@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=15';
+import { PAL } from './palette.js?v=16';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -47,7 +47,16 @@ const ROLE = {
 function grainPaint(mats) {
   getTexture('balsa').then((tex) => {
     if (!tex) return;
-    for (const m of mats) { m.map = tex; m.needsUpdate = true; }
+    // An imported GLB carries its OWN UV atlas — 0…1 across the whole model —
+    // so `craftBox`'s world-space trick is not available and a plain repeating
+    // map simply stretches one copy of the brushwork over the entire machine,
+    // which is why the excavator still read as smooth plastic. Tile it across
+    // the atlas instead. Cloned per call: repeat lives on the Texture, and
+    // the cached one is shared with every other surface asking for balsa.
+    const t = tex.clone();
+    t.needsUpdate = true;
+    t.repeat.set(9, 9);
+    for (const m of mats) { m.map = t; m.needsUpdate = true; }
   });
 }
 
@@ -94,7 +103,7 @@ export async function loadManifest() {
   // token never learns the new one exists and keeps the old art forever,
   // with every asset URL inside it still perfectly correct. This shipped at
   // `?v=1` for eleven versions. The smoke gate now asserts the two agree.
-  const res = await fetch(new URL('manifest.json?v=15', BASE));
+  const res = await fetch(new URL('manifest.json?v=24', BASE));
   manifest = await res.json();
   return manifest;
 }
@@ -141,9 +150,15 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
       return { root, nodes: {}, clips, skinned: true, live: true };
     }
 
+    // A PROP has neither nodes nor clips — nothing inside it moves, the game
+    // spins and bobs it whole (a bolt, a token). Without this it fell into
+    // the node loop, threw on an absent `nodes`, and silently served the code
+    // placeholder instead of the model that had just been fetched.
+    if (entry.rig === 'prop') return { root, nodes: {}, clips: {}, live: true };
+
     const nodes = {};
     const missing = [];
-    for (const n of entry.nodes) {
+    for (const n of entry.nodes || []) {
       const obj = root.getObjectByName(n);
       if (obj) nodes[n] = obj; else missing.push(n);
     }

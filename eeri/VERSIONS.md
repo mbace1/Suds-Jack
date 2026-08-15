@@ -237,6 +237,445 @@ fetch carries the manifest's own version now and the gate asserts the two
 agree.
 
 Gates: 157 smoke, 30 prover, 7 playthrough, hub green.
+## v23 — 2026-08-14 — the open failure is closed: it was three bugs, all mine
+
+v21's known-open "walking out of site 1" check is fixed. origin/main ran
+green in a worktree, which pinned it to this branch, and the chase found
+three stacked faults:
+
+1. **`assets.js` threw on `rig:"prop"`** — the node loop assumed every
+   non-skinned model declares `nodes`, so every pickup fell back to its code
+   placeholder with only a console warning. The bolt GLB was never actually
+   on screen. Props now return whole.
+2. **The bolt's placeholder builder returned a bare Group** where the seam's
+   contract says builder and live path return the same `{root}` shape — "so
+   game code cannot tell them apart". It worked on whichever path was
+   exercised that day and crashed on the other.
+3. **The real killer: a hundred of a thing is a budget of its own.** The
+   live bolt was Meshy raw — ~4k tris and a 1024² texture — and 100 clones
+   dropped headless rendering to 6 fps, which starved the gate's 8-second
+   walk-out. Remeshed (5 cr) to 500 tris, packed at 64px texture: **43 KB**,
+   from 3.3 MB.
+
+The diagnostic that settled it: bolt as placeholder → 189/0 green; bolt
+live-heavy → the one red. Not flakiness, not level geometry — draw cost.
+
+Gates: 189 smoke green on the placeholder run; final live-bolt confirmation
+run below.
+
+## v22 — 2026-08-14 — Eeri leans over his own logo, and landscape gets its arcade plank
+
+Both from owner notes on v21, same day:
+
+- **`logo_v2.png`** — "needs to have Eeri the character involved, coming
+  towards the camera pov from top of the text box, waist up." He leans over
+  the sign's top edge like a kid over a fence: body behind the plate, head
+  and hands breaking above it. Built with `--ref E1-eeri-tpose` so he is the
+  SAME kid as the cast model rather than a re-imagining — the ref carries
+  the character, the sign is ours and is described. v1 removed.
+- **`padplate_landscape_v1.png`** — "wider and thinner look, maybe more
+  arcade background board feel." Not a stretch of the portrait DMG plate but
+  a different object: an arcade cabinet control-panel strip, joystick ball
+  far left, B/A + SELECT/START + grill far right, and the whole middle
+  deliberately EMPTY — in landscape the middle of the screen is the game.
+
+The portrait DMG plate is unchanged and now named `padplate_portrait`.
+Mounting all three (title state, per-orientation plates, transparent hit
+areas over the drawn controls) is Design/Level + shared-file work.
+
+Known open from v21 stands: the walk-out-of-site-1 check still fails (188 of
+189) and is still not isolated.
+
+Gates: 188 smoke + 30 rooms, 1 known failure.
+
+## v20 — 2026-08-14 — the pickups are 3D, and the gate learns a third rig
+
+DESIGN §6.3's collectables. The bolt now comes through the asset seam
+(`bolt_v1.glb`) instead of being two cylinders built inline, and world 1–3's
+tokens exist as `token_toolbox` / `token_blueprint` / `token_bolt`.
+
+**§6.3's real requirement is a SILHOUETTE test, not a look test** —
+"unmistakably NOT a bolt at 32 px, different silhouette, not just bigger" —
+so `art-src/tools/silhouette.mjs` (new) renders each one keyed, at 32 px, as
+a flat black shape, which is all the player's eye actually gets. The four
+read as: a blob with a hole (bolt), a winged V (golden bolt — allowed to be
+a bolt because it IS the golden one, so the wings carry it), an arch with
+daylight under it (toolbox), and a long diagonal (blueprint). Distinct as
+pure shapes, which is the contract.
+
+**A pickup's origin is its CENTRE.** It floats and bobs; the foot-contact
+rule in assets/README governs things that stand. Shipping these base-anchored
+would have hung every bolt half a tile high. `packprop.mjs` (new) takes
+`--anchor center|base` and says why.
+
+Weight: Meshy returned 3.3 MB each — a 1024² texture for something drawn
+32 px wide. `packprop.mjs` re-exports at 128², which is 240–307 KB, inside
+assets/README's 400 KB budget for the first time in this project. The
+textures are downsized rather than stripped-and-painted because a Meshy prop
+is a single `mesh_node`: a `paint` map could only give it ONE colour, and the
+bolt's grey collar against the yellow is the read.
+
+**The smoke gate learned a third kind of rig.** It knew skinned characters
+(declare CLIPS) and hand-cut models (declare NODES) and failed all four
+pickups, which have neither. `rig: "prop"` now declares *no moving parts* and
+is asserted as such — saying it beats exempting it, because a prop that
+quietly grew an animated part is still caught.
+
+Two live bugs fixed on the way in, both from a code placeholder becoming a
+real GLB: the collect fade walked `b.children`, which reaches a Group's
+direct children but never the Mesh inside a loaded GLB (Group → Object3D →
+Mesh), so bolts would have popped without fading; and cloned GLB materials
+are shared and opaque, so one collected bolt would have faded every bolt in
+the level at once.
+
+Cross-lane, declared: `js/main.js` (shared) routes bolts through `getModel`,
+and `test/smoke.cjs` gains the prop contract.
+
+Gates: 186 smoke + 30 rooms + 7 playthrough.
+
+## v19 — 2026-08-14 — the enemy family is three deep
+
+DESIGN §6.2 #1 — "nothing is more used and nothing is missing more" — was
+one enemy across twelve levels. Now: `hopper_v1.glb` (24 bones; idle/walk/
+run/**hop** — 417 Hop_with_Arms_Raised IS the fixed-rhythm hop §3 asks for)
+and `bucket_v1.glb` (22 bones; idle/walk/run/**wake** — 271, measured
+head-led at 0.12 against near-still limbs, so the look-up is the telegraph
+itself; then `run` chases). Both on the bolt-bot body plan, both rigged
+FIRST TRY — the volume rule from v17 held twice more. Both `placeholder`
+until js/robots.js consumes them.
+
+The **roller stays a vehicle** (PHASING routing: wheels → sliced nodes,
+never a rig). Its concept is in `art-src/bots/B-roller.jpg`: domed top that
+reads as un-landable from across a room — §3's rule for it — with its
+notice-tell lamp on a stalk. Mesh + slice is a follow-up; it needs
+`slice.mjs`, not the rigger.
+
+Costs this batch: 60 cr meshes, 12 cr clips — and **rigging billed 0** on
+both (the rig charge appears to have moved into bundle pricing). Balance
+1732 → all of Phase A's remaining art fits several times over.
+
+Gates: 174 smoke + 30 rooms.
+
+## v18 — 2026-08-14 — the two new verbs animate
+
+DESIGN §6.2 #2, verbatim: "the two new verbs have no animation at all."
+`eeri_v4.glb` fixes that with three library clips on the existing rig —
+`climb` (438 Ladder_Climb_Loop, chosen over the fast/slow variants because
+the game HOLDS a climb, so it has to loop), `stomp` (470 Jumping_Down, the
+crouch-and-rebound), and `hurt` (178 Hit_Reaction — a plain flinch; the
+library's other reactions are punches and gunshots, which have no business
+in this game). 9 credits, `art-src/tools/meshyrig.mjs anim`.
+
+The full action library with names is at docs.meshy.ai/en/api/animation-library
+— found while hunting a hurt clip, and better than the rough id ranges this
+repo had been navigating by.
+
+New FILE name (eeri_v4, not a rewrite of v3) per the versioned-URL rule.
+Clips measured moving in the packed file before install: climb forearm 0.22 /
+leg 0.20, stomp 0.68 / 0.55, hurt 0.36 across the board — none dead.
+
+One declared cross-lane line in js/kid.js: `CLIP_FOR.climb` pointed at
+`'walk'` as a stand-in and now points at the real clip. Wiring `stomp` and
+`hurt` into the state machine is real behaviour work and stays with
+Design/Level — the clips are on the model waiting.
+
+Also concepted on the rigged body plan: `B-hopper2` and `B-bucket2`
+(art-src/bots/), the next two family members. Not yet meshed.
+
+Gates: 166 smoke + 30 rooms + 7 playthrough.
+
+## v17 — 2026-08-14 — the bolt-bot rigs, and why the first two did not
+
+PHASING §2's highest asset-value-per-credit item: ONE Meshy-rigged biped that
+the whole non-violent enemy family is re-headed and retextured from, so the
+game stops being one enemy type across twelve levels. `boltbot_v1.glb` — 24
+bones, feet at the origin, `idle`/`walk`/`run`, 1.1 MB. It sits in the
+manifest as **placeholder** until `js/robots.js` asks for it, because the
+smoke gate fails a live asset nothing fetches.
+
+**Two rigs were rejected before this one, and the reason was not the pose.**
+Both were in a strict T-pose with daylight through both armpits and between
+the legs — exactly what ART_PIPELINE's T-pose rule asks for — and Meshy
+answered *"Pose estimation failed, please provide a valid model"* both times.
+The second attempt even had textbook human proportions: visible neck,
+shoulders wider than hips, arms as long as the legs, elbows and knees halfway.
+Rejected again.
+
+The answer was in `art-src/E1-eeri-tpose.jpg`, the concept that rigged first
+time months ago: **his legs merge at the hip with no daylight at all, and his
+arms are barely 40° from his sides.** He breaks the stated rule and rigs
+anyway. So the rule was mis-stated. What the estimator wants is **volume** — a
+body it can fit a skeleton *inside*. Eeri is a solid toy with mass; both
+failed bots were tubes stuck onto a box, and there is nothing inside a tube.
+
+The fix, and the general lesson now in ART_PIPELINE: for anything non-human,
+`--ref` a character that has already rigged, take its BODY PLAN, and disown
+its costume in words. The third bolt-bot did that and rigged first time. Be a
+robot in the faceplate and the surface, never in the construction.
+
+Cost of learning it: 90 credits of meshes (the two failures charged 30 each;
+**a failed rig charges nothing**), then 5 for the rig and 3 for the idle clip.
+
+Verified by measurement, not by eye (`art-src/tools/botmeasure.mjs`, new):
+every driven joint travels in `walk` and `run` — forearms 0.15–0.23, legs
+0.12–0.16 — against an idle that is correctly near-static at 0.004–0.011. A
+dead joint renders completely plausibly, so this is the only honest check.
+
+Not done here, and deliberately: **the stomp squash is CODE, not a clip**
+(PHASING §1) and `js/robots.js` is Design/Level's file. The rig ships with a
+root the game can scale; the flatten-and-pop belongs to that lane.
+
+> **A note on the numbering.** Two lineages both shipped a "v10" and a "v11":
+> main's are gameplay (the machine on the route; ladders and vertical levels),
+> the art lane's were the material kit and the painted machines. The art
+> entries below are renumbered **v12–v16** to continue from main's v11 rather
+> than collide with it. Their own text still refers to itself by the old
+> numbers in places, and that is left alone — rewriting the record to look
+> tidier than it was is how the traps stop being findable.
+
+## v16 — 2026-08-14 — world 2's backdrop, built ahead of need and parked
+
+The pipeworks layer set (DESIGN §4.1 "pipes/water") — built now because the
+whole run cost ~nothing on the v14 model policy, parked because §6.2 #5 says
+it is due at level 4, which does not exist yet. It ships in the manifest
+under `layers.pipeworks` with status **placeholder — deliberately**: the
+smoke gate fails any live asset the game never fetches (the v6 bug class,
+2.7 MB shipped and never requested), and no level plays world 2 yet. Level 4
+flips six words to "live" and nothing else; the seam (`buildLayers(scene, world)`) has taken a
+world name since v6, so when level 4 lands it is one string in the room def.
+
+- **28-piece pool** (`art-src/craft/pipeworks/`): waterworks skyline (water
+  tower, gasometer, pump station, elevated pipeline, crane), the far water
+  structures (tank tower, pipe rack, pump house, standpipe, a lattice pipe
+  bridge), a mid kit of pipes at hand height (runs, a red-wheeled valve, an
+  elbow, pump skid, sluice, pipe stack), wet near clutter, dark fore
+  occluders, and three grade strips with standing water let into them.
+- **Water is CUT PAPER** — layered blue card with scalloped torn edges and
+  paper foam curls, never a rendered liquid. The near lane carries it as a
+  wide strip sunk half into the grade.
+- **23 of 26 concepts on base nano banana** (flash); Pro only for the three
+  structural heroes. Owner's call, and the strata A/B backs it: flash results
+  are equivalent outside fine lattice work.
+- `build-layers.mjs` gained a **`WORLD` switch** — per-world pool + layer
+  config over the same world-agnostic rects — and a per-piece **`sink`**:
+  some pieces keep a sliver of white base (legit ink the key is right to
+  keep), and burying the feet in the grade is cheaper and more honest than
+  re-rolling for a perfect crop. P-mid-tower is borrowed from the groundworks
+  pool deliberately: one shared silhouette ties the worlds to one site.
+- The sky entry points at the groundworks sky — world-agnostic until a world
+  needs its own (the evening set will).
+
+Composition acceptance (full-width strips): far and mid pass cleanly; the
+skyline needed the hero rate halved after three identical cranes landed in
+one screen — one hero piece per pool makes the hero rate the repeat rate.
+
+## v15 — 2026-08-14 — the ground stops being wallpaper
+
+The owner, on v12: *"I thought it was already done."* It had been — twice. v10
+gave the earth the material kit and v11 fixed the detail map's contrast, and
+both were real fixes on the MATERIAL axis. Neither touched composition, which
+is why ~30% of every frame was still an evenly-spaced motif marching across
+136 world units between four dead-straight horizontals. Machine-perfect is the
+one thing the reference is not.
+
+- **Each stratum takes its own section at its own scale.** They shared one
+  `flute` map, so four bands were four tints of one stamp.
+- **The boundaries INTERLOCK instead of running straight.** Each band sends
+  tongues of itself into the band below at varying widths and depths, drawn
+  per solid run so a dug hole is never bridged. This replaced a first attempt
+  that laid a torn-card strip along each boundary — which was worse, and
+  usefully so: it turned four straight lines into four regular rows of
+  identical bumps, i.e. the same failure with more ink. **A boundary wants to
+  be irregular in POSITION, not dressed.** The geometry version costs no asset
+  at all.
+- **The face carries things you can name** — a paper-tube pipe with a tape
+  band, a crushed drum, a root, broken brickwork, stone clusters, a bottle —
+  keyed cutouts placed deterministically, knocked back in value so they sit in
+  the earth rather than on it, and skipped where they would float over a dug
+  pit. The v4 "cobbles" they replace are ninety grey dodecahedrons mixed toward
+  INK on a brown face: invisible, which is why the section read as empty
+  however much material was thrown at it.
+- **The grass lip gets its felt fringe**, tiled at the strip's own aspect.
+
+**A DETAIL MAP MUST TILE, WHICH MEANS IT MUST BE FEATURELESS**, and this cost
+two rounds. The strata sources inherited the house craft block, which names
+split pins and masking tape, so every section came back with fixings in
+specific places — correct for a piece, fatal for a map, because a map repeats:
+at a 3-unit repeat you could count the same brass pin forty-five times.
+`detailmap.mjs` gained a **`highpass`** argument (subtract everything coarser
+than a radius; the features are large and the fluting is fine, so one number
+separates them). That fixed two of the four. It could not fix `packed` and
+`gritty`, which are photographs of a specific card *assemblage* — the
+arrangement is the subject, and no filter turns an object into a material.
+Both were pulled; those bands fall back to `flute`, which is genuinely
+uniform, at two densities. **The test is TILE IT 3×3 AND LOOK** — a single
+patch of all four reads as convincing card, and only the 3×3 shows which two
+are objects.
+
+Also fixed: the first cut placed all 46 face cutouts between y −0.5 and −8,
+which is almost entirely below the bottom of the frame — loaded, lit and
+rendered where nobody would ever see one.
+
+**Postscript — it was the prompt, not the model.** The credits came back and
+the three failed sources were re-rolled against both models on the fixed
+brief. All three came out right on both, which settles it: the earlier
+failures were the house craft block leaking fixings into a texture, not the
+generator. And **base nano banana (`gemini-2.5-flash-image`) produced the
+best-tiling swatch of the four**, beating Pro — Pro put repeating white blobs
+in `gritty`. Pro won `gritty` and the torn edge. So the standing rule is
+**generate on flash, escalate to Pro only when a look fails**; Pro's clear
+advantage is a piece with internal structure, where the subject is an object.
+All four strata are live again.
+
+Gates: 156 smoke + 29 room-prover.
+
+## v14 — 2026-08-14 — the layers are COMPOSED, not tiled
+
+The owner's note on v11 was that the assets were not good enough yet, and
+then, looking at them: *"a lot of the backgrounds looked like it stopped
+abruptly or that it's not connected to ground. generally they are flat and
+need more definition or edge contrast."* Rendering a full layer strip instead
+of a screenshot showed why, and it was not a material failure.
+
+**Every layer was ONE generated segment stamped across the rect with a gap
+between copies.** In one 1280px frame at x=78 you could count three identical
+half-built frames at identical heights with three identical cranes above them;
+across the whole strip roughly half of each layer was empty air. The segments
+themselves were on target — balsa standards, split-pin bolts, corrugated cut
+edges, all of it — so every previous pass had been improving the thing that
+was already right.
+
+So the unit of generation stops being a segment and becomes a **piece**, and
+`build-layers.mjs` becomes a compositor:
+
+1. **A pool, not a tile.** 36 pieces (`art-src/craft/pieces/`), each ONE object
+   on magenta with no ground under it. The tool finds its ink bounds, gives it
+   a world height and places it.
+2. **A height profile.** Each piece carries its own world height and jitters
+   around it; `hero` pieces — cranes, a lift core, a chimney stack, a tall
+   scaffold — appear rarely and stand well above the run. A run of 13s with an
+   occasional 21 is a skyline; thirteen 13s is a fence.
+3. **A continuous grade, and feet that are buried in it.** Each ground lane
+   gets a torn-card ground line tiled the full width, and then the SAME strip
+   again in front at half height, so every piece is planted rather than
+   standing on air. Drawn only behind, a grade is a backdrop and the cutouts
+   still float — which is the "not connected to ground" read exactly.
+4. **Edge contrast.** Every piece drops a hard-edged cutout shadow onto
+   whatever is behind it (which is what Crafted World's flat sets actually do)
+   and each lane's contrast is pushed back up before the depth tint washes it
+   out.
+5. **A value staircase.** The depth tint alone mixes every lane toward the
+   same pale sky, which is why the old build read as one field of cream with
+   the player lost in it. Each lane now steps down from the one behind it
+   (1.00 / 0.92 / 0.84 / 0.78) and the hoarding — the only wide block of local
+   colour in the kit — was promoted into the NEAR lane, so there is something
+   behind the play lane that is neither pale nor grey.
+
+Placement is seeded, so the same commit builds the same layers, and the tools
+plus the pool ship in `art-src/` — `build-layers.mjs` rebuilds
+`assets/2d/groundworks_*_v3.png` byte-for-byte from `art-src/craft/pieces/`.
+
+**Three bugs in the chroma key, all of which had shipped.** `keylib.js` is now
+the one copy, shared by the compositor and the review tools:
+
+- **A ratio test over-keys.** Keying on `g < min(r,b) × 0.8` alone lets JPEG
+  chroma noise in a dark passage punch black speckle through the middle of the
+  art — it was visible all over the lift core and the dark scaffold. The
+  backing is a lit sheet, so demand an absolute floor and a real separation
+  too.
+- **A level test under-keys.** The previous cut tested `r > 140 && b > 140 &&
+  g < 110`, which is a test for BRIGHT magenta — and the model casts a SHADOW
+  on the backing, around (90, 15, 90), which passes none of those thresholds.
+  That shipped as a solid purple block beside a tower.
+- **A keyed pixel still carries its original colour.** Canvas scaling averages
+  rgb across the alpha edge, so a piece composited at half size grows a
+  magenta fringe out of pixels that are supposedly invisible. Dilating the
+  opaque colour a few pixels into the transparent region is the fix, and it is
+  the real cause of the whole "pink on the clouds" family — no amount of
+  threshold tuning reaches it. Worst residual lean across the five shipped
+  layers is now 12 levels, against ~100 before.
+
+And one that is not a bug: **the de-magenta correction is per piece, on
+purpose.** The backing bounces onto everything it lights, so a balsa scaffold
+comes back salmon — but `castprobe.mjs` scores the orange skip and the orange
+cones just as high, because orange genuinely sits on the magenta side of the
+green-magenta axis. A blanket correction would grey out the only saturated
+colours in the kit. The neutrals declare a correction; the painted pieces
+declare none.
+
+The superseded `_v1` and `_v2` layer sets are removed (7 MB).
+
+## v13 — 2026-08-13 — the machines are painted wood, and the map tool is fixed
+
+**The excavator was still smooth plastic in a crafted world**, and chasing it
+found two independent causes plus a bug in the tool that makes every map.
+
+1. **An imported GLB carries its own UV atlas.** `craftBox`'s world-space UV
+   trick is only available to geometry we build, so on a live model a
+   repeating map stretched ONE copy of the brushwork across the whole
+   machine. The paint path now tiles across the atlas explicitly (repeat 9),
+   on a cloned texture — repeat lives on the Texture, and the cached one is
+   shared with every other surface asking for balsa.
+2. **The placeholder machines built boxes directly.** `excavator.js`,
+   `crane.js`, `pieces.js` and `robots.js` each had a local
+   `new THREE.Mesh(new THREE.BoxGeometry(...), M(c))`, which gets the shared
+   material but none of the UV density. All four route through `craftBox`
+   now.
+3. **`detailmap.mjs` scaled contrast about the MEAN**, which preserves the
+   source photo's own contrast. That is fine for corrugated card (luminance
+   40…230) and useless for a white-painted board (230…250): the balsa map
+   came out ±4% however high the strength went. It does a **histogram
+   stretch** now — 5th to 95th percentile onto a fixed band — so a map's
+   contrast is a property of the REQUEST, not of how well lit the source
+   happened to be. Every material was rebuilt through it; felt and balsa
+   only became visible at all after this.
+
+The lesson generalises past this project: **normalising by mean preserves
+the source's contrast; normalising by range sets it.** A tool that takes a
+"strength" argument and ignores it for low-contrast inputs is worse than one
+with no argument, because it looks like it is working.
+
+Gate: 134 checks + 29 room prover.
+
+## v12 — 2026-08-13 — a material KIT, not cardboard everywhere
+
+**Crafted World is a kit of materials and the first pass used card for all of
+it.** `js/craft.js` is now the one factory every surface is made through, and
+the manifest's `textures` block is the palette: `flute` (the cut edge of
+corrugated card, stacked fluting) for the earth section and every dug face,
+`card` (kraft liner) for flat card, `felt` for the grass lip, `balsa`
+(painted wood, brush strokes and a paint chip) for machines, girders and
+props — §3.3's "painted wood and pressed steel". Each is a greyscale map
+multiplied onto a palette colour, so §3.2 holds exactly.
+
+**The ground is the headline.** It was flat brown, then card with a faint
+grain, and it is now visibly a CUT THROUGH STACKED CORRUGATED CARD — which is
+what a cut earth section is in this reference. The strata banding the depth
+pass established still reads through it; the flute strength was pulled from
+0.62 to 0.5 precisely so it would.
+
+**Two failures worth recording.** A probe of the live scene found **3
+materials mapped and about 70 not**: every module had grown its own
+`const M = (c) => new MeshLambertMaterial(...)`, so the grass lip, both
+machines and every prop were still flat paint while the ground behind them
+was card. Patching call sites would have left the next one to be written
+flat, so `craft.js` replaced all of them — 128 materials now carry their
+material, and the ones that do not are the beacon lamp, shadows and glass,
+which must stay bare. And the first maps were far too weak: ±20% variation,
+which Lambert then flattens further. A material you have to be told is there
+is not doing its job.
+
+Also fixed: the sky's remaining magenta. **Magenta is the only thing where r
+AND b both exceed g** — yellow, orange, kraft and cream all have b < g, and
+cotton is neutral — so the despill needs no threshold and cannot eat a real
+colour. 2.04% of pixels carried a pink cast; now 0.004%.
+
+And the gate learned to refuse a manifest block containing a stray note: a
+bare `_note` string beside the texture entries made the seam-scope check
+resolve a path on `undefined` and killed the whole run with
+`ERR_INVALID_ARG_TYPE` instead of naming the problem.
+
+Gate: 134 checks + 29 in the room prover.
 
 ## v11 — 2026-08-13 — ladders, and levels that go up
 

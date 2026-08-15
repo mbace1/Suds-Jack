@@ -12,8 +12,8 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=15';
-import { craftMat, craftBox } from './craft.js?v=15';
+import { PAL, mix } from './palette.js?v=16';
+import { craftMat, craftBox } from './craft.js?v=16';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();

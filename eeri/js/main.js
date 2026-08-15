@@ -9,25 +9,25 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=15';
-import { Input } from './input.js?v=15';
-import { Level, ROOMS, LAB } from './level.js?v=15';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=16';
+import { Input } from './input.js?v=16';
+import { Level, ROOMS, LAB } from './level.js?v=16';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=15';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=15';
-import { Camera } from './camera.js?v=15';
-import { buildKidModel, Kid, Player } from './kid.js?v=15';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=15';
-import { buildCraneModel, Crane } from './crane.js?v=15';
-import { Robot, SteamVent } from './robots.js?v=15';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=15';
-import { WreckingBall } from './hazards.js?v=15';
-import { AudioKit } from './audio.js?v=15';
-import { loadManifest, getModel, getPiece } from './assets.js?v=15';
-import { craftMat, craftBox } from './craft.js?v=15';
-import { t as tr } from './lang.js?v=15';
-import { showIntro } from './intro.js?v=15';
+} from './pieces.js?v=16';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=16';
+import { Camera } from './camera.js?v=16';
+import { buildKidModel, Kid, Player } from './kid.js?v=16';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=16';
+import { buildCraneModel, Crane } from './crane.js?v=16';
+import { Robot, SteamVent } from './robots.js?v=16';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=16';
+import { WreckingBall } from './hazards.js?v=16';
+import { AudioKit } from './audio.js?v=16';
+import { loadManifest, getModel, getPiece } from './assets.js?v=16';
+import { craftMat, craftBox } from './craft.js?v=16';
+import { t as tr } from './lang.js?v=16';
+import { showIntro } from './intro.js?v=16';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -182,14 +182,30 @@ async function boot() {
       bar.position.set(def.gate.x, def.gate.y + 2.6, 0); group.add(bar);
     }
 
-    // bolts: the collectable (3D slow spinners, §6)
-    const bolts = level.boltCells.map((cell, bi) => {
+    // bolts: the collectable (3D slow spinners, §6). The model comes through
+    // the seam like everything else — and the seam's contract is that the
+    // PLACEHOLDER BUILDER RETURNS THE SAME SHAPE AS THE LIVE PATH ({root}),
+    // "so game code cannot tell them apart". The first cut returned a bare
+    // Group from the builder and unwrapped .root outside the call, which
+    // worked on whichever path was exercised that day and crashed on the
+    // other. A bolt is a PICKUP: origin at its centre, cloned per cell.
+    const boltModel = (await getModel('bolt', () => {
       const g = new THREE.Group();
       const m1 = craftMat(PAL.MACHINE, 'balsa', { transparent: true });
       const m2 = craftMat(PAL.MACHINE_DK, 'balsa', { transparent: true });
       const nut = new THREE.Mesh(boltGeo, m1); nut.rotation.x = Math.PI / 2;
       const hub = new THREE.Mesh(hubGeo, m2); hub.rotation.x = Math.PI / 2;
       g.add(nut, hub);
+      return { root: g };
+    })).root;
+    const bolts = level.boltCells.map((cell, bi) => {
+      const g = boltModel.clone(true);
+      // the collect pop fades it, and a material cloned off a GLB is opaque
+      g.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone();      // per-bolt, or one pop fades all
+        o.material.transparent = true;
+      });
       g.position.set(cell.x, cell.y, 0);
       g.baseY = cell.y; g.phase = bi * 0.7; g.state = 'up'; g.popT = 0;
       group.add(g);
@@ -706,7 +722,10 @@ async function boot() {
         b.popT += dt / 0.25;
         b.rotation.y += dt * 14;
         b.scale.setScalar(1 + b.popT * 0.8);
-        for (const ch of b.children) ch.material.opacity = 1 - b.popT;
+        // fade every material in the tree, not just direct children: a live
+        // GLB is Group → Object3D → Mesh, so `b.children` alone never
+        // reaches the mesh and the bolt would pop without fading
+        b.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - b.popT; });
         if (b.popT >= 1) { b.state = 'gone'; b.visible = false; }
       }
     }
