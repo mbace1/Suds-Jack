@@ -1,5 +1,54 @@
 # EERI — versions
 
+## v15.5 — 2026-08-15 — the plate is cropped, the bank says dig, the mark is a sticker
+
+Four owner notes from one sitting, and the last of them found a bug that
+had been swallowing two other things silently.
+
+**The portrait plate is cropped and centred** (*"can be cropped a bit from
+the top and should be very slightly smaller and centered on the screen
+along the bottom"*). `#pad` is inset 4% either side and its box is given
+the plate's ratio **minus the crop** (1024 × 496 against the image's 590),
+with the image anchored to the box's bottom and the overflow clipped. The
+crop takes the transparent air and a sliver of the yellow strip off the
+top; the controls do not move, because `#touch` keeps the image's FULL
+ratio and every hit area is a percentage of that.
+
+**The title logo comes back.** `intro.js` asks `uiAsset('logo')` for it,
+and `uiAsset` reads the manifest — which `main.js` was loading **after**
+the intro. So the lookup ran against a null manifest every time, returned
+null every time, and the code-drawn wordmark shipped in front of a painted
+logo that was sitting right there marked `live`. The manifest is a ~2 KB
+JSON read; it now happens first, and the intro awaits nothing else.
+
+**The dirt bank asks to be dug.** Paired ▲▼ chevrons at the top of the
+face and a hazard-striped board under them — on the BANK, never beside the
+machine, so the affordance is on the thing the affordance is about. The
+first cut put the board between the arrows and hid ▼, which is the whole
+instruction.
+
+**The Toko mark is a sticker on the pad** (*"can be on the game pad but
+should look more like a sticker"*): white die-cut border, a few degrees
+off square, a shadow, and parked in the plate's deliberately empty ground
+— the DMG's blank panel in portrait, the arcade strip's middle in
+landscape. `sign()` writes its position inline, so the rules have to
+shout, and a `MutationObserver` re-parents the badge into `#touch` once
+`.plated` lands so it tracks the plate art at any size.
+
+**The trap, and it is a layer trap, not a z-index one.** The sticker did
+not appear. `sign()` sets `z-index: 4` inline (deliberately, so it sits
+under a game's HUD) and the plate is `z-index: 5`, so the first fix was an
+`!important` 7 — and nothing changed. Nor did **9999**. `#touch` was at
+`z-index: auto`, which paints the entire hit layer as a unit *below* `#pad`
+— and no z-index on a child can climb out of its own parent's layer. One
+line fixes it (`#touch { z-index: 6 }`), and the same line un-buries the
+plated buttons' **press tint**, which had been painting under the plate
+since the plates were mounted with nobody noticing, because a transparent
+button and a buried tint look identical. The gate now asserts the layer
+order rather than the badge's number: `z(touch) > z(pad)`.
+
+Gates: 88 / 31 / 30 / 257 / 7 / hub.
+
 ## v15.4 — 2026-08-15 — stomp and hurt animate, and both lanes' docs land
 
 **The two verbs finally react.** `eeri_v4` has carried `stomp` and `hurt`

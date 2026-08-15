@@ -12,8 +12,8 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=17';
-import { craftMat, craftBox } from './craft.js?v=17';
+import { PAL, mix } from './palette.js?v=18';
+import { craftMat, craftBox } from './craft.js?v=18';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();
@@ -51,6 +51,62 @@ export function buildBankModel(rows = 3, width = 5) {
         g.add(sp);
       }
     }
+    // ---- READ ME AS DIGGABLE (owner, 2026-08-15) --------------------
+    // CLAUDE_HANDOFF's rule stands and this obeys it: the sign labels the
+    // OBSTACLE, never the machine and never the controls, and there is no
+    // explanatory text beside the excavator. It goes ON the bank.
+    //
+    // The arrows are ▲ and ▼ because those are the two buttons that work
+    // the boom — the same glyphs the hint line and the pad plate use, so
+    // what you read on the dirt is what you press. They stand on the face
+    // of the wall, which is the thing you are being asked to act on.
+    //
+    // Only on the standing states: once the bank is dug flat there is
+    // nothing left to label, and a sign on a hole is a leftover.
+    if (h > 0) {
+      const face = 0.9;                       // just proud of the cut face
+      const arrow = (up, y) => {
+        const a = new THREE.Group();
+        // a flat chevron, built from two bars — no text, no glyph font, and
+        // it reads at 32px because it is a shape rather than a character
+        for (const dir of [-1, 1]) {
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.13, 0.08), M(PAL.MACHINE));
+          bar.position.set(dir * 0.14, 0, 0);
+          bar.rotation.z = dir * (up ? -0.7 : 0.7);
+          a.add(bar);
+        }
+        a.position.set(width / 2, y, face);
+        g.add(a);
+        return a;
+      };
+      // The pair sits TOGETHER at the top and the sign goes below it: up and
+      // down are one instruction ("this is the thing the boom works"), and
+      // the first cut put the board between them, which hid the ▼ entirely.
+      arrow(true, h - 0.45);                  // ▲ raise the boom
+      if (h >= 2) arrow(false, h - 0.95);     // ▼ and dig it down
+
+      // the sign itself: a small construction board bolted to the face
+      const sign = new THREE.Group();
+      const board = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.1), M(PAL.MACHINE));
+      sign.add(board);
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(1.56, 0.09, 0.11), M(PAL.INK));
+      edge.position.y = -0.29; sign.add(edge);
+      // hazard chevrons along the board, the site's own danger language
+      for (let i = 0; i < 5; i++) {
+        const st = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.34, 0.12), M(PAL.INK));
+        st.position.set(-0.56 + i * 0.28, 0.02, 0.01);
+        st.rotation.z = 0.42;
+        sign.add(st);
+      }
+      // …and the board only while there is wall to put it on. On the last
+      // standing tile there is no room, and a sign crowding a one-tile lip
+      // reads as clutter rather than as an instruction.
+      if (h >= 2) {
+        sign.position.set(width / 2, h - 1.75, face + 0.08);
+        g.add(sign);
+      }
+    }
+
     root.add(g); nodes[`state${s}`] = g;
   }
   return { root, nodes };
