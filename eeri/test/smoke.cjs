@@ -729,15 +729,20 @@ s.listen(0, '127.0.0.1', async () => {
       // the direction ticks use the same words and matched too
       const block = g.slice(g.indexOf('export const GLYPHS = {'), g.indexOf('};', g.indexOf('export const GLYPHS = {')));
       const drawn = [...block.matchAll(/^\s{2}(\w+):/gm)].map((m) => m[1]);
-      const CONTROLS = ['left', 'right', 'up', 'down', 'jump', 'action'];
+      // `menu` joined the map when SELECT and START were wired (v15.12).
+      // Two BUTTONS bind it — the two drawn pills — so the bound list is
+      // deduped before comparing: the contract is over control NAMES.
+      const CONTROLS = ['left', 'right', 'up', 'down', 'jump', 'action', 'menu'];
       ok('a face is drawn for every control, and only for those',
         CONTROLS.every((c) => drawn.includes(c)) && drawn.length === CONTROLS.length,
         drawn.join(','));
       const mainSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
       const bind = mainSrc.match(/bindButtons\(\{([^}]*)\}/);
       const bound = bind ? [...bind[1].matchAll(/'(\w+)'/g)].map((m) => m[1]) : [];
+      const boundSet = [...new Set(bound)];
       ok('…and the glyph set matches the controls the game actually binds',
-        bound.length > 0 && bound.every((c) => CONTROLS.includes(c)), bound.join(','));
+        boundSet.length > 0 && boundSet.every((c) => CONTROLS.includes(c))
+        && CONTROLS.every((c) => boundSet.includes(c)), boundSet.join(','));
     }
     // The rule is about the WORDS and is unaffected by the buttons gaining
     // pictures. It is checked against the language packs rather than against

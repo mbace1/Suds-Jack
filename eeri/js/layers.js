@@ -23,8 +23,8 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=23';
-import { getLayerTexture } from './assets.js?v=23';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=24';
+import { getLayerTexture } from './assets.js?v=24';
 
 export const PPU = 30; // canvas pixels per world unit
 

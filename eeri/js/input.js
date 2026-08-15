@@ -10,13 +10,13 @@
 // The poll only ever acts on EDGES of its own previous state, so a pad
 // being idle never clobbers a key being held, and the three paths coexist.
 
-import { art } from './glyphs.js?v=23';
-import { t } from './lang.js?v=23';
+import { art } from './glyphs.js?v=24';
+import { t } from './lang.js?v=24';
 
 // which string names each control, for the accessible name on its button
 const CTL_KEY = {
   left: 'ctlLeft', right: 'ctlRight', up: 'ctlUp',
-  down: 'ctlDown', jump: 'ctlJump', action: 'ctlAction',
+  down: 'ctlDown', jump: 'ctlJump', action: 'ctlAction', menu: 'ctlMenu',
 };
 
 const KEYS = {
@@ -26,6 +26,9 @@ const KEYS = {
   ArrowDown: 'down', KeyS: 'down',
   Space: 'jump',
   KeyE: 'action', Enter: 'action',
+  // SELECT and START both open the menu, and so does Esc — the house key
+  // for "let me out of this" on every other cabinet here
+  Escape: 'menu', Backquote: 'menu',
 };
 
 const DEAD = 0.4;   // generous: a six-year-old rests a thumb on the stick
@@ -63,6 +66,8 @@ export class Input {
       down:   b(13) || ly > DEAD,
       jump:   b(0),
       action: b(1) || b(2),
+      // 8 = Select/Back, 9 = Start/Menu on every standard mapping
+      menu:   b(8) || b(9),
     };
     for (const k in now) {
       if (now[k] === prev[k]) continue;
@@ -97,7 +102,8 @@ export class Input {
       // this is the one place that already knows which button means which
       // action — putting the picture in the markup would let the glyph set
       // and the input map disagree about what ▲ does.
-      if (!el.innerHTML.trim()) el.innerHTML = art(name);
+      if (!el.innerHTML.trim() && name !== 'menu') el.innerHTML = art(name);
+      if (name === 'menu' && !el.innerHTML.trim()) el.textContent = id === 'tSt' ? 'START' : 'SELECT';
       el.setAttribute('aria-label', t(CTL_KEY[name] || 'ctlJump'));
       el.type = 'button';
     }

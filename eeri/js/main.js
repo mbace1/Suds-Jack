@@ -9,27 +9,28 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=23';
-import { Input } from './input.js?v=23';
-import { Level, ROOMS, LAB } from './level.js?v=23';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=24';
+import { Input } from './input.js?v=24';
+import { Level, ROOMS, LAB } from './level.js?v=24';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=23';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=23';
-import { Camera } from './camera.js?v=23';
-import { buildKidModel, Kid, Player } from './kid.js?v=23';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=23';
-import { buildCraneModel, Crane } from './crane.js?v=23';
-import { Robot, SteamVent } from './robots.js?v=23';
-import { Hoist } from './hoist.js?v=23';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=23';
-import { WreckingBall } from './hazards.js?v=23';
-import { AudioKit } from './audio.js?v=23';
-import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=23';
-import { craftMat, craftBox } from './craft.js?v=23';
-import { t as tr } from './lang.js?v=23';
-import { showIntro } from './intro.js?v=23';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=23';
+} from './pieces.js?v=24';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=24';
+import { Camera } from './camera.js?v=24';
+import { buildKidModel, Kid, Player } from './kid.js?v=24';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=24';
+import { buildCraneModel, Crane } from './crane.js?v=24';
+import { Robot, SteamVent } from './robots.js?v=24';
+import { Hoist } from './hoist.js?v=24';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=24';
+import { WreckingBall } from './hazards.js?v=24';
+import { AudioKit } from './audio.js?v=24';
+import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=24';
+import { craftMat, craftBox } from './craft.js?v=24';
+import { t as tr } from './lang.js?v=24';
+import { showIntro } from './intro.js?v=24';
+import { toggleMenu, closeMenu, menuOpen } from './menu.js?v=24';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=24';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -60,8 +61,40 @@ async function boot() {
   // renderer: clean edges, no post stack (ART_BRIEF §3.4)
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
   document.getElementById('game').appendChild(renderer.domElement);
+
+  // 16:9, ALWAYS (owner, 2026-08-15). A level is composed — the reach
+  // budget, the camera pull-backs, where a hazard sits relative to the lip
+  // you read it from — and all of it is composed at one shape. Letting the
+  // viewport dictate the aspect means a tall phone shows less of the room
+  // ahead than a laptop does, so the same jump is a different question on
+  // different hardware. The stage is the picture; the rest of the window is
+  // the room it hangs in, and on a phone the pad lives there.
+  const STAGE = 16 / 9;
+  function fitStage() {
+    const vw = innerWidth;
+    // THE PAD IS NOT ON THE PICTURE. If a control plate is up it owns the
+    // bottom of the screen outright and the stage fits into what is left —
+    // the arcade arrangement, screen above panel. A 16:9 stage that then
+    // has a control strip laid over its lower third is not a 16:9 stage.
+    const pad = document.getElementById('pad');
+    const padH = pad && getComputedStyle(pad).display !== 'none'
+      ? Math.round(pad.getBoundingClientRect().height) : 0;
+    const vh = Math.max(120, innerHeight - padH);
+    let w = vw, h = Math.round(vw / STAGE);
+    if (h > vh) { h = vh; w = Math.round(vh * STAGE); }
+    const el = renderer.domElement;
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.left = Math.round((vw - w) / 2) + 'px';
+    el.style.top = Math.round((vh - h) / 2) + 'px';
+    renderer.setSize(w, h, false);
+    document.documentElement.style.setProperty('--stage-h', h + 'px');
+    document.documentElement.style.setProperty('--stage-w', w + 'px');
+    document.documentElement.style.setProperty('--stage-top', el.style.top);
+    return { w, h };
+  }
+  const stage0 = fitStage();
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(PAL.SKY);
@@ -72,15 +105,19 @@ async function boot() {
   key.position.set(-14, 22, 18);
   scene.add(key);
 
-  const camera = new THREE.PerspectiveCamera(FOV, innerWidth / innerHeight, 0.1, 220);
+  // the camera's aspect is the STAGE's, not the window's — that is the
+  // whole point of fixing it
+  const camera = new THREE.PerspectiveCamera(FOV, STAGE, 0.1, 220);
+  camera.aspect = stage0.w / stage0.h;
   addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
+    const { w, h } = fitStage();
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
   });
 
   const input = new Input();
-  input.bindButtons({ tL: 'left', tR: 'right', tU: 'up', tD: 'down', tJ: 'jump', tA: 'action' });
+  input.bindButtons({ tL: 'left', tR: 'right', tU: 'up', tD: 'down', tJ: 'jump', tA: 'action',
+    tSel: 'menu', tSt: 'menu' });
   input.bindStick('stick');   // plated: one zone over the drawn d-pad
 
   // the noise waits for a gesture — browsers will not start it otherwise
@@ -115,6 +152,9 @@ async function boot() {
       img.src = src;
     })));
     if (loaded === plates.length) document.documentElement.classList.add('plated');
+    // the plate's height is what the stage fits around, and it is only real
+    // once the image has laid out — so measure again here
+    requestAnimationFrame(() => { const f = fitStage(); camera.aspect = f.w / f.h; camera.updateProjectionMatrix(); });
   }
   // WHICH WORLD A LEVEL IS IN. Three levels to a world (DESIGN §4.2), so
   // this is arithmetic rather than a table — until a world wants a name
@@ -629,6 +669,23 @@ async function boot() {
     // controller first: polled in EVERY mode, not inside the play branch —
     // a pad that cannot reach the menu is a pad that cannot start the game
     input.pollGamepad();
+
+    // THE MENU, and the pause is REAL. It gates the update half below —
+    // not merely input — because a menu that leaves the world running is
+    // how you come back to find a robot standing where you were. The clock
+    // `t` does not advance either, so nothing on a timer (the hopper's
+    // rhythm, the ball's wind-up, mercy frames) creeps while you read.
+    if (input.take('menu')) {
+      toggleMenu({
+        levels: ROOMS.map((r, i) => ({ i, label: labelOf(i) })),
+        current: () => siteIndex,
+        goSite: (i) => goSite(i),
+        restart: () => goSite(siteIndex),
+        home: () => { location.href = '../'; },
+      });
+    }
+    if (menuOpen()) { renderer.render(scene, camera); return; }
+
     t += dt;
 
     if (!transitioning) {

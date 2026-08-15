@@ -1,5 +1,59 @@
 # EERI — versions
 
+## v15.12 — 2026-08-15 — a menu on START and SELECT, and the game is 16:9
+
+Three owner notes, and the third turned out to govern the other two.
+
+**THE GAME IS 16:9, ALWAYS.** A level is *composed* — the reach budget,
+where the camera pulls back, where a hazard sits relative to the lip you
+read it from — and all of it is composed at one shape. Letting the viewport
+decide the aspect means a tall phone shows less of the room ahead than a
+laptop does, so the same jump is a different question on different
+hardware. The stage is now a fixed 16:9 box; the rest of the window is the
+room it hangs in, painted near-black because a light surround reads as the
+game being the wrong size while a dark one reads as a screen.
+
+**AND THE PAD IS NOT ON THE PICTURE.** A 16:9 stage with a control strip
+laid over its lower third is not a 16:9 stage. When a plate is up it owns
+the bottom of the screen outright and the stage fits into what is left —
+the arcade arrangement, screen above panel. The trade is real and worth
+stating: on an 844 × 390 phone the picture is 443 × 249 with black either
+side, because 16:9 *plus* a visible panel cannot be wider on that screen.
+The alternative is the panel back over the picture.
+
+**THE LANDSCAPE PANEL WAS EATING 72% OF THE SCREEN** (owner: *"covering
+too much"*). Same treatment portrait got, same measurement:
+`padplate_landscape_v1.png` is 1400 × 466 with the drawn panel at y
+204…463 — more than half the image is transparent air. Cropped to the
+panel itself it is **141 px instead of 281**, every control exactly where
+it was, and centred (the panel's own centre is x 758 against the image's
+700).
+
+**THE MENU** (`js/menu.js`), on SELECT *and* START — both plates have drawn
+those pills since the art landed and neither did anything, which is worse
+than not drawing them: a control that is pictured and dead teaches a child
+that pictures are not controls. Both open the same menu, deliberately —
+nobody should have to remember which of two identical pills is the one
+that helps. Carry on · start this bit again · go to a level (all six) ·
+language · back to the arcade. Esc and the pad's Select/Start reach it too.
+**The pause is real**: it gates the update half of the loop and the clock,
+not just input, so nothing on a timer creeps while you read.
+
+**Three traps, all specificity or floors:**
+
+- The unplated fallback (`#touch #tSel`, two ids) **outranked** the plated
+  rule (`html.plated #tSel`, one id + one class), so on a real plate the
+  pills jumped back to the top of the screen. Plated rules now carry two
+  ids of their own.
+- `min-width: 44px` is why they overlapped Ⓐ. A pill declared at 4.6% of
+  the plate is 37 px on a 750 px phone and the floor lifts it to 44 — so
+  the drawn pill's share does not decide the box, the floor does. Centres
+  are now spaced from the floor, not from the art.
+- `menu` joined the input map, so the glyph contract had to grow with it —
+  and the bound list needed deduping, because TWO buttons bind one control.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+
 ## v15.11 — 2026-08-15 — World 2 looks like World 2, and the world's curtain works again
 
 Wiring `#250`'s levels revealed two things that were only ever true while

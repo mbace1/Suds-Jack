@@ -27,6 +27,12 @@ export const LANGS = ['fi', 'en', 'ja'];
 
 export const STRINGS = {
   en: {
+    mResume: 'carry on',
+    mRestart: 'start this bit again',
+    mHome: 'back to the arcade',
+    mLevels: 'GO TO',
+    mLang: 'LANGUAGE',
+    ctlMenu: 'menu',
     langName: 'English',
     // the intro (owner's words, 2026-08-14 — the Finnish is the source)
     title: 'eeri',
@@ -69,6 +75,12 @@ export const STRINGS = {
     hOut: 'THE WAY OUT IS OPEN',
   },
   fi: {
+    mResume: 'jatka',
+    mRestart: 'aloita tämä kohta alusta',
+    mHome: 'takaisin pelihalliin',
+    mLevels: 'SIIRRY',
+    mLang: 'KIELI',
+    ctlMenu: 'valikko',
     langName: 'suomi',
     title: 'eeri',
     brief: 'seikkailee työkoneiden ja robottien maailmassa',
@@ -108,6 +120,12 @@ export const STRINGS = {
     hOut: 'TIE ULOS ON AUKI',
   },
   ja: {
+    mResume: 'つづける',
+    mRestart: 'ここからやりなおす',
+    mHome: 'アーケードにもどる',
+    mLevels: 'いどう',
+    mLang: 'ことば',
+    ctlMenu: 'メニュー',
     langName: '日本語',
     title: 'eeri',
     // はたらくくるま is the standard Japanese category for work vehicles and
