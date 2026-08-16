@@ -47,6 +47,11 @@ export class Input {
     addEventListener('keyup', (e) => {
       const n = KEYS[e.code]; if (n) this.down[n] = false;
     });
+    // A THUMB TAKES THE CONTROLS BACK. `padSeen` strips the on-screen pad
+    // (main.js), and a pad that has gone quiet is not a pad that has gone
+    // away — only a touch says that. Without this, unplugging a controller
+    // mid-run leaves a phone with no way to move.
+    addEventListener('touchstart', () => { this.padSeen = false; }, { passive: true });
   }
 
   // The Gamepad API has no press events, so this is polled once a frame.

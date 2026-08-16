@@ -65,6 +65,26 @@ let open = false;
 
 export function menuOpen() { return open; }
 
+// ---- driving it from a controller ---------------------------------------
+// The menu is DOM, so the pad drives real focus rather than a parallel
+// "selected index" — that way the keyboard, a screen reader and the pad all
+// agree on what is highlighted, and the focus ring is the highlight.
+function items() {
+  return el ? [...el.querySelectorAll('button')] : [];
+}
+
+export function menuMove(d) {
+  const list = items(); if (!list.length) return;
+  const at = list.indexOf(document.activeElement);
+  const next = list[(at < 0 ? 0 : at + d + list.length) % list.length];
+  next?.focus({ preventScroll: false });
+}
+
+export function menuPick() {
+  const a = document.activeElement;
+  if (a && items().includes(a)) a.click();
+}
+
 /**
  * @param {object} api  what the menu is allowed to do — passed in rather
  *   than imported, so this module knows nothing about the game's internals
