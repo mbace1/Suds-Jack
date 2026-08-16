@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>EERI</title>
+<style>
+  /* THE ROOM AROUND THE PICTURE. Held SIDEWAYS the stage is pinned to 16:9
+     and centred (js/main.js sizes the canvas), because that is the shape
+     levels are composed at; held upright it simply fills the space above
+     the pad. Whatever is left over is bare, and it is painted the ink
+     colour rather than the sky — a lighter surround reads as the game
+     being the wrong size, a dark one reads as a screen. */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #14100c; }
+  #game { position: fixed; inset: 0; }
+  #game canvas { position: absolute; display: block; }
+
+  #boot {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    background: #4aa8e8; color: #fff; z-index: 10;
+    font: 700 22px/1.4 system-ui, sans-serif; letter-spacing: 0.18em;
+  }
+
+  /* top-RIGHT: hub/shell.js owns the top-left corner with the HOME button */
+  #hud {
+    position: fixed; top: max(10px, env(safe-area-inset-top), var(--stage-top, 0px)); right: 14px; z-index: 5;
+    text-align: right;
+    color: #fff; font: 800 18px/1.3 system-ui, sans-serif; letter-spacing: 0.14em;
+    text-shadow: 0 2px 0 rgba(26,20,16,0.45); user-select: none; pointer-events: none;
+  }
+  #bolts { font-size: 15px; font-weight: 700; letter-spacing: 0.08em; color: #ffe9bd; }
+  #gold { font-size: 15px; font-weight: 700; letter-spacing: 0.08em; color: #ffc63f; }
+  #site { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: #d9efff; }
+
+  #hint {
+    position: fixed; bottom: max(12px, env(safe-area-inset-bottom)); left: 50%;
+    transform: translateX(-50%); z-index: 5; pointer-events: none; user-select: none;
+    color: #fff; font: 700 13px/1 system-ui, sans-serif; letter-spacing: 0.14em;
+    background: rgba(26,20,16,0.5); padding: 9px 14px; border-radius: 8px;
+    white-space: nowrap;
+  }
+
+  #clear, #banner {
+    position: fixed; inset: 0; display: grid; place-content: center; gap: 10px;
+    z-index: 8; pointer-events: none; text-align: center;
+    color: #fff; font: 800 34px/1 system-ui, sans-serif; letter-spacing: 0.2em;
+    text-shadow: 0 3px 0 rgba(26,20,16,0.5);
+    animation: pop 0.4s ease-out;
+  }
+  #clear span { display: block; font-size: 16px; letter-spacing: 0.12em; color: #ffe9bd; }
+  @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { #clear, #banner { animation: none; } }
+
+  /* ---- THE TOUCH PAD -------------------------------------------------
+     The controls are a DRAWN BACKBOARD with transparent hit areas over it
+     (art lane, PR #236). Two plates, because a handheld and an arcade
+     cabinet are different objects and stretching one into the other is not
+     the same as drawing the other:
+
+       PORTRAIT  — the Game Boy DMG face: d-pad, A/B on a slant, SELECT and
+                   START pills, the speaker grill cut clean through.
+       LANDSCAPE — an arcade control-panel strip: ball-top stick far left,
+                   B/A and SELECT/START far right, and the whole middle
+                   DELIBERATELY EMPTY, because in landscape the middle of
+                   the screen is the game.
+
+     Both PNGs carry a lot of transparent air above the plate, so a
+     full-width image anchored to the bottom shows a plate only about half
+     its own height — which is what makes the landscape one fit a short
+     phone at full width instead of eating two-thirds of it.
+
+     The buttons keep their ids, so js/input.js binds them unchanged. They
+     become invisible only once a plate has actually LOADED (`.plated` on
+     <html>, set from main.js) — if the art 404s the drawn circles are
+     still there and the game is still playable. */
+  #touch { display: none; }
+  #pad { display: none; }
+  /* A REAL CONTROLLER, so nothing drawn (owner, 2026-08-15). This wins over
+     the `@media (pointer: coarse)` rules below by being more specific —
+     a class on <html> plus the id — which is deliberate: it must hold even
+     on a touchscreen, since a phone with a pad plugged into it is exactly
+     the case that wants this. */
+  html.padded #touch, html.padded #pad { display: none !important; }
+  /* …and the hint stops reserving room for a plate that is not there */
+  html.padded #hint { bottom: max(12px, env(safe-area-inset-bottom)) !important; }
+  @media (pointer: coarse) {
+    #touch { display: block; }
+    #pad {
+      display: block; position: fixed; left: 0; right: 0; bottom: 0;
+      z-index: 5; pointer-events: none; user-select: none;
+    }
+    #pad img { display: none; width: 100%; height: auto; }
+    /* THE NUMBERS BELOW ARE MEASURED OFF THE PNG, not judged by eye.
+       `padplate_v1.png` is 1024 × 590 and the drawn plate inside it runs
+       x 122…1022, y 75…588, with its yellow top strip ending at y 121.
+       Two facts fall out of that and both were visible complaints:
+
+         · the plate's centre is x 572 against the image's 512, so a plate
+           drawn full-width sits 60 px — about 6% — RIGHT of centre;
+         · cropping 94 rows off the top left 27 rows of yellow behind.
+
+       So the image box is deliberately WIDER than the screen and pushed
+       left: the plate ends up 96% of the viewport and centred on it. The
+       box keeps the image's own ratio, which is what lets every hit area
+       stay a percentage of the picture and need no second set of numbers. */
+    @media (orientation: portrait) {
+      #pad {
+        left: -11%; right: 1.8%;
+        aspect-ratio: 1024 / 466; overflow: hidden;   /* 590 − 124 = the yellow gone */
+      }
+      #pad img#padP { position: absolute; left: 0; bottom: 0; }
+    }
+    /* LANDSCAPE, same treatment and the same reason (owner: "the horizontal
+       on screen arcade stick is covering too much"). `padplate_landscape_v1
+       .png` is 1400 × 466 with the drawn panel at x 119…1398, y 204…463 and
+       its yellow strip ending at y 229 — so more than HALF the image is
+       transparent air above the panel, and a full-width plate anchored to
+       the bottom stood 281 px tall on an 844 × 390 phone. That is 72% of
+       the screen for a control strip.
+
+       Cropping to the panel itself (466 − 232 = 234) leaves it 141 px, or
+       36%, with every drawn control exactly where it was — the hit areas
+       are percentages of the image box, which is unchanged. The 4.2% shift
+       is the panel's own centre (758) against the image's (700). */
+    @media (orientation: landscape) {
+      #pad {
+        left: -4.2%; right: 4.2%;
+        aspect-ratio: 1400 / 234; overflow: hidden;
+      }
+      #pad img#padL { position: absolute; left: 0; bottom: 0; }
+    }
+    /* THE HIT LAYER SITS ON THE PLATE, AND IT HAS TO SAY SO. `#touch` was
+       left at `z-index: auto`, which paints the whole layer — buttons,
+       press tint, sticker — *underneath* `#pad` (z 5), and no z-index on a
+       child can climb out of its own parent's layer. It cost an afternoon
+       because the plated buttons are transparent, so the only two things
+       that were ever visible through it were the press tint and the Toko
+       sticker, and both were assumed missing rather than buried. */
+    #touch { z-index: 6; }
+    #hint { bottom: max(152px, calc(env(safe-area-inset-bottom) + 148px)); }
+    /* the portrait plate is bigger since 2026-08-15 and the hint has to
+       clear it: 466/1024 of a 109%-wide box is ~50% of the viewport width
+       in height, which is 194 px on a 390 px phone */
+    @media (orientation: portrait) {
+      #hint { bottom: max(206px, calc(env(safe-area-inset-bottom) + 202px)); }
+    }
+  }
+  /* `#pad img` is (1 id + 1 type) and outranks a bare `#padP`, so these
+     have to be at least as specific or neither plate ever shows. */
+  @media (pointer: coarse) and (orientation: portrait) { #pad img#padP { display: block; } }
+  @media (pointer: coarse) and (orientation: landscape) { #pad img#padL { display: block; } }
+
+  /* the six hit areas. Percentages are of the PLATE IMAGE's own box, so
+     they track the drawn controls at any width without a second set of
+     numbers to keep in step. */
+  #touch button {
+    position: fixed; z-index: 6;
+    width: 62px; height: 62px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.75); background: rgba(26,20,16,0.4);
+    color: #fff; font: 800 16px system-ui, sans-serif; letter-spacing: 0.05em;
+    touch-action: none; -webkit-user-select: none; user-select: none;
+    display: grid; place-items: center; padding: 0;
+    transform: translate(-50%, 50%);   /* positioned from its CENTRE */
+  }
+  #touch button svg, #touch button img {
+    width: 38px; height: 38px; display: block; pointer-events: none;
+  }
+  #tJ, #tA { border-color: #ffb01f; }
+  #tJ svg, #tA svg { color: #ffb01f; }
+  #touch button:active { background: rgba(255,176,31,0.5); }
+
+  /* PLATED: the drawn control IS the button, so the DOM one gets out of the
+     way and only the hit area remains. A press tints the art rather than
+     drawing a second control on top of it. */
+  html.plated #touch button {
+    border-color: transparent; background: transparent;
+    /* THE FLOOR STILL APPLIES (DESIGN §5). At 390px wide the DMG plate is
+       only 225px tall, which puts its drawn d-pad arms at about 20px — so
+       the hit zone is necessarily LARGER than the picture of the switch.
+       That is how a virtual d-pad works, but it is also a note back to the
+       art lane: for portrait phone use the plate wants its controls drawn
+       bigger relative to the face. */
+    min-width: 44px; min-height: 44px;
+  }
+  html.plated #touch button svg { display: none; }
+  /* the pills are drawn on the plate, so the DOM ones lose their own shape
+     and their word — same rule as every other plated control */
+  html.plated #touch #tSel, html.plated #touch #tSt {
+    font-size: 0; border-radius: 8px; transform: translate(-50%, -50%);
+  }
+  html.plated #touch button:active { background: rgba(255,255,255,0.22); }
+
+  /* THE TOKO MARK AS A STICKER (owner, 2026-08-15): "can be on the game pad
+     but should look more like a sticker."
+
+     So it stops being a corner watermark floating over the playfield and
+     becomes a thing stuck to the plate — white die-cut border, a few
+     degrees off square, and a shadow so it sits ON the face rather than in
+     it. It goes in the plate's EMPTY ground on purpose: the DMG's blank
+     panel between the d-pad and B, and the arcade strip's deliberately
+     empty middle. `sign()` writes its position inline, so these have to
+     shout to be heard. It stays inert under a thumb either way — that is
+     toko's own rule, and a sticker is not a button. */
+  html.plated .toko-signature {
+    position: absolute !important;
+    top: auto !important; bottom: auto !important;
+    left: auto !important; right: auto !important;
+    background: #fff;
+    padding: 5px;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(26, 20, 16, 0.45);
+    /* `!important` and not a bigger number: sign() writes `z-index: 4`
+       INLINE (it is deliberately under the HUD, toko/js/signature.js), and
+       an inline declaration beats any stylesheet rule no matter how
+       specific — so the badge rendered under the plate image (#pad, z 5)
+       and was simply invisible. On the plate it is ON the art, so it has
+       to clear it. */
+    z-index: 7 !important;
+  }
+  @media (pointer: coarse) and (orientation: portrait) {
+    html.plated .toko-signature {
+      /* the blank panel between the d-pad's dished recess (out to ~42%) and
+         B (from ~67%), clear of both hit zones */
+      left: 55% !important; top: 55% !important;
+      transform: translate(-50%, -50%) rotate(-7deg);
+    }
+  }
+  @media (pointer: coarse) and (orientation: landscape) {
+    html.plated .toko-signature {
+      left: 47% !important; top: 74% !important;
+      transform: translate(-50%, -50%) rotate(-7deg);
+    }
+  }
+
+  /* --- fallback placement, used when no plate has loaded --- */
+  #tL { left: 39px;  bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  #tD { left: 107px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  #tR { left: 175px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  #tU { left: 107px; bottom: max(111px, calc(env(safe-area-inset-bottom) + 99px)); }
+  #tA { left: auto; right: 61px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  #tJ { left: auto; right: -11px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  /* UNPLATED fallback only (the drawn plate carries its own pills). Top
+     centre, because every other edge is taken: HOME top-left, the HUD
+     top-right, the d-pad and face buttons along the bottom — and the first
+     cut put these under Ⓐ, where the gate caught them overlapping. */
+  #touch #tSel, #touch #tSt {
+    width: 62px; height: 44px; border-radius: 22px; font-size: 10px;
+    bottom: auto; top: max(12px, env(safe-area-inset-top));
+    transform: translate(-50%, 0);
+  }
+  #touch #tSel { left: calc(50% - 36px); right: auto; }
+  #touch #tSt  { left: calc(50% + 36px); right: auto; }
+
+  /* --- PORTRAIT: over the DMG face (padplate_v1.png, 1024x590) --- */
+  @media (pointer: coarse) and (orientation: portrait) {
+    html.plated #touch button { position: absolute; }
+    html.plated #pad { pointer-events: none; }
+    /* the same inset as the plate, and the image's FULL ratio — the crop
+       hides the top of the picture, it does not move the controls */
+    html.plated #touch {
+      position: fixed; left: -11%; right: 1.8%; bottom: 0;
+      aspect-ratio: 1024 / 590; pointer-events: none;
+    }
+    html.plated #touch button {
+      pointer-events: auto; bottom: auto; right: auto;
+      /* sized off the plate, not in px: the drawn control is the target, so
+         the hit area has to grow and shrink with the art */
+      width: 11%; height: 19%;
+    }
+    /* the d-pad's four zones tile the drawn RECESS — the dished circle the
+       cross sits in — rather than the cross arms alone, which are only a
+       fifth of it. That is how a virtual d-pad has to work: the zone is
+       bigger than the picture of the switch. They are POINTER-INERT when
+       plated: `#stick` below owns this area, and these stay for the
+       keyboard, the accessible names and the unplated fallback. */
+    html.plated #tU, html.plated #tD { width: 10%; height: 16%; }
+    html.plated #tL, html.plated #tR { width: 9%; height: 18%; }
+    /* the d-pad cross */
+    html.plated #tU { left: 31.8%; top: 46.1%; }
+    html.plated #tD { left: 31.8%; top: 64.1%; }
+    html.plated #tL { left: 26.6%; top: 55.1%; }
+    html.plated #tR { left: 37.1%; top: 55.1%; }
+    /* B is the low-left red button, A the high-right one — the DMG slant.
+       Bigger than the drawn circles (owner, 2026-08-15): these are the two
+       controls a six-year-old hits under pressure. */
+    html.plated #tA { left: 72.5%; top: 54.6%; width: 14%; height: 24%; }
+    html.plated #tJ { left: 85.2%; top: 41.9%; width: 14%; height: 24%; }
+    html.plated #touch button { transform: translate(-50%, -50%); }
+    html.plated #stick { left: 31.9%; top: 55.1%; width: 27%; height: 42%; }
+    /* the pills sit low and centre-right on the DMG face, angled; these are
+       generous rectangles over them rather than the drawn shapes */
+    /* two ids, to clear the unplated fallback below — which is `#touch
+       #tSel` and would otherwise win on specificity and put the pills back
+       at the top of the screen */
+    html.plated #touch #tSel { left: 47.5%; top: 88%; width: 11%; height: 13%; bottom: auto; }
+    html.plated #touch #tSt  { left: 59.5%; top: 88%; width: 11%; height: 13%; bottom: auto; }
+  }
+
+  /* --- LANDSCAPE: over the arcade strip (padplate_landscape_v1.png, 1400x466) --- */
+  @media (pointer: coarse) and (orientation: landscape) {
+    html.plated #touch {
+      position: fixed; left: -4.2%; right: 4.2%; bottom: 0;
+      aspect-ratio: 1400 / 466; pointer-events: none;
+    }
+    html.plated #touch button {
+      position: absolute; pointer-events: auto; bottom: auto; right: auto;
+      transform: translate(-50%, -50%);
+      width: 7%; height: 22%;         /* a share of the plate, like portrait */
+    }
+    /* the four arrows around the ball-top stick */
+    html.plated #tU { left: 18.8%; top: 52.6%; }
+    html.plated #tD { left: 18.8%; top: 90.1%; }
+    html.plated #tL { left: 12.7%; top: 71.9%; }
+    html.plated #tR { left: 24.9%; top: 70.8%; }
+    /* B then A, left to right, as the panel draws them */
+    html.plated #tA { left: 75.4%; top: 70.8%; width: 9%; height: 28%; }
+    html.plated #tJ { left: 83.2%; top: 65.5%; width: 9%; height: 28%; }
+    html.plated #stick { left: 18.8%; top: 71.5%; width: 17%; height: 52%; }
+    /* THE 44px FLOOR IS WHY THESE ARE SPACED THE WAY THEY ARE. A declared
+       width of 4.6% is 37px on a 750px phone, and `min-width: 44px` floors
+       it back up — so the drawn pill's share of the plate does NOT decide
+       the box, the floor does. Two pills 4.6% apart therefore overlap each
+       other AND Ⓐ, which is exactly what the gate reported. The centres are
+       set from the floor instead: ≥44px apart, and ≥44px clear of Ⓐ's own
+       edge at 619px. */
+    html.plated #touch #tSel { left: 90.2%; top: 62%; width: 4.6%; height: 22%; bottom: auto; }
+    html.plated #touch #tSt  { left: 96.4%; top: 62%; width: 4.6%; height: 22%; bottom: auto; }
+  }
+
+  /* ---- THE STICK -----------------------------------------------------
+     Owner, 2026-08-15: *"the d-pad part should be a larger on-screen stick
+     like in other games in this repo."* Every other cabinet here that takes
+     a thumb draws a stick — hyperdagger, dropcabal, toko-drop — and they
+     are all the same shape: one large zone, push from its centre, and a
+     knob that follows so your thumb can see what it is doing.
+
+     Four rectangles cannot do that. A d-pad zone is a switch you are either
+     on or off, so the moment a thumb drifts between two of them the input
+     stops, and a six-year-old's thumb drifts constantly. This is ONE zone
+     with a generous deadzone: direction comes from the offset, diagonals
+     come free, and there is no seam to fall into.
+
+     The drawn cross underneath stays — the art says d-pad and the control
+     behaves like a stick, which is exactly what a DMG's cross does under a
+     real thumb anyway. It is inert until a plate loads, because unplated
+     the four drawn circles ARE the control. */
+  #stick { display: none; }
+  html.plated #stick {
+    display: block; position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: auto; touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    border-radius: 46%;
+  }
+  html.plated #stick i {
+    position: absolute; left: 50%; top: 50%;
+    width: 34%; padding-bottom: 34%;
+    margin: -17% 0 0 -17%;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.16);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.22);
+    opacity: 0; transition: opacity 0.12s;
+    pointer-events: none;
+  }
+  html.plated #stick.on i { opacity: 1; }
+  /* two ids, so this outranks `html.plated #touch button { pointer-events:
+     auto }` in the orientation blocks — the stick owns this area now */
+  html.plated #touch #tU, html.plated #touch #tD,
+  html.plated #touch #tL, html.plated #touch #tR { pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { html.plated #stick i { transition: none; } }
+</style>
+<script type="importmap">
+  { "imports": { "three": "./vendor/three.module.min.js?v=1" } }
+</script>
+</head>
+<body>
+<div id="game"></div>
+<div id="hud">EERI<br><span id="site"></span><br><span id="bolts">⬡ 0</span> <span id="gold">✦ 0</span></div>
+<div id="hint"></div>
+<!-- Faces and accessible names are filled in by js/glyphs.js and js/lang.js
+     at boot: a picture of the action per button, and the name in the
+     player's own language. The glyphs stay out of the markup so ONE set
+     serves the buttons and the hint line alike (DESIGN §6.4). -->
+<div id="pad"><img id="padP" alt=""><img id="padL" alt=""></div>
+<div id="touch">
+  <div id="stick" aria-hidden="true"><i></i></div>
+  <button id="tL"></button>
+  <button id="tD"></button>
+  <button id="tR"></button>
+  <button id="tU"></button>
+  <button id="tA"></button>
+  <button id="tJ"></button>
+  <!-- the two drawn pills, which were pictured and dead until now -->
+  <button id="tSel"></button>
+  <button id="tSt"></button>
+</div>
+<div id="boot">EERI</div>
+<script type="module" src="../hub/shell.js?v=31"></script>
+<script type="module" src="./js/main.js?v=26"></script>
+<script type="module">
+  // bottom-right: the HOME button owns top-left and the HUD owns top-right.
+  // Under a thumb that corner also holds the jump button (#tJ, 62px at
+  // inset 16), and the badge at inset 12 sat on top of it — inert, per the
+  // house rule, but covering the one control the game is played with. So on
+  // a coarse pointer it climbs clear of the whole button row.
+  import { sign } from '../toko/js/signature.js?v=3';
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  // The plate owns the entire bottom strip now, so the old inset of 92 —
+  // which was measured to clear a row of 62px circles — lands squarely on
+  // the drawn A button. Above the plate is the only clear ground on a
+  // coarse pointer: the painted face reaches about 40% up a landscape
+  // screen and about 23% up a portrait one, so 210 clears both. The badge
+  // is inert under a thumb anyway (toko's own rule), but a mark sitting on
+  // the one control the game is played with is still wrong.
+  sign({ corner: 'bottom-right', counter: true, inset: coarse ? 210 : 12 });
+
+  // …and on a plated pad it moves ONTO the plate. `#touch` is already a box
+  // that matches the plate image exactly, so re-parenting into it means the
+  // sticker tracks the art at any size with no second set of numbers — the
+  // same trick the hit areas use. The inset above still governs the
+  // unplated fallback, where there is no plate to stick it to.
+  requestAnimationFrame(() => {
+    const badge = document.querySelector('.toko-signature');
+    const touch = document.getElementById('touch');
+    if (!badge || !touch) return;
+    const place = () => {
+      if (document.documentElement.classList.contains('plated')) touch.appendChild(badge);
+    };
+    place();
+    // `.plated` is set once the plate image decodes, which may be after this
+    new MutationObserver(place).observe(document.documentElement, {
+      attributes: true, attributeFilter: ['class'],
+    });
+  });
+</script>
+</body>
+</html>

@@ -685,9 +685,20 @@ function check(name, cond) {
   });
   check(`unversioned cabinets are missing both a log and their own token (${unversioned.map(g => g.id)})`,
     honestlyUnversioned);
+  // Versions are DECIMAL from 2026-08-14: `v` is the LABEL a reader sees
+  // ("15.1") and `n` is the sort key (15001). Both are asserted, because
+  // the pair is the whole point — the label cannot be compared and the key
+  // cannot be displayed, so a build that drops either one is broken in a
+  // way that shows up as either a wrong number or a wrong "this moved".
   check('every version came from a log or a real cache token',
-    Object.values(versions).every(v => Number.isInteger(v.v) && v.v > 0
+    Object.values(versions).every(v => /^\d+(\.\d+)?$/.test(String(v.v))
+      && Number.isInteger(v.n) && v.n > 0
       && ['VERSIONS.md', 'cache token'].includes(v.from)));
+  check('every version label agrees with its sort key',
+    Object.values(versions).every(v => {
+      const [maj, min] = String(v.v).split('.');
+      return v.n === Number(maj) * 1000 + Math.min(999, Number(min ?? 0));
+    }));
   await page.reload({ waitUntil: 'networkidle' });
   // not every cabinet has a number — the first one is a game that lives only
   // on the deployed site — so wait for any of them to fill, not for the first

@@ -6,8 +6,8 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=21';
-import { drawMarquee } from './art.js?v=13';
+import { GAMES, SKETCHES } from './games.js?v=37';
+import { drawMarquee } from './art.js?v=14';
 import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';
@@ -564,8 +564,16 @@ function readSeen() {
 
 let pendingSeen = null;
 function markFresh(versions) {
+  // DECIMAL VERSIONS. `v` is the label a reader sees ("15.2") and `n` is the
+  // sort key (15002). The diff has to compare on `n`: a label cannot be
+  // compared, because lexically '15.10' sorts BELOW '15.9' and a version
+  // that moved would show as one that had not. What is remembered is the
+  // pair, so the "was vX" tooltip can still say the label rather than the
+  // key. Older stored data is a bare number — coerced on read, not migrated.
   const now = {};
-  for (const [id, v] of Object.entries(versions)) now[id] = v.v;
+  for (const [id, v] of Object.entries(versions)) {
+    now[id] = { v: String(v.v), n: Number(v.n ?? v.v) };
+  }
   pendingSeen = now;
 
   const seen = readSeen();
@@ -577,12 +585,15 @@ function markFresh(versions) {
   for (const slot of document.querySelectorAll('.ver')) {
     const id = slot.dataset.game;
     if (!(id in now)) continue;
-    const was = seen[id];
-    const state = was === undefined ? 'new' : (now[id] > was ? 'up' : null);
+    const raw = seen[id];
+    // a value stored before decimals were a thing is a bare number
+    const was = raw == null ? undefined
+      : (typeof raw === 'object' ? raw : { v: String(raw), n: Number(raw) });
+    const state = was === undefined ? 'new' : (now[id].n > was.n ? 'up' : null);
     if (!state) continue;
     n++;
     const tag = el('span', 'fresh', t(`fresh.${state}`));
-    tag.title = state === 'up' ? t('fresh.from', { x: was }) : '';
+    tag.title = state === 'up' ? t('fresh.from', { x: was.v }) : '';
     slot.after(tag);
     slot.closest('.cab')?.classList.add('has-fresh');
   }
@@ -861,7 +872,20 @@ function useLang(code) {
 // so unlocking is a re-render and nothing else has to know about it.
 let unlocked = false;
 const onFloor = () => GAMES.filter(g => !g.secret || unlocked);
-const active = () => onFloor().filter(g => g.status !== 'archived');
+// A headset browser sorts the floor for the body standing in it: cabinets
+// marked `vr: true` in the catalogue go first, and only when the device says
+// immersive-vr is real. Detection is async, so the flag lands after the first
+// paint and re-renders once — hub.js still knows about no game in particular.
+let vrHere = false;
+try {
+  navigator.xr?.isSessionSupported('immersive-vr').then(ok => {
+    if (ok) { vrHere = true; render(); }
+  }).catch(() => {});
+} catch (e) { /* no WebXR — the floor stays as authored */ }
+const active = () => {
+  const a = onFloor().filter(g => g.status !== 'archived');
+  return vrHere ? [...a.filter(g => g.vr), ...a.filter(g => !g.vr)] : a;
+};
 const archived = () => onFloor().filter(g => g.status === 'archived');
 
 const setText = (sel, key) => {

@@ -1,0 +1,353 @@
+{
+  "v": 25,
+  "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
+  "models": {
+    "eeri": {
+      "file": "3d/eeri_v4.glb",
+      "status": "live",
+      "rig": "skinned",
+      "height": 1.62,
+      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES — Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md. v4 adds climb/stomp/hurt from the Meshy library (ids 438/470/178) — the two new verbs finally animate. New file name per the versioned-URL rule.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "jump",
+        "sit",
+        "climb",
+        "stomp",
+        "hurt"
+      ]
+    },
+    "excavator": {
+      "file": "3d/excavator_v1.glb",
+      "status": "live",
+      "nodes": [
+        "house",
+        "boom",
+        "stick",
+        "bucket",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ],
+      "paint": {
+        "tracks": "DARK",
+        "wheels": "DARK",
+        "house": "MACHINE",
+        "boom": "MACHINE",
+        "stick": "MACHINE",
+        "bucket": "STEEL1",
+        "step": "MACHINE_DK"
+      }
+    },
+    "crane": {
+      "file": "3d/crane_v1.glb",
+      "status": "placeholder",
+      "nodes": [
+        "house",
+        "boom",
+        "arm",
+        "ball",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ],
+      "paint": {
+        "tracks": "DARK",
+        "wheels": "DARK",
+        "house": "MACHINE",
+        "boom": "MACHINE",
+        "arm": "DARK",
+        "ball": "STEEL1",
+        "step": "MACHINE_DK"
+      }
+    },
+    "boltbot": {
+      "file": "3d/boltbot_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.9,
+      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING §2). 24 bones, feet at the origin, clips measured moving. Height is in TILES — DESIGN wants a small enemy at ≤ 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING §1) — scale the rig root.",
+      "clips": [
+        "idle",
+        "walk",
+        "run"
+      ]
+    },
+    "hopper": {
+      "file": "3d/hopper_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.9,
+      "_note": "The jackhammer timing enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "hop"
+      ]
+    },
+    "bucket": {
+      "file": "3d/bucket_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.85,
+      "_note": "The sleepy provocation enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `wake` (271) is head-led — the look-up IS the telegraph; then `run` chases.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "wake"
+      ]
+    },
+    "bolt": {
+      "file": "3d/bolt_v1.glb",
+      "status": "live",
+      "rig": "prop",
+      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: origin at its CENTRE. Remeshed to 500 tris / 64px texture / 43 KB — the first cut shipped Meshy raw at ~4k tris x 100 clones, which dropped headless rendering to 6 fps and starved the walk-out gate; a hundred of a thing is a budget of its own."
+    },
+    "token_toolbox": {
+      "file": "3d/token_toolbox_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette — §6.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
+    },
+    "token_blueprint": {
+      "file": "3d/token_blueprint_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 2's token, one per world, unlocks secret art — so §6.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
+    },
+    "token_bolt": {
+      "file": "3d/token_bolt_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one — so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
+    }
+  },
+  "pieces": {
+    "bank": {
+      "file": "3d/bank_v1.glb",
+      "status": "placeholder",
+      "nodes": [
+        "state0",
+        "state1",
+        "state2"
+      ]
+    },
+    "girder": {
+      "file": "3d/girder_v1.glb",
+      "status": "placeholder",
+      "nodes": [
+        "state0",
+        "state1",
+        "state2",
+        "grip"
+      ]
+    },
+    "wall": {
+      "file": "3d/wall_v1.glb",
+      "status": "placeholder",
+      "nodes": [
+        "state0",
+        "state1",
+        "state2"
+      ]
+    },
+    "flag": {
+      "file": "3d/flag_v1.glb",
+      "status": "placeholder",
+      "_note": "The level's ending. It BUILDS in three steps as Eeri arrives and activates by being run past, so each phase has to read at a glance, mid-run. `pole` stands from the first frame; phase0/1/2 are exclusive — each is the whole flag at that stage, not the delta. Materials: painted balsa for the timber, felt for the cloth.",
+      "nodes": [
+        "pole",
+        "phase0",
+        "phase1",
+        "phase2"
+      ]
+    },
+    "flagBig": {
+      "file": "3d/flag_big_v1.glb",
+      "status": "placeholder",
+      "_note": "Level 3 of a world. Same three phases, larger AND a different colour — it must be tellable from the small one at a distance, before you reach it.",
+      "nodes": [
+        "pole",
+        "phase0",
+        "phase1",
+        "phase2"
+      ]
+    },
+    "checkpoint": {
+      "file": "3d/checkpoint_v1.glb",
+      "status": "placeholder",
+      "_note": "The midway gate. `lamp` is the state (the game recolours it red before, green after) and `cloth` is hidden until it is lit, so those two nodes carry the whole read. The lamp is lit, so it stays BARE of any material map.",
+      "nodes": [
+        "lamp",
+        "cloth"
+      ]
+    }
+  },
+  "layers": {
+    "groundworks": {
+      "skyline": {
+        "file": "2d/groundworks_skyline_v3.png",
+        "status": "live"
+      },
+      "far": {
+        "file": "2d/groundworks_far_v3.png",
+        "status": "live"
+      },
+      "mid": {
+        "file": "2d/groundworks_mid_v3.png",
+        "status": "live"
+      },
+      "near": {
+        "file": "2d/groundworks_near_v3.png",
+        "status": "live"
+      },
+      "fore": {
+        "file": "2d/groundworks_fore_v3.png",
+        "status": "live"
+      },
+      "sky": {
+        "file": "2d/groundworks_sky_v1.png",
+        "status": "live"
+      }
+    },
+    "pipeworks": {
+      "skyline": {
+        "file": "2d/pipeworks_skyline_v1.png",
+        "status": "live",
+        "_note": "READY, parked: the whole set is built and in assets/2d — level 4 flips these six to \"live\" and nothing else. Kept placeholder until then because the smoke gate (rightly) fails a live asset nothing fetches."
+      },
+      "far": {
+        "file": "2d/pipeworks_far_v1.png",
+        "status": "live"
+      },
+      "mid": {
+        "file": "2d/pipeworks_mid_v1.png",
+        "status": "live"
+      },
+      "near": {
+        "file": "2d/pipeworks_near_v1.png",
+        "status": "live"
+      },
+      "fore": {
+        "file": "2d/pipeworks_fore_v1.png",
+        "status": "live"
+      },
+      "sky": {
+        "file": "2d/groundworks_sky_v1.png",
+        "status": "live",
+        "_note": "shared with groundworks — the sky is world-agnostic until a world needs its own"
+      }
+    }
+  },
+  "textures": {
+    "card": {
+      "file": "2d/card_detail_v1.png",
+      "status": "live",
+      "_note": "corrugated kraft — the earth, the cut faces, the deep bands"
+    },
+    "felt": {
+      "file": "2d/felt_detail_v1.png",
+      "status": "live",
+      "_note": "wool felt nap — the grass lip"
+    },
+    "balsa": {
+      "file": "2d/balsa_detail_v1.png",
+      "status": "live",
+      "_note": "painted balsa, brush strokes and a paint chip — machines, steel, props (§3.3 'painted wood and pressed steel')"
+    },
+    "flute": {
+      "file": "2d/flute_detail_v1.png",
+      "status": "live",
+      "_note": "the CUT EDGE of corrugated card — stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
+    },
+    "topsoil": {
+      "file": "2d/topsoil_detail_v1.png",
+      "status": "live",
+      "_note": "the top strata — fine tight card layers. High-passed (radius 62) so no fixing survives into a map that TILES"
+    },
+    "strata": {
+      "file": "2d/mid_detail_v1.png",
+      "status": "live",
+      "_note": "the middle strata — coarse layered card section, high-passed"
+    },
+    "fringe": {
+      "file": "2d/fringe_edge_v1.png",
+      "status": "live",
+      "_note": "the felt lip cut into a fringe of nap — the line the player stands on"
+    },
+    "f_stone": {
+      "file": "2d/f_stone_v1.png",
+      "status": "live",
+      "_note": "one card stone in the cut face"
+    },
+    "f_stones": {
+      "file": "2d/f_stones_v1.png",
+      "status": "live",
+      "_note": "a cluster of card stones"
+    },
+    "f_pipe": {
+      "file": "2d/f_pipe_v1.png",
+      "status": "live",
+      "_note": "a buried paper-tube pipe, cut ends showing the wall"
+    },
+    "f_drum": {
+      "file": "2d/f_drum_v1.png",
+      "status": "live",
+      "_note": "a crushed card drum on its side"
+    },
+    "f_root": {
+      "file": "2d/f_root_v1.png",
+      "status": "live",
+      "_note": "a paper-cord root spreading into tendrils"
+    },
+    "f_brick": {
+      "file": "2d/f_brick_v1.png",
+      "status": "live",
+      "_note": "a broken chunk of card brickwork"
+    },
+    "f_bottle": {
+      "file": "2d/f_bottle_v1.png",
+      "status": "live",
+      "_note": "a buried bottle, half broken away"
+    },
+    "flutecoarse": {
+      "file": "2d/flute_detail_v1.png",
+      "status": "live",
+      "_note": "the same stacked fluting as `flute`, declared again for a COARSER density. Two deep bands wearing one material at one scale are one band"
+    },
+    "packed": {
+      "file": "2d/packed_detail_v1.png",
+      "status": "live",
+      "_note": "the deep bands — dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
+    },
+    "gritty": {
+      "file": "2d/gritty_detail_v1.png",
+      "status": "live",
+      "_note": "grit and torn paper pellets in the fluting (nano banana Pro — base put repeating white blobs in it)"
+    }
+  },
+  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) — never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
+  "ui": {
+    "logo": {
+      "file": "2d/logo_v2.png",
+      "status": "live",
+      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence — body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
+    },
+    "padplate_portrait": {
+      "file": "2d/padplate_v1.png",
+      "status": "live",
+      "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card — d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN §5's 44px targets. LANDSCAPE gets its own plate — wider and thinner, arcade control-panel rather than handheld — as `padplate_landscape`; stretching this one is not that."
+    },
+    "padplate_landscape": {
+      "file": "2d/padplate_landscape_v1.png",
+      "status": "live",
+      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip — joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
+    }
+  }
+}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EERI — dev</title>
+<link rel="stylesheet" href="./dev/dev-menu.css?v=15">
+<style>
+  /* The game fills the page and the panel sits over its right edge. The
+     iframe is NOT a copy of index.html — it IS index.html, so what is being
+     inspected is byte-for-byte what the player gets. A dev harness that is
+     a copy is one that drifts, and this repo has paid for that class of bug
+     more than once. */
+  html, body { margin: 0; height: 100%; background: #14100c; overflow: hidden; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  #nogame {
+    position: fixed; inset: 0; display: grid; place-items: center; padding: 24px;
+    color: #e8e2d8; font: 13px/1.6 ui-monospace, monospace; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div id="nogame">loading <b>index.html</b> in a frame…<br>
+  <small>if this stays up, the page is being opened from <code>file://</code> —
+  the frame has to be same-origin, so serve the folder over http.</small></div>
+<iframe id="game" src="./index.html?skip" title="EERI"></iframe>
+<script type="module">
+  // ?skip walks past the title screen: this page is for iterating on feel,
+  // and a button between you and the thing you are tuning gets old fast.
+  import { DevMenu } from './dev/dev-menu.js?v=15';
+
+  const frame = document.getElementById('game');
+  const note = document.getElementById('nogame');
+  let menu = null;
+
+  function boot() {
+    let target;
+    try {
+      target = frame.contentWindow;
+      // touching a cross-origin frame throws; better to say so than to sit
+      // there looking broken
+      void target.location.href;
+    } catch {
+      note.innerHTML = 'the frame is cross-origin — serve this folder over http and reload';
+      return;
+    }
+    note.remove();
+    menu?.destroy();
+    menu = new DevMenu(target).mount(document.body);
+    window.__dev = menu;    // console access, same habit as __eeri
+  }
+
+  frame.addEventListener('load', boot);
+  if (frame.contentDocument?.readyState === 'complete') boot();
+</script>
+</body>
+</html>

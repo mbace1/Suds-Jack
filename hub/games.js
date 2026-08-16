@@ -261,6 +261,33 @@ export const GAMES = [
     art: 'ledge',
   },
   {
+    id: 'eeri',
+    fi: {
+      tagline: 'Poika työmaalla, joka saa kiivetä koneisiin. Aja kaivinkonetta, nosta puomia, väistä pallo.',
+      lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
+      controls: '◀ ▶ juokse · Ⓐ hyppää · Ⓑ kiipeä koneeseen · ▲ ▼ puomi · pidä ▼ kaivaa',
+      note: 'v15.4 — Game Boy pystyssä, arcade vaakaan; pomppu ja kolhu myös animoituvat. Alkuruutu, ja napeissa kuvat siitä mitä ne tekevät.',
+    },
+    ja: {
+      tagline: '工事現場の子ども。重機によじ登って運転できる。ショベルを走らせ、ブームを上げ、鉄球をかわす。',
+      lineage: 'マリオ3 × ヨッシークラフトワールド × トンカ',
+      controls: '◀ ▶ 走る · Ⓐ ジャンプ · Ⓑ 乗り込む · ▲ ▼ ブーム · ▼長押しで掘る',
+      note: 'v15.4 — 縦はゲームボーイ、横はアーケード。踏みつけと被弾も動く。タイトル画面と、動きの絵がついたボタン。',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'v15.4 — a Game Boy pad in portrait, an arcade panel in landscape; the stomp and the hit animate now. In Finnish, English and Japanese. A title screen, and buttons with pictures of what they do.',
+    title: 'Eeri',
+    tagline: 'A kid on a worksite where nobody is driving. Read the machine, get in the cab, and dig your way out.',
+    lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
+    tags: ['platformer', 'three.js', 'diorama'],
+    controls: '◀ ▶ run · Ⓐ jump · Ⓑ climb in · ▲ ▼ boom · hold ▼ to dig, sling or swing',
+    path: 'eeri/',
+    inRepo: true,
+    accent: '#ffb01f',
+    art: 'worksite',
+  },
+  {
     id: 'gameoflife',
     fi: {
       tagline: 'Pieniä tarinoita ja pelejä, jotka palauttavat sinut aina ulos. Suomeksi, englanniksi ja japaniksi.',

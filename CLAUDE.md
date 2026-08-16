@@ -838,6 +838,144 @@ plus its five deps — so **changing `signature.js` means bumping that token and
 the list entry in the same change**, or those two games serve the old badge out
 of cache forever while every other cabinet gets the new one.
 
+### Eeri (`eeri/`) — the platformer, and the one MULTI-AGENT project
+
+A Mario 3 / Yoshi-shaped platformer for a six-year-old: Eeri is the owner's
+own kid, on a worksite of Tonka × Cat machines he can climb into. On foot is
+the game (run, jump, stomp, climb); machines are short ride sequences. Three
+levels of a planned twelve, four worlds of three.
+
+**READ IN THIS ORDER BEFORE TOUCHING ANYTHING.** More than one agent works
+this project at once, so the docs are the coordination and skipping them is
+how work gets deleted:
+
+1. **`eeri/PHASING.md`** — newest owner direction (2026-08-14) and it
+   **supersedes the others where they disagree**. Holds the three things
+   canon does not: the **80/20 reference ratio** (Yoshi's Crafted World 80,
+   Tropical Freeze 20 — the *default* answer to any look question is Crafted
+   World), the **tool-reality table** (what Nano Banana and Meshy can
+   actually do; routing rule: *legs → Meshy rig · wheels/tracks → sliced
+   nodes · deformation → code*), and the **phase gates** — no agent starts
+   Phase N+1 while a Phase N item in its own lane is open.
+2. `eeri/DESIGN.md` — what the game does, and §6 is the art pipeline's
+   asset queue. §8 is the ordered plan.
+3. `eeri/ART_BRIEF.md` — the look, and **`/ART_PIPELINE.md`** for how an
+   asset is actually MADE: concept → mesh → rig → animate → integrate, the
+   credit costs, and a trap index of everything that has shipped broken.
+   Its two standing rules — **a Meshy feature is always the primary
+   choice**, and **anything to be rigged is concepted in a T-POSE** —
+   decide most art questions before they are asked. `/ART_TARGET.md` is
+   the quality bar, with an acceptance test per rung.
+4. `eeri/assets/README.md` + `assets/manifest.json` — the seam: node and
+   clip contracts, layer rects and PNG sizes.
+5. `eeri/VERSIONS.md` — what shipped and, more usefully, the traps.
+
+**LANES — who owns which files.** Two agents editing one module is how two
+lineages start. Stay in your lane; if you must cross it, say so in the
+commit message.
+
+| lane | owns |
+|---|---|
+| **Art** | `assets/**`, `art-src/**`, `js/craft.js`, `js/layers.js` paintings, `PAL` colour values, `ASSET_PLAN.md` |
+| **Design/Level** | `js/rooms.js`, `js/parts.js`, `js/level.js`, `js/kid.js`, `js/input.js`, `js/robots.js`, `js/flag.js`, `test/**`, `DESIGN.md` |
+| **Shared — coordinate first** | `js/main.js`, `js/assets.js`, `js/palette.js` (structure), `assets/manifest.json`, `index.html` |
+
+**BRANCH RULE, and it is the one that has already cost this project twice:**
+
+- **`main` is the only place to author.** `gh-pages` is a **deploy target,
+  not a workspace**. Editing Eeri directly on `gh-pages` starts a lineage
+  with no common ancestor to `main` — `git merge-base` returns *nothing* —
+  and then neither tree can be merged into the other without hand work.
+  This has happened **three** times: between two `claude/*` branches, then
+  between `main` and `gh-pages`, then again with
+  `claude/eeri-platformer-levels-dtfh0x`. All three are now joined into
+  `main` (v12 and v14) — **`main` is the one tree, and it is ahead of every
+  other branch.** Start from it.
+- **Before any Eeri work: `git fetch origin` and check `git merge-base`
+  against `origin/main`.** If it returns nothing, you are on a fourth
+  lineage — stop and reconcile before writing anything. Code from whichever
+  lineage is ahead *per file*, art re-judged against `PHASING.md` §0.1 no
+  matter who shipped it.
+- **`--allow-unrelated-histories` is not the tool.** It was tried: the
+  Eeri branches descend from `gh-pages`, so merging one drags the whole
+  deployed site — toko-drop, toko, voxel — into `main`. Scope the join to
+  `eeri/js`, `eeri/test`, `index.html` and the manifest, and keep `main`'s
+  docs whole.
+- **Merge by KIND, and against the content ancestor.** There is no git
+  ancestor, but each lineage's `VERSIONS.md` names where it forked, and
+  that commit's tree usually *is* a real ancestor in content — check with
+  a byte comparison on a file neither side touched. Then a genuine
+  three-way `git merge-file` does the work instead of you picking files by
+  hand; both v12 and v14 were done that way and the conflicts were mostly
+  single import lines.
+- **Version numbers do not detect this.** Both lineages independently
+  reached "v11" and `hub/versions.json` said `v: 11` on each, so nothing
+  looked wrong. It happened again at v13. **Never reuse a version number:
+  fetch and read the other lineage's `VERSIONS.md` before writing a new
+  heading.**
+- **Versions are DECIMAL from v15** (2026-08-14): `vMAJOR.MINOR`, the
+  integer a milestone and the decimal an increment on it. Burning a whole
+  integer on ordinary work is what made the collisions above so easy.
+  **`?v=` module tokens stay integers** — they are cache-busters tracking
+  module-graph churn, not releases, and the two numbers are deliberately
+  different. `scripts/versions.mjs` emits both a label (`"15.1"`) and a
+  sort key (`15001`) because one number cannot do both jobs: a label
+  cannot be compared (`'15.10' < '15.9'` lexically) and a float cannot be
+  displayed (`15.0` prints as `15`).
+- Deploying is a copy onto `gh-pages` limited to `eeri/` plus
+  `hub/games.js` and `hub/versions.json`. It omits `test/` and `art-src/`
+  (that branch ships docs, not test dirs). **Deploys never merge.**
+
+**SIX GATES, all of which must be green before a deploy:**
+
+```
+node eeri/test/rooms.mjs                                 # the room prover
+node eeri/test/fx-smoke.mjs                              # the FX spec, pool, inference
+node eeri/test/dev-menu.mjs                              # the dev pack's contract
+NODE_PATH=$(npm root -g) node eeri/test/smoke.cjs        # the game
+NODE_PATH=$(npm root -g) node eeri/test/playthrough.cjs  # a bot finishes every level
+NODE_PATH=$(npm root -g) node test/hub-smoke.cjs         # the cabinet
+```
+
+The two `.mjs` ones run in **bare node** — no browser, no GPU, no audio
+device — which is why they are fast enough to run on every edit.
+
+`rooms.mjs` proves a room's *geometry*; `playthrough.cjs` proves it is
+*playable* — it exists because the prover passed a level nobody could
+finish. The playthrough also measures **cost** (how often a level takes the
+ride away), because a tireless bot will beat a level a child would put down.
+`dev-menu.mjs` catches the one break nothing else can: the dev/FX pack reads
+debug hooks that **nothing in the game depends on**, so renaming one breaks
+the pack and no other test fails — the menu just quietly shows dashes while
+the effects quietly stop.
+
+**The game speaks fi / en / ja** (`js/lang.js`) — house convention, and it
+had none until v15.1, so the Finnish six-year-old it is built for read it in
+English. English is the **per-key** fallback. `js/intro.js` is the title
+screen (the owner's line: *seikkailee työkoneiden ja robottien maailmassa*),
+shown before the scene builds and awaited after it; **`?skip` walks past it**
+and every gate uses that. `js/glyphs.js` draws the button faces as inline
+SVG — one set for a 13px hint line and a 62px touch button, and **no key
+caps or mouse icons, ever** (§6.4).
+
+**The dev / FX pack is peripheral by design** (`CLAUDE_HANDOFF.md`,
+`EERI_DEV_PACK.md`, `eeri/dev/README.md`). `eeri/dev.html` **frames**
+`index.html` rather than copying it, so the thing being tuned is the thing
+that ships. Effects fire from **polling** `window.__eeri` and reading events
+out of state differences, so there are zero hooks in `main.js`.
+`js/fx.js` and `js/audio-fx.js` **inject** three.js and WebAudio instead of
+importing them — that is what makes `fx-smoke.mjs` runnable in bare node,
+and `dev-menu.mjs` fails if anyone adds a top-level `import * as THREE`.
+Sound is **synthesised, never sampled**; a binary audio file under
+`assets/audio/` fails the gate on purpose.
+
+**Traps worth knowing before you spend a day on one** (all in `VERSIONS.md`):
+one `?v=` token per module or the browser instantiates it twice and the
+module's state splits — that silently unplugged 2.7 MB of layer art, twice;
+a ride-ending hazard may never stand between a machine and its job; the
+skinned rig is modelled facing +z and `FACE_TURN` already does the +z→+x
+turn, so any extra yaw points him at the camera.
+
 ### Toko Drop (`toko-drop/`)
 
 **THE MAIN PROJECT (owner's call, 2026-08).** Attention goes here first; Hyper Dagger
@@ -914,6 +1052,44 @@ reference; the old UE5 notes no longer describe this repository.
 ## Repository Structure
 
 ```
+eeri/           # Eeri — the platformer. MULTI-AGENT: read PHASING.md before anything
+  PHASING.md    # NEWEST owner direction — supersedes the rest where they disagree
+  DESIGN.md     # what the game does; §6 is the art queue, §8 the ordered plan
+  ART_BRIEF.md  # the look: Crafted World 80 / Tropical Freeze 20
+  VERSIONS.md   # what shipped, and the traps
+  vendor/       # three.js r167 + GLTFLoader, local — not the CDN
+  assets/
+    README.md   # THE SEAM: node/clip contracts, layer rects, PNG sizes
+    manifest.json # every model + layer: "placeholder" (code-built) or "live" (file)
+    2d/ 3d/     # the shipped art
+  dev.html      # the dev/FX entry — a same-origin FRAME around index.html
+  dev/
+    dev-menu.js # the panel: level jumps, fire-an-effect, switches, live state
+    dev-menu.css README.md
+  js/
+    main.js     # scene, loop, HUD, states, the ride handoff        (SHARED)
+    assets.js   # the manifest reader; placeholder ⇄ live           (SHARED)
+    palette.js  # PAL + the craft materials                         (SHARED)
+    lang.js     # fi / en / ja, English as the per-KEY fallback     (SHARED)
+    intro.js    # the title screen; ?skip walks past it
+    glyphs.js   # the button faces, drawn as SVG — no key caps ever  (Art)
+    fx.js       # visual spec + particle pool + event inference (three INJECTED)
+    audio-fx.js # the voice table + synthesised kit (never sampled)
+    layers.js   # the cutout diorama: LAYER_RECTS × PPU at real z    (Art)
+    rooms.js    # the twelve levels, laid out in parts              (Design/Level)
+    parts.js    # the room compiler + REACH, the reach budget       (Design/Level)
+    level.js    # tile collision, ladders, the compiled room        (Design/Level)
+    kid.js      # Eeri: run/jump/stomp/climb/ride, and the facing   (Design/Level)
+    input.js    # keys / pad / on-screen glyph controls — pad-first (Design/Level)
+    robots.js   # the small enemies; stomp response lives here      (Design/Level)
+    flag.js     # the three-phase building flag, finished by running past
+    excavator.js crane.js pieces.js hazards.js camera.js audio.js
+  test/
+    rooms.mjs      # the room prover — geometry against REACH
+    smoke.cjs      # the game: boot, assets fetched, one token per module
+    playthrough.cjs# a bot must FINISH every level, and it measures COST
+    fx-smoke.mjs   # the FX spec, pool and inference — bare node
+    dev-menu.mjs   # the dev pack's contract with the game — bare node
 sudsjack/       # Suds Jack — the rebuild: Bomb Jack's collection on Tempest's tube
   index.html    #   (the playable original is still sudz/ on gh-pages)
   VERSIONS.md
