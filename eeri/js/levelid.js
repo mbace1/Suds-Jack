@@ -13,8 +13,13 @@
 // mapping is arithmetic and stays correct as rooms are added — a level never
 // has to be told which world it is in.
 //
-// PURE — no three.js, no DOM — so `test/rooms.mjs` can prove the mapping in
-// plain Node, the same discipline `parts.js` keeps.
+// PURE except for the temporary greybox registration below. World 3/4 are
+// intentionally kept outside the already-stable rooms.js while they are
+// being playtested; world34-register.js appends them to the same live array
+// that level.js exports. Fold them into rooms.js and remove this import once
+// the six layouts stop moving.
+
+import './world34-register.js?v=1';
 
 // DESIGN §4.1: "A world is three levels, and a world is one backdrop set."
 export const PER_WORLD = 3;
