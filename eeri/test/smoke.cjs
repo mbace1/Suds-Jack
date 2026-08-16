@@ -861,8 +861,11 @@ s.listen(0, '127.0.0.1', async () => {
       && await p.evaluate(() => location.hash) === '#eeri-1-3',
       await p.evaluate(() => location.hash));
 
-    await p.goto(base + '/eeri/?skip&a=3#eeri-3-1', { waitUntil: 'load' });
+    await p.goto(base + '/eeri/?skip&a=3#eeri-5-1', { waitUntil: 'load' });
     await p.waitForFunction(() => !!window.__eeri, null, { timeout: 20000 }).catch(() => {});
+    // 5-1: there are FOUR worlds, so this one cannot exist. It was 2-1 until
+    // World 2 was built and 3-1 until the greyboxes landed — an address test
+    // written against the edge of what exists has to move as that edge does.
     ok('an address for a level that is not built yet falls back to 1-1',
       await p.evaluate(() => window.__eeri.site()) === 0);
 

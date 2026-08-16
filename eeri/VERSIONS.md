@@ -1,5 +1,45 @@
 # EERI — versions
 
+## v15.15 — 2026-08-16 — Worlds 3 and 4 exist, and the game ends where the art does
+
+**Twelve levels are built** (PR #265): the Grove and the Night Shift as
+greyboxes, with their own structural gate (`test/world34.mjs`) and their own
+dressing module ready for art. The playthrough bot now finishes **all
+twelve** — 25 checks, zero ride losses — so these are rooms, not sketches.
+
+**But six of them are undressed, and greybox is not something to hand a
+six-year-old through a menu.** So the game ends at the last room whose
+world has **live art**, and the rule is derived rather than declared:
+
+```
+dressed(world) = every layer in the manifest is `status: "live"`
+SHOWN          = rooms up to the first undressed world
+```
+
+That is `LAST_LEVEL` (what the flag advances into, and where the world's
+curtain becomes an ending) and the menu's level list. **The moment the art
+lane flips a world's layers to `live`, its rooms appear on their own** —
+no flag to remember, no second list to keep in step. The seam already knew
+which worlds are finished; it just had not been asked.
+
+Deep links still reach them (`/eeri/#eeri-3-1`), which is the lane's way in
+to keep working.
+
+The four worlds are named in code for the first time — `groundworks`,
+`pipeworks`, `grove`, `nightshift` — because `WORLDS` had two placeholder
+'groundworks' entries standing in for worlds that did not exist yet, and
+they would have quietly dressed World 3 as World 1.
+
+**Also merged:** #268's art-library structure (art-src only).
+
+**A gate that had to move with the edge:** *"an address for a level that is
+not built yet"* pointed at `2-1`, then `3-1`, and both got built. It is
+`5-1` now — there are four worlds, so that one cannot exist. A test written
+against the edge of what exists has to move as the edge does.
+
+Gates: rooms 147 / world34 pass / fx 31 / dev-menu 30 / **smoke 282** /
+**playthrough 25** / hub.
+
 ## v15.14 — 2026-08-16 — World 2 stops being grey boxes, and a deep link brings its own sky
 
 **The Pipeworks is dressed** (PR #258). `js/world2-dressing.js` builds the
