@@ -1,5 +1,5 @@
-/* Betterment v3 — mobile-first retro/craft UX layer.
-   Visual scene stays pixel art; controls become large, direct and game-like. */
+/* Betterment v4 — mobile-first retro/craft UX layer.
+   The illustration stays pixel/craft; controls stay large, clean and direct. */
 
 :root {
   --bm-bg: #080d13;
@@ -32,7 +32,6 @@ body {
   font-size: 15px !important;
 }
 #app { max-width: 560px !important; }
-
 #app > header:not(.betterment-hud),
 #app > .rule { display: none !important; }
 
@@ -103,7 +102,7 @@ body {
   border: 2px solid #763716; border-radius: 50%;
   background: var(--bm-ember-deep); color: #ffe6a4; font-weight: 900;
 }
-.bm-progress-track { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; margin-top: 7px; }
+.bm-progress-track { display: grid; gap: 4px; margin-top: 7px; }
 .bm-progress-seg { height: 13px; border: 1px solid #3a332b; border-radius: 2px; background: #080c10; }
 .bm-progress-seg.on { background: var(--bm-ember); border-color: #9d5724; }
 .bm-progress-score { text-align: right; }
@@ -131,11 +130,13 @@ body {
   box-shadow: 0 3px 0 var(--bm-shadow);
 }
 .task:hover { background: var(--bm-panel-2) !important; }
-.bm-task-icon {
-  width: 50px; height: 50px; display: grid; place-items: center;
+.bm-task-icon, .bm-mini-icon {
+  display: grid; place-items: center;
   border: 2px solid var(--bm-line); border-radius: 9px;
   color: #f8ead0; font-size: 10px; font-weight: 900;
 }
+.bm-task-icon { width: 50px; height: 50px; }
+.bm-mini-icon { width: 42px; height: 42px; }
 .bm-tone-blue { background: #26465e; }
 .bm-tone-green { background: #344a2e; }
 .bm-tone-purple { background: #49375a; }
@@ -146,7 +147,7 @@ body {
   display: block; color: var(--bm-paper) !important; text-decoration: none !important;
   font-size: clamp(16px,4.6vw,21px); font-weight: 900; line-height: 1.05;
 }
-.bm-reward { display: block; margin-top: 5px; color: var(--bm-ember); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.bm-reward { display: block; margin-top: 5px; color: var(--bm-ember); font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .task .box {
   order: 3; width: 44px; height: 44px; justify-self: end;
   display: grid; place-items: center;
@@ -155,9 +156,7 @@ body {
 }
 .task .box::after { content: ''; }
 .task[aria-pressed="true"] .box { background: #40572e; border-color: #81935c; }
-.task[aria-pressed="true"] .box::after {
-  content: '✓'; color: #f6e8c8; font-size: 28px; font-weight: 900; line-height: 1;
-}
+.task[aria-pressed="true"] .box::after { content: '✓'; color: #f6e8c8; font-size: 28px; font-weight: 900; line-height: 1; }
 .task[aria-pressed="true"] .what { color: var(--bm-moss) !important; }
 .drop {
   min-width: 44px !important; min-height: 78px !important;
@@ -165,21 +164,30 @@ body {
   color: var(--bm-dim) !important; background: var(--bm-panel) !important;
 }
 
-.add { display: grid !important; grid-template-columns: 1fr auto; gap: 7px !important; margin: 9px 0 12px !important; }
-.add input {
-  min-width: 0; min-height: 50px !important; padding: 9px 11px !important;
-  border: 2px solid var(--bm-line) !important; border-radius: 10px !important;
-  color: var(--bm-paper) !important; background: var(--bm-panel) !important;
+.add { display: grid !important; grid-template-columns: 1fr auto; gap: 7px !important; margin: 9px 0 8px !important; }
+.add input,
+.bm-library-add input {
+  min-width: 0; min-height: 50px; padding: 9px 11px;
+  border: 2px solid var(--bm-line); border-radius: 10px;
+  color: var(--bm-paper); background: var(--bm-panel);
+  font: inherit;
 }
-.add input::placeholder { color: var(--bm-dim) !important; }
+.add input::placeholder,
+.bm-library-add input::placeholder { color: var(--bm-dim) !important; }
+.bm-manage-goals {
+  width: 100%; min-height: 50px; margin: 0 0 12px; padding: 10px 14px;
+  border: 2px solid var(--bm-line); border-radius: 10px;
+  background: var(--bm-panel-2); color: var(--bm-paper);
+  font: inherit; font-weight: 900; text-transform: uppercase; cursor: pointer;
+}
 
 .ask { color: var(--bm-dim) !important; font-size: 12px !important; }
 .moods { display: grid !important; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px !important; margin: 8px 0 12px !important; }
 .mood {
-  min-height: 50px !important; padding: 5px 3px !important;
+  min-height: 52px !important; padding: 5px 3px !important;
   border: 2px solid var(--bm-line) !important; border-radius: 9px !important;
   background: var(--bm-panel-2) !important; color: var(--bm-paper) !important;
-  font-size: 10px !important;
+  font-size: 10px !important; font-weight: 800 !important;
 }
 
 .acts { display: grid !important; grid-template-columns: 1fr 1fr; gap: 7px !important; margin-top: 8px; }
@@ -216,6 +224,56 @@ body {
 .bm-find-mark { color: var(--bm-ember); font-size: 23px; }
 .bm-big { color: var(--bm-ember); font-size: 35px; font-weight: 900; }
 .bm-setting-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.bm-journey-hint { text-align: center; margin-top: 2px; }
+
+.bm-back { width: 100%; margin: 2px 0 10px; }
+.bm-current-goals { padding: 10px; }
+.bm-current-goal {
+  display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center;
+  padding: 9px 0; border-bottom: 1px solid rgba(114,90,60,.45);
+}
+.bm-current-goal:last-child { border-bottom: 0; }
+.bm-current-copy { min-width: 0; }
+.bm-current-copy strong,
+.bm-goal-choice-copy strong { display: block; color: var(--bm-paper); font-size: 15px; line-height: 1.15; }
+.bm-category { display: block; margin-top: 3px; color: var(--bm-dim); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.bm-small-action {
+  min-height: 44px; min-width: 62px; padding: 7px 9px;
+  border: 2px solid var(--bm-line); border-radius: 9px;
+  background: var(--bm-panel-2); color: var(--bm-paper);
+  font: inherit; font-size: 10px; font-weight: 900; text-transform: uppercase; cursor: pointer;
+}
+.bm-small-action:disabled { opacity: .52; cursor: default; }
+.bm-library-add { margin-bottom: 16px; }
+.bm-library-add-row { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin-top: 8px; }
+.bm-goal-section { margin: 18px 0; }
+.bm-goal-section h3 { margin: 0 2px 7px; color: var(--bm-paper); font-size: 15px; letter-spacing: .06em; text-transform: uppercase; }
+.bm-goal-choices { display: grid; gap: 7px; }
+.bm-goal-choice {
+  display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: center;
+  min-height: 70px; padding: 8px;
+  border: 2px solid var(--bm-line); border-radius: 11px;
+  background: var(--bm-panel); box-shadow: 0 2px 0 var(--bm-shadow);
+}
+.bm-goal-choice.added { opacity: .72; }
+.bm-goal-choice-copy { min-width: 0; }
+
+.journal > .btn { width: 100%; margin-bottom: 10px; }
+.journal .days { display: grid; gap: 8px; margin-top: 8px !important; }
+.journal .days li {
+  margin: 0 !important; padding: 13px;
+  border: 2px solid var(--bm-line); border-radius: 12px;
+  background: var(--bm-panel); box-shadow: 0 3px 0 var(--bm-shadow);
+}
+.journal .date { color: var(--bm-ember) !important; }
+.journal .line { color: var(--bm-paper); }
+
+.breathing {
+  padding: 18px 14px; border: 2px solid var(--bm-line); border-radius: 14px;
+  background: var(--bm-panel); text-align: center; box-shadow: 0 4px 0 var(--bm-shadow);
+}
+.breathing .breath-label { color: var(--bm-ember) !important; font-size: 22px !important; }
+.breathing .breath-round { color: var(--bm-dim) !important; margin: 6px 0 12px; }
 
 .bm-nav {
   position: fixed; z-index: 25; left: 50%; bottom: max(6px,env(safe-area-inset-bottom));
@@ -244,4 +302,7 @@ body {
   .bm-task-icon { width: 45px; height: 45px; }
   .task .box { width: 40px; height: 40px; }
   .moods { grid-template-columns: repeat(3,1fr) !important; }
+  .bm-goal-choice { grid-template-columns: 46px 1fr auto; gap: 7px; }
+  .bm-goal-choice .bm-task-icon { width: 44px; height: 44px; }
+  .bm-small-action { min-width: 54px; padding-left: 6px; padding-right: 6px; }
 }
