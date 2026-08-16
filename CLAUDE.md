@@ -638,6 +638,21 @@ was a key**, so a tap never raises a ring nobody asked for. `window.__kd` expose
 `{state, audio, view, debug}` — `finishErrand()` and `ageDay(n)` hand the clock forward,
 because `node kindling/test/smoke.cjs` (65 checks) is driven off state and never off the
 wall clock.
+**The mobile-first layer** (`js/modern-ux.js` + `modern-ux.css`, from PR #267) sits on
+top of that state machine without owning any of it: large goal rows with explicit check
+states, a five-step Today progress bar, a flames/level HUD, a fixed bottom nav and real
+Journey / Inventory / Reflections / Companion destinations built from the errand,
+found-object and growth state that already existed. `BETTERMENT_OWNER_DIRECTION.md` is
+the **newest design authority** and supersedes the older "no progress bars, no level
+presentation, cozy hut" calls; the art target ahead is a layered-2D dark-fantasy bonfire
+rather than this interior. The app is still called **Kindling** — Betterment is the lane,
+not the title, and the folder, cache name, catalogue entry and `kindlingState` key were
+never going to move. Two traps that merge found: the layer relabelled the action row **by
+index**, which silently renamed the fourth button the base layer had added, so it matches
+on what buttons SAY now; and there is **one hello, two doors** — the Companion page calls
+the same `idle.hello()` rather than growing a second creature. Everything in the folder
+carries **one token per release** (`?v=4`) with the worker's cache name, because the merge
+arrived with four different numbers in it at once.
 It is **offline-first and installable**, for the same reason `gameoflife/` is: something
 you open once a day, often on a phone and often before you are properly awake, cannot
 need a signal. `sw.js` is cache-first and scoped to this folder (a narrower scope wins
@@ -934,6 +949,7 @@ kindling/       # Kindling — a betterment game: care in, firelight out
   js/
     room.js     # the room, and the one falloff whose reach IS the day's tally
     idle.js     # the creature's own business — and it cannot pay itself
+    modern-ux.js# the mobile-first layer over the state machine (PR #267)
     pet.js      # the creature: five stages from one table, lit from the hearth
     state.js    # the sheet, the streak, the journal — one localStorage key, no network
     errand.js   # the outing: seeded at departure, computed on return; what it finds
@@ -945,6 +961,7 @@ kindling/       # Kindling — a betterment game: care in, firelight out
   test/
     smoke.cjs   # 65 checks, driven off state — including that the copy never scolds
     offline.cjs # kills the server and plays a day with the network gone
+    betterment-ux-smoke.cjs  # 20 checks over the mobile layer: nav, goals, flames
 toko/           # Toko Midori Games — the brand (face, lockups, sting, signature)
   BRAND.md      # the rules: the creed, construction notes, the two colours, do/don't
   index.html    # the brand board — every mark live, glitch lab, SVG downloads

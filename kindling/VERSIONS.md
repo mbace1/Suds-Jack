@@ -1,5 +1,52 @@
 # Kindling — versions
 
+## v4 — 2026-08-16
+
+**The mobile-first UX layer** (PR #267), merged onto the room work. The v2/v3 care
+loop stays authoritative — goals, once-only payouts, mood, breathing, warmth,
+growth, errands, journal, the 04:00 rollover and local-only storage are all
+untouched — and a new presentation layer sits on top of it.
+
+- **`js/modern-ux.js` + `modern-ux.css`** — large goal rows with explicit check
+  states, a five-step Today progress bar, a flames/level HUD, a fixed bottom
+  navigation, and real Journey / Inventory / Reflections / Companion
+  destinations backed by the existing errand, found-object and growth state.
+  A goal-management screen with a preset library (Body, Hygiene, Mind,
+  Connection, Daily care) sits behind Today, so the everyday screen is not a
+  list-configuration screen. Dark mode is the default, with an optional
+  parchment surface. `test/betterment-ux-smoke.cjs` covers the new layer.
+- **`BETTERMENT_OWNER_DIRECTION.md` is the newest design authority** and
+  supersedes the older "no progress bars, no level presentation, cozy hut"
+  calls. The visual target ahead is a layered-2D dark-fantasy bonfire scene.
+
+Reconciled while merging the two lineages:
+
+- **The name stays Kindling** (owner's call). `Betterment` is the lane and the
+  direction, not the app's title — so the manifest, `<title>` and masthead read
+  Kindling again. The folder, the cache name, the catalogue entry and the
+  `kindlingState` key were never going to move: renaming those breaks the
+  deployed URL and every existing save for no gain.
+- **A merge bug caught before it shipped.** The UX layer relabelled the action
+  row BY INDEX (`actions[2]` → "Reflect"), which was the journal button when it
+  was written and is "say hello" after v3 — so the merge would have shipped a
+  hello button labelled Reflect. It matches on what the buttons say now.
+- **One hello, two doors.** The Companion page's greeting calls the same
+  `idle.hello()` the base layer owns, so the two cannot drift into two different
+  creatures. It still pays nothing.
+- **`bm-manage-goals` was a 19px control**; the floor here is 44px and this is a
+  mobile-first overhaul, so it is styled as a real one now.
+- **The contrast ruler was wrong, not the page.** The check glyph is deliberately
+  `color: transparent; font-size: 0` — a DOM label behind a drawn box — and the
+  gate was measuring it as 1.09:1 text. Text that is not rendered is not a
+  contrast failure; the state is carried by `aria-pressed` and checked there.
+- **One token for the release: everything in this folder is `?v=4`,** and the
+  worker's cache name with it. The merge arrived carrying four different numbers
+  at once — `sw.js` at v4 while its module token said v2, `main.js?v=2` beside
+  `modern-ux.js?v=4` beside `modern-ux-accessibility.css?v=3` — and my own v3 had
+  changed three modules' bytes without moving their token at all, which would
+  have served an installed user v2 out of cache indefinitely. That drift is the
+  one bug this folder has rules about, and half of it was mine.
+
 ## v3 — 2026-08-15
 
 **Room life** — Slice 1 of `BETTERMENT_DESIGN.md` (PR #267). The room should feel

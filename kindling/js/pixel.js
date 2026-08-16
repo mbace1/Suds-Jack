@@ -9,7 +9,7 @@
 // the light source, and a scanlined tube on top of it fought the one thing the
 // picture is trying to say.
 
-import { shade } from './palette.js?v=2';
+import { shade } from './palette.js?v=4';
 
 // 4×4 ordered (Bayer) matrix as a 0..1 threshold per pixel. Firelight is a
 // gradient, and a gradient painted flat reads as modern; stippled through this

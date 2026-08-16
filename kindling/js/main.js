@@ -17,17 +17,17 @@
 // lets the arcade's `{ui:true}` pad bridge walk it, and what keeps the 44px and
 // WCAG-AA floors measurable.
 
-import { PixelScreen, loop } from './pixel.js?v=2';
-import { drawRoom, FLOOR_Y, skyOf } from './room.js?v=2';
-import { makeIdle, HELLO } from './idle.js?v=2';
-import * as audio from './audio.js?v=2';
-import { makeBreath, ROUNDS } from './breathe.js?v=2';
-import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=2';
+import { PixelScreen, loop } from './pixel.js?v=4';
+import { drawRoom, FLOOR_Y, skyOf } from './room.js?v=4';
+import { makeIdle, HELLO } from './idle.js?v=4';
+import * as audio from './audio.js?v=4';
+import { makeBreath, ROUNDS } from './breathe.js?v=4';
+import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=4';
 import {
   S, save, write, rollover, warmth, caredToday, liveStreak, stage, nextStage,
   toggleTask, setMood, countBreath, addTask, removeTask, spend, found, note, setSound,
   dayKey, FULL_DAY, ERRAND_COST, PAY,
-} from './state.js?v=2';
+} from './state.js?v=4';
 
 const MOODS = [
   { id: 'rough',  label: 'rough' },

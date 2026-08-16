@@ -18,7 +18,7 @@
 // nothing has been done, sits up once the fire has anything to it, hops when you
 // keep something, and is simply absent while it is out on an errand.
 
-import { PAL, mix } from './palette.js?v=2';
+import { PAL, mix } from './palette.js?v=4';
 
 // which features each stage has. `r` is the head radius; everything else is
 // measured off it, which is what keeps a spark and an elder the same creature.

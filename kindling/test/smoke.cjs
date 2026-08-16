@@ -164,7 +164,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
 
   // ── the breathing machine, stepped rather than waited out ──
   const breath = await page.evaluate(async () => {
-    const { makeBreath, ROUNDS } = await import('./js/breathe.js?v=2');
+    const { makeBreath, ROUNDS } = await import('./js/breathe.js?v=4');
     const rounds = [];
     let done = false;
     const m = makeBreath({ onRound: n => rounds.push(n), onDone: () => { done = true; } });
@@ -221,7 +221,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   // the report is rolled at DEPARTURE: the same errand always tells the same
   // story, however many times the page is reloaded before it gets home
   const stable = await page.evaluate(async () => {
-    const { report } = await import('./js/errand.js?v=2');
+    const { report } = await import('./js/errand.js?v=4');
     const e = __kd.state.errand;
     const a = report(e, []), b = report(e, []);
     return a.lines.join('|') === b.lines.join('|') && a.thing === b.thing;
@@ -408,7 +408,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
 
   // the window is read off the local clock — and off nothing else
   const sky = await page.evaluate(async () => {
-    const { skyOf } = await import('./js/room.js?v=2');
+    const { skyOf } = await import('./js/room.js?v=4');
     const at = (h, d = 15) => skyOf(new Date(2026, 7, d, h, 0, 0));
     return {
       night: at(23).key, noon: at(13).key, dawn: at(6).key, dusk: at(19).key,
@@ -501,6 +501,15 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
     for (const n of document.querySelectorAll('h1, h2, p, span, button, input, li')) {
       if (!n.textContent.trim()) continue;
       const cs = getComputedStyle(n);
+      // Text that is not RENDERED is not a contrast problem. A checkbox glyph
+      // replaced by a drawn box sets `color: transparent; font-size: 0` and keeps
+      // its text in the DOM — measuring that reported 1.09:1 for something no eye
+      // will ever see, which is a bug in the ruler, not the page. The state it
+      // carries is still checked, via aria-pressed.
+      if (parseFloat(cs.fontSize) === 0) continue;
+      const alpha = cs.color.startsWith('rgba') ? parseFloat(cs.color.split(',')[3]) : 1;
+      if (!alpha) continue;
+      if (cs.visibility === 'hidden' || cs.display === 'none') continue;
       let bg = 'rgba(0, 0, 0, 0)', at = n;
       while (at && bg === 'rgba(0, 0, 0, 0)') { bg = getComputedStyle(at).backgroundColor; at = at.parentElement; }
       out.push([n.className || n.tagName, cs.color, bg, parseFloat(cs.fontSize)]);
