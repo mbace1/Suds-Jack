@@ -1,0 +1,6 @@
+/* Contrast correction for small HUD glyphs on ember surfaces. */
+.bm-flame-mark,
+.bm-progress-fire {
+  background: #64280f;
+  color: #ffe7a9;
+}
