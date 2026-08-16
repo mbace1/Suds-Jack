@@ -9,28 +9,28 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=25';
-import { Input } from './input.js?v=25';
-import { Level, ROOMS, LAB } from './level.js?v=25';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=26';
+import { Input } from './input.js?v=26';
+import { Level, ROOMS, LAB } from './level.js?v=26';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=25';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=25';
-import { Camera } from './camera.js?v=25';
-import { buildKidModel, Kid, Player } from './kid.js?v=25';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=25';
-import { buildCraneModel, Crane } from './crane.js?v=25';
-import { Robot, SteamVent } from './robots.js?v=25';
-import { Hoist } from './hoist.js?v=25';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=25';
-import { WreckingBall } from './hazards.js?v=25';
-import { AudioKit } from './audio.js?v=25';
-import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=25';
-import { craftMat, craftBox } from './craft.js?v=25';
-import { t as tr } from './lang.js?v=25';
-import { showIntro } from './intro.js?v=25';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=25';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=25';
+} from './pieces.js?v=26';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=26';
+import { Camera } from './camera.js?v=26';
+import { buildKidModel, Kid, Player } from './kid.js?v=26';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=26';
+import { buildCraneModel, Crane } from './crane.js?v=26';
+import { Robot, SteamVent } from './robots.js?v=26';
+import { Hoist } from './hoist.js?v=26';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=26';
+import { WreckingBall } from './hazards.js?v=26';
+import { AudioKit } from './audio.js?v=26';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=26';
+import { craftMat, craftBox } from './craft.js?v=26';
+import { t as tr } from './lang.js?v=26';
+import { showIntro } from './intro.js?v=26';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=26';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=26';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -167,8 +167,25 @@ async function boot() {
   // WHICH WORLD A LEVEL IS IN. Three levels to a world (DESIGN §4.2), so
   // this is arithmetic rather than a table — until a world wants a name
   // that is not its backdrop's, at which point it becomes one.
-  const WORLDS = ['groundworks', 'pipeworks', 'groundworks', 'groundworks'];
+  const WORLDS = ['groundworks', 'pipeworks', 'grove', 'nightshift'];
   const worldOf = (i) => WORLDS[Math.floor(i / 3)] || 'groundworks';
+
+  // WHAT IS FINISHED IS WHAT THE MANIFEST HAS PAINTED. Worlds 3 and 4 are
+  // built and structurally proved (`test/world34.mjs`) but UNDRESSED — no
+  // layer set exists for them yet — and greybox is not something to hand a
+  // six-year-old through a menu. So the game ends at the last room whose
+  // world has live art, and the moment the art lane flips a world's layers
+  // to `live` those rooms appear on their own. No flag to remember, and no
+  // second list to keep in step: the seam already knows.
+  const dressed = (w) => {
+    const set = manifestData()?.layers?.[w];
+    return !!set && Object.values(set).every((e) => e.status === 'live');
+  };
+  const SHOWN = (() => {
+    let n = 0;
+    while (n < ROOMS.length && dressed(worldOf(n))) n++;
+    return Math.max(1, n);
+  })();
 
   let diorama = await buildLayers(scene, worldOf(0), REDUCED);
 
@@ -204,7 +221,7 @@ async function boot() {
   const hubGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.14, 6);
 
   const SITES = [...ROOMS, LAB];
-  const LAST_LEVEL = ROOMS.length - 1;
+  const LAST_LEVEL = SHOWN - 1;   // the last DRESSED room — see SHOWN above
 
   async function buildSite(i) {
     const level = new Level(SITES[i]);
@@ -711,7 +728,7 @@ async function boot() {
     // rhythm, the ball's wind-up, mercy frames) creeps while you read.
     if (input.take('menu')) {
       toggleMenu({
-        levels: ROOMS.map((r, i) => ({ i, label: labelOf(i) })),
+        levels: ROOMS.slice(0, SHOWN).map((r, i) => ({ i, label: labelOf(i) })),
         current: () => siteIndex,
         goSite: (i) => goSite(i),
         restart: () => goSite(siteIndex),
