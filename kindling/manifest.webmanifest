@@ -1,13 +1,13 @@
 {
-  "name": "Kindling",
-  "short_name": "Kindling",
-  "description": "A small fire, kept on the small things you actually did.",
+  "name": "Betterment",
+  "short_name": "Betterment",
+  "description": "A game-like self-care companion: keep small real-life goals, tend a fire, and help a small companion grow.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f0b08",
-  "theme_color": "#0f0b08",
+  "background_color": "#080d13",
+  "theme_color": "#080d13",
   "icons": [
     { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
