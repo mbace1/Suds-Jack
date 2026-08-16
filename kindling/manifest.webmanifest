@@ -1,7 +1,7 @@
 {
   "name": "Betterment",
   "short_name": "Betterment",
-  "description": "A game-like self-care companion: keep small real-life goals, tend a fire, and help a small companion grow.",
+  "description": "A game-like self-care companion. Complete small real-life goals, tend the fire, and grow with your companion.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
