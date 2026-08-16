@@ -1,5 +1,47 @@
 # EERI — versions
 
+## v15.13 — 2026-08-15 — 16:9 is a landscape rule, and a real pad clears the screen
+
+Two corrections from the owner, and the second is the more interesting one.
+
+**16:9 WAS AIMED AT HORIZONTAL MOBILE, NOT VERTICAL.** v15.12 pinned the
+aspect in both orientations, which letterboxes a portrait phone *twice
+over* — bars beside a picture that already has the pad below it — and
+wastes the only dimension that shape has. Held sideways the picture is the
+whole screen and its shape is the composition, so it stays pinned. Held
+upright it is a **window above the pad** and simply fills what is there.
+On a 390 × 844 phone that is 390 × 650 instead of 390 × 219.
+
+**A REAL CONTROLLER MEANS NOTHING DRAWN.** The plate is a picture of a
+controller; holding a real one and looking at a drawn one is the same joke
+twice, and in landscape that joke was a third of the screen. The first pad
+input strips both plate and hit areas and the stage takes the space back —
+693 × 390 instead of 443 × 249, the full window at 16:9.
+
+Two things that make it honest rather than clever:
+
+- **The first TOUCH puts it back.** A pad going quiet is not a pad going
+  away; only a thumb says that. Without it, unplugging a controller
+  mid-run leaves a phone with no way to move.
+- **The menu takes the pad too** — direction moves, Ⓐ picks. A controller
+  that can open a menu and not move inside it is worse than one that
+  cannot open it. It drives real DOM focus rather than a parallel
+  "selected index", so the pad, the keyboard and a screen reader all agree
+  on what is highlighted and the focus ring IS the highlight.
+
+Measured, all three states, both orientations: landscape 443 × 249 above
+the pad → 693 × 390 padded → back on a thumb; portrait 390 × 650 → 390 ×
+844 → back.
+
+**The sandbox flake, again and worth a number:** `smoke.cjs` returned
+252/30 and then 282/0 on the identical tree, minutes apart. Every failure
+was a timeout. It has now done this four times today at 6, 5, 3 and 30
+failures. The gate is honest but its waits assume a machine that is not
+also rendering six levels in software; the fix is to judge state with
+longer ceilings, not to re-run until green.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+
 ## v15.12 — 2026-08-15 — a menu on START and SELECT, and the game is 16:9
 
 Three owner notes, and the third turned out to govern the other two.

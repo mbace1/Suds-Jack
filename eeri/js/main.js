@@ -29,7 +29,7 @@ import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=24';
 import { craftMat, craftBox } from './craft.js?v=24';
 import { t as tr } from './lang.js?v=24';
 import { showIntro } from './intro.js?v=24';
-import { toggleMenu, closeMenu, menuOpen } from './menu.js?v=24';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=24';
 import { slugOf, labelOf, parseSlug } from './levelid.js?v=24';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
@@ -81,8 +81,16 @@ async function boot() {
     const padH = pad && getComputedStyle(pad).display !== 'none'
       ? Math.round(pad.getBoundingClientRect().height) : 0;
     const vh = Math.max(120, innerHeight - padH);
+    // 16:9 IS A LANDSCAPE RULE (owner, 2026-08-15: "aimed at horizontal
+    // mobile, not vertical"). Held sideways the picture is the whole of the
+    // screen and its shape is the composition, so it is pinned. Held
+    // upright the picture is a WINDOW above the pad — there is no 16:9 to
+    // preserve there, and letterboxing a portrait phone twice over (bars
+    // beside a picture that already has the pad below it) wastes the only
+    // dimension that room has.
     let w = vw, h = Math.round(vw / STAGE);
-    if (h > vh) { h = vh; w = Math.round(vh * STAGE); }
+    if (innerHeight > innerWidth) { w = vw; h = vh; }        // portrait: fill it
+    else if (h > vh) { h = vh; w = Math.round(vh * STAGE); }
     const el = renderer.domElement;
     el.style.width = w + 'px';
     el.style.height = h + 'px';
@@ -660,6 +668,7 @@ async function boot() {
   // ---- the loop ------------------------------------------------------------
   let t = 0;
   let god = false;          // dev: an unexpiring mercy timer, see debug.invincible
+  let padded = false;       // a real controller is in hand — see the loop
   const cam = new Camera(camera, site.def);
   cam.cut(player.x, player.y + 3);
   const clock = new THREE.Clock();
@@ -669,6 +678,22 @@ async function boot() {
     // controller first: polled in EVERY mode, not inside the play branch —
     // a pad that cannot reach the menu is a pad that cannot start the game
     input.pollGamepad();
+
+    // A PAD IN HAND MEANS NO ON-SCREEN CONTROLS (owner, 2026-08-15). The
+    // plate is a picture of a controller; holding a real one and looking at
+    // a drawn one is the same joke twice, and on a landscape phone the
+    // panel is a third of the screen. So the first pad input strips it and
+    // the stage takes the space back — and the first TOUCH puts it back,
+    // because a pad going idle is not the same as a pad going away.
+    if (input.padSeen !== padded) {
+      padded = input.padSeen;
+      document.documentElement.classList.toggle('padded', padded);
+      requestAnimationFrame(() => {
+        const f = fitStage();
+        camera.aspect = f.w / f.h;
+        camera.updateProjectionMatrix();
+      });
+    }
 
     // THE MENU, and the pause is REAL. It gates the update half below —
     // not merely input — because a menu that leaves the world running is
@@ -684,7 +709,17 @@ async function boot() {
         home: () => { location.href = '../'; },
       });
     }
-    if (menuOpen()) { renderer.render(scene, camera); return; }
+    if (menuOpen()) {
+      // …and the menu takes the pad too. A controller that can OPEN a menu
+      // and not move inside it is worse than one that cannot open it.
+      if (input.take('down')) menuMove(1);
+      if (input.take('up')) menuMove(-1);
+      if (input.take('right')) menuMove(1);
+      if (input.take('left')) menuMove(-1);
+      if (input.take('jump') || input.take('action')) menuPick();
+      renderer.render(scene, camera);
+      return;
+    }
 
     t += dt;
 

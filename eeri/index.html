@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>EERI</title>
 <style>
-  /* THE ROOM AROUND THE PICTURE. The stage is 16:9 and centred (js/main.js
-     sizes the canvas); everything outside it is bare, so it is painted the
-     ink colour rather than the sky — a lighter surround reads as the game
+  /* THE ROOM AROUND THE PICTURE. Held SIDEWAYS the stage is pinned to 16:9
+     and centred (js/main.js sizes the canvas), because that is the shape
+     levels are composed at; held upright it simply fills the space above
+     the pad. Whatever is left over is bare, and it is painted the ink
+     colour rather than the sky — a lighter surround reads as the game
      being the wrong size, a dark one reads as a screen. */
   html, body { margin: 0; height: 100%; overflow: hidden; background: #14100c; }
   #game { position: fixed; inset: 0; }
@@ -73,6 +75,14 @@
      still there and the game is still playable. */
   #touch { display: none; }
   #pad { display: none; }
+  /* A REAL CONTROLLER, so nothing drawn (owner, 2026-08-15). This wins over
+     the `@media (pointer: coarse)` rules below by being more specific —
+     a class on <html> plus the id — which is deliberate: it must hold even
+     on a touchscreen, since a phone with a pad plugged into it is exactly
+     the case that wants this. */
+  html.padded #touch, html.padded #pad { display: none !important; }
+  /* …and the hint stops reserving room for a plate that is not there */
+  html.padded #hint { bottom: max(12px, env(safe-area-inset-bottom)) !important; }
   @media (pointer: coarse) {
     #touch { display: block; }
     #pad {
