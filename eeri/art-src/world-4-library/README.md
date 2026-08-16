@@ -1,24 +1,23 @@
-# World 4 library — Evening site under lights
+# World 4 library — Evening warehouse / loading dock
 
-This library is intentionally **empty of art assets for now**. It exists so the owner can simply direct an Art/Level agent to **“check the World 4 library”** and future work has an obvious isolated drop point.
+Optional source art for **World 4: the evening construction site under lights**, specifically the warehouse/loading-dock side of the site.
 
 ## Theme lock
 
-World 4 is **the evening construction site under lights**.
+World 4 is the same Crafted World after daylight falls — **not** snow, mountains, fantasy, lava, space, or another biome.
 
-Planned visual vocabulary:
-- dark painted-card / fibreboard silhouettes rather than a new realistic rendering style;
-- warm portable work lights and hanging lamps;
-- translucent amber/red safety lenses and reflective tape accents;
-- cable bundles, generators, dark tarpaulin screens and high/low foreground crossings;
-- the same visibly handmade Crafted World material grammar as the earlier worlds.
+- Warehouse and loading-dock construction scenery: roller doors, dock walls, service structures, concrete-card edges, pallets/crates, bollards and electrical details.
+- Dark painted card / fibreboard and deep blue corrugated surfaces provide the large masses.
+- Warm portable/work lamps, amber beacons, reflective tape and small lit windows provide sparse accents.
+- Cardboard, felt, balsa, tape, brads and deliberately visible corrugation remain the material grammar.
+- Darkness must never hide the gameplay silhouette.
 
-The visual variety should come from **light, translucency, silhouettes and night-shift equipment**, not from abandoning the craft language.
-
-## Rules
+## Asset rules
 
 - Source-only library; do not auto-promote into `eeri/assets/**` or the manifest.
-- Flat-plane-friendly assets. No 3D ground/pedestal baked into environment pieces.
-- Single reusable pieces or deliberately composable larger connectors.
-- No baked clouds.
-- Read `CATALOG.md` before adding new work.
+- Single asset per image.
+- Flat-plane-friendly pieces; no baked 3D ground plane/pedestal.
+- Clouds remain a separate layer and are never baked into these assets.
+- Larger walls/backgrounds should leave clean windows for gameplay.
+- Small accents exist to break repetition, not to fill every gap.
+- Read `CATALOG.md` before adding or composing new work.
