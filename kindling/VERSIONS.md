@@ -1,5 +1,20 @@
 # Kindling — versions
 
+## v4 — 2026-08-16
+
+The mobile UX becomes a real self-care goal product rather than only a reskin.
+
+- **Goal management:** a dedicated goal screen lets the user add/remove goals, write custom goals, and choose presets grouped into Body, Hygiene, Mind, Connection and Daily care.
+- **Daily progress truth:** the segmented Today bar now tracks checked goals directly rather than mixing mood/breathing into the visible goal count. The underlying fire still responds to the broader care model.
+- **Clear mobile hierarchy:** Today keeps the scene, explicit goal checks, visible `+20 Flames` reward language, a large journey action and direct access to goal management.
+- **Journey guidance:** the journey page tells the user how many more goals are needed when they do not yet have 60 Flames.
+- **Companion:** the companion page exposes Level/bond and a harmless hello interaction without creating a need meter.
+- **Dark first:** dark mode remains the default; parchment is optional.
+- **Offline:** v4 UX resources are included in the service-worker shell.
+- **Test:** `test/betterment-ux-smoke.cjs` covers mobile navigation, goal checking, Flames, preset goal addition, real destinations, theme switching and overflow.
+
+The underlying v2 state machine remains authoritative for once-only payouts, 04:00 rollover, breathing, errands, journal, collection, growth and local-only persistence.
+
 ## v3 — 2026-08-16
 
 The first Betterment UX overhaul. The proven v2 care loop stays in place; a new mobile-first presentation layer makes it read like a game rather than a small utility.
