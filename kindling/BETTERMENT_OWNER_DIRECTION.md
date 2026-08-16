@@ -73,3 +73,18 @@ Where older notes conflict, the following are no longer instructions:
 3. Make Journey / Inventory / Reflections / Companion navigation functional using existing state.
 4. Preserve existing local-only storage, offline support, breathing, errands, collection and non-punitive rules.
 5. After UX is playable, replace/extend the current room art toward the approved layered 2D dark-fantasy craft/pixel scene.
+
+## Implemented in the current PR
+
+The current Betterment implementation now includes:
+- large mobile goal rows with explicit checked states and `+20 Flames` feedback;
+- a segmented daily goal-progress bar;
+- Flames plus gentle Level/bond HUD;
+- functional Journey, Inventory, Reflections and Companion destinations;
+- dark mode as the primary theme;
+- a dedicated goal-management screen with category presets inspired by the self-care-app category model: **Body, Hygiene, Mind, Connection and Daily care**;
+- direct add/remove goal management while preserving the existing local-only state and once-only reward rules;
+- custom user-authored goals alongside presets;
+- v4 mobile UX resources cached for offline use.
+
+The current daily progress target remains the existing balanced-day target of **five goals**. This is an implementation assumption to confirm with the owner before deeper scheduling/recurrence logic is built.
