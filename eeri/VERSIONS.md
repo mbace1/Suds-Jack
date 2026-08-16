@@ -1,5 +1,33 @@
 # EERI — versions
 
+## v15.14 — 2026-08-16 — World 2 stops being grey boxes, and a deep link brings its own sky
+
+**The Pipeworks is dressed** (PR #258). `js/world2-dressing.js` builds the
+world's identity on the playfield rather than only behind it — pipe stacks,
+a service wall with a valve, a standpipe, pump hardware, and buried pipe
+cut-faces using the live `f_pipe` asset. It sits mostly at z −0.72, behind
+the plane the game is played on, which is the rule that keeps a dressed
+level readable: **the traversal stays unobscured in front**.
+
+Seen at close range it is the difference between "World 1 with different
+bolts" and a place: gas holders, a water tower, pipe racks and a chimney
+against the pipeworks backdrop.
+
+**AND A DEEP LINK NOW BRINGS THE RIGHT SKY.** `/eeri/#eeri-2-1` came up in
+World 1's site — my own bug from v15.11. The diorama is built before the
+address is read, which is correct (it is the persistent layer), and only
+`goSite()` swapped it, so *walking* into World 2 was dressed and *linking*
+into it was not. The boot now compares the room's world against the one
+just built and swaps before the first frame. Anything that can start you
+somewhere other than room 1 — a link, the menu's level jump across a
+reload — needed this.
+
+**Also merged:** PR #268, the World 2–4 reusable art-library structure and
+the World 3/4 handoff — `art-src` only, no production seam.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+Tokens unified at `?v=25`.
+
 ## v15.13 — 2026-08-15 — 16:9 is a landscape rule, and a real pad clears the screen
 
 Two corrections from the owner, and the second is the more interesting one.

@@ -23,7 +23,7 @@
 // main.js, not just input — a menu that leaves the world running is how you
 // come back to find a robot standing on you.
 
-import { t, lang, LANGS, setLang, STRINGS } from './lang.js?v=24';
+import { t, lang, LANGS, setLang, STRINGS } from './lang.js?v=25';
 
 const CSS = `
 #menu {
