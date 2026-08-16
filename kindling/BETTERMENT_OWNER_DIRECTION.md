@@ -85,6 +85,7 @@ The current Betterment implementation now includes:
 - a dedicated goal-management screen with category presets inspired by the self-care-app category model: **Body, Hygiene, Mind, Connection and Daily care**;
 - direct add/remove goal management while preserving the existing local-only state and once-only reward rules;
 - custom user-authored goals alongside presets;
-- v4 mobile UX resources cached for offline use.
+- v4 mobile UX resources cached for offline use;
+- a dedicated Playwright mobile UX smoke gate covering the new navigation, goal library, checking, Flames and theme switching.
 
 The current daily progress target remains the existing balanced-day target of **five goals**. This is an implementation assumption to confirm with the owner before deeper scheduling/recurrence logic is built.
