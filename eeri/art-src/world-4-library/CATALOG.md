@@ -1,12 +1,25 @@
 # World 4 — source asset catalog
 
-**No approved source assets yet.**
+All pieces are **optional source art**, never automatic production-manifest entries.
 
-When work begins, group pieces by role rather than by generation batch:
+## Background / large construction
 
-- `background/` — quiet evening-site silhouettes and distant lit structures
-- `midground/` — construction walls, equipment, lit work areas and larger connectors
-- `foreground/` — narrow verticals, low sweeps and high crossings that crop at the frame edge
-- `accents/` — lamps, cable loops, safety lenses, reflectors, generator/control details and other small dressing
+- `background/warehouse-dock-a.png` — large night warehouse/loading-dock facade in the approved crafted style.
+- `midground/loading-facade-a.png` — modular loading-bay wall with doors, office/light details and construction framing.
 
-Keep this file updated as assets are approved. Rejected experiments should never be catalogued just because they were generated.
+## Connecting tissue
+
+- `connecting/loading-ground-a.png` — long concrete-card loading-dock ground/curb strip.
+- `connecting/street-felt-a.png` — dark cardboard/felt street strip with patched lane paint and warm reflectors.
+- `connecting/drain-service-a.png` — low concrete-card service/drain section with grate and hatch.
+
+## Small accents / foreground dressing
+
+- `accents/supply-cluster-a.png` — pallets, boxes/crate and cable spool for loading-yard dressing.
+- `accents/barricade-beacon-a.png` — reflective construction barricade with amber beacon.
+- `accents/caged-lamp-sign-a.png` — warm caged work lamp + directional sign plate.
+- `accents/bollard-electrical-a.png` — safety bollards with electrical/control box and cable.
+
+## Composition rule
+
+World 4 is a **night warehouse / loading-dock construction site**, not a new biome. Build screens from quiet dark-blue/grey warehouse masses, flat loading-yard/street connectors and sparse warm light accents. Use bright amber lamps and reflective tape as punctuation; darkness must never hide gameplay geometry.
