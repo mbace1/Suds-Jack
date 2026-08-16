@@ -14,6 +14,7 @@ const SHELL = [
   './icon-192.png',
   './icon-512.png',
   './modern-ux.css?v=3',
+  './modern-ux-accessibility.css?v=3',
   './js/modern-ux.js?v=3',
   `./js/main.js${V}`,
   `./js/room.js${V}`,
