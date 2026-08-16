@@ -1,18 +1,36 @@
 # World 3 — source asset catalog
 
-All files here are **optional source pieces**, not production manifest entries.
+All pieces are **optional source art**, never automatic production-manifest entries.
 
-## Connecting / terrain pieces
+## Approved larger anchors
 
-- `midground/forest-cutbank-a.png` — long crafted earth/forest cutaway with roots, felt lip, corrugation and hollow-log form.
-- `midground/retaining-wall-a.png` — layered soil held by timber construction; useful as a larger connector.
-- `midground/log-tunnel-a.png` — long hollow-log / root-tunnel segment for a strong World 3 silhouette.
-- `midground/clearing-stumps-a.png` — stump/log clearing cluster with construction markers.
+- `background/forest-clearing-a.png` — broad forest-clearing / excavation composition with layered kraft soil, roots, felt moss and construction marks.
+- `midground/retaining-wall-a.png` — large root-and-timber retaining wall.
+- `midground/root-tunnel-a.png` — hollow root/log tunnel connector.
+- `midground/timber-shoring-wall-a.png` — construction-heavy timber shoring wall for the dug-out side of the world.
+- `midground/stump-log-construction-a.png` — stump/log construction composition.
+- `foreground/tree-brace-a.png` — tall trunk + brace foreground piece.
 
-## Foreground / verticals
+## New connecting tissue
 
-- `foreground/tree-brace-a.png` — tall paired trunks with timber brace, tape, fasteners and survey ribbon. Crop through the frame edge for foreground depth.
+- `connecting/earth-cut-strip-a.png` — low layered earth/cork/card strip for joining larger forest pieces.
+- `connecting/root-soil-edge-a.png` — compact root/soil cut edge.
+- `midground/timber-shoring-low-a.png` — low timber-shoring connector.
+- `midground/retaining-wall-short-a.png` — shorter retaining-wall segment for repeated layering.
+- `foreground/trunk-root-a.png` — narrow trunk/root foreground crop for frame-edge depth.
 
-## Composition notes
+## Small accents
 
-World 3 should alternate built and organic rhythm: a root mass beside a timber brace, a cut bank beside a hollow log, a stump clearing beside survey/construction marks. Avoid turning every screen into dense foliage; these pieces should leave clean windows around the gameplay lane.
+- `accents/survey-barrier-stakes-a.png` — temporary construction barrier / survey-stake cluster.
+- `accents/log-stack-a.png` — small stacked-log dressing.
+- `accents/stump-mushroom-a.png` — compact stump/mushroom organic dressing.
+
+## Material tiles
+
+- `textures/soil-kraft-a.png` — kraft/card soil material.
+- `textures/moss-felt-a.png` — green felt/moss material.
+- `textures/bark-card-a.png` — bark-card material.
+
+## Composition rule
+
+Alternate **built / organic / built / organic**. Do not fill every gap with foliage. Roots, cut banks and trunks should be broken up by timber braces, survey marks and temporary construction so World 3 reads as a working forest excavation rather than a fantasy forest.
