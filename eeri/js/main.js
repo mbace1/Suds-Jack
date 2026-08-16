@@ -9,28 +9,28 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=24';
-import { Input } from './input.js?v=24';
-import { Level, ROOMS, LAB } from './level.js?v=24';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=25';
+import { Input } from './input.js?v=25';
+import { Level, ROOMS, LAB } from './level.js?v=25';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=24';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=24';
-import { Camera } from './camera.js?v=24';
-import { buildKidModel, Kid, Player } from './kid.js?v=24';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=24';
-import { buildCraneModel, Crane } from './crane.js?v=24';
-import { Robot, SteamVent } from './robots.js?v=24';
-import { Hoist } from './hoist.js?v=24';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=24';
-import { WreckingBall } from './hazards.js?v=24';
-import { AudioKit } from './audio.js?v=24';
-import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=24';
-import { craftMat, craftBox } from './craft.js?v=24';
-import { t as tr } from './lang.js?v=24';
-import { showIntro } from './intro.js?v=24';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=24';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=24';
+} from './pieces.js?v=25';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=25';
+import { Camera } from './camera.js?v=25';
+import { buildKidModel, Kid, Player } from './kid.js?v=25';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=25';
+import { buildCraneModel, Crane } from './crane.js?v=25';
+import { Robot, SteamVent } from './robots.js?v=25';
+import { Hoist } from './hoist.js?v=25';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=25';
+import { WreckingBall } from './hazards.js?v=25';
+import { AudioKit } from './audio.js?v=25';
+import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=25';
+import { craftMat, craftBox } from './craft.js?v=25';
+import { t as tr } from './lang.js?v=25';
+import { showIntro } from './intro.js?v=25';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=25';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=25';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -356,6 +356,15 @@ async function boot() {
   };
 
   let siteIndex = fromHash();
+  // THE BACKDROP HAS TO MATCH THE ROOM YOU BOOT INTO, not room 1. The
+  // diorama is built above, before the address is read — which is right,
+  // because it is the persistent layer — but a deep link (or the menu's
+  // level jump on a reload) can start you in another world, and only
+  // goSite() swaps it. `/eeri/#eeri-2-1` came up in World 1's site.
+  if (worldOf(siteIndex) !== diorama.world) {
+    diorama.dispose();
+    diorama = await buildLayers(scene, worldOf(siteIndex), REDUCED);
+  }
   let site = await buildSite(siteIndex);
   setHash(siteIndex);
 
