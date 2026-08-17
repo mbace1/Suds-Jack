@@ -1,12 +1,15 @@
-/* Kindling v8 — companion roster / lineage prototype. */
+/* Kindling v9 — companion roster / lineage + active creature selection. */
 
 .bm-breeding { margin-top:18px; padding-top:16px; border-top:2px solid var(--bm-line); }
-.bm-breeding > h3 { margin:4px 0 10px; color:var(--bm-paper); font-size:20px; }
+.bm-breeding > h3 { margin:4px 0 6px; color:var(--bm-paper); font-size:20px; }
+.bm-active-note { margin:0 0 10px; color:var(--bm-ember); font-size:10px; font-weight:900; text-transform:uppercase; }
 .bm-roster-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .bm-roster-card { min-width:0; padding:11px; border:2px solid #4e533e; border-radius:12px; background:#121710; }
+.bm-roster-card.active { border-color:var(--bm-ember); box-shadow:0 0 0 1px rgba(243,154,57,.18) inset; }
 .bm-roster-card.kindled { border-color:#5a4031; background:#17110e; opacity:.76; }
 .bm-roster-head { display:grid; grid-template-columns:42px 1fr; gap:8px; align-items:center; }
 .bm-roster-mark { width:40px; height:40px; display:grid; place-items:center; border:2px solid #6d774f; border-radius:50%; background:#25301f; color:#a7bf78; font-size:18px; }
+.bm-roster-card.active .bm-roster-mark { border-color:#9b5726; background:#402216; color:#ffc767; }
 .bm-roster-card.kindled .bm-roster-mark { border-color:#714222; background:#2d1710; color:#db7732; }
 .bm-roster-name { min-width:0; }
 .bm-roster-name strong { display:block; overflow:hidden; color:var(--bm-paper); font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
@@ -14,6 +17,8 @@
 .bm-traits,.bm-egg-tendencies { display:flex; flex-wrap:wrap; gap:4px; margin-top:9px; }
 .bm-trait-chip { display:inline-flex; align-items:center; min-height:24px; padding:3px 6px; border:1px solid #504738; border-radius:999px; background:#0d1210; color:#bdb39d; font-size:8px; line-height:1.1; text-transform:uppercase; }
 .bm-parentage { margin-top:8px; color:var(--bm-dim); font-size:9px; }
+.bm-by-fire { width:100%; min-height:44px; margin-top:9px; border:2px solid #594733; border-radius:9px; background:#171d18; color:var(--bm-paper); font:inherit; font-size:9px; font-weight:900; text-transform:uppercase; }
+.bm-by-fire:disabled { border-color:#8f4a20; background:#3c2418; color:#f3b25f; opacity:1; }
 .bm-moss-discovery,.bm-nest-card,.bm-egg-card { margin-top:10px; }
 .bm-moss-discovery > strong,.bm-nest-card > strong,.bm-egg-card > strong { display:block; margin-top:4px; color:var(--bm-paper); font-size:15px; }
 .bm-moss-discovery .btn,.bm-nest-card .btn,.bm-egg-card .btn { width:100%; }
