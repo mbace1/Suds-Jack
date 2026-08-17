@@ -1,5 +1,20 @@
 # Kindling — versions
 
+## v6 — 2026-08-17
+
+**The GDD starts becoming game logic.** This slice keeps the stable v5 care loop underneath it and adds the first rules that make Betterment more than a checklist.
+
+- **Five means five.** The visible Fire bar is now always five care points, regardless of how many goals are configured. Extra goals do not move the denominator.
+- **Progressive goals.** Completing a supported Tier I goal can reveal a finite, explicitly optional `GO FURTHER` card. The first prototype is `Do 10 push-ups → reach 20 → reach 30`; reading and walking also have finite follow-up tiers. Bonus tiers add Flames and Bond progression but do not add extra Fire care points.
+- **Two-day Kindling rule.** One completely missed care-day produces `THE FIRE IS FADING`; two consecutive completely missed care-days move the current monster into lineage as a Kindled ancestor. Any qualifying care action resets the danger. `4/5` is never failure — only zero qualifying care actions counts as a missed day.
+- **No retroactive deaths.** Existing saves get a fresh grace anchor when v6 first opens. Old inactivity before the feature shipped cannot Kindle a companion.
+- **Lineage begins.** A Kindled companion keeps its name, generation, stage and bond snapshot. The player can wake the next Ember immediately and continue. This is the state foundation for the later breeding system.
+- **One state key still.** The new metadata lives under `kindlingState.betterment`; there is no second account/store/cloud layer.
+- **Separate rule layer.** `js/gdd-rules.js` and `gdd-rules.css` sit above the stable v5 modules while the new systems are being proven. The service-worker cache advances to v6 and precaches the layer.
+- **Gate coverage.** `test/betterment-ux-smoke.cjs` now covers the fixed Fire target, progressive tier rewards, warning day, Kindling event, lineage retention and waking the next Ember.
+
+Known limitation of this first slice: the underlying legacy canvas still derives the creature growth silhouette from lifetime kept units. The new lineage state records per-generation starts, but per-generation rendered growth will move into the dedicated companion/breeding implementation rather than being hacked into the old renderer here.
+
 ## v5 — 2026-08-16
 
 **The pivot to the ruin — first draft.** The cozy hut is retired (owner direction);
