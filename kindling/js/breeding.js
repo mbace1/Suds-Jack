@@ -6,7 +6,6 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 while (!window.__kd || !window.__bettermentUx || !window.__bettermentGdd || !window.__bettermentCombat) await wait(10);
 
 const kd = window.__kd;
-const ux = window.__bettermentUx;
 const gdd = window.__bettermentGdd;
 const combat = window.__bettermentCombat.state;
 const { save } = await import('./state.js?v=5');
@@ -106,7 +105,7 @@ function awakenMossling() {
     temperament: 'cautious',
     combatStyle: 'guard-heavy',
     bornAtKept: kd.state.kept || 0,
-    mature: true, // prototype discovery arrives mature so breeding can be tested immediately
+    mature: true,
     alive: true,
     source: 'moss-fragment',
   });
@@ -196,9 +195,7 @@ function hatch() {
   return child;
 }
 
-function traitChip(text) {
-  return make('span', 'bm-trait-chip', text);
-}
+function traitChip(text) { return make('span', 'bm-trait-chip', text); }
 
 function creatureCard(r) {
   const card = make('article', `bm-roster-card${r.alive ? '' : ' kindled'}`);
@@ -299,13 +296,26 @@ function breedingPanel() {
   return section;
 }
 
+function uiSignature() {
+  const progress = eggProgress();
+  return JSON.stringify({
+    kept: kd.state.kept || 0,
+    fragments: combat.mossFragments || 0,
+    roster: game.roster.map(r => [r.id, r.alive, r.mature, r.generation]),
+    egg: game.egg ? [game.egg.seed, progress.done, progress.ready] : null,
+  });
+}
+
 function onCompanionPage() {
   const page = document.querySelector('#panel > .bm-page');
   if (!page || page.classList.contains('bm-combat-page')) return false;
   const eyebrow = page.querySelector('.bm-eyebrow');
   if (!eyebrow || eyebrow.textContent.trim().toUpperCase() !== 'COMPANION') return false;
+  const signature = uiSignature();
   const old = page.querySelector('[data-breeding]');
+  if (old?.dataset.signature === signature) return true;
   const next = breedingPanel();
+  next.dataset.signature = signature;
   if (old) old.replaceWith(next); else page.appendChild(next);
   return true;
 }
