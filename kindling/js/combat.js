@@ -1,6 +1,6 @@
-// Kindling v7 — first combat prototype.
-// Short, deterministic, one-hand turn-based combat under Journey.
+// Kindling v9 — short, deterministic, one-hand turn-based combat under Journey.
 // Combat never spends care points, Flames or Bond XP and can never undo real-life progress.
+// Companion combat tendency now changes the encounter while preserving the original Ember baseline.
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 while (!window.__kd || !window.__bettermentUx || !window.__bettermentGdd) await wait(10);
@@ -24,6 +24,25 @@ const INTENTS = [
   { id: 'mend', label: 'MOSS REKNITS', damage: 0, heal: 2, text: 'It pauses to pull itself together.' },
 ];
 
+const STYLES = {
+  'quick striker': {
+    label: 'Quick striker', hp: 20, sparks: 1, strike: 4, skill: 9, guardFactor: .25, counter: 0,
+    note: 'Balanced prototype kit. Strike builds Sparks quickly.',
+  },
+  'guard-heavy': {
+    label: 'Guard-heavy', hp: 24, sparks: 1, strike: 3, skill: 8, guardFactor: .12, counter: 0,
+    note: 'More HP and a stronger Guard, with lighter attacks.',
+  },
+  'skill-focused': {
+    label: 'Skill-focused', hp: 18, sparks: 2, strike: 3, skill: 11, guardFactor: .25, counter: 0,
+    note: 'Starts charged and hits harder with Ember Lash.',
+  },
+  counterattacker: {
+    label: 'Counterattacker', hp: 20, sparks: 1, strike: 4, skill: 8, guardFactor: .25, counter: 2,
+    note: 'Guard returns 2 damage whenever it catches an attack.',
+  },
+};
+
 const make = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -42,16 +61,22 @@ function ensureCombat() {
 }
 
 const combat = ensureCombat();
+const styleOf = id => STYLES[id] || STYLES['quick striker'];
 
 function freshFight() {
+  const styleId = meta.companion?.combatStyle || 'quick striker';
+  const profile = styleOf(styleId);
   return {
     id: ENEMY.id,
     status: 'active',
-    playerHp: 20,
-    playerMaxHp: 20,
+    companionId: meta.companion?.id || null,
+    companionName: meta.companion?.name || 'Ember',
+    style: styleId,
+    playerHp: profile.hp,
+    playerMaxHp: profile.hp,
     enemyHp: ENEMY.maxHp,
     enemyMaxHp: ENEMY.maxHp,
-    sparks: 1,
+    sparks: profile.sparks,
     maxSparks: 3,
     turn: 0,
     guarded: false,
@@ -97,6 +122,7 @@ function finishRetreat(fight) {
 function enemyTurn(fight) {
   if (fight.status !== 'active' || fight.enemyHp <= 0) return;
   const intent = currentIntent(fight);
+  const profile = styleOf(fight.style);
 
   if (intent.heal) {
     const before = fight.enemyHp;
@@ -104,35 +130,44 @@ function enemyTurn(fight) {
     const healed = fight.enemyHp - before;
     fight.log += healed ? ` The knight reknits ${healed} HP.` : ' The moss has nothing left to mend.';
   } else if (intent.damage > 0) {
-    const incoming = fight.guarded ? Math.max(1, Math.floor(intent.damage * 0.25)) : intent.damage;
+    const wasGuarded = fight.guarded;
+    const incoming = wasGuarded ? Math.max(1, Math.floor(intent.damage * profile.guardFactor)) : intent.damage;
     fight.playerHp = Math.max(0, fight.playerHp - incoming);
-    fight.log += fight.guarded
+    fight.log += wasGuarded
       ? ` Guard catches the blow. ${incoming} damage gets through.`
       : ` ${intent.damage} damage lands.`;
+    if (wasGuarded && profile.counter > 0) {
+      fight.enemyHp = Math.max(0, fight.enemyHp - profile.counter);
+      fight.log += ` The counter returns ${profile.counter}.`;
+    }
   }
 
   fight.guarded = false;
   fight.turn += 1;
-  if (fight.playerHp <= 0) finishRetreat(fight);
+  if (fight.enemyHp <= 0) finishVictory(fight);
+  else if (fight.playerHp <= 0) finishRetreat(fight);
 }
 
 function act(kind) {
   const fight = combat.current;
   if (!fight || fight.status !== 'active') return false;
+  const profile = styleOf(fight.style);
 
   if (kind === 'strike') {
-    fight.enemyHp = Math.max(0, fight.enemyHp - 4);
+    fight.enemyHp = Math.max(0, fight.enemyHp - profile.strike);
     fight.sparks = Math.min(fight.maxSparks, fight.sparks + 1);
-    fight.log = 'Strike bites through the moss for 4.';
+    fight.log = `Strike bites through the moss for ${profile.strike}.`;
   } else if (kind === 'guard') {
     fight.guarded = true;
     fight.sparks = Math.min(fight.maxSparks, fight.sparks + 1);
-    fight.log = 'You brace. The next hit will be heavily reduced.';
+    fight.log = profile.counter
+      ? 'You brace. A caught attack will answer with a counter.'
+      : 'You brace. The next hit will be heavily reduced.';
   } else if (kind === 'skill') {
     if (fight.sparks < 2) return false;
     fight.sparks -= 2;
-    fight.enemyHp = Math.max(0, fight.enemyHp - 9);
-    fight.log = 'EMBER LASH tears across the knight for 9.';
+    fight.enemyHp = Math.max(0, fight.enemyHp - profile.skill);
+    fight.log = `EMBER LASH tears across the knight for ${profile.skill}.`;
   } else {
     return false;
   }
@@ -209,16 +244,19 @@ function resultPanel(fight) {
 function fightView() {
   const fight = combat.current;
   if (!fight) return null;
+  const profile = styleOf(fight.style);
 
   const wrap = make('div', 'bm-page bm-combat-page');
   wrap.append(make('span', 'bm-eyebrow', ENEMY.region.toUpperCase()), make('h2', '', ENEMY.name));
 
   const arena = make('section', 'bm-combat-arena');
   const enemyName = ENEMY.name;
-  const companionName = meta.companion?.name || 'Ember';
+  const companionName = fight.companionName || meta.companion?.name || 'Ember';
   const actors = make('div', 'bm-combat-actors');
   actors.append(fighter('player', '●', companionName), fighter('foe', '♜', enemyName));
   arena.append(actors, hpBlock(companionName, fight.playerHp, fight.playerMaxHp), hpBlock(enemyName, fight.enemyHp, fight.enemyMaxHp, true));
+  const styleLine = make('p', 'bm-combat-style', `${profile.label} · ${profile.note}`);
+  arena.appendChild(styleLine);
   wrap.appendChild(arena);
 
   if (fight.status !== 'active') {
@@ -238,10 +276,11 @@ function fightView() {
   wrap.appendChild(make('p', 'bm-combat-log', fight.log));
 
   const actions = make('div', 'bm-combat-actions');
+  const guardText = profile.counter ? `Reduce hit + ${profile.counter} counter · +1 Spark` : 'Reduce next hit · +1 Spark';
   const specs = [
-    ['strike', 'STRIKE', '4 dmg · +1 Spark'],
-    ['guard', 'GUARD', 'Reduce next hit · +1 Spark'],
-    ['skill', 'EMBER LASH', '9 dmg · costs 2 Sparks'],
+    ['strike', 'STRIKE', `${profile.strike} dmg · +1 Spark`],
+    ['guard', 'GUARD', guardText],
+    ['skill', 'EMBER LASH', `${profile.skill} dmg · costs 2 Sparks`],
   ];
   for (const [id, title, sub] of specs) {
     const b = make('button', `bm-combat-action ${id}`);
@@ -277,13 +316,15 @@ function renderFight() {
 }
 
 function encounterCard() {
+  const styleId = meta.companion?.combatStyle || 'quick striker';
+  const profile = styleOf(styleId);
   const card = make('section', 'bm-card bm-encounter-card');
   card.dataset.combatEncounter = 'moss-knight';
   const copy = make('div', 'bm-encounter-copy');
   copy.append(
     make('span', 'bm-eyebrow', 'ENCOUNTER'),
     make('strong', '', 'Moss Knight'),
-    make('p', 'bm-page-copy', 'A 30–60 second prototype fight. Combat uses its own HP and Sparks; your care progress is never at risk.'),
+    make('p', 'bm-page-copy', `A 30–60 second prototype fight. ${meta.companion?.name || 'Ember'} enters as ${profile.label.toLowerCase()}. Care progress is never at risk.`),
   );
   const stats = make('div', 'bm-encounter-stats', `${combat.wins} wins · ${combat.mossFragments} fragments`);
   const button = make('button', 'btn bm-fight', combat.current?.status === 'active' ? 'Resume fight' : 'Fight');
@@ -304,7 +345,8 @@ function onJourneyPage() {
   const eyebrow = page.querySelector('.bm-eyebrow');
   if (!eyebrow || eyebrow.textContent.trim().toUpperCase() !== 'JOURNEY') return false;
   if (meta.kindling?.event?.pending) return false;
-  if (!page.querySelector('[data-combat-encounter]')) page.appendChild(encounterCard());
+  const old = page.querySelector('[data-combat-encounter]');
+  if (old) old.replaceWith(encounterCard()); else page.appendChild(encounterCard());
   return true;
 }
 
@@ -321,6 +363,7 @@ window.__bettermentCombat = {
   state: combat,
   enemy: ENEMY,
   intents: INTENTS,
+  styles: STYLES,
   start: startFight,
   act,
   render: renderFight,
