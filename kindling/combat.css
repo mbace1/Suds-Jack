@@ -1,4 +1,4 @@
-/* Kindling v7 — first one-hand combat slice. */
+/* Kindling v9 — one-hand combat with inherited companion tendencies. */
 
 .bm-encounter-card {
   display: grid;
@@ -102,6 +102,14 @@
   transition: width .16s ease-out;
 }
 .bm-combat-hp.enemy .bm-combat-hp-fill { background: #718b57; }
+.bm-combat-style {
+  margin: 10px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid rgba(114,90,60,.42);
+  color: var(--bm-dim);
+  font-size: 10px;
+  line-height: 1.35;
+}
 
 .bm-combat-intent {
   margin: 10px 0;
