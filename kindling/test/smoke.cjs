@@ -164,7 +164,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
 
   // ── the breathing machine, stepped rather than waited out ──
   const breath = await page.evaluate(async () => {
-    const { makeBreath, ROUNDS } = await import('./js/breathe.js?v=4');
+    const { makeBreath, ROUNDS } = await import('./js/breathe.js?v=5');
     const rounds = [];
     let done = false;
     const m = makeBreath({ onRound: n => rounds.push(n), onDone: () => { done = true; } });
@@ -221,7 +221,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   // the report is rolled at DEPARTURE: the same errand always tells the same
   // story, however many times the page is reloaded before it gets home
   const stable = await page.evaluate(async () => {
-    const { report } = await import('./js/errand.js?v=4');
+    const { report } = await import('./js/errand.js?v=5');
     const e = __kd.state.errand;
     const a = report(e, []), b = report(e, []);
     return a.lines.join('|') === b.lines.join('|') && a.thing === b.thing;
@@ -250,40 +250,39 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   check(`the room says it too ("${back.said.slice(0, 40)}…")`, /home/i.test(back.said));
 
   // ── the light is the reward ──
+  // The promise is that FIRELIGHT reaches further on a better day — so that is
+  // what is measured, not total brightness. Since the pivot the world is a
+  // moonlit ruin: the sky is always lit, so mean brightness barely moves and the
+  // old ruler (all pixels, cold included) reported a 1.3× change for a day that
+  // goes from coals to a full fire. Counting WARM pixels — where red leads blue —
+  // measures the thing the design actually claims, and measures it harder.
   const brightness = await page.evaluate(async () => {
     const c = document.querySelector('canvas');
-    const read = () => {
-      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-      let sum = 0;
-      for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
-      return sum / (d.length / 4);
+    const ctx = c.getContext('2d');
+    const warmIn = (x, y, w, h) => {
+      const d = ctx.getImageData(x, y, w, h).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] - d[i + 2] > 40 && d[i] > 60) n++;     // red leads blue: firelight
+      }
+      return n;
     };
-    // the far wall: the door only exists on a day that reached it
-    const farWall = () => {
-      const d = c.getContext('2d').getImageData(158, 60, 24, 30).data;
-      let lit = 0;
-      for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 60) lit++;
-      return lit;
-    };
-    // The fire EASES toward the day, so the level is set on the view directly
-    // and one frame is taken: waiting for the ease to land would be timing the
-    // wall clock, which is the thing this gate does not do.
     const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const s = __kd.state;
     s.sheet.done = []; s.sheet.mood = null; s.sheet.breaths = 0;
     __kd.view.shown = 0;
     await frame();
-    const cold = { mean: read(), far: farWall() };
+    const cold = { warm: warmIn(0, 0, c.width, c.height), far: warmIn(156, 62, 30, 36) };
     s.sheet.done = __kd.debug.tasks(); s.sheet.mood = 'ok';
     __kd.view.shown = 1;
     await frame();
-    const warm = { mean: read(), far: farWall() };
+    const warm = { warm: warmIn(0, 0, c.width, c.height), far: warmIn(156, 62, 30, 36) };
     return { cold, warm };
   });
-  check(`a full day is a measurably brighter room (${brightness.cold.mean.toFixed(1)} → ${brightness.warm.mean.toFixed(1)})`,
-    brightness.warm.mean > brightness.cold.mean * 1.5);
-  check(`and the far side of the room only exists on a full fire (${brightness.cold.far} → ${brightness.warm.far} lit)`,
-    brightness.cold.far < 10 && brightness.warm.far > 120);
+  check(`a full day is measurably more firelight (${brightness.cold.warm} → ${brightness.warm.warm} warm pixels)`,
+    brightness.warm.warm > brightness.cold.warm * 1.5);
+  check(`and the far side of the ruin is only reached by a full fire (${brightness.cold.far} → ${brightness.warm.far})`,
+    brightness.cold.far < 10 && brightness.warm.far > 60);
 
   // ── the day turning over ──
   const rolled = await page.evaluate(() => {
@@ -408,7 +407,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
 
   // the window is read off the local clock — and off nothing else
   const sky = await page.evaluate(async () => {
-    const { skyOf } = await import('./js/room.js?v=4');
+    const { skyOf } = await import('./js/room.js?v=5');
     const at = (h, d = 15) => skyOf(new Date(2026, 7, d, h, 0, 0));
     return {
       night: at(23).key, noon: at(13).key, dawn: at(6).key, dusk: at(19).key,

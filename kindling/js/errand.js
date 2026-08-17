@@ -15,7 +15,7 @@
 //    and an errand that brings nothing home still brings back the walk. A care
 //    app that can punish you for looking away has forgotten what it is for.
 
-import { PAL } from './palette.js?v=4';
+import { PAL } from './palette.js?v=5';
 
 export const ERRAND_MS = 90 * 1000;
 

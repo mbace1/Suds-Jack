@@ -55,6 +55,22 @@ export const PAL = {
   GLASS:     '#7fc7d8',
   THREAD:    '#7f8fd8',
 
+  // ── THE RUIN (owner direction, 2026-08-16) ────────────────────────
+  // The hut is retired. The world is now a moonlit dark-fantasy ruin, and the
+  // scheme's one idea gets sharper rather than changing: the environment is
+  // COLD and the fire is the only warm thing in it. So everything is drawn from
+  // a cold ramp first and warmed by distance from the flame — that subtraction
+  // is what makes forty pixels of firelight feel like shelter instead of decor.
+  COLD:      ['#080d13', '#101823', '#1a2634', '#26364a', '#354a63'],
+  STONE_COLD:'#5a6a7e',
+  TREE_FAR:  '#121b28',
+  TREE_NEAR: '#080d14',
+  MOSS_DARK: '#2f4029',
+  // one accent in the world that is neither fire nor moon: a banner that has
+  // been hanging too long. Dark enough to stay out of the fire's job.
+  BANNER:    '#6e2c3a',
+  BANNER_DIM:'#3f1c26',
+
   // ink and paper: the 1px outline that keeps a pixel shape defined, and the
   // colour text is set in
   INK:       '#080506',
