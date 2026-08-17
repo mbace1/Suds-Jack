@@ -209,6 +209,15 @@ s.listen(0, '127.0.0.1', async () => {
         window.__eeri.player.mercyT = 0;
         window.__eeri.debug.setPos(where ?? (e.x - 1.5), e.y + 0.1);
       }, place);
+      // WAIT UNTIL HE IS STANDING BEFORE PRESSING. `setPos` puts him at
+      // e.y + 0.1 — a tenth of a tile ABOVE the floor — so he is falling for
+      // the first frames after each placement. `nearExc()` requires
+      // `grounded`, and `input.take('action')` consumes the edge whether or
+      // not the mount was possible, so a press read on an airborne frame is
+      // simply thrown away. Every retry repeated the same race, which is why
+      // this failed consistently rather than flakily once the machine got
+      // slow enough that one frame is a long time.
+      await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: ms(2000) }).catch(() => {});
       await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
       await p.waitForTimeout(ms(350));
     }
@@ -520,8 +529,20 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => window.__eeri.debug.press('jump'));
   await p.waitForTimeout(ms(300));
   await p.evaluate(() => { window.__eeri.debug.release('jump'); window.__eeri.debug.release('right'); });
-  await p.waitForTimeout(ms(1500));   // he falls, and the pit hands him back
-  ok('the gap is too wide for the kid', await p.evaluate(() => window.__eeri.player.x) < 58,
+  // WAIT FOR THE LANDING, not for a clock. He has to fall and be handed back
+  // by the pit, and that is a number of FRAMES — on a software renderer 1.5 s
+  // of wall time is not enough of them, so the check read his x mid-air at
+  // 58.19 and called a fall a crossing.
+  await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: ms(8000) }).catch(() => {});
+  await p.waitForTimeout(ms(250));
+  // MEASURED OFF THE ROOM, not guessed: solid through cell 57 (so the near
+  // lip's edge is x 58.0), gap 58…65, far side from 66. `< 58` therefore
+  // failed him for STANDING ON THE LIP — his centre rests at 58.1 with his
+  // box still supported — which is not crossing, it is arriving at the edge.
+  // The claim is that he never reaches the far side, so that is what is
+  // asserted; an eight-tile hole against a four-tile budget still fails
+  // loudly if the jump ever grows.
+  ok('the gap is too wide for the kid', await p.evaluate(() => window.__eeri.player.x) < 64,
     'x=' + await p.evaluate(() => window.__eeri.player.x));
 
   // …so read the cycle and take the machine, again
