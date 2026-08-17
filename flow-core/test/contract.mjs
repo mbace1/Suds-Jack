@@ -39,7 +39,7 @@ const build = (seed = 7) => {
   return f;
 };
 
-const LINE_A = ['hakaniemi', 'kuudeslinja', 'karhupuisto', 'vaasanaukio', 'vaasankatu', 'kurvi'];
+const LINE_A = ['hakaniemi', 'kuudeslinja', 'kirkko', 'karhupuisto', 'vaasanaukio', 'kurvi'];
 const LINE_B = ['kirkko', 'kuudeslinja', 'hakaniemi'];
 
 console.log('\nflow-core contract\n');
@@ -73,7 +73,7 @@ console.log('\nflow-core contract\n');
   ok('some trips are aboard before the edit', riding > 0, `riding=${riding}`);
 
   const r = f.routes.list[0];
-  f.reshapeRoute(r.id, ['hakaniemi', 'kuudeslinja', 'karhupuisto', 'vaasanaukio']);
+  f.reshapeRoute(r.id, ['hakaniemi', 'kuudeslinja', 'kirkko', 'karhupuisto']);
   const after = f.trips.active.length + f.trips.completed.length + f.trips.abandoned.length;
   ok('reshaping loses nobody', after === before, `${before} → ${after}`);
   ok('nobody is left aboard a line that changed',
@@ -93,7 +93,7 @@ console.log('\nflow-core contract\n');
   f.addRoute('tram', LINE_A);
   f.addRoute('tram', LINE_B);
   f.runTicks(700);
-  const edge = f.graph.edgeBetween('vaasanaukio', 'vaasankatu', 'tram');
+  const edge = f.graph.edgeBetween('vaasanaukio', 'kurvi', 'tram');
   edge.closed = true;
   f.trips.replan();
   f.runTicks(400);

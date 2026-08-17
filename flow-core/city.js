@@ -2,78 +2,97 @@
 // brief's "the legal and illegal city are the same city" true rather than
 // asserted, so it lives in the core and neither product may fork it.
 //
-// POSITIONS ARE REAL. Owner direction: work from a real map of Kallio, not an
-// invented layout. Each stop below is projected from its actual WGS84 position
-// — longitude scaled by cos(60.18°) so the district is not stretched sideways,
-// latitude flipped so north is up — with Hakaniemi near the origin. So the
-// diagram keeps the things a local would check: Hakaniemi low and west by the
-// water, the district climbing north-east, the church west of Karhupuisto, the
-// bend at Kurvi, Sörnäinen furthest out along Hämeentie.
+// BUILT FROM THE OWNER'S REFERENCE MAPS (2026-08-17): a printed Helsinki city
+// map of Harju/Kallio, a road map of the whole district, and two Google Maps
+// captures — one of which searches "piritori" and pins it AT SÖRNÄINEN METRO.
+// That corrected a real error here: Vaasanaukio is not a square in the middle
+// of Kallio, it is the plaza at the metro's west door, and Vaasanaukio, Kurvi
+// and the Sörnäinen station form one tight cluster at the Hämeentie bend.
+// The maps also put two places on the board this graph was missing: the
+// Kallion urheilukenttä / Brahen kenttä fields at Harju (circled on the
+// printed map) and the Torkkelinmäki hill (labelled on both captures).
 //
-//   x = (lon − 24.9480) × 55.34 km/deg × 110      (55.34 = 111.32 × cos 60.18°)
-//   y = 100 − (lat − 60.1790) × 111.32 km/deg × 90
+// AUTHENTIC SCALE. One design unit is TEN METRES. Every node is projected
+// from its WGS84 position:
 //
-// Travel times are TICKS and stay roughly proportional to real distance, so a
-// long run on the map costs a long run in play. Hämeentie is the exception and
-// deliberately so: it is the arterial, so it is quicker per unit of distance
-// than the streets that parallel it.
+//   x = (lon − 24.9490) × 5534        (111.32 km/° × cos 60.185° ÷ 10 m)
+//   y = (60.1885 − lat) × 11132       (111.32 km/° ÷ 10 m, north up)
+//
+// so the whole board is ~550 m wide and ~980 m tall — Kallio really is that
+// small and that steep a rectangle, one metro stop from Hakaniemi to
+// Sörnäinen. Distances between stops are therefore real distances, and edge
+// times are cut from them: walk ≈ 0.9 ticks per unit, tram ≈ 0.45, so a
+// minute of game time is roughly a real walk up Fleminginkatu.
 //
 // Every name is an ordinary Helsinki place name. The starting square is
 // `vaasanaukio`, its real name; Piritori is a STREET NICKNAME and therefore a
 // product label, applied by the night product at display time. That is not
-// squeamishness — it is the seam working, and the contract test scans the other
-// product's bundle for exactly this.
+// squeamishness — it is the seam working, and the contract test scans the
+// other product's bundle for exactly this.
 
 export const KALLIO = {
-  // real position of each stop, kept for anyone re-deriving the projection
+  // the WGS84 positions each node was projected from, kept so anyone can
+  // re-derive the board or add a stop without guessing
   source: {
-    hakaniemi: [60.1793, 24.9486], kuudeslinja: [60.1818, 24.9520],
-    kirkko: [60.1846, 24.9489], karhupuisto: [60.1852, 24.9524],
-    vaasanaukio: [60.1863, 24.9530], vaasankatu: [60.1860, 24.9545],
-    kurvi: [60.1875, 24.9575], sornainen: [60.1884, 24.9628],
+    hakaniemi: [60.1794, 24.9511], kuudeslinja: [60.1832, 24.9527],
+    kirkko: [60.1844, 24.9500], karhupuisto: [60.1845, 24.9534],
+    torkkelinmaki: [60.1848, 24.9560], harju: [60.1864, 24.9507],
+    vaasankatu: [60.1881, 24.9560], vaasanaukio: [60.1871, 24.9572],
+    kurvi: [60.1875, 24.9590], sornainen: [60.1880, 24.9601],
   },
 
   nodes: [
-    // Hakaniemi — the market hall and the water, the low south-west corner
-    { id: 'hakaniemi', name: 'Hakaniemi', x: 14, y: 97, tags: ['transfer', 'shop', 'work'], capacity: 30 },
-    // the linjat, climbing north off Siltasaarenkatu
-    { id: 'kuudeslinja', name: 'Kuudes linja', x: 34, y: 72, tags: ['shop', 'home'], capacity: 20 },
-    // the church on its hill, west of everything
-    { id: 'kirkko', name: 'Kallion kirkko', x: 16, y: 44, tags: ['service', 'school'], capacity: 16 },
-    { id: 'karhupuisto', name: 'Karhupuisto', x: 37, y: 38, tags: ['home', 'school'], capacity: 18 },
-    { id: 'vaasanaukio', name: 'Vaasanaukio', x: 40, y: 27, tags: ['transfer', 'shop', 'home'], capacity: 30 },
-    { id: 'vaasankatu', name: 'Vaasankatu', x: 50, y: 30, tags: ['shop', 'service'], capacity: 18 },
-    // Kurvi — where Hämeentie bends at Helsinginkatu
-    { id: 'kurvi', name: 'Kurvi', x: 68, y: 15, tags: ['transfer', 'work', 'home'], capacity: 26 },
-    { id: 'sornainen', name: 'Sörnäinen', x: 100, y: 6, tags: ['transfer', 'work'], capacity: 28 },
+    // the south: the market hall, the water, the metro's other end
+    { id: 'hakaniemi', name: 'Hakaniemi', x: 12, y: 101, tags: ['transfer', 'shop', 'work'], capacity: 30 },
+    // the linjat climbing north
+    { id: 'kuudeslinja', name: 'Kuudes linja', x: 20, y: 59, tags: ['shop', 'home'], capacity: 20 },
+    // the church on its rock, west of everything
+    { id: 'kirkko', name: 'Kallion kirkko', x: 6, y: 46, tags: ['service', 'school'], capacity: 16 },
+    { id: 'karhupuisto', name: 'Karhupuisto', x: 24, y: 45, tags: ['home', 'school'], capacity: 18 },
+    // the residential hill between Pengerkatu and Hämeentie
+    { id: 'torkkelinmaki', name: 'Torkkelinmäki', x: 39, y: 41, tags: ['home'], capacity: 16 },
+    // Brahen kenttä / Kallion urheilukenttä — circled on the owner's map
+    { id: 'harju', name: 'Harju', x: 9, y: 23, tags: ['home', 'service'], capacity: 18 },
+    // the restaurant street, running up into Harju
+    { id: 'vaasankatu', name: 'Vaasankatu', x: 39, y: 4, tags: ['shop', 'service'], capacity: 18 },
+    // the plaza at the metro's west door — one block, three names
+    { id: 'vaasanaukio', name: 'Vaasanaukio', x: 45, y: 16, tags: ['transfer', 'shop', 'home'], capacity: 30 },
+    // where Hämeentie bends at Helsinginkatu
+    { id: 'kurvi', name: 'Kurvi', x: 55, y: 11, tags: ['transfer', 'work', 'shop'], capacity: 26 },
+    { id: 'sornainen', name: 'Sörnäinen', x: 61, y: 6, tags: ['transfer', 'work'], capacity: 28 },
   ],
 
-  // Tram follows the real corridors; walking is the mesh of streets under it.
-  // The asymmetry is the point of having two modes: a walk link exists almost
-  // everywhere, so it is never the network that limits you — it is the capacity
-  // riding it.
+  // Edges follow real corridors. Hämeentie is the arterial (Hakaniemi straight
+  // to Kurvi, tram 6's run); Siltasaarenkatu climbs to the linjat; the church
+  // loop takes Karhupuisto; Helsinginkatu runs the east-west line past the
+  // Harju fields. Walking is the street mesh under all of it — a walk link
+  // exists almost everywhere, so it is never the network that limits you, it
+  // is the capacity riding it.
   edges: [
-    // Hämeentie, the arterial: quicker per unit than anything beside it
-    { id: 't_hameentie', a: 'hakaniemi', b: 'kurvi', mode: 'tram', time: 44, capacity: 5 },
-    { id: 't_kurvi_sor', a: 'kurvi', b: 'sornainen', mode: 'tram', time: 20, capacity: 4 },
-    // Siltasaarenkatu up into the linjat
-    { id: 't_hak_kuu', a: 'hakaniemi', b: 'kuudeslinja', mode: 'tram', time: 19, capacity: 4 },
-    { id: 't_kuu_kir', a: 'kuudeslinja', b: 'kirkko', mode: 'tram', time: 20, capacity: 3 },
-    { id: 't_kuu_kar', a: 'kuudeslinja', b: 'karhupuisto', mode: 'tram', time: 20, capacity: 3 },
-    { id: 't_kir_kar', a: 'kirkko', b: 'karhupuisto', mode: 'tram', time: 13, capacity: 3 },
-    { id: 't_kar_vaa', a: 'karhupuisto', b: 'vaasanaukio', mode: 'tram', time: 7, capacity: 4 },
-    { id: 't_vaa_vsk', a: 'vaasanaukio', b: 'vaasankatu', mode: 'tram', time: 6, capacity: 4 },
-    { id: 't_vsk_kur', a: 'vaasankatu', b: 'kurvi', mode: 'tram', time: 14, capacity: 4 },
+    // tram corridors
+    { id: 't_silta', a: 'hakaniemi', b: 'kuudeslinja', mode: 'tram', time: 19, capacity: 4 },
+    { id: 't_kuu_kir', a: 'kuudeslinja', b: 'kirkko', mode: 'tram', time: 9, capacity: 3 },
+    { id: 't_kir_kar', a: 'kirkko', b: 'karhupuisto', mode: 'tram', time: 8, capacity: 3 },
+    { id: 't_kar_vaa', a: 'karhupuisto', b: 'vaasanaukio', mode: 'tram', time: 18, capacity: 4 },
+    { id: 't_helsinginkatu', a: 'harju', b: 'vaasanaukio', mode: 'tram', time: 17, capacity: 3 },
+    { id: 't_vaa_kur', a: 'vaasanaukio', b: 'kurvi', mode: 'tram', time: 5, capacity: 5 },
+    { id: 't_kur_sor', a: 'kurvi', b: 'sornainen', mode: 'tram', time: 4, capacity: 5 },
+    { id: 't_hameentie', a: 'hakaniemi', b: 'kurvi', mode: 'tram', time: 45, capacity: 5 },
 
-    { id: 'w_vaa_vsk', a: 'vaasanaukio', b: 'vaasankatu', mode: 'walk', time: 11, capacity: 2 },
-    { id: 'w_kar_vaa', a: 'karhupuisto', b: 'vaasanaukio', mode: 'walk', time: 13, capacity: 2 },
-    { id: 'w_kar_vsk', a: 'karhupuisto', b: 'vaasankatu', mode: 'walk', time: 17, capacity: 2 },
-    { id: 'w_kir_kar', a: 'kirkko', b: 'karhupuisto', mode: 'walk', time: 24, capacity: 2 },
-    { id: 'w_kuu_kir', a: 'kuudeslinja', b: 'kirkko', mode: 'walk', time: 37, capacity: 2 },
-    { id: 'w_hak_kuu', a: 'hakaniemi', b: 'kuudeslinja', mode: 'walk', time: 35, capacity: 2 },
-    { id: 'w_kuu_kar', a: 'kuudeslinja', b: 'karhupuisto', mode: 'walk', time: 37, capacity: 2 },
-    { id: 'w_vaa_kur', a: 'vaasanaukio', b: 'kurvi', mode: 'walk', time: 34, capacity: 2 },
-    { id: 'w_vsk_kur', a: 'vaasankatu', b: 'kurvi', mode: 'walk', time: 26, capacity: 2 },
-    { id: 'w_kur_sor', a: 'kurvi', b: 'sornainen', mode: 'walk', time: 37, capacity: 2 },
+    // the street mesh
+    { id: 'w_vaa_vsk', a: 'vaasanaukio', b: 'vaasankatu', mode: 'walk', time: 12, capacity: 2 },
+    { id: 'w_vsk_kur', a: 'vaasankatu', b: 'kurvi', mode: 'walk', time: 16, capacity: 2 },
+    { id: 'w_vaa_kur', a: 'vaasanaukio', b: 'kurvi', mode: 'walk', time: 10, capacity: 2 },
+    { id: 'w_kur_sor', a: 'kurvi', b: 'sornainen', mode: 'walk', time: 7, capacity: 2 },
+    { id: 'w_penger', a: 'vaasanaukio', b: 'torkkelinmaki', mode: 'walk', time: 23, capacity: 2 },
+    { id: 'w_tor_kar', a: 'torkkelinmaki', b: 'karhupuisto', mode: 'walk', time: 14, capacity: 2 },
+    { id: 'w_tor_kur', a: 'torkkelinmaki', b: 'kurvi', mode: 'walk', time: 30, capacity: 2 },
+    { id: 'w_kar_kir', a: 'karhupuisto', b: 'kirkko', mode: 'walk', time: 16, capacity: 2 },
+    { id: 'w_kar_vaa', a: 'karhupuisto', b: 'vaasanaukio', mode: 'walk', time: 32, capacity: 2 },
+    { id: 'w_kir_kuu', a: 'kirkko', b: 'kuudeslinja', mode: 'walk', time: 17, capacity: 2 },
+    { id: 'w_kuu_hak', a: 'kuudeslinja', b: 'hakaniemi', mode: 'walk', time: 39, capacity: 2 },
+    { id: 'w_harju_vsk', a: 'harju', b: 'vaasankatu', mode: 'walk', time: 32, capacity: 2 },
+    { id: 'w_harju_kir', a: 'harju', b: 'kirkko', mode: 'walk', time: 21, capacity: 2 },
+    { id: 'w_harju_kar', a: 'harju', b: 'karhupuisto', mode: 'walk', time: 24, capacity: 2 },
   ],
 };
