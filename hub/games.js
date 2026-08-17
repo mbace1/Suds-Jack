@@ -338,6 +338,33 @@ export const GAMES = [
     art: 'treeline',
   },
   {
+    id: 'kindling',
+    fi: {
+      tagline: 'Hoivakumppani, ei pistetaulu. Merkitse ne pienet asiat jotka todella teit, pidä niillä tulta, ja valo näyttää huoneen.',
+      lineage: 'Finch, mutta yhdessä huoneessa',
+      controls: 'napauta listaa · hengitä tulen tahdissa · lähetä se ulos',
+      note: 'uusi — sovellus itse on vielä pelkästään englanniksi',
+    },
+    ja: {
+      tagline: '点数表ではなく、世話をするための小さなアプリ。実際にやった小さなことに印をつけ、その火を保つと、光が部屋を見せてくれる。',
+      lineage: 'Finch を一部屋に',
+      controls: 'リストをタップ · 火に合わせて呼吸する · 外へ送り出す',
+      note: '新作 — 中身はまだ英語だけ',
+    },
+    pad: { ui: true },
+    status: 'active',
+    note: 'new — the app itself is English only so far',
+    title: 'Kindling',
+    tagline: 'A care companion, not a scoreboard. Tick off the small things you actually did, keep a fire on them, and the light shows you the room.',
+    lineage: 'Finch, in one room',
+    tags: ['care', 'daily', 'pixel'],
+    controls: 'tap the list · breathe with the fire · send it out',
+    path: 'kindling/',
+    inRepo: true,
+    accent: '#f0a24a',
+    art: 'hearth',
+  },
+  {
     id: 'radiofree',
     fi: {
       tagline: 'Piraattiuutisvirta Tokon lukemana. Jokainen tiedote on keksitty; DECODE näyttää mitä sanamuoto oikeasti teki.',

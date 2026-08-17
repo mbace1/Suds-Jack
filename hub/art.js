@@ -719,6 +719,127 @@ export const ART = {
     g.p(sx, sy - 4, 2, 2, '#a8322c');                   // tuft
   },
 
+  // Kindling: a small thing keeping a fire, seen from behind it.
+  //
+  // Two passes were thrown away to get here, and both failed the same way: they
+  // put the creature in the middle of the room facing us, which is a picture of a
+  // character. This game is not about a character, it is about how much of a room
+  // one small light can hold — so the composition is the FIRE, at full brightness,
+  // with the creature between us and it, cropped by the bottom of the frame.
+  //
+  // That crop is what makes it foreground rather than a sprite standing in a
+  // scene (the lesson Neon Ronin's gate and Hyper Dagger's jaws both paid for),
+  // and being between us and the light is what lets it be dark without being a
+  // hole in the picture: it is rimmed in ember down the fire side and in cold
+  // window-light down the other, which is the two-colour rim rule.
+  //
+  // The idiom is the house one. The wall is flat horizontal bars with hard seams
+  // (a 2600 changes colour once per scanline, so firelight on plaster is banding,
+  // never a gradient) and the light on the floor is four stepped tones fanning
+  // out of the hearth — a wedge, because a full-width band reads as furniture.
+  hearth(g, a) {
+    const wall = ['#07060a', '#0a0807', '#0f0b08', '#150e09', '#1d130a', '#26170c'];
+    wall.forEach((c, i) => g.p(0, i * 7, W, 7, c));
+    g.p(0, 42, W, 4, '#2c1b0e');
+    g.p(0, 46, W, H - 46, '#120c06');                   // the floor, unlit
+
+    // the window: the one cold thing on the picture, and small
+    g.p(66, 4, 26, 17, '#0b1120');
+    for (let i = 0; i < 7; i++) g.p(69 + ((i * 9) % 21), 7 + ((i * 5) % 8), 1, 1, i % 3 ? '#cfe4ea' : '#e8eef2');
+    for (let x = 67; x < 91; x++) g.p(x, 16 + (x % 4 === 0 ? -2 : 0), 1, 5, '#080c14');
+    g.p(65, 2, 28, 2, '#3f2a14');
+    g.p(65, 21, 28, 2, '#3f2a14');
+    g.p(65, 2, 2, 21, '#3f2a14');
+    g.p(91, 2, 2, 21, '#3f2a14');
+    g.p(78, 4, 1, 17, '#33210f');
+
+    // the hearth
+    g.p(2, 13, 50, 5, '#5b3a1c');                       // the mantel beam
+    g.p(2, 18, 50, 1, '#31200f');
+    g.p(6, 19, 7, 27, '#6e5c48');                       // stone, tinted to the fire
+    g.p(39, 19, 8, 27, '#6e5c48');
+    for (let y = 22; y < 46; y += 5) { g.p(6, y, 7, 1, '#42372a'); g.p(39, y, 8, 1, '#42372a'); }
+    g.p(13, 19, 26, 27, '#05060b');                     // the mouth
+    g.p(13, 19, 26, 1, '#000');
+
+    // the fire: the brightest thing on the cabinet by a wide margin
+    const fx = 25, base = 44;
+    for (let i = 0; i < 23; i++) {
+      const k = i / 23;
+      const bw = Math.max(1, Math.round(15 * (1 - k * k * 0.9) * (1 - k * 0.28)));
+      const col = k < 0.2 ? '#fff6e2' : k < 0.5 ? '#ffc768' : k < 0.8 ? a : '#b2481c';
+      g.p(fx - bw / 2 + Math.sin(k * 5.5) * k * 3.2, base - i, bw, 1, col);
+    }
+    for (let i = 0; i < 6; i++) g.p(16 + i * 3, base, 3, 2, i % 2 ? '#c9521f' : '#7a2f16');
+    for (let i = 0; i < 5; i++) g.p(fx + 4 + i * 2, 20 - i * 3, 1, 1, '#ffe6a8');   // sparks
+
+    // the light on the floor: a wedge out of the hearth, in four stepped tones
+    const POOL = ['#7a4a24', '#5c3819', '#412712', '#2b1a0d'];
+    for (let y = 46; y < H; y++) {
+      const k = (y - 46) / (H - 46);
+      const w2 = Math.round(78 - k * 34);
+      g.p(0, y, w2, 1, POOL[Math.min(3, Math.floor(k * 4.4))]);
+    }
+    g.p(0, 45, 74, 1, '#96602c');                       // the hot lip of the pool
+
+    // The creature, between us and the fire, cropped by the bottom of the frame.
+    //
+    // It is BACKLIT, so it gets no face: an eye and a nose painted onto a shape
+    // with the light behind it is a mascot sticker, and it was one for a pass.
+    // What carries it instead is the silhouette — ears, a snout turned to the
+    // fire, and shoulders that widen into the crop — plus the two rims. The
+    // shoulders matter more than they sound: two stacked discs read as a snowman,
+    // and the fix is that a body is wider at the bottom than the top.
+    const cx = 62, DARK = '#25301c', MID = '#39482a';
+    const bodyW = y => Math.round(11 + (y - 52) * 0.62);
+    for (let y = 52; y < H; y++) {
+      const w2 = bodyW(y);
+      // the top two rows curve in, so the shoulders are round and not a box
+      const in_ = y < 55 ? (55 - y) * 2 : 0;
+      g.p(cx - w2 + in_, y, (w2 - in_) * 2, 1, DARK);
+    }
+    g.disc(cx - 1, 45, 7, DARK);                        // the head
+    for (let i = 0; i < 4; i++) g.p(cx - 9 - i, 44 + i, 3, 2, DARK);   // the snout
+    for (const [ex, lean] of [[cx - 8, -1], [cx + 3, 1]]) {            // the ears
+      for (let i = 0; i < 5; i++) g.p(ex + Math.round(i * 0.4) * lean, 38 - i, 3, 1, DARK);
+    }
+    // the tail curls round in front of the shoulder — the same dark as the body,
+    // because a lighter one read as a patch of paint rather than part of the shape
+    g.p(cx + 11, 58, 7, H - 58, DARK);
+    g.p(cx + 11, 58, 1, H - 58, MID);
+
+    // the two rims: ember off the hearth down the fire side, cold window-light
+    // down the other. Walked along the silhouette itself, so it hugs the shape.
+    for (let y = 34; y < H; y++) {
+      let lit = -1, dark = -1;
+      for (let x = 40; x < 100; x++) {
+        const ink = insideCreature(x, y);
+        if (ink && lit < 0) lit = x;
+        if (ink) dark = x;
+      }
+      if (lit < 0) continue;
+      g.p(lit, y, 1, 1, '#f0a24a');
+      g.p(lit + 1, y, 1, 1, '#8f7a3e');
+      g.p(dark, y, 1, 1, '#4a5f6b');
+    }
+
+    function insideCreature(x, y) {
+      const dxh = x - (cx - 1), dyh = y - 45;
+      if (dxh * dxh + dyh * dyh <= 49) return true;                    // head
+      if (y >= 52 && Math.abs(x - cx) <= bodyW(y) - (y < 55 ? (55 - y) * 2 : 0)) return true;
+      if (y >= 44 && y < 48 && x >= cx - 12 && x < cx - 5) return true; // snout
+      if (y >= 34 && y < 39 && (Math.abs(x - (cx - 7)) <= 1 || Math.abs(x - (cx + 4)) <= 1)) return true;
+      return false;
+    }
+
+    // the doorjamb, cropping the right of the frame: dark against a dim wall,
+    // with one lit edge to place it in front of everything else
+    g.p(108, 0, 4, H, '#0b0806');
+    g.p(112, 0, W - 112, H, '#170f0a');
+    g.p(114, 6, 11, 60, '#20140b');
+    g.p(107, 0, 1, H, '#5b3a1c');
+  },
+
   // 20/20: the chart, getting away from you
   optotype(g, a) {
     g.p(0, 0, W, H, '#f2efe6');

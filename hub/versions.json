@@ -5,18 +5,23 @@
     "from": "VERSIONS.md"
   },
   "tokodrop": {
-    "v": "221",
-    "n": 221000,
+    "v": "223",
+    "n": 223000,
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": "31",
-    "n": 31000,
+    "v": "25",
+    "n": 25000,
+    "from": "VERSIONS.md"
+  },
+  "tokotrip": {
+    "v": "4",
+    "n": 4000,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
-    "v": "3",
-    "n": 3000,
+    "v": "2",
+    "n": 2000,
     "from": "VERSIONS.md"
   },
   "powder": {
@@ -34,9 +39,14 @@
     "n": 12000,
     "from": "cache token"
   },
+  "neonronin": {
+    "v": "2",
+    "n": 2000,
+    "from": "VERSIONS.md"
+  },
   "flashprince": {
-    "v": "3",
-    "n": 3000,
+    "v": "47",
+    "n": 47000,
     "from": "VERSIONS.md"
   },
   "eeri": {
@@ -49,9 +59,14 @@
     "n": 40000,
     "from": "VERSIONS.md"
   },
+  "kindling": {
+    "v": "5",
+    "n": 5000,
+    "from": "VERSIONS.md"
+  },
   "radiofree": {
-    "v": "37",
-    "n": 37000,
+    "v": "43",
+    "n": 43000,
     "from": "cache token"
   },
   "tinyhawk": {
@@ -60,8 +75,13 @@
     "from": "VERSIONS.md"
   },
   "tiny2d": {
-    "v": "3",
-    "n": 3000,
+    "v": "4",
+    "n": 4000,
+    "from": "VERSIONS.md"
+  },
+  "eyetest": {
+    "v": "1",
+    "n": 1000,
     "from": "VERSIONS.md"
   },
   "brand": {
