@@ -75,6 +75,12 @@ const LEADS = {
   tokodrop: ['balance', 'idea'],
   sudsjack: ['idea', 'more'],             // a rebuild is starting; ideas land now
   gameoflife: ['idea', 'more'],           // the next thing it needs is another story
+  // The two cabinets that live only on the deployed site had never been given a
+  // question, so the counter offered them the bare order — and the gate tolerates
+  // exactly one of those. A worksite platformer for a six-year-old is asked about
+  // its handling first; a VR room you sit in is asked how it FEELS to be in.
+  eeri: ['controls', 'balance'],
+  tokotrip: ['look', 'more'],
   kindling: ['look', 'idea'],             // a mobile UX layer just landed on it
                                           // and the art target is changing under
                                           // it: how it reads, and what it should

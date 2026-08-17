@@ -564,13 +564,13 @@ function readSeen() {
 
 let pendingSeen = null;
 function markFresh(versions) {
+  const now = {};
   // DECIMAL VERSIONS. `v` is the label a reader sees ("15.2") and `n` is the
   // sort key (15002). The diff has to compare on `n`: a label cannot be
   // compared, because lexically '15.10' sorts BELOW '15.9' and a version
   // that moved would show as one that had not. What is remembered is the
   // pair, so the "was vX" tooltip can still say the label rather than the
   // key. Older stored data is a bare number — coerced on read, not migrated.
-  const now = {};
   for (const [id, v] of Object.entries(versions)) {
     now[id] = { v: String(v.v), n: Number(v.n ?? v.v) };
   }
