@@ -427,10 +427,17 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   // one below, or "the fire is the measure" is only a claim
   const bands = await page.evaluate(async () => {
     const c = document.querySelector('canvas');
+    // The ruler is FIRELIGHT — red leading blue — and not total brightness.
+    // Total brightness saturates: once the camp had a blue sky, moonlit stone,
+    // a treeline and warm earth in it, nearly every pixel already cleared a
+    // sum-of-channels threshold and the count stopped moving with the fire
+    // (18474 → 19056 across a whole day, and the first step went DOWN). This is
+    // the second time this check has measured the wrong thing after an art
+    // pass, and both times the page was right and the ruler was wrong.
     const lit = () => {
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
       let n = 0;
-      for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 60) n++;
+      for (let i = 0; i < d.length; i += 4) if (d[i] - d[i + 2] > 40 && d[i] > 60) n++;
       return n;
     };
     const out = [];

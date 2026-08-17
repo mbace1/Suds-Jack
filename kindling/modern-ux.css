@@ -312,3 +312,93 @@ body {
   .bm-goal-choice .bm-task-icon { width: 44px; height: 44px; }
   .bm-small-action { min-width: 54px; padding-left: 6px; padding-right: 6px; }
 }
+/* ── THE UI KIT, from the approved sheets ────────────────────────────────
+   `art-src/approved/SHEETS.md` §4. The kit is LEATHER AND FELT, not glass:
+   every panel is a dark stitched plate with a dashed stitch line inset from
+   its edge, and the type on top stays clean — "button surfaces should be
+   comparatively clean and restrained" is the kit's own note, so the craft
+   texture lives on the plate and never on the words.
+
+   All of it is additive: not one rule here needs a DOM change, because the
+   stitch is a pseudo-element and the grain is a gradient. The layer stays
+   something sitting on top of the state machine rather than owning it. */
+
+:root {
+  --bm-stitch: rgba(241,227,196,.20);
+  --bm-grain: rgba(255,255,255,.022);
+}
+html[data-betterment-theme="parchment"] {
+  --bm-stitch: rgba(60,44,28,.26);
+  --bm-grain: rgba(0,0,0,.025);
+}
+
+/* the felt grain: two crossed hairline gradients, which at this weight is a
+   texture you feel rather than see. Anything stronger fights the scene. */
+.bm-hud-block, .bm-settings, .bm-card, .bm-goal-choice, .bm-current-goal,
+.bm-nav, .bm-companion-card, .bm-page {
+  background-image:
+    repeating-linear-gradient(45deg, var(--bm-grain) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, var(--bm-grain) 0 2px, transparent 2px 4px);
+}
+
+/* THE STITCH. A dashed line inset from the panel edge — the single detail that
+   makes the whole kit read as hand-assembled rather than as a dark rectangle
+   with rounded corners. It is decorative, so it is hidden from assistive tech
+   and it never intercepts a tap. */
+.bm-hud-block, .bm-settings, .bm-card, .bm-goal-choice, .bm-current-goal,
+.bm-companion-card { position: relative; }
+.bm-hud-block::after, .bm-settings::after, .bm-card::after,
+.bm-goal-choice::after, .bm-current-goal::after, .bm-companion-card::after {
+  content: ""; position: absolute; inset: 4px;
+  border: 1px dashed var(--bm-stitch);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* the goal row's icon tile: the kit puts a coloured, stitched square on the
+   left of every goal, and it is what stops a list of goals being a list of
+   text */
+.bm-task-icon, .bm-find-mark, .bm-mini-icon, .bm-nav-icon {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--bm-stitch);
+}
+
+/* the progress row: five nodes on a connector, cold when empty and warm when
+   filled, with the fire mark at the head — the sheet draws it as beads on a
+   string rather than as a bar, and beads are countable at a glance */
+.bm-progress-track { border-radius: 999px; }
+.bm-progress-seg {
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--bm-stitch);
+}
+
+/* primary surfaces stay warm and stitched; a disabled one is DESATURATED and
+   still present, never removed — the kit draws every button twice for exactly
+   this reason, and a control that vanishes is a control the user has to
+   re-find */
+.bm-send, .bm-library-add, .bm-big {
+  border-radius: 12px;
+  box-shadow: 0 3px 0 var(--bm-shadow), inset 0 0 0 1px var(--bm-stitch);
+}
+.bm-send[disabled], .bm-big[disabled], .bm-library-add[disabled] {
+  filter: saturate(.35);
+  box-shadow: 0 2px 0 var(--bm-shadow), inset 0 0 0 1px var(--bm-stitch);
+}
+
+/* the bottom navigation is one plate carrying five items, so the stitch runs
+   round the plate and not round each item.
+   NOTE: no `position: relative` here. `.bm-nav` is `position: fixed`, and a
+   later rule of equal specificity setting `relative` silently un-fixes it —
+   the nav drops into the document flow at the bottom of the page and lands on
+   top of the goal list. A fixed element is already a containing block for its
+   own pseudo-elements, so the rule bought nothing and cost the whole layout. */
+.bm-nav::after {
+  content: ""; position: absolute; inset: 4px 6px;
+  border: 1px dashed var(--bm-stitch);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* Nothing above may move under `prefers-reduced-motion` — it does not animate,
+   and that is deliberate: the craft in this kit is texture, not motion. The
+   scene is where this app is allowed to move. */
