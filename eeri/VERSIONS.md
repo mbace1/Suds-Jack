@@ -1,5 +1,24 @@
 # EERI — versions
 
+## v15.17 — 2026-08-17 — Worlds 3 and 4 get their second art pass (still hidden)
+
+PR #276: `world34-dressing.js` rebuilt gameplay-aware — the Grove and the
+Night Shift dressed around what the rooms actually ask you to do, rather
+than decorated evenly.
+
+**Nothing player-visible changes and it is NOT deployed.** Both worlds are
+still undressed at the LAYER level — no `grove` or `nightshift` layer set
+exists in the manifest — so v15.15's rule keeps them out of the menu and
+out of the run. Looked at through a deep link, `3-1 THE CUT BANK` is
+honest greybox: flat tree discs and a root feature against a bare sky,
+because a world's backdrop is five painted planes and those are the art
+lane's next item, not this.
+
+That is the right order. What this PR moves is the playfield furniture,
+which is the half that can be built before the paintings exist.
+
+Gates: rooms 147 / world34 pass / **smoke 282** (×1.5) / fx 31 / dev-menu 30.
+
 ## v15.16 — 2026-08-16 — the smoke gate stops lying about the machine (test only)
 
 **Not a release — nothing shipped changes.** `hub/versions.json` is left at

@@ -14,7 +14,7 @@ import {
   machine, robot, hopper, roller, swingBall, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, hoist,
   boltRun, GROUND,
-} from './parts.js?v=26';
+} from './parts.js?v=27';
 
 // Four quiet 25-bolt blocks = exactly 100. Keeping the breadcrumb count
 // mechanically boring is intentional in a greybox: playtests should be about
