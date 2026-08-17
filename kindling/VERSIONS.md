@@ -1,5 +1,40 @@
 # Kindling — versions
 
+## v5 — 2026-08-16
+
+**The pivot to the ruin — first draft.** The cozy hut is retired (owner direction);
+the world is a moonlit dark-fantasy ruin with a bonfire in it. What did not change
+is the thing underneath: no score, and what you get for looking after yourself is
+still LIGHT, in the same five bands.
+
+- **Two ramps, one subtraction.** Everything is painted from a COLD ramp and
+  warmed toward the fire by `lightAt`. The environment is moonlit; the fire is the
+  only warm thing in it. Paint the stone warm to begin with and the picture goes
+  flat, which is what the first attempt did.
+- **Four planes**: sky (with a moon opposite the fire, and stars from the date) ·
+  far treeline and a broken tower · the ruin — two wall sections with a COLLAPSE
+  between them, a free-standing arch, the ledges, the gate · the fire, the ground
+  and the companion · and a cropped fallen column and bracken in front of it all.
+- **The gate still keeps the promise.** A full fire reaches the far wall and lights
+  the iron, because "a good day shows you the way out" has to be visible or it is
+  not a promise. The first cut left eight warm pixels there and the gate might as
+  well not have existed.
+- **The five-goal target is settled** (owner): the day's denominator stays five
+  however many goals are configured. Recorded in `BETTERMENT_OWNER_DIRECTION.md`.
+
+Three passes, and the honest state of it: the cold/warm split, the bonfire, the
+moon, the gate reveal and the layered foreground read. The RUINED ARCHITECTURE does
+not yet — the free arch is a thin hoop rather than masonry with mass, the wall is so
+dark that the ledges float, and the banner is a red smear behind them. Each of those
+is a composition question, and this project's method for those is a reference from
+the owner rather than a fourth guess from me.
+
+Gate notes: the smoke gate's brightness ruler was re-aimed. It measured TOTAL
+brightness, which was right for a dark interior and wrong for a moonlit ruin where
+the sky is always lit — a day going from coals to a full fire moved it 1.3×. It now
+counts WARM pixels (red leading blue), which measures the firelight the design
+actually promises: 584 → 3289 across a day.
+
 ## v4 — 2026-08-16
 
 **The mobile-first UX layer** (PR #267), merged onto the room work. The v2/v3 care

@@ -584,12 +584,18 @@ roadmap of future experiences.
 ### Kindling (`kindling/`)
 **A betterment game in Finch's shape, made small enough to be honest.** Finch's loop
 taken at its word: you tick off the small real things you actually did, they become
-**kindling**, the kindling keeps a fire, and the fire is the light you see the room by.
+**kindling**, the kindling keeps a fire, and the fire is the light you see the world by.
+**The setting pivoted at v5** (owner direction, 2026-08-16): the cozy hut is retired and
+the scene is a **moonlit dark-fantasy ruin** — bonfire, broken wall with a collapse in
+it, a free-standing arch, a gate in the far wall, forest behind. The loop underneath is
+untouched, and the scheme's one idea got sharper rather than changing: everything is
+painted from a COLD ramp and warmed toward the fire, because the world is cold and the
+fire is the only warm thing in it. The ruined architecture is still first-draft.
 Canvas 2D at 192×128, no build step, no image assets, English only for now.
 **The light is the whole reward, and it is a MEASURE** — `lightAt()` in `js/room.js`
-is one falloff out of the hearth whose reach is the day's tally, so a bad day is coals
-and forty pixels of floor while a full one reaches the shelf, the woodpile and the far
-wall. That is why *everything* the game gives you is a thing that becomes visible
+is one falloff out of the bonfire whose reach is the day's tally, so a bad day is coals
+and forty pixels of flagstone while a full one reaches the ledges, the branch pile and
+the gate. That is why *everything* the game gives you is a thing that becomes visible
 rather than a number: the shelf fills permanently with what the creature carries home,
 the woodpile is your unspent kindling drawn as sticks, and the **door on the far wall
 only exists on a full fire** — the thing a good day reveals is the way out of the room.
