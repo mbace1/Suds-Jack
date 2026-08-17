@@ -124,6 +124,14 @@ export const GLYPHS = {
   down:   () => SVG(F.dig + TICK.down),
   jump:   () => SVG(F.jump),
   action: () => SVG(F.ride),
+  // THE MENU is the one control that is not a thing Eeri does — it is a
+  // thing the PLAYER does, so it is the only glyph here that is a symbol
+  // rather than a picture of him. Two bars: the pause mark every machine
+  // in this house uses, which is also what the drawn SELECT/START pills
+  // sit under on the plate.
+  menu:   () => SVG(
+    '<rect x="20" y="16" width="9" height="32" rx="3" fill="currentColor"/>' +
+    '<rect x="35" y="16" width="9" height="32" rx="3" fill="currentColor"/>'),
 };
 
 let sheet = null;   // set by useGlyphSheet() when painted art ships

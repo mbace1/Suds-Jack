@@ -9,25 +9,28 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=16';
-import { Input } from './input.js?v=16';
-import { Level, ROOMS, LAB } from './level.js?v=16';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=29';
+import { Input } from './input.js?v=29';
+import { Level, ROOMS, LAB } from './level.js?v=29';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=16';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=16';
-import { Camera } from './camera.js?v=16';
-import { buildKidModel, Kid, Player } from './kid.js?v=16';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=16';
-import { buildCraneModel, Crane } from './crane.js?v=16';
-import { Robot, SteamVent } from './robots.js?v=16';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=16';
-import { WreckingBall } from './hazards.js?v=16';
-import { AudioKit } from './audio.js?v=16';
-import { loadManifest, getModel, getPiece } from './assets.js?v=16';
-import { craftMat, craftBox } from './craft.js?v=16';
-import { t as tr } from './lang.js?v=16';
-import { showIntro } from './intro.js?v=16';
+} from './pieces.js?v=29';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=29';
+import { Camera } from './camera.js?v=29';
+import { buildKidModel, Kid, Player } from './kid.js?v=29';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=29';
+import { buildCraneModel, Crane } from './crane.js?v=29';
+import { Robot, SteamVent } from './robots.js?v=29';
+import { Hoist } from './hoist.js?v=29';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=29';
+import { WreckingBall } from './hazards.js?v=29';
+import { AudioKit } from './audio.js?v=29';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=29';
+import { craftMat, craftBox } from './craft.js?v=29';
+import { t as tr } from './lang.js?v=29';
+import { showIntro } from './intro.js?v=29';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=29';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=29';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -42,14 +45,64 @@ async function boot() {
   //
   // `?skip` walks past it, because the smoke gate and the playthrough bot
   // are not testing the title screen and would both stall on a button.
+  //
+  // THE MANIFEST IS READ FIRST, and that is not an optimisation — it is the
+  // fix for a bug that hid the logo completely. `showIntro()` asks
+  // `uiAsset('logo')` for the painted mark, and `uiAsset` reads a manifest
+  // that was still null this early, so it returned null EVERY time and the
+  // intro silently fell back to its code-drawn wordmark. The logo has been
+  // live since PR #236 and had never once been seen. The manifest is a
+  // small JSON and the heavy art still streams behind the title, so nothing
+  // is lost by knowing what the assets are before drawing the first screen.
   const skipIntro = new URLSearchParams(location.search).has('skip');
+  if (!skipIntro) await loadManifest();
   const introDone = skipIntro ? Promise.resolve() : showIntro();
 
   // renderer: clean edges, no post stack (ART_BRIEF §3.4)
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
   document.getElementById('game').appendChild(renderer.domElement);
+
+  // 16:9, ALWAYS (owner, 2026-08-15). A level is composed — the reach
+  // budget, the camera pull-backs, where a hazard sits relative to the lip
+  // you read it from — and all of it is composed at one shape. Letting the
+  // viewport dictate the aspect means a tall phone shows less of the room
+  // ahead than a laptop does, so the same jump is a different question on
+  // different hardware. The stage is the picture; the rest of the window is
+  // the room it hangs in, and on a phone the pad lives there.
+  const STAGE = 16 / 9;
+  function fitStage() {
+    const vw = innerWidth;
+    // THE PAD IS NOT ON THE PICTURE. If a control plate is up it owns the
+    // bottom of the screen outright and the stage fits into what is left —
+    // the arcade arrangement, screen above panel. A 16:9 stage that then
+    // has a control strip laid over its lower third is not a 16:9 stage.
+    const pad = document.getElementById('pad');
+    const padH = pad && getComputedStyle(pad).display !== 'none'
+      ? Math.round(pad.getBoundingClientRect().height) : 0;
+    const vh = Math.max(120, innerHeight - padH);
+    // 16:9 IS A LANDSCAPE RULE (owner, 2026-08-15: "aimed at horizontal
+    // mobile, not vertical"). Held sideways the picture is the whole of the
+    // screen and its shape is the composition, so it is pinned. Held
+    // upright the picture is a WINDOW above the pad — there is no 16:9 to
+    // preserve there, and letterboxing a portrait phone twice over (bars
+    // beside a picture that already has the pad below it) wastes the only
+    // dimension that room has.
+    let w = vw, h = Math.round(vw / STAGE);
+    if (innerHeight > innerWidth) { w = vw; h = vh; }        // portrait: fill it
+    else if (h > vh) { h = vh; w = Math.round(vh * STAGE); }
+    const el = renderer.domElement;
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.left = Math.round((vw - w) / 2) + 'px';
+    el.style.top = Math.round((vh - h) / 2) + 'px';
+    renderer.setSize(w, h, false);
+    document.documentElement.style.setProperty('--stage-h', h + 'px');
+    document.documentElement.style.setProperty('--stage-w', w + 'px');
+    document.documentElement.style.setProperty('--stage-top', el.style.top);
+    return { w, h };
+  }
+  const stage0 = fitStage();
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(PAL.SKY);
@@ -60,15 +113,20 @@ async function boot() {
   key.position.set(-14, 22, 18);
   scene.add(key);
 
-  const camera = new THREE.PerspectiveCamera(FOV, innerWidth / innerHeight, 0.1, 220);
+  // the camera's aspect is the STAGE's, not the window's — that is the
+  // whole point of fixing it
+  const camera = new THREE.PerspectiveCamera(FOV, STAGE, 0.1, 220);
+  camera.aspect = stage0.w / stage0.h;
   addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
+    const { w, h } = fitStage();
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
   });
 
   const input = new Input();
-  input.bindButtons({ tL: 'left', tR: 'right', tU: 'up', tD: 'down', tJ: 'jump', tA: 'action' });
+  input.bindButtons({ tL: 'left', tR: 'right', tU: 'up', tD: 'down', tJ: 'jump', tA: 'action',
+    tSel: 'menu', tSt: 'menu' });
+  input.bindStick('stick');   // plated: one zone over the drawn d-pad
 
   // the noise waits for a gesture — browsers will not start it otherwise
   const audio = new AudioKit();
@@ -77,8 +135,59 @@ async function boot() {
   addEventListener('pointerdown', wake, { once: true });
 
   // ---- the persistent world: diorama + cast -------------------------------
+  // (already read above when the title screen needed the logo; harmless and
+  // required on the `?skip` path, which never took that branch)
   await loadManifest();
-  const diorama = await buildLayers(scene, 'groundworks', REDUCED);
+
+  // THE TOUCH PLATES (art lane, PR #236). The controls are a drawn
+  // backboard and the DOM buttons are transparent hit areas over it — a
+  // Game Boy DMG face in portrait, an arcade control-panel strip in
+  // landscape, because a handheld and a cabinet are different objects.
+  //
+  // `.plated` goes on <html> only once an image has actually DECODED. If
+  // the art 404s or the manifest still calls it a placeholder, the drawn
+  // circle buttons stay and the game is still playable — the same rule the
+  // rest of the asset seam runs on.
+  {
+    const plates = [['padP', 'padplate_portrait'], ['padL', 'padplate_landscape']];
+    let loaded = 0;
+    await Promise.all(plates.map(([id, key]) => new Promise((done) => {
+      const src = uiAsset(key);
+      const img = document.getElementById(id);
+      if (!src || !img) return done();
+      img.onload = () => { loaded++; done(); };
+      img.onerror = () => { console.warn(`[eeri] pad plate "${key}" did not load — keeping the drawn buttons`); done(); };
+      img.src = src;
+    })));
+    if (loaded === plates.length) document.documentElement.classList.add('plated');
+    // the plate's height is what the stage fits around, and it is only real
+    // once the image has laid out — so measure again here
+    requestAnimationFrame(() => { const f = fitStage(); camera.aspect = f.w / f.h; camera.updateProjectionMatrix(); });
+  }
+  // WHICH WORLD A LEVEL IS IN. Three levels to a world (DESIGN §4.2), so
+  // this is arithmetic rather than a table — until a world wants a name
+  // that is not its backdrop's, at which point it becomes one.
+  const WORLDS = ['groundworks', 'pipeworks', 'grove', 'nightshift'];
+  const worldOf = (i) => WORLDS[Math.floor(i / 3)] || 'groundworks';
+
+  // WHAT IS FINISHED IS WHAT THE MANIFEST HAS PAINTED. Worlds 3 and 4 are
+  // built and structurally proved (`test/world34.mjs`) but UNDRESSED — no
+  // layer set exists for them yet — and greybox is not something to hand a
+  // six-year-old through a menu. So the game ends at the last room whose
+  // world has live art, and the moment the art lane flips a world's layers
+  // to `live` those rooms appear on their own. No flag to remember, and no
+  // second list to keep in step: the seam already knows.
+  const dressed = (w) => {
+    const set = manifestData()?.layers?.[w];
+    return !!set && Object.values(set).every((e) => e.status === 'live');
+  };
+  const SHOWN = (() => {
+    let n = 0;
+    while (n < ROOMS.length && dressed(worldOf(n))) n++;
+    return Math.max(1, n);
+  })();
+
+  let diorama = await buildLayers(scene, worldOf(0), REDUCED);
 
   const kid = new Kid(await getModel('eeri', buildKidModel));
   scene.add(kid.group, kid.shadow);
@@ -112,7 +221,7 @@ async function boot() {
   const hubGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.14, 6);
 
   const SITES = [...ROOMS, LAB];
-  const LAST_LEVEL = ROOMS.length - 1;
+  const LAST_LEVEL = SHOWN - 1;   // the last DRESSED room — see SHOWN above
 
   async function buildSite(i) {
     const level = new Level(SITES[i]);
@@ -140,6 +249,11 @@ async function boot() {
     // the small stuff: robots patrol a span the kit guaranteed is floor,
     // vents breathe on their own clock
     const robots = def.robots.map((r) => new Robot(group, level, r));
+    // THE HOISTS: entities, because a moving floor cannot be a tile. They
+    // register with the level so the player's platform pass can find them —
+    // one list, filled here, rather than the player reaching into `site`.
+    const hoists = (def.hoists || []).map((h) => new Hoist(group, level, h));
+    level.platforms = hoists;
     const vents = def.hazards.filter((h) => h.type === 'steam')
       .map((h) => new SteamVent(group, level, h.x));
 
@@ -231,15 +345,45 @@ async function boot() {
     scene.add(group);
     return {
       def, level, group, bank, girder, wall, ball, bolts, golden,
-      robots, vents, machine, checkpoint, flag,
+      robots, vents, machine, checkpoint, flag, hoists,
     };
   }
 
   // The lab is buildable but NOT in the sequence: SITES is what a room index
   // means, ROOMS is what the game runs through. One derived constant rather
   // than two lists that can disagree — the whole reason the parts kit exists.
-  let siteIndex = 0;
-  let site = await buildSite(0);
+  // THE ADDRESS (js/levelid.js). `/eeri/#eeri-1-2` opens the second level of
+  // the first world — Mario's scheme, because it is the one a parent already
+  // reads. A fragment that names nothing lands on 1-1 rather than a black
+  // screen, and so does one naming a level that is not built YET: the game
+  // grows three levels at a time, so the address space is the whole twelve
+  // from the start and the rooms arrive later.
+  const fromHash = () => {
+    const p = parseSlug(location.hash);
+    if (!p) return 0;
+    if (p.lab) return ROOMS.length;              // SITES[ROOMS.length] is LAB
+    return p.index < ROOMS.length ? p.index : 0;
+  };
+  // `replaceState`, never `location.hash =` — assigning fires `hashchange`
+  // back at the handler that just moved the level, and the game reloads the
+  // room it is already standing in. Same trap gameoflife documents.
+  const setHash = (i) => {
+    const want = '#' + slugOf(i, ROOMS.length);
+    if (location.hash !== want) history.replaceState(null, '', want);
+  };
+
+  let siteIndex = fromHash();
+  // THE BACKDROP HAS TO MATCH THE ROOM YOU BOOT INTO, not room 1. The
+  // diorama is built above, before the address is read — which is right,
+  // because it is the persistent layer — but a deep link (or the menu's
+  // level jump on a reload) can start you in another world, and only
+  // goSite() swaps it. `/eeri/#eeri-2-1` came up in World 1's site.
+  if (worldOf(siteIndex) !== diorama.world) {
+    diorama.dispose();
+    diorama = await buildLayers(scene, worldOf(siteIndex), REDUCED);
+  }
+  let site = await buildSite(siteIndex);
+  setHash(siteIndex);
 
   const player = new Player(site.level, site.def.spawn.kid, kid);
   // `exc` is whatever machine this room parked here — an excavator, or a
@@ -256,7 +400,14 @@ async function boot() {
     boltsEl.textContent = `⬡ ${collected}/${site.def.bolts.length}`;
     goldEl.textContent = `✦ ${goldenGot}/${site.def.golden.length}`;
   };
-  siteEl.textContent = site.def.name;
+  // the address beside the name, so what is on screen is what you can paste
+  // to somebody: "1-2 · LEVEL 2 — THE SCAFFOLD"
+  const setSiteName = () => {
+    const tag = labelOf(siteIndex, ROOMS.length);
+    siteEl.textContent = `${tag} · ${site.def.name}`;
+    document.title = `EERI ${tag} — ${site.def.name}`;
+  };
+  setSiteName();
   const setHint = (s) => { if (hintEl.textContent !== s) hintEl.textContent = s; };
   // ONE glyph set, for every input (DESIGN.md §5). A prompt never names a
   // key: a key name is no help to a thumb or a pad, and the on-screen
@@ -287,6 +438,7 @@ async function boot() {
     seat: tr('hSeat'),
     smash: tr('hSmash'),
     out: tr('hOut'),
+    pipe: tr('hPipe'),
   };
 
   // ---- the mode machine ---------------------------------------------------
@@ -295,6 +447,27 @@ async function boot() {
   let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
+
+  // THE PIPE (DESIGN world 2). A tube you go inside: stand at a mouth, press
+  // the action, and you come out the other end. It is a scripted move like
+  // the mount rather than a tile like the belt — a tile is a place, and a
+  // pipe is a pair of places plus the trip between them.
+  //
+  // `piping` is the trip; `pipeCool` is what stops the far mouth reading as
+  // a fresh entrance the instant you arrive and sending you straight back.
+  let piping = null, pipeT = 0, pipeCool = 0;
+  const PIPE_T = 0.55;
+  const atPipe = () => {
+    if (!player.grounded || piping || pipeCool > 0) return null;
+    for (const q of site.def.pipes || []) {
+      for (const [m, other] of [[q.a, q.b], [q.b, q.a]]) {
+        if (Math.abs(player.x - (m.c + 0.5)) < 0.7 && Math.abs(player.y - m.cy) < 0.6) {
+          return { from: m, to: other };
+        }
+      }
+    }
+    return null;
+  };
 
   const nearExc = () => !!exc
     && Math.abs(player.x - exc.x) < 2.6 && player.y > exc.y - 1 && player.y < exc.y + 2.4 && player.grounded;
@@ -365,9 +538,21 @@ async function boot() {
     scene.remove(old.group);
     dispose(old.group);
 
+    // …and the BACKDROP, if this room is in a different world. It was built
+    // once at boot while there was only one world to be in; levels 4-6
+    // played in front of World 1's site until this. Taken down before the
+    // new one goes up — six full-width planes left in the scene are not
+    // hidden by six more, the near ones are opaque.
+    const want = worldOf(i);
+    if (want !== diorama.world) {
+      diorama.dispose();
+      diorama = await buildLayers(scene, want, REDUCED);
+    }
+
     // the cast walks on: same kid, but each room's machine is the room's
     // own — a crane where a crane is the answer — and it is unmanned again,
     // beacon turning. Taming never carries between rooms.
+    setHash(i);                        // the address follows the level
     const s = site.def.spawn;
     player.level = site.level;
     player.x = s.kid.x; player.y = s.kid.y; player.vx = 0; player.vy = 0; player.mercyT = 0;
@@ -376,7 +561,7 @@ async function boot() {
     mode = 'foot'; digT = 0; slingT = 0;
     player.climbing = false;
     input.take('action'); input.take('jump');
-    siteEl.textContent = site.def.name;
+    setSiteName();
     collected = 0; goldenGot = 0;      // the counts belong to the LEVEL
     setCounts();
 
@@ -415,6 +600,28 @@ async function boot() {
       excPos: () => (exc ? { x: exc.x, y: exc.y } : null),
       hazard: () => site.ball ? { state: site.ball.state, ...site.ball.ballPos() } : { state: 'none' },
       mercy: () => player.mercyT,
+      // ---- the five the DEV PACK asked for (dev/README.md) --------------
+      // Each is one line against something the game already does, which is
+      // the whole rule for this seam: the pack reads the game, the game
+      // never learns the pack exists.
+      tame: () => { exc?.tame(); return !!exc?.tamed; },
+      dig: () => (site.bank ? site.bank.dig() : false),
+      // INVINCIBILITY is a mercy timer that never runs out rather than a
+      // second code path through damage — a real branch here would be a
+      // debugging aid that changes the thing being debugged.
+      invincible: (v) => {
+        god = v === undefined ? !god : !!v;
+        if (!god) player.mercyT = 0;
+        return god;
+      },
+      // the boxes the collisions actually use, so a hitbox preview draws
+      // the truth instead of a guess at it
+      boxes: () => [
+        { tag: 'kid', x: player.x, y: player.y, hw: player.hw, h: player.h },
+        ...(exc ? [{ tag: 'machine', x: exc.x, y: exc.y, hw: exc.hw, h: exc.h }] : []),
+        ...site.robots.filter((r) => !r.dead)
+          .map((r) => ({ tag: r.kind, x: r.x, y: r.y, hw: r.hw, h: r.h })),
+      ],
       tamed: () => !!exc?.tamed,
       bank: () => site.bank ? { remaining: site.bank.remaining, cleared: site.bank.cleared } : null,
       girder: () => site.girder ? { state: site.girder.state, carrying: !!exc?.carrying } : null,
@@ -428,13 +635,22 @@ async function boot() {
       padSeen: () => input.padSeen,
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
+      world: () => diorama.world,
       // a room change is not finished when the index flips — goSite() still
       // has to put the kid on the new spawn, so anything positioning him
       // must wait for this
       transitioning: () => transitioning,
       // the gizmo lab: buildable, never in the sequence (js/rooms.js)
       goLab: () => goSite(ROOMS.length),
-      gizmos: () => ({ belts: site.def.belts, tarps: site.def.tarps }),
+      gizmos: () => ({ belts: site.def.belts, tarps: site.def.tarps, water: site.def.water }),
+      wading: () => site.level.waterAt(player.x, player.y),
+      pipes: () => site.def.pipes || [],
+      hoists: () => site.hoists.map((h) => ({
+        x: +h.x.toFixed(2), y: +h.y.toFixed(2), hw: h.hw,
+        cy0: h.cy0, cy1: h.cy1, period: h.period,
+      })),
+      carried: () => !!player.carrier,
+      piping: () => mode === 'piping',
       // the level's own furniture, so "it is a level and not a room" is
       // something the gate can actually ask
       climbing: () => player.climbing,
@@ -477,6 +693,8 @@ async function boot() {
 
   // ---- the loop ------------------------------------------------------------
   let t = 0;
+  let god = false;          // dev: an unexpiring mercy timer, see debug.invincible
+  let padded = false;       // a real controller is in hand — see the loop
   const cam = new Camera(camera, site.def);
   cam.cut(player.x, player.y + 3);
   const clock = new THREE.Clock();
@@ -486,10 +704,54 @@ async function boot() {
     // controller first: polled in EVERY mode, not inside the play branch —
     // a pad that cannot reach the menu is a pad that cannot start the game
     input.pollGamepad();
+
+    // A PAD IN HAND MEANS NO ON-SCREEN CONTROLS (owner, 2026-08-15). The
+    // plate is a picture of a controller; holding a real one and looking at
+    // a drawn one is the same joke twice, and on a landscape phone the
+    // panel is a third of the screen. So the first pad input strips it and
+    // the stage takes the space back — and the first TOUCH puts it back,
+    // because a pad going idle is not the same as a pad going away.
+    if (input.padSeen !== padded) {
+      padded = input.padSeen;
+      document.documentElement.classList.toggle('padded', padded);
+      requestAnimationFrame(() => {
+        const f = fitStage();
+        camera.aspect = f.w / f.h;
+        camera.updateProjectionMatrix();
+      });
+    }
+
+    // THE MENU, and the pause is REAL. It gates the update half below —
+    // not merely input — because a menu that leaves the world running is
+    // how you come back to find a robot standing where you were. The clock
+    // `t` does not advance either, so nothing on a timer (the hopper's
+    // rhythm, the ball's wind-up, mercy frames) creeps while you read.
+    if (input.take('menu')) {
+      toggleMenu({
+        levels: ROOMS.slice(0, SHOWN).map((r, i) => ({ i, label: labelOf(i) })),
+        current: () => siteIndex,
+        goSite: (i) => goSite(i),
+        restart: () => goSite(siteIndex),
+        home: () => { location.href = '../'; },
+      });
+    }
+    if (menuOpen()) {
+      // …and the menu takes the pad too. A controller that can OPEN a menu
+      // and not move inside it is worse than one that cannot open it.
+      if (input.take('down')) menuMove(1);
+      if (input.take('up')) menuMove(-1);
+      if (input.take('right')) menuMove(1);
+      if (input.take('left')) menuMove(-1);
+      if (input.take('jump') || input.take('action')) menuPick();
+      renderer.render(scene, camera);
+      return;
+    }
+
     t += dt;
 
     if (!transitioning) {
     if (mode === 'foot') {
+      pipeCool = Math.max(0, pipeCool - dt);
       player.update(dt, input);
       if (exc) { if (exc.tamed) exc.update(dt, null); else exc.work(dt); }
       if (player.justJumped) audio.jump();
@@ -499,14 +761,46 @@ async function boot() {
       if (exc && unmannedStrike() && player.struck(exc.x)) { audio.splat(); cam.punch(1.1); }
 
       const near = nearExc();
+      const pipeHere = atPipe();
       setHint(cleared ? HINT.out
         : near ? HINT.near
+        : pipeHere ? HINT.pipe
         : player.climbing ? HINT.ladder
         : (site.flag && site.flag.phase >= 2 && !site.flag.raised
             && Math.abs(player.x - site.flag.x) < 12) ? HINT.flag
         : (exc && !exc.tamed && Math.abs(player.x - exc.x) < 6) ? HINT.wary
         : HINT.foot);
       if (near && input.take('action')) { startMount(); audio.mount(); }
+      else if (!near && pipeHere && input.take('action')) {
+        piping = pipeHere; pipeT = 0; mode = 'piping';
+        audio.mount();
+        input.take('jump');
+      }
+    } else if (mode === 'piping') {
+      // THE TRIP. He ducks out of sight and reappears at the far mouth —
+      // long enough to read as travel, short enough not to take the controls
+      // away for a beat that matters. He is out of the world while it runs,
+      // so nothing can touch him in transit, which is the whole reason this
+      // is a mode rather than a teleport.
+      pipeT += dt;
+      const k = Math.min(1, pipeT / PIPE_T);
+      kid.group.visible = k > 0.5;
+      if (k > 0.5) {                       // second half: out at the far end
+        player.x = piping.to.c + 0.5;
+        player.y = piping.to.cy;
+        player.vx = 0; player.vy = 0;
+      }
+      if (k >= 1) {
+        kid.group.visible = true;
+        // the far mouth is a mouth too, and would swallow him straight back
+        // on the next frame without this
+        pipeCool = 0.45;
+        piping = null;
+        mode = 'foot';
+        audio.dismount();
+        input.take('action'); input.take('jump');
+      }
+      setHint(HINT.pipe);
     } else if (mode === 'mounting') {
       moveT += dt / 0.55;
       exc.update(dt, null);
@@ -533,6 +827,7 @@ async function boot() {
       });
       player.x = exc.x; player.y = exc.y + 1; player.vx = 0; player.vy = 0;
       player.mercyT = Math.max(0, player.mercyT - dt);
+      if (god) player.mercyT = 9;   // dev: invincible, see debug.invincible
       kid.pose('ride', t);
       kid.shadow.visible = false;
       kid.group.visible = true;
@@ -632,7 +927,13 @@ async function boot() {
     if (site.flag) {
       const ev = site.flag.update(dt, mode === 'riding' && exc ? exc.x : player.x);
       if (ev === 'phase') audio.clank();
-      if (ev === 'raised' && !transitioning && siteIndex < LAST_LEVEL) {
+      // A LEVEL WITH A GATE DOES NOT AUTO-ADVANCE. The flag ends a level and
+      // the gate ends a WORLD (DESIGN §4.2), and while three levels existed
+      // those were the same moment so nothing distinguished them. With World
+      // 2 built, raising World 1's big flag advanced straight to level 4 and
+      // the gate — the world's whole curtain — became unreachable. On a gated
+      // level the flag raises and you walk out yourself.
+      if (ev === 'raised' && !transitioning && siteIndex < LAST_LEVEL && !site.def.gate) {
         audio.mount();
         runBolts += collected; runGolden += goldenGot;
         goSite(siteIndex + 1);
@@ -651,6 +952,16 @@ async function boot() {
       done.innerHTML = 'CLOCKING OUT'
         + `<span>⬡ ${runBolts + collected} · ✦ ${runGolden + goldenGot}</span>`;
       document.body.appendChild(done);
+      // …and if there is another world behind this one, the curtain is a
+      // BEAT rather than an ending: it holds, then the next site loads.
+      if (siteIndex < LAST_LEVEL) {
+        runBolts += collected; runGolden += goldenGot;
+        setTimeout(() => {
+          done.remove();
+          cleared = false;
+          goSite(siteIndex + 1);
+        }, 2600);
+      }
     }
 
     // the hazard: wakes on whoever is near, and takes the ride, not the run
@@ -674,7 +985,9 @@ async function boot() {
     const focusX = mode === 'riding' && exc ? exc.x : player.x;
     const focusY = mode === 'riding' && exc ? exc.y + 1 : player.y;
     for (const r of site.robots) {
-      r.update(dt, { x: focusX, y: focusY }, REDUCED);
+      // `grounded` is for the bucket, which wakes on a LANDING rather than
+      // on proximity — walking past a sleeping one has to stay safe
+      r.update(dt, { x: focusX, y: focusY, grounded: player.grounded }, REDUCED);
       if (mode === 'riding') {
         if (r.crush(exc.x, exc.hw)) { audio.splat(); cam.punch(0.5); }
       } else if (mode === 'foot') {
@@ -760,6 +1073,9 @@ async function boot() {
     if (!REDUCED) bg.auto(dt);
     diorama.update(dt);          // the crane traverses, the truck crosses
     if (mode !== 'riding') audio.idleLoad(0);
+    // the hoists run in EVERY mode — a lift that stopped while you were in a
+    // cab would be a lift whose cycle you could not read from the cab
+    for (const h of site.hoists) h.update(dt, REDUCED);
     site.bank?.update(dt);
     site.wall?.update(dt);
     if (exc) site.girder?.update(dt, exc);

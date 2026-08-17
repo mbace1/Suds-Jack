@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-betterment-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kindling</title>
+  <meta name="description" content="A game-like self-care companion. Keep small real-life goals, tend a fire, and help a small companion grow.">
+  <meta name="color-scheme" content="dark light">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Kindling">
+  <meta property="og:description" content="Small real-life care steps tend a fire and help your companion grow.">
+  <meta property="og:url" content="https://mbace1.github.io/Suds-Jack/kindling/">
+  <meta name="twitter:card" content="summary">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23080d13'/%3E%3Cpath d='M8 2c3 3 4 5 4 7a4 4 0 0 1-8 0c0-2 1-4 4-7z' fill='%23ef7d23'/%3E%3Cpath d='M8 7c1.4 1.5 2 2.6 2 3.6a2 2 0 0 1-4 0C6 9.6 6.6 8.5 8 7z' fill='%23fff2cf'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="modern-ux.css?v=5">
+  <link rel="stylesheet" href="modern-ux-accessibility.css?v=5">
+  <style>
+    :root { --bg:#0f0b08; --panel:#17110c; --line:#2c2118; --paper:#efe3c9; --dim:#b9ab8c; --ember:#f0a24a; --moss:#9cbf72; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { background:var(--bg); min-height:100%; }
+    body { font-family:'Courier New',ui-monospace,Menlo,monospace; color:var(--paper); display:flex; justify-content:center; padding:58px 16px 40px; font-size:14px; line-height:1.55; -webkit-text-size-adjust:100%; }
+    #app { width:100%; max-width:560px; }
+    :focus-visible { outline:2px solid var(--ember); outline-offset:3px; }
+    header h1 { font-size:18px; font-weight:400; letter-spacing:5px; text-transform:uppercase; }
+    header p,.ask,.hint,.tally,.status { color:var(--dim); }
+    .rule { height:1px; background:var(--line); margin:14px 0; }
+    .screen-wrap { position:relative; background:#000; border:1px solid var(--line); border-radius:6px; padding:5px; }
+    .pixel-screen { display:block; width:100%; height:auto; aspect-ratio:192/128; image-rendering:pixelated; margin:0 auto; }
+    .say { margin:12px 2px 0; min-height:4.6em; font-size:13px; }
+    ul { list-style:none; }
+    .sheet li { display:flex; align-items:stretch; gap:6px; }
+    .task { flex:1; display:flex; align-items:center; gap:10px; min-height:44px; padding:8px 10px; font:inherit; text-align:left; color:var(--paper); background:transparent; border:1px solid transparent; border-radius:5px; cursor:pointer; }
+    .task[aria-pressed="true"] { color:var(--moss); }
+    .drop { min-width:44px; min-height:44px; font:inherit; color:var(--dim); background:transparent; border:1px solid transparent; }
+    .add { display:flex; gap:8px; margin:14px 0 18px; }
+    .add input { flex:1; min-height:44px; padding:8px 10px; font:inherit; color:var(--paper); background:var(--panel); border:1px solid var(--line); border-radius:5px; }
+    .acts,.moods { display:flex; flex-wrap:wrap; gap:8px; }
+    .btn,.mood { min-height:44px; padding:10px 14px; font:inherit; color:var(--paper); background:var(--panel); border:1px solid var(--line); border-radius:5px; cursor:pointer; }
+    .link { min-height:0; padding:0; font:inherit; color:var(--ember); background:none; border:0; text-decoration:underline; }
+    .journal .days { margin-top:16px; }
+    .journal li { margin-bottom:18px; }
+    .date { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--ember); }
+    .status { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; }
+    .status button.bit { min-height:44px; }
+  </style>
+</head>
+<body>
+  <main id="app">
+    <header>
+      <h1>Kindling</h1>
+      <p>Small steps. Tend the fire. Grow together.</p>
+    </header>
+    <div class="rule"></div>
+    <div id="screen" class="screen-wrap"></div>
+    <p id="say" class="say" aria-live="polite"></p>
+    <div id="panel"></div>
+    <div class="rule"></div>
+    <div id="status" class="status"></div>
+  </main>
+  <script type="module" src="js/main.js?v=5"></script>
+  <script type="module" src="js/modern-ux.js?v=5"></script>
+  <script type="module" src="../hub/shell.js?v=17"></script>
+  <script>
+    if ('serviceWorker' in navigator
+        && (location.protocol === 'https:' || location.search.includes('sw=1'))) {
+      addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

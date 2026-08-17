@@ -11,9 +11,9 @@
 // and the danger read off the same number and cannot disagree.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=16';
-import { craftMat, craftBox } from './craft.js?v=16';
-import { CLOCK } from './parts.js?v=16';
+import { PAL, mix } from './palette.js?v=29';
+import { craftMat, craftBox } from './craft.js?v=29';
+import { CLOCK } from './parts.js?v=29';
 
 // The telegraph clock is DESIGN §4.1's, and it lives in parts.js so the room
 // prover can hold it to the 1.0s floor — these three were all under it.
@@ -28,8 +28,16 @@ const SEE = 5.2, WALK = 1.5, LUNGE_SPEED = 6.4;
 //            to stomp: landing on one bounces you off without killing it,
 //            which is the game saying "this one you jump"
 //   skitter  a PROVOCATION test — the original: patrol, notice, wind, lunge
+//   bucket   a PROXIMITY test — an abandoned digger bucket asleep on the
+//            floor. It does not patrol and it cannot be provoked from
+//            across the room: it wakes when you LAND near it, lifts its
+//            head for half a second, chases for two, then gives up and
+//            settles. The answer is always to go round or to wait, never
+//            to outrun it — a pursuer that never stops is a different
+//            game, and not this one (DESIGN §4.1).
 const HOP_CYCLE = CLOCK.hopper.cycle, HOP_RISE = CLOCK.hopper.rise, HOP_CROUCH = CLOCK.hopper.crouch;
 const ROLL_SPEED = CLOCK.roller.speed;
+const BKT = CLOCK.bucket;
 
 // Every surface here goes through craftMat + craftBox — painted balsa, the
 // same material the machines wear (§3.3, ART_TARGET §0.05). A prop built
@@ -45,7 +53,21 @@ function buildRobot(kind) {
   const legs = [];
   let eye;
 
-  if (kind === 'roller') {
+  if (kind === 'bucket') {
+    // A DIGGER BUCKET, and the silhouette has to say "this is machinery
+    // that fell off a machine" from across the screen: a wide steel scoop
+    // with teeth along its lip, sitting low. Asleep it reads as debris,
+    // which is the point — the tell is the head lifting, not the shape.
+    box(0.86, 0.42, 0.66, PAL.STEEL[1], 0, 0.21, 0);          // the scoop
+    box(0.9, 0.12, 0.7, PAL.STEEL[2], 0, 0.44, 0);            // the lip
+    for (const tx of [-0.3, -0.1, 0.1, 0.3]) {                // teeth
+      box(0.1, 0.16, 0.12, PAL.STEEL[3], tx, 0.52, 0.3);
+    }
+    box(0.3, 0.26, 0.34, PAL.MACHINE_DK, 0.1, 0.6, 0);        // the head
+    // two stubby feet, so it can be seen to move rather than slide
+    for (const lx of [-0.24, 0.24]) legs.push(box(0.16, 0.18, 0.2, PAL.STEEL[2], lx, 0.09, 0));
+    eye = box(0.1, 0.1, 0.06, PAL.HAZARD, 0.24, 0.63, 0.16);
+  } else if (kind === 'roller') {
     // a mini road roller: WIDE and LOW, and the silhouette is the drum. It
     // has to read as "you cannot land on this" from across the screen.
     box(0.9, 0.26, 0.56, PAL.MACHINE_DK, 0, 0.4, 0);                // deck
@@ -99,8 +121,12 @@ export class Robot {
     this.group = built.group;
     this.eye = built.eye;
     this.legs = built.legs;
-    this.hw = this.kind === 'roller' ? 0.46 : this.kind === 'hopper' ? 0.24 : 0.34;
-    this.h = this.kind === 'roller' ? 0.5 : this.kind === 'hopper' ? 1.0 : 0.7;
+    this.hw = this.kind === 'roller' ? 0.46 : this.kind === 'hopper' ? 0.24
+      : this.kind === 'bucket' ? 0.44 : 0.34;
+    this.h = this.kind === 'roller' ? 0.5 : this.kind === 'hopper' ? 1.0
+      : this.kind === 'bucket' ? 0.72 : 0.7;
+    // asleep until landed near — see update()
+    if (this.kind === 'bucket') this.state = 'sleep';
     // the roller is the one you jump rather than land on
     this.stompable = this.kind !== 'roller';
     this.group.position.set(this.x, this.y, 0);
@@ -162,6 +188,50 @@ export class Robot {
       return;
     }
 
+    // ---- the bucket: asleep until you land beside it ---------------------
+    // WAKING IS A LANDING, not a proximity radius, and that is the whole
+    // design of it: walking past a sleeping bucket has to be safe, or the
+    // beat becomes "never go near the pipe mouth" and the pipe stops being
+    // the way across. `target.landed` is the frame the kid touches down.
+    if (this.kind === 'bucket') {
+      const heard = Math.abs(dx) < BKT.hear && Math.abs(target.y - this.y) < 2.4;
+      // the landing EDGE, computed here rather than asked for: main.js
+      // passes the kid's grounded flag and this is the frame it turns true
+      const landed = !!target.grounded && this.wasAir === true;
+      this.wasAir = !target.grounded;
+      if (this.state === 'sleep') {
+        if (heard && landed) { this.face = Math.sign(dx) || this.face; this.go('wake'); }
+      } else if (this.state === 'wake') {
+        // the head lifts and the lamp comes up: the telegraph, and it does
+        // not move an inch during it
+        if (this.t >= BKT.wake) this.go('chase');
+      } else if (this.state === 'chase') {
+        this.face = Math.sign(dx) || this.face;
+        this.x += this.face * BKT.speed * dt;
+        this.x = Math.max(this.c0 - 0.5, Math.min(this.c1 + 1.5, this.x));
+        if (this.t >= BKT.chase) this.go('settle');
+      } else if (this.state === 'settle') {
+        if (this.t >= BKT.settle) this.go('sleep');
+      }
+      this.y = this.deck !== null ? this.deck : this.level.groundTop(this.x, this.y + 1.2);
+      this.group.position.set(this.x, this.y, 0);
+      this.group.rotation.y = this.face > 0 ? 0 : Math.PI;
+      // asleep it sits low and dark; awake it stands up and the lamp burns
+      const up = this.state === 'sleep' ? 0.86 : this.state === 'wake' ? 0.94 + Math.min(1, this.t / BKT.wake) * 0.06 : 1;
+      this.group.scale.y = up;
+      const lit = this.state === 'wake' || this.state === 'chase';
+      const blink = reduced ? 1 : (Math.sin(this.t * 22) * 0.5 + 0.5);
+      this.eye.material.color.set(this.state === 'sleep' ? PAL.STEEL[3]
+        : lit ? mix(PAL.HAZARD, '#ffffff', blink * 0.7) : PAL.HAZARD);
+      if (!reduced && this.state === 'chase') {
+        for (let i = 0; i < this.legs.length; i++) {
+          this.legs[i].position.y = 0.09 + Math.sin(this.t * 18 + i * Math.PI) * 0.04;
+        }
+      }
+      this.shadow.position.set(this.x, this.y + 0.02, 0);
+      return;
+    }
+
     if (this.state === 'patrol') {
       this.x += this.face * WALK * dt;
       if (this.x < this.c0) { this.x = this.c0; this.face = 1; }
@@ -207,6 +277,13 @@ export class Robot {
   // timing and spacing instead, and the way past both is over the top.
   hits(x, y, hw, h) {
     if (this.shrugT > 0) return false;
+    if (this.kind === 'bucket') {
+      // ASLEEP IS HARMLESS. Otherwise the tell is decoration: something you
+      // cannot walk past teaches nothing by lifting its head first.
+      if (this.state === 'sleep' || this.state === 'wake') return false;
+      return !this.dead && Math.abs(x - this.x) < hw + this.hw
+        && y < this.y + this.h && y + h > this.y;
+    }
     if (this.kind === 'hopper' || this.kind === 'roller') {
       return !this.dead && Math.abs(x - this.x) < hw + this.hw
         && y < this.y + this.h && y + h > this.y;

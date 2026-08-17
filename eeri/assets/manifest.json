@@ -1,5 +1,5 @@
 {
-  "v": 24,
+  "v": 25,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -7,7 +7,7 @@
       "status": "live",
       "rig": "skinned",
       "height": 1.62,
-      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES \u2014 Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md. v4 adds climb/stomp/hurt from the Meshy library (ids 438/470/178) \u2014 the two new verbs finally animate. New file name per the versioned-URL rule.",
+      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES — Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md. v4 adds climb/stomp/hurt from the Meshy library (ids 438/470/178) — the two new verbs finally animate. New file name per the versioned-URL rule.",
       "clips": [
         "idle",
         "walk",
@@ -22,7 +22,7 @@
     "excavator": {
       "file": "3d/excavator_v1.glb",
       "status": "live",
-      "_note": "STILL v1, deliberately. `3d/excavator_v2.glb` is the owner's 2026-08 reference-sheet excavator (face on the windscreen), cut and joint-verified \u2014 but excavator_v1 was BUILT to be interchangeable with the code placeholder: same pivots, same rest pose, same overall size, so game code cannot tell which it got (boom at (0.35,0.28) off house, stick at (1.58,0) off boom, bucket at (1.02,0) off stick). v2 is a different machine with its own proportions, so those offsets no longer describe it and the girder pickup misses. Swapping needs js/excavator.js's constants retuned to the asset, or geometry metadata on the entry \u2014 either way gameplay-lane work, so it is handed over rather than done unilaterally. Rig contract and drive ranges: art-src/machines/RIGS.md and art-src/machines/drive.js.",
+      "_note": "STILL v1, deliberately. `3d/excavator_v2.glb` is the owner's 2026-08 reference-sheet excavator (face on the windscreen), cut and joint-verified — but excavator_v1 was BUILT to be interchangeable with the code placeholder: same pivots, same rest pose, same overall size, so game code cannot tell which it got (boom at (0.35,0.28) off house, stick at (1.58,0) off boom, bucket at (1.02,0) off stick). v2 is a different machine with its own proportions, so those offsets no longer describe it and the girder pickup misses. Swapping needs js/excavator.js's constants retuned to the asset, or geometry metadata on the entry — either way gameplay-lane work, so it is handed over rather than done unilaterally. Rig contract and drive ranges: art-src/machines/RIGS.md and art-src/machines/drive.js.",
       "nodes": [
         "house",
         "boom",
@@ -46,7 +46,7 @@
     "crane": {
       "file": "3d/crane_v1.glb",
       "status": "placeholder",
-      "_note": "Rigged and verified but held at PLACEHOLDER on purpose. js/crane.js drives `arm` and `ball` and was written against the code-built crane's exact numbers \u2014 arm at (L,0,0) along the boom's local x, a fixed drop \u2014 the way excavator_v1 was deliberately built to match its placeholder pivot for pivot so game code could not tell which it got. This mesh has its own proportions, so the ball stops short of the brick wall and the wrecking sequence fails. Making them agree means changing geometry or changing crane.js constants; crane.js is not the art lane's file, so this is handed over rather than tuned unilaterally. Node names already match (sheave->arm, hook->ball); it is the reach that differs. The hoist rope is not in the mesh \u2014 image-to-3D will not model a 2px thread \u2014 so the game draws it from `arm` to `ball`.",
+      "_note": "Rigged and verified but held at PLACEHOLDER on purpose. js/crane.js drives `arm` and `ball` and was written against the code-built crane's exact numbers — arm at (L,0,0) along the boom's local x, a fixed drop — the way excavator_v1 was deliberately built to match its placeholder pivot for pivot so game code could not tell which it got. This mesh has its own proportions, so the ball stops short of the brick wall and the wrecking sequence fails. Making them agree means changing geometry or changing crane.js constants; crane.js is not the art lane's file, so this is handed over rather than tuned unilaterally. Node names already match (sheave->arm, hook->ball); it is the reach that differs. The hoist rope is not in the mesh — image-to-3D will not model a 2px thread — so the game draws it from `arm` to `ball`.",
       "nodes": [
         "house",
         "boom",
@@ -71,7 +71,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 0.9,
-      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING \u00a72). 24 bones, feet at the origin, clips measured moving. Height is in TILES \u2014 DESIGN wants a small enemy at \u2264 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING \u00a71) \u2014 scale the rig root.",
+      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING §2). 24 bones, feet at the origin, clips measured moving. Height is in TILES — DESIGN wants a small enemy at ≤ 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING §1) — scale the rig root.",
       "clips": [
         "idle",
         "walk",
@@ -83,7 +83,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 0.9,
-      "_note": "The jackhammer timing enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself.",
+      "_note": "The jackhammer timing enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself.",
       "clips": [
         "idle",
         "walk",
@@ -96,7 +96,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 0.85,
-      "_note": "The sleepy provocation enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `wake` (271) is head-led \u2014 the look-up IS the telegraph; then `run` chases.",
+      "_note": "The sleepy provocation enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `wake` (271) is head-led — the look-up IS the telegraph; then `run` chases.",
       "clips": [
         "idle",
         "walk",
@@ -108,25 +108,25 @@
       "file": "3d/bolt_v1.glb",
       "status": "live",
       "rig": "prop",
-      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: origin at its CENTRE. Remeshed to 500 tris / 64px texture / 43 KB \u2014 the first cut shipped Meshy raw at ~4k tris x 100 clones, which dropped headless rendering to 6 fps and starved the walk-out gate; a hundred of a thing is a budget of its own."
+      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: origin at its CENTRE. Remeshed to 500 tris / 64px texture / 43 KB — the first cut shipped Meshy raw at ~4k tris x 100 clones, which dropped headless rendering to 6 fps and starved the walk-out gate; a hundred of a thing is a budget of its own."
     },
     "token_toolbox": {
       "file": "3d/token_toolbox_v1.glb",
       "status": "placeholder",
       "rig": "prop",
-      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette \u2014 \u00a76.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
+      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette — §6.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
     },
     "token_blueprint": {
       "file": "3d/token_blueprint_v1.glb",
       "status": "placeholder",
       "rig": "prop",
-      "_note": "World 2's token, one per world, unlocks secret art \u2014 so \u00a76.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
+      "_note": "World 2's token, one per world, unlocks secret art — so §6.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
     },
     "token_bolt": {
       "file": "3d/token_bolt_v1.glb",
       "status": "placeholder",
       "rig": "prop",
-      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one \u2014 so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
+      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one — so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
     },
     "dumptruck": {
       "file": "3d/dumptruck_v1.glb",
@@ -152,7 +152,7 @@
     "roller": {
       "file": "3d/roller_v1.glb",
       "status": "placeholder",
-      "_note": "`drum` spins on ground speed like a wheel but at its OWN radius (0.45): it is far bigger than the rear tyre and sharing one radius makes one of them skate. DESIGN \u00a76 also lists a roller as a <=1-tile SMALL ENEMY needing a squash node \u2014 one mesh can serve both, but the squash node is a cut and must be decided before that variant is authored.",
+      "_note": "`drum` spins on ground speed like a wheel but at its OWN radius (0.45): it is far bigger than the rear tyre and sharing one radius makes one of them skate. DESIGN §6 also lists a roller as a <=1-tile SMALL ENEMY needing a squash node — one mesh can serve both, but the squash node is a cut and must be decided before that variant is authored.",
       "nodes": [
         "body",
         "drum",
@@ -190,7 +190,7 @@
     "cherrypicker": {
       "file": "3d/cherrypicker_v1.glb",
       "status": "placeholder",
-      "_note": "`basket` must COUNTER-ROTATE against `boom` to stay level. That is a code rule, not a rest pose \u2014 a basket that tips with its arm is the one thing a child notices instantly, having watched a real one never do it.",
+      "_note": "`basket` must COUNTER-ROTATE against `boom` to stay level. That is a code rule, not a rest pose — a basket that tips with its arm is the one thing a child notices instantly, having watched a real one never do it.",
       "nodes": [
         "body",
         "boom",
@@ -235,7 +235,7 @@
     "floodlight": {
       "file": "3d/floodlight_v1.glb",
       "status": "placeholder",
-      "_note": "NOT RIDEABLE \u2014 no seat, no step, deliberately: it is site furniture that lights a dark span. `lamps` animates by EMISSIVE SWAP rather than by transform, the only machine in the fleet whose animation is a material. Weakest mesh of the eight: Meshy fused the four lamps into one head.",
+      "_note": "NOT RIDEABLE — no seat, no step, deliberately: it is site furniture that lights a dark span. `lamps` animates by EMISSIVE SWAP rather than by transform, the only machine in the fleet whose animation is a material. Weakest mesh of the eight: Meshy fused the four lamps into one head.",
       "nodes": [
         "body",
         "mast",
@@ -283,7 +283,7 @@
     "flag": {
       "file": "3d/flag_v1.glb",
       "status": "placeholder",
-      "_note": "The level's ending. It BUILDS in three steps as Eeri arrives and activates by being run past, so each phase has to read at a glance, mid-run. `pole` stands from the first frame; phase0/1/2 are exclusive \u2014 each is the whole flag at that stage, not the delta. Materials: painted balsa for the timber, felt for the cloth.",
+      "_note": "The level's ending. It BUILDS in three steps as Eeri arrives and activates by being run past, so each phase has to read at a glance, mid-run. `pole` stands from the first frame; phase0/1/2 are exclusive — each is the whole flag at that stage, not the delta. Materials: painted balsa for the timber, felt for the cloth.",
       "nodes": [
         "pole",
         "phase0",
@@ -294,7 +294,7 @@
     "flagBig": {
       "file": "3d/flag_big_v1.glb",
       "status": "placeholder",
-      "_note": "Level 3 of a world. Same three phases, larger AND a different colour \u2014 it must be tellable from the small one at a distance, before you reach it.",
+      "_note": "Level 3 of a world. Same three phases, larger AND a different colour — it must be tellable from the small one at a distance, before you reach it.",
       "nodes": [
         "pole",
         "phase0",
@@ -342,29 +342,29 @@
     "pipeworks": {
       "skyline": {
         "file": "2d/pipeworks_skyline_v1.png",
-        "status": "placeholder",
-        "_note": "READY, parked: the whole set is built and in assets/2d \u2014 level 4 flips these six to \"live\" and nothing else. Kept placeholder until then because the smoke gate (rightly) fails a live asset nothing fetches."
+        "status": "live",
+        "_note": "READY, parked: the whole set is built and in assets/2d — level 4 flips these six to \"live\" and nothing else. Kept placeholder until then because the smoke gate (rightly) fails a live asset nothing fetches."
       },
       "far": {
         "file": "2d/pipeworks_far_v1.png",
-        "status": "placeholder"
+        "status": "live"
       },
       "mid": {
         "file": "2d/pipeworks_mid_v1.png",
-        "status": "placeholder"
+        "status": "live"
       },
       "near": {
         "file": "2d/pipeworks_near_v1.png",
-        "status": "placeholder"
+        "status": "live"
       },
       "fore": {
         "file": "2d/pipeworks_fore_v1.png",
-        "status": "placeholder"
+        "status": "live"
       },
       "sky": {
         "file": "2d/groundworks_sky_v1.png",
-        "status": "placeholder",
-        "_note": "shared with groundworks \u2014 the sky is world-agnostic until a world needs its own"
+        "status": "live",
+        "_note": "shared with groundworks — the sky is world-agnostic until a world needs its own"
       }
     }
   },
@@ -372,37 +372,37 @@
     "card": {
       "file": "2d/card_detail_v1.png",
       "status": "live",
-      "_note": "corrugated kraft \u2014 the earth, the cut faces, the deep bands"
+      "_note": "corrugated kraft — the earth, the cut faces, the deep bands"
     },
     "felt": {
       "file": "2d/felt_detail_v1.png",
       "status": "live",
-      "_note": "wool felt nap \u2014 the grass lip"
+      "_note": "wool felt nap — the grass lip"
     },
     "balsa": {
       "file": "2d/balsa_detail_v1.png",
       "status": "live",
-      "_note": "painted balsa, brush strokes and a paint chip \u2014 machines, steel, props (\u00a73.3 'painted wood and pressed steel')"
+      "_note": "painted balsa, brush strokes and a paint chip — machines, steel, props (§3.3 'painted wood and pressed steel')"
     },
     "flute": {
       "file": "2d/flute_detail_v1.png",
       "status": "live",
-      "_note": "the CUT EDGE of corrugated card \u2014 stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
+      "_note": "the CUT EDGE of corrugated card — stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
     },
     "topsoil": {
       "file": "2d/topsoil_detail_v1.png",
       "status": "live",
-      "_note": "the top strata \u2014 fine tight card layers. High-passed (radius 62) so no fixing survives into a map that TILES"
+      "_note": "the top strata — fine tight card layers. High-passed (radius 62) so no fixing survives into a map that TILES"
     },
     "strata": {
       "file": "2d/mid_detail_v1.png",
       "status": "live",
-      "_note": "the middle strata \u2014 coarse layered card section, high-passed"
+      "_note": "the middle strata — coarse layered card section, high-passed"
     },
     "fringe": {
       "file": "2d/fringe_edge_v1.png",
       "status": "live",
-      "_note": "the felt lip cut into a fringe of nap \u2014 the line the player stands on"
+      "_note": "the felt lip cut into a fringe of nap — the line the player stands on"
     },
     "f_stone": {
       "file": "2d/f_stone_v1.png",
@@ -447,30 +447,30 @@
     "packed": {
       "file": "2d/packed_detail_v1.png",
       "status": "live",
-      "_note": "the deep bands \u2014 dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
+      "_note": "the deep bands — dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
     },
     "gritty": {
       "file": "2d/gritty_detail_v1.png",
       "status": "live",
-      "_note": "grit and torn paper pellets in the fluting (nano banana Pro \u2014 base put repeating white blobs in it)"
+      "_note": "grit and torn paper pellets in the fluting (nano banana Pro — base put repeating white blobs in it)"
     }
   },
-  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) \u2014 never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
+  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) — never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
   "ui": {
     "logo": {
       "file": "2d/logo_v2.png",
       "status": "live",
-      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence \u2014 body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
+      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence — body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
     },
     "padplate_portrait": {
       "file": "2d/padplate_v1.png",
       "status": "live",
-      "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card \u2014 d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN \u00a75's 44px targets. LANDSCAPE gets its own plate \u2014 wider and thinner, arcade control-panel rather than handheld \u2014 as `padplate_landscape`; stretching this one is not that."
+      "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card — d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN §5's 44px targets. LANDSCAPE gets its own plate — wider and thinner, arcade control-panel rather than handheld — as `padplate_landscape`; stretching this one is not that."
     },
     "padplate_landscape": {
       "file": "2d/padplate_landscape_v1.png",
       "status": "live",
-      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip \u2014 joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
+      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip — joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
     }
   }
 }

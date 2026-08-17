@@ -38,12 +38,23 @@ export const REACH = {
   // (sqrt(2h/(g*1.35)) = 0.362s) = 0.782s; carried at RUN = 4.85 tiles
   jumpAcross: 4.85,
   gap: 4,                          // whole tiles of hole he clears from a run
+
+  // …AND THE SAME JUMP TAKEN OUT OF WATER. Wading caps the run at WADE x
+  // RUN, and a running jump carries `run speed x airtime` — so a takeoff
+  // from shallow water carries 2.67 tiles, not 4.85. This is the trap the
+  // kit already has a scar from: "anything that changes where the player can
+  // get to must be added to the reach model, or the check starts passing
+  // rooms nobody can finish". The tarp taught it by being missing; water
+  // would have taught it again by being SILENT, because a gap after a puddle
+  // looks exactly like a gap.
+  jumpAcrossWading: 4.85 * 0.55,
+  gapWading: 2,
 };
 
 // ---- the speeds, and the telegraph clock ---------------------------------
 // Measured off js/kid.js the same way REACH is, and used by the walk-time
 // estimate below.
-export const SPEED = { run: 6.2, climb: 3.6 };
+export const SPEED = { run: 6.2, climb: 3.6, wade: 6.2 * 0.55 };
 // what the gizmos do, in the same place as everything else the prover reads
 export const GIZMO = { belt: 2.6, tarp: 17.5 };
 // a tarp throws you tarp^2/2g tiles up: 17.5 gives 5.1, about twice a jump
@@ -51,10 +62,10 @@ export const TARP_RISE = (17.5 * 17.5) / 60;
 
 // …and the machines', off js/excavator.js and js/crane.js, for the ride term
 // of the estimate below. A machine is deliberately slower than the kid.
-export const MACHINE_SPEED = { excavator: 3.4, crane: 2.8 };
+export const MACHINE_SPEED = { excavator: 3.4, crane: 2.8, pump: 3.0, pipelayer: 2.6 };
 // what a ride's own job costs, in seconds: the mount and dismount moves, and
 // then the work itself — a dug row, a slung span, a swing of the ball
-export const RIDE = { mount: 0.55, dismount: 0.5, dig: 0.7, sling: 0.55, seat: 0.5, swing: 2.4 };
+export const RIDE = { mount: 0.55, dismount: 0.5, dig: 0.7, sling: 0.55, seat: 0.5, swing: 2.4, drain: 0.8 };
 
 // THE TELEGRAPH FLOOR (DESIGN §4.1, the owner's, and it is about a
 // six-year-old): "telegraph ≥ 1.0 s before anything can touch you". A rule
@@ -76,6 +87,12 @@ export const CLOCK = {
   // so what it owes you is a readable rhythm, not a warning.
   hopper: { cycle: 1.35, crouch: 0.28, rise: 1.25 },
   roller: { speed: 2.4 },
+  // THE BUCKET SLEEPS. `wake` is the whole telegraph — it lifts its head
+  // before it moves, and 0.55 s is long enough for a six-year-old to read
+  // it and step back. It chases for `chase` and then gives up and settles
+  // again, which is what makes it a PROXIMITY test rather than a pursuer:
+  // the answer is always "go round it or wait", never "outrun it forever".
+  bucket: { wake: 0.55, chase: 2.2, speed: 2.9, settle: 1.1, hear: 3.4 },
 };
 
 // A machine is heavy, refuses a cliff, and cannot jump. It clears what it is
@@ -87,6 +104,12 @@ export const MACHINE_REACH = {
   // lowers it in as a span: one machine, two verbs
   excavator: { verbs: ['dig', 'span'], arm: 2.6 },
   crane: { verbs: ['smash'], arm: 3.4 },
+  // WORLD 2. The pump lowers a flooded trench the way the bucket lowers a
+  // bank — a row at a time, so it reads. The pipe-layer needs NO new verb:
+  // seating a pipe section IS the excavator's `span`, re-dressed, which is
+  // why it is the cheap second machine of the pair.
+  pump: { verbs: ['drain'], arm: 3.0 },
+  pipelayer: { verbs: ['span'], arm: 2.8 },
 };
 
 // ---- the palette ---------------------------------------------------------
@@ -108,15 +131,35 @@ export const TILES = {
   beltL: solid('c'),
   // …and a TARP throws you up off it, harder than a jump
   tarp: solid('T'),
+  // SHALLOW WATER is solid — it is a floor, and the only thing it does is
+  // slow you down (DESIGN world 2). It is the belt's shape exactly: a floor
+  // that disagrees with you, read from the character under your boot.
+  // Deep water is NOT here, because deep water is a `pit` drawn differently
+  // and the pit already knows how to hand you back.
+  water: solid('~'),
   // a rung is NOT solid — you pass through it in every direction and only
   // the climb verb holds you on it. A solid ladder is a wall with a picture
   // of a ladder on it.
   ladder: { ch: 'H', solid: false },
 };
-export const SOLID_CHARS = '#=GBKCcT';
+export const SOLID_CHARS = '#=GBKCcT~';
 export const BELT_CHARS = 'Cc';
 export const TARP_CHAR = 'T';
+export const WATER_CHAR = '~';
 export const CLIMB_CHAR = 'H';
+
+// THE TILE CONTRACT, checked rather than trusted. `TILES` above is
+// documentation — nothing imports it — while the strings are what the game
+// actually reads, so the two can drift apart in silence. This proves every
+// solid TILES entry appears in SOLID_CHARS and vice versa, and it runs at
+// import time so a mismatch cannot reach a room.
+{
+  const declared = Object.values(TILES).filter((t) => t.solid).map((t) => t.ch).sort().join('');
+  const listed = [...SOLID_CHARS].sort().join('');
+  if (declared !== listed) {
+    throw new Error(`parts.js: TILES and SOLID_CHARS disagree — TILES says "${declared}", SOLID_CHARS says "${listed}"`);
+  }
+}
 
 // ---- parts ---------------------------------------------------------------
 // Each returns a descriptor. `stamp(grid)` writes tiles. `obstacle` is what
@@ -220,6 +263,11 @@ export const robot = (c0, c1, kind = 'skitter', cy = null) => ({
 });
 export const hopper = (c0, c1) => robot(c0, c1, 'hopper');
 export const roller = (c0, c1) => robot(c0, c1, 'roller');
+// a FOURTH kind, and it is a PROXIMITY test: an abandoned digger bucket
+// asleep on the floor that wakes when you LAND beside it, chases briefly,
+// and settles again. It takes no span because it does not patrol — the two
+// cells are how far it is willing to lurch, not a beat it walks.
+export const bucketBot = (c0, c1 = c0 + 2) => robot(c0, c1, 'bucket');
 
 // A small telegraphed hazard sitting on the floor at x.
 export const hazard = (x, type = 'steam') => ({
@@ -261,6 +309,98 @@ export const tarp = (c0, c1, cy) => ({
   kind: 'tarp', c0, c1, cy,
   stamp: (g) => rows(g, rowOf(cy), rowOf(cy), c0, c1, 'T'),
   tarp: { c0, c1, cy },
+});
+
+// ---- water (DESIGN world 2) ----------------------------------------------
+// World 1's floor is either there or it is a hole. Water is the THIRD state:
+// somewhere you can be that is neither safe nor fatal — which is the
+// cheapest new idea a platformer has, and the whole reason three levels of
+// pipes are not three levels of dirt.
+//
+// It must obey DESIGN §4.1, and this is not negotiable: *Eeri is never hurt,
+// never dies, has no health bar.* So WATER DOES NOT DROWN HIM. Between them
+// the two kinds add no new way to lose:
+
+// SHALLOW — a floor that slows you. It stamps at GROUND like any other
+// floor and the whole behaviour is one read in the player's step, exactly
+// as the belt is. Wading is not a verb you press; it is a place you are.
+export const shallow = (c0, c1) => ({
+  kind: 'shallow', c0, c1,
+  stamp: (g) => rows(g, rowOf(GROUND - 1), rowOf(GROUND - 1), c0, c1, '~'),
+  water: { c0, c1, deep: false },
+});
+
+// DEEP — a `pit` wearing different paint. It is authored as water and reads
+// as water, but mechanically it is the hole this game already understands,
+// so `fallRespawn` hands you to the near lip with nothing new written. The
+// `pit` record is what makes that true; `water` is what makes it look right.
+export const deep = (c0, c1) => ({
+  kind: 'deep', c0, c1,
+  stamp: (g) => rows(g, rowOf(GROUND - 1), H - 1, c0, c1, ' '),
+  pit: { c0, c1, backX: c0 - 3 },
+  water: { c0, c1, deep: true, respawns: true },
+  obstacle: { at: c0, kind: 'gap', size: c1 - c0 + 1, clears: null },
+  blocksMachine: true,
+});
+
+// A FLOODED TRENCH: the pump's job, and world 2's machine-shaped lock.
+//
+// It is a HOLE, not a wall — deep water is a pit wearing different paint,
+// and that is the rule the whole world rests on (DESIGN §4.1: he is never
+// hurt, so water hands him back exactly as a hole does). Until it is pumped
+// it is too wide to jump; pumped, it is floor you walk across, so the ride
+// leaves the level visibly changed the way the dig does.
+export const flooded = (c0, c1) => ({
+  kind: 'flooded', c0, c1,
+  stamp: (g) => rows(g, rowOf(GROUND - 1), H - 1, c0, c1, ' '),
+  pit: { c0, c1, backX: c0 - 3 },
+  water: { c0, c1, deep: true, respawns: true },
+  // the drained floor is what the ride hands back, and `finishedGrid` needs
+  // to know about it or every bolt over the trench reads as unreachable
+  drained: { c0, c1, cy: GROUND - 1 },
+  obstacle: { at: c0, kind: 'gap', size: c1 - c0 + 1, clears: 'drain' },
+  blocksMachine: true,
+});
+
+// ---- the hoist (DESIGN world 2, level 6's idea) --------------------------
+// THE FIRST SOLID THING IN THIS GAME THAT IS NOT A TILE, and that sentence
+// is the whole of why it is expensive. Every other floor here is a character
+// in the grid: collision is a lookup, meshes are built once, and nothing has
+// to be told it is standing on anything. A floor that MOVES can be none of
+// those — so it is an entity with its own pass in the player's step, and the
+// kit deliberately stopped at this line until now (see VERSIONS v14).
+//
+// `c0…c1` is the platform's width, `cy0` its bottom and `cy1` its top. It
+// runs between them forever on `period` seconds a round trip. Vertical only:
+// a lift is what level 6 needs, and a hoist that also slid sideways would
+// need the carry to fight the player's own run.
+//
+// Its `check()` contract is THE LADDER'S, and deliberately so — both ends,
+// every time. A ladder is held to a foot and a landing because one ending in
+// mid-air is invisible on a screenshot; a hoist is worse, because it is only
+// wrong for the half of the cycle you are not looking at.
+export const hoist = (c0, c1, cy0, cy1, period = 4) => ({
+  kind: 'hoist', c0, c1, cy0, cy1, period,
+  hoist: { c0, c1, cy0, cy1, period },
+});
+
+// ---- the pipe (DESIGN world 2, level 5's idea) ---------------------------
+// A tube you go INSIDE: enter one mouth, come out the other. It is not a
+// tile — a tile is a place, and a pipe is a pair of places plus a move
+// between them — so it is authored as two points and a scripted walk, which
+// is the machine mount's shape rather than the belt's.
+//
+// The contract is the LADDER'S, generalised, and `check()` holds it to both
+// ends the same way: a pipe that delivers you into a wall is the horizontal
+// version of a ladder that tops out in mid-air, and that is the mistake this
+// whole kit exists to make impossible.
+//
+// `a` and `b` are {c, cy} — the tile each mouth sits in. Travel is
+// two-way, because a one-way pipe is a trapdoor and this game does not take
+// things away from you.
+export const pipe = (a, b) => ({
+  kind: 'pipe', a, b,
+  pipe: { a, b },
 });
 
 // ---- the verticality kit -------------------------------------------------
@@ -357,7 +497,7 @@ export function compile(room) {
     // the deck it serves), so the list is flattened once, here
     parts: room.parts.flat(),
     bolts: [], golden: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
-    pieces: [], obstacles: [], ladders: [], belts: [], tarps: [],
+    pieces: [], obstacles: [], ladders: [], belts: [], tarps: [], water: [], pipes: [], hoists: [],
     ball: null, checkpoint: null, flag: null,
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
     exit: { x: W - 4, y: GROUND },
@@ -375,6 +515,10 @@ export function compile(room) {
     if (p.ladder) out.ladders.push(p.ladder);
     if (p.belt) out.belts.push(p.belt);
     if (p.tarp) out.tarps.push(p.tarp);
+    if (p.water) out.water.push(p.water);
+    if (p.pipe) out.pipes.push(p.pipe);
+    if (p.hoist) out.hoists.push(p.hoist);
+    if (p.drained) (out.drained ||= []).push(p.drained);
     if (p.checkpoint) out.checkpoint = p.checkpoint;
     if (p.flag) out.flag = p.flag;
     if (p.shot) out.shots.push(p.shot);
@@ -441,6 +585,9 @@ function finishedGrid(r) {
       for (let c = p.c0; c <= p.c1; c++) g[H - 1 - cy][c] = ' ';
     }
   }
+  for (const d of r.drained || []) {
+    for (let c = d.c0; c <= d.c1; c++) g[H - 1 - d.cy][c] = '#';
+  }
   if (r.girder) {
     for (let c = r.girder.gap.c0; c <= r.girder.gap.c1; c++) {
       g[H - 1 - r.girder.gap.cy][c] = 'G';
@@ -501,6 +648,12 @@ function rideTime(r) {
   else if (job.clears === 'span') work = RIDE.sling + RIDE.seat
     + (r.girder ? Math.abs(r.girder.seat.x0 - r.girder.stackX) / speed : 0);
   else if (job.clears === 'smash') work = 2 * RIDE.swing;
+  else if (job.clears === 'drain') work = (job.size || 1) * RIDE.drain;
+  // A VERB WITH NO BRANCH LEAVES work AT 0 and the estimate quietly
+  // under-counts — the failure this chain is most likely to have, because
+  // nothing errors. Say so instead.
+  else throw new Error(`rideTime: no cost for the verb "${job.clears}" — `
+    + 'add a branch, or estimate() will under-count this ride in silence');
   return RIDE.mount + drive + work + RIDE.dismount;
 }
 
@@ -690,6 +843,131 @@ export function check(room) {
     }
   }
 
+  // ---- the hoist: both ends, and the ceiling ----------------------------
+  // The ladder's contract, and one rule a ladder never needed. A ladder is
+  // static, so if it clears the wall once it clears it forever; a hoist is
+  // only wrong for the half of its cycle you are not watching, which is why
+  // every one of these is a build step rather than a placement note.
+  for (const h of r.hoists) {
+    if (h.cy1 <= h.cy0) {
+      note(`${r.name}: the hoist at ${h.c0}…${h.c1} runs from cy=${h.cy0} to cy=${h.cy1} — `
+        + 'it goes nowhere, or downwards');
+      continue;
+    }
+    // 1. you have to be able to GET ON: something standable beside its floor
+    const boardable = solidAt(h.c0 - 1, h.cy0 - 1) || solidAt(h.c1 + 1, h.cy0 - 1);
+    if (!boardable) {
+      note(`${r.name}: the hoist at ${h.c0}…${h.c1} sits at cy=${h.cy0} with nothing to `
+        + `board it from — put a floor beside x=${h.c0 - 1} or x=${h.c1 + 1}`);
+    }
+    // 2. …and OFF at the top, which is the half nobody checks
+    const lands = solidAt(h.c0 - 1, h.cy1) || solidAt(h.c1 + 1, h.cy1);
+    if (!lands) {
+      note(`${r.name}: the hoist at ${h.c0}…${h.c1} tops out at cy=${h.cy1} with nothing to `
+        + `step off onto — a lift to nowhere is a ladder that tops out in mid-air, `
+        + `and it is only wrong for half the cycle`);
+    }
+    // 3. its shaft must be clear, or it carries you into the level
+    for (let cy = h.cy0; cy <= h.cy1; cy++) {
+      let blocked = false;
+      for (let c = h.c0; c <= h.c1 && !blocked; c++) if (solidAt(c, cy)) blocked = true;
+      if (blocked) {
+        note(`${r.name}: the hoist at ${h.c0}…${h.c1} runs through solid tile at cy=${cy} — `
+          + 'its shaft has to be clear the whole way');
+        break;
+      }
+    }
+    // 4. THE CRUSH. Riding to the top with a ceiling over it puts the player
+    // between a floor that keeps rising and a tile that will not move. The
+    // tarp has the same rule for the same reason, and a tarp only throws you
+    // once — a hoist does it every cycle.
+    let ceiling = false;
+    for (let c = h.c0; c <= h.c1 && !ceiling; c++) {
+      if (solidAt(c, h.cy1 + 1) || solidAt(c, h.cy1 + 2)) ceiling = true;
+    }
+    if (ceiling) {
+      note(`${r.name}: the hoist at ${h.c0}…${h.c1} tops out at cy=${h.cy1} with something `
+        + 'solid directly above it — it would carry the player into a ceiling, every cycle');
+    }
+  }
+
+  // ---- the pipe: both mouths, every time --------------------------------
+  // The ladder's rule, generalised. A ladder is held to a foot and a landing
+  // because a ladder ending in mid-air is invisible on a screenshot; a pipe
+  // is worse, because the far mouth may be forty tiles away and nobody
+  // checks it by eye. Both mouths must be somewhere you can STAND — arriving
+  // is the same problem as leaving.
+  for (const q of r.pipes) {
+    for (const [name, m] of [['near', q.a], ['far', q.b]]) {
+      if (m.c < 0 || m.c >= W) {
+        note(`${r.name}: a pipe's ${name} mouth at x=${m.c} is outside the room`);
+        continue;
+      }
+      if (!solidAt(m.c, m.cy - 1)) {
+        note(`${r.name}: the pipe's ${name} mouth at (x=${m.c}, cy=${m.cy}) has nothing to `
+          + 'stand on under it — a pipe that delivers you into mid-air is a ladder that '
+          + 'tops out in mid-air, lying down');
+      }
+      if (solidAt(m.c, m.cy)) {
+        note(`${r.name}: the pipe's ${name} mouth at (x=${m.c}, cy=${m.cy}) is buried in `
+          + 'solid tile — you could not step into it, or out of it');
+      }
+    }
+    if (q.a.c === q.b.c && q.a.cy === q.b.cy) {
+      note(`${r.name}: a pipe's two mouths are the same cell (x=${q.a.c}, cy=${q.a.cy}) — `
+        + 'it goes nowhere');
+    }
+  }
+
+  // ---- a jump taken OUT OF WATER carries less --------------------------
+  // The rule the tarp's scar predicts. Wading caps the run, a running jump
+  // carries `run x airtime`, so a gap whose takeoff lip is shallow water is
+  // measured against 2.67 tiles rather than 4.85 — and the two look
+  // identical in a room listing, which is precisely why this is a rule and
+  // not a note. Only the KID's gaps: a machine does not wade.
+  const waterAt = (c) => c >= 0 && c < W && r.grid[H - 1 - (GROUND - 1)][c] === WATER_CHAR;
+  for (const o of r.obstacles) {
+    if (o.clears || o.kind !== 'gap') continue;
+    if (!waterAt(o.at - 1)) continue;
+    if (o.size > REACH.gapWading) {
+      note(`${r.name}: the gap of ${o.size} at x=${o.at} is taken off from SHALLOW WATER at `
+        + `x=${o.at - 1} — wading caps the run, so that jump carries `
+        + `${REACH.jumpAcrossWading.toFixed(2)} tiles, not ${REACH.jumpAcross}. `
+        + `From water the budget is ${REACH.gapWading}`);
+    }
+  }
+
+  // ---- water, and the one way it goes wrong -----------------------------
+  // DESIGN §4.1: Eeri is never hurt and never dies, so DEEP WATER DOES NOT
+  // DROWN HIM — it hands him back, exactly as a hole does. That promise is
+  // only true if there is somewhere to hand him back TO: `fallRespawn` walks
+  // to `backX`, three tiles before the near lip, and if that column is
+  // itself water or a hole he is handed straight back in and the level eats
+  // him. A pit has never needed this rule because a pit beside a pit is
+  // obviously wrong; two stretches of water read as one pond and are not.
+  for (const w of r.water) {
+    if (!w.respawns) continue;
+    const back = w.c0 - 3;
+    if (back < 0 || !solidAt(back, GROUND - 1)) {
+      note(`${r.name}: the deep water at ${w.c0}…${w.c1} has no dry lip to hand you back to `
+        + `(x=${back} is not standable) — deep water returns you like a hole, and a return `
+        + 'into more water is a level that eats you');
+    }
+  }
+  // …and shallow water is a floor, so it must actually BE one. It stamps
+  // OVER the ground's top row, so asking whether the water tile is solid
+  // answers itself — the question is whether the earth is still under it.
+  for (const w of r.water) {
+    if (w.deep) continue;
+    for (let c = w.c0; c <= w.c1; c++) {
+      if (!solidAt(c, GROUND - 2)) {
+        note(`${r.name}: the shallow water at ${w.c0}…${w.c1} has nothing under x=${c} — `
+          + 'shallow water is a floor you wade through, not a puddle in mid-air');
+        break;
+      }
+    }
+  }
+
   // ---- generosity, as numbers (DESIGN §4.1) -----------------------------
   // "Every jump proved with a full tile of slack over the budget." The
   // budget's own ceilings are step 2 (of 2.65) and gap 4 (of 4.85), which is
@@ -734,8 +1012,20 @@ export function check(room) {
     // gizmo lab did was report its own bolts unreachable. Anything a gizmo
     // adds to the player's reach has to be added here too, or the check
     // starts refusing correct rooms, which is worse than not checking.
-    return r.tarps.some((t) => col >= t.c0 - 1 && col <= t.c1 + 1
-      && cy >= t.cy && cy <= t.cy + 1 + TARP_RISE + 0.9);
+    if (r.tarps.some((t) => col >= t.c0 - 1 && col <= t.c1 + 1
+      && cy >= t.cy && cy <= t.cy + 1 + TARP_RISE + 0.9)) return true;
+    // …and A PIPE IS A WAY TO GET SOMEWHERE, so it counts too. Its mouths
+    // are standable by the rule above, so anything within a jump of either
+    // one is reachable — this is the same debt the tarp taught, paid on the
+    // way in this time rather than after the lab complained.
+    if (r.pipes.some((q) => [q.a, q.b].some((m) =>
+      Math.abs(m.c - col) <= BOLT_SPREAD && cy - m.cy <= BOLT_REACH && cy - m.cy >= -0.5))) return true;
+    // …and A HOIST IS A MOVING FLOOR, so everything within a jump of ANY
+    // height it passes through is reachable. Same debt as the tarp and the
+    // pipe, paid on the way in: a gizmo that changes where the player can
+    // get to must be in this model, or the check refuses correct rooms.
+    return r.hoists.some((h) => col >= h.c0 - BOLT_SPREAD && col <= h.c1 + BOLT_SPREAD
+      && cy >= h.cy0 - 0.5 && cy <= h.cy1 + BOLT_REACH);
   };
   for (const [row, col] of [...r.bolts, ...r.golden]) {
     const cy = H - 1 - row;

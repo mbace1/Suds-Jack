@@ -36,6 +36,49 @@ overwrite existing assets, and only promote selected work through the normal
 
 ---
 
+## 0.1 HOW WORK LANDS — read this before you write a plan
+
+**Owner direction, 2026-08-15**, and it exists because a lane sat on a
+finished plan waiting for an approval that was never coming, and the owner
+ended up hand-carrying the document between sessions.
+
+**Nobody approves plans here. Work is merged, not authorised.** There is
+no queue, no sign-off step, and no owner review gate between you and
+`main`. If you are waiting, you have misread the process — go.
+
+**The loop, in full:**
+
+1. **Branch off `origin/main`.** Not off another lane's branch, not off
+   `gh-pages`. Check `git merge-base` against `origin/main` first; if it
+   returns nothing you are on a fourth lineage and must stop.
+2. **Work in slices that pass the six gates.** A slice is one idea that
+   stands up on its own — the `LAB` exists so a new gizmo can be proved
+   without spending it in a level. A 20-hour plan is a map, not a unit of
+   delivery: submit its first PR before its fourth is written.
+3. **Open a PR against `main` and keep going.** Do not block on it. The
+   integrating session merges; it does not need the owner and neither do
+   you.
+4. **Say in the PR what a reader cannot see**: which lane, which SHARED
+   files you touched and why, each gate's number run singly, and anything
+   you could not prove.
+
+**Two things the integrator will change under you, by design:**
+
+- **The version number.** A version is claimed at **MERGE**, not at
+  authoring — whatever heading you wrote will be renumbered if the shelf
+  moved while your PR was open. Two lineages both reaching "v11", then
+  both reaching "v13", is how this project lost a week twice.
+- **The `?v=` module tokens.** They track the whole graph, so a branch
+  authored at 16 lands on a tree at 18 and every token is unified at
+  merge. Expect your import lines to be the only conflicts, and do not
+  hand-pick tokens to avoid them.
+
+**What still needs the owner:** a look call, a design direction, a new
+world, spending Meshy credits. Not a plan, not a schedule, not permission
+to start.
+
+---
+
 ## 1. Tool reality — what the pipeline can actually do
 
 Plan against this table, not against hope. `docs.meshy.ai` is truth;

@@ -17,8 +17,9 @@ import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
   ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
-  swingBall, hazard,
+  swingBall, hazard, shallow, deep, pipe, flooded, machine as mach, hoist,
 } from '../js/parts.js?v=4';
+import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=15';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
 // below would fail on the count alone and say nothing about what they are
@@ -135,6 +136,63 @@ for (const room of ROOMS) {
     ok(`${room.name}: the ladder at x=${l.c} has a deck to step off onto`, landed,
       `tops out at cy=${l.cy1}`);
   }
+}
+
+// ---- water, and the budget it quietly changes ---------------------------
+// The rule that is easy to get wrong by omission rather than by error: a
+// jump taken out of shallow water carries roughly half what a dry one does,
+// and the two are indistinguishable in a room listing.
+{
+  console.log('\nwater:');
+  ok('shallow water is a floor — it is in SOLID_CHARS', SOLID_CHARS.includes('~'));
+  ok(`a dry running jump carries ${REACH.jumpAcross} tiles`, REACH.jumpAcross > 4.8);
+  ok(`…and one out of water carries ${REACH.jumpAcrossWading.toFixed(2)}`,
+    REACH.jumpAcrossWading < REACH.jumpAcross * 0.6);
+  ok(`so the gap budget drops from ${REACH.gap} to ${REACH.gapWading} in water`,
+    REACH.gapWading < REACH.gap);
+  // the budget must keep the same slack rule the dry one is held to
+  ok('and the waded budget still leaves a real margin',
+    REACH.jumpAcrossWading - REACH.gapWading >= 0.6,
+    `${(REACH.jumpAcrossWading - REACH.gapWading).toFixed(2)} tiles`);
+  console.log('');
+}
+
+// ---- the address (js/levelid.js) ----------------------------------------
+// A world is a NAMING layer over the flat site list, so the thing to prove is
+// that the two never disagree: every level has exactly one address, and every
+// address round-trips back to the level it names. The mapping is arithmetic
+// and covers the whole planned twelve, so it is proved PAST the rooms that
+// exist — the address space is complete before the rooms are, which is what
+// makes #eeri-2-1 a link somebody can hold today.
+{
+  console.log('\nthe address:');
+  ok('EERI 1-1 is the first level', slugOf(0, ROOMS.length) === 'eeri-1-1');
+  ok('EERI 1-2 is the second level of world one', slugOf(1, ROOMS.length) === 'eeri-1-2');
+  ok('EERI 2-1 is the first level of world two', slugOf(3, 12) === 'eeri-2-1');
+  ok('EERI 4-3 is the last of the planned twelve', slugOf(11, 12) === 'eeri-4-3');
+
+  let round = true;
+  for (let i = 0; i < 12; i++) {
+    const q = parseSlug('#' + slugOf(i, 12));
+    if (!q || q.index !== i) { round = false; break; }
+  }
+  ok('every address round-trips back to its own level', round);
+
+  ok('a world is three levels, as DESIGN §4.1 fixes it', PER_WORLD === 3);
+  ok('the gizmo lab is addressed, and is not a level',
+    slugOf(ROOMS.length, ROOMS.length) === 'lab' && parseSlug('#lab')?.lab === true);
+
+  // forgiving on the way in, because a child or a parent types these
+  ok('the bare form works too', parseSlug('1-2')?.index === 1);
+  ok('case does not matter', parseSlug('#EERI-1-2')?.index === 1);
+  ok('a missing hash does not matter', parseSlug('eeri-1-2')?.index === 1);
+
+  // …and strict about nonsense, so the caller can fall back rather than
+  // build a room that is not there
+  ok('nonsense addresses are refused rather than guessed at',
+    ['', '#', '#eeri', '#1-0', '#0-1', '#1-4', '#eeri-1', 'x', '#1-2-3', null]
+      .every((b) => parseSlug(b) === null));
+  console.log('');
 }
 
 // ---- the gizmo lab -------------------------------------------------------
@@ -289,6 +347,67 @@ bites('a steam vent parked in the same place', {
   parts: [ground(), startAt(4), machine('excavator', 50, [44, 92]),
     hazard(70, 'steam'), bank(84, 88, 3), ...furniture()],
 }, 'stands in the excavator\'s only run');
+
+bites('a hoist that tops out with nowhere to step off', {
+  // it boards fine from the ground; it is the FAR end that is wrong, which
+  // is the half of the cycle nobody looks at
+  name: 'BAD/lift-to-nowhere',
+  parts: [ground(), startAt(4), hoist(40, 41, GROUND, 10), ...furniture()],
+}, 'nothing to step off onto');
+
+bites('a hoist whose shaft runs through solid tile', {
+  name: 'BAD/lift-through-the-floor',
+  parts: [ground(), startAt(4), hoist(40, 41, GROUND, 10),
+          ledge(38, 43, 7), ...furniture()],
+}, 'runs through solid tile');
+
+bites('a hoist that carries you into a ceiling', {
+  name: 'BAD/lift-into-the-lid',
+  parts: [ground(), startAt(4), hoist(40, 41, GROUND, 8),
+          ledge(42, 45, 8), ledge(38, 43, 9), ...furniture()],
+}, 'into a ceiling');
+
+bites('a hoist that goes nowhere', {
+  name: 'BAD/lift-that-sits-still',
+  parts: [ground(), startAt(4), hoist(40, 41, GROUND, GROUND), ...furniture()],
+}, 'goes nowhere');
+
+bites('a pipe whose far mouth opens into mid-air', {
+  name: 'BAD/pipe-to-nowhere',
+  parts: [ground(), startAt(4), pit(40, 44),
+          pipe({ c: 20, cy: GROUND }, { c: 42, cy: GROUND }), ...furniture()],
+}, 'nothing to stand on under it');
+
+bites('a pipe whose mouth is buried in solid tile', {
+  name: 'BAD/pipe-in-a-wall',
+  parts: [ground(), startAt(4), mound(30, 34, 2),
+          pipe({ c: 20, cy: GROUND }, { c: 32, cy: GROUND }), ...furniture()],
+}, 'buried in');
+
+bites('a pipe that goes nowhere', {
+  name: 'BAD/pipe-loop',
+  parts: [ground(), startAt(4),
+          pipe({ c: 20, cy: GROUND }, { c: 20, cy: GROUND }), ...furniture()],
+}, 'goes nowhere');
+
+bites('shallow water hanging over a hole', {
+  name: 'BAD/puddle-in-the-air',
+  parts: [ground(), startAt(4), pit(30, 32), shallow(30, 32), ...furniture()],
+}, 'puddle in mid-air');
+
+bites('deep water with no dry lip to hand you back to', {
+  // two stretches with only water between them: fallRespawn walks back three
+  // tiles and lands in the second one, so the level eats you
+  name: 'BAD/nowhere-to-return',
+  parts: [ground(), startAt(4), deep(24, 26), deep(28, 30), ...furniture()],
+}, 'no dry lip');
+
+bites('a gap you have to jump straight out of the water', {
+  // 3 wide is well inside the DRY budget of 4 — this fails only because the
+  // takeoff lip is a puddle, which is the whole point of the rule
+  name: 'BAD/jump-from-water',
+  parts: [ground(), startAt(4), shallow(26, 29), pit(30, 32), ...furniture()],
+}, 'shallow water');
 
 bites('a belt that walks you off an edge you did not choose', {
   name: 'BAD/belt',

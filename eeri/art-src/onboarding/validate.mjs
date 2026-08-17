@@ -1,0 +1,10 @@
+import { LESSONS, HINT_POLICY, validateOnboarding } from './onboarding-spec.js';
+let pass=0, fail=0;
+const ok=(n,c)=>{(c?pass++:fail++); console.log(`${c?'ok':'FAIL'} ${n}`)};
+ok('spec valid', validateOnboarding().length===0);
+ok('first lesson is movement', LESSONS[0].id==='move');
+ok('1-1 teaches stomp before mount', LESSONS.findIndex(x=>x.id==='stomp') < LESSONS.findIndex(x=>x.id==='mount'));
+ok('text is fallback', HINT_POLICY.textIsFallback===true);
+ok('hints never block input', HINT_POLICY.neverInterruptsInput===true);
+ok('no lesson needs a timer to advance', LESSONS.every(x=>!('deadlineMs' in x)));
+console.log(`${pass} passed, ${fail} failed`); process.exit(fail?1:0);

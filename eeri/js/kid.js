@@ -9,7 +9,7 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=16';
+import { PAL } from './palette.js?v=29';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -160,8 +160,43 @@ class ClipDriver {
     }
     this.current = null;
     this.last = 0;
+    this.shotUntil = 0;   // a one-shot owns the rig until this time
   }
+  /**
+   * Play a clip ONCE, over the top of whatever the state machine wants.
+   *
+   * `stomp` and `hurt` are not states — they are moments. The kid is
+   * airborne after a bounce and running again a third of a second after a
+   * knock, so driving them through CLIP_FOR would either never fire or
+   * never end. They ride above the state instead, for their own length.
+   *
+   * Capped as well as clamped: a clip longer than the moment it stands for
+   * leaves him flinching after the game has moved on, which reads as a
+   * hitch rather than a reaction.
+   */
+  once(name, t, cap = 0.5) {
+    const a = this.actions[name];
+    if (!a) return;
+    a.reset();
+    a.setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = true;
+    a.setEffectiveWeight(1).setEffectiveTimeScale(1).play();
+    if (this.current && this.current !== name && this.actions[this.current]) {
+      this.actions[this.current].crossFadeTo(a, 0.08, false);
+    }
+    this.current = name;
+    this.shotUntil = t + Math.min(cap, a.getClip().duration || cap);
+  }
+
   play(state, t, speed) {
+    // a one-shot owns the rig until it is done; the state resumes after
+    if (this.shotUntil && t < this.shotUntil) {
+      const dt0 = Math.min(0.1, Math.max(0, t - this.last));
+      this.last = t;
+      this.mixer.update(dt0);
+      return;
+    }
+    if (this.shotUntil) { this.shotUntil = 0; this.current = null; }
     const want = this.actions[CLIP_FOR[state]] ? CLIP_FOR[state] : 'idle';
     if (want !== this.current) {
       const next = this.actions[want];
@@ -217,11 +252,24 @@ export class Kid {
   // the machine with his hands behind his back and climbed the step
   // reaching backwards over his own shoulder. Check a new pose by where the
   // tip lands, not by whether the number looks right.
+  /** A moment rather than a state — see ClipDriver.once. No-op unrigged. */
+  oneShot(name, t, cap) { this.clips?.once(name, t, cap); }
+
   pose(state, t, speed = 0) {
     // the turn is animated, not mirrored — a 3D cast's free win.
     // riding, the pose is local to the seat and the machine owns the facing.
+    // THE TWO RIGS MIRROR DIFFERENTLY, and this is the third symptom of the
+    // same +z/+x confusion. `π − θ` is the mirror for the code-built kid,
+    // who is modelled facing +x: it sends +x to −x and keeps the tip toward
+    // the camera. It is NOT the mirror for the skinned rig, which is
+    // modelled facing +z — and sin(π − θ) = sin θ, so his x component never
+    // changes sign and he stays pointed screen-RIGHT while walking left.
+    // That is the moon-walk: the run clip playing forwards on a body facing
+    // the wrong way. For a +z-forward rig the mirror is simply −θ, which
+    // sends +z to (−sin θ, 0, cos θ) — screen-left, same tip toward camera.
     const target = state === 'ride' ? (this.clips ? SKIN_RIDE_YAW : 0)
-      : this.face > 0 ? FACE_TURN : Math.PI - FACE_TURN;
+      : this.face > 0 ? FACE_TURN
+      : this.clips ? -FACE_TURN : Math.PI - FACE_TURN;
     this.turn += (target - this.turn) * 0.18;
     this.group.rotation.y = this.turn;
 
@@ -300,6 +348,15 @@ const CLIMB_V = 3.6;
 // not a change of speed, so you keep full control and only your ground
 // disagrees with you. A tarp throws you about twice as high as a jump.
 const BELT = 2.6, TARP_V = 17.5;
+// WADING (DESIGN world 2). Shallow water is a floor that slows you — the
+// belt's idea turned down instead of sideways. 0.55 is chosen so a wade
+// still feels like running rather than like being stuck: at RUN it is 3.4
+// tiles/s, which is above the excavator's 3.4 only by rounding, so the
+// slowest thing on foot is still about as quick as the machinery.
+// It does NOT touch the jump: DESIGN §4.1 says every jump is proved with a
+// full tile of slack, and a jump that got shorter in water would break that
+// silently for every room the prover has already passed.
+const WADE = 0.55;
 
 export class Player {
   constructor(level, spawn, kid) {
@@ -315,8 +372,12 @@ export class Player {
     this.mercyT = 0;
     this.climbing = false;
     this.cutJump = false;
+    // the hoist under his feet, if any — kept across frames so RIDING can be
+    // told from LANDING (see the platform pass in update)
+    this.carrier = null;
     // one-frame events for the noise to hang off
     this.justJumped = false; this.justLanded = false;
+    this.justStomped = false; this.justStruck = false;
   }
 
   // Bounced off something he landed on. Higher than a step, lower than a
@@ -328,6 +389,11 @@ export class Player {
     this.squash = 0.1;
     this.jumpBufT = 0;
     this.justStomped = true;
+    // Fired HERE, not from updateVisual. main.js resolves stomps and hits
+    // AFTER player.update() has already drawn this frame, so a flag set now
+    // is cleared at the top of the next update before the visual ever reads
+    // it — the clip would simply never have played.
+    this.kid?.oneShot('stomp', this.t, 0.4);
   }
 
   // knocked back by a hazard: the cost is never death (ART_BRIEF hazards)
@@ -336,6 +402,8 @@ export class Player {
     this.mercyT = 1.3;
     this.vx = (this.x < fromX ? -1 : 1) * 7.5;
     this.vy = 7;
+    this.justStruck = true;
+    this.kid?.oneShot('hurt', this.t, 0.55);   // same reason as bounce()
     return true;
   }
 
@@ -395,9 +463,13 @@ export class Player {
 
     // horizontal: accelerate hard, stop hard — tap = a step, hold = a run
     const acc = this.grounded ? ACC : ACC_AIR;
+    // …and wading caps the RUN, not the acceleration: you get up to speed as
+    // sharply as ever and simply cannot go as fast, which reads as heavy
+    // water rather than as sluggish controls.
+    const top = (this.grounded && this.level.waterAt(this.x, this.y)) ? RUN * WADE : RUN;
     if (ax !== 0) {
       this.vx += ax * acc * dt;
-      this.vx = Math.max(-RUN, Math.min(RUN, this.vx));
+      this.vx = Math.max(-top, Math.min(top, this.vx));
       this.kid.setFace(ax);
     } else if (this.grounded) {
       const s = Math.sign(this.vx);
@@ -420,6 +492,7 @@ export class Player {
 
     const mx = this.level.moveX(this.box(), this.vx * dt);
     this.x = mx.x; if (mx.hit) this.vx = 0;
+    const wasAt = this.y;                       // …for the platform pass
     const my = this.level.moveY(this.box(), this.vy * dt);
     this.y = my.y;
     if (my.hit) {
@@ -437,6 +510,39 @@ export class Player {
     }
     this.grounded = my.grounded || this.level.grounded(this.box());
 
+    // ---- THE PLATFORM PASS -------------------------------------------
+    // The one place in this game where the floor is not a tile. It runs
+    // AFTER the tile pass, so a tile always wins: standing on solid ground
+    // is never overridden by a hoist passing underneath.
+    //
+    // Two ways to be on one, and they are genuinely different questions:
+    //
+    //   LANDING — falling, and the feet crossed the deck between last frame
+    //   and this one. Tested as a crossing rather than as an overlap, or a
+    //   fast fall tunnels straight through a platform one tile thick.
+    //
+    //   RIDING — already carried, still over it, not jumping. This is what
+    //   a rising hoist needs: it comes UP into the feet, so the crossing
+    //   test above can never fire, and without this branch the player sinks
+    //   through a lift that is travelling towards them.
+    //
+    // `carrier` is kept across frames because that is the only way to tell
+    // the two apart.
+    let onDeck = null;
+    for (const h of this.level.platforms) {
+      if (!h.overlaps(this.x, this.hw)) continue;
+      const top = h.top;
+      const landing = this.vy <= 0 && wasAt >= top - 0.02 && this.y <= top + 0.02;
+      const riding = this.carrier === h && this.vy <= 0.01 && Math.abs(this.y - top) < 0.7;
+      if (landing || riding) { onDeck = h; break; }
+    }
+    if (onDeck) {
+      this.y = onDeck.top;
+      this.vy = 0;
+      this.grounded = true;
+    }
+    this.carrier = onDeck;
+
     // the belt: it moves the FLOOR, so it is applied after the move and does
     // not touch vx — you still run at your own speed, on ground that
     // disagrees with you
@@ -448,7 +554,15 @@ export class Player {
     if (this.grounded && !wasGrounded) this.justLanded = true;
 
     // fell in the pit (its floor is dressing, not ground): back to the near side
-    if (this.y < 0.9) { this.x = 43; this.y = 5; this.vx = 0; this.vy = 0; }
+    // …and the level says where he comes back, not a number left here by a
+    // debugging session. `x = 43` is a LEVEL 2 coordinate — it sits at that
+    // room's third ladder — so every fall in every level landed there,
+    // skipping checkpoints and sometimes whole sections. `fallRespawn` was
+    // written for exactly this and was simply never called.
+    if (this.y < 0.9) {
+      const r = this.level.fallRespawn(this.x);
+      this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0;
+    }
 
     this.updateVisual();
   }

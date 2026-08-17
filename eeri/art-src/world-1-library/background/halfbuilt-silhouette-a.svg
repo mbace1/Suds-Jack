@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700">
+  <defs>
+    <filter id="softpaper"><feTurbulence type="fractalNoise" baseFrequency=".014" numOctaves="2" seed="4" result="n"/><feColorMatrix in="n" type="saturate" values="0" result="g"/><feBlend in="SourceGraphic" in2="g" mode="soft-light"/></filter>
+  </defs>
+  <!-- Quiet, low-contrast background ingredient. Transparent; no sky/clouds/ground plane. -->
+  <g fill="#8fb9d2" opacity=".5" stroke="#82adc6" stroke-width="4" filter="url(#softpaper)">
+    <rect x="100" y="210" width="54" height="430"/><rect x="310" y="160" width="54" height="480"/><rect x="520" y="235" width="54" height="405"/>
+    <rect x="730" y="120" width="54" height="520"/><rect x="940" y="200" width="54" height="440"/><rect x="1150" y="145" width="54" height="495"/><rect x="1360" y="225" width="54" height="415"/>
+    <rect x="90" y="270" width="1335" height="28"/><rect x="90" y="420" width="1335" height="28"/><rect x="90" y="570" width="1335" height="28"/>
+  </g>
+  <g fill="#a9c8da" opacity=".42" filter="url(#softpaper)">
+    <path d="M35 640V480h150V400h95v240z"/><path d="M390 640V455h95V350h120v290z"/>
+    <path d="M815 640V500h100V365h150v275z"/><path d="M1240 640V470h95V330h150v310z"/>
+  </g>
+</svg>

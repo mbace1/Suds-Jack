@@ -27,6 +27,12 @@ export const LANGS = ['fi', 'en', 'ja'];
 
 export const STRINGS = {
   en: {
+    mResume: 'carry on',
+    mRestart: 'start this bit again',
+    mHome: 'back to the arcade',
+    mLevels: 'GO TO',
+    mLang: 'LANGUAGE',
+    ctlMenu: 'menu',
     langName: 'English',
     // the intro (owner's words, 2026-08-14 — the Finnish is the source)
     title: 'eeri',
@@ -59,6 +65,7 @@ export const STRINGS = {
     hFetchOn: 'TOO HIGH TO JUMP — BRING THE MACHINE  ▶',
     hWary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
     hNear: 'Ⓑ  CLIMB IN',
+    hPipe: 'Ⓑ  GO IN THE PIPE',
     hRide: '◀ ▶  DRIVE     ▲ ▼  BOOM     Ⓑ  HOP OUT',
     hDig: 'HOLD ▼  DIG THE BANK DOWN',
     hSling: 'HOLD ▼  SLING THE GIRDER ON',
@@ -68,6 +75,12 @@ export const STRINGS = {
     hOut: 'THE WAY OUT IS OPEN',
   },
   fi: {
+    mResume: 'jatka',
+    mRestart: 'aloita tämä kohta alusta',
+    mHome: 'takaisin pelihalliin',
+    mLevels: 'SIIRRY',
+    mLang: 'KIELI',
+    ctlMenu: 'valikko',
     langName: 'suomi',
     title: 'eeri',
     brief: 'seikkailee työkoneiden ja robottien maailmassa',
@@ -97,6 +110,7 @@ export const STRINGS = {
     hFetchOn: 'LIIAN KORKEA — TUO KONE  ▶',
     hWary: 'KUKAAN EI AJA SITÄ — ODOTA KUNNES KAUHA NOUSEE',
     hNear: 'Ⓑ  KIIPEÄ KYYTIIN',
+    hPipe: 'Ⓑ  MENE PUTKEEN',
     hRide: '◀ ▶  AJA     ▲ ▼  PUOMI     Ⓑ  HYPPÄÄ POIS',
     hDig: 'PIDÄ ▼  KAIVA VALLI ALAS',
     hSling: 'PIDÄ ▼  NOSTA PALKKI KOUKKUUN',
@@ -106,6 +120,12 @@ export const STRINGS = {
     hOut: 'TIE ULOS ON AUKI',
   },
   ja: {
+    mResume: 'つづける',
+    mRestart: 'ここからやりなおす',
+    mHome: 'アーケードにもどる',
+    mLevels: 'いどう',
+    mLang: 'ことば',
+    ctlMenu: 'メニュー',
     langName: '日本語',
     title: 'eeri',
     // はたらくくるま is the standard Japanese category for work vehicles and
@@ -138,6 +158,7 @@ export const STRINGS = {
     hFetchOn: 'たかすぎる — 重機を つれてこよう  ▶',
     hWary: 'だれも のっていない — バケットが 上がるまで まて',
     hNear: 'Ⓑ  のりこむ',
+    hPipe: 'Ⓑ  どかんに はいる',
     hRide: '◀ ▶  うごかす     ▲ ▼  ブーム     Ⓑ  おりる',
     hDig: '▼ を おして  土手を ほりさげる',
     hSling: '▼ を おして  鉄骨を つりあげる',

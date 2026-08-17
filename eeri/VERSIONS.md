@@ -1,5 +1,480 @@
 # EERI — versions
 
+## v15.18 — 2026-08-17 — the Grove paints itself, the libraries have art, the gate is honest
+
+**World 3 stops borrowing World 1's backdrop.** `PLACEHOLDER_DRAW` was one
+world-agnostic set, so `buildLayers(scene, 'grove')` dressed a forest in
+half-built concrete frames and scaffold bays — the actual reason World 3
+read as greybox. The Grove has its own five painters now: treeline ridge,
+canopy with sky between the crowns, a cut bank with root ends and timber
+shoring, moss lip and stumps, one cropped trunk in the occluder lane.
+Forest AND dig, because this world is a worksite in a wood.
+
+**And the green blobs were the dressing's, not the backdrop's.**
+`world34-dressing.js` drew its treeline as seven discs of r 5.3–6.3 at
+z −1.55 — barely behind the plane the game is played on, so each one
+spanned from below Eeri's feet to above the frame in one flat colour.
+Fourteen smaller, higher discs instead. Depth magnifies; the fore lane
+needed the same correction in the same sitting.
+
+**The World 3 and 4 libraries have art in them** — eleven approved pieces
+imported to the paths the pack's own notes name. Until now both were
+catalogs with NOTHING behind them: World 3 named 17 files and shipped 0,
+World 4 named 9 and shipped 0, under headings reading "approved". Source
+library only; production `assets/**` and the manifest are untouched, and
+`art-src/` does not deploy.
+
+**The smoke gate went from 25 failures to 0, and none of it was the game.**
+The mount cluster was a real race — the kid was re-placed a tenth of a tile
+above the floor and the action press was consumed on an airborne frame,
+identically on all forty retries. The gap check waited on a clock where it
+needed a state, then failed him for standing on the lip rather than
+crossing the hole. Both now measure what they claim to.
+
+Not deployed with this: `art-src/` (source, 21 MB) and worlds 3–4, which
+stay hidden until their layers are painted.
+
+Gates: rooms 147 / world34 pass / fx 31 / dev-menu 30 / **smoke 282** /
+playthrough 25 / hub.
+
+## v15.17 — 2026-08-17 — Worlds 3 and 4 get their second art pass (still hidden)
+
+PR #276: `world34-dressing.js` rebuilt gameplay-aware — the Grove and the
+Night Shift dressed around what the rooms actually ask you to do, rather
+than decorated evenly.
+
+**Nothing player-visible changes and it is NOT deployed.** Both worlds are
+still undressed at the LAYER level — no `grove` or `nightshift` layer set
+exists in the manifest — so v15.15's rule keeps them out of the menu and
+out of the run. Looked at through a deep link, `3-1 THE CUT BANK` is
+honest greybox: flat tree discs and a root feature against a bare sky,
+because a world's backdrop is five painted planes and those are the art
+lane's next item, not this.
+
+That is the right order. What this PR moves is the playfield furniture,
+which is the half that can be built before the paintings exist.
+
+Gates: rooms 147 / world34 pass / **smoke 282** (×1.5) / fx 31 / dev-menu 30.
+
+## v15.16 — 2026-08-16 — the smoke gate stops lying about the machine (test only)
+
+**Not a release — nothing shipped changes.** `hub/versions.json` is left at
+15.15 deliberately, because there is nothing to deploy.
+
+The gate returned **6, 5, 3 and 30 failures** on four separate occasions
+against trees that passed on the next run. Every one was a timeout and none
+was a bug. Its waits were written on a machine with a GPU; the same page
+under SwiftShader renders a twelve-level game at a handful of frames a
+second, so a 1.5 s wait for a jump to peak can expire before the jump has
+had five frames to happen in.
+
+**Re-running until green is the worst available answer** — it is exactly
+the habit that hides a real failure, and I had started doing it.
+
+So the gate measures the machine instead of assuming one. The first boot is
+a direct read of how fast this box is; every wait after it scales by
+`boot / 1200 ms`, clamped to 1.5…8, and `EERI_SLOW=n` forces it. Observed
+here: 2129 ms → ×1.77 cold, 457 ms → ×1 warm. **The floor of 1.5 is the
+part that matters**: the boot is one measurement at one moment, and these
+failures came from load arriving *mid-run* — a warm cache can boot in
+450 ms and then meet a busy machine forty checks later.
+
+It costs nothing when the machine is fast. Every wait here ends the moment
+its state arrives; none of them is a sleep waiting out a clock, so a longer
+ceiling is only ever an unused ceiling.
+
+Four consecutive runs since: ×1.77, ×1, ×1, ×1.5 — **282 / 0** each.
+
+## v15.15 — 2026-08-16 — Worlds 3 and 4 exist, and the game ends where the art does
+
+**Twelve levels are built** (PR #265): the Grove and the Night Shift as
+greyboxes, with their own structural gate (`test/world34.mjs`) and their own
+dressing module ready for art. The playthrough bot now finishes **all
+twelve** — 25 checks, zero ride losses — so these are rooms, not sketches.
+
+**But six of them are undressed, and greybox is not something to hand a
+six-year-old through a menu.** So the game ends at the last room whose
+world has **live art**, and the rule is derived rather than declared:
+
+```
+dressed(world) = every layer in the manifest is `status: "live"`
+SHOWN          = rooms up to the first undressed world
+```
+
+That is `LAST_LEVEL` (what the flag advances into, and where the world's
+curtain becomes an ending) and the menu's level list. **The moment the art
+lane flips a world's layers to `live`, its rooms appear on their own** —
+no flag to remember, no second list to keep in step. The seam already knew
+which worlds are finished; it just had not been asked.
+
+Deep links still reach them (`/eeri/#eeri-3-1`), which is the lane's way in
+to keep working.
+
+The four worlds are named in code for the first time — `groundworks`,
+`pipeworks`, `grove`, `nightshift` — because `WORLDS` had two placeholder
+'groundworks' entries standing in for worlds that did not exist yet, and
+they would have quietly dressed World 3 as World 1.
+
+**Also merged:** #268's art-library structure (art-src only).
+
+**A gate that had to move with the edge:** *"an address for a level that is
+not built yet"* pointed at `2-1`, then `3-1`, and both got built. It is
+`5-1` now — there are four worlds, so that one cannot exist. A test written
+against the edge of what exists has to move as the edge does.
+
+Gates: rooms 147 / world34 pass / fx 31 / dev-menu 30 / **smoke 282** /
+**playthrough 25** / hub.
+
+## v15.14 — 2026-08-16 — World 2 stops being grey boxes, and a deep link brings its own sky
+
+**The Pipeworks is dressed** (PR #258). `js/world2-dressing.js` builds the
+world's identity on the playfield rather than only behind it — pipe stacks,
+a service wall with a valve, a standpipe, pump hardware, and buried pipe
+cut-faces using the live `f_pipe` asset. It sits mostly at z −0.72, behind
+the plane the game is played on, which is the rule that keeps a dressed
+level readable: **the traversal stays unobscured in front**.
+
+Seen at close range it is the difference between "World 1 with different
+bolts" and a place: gas holders, a water tower, pipe racks and a chimney
+against the pipeworks backdrop.
+
+**AND A DEEP LINK NOW BRINGS THE RIGHT SKY.** `/eeri/#eeri-2-1` came up in
+World 1's site — my own bug from v15.11. The diorama is built before the
+address is read, which is correct (it is the persistent layer), and only
+`goSite()` swapped it, so *walking* into World 2 was dressed and *linking*
+into it was not. The boot now compares the room's world against the one
+just built and swaps before the first frame. Anything that can start you
+somewhere other than room 1 — a link, the menu's level jump across a
+reload — needed this.
+
+**Also merged:** PR #268, the World 2–4 reusable art-library structure and
+the World 3/4 handoff — `art-src` only, no production seam.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+Tokens unified at `?v=25`.
+
+## v15.13 — 2026-08-15 — 16:9 is a landscape rule, and a real pad clears the screen
+
+Two corrections from the owner, and the second is the more interesting one.
+
+**16:9 WAS AIMED AT HORIZONTAL MOBILE, NOT VERTICAL.** v15.12 pinned the
+aspect in both orientations, which letterboxes a portrait phone *twice
+over* — bars beside a picture that already has the pad below it — and
+wastes the only dimension that shape has. Held sideways the picture is the
+whole screen and its shape is the composition, so it stays pinned. Held
+upright it is a **window above the pad** and simply fills what is there.
+On a 390 × 844 phone that is 390 × 650 instead of 390 × 219.
+
+**A REAL CONTROLLER MEANS NOTHING DRAWN.** The plate is a picture of a
+controller; holding a real one and looking at a drawn one is the same joke
+twice, and in landscape that joke was a third of the screen. The first pad
+input strips both plate and hit areas and the stage takes the space back —
+693 × 390 instead of 443 × 249, the full window at 16:9.
+
+Two things that make it honest rather than clever:
+
+- **The first TOUCH puts it back.** A pad going quiet is not a pad going
+  away; only a thumb says that. Without it, unplugging a controller
+  mid-run leaves a phone with no way to move.
+- **The menu takes the pad too** — direction moves, Ⓐ picks. A controller
+  that can open a menu and not move inside it is worse than one that
+  cannot open it. It drives real DOM focus rather than a parallel
+  "selected index", so the pad, the keyboard and a screen reader all agree
+  on what is highlighted and the focus ring IS the highlight.
+
+Measured, all three states, both orientations: landscape 443 × 249 above
+the pad → 693 × 390 padded → back on a thumb; portrait 390 × 650 → 390 ×
+844 → back.
+
+**The sandbox flake, again and worth a number:** `smoke.cjs` returned
+252/30 and then 282/0 on the identical tree, minutes apart. Every failure
+was a timeout. It has now done this four times today at 6, 5, 3 and 30
+failures. The gate is honest but its waits assume a machine that is not
+also rendering six levels in software; the fix is to judge state with
+longer ceilings, not to re-run until green.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+
+## v15.12 — 2026-08-15 — a menu on START and SELECT, and the game is 16:9
+
+Three owner notes, and the third turned out to govern the other two.
+
+**THE GAME IS 16:9, ALWAYS.** A level is *composed* — the reach budget,
+where the camera pulls back, where a hazard sits relative to the lip you
+read it from — and all of it is composed at one shape. Letting the viewport
+decide the aspect means a tall phone shows less of the room ahead than a
+laptop does, so the same jump is a different question on different
+hardware. The stage is now a fixed 16:9 box; the rest of the window is the
+room it hangs in, painted near-black because a light surround reads as the
+game being the wrong size while a dark one reads as a screen.
+
+**AND THE PAD IS NOT ON THE PICTURE.** A 16:9 stage with a control strip
+laid over its lower third is not a 16:9 stage. When a plate is up it owns
+the bottom of the screen outright and the stage fits into what is left —
+the arcade arrangement, screen above panel. The trade is real and worth
+stating: on an 844 × 390 phone the picture is 443 × 249 with black either
+side, because 16:9 *plus* a visible panel cannot be wider on that screen.
+The alternative is the panel back over the picture.
+
+**THE LANDSCAPE PANEL WAS EATING 72% OF THE SCREEN** (owner: *"covering
+too much"*). Same treatment portrait got, same measurement:
+`padplate_landscape_v1.png` is 1400 × 466 with the drawn panel at y
+204…463 — more than half the image is transparent air. Cropped to the
+panel itself it is **141 px instead of 281**, every control exactly where
+it was, and centred (the panel's own centre is x 758 against the image's
+700).
+
+**THE MENU** (`js/menu.js`), on SELECT *and* START — both plates have drawn
+those pills since the art landed and neither did anything, which is worse
+than not drawing them: a control that is pictured and dead teaches a child
+that pictures are not controls. Both open the same menu, deliberately —
+nobody should have to remember which of two identical pills is the one
+that helps. Carry on · start this bit again · go to a level (all six) ·
+language · back to the arcade. Esc and the pad's Select/Start reach it too.
+**The pause is real**: it gates the update half of the loop and the clock,
+not just input, so nothing on a timer creeps while you read.
+
+**Three traps, all specificity or floors:**
+
+- The unplated fallback (`#touch #tSel`, two ids) **outranked** the plated
+  rule (`html.plated #tSel`, one id + one class), so on a real plate the
+  pills jumped back to the top of the screen. Plated rules now carry two
+  ids of their own.
+- `min-width: 44px` is why they overlapped Ⓐ. A pill declared at 4.6% of
+  the plate is 37 px on a 750 px phone and the floor lifts it to 44 — so
+  the drawn pill's share does not decide the box, the floor does. Centres
+  are now spaced from the floor, not from the art.
+- `menu` joined the input map, so the glyph contract had to grow with it —
+  and the bound list needed deduping, because TWO buttons bind one control.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+
+## v15.11 — 2026-08-15 — World 2 looks like World 2, and the world's curtain works again
+
+Wiring `#250`'s levels revealed two things that were only ever true while
+three levels existed.
+
+**THE GATE WAS UNREACHABLE.** A flag ends a level, a gate ends a WORLD
+(DESIGN §4.2) — and while World 1 was the whole game those were the same
+moment, so nothing had to tell them apart. The instant level 4 existed,
+raising World 1's big flag auto-advanced straight into it and the gate,
+the world's entire curtain, could never fire. **A gated level does not
+auto-advance**: the flag goes up and you walk out yourself. And the
+curtain is now a *beat* rather than an ending when there is a world behind
+it — CLOCKING OUT holds, then World 2 loads.
+
+**THE BACKDROP FOLLOWED NOTHING.** `main.js` built the diorama once at
+boot with `buildLayers(scene, 'groundworks')`, so levels 4–6 played World
+2 in front of World 1's site. The layer set had no teardown, because
+nothing had ever needed one — six full-width planes left in the scene are
+not hidden by six more, the near ones are opaque. `layers.js` gains
+`dispose()` (every plane, its geometry, material and texture, plus the
+background events' own meshes), and `goSite` swaps sets when a room
+crosses into another world. Which world a level is in is arithmetic —
+three to a world — until a world wants a name that is not its backdrop's.
+
+**And so `pipeworks_*` goes LIVE.** Painted and parked since art lineage
+v16, blocked ever since by the gate that fails a live asset nothing
+fetches. Now something fetches it. Manifest `v: 25`.
+
+**A test trap worth keeping.** The gate walked out of World 1, then
+navigated back to `/eeri/?skip#eeri-1-3` to finish its World 1 checks — and
+three of them failed. That URL differs from the open one only in its HASH,
+so it is a same-document navigation: the page never reloaded, the run
+carried on in World 2, and the checks read the wrong room while the
+address bar said 1-3. Every other address check in that file carries an
+`?a=N` for exactly this reason. It is not decoration.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+
+## v15.10 — 2026-08-15 — World 2 has levels (PR 4 of 4)
+
+**Levels 4, 5 and 6 — the Wet Trench, the Pipe Run, the Pumphouse.** The
+world's three beats in the order `WORLD2.md` set them: water alone, then
+pipes over water, then all of it plus the hoist as the world's exam. The
+gizmos were each proved in the `LAB` before a level spent one, which is
+what the LAB is for.
+
+**The playthrough gate is the reason to believe it:** a bot finishes all
+**six** levels now, and loses the ride zero times in each. `rooms.mjs` is
+at 147 — the prover grew with the rooms rather than after them.
+
+**What this unblocks, and it is the point:** World 2's backdrop has been
+painted and parked since art lineage v16, and the `pipeworks_*` manifest
+entries could not be flipped to `live` because the smoke gate fails any
+live asset nothing fetches — and nothing asked for world 2. Now something
+does.
+
+**Still to wire:** `main.js` builds the diorama ONCE at boot with
+`buildLayers(scene, 'groundworks')`, so levels 4–6 currently play in front
+of World 1's site. The layer set has no teardown, so swapping worlds is a
+real change to `layers.js` (Art lane) rather than a one-line argument.
+Named here so it is not mistaken for the levels being wrong.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / smoke 274 / **playthrough 13** / hub.
+
+## v15.9 — 2026-08-15 — the hoist: the first solid thing that is not a tile (World 2, PR 3 of 4)
+
+> Submitted as v15.4 — a number already spent, and four releases behind
+> by the time it merged. Renumbered at the merge per LEVELCRAFT.md §7.
+
+**The expensive item of world 2, and it is expensive for one reason.** Every
+other floor in this game is a character in the grid: collision is a lookup,
+meshes are built once per room, and nothing in `Player` has any concept of
+standing ON something — entity contact has only ever been a one-frame
+impulse (`bounce`, `struck`) after which you are airborne. A floor that
+MOVES can be none of those, which is why the gizmo kit stopped at the tile
+line on purpose (v14) and why this is its own release.
+
+**`js/hoist.js`** is an entity shaped exactly like `robots.js`'s — it takes
+the room's group, adds its meshes to it, answers `update(dt, reduced)`.
+Everything it makes lives inside that group or it leaks on a level change.
+It moves **vertically only**: a lift is what level 6 asks for, and one that
+also slid sideways would have its carry arguing with the player's own run.
+
+**The motion is a TRIANGLE, not a sine**, and that is a design decision
+rather than a shortcut. You have to *wait* for a hoist, and waiting is only
+fair if the arrival is predictable — a sine spends most of its time near the
+ends and reads as a lift that hesitates.
+
+**The carry is one pass in `Player.update`, after the tile pass** — so a
+tile always wins, and standing on real ground is never overridden by a hoist
+passing underneath. It distinguishes two cases that look the same and are
+not:
+
+- **LANDING** — falling, and the feet *crossed* the deck between frames.
+  Tested as a crossing rather than an overlap, or a fast fall tunnels
+  straight through a platform one tile thick.
+- **RIDING** — already carried, still over it, not jumping. **This is the
+  one that matters**: a rising hoist comes UP into the feet, so the crossing
+  test can never fire, and without this branch the player sinks through a
+  lift travelling towards them. `player.carrier` is kept across frames
+  because that is the only way to tell the two apart.
+
+**Four rules, four rooms broken on purpose** — the ladder's contract
+generalised, plus one a ladder never needed: a hoist that tops out with
+nowhere to step off · one whose shaft runs through solid tile · one that
+carries you into a **ceiling** (a ladder is static, so if it clears once it
+clears forever; a hoist is only wrong for the half of the cycle you are not
+watching) · one that goes nowhere.
+
+**And the reach model learns it**, paid on the way in rather than after the
+lab complains: anything within a jump of any height the hoist passes through
+is reachable. That debt is now paid three times — tarp, pipe, hoist.
+
+`prefers-reduced-motion` **parks it at the bottom** rather than freezing it
+mid-shaft, where it would be a floor nobody could reach and a level nobody
+could finish. The game stays completable with the animation off.
+
+Gates, each run singly: rooms **103/0**, smoke **265/0**, playthrough
+**7/0**. The browser gate proves physics rather than a state flag: he lands
+on it, it carries him up, a jump lets go, and he is never left inside a tile.
+
+**Still open, and deliberately PR 4's:** the playthrough bot does not know
+how to wait for a lift — it holds `right` every tick on foot, which walks it
+off a platform. No level has a hoist yet, so nothing stalls today; it must
+land with levels 4–6, which is where it can actually be exercised.
+
+**SHARED files touched:** `js/main.js` (build, update, debug hooks).
+
+## v15.8 — 2026-08-15 — the bucket wakes, and the dev pack gets its five rows
+
+**A fourth enemy: the bucket.** `WORLD2.md` §3 level 5 asks for it and the
+behaviour was simply absent from `robots.js`, so the beat could not be
+written. It is a **proximity** test, which is the one axis the other three
+do not cover — hopper is timing, roller is spacing, skitter is provocation.
+An abandoned digger bucket asleep on the floor: it wakes when you **land**
+beside it, lifts its head for 0.55 s without moving, chases for 2.2 s, then
+settles.
+
+Three rules make it fair rather than merely present:
+
+- **It wakes on a LANDING, not on a radius.** Walking past a sleeping one
+  is safe. A radius would teach "never go near the pipe mouth", and then
+  the pipe stops being the way across, which is the whole of that beat.
+  The landing edge is computed in the robot from the kid's `grounded`
+  flag — main.js passes it, nothing new is invented.
+- **Asleep and waking, it cannot hurt you.** Otherwise the head-lift is
+  decoration: a tell you cannot act on teaches nothing.
+- **It gives up.** DESIGN §4.1 has no lives and no death; a pursuer that
+  never stops is a different game. The answer is always go round, or wait.
+
+Proved in the `LAB` beside the pipe's far mouth — come out of the pipe and
+it wakes, which is level 5's beat in one object. The GLB (`bucket_v1.glb`,
+skinned, four clips) stays `placeholder`: `robots.js` is still code-built
+for every kind, and the gate rightly fails a live asset nothing fetches.
+
+**The dev pack gets the five rows from PR #235** (`dev/README.md` named
+them): warps by fraction of the room, take-the-machine, dig-one,
+invincible, hitboxes, copy-state. Four new debug hooks carry them —
+`tame` `dig` `invincible` `boxes` — and `dev-menu.mjs` now names all four,
+because a hook the pack reads and nothing else does is exactly the silent
+break that gate exists for. Two notes on how they are built: invincibility
+is an **unexpiring mercy timer** rather than a second path through damage
+(a debugging aid must not change the thing being debugged), and the hitbox
+preview draws `debug.boxes()` — the numbers the collisions actually use,
+not a guess at them.
+
+**Not done, and correctly blocked:** flipping World 2's `pipeworks_*`
+layers to `live`. All five PNGs are on disk and the sixth reuses the
+groundworks sky, but the smoke gate fails any live asset nothing fetches
+and no room asks for world 2 yet. That flip belongs to the level lane's
+PR 3, in the same change as the first World 2 room.
+
+**A flake, recorded rather than buried:** *"holding the bucket in the stack
+slings the girder on"* failed on one run of `smoke.cjs` and passed on the
+next two against the same tree. It is wall-clock sensitive under sandbox
+load. It should be re-cut to judge game state, like the rest of that gate.
+
+Gates: 99 / 31 / 30 / **269** / 7 / hub.
+
+## v15.7 — 2026-08-15 — he turns around, and the d-pad becomes a stick
+
+**He was moon-walking, and it is the +z/+x confusion for the third time.**
+Running left played the run clip on a body still pointed screen-right.
+`pose()` mirrors the facing with `π − θ`, which is correct for the
+**code-built** kid — he is modelled facing +x, and `π − θ` sends +x to −x.
+It is wrong for the **skinned** rig, which is modelled facing +z: a
+rotation of θ about Y sends +z to `(sin θ, 0, cos θ)`, and
+`sin(π − θ) = sin θ`, so his x component never changes sign. For a
++z-forward rig the mirror is simply **−θ**, which lands him screen-left
+with the same tip toward the camera. One line, and the third symptom of
+the same root: the first two were facing the camera while running and
+sitting backwards in the cab.
+
+**The d-pad is a stick** (owner: *"the d-pad part should be a larger
+on-screen stick like in other games in this repo"*). Every other cabinet
+here that takes a thumb reads a stick, and the reason is mechanical:
+four rectangles have three seams, and a thumb that drifts onto a seam
+stops steering with nothing to feel. `input.bindStick()` is one zone with
+a generous deadzone, direction measured from the control's **centre**
+rather than from where the thumb landed — a self-centring stick would walk
+away from the drawn d-pad within a few presses — plus a knob that follows
+the thumb, since the painted cross cannot move. The four zones stay in the
+DOM for the keyboard, the accessible names and the unplated fallback, and
+go **pointer-inert**; the gate checks that second half, because a live
+button sitting on top of the stick would swallow every press and the stick
+would look mounted while doing nothing.
+
+**The plate is measured now, not judged.** `padplate_v1.png` is 1024 × 590
+and the drawn plate inside it runs x 122…1022, y 75…588 with its yellow
+strip ending at y 121. Two owner complaints fall straight out of those
+numbers: the plate's centre is x **572** against the image's 512, so drawn
+full-width it sits ~6% RIGHT of centre; and the old 496-row crop left 27
+rows of yellow behind. So the image box is deliberately **wider than the
+screen and pushed left** (`left: -11%; right: 1.8%`, crop `1024/466`) —
+the plate lands at 96% of the viewport, centred, with no yellow. A and B
+grow to 14% × 24%, being the two controls a six-year-old hits under
+pressure.
+
+Gates: 99 / 31 / 30 / **269** / 7 / hub.
+
+## v15.6 — 2026-08-15 — water, the pipe, and the pump verb (World 2, PR 2 of 4)
+
+> Submitted by the level lane as v15.3. That number was already spent by
+> the levels PR before it, and 15.4/15.5 shipped while this was open — so
+> it lands as **15.6**. The lesson is in `LEVELCRAFT.md`: a number is
+> claimed at MERGE, not at authoring.
 > **VERSIONS ARE DECIMAL from v15 (2026-08-14).** `vMAJOR.MINOR` — the
 > integer is a milestone, the decimal an increment on it. Three lineages of
 > this project each burned whole integers on ordinary work and then collided
@@ -13,6 +488,236 @@
 > jobs: a label cannot be compared (`'15.10' < '15.9'` lexically) and a
 > float cannot be displayed (`15.0` prints as `15`).
 
+
+## v15.5 — 2026-08-15 — the plate is cropped, the bank says dig, the mark is a sticker
+
+Four owner notes from one sitting, and the last of them found a bug that
+had been swallowing two other things silently.
+
+**The portrait plate is cropped and centred** (*"can be cropped a bit from
+the top and should be very slightly smaller and centered on the screen
+along the bottom"*). `#pad` is inset 4% either side and its box is given
+the plate's ratio **minus the crop** (1024 × 496 against the image's 590),
+with the image anchored to the box's bottom and the overflow clipped. The
+crop takes the transparent air and a sliver of the yellow strip off the
+top; the controls do not move, because `#touch` keeps the image's FULL
+ratio and every hit area is a percentage of that.
+
+**The title logo comes back.** `intro.js` asks `uiAsset('logo')` for it,
+and `uiAsset` reads the manifest — which `main.js` was loading **after**
+the intro. So the lookup ran against a null manifest every time, returned
+null every time, and the code-drawn wordmark shipped in front of a painted
+logo that was sitting right there marked `live`. The manifest is a ~2 KB
+JSON read; it now happens first, and the intro awaits nothing else.
+
+**The dirt bank asks to be dug.** Paired ▲▼ chevrons at the top of the
+face and a hazard-striped board under them — on the BANK, never beside the
+machine, so the affordance is on the thing the affordance is about. The
+first cut put the board between the arrows and hid ▼, which is the whole
+instruction.
+
+**The Toko mark is a sticker on the pad** (*"can be on the game pad but
+should look more like a sticker"*): white die-cut border, a few degrees
+off square, a shadow, and parked in the plate's deliberately empty ground
+— the DMG's blank panel in portrait, the arcade strip's middle in
+landscape. `sign()` writes its position inline, so the rules have to
+shout, and a `MutationObserver` re-parents the badge into `#touch` once
+`.plated` lands so it tracks the plate art at any size.
+
+**The trap, and it is a layer trap, not a z-index one.** The sticker did
+not appear. `sign()` sets `z-index: 4` inline (deliberately, so it sits
+under a game's HUD) and the plate is `z-index: 5`, so the first fix was an
+`!important` 7 — and nothing changed. Nor did **9999**. `#touch` was at
+`z-index: auto`, which paints the entire hit layer as a unit *below* `#pad`
+— and no z-index on a child can climb out of its own parent's layer. One
+line fixes it (`#touch { z-index: 6 }`), and the same line un-buries the
+plated buttons' **press tint**, which had been painting under the plate
+since the plates were mounted with nobody noticing, because a transparent
+button and a buried tint look identical. The gate now asserts the layer
+order rather than the badge's number: `z(touch) > z(pad)`.
+
+Gates: 88 / 31 / 30 / 257 / 7 / hub.
+
+## v15.4 — 2026-08-15 — stomp and hurt animate, and both lanes' docs land
+
+**The two verbs finally react.** `eeri_v4` has carried `stomp` and `hurt`
+since the art lane shipped it and only `climb` was wired, so the biggest
+moments in the game — bouncing off a robot, taking a hit — played the run
+cycle. They are **one-shots over the top of the state machine**, not
+states: the kid is airborne a frame after a bounce and running again a
+third of a second after a knock, so driving them through `CLIP_FOR` would
+either never fire or never end. `ClipDriver.once()` owns the rig for the
+clip's own length, capped (0.4s stomp, 0.55s hurt) because a clip that
+outlives the moment reads as a hitch rather than a reaction.
+
+**The first wiring of it never fired at all, and nothing would have said
+so.** `main.js` resolves stomps and hits AFTER `player.update()` has drawn
+the frame, so the one-frame flag was set too late for that frame's visual
+and cleared at the top of the next update before it was ever read. The
+game plays identically with a rig that simply never reacts — no gate, no
+error, nothing. Fixed by firing at the MOMENT, from `bounce()` and
+`struck()` themselves, and the smoke gate now drives both and asserts the
+clip takes over **and hands the rig back**.
+
+That release check is judged on **game time, not the wall clock**. My first
+reading said the one-shot never released; it had, and the sandbox was
+simply rendering at a few frames a second — this project's oldest trap,
+caught here only because the probe was rewritten to ask the game.
+
+Also in: both lanes' pending work, all documentation — the art lane's World
+1 source-pool index, and the levels lane's World 2 plan with its correction
+that world 2's backdrop already exists (`pipeworks_*` shipped in PR #236
+and is parked as placeholder).
+
+Gates: 256 smoke, 88 rooms, 7 playthrough, 31 fx, 30 dev-pack, hub green.
+
+## v15.3 — 2026-08-15 — the pad plates are mounted, and the controls are drawn
+
+PR #236 shipped both touch plates and PR #234 landed on top of it, but
+nothing MOUNTED them — the art was live in the manifest and the game still
+drew its own circles. Owner: *"the vertical controls is not the Gameboy
+look."* Correct, and the miss was this lane's: the art lane's submission
+listed mounting as our work and we went to deploy without doing it.
+
+**Two plates, because they are two objects.** Portrait gets the Game Boy
+DMG face; landscape gets the arcade control-panel strip whose middle is
+deliberately empty, because in landscape the middle of the screen is the
+game. The DOM buttons keep their ids and become **transparent hit areas**
+over the drawn controls, so `js/input.js` binds them unchanged.
+
+Both PNGs carry a lot of transparent air above the plate, which is what
+makes a full-width image work on a short phone: the painted face is about
+half the rendered height, so the landscape strip covers ~40% of a 390px
+screen rather than the ~72% its 3:1 ratio suggests.
+
+**Four things this cost, each a real bug rather than a tidy-up:**
+
+1. **Neither plate ever displayed at first.** `#pad img` is one id plus one
+   type and outranks a bare `#padP`, so `display: none` won. Specificity,
+   not a typo, and invisible until measured.
+2. **The signature landed on the A button again.** Its coarse-pointer inset
+   of 92 was measured to clear a row of 62px circles; the plate owns the
+   whole bottom strip now, so 92 sits on the drawn A. Raised to 210, which
+   clears the painted face in both orientations. v6 fixed this once for
+   jump — the third time it has bitten.
+3. **The face buttons overlapped each other** in landscape, which means an
+   ambiguous press: jumping when you meant to climb into a machine.
+4. **The 44px floor and the drawn d-pad genuinely conflict.** At 390px wide
+   the DMG plate is 225px tall and its d-pad arms are about 20px, so four
+   zones that each clear the floor cannot also be disjoint. Adjacent zones
+   are how a virtual d-pad has always worked, so the gate now allows
+   overlap BETWEEN D-PAD MEMBERS ONLY and still refuses it anywhere else.
+   **A note back to the art lane:** for portrait phone use the plate wants
+   its controls drawn larger relative to the face — the hit zone is
+   currently more than twice the picture of the switch.
+
+The old "never more than two rows tall" check was this lane's rule for a
+layout this lane drew. The arrangement is the art's now, so it is replaced
+by what actually matters: the plate is mounted, and every hit area sits on
+it.
+
+If a plate 404s or is still `placeholder`, `.plated` is never set and the
+drawn circles stay — the game is playable either way, same as the rest of
+the seam.
+
+Gates: 251 smoke, 88 rooms, 7 playthrough, 31 fx, 30 dev-pack, hub green.
+
+> **VERSIONS ARE DECIMAL from v15 (2026-08-14).** `vMAJOR.MINOR` — the
+> integer is a milestone, the decimal an increment on it. Three lineages of
+> this project each burned whole integers on ordinary work and then collided
+> on them (there were two v11s and two v13s); a minor part gives increments
+> somewhere to go that is not the next milestone's number.
+>
+> **The `?v=` module tokens stay integers.** They are cache-busters, not
+> releases — they track every module-graph change, and the release number
+> tracks what shipped. `scripts/versions.mjs` reads both and emits a label
+> (`"15.1"`) plus a sort key (`15001`), because one number cannot do both
+> jobs: a label cannot be compared (`'15.10' < '15.9'` lexically) and a
+> float cannot be displayed (`15.0` prints as `15`).
+
+
+## v15.2 — 2026-08-15 — every level has an address, and falls stop teleporting
+
+**`EERI 1-1`** (owner's direction, and it is Mario's scheme because that is
+the one every parent already reads). World and level, both 1-based, three
+levels to a world exactly as DESIGN §4.1 fixes it — so `1-3` closes world
+one and `2-1` opens world two. It is a URL: `/eeri/#eeri-1-2` boots straight
+into that room, which is what makes a level shareable for a playtest.
+
+**It is a naming layer, not a second list.** `js/levelid.js` is pure — no
+three.js, no DOM, so `test/rooms.mjs` proves the mapping in plain Node — and
+the game still runs on one flat index with `goSite(i + 1)` as the whole of
+"next level". No room knows which world it is in, because the mapping is
+arithmetic over the index.
+
+Four decisions:
+
+- **The address space is the whole planned twelve from the start.** A level
+  is addressable the moment it is authored, so `#eeri-2-1` is a link
+  somebody can hold before world 2 is built: it opens **1-1** rather than a
+  black screen, and so does nonsense.
+- **Forgiving in, canonical out.** `#eeri-1-2`, `#EERI-1-2` and `#1-2` all
+  mean the same level — the failure mode is a child or a parent typing it —
+  and the bar is rewritten to the full form afterwards.
+- **`replaceState`, never `location.hash =`.** Assigning fires `hashchange`
+  back at the handler that just changed the level, and the game reloads the
+  room it is already standing in. `gameoflife` documents the same trap.
+- **The HUD prints the address beside the name** (`1-2 · LEVEL 2 — THE
+  SCAFFOLD`) and so does the tab title.
+
+It composes with the title screen rather than fighting it: the intro is
+`?skip`-able for the gates and the address is a fragment, so `?skip#eeri-1-2`
+is a level and `#eeri-1-2` alone is the title screen then that level.
+
+### the bug, and it was live on the trunk
+
+**Falls used a hardcoded `x = 43`.** `Player.update`'s fall handler carried a
+LEVEL 2 coordinate — it sits at that room's third ladder — left behind by a
+debugging session, so *every* fall in *every* level teleported the kid there,
+bypassing `level.fallRespawn()`, which already existed and already did the
+right thing (the near lip of whichever hole took you, else the last
+checkpoint passed).
+
+Found by the **playthrough gate**, the only one of the four that could see
+it: `rooms.mjs` proves a room is reachable and cannot watch a fall, and a
+human reads it as "the game put me somewhere odd". The owner's experience
+analysis filed the same thing as **P0** independently. The general lesson is
+new to this log: **a debug constant in shipping code outlives the debugging
+session.**
+
+### and two documents
+
+**`LEVEL2.md`** — the worked example. Every level here is cut from one shape,
+so one level is documented completely: the four beats object by object with
+real coordinates, the skill ladder it sits on, the `check()` rules that bite
+on it, what building it taught, and where it still falls short against the
+owner's analysis. Every number is read out of the compiler, and the file
+carries the snippet to regenerate them.
+
+**`WORLD2.md`** — the grey box for Pipeworks (DESIGN §4.2). Theme, three
+levels on the four-beat pattern, the art queue with the `pipeworks_*` layer
+table matching the rects `smoke.cjs` measures, two machines on the
+excavator's node contract, and an honest costing: water and the pipe are
+cheap re-dresses, the hoist is not — every solid in this game is a tile and a
+moving platform cannot be one. **Not a to-do list:** the owner's analysis
+says explicitly not to prioritise more levels yet.
+
+### the reconciliation this entry is landing through
+
+This work was built on a branch that had assembled the three lineages
+**independently of `main` doing the same thing**, because the branch was
+started without the `git fetch origin main gh-pages` that CLAUDE.md's Eeri
+section requires. Both trees then wrote a v12, a v14 and a v15 with different
+content — a fourth lineage, and exactly the collision the decimal scheme
+above was introduced to stop.
+
+`main` won on every overlap, because `main` is the trunk: its assembly, its
+`v15.1` language/title/FX pack, its decimal versioning, its `REACH.gap` of 4.
+Only the work `main` did not have was carried across — the respawn fix, the
+address, and the two documents — re-applied against `main`'s newer
+`main.js`, `smoke.cjs` and `rooms.mjs` rather than merged, since a merge
+reported 23 conflicts and would have deleted eight modules. The abandoned
+branch's own `v15`/`v16` numbering is void; nothing referenced it.
 
 ## v15.1 — 2026-08-14 — three languages, a title screen, an illustrated pad, and the dev/FX pack
 

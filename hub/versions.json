@@ -40,13 +40,18 @@
     "from": "VERSIONS.md"
   },
   "eeri": {
-    "v": "15.1",
-    "n": 15001,
+    "v": "15.18",
+    "n": 15018,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
     "v": "40",
     "n": 40000,
+    "from": "VERSIONS.md"
+  },
+  "kindling": {
+    "v": "6",
+    "n": 6000,
     "from": "VERSIONS.md"
   },
   "radiofree": {

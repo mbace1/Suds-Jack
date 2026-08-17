@@ -15,6 +15,27 @@ const s = http.createServer((req, res) => {
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (d ? ' → ' + d : ''))); };
 
+// ---- PATIENCE, measured rather than guessed ------------------------------
+// This gate returned 6, 5, 3 and 30 failures on four occasions against a
+// tree that passed on the next run — every one of them a timeout, none of
+// them a bug. Its waits were written on a machine with a GPU; the same page
+// under SwiftShader renders a twelve-level game at a handful of frames a
+// second, so a 1.5 s wait for a jump to peak can expire before the jump has
+// had five frames to happen in.
+//
+// Re-running until green is the worst possible response to that: it is
+// exactly the habit that hides a real failure. So the gate now MEASURES the
+// machine it is on — how long the first boot takes is a direct read of it —
+// and scales every wait by the result. A fast machine stays fast (scale 1);
+// a software renderer gets the room it needs. `EERI_SLOW=n` overrides.
+//
+// The floor is the boot itself: nothing here is a fixed sleep waiting for a
+// clock, they are all waits for a STATE, so a longer ceiling costs nothing
+// when the state arrives early.
+const BOOT_BASELINE = 1200;     // ms, on a machine with a working GPU
+let SCALE = Number(process.env.EERI_SLOW) || 0;
+const ms = (n) => Math.round(n * (SCALE || 1));
+
 // ---- one token per module ------------------------------------------------
 // Two tokens for one module means the browser instantiates it TWICE, and a
 // module with state (assets.js holds the manifest) then has two of them:
@@ -188,20 +209,42 @@ s.listen(0, '127.0.0.1', async () => {
         window.__eeri.player.mercyT = 0;
         window.__eeri.debug.setPos(where ?? (e.x - 1.5), e.y + 0.1);
       }, place);
+      // WAIT UNTIL HE IS STANDING BEFORE PRESSING. `setPos` puts him at
+      // e.y + 0.1 — a tenth of a tile ABOVE the floor — so he is falling for
+      // the first frames after each placement. `nearExc()` requires
+      // `grounded`, and `input.take('action')` consumes the edge whether or
+      // not the mount was possible, so a press read on an airborne frame is
+      // simply thrown away. Every retry repeated the same race, which is why
+      // this failed consistently rather than flakily once the machine got
+      // slow enough that one frame is a long time.
+      await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: ms(2000) }).catch(() => {});
       await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-      await p.waitForTimeout(350);
+      await p.waitForTimeout(ms(350));
     }
     return await p.evaluate(() => window.__eeri.mode() === 'riding');
   }
 
   await p.goto(base + '/eeri/?skip', { waitUntil: 'load' });
-  await p.waitForFunction(() => !!window.__eeri, null, { timeout: 8000 }).catch(() => {});
+  // CALIBRATION. This one wait keeps a fixed, generous ceiling because it is
+  // the measurement: how long the game takes to stand up here sets the pace
+  // for every wait after it.
+  {
+    const t0 = Date.now();
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: 60000 }).catch(() => {});
+    const boot = Date.now() - t0;
+    // …with a FLOOR. The boot is one measurement at one moment, and the
+    // failures this fixes came from load arriving mid-run — a warm cache
+    // can boot in 450 ms and then meet a busy machine forty checks later.
+    // 1.5x of waits that end the moment their state arrives costs nothing.
+    if (!SCALE) SCALE = Math.min(8, Math.max(1.5, +(boot / BOOT_BASELINE).toFixed(2)));
+    console.log(`  ·    boot ${boot} ms → waits ×${SCALE}${process.env.EERI_SLOW ? ' (forced)' : ''}`);
+  }
   ok('it boots and exposes the handle', await p.evaluate(() => !!window.__eeri));
   ok('no errors on boot', errs.length === 0, errs.slice(0, 3).join(' | '));
   ok('it is actually drawing triangles', await p.evaluate(() => window.__eeri.debug.tris() > 500));
 
   // the kid lands on the ground and stands
-  await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: 3000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: ms(3000) }).catch(() => {});
   ok('the kid stands on the ground', await p.evaluate(() => window.__eeri.player.grounded));
   const y0 = await p.evaluate(() => window.__eeri.player.y);
   ok('the ground is where the map says (top of the band = 4)', Math.abs(y0 - 4) < 0.1, 'y=' + y0);
@@ -209,38 +252,38 @@ s.listen(0, '127.0.0.1', async () => {
   // run right: x increases (state-driven — a GPU-less sandbox renders slow)
   const x0 = await p.evaluate(() => window.__eeri.player.x);
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const ran = await p.waitForFunction((x) => window.__eeri.player.x > x + 2, x0, { timeout: 6000 }).then(() => true).catch(() => false);
+  const ran = await p.waitForFunction((x) => window.__eeri.player.x > x + 2, x0, { timeout: ms(6000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('holding right runs him right', ran, `${x0} → ` + await p.evaluate(() => window.__eeri.player.x));
 
   // jump: leaves the ground, comes back
   await p.evaluate(() => window.__eeri.debug.press('jump'));
-  const rose = await p.waitForFunction(() => window.__eeri.player.y > 4.5, null, { timeout: 1500 }).then(() => true).catch(() => false);
+  const rose = await p.waitForFunction(() => window.__eeri.player.y > 4.5, null, { timeout: ms(1500) }).then(() => true).catch(() => false);
   ok('jump leaves the ground', rose);
   await p.evaluate(() => window.__eeri.debug.release('jump'));
-  const back = await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  const back = await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: ms(8000) }).then(() => true).catch(() => false);
   ok('and gravity brings him back', back);
 
   // a bolt collects on touch
   const n0 = await p.evaluate(() => window.__eeri.collected());
   await p.evaluate(() => window.__eeri.debug.setPos(30.5, 4.2));
-  await p.waitForTimeout(400);
+  await p.waitForTimeout(ms(400));
   ok('walking into a bolt collects it', await p.evaluate(() => window.__eeri.collected()) > n0);
 
   // ---- THE CLIMB: the verb level 2 is built around --------------------
   // Level 1 is the stomp's level and carries no ladders on purpose (one idea
   // per level), so the climb is proved where it is taught.
   await p.evaluate(() => window.__eeri.debug.goSite(1));
-  await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(), null, { timeout: 8000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(), null, { timeout: ms(8000) }).catch(() => {});
   const ladders = await p.evaluate(() => window.__eeri.debug.ladders());
   ok('level 2 is built on ladders', ladders.length > 0, JSON.stringify(ladders));
   const L = ladders[0];
   await p.evaluate((l) => window.__eeri.debug.setPos(l.c + 0.5, 4.1), L);
-  await p.waitForTimeout(300);
+  await p.waitForTimeout(ms(300));
   await p.evaluate(() => window.__eeri.debug.press('up'));
   const climbed = await p.waitForFunction(
     () => window.__eeri.debug.climbing() && window.__eeri.player.y > 5.2,
-    null, { timeout: 8000 }).then(() => true).catch(() => false);
+    null, { timeout: ms(8000) }).then(() => true).catch(() => false);
   ok('holding up on a ladder climbs it', climbed,
     'y=' + await p.evaluate(() => window.__eeri.player.y));
 
@@ -248,7 +291,7 @@ s.listen(0, '127.0.0.1', async () => {
   // which is what makes a ladder a route instead of a trap
   const topped = await p.waitForFunction(
     (l) => Math.abs(window.__eeri.player.y - (l.cy1 + 1)) < 0.2,
-    L, { timeout: 12000 }).then(() => true).catch(() => false);
+    L, { timeout: ms(12000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('up'));
   ok('the climb tops out with his feet on the deck', topped,
     `y=${await p.evaluate(() => window.__eeri.player.y)}, deck=${L.cy1 + 1}`);
@@ -257,7 +300,7 @@ s.listen(0, '127.0.0.1', async () => {
   const steppedOff = await p.waitForFunction(
     (l) => !window.__eeri.debug.climbing() && window.__eeri.player.x > l.c + 1.2
       && window.__eeri.player.grounded,
-    L, { timeout: 8000 }).then(() => true).catch(() => false);
+    L, { timeout: ms(8000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('and a direction steps him off onto it', steppedOff,
     'x=' + await p.evaluate(() => window.__eeri.player.x));
@@ -272,7 +315,7 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate((c) => window.__eeri.debug.setPos(c.x - 1, 4.2), cp);
   await p.evaluate(() => window.__eeri.debug.press('right'));
   const litUp = await p.waitForFunction(() => window.__eeri.debug.checkpoint()?.lit,
-    null, { timeout: 8000 }).then(() => true).catch(() => false);
+    null, { timeout: ms(8000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('running past it lights it', litUp);
   ok('…and falling out of the world then costs the middle of the level, not all of it',
@@ -285,14 +328,14 @@ s.listen(0, '127.0.0.1', async () => {
   ok('…and the roller is the one you jump, not the one you land on',
     roll && roll.stompable === false);
   await p.evaluate(() => window.__eeri.debug.goSite(0));
-  await p.waitForFunction(() => window.__eeri.site() === 0 && !window.__eeri.debug.transitioning(), null, { timeout: 8000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.site() === 0 && !window.__eeri.debug.transitioning(), null, { timeout: ms(8000) }).catch(() => {});
 
   // the ride: walk to the cab, climb in, drive, hop out
   await p.evaluate(() => {
     const e = window.__eeri.debug.excPos();
     window.__eeri.debug.setPos(e.x - 1.5, e.y + 0.1);
   });
-  await p.waitForTimeout(200);
+  await p.waitForTimeout(ms(200));
   let mounted = await mountUp();
   // A mount that fails says almost nothing on its own — it is four
   // conditions ANDed together in nearExc() — so it reports which one was
@@ -311,13 +354,13 @@ s.listen(0, '127.0.0.1', async () => {
 
   const ex0 = (await p.evaluate(() => window.__eeri.debug.excPos())).x;
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const drove = await p.waitForFunction((x) => window.__eeri.debug.excPos().x > x + 1.5, ex0, { timeout: 8000 }).then(() => true).catch(() => false);
+  const drove = await p.waitForFunction((x) => window.__eeri.debug.excPos().x > x + 1.5, ex0, { timeout: ms(8000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('riding drives the machine', drove, `${ex0} → ` + (await p.evaluate(() => window.__eeri.debug.excPos())).x);
 
   await p.evaluate(() => window.__eeri.debug.press('action'));
   await p.evaluate(() => window.__eeri.debug.release('action'));
-  const out = await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 10000 }).then(() => true).catch(() => false);
+  const out = await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: ms(10000) }).then(() => true).catch(() => false);
   ok('E hops back out', out, 'mode=' + await p.evaluate(() => window.__eeri.mode()));
   ok('the kid lands somewhere real after dismount', await p.evaluate(() => window.__eeri.player.y) > 3);
 
@@ -328,7 +371,7 @@ s.listen(0, '127.0.0.1', async () => {
   // runs the clock several times slower than the wall clock.
   await p.evaluate(() => window.__eeri.debug.setPos(4, 4.2));
   const rested = await p.waitForFunction(
-    () => window.__eeri.debug.hazard()?.state === 'rest', null, { timeout: 20000 })
+    () => window.__eeri.debug.hazard()?.state === 'rest', null, { timeout: ms(20000) })
     .then(() => true).catch(() => false);
   ok('the wrecking ball hangs still when nobody is near', rested,
     'state=' + await p.evaluate(() => window.__eeri.debug.hazard()?.state));
@@ -353,7 +396,7 @@ s.listen(0, '127.0.0.1', async () => {
   // slower than the wall clock, so the budget is the frame rate's, not the
   // hazard's — the ORDER below is the actual assertion
   const swung = await p.waitForFunction(() => window.__ballLog.includes('swing'),
-    null, { timeout: 45000 }).then(() => true).catch(() => false);
+    null, { timeout: ms(45000) }).then(() => true).catch(() => false);
   const ballLog = await p.evaluate(() => window.__ballLog);
   // the telegraph is an ORDER, and the order is the assertion: it must go
   // through `wind` and it must not have swung before it. Written as
@@ -366,7 +409,7 @@ s.listen(0, '127.0.0.1', async () => {
   ok('and only then does it swing', swung, ballLog.join(' → '));
 
 
-  const struck = await p.waitForFunction(() => window.__eeri.debug.mercy() > 0, null, { timeout: 6000 }).then(() => true).catch(() => false);
+  const struck = await p.waitForFunction(() => window.__eeri.debug.mercy() > 0, null, { timeout: ms(6000) }).then(() => true).catch(() => false);
   ok('the swing knocks the kid back (mercy frames, never death)', struck);
   ok('and he is still in the world afterwards',
     await p.evaluate(() => window.__eeri.player.y) > 0.9);
@@ -385,12 +428,12 @@ s.listen(0, '127.0.0.1', async () => {
   // drive the cab under the ball deliberately — it hangs at 39 now, off the
   // machine's own run, which is the entire point of having moved it
   await p.evaluate(() => { window.__eeri.exc.x = 38.4; window.__eeri.player.mercyT = 0; });
-  const thrown = await p.waitForFunction(() => window.__eeri.mode() !== 'riding', null, { timeout: 10000 }).then(() => true).catch(() => false);
+  const thrown = await p.waitForFunction(() => window.__eeri.mode() !== 'riding', null, { timeout: ms(10000) }).then(() => true).catch(() => false);
   ok('a hit takes the ride, not the run (thrown clear of the cab)', thrown);
 
   // ---- the loop: dangerous until tamed, and a machine-shaped exit -------
   await p.reload({ waitUntil: 'load' });
-  await p.waitForFunction(() => !!window.__eeri && window.__eeri.player.grounded, null, { timeout: 8000 });
+  await p.waitForFunction(() => !!window.__eeri && window.__eeri.player.grounded, null, { timeout: ms(8000) });
   ok('the machine starts UNMANNED', await p.evaluate(() => !window.__eeri.debug.tamed()));
   ok('and the bank blocks the way out', await p.evaluate(() => window.__eeri.debug.bank()?.remaining) === 3);
   ok('the exit is not open at the start', await p.evaluate(() => !window.__eeri.debug.cleared()));
@@ -402,12 +445,12 @@ s.listen(0, '127.0.0.1', async () => {
     await p.evaluate(() => window.__eeri.debug.flag()?.phase) === -1,
     'phase=' + await p.evaluate(() => window.__eeri.debug.flag()?.phase));
   await p.evaluate(() => window.__eeri.debug.setPos(80, 4.2));
-  await p.waitForFunction(() => window.__eeri.debug.flag()?.phase >= 0, null, { timeout: 8000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.debug.flag()?.phase >= 0, null, { timeout: ms(8000) }).catch(() => {});
   ok('coming up on it starts building it',
     await p.evaluate(() => window.__eeri.debug.flag()?.phase) >= 0);
   await p.evaluate(() => window.__eeri.debug.setPos(89, 4.2));
   const built = await p.waitForFunction(() => window.__eeri.debug.flag()?.phase >= 2,
-    null, { timeout: 10000 }).then(() => true).catch(() => false);
+    null, { timeout: ms(10000) }).then(() => true).catch(() => false);
   ok('and arriving finishes it — all three phases', built,
     'phase=' + await p.evaluate(() => window.__eeri.debug.flag()?.phase));
   ok('…but it is not raised until it is passed',
@@ -417,12 +460,12 @@ s.listen(0, '127.0.0.1', async () => {
   // the kid cannot pass the bank on foot — three tiles is above his jump
   await p.evaluate(() => window.__eeri.debug.setPos(82, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  await p.waitForTimeout(1200);
+  await p.waitForTimeout(ms(1200));
   for (let i = 0; i < 6; i++) {
     await p.evaluate(() => { window.__eeri.debug.press('jump'); });
-    await p.waitForTimeout(220);
+    await p.waitForTimeout(ms(220));
     await p.evaluate(() => window.__eeri.debug.release('jump'));
-    await p.waitForTimeout(220);
+    await p.waitForTimeout(ms(220));
   }
   await p.evaluate(() => window.__eeri.debug.release('right'));
   const blocked = await p.evaluate(() => window.__eeri.player.x) < 84;
@@ -440,7 +483,7 @@ s.listen(0, '127.0.0.1', async () => {
 
   // the bucket digs the bank down — the machine changes the level
   await p.evaluate(() => { window.__eeri.exc.x = 83; window.__eeri.debug.press('down'); });
-  const dug = await p.waitForFunction(() => window.__eeri.debug.bank()?.cleared, null, { timeout: 45000 }).then(() => true).catch(() => false);
+  const dug = await p.waitForFunction(() => window.__eeri.debug.bank()?.cleared, null, { timeout: ms(45000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('down'));
   ok('the bucket digs the bank away', dug,
     'remaining=' + await p.evaluate(() => window.__eeri.debug.bank()?.remaining));
@@ -450,7 +493,7 @@ s.listen(0, '127.0.0.1', async () => {
   // out on foot, through the gate the machine opened — and the gate does
   // not end the job any more: the level goes beyond one room
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 20000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: ms(20000) }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
   // A long window, not 8s: this walk is ~4.5 tiles plus the flag's build and
@@ -462,7 +505,7 @@ s.listen(0, '127.0.0.1', async () => {
   // finished arriving, and without it the next check can read the old room.
   const site2 = await p.waitForFunction(
     () => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(),
-    null, { timeout: 25000 }).then(() => true).catch(() => false);
+    null, { timeout: ms(25000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('running past the flag ends the level and leads to LEVEL 2, not the credits', site2);
   ok('the room announces itself on the way in', await p.locator('#banner').count() === 1);
@@ -482,12 +525,24 @@ s.listen(0, '127.0.0.1', async () => {
   // the gap is past BOTH of them: the kid's jump falls short…
   await p.evaluate(() => window.__eeri.debug.setPos(54, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  await p.waitForTimeout(600);
+  await p.waitForTimeout(ms(600));
   await p.evaluate(() => window.__eeri.debug.press('jump'));
-  await p.waitForTimeout(300);
+  await p.waitForTimeout(ms(300));
   await p.evaluate(() => { window.__eeri.debug.release('jump'); window.__eeri.debug.release('right'); });
-  await p.waitForTimeout(1500);   // he falls, and the pit hands him back
-  ok('the gap is too wide for the kid', await p.evaluate(() => window.__eeri.player.x) < 58,
+  // WAIT FOR THE LANDING, not for a clock. He has to fall and be handed back
+  // by the pit, and that is a number of FRAMES — on a software renderer 1.5 s
+  // of wall time is not enough of them, so the check read his x mid-air at
+  // 58.19 and called a fall a crossing.
+  await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: ms(8000) }).catch(() => {});
+  await p.waitForTimeout(ms(250));
+  // MEASURED OFF THE ROOM, not guessed: solid through cell 57 (so the near
+  // lip's edge is x 58.0), gap 58…65, far side from 66. `< 58` therefore
+  // failed him for STANDING ON THE LIP — his centre rests at 58.1 with his
+  // box still supported — which is not crossing, it is arriving at the edge.
+  // The claim is that he never reaches the far side, so that is what is
+  // asserted; an eight-tile hole against a four-tile budget still fails
+  // loudly if the jump ever grows.
+  ok('the gap is too wide for the kid', await p.evaluate(() => window.__eeri.player.x) < 64,
     'x=' + await p.evaluate(() => window.__eeri.player.x));
 
   // …so read the cycle and take the machine, again
@@ -499,7 +554,7 @@ s.listen(0, '127.0.0.1', async () => {
   // drive — it must actually reach the lip and stop there, not merely dawdle
   await p.evaluate(() => { window.__eeri.exc.x = 54; window.__eeri.exc.vx = 0; });
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  await p.waitForTimeout(6000);
+  await p.waitForTimeout(ms(6000));
   await p.evaluate(() => window.__eeri.debug.release('right'));
   const stoppedAt = await p.evaluate(() => window.__eeri.exc.x);
   ok('the machine refuses the gap', stoppedAt > 55 && stoppedAt < 57.1, 'x=' + stoppedAt);
@@ -507,16 +562,16 @@ s.listen(0, '127.0.0.1', async () => {
   // the bucket takes the girder off the stack
   await p.evaluate(() => { window.__eeri.exc.x = 46; window.__eeri.exc.vx = 0; });
   await p.evaluate(() => window.__eeri.debug.press('down'));
-  const slung = await p.waitForFunction(() => window.__eeri.debug.girder()?.state === 1, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  const slung = await p.waitForFunction(() => window.__eeri.debug.girder()?.state === 1, null, { timeout: ms(8000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('down'));
   ok('holding the bucket in the stack slings the girder on', slung);
   ok('and the machine feels the load', await p.evaluate(() => window.__eeri.debug.girder()?.carrying));
 
   // carried to the lip and lowered in, it seats as a span
   await p.evaluate(() => { window.__eeri.exc.x = 55.5; window.__eeri.exc.vx = 0; });
-  await p.waitForTimeout(300);
+  await p.waitForTimeout(ms(300));
   await p.evaluate(() => window.__eeri.debug.press('down'));
-  const seated = await p.waitForFunction(() => window.__eeri.debug.girder()?.state === 2, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  const seated = await p.waitForFunction(() => window.__eeri.debug.girder()?.state === 2, null, { timeout: ms(8000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('down'));
   ok('lowered at the lip, the girder seats as a span', seated);
   ok('and the map really changed — the gap is bridged',
@@ -525,20 +580,20 @@ s.listen(0, '127.0.0.1', async () => {
 
   // the kid crosses his machine's bridge and walks the job out
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 20000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: ms(20000) }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.setPos(56, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
   // mid-span at ground height, grounded, over what used to be air = crossing
   const crossed = await p.waitForFunction(
     () => window.__eeri.player.x > 62 && window.__eeri.player.grounded && window.__eeri.player.y < 4.2,
-    null, { timeout: 30000 }).then(() => true).catch(() => false);
+    null, { timeout: ms(30000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('the kid crosses the span on foot', crossed,
     'x=' + await p.evaluate(() => window.__eeri.player.x));
 
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const site3 = await p.waitForFunction(() => window.__eeri.site() === 2 && !window.__eeri.debug.transitioning(), null, { timeout: 20000 }).then(() => true).catch(() => false);
+  const site3 = await p.waitForFunction(() => window.__eeri.site() === 2 && !window.__eeri.debug.transitioning(), null, { timeout: ms(20000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('site 2 leads on to SITE 3', site3);
 
@@ -556,9 +611,9 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => window.__eeri.debug.press('right'));
   for (let i = 0; i < 5; i++) {
     await p.evaluate(() => window.__eeri.debug.press('jump'));
-    await p.waitForTimeout(200);
+    await p.waitForTimeout(ms(200));
     await p.evaluate(() => window.__eeri.debug.release('jump'));
-    await p.waitForTimeout(200);
+    await p.waitForTimeout(ms(200));
   }
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('the kid alone cannot get past the wall',
@@ -570,13 +625,13 @@ s.listen(0, '127.0.0.1', async () => {
 
   // the ball that swung at you is the ball you swing at the wall
   await p.evaluate(() => { window.__eeri.exc.x = 77; window.__eeri.exc.vx = 0; });
-  await p.waitForTimeout(300);
+  await p.waitForTimeout(ms(300));
   await p.evaluate(() => window.__eeri.debug.press('down'));
-  const cracked = await p.waitForFunction(() => window.__eeri.debug.wall()?.hits >= 1, null, { timeout: 30000 }).then(() => true).catch(() => false);
+  const cracked = await p.waitForFunction(() => window.__eeri.debug.wall()?.hits >= 1, null, { timeout: ms(30000) }).then(() => true).catch(() => false);
   ok('the first swing cracks the wall', cracked);
   ok('…and a cracked wall is still a wall',
     await p.evaluate(() => window.__eeri.debug.wall()?.cracked && !window.__eeri.debug.wall()?.cleared));
-  const smashed = await p.waitForFunction(() => window.__eeri.debug.wall()?.cleared, null, { timeout: 30000 }).then(() => true).catch(() => false);
+  const smashed = await p.waitForFunction(() => window.__eeri.debug.wall()?.cleared, null, { timeout: ms(30000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('down'));
   ok('the second brings it down', smashed);
   ok('and the map really changed — the brick is gone',
@@ -584,27 +639,49 @@ s.listen(0, '127.0.0.1', async () => {
 
   // out on foot, through the hole the crane made
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 20000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: ms(20000) }).catch(() => {});
   // the last level of a world carries the BIG flag — a different object, so
   // it is tellable from the small one before you reach it — and past it the
   // GATE, which is the world's curtain rather than the level's
   ok('the last level flies the big flag',
     await p.evaluate(() => window.__eeri.debug.flag()?.big) === true);
   await p.evaluate(() => window.__eeri.debug.setPos(85, 4.2));
-  await p.waitForFunction(() => window.__eeri.debug.flag()?.phase >= 2, null, { timeout: 12000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.debug.flag()?.phase >= 2, null, { timeout: ms(12000) }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.press('right'));
   const bigRaised = await p.waitForFunction(() => window.__eeri.debug.flag()?.raised,
-    null, { timeout: 25000 }).then(() => true).catch(() => false);
+    null, { timeout: ms(25000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('and it is run past like any other', bigRaised);
   ok('but it does NOT end the world by itself', await p.evaluate(() => !window.__eeri.debug.cleared()));
 
   await p.evaluate(() => window.__eeri.debug.setPos(89, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const walkedOut = await p.waitForFunction(() => window.__eeri.debug.cleared(), null, { timeout: 25000 }).then(() => true).catch(() => false);
+  const walkedOut = await p.waitForFunction(() => window.__eeri.debug.cleared(), null, { timeout: ms(25000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
-  ok('walking out through the gate clocks the whole job out', walkedOut);
+  ok('walking out through the gate ends the world', walkedOut);
   ok('and it says so on screen', await p.locator('#clear').count() === 1);
+  // WITH A WORLD BEHIND IT, the curtain is a beat and not an ending — and
+  // the flag on a gated level must NOT have advanced past the gate on its
+  // own, or the curtain is unreachable. Both were live bugs the moment
+  // World 2's levels landed.
+  {
+    const wentOn = await p.waitForFunction(() => window.__eeri.site() === 3,
+      null, { timeout: ms(20000) }).then(() => true).catch(() => false);
+    ok('…and then World 2 begins', wentOn, 'site=' + await p.evaluate(() => window.__eeri.site()));
+    // the swap is ASYNC — goSite sets the index, then awaits the new layer
+    // set — so this waits on the thing itself rather than on the index
+    const swapped = await p.waitForFunction(() => window.__eeri.debug.world?.() === 'pipeworks',
+      null, { timeout: ms(30000) }).then(() => true).catch(() => false);
+    ok('the backdrop changes with the world', swapped,
+      await p.evaluate(() => window.__eeri.debug.world?.()));
+    // back to World 1's last room for the checks below, which are its
+    // `?a=` is not decoration: without it this is a HASH-ONLY navigation
+    // from the page already open, so the document never reloads and the
+    // run carries on in World 2 while the address says 1-3
+    await p.goto(base + '/eeri/?skip&a=5#eeri-1-3', { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__eeri?.site() === 2, null, { timeout: ms(30000) }).catch(() => {});
+    await p.waitForTimeout(ms(800));
+  }
 
   // ---- the small stuff ---------------------------------------------------
   const bots = await p.evaluate(() => window.__eeri.debug.robots());
@@ -646,7 +723,7 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the background carries authored life at all', bg0.length > 0);
   const bgMoved = await p.waitForFunction(
     (a) => window.__eeri.debug.bg().some((v, i) => Math.abs(v - a[i]) > 0.05),
-    bg0, { timeout: 6000 }).then(() => true).catch(() => false);
+    bg0, { timeout: ms(6000) }).then(() => true).catch(() => false);
   ok('the background works — something back there is moving', bgMoved);
 
   // the camera reframes per room (js/camera.js): a room pulls back where it
@@ -660,7 +737,7 @@ s.listen(0, '127.0.0.1', async () => {
       const z = (await p.evaluate(() => window.__eeri.debug.camera())).z;
       if (last !== null && Math.abs(z - last) < 0.12) return z;
       last = z;
-      await p.waitForTimeout(250);
+      await p.waitForTimeout(ms(250));
     }
     return last;
   };
@@ -707,15 +784,20 @@ s.listen(0, '127.0.0.1', async () => {
       // the direction ticks use the same words and matched too
       const block = g.slice(g.indexOf('export const GLYPHS = {'), g.indexOf('};', g.indexOf('export const GLYPHS = {')));
       const drawn = [...block.matchAll(/^\s{2}(\w+):/gm)].map((m) => m[1]);
-      const CONTROLS = ['left', 'right', 'up', 'down', 'jump', 'action'];
+      // `menu` joined the map when SELECT and START were wired (v15.12).
+      // Two BUTTONS bind it — the two drawn pills — so the bound list is
+      // deduped before comparing: the contract is over control NAMES.
+      const CONTROLS = ['left', 'right', 'up', 'down', 'jump', 'action', 'menu'];
       ok('a face is drawn for every control, and only for those',
         CONTROLS.every((c) => drawn.includes(c)) && drawn.length === CONTROLS.length,
         drawn.join(','));
       const mainSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
       const bind = mainSrc.match(/bindButtons\(\{([^}]*)\}/);
       const bound = bind ? [...bind[1].matchAll(/'(\w+)'/g)].map((m) => m[1]) : [];
+      const boundSet = [...new Set(bound)];
       ok('…and the glyph set matches the controls the game actually binds',
-        bound.length > 0 && bound.every((c) => CONTROLS.includes(c)), bound.join(','));
+        boundSet.length > 0 && boundSet.every((c) => CONTROLS.includes(c))
+        && CONTROLS.every((c) => boundSet.includes(c)), boundSet.join(','));
     }
     // The rule is about the WORDS and is unaffected by the buttons gaining
     // pictures. It is checked against the language packs rather than against
@@ -741,8 +823,8 @@ s.listen(0, '127.0.0.1', async () => {
     });
     const pp = await phone.newPage();
     await pp.goto(base + '/eeri/?skip', { waitUntil: 'load' });
-    await pp.waitForFunction(() => !!window.__eeri, null, { timeout: 12000 }).catch(() => {});
-    await pp.waitForTimeout(600);
+    await pp.waitForFunction(() => !!window.__eeri, null, { timeout: ms(12000) }).catch(() => {});
+    await pp.waitForTimeout(ms(600));
     const geo = await pp.evaluate(() => {
       const btns = [...document.querySelectorAll('#touch button')]
         .map((e) => ({ id: e.id, r: e.getBoundingClientRect() }));
@@ -764,8 +846,21 @@ s.listen(0, '127.0.0.1', async () => {
     ok('the on-screen controls are all there on a phone', geo.n >= 6);
     ok(`every on-screen button clears the 44 px floor${geo.small.length ? ' — ' + geo.small : ''}`,
       geo.small.length === 0);
-    ok(`no two on-screen buttons overlap${geo.pairs.length ? ' — ' + geo.pairs : ''}`,
-      geo.pairs.length === 0);
+    // A D-PAD'S ZONES MAY TOUCH. The pad is a painted backboard now (art
+    // lane), and at 390px wide the DMG plate is 225px tall with drawn d-pad
+    // arms of about 20px — so four zones that each clear the 44px floor
+    // cannot also be disjoint. Adjacent zones are how a virtual d-pad has
+    // always worked. What must never overlap is the FACE buttons, where an
+    // ambiguous press means jumping when you meant to climb into a machine.
+    {
+      const DPAD = new Set(['tL', 'tR', 'tU', 'tD']);
+      const bad = geo.pairs.filter((pair) => {
+        const [a, b] = pair.split('/');
+        return !(DPAD.has(a) && DPAD.has(b));
+      });
+      ok(`no two controls overlap, d-pad zones aside${bad.length ? ' — ' + bad.join(',') : ''}`,
+        bad.length === 0);
+    }
     // the badge is inert under a thumb, but it must not COVER a control —
     // v6 fixed this once for jump, and my first layout put Ⓑ under it
     ok(`the signature covers no control${geo.onBadge.length ? ' — ' + geo.onBadge : ''}`,
@@ -780,6 +875,67 @@ s.listen(0, '127.0.0.1', async () => {
       /pollGamepad\(\)/.test(src.slice(src.indexOf('setAnimationLoop'), src.indexOf('setAnimationLoop') + 400)));
   }
 
+  // ---- THE ADDRESS: /eeri/#eeri-1-2 opens the second level --------------
+  // The mapping itself is proved in test/rooms.mjs, in plain Node. What can
+  // only be proved here is the WIRING: that a fragment actually boots that
+  // room, that a level change rewrites the bar, and that an address naming a
+  // level which is not built yet lands somewhere real instead of a black
+  // screen — the game grows three levels at a time, so #eeri-2-1 is a link
+  // somebody can hold before world 2 exists.
+  //
+  // Each check needs its own QUERY, not just its own fragment: a navigation
+  // differing only after the '#' does not reload the page, so the assertions
+  // would read the PREVIOUS room's game object and pass or fail for the wrong
+  // reason. That cost a debugging pass. `?skip` walks past the title screen.
+  {
+    // the invariant, not a fixed string: the gate has already walked several
+    // rooms by now, so what must hold is that the bar names the room you are
+    // standing in — whichever that is.
+    const agrees = await p.evaluate(() => {
+      const i = window.__eeri.site();
+      return location.hash === `#eeri-${Math.floor(i / 3) + 1}-${(i % 3) + 1}`;
+    });
+    ok('the address in the bar always names the room you are in', agrees,
+      await p.evaluate(() => `${location.hash} at site ${window.__eeri.site()}`));
+    ok('the HUD shows the address beside the name',
+      /^\d+-\d+ · /.test(await p.evaluate(() => document.getElementById('site').textContent)),
+      await p.evaluate(() => document.getElementById('site').textContent));
+
+    await p.goto(base + '/eeri/?skip&a=1#eeri-1-2', { waitUntil: 'load' });
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: ms(20000) }).catch(() => {});
+    ok('#eeri-1-2 boots straight into the second level',
+      await p.evaluate(() => window.__eeri.site()) === 1,
+      'site=' + await p.evaluate(() => window.__eeri.site()));
+    ok('…and it really is the room it names',
+      (await p.evaluate(() => window.__eeri.level.def.name)).includes('SCAFFOLD'));
+
+    await p.goto(base + '/eeri/?skip&a=2#1-3', { waitUntil: 'load' });
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: ms(20000) }).catch(() => {});
+    ok('the bare form works, and is rewritten to the full one',
+      await p.evaluate(() => window.__eeri.site()) === 2
+      && await p.evaluate(() => location.hash) === '#eeri-1-3',
+      await p.evaluate(() => location.hash));
+
+    await p.goto(base + '/eeri/?skip&a=3#eeri-5-1', { waitUntil: 'load' });
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: ms(20000) }).catch(() => {});
+    // 5-1: there are FOUR worlds, so this one cannot exist. It was 2-1 until
+    // World 2 was built and 3-1 until the greyboxes landed — an address test
+    // written against the edge of what exists has to move as that edge does.
+    ok('an address for a level that is not built yet falls back to 1-1',
+      await p.evaluate(() => window.__eeri.site()) === 0);
+
+    await p.goto(base + '/eeri/?skip&a=4#totally-bogus', { waitUntil: 'load' });
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: ms(20000) }).catch(() => {});
+    ok('and so does nonsense', await p.evaluate(() => window.__eeri.site()) === 0);
+
+    await p.evaluate(() => window.__eeri.debug.goSite(1));
+    await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(),
+      null, { timeout: ms(20000) }).catch(() => {});
+    ok('changing level rewrites the address',
+      await p.evaluate(() => location.hash) === '#eeri-1-2',
+      await p.evaluate(() => location.hash));
+  }
+
   // ---- the gizmo kit, in the lab ----------------------------------------
   // A belt is a floor that moves you and a tarp is a floor that throws you,
   // so both are proved by standing still on one: anything that happens is
@@ -787,17 +943,149 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => window.__eeri.debug.goLab());
   const inLab = await p.waitForFunction(
     () => !window.__eeri.debug.transitioning() && (window.__eeri.debug.gizmos().belts || []).length > 0,
-    null, { timeout: 15000 }).then(() => true).catch(() => false);
+    null, { timeout: ms(15000) }).then(() => true).catch(() => false);
   ok('the gizmo lab builds', inLab);
 
   if (inLab) {
     const giz = await p.evaluate(() => window.__eeri.debug.gizmos());
+    // WATER, both kinds, in the lab that exists to prove the kit.
+    const wat = giz.water || [];
+    ok('the lab carries both kinds of water', wat.length >= 2
+      && wat.some((q) => !q.deep) && wat.some((q) => q.deep), JSON.stringify(wat));
+
+    const sh = wat.find((q) => !q.deep);
+    if (sh) {
+      // SHALLOW is a floor that slows you. Measured as a RACE rather than by
+      // reading a constant: run the same 4 tiles on dry land and in water and
+      // compare, because a test that reads WADE back out of the game proves
+      // only that the number exists.
+      const runFor = async (x0) => {
+        await p.evaluate((x) => { window.__eeri.debug.setPos(x, 4.2); }, x0);
+        await p.waitForTimeout(ms(120));
+        await p.evaluate(() => window.__eeri.debug.press('right'));
+        await p.waitForFunction((x) => window.__eeri.player.x > x + 3.5, x0, { timeout: ms(20000) })
+          .catch(() => {});
+        const v = await p.evaluate(() => Math.abs(window.__eeri.player.vx));
+        await p.evaluate(() => window.__eeri.debug.release('right'));
+        return v;
+      };
+      const dryV = await runFor(sh.c0 - 8);
+      const wetV = await runFor(sh.c0 + 0.5);
+      ok('standing in shallow water reads as water', await p.evaluate(() => window.__eeri.debug.wading()));
+      ok(`wading is slower than running (${wetV.toFixed(2)} vs ${dryV.toFixed(2)} tiles/s)`,
+        wetV < dryV * 0.75 && wetV > 0.5);
+    }
+
+    const dp = wat.find((q) => q.deep);
+    if (dp) {
+      // DEEP is a hole wearing different paint, and DESIGN §4.1 is the point:
+      // it must HAND HIM BACK, never hurt him. Dropped into the middle of it,
+      // he ends up on the dry side of the near lip with his health untouched
+      // (there is no health), which is the promise the whole world rests on.
+      await p.evaluate((d) => window.__eeri.debug.setPos((d.c0 + d.c1) / 2 + 0.5, 4.2), dp);
+      const handedBack = await p.waitForFunction(
+        (d) => window.__eeri.player.y > 3 && window.__eeri.player.x < d.c0,
+        dp, { timeout: ms(15000) }).then(() => true).catch(() => false);
+      ok('deep water hands him back to the near lip rather than drowning him', handedBack,
+        'x=' + await p.evaluate(() => window.__eeri.player.x.toFixed(1)));
+      // …on something STANDABLE, which the shallows are — the lip he is
+      // handed to here is a puddle, and that is a legitimate place to be put
+      // down. `fallRespawn` returns him a tile ABOVE the lip, so this waits
+      // for the landing rather than sampling mid-drop.
+      const landed = await p.waitForFunction(() => window.__eeri.player.grounded,
+        null, { timeout: ms(10000) }).then(() => true).catch(() => false);
+      ok('…and he lands on a floor, out of the deep', landed,
+        'y=' + await p.evaluate(() => window.__eeri.player.y.toFixed(2)));
+    }
+
+    // THE HOIST — the first solid thing here that is not a tile, so this is
+    // the one gizmo whose test has to prove PHYSICS rather than a state
+    // flag. Four things, and each is a way moving floors classically break:
+    // you land on it, it CARRIES you (the hard one — it rises into your
+    // feet, so the landing test can never fire), you can leave it, and it
+    // does not drag you through the ceiling.
+    const hoists = await p.evaluate(() => window.__eeri.debug.hoists());
+    ok('the lab carries a hoist', hoists.length >= 1, JSON.stringify(hoists));
+    if (hoists.length) {
+      const h = hoists[0];
+
+      // wait for it to come down to its floor, then stand on it
+      await p.waitForFunction((q) => window.__eeri.debug.hoists()[0].y < q.cy0 + 0.4,
+        h, { timeout: ms(20000) }).catch(() => {});
+      await p.evaluate((q) => window.__eeri.debug.setPos(q.x, q.cy0 + 0.8), h);
+      const stood = await p.waitForFunction(() => window.__eeri.debug.carried(),
+        null, { timeout: ms(15000) }).then(() => true).catch(() => false);
+      ok('landing on a hoist puts him on it', stood,
+        'carried=' + await p.evaluate(() => window.__eeri.debug.carried()));
+
+      if (stood) {
+        // THE CARRY. It rises INTO him, so a crossing test alone can never
+        // catch it — this is what the `riding` branch of the platform pass
+        // exists for, and the assertion is simply that he went up with it.
+        const y0 = await p.evaluate(() => window.__eeri.player.y);
+        const rose = await p.waitForFunction(
+          (y) => window.__eeri.player.y > y + 2 && window.__eeri.debug.carried(),
+          y0, { timeout: ms(25000) }).then(() => true).catch(() => false);
+        ok('…and it carries him up as it goes', rose,
+          `${y0.toFixed(2)} → ` + await p.evaluate(() => window.__eeri.player.y.toFixed(2)));
+
+        // he must not be welded to it: a jump lets go
+        await p.evaluate(() => window.__eeri.debug.press('jump'));
+        await p.waitForTimeout(ms(200));
+        await p.evaluate(() => window.__eeri.debug.release('jump'));
+        const letGo = await p.waitForFunction(() => !window.__eeri.debug.carried(),
+          null, { timeout: ms(8000) }).then(() => true).catch(() => false);
+        ok('…and a jump lets go of it', letGo);
+      }
+
+      // it must never push him through a solid: the rule the prover refuses
+      // a room for, checked here as a fact about the running game
+      const clear = await p.evaluate(() => {
+        const pl = window.__eeri.player;
+        return !window.__eeri.level.solidCell(Math.floor(pl.x), Math.floor(pl.y + 0.5));
+      });
+      ok('a hoist never leaves him inside a tile', clear);
+    }
+
+    // THE PIPE: a tube you go inside. Stand at a mouth, press the action,
+    // come out the other end — and the assertions are the two halves of the
+    // contract: you actually MOVE, and you are somewhere standable when you
+    // land, which is what `check()` proves geometrically and this proves in
+    // the running game.
+    const pipes = await p.evaluate(() => window.__eeri.debug.pipes());
+    ok('the lab carries a pipe', pipes.length >= 1, JSON.stringify(pipes));
+    if (pipes.length) {
+      const q = pipes[0];
+      await p.evaluate((m) => window.__eeri.debug.setPos(m.c + 0.5, m.cy + 0.05), q.a);
+      await p.waitForTimeout(ms(250));
+      ok('standing at a mouth offers the pipe',
+        (await p.evaluate(() => document.getElementById('hint').textContent)).toUpperCase()
+          .includes('PIPE'),
+        await p.evaluate(() => document.getElementById('hint').textContent));
+
+      await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+      const cameOut = await p.waitForFunction(
+        (m) => Math.abs(window.__eeri.player.x - (m.c + 0.5)) < 1.2 && window.__eeri.mode() === 'foot',
+        q.b, { timeout: ms(15000) }).then(() => true).catch(() => false);
+      ok('going in one mouth brings you out the other', cameOut,
+        'x=' + await p.evaluate(() => window.__eeri.player.x.toFixed(1))
+        + ' wanted ~' + (q.b.c + 0.5));
+      ok('…and he is standing on something when he arrives',
+        await p.evaluate(() => window.__eeri.player.grounded));
+      // the far mouth is a mouth too — without a cooldown it swallows him
+      // straight back, and the trip becomes a loop he cannot leave
+      await p.waitForTimeout(ms(700));
+      ok('…and the far mouth does not send him straight back',
+        Math.abs(await p.evaluate(() => window.__eeri.player.x) - (q.b.c + 0.5)) < 1.5,
+        'x=' + await p.evaluate(() => window.__eeri.player.x.toFixed(1)));
+    }
+
     // THE BELT: stand still on it and the floor takes you somewhere
     const b = giz.belts.find((x) => x.dir > 0);
     await p.evaluate((v) => window.__eeri.debug.setPos(v.c0 + 0.5, v.cy + 1.2), b);
     const carried = await p.waitForFunction(
       (v) => window.__eeri.player.x > v.c0 + 1.4 && Math.abs(window.__eeri.player.vx) < 0.1,
-      b, { timeout: 15000 }).then(() => true).catch(() => false);
+      b, { timeout: ms(15000) }).then(() => true).catch(() => false);
     ok('a belt carries him along it while he stands still', carried,
       'x=' + await p.evaluate(() => window.__eeri.player.x));
 
@@ -812,7 +1100,7 @@ s.listen(0, '127.0.0.1', async () => {
       window.__eeri.debug.setPos((v.c0 + v.c1) / 2 + 0.5, v.cy + 3.5);
     }, t);
     const thrown = await p.waitForFunction(() => window.__eeri.player.vy > 13,
-      null, { timeout: 15000 }).then(() => true).catch(() => false);
+      null, { timeout: ms(15000) }).then(() => true).catch(() => false);
     ok('landing on a tarp throws him back up', thrown,
       'vy=' + await p.evaluate(() => window.__eeri.player.vy));
     const apex = await p.evaluate(async () => {
@@ -829,7 +1117,7 @@ s.listen(0, '127.0.0.1', async () => {
   }
 
   await p.evaluate(() => window.__eeri.debug.goSite(2));
-  await p.waitForFunction(() => window.__eeri.site() === 2 && !window.__eeri.debug.transitioning(), null, { timeout: 15000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.site() === 2 && !window.__eeri.debug.transitioning(), null, { timeout: ms(15000) }).catch(() => {});
 
   // ---- the stomp --------------------------------------------------------
   // Dropped from a height measured off the TARGET, not from a fixed 7.5: the
@@ -847,7 +1135,7 @@ s.listen(0, '127.0.0.1', async () => {
     return r;
   });
   ok('there is something stompable to land on', !!target, JSON.stringify(target));
-  const stomped = await p.waitForFunction(() => window.__eeri.debug.stomps() > 0, null, { timeout: 5000 })
+  const stomped = await p.waitForFunction(() => window.__eeri.debug.stomps() > 0, null, { timeout: ms(5000) })
     .then(() => true).catch(() => false);
   ok('landing on a small machine stomps it', stomped);
   ok('and the stomp bounces him back up', await p.evaluate(() => window.__eeri.player.vy) > 3);
@@ -873,6 +1161,38 @@ s.listen(0, '127.0.0.1', async () => {
       missed.length === 0);
   }
 
+  // ---- the two MOMENTS on the rig ---------------------------------------
+  // `stomp` and `hurt` are one-shot clips over the top of the state machine,
+  // and the first wiring of them never fired at all: main.js resolves stomps
+  // and hits AFTER player.update() has drawn the frame, so a flag set then
+  // was cleared at the top of the next update before the visual read it.
+  // Nothing else in the suite would notice — the game plays identically with
+  // a rig that simply never reacts.
+  {
+    const rigged = await p.evaluate(() => !!window.__eeri.player.kid.clips);
+    ok('the kid is on a skinned rig with clips', rigged);
+    if (rigged) {
+      const has = await p.evaluate(() => Object.keys(window.__eeri.player.kid.clips.actions));
+      ok('the rig carries stomp and hurt', has.includes('stomp') && has.includes('hurt'), has.join(','));
+
+      await p.evaluate(() => window.__eeri.player.bounce());
+      ok('a bounce plays the stomp clip',
+        await p.evaluate(() => window.__eeri.player.kid.clips.current) === 'stomp');
+
+      await p.evaluate(() => { window.__eeri.player.mercyT = 0; window.__eeri.player.struck(window.__eeri.player.x + 5); });
+      ok('a hit plays the hurt clip',
+        await p.evaluate(() => window.__eeri.player.kid.clips.current) === 'hurt');
+
+      // …and it must RELEASE. Judged on game time, never the wall clock:
+      // this sandbox renders at a handful of frames a second.
+      const t0 = await p.evaluate(() => window.__eeri.player.t);
+      const freed = await p.waitForFunction(
+        (t) => window.__eeri.player.t > t + 1.2 && !window.__eeri.player.kid.clips.shotUntil,
+        t0, { timeout: ms(60000) }).then(() => true).catch(() => false);
+      ok('…and a one-shot hands the rig back to the state machine', freed);
+    }
+  }
+
   ok('no errors after the whole ride', errs.length === 0, errs.slice(0, 3).join(' | '));
 
   // ---- THE TITLE SCREEN, and the three languages -------------------------
@@ -886,11 +1206,11 @@ s.listen(0, '127.0.0.1', async () => {
     const ierr = [];
     ip.on('pageerror', (e) => ierr.push(String(e)));
     await ip.goto(base + '/eeri/', { waitUntil: 'load' });
-    const shown = await ip.waitForSelector('#intro', { timeout: 20000 }).then(() => true).catch(() => false);
+    const shown = await ip.waitForSelector('#intro', { timeout: ms(20000) }).then(() => true).catch(() => false);
     ok('the game opens on a title screen, not straight into level 1', shown);
 
     if (shown) {
-      await ip.waitForTimeout(400);
+      await ip.waitForTimeout(ms(400));
       const txt = await ip.evaluate(() => document.getElementById('intro').innerText);
       // the owner's own words, and the reason this screen exists
       ok('the title screen carries the story brief, in Finnish',
@@ -902,11 +1222,11 @@ s.listen(0, '127.0.0.1', async () => {
 
       // switching is the whole point of putting the toggle here
       await ip.click('#intro .lang button:nth-child(3)');
-      await ip.waitForTimeout(150);
+      await ip.waitForTimeout(ms(150));
       ok('switching to Japanese rewrites the brief',
         (await ip.evaluate(() => document.getElementById('introBrief').textContent)).includes('はたらくくるま'));
       await ip.click('#intro .lang button:nth-child(1)');
-      await ip.waitForTimeout(150);
+      await ip.waitForTimeout(ms(150));
 
       // 44px floor applies here like everywhere else on this site
       const small = await ip.evaluate(() => [...document.querySelectorAll('#intro button')]
@@ -916,7 +1236,7 @@ s.listen(0, '127.0.0.1', async () => {
 
       // and it must actually let you in
       await ip.click('#introStart');
-      const started = await ip.waitForFunction(() => window.__eeri, null, { timeout: 90000 })
+      const started = await ip.waitForFunction(() => window.__eeri, null, { timeout: ms(90000) })
         .then(() => true).catch(() => false);
       ok('START starts the game', started);
     }
@@ -934,8 +1254,8 @@ s.listen(0, '127.0.0.1', async () => {
       viewport: { width: 844, height: 390 }, locale: 'fi-FI', hasTouch: true, isMobile: true,
     });
     await tp.goto(base + '/eeri/?skip', { waitUntil: 'load' });
-    await tp.waitForFunction(() => window.__eeri, null, { timeout: 90000 });
-    await tp.waitForTimeout(800);
+    await tp.waitForFunction(() => window.__eeri, null, { timeout: ms(90000) });
+    await tp.waitForTimeout(ms(800));
     const pad = await tp.evaluate(() => ['tL', 'tD', 'tR', 'tU', 'tA', 'tJ'].map((id) => {
       const e = document.getElementById(id); const r = e.getBoundingClientRect();
       return { id, x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width),
@@ -954,8 +1274,53 @@ s.listen(0, '127.0.0.1', async () => {
     ok('up sits above, in the middle column', by.tU.y < by.tD.y && by.tU.x === by.tD.x,
       `U(${by.tU.x},${by.tU.y}) D(${by.tD.x},${by.tD.y})`);
     // …and nothing is stacked more than two high: this is a landscape phone
-    ok('the pad is never more than two rows tall',
-      new Set(pad.map((q) => q.y)).size <= 2, pad.map((q) => q.y).join(','));
+    // The "never more than two rows" rule belonged to the DRAWN buttons this
+    // lane laid out. The pad is a painted backboard now and the arrangement
+    // is the ART's — a DMG face in portrait, an arcade panel in landscape —
+    // so what must hold is that the plate is mounted and every hit area
+    // actually sits on it, rather than a row count.
+    ok('the touch plate is mounted',
+      await tp.evaluate(() => document.documentElement.classList.contains('plated')));
+    // THE STICK OWNS THE D-PAD AREA when a plate is up. Two halves, and
+    // the second is the one that would break silently: if the four d-pad
+    // buttons keep `pointer-events: auto` they sit ON TOP of the stick (a
+    // later sibling, z 6) and swallow every press, so the stick would look
+    // mounted and do nothing.
+    ok('the stick is mounted over the plate and clears 44px', await tp.evaluate(() => {
+      const st = document.getElementById('stick'); if (!st) return false;
+      const s = st.getBoundingClientRect();
+      if (s.width < 44 || s.height < 44) return false;
+      const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
+      const r = img.getBoundingClientRect();
+      const cx = s.left + s.width / 2, cy = s.top + s.height / 2;
+      return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
+    }));
+    ok('…and the four d-pad zones are pointer-inert under it',
+      await tp.evaluate(() => ['tU', 'tD', 'tL', 'tR']
+        .every((id) => getComputedStyle(document.getElementById(id)).pointerEvents === 'none')));
+
+    // THE STICKER IS ON THE PLATE, WHICH IS A LAYER QUESTION, NOT A
+    // z-index ONE. `#touch` was left at `z-index: auto`, so the whole hit
+    // layer — buttons, press tint and the Toko sticker with it — painted
+    // *under* `#pad`; a z-index of 9999 on the badge itself changed
+    // nothing, because a child cannot climb out of its parent's layer.
+    // Nothing was visible through the plated buttons except those two
+    // things, so it read as "the sticker never mounted".
+    ok('the sticker layer sits above the plate', await tp.evaluate(() => {
+      const z = (id) => { const v = getComputedStyle(document.getElementById(id)).zIndex; return v === 'auto' ? 0 : +v; };
+      const bd = document.querySelector('.toko-signature');
+      return !!bd && !!bd.closest('#touch') && z('touch') > z('pad');
+    }));
+    ok('…and every hit area sits over the plate', await tp.evaluate(() => {
+      const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
+      if (!img) return false;
+      const r = img.getBoundingClientRect();
+      return ['tU', 'tD', 'tL', 'tR', 'tA', 'tJ'].every((id) => {
+        const b = document.getElementById(id).getBoundingClientRect();
+        const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+        return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
+      });
+    }));
     await tp.close();
   }
 
