@@ -22,6 +22,7 @@
     "excavator": {
       "file": "3d/excavator_v1.glb",
       "status": "live",
+      "_note": "STILL v1, deliberately. `3d/excavator_v2.glb` is the owner's 2026-08 reference-sheet excavator (face on the windscreen), cut and joint-verified \u2014 but excavator_v1 was BUILT to be interchangeable with the code placeholder: same pivots, same rest pose, same overall size, so game code cannot tell which it got (boom at (0.35,0.28) off house, stick at (1.58,0) off boom, bucket at (1.02,0) off stick). v2 is a different machine with its own proportions, so those offsets no longer describe it and the girder pickup misses. Swapping needs js/excavator.js's constants retuned to the asset, or geometry metadata on the entry \u2014 either way gameplay-lane work, so it is handed over rather than done unilaterally. Rig contract and drive ranges: art-src/machines/RIGS.md and art-src/machines/drive.js.",
       "nodes": [
         "house",
         "boom",
@@ -45,6 +46,7 @@
     "crane": {
       "file": "3d/crane_v1.glb",
       "status": "placeholder",
+      "_note": "Rigged and verified but held at PLACEHOLDER on purpose. js/crane.js drives `arm` and `ball` and was written against the code-built crane's exact numbers \u2014 arm at (L,0,0) along the boom's local x, a fixed drop \u2014 the way excavator_v1 was deliberately built to match its placeholder pivot for pivot so game code could not tell which it got. This mesh has its own proportions, so the ball stops short of the brick wall and the wrecking sequence fails. Making them agree means changing geometry or changing crane.js constants; crane.js is not the art lane's file, so this is handed over rather than tuned unilaterally. Node names already match (sheave->arm, hook->ball); it is the reach that differs. The hoist rope is not in the mesh \u2014 image-to-3D will not model a 2px thread \u2014 so the game draws it from `arm` to `ball`.",
       "nodes": [
         "house",
         "boom",
@@ -60,8 +62,7 @@
         "wheels": "DARK",
         "house": "MACHINE",
         "boom": "MACHINE",
-        "arm": "DARK",
-        "ball": "STEEL1",
+        "hook": "MACHINE_DK",
         "step": "MACHINE_DK"
       }
     },
@@ -126,6 +127,128 @@
       "status": "placeholder",
       "rig": "prop",
       "_note": "World 3's token. Allowed to be a bolt because it IS the golden one \u2014 so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
+    },
+    "dumptruck": {
+      "file": "3d/dumptruck_v1.glb",
+      "status": "placeholder",
+      "_note": "`tipper` hinges at its REAR BOTTOM edge so it rears up off the chassis rather than sinking through it. That one pivot is the whole rig.",
+      "nodes": [
+        "body",
+        "tipper",
+        "cab",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ],
+      "paint": {
+        "body": "MACHINE",
+        "tipper": "ACCENT",
+        "cab": "ACCENT2",
+        "wheels": "DARK",
+        "step": "MACHINE_DK"
+      }
+    },
+    "roller": {
+      "file": "3d/roller_v1.glb",
+      "status": "placeholder",
+      "_note": "`drum` spins on ground speed like a wheel but at its OWN radius (0.45): it is far bigger than the rear tyre and sharing one radius makes one of them skate. DESIGN \u00a76 also lists a roller as a <=1-tile SMALL ENEMY needing a squash node \u2014 one mesh can serve both, but the squash node is a cut and must be decided before that variant is authored.",
+      "nodes": [
+        "body",
+        "drum",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ],
+      "paint": {
+        "body": "MACHINE",
+        "drum": "STEEL1",
+        "wheels": "DARK",
+        "step": "MACHINE_DK"
+      }
+    },
+    "forklift": {
+      "file": "3d/forklift_v1.glb",
+      "status": "placeholder",
+      "_note": "The MAST DOES NOT MOVE; only `carriage` rides up it, and the forks are its children so they inherit the lift for free. That realisation removed the hardest cut on the machine.",
+      "nodes": [
+        "body",
+        "carriage",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ],
+      "paint": {
+        "body": "MACHINE",
+        "carriage": "DARK",
+        "wheels": "DARK",
+        "step": "MACHINE_DK"
+      }
+    },
+    "cherrypicker": {
+      "file": "3d/cherrypicker_v1.glb",
+      "status": "placeholder",
+      "_note": "`basket` must COUNTER-ROTATE against `boom` to stay level. That is a code rule, not a rest pose \u2014 a basket that tips with its arm is the one thing a child notices instantly, having watched a real one never do it.",
+      "nodes": [
+        "body",
+        "boom",
+        "basket",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ],
+      "paint": {
+        "body": "MACHINE",
+        "boom": "MACHINE",
+        "basket": "ACCENT",
+        "wheels": "DARK",
+        "step": "MACHINE_DK"
+      }
+    },
+    "pipelayer": {
+      "file": "3d/pipelayer_v1.glb",
+      "status": "placeholder",
+      "_note": "`load` is the slung pipe, a child of `hook`; hide it when empty. It came back as a ring seen end-on rather than a length of pipe, which reads better at 32px and does not foreshorten.",
+      "nodes": [
+        "house",
+        "boom",
+        "hook",
+        "load",
+        "flag",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ],
+      "paint": {
+        "house": "MACHINE",
+        "boom": "MACHINE",
+        "load": "STEEL1",
+        "tracks": "DARK",
+        "wheels": "DARK",
+        "step": "MACHINE_DK"
+      }
+    },
+    "floodlight": {
+      "file": "3d/floodlight_v1.glb",
+      "status": "placeholder",
+      "_note": "NOT RIDEABLE \u2014 no seat, no step, deliberately: it is site furniture that lights a dark span. `lamps` animates by EMISSIVE SWAP rather than by transform, the only machine in the fleet whose animation is a material. Weakest mesh of the eight: Meshy fused the four lamps into one head.",
+      "nodes": [
+        "body",
+        "mast",
+        "lamps",
+        "wheels",
+        "beacon"
+      ],
+      "paint": {
+        "body": "MACHINE",
+        "mast": "DARK",
+        "lamps": "STEEL1",
+        "wheels": "DARK"
+      }
     }
   },
   "pieces": {

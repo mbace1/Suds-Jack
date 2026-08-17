@@ -84,7 +84,57 @@ starting point for tuning, not a measurement.
    needs the squash node, which is a cut, so it has to be decided **before**
    the cut table is authored rather than after.
 
-## Cost
+## What shipped, and what is wired
 
-8 × image-to-3D at 30 cr = **240 cr**. No rig credits, no clip credits — that
-is the whole point of the routing rule. Balance before the run was 1597.
+All eight are generated, cut and **joint-verified**: `machine-swing.mjs`
+reports 39/39 joints moving real geometry with zero wheel wobble. Drive ranges
+are in `drive.js`.
+
+**Only `excavator` is live, and it is still v1.** Every other entry is
+`placeholder` — declared, present on disk, not yet driven. That is not
+timidity, it is the seam working as designed:
+
+- `excavator_v1.glb` was **built to be interchangeable with the code
+  placeholder** — same pivots, same rest pose, same size, so game code cannot
+  tell which it got (boom at (0.35, 0.28) off house, stick at (1.58, 0) off
+  boom, bucket at (1.02, 0) off stick). `excavator_v2.glb` is a *different
+  machine* with its own proportions, so those offsets no longer describe it.
+- `crane_v1.glb` fails the same way louder: `js/crane.js` drives `arm` and
+  `ball` against the code crane's exact reach, and with the new mesh the
+  wrecking ball stops short of the brick wall. The **node names already
+  match** — the cut renames sheave→`arm` and hook→`ball` for precisely this
+  reason, and a GLB whose nodes disagree with its driver does not degrade, it
+  throws `Cannot read properties of undefined (reading 'rotation')` and takes
+  the whole ride down.
+
+So what is left is not modelling, it is **one constants pass per machine** in
+`js/excavator.js` / `js/crane.js` — Design/Level's files. Handing that over is
+the lane rule, not a shortfall.
+
+**Standing gate note:** the girder sequence (5 checks, "slings the girder on"
+… "the kid crosses the span") is **already failing on this branch** before any
+of this work — baseline 237/5, with the fleet 255/5, the same five. It is
+worth knowing because it means the excavator v1→v2 swap **cannot currently be
+validated by the gate**: the test that would catch a bad pickup is red either
+way. Fix that first, then swap.
+
+## Cost, and the one thing worth regenerating
+
+8 × image-to-3D at 30 cr = **240 cr**, plus 30 for one floodlight re-roll. No
+rig credits and no clip credits — that is the whole point of the routing rule.
+Balance before the run was 1597.
+
+**Each GLB is ~3.5 MB, and it is GEOMETRY, not texture.** That was worth
+measuring rather than assuming: re-encoding the baked 2 k PNG to 1024 JPEG
+saved only 20 % (3.5 → 2.85 MB) and broke the material, so it was abandoned.
+30 000 triangles at float32 position+normal+uv is ≈ 2.9 MB on its own, and
+30 k is roughly ten times what a toy 200 px tall on screen needs. The fix is
+`--polycount` at generation time (or a 5 cr Meshy remesh, after which **the cut
+tables still apply** — they are predicates in normalised space, so decimation
+does not invalidate them). 28 MB for the fleet is not a slow game for a
+six-year-old on a borrowed phone, it is a game that never starts.
+
+**`floodlight` is the weakest mesh**: Meshy fused its four lamps into one head.
+It is rigged and usable — `mast` and `lamps` separate cleanly — but it is the
+one that does not match the sheet, and a re-rolled concept with fatter,
+better-separated lamps is in `out/machines2/` awaiting a cut.

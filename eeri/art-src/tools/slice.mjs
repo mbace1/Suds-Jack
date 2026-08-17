@@ -23,15 +23,13 @@
  * scaled so its longest horizontal axis is 1 and translated so x/z are centred
  * and y = 0 is the lowest point. `inspect` draws that grid on the render.
  */
-// The work tree (playwright, three, and out/) lives outside the repo —
-// generated meshes are not source. Set MESHY_WORK to point at it.
 const WORK = process.env.MESHY_WORK || '/tmp/meshy-work';
 const { chromium } = await import(WORK + '/node_modules/playwright/index.mjs');
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { extname, join, basename } from 'node:path'
 
-const HERE = WORK;
+const HERE = process.env.MESHY_HERE || WORK;
 const MIME = { '.glb': 'model/gltf-binary', '.js': 'text/javascript', '.html': 'text/html' };
 
 // ---------------------------------------------------------------- cut tables
@@ -120,6 +118,223 @@ const CUTS = {
       ['hipL', null,   (p) => p.y < 0.20 && p.z > 0,       [0, 0.20, 0.07]],
       ['hipR', null,   (p) => p.y < 0.20,                  [0, 0.20, -0.07]],
       ['body', null,   () => true,                         [0, 0.20, 0]],
+    ],
+  },
+
+  // ---- THE EIGHT MACHINES (owner's reference sheet, 2026-08) --------------
+  // Numbers are read off `inspect`'s grid and then flipped, because every
+  // test here is in POST-YAW space. These all came back facing −x, so yaw is
+  // PI and a feature measured at x on the render is at −x in the table. That
+  // sign is the single easiest thing to get wrong and it fails silently: the
+  // catch-all swallows everything and you get one node called `house`.
+  m_excavator: {
+    src: 'out/m3d/excavator/image-01a011c1.glb',
+    out: 'excavator_v2.glb',
+    length: 2.9,
+    yaw: Math.PI,
+    // The arm folds back over itself, so boom and stick overlap in x — but
+    // only just: the elbow sits at x 0.27 and it is the one clean plane
+    // through the whole arm. The bucket then needs a y test as well, because
+    // it hangs UNDER the stick's own x range rather than beyond it.
+    nodes: [
+      ['beacon', 'house',  (p) => Math.hypot(p.x - (-0.22), p.y - (0.37)) < 0.055, 'auto'],
+      ['bucket', 'stick', (p) => p.x > 0.30 && p.y < 0.22, [0.34, 0.21, 0]],
+      ['stick',  'boom',  (p) => p.x > 0.26,               [0.27, 0.45, 0]],
+      ['boom',   'house', (p) => p.x > -0.08 && p.y > 0.16, [-0.07, 0.19, 0]],
+      // A WHEEL IS A CIRCLE — a horizontal plane saws it in half and the top
+      // stays behind on the chassis. Each idler is its own radial test, and
+      // the idlers MUST be tested before the belt: order is priority, and a
+      // `tracks` plane listed first swallows every wheel triangle and leaves
+      // both spinning nodes empty. (It did exactly that on the first run —
+      // and a 0-tri node is silent, the rig loads and simply never turns.)
+      ['wheelF', 'wheels', (p) => Math.hypot(p.x + 0.041, p.y - 0.067) < 0.075, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x + 0.404, p.y - 0.067) < 0.075, 'auto'],
+      ['tracks', null,     (p) => p.y < 0.14,               [0, 0, 0]],
+      ['wheels', 'tracks', null,                            [0, 0, 0]],
+      ['house',  null,     () => true,                      [-0.25, 0.15, 0]],
+      ['seat',   'house',  null,                            [-0.20, 0.22, 0]],
+      ['step',   null,     null,                            [-0.10, 0.10, 0.18]],
+    ],
+  },
+
+  // The crane is the one machine whose driven node TRANSLATES: the hook drops
+  // rather than swinging on a hinge.
+  //
+  // THERE IS NO `cable` NODE, and that is the right answer rather than a
+  // shortfall. A cut for it returned 0 triangles because the hoist rope is
+  // not in the mesh at all — image-to-3D will not model a 2 px thread, so the
+  // hook simply floats. Do not go looking for a cleverer predicate: nothing
+  // is there to find. The rope is drawn in code as a cylinder between the
+  // sheave and `hook`, which is better anyway, since a rope that pays out is
+  // DEFORMATION and the routing rule sends deformation to code. A cut node
+  // could only have scaled a fixed mesh.
+  //
+  // The boom keeps its backstay, which is correct: the pendant swings with
+  // the boom in life too.
+  m_crane: {
+    src: 'out/m3d/crane/image-01a011c2.glb',
+    out: 'crane_v1.glb',
+    length: 3.0,
+    yaw: Math.PI,
+    nodes: [
+      ['beacon', 'house',  (p) => Math.hypot(p.x - (-0.41), p.y - (0.44)) < 0.055, 'auto'],
+      // NAMED FOR THE GAME, not for the crane. js/crane.js drives `arm` and
+      // `ball`: it is a wrecking-ball crane, and it keeps `arm` plumb by
+      // counter-rotating it against the boom each frame. The mapping is exact
+      // even though the words differ — the sheave IS the arm's pivot and the
+      // hook IS the ball — so the rig drops straight onto existing code. A
+      // GLB whose nodes disagree with its driver does not degrade: it throws
+      // `Cannot read properties of undefined (reading 'rotation')` and takes
+      // the whole ride down with it.
+      ['ball',   'arm',   (p) => p.x > 0.35 && p.y < 0.70,  'auto'],
+      ['arm',    'boom',  null,                             [0.46, 1.10, 0]],
+      ['boom',   'house', (p) => p.y > 0.40 && p.x > -0.16, [-0.13, 0.41, 0]],
+      ['wheelF', 'wheels', (p) => Math.hypot(p.x + 0.055, p.y - 0.070) < 0.080, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x + 0.430, p.y - 0.070) < 0.080, 'auto'],
+      ['tracks', null,     (p) => p.y < 0.165,               [0, 0, 0]],
+      ['wheels', 'tracks', null,                             [0, 0, 0]],
+      ['house',  null,     () => true,                       [-0.26, 0.16, 0]],
+      ['seat',   'house',  null,                             [-0.13, 0.26, 0]],
+      ['step',   null,     null,                             [-0.16, 0.11, 0.20]],
+    ],
+  },
+
+  // The tipper hinges at its REAR BOTTOM edge, not its centre — get that pivot
+  // wrong and the body sinks through the chassis as it lifts instead of
+  // rearing up off it. That one point is the whole rig.
+  m_dumptruck: {
+    src: 'out/m3d/dumptruck/image-01a011c4.glb',
+    out: 'dumptruck_v1.glb',
+    length: 3.4,
+    yaw: Math.PI,
+    nodes: [
+      ['beacon', 'cab',  (p) => Math.hypot(p.x - (0.275), p.y - (0.48)) < 0.055, 'auto'],
+      // wheels first: the cab plane would otherwise take the top of the front
+      // tyre with it, and a half-tyre spinning inside a fixed half is the
+      // sawn-wheel failure one machine up.
+      ['wheelF', 'wheels', (p) => Math.hypot(p.x - 0.303, p.y - 0.082) < 0.085, 'auto'],
+      ['wheelM', 'wheels', (p) => Math.hypot(p.x + 0.086, p.y - 0.082) < 0.085, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x + 0.314, p.y - 0.082) < 0.085, 'auto'],
+      ['tipper', 'body',  (p) => p.x < 0.14 && p.y > 0.215,  [-0.47, 0.21, 0]],
+      ['cab',    'body',  (p) => p.x > 0.16 && p.y > 0.17,   [0.30, 0.17, 0]],
+      ['wheels', 'body',  null,                              [0, 0, 0]],
+      ['body',   null,    () => true,                        [0, 0.10, 0]],
+      ['seat',   'cab',   null,                              [0.30, 0.28, 0]],
+      ['step',   null,    null,                              [0.20, 0.12, 0.20]],
+    ],
+  },
+
+  // The drum is the whole machine and it is the hardest circle in the fleet,
+  // because the YOKE crosses it: a yellow plate straddling the drum right
+  // through its centre, so a radial test alone takes the yoke with it and the
+  // arm spins. They only separate in z — the fork arms sit outside the drum
+  // ends — which is the one time a cut here needs the third axis.
+  m_roller: {
+    src: 'out/m3d/roller/image-01a011c5.glb',
+    out: 'roller_v1.glb',
+    length: 2.6,
+    yaw: Math.PI,
+    nodes: [
+      ['beacon', 'body',  (p) => Math.hypot(p.x - (-0.017), p.y - (0.70)) < 0.055, 'auto'],
+      // z 0.225, not 0.17: the first cut clipped the drum's own ends off and
+      // left 950 triangles — a thin disc spinning inside its own rim. The
+      // window has to be wider than the drum and narrower than the yoke arms,
+      // and the drum is most of the machine's width.
+      ['drum',   'body',   (p) => Math.hypot(p.x - 0.288, p.y - 0.165) < 0.175 && Math.abs(p.z) < 0.225, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x + 0.244, p.y - 0.183) < 0.155, 'auto'],
+      ['wheels', 'body',   null,                             [0, 0, 0]],
+      ['body',   null,     () => true,                       [0, 0.18, 0]],
+      ['seat',   'body',   null,                             [0.02, 0.42, 0]],
+      ['step',   null,     null,                             [-0.10, 0.14, 0.20]],
+    ],
+  },
+
+  // THE MAST DOES NOT MOVE — only the carriage and its forks ride up it. That
+  // realisation removes the hardest cut on this machine: the mast can simply
+  // stay with the body, and the only plane needed is the one in front of it.
+  m_forklift: {
+    src: 'out/m3d/forklift/image-01a011c6.glb',
+    out: 'forklift_v1.glb',
+    length: 2.2,
+    yaw: Math.PI,
+    nodes: [
+      ['beacon', 'body',  (p) => Math.hypot(p.x - (-0.185), p.y - (0.62)) < 0.055, 'auto'],
+      ['carriage', 'body',  (p) => p.x > 0.19 && p.y < 0.26,  [0.20, 0.05, 0]],
+      ['wheelF', 'wheels', (p) => Math.hypot(p.x - 0.051, p.y - 0.078) < 0.090, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x + 0.333, p.y - 0.081) < 0.090, 'auto'],
+      ['wheels', 'body',   null,                             [0, 0, 0]],
+      ['body',   null,     () => true,                       [0, 0.12, 0]],
+      ['seat',   'body',   null,                             [-0.10, 0.33, 0]],
+      ['step',   null,     null,                             [-0.02, 0.10, 0.18]],
+    ],
+  },
+
+  // A DIAGONAL MEMBER NEEDS A DIAGONAL CUT. The boom crosses the cab in x and
+  // sits above it in y, so neither a vertical nor a horizontal plane divides
+  // them — but a sloped half-plane along the boom's own underside does, and
+  // costs nothing. `p.y > 0.52 + 0.439·p.x` is that line, read off the two
+  // ends of the boom on the inspect grid.
+  m_cherrypicker: {
+    src: 'out/m3d/cherrypicker/image-01a011c8.glb',
+    out: 'cherrypicker_v1.glb',
+    length: 3.2,
+    yaw: Math.PI,
+    nodes: [
+      ['beacon', 'body',  (p) => Math.hypot(p.x - (-0.013), p.y - (0.44)) < 0.055, 'auto'],
+      ['basket', 'boom',   (p) => p.x > 0.30 && p.y > 0.40 && p.y < 0.70, [0.42, 0.66, 0]],
+      ['boom',   'body',   (p) => p.y > 0.52 + 0.439 * p.x,  [-0.342, 0.415, 0]],
+      ['wheelF', 'wheels', (p) => Math.hypot(p.x - 0.021, p.y - 0.103) < 0.078, 'auto'],
+      ['wheelM', 'wheels', (p) => Math.hypot(p.x + 0.177, p.y - 0.103) < 0.078, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x + 0.375, p.y - 0.103) < 0.078, 'auto'],
+      ['wheels', 'body',   null,                             [0, 0, 0]],
+      ['body',   null,     () => true,                       [0, 0.14, 0]],
+      ['seat',   'body',   null,                             [-0.02, 0.34, 0]],
+      ['step',   null,     null,                             [0.10, 0.12, 0.18]],
+    ],
+  },
+
+  // The slung pipe came back as a ring seen end-on rather than a length of
+  // pipe. That is fine and arguably better — a ring reads as "pipe" at 32 px
+  // and does not foreshorten — but it means `load` is cut by a single x plane
+  // beyond the boom tip rather than by any clever shape test.
+  m_pipelayer: {
+    src: 'out/m3d/pipelayer/image-01a011c9.glb',
+    out: 'pipelayer_v1.glb',
+    length: 2.8,
+    yaw: Math.PI,
+    nodes: [
+      ['beacon', 'house',  (p) => Math.hypot(p.x - (-0.048), p.y - (0.55)) < 0.055, 'auto'],
+      ['load',   'hook',   (p) => p.x > 0.345,               [0.418, 0.295, 0]],
+      ['hook',   'boom',   null,                             [0.33, 0.62, 0]],
+      ['boom',   'house',  (p) => p.x > 0.13 && p.y > 0.40,  [0.13, 0.45, 0]],
+      ['flag',   'house',  (p) => p.x < -0.39 && p.y > 0.42, [-0.40, 0.42, 0]],
+      ['wheelF', 'wheels', (p) => Math.hypot(p.x - 0.071, p.y - 0.084) < 0.070, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x + 0.330, p.y - 0.084) < 0.070, 'auto'],
+      ['tracks', null,     (p) => p.y < 0.20,                [0, 0, 0]],
+      ['wheels', 'tracks', null,                             [0, 0, 0]],
+      ['house',  null,     () => true,                       [0, 0.22, 0]],
+      ['seat',   'house',  null,                             [0.02, 0.33, 0]],
+      ['step',   null,     null,                             [-0.10, 0.14, 0.19]],
+    ],
+  },
+
+  // NOT RIDEABLE — no `seat`, no `step`. It is site furniture that lights a
+  // dark span, so the contract is shorter on purpose and `assets.js` should
+  // never be asked for a seat it does not have.
+  m_floodlight: {
+    src: 'out/m3d/floodlight/image-01a011ca.glb',
+    out: 'floodlight_v1.glb',
+    length: 1.5,
+    yaw: 0,             // came back square to camera; nothing to turn
+    by: 'x',
+    nodes: [
+      ['beacon', 'body',  (p) => Math.hypot(p.x - (0.30), p.y - (0.78)) < 0.055, 'auto'],
+      ['lamps',  'mast',   (p) => p.y > 1.25,                [0, 1.27, 0]],
+      ['mast',   'body',   (p) => p.y > 0.72,                [0, 0.70, 0]],
+      ['wheelL', 'wheels', (p) => Math.hypot(p.x + 0.244, p.y - 0.170) < 0.145, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x - 0.229, p.y - 0.170) < 0.145, 'auto'],
+      ['wheels', 'body',   null,                             [0, 0, 0]],
+      ['body',   null,     () => true,                       [0, 0.20, 0]],
     ],
   },
 };
@@ -398,6 +613,21 @@ if (mode === 'inspect' || mode === 'check') {
     // exists — and `bucket` is a child of `stick`. So pivots are collected in
     // one pass and the tree is built in a second, deferring any node whose
     // parent has not been built yet.
+    // PIVOT 'auto' — the node's own geometric centre, resolved before
+    // anything is parented. Hand-typed pivots are read off a render by eye,
+    // and for a hinge that is fine because a hinge only has to be near the
+    // right seam. For a WHEEL it is not: a spin about a point 0.1 off centre
+    // is a wobble, and a wobbling wheel is the most legible way for a toy to
+    // look fake. Measured wheels do not wobble, and nothing about a wheel's
+    // centre needs a human opinion — it is where its triangles are.
+    for (let i = 0; i < spec.nodes.length; i++) {
+      if (spec.nodes[i][3] !== 'auto') continue;
+      const g = sub[i];
+      if (!g) { spec.nodes[i][3] = [0, 0, 0]; continue; }
+      g.computeBoundingBox();
+      const c = g.boundingBox.getCenter(new THREE.Vector3());
+      spec.nodes[i][3] = [c.x, c.y, c.z];
+    }
     for (const [name, , , pv] of spec.nodes) pivots[name] = pv;
     const pending = spec.nodes.map((n, i) => [n, i]);
     let guard = pending.length + 1;
