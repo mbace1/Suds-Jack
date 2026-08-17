@@ -138,20 +138,40 @@ s.listen(0, '127.0.0.1', async () => {
           return ids.includes('contact:') && ids.includes('dealers')
             && ids.includes('rival') && ids.includes('mission:');
         }));
-      await p.evaluate(() => window.__pt.debug.startFight('rival', 1000));
-      await p.waitForTimeout(200);
+      await p.evaluate(() => window.__pt.debug.startFight('collector', 1000));
+      await p.waitForTimeout(250);
       ok('an encounter opens', await p.locator('#fight').isVisible());
+      ok('the isometric board paints', await p.evaluate(() => {
+        const c = document.getElementById('board');
+        const g = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+        const first = [g[0], g[1], g[2]].join();
+        for (let i = 4; i < g.length; i += 4) if ([g[i], g[i+1], g[i+2]].join() !== first) return true;
+        return false;
+      }));
+      ok('it is three a side', await p.evaluate(() => {
+        const f = window.__pt.debug.fight;
+        return f.living('you').length === 3 && f.living('them').length === 3;
+      }));
       ok('it telegraphs before you commit',
         (await p.locator('#fightTell').textContent()).length > 10);
       ok('it freezes the city while it runs',
         await p.evaluate(() => window.__pt.flow.clock.paused));
-      const moves = await p.locator('#fightBtns button').count();
-      ok(`it offers moves, paying and leaving (${moves})`, moves >= 5);
-      // fight it out, whatever it takes
-      for (let i = 0; i < 30; i++) {
-        if (await p.evaluate(() => !!window.__pt.debug.fight?.over)) break;
-        await p.locator('#fightBtns button').first().click();
-      }
+      ok('a weapon out of its row is refused by the button', await p.evaluate(() => {
+        const f = window.__pt.debug.fight;
+        const u = f.living('you').find(x => x.weapons.includes('blank'));
+        return !!u && !f.canUse(u, 'blank') === (u.row === 0);
+      }));
+      // hand it to the auto-battler and let it finish
+      await p.evaluate(() => {
+        const f = window.__pt.debug.fight;
+        f.auto = true;
+        let n = 0;
+        while (!f.over && n++ < 400) f.autoTurn();
+      });
+      await p.evaluate(() => window.__pt.debug.paintFight());
+      await p.waitForTimeout(120);
+      ok('the auto-battler finishes it',
+        await p.evaluate(() => !!window.__pt.debug.fight.over));
       await p.locator('#fightBtns button').last().click();
       await p.waitForTimeout(150);
       ok('and it closes and hands the city back',
