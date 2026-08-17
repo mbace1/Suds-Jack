@@ -1,0 +1,1 @@
+This branch intentionally re-opens the repo-visible World 3/4 art handoff on a fresh pull request so Claude Code can discover and work from it directly. Use `EERI_W3_W4_CLAUDE_VISIBLE_PACK.zip` and `README_W3_W4_CLAUDE.md` in this folder.
