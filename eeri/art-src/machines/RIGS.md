@@ -118,6 +118,38 @@ worth knowing because it means the excavator v1→v2 swap **cannot currently be
 validated by the gate**: the test that would catch a bad pickup is red either
 way. Fix that first, then swap.
 
+## Wiring these into levels — what the Design/Level lane needs
+
+A room places a machine with `machine(type, x, track)` (`js/parts.js`), and
+that only resolves for a type present in **`MACHINE_REACH`**, which carries the
+`verbs` and the `arm` the room prover budgets against. So the gate on level use
+is that table, not the art. Current state:
+
+| machine | in `MACHINE_REACH`? | what is needed |
+|---|---|---|
+| `excavator` | yes — `['dig','span']`, arm 2.6 | nothing; v1 still live. v2 swap needs excavator.js constants (see above) |
+| `crane` | yes — `['smash']`, arm 3.4 | crane.js reach constants; node names already match |
+| **`pipelayer`** | **yes — `['span']`, arm 2.8** | **nothing but a status flip — the art was the only thing missing** |
+| `pump` | yes — `['drain']`, arm 3.0 | **no art: it was not on the owner's sheet.** World 2's other machine |
+| `dumptruck` `roller` `forklift` `cherrypicker` `floodlight` | no | a `MACHINE_REACH` entry each — but see below |
+
+**`pipelayer` is the one that can be wired today.** It is already a declared
+World 2 machine with a verb (`span`, the excavator's girder move re-dressed —
+"which is why it is the cheap second machine of the pair"), an arm budget of
+2.8, and no art. The mesh is cut to `length: 2.8` and carries `boom hook load`.
+Flip its status to `live` the moment a room places it; the smoke gate fails a
+`live` asset nothing fetches, which is the only reason it is `placeholder` now.
+
+**The other five are deliberately NOT given `MACHINE_REACH` entries here**, and
+that is not caution for its own sake: an entry declares a machine's *verbs*, and
+DESIGN §7 item 2 — *which machine rides in which world* — is still an **open
+owner question** that PHASING says blocks the art queue. Inventing verbs for a
+forklift would be answering it by accident, in someone else's file. They are
+modelled, rigged and measured; assigning them is a design decision.
+
+`floodlight` needs no reach entry at all — it is not rideable and is site
+furniture, so it wants whatever scenery path the level uses, not `machine()`.
+
 ## Cost, and the one thing worth regenerating
 
 8 × image-to-3D at 30 cr = **240 cr**, plus 30 for one floodlight re-roll. No
