@@ -1,5 +1,34 @@
 # Kindling — versions
 
+## v6 — 2026-08-17
+
+**The Art Guide, and the growth silhouettes it asks for.**
+
+`BETTERMENT_GDD.md` §17 is an *art-guide handoff* — a list of eleven things the
+guide must define — and §18.9 names the guide itself as the next design artifact.
+There are no art files anywhere in the PR stack or the repo to work from (5 js,
+3 css, 3 cjs, 1 md, 1 html across #272–#275; the only PNGs in `kindling/` are the
+PWA icons this project generates from its own palette). So the style was cropped
+from the text.
+
+- **`ART_GUIDE.md`** — the artifact §17 asks for, written to its own eleven
+  bullets, with every rule traced to the document it comes from. It invents
+  nothing; what it adds is arithmetic, because "growth silhouettes" and
+  "inherited trait zones" are not numbers and a renderer needs numbers.
+- **The 3-pixel rule.** A trait or a stage that does not change the silhouette by
+  at least three pixels does not exist at 192×128, where the companion is about
+  24px tall. This is the rule #275's lineage work breaks: sixteen gene
+  combinations render as sixteen near-identical creatures, because only the ember
+  colour changes the fur rather than adding an ornament of one or two pixels.
+- **Growth silhouettes** (§5, cropped from GDD §17 and DESIGN G3, "shape is more
+  memorable than +20% size"). Five stages that differ by SHAPE: a spark is a tiny
+  ember body with a flame tip, a wisp lengthens, a tender grows arms and puts its
+  feet apart, a keeper broadens and carries a lamp, an elder wears a mantle and a
+  branching crown. The body is an ellipse now rather than a disc, because a disc
+  can only be bigger and bigger is the one thing canon says a stage must not be.
+- **The gate measures it** rather than trusting it: consecutive stages differ by
+  123 / 85 / 64 / 144 pixels of silhouette, against a floor of 3.
+
 ## v5 — 2026-08-16
 
 **The pivot to the ruin — first draft.** The cozy hut is retired (owner direction);
