@@ -20,4 +20,4 @@ for (const room of WORLD34_ROOMS) {
 // registration in plain Node, so three.js / window must never become a static
 // dependency of the level data. Dressing watches the active site and owns no
 // collision, which also makes it safe to remove while layouts are still fluid.
-if (typeof window !== 'undefined') import('./world34-dressing.js?v=26');
+if (typeof window !== 'undefined') import('./world34-dressing.js?v=27');
