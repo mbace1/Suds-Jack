@@ -19,7 +19,7 @@
 // that level.js exports. Fold them into rooms.js and remove this import once
 // the six layouts stop moving.
 
-import './world34-register.js?v=26';
+import './world34-register.js?v=29';
 
 // DESIGN §4.1: "A world is three levels, and a world is one backdrop set."
 export const PER_WORLD = 3;

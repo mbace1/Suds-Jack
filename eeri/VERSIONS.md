@@ -1,5 +1,53 @@
 # EERI — versions
 
+## v15.17 — 2026-08-17 — Worlds 3 and 4 get their second art pass (still hidden)
+
+PR #276: `world34-dressing.js` rebuilt gameplay-aware — the Grove and the
+Night Shift dressed around what the rooms actually ask you to do, rather
+than decorated evenly.
+
+**Nothing player-visible changes and it is NOT deployed.** Both worlds are
+still undressed at the LAYER level — no `grove` or `nightshift` layer set
+exists in the manifest — so v15.15's rule keeps them out of the menu and
+out of the run. Looked at through a deep link, `3-1 THE CUT BANK` is
+honest greybox: flat tree discs and a root feature against a bare sky,
+because a world's backdrop is five painted planes and those are the art
+lane's next item, not this.
+
+That is the right order. What this PR moves is the playfield furniture,
+which is the half that can be built before the paintings exist.
+
+Gates: rooms 147 / world34 pass / **smoke 282** (×1.5) / fx 31 / dev-menu 30.
+
+## v15.16 — 2026-08-16 — the smoke gate stops lying about the machine (test only)
+
+**Not a release — nothing shipped changes.** `hub/versions.json` is left at
+15.15 deliberately, because there is nothing to deploy.
+
+The gate returned **6, 5, 3 and 30 failures** on four separate occasions
+against trees that passed on the next run. Every one was a timeout and none
+was a bug. Its waits were written on a machine with a GPU; the same page
+under SwiftShader renders a twelve-level game at a handful of frames a
+second, so a 1.5 s wait for a jump to peak can expire before the jump has
+had five frames to happen in.
+
+**Re-running until green is the worst available answer** — it is exactly
+the habit that hides a real failure, and I had started doing it.
+
+So the gate measures the machine instead of assuming one. The first boot is
+a direct read of how fast this box is; every wait after it scales by
+`boot / 1200 ms`, clamped to 1.5…8, and `EERI_SLOW=n` forces it. Observed
+here: 2129 ms → ×1.77 cold, 457 ms → ×1 warm. **The floor of 1.5 is the
+part that matters**: the boot is one measurement at one moment, and these
+failures came from load arriving *mid-run* — a warm cache can boot in
+450 ms and then meet a busy machine forty checks later.
+
+It costs nothing when the machine is fast. Every wait here ends the moment
+its state arrives; none of them is a sleep waiting out a clock, so a longer
+ceiling is only ever an unused ceiling.
+
+Four consecutive runs since: ×1.77, ×1, ×1, ×1.5 — **282 / 0** each.
+
 ## v15.15 — 2026-08-16 — Worlds 3 and 4 exist, and the game ends where the art does
 
 **Twelve levels are built** (PR #265): the Grove and the Night Shift as
