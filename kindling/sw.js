@@ -1,11 +1,12 @@
 // Betterment / Kindling — offline shell.
 // The state remains local-only; the whole UI is cached for daily use without a signal.
 
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `kindling-${VERSION}`;
 
-// Existing core modules stay on the v2 token. The mobile UX layer has its own token,
-// so it can ship independently without pretending the underlying state machine changed.
+// The proven core remains on its v5 token. The v6 GDD rules are isolated as a
+// new layer so progressive goals / Kindling can evolve without destabilising the
+// care, room, breathing and journey modules underneath them.
 const V = '?v=5';
 const SHELL = [
   './',
@@ -15,7 +16,9 @@ const SHELL = [
   './icon-512.png',
   './modern-ux.css?v=5',
   './modern-ux-accessibility.css?v=5',
+  './gdd-rules.css?v=6',
   './js/modern-ux.js?v=5',
+  './js/gdd-rules.js?v=6',
   `./js/main.js${V}`,
   `./js/room.js${V}`,
   `./js/idle.js${V}`,
