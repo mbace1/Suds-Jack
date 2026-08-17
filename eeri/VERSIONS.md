@@ -1,5 +1,42 @@
 # EERI — versions
 
+## v15.18 — 2026-08-17 — the Grove paints itself, the libraries have art, the gate is honest
+
+**World 3 stops borrowing World 1's backdrop.** `PLACEHOLDER_DRAW` was one
+world-agnostic set, so `buildLayers(scene, 'grove')` dressed a forest in
+half-built concrete frames and scaffold bays — the actual reason World 3
+read as greybox. The Grove has its own five painters now: treeline ridge,
+canopy with sky between the crowns, a cut bank with root ends and timber
+shoring, moss lip and stumps, one cropped trunk in the occluder lane.
+Forest AND dig, because this world is a worksite in a wood.
+
+**And the green blobs were the dressing's, not the backdrop's.**
+`world34-dressing.js` drew its treeline as seven discs of r 5.3–6.3 at
+z −1.55 — barely behind the plane the game is played on, so each one
+spanned from below Eeri's feet to above the frame in one flat colour.
+Fourteen smaller, higher discs instead. Depth magnifies; the fore lane
+needed the same correction in the same sitting.
+
+**The World 3 and 4 libraries have art in them** — eleven approved pieces
+imported to the paths the pack's own notes name. Until now both were
+catalogs with NOTHING behind them: World 3 named 17 files and shipped 0,
+World 4 named 9 and shipped 0, under headings reading "approved". Source
+library only; production `assets/**` and the manifest are untouched, and
+`art-src/` does not deploy.
+
+**The smoke gate went from 25 failures to 0, and none of it was the game.**
+The mount cluster was a real race — the kid was re-placed a tenth of a tile
+above the floor and the action press was consumed on an airborne frame,
+identically on all forty retries. The gap check waited on a clock where it
+needed a state, then failed him for standing on the lip rather than
+crossing the hole. Both now measure what they claim to.
+
+Not deployed with this: `art-src/` (source, 21 MB) and worlds 3–4, which
+stay hidden until their layers are painted.
+
+Gates: rooms 147 / world34 pass / fx 31 / dev-menu 30 / **smoke 282** /
+playthrough 25 / hub.
+
 ## v15.17 — 2026-08-17 — Worlds 3 and 4 get their second art pass (still hidden)
 
 PR #276: `world34-dressing.js` rebuilt gameplay-aware — the Grove and the
