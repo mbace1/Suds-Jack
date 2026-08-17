@@ -55,7 +55,7 @@ s.listen(0, '127.0.0.1', async () => {
     // draw a line by dragging between two stops, and check it carries people
     const drew = await p.evaluate(h => {
       const f = window[h].flow;
-      const r = f.addRoute('tram', ['hakaniemi', 'kuudeslinja', 'karhupuisto', 'vaasanaukio', 'vaasankatu', 'kurvi']);
+      const r = f.addRoute('tram', ['hakaniemi', 'kuudeslinja', 'kirkko', 'karhupuisto', 'vaasanaukio', 'kurvi']);
       return !r.error;
     }, handle);
     ok('a line can be drawn', drew);
@@ -78,7 +78,7 @@ s.listen(0, '127.0.0.1', async () => {
     ok('editing still works while paused', await p.evaluate(h => {
       const f = window[h].flow;
       const n = f.routes.list.length;
-      f.addRoute('tram', ['kirkko', 'karhupuisto', 'vaasanaukio']);
+      f.addRoute('tram', ['harju', 'vaasanaukio', 'kurvi']);
       return f.routes.list.length === n + 1;
     }, handle));
     await p.click('#pause');
