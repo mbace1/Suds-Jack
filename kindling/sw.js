@@ -1,11 +1,12 @@
 // Betterment / Kindling — offline shell.
 // The state remains local-only; the whole UI is cached for daily use without a signal.
 
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE = `kindling-${VERSION}`;
 
-// The proven core remains on v5. New gameplay layers stay separately tokened so
-// the daily care loop can remain stable while combat and lineage are iterated.
+// The proven care core remains on v5. The v9 cache is deliberately rebuilt with
+// cache:'reload', which refreshes the changed pet renderer even though room.js
+// still imports that stable module URL as pet.js?v=5.
 const V = '?v=5';
 const SHELL = [
   './',
@@ -17,11 +18,11 @@ const SHELL = [
   './modern-ux-accessibility.css?v=5',
   './gdd-rules.css?v=6',
   './combat.css?v=7',
-  './breeding.css?v=8',
+  './breeding.css?v=9',
   './js/modern-ux.js?v=5',
   './js/gdd-rules.js?v=6',
   './js/combat.js?v=7',
-  './js/breeding.js?v=8',
+  './js/breeding.js?v=9',
   `./js/main.js${V}`,
   `./js/room.js${V}`,
   `./js/idle.js${V}`,
