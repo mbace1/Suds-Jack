@@ -444,6 +444,46 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   const rising = bands.every((n, i) => i === 0 || n > bands[i - 1]);
   check(`the day has five bands and each one is a brighter room (${bands.join(' → ')})`, rising);
 
+  // ── the growth silhouettes (ART_GUIDE.md §5 and §11.1) ──
+  //
+  // Canon says growth may use scale as well, never instead — "shape is more
+  // memorable than +20% size" — and the guide turns that into a number a gate can
+  // hold: a stage must change the silhouette by at least three pixels against the
+  // stage below it. Measured on the SHAPE, with every stage drawn at the same
+  // place, so a difference here is a difference in outline rather than in colour.
+  const stages = await page.evaluate(async () => {
+    const { PixelScreen } = await import('./js/pixel.js?v=5');
+    const { drawPet } = await import('./js/pet.js?v=5');
+    const host = document.createElement('div');
+    host.style.display = 'none';
+    document.body.appendChild(host);
+    const shapeOf = stage => {
+      const scr = new PixelScreen(host, 48, 56);
+      scr.clear('#000000');
+      drawPet(scr, 24, 52, { stage, t: 0.3, pose: 'sit', lit: 1, still: true, face: -1 });
+      const d = scr.ctx.getImageData(0, 0, 48, 56).data;
+      const on = new Set();
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] + d[i + 1] + d[i + 2] > 24) on.add(i / 4);
+      }
+      scr.destroy();
+      return on;
+    };
+    const ORDER = ['spark', 'wisp', 'tender', 'keeper', 'elder'];
+    const shapes = ORDER.map(shapeOf);
+    const diffs = [];
+    for (let i = 1; i < shapes.length; i++) {
+      let n = 0;
+      for (const px of shapes[i]) if (!shapes[i - 1].has(px)) n++;
+      for (const px of shapes[i - 1]) if (!shapes[i].has(px)) n++;
+      diffs.push({ from: ORDER[i - 1], to: ORDER[i], px: n });
+    }
+    return diffs;
+  });
+  const flat = stages.filter(d => d.px < 3);
+  check(`every growth stage changes the silhouette (${stages.map(d => `${d.to} ${d.px}px`).join(', ')})`,
+    flat.length === 0);
+
   // ── the offline shell, and the numbers in it ──
   //
   // The one bug a hand-kept precache list can have is a number that disagrees
