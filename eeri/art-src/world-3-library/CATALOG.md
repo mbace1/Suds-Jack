@@ -16,3 +16,18 @@
 
 ## Notes
 Some included pieces are taller or deeper than the current flat gameplay camera prefers. Keep them in library as optional source material and crop/recompose when promoting to production.
+
+## Sheets (imported 2026-08-17, from chat)
+
+Large multi-asset boards, source material for cropping — not production
+pieces. Compose from them; do not promote a whole sheet.
+
+- `sheets/w3-forest-craft-sheet-a.png` (1536×1024) — the felt/card forest
+  set: trunks with hollows, tyre swings, rope bridges, tree platforms, a
+  waterfall cliff, moss-topped ledges, leaf and mushroom accents, plus a
+  strip of material tiles along the foot.
+- `sheets/w3-w4-combined-sheet-a.png` (1536×1024) — World 4 dock across the
+  top, World 3 forest/trees/nature across the bottom, labelled.
+- `sheets/w3-w4-combined-sheet-b.png` (1536×1024) — the same pairing, second
+  take: camp/mountain flavour in the World 3 half (tent, campfire, lantern,
+  signposts, snow peaks).
