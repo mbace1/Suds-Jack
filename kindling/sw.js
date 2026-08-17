@@ -1,12 +1,11 @@
 // Betterment / Kindling — offline shell.
 // The state remains local-only; the whole UI is cached for daily use without a signal.
 
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = `kindling-${VERSION}`;
 
-// The proven core remains on its v5 token. The v6 GDD rules are isolated as a
-// new layer so progressive goals / Kindling can evolve without destabilising the
-// care, room, breathing and journey modules underneath them.
+// The proven core remains on its v5 token. The v6 GDD rules and v7 combat slice
+// stay isolated so gameplay experiments do not destabilise the daily care loop.
 const V = '?v=5';
 const SHELL = [
   './',
@@ -17,8 +16,10 @@ const SHELL = [
   './modern-ux.css?v=5',
   './modern-ux-accessibility.css?v=5',
   './gdd-rules.css?v=6',
+  './combat.css?v=7',
   './js/modern-ux.js?v=5',
   './js/gdd-rules.js?v=6',
+  './js/combat.js?v=7',
   `./js/main.js${V}`,
   `./js/room.js${V}`,
   `./js/idle.js${V}`,
