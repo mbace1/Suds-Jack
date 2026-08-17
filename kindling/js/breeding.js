@@ -1,4 +1,4 @@
-// Kindling v8 — companion roster + first lineage/breeding prototype.
+// Kindling v9 — companion roster + visible lineage genetics.
 // Two living mature companions can create one egg. Future real care hatches it.
 // Parents remain permanently available; no creature is consumed by breeding.
 
@@ -13,6 +13,13 @@ const meta = gdd.meta;
 
 const HATCH_CARE = 5;
 const MATURE_CARE = 18;
+const STAGES = [
+  { at: 0, id: 'spark' },
+  { at: 6, id: 'wisp' },
+  { at: 18, id: 'tender' },
+  { at: 40, id: 'keeper' },
+  { at: 80, id: 'elder' },
+];
 
 const TRAIT_POOLS = {
   horns: ['stub', 'branch', 'curl', 'none'],
@@ -35,38 +42,81 @@ function defaultTraits(kind = 'ember') {
   return { horns: 'stub', ears: 'round', ember: 'orange', marking: 'ash' };
 }
 
-function ensureLineageGame() {
-  if (!meta.lineageGame || typeof meta.lineageGame !== 'object') meta.lineageGame = {};
-  const lg = meta.lineageGame;
-  if (!Array.isArray(lg.roster)) lg.roster = [];
-  if (!('egg' in lg)) lg.egg = null;
-  if (!Number.isFinite(lg.hatched)) lg.hatched = 0;
-  syncRoster();
-  save();
-  return lg;
+function visualAge(r) {
+  return Math.max(0, (r.birthStageUnits || 0) + (kd.state.kept || 0) - (r.bornAtKept || 0));
+}
+
+function visualStage(r) {
+  let out = STAGES[0].id;
+  const age = visualAge(r);
+  for (const st of STAGES) if (age >= st.at) out = st.id;
+  return out;
 }
 
 function currentRecord(companion) {
+  const source = companion.source || 'bonfire';
   return {
     id: companion.id,
     name: companion.name,
     generation: companion.generation || 1,
     parents: companion.parents || [],
-    traits: companion.traits || defaultTraits(),
+    parentNames: companion.parentNames || [],
+    traits: companion.traits || defaultTraits(source === 'moss-fragment' ? 'moss' : 'ember'),
     temperament: companion.temperament || 'curious',
     combatStyle: companion.combatStyle || 'quick striker',
     bornAtKept: companion.startKept ?? kd.state.kept ?? 0,
-    mature: companion.generation === 1,
+    // Preserve the starter creature's existing silhouette when lineage first arrives.
+    birthStageUnits: companion.birthStageUnits ?? (source === 'bonfire' && (companion.generation || 1) === 1 ? (kd.state.kept || 0) : 0),
+    mature: companion.mature ?? true,
     alive: companion.alive !== false,
-    source: companion.source || 'bonfire',
+    source,
   };
 }
 
+function setCurrent(r, announce = true) {
+  if (!r || !r.alive) return false;
+  game.activeId = r.id;
+  meta.companion = {
+    id: r.id,
+    name: r.name,
+    generation: r.generation,
+    parents: r.parents || [],
+    parentNames: r.parentNames || [],
+    traits: { ...r.traits },
+    temperament: r.temperament,
+    combatStyle: r.combatStyle,
+    source: r.source,
+    startKept: r.bornAtKept || 0,
+    birthStageUnits: r.birthStageUnits || 0,
+    mature: !!r.mature,
+    alive: true,
+  };
+  save();
+  if (announce) kd.debug.say(`${r.name} settles beside the bonfire.`);
+  sync();
+  return true;
+}
+
 function syncRoster() {
-  if (!meta.lineageGame) return;
-  const roster = meta.lineageGame.roster;
-  const active = meta.companion;
-  if (active?.id && !roster.some(r => r.id === active.id)) roster.push(currentRecord(active));
+  const lg = meta.lineageGame;
+  if (!lg) return;
+  const roster = lg.roster;
+  const current = meta.companion;
+
+  if (current?.id) {
+    let row = roster.find(r => r.id === current.id);
+    if (!row) {
+      row = currentRecord(current);
+      roster.push(row);
+    } else {
+      row.name = current.name || row.name;
+      row.alive = current.alive !== false;
+      row.traits ||= current.traits || defaultTraits();
+      row.temperament ||= current.temperament || 'curious';
+      row.combatStyle ||= current.combatStyle || 'quick striker';
+    }
+    lg.activeId = current.id;
+  }
 
   for (const ancestor of meta.lineage || []) {
     const row = roster.find(r => r.id === ancestor.id);
@@ -77,11 +127,40 @@ function syncRoster() {
   }
 
   for (const r of roster) {
-    if (!r.mature && (kd.state.kept || 0) - (r.bornAtKept || 0) >= MATURE_CARE) r.mature = true;
+    r.traits ||= defaultTraits(r.source === 'moss-fragment' ? 'moss' : 'ember');
+    r.parentNames ||= [];
+    if (!Number.isFinite(r.birthStageUnits)) r.birthStageUnits = 0;
+    if (!r.mature && visualAge(r) >= MATURE_CARE) r.mature = true;
+  }
+
+  const active = roster.find(r => r.id === lg.activeId && r.alive);
+  if (!active) {
+    const fallback = roster.find(r => r.alive);
+    lg.activeId = fallback?.id || null;
+    if (fallback && (!meta.companion || meta.companion.id !== fallback.id)) setCurrent(fallback, false);
   }
 }
 
+function ensureLineageGame() {
+  if (!meta.lineageGame || typeof meta.lineageGame !== 'object') meta.lineageGame = {};
+  const lg = meta.lineageGame;
+  if (!Array.isArray(lg.roster)) lg.roster = [];
+  if (!('egg' in lg)) lg.egg = null;
+  if (!Number.isFinite(lg.hatched)) lg.hatched = 0;
+  if (!('activeId' in lg)) lg.activeId = meta.companion?.id || null;
+  syncRoster();
+  save();
+  return lg;
+}
+
 const game = ensureLineageGame();
+
+function active() {
+  syncRoster();
+  const r = game.roster.find(x => x.id === game.activeId && x.alive) || game.roster.find(x => x.alive) || null;
+  if (!r) return null;
+  return { ...r, visualAge: visualAge(r), visualStage: visualStage(r), active: true };
+}
 
 function liveMature() {
   syncRoster();
@@ -101,10 +180,12 @@ function awakenMossling() {
     name: 'Mossling',
     generation: 1,
     parents: [],
+    parentNames: [],
     traits: defaultTraits('moss'),
     temperament: 'cautious',
     combatStyle: 'guard-heavy',
     bornAtKept: kd.state.kept || 0,
+    birthStageUnits: MATURE_CARE,
     mature: true,
     alive: true,
     source: 'moss-fragment',
@@ -134,9 +215,7 @@ function createChildPreview(a, b, seed) {
   const rng = seedRng(seed);
   const generation = Math.max(a.generation || 1, b.generation || 1) + 1;
   const traits = {};
-  for (const [key, pool] of Object.entries(TRAIT_POOLS)) {
-    traits[key] = inheritedValue(a.traits[key], b.traits[key], pool, rng);
-  }
+  for (const [key, pool] of Object.entries(TRAIT_POOLS)) traits[key] = inheritedValue(a.traits[key], b.traits[key], pool, rng);
   const temperament = inheritedValue(a.temperament, b.temperament, TEMPERAMENTS, rng);
   const combatStyle = inheritedValue(a.combatStyle, b.combatStyle, COMBAT_STYLES, rng);
   return {
@@ -182,6 +261,7 @@ function hatch() {
   const child = {
     ...game.egg.child,
     bornAtKept: kd.state.kept || 0,
+    birthStageUnits: 0,
     mature: false,
     alive: true,
     source: 'lineage',
@@ -198,17 +278,20 @@ function hatch() {
 function traitChip(text) { return make('span', 'bm-trait-chip', text); }
 
 function creatureCard(r) {
-  const card = make('article', `bm-roster-card${r.alive ? '' : ' kindled'}`);
+  const isActive = game.activeId === r.id && r.alive;
+  const card = make('article', `bm-roster-card${r.alive ? '' : ' kindled'}${isActive ? ' active' : ''}`);
+  card.dataset.creatureId = r.id;
   const head = make('div', 'bm-roster-head');
   const mark = make('span', 'bm-roster-mark', r.alive ? (r.source === 'moss-fragment' ? '♣' : '●') : '▲');
   const copy = make('span', 'bm-roster-name');
-  copy.append(make('strong', '', r.name), make('span', '', `Generation ${r.generation} · ${r.alive ? (r.mature ? 'mature' : 'young') : 'Kindled'}`));
+  copy.append(make('strong', '', r.name), make('span', '', `Generation ${r.generation} · ${r.alive ? (r.mature ? 'mature' : visualStage(r)) : 'Kindled'}`));
   head.append(mark, copy);
   const traits = make('div', 'bm-traits');
   traits.append(
     traitChip(`${r.traits.horns} horns`),
     traitChip(`${r.traits.ears} ears`),
     traitChip(`${r.traits.ember} ember`),
+    traitChip(r.traits.marking),
     traitChip(r.temperament),
     traitChip(r.combatStyle),
   );
@@ -216,6 +299,13 @@ function creatureCard(r) {
   if (r.parents?.length) {
     const names = r.parentNames?.join(' + ') || r.parents.join(' + ');
     card.appendChild(make('p', 'bm-parentage', `From ${names}`));
+  }
+  if (r.alive) {
+    const choose = make('button', 'bm-by-fire', isActive ? 'By the fire' : 'Keep by fire');
+    choose.type = 'button';
+    choose.disabled = isActive;
+    choose.addEventListener('click', () => setCurrent(r));
+    card.appendChild(choose);
   }
   return card;
 }
@@ -257,6 +347,9 @@ function breedingPanel() {
   section.dataset.breeding = '1';
   section.append(make('span', 'bm-eyebrow', 'COMPANION LINEAGE'), make('h3', '', 'Roster & Nest'));
 
+  const a = active();
+  if (a) section.appendChild(make('p', 'bm-active-note', `${a.name} is by the bonfire · ${a.visualStage} · ${a.traits.ember} ember`));
+
   const grid = make('div', 'bm-roster-grid');
   for (const r of game.roster) grid.appendChild(creatureCard(r));
   section.appendChild(grid);
@@ -276,9 +369,8 @@ function breedingPanel() {
   }
 
   const egg = eggCard();
-  if (egg) {
-    section.appendChild(egg);
-  } else {
+  if (egg) section.appendChild(egg);
+  else {
     const parents = liveMature();
     const nest = make('section', 'bm-card bm-nest-card');
     nest.append(make('span', 'bm-eyebrow', 'NEST'), make('strong', '', parents.length >= 2 ? 'Create an ember-seed' : 'Two mature companions needed'));
@@ -301,6 +393,7 @@ function uiSignature() {
   return JSON.stringify({
     kept: kd.state.kept || 0,
     fragments: combat.mossFragments || 0,
+    active: game.activeId,
     roster: game.roster.map(r => [r.id, r.alive, r.mature, r.generation]),
     egg: game.egg ? [game.egg.seed, progress.done, progress.ready] : null,
   });
@@ -331,10 +424,17 @@ sync();
 window.__bettermentBreeding = {
   game,
   sync,
+  active,
+  setCurrentById(id) {
+    const r = game.roster.find(x => x.id === id && x.alive);
+    return setCurrent(r);
+  },
   awakenMossling,
   beginNest,
   eggProgress,
   hatch,
   liveMature,
+  visualAge,
+  visualStage,
   constants: { HATCH_CARE, MATURE_CARE },
 };
