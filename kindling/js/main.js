@@ -17,17 +17,17 @@
 // lets the arcade's `{ui:true}` pad bridge walk it, and what keeps the 44px and
 // WCAG-AA floors measurable.
 
-import { PixelScreen, loop } from './pixel.js?v=4';
-import { drawRoom, FLOOR_Y, skyOf } from './room.js?v=4';
-import { makeIdle, HELLO } from './idle.js?v=4';
-import * as audio from './audio.js?v=4';
-import { makeBreath, ROUNDS } from './breathe.js?v=4';
-import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=4';
+import { PixelScreen, loop } from './pixel.js?v=5';
+import { drawRoom, FLOOR_Y, FIRE_X, skyOf } from './room.js?v=5';
+import { makeIdle, HELLO } from './idle.js?v=5';
+import * as audio from './audio.js?v=5';
+import { makeBreath, ROUNDS } from './breathe.js?v=5';
+import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=5';
 import {
   S, save, write, rollover, warmth, caredToday, liveStreak, stage, nextStage,
   toggleTask, setMood, countBreath, addTask, removeTask, spend, found, note, setSound,
   dayKey, FULL_DAY, ERRAND_COST, PAY,
-} from './state.js?v=4';
+} from './state.js?v=5';
 
 const MOODS = [
   { id: 'rough',  label: 'rough' },
@@ -180,7 +180,7 @@ function tickClocks() {
 function sparkle(n = 8) {
   for (let i = 0; i < n; i++) {
     view.sparks.push({
-      x: 38 + (Math.random() * 8 - 4),
+      x: FIRE_X + (Math.random() * 8 - 4),   // the bonfire moved; the sparks follow
       y: FLOOR_Y - 6 - Math.random() * 8,
       vx: (Math.random() * 2 - 1) * 14,
       vy: -18 - Math.random() * 22,

@@ -66,6 +66,18 @@ Where older notes conflict, the following are no longer instructions:
 - highly textured fabric buttons;
 - 3D/diorama-like scene rendering.
 
+## Settled decisions
+
+- **The daily target stays FIVE**, even when more than five goals are configured
+  (owner, 2026-08-16). A denominator that grows with the list would mean adding a
+  goal makes today harder to finish, which quietly punishes the person who writes
+  down more of their life — and the fire's five bands are built on the same
+  number, so the bar and the room would start telling different stories. A long
+  list can be acknowledged in words ("2 / 5 today · 9 goals on your list") without
+  moving the target.
+- **The art pivot is approved** (owner, 2026-08-16): the cozy-hut interior is
+  retired in favour of the layered-2D dark-fantasy bonfire described above.
+
 ## Current implementation priority
 
 1. Code and logic first — stop producing more art drafts unless requested.
