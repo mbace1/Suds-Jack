@@ -72,7 +72,7 @@ console.log('\nflow-core contract\n');
   const riding = f.trips.active.filter(t => t.state === 'riding').length;
   ok('some trips are aboard before the edit', riding > 0, `riding=${riding}`);
 
-  const r = f.routes.list[0];
+  const r = f.routes.drawn[0];
   f.reshapeRoute(r.id, ['hakaniemi', 'kuudeslinja', 'kirkko', 'karhupuisto']);
   const after = f.trips.active.length + f.trips.completed.length + f.trips.abandoned.length;
   ok('reshaping loses nobody', after === before, `${before} → ${after}`);
@@ -80,11 +80,18 @@ console.log('\nflow-core contract\n');
     f.trips.active.every(t => t.state !== 'riding' || f.routes.get(t.leg?.routeId)));
 
   const before2 = f.trips.active.length + f.trips.completed.length + f.trips.abandoned.length;
-  f.removeRoute(f.routes.list[0].id);
+  f.removeRoute(f.routes.drawn[0].id);
   const after2 = f.trips.active.length + f.trips.completed.length + f.trips.abandoned.length;
   ok('deleting a line loses nobody', after2 === before2, `${before2} → ${after2}`);
+  // people may still legitimately be riding the CITY's fixed services —
+  // the guarantee is that nobody is aboard a line that no longer exists
   ok('and everyone is standing somewhere real',
-    f.trips.active.every(t => t.state !== 'riding'));
+    f.trips.active.every(t => t.state !== 'riding' || f.routes.get(t.leg?.routeId)));
+
+  // and the city's own services are not the player's to delete
+  const fixed = f.routes.list.find(r => r.fixed);
+  ok('a fixed line refuses removal', !!f.removeRoute(fixed.id).error);
+  ok('and refuses reshaping', !!f.reshapeRoute(fixed.id, fixed.nodes.slice(0, 2)).error);
 }
 
 // ── a closed edge reroutes or visibly queues every affected trip ────────

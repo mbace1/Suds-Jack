@@ -27,6 +27,9 @@ export function createFlow({ city, seed = 1, days = 7, demand, hooks = {}, maxRo
   const events = new EventQueue(rng.fork('events'), { ticksPerDay: clock.ticksPerDay });
   events.schedule(graph, days);
 
+  // the city's own services run from tick one, before the player draws a thing
+  for (const line of city.lines || []) routes.addFixed(line);
+
   // pressure needs to know a carrier's tagged share without importing trips
   pressure.taggedShareOf = carrier => {
     if (!carrier.load.length) return 0;

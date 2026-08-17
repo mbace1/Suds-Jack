@@ -94,5 +94,32 @@ export const KALLIO = {
     { id: 'w_harju_vsk', a: 'harju', b: 'vaasankatu', mode: 'walk', time: 32, capacity: 2 },
     { id: 'w_harju_kir', a: 'harju', b: 'kirkko', mode: 'walk', time: 21, capacity: 2 },
     { id: 'w_harju_kar', a: 'harju', b: 'karhupuisto', mode: 'walk', time: 24, capacity: 2 },
+
+    // the metro tunnel — Hakaniemi to Sörnäinen is 900 m of tube (opened
+    // 1984, Sörnäinen station at Helsinginkatu 1), far quicker than the
+    // street and far bigger than anything on it
+    { id: 'm_tunnel', a: 'hakaniemi', b: 'sornainen', mode: 'metro', time: 26, capacity: 6 },
+
+    // car corridors: Hämeentie and Helsinginkatu carry private traffic
+    { id: 'c_hameentie', a: 'hakaniemi', b: 'kurvi', mode: 'car', time: 30, capacity: 8 },
+    { id: 'c_kur_sor', a: 'kurvi', b: 'sornainen', mode: 'car', time: 5, capacity: 8 },
+    { id: 'c_helsinginkatu', a: 'harju', b: 'vaasanaukio', mode: 'car', time: 11, capacity: 6 },
+    { id: 'c_vaa_kur', a: 'vaasanaukio', b: 'kurvi', mode: 'car', time: 4, capacity: 6 },
+  ],
+
+  // FIXED SERVICES — running from the first tick, not drawable, not editable.
+  // These are the early-2000s services that really worked these streets: the
+  // metro between the two stations; tram 6 up Hämeentie toward Arabia; the
+  // 3B/3T figure-eight's Kallio loop past the church and Karhupuisto (its
+  // letters lasted until 2013); tram 1 along Helsinginkatu past the fields;
+  // and ordinary car traffic on the two big streets. The player's own lines
+  // are drawn on top of — and compete for room with — all of this.
+  lines: [
+    { id: 'M', name: 'Metro', mode: 'metro', nodes: ['hakaniemi', 'sornainen'], carriers: 2, carrierCapacity: 40 },
+    { id: '6', name: '6', mode: 'tram', nodes: ['hakaniemi', 'kurvi', 'sornainen'], carriers: 2, carrierCapacity: 12 },
+    { id: '3B', name: '3B', mode: 'tram', nodes: ['hakaniemi', 'kuudeslinja', 'kirkko', 'karhupuisto', 'vaasanaukio', 'kurvi'], carriers: 2, carrierCapacity: 12 },
+    { id: '1', name: '1', mode: 'tram', nodes: ['harju', 'vaasanaukio', 'kurvi'], carriers: 1, carrierCapacity: 10 },
+    { id: 'cars1', name: 'Hämeentie', mode: 'car', nodes: ['hakaniemi', 'kurvi', 'sornainen'], carriers: 3, carrierCapacity: 2 },
+    { id: 'cars2', name: 'Helsinginkatu', mode: 'car', nodes: ['harju', 'vaasanaukio', 'kurvi'], carriers: 2, carrierCapacity: 2 },
   ],
 };

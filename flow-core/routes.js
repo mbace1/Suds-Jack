@@ -31,10 +31,12 @@ export class Carrier {
 }
 
 export class Route {
-  constructor({ mode, nodes, carriers = 2, carrierCapacity = 6 }) {
+  constructor({ mode, nodes, carriers = 2, carrierCapacity = 6, fixed = false, label = null }) {
     this.id = `r${nextRouteId++}`;
     this.mode = mode;
     this.nodes = [...nodes];
+    this.fixed = fixed;          // a city service: runs from tick one, not editable
+    this.label = label;          // what the city calls it ("M", "6", "3B"…)
     this.carrierCapacity = carrierCapacity;
     this.carriers = [];
     this.uses = 0;               // how many boardings — feeds `repetition`
@@ -60,6 +62,17 @@ export class RouteSet {
   }
 
   get(id) { return this.list.find(r => r.id === id); }
+  get drawn() { return this.list.filter(r => !r.fixed); }   // the player's own
+
+  // A city service. Bypasses maxRoutes (it is not the player's budget being
+  // spent) but not validation — a fixed line still has to follow real edges.
+  addFixed(spec) {
+    const bad = this.validate(spec.mode, spec.nodes);
+    if (bad) return { error: bad };
+    const r = new Route({ ...spec, fixed: true, label: spec.label ?? spec.id });
+    this.list.push(r);
+    return { route: r };
+  }
 
   // Every consecutive pair must be joined by an open edge of the route's mode.
   // Returns a reason string when invalid, so the UI can say why rather than
@@ -76,7 +89,7 @@ export class RouteSet {
   }
 
   add(mode, nodes) {
-    if (this.list.length >= this.maxRoutes) return { error: 'no spare lines' };
+    if (this.drawn.length >= this.maxRoutes) return { error: 'no spare lines' };
     const bad = this.validate(mode, nodes);
     if (bad) return { error: bad };
     const r = new Route({ mode, nodes });
@@ -89,6 +102,7 @@ export class RouteSet {
   reshape(routeId, nodes, trips) {
     const r = this.get(routeId);
     if (!r) return { error: 'no such line' };
+    if (r.fixed) return { error: 'that line is the city\'s, not yours' };
     const bad = this.validate(r.mode, nodes);
     if (bad) return { error: bad };
     this.disembarkAll(r, trips);
@@ -103,6 +117,7 @@ export class RouteSet {
   remove(routeId, trips) {
     const i = this.list.findIndex(r => r.id === routeId);
     if (i < 0) return { error: 'no such line' };
+    if (this.list[i].fixed) return { error: 'that line is the city\'s, not yours' };
     this.disembarkAll(this.list[i], trips);
     this.list.splice(i, 1);
     return {};

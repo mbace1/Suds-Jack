@@ -14,6 +14,8 @@ export const PAL = {
   slow: '#e0a53a',
   draft: '#2f9fb8',
   routeColours: ['#2f9fb8', '#5aa860', '#e0a53a', '#c86f9a'],
+  // the standing city services, quieter than the player's own lines
+  modeColours: { metro: '#e07b2f', tram: '#86a98c', car: '#9aa4ac' },
   font: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
 };
 

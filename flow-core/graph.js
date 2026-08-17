@@ -5,7 +5,11 @@
 // which is a school run is the product adapter's business, and the core must
 // never be able to tell.
 
-export const MODES = ['walk', 'tram'];   // the slice: walking plus one public mode
+// walk and tram are drawable by the player; metro and car exist as FIXED
+// services (see city `lines`) — real corridors that run whether or not the
+// player does anything, which is what makes the map an active city rather
+// than an empty board waiting for input.
+export const MODES = ['walk', 'tram', 'metro', 'car'];
 
 export class Node {
   constructor({ id, name, x, y, tags = [], capacity = 24 }) {
