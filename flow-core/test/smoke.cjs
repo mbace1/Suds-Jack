@@ -55,7 +55,7 @@ s.listen(0, '127.0.0.1', async () => {
     // draw a line by dragging between two stops, and check it carries people
     const drew = await p.evaluate(h => {
       const f = window[h].flow;
-      const r = f.addRoute('tram', ['hakaniemi', 'kuudeslinja', 'vaasanaukio', 'kurvi']);
+      const r = f.addRoute('tram', ['hakaniemi', 'kuudeslinja', 'karhupuisto', 'vaasanaukio', 'vaasankatu', 'kurvi']);
       return !r.error;
     }, handle);
     ok('a line can be drawn', drew);
@@ -78,7 +78,7 @@ s.listen(0, '127.0.0.1', async () => {
     ok('editing still works while paused', await p.evaluate(h => {
       const f = window[h].flow;
       const n = f.routes.list.length;
-      f.addRoute('tram', ['kirkko', 'karhupuisto', 'vaasankatu']);
+      f.addRoute('tram', ['kirkko', 'karhupuisto', 'vaasanaukio']);
       return f.routes.list.length === n + 1;
     }, handle));
     await p.click('#pause');
@@ -91,6 +91,31 @@ s.listen(0, '127.0.0.1', async () => {
       return r.width > 0 && (r.width < 44 || r.height < 44);
     }).map(x => x.id || x.textContent.trim().slice(0, 16)));
     ok('every control clears 44px', small.length === 0, small.join(', '));
+
+    // the encounter layer is Piritori-only, and must never reach the other one
+    if (name === 'piritori') {
+      await p.evaluate(() => window.__pt.debug.startFight('rival', 1000));
+      await p.waitForTimeout(200);
+      ok('an encounter opens', await p.locator('#fight').isVisible());
+      ok('it telegraphs before you commit',
+        (await p.locator('#fightTell').textContent()).length > 10);
+      ok('it freezes the city while it runs',
+        await p.evaluate(() => window.__pt.flow.clock.paused));
+      const moves = await p.locator('#fightBtns button').count();
+      ok(`it offers moves, paying and leaving (${moves})`, moves >= 5);
+      // fight it out, whatever it takes
+      for (let i = 0; i < 30; i++) {
+        if (await p.evaluate(() => !!window.__pt.debug.fight?.over)) break;
+        await p.locator('#fightBtns button').first().click();
+      }
+      await p.locator('#fightBtns button').last().click();
+      await p.waitForTimeout(150);
+      ok('and it closes and hands the city back',
+        !(await p.locator('#fight').isVisible())
+        && await p.evaluate(() => !window.__pt.flow.clock.paused));
+    } else {
+      ok('no encounter layer in this product', await p.evaluate(() => !document.getElementById('fight')));
+    }
 
     ok('still no errors after playing', errs.length === 0, errs.slice(0, 2).join(' | '));
     await p.close();
