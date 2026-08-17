@@ -586,11 +586,66 @@ roadmap of future experiences.
 taken at its word: you tick off the small real things you actually did, they become
 **kindling**, the kindling keeps a fire, and the fire is the light you see the world by.
 **The setting pivoted at v5** (owner direction, 2026-08-16): the cozy hut is retired and
-the scene is a **moonlit dark-fantasy ruin** — bonfire, broken wall with a collapse in
-it, a free-standing arch, a gate in the far wall, forest behind. The loop underneath is
-untouched, and the scheme's one idea got sharper rather than changing: everything is
-painted from a COLD ramp and warmed toward the fire, because the world is cold and the
-fire is the only warm thing in it. The ruined architecture is still first-draft.
+the scene is a **moonlit dark-fantasy bonfire camp**. The loop underneath is untouched,
+and the scheme's one idea got sharper rather than changing: everything is painted from a
+COLD ramp and warmed toward the fire, because the world is cold and the fire is the only
+warm thing in it.
+**The art canon is `kindling/art-src/approved/`** (v7, 2026-08-17). Thirteen approved
+sheets arrived from the ChatGPT art pass — scenes, environment libraries, four character
+bibles and a full UI kit — and **none of them are in the repo**:
+`agent/betterment-approved-art-handoff` ships a README naming a zip that never landed,
+and no branch carries binary art. `SHEETS.md` is the archive that survives that: the
+sheets **read out** at the level of detail a renderer needs, because this game draws
+every pixel in code and there was never anything to import. **Read it before touching
+the look**; `ART_GUIDE.md` is the arithmetic on top of it (the 3-pixel rule, the trait
+zones, what a gate can check) and the sheets win where the two disagree — two of the
+guide's rules were guesses written before there was any art and are corrected against
+the reference.
+**The camp is staged left to right**, the same way every reference scene stages it: a
+tree cropped by the top-left corner with a lit lantern and a torn banner on it, one
+whole arch and one broken behind it, the bonfire in its ring of stones **left of
+centre**, the companion on a rug, the gear on the ground, crumbled wall stacks carrying
+everything ever brought home, a gate where the wall ends, and a castle on the horizon
+with a few windows lit. **Depth is value, not perspective** — the handoff says so
+outright ("do not invent perspective depth that the supplied layers cannot support"), so
+it is four flat layers each a step off the one behind, never a receding ground plane.
+**The companion is EMBER**, and it is not the moss-green animal the first cut drew: dark
+porous stone nearly the colour of the night, one big head on a small body, large white
+eyes, two fangs, two pale tan **horns**, a maroon **scarf**, ember at the cracks and the
+tail tip. That first clause decides the build — a body that dark cannot carry its own
+silhouette, so the sheet puts the job on the horns and the scarf and they are drawn in
+the two lightest colours it owns. The five stages are the sheet's age ladder (horn size,
+posture, accessories, surface detail — explicitly *not* body type), with horn length
+2/3/4/5/7px doing most of the work so the 3-pixel rule holds by construction.
+**Animation is a stated requirement, not a nicety**: the sheets ship IDLE 8f / WALK 6f /
+RUN 6f / ATTACK 8f and five shared principles, and the one this game had none of is
+**follow-through — cloth and accessories LAG the body**. The scarf and tail run off the
+breathing clock two frames late; over the cached blit sits a live layer (lantern flicker,
+the banner swaying as a travelling wave biggest at the hem, ember motes, leaning grass,
+three castle windows on uneven clocks), none of which costs a repaint and all of which
+stops under `prefers-reduced-motion`. **The UI kit is leather and felt, not glass** — a
+dashed stitch inset inside each panel, a hairline grain, progress as beads on a string,
+disabled buttons desaturated rather than removed — and all of it is additive CSS, so the
+mobile layer still owns none of the state machine.
+**Four art traps, all of which passed every gate and were visible only in a render**
+(which is why an art change ends in a screenshot, never in a green suite): the far plane
+was painted only where the ruin was not, so the **arch openings showed raw VOID** —
+anything with a hole in it needs something behind the hole; the masonry **hashed per
+pixel**, which is noise rather than texture and reads as poured concrete, so blocks are
+quantised 4×3 with offset courses and the joint is the block's own last row/column
+dropped down the ramp; the tree's canopy hung to the ground and made a **green cliff**
+(a tree is a trunk you can see with leaves above it); and **moss ran round the whole
+arch**, turning masonry into a hoop of vine — moss is a horizontal-surface plant. Two
+more were plainly wrong: a far building painted in the light stone tone reads as a bright
+column under the moon rather than a silhouette, and warm rust on the gate's bars made a
+white picket fence out of the brightest thing in the half of the picture the fire is
+supposed to own.
+**And the band-brightness gate has now measured the wrong thing twice**, once after each
+art pass: a sum-of-channels threshold saturates the moment the scene has a blue sky and
+warm earth in it (a whole day moved it 18474 → 19056, first step *downward*). The ruler
+is **firelight — red leading blue** — and the bands read 1243 → 2322 → 3261 → 4137 →
+5089 → 5997. Both times the page was right and the ruler was wrong, which is the general
+shape of this failure: a gate that certifies *works* cannot see *looks*.
 Canvas 2D at 192×128, no build step, no image assets, English only for now.
 **The light is the whole reward, and it is a MEASURE** — `lightAt()` in `js/room.js`
 is one falloff out of the bonfire whose reach is the day's tally, so a bad day is coals
