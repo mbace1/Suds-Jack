@@ -34,7 +34,8 @@ function boot(seed = 7) {
       onTick: t => {
         goals.step(t);
         drainDeliveries();
-        if (t % 900 === 0) callForService();
+        // the first booking comes in with the morning, then a steady trickle
+        if (t === 120 || t % 900 === 0) callForService();
       },
       onDay: () => finish(),
       onEvent: ev => {
@@ -51,12 +52,16 @@ function boot(seed = 7) {
   $('map').style.aspectRatio = `${flow.graph.bounds.w} / ${flow.graph.bounds.h}`;
   renderer = new FlowRenderer($('map'), THEME);
   drawer = new RouteDrawer($('map'), renderer, flow, {
+    markersProvider: () => markers(),
     onCommit: (mode, nodes) => {
       const r = flow.addRoute(mode, nodes);
       say(r.error ? `— ${r.error}` : `New line: ${nodes.map(id => flow.graph.node(id).name).join(' → ')}.`);
       paintHud();
     },
-    onTap: id => { sel = id; paintSheet(); },
+    onTap: (hit, p) => {
+      if (hit.kind === 'node') { sel = hit.id; paintSheet(); hidePop(); }
+      else showPop(hit, p);
+    },
     onDraft: d => { draft = d; },
   });
 
@@ -136,6 +141,74 @@ function finish() {
   $('end').hidden = false;
 }
 
+// ── the pin layer ───────────────────────────────────────────────────────
+// What the day map can be asked about: deliveries on their way, and any stop
+// starting to overflow. Built fresh each paint so nothing shown is stale.
+function markers() {
+  if (!flow || !goals) return [];
+  const out = [];
+  const slots = {};
+  const slot = node => (slots[node] = (slots[node] ?? -1) + 1);
+
+  for (const t of flow.trips.active) {
+    if (!t.payload) continue;
+    out.push({
+      id: `job:${t.id}`, node: t.dest, slot: slot(t.dest),
+      glyph: '▣', color: '#e2683c', data: t,
+    });
+  }
+  const w = goals.worstCrowd();
+  if (w.id && w.load > 0.7) {
+    out.push({ id: 'crowd', node: w.id, slot: slot(w.id), glyph: '!', color: '#e2683c' });
+  }
+  return out;
+}
+
+// ── the small window ────────────────────────────────────────────────────
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+function showPop(hit, p) {
+  const body = popBody(hit);
+  if (!body) { hidePop(); return; }
+  $('popBody').innerHTML = body;
+  const box = $('pop');
+  box.hidden = false;
+  const r = $('map').getBoundingClientRect();
+  const w = Math.min(300, innerWidth - 20);
+  box.style.width = w + 'px';
+  box.style.left = Math.max(10, Math.min(innerWidth - w - 10, r.left + p.x - w / 2)) + 'px';
+  box.style.top = Math.max(10, Math.min(innerHeight - 170, r.top + p.y + 14)) + 'px';
+}
+function hidePop() { $('pop').hidden = true; }
+
+function popBody(hit) {
+  const name = id => flow.graph.node(id).name;
+  if (hit.kind === 'carrier') {
+    const r = flow.routes.get(hit.routeId);
+    if (!r) return null;
+    const c = r.carriers.find(k => k.id === hit.carrierId);
+    const title = r.fixed
+      ? (r.mode === 'metro' ? 'The metro' : r.mode === 'car' ? `Street traffic · ${r.label}` : `Tram ${r.label}`)
+      : `Your line ${r.id.toUpperCase()}`;
+    return `<h3>${esc(title)}</h3>`
+      + `<p>${c.load.length}/${r.carrierCapacity} aboard between ${esc(name(r.nodes[c.idx]))} and ${esc(name(r.nodes[Math.min(c.idx + Math.max(c.dir, 0), r.nodes.length - 1)]))}.</p>`
+      + (r.fixed ? '<p class="dim">A city service — it runs whether you plan around it or not.</p>' : '');
+  }
+  if (hit.kind !== 'marker') return null;
+  const mk = hit.marker;
+  if (mk.id.startsWith('job:')) {
+    const t = mk.data;
+    return `<h3>Delivery due</h3>`
+      + `<p>Booked from ${esc(name(t.origin))} to ${esc(name(t.dest))} — ${t.state === 'riding' ? 'on its way now' : 'still waiting for a line that goes there'}.</p>`;
+  }
+  if (mk.id === 'crowd') {
+    const w = goals.worstCrowd();
+    return `<h3>Crowding · ${esc(name(w.id))}</h3>`
+      + `<p>The shelter is at ${Math.round(w.load * 100)}% of its capacity. More service here, or a second way out, before people start giving up.</p>`;
+  }
+  return null;
+}
+
 function paintHud() {
   const r = goals.report();
   $('done').textContent = `${(r.completion * 100) | 0}%`;
@@ -165,7 +238,7 @@ function frame(now) {
   const dt = last ? Math.min(120, now - last) : 0; last = now;
   if (flow) {
     flow.update(dt);
-    renderer.draw(flow, { draft, alpha: flow.clock.alpha() });
+    renderer.draw(flow, { draft, alpha: flow.clock.alpha(), markers: markers() });
     if (flow.clock.tick % 10 === 0) paintHud();
   }
   requestAnimationFrame(frame);
@@ -182,8 +255,13 @@ $('speed').addEventListener('click', () => {
   flow.clock.setSpeed(s); $('speed').textContent = `×${s}`;
 });
 $('again').addEventListener('click', () => { $('end').hidden = true; boot(7); flow.clock.setPaused(false); });
+$('popClose').addEventListener('click', hidePop);
+addEventListener('keydown', e => { if (e.key === 'Escape') hidePop(); });
 
 boot(7);
 requestAnimationFrame(frame);
 
-window.__tm = { get flow() { return flow; }, get goals() { return goals; }, debug: { boot, finish } };
+window.__tm = {
+  get flow() { return flow; }, get goals() { return goals; },
+  debug: { boot, finish, markers, showPop, hidePop },
+};

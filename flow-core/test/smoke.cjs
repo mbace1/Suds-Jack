@@ -92,8 +92,52 @@ s.listen(0, '127.0.0.1', async () => {
     }).map(x => x.id || x.textContent.trim().slice(0, 16)));
     ok('every control clears 44px', small.length === 0, small.join(', '));
 
+    // the active city: fixed services run from boot, and everything on the
+    // map opens a small window when asked
+    ok('the metro is running before the player draws anything',
+      await p.evaluate(h => window[h].flow.routes.list.some(r => r.fixed && r.mode === 'metro'), handle));
+    ok('trams and cars are out too', await p.evaluate(h => {
+      const modes = new Set(window[h].flow.routes.list.filter(r => r.fixed).map(r => r.mode));
+      return modes.has('tram') && modes.has('car');
+    }, handle));
+    ok('a fixed line refuses the player\'s edits', await p.evaluate(h => {
+      const f = window[h].flow;
+      const m = f.routes.list.find(r => r.fixed);
+      return !!f.removeRoute(m.id).error && !!f.reshapeRoute(m.id, m.nodes.slice(0, 2)).error;
+    }, handle));
+    ok('a tap on a moving carrier opens its window', await p.evaluate(h => {
+      const d = window[h].debug;
+      const f = window[h].flow;
+      const r = f.routes.list.find(x => x.fixed && x.mode === 'metro');
+      d.showPop({ kind: 'carrier', routeId: r.id, carrierId: r.carriers[0].id }, { x: 100, y: 100 });
+      const open = !document.getElementById('pop').hidden
+        && document.getElementById('popBody').textContent.length > 20;
+      d.hidePop();
+      return open;
+    }, handle));
+    ok('there are pins on the map', await p.evaluate(h => window[h].debug.markers().length > 0, handle));
+    ok('every pin opens a window that says something', await p.evaluate(h => {
+      const d = window[h].debug;
+      for (const mk of d.markers()) {
+        d.showPop({ kind: 'marker', id: mk.id, marker: mk }, { x: 100, y: 100 });
+        if (document.getElementById('pop').hidden
+          || document.getElementById('popBody').textContent.length < 15) { d.hidePop(); return false; }
+      }
+      d.hidePop();
+      return true;
+    }, handle));
+
     // the encounter layer is Piritori-only, and must never reach the other one
     if (name === 'piritori') {
+      // the pin set the request names: contacts (gangs, the wholesale), the
+      // sellers, the rival crew, and mission goals — the patrol appears with
+      // heat, proven separately in the contract of heat.js
+      ok('the night map pins people, sellers, a rival and the goals',
+        await p.evaluate(() => {
+          const ids = window.__pt.debug.markers().map(m => m.id).join();
+          return ids.includes('contact:') && ids.includes('dealers')
+            && ids.includes('rival') && ids.includes('mission:');
+        }));
       await p.evaluate(() => window.__pt.debug.startFight('rival', 1000));
       await p.waitForTimeout(200);
       ok('an encounter opens', await p.locator('#fight').isVisible());

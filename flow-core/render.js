@@ -47,7 +47,56 @@ export class FlowRenderer {
     return best;
   }
 
-  draw(flow, { draft = null, selected = null, alpha = 0 } = {}) {
+  // Everything under a fingertip, by priority: a MARKER (product-owned pin)
+  // beats a CARRIER (something moving) beats a NODE (somewhere). The product
+  // decides what each one means; this only says what was touched.
+  hitAll(flow, cx, cy, markers = []) {
+    const f = flow.graph.fit(this.canvas.width, this.canvas.height);
+    const x = cx * this.dpr, y = cy * this.dpr;
+
+    let m = null, md = 24 * this.dpr;
+    for (const mk of markers) {
+      const p = this.markerPoint(flow, mk, f);
+      if (!p) continue;
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < md) { m = mk; md = d; }
+    }
+    if (m) return { kind: 'marker', id: m.id, marker: m };
+
+    let c = null, cd = 20 * this.dpr;
+    for (const r of flow.routes.list) {
+      for (const k of r.carriers) {
+        const p = this.carrierPos(flow, r, k, 0, f);
+        if (!p) continue;
+        const d = Math.hypot(p.x - x, p.y - y);
+        if (d < cd) { c = { routeId: r.id, carrierId: k.id }; cd = d; }
+      }
+    }
+    if (c) return { kind: 'carrier', ...c };
+
+    const nodeId = this.hit(flow, cx, cy);
+    return nodeId ? { kind: 'node', id: nodeId } : null;
+  }
+
+  // Where a marker sits: on its node (stacked around the disc by slot) or at
+  // an edge's midpoint. Design-unit `pos` is also allowed.
+  markerPoint(flow, mk, f) {
+    if (mk.pos) return { x: f.x(mk.pos.x), y: f.y(mk.pos.y) };
+    if (mk.edge) {
+      const e = flow.graph.edge(mk.edge);
+      if (!e) return null;
+      const a = flow.graph.node(e.a), b = flow.graph.node(e.b);
+      return { x: (f.x(a.x) + f.x(b.x)) / 2, y: (f.y(a.y) + f.y(b.y)) / 2 };
+    }
+    const n = flow.graph.node(mk.node);
+    if (!n) return null;
+    const slot = mk.slot ?? 0;
+    const ang = -Math.PI / 2 + slot * (Math.PI / 3);
+    const r = f.scale * 1.5 + 13 * this.dpr;
+    return { x: f.x(n.x) + Math.cos(ang) * r, y: f.y(n.y) + Math.sin(ang) * r };
+  }
+
+  draw(flow, { draft = null, selected = null, alpha = 0, markers = [] } = {}) {
     const { ctx, theme } = this;
     const W = this.canvas.width, H = this.canvas.height;
     const f = flow.graph.fit(W, H);
@@ -83,8 +132,26 @@ export class FlowRenderer {
       if (e.closed) this.glyph(ctx, (f.x(a.x) + f.x(b.x)) / 2, (f.y(a.y) + f.y(b.y)) / 2, '×', theme.warn, u);
     }
 
+    // 2b. the city's own services, under the player's ink: metro heavy and
+    //     straight, trams thin, car corridors as a faint doubled line
+    for (const r of flow.routes.list) {
+      if (!r.fixed) continue;
+      const col = theme.modeColours?.[r.mode] || theme.latent;
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = r.mode === 'car' ? 0.35 : 0.65;
+      ctx.lineWidth = u * (r.mode === 'metro' ? 0.22 : r.mode === 'car' ? 0.07 : 0.10);
+      ctx.setLineDash(r.mode === 'car' ? [7, 5] : []);
+      ctx.beginPath();
+      r.nodes.forEach((id, k) => {
+        const n = flow.graph.node(id);
+        k ? ctx.lineTo(f.x(n.x), f.y(n.y)) : ctx.moveTo(f.x(n.x), f.y(n.y));
+      });
+      ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+
     // 3. the drawn routes — width carries load, pattern carries identity
-    flow.routes.list.forEach((r, i) => {
+    flow.routes.drawn.forEach((r, i) => {
       const col = theme.routeColours[i % theme.routeColours.length];
       const pat = PATTERNS[i % PATTERNS.length];
       const loadK = Math.min(1, r.carriers.reduce((s, c) => s + c.load.length, 0)
@@ -117,10 +184,14 @@ export class FlowRenderer {
       ctx.setLineDash([]);
     }
 
-    // 5. carriers, and the marks riding them
+    // 5. carriers, and the marks riding them. The silhouette says the mode
+    //    before any colour does: the metro is a long car, a tram a box, a car
+    //    a small lozenge.
     for (const r of flow.routes.list) {
-      const i = flow.routes.list.indexOf(r);
-      const col = theme.routeColours[i % theme.routeColours.length];
+      const di = flow.routes.drawn.indexOf(r);
+      const col = r.fixed
+        ? (theme.modeColours?.[r.mode] || theme.latent)
+        : theme.routeColours[di % theme.routeColours.length];
       for (const c of r.carriers) {
         const p = this.carrierPos(flow, r, c, this.reduced ? 0 : alpha, f);
         if (!p) continue;
@@ -128,18 +199,39 @@ export class FlowRenderer {
         ctx.strokeStyle = theme.paper;
         ctx.lineWidth = 1.5 * this.dpr;
         const s = u * 0.5;
+        const w = r.mode === 'metro' ? s * 1.9 : r.mode === 'car' ? s * 0.8 : s;
+        const h = r.mode === 'car' ? s * 0.5 : s;
         ctx.beginPath();
-        ctx.rect(p.x - s / 2, p.y - s / 2, s, s);
+        ctx.rect(p.x - w / 2, p.y - h / 2, w, h);
         ctx.fill(); ctx.stroke();
         // the load, as marks on the carrier
         const n = Math.min(c.load.length, 6);
         ctx.fillStyle = theme.paper;
         for (let k = 0; k < n; k++) {
-          ctx.fillRect(p.x - s / 2 + 2 * this.dpr + (k % 3) * (s / 3.4),
-            p.y - s / 2 + 2 * this.dpr + Math.floor(k / 3) * (s / 2.6),
+          ctx.fillRect(p.x - w / 2 + 2 * this.dpr + (k % 3) * (w / 3.4),
+            p.y - h / 2 + 2 * this.dpr + Math.floor(k / 3) * (h / 2.6),
             Math.max(1, u * 0.07), Math.max(1, u * 0.07));
         }
       }
+    }
+
+    // 5b. the product's markers — pins with a glyph, stacked around their
+    //     node so several can share one place and stay tappable
+    for (const mk of markers) {
+      const p = this.markerPoint(flow, mk, f);
+      if (!p) continue;
+      const r = 9 * this.dpr;
+      ctx.fillStyle = theme.paper;
+      ctx.strokeStyle = mk.color || theme.ink;
+      ctx.lineWidth = 2 * this.dpr;
+      ctx.globalAlpha = mk.dim ? 0.45 : 1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = mk.color || theme.ink;
+      ctx.font = `bold ${Math.round(10 * this.dpr)}px ${theme.font}`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(mk.glyph || '•', p.x, p.y + 0.5);
+      ctx.textBaseline = 'alphabetic';
+      ctx.globalAlpha = 1;
     }
 
     // 6. nodes, their glyphs and their queues

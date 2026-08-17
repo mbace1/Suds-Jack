@@ -9,11 +9,14 @@
 // `touchend` survives both.
 
 export class RouteDrawer {
-  constructor(canvas, renderer, flow, { onCommit, onTap, onDraft } = {}) {
+  constructor(canvas, renderer, flow, { onCommit, onTap, onDraft, markersProvider } = {}) {
     this.canvas = canvas;
     this.renderer = renderer;
     this.flow = flow;
     this.onCommit = onCommit; this.onTap = onTap; this.onDraft = onDraft;
+    // the product's live pins, so a tap can land on one; a drag still only
+    // ever starts from a node — you draw lines between places, not onto cars
+    this.markersProvider = markersProvider || (() => []);
     this.draft = null;
     this.mode = 'tram';
     this.moved = false;
@@ -36,10 +39,12 @@ export class RouteDrawer {
   setMode(m) { this.mode = m; }
 
   down(p) {
-    const id = this.renderer.hit(this.flow, p.x, p.y);
     this.moved = false;
-    if (!id) { this.draft = null; this.onDraft?.(null); return; }
-    this.draft = { mode: this.mode, nodes: [id], cursor: p };
+    this.downHit = this.renderer.hitAll(this.flow, p.x, p.y, this.markersProvider());
+    // only a NODE can anchor a new line; a press on a pin or a carrier is the
+    // start of a tap, never of a route
+    if (this.downHit?.kind !== 'node') { this.draft = null; this.onDraft?.(null); return; }
+    this.draft = { mode: this.mode, nodes: [this.downHit.id], cursor: p };
     this.onDraft?.(this.draft);
   }
 
@@ -62,12 +67,14 @@ export class RouteDrawer {
   }
 
   up(p) {
-    if (!this.draft) return;
     const d = this.draft;
-    this.draft = null;
+    const downHit = this.downHit;
+    this.draft = null; this.downHit = null;
     this.onDraft?.(null);
-    if (!this.moved || d.nodes.length < 2) { this.onTap?.(d.nodes[0]); return; }
-    this.onCommit?.(d.mode, d.nodes);
+    if (d && this.moved && d.nodes.length >= 2) { this.onCommit?.(d.mode, d.nodes); return; }
+    // a tap: report whatever was under the finger, with the point so the
+    // product can hang a small window off it
+    if (downHit) this.onTap?.(downHit, p);
   }
 
   cancel() { this.draft = null; this.onDraft?.(null); }
