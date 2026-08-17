@@ -116,10 +116,18 @@ function world3Backdrop(THREE, root) {
   panel(THREE, root, 48, 7.2, 124, 12, 0x416d4d, -1.64);
   panel(THREE, root, 48, 4.0, 124, 2.5, 0x6b5438, -1.58);
 
-  // Treeline rhythm rather than a flat green card.
-  for (const [x, y, r] of [[4,11,5.5],[13,12,6.2],[25,10.6,5.3],[46,12,6.3],[60,10.8,5.5],[78,12.1,6.0],[94,10.5,5.4]]) {
-    disc(THREE, root, x, y, r, 0x274c3c, -1.55, 0.96);
-  }
+  // Treeline rhythm rather than a flat green card — but SMALL, and this is
+  // the whole of why World 3 read as green blobs. These sit at z −1.55,
+  // barely behind the plane the game is played on, so a disc of r 6 is not
+  // "a tree in the distance": it spans the playfield from below Eeri's feet
+  // to above the frame, in one flat colour. Depth magnifies, and the fix is
+  // the same one the fore lane needed — smaller, more of them, higher up,
+  // so the eye reads a canopy line instead of seven circles.
+  const line = [[2, 12.4, 2.6], [9, 13.2, 3.0], [16, 12.0, 2.4], [24, 13.4, 2.9],
+                [32, 12.2, 2.5], [40, 13.6, 3.1], [48, 12.6, 2.7], [56, 13.2, 2.9],
+                [64, 12.1, 2.4], [72, 13.5, 3.0], [80, 12.4, 2.6], [88, 13.3, 2.8],
+                [96, 12.2, 2.5], [104, 13.0, 2.7]];
+  for (const [x, y, r] of line) disc(THREE, root, x, y, r, 0x274c3c, -1.55, 0.96);
 }
 
 function timberFrame(THREE, root, x, base, h, w = 5.2, z = -0.82) {

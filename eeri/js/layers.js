@@ -23,9 +23,9 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=27';
-import { getLayerTexture } from './assets.js?v=27';
-import { buildPipeworksDressing } from './world2-dressing.js?v=27';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=29';
+import { getLayerTexture } from './assets.js?v=29';
+import { buildPipeworksDressing } from './world2-dressing.js?v=29';
 
 export const PPU = 30; // canvas pixels per world unit
 
@@ -321,6 +321,151 @@ function drawFore(g) {
   scaffoldLeg(95);
 }
 
+
+// ---- WORLD 3, THE GROVE: its own set of painters -------------------------
+// Until this, EVERY world painted the construction site. `PLACEHOLDER_DRAW`
+// was one world-agnostic set, so `buildLayers(scene, 'grove')` dressed a
+// forest in half-built concrete frames and scaffold bays — which is why
+// World 3 read as "greybox with some trees on it" rather than as a place.
+//
+// These are code paintings, like every other placeholder here: no PNG, no
+// credits, and they hold the same contract, so the moment the art lane
+// paints `grove_far_v1.png` the file wins and this is never called again.
+//
+// The world is "forest clearing and DIGS" (DESIGN §4.2) — so it is not a
+// forest, it is a worksite IN one. Every layer carries both: canopy and a
+// cut, roots and shoring, moss and a stack of cut logs. A pure forest here
+// would be a different game's backdrop.
+
+// A POSITIVE modulo. `%` in JS keeps the sign of the DIVIDEND, and every
+// layer rect here starts at a negative x — so `(x * 7919) % 13` went
+// negative on the left-hand half of the world, the size derived from it
+// went negative, and `arc()` threw on a negative radius. That is a thrown
+// error inside buildLayers, which is awaited during boot, so the whole game
+// failed to start rather than drawing one odd bush.
+const wob = (x, n) => ((x * 7919) % n + n) % n / n;
+
+// one soft canopy mass — a fan of overlapping discs, never a single circle,
+// because a circle reads as a ball and a fan reads as leaves
+function canopy(g, c, cx, cy, r) {
+  g.fillStyle = c;
+  const lobes = [[0, 0, 1], [-0.72, 0.16, 0.78], [0.72, 0.16, 0.78], [-0.34, 0.6, 0.66], [0.36, 0.58, 0.62]];
+  for (const [dx, dy, k] of lobes) {
+    g.beginPath();
+    g.arc(cx + dx * r, cy + dy * r, r * k, 0, Math.PI * 2);
+    g.fill();
+  }
+}
+
+function tree(g, T, x, base, h, r, leaf, bark) {
+  rect(g, T(bark), x - h * 0.055, base, h * 0.11, h * 0.72);
+  canopy(g, T(leaf), x, base + h * 0.78, r);
+}
+
+function drawGroveSkyline(g, T) {
+  // a far ridge, and the treeline ON it — the horizon of a valley you are
+  // digging in the bottom of
+  rect(g, T(PAL.GREEN_DK), -30, 3.0, 160, 2.4);
+  for (let x = -28; x < 130; x += 3.1) {
+    const h = 2.2 + wob(x, 13) * 2.6;
+    // firs: a stack of narrowing bars is a conifer at this distance, and it
+    // costs nothing next to a path
+    for (let i = 0; i < 3; i++) {
+      const w = 2.0 - i * 0.55;
+      rect(g, T(PAL.GREEN_DK), x - w / 2, 4.6 + i * h * 0.3, w, h * 0.34);
+    }
+  }
+  // the one built thing on the horizon: a crane over the cut
+  rect(g, T(PAL.STEEL[2]), 74, 5.0, 0.5, 9.5);
+  rect(g, T(PAL.STEEL[2]), 62, 14.0, 26, 0.5);
+  rect(g, T(PAL.MACHINE), 66, 12.6, 1.1, 1.4);
+}
+
+function drawGroveFar(g, T) {
+  // full canopy, staggered depths, with sky between the crowns — a wall of
+  // green is a wall, and this has to read as trees you could walk into
+  const base = 3.4;
+  // SCALE, learned by looking: the first cut used crowns of r 3.0…4.3 and
+  // they filled the frame as flat green masses — a tree you cannot see the
+  // top of is a wall. Crowns are smaller and the trunks TALLER, so the stand
+  // reads as trunks with sky and canopy above rather than as foliage with a
+  // path under it. More of them, closer together, for the same reason.
+  const stand = [[2, 9.5, 1.9], [9, 11.0, 2.2], [15, 8.6, 1.7], [23, 10.4, 2.1],
+                 [31, 9.0, 1.8], [38, 11.4, 2.3], [46, 8.8, 1.7], [54, 10.0, 2.0],
+                 [62, 9.2, 1.9], [70, 11.2, 2.2], [78, 8.6, 1.7], [86, 10.6, 2.1],
+                 [94, 9.4, 1.9], [102, 10.8, 2.2]];
+  for (const [x, h, r] of stand) tree(g, T, x, base, h, r, PAL.GREEN_DK, PAL.EARTH[3]);
+  rect(g, T(PAL.EARTH[2]), -20, 2.0, 145, 1.6);
+}
+
+function drawGroveMid(g, T) {
+  // THE DIG. A cut bank in layered earth with root ends coming out of it,
+  // held back by timber shoring — the world's whole idea in one silhouette:
+  // the forest is being opened, and it is being held open.
+  const base = 3.8;
+  for (let i = 0; i < 4; i++) {                       // the strata
+    rect(g, T(PAL.EARTH[3 - (i % 2)]), -12, base + i * 0.62, 124, 0.62);
+  }
+  const shoring = (x, w, h) => {
+    rect(g, T(PAL.EARTH[3]), x, base, 0.42, h);       // posts
+    rect(g, T(PAL.EARTH[3]), x + w, base, 0.42, h);
+    for (let y = 0.5; y < h; y += 0.85) {             // horizontal boards
+      rect(g, T(PAL.EARTH[2]), x, base + y, w + 0.42, 0.5);
+    }
+  };
+  shoring(6, 7.5, 4.2); shoring(38, 9.0, 5.0); shoring(74, 6.5, 3.6);
+  // root ends breaking the cut face — the tell that this is a forest floor
+  g.strokeStyle = T(PAL.EARTH[1]); g.lineCap = 'round';
+  for (const [rx, ry] of [[20, 5.4], [27, 4.6], [56, 6.0], [64, 5.0], [92, 5.6], [100, 4.8]]) {
+    g.lineWidth = 0.3;
+    g.beginPath(); g.moveTo(rx, ry); g.lineTo(rx + 1.5, ry + 0.55); g.stroke();
+    g.lineWidth = 0.18;
+    g.beginPath(); g.moveTo(rx + 1.5, ry + 0.55); g.lineTo(rx + 2.4, ry + 0.25); g.stroke();
+    g.beginPath(); g.moveTo(rx + 1.5, ry + 0.55); g.lineTo(rx + 2.3, ry + 1.1); g.stroke();
+  }
+  // stacked cut logs: what the dig takes out, left where it was taken
+  for (let i = 0; i < 3; i++) {
+    rect(g, T(PAL.EARTH[2]), 24 + i * 0.2, base + i * 0.62, 4.4, 0.6);
+  }
+}
+
+function drawGroveNear(g, T) {
+  // the moss lip and the undergrowth the path runs through
+  rect(g, T(PAL.GREEN_DK), -8, 3.2, 115, 0.9);
+  for (let x = -6; x < 104; x += 2.4) {
+    const h = 0.7 + wob(x, 9) * 0.9;
+    canopy(g, T(PAL.GREEN), x, 4.0, h * 0.62);       // fern clumps
+  }
+  // stumps, cut flat — a clearing is a place where trees WERE
+  for (const sx of [9, 41, 77]) {
+    rect(g, T(PAL.EARTH[3]), sx, 3.6, 1.8, 1.5);
+    rect(g, T(PAL.EARTH[1]), sx - 0.15, 5.0, 2.1, 0.34);
+  }
+}
+
+function drawGroveFore(g, T) {
+  // ONE trunk, cropped by the frame top and bottom, and a brace on it —
+  // the occluder lane's whole job is to be closer than the game is
+  rect(g, T(PAL.EARTH[3]), 6, -2, 1.9, 16);
+  rect(g, T(PAL.EARTH[2]), 5.4, 6.4, 3.1, 0.55);
+  rect(g, T(PAL.EARTH[3]), 92, -2, 1.5, 16);
+  // DEPTH MAGNIFIES, and the fore lane is the closest thing in the world.
+  // A crown of r 2.4 here is not "a tree slightly nearer" — at z +2.2 it
+  // covered a third of the screen in flat green, which is what made the
+  // first two passes read as blobs rather than as a wood. Small, and in the
+  // TOP CORNERS, where a canopy hangs into frame without standing in it.
+  canopy(g, T(PAL.GREEN_DK), 0.4, 12.4, 0.9);
+  canopy(g, T(PAL.GREEN_DK), 100.4, 12.2, 0.85);
+}
+
+const GROVE_DRAW = {
+  skyline: { draw: drawGroveSkyline, tint: LAYER_TINT.SKYLINE },
+  far:     { draw: drawGroveFar,     tint: LAYER_TINT.FAR },
+  mid:     { draw: drawGroveMid,     tint: LAYER_TINT.MID },
+  near:    { draw: drawGroveNear,    tint: LAYER_TINT.NEAR },
+  fore:    { draw: drawGroveFore,    tint: 0 },
+};
+
 const PLACEHOLDER_DRAW = {
   skyline: { draw: drawSkyline, tint: LAYER_TINT.SKYLINE },
   far:     { draw: drawFar,     tint: LAYER_TINT.FAR },
@@ -413,7 +558,10 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
   for (const name of ['skyline', 'far', 'mid', 'near', 'fore']) {
     const rect = LAYER_RECTS[name];
     const live = await getLayerTexture(world, name);
-    mounted.push(mountLayer(scene, rect, live || paintCanvas({ ...rect, ...PLACEHOLDER_DRAW[name] })));
+    // a world paints ITSELF when it has its own set; everything without one
+    // still falls back to the site, which is what worlds 1 and 2 want
+    const set = world === 'grove' ? GROVE_DRAW : PLACEHOLDER_DRAW;
+    mounted.push(mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] })));
   }
   const events = backgroundEvents(scene);
   const dressing = world === 'pipeworks' ? buildPipeworksDressing(scene) : null;
