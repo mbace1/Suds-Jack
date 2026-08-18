@@ -14,7 +14,7 @@ even when the code is otherwise correct, tested and pretty.
 
 | project | canon | notes |
 |---|---|---|
-| `piritori/` + `toko-move/` + `flow-core/` | `piritori/BRIEF.md` (game, art, UX), `piritori/SHARED_ENGINE.md` (core boundary), `piritori/FIGHT_BRIEF.md` (fights) | PR #269 is the anchor |
+| `piritori/` + `toko-move/` + `flow-core/` | `piritori/BRIEF.md` (game, art, UX), `piritori/SHARED_ENGINE.md` (core boundary), `piritori/FIGHT_BRIEF.md` (fights) — then `piritori/DECISIONS.md` for every ruling that has overridden one of them | PR #269 is the anchor. **Read `DECISIONS.md` first**: four parts of `BRIEF.md` have been overridden by the owner and it is the only index of which |
 | `eeri/` | `eeri/PHASING.md` first, then `DESIGN.md`, `ART_BRIEF.md`, `VERSIONS.md` | multi-agent; PHASING supersedes on conflict |
 | `kindling/` | `BETTERMENT_OWNER_DIRECTION.md` | newest authority; supersedes older "cozy hut" calls |
 | `toko/` | `toko/BRAND.md` | two colours only, geometry invariants |
@@ -27,10 +27,20 @@ firearms against *"there is no gunfight"*, and cover as terrain — each naming
 the sentence it contradicts and the words that overrode it. An unrecorded
 contradiction is a finding; a recorded one is a decision.
 
-**Note for Piritori reviewers:** guns are canon as of 2026-08-18 and the
-firearms in `WEAPONS` are not a finding. *"There is no gunfight"* is still true
-and is now enforced structurally — see `piritori/FIGHT_BRIEF.md` §2.1 for the
-four rules and `piritori/test/fight.mjs` for where each is checked.
+**Note for Piritori reviewers.** Four things in `BRIEF.md` have been overridden
+by the owner and are **not** findings. All four are indexed in
+`piritori/DECISIONS.md` with the words that overrode them:
+
+- **guns exist** — *"there is no gunfight"* is still true and now enforced
+  structurally (`FIGHT_BRIEF.md` §2.1, checked in `test/fight.mjs`);
+- **cover is terrain**, not only a body (`FIGHT_BRIEF.md` §4.1);
+- **the goods are named** rather than abstract classes — the tiers still own
+  every number, which is the part that mattered (`test/market.mjs`);
+- **the art is ink-line illustration**, not the risograph of § Visual direction.
+
+**The 2024 Pasila act is canon and phase-gated.** Second-act content in the code
+or in an art queue *is* a finding until Act I is feature complete —
+`DECISIONS.md` §5.
 
 ## 2. Severity, in this repository's terms
 
@@ -85,6 +95,7 @@ CI runs these on every push (`.github/workflows/gates.yml`). Locally:
 ```bash
 node flow-core/test/contract.mjs                          # neutral core
 node piritori/test/fight.mjs                              # rank fights
+node piritori/test/market.mjs                             # goods, deals, cut bags
 NODE_PATH=$(npm root -g) node flow-core/test/smoke.cjs    # both entry points
 
 node eeri/test/rooms.mjs                                  # eeri: geometry

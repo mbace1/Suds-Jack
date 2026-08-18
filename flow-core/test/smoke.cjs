@@ -142,6 +142,33 @@ s.listen(0, '127.0.0.1', async () => {
             && ids.includes('rival') && ids.includes('mission:');
         }));
 
+      // ── the bargain, clicked rather than called ──────────────────────
+      // The offer is SET UP through the handle and TAKEN through the button,
+      // because a fake bag the player cannot be sold is not a mechanic.
+      const bargain = await p.evaluate(async () => {
+        const d = window.__pt.debug, m = window.__pt.market;
+        m.cash = 50000;
+        d.sel = 'sornainen';
+        d.forceDeal({ at: 'sornainen', who: 'Igor', good: 'piri', n: 5, discount: 0.4, fake: true, trust: -1 });
+        const btn = document.getElementById('dealTake');
+        if (!btn) return { shown: false };
+        const tell = document.querySelector('#sheet .deal .hint')?.textContent || '';
+        const before = m.stock.piri;
+        btn.click();
+        return {
+          shown: true, tell,
+          bought: m.stock.piri - before,
+          cut: m.fake.piri,
+          gone: !document.getElementById('dealTake'),
+        };
+      });
+      ok('a bargain is offered where the seller stands', bargain.shown);
+      ok('and it says how far under it is before you commit',
+        /\d+% under/.test(bargain.tell || ''), bargain.tell);
+      ok('clicking TAKE IT actually buys it', bargain.bought === 5, String(bargain.bought));
+      ok('and a cut bag is really cut', bargain.cut === 5, String(bargain.cut));
+      ok('the offer cannot be taken twice', bargain.gone === true);
+
       await p.evaluate(() => window.__pt.debug.startFight('collector', 1000));
       await p.waitForTimeout(250);
       ok('an encounter opens', await p.locator('#fight').isVisible());

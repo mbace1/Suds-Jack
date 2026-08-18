@@ -42,6 +42,9 @@ jobs:
       - name: the rank fights
         run: node piritori/test/fight.mjs
 
+      - name: the market — named goods, deals, and what is in the bag
+        run: node piritori/test/market.mjs
+
       # The browser gate needs Chromium. `--with-deps` pulls the system
       # libraries the headless browser needs on a bare runner.
       - name: install chromium
