@@ -1,0 +1,38 @@
+{
+  "native_pixel_art": true,
+  "alpha": "binary alpha only (0/255); no baked shadows, labels, frames or captions",
+  "A": {
+    "grid": "320x180 full-frame layers",
+    "files": [
+      "A1_night_camp_sky_distance_320x180.png",
+      "A2_night_camp_ruin_320x180.png",
+      "A3_night_camp_near_ground_320x180.png",
+      "A4_night_camp_foreground_320x180.png"
+    ],
+    "note": "Fire and firelight are deliberately omitted from A layers."
+  },
+  "B": {
+    "grid": "40x40 cells, 10 columns x 4 rows, 400x160",
+    "layout": "idle 8, walk 6, run 6, cast 8, one-offs 4, ages 5",
+    "adult_height_px": 26
+  },
+  "D": {
+    "grid": "40x40 cells, same layout as Ember",
+    "adult_heights_px": {
+      "Mossling": 26,
+      "Ashling": 20,
+      "Moss Knight": 38
+    }
+  },
+  "E": {
+    "atlas": "left 256x256, 16x16 cells",
+    "bonfires": "five 48x48 cells starting at x=256, y=104",
+    "canvas": "512x256"
+  },
+  "F": {
+    "grid": "32x32 cells, 512x256",
+    "dark_set": "columns 0-7",
+    "parchment_set": "columns 8-15",
+    "note": "No baked text."
+  }
+}
