@@ -17,17 +17,18 @@
 // lets the arcade's `{ui:true}` pad bridge walk it, and what keeps the 44px and
 // WCAG-AA floors measurable.
 
-import { PixelScreen, loop } from './pixel.js?v=8';
-import { drawRoom, FLOOR_Y, FIRE_X, skyOf } from './room.js?v=8';
-import { makeIdle, HELLO } from './idle.js?v=8';
-import * as audio from './audio.js?v=8';
-import { makeBreath, ROUNDS } from './breathe.js?v=8';
-import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=8';
+import { PixelScreen, loop } from './pixel.js?v=9';
+import { ready as artReady } from './assets.js?v=9';
+import { drawRoom, FLOOR_Y, FIRE_X, skyOf } from './room.js?v=9';
+import { makeIdle, HELLO } from './idle.js?v=9';
+import * as audio from './audio.js?v=9';
+import { makeBreath, ROUNDS } from './breathe.js?v=9';
+import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=9';
 import {
   S, save, write, rollover, warmth, caredToday, liveStreak, stage, nextStage,
   toggleTask, setMood, countBreath, addTask, removeTask, spend, found, note, setSound,
   dayKey, FULL_DAY, ERRAND_COST, PAY,
-} from './state.js?v=8';
+} from './state.js?v=9';
 
 const MOODS = [
   { id: 'rough',  label: 'rough' },
@@ -521,6 +522,13 @@ function render(focus = false) {
 }
 
 // ── boot ─────────────────────────────────────────────────────────────
+// The art, if any has landed. A cut layer that arrives after the first paint
+// pops in a frame or two late, which reads as a glitch — so the first render
+// waits for it. `ready()` never rejects and resolves immediately when nothing
+// is live, which is every build until the pipeline delivers, so this costs
+// nothing today and is correct the day it stops being nothing.
+artReady().then(render);
+
 render();
 
 // The one-time note about where this all lives. It is first, it is once, and it

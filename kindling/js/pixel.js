@@ -9,7 +9,7 @@
 // the light source, and a scanlined tube on top of it fought the one thing the
 // picture is trying to say.
 
-import { shade } from './palette.js?v=8';
+import { shade } from './palette.js?v=9';
 
 // 4×4 ordered (Bayer) matrix as a 0..1 threshold per pixel. Firelight is a
 // gradient, and a gradient painted flat reads as modern; stippled through this
@@ -43,6 +43,17 @@ export class PixelScreen {
   }
 
   clear(color) { this.px(0, 0, this.w, this.h, color); }
+
+  // Blit a cut asset. The whole reason this exists is `assets.js`: a scene
+  // plane is either a bitmap or a function, and the caller should not care
+  // which. Smoothing stays off — a cut PNG is already at the native grid, so
+  // any resampling here would undo the pipeline's whole point.
+  img(bmp, dx = 0, dy = 0, sx, sy, w, h) {
+    if (!bmp) return false;
+    if (sx === undefined) this.ctx.drawImage(bmp, Math.round(dx), Math.round(dy));
+    else this.ctx.drawImage(bmp, sx, sy, w, h, Math.round(dx), Math.round(dy), w, h);
+    return true;
+  }
 
   px(x, y, w, h, color) {
     this.ctx.fillStyle = color;

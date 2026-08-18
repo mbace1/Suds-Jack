@@ -40,10 +40,11 @@
 // drawn live on top — the sheet asks for secondary motion everywhere, and a
 // scene whose first screen is frozen reads as a broken page.
 
-import { PAL, mix, shade } from './palette.js?v=8';
-import { bayer, rampDither } from './pixel.js?v=8';
-import { THINGS } from './errand.js?v=8';
-import { drawPet } from './pet.js?v=8';
+import { PAL, mix, shade } from './palette.js?v=9';
+import { bayer, rampDither } from './pixel.js?v=9';
+import { THINGS } from './errand.js?v=9';
+import { drawPet } from './pet.js?v=9';
+import { layer } from './assets.js?v=9';
 
 export const FLOOR_Y = 118;
 // The bonfire sits left of centre and the companion beside it. Both keep the
@@ -167,17 +168,24 @@ export function drawRoom(scr, view) {
 }
 
 // ── the part that holds still ────────────────────────────────────────
+// THE SEAM. Each plane asks assets.js for a cut PNG first and draws itself only
+// if there is not one. That is what lets a delivered layer switch on with a
+// one-word edit to the manifest, one plane at a time, without the scene ever
+// being half-built — and it is why ART_REQUESTS.md asks for the camp as four
+// separated layers rather than one finished picture.
+//
+// The things that are NOT a layer stay drawn either way: the fire is gameplay
+// (its height is the day's tally), the found objects are whatever you have
+// brought home, and the woodpile is your unspent kindling. None of those can be
+// baked into a background.
 function staticCamp(scr, w, fuel, found, sky) {
   scr.clear(PAL.VOID);
-  skyPlane(scr, sky);
-  farPlane(scr, sky, w);
-  ruinPlane(scr, w, found);
-  gate(scr, w);
-  groundPlane(scr, w);
-  props(scr, w);
+  if (!scr.img(layer('camp.sky'))) { skyPlane(scr, sky); farPlane(scr, sky, w); }
+  if (!scr.img(layer('camp.ruin'))) { ruinPlane(scr, w, found); gate(scr, w); }
+  else ledge(scr, w, found);
+  if (!scr.img(layer('camp.ground'))) { groundPlane(scr, w); props(scr, w); }
   branchPile(scr, w, fuel);
-  bigTree(scr, w, sky);
-  foreground(scr, w);
+  if (!scr.img(layer('camp.front'))) { bigTree(scr, w, sky); foreground(scr, w); }
 }
 
 // ── plane 1: the sky, which the fire never touches ──
