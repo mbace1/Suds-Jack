@@ -26,7 +26,28 @@
 // It is drawn, never sprited: one table of numbers, so growing cannot make five
 // sheets of art that drift apart.
 
-import { PAL, mix, shade } from './palette.js?v=7';
+import { PAL, mix, shade } from './palette.js?v=8';
+import { get as species, stageAt } from './species.js?v=8';
+
+// ── SKIN: what a species is made of ──
+// The build is shared on purpose. The global bible's "shared shape language"
+// panel is one round core form with a signature crown, so what tells an Ember
+// from a Mossling at 26 pixels is the CROWN and the SURFACE — never the body
+// plan. Everything below is therefore a palette swap plus one shape flag.
+const SKIN = {
+  stone: { body: PAL.EM_BODY, lit: PAL.EM_LIT, crown: PAL.EM_HORN, crownLit: PAL.EM_HORN_LIT,
+           cloth: PAL.EM_SCARF, clothLit: PAL.EM_SCARF_LIT, clothDark: PAL.EM_SCARF_DK,
+           glow: PAL.EMBER, glowHot: PAL.FLAME },
+  moss:  { body: PAL.MO_BODY, lit: PAL.MO_LIT, crown: PAL.MO_ANTLER, crownLit: PAL.MO_ANTLER_LIT,
+           cloth: '#5a4a2c', clothLit: '#7d6538', clothDark: '#33291a',
+           glow: PAL.MO_ACCENT, glowHot: '#c7ef8a' },
+  ash:   { body: PAL.AS_BODY, lit: PAL.AS_LIT, crown: PAL.AS_SPIKE, crownLit: '#c19a72',
+           cloth: PAL.AS_WING, clothLit: PAL.AS_WING_LIT, clothDark: '#3a1a16',
+           glow: PAL.EMBER, glowHot: PAL.FLAME },
+  iron:  { body: PAL.MK_BODY, lit: PAL.MK_LIT, crown: PAL.MK_MOSS, crownLit: PAL.MK_MOSS_LIT,
+           cloth: PAL.MK_TRIM, clothLit: '#d3ad55', clothDark: '#5e4a1e',
+           glow: PAL.MK_MOSS_LIT, glowHot: '#93b862' },
+};
 
 // GROWTH SILHOUETTES (ART_GUIDE.md §5 · SHEETS.md §2 "the age ladder").
 //
@@ -87,6 +108,46 @@ function ellipse(scr, cx, cy, rw, rh, fill, edge) {
 // the creature has. `n` is its length, and it is the single number that carries
 // the age ladder — 2 px on a spark, 7 on an elder, which is the 3-pixel rule
 // being obeyed by construction rather than by luck.
+// A CROWN is whatever sits on top of the head, and which kind it is does more
+// work than any other single decision: horns say Ember, antlers say Mossling,
+// spikes say Ashling, a helm says Moss Knight. The age ladder rides on its
+// LENGTH, so one number carries both facts.
+function crownOf(scr, kind, x, y, n, side, tone, lit) {
+  if (kind === 'helm') return;   // the helm is the head, and head() draws it
+  if (kind === 'spike') {
+    // a low row of spines rather than a pair of horns
+    for (let i = 0; i < 3; i++) {
+      const h = Math.max(2, n - i * 2);
+      scr.px(x + side * (i * 2 + 1), y - h, 2, h, i ? tone : lit);
+    }
+    return;
+  }
+  if (kind === 'antler') {
+    // AN ANTLER FORKS. Tines hung off the side of a horn were invisible at this
+    // size — a Mossling and an Ember came out the same creature in two colours,
+    // which is the 3-pixel rule being broken by the very thing meant to satisfy
+    // it. What reads is a SHORT beam that splits into a clear Y near the top,
+    // because a fork changes the outline and a bump on a curve does not.
+    const beam = Math.max(2, Math.round(n * 0.55));
+    for (let i = 0; i < beam; i++) {
+      const k = i / Math.max(1, beam - 1);
+      scr.px(Math.round(x + side * Math.sin(k * 1.1) * (n * 0.35)) - (side < 0 ? 1 : 0),
+        Math.round(y - k * n * 0.55), 2, 2, tone);
+    }
+    const fx = Math.round(x + side * Math.sin(1.1) * (n * 0.35));
+    const fy = Math.round(y - n * 0.55);
+    for (const [spread, len] of [[0.15, 0.72], [0.85, 0.5]]) {
+      const l = Math.max(3, Math.round(n * len));
+      for (let i = 0; i < l; i++) {
+        scr.px(fx + Math.round(side * spread * i * 1.6), fy - i - 1, 2, 2,
+          i > l - 3 ? lit : tone);
+      }
+    }
+    return;
+  }
+  horn(scr, x, y, n, side, tone, lit);
+}
+
 function horn(scr, x, y, n, side, tone, lit) {
   const steps = Math.max(2, n * 2);
   for (let i = 0; i < steps; i++) {
@@ -113,20 +174,28 @@ function horn(scr, x, y, n, side, tone, lit) {
 export function drawPet(scr, x, floorY, opts = {}) {
   const {
     stage = 'spark', t = 0, pose = 'sit', hop = 0, lit = 1, still = false,
-    face = -1, look = 0,
+    face = -1, look = 0, kind = 'ember',
   } = opts;
-  const b = BUILD[stage] ?? BUILD.spark;
+  const sp = species(kind);
+  const skin = SKIN[sp.surface] ?? SKIN.stone;
+  const base = BUILD[stage] ?? BUILD.spark;
+  // the species' own size, off the global bible's scale chart, against Ember's
+  // 1.6u — so a Moss Knight really is half again as tall as the thing it fights
+  const grow = sp.unit / 1.6;
+  const b = { ...base, r: Math.max(4, Math.round(base.r * grow)),
+              horn: Math.max(2, Math.round(base.horn * grow)),
+              feet: Math.round(base.feet * grow) };
   const r = b.r;
 
   // firelight decides how much of the creature there is at all: at coals it is
   // a shape you can just make out, at a full fire the stone has colour in it
-  const body = mix(PAL.EM_BODY[0], PAL.EM_BODY[2], 0.25 + lit * 0.75);
-  const bodyLit = mix(body, PAL.EM_LIT, 0.3 + lit * 0.7);
-  const rim = mix(PAL.COAL, PAL.EMBER, 0.25 + lit * 0.5);
-  const hornTone = mix(shade(PAL.EM_HORN, 0.42), PAL.EM_HORN, 0.25 + lit * 0.6);
-  const hornLit = mix(hornTone, PAL.EM_HORN_LIT, 0.3 + lit * 0.35);
-  const scarf = mix(PAL.EM_SCARF_DK, PAL.EM_SCARF, 0.3 + lit * 0.7);
-  const scarfLit = mix(scarf, PAL.EM_SCARF_LIT, 0.35 + lit * 0.65);
+  const body = mix(skin.body[0], skin.body[2], 0.25 + lit * 0.75);
+  const bodyLit = mix(body, skin.lit, 0.3 + lit * 0.7);
+  const rim = mix(PAL.COAL, skin.glow, 0.25 + lit * 0.5);
+  const hornTone = mix(shade(skin.crown, 0.42), skin.crown, 0.25 + lit * 0.6);
+  const hornLit = mix(hornTone, skin.crownLit, 0.3 + lit * 0.35);
+  const scarf = mix(skin.clothDark, skin.cloth, 0.3 + lit * 0.7);
+  const scarfLit = mix(scarf, skin.clothLit, 0.35 + lit * 0.65);
 
   // ── the animation principles from the sheet, in three numbers ──
   // (1) IDLE BREATH: a gentle bob, and the ember flicker rides on it.
@@ -171,8 +240,33 @@ export function drawPet(scr, x, floorY, opts = {}) {
     const tx = Math.round(bx - face * (bodyW - 1 + Math.cos(tipA) * 6.8));
     const ty = Math.round(by + 1 + Math.sin(-tipA) * 4.3);
     const flick = still ? 0.6 : 0.5 + Math.sin(t * 12.7) * 0.5;
-    scr.px(tx, ty, 2, 2, mix(PAL.EMBER, PAL.FLAME, flick));
-    scr.px(tx, ty - 1, 1, 1, mix(PAL.FLAME, PAL.FLAME_CORE, flick));
+    scr.px(tx, ty, 2, 2, mix(skin.glow, skin.glowHot, flick));
+    scr.px(tx, ty - 1, 1, 1, mix(skin.glowHot, PAL.FLAME_CORE, flick));
+  }
+
+  // WINGS, and they go behind the body: a wing drawn over the mass reads as a
+  // cape. Two membranes with a lighter leading edge, opening a little on the
+  // breath — the Ashling sheet's note is "wings open slightly on attack".
+  if (sp.wings) {
+    const open = 1 + (still ? 0 : Math.sin(t * 2) * 0.14);
+    for (const side of [-1, 1]) {
+      const span = Math.round((bodyW + 5) * open);
+      for (let i = 0; i < span; i++) {
+        // the membrane: tallest at the shoulder, tapering to the tip, and it
+        // rises as it goes out — a wing that lies flat is a plank
+        const drop = Math.round(i * 0.55);
+        const tall = Math.max(1, Math.round((span - i) * 0.8));
+        scr.px(bx + side * (bodyW + i), by - bodyH - 1 + drop - tall + 4, 1, tall,
+          mix(skin.cloth, PAL.INK, 0.25));
+      }
+      // the leading edge, one step lighter, which is what makes it a wing and
+      // not a smear
+      for (let i = 0; i < span; i++) {
+        const drop = Math.round(i * 0.55);
+        const tall = Math.max(1, Math.round((span - i) * 0.8));
+        scr.px(bx + side * (bodyW + i), by - bodyH - 1 + drop - tall + 4, 1, 1, skin.clothLit);
+      }
+    }
   }
 
   // ── body ── an ellipse, so height and width are the stage's to set
@@ -184,21 +278,21 @@ export function drawPet(scr, x, floorY, opts = {}) {
   // stops being one mass, which is the thing the silhouette depends on.
   for (const [px, py] of [[-2, -1], [1, 1], [2, -2], [-1, 2]]) {
     if (Math.abs(px) < bodyW - 1 && Math.abs(py) < bodyH - 1) {
-      scr.px(bx + px, by + py, 1, 1, mix(body, PAL.EM_LIT, 0.35));
+      scr.px(bx + px, by + py, 1, 1, mix(body, skin.lit, 0.35));
     }
   }
   // an elder's stone has opened: cracks with the fire showing through
   if (b.cracks) {
     const pulse = still ? 0.5 : 0.5 + Math.sin(t * 2.3) * 0.5;
-    scr.px(bx - 1, by - 2, 1, 3, mix(PAL.COAL, PAL.EMBER, pulse));
-    scr.px(bx + 2, by, 1, 2, mix(PAL.COAL, PAL.EMBER, pulse * 0.7));
+    scr.px(bx - 1, by - 2, 1, 3, mix(PAL.COAL, skin.glow, pulse));
+    scr.px(bx + 2, by, 1, 2, mix(PAL.COAL, skin.glow, pulse * 0.7));
   }
 
   // a spark has no tail yet, so its ember sits on its back — the sheet's young
   // Ember carries the glow before it has anywhere to put it
   if (!b.tail) {
     const flick = still ? 0.5 : 0.5 + Math.sin(t * 9.1) * 0.5;
-    scr.px(bx + 1, by - bodyH - 1, 2, 2, mix(PAL.EMBER, PAL.FLAME, flick));
+    scr.px(bx + 1, by - bodyH - 1, 2, 2, mix(skin.glow, skin.glowHot, flick));
     scr.px(bx + 1, by - bodyH - 2, 1, 1, PAL.SPARK);
   }
 
@@ -249,15 +343,29 @@ export function drawPet(scr, x, floorY, opts = {}) {
   }
 
   // ── head ── drawn before the horns so they sit on top of the crown
-  scr.disc(hx, hy, r, body, PAL.INK);
-  crescent(scr, hx, hy, r, -1, bodyLit, rim);
+  if (sp.crown === 'helm') {
+    // A CLOSED HELM IS THE HEAD. Drawn as a squarer mass than a face, with a
+    // hard brow, a dark slit and moss over the crown — and no eyes at all,
+    // because a helm with big friendly eyes under it is a mascot in a hat.
+    ellipse(scr, hx, hy, r, Math.round(r * 1.05), body, PAL.INK);
+    scr.px(hx - r, hy - Math.round(r * 0.35), r * 2 + 1, 2, shade(body, 0.6));
+    scr.px(hx - r + 1, hy - 1, r * 2 - 1, 3, PAL.INK);              // the slit
+    scr.px(hx - r + 2, hy, 3, 1, mix(skin.glow, PAL.INK, 0.4));     // one live glint
+    for (let i = 0; i < 4; i++) {                                    // moss on the crown
+      scr.px(hx - r + 2 + i * 3, hy - r - 1 + (i % 2), 3, 3, i % 2 ? hornTone : hornLit);
+    }
+    crescent(scr, hx, hy, r, -1, bodyLit, rim);
+  } else {
+    scr.disc(hx, hy, r, body, PAL.INK);
+    crescent(scr, hx, hy, r, -1, bodyLit, rim);
+  }
 
   // ── HORNS ── the age ladder, and the first thing you read at arm's length.
   // They lean out and back from the top of the head; an elder's branches.
   for (const side of [-1, 1]) {
     const ox = hx + side * (r - 2), oy = hy - r + 1;
-    horn(scr, ox, oy, b.horn, side, hornTone, hornLit);
-    if (b.branch) {
+    crownOf(scr, sp.crown, ox, oy, b.horn, side, hornTone, hornLit);
+    if (b.branch && sp.crown === 'horn') {
       horn(scr, Math.round(ox + side * 2.4), oy - 3, Math.round(b.horn * 0.5),
         side, hornTone, hornLit);
     }
@@ -265,9 +373,10 @@ export function drawPet(scr, x, floorY, opts = {}) {
 
   // ── face ── both eyes sit on the side it is turned toward. Large, white and
   // set wide: the sheet's single most recognisable feature after the horns.
+  const helmed = sp.crown === 'helm';
   const closed = pose === 'doze' || (!still && blinking(t));
   const ey = hy - 1 - (pose === 'stretch' ? 1 : 0);
-  for (const dx of [-4, 2]) {
+  if (!helmed) for (const dx of [-4, 2]) {
     const ex = hx + face * dx - (face > 0 ? 2 : 0);
     if (closed) { scr.px(ex, ey, 5, 2, PAL.INK); continue; }
     scr.px(ex, ey - 2, 5, 5, PAL.EM_EYE);
@@ -277,7 +386,7 @@ export function drawPet(scr, x, floorY, opts = {}) {
     scr.px(ex, ey - 2, 2, 2, '#ffffff');
   }
   // the mouth, and two fangs standing up out of it
-  if (!closed || pose !== 'doze') {
+  if (!helmed && (!closed || pose !== 'doze')) {
     const mx = hx + face * 1, my = ey + 5;
     scr.px(mx - 3, my, 7, 2, shade(body, 0.6));
     scr.px(mx - 3, my - 2, 2, 2, PAL.EM_TOOTH);
@@ -289,8 +398,18 @@ export function drawPet(scr, x, floorY, opts = {}) {
   if (b.lamp) {
     const ly = by - 1, lx = bx - bodyW - 2;
     const flick = still ? 0.5 : 0.5 + Math.sin(t * 10.3) * 0.5;
-    scr.px(lx, ly, 4, 4, mix(PAL.EMBER, PAL.FLAME, flick));
+    scr.px(lx, ly, 4, 4, mix(skin.glow, skin.glowHot, flick));
     scr.px(lx, ly - 2, 2, 2, PAL.FLAME_CORE);
+  }
+
+  // THE SHIELD LEADS. The Moss Knight sheet says so in as many words, and in a
+  // turn-based fight the shield is also the telegraph: it is what moves before
+  // the hit lands, which is a silhouette change rather than a colour flash.
+  if (sp.wears === 'shield') {
+    const sx = bx + face * (bodyW + 3);
+    ellipse(scr, sx, by - 1, 5, 8, mix(skin.body[1], skin.lit, 0.3), PAL.INK);
+    scr.px(sx - 1, by - 7, 2, 13, skin.cloth);
+    scr.px(sx - 4, by - 3, 8, 2, skin.cloth);
   }
 
   if (pose === 'doze' && !still) {

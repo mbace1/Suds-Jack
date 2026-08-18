@@ -77,7 +77,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 0.9,
-      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING §2). 24 bones, feet at the origin, clips measured moving. Height is in TILES — DESIGN wants a small enemy at ≤ 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING §1) — scale the rig root.",
+      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING \u00a72). 24 bones, feet at the origin, clips measured moving. Height is in TILES \u2014 DESIGN wants a small enemy at \u2264 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING \u00a71) \u2014 scale the rig root.",
       "clips": [
         "idle",
         "walk",
@@ -89,7 +89,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 0.9,
-      "_note": "The jackhammer timing enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself.",
+      "_note": "The jackhammer timing enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself.",
       "clips": [
         "idle",
         "walk",
@@ -102,7 +102,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 0.85,
-      "_note": "The sleepy provocation enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `wake` (271) is head-led — the look-up IS the telegraph; then `run` chases.",
+      "_note": "The sleepy provocation enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `wake` (271) is head-led \u2014 the look-up IS the telegraph; then `run` chases.",
       "clips": [
         "idle",
         "walk",
@@ -114,25 +114,25 @@
       "file": "3d/bolt_v1.glb",
       "status": "live",
       "rig": "prop",
-      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: origin at its CENTRE. Remeshed to 500 tris / 64px texture / 43 KB — the first cut shipped Meshy raw at ~4k tris x 100 clones, which dropped headless rendering to 6 fps and starved the walk-out gate; a hundred of a thing is a budget of its own."
+      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: origin at its CENTRE. Remeshed to 500 tris / 64px texture / 43 KB \u2014 the first cut shipped Meshy raw at ~4k tris x 100 clones, which dropped headless rendering to 6 fps and starved the walk-out gate; a hundred of a thing is a budget of its own."
     },
     "token_toolbox": {
       "file": "3d/token_toolbox_v1.glb",
       "status": "placeholder",
       "rig": "prop",
-      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette — §6.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
+      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette \u2014 \u00a76.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
     },
     "token_blueprint": {
       "file": "3d/token_blueprint_v1.glb",
       "status": "placeholder",
       "rig": "prop",
-      "_note": "World 2's token, one per world, unlocks secret art — so §6.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
+      "_note": "World 2's token, one per world, unlocks secret art \u2014 so \u00a76.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
     },
     "token_bolt": {
       "file": "3d/token_bolt_v1.glb",
       "status": "placeholder",
       "rig": "prop",
-      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one — so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
+      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one \u2014 so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
     }
   },
   "pieces": {
@@ -167,7 +167,7 @@
     "flag": {
       "file": "3d/flag_v1.glb",
       "status": "placeholder",
-      "_note": "The level's ending. It BUILDS in three steps as Eeri arrives and activates by being run past, so each phase has to read at a glance, mid-run. `pole` stands from the first frame; phase0/1/2 are exclusive — each is the whole flag at that stage, not the delta. Materials: painted balsa for the timber, felt for the cloth.",
+      "_note": "The level's ending. It BUILDS in three steps as Eeri arrives and activates by being run past, so each phase has to read at a glance, mid-run. `pole` stands from the first frame; phase0/1/2 are exclusive \u2014 each is the whole flag at that stage, not the delta. Materials: painted balsa for the timber, felt for the cloth.",
       "nodes": [
         "pole",
         "phase0",
@@ -178,7 +178,7 @@
     "flagBig": {
       "file": "3d/flag_big_v1.glb",
       "status": "placeholder",
-      "_note": "Level 3 of a world. Same three phases, larger AND a different colour — it must be tellable from the small one at a distance, before you reach it.",
+      "_note": "Level 3 of a world. Same three phases, larger AND a different colour \u2014 it must be tellable from the small one at a distance, before you reach it.",
       "nodes": [
         "pole",
         "phase0",
@@ -199,56 +199,114 @@
   "layers": {
     "groundworks": {
       "skyline": {
-        "file": "2d/groundworks_skyline_v3.png",
-        "status": "live"
+        "file": "2d/groundworks_skyline_v4.webp",
+        "status": "live",
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library \u2014 the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
-        "file": "2d/groundworks_far_v3.png",
+        "file": "2d/groundworks_far_v4.webp",
         "status": "live"
       },
       "mid": {
-        "file": "2d/groundworks_mid_v3.png",
+        "file": "2d/groundworks_mid_v4.webp",
         "status": "live"
       },
       "near": {
-        "file": "2d/groundworks_near_v3.png",
+        "file": "2d/groundworks_near_v4.webp",
         "status": "live"
       },
       "fore": {
-        "file": "2d/groundworks_fore_v3.png",
+        "file": "2d/groundworks_fore_v4.webp",
         "status": "live"
       },
       "sky": {
-        "file": "2d/groundworks_sky_v1.png",
-        "status": "live"
+        "file": "2d/day_sky_v2.webp",
+        "status": "live",
+        "_note": "shared by the three daylight worlds \u2014 the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
       }
     },
     "pipeworks": {
       "skyline": {
-        "file": "2d/pipeworks_skyline_v1.png",
+        "file": "2d/pipeworks_skyline_v2.webp",
         "status": "live",
-        "_note": "READY, parked: the whole set is built and in assets/2d — level 4 flips these six to \"live\" and nothing else. Kept placeholder until then because the smoke gate (rightly) fails a live asset nothing fetches."
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library \u2014 the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
-        "file": "2d/pipeworks_far_v1.png",
+        "file": "2d/pipeworks_far_v2.webp",
         "status": "live"
       },
       "mid": {
-        "file": "2d/pipeworks_mid_v1.png",
+        "file": "2d/pipeworks_mid_v2.webp",
         "status": "live"
       },
       "near": {
-        "file": "2d/pipeworks_near_v1.png",
+        "file": "2d/pipeworks_near_v2.webp",
         "status": "live"
       },
       "fore": {
-        "file": "2d/pipeworks_fore_v1.png",
+        "file": "2d/pipeworks_fore_v2.webp",
         "status": "live"
       },
       "sky": {
-        "file": "2d/groundworks_sky_v1.png",
+        "file": "2d/day_sky_v2.webp",
         "status": "live",
-        "_note": "shared with groundworks — the sky is world-agnostic until a world needs its own"
+        "_note": "shared by the three daylight worlds \u2014 the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
+      }
+    },
+    "grove": {
+      "skyline": {
+        "file": "2d/grove_skyline_v1.webp",
+        "status": "live",
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library \u2014 the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
+      },
+      "far": {
+        "file": "2d/grove_far_v1.webp",
+        "status": "live"
+      },
+      "mid": {
+        "file": "2d/grove_mid_v1.webp",
+        "status": "live"
+      },
+      "near": {
+        "file": "2d/grove_near_v1.webp",
+        "status": "live"
+      },
+      "fore": {
+        "file": "2d/grove_fore_v1.webp",
+        "status": "live"
+      },
+      "sky": {
+        "file": "2d/day_sky_v2.webp",
+        "status": "live",
+        "_note": "shared by the three daylight worlds \u2014 the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
+      }
+    },
+    "nightshift": {
+      "skyline": {
+        "file": "2d/nightshift_skyline_v1.webp",
+        "status": "live",
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library \u2014 the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
+      },
+      "far": {
+        "file": "2d/nightshift_far_v1.webp",
+        "status": "live"
+      },
+      "mid": {
+        "file": "2d/nightshift_mid_v1.webp",
+        "status": "live"
+      },
+      "near": {
+        "file": "2d/nightshift_near_v1.webp",
+        "status": "live"
+      },
+      "fore": {
+        "file": "2d/nightshift_fore_v1.webp",
+        "status": "live"
+      },
+      "sky": {
+        "file": "2d/nightshift_sky_v1.webp",
+        "status": "live",
+        "_note": "the one sky that cannot be shared \u2014 World 4 is a night shift. Painted rather than rendered: a sky is a gradient with things on it, and a 4 MB photograph of one is what this pass exists to stop."
       }
     }
   },
@@ -256,37 +314,37 @@
     "card": {
       "file": "2d/card_detail_v1.png",
       "status": "live",
-      "_note": "corrugated kraft — the earth, the cut faces, the deep bands"
+      "_note": "corrugated kraft \u2014 the earth, the cut faces, the deep bands"
     },
     "felt": {
       "file": "2d/felt_detail_v1.png",
       "status": "live",
-      "_note": "wool felt nap — the grass lip"
+      "_note": "wool felt nap \u2014 the grass lip"
     },
     "balsa": {
       "file": "2d/balsa_detail_v1.png",
       "status": "live",
-      "_note": "painted balsa, brush strokes and a paint chip — machines, steel, props (§3.3 'painted wood and pressed steel')"
+      "_note": "painted balsa, brush strokes and a paint chip \u2014 machines, steel, props (\u00a73.3 'painted wood and pressed steel')"
     },
     "flute": {
       "file": "2d/flute_detail_v1.png",
       "status": "live",
-      "_note": "the CUT EDGE of corrugated card — stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
+      "_note": "the CUT EDGE of corrugated card \u2014 stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
     },
     "topsoil": {
       "file": "2d/topsoil_detail_v1.png",
       "status": "live",
-      "_note": "the top strata — fine tight card layers. High-passed (radius 62) so no fixing survives into a map that TILES"
+      "_note": "the top strata \u2014 fine tight card layers. High-passed (radius 62) so no fixing survives into a map that TILES"
     },
     "strata": {
       "file": "2d/mid_detail_v1.png",
       "status": "live",
-      "_note": "the middle strata — coarse layered card section, high-passed"
+      "_note": "the middle strata \u2014 coarse layered card section, high-passed"
     },
     "fringe": {
       "file": "2d/fringe_edge_v1.png",
       "status": "live",
-      "_note": "the felt lip cut into a fringe of nap — the line the player stands on"
+      "_note": "the felt lip cut into a fringe of nap \u2014 the line the player stands on"
     },
     "f_stone": {
       "file": "2d/f_stone_v1.png",
@@ -331,30 +389,30 @@
     "packed": {
       "file": "2d/packed_detail_v1.png",
       "status": "live",
-      "_note": "the deep bands — dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
+      "_note": "the deep bands \u2014 dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
     },
     "gritty": {
       "file": "2d/gritty_detail_v1.png",
       "status": "live",
-      "_note": "grit and torn paper pellets in the fluting (nano banana Pro — base put repeating white blobs in it)"
+      "_note": "grit and torn paper pellets in the fluting (nano banana Pro \u2014 base put repeating white blobs in it)"
     }
   },
-  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) — never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
+  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) \u2014 never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
   "ui": {
     "logo": {
-      "file": "2d/logo_v2.png",
+      "file": "2d/logo_v3.webp",
       "status": "live",
-      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence — body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
+      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence \u2014 body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
     },
     "padplate_portrait": {
-      "file": "2d/padplate_v1.png",
+      "file": "2d/padplate_v2.webp",
       "status": "live",
-      "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card — d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN §5's 44px targets. LANDSCAPE gets its own plate — wider and thinner, arcade control-panel rather than handheld — as `padplate_landscape`; stretching this one is not that."
+      "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card \u2014 d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN \u00a75's 44px targets. LANDSCAPE gets its own plate \u2014 wider and thinner, arcade control-panel rather than handheld \u2014 as `padplate_landscape`; stretching this one is not that."
     },
     "padplate_landscape": {
-      "file": "2d/padplate_landscape_v1.png",
+      "file": "2d/padplate_landscape_v2.webp",
       "status": "live",
-      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip — joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
+      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip \u2014 joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
     }
   }
 }

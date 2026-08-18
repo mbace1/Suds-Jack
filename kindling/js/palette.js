@@ -132,6 +132,30 @@ export const PAL = {
   EM_PUPIL:  '#12141c',
   EM_TOOTH:  '#f2ecda',
 
+  // ── THE REST OF THE ROSTER (mossling / ashling / moss_knight sheets) ──
+  // Same construction as Ember, different material. The build is deliberately
+  // shared: the global bible's "shared shape language" panel is one round core
+  // form with a signature crown, and it is the CROWN and the SURFACE that tell
+  // two of these apart at 26 pixels, never the body plan.
+  MO_BODY:   ['#1d2a19', '#2c3d22', '#3c522c', '#4d6836'],   // moss and bark
+  MO_LIT:    '#628040',
+  MO_ANTLER: '#b6a882',
+  MO_ANTLER_LIT: '#dcd0ac',
+  MO_ACCENT: '#8fc25a',        // the leaf glow
+  MO_CAP:    '#a8442f',        // the mushrooms growing on it
+
+  AS_BODY:   ['#1a1719', '#262224', '#332d2f', '#453d3e'],   // cooled ash
+  AS_LIT:    '#5a5052',
+  AS_WING:   '#6a2f28',
+  AS_WING_LIT: '#93463a',
+  AS_SPIKE:  '#8a6a4a',
+
+  MK_BODY:   ['#22262a', '#2f353a', '#3e464c', '#525c63'],   // iron under moss
+  MK_LIT:    '#6b767e',
+  MK_MOSS:   '#4a6335',
+  MK_MOSS_LIT: '#6b8a44',
+  MK_TRIM:   '#a8863c',        // the gold cross on the shield
+
   // ── DAYLIGHT, for the travel view (owner direction: day is for travel) ──
   // Measured off `daytime_journey_side_scroll_scene` and `daytime_path_scene`.
   // The region rule holds exactly as ART_GUIDE.md §8 predicts: the COLD half
