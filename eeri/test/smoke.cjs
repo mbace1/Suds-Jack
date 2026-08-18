@@ -1174,6 +1174,26 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the stomped one is dead', await p.evaluate(() =>
     window.__eeri.debug.robots().some((r) => r.dead)));
 
+  // THE WORLD TOUR, and it is here to keep the check below honest. That
+  // check asserts every asset the manifest calls `live` was really requested
+  // — the rule that caught 2.7 MB of layer art silently unplugged, twice.
+  // But the run up to this point never leaves World 1, so once Worlds 2-4
+  // were dressed it started failing on eleven files that are used perfectly
+  // well, just not in the room the test happens to be standing in. The fix
+  // is to go and look, not to soften the rule: one room per world, which
+  // also happens to be the only coverage the grove and nightshift swaps get.
+  for (const [i, want] of [[0, 'groundworks'], [3, 'pipeworks'], [6, 'grove'], [9, 'nightshift']]) {
+    await p.evaluate((n) => window.__eeri.debug.goSite(n), i);
+    const got = await p.waitForFunction(
+      (w) => window.__eeri.debug.world() === w && !window.__eeri.debug.transitioning(),
+      want, { timeout: ms(15000) }).then(() => true).catch(() => false);
+    ok(`site ${i + 1} wears its own world (${want})`, got,
+      'world=' + await p.evaluate(() => window.__eeri.debug.world()));
+  }
+  await p.evaluate(() => window.__eeri.debug.goSite(0));
+  await p.waitForFunction(() => window.__eeri.debug.world() === 'groundworks'
+    && !window.__eeri.debug.transitioning(), null, { timeout: ms(15000) }).catch(() => {});
+
   // every asset the manifest calls live must actually have been requested
   {
     const live = [];

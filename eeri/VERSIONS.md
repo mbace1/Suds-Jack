@@ -29,6 +29,10 @@ parses PNG IHDR plus all three WEBP encodings; guessing one and calling the
 rest unreadable is how a size gate quietly stops gating. The pad plates and the
 logo came along for the same reason (6.9 MB → 400 kB).
 
+`test/playthrough.cjs` finishes all twelve levels (25 checks, 0 failed) and
+no level throws you out of the cab repeatedly — so Worlds 3 and 4 are not
+just dressed, they are finishable.
+
 Traps found building it, all the same shape — **a generated layer defaults to
 looking generated**:
 
@@ -50,6 +54,12 @@ looking generated**:
   `Object.values(set).every(e => e.status === 'live')`, so a bare string there
   reads as an undressed world and hides that world's levels. Caught before it
   shipped; the note is now inside an entry and says so.
+- **A rule that starts failing is not always a rule to soften.** "every live
+  asset is actually fetched" — the check that caught 2.7 MB of layer art
+  silently unplugged, twice — went red on eleven files the moment Worlds 2-4
+  were dressed, because the run never leaves World 1. The fix is a **world
+  tour**: one room per world before the check, which makes the rule true again
+  and is also the only coverage the grove and nightshift swaps have.
 - **The version is 15.19, not 16.** `origin/eeri-address-backup` already spent
   "v16" on the old integer scheme. Never reuse a number, even across a scheme
   change.
