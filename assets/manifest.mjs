@@ -104,6 +104,23 @@ shadows, no atmosphere, no ground plane. Plain flat mid-grey background.
 Stylized game-ready proportions, clean readable silhouette, matte surfaces with
 no gloss and no fine texture detail. No text, no logos, no UI, no watermark.`,
 
+  // Piritori → Eden and Toko Move: one style, two weathers. The hybrid the
+  // owner locked on 2026-08-18 (ART_BIBLE.md §3.2) — ink-line illustration
+  // carried on risograph print language, which is neither of the two things
+  // it is made of and has to be described as the blend or a model picks one.
+  // The night/day split is a palette line inside each prompt, never a second
+  // style: the whole design claim is that these are one city.
+  kallio: `Piritori house style. A hybrid: hard black ink-line illustration
+with flat, slightly muted fills — Darkest Dungeon rather than a comic —
+PRINTED as a risograph. Visible paper grain over everything, screen-print
+colour separations, slight registration drift between colour layers. Limited
+palette, hard seams between colours, flat cut-paper shapes where the
+SILHOUETTE does the work rather than the shading. No gradients, no glow, no
+lens effects, no photographic rendering. Helsinki in 2003 — cold, used,
+deadpan, and not a crime film about it. No text, no logos, no UI, no
+watermark. Include a small swatch strip of every colour used along the very
+bottom edge, outside the subject.`,
+
   // Suds Jack: cold blooms, warm does not. The whole read of the game is that
   // what you want glows and what hurts you never does.
   suds: `Suds Jack house style. Everything desirable is COLD — pale cyan and
@@ -165,6 +182,257 @@ about to spit. No limbs, no face. Three quarter view, centred, full body.`,
 torus standing upright on its rim like a rolling tyre. Firmer and glassier than
 the soft gels — a hard rolling wheel, not a jelly. Motion implied, poised to
 charge. Side-on three quarter view, centred, full body.`,
+  },
+
+  // ── PIRITORI → EDEN + TOKO MOVE ─────────────────────────────────────────
+  // Every entry here answers a numbered item in piritori/ART_REQUEST.md, and
+  // that document is the reason they are worth generating: the build has a
+  // place waiting for each one. Two things are deliberately NOT here — the
+  // arcade marquee (128×72, drawn in canvas by house rule) and anything from
+  // the 2024 Pasila act, which is canon but phase-gated (piritori/DECISIONS.md
+  // §5). Sizes and the magenta rule live in piritori/art-src/NANO_BANANA.md.
+  //
+  // THE MAP IS THE FLAGSHIP and it is the one prompt in this file that must be
+  // checked against reality rather than against taste: the ten stops are
+  // projected from real WGS84 positions in flow-core/city.js, and a local is
+  // meant to be able to hold the result up against a 2003 street map. If a
+  // generated map renames or moves a stop it is regenerated, however good it
+  // looks — owner ruling, "only map style is canon, the places need to follow
+  // actual map".
+  {
+    id: 'piritori/night-map',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallio',
+    aspect: '3:5',
+    tags: ['map', 'flagship'],
+    prompt: `A printed transit and street map of the KALLIO district of
+Helsinki in 2003, on dark charcoal paper. Tall portrait — the district is a
+steep rectangle roughly 610 metres wide and 1010 metres tall, one metro stop
+end to end, and the drawing keeps that proportion.
+
+THE GROUND, and it is real: Hameentie is the eastern arterial running the full
+height of the sheet, the heaviest line on it. Helsinginkatu cuts east-west and
+meets Hameentie at a bend — that junction is Kurvi. The numbered "linjat"
+streets fan south-west in parallel between Hakaniemi and the church.
+Siltasaarenkatu runs north from the Hakaniemi bridge and splits around a rock
+outcrop carrying a large church. Torkkelinmaki is a knot of curving 1920s
+streets, visibly different from the grid around it. A small triangular park
+sits west of centre. Water on two sides: an inlet along the west edge, and the
+harbour along the south-east.
+
+TEN STOPS, each a small disc outlined in heavy ink with a tiny geometric glyph
+inside, labelled in municipal sans-serif, running roughly north to south:
+Vaasankatu and Sornainen at the top, Kurvi just below them, Vaasanaukio west
+of Kurvi, Harju far west, then Torkkelinmaki, Karhupuisto and Kallion kirkko
+across the middle, Kuudes linja below those, and Hakaniemi alone at the
+bottom beside open water.
+
+THE TRANSIT, drawn as printed lines over the streets: one heavy straight
+UNDERGROUND metro line joining only Hakaniemi and Sornainen — visibly not a
+street. Three tram lines that FOLLOW REAL STREETS: one along Hameentie from
+Hakaniemi through Kurvi to Sornainen; one climbing from Hakaniemi through
+Kuudes linja, the church, the park and Vaasanaukio to Kurvi; one short line
+along Helsinginkatu from Harju through Vaasanaukio to Kurvi. Faint dashed
+lines mark corridors nobody has built on.
+
+Palette: charcoal paper #0f1216, bone ink #e2dccd, dim grey #8c8778, cold
+water #1b2c3a, amber metro #b06a2a, dull green tram #5d6b5e, slate car
+#46525e. Dark, quiet, used. A rubber stamp and a few hand annotations in one
+corner.`,
+  },
+  {
+    id: 'tokomove/day-map',
+    game: 'toko-move',
+    use: 'reference',
+    style: 'kallio',
+    aspect: '3:5',
+    from: 'piritori/night-map',
+    tags: ['map'],
+    // `from` feeds the night map back in as a reference image. The day map is
+    // a RE-INK of the same sheet, not a second composition — if the geometry
+    // drifts between them the "same city" claim, which is the entire reason
+    // both products exist, stops being true on the two most-looked-at images
+    // in the project.
+    prompt: `The EXACT same printed map of Kallio as the reference image —
+identical street structure, identical ten stops in identical positions,
+identical tram and metro line paths, identical proportions — re-printed on
+warm off-white day paper with clean dark type.
+
+Nothing moves. Only the weather changes: mint, sky-blue, coral and amber inks
+on paper #f4f1e8 with ink #20272e, pale blue water #bcd8e6, orange metro
+#e07b2f, sage tram #86a98c, grey car #9aa4ac. A soft pale stain spreading
+behind the busiest line, like ink bleeding into paper. Optimistic, legible,
+busy — the same city, opposite weather.`,
+  },
+  {
+    id: 'piritori/arena-harbour',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallio',
+    aspect: '16:9',
+    tags: ['arena', 'fight'],
+    prompt: `A backdrop for a night street confrontation: the wholesale end of
+a Helsinki harbour. Warehouses in flat silhouette, two gantry cranes, the side
+of a moored ship, tram rails set into wet cobbles catching one sodium light.
+The horizon sits in the UPPER THIRD of the frame. The entire lower two thirds
+is EMPTY OPEN GROUND — flat wet setts with nothing standing on it and nothing
+in the middle of the frame. A stage seen slightly from above, looking down into
+an empty yard. One warm light source only. No people, no foreground clutter.`,
+  },
+  {
+    id: 'piritori/arena-court',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallio',
+    aspect: '16:9',
+    tags: ['arena', 'fight'],
+    prompt: `A backdrop for a night street confrontation: a back courtyard off
+a Helsinki tenement street. Four storeys of brick on three sides, one lit
+doorway under an arch, a fire escape, wet gravel. The buildings occupy the
+UPPER THIRD only; the lower two thirds is empty gravel with nothing standing
+on it. Enclosed, watched, nowhere to run. Two lit windows, everything else
+dark. No people, no foreground clutter.`,
+  },
+  {
+    id: 'piritori/arena-park',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallio',
+    aspect: '16:9',
+    tags: ['arena', 'fight'],
+    prompt: `A backdrop for a night confrontation in a small city park square.
+Iron railings, bare autumn trees, a bandstand cropped by the left edge, and a
+low stone plinth carrying a BEAR STATUE cropped by the right edge — both in the
+UPPER THIRD. The lower two thirds is empty frosted grass and path with nothing
+standing on it. Municipal, cold, ordinary. One park lamp. No people.`,
+  },
+  {
+    id: 'piritori/arena-yard',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallio',
+    aspect: '16:9',
+    tags: ['arena', 'fight'],
+    prompt: `A backdrop for a night confrontation in a residential inner
+courtyard. A carpet-beating rack, a bicycle shed, rubbish bins against a wall,
+lit kitchen windows above. Buildings in the UPPER THIRD; the lower two thirds
+is bare gravel with nothing on it. Domestic, close, embarrassing to fight in.
+No people.`,
+  },
+  {
+    id: 'piritori/cover-barrier',
+    game: 'piritori',
+    use: 'prop',
+    style: 'kallio',
+    tags: ['cover', 'fight'],
+    // Every cover prop shares one hard constraint the art cannot know on its
+    // own: on the board a prop is drawn about 30px wide and 15-20px tall, so
+    // anything tall enough to occlude a standing figure is wrong however good
+    // it looks. It is said in every one of these prompts rather than once here,
+    // because a prompt travels alone.
+    prompt: `A single concrete road barrier, scuffed, its reflective tape worn
+off, seen from a low three-quarter isometric angle, lit from one side, standing
+on nothing. It is WIDE AND LOW — wider than it is tall, waist height at most,
+never tall enough to hide a standing person behind it. Heavy, solid, worth
+taking cover behind. One clear silhouette. Flat magenta #FF00FF background,
+subject clear of all edges.`,
+  },
+  {
+    id: 'piritori/cover-rock',
+    game: 'piritori',
+    use: 'prop',
+    style: 'kallio',
+    tags: ['cover', 'fight'],
+    prompt: `A single rough granite boulder, the kind set at a park edge to
+stop cars parking on the grass, seen from a low three-quarter isometric angle,
+lit from one side, standing on nothing. WIDE AND LOW — wider than tall, waist
+height at most, never tall enough to hide a standing person. Heavy, solid.
+Flat magenta #FF00FF background, subject clear of all edges.`,
+  },
+  {
+    id: 'piritori/cover-bin',
+    game: 'piritori',
+    use: 'prop',
+    style: 'kallio',
+    tags: ['cover', 'fight'],
+    prompt: `A single green municipal wheelie bin, lid closed, seen from a low
+three-quarter isometric angle, lit from one side, standing on nothing. It
+reads as HOLLOW rather than solid — something a fist goes through. Waist
+height at most, never tall enough to hide a standing person. Flat magenta
+#FF00FF background, subject clear of all edges.`,
+  },
+  {
+    id: 'piritori/cover-crate',
+    game: 'piritori',
+    use: 'prop',
+    style: 'kallio',
+    tags: ['cover', 'fight'],
+    prompt: `A single stacked wooden pallet with one crate on it, seen from a
+low three-quarter isometric angle, lit from one side, standing on nothing.
+Hollow and light rather than solid. WIDE AND LOW, waist height at most, never
+tall enough to hide a standing person. Flat magenta #FF00FF background,
+subject clear of all edges.`,
+  },
+  {
+    id: 'piritori/cover-rack',
+    game: 'piritori',
+    use: 'prop',
+    style: 'kallio',
+    tags: ['cover', 'fight'],
+    prompt: `A single empty steel bicycle rack, seen from a low three-quarter
+isometric angle, lit from one side, standing on nothing. Thin, open, hollow —
+the least protective thing on the street. Waist height at most. Flat magenta
+#FF00FF background, subject clear of all edges.`,
+  },
+  {
+    id: 'piritori/weapons-plate',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallio',
+    aspect: '4:3',
+    tags: ['weapons', 'fight'],
+    // A plate rather than eleven cut items on purpose: a model cannot count,
+    // so this is generated to establish that the eleven read as ONE set at one
+    // scale, and the cut versions are generated individually against it with
+    // `from`. Weapon scale is the thing that goes wrong first — a bat and a
+    // rifle drawn in separate runs come back unrelated in size.
+    prompt: `Eleven ordinary weapons laid flat side by side on a dark surface,
+seen straight down, all at ONE consistent scale relative to each other: bare
+fists (a pair of hands), a beer bottle, a wooden baseball bat, a length of
+steel pipe, a starting pistol with a blocked barrel, a docker's cargo hook, a
+crowbar, a length of splintered plank, a small revolver, a sawn-off
+single-barrel shotgun, and a bolt-action hunting rifle. Every one is worn,
+second-hand and ordinary — nothing tactical, nothing shiny, nothing heroic.
+Each drawn as a flat shape inside a hard black outline. No text, no labels.`,
+  },
+  {
+    id: 'piritori/pin-glyphs',
+    game: 'piritori',
+    use: 'prop',
+    style: 'kallio',
+    aspect: '1:1',
+    tags: ['ui', 'map'],
+    prompt: `Nine map-marker glyphs on dark charcoal paper, each in its own
+square cell with generous margin, arranged in a 3 by 3 grid: a person's
+silhouette bust; a euro sign; the letter R; an exclamation mark; a
+five-pointed star; a hollow circle; a hollow diamond; a hollow square; a
+hollow triangle. Each glyph is a flat single-colour shape inside a thin
+circular ink outline, drawn to read clearly when shrunk to 18 pixels — bold,
+simple, high contrast, no detail that disappears at that size.`,
+  },
+  {
+    id: 'piritori/key-art',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallio',
+    aspect: '16:10',
+    tags: ['poster'],
+    prompt: `A poster. A printed night transit diagram of a Helsinki district
+fills the sheet, running diagonally from bottom-left to top-right. One magenta
+line runs through the whole diagram toward the top-right corner, where it
+leaves the sheet. Charcoal, dirty off-white, cold blue, one orange accent.
+Bleak, dry, deadpan. No people, no crime imagery, no glow, no title text.`,
   },
 
   // ── THE LAB — no cabinet yet ─────────────────────────────────────────────

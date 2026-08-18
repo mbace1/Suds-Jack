@@ -45,6 +45,12 @@ jobs:
       - name: the market — named goods, deals, and what is in the bag
         run: node piritori/test/market.mjs
 
+      # The asset pipeline's own gate: the manifest is well formed, every
+      # spec hashes, and an output at an old hash reads as drift. Needs no
+      # key and calls nothing — generation is never run in CI.
+      - name: the graphics pipeline's contract
+        run: node test/assets-smoke.cjs
+
       # The browser gate needs Chromium. `--with-deps` pulls the system
       # libraries the headless browser needs on a bare runner.
       - name: install chromium
