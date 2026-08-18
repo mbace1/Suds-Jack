@@ -140,11 +140,43 @@ World 2 machine with a verb (`span`, the excavator's girder move re-dressed —
 Flip its status to `live` the moment a room places it; the smoke gate fails a
 `live` asset nothing fetches, which is the only reason it is `placeholder` now.
 
-**The other five are deliberately NOT given `MACHINE_REACH` entries here**, and
-that is not caution for its own sake: an entry declares a machine's *verbs*, and
-DESIGN §7 item 2 — *which machine rides in which world* — is still an **open
-owner question** that PHASING says blocks the art queue. Inventing verbs for a
-forklift would be answering it by accident, in someone else's file. They are
+### Correction: the world assignment is NOT open
+
+An earlier version of this file said the other five got no `MACHINE_REACH`
+entry because *"which machine rides in which world"* was an open owner
+question. **That was wrong, and it was wrong because I read DESIGN §7's "still
+open" list and stopped there** — the very section that warns a stale
+open-questions list is worse than none, and points at §6.6.
+
+**DESIGN §6.6 approved the assignment on 2026-08-14**, closing PHASING's Gate B
+by name:
+
+| world | machine | verb the owner named |
+|---|---|---|
+| 1 | excavator *(live)* + crane *(art owed)* | DIG · SWING |
+| 2 | **pipe-layer** | **LAY** — lowers a pipe across a gap and the pipe becomes the bridge |
+| 3 | **cherry-picker** | **RISE** — carries you up and puts you on the high route |
+| 4 | **floodlight rig** | **AIM** — points a lamp, and what it lights becomes safe to cross |
+
+So five of the eight in this folder are the approved per-world rides, and their
+verbs are the owner's words rather than an art-lane guess. Proposed entries,
+for Design/Level to place in `parts.js` — `arm` is the reach from the machine's
+own centre and is a **budget the room prover checks**, so these are measured off
+each cut's `length` and want confirming against a real room:
+
+```js
+cherrypicker: { verbs: ['rise'],  arm: 3.0 },   // boom reach, mesh length 3.2
+floodlight:   { verbs: ['aim'],   arm: 4.5 },   // the LIT SPAN, not a physical reach
+```
+
+`floodlight` is the odd one and worth saying out loud: its `arm` is not
+something it can touch, it is **how far its light reaches**, because what the
+lamp lights is what becomes crossable. If the prover treats `arm` as physical
+reach, `aim` needs its own budget rather than borrowing that field.
+
+`dumptruck`, `roller` and `forklift` are the *second* machine of a world, which
+§7 item 1 defers deliberately until a world plays end to end. Those three still
+get no entry, and now for the right reason. They are
 modelled, rigged and measured; assigning them is a design decision.
 
 `floodlight` needs no reach entry at all — it is not rideable and is site
