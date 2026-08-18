@@ -9,7 +9,7 @@
 // the light source, and a scanlined tube on top of it fought the one thing the
 // picture is trying to say.
 
-import { shade } from './palette.js?v=5';
+import { shade } from './palette.js?v=8';
 
 // 4×4 ordered (Bayer) matrix as a 0..1 threshold per pixel. Firelight is a
 // gradient, and a gradient painted flat reads as modern; stippled through this
@@ -28,7 +28,7 @@ export function rampDither(ramp, u, x, y) {
 }
 
 export class PixelScreen {
-  constructor(parent, w = 192, h = 128) {
+  constructor(parent, w = 320, h = 180) {
     this.w = w; this.h = h;
     const c = document.createElement('canvas');
     c.width = w; c.height = h;

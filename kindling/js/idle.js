@@ -15,7 +15,7 @@
 // it answers, and that pays nothing either.
 
 // where things are, in room coordinates
-export const SPOT = { hearth: 58, home: 74, pile: 96, shelf: 108, window: 120 };
+export const SPOT = { hearth: 97, home: 124, pile: 166, shelf: 180, window: 200 };
 
 const WALK = 11;            // px per second — an amble, not a commute
 const HOME_FACE = -1;       // the fire is to the left of everywhere it stands

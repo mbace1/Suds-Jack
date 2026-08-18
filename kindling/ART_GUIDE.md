@@ -4,10 +4,17 @@
 ("Next major design artifact is the **Betterment Art Guide**"), written to the
 handoff list in §17.
 
+**The reference now exists.** This guide was written from the prose canon alone,
+before there was any art to look at. Thirteen approved sheets have since arrived
+and are read out in **`art-src/approved/SHEETS.md`** — that file is the target,
+this one is the arithmetic, and where they disagree the sheets win. Two rules
+below were guesses and have been corrected against them (§2 and §4); the rest
+survived the reference unchanged.
+
 **This document invents nothing.** Every rule below is cropped from canon —
 `BETTERMENT_GDD.md`, `BETTERMENT_GDD_AMENDMENT_KINDLING.md`,
-`BETTERMENT_OWNER_DIRECTION.md` and `BETTERMENT_DESIGN.md` — and each one names
-where it comes from. What this guide adds is **arithmetic**: canon says "growth
+`BETTERMENT_OWNER_DIRECTION.md`, `BETTERMENT_DESIGN.md` and now the sheets — and
+each one names where it comes from. What this guide adds is **arithmetic**: canon says "growth
 silhouettes" and "inherited trait zones", and a renderer needs to know how many
 pixels that is. The numbers are the only new thing here, and they exist because
 a rule that cannot be measured cannot be checked by a gate.
@@ -51,9 +58,16 @@ silhouettes over small detail noise"**.
 
 That last clause is the operative one and it is a *subtraction* instruction:
 
-- **No surface texture below 3px.** Mortar lines, flagstone joints, fluting and
-  scattered speckle all failed this in practice — every line cut into the stone
-  competed with the fire and the picture got busier and less legible.
+- **Texture is a VALUE STEP, never a line.** This is the corrected form of the
+  rule; it used to read "no surface texture below 3px", which the reference
+  overturns — the approved sheets are textured everywhere, every stone block
+  drawn individually. What was actually true is narrower: a line *cut into* a
+  mass competes with the fire and loses, so mortar is the **absence between**
+  blocks rather than a stroke on top of them. In practice that means quantising
+  a surface into blocks (4×3, courses offset by half a block) and dropping each
+  block's last row and column two steps down the ramp. Hashing per *pixel* is
+  not texture at all — it is noise, and a wall of noise reads as poured concrete
+  however carefully the ramp is chosen.
 - **A mass is a silhouette plus one lit edge.** That is the craft read at this
   size: cut paper has an edge, not a gradient.
 - **One colour change per row** where a ramp is needed (fire, sky). Banding is
@@ -83,9 +97,21 @@ Canon lists what may be inherited: horn shape, ears, body silhouette, eye colour
 ember/fire accents, markings, tail, craft-material motif, temperament, combat
 tendency, rare mutation.
 
-**The base body** is one mass (body) plus one mass (head), each a flat fill
-inside a 1px ink line, lit from the hearth side with a pale crescent and one
-ember rim. The light does not turn when the creature turns.
+**The base body is EMBER**, and the sheet fixes it (`SHEETS.md` §2): a body of
+dark porous stone nearly the colour of the night, one **big head on a small
+body**, two large white eyes set wide, two small fangs, two pale tan **horns**
+curving up and back, a dark maroon **scarf**, and ember glow at the cracks and
+the tail tip. Each mass is a flat fill inside a 1px ink line, lit from the fire
+side with a pale crescent and one ember rim, and **the light does not turn when
+the creature turns**.
+
+The first clause decides the rest: a body that dark cannot carry its own
+silhouette against this night, so the sheet's own call-out puts that job on the
+ornaments — *"big head, clear horns, scarf, and tail flame create a strong,
+readable silhouette at small sizes"*. Horns and scarf are therefore drawn in the
+two lightest colours the creature owns. (An earlier draft of this section
+described a generic two-mass animal with no horns, scarf or fangs at all, and the
+renderer followed it; that creature is not Ember.)
 
 **Every inherited trait owns a ZONE**, and no two traits may write to the same
 zone — that is what "trait modularity" (§17 bullet 7) means in a renderer:
@@ -128,9 +154,15 @@ different *creature*.
 Five stages, and each needs **one dominant silhouette change** rather than a
 size step:
 
+Age is carried by the sheet's own four levers — **horn size, posture,
+accessories, and surface detail** (cracks, moss, wear) — explicitly *not* body
+type, which is the same sentence the bible uses to say gender is not body type
+either. Horn length is the single number doing most of the work: 2 → 3 → 4 → 5 →
+7 px, which makes the 3-pixel rule true by construction rather than by luck.
+
 | stage | the change |
 |---|---|
-| spark | a tiny ember body, no ornament |
+| spark | horn nubs, no scarf, no arms; the ember sits on its back |
 | wisp | the body lengthens into a flame/tail shape |
 | tender | feet, ears and arms separate from the mass |
 | keeper | broader body, and it is carrying something |
