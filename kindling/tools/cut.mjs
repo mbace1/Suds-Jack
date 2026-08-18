@@ -384,10 +384,27 @@ if (cmd === 'key') {
     for (const f of files) {
       const r = await pg.evaluate(async ({ u, cell }) => inspect(await load(u), cell),
         { u: await toUrl(f), cell });
-      const notes = [];
+      const notes = [], soft = [];
       if (r.semi > 0) notes.push(`${r.semi}px SEMI-TRANSPARENT (must be binary)`);
       if (r.colours > maxColours) notes.push(`${r.colours} colours (expected <= ${maxColours})`);
-      if (!illustration && r.roundTrip > 2) notes.push(`${r.roundTrip}% lost on a half-scale round trip — NOT 1:1 pixel art`);
+      // THE ROUND TRIP ONLY DISCRIMINATES WHEN THE COLOUR COUNT DOES NOT.
+      // Halving and doubling back destroys any 1px feature, so genuinely 1:1
+      // art that is DENSE — a 26px sprite, a 16px icon — fails it just as an
+      // illustration does. Measured: the reference illustrations lost 7.7-13%
+      // with 6,500-9,200 colours; the delivered sprite sheets lost 4.5-10.4%
+      // with 8-25. The loss does not separate them and the palette does.
+      //
+      // So the test is applied only where a file is not already provably pixel
+      // art by its palette. Under 64 colours nothing an image model produces
+      // survives, so the file has been quantised, and the round trip has
+      // nothing left to tell us. This flagged six good sheets as failures on
+      // its first real delivery, which is the whole reason for the change.
+      const provable = r.colours <= 64;
+      if (!illustration && !provable && r.roundTrip > 2) {
+        notes.push(`${r.roundTrip}% lost on a half-scale round trip — NOT 1:1 pixel art`);
+      } else if (!illustration && provable && r.roundTrip > 2) {
+        soft.push(`${r.roundTrip}% lost halved — fine 1px detail, expected on dense sprites`);
+      }
       if (cell && r.cells && (r.cells.across % 1 || r.cells.down % 1)) {
         notes.push(`${r.w}x${r.h} is not a whole number of ${cell}px cells`);
       }
@@ -396,6 +413,7 @@ if (cmd === 'key') {
         + `${r.colours} colours  ${r.opaque}px ink`
         + (cell && r.cells ? `  ${r.cells.across}x${r.cells.down} cells` : ''));
       for (const n of notes) console.log(`        ${n}`);
+      for (const n of soft) console.log(`        note: ${n}`);
     }
   });
   console.log(`\n${files.length - bad}/${files.length} usable`);
