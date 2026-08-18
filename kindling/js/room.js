@@ -63,15 +63,17 @@ const REACH = w => 46 + w * 124;
 // nothing is claimed about the real weather where you are, and none of it touches
 // what anything is worth. It is a picture of a night.
 //
-// The night is genuinely BLUE. The first cut was painted so close to black that
-// there was no cold half for the fire to be warm against — the reference sky is
-// a navy you can name.
+// Every tone here is MEASURED off the reference thumbnails — mean row colour
+// down the right side of the frame, clear of the tree — rather than picked by
+// eye. The night came out darker and more saturated than the guess (#04142c to
+// #12253f against a guessed #101a30 to #243357), and the twilight scene is the
+// one that is genuinely lighter at the horizon than at the top.
 export const SKY = {
-  night: { key: 'night', top: '#101a30', low: '#243357', trees: '#0d1522', stars: 18, moon: true },
-  small: { key: 'small', top: '#0c1526', low: '#1d2a48', trees: '#0b1220', stars: 13, moon: true },
+  night: { key: 'night', top: '#04142c', low: '#12253f', trees: '#0a1018', stars: 18, moon: true },
+  small: { key: 'small', top: '#03101f', low: '#0d1e36', trees: '#080d14', stars: 13, moon: true },
   dawn:  { key: 'dawn',  top: '#1a2542', low: '#7a5652', trees: '#131a26', stars: 4,  moon: false },
-  day:   { key: 'day',   top: '#3f5b78', low: '#8ba3ad', trees: '#1c2734', stars: 0,  moon: false },
-  dusk:  { key: 'dusk',  top: '#161d38', low: '#5a3a4c', trees: '#101724', stars: 8,  moon: true },
+  day:   { key: 'day',   top: '#3d95d9', low: '#9cd0ec', trees: '#1c2734', stars: 0,  moon: false },
+  dusk:  { key: 'dusk',  top: '#15284f', low: '#3e4265', trees: '#101724', stars: 8,  moon: true },
 };
 
 // the hour decides the tone; the DATE decides the stars, so tonight's sky is not

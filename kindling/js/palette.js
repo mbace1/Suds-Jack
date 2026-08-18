@@ -29,8 +29,8 @@ export const PAL = {
   COAL:      '#7a2f16',
   COAL_HOT:  '#b2481c',
   EMBER:     '#f0a24a',
-  FLAME:     '#ffc768',
-  FLAME_CORE:'#fff2cf',
+  FLAME:     '#ffd774',
+  FLAME_CORE:'#fff0c0',
   SPARK:     '#ffe6a8',
   SMOKE:     '#2b2530',
 
@@ -76,19 +76,22 @@ export const PAL = {
   // sheet shows. Everything below is measured from the art rather than invented,
   // which is the whole difference between this block and the one above it.
   //
-  // The night is genuinely BLUE. The first cut of the ruin was painted so close
-  // to black that the picture had no cold half to warm anything against — the
-  // reference sky is a deep navy you can name, and the value contrast between it
-  // and the stone is where the depth comes from.
-  SKY_HIGH:  '#101a30',
-  SKY_LOW:   '#243357',
+  // MEASURED off the reference thumbnails rather than guessed (they are 160x90,
+  // near enough this canvas to sample pixel-for-pixel). The night sky is darker
+  // and more saturated than the first cut: mean row colours run #04142c at the
+  // top to #12253f at the horizon, where the guess had #101a30 -> #243357 —
+  // lighter, greyer and a touch purple. The whole picture is darker than it
+  // felt: the fourteen most common colours in every night reference are all
+  // near-black neutrals and deep navy.
+  SKY_HIGH:  '#04142c',
+  SKY_LOW:   '#12253f',
   SKY_WARM:  '#5e3f3a',    // the ember band low behind the castle
-  CLOUD:     '#2a3a5c',
+  CLOUD:     '#213352',
 
   // stone, from deep shadow to a block catching the moon. Five steps, because a
   // wall reads by blocks being different VALUES of the same colour — a mortar
   // line drawn as a stroke is the trap SHEETS.md §5 records.
-  BLOCK:     ['#1a222e', '#26303e', '#333f50', '#455263', '#586777'],
+  BLOCK:     ['#12181f', '#1b2330', '#28323f', '#37424f', '#495667'],
   MOSS_TOP:  '#3f5936',    // every top edge in the reference carries moss
   MOSS_LIT:  '#587f42',
 
@@ -97,7 +100,7 @@ export const PAL = {
   LEAF_DARK: '#16241a',
   LEAF:      '#2b4025',
 
-  EARTH:     '#332a20',
+  EARTH:     '#241f19',
   EARTH_LIT: '#6b5330',
   GRASS:     '#26361f',
   GRASS_LIT: '#425c2c',
@@ -128,6 +131,25 @@ export const PAL = {
   EM_EYE:    '#e8eef4',
   EM_PUPIL:  '#12141c',
   EM_TOOTH:  '#f2ecda',
+
+  // ── DAYLIGHT, for the travel view (owner direction: day is for travel) ──
+  // Measured off `daytime_journey_side_scroll_scene` and `daytime_path_scene`.
+  // The region rule holds exactly as ART_GUIDE.md §8 predicts: the COLD half
+  // changes and the fire's warm ramp does not. There is no fire out here, so
+  // the whole picture is the cold half, and it is a saturated blue sky over
+  // olive-green country.
+  DAY_SKY:   ['#3d95d9', '#6fb1e1', '#9cd0ec'],
+  DAY_HAZE:  '#93c4e0',        // the band just above the horizon
+  DAY_CLOUD: '#f2f6fb',
+  DAY_CLOUD_LOW: '#c3d6e8',
+  DAY_FAR:   '#5f7f8c',        // hills, at distance
+  DAY_TREE:  ['#1b2317', '#242a1b', '#2c3324', '#343b2c', '#3b4334'],
+  DAY_BIRCH: '#c8cec4',
+  DAY_GRASS: ['#2c3423', '#3a4429', '#48542f', '#5a6636'],
+  DAY_PATH:  '#6b5f3f',
+  DAY_PATH_LIT: '#8d7d55',
+  DAY_STONE: ['#4a4f4c', '#5d635e', '#727872', '#8c918a'],
+  DAY_WATER: '#4a7fa6',
 
   // ink and paper: the 1px outline that keeps a pixel shape defined, and the
   // colour text is set in
