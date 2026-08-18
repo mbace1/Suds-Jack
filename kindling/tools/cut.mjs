@@ -3,9 +3,16 @@
  * Kindling — turn a generated sheet into cuttable game art.
  *
  *   node kindling/tools/cut.mjs key   <in> <out.png>
- *   node kindling/tools/cut.mjs fit   <in> <out.png> <W>x<H>
+ *   node kindling/tools/cut.mjs fit   <in> <out.png> <W>x<H> [--palette P] [--no-quantise]
  *   node kindling/tools/cut.mjs slice <in> <outDir> <cell> [name,name,...]
- *   node kindling/tools/cut.mjs check <in> [--cell N]
+ *   node kindling/tools/cut.mjs check <in> [--cell N] [--colours N] [--illustration]
+ *
+ * IT IS NOT KINDLING'S ANY MORE. Piritori ships art from the same magenta
+ * pipeline but is not a pixel-art game and does not use this palette, so the
+ * two Kindling assumptions baked in here are now flags: which palette `fit`
+ * snaps to, and whether `check` expects 1:1 pixel art at all. The defaults are
+ * unchanged, so every Kindling command in NANO_BANANA_PIPELINE.md still means
+ * what it did.
  *
  * WHY THIS EXISTS. An image model does not produce game art. It produces an
  * illustration: no alpha channel, an arbitrary resolution, thousands of
@@ -50,13 +57,27 @@ function playwright() {
 // element cannot disagree about what colour the stone is. This is the whole
 // reason `fit` quantises at all: a sheet with 4,000 colours in it is not in
 // the same world as a scene built from thirty.
-async function gamePalette() {
-  const mod = await import(new URL('../js/palette.js', import.meta.url));
+async function gamePalette(src) {
   const out = new Set();
-  for (const v of Object.values(mod.PAL)) {
-    for (const c of (Array.isArray(v) ? v : [v])) {
-      if (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) out.add(c.toLowerCase());
-    }
+  // walks arrays AND nested objects: Piritori keeps its city-service colours in
+  // a { metro, tram, car } object, and a flat Object.values() pass dropped all
+  // three on the floor without saying so.
+  const walk = v => {
+    if (typeof v === 'string') {
+      if (/^#[0-9a-f]{6}$/i.test(v)) out.add(v.toLowerCase());
+    } else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+
+  if (src && /\.json$/i.test(src)) {
+    // a plain list of hex strings — how a project declares an ART palette that
+    // is wider than the one its code draws with
+    walk(JSON.parse(await readFile(src, 'utf8')));
+  } else {
+    const mod = await import(src
+      ? new URL(path.resolve(src), 'file://')
+      : new URL('../js/palette.js', import.meta.url));
+    walk(mod.PAL ?? mod.default ?? mod);
   }
   return [...out];
 }
@@ -135,6 +156,10 @@ function fitImage(img,W,H,pal){
   g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
   g.drawImage(img,0,0,W,H);
   const im=g.getImageData(0,0,W,H),d=im.data;
+  if(!pal){ // resize + binary alpha only
+    for(let i=0;i<d.length;i+=4){ if(d[i+3]<128){d[i+3]=0;d[i]=d[i+1]=d[i+2]=0;} else d[i+3]=255; }
+    g.putImageData(im,0,0); return c;
+  }
   const P=pal.map(h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]);
   for(let i=0;i<d.length;i+=4){
     if(d[i+3]<128){d[i+3]=0;d[i]=d[i+1]=d[i+2]=0;continue;}
@@ -195,6 +220,16 @@ function sliceImage(img,cell){
 // ── the commands ──
 const [cmd, ...rest] = process.argv.slice(2);
 
+// --flag and --opt VALUE, without pulling in a dependency. `flagValues` is what
+// keeps an option's VALUE from being mistaken for a positional argument.
+const flagValues = new Set();
+for (let i = 0; i < rest.length; i++) {
+  if (rest[i].startsWith('--') && rest[i + 1] && !rest[i + 1].startsWith('--')
+      && ['--palette', '--cell', '--colours'].includes(rest[i])) flagValues.add(rest[i + 1]);
+}
+const flag = name => rest.includes(name);
+const opt = name => { const i = rest.indexOf(name); return i >= 0 ? rest[i + 1] : undefined; };
+
 if (cmd === 'key') {
   const [src, out] = rest;
   const url = await toUrl(src);
@@ -205,16 +240,20 @@ if (cmd === 'key') {
   console.log(`→ ${out}  ${(await write(out, dataUrl) / 1024).toFixed(0)} KB`);
 
 } else if (cmd === 'fit') {
-  const [src, out, size] = rest;
+  const [src, out, size] = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
   const [W, H] = size.split('x').map(Number);
-  const pal = await gamePalette();
+  // --no-quantise keeps every colour: correct for illustration, where snapping
+  // an ink-line painting to fourteen flats destroys it. The resize, the binary
+  // alpha and the edge handling are all still worth having.
+  const pal = flag('--no-quantise') ? null : await gamePalette(opt('--palette'));
   const url = await toUrl(src);
   const dataUrl = await withCanvas(async pg => {
     await pg.addScriptTag({ content: LIB });
     return pg.evaluate(async ({ u, W, H, pal }) =>
       fitImage(await load(u), W, H, pal).toDataURL('image/png'), { u: url, W, H, pal });
   });
-  console.log(`→ ${out}  ${W}x${H}  snapped to ${pal.length} palette colours  `
+  console.log(`→ ${out}  ${W}x${H}  `
+    + (pal ? `snapped to ${pal.length} palette colours  ` : 'colours kept as generated  ')
     + `${(await write(out, dataUrl) / 1024).toFixed(1)} KB`);
 
 } else if (cmd === 'slice') {
@@ -239,10 +278,14 @@ if (cmd === 'key') {
   }
 
 } else if (cmd === 'check') {
-  const cellIdx = rest.indexOf('--cell');
-  const cell = cellIdx >= 0 ? Number(rest[cellIdx + 1]) : 0;
+  const cell = Number(opt('--cell') ?? 0);
+  // an illustration is not meant to survive the half-scale round trip, and its
+  // colour count is a different question. Saying so is better than shipping a
+  // gate that cannot pass — this repo has done that before.
+  const illustration = flag('--illustration');
+  const maxColours = Number(opt('--colours') ?? (illustration ? 4096 : 64));
   const files = [];
-  for (const src of rest.filter(a => !a.startsWith('--') && a !== String(cell))) {
+  for (const src of rest.filter(a => !a.startsWith('--') && !flagValues.has(a))) {
     if (existsSync(src) && (await readdir(src).catch(() => null))) {
       for (const f of await readdir(src)) if (/\.(png|webp|jpg)$/i.test(f)) files.push(path.join(src, f));
     } else files.push(src);
@@ -255,8 +298,8 @@ if (cmd === 'key') {
         { u: await toUrl(f), cell });
       const notes = [];
       if (r.semi > 0) notes.push(`${r.semi}px SEMI-TRANSPARENT (must be binary)`);
-      if (r.colours > 64) notes.push(`${r.colours} colours (expected <= 64)`);
-      if (r.roundTrip > 2) notes.push(`${r.roundTrip}% lost on a half-scale round trip — NOT 1:1 pixel art`);
+      if (r.colours > maxColours) notes.push(`${r.colours} colours (expected <= ${maxColours})`);
+      if (!illustration && r.roundTrip > 2) notes.push(`${r.roundTrip}% lost on a half-scale round trip — NOT 1:1 pixel art`);
       if (cell && r.cells && (r.cells.across % 1 || r.cells.down % 1)) {
         notes.push(`${r.w}x${r.h} is not a whole number of ${cell}px cells`);
       }
@@ -275,8 +318,13 @@ if (cmd === 'key') {
 
   key   <in> <out.png>                    magenta background -> real alpha
   fit   <in> <out.png> <W>x<H>            down to the native grid, snapped to the palette
+          --palette <file.js|.json>       snap to another project's palette
+          --no-quantise                   resize + binary alpha only (illustration)
   slice <in> <outDir> <cell> [names]      grid sheet -> one PNG per non-empty cell
   check <in|dir...> [--cell N]            is it actually 1:1 pixel art?
+          --colours N                     raise the colour ceiling (default 64)
+          --illustration                  skip the pixel-art round trip entirely
 
-See art-src/NANO_BANANA_PIPELINE.md for the whole run.`);
+See kindling/art-src/NANO_BANANA_PIPELINE.md, or piritori/art-src/NANO_BANANA.md
+for the illustration path.`);
 }
