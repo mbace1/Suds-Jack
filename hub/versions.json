@@ -59,6 +59,16 @@
     "n": 37000,
     "from": "cache token"
   },
+  "piritori": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
+  "tokomove": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
   "tinyhawk": {
     "v": "6",
     "n": 6000,
