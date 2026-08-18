@@ -27,6 +27,34 @@ a design document, and you should be able to read the state of the whole batch
 — including which prompts have drifted from their bytes — without spending
 anything.
 
+## Setting up nano banana (2D) — diagnosed 2026-08-18
+
+**The route is open; only the key is missing.** Checked from a Claude Code
+cloud session:
+
+- `generativelanguage.googleapis.com` **answers**. Unauthenticated it returns
+  Google's own `403 PERMISSION_DENIED — "Method doesn't allow unregistered
+  callers"`, with `server: scaffolding on HTTPServer2` in the headers. That is
+  Google talking, not the egress proxy refusing the host, so **2D needs no
+  network-policy change** — unlike Meshy below.
+- There is **no usable Google credential in the environment.** Do not be misled
+  by `CLOUDSDK_AUTH_ACCESS_TOKEN`: it is a 14-character placeholder beginning
+  `prox`, every Google endpoint rejects it as `UNAUTHENTICATED`, `tokeninfo`
+  calls it `invalid_token`, and there is no metadata server to mint a real one.
+  It is not a key you can borrow.
+
+So: **set `GEMINI_API_KEY` and `gen` runs.** Get one at
+[aistudio.google.com/apikey](https://aistudio.google.com/apikey). Put it in the
+**environment's variables** (claude.ai/code → the cloud icon above the message
+box → edit the environment) rather than pasting it into a chat or a file — a
+key in a transcript is a key in a log, and a key in the repo is a key on
+`gh-pages`. `.gitignore` does not protect you from either.
+
+Recorded here because the sibling failure is already documented below and the
+two look identical from the outside: **a blocked host is not a bad key, and a
+missing key is not a blocked host.** `doctor` names them separately for exactly
+that reason.
+
 ## Setting up Meshy
 
 Each half of this pipeline needs **two** things: a key *and* a route. They fail
