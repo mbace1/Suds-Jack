@@ -122,6 +122,32 @@ const CUTS = {
       ['body', null,   () => true,                         [0, 0.20, 0]],
     ],
   },
+
+  // THE ROOMBA. Its whole design is one node: `spring` fires on the first
+  // stomp and launches Eeri, and breaks on the second (ENEMY_BRIEFS.md). It is
+  // drawn standing clear on the top face for exactly that reason — a cut is a
+  // predicate in normalised space, so a spring touching the shell could never
+  // have been separated from it.
+  //
+  // `eye` is not decoration either: js/robots.js brightens the eye through
+  // `notice` and `wind` before an enemy acts, so the telegraph needs its own
+  // node to brighten. An enemy with nothing to brighten cannot be read.
+  //
+  // No yaw: the disc is symmetric and came back square to the camera.
+  m_vacbot: {
+    src: 'out/kit3d/B-vacbot/image-01a01665.glb',
+    out: 'vacbot_v1.glb',
+    length: 1.0,
+    yaw: 0,
+    nodes: [
+      ['spring', 'body',   (p) => p.y > 0.31,                [0, 0.31, 0]],
+      ['eye',    'body',   (p) => Math.hypot(p.x, p.y - 0.219) < 0.105, 'auto'],
+      ['wheelL', 'wheels', (p) => Math.hypot(p.x + 0.440, p.y - 0.028) < 0.055, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x - 0.400, p.y - 0.028) < 0.055, 'auto'],
+      ['wheels', 'body',   null,                             [0, 0, 0]],
+      ['body',   null,     () => true,                       [0, 0.10, 0]],
+    ],
+  },
 };
 
 const [mode, arg] = process.argv.slice(2);
