@@ -226,6 +226,32 @@ s.listen(0, '127.0.0.1', async () => {
       ok('clicking a weapon then a body actually strikes', after < before, `${before} → ${after}`);
 
       // cover is terrain now, and it has to be on the board and hittable
+      // The arena is ADDITIVE: it must load when it exists and change nothing
+      // when it does not. Both halves are checked, because "the game still
+      // works with the art missing" is the promise assets/load.js makes and
+      // the only one that keeps a cabinet safe to deploy ahead of its batch.
+      ok('the fight stands on generated ground when there is some',
+        await p.evaluate(async () => {
+          const v = window.__pt.debug.fightView;
+          for (let i = 0; i < 40 && !v.arena; i++) await new Promise(r => setTimeout(r, 50));
+          return !!v.arena && v.arenaId === 'piritori/arena-court';
+        }));
+      ok('and the board drops onto its ground rather than centring on the roofs',
+        await p.evaluate(() => {
+          const v = window.__pt.debug.fightView;
+          const withArt = v.cell('you', 1, 0, 3).y;
+          const held = v.arena; v.arena = null;
+          const without = v.cell('you', 1, 0, 3).y;
+          v.arena = held;
+          return withArt > without;
+        }));
+      ok('and it survives the art not being there at all', await p.evaluate(() => {
+        const d = window.__pt.debug, v = d.fightView;
+        const held = v.arena;
+        v.arena = null;
+        try { v.draw(d.fight); return true; } catch { return false; } finally { v.arena = held; }
+      }));
+
       ok('the arena has cover standing in it', await p.evaluate(() => {
         const f = window.__pt.debug.fight;
         return f.props.length > 0 && f.props.every(x => x.alive && x.hp > 0);
