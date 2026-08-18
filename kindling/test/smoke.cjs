@@ -455,6 +455,26 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   const rising = bands.every((n, i) => i === 0 || n > bands[i - 1]);
   check(`the day has five bands and each one is a brighter room (${bands.join(' → ')})`, rising);
 
+  // ── the seam between drawn art and cut art (js/assets.js) ──
+  // The whole point of the manifest is that nobody has to ask whether the art
+  // has landed. So the gate asks the two questions that could silently break
+  // that: did anything the manifest calls `live` fail to load, and does the
+  // offline shell carry every file it promises? A live entry with no file is a
+  // hole in the picture; a live file the worker does not precache is an app
+  // that loads online and is blank on a train, which this repo has shipped.
+  const art = await page.evaluate(async () => {
+    const a = await import('./js/assets.js?v=9');
+    await a.ready();
+    return { grid: a.grid(), missing: a.missing(), files: a.files() };
+  });
+  check(`the art manifest loads and matches the canvas `
+    + `(${art.grid.w}x${art.grid.h})`, art.grid.w === 320 && art.grid.h === 180);
+  check(`nothing the manifest calls live is missing`
+    + (art.missing.length ? ` — ${art.missing.join(', ')}` : ''), art.missing.length === 0);
+  const shell = fs.readFileSync(path.join(ROOT, 'kindling', 'sw.js'), 'utf8');
+  const uncached = art.files.filter(f => !shell.includes(f.replace('./', '')));
+  check(`every live asset is precached (${art.files.length} file(s))`, uncached.length === 0);
+
   // ── the roster reads by SHAPE (ART_GUIDE.md §11.2) ──
   // Four species that differ only in palette are one species in four costumes.
   // This is the same 3-pixel rule the growth stages are held to, applied across

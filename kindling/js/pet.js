@@ -26,8 +26,8 @@
 // It is drawn, never sprited: one table of numbers, so growing cannot make five
 // sheets of art that drift apart.
 
-import { PAL, mix, shade } from './palette.js?v=8';
-import { get as species, stageAt } from './species.js?v=8';
+import { PAL, mix, shade } from './palette.js?v=9';
+import { get as species, stageAt } from './species.js?v=9';
 
 // ── SKIN: what a species is made of ──
 // The build is shared on purpose. The global bible's "shared shape language"
