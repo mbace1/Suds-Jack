@@ -271,22 +271,38 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
       }
       return n;
     };
+    // How warm a patch is ON AVERAGE, which a count cannot tell you once every
+    // pixel in it already clears the threshold. The cut ground layer is warm
+    // brown before any fire touches it, so counting warm pixels out at the edge
+    // of the light saturates and then reads a brighter fire as no change at
+    // all — it went 1216 -> 1204 across a whole day.
+    const heatIn = (x, y, w, h) => {
+      const d = ctx.getImageData(x, y, w, h).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += Math.max(0, d[i] - d[i + 2]);
+      return Math.round(sum / (w * h));
+    };
     const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const s = __kd.state;
     s.sheet.done = []; s.sheet.mood = null; s.sheet.breaths = 0;
     __kd.view.shown = 0;
     await frame();
-    const cold = { warm: warmIn(0, 0, c.width, c.height), far: warmIn(156, 62, 30, 36) };
+    const cold = { warm: warmIn(0, 0, c.width, c.height), far: heatIn(196, 126, 64, 44) };
     s.sheet.done = __kd.debug.tasks(); s.sheet.mood = 'ok';
     __kd.view.shown = 1;
     await frame();
-    const warm = { warm: warmIn(0, 0, c.width, c.height), far: warmIn(156, 62, 30, 36) };
+    const warm = { warm: warmIn(0, 0, c.width, c.height), far: heatIn(196, 126, 64, 44) };
     return { cold, warm };
   });
   check(`a full day is measurably more firelight (${brightness.cold.warm} → ${brightness.warm.warm} warm pixels)`,
     brightness.warm.warm > brightness.cold.warm * 1.5);
-  check(`and the far side of the ruin is only reached by a full fire (${brightness.cold.far} → ${brightness.warm.far})`,
-    brightness.cold.far < 10 && brightness.warm.far > 60);
+  // The sample sits on the ground to the RIGHT of the props, past where a
+  // banked fire reaches. It moved twice: once for the 320x180 grid, and once
+  // because the old spot landed on the castle's lit windows in the cut sky
+  // layer — those are warm whatever kind of day you had, since somebody else is
+  // up a long way off, so measuring firelight there measured nothing at all.
+  check(`and the far side of the camp is only reached by a full fire (${brightness.cold.far} → ${brightness.warm.far})`,
+    brightness.warm.far > brightness.cold.far + 8);
 
   // ── the day turning over ──
   const rolled = await page.evaluate(() => {

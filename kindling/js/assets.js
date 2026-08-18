@@ -73,18 +73,27 @@ export function layer(id) {
   return bitmaps.get(id) ?? null;
 }
 
-// One frame out of a sprite sheet, as everything `drawImage` needs. `row` is a
-// named strip from the manifest (idle / walk / run / cast / …) and `i` wraps,
-// so a caller can hand it a frame counter without doing modulo itself.
-export function frame(id, row, i = 0) {
+// One frame out of a sprite sheet, as everything `drawImage` needs. `strip` is
+// a named animation and `i` wraps, so a caller can hand it a frame counter
+// without doing modulo itself.
+//
+// A strip is [firstCell, count] into a FLAT run of cells in reading order, not
+// a row index. batch1 packs 37 cells of Ember onto a 10x4 grid — idle 8, walk
+// 6, run 6, cast 8, four poses and five ages, running straight on across the
+// row breaks — so a row index would have addressed the wrong pictures. It is
+// also the only form that survives the same sheet being re-packed at another
+// width, which is worth having when the art is on its second delivery.
+export function frame(id, strip, i = 0) {
   const a = spec(id), img = bitmaps.get(id);
-  if (!a || !img || !a.rows) return null;
-  const names = Object.keys(a.rows);
-  const r = names.indexOf(row);
-  if (r < 0) return null;
-  const n = a.rows[row];
+  if (!a || !img || !a.strips?.[strip]) return null;
+  const [first, n] = a.strips[strip];
   const cell = a.cell;
-  return { img, sx: (((i % n) + n) % n) * cell, sy: r * cell, w: cell, h: cell };
+  const across = Math.max(1, Math.floor(img.width / cell));
+  const idx = first + (((i % n) + n) % n);
+  return {
+    img, sx: (idx % across) * cell, sy: Math.floor(idx / across) * cell,
+    w: cell, h: cell, foot: a.foot ?? cell,
+  };
 }
 
 // One cell out of an atlas, by name. The manifest lists atlas cells in reading

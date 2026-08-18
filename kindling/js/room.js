@@ -40,11 +40,11 @@
 // drawn live on top — the sheet asks for secondary motion everywhere, and a
 // scene whose first screen is frozen reads as a broken page.
 
-import { PAL, mix, shade } from './palette.js?v=9';
-import { bayer, rampDither } from './pixel.js?v=9';
-import { THINGS } from './errand.js?v=9';
-import { drawPet } from './pet.js?v=9';
-import { layer } from './assets.js?v=9';
+import { PAL, mix, shade } from './palette.js?v=10';
+import { bayer, rampDither } from './pixel.js?v=10';
+import { THINGS } from './errand.js?v=10';
+import { drawPet } from './pet.js?v=10';
+import { layer } from './assets.js?v=10';
 
 export const FLOOR_Y = 118;
 // The bonfire sits left of centre and the companion beside it. Both keep the
@@ -186,6 +186,13 @@ function staticCamp(scr, w, fuel, found, sky) {
   if (!scr.img(layer('camp.ground'))) { groundPlane(scr, w); props(scr, w); }
   branchPile(scr, w, fuel);
   if (!scr.img(layer('camp.front'))) { bigTree(scr, w, sky); foreground(scr, w); }
+
+  // Firelight goes over the cut layers, and ONLY over them: a drawn plane has
+  // already had `lit()` applied to every pixel it painted, so tinting it again
+  // would double the warmth near the fire and wash the bands out.
+  if (layer('camp.ground') || layer('camp.ruin')) {
+    scr.firelight(FIRE_X, FIRE_Y, REACH(w), `rgba(255, 132, 34, ${0.08 + w * 0.34})`);
+  }
 }
 
 // ── plane 1: the sky, which the fire never touches ──

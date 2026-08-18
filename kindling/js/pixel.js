@@ -9,7 +9,7 @@
 // the light source, and a scanlined tube on top of it fought the one thing the
 // picture is trying to say.
 
-import { shade } from './palette.js?v=9';
+import { shade } from './palette.js?v=10';
 
 // 4×4 ordered (Bayer) matrix as a 0..1 threshold per pixel. Firelight is a
 // gradient, and a gradient painted flat reads as modern; stippled through this
@@ -48,6 +48,38 @@ export class PixelScreen {
   // plane is either a bitmap or a function, and the caller should not care
   // which. Smoothing stays off — a cut PNG is already at the native grid, so
   // any resampling here would undo the pipeline's whole point.
+  // FIRELIGHT, as a pass over whatever is underneath.
+  //
+  // This is the one thing a cut asset cannot do for itself. The whole scheme is
+  // that everything is painted cold and warmed toward the flame by distance —
+  // and how far that warmth reaches IS the day's tally, so it is gameplay, not
+  // decoration. A drawn scene can mix every pixel individually. A PNG arrives
+  // already coloured, so the light has to go over the top.
+  //
+  // One additive radial gradient, drawn through a squash so the pool is wider
+  // than it is tall exactly as `lightAt` computes it. `lighter` adds rather
+  // than replaces, which is what firelight does to a surface — it cannot make
+  // the far corners lighter, because out there the alpha is zero.
+  firelight(x, y, reach, colour, squash = 1.25) {
+    const g = this.ctx;
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    g.translate(x, y);
+    g.scale(1, 1 / squash);
+    const grad = g.createRadialGradient(0, 0, 0, 0, 0, Math.max(1, reach));
+    grad.addColorStop(0, colour);
+    // falls off FAST. An additive gradient with a lazy mid stop adds a bit of
+    // every channel across half the screen, and adding red, green and blue
+    // together is grey — the first cut laid a soft grey fog over the whole camp
+    // and called it firelight. Warmth has to be concentrated to read as warm.
+    grad.addColorStop(0.22, colour.replace(/[\d.]+\)$/, '0.30)'));
+    grad.addColorStop(0.55, colour.replace(/[\d.]+\)$/, '0.08)'));
+    grad.addColorStop(1, colour.replace(/[\d.]+\)$/, '0)'));
+    g.fillStyle = grad;
+    g.fillRect(-reach, -reach, reach * 2, reach * 2);
+    g.restore();
+  }
+
   img(bmp, dx = 0, dy = 0, sx, sy, w, h) {
     if (!bmp) return false;
     if (sx === undefined) this.ctx.drawImage(bmp, Math.round(dx), Math.round(dy));
