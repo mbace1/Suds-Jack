@@ -50,6 +50,7 @@ function boot(seed = 7) {
   done = false; delivered = 0; msgs = []; sel = null;
 
   $('map').style.aspectRatio = `${flow.graph.bounds.w} / ${flow.graph.bounds.h}`;
+  drawer?.destroy();               // or a restart leaves the old one listening
   renderer = new FlowRenderer($('map'), THEME);
   drawer = new RouteDrawer($('map'), renderer, flow, {
     markersProvider: () => markers(),
@@ -215,7 +216,7 @@ function paintHud() {
   $('reach').textContent = `${(r.access * 100) | 0}%`;
   $('emit').textContent = `${r.emissions | 0}`;
   $('clock').textContent = `${String(6 + Math.floor(flow.clock.dayProgress * 16)).padStart(2, '0')}:00`;
-  $('lines').textContent = `${flow.routes.list.length}/${flow.routes.maxRoutes} lines`;
+  $('lines').textContent = `${flow.routes.drawn.length}/${flow.routes.maxRoutes} lines`;
 }
 
 function paintSheet() {
