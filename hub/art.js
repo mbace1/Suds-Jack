@@ -1011,6 +1011,59 @@ export const ART = {
     g.p(kx - 1, 29, 11, 2, DK);                                     // its brim
     g.p(kx + 3, 52, 5, 2, mix('#8a6242', INK, 0.3));                // his shadow
   },
+  // ── the flow twins ─────────────────────────────────────────────────────
+  // One city drawn twice — Piritori by night, Toko Move by day — so the two
+  // cabinets say on the shelf what the code says underneath: same geometry,
+  // opposite weather. The diagram is the subject AND the framing device: fat
+  // route lines crop at the frame (foreground), stops sit lighter than the
+  // paper behind them, and the one thing happening differs per cover.
+  nightmap(g, a) {
+    // charcoal paper with the water pulling cold at the bottom-left
+    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#12161c', '#0b0e13', y / H));
+    for (let y = 56; y < H; y++) g.p(0, y, 40 - (y - 56) * 1.4, 1, '#17242f');
+    // corridors nobody has built on: faint dashes
+    for (let x = 8; x < W; x += 8) g.p(x, 14, 3, 1, '#1d242e');
+    for (let x = 4; x < W; x += 8) g.p(x, 50, 3, 1, '#1d242e');
+    // the arterial, bottom-left to top-right, 45° bend — fat, bone white
+    const art_ = [[4, 66], [46, 66], [96, 16], [124, 16]];
+    const fat = (pts, c) => { for (let i = 0; i < pts.length - 1; i++) for (let o = 0; o < 2; o++) g.line(pts[i][0], pts[i][1] + o, pts[i + 1][0], pts[i + 1][1] + o, c); };
+    fat([[18, 4], [18, 30], [52, 64], [88, 64]], '#146a70');    // a cold cross line
+    fat(art_, '#e2dccd');
+    fat([[70, 4], [96, 30]], '#2c5a3a');                        // a spur
+    // stops: discs LIGHTER than the paper, dark cores — bends and ends
+    for (const [x, y] of [[18, 30], [46, 66], [70, 4], [124, 16]]) { g.disc(x, y, 3, '#8c8778'); g.disc(x, y, 1, '#0b0e13'); }
+    // Piritori itself, where the arterial breaks upward: ringed by a patrol
+    const px = 96, py = 16;
+    g.disc(px, py, 4, '#e2dccd'); g.disc(px, py, 2, '#0b0e13');
+    for (let i = 0; i < 16; i++) { const t = i / 16 * Math.PI * 2; g.p(px + Math.cos(t) * 9 * 1.3, py + Math.sin(t) * 9, 1, 1, '#ff7a1a'); }
+    // the queue: a fan of tiny marks waiting beside the square
+    for (let i = 0; i < 7; i++) g.p(px - 16 - (i % 3) * 4, py + 6 + ((i * 5) % 11), 1, 2, '#b9b2a0');
+    // one thing happening: the consignment, magenta, halfway up the climb —
+    // somewhere to be, and a trail saying which way it is going
+    g.p(66, 45, 3, 3, '#F0027F');
+    g.p(61, 51, 2, 2, '#7a1a4a'); g.p(57, 55, 1, 1, '#4a1230');
+  },
+  daymap(g, a) {
+    // warm day paper, the same water in the same corner
+    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#f4f1e8', '#e9e4d6', y / H));
+    for (let y = 56; y < H; y++) g.p(0, y, 40 - (y - 56) * 1.4, 1, '#bcd8e6');
+    // the SAME geometry — that is the whole joke of the pair
+    const fat = (pts, c) => { for (let i = 0; i < pts.length - 1; i++) for (let o = 0; o < 2; o++) g.line(pts[i][0], pts[i][1] + o, pts[i + 1][0], pts[i + 1][1] + o, c); };
+    // a soft stain bleeding behind the busiest line before it is drawn
+    for (let i = 0; i < 40; i++) g.p(50 + (i * 17) % 60, 20 + (i * 11) % 40, 2, 2, '#efe4d2');
+    fat([[18, 4], [18, 30], [52, 64], [88, 64]], '#86a98c');
+    fat([[4, 66], [46, 66], [96, 16], [124, 16]], a);           // the accent line is the busy one
+    fat([[70, 4], [96, 30]], '#e0a53a');
+    for (const [x, y] of [[18, 30], [46, 66], [70, 4], [124, 16]]) { g.disc(x, y, 3, '#20272e'); g.disc(x, y, 1, '#f4f1e8'); }
+    const px = 96, py = 16;
+    g.disc(px, py, 4, '#20272e'); g.disc(px, py, 2, '#f4f1e8');
+    // one thing happening: the morning crowd, dark ticks queuing and riding
+    for (let i = 0; i < 9; i++) g.p(px - 17 - (i % 3) * 4, py + 5 + ((i * 5) % 12), 1, 2, '#20272e');
+    for (const [x, y] of [[60, 51], [72, 39], [84, 27]]) g.p(x, y, 2, 2, '#20272e');
+    // the sun, high and off-centre, cropped by nothing — it is day, that is all
+    g.disc(112, 8, 5, '#e0a53a'); g.disc(112, 8, 3, '#f4f1e8');
+  },
+
 };
 
 // ── the glass ──────────────────────────────────────────────────────

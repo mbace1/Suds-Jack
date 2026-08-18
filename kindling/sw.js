@@ -26,9 +26,9 @@ const SHELL = [
   `./js/pixel.js${V}`,
   `./js/palette.js${V}`,
   `./js/audio.js${V}`,
-  '../hub/shell.js?v=17',
+  '../hub/shell.js?v=34',
   '../hub/pad.js?v=9',
-  '../hub/games.js?v=21',
+  '../hub/games.js?v=41',
   '../hub/padkeys.js?v=9',
 ];
 

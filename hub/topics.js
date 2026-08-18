@@ -93,7 +93,12 @@ const LEADS = {
                                           // complaint: it has to be told apart
                                           // from lag, and the screens are the
                                           // difficulty
-  radiofree: ['idea', 'look'],            // it is writing and voice: what it
+  radiofree: ['idea', 'look'],
+  piritori: ['balance', 'idea'],          // the economy IS the game: can seven
+                                          // nights beat the interest, and what
+                                          // should the city do next
+  tokomove: ['look', 'idea'],             // the day read is the product: does it
+                                          // read as the same city, kindly            // it is writing and voice: what it
                                           // should say next, and how it reads
   hub: ['idea', 'bug'],
 };
