@@ -21,6 +21,13 @@ export class RouteDrawer {
     this.mode = 'tram';
     this.moved = false;
 
+    // Every listener goes on one signal so the whole drawer can be detached in
+    // a single call. Without this, re-booting a product left the previous
+    // drawer attached to the same canvas and one drag fired BOTH onCommit
+    // callbacks — a route added twice, two slots spent.
+    this.abort = new AbortController();
+    const sig = { signal: this.abort.signal };
+
     const local = ev => {
       const r = canvas.getBoundingClientRect();
       const p = ev.touches?.[0] || ev.changedTouches?.[0] || ev;
@@ -28,13 +35,17 @@ export class RouteDrawer {
     };
     this._local = local;
 
-    canvas.addEventListener('pointerdown', e => this.down(local(e)));
-    canvas.addEventListener('pointermove', e => this.move(local(e)));
-    canvas.addEventListener('pointerup', e => this.up(local(e)));
-    canvas.addEventListener('pointercancel', () => this.cancel());
-    canvas.addEventListener('touchend', e => { this.up(local(e)); }, { passive: true });
-    canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    canvas.addEventListener('pointerdown', e => this.down(local(e)), sig);
+    canvas.addEventListener('pointermove', e => this.move(local(e)), sig);
+    canvas.addEventListener('pointerup', e => this.up(local(e)), sig);
+    canvas.addEventListener('pointercancel', () => this.cancel(), sig);
+    canvas.addEventListener('touchend', e => { this.up(local(e)); }, { passive: true, ...sig });
+    canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false, ...sig });
   }
+
+  // Detach every listener. Call before constructing a replacement on the
+  // same canvas.
+  destroy() { this.abort.abort(); this.draft = null; }
 
   setMode(m) { this.mode = m; }
 

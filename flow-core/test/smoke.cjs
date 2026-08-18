@@ -127,17 +127,21 @@ s.listen(0, '127.0.0.1', async () => {
       return true;
     }, handle));
 
-    // the encounter layer is Piritori-only, and must never reach the other one
+    // ── the encounter layer, driven through the REAL UI ──────────────────
+    //
+    // This block used to call autoTurn() through the debug handle, which
+    // exercised the MODEL and never the INTERFACE — so it passed while a real
+    // encounter opened frozen with no buttons at all. Debug hooks are for
+    // SETUP only now; every action below is a click on the thing a player
+    // clicks.
     if (name === 'piritori') {
-      // the pin set the request names: contacts (gangs, the wholesale), the
-      // sellers, the rival crew, and mission goals — the patrol appears with
-      // heat, proven separately in the contract of heat.js
       ok('the night map pins people, sellers, a rival and the goals',
         await p.evaluate(() => {
           const ids = window.__pt.debug.markers().map(m => m.id).join();
           return ids.includes('contact:') && ids.includes('dealers')
             && ids.includes('rival') && ids.includes('mission:');
         }));
+
       await p.evaluate(() => window.__pt.debug.startFight('collector', 1000));
       await p.waitForTimeout(250);
       ok('an encounter opens', await p.locator('#fight').isVisible());
@@ -152,27 +156,58 @@ s.listen(0, '127.0.0.1', async () => {
         const f = window.__pt.debug.fight;
         return f.living('you').length === 3 && f.living('them').length === 3;
       }));
+
+      // THE ONE THAT MATTERS: whoever wins initiative, the player must end up
+      // with something to press. Every roster has an enemy who is faster than
+      // Aatami, so if enemy turns are not run for us the panel opens dead.
+      const firstUp = await p.evaluate(() => window.__pt.debug.fight.actor.side);
+      const btns = await p.locator('#fightBtns button:visible').count();
+      ok(`the fight is actionable on arrival (first actor: ${firstUp}, ${btns} buttons)`,
+        btns > 0);
       ok('it telegraphs before you commit',
         (await p.locator('#fightTell').textContent()).length > 10);
       ok('it freezes the city while it runs',
         await p.evaluate(() => window.__pt.flow.clock.paused));
-      ok('a weapon out of its row is refused by the button', await p.evaluate(() => {
+
+      // arm a weapon by clicking it, then strike a ringed body on the canvas
+      const before = await p.evaluate(() => {
         const f = window.__pt.debug.fight;
-        const u = f.living('you').find(x => x.weapons.includes('blank'));
-        return !!u && !f.canUse(u, 'blank') === (u.row === 0);
-      }));
-      // hand it to the auto-battler and let it finish
-      await p.evaluate(() => {
-        const f = window.__pt.debug.fight;
-        f.auto = true;
-        let n = 0;
-        while (!f.over && n++ < 400) f.autoTurn();
+        return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
       });
-      await p.evaluate(() => window.__pt.debug.paintFight());
-      await p.waitForTimeout(120);
-      ok('the auto-battler finishes it',
-        await p.evaluate(() => !!window.__pt.debug.fight.over));
-      await p.locator('#fightBtns button').last().click();
+      await p.locator('#fightBtns button').first().click();
+      await p.waitForTimeout(80);
+      const shot = await p.evaluate(() => {
+        const d = window.__pt.debug, f = d.fight, v = d.fightView;
+        const t = f.targets(f.actor, f.actor.weapons[0])[0];
+        if (!t) return null;
+        const c = document.getElementById('board').getBoundingClientRect();
+        const pt = v.cell(t.side, t.col, t.row, f.rows);
+        return { x: c.left + pt.x / v.dpr, y: c.top + pt.y / v.dpr - 16 };
+      });
+      if (shot) {
+        await p.mouse.click(shot.x, shot.y);
+        await p.waitForTimeout(120);
+      }
+      const after = await p.evaluate(() => {
+        const f = window.__pt.debug.fight;
+        return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
+      });
+      ok('clicking a weapon then a body actually strikes', after < before, `${before} → ${after}`);
+
+      // the out is offered every round and is a real button
+      ok('OFFER THEM THE OUT is always present',
+        await p.locator('#fightBtns button', { hasText: 'OFFER THEM THE OUT' }).count() > 0);
+
+      // hand it to the auto-battler by clicking, and let it finish
+      await p.locator('#fightBtns button', { hasText: 'AUTO' }).first().click();
+      for (let i = 0; i < 40; i++) {
+        if (await p.evaluate(() => !!window.__pt.debug.fight?.over)) break;
+        await p.waitForTimeout(60);
+      }
+      ok('the auto-battler finishes it from a click',
+        await p.evaluate(() => !!window.__pt.debug.fight?.over));
+
+      await p.locator('#fightBtns button', { hasText: 'CONTINUE' }).click();
       await p.waitForTimeout(150);
       ok('and it closes and hands the city back',
         !(await p.locator('#fight').isVisible())
@@ -180,6 +215,23 @@ s.listen(0, '127.0.0.1', async () => {
     } else {
       ok('no encounter layer in this product', await p.evaluate(() => !document.getElementById('fight')));
     }
+
+    // ── restarting must not leave the old listeners behind ────────────────
+    const dupes = await p.evaluate(async h => {
+      const api = window[h];
+      api.debug.boot(7);
+      await new Promise(r => setTimeout(r, 60));
+      const n = api.flow.routes.drawn.length;
+      api.flow.addRoute('tram', ['harju', 'vaasanaukio', 'kurvi']);
+      return { added: api.flow.routes.drawn.length - n };
+    }, handle);
+    ok('after a restart one route is one route', dupes.added === 1, `added ${dupes.added}`);
+    ok('the line budget counts only the player\'s own lines', await p.evaluate(h => {
+      const t = document.getElementById('lines').textContent;
+      const max = window[h].flow.routes.maxRoutes;
+      const shown = parseInt(t.split('/')[0], 10);
+      return shown <= max;
+    }, handle), await p.locator('#lines').textContent());
 
     ok('still no errors after playing', errs.length === 0, errs.slice(0, 2).join(' | '));
     await p.close();
