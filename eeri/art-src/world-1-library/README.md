@@ -105,6 +105,9 @@ Likewise, do not add a new sun or sky decoration unless specifically requested.
 - `textures/` — source texture patches/material swatches: corrugated card,
   kraft paper, painted foam board, balsa/wood, masking tape, felt/soft material,
   brushed/painted metal and related World 1 surfaces
+- `sheets/` — multi-piece boards: several objects arranged on one render.
+  Source material to CUT FROM, never to promote whole; a board dropped onto a
+  layer brings its neighbours and its background with it
 - `candidates/` — newly generated pieces awaiting visual approval; agents should
   prefer the category folders above
 

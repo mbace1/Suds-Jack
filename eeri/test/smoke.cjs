@@ -160,24 +160,42 @@ for (const line of readme.split('\n')) {
 ok('the README documents every 2D layer', Object.keys(readmeRects).length === 6,
   Object.keys(readmeRects).join(','));
 
-// A live PNG at the wrong size does not fail — it STRETCHES onto the plane,
+// A live layer at the wrong size does not fail — it STRETCHES onto the plane,
 // silently, and the art looks subtly wrong with nothing to blame. So the
-// pixels are measured. (PNG header: 8-byte signature, then IHDR length and
-// type, then width and height as big-endian u32s.)
-function pngSize(file) {
+// pixels are measured, from the file's own header rather than from its name.
+//
+// PNG: 8-byte signature, IHDR length + type, then width/height as BE u32s.
+//
+// WEBP, which the v4 layer set ships as: RIFF container, 'WEBP' at 8, then a
+// chunk tag at 12. Three encodings and they store the size three ways —
+// 'VP8X' (what chromium's canvas.toDataURL writes) puts canvas width−1 and
+// height−1 as 24-bit LITTLE-endian at 24 and 27; 'VP8 ' lossy keeps 14-bit
+// LE at 26 and 28; 'VP8L' lossless packs 14-bit width−1 and height−1 across
+// five bytes from 21. Guessing one of the three and calling the others
+// unreadable is how a size gate quietly stops gating.
+function imageSize(file) {
   const b = fs.readFileSync(file);
-  if (b.length < 24 || b.toString('ascii', 12, 16) !== 'IHDR') return null;
-  return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+  if (b.length < 32) return null;
+  if (b.toString('ascii', 12, 16) === 'IHDR') return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+  if (b.toString('ascii', 0, 4) !== 'RIFF' || b.toString('ascii', 8, 12) !== 'WEBP') return null;
+  const tag = b.toString('ascii', 12, 16);
+  if (tag === 'VP8X') return { w: (b[24] | b[25] << 8 | b[26] << 16) + 1, h: (b[27] | b[28] << 8 | b[29] << 16) + 1 };
+  if (tag === 'VP8 ') return { w: b.readUInt16LE(26) & 0x3fff, h: b.readUInt16LE(28) & 0x3fff };
+  if (tag === 'VP8L') {
+    const n = b.readUInt32LE(21);
+    return { w: (n & 0x3fff) + 1, h: ((n >> 14) & 0x3fff) + 1 };
+  }
+  return null;
 }
 for (const [world, layers] of Object.entries(manifest.layers)) {
   for (const [layer, e] of Object.entries(layers)) {
     if (e.status !== 'live') continue;
     const f = path.join(ASSETS, e.file);
     if (!fs.existsSync(f)) continue;              // already reported above
-    const got = pngSize(f), want = readmeRects[layer];
+    const got = imageSize(f), want = readmeRects[layer];
     ok(`layer "${world}/${layer}" is painted to its documented size`,
       got && want && got.w === want.pxW && got.h === want.pxH,
-      got ? `${got.w}×${got.h}, wanted ${want?.pxW}×${want?.pxH}` : 'not a readable PNG');
+      got ? `${got.w}×${got.h}, wanted ${want?.pxW}×${want?.pxH}` : 'not a readable PNG or WEBP');
   }
 }
 
@@ -202,7 +220,20 @@ s.listen(0, '127.0.0.1', async () => {
   // press that lands during one is lost. Returns true once mode is 'riding'.
   async function mountUp(tries = 40, place = null) {
     for (let i = 0; i < tries; i++) {
-      if (await p.evaluate(() => window.__eeri.mode() === 'riding')) return true;
+      const m = await p.evaluate(() => window.__eeri.mode());
+      if (m === 'riding') return true;
+      // A MOUNT IN FLIGHT IS NOT A FAILED MOUNT. `mounting` and `dismounting`
+      // are animations (main.js), and the cab goes on reading `action` while
+      // they play — so a retry pressed during one lands as the DISMOUNT of
+      // the mount that was about to finish, and the loop hands the ride back
+      // as fast as it takes it. Only `foot` gets a press; the rest is waiting.
+      //
+      // This surfaced when the layer art went to webp and boot dropped from
+      // 1716 ms to 405 ms: the retry interval is calibrated off boot and
+      // clamps at ×1.5, so a four-times-faster machine started landing the
+      // retry inside the animation every time. The race was always there —
+      // it just needed a fast enough machine to lose.
+      if (m !== 'foot') { await p.waitForTimeout(ms(220)); continue; }
       await p.evaluate((where) => {
         const e = window.__eeri.exc;
         if (!e) return;
@@ -1142,6 +1173,26 @@ s.listen(0, '127.0.0.1', async () => {
   ok('it does not also count as being hit', await p.evaluate(() => window.__eeri.debug.mercy()) === 0);
   ok('the stomped one is dead', await p.evaluate(() =>
     window.__eeri.debug.robots().some((r) => r.dead)));
+
+  // THE WORLD TOUR, and it is here to keep the check below honest. That
+  // check asserts every asset the manifest calls `live` was really requested
+  // — the rule that caught 2.7 MB of layer art silently unplugged, twice.
+  // But the run up to this point never leaves World 1, so once Worlds 2-4
+  // were dressed it started failing on eleven files that are used perfectly
+  // well, just not in the room the test happens to be standing in. The fix
+  // is to go and look, not to soften the rule: one room per world, which
+  // also happens to be the only coverage the grove and nightshift swaps get.
+  for (const [i, want] of [[0, 'groundworks'], [3, 'pipeworks'], [6, 'grove'], [9, 'nightshift']]) {
+    await p.evaluate((n) => window.__eeri.debug.goSite(n), i);
+    const got = await p.waitForFunction(
+      (w) => window.__eeri.debug.world() === w && !window.__eeri.debug.transitioning(),
+      want, { timeout: ms(15000) }).then(() => true).catch(() => false);
+    ok(`site ${i + 1} wears its own world (${want})`, got,
+      'world=' + await p.evaluate(() => window.__eeri.debug.world()));
+  }
+  await p.evaluate(() => window.__eeri.debug.goSite(0));
+  await p.waitForFunction(() => window.__eeri.debug.world() === 'groundworks'
+    && !window.__eeri.debug.transitioning(), null, { timeout: ms(15000) }).catch(() => {});
 
   // every asset the manifest calls live must actually have been requested
   {

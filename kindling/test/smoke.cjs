@@ -94,7 +94,11 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
     return { lit, w: c.width, h: c.height };
   });
   check(`the room is painted, not a blank canvas (${painted.lit} lit pixels)`, painted.lit > 500);
-  check('at the resolution the art is drawn for', painted.w === 192 && painted.h === 128);
+  // 320x180 is the grid the approved art is being authored to (art-src/
+  // ART_REQUESTS.md §2): exactly 2x the delivered reference thumbnails and the
+  // same 16:9, so a reference can be laid over a render at 2x and compared.
+  check(`at the resolution the art is drawn for (${painted.w}x${painted.h})`,
+    painted.w === 320 && painted.h === 180);
 
   // it must MOVE on its first screen — a still opening reads as a broken page
   const moved = await page.evaluate(async () => {
@@ -427,10 +431,17 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   // one below, or "the fire is the measure" is only a claim
   const bands = await page.evaluate(async () => {
     const c = document.querySelector('canvas');
+    // The ruler is FIRELIGHT — red leading blue — and not total brightness.
+    // Total brightness saturates: once the camp had a blue sky, moonlit stone,
+    // a treeline and warm earth in it, nearly every pixel already cleared a
+    // sum-of-channels threshold and the count stopped moving with the fire
+    // (18474 → 19056 across a whole day, and the first step went DOWN). This is
+    // the second time this check has measured the wrong thing after an art
+    // pass, and both times the page was right and the ruler was wrong.
     const lit = () => {
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
       let n = 0;
-      for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 60) n++;
+      for (let i = 0; i < d.length; i += 4) if (d[i] - d[i + 2] > 40 && d[i] > 60) n++;
       return n;
     };
     const out = [];
@@ -443,6 +454,44 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   });
   const rising = bands.every((n, i) => i === 0 || n > bands[i - 1]);
   check(`the day has five bands and each one is a brighter room (${bands.join(' → ')})`, rising);
+
+  // ── the roster reads by SHAPE (ART_GUIDE.md §11.2) ──
+  // Four species that differ only in palette are one species in four costumes.
+  // This is the same 3-pixel rule the growth stages are held to, applied across
+  // the roster: every creature must differ from every other by its outline
+  // alone, measured with colour thrown away.
+  const roster = await page.evaluate(async () => {
+    const { PixelScreen } = await import('./js/pixel.js?v=8');
+    const { drawPet } = await import('./js/pet.js?v=8');
+    const { all } = await import('./js/species.js?v=8');
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(host);
+    const mask = (kind) => {
+      const scr = new PixelScreen(host, 72, 72);
+      scr.clear('#000000');
+      drawPet(scr, 36, 66, { kind, stage: 'elder', t: 0.3, pose: 'sit', lit: 1, still: true, face: -1 });
+      const d = scr.ctx.getImageData(0, 0, 72, 72).data;
+      const bits = [];
+      for (let i = 0; i < d.length; i += 4) bits.push(d[i] + d[i + 1] + d[i + 2] > 24 ? 1 : 0);
+      return bits;
+    };
+    const ids = all().map(s => s.id);
+    const masks = Object.fromEntries(ids.map(k => [k, mask(k)]));
+    const pairs = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+      const a = masks[ids[i]], b = masks[ids[j]];
+      let diff = 0;
+      for (let k = 0; k < a.length; k++) if (a[k] !== b[k]) diff++;
+      pairs.push({ a: ids[i], b: ids[j], diff });
+    }
+    host.remove();
+    return pairs;
+  });
+  const worst = roster.reduce((m, p) => p.diff < m.diff ? p : m, roster[0]);
+  check(`every species differs from every other by its outline alone `
+    + `(closest pair ${worst.a}/${worst.b} at ${worst.diff}px)`,
+    roster.every(p => p.diff >= 24));
 
   // ── the growth silhouettes (ART_GUIDE.md §5 and §11.1) ──
   //

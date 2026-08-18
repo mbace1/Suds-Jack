@@ -315,56 +315,114 @@
   "layers": {
     "groundworks": {
       "skyline": {
-        "file": "2d/groundworks_skyline_v3.png",
-        "status": "live"
+        "file": "2d/groundworks_skyline_v4.webp",
+        "status": "live",
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
-        "file": "2d/groundworks_far_v3.png",
+        "file": "2d/groundworks_far_v4.webp",
         "status": "live"
       },
       "mid": {
-        "file": "2d/groundworks_mid_v3.png",
+        "file": "2d/groundworks_mid_v4.webp",
         "status": "live"
       },
       "near": {
-        "file": "2d/groundworks_near_v3.png",
+        "file": "2d/groundworks_near_v4.webp",
         "status": "live"
       },
       "fore": {
-        "file": "2d/groundworks_fore_v3.png",
+        "file": "2d/groundworks_fore_v4.webp",
         "status": "live"
       },
       "sky": {
-        "file": "2d/groundworks_sky_v1.png",
-        "status": "live"
+        "file": "2d/day_sky_v2.webp",
+        "status": "live",
+        "_note": "shared by the three daylight worlds — the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
       }
     },
     "pipeworks": {
       "skyline": {
-        "file": "2d/pipeworks_skyline_v1.png",
+        "file": "2d/pipeworks_skyline_v2.webp",
         "status": "live",
-        "_note": "READY, parked: the whole set is built and in assets/2d — level 4 flips these six to \"live\" and nothing else. Kept placeholder until then because the smoke gate (rightly) fails a live asset nothing fetches."
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
-        "file": "2d/pipeworks_far_v1.png",
+        "file": "2d/pipeworks_far_v2.webp",
         "status": "live"
       },
       "mid": {
-        "file": "2d/pipeworks_mid_v1.png",
+        "file": "2d/pipeworks_mid_v2.webp",
         "status": "live"
       },
       "near": {
-        "file": "2d/pipeworks_near_v1.png",
+        "file": "2d/pipeworks_near_v2.webp",
         "status": "live"
       },
       "fore": {
-        "file": "2d/pipeworks_fore_v1.png",
+        "file": "2d/pipeworks_fore_v2.webp",
         "status": "live"
       },
       "sky": {
-        "file": "2d/groundworks_sky_v1.png",
+        "file": "2d/day_sky_v2.webp",
         "status": "live",
-        "_note": "shared with groundworks — the sky is world-agnostic until a world needs its own"
+        "_note": "shared by the three daylight worlds — the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
+      }
+    },
+    "grove": {
+      "skyline": {
+        "file": "2d/grove_skyline_v1.webp",
+        "status": "live",
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
+      },
+      "far": {
+        "file": "2d/grove_far_v1.webp",
+        "status": "live"
+      },
+      "mid": {
+        "file": "2d/grove_mid_v1.webp",
+        "status": "live"
+      },
+      "near": {
+        "file": "2d/grove_near_v1.webp",
+        "status": "live"
+      },
+      "fore": {
+        "file": "2d/grove_fore_v1.webp",
+        "status": "live"
+      },
+      "sky": {
+        "file": "2d/day_sky_v2.webp",
+        "status": "live",
+        "_note": "shared by the three daylight worlds — the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
+      }
+    },
+    "nightshift": {
+      "skyline": {
+        "file": "2d/nightshift_skyline_v1.webp",
+        "status": "live",
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
+      },
+      "far": {
+        "file": "2d/nightshift_far_v1.webp",
+        "status": "live"
+      },
+      "mid": {
+        "file": "2d/nightshift_mid_v1.webp",
+        "status": "live"
+      },
+      "near": {
+        "file": "2d/nightshift_near_v1.webp",
+        "status": "live"
+      },
+      "fore": {
+        "file": "2d/nightshift_fore_v1.webp",
+        "status": "live"
+      },
+      "sky": {
+        "file": "2d/nightshift_sky_v1.webp",
+        "status": "live",
+        "_note": "the one sky that cannot be shared — World 4 is a night shift. Painted rather than rendered: a sky is a gradient with things on it, and a 4 MB photograph of one is what this pass exists to stop."
       }
     }
   },
@@ -458,17 +516,17 @@
   "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) — never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
   "ui": {
     "logo": {
-      "file": "2d/logo_v2.png",
+      "file": "2d/logo_v3.webp",
       "status": "live",
       "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence — body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
     },
     "padplate_portrait": {
-      "file": "2d/padplate_v1.png",
+      "file": "2d/padplate_v2.webp",
       "status": "live",
       "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card — d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN §5's 44px targets. LANDSCAPE gets its own plate — wider and thinner, arcade control-panel rather than handheld — as `padplate_landscape`; stretching this one is not that."
     },
     "padplate_landscape": {
-      "file": "2d/padplate_landscape_v1.png",
+      "file": "2d/padplate_landscape_v2.webp",
       "status": "live",
       "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip — joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
     }
