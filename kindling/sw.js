@@ -1,21 +1,21 @@
 // Betterment / Kindling — offline shell.
 // The state remains local-only; the whole UI is cached for daily use without a signal.
 
-const VERSION = 'v9';
+const VERSION = 'v10';
 const CACHE = `kindling-${VERSION}`;
 
 // Existing core modules stay on the v2 token. The mobile UX layer has its own token,
 // so it can ship independently without pretending the underlying state machine changed.
-const V = '?v=9';
+const V = '?v=10';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
-  './modern-ux.css?v=9',
-  './modern-ux-accessibility.css?v=9',
-  './js/modern-ux.js?v=9',
+  './modern-ux.css?v=10',
+  './modern-ux-accessibility.css?v=10',
+  './js/modern-ux.js?v=10',
   `./js/main.js${V}`,
   `./js/room.js${V}`,
   `./js/idle.js${V}`,
@@ -23,6 +23,16 @@ const SHELL = [
   `./js/species.js${V}`,
   `./js/assets.js${V}`,
   `./assets/manifest.json${V}`,
+  `./assets/camp-sky.png${V}`,
+  `./assets/camp-ruin.png${V}`,
+  `./assets/camp-ground.png${V}`,
+  `./assets/camp-front.png${V}`,
+  `./assets/ember.png${V}`,
+  `./assets/mossling.png${V}`,
+  `./assets/ashling.png${V}`,
+  `./assets/mossknight.png${V}`,
+  `./assets/objects.png${V}`,
+  `./assets/ui.png${V}`,
   `./js/state.js${V}`,
   `./js/errand.js${V}`,
   `./js/breathe.js${V}`,
