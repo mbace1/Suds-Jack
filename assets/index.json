@@ -8,32 +8,32 @@
       "hash": "058f90a7"
     },
     "piritori/arena-harbour": {
-      "file": "2d/piritori-arena-harbour.3df483e8.png",
+      "file": "2d/piritori-arena-harbour.03c24c72.png",
       "kind": "2d",
       "use": "reference",
       "game": "piritori",
-      "hash": "3df483e8"
+      "hash": "03c24c72"
     },
     "piritori/arena-court": {
-      "file": "2d/piritori-arena-court.ccf8580d.png",
+      "file": "2d/piritori-arena-court.0d2918de.png",
       "kind": "2d",
       "use": "reference",
       "game": "piritori",
-      "hash": "ccf8580d"
+      "hash": "0d2918de"
     },
     "piritori/arena-park": {
-      "file": "2d/piritori-arena-park.38ee569b.png",
+      "file": "2d/piritori-arena-park.d4cf91e8.png",
       "kind": "2d",
       "use": "reference",
       "game": "piritori",
-      "hash": "38ee569b"
+      "hash": "d4cf91e8"
     },
     "piritori/arena-yard": {
-      "file": "2d/piritori-arena-yard.c092c0be.png",
+      "file": "2d/piritori-arena-yard.edcf098a.png",
       "kind": "2d",
       "use": "reference",
       "game": "piritori",
-      "hash": "c092c0be"
+      "hash": "edcf098a"
     },
     "piritori/cover-barrier": {
       "file": "2d/piritori-cover-barrier.3c1aa449.png",

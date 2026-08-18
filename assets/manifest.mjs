@@ -121,6 +121,37 @@ deadpan, and not a crime film about it. No text, no logos, no UI, no
 watermark. Include a small swatch strip of every colour used along the very
 bottom edge, outside the subject.`,
 
+  // The ARENAS ONLY, and they are a deliberate exception to `kallio` above.
+  //
+  // The first arena pass obeyed the house style to the letter — flat fills, no
+  // gradients, no glow, hard seams — and came back as a technical illustration
+  // of a courtyard rather than a courtyard at night. Held against the owner's
+  // reference the gap was not composition, it was LIGHT: the reference is lit,
+  // not filled. Warm sodium pouring out of forty windows, the stone modelled by
+  // it, the ground falling off into black at the corners, haze in the air
+  // between the viewer and the far wall.
+  //
+  // So this style gives the three things `kallio` forbids — falloff, glow and
+  // atmosphere — and keeps the two that make it ours: the hard ink line and the
+  // grain over everything. An arena is a background a fight happens in FRONT
+  // of, so it is allowed to be a painting; a prop that has to be cut out and
+  // composited is not, and stays on `kallio`.
+  kallioNight: `Piritori arena style. A LIT NIGHT PAINTING, not a flat
+illustration. Hard black ink line over painted, modelled surfaces — deep warm
+chiaroscuro, strong tonal falloff, real light doing the work.
+
+The light is WARM SODIUM AND LAMPLIGHT: dozens of windows lit warm amber in an
+irregular rhythm, a lamp throwing a pool onto the ground, light raking across
+stone and modelling it. Everything the light does not reach falls off through
+deep umber into PURE BLACK at the frame edges. Faint haze in the air between
+the viewer and the far wall, so distance reads.
+
+Palette: warm ochre and sepia stone, amber window light, cold blue-grey in the
+shadows, black. Rich, heavy film grain over the whole image. Dense
+architectural detail — cornices, chimneys, roof edges, drainpipes, worn render.
+Moody, atmospheric, oppressive, beautiful. Darkest Dungeon and Blasphemous
+backgrounds. No text, no logos, no UI, no watermark, no people, no characters.`,
+
   // Suds Jack: cold blooms, warm does not. The whole read of the game is that
   // what you want glows and what hurts you never does.
   suds: `Suds Jack house style. Everything desirable is COLD — pale cyan and
@@ -289,7 +320,7 @@ busy — the same city, opposite weather.`,
     id: 'piritori/arena-harbour',
     game: 'piritori',
     use: 'reference',
-    style: 'kallio',
+    style: 'kallioNight',
     aspect: '16:9',
     tags: ['arena', 'fight'],
     // v2, against the owner's reference (2026-08-18). v1 came back as a flat
@@ -305,9 +336,9 @@ vehicles, no crates, nothing standing on it. Buildings and scenery enclose it
 on three sides and are CROPPED by the left and right edges of the frame. The
 surround outside the scene falls off to PURE BLACK.
 
-NIGHT. The only light is warm and practical — lit windows, one lamp, a doorway
-— pooling on the ground and leaving the corners black. Muted sepia, brown,
-cold grey and black. Hard ink line over flat fills with heavy grain.
+NIGHT, and the light is the subject: warm sodium from many lit windows and one
+lamp, pooling on the ground, modelling the walls it rakes across, and dying
+into pure black at the corners of the frame.
 
 THE SCENE: warehouse walls enclosing a loading yard on three sides, a gantry
 crane cropped by one edge, the black side of a moored ship behind, tram rails
@@ -317,7 +348,7 @@ set into wet cobbles. The yard itself is empty wet stone.`,
     id: 'piritori/arena-court',
     game: 'piritori',
     use: 'reference',
-    style: 'kallio',
+    style: 'kallioNight',
     aspect: '16:9',
     tags: ['arena', 'fight'],
     prompt: `A fight arena: the back courtyard of a Helsinki tenement at night.
@@ -329,9 +360,9 @@ vehicles, no crates, nothing standing on it. Buildings and scenery enclose it
 on three sides and are CROPPED by the left and right edges of the frame. The
 surround outside the scene falls off to PURE BLACK.
 
-NIGHT. The only light is warm and practical — lit windows, one lamp, a doorway
-— pooling on the ground and leaving the corners black. Muted sepia, brown,
-cold grey and black. Hard ink line over flat fills with heavy grain.
+NIGHT, and the light is the subject: warm sodium from many lit windows and one
+lamp, pooling on the ground, modelling the walls it rakes across, and dying
+into pure black at the corners of the frame.
 
 THE SCENE: three wings of a four-storey plastered apartment block enclosing the
 yard, rows of tall windows with a scattering of them lit warm yellow, one lit
@@ -343,7 +374,7 @@ gravel yard. Enclosed, overlooked, nowhere to run.`,
     id: 'piritori/arena-park',
     game: 'piritori',
     use: 'reference',
-    style: 'kallio',
+    style: 'kallioNight',
     aspect: '16:9',
     tags: ['arena', 'fight'],
     prompt: `A fight arena: a small city park square at night.
@@ -355,9 +386,9 @@ vehicles, no crates, nothing standing on it. Buildings and scenery enclose it
 on three sides and are CROPPED by the left and right edges of the frame. The
 surround outside the scene falls off to PURE BLACK.
 
-NIGHT. The only light is warm and practical — lit windows, one lamp, a doorway
-— pooling on the ground and leaving the corners black. Muted sepia, brown,
-cold grey and black. Hard ink line over flat fills with heavy grain.
+NIGHT, and the light is the subject: warm sodium from many lit windows and one
+lamp, pooling on the ground, modelling the walls it rakes across, and dying
+into pure black at the corners of the frame.
 
 THE SCENE: iron railings and bare autumn trees enclosing the square, a wooden
 bandstand cropped by one edge, and a low stone plinth carrying a BEAR STATUE
@@ -368,7 +399,7 @@ is empty frosted grass and gravel path. Municipal, cold, ordinary.`,
     id: 'piritori/arena-yard',
     game: 'piritori',
     use: 'reference',
-    style: 'kallio',
+    style: 'kallioNight',
     aspect: '16:9',
     tags: ['arena', 'fight'],
     prompt: `A fight arena: a residential inner courtyard at night.
@@ -380,9 +411,9 @@ vehicles, no crates, nothing standing on it. Buildings and scenery enclose it
 on three sides and are CROPPED by the left and right edges of the frame. The
 surround outside the scene falls off to PURE BLACK.
 
-NIGHT. The only light is warm and practical — lit windows, one lamp, a doorway
-— pooling on the ground and leaving the corners black. Muted sepia, brown,
-cold grey and black. Hard ink line over flat fills with heavy grain.
+NIGHT, and the light is the subject: warm sodium from many lit windows and one
+lamp, pooling on the ground, modelling the walls it rakes across, and dying
+into pure black at the corners of the frame.
 
 THE SCENE: lower wooden and brick outbuildings enclosing the yard — a bicycle
 shed, a carpet-beating rack, rubbish bins against a wall — with the backs of
