@@ -109,11 +109,15 @@ translated into three languages and a picture of a sentence cannot be.
 
 ## 2D layers (`assets/2d/*.png`)
 
-Spec: ART_BRIEF §4. PNG with alpha, flat-colour cutout shapes, shading
-painted in (key light upper-left), depth tint toward the sky **baked into
-the painting** (`LAYER_TINT`: skyline 0.58 · far 0.38 · mid 0.20 ·
-near 0.07 · fore 0). Each layer is one image covering a fixed world rect
-at **30 px per unit** (`PPU` in `js/layers.js`):
+Spec: ART_BRIEF §4. **WEBP with alpha** since v15.19 — PNG is still accepted
+and the size gate reads both, but a layer is five wide strips of soft craft
+render and PNG is the wrong container for that: the v3 groundworks set was
+8.5 MB, the day sky alone 4.2 MB, and the same pictures at q0.88 webp are
+about a tenth of it. Flat-colour cutout shapes, shading painted in (key light
+upper-left), depth tint toward the sky **baked into the painting**
+(`LAYER_TINT`: skyline 0.58 · far 0.38 · mid 0.20 · near 0.07 · fore 0).
+Each layer is one image covering a fixed world rect at **30 px per unit**
+(`PPU` in `js/layers.js`):
 
 | layer | z | world rect (x0…x1 × y0…y1) | PNG size |
 |---|---|---|---|
@@ -129,9 +133,24 @@ so paint to 4096 wide and treat the horizontal scale as slightly coarse —
 these layers are far away.
 
 **These numbers are checked.** `eeri/test/smoke.cjs` reads this table and
-compares it against `LAYER_RECTS` × `PPU` in `js/layers.js`, and a live PNG
+compares it against `LAYER_RECTS` × `PPU` in `js/layers.js`, and a live layer
 whose pixel size does not match its row fails the gate rather than being
-silently stretched onto the plane. Paint to the row.
+silently stretched onto the plane. Paint to the row. Its `imageSize()` reads
+PNG IHDR and all three WEBP encodings, so the format is free but the size is
+not.
+
+**Where the shipping layers come from.** `art-src/tools/build-worlds.mjs`
+composes all four worlds out of `art-src/world-N-library/`, one pool per
+world — a world may only draw from its own library, which is the rule that
+was missing when World 2 shipped built largely from World 1's pieces. The
+ground line each lane stands on is **measured off the code painter** in
+`js/layers.js` (its `base` per lane: 3.0 / 3.4 / 3.8 / 3.9, and
+`FORE_GROUND` 3.4), because a live layer and its placeholder have to put the
+horizon in the same place. Rebuild one world with:
+
+```
+NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs groundworks
+```
 
 The sky ships as a layer like the rest since v9 — the crafted paper sky
 (palette gradient × paper-grain luminance, cotton-wool cloud cutouts, ONE

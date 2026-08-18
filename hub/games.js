@@ -12,9 +12,9 @@
 //          dead and dimmed instead of pointing at a 404, and `note` says why.
 //          Not every button has to work for a game to be worth listing.
 // `path`   what Play opens, relative to the hub page.
-// `inRepo` true when the folder lives on this branch too. The site (gh-pages)
-//          is a curated root that carries a few games `main` does not, so the
-//          local test loop only checks the links it can actually see.
+// `inRepo` true when the folder lives in a complete source checkout. Keep this
+//          explicit so partial or experimental branches can still mark links
+//          they do not carry without weakening the local link gate.
 // `accent` the card's neon; taken from the game's own palette so the row of
 //          cards reads as the row of cabinets it is meant to be.
 // `art`    the key of a draw function in art.js (each cabinet gets a marquee).
@@ -48,7 +48,7 @@ export const GAMES = [
     tags: ['shooter', 'vector', 'canvas'],
     controls: '← → / A D move · Space fire · Z superzapper',
     path: 'sudz/',
-    inRepo: false,
+    inRepo: true,
     accent: '#22e0e8',
     art: 'tube',
   },
@@ -103,32 +103,6 @@ export const GAMES = [
     art: 'skull',
   },
   {
-    id: 'tokotrip',
-    fi: {
-      tagline: 'VR-zensaari: oikea tuolisi rekisteröitynä poukaman rantaan. Lue kirjaa, laita levy soimaan, katso auringonlaskua. Ei mitään voitettavaa.',
-      controls: 'Quest: osoita + liipaisin teleport · toteemi vaihtaa tunnelman · kirja · radio · kyltti vie kotiin · työpöytä: raahaa katse · WASD · M',
-      note: 'saari, kirja ja radio ovat pystyssä — luolan sisätila on lykätty',
-    },
-    ja: {
-      tagline: 'VRの禅の島 — 本物の椅子を入り江のほとりに登録する。本を読み、レコードをかけ、日の入りを眺める。勝ち負けはなし。',
-      controls: 'Quest: ポイント＋トリガーでテレポート · トーテムでムード · 本 · ラジオ · 看板で帰る · PC: ドラッグ視点 · WASD · M',
-      note: '島と本とラジオは動いている — 洞窟の中は保留',
-    },
-    pad: 'native',
-    vr: true,
-    status: 'active',
-    note: 'the island, the book and the radio are up — the cave interior is deferred',
-    title: 'Toko Trip',
-    tagline: 'A VR zen island: your real chair, registered beside a cove. Read a book, put a record on, watch the sun go down. Nothing to win.',
-    lineage: 'A Short Hike × Monument Valley',
-    tags: ['vr', 'zen', 'three.js'],
-    controls: 'Quest: point + trigger teleport · totem cycles the mood · book · radio · the sign goes home · desktop: drag look · WASD · M',
-    path: 'toko-trip/',
-    inRepo: true,
-    accent: '#3aa8a0',
-    art: 'cove',
-  },
-  {
     id: 'dropcabal',
     score: { key: 'dropCabalHi', fmt: 'points' },
     fi: {
@@ -141,13 +115,13 @@ export const GAMES = [
       lineage: 'Cabal (1988)',
       controls: 'A D 走る · マウスで照準 + 左クリック · スペース ローリング · G 手榴弾',
     },
-    pad: { keys: { left: 'KeyA', right: 'KeyD', b0: 'Space', b1: 'KeyG' } },   // aim stays on the mouse
+    pad: 'native',   // reads the sticks itself: a crosshair needs an axis, not a keystroke
     status: 'active',
     title: 'Drop Cabal',
     tagline: 'A gallery shooter with layered depth — near gels eat the shots you aimed at far ones.',
     lineage: 'Cabal (1988)',
     tags: ['shooter', 'pixel', 'three.js'],
-    controls: 'A D run · mouse aim + LMB · Space roll · G grenade',
+    controls: 'A D run · mouse aim + LMB · Space roll · G grenade · pad: twin sticks',
     path: 'dropcabal/',
     inRepo: true,
     accent: '#e8913a',
@@ -228,7 +202,7 @@ export const GAMES = [
     tags: ['roguelike', 'survival', 'canvas'],
     controls: 'WASD move · fires on its own',
     path: 'Skltr/',
-    inRepo: false,
+    inRepo: true,
     accent: '#3ce85a',
     art: 'bones',
   },
@@ -254,55 +228,55 @@ export const GAMES = [
     tags: ['action', 'three.js', 'combo'],
     controls: 'WASD + mouse · LMB chains · tap stick to jump ×2',
     path: 'neon-ronin/',
-    inRepo: false,
+    inRepo: true,
     accent: '#e83ca8',
     art: 'slash',
   },
   {
     id: 'flashprince',
+    score: { key: 'flashPrinceBest', fmt: 'best-time' },
     fi: {
-      tagline: 'Yksi lattia, yksi mies ja jokainen hänen ruutunsa. Conradin oma animaatio, kuva kuvalta.',
-      lineage: 'Flashback — Conrad B. Hart',
-      controls: '← → kävele (pidä = juoksu) · ↑ hyppy · ↓ kyykky · X animaatiogalleria',
-      note: 'kentät riisuttu toistaiseksi — tämä on animaatiopaja, ei peli',
+      tagline: 'Jokainen liike viedään loppuun. Riipu, kiipeä ja vedä ase esiin ennen kuin hän ehtii.',
+      lineage: 'Another World × Flashback × Prince of Persia',
+      controls: '← → kävele (pidä = juoksu) · ↑ hyppy ja kiipeäminen · ↓ kyykky · E ase · X ammu',
+      note: 'neljätoista ruutua viidakosta hautakammioon ja takaisin — monikielisyys ja äänet vielä kesken',
     },
     ja: {
-      tagline: '床がひとつ、男がひとり、そして彼の全フレーム。コンラッドの動きを一枚ずつ。',
-      lineage: 'Flashback — コンラッド・B・ハート',
-      controls: '← → 歩く（長押しで走る）· ↑ ジャンプ · ↓ しゃがむ · X アニメ一覧',
-      note: 'ステージは今は外してある — これはゲームではなくアニメーションの作業台',
+      tagline: '始めた動きは必ず終わる。ぶら下がり、よじ登り、相手より先に銃を抜く。',
+      lineage: 'Another World × Flashback × Prince of Persia',
+      controls: '← → 歩く（長押しで走る）· ↑ ジャンプ／よじ登り · ↓ しゃがむ · E 銃 · X 撃つ',
+      note: 'ジャングルから墓所へ、そしてまた戻る十四画面 — 多言語と音はまだこれから',
     },
     pad: 'native',
     status: 'active',
-    note: 'the levels are stripped out for now — this is an animation bench, not a game',
+    note: 'fourteen screens from the jungle to the tomb and back — new, and still being tuned',
     title: 'Flash Prince',
-    tagline: 'One floor, one man, and every frame he has. Conrad, traced to the pixel.',
-    lineage: 'Flashback — Conrad B. Hart',
-    tags: ['cinematic', 'animation', 'canvas'],
-    controls: '← → walk (hold to run) · ↑ jump · ↓ crouch · E pistol · X fire · G gallery',
+    tagline: 'Every move you start, you finish. Hang, climb, and draw before he does.',
+    lineage: 'Another World × Flashback × Prince of Persia',
+    tags: ['cinematic', 'polygon', 'canvas'],
+    controls: '← → walk (hold to run) · ↑ jump & climb · ↓ crouch · E pistol · X fire',
     path: 'flashprince/',
     inRepo: true,
     accent: '#c8ee5a',
     art: 'ledge',
   },
-
   {
     id: 'eeri',
     fi: {
       tagline: 'Poika työmaalla, joka saa kiivetä koneisiin. Aja kaivinkonetta, nosta puomia, väistä pallo.',
       lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
       controls: '◀ ▶ juokse · Ⓐ hyppää · Ⓑ kiipeä koneeseen · ▲ ▼ puomi · pidä ▼ kaivaa',
-      note: 'v15.4 — Game Boy pystyssä, arcade vaakaan; pomppu ja kolhu myös animoituvat. Alkuruutu, ja napeissa kuvat siitä mitä ne tekevät.',
+      note: 'v15.19 — kaikki neljä maailmaa on nyt maalattu, ja kaikki 12 kenttää näkyvät valikossa. Työmaa, putkisto, metsä ja yövuoro — jokainen omalla kuvituksellaan.',
     },
     ja: {
       tagline: '工事現場の子ども。重機によじ登って運転できる。ショベルを走らせ、ブームを上げ、鉄球をかわす。',
       lineage: 'マリオ3 × ヨッシークラフトワールド × トンカ',
       controls: '◀ ▶ 走る · Ⓐ ジャンプ · Ⓑ 乗り込む · ▲ ▼ ブーム · ▼長押しで掘る',
-      note: 'v15.4 — 縦はゲームボーイ、横はアーケード。踏みつけと被弾も動く。タイトル画面と、動きの絵がついたボタン。',
+      note: 'v15.19 — 4つのワールドすべてに専用の背景がつき、12ステージすべてがメニューに出る。工事現場・配管・森・夜勤。',
     },
     pad: 'native',
     status: 'active',
-    note: 'v15.4 — a Game Boy pad in portrait, an arcade panel in landscape; the stomp and the hit animate now. In Finnish, English and Japanese. A title screen, and buttons with pictures of what they do.',
+    note: 'v15.19 — all four worlds are painted now, so all twelve levels are in the pause menu: the site, the pipeworks, the grove and the night shift, each built from its own art. Loads about four times faster too — the backdrops were 31 MB of PNG and are 5.9 MB of webp.',
     title: 'Eeri',
     tagline: 'A kid on a worksite where nobody is driving. Read the machine, get in the cab, and dig your way out.',
     lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
@@ -462,7 +436,7 @@ export const GAMES = [
     tags: ['puzzle', 'canvas', 'landscape'],
     controls: 'tap a picture · or ← →',
     path: 'eye-test/',
-    inRepo: false,
+    inRepo: true,
     accent: '#e8d24a',
     art: 'optotype',
   },
