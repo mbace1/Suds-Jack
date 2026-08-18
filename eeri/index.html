@@ -91,7 +91,7 @@
     }
     #pad img { display: none; width: 100%; height: auto; }
     /* THE NUMBERS BELOW ARE MEASURED OFF THE PNG, not judged by eye.
-       `padplate_v1.png` is 1024 × 590 and the drawn plate inside it runs
+       `padplate_v2.webp` is 1024 × 590 and the drawn plate inside it runs
        x 122…1022, y 75…588, with its yellow top strip ending at y 121.
        Two facts fall out of that and both were visible complaints:
 
@@ -111,7 +111,7 @@
       #pad img#padP { position: absolute; left: 0; bottom: 0; }
     }
     /* LANDSCAPE, same treatment and the same reason (owner: "the horizontal
-       on screen arcade stick is covering too much"). `padplate_landscape_v1
+       on screen arcade stick is covering too much"). `padplate_landscape_v2
        .png` is 1400 × 466 with the drawn panel at x 119…1398, y 204…463 and
        its yellow strip ending at y 229 — so more than HALF the image is
        transparent air above the panel, and a full-width plate anchored to
@@ -251,7 +251,7 @@
   #touch #tSel { left: calc(50% - 36px); right: auto; }
   #touch #tSt  { left: calc(50% + 36px); right: auto; }
 
-  /* --- PORTRAIT: over the DMG face (padplate_v1.png, 1024x590) --- */
+  /* --- PORTRAIT: over the DMG face (padplate_v2.webp, 1024x590) --- */
   @media (pointer: coarse) and (orientation: portrait) {
     html.plated #touch button { position: absolute; }
     html.plated #pad { pointer-events: none; }
@@ -296,7 +296,7 @@
     html.plated #touch #tSt  { left: 59.5%; top: 88%; width: 11%; height: 13%; bottom: auto; }
   }
 
-  /* --- LANDSCAPE: over the arcade strip (padplate_landscape_v1.png, 1400x466) --- */
+  /* --- LANDSCAPE: over the arcade strip (padplate_landscape_v2.webp, 1400x466) --- */
   @media (pointer: coarse) and (orientation: landscape) {
     html.plated #touch {
       position: fixed; left: -4.2%; right: 4.2%; bottom: 0;

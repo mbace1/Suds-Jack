@@ -1,5 +1,59 @@
 # EERI — versions
 
+## v15.19 — 2026-08-18 — four worlds, four sets of art, and 25 MB less of it
+
+Owner's report: *"all World 1 is unoptimized and has old graphics/assets,
+World 2 is filled with World 1 assets, World 3 and World 4 are not available
+on the pause menu."* All three are one fact — there was **one pool of art and
+two worlds pointing at it** — so this is one change.
+
+**`art-src/tools/build-worlds.mjs`** composes every world's five parallax
+lanes out of `art-src/world-N-library/`, the libraries the owner approved and
+handed over. Its first rule is the fix: **a world may only draw from its own
+library.** World 2's old set was built largely from World 1's pieces, which is
+why it looked like World 1 at a different tint; it is now pipe walls, culverts,
+valve junctions and wet concrete, and it shares nothing with the site.
+
+**Worlds 3 and 4 are in the pause menu because they are dressed, not because
+a flag was flipped.** `main.js` `dressed()` walks the manifest and stops the
+game at the last room whose world has live art — that gate was doing its job,
+and the honest way past it was to paint the art. Grove is conifer stands, root
+tunnels and timber shoring; Nightshift is a lit dock under a painted night sky,
+the one sky that cannot be shared. `SHOWN` goes 6 → 12.
+
+**WEBP, and the size gate had to learn to read it.** The layer set was 31 MB of
+PNG — `groundworks_sky_v1.png` alone was 4.2 MB — for pictures that are soft
+craft render, which PNG stores a pixel at a time. Same images, same documented
+sizes, **5.9 MB**. `test/smoke.cjs`'s `pngSize()` is now `imageSize()` and
+parses PNG IHDR plus all three WEBP encodings; guessing one and calling the
+rest unreadable is how a size gate quietly stops gating. The pad plates and the
+logo came along for the same reason (6.9 MB → 400 kB).
+
+Traps found building it, all the same shape — **a generated layer defaults to
+looking generated**:
+
+- **The ground line is not a free choice.** The first build put `near`'s at 1.5
+  and sank every prop two units into the floor. The right numbers are measured
+  off the code painter in `js/layers.js` (`base` per lane: 3.0 / 3.4 / 3.8 /
+  3.9, `FORE_GROUND` 3.4) — a live layer and its placeholder have to put the
+  horizon in the same place, or flipping `status` to `live` moves it.
+- **`ground` and `band` are different things.** They were one field, so the
+  fore lane painted its 5.4 units of standing height as earth and walled the
+  playfield off behind a brown slab.
+- **A parallax lane is mostly empty.** At a gap of 0.62× piece width every lane
+  came out solid: the foreground was a picket fence the kid ran a whole level
+  behind, and the far lane had no sky left in it. The pieces are punctuation.
+- **Haze is not one number for every world.** The city tints run a forest milky
+  — green mixed toward pale blue is the colour of nothing — so a world may damp
+  the table (grove 0.68, nightshift 0.55).
+- **`_note` cannot sit beside the layer entries.** `dressed()` calls
+  `Object.values(set).every(e => e.status === 'live')`, so a bare string there
+  reads as an undressed world and hides that world's levels. Caught before it
+  shipped; the note is now inside an entry and says so.
+- **The version is 15.19, not 16.** `origin/eeri-address-backup` already spent
+  "v16" on the old integer scheme. Never reuse a number, even across a scheme
+  change.
+
 ## v15.18 — 2026-08-17 — the Grove paints itself, the libraries have art, the gate is honest
 
 **World 3 stops borrowing World 1's backdrop.** `PLACEHOLDER_DRAW` was one
