@@ -48,13 +48,20 @@ slice and a sheet I can only look at.
    with a pixel filter over it. The test: scaling the file down by half must not
    change what it looks like at 2× nearest-neighbour. A faux-pixel illustration
    turns to mush the moment it is resampled, and every asset here gets resampled.
-5. **The native grid is 320 × 180.** That is this game's canvas (see §2). Deliver
+5. **Author at 4× and deliver at 4×.** Draw at a native 320 × 180 but output at
+   1280 × 720, every art pixel a 4×4 block of identical image pixels, nothing
+   anti-aliased. A request for 320 × 180 directly comes back with a 320 × 180
+   quantity of ideas in it — few, large, empty shapes — which is what the first
+   production batch did. Multiply every size in §3 by four on the way out.
+   **And quantise to a limited palette**: that is an authoring instruction, not
+   an export setting, and no amount of re-exporting fixes a soft edge.
+6. **The native grid is 320 × 180.** That is this game's canvas (see §2). Deliver
    sources at **1:1** for that grid. If a 4× review copy is wanted alongside,
    scale it **nearest-neighbour only** — never smooth.
-6. **A limited palette, shared across the whole set.** The colours already
+7. **A limited palette, shared across the whole set.** The colours already
    measured off the references are in `kindling/js/palette.js`; matching them
    keeps a cut asset and a code-drawn one in the same world.
-7. **No text in any asset.** The game is heading for fi / en / ja and text baked
+8. **No text in any asset.** The game is heading for fi / en / ja and text baked
    into a sprite cannot be translated.
 
 ---
