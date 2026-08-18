@@ -5,9 +5,9 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 while (!window.__kd) await wait(10);
 
 const kd = window.__kd;
-const { THINGS } = await import('./errand.js?v=7');
-const { addTask, removeTask, setSound } = await import('./state.js?v=7');
-const { HELLO } = await import('./idle.js?v=7');
+const { THINGS } = await import('./errand.js?v=8');
+const { addTask, removeTask, setSound } = await import('./state.js?v=8');
+const { HELLO } = await import('./idle.js?v=8');
 const app = document.getElementById('app');
 const panel = document.getElementById('panel');
 const FULL_DAY = 5;

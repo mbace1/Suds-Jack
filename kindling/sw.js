@@ -1,25 +1,26 @@
 // Betterment / Kindling — offline shell.
 // The state remains local-only; the whole UI is cached for daily use without a signal.
 
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = `kindling-${VERSION}`;
 
 // Existing core modules stay on the v2 token. The mobile UX layer has its own token,
 // so it can ship independently without pretending the underlying state machine changed.
-const V = '?v=7';
+const V = '?v=8';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
-  './modern-ux.css?v=7',
-  './modern-ux-accessibility.css?v=7',
-  './js/modern-ux.js?v=7',
+  './modern-ux.css?v=8',
+  './modern-ux-accessibility.css?v=8',
+  './js/modern-ux.js?v=8',
   `./js/main.js${V}`,
   `./js/room.js${V}`,
   `./js/idle.js${V}`,
   `./js/pet.js${V}`,
+  `./js/species.js${V}`,
   `./js/state.js${V}`,
   `./js/errand.js${V}`,
   `./js/breathe.js${V}`,

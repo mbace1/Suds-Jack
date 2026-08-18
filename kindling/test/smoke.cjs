@@ -455,6 +455,44 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   const rising = bands.every((n, i) => i === 0 || n > bands[i - 1]);
   check(`the day has five bands and each one is a brighter room (${bands.join(' → ')})`, rising);
 
+  // ── the roster reads by SHAPE (ART_GUIDE.md §11.2) ──
+  // Four species that differ only in palette are one species in four costumes.
+  // This is the same 3-pixel rule the growth stages are held to, applied across
+  // the roster: every creature must differ from every other by its outline
+  // alone, measured with colour thrown away.
+  const roster = await page.evaluate(async () => {
+    const { PixelScreen } = await import('./js/pixel.js?v=8');
+    const { drawPet } = await import('./js/pet.js?v=8');
+    const { all } = await import('./js/species.js?v=8');
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(host);
+    const mask = (kind) => {
+      const scr = new PixelScreen(host, 72, 72);
+      scr.clear('#000000');
+      drawPet(scr, 36, 66, { kind, stage: 'elder', t: 0.3, pose: 'sit', lit: 1, still: true, face: -1 });
+      const d = scr.ctx.getImageData(0, 0, 72, 72).data;
+      const bits = [];
+      for (let i = 0; i < d.length; i += 4) bits.push(d[i] + d[i + 1] + d[i + 2] > 24 ? 1 : 0);
+      return bits;
+    };
+    const ids = all().map(s => s.id);
+    const masks = Object.fromEntries(ids.map(k => [k, mask(k)]));
+    const pairs = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+      const a = masks[ids[i]], b = masks[ids[j]];
+      let diff = 0;
+      for (let k = 0; k < a.length; k++) if (a[k] !== b[k]) diff++;
+      pairs.push({ a: ids[i], b: ids[j], diff });
+    }
+    host.remove();
+    return pairs;
+  });
+  const worst = roster.reduce((m, p) => p.diff < m.diff ? p : m, roster[0]);
+  check(`every species differs from every other by its outline alone `
+    + `(closest pair ${worst.a}/${worst.b} at ${worst.diff}px)`,
+    roster.every(p => p.diff >= 24));
+
   // ── the growth silhouettes (ART_GUIDE.md §5 and §11.1) ──
   //
   // Canon says growth may use scale as well, never instead — "shape is more

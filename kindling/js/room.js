@@ -40,10 +40,10 @@
 // drawn live on top — the sheet asks for secondary motion everywhere, and a
 // scene whose first screen is frozen reads as a broken page.
 
-import { PAL, mix, shade } from './palette.js?v=7';
-import { bayer, rampDither } from './pixel.js?v=7';
-import { THINGS } from './errand.js?v=7';
-import { drawPet } from './pet.js?v=7';
+import { PAL, mix, shade } from './palette.js?v=8';
+import { bayer, rampDither } from './pixel.js?v=8';
+import { THINGS } from './errand.js?v=8';
+import { drawPet } from './pet.js?v=8';
 
 export const FLOOR_Y = 118;
 // The bonfire sits left of centre and the companion beside it. Both keep the
