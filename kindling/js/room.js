@@ -45,18 +45,18 @@ import { bayer, rampDither } from './pixel.js?v=7';
 import { THINGS } from './errand.js?v=7';
 import { drawPet } from './pet.js?v=7';
 
-export const FLOOR_Y = 100;
+export const FLOOR_Y = 118;
 // The bonfire sits left of centre and the companion beside it. Both keep the
 // coordinates idle.js already walks to (SPOT.hearth 58 · home 74 · pile 96 ·
 // shelf 108 · window 120), because the creature's behaviours are about this
 // place and should not need rewriting when the place changes its clothes.
-const FIRE_X = 50, FIRE_Y = 96;
-const PET_X = 74;
+const FIRE_X = 84, FIRE_Y = 114;
+const PET_X = 124;
 
 // how far the light reaches, in pixels, from coals to a full fire. The floor of
 // 46 is what keeps the companion and its patch of ground readable on a day with
 // nothing in it at all.
-const REACH = w => 46 + w * 124;
+const REACH = w => 58 + w * 152;
 
 // ── what is outside ──────────────────────────────────────────────────
 // The sky is read off the LOCAL CLOCK and nothing else: no forecast is fetched,
@@ -143,7 +143,7 @@ export function drawRoom(scr, view) {
   // and none of it may cost a repaint of the camp, so everything that moves is
   // drawn here on top of the blit.
   castleWindows(scr, t, still, sky);
-  banner(scr, 26, 44, q, t, still);
+  banner(scr, 44, 62, q, t, still);
   hangingLantern(scr, t, still);
 
   // `flame` is the live height — breathing drives it continuously, and it must
@@ -158,7 +158,7 @@ export function drawRoom(scr, view) {
     drawPet(scr, px, FLOOR_Y, {
       stage: view.stage, t, pose: view.pose, hop: view.hop, still,
       face: view.face ?? -1, look: view.look ?? 0,
-      lit: Math.min(1, lightAt(px, FLOOR_Y - 8, q) * 1.6),
+      lit: Math.min(1, lightAt(px, FLOOR_Y - 13, q) * 1.6),
     });
   }
   if (view.sparks) for (const s of view.sparks) {
@@ -182,17 +182,17 @@ function staticCamp(scr, w, fuel, found, sky) {
 
 // ── plane 1: the sky, which the fire never touches ──
 function skyPlane(scr, sky) {
-  const H = 68;
+  const H = 92;
   for (let y = 0; y < H; y++) {
     scr.px(0, y, scr.w, 1, mix(sky.top, sky.low, (y / H) ** 1.6));
   }
   // the ember band low on the horizon, behind the castle. Every night scene has
   // one — it is what stops the sky being a flat wash and gives the castle a
   // value to be a silhouette against.
-  for (let y = 52; y < H; y++) {
-    const k = (y - 52) / (H - 52);
-    for (let x = 96; x < scr.w; x++) {
-      const across = Math.min(1, (x - 96) / 60);
+  for (let y = 74; y < H; y++) {
+    const k = (y - 74) / (H - 74);
+    for (let x = 160; x < scr.w; x++) {
+      const across = Math.min(1, (x - 160) / 100);
       if (bayer(x >> 1, y >> 1) < k * across * 0.75) {
         scr.px(x, y, 1, 1, mix(sky.low, PAL.SKY_WARM, k * 0.7));
       }
@@ -200,12 +200,12 @@ function skyPlane(scr, sky) {
   }
   for (let i = 0; i < sky.stars; i++) {
     const h = (i * 2654435761 + sky.seed * 40503) >>> 0;
-    scr.px(3 + (h % (scr.w - 6)), 2 + ((h >>> 8) % (H - 30)), 1, 1,
+    scr.px(3 + (h % (scr.w - 6)), 2 + ((h >>> 8) % (H - 42)), 1, 1,
       (h >>> 16) % 5 === 0 ? PAL.MOON : PAL.STAR);
   }
   // flat cloud bars — the reference clouds are horizontal slabs with hard tops,
   // which is the only kind of cloud that survives at this size
-  for (const [cx, cy, cw] of [[112, 24, 34], [64, 12, 26], [150, 40, 30]]) {
+  for (const [cx, cy, cw] of [[187, 34, 57], [107, 17, 43], [250, 56, 50]]) {
     for (let i = 0; i < 3; i++) {
       const iw = Math.round(cw * (1 - i * 0.22));
       scr.px(cx - iw / 2 + i, cy + i * 2, iw, 2, mix(PAL.CLOUD, sky.low, 0.15 + i * 0.25));
@@ -214,10 +214,10 @@ function skyPlane(scr, sky) {
   // The moon, high and to the right — the one cold light, opposite the fire, so
   // the two of them split the picture between them.
   if (sky.moon) {
-    scr.softDisc(150, 18, 15, mix(sky.low, PAL.MOON, 0.22), 12);
-    scr.disc(150, 18, 7, mix(PAL.MOON, sky.low, 0.12));
-    scr.disc(147, 15, 2, shade(PAL.MOON, 0.86));      // a crater, so it is a body
-    scr.disc(152, 21, 1, shade(PAL.MOON, 0.9));
+    scr.softDisc(250, 26, 25, mix(sky.low, PAL.MOON, 0.22), 20);
+    scr.disc(250, 26, 11, mix(PAL.MOON, sky.low, 0.12));
+    scr.disc(245, 21, 3, shade(PAL.MOON, 0.86));      // a crater, so it is a body
+    scr.disc(253, 30, 2, shade(PAL.MOON, 0.9));
   }
 }
 
@@ -231,15 +231,15 @@ function farPlane(scr, sky, w) {
   // only where the ruin was not, so the arch openings showed raw VOID and the
   // scene had two black holes punched in the middle of it. Anything with a hole
   // in it needs something behind the hole.
-  for (let y = 62; y < FLOOR_Y; y++) {
-    scr.px(0, y, scr.w, 1, mix(PAL.TREE_NEAR, PAL.COLD[1], 0.2 + (y - 62) / 90));
+  for (let y = 88; y < FLOOR_Y; y++) {
+    scr.px(0, y, scr.w, 1, mix(PAL.TREE_NEAR, PAL.COLD[1], 0.2 + (y - 88) / 120));
   }
   const hill = mix(sky.trees, PAL.COLD[2], 0.5);
-  for (let x = 88; x < scr.w; x++) {
-    const y = 58 - Math.round(Math.sin((x - 88) * 0.04) * 8 + 2);
-    scr.px(x, y, 1, 68 - y, hill);
+  for (let x = 147; x < scr.w; x++) {
+    const y = 82 - Math.round(Math.sin((x - 147) * 0.024) * 11 + 3);
+    scr.px(x, y, 1, 96 - y, hill);
   }
-  castle(scr, 118, 24, sky);
+  castle(scr, 196, 34, sky);
   // the conifer line: a row of triangles, near-black, closing the horizon
   const conifer = (x0, base, h) => {
     for (let i = 0; i < h; i++) {
@@ -247,8 +247,8 @@ function farPlane(scr, sky, w) {
       scr.px(x0 - half, base - h + i, half * 2 + 1, 1, PAL.TREE_NEAR);
     }
   };
-  for (let x = 56; x < 116; x += 7) conifer(x, 68, 9 + (x % 3) * 4);
-  for (let x = 150; x < scr.w + 8; x += 6) conifer(x, 70, 12 + (x % 4) * 4);
+  for (let x = 93; x < 193; x += 12) conifer(x, 96, 13 + (x % 3) * 6);
+  for (let x = 250; x < scr.w + 13; x += 10) conifer(x, 99, 17 + (x % 4) * 6);
 }
 
 // The castle on its hill: a silhouette with lit windows, and it is the one warm
@@ -261,24 +261,24 @@ function farPlane(scr, sky, w) {
 function castle(scr, x, y, sky) {
   const body = mix(PAL.CASTLE, sky.low, 0.12);
   const edge = mix(PAL.CASTLE_LIT, sky.low, 0.35);
-  scr.px(x, y + 16, 26, 20, body);                 // the keep
-  scr.px(x + 3, y + 10, 8, 8, body);               // a tower
-  scr.px(x + 18, y + 4, 7, 14, body);              // the tall tower
-  scr.px(x + 24, y + 4, 1, 14, edge);              // its moonward edge, and only that
-  for (let i = 0; i < 4; i++) scr.px(x + 18 + i * 2, y + 2, 1, 3, body);
-  for (let i = 0; i < 6; i++) scr.px(x + 1 + i * 4, y + 14, 2, 2, body);
-  scr.px(x - 7, y + 26, 8, 10, mix(body, sky.low, 0.35));  // an outbuilding, further off
+  scr.px(x, y + 22, 43, 28, body);                 // the keep
+  scr.px(x + 5, y + 14, 13, 11, body);             // a tower
+  scr.px(x + 30, y + 6, 12, 20, body);             // the tall tower
+  scr.px(x + 41, y + 6, 2, 20, edge);              // its moonward edge, and only that
+  for (let i = 0; i < 4; i++) scr.px(x + 30 + i * 3, y + 3, 2, 4, body);
+  for (let i = 0; i < 6; i++) scr.px(x + 2 + i * 7, y + 20, 3, 3, body);
+  scr.px(x - 12, y + 37, 13, 14, mix(body, sky.low, 0.35));  // an outbuilding, further off
 }
 
 // The lit windows are LIVE: they flicker slowly, on their own uneven clock, so
 // the horizon is never quite still. Three of them, which is enough to say
 // somebody is home and few enough to stay out of the fire's job.
-const WINDOWS = [[139, 32], [124, 46], [133, 50]];
+const WINDOWS = [[232, 45], [210, 64], [224, 70]];
 function castleWindows(scr, t, still, sky) {
   if (!sky.moon && sky.key?.startsWith?.('day')) return;
   WINDOWS.forEach(([x, y], i) => {
     const k = still ? 0.7 : 0.55 + Math.sin(t * (0.7 + i * 0.23) + i * 2) * 0.45;
-    scr.px(x, y, 1, 2, mix(PAL.CASTLE_LIT, PAL.EMBER, k));
+    scr.px(x, y, 2, 3, mix(PAL.CASTLE_LIT, PAL.EMBER, k));
   });
 }
 
@@ -290,8 +290,8 @@ function castleWindows(scr, t, still, sky) {
 // reference arch is a THICK ring of blocks with visible mass and moss on top,
 // and mass at this size means five pixels, not two.
 function ruinPlane(scr, w, found) {
-  ruinArch(scr, 45, 62, 17, 5, FLOOR_Y, w, 0.94);  // the whole one, behind the fire
-  ruinArch(scr, 78, 66, 13, 4, FLOOR_Y, w, 0.72);  // the broken one, further back
+  ruinArch(scr, 78, 84, 29, 9, FLOOR_Y, w, 0.94);  // the whole one, behind the fire
+  ruinArch(scr, 136, 92, 22, 7, FLOOR_Y, w, 0.72); // the broken one, further back
   wallStack(scr, w);
   ledge(scr, w, found);
 }
@@ -337,7 +337,7 @@ function ruinArch(scr, cx, springY, rOut, thick, footY, w, solid) {
     scr.px(px, py, 1, 2, lit(mix(PAL.COLD[2], PAL.MOSS_TOP, 0.55 + ((px * 7) % 4) / 9), u * 0.4));
   }
   // the keystone, one step brighter — an arch with no keystone has no centre
-  scr.px(cx - 1, springY - rOut - 1, 3, 3,
+  scr.px(cx - 2, springY - rOut - 2, 5, 4,
     lit(PAL.BLOCK[4], lightAt(cx, springY - rOut, w)));
 }
 
@@ -350,7 +350,7 @@ function ruinArch(scr, cx, springY, rOut, thick, footY, w, solid) {
 // fixes it is what makes a ruin a ruin: they are SEPARATE, at DIFFERENT heights,
 // with the distance visible in the gaps between them, and they sit low in the
 // value ramp because they are a long way from the fire.
-const STACK = [[92, 74, 24], [120, 80, 16], [140, 76, 14], [158, 84, 16]];
+const STACK = [[152, 88, 42], [202, 97, 28], [240, 91, 24], [274, 101, 28]];
 function wallStack(scr, w) {
   for (const [x0, top, wd] of STACK) {
     for (let y = top; y < FLOOR_Y; y++) {
@@ -371,8 +371,8 @@ function wallStack(scr, w) {
   }
   // rubble at the foot of the stacks
   for (let i = 0; i < 14; i++) {
-    const x = 92 + i * 7 + (i % 3), y = FLOOR_Y - 2 - (i % 2) * 2;
-    scr.px(x, y, 3, 2, stone(x, y, lightAt(x, y, w), 1));
+    const x = 152 + i * 12 + (i % 3), y = FLOOR_Y - 3 - (i % 2) * 3;
+    scr.px(x, y, 5, 3, stone(x, y, lightAt(x, y, w), 1));
   }
 }
 
@@ -382,20 +382,20 @@ function wallStack(scr, w) {
 // the trick of this screen, the wall fills up permanently and a bad day simply
 // cannot see the far end of it.
 function ledge(scr, w, found) {
-  const BOARDS = [82, 93];
-  const x0 = 96, x1 = 150;
+  const BOARDS = [98, 112];
+  const x0 = 160, x1 = 250;
   BOARDS.forEach((y, board) => {
     for (let x = x0; x < x1; x += 2) {
       const u = lightAt(x, y, w);
       if (u <= 0.05) continue;
-      scr.px(x, y, 2, 2, lit(PAL.BLOCK[3], u * 1.15));
-      scr.px(x, y + 2, 2, 1, shade(PAL.BLOCK[0], 0.7));
+      scr.px(x, y, 2, 3, lit(PAL.BLOCK[3], u * 1.15));
+      scr.px(x, y + 3, 2, 1, shade(PAL.BLOCK[0], 0.7));
     }
     found.slice(-12).forEach((id, i) => {
       if (Math.floor(i / 6) !== board) return;
       const thing = THINGS[id];
       if (!thing) return;
-      const x = x0 + 3 + (i % 6) * 9;
+      const x = x0 + 5 + (i % 6) * 15;
       const u = lightAt(x, y, w);
       if (u <= 0.12) return;
       thing.draw(scr, x, y - 1);
@@ -412,7 +412,7 @@ function ledge(scr, w, found) {
 // in this picture that is also a design statement: what a good day reveals is the
 // way out. Nothing asks you to use it and it does not open.
 function gate(scr, w) {
-  const x = 158, y = 68, dw = 24, dh = FLOOR_Y - y;
+  const x = 264, y = 82, dw = 42, dh = FLOOR_Y - y;
   const u = lightAt(x + dw / 2, y + dh * 0.6, w);
   if (u <= 0.04) return;
   // The gate has to be SEEN on a full fire, or "a good day shows you the way out"
@@ -420,12 +420,12 @@ function gate(scr, w) {
   // is mixed warm hard at the top of the range.
   const iron = lit(PAL.IRON, Math.min(1, u * 2.4), PAL.EMBER);
   // an arched surround, per the sheet's gate-and-portcullis row
-  for (let iy = y - 6; iy < FLOOR_Y; iy++) {
+  for (let iy = y - 10; iy < FLOOR_Y; iy++) {
     const dy = y - iy;
-    const half = iy < y ? Math.sqrt(Math.max(0, 144 - dy * dy)) : 12;
+    const half = iy < y ? Math.sqrt(Math.max(0, 441 - dy * dy)) : 21;
     if (half <= 0) continue;
     for (const side of [-1, 1]) {
-      for (let d = Math.round(half) - 3; d < Math.round(half); d++) {
+      for (let d = Math.round(half) - 5; d < Math.round(half); d++) {
         const px = Math.round(x + dw / 2) + side * d;
         scr.px(px, iy, 1, 1, stone(px, iy, u, 3));
       }
@@ -436,10 +436,10 @@ function gate(scr, w) {
   // Painting the whole bar in warm rust turned the gate into a white picket
   // fence — the brightest thing in the right half of a picture whose brightest
   // thing is supposed to be the fire.
-  for (let i = 0; i < 5; i++) scr.px(x + 2 + i * 5, y, 3, dh, shade(iron, 0.55));
-  for (const iy of [y + 6, y + dh - 8]) scr.px(x + 2, iy, dw - 4, 2, shade(iron, 0.7));
+  for (let i = 0; i < 5; i++) scr.px(x + 4 + i * 8, y, 5, dh, shade(iron, 0.55));
+  for (const iy of [y + 9, y + dh - 12]) scr.px(x + 3, iy, dw - 6, 3, shade(iron, 0.7));
   for (let i = 0; i < 5; i++) {
-    scr.px(x + 2 + i * 5, y, 1, dh, lit(shade(PAL.RUST, 0.8), Math.min(1, u * 2.2), PAL.EMBER));
+    scr.px(x + 4 + i * 8, y, 2, dh, lit(shade(PAL.RUST, 0.8), Math.min(1, u * 2.2), PAL.EMBER));
   }
 }
 
@@ -449,10 +449,10 @@ function gate(scr, w) {
 // a shrub in the middle distance.
 function bigTree(scr, w, sky) {
   // the trunk, leaning very slightly, with roots spreading into the ground
-  for (let y = 0; y < FLOOR_Y + 4; y++) {
-    const lean = Math.round(Math.sin(y * 0.012) * 3);
-    const wd = 13 + Math.round((y / FLOOR_Y) ** 3 * 9);
-    const x0 = 2 + lean;
+  for (let y = 0; y < FLOOR_Y + 6; y++) {
+    const lean = Math.round(Math.sin(y * 0.010) * 5);
+    const wd = 22 + Math.round((y / FLOOR_Y) ** 3 * 15);
+    const x0 = 3 + lean;
     for (let x = x0; x < x0 + wd; x++) {
       const u = lightAt(x, y, w);
       // bark is vertical value banding — the one place a "line" is right,
@@ -461,15 +461,15 @@ function bigTree(scr, w, sky) {
       scr.px(x, y, 1, 1, lit(mix(PAL.BARK, PAL.BARK_LIT, k / 5), u * 0.8));
     }
   }
-  for (const [rx, ry, rw2] of [[14, 98, 14], [10, 102, 18], [16, 104, 20]]) {
-    scr.px(rx, ry, rw2, 3, lit(PAL.BARK, lightAt(rx + rw2 / 2, ry, w) * 0.9));
+  for (const [rx, ry, rw2] of [[23, 115, 24], [17, 121, 30], [27, 124, 34]]) {
+    scr.px(rx, ry, rw2, 4, lit(PAL.BARK, lightAt(rx + rw2 / 2, ry, w) * 0.9));
   }
   // The canopy: a BAND across the top, not a curtain down the side. The first
   // cut hung discs to y=54 and the left third of the picture became a green
   // cliff with the trunk buried in it — a tree is a trunk you can see with
   // leaves above it, and the moment the leaves reach the ground it is a hedge.
   for (const [cx, cy, cr, near] of [
-    [8, 4, 17, 0], [30, 1, 15, 1], [48, 5, 11, 0], [18, 15, 12, 1], [40, 14, 9, 0],
+    [13, 5, 29, 0], [50, 1, 25, 1], [80, 7, 19, 0], [30, 21, 20, 1], [67, 20, 15, 0],
   ]) {
     scr.disc(cx, cy, cr, near ? PAL.LEAF : PAL.LEAF_DARK);
   }
@@ -477,16 +477,16 @@ function bigTree(scr, w, sky) {
   // the edge you actually see against the sky
   for (let i = 0; i < 20; i++) {
     const h = (i * 2654435761) >>> 0;
-    const lx = 2 + (h % 56), ly = 2 + ((h >>> 9) % 24);
-    scr.px(lx, ly, 2, 1, mix(PAL.LEAF, sky.low, 0.4));
+    const lx = 3 + (h % 94), ly = 2 + ((h >>> 9) % 34);
+    scr.px(lx, ly, 3, 2, mix(PAL.LEAF, sky.low, 0.4));
   }
   // the lantern's bracket — the flame itself is live
-  scr.px(16, 52, 8, 2, PAL.IRON);
-  scr.px(22, 53, 1, 5, PAL.IRON);
-  scr.rect(20, 58, 6, 7, shade(PAL.IRON, 1.2), PAL.INK);
+  scr.px(27, 73, 13, 3, PAL.IRON);
+  scr.px(37, 75, 2, 7, PAL.IRON);
+  scr.rect(33, 82, 10, 11, shade(PAL.IRON, 1.2), PAL.INK);
   // and the beam the banner hangs from
-  scr.px(24, 42, 16, 2, lit(PAL.BARK_LIT, 0.35));
-  scr.px(38, 42, 2, 4, lit(PAL.BARK, 0.3));
+  scr.px(40, 59, 27, 3, lit(PAL.BARK_LIT, 0.35));
+  scr.px(63, 59, 3, 6, lit(PAL.BARK, 0.3));
 }
 
 // The lantern on the tree: the second warm light in the camp, and the only one
@@ -494,29 +494,29 @@ function bigTree(scr, w, sky) {
 // in step read as one light.
 function hangingLantern(scr, t, still) {
   const k = still ? 0.6 : 0.55 + Math.sin(t * 5.7) * 0.25 + Math.sin(t * 13.1) * 0.2;
-  scr.softDisc(23, 61, 9, mix(PAL.COAL_HOT, PAL.EMBER, 0.3 + k * 0.4), 7);
-  scr.px(21, 60, 4, 4, mix(PAL.EMBER, PAL.FLAME, k));
-  scr.px(22, 61, 2, 2, mix(PAL.FLAME, PAL.FLAME_CORE, k));
+  scr.softDisc(38, 86, 15, mix(PAL.COAL_HOT, PAL.EMBER, 0.3 + k * 0.4), 12);
+  scr.px(35, 84, 7, 7, mix(PAL.EMBER, PAL.FLAME, k));
+  scr.px(37, 86, 3, 3, mix(PAL.FLAME, PAL.FLAME_CORE, k));
 }
 
 // A banner that has been hanging too long: dark cloth, a gold sigil, a torn
 // hem. It SWAYS — cloth is the sheet's own example of follow-through, and a
 // banner that holds perfectly still is a painted wall.
 function banner(scr, x, y, w, t, still) {
-  const u = lightAt(x + 5, y + 14, w);
+  const u = lightAt(x + 9, y + 20, w);
   const cloth = lit(shade(PAL.BANNER_DIM, 0.75), u * 0.6, PAL.BANNER);
   const gold = lit(shade(PAL.BANNER_GOLD, 0.6), u * 0.9, PAL.BANNER_GOLD);
-  for (let iy = 0; iy < 26; iy++) {
+  for (let iy = 0; iy < 37; iy++) {
     // the sway runs down the cloth as a travelling wave, biggest at the hem
-    const k = iy / 26;
-    const sway = still ? 0 : Math.sin(t * 1.6 - k * 2.1) * (k * k * 2.2);
-    const tear = iy > 19 ? (iy - 19) : 0;              // it is torn at the bottom
+    const k = iy / 37;
+    const sway = still ? 0 : Math.sin(t * 1.6 - k * 2.1) * (k * k * 3.4);
+    const tear = iy > 27 ? (iy - 27) : 0;              // it is torn at the bottom
     const bx = Math.round(x + sway);
-    scr.px(bx, y + iy, 11 - tear * 2, 1, iy % 6 === 5 ? shade(cloth, 0.8) : cloth);
+    scr.px(bx, y + iy, 18 - tear * 3, 1, iy % 8 === 7 ? shade(cloth, 0.8) : cloth);
     // the sigil: a cross, in the reference's gold, three rows of it
-    if (iy > 7 && iy < 17) {
-      const mid = iy > 10 && iy < 13;
-      scr.px(bx + (mid ? 3 : 5), y + iy, mid ? 5 : 1, 1, gold);
+    if (iy > 10 && iy < 25) {
+      const mid = iy > 15 && iy < 19;
+      scr.px(bx + (mid ? 4 : 8), y + iy, mid ? 9 : 2, 1, gold);
     }
   }
 }
@@ -532,16 +532,27 @@ function groundPlane(scr, w) {
   }
   // the path: flat stones set into the earth, running off to the right — the
   // way out, drawn as the ground rather than as a thing
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < 40; i++) {
     const h = (i * 2246822519) >>> 0;
-    const x = 96 + (h % 92), y = FLOOR_Y + 2 + ((h >>> 7) % 22);
+    const x = 160 + (h % 156), y = FLOOR_Y + 3 + ((h >>> 7) % 38);
     const u = lightAt(x, y, w);
-    scr.px(x, y, 4 + (h % 3), 3, lit(PAL.BLOCK[2], u * 1.5, PAL.EARTH_LIT));
-    scr.px(x, y, 4 + (h % 3), 1, lit(PAL.BLOCK[3], u * 1.7, PAL.EARTH_LIT));
+    scr.px(x, y, 7 + (h % 5), 5, lit(PAL.BLOCK[2], u * 1.5, PAL.EARTH_LIT));
+    scr.px(x, y, 7 + (h % 5), 2, lit(PAL.BLOCK[3], u * 1.7, PAL.EARTH_LIT));
   }
   // where the wall stacks meet the ground — and only there. A hard line all the
   // way across read as the lip of a stage.
   for (const [x0, , wd] of STACK) scr.px(x0, FLOOR_Y - 1, wd, 1, PAL.VOID);
+  // the ragged seam: the ground's own top edge, wandering a few pixels, with the
+  // distance behind it showing through the notches
+  for (let x = 0; x < scr.w; x++) {
+    const rise = Math.round(Math.sin(x * 0.13) * 1.6 + Math.sin(x * 0.041) * 2.2);
+    const u = lightAt(x, FLOOR_Y, w);
+    for (let y = FLOOR_Y - 3; y < FLOOR_Y + 1; y++) {
+      if (y < FLOOR_Y - rise) continue;
+      const cold = mix(PAL.COLD[1], PAL.EARTH, 0.45);
+      scr.px(x, y, 1, 1, lit(cold, u * 1.25, PAL.EARTH_LIT));
+    }
+  }
 }
 
 // The gear on the ground beside the fire — sword, shield, helmet — which every
@@ -550,33 +561,34 @@ function groundPlane(scr, w) {
 function props(scr, w) {
   const U = x => lightAt(x, FLOOR_Y + 2, w);
   // the rug, under the companion's usual place
-  for (let x = PET_X - 11; x < PET_X + 11; x++) {
+  for (let x = PET_X - 18; x < PET_X + 18; x++) {
     const u = U(x);
-    scr.px(x, FLOOR_Y, 1, 4, lit(shade(PAL.CAP, 0.45), u * 0.9, PAL.CAP));
-    if ((x - PET_X) % 4 === 0) scr.px(x, FLOOR_Y + 1, 1, 2, lit(PAL.BANNER_GOLD, u * 0.6));
+    scr.px(x, FLOOR_Y, 1, 6, lit(shade(PAL.CAP, 0.45), u * 0.9, PAL.CAP));
+    if ((x - PET_X) % 7 === 0) scr.px(x, FLOOR_Y + 2, 1, 3, lit(PAL.BANNER_GOLD, u * 0.6));
   }
   // a sword, point down in the earth
-  scr.px(64, FLOOR_Y - 13, 2, 13, lit(PAL.BLADE, U(64) * 1.4));
-  scr.px(62, FLOOR_Y - 13, 6, 2, lit(PAL.IRON_LIT, U(64) * 1.2));
-  scr.px(64, FLOOR_Y - 16, 2, 3, lit(PAL.BANNER_GOLD, U(64)));
+  scr.px(107, FLOOR_Y - 22, 3, 22, lit(PAL.BLADE, U(107) * 1.4));
+  scr.px(104, FLOOR_Y - 22, 10, 3, lit(PAL.IRON_LIT, U(107) * 1.2));
+  scr.px(107, FLOOR_Y - 27, 3, 5, lit(PAL.BANNER_GOLD, U(107)));
   // a shield, leaning
-  scr.disc(90, FLOOR_Y - 6, 5, lit(shade(PAL.SHIELD, 0.7), U(90) * 0.8), PAL.INK);
-  scr.px(89, FLOOR_Y - 10, 2, 8, lit(shade(PAL.BANNER_GOLD, 0.8), U(90) * 0.7));
-  scr.px(86, FLOOR_Y - 8, 8, 2, lit(shade(PAL.BANNER_GOLD, 0.8), U(90) * 0.7));
+  scr.disc(152, FLOOR_Y - 10, 9, lit(shade(PAL.SHIELD, 0.7), U(152) * 0.8), PAL.INK);
+  scr.px(151, FLOOR_Y - 17, 3, 14, lit(shade(PAL.BANNER_GOLD, 0.8), U(152) * 0.7));
+  scr.px(146, FLOOR_Y - 13, 14, 3, lit(shade(PAL.BANNER_GOLD, 0.8), U(152) * 0.7));
   // a helmet, set down on its side
-  scr.disc(104, FLOOR_Y - 3, 4, lit(PAL.IRON_LIT, U(104)));
-  scr.px(100, FLOOR_Y - 3, 9, 4, lit(PAL.IRON, U(104)));
-  scr.px(103, FLOOR_Y - 5, 2, 3, PAL.VOID);
+  scr.disc(176, FLOOR_Y - 5, 7, lit(PAL.IRON_LIT, U(176)));
+  scr.px(169, FLOOR_Y - 5, 15, 6, lit(PAL.IRON, U(176)));
+  scr.px(174, FLOOR_Y - 9, 4, 5, PAL.VOID);
 
   // mushrooms and small flowers along the lit ground. Every reference scene has
   // them and they do one job: they are the only saturated colour down here that
   // is not the fire, so the ground stops being a brown field.
-  for (const [mx, my, cap] of [[30, 112, PAL.CAP], [22, 120, PAL.CAP], [118, 106, PAL.BLOOM],
-    [96, 116, PAL.BANNER_GOLD], [58, 118, PAL.BLOOM], [136, 110, PAL.CAP]]) {
+  for (const [mx, my, cap] of [[50, 158, PAL.CAP], [37, 169, PAL.CAP], [197, 149, PAL.BLOOM],
+    [160, 163, PAL.BANNER_GOLD], [97, 166, PAL.BLOOM], [227, 155, PAL.CAP],
+    [268, 170, PAL.BLOOM], [138, 172, PAL.CAP]]) {
     const u = lightAt(mx, my, w);
     if (u < 0.08) continue;
-    scr.px(mx, my - 1, 1, 2, lit(PAL.BONE, u * 0.9));
-    scr.px(mx - 1, my - 2, 3, 1, lit(cap, Math.min(1, u * 1.6), PAL.FLAME));
+    scr.px(mx, my - 2, 2, 4, lit(PAL.BONE, u * 0.9));
+    scr.px(mx - 2, my - 4, 6, 2, lit(cap, Math.min(1, u * 1.6), PAL.FLAME));
   }
 }
 
@@ -585,12 +597,12 @@ function branchPile(scr, w, fuel) {
   const n = Math.min(9, fuel);
   for (let i = 0; i < n; i++) {
     const row = Math.floor(i / 3), col = i % 3;
-    const x = 116 + col * 7 + (row % 2 ? 2 : 0);
-    const y = FLOOR_Y - 4 - row * 4;
+    const x = 194 + col * 12 + (row % 2 ? 3 : 0);
+    const y = FLOOR_Y - 6 - row * 6;
     const u = Math.min(1, lightAt(x, y, w) * 1.3);
     if (u <= 0.05) continue;
-    scr.rect(x, y, 7, 4, lit(shade(PAL.WOOD, 0.7), u, PAL.WOOD_LIT), PAL.VOID);
-    scr.px(x + 1, y + 1, 2, 1, lit(PAL.WOOD, u * 0.8, PAL.BONE));
+    scr.rect(x, y, 12, 6, lit(shade(PAL.WOOD, 0.7), u, PAL.WOOD_LIT), PAL.VOID);
+    scr.px(x + 2, y + 2, 4, 2, lit(PAL.WOOD, u * 0.8, PAL.BONE));
   }
 }
 
@@ -604,24 +616,24 @@ function foreground(scr, w) {
   // picture. Rocks are the reference's own foreground furniture and they have
   // the one thing the bar did not: a top edge that goes up and down, which is
   // the only way a silhouette says "solid object" rather than "letterbox".
-  for (const [rx, ry, rr] of [[-2, 122, 13], [14, 126, 11], [28, 124, 8], [38, 127, 6]]) {
+  for (const [rx, ry, rr] of [[-3, 168, 22], [23, 174, 19], [47, 171, 14], [63, 176, 10]]) {
     scr.disc(rx, ry, rr, '#070a10');
     // one lit rim along the fire-facing upper edge, and nothing else — a
     // foreground mass has no interior detail
-    for (let a = -1.1; a <= 0.5; a += 0.08) {
+    for (let a = -1.1; a <= 0.5; a += 0.05) {
       const px = Math.round(rx + Math.sin(a) * rr), py = Math.round(ry - Math.cos(a) * rr);
       scr.px(px, py, 1, 1, lit('#1e2836', lightAt(px, py, w) * 0.8));
     }
   }
   // brambles either side, in silhouette, running off both edges
-  for (let i = 0; i < 11; i++) {
-    const bx = 140 + i * 5, h = 9 + (i % 3) * 6;
+  for (let i = 0; i < 12; i++) {
+    const bx = 233 + i * 8, h = 13 + (i % 3) * 8;
     for (let k = 0; k < h; k++) {
       scr.px(bx + Math.round(Math.sin(k * 0.5 + i) * 2), scr.h - k, 2, 1, '#05070b');
     }
   }
   for (let i = 0; i < 5; i++) {
-    const bx = i * 6, h = 12 + (i % 3) * 7;
+    const bx = i * 10, h = 17 + (i % 3) * 10;
     for (let k = 0; k < h; k++) {
       scr.px(bx + Math.round(Math.sin(k * 0.42 + i) * 3), scr.h - k, 2, 1, '#05070b');
     }
@@ -629,8 +641,8 @@ function foreground(scr, w) {
   // and the dark closing in at the very corners
   for (let y = 0; y < scr.h; y += 2) {
     for (let x = 0; x < scr.w; x += 2) {
-      const dx = Math.max(0, Math.abs(x - 96) - 82) / 16;
-      const dy = Math.max(0, Math.abs(y - 62) - 56) / 12;
+      const dx = Math.max(0, Math.abs(x - 160) - 138) / 26;
+      const dy = Math.max(0, Math.abs(y - 90) - 79) / 17;
       const v = Math.min(1, Math.hypot(dx, dy));
       if (v > 0.15 && bayer(x >> 1, y >> 1) < v * 0.55) scr.px(x, y, 2, 2, PAL.VOID);
     }
@@ -655,51 +667,51 @@ function tongue(scr, x, base, h, wide, t, still, phase) {
 }
 
 function bonfire(scr, w, flick, still, t) {
-  const base = FLOOR_Y - 3;
-  const h = 4 + w * 22 + flick * (0.8 + w * 2);
+  const base = FLOOR_Y - 5;
+  const h = 6 + w * 32 + flick * (1.3 + w * 3.4);
 
   // the ring of stones it is built in — cold rock lit from inside, which is the
   // whole scheme in one object, and the one constant across all five fire states
   for (let i = -5; i <= 5; i++) {
-    const sx = FIRE_X + i * 4, sy = base + 2 + Math.abs(i) % 2;
-    scr.disc(sx, sy, 3, lit(PAL.BLOCK[3], 0.5 + (1 - Math.abs(i) / 6) * 0.5));
-    scr.px(sx - 1, sy - 3, 3, 1, mix(PAL.BLOCK[4], PAL.FLAME, 0.35 + w * 0.4));
+    const sx = FIRE_X + i * 7, sy = base + 3 + (Math.abs(i) % 2) * 2;
+    scr.disc(sx, sy, 5, lit(PAL.BLOCK[3], 0.5 + (1 - Math.abs(i) / 6) * 0.5));
+    scr.px(sx - 2, sy - 5, 5, 2, mix(PAL.BLOCK[4], PAL.FLAME, 0.35 + w * 0.4));
   }
   // logs, leaning in
-  for (const [lx, ly, lw, lh] of [[-9, -2, 9, 3], [4, -2, 9, 3], [-4, -5, 8, 3]]) {
+  for (const [lx, ly, lw, lh] of [[-15, -3, 15, 5], [7, -3, 15, 5], [-7, -8, 14, 5]]) {
     scr.rect(FIRE_X + lx, base + ly, lw, lh, mix(shade(PAL.WOOD, 0.8), PAL.COAL_HOT, 0.3 + w * 0.4), PAL.VOID);
   }
 
   // the glow, kept tight: the reach of the light is the scene's job, this is only
   // the bloom at the source
-  scr.softDisc(FIRE_X, base - Math.round(h * 0.35), Math.round(8 + w * 11 + flick),
-    mix(PAL.COAL_HOT, PAL.EMBER, 0.28 + w * 0.5), Math.round(7 + w * 9));
+  scr.softDisc(FIRE_X, base - Math.round(h * 0.35), Math.round(10 + w * 12 + flick),
+    mix(PAL.COAL_HOT, PAL.EMBER, 0.28 + w * 0.5), Math.round(9 + w * 10));
 
   for (let i = 0; i < 5; i++) {
-    const cx = FIRE_X - 6 + i * 3;
+    const cx = FIRE_X - 10 + i * 5;
     const hot = 0.3 + 0.7 * Math.abs(Math.sin(t * 1.7 + i));
-    scr.px(cx, base, 3, 2, mix(PAL.COAL, PAL.COAL_HOT, still ? 0.5 : hot));
+    scr.px(cx, base, 5, 3, mix(PAL.COAL, PAL.COAL_HOT, still ? 0.5 : hot));
   }
 
   // ONE FEATURE PER BAND, so the five steps of a day are five different fires
   if (w <= 0.02) return;                                  // banked: coals only
-  tongue(scr, FIRE_X, base, h, 5 + w * 7, t, still, 0);
-  if (w > 0.3) tongue(scr, FIRE_X + 5, base, h * 0.62, 2 + w * 3, t, still, 2.1);
-  if (w > 0.7) tongue(scr, FIRE_X - 6, base, h * 0.48, 2 + w * 2, t, still, 4.3);
+  tongue(scr, FIRE_X, base, h, 6 + w * 7, t, still, 0);
+  if (w > 0.3) tongue(scr, FIRE_X + 8, base, h * 0.62, 3 + w * 4, t, still, 2.1);
+  if (w > 0.7) tongue(scr, FIRE_X - 10, base, h * 0.48, 2 + w * 3, t, still, 4.3);
 
   // a full fire throws embers, and they are the one thing that only happens on a
   // day that filled it
   if (!still && w > 0.9) for (let i = 0; i < 3; i++) {
     const p = ((t * 0.5 + i * 0.34) % 1);
-    scr.px(FIRE_X - 4 + Math.sin(p * 7 + i * 2) * 9, base - h - p * 22, 1, 1,
+    scr.px(FIRE_X - 7 + Math.sin(p * 7 + i * 2) * 15, base - h - p * 31, 2, 2,
       p < 0.6 ? PAL.SPARK : PAL.EMBER);
   }
   // smoke, drifting up past the arch once there is a real fire to make it
   if (!still && w > 0.5) for (let i = 0; i < 3; i++) {
     const p = ((t * 0.3 + i * 0.33) % 1);
-    const sy = base - h - 3 - p * 34;
+    const sy = base - h - 5 - p * 48;
     if (sy < 4) continue;
-    scr.px(FIRE_X + Math.sin(p * 4 + i) * 7, sy, 2, 2, mix(PAL.SMOKE, PAL.VOID, p * 0.85));
+    scr.px(FIRE_X + Math.sin(p * 4 + i) * 12, sy, 3, 3, mix(PAL.SMOKE, PAL.VOID, p * 0.85));
   }
 }
 
@@ -710,8 +722,8 @@ function motes(scr, w, t, still) {
   if (still || w < 0.2) return;
   for (let i = 0; i < 6; i++) {
     const p = ((t * 0.11 + i * 0.17) % 1);
-    const x = Math.round(FIRE_X - 16 + i * 13 + Math.sin(t * 0.6 + i * 2) * 7);
-    const y = Math.round(FLOOR_Y - 6 - p * 54);
+    const x = Math.round(FIRE_X - 27 + i * 22 + Math.sin(t * 0.6 + i * 2) * 12);
+    const y = Math.round(FLOOR_Y - 10 - p * 76);
     if (lightAt(x, y, w) < 0.06) continue;
     scr.px(x, y, 1, 1, mix(PAL.EMBER, PAL.VOID, p * 0.8));
   }
@@ -721,12 +733,12 @@ function motes(scr, w, t, still) {
 // stops. The reference has tufts everywhere; here they are what keeps the
 // bottom edge from being a flat band of earth.
 function grass(scr, w, t, still) {
-  for (let i = 0; i < 22; i++) {
+  for (let i = 0; i < 38; i++) {
     const h = (i * 2654435761) >>> 0;
-    const x = 2 + (h % 188), y = FLOOR_Y + 1 + ((h >>> 8) % 24);
+    const x = 2 + (h % 316), y = FLOOR_Y + 2 + ((h >>> 8) % 42);
     const u = lightAt(x, y, w);
     if (u < 0.05) continue;
-    const tall = 3 + (h >>> 4) % 4;
+    const tall = 5 + (h >>> 4) % 6;
     const lean = still ? 0 : Math.sin(t * 1.3 + i) * 1.4;
     const col = lit(mix(PAL.GRASS, PAL.GRASS_LIT, ((h >>> 12) % 4) / 4), u * 0.8, PAL.EARTH_LIT);
     for (let k = 0; k < tall; k++) {
@@ -740,13 +752,13 @@ function grass(scr, w, t, still) {
 // elsewhere.
 function awayLantern(scr, t, still) {
   const p = still ? 0.5 : (t * 0.05) % 1;
-  const lx = 84 + p * 56;
-  const ly = 64 + (still ? 0 : Math.sin(t * 2.2) * 1.5);
-  scr.softDisc(Math.round(lx), Math.round(ly), 5, mix(PAL.EMBER, PAL.COLD[1], 0.4), 4);
-  scr.px(Math.round(lx), Math.round(ly), 2, 2, PAL.FLAME_CORE);
+  const lx = 140 + p * 93;
+  const ly = 90 + (still ? 0 : Math.sin(t * 2.2) * 2.5);
+  scr.softDisc(Math.round(lx), Math.round(ly), 8, mix(PAL.EMBER, PAL.COLD[1], 0.4), 7);
+  scr.px(Math.round(lx), Math.round(ly), 3, 3, PAL.FLAME_CORE);
   // and the empty place by the fire, so you can see who is missing
-  scr.px(PET_X - 5, FLOOR_Y - 3, 11, 3, mix(PAL.VOID, PAL.WOOD, 0.45));
-  scr.px(PET_X - 4, FLOOR_Y - 4, 9, 1, mix(PAL.WOOD, PAL.WOOD_LIT, 0.4));
+  scr.px(PET_X - 8, FLOOR_Y - 5, 18, 5, mix(PAL.VOID, PAL.WOOD, 0.45));
+  scr.px(PET_X - 7, FLOOR_Y - 7, 15, 2, mix(PAL.WOOD, PAL.WOOD_LIT, 0.4));
 }
 
 export { lightAt, PET_X, FIRE_X };

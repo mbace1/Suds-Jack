@@ -28,7 +28,7 @@ export function rampDither(ramp, u, x, y) {
 }
 
 export class PixelScreen {
-  constructor(parent, w = 192, h = 128) {
+  constructor(parent, w = 320, h = 180) {
     this.w = w; this.h = h;
     const c = document.createElement('canvas');
     c.width = w; c.height = h;

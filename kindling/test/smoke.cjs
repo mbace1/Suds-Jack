@@ -94,7 +94,11 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
     return { lit, w: c.width, h: c.height };
   });
   check(`the room is painted, not a blank canvas (${painted.lit} lit pixels)`, painted.lit > 500);
-  check('at the resolution the art is drawn for', painted.w === 192 && painted.h === 128);
+  // 320x180 is the grid the approved art is being authored to (art-src/
+  // ART_REQUESTS.md §2): exactly 2x the delivered reference thumbnails and the
+  // same 16:9, so a reference can be laid over a render at 2x and compared.
+  check(`at the resolution the art is drawn for (${painted.w}x${painted.h})`,
+    painted.w === 320 && painted.h === 180);
 
   // it must MOVE on its first screen — a still opening reads as a broken page
   const moved = await page.evaluate(async () => {

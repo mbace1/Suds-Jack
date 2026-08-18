@@ -39,14 +39,18 @@ import { PAL, mix, shade } from './palette.js?v=7';
 //   tender  arms and feet separate from the mass
 //   keeper  broader across, and carrying a flame in one hand
 //   elder   BRANCHED horns, a mantle, moss and lit cracks in the stone
+// Sized for the 320x180 grid: an adult stands ~26 px, which is the height the
+// global art bible's scale chart gives Ember (~1.6u) once a unit is fixed. The
+// numbers below are that chart, not a guess — Mossling will share them, Ashling
+// takes ~0.75 of them and the Moss Knight ~1.5.
 const BUILD = {
-  spark:  { r: 5, horn: 2, stretch: 0.78, feet: 3 },
-  wisp:   { r: 5, horn: 3, stretch: 1.24, feet: 3, scarf: true, tail: true },
-  tender: { r: 6, horn: 4, stretch: 0.94, feet: 4, scarf: true, tail: true, arms: true },
-  keeper: { r: 6, horn: 5, stretch: 0.90, feet: 5, scarf: true, tail: true, arms: true,
-            broad: 3, lamp: true },
-  elder:  { r: 7, horn: 7, stretch: 0.94, feet: 5, scarf: true, tail: true, arms: true,
-            broad: 2, lamp: true, mantle: true, branch: true, cracks: true },
+  spark:  { r: 7,  horn: 3,  stretch: 0.78, feet: 4 },
+  wisp:   { r: 7,  horn: 4,  stretch: 1.24, feet: 4, scarf: true, tail: true },
+  tender: { r: 8,  horn: 6,  stretch: 0.94, feet: 6, scarf: true, tail: true, arms: true },
+  keeper: { r: 9,  horn: 7,  stretch: 0.90, feet: 7, scarf: true, tail: true, arms: true,
+            broad: 4, lamp: true },
+  elder:  { r: 10, horn: 10, stretch: 0.94, feet: 7, scarf: true, tail: true, arms: true,
+            broad: 3, lamp: true, mantle: true, branch: true, cracks: true },
 };
 
 // a lit crescent down one side of a disc: the pass that keeps the creature from
@@ -93,7 +97,7 @@ function horn(scr, x, y, n, side, tone, lit) {
     // the base down to one at the tip.
     const hx = Math.round(x + side * Math.sin(k * 1.35) * (n * 0.62));
     const hy = Math.round(y - k * n * 1.05);
-    const w = Math.max(1, Math.round(3 - k * 2.2));
+    const w = Math.max(1, Math.round(4 - k * 3));
     scr.px(hx - (side < 0 ? w - 1 : 0), hy, w, 2, k < 0.45 ? tone : lit);
   }
 }
@@ -203,8 +207,8 @@ export function drawPet(scr, x, floorY, opts = {}) {
   if (b.arms) {
     for (const side of [-1, 1]) {
       const ax = bx + side * (bodyW + 1);
-      scr.px(ax - (side < 0 ? 1 : 0), by - 1, 2, 4, side < 0 ? bodyLit : body);
-      scr.px(ax - (side < 0 ? 1 : 0), by + 3, 2, 1, PAL.INK);
+      scr.px(ax - (side < 0 ? 2 : 0), by - 2, 3, 6, side < 0 ? bodyLit : body);
+      scr.px(ax - (side < 0 ? 2 : 0), by + 4, 3, 2, PAL.INK);
     }
   }
   // an elder wears the room: a mantle across the shoulders, three pixels deep
@@ -221,14 +225,14 @@ export function drawPet(scr, x, floorY, opts = {}) {
   // body. A band at the throat, then a flap down the front on the facing side.
   if (b.scarf) {
     const ny = by - bodyH + 1;
-    scr.px(bx - bodyW, ny, bodyW * 2 + 1, 2, scarf);
+    scr.px(bx - bodyW, ny, bodyW * 2 + 1, 3, scarf);
     scr.px(bx - bodyW, ny, Math.max(1, bodyW), 1, scarfLit);
     const sway = Math.round(lag * 1.6);
-    for (let i = 0; i < 4; i++) {
-      scr.px(bx + face * 2 + Math.round(sway * (i / 3)), ny + 2 + i,
-        3 - (i > 2 ? 1 : 0), 1, i % 2 ? scarf : scarfLit);
+    for (let i = 0; i < 6; i++) {
+      scr.px(bx + face * 3 + Math.round(sway * (i / 5)), ny + 3 + i,
+        5 - (i > 3 ? 2 : 0), 1, i % 2 ? scarf : scarfLit);
     }
-    scr.px(bx - face * (bodyW - 1), ny + 2, 2, 3, shade(scarf, 0.75));   // the back flap
+    scr.px(bx - face * (bodyW - 1), ny + 3, 3, 5, shade(scarf, 0.75));   // the back flap
   }
 
   // feet: tucked when it is sitting, and stepping when it is not. Round paws,
@@ -237,11 +241,11 @@ export function drawPet(scr, x, floorY, opts = {}) {
   const paw = mix(body, PAL.INK, 0.35);
   if (walking) {
     const step = Math.sin(t * 9) * 2.5;
-    scr.px(bx - gap + step, floorY - 2, 3, 2, paw);
-    scr.px(bx + gap - 2 - step, floorY - 2, 3, 2, paw);
+    scr.px(bx - gap + step, floorY - 3, 5, 3, paw);
+    scr.px(bx + gap - 3 - step, floorY - 3, 5, 3, paw);
   } else {
-    scr.px(bx - gap, floorY - 2, 3, 2, paw);
-    scr.px(bx + gap - 2, floorY - 2, 3, 2, paw);
+    scr.px(bx - gap, floorY - 3, 5, 3, paw);
+    scr.px(bx + gap - 3, floorY - 3, 5, 3, paw);
   }
 
   // ── head ── drawn before the horns so they sit on top of the crown
@@ -263,21 +267,21 @@ export function drawPet(scr, x, floorY, opts = {}) {
   // set wide: the sheet's single most recognisable feature after the horns.
   const closed = pose === 'doze' || (!still && blinking(t));
   const ey = hy - 1 - (pose === 'stretch' ? 1 : 0);
-  for (const dx of [-3, 1]) {
-    const ex = hx + face * dx - (face > 0 ? 1 : 0);
-    if (closed) { scr.px(ex, ey, 3, 1, PAL.INK); continue; }
-    scr.px(ex, ey - 1, 3, 3, PAL.EM_EYE);
-    scr.px(ex + (face > 0 ? 1 : 0), ey, 2, 2, PAL.EM_PUPIL);
+  for (const dx of [-4, 2]) {
+    const ex = hx + face * dx - (face > 0 ? 2 : 0);
+    if (closed) { scr.px(ex, ey, 5, 2, PAL.INK); continue; }
+    scr.px(ex, ey - 2, 5, 5, PAL.EM_EYE);
+    scr.px(ex + 1, ey - 1, 4, 4, PAL.EM_PUPIL);
     // the catch light is a reflection of the fire, so it stays on the fire side
     // of the eye no matter which way the head is turned
-    scr.px(ex, ey - 1, 1, 1, '#ffffff');
+    scr.px(ex, ey - 2, 2, 2, '#ffffff');
   }
   // the mouth, and two fangs standing up out of it
   if (!closed || pose !== 'doze') {
-    const mx = hx + face * 1, my = ey + 3;
-    scr.px(mx - 2, my, 4, 1, shade(body, 0.6));
-    scr.px(mx - 2, my - 1, 1, 1, PAL.EM_TOOTH);
-    scr.px(mx + 1, my - 1, 1, 1, PAL.EM_TOOTH);
+    const mx = hx + face * 1, my = ey + 5;
+    scr.px(mx - 3, my, 7, 2, shade(body, 0.6));
+    scr.px(mx - 3, my - 2, 2, 2, PAL.EM_TOOTH);
+    scr.px(mx + 2, my - 2, 2, 2, PAL.EM_TOOTH);
   }
 
   // ── what it is carrying ── a flame cupped in the near hand, which is the
@@ -285,8 +289,8 @@ export function drawPet(scr, x, floorY, opts = {}) {
   if (b.lamp) {
     const ly = by - 1, lx = bx - bodyW - 2;
     const flick = still ? 0.5 : 0.5 + Math.sin(t * 10.3) * 0.5;
-    scr.px(lx, ly, 2, 2, mix(PAL.EMBER, PAL.FLAME, flick));
-    scr.px(lx, ly - 1, 1, 1, PAL.FLAME_CORE);
+    scr.px(lx, ly, 4, 4, mix(PAL.EMBER, PAL.FLAME, flick));
+    scr.px(lx, ly - 2, 2, 2, PAL.FLAME_CORE);
   }
 
   if (pose === 'doze' && !still) {
