@@ -260,6 +260,22 @@ async function section(name, fn) {
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
+  await section('the aspect ratios are the model\'s, not ours', () => {
+    // nano banana rejects anything outside a fixed list, and it does so at the
+    // API — so a typo is a spec that looks fine in `status`, passes every other
+    // check here, and fails only once somebody is spending on a batch. `3:5`
+    // and `16:10` both got that far. The list is read off the 400 it returns.
+    const OK = new Set(['1:1', '1:4', '1:8', '2:3', '3:2', '3:4', '4:1', '4:3',
+      '4:5', '5:4', '8:1', '16:9', '9:16', '21:9']);
+    const bad = specs
+      .filter(s => s.kind === '2d' && s.aspect && !OK.has(s.aspect))
+      .map(s => `${s.id}:${s.aspect}`);
+    check(`every 2D aspect is one the model accepts${bad.length ? ` — ${bad}` : ''}`,
+      bad.length === 0);
+    check(`the default aspect is one too (${manifest.DEFAULTS.aspect})`,
+      OK.has(manifest.DEFAULTS.aspect));
+  });
+
   console.log(failures ? `\n${failures} FAILED` : `\nall asset pipeline checks passed`);
   process.exit(failures ? 1 : 0);
 })();

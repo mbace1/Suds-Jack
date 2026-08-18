@@ -1,5 +1,96 @@
 {
   "generated": {
+    "piritori/night-map": {
+      "file": "2d/piritori-night-map.058f90a7.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "058f90a7"
+    },
+    "piritori/arena-harbour": {
+      "file": "2d/piritori-arena-harbour.3df483e8.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "3df483e8"
+    },
+    "piritori/arena-court": {
+      "file": "2d/piritori-arena-court.ccf8580d.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "ccf8580d"
+    },
+    "piritori/arena-park": {
+      "file": "2d/piritori-arena-park.38ee569b.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "38ee569b"
+    },
+    "piritori/arena-yard": {
+      "file": "2d/piritori-arena-yard.c092c0be.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "c092c0be"
+    },
+    "piritori/cover-barrier": {
+      "file": "2d/piritori-cover-barrier.3c1aa449.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "3c1aa449"
+    },
+    "piritori/cover-rock": {
+      "file": "2d/piritori-cover-rock.e42c1dcf.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "e42c1dcf"
+    },
+    "piritori/cover-bin": {
+      "file": "2d/piritori-cover-bin.f68c94a9.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "f68c94a9"
+    },
+    "piritori/cover-crate": {
+      "file": "2d/piritori-cover-crate.8d38ef4b.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "8d38ef4b"
+    },
+    "piritori/cover-rack": {
+      "file": "2d/piritori-cover-rack.cd7f3f41.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "cd7f3f41"
+    },
+    "piritori/weapons-plate": {
+      "file": "2d/piritori-weapons-plate.d9ab7aeb.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "d9ab7aeb"
+    },
+    "piritori/pin-glyphs": {
+      "file": "2d/piritori-pin-glyphs.025800a3.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "025800a3"
+    },
+    "piritori/key-art": {
+      "file": "2d/piritori-key-art.9f6d30bf.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "9f6d30bf"
+    },
     "lab/orc": {
       "file": "2d/lab-orc.c019895c.png",
       "kind": "2d",

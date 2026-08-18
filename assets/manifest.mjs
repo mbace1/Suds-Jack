@@ -204,49 +204,68 @@ charge. Side-on three quarter view, centred, full body.`,
     game: 'piritori',
     use: 'reference',
     style: 'kallio',
-    aspect: '3:5',
+    aspect: '9:16',
     tags: ['map', 'flagship'],
-    prompt: `A printed transit and street map of the KALLIO district of
-Helsinki in 2003, on dark charcoal paper. Tall portrait — the district is a
-steep rectangle roughly 610 metres wide and 1010 metres tall, one metro stop
-end to end, and the drawing keeps that proportion.
+    // v2, after looking at v1. THE CODE OWNS THE COORDINATES — flow-core/city.js
+    // projects the ten stops from real WGS84 positions and hub-side rendering
+    // draws them, which is exactly what the owner's ruling means: "only map
+    // style is canon, the places need to follow actual map". So this plate is
+    // asked for the LOOK — paper, grain, ink weights, how a tram line differs
+    // from a street, how water meets the blocks — and its own geometry only has
+    // to be right enough to judge that by.
+    //
+    // Three things v1 got wrong and this forbids outright:
+    //   · TEXT. It labelled everything and misspelled most of it — "Kudes
+    //     linja", "HELSINGIN KAUPNGIN", "Helsinglntau". A diffusion model
+    //     cannot spell Finnish, and the game draws its own labels from
+    //     city.js anyway, so asking for lettering buys a liability.
+    //   · DUPLICATES. Vaasankatu, Hakaniemi and Karhupuisto each appeared
+    //     twice, in different places.
+    //   · A large green park through the middle, which is Töölönlahti's shape
+    //     and not this district's. Kallio is dense blocks on a ridge.
+    prompt: `A printed civic street map of a dense inner-city district of
+Helsinki, on dark charcoal paper. Tall portrait — the district is a steep
+rectangle roughly twice as tall as it is wide.
 
-THE GROUND, and it is real: Hameentie is the eastern arterial running the full
-height of the sheet, the heaviest line on it. Helsinginkatu cuts east-west and
-meets Hameentie at a bend — that junction is Kurvi. The numbered "linjat"
-streets fan south-west in parallel between Hakaniemi and the church.
-Siltasaarenkatu runs north from the Hakaniemi bridge and splits around a rock
-outcrop carrying a large church. Torkkelinmaki is a knot of curving 1920s
-streets, visibly different from the grid around it. A small triangular park
-sits west of centre. Water on two sides: an inlet along the west edge, and the
-harbour along the south-east.
+ABSOLUTELY NO TEXT ANYWHERE. No street names, no station names, no numbers, no
+legend, no title, no stamp, no lettering of any kind, in any language. Every
+label is added later by hand. A map with writing on it is a rejected map.
 
-TEN STOPS, each a small disc outlined in heavy ink with a tiny geometric glyph
-inside, labelled in municipal sans-serif, running roughly north to south:
-Vaasankatu and Sornainen at the top, Kurvi just below them, Vaasanaukio west
-of Kurvi, Harju far west, then Torkkelinmaki, Karhupuisto and Kallion kirkko
-across the middle, Kuudes linja below those, and Hakaniemi alone at the
-bottom beside open water.
+THE GROUND: one heavy arterial road runs the full height of the sheet down the
+eastern side. A second major road cuts east-west and meets it at a distinct
+bend two thirds of the way up — the busiest junction on the sheet. In the
+south-west, six or seven numbered parallel streets fan diagonally toward the
+water. A spine road runs north from a bridge at the very bottom and splits
+around a rocky outcrop carrying one large church, which sits HIGH ON THE
+WESTERN RIDGE. East of centre, one hill of curving streets makes a soft oval
+knot that is visibly different from the grid around it. ONE small triangular
+park, no bigger than a couple of blocks. The rest is DENSE CITY BLOCKS — no
+large green space anywhere, no lake, no forest.
 
-THE TRANSIT, drawn as printed lines over the streets: one heavy straight
-UNDERGROUND metro line joining only Hakaniemi and Sornainen — visibly not a
-street. Three tram lines that FOLLOW REAL STREETS: one along Hameentie from
-Hakaniemi through Kurvi to Sornainen; one climbing from Hakaniemi through
-Kuudes linja, the church, the park and Vaasanaukio to Kurvi; one short line
-along Helsinginkatu from Harju through Vaasanaukio to Kurvi. Faint dashed
-lines mark corridors nobody has built on.
+WATER on two sides only: a narrow inlet along the west edge, and a harbour
+along the bottom and south-east corner. The land reads as a high block between
+two waters.
+
+EXACTLY TEN STOPS, each a small disc outlined in heavy ink with a tiny
+geometric glyph inside. Ten, no more — none repeated, none paired, spread over
+the whole sheet rather than clustered.
+
+THE TRANSIT, printed over the streets: one heavy straight UNDERGROUND line
+joining just two of the stops near the top-right, drawn so it is obviously not
+a street. Three lighter tram lines that FOLLOW the roads exactly and never cut
+across a block. Faint dashed lines for corridors nobody has built on.
 
 Palette: charcoal paper #0f1216, bone ink #e2dccd, dim grey #8c8778, cold
-water #1b2c3a, amber metro #b06a2a, dull green tram #5d6b5e, slate car
-#46525e. Dark, quiet, used. A rubber stamp and a few hand annotations in one
-corner.`,
+water #1b2c3a, amber for the underground line #b06a2a, dull green for the
+trams #5d6b5e, slate for road traffic #46525e. Dark, quiet, used, and
+completely wordless.`,
   },
   {
     id: 'tokomove/day-map',
     game: 'toko-move',
     use: 'reference',
     style: 'kallio',
-    aspect: '3:5',
+    aspect: '9:16',
     from: 'piritori/night-map',
     tags: ['map'],
     // `from` feeds the night map back in as a reference image. The day map is
@@ -259,7 +278,8 @@ identical street structure, identical ten stops in identical positions,
 identical tram and metro line paths, identical proportions — re-printed on
 warm off-white day paper with clean dark type.
 
-Nothing moves. Only the weather changes: mint, sky-blue, coral and amber inks
+Nothing moves, and there is still ABSOLUTELY NO TEXT anywhere — no names, no
+numbers, no legend, no title. Only the weather changes: mint, sky-blue, coral and amber inks
 on paper #f4f1e8 with ink #20272e, pale blue water #bcd8e6, orange metro
 #e07b2f, sage tram #86a98c, grey car #9aa4ac. A soft pale stain spreading
 behind the busiest line, like ink bleeding into paper. Optimistic, legible,
@@ -272,13 +292,26 @@ busy — the same city, opposite weather.`,
     style: 'kallio',
     aspect: '16:9',
     tags: ['arena', 'fight'],
-    prompt: `A backdrop for a night street confrontation: the wholesale end of
-a Helsinki harbour. Warehouses in flat silhouette, two gantry cranes, the side
-of a moored ship, tram rails set into wet cobbles catching one sodium light.
-The horizon sits in the UPPER THIRD of the frame. The entire lower two thirds
-is EMPTY OPEN GROUND — flat wet setts with nothing standing on it and nothing
-in the middle of the frame. A stage seen slightly from above, looking down into
-an empty yard. One warm light source only. No people, no foreground clutter.`,
+    // v2, against the owner's reference (2026-08-18). v1 came back as a flat
+    // daylight ELEVATION, which cannot carry an isometric 3x3 grid — the board
+    // needs a ground plane you can stand a formation on. The framing block
+    // below is quoted identically in all four arenas so they cannot drift.
+    prompt: `A fight arena: the wholesale end of a Helsinki harbour at night.
+
+ISOMETRIC AERIAL VIEW, looking down at about 40 degrees — a
+game board, not a photograph. The GROUND PLANE is a clear open quadrilateral
+filling the lower two thirds of the frame, completely EMPTY: no people, no
+vehicles, no crates, nothing standing on it. Buildings and scenery enclose it
+on three sides and are CROPPED by the left and right edges of the frame. The
+surround outside the scene falls off to PURE BLACK.
+
+NIGHT. The only light is warm and practical — lit windows, one lamp, a doorway
+— pooling on the ground and leaving the corners black. Muted sepia, brown,
+cold grey and black. Hard ink line over flat fills with heavy grain.
+
+THE SCENE: warehouse walls enclosing a loading yard on three sides, a gantry
+crane cropped by one edge, the black side of a moored ship behind, tram rails
+set into wet cobbles. The yard itself is empty wet stone.`,
   },
   {
     id: 'piritori/arena-court',
@@ -287,12 +320,24 @@ an empty yard. One warm light source only. No people, no foreground clutter.`,
     style: 'kallio',
     aspect: '16:9',
     tags: ['arena', 'fight'],
-    prompt: `A backdrop for a night street confrontation: a back courtyard off
-a Helsinki tenement street. Four storeys of brick on three sides, one lit
-doorway under an arch, a fire escape, wet gravel. The buildings occupy the
-UPPER THIRD only; the lower two thirds is empty gravel with nothing standing
-on it. Enclosed, watched, nowhere to run. Two lit windows, everything else
-dark. No people, no foreground clutter.`,
+    prompt: `A fight arena: the back courtyard of a Helsinki tenement at night.
+
+ISOMETRIC AERIAL VIEW, looking down at about 40 degrees — a
+game board, not a photograph. The GROUND PLANE is a clear open quadrilateral
+filling the lower two thirds of the frame, completely EMPTY: no people, no
+vehicles, no crates, nothing standing on it. Buildings and scenery enclose it
+on three sides and are CROPPED by the left and right edges of the frame. The
+surround outside the scene falls off to PURE BLACK.
+
+NIGHT. The only light is warm and practical — lit windows, one lamp, a doorway
+— pooling on the ground and leaving the corners black. Muted sepia, brown,
+cold grey and black. Hard ink line over flat fills with heavy grain.
+
+THE SCENE: three wings of a four-storey plastered apartment block enclosing the
+yard, rows of tall windows with a scattering of them lit warm yellow, one lit
+doorway with a lamp over it, a dark arched passage through to the street, an
+iron fire escape. A low railing and a cobbled border run around the empty
+gravel yard. Enclosed, overlooked, nowhere to run.`,
   },
   {
     id: 'piritori/arena-park',
@@ -301,11 +346,23 @@ dark. No people, no foreground clutter.`,
     style: 'kallio',
     aspect: '16:9',
     tags: ['arena', 'fight'],
-    prompt: `A backdrop for a night confrontation in a small city park square.
-Iron railings, bare autumn trees, a bandstand cropped by the left edge, and a
-low stone plinth carrying a BEAR STATUE cropped by the right edge — both in the
-UPPER THIRD. The lower two thirds is empty frosted grass and path with nothing
-standing on it. Municipal, cold, ordinary. One park lamp. No people.`,
+    prompt: `A fight arena: a small city park square at night.
+
+ISOMETRIC AERIAL VIEW, looking down at about 40 degrees — a
+game board, not a photograph. The GROUND PLANE is a clear open quadrilateral
+filling the lower two thirds of the frame, completely EMPTY: no people, no
+vehicles, no crates, nothing standing on it. Buildings and scenery enclose it
+on three sides and are CROPPED by the left and right edges of the frame. The
+surround outside the scene falls off to PURE BLACK.
+
+NIGHT. The only light is warm and practical — lit windows, one lamp, a doorway
+— pooling on the ground and leaving the corners black. Muted sepia, brown,
+cold grey and black. Hard ink line over flat fills with heavy grain.
+
+THE SCENE: iron railings and bare autumn trees enclosing the square, a wooden
+bandstand cropped by one edge, and a low stone plinth carrying a BEAR STATUE
+cropped by the other. One park lamp throws the only pool of light. The ground
+is empty frosted grass and gravel path. Municipal, cold, ordinary.`,
   },
   {
     id: 'piritori/arena-yard',
@@ -314,11 +371,23 @@ standing on it. Municipal, cold, ordinary. One park lamp. No people.`,
     style: 'kallio',
     aspect: '16:9',
     tags: ['arena', 'fight'],
-    prompt: `A backdrop for a night confrontation in a residential inner
-courtyard. A carpet-beating rack, a bicycle shed, rubbish bins against a wall,
-lit kitchen windows above. Buildings in the UPPER THIRD; the lower two thirds
-is bare gravel with nothing on it. Domestic, close, embarrassing to fight in.
-No people.`,
+    prompt: `A fight arena: a residential inner courtyard at night.
+
+ISOMETRIC AERIAL VIEW, looking down at about 40 degrees — a
+game board, not a photograph. The GROUND PLANE is a clear open quadrilateral
+filling the lower two thirds of the frame, completely EMPTY: no people, no
+vehicles, no crates, nothing standing on it. Buildings and scenery enclose it
+on three sides and are CROPPED by the left and right edges of the frame. The
+surround outside the scene falls off to PURE BLACK.
+
+NIGHT. The only light is warm and practical — lit windows, one lamp, a doorway
+— pooling on the ground and leaving the corners black. Muted sepia, brown,
+cold grey and black. Hard ink line over flat fills with heavy grain.
+
+THE SCENE: lower wooden and brick outbuildings enclosing the yard — a bicycle
+shed, a carpet-beating rack, rubbish bins against a wall — with the backs of
+apartment blocks rising behind, a few kitchen windows lit. The yard is bare
+gravel. Domestic, close, embarrassing to fight in.`,
   },
   {
     id: 'piritori/cover-barrier',
@@ -426,7 +495,7 @@ simple, high contrast, no detail that disappears at that size.`,
     game: 'piritori',
     use: 'reference',
     style: 'kallio',
-    aspect: '16:10',
+    aspect: '16:9',
     tags: ['poster'],
     prompt: `A poster. A printed night transit diagram of a Helsinki district
 fills the sheet, running diagonally from bottom-left to top-right. One magenta
@@ -603,7 +672,12 @@ cropped. Plain flat mid-grey background. Sharp, clean, centred.`,
     game: 'hyperdagger',
     use: 'texture',
     style: 'dagger',
-    aspect: '2:1',
+    // An equirectangular panorama wants 2:1 and nano banana does not offer it —
+    // the closest it has is 21:9 (2.33), which over-widens, or 16:9 (1.78),
+    // which under-widens by less. 16:9, and the seam is what matters here
+    // rather than the exact ratio: a sky sphere resamples anyway, and a
+    // panorama that does not tile is useless at any aspect.
+    aspect: '16:9',
     tags: ['skybox', 'equirect'],
     // The live sky is a BackSide sphere: greyscale band shimmer over black
     // with one dark-red ember at the horizon. This is that, done properly.
