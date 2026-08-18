@@ -4,6 +4,7 @@
  *
  *   node kindling/tools/cut.mjs key   <in> <out.png>
  *   node kindling/tools/cut.mjs fit   <in> <out.png> <W>x<H> [--palette P] [--no-quantise]
+ *   node kindling/tools/cut.mjs anchors <in> [out.png] [--as WxH] [--tol N]
  *   node kindling/tools/cut.mjs slice <in> <outDir> <cell> [name,name,...]
  *   node kindling/tools/cut.mjs check <in> [--cell N] [--colours N] [--illustration]
  *
@@ -202,6 +203,70 @@ function inspect(img,cell){
            roundTrip: +(100*diff/(c.width*c.height)).toFixed(1), cells };
 }
 
+// ── anchors ──
+// Registration dots: a pure colour that appears nowhere in the art, marking a
+// point something else has to line up with. Same trick as the magenta key, one
+// level down — cyan is the primary point, orange the secondary, and BOTH are
+// read off and then erased, because a dot that ships is noise on a silhouette
+// that is doing all the work.
+function findAnchors(img,targets,tol){
+  const [c,g]=ctxOf(img.width,img.height);
+  g.drawImage(img,0,0);
+  const im=g.getImageData(0,0,c.width,c.height), d=im.data, W=c.width, H=c.height;
+  const out={};
+  const claimed=new Uint8Array(W*H);
+  for(const key of Object.keys(targets)){
+    const T=targets[key];
+    const mask=new Uint8Array(W*H);
+    for(let i=0,p=0;i<d.length;i+=4,p++){
+      if(d[i+3]<128)continue;
+      const dr=d[i]-T[0],dg=d[i+1]-T[1],db=d[i+2]-T[2];
+      if(dr*dr+dg*dg+db*db<=tol*tol){mask[p]=1;claimed[p]=1;}
+    }
+    // connected components, so three knee/elbow/shoulder dots of one colour
+    // come back as three points rather than one centroid between them
+    const seen=new Uint8Array(W*H), pts=[];
+    for(let p=0;p<mask.length;p++){
+      if(!mask[p]||seen[p])continue;
+      let sx=0,sy=0,n=0; const st=[p]; seen[p]=1;
+      while(st.length){
+        const q=st.pop(), qx=q%W, qy=(q/W)|0;
+        sx+=qx; sy+=qy; n++;
+        for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+          const nx=qx+dx, ny=qy+dy;
+          if(nx<0||ny<0||nx>=W||ny>=H)continue;
+          const r=ny*W+nx;
+          if(mask[r]&&!seen[r]){seen[r]=1;st.push(r);}
+        }
+      }
+      if(n>=4)pts.push({x:+(sx/n).toFixed(1),y:+(sy/n).toFixed(1),px:n});
+    }
+    pts.sort((a,b)=>a.y-b.y||a.x-b.x);
+    out[key]=pts;
+  }
+  // erase: every claimed pixel takes the nearest unclaimed opaque colour, so
+  // the dot leaves no hole and no halo behind it
+  for(let p=0;p<claimed.length;p++){
+    if(!claimed[p])continue;
+    const x=p%W, y=(p/W)|0;
+    let got=null;
+    for(let r=1;r<=10&&!got;r++){
+      for(let dy=-r;dy<=r&&!got;dy++)for(let dx=-r;dx<=r&&!got;dx++){
+        if(Math.abs(dx)!==r&&Math.abs(dy)!==r)continue;
+        const nx=x+dx, ny=y+dy;
+        if(nx<0||ny<0||nx>=W||ny>=H)continue;
+        const q=ny*W+nx;
+        if(claimed[q]||d[q*4+3]<128)continue;
+        got=[d[q*4],d[q*4+1],d[q*4+2],d[q*4+3]];
+      }
+    }
+    if(got){d[p*4]=got[0];d[p*4+1]=got[1];d[p*4+2]=got[2];d[p*4+3]=got[3];}
+    else {d[p*4+3]=0;}
+  }
+  g.putImageData(im,0,0);
+  return { points:out, w:W, h:H, url:c.toDataURL('image/png') };
+}
+
 // cut a grid sheet into one canvas per cell, skipping empty ones
 function sliceImage(img,cell){
   const across=Math.floor(img.width/cell), down=Math.floor(img.height/cell);
@@ -225,7 +290,7 @@ const [cmd, ...rest] = process.argv.slice(2);
 const flagValues = new Set();
 for (let i = 0; i < rest.length; i++) {
   if (rest[i].startsWith('--') && rest[i + 1] && !rest[i + 1].startsWith('--')
-      && ['--palette', '--cell', '--colours'].includes(rest[i])) flagValues.add(rest[i + 1]);
+      && ['--palette', '--cell', '--colours', '--as', '--tol'].includes(rest[i])) flagValues.add(rest[i + 1]);
 }
 const flag = name => rest.includes(name);
 const opt = name => { const i = rest.indexOf(name); return i >= 0 ? rest[i + 1] : undefined; };
@@ -255,6 +320,29 @@ if (cmd === 'key') {
   console.log(`→ ${out}  ${W}x${H}  `
     + (pal ? `snapped to ${pal.length} palette colours  ` : 'colours kept as generated  ')
     + `${(await write(out, dataUrl) / 1024).toFixed(1)} KB`);
+
+} else if (cmd === 'anchors') {
+  const [src, out] = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
+  const scale = opt('--as');           // report coordinates as if fitted to WxH
+  const tol = Number(opt('--tol') ?? 90);
+  const url = await toUrl(src);
+  const r = await withCanvas(async pg => {
+    await pg.addScriptTag({ content: LIB });
+    return pg.evaluate(async ({ u, tol }) => findAnchors(await load(u),
+      { primary: [0, 255, 255], secondary: [255, 106, 0] }, tol), { u: url, tol });
+  });
+  const [SW, SH] = scale ? scale.split('x').map(Number) : [r.w, r.h];
+  const fmt = p => `${Math.round(p.x * SW / r.w)},${Math.round(p.y * SH / r.h)}`;
+  for (const key of Object.keys(r.points)) {
+    const pts = r.points[key];
+    console.log(`  ${key.padEnd(9)} ${pts.length ? pts.map(fmt).join('  ') : '— none found'}`
+      + (scale && pts.length ? `   (as ${scale})` : ''));
+  }
+  if (!Object.values(r.points).some(p => p.length)) {
+    console.log('  ! no anchor dots found — is the sheet keyed, and are the dots'
+      + ' pure cyan #00FFFF / orange #FF6A00? raise --tol if the generator drifted.');
+  }
+  if (out) console.log(`→ ${out}  dots erased  ${(await write(out, r.url) / 1024).toFixed(1)} KB`);
 
 } else if (cmd === 'slice') {
   const [src, dir, cellArg, namesArg] = rest;
@@ -320,6 +408,8 @@ if (cmd === 'key') {
   fit   <in> <out.png> <W>x<H>            down to the native grid, snapped to the palette
           --palette <file.js|.json>       snap to another project's palette
           --no-quantise                   resize + binary alpha only (illustration)
+  anchors <in> [out.png] [--as WxH]      read the cyan/orange registration dots,
+          [--tol N]                       print their coordinates and erase them
   slice <in> <outDir> <cell> [names]      grid sheet -> one PNG per non-empty cell
   check <in|dir...> [--cell N]            is it actually 1:1 pixel art?
           --colours N                     raise the colour ceiling (default 64)
