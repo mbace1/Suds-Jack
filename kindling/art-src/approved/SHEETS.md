@@ -1,18 +1,35 @@
 # The approved sheets, read out
 
-`README.md` beside this file is the handoff index from the art pass. It names a
-`BETTERMENT_ACCEPTED_ART_REPO_PACK.zip` — **that zip is not in the repository**,
-on this branch or any other. The sheets were delivered to the session as images
-and reviewed there.
+`README.md` beside this file is the handoff index from the art pass, and the
+sheets themselves are now in this folder — they arrived in **PR #281**
+(`agent/betterment-approved-art-library`) after this file was first written.
 
-This file is the archive that survives that: **what the sheets actually show**,
-written down at the level of detail a renderer needs. It exists because a
-reference nobody can open is a reference nobody can check a change against, and
-because this game draws every pixel in code — there is nothing to import even
-when the zip does arrive.
+**Read this before treating them as the reference: they are THUMBNAILS.** Every
+file is downscaled by roughly 10× in each dimension against the art that was
+actually made:
 
-If the pack lands later, the files replace nothing here: this stays as the read,
-and the images become the check on it.
+| what | delivered at | as reviewed |
+|---|---|---|
+| `references/*` — the five scene concepts | **160 × 90** | ~1700 × 950 |
+| `art-bible/*` — the five character sheets | 256 × 362 | ~1050 × 1500 |
+| `environments/*`, `layer-breakdowns/*`, `ui/*` | 160–256 wide | ~1120–1700 |
+
+That is about **1% of the original pixels**. What survives is composition,
+staging, palette and value structure — which is most of what this renderer needs
+— but not detail: at 160×90 the sword by the fire is four pixels and the stone
+courses are gone entirely. So the files are the check on *layout and colour*, and
+the read-out below is the check on *everything smaller than that*, because it was
+written from the full-size images.
+
+There is a **second delivery, PR #282** (`agent/betterment-approved-art-handoff`),
+which ships the same pack as base64 chunks plus a `rebuild_pack.py`. **It does not
+rebuild.** The script runs and produces 107,789 bytes against a manifest claiming
+116,809, and the result is not a readable archive ("Bad magic number for central
+directory"); the SHA does not match either. The chunks are truncated. Use #281.
+
+One accident worth knowing: a scene reference at **160×90 is very close to this
+game's own canvas**, so those five files can be sampled almost pixel-for-pixel for
+palette and layer masses rather than merely looked at.
 
 ---
 
