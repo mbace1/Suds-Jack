@@ -7,7 +7,7 @@
 // with which game it came from, and goes out through hub/feedback.js.
 
 import { GAMES, SKETCHES } from './games.js?v=40';
-import { drawMarquee } from './art.js?v=17';
+import { drawMarquee } from './art.js?v=18';
 import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=4';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';

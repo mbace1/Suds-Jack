@@ -1,5 +1,144 @@
 # Kindling — versions
 
+## v7 — 2026-08-17
+
+**The art arrived, and the game is dressed to it.**
+
+Thirteen approved sheets came in from the art pass: five scene concepts, four
+environment libraries, four character bibles and a full UI kit. They are **not in
+the repository** — `agent/betterment-approved-art-handoff` ships a README naming
+a `BETTERMENT_ACCEPTED_ART_REPO_PACK.zip` that never landed, and there is no
+binary art on any branch. So the archive is `art-src/approved/SHEETS.md`: the
+handoff index, plus the sheets **read out** at the level of detail a renderer
+needs. This project draws every pixel in code, so there was never anything to
+import — what was missing was a target, and now there is a written one that a
+change can be checked against.
+
+**Two of the Art Guide's rules were guesses and the sheets settle them the other
+way.** "No surface texture below 3px" was right about lines cut into a mass and
+wrong as stated — the reference is textured everywhere, so it becomes *texture is
+a value step, never a line*. And the companion was invented: canon describes one
+mass plus one head and says nothing about horns, a scarf or fangs.
+
+**EMBER.** The companion is not the moss-green animal this game has been drawing.
+The sheet is specific: a body of dark porous stone nearly the colour of the
+night, one big head on a small body, large white eyes set wide, two small fangs,
+two pale tan horns curving up and back, a dark maroon scarf, ember glow at the
+cracks and the tail tip. The consequence of the first clause is the whole build —
+a dark body cannot carry its own silhouette, so the sheet puts that job on the
+horns and the scarf, and they are drawn in the two lightest colours the creature
+owns. Growth is the sheet's own age ladder ("horn size, posture, accessories, and
+surface detail", explicitly not body type): horn length runs 2 → 3 → 4 → 5 → 7 px
+across the five stages, which makes the 3-pixel rule true by construction rather
+than by luck. Measured silhouette change per step: 62 / 73 / 62 / 112 px.
+
+**THE CAMP.** It was never a room, and it is not a clearing with furniture in it —
+every reference scene stages the same picture left to right, and now so does this
+one: a tree cropped by the top-left corner with a lit lantern and a torn banner on
+it, one whole arch and one broken behind it, the bonfire in its ring of stones left
+of centre, the companion on a rug, the gear on the ground (sword, shield, helmet),
+crumbled wall stacks carrying everything ever brought home, a gate where the wall
+ends, and a castle on the horizon with a few windows lit. Mushrooms and small
+flowers on the lit ground — the only saturated colour down there that is not the
+fire.
+
+**Animation, because the sheets ask for it by name.** Every character sheet ships
+IDLE 8f / WALK 6f / RUN 6f / ATTACK 8f and five shared principles, and the third
+one — *follow-through: cloth and accessories lag the body* — was the thing this
+game had none of. Everything moved together, so the creature read as one rigid
+piece. Now the scarf and the tail are driven off the breathing clock run two
+frames late, the tail-tip ember flickers on its own beat, and the camp has a live
+layer over the cached blit: the hanging lantern flickers, the banner sways as a
+travelling wave biggest at the hem, six ember motes drift, the grass leans, and
+three castle windows breathe on uneven clocks. None of it costs a repaint, and
+all of it stops under `prefers-reduced-motion`.
+
+**The UI kit** is leather and felt, not glass: a dashed stitch line inset inside
+every panel, a hairline felt grain, stitched icon tiles, progress as beads on a
+string rather than a bar, and disabled buttons desaturated rather than removed.
+All of it additive — the stitch is a pseudo-element and the grain is a gradient,
+so the mobile layer still owns none of the state machine.
+
+**The arcade cabinet was advertising a room the game does not have.** The `hearth`
+marquee still drew the retired hut — a mantel, a stone hearth, a window. Redrawn
+as the camp, to the rack's own cover rules: sky as flat bars with hard seams, the
+arch as a framing device *lighter* than the sky behind it, and Ember cropped by
+the bottom edge with the two-colour rim (ember off the fire, cold moonlight off
+the other side). Its first fire was one smooth cone — a traffic cone — so it is
+three tongues now, narrow and tall, because a 12px-wide flame on a 128px canvas
+is fatter than it is hot.
+
+### Four things found by looking rather than by testing
+
+Every one of these passed every gate and was only visible in a render:
+
+- **The arch had a black hole through it.** The distance was painted only where
+  the ruin was not, so the arch openings showed raw `VOID`. Anything with a hole
+  in it needs something behind the hole; the far plane now paints across the full
+  width first.
+- **The masonry hashed per pixel, which is noise, not texture.** A wall of noise
+  reads as poured concrete however carefully the ramp is chosen. Blocks are now
+  quantised 4×3 with courses offset by half a block, and the joint is the block's
+  own last row and column dropped two steps down the ramp — the mortar is the
+  absence between stones, never a line drawn on top of them.
+- **The tree was a green cliff.** Canopy discs hung to y=54 and buried the trunk.
+  A tree is a trunk you can see with leaves above it; the moment the leaves reach
+  the ground it is a hedge.
+- **Moss ran round the whole arc**, which turned the arch into a hoop of vine.
+  Moss is a horizontal-surface plant and the sides of an arch are not horizontal.
+
+Plus two that were straightforwardly wrong: the castle's tall tower was painted in
+the light stone tone and read as a bright column hanging under the moon (a far
+object is a shape cut out of the sky — one value, only its moonward edge lifted),
+and the gate's bars were painted in warm rust, making a white picket fence out of
+the brightest thing in the right half of a picture whose brightest thing is
+supposed to be the fire.
+
+### And two bugs the gates did catch
+
+- **`.bm-nav { position: relative }` silently un-fixed the bottom navigation.**
+  The nav is `position: fixed`; a later rule of equal specificity dropped it into
+  the document flow at the end of the page, where it landed on top of the goal
+  list and made the Add button untappable. A fixed element is already a
+  containing block for its own pseudo-elements, so the rule bought nothing.
+- **The band-brightness ruler was measuring the wrong thing, for the second time
+  after an art pass.** Counting pixels above a sum-of-channels threshold saturates
+  once the scene has a blue sky, moonlit stone and warm earth in it: a whole day
+  moved the count from 18474 to 19056, and the first step went *down*. The ruler
+  is firelight — red leading blue — and the bands now read 1243 → 2322 → 3261 →
+  4137 → 5089 → 5997. Both times the page was right and the ruler was wrong.
+
+Gates: smoke 66, offline 15, betterment-ux 20, hub green.
+
+## v6 — 2026-08-17
+
+**The Art Guide, and the growth silhouettes it asks for.**
+
+`BETTERMENT_GDD.md` §17 is an *art-guide handoff* — a list of eleven things the
+guide must define — and §18.9 names the guide itself as the next design artifact.
+There are no art files anywhere in the PR stack or the repo to work from (5 js,
+3 css, 3 cjs, 1 md, 1 html across #272–#275; the only PNGs in `kindling/` are the
+PWA icons this project generates from its own palette). So the style was cropped
+from the text.
+
+- **`ART_GUIDE.md`** — the artifact §17 asks for, written to its own eleven
+  bullets, with every rule traced to the document it comes from. It invents
+  nothing; what it adds is arithmetic, because "growth silhouettes" and
+  "inherited trait zones" are not numbers and a renderer needs numbers.
+- **The 3-pixel rule.** A trait or a stage that does not change the silhouette by
+  at least three pixels does not exist at 192×128, where the companion is about
+  24px tall. This is the rule #275's lineage work breaks: sixteen gene
+  combinations render as sixteen near-identical creatures, because only the ember
+  colour changes the fur rather than adding an ornament of one or two pixels.
+- **Growth silhouettes** (§5, cropped from GDD §17 and DESIGN G3, "shape is more
+  memorable than +20% size"). Five stages that differ by SHAPE: a spark is a tiny
+  ember body with a flame tip, a wisp lengthens, a tender grows arms and puts its
+  feet apart, a keeper broadens and carries a lamp, an elder wears a mantle and a
+  branching crown. The body is an ellipse now rather than a disc, because a disc
+  can only be bigger and bigger is the one thing canon says a stage must not be.
+- **The gate measures it** rather than trusting it: consecutive stages differ by
+  123 / 85 / 64 / 144 pixels of silhouette, against a floor of 3.
+
 ## v5 — 2026-08-16
 
 **The pivot to the ruin — first draft.** The cozy hut is retired (owner direction);

@@ -71,6 +71,64 @@ export const PAL = {
   BANNER:    '#6e2c3a',
   BANNER_DIM:'#3f1c26',
 
+  // ── THE APPROVED SHEETS (art pass, 2026-08-17) ────────────────────
+  // Read off the reference in `art-src/approved/` — see SHEETS.md for what each
+  // sheet shows. Everything below is measured from the art rather than invented,
+  // which is the whole difference between this block and the one above it.
+  //
+  // The night is genuinely BLUE. The first cut of the ruin was painted so close
+  // to black that the picture had no cold half to warm anything against — the
+  // reference sky is a deep navy you can name, and the value contrast between it
+  // and the stone is where the depth comes from.
+  SKY_HIGH:  '#101a30',
+  SKY_LOW:   '#243357',
+  SKY_WARM:  '#5e3f3a',    // the ember band low behind the castle
+  CLOUD:     '#2a3a5c',
+
+  // stone, from deep shadow to a block catching the moon. Five steps, because a
+  // wall reads by blocks being different VALUES of the same colour — a mortar
+  // line drawn as a stroke is the trap SHEETS.md §5 records.
+  BLOCK:     ['#1a222e', '#26303e', '#333f50', '#455263', '#586777'],
+  MOSS_TOP:  '#3f5936',    // every top edge in the reference carries moss
+  MOSS_LIT:  '#587f42',
+
+  BARK:      '#33251b',
+  BARK_LIT:  '#5a3f26',
+  LEAF_DARK: '#16241a',
+  LEAF:      '#2b4025',
+
+  EARTH:     '#332a20',
+  EARTH_LIT: '#6b5330',
+  GRASS:     '#26361f',
+  GRASS_LIT: '#425c2c',
+
+  CASTLE:    '#232f4a',
+  CASTLE_LIT:'#33415f',
+
+  BANNER_GOLD:'#c08b3e',
+  IRON:      '#2b2d33',
+  IRON_LIT:  '#6f7a88',
+  BLADE:     '#9aa6b4',
+  SHIELD:    '#2c3f66',
+  POTION:    '#4aa6c8',
+  CAP:       '#a83c34',    // mushroom caps, and the rug
+  BLOOM:     '#7d6bb0',
+
+  // ── EMBER, the companion (ember_character_art_bible_sheet) ────────
+  // Porous dark stone, not fur. The body is nearly the colour of the night, so
+  // it is the HORNS and the SCARF that carry the silhouette — which is exactly
+  // what the sheet's call-outs say they are for.
+  EM_BODY:   ['#171d2b', '#232b3d', '#2f3950', '#3f4b66'],
+  EM_LIT:    '#4d5c7c',
+  EM_HORN:   '#c7b189',
+  EM_HORN_LIT:'#e5d5b1',
+  EM_SCARF:  '#7e2a2a',
+  EM_SCARF_LIT:'#a8402f',
+  EM_SCARF_DK:'#4a1a1c',
+  EM_EYE:    '#e8eef4',
+  EM_PUPIL:  '#12141c',
+  EM_TOOTH:  '#f2ecda',
+
   // ink and paper: the 1px outline that keeps a pixel shape defined, and the
   // colour text is set in
   INK:       '#080506',

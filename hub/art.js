@@ -738,106 +738,179 @@ export const ART = {
   // never a gradient) and the light on the floor is four stepped tones fanning
   // out of the hearth — a wedge, because a full-width band reads as furniture.
   hearth(g, a) {
-    const wall = ['#07060a', '#0a0807', '#0f0b08', '#150e09', '#1d130a', '#26170c'];
-    wall.forEach((c, i) => g.p(0, i * 7, W, 7, c));
-    g.p(0, 42, W, 4, '#2c1b0e');
-    g.p(0, 46, W, H - 46, '#120c06');                   // the floor, unlit
-
-    // the window: the one cold thing on the picture, and small
-    g.p(66, 4, 26, 17, '#0b1120');
-    for (let i = 0; i < 7; i++) g.p(69 + ((i * 9) % 21), 7 + ((i * 5) % 8), 1, 1, i % 3 ? '#cfe4ea' : '#e8eef2');
-    for (let x = 67; x < 91; x++) g.p(x, 16 + (x % 4 === 0 ? -2 : 0), 1, 5, '#080c14');
-    g.p(65, 2, 28, 2, '#3f2a14');
-    g.p(65, 21, 28, 2, '#3f2a14');
-    g.p(65, 2, 2, 21, '#3f2a14');
-    g.p(91, 2, 2, 21, '#3f2a14');
-    g.p(78, 4, 1, 17, '#33210f');
-
-    // the hearth
-    g.p(2, 13, 50, 5, '#5b3a1c');                       // the mantel beam
-    g.p(2, 18, 50, 1, '#31200f');
-    g.p(6, 19, 7, 27, '#6e5c48');                       // stone, tinted to the fire
-    g.p(39, 19, 8, 27, '#6e5c48');
-    for (let y = 22; y < 46; y += 5) { g.p(6, y, 7, 1, '#42372a'); g.p(39, y, 8, 1, '#42372a'); }
-    g.p(13, 19, 26, 27, '#05060b');                     // the mouth
-    g.p(13, 19, 26, 1, '#000');
-
-    // the fire: the brightest thing on the cabinet by a wide margin
-    const fx = 25, base = 44;
-    for (let i = 0; i < 23; i++) {
-      const k = i / 23;
-      const bw = Math.max(1, Math.round(15 * (1 - k * k * 0.9) * (1 - k * 0.28)));
-      const col = k < 0.2 ? '#fff6e2' : k < 0.5 ? '#ffc768' : k < 0.8 ? a : '#b2481c';
-      g.p(fx - bw / 2 + Math.sin(k * 5.5) * k * 3.2, base - i, bw, 1, col);
-    }
-    for (let i = 0; i < 6; i++) g.p(16 + i * 3, base, 3, 2, i % 2 ? '#c9521f' : '#7a2f16');
-    for (let i = 0; i < 5; i++) g.p(fx + 4 + i * 2, 20 - i * 3, 1, 1, '#ffe6a8');   // sparks
-
-    // the light on the floor: a wedge out of the hearth, in four stepped tones
-    const POOL = ['#7a4a24', '#5c3819', '#412712', '#2b1a0d'];
-    for (let y = 46; y < H; y++) {
-      const k = (y - 46) / (H - 46);
-      const w2 = Math.round(78 - k * 34);
-      g.p(0, y, w2, 1, POOL[Math.min(3, Math.floor(k * 4.4))]);
-    }
-    g.p(0, 45, 74, 1, '#96602c');                       // the hot lip of the pool
-
-    // The creature, between us and the fire, cropped by the bottom of the frame.
+    // THE BONFIRE CAMP. Redrawn for the art pass (2026-08-17): the cabinet used
+    // to advertise a cozy interior — a mantel, a stone hearth, a window — and
+    // the game has not been that since the pivot. A marquee for a room the game
+    // does not have is worse than no marquee, because it is a promise.
     //
-    // It is BACKLIT, so it gets no face: an eye and a nose painted onto a shape
-    // with the light behind it is a mascot sticker, and it was one for a pass.
-    // What carries it instead is the silhouette — ears, a snout turned to the
-    // fire, and shoulders that widen into the crop — plus the two rims. The
-    // shoulders matter more than they sound: two stacked discs read as a snowman,
-    // and the fix is that a body is wider at the bottom than the top.
-    const cx = 62, DARK = '#25301c', MID = '#39482a';
-    const bodyW = y => Math.round(11 + (y - 52) * 0.62);
-    for (let y = 52; y < H; y++) {
-      const w2 = bodyW(y);
-      // the top two rows curve in, so the shoulders are round and not a box
-      const in_ = y < 55 ? (55 - y) * 2 : 0;
+    // Staged off the approved scene sheets, same as the game: tree cropped
+    // left, ruined arch as the framing device, fire left of centre, the
+    // companion cropped by the bottom edge, castle on the horizon.
+    //
+    // The house rules the other covers were built on all still apply. The sky
+    // is flat horizontal bars with hard seams, because a 2600 changes colour
+    // once per scanline and a night sky is banding, never a gradient. The arch
+    // is LIGHTER than the sky behind it — a framing device darker than its
+    // background is an outline floating in the void, which is the mistake this
+    // rack has made before. And the companion is cropped by the frame, which is
+    // what makes a foreground figure read as foreground rather than as a small
+    // thing standing in the middle distance.
+    const SKY = ['#0d1730', '#111c39', '#152242', '#1a284c', '#203055', '#26375e'];
+    SKY.forEach((c, i) => g.p(0, i * 7, W, 7, c));
+    g.p(0, 42, W, 3, '#2a3a5c');
+
+    // the moon, and the one bright thing that is not the fire
+    g.disc(105, 11, 6, '#dfe8f2');
+    g.disc(103, 9, 2, '#bcc9dc');
+    for (let i = 0; i < 9; i++) g.p(70 + ((i * 17) % 56), 3 + ((i * 11) % 26), 1, 1, '#cfe4ea');
+
+    // the castle on its hill: a silhouette with two windows lit, a long way off
+    g.p(86, 30, 22, 15, '#22304c');
+    g.p(100, 24, 6, 12, '#22304c');
+    g.p(105, 24, 1, 12, '#33415f');
+    for (let i = 0; i < 4; i++) g.p(88 + i * 4, 28, 2, 2, '#22304c');
+    g.p(102, 28, 1, 2, a);
+    g.p(91, 35, 1, 2, '#b2481c');
+
+    // the treeline, closing the horizon
+    for (let x = 60; x < W + 6; x += 5) {
+      const h = 9 + (x % 3) * 4;
+      for (let i = 0; i < h; i++) {
+        const half = Math.max(1, Math.round((i / h) * h * 0.42));
+        g.p(x - half, 45 - h + i, half * 2 + 1, 1, '#0b1220');
+      }
+    }
+    // the ground. Its top edge is RAGGED: a straight line all the way across
+    // read as the lip of a shelf with the camp standing on it.
+    for (let x = 0; x < W; x++) {
+      const y0 = 45 + Math.round(Math.sin(x * 0.21) + Math.sin(x * 0.07) * 1.5);
+      g.p(x, y0, 1, H - y0, '#141b18');
+    }
+
+    // THE ARCH — the framing device, and the fire is seen through it
+    const acx = 52, spring = 30, rOut = 17, rIn = 12;
+    for (let y = spring - rOut; y < 52; y++) {
+      let out, inn;
+      if (y < spring) {
+        const dy = spring - y;
+        out = Math.sqrt(Math.max(0, rOut * rOut - dy * dy));
+        inn = dy <= rIn ? Math.sqrt(Math.max(0, rIn * rIn - dy * dy)) : 0;
+        if (out <= 0.5) continue;
+      } else { out = rOut; inn = rIn; }
+      for (const side of [-1, 1]) {
+        for (let d = Math.round(inn); d < Math.round(out); d++) {
+          const px = acx + side * d;
+          if ((((px * 37) ^ (y * 91)) >>> 3) % 100 > 93) continue;      // a stone gone
+          // blocks, 4x3, courses offset — texture is a value step, never a line
+          const by = Math.floor(y / 3), bx = Math.floor((px + (by % 2) * 2) / 4);
+          const k = (((bx * 7369) ^ (by * 3121)) >>> 0) % 3;
+          const joint = ((px + (by % 2) * 2) % 4 === 3) || (y % 3 === 2);
+          const ramp = ['#39445a', '#4a5668', '#5c6878'];
+          g.p(px, y, 1, 1, joint ? '#2a3346' : ramp[k]);
+        }
+      }
+    }
+    for (let ang = -0.95; ang <= 0.95; ang += 0.05) {   // moss on the top only
+      const px = Math.round(acx + Math.sin(ang) * (rOut - 1));
+      const py = Math.round(spring - Math.cos(ang) * (rOut - 1));
+      if (((px * 9176) ^ py) % 3 === 0) continue;
+      g.p(px, py, 1, 2, '#3f5936');
+    }
+
+    // the big tree, cropped by the top-left corner, with the banner on it
+    for (let y = 0; y < H; y++) {
+      const wd = 11 + Math.round((y / H) ** 3 * 8);
+      for (let x = 0; x < wd; x++) g.p(x, y, 1, 1, ((x * 5) ^ (y >> 3)) % 4 > 1 ? '#33251b' : '#472f1e');
+    }
+    for (const [cx2, cy2, cr] of [[4, 2, 15], [20, 0, 12], [10, 14, 10]]) g.disc(cx2, cy2, cr, '#16241a');
+    g.p(11, 14, 12, 2, '#5a3f26');                      // the beam
+    for (let i = 0; i < 18; i++) {
+      const tear = i > 13 ? (i - 13) * 2 : 0;
+      g.p(15, 16 + i, 8 - tear, 1, i % 6 === 5 ? '#3f1c26' : '#6e2c3a');
+    }
+    g.p(17, 22, 4, 1, '#c08b3e'); g.p(18, 20, 2, 6, '#c08b3e');   // the sigil
+
+    // the ground light: a wedge out of the fire, four stepped tones, because a
+    // full-width band reads as furniture rather than as firelight
+    const POOL = ['#6b5330', '#4c3a1f', '#332714', '#20190e'];
+    for (let y = 45; y < H; y++) {
+      const k = (y - 45) / (H - 45);
+      const w2 = Math.round(64 - k * 22), x0 = Math.round(18 - k * 14);
+      g.p(x0, y, w2, 1, POOL[Math.min(3, Math.floor(k * 4.4))]);
+    }
+
+    // THE FIRE — the brightest thing on the cabinet by a wide margin
+    const fx = 46, base = 52;
+    for (let i = 0; i < 5; i++) {
+      g.disc(fx - 8 + i * 4, base + 2, 3, '#333f50');
+      g.p(fx - 9 + i * 4, base - 1, 3, 1, '#6b5330');
+    }
+    // THREE tongues, not one. A single tapered stack is a shape, and fire is
+    // not a shape — it is several arguing. One cone with a smooth taper is the
+    // shape a traffic cone has, which is what the first cut of this drew.
+    const tongue = (x, h, wide, phase) => {
+      for (let i = 0; i < h; i++) {
+        const k = i / h;
+        const sway = Math.sin(phase + k * 5) * (0.8 + k * 3.4);
+        const bw = Math.max(1, Math.round(wide * (1 - k * k * 0.95) * (1 - k * 0.35)));
+        const col = k < 0.16 ? '#fff2cf' : k < 0.44 ? '#ffc768' : k < 0.76 ? a : '#b2481c';
+        g.p(x - bw / 2 + sway * k, base - 1 - i, bw, 1, col);
+      }
+    };
+    // Narrow and TALL. At 128px across, a 12px-wide flame is fatter than it is
+    // hot: the white core sits at the base, so a wide core is a white brick with
+    // a taper on it. Flame is a vertical.
+    tongue(fx, 25, 8, 0);
+    tongue(fx + 4, 15, 5, 2.1);
+    tongue(fx - 5, 12, 4, 4.3);
+    for (let i = 0; i < 5; i++) g.p(fx + 5 + i * 2, 30 - i * 4, 1, 1, '#ffe6a8');   // sparks
+
+    // EMBER, cropped by the bottom of the frame and turned toward the fire.
+    // It is a dark body in a dark picture, so it gets the two-colour rim the
+    // rack learned on Neon Ronin: ember down the fire side, cold moonlight down
+    // the other. Without both it is a hole where the hero should be.
+    const cx = 88, DARK = '#1c2333', MID = '#2f3950';
+    const bodyW = y => Math.round(9 + (y - 54) * 0.7);
+    for (let y = 54; y < H; y++) {
+      const w2 = bodyW(y), in_ = y < 57 ? (57 - y) * 2 : 0;
       g.p(cx - w2 + in_, y, (w2 - in_) * 2, 1, DARK);
     }
-    g.disc(cx - 1, 45, 7, DARK);                        // the head
-    for (let i = 0; i < 4; i++) g.p(cx - 9 - i, 44 + i, 3, 2, DARK);   // the snout
-    for (const [ex, lean] of [[cx - 8, -1], [cx + 3, 1]]) {            // the ears
-      for (let i = 0; i < 5; i++) g.p(ex + Math.round(i * 0.4) * lean, 38 - i, 3, 1, DARK);
+    g.disc(cx, 47, 10, DARK);                           // the big head
+    for (const side of [-1, 1]) {                       // the horns
+      for (let i = 0; i < 14; i++) {
+        const k = i / 13;
+        const hx = Math.round(cx + side * Math.sin(k * 1.35) * 8);
+        const hy = Math.round(38 - k * 11);
+        const wd = Math.max(1, Math.round(3 - k * 2.2));
+        g.p(hx - (side < 0 ? wd - 1 : 0), hy, wd, 2, k < 0.45 ? '#8f7c5c' : '#c7b189');
+      }
     }
-    // the tail curls round in front of the shoulder — the same dark as the body,
-    // because a lighter one read as a patch of paint rather than part of the shape
-    g.p(cx + 11, 58, 7, H - 58, DARK);
-    g.p(cx + 11, 58, 1, H - 58, MID);
-
-    // the two rims: ember off the hearth down the fire side, cold window-light
-    // down the other. Walked along the silhouette itself, so it hugs the shape.
-    for (let y = 34; y < H; y++) {
+    g.p(cx - 12, 53, 24, 3, '#7e2a2a');                 // the scarf
+    g.p(cx - 12, 53, 12, 1, '#a8402f');
+    for (const dx of [-6, 2]) {                         // the eyes
+      g.p(cx + dx, 45, 4, 4, '#e8eef4');
+      g.p(cx + dx, 46, 3, 3, '#12141c');
+      g.p(cx + dx, 45, 1, 1, '#ffffff');
+    }
+    for (let y = 37; y < H; y++) {                      // the two rims
       let lit = -1, dark = -1;
-      for (let x = 40; x < 100; x++) {
-        const ink = insideCreature(x, y);
+      for (let x = 66; x < 116; x++) {
+        const dxh = x - cx, dyh = y - 47;
+        const ink = (dxh * dxh + dyh * dyh <= 100) || (y >= 54 && Math.abs(x - cx) <= bodyW(y) - (y < 57 ? (57 - y) * 2 : 0));
         if (ink && lit < 0) lit = x;
         if (ink) dark = x;
       }
       if (lit < 0) continue;
-      g.p(lit, y, 1, 1, '#f0a24a');
-      g.p(lit + 1, y, 1, 1, '#8f7a3e');
+      g.p(lit, y, 1, 1, a);
+      g.p(lit + 1, y, 1, 1, '#8f5a2e');
       g.p(dark, y, 1, 1, '#4a5f6b');
     }
 
-    function insideCreature(x, y) {
-      const dxh = x - (cx - 1), dyh = y - 45;
-      if (dxh * dxh + dyh * dyh <= 49) return true;                    // head
-      if (y >= 52 && Math.abs(x - cx) <= bodyW(y) - (y < 55 ? (55 - y) * 2 : 0)) return true;
-      if (y >= 44 && y < 48 && x >= cx - 12 && x < cx - 5) return true; // snout
-      if (y >= 34 && y < 39 && (Math.abs(x - (cx - 7)) <= 1 || Math.abs(x - (cx + 4)) <= 1)) return true;
-      return false;
+    // brambles cropping the bottom-right corner, in silhouette
+    for (let i = 0; i < 7; i++) {
+      const bx = 112 + i * 4, h = 8 + (i % 3) * 6;
+      for (let k = 0; k < h; k++) g.p(bx + Math.round(Math.sin(k * 0.5 + i) * 2), H - k, 2, 1, '#05070b');
     }
-
-    // the doorjamb, cropping the right of the frame: dark against a dim wall,
-    // with one lit edge to place it in front of everything else
-    g.p(108, 0, 4, H, '#0b0806');
-    g.p(112, 0, W - 112, H, '#170f0a');
-    g.p(114, 6, 11, 60, '#20140b');
-    g.p(107, 0, 1, H, '#5b3a1c');
   },
 
   // 20/20: the chart, getting away from you
