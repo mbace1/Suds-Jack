@@ -22,9 +22,15 @@ even when the code is otherwise correct, tested and pretty.
 
 **When canon is deliberately overridden**, the override is recorded in the file
 that breaks it, naming what it contradicts. Example: `piritori/js/fight.js`
-opens by stating that `BRIEF.md` forbids a combat layer and that the owner
-overrode it twice. An unrecorded contradiction is a finding; a recorded one is
-a decision.
+opens with three numbered OWNER OVERRIDE blocks — a combat layer at all, live
+firearms against *"there is no gunfight"*, and cover as terrain — each naming
+the sentence it contradicts and the words that overrode it. An unrecorded
+contradiction is a finding; a recorded one is a decision.
+
+**Note for Piritori reviewers:** guns are canon as of 2026-08-18 and the
+firearms in `WEAPONS` are not a finding. *"There is no gunfight"* is still true
+and is now enforced structurally — see `piritori/FIGHT_BRIEF.md` §2.1 for the
+four rules and `piritori/test/fight.mjs` for where each is checked.
 
 ## 2. Severity, in this repository's terms
 
@@ -34,7 +40,7 @@ Generic P1/P2 is less useful here than these five. Please use these words.
 |---|---|---|
 | **Playable** | a player can reach a state where the game cannot be played or progressed | a fight panel that opened with no buttons and froze forever; overlays that swallowed every tap because `display:flex` beat `[hidden]` |
 | **Gate** | breaks, or should break, a documented test gate — or the gate passes while the thing it names is broken | the smoke gate drove the model through a debug handle and never the interface |
-| **Canon** | contradicts a canon document above, without a recorded override | a working pistol, when `BRIEF.md` says "there is no gunfight" |
+| **Canon** | contradicts a canon document above, without a recorded override | Eden drawn as a node or a progress bar, when the owner locked it as a mystery |
 | **Drift** | code, docs, PR text or version tokens disagree with each other | a precache list one token behind the page; a PR body claiming capacity that the code does not enforce |
 | **Polish** | everything else | naming, dead code, formatting |
 

@@ -178,7 +178,11 @@ s.listen(0, '127.0.0.1', async () => {
       await p.waitForTimeout(80);
       const shot = await p.evaluate(() => {
         const d = window.__pt.debug, f = d.fight, v = d.fightView;
-        const t = f.targets(f.actor, f.actor.weapons[0])[0];
+        // a PERSON, deliberately: this arena has cover standing in it, and
+        // hitting a barrier moves no unit's numbers — the check below would
+        // then be passing on the enemy turns that follow rather than on the
+        // player's own swing
+        const t = f.targets(f.actor, f.actor.weapons[0]).find(x => !x.prop);
         if (!t) return null;
         const c = document.getElementById('board').getBoundingClientRect();
         const pt = v.cell(t.side, t.col, t.row, f.rows);
@@ -193,6 +197,23 @@ s.listen(0, '127.0.0.1', async () => {
         return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
       });
       ok('clicking a weapon then a body actually strikes', after < before, `${before} → ${after}`);
+
+      // cover is terrain now, and it has to be on the board and hittable
+      ok('the arena has cover standing in it', await p.evaluate(() => {
+        const f = window.__pt.debug.fight;
+        return f.props.length > 0 && f.props.every(x => x.alive && x.hp > 0);
+      }));
+      const smashed = await p.evaluate(async () => {
+        const d = window.__pt.debug, f = d.fight;
+        const prop = f.props.find(x => x.side === 'them' && x.alive);
+        if (!prop) return 'no cover';
+        const hp = prop.hp;
+        // reachable from somebody's front row with a bare hand, or it is not
+        // cover so much as scenery
+        const who = f.living('you').find(u => f.targets(u, u.weapons[0]).some(t => t.id === prop.id));
+        return who ? (hp > 0 ? 'reachable' : 'broken') : 'unreachable';
+      });
+      ok('cover stands where a swing can reach it', smashed === 'reachable', smashed);
 
       // the out is offered every round and is a real button
       ok('OFFER THEM THE OUT is always present',
