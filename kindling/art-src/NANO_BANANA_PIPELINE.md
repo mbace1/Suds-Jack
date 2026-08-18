@@ -46,6 +46,33 @@ expensive way on another project in this repo:
 - **It cannot count.** "A 4×6 grid of 40px cells" comes back as a picture of a
   grid with roughly the right number of roughly-sized things in it. Generate
   **one pose per image** and assemble the sheet yourself.
+- **ASK FOR 4×, NOT 1:1.** This is the one that cost a whole round trip. An
+  image model puts roughly a constant NUMBER of features into a picture whatever
+  size you ask for, so a request for 320×180 comes back as a 320×180-sized
+  *idea* — few, large shapes. batch1-v2 was technically perfect and artistically
+  a regression on the code-drawn placeholder for exactly this reason: an arch
+  that was a thin grey hoop, lollipop trees, a flat brown ground band.
+
+  So say the size twice, and say it like this:
+
+  > Draw this at a native resolution of 320×180, but output the image at
+  > 1280×720, where every art pixel is exactly a 4×4 block of identical image
+  > pixels. Do not anti-alias anything. No in-between colours at any edge.
+
+  Then `fit … 320x180` divides by exactly four and recovers a true 1:1 grid.
+  The reference sheets are authored this way — their blocks are four to six
+  screen pixels across in a 1700px image — which is why they carry detail the
+  first delivery did not.
+
+- **The colour count is an AUTHORING problem, not an export problem.** A
+  re-delivery at the right size, in PNG, with alpha, still fails if it was
+  anti-aliased: size and format are transfer faults and a thousand in-between
+  edge colours is not. Ask in these words: *quantise to a limited palette, no
+  anti-aliasing, nearest-neighbour only.* (Measured independently in PR #287:
+  the current sheets run 3,110–20,073 distinct colours, while 74–100% of their
+  pixels sit within 24 of a colour already in `js/palette.js` — so the hues are
+  right and only the edges are wrong.)
+
 - **It cannot hold a pixel grid.** Everything it makes is an illustration in a
   pixel-art *style*. That is fine — `fit` is what turns it into pixel art — but
   it means you must never accept its output directly as an asset.
