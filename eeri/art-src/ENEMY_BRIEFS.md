@@ -89,20 +89,39 @@ tell. Clips wanted: `idle`, `walk`, `notice`, `hurt`.
 
 ---
 
-## The site kit — not enemies
+## The site kit — behaviours APPROVED (owner, 2026-08-18)
 
-Six props, all `slice.mjs` or prop-pack rather than rigs. Roles suggested, none
-of them load-bearing:
+All rigged (`slice.mjs`) and joint-verified. The owner's calls, verbatim where
+they decide something:
 
-| piece | role |
-|---|---|
-| `E-jackhammer` | dressing, and the hopper's namesake — *"a jackhammer on legs"* |
-| `E-generator` | dressing; a hum and a light. A candidate hazard if it sparks |
-| `E-compressor` | dressing; pairs with the jackhammer |
-| `E-wheelbarrow` | **a gizmo, not dressing** — a tipping surface is the cheapest fun in DESIGN §8.2's kit, and a barrow already looks like it tips |
-| `E-cabledrum` | dressing, or a rolling hazard on a slope |
-| `E-gascart` | dressing. **Not an explosive** — a bottle that blows up is a different game |
+| piece | behaviour | its node |
+|---|---|---|
+| `jackhammer` | judders and hops — the hopper's big brother | `bit` (the striking assembly) |
+| `generator` | **shakes and throws you away** — the bounce pushes a jump further, which is how you clear it to the far side and **pull the plug** | `plug` (hidden when pulled; the shake stops) |
+| `compressor` | **blows air**, overpressures, and **takes off like a rocket** — `motor` rattles first, the telegraph before the launch | `motor`, `nozzle` |
+| `wheelbarrow` | **moves toward you, then tips its tray to strike** — a gizmo first (a tipping surface is §8.2's cheapest fun), an enemy dress of the same rig second | `tray` (hinged at the FRONT LIP, the dump-truck pivot lesson) |
+| `cabledrum` | dressing, or a rolling hazard on a slope | `spool`, `crank` |
+| `gascart` | **SPRAY, not explode** — the owner offered either; a bottle that detonates is a different game | `nozzle` |
 
-Each is drawn three-quarter with air around anything that moves (the barrow's
-wheel clear of its tray, the drum's spool clear of its stand), because that is
-what makes them cuttable later.
+Behaviour code is Design/Level's (`robots.js` / hazards); the nodes above are
+the art contract that makes each behaviour drivable, and they are cut and
+measured now, because a node cannot be added after the mesh is made.
+
+## `rollerbot` — the small roller, built
+
+The ≤1-tile spacing-test enemy that shares a name and nothing else with the
+ride machine. `squash` (an empty root holding everything — a stomped enemy
+flattens *whole*), `eye` on its stalk, domed un-landable top. **Deliberately no
+spinning drum**: the yoke plate sits flush against the drum face and they
+interleave in z, so no predicate separates them — and §6.2's contract is squash
+plus notice tell, nothing more. Fighting a mesh for a node the design never
+asked for is how a day disappears.
+
+## Two owner calls recorded (2026-08-18)
+
+- **Material language: moulded plastic toy** for tools, gizmos and machines
+  (option a/c) — effects may be crafty. The cardboard/felt language stays the
+  *backdrop's*.
+- **Faces on machines: dropped unless they work; try one.** The jackhammer is
+  the trial — Meshy grew it two rivet-eyes uninvited and they suit it. Nothing
+  else gets a face until that one is judged in a level.
