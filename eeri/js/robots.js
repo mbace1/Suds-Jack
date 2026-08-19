@@ -1,5 +1,26 @@
 // EERI — the small robots, and the small hazards.
 //
+// ┌──────────────────────────────────────────────────────────────────────┐
+// │ CROSS-LANE EDIT, DECLARED. This file belongs to DESIGN/LEVEL (see    │
+// │ CLAUDE.md's lanes table). It was edited by the ART lane on           │
+// │ 2026-08-19, with the owner's explicit go-ahead, to add ONE thing:    │
+// │ the asset seam. Every enemy in this game had a finished, rigged,     │
+// │ contract-checked 3D model sitting in assets/3d — and this file never │
+// │ imported assets.js, so not one of them could ever be loaded.         │
+// │ `art-src/tools/audit-assets.mjs` counts them: 18 unreachable files.  │
+// │                                                                      │
+// │ NOTHING ABOUT THE BEHAVIOUR WAS TOUCHED. The clock, the states, the  │
+// │ speeds, the telegraph timings, the stomp rules and buildRobot() are  │
+// │ byte-for-byte what they were. The only change is that a robot now    │
+// │ ASKS for a model first and draws its own when there is not one —     │
+// │ which is the same seam js/main.js already uses for Eeri, the         │
+// │ excavator, the crane, the flag and the checkpoint.                   │
+// │                                                                      │
+// │ If Design/Level wants this reverted, deleting `adoptModel` and the   │
+// │ `asset` argument restores the previous behaviour exactly; the code   │
+// │ path it falls back to is the one that was always here.               │
+// └──────────────────────────────────────────────────────────────────────┘
+//
 // The house rule is the one the game already lives by: EVERYTHING
 // TELEGRAPHS, and nothing kills. A robot is not a chaser — it patrols a
 // declared span of floor (js/parts.js refuses to place one across a hole),
@@ -14,6 +35,7 @@ import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=29';
 import { craftMat, craftBox } from './craft.js?v=29';
 import { CLOCK } from './parts.js?v=29';
+import { getModel } from './assets.js?v=29';
 
 // The telegraph clock is DESIGN §4.1's, and it lives in parts.js so the room
 // prover can hold it to the 1.0s floor — these three were all under it.
@@ -43,6 +65,114 @@ const BKT = CLOCK.bucket;
 // same material the machines wear (§3.3, ART_TARGET §0.05). A prop built
 // with a bare material is flat paint in a crafted world, and that is the
 // exact failure craft.js exists to make impossible.
+
+// ---- THE ASSET SEAM (added by the Art lane — see the banner above) -------
+//
+// Which catalogue entry each KIND wears. The game's kinds and the manifest's
+// names are deliberately not the same words: `skitter` is the behaviour and
+// `boltbot` is the thing wearing it, and `roller` the enemy is `rollerbot`
+// because `roller` in the catalogue is the rideable road roller.
+const MODEL_FOR = { skitter: 'boltbot', hopper: 'hopper', bucket: 'bucket', roller: 'rollerbot' };
+
+// A 3/4 turn, the same constant js/kid.js uses and for the same reason: these
+// rigs are modelled facing +z and the game drives facing along ±x.
+const FACE_TURN = 0.42 * Math.PI;
+
+// Which clip each game STATE reads as. The states are the design's and are not
+// negotiable here; this is only a costume, so anything unmapped falls back to
+// idle and a rig with no idle falls back to its first clip.
+const CLIP_FOR = {
+  patrol: 'walk', roll: 'walk', lunge: 'run', wake: 'wake', hop: 'hop',
+  crouch: 'idle', notice: 'idle', wind: 'idle', recover: 'idle', sleep: 'idle',
+};
+
+// ONE LOAD PER ROBOT, not one per kind, and it is not an oversight: a skinned
+// mesh cannot be safely cloned without SkeletonUtils, which is not in vendor/,
+// and two robots sharing one skeleton animate as a single puppet. getModel
+// builds a fresh graph each call and the browser serves the bytes from cache,
+// so the cost is a parse, not a download.
+//
+// Returns null for "draw your own", which is every failure mode: no entry, not
+// live, a missing contracted node, a decode error, or no network. Art is the
+// one thing in this game allowed to be absent.
+export async function loadRobotAsset(kind) {
+  const name = MODEL_FOR[kind];
+  if (!name) return null;
+  try {
+    const a = await getModel(name, () => null);
+    return a?.root ? a : null;
+  } catch { return null; }
+}
+
+// Dress a robot in a loaded model, returning the same `{ group, eye, legs }`
+// buildRobot() returns so nothing downstream can tell the difference.
+function adoptModel(asset, kind) {
+  const outer = new THREE.Group();
+  const turn = new THREE.Group();
+  // a node rig was cut with its yaw already declared in slice.mjs and comes
+  // out facing +x; only the skinned rigs need bringing round from +z
+  turn.rotation.y = asset.skinned ? FACE_TURN : 0;
+  turn.add(asset.root);
+  outer.add(turn);
+
+  let eye = null;
+  const legs = [];
+
+  if (asset.skinned) {
+    // The three skinned enemies are ONE mesh called `char1` with the eye
+    // painted into the texture — there is nothing to brighten. DESIGN §3 is
+    // explicit that the telegraph IS the enemy design, and an enemy with
+    // nothing to brighten cannot be read, so the tell is added: a small lamp
+    // parented to the `Head` bone, which is where the eye already looks like
+    // it is. MeshBasicMaterial because a tell must not be dimmed by the scene.
+    let head = null;
+    asset.root.traverse((o) => { if (!head && /^head/i.test(o.name || '')) head = o; });
+    eye = new THREE.Mesh(
+      new THREE.SphereGeometry(0.075, 8, 6),
+      new THREE.MeshBasicMaterial({ color: PAL.HAZARD }),
+    );
+    if (head) { eye.position.set(0, 0.02, 0.10); head.add(eye); }
+    else { eye.position.set(0.16, 0.62, 0.14); outer.add(eye); }
+  } else {
+    // A cut node may be a GROUP wrapping `<name>_mesh` rather than a mesh —
+    // rollerbot was cut before slice.mjs grew `flatten`, so `eye` is a group
+    // and `eye.material` is undefined. The checkpoint's lamp threw on exactly
+    // this. Resolve to the first real mesh underneath.
+    const meshOf = (n) => {
+      if (!n) return null;
+      if (n.isMesh) return n;
+      let m = null; n.traverse((o) => { if (!m && o.isMesh) m = o; });
+      return m;
+    };
+    eye = meshOf(asset.nodes?.eye);
+    // AND IT NEEDS ITS OWN MATERIAL. slice.mjs gives every node of a model one
+    // SHARED material, so brightening the eye would brighten the whole robot.
+    if (eye) eye.material = eye.material.clone();
+    // `legs` is what the walk cycle SPINS, so `squash` is deliberately not in
+    // it — that node is the stomp response's, and a spinning squash node is a
+    // robot whose whole body rotates when it walks.
+    for (const n of ['wheels', 'drum']) {
+      const m = asset.nodes?.[n];
+      if (m) legs.push(m);
+    }
+  }
+
+  // Last line of defence: the telegraph code sets `eye.material.color` every
+  // frame and must never be handed something without one.
+  if (!eye?.material?.color) return null;
+
+  const out = { group: outer, eye, legs };
+  if (asset.skinned && asset.clips) {
+    out.mixer = new THREE.AnimationMixer(asset.root);
+    out.actions = {};
+    for (const [name, clip] of Object.entries(asset.clips)) {
+      out.actions[name] = out.mixer.clipAction(clip);
+    }
+    out.firstClip = Object.keys(out.actions)[0] || null;
+  }
+  return out;
+}
+
 function buildRobot(kind) {
   const g = new THREE.Group();
   const M = (c) => craftMat(c, 'balsa');
@@ -103,7 +233,9 @@ function buildRobot(kind) {
 export class Robot {
   // span = { c0, c1, kind, cy } in cells; it never leaves it, and `cy` puts
   // it on a DECK rather than on the ground
-  constructor(scene, level, span) {
+  // `asset` is optional and may be null — see the banner at the top of this
+  // file. Null means "draw your own", which is what this class always did.
+  constructor(scene, level, span, asset = null) {
     this.level = level;
     this.c0 = span.c0; this.c1 = span.c1;
     this.kind = span.kind || 'skitter';
@@ -117,10 +249,17 @@ export class Robot {
     this.state = 'patrol'; this.t = 0;
     this.dead = false;
     this.hop = 0; this.shrugT = 0;
-    const built = buildRobot(this.kind);
+    // ASK FOR A MODEL, DRAW ONE IF THERE IS NOT ONE. adoptModel returns null
+    // for anything it cannot dress safely — no eye to brighten, a node that is
+    // not a mesh — so a half-usable model falls back rather than half-works.
+    const built = (asset && adoptModel(asset, this.kind)) || buildRobot(this.kind);
     this.group = built.group;
     this.eye = built.eye;
     this.legs = built.legs;
+    this.mixer = built.mixer || null;
+    this.actions = built.actions || null;
+    this.firstClip = built.firstClip || null;
+    this.clip = null;
     this.hw = this.kind === 'roller' ? 0.46 : this.kind === 'hopper' ? 0.24
       : this.kind === 'bucket' ? 0.44 : 0.34;
     this.h = this.kind === 'roller' ? 0.5 : this.kind === 'hopper' ? 1.0
@@ -147,9 +286,30 @@ export class Robot {
   // reads as bouncing off a roller AND walking into one, in the same frame.
   shrug() { this.shrugT = 0.4; }
 
+  // The costume, and nothing else. It reads `this.state` — which the design's
+  // own clock sets — and never writes it, so a missing clip can change how a
+  // robot LOOKS and can never change what it DOES.
+  playClip(dt) {
+    if (!this.mixer) return;
+    this.mixer.update(dt);
+    const want = CLIP_FOR[this.state] || 'idle';
+    const name = this.actions[want] ? want
+      : this.actions.idle ? 'idle'
+      : this.firstClip;
+    if (!name || name === this.clip) return;
+    const next = this.actions[name];
+    const prev = this.clip && this.actions[this.clip];
+    next.reset().play();
+    if (prev) prev.crossFadeTo(next, 0.15, false); else next.fadeIn(0.1);
+    this.clip = name;
+  }
+
   update(dt, target, reduced) {
-    if (this.dead) { this.fade(dt); return; }
+    if (this.dead) { this.fade(dt); this.playClip(dt); return; }
     this.t += dt;
+    // one frame behind the state that is about to be computed, which is
+    // invisible, and it keeps the costume out of every early return below
+    this.playClip(dt);
     this.shrugT = Math.max(0, this.shrugT - dt);
     const dx = target.x - this.x;
     const near = Math.abs(dx) < SEE && Math.abs(target.y - this.y) < 2.2;

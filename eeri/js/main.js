@@ -20,7 +20,7 @@ import { Camera } from './camera.js?v=29';
 import { buildKidModel, Kid, Player } from './kid.js?v=29';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=29';
 import { buildCraneModel, Crane } from './crane.js?v=29';
-import { Robot, SteamVent } from './robots.js?v=29';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=29';
 import { Hoist } from './hoist.js?v=29';
 import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=29';
 import { WreckingBall } from './hazards.js?v=29';
@@ -248,7 +248,13 @@ async function boot() {
 
     // the small stuff: robots patrol a span the kit guaranteed is floor,
     // vents breathe on their own clock
-    const robots = def.robots.map((r) => new Robot(group, level, r));
+    // Each robot is handed its own loaded model, or null to draw its own. The
+    // load is per ROBOT rather than per kind because a skinned mesh cannot be
+    // cloned without SkeletonUtils (not in vendor/), and two robots sharing a
+    // skeleton animate as one puppet. Parallel, and every failure resolves to
+    // null, so a missing or broken model costs a placeholder and never a level.
+    const robots = await Promise.all(def.robots.map(async (r) =>
+      new Robot(group, level, r, await loadRobotAsset(r.kind || 'skitter'))));
     // THE HOISTS: entities, because a moving floor cannot be a tile. They
     // register with the level so the player's platform pass can find them —
     // one list, filled here, rather than the player reaching into `site`.

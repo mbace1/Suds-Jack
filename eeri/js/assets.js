@@ -107,7 +107,7 @@ export async function loadManifest() {
   // token never learns the new one exists and keeps the old art forever,
   // with every asset URL inside it still perfectly correct. This shipped at
   // `?v=1` for eleven versions. The smoke gate now asserts the two agree.
-  const res = await fetch(new URL('manifest.json?v=26', BASE));
+  const res = await fetch(new URL('manifest.json?v=27', BASE));
   manifest = await res.json();
   return manifest;
 }

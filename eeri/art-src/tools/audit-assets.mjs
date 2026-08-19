@@ -98,7 +98,12 @@ const asked = (name) =>
   new RegExp(`get(?:Model|Piece)\\(\\s*['"\`]${name}['"\`]`).test(jsSrc) ||
   // the flag picks its entry at the call site: getPiece(def.flag.big ? 'flagBig' : 'flag', …)
   new RegExp(`['"\`]${name}['"\`]\\s*:\\s*['"\`]`).test(jsSrc) ||
-  new RegExp(`\\?\\s*['"\`]${name}['"\`]|['"\`]${name}['"\`]\\s*(?:,|\\))`).test(jsSrc);
+  // …and named in a lookup table, which is how the enemies are addressed:
+  // `const MODEL_FOR = { skitter: 'boltbot', …, roller: 'rollerbot' }`. The
+  // closing brace matters — the LAST entry of a map has no trailing comma, and
+  // leaving `}` out of this class reported `rollerbot` as unreachable when the
+  // game asks for it by name like every other one.
+  new RegExp(`\\?\\s*['"\`]${name}['"\`]|['"\`]${name}['"\`]\\s*[,)}\\n]`).test(jsSrc);
 
 const manifest = JSON.parse(readFileSync(path.join(ROOT, 'assets', 'manifest.json'), 'utf8'));
 

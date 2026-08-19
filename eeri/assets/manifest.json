@@ -1,5 +1,5 @@
 {
-  "v": 26,
+  "v": 27,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -78,8 +78,8 @@
       "file": "3d/boltbot_v1.glb",
       "status": "placeholder",
       "rig": "skinned",
-      "height": 0.9,
-      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING §2). 24 bones, feet at the origin, clips measured moving. Height is in TILES — DESIGN wants a small enemy at ≤ 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING §1) — scale the rig root.",
+      "height": 0.7,
+      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING §2). 24 bones, feet at the origin, clips measured moving. Height is in TILES — DESIGN wants a small enemy at ≤ 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING §1) — scale the rig root. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.7 tiles to match the collision box js/robots.js declares for this kind (`this.h`) — a model taller than its own collision is the one mismatch a player feels immediately.",
       "clips": [
         "idle",
         "walk",
@@ -90,8 +90,8 @@
       "file": "3d/hopper_v1.glb",
       "status": "placeholder",
       "rig": "skinned",
-      "height": 0.9,
-      "_note": "The jackhammer timing enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself.",
+      "height": 1.0,
+      "_note": "The jackhammer timing enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself. LIVE from v15.23: js/robots.js now asks for it. `height` is 1.0 tiles to match the collision box js/robots.js declares for this kind (`this.h`) — a model taller than its own collision is the one mismatch a player feels immediately.",
       "clips": [
         "idle",
         "walk",
@@ -103,8 +103,8 @@
       "file": "3d/bucket_v1.glb",
       "status": "placeholder",
       "rig": "skinned",
-      "height": 0.85,
-      "_note": "The sleepy provocation enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `wake` (271) is head-led — the look-up IS the telegraph; then `run` chases.",
+      "height": 0.72,
+      "_note": "The sleepy provocation enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `wake` (271) is head-led — the look-up IS the telegraph; then `run` chases. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.72 tiles to match the collision box js/robots.js declares for this kind (`this.h`) — a model taller than its own collision is the one mismatch a player feels immediately.",
       "clips": [
         "idle",
         "walk",
@@ -294,12 +294,13 @@
     "rollerbot": {
       "file": "3d/rollerbot_v1.glb",
       "status": "placeholder",
-      "_note": "The SMALL roller — DESIGN §3's spacing-test enemy, sharing a name and nothing else with the ride machine. `squash` is an empty root holding everything, because a stomped enemy flattens whole — a scale on `body` alone would leave the eye floating. DELIBERATELY no spinning drum: the yoke plate sits flush against the drum face and they interleave in z, no predicate separates them, and §6.2's contract is squash + notice tell, nothing more. Domed top per the concept — §3 says it reads un-landable from across a room.",
+      "_note": "The SMALL roller — DESIGN §3's spacing-test enemy, sharing a name and nothing else with the ride machine. `squash` is an empty root holding everything, because a stomped enemy flattens whole — a scale on `body` alone would leave the eye floating. DELIBERATELY no spinning drum: the yoke plate sits flush against the drum face and they interleave in z, no predicate separates them, and §6.2's contract is squash + notice tell, nothing more. Domed top per the concept — §3 says it reads un-landable from across a room. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.5 tiles to match the collision box js/robots.js declares for this kind (`this.h`) — a model taller than its own collision is the one mismatch a player feels immediately.",
       "nodes": [
         "squash",
         "eye",
         "body"
-      ]
+      ],
+      "height": 0.5
     },
     "jackhammer": {
       "file": "3d/jackhammer_v1.glb",

@@ -105,6 +105,38 @@ warns and skips an unknown name, so the ball would have kept its Meshy texture
 while everything around it took the palette. No gate could see it because the
 crane is `placeholder` and nothing loads it. Fixed, with `arm` added alongside.
 
+**The enemy seam is in, and deliberately switched OFF.** `js/robots.js` never
+imported `assets.js`, so all four enemy models were unreachable. It does now:
+`loadRobotAsset(kind)` maps the game's kinds onto the catalogue
+(`skitter→boltbot`, `roller→rollerbot`), `adoptModel` dresses a robot and
+returns the same `{group, eye, legs}` `buildRobot` always returned, and a
+skinned rig gets an AnimationMixer with the clip chosen by the game's own
+state. Behaviour is untouched: the clock, the speeds, the telegraph timings
+and `buildRobot` are byte-for-byte what they were, and `adoptModel` returns
+null for anything it cannot dress — so the fallback is the code that was
+always there. **This is a CROSS-LANE edit** (`js/robots.js` is Design/Level's)
+made with the owner's explicit go-ahead, and it is declared in a banner at the
+top of that file as well as here.
+
+Two traps it had to solve, both already known from the pieces: `rollerbot`'s
+`eye` is a Group wrapping `eye_mesh` (it was cut before `flatten` existed) so
+it is resolved to its mesh; and `slice.mjs` gives every node of a model ONE
+shared material, so the eye's material is cloned or brightening it would
+brighten the whole robot. The three skinned enemies are a single `char1` mesh
+with the eye painted into the texture — nothing to brighten at all — so the
+tell is added as a lamp parented to the `Head` bone.
+
+**The four entries stay `placeholder` because the playthrough gate fails with
+them live**, and the cause is NOT understood yet. Four long levels stall on
+foot part-way (3, 6, 7, 8, 9 — all of them machine-job levels). A performance
+theory was measured and REFUTED: frame rate is 13.8-16.3 fps with the models
+live and 13.8-15.5 with them off, which is software-renderer noise either way;
+level build costs about +780 ms, which is real but nowhere near a stall. The
+meshes were decimated anyway (20k → 2k triangles, indistinguishable at the
+size they are seen — 10x lighter is worth having regardless) and it did not
+fix it. So: the seam ships inert. Turning it on is four words in the manifest,
+once somebody finds what actually blocks the bot.
+
 **Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
 to be meshes.** The ladder is already built per tile in `js/level.js` and meets
 every clause of its contract, including the hard one — seamless vertical
