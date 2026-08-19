@@ -117,11 +117,40 @@ function keyImage(img){
   const [c,g]=ctxOf(img.width,img.height);
   g.drawImage(img,0,0);
   const im=g.getImageData(0,0,c.width,c.height),d=im.data;
+  // IW/IH rather than W/H: the bleed pass further down already declares those
+  // in this same function, and shadowing them is a syntax error, not a warning.
+  const IW=c.width,IH=c.height;
+
+  // THE BACKGROUND IS NOT ALWAYS THE COLOUR YOU ASKED FOR. Piritori's props
+  // came back on a dusty pink — 202,99,139 — because its house style asks for
+  // grain and muted fills and the background obeys along with everything else.
+  // The ratio test below wants green under 55% of the red/blue mean; that pink
+  // lands at 99 against a threshold of 94 and misses by five, so nothing keys
+  // and the whole sheet ships opaque.
+  //
+  // So the corners get a vote. If all four agree with each other, that colour
+  // is ALSO treated as background, by distance. It is safe because the subject
+  // is clear of the edges by contract — that is the one thing every prompt in
+  // both pipelines says — and it changes nothing where the background really is
+  // #FF00FF, since the ratio test catches those first.
+  const at=(x,y)=>{const i=(y*IW+x)*4;return [d[i],d[i+1],d[i+2]];};
+  const corners=[at(2,2),at(IW-3,2),at(2,IH-3),at(IW-3,IH-3)];
+  const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+  let bg=null;
+  const spread=Math.max(...corners.map(a=>Math.max(...corners.map(b=>dist(a,b)))));
+  if(spread<40){
+    const m=[0,1,2].map(k=>corners.reduce((s,c2)=>s+c2[k],0)/corners.length);
+    // only a PINK background is ever sampled. A grey or a white corner is a
+    // photograph's sky, not a key colour, and eating it would cut the art.
+    if(m[0]>90 && m[2]>90 && m[1]<Math.min(m[0],m[2])*0.85) bg=m;
+  }
+
   for(let i=0;i<d.length;i+=4){
     const r=d[i],gg=d[i+1],b=d[i+2];
     // magenta is red AND blue high with green low. A ratio test rather than a
     // distance test, so a dark magenta edge keys as surely as a bright one.
-    const mag=(r+b)/2, key=mag>60 && gg<mag*0.55;
+    const mag=(r+b)/2, key=(mag>60 && gg<mag*0.55)
+      || (bg && dist([r,gg,b],bg)<62);
     if(key){d[i+3]=0;continue;}
     // despill: pull green back up toward the mean where the pink has bled in
     const spill=(r+b)/2-gg;

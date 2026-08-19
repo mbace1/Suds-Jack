@@ -191,7 +191,7 @@ s.listen(0, '127.0.0.1', async () => {
         if (!ask) return { offered: false };
         const before = m.cash;
         ask.click();
-        const said = document.querySelector('#roomBtns .dim')?.textContent || '';
+        const said = document.querySelector('#roomBtns .said')?.textContent || '';
         d.closeRoom();
         return { offered: true, spent: before - m.cash, said };
       });

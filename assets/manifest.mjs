@@ -158,33 +158,51 @@ ABSOLUTELY NO TEXT ANYWHERE: no names, no numbers, no labels, no legend, no
 title, no lettering in any language. Labels are added later in code. No logos,
 no UI, no watermark, no people, no vehicles.`,
 
-  // INTERIORS — the same cut paper as the map, but LIT and inhabited.
+  // INTERIORS — v2, after the first pass missed the reference badly.
   //
-  // The targets' noodle shop is unmistakably the same craft as the map: a paper
-  // lantern, a paper shirt, paper bowls. What separates it is that a room is a
-  // place you are standing IN rather than a thing you are holding, so it is
-  // warm, it is lit from inside, and there is a person behind the counter.
+  // WHAT WENT WRONG, because the same mistake is easy to make twice. Two rules
+  // were carried in from places they were right and applied where they are not:
   //
-  // The person is the reason this is its own style. `paper` forbids people
-  // outright — a map with figures on it is a diorama of a crowd — and an
-  // interior needs exactly one.
-  paperRoom: `Piritori interior style. A PHOTOGRAPH OF A HANDMADE CUT-PAPER
-DIORAMA — a little stage box built from layers of torn and cut card, seen
-straight on from across the counter. Every object is visibly made of paper:
-paper bowls, paper bottles, a paper lantern, a paper coat. Torn white edges,
-visible fibre, real soft drop shadows between the layers.
+  //   · "ABSOLUTELY NO TEXT" belongs to the MAP, where a diffusion model spells
+  //     Finnish street names as "Kudes linja" and the game draws its own labels
+  //     anyway. A shop is the opposite: the owner's reference is full of
+  //     signage — a painted shop sign, hanging menu cards, a poster, katakana
+  //     down a lantern — and that lettering IS the charm. It is also mostly
+  //     decorative, so a misspelling costs nothing.
+  //   · "no face detail beyond the barest suggestion" belongs to the FIGHT
+  //     SHEETS, where a body has to read at thirty pixels. Toko wears a bright
+  //     yellow smiling MASK, which is the most distinctive thing in the whole
+  //     reference, and the first pass generated a blank mannequin instead.
+  //
+  // And the material was wrong in kind. This is a layered paper COLLAGE
+  // ILLUSTRATION — cut shapes with drawn detail on top of them — not a
+  // photograph of a beige cardboard model, which is what "photograph of a
+  // diorama" reliably produces.
+  paperRoom: `Piritori interior style. A LAYERED PAPER COLLAGE ILLUSTRATION —
+cut and torn paper shapes with hand-drawn ink detail, texture and shading drawn
+ON TOP of them. Not a photograph, not a 3D render, not a beige cardboard model:
+a made picture, with visible paper fibre, torn edges and soft shadows between
+the layers.
 
-WARM AND LIT FROM INSIDE. One or two practical lights — a lantern, a bulb over
-the counter — pooling warm amber on the near surfaces and falling off into deep
-blue-black at the edges of the box. Outside the window it is night and cold.
+DENSE AND FULL OF LIFE. The room is crowded with specific, characterful
+objects, each one clearly built from paper — bowls, bottles, jars, hanging
+curtains, a lantern, a radio, a till. Every surface has something on it.
 
-ONE PERSON, behind the counter, built from the same paper as everything else,
-seen from the chest up and slightly turned. No face detail beyond the barest
-suggestion — the silhouette and the hands do the work.
+TEXT AND SIGNAGE ARE WELCOME and part of the look: a painted shop sign, small
+hanging menu cards with simple pictograms, a poster on the wall, lettering down
+a lantern. Hand-lettered, slightly uneven, worn.
 
-Muted and tactile: warm ochre, deep red-brown, slate, bone, black. ABSOLUTELY
-NO TEXT ANYWHERE — no signs, no labels, no menu boards, no lettering in any
-language. No logos, no UI, no watermark.`,
+WARM AGAINST COLD. The interior is lit warm — amber lamps, ochre walls, deep
+red-brown wood. Through a window it is NIGHT and COLD: deep slate blue, rain,
+the lit windows of the street, a passing tram. That contrast is the whole
+picture and it must be strong.
+
+ONE CHARACTER, front and centre behind the counter, built from the same paper,
+seen from the chest up. They have a DESIGNED, DISTINCTIVE FACE — this is a
+character, not a mannequin, and a blank featureless head is a failed image.
+
+Muted, tactile, storybook-noir. Warm ochre, deep red-brown, mustard, slate,
+bone, black. No modern UI, no watermark, no photographic realism.`,
 
   // The ARENAS ONLY, and they are a deliberate exception to `kallio` above.
   //
@@ -611,12 +629,28 @@ Bleak, dry, deadpan. No people, no crime imagery, no glow, no title text.`,
     style: 'paperRoom',
     aspect: '16:9',
     tags: ['interior', 'contact'],
+    // The mask is CANON as of the owner's reference (ART_BIBLE §1.-1): Toko
+    // Slomo wears a bright yellow mask with a painted smile, and it is the most
+    // recognisable thing in the picture. Everything else here is set dressing
+    // around it.
     prompt: `Inside a tiny late-night noodle shop on a Helsinki side street in
-2003. A worn wooden counter across the front with three stools at it, a big
-steel stock pot steaming behind, stacked bowls, chopstick jars, soy bottles, a
-till. A paper lantern hangs at one side. Through the window at the right it is
-raining and a tram is passing. The cook stands behind the counter drying a
-bowl.`,
+2003, crowded and warm.
+
+THE COOK is the subject: a man behind the counter wearing a BRIGHT YELLOW MASK
+with a simple painted smiling face on it — curved eyes, a wide curved mouth,
+flat mustard-yellow, unmistakable. Grey hair above it, a pale work shirt. He is
+drying a bowl with a cloth, unhurried.
+
+AROUND HIM: a long red-brown counter with stools, a big steel stock pot with
+steam curling up, stacked bowls, chopstick jars, soy and chilli bottles, a
+mechanical till. A red paper lantern hangs at the left with vertical Japanese
+lettering down it. Short fabric noren curtains hang behind him. A hand-painted
+wooden shop sign runs across the top of the frame, and a row of small hanging
+menu cards with simple pictograms hangs beside it. A travel poster is pinned on
+the right wall.
+
+THROUGH THE WINDOW on the right: a cold blue rainy night street, lit windows
+opposite, and a tram going past. Warm inside, cold outside.`,
   },
   {
     id: 'piritori/interior-sean',

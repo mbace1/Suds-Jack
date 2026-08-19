@@ -92,32 +92,11 @@
       "hash": "9f6d30bf"
     },
     "piritori/interior-toko": {
-      "file": "2d/piritori-interior-toko.3b9431fc.png",
+      "file": "2d/piritori-interior-toko.44fdd1b8.png",
       "kind": "2d",
       "use": "reference",
       "game": "piritori",
-      "hash": "3b9431fc"
-    },
-    "piritori/interior-sean": {
-      "file": "2d/piritori-interior-sean.66eb4077.png",
-      "kind": "2d",
-      "use": "reference",
-      "game": "piritori",
-      "hash": "66eb4077"
-    },
-    "piritori/interior-igor": {
-      "file": "2d/piritori-interior-igor.95e595d7.png",
-      "kind": "2d",
-      "use": "reference",
-      "game": "piritori",
-      "hash": "95e595d7"
-    },
-    "piritori/interior-jaska": {
-      "file": "2d/piritori-interior-jaska.b89c3745.png",
-      "kind": "2d",
-      "use": "reference",
-      "game": "piritori",
-      "hash": "b89c3745"
+      "hash": "44fdd1b8"
     },
     "lab/orc": {
       "file": "2d/lab-orc.c019895c.png",
