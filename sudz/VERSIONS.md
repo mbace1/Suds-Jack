@@ -8,6 +8,20 @@
   release number shown by the arcade.
 -->
 
+## v5 — 2026-08-19
+**Make the update impossible to miss**
+- A bright, persistent `BUILD v5` badge now sits below the HUD on the title,
+  during play and on game over. It is HTML rather than a faint canvas footer,
+  so the live build number stays readable on mobile and desktop.
+- The v4 camera adjustment was too subtle. The central eye now sits at 48% of
+  the screen instead of 31%, the playable web is shorter and 23% wider, and a
+  stronger depth curve packs the distant rings tightly around the eye.
+- Terrain relief is reduced again so the view reads as a flat Tempest web rather
+  than a road. Gameplay, timing, collision depth and controls remain unchanged.
+- `game.js?v=53` and `style.css?v=1` make both the camera and badge fresh URLs.
+  `test/core.mjs`: 26 bare-Node checks retain the gameplay gate and pin the v5
+  framing plus visible build marker.
+
 ## v4 — 2026-08-19
 **The road becomes a Tempest web**
 - The vanishing point moves from the top of the screen down into the playfield,
