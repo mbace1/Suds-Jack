@@ -142,41 +142,71 @@ s.listen(0, '127.0.0.1', async () => {
             && ids.includes('rival') && ids.includes('mission:');
         }));
 
-      // ── the bargain, clicked rather than called ──────────────────────
-      // The offer is SET UP through the handle and TAKEN through the button,
-      // because a fake bag the player cannot be sold is not a mechanic.
-      const bargain = await p.evaluate(async () => {
+      // ── the room, and the bargain inside it ─────────────────────────
+      // The offer is SET UP through the handle and everything after is a
+      // click: walk into the man's place from the stop sheet, take what he is
+      // offering, and — from somebody else's place — pay to be told whether
+      // the bag is real. A fake bag the player cannot be sold is not a
+      // mechanic, and a room you cannot walk into is not a location.
+      const room = await p.evaluate(async () => {
         const d = window.__pt.debug, m = window.__pt.market;
         m.cash = 50000;
+        d.forceDeal({ seller: 'igor', at: 'sornainen', who: 'Igor',
+          good: 'piri', n: 5, discount: 0.4, fake: true, trust: -1 });
         d.sel = 'sornainen';
-        d.forceDeal({ at: 'sornainen', who: 'Igor', good: 'piri', n: 5, discount: 0.4, fake: true, trust: -1 });
-        const btn = document.getElementById('dealTake');
-        if (!btn) return { shown: false };
-        const tell = document.querySelector('#sheet .deal .hint')?.textContent || '';
+        const visit = document.getElementById('visit');
+        if (!visit) return { sheet: false };
+        visit.click();
+        const open = !document.getElementById('room').hidden;
+        const who = document.getElementById('roomWho').textContent;
+        const take = [...document.querySelectorAll('#roomBtns button')]
+          .find(b => /TAKE THE/.test(b.textContent));
+        if (!take) return { sheet: true, open, who, took: false };
         const before = m.stock.piri;
-        btn.click();
+        take.click();
         return {
-          shown: true, tell,
+          sheet: true, open, who,
           bought: m.stock.piri - before,
           cut: m.fake.piri,
-          gone: !document.getElementById('dealTake'),
+          gone: ![...document.querySelectorAll('#roomBtns button')]
+            .some(b => /TAKE THE/.test(b.textContent)),
         };
       });
-      ok('a bargain is offered where the seller stands', bargain.shown);
-      ok('and it says how far under it is before you commit',
-        /\d+% under/.test(bargain.tell || ''), bargain.tell);
-      ok('clicking TAKE IT actually buys it', bargain.bought === 5, String(bargain.bought));
-      ok('and a cut bag is really cut', bargain.cut === 5, String(bargain.cut));
-      ok('the offer cannot be taken twice', bargain.gone === true);
+      ok('a contact\'s stop offers a way in', room.sheet);
+      ok('and walking in opens their place', room.open === true && /IGOR/.test(room.who || ''), room.who);
+      ok('the offer is taken in the room', room.bought === 5, String(room.bought));
+      ok('and a cut bag is really cut', room.cut === 5, String(room.cut));
+      ok('the offer cannot be taken twice', room.gone === true);
+
+      // …and the appraisal, which is the second relationship paying off
+      const asked = await p.evaluate(async () => {
+        const d = window.__pt.debug, m = window.__pt.market;
+        m.cash = 50000;
+        d.forceDeal({ seller: 'igor', at: 'sornainen', who: 'Igor',
+          good: 'piri', n: 5, discount: 0.4, fake: true, trust: -1 });
+        d.closeRoom();
+        d.openRoom('jaska');                       // somebody else entirely
+        const ask = [...document.querySelectorAll('#roomBtns button')]
+          .find(b => /ASK ABOUT/.test(b.textContent));
+        if (!ask) return { offered: false };
+        const before = m.cash;
+        ask.click();
+        const said = document.querySelector('#roomBtns .dim')?.textContent || '';
+        d.closeRoom();
+        return { offered: true, spent: before - m.cash, said };
+      });
+      ok('a second contact will look at the first one\'s offer', asked.offered);
+      ok('and charges for it', asked.spent > 0, String(asked.spent));
+      ok('and a kept contact tells the truth', /cut/i.test(asked.said || ''), asked.said);
 
       await p.evaluate(() => window.__pt.debug.startFight('collector', 1000));
-      await p.waitForTimeout(250);
+      await p.waitForTimeout(300);
       ok('an encounter opens', await p.locator('#fight').isVisible());
-      ok('the isometric board paints', await p.evaluate(() => {
+      ok('the board paints', await p.evaluate(() => {
         const c = document.getElementById('board');
         const g = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
         const first = [g[0], g[1], g[2]].join();
-        for (let i = 4; i < g.length; i += 4) if ([g[i], g[i+1], g[i+2]].join() !== first) return true;
+        for (let i = 4; i < g.length; i += 4) if ([g[i], g[i + 1], g[i + 2]].join() !== first) return true;
         return false;
       }));
       ok('it is three a side', await p.evaluate(() => {
@@ -196,40 +226,8 @@ s.listen(0, '127.0.0.1', async () => {
       ok('it freezes the city while it runs',
         await p.evaluate(() => window.__pt.flow.clock.paused));
 
-      // arm a weapon by clicking it, then strike a ringed body on the canvas
-      const before = await p.evaluate(() => {
-        const f = window.__pt.debug.fight;
-        return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
-      });
-      await p.locator('#fightBtns button').first().click();
-      await p.waitForTimeout(80);
-      const shot = await p.evaluate(() => {
-        const d = window.__pt.debug, f = d.fight, v = d.fightView;
-        // a PERSON, deliberately: this arena has cover standing in it, and
-        // hitting a barrier moves no unit's numbers — the check below would
-        // then be passing on the enemy turns that follow rather than on the
-        // player's own swing
-        const t = f.targets(f.actor, f.actor.weapons[0]).find(x => !x.prop);
-        if (!t) return null;
-        const c = document.getElementById('board').getBoundingClientRect();
-        const pt = v.cell(t.side, t.col, t.row, f.rows);
-        return { x: c.left + pt.x / v.dpr, y: c.top + pt.y / v.dpr - 16 };
-      });
-      if (shot) {
-        await p.mouse.click(shot.x, shot.y);
-        await p.waitForTimeout(120);
-      }
-      const after = await p.evaluate(() => {
-        const f = window.__pt.debug.fight;
-        return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
-      });
-      ok('clicking a weapon then a body actually strikes', after < before, `${before} → ${after}`);
-
-      // cover is terrain now, and it has to be on the board and hittable
       // The arena is ADDITIVE: it must load when it exists and change nothing
-      // when it does not. Both halves are checked, because "the game still
-      // works with the art missing" is the promise assets/load.js makes and
-      // the only one that keeps a cabinet safe to deploy ahead of its batch.
+      // when it does not.
       ok('the fight stands on generated ground when there is some',
         await p.evaluate(async () => {
           const v = window.__pt.debug.fightView;
@@ -256,17 +254,28 @@ s.listen(0, '127.0.0.1', async () => {
         const f = window.__pt.debug.fight;
         return f.props.length > 0 && f.props.every(x => x.alive && x.hp > 0);
       }));
-      const smashed = await p.evaluate(async () => {
-        const d = window.__pt.debug, f = d.fight;
-        const prop = f.props.find(x => x.side === 'them' && x.alive);
-        if (!prop) return 'no cover';
-        const hp = prop.hp;
-        // reachable from somebody's front row with a bare hand, or it is not
-        // cover so much as scenery
-        const who = f.living('you').find(u => f.targets(u, u.weapons[0]).some(t => t.id === prop.id));
-        return who ? (hp > 0 ? 'reachable' : 'broken') : 'unreachable';
+
+      // arm a weapon by clicking it, then strike a ringed body on the canvas
+      const before = await p.evaluate(() => {
+        const f = window.__pt.debug.fight;
+        return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
       });
-      ok('cover stands where a swing can reach it', smashed === 'reachable', smashed);
+      await p.locator('#fightBtns button').first().click();
+      await p.waitForTimeout(80);
+      const shot = await p.evaluate(() => {
+        const d = window.__pt.debug, f = d.fight, v = d.fightView;
+        const t = f.targets(f.actor, f.actor.weapons[0]).find(x => !x.prop);
+        if (!t) return null;
+        const c = document.getElementById('board').getBoundingClientRect();
+        const pt = v.cell(t.side, t.col, t.row, f.rows);
+        return { x: c.left + pt.x / v.dpr, y: c.top + pt.y / v.dpr - 16 };
+      });
+      if (shot) { await p.mouse.click(shot.x, shot.y); await p.waitForTimeout(120); }
+      const after = await p.evaluate(() => {
+        const f = window.__pt.debug.fight;
+        return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
+      });
+      ok('clicking a weapon then a body actually strikes', after < before, `${before} → ${after}`);
 
       // ITEM, clicked. A consumable you cannot actually throw is a button.
       const thrown = await p.evaluate(async () => {

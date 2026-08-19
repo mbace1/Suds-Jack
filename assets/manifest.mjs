@@ -158,6 +158,34 @@ ABSOLUTELY NO TEXT ANYWHERE: no names, no numbers, no labels, no legend, no
 title, no lettering in any language. Labels are added later in code. No logos,
 no UI, no watermark, no people, no vehicles.`,
 
+  // INTERIORS — the same cut paper as the map, but LIT and inhabited.
+  //
+  // The targets' noodle shop is unmistakably the same craft as the map: a paper
+  // lantern, a paper shirt, paper bowls. What separates it is that a room is a
+  // place you are standing IN rather than a thing you are holding, so it is
+  // warm, it is lit from inside, and there is a person behind the counter.
+  //
+  // The person is the reason this is its own style. `paper` forbids people
+  // outright — a map with figures on it is a diorama of a crowd — and an
+  // interior needs exactly one.
+  paperRoom: `Piritori interior style. A PHOTOGRAPH OF A HANDMADE CUT-PAPER
+DIORAMA — a little stage box built from layers of torn and cut card, seen
+straight on from across the counter. Every object is visibly made of paper:
+paper bowls, paper bottles, a paper lantern, a paper coat. Torn white edges,
+visible fibre, real soft drop shadows between the layers.
+
+WARM AND LIT FROM INSIDE. One or two practical lights — a lantern, a bulb over
+the counter — pooling warm amber on the near surfaces and falling off into deep
+blue-black at the edges of the box. Outside the window it is night and cold.
+
+ONE PERSON, behind the counter, built from the same paper as everything else,
+seen from the chest up and slightly turned. No face detail beyond the barest
+suggestion — the silhouette and the hands do the work.
+
+Muted and tactile: warm ochre, deep red-brown, slate, bone, black. ABSOLUTELY
+NO TEXT ANYWHERE — no signs, no labels, no menu boards, no lettering in any
+language. No logos, no UI, no watermark.`,
+
   // The ARENAS ONLY, and they are a deliberate exception to `kallio` above.
   //
   // The first arena pass obeyed the house style to the letter — flat fills, no
@@ -570,6 +598,63 @@ fills the sheet, running diagonally from bottom-left to top-right. One magenta
 line runs through the whole diagram toward the top-right corner, where it
 leaves the sheet. Charcoal, dirty off-white, cold blue, one orange accent.
 Bleak, dry, deadpan. No people, no crime imagery, no glow, no title text.`,
+  },
+
+  // ── the four interiors ─────────────────────────────────────────────────
+  // One per contact, keyed to `piritori/interior-<contact id>` so main.js can
+  // ask for a room by the person standing in it. Additive: with none generated
+  // the room is the person and the words, which is what it was yesterday.
+  {
+    id: 'piritori/interior-toko',
+    game: 'piritori',
+    use: 'reference',
+    style: 'paperRoom',
+    aspect: '16:9',
+    tags: ['interior', 'contact'],
+    prompt: `Inside a tiny late-night noodle shop on a Helsinki side street in
+2003. A worn wooden counter across the front with three stools at it, a big
+steel stock pot steaming behind, stacked bowls, chopstick jars, soy bottles, a
+till. A paper lantern hangs at one side. Through the window at the right it is
+raining and a tram is passing. The cook stands behind the counter drying a
+bowl.`,
+  },
+  {
+    id: 'piritori/interior-sean',
+    game: 'piritori',
+    use: 'reference',
+    style: 'paperRoom',
+    aspect: '16:9',
+    tags: ['interior', 'contact'],
+    prompt: `Inside a narrow Irish bar on a Helsinki backstreet in 2003. A dark
+wooden bar across the front with taps and upturned stools, bottles on a mirrored
+back shelf, a dartboard, a low lamp over the till. Through the window at the
+left it is night. The barman stands behind the bar with his hands flat on it.`,
+  },
+  {
+    id: 'piritori/interior-igor',
+    game: 'piritori',
+    use: 'reference',
+    style: 'paperRoom',
+    aspect: '16:9',
+    tags: ['interior', 'contact'],
+    prompt: `The back booth of a shabby restaurant near a Helsinki metro
+station in 2003. A red vinyl banquette, a small table with a cloth, an ashtray,
+a ledger, one hanging bulb in a cheap shade throwing a hard pool of light and
+leaving the corners black. A coat on a hook. A man sits in the booth, still,
+facing the viewer.`,
+  },
+  {
+    id: 'piritori/interior-jaska',
+    game: 'piritori',
+    use: 'reference',
+    style: 'paperRoom',
+    aspect: '16:9',
+    tags: ['interior', 'contact'],
+    prompt: `A cramped painter's room in a Helsinki tenement in 2003. Canvases
+stacked against the wall, a jar of brushes, a paint-smeared table, a mattress on
+the floor, one bare bulb and a window onto a dark courtyard with snow on the
+sill. Warmer and softer than anywhere else in this game. A young man sits at the
+table with charcoal on his hands, looking up.`,
   },
 
   // ── THE LAB — no cabinet yet ─────────────────────────────────────────────
