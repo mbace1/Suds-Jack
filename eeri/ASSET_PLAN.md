@@ -222,3 +222,39 @@ its stick and buttons large, and the hit areas sit almost exactly on them.
 What would fix it: the same DMG face with the d-pad, A/B and the pills
 scaled up within it (less blank shell, same silhouette). The blank panel
 between the d-pad and B should stay — the Toko sticker lives there now.
+
+---
+
+## Resolved: `ladder_v1.glb` / `scaffold_v1.glb` are NOT going to be meshes
+
+`PHASING.md` Phase A lists them as Art items and `DESIGN.md` §8.2 gives them a
+contract — *"must tile vertically without a seam. Built and playable on a code
+placeholder — one tile tall, origin at its foot, the game repeats it up the
+run."* Read on its own that says: make a mesh. Looked at, it says the opposite,
+and the looking is what settles it.
+
+The ladder is **already built**, twice, in `js/level.js`: once from the map's
+`ladders` list and once from the `H` tile. Two stiles and a rung per tile,
+through `box()`/`craftBox()` so it takes the balsa grain like every other made
+thing, drawn at z +0.35–0.45 so the rungs read against the earth behind them.
+Every clause of the contract is already satisfied — one tile, origin at the
+foot, repeated up the run, a rung every tile — and it satisfies the hard one,
+**seamless tiling, BY CONSTRUCTION**: it is generated per tile, so there is no
+seam to hide.
+
+A Meshy mesh cannot do that. An image-to-3D result has no reason for its top
+cross-section to match its bottom, and nothing in the pipeline can make it —
+so a ladder tile would arrive with a visible joint every 1.0 units, which is
+the one defect the contract names. Buying that with 30 credits and a slice
+table would be paying to make the asset worse.
+
+This is the tool-reality table's own routing rule reaching one step further.
+It already says *deformation → code*; a **repeating modular tile is code** for
+exactly the same reason — it is defined by a rule rather than by a shape, and
+a generated shape cannot hold a rule.
+
+**What IS open here is the LOOK, not the format.** The tiles are `box()`
+primitives in `mat.steel` and `mat.girder`. If a scaffold pass is wanted, it
+belongs in the material and the profile, and `js/level.js` is Design/Level's
+file — so that is a coordinated change, not an art drop. Nothing is blocked on
+a file that does not exist.

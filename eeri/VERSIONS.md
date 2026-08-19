@@ -1,5 +1,89 @@
 # EERI — versions
 
+## v15.23 — 2026-08-19 — the pieces stop being placeholders
+
+`assets/manifest.json`'s `pieces` block had six entries and **not one file**.
+Three of them now have one: the flag that ends a level, the gantry that ends a
+world, and the midway checkpoint. All Meshy image-to-3D, cut by `slice.mjs`,
+`live` and loading through `getPiece`.
+
+**One mesh per flag, not three.** The flag BUILDS in three steps, so phase1 has
+to be the SAME flag as phase2 with less of it finished. Three separate
+generations of "a flag at stage N" come back as three DIFFERENT flags — same
+prompt, different object — and the build then reads as a cut between two props
+instead of one prop being assembled. So: one mesh, sliced once, and the new
+`art-src/tools/phasemerge.mjs` composes `pole` + `phase0/1/2` from CUMULATIVE
+SUBSETS of its parts. A third of the credits, and honestly the same object
+three times. 90 credits for all three pieces; balance 798.
+
+**And the phases now read at a glance**, which is their stated contract
+(DESIGN §6.3) and the thing the code-built flag failed: its phase2 added a
+0.2-unit ball and a small plank, invisible at a run. The mesh adds a chunky
+caged lamp standing above the pole. `flag_big` is a **different shape** rather
+than a bigger one — a two-post gantry with the cloth slung between — because a
+size difference is not tellable without the small flag beside it to compare.
+Its footprint is 4.2 x 3.8 against the small flag's 2.3 x 3.8; that number is
+the part Design/Level may want to argue with, and it is in the manifest note.
+
+**Four traps, and three of them shipped silently before anything caught them.**
+
+1. **A leaf node has to BE its mesh.** `slice.mjs` wrapped every cut in a
+   Group holding a `<name>_mesh`, which is right for a machine — the game only
+   rotates those. But pieces are RECOLOURED: `js/flag.js` does
+   `nodes.lamp.material.color.set(...)`, and a Group has no `.material`, so
+   the checkpoint threw the first time it was lit. Nothing had ever caught it
+   because **no node-rig piece had ever been `live`** — every one was still a
+   placeholder, so that contract had never once been exercised. New opt-in
+   `flatten` on the spec; all fifteen machine rigs cut byte-identical.
+2. **`GLTFExporter` prunes invisible nodes.** `phasemerge` rested the file on
+   phase0 and hid the rest, and the exporter dropped phase1 and phase2 from
+   the file entirely. The GLB loaded, `pole` and `phase0` both resolved, the
+   file was a plausible 1.5 MB — and the flag simply never built. `statemerge`
+   escapes this only because it never sets `visible` at all. Fixed with
+   `onlyVisible: false`.
+3. **Capping is for a seam, not for a footprint.** `capHoles` closes the
+   boundary a cut leaves behind, which is right when a wheel comes off an axle
+   and leaves a coin-sized hole. The gantry's cloth is welded across its beam
+   and both uprights, so the "hole" was the whole area the cloth occupied and
+   the fan filled the bay with a solid grey web. New `cap: false`.
+4. **`getObjectByName` returns the first match and stops.** The banner is
+   cloned into phase1 and phase2, and under one name `housePaint` would repaint
+   one and leave the other on its Meshy texture — the flag would change colour
+   as it built, on the last step only. Clones are suffixed `_p1`/`_p2` and the
+   tool prints the paint keys so the manifest is written from the file.
+
+Also: `phase2`'s children are ordered `[lamp, banner]` because `js/flag.js`
+waves `phase2.children[1]`, and the checkpoint's `lamp` is deliberately left
+OUT of its paint map — `slice.mjs` gives every node of a model one shared
+material, so painting body and cloth leaves the lamp the only user of the
+original, and `lamp.material.color.set()` can no longer turn the whole post
+green.
+
+**Cross-lane, declared:** two entries added to `ROLE` in `js/assets.js`
+(`HAZARD`, `GREEN`) — the two state colours the pieces need and the machines
+never did, and `js/flag.js` already builds its placeholders from exactly those
+two. The manifest token moved 25 → 26 in both places it is written.
+
+**Compressed with the rest.** v15.22 landed `compress-models.mjs` the same day
+this branch was cutting new meshes, so all three went through it rather than
+re-inflating the directory a release later: 1.78 / 1.82 / 2.00 MB → 0.91 /
+0.91 / 1.00 MB, about half, in line with that release's −46%. The tool's own
+guard is the point — it compares node names, clip names and skin count before
+and after and refuses a file whose contract moved — and all four contracted
+node names survive on each piece. Only the three new files are rewritten here;
+re-running the tool over already-compressed models buys about 1% and would
+have put 27 files of pure diff noise in this change.
+
+**Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
+to be meshes.** The ladder is already built per tile in `js/level.js` and meets
+every clause of its contract, including the hard one — seamless vertical
+tiling — **by construction**, because it is generated per tile and has no seam.
+An image-to-3D result has no reason for its top cross-section to match its
+bottom, so a mesh would arrive with a visible joint every tile, which is the
+one defect the contract names. The reasoning is written up in `ASSET_PLAN.md`;
+the tool-reality table already says *deformation → code*, and a repeating
+modular tile is code for the same reason.
+
 ## v15.22 — 2026-08-19 — the models lose half their weight, contracts intact
 
 `assets/3d` had reached **56 MB** across two releases, immediately after the
