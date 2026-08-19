@@ -1,5 +1,218 @@
 # EERI — versions
 
+## v15.25 — 2026-08-19 — the slab has thickness, the kid has an edge, landscape loses its board
+
+Three of the four things the captured frames said were wrong, plus the
+landscape rework.
+
+**The playfield reads as built.** A run of earth with air under it was one
+flat topsoil rectangle with a grass strip on top — the least finished thing on
+screen, against backdrops that are layered, hazed and lit. It now steps down
+in tone below the lip and takes the lane's darkest tone along its underside,
+which is §3.1's "a single darker tone for side faces" and "shading painted in,
+key from upper-left" applied to the surface the player actually stands on.
+
+**The kid has an edge.** A back-face shell in INK on every mesh, built from
+the model itself so it follows the pose and the bones for free. Not a post
+effect — §3.4 forbids a post stack, and a shell obeys that while giving the
+same silhouette. He was a small mid-toned figure against busy pale backdrops
+and in Nightshift nearly his own value; losing your own character is the worst
+failure available in a game for a six-year-old.
+
+**LANDSCAPE DROPS THE BOARD** (owner: "the screen wider", "the controls cover
+the screen along", "smaller and lower", and the one that decides it — "if the
+buttons have a and b on them, the board doesn't need them").
+
+The drawn panel was solving a problem the buttons already solve. It carried
+its own A and B, so held sideways you read the same two letters twice, and it
+charged 141 px of a 390 px-tall phone for it — a strip the stage then had to
+fit above. So landscape keeps the controls and loses the plate: glyph buttons
+along the bottom corners, over the picture rather than under it, and
+`fitStage` stops reserving a panel's height because a hidden `#pad` measures
+zero. **The stage goes 443 × 249 to 693 × 390 — 56% wider.**
+
+**The face is arrows and A/B** (owner: "just arrows and a b please").
+`glyphs.js`'s illustrated figures are right on the 13px hint line where they
+describe a VERB; on a 54px control they are the wrong register — a button
+face should say which button it is, not mime what it does. Not a key cap and
+not a mouse icon (§6.4 forbids both): an arrow and a letter are what is
+printed on a controller.
+
+Two things the gates caught rather than the eye. SELECT and START first went
+top-right and **overlapped the HUD**, so they moved to the bottom centre under
+the hint, between the two thumbs and under neither. And they were drawn 30 px
+tall — `test/smoke.cjs` measures the 44 px floor and was right to object.
+
+**Portrait is untouched.** Held upright the picture is a window above a
+handheld's face and the DMG plate is the charm of it; there the board earns
+its room.
+
+**The nine animations that were loaded and never played.** `eeri_v5.glb`
+carries fifteen clips; the game had only ever named six, so the other nine
+were parsed, skinned and stepped every frame with nothing selecting them.
+Five have a moment this file already knows about, and they are wired to it:
+`climbon` / `climboff` on either side of a ladder, `teeter` when he is idle at
+the lip of a drop of more than 1.6 (throttled, or he teeters every frame he
+stands at an edge), and `idle2` / `lookaround` as idle breaks on a re-rolled
+4-8 then 6-12 second timer. `talk` and `confused` stay unwired on purpose:
+there is no beat in play that means either, and inventing a trigger to use up
+a clip is how a character starts doing things for no reason.
+
+**Two rules in the landscape block were losing a specificity fight.** A media
+query adds no weight of its own, and both rules it has to overturn
+(`html.plated #stick`, `html.plated #touch #tL`) sit further down the sheet.
+Measured on a 750×340 phone the result was a zero-size stick on top of four
+`pointer-events: none` arrows — **no way to move at all**. Both are now
+written heavier than what they replace, and the gate asserts the landscape
+design directly (board away, stick away, arrows live, faces set in CSS)
+instead of asserting the plate that is no longer there.
+
+**The playthrough gate was timing the jump on the wrong clock.** It held jump
+for 420 ms of *wall* time; the loop clamps `dt` to 33 ms, so under a software
+renderer at 13 fps the game clock runs at under half real time and 420 ms is
+five frames — 0.17 s of his time. His jump is variable height, so every jump
+the bot made was a hop, and it sat under the first two-high step in seven of
+twelve levels reporting a wall that is not there. Held in `player.t` now, the
+same clock the jump is integrated on. **No level changed; seven went from
+"unfinishable" to finished.**
+
+Still open from the diagnosis: one dirt band still serves all four worlds, the
+Grove canopy is still flat discs, and tone mapping is still the undecided
+§3.4 call.
+
+## v15.24 — 2026-08-19 — every live model was rendering as dark metal
+
+Second-pass visual work, and it starts with a bug rather than a preference.
+
+**Every Meshy export ships `metallic 0.5, roughness 0.5`** — half metal, half
+gloss. Surveyed across `assets/3d`, that is 22 of 30 models; the hand-built
+ones (`eeri_v5`, `boltbot`, `bucket`, `hopper`, `workerbot`) are correctly
+`metallic 0, roughness 1`. This scene has one hemisphere fill, one directional
+key and **deliberately no environment map** — and a metal with nothing to
+reflect renders DARK.
+
+That is why the collectable bolts read as specks of dirt on the ground rather
+than as the thing you are in the level to pick up. `bolt` went `live` in an
+earlier release and its placeholder had been bright `PAL.MACHINE` orange, so
+flipping the seam to the real asset made the pickup *harder to see* — the one
+thing a collectable may not be. Every machine would have arrived the same way
+as it got wired.
+
+ART_BRIEF §3.1 already says it: **"no PBR gloss anywhere."** It is now
+enforced at the seam in `js/assets.js` (`paintedToy`) rather than hoped for
+per asset — metalness 0, roughness 1 on every loaded model, levelling the two
+families to one language. baseColor and textures are left alone: this changes
+how a surface answers light, not what colour it is.
+
+Measured before/after on captured frames rather than judged by eye: in
+Pipeworks the changed pixels brightened **74.2 → 94.3 mean luma (+27%)**,
+concentrated in the play band (y 334-464) where the bolts and pieces sit.
+Groundworks +8%. Nothing else moved.
+
+**What the frames also showed, and what is NOT fixed here** — recorded so the
+next pass starts from a diagnosis instead of a blank page:
+
+1. **The playfield is the least finished thing on screen.** The backdrops are
+   crafted, layered and lit; the platforms the kid actually runs on are flat
+   slabs with a hard top edge. §3.1 asks for "a single darker tone for side
+   faces" and "large radii" and the platform faces have neither.
+2. **The kid does not read.** He is small, unlit against busy backdrops, and
+   has no rim or outline guaranteeing contrast. For the six-year-old this is
+   built for, that is the most important failure in the list.
+3. **One dirt band serves all four worlds.** The night dock sits on the same
+   sunlit brown earth as the construction site, with the same pipe and brick
+   inclusions repeating at a visible interval.
+4. **The Grove canopy is flat discs.** The code painter's fan of circles reads
+   as green balloons in front of library art that is much better than it.
+5. **Tone mapping is still undecided.** §3.4 leaves it explicitly open —
+   "NoToneMapping or ACES, whichever the gate-1 shot proves, then locked" —
+   and the renderer sets neither, so it is defaulting rather than deciding.
+   Worth its own pass, not a change to slip in at the end of another.
+
+## v15.23 — 2026-08-19 — the pieces stop being placeholders
+
+`assets/manifest.json`'s `pieces` block had six entries and **not one file**.
+Three of them now have one: the flag that ends a level, the gantry that ends a
+world, and the midway checkpoint. All Meshy image-to-3D, cut by `slice.mjs`,
+`live` and loading through `getPiece`.
+
+**One mesh per flag, not three.** The flag BUILDS in three steps, so phase1 has
+to be the SAME flag as phase2 with less of it finished. Three separate
+generations of "a flag at stage N" come back as three DIFFERENT flags — same
+prompt, different object — and the build then reads as a cut between two props
+instead of one prop being assembled. So: one mesh, sliced once, and the new
+`art-src/tools/phasemerge.mjs` composes `pole` + `phase0/1/2` from CUMULATIVE
+SUBSETS of its parts. A third of the credits, and honestly the same object
+three times. 90 credits for all three pieces; balance 798.
+
+**And the phases now read at a glance**, which is their stated contract
+(DESIGN §6.3) and the thing the code-built flag failed: its phase2 added a
+0.2-unit ball and a small plank, invisible at a run. The mesh adds a chunky
+caged lamp standing above the pole. `flag_big` is a **different shape** rather
+than a bigger one — a two-post gantry with the cloth slung between — because a
+size difference is not tellable without the small flag beside it to compare.
+Its footprint is 4.2 x 3.8 against the small flag's 2.3 x 3.8; that number is
+the part Design/Level may want to argue with, and it is in the manifest note.
+
+**Four traps, and three of them shipped silently before anything caught them.**
+
+1. **A leaf node has to BE its mesh.** `slice.mjs` wrapped every cut in a
+   Group holding a `<name>_mesh`, which is right for a machine — the game only
+   rotates those. But pieces are RECOLOURED: `js/flag.js` does
+   `nodes.lamp.material.color.set(...)`, and a Group has no `.material`, so
+   the checkpoint threw the first time it was lit. Nothing had ever caught it
+   because **no node-rig piece had ever been `live`** — every one was still a
+   placeholder, so that contract had never once been exercised. New opt-in
+   `flatten` on the spec; all fifteen machine rigs cut byte-identical.
+2. **`GLTFExporter` prunes invisible nodes.** `phasemerge` rested the file on
+   phase0 and hid the rest, and the exporter dropped phase1 and phase2 from
+   the file entirely. The GLB loaded, `pole` and `phase0` both resolved, the
+   file was a plausible 1.5 MB — and the flag simply never built. `statemerge`
+   escapes this only because it never sets `visible` at all. Fixed with
+   `onlyVisible: false`.
+3. **Capping is for a seam, not for a footprint.** `capHoles` closes the
+   boundary a cut leaves behind, which is right when a wheel comes off an axle
+   and leaves a coin-sized hole. The gantry's cloth is welded across its beam
+   and both uprights, so the "hole" was the whole area the cloth occupied and
+   the fan filled the bay with a solid grey web. New `cap: false`.
+4. **`getObjectByName` returns the first match and stops.** The banner is
+   cloned into phase1 and phase2, and under one name `housePaint` would repaint
+   one and leave the other on its Meshy texture — the flag would change colour
+   as it built, on the last step only. Clones are suffixed `_p1`/`_p2` and the
+   tool prints the paint keys so the manifest is written from the file.
+
+Also: `phase2`'s children are ordered `[lamp, banner]` because `js/flag.js`
+waves `phase2.children[1]`, and the checkpoint's `lamp` is deliberately left
+OUT of its paint map — `slice.mjs` gives every node of a model one shared
+material, so painting body and cloth leaves the lamp the only user of the
+original, and `lamp.material.color.set()` can no longer turn the whole post
+green.
+
+**Cross-lane, declared:** two entries added to `ROLE` in `js/assets.js`
+(`HAZARD`, `GREEN`) — the two state colours the pieces need and the machines
+never did, and `js/flag.js` already builds its placeholders from exactly those
+two. The manifest token moved 25 → 26 in both places it is written.
+
+**Compressed with the rest.** v15.22 landed `compress-models.mjs` the same day
+this branch was cutting new meshes, so all three went through it rather than
+re-inflating the directory a release later: 1.78 / 1.82 / 2.00 MB → 0.91 /
+0.91 / 1.00 MB, about half, in line with that release's −46%. The tool's own
+guard is the point — it compares node names, clip names and skin count before
+and after and refuses a file whose contract moved — and all four contracted
+node names survive on each piece. Only the three new files are rewritten here;
+re-running the tool over already-compressed models buys about 1% and would
+have put 27 files of pure diff noise in this change.
+
+**Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
+to be meshes.** The ladder is already built per tile in `js/level.js` and meets
+every clause of its contract, including the hard one — seamless vertical
+tiling — **by construction**, because it is generated per tile and has no seam.
+An image-to-3D result has no reason for its top cross-section to match its
+bottom, so a mesh would arrive with a visible joint every tile, which is the
+one defect the contract names. The reasoning is written up in `ASSET_PLAN.md`;
+the tool-reality table already says *deformation → code*, and a repeating
+modular tile is code for the same reason.
+
 ## v15.22 — 2026-08-19 — the models lose half their weight, contracts intact
 
 `assets/3d` had reached **56 MB** across two releases, immediately after the

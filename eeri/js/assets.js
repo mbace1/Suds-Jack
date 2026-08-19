@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=29';
+import { PAL } from './palette.js?v=31';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -36,6 +36,10 @@ const ROLE = {
   DARK: PAL.DARK, INK: PAL.INK,
   STEEL0: PAL.STEEL[0], STEEL1: PAL.STEEL[1], STEEL2: PAL.STEEL[2], STEEL3: PAL.STEEL[3],
   EARTH0: PAL.EARTH[0], EARTH1: PAL.EARTH[1], EARTH2: PAL.EARTH[2], EARTH3: PAL.EARTH[3],
+  // the two state colours the PIECES need and the machines never did: a flag
+  // cloth is HAZARD or MACHINE and a lit checkpoint is GREEN, and js/flag.js
+  // already builds its code placeholders from exactly these two
+  HAZARD: PAL.HAZARD, GREEN: PAL.GREEN,
 };
 
 // The cast is "painted wood and pressed steel" (§3.3), so its flat palette
@@ -103,12 +107,42 @@ export async function loadManifest() {
   // token never learns the new one exists and keeps the old art forever,
   // with every asset URL inside it still perfectly correct. This shipped at
   // `?v=1` for eleven versions. The smoke gate now asserts the two agree.
-  const res = await fetch(new URL('manifest.json?v=25', BASE));
+  const res = await fetch(new URL('manifest.json?v=26', BASE));
   manifest = await res.json();
   return manifest;
 }
 
 // ---- 3D: models against a rig contract -----------------------------------
+
+// NO PBR GLOSS ANYWHERE (ART_BRIEF §3.1/§3.4) — enforced here rather than
+// hoped for per asset.
+//
+// Every Meshy export arrives `metallic 0.5, roughness 0.5`: half metal, half
+// gloss. This scene has ONE hemisphere fill and ONE directional key and
+// deliberately no environment map, and a metal with nothing to reflect
+// renders DARK. That is not a subtlety — it is why the collectable bolts read
+// as specks of dirt on the ground rather than as the thing you are there to
+// pick up, and it would have done the same to every machine as it got wired.
+//
+// The hand-built models in the same folder are already `metallic 0,
+// roughness 1`, which is what "painted toy" means in glTF terms. So this
+// levels the two families to the same language on load: matte, lit by the
+// rig, colour from the map.
+//
+// Left alone on purpose: baseColor and the texture. This changes how a
+// surface answers light, not what colour it is.
+function paintedToy(root) {
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+      if (!m) continue;
+      if (m.metalness !== undefined) m.metalness = 0;
+      if (m.roughness !== undefined) m.roughness = 1;
+      m.needsUpdate = true;
+    }
+  });
+}
+
 
 export async function getModel(name, buildPlaceholder, kind = 'models') {
   const entry = manifest?.[kind]?.[name];
@@ -116,6 +150,7 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
   try {
     const gltf = await new GLTFLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href);
     const root = gltf.scene;
+    paintedToy(root);
 
     // A SECOND KIND OF RIG. A hand-cut model is a tree of named nodes the
     // game rotates. A Meshy auto-rigged character is a SKINNED mesh driven by
