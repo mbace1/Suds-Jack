@@ -1,5 +1,43 @@
 # EERI — versions
 
+## v15.22 — 2026-08-19 — the models lose half their weight, contracts intact
+
+`assets/3d` had reached **56 MB** across two releases, immediately after the
+layer art went the other way (31 MB → 5.9 MB). Measured rather than guessed:
+only ~23% of it was texture. The rest was vertex data stored as raw float32,
+and the machines had **no indices at all**.
+
+`art-src/tools/compress-models.mjs` rewrites every shipped `.glb` with two
+passes and no new runtime dependency: **`quantize`** (KHR_mesh_quantization —
+float32 positions/normals/UVs become int16/int8; a data layout, not a codec)
+and **`webp`** (EXT_texture_webp). Both are decoded natively by the vendored
+GLTFLoader. **55.7 MB → 30.2 MB, −46%**, across 28 files.
+
+**Draco and meshopt would beat both and are deliberately not used.** Each
+needs a decoder module that is not in `vendor/`, and adding a runtime
+dependency to save disk is the wrong trade for a game that must boot on a
+phone with no build step.
+
+**The trap, and the reason this is a tool rather than a one-liner.** The
+obvious command is `gltf-transform optimize`. Run on the crane it took the
+model from **19 nodes to 1** — because `optimize` bundles `join` and
+`flatten`, which merge nodes. Those node names ARE the seam: `assets.js` looks
+up `house`, `boom`, `stick`, `bucket` by name and `js/excavator.js` drives
+them, so a merge silently turns a rigged machine into one welded lump the game
+cannot articulate. It would have passed a visual check and failed in a level.
+So the tool runs the two safe passes only, and **compares node names, clip
+names and skin count before and after, refusing to write a file whose
+contract moved**. A tool that needs a gate to catch it is a tool aimed at your
+foot.
+
+Also removed: `eeri_v3.glb`, two character generations back and referenced by
+nothing. `eeri_v4.glb` stays — it is the skeleton v5's clips were retargeted
+onto — and so does `excavator_v2.glb`, which is parked on purpose and says so
+in the manifest.
+
+Verified after: `eeri_v5` keeps its skin and all fifteen clips, `excavator_v1`
+its twenty nodes. Gates green.
+
 ## v15.21 — 2026-08-19 — three enemies, a site kit, and the theme has a home
 
 Three PRs merged in order onto v15.20. All three are art and reference; no
