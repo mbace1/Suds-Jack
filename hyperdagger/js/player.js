@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=61';
+import { TUNING as T } from './tuning.js?v=63';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const EYE = T.player.eye;
@@ -37,6 +37,8 @@ export class Player {
     this.sens = 1; // look sensitivity multiplier (pause-menu option)
     this.aimAssist = 1; // <1 slows stick look near a target; main sets it per frame
     this.dashEnabled = true;
+    this.edgeMode = 'void';
+    this.overEdge = false;
     this.reset();
   }
 
@@ -67,6 +69,7 @@ export class Player {
     this.daggerJumpsLeft = T.player.daggerJumps;
     this.hopCount = 0;
     this.daggerJumpCount = 0;
+    this.overEdge = false;
     this._sync();
   }
 
@@ -221,18 +224,24 @@ export class Player {
     }
     this.feet.addScaledVector(this.velocity, dt);
 
-    // Keep inside the arena.
     const r = Math.hypot(this.feet.x, this.feet.z);
-    const max = this.arenaR - 0.8;
-    if (r > max) {
-      this.feet.x *= max / r;
-      this.feet.z *= max / r;
-      const nx = this.feet.x / max, nz = this.feet.z / max;
-      const outward = this.velocity.x * nx + this.velocity.z * nz;
-      if (outward > 0) {
-        this.velocity.x -= nx * outward;
-        this.velocity.z -= nz * outward;
+    if (this.edgeMode === 'void') {
+      this.overEdge = r > this.arenaR - 0.12;
+    } else if (this.edgeMode === 'clamp') {
+      this.overEdge = false;
+      const max = this.arenaR - 0.8;
+      if (r > max) {
+        this.feet.x *= max / r;
+        this.feet.z *= max / r;
+        const nx = this.feet.x / max, nz = this.feet.z / max;
+        const outward = this.velocity.x * nx + this.velocity.z * nz;
+        if (outward > 0) {
+          this.velocity.x -= nx * outward;
+          this.velocity.z -= nz * outward;
+        }
       }
+    } else {
+      this.overEdge = false;
     }
 
     // Vertical integration. A buffered landing press is consumed next frame,
@@ -240,7 +249,7 @@ export class Player {
     const wasAbove = this.feet.y > 0.001;
     this.vy += GRAVITY * dt;
     this.feet.y += this.vy * dt;
-    if (this.feet.y < 0) {
+    if (this.edgeMode !== 'open' && this.feet.y < 0) {
       this.feet.y = 0;
       this.vy = 0;
       if (wasAbove) this.landedAgo = 0;
