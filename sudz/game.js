@@ -1,5 +1,5 @@
-// Suds Jack — Horizon Mesh v5.0
-// Fixed projection + consistent jump physics (z up, positive)
+// Suds Jack — Horizon Mesh v3
+// Nine-lane score attack: collect, jump, stomp, survive.
 // Bomb Jack × Tempest × Tiny Wings × Suda51
 
 (() => {
@@ -10,12 +10,19 @@
   const elScore = document.getElementById("score");
   const elBest = document.getElementById("best");
   const elLives = document.getElementById("lives");
+  const elWave = document.getElementById("wave");
   const overlay = document.getElementById("overlay");
   const playBtn = document.getElementById("play");
   const glitch = document.getElementById("glitch");
+  const overlayTag = overlay.querySelector(".tag");
+  const overlaySub = overlay.querySelector(".sub");
+  const overlayHowto = overlay.querySelector(".howto");
+  const overlayHint = overlay.querySelector(".hint");
 
-  const VERSION = "v5.0";
+  const VERSION = "v3";
   const LANES = 9;
+  const SLICE_COUNT = 31;
+  const SLICE_SPACING = 0.036;
 
   // Physics — z is UP, 0 = ground
   const GRAVITY = 48;
@@ -25,7 +32,7 @@
   const MOVE_SPEED = 7.2;
   const PLAYER_DEPTH = 0.88;
   const HIT_DEPTH = 0.82;
-  const HI_KEY = "sudsJack.horizon.v5.best";
+  const HI_KEY = "sudsJack.horizon.best";
 
   // Perspective — sane classic vector
   const FAR_SCALE = 0.06;
@@ -37,12 +44,13 @@
   let score = 0, best = Number(localStorage.getItem(HI_KEY) || 0) || 0;
   let lives = 3, mult = 1, combo = 0, comboTimer = 0;
   let t = 0, last = 0, hue = 172, seed = 11;
-  let distance = 0, intensity = 1;
+  let distance = 0, intensity = 1, wave = 1;
   let shake = 0, flash = 0;
 
   const keys = new Set();
   const touch = { left: false, right: false, jump: false };
   const activeTouches = new Map();
+  let padJumpDown = false;
 
   const player = {
     lane: (LANES - 1) / 2,
@@ -53,10 +61,11 @@
 
   let slices = [];
   let nextSliceId = 0;
-  let genPhase = 0;
+  let nextFarRow = -1;
   let things = [];
   let particles = [];
   let spawnTimer = 0.55;
+  let lastSpawnLane = -1;
   let audioCtx = null;
 
   function ensureAudio() {
@@ -119,64 +128,113 @@
     return { x, y: baseY - elevPx, s };
   }
 
-  function meshHeight(lane, depth) {
-    const world = genPhase + depth * 6.5 + distance * 0.012;
+  function terrainHeight(lane, row) {
+    const world = row * 0.22;
     const ridge = Math.abs(Math.sin(world * 0.5 + lane * 0.65));
-    const sharp = Math.pow(ridge, 2.0) * 0.28;
-    const cross = Math.pow(Math.abs(Math.sin(world * 1.2 + lane * 1.5)), 1.8) * 0.14;
+    const sharp = Math.pow(ridge, 2.0) * 0.26;
+    const cross = Math.pow(Math.abs(Math.sin(world * 1.2 + lane * 1.5)), 1.8) * 0.12;
     const platWave = Math.sin(world * 0.2 + lane * 0.28);
-    const plat = platWave > 0.7 ? (platWave - 0.7) * 1.8 : 0;
-    const base = 0.03 + 0.05 * Math.sin(world * 0.14 + lane * 0.35);
-    return Math.min(0.7, base + sharp + cross + plat);
+    const plat = platWave > 0.72 ? (platWave - 0.72) * 1.55 : 0;
+    const base = 0.035 + 0.045 * Math.sin(world * 0.14 + lane * 0.35);
+    return Math.max(0, Math.min(0.64, base + sharp + cross + plat));
   }
 
-  function meshPeak(lane, depth) {
-    return meshHeight(lane, depth) > 0.38;
+  function makeSlice(depth, row) {
+    const heights = [];
+    const peak = [];
+    for (let lane = 0; lane < LANES; lane++) {
+      const h = terrainHeight(lane, row);
+      heights.push(h);
+      peak.push(h > 0.4);
+    }
+    return { depth, row, heights, peak, id: nextSliceId++ };
   }
 
   function ensureSlices() {
-    while (slices.length < 36) {
-      const maxD = slices.length ? Math.max(...slices.map(s => s.depth)) : -0.03;
-      const d = maxD + 0.036;
-      const heights = [];
-      const peak = [];
-      for (let i = 0; i < LANES; i++) {
-        const h = meshHeight(i, d);
-        heights.push(h);
-        peak.push(h > 0.38);
+    if (!slices.length) {
+      for (let i = 0; i < SLICE_COUNT; i++) {
+        slices.push(makeSlice(i * SLICE_SPACING, i));
       }
-      slices.push({ depth: d, heights, peak, id: nextSliceId++ });
+      nextFarRow = -1;
     }
+    while (slices.length < SLICE_COUNT) {
+      const minDepth = Math.min(...slices.map(s => s.depth));
+      slices.push(makeSlice(minDepth - SLICE_SPACING, nextFarRow--));
+    }
+  }
+
+  function terrainAt(lane, depth) {
+    if (!slices.length) return 0;
+    let behind = null;
+    let ahead = null;
+    for (const slice of slices) {
+      if (slice.depth <= depth && (!behind || slice.depth > behind.depth)) behind = slice;
+      if (slice.depth >= depth && (!ahead || slice.depth < ahead.depth)) ahead = slice;
+    }
+    behind ||= ahead;
+    ahead ||= behind;
+    const lo = Math.max(0, Math.min(LANES - 1, Math.floor(lane)));
+    const hi = Math.min(LANES - 1, lo + 1);
+    const laneMix = Math.max(0, Math.min(1, lane - lo));
+    const sample = slice => slice.heights[lo] * (1 - laneMix) + slice.heights[hi] * laneMix;
+    if (behind === ahead) return sample(behind);
+    const depthMix = (depth - behind.depth) / (ahead.depth - behind.depth);
+    return sample(behind) * (1 - depthMix) + sample(ahead) * depthMix;
+  }
+
+  function terrainPeak(lane, depth) {
+    return terrainAt(lane, depth) > 0.4;
+  }
+
+  function currentSpeed() {
+    return mode === "play" ? 0.17 + Math.min(0.18, (wave - 1) * 0.028) : 0.12;
   }
 
   function advanceLandscape(dt) {
-    const base = mode === "play" ? 0.18 + Math.min(0.22, distance * 0.001) : 0.35;
-    const speed = base * intensity * dt;
-    for (const s of slices) s.depth += speed;
+    const travel = currentSpeed() * dt;
+    for (const s of slices) s.depth += travel;
     slices = slices.filter(s => s.depth < 1.08);
-    genPhase += dt * (0.55 + intensity * 0.12);
     ensureSlices();
     if (mode === "play") {
-      distance += speed * 14;
-      intensity = 1 + Math.min(1.6, distance * 0.0035);
+      distance += travel * 12;
+      const nextWave = Math.min(7, 1 + Math.floor(distance / 16));
+      if (nextWave !== wave) {
+        wave = nextWave;
+        intensity = 1 + (wave - 1) * 0.18;
+        flash = 0.18;
+        blip(220 + wave * 35, 0.12, "square", 0.045, 390 + wave * 35);
+        updateHud();
+      }
     }
+    return travel;
   }
 
-  function spawnAtHorizon() {
+  function spawnAtHorizon(forcedKind, forcedLane) {
     const r = rand();
-    let kind = "orb";
-    if (r > 0.55) kind = "crawler";
-    else if (r > 0.78) kind = "dart";
-    else if (r > 0.9) kind = "boost";
-    else if (r > 0.96 && intensity > 1.2) kind = "spike";
-    things.push({
-      lane: Math.floor(rand() * LANES),
-      depth: 0.01 + rand() * 0.04,
+    let kind;
+    if (forcedKind) kind = forcedKind;
+    else if (r < 0.52) kind = "orb";
+    else if (r < 0.78) kind = "crawler";
+    else if (r < 0.88) kind = wave >= 2 ? "dart" : "orb";
+    else if (r < 0.95) kind = wave >= 2 ? "boost" : "orb";
+    else kind = wave >= 3 ? "spike" : "crawler";
+
+    let lane = forcedLane === undefined ? Math.floor(rand() * LANES) : forcedLane;
+    if (forcedLane === undefined && lane === lastSpawnLane) {
+      lane = (lane + 1 + Math.floor(rand() * (LANES - 1))) % LANES;
+    }
+    lastSpawnLane = lane;
+
+    const thing = {
+      lane,
+      depth: -0.01 + rand() * 0.025,
       kind,
       alive: true,
       phase: rand() * 12,
-      hp: kind === "spike" ? 2 : 1
-    });
+      speed: kind === "dart" ? 1.12 : kind === "boost" ? 0.94 : 1
+    };
+    things.push(thing);
+    return thing;
   }
 
   function burst(lane, depth, elev, count, hOff) {
@@ -206,7 +264,7 @@
   function tryJump() {
     if (mode !== "play" || !player.onGround) return;
     ensureAudio();
-    const peak = meshPeak(player.lane, PLAYER_DEPTH);
+    const peak = terrainPeak(player.lane, PLAYER_DEPTH);
     player.vz = peak ? BOOST_V : JUMP_V;
     player.onGround = false;
     player.floating = !!peak;
@@ -214,7 +272,7 @@
     if (peak) {
       player.boostUntil = t + 0.55;
       addCombo(50);
-      burst(player.lane, PLAYER_DEPTH, meshHeight(player.lane, PLAYER_DEPTH), 14, 30);
+      burst(player.lane, PLAYER_DEPTH, terrainAt(player.lane, PLAYER_DEPTH), 14, 30);
       flash = 0.22;
       if (glitch) {
         glitch.className = "flash";
@@ -227,18 +285,22 @@
     elScore.textContent = String(score | 0);
     elBest.textContent = String(best | 0);
     elLives.textContent = lives > 0 ? "● ".repeat(lives).trim() : "—";
+    elWave.textContent = "WAVE " + wave;
   }
 
   function startGame() {
     ensureAudio();
     mode = "play";
     score = 0; lives = 3; mult = 1; combo = 0; comboTimer = 0;
+    wave = 1;
     player.lane = (LANES - 1) / 2;
     player.z = 0; player.vz = 0;
     player.onGround = true; player.floating = false; player.invuln = 0;
     things = []; particles = [];
     distance = 0; intensity = 1;
-    spawnTimer = 0.5;
+    spawnTimer = 0.8;
+    lastSpawnLane = -1;
+    spawnAtHorizon("orb", player.lane);
     overlay.classList.remove("show");
     updateHud();
   }
@@ -260,6 +322,11 @@
         best = score;
         localStorage.setItem(HI_KEY, String(best));
       }
+      overlayTag.textContent = "RUN OVER · WAVE " + wave;
+      overlaySub.textContent = "SCORE " + (score | 0) + " · BEST " + (best | 0);
+      overlayHowto.innerHTML = "<li>Orbs keep the chain alive.</li><li>Crawlers can be stomped.</li><li>Darts punish jumping; spikes punish staying put.</li>";
+      playBtn.textContent = "PLAY AGAIN";
+      overlayHint.textContent = "Enter · tap";
       overlay.classList.add("show");
       updateHud();
     }
@@ -280,6 +347,26 @@
     }
   }
 
+  function readGamepad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let pad = null;
+    for (const candidate of pads) {
+      if (candidate && candidate.connected) { pad = candidate; break; }
+    }
+    if (!pad) { padJumpDown = false; return 0; }
+
+    let move = Math.abs(pad.axes[0] || 0) > 0.2 ? pad.axes[0] : 0;
+    if (pad.buttons[14]?.pressed) move = -1;
+    if (pad.buttons[15]?.pressed) move = 1;
+    const jump = !!(pad.buttons[0]?.pressed || pad.buttons[1]?.pressed);
+    if (jump && !padJumpDown) {
+      if (mode === "title" || mode === "over") startGame();
+      else tryJump();
+    }
+    padJumpDown = jump;
+    return move;
+  }
+
   window.addEventListener("keydown", e => {
     if (["ArrowLeft","ArrowRight","ArrowUp","Space"].includes(e.code)) e.preventDefault();
     if (keys.has(e.code)) return;
@@ -292,7 +379,7 @@
 
   playBtn.addEventListener("click", startGame);
   overlay.addEventListener("click", e => {
-    if (e.target === overlay || e.target === playBtn || e.target.closest("#play")) startGame();
+    if (e.target === overlay) startGame();
   });
 
   function onTS(e) {
@@ -337,11 +424,23 @@
       if (comboTimer <= 0) { combo = 0; mult = 1; }
     }
 
-    advanceLandscape(dt);
+    const travel = advanceLandscape(dt);
+    const padInput = readGamepad();
+
+    for (const th of things) {
+      if (!th.alive) continue;
+      th.depth += travel * th.speed;
+      th.phase += dt * (5 + intensity);
+      if (th.kind === "crawler" || th.kind === "spike") {
+        th.lane += Math.sin(th.phase * 0.35) * 0.32 * dt;
+        th.lane = Math.max(0, Math.min(LANES - 1, th.lane));
+      }
+      if (th.depth > 1.05) th.alive = false;
+    }
 
     if (mode === "title") {
       if (rand() < dt * 0.6) spawnAtHorizon();
-      things = things.filter(th => th.alive && th.depth < 1.05);
+      things = things.filter(th => th.alive);
       return;
     }
     if (mode !== "play") return;
@@ -349,6 +448,8 @@
     let input = 0;
     if (keys.has("KeyA") || keys.has("ArrowLeft") || touch.left) input -= 1;
     if (keys.has("KeyD") || keys.has("ArrowRight") || touch.right) input += 1;
+    input += padInput;
+    input = Math.max(-1, Math.min(1, input));
     if (input) player.facing = input;
     const air = player.onGround ? 1 : 0.55;
     player.lane += input * MOVE_SPEED * air * dt;
@@ -375,52 +476,51 @@
     spawnTimer -= dt;
     if (spawnTimer <= 0) {
       spawnAtHorizon();
-      if (rand() < 0.3 + intensity * 0.1) spawnAtHorizon();
-      spawnTimer = Math.max(0.2, 0.7 - distance * 0.0012 - intensity * 0.04);
+      if (wave >= 3 && rand() < 0.08 + wave * 0.025) spawnAtHorizon();
+      spawnTimer = Math.max(0.36, 0.88 - (wave - 1) * 0.07);
     }
 
     for (const th of things) {
       if (!th.alive) continue;
-      th.phase += dt * (5 + intensity);
-      if (th.kind === "crawler" || th.kind === "spike") {
-        th.lane += Math.sin(th.phase * 0.35) * 0.4 * dt;
-        th.lane = Math.max(0, Math.min(LANES - 1, th.lane));
-      }
-      if (th.depth > 1.05) { th.alive = false; continue; }
-
       if (th.depth > HIT_DEPTH && th.depth < 0.98) {
-        const dist = Math.abs(th.lane - player.lane);
-        if (dist < 0.5) {
+        const laneDist = Math.abs(th.lane - player.lane);
+        if (laneDist < 0.48) {
+          const ground = terrainAt(th.lane, th.depth);
           if (th.kind === "orb" || th.kind === "boost") {
-            if (th.kind === "boost" && player.z < 0.3 && !player.floating) continue;
             th.alive = false;
             if (th.kind === "boost") {
               sfxBoost();
-              player.vz = BOOST_V * 0.65;
+              player.vz = Math.max(player.vz, BOOST_V * 0.72);
+              player.onGround = false;
               player.floating = true;
-              player.boostUntil = t + 0.35;
+              player.boostUntil = t + 0.5;
               addCombo(200);
-              burst(th.lane, th.depth, meshHeight(th.lane, th.depth), 16, 40);
+              burst(th.lane, th.depth, ground, 16, 40);
             } else {
               sfxCollect();
               addCombo(100);
-              burst(th.lane, th.depth, meshHeight(th.lane, th.depth), 10, 130);
+              burst(th.lane, th.depth, ground, 10, 130);
             }
-          } else {
+          } else if (th.kind === "crawler") {
             const stomp = player.vz < -2 && player.z > 0.25;
-            if (stomp && th.kind !== "dart") {
-              th.hp--;
-              if (th.hp <= 0) {
-                th.alive = false;
-                player.vz = JUMP_V * 0.45;
-                sfxStomp();
-                addCombo(th.kind === "spike" ? 350 : 240);
-                burst(th.lane, th.depth, meshHeight(th.lane, th.depth), 16, 0);
-              }
-            } else if (player.invuln <= 0 && player.z < 1.2) {
+            if (stomp) {
+              th.alive = false;
+              player.vz = JUMP_V * 0.55;
+              sfxStomp();
+              addCombo(240);
+              burst(th.lane, th.depth, ground, 16, 0);
+            } else if (player.z < 0.9 && player.invuln <= 0) {
               th.alive = false;
               hurt();
             }
+          } else if (th.kind === "dart") {
+            if (player.z > 0.35 && player.z < 2.2 && player.invuln <= 0) {
+              th.alive = false;
+              hurt();
+            }
+          } else if (th.kind === "spike" && player.z < 1.55 && player.invuln <= 0) {
+            th.alive = false;
+            hurt();
           }
         }
       }
@@ -504,7 +604,10 @@
 
     for (const th of things) {
       if (!th.alive || th.depth > 1.0) continue;
-      const elev = meshHeight(th.lane, th.depth);
+      let lift = 0.035;
+      if (th.kind === "boost") lift = 0.08;
+      else if (th.kind === "dart") lift = 0.17;
+      const elev = terrainAt(th.lane, th.depth) + lift;
       const p = project(th.lane, th.depth, elev, 0);
       const s = p.s;
       const pulse = 0.9 + 0.1 * Math.sin(th.phase);
@@ -546,17 +649,18 @@
       } else {
         ctx.strokeStyle = `hsl(${(hue + 180) % 360}, 100%, 65%)`;
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y - 8 * s);
-        ctx.lineTo(p.x + 5 * s, p.y + 6 * s);
-        ctx.lineTo(p.x - 5 * s, p.y + 6 * s);
-        ctx.closePath();
+        ctx.moveTo(p.x - 9 * s, p.y - 2 * s);
+        ctx.lineTo(p.x, p.y + 4 * s);
+        ctx.lineTo(p.x + 9 * s, p.y - 2 * s);
+        ctx.moveTo(p.x, p.y + 4 * s);
+        ctx.lineTo(p.x, p.y - 7 * s);
         ctx.stroke();
       }
     }
 
     if (mode === "play") {
       if (!(player.invuln > 0 && Math.floor(t * 14) % 2 === 0)) {
-        const elev = meshHeight(player.lane, PLAYER_DEPTH);
+        const elev = terrainAt(player.lane, PLAYER_DEPTH);
         const jumpZ = Math.min(1.1, player.z * 0.07);
         const p = project(player.lane, PLAYER_DEPTH, elev, jumpZ);
         const py = Math.max(H * 0.08, Math.min(H * 0.82, p.y));
@@ -676,7 +780,15 @@
 
   resize();
   window.addEventListener("resize", resize);
-  elBest.textContent = String(best);
   ensureSlices();
+  updateHud();
+  window.__sudz = {
+    state: () => ({
+      mode, score, best, lives, wave, distance, combo, multiplier: mult,
+      player: { lane: player.lane, z: player.z, onGround: player.onGround },
+      things: things.map(th => ({ lane: th.lane, depth: th.depth, kind: th.kind, alive: th.alive })),
+      slices: slices.length
+    })
+  };
   requestAnimationFrame(frame);
 })();
