@@ -73,6 +73,24 @@ html, body {
   letter-spacing: 0.16em;
 }
 
+#build {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  z-index: 30;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 229, 84, 0.9);
+  background: rgba(5, 6, 10, 0.9);
+  color: #ffe554;
+  box-shadow: 0 0 14px rgba(255, 229, 84, 0.3);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  pointer-events: none;
+}
+
 #overlay {
   position: fixed;
   inset: 0;
@@ -199,5 +217,6 @@ html, body {
 @media (max-width: 520px) {
   #hud { padding: 10px 12px; }
   #score, #best { font-size: 18px; }
+  #build { top: 50px; font-size: 11px; }
   .panel { padding: 22px 18px 18px; }
 }
