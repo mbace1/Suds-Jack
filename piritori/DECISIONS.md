@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **Authority reset, 2026-08-19.** This remains the historical owner-decision
+> index. [DESIGN_AUTHORITY.md](DESIGN_AUTHORITY.md) defines the current hierarchy;
+> later recorded owner decisions still outrank earlier entries.
+
 # Owner decisions — Piritori → Eden
 
 The rulings, dated, in the owner's words, with what each one changed.

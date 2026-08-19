@@ -14,7 +14,7 @@ even when the code is otherwise correct, tested and pretty.
 
 | project | canon | notes |
 |---|---|---|
-| `piritori/` + `toko-move/` + `flow-core/` | `piritori/BRIEF.md` (game, art, UX), `piritori/SHARED_ENGINE.md` (core boundary), `piritori/FIGHT_BRIEF.md` (fights) — then `piritori/DECISIONS.md` for every ruling that has overridden one of them | PR #269 is the anchor. **Read `DECISIONS.md` first**: four parts of `BRIEF.md` have been overridden by the owner and it is the only index of which |
+| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `GAME_DESIGN_DOCUMENT.md`, `NARRATIVE.md`, `SCREEN_AND_COMBAT_BASELINE.md`; art authority is `art-library/APPROVALS.md` + `CATALOG.md`; supporting `FIGHT_BRIEF.md`, `MAP.md`, `DECISIONS.md` only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
 | `eeri/` | `eeri/PHASING.md` first, then `DESIGN.md`, `ART_BRIEF.md`, `VERSIONS.md` | multi-agent; PHASING supersedes on conflict |
 | `kindling/` | `BETTERMENT_OWNER_DIRECTION.md` | newest authority; supersedes older "cozy hut" calls |
 | `toko/` | `toko/BRAND.md` | two colours only, geometry invariants |
@@ -27,16 +27,12 @@ firearms against *"there is no gunfight"*, and cover as terrain — each naming
 the sentence it contradicts and the words that overrode it. An unrecorded
 contradiction is a finding; a recorded one is a decision.
 
-**Note for Piritori reviewers.** Four things in `BRIEF.md` have been overridden
-by the owner and are **not** findings. All four are indexed in
-`piritori/DECISIONS.md` with the words that overrode them:
-
-- **guns exist** — *"there is no gunfight"* is still true and now enforced
-  structurally (`FIGHT_BRIEF.md` §2.1, checked in `test/fight.mjs`);
-- **cover is terrain**, not only a body (`FIGHT_BRIEF.md` §4.1);
-- **the goods are named** rather than abstract classes — the tiers still own
-  every number, which is the part that mattered (`test/market.mjs`);
-- **the art is ink-line illustration**, not the risograph of § Visual direction.
+**Note for Piritori reviewers.** Read `piritori/DESIGN_AUTHORITY.md` first.
+The approved art library supersedes the previous PAPER-versus-INK split and the
+prototype's placeholders. Guns, named goods and terrain cover remain recorded
+owner decisions where they agree with the GDD. Battles stay darker and more
+forceful, but characters, locations, props and UI share the active cut-cardstock
+and hand-marker construction.
 
 **The 2024 Pasila act is canon and phase-gated.** Second-act content in the code
 or in an art queue *is* a finding until Act I is feature complete —
@@ -61,9 +57,10 @@ unilateral fix.**
 
 - **No build step, anywhere.** Vanilla ES modules, opened from a file server.
   A finding that recommends a bundler is out of scope unless the owner asked.
-- **No image assets.** Everything is drawn in code. The single documented
-  exception is PWA manifest icons, which are *generated* from the app's own
-  palette (see `kindling/tools/make-icons.mjs`).
+- **Image assets are project-owned exceptions.** Most demos draw in code and PWA
+  icons remain generated. Piritori explicitly keeps approved raster/vector
+  source under `piritori/art-library/` and optimized runtime derivatives under
+  `piritori/art/`; its manifests and approval register control what is active.
 - **One `?v=` token per module**, bumped when and only when its bytes change.
   Two tokens for one module means the browser instantiates it twice and its
   state splits — this has silently unplugged megabytes of art, twice.
