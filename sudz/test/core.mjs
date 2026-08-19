@@ -7,6 +7,7 @@ import path from 'node:path';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = fs.readFileSync(path.join(ROOT, 'game.js'), 'utf8');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const styles = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
 
 const listeners = new Map();
 let raf = null;
@@ -140,12 +141,15 @@ assert.equal(state.mode, 'play', 'Enter restarts after game over');
 assert.equal(state.lives, 3);
 assert.equal(state.wave, 1);
 
-assert.match(source, /const VERSION = "v4"/);
-assert.match(source, /const VANISH_Y = 0\.31/);
-assert.match(source, /const DEPTH_CURVE = 1\.48/);
-assert.match(source, /const MESH_WIDTH = 0\.94/);
-assert.match(index, /game\.js\?v=52/);
+assert.match(source, /const VERSION = "v5"/);
+assert.match(source, /const VANISH_Y = 0\.48/);
+assert.match(source, /const DEPTH_CURVE = 1\.8/);
+assert.match(source, /const MESH_WIDTH = 1\.16/);
+assert.match(index, /game\.js\?v=53/);
+assert.match(index, /style\.css\?v=1/);
+assert.match(index, /id="build"[^>]*>BUILD v5<\/div>/);
+assert.match(styles, /#build\s*\{/);
 assert.match(index, /hub\/shell\.js\?v=17/);
 assert.match(index, /id="wave"/);
 
-console.log('Suds Jack core gate: 23 checks passed');
+console.log('Suds Jack core gate: 26 checks passed');

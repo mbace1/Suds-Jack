@@ -1,4 +1,4 @@
-// Suds Jack — Horizon Mesh v4
+// Suds Jack — Horizon Mesh v5
 // Nine-lane score attack: collect, jump, stomp, survive.
 // Bomb Jack × Tempest × Tiny Wings × Suda51
 
@@ -19,7 +19,7 @@
   const overlayHowto = overlay.querySelector(".howto");
   const overlayHint = overlay.querySelector(".hint");
 
-  const VERSION = "v4";
+  const VERSION = "v5";
   const LANES = 9;
   const SLICE_COUNT = 31;
   const SLICE_SPACING = 0.036;
@@ -35,13 +35,13 @@
   const HI_KEY = "sudsJack.horizon.best";
 
   // Perspective — low camera, deep Tempest-style web
-  const FAR_SCALE = 0.018;
+  const FAR_SCALE = 0.035;
   const NEAR_SCALE = 1.0;
-  const VANISH_Y = 0.31;
-  const NEAR_Y = 0.94;
-  const DEPTH_CURVE = 1.48;
-  const MESH_WIDTH = 0.94;
-  const ELEV_PX = 62;
+  const VANISH_Y = 0.48;
+  const NEAR_Y = 0.92;
+  const DEPTH_CURVE = 1.8;
+  const MESH_WIDTH = 1.16;
+  const ELEV_PX = 36;
 
   let W = 0, H = 0, dpr = 1;
   let mode = "title";
