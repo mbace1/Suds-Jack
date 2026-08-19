@@ -134,18 +134,49 @@ bottom edge, outside the subject.`,
   //
   // A style is prepended to the prompt and a prompt cannot argue with it, so
   // the fix is a second register rather than more words in each of the five.
-  kallioProp: `Piritori house style, as a CUT-OUT PROP. Hard black ink-line
-illustration with flat, slightly muted fills — Darkest Dungeon rather than a
-comic. Limited palette, hard seams between colours, flat shapes where the
-SILHOUETTE does the work rather than the shading. No gradients, no glow, no
-lens effects, no photographic rendering. Helsinki in 2003 — cold, used,
-deadpan. No text, no logos, no UI, no watermark.
+  // CUT-OUT ART — props and figures. DERIVED FROM `kallioNight`, deliberately.
+  //
+  // The bible (§1.-1) records the owner's targets as two registers, and both
+  // of my attempts at this one were wrong in the same way. INK covers "the
+  // fights, BACKGROUNDS AND FIGURES ALIKE — Darkest Dungeon. Hard black line,
+  // painted muted fills, deep warm chiaroscuro" and adds that the arena
+  // references "are close to what the pipeline already produces". That is a
+  // direct statement that `kallioNight` is the approved register and that the
+  // figures belong in it.
+  //
+  // Instead I wrote a NEW style for cut-outs that stripped the paint, the
+  // falloff and the grain in order to make keying easy — and produced exactly
+  // what `kallio` warns against, "a comic": clean vector men with rendered
+  // denim folds, no ink weight, no light. The keying was never the problem.
+  //
+  // So this is `kallioNight`'s own words with two clauses changed: the light
+  // falls on ONE OBJECT instead of a street, and what it falls off into is
+  // flat magenta instead of black. Nothing else moves.
+  kallioProp: `Piritori cut-out style. A LIT PAINTING of one thing, not a flat
+illustration and not a comic. Hard black ink line over painted, modelled
+surfaces — deep warm chiaroscuro, strong tonal falloff, real light doing the
+work. Rich heavy film grain over the whole subject. Darkest Dungeon and
+Blasphemous, at the scale of a single object.
+
+The light is WARM SODIUM AND LAMPLIGHT from one side, raking across the subject
+and modelling it. The side away from the light falls off through deep umber
+toward black. Palette: warm ochre and sepia, amber highlight, cold blue-grey in
+the shadow, black. Worn, second-hand, used by somebody.
+
+IF THE SUBJECT IS A PERSON, it is a DARKEST DUNGEON figure and not a video
+game character portrait. That means: a heavy, stylised, slightly caricatured
+SILHOUETTE — broad shoulders, big hands and boots, a low hunched head, weight
+in the stance — drawn inside a THICK, uneven brush-ink outline that varies in
+weight and pools black where forms meet. The face is LOST IN SHADOW under the
+brow: a suggestion of a jaw, no eyes, no rendered features, because this figure
+is read thirty pixels tall and a drawn face is noise at that size. Deep black
+eats the whole shadow side of the body. Grimy, worn, tired, a little ugly.
 
 THE BACKGROUND IS FLAT #FF00FF MAGENTA, edge to edge, and nothing else: no
-paper texture, no grain, no risograph print, no ground, no shadow cast onto
-anything, no swatch strip, no border, no margin note, no second view. ONE
-object, alone, floating on the magenta, well clear of all four edges. It will
-be keyed out and cut, so any pixel that is not the object is a mistake.`,
+paper texture, no ground, no cast shadow onto anything, no swatch strip, no
+border, no second view, no text. ONE subject, alone, well clear of all four
+edges. It will be keyed out and cut, so any pixel that is not the subject is a
+mistake — but the SUBJECT itself is painted and lit, never flattened.`,
 
   // PAPER — the map, and every interior you stand in.
   //
@@ -204,39 +235,62 @@ no UI, no watermark, no people, no vehicles.`,
   // ILLUSTRATION — cut shapes with drawn detail on top of them — not a
   // photograph of a beige cardboard model, which is what "photograph of a
   // diorama" reliably produces.
-  paperRoom: `Piritori interior style. A LAYERED PAPER COLLAGE ILLUSTRATION —
-cut and torn paper shapes with hand-drawn ink detail, texture and shading drawn
-ON TOP of them. Not a photograph, not a 3D render, not a beige cardboard model:
-a made picture, with visible paper fibre, torn edges and soft shadows between
-the layers.
+  // INTERIORS — v3, and the correction is a RETREAT rather than another push.
+  //
+  // v1 came back a grey cardboard model with a blank-faced mannequin in it and
+  // the owner said so. I over-corrected: I wrote "Not a photograph, not a 3D
+  // render, not a beige cardboard model" into the style, which threw out THE
+  // REGISTER along with the greyness, and v2 came back a warm storybook
+  // illustration OF a noodle shop. The owner's word for it: "nothing like the
+  // target art."
+  //
+  // The bible has said what these are the whole time (§1.-1): the PAPER
+  // register is "a physical cut-paper / torn-card relief diorama … Toko's shop
+  // is the same craft: PAPER LANTERN, PAPER SHIRT, PAPER BOWLS." So it IS a
+  // photograph of a made thing. What was wrong with v1 was never the medium —
+  // it was that the paper was grey instead of coloured, the lamp was not lit,
+  // there was no signage, and the man had no face.
+  //
+  // So: back to paper, and fix those four things instead.
+  paperRoom: `Piritori interior style. A PHOTOGRAPH OF A HANDMADE CUT-PAPER
+RELIEF DIORAMA — a real object built from layers of coloured card and paper,
+photographed, not a drawing and not a render. Every single thing in frame is
+made of paper: paper walls, a paper counter, paper bowls, a paper lantern, a
+paper shirt on a paper man. Torn and cut edges show their white core. Layers
+stand at different depths and cast REAL SOFT SHADOWS onto the layer behind.
+Visible paper fibre and grain, slight warp where card meets card.
 
-DENSE AND FULL OF LIFE. The room is crowded with specific, characterful
-objects, each one clearly built from paper — bowls, bottles, jars, hanging
-curtains, a lantern, a radio, a till. Every surface has something on it.
+IT IS BUILT FROM COLOURED PAPER, NOT GREY CARDBOARD. Warm ochre, deep
+red-brown, mustard, oxblood, bone. If it reads as an unpainted cardboard mock-up
+it is wrong.
 
-TEXT AND SIGNAGE ARE WELCOME and part of the look: a painted shop sign, small
-hanging menu cards with simple pictograms, a poster on the wall, lettering down
-a lantern. Hand-lettered, slightly uneven, worn.
+THE LAMPS ARE ACTUALLY LIT. A warm amber glow inside the paper lantern and
+under the paper shades, spilling onto the counter and the wall and falling off
+into shadow at the edges of the frame. THROUGH A WINDOW it is night and COLD:
+deep slate blue card, rain, the lit windows of the street, a tram going past.
+That warm-against-cold contrast is the whole picture and it must be strong.
 
-WARM AGAINST COLD. The interior is lit warm — amber lamps, ochre walls, deep
-red-brown wood. Through a window it is NIGHT and COLD: deep slate blue, rain,
-the lit windows of the street, a passing tram. That contrast is the whole
-picture and it must be strong.
+DENSE AND FULL OF LIFE: crowded with specific paper objects, every surface
+carrying something — bottles, jars, a till, hanging cloth, stacked bowls.
 
-ONE CHARACTER, front and centre behind the counter, built from the same paper,
-seen from the chest up. They have a DESIGNED, DISTINCTIVE FACE — this is a
-character, not a mannequin, and a blank featureless head is a failed image.
+SIGNAGE IS PART OF THE CRAFT and welcome: a hand-lettered paper shop sign,
+small hanging paper menu cards, a poster, lettering down the lantern. Cut and
+stuck on, slightly uneven, worn.
 
-FULL BLEED: the room fills the entire frame, edge to edge. No border, no
-margin, no mount, no cream paper surround, no torn frame around the picture,
-no drop shadow under the picture, and no shot of an artwork lying on a table.
-The paper is what the room is MADE OF, never what it is mounted on. (Three of
-the four first-pass interiors came back as a picture floating on a cream sheet;
-the game covers the card with the image, so the surround shows as a pale rim
-along whichever edge the crop does not eat.)
+ONE CHARACTER behind the counter, built from the same paper as the room, seen
+from the chest up, with a DESIGNED AND DISTINCTIVE FACE. A blank featureless
+head is a failed image.
 
-Muted, tactile, storybook-noir. Warm ochre, deep red-brown, mustard, slate,
-bone, black. No modern UI, no watermark, no photographic realism.`,
+THE CAMERA IS INSIDE THE ROOM, not looking at a model of one. Push in close:
+the paper walls, the counter and the ceiling all run PAST the edges of the
+frame on every side, and the picture is cropped by the room rather than by the
+object. You cannot see the outside of the diorama, its top edge, its corners,
+its base, or anything behind it — there is no box, no shadow-box, no
+proscenium, no white studio background, no surface it is standing on, no
+border and no mount. Every one of the four frame edges is cut through the
+middle of something made of paper. If the whole construction is visible sitting
+in space, it is wrong. The paper is what the room is MADE OF, never what it is
+mounted on. No modern UI, no watermark.`,
 
   // The ARENAS ONLY, and they are a deliberate exception to `kallio` above.
   //
