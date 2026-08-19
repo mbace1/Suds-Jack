@@ -1,5 +1,60 @@
 # EERI — versions
 
+## v15.26 — 2026-08-19 — worlds 3 and 4 stop wearing the same trail
+
+Second pass on **placement**, which in a platformer means the collectables
+before it means anything else.
+
+Levels 7-12 were greyboxed with one shared helper, `hundredTrail()`: four
+quiet 25-bolt blocks at columns 6-79, laid identically in all six rooms
+whatever stood there. That was honest scaffolding and the code said so — the
+comment called the count "mechanically boring… intentional in a greybox" —
+but it meant **the bolts said nothing**. They hung over pits, ignored every
+shelf the level had built, and stopped dead at column 79, so the whole ride
+beat of six levels was bare.
+
+Each room now lays its own trail, to the rules Level 1 already set:
+
+* a **run out of the gate** — the level saying which way it goes before it
+  asks you for anything;
+* an **arc over each hazard**, because following the bolts IS the jump's
+  timing rather than a sign about it;
+* a **column** wherever the answer is up — over a tarp, beside a hoist
+  shaft — since a stack of bolts is the only shape that says *the floor
+  throws you here*;
+* a **run along every deck**, at feet and head height, so a climb is paid
+  for instead of merely permitted; and
+* bolts **past the thing the machine clears** — behind the bank, across the
+  chasm — which cannot be reached until the ride has done its job. That is
+  the ride's receipt, and Level 1 has always had it.
+
+Two of them turned into the level's own lesson rather than decoration.
+**Night Shift** lays the same seven bolts on the same row on the helpful belt
+and then on the one that pushes back: twice the work for the same pay is what
+a conveyor teaches, said without a word. **The Lit Scaffold** runs its row
+straight under the swinging load, so those bolts are taken on the ball's
+clock and not yours.
+
+Still exactly **100 a room with 3 golden ones off the walking line** — the
+prover refuses ninety-nine under a HUD that says a hundred, and refuses a
+golden bolt you would collect by walking. No geometry moved: same rooms, same
+beats, same machines.
+
+**One check outside this lane, and it is a fix to the check.** `test/hub-smoke.cjs`
+asserted that switching the hub to Finnish reached a game's own words by
+keyword-matching one cabinet's tagline (`paja|Vektorinen|Selain`). Suds Jack v5
+rewrote that tagline, so the gate went red for everybody over copy that is
+perfectly correct. It now compares the tagline before and after the switch and
+against the catalogue's own fi string — a test of the language switch should
+not be a test of anybody's prose.
+
+Recorded because it cost an hour: **the container rolled this working tree
+back to a commit from two days ago, twice.** Everything already pushed was
+safe; what was in the tree was not. The tell is a token that disagrees with
+itself — `?v=29` in files that should read 31 — and the recovery is
+`git fetch origin main && git reset --hard origin/main`, after copying any
+uncommitted file somewhere outside the repo first.
+
 ## v15.25 — 2026-08-19 — the slab has thickness, the kid has an edge, landscape loses its board
 
 Three of the four things the captured frames said were wrong, plus the
