@@ -1,5 +1,5 @@
-// Suds Jack — Horizon Mesh v4.1
-// AGGRESSIVE vector perspective (FAR 0.015 → NEAR 1.08) + angular geometric heightfield
+// Suds Jack — Horizon Mesh v4.2
+// Visual version indicator + aggressive vector perspective (FAR 0.015 → NEAR 1.08)
 // Bomb Jack × Tempest × Tiny Wings × Suda51
 
 (() => {
@@ -14,6 +14,7 @@
   const playBtn = document.getElementById("play");
   const glitch = document.getElementById("glitch");
 
+  const VERSION = "v4.2";
   const LANES = 9;
   const GRAVITY = 27;
   const JUMP_V = -12.4;
@@ -600,6 +601,16 @@
       ctx.fillStyle = `hsla(${(hue + 25) % 360}, 100%, 72%, ${0.45 + comboTimer * 0.22})`;
       ctx.fillText("×" + mult, W * 0.5, 46);
     }
+
+    // always-visible version indicator (bottom-left)
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.font = "11px IBM Plex Mono, monospace";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillStyle = "#6af";
+    ctx.fillText(VERSION + "  FAR " + FAR_SCALE + " → NEAR " + NEAR_SCALE, 10, H - 8);
+    ctx.restore();
 
     if (mode === "play" && ("ontouchstart" in window || matchMedia("(pointer: coarse)").matches)) {
       const padH = Math.min(94, H * 0.175);
