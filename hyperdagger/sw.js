@@ -1,36 +1,23 @@
-// Hyper Dagger offline service worker — same strategy as toko-drop's (v128):
-//  - Tokened URLs (?v=N) are immutable per release → CACHE-FIRST; a release
-//    bumps every token, so new URLs can never hit a stale cache entry.
+// Hyper Dagger service worker — offline-first for the pure-browser FPS.
 //  - The whole module graph + vendored three.js is PRECACHED at install so
-//    the installed app boots offline from the very first visit.
+//    a second visit works with the network offline.
 //  - Untokened requests (page shell, vendor files' internal relative imports,
-//    icons) are NETWORK-FIRST with cache fallback: offline boot works, and a
-//    new release is picked up the moment the device is online.
-//  - The cache name embeds the token (from this script's own ?v= URL);
-//    activation deletes older caches.
-//  - GET + same-origin only: leaderboard/telemetry POSTs and any cross-origin
-//    traffic pass straight through, untouched.
-//  - Only OK responses are cached; precache failures are non-fatal (a CDN
-//    edge 404 must not brick the install or get pinned offline).
-const TOKEN = new URL(self.location.href).searchParams.get('v') ?? '0';
-const CACHE = `hyper-dagger-v${TOKEN}`;
+//    icons) use network-first with cache fallback.
+//  - Tokened module requests (?v=N) stay network-first so a deploy with a
+//    bumped token always pulls the new graph; the old tokened entries age out.
 
+const CACHE = 'hyperdagger-v33';
 const PRECACHE = [
-  // The Toko signature. It is a cross-directory import, so it has to be named
-  // here or the badge becomes a network request on an offline boot — only the
-  // entry URL carries the token, the rest are plain relative imports.
-  '../toko/js/signature.js?v=3',
-  ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
-  './', './index.html',
-  // Module tokens are all normalized to the release token, so these precache
-  // entries are byte-identical to the URLs the page actually imports.
-  ...['main', 'input', 'player', 'daggers', 'gems', 'voxel', 'enemy', 'bullets', 'audio', 'rng', 'tuning', 'meshassets']
-    .map(m => `./js/${m}.js?v=${TOKEN}`),
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './favicon.png',
+  './apple-touch-icon.png',
+  './icon-192.png',
+  './icon-512.png',
   './vendor/three.module.min.js',
-  // the GLB loader pair (dynamic import when assets are registered); the
-  // GLBs themselves are runtime-cached on first play, not precached
-  './vendor/jsm/loaders/GLTFLoader.js',
-  './vendor/jsm/utils/BufferGeometryUtils.js',
+  './js/mesh-enemies.js',
+  './js/truck.js',
   './vendor/jsm/postprocessing/EffectComposer.js',
   './vendor/jsm/postprocessing/RenderPass.js',
   './vendor/jsm/postprocessing/AfterimagePass.js',
@@ -43,55 +30,48 @@ const PRECACHE = [
   './vendor/jsm/shaders/AfterimageShader.js',
   './vendor/jsm/shaders/LuminosityHighPassShader.js',
   './vendor/jsm/shaders/OutputShader.js',
-  `./manifest.webmanifest?v=${TOKEN}`,
-  './favicon.png', './apple-touch-icon.png', './icon-192.png', './icon-512.png',
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
+self.addEventListener('install', event => {
+  event.waitUntil(
     caches.open(CACHE)
       .then(c => Promise.allSettled(PRECACHE.map(u => c.add(u))))
-      .then(() => self.skipWaiting()),
+      .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
+self.addEventListener('activate', event => {
+  event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
-  if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
 
-  if (url.searchParams.has('v')) {
-    // tokened = immutable for this release: cache-first
-    e.respondWith(
-      caches.open(CACHE).then(async c => {
-        const hit = await c.match(e.request);
-        if (hit) return hit;
-        const res = await fetch(e.request);
-        if (res.ok) c.put(e.request, res.clone());
+  // tokened modules: network-first so a ?v= bump always wins
+  if (url.searchParams.has('v') || url.pathname.endsWith('.js')) {
+    event.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy));
         return res;
-      }),
+      }).catch(() => caches.match(req))
     );
-  } else {
-    // untokened shell/vendor/icons: network-first, cache fallback
-    e.respondWith(
-      caches.open(CACHE).then(async c => {
-        try {
-          const res = await fetch(e.request);
-          if (res.ok) c.put(e.request, res.clone());
-          return res;
-        } catch {
-          const hit = await c.match(e.request, { ignoreSearch: url.pathname.endsWith('/') });
-          if (hit) return hit;
-          throw new Error('offline, uncached: ' + url.pathname);
-        }
-      }),
-    );
+    return;
   }
+
+  // untokened shell/vendor/icons: network-first, cache fallback
+  event.respondWith(
+    fetch(req).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE).then(c => c.put(req, copy));
+      return res;
+    }).catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
+  );
 });
