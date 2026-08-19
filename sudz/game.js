@@ -1,5 +1,5 @@
-// Suds Jack — Horizon Mesh v4.2
-// Visual version indicator + aggressive vector perspective (FAR 0.015 → NEAR 1.08)
+// Suds Jack — Horizon Mesh v5.0
+// Fixed projection + consistent jump physics (z up, positive)
 // Bomb Jack × Tempest × Tiny Wings × Suda51
 
 (() => {
@@ -14,28 +14,29 @@
   const playBtn = document.getElementById("play");
   const glitch = document.getElementById("glitch");
 
-  const VERSION = "v4.2";
+  const VERSION = "v5.0";
   const LANES = 9;
-  const GRAVITY = 27;
-  const JUMP_V = -12.4;
-  const BOOST_V = -19;
-  const FLOAT_DRAG = 0.25;
-  const MOVE_SPEED = 7.4;
-  const PLAYER_DEPTH = 0.905;
-  const HIT_DEPTH = 0.84;
-  const HI_KEY = "sudsJack.horizon.v4.best";
 
-  // Perspective constants — aggressive classic vector (Tempest / Star Wars)
-  // Far is TINY, near is FULL WIDTH. Linear scale = constant foreshortening.
-  const FAR_SCALE = 0.015;   // almost a point at horizon — classic vector
-  const NEAR_SCALE = 1.08;   // full width (slight overscan) at player plane
-  const ELEV_SCALE = 0.20;   // strong vertical lift so peaks are unmistakable
+  // Physics — z is UP, 0 = ground
+  const GRAVITY = 48;
+  const JUMP_V = 14;
+  const BOOST_V = 22;
+  const FLOAT_G = 12;
+  const MOVE_SPEED = 7.2;
+  const PLAYER_DEPTH = 0.88;
+  const HIT_DEPTH = 0.82;
+  const HI_KEY = "sudsJack.horizon.v5.best";
+
+  // Perspective — sane classic vector
+  const FAR_SCALE = 0.06;
+  const NEAR_SCALE = 1.0;
+  const ELEV_PX = 90;
 
   let W = 0, H = 0, dpr = 1;
   let mode = "title";
   let score = 0, best = Number(localStorage.getItem(HI_KEY) || 0) || 0;
   let lives = 3, mult = 1, combo = 0, comboTimer = 0;
-  let t = 0, last = 0, hue = 170, seed = 31;
+  let t = 0, last = 0, hue = 172, seed = 11;
   let distance = 0, intensity = 1;
   let shake = 0, flash = 0;
 
@@ -69,16 +70,16 @@
     o.type = type || "square";
     o.frequency.value = freq;
     if (slide) o.frequency.linearRampToValueAtTime(slide, audioCtx.currentTime + dur);
-    g.gain.value = vol || 0.08;
+    g.gain.value = vol || 0.07;
     g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
     o.connect(g); g.connect(audioCtx.destination);
     o.start(); o.stop(audioCtx.currentTime + dur);
   }
-  function sfxJump(peak) { blip(peak ? 400 : 230, 0.11, "triangle", 0.09, peak ? 540 : 130); }
-  function sfxCollect() { blip(680, 0.07, "sine", 0.07, 1020); }
-  function sfxBoost() { blip(160, 0.16, "sawtooth", 0.06, 440); }
-  function sfxHit() { blip(85, 0.18, "sawtooth", 0.1, 35); }
-  function sfxStomp() { blip(130, 0.09, "square", 0.08, 55); }
+  function sfxJump(peak) { blip(peak ? 420 : 240, 0.1, "triangle", 0.08, peak ? 560 : 150); }
+  function sfxCollect() { blip(700, 0.06, "sine", 0.06, 1000); }
+  function sfxBoost() { blip(170, 0.14, "sawtooth", 0.05, 400); }
+  function sfxHit() { blip(80, 0.16, "sawtooth", 0.09, 30); }
+  function sfxStomp() { blip(120, 0.08, "square", 0.07, 50); }
 
   function rand() {
     seed = (seed * 16807) % 2147483647;
@@ -97,77 +98,80 @@
   }
 
   function vanish() {
-    return { x: W * 0.5, y: H * 0.11 };
+    return { x: W * 0.5, y: H * 0.14 };
   }
 
   function perspectiveScale(depth) {
-    return FAR_SCALE + (NEAR_SCALE - FAR_SCALE) * depth;
+    const d = Math.max(0, Math.min(1, depth));
+    return FAR_SCALE + (NEAR_SCALE - FAR_SCALE) * d;
   }
 
-  function project(lane, depth, elev) {
+  function project(lane, depth, elev, jumpZ) {
     const v = vanish();
-    const s = perspectiveScale(depth);
-    const nearY = H * 0.91;
-    const baseY = v.y + (nearY - v.y) * depth;
-    const elevPx = elev * H * ELEV_SCALE * s;
-    const totalW = W * 0.84 * s;
+    const d = Math.max(0, Math.min(1.05, depth));
+    const s = perspectiveScale(d);
+    const nearY = H * 0.86;
+    const baseY = v.y + (nearY - v.y) * d;
+    const totalElev = Math.max(0, (elev || 0) + (jumpZ || 0));
+    const elevPx = totalElev * ELEV_PX * s;
+    const totalW = W * 0.78 * s;
     const x = v.x + (lane - (LANES - 1) / 2) * (totalW / (LANES - 1));
     return { x, y: baseY - elevPx, s };
   }
 
   function meshHeight(lane, depth) {
-    const world = genPhase + depth * 8.5 + distance * 0.02;
-    const ridge = Math.abs(Math.sin(world * 0.45 + lane * 0.6));
-    const sharp = Math.pow(ridge, 2.6);
-    const cross = Math.pow(Math.abs(Math.sin(world * 1.5 + lane * 1.8)), 2.2) * 0.42;
-    const platWave = Math.sin(world * 0.17 + lane * 0.3);
-    const plat = platWave > 0.65 ? Math.pow(platWave - 0.65, 1.3) * 4.0 : 0;
-    const base = 0.015 + 0.035 * Math.sin(world * 0.12 + lane * 0.4);
-    return Math.min(0.95, base + sharp * 0.42 + cross * 0.24 + plat);
+    const world = genPhase + depth * 6.5 + distance * 0.012;
+    const ridge = Math.abs(Math.sin(world * 0.5 + lane * 0.65));
+    const sharp = Math.pow(ridge, 2.0) * 0.28;
+    const cross = Math.pow(Math.abs(Math.sin(world * 1.2 + lane * 1.5)), 1.8) * 0.14;
+    const platWave = Math.sin(world * 0.2 + lane * 0.28);
+    const plat = platWave > 0.7 ? (platWave - 0.7) * 1.8 : 0;
+    const base = 0.03 + 0.05 * Math.sin(world * 0.14 + lane * 0.35);
+    return Math.min(0.7, base + sharp + cross + plat);
   }
 
   function meshPeak(lane, depth) {
-    return meshHeight(lane, depth) > 0.50;
+    return meshHeight(lane, depth) > 0.38;
   }
 
   function ensureSlices() {
-    while (slices.length < 40) {
-      const maxD = slices.length ? Math.max(...slices.map(s => s.depth)) : -0.04;
-      const d = maxD + 0.034;
+    while (slices.length < 36) {
+      const maxD = slices.length ? Math.max(...slices.map(s => s.depth)) : -0.03;
+      const d = maxD + 0.036;
       const heights = [];
       const peak = [];
       for (let i = 0; i < LANES; i++) {
         const h = meshHeight(i, d);
         heights.push(h);
-        peak.push(h > 0.50);
+        peak.push(h > 0.38);
       }
       slices.push({ depth: d, heights, peak, id: nextSliceId++ });
     }
   }
 
   function advanceLandscape(dt) {
-    const base = mode === "play" ? 0.195 + Math.min(0.3, distance * 0.0013) : 0.4;
+    const base = mode === "play" ? 0.18 + Math.min(0.22, distance * 0.001) : 0.35;
     const speed = base * intensity * dt;
     for (const s of slices) s.depth += speed;
-    slices = slices.filter(s => s.depth < 1.22);
-    genPhase += dt * (0.6 + intensity * 0.18);
+    slices = slices.filter(s => s.depth < 1.08);
+    genPhase += dt * (0.55 + intensity * 0.12);
     ensureSlices();
     if (mode === "play") {
-      distance += speed * 15;
-      intensity = 1 + Math.min(1.9, distance * 0.0038);
+      distance += speed * 14;
+      intensity = 1 + Math.min(1.6, distance * 0.0035);
     }
   }
 
   function spawnAtHorizon() {
     const r = rand();
     let kind = "orb";
-    if (r > 0.52) kind = "crawler";
-    else if (r > 0.76) kind = "dart";
-    else if (r > 0.88) kind = "boost";
-    else if (r > 0.95 && intensity > 1.25) kind = "spike";
+    if (r > 0.55) kind = "crawler";
+    else if (r > 0.78) kind = "dart";
+    else if (r > 0.9) kind = "boost";
+    else if (r > 0.96 && intensity > 1.2) kind = "spike";
     things.push({
       lane: Math.floor(rand() * LANES),
-      depth: 0.006 + rand() * 0.04,
+      depth: 0.01 + rand() * 0.04,
       kind,
       alive: true,
       phase: rand() * 12,
@@ -176,24 +180,24 @@
   }
 
   function burst(lane, depth, elev, count, hOff) {
-    const p = project(lane, depth, elev);
+    const p = project(lane, depth, elev, 0);
     for (let i = 0; i < count; i++) {
       const a = rand() * Math.PI * 2;
-      const sp = 55 + rand() * 120;
+      const sp = 40 + rand() * 90;
       particles.push({
         x: p.x, y: p.y,
         vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp - 45,
-        life: 0.28 + rand() * 0.4,
-        hue: (hue + hOff + rand() * 45) % 360,
-        size: 2 + rand() * 3.2
+        vy: Math.sin(a) * sp - 30,
+        life: 0.25 + rand() * 0.35,
+        hue: (hue + hOff + rand() * 40) % 360,
+        size: 2 + rand() * 2.5
       });
     }
   }
 
   function addCombo(pts) {
     combo++;
-    comboTimer = 2.3;
+    comboTimer = 2.2;
     mult = Math.min(8, 1 + Math.floor(combo / 3));
     score += pts * mult;
     updateHud();
@@ -208,13 +212,13 @@
     player.floating = !!peak;
     sfxJump(peak);
     if (peak) {
-      player.boostUntil = t + 0.65;
-      addCombo(55);
-      burst(player.lane, PLAYER_DEPTH, meshHeight(player.lane, PLAYER_DEPTH), 18, 25);
-      flash = 0.28;
+      player.boostUntil = t + 0.55;
+      addCombo(50);
+      burst(player.lane, PLAYER_DEPTH, meshHeight(player.lane, PLAYER_DEPTH), 14, 30);
+      flash = 0.22;
       if (glitch) {
         glitch.className = "flash";
-        setTimeout(() => glitch.className = "", 260);
+        setTimeout(() => glitch.className = "", 250);
       }
     }
   }
@@ -234,7 +238,7 @@
     player.onGround = true; player.floating = false; player.invuln = 0;
     things = []; particles = [];
     distance = 0; intensity = 1;
-    spawnTimer = 0.55;
+    spawnTimer = 0.5;
     overlay.classList.remove("show");
     updateHud();
   }
@@ -242,13 +246,13 @@
   function hurt() {
     if (player.invuln > 0) return;
     lives--;
-    player.invuln = 1.5;
-    shake = 15;
+    player.invuln = 1.4;
+    shake = 12;
     combo = 0; mult = 1; comboTimer = 0;
     sfxHit();
     if (glitch) {
       glitch.className = "hard";
-      setTimeout(() => glitch.className = "", 460);
+      setTimeout(() => glitch.className = "", 400);
     }
     if (lives <= 0) {
       mode = "over";
@@ -325,8 +329,8 @@
 
   function update(dt) {
     t += dt;
-    hue = (hue + dt * (13 + intensity * 5)) % 360;
-    if (shake > 0) shake *= 0.85;
+    hue = (hue + dt * (12 + intensity * 4)) % 360;
+    if (shake > 0) shake *= 0.86;
     if (flash > 0) flash -= dt;
     if (comboTimer > 0) {
       comboTimer -= dt;
@@ -336,12 +340,8 @@
     advanceLandscape(dt);
 
     if (mode === "title") {
-      if (rand() < dt * 0.7) spawnAtHorizon();
-      things = things.filter(th => th.alive && th.depth < 1.15);
-      if (rand() < dt * 2.2) {
-        const lane = Math.floor(rand() * LANES);
-        burst(lane, 0.25 + rand() * 0.55, 0.12, 2, 70);
-      }
+      if (rand() < dt * 0.6) spawnAtHorizon();
+      things = things.filter(th => th.alive && th.depth < 1.05);
       return;
     }
     if (mode !== "play") return;
@@ -354,67 +354,70 @@
     player.lane += input * MOVE_SPEED * air * dt;
     player.lane = Math.max(0, Math.min(LANES - 1, player.lane));
 
-    if (player.floating && player.vz > 0 && t < player.boostUntil + 0.75) {
-      player.vz += GRAVITY * FLOAT_DRAG * dt;
+    // vertical — z is UP
+    if (player.floating && player.vz < 0 && t < player.boostUntil + 0.6) {
+      player.vz -= FLOAT_G * dt;
     } else {
-      player.vz += GRAVITY * dt;
-      if (player.vz > 0) player.floating = false;
+      player.vz -= GRAVITY * dt;
     }
     player.z += player.vz * dt;
-    if (player.vz >= 0 && player.z <= 0) {
-      player.z = 0; player.vz = 0;
-      player.onGround = true; player.floating = false;
-    } else player.onGround = false;
+    if (player.z <= 0) {
+      player.z = 0;
+      player.vz = 0;
+      player.onGround = true;
+      player.floating = false;
+    } else {
+      player.onGround = false;
+    }
 
     if (player.invuln > 0) player.invuln -= dt;
 
     spawnTimer -= dt;
     if (spawnTimer <= 0) {
       spawnAtHorizon();
-      if (rand() < 0.32 + intensity * 0.12) spawnAtHorizon();
-      if (rand() < intensity * 0.09) spawnAtHorizon();
-      spawnTimer = Math.max(0.16, 0.68 - distance * 0.0014 - intensity * 0.045);
+      if (rand() < 0.3 + intensity * 0.1) spawnAtHorizon();
+      spawnTimer = Math.max(0.2, 0.7 - distance * 0.0012 - intensity * 0.04);
     }
 
     for (const th of things) {
       if (!th.alive) continue;
-      th.phase += dt * (5.5 + intensity);
+      th.phase += dt * (5 + intensity);
       if (th.kind === "crawler" || th.kind === "spike") {
-        th.lane += Math.sin(th.phase * 0.35) * 0.45 * dt;
+        th.lane += Math.sin(th.phase * 0.35) * 0.4 * dt;
         th.lane = Math.max(0, Math.min(LANES - 1, th.lane));
       }
-      if (th.depth > 1.16) { th.alive = false; continue; }
+      if (th.depth > 1.05) { th.alive = false; continue; }
 
-      if (th.depth > HIT_DEPTH && th.depth < 1.03) {
+      if (th.depth > HIT_DEPTH && th.depth < 0.98) {
         const dist = Math.abs(th.lane - player.lane);
-        if (dist < 0.48) {
+        if (dist < 0.5) {
           if (th.kind === "orb" || th.kind === "boost") {
-            if (th.kind === "boost" && player.z < 0.45 && !player.floating) continue;
+            if (th.kind === "boost" && player.z < 0.3 && !player.floating) continue;
             th.alive = false;
             if (th.kind === "boost") {
               sfxBoost();
-              player.vz = BOOST_V * 0.72;
+              player.vz = BOOST_V * 0.65;
               player.floating = true;
-              player.boostUntil = t + 0.42;
-              addCombo(220);
-              burst(th.lane, th.depth, meshHeight(th.lane, th.depth) + 0.1, 20, 35);
+              player.boostUntil = t + 0.35;
+              addCombo(200);
+              burst(th.lane, th.depth, meshHeight(th.lane, th.depth), 16, 40);
             } else {
               sfxCollect();
-              addCombo(110);
-              burst(th.lane, th.depth, meshHeight(th.lane, th.depth) + 0.08, 11, 135);
+              addCombo(100);
+              burst(th.lane, th.depth, meshHeight(th.lane, th.depth), 10, 130);
             }
           } else {
-            const stomp = player.vz > 2.1 && player.z > 0.38;
+            const stomp = player.vz < -2 && player.z > 0.25;
             if (stomp && th.kind !== "dart") {
               th.hp--;
               if (th.hp <= 0) {
                 th.alive = false;
-                player.vz = JUMP_V * 0.52;
+                player.vz = JUMP_V * 0.45;
                 sfxStomp();
-                addCombo(th.kind === "spike" ? 380 : 270);
-                burst(th.lane, th.depth, meshHeight(th.lane, th.depth), 20, 0);
+                addCombo(th.kind === "spike" ? 350 : 240);
+                burst(th.lane, th.depth, meshHeight(th.lane, th.depth), 16, 0);
               }
-            } else if (player.invuln <= 0 && player.z < 1.65) {
+            } else if (player.invuln <= 0 && player.z < 1.2) {
               th.alive = false;
               hurt();
             }
@@ -428,7 +431,7 @@
       const p = particles[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vy += 150 * dt;
+      p.vy += 140 * dt;
       p.life -= dt;
       if (p.life <= 0) particles.splice(i, 1);
     }
@@ -444,9 +447,9 @@
     ctx.fillRect(0, 0, W, H);
 
     const v = vanish();
-    const g = ctx.createRadialGradient(v.x, v.y, 0, v.x, v.y, H * 0.58);
-    g.addColorStop(0, `hsla(${hue}, 95%, 50%, ${0.22 + flash * 0.45})`);
-    g.addColorStop(0.4, `hsla(${(hue + 40) % 360}, 70%, 30%, 0.07)`);
+    const g = ctx.createRadialGradient(v.x, v.y, 0, v.x, v.y, H * 0.5);
+    g.addColorStop(0, `hsla(${hue}, 90%, 45%, ${0.18 + flash * 0.35})`);
+    g.addColorStop(0.5, `hsla(${(hue + 40) % 360}, 60%, 25%, 0.05)`);
     g.addColorStop(1, "transparent");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
@@ -455,131 +458,133 @@
 
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+
     for (let lane = 0; lane < LANES; lane++) {
       ctx.beginPath();
       let started = false;
       for (const s of sorted) {
-        if (s.depth < 0.008 || s.depth > 1.05) continue;
-        const p = project(lane, s.depth, s.heights[lane] || 0);
+        if (s.depth < 0.01 || s.depth > 1.0) continue;
+        const p = project(lane, s.depth, s.heights[lane] || 0, 0);
         if (!started) { ctx.moveTo(p.x, p.y); started = true; }
         else ctx.lineTo(p.x, p.y);
       }
       if (started) {
-        const alpha = 0.35 + 0.45 * Math.min(1, sorted[sorted.length - 1].depth);
-        ctx.strokeStyle = `hsla(${(hue + lane * 9) % 360}, 100%, 58%, ${alpha})`;
-        ctx.lineWidth = 1.15;
+        ctx.strokeStyle = `hsla(${(hue + lane * 9) % 360}, 100%, 55%, 0.5)`;
+        ctx.lineWidth = 1.2;
         ctx.stroke();
       }
     }
 
     for (const s of sorted) {
-      if (s.depth < 0.025 || s.depth > 1.02) continue;
+      if (s.depth < 0.03 || s.depth > 0.98) continue;
       ctx.beginPath();
       for (let lane = 0; lane < LANES; lane++) {
-        const p = project(lane, s.depth, s.heights[lane] || 0);
+        const p = project(lane, s.depth, s.heights[lane] || 0, 0);
         if (lane === 0) ctx.moveTo(p.x, p.y);
         else ctx.lineTo(p.x, p.y);
       }
-      const fade = Math.min(1, s.depth * 1.7);
-      ctx.strokeStyle = `hsla(${(hue + s.depth * 55) % 360}, 100%, 52%, ${0.12 + fade * 0.5})`;
-      ctx.lineWidth = 0.9 + s.depth * 1.3;
+      const fade = Math.min(1, s.depth * 1.5);
+      ctx.strokeStyle = `hsla(${(hue + s.depth * 50) % 360}, 100%, 50%, ${0.12 + fade * 0.45})`;
+      ctx.lineWidth = 0.9 + s.depth * 1.1;
       ctx.stroke();
 
       for (let lane = 0; lane < LANES; lane++) {
         if (!s.peak[lane]) continue;
-        const p = project(lane, s.depth, s.heights[lane]);
-        const sz = 2.8 + s.depth * 11;
-        ctx.strokeStyle = `hsla(${(hue + 42) % 360}, 100%, 78%, ${0.28 + fade * 0.62})`;
-        ctx.lineWidth = 1.35;
+        const p = project(lane, s.depth, s.heights[lane], 0);
+        const sz = 3 + s.depth * 9;
+        ctx.strokeStyle = `hsla(${(hue + 45) % 360}, 100%, 75%, ${0.3 + fade * 0.55})`;
+        ctx.lineWidth = 1.3;
         ctx.beginPath();
         ctx.moveTo(p.x - sz, p.y + 1);
-        ctx.lineTo(p.x, p.y - sz * 1.35);
+        ctx.lineTo(p.x, p.y - sz * 1.2);
         ctx.lineTo(p.x + sz, p.y + 1);
         ctx.stroke();
       }
     }
 
     for (const th of things) {
-      if (!th.alive) continue;
-      const elev = meshHeight(th.lane, th.depth) + 0.06;
-      const p = project(th.lane, th.depth, elev);
+      if (!th.alive || th.depth > 1.0) continue;
+      const elev = meshHeight(th.lane, th.depth);
+      const p = project(th.lane, th.depth, elev, 0);
       const s = p.s;
-      const pulse = 0.88 + 0.12 * Math.sin(th.phase);
-      ctx.lineWidth = 1.6 + s * 0.6;
+      const pulse = 0.9 + 0.1 * Math.sin(th.phase);
+      ctx.lineWidth = 1.5 + s * 0.5;
 
       if (th.kind === "orb") {
-        ctx.strokeStyle = `hsl(${(hue + 120) % 360}, 100%, 72%)`;
+        ctx.strokeStyle = `hsl(${(hue + 120) % 360}, 100%, 70%)`;
         ctx.shadowColor = ctx.strokeStyle;
-        ctx.shadowBlur = 11 * s;
+        ctx.shadowBlur = 10 * s;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 5.5 * s * pulse, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 5 * s * pulse, 0, Math.PI * 2);
         ctx.stroke();
         ctx.shadowBlur = 0;
       } else if (th.kind === "boost") {
-        ctx.strokeStyle = `hsl(${(hue + 38) % 360}, 100%, 72%)`;
+        ctx.strokeStyle = `hsl(${(hue + 40) % 360}, 100%, 70%)`;
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y - 9 * s);
-        ctx.lineTo(p.x + 7 * s, p.y + 6 * s);
-        ctx.lineTo(p.x - 7 * s, p.y + 6 * s);
+        ctx.moveTo(p.x, p.y - 8 * s);
+        ctx.lineTo(p.x + 6 * s, p.y + 5 * s);
+        ctx.lineTo(p.x - 6 * s, p.y + 5 * s);
         ctx.closePath();
         ctx.stroke();
       } else if (th.kind === "crawler") {
-        ctx.strokeStyle = `hsl(${(hue + 8) % 360}, 100%, 58%)`;
+        ctx.strokeStyle = `hsl(${(hue + 5) % 360}, 100%, 55%)`;
         ctx.beginPath();
-        ctx.moveTo(p.x - 7 * s, p.y);
-        ctx.lineTo(p.x + 7 * s, p.y);
-        ctx.moveTo(p.x, p.y - 6 * s);
-        ctx.lineTo(p.x, p.y + 6 * s);
+        ctx.moveTo(p.x - 6 * s, p.y);
+        ctx.lineTo(p.x + 6 * s, p.y);
+        ctx.moveTo(p.x, p.y - 5 * s);
+        ctx.lineTo(p.x, p.y + 5 * s);
         ctx.stroke();
       } else if (th.kind === "spike") {
-        ctx.strokeStyle = `hsl(${(hue + 0) % 360}, 100%, 56%)`;
+        ctx.strokeStyle = `hsl(${(hue + 0) % 360}, 100%, 55%)`;
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y - 10 * s);
-        ctx.lineTo(p.x + 8 * s, p.y + 7 * s);
-        ctx.lineTo(p.x, p.y + 3 * s);
-        ctx.lineTo(p.x - 8 * s, p.y + 7 * s);
+        ctx.moveTo(p.x, p.y - 9 * s);
+        ctx.lineTo(p.x + 7 * s, p.y + 6 * s);
+        ctx.lineTo(p.x, p.y + 2 * s);
+        ctx.lineTo(p.x - 7 * s, p.y + 6 * s);
         ctx.closePath();
         ctx.stroke();
       } else {
-        ctx.strokeStyle = `hsl(${(hue + 180) % 360}, 100%, 66%)`;
+        ctx.strokeStyle = `hsl(${(hue + 180) % 360}, 100%, 65%)`;
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y - 9 * s);
-        ctx.lineTo(p.x + 5.5 * s, p.y + 7 * s);
-        ctx.lineTo(p.x - 5.5 * s, p.y + 7 * s);
+        ctx.moveTo(p.x, p.y - 8 * s);
+        ctx.lineTo(p.x + 5 * s, p.y + 6 * s);
+        ctx.lineTo(p.x - 5 * s, p.y + 6 * s);
         ctx.closePath();
         ctx.stroke();
       }
     }
 
     if (mode === "play") {
-      if (!(player.invuln > 0 && Math.floor(t * 15) % 2 === 0)) {
+      if (!(player.invuln > 0 && Math.floor(t * 14) % 2 === 0)) {
         const elev = meshHeight(player.lane, PLAYER_DEPTH);
-        const p = project(player.lane, PLAYER_DEPTH, elev + player.z * 0.058);
-        const col = `hsl(${(hue + 6) % 360}, 100%, 76%)`;
+        const jumpZ = Math.min(1.1, player.z * 0.07);
+        const p = project(player.lane, PLAYER_DEPTH, elev, jumpZ);
+        const py = Math.max(H * 0.08, Math.min(H * 0.82, p.y));
+        const col = `hsl(${(hue + 8) % 360}, 100%, 75%)`;
         ctx.strokeStyle = col;
         ctx.shadowColor = col;
-        ctx.shadowBlur = 18;
-        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 16;
+        ctx.lineWidth = 2.4;
         const f = player.facing;
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y - 15);
-        ctx.lineTo(p.x + 13 * f, p.y);
-        ctx.lineTo(p.x, p.y + 13);
-        ctx.lineTo(p.x - 13 * f, p.y);
+        ctx.moveTo(p.x, py - 14);
+        ctx.lineTo(p.x + 12 * f, py);
+        ctx.lineTo(p.x, py + 12);
+        ctx.lineTo(p.x - 12 * f, py);
         ctx.closePath();
         ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(p.x - 5.5, p.y + 13);
-        ctx.lineTo(p.x - 9.5, p.y + 20);
-        ctx.moveTo(p.x + 5.5, p.y + 13);
-        ctx.lineTo(p.x + 9.5, p.y + 20);
+        ctx.moveTo(p.x - 5, py + 12);
+        ctx.lineTo(p.x - 9, py + 18);
+        ctx.moveTo(p.x + 5, py + 12);
+        ctx.lineTo(p.x + 9, py + 18);
         ctx.stroke();
         if (player.floating) {
-          ctx.globalAlpha = 0.42;
+          ctx.globalAlpha = 0.4;
           ctx.beginPath();
-          ctx.moveTo(p.x, p.y + 14);
-          ctx.lineTo(p.x - f * 8, p.y + 35);
-          ctx.lineTo(p.x + f * 5.5, p.y + 30);
+          ctx.moveTo(p.x, py + 13);
+          ctx.lineTo(p.x - f * 7, py + 30);
+          ctx.lineTo(p.x + f * 5, py + 26);
           ctx.stroke();
           ctx.globalAlpha = 1;
         }
@@ -588,71 +593,71 @@
     }
 
     for (const p of particles) {
-      ctx.globalAlpha = Math.max(0, p.life * 2.5);
-      ctx.fillStyle = `hsl(${p.hue}, 100%, 66%)`;
+      ctx.globalAlpha = Math.max(0, p.life * 2.4);
+      ctx.fillStyle = `hsl(${p.hue}, 100%, 65%)`;
       const sz = p.size || 3;
       ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
     }
     ctx.globalAlpha = 1;
 
     if (mode === "play" && mult > 1) {
-      ctx.font = "bold 18px IBM Plex Mono, monospace";
+      ctx.font = "bold 17px IBM Plex Mono, monospace";
       ctx.textAlign = "center";
-      ctx.fillStyle = `hsla(${(hue + 25) % 360}, 100%, 72%, ${0.45 + comboTimer * 0.22})`;
-      ctx.fillText("×" + mult, W * 0.5, 46);
+      ctx.fillStyle = `hsla(${(hue + 25) % 360}, 100%, 70%, ${0.5 + comboTimer * 0.2})`;
+      ctx.fillText("×" + mult, W * 0.5, 44);
     }
 
-    // always-visible version indicator (bottom-left)
+    // version — always visible
     ctx.save();
-    ctx.globalAlpha = 0.55;
+    ctx.globalAlpha = 0.6;
     ctx.font = "11px IBM Plex Mono, monospace";
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillStyle = "#6af";
-    ctx.fillText(VERSION + "  FAR " + FAR_SCALE + " → NEAR " + NEAR_SCALE, 10, H - 8);
+    ctx.fillStyle = "#7cf";
+    ctx.fillText(VERSION, 10, H - 8);
     ctx.restore();
 
     if (mode === "play" && ("ontouchstart" in window || matchMedia("(pointer: coarse)").matches)) {
-      const padH = Math.min(94, H * 0.175);
-      const padY = H - padH - 14;
+      const padH = Math.min(88, H * 0.16);
+      const padY = H - padH - 12;
       const leftW = W * 0.48;
       const rightX = W * 0.52;
-      const rightW = W - rightX - 12;
+      const rightW = W - rightX - 10;
 
       ctx.save();
       ctx.globalAlpha = 0.14;
       ctx.fillStyle = "#0a1214";
-      ctx.fillRect(12, padY, leftW - 20, padH);
+      ctx.fillRect(10, padY, leftW - 16, padH);
       ctx.fillRect(rightX, padY, rightW, padH);
 
-      ctx.globalAlpha = 0.55;
+      ctx.globalAlpha = 0.5;
       ctx.strokeStyle = "#22e0e8";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(12, padY, leftW - 20, padH);
+      ctx.lineWidth = 1.4;
+      ctx.strokeRect(10, padY, leftW - 16, padH);
       ctx.strokeRect(rightX, padY, rightW, padH);
 
-      const midX = 12 + (leftW - 20) / 2;
+      const midX = 10 + (leftW - 16) / 2;
       ctx.beginPath();
-      ctx.moveTo(midX, padY + 12);
-      ctx.lineTo(midX, padY + padH - 12);
+      ctx.moveTo(midX, padY + 10);
+      ctx.lineTo(midX, padY + padH - 10);
       ctx.stroke();
 
-      ctx.font = `bold ${Math.min(32, padH * 0.42)}px IBM Plex Mono, monospace`;
+      ctx.font = `bold ${Math.min(28, padH * 0.4)}px IBM Plex Mono, monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const cy = padY + padH / 2;
 
-      ctx.globalAlpha = touch.left ? 1 : 0.48;
+      ctx.globalAlpha = touch.left ? 1 : 0.45;
       ctx.fillStyle = touch.left ? "#22e0e8" : "#8af";
-      ctx.fillText("◀", 12 + (leftW - 20) * 0.25, cy);
+      ctx.fillText("◀", 10 + (leftW - 16) * 0.25, cy);
 
-      ctx.globalAlpha = touch.right ? 1 : 0.48;
+      ctx.globalAlpha = touch.right ? 1 : 0.45;
       ctx.fillStyle = touch.right ? "#22e0e8" : "#8af";
-      ctx.fillText("▶", 12 + (leftW - 20) * 0.75, cy);
+      ctx.fillText("▶", 10 + (leftW - 16) * 0.75, cy);
 
-      ctx.globalAlpha = touch.jump ? 1 : 0.48;
+      ctx.globalAlpha = touch.jump ? 1 : 0.45;
       ctx.fillStyle = touch.jump ? "#22e0e8" : "#8af";
-      ctx.font = `bold ${Math.min(26, padH * 0.36)}px IBM Plex Mono, monospace`;
+      ctx.font = `bold ${Math.min(22, padH * 0.32)}px IBM Plex Mono, monospace`;
       ctx.fillText("JUMP", rightX + rightW / 2, cy);
       ctx.restore();
     }
