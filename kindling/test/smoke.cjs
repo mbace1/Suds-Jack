@@ -471,6 +471,23 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   const rising = bands.every((n, i) => i === 0 || n > bands[i - 1]);
   check(`the day has five bands and each one is a brighter room (${bands.join(' → ')})`, rising);
 
+  // ── and each band has to be WORTH something ──
+  // Rising is not enough, and batch 1 proved it: the delivered ground plane was
+  // 84.8% warm before any fire existed, so the measure saturated the moment it
+  // was visible. The ladder still rose — 11772 → 12155 → 13369 → 15445 → 17713
+  // — but the steps were 3%, 10%, 15%, 15% on top of a 5.9x cliff at band 1.
+  // Of the five small things a day holds, the first did nearly all the visible
+  // work. Every check passed; the reward loop was flat.
+  //
+  // So the floor is on the SMALLEST step, as a fraction of the band below it.
+  // Baked-in warmth is the only thing that squashes this, which makes it a
+  // direct guard on the palette's one rule: the environment is cold and the
+  // fire is the only warm thing in it.
+  const steps = bands.slice(1).map((n, i) => n / Math.max(1, bands[i]) - 1);
+  const weakestStep = Math.min(...steps);
+  check(`and every one of them is worth doing (smallest step +${(weakestStep * 100).toFixed(0)}%)`,
+    weakestStep >= 0.12);
+
   // ── the seam between drawn art and cut art (js/assets.js) ──
   // The whole point of the manifest is that nobody has to ask whether the art
   // has landed. So the gate asks the two questions that could silently break
