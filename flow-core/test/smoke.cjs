@@ -268,6 +268,26 @@ s.listen(0, '127.0.0.1', async () => {
       });
       ok('cover stands where a swing can reach it', smashed === 'reachable', smashed);
 
+      // ITEM, clicked. A consumable you cannot actually throw is a button.
+      const thrown = await p.evaluate(async () => {
+        const d = window.__pt.debug, f = d.fight;
+        const btn = [...document.querySelectorAll('#fightBtns button')]
+          .find(b => /THROW THE/.test(b.textContent));
+        if (!btn) return { shown: false };
+        const label = btn.textContent;
+        const before = f.items.rock + f.items.bottle;
+        btn.click();                                   // arms it
+        const item = d.fightView.sel;
+        const t = f.itemTargets(f.actor)[0];
+        if (!t) return { shown: true, armed: item, threw: false };
+        f.act({ kind: 'throw', item: item.slice(1), target: t.id });
+        return { shown: true, armed: item, label, spent: before - (f.items.rock + f.items.bottle) };
+      });
+      ok('the street offers something to throw', thrown.shown, JSON.stringify(thrown));
+      ok('the button says how many are left', /\d+ left/.test(thrown.label || ''), thrown.label);
+      ok('arming an item is not arming a weapon', (thrown.armed || '').startsWith('!'), thrown.armed);
+      ok('and throwing one spends it', thrown.spent === 1, String(thrown.spent));
+
       // the out is offered every round and is a real button
       ok('OFFER THEM THE OUT is always present',
         await p.locator('#fightBtns button', { hasText: 'OFFER THEM THE OUT' }).count() > 0);
