@@ -337,6 +337,152 @@ const CUTS = {
       ['body',   null,     () => true,                       [0, 0.20, 0]],
     ],
   },
+  // THE ROOMBA. Its whole design is one node: `spring` fires on the first
+  // stomp and launches Eeri, and breaks on the second (ENEMY_BRIEFS.md). It is
+  // drawn standing clear on the top face for exactly that reason — a cut is a
+  // predicate in normalised space, so a spring touching the shell could never
+  // have been separated from it.
+  //
+  // `eye` is not decoration either: js/robots.js brightens the eye through
+  // `notice` and `wind` before an enemy acts, so the telegraph needs its own
+  // node to brighten. An enemy with nothing to brighten cannot be read.
+  //
+  // No yaw: the disc is symmetric and came back square to the camera.
+  m_vacbot: {
+    src: 'out/kit3d/B-vacbot/image-01a01665.glb',
+    out: 'vacbot_v1.glb',
+    length: 1.0,
+    yaw: 0,
+    nodes: [
+      ['spring', 'body',   (p) => p.y > 0.31,                [0, 0.31, 0]],
+      ['eye',    'body',   (p) => Math.hypot(p.x, p.y - 0.219) < 0.105, 'auto'],
+      ['wheelL', 'wheels', (p) => Math.hypot(p.x + 0.440, p.y - 0.028) < 0.055, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x - 0.400, p.y - 0.028) < 0.055, 'auto'],
+      ['wheels', 'body',   null,                             [0, 0, 0]],
+      ['body',   null,     () => true,                       [0, 0.10, 0]],
+    ],
+  },
+
+  // ---- THE SITE KIT (owner behaviours, 2026-08-18) --------------------------
+  // Every gizmo's TRICK is a node; the motion itself is code, per the routing
+  // rule. Concepted with air around each moving part for exactly this moment.
+
+  // The hopper's big brother. `bit` is the whole striking assembly — collar
+  // and chisel — and judders in position.y while the body hops.
+  m_jackhammer: {
+    src: 'out/kit3d/E-jackhammer/image-01a01667.glb',
+    out: 'jackhammer_v1.glb',
+    length: 0.7, yaw: 0,
+    nodes: [
+      ['bit',  'body', (p) => p.y < 0.62, [0, 0.62, 0]],
+      ['body', null,   () => true,        [0, 0.62, 0]],
+    ],
+  },
+
+  // The generator SHAKES (root motion, code) and throws Eeri back; the way
+  // past is over the top, and `plug` is the disable on the far side — pulled,
+  // it is hidden and the shake stops. The plug must be its own node or there
+  // is nothing to pull.
+  m_generator: {
+    src: 'out/kit3d/E-generator/image-01a01669.glb',
+    out: 'generator_v1.glb',
+    length: 0.9, yaw: 0,
+    nodes: [
+      ['plug', 'body', (p) => p.x < -0.40 && p.y > 0.20 && p.y < 0.60, 'auto'],
+      ['body', null,   () => true, [0, 0.10, 0]],
+    ],
+  },
+
+  // Blows air (a push field, code), overpressures, and takes off like a
+  // rocket. `nozzle` marks where the air comes from; `motor` is the block
+  // that rattles as pressure builds — the telegraph before the launch.
+  m_compressor: {
+    src: 'out/kit3d/E-compressor/image-01a0166a.glb',
+    out: 'compressor_v1.glb',
+    length: 1.0, yaw: 0,
+    nodes: [
+      // hinged at its ROOT on the tank, not its centre: 'auto' put the pivot
+      // mid-hose and the swing test read the rotation as DEAD — rotating a
+      // blob about its own centre moves nothing.
+      ['nozzle', 'body',   (p) => p.x < -0.38,               [-0.38, 0.50, 0]],
+      ['motor',  'body',   (p) => p.y > 0.48 && p.x > -0.15, 'auto'],
+      ['wheelF', 'wheels', (p) => Math.hypot(p.x - 0.27, p.y - 0.09) < 0.13, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x + 0.17, p.y - 0.09) < 0.13, 'auto'],
+      ['wheels', 'body',   null, [0, 0, 0]],
+      ['body',   null,     () => true, [0, 0.12, 0]],
+    ],
+  },
+
+  // Trundles at you, then TIPS its tray to strike — so the tray hinges at its
+  // front lip, over the wheel, the same pivot lesson as the dump truck: hinge
+  // it anywhere else and it sinks through the frame instead of rearing.
+  m_wheelbarrow: {
+    src: 'out/kit3d/E-wheelbarrow/image-01a0166b.glb',
+    out: 'wheelbarrow_v1.glb',
+    length: 1.1, yaw: 0,
+    nodes: [
+      ['wheel', 'body', (p) => Math.hypot(p.x + 0.40, p.y - 0.15) < 0.17, 'auto'],
+      ['tray',  'body', (p) => p.y > 0.22 && p.x < 0.30, [-0.35, 0.24, 0]],
+      ['body',  null,   () => true, [0, 0.10, 0]],
+    ],
+  },
+
+  // `spool` spins — about local x, because the mesh came back with its axle
+  // across the picture. The crank is claimed FIRST or the spool's radius
+  // swallows it and the handle spins with the drum it is meant to wind.
+  m_kitcabledrum: {
+    src: 'out/kit3d/E-cabledrum/image-01a0166c.glb',
+    out: 'cabledrum_v1.glb',
+    length: 0.9, yaw: 0,
+    nodes: [
+      ['crank', 'spool', (p) => p.x > 0.34 && p.y > 0.28, 'auto'],
+      ['spool', 'stand', (p) => Math.hypot(p.x + 0.02, p.y - 0.42) < 0.33, 'auto'],
+      ['stand', null,    () => true, [0, 0.10, 0]],
+    ],
+  },
+
+  // SPRAY, not explode — a bottle that detonates is a different game. The
+  // spray is a particle cone from `nozzle` (the hose coils at the bottle
+  // tops); the bottles themselves never move.
+  m_gascart: {
+    src: 'out/kit3d/E-gascart/image-01a0166e.glb',
+    out: 'gascart_v1.glb',
+    length: 0.8, yaw: 0,
+    nodes: [
+      // same lesson: hinged where the hoses leave the bottle tops
+      ['nozzle', 'body',   (p) => p.y > 1.10,               [0, 1.10, 0]],
+      ['wheelL', 'wheels', (p) => Math.hypot(p.x + 0.38, p.y - 0.10) < 0.13, 'auto'],
+      ['wheelR', 'wheels', (p) => Math.hypot(p.x - 0.38, p.y - 0.10) < 0.13, 'auto'],
+      ['wheels', 'body',   null, [0, 0, 0]],
+      ['body',   null,     () => true, [0, 0.10, 0]],
+    ],
+  },
+
+  // The SMALL roller — the DESIGN §3 enemy, sharing a name and nothing else
+  // with the ride machine on PR #283. Two things distinguish an enemy cut
+  // from a machine cut, and both are §6.2's own words:
+  //   `squash` — an empty ROOT holding everything, because a stomped enemy
+  //     flattens (robots.js scales it toward the ground) and a scale applied
+  //     to `body` alone would leave the drum and eye floating at full height.
+  //   `eye` — the notice tell on its stalk, cut free so it can brighten.
+  m_rollerbot: {
+    src: 'out/kit3d/B-rollerbot/image-01a016a7.glb',
+    out: 'rollerbot_v1.glb',
+    length: 0.9, yaw: 0,
+    // DELIBERATELY only squash + eye. A spinning drum was tried and the mesh
+    // refused it: the yoke plate sits flush against the drum face and they
+    // interleave in z, so no predicate separates them without shaving one or
+    // the other — the first cut took the yoke, the z-clamped one left the
+    // drum's own face behind. §6.2's contract for a small enemy is a squash
+    // node and a notice tell, nothing more, and at 32 px a static drum on a
+    // moving body is invisible. Fighting a mesh for a node the design never
+    // asked for is how a day disappears.
+    nodes: [
+      ['squash', null,     null,       [0, 0, 0]],
+      ['eye',    'squash', (p) => p.y > 0.56, 'auto'],
+      ['body',   'squash', () => true, [0, 0.15, 0]],
+    ],
+  },
 };
 
 const [mode, arg] = process.argv.slice(2);
@@ -620,6 +766,13 @@ if (mode === 'inspect' || mode === 'check') {
     // is a wobble, and a wobbling wheel is the most legible way for a toy to
     // look fake. Measured wheels do not wobble, and nothing about a wheel's
     // centre needs a human opinion — it is where its triangles are.
+    //
+    // THIS BLOCK IS LOAD-BEARING, learned the expensive way: without it the
+    // string 'auto' reaches the build arithmetic, every derived position and
+    // translate goes NaN, and the exporter sanitises NaN to zero — so the rig
+    // LOADS, the node names all resolve, the triangle counts all look right,
+    // and the geometry is a degenerate point at the origin. Nine kit joints
+    // shipped exactly that way and only the swing test saw it.
     for (let i = 0; i < spec.nodes.length; i++) {
       if (spec.nodes[i][3] !== 'auto') continue;
       const g = sub[i];
