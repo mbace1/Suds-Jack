@@ -1,5 +1,54 @@
 # EERI — versions
 
+## v15.24 — 2026-08-19 — every live model was rendering as dark metal
+
+Second-pass visual work, and it starts with a bug rather than a preference.
+
+**Every Meshy export ships `metallic 0.5, roughness 0.5`** — half metal, half
+gloss. Surveyed across `assets/3d`, that is 22 of 30 models; the hand-built
+ones (`eeri_v5`, `boltbot`, `bucket`, `hopper`, `workerbot`) are correctly
+`metallic 0, roughness 1`. This scene has one hemisphere fill, one directional
+key and **deliberately no environment map** — and a metal with nothing to
+reflect renders DARK.
+
+That is why the collectable bolts read as specks of dirt on the ground rather
+than as the thing you are in the level to pick up. `bolt` went `live` in an
+earlier release and its placeholder had been bright `PAL.MACHINE` orange, so
+flipping the seam to the real asset made the pickup *harder to see* — the one
+thing a collectable may not be. Every machine would have arrived the same way
+as it got wired.
+
+ART_BRIEF §3.1 already says it: **"no PBR gloss anywhere."** It is now
+enforced at the seam in `js/assets.js` (`paintedToy`) rather than hoped for
+per asset — metalness 0, roughness 1 on every loaded model, levelling the two
+families to one language. baseColor and textures are left alone: this changes
+how a surface answers light, not what colour it is.
+
+Measured before/after on captured frames rather than judged by eye: in
+Pipeworks the changed pixels brightened **74.2 → 94.3 mean luma (+27%)**,
+concentrated in the play band (y 334-464) where the bolts and pieces sit.
+Groundworks +8%. Nothing else moved.
+
+**What the frames also showed, and what is NOT fixed here** — recorded so the
+next pass starts from a diagnosis instead of a blank page:
+
+1. **The playfield is the least finished thing on screen.** The backdrops are
+   crafted, layered and lit; the platforms the kid actually runs on are flat
+   slabs with a hard top edge. §3.1 asks for "a single darker tone for side
+   faces" and "large radii" and the platform faces have neither.
+2. **The kid does not read.** He is small, unlit against busy backdrops, and
+   has no rim or outline guaranteeing contrast. For the six-year-old this is
+   built for, that is the most important failure in the list.
+3. **One dirt band serves all four worlds.** The night dock sits on the same
+   sunlit brown earth as the construction site, with the same pipe and brick
+   inclusions repeating at a visible interval.
+4. **The Grove canopy is flat discs.** The code painter's fan of circles reads
+   as green balloons in front of library art that is much better than it.
+5. **Tone mapping is still undecided.** §3.4 leaves it explicitly open —
+   "NoToneMapping or ACES, whichever the gate-1 shot proves, then locked" —
+   and the renderer sets neither, so it is defaulting rather than deciding.
+   Worth its own pass, not a change to slip in at the end of another.
+
 ## v15.23 — 2026-08-19 — the pieces stop being placeholders
 
 `assets/manifest.json`'s `pieces` block had six entries and **not one file**.

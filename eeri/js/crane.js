@@ -13,8 +13,8 @@
 // wind back, then strike — because that read is already learned.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=29';
-import { craftMat, craftBox } from './craft.js?v=29';
+import { PAL, mix } from './palette.js?v=30';
+import { craftMat, craftBox } from './craft.js?v=30';
 
 export function buildCraneModel(tint = 0) {
   const T = (c) => (tint > 0 ? mix(c, PAL.SKY_PALE, tint) : c);

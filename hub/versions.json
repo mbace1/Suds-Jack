@@ -1,7 +1,7 @@
 {
   "sudsjack": {
-    "v": "1",
-    "n": 1000,
+    "v": "2",
+    "n": 2000,
     "from": "VERSIONS.md"
   },
   "tokodrop": {
@@ -10,8 +10,8 @@
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": "31",
-    "n": 31000,
+    "v": "33",
+    "n": 33000,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
@@ -40,8 +40,8 @@
     "from": "VERSIONS.md"
   },
   "eeri": {
-    "v": "15.22",
-    "n": 15022,
+    "v": "15.24",
+    "n": 15024,
     "from": "VERSIONS.md"
   },
   "gameoflife": {

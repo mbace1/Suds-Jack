@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=29';
+import { PAL } from './palette.js?v=30';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -114,12 +114,43 @@ export async function loadManifest() {
 
 // ---- 3D: models against a rig contract -----------------------------------
 
+// NO PBR GLOSS ANYWHERE (ART_BRIEF §3.1/§3.4) — enforced here rather than
+// hoped for per asset.
+//
+// Every Meshy export arrives `metallic 0.5, roughness 0.5`: half metal, half
+// gloss. This scene has ONE hemisphere fill and ONE directional key and
+// deliberately no environment map, and a metal with nothing to reflect
+// renders DARK. That is not a subtlety — it is why the collectable bolts read
+// as specks of dirt on the ground rather than as the thing you are there to
+// pick up, and it would have done the same to every machine as it got wired.
+//
+// The hand-built models in the same folder are already `metallic 0,
+// roughness 1`, which is what "painted toy" means in glTF terms. So this
+// levels the two families to the same language on load: matte, lit by the
+// rig, colour from the map.
+//
+// Left alone on purpose: baseColor and the texture. This changes how a
+// surface answers light, not what colour it is.
+function paintedToy(root) {
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+      if (!m) continue;
+      if (m.metalness !== undefined) m.metalness = 0;
+      if (m.roughness !== undefined) m.roughness = 1;
+      m.needsUpdate = true;
+    }
+  });
+}
+
+
 export async function getModel(name, buildPlaceholder, kind = 'models') {
   const entry = manifest?.[kind]?.[name];
   if (!entry || entry.status !== 'live') return buildPlaceholder();
   try {
     const gltf = await new GLTFLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href);
     const root = gltf.scene;
+    paintedToy(root);
 
     // A SECOND KIND OF RIG. A hand-cut model is a tree of named nodes the
     // game rotates. A Meshy auto-rigged character is a SKINNED mesh driven by
