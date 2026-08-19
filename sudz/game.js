@@ -1,4 +1,4 @@
-// Suds Jack — Horizon Mesh v3
+// Suds Jack — Horizon Mesh v4
 // Nine-lane score attack: collect, jump, stomp, survive.
 // Bomb Jack × Tempest × Tiny Wings × Suda51
 
@@ -19,7 +19,7 @@
   const overlayHowto = overlay.querySelector(".howto");
   const overlayHint = overlay.querySelector(".hint");
 
-  const VERSION = "v3";
+  const VERSION = "v4";
   const LANES = 9;
   const SLICE_COUNT = 31;
   const SLICE_SPACING = 0.036;
@@ -34,10 +34,14 @@
   const HIT_DEPTH = 0.82;
   const HI_KEY = "sudsJack.horizon.best";
 
-  // Perspective — sane classic vector
-  const FAR_SCALE = 0.06;
+  // Perspective — low camera, deep Tempest-style web
+  const FAR_SCALE = 0.018;
   const NEAR_SCALE = 1.0;
-  const ELEV_PX = 90;
+  const VANISH_Y = 0.31;
+  const NEAR_Y = 0.94;
+  const DEPTH_CURVE = 1.48;
+  const MESH_WIDTH = 0.94;
+  const ELEV_PX = 62;
 
   let W = 0, H = 0, dpr = 1;
   let mode = "title";
@@ -107,23 +111,29 @@
   }
 
   function vanish() {
-    return { x: W * 0.5, y: H * 0.14 };
+    return { x: W * 0.5, y: H * VANISH_Y };
+  }
+
+  function depthCurve(depth) {
+    const d = Math.max(0, Math.min(1, depth));
+    return Math.pow(d, DEPTH_CURVE);
   }
 
   function perspectiveScale(depth) {
-    const d = Math.max(0, Math.min(1, depth));
+    const d = depthCurve(depth);
     return FAR_SCALE + (NEAR_SCALE - FAR_SCALE) * d;
   }
 
   function project(lane, depth, elev, jumpZ) {
     const v = vanish();
-    const d = Math.max(0, Math.min(1.05, depth));
-    const s = perspectiveScale(d);
-    const nearY = H * 0.86;
+    const rawDepth = Math.max(0, Math.min(1.05, depth));
+    const d = depthCurve(rawDepth);
+    const s = perspectiveScale(rawDepth);
+    const nearY = H * NEAR_Y;
     const baseY = v.y + (nearY - v.y) * d;
     const totalElev = Math.max(0, (elev || 0) + (jumpZ || 0));
     const elevPx = totalElev * ELEV_PX * s;
-    const totalW = W * 0.78 * s;
+    const totalW = W * MESH_WIDTH * s;
     const x = v.x + (lane - (LANES - 1) / 2) * (totalW / (LANES - 1));
     return { x, y: baseY - elevPx, s };
   }
