@@ -36,39 +36,39 @@
       "hash": "edcf098a"
     },
     "piritori/cover-barrier": {
-      "file": "2d/piritori-cover-barrier.3c1aa449.png",
+      "file": "2d/piritori-cover-barrier.277d88f7.png",
       "kind": "2d",
       "use": "prop",
       "game": "piritori",
-      "hash": "3c1aa449"
+      "hash": "277d88f7"
     },
     "piritori/cover-rock": {
-      "file": "2d/piritori-cover-rock.e42c1dcf.png",
+      "file": "2d/piritori-cover-rock.b0d55252.png",
       "kind": "2d",
       "use": "prop",
       "game": "piritori",
-      "hash": "e42c1dcf"
+      "hash": "b0d55252"
     },
     "piritori/cover-bin": {
-      "file": "2d/piritori-cover-bin.f68c94a9.png",
+      "file": "2d/piritori-cover-bin.d0ab844a.png",
       "kind": "2d",
       "use": "prop",
       "game": "piritori",
-      "hash": "f68c94a9"
+      "hash": "d0ab844a"
     },
     "piritori/cover-crate": {
-      "file": "2d/piritori-cover-crate.8d38ef4b.png",
+      "file": "2d/piritori-cover-crate.8cdb40bc.png",
       "kind": "2d",
       "use": "prop",
       "game": "piritori",
-      "hash": "8d38ef4b"
+      "hash": "8cdb40bc"
     },
     "piritori/cover-rack": {
-      "file": "2d/piritori-cover-rack.cd7f3f41.png",
+      "file": "2d/piritori-cover-rack.41d0a68d.png",
       "kind": "2d",
       "use": "prop",
       "game": "piritori",
-      "hash": "cd7f3f41"
+      "hash": "41d0a68d"
     },
     "piritori/weapons-plate": {
       "file": "2d/piritori-weapons-plate.d9ab7aeb.png",
@@ -92,11 +92,32 @@
       "hash": "9f6d30bf"
     },
     "piritori/interior-toko": {
-      "file": "2d/piritori-interior-toko.44fdd1b8.png",
+      "file": "2d/piritori-interior-toko.d96eb7f5.png",
       "kind": "2d",
       "use": "reference",
       "game": "piritori",
-      "hash": "44fdd1b8"
+      "hash": "d96eb7f5"
+    },
+    "piritori/interior-sean": {
+      "file": "2d/piritori-interior-sean.5dd7e2a1.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "5dd7e2a1"
+    },
+    "piritori/interior-igor": {
+      "file": "2d/piritori-interior-igor.dd912d3c.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "dd912d3c"
+    },
+    "piritori/interior-jaska": {
+      "file": "2d/piritori-interior-jaska.2ff12fc2.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "2ff12fc2"
     },
     "lab/orc": {
       "file": "2d/lab-orc.c019895c.png",

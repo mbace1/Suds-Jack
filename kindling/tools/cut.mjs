@@ -4,6 +4,7 @@
  *
  *   node kindling/tools/cut.mjs key   <in> <out.png>
  *   node kindling/tools/cut.mjs fit   <in> <out.png> <W>x<H> [--palette P] [--no-quantise]
+ *   node kindling/tools/cut.mjs trim  <in> <out.png> [--width N] [--pad N]
  *   node kindling/tools/cut.mjs anchors <in> [out.png] [--as WxH] [--tol N]
  *   node kindling/tools/cut.mjs slice <in> <outDir> <cell> [name,name,...]
  *   node kindling/tools/cut.mjs check <in> [--cell N] [--colours N] [--illustration]
@@ -296,6 +297,32 @@ function findAnchors(img,targets,tol){
   return { points:out, w:W, h:H, url:c.toDataURL('image/png') };
 }
 
+// crop to the ink and scale to a width. A keyed image is still the size the
+// generator made it and is mostly nothing — a prop drawn 30px wide on the board
+// does not need a 1024px transparent margin around it, and the margin is what
+// makes a sprite impossible to place: the anchor of a trimmed sprite is its own
+// edge, and the anchor of an untrimmed one is wherever the model felt like
+// putting the subject.
+function trimImage(img,maxW,pad){
+  const [c,g]=ctxOf(img.width,img.height);
+  g.drawImage(img,0,0);
+  const W=c.width,H=c.height,d=g.getImageData(0,0,W,H).data;
+  let x0=W,y0=H,x1=-1,y1=-1;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    if(d[(y*W+x)*4+3]<8)continue;
+    if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+  }
+  if(x1<0) return { canvas:c, box:null };            // nothing survived the key
+  x0=Math.max(0,x0-pad); y0=Math.max(0,y0-pad);
+  x1=Math.min(W-1,x1+pad); y1=Math.min(H-1,y1+pad);
+  const cw=x1-x0+1, ch=y1-y0+1;
+  const s=maxW&&cw>maxW ? maxW/cw : 1;
+  const [o,og]=ctxOf(Math.round(cw*s),Math.round(ch*s));
+  og.imageSmoothingEnabled=true; og.imageSmoothingQuality='high';
+  og.drawImage(c,x0,y0,cw,ch,0,0,o.width,o.height);
+  return { canvas:o, box:{ x:x0, y:y0, w:cw, h:ch }, out:{ w:o.width, h:o.height } };
+}
+
 // cut a grid sheet into one canvas per cell, skipping empty ones
 function sliceImage(img,cell){
   const across=Math.floor(img.width/cell), down=Math.floor(img.height/cell);
@@ -319,7 +346,7 @@ const [cmd, ...rest] = process.argv.slice(2);
 const flagValues = new Set();
 for (let i = 0; i < rest.length; i++) {
   if (rest[i].startsWith('--') && rest[i + 1] && !rest[i + 1].startsWith('--')
-      && ['--palette', '--cell', '--colours', '--as', '--tol'].includes(rest[i])) flagValues.add(rest[i + 1]);
+      && ['--palette', '--cell', '--colours', '--as', '--tol', '--width', '--pad'].includes(rest[i])) flagValues.add(rest[i + 1]);
 }
 const flag = name => rest.includes(name);
 const opt = name => { const i = rest.indexOf(name); return i >= 0 ? rest[i + 1] : undefined; };
@@ -349,6 +376,22 @@ if (cmd === 'key') {
   console.log(`→ ${out}  ${W}x${H}  `
     + (pal ? `snapped to ${pal.length} palette colours  ` : 'colours kept as generated  ')
     + `${(await write(out, dataUrl) / 1024).toFixed(1)} KB`);
+
+} else if (cmd === 'trim') {
+  const [src, out] = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
+  const maxW = Number(opt('--width') ?? 0);
+  const pad = Number(opt('--pad') ?? 0);
+  const url = await toUrl(src);
+  const r = await withCanvas(async pg => {
+    await pg.addScriptTag({ content: LIB });
+    return pg.evaluate(async ({ u, maxW, pad }) => {
+      const t = trimImage(await load(u), maxW, pad);
+      return { box: t.box, out: t.out, url: t.canvas.toDataURL('image/png') };
+    }, { u: url, maxW, pad });
+  });
+  if (!r.box) { console.error(`${src}: nothing opaque left — the key ate the subject`); process.exit(1); }
+  console.log(`→ ${out}  ${r.out.w}x${r.out.h}  (ink was ${r.box.w}x${r.box.h} at ${r.box.x},${r.box.y})  `
+    + `${(await write(out, r.url) / 1024).toFixed(0)} KB`);
 
 } else if (cmd === 'anchors') {
   const [src, out] = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
@@ -455,6 +498,9 @@ if (cmd === 'key') {
   fit   <in> <out.png> <W>x<H>            down to the native grid, snapped to the palette
           --palette <file.js|.json>       snap to another project's palette
           --no-quantise                   resize + binary alpha only (illustration)
+  trim  <in> <out.png>                    crop to the ink, so the sprite IS its own box
+          --width N                       and scale down to N wide
+          --pad N                         leave N transparent pixels around it
   anchors <in> [out.png] [--as WxH]      read the cyan/orange registration dots,
           [--tol N]                       print their coordinates and erase them
   slice <in> <outDir> <cell> [names]      grid sheet -> one PNG per non-empty cell

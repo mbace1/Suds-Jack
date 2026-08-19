@@ -121,6 +121,32 @@ deadpan, and not a crime film about it. No text, no logos, no UI, no
 watermark. Include a small swatch strip of every colour used along the very
 bottom edge, outside the subject.`,
 
+  // PROPS — the same register, minus the two things that make a plate a PLATE.
+  //
+  // The five cover props came back unusable and the prompt was not at fault:
+  // `kallio` ends by asking for paper grain over everything and a swatch strip
+  // along the bottom edge, both of which are exactly right for a reference
+  // sheet somebody LOOKS at, and both of which are fatal for a sprite somebody
+  // CUTS OUT. The grain gave the props a cream paper ground that the magenta
+  // key could not touch, so `key` left them fully opaque and `trim` reported
+  // the crop box as the whole 1024 frame; the swatch strip would have been
+  // trimmed into the sprite as five coloured squares under the boulder.
+  //
+  // A style is prepended to the prompt and a prompt cannot argue with it, so
+  // the fix is a second register rather than more words in each of the five.
+  kallioProp: `Piritori house style, as a CUT-OUT PROP. Hard black ink-line
+illustration with flat, slightly muted fills — Darkest Dungeon rather than a
+comic. Limited palette, hard seams between colours, flat shapes where the
+SILHOUETTE does the work rather than the shading. No gradients, no glow, no
+lens effects, no photographic rendering. Helsinki in 2003 — cold, used,
+deadpan. No text, no logos, no UI, no watermark.
+
+THE BACKGROUND IS FLAT #FF00FF MAGENTA, edge to edge, and nothing else: no
+paper texture, no grain, no risograph print, no ground, no shadow cast onto
+anything, no swatch strip, no border, no margin note, no second view. ONE
+object, alone, floating on the magenta, well clear of all four edges. It will
+be keyed out and cut, so any pixel that is not the object is a mistake.`,
+
   // PAPER — the map, and every interior you stand in.
   //
   // From the owner's final targets (ART_BIBLE §1.-1): the map is not a printed
@@ -200,6 +226,14 @@ picture and it must be strong.
 ONE CHARACTER, front and centre behind the counter, built from the same paper,
 seen from the chest up. They have a DESIGNED, DISTINCTIVE FACE — this is a
 character, not a mannequin, and a blank featureless head is a failed image.
+
+FULL BLEED: the room fills the entire frame, edge to edge. No border, no
+margin, no mount, no cream paper surround, no torn frame around the picture,
+no drop shadow under the picture, and no shot of an artwork lying on a table.
+The paper is what the room is MADE OF, never what it is mounted on. (Three of
+the four first-pass interiors came back as a picture floating on a cream sheet;
+the game covers the card with the image, so the surround shows as a pale rim
+along whichever edge the crop does not eat.)
 
 Muted, tactile, storybook-noir. Warm ochre, deep red-brown, mustard, slate,
 bone, black. No modern UI, no watermark, no photographic realism.`,
@@ -507,7 +541,7 @@ gravel. Domestic, close, embarrassing to fight in.`,
     id: 'piritori/cover-barrier',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     // Every cover prop shares one hard constraint the art cannot know on its
     // own: on the board a prop is drawn about 30px wide and 15-20px tall, so
@@ -525,7 +559,7 @@ subject clear of all edges.`,
     id: 'piritori/cover-rock',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     prompt: `A single rough granite boulder, the kind set at a park edge to
 stop cars parking on the grass, seen from a low three-quarter isometric angle,
@@ -537,7 +571,7 @@ Flat magenta #FF00FF background, subject clear of all edges.`,
     id: 'piritori/cover-bin',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     prompt: `A single green municipal wheelie bin, lid closed, seen from a low
 three-quarter isometric angle, lit from one side, standing on nothing. It
@@ -549,7 +583,7 @@ height at most, never tall enough to hide a standing person. Flat magenta
     id: 'piritori/cover-crate',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     prompt: `A single stacked wooden pallet with one crate on it, seen from a
 low three-quarter isometric angle, lit from one side, standing on nothing.
@@ -561,7 +595,7 @@ subject clear of all edges.`,
     id: 'piritori/cover-rack',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     prompt: `A single empty steel bicycle rack, seen from a low three-quarter
 isometric angle, lit from one side, standing on nothing. Thin, open, hollow —
