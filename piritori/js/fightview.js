@@ -12,38 +12,41 @@
 
 import { COLS, ROW_NAME, WEAPONS, ITEMS, arenaFor } from './fight.js?v=4';
 import { PAL } from './palette.js?v=1';
-import { image } from '../../assets/load.js?v=1';
 
 const TW = 34, TH = 17;          // iso tile half-width / half-height
 
-// ── the sprites ─────────────────────────────────────────────────────────
-// These are SHIPPED art, not pipeline output: generated once, keyed off the
-// magenta and trimmed to their own ink (`cut.mjs key` then `trim`), and
-// committed under piritori/art/. That is the difference between assets/out/
-// — which is a build directory a fresh checkout may not have — and a sprite
-// the game draws. Loaded once and shared by every fight; a miss is silent and
-// draw() falls back to the shapes it has always drawn.
+// ── the art ─────────────────────────────────────────────────────────────
+// Everything the board draws lives under piritori/art/ and is loaded by plain
+// relative path. That is the difference between assets/out/ — a 38 MB BUILD
+// directory holding the generator's own 2 MB plates, which is not deployed and
+// which a fresh checkout may not have at all — and a file this cabinet ships.
+// The plates become shipped art through `cut.mjs`: key + trim for anything
+// with alpha, `web` for the paintings (sixteen megabytes of PNG became two and
+// a half of WebP, and a cabinet has to open on a phone).
+//
+// Every load is allowed to fail. A miss is silent and draw() paints the flat
+// paper and the plain shapes it has always painted.
 const ART = new Map();
 // …and a repaint when one lands, or the first frame of a fight keeps whatever
 // it fell back to until something else happens to redraw the board — which,
 // between two turns of a turn-based game, is nothing at all.
 let onSpriteLoad = null;
-function sprite(path) {
-  if (ART.has(path)) return ART.get(path) || null;
-  ART.set(path, null);
+function sprite(file) {
+  if (ART.has(file)) return ART.get(file) || null;
+  ART.set(file, null);
   const img = new Image();
-  img.onload = () => { ART.set(path, img); onSpriteLoad?.(); };
-  img.src = `art/${path}.png?v=1`;
+  img.onload = () => { ART.set(file, img); onSpriteLoad?.(); };
+  img.src = `${file}?v=1`;
   return null;
 }
-const propArt = kind => sprite(`props/${kind}`);
+const propArt = kind => sprite(`art/props/${kind}.png`);
 
 // A unit's picture is its SIDE and its STATE, and nothing else. Facing is a
 // property of the side rather than of the pose — your men stand up the board
 // and theirs stand down it, so there is no arrangement in which the board
 // shows a man of yours facing the camera. Generating both facings for both
 // sides would have doubled the sheet to draw four images it can never use.
-const figArt = u => sprite(`fig/${u.side === 'you' ? 'you' : 'them'}-${u.downed ? 'down' : 'stand'}`);
+const figArt = u => sprite(`art/fig/${u.side === 'you' ? 'you' : 'them'}-${u.downed ? 'down' : 'stand'}.png`);
 
 export class FightView {
   constructor(canvas) {
@@ -51,24 +54,17 @@ export class FightView {
     this.ctx = canvas.getContext('2d');
     this.sel = null;             // { weapon } once a weapon is picked
     this.hot = null;             // unit id under the pointer
-    this.arena = null;           // the generated backdrop, once it lands
-    this.arenaId = null;
+    this.arenaFile = null;       // the backdrop for this fight's ground
     this.last = null;            // the fight it drew, so a late sprite can land
     onSpriteLoad = () => { if (this.last) this.draw(this.last); };
     this.resize();
   }
 
-  // The backdrop for whichever ground this fight is on. Asynchronous and
-  // ALLOWED TO FAIL: assets/load.js returns null when nothing has been
-  // generated, and draw() then paints the flat paper it always painted. A
-  // cabinet must never depend on a PNG — the arena is additive, and the game
-  // is playable on a fresh checkout with assets/out/ empty.
+  // The backdrop for whichever ground this fight is on. Named here and loaded
+  // by draw(), so a late arrival repaints itself like every other sprite —
+  // and so a missing file is simply a fight on flat paper.
   useArena(kind) {
-    const id = `piritori/arena-${arenaFor(kind)}`;
-    if (id === this.arenaId) return;
-    this.arenaId = id;
-    this.arena = null;
-    image(id).then(img => { if (this.arenaId === id) this.arena = img; });
+    this.arenaFile = `art/arenas/${arenaFor(kind)}.webp`;
   }
 
   resize() {
@@ -89,7 +85,7 @@ export class FightView {
     // formation centred on the canvas stands on the roofs. Kept as one number
     // rather than per-arena: the framing block in the manifest is quoted
     // identically into all four prompts precisely so this can be.
-    const cy = this.canvas.height * (this.arena ? 0.60 : 0.5);
+    const cy = this.canvas.height * (this.arenaFile ? 0.60 : 0.5);
     // rows run away from the middle on each side
     const r = side === 'you' ? row + 1 : -(row + 1);
     const c = col - (COLS - 1) / 2;
@@ -113,6 +109,7 @@ export class FightView {
 
   draw(fight) {
     this.last = fight;
+    const arena = this.arenaFile ? sprite(this.arenaFile) : null;
     const { ctx } = this;
     const W = this.canvas.width, H = this.canvas.height, dpr = this.dpr;
     ctx.fillStyle = PAL.paper;
@@ -122,10 +119,10 @@ export class FightView {
     //    the arenas are 16:9 and the panel is not, and squashing a painting to
     //    fit is worse than losing an edge of it. Darkened, because everything
     //    above has to read against it and the fight is the subject.
-    if (this.arena) {
-      const s = Math.max(W / this.arena.width, H / this.arena.height);
-      const w = this.arena.width * s, h = this.arena.height * s;
-      ctx.drawImage(this.arena, (W - w) / 2, (H - h) / 2, w, h);
+    if (arena) {
+      const s = Math.max(W / arena.width, H / arena.height);
+      const w = arena.width * s, h = arena.height * s;
+      ctx.drawImage(arena, (W - w) / 2, (H - h) / 2, w, h);
       ctx.fillStyle = 'rgba(9,12,16,0.45)';
       ctx.fillRect(0, 0, W, H);
     }
@@ -157,7 +154,7 @@ export class FightView {
             ctx.strokeStyle = mine ? 'rgba(87,200,232,0.85)' : 'rgba(214,84,72,0.85)';
             ctx.lineWidth = 1.6 * dpr;
           } else {
-            ctx.strokeStyle = this.arena
+            ctx.strokeStyle = this.arenaFile
               ? (mine ? 'rgba(87,200,232,0.16)' : 'rgba(214,84,72,0.16)')
               : '#1b222b';
             ctx.lineWidth = 1 * dpr;
@@ -373,11 +370,11 @@ export class FightView {
         // over a lit courtyard, dim grey on ochre is unreadable — the name
         // gets its own shadow rather than its own colour, so the palette
         // stays the palette
-        if (this.arena) {
+        if (this.arenaFile) {
           ctx.shadowColor = 'rgba(0,0,0,0.9)';
           ctx.shadowBlur = 4 * dpr;
         }
-        ctx.fillStyle = isActor ? PAL.gold : (this.arena ? PAL.mark : PAL.dim);
+        ctx.fillStyle = isActor ? PAL.gold : (this.arenaFile ? PAL.mark : PAL.dim);
         const label = u.name.length > 12 ? u.name.slice(0, 11) + '…' : u.name;
         ctx.fillText(label, p.x, p.y + 15 * dpr);
         ctx.shadowBlur = 0;
