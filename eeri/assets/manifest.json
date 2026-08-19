@@ -53,7 +53,7 @@
     "crane": {
       "file": "3d/crane_v1.glb",
       "status": "placeholder",
-      "_note": "Rigged and verified but held at PLACEHOLDER on purpose. js/crane.js drives `arm` and `ball` and was written against the code-built crane's exact numbers — arm at (L,0,0) along the boom's local x, a fixed drop — the way excavator_v1 was deliberately built to match its placeholder pivot for pivot so game code could not tell which it got. This mesh has its own proportions, so the ball stops short of the brick wall and the wrecking sequence fails. Making them agree means changing geometry or changing crane.js constants; crane.js is not the art lane's file, so this is handed over rather than tuned unilaterally. Node names already match (sheave->arm, hook->ball); it is the reach that differs. The hoist rope is not in the mesh — image-to-3D will not model a 2px thread — so the game draws it from `arm` to `ball`.",
+      "_note": "Rigged and verified but held at PLACEHOLDER on purpose. js/crane.js drives `arm` and `ball` and was written against the code-built crane's exact numbers — arm at (L,0,0) along the boom's local x, a fixed drop — the way excavator_v1 was deliberately built to match its placeholder pivot for pivot so game code could not tell which it got. This mesh has its own proportions, so the ball stops short of the brick wall and the wrecking sequence fails. Making them agree means changing geometry or changing crane.js constants; crane.js is not the art lane's file, so this is handed over rather than tuned unilaterally. Node names already match (sheave->arm, hook->ball); it is the reach that differs. The hoist rope is not in the mesh — image-to-3D will not model a 2px thread — so the game draws it from `arm` to `ball`. PAINT: `hook` was renamed `ball` and `sheave` renamed `arm` when this was cut, to match the names js/crane.js actually drives — but the paint map kept saying `hook`, so housePaint warned and skipped it and the ball would have kept its Meshy texture while everything around it took the palette. Found by art-src/tools/audit-assets.mjs; no gate could see it because the crane is `placeholder` and nothing loads it yet. `arm` added alongside, because the excavator paints its whole chain (house/boom/stick/bucket) and a half-painted boom is worse than an unpainted one.",
       "nodes": [
         "house",
         "boom",
@@ -69,7 +69,8 @@
         "wheels": "DARK",
         "house": "MACHINE",
         "boom": "MACHINE",
-        "hook": "MACHINE_DK",
+        "arm": "MACHINE",
+        "ball": "MACHINE_DK",
         "step": "MACHINE_DK"
       }
     },

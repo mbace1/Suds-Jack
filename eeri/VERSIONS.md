@@ -74,6 +74,37 @@ node names survive on each piece. Only the three new files are rewritten here;
 re-running the tool over already-compressed models buys about 1% and would
 have put 27 files of pure diff noise in this change.
 
+**And an audit, which found the number that should stop the art queue.**
+`art-src/tools/audit-assets.mjs` checks every shipped `.glb` against the
+promise the manifest makes about it — every `nodes` name, every `clips` name,
+every `paint` key, a skin for anything `rig: skinned` — and then asks the
+question no other gate asks: **can the game reach it at all?**
+
+**31/31 keep their contract. 18 cannot be reached.** Nothing under `js/` names
+them in a `getModel()`/`getPiece()` call, because `js/robots.js` builds every
+enemy in code and does not import `assets.js`. Every enemy mesh and every kit
+prop is a correct file answering a question nobody asks. `smoke.cjs` cannot see
+this and it is not its fault: it checks the assets the game asks for, and an
+asset nothing asks for is, to that gate, not there.
+
+It reads the GLB's own JSON chunk, so it runs in **bare node** like `rooms.mjs`
+— a check you can afford on every edit is a check that runs.
+
+Two of its own first-run findings were the TOOL being wrong, and both are
+worth keeping: it reported six models as 65534 units tall, because v15.22
+quantized them and the accessor min/max are in quantization space rather than
+world space — so the height check is skipped on a quantized file rather than
+guessed at; and it called a `placeholder` entry with no file BROKEN, when that
+is precisely what placeholder means. Same shape as the band-brightness ruler in
+`kindling/`: the page was right and the ruler was wrong, twice.
+
+**One real defect.** The crane's `paint` map named `hook`. That node was
+renamed `ball` — and `sheave` renamed `arm` — when the crane was cut, to match
+what `js/crane.js` drives; the paint map never moved with them. `housePaint`
+warns and skips an unknown name, so the ball would have kept its Meshy texture
+while everything around it took the palette. No gate could see it because the
+crane is `placeholder` and nothing loads it. Fixed, with `arm` added alongside.
+
 **Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
 to be meshes.** The ladder is already built per tile in `js/level.js` and meets
 every clause of its contract, including the hard one — seamless vertical
