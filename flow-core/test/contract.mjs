@@ -10,7 +10,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createFlow } from '../sim.js?v=1';
-import { KALLIO } from '../city.js?v=1';
+import { KALLIO, project } from '../city.js?v=1';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
@@ -180,6 +180,30 @@ console.log('\nflow-core contract\n');
   ok('two products on one seed move identically', a.fingerprint() === b.fingerprint());
   ok('the shared city has no product-specific node name',
     [...a.graph.nodes.keys()].every(id => !/piritori/i.test(id)));
+}
+
+// ── the projection is the one the stops were placed with ────────────────
+// city.js carries both a `source` table of WGS84 positions and a `nodes` table
+// of design units, and until now the arithmetic between them lived in a
+// comment. It is a function now, because the ground importer needs the same
+// one — and two copies of two constants is two copies that can drift. This
+// re-derives every stop and compares, so the day somebody edits one table
+// without the other, or nudges a constant, this says so.
+{
+  const off = [];
+  for (const [id, [lat, lon]] of Object.entries(KALLIO.source)) {
+    const n = KALLIO.nodes.find(x => x.id === id);
+    if (!n) { off.push(`${id}: no node`); continue; }
+    const p = project(lon, lat);
+    if (Math.abs(p.x - n.x) > 0.5 || Math.abs(p.y - n.y) > 0.5) {
+      off.push(`${id}: ${n.x},${n.y} vs ${p.x.toFixed(1)},${p.y.toFixed(1)}`);
+    }
+  }
+  ok(`every stop is where its coordinates put it${off.length ? ` — ${off}` : ''}`,
+    off.length === 0);
+  ok('and every node has coordinates to check',
+    KALLIO.nodes.every(n => KALLIO.source[n.id]),
+    KALLIO.nodes.filter(n => !KALLIO.source[n.id]).map(n => n.id).join());
 }
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`);

@@ -4,6 +4,7 @@
  *
  *   node kindling/tools/cut.mjs key   <in> <out.png>
  *   node kindling/tools/cut.mjs fit   <in> <out.png> <W>x<H> [--palette P] [--no-quantise]
+ *   node kindling/tools/cut.mjs trim  <in> <out.png> [--width N] [--pad N]
  *   node kindling/tools/cut.mjs anchors <in> [out.png] [--as WxH] [--tol N]
  *   node kindling/tools/cut.mjs slice <in> <outDir> <cell> [name,name,...]
  *   node kindling/tools/cut.mjs check <in> [--cell N] [--colours N] [--illustration]
@@ -117,16 +118,71 @@ function keyImage(img){
   const [c,g]=ctxOf(img.width,img.height);
   g.drawImage(img,0,0);
   const im=g.getImageData(0,0,c.width,c.height),d=im.data;
+  // IW/IH rather than W/H: the bleed pass further down already declares those
+  // in this same function, and shadowing them is a syntax error, not a warning.
+  const IW=c.width,IH=c.height;
+
+  // THE BACKGROUND IS NOT ALWAYS THE COLOUR YOU ASKED FOR. Piritori's props
+  // came back on a dusty pink — 202,99,139 — because its house style asks for
+  // grain and muted fills and the background obeys along with everything else.
+  // The ratio test below wants green under 55% of the red/blue mean; that pink
+  // lands at 99 against a threshold of 94 and misses by five, so nothing keys
+  // and the whole sheet ships opaque.
+  //
+  // So the corners get a vote. If all four agree with each other, that colour
+  // is ALSO treated as background, by distance. It is safe because the subject
+  // is clear of the edges by contract — that is the one thing every prompt in
+  // both pipelines says — and it changes nothing where the background really is
+  // #FF00FF, since the ratio test catches those first.
+  const at=(x,y)=>{const i=(y*IW+x)*4;return [d[i],d[i+1],d[i+2]];};
+  const corners=[at(2,2),at(IW-3,2),at(2,IH-3),at(IW-3,IH-3)];
+  const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+  let bg=null;
+  const spread=Math.max(...corners.map(a=>Math.max(...corners.map(b=>dist(a,b)))));
+  if(spread<40){
+    const m=[0,1,2].map(k=>corners.reduce((s,c2)=>s+c2[k],0)/corners.length);
+    // only a PINK background is ever sampled. A grey or a white corner is a
+    // photograph's sky, not a key colour, and eating it would cut the art.
+    if(m[0]>90 && m[2]>90 && m[1]<Math.min(m[0],m[2])*0.85) bg=m;
+  }
+
   for(let i=0;i<d.length;i+=4){
     const r=d[i],gg=d[i+1],b=d[i+2];
     // magenta is red AND blue high with green low. A ratio test rather than a
     // distance test, so a dark magenta edge keys as surely as a bright one.
-    const mag=(r+b)/2, key=mag>60 && gg<mag*0.55;
+    const mag=(r+b)/2, key=(mag>60 && gg<mag*0.55)
+      || (bg && dist([r,gg,b],bg)<62);
     if(key){d[i+3]=0;continue;}
     // despill: pull green back up toward the mean where the pink has bled in
     const spill=(r+b)/2-gg;
     if(spill>18&&gg<200){const k=Math.min(1,(spill-18)/70);
       d[i]=r-(r-gg)*k*0.7; d[i+2]=b-(b-gg)*k*0.7;}
+  }
+  // DESPECKLE, before the bleed. A key never comes back perfectly clean: the
+  // background has print grain in it and a handful of darker pixels miss the
+  // ratio test, so the sprite ships with crumbs floating beside it. They are
+  // hard to see at 1024 and impossible to miss once trim() decides they are
+  // part of the subject and crops to include them. So every opaque connected
+  // component smaller than a thousandth of the frame is background that got
+  // away — nothing a prop or a figure is made of is that small and detached.
+  {
+    const W=c.width,H=c.height,seen=new Uint8Array(W*H);
+    const min=Math.max(24,(W*H)/1000);
+    const stack=new Int32Array(W*H); const comp=new Int32Array(W*H);
+    for(let p=0;p<W*H;p++){
+      if(seen[p]||d[p*4+3]<8)continue;
+      let sp=0,n=0; stack[sp++]=p; seen[p]=1;
+      while(sp){
+        const q=stack[--sp]; comp[n++]=q;
+        const x=q%W,y=(q/W)|0;
+        for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx=x+dx,ny=y+dy; if(nx<0||ny<0||nx>=W||ny>=H)continue;
+          const r2=ny*W+nx; if(seen[r2]||d[r2*4+3]<8)continue;
+          seen[r2]=1; stack[sp++]=r2;
+        }
+      }
+      if(n<min) for(let k=0;k<n;k++) d[comp[k]*4+3]=0;
+    }
   }
   // bleed: give every transparent pixel the colour of its nearest opaque
   // neighbour, so a later downscale cannot sample magenta out of nothing
@@ -267,6 +323,32 @@ function findAnchors(img,targets,tol){
   return { points:out, w:W, h:H, url:c.toDataURL('image/png') };
 }
 
+// crop to the ink and scale to a width. A keyed image is still the size the
+// generator made it and is mostly nothing — a prop drawn 30px wide on the board
+// does not need a 1024px transparent margin around it, and the margin is what
+// makes a sprite impossible to place: the anchor of a trimmed sprite is its own
+// edge, and the anchor of an untrimmed one is wherever the model felt like
+// putting the subject.
+function trimImage(img,maxW,pad){
+  const [c,g]=ctxOf(img.width,img.height);
+  g.drawImage(img,0,0);
+  const W=c.width,H=c.height,d=g.getImageData(0,0,W,H).data;
+  let x0=W,y0=H,x1=-1,y1=-1;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    if(d[(y*W+x)*4+3]<8)continue;
+    if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+  }
+  if(x1<0) return { canvas:c, box:null };            // nothing survived the key
+  x0=Math.max(0,x0-pad); y0=Math.max(0,y0-pad);
+  x1=Math.min(W-1,x1+pad); y1=Math.min(H-1,y1+pad);
+  const cw=x1-x0+1, ch=y1-y0+1;
+  const s=maxW&&cw>maxW ? maxW/cw : 1;
+  const [o,og]=ctxOf(Math.round(cw*s),Math.round(ch*s));
+  og.imageSmoothingEnabled=true; og.imageSmoothingQuality='high';
+  og.drawImage(c,x0,y0,cw,ch,0,0,o.width,o.height);
+  return { canvas:o, box:{ x:x0, y:y0, w:cw, h:ch }, out:{ w:o.width, h:o.height } };
+}
+
 // cut a grid sheet into one canvas per cell, skipping empty ones
 function sliceImage(img,cell){
   const across=Math.floor(img.width/cell), down=Math.floor(img.height/cell);
@@ -290,7 +372,7 @@ const [cmd, ...rest] = process.argv.slice(2);
 const flagValues = new Set();
 for (let i = 0; i < rest.length; i++) {
   if (rest[i].startsWith('--') && rest[i + 1] && !rest[i + 1].startsWith('--')
-      && ['--palette', '--cell', '--colours', '--as', '--tol'].includes(rest[i])) flagValues.add(rest[i + 1]);
+      && ['--palette', '--cell', '--colours', '--as', '--tol', '--width', '--pad'].includes(rest[i])) flagValues.add(rest[i + 1]);
 }
 const flag = name => rest.includes(name);
 const opt = name => { const i = rest.indexOf(name); return i >= 0 ? rest[i + 1] : undefined; };
@@ -320,6 +402,22 @@ if (cmd === 'key') {
   console.log(`→ ${out}  ${W}x${H}  `
     + (pal ? `snapped to ${pal.length} palette colours  ` : 'colours kept as generated  ')
     + `${(await write(out, dataUrl) / 1024).toFixed(1)} KB`);
+
+} else if (cmd === 'trim') {
+  const [src, out] = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
+  const maxW = Number(opt('--width') ?? 0);
+  const pad = Number(opt('--pad') ?? 0);
+  const url = await toUrl(src);
+  const r = await withCanvas(async pg => {
+    await pg.addScriptTag({ content: LIB });
+    return pg.evaluate(async ({ u, maxW, pad }) => {
+      const t = trimImage(await load(u), maxW, pad);
+      return { box: t.box, out: t.out, url: t.canvas.toDataURL('image/png') };
+    }, { u: url, maxW, pad });
+  });
+  if (!r.box) { console.error(`${src}: nothing opaque left — the key ate the subject`); process.exit(1); }
+  console.log(`→ ${out}  ${r.out.w}x${r.out.h}  (ink was ${r.box.w}x${r.box.h} at ${r.box.x},${r.box.y})  `
+    + `${(await write(out, r.url) / 1024).toFixed(0)} KB`);
 
 } else if (cmd === 'anchors') {
   const [src, out] = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
@@ -426,6 +524,9 @@ if (cmd === 'key') {
   fit   <in> <out.png> <W>x<H>            down to the native grid, snapped to the palette
           --palette <file.js|.json>       snap to another project's palette
           --no-quantise                   resize + binary alpha only (illustration)
+  trim  <in> <out.png>                    crop to the ink, so the sprite IS its own box
+          --width N                       and scale down to N wide
+          --pad N                         leave N transparent pixels around it
   anchors <in> [out.png] [--as WxH]      read the cyan/orange registration dots,
           [--tol N]                       print their coordinates and erase them
   slice <in> <outDir> <cell> [names]      grid sheet -> one PNG per non-empty cell

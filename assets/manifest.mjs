@@ -121,6 +121,32 @@ deadpan, and not a crime film about it. No text, no logos, no UI, no
 watermark. Include a small swatch strip of every colour used along the very
 bottom edge, outside the subject.`,
 
+  // PROPS — the same register, minus the two things that make a plate a PLATE.
+  //
+  // The five cover props came back unusable and the prompt was not at fault:
+  // `kallio` ends by asking for paper grain over everything and a swatch strip
+  // along the bottom edge, both of which are exactly right for a reference
+  // sheet somebody LOOKS at, and both of which are fatal for a sprite somebody
+  // CUTS OUT. The grain gave the props a cream paper ground that the magenta
+  // key could not touch, so `key` left them fully opaque and `trim` reported
+  // the crop box as the whole 1024 frame; the swatch strip would have been
+  // trimmed into the sprite as five coloured squares under the boulder.
+  //
+  // A style is prepended to the prompt and a prompt cannot argue with it, so
+  // the fix is a second register rather than more words in each of the five.
+  kallioProp: `Piritori house style, as a CUT-OUT PROP. Hard black ink-line
+illustration with flat, slightly muted fills — Darkest Dungeon rather than a
+comic. Limited palette, hard seams between colours, flat shapes where the
+SILHOUETTE does the work rather than the shading. No gradients, no glow, no
+lens effects, no photographic rendering. Helsinki in 2003 — cold, used,
+deadpan. No text, no logos, no UI, no watermark.
+
+THE BACKGROUND IS FLAT #FF00FF MAGENTA, edge to edge, and nothing else: no
+paper texture, no grain, no risograph print, no ground, no shadow cast onto
+anything, no swatch strip, no border, no margin note, no second view. ONE
+object, alone, floating on the magenta, well clear of all four edges. It will
+be keyed out and cut, so any pixel that is not the object is a mistake.`,
+
   // PAPER — the map, and every interior you stand in.
   //
   // From the owner's final targets (ART_BIBLE §1.-1): the map is not a printed
@@ -157,6 +183,60 @@ sitting on a surface. The camera is directly overhead.
 ABSOLUTELY NO TEXT ANYWHERE: no names, no numbers, no labels, no legend, no
 title, no lettering in any language. Labels are added later in code. No logos,
 no UI, no watermark, no people, no vehicles.`,
+
+  // INTERIORS — v2, after the first pass missed the reference badly.
+  //
+  // WHAT WENT WRONG, because the same mistake is easy to make twice. Two rules
+  // were carried in from places they were right and applied where they are not:
+  //
+  //   · "ABSOLUTELY NO TEXT" belongs to the MAP, where a diffusion model spells
+  //     Finnish street names as "Kudes linja" and the game draws its own labels
+  //     anyway. A shop is the opposite: the owner's reference is full of
+  //     signage — a painted shop sign, hanging menu cards, a poster, katakana
+  //     down a lantern — and that lettering IS the charm. It is also mostly
+  //     decorative, so a misspelling costs nothing.
+  //   · "no face detail beyond the barest suggestion" belongs to the FIGHT
+  //     SHEETS, where a body has to read at thirty pixels. Toko wears a bright
+  //     yellow smiling MASK, which is the most distinctive thing in the whole
+  //     reference, and the first pass generated a blank mannequin instead.
+  //
+  // And the material was wrong in kind. This is a layered paper COLLAGE
+  // ILLUSTRATION — cut shapes with drawn detail on top of them — not a
+  // photograph of a beige cardboard model, which is what "photograph of a
+  // diorama" reliably produces.
+  paperRoom: `Piritori interior style. A LAYERED PAPER COLLAGE ILLUSTRATION —
+cut and torn paper shapes with hand-drawn ink detail, texture and shading drawn
+ON TOP of them. Not a photograph, not a 3D render, not a beige cardboard model:
+a made picture, with visible paper fibre, torn edges and soft shadows between
+the layers.
+
+DENSE AND FULL OF LIFE. The room is crowded with specific, characterful
+objects, each one clearly built from paper — bowls, bottles, jars, hanging
+curtains, a lantern, a radio, a till. Every surface has something on it.
+
+TEXT AND SIGNAGE ARE WELCOME and part of the look: a painted shop sign, small
+hanging menu cards with simple pictograms, a poster on the wall, lettering down
+a lantern. Hand-lettered, slightly uneven, worn.
+
+WARM AGAINST COLD. The interior is lit warm — amber lamps, ochre walls, deep
+red-brown wood. Through a window it is NIGHT and COLD: deep slate blue, rain,
+the lit windows of the street, a passing tram. That contrast is the whole
+picture and it must be strong.
+
+ONE CHARACTER, front and centre behind the counter, built from the same paper,
+seen from the chest up. They have a DESIGNED, DISTINCTIVE FACE — this is a
+character, not a mannequin, and a blank featureless head is a failed image.
+
+FULL BLEED: the room fills the entire frame, edge to edge. No border, no
+margin, no mount, no cream paper surround, no torn frame around the picture,
+no drop shadow under the picture, and no shot of an artwork lying on a table.
+The paper is what the room is MADE OF, never what it is mounted on. (Three of
+the four first-pass interiors came back as a picture floating on a cream sheet;
+the game covers the card with the image, so the surround shows as a pale rim
+along whichever edge the crop does not eat.)
+
+Muted, tactile, storybook-noir. Warm ochre, deep red-brown, mustard, slate,
+bone, black. No modern UI, no watermark, no photographic realism.`,
 
   // The ARENAS ONLY, and they are a deliberate exception to `kallio` above.
   //
@@ -461,7 +541,7 @@ gravel. Domestic, close, embarrassing to fight in.`,
     id: 'piritori/cover-barrier',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     // Every cover prop shares one hard constraint the art cannot know on its
     // own: on the board a prop is drawn about 30px wide and 15-20px tall, so
@@ -479,7 +559,7 @@ subject clear of all edges.`,
     id: 'piritori/cover-rock',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     prompt: `A single rough granite boulder, the kind set at a park edge to
 stop cars parking on the grass, seen from a low three-quarter isometric angle,
@@ -491,7 +571,7 @@ Flat magenta #FF00FF background, subject clear of all edges.`,
     id: 'piritori/cover-bin',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     prompt: `A single green municipal wheelie bin, lid closed, seen from a low
 three-quarter isometric angle, lit from one side, standing on nothing. It
@@ -503,7 +583,7 @@ height at most, never tall enough to hide a standing person. Flat magenta
     id: 'piritori/cover-crate',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     prompt: `A single stacked wooden pallet with one crate on it, seen from a
 low three-quarter isometric angle, lit from one side, standing on nothing.
@@ -515,12 +595,117 @@ subject clear of all edges.`,
     id: 'piritori/cover-rack',
     game: 'piritori',
     use: 'prop',
-    style: 'kallio',
+    style: 'kallioProp',
     tags: ['cover', 'fight'],
     prompt: `A single empty steel bicycle rack, seen from a low three-quarter
 isometric angle, lit from one side, standing on nothing. Thin, open, hollow —
 the least protective thing on the street. Waist height at most. Flat magenta
 #FF00FF background, subject clear of all edges.`,
+  },
+
+  // ── THE FIGURES ────────────────────────────────────────────────────────
+  // The board has drawn a rounded rectangle with a circle on it since the
+  // fight existed. This is the replacement, and it is built the way
+  // NANO_BANANA.md §6.6 and ART_REQUEST.md §2 say: one BASE BODY generated
+  // first as the group's anchor, then every pose drawn with that body attached
+  // as a reference. Ten poses drawn independently are ten different men — the
+  // model drifts on proportion and palette between runs, and a fight where the
+  // same man changes build when he falls over is worse than a rectangle.
+  //
+  // Two departures from the request, both deliberate:
+  //
+  //   · NO CYAN JOINT DOTS. The dots exist so weapons can be composited onto a
+  //     hand, and nothing composites yet — the board draws one figure per unit
+  //     and the weapon is a word in the log. A marker that is read by nothing
+  //     is a marker that can be wrong without anyone noticing, and it costs a
+  //     keying pass on every sheet. They go in when compositing does.
+  //   · Facing is per SIDE, not per pose. Your men stand up the board and
+  //     theirs stand down it, so "toward" and "away" are properties of which
+  //     half of the grid a body is standing in. Generating both facings for
+  //     both sides would double the sheet to draw ten images the board can
+  //     never show at once.
+  {
+    id: 'piritori/body-base',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallioProp',
+    aspect: '2:3',
+    tags: ['figure', 'anchor'],
+    // The anchor. It ships to nobody — it exists so the ten poses agree about
+    // what a man in this game is shaped like and what he is wearing.
+    prompt: `ONE standing man, whole body, feet together, seen from a low
+three-quarter angle, arms slightly out from the body in a relaxed neutral
+stance. Drawn as a FLAT SHAPE INSIDE A HARD BLACK OUTLINE — the silhouette
+carries the whole read and there is almost nothing rendered inside it.
+
+Ordinary and unheroic: a man in his thirties, average build, Helsinki 2003 —
+a worn bomber jacket over a dark top, jeans, trainers, short hair. No face
+detail beyond the barest suggestion: this figure is read thirty pixels tall
+and a drawn face becomes noise. Hands EMPTY and open.
+
+Nothing else in frame. No weapon, no bag, no hat, no ground, no shadow.`,
+  },
+  {
+    id: 'piritori/fig-you-stand',
+    game: 'piritori', use: 'prop', style: 'kallioProp', aspect: '2:3',
+    ref: 'piritori/body-base', tags: ['figure'],
+    prompt: `THE SAME MAN AS THE ATTACHED REFERENCE, redrawn in one pose:
+STANDING, seen from THREE-QUARTERS BEHIND — turned away from the viewer, up
+the picture. Weight on the back foot, hands loose at his sides, waiting, not
+yet committed. Whole body, feet together, flat shape inside a hard black
+outline.
+
+Copy only the body plan, the proportions and the clothing from the reference.
+Do NOT copy its pose, its framing or its background. Hands empty. Nothing else
+in frame — no weapon, no ground, no shadow.`,
+  },
+  {
+    id: 'piritori/fig-you-down',
+    game: 'piritori', use: 'prop', style: 'kallioProp', aspect: '2:3',
+    ref: 'piritori/body-base', tags: ['figure'],
+    prompt: `THE SAME MAN AS THE ATTACHED REFERENCE, redrawn in one pose: DOWN
+— on the ground, on his side, one arm under him, knees drawn up, not moving.
+He is LOW AND WIDE in the frame, lying across it, with empty space above him,
+because on the board he must not stand as tall as a man on his feet. Flat
+shape inside a hard black outline.
+
+Copy only the body plan, the proportions and the clothing from the reference.
+Do NOT copy its pose, its framing or its background. Hands empty. Nothing else
+in frame — no weapon, no ground, no shadow, no blood.`,
+  },
+  {
+    id: 'piritori/fig-them-stand',
+    game: 'piritori', use: 'prop', style: 'kallioProp', aspect: '2:3',
+    ref: 'piritori/body-base', tags: ['figure'],
+    prompt: `THE SAME MAN AS THE ATTACHED REFERENCE, redrawn in one pose:
+STANDING, seen from THREE-QUARTERS IN FRONT — facing the viewer, down the
+picture. Weight on the back foot, hands loose at his sides, waiting, not yet
+committed. Whole body, feet together, flat shape inside a hard black outline.
+
+His clothing is DIFFERENT from the reference and darker — a dark work coat and
+dark trousers instead of the bomber jacket and jeans — because this is the man
+on the other side of the fight and the two must be told apart at thirty pixels
+by silhouette and value alone. Same build, same drawing, different clothes.
+
+Copy the body plan and the proportions from the reference, not the clothing.
+Do NOT copy its pose, its framing or its background. Hands empty. Nothing else
+in frame — no weapon, no ground, no shadow.`,
+  },
+  {
+    id: 'piritori/fig-them-down',
+    game: 'piritori', use: 'prop', style: 'kallioProp', aspect: '2:3',
+    ref: 'piritori/body-base', tags: ['figure'],
+    prompt: `THE SAME MAN AS THE ATTACHED REFERENCE, redrawn in one pose: DOWN
+— on the ground, on his side, one arm under him, knees drawn up, not moving.
+He is LOW AND WIDE in the frame, lying across it, with empty space above him.
+Flat shape inside a hard black outline.
+
+His clothing is DIFFERENT from the reference and darker — a dark work coat and
+dark trousers — because this is the man on the other side of the fight.
+
+Copy the body plan and the proportions from the reference, not the clothing.
+Do NOT copy its pose, its framing or its background. Hands empty. Nothing else
+in frame — no weapon, no ground, no shadow, no blood.`,
   },
   {
     id: 'piritori/weapons-plate',
@@ -570,6 +755,79 @@ fills the sheet, running diagonally from bottom-left to top-right. One magenta
 line runs through the whole diagram toward the top-right corner, where it
 leaves the sheet. Charcoal, dirty off-white, cold blue, one orange accent.
 Bleak, dry, deadpan. No people, no crime imagery, no glow, no title text.`,
+  },
+
+  // ── the four interiors ─────────────────────────────────────────────────
+  // One per contact, keyed to `piritori/interior-<contact id>` so main.js can
+  // ask for a room by the person standing in it. Additive: with none generated
+  // the room is the person and the words, which is what it was yesterday.
+  {
+    id: 'piritori/interior-toko',
+    game: 'piritori',
+    use: 'reference',
+    style: 'paperRoom',
+    aspect: '16:9',
+    tags: ['interior', 'contact'],
+    // The mask is CANON as of the owner's reference (ART_BIBLE §1.-1): Toko
+    // Slomo wears a bright yellow mask with a painted smile, and it is the most
+    // recognisable thing in the picture. Everything else here is set dressing
+    // around it.
+    prompt: `Inside a tiny late-night noodle shop on a Helsinki side street in
+2003, crowded and warm.
+
+THE COOK is the subject: a man behind the counter wearing a BRIGHT YELLOW MASK
+with a simple painted smiling face on it — curved eyes, a wide curved mouth,
+flat mustard-yellow, unmistakable. Grey hair above it, a pale work shirt. He is
+drying a bowl with a cloth, unhurried.
+
+AROUND HIM: a long red-brown counter with stools, a big steel stock pot with
+steam curling up, stacked bowls, chopstick jars, soy and chilli bottles, a
+mechanical till. A red paper lantern hangs at the left with vertical Japanese
+lettering down it. Short fabric noren curtains hang behind him. A hand-painted
+wooden shop sign runs across the top of the frame, and a row of small hanging
+menu cards with simple pictograms hangs beside it. A travel poster is pinned on
+the right wall.
+
+THROUGH THE WINDOW on the right: a cold blue rainy night street, lit windows
+opposite, and a tram going past. Warm inside, cold outside.`,
+  },
+  {
+    id: 'piritori/interior-sean',
+    game: 'piritori',
+    use: 'reference',
+    style: 'paperRoom',
+    aspect: '16:9',
+    tags: ['interior', 'contact'],
+    prompt: `Inside a narrow Irish bar on a Helsinki backstreet in 2003. A dark
+wooden bar across the front with taps and upturned stools, bottles on a mirrored
+back shelf, a dartboard, a low lamp over the till. Through the window at the
+left it is night. The barman stands behind the bar with his hands flat on it.`,
+  },
+  {
+    id: 'piritori/interior-igor',
+    game: 'piritori',
+    use: 'reference',
+    style: 'paperRoom',
+    aspect: '16:9',
+    tags: ['interior', 'contact'],
+    prompt: `The back booth of a shabby restaurant near a Helsinki metro
+station in 2003. A red vinyl banquette, a small table with a cloth, an ashtray,
+a ledger, one hanging bulb in a cheap shade throwing a hard pool of light and
+leaving the corners black. A coat on a hook. A man sits in the booth, still,
+facing the viewer.`,
+  },
+  {
+    id: 'piritori/interior-jaska',
+    game: 'piritori',
+    use: 'reference',
+    style: 'paperRoom',
+    aspect: '16:9',
+    tags: ['interior', 'contact'],
+    prompt: `A cramped painter's room in a Helsinki tenement in 2003. Canvases
+stacked against the wall, a jar of brushes, a paint-smeared table, a mattress on
+the floor, one bare bulb and a window onto a dark courtyard with snow on the
+sill. Warmer and softer than anywhere else in this game. A young man sits at the
+table with charcoal on his hands, looking up.`,
   },
 
   // ── THE LAB — no cabinet yet ─────────────────────────────────────────────
