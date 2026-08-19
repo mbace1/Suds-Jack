@@ -13,6 +13,7 @@ Read this with:
 
 - `DESIGN_AUTHORITY.md` for authority and publishing rules;
 - `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md` for product requirements;
+- `UX_SPEC.md` for interaction hierarchy and responsive reflow;
 - `art-library/APPROVALS.md` for per-asset approval status;
 - `art-library/MODULAR_CHARACTER_SYSTEM.md` for rig and socket details;
 - `art-library/ANIMATION_LAYER_CONTRACT.md` for motion and layer order.

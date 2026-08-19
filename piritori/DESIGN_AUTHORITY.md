@@ -18,12 +18,13 @@ From highest to lowest:
 3. `DESIGN_LOCKS.md`.
 4. `GAME_DESIGN_DOCUMENT.md`.
 5. `ART_BIBLE.md` for visual and asset-production decisions.
-6. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
-7. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
+6. `UX_SPEC.md` for interaction, navigation and responsive layout.
+7. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
+8. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
    linked from them.
-8. `FIGHT_BRIEF.md`, `MAP.md` and `DECISIONS.md`, but only where they do not
+9. `FIGHT_BRIEF.md`, `MAP.md` and `DECISIONS.md`, but only where they do not
    conflict with the documents above.
-9. The current runtime, tests and legacy design documents. These are evidence
+10. The current runtime, tests and legacy design documents. These are evidence
    and prototypes, not permission to change the design.
 
 When two sources at the same level disagree, stop and record a decision. Do not
@@ -32,6 +33,10 @@ silently average them together.
 `DESIGN_LOCKS.md` closes the structural choices required for Art Bible and UX
 work. Values explicitly marked as playtest gates may change only after the test
 and reason are recorded; they are not open placeholders in the meantime.
+
+Where visual appearance and interaction layout meet, `ART_BIBLE.md` owns the
+material, colour, asset and motion treatment; `UX_SPEC.md` owns hierarchy,
+input, state transition and responsive reflow.
 
 ## Locked product direction
 

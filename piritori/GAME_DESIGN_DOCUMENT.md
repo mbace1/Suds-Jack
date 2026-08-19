@@ -1,17 +1,18 @@
 # PIRITORI → EDEN
 
-## Game Design Document — pre-UX baseline
+## Game Design Document — active baseline
 
-Version: 0.4  
+Version: 0.5  
 Date: 2026-08-19  
-Status: active pre-UX design baseline; structural and visual baselines locked  
+Status: active design baseline; structural, visual and UX baselines locked  
 Platform assumption: mobile-first browser prototype, desktop supported  
 Audience: adults  
 
-This document defines the game before final UX and art decisions are made. It
-supersedes the obsolete parts of `BRIEF.md` that exclude combat, reduce
-narrative to small event cards or imply that four screens are already final.
-The existing prototype is evidence and a systems test, not the design contract.
+This document defines the game beneath the active Art Bible and UX
+specification. It supersedes the obsolete parts of `BRIEF.md` that exclude
+combat, reduce narrative to small event cards or imply that four screens are
+already final. The existing prototype is evidence and a systems test, not the
+design contract.
 
 The previous Art Bible was rejected and is retained only as legacy production
 history. The approved `art-library/` now establishes the active Finnish,
@@ -269,9 +270,9 @@ The long arc repeatedly converts personal access into impersonal capacity:
 
 ## 5. Interaction modes, not final screens
 
-These are five different jobs the game must perform. They do **not** prescribe
-final navigation, dimensions or the number of taps between them. That work
-belongs to the later UX pass.
+These are five different jobs the game must perform. `UX_SPEC.md` defines
+their navigation, input hierarchy and portrait/landscape reflow; the modes
+remain functional requirements rather than a promise of five permanent tabs.
 
 ### 5.1 Operations map
 
@@ -1547,8 +1548,9 @@ The GDD does not lock layouts, but the eventual UX must support:
 
 ## 26. Decision status
 
-The structural choices required before Art Bible and UX work are locked in
-`DESIGN_LOCKS.md`. They include:
+The structural choices required by Art Bible and UX work are locked in
+`DESIGN_LOCKS.md` and implemented by `ART_BIBLE.md` and `UX_SPEC.md`. They
+include:
 
 - slice and campaign time targets;
 - hybrid location verbs and contextual actions;
@@ -1589,8 +1591,9 @@ copy.
 
 ## 28. Authority and companion document
 
-This GDD is the active pre-UX design baseline beneath `DESIGN_AUTHORITY.md`
-and `DESIGN_LOCKS.md`. Specifically:
+This GDD is the active design baseline beneath `DESIGN_AUTHORITY.md` and
+`DESIGN_LOCKS.md`, and above the domain rules in `ART_BIBLE.md` and
+`UX_SPEC.md`. Specifically:
 
 - location encounters are a core interaction mode;
 - variable-size isometric formation combat is part of the intended game, with
@@ -1600,9 +1603,11 @@ and `DESIGN_LOCKS.md`. Specifically:
 - the market unlocks through street missions and relationships;
 - the five interaction modes are functional requirements, not final screens;
 - the approved `art-library/` establishes the visual baseline; review sheets
-  still require extraction and registration before runtime use.
+  still require extraction and registration before runtime use;
+- `UX_SPEC.md` defines navigation, input, confirmation and responsive layouts
+  for the five modes.
 
 `ART_BIBLE.md` defines medium, character construction, environments, map
 language, combat staging, motion and production rules from the approved library.
-Final UX and asset counts remain gated by the Art Bible and UX passes, not by
-the rejected legacy document.
+The Art Bible and UX specification now gate implementation and asset counts, not
+the rejected legacy documents.

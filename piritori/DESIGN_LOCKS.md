@@ -2,9 +2,10 @@
 
 Version: 1.0  
 Date: 2026-08-19  
-Status: **ACTIVE — required input for UX and Art Bible v1**  
+Status: **ACTIVE — structural authority for UX and Art Bible v1**  
 
-This document closes the structural questions left open by the pre-UX GDD.
+This document closes the structural questions left open by the pre-UX GDD and
+is implemented by `ART_BIBLE.md` and `UX_SPEC.md`.
 These are design locks, not final balance values. A value marked **playtest
 gate** may move after a recorded test, but implementation should use the target
 until evidence supports changing it.
