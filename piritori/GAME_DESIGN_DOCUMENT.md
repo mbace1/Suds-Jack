@@ -2,9 +2,9 @@
 
 ## Game Design Document — pre-UX baseline
 
-Version: 0.1  
-Date: 2026-08-17  
-Status: design pass for owner review; not final production scope  
+Version: 0.2  
+Date: 2026-08-19  
+Status: active pre-UX design baseline; production scope remains gated  
 Platform assumption: mobile-first browser prototype, desktop supported  
 Audience: adults  
 
@@ -13,9 +13,11 @@ supersedes the obsolete parts of `BRIEF.md` that exclude combat, reduce
 narrative to small event cards or imply that four screens are already final.
 The existing prototype is evidence and a systems test, not the design contract.
 
-The previous Art Bible was rejected and reset. Art direction remains outside
-the current PR until a new Finnish, cartoony character baseline is
-owner-approved. No current concept image is final production art.
+The previous Art Bible was rejected and is retained only as legacy production
+history. The approved `art-library/` now establishes the active Finnish,
+cartoony cut-cardstock and hand-marker baseline. Approval establishes visual
+direction; individual review sheets still require production extraction,
+registration and optimization before they become runtime art.
 
 ### Decision labels
 
