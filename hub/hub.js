@@ -6,7 +6,7 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=37';
+import { GAMES, SKETCHES } from './games.js?v=38';
 import { drawMarquee } from './art.js?v=15';
 import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
