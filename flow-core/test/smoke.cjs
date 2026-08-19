@@ -228,26 +228,24 @@ s.listen(0, '127.0.0.1', async () => {
 
       // The arena is ADDITIVE: it must load when it exists and change nothing
       // when it does not.
-      ok('the fight stands on generated ground when there is some',
-        await p.evaluate(async () => {
-          const v = window.__pt.debug.fightView;
-          for (let i = 0; i < 40 && !v.arena; i++) await new Promise(r => setTimeout(r, 50));
-          return !!v.arena && v.arenaId === 'piritori/arena-court';
-        }));
-      ok('and the board drops onto its ground rather than centring on the roofs',
+      ok('the fight stands on the right ground',
+        await p.evaluate(() => window.__pt.debug.fightView.arenaFile === 'art/arenas/court.webp'));
+      ok('and that ground is a file this cabinet actually ships',
+        (await fetch(base + '/piritori/art/arenas/court.webp')).ok);
+      ok('and the board drops onto it rather than centring on the roofs',
         await p.evaluate(() => {
           const v = window.__pt.debug.fightView;
           const withArt = v.cell('you', 1, 0, 3).y;
-          const held = v.arena; v.arena = null;
+          const held = v.arenaFile; v.arenaFile = null;
           const without = v.cell('you', 1, 0, 3).y;
-          v.arena = held;
+          v.arenaFile = held;
           return withArt > without;
         }));
       ok('and it survives the art not being there at all', await p.evaluate(() => {
         const d = window.__pt.debug, v = d.fightView;
-        const held = v.arena;
-        v.arena = null;
-        try { v.draw(d.fight); return true; } catch { return false; } finally { v.arena = held; }
+        const held = v.arenaFile;
+        v.arenaFile = null;
+        try { v.draw(d.fight); return true; } catch { return false; } finally { v.arenaFile = held; }
       }));
 
       ok('the arena has cover standing in it', await p.evaluate(() => {

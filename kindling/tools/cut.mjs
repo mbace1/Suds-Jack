@@ -5,6 +5,7 @@
  *   node kindling/tools/cut.mjs key   <in> <out.png>
  *   node kindling/tools/cut.mjs fit   <in> <out.png> <W>x<H> [--palette P] [--no-quantise]
  *   node kindling/tools/cut.mjs trim  <in> <out.png> [--width N] [--pad N]
+ *   node kindling/tools/cut.mjs web   <in> <out.webp> [--width N] [--q 0-100]
  *   node kindling/tools/cut.mjs anchors <in> [out.png] [--as WxH] [--tol N]
  *   node kindling/tools/cut.mjs slice <in> <outDir> <cell> [name,name,...]
  *   node kindling/tools/cut.mjs check <in> [--cell N] [--colours N] [--illustration]
@@ -349,6 +350,20 @@ function trimImage(img,maxW,pad){
   return { canvas:o, box:{ x:x0, y:y0, w:cw, h:ch }, out:{ w:o.width, h:o.height } };
 }
 
+// A generated plate is not a shipped file. The model returns a 1344x768 PNG of
+// a painting, which is ~2 MB — eight of them is 16 MB of art for a cabinet that
+// has to open on a phone. Nothing in that picture is line art or flat colour,
+// so PNG is the wrong container for it: it is a photograph of a painting and
+// wants a lossy one. (The props and the figures stay PNG — they have alpha,
+// and they are small because they were trimmed to their own ink.)
+function webImage(img,maxW,q){
+  const s=maxW&&img.width>maxW ? maxW/img.width : 1;
+  const [c,g]=ctxOf(Math.round(img.width*s),Math.round(img.height*s));
+  g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
+  g.drawImage(img,0,0,c.width,c.height);
+  return { url:c.toDataURL('image/webp',q/100), w:c.width, h:c.height };
+}
+
 // cut a grid sheet into one canvas per cell, skipping empty ones
 function sliceImage(img,cell){
   const across=Math.floor(img.width/cell), down=Math.floor(img.height/cell);
@@ -372,7 +387,7 @@ const [cmd, ...rest] = process.argv.slice(2);
 const flagValues = new Set();
 for (let i = 0; i < rest.length; i++) {
   if (rest[i].startsWith('--') && rest[i + 1] && !rest[i + 1].startsWith('--')
-      && ['--palette', '--cell', '--colours', '--as', '--tol', '--width', '--pad'].includes(rest[i])) flagValues.add(rest[i + 1]);
+      && ['--palette', '--cell', '--colours', '--as', '--tol', '--width', '--pad', '--q'].includes(rest[i])) flagValues.add(rest[i + 1]);
 }
 const flag = name => rest.includes(name);
 const opt = name => { const i = rest.indexOf(name); return i >= 0 ? rest[i + 1] : undefined; };
@@ -418,6 +433,21 @@ if (cmd === 'key') {
   if (!r.box) { console.error(`${src}: nothing opaque left — the key ate the subject`); process.exit(1); }
   console.log(`→ ${out}  ${r.out.w}x${r.out.h}  (ink was ${r.box.w}x${r.box.h} at ${r.box.x},${r.box.y})  `
     + `${(await write(out, r.url) / 1024).toFixed(0)} KB`);
+
+} else if (cmd === 'web') {
+  const [src, out] = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
+  const maxW = Number(opt('--width') ?? 0);
+  const q = Number(opt('--q') ?? 82);
+  const url = await toUrl(src);
+  const r = await withCanvas(async pg => {
+    await pg.addScriptTag({ content: LIB });
+    return pg.evaluate(async ({ u, maxW, q }) =>
+      webImage(await load(u), maxW, q), { u: url, maxW, q });
+  });
+  const before = (await readFile(src)).length;
+  const after = await write(out, r.url);
+  console.log(`\u2192 ${out}  ${r.w}x${r.h}  ${(after / 1024).toFixed(0)} KB  `
+    + `(was ${(before / 1024).toFixed(0)} KB, ${(100 - 100 * after / before).toFixed(0)}% off)`);
 
 } else if (cmd === 'anchors') {
   const [src, out] = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
@@ -527,6 +557,9 @@ if (cmd === 'key') {
   trim  <in> <out.png>                    crop to the ink, so the sprite IS its own box
           --width N                       and scale down to N wide
           --pad N                         leave N transparent pixels around it
+  web   <in> <out.webp>                   a generated plate -> something to SHIP
+          --width N                       scale to N wide (default 1344, i.e. none)
+          --q 0-100                       webp quality (default 82)
   anchors <in> [out.png] [--as WxH]      read the cyan/orange registration dots,
           [--tol N]                       print their coordinates and erase them
   slice <in> <outDir> <cell> [names]      grid sheet -> one PNG per non-empty cell

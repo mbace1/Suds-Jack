@@ -10,8 +10,7 @@ import { Market, CLASSES } from './market.js?v=2';
 import { Heat, THRESHOLD } from './heat.js?v=1';
 import { CONTACTS, LINES, MISSIONS, Cast, ending } from './narrative.js?v=1';
 import { startFight as buildFight, WEAPONS, ITEMS, consequence } from './fight.js?v=4';
-import { FightView } from './fightview.js?v=8';
-import { image } from '../../assets/load.js?v=1';
+import { FightView } from './fightview.js?v=9';
 
 const $ = id => document.getElementById(id);
 const eur = n => `${Math.round(n).toLocaleString('fi-FI')} €`;
@@ -190,11 +189,12 @@ function openRoom(id) {
   hidePop();
   $('room').hidden = false;
   paintRoom();
-  // the interior, if one has been generated. Additive, like the arenas: with
-  // nothing in assets/out/ the card is just the person and the words.
+  // his room, if it has been drawn. Additive, like everything else under
+  // piritori/art/: with the file missing the card is just the person and the
+  // words, and nothing throws.
   const art = $('roomArt');
   art.hidden = true; roomImg = null;
-  image(`piritori/interior-${c.id}`).then(img => {
+  roomPicture(c.id).then(img => {
     if (!img || roomWith?.id !== c.id) return;
     art.hidden = false;
     const dpr = Math.min(2, devicePixelRatio || 1);
@@ -211,6 +211,20 @@ function openRoom(id) {
     roomImg = img;
     facePortrait($('roomFace'), img, c.face);
   });
+}
+
+// One promise per room, cached — reopening a door must not refetch a picture.
+const ROOMS = new Map();
+function roomPicture(id) {
+  if (!ROOMS.has(id)) {
+    ROOMS.set(id, new Promise(res => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = () => res(null);
+      img.src = `art/rooms/${id}.webp?v=1`;
+    }));
+  }
+  return ROOMS.get(id);
 }
 
 function closeRoom() {
