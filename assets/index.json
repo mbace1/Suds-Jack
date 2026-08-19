@@ -70,6 +70,41 @@
       "game": "piritori",
       "hash": "41d0a68d"
     },
+    "piritori/body-base": {
+      "file": "2d/piritori-body-base.3b0d44ad.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "3b0d44ad"
+    },
+    "piritori/fig-you-stand": {
+      "file": "2d/piritori-fig-you-stand.bde8dc35.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "bde8dc35"
+    },
+    "piritori/fig-you-down": {
+      "file": "2d/piritori-fig-you-down.18cbc8e2.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "18cbc8e2"
+    },
+    "piritori/fig-them-stand": {
+      "file": "2d/piritori-fig-them-stand.4988e649.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "4988e649"
+    },
+    "piritori/fig-them-down": {
+      "file": "2d/piritori-fig-them-down.9aa974f9.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "9aa974f9"
+    },
     "piritori/weapons-plate": {
       "file": "2d/piritori-weapons-plate.d9ab7aeb.png",
       "kind": "2d",

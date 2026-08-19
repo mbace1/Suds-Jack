@@ -602,6 +602,111 @@ isometric angle, lit from one side, standing on nothing. Thin, open, hollow —
 the least protective thing on the street. Waist height at most. Flat magenta
 #FF00FF background, subject clear of all edges.`,
   },
+
+  // ── THE FIGURES ────────────────────────────────────────────────────────
+  // The board has drawn a rounded rectangle with a circle on it since the
+  // fight existed. This is the replacement, and it is built the way
+  // NANO_BANANA.md §6.6 and ART_REQUEST.md §2 say: one BASE BODY generated
+  // first as the group's anchor, then every pose drawn with that body attached
+  // as a reference. Ten poses drawn independently are ten different men — the
+  // model drifts on proportion and palette between runs, and a fight where the
+  // same man changes build when he falls over is worse than a rectangle.
+  //
+  // Two departures from the request, both deliberate:
+  //
+  //   · NO CYAN JOINT DOTS. The dots exist so weapons can be composited onto a
+  //     hand, and nothing composites yet — the board draws one figure per unit
+  //     and the weapon is a word in the log. A marker that is read by nothing
+  //     is a marker that can be wrong without anyone noticing, and it costs a
+  //     keying pass on every sheet. They go in when compositing does.
+  //   · Facing is per SIDE, not per pose. Your men stand up the board and
+  //     theirs stand down it, so "toward" and "away" are properties of which
+  //     half of the grid a body is standing in. Generating both facings for
+  //     both sides would double the sheet to draw ten images the board can
+  //     never show at once.
+  {
+    id: 'piritori/body-base',
+    game: 'piritori',
+    use: 'reference',
+    style: 'kallioProp',
+    aspect: '2:3',
+    tags: ['figure', 'anchor'],
+    // The anchor. It ships to nobody — it exists so the ten poses agree about
+    // what a man in this game is shaped like and what he is wearing.
+    prompt: `ONE standing man, whole body, feet together, seen from a low
+three-quarter angle, arms slightly out from the body in a relaxed neutral
+stance. Drawn as a FLAT SHAPE INSIDE A HARD BLACK OUTLINE — the silhouette
+carries the whole read and there is almost nothing rendered inside it.
+
+Ordinary and unheroic: a man in his thirties, average build, Helsinki 2003 —
+a worn bomber jacket over a dark top, jeans, trainers, short hair. No face
+detail beyond the barest suggestion: this figure is read thirty pixels tall
+and a drawn face becomes noise. Hands EMPTY and open.
+
+Nothing else in frame. No weapon, no bag, no hat, no ground, no shadow.`,
+  },
+  {
+    id: 'piritori/fig-you-stand',
+    game: 'piritori', use: 'prop', style: 'kallioProp', aspect: '2:3',
+    ref: 'piritori/body-base', tags: ['figure'],
+    prompt: `THE SAME MAN AS THE ATTACHED REFERENCE, redrawn in one pose:
+STANDING, seen from THREE-QUARTERS BEHIND — turned away from the viewer, up
+the picture. Weight on the back foot, hands loose at his sides, waiting, not
+yet committed. Whole body, feet together, flat shape inside a hard black
+outline.
+
+Copy only the body plan, the proportions and the clothing from the reference.
+Do NOT copy its pose, its framing or its background. Hands empty. Nothing else
+in frame — no weapon, no ground, no shadow.`,
+  },
+  {
+    id: 'piritori/fig-you-down',
+    game: 'piritori', use: 'prop', style: 'kallioProp', aspect: '2:3',
+    ref: 'piritori/body-base', tags: ['figure'],
+    prompt: `THE SAME MAN AS THE ATTACHED REFERENCE, redrawn in one pose: DOWN
+— on the ground, on his side, one arm under him, knees drawn up, not moving.
+He is LOW AND WIDE in the frame, lying across it, with empty space above him,
+because on the board he must not stand as tall as a man on his feet. Flat
+shape inside a hard black outline.
+
+Copy only the body plan, the proportions and the clothing from the reference.
+Do NOT copy its pose, its framing or its background. Hands empty. Nothing else
+in frame — no weapon, no ground, no shadow, no blood.`,
+  },
+  {
+    id: 'piritori/fig-them-stand',
+    game: 'piritori', use: 'prop', style: 'kallioProp', aspect: '2:3',
+    ref: 'piritori/body-base', tags: ['figure'],
+    prompt: `THE SAME MAN AS THE ATTACHED REFERENCE, redrawn in one pose:
+STANDING, seen from THREE-QUARTERS IN FRONT — facing the viewer, down the
+picture. Weight on the back foot, hands loose at his sides, waiting, not yet
+committed. Whole body, feet together, flat shape inside a hard black outline.
+
+His clothing is DIFFERENT from the reference and darker — a dark work coat and
+dark trousers instead of the bomber jacket and jeans — because this is the man
+on the other side of the fight and the two must be told apart at thirty pixels
+by silhouette and value alone. Same build, same drawing, different clothes.
+
+Copy the body plan and the proportions from the reference, not the clothing.
+Do NOT copy its pose, its framing or its background. Hands empty. Nothing else
+in frame — no weapon, no ground, no shadow.`,
+  },
+  {
+    id: 'piritori/fig-them-down',
+    game: 'piritori', use: 'prop', style: 'kallioProp', aspect: '2:3',
+    ref: 'piritori/body-base', tags: ['figure'],
+    prompt: `THE SAME MAN AS THE ATTACHED REFERENCE, redrawn in one pose: DOWN
+— on the ground, on his side, one arm under him, knees drawn up, not moving.
+He is LOW AND WIDE in the frame, lying across it, with empty space above him.
+Flat shape inside a hard black outline.
+
+His clothing is DIFFERENT from the reference and darker — a dark work coat and
+dark trousers — because this is the man on the other side of the fight.
+
+Copy the body plan and the proportions from the reference, not the clothing.
+Do NOT copy its pose, its framing or its background. Hands empty. Nothing else
+in frame — no weapon, no ground, no shadow, no blood.`,
+  },
   {
     id: 'piritori/weapons-plate',
     game: 'piritori',

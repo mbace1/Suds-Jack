@@ -215,8 +215,24 @@ async function cmdGen() {
   for (const s of todo.filter(x => x.kind === '2d')) {
     process.stdout.write(`  ${s.id} … `);
     try {
+      // a spec with `ref` is drawn WITH another asset in front of the model.
+      // It is ordered before this one in the manifest, so on a fresh checkout
+      // it is either already on disk or earlier in this same batch — but if
+      // its own generation just failed there is nothing to attach, and drawing
+      // the pose without the body is worse than not drawing it.
+      let refImage;
+      if (s.resolved.ref) {
+        const r = specs.find(x => x.id === s.resolved.ref);
+        if (!r || !have(r)) {
+          console.log(C.bad('skipped') + ` — its reference ${s.resolved.ref} is not on disk`);
+          failed++; continue;
+        }
+        refImage = { bytes: fs.readFileSync(outPath(r)), mime: 'image/png' };
+        process.stdout.write(`(ref ${s.resolved.ref}) `);
+      }
       const { bytes } = await banana.generateImage({
-        prompt: s.resolved.prompt, model: s.resolved.model, aspect: s.resolved.aspect, apiKey: gKey,
+        prompt: s.resolved.prompt, model: s.resolved.model, aspect: s.resolved.aspect,
+        image: refImage, apiKey: gKey,
       });
       fs.writeFileSync(outPath(s), bytes);
       console.log(C.ok(`${(bytes.length / 1024).toFixed(0)}kb`));

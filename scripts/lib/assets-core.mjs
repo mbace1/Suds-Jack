@@ -26,6 +26,11 @@ import { createHash } from 'node:crypto';
 // for a hash, so this walks a FIXED key list rather than JSON.stringify(spec):
 // stringify follows insertion order, so re-ordering two keys in the manifest
 // while editing would silently restage every asset in the batch.
+// `ref` is deliberately NOT in this list. It is carried by `parentHash` below
+// instead — which is present only when a spec actually has a reference, so
+// adding the feature does not restage the twenty assets that do not use it.
+// Putting the field in here restaged the entire 2D catalogue on the first run,
+// which is exactly the drift the comment above is about.
 const HASHED_2D = ['prompt', 'negative', 'model', 'aspect', 'seed'];
 const HASHED_3D = ['from', 'model', 'topology', 'targetPolycount', 'texture', 'symmetry'];
 
@@ -36,8 +41,10 @@ export function specHash(spec, resolved) {
   for (const k of keys) h.update(k + '=' + String(resolved[k] ?? '') + '\0');
   // A 3D asset is lifted from a 2D one, so it inherits its parent's identity:
   // regenerate the source image and the mesh cut from it is stale too, even
-  // though not one field of the 3D spec changed.
-  if (spec.kind === '3d' && resolved.parentHash) h.update('parent=' + resolved.parentHash);
+  // though not one field of the 3D spec changed. A 2D asset drawn FROM another
+  // 2D asset (`ref`) inherits it for exactly the same reason — redraw the base
+  // body and the ten poses built on it are no longer poses of that body.
+  if (resolved.parentHash) h.update('parent=' + resolved.parentHash);
   return h.digest('hex').slice(0, 8);
 }
 
@@ -79,12 +86,26 @@ export function resolveAll(manifest) {
       let resolved;
 
       if (kind === '2d') {
+        // `ref` attaches another 2D asset as a REFERENCE IMAGE. It is the one
+        // way a character survives a re-pose (NANO_BANANA.md §1): generate the
+        // group's anchor first — the base body, the first arena, the night map
+        // — and hand it to everything else in that group, because the model
+        // drifts on palette and proportion between runs and ten poses drawn
+        // independently are ten different men.
+        let refEntry;
+        if (spec.ref) {
+          refEntry = byId.get(spec.ref);
+          if (refEntry === undefined) throw new Error(`${spec.id}: ref points at unknown asset "${spec.ref}"`);
+          if (refEntry === null) throw new Error(`${spec.id}: ref "${spec.ref}" is not resolved yet — a reference must appear EARLIER in ASSETS than the assets that use it, since the manifest is walked once in order`);
+        }
         resolved = {
           prompt: composePrompt({ ...spec, kind }, STYLES),
           negative: spec.negative ?? '',
           model: spec.model ?? DEFAULTS.imageModel,
           aspect: spec.aspect ?? DEFAULTS.aspect,
           seed: spec.seed ?? '',
+          ref: spec.ref ?? '',
+          parentHash: refEntry?.hash,
         };
       } else {
         const parent = byId.get(spec.from);

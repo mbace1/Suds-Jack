@@ -158,6 +158,32 @@ function keyImage(img){
     if(spill>18&&gg<200){const k=Math.min(1,(spill-18)/70);
       d[i]=r-(r-gg)*k*0.7; d[i+2]=b-(b-gg)*k*0.7;}
   }
+  // DESPECKLE, before the bleed. A key never comes back perfectly clean: the
+  // background has print grain in it and a handful of darker pixels miss the
+  // ratio test, so the sprite ships with crumbs floating beside it. They are
+  // hard to see at 1024 and impossible to miss once trim() decides they are
+  // part of the subject and crops to include them. So every opaque connected
+  // component smaller than a thousandth of the frame is background that got
+  // away — nothing a prop or a figure is made of is that small and detached.
+  {
+    const W=c.width,H=c.height,seen=new Uint8Array(W*H);
+    const min=Math.max(24,(W*H)/1000);
+    const stack=new Int32Array(W*H); const comp=new Int32Array(W*H);
+    for(let p=0;p<W*H;p++){
+      if(seen[p]||d[p*4+3]<8)continue;
+      let sp=0,n=0; stack[sp++]=p; seen[p]=1;
+      while(sp){
+        const q=stack[--sp]; comp[n++]=q;
+        const x=q%W,y=(q/W)|0;
+        for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx=x+dx,ny=y+dy; if(nx<0||ny<0||nx>=W||ny>=H)continue;
+          const r2=ny*W+nx; if(seen[r2]||d[r2*4+3]<8)continue;
+          seen[r2]=1; stack[sp++]=r2;
+        }
+      }
+      if(n<min) for(let k=0;k<n;k++) d[comp[k]*4+3]=0;
+    }
+  }
   // bleed: give every transparent pixel the colour of its nearest opaque
   // neighbour, so a later downscale cannot sample magenta out of nothing
   const W=c.width,H=c.height,src=new Uint8ClampedArray(d);
