@@ -2,44 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>Suds Jack</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Suds Jack — Vector Arcade Shooter</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <canvas id="c"></canvas>
+  <canvas id="gameCanvas" style="touch-action:none;"></canvas>
 
   <div id="hud">
-    <div class="hud-l">
-      <span id="score">0</span>
-      <span class="label">SCORE</span>
-    </div>
-    <div class="hud-c">
-      <span id="lives">● ● ●</span>
-    </div>
-    <div class="hud-r">
-      <span id="best">0</span>
-      <span class="label">BEST</span>
-    </div>
+    <div class="hud-score">SCORE: <span id="scoreDisplay">0</span></div>
+    <div class="hud-level">LEVEL <span id="levelDisplay">1</span></div>
+    <div class="hud-lives">LIVES: <span id="livesDisplay">❤ ❤ ❤</span></div>
   </div>
 
-  <div id="overlay" class="show">
-    <div class="panel">
-      <p class="tag">HORIZON MESH</p>
-      <h1>SUDS JACK</h1>
-      <p class="sub">Bomb Jack · Tempest · Tiny Wings · Suda51</p>
-      <ul class="howto">
-        <li>Landscape rewrites at the horizon and rolls toward you</li>
-        <li><kbd>A</kbd><kbd>D</kbd> / ◀▶ move · <kbd>Space</kbd> / JUMP — peaks boost-float</li>
-        <li>Left side: move · Right side: jump (Bomb Jack layout)</li>
-        <li>Orbs, peaks, and hazards all arrive from depth</li>
-      </ul>
-      <button id="play" type="button">PLAY</button>
-      <p class="hint">Enter · tap</p>
-    </div>
+  <div id="overlay">
+    <h1 id="overlayTitle" style="color:#0ff; text-shadow: 0 0 20px #0ff, 0 0 40px #0ff;">SUDS JACK</h1>
+    <p id="overlaySubtitle" style="color:#f0f; text-shadow: 0 0 10px #f0f;">VECTOR TUBE SHOOTER</p>
+    <p id="overlayInstructions" style="color:#ff0; text-shadow: 0 0 10px #ff0; margin-top:30px;">← → or A/D : MOVE &nbsp;&nbsp; SPACE : SHOOT</p>
+    <p style="color:#0ff; text-shadow: 0 0 10px #0ff; margin-top:8px;">Z : SUPERZAPPER &nbsp;&nbsp; ENTER : START</p>
+    <p style="color:#888; font-size:16px; margin-top:16px;">MOBILE: TAP TO START · ◀ ▶ TO MOVE · ZAP BUTTON</p>
+    <p style="color:#888; font-size:16px; margin-top:6px;">GAMEPAD: START/A · STICK OR D-PAD TO MOVE · B TO ZAP</p>
   </div>
 
-  <div id="glitch" aria-hidden="true"></div>
   <script src="game.js"></script>
+  <!-- the arcade shell: a home button and a controller way back -->
+  <script type="module" src="../hub/shell.js?v=34"></script>
 </body>
 </html>
