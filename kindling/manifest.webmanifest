@@ -1,7 +1,7 @@
 {
-  "name": "Kindling",
-  "short_name": "Kindling",
-  "description": "A game-like self-care companion. Complete small real-life goals, tend the fire, and grow with your companion.",
+  "name": "Betterment",
+  "short_name": "Betterment",
+  "description": "A mobile self-care game where small real-life goals tend a bonfire and grow a strange companion through a dark fantasy world.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
