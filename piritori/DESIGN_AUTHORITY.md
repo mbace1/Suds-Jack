@@ -19,12 +19,14 @@ From highest to lowest:
 4. `GAME_DESIGN_DOCUMENT.md`.
 5. `ART_BIBLE.md` for visual and asset-production decisions.
 6. `UX_SPEC.md` for interaction, navigation and responsive layout.
-7. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
-8. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
+7. `MAP.md` and `map/kallio-era1-2003-v1.json` for Era I geography,
+   public anchors, sites, corridors, projection and map-layer separation.
+8. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
+9. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
    linked from them.
-9. `FIGHT_BRIEF.md`, `MAP.md` and `DECISIONS.md`, but only where they do not
+10. `FIGHT_BRIEF.md` and `DECISIONS.md`, but only where they do not
    conflict with the documents above.
-10. The current runtime, tests and legacy design documents. These are evidence
+11. The current runtime, tests and legacy design documents. These are evidence
    and prototypes, not permission to change the design.
 
 When two sources at the same level disagree, stop and record a decision. Do not
@@ -37,6 +39,10 @@ and reason are recorded; they are not open placeholders in the meantime.
 Where visual appearance and interaction layout meet, `ART_BIBLE.md` owns the
 material, colour, asset and motion treatment; `UX_SPEC.md` owns hierarchy,
 input, state transition and responsive reflow.
+
+Where the City screen meets real geography, `MAP.md` owns public topology and
+anchor identity, `ART_BIBLE.md` owns material treatment, and `UX_SPEC.md`
+owns camera, focus and input behaviour.
 
 ## Locked product direction
 
@@ -55,6 +61,8 @@ input, state transition and responsive reflow.
   factions, economy or narrative data.
 - Real Helsinki geography grounds the fiction. Criminal operations, exact
   routes, named groups and actionable methods remain fictional or abstract.
+- Era I uses the twelve-anchor graph in `map/kallio-era1-2003-v1.json`, with
+  eight active slice anchors and fictional services attached as sites.
 
 ## Active visual baseline
 

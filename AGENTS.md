@@ -14,7 +14,7 @@ even when the code is otherwise correct, tested and pretty.
 
 | project | canon | notes |
 |---|---|---|
-| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; `ART_BIBLE.md` owns visuals and `UX_SPEC.md` owns interaction/reflow; narrative, art-library and supporting documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
+| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; `ART_BIBLE.md` owns visuals, `UX_SPEC.md` owns interaction/reflow, and `MAP.md` owns Era I geography/graph; narrative, art-library and supporting documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
 | `eeri/` | `eeri/PHASING.md` first, then `DESIGN.md`, `ART_BRIEF.md`, `VERSIONS.md` | multi-agent; PHASING supersedes on conflict |
 | `kindling/` | `BETTERMENT_OWNER_DIRECTION.md` | newest authority; supersedes older "cozy hut" calls |
 | `toko/` | `toko/BRAND.md` | two colours only, geometry invariants |
@@ -28,11 +28,16 @@ the sentence it contradicts and the words that overrode it. An unrecorded
 contradiction is a finding; a recorded one is a decision.
 
 **Note for Piritori reviewers.** Read `piritori/DESIGN_AUTHORITY.md` first.
-`piritori/ART_BIBLE.md`, `UX_SPEC.md` and the approved art library supersede
+`piritori/ART_BIBLE.md`, `UX_SPEC.md`, `MAP.md` and the approved art library supersede
 the previous PAPER-versus-INK split and the prototype's placeholders. Guns, named goods and terrain cover remain recorded
 owner decisions where they agree with the GDD. Battles stay darker and more
 forceful, but characters, locations, props and UI share the active cut-cardstock
 and hand-marker construction.
+
+The v2 graph in `flow-core/city.js` is legacy runtime evidence. v3 must adapt
+the twelve-anchor Era I graph in
+`piritori/map/kallio-era1-2003-v1.json`; fiction sites inherit an anchor and
+must not be converted into false real-world addresses.
 
 **The 2024 Pasila act is canon and phase-gated.** Second-act content in the code
 or in an art queue *is* a finding until Act I is feature complete —

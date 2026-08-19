@@ -2,14 +2,14 @@
 
 ## Game Design Document — active baseline
 
-Version: 0.5  
+Version: 0.6  
 Date: 2026-08-19  
-Status: active design baseline; structural, visual and UX baselines locked  
+Status: active design baseline; structural, visual, UX and Era I map baselines locked  
 Platform assumption: mobile-first browser prototype, desktop supported  
 Audience: adults  
 
-This document defines the game beneath the active Art Bible and UX
-specification. It supersedes the obsolete parts of `BRIEF.md` that exclude
+This document defines the game beneath the active Art Bible, UX specification
+and Era I map specification. It supersedes the obsolete parts of `BRIEF.md` that exclude
 combat, reduce narrative to small event cards or imply that four screens are
 already final. The existing prototype is evidence and a systems test, not the
 design contract.
@@ -400,32 +400,43 @@ real time.
 
 ### 6.4 Map accuracy and compression
 
-**LOCKED:** final geography must be based on recognisable Kallio and Pasila
-relationships.  
+**LOCKED:** geography is based on recognisable Kallio and Pasila relationships.  
 **LOCKED:** preserve coastline, rail, major streets, relative district
 direction and landmark adjacency, then compress minor blocks for play. The
-Era I production boundary is fixed in `DESIGN_LOCKS.md` §10; exact coordinates
-and node geometry belong to the map pass.
+Era I production boundary is fixed in `DESIGN_LOCKS.md` §10. `MAP.md` and
+`map/kallio-era1-2003-v1.json` now lock its exact public-anchor graph,
+projection, corridor order, slice reveal and responsive layer contract.
 
 The map is not intended to reproduce real criminal routes. Location placement
 is a navigational and narrative abstraction built from public geography.
+Public anchors keep WGS84 coordinates; fictional interiors inherit only their
+parent anchor and are not presented as real addresses.
 
-### 6.5 Initial Era I node set
+### 6.5 Locked Era I anchor and site set
 
-| Node | Primary role | Early access |
+| Public anchor | Primary role | Slice state |
 |---|---|---|
-| Piritori / Kurvi | first purchase, street recruitment, first contested corner | open |
-| Sörnäinen station | transport transfer and ordinary crowd flow | open |
-| Vaasankatu | Toko Slomo's Noodles and local market intelligence | mission unlock |
-| Siltanen / Kuudes Linja | McCormick family services and nightlife | relationship unlock |
-| Jaska's studio | family, art and non-commercial choices | open by invitation |
-| Harju / Kallio streets | first sale and neighbourhood missions | first purchase |
-| Hakaniemi | larger market and southbound connection | route unlock |
-| Staffed bank counter | markka conversion and legitimate visibility | opening-hours event |
-| Desktop terminal | online research and rumours | location access |
-| Restaurant fronts | Jade Lantern Network access and contested services | faction unlock |
+| Piritori / Kurvi / Sörnäinen metro cluster | first purchase, street recruitment, transfer | active |
+| Vaasankatu | Toko Slomo's Noodles and local information | active |
+| Harju / Brahenkenttä | first sales, recruitment and neighbourhood missions | active |
+| Karhupuisto | recurring public encounters, people and weather | active |
+| Torkkelinmäki | Jaska's studio, family and residential choices | active |
+| Linjat / Hämeentie yard | McCormick services, nightlife and restaurant-front teaser | active |
+| Hakaniemi | larger market, metro and southbound crowd flow | active |
+| Siltasaari | staffed bank counter and southern threshold | active |
+| Kallion kirkko | central orientation | landmark only |
+| Alppiharju | rail-edge expansion | visible locked |
+| Vallila | northern expansion | visible locked |
+| Sörnäinen harbour | docks and eastern expansion | teaser |
 
-The exact count and positions remain open until the map pass.
+Enterable authored scenes are **sites attached to anchors**, not extra
+near-overlapping nodes. The opening encounter and Sörnäinen metro therefore
+share the Piritori anchor. Toko, Jaska, the McCormicks, the bank encounter and
+restaurant fronts remain fictional composites.
+
+Because the real Kuudes Linja venue began operating in 2005, the 2003 map uses
+the public label **Linjat / Hämeentie** and a fictional service yard. Later
+chapters may adopt the documented venue label after its opening.
 
 ### 6.6 Pressure is local
 
@@ -1592,8 +1603,8 @@ copy.
 ## 28. Authority and companion document
 
 This GDD is the active design baseline beneath `DESIGN_AUTHORITY.md` and
-`DESIGN_LOCKS.md`, and above the domain rules in `ART_BIBLE.md` and
-`UX_SPEC.md`. Specifically:
+`DESIGN_LOCKS.md`, and above the domain rules in `ART_BIBLE.md`,
+`UX_SPEC.md` and `MAP.md`. Specifically:
 
 - location encounters are a core interaction mode;
 - variable-size isometric formation combat is part of the intended game, with
@@ -1605,9 +1616,11 @@ This GDD is the active design baseline beneath `DESIGN_AUTHORITY.md` and
 - the approved `art-library/` establishes the visual baseline; review sheets
   still require extraction and registration before runtime use;
 - `UX_SPEC.md` defines navigation, input, confirmation and responsive layouts
-  for the five modes.
+  for the five modes;
+- `MAP.md` and `map/kallio-era1-2003-v1.json` define Era I public anchors,
+  sites, corridor topology, projection, slice reveal and map-layer separation.
 
 `ART_BIBLE.md` defines medium, character construction, environments, map
 language, combat staging, motion and production rules from the approved library.
-The Art Bible and UX specification now gate implementation and asset counts, not
-the rejected legacy documents.
+The Art Bible, UX and map specifications now gate implementation and asset
+counts, not the rejected legacy documents.
