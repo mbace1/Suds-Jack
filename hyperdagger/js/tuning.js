@@ -144,8 +144,18 @@ export const TUNING = {
 
   // HYPER mode economy (real-time life clock)
   hyper: {
-    start: 30,         // s on the clock at run start
+    start: 30,
     cap: 60,
-    hitCost: 10,       // s lost per enemy touch
+    hitCost: 10,
+    killBonus: 3,
+    densityRamp: 0.012,
+  },
+
+  truck: {
+    scrollSpeed: 14,
+    platformGap: 6.5,
+    platformLife: 2.2,
+    fallY: -8,
+    width: 4.2,
   },
 };
