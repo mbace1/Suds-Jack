@@ -174,20 +174,29 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
 
-### Suds Jack (`sudsjack/`) — the rebuild, SET DOWN
+### Suds Jack (`sudz/`) — Horizon Mesh, ACTIVE
+**Owner's call, 2026-08-19: continue the current live Bomb Jack × Tempest
+lane-survival direction and make it a functioning game.** This is the canvas
+Horizon Mesh build at `sudz/`: nine clamped lanes, left/right movement, jump,
+incoming orbs and hazards, chains, waves and three-life score attack. It is
+not the Hyper-Dagger-based rebuild below. Author it on `main`, add a top entry
+to `sudz/VERSIONS.md` for every game change, bump its `game.js?v=` cache token,
+run `node sudz/test/core.mjs`, then deploy the `sudz/` copy plus only its
+catalogue/version changes to `gh-pages`.
+
+### Suds Jack (`sudsjack/`) — the earlier rebuild, SET DOWN
 **Owner's call, 2026-08: the Hyper-Dagger-based rebuild was a mistake — stop building
 it.** The code stays in the repo like `paperboy/` does, the deployed copy stays
-unlisted, and the arcade's `sudsjack` cabinet points at the original vector build at
-`sudz/` with no rebuild promised on the card. Do not resume this without the owner
+unlisted, and the arcade's `sudsjack` cabinet points at the active Horizon Mesh build at
+`sudz/`. Do not resume `sudsjack/` without the owner
 asking in their own words. The section below is kept as a record of what was learned
 building it (the traps generalise); it is not a to-do list.
 Concept: "Bomb Jack x Suds 51 x Tempest 2000", taken **literally and in that order** —
 Bomb Jack is the *game* (collect, in the right order, **no weapon**), Tempest is the
 *shape* (a tube you ride the rim of), the suds are what it is made of.
-**Two things share the name.** The playable one is still the **original canvas vector
-build**, live at `sudz/` on `gh-pages` (a tube *shooter*: ← → move, Space fire, Z
-superzapper). The arcade's `sudsjack` cabinet points there and **stays pointed there**
-until the rebuild is better than it. The rebuild is `sudsjack/`, deployed unlisted.
+**Two things share the name.** The playable one is the **Horizon Mesh canvas build**,
+live at `sudz/` on `gh-pages` (← → move, Space jump). The earlier rebuild is
+`sudsjack/`, deployed unlisted and still set down.
 It is a **half tunnel** — a channel open along the top, walls sweeping up both sides, Jack
 lying on the floor of it (owner's direction, and it is a design change, not a view: **a
 closed ring has no ends**, so you can always keep running, while a channel has two lips and
@@ -1151,8 +1160,11 @@ eeri/           # Eeri — the platformer. MULTI-AGENT: read PHASING.md before a
     playthrough.cjs# a bot must FINISH every level, and it measures COST
     fx-smoke.mjs   # the FX spec, pool and inference — bare node
     dev-menu.mjs   # the dev pack's contract with the game — bare node
-sudsjack/       # Suds Jack — the rebuild: Bomb Jack's collection on Tempest's tube
-  index.html    #   (the playable original is still sudz/ on gh-pages)
+sudz/           # Suds Jack — active Horizon Mesh canvas score attack
+  game.js       #   lanes, terrain, director, collisions, score and render
+  test/core.mjs #   bare-Node core-loop gate
+sudsjack/       # Suds Jack — earlier tube-collection rebuild, SET DOWN
+  index.html    #   deployed unlisted; the arcade points at sudz/
   VERSIONS.md
   vendor/       # three.js r167, local — not the CDN
   js/
