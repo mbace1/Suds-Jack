@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const KIND_URL = {
   skull: new URL('../models/enemies/skull.glb', import.meta.url).href,
@@ -18,6 +17,14 @@ let loading = null;
 export function preloadMeshEnemies() {
   if (loading) return loading;
   loading = (async () => {
+    let GLTFLoader;
+    try {
+      const mod = await import('three/addons/loaders/GLTFLoader.js');
+      GLTFLoader = mod.GLTFLoader;
+    } catch (e) {
+      console.warn('[mesh-enemies] GLTFLoader unavailable, voxel fallback only', e);
+      return;
+    }
     const loader = new GLTFLoader();
     await Promise.all(Object.entries(KIND_URL).map(async ([kind, url]) => {
       try {
