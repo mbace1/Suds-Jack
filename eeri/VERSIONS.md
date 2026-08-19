@@ -137,6 +137,53 @@ size they are seen — 10x lighter is worth having regardless) and it did not
 fix it. So: the seam ships inert. Turning it on is four words in the manifest,
 once somebody finds what actually blocks the bot.
 
+**The look pass is TOOLED BUT NOT RUN.** Three defects were measured in the
+booted game against the owner's report of 2026-08-19 ("the art cuts out and
+has rough edges … foreground images often block too much … the earth is not
+textured"). All three are real and all three are in the compositor, not the
+pieces:
+
+1. **Rough edges are keying residue.** Every library piece was cut with a hard
+   threshold, which keeps the boundary pixels CONTAMINATED — a ring of colour
+   halfway to the old backing, which reads as a dark speckled fringe and, at
+   the fore lane's magnification, as a torn edge. `build-worlds.mjs` gains
+   `cleanEdges`: erode 1px, decontaminate the rim from its solid neighbours
+   twice, then one 3x3 blur on the alpha alone. It runs on BOTH keying paths,
+   because the library pieces arrive pre-keyed with somebody else's fringe
+   already baked in — which is where the in-game fringe came from.
+2. **The foreground was a fence.** Fore verticals were `w` 2-3 world units
+   against a 1.62-unit character, magnified ~1.25x by depth, arriving every
+   ~25 units — one per screen, every screen, at eye level. Narrowed to <= 1.6
+   in all four worlds (a fore vertical is a window MULLION: never wider than
+   the character it crops) and the gap opened from [4.5, 4.0] to [7.0, 6.0].
+   `js/layers.js` already said a foreground occludes IN PASSING; the numbers
+   did not.
+3. **The earth's maps are applied and too faint to survive.** 312 materials
+   carry a detail map, so nothing is missing — but a map MULTIPLIES the
+   palette colour, and multiplication scales variance by the surface's own
+   brightness. The earth sits near luminance 55 with maps at std/mean 0.09-0.12,
+   so about 5 levels of variation reach the screen; measured on the same
+   frame, sky and midground read at std 21 and the earth at 8.6. The maps were
+   authored on white, judged on white, and died on brown. `punch-maps.mjs` is
+   a mean-anchored contrast stretch (mean-anchored because the mean IS the
+   surface brightness under multiply) taking the earth sections to 0.21-0.25,
+   with a wrap-blend on the edges because the stretch amplifies any seam the
+   source already had — `packed` grew a visible one — and a 3x3 tiled contact
+   sheet, because "tile it and LOOK" is the only test that shows tiling.
+
+**RESOLUTION IS THE HEADLINE and it is a rebuild, not a redraw.** The close
+lanes were stored at 30 px/unit and are shown at ~57 (play plane) to ~69
+(fore, magnified by depth). Everything near the camera has been displayed at
+roughly twice its painted resolution through a LinearFilter, which is the
+soft, smeared read that "not HD" names. `LANES` now carries 48 px/unit for
+fore and near and 36 for mid; skyline and far stay near 26, where softness is
+the aerial perspective doing its job.
+
+None of this has been RUN against the shipped art — the tools are committed,
+the assets are not regenerated, and `assets/2d` is still the v4 set. That is
+deliberate: regenerating is twenty-odd binaries and wants to be its own
+change, judged on a picture.
+
 **Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
 to be meshes.** The ladder is already built per tile in `js/level.js` and meets
 every clause of its contract, including the hard one — seamless vertical
