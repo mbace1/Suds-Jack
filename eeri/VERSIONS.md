@@ -1,5 +1,62 @@
 # EERI — versions
 
+## v15.21 — 2026-08-19 — three enemies, a site kit, and the theme has a home
+
+Three PRs merged in order onto v15.20. All three are art and reference; no
+gameplay module changed, and no world's dressing moved.
+
+**#286 — three enemies and a nine-piece site kit, all rigged.** `vacbot`
+(the Roomba: first stomp fires its spring and pops you up, second breaks it),
+`workerbot` (a skinned humanoid, too tall to stomp from level ground) and
+`rollerbot`, plus compressor, generator, cable drum, gas cart, jackhammer and
+wheelbarrow. `ENEMY_BRIEFS.md` states what each new enemy is FOR — the frame
+is that hopper reads timing, roller reads spacing, bucket reads proximity and
+skitter reads provocation, so **a new enemy that does not add a new read is a
+reskin**. It also records two owner calls from 2026-08-18: the material
+language for tools and machines is **moulded plastic toy** (the cardboard and
+felt stay the backdrop's), and **faces on machines are dropped unless they
+work** — the jackhammer is the single trial, because Meshy grew it two rivet
+eyes uninvited and they suit it.
+
+Every one of the nine lands as **`placeholder`**, which is correct and not an
+oversight: `js/robots.js` builds every enemy in code and never calls
+`getModel`, so a `live` entry here would be an asset nothing fetches and the
+smoke gate would rightly fail it. They are ready for the gameplay lane to ask.
+
+**#239 — the theme seed, finally playable.** The owner's approved *Eerin peli*
+take, stored under `art-src/audio/` where it does not deploy and does not
+touch the shipping game. It arrived as five Base64 fragments plus a rebuild
+script because the connector that opened that PR could not upload a binary;
+that constraint does not apply here, so it is decoded back to the real
+33,988-byte m4a and the fragments are gone. The decoded SHA-256 matches the
+one the fragments declared, byte for byte. **The procedural-audio rule is
+untouched** — `assets/audio/` still holds nothing but the README explaining
+why it is empty, and `dev-menu.mjs` still fails a binary dropped in there.
+Eeri still has no music in game; this is the seed, not the wiring.
+
+**#288 — hyperdagger's three-mode platform.** `PLATFORM.md` plus `js/truck.js`
+and `js/mesh-enemies.js`. Recorded honestly: **nothing imports either module
+yet** — no caller for `TruckTrack`, `preloadMeshEnemies` or `cloneMeshEnemy`
+anywhere in the tree. It is groundwork for a TRUCK mode, not a TRUCK mode, and
+it changes no existing file.
+
+**Also closed, because they had already landed by other routes:** #243 (the
+Feel Lab — both its branches are zero commits ahead of main), #277, #278,
+#279, #280.
+
+**Merge note for whoever hits this next.** #286 conflicted on
+`assets/manifest.json` and `art-src/tools/slice.mjs`, two hunks each, purely
+because it was branched before #283 and #285 landed. Every hunk was additive —
+main's eight machines against #286's bots and kit — but the cuts run **through
+a `paint` block and through a `nodes[]` array**, so a naive keep-both produces
+invalid JSON and unparseable JS. Each needs its own closing glue (`},` and
+`],` `},`) before the second side starts. Resolved that way, then verified by
+parsing both files rather than by eye.
+
+**assets/3d is now 56 MB** and only three models are ever fetched. That is the
+second release running where this has grown; the mesh-compression pass noted
+in v15.20 is now overdue.
+
 ## v15.20 — 2026-08-18 — the machines are modelled, and Eeri has idle breaks
 
 Two art-lane PRs, merged in order onto v15.19.

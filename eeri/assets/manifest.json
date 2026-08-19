@@ -256,6 +256,108 @@
         "lamps": "STEEL1",
         "wheels": "DARK"
       }
+    },
+    "workerbot": {
+      "file": "3d/workerbot_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 1.1,
+      "_note": "The humanoid site bot. Meshy auto-rig, so it is checked against `clips`, not node names. RIGGED ONLY ON THE SECOND ATTEMPT: the first concept was a strict horizontal T-pose with slim arms and spread legs, and Meshy answered 'Pose estimation failed' — the third time this project has hit that. The fix is in ART_PIPELINE and it is VOLUME, not pose: the estimator wants a body it can fit a skeleton inside, and Eeri rigged first time with merged legs and arms barely 40 degrees out. Redrawn to copy Eeri's actual mass and stance rather than imposing a T on top of the reference, it rigged first time. Behaviour brief in art-src/ENEMY_BRIEFS.md — it reads HEIGHT: too tall to stomp from level ground. `placeholder` until js/robots.js asks for a model; robots.js currently builds every enemy in code and never calls getModel, which is why boltbot, hopper and bucket are parked the same way.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "notice",
+        "hurt"
+      ]
+    },
+    "vacbot": {
+      "file": "3d/vacbot_v2.glb",
+      "status": "placeholder",
+      "height": 0.55,
+      "_note": "The Roomba. Node-rigged (a disc has no legs — routing rule). `spring` fires on the first stomp and launches Eeri; the SECOND stomp swaps `state0` for `state1`, the broken form — merged into one file by art-src/tools/statemerge.mjs per the manipulable-piece convention, sharing an origin so the swap is a visibility flip that cannot teleport. Reads RESOURCE: the only enemy that is a choice rather than a skill (art-src/ENEMY_BRIEFS.md). `eye` is the notice tell. v2 file name per the versioned-URL rule.",
+      "nodes": [
+        "state0",
+        "state1",
+        "body",
+        "spring",
+        "eye",
+        "wheels"
+      ],
+      "paint": {
+        "body": "MACHINE",
+        "spring": "STEEL1",
+        "wheels": "DARK"
+      }
+    },
+    "rollerbot": {
+      "file": "3d/rollerbot_v1.glb",
+      "status": "placeholder",
+      "_note": "The SMALL roller — DESIGN §3's spacing-test enemy, sharing a name and nothing else with the ride machine. `squash` is an empty root holding everything, because a stomped enemy flattens whole — a scale on `body` alone would leave the eye floating. DELIBERATELY no spinning drum: the yoke plate sits flush against the drum face and they interleave in z, no predicate separates them, and §6.2's contract is squash + notice tell, nothing more. Domed top per the concept — §3 says it reads un-landable from across a room.",
+      "nodes": [
+        "squash",
+        "eye",
+        "body"
+      ]
+    },
+    "jackhammer": {
+      "file": "3d/jackhammer_v1.glb",
+      "status": "placeholder",
+      "_note": "The hopper's namesake. `bit` is the whole striking assembly and judders in position.y while the body hops — code, per the routing rule. Meshy grew it two rivet-eyes uninvited; kept, as the owner's 'try a face on one'.",
+      "nodes": [
+        "body",
+        "bit"
+      ]
+    },
+    "generator": {
+      "file": "3d/generator_v1.glb",
+      "status": "placeholder",
+      "_note": "Owner behaviour 2026-08-18: it SHAKES and throws Eeri back — the bounce field pushes a jump further, which is how you clear it — and `plug` on the far side is the disable: pulled, it hides and the shake stops. The plug must be its own node or there is nothing to pull.",
+      "nodes": [
+        "body",
+        "plug"
+      ]
+    },
+    "compressor": {
+      "file": "3d/compressor_v1.glb",
+      "status": "placeholder",
+      "_note": "Blows air (push field, code), overpressures, takes off like a rocket — root motion. `motor` rattles as pressure builds: the telegraph before the launch, same law as every hazard. `nozzle` hinges at its ROOT on the tank — an 'auto' centre pivot spun it about itself and the swing test read it DEAD.",
+      "nodes": [
+        "body",
+        "motor",
+        "nozzle",
+        "wheels"
+      ]
+    },
+    "wheelbarrow": {
+      "file": "3d/wheelbarrow_v1.glb",
+      "status": "placeholder",
+      "_note": "Owner behaviour 2026-08-18: trundles at you, then TIPS its tray to strike. `tray` hinges at its FRONT LIP over the wheel — the dump-truck pivot lesson: hinge it anywhere else and it sinks through the frame instead of rearing. A gizmo first (DESIGN §8.2 calls a tipping surface the cheapest fun in the kit); an enemy dress of the same rig second.",
+      "nodes": [
+        "body",
+        "tray",
+        "wheel"
+      ]
+    },
+    "cabledrum": {
+      "file": "3d/cabledrum_v1.glb",
+      "status": "placeholder",
+      "_note": "`spool` spins about local x — the mesh came back with its axle across the picture. `crank` is claimed before the spool's radius or the handle spins with the drum it winds. Dressing, or a rolling hazard on a slope.",
+      "nodes": [
+        "stand",
+        "spool",
+        "crank"
+      ]
+    },
+    "gascart": {
+      "file": "3d/gascart_v1.glb",
+      "status": "placeholder",
+      "_note": "SPRAY, not explode — the owner offered either and a bottle that detonates is a different game. The spray is a particle cone from `nozzle`, hinged where the hoses leave the bottle tops; the bottles never move.",
+      "nodes": [
+        "body",
+        "nozzle",
+        "wheels"
+      ]
     }
   },
   "pieces": {
