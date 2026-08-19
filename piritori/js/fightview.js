@@ -11,7 +11,7 @@
 // stands in front of it, and nobody has to read a tooltip.
 
 import { COLS, ROW_NAME, WEAPONS, ITEMS, arenaFor } from './fight.js?v=4';
-import { PAL } from './palette.js?v=1';
+import { PAL } from './palette.js?v=2';
 
 const TW = 34, TH = 17;          // iso tile half-width / half-height
 

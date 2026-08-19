@@ -14,8 +14,8 @@
 
 import {
   Market, GOODS, GOOD, TIERS, CLASSES, FAKE_RATE, tierOf, goodsInTier,
-} from '../js/market.js?v=2';
-import { KALLIO } from '../../flow-core/city.js?v=1';
+} from '../js/market.js?v=3';
+import { KALLIO } from '../../flow-core/city.js?v=2';
 import { Graph } from '../../flow-core/graph.js?v=1';
 
 let pass = 0, fail = 0;
