@@ -38,6 +38,13 @@ html, body {
   gap: 2px;
 }
 
+.hud-c {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
 .hud-r { text-align: right; }
 
 #score, #best {
@@ -59,6 +66,11 @@ html, body {
   letter-spacing: 0.35em;
   font-size: 14px;
   text-shadow: 0 0 10px rgba(34, 224, 232, 0.4);
+}
+
+#wave {
+  color: #8b969a;
+  letter-spacing: 0.16em;
 }
 
 #overlay {
