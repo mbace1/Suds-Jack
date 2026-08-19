@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=30';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=30';
+import { PAL, mix } from './palette.js?v=31';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=31';
 
-import { ROOMS, LAB } from './rooms.js?v=30';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=30';
+import { ROOMS, LAB } from './rooms.js?v=31';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=31';
 
 export { ROOMS, LAB };
 const EPS = 0.001;
@@ -388,6 +388,36 @@ export class Level {
           }
           if (e < W - 1 && this.map[r][e + 1] === ' ' && cy >= 1) {
             box(0.16, 1, 1.7, mat.cut, e + 0.95, cy + 0.5, 0);
+          }
+
+          // A RAISED PLATFORM IS A SLAB, NOT A HOLE IN THE SKY.
+          //
+          // Everything above dresses earth that is part of the CUT — the
+          // strata read as a section because there is more section under
+          // them. A run with air beneath it gets none of that: it was one
+          // flat topsoil rectangle with a grass strip on top, and against
+          // backdrops that are layered, hazed and lit it is the least
+          // finished thing on screen. Looked at in a captured frame it reads
+          // as a brown card someone slid in front of the level.
+          //
+          // Two bands, and between them they are the whole of §3.1's "a
+          // single darker tone for side faces" and "shading painted in, key
+          // from upper-left":
+          //
+          //   * the FACE steps down in tone below the lip, so the slab has a
+          //     lit top and a shaded body instead of one value; and
+          //   * the UNDERSIDE gets the darkest tone in the lane, because the
+          //     bottom edge of a floating slab is the one place the eye looks
+          //     for thickness and there was nothing there at all.
+          //
+          // Depth 1.62/1.64 rather than 1.6: these sit a hair proud of the
+          // slab so they win the z-fight outright instead of shimmering.
+          if (r + 1 < H && this.map[r + 1][c] === ' ') {
+            const base = strata(cy);
+            box(w, 0.5, 1.62, dirtMat(mix(base, PAL.INK, 0.14), section(cy)),
+                cx, cy + 0.34, 0);
+            box(w, 0.17, 1.64, dirtMat(mix(base, PAL.INK, 0.34), section(cy)),
+                cx, cy + 0.085, 0);
           }
         } else if (ch === '=') {
           box(w, 0.5, 1.4, mat.steel, cx, cy + 0.72, 0);

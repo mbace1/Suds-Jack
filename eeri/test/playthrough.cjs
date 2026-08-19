@@ -131,9 +131,17 @@ const BOT = `async (budgetMs) => {
     // jump when the run is blocked, or a hole is coming
     const ahead = E.level.groundTop(q.x + 1.0, q.y + 0.1);
     if (q.grounded && (Math.abs(q.vx) < 1.0 || ahead < q.y - 0.5) && !jumping) {
-      E.debug.press('jump'); jumping = true; jT = Date.now();
+      E.debug.press('jump'); jumping = true; jT = q.t;
     }
-    if (jumping && Date.now() - jT > 420) { E.debug.release('jump'); jumping = false; }
+    // HOLD THE JUMP IN GAME SECONDS, NOT WALL SECONDS. His jump is variable
+    // height — letting go while rising cuts it to a hop — and the loop
+    // clamps dt to 33 ms, so under a software renderer at 13 fps the game
+    // clock runs at less than half real time. A 420 ms wall-clock hold was
+    // five frames, i.e. 0.17 s of HIS time: every jump in the gate was a
+    // hop, and the bot sat under the first two-high step in seven levels
+    // reporting a wall that is not there. player.t is the same clock the
+    // jump is integrated on, so this holds for as long as a thumb would.
+    if (jumping && q.t - jT > 0.42) { E.debug.release('jump'); jumping = false; }
 
     // stuck for a while and there is a machine job outstanding? go board it
     if (stuck > 90) {

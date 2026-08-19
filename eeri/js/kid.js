@@ -9,9 +9,36 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=30';
+import { PAL } from './palette.js?v=31';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
+
+// One dark line on the silhouette, built from the model itself so it cannot
+// disagree with the pose. Skinned meshes are cloned as SkinnedMesh and share
+// the original's skeleton; a plain Mesh just shares geometry.
+const OUTLINE = 0.045;
+function outlineShell(root) {
+  const mat = new THREE.MeshBasicMaterial({
+    color: PAL.INK, side: THREE.BackSide, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+  });
+  const targets = [];
+  root.traverse((o) => { if (o.isMesh && !o.userData.__outline) targets.push(o); });
+  for (const m of targets) {
+    let shell;
+    if (m.isSkinnedMesh) {
+      shell = new THREE.SkinnedMesh(m.geometry, mat);
+      shell.bind(m.skeleton, m.bindMatrix);
+    } else {
+      shell = new THREE.Mesh(m.geometry, mat);
+    }
+    shell.userData.__outline = true;
+    shell.renderOrder = -1;
+    // scaled about the mesh's own origin: enough to show, not enough to fatten
+    shell.scale.setScalar(1 + OUTLINE);
+    m.add(shell);
+  }
+}
 
 export function buildKidModel() {
   const root = new THREE.Group(); // origin at the feet, facing +x
@@ -230,6 +257,24 @@ export class Kid {
     }
     // remember rest offsets so a GLB with its own base positions poses right
     this.baseBodyY = this.n.body ? this.n.body.position.y : 0;
+
+    // HE HAS TO READ. Captured frames of all four worlds say the same thing:
+    // the kid is a small mid-toned figure against backdrops that are busy,
+    // pale and — in Nightshift — nearly the same value he is. For the
+    // six-year-old this is built for, losing your own character is the worst
+    // failure on the list, worse than any of the scenery being plain.
+    //
+    // A back-face shell, not a post effect: each mesh gets a sibling of the
+    // same geometry in INK, culled to BackSide and pushed out slightly, so
+    // what survives is a dark line exactly on the silhouette. This is why it
+    // is done this way rather than with an outline pass — ART_BRIEF §3.4 says
+    // no post stack, and the shell obeys that while giving the same result.
+    //
+    // `depthWrite: false` and a small negative polygon offset keep the shell
+    // from z-fighting the surface it is wrapping, and it is added as a CHILD
+    // of each mesh so it inherits every bone and every pose for free — an
+    // outline that does not follow the animation is worse than none.
+    outlineShell(this.group);
 
     // blob shadow — the landing aid (no shadow maps anywhere)
     this.shadow = new THREE.Mesh(
@@ -577,6 +622,55 @@ export class Player {
     const state = this.climbing ? 'climb'
       : !this.grounded ? 'air'
       : Math.abs(this.vx) > 0.4 ? 'run' : 'idle';
+
+    // ---- THE CLIPS THAT WERE IN THE FILE AND NEVER PLAYED ----------------
+    //
+    // eeri_v5 ships fifteen animations; the game asked for six. The other
+    // nine were loaded, skinned and stepped every frame with nothing ever
+    // selecting them. Five of them have a moment in this game that is
+    // already known here, so they are wired to it:
+    //
+    //   climbon / climboff  the frames either side of a ladder
+    //   teeter              standing at the lip of a drop
+    //   idle2 / lookaround  he has been still for a while
+    //
+    // `talk` and `confused` are deliberately NOT wired. There is no beat in
+    // play that means either one, and inventing a trigger to use up a clip
+    // is how a character starts doing things for no reason. They belong to
+    // the intro or a checkpoint, which is a design call, not this file's.
+    if (state === 'climb' && !this.wasClimbing) k.oneShot('climbon', this.t, 0.9);
+    if (this.wasClimbing && state !== 'climb') k.oneShot('climboff', this.t, 0.9);
+    this.wasClimbing = state === 'climb';
+
+    // IDLE BREAKS. Counted in seconds of actually standing still, and reset
+    // by any other state — so a break can only ever interrupt stillness,
+    // never a jump. The gap is re-rolled each time so two breaks in a row
+    // are not the same wait, and `idleBreakAt` starts unset so he does not
+    // fidget the instant a level loads.
+    if (state === 'idle') {
+      if (this.idleBreakAt === undefined) this.idleBreakAt = this.t + 4 + Math.random() * 4;
+      else if (this.t > this.idleBreakAt) {
+        k.oneShot(Math.random() < 0.5 ? 'idle2' : 'lookaround', this.t, 2.2);
+        this.idleBreakAt = this.t + 6 + Math.random() * 6;
+      }
+    } else {
+      this.idleBreakAt = undefined;
+    }
+
+    // TEETER — grounded, not moving, and no floor one step ahead. The lip is
+    // the most useful thing a platformer can tell you about, and the clip
+    // says it without a word or an icon. Throttled, or he teeters on every
+    // frame he stands at an edge.
+    if (state === 'idle' && this.t > (this.teeterAt || 0)) {
+      const ahead = this.x + (k.face || 1) * 0.75;
+      const drop = this.y - this.level.groundTop(ahead, this.y + 0.1);
+      if (drop > 1.6) {
+        k.oneShot('teeter', this.t, 1.4);
+        this.teeterAt = this.t + 3.5;
+        this.idleBreakAt = this.t + 6;      // one reaction at a time
+      }
+    }
+
     k.pose(state, this.t, Math.abs(this.vx));
     const gy = this.level.groundTop(this.x, this.y + 0.1);
     k.shadow.position.set(this.x, gy + 0.02, 0);

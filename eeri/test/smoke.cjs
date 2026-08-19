@@ -1313,7 +1313,10 @@ s.listen(0, '127.0.0.1', async () => {
                h: Math.round(r.height), art: !!e.querySelector('svg,img'), label: e.getAttribute('aria-label') };
     }));
     const by = Object.fromEntries(pad.map((q) => [q.id, q]));
-    ok('every pad button carries a picture of its action, not a bare arrow',
+    // glyphs.js has RUN on every button — each one holds its drawn figure.
+    // Landscape then hides them behind a CSS arrow (asserted below), so this
+    // proves the glyph pass happened, not which face is showing.
+    ok('every pad button had its glyph drawn into it',
       pad.every((q) => q.art), pad.filter((q) => !q.art).map((q) => q.id).join(','));
     ok('every pad button clears 44px', pad.every((q) => q.w >= 44 && q.h >= 44));
     ok('every pad button is named in the player\'s language',
@@ -1330,24 +1333,81 @@ s.listen(0, '127.0.0.1', async () => {
     // is the ART's — a DMG face in portrait, an arcade panel in landscape —
     // so what must hold is that the plate is mounted and every hit area
     // actually sits on it, rather than a row count.
+    // ---- LANDSCAPE HAS NO BOARD (owner, 2026-08-19) ------------------
+    //
+    // Held sideways the picture takes the whole window and the controls are
+    // six buttons standing on the glass — no DMG plate, no drawn cross, no
+    // stick over it. So the plate assertions this block used to make now
+    // belong to PORTRAIT, and what has to hold here is the opposite of each
+    // of them. They are worth stating rather than deleting: the two designs
+    // are one CSS block apart, and a rule that loses a specificity fight
+    // silently restores the other one — which is exactly what happened,
+    // leaving a zero-size stick on top of four inert arrows and no way to
+    // move at all.
+    ok('the board is put away in landscape', await tp.evaluate(() =>
+      [...document.querySelectorAll('#pad img')]
+        .every((i) => getComputedStyle(i).display === 'none')
+      || getComputedStyle(document.getElementById('pad')).display === 'none'));
+    ok('the stick is put away with it', await tp.evaluate(() => {
+      const st = document.getElementById('stick');
+      const r = st.getBoundingClientRect();
+      return getComputedStyle(st).display === 'none' || (r.width < 44 && r.height < 44);
+    }));
+    // THE ARROWS ARE THE CONTROL HERE, so they must actually take a touch.
+    // Under the plate they are inert hit areas beneath the stick; with the
+    // stick gone, inert means a game that cannot be played.
+    ok('…so the four arrows take the touch themselves', await tp.evaluate(() =>
+      ['tU', 'tD', 'tL', 'tR']
+        .every((id) => getComputedStyle(document.getElementById(id)).pointerEvents !== 'none')));
+    // "just arrows and a b please" — the face is set in CSS here because the
+    // drawn figures are a 13px hint-line register, not a 54px button one.
+    // §6.4 still holds: an arrow and a letter are what is printed on a
+    // controller, and neither is a key cap or a mouse.
+    {
+      const faces = await tp.evaluate(() => Object.fromEntries(
+        ['tL', 'tR', 'tU', 'tD', 'tJ', 'tA'].map((id) => [id,
+          getComputedStyle(document.getElementById(id), '::after').content])));
+      ok('the button faces are arrows and letters',
+        /\u25c0/.test(faces.tL) && /\u25b6/.test(faces.tR)
+        && /\u25b2/.test(faces.tU) && /\u25bc/.test(faces.tD)
+        && /A/.test(faces.tJ) && /B/.test(faces.tA), JSON.stringify(faces));
+      ok('…and the drawn figures are hidden behind them', await tp.evaluate(() =>
+        ['tL', 'tR', 'tU', 'tD', 'tJ', 'tA'].every((id) => {
+          const g = document.getElementById(id).querySelector('svg,img');
+          return !g || getComputedStyle(g).display === 'none';
+        })));
+    }
+    await tp.close();
+
+    // ---- PORTRAIT KEEPS THE PLATE ------------------------------------
+    // Everything below was written for the handheld face and still holds
+    // there; it moved rather than went, because portrait is where the DMG
+    // board is the charm and the stick is the control.
+    const pt = await b.newPage({
+      viewport: { width: 390, height: 844 }, locale: 'fi-FI', hasTouch: true, isMobile: true,
+    });
+    await pt.goto(base + '/eeri/?skip', { waitUntil: 'load' });
+    await pt.waitForFunction(() => window.__eeri, null, { timeout: ms(90000) });
+    await pt.waitForTimeout(ms(800));
     ok('the touch plate is mounted',
-      await tp.evaluate(() => document.documentElement.classList.contains('plated')));
+      await pt.evaluate(() => document.documentElement.classList.contains('plated')));
     // THE STICK OWNS THE D-PAD AREA when a plate is up. Two halves, and
     // the second is the one that would break silently: if the four d-pad
     // buttons keep `pointer-events: auto` they sit ON TOP of the stick (a
     // later sibling, z 6) and swallow every press, so the stick would look
     // mounted and do nothing.
-    ok('the stick is mounted over the plate and clears 44px', await tp.evaluate(() => {
+    ok('the stick is mounted over the plate and clears 44px', await pt.evaluate(() => {
       const st = document.getElementById('stick'); if (!st) return false;
-      const s = st.getBoundingClientRect();
-      if (s.width < 44 || s.height < 44) return false;
+      const s2 = st.getBoundingClientRect();
+      if (s2.width < 44 || s2.height < 44) return false;
       const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
+      if (!img) return false;
       const r = img.getBoundingClientRect();
-      const cx = s.left + s.width / 2, cy = s.top + s.height / 2;
+      const cx = s2.left + s2.width / 2, cy = s2.top + s2.height / 2;
       return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
     }));
     ok('…and the four d-pad zones are pointer-inert under it',
-      await tp.evaluate(() => ['tU', 'tD', 'tL', 'tR']
+      await pt.evaluate(() => ['tU', 'tD', 'tL', 'tR']
         .every((id) => getComputedStyle(document.getElementById(id)).pointerEvents === 'none')));
 
     // THE STICKER IS ON THE PLATE, WHICH IS A LAYER QUESTION, NOT A
@@ -1357,22 +1417,22 @@ s.listen(0, '127.0.0.1', async () => {
     // nothing, because a child cannot climb out of its parent's layer.
     // Nothing was visible through the plated buttons except those two
     // things, so it read as "the sticker never mounted".
-    ok('the sticker layer sits above the plate', await tp.evaluate(() => {
+    ok('the sticker layer sits above the plate', await pt.evaluate(() => {
       const z = (id) => { const v = getComputedStyle(document.getElementById(id)).zIndex; return v === 'auto' ? 0 : +v; };
       const bd = document.querySelector('.toko-signature');
       return !!bd && !!bd.closest('#touch') && z('touch') > z('pad');
     }));
-    ok('…and every hit area sits over the plate', await tp.evaluate(() => {
+    ok('…and every hit area sits over the plate', await pt.evaluate(() => {
       const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
       if (!img) return false;
       const r = img.getBoundingClientRect();
       return ['tU', 'tD', 'tL', 'tR', 'tA', 'tJ'].every((id) => {
-        const b = document.getElementById(id).getBoundingClientRect();
-        const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+        const b2 = document.getElementById(id).getBoundingClientRect();
+        const cx = b2.left + b2.width / 2, cy = b2.top + b2.height / 2;
         return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
       });
     }));
-    await tp.close();
+    await pt.close();
   }
 
   await b.close(); s.close();

@@ -1,5 +1,85 @@
 # EERI — versions
 
+## v15.25 — 2026-08-19 — the slab has thickness, the kid has an edge, landscape loses its board
+
+Three of the four things the captured frames said were wrong, plus the
+landscape rework.
+
+**The playfield reads as built.** A run of earth with air under it was one
+flat topsoil rectangle with a grass strip on top — the least finished thing on
+screen, against backdrops that are layered, hazed and lit. It now steps down
+in tone below the lip and takes the lane's darkest tone along its underside,
+which is §3.1's "a single darker tone for side faces" and "shading painted in,
+key from upper-left" applied to the surface the player actually stands on.
+
+**The kid has an edge.** A back-face shell in INK on every mesh, built from
+the model itself so it follows the pose and the bones for free. Not a post
+effect — §3.4 forbids a post stack, and a shell obeys that while giving the
+same silhouette. He was a small mid-toned figure against busy pale backdrops
+and in Nightshift nearly his own value; losing your own character is the worst
+failure available in a game for a six-year-old.
+
+**LANDSCAPE DROPS THE BOARD** (owner: "the screen wider", "the controls cover
+the screen along", "smaller and lower", and the one that decides it — "if the
+buttons have a and b on them, the board doesn't need them").
+
+The drawn panel was solving a problem the buttons already solve. It carried
+its own A and B, so held sideways you read the same two letters twice, and it
+charged 141 px of a 390 px-tall phone for it — a strip the stage then had to
+fit above. So landscape keeps the controls and loses the plate: glyph buttons
+along the bottom corners, over the picture rather than under it, and
+`fitStage` stops reserving a panel's height because a hidden `#pad` measures
+zero. **The stage goes 443 × 249 to 693 × 390 — 56% wider.**
+
+**The face is arrows and A/B** (owner: "just arrows and a b please").
+`glyphs.js`'s illustrated figures are right on the 13px hint line where they
+describe a VERB; on a 54px control they are the wrong register — a button
+face should say which button it is, not mime what it does. Not a key cap and
+not a mouse icon (§6.4 forbids both): an arrow and a letter are what is
+printed on a controller.
+
+Two things the gates caught rather than the eye. SELECT and START first went
+top-right and **overlapped the HUD**, so they moved to the bottom centre under
+the hint, between the two thumbs and under neither. And they were drawn 30 px
+tall — `test/smoke.cjs` measures the 44 px floor and was right to object.
+
+**Portrait is untouched.** Held upright the picture is a window above a
+handheld's face and the DMG plate is the charm of it; there the board earns
+its room.
+
+**The nine animations that were loaded and never played.** `eeri_v5.glb`
+carries fifteen clips; the game had only ever named six, so the other nine
+were parsed, skinned and stepped every frame with nothing selecting them.
+Five have a moment this file already knows about, and they are wired to it:
+`climbon` / `climboff` on either side of a ladder, `teeter` when he is idle at
+the lip of a drop of more than 1.6 (throttled, or he teeters every frame he
+stands at an edge), and `idle2` / `lookaround` as idle breaks on a re-rolled
+4-8 then 6-12 second timer. `talk` and `confused` stay unwired on purpose:
+there is no beat in play that means either, and inventing a trigger to use up
+a clip is how a character starts doing things for no reason.
+
+**Two rules in the landscape block were losing a specificity fight.** A media
+query adds no weight of its own, and both rules it has to overturn
+(`html.plated #stick`, `html.plated #touch #tL`) sit further down the sheet.
+Measured on a 750×340 phone the result was a zero-size stick on top of four
+`pointer-events: none` arrows — **no way to move at all**. Both are now
+written heavier than what they replace, and the gate asserts the landscape
+design directly (board away, stick away, arrows live, faces set in CSS)
+instead of asserting the plate that is no longer there.
+
+**The playthrough gate was timing the jump on the wrong clock.** It held jump
+for 420 ms of *wall* time; the loop clamps `dt` to 33 ms, so under a software
+renderer at 13 fps the game clock runs at under half real time and 420 ms is
+five frames — 0.17 s of his time. His jump is variable height, so every jump
+the bot made was a hop, and it sat under the first two-high step in seven of
+twelve levels reporting a wall that is not there. Held in `player.t` now, the
+same clock the jump is integrated on. **No level changed; seven went from
+"unfinishable" to finished.**
+
+Still open from the diagnosis: one dirt band still serves all four worlds, the
+Grove canopy is still flat discs, and tone mapping is still the undecided
+§3.4 call.
+
 ## v15.24 — 2026-08-19 — every live model was rendering as dark metal
 
 Second-pass visual work, and it starts with a bug rather than a preference.
