@@ -1,0 +1,168 @@
+/* Betterment recovery rules — additive states over the current mobile UI. */
+
+.bm-progressive-stack {
+  display:grid;
+  gap:10px;
+  margin:12px 0 16px;
+}
+
+.bm-progressive-card,
+.bm-kindling-warning {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:13px 14px;
+  border:1px solid color-mix(in srgb, var(--bm-ember, #e68a32) 46%, transparent);
+  border-radius:10px;
+  background:color-mix(in srgb, var(--bm-surface, #161b22) 90%, #2f1b0d 10%);
+}
+
+.bm-progressive-copy {
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+
+.bm-progressive-reward {
+  color:var(--bm-dim, #aa9f8c);
+  font-size:12px;
+}
+
+.bm-progressive-action {
+  flex:0 0 auto;
+  min-width:88px;
+  min-height:44px;
+  padding:8px 12px;
+  border:1px solid var(--bm-ember, #e68a32);
+  border-radius:8px;
+  color:var(--bm-text, #f1e4ca);
+  background:transparent;
+  font:inherit;
+}
+
+.bm-kindling-warning {
+  display:grid;
+  justify-content:stretch;
+  gap:5px;
+  margin:0 0 12px;
+  border-color:#8d5d39;
+  background:#17120f;
+}
+
+.bm-kindling-warning p {
+  margin:0;
+  color:var(--bm-dim, #aa9f8c);
+  font-size:12px;
+}
+
+.screen-wrap.bm-first-miss::after {
+  content:"";
+  position:absolute;
+  inset:5px;
+  pointer-events:none;
+  border-radius:3px;
+  background:rgba(2,7,14,.12);
+  box-shadow:inset 0 0 0 1px rgba(116,146,184,.06);
+}
+
+body.bm-kindling-event .bm-nav,
+body.bm-kindling-event .betterment-hud {
+  visibility:hidden;
+}
+
+.bm-kindling-scene {
+  position:absolute;
+  inset:5px;
+  z-index:8;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border-radius:3px;
+  background:
+    radial-gradient(circle at 31% 68%, rgba(194,80,26,.12), transparent 18%),
+    linear-gradient(#030811, #080b0e 68%, #0b0908);
+  image-rendering:pixelated;
+}
+
+.bm-kindling-ring {
+  position:absolute;
+  left:25%;
+  top:55%;
+  width:72px;
+  height:46px;
+  display:grid;
+  place-items:center;
+  border-bottom:5px dotted #5f5c56;
+  color:#b95225;
+  transform:translate(-50%,-50%);
+}
+
+.bm-kindling-coal {
+  font-size:34px;
+  line-height:1;
+  text-shadow:0 0 8px rgba(202,78,24,.45);
+}
+
+.bm-kindling-ash {
+  position:absolute;
+  bottom:-22px;
+  color:#737577;
+  letter-spacing:5px;
+  font-size:13px;
+}
+
+.bm-kindling-page {
+  display:grid;
+  gap:12px;
+  padding:8px 0 96px;
+}
+
+.bm-kindling-page h2 {
+  margin:0;
+  font-size:22px;
+}
+
+.bm-kindling-name {
+  margin:0;
+  color:#d38a4d;
+  font-size:16px;
+}
+
+.bm-kindling-memory {
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:6px 10px;
+  align-items:center;
+}
+
+.bm-kindling-memory .bm-page-copy {
+  grid-column:2;
+}
+
+.bm-kindled-mark {
+  grid-row:1 / span 2;
+  color:#c05f28;
+  font-size:28px;
+}
+
+.bm-lineage-card {
+  display:grid;
+  gap:7px;
+}
+
+.bm-lineage-entry {
+  margin:0;
+  padding-top:7px;
+  border-top:1px solid rgba(255,255,255,.08);
+  color:var(--bm-dim, #aa9f8c);
+  font-size:12px;
+}
+
+@media (max-width:420px) {
+  .bm-progressive-card {
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .bm-progressive-action { width:100%; }
+}
