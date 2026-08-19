@@ -1,11 +1,14 @@
 # Piritori to Eden Art Library
 
-This is the categorized, production-facing asset library for the approved and
-semi-approved visual work. It is not the Art Bible. The final Art Bible should
-only be written after the remaining screen and location passes are approved.
+This is the categorized, production-facing asset library for approved and
+semi-approved visual work. [Art Bible v1](../ART_BIBLE.md) defines the active
+visual and production rules; this library records the assets, statuses and
+system contracts that support it.
 
 Start with [CATALOG.md](CATALOG.md) for visual links, [APPROVALS.md](APPROVALS.md)
 for status, and [manifest.json](manifest.json) for machine-readable categories.
+Semi-approved work remains visibly revisable even when the Art Bible establishes
+the wider direction.
 
 ## Approval labels
 
@@ -113,6 +116,7 @@ modules can move, change rows and swap equipment.
 
 ## System documents
 
+- [Active Art Bible](../ART_BIBLE.md)
 - [Modular character system](MODULAR_CHARACTER_SYSTEM.md)
 - [Animation and environmental layers](ANIMATION_LAYER_CONTRACT.md)
 - [Photo-grounding notes](REFERENCE_NOTES.md)

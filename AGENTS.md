@@ -14,7 +14,7 @@ even when the code is otherwise correct, tested and pretty.
 
 | project | canon | notes |
 |---|---|---|
-| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `GAME_DESIGN_DOCUMENT.md`, `NARRATIVE.md`, `SCREEN_AND_COMBAT_BASELINE.md`; art authority is `art-library/APPROVALS.md` + `CATALOG.md`; supporting `FIGHT_BRIEF.md`, `MAP.md`, `DECISIONS.md` only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
+| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; visual authority is `ART_BIBLE.md` with `art-library/APPROVALS.md` + `CATALOG.md`; narrative and supporting documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
 | `eeri/` | `eeri/PHASING.md` first, then `DESIGN.md`, `ART_BRIEF.md`, `VERSIONS.md` | multi-agent; PHASING supersedes on conflict |
 | `kindling/` | `BETTERMENT_OWNER_DIRECTION.md` | newest authority; supersedes older "cozy hut" calls |
 | `toko/` | `toko/BRAND.md` | two colours only, geometry invariants |
@@ -28,8 +28,8 @@ the sentence it contradicts and the words that overrode it. An unrecorded
 contradiction is a finding; a recorded one is a decision.
 
 **Note for Piritori reviewers.** Read `piritori/DESIGN_AUTHORITY.md` first.
-The approved art library supersedes the previous PAPER-versus-INK split and the
-prototype's placeholders. Guns, named goods and terrain cover remain recorded
+`piritori/ART_BIBLE.md` and the approved art library supersede the previous
+PAPER-versus-INK split and the prototype's placeholders. Guns, named goods and terrain cover remain recorded
 owner decisions where they agree with the GDD. Battles stay darker and more
 forceful, but characters, locations, props and UI share the active cut-cardstock
 and hand-marker construction.

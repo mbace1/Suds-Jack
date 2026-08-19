@@ -17,12 +17,13 @@ From highest to lowest:
 2. `DESIGN_AUTHORITY.md`.
 3. `DESIGN_LOCKS.md`.
 4. `GAME_DESIGN_DOCUMENT.md`.
-5. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
-6. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
+5. `ART_BIBLE.md` for visual and asset-production decisions.
+6. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
+7. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
    linked from them.
-7. `FIGHT_BRIEF.md`, `MAP.md` and `DECISIONS.md`, but only where they do not
+8. `FIGHT_BRIEF.md`, `MAP.md` and `DECISIONS.md`, but only where they do not
    conflict with the documents above.
-8. The current runtime, tests and legacy design documents. These are evidence
+9. The current runtime, tests and legacy design documents. These are evidence
    and prototypes, not permission to change the design.
 
 When two sources at the same level disagree, stop and record a decision. Do not
@@ -52,8 +53,10 @@ and reason are recorded; they are not open placeholders in the meantime.
 
 ## Active visual baseline
 
-The active visual source is the categorized `art-library/`, not the previous
-Art Bible or the current prototype's code-drawn placeholders.
+`ART_BIBLE.md` is the active visual production authority. It converts the
+approved categorized `art-library/` into medium, character, environment,
+motion, responsive-layout and export rules. Neither the rejected earlier Bible
+nor the current prototype's code-drawn placeholders remain visual authority.
 
 - Broad, low-detail cut-cardstock shapes establish silhouette and volume.
 - Torn fibres, imperfect cuts, physical overlaps and shallow layer shadows make
@@ -90,10 +93,8 @@ split, compressed, registered or animation-ready.
 
 ## Legacy material
 
-Until Art Bible v1 replaces them, these files are retained only as production
-history and reference:
+These files are retained only as production history and reference:
 
-- `ART_BIBLE.md`
 - `ART_BRIEF_CONCEPT.md`
 - `ART_PROMPTS.md`
 - `ART_REQUEST.md`
@@ -101,8 +102,8 @@ history and reference:
 - `CLAUDE_HANDOFF.md`
 - `CONTENT_HANDOVER.md`
 
-Their still-useful facts may be migrated into the new Art Bible. Their visual
-rules do not override the active library or the hierarchy above.
+Their still-useful facts have been migrated where appropriate. Their visual
+rules do not override the active Art Bible, library or hierarchy above.
 
 ## Asset exception
 

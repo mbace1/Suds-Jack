@@ -1,7 +1,9 @@
 # Art Library catalog
 
-Approval status is tracked in [APPROVALS.md](APPROVALS.md) and machine-readable
-form in [catalog.json](catalog.json).
+Visual and production rules are defined in the active
+[Art Bible](../ART_BIBLE.md). Approval status is tracked in
+[APPROVALS.md](APPROVALS.md) and machine-readable form in
+[catalog.json](catalog.json).
 
 ## Approved active character system
 

@@ -2,9 +2,9 @@
 
 ## Game Design Document — pre-UX baseline
 
-Version: 0.3  
+Version: 0.4  
 Date: 2026-08-19  
-Status: active pre-UX design baseline; structural decisions locked  
+Status: active pre-UX design baseline; structural and visual baselines locked  
 Platform assumption: mobile-first browser prototype, desktop supported  
 Audience: adults  
 
@@ -1602,7 +1602,7 @@ and `DESIGN_LOCKS.md`. Specifically:
 - the approved `art-library/` establishes the visual baseline; review sheets
   still require extraction and registration before runtime use.
 
-The next milestone, Art Bible v1, will define medium, character construction,
-environments, map language, combat staging, motion and production rules from
-that approved library. Final UX and asset counts remain gated by the Art Bible
-and UX passes, not by the rejected legacy document.
+`ART_BIBLE.md` defines medium, character construction, environments, map
+language, combat staging, motion and production rules from the approved library.
+Final UX and asset counts remain gated by the Art Bible and UX passes, not by
+the rejected legacy document.

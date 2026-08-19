@@ -6,8 +6,8 @@ assumption.
 `GAME_DESIGN_DOCUMENT.md` now supersedes this short note for interaction-mode
 scope, 3v3 rules, encounter design and vertical-slice content. Keep this file as
 the record of the owner correction that introduced separate maps, locations,
-markets and battles. Its art notes remain exploratory; the previous Art Bible
-was rejected and there is currently no visual-test authority.
+markets and battles. Its art notes remain a historical record; `ART_BIBLE.md` now owns visual and
+asset-production decisions.
 
 ## Screen architecture
 
@@ -53,7 +53,7 @@ combat unit.
 10. Transition Aatami from street operator to commander of a replaceable but
     narratively meaningful roster.
 
-## Art lock under exploration
+## Historical art direction that led to Art Bible v1
 
 - full-screen map based on recognisable Kallio street relationships;
 - shallow handmade collage districts, roads, buildings and interface panels;
@@ -68,7 +68,7 @@ combat unit.
 - no news, market or combat tableau crowded into the map screen;
 - faction icons must be specific invented marks, never ethnic caricatures.
 
-### Broadcast exception under exploration
+### Historical broadcast exception, retained in Art Bible v1
 
 - Arvo Linde may be a reusable stylised 3D presenter produced in Meshy or an
   equivalent character pipeline for lip sync, idle motion and restrained hand
