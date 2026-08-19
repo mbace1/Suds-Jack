@@ -30,6 +30,16 @@
 // squeamishness — it is the seam working, and the contract test scans the
 // other product's bundle for exactly this.
 
+// The projection itself, exported rather than only described above — the
+// ground importer needs the SAME arithmetic the stops were placed with, and a
+// second copy of two constants is a second copy that can drift. The contract
+// test re-derives every node from `source` through this and compares.
+export const ORIGIN = { lon: 24.9490, lat: 60.1885, kx: 5534, ky: 11132 };
+export const project = (lon, lat) => ({
+  x: (lon - ORIGIN.lon) * ORIGIN.kx,
+  y: (ORIGIN.lat - lat) * ORIGIN.ky,
+});
+
 export const KALLIO = {
   // the WGS84 positions each node was projected from, kept so anyone can
   // re-derive the board or add a stop without guessing
