@@ -140,8 +140,12 @@ assert.equal(state.mode, 'play', 'Enter restarts after game over');
 assert.equal(state.lives, 3);
 assert.equal(state.wave, 1);
 
-assert.match(index, /game\.js\?v=51/);
+assert.match(source, /const VERSION = "v4"/);
+assert.match(source, /const VANISH_Y = 0\.31/);
+assert.match(source, /const DEPTH_CURVE = 1\.48/);
+assert.match(source, /const MESH_WIDTH = 0\.94/);
+assert.match(index, /game\.js\?v=52/);
 assert.match(index, /hub\/shell\.js\?v=17/);
 assert.match(index, /id="wave"/);
 
-console.log('Suds Jack core gate: 19 checks passed');
+console.log('Suds Jack core gate: 23 checks passed');
