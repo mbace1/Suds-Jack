@@ -127,6 +127,74 @@ const CUTS = {
   // PI and a feature measured at x on the render is at −x in the table. That
   // sign is the single easiest thing to get wrong and it fails silently: the
   // catch-all swallows everything and you get one node called `house`.
+  // ---- THE PIECES (assets/manifest.json `pieces`, none of which had a file) --
+  // Not machines: nothing here is driven, so there are no hinges to get wrong
+  // and the only job of the cut is SEPARABILITY. Each node named in the
+  // manifest is a thing the game shows or hides on its own, so it has to come
+  // out whole. Numbers read off the inspect grid (0.1 a line, 0.5 red).
+
+  // The midway gate. `lamp` is the state (red before, green after) and `cloth`
+  // is hidden until it is lit — those two carry the whole read, so those two
+  // are the whole cut. Everything else is the post.
+  p_checkpoint: {
+    flatten: true,
+    cap: false,              // the cloth is welded across a span, not poked through a face          // pieces are recoloured, so a leaf node must BE its mesh
+    src: 'out/pieces3d-mesh/P-checkpoint/image-01a01a2a.glb',
+    out: 'checkpoint_v1.glb',
+    length: 1.95,                    // 1.95 x 1.384 = 2.7 tall, the code post's height
+    nodes: [
+      // the globe stands on a stalk clear above the post top (y 1.126), which
+      // is the gap the concept was written to produce
+      ['lamp',  null, (p) => p.y > 1.15,                              'auto'],
+      // x > 0.10 and not x > 0.05: the arm that carries the cloth reaches to
+      // x 0.12, and an arm inside the cloth node hides with it
+      ['cloth', null, (p) => p.x > 0.10 && p.y > 0.40 && p.y < 1.05,  'auto'],
+      ['body',  null, () => true,                                     [0, 0, 0]],
+    ],
+  },
+
+  // The level's ending. Cut into the parts the phases are composed FROM;
+  // phasemerge.mjs turns them into `pole` + phase0/1/2. Meshy dropped the
+  // diagonal brace the concept asked for, so phase2's delta is the lamp alone
+  // — which survives only because this lamp is a chunky caged globe rather
+  // than the 0.2-unit ball the code-built flag was adding.
+  p_flag: {
+    flatten: true,
+    cap: false,              // the cloth is welded across a span, not poked through a face          // pieces are recoloured, so a leaf node must BE its mesh
+    src: 'out/pieces3d-mesh/P-flag/image-01a01a2b.glb',
+    out: 'flag_cut.glb',
+    length: 2.32,                    // 2.32 x 1.641 = 3.8 tall, matching js/flag.js
+    nodes: [
+      ['lamp',   null, (p) => p.y > 1.40,                             'auto'],
+      // y > 0.30 keeps the base plate out: it reaches x 0.05, so an x-only
+      // test would have put a sliver of the foot inside the banner and taken
+      // it away with it on phase0
+      ['banner', null, (p) => p.x > 0.0 && p.y > 0.30 && p.y < 1.20,  'auto'],
+      ['pole',   null, () => true,                                    [0, 0, 0]],
+    ],
+  },
+
+  // The world's ending, and it is a DIFFERENT SHAPE rather than a bigger one:
+  // a size difference is not tellable without the other one beside it, and
+  // DESIGN §6.3 asks for it to be readable before you reach it.
+  p_flagbig: {
+    flatten: true,
+    cap: false,              // the cloth is welded across a span, not poked through a face          // pieces are recoloured, so a leaf node must BE its mesh
+    src: 'out/pieces3d-mesh/P-flagbig/image-01a01a2d.glb',
+    out: 'flagbig_cut.glb',
+    length: 4.2,                     // 4.2 x 0.906 = 3.8 tall — same height as the
+                                     // small flag, three times the width. See the
+                                     // manifest note: the footprint is the part
+                                     // Design/Level may want to argue with.
+    nodes: [
+      ['lamp',   null, (p) => p.y > 0.75,                             'auto'],
+      // the bay between the uprights is empty apart from the cloth, so the
+      // window is generous; y < 0.60 stops it eating the rail above it
+      ['banner', null, (p) => Math.abs(p.x) < 0.30 && p.y > 0.15 && p.y < 0.60, 'auto'],
+      ['pole',   null, () => true,                                    [0, 0, 0]],
+    ],
+  },
+
   m_excavator: {
     src: 'out/m3d/excavator/image-01a011c1.glb',
     out: 'excavator_v2.glb',
@@ -788,30 +856,70 @@ if (mode === 'inspect' || mode === 'check') {
       for (let i = 0; i < pending.length; i++) {
         const [[name, parent, , pv, restZ, bind], n] = pending[i];
         if (parent && !byName[parent]) continue;
-        const g = new THREE.Group(); g.name = name;
+        // FLATTEN: a LEAF node IS its mesh, rather than a group wrapping one.
+        //
+        // The wrapper exists so a node can carry a pivot, a rest rotation and
+        // children, and for a machine that is right — the game only ever
+        // rotates those nodes. But `pieces` are shown, hidden and RECOLOURED:
+        // js/flag.js does `nodes.lamp.material.color.set(...)`, and a Group
+        // has no `.material`, so the checkpoint threw the first time it was
+        // lit. Nothing caught it because no node-rig piece had ever been live
+        // — every one of them was still `placeholder`, so the contract
+        // between what slice.mjs emits and what the game does with it had
+        // never once been exercised.
+        //
+        // Opt-in per spec, and only for a node with no children and no bind
+        // holder, so all fifteen machine rigs cut byte-identical. A Mesh is
+        // an Object3D: it takes the same position, rotation and parenting.
+        const isLeaf = spec.flatten && !bind && sub[n] &&
+          !spec.nodes.some((nn) => nn[1] === name);
+        const g = isLeaf
+          ? null                                  // built below, once its geometry is
+          : new THREE.Group();
+        if (g) g.name = name;
         const pp = parent ? pivots[parent] : [0, 0, 0];
-        g.position.set((pv[0] - pp[0]) * S, (pv[1] - pp[1]) * S, (pv[2] - pp[2]) * S);
+        const place = [(pv[0] - pp[0]) * S, (pv[1] - pp[1]) * S, (pv[2] - pp[2]) * S];
           // REST ROTATION, all three axes. A T-posed arm lies along z and the
         // game swings arms about z — rotating it about its own axis does
         // nothing. It has to be brought DOWN to the side first, which is a
         // rotation about x, and only then do the game's z swings mean
         // anything. A scalar z-only rest could not express that.
         const rot = Array.isArray(restZ) ? restZ : [0, 0, restZ || 0];
-        g.rotation.set(rot[0], rot[1], rot[2]);
+        let node = g;
         if (sub[n]) {
-          const gg = window.capHoles(THREE, sub[n].clone());
+          // CAPPING IS FOR A SEAM, NOT FOR A FOOTPRINT. Pulling a wheel off
+          // an axle leaves a coin-sized boundary that would read as a black
+          // disc, and fanning it closed is right. But when the removed part
+          // was WELDED ACROSS A SPAN — the gantry's cloth is fused to its
+          // beam and to both uprights — the "hole" is not a hole, it is the
+          // whole area the part used to occupy, and the fan fills the bay
+          // with a solid grey web. That is what `cap: false` is for; the
+          // boundary it leaves open sits behind the beam and is never seen.
+          const gg = spec.cap === false
+            ? sub[n].clone()
+            : window.capHoles(THREE, sub[n].clone());
           gg.translate(-pv[0], -pv[1], -pv[2]);   // pivot to the node origin
           gg.scale(S, S, S);                       // then to world size, baked
-          const mesh = new THREE.Mesh(gg, material); mesh.name = name + '_mesh';
-          if (bind) {
-            // geometry-only holder: the game's angle composes OUTSIDE this
-            const h = new THREE.Group(); h.name = name + '_bind';
-            h.rotation.set(bind[0], bind[1], bind[2]);
-            h.add(mesh); g.add(h);
-          } else g.add(mesh);
+          const mesh = new THREE.Mesh(gg, material);
+          if (isLeaf) {
+            mesh.name = name;                      // the node IS the mesh
+            node = mesh;
+          } else {
+            mesh.name = name + '_mesh';
+            if (bind) {
+              // geometry-only holder: the game's angle composes OUTSIDE this
+              const h = new THREE.Group(); h.name = name + '_bind';
+              h.rotation.set(bind[0], bind[1], bind[2]);
+              h.add(mesh); g.add(h);
+            } else g.add(mesh);
+          }
         }
-        (parent ? byName[parent] : root).add(g);
-        byName[name] = g;
+        // a flattened node with NO geometry still has to exist for its name
+        if (!node) { node = new THREE.Group(); node.name = name; }
+        node.position.set(place[0], place[1], place[2]);
+        node.rotation.set(rot[0], rot[1], rot[2]);
+        (parent ? byName[parent] : root).add(node);
+        byName[name] = node;
         pending.splice(i--, 1);
       }
     }

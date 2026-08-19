@@ -36,6 +36,10 @@ const ROLE = {
   DARK: PAL.DARK, INK: PAL.INK,
   STEEL0: PAL.STEEL[0], STEEL1: PAL.STEEL[1], STEEL2: PAL.STEEL[2], STEEL3: PAL.STEEL[3],
   EARTH0: PAL.EARTH[0], EARTH1: PAL.EARTH[1], EARTH2: PAL.EARTH[2], EARTH3: PAL.EARTH[3],
+  // the two state colours the PIECES need and the machines never did: a flag
+  // cloth is HAZARD or MACHINE and a lit checkpoint is GREEN, and js/flag.js
+  // already builds its code placeholders from exactly these two
+  HAZARD: PAL.HAZARD, GREEN: PAL.GREEN,
 };
 
 // The cast is "painted wood and pressed steel" (§3.3), so its flat palette
@@ -103,7 +107,7 @@ export async function loadManifest() {
   // token never learns the new one exists and keeps the old art forever,
   // with every asset URL inside it still perfectly correct. This shipped at
   // `?v=1` for eleven versions. The smoke gate now asserts the two agree.
-  const res = await fetch(new URL('manifest.json?v=25', BASE));
+  const res = await fetch(new URL('manifest.json?v=26', BASE));
   manifest = await res.json();
   return manifest;
 }
