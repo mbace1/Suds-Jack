@@ -13,6 +13,7 @@ import { RouteSet, resetRouteIds } from './routes.js?v=1';
 import { TripSet, resetTripIds } from './trips.js?v=1';
 import { Pressure } from './pressure.js?v=1';
 import { EventQueue } from './events.js?v=1';
+import { plan } from './path.js?v=1';
 
 export function createFlow({ city, seed = 1, days = 7, demand, hooks = {}, maxRoutes = 4 }) {
   resetRouteIds();
@@ -115,6 +116,16 @@ export function createFlow({ city, seed = 1, days = 7, demand, hooks = {}, maxRo
     // capacity as everyone else. There is no second network to put it on.
     inject(origin, dest, payload, opts = {}) {
       return trips.spawn({ origin, dest, payload, bornTick: clock.tick, ...opts });
+    },
+
+    // Can anything get from here to there on the lines as they stand? A
+    // product needs to ask BEFORE it commits something to a trip: an ordinary
+    // traveller who cannot be carried is a person waiting on a platform, which
+    // is the game working, but a payload that cannot be carried is a payload
+    // its owner has already paid for. Same planner the carriers use, so the
+    // answer cannot disagree with what actually happens.
+    reaches(origin, dest) {
+      return origin === dest || !!plan(graph, routes, origin, dest);
     },
 
     // A compact, comparable fingerprint of movement. Two runs of one seed must

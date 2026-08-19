@@ -1,16 +1,16 @@
 // Piritori → Eden — the product. Owns market, debt, heat, trust, narrative and
 // the night presentation; borrows every moving part from flow-core.
 
-import { createFlow } from '../../flow-core/sim.js?v=1';
-import { KALLIO } from '../../flow-core/city.js?v=1';
-import { FlowRenderer } from '../../flow-core/render.js?v=1';
+import { createFlow } from '../../flow-core/sim.js?v=2';
+import { KALLIO } from '../../flow-core/city.js?v=2';
+import { FlowRenderer } from '../../flow-core/render.js?v=2';
 import { RouteDrawer } from '../../flow-core/input.js?v=1';
-import { THEME } from './palette.js?v=1';
-import { Market, CLASSES } from './market.js?v=2';
+import { THEME, PAL } from './palette.js?v=2';
+import { Market, CLASSES } from './market.js?v=3';
 import { Heat, THRESHOLD } from './heat.js?v=1';
-import { CONTACTS, LINES, MISSIONS, Cast, ending } from './narrative.js?v=1';
-import { startFight as buildFight, WEAPONS, consequence } from './fight.js?v=3';
-import { FightView } from './fightview.js?v=2';
+import { CONTACTS, LINES, MISSIONS, Cast, ending } from './narrative.js?v=2';
+import { startFight as buildFight, WEAPONS, ITEMS, consequence } from './fight.js?v=4';
+import { FightView } from './fightview.js?v=9';
 
 const $ = id => document.getElementById(id);
 const eur = n => `${Math.round(n).toLocaleString('fi-FI')} €`;
@@ -21,6 +21,8 @@ let sel = null, draft = null, over = null, drained = 0, pendingChoice = null;
 let fight = null, nextFightAt = 900, fightView = null, armed = null;
 let msgs = [], landed = 0;
 let dealToday = null;            // one bargain a day, from one contact
+let roomWith = null;             // whose place you are standing in
+let roomImg = null;              // his interior, once it has loaded
 
 function say(...lines) {
   for (const l of lines) msgs.unshift(l);
@@ -110,14 +112,22 @@ const edgeName = id => {
 // whatever the price is WHEN IT LANDS.
 function send(cls, n, from, to) {
   if (n <= 0) return;
-  const { n: held, fake } = market.hold(cls, n);
-  if (!held) return;
+  // ASK BEFORE TAKING. A consignment to somewhere no line reaches used to be
+  // accepted in full: the goods left the pile, the trip never planned, nothing
+  // ever arrived, and the money was gone with no message at all — a whole
+  // day's cash could be posted into a hole in one tap. The warning that did
+  // exist asked whether a line called at the ORIGIN, which is the half of the
+  // question that is never the problem.
+  if (!flow.reaches(from, to)) {
+    say(`Nothing you have drawn reaches ${label(to)}. It stays in the bag.`);
+    return;
+  }
   // the payload stays OPAQUE to the core — it is a tag the core copies and
   // never reads, which is what lets flow-core carry groceries in Toko Move
+  const { n: held, fake } = market.hold(cls, n);
+  if (!held) return;
   const t = flow.inject(from, to, { cls, n: held, fake });
-  if (!t.legs && !flow.routes.list.some(r => r.serves(from))) {
-    say(`No line calls at ${label(from)}. It waits on the pavement.`);
-  }
+  if (!t.legs) say(`It waits at ${label(from)} for something to carry it.`);
   say(`${held} ${cls} away toward ${label(to)}.`);
   renderHud(); renderSheet();
 }
@@ -162,6 +172,137 @@ function rollDeal(day) {
     const d = market.dealFor(day, c.id, cast.trust[c.id] ?? 0);
     if (d) { dealToday = { ...d, at: c.at, who: c.name }; return; }
   }
+}
+
+// ── the room ────────────────────────────────────────────────────────────
+// A place you stand in rather than a tooltip you read. Everything in here
+// already existed and was scattered: the bargain was a row at the bottom of a
+// price table, and a contact was two lines in a hover. The targets put the
+// person in a room and give you two or three things to do about it, which is
+// also where the ITEM-shaped question — what can you actually spend money on
+// besides stock — finally gets an answer.
+function openRoom(id) {
+  const c = CONTACTS.find(x => x.id === id);
+  if (!c || over) return;
+  roomWith = c;
+  flow.clock.setPaused(true);
+  hidePop();
+  $('room').hidden = false;
+  paintRoom();
+  // his room, if it has been drawn. Additive, like everything else under
+  // piritori/art/: with the file missing the card is just the person and the
+  // words, and nothing throws.
+  const art = $('roomArt');
+  art.hidden = true; roomImg = null;
+  roomPicture(c.id).then(img => {
+    if (!img || roomWith?.id !== c.id) return;
+    art.hidden = false;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    const w = art.clientWidth * dpr, h = w * 9 / 16;
+    art.width = w; art.height = h;
+    const g = art.getContext('2d');
+    const s = Math.max(w / img.width, h / img.height);
+    g.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2,
+      img.width * s, img.height * s);
+    // the portrait is CUT OUT OF THE SAME PICTURE, never drawn beside it. A
+    // silhouette placeholder next to finished art does not read as a
+    // placeholder, it reads as a broken image — and a crop cannot drift out of
+    // register with the room behind it, because it IS the room.
+    roomImg = img;
+    facePortrait($('roomFace'), img, c.face);
+  });
+}
+
+// One promise per room, cached — reopening a door must not refetch a picture.
+const ROOMS = new Map();
+function roomPicture(id) {
+  if (!ROOMS.has(id)) {
+    ROOMS.set(id, new Promise(res => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = () => res(null);
+      img.src = `art/rooms/${id}.webp?v=1`;
+    }));
+  }
+  return ROOMS.get(id);
+}
+
+function closeRoom() {
+  roomWith = null; roomImg = null;
+  $('room').hidden = true;
+  if (!over) flow.clock.setPaused(false);
+  renderHud(); renderSheet();
+}
+
+function paintRoom() {
+  const c = roomWith;
+  if (!c) return;
+  const t = cast.trust[c.id] ?? 0;
+  $('roomWho').textContent = c.name.toUpperCase();
+  $('roomRole').textContent = c.role;
+  $('roomLine').textContent = c.said
+    || (t >= 3 ? 'He puts the cloth down when you come in.'
+      : t >= 1 ? 'He nods, and keeps working.'
+        : 'He looks up, and takes his time about it.');
+
+  if (roomImg) facePortrait($('roomFace'), roomImg, c.face);
+  else drawSilhouette($('roomFace'), { side: 'you', name: c.name });
+
+  const box = $('roomBtns');
+  box.innerHTML = '';
+  // label on one line, what it costs on the next — the targets price every
+  // choice on its own face, so weighing two of them never needs a third screen
+  const add = (label, note, fn, cls = 'btn') => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = cls;
+    b.innerHTML = `<b>${esc(label)}</b>${note ? `<i>${esc(note)}</i>` : ''}`;
+    b.onclick = fn; box.append(b); return b;
+  };
+
+  // 1. his own offer, if tonight's is his. This is the bargain, moved out of
+  //    the price table and into the room where the man is standing.
+  if (dealToday && dealToday.seller === c.id && !dealToday.taken) {
+    const p = market.dealPrice(c.at, dealToday);
+    add(`TAKE THE ${dealToday.good.toUpperCase()}`, `${dealToday.n} for ${eur(p * dealToday.n)}`, () => {
+      const r = market.takeDeal(c.at, dealToday);
+      if (!r.n) { say('You cannot cover it.'); return; }
+      dealToday.taken = true;
+      say(`${r.n} ${dealToday.good} off ${c.name} for ${eur(r.spent)}. He does not count it twice.`);
+      paintRoom(); renderHud();
+    }, 'btn prime');
+    const tell = document.createElement('p');
+    tell.className = 'said';
+    tell.textContent = market.dealTell(dealToday)
+      + (dealToday.appraised ? ` — ${dealToday.appraised}` : '');
+    box.append(tell);
+  }
+
+  // 2. ask him about SOMEBODY ELSE'S offer. You cannot ask the man selling you
+  //    a bag whether the bag is real; a second relationship is the price of
+  //    knowing, and that is the point of having more than one.
+  if (dealToday && dealToday.seller !== c.id && !dealToday.appraised) {
+    const cost = market.appraisalCost(t);
+    add(`ASK ABOUT ${dealToday.who.split(' ')[0].toUpperCase()}'S OFFER`, eur(cost), () => {
+      const r = market.appraise(dealToday, t);
+      if (!r.told && r.why === 'you cannot cover it') { say('You cannot cover it.'); return; }
+      dealToday.appraised = r.told
+        ? (r.cut ? `${c.name} says it is cut.` : `${c.name} says it is clean.`)
+        : `${c.name} took the money and changed the subject.`;
+      say(dealToday.appraised);
+      paintRoom(); renderHud();
+    });
+  }
+
+  // what you were told, said in the room you were told it in. Without this the
+  // money left and nothing on screen changed, which reads as a broken button.
+  if (dealToday?.appraised && dealToday.seller !== c.id) {
+    const p = document.createElement('p');
+    p.className = 'said';
+    p.textContent = dealToday.appraised;
+    box.append(p);
+  }
+
+  add('LEAVE', '', closeRoom);
 }
 
 function settle(day) {
@@ -356,6 +497,7 @@ function startFight(kind, tick) {
     $('board').addEventListener('touchend', onBoardTap, { passive: true });
   }
   fightView.resize();
+  fightView.useArena(kind);      // the ground this one is happening on
   // Every roster has somebody faster than Aatami, so the first actor is
   // usually an enemy — and paintFight() draws no controls when the actor is
   // hostile. Without this the panel opened dead and stayed dead forever.
@@ -370,9 +512,16 @@ function onBoardTap(e) {
   const p = e.changedTouches?.[0] || e;
   const u = fightView.hit(fight, p.clientX - r.left, p.clientY - r.top);
   if (!u) return;
-  const legal = fight.targets(fight.actor, armed).some(t => t.id === u.id);
+  // `!bottle` means the armed thing is an ITEM rather than a weapon. One
+  // variable rather than two, so there is no state where both are armed.
+  const item = armed.startsWith('!') ? armed.slice(1) : null;
+  const legal = item
+    ? fight.itemTargets(fight.actor).some(t => t.id === u.id)
+    : fight.targets(fight.actor, armed).some(t => t.id === u.id);
   if (!legal) return;
-  fight.act({ kind: 'attack', weapon: armed, target: u.id });
+  fight.act(item
+    ? { kind: 'throw', item, target: u.id }
+    : { kind: 'attack', weapon: armed, target: u.id });
   armed = null; fightView.arm(null);
   paintFight();
   stepEnemies();
@@ -391,9 +540,105 @@ function stepEnemies() {
   paintFight();
 }
 
+// The acting unit's panel. Segments rather than a smooth bar, because the
+// question a player actually has is "how many more of those can he take", and
+// a bar you can count answers it while a percentage does not.
+function paintUnit(u) {
+  const box = $('fightUnit');
+  if (!u || u.prop) { box.hidden = true; return; }
+  box.hidden = false;
+  $('fuName').textContent = u.name.toUpperCase() + (u.side === 'you' ? '' : ' — THEIRS');
+  $('fuHp').textContent = `♥ ${Math.max(0, u.hp)} / ${u.maxHp}`;
+  const beads = (el, now, max, on, off) => {
+    el.innerHTML = '';
+    const n = Math.min(8, max);
+    const lit = Math.round((Math.max(0, now) / max) * n);
+    for (let i = 0; i < n; i++) {
+      const b = document.createElement('b');
+      b.style.background = i < lit ? on : off;
+      el.append(b);
+    }
+  };
+  // guard is a flat reduction rather than a pool, so it shows what it IS —
+  // how much is coming off each hit — instead of pretending to be a meter
+  beads($('fuGuard'), (u.guard || 0) + (u.bracing ? 2 : 0), 5, PAL.draft, '#1d2630');
+  beads($('fuNerve'), u.nerve, u.maxNerve, PAL.magenta, '#2a1d27');
+  drawFace($('fightFace'), u);
+}
+
+// A head out of the interior: `face` is [cx, cy, r] in fractions of the
+// picture, so moving a character in a regenerated interior is one triple in
+// narrative.js and nothing else.
+function facePortrait(cv, img, face) {
+  const [cx, cy, r] = face || [0.5, 0.42, 0.14];
+  const side = Math.min(img.width, img.height) * r * 2;
+  const g = cv.getContext('2d');
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.drawImage(img,
+    img.width * cx - side / 2, img.height * cy - side / 2, side, side,
+    0, 0, cv.width, cv.height);
+}
+
+// The unit panel shows THE MAN, full length — the same sprite standing on the
+// board, not a portrait of him. Your side is drawn from behind, so a
+// head-and-shoulders crop would be the back of a head; and a second picture of
+// a character is a second thing that can disagree with the first.
+const FIG = new Map();
+function figSprite(u) {
+  const path = `art/fig/${u.side === 'you' ? 'you' : 'them'}-${u.downed ? 'down' : 'stand'}.png?v=1`;
+  if (FIG.has(path)) return FIG.get(path);
+  FIG.set(path, null);
+  const img = new Image();
+  // and repaint when it lands. A sprite loaded after the panel was painted is
+  // a panel that keeps the placeholder until something else happens to redraw
+  // it — which on the first frame of a fight is nothing at all.
+  img.onload = () => { FIG.set(path, img); if (fight) paintUnit(fight.actor); };
+  img.src = path;
+  return null;
+}
+
+function drawFace(cv, u) {
+  const art = figSprite(u);
+  if (art) {
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.fillStyle = u.side === 'you' ? '#141b22' : '#1d1416';
+    g.fillRect(0, 0, cv.width, cv.height);
+    const s = Math.min(cv.width / art.width, cv.height / art.height) * 0.92;
+    const w = art.width * s, h = art.height * s;
+    g.drawImage(art, (cv.width - w) / 2, cv.height - h, w, h);
+    return;
+  }
+  drawSilhouette(cv, u);
+}
+
+// No character art on disk, so the portrait is drawn: the same flat silhouette
+// in a hard line the board falls back to, tinted by side. It is a placeholder
+// that obeys the house rule rather than a grey box that admits nothing was made.
+function drawSilhouette(cv, u) {
+  const g = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = u.side === 'you' ? '#141b22' : '#1d1416';
+  g.fillRect(0, 0, W, H);
+  // seeded off the name, so four contacts are four silhouettes rather than one
+  // drawn four times — a placeholder may be plain but it must not be anonymous
+  const seed = [...(u.name || '')].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  g.fillStyle = u.side === 'you' ? PAL.ink : '#b4655a';
+  g.strokeStyle = '#0b0e13';
+  g.lineWidth = 3;
+  g.beginPath(); g.arc(W / 2, H * 0.42, W * (0.19 + (seed % 4) * 0.015), 0, Math.PI * 2);
+  g.fill(); g.stroke();
+  g.beginPath();
+  g.moveTo(W * 0.18, H); g.lineTo(W * 0.28, H * 0.68);
+  g.lineTo(W * 0.72, H * 0.68); g.lineTo(W * 0.82, H);
+  g.closePath(); g.fill(); g.stroke();
+}
+
 function paintFight() {
   if (!fight) return;
   fightView.draw(fight);
+  paintUnit(fight.actor);
   $('fightWho').textContent = fight.foe.name.toUpperCase();
   $('fightRound').textContent = `round ${fight.round}`;
   $('fightLog').innerHTML = '';
@@ -428,6 +673,21 @@ function paintFight() {
     b.textContent = `${w.name.toUpperCase()} · ${w.dmg[1] ? `${w.dmg[0]}–${w.dmg[1]}` : 'no damage'}`
       + (can ? (t.length ? '' : ' · nothing in reach') : ` · not from the ${u.rowName}`);
     b.onclick = () => { armed = armed === id ? null : id; fightView.arm(armed); paintFight(); };
+    box.append(b);
+  }
+  // ITEM, from the mockups and now a real thing: what is lying about on this
+  // street. Shown only while there is any left, because a permanently greyed
+  // button is a promise the game keeps failing to keep.
+  for (const o of fight.options(u).filter(o => o.kind === 'throw')) {
+    const it = ITEMS[o.item];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn wide' + (armed === `!${o.item}` ? ' prime' : '');
+    b.textContent = `THROW THE ${it.name.toUpperCase()} · ${it.dmg[0]}–${it.dmg[1]} · ${fight.items[o.item]} left`;
+    b.onclick = () => {
+      armed = armed === `!${o.item}` ? null : `!${o.item}`;
+      fightView.arm(armed); paintFight();
+    };
     box.append(b);
   }
   for (const o of fight.options(u).filter(o => o.kind === 'move')) {
@@ -543,26 +803,18 @@ function renderSheet() {
   }
   html += '</table>';
 
-  // the bargain, if tonight's is standing here
-  if (dealToday && dealToday.at === sel && !dealToday.taken) {
-    const p = market.dealPrice(sel, dealToday);
-    html += `<div class="deal"><p><strong>${esc(dealToday.who)}</strong> has ${dealToday.n}`
-      + ` ${esc(dealToday.good)} at ${p} €.</p>`
-      + `<p class="hint">${esc(market.dealTell(dealToday))}</p>`
-      + `<button class="btn" id="dealTake">TAKE IT — ${p * dealToday.n} €</button></div>`;
+  // Anybody standing here is worth walking in on. The bargain used to be a row
+  // at the bottom of this table; it lives in the room now, because a man with
+  // an offer is a person and not a line item.
+  if (contact) {
+    html += `<div class="deal"><p><strong>${esc(contact.name)}</strong> is here.`
+      + `${dealToday && dealToday.seller === contact.id && !dealToday.taken ? ' He has something for you.' : ''}</p>`
+      + `<button class="btn" id="visit">GO IN AND SEE ${esc(contact.name.split(' ')[0].toUpperCase())}</button></div>`;
   }
 
   box.innerHTML = html;
-  const take = $('dealTake');
-  if (take) {
-    take.onclick = () => {
-      const r = market.takeDeal(sel, dealToday);
-      if (!r.n) { say('You cannot cover it.'); return; }
-      dealToday.taken = true;
-      say(`${r.n} ${dealToday.good} off ${dealToday.who} for ${eur(r.spent)}. He does not count it twice.`);
-      renderHud(); renderSheet();
-    };
-  }
+  const visit = $('visit');
+  if (visit) visit.onclick = () => openRoom(contact.id);
   for (const b of box.querySelectorAll('[data-buy]')) {
     b.onclick = () => { market.buy(sel, b.dataset.buy, 5); renderHud(); renderSheet(); };
   }
@@ -634,7 +886,8 @@ window.__pt = {
   get heat() { return heat; },
   get cast() { return cast; },
   debug: {
-    boot, send, settle, finish, say, startFight,
+    boot, send, settle, finish, say, startFight, openRoom, closeRoom, paintRoom,
+    get room() { return roomWith; },
     markers, showPop, hidePop, paintFight, renderSheet,
     // SETUP ONLY (AGENTS.md §4): force tonight's offer to a known shape so a
     // gate can click it. The taking is still done by clicking the button.

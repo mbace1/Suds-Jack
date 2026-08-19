@@ -221,11 +221,22 @@ export class FlowRenderer {
       const p = this.markerPoint(flow, mk, f);
       if (!p) continue;
       const r = 9 * this.dpr;
+      ctx.globalAlpha = mk.dim ? 0.45 : 1;
+      // the targets hang a badge on a short stalk above its node, so a pin
+      // points at a place instead of covering it
+      if (theme.relief) {
+        ctx.strokeStyle = mk.color || theme.ink;
+        ctx.lineWidth = 1.5 * this.dpr;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y + r); ctx.lineTo(p.x, p.y + r + 5 * this.dpr);
+        ctx.stroke();
+      }
       ctx.fillStyle = theme.paper;
       ctx.strokeStyle = mk.color || theme.ink;
       ctx.lineWidth = 2 * this.dpr;
-      ctx.globalAlpha = mk.dim ? 0.45 : 1;
+      this.lift(ctx);
       ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      this.flat(ctx);
       ctx.fillStyle = mk.color || theme.ink;
       ctx.font = `bold ${Math.round(10 * this.dpr)}px ${theme.font}`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -252,10 +263,42 @@ export class FlowRenderer {
       ctx.fillStyle = theme.paper;
       ctx.strokeStyle = n.closed ? theme.warn : theme.ink;
       ctx.lineWidth = 2.4 * this.dpr;
+      this.lift(ctx);
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      this.flat(ctx);
 
       const g = theme.glyphFor ? theme.glyphFor(n) : '·';
       this.glyph(ctx, x, y, g, theme.ink, u);
+
+      // the torn name tag. A stop the player can trade at is worth naming ON
+      // the board — the targets do it, and until now the only way to learn a
+      // stop's name was to tap it. Drawn for the SELECTED stop and for
+      // anywhere a marker stands, so the board never becomes a wall of text.
+      const tagged = theme.relief && theme.labelFor
+        && (selected === n.id || markers.some(m => m.node === n.id));
+      if (tagged) {
+        const t = theme.labelFor(n).toUpperCase();
+        ctx.font = `${Math.round(9 * this.dpr)}px ${theme.font}`;
+        const tw = ctx.measureText(t).width + 8 * this.dpr;
+        const th = 13 * this.dpr, ty = y + r + 7 * this.dpr;   // below, always:
+        // a marker's badge hangs ABOVE its node, so the two never fight
+        this.lift(ctx, 0.7);
+        ctx.fillStyle = theme.latent;
+        ctx.beginPath();
+        // a torn edge rather than a rectangle: three shallow notches, seeded
+        // off the name so a stop's tag is the same shape every frame
+        const seed = t.charCodeAt(0) + t.length;
+        ctx.moveTo(x - tw / 2, ty);
+        ctx.lineTo(x + tw / 2, ty - (seed % 3) * 0.6 * this.dpr);
+        ctx.lineTo(x + tw / 2 - (seed % 2) * this.dpr, ty + th);
+        ctx.lineTo(x - tw / 2 + ((seed + 1) % 3) * this.dpr, ty + th - 0.8 * this.dpr);
+        ctx.closePath(); ctx.fill();
+        this.flat(ctx);
+        ctx.fillStyle = theme.ink;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(t, x, ty + th / 2);
+        ctx.textBaseline = 'alphabetic';
+      }
 
       // the queue: tiny marks, the thing you are meant to read first
       const show = Math.min(q, Math.ceil(10 * this.detail));
@@ -267,11 +310,15 @@ export class FlowRenderer {
           Math.max(1.5, u * 0.16), Math.max(1.5, u * 0.16));
       }
 
-      ctx.fillStyle = theme.dim;
-      ctx.font = `${Math.max(9, u * 0.62) | 0}px ${theme.font}`;
-      ctx.textAlign = 'center';
-      const label = theme.labelFor ? theme.labelFor(n) : n.name;
-      ctx.fillText(label, x, n.y > 52 ? y - r - 7 * this.dpr : y + r + 15 * this.dpr);
+      // the plain label, for anywhere that did not earn a tag. Two renderings
+      // of one name is how "Hakaniemi" ended up on the board twice.
+      if (!tagged) {
+        ctx.fillStyle = theme.dim;
+        ctx.font = `${Math.max(9, u * 0.62) | 0}px ${theme.font}`;
+        ctx.textAlign = 'center';
+        const label = theme.labelFor ? theme.labelFor(n) : n.name;
+        ctx.fillText(label, x, n.y > 52 ? y - r - 7 * this.dpr : y + r + 15 * this.dpr);
+      }
     }
   }
 
@@ -284,6 +331,20 @@ export class FlowRenderer {
     const t = Math.min(1, (c.progress + alpha) / c.legTime);
     return { x: f.x(a.x + (b.x - a.x) * t), y: f.y(a.y + (b.y - a.y) * t) };
   }
+
+  // RELIEF. `theme.relief` is a product's opt-in to the cut-paper look: every
+  // laid-on element gets the drop shadow of a piece of card sitting above the
+  // one below it. It lives here rather than in the product because only the
+  // renderer knows the draw order, and it lives behind a THEME FLAG rather than
+  // a constant because flow-core carries no product's look — Toko Move's day
+  // map is flat paper and must stay flat by saying nothing.
+  lift(ctx, k = 1) {
+    if (!this.theme.relief) return;
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = 5 * this.dpr * k;
+    ctx.shadowOffsetY = 2.5 * this.dpr * k;
+  }
+  flat(ctx) { ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.shadowColor = 'transparent'; }
 
   glyph(ctx, x, y, ch, col, u) {
     ctx.fillStyle = col;
