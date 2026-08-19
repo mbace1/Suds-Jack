@@ -3,232 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#000000">
   <title>Hyper Dagger</title>
-  <link rel="manifest" href="manifest.webmanifest?v=61">
+  <link rel="manifest" href="manifest.webmanifest?v=63">
   <link rel="icon" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; touch-action: none; }
-    #canvas-game {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-      image-rendering: pixelated;
-    }
-    #canvas-ui {
-      position: fixed;
-      top: 0; left: 0;
-      pointer-events: none;
-    }
-    #hud {
-      position: fixed;
-      top: max(14px, env(safe-area-inset-top));
-      left: 50%;
-      transform: translateX(-50%);
-      color: #f0f0f0;
-      font-family: monospace;
-      text-align: center;
-      pointer-events: none;
-      user-select: none;
-      text-shadow: 0 0 16px rgba(200, 30, 30, 0.8);
-    }
-    #timer { font-size: 34px; font-weight: bold; }
-    #kills { font-size: 13px; color: #9a9a9a; }
-    #gems { font-size: 13px; color: #c81e1e; margin-top: 2px; }
-    #style {
-      margin-top: 6px;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    #style .row {
-      display: flex;
-      align-items: baseline;
-      justify-content: center;
-      gap: 6px;
-    }
-    #styleRank {
-      font-size: 20px;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
-    #styleMult { font-size: 12px; color: #9a9a9a; }
-    #styleBar {
-      width: 92px;
-      height: 3px;
-      margin: 3px auto 0;
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    #styleFill {
-      height: 100%;
-      width: 0%;
-      background: #f0f0f0;
-      transition: width 0.12s linear;
-    }
-    #pauseBtn {
-      position: fixed;
-      top: max(12px, env(safe-area-inset-top));
-      right: max(12px, env(safe-area-inset-right));
-      width: 42px; height: 42px;
-      font-family: monospace;
-      font-size: 16px;
-      color: #f0f0f0;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 8px;
-      cursor: pointer;
-      user-select: none;
-      display: none;
-    }
-    #pauseBtn:hover { background: rgba(255, 255, 255, 0.14); }
-    /* During a run, leave only the clock and the weapon in the frame. The
-       shell controls remain reachable, but retreat until the player asks. */
-    body.in-run #timer { font-size: 27px; letter-spacing: 2px; }
-    body.in-run #kills,
-    body.in-run #gems,
-    body.in-run #style { display: none !important; }
-    body.in-run #pauseBtn {
-      opacity: 0.16;
-      background: transparent;
-      border-color: rgba(255, 255, 255, 0.18);
-      transition: opacity 0.18s, background 0.18s;
-    }
-    body.in-run #pauseBtn:hover,
-    body.in-run #pauseBtn:focus-visible { opacity: 0.9; }
-    body.in-run .arcade-home,
-    body.in-run .toko-signature {
-      opacity: 0.08 !important;
-      transition: opacity 0.18s;
-    }
-    body.in-run .arcade-home:hover,
-    body.in-run .arcade-home:focus-visible,
-    body.in-run .toko-signature:hover,
-    body.in-run .toko-signature:focus-visible { opacity: 0.9 !important; }
-    #toast {
-      position: fixed;
-      top: 22%; left: 50%;
-      transform: translateX(-50%);
-      color: #f0f0f0;
-      font-family: monospace;
-      font-size: 22px;
-      letter-spacing: 3px;
-      pointer-events: none;
-      user-select: none;
-      text-shadow: 0 0 24px rgba(200, 30, 30, 0.9);
-      opacity: 0;
-      transition: opacity 0.25s;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #020202; color: #e8dcc8; font-family: system-ui, sans-serif; }
+    #canvas-game, #canvas-ui { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+    #canvas-ui { pointer-events: none; }
+    #msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: rgba(0,0,0,0.72); z-index: 10; padding: 1.5rem; }
+    #msg h1 { font-size: 2.2rem; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+    #msg .sub, #msg .keys, #msg .go, #msg .history, #msg .breakdown, #msg .cause { opacity: 0.85; margin: 0.35rem 0; max-width: 36rem; }
+    #msg .big { font-size: 1.25rem; margin: 0.6rem 0; }
+    #msg button { margin: 0.4rem; padding: 0.55rem 1rem; background: #2a221c; color: #e8dcc8; border: 1px solid #5a4a3a; cursor: pointer; font: inherit; }
+    #msg button.on, #msg button.gfocus { border-color: #d8412f; background: #3a2820; }
+    #timer, #kills, #gems, #style { position: absolute; z-index: 5; pointer-events: none; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000; }
+    #timer { top: 0.8rem; left: 50%; transform: translateX(-50%); font-size: 1.6rem; letter-spacing: 0.06em; }
+    #kills, #gems { top: 0.9rem; font-size: 0.9rem; opacity: 0.75; }
+    #kills { left: 1rem; } #gems { right: 1rem; }
+    #style { bottom: 1.2rem; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; text-align: center; }
+    #styleRank { font-size: 1.4rem; font-weight: 700; } #styleMult { font-size: 0.85rem; opacity: 0.8; }
+    #styleFill { height: 3px; width: 0; background: #c81e1e; margin: 0.2rem auto 0; max-width: 8rem; }
+    #toast { position: absolute; top: 18%; left: 50%; transform: translateX(-50%); z-index: 8; opacity: 0; transition: opacity 0.2s; pointer-events: none; letter-spacing: 0.1em; text-shadow: 0 1px 3px #000; }
     #toast.show { opacity: 1; }
-    #crosshair {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: #f0f0f0;
-      font-family: monospace;
-      font-size: 18px;
-      pointer-events: none;
-      user-select: none;
-      display: none;
-      text-shadow: 0 0 8px rgba(200, 30, 30, 0.9);
-    }
-    #vignette {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background: radial-gradient(ellipse at center, transparent 30%, rgba(160, 10, 10, 0.8) 100%);
-      opacity: 0;
-      transition: opacity 0.4s;
-    }
-    #msg {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: min(92vw, 640px);
-      color: #e8e8e8;
-      font-family: monospace;
-      text-align: center;
-      pointer-events: none;
-      user-select: none;
-      line-height: 1.5;
-      text-shadow: 0 0 24px rgba(200, 30, 30, 0.8);
-      display: none;
-    }
-    #msg h1 { font-size: 44px; letter-spacing: 6px; color: #ffffff; }
-    #msg h1.dead { color: #c81e1e; }
-    #msg .sub { color: #9a9a9a; margin-bottom: 12px; }
-    #msg .big { font-size: 26px; color: #ffffff; }
-    #msg .cause { font-size: 13px; color: #c81e1e; margin-top: 4px; }
-    #msg .breakdown { font-size: 11px; color: #8a8a8a; margin-top: 6px; }
-    #msg .history { font-size: 11px; color: #6a6a6a; margin-top: 10px; }
-    #msg .keys { font-size: 12px; opacity: 0.8; margin-top: 12px; }
-    #msg .go { margin-top: 16px; color: #c81e1e; animation: pulse 1.2s ease-in-out infinite; }
-    #modeBtn, #msg button.opt {
-      pointer-events: auto;
-      cursor: pointer;
-      margin: 4px 3px 0;
-      padding: 8px 14px;
-      font-family: monospace;
-      font-size: 12px;
-      color: #f0f0f0;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 6px;
-    }
-    #modeBtn:hover, #msg button.opt:hover { background: rgba(255, 255, 255, 0.14); }
-    #msg input#initials {
-      pointer-events: auto;
-      width: 4ch;
-      padding: 2px 4px;
-      font-family: monospace;
-      font-size: 12px;
-      text-align: center;
-      text-transform: uppercase;
-      color: #f0f0f0;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 4px;
-    }
-    #msg button.opt.on {
-      color: #fff;
-      border-color: #c81e1e;
-      background: rgba(200, 30, 30, 0.25);
-    }
-    #msg button.gfocus {
-      border-color: #c81e1e;
-      box-shadow: 0 0 12px rgba(200, 30, 30, 0.7);
-      background: rgba(200, 30, 30, 0.35);
-    }
-    #msg .optrow { margin-top: 8px; }
-    #msg .optrow span {
-      display: inline-block;
-      min-width: 64px;
-      font-size: 12px;
-      color: #9a9a9a;
-    }
-    @keyframes pulse { 50% { opacity: 0.35; } }
+    #crosshair { display: none; }
+    #pauseBtn { position: absolute; top: 0.7rem; right: 0.7rem; z-index: 6; background: transparent; border: 0; color: #e8dcc8; opacity: 0.35; cursor: pointer; font-size: 1.2rem; }
+    #pauseBtn:hover { opacity: 1; }
+    #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(120,10,10,0.55) 100%); opacity: 0; z-index: 4; transition: opacity 0.15s; }
+    body.in-run #msg { display: none; }
   </style>
 </head>
 <body>
   <canvas id="canvas-game"></canvas>
   <canvas id="canvas-ui"></canvas>
-  <div id="hud">
-    <div id="timer">0.0</div>
-    <div id="kills">0 kills</div>
-    <div id="gems">◆ 0 · LV 1</div>
-    <div id="style">
-      <div class="row"><span id="styleRank"></span><span id="styleMult"></span></div>
-      <div id="styleBar"><div id="styleFill"></div></div>
-    </div>
-  </div>
-  <div id="toast"></div>
-  <button id="pauseBtn">&#10074;&#10074;</button>
-  <div id="crosshair">+</div>
   <div id="vignette"></div>
+  <div id="timer">0.0</div>
+  <div id="kills">0 kills</div>
+  <div id="gems">◆ 0 · LV 1</div>
+  <div id="style"><div id="styleRank"></div><div id="styleMult"></div><div id="styleFill"></div></div>
+  <div id="toast"></div>
+  <div id="crosshair">+</div>
+  <button id="pauseBtn" title="Pause">⏸</button>
   <div id="msg"></div>
-
   <script type="importmap">
   {
     "imports": {
@@ -237,20 +54,13 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=61"></script>
+  <script type="module" src="js/main.js?v=63"></script>
   <script>
-    // Offline install: same ?v= discipline as the modules — the token flows
-    // into the worker and names its cache, so each release rotates cleanly.
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=61').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=63').catch(() => {});
     }
   </script>
-  <!-- the arcade shell: a home button and a controller way back -->
   <script type="module" src="../hub/shell.js?v=17"></script>
-
-  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD.
-       `counter: true` makes it the way to the counter on the hub; on a
-       touchscreen it stays inert, because that corner is the left stick. See ../toko/BRAND.md -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';
     sign({ corner: 'bottom-left', counter: true });

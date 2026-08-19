@@ -1,7 +1,7 @@
 // Toko Move — keep a growing city moving through one day.
 // Same core, same city, same capacity. Warm, readable, no hard failure.
 
-import { createFlow } from '../../flow-core/sim.js?v=1';
+import { createFlow } from '../../flow-core/sim.js?v=2';
 import { KALLIO } from '../../flow-core/city.js?v=1';
 import { FlowRenderer } from '../../flow-core/render.js?v=1';
 import { RouteDrawer } from '../../flow-core/input.js?v=1';

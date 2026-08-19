@@ -9,7 +9,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { createFlow } from '../sim.js?v=1';
+import { createFlow } from '../sim.js?v=2';
 import { KALLIO, project } from '../city.js?v=1';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -204,6 +204,30 @@ console.log('\nflow-core contract\n');
   ok('and every node has coordinates to check',
     KALLIO.nodes.every(n => KALLIO.source[n.id]),
     KALLIO.nodes.filter(n => !KALLIO.source[n.id]).map(n => n.id).join());
+}
+
+// ── reaches(): the question a product must be able to ask BEFORE it commits
+// something it has paid for. Piritori shipped for a while without it: a
+// consignment to a district no line touched took the goods, planned no trip,
+// arrived nowhere and said nothing, so a whole day's cash could be posted into
+// a hole in one tap. The planner already knew; there was no way to ask it.
+{
+  const f = createFlow({ city: KALLIO, seed: 5, days: 7, demand: DEMAND });
+  const line = ['hakaniemi', 'kuudeslinja', 'kirkko', 'karhupuisto'];
+  f.addRoute('tram', line);
+  ok('two stops on one line reach each other', f.reaches('hakaniemi', 'karhupuisto'));
+  ok('and it is symmetric — a line runs both ways',
+    f.reaches('karhupuisto', 'hakaniemi'));
+  ok('somewhere to itself is always reachable', f.reaches('kirkko', 'kirkko'));
+  const off = [...f.graph.nodes.keys()].find(id => !line.includes(id));
+  ok(`nothing reaches ${off}, which no line calls at`, !f.reaches('hakaniemi', off));
+  ok('and it does not reach back either', !f.reaches(off, 'hakaniemi'));
+  // and the answer must move when the network does, or a product caches a lie.
+  // torkkelinmaki is only on WALK edges, which is the point of picking it: the
+  // mode a line is drawn in decides whether a stop can be served at all.
+  const r = f.addRoute('walk', ['karhupuisto', off]);
+  ok(`a line can actually be drawn to it${r.error ? ` — ${r.error}` : ''}`, !r.error);
+  ok('and drawing it makes it reachable', f.reaches('hakaniemi', off));
 }
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`);

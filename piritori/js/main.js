@@ -1,7 +1,7 @@
 // Piritori → Eden — the product. Owns market, debt, heat, trust, narrative and
 // the night presentation; borrows every moving part from flow-core.
 
-import { createFlow } from '../../flow-core/sim.js?v=1';
+import { createFlow } from '../../flow-core/sim.js?v=2';
 import { KALLIO } from '../../flow-core/city.js?v=1';
 import { FlowRenderer } from '../../flow-core/render.js?v=1';
 import { RouteDrawer } from '../../flow-core/input.js?v=1';
@@ -113,14 +113,22 @@ const edgeName = id => {
 // whatever the price is WHEN IT LANDS.
 function send(cls, n, from, to) {
   if (n <= 0) return;
-  const { n: held, fake } = market.hold(cls, n);
-  if (!held) return;
+  // ASK BEFORE TAKING. A consignment to somewhere no line reaches used to be
+  // accepted in full: the goods left the pile, the trip never planned, nothing
+  // ever arrived, and the money was gone with no message at all — a whole
+  // day's cash could be posted into a hole in one tap. The warning that did
+  // exist asked whether a line called at the ORIGIN, which is the half of the
+  // question that is never the problem.
+  if (!flow.reaches(from, to)) {
+    say(`Nothing you have drawn reaches ${label(to)}. It stays in the bag.`);
+    return;
+  }
   // the payload stays OPAQUE to the core — it is a tag the core copies and
   // never reads, which is what lets flow-core carry groceries in Toko Move
+  const { n: held, fake } = market.hold(cls, n);
+  if (!held) return;
   const t = flow.inject(from, to, { cls, n: held, fake });
-  if (!t.legs && !flow.routes.list.some(r => r.serves(from))) {
-    say(`No line calls at ${label(from)}. It waits on the pavement.`);
-  }
+  if (!t.legs) say(`It waits at ${label(from)} for something to carry it.`);
   say(`${held} ${cls} away toward ${label(to)}.`);
   renderHud(); renderSheet();
 }
