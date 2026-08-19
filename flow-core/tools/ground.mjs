@@ -45,7 +45,7 @@
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { project, KALLIO } from '../city.js?v=1';
+import { project, KALLIO } from '../city.js?v=2';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, '..', 'ground.js');

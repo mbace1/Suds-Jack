@@ -2,13 +2,13 @@
 // the night presentation; borrows every moving part from flow-core.
 
 import { createFlow } from '../../flow-core/sim.js?v=2';
-import { KALLIO } from '../../flow-core/city.js?v=1';
-import { FlowRenderer } from '../../flow-core/render.js?v=1';
+import { KALLIO } from '../../flow-core/city.js?v=2';
+import { FlowRenderer } from '../../flow-core/render.js?v=2';
 import { RouteDrawer } from '../../flow-core/input.js?v=1';
-import { THEME, PAL } from './palette.js?v=1';
-import { Market, CLASSES } from './market.js?v=2';
+import { THEME, PAL } from './palette.js?v=2';
+import { Market, CLASSES } from './market.js?v=3';
 import { Heat, THRESHOLD } from './heat.js?v=1';
-import { CONTACTS, LINES, MISSIONS, Cast, ending } from './narrative.js?v=1';
+import { CONTACTS, LINES, MISSIONS, Cast, ending } from './narrative.js?v=2';
 import { startFight as buildFight, WEAPONS, ITEMS, consequence } from './fight.js?v=4';
 import { FightView } from './fightview.js?v=9';
 
