@@ -101,6 +101,11 @@ adapter.
 - adult event writing;
 - campaign ending matrix;
 - hidden-layer presentation.
+- mission availability and territory unlocks;
+- recruitable crew roster, wounds and deaths;
+- weapons, armour and equipment inventory;
+- alternating-turn battle state and enemy teams;
+- location services for information, sabotage and hired operatives.
 
 ## Toko Move-only systems
 
@@ -132,10 +137,11 @@ adapter.
 2. Route drawing and deterministic pathing.
 3. Queues, capacity and one visible overload.
 4. Two product adapters with different labels, palettes and win metrics.
-5. Piritori market/debt loop.
+5. Piritori street market/debt loop and mission unlocks.
 6. Toko Move daily schedule/access loop.
-7. Shared event system.
-8. Save/replay and phone performance gate.
+7. Piritori crew roster plus one deterministic alternating-turn encounter.
+8. Shared event system.
+9. Save/replay and phone performance gate.
 
 Do not begin with a full economy, Helsinki data import, narrative database or
 final visual effects. The first proof is a route you draw, people who visibly

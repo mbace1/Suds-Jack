@@ -2,9 +2,15 @@
 
 Game, narrative and visual direction brief
 
-Status: first design anchor, 2026-08-16  
+Status: historical first design anchor, 2026-08-16
 Platform: mobile-first browser game, desktop supported  
 Product pair: Piritori → Eden + Toko Move  
+
+> **Current authority:** `GAME_DESIGN_DOCUMENT.md` is the owner-review baseline
+> for game structure, interaction modes, location encounters, 3v3 combat and the
+> vertical slice. The previous Art Bible was rejected and reset; no current art
+> direction is authoritative or part of the PR.
+> Where this historical brief conflicts with the GDD, the GDD wins.
 
 ## Direction lock
 
@@ -18,7 +24,7 @@ network carrying product, money, attention and consequences.
 
 The pitch:
 
-> Drug Wars market pressure inside a living Mini Metro / Mini Motorways-style
+> 1984 Drug Wars market pressure inside a living Mini Metro / Mini Motorways-style
 > flow map, with a street-level Helsinki narrative and a way out called Eden.
 
 The important new idea is not the drug theme by itself. It is that the legal
@@ -64,9 +70,10 @@ but conspicuous. A walking route is cheap and local but carries very little.
 
 ### 3. Few actions, hard decisions
 
-The player draws or edits routes, assigns scarce capacity, sets priorities,
-chooses offers and settles the day. There is no individual-agent
-micromanagement and no combat layer.
+On the operations map the player draws or edits routes, assigns a crew, chooses
+missions and settles the day. Missions may open a separate alternating-turn
+battle screen. Aatami calls the shots; recruited crew members execute them and
+carry the risk.
 
 ### 4. The map tells the story
 
@@ -85,22 +92,30 @@ proven.
 
 | Reference | Keep | Do not copy |
 |---|---|---|
-| Drug Wars / Dope Wars | location-based arbitrage, price shocks, debt interest, limited carrying capacity, travel consuming time, a hard campaign horizon | guns, combat, random punishment without readable warning, a menu-only presentation |
-| Weed Wars, provisional | production or stock slots, timing a sale, business upgrades, disruptive events, resource trade-offs | real-time waiting monetisation, farming busywork, PvP sabotage, literal card-game structure unless the intended version is confirmed |
+| Drug Wars (John E. Dell, 1984) | turn-based location arbitrage, local price tables, loan-shark debt, limited coat capacity, one day per trip, random market shocks and a 30-day horizon | Officer Hardass, direct rewards for killing police, random punishment without readable warning, a menu-only presentation |
+| Final Fantasy / modern alternating-turn RPGs | legible team turns, attacks, equipment, status and tactical party composition | spectacle-first magic, long ability lists or world-saving heroics |
+| Darkest Dungeon | recruitable roster, injury, death, replacement pressure and attachment to imperfect operatives | its exact stress system, formation grammar, gothic presentation or punitive opacity |
+| Later Drug Wars modernisations, optional | only features that clarify the original loop: price history, readable shocks, touch input and compact runs | timers, monetised waiting, farming busywork or PvP sabotage |
 | Mini Metro | immediate map readability, automatic agents, limited route resources, pause-and-redraw, overload as visible failure | its station-shape language, exact line grammar, passenger icons or zen-clean emotional tone |
 | Mini Motorways | origin-to-destination flow, network bottlenecks, constrained upgrades, a city that grows around earlier decisions | coloured-house matching, pins, road-tile economy or grid appearance |
 | Original Toko Move concept | mobile-first play, four traffic layers, foot / bike / car / public transport, distance and pollution trade-offs, growth turning a clean system hectic | the old 2021 release and free-to-play assumptions |
 
-“Weed Wars” is an ambiguous title. Until the owner identifies the exact version,
-the brief uses only the common business-loop ideas above. It must not silently
-lock the project to the current trading card game, the 2013 mobile grower, or a
-browser crime game.
+The owner has confirmed that “Weed Wars” was a mistaken recollection of one of
+the original’s many modernisations. The mechanical baseline is specifically
+John E. Dell’s 1984 MS-DOS game. Later versions are research leads, not lineage.
 
 ## Player role and setting
 
-The player is an operator inside the network, not a mayor looking down from
-outside it. The first node is Piritori. At the beginning, the player knows one
-route, one contact and one debt. Growth turns personal errands into a system.
+The player is Aatami in the 2000s and his son Kalle in 2024, inside the network
+rather than looking down as a mayor. The first-generation starting node is
+Piritori. At the beginning, Aatami knows one route, one contact and one debt.
+Growth turns personal errands into a system.
+
+At first Aatami personally buys small quantities at Piritori and sends a tiny
+crew through nearby Kallio streets to sell them. Small jobs open contacts and
+territory. The first firearm bought at Piritori is the explicit gate into
+tactical missions. Over time Aatami stops travelling and becomes a commander;
+his recruited operatives move, fight, become injured and may die.
 
 The map is recognisably Helsinki in coastline, rail and district rhythm, but
 compressed and fictionalised for play. It should never claim to model real
@@ -143,6 +158,12 @@ At the start of a day, inspect demand, market offers, delayed routes, contact
 needs and the current pressure map. New information is limited and local; the
 player never receives a perfect forecast.
 
+### Work the street
+
+Piritori begins as the only reliable source, with small quantities and the
+cheapest low-quality recruits. Sell through a few nearby neighbourhoods and
+survive rival encounters before the full market opens.
+
 ### Draw
 
 Create or alter a small number of routes. Assign a mode and limited capacity.
@@ -154,6 +175,18 @@ time.
 People and payloads move automatically. Origins queue. Vehicles transfer loads.
 Product travels outward and money returns. The player watches rather than
 steering individuals.
+
+### Deploy
+
+Assign recruited crew, weapons, armour and consumable resources to an active
+mission. A mission can resolve through movement, negotiation or sabotage, or
+open the separate alternating-turn battle screen. Aatami is not a combat unit.
+
+### Resolve
+
+Apply wounds, deaths, territory change, captured stock, new information and
+relationship consequences. Survivors return to the roster changed; vacancies
+make recruitment part of the economy.
 
 ### Reroute
 
@@ -171,14 +204,44 @@ patterns advance.
 
 ### Market
 
-- A small set of abstract product classes in the prototype: cheap/bulky,
-  stable/mid-risk and scarce/high-risk.
+- The first prototype names amphetamine and, in 2024, Alpha-PVP. This is
+  deliberately less operational than a real market and does not model sourcing,
+  doses, concealment or real routes.
 - Every district has a changing buy and sell range.
 - Events shift supply or demand for a readable reason.
 - The player acts on imperfect information; yesterday’s price remains visible
   so choices feel learned rather than random.
 - Real substance names and final fiction are a narrative decision after the
   loop works.
+- The early street market is deliberately narrow. Completing local missions
+  reveals new buy/sell locations, price information and wholesale access.
+
+### Crew, equipment and tactical battles
+
+- Recruits have role, reliability, health, equipment slots and faction history.
+- Piritori always offers the cheapest hired hands; cheap does not mean safe or
+  loyal.
+- Weapons and armour change available actions, damage, protection and mission
+  confidence. They do not turn the game into a shooter.
+- Battles alternate between the player crew and opposing team, with a small
+  readable action set and clear target order.
+- Injury and death persist. Replacements are necessary, and veteran loss should
+  hurt strategically and narratively.
+- The first firearm is a progression gate that unlocks armed missions rather
+  than an immediate power fantasy.
+
+### Contact locations
+
+- **Toko Slomo’s Noodles, Vaasankatu:** buy information and gamble resources on
+  sabotage whose probability and consequences are partially revealed.
+- **McCormicks, Siltanen complex:** hired guns, firearms, armour, intimidation
+  and sabotage services.
+- **Jade Lantern Network:** the fictional Chinese restaurant-mafia faction,
+  operating many restaurant fronts and specialising in firearms and other
+  illicit materials. It is an invented organisation, not a statement about
+  Chinese restaurateurs.
+- **Piritori:** starting retail source, first street sales, cheapest recruits
+  and the first firearm unlock.
 
 ### Capacity
 
@@ -202,8 +265,9 @@ patterns advance.
   incidents.
 - It cools through time and changed behaviour.
 - Thresholds are telegraphed before an inspection or closure.
-- There is no gunfight. The interesting response is rerouting, abandoning stock,
-  sacrificing profit, calling in trust or accepting the closure.
+- Heat can still be answered by rerouting, abandoning stock, sacrificing profit
+  or calling in trust. Armed confrontations use the tactical screen and create
+  persistent casualties; they never become real-time chases or shooting.
 
 ### Trust
 
@@ -243,7 +307,8 @@ the city and shows what still moves after the player is gone.
 - Eight or fewer recurring contacts for the first campaign.
 - One to three lines per event, anchored to a person or place on the map.
 - No lore logs, codex, omniscient narrator or long dialogue scenes.
-- Messages arrive through the same phone/map surface used to run the network.
+- In Era I, delivery channels stay distinct: scheduled TV news, calls/SMS on a
+  feature phone, and online information at a physical desktop terminal.
 - Events must change a number, route, capacity, relationship or visible place.
 - The city remembers: shutters, memorials, reopened shops, new transit, missing
   lights and altered travel patterns persist across days.
@@ -275,8 +340,9 @@ Example register, not final copy:
 
 The look should take the clarity lesson from Mini Metro without cloning its
 coloured lines and geometric station symbols. The distinct identity is a
-risograph / photocopied civic map: paper grain, screen-print flats, slight
-registration drift, municipal typography and moving ink marks.
+layered cut-carton civic map: clean screen-print flats, visible paper thickness,
+soft cast shadows, municipal typography and selective torn fibres. Registration
+drift and roughness are accents, not an all-over filter.
 
 ### Piritori skin
 
@@ -355,7 +421,6 @@ The slice is successful when:
 
 - full Helsinki;
 - multiplayer;
-- combat;
 - detailed cultivation;
 - real-world route data;
 - live service or accounts;
@@ -366,13 +431,11 @@ The slice is successful when:
 
 ## Decisions the owner should lock next
 
-1. What exactly is Eden: an exit, literal location, person, venue or event?
-2. Which “Weed Wars” is the intended reference?
-3. Is the player a single named person who grows into an operator, or an
-   unnamed phone/voice inside the network?
-4. Should the campaign stay a fixed 30 days, or use a shorter Helsinki-specific
-   countdown?
-5. How explicit should final product/substance names be?
+1. Final campaign time model and duration.
+2. What exactly Eden means in the ending matrix.
+3. Persistent verbs versus fully contextual actions in location encounters.
+4. Exact 3v3 lethality and casualty frequency.
+5. Exact Kallio and Pasila map boundaries.
 
 ## Reference links
 
@@ -386,10 +449,6 @@ The slice is successful when:
   https://dinopoloclub.com/games/mini-motorways/
 - Mini Metro design discussion:
   https://www.gamedeveloper.com/design/let-s-talk-about-mini-metro
-- Weed Wars trading-card rules, one possible intended reference:
-  https://weedwars.org/how-to-play/
-- Weed Wars: Episode 1 mobile description, another possible reference:
-  https://discussions.unity.com/t/weed-wars-episode-1/499483
 
 The supplied 2021 Project Move / Toko Move concept image is kept under
 references as source context. Its platform and transport-layer intent is useful;
