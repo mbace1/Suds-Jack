@@ -64,6 +64,16 @@ green.
 never did, and `js/flag.js` already builds its placeholders from exactly those
 two. The manifest token moved 25 → 26 in both places it is written.
 
+**Compressed with the rest.** v15.22 landed `compress-models.mjs` the same day
+this branch was cutting new meshes, so all three went through it rather than
+re-inflating the directory a release later: 1.78 / 1.82 / 2.00 MB → 0.91 /
+0.91 / 1.00 MB, about half, in line with that release's −46%. The tool's own
+guard is the point — it compares node names, clip names and skin count before
+and after and refuses a file whose contract moved — and all four contracted
+node names survive on each piece. Only the three new files are rewritten here;
+re-running the tool over already-compressed models buys about 1% and would
+have put 27 files of pure diff noise in this change.
+
 **Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
 to be meshes.** The ladder is already built per tile in `js/level.js` and meets
 every clause of its contract, including the hard one — seamless vertical
