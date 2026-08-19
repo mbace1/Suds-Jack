@@ -8,6 +8,18 @@
   release number shown by the arcade.
 -->
 
+## v4 — 2026-08-19
+**The road becomes a Tempest web**
+- The vanishing point moves from the top of the screen down into the playfield,
+  putting the camera lower behind Jack instead of looking down an uphill road.
+- Nonlinear depth now compresses the distant grid into a tight central eye while
+  the near rim opens wider across the screen. Incoming objects use the same
+  projection, so their approach remains readable and collision timing is unchanged.
+- Terrain elevation is visually flatter so the converging lane web owns the
+  silhouette. Scoring, hazards, waves, controls and the three-life loop are unchanged.
+- `game.js?v=52` makes the new framing a fresh URL. `test/core.mjs`: 23 bare-Node
+  checks retain the complete v3 gameplay gate and pin the v4 camera constants.
+
 ## v3 — 2026-08-19
 **The horizon becomes a game**
 - Owner direction: continue the live Horizon Mesh lane-survival game. This is
