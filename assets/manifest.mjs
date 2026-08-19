@@ -121,6 +121,43 @@ deadpan, and not a crime film about it. No text, no logos, no UI, no
 watermark. Include a small swatch strip of every colour used along the very
 bottom edge, outside the subject.`,
 
+  // PAPER — the map, and every interior you stand in.
+  //
+  // From the owner's final targets (ART_BIBLE §1.-1): the map is not a printed
+  // diagram at all, it is a PHYSICAL OBJECT — a cut-card relief diorama, lit
+  // from above, with torn edges and real drop shadow. That is a different
+  // instruction from "risograph" in the way that matters to a model: it is
+  // asked for a photograph of a made thing rather than for a drawing.
+  //
+  // It also fixes the failure the two printed map attempts shared. A diagram
+  // invites the model to letter it, and it cannot spell Finnish — v1 came back
+  // reading "Kudes linja" and "HELSINGIN KAUPNGIN". A paper model has no
+  // captions in it, so the register removes the liability rather than fighting
+  // it with instructions. The game draws every label from city.js anyway.
+  paper: `Piritori paper style. A PHOTOGRAPH OF A HANDMADE CUT-PAPER RELIEF
+DIORAMA, not a drawing and not a printed map. Everything in frame is built from
+layers of torn and cut card: slate-grey paper ground, city blocks as raised
+paper slabs with visible torn white edges and real soft drop shadows beneath
+them, roads as flat grey paper strips laid on top, water as deep navy card set
+lower than the land.
+
+Lit softly from above so every layer casts a shadow onto the one below and the
+relief is unmistakable. Visible paper fibre and grain, slightly frayed cut
+edges, a little warp where card meets card.
+
+VERY DARK. This is a night object: the blocks are DARK SLATE card, not cream
+and not tan — the whole picture sits between charcoal and deep navy, with only
+the torn edges catching enough light to separate one layer from the next. If it
+reads as a bright architectural model it is wrong.
+
+FULL BLEED: the diorama fills the entire frame edge to edge. No border, no
+mount, no backing board, no table around it, no frame, and no shot of an object
+sitting on a surface. The camera is directly overhead.
+
+ABSOLUTELY NO TEXT ANYWHERE: no names, no numbers, no labels, no legend, no
+title, no lettering in any language. Labels are added later in code. No logos,
+no UI, no watermark, no people, no vehicles.`,
+
   // The ARENAS ONLY, and they are a deliberate exception to `kallio` above.
   //
   // The first arena pass obeyed the house style to the letter — flat fills, no
@@ -234,7 +271,7 @@ charge. Side-on three quarter view, centred, full body.`,
     id: 'piritori/night-map',
     game: 'piritori',
     use: 'reference',
-    style: 'kallio',
+    style: 'paper',
     aspect: '9:16',
     tags: ['map', 'flagship'],
     // v2, after looking at v1. THE CODE OWNS THE COORDINATES — flow-core/city.js
@@ -295,7 +332,7 @@ completely wordless.`,
     id: 'tokomove/day-map',
     game: 'toko-move',
     use: 'reference',
-    style: 'kallio',
+    style: 'paper',
     aspect: '9:16',
     from: 'piritori/night-map',
     tags: ['map'],

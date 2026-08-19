@@ -1,11 +1,11 @@
 {
   "generated": {
     "piritori/night-map": {
-      "file": "2d/piritori-night-map.058f90a7.png",
+      "file": "2d/piritori-night-map.a15b7f79.png",
       "kind": "2d",
       "use": "reference",
       "game": "piritori",
-      "hash": "058f90a7"
+      "hash": "a15b7f79"
     },
     "piritori/arena-harbour": {
       "file": "2d/piritori-arena-harbour.03c24c72.png",
