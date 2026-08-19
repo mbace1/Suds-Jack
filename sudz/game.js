@@ -1,5 +1,5 @@
-// Suds Jack — Horizon Mesh v4
-// Actual vector perspective + geometric heightfield
+// Suds Jack — Horizon Mesh v4.1
+// AGGRESSIVE vector perspective (FAR 0.015 → NEAR 1.08) + angular geometric heightfield
 // Bomb Jack × Tempest × Tiny Wings × Suda51
 
 (() => {
@@ -24,10 +24,11 @@
   const HIT_DEPTH = 0.84;
   const HI_KEY = "sudsJack.horizon.v4.best";
 
-  // Perspective constants (real vector feel)
-  const FAR_SCALE = 0.035;   // width scale at horizon
-  const NEAR_SCALE = 1.0;    // width scale at player plane
-  const ELEV_SCALE = 0.14;   // how much elevation lifts in screen space (fraction of H)
+  // Perspective constants — aggressive classic vector (Tempest / Star Wars)
+  // Far is TINY, near is FULL WIDTH. Linear scale = constant foreshortening.
+  const FAR_SCALE = 0.015;   // almost a point at horizon — classic vector
+  const NEAR_SCALE = 1.08;   // full width (slight overscan) at player plane
+  const ELEV_SCALE = 0.20;   // strong vertical lift so peaks are unmistakable
 
   let W = 0, H = 0, dpr = 1;
   let mode = "title";
@@ -56,7 +57,6 @@
   let spawnTimer = 0.55;
   let audioCtx = null;
 
-  // ── audio ──────────────────────────────────────────────────
   function ensureAudio() {
     if (audioCtx) return;
     try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
@@ -95,65 +95,38 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  // ── TRUE VECTOR PERSPECTIVE ────────────────────────────────
-  // depth ∈ [0, 1]   0 = vanishing point (far), 1 = near plane
-  // scale is linear in depth (classic vector arcade feel)
-  // elevation is applied in world units then projected by the same scale
-
   function vanish() {
     return { x: W * 0.5, y: H * 0.11 };
   }
 
   function perspectiveScale(depth) {
-    // linear interpolation of scale → constant foreshortening rate
-    // this is the classic Tempest / Star Wars vector look
     return FAR_SCALE + (NEAR_SCALE - FAR_SCALE) * depth;
   }
 
   function project(lane, depth, elev) {
     const v = vanish();
     const s = perspectiveScale(depth);
-
-    // Y: linear from vanish → near floor, then elev lifts against gravity direction
     const nearY = H * 0.91;
     const baseY = v.y + (nearY - v.y) * depth;
     const elevPx = elev * H * ELEV_SCALE * s;
-
-    // X: centered fan of lanes, width proportional to scale
     const totalW = W * 0.84 * s;
     const x = v.x + (lane - (LANES - 1) / 2) * (totalW / (LANES - 1));
-
     return { x, y: baseY - elevPx, s };
   }
 
-  // ── GEOMETRIC HEIGHTFIELD (vector / angular) ───────────────
-  // Instead of soft pure sines we build angular ridges + plateaus
-  // so peaks read as real launch pads, not gentle hills.
-
   function meshHeight(lane, depth) {
-    // world-space phase that marches toward the player
-    const world = genPhase + depth * 7.5 + distance * 0.015;
-
-    // primary ridge system (angular)
-    const ridge = Math.abs(Math.sin(world * 0.55 + lane * 0.7));
-    const sharp = Math.pow(ridge, 1.8);               // sharpens the peaks
-
-    // secondary cross ridges
-    const cross = Math.abs(Math.sin(world * 1.3 + lane * 1.6)) * 0.35;
-
-    // occasional high plateaus (true peaks)
-    const plateau = Math.sin(world * 0.22 + lane * 0.25);
-    const plat = plateau > 0.72 ? (plateau - 0.72) * 2.2 : 0;
-
-    // gentle base undulation so the floor never feels dead flat
-    const base = 0.04 + 0.06 * Math.sin(world * 0.18 + lane * 0.4);
-
-    return Math.min(0.85, base + sharp * 0.32 + cross * 0.18 + plat);
+    const world = genPhase + depth * 8.5 + distance * 0.02;
+    const ridge = Math.abs(Math.sin(world * 0.45 + lane * 0.6));
+    const sharp = Math.pow(ridge, 2.6);
+    const cross = Math.pow(Math.abs(Math.sin(world * 1.5 + lane * 1.8)), 2.2) * 0.42;
+    const platWave = Math.sin(world * 0.17 + lane * 0.3);
+    const plat = platWave > 0.65 ? Math.pow(platWave - 0.65, 1.3) * 4.0 : 0;
+    const base = 0.015 + 0.035 * Math.sin(world * 0.12 + lane * 0.4);
+    return Math.min(0.95, base + sharp * 0.42 + cross * 0.24 + plat);
   }
 
   function meshPeak(lane, depth) {
-    // only the highest geometric features are launchable
-    return meshHeight(lane, depth) > 0.42;
+    return meshHeight(lane, depth) > 0.50;
   }
 
   function ensureSlices() {
@@ -165,16 +138,14 @@
       for (let i = 0; i < LANES; i++) {
         const h = meshHeight(i, d);
         heights.push(h);
-        peak.push(h > 0.42);
+        peak.push(h > 0.50);
       }
       slices.push({ depth: d, heights, peak, id: nextSliceId++ });
     }
   }
 
   function advanceLandscape(dt) {
-    const base = mode === "play"
-      ? 0.195 + Math.min(0.3, distance * 0.0013)
-      : 0.4;
+    const base = mode === "play" ? 0.195 + Math.min(0.3, distance * 0.0013) : 0.4;
     const speed = base * intensity * dt;
     for (const s of slices) s.depth += speed;
     slices = slices.filter(s => s.depth < 1.22);
@@ -289,7 +260,6 @@
     }
   }
 
-  // ── Bomb Jack controls ─────────────────────────────────────
   function zoneAt(x, y) {
     if (y < H * 0.5) return null;
     if (x < W * 0.48) return x < W * 0.24 ? "left" : "right";
@@ -352,7 +322,6 @@
   canvas.addEventListener("touchend", onTE, { passive: false });
   canvas.addEventListener("touchcancel", onTE, { passive: false });
 
-  // ── update ─────────────────────────────────────────────────
   function update(dt) {
     t += dt;
     hue = (hue + dt * (13 + intensity * 5)) % 360;
@@ -464,7 +433,6 @@
     }
   }
 
-  // ── render (clean vector strokes) ──────────────────────────
   function render() {
     ctx.save();
     if (shake > 0.5) {
@@ -474,7 +442,6 @@
     ctx.fillStyle = "#05060a";
     ctx.fillRect(0, 0, W, H);
 
-    // horizon glow
     const v = vanish();
     const g = ctx.createRadialGradient(v.x, v.y, 0, v.x, v.y, H * 0.58);
     g.addColorStop(0, `hsla(${hue}, 95%, 50%, ${0.22 + flash * 0.45})`);
@@ -483,10 +450,8 @@
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    // sort far → near so near lines overdraw cleanly
     const sorted = slices.slice().sort((a, b) => a.depth - b.depth);
 
-    // 1. Lane rails (true vector lines from horizon to near)
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     for (let lane = 0; lane < LANES; lane++) {
@@ -499,7 +464,6 @@
         else ctx.lineTo(p.x, p.y);
       }
       if (started) {
-        // intensity falls off slightly with depth (CRT vector feel)
         const alpha = 0.35 + 0.45 * Math.min(1, sorted[sorted.length - 1].depth);
         ctx.strokeStyle = `hsla(${(hue + lane * 9) % 360}, 100%, 58%, ${alpha})`;
         ctx.lineWidth = 1.15;
@@ -507,11 +471,8 @@
       }
     }
 
-    // 2. Depth ribs (Guitar Hero frets) + peak chevrons
     for (const s of sorted) {
       if (s.depth < 0.025 || s.depth > 1.02) continue;
-
-      // rib
       ctx.beginPath();
       for (let lane = 0; lane < LANES; lane++) {
         const p = project(lane, s.depth, s.heights[lane] || 0);
@@ -523,7 +484,6 @@
       ctx.lineWidth = 0.9 + s.depth * 1.3;
       ctx.stroke();
 
-      // geometric peak markers (sharp chevrons)
       for (let lane = 0; lane < LANES; lane++) {
         if (!s.peak[lane]) continue;
         const p = project(lane, s.depth, s.heights[lane]);
@@ -538,14 +498,12 @@
       }
     }
 
-    // 3. Entities (clean vector shapes)
     for (const th of things) {
       if (!th.alive) continue;
       const elev = meshHeight(th.lane, th.depth) + 0.06;
       const p = project(th.lane, th.depth, elev);
       const s = p.s;
       const pulse = 0.88 + 0.12 * Math.sin(th.phase);
-
       ctx.lineWidth = 1.6 + s * 0.6;
 
       if (th.kind === "orb") {
@@ -592,7 +550,6 @@
       }
     }
 
-    // 4. Player (vector diamond)
     if (mode === "play") {
       if (!(player.invuln > 0 && Math.floor(t * 15) % 2 === 0)) {
         const elev = meshHeight(player.lane, PLAYER_DEPTH);
@@ -629,7 +586,6 @@
       }
     }
 
-    // particles
     for (const p of particles) {
       ctx.globalAlpha = Math.max(0, p.life * 2.5);
       ctx.fillStyle = `hsl(${p.hue}, 100%, 66%)`;
@@ -638,7 +594,6 @@
     }
     ctx.globalAlpha = 1;
 
-    // multiplier
     if (mode === "play" && mult > 1) {
       ctx.font = "bold 18px IBM Plex Mono, monospace";
       ctx.textAlign = "center";
@@ -646,7 +601,6 @@
       ctx.fillText("×" + mult, W * 0.5, 46);
     }
 
-    // touch pads
     if (mode === "play" && ("ontouchstart" in window || matchMedia("(pointer: coarse)").matches)) {
       const padH = Math.min(94, H * 0.175);
       const padY = H - padH - 14;
