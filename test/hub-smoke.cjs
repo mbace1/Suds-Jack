@@ -270,6 +270,12 @@ function check(name, cond) {
   check('and each is a 44px target', langBoxes.every(b => b.w >= 44 && b.h >= 44));
 
   const before = await page.locator('#floor-head').textContent();
+  // …and the FIRST cabinet's English words, to compare against after the
+  // switch. This used to keyword-match the Finnish (`paja|Vektorinen|Selain`),
+  // which meant the gate went red the moment another lane rewrote that one
+  // game's tagline — which is exactly what happened when Suds Jack v5 landed.
+  // A test of the language switch should not be a test of anybody's copy.
+  const beforeTag = await page.locator('.cab .tagline').first().textContent();
   await page.locator('.lang-btn[data-lang="fi"]').click();
   const fi = await page.evaluate(() => ({
     head: document.getElementById('floor-head').textContent,
@@ -280,7 +286,20 @@ function check(name, cond) {
   }));
   check(`switching relabels the page's own words ("${fi.head}")`, fi.head !== before && fi.head.length > 0);
   check(`and the cabinets' words with them ("${fi.play?.trim()}")`, /PELAA|Pelaa/i.test(fi.play ?? ''));
-  check('and the games\' own copy', /paja|Vektorinen|Selain/i.test(fi.tagline ?? ''));
+  // the switch has to reach the CATALOGUE, not just the page furniture: the
+  // cabinet's own tagline must change, and must be the fi one the catalogue
+  // holds for that cabinet rather than any old different string.
+  {
+    const wanted = await page.evaluate(() => {
+      // a cabinet names itself as `cab-<id>` (hub.js line 35)
+      const id = (document.querySelector('.cab')?.id || '').replace(/^cab-/, '');
+      const g = __hub.games.find((x) => x.id === id);
+      return g?.fi?.tagline ?? null;
+    });
+    check('and the games\' own copy',
+      !!fi.tagline && fi.tagline.trim() !== (beforeTag ?? '').trim()
+      && (!wanted || fi.tagline.trim() === wanted.trim()));
+  }
   // a page claiming lang="en" while showing Finnish lies to every screen reader
   // and translation tool that asks it
   check('<html lang> follows', fi.lang === 'fi');
