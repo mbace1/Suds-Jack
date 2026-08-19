@@ -15,17 +15,22 @@ From highest to lowest:
 
 1. Direct owner decisions recorded after this reset.
 2. `DESIGN_AUTHORITY.md`.
-3. `GAME_DESIGN_DOCUMENT.md`.
-4. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
-5. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
+3. `DESIGN_LOCKS.md`.
+4. `GAME_DESIGN_DOCUMENT.md`.
+5. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
+6. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
    linked from them.
-6. `FIGHT_BRIEF.md`, `MAP.md` and `DECISIONS.md`, but only where they do not
+7. `FIGHT_BRIEF.md`, `MAP.md` and `DECISIONS.md`, but only where they do not
    conflict with the documents above.
-7. The current runtime, tests and legacy design documents. These are evidence
+8. The current runtime, tests and legacy design documents. These are evidence
    and prototypes, not permission to change the design.
 
 When two sources at the same level disagree, stop and record a decision. Do not
 silently average them together.
+
+`DESIGN_LOCKS.md` closes the structural choices required for Art Bible and UX
+work. Values explicitly marked as playtest gates may change only after the test
+and reason are recorded; they are not open placeholders in the meantime.
 
 ## Locked product direction
 

@@ -2,9 +2,9 @@
 
 ## Game Design Document — pre-UX baseline
 
-Version: 0.2  
+Version: 0.3  
 Date: 2026-08-19  
-Status: active pre-UX design baseline; production scope remains gated  
+Status: active pre-UX design baseline; structural decisions locked  
 Platform assumption: mobile-first browser prototype, desktop supported  
 Audience: adults  
 
@@ -207,10 +207,13 @@ inheritance. The player shapes its cost and texture.
 
 ### 3.4 Time structure
 
-**PROPOSED:** use discrete time blocks rather than one entire day per click.
+**LOCKED:** use discrete time blocks rather than one entire day per click.
 
-- **Day**, **Evening** and **Night** each change available shops, crowds,
-  transport, prices and mission risk.
+- The vertical slice uses seven days with **Day** and **Night** action blocks.
+- The first full Era I target uses 21 days with **Day**, **Evening** and
+  **Night** action blocks; campaign length is a recorded playtest gate.
+- Each block changes available shops, crowds, transport, prices and mission
+  risk.
 - A normal trip, encounter or mission consumes one block.
 - A battle is part of its parent mission and does not charge a second block.
 - Prices make one major update per day; local availability can change by block.
@@ -218,9 +221,7 @@ inheritance. The player shapes its cost and texture.
 - Arvo's main television bulletin occurs at a predictable boundary, making TV
   feel scheduled rather than a push notification.
 
-**OPEN:** final campaign duration. The original *Drug Wars* 30-day horizon is a
-useful pressure reference, but the full narrative campaign should not inherit
-30 days until location and battle pacing has been tested.
+See `DESIGN_LOCKS.md` §1 for the test rule and vertical-slice timing.
 
 ---
 
@@ -400,8 +401,10 @@ real time.
 
 **LOCKED:** final geography must be based on recognisable Kallio and Pasila
 relationships.  
-**PROPOSED:** preserve coastline, rail, major streets, relative district
-direction and landmark adjacency, then compress minor blocks for play.
+**LOCKED:** preserve coastline, rail, major streets, relative district
+direction and landmark adjacency, then compress minor blocks for play. The
+Era I production boundary is fixed in `DESIGN_LOCKS.md` §10; exact coordinates
+and node geometry belong to the map pass.
 
 The map is not intended to reproduce real criminal routes. Location placement
 is a navigational and narrative abstraction built from public geography.
@@ -1062,7 +1065,7 @@ Toko is a contact, not a faction army.
 
 They should feel like a large compromised family, not a generic gun shop.
 
-### 14.5 Jade Lantern Network — working fictional name
+### 14.5 Jade Lantern Network
 
 - **Wants:** expansion through restaurant fronts and control of illicit material
   supply.
@@ -1070,9 +1073,10 @@ They should feel like a large compromised family, not a generic gun shop.
 - **Weakness:** distributed fronts have individual motives and competing
   loyalties.
 
-The organisation is entirely fictional. Members must be written as distinct
-people; ethnicity is never a gameplay trait or shorthand for menace. Final
-name and representation remain subject to the narrative and Art Bible review.
+The organisation and name are production locks for Era I. Members must be
+written and drawn as distinct people; ethnicity is never a gameplay trait,
+combat class or shorthand for menace. Individual characters and visual
+descriptions belong to the content and Art Bible passes.
 
 ### 14.6 Police and public institutions
 
@@ -1435,7 +1439,7 @@ Do not attempt the entire two-generation campaign before this works.
 
 ### 23.2 Slice scope — Era I
 
-**PROPOSED:**
+**LOCKED content target; exact balance remains testable:**
 
 - seven in-game days with two active blocks per day for the first test;
 - one geographically credible compressed Kallio map;
@@ -1536,38 +1540,31 @@ The GDD does not lock layouts, but the eventual UX must support:
 - TV, feature phone and desktop internet as distinct narrative channels;
 - save/resume at every non-combat decision boundary;
 - no hover dependency;
-- no final visual style assumed from current concepts.
+- use the active cut-cardstock and hand-marker baseline in the approved
+  `art-library/`; Art Bible v1 defines its production rules.
 
 ---
 
-## 26. Open decisions
+## 26. Decision status
 
-### Required before full UX design
+The structural choices required before Art Bible and UX work are locked in
+`DESIGN_LOCKS.md`. They include:
 
-1. Final campaign time model and length.
-2. Whether location scenes use persistent verbs, fully contextual actions or a
-   hybrid.
-3. How often Aatami appears physically after becoming a commander.
-4. Exact battle lethality and casualty frequency.
-5. Maximum deployed team size after the vertical slice.
-6. Whether the wider 3x4 board is a mission modifier or the default board.
-7. Which location owns recurring market access after the introductory missions.
-8. Exact meaning of Eden: home, exit fund, Pasila, relationship or deliberately
-   unstable promise.
-9. Whether refusing the first purchase creates a short alternate opening or
-   simply delays acceptance.
-10. How much of Era I can be inherited mechanically by Kalle rather than only
-   reflected in authored scenes.
+- slice and campaign time targets;
+- hybrid location verbs and contextual actions;
+- Aatami's physical role after delegation begins;
+- team cap, default formation and casualty model;
+- recurring ledger access and information channels;
+- Eden's deliberately unstable meaning;
+- the alternate first-purchase opening;
+- Era I inheritance bands;
+- product abstraction, recurring groups and cultural safeguards;
+- Era I map boundary, audience, localisation and phase gates.
 
-### Required before content production
-
-1. Final fictional faction and venue names.
-2. Character roster, ages and visual descriptions.
-3. Exact Kallio and Pasila map boundaries.
-4. Final product naming and abstraction level.
-5. Historical events selected for missions and broadcasts.
-6. Aaro's full arc and family-scene count.
-7. Rating, content warnings and localisation plan.
+Exact economy values, encounter frequency, roster details, final map coordinates
+and content counts remain milestone work. A playtest-gated value is the active
+target until a recorded test supports changing it; it is not an unowned
+placeholder.
 
 ---
 
@@ -1592,7 +1589,8 @@ copy.
 
 ## 28. Authority and companion document
 
-This GDD is the current pre-UX design authority once owner-reviewed. Specifically:
+This GDD is the active pre-UX design baseline beneath `DESIGN_AUTHORITY.md`
+and `DESIGN_LOCKS.md`. Specifically:
 
 - location encounters are a core interaction mode;
 - variable-size isometric formation combat is part of the intended game, with
@@ -1601,9 +1599,10 @@ This GDD is the current pre-UX design authority once owner-reviewed. Specificall
 - seedy shops are recurring narrative locations, not detached catalogues;
 - the market unlocks through street missions and relationships;
 - the five interaction modes are functional requirements, not final screens;
-- existing art concepts are exploratory.
+- the approved `art-library/` establishes the visual baseline; review sheets
+  still require extraction and registration before runtime use.
 
-The previous Art Bible and its screen tests were rejected. A replacement will
-define medium, character construction, environments, map language, combat
-staging and production rules only after a Finnish, cartoony character direction
-is owner-approved. Final UX and asset counts remain gated by that decision.
+The next milestone, Art Bible v1, will define medium, character construction,
+environments, map language, combat staging, motion and production rules from
+that approved library. Final UX and asset counts remain gated by the Art Bible
+and UX passes, not by the rejected legacy document.
