@@ -1,5 +1,5 @@
 {
-  "v": 27,
+  "v": 29,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -440,24 +440,24 @@
   "layers": {
     "groundworks": {
       "skyline": {
-        "file": "2d/groundworks_skyline_v4.webp",
+        "file": "2d/groundworks_skyline_v5.webp",
         "status": "live",
         "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
-        "file": "2d/groundworks_far_v4.webp",
+        "file": "2d/groundworks_far_v5.webp",
         "status": "live"
       },
       "mid": {
-        "file": "2d/groundworks_mid_v4.webp",
+        "file": "2d/groundworks_mid_v5.webp",
         "status": "live"
       },
       "near": {
-        "file": "2d/groundworks_near_v4.webp",
+        "file": "2d/groundworks_near_v5.webp",
         "status": "live"
       },
       "fore": {
-        "file": "2d/groundworks_fore_v4.webp",
+        "file": "2d/groundworks_fore_v5.webp",
         "status": "live"
       },
       "sky": {
@@ -468,24 +468,24 @@
     },
     "pipeworks": {
       "skyline": {
-        "file": "2d/pipeworks_skyline_v2.webp",
+        "file": "2d/pipeworks_skyline_v3.webp",
         "status": "live",
         "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
-        "file": "2d/pipeworks_far_v2.webp",
+        "file": "2d/pipeworks_far_v3.webp",
         "status": "live"
       },
       "mid": {
-        "file": "2d/pipeworks_mid_v2.webp",
+        "file": "2d/pipeworks_mid_v3.webp",
         "status": "live"
       },
       "near": {
-        "file": "2d/pipeworks_near_v2.webp",
+        "file": "2d/pipeworks_near_v3.webp",
         "status": "live"
       },
       "fore": {
-        "file": "2d/pipeworks_fore_v2.webp",
+        "file": "2d/pipeworks_fore_v3.webp",
         "status": "live"
       },
       "sky": {
@@ -496,24 +496,24 @@
     },
     "grove": {
       "skyline": {
-        "file": "2d/grove_skyline_v1.webp",
+        "file": "2d/grove_skyline_v2.webp",
         "status": "live",
         "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
-        "file": "2d/grove_far_v1.webp",
+        "file": "2d/grove_far_v2.webp",
         "status": "live"
       },
       "mid": {
-        "file": "2d/grove_mid_v1.webp",
+        "file": "2d/grove_mid_v2.webp",
         "status": "live"
       },
       "near": {
-        "file": "2d/grove_near_v1.webp",
+        "file": "2d/grove_near_v2.webp",
         "status": "live"
       },
       "fore": {
-        "file": "2d/grove_fore_v1.webp",
+        "file": "2d/grove_fore_v2.webp",
         "status": "live"
       },
       "sky": {
@@ -524,28 +524,28 @@
     },
     "nightshift": {
       "skyline": {
-        "file": "2d/nightshift_skyline_v1.webp",
+        "file": "2d/nightshift_skyline_v2.webp",
         "status": "live",
         "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
-        "file": "2d/nightshift_far_v1.webp",
+        "file": "2d/nightshift_far_v2.webp",
         "status": "live"
       },
       "mid": {
-        "file": "2d/nightshift_mid_v1.webp",
+        "file": "2d/nightshift_mid_v2.webp",
         "status": "live"
       },
       "near": {
-        "file": "2d/nightshift_near_v1.webp",
+        "file": "2d/nightshift_near_v2.webp",
         "status": "live"
       },
       "fore": {
-        "file": "2d/nightshift_fore_v1.webp",
+        "file": "2d/nightshift_fore_v2.webp",
         "status": "live"
       },
       "sky": {
-        "file": "2d/nightshift_sky_v1.webp",
+        "file": "2d/nightshift_sky_v2.webp",
         "status": "live",
         "_note": "the one sky that cannot be shared — World 4 is a night shift. Painted rather than rendered: a sky is a gradient with things on it, and a 4 MB photograph of one is what this pass exists to stop."
       }
@@ -553,32 +553,32 @@
   },
   "textures": {
     "card": {
-      "file": "2d/card_detail_v1.png",
+      "file": "2d/card_detail_v2.png",
       "status": "live",
       "_note": "corrugated kraft — the earth, the cut faces, the deep bands"
     },
     "felt": {
-      "file": "2d/felt_detail_v1.png",
+      "file": "2d/felt_detail_v2.png",
       "status": "live",
       "_note": "wool felt nap — the grass lip"
     },
     "balsa": {
-      "file": "2d/balsa_detail_v1.png",
+      "file": "2d/balsa_detail_v2.png",
       "status": "live",
       "_note": "painted balsa, brush strokes and a paint chip — machines, steel, props (§3.3 'painted wood and pressed steel')"
     },
     "flute": {
-      "file": "2d/flute_detail_v1.png",
+      "file": "2d/flute_detail_v2.png",
       "status": "live",
       "_note": "the CUT EDGE of corrugated card — stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
     },
     "topsoil": {
-      "file": "2d/topsoil_detail_v1.png",
+      "file": "2d/topsoil_detail_v2.png",
       "status": "live",
-      "_note": "the top strata — fine tight card layers. High-passed (radius 62) so no fixing survives into a map that TILES"
+      "_note": "v2: contrast-stretched by art-src/tools/punch-maps.mjs. A detail map MULTIPLIES the palette colour, and multiplication scales variance by the surface's own brightness — the earth sits near luminance 55, so the v1 maps at std/mean 0.09-0.12 delivered about 5 levels of variation to the screen and the earth read as a flat tint. Measured on one frame: sky and mid at std 21, earth at 8.6. The earth sections now sit at 0.21-0.25."
     },
     "strata": {
-      "file": "2d/mid_detail_v1.png",
+      "file": "2d/mid_detail_v2.png",
       "status": "live",
       "_note": "the middle strata — coarse layered card section, high-passed"
     },
@@ -623,17 +623,17 @@
       "_note": "a buried bottle, half broken away"
     },
     "flutecoarse": {
-      "file": "2d/flute_detail_v1.png",
+      "file": "2d/flute_detail_v2.png",
       "status": "live",
       "_note": "the same stacked fluting as `flute`, declared again for a COARSER density. Two deep bands wearing one material at one scale are one band"
     },
     "packed": {
-      "file": "2d/packed_detail_v1.png",
+      "file": "2d/packed_detail_v2.png",
       "status": "live",
       "_note": "the deep bands — dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
     },
     "gritty": {
-      "file": "2d/gritty_detail_v1.png",
+      "file": "2d/gritty_detail_v2.png",
       "status": "live",
       "_note": "grit and torn paper pellets in the fluting (nano banana Pro — base put repeating white blobs in it)"
     }

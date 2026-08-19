@@ -179,10 +179,31 @@ soft, smeared read that "not HD" names. `LANES` now carries 48 px/unit for
 fore and near and 36 for mid; skyline and far stay near 26, where softness is
 the aerial perspective doing its job.
 
-None of this has been RUN against the shipped art — the tools are committed,
-the assets are not regenerated, and `assets/2d` is still the v4 set. That is
-deliberate: regenerating is twenty-odd binaries and wants to be its own
-change, judged on a picture.
+**RUN, and here is what it cost to get right.** All four worlds rebuilt
+(`groundworks_v5`, `pipeworks_v3`, `grove_v2`, `nightshift_v2`) and the eight
+detail maps regenerated. Two corrections along the way, both worth keeping:
+
+- **`w` in a pool entry is the draw WEIGHT, not the width** (build-worlds.mjs
+  line 98 says so). The first pass "narrowed" the fore verticals by editing
+  `w`, which changed how OFTEN they appear and not how wide they are, and the
+  render came back with a pillar filling the middle third — worse than before.
+  A piece's width is `h x its source aspect`, so HEIGHT is the only lever, and
+  halving it (17 → 9) halves the width while still crossing the frame: the
+  fore ground line is 5.4 and the rect ends at 14, so a 9-unit piece still
+  runs off the top, which is the property `js/layers.js` actually asks for.
+- **4096 IS THE CEILING and the first numbers ignored it.** The close lanes
+  were set to 5376 px, which would have been a texture a modest phone GPU can
+  refuse — and a layer that fails to upload is not a soft layer, it is a
+  missing one. Capped, that is 36.6 px/unit over a 112-unit rect: a 22% linear
+  gain, not the 60% first claimed here.
+
+`js/layers.js` grows `LAYER_PX`, an explicit per-lane size table. It is a
+table and not a formula on purpose: the far lanes are NOT square-pixeled —
+they are painted at 30 px/unit vertically and squashed horizontally by the
+cap — so a derivation clean enough for the close lanes silently disagreed with
+the three that already shipped. Three places now have to agree (this table,
+`LANES` in build-worlds.mjs, the table in assets/README.md) and `smoke.cjs`
+holds all three to each other.
 
 **Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
 to be meshes.** The ladder is already built per tile in `js/level.js` and meets

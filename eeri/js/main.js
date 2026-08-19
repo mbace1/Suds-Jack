@@ -15,7 +15,7 @@ import { Level, ROOMS, LAB } from './level.js?v=29';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
 } from './pieces.js?v=29';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=29';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=29';
 import { Camera } from './camera.js?v=29';
 import { buildKidModel, Kid, Player } from './kid.js?v=29';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=29';
@@ -678,10 +678,12 @@ async function boot() {
       tris: () => renderer.info.render.triangles,
       // the 2D contract, computed rather than written down twice — the gate
       // checks assets/README.md (what an artist paints to) against this
+      // Derived from layers.js's own layerPx() rather than recomputed here:
+      // the gate compares this against assets/README.md, so if it did its own
+      // arithmetic the two could agree with each other and both be wrong
+      // about what the loader actually wants.
       layerContract: () => Object.fromEntries(Object.entries(LAYER_RECTS).map(([k, r]) => [k, {
-        ...r,
-        pxW: Math.min(4096, Math.round((r.x1 - r.x0) * PPU)),
-        pxH: Math.round((r.y1 - r.y0) * PPU),
+        ...r, ...layerPx(k),
       }])),
       // where the camera actually is, so "it reframes" is testable
       camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),

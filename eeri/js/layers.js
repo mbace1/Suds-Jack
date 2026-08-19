@@ -27,7 +27,49 @@ import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=29';
 import { getLayerTexture } from './assets.js?v=29';
 import { buildPipeworksDressing } from './world2-dressing.js?v=29';
 
-export const PPU = 30; // canvas pixels per world unit
+// CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
+//
+// Resolution has to follow how close a lane is to the camera, because that is
+// what decides whether its painting is magnified on screen. The play plane
+// shows at about 57 px per world unit and the fore lane, magnified by its own
+// depth, at about 69. Every lane was stored at 30, so everything near the
+// camera was displayed at roughly twice its painted resolution through a
+// LinearFilter — the soft, smeared read that "not HD" names.
+//
+// The close lanes go to the 4096 cap and no further. That cap is the texture
+// size a modest phone GPU is guaranteed to accept, and a layer that fails to
+// upload is not a soft layer, it is a missing one. Over a 112-unit rect the
+// ceiling is 36.6 px/unit, so this buys 22% and not the 60% the camera wants.
+//
+// `PPU` stays exported at the old value: it is the CODE-DRAWN fallback's
+// density, and those are painted per level rather than shipped, so nothing is
+// gained by making them heavier.
+export const PPU = 30; // canvas pixels per world unit (code-drawn fallback)
+
+// THE EXACT PIXEL SIZE a shipped layer must be painted to, per lane. A table
+// and not a formula, and that is deliberate: the far lanes are NOT square-
+// pixeled — they are painted at 30 px/unit vertically and then squashed
+// horizontally by the 4096 cap (assets/README.md's footnote calls this out).
+// A derivation clean enough to describe the close lanes silently disagreed
+// with the three that already shipped, so the table is the contract.
+//
+// THREE PLACES MUST AGREE and test/smoke.cjs holds them to each other:
+// this table, `LANES` in art-src/tools/build-worlds.mjs, and the size table in
+// assets/README.md. A painting at the wrong size does not fail — it STRETCHES
+// onto the plane, which looks like slightly worse art rather than a bug.
+export const LAYER_PX = {
+  sky:     { pxW: 4096, pxH: 1380 },
+  skyline: { pxW: 4096, pxH: 900 },
+  far:     { pxW: 4096, pxH: 600 },
+  // raised in v15.23: these three sit close enough to be magnified on screen
+  mid:     { pxW: 4096, pxH: 470 },
+  near:    { pxW: 4096, pxH: 293 },
+  fore:    { pxW: 4096, pxH: 585 },
+};
+
+export function layerPx(name) {
+  return LAYER_PX[name] || null;
+}
 
 // The world rects each layer occupies. These are the asset contract for 2D:
 // a live PNG for a layer must be painted to this rect at PPU px per unit
