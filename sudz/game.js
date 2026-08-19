@@ -1,902 +1,437 @@
-// Suds Jack — Vector Tube Shooter
-// Tempest 2000 x Bomb Jack x Suds 51
+// Suds Jack — horizon vector landscape (Bomb Jack controls)
+// Left side move · Right side JUMP
 
-(async function () {
-  'use strict';
+(() => {
+  "use strict";
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  const elScore = document.getElementById("score");
+  const elBest = document.getElementById("best");
+  const elLives = document.getElementById("lives");
+  const overlay = document.getElementById("overlay");
+  const playBtn = document.getElementById("play");
+  const glitch = document.getElementById("glitch");
 
-  // ─── Canvas Setup ────────────────────────────────────────────────────────────
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
+  const LANES = 9;
+  const GRAVITY = 28;
+  const JUMP_V = -11.5;
+  const BOOST_V = -16.5;
+  const MOVE_SPEED = 6.5;
+  const PLAYER_DEPTH = 0.92;
+  const HI_KEY = "sudsJack.horizon.best";
+
+  let W = 0, H = 0, dpr = 1;
+  let mode = "title";
+  let score = 0;
+  let best = Number(localStorage.getItem(HI_KEY) || 0) || 0;
+  let lives = 3;
+  let t = 0;
+  let last = 0;
+  let hue = 175;
+  let seed = 1;
+  let distance = 0;
+
+  const keys = new Set();
+  const touch = { left: false, right: false, jump: false };
+  const activeTouches = new Map();
+
+  const player = {
+    lane: (LANES - 1) / 2,
+    z: 0, vz: 0, onGround: true, floating: false, boostUntil: 0, invuln: 0, facing: 1
+  };
+
+  let slices = [];
+  let things = [];
+  let particles = [];
+  let spawnTimer = 0;
+  let nextSliceId = 0;
+  let genPhase = 0;
+
+  function rand() {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  }
 
   function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  // ─── Constants ───────────────────────────────────────────────────────────────
-  const NUM_SPOKES = 8;
-  const NUM_RINGS = 5;
-  const OUTER_RADIUS_RATIO = 0.42;  // fraction of min(w,h)
-  const VANISH_Y_RATIO = 0.18;      // vanishing point top fraction
-  const BULLET_SPEED = 0.045;
-  const PLAYER_SHOOT_COOLDOWN = 180; // ms
-  const PARTICLE_COUNT = 18;
-  const SUPERZAPPER_COOLDOWN = 15000; // ms
-
-  // ─── Level Data ──────────────────────────────────────────────────────────────
-  let levels = [];
-  try {
-    const resp = await fetch('levels.json');
-    levels = await resp.json();
-  } catch (e) {
-    levels = [
-      { level: 1, wave_count: 3, enemy_types: ['basic'], speed_multiplier: 1.0, bomb_count: 3 },
-      { level: 2, wave_count: 4, enemy_types: ['basic', 'flipper'], speed_multiplier: 1.3, bomb_count: 4 },
-      { level: 3, wave_count: 5, enemy_types: ['basic', 'flipper', 'tanker'], speed_multiplier: 1.6, bomb_count: 5 }
-    ];
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  // ─── Game State ──────────────────────────────────────────────────────────────
-  let state = 'title'; // title | playing | dead | gameover
-  let score = 0;
-  let lives = 3;
-  let levelIndex = 0;
-  let hue = 0;
-  let frameTime = 0;
-  let lastTime = 0;
-  let shakeFrames = 0;
-  let shakeIntensity = 0;
-  let playerSpoke = 0;
-  let playerMoveCD = 0;
-  let shootCD = 0;
-  let superzapperCD = 0;
-  let superzapperActive = false;
-  let superzapperTimer = 0;
-  let waveTimer = 0;
-  let wavesSpawned = 0;
-  let levelComplete = false;
-  let levelCompleteTimer = 0;
-  let deathTimer = 0;
+  function vanish() { return { x: W * 0.5, y: H * 0.14 }; }
 
-  let enemies = [];
-  let bullets = [];
-  let bombs = [];
-  let particles = [];
-  let superzapperParticles = [];
-
-  // ─── Input ───────────────────────────────────────────────────────────────────
-  const keys = {};
-  window.addEventListener('keydown', e => {
-    if (!keys[e.code]) {
-      keys[e.code] = true;
-      onKeyDown(e.code);
-    }
-  });
-  window.addEventListener('keyup', e => { keys[e.code] = false; });
-
-  function onKeyDown(code) {
-    if (state === 'title' && code === 'Enter') startGame();
-    if (state === 'gameover' && code === 'Enter') startGame();
-    if (state === 'playing') {
-      if (code === 'Space') tryShoot();
-      if (code === 'KeyZ') trySuperzapper();
-    }
+  function project(lane, depth, elev) {
+    const v = vanish();
+    const nearY = H * 0.88;
+    const y = v.y + (nearY - v.y) * depth;
+    const scale = 0.08 + depth * 0.92;
+    const laneW = W * 0.72 * scale;
+    const x = v.x + (lane - (LANES - 1) / 2) * (laneW / (LANES - 1));
+    const elevPx = elev * 40 * scale;
+    return { x, y: y - elevPx, s: scale };
   }
 
-  // ─── Gamepad Input ───────────────────────────────────────────────────────────
-  // Standard mapping: 0=A 1=B 2=X 3=Y 4/5=bumpers 6/7=triggers 9=start
-  // 12/13/14/15 = dpad up/down/left/right. Axis 0 = left stick X.
-  const pad = { on: false, left: false, right: false, fire: false, prev: [] };
-  const PAD_DEADZONE = 0.30;
-
-  function pollGamepad() {
-    const list = navigator.getGamepads ? navigator.getGamepads() : [];
-    let gp = null;
-    for (const p of list) if (p && p.connected) { gp = p; break; }
-
-    pad.on = !!gp;
-    if (!gp) { pad.left = pad.right = pad.fire = false; pad.prev = []; return; }
-
-    const down = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
-    const hit  = i => down(i) && !pad.prev[i];      // edge-triggered
-    const ax   = gp.axes[0] || 0;
-
-    pad.left  = ax < -PAD_DEADZONE || down(14);
-    pad.right = ax >  PAD_DEADZONE || down(15);
-    pad.fire  = down(0) || down(7);                 // A / right trigger held
-
-    if (state === 'playing') {
-      if (hit(1) || hit(2) || hit(5)) trySuperzapper();   // B / X / RB
-    } else if (hit(0) || hit(9)) {
-      startGame();                                        // A / Start
-    }
-
-    pad.prev = gp.buttons.map(b => b.pressed);
+  function meshHeight(lane, depth) {
+    const ph = genPhase + depth * 4;
+    return 0.15 + 0.25 * Math.sin(ph + lane * 0.7) * Math.sin(ph * 0.6);
   }
 
-  window.addEventListener('gamepadconnected',    () => { pad.on = true; });
-  window.addEventListener('gamepaddisconnected', () => { pad.on = false; pad.prev = []; });
-
-  // ─── Touch Input ─────────────────────────────────────────────────────────────
-  const touch = { left: false, right: false, zap: false };
-
-  function touchZone(x, y) {
-    const w = canvas.width, h = canvas.height;
-    const btnH = Math.min(120, h * 0.18);
-    const btnW = w / 3;
-    if (y > h - btnH) {
-      if (x < btnW) return 'left';
-      if (x > w - btnW) return 'right';
-      return 'zap';
-    }
-    return 'none';
+  function meshPeak(lane, depth) {
+    const h = meshHeight(lane, depth);
+    return h > 0.32;
   }
 
-  function handleTouchStart(e) {
-    e.preventDefault();
-    if (state === 'title' || state === 'gameover') { startGame(); return; }
-    for (const t of e.changedTouches) {
-      const zone = touchZone(t.clientX * (canvas.width / window.innerWidth),
-                             t.clientY * (canvas.height / window.innerHeight));
-      if (zone === 'left') touch.left = true;
-      if (zone === 'right') touch.right = true;
-      if (zone === 'zap') { touch.zap = true; trySuperzapper(); }
-    }
-  }
-
-  function handleTouchEnd(e) {
-    e.preventDefault();
-    // recompute which zones still have active touches
-    touch.left = false; touch.right = false; touch.zap = false;
-    for (const t of e.touches) {
-      const zone = touchZone(t.clientX * (canvas.width / window.innerWidth),
-                             t.clientY * (canvas.height / window.innerHeight));
-      if (zone === 'left') touch.left = true;
-      if (zone === 'right') touch.right = true;
-      if (zone === 'zap') touch.zap = true;
-    }
-  }
-
-  canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-  canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-  canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-
-  // ─── Geometry Helpers ────────────────────────────────────────────────────────
-  function cx() { return canvas.width / 2; }
-  function cy() { return canvas.height; }  // vanishing point at bottom center — actually let's do top-center feel
-
-  // Vanishing point at center-top area
-  function vanishX() { return canvas.width / 2; }
-  function vanishY() { return canvas.height * VANISH_Y_RATIO; }
-
-  // Outer ring center
-  function outerCX() { return canvas.width / 2; }
-  function outerCY() { return canvas.height * 0.82; }
-  function outerR() { return Math.min(canvas.width, canvas.height) * OUTER_RADIUS_RATIO; }
-
-  // Get the XY position of a spoke at a given depth
-  // depth 0 = vanishing point, depth 1 = outer ring
-  function spokePoint(spokeIdx, depth) {
-    const angle = (spokeIdx / NUM_SPOKES) * Math.PI * 2 - Math.PI / 2;
-    const vx = vanishX();
-    const vy = vanishY();
-    const ox = outerCX() + Math.cos(angle) * outerR();
-    const oy = outerCY() + Math.sin(angle) * outerR();
-    return {
-      x: vx + (ox - vx) * depth,
-      y: vy + (oy - vy) * depth
-    };
-  }
-
-  // Get XY on a ring at a given depth
-  function ringPoint(spokeIdx, depth) {
-    return spokePoint(spokeIdx, depth);
-  }
-
-  // Ring radius at depth (for drawing rings)
-  function ringRadius(depth) {
-    return outerR() * depth;
-  }
-
-  // Ring center at depth (perspective: rings converge toward vanish point)
-  function ringCenter(depth) {
-    const vx = vanishX();
-    const vy = vanishY();
-    const ocx = outerCX();
-    const ocy = outerCY();
-    return {
-      x: vx + (ocx - vx) * depth,
-      y: vy + (ocy - vy) * depth
-    };
-  }
-
-  // ─── Drawing: Web/Tube ───────────────────────────────────────────────────────
-  function drawWeb() {
-    // Draw spokes
-    for (let s = 0; s < NUM_SPOKES; s++) {
-      const outer = spokePoint(s, 1);
-      const inner = spokePoint(s, 0);
-      const spokehue = (hue + s * (360 / NUM_SPOKES)) % 360;
-      const color = `hsl(${spokehue}, 100%, 55%)`;
-      ctx.beginPath();
-      ctx.moveTo(outer.x, outer.y);
-      ctx.lineTo(inner.x, inner.y);
-      ctx.strokeStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 15;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-
-    // Draw concentric rings (perspective correct)
-    for (let r = 1; r <= NUM_RINGS; r++) {
-      const depth = r / NUM_RINGS;
-      const ringHue = (hue + r * 40) % 360;
-      const color = `hsl(${ringHue}, 100%, 55%)`;
-      ctx.beginPath();
-      for (let s = 0; s <= NUM_SPOKES; s++) {
-        const pt = spokePoint(s % NUM_SPOKES, depth);
-        if (s === 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
+  function ensureSlices() {
+    while (slices.length < 28) {
+      const depths = slices.map(s => s.depth);
+      const maxD = depths.length ? Math.max(...depths) : -0.05;
+      const d = maxD + 0.045;
+      const heights = [];
+      const peak = [];
+      for (let i = 0; i < LANES; i++) {
+        const h = 0.12 + 0.3 * Math.sin(genPhase + d * 5 + i * 0.8);
+        heights.push(Math.max(0, h));
+        peak.push(h > 0.35);
       }
-      ctx.closePath();
-      ctx.strokeStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 12;
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-    }
-
-    ctx.shadowBlur = 0;
-  }
-
-  // ─── Drawing: Player ─────────────────────────────────────────────────────────
-  function drawPlayer() {
-    if (state === 'dead' || state === 'gameover') return;
-    const pt = spokePoint(playerSpoke, 1);
-    const nextPt = spokePoint((playerSpoke + 1) % NUM_SPOKES, 1);
-    const prevPt = spokePoint((playerSpoke - 1 + NUM_SPOKES) % NUM_SPOKES, 1);
-
-    // Draw a "claw" shape at the outer ring between adjacent nodes
-    const midX = (prevPt.x + nextPt.x) / 2;
-    const midY = (prevPt.y + nextPt.y) / 2;
-
-    const playerHue = (hue * 2) % 360;
-    const col = `hsl(${playerHue}, 100%, 70%)`;
-    ctx.strokeStyle = col;
-    ctx.shadowColor = col;
-    ctx.shadowBlur = 20;
-    ctx.lineWidth = 2.5;
-
-    // Claw: V-shape pointing inward from outer ring node
-    const innerPt = spokePoint(playerSpoke, 0.85);
-    ctx.beginPath();
-    ctx.moveTo(prevPt.x, prevPt.y);
-    ctx.lineTo(innerPt.x, innerPt.y);
-    ctx.lineTo(nextPt.x, nextPt.y);
-    ctx.stroke();
-
-    // Center dot
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = col;
-    ctx.shadowBlur = 25;
-    ctx.fill();
-
-    ctx.shadowBlur = 0;
-  }
-
-  // ─── Drawing: Enemies ────────────────────────────────────────────────────────
-  function drawEnemies() {
-    for (const e of enemies) {
-      const pt = spokePoint(e.spoke, e.depth);
-      let color;
-      if (e.type === 'basic') color = '#ffffff';
-      else if (e.type === 'flipper') color = `hsl(${(hue + 180) % 360}, 100%, 70%)`;
-      else if (e.type === 'tanker') color = `hsl(${(hue + 30) % 360}, 100%, 65%)`;
-
-      ctx.strokeStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 18;
-      ctx.lineWidth = 2;
-
-      if (e.type === 'basic') {
-        // Simple cross/diamond
-        const sz = 8 * e.depth + 3;
-        ctx.beginPath();
-        ctx.moveTo(pt.x - sz, pt.y);
-        ctx.lineTo(pt.x + sz, pt.y);
-        ctx.moveTo(pt.x, pt.y - sz);
-        ctx.lineTo(pt.x, pt.y + sz);
-        ctx.stroke();
-      } else if (e.type === 'flipper') {
-        // Hourglass between current and next spoke
-        const nextPt = spokePoint((e.spoke + 1) % NUM_SPOKES, e.depth);
-        const sz = 6 * e.depth + 2;
-        ctx.beginPath();
-        ctx.moveTo(pt.x - sz, pt.y - sz);
-        ctx.lineTo(pt.x + sz, pt.y + sz);
-        ctx.moveTo(pt.x + sz, pt.y - sz);
-        ctx.lineTo(pt.x - sz, pt.y + sz);
-        // line to neighbor
-        ctx.moveTo(pt.x, pt.y);
-        ctx.lineTo(nextPt.x, nextPt.y);
-        ctx.stroke();
-      } else if (e.type === 'tanker') {
-        // Large rectangle
-        const sz = 10 * e.depth + 4;
-        ctx.beginPath();
-        ctx.rect(pt.x - sz, pt.y - sz * 0.6, sz * 2, sz * 1.2);
-        ctx.stroke();
-      }
-
-      ctx.shadowBlur = 0;
+      slices.push({ depth: d, heights, peak, id: nextSliceId++ });
     }
   }
 
-  // ─── Drawing: Bullets ────────────────────────────────────────────────────────
-  function drawBullets() {
-    for (const b of bullets) {
-      const pt = spokePoint(b.spoke, b.depth);
-      const tailPt = spokePoint(b.spoke, Math.min(1, b.depth + 0.08));
-      const col = `hsl(${(hue + 60) % 360}, 100%, 80%)`;
-      ctx.strokeStyle = col;
-      ctx.shadowColor = col;
-      ctx.shadowBlur = 20;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(pt.x, pt.y);
-      ctx.lineTo(tailPt.x, tailPt.y);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
+  function advanceLandscape(dt) {
+    const scroll = 0.22 * (mode === "play" ? 1 + Math.min(0.8, distance * 0.01) : 0.5) * dt;
+    for (const s of slices) s.depth += scroll;
+    slices = slices.filter(s => s.depth < 1.15);
+    genPhase += dt * 0.8;
+    ensureSlices();
+    distance += scroll * 10;
+  }
+
+  function spawnAtHorizon() {
+    const kind = rand() < 0.55 ? "orb" : (rand() < 0.6 ? "crawler" : "dart");
+    things.push({
+      lane: Math.floor(rand() * LANES),
+      depth: 0.02 + rand() * 0.08,
+      kind,
+      alive: true,
+      phase: rand() * 6
+    });
+  }
+
+  function tryJump() {
+    if (mode !== "play" || !player.onGround) return;
+    const peak = meshPeak(player.lane, PLAYER_DEPTH);
+    player.vz = peak ? BOOST_V : JUMP_V;
+    player.onGround = false;
+    player.floating = peak;
+    if (peak) {
+      player.boostUntil = t + 0.5;
+      score += 30;
+      updateHud();
     }
   }
 
-  // ─── Drawing: Bombs ──────────────────────────────────────────────────────────
-  function drawBombs() {
-    for (const b of bombs) {
-      const pt = spokePoint(b.spoke, b.depth);
-      const bombHue = (hue + b.hueOffset) % 360;
-      const col = `hsl(${bombHue}, 100%, 65%)`;
-      const r = 10 + Math.sin(b.phase) * 3;
-
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
-      ctx.strokeStyle = col;
-      ctx.shadowColor = col;
-      ctx.shadowBlur = 25;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Inner star
-      ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        const rx = pt.x + Math.cos(a) * r * 0.5;
-        const ry = pt.y + Math.sin(a) * r * 0.5;
-        if (i === 0) ctx.moveTo(rx, ry); else ctx.lineTo(rx, ry);
-      }
-      ctx.closePath();
-      ctx.fillStyle = `hsla(${bombHue}, 100%, 75%, 0.6)`;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-  }
-
-  // ─── Drawing: Particles ──────────────────────────────────────────────────────
-  function drawParticles() {
-    for (const p of particles) {
-      const alpha = p.life / p.maxLife;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * alpha, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${p.hue}, 100%, 65%, ${alpha})`;
-      ctx.shadowColor = `hsl(${p.hue}, 100%, 65%)`;
-      ctx.shadowBlur = 10;
-      ctx.fill();
-    }
-    ctx.shadowBlur = 0;
-  }
-
-  // ─── Drawing: Superzapper Effect ─────────────────────────────────────────────
-  function drawSuperzapper() {
-    if (!superzapperActive) return;
-    const progress = 1 - superzapperTimer / 800;
-    const maxR = Math.max(canvas.width, canvas.height) * 1.5;
-    for (let i = 0; i < 6; i++) {
-      const r = maxR * progress * ((i + 1) / 6);
-      const h = (hue + i * 60) % 360;
-      ctx.beginPath();
-      ctx.arc(vanishX(), vanishY(), r, 0, Math.PI * 2);
-      ctx.strokeStyle = `hsla(${h}, 100%, 70%, ${0.7 - progress * 0.6})`;
-      ctx.shadowColor = `hsl(${h}, 100%, 70%)`;
-      ctx.shadowBlur = 30;
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-    ctx.shadowBlur = 0;
-  }
-
-  // ─── Drawing: HUD ────────────────────────────────────────────────────────────
-  function updateHUD() {
-    document.getElementById('scoreDisplay').textContent = score;
-    document.getElementById('levelDisplay').textContent = levelIndex + 1;
-    const hearts = lives > 0 ? '♥ '.repeat(lives).trim() : '';
-    document.getElementById('livesDisplay').textContent = hearts;
-  }
-
-  // ─── Game Actions ────────────────────────────────────────────────────────────
-  function tryShoot() {
-    if (shootCD > 0) return;
-    bullets.push({ spoke: playerSpoke, depth: 0.97 });
-    shootCD = PLAYER_SHOOT_COOLDOWN;
-  }
-
-  function trySuperzapper() {
-    if (superzapperCD > 0 || superzapperActive) return;
-    superzapperActive = true;
-    superzapperTimer = 800;
-    superzapperCD = SUPERZAPPER_COOLDOWN;
-    // Kill all enemies
-    for (const e of enemies) {
-      spawnParticles(spokePoint(e.spoke, e.depth), e.type === 'tanker' ? 25 : 15);
-      score += scoreForEnemy(e.type);
-    }
-    enemies = [];
-  }
-
-  function scoreForEnemy(type) {
-    if (type === 'basic') return 100;
-    if (type === 'flipper') return 250;
-    if (type === 'tanker') return 500;
-    return 100;
-  }
-
-  function spawnParticles(pt, count) {
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 1.5 + Math.random() * 3;
-      particles.push({
-        x: pt.x, y: pt.y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        r: 3 + Math.random() * 4,
-        hue: (hue + Math.random() * 180) % 360,
-        life: 40 + Math.random() * 30,
-        maxLife: 70
-      });
-    }
-  }
-
-  function spawnBombs(levelData) {
-    bombs = [];
-    for (let i = 0; i < levelData.bomb_count; i++) {
-      bombs.push({
-        spoke: Math.floor(Math.random() * NUM_SPOKES),
-        depth: 0.3 + Math.random() * 0.55,
-        hueOffset: Math.random() * 360,
-        phase: Math.random() * Math.PI * 2,
-        driftDir: Math.random() < 0.5 ? 1 : -1,
-        driftSpeed: 0.0003 + Math.random() * 0.0004
-      });
-    }
-  }
-
-  function spawnWave(levelData) {
-    const types = levelData.enemy_types;
-    const count = 2 + Math.floor(wavesSpawned * 0.5);
-    for (let i = 0; i < count; i++) {
-      const type = types[Math.floor(Math.random() * types.length)];
-      enemies.push({
-        type,
-        spoke: Math.floor(Math.random() * NUM_SPOKES),
-        depth: 0.05 + Math.random() * 0.1,
-        speed: (0.0008 + Math.random() * 0.0004) * levelData.speed_multiplier,
-        flipTimer: type === 'flipper' ? 1500 + Math.random() * 1000 : Infinity,
-        splitDone: false
-      });
-    }
-    wavesSpawned++;
+  function updateHud() {
+    elScore.textContent = String(score);
+    elBest.textContent = String(best);
+    elLives.textContent = "● ".repeat(Math.max(0, lives)).trim() || "—";
   }
 
   function startGame() {
+    mode = "play";
     score = 0;
     lives = 3;
-    levelIndex = 0;
-    playerSpoke = 0;
-    enemies = [];
-    bullets = [];
-    bombs = [];
+    player.lane = (LANES - 1) / 2;
+    player.z = 0; player.vz = 0; player.onGround = true; player.floating = false;
+    things = [];
     particles = [];
-    wavesSpawned = 0;
-    waveTimer = 0;
-    levelComplete = false;
-    superzapperCD = 0;
-    superzapperActive = false;
-    shootCD = 0;
-    playerMoveCD = 0;
-    state = 'playing';
-    document.getElementById('overlay').classList.add('hidden');
-    spawnBombs(currentLevel());
+    distance = 0;
+    overlay.classList.remove("show");
+    updateHud();
   }
 
-  function currentLevel() {
-    return levels[Math.min(levelIndex, levels.length - 1)];
-  }
-
-  function advanceLevel() {
-    levelIndex++;
-    if (levelIndex >= levels.length) levelIndex = levels.length - 1;
-    enemies = [];
-    bullets = [];
-    wavesSpawned = 0;
-    waveTimer = 0;
-    levelComplete = false;
-    spawnBombs(currentLevel());
-  }
-
-  function playerDie() {
+  function hurt() {
     lives--;
-    shakeFrames = 40;
-    shakeIntensity = 12;
-    spawnParticles(spokePoint(playerSpoke, 1), 30);
-
+    player.invuln = 1.2;
+    if (glitch) { glitch.className = "hard"; setTimeout(() => glitch.className = "", 500); }
     if (lives <= 0) {
-      state = 'gameover';
-      showOverlay('GAME OVER', `SCORE: ${score}`, 'PRESS ENTER TO RESTART');
-    } else {
-      state = 'dead';
-      deathTimer = 1800;
+      mode = "over";
+      if (score > best) { best = score; localStorage.setItem(HI_KEY, String(best)); }
+      overlay.classList.add("show");
+      updateHud();
     }
   }
 
-  function showOverlay(title, sub, instr) {
-    const overlay = document.getElementById('overlay');
-    overlay.classList.remove('hidden');
-    document.getElementById('overlayTitle').textContent = title;
-    document.getElementById('overlaySubtitle').textContent = sub;
-    document.getElementById('overlayInstructions').textContent = instr || '';
+  function zoneAt(x, y) {
+    const bandTop = H * 0.55;
+    if (y < bandTop) return null;
+    if (x < W * 0.48) return x < W * 0.24 ? "left" : "right";
+    if (x > W * 0.52) return "jump";
+    return null;
   }
 
-  // ─── Update ──────────────────────────────────────────────────────────────────
-  function update(dt) {
-    hue = (hue + 0.5) % 360;
+  function syncTouchFlags() {
+    touch.left = touch.right = touch.jump = false;
+    for (const z of activeTouches.values()) {
+      if (z === "left") touch.left = true;
+      else if (z === "right") touch.right = true;
+      else if (z === "jump") touch.jump = true;
+    }
+  }
 
-    if (state === 'dead') {
-      deathTimer -= dt;
-      if (deathTimer <= 0) {
-        state = 'playing';
-        playerSpoke = 0;
-        enemies = [];
-        bullets = [];
+  window.addEventListener("keydown", (e) => {
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space"].includes(e.code)) e.preventDefault();
+    if (keys.has(e.code)) return;
+    keys.add(e.code);
+    if (e.code === "Enter" && (mode === "title" || mode === "over")) startGame();
+    if (mode === "play" && (e.code === "Space" || e.code === "KeyW" || e.code === "ArrowUp")) tryJump();
+  });
+  window.addEventListener("keyup", (e) => keys.delete(e.code));
+  window.addEventListener("blur", () => { keys.clear(); activeTouches.clear(); syncTouchFlags(); });
+
+  playBtn.addEventListener("click", () => startGame());
+  overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target === playBtn) startGame(); });
+
+  function onTouchStart(e) {
+    e.preventDefault();
+    if (mode !== "play") { startGame(); return; }
+    for (const te of e.changedTouches) {
+      const z = zoneAt(te.clientX, te.clientY);
+      if (z) {
+        activeTouches.set(te.identifier, z);
+        if (z === "jump") tryJump();
       }
-      updateParticles(dt);
+    }
+    syncTouchFlags();
+  }
+  function onTouchMove(e) {
+    e.preventDefault();
+    if (mode !== "play") return;
+    for (const te of e.changedTouches) {
+      const z = zoneAt(te.clientX, te.clientY);
+      if (z) activeTouches.set(te.identifier, z);
+      else activeTouches.delete(te.identifier);
+    }
+    syncTouchFlags();
+  }
+  function onTouchEnd(e) {
+    e.preventDefault();
+    for (const te of e.changedTouches) activeTouches.delete(te.identifier);
+    syncTouchFlags();
+  }
+  canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+  canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+  canvas.addEventListener("touchend", onTouchEnd, { passive: false });
+  canvas.addEventListener("touchcancel", onTouchEnd, { passive: false });
+
+  function update(dt) {
+    t += dt;
+    hue = (hue + dt * 14) % 360;
+    advanceLandscape(dt);
+
+    if (mode === "title") {
+      if (rand() < dt * 0.6) spawnAtHorizon();
+      things = things.filter(th => th.alive && th.depth < 1.2);
       return;
     }
+    if (mode !== "play") return;
 
-    if (state !== 'playing') return;
+    let input = 0;
+    if (keys.has("KeyA") || keys.has("ArrowLeft") || touch.left) input -= 1;
+    if (keys.has("KeyD") || keys.has("ArrowRight") || touch.right) input += 1;
+    if (input) player.facing = input;
+    const air = player.onGround ? 1 : 0.65;
+    player.lane += input * MOVE_SPEED * air * dt;
+    player.lane = Math.max(0, Math.min(LANES - 1, player.lane));
 
-    // Cooldowns
-    if (shootCD > 0) shootCD -= dt;
-    if (playerMoveCD > 0) playerMoveCD -= dt;
-    if (superzapperCD > 0) superzapperCD -= dt;
-    if (superzapperActive) {
-      superzapperTimer -= dt;
-      if (superzapperTimer <= 0) superzapperActive = false;
+    if (player.floating && player.vz > 0 && t < player.boostUntil + 0.7) {
+      player.vz += GRAVITY * 0.32 * dt;
+    } else {
+      player.vz += GRAVITY * dt;
+      if (player.vz > 0) player.floating = false;
+    }
+    player.z += player.vz * dt;
+    if (player.vz >= 0 && player.z <= 0) {
+      player.z = 0; player.vz = 0; player.onGround = true; player.floating = false;
+    } else player.onGround = false;
+
+    if (player.invuln > 0) player.invuln -= dt;
+
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      spawnAtHorizon();
+      if (rand() < 0.4) spawnAtHorizon();
+      spawnTimer = Math.max(0.3, 0.9 - distance * 0.002);
     }
 
-    // Player movement (keyboard + touch + gamepad)
-    if (playerMoveCD <= 0) {
-      if (keys['ArrowLeft'] || keys['KeyA'] || touch.left || pad.left) {
-        playerSpoke = (playerSpoke - 1 + NUM_SPOKES) % NUM_SPOKES;
-        playerMoveCD = 120;
-      } else if (keys['ArrowRight'] || keys['KeyD'] || touch.right || pad.right) {
-        playerSpoke = (playerSpoke + 1) % NUM_SPOKES;
-        playerMoveCD = 120;
-      }
-    }
-
-    // Auto-shoot: keyboard hold, gamepad fire/move, OR always on mobile
-    if (keys['Space'] || pad.fire || pad.left || pad.right ||
-        touch.left || touch.right || ('ontouchstart' in window)) tryShoot();
-
-    // Wave spawning
-    const lv = currentLevel();
-    waveTimer += dt;
-    const waveInterval = 3500 / lv.speed_multiplier;
-    if (waveTimer >= waveInterval && wavesSpawned < lv.wave_count * 3) {
-      waveTimer = 0;
-      spawnWave(lv);
-    }
-
-    // Level complete check
-    if (wavesSpawned >= lv.wave_count * 3 && enemies.length === 0 && !levelComplete) {
-      levelComplete = true;
-      levelCompleteTimer = 2500;
-    }
-    if (levelComplete) {
-      levelCompleteTimer -= dt;
-      if (levelCompleteTimer <= 0) advanceLevel();
-    }
-
-    // Update enemies
-    const toRemove = [];
-    for (let i = 0; i < enemies.length; i++) {
-      const e = enemies[i];
-      e.depth += e.speed * dt;
-
-      // Flipper logic: periodically switch to adjacent spoke
-      if (e.type === 'flipper') {
-        e.flipTimer -= dt;
-        if (e.flipTimer <= 0) {
-          e.spoke = (e.spoke + (Math.random() < 0.5 ? 1 : -1) + NUM_SPOKES) % NUM_SPOKES;
-          e.flipTimer = 800 + Math.random() * 800;
-        }
-      }
-
-      // Tanker splits at midpoint
-      if (e.type === 'tanker' && !e.splitDone && e.depth > 0.5) {
-        e.splitDone = true;
-        enemies.push({
-          type: 'basic',
-          spoke: (e.spoke + 1) % NUM_SPOKES,
-          depth: e.depth,
-          speed: e.speed * 1.2,
-          flipTimer: Infinity,
-          splitDone: true
-        });
-        enemies.push({
-          type: 'basic',
-          spoke: (e.spoke - 1 + NUM_SPOKES) % NUM_SPOKES,
-          depth: e.depth,
-          speed: e.speed * 1.2,
-          flipTimer: Infinity,
-          splitDone: true
-        });
-        toRemove.push(i);
-        spawnParticles(spokePoint(e.spoke, e.depth), 10);
-        continue;
-      }
-
-      // Enemy reaches player
-      if (e.depth >= 0.95) {
-        if (e.spoke === playerSpoke) {
-          toRemove.push(i);
-          playerDie();
-          return; // stop update this frame
-        } else if (e.depth >= 1.05) {
-          toRemove.push(i);
+    for (const th of things) {
+      if (!th.alive) continue;
+      th.phase += dt * 5;
+      if (th.depth > 1.15) { th.alive = false; continue; }
+      if (th.depth > 0.88 && th.depth < 1.02) {
+        const laneDist = Math.abs(th.lane - player.lane);
+        if (laneDist < 0.55) {
+          if (th.kind === "orb") {
+            th.alive = false;
+            score += 100;
+            updateHud();
+          } else if (player.invuln <= 0 && player.z < 1.5) {
+            th.alive = false;
+            hurt();
+          }
         }
       }
     }
-    // Remove in reverse order
-    for (let i = toRemove.length - 1; i >= 0; i--) {
-      enemies.splice(toRemove[i], 1);
-    }
-
-    // Update bullets
-    const bulletsToRemove = [];
-    for (let i = 0; i < bullets.length; i++) {
-      const b = bullets[i];
-      b.depth -= BULLET_SPEED * (dt / 16);
-
-      if (b.depth <= 0.02) {
-        bulletsToRemove.push(i);
-        continue;
-      }
-
-      // Collision with enemies
-      let hit = false;
-      for (let j = enemies.length - 1; j >= 0; j--) {
-        const e = enemies[j];
-        if (e.spoke === b.spoke && Math.abs(e.depth - b.depth) < 0.08) {
-          spawnParticles(spokePoint(e.spoke, e.depth), PARTICLE_COUNT);
-          score += scoreForEnemy(e.type);
-          enemies.splice(j, 1);
-          hit = true;
-          break;
-        }
-      }
-      if (hit) bulletsToRemove.push(i);
-    }
-    for (let i = bulletsToRemove.length - 1; i >= 0; i--) {
-      bullets.splice(bulletsToRemove[i], 1);
-    }
-
-    // Update bombs
-    for (let i = bombs.length - 1; i >= 0; i--) {
-      const b = bombs[i];
-      b.phase += 0.03;
-      b.depth += b.driftDir * b.driftSpeed * dt;
-      if (b.depth > 0.88) b.driftDir = -1;
-      if (b.depth < 0.2) b.driftDir = 1;
-
-      // Collect if player on same spoke and close enough
-      const pt = spokePoint(b.spoke, b.depth);
-      const playerPt = spokePoint(playerSpoke, 1.0);
-      const dx = pt.x - playerPt.x;
-      const dy = pt.y - playerPt.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 40 && b.spoke === playerSpoke) {
-        score += 500;
-        spawnParticles(pt, 20);
-        bombs.splice(i, 1);
-      }
-    }
-
-    updateParticles(dt);
-
-    // Screen shake decay
-    if (shakeFrames > 0) {
-      shakeFrames--;
-      shakeIntensity *= 0.92;
-    }
-
-    updateHUD();
+    things = things.filter(th => th.alive);
   }
 
-  function updateParticles(dt) {
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vx *= 0.95;
-      p.vy *= 0.95;
-      p.life--;
-      if (p.life <= 0) particles.splice(i, 1);
-    }
-  }
-
-  // ─── Touch Button Drawing ────────────────────────────────────────────────────
-  function drawTouchButtons() {
-    const w = canvas.width, h = canvas.height;
-    const btnH = Math.min(120, h * 0.18);
-    const btnW = w / 3;
-    const zapReady = superzapperCD <= 0 && !superzapperActive;
-
-    ctx.save();
-    ctx.globalAlpha = 0.35;
-
-    // Left button
-    const lActive = touch.left;
-    ctx.fillStyle = lActive ? '#0ff' : '#003333';
-    ctx.fillRect(0, h - btnH, btnW, btnH);
-
-    // Right button
-    const rActive = touch.right;
-    ctx.fillStyle = rActive ? '#0ff' : '#003333';
-    ctx.fillRect(w - btnW, h - btnH, btnW, btnH);
-
-    // Zap button
-    ctx.fillStyle = zapReady ? (touch.zap ? '#ff0' : '#332200') : '#111';
-    ctx.fillRect(btnW, h - btnH, btnW, btnH);
-
-    ctx.globalAlpha = 1;
-
-    // Button borders
-    ctx.strokeStyle = '#0ff';
-    ctx.shadowColor = '#0ff';
-    ctx.shadowBlur = lActive ? 20 : 8;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(1, h - btnH, btnW - 1, btnH - 1);
-    ctx.shadowBlur = rActive ? 20 : 8;
-    ctx.strokeRect(w - btnW, h - btnH, btnW - 1, btnH - 1);
-
-    ctx.strokeStyle = zapReady ? '#ff0' : '#444';
-    ctx.shadowColor = zapReady ? '#ff0' : '#444';
-    ctx.shadowBlur = zapReady ? 15 : 4;
-    ctx.strokeRect(btnW, h - btnH, btnW, btnH - 1);
-
-    // Labels
-    ctx.shadowBlur = 0;
-    const fontSize = Math.min(36, btnH * 0.45);
-    ctx.font = `bold ${fontSize}px Courier New`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const midY = h - btnH / 2;
-
-    ctx.fillStyle = lActive ? '#000' : '#0ff';
-    ctx.fillText('◀', btnW / 2, midY);
-
-    ctx.fillStyle = rActive ? '#000' : '#0ff';
-    ctx.fillText('▶', w - btnW / 2, midY);
-
-    ctx.fillStyle = zapReady ? '#ff0' : '#444';
-    const zapLabel = zapReady ? 'ZAP' : `${Math.ceil(superzapperCD / 1000)}s`;
-    ctx.font = `bold ${Math.min(28, btnH * 0.35)}px Courier New`;
-    ctx.fillText(zapLabel, w / 2, midY);
-
-    ctx.textBaseline = 'alphabetic';
-    ctx.restore();
-  }
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
   function render() {
-    ctx.save();
+    ctx.fillStyle = "#05060a";
+    ctx.fillRect(0, 0, W, H);
 
-    // Screen shake
-    if (shakeFrames > 0) {
-      const sx = (Math.random() - 0.5) * shakeIntensity;
-      const sy = (Math.random() - 0.5) * shakeIntensity;
-      ctx.translate(sx, sy);
+    const v = vanish();
+    const g = ctx.createRadialGradient(v.x, v.y, 0, v.x, v.y, H * 0.5);
+    g.addColorStop(0, `hsla(${hue}, 80%, 40%, 0.15)`);
+    g.addColorStop(1, "transparent");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    const sorted = slices.slice().sort((a, b) => a.depth - b.depth);
+    for (let lane = 0; lane < LANES; lane++) {
+      ctx.beginPath();
+      let started = false;
+      for (const s of sorted) {
+        if (s.depth < 0 || s.depth > 1.05) continue;
+        const p = project(lane, s.depth, s.heights[lane] || 0);
+        if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+        else ctx.lineTo(p.x, p.y);
+      }
+      if (started) {
+        ctx.strokeStyle = `hsla(${(hue + lane * 12) % 360}, 100%, 55%, 0.6)`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
 
-    // Clear
-    ctx.fillStyle = 'rgba(0,0,0,0.88)';
-    ctx.fillRect(-20, -20, canvas.width + 40, canvas.height + 40);
-
-    drawWeb();
-    drawBombs();
-    drawEnemies();
-    drawBullets();
-    drawPlayer();
-    drawParticles();
-    drawSuperzapper();
-
-    // Level complete flash
-    if (levelComplete) {
-      ctx.fillStyle = `hsla(${hue}, 100%, 70%, 0.15)`;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = 'bold 48px Courier New';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
-      ctx.shadowColor = `hsl(${hue}, 100%, 70%)`;
-      ctx.shadowBlur = 30;
-      ctx.fillText('LEVEL CLEAR!', canvas.width / 2, canvas.height / 2);
-      ctx.shadowBlur = 0;
+    for (const s of sorted) {
+      if (s.depth < 0.05 || s.depth > 1.0) continue;
+      ctx.beginPath();
+      for (let lane = 0; lane < LANES; lane++) {
+        const p = project(lane, s.depth, s.heights[lane] || 0);
+        if (lane === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.strokeStyle = `hsla(${(hue + s.depth * 80) % 360}, 100%, 50%, ${0.2 + s.depth * 0.5})`;
+      ctx.lineWidth = 1 + s.depth;
+      ctx.stroke();
     }
 
-    // Superzapper charge indicator (desktop)
-    if (state === 'playing' && !('ontouchstart' in window)) {
-      const zapReady = superzapperCD <= 0 && !superzapperActive;
-      ctx.font = '14px Courier New';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = zapReady ? '#0ff' : '#444';
-      ctx.shadowColor = '#0ff';
-      ctx.shadowBlur = zapReady ? 10 : 0;
-      const zapKey = pad.on ? 'B: SUPERZAPPER' : 'Z: SUPERZAPPER';
-      ctx.fillText(zapKey + (zapReady ? ' [READY]' : ` [${Math.ceil(superzapperCD / 1000)}s]`), 20, canvas.height - 20);
-      ctx.shadowBlur = 0;
+    for (const th of things) {
+      if (!th.alive) continue;
+      const elev = meshHeight(th.lane, th.depth);
+      const p = project(th.lane, th.depth, elev + 0.05);
+      const s = p.s;
+      if (th.kind === "orb") {
+        ctx.strokeStyle = `hsl(${(hue + 120) % 360}, 100%, 70%)`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6 * s, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = `hsl(${(hue + 0) % 360}, 100%, 60%)`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 8 * s);
+        ctx.lineTo(p.x + 5 * s, p.y + 6 * s);
+        ctx.lineTo(p.x - 5 * s, p.y + 6 * s);
+        ctx.closePath();
+        ctx.stroke();
+      }
     }
 
-    // Controller connected indicator
-    if (pad.on) {
-      ctx.font = '14px Courier New';
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#0ff';
-      ctx.shadowColor = '#0ff';
-      ctx.shadowBlur = 8;
-      ctx.fillText('◎ GAMEPAD', canvas.width - 20, canvas.height - 20);
-      ctx.shadowBlur = 0;
+    if (mode === "play") {
+      if (!(player.invuln > 0 && Math.floor(t * 20) % 2 === 0)) {
+        const elev = meshHeight(player.lane, PLAYER_DEPTH);
+        const p = project(player.lane, PLAYER_DEPTH, elev + player.z * 0.045);
+        const col = `hsl(${(hue + 15) % 360}, 100%, 72%)`;
+        ctx.strokeStyle = col;
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 16;
+        ctx.lineWidth = 2.4;
+        const f = player.facing;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 13);
+        ctx.lineTo(p.x + 11 * f, p.y);
+        ctx.lineTo(p.x, p.y + 11);
+        ctx.lineTo(p.x - 11 * f, p.y);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
     }
 
-    // Mobile touch buttons
-    if ('ontouchstart' in window && (state === 'playing' || state === 'dead')) {
-      drawTouchButtons();
-    }
+    if (mode === "play" && ("ontouchstart" in window || matchMedia("(pointer: coarse)").matches)) {
+      const padH = Math.min(88, H * 0.16);
+      const padY = H - padH - 10;
+      const leftW = W * 0.48;
+      const rightX = W * 0.52;
+      const rightW = W - rightX - 8;
 
-    ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = "#0a1214";
+      ctx.fillRect(8, padY, leftW - 16, padH);
+      ctx.fillRect(rightX, padY, rightW, padH);
+
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = "#22e0e8";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(8, padY, leftW - 16, padH);
+      ctx.strokeRect(rightX, padY, rightW, padH);
+
+      const midX = 8 + (leftW - 16) / 2;
+      ctx.beginPath();
+      ctx.moveTo(midX, padY + 8);
+      ctx.lineTo(midX, padY + padH - 8);
+      ctx.stroke();
+
+      ctx.font = `bold ${Math.min(28, padH * 0.38)}px IBM Plex Mono, monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const cy = padY + padH / 2;
+
+      ctx.globalAlpha = touch.left ? 1 : 0.55;
+      ctx.fillStyle = touch.left ? "#22e0e8" : "#8fd";
+      ctx.fillText("◀", 8 + (leftW - 16) * 0.25, cy);
+
+      ctx.globalAlpha = touch.right ? 1 : 0.55;
+      ctx.fillStyle = touch.right ? "#22e0e8" : "#8fd";
+      ctx.fillText("▶", 8 + (leftW - 16) * 0.75, cy);
+
+      ctx.globalAlpha = touch.jump ? 1 : 0.55;
+      ctx.fillStyle = touch.jump ? "#22e0e8" : "#8fd";
+      ctx.font = `bold ${Math.min(22, padH * 0.32)}px IBM Plex Mono, monospace`;
+      ctx.fillText("JUMP", rightX + rightW / 2, cy);
+      ctx.restore();
+    }
   }
 
-  // ─── Main Loop ───────────────────────────────────────────────────────────────
-  function loop(timestamp) {
-    const dt = Math.min(timestamp - lastTime, 50); // cap at 50ms
-    lastTime = timestamp;
-    frameTime = timestamp;
-
-    pollGamepad();
+  function frame(ts) {
+    if (!last) last = ts;
+    const dt = Math.min(0.05, (ts - last) / 1000);
+    last = ts;
     update(dt);
     render();
-
-    requestAnimationFrame(loop);
+    requestAnimationFrame(frame);
   }
 
-  // Init
-  updateHUD();
-  requestAnimationFrame(ts => {
-    lastTime = ts;
-    requestAnimationFrame(loop);
-  });
-
+  resize();
+  window.addEventListener("resize", resize);
+  elBest.textContent = String(best);
+  ensureSlices();
+  requestAnimationFrame(frame);
 })();
