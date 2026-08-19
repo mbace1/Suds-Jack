@@ -1,0 +1,64 @@
+# Run the projects' own gates on every push and pull request.
+#
+# Why this exists: until now the repository had no CI whatever, so a pull
+# request page could look entirely healthy while the game was unplayable — the
+# only verification was whoever remembered to run the gates locally. Codex
+# reviews the code, but nothing was running it.
+#
+# Scoping: each project gets its own job, gated on paths, so a change to one
+# lane never fails on another lane's unrelated breakage. Only the lanes that
+# are known green are wired up; add a block per project as each is verified,
+# rather than turning everything on at once and teaching people to ignore red.
+
+name: gates
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# a new push supersedes the run in flight for the same ref
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  piritori:
+    name: flow-core · piritori · toko-move
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The two bare-node gates need nothing at all — no browser, no GPU, no
+      # audio device — which is exactly why they are the ones worth running
+      # first: they fail in seconds when they fail.
+      - name: the neutral core's contract
+        run: node flow-core/test/contract.mjs
+
+      - name: the rank fights
+        run: node piritori/test/fight.mjs
+
+      - name: the market — named goods, deals, and what is in the bag
+        run: node piritori/test/market.mjs
+
+      # The asset pipeline's own gate: the manifest is well formed, every
+      # spec hashes, and an output at an old hash reads as drift. Needs no
+      # key and calls nothing — generation is never run in CI.
+      - name: the graphics pipeline's contract
+        run: node test/assets-smoke.cjs
+
+      # The browser gate needs Chromium. `--with-deps` pulls the system
+      # libraries the headless browser needs on a bare runner.
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: both entry points, in a real browser
+        run: node flow-core/test/smoke.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules

@@ -1,5 +1,45 @@
 # EERI — versions
 
+## v15.20 — 2026-08-18 — the machines are modelled, and Eeri has idle breaks
+
+Two art-lane PRs, merged in order onto v15.19.
+
+**#283 — the eight machines, modelled and rigged.** Eight new `.glb` under
+`assets/3d` (forklift, roller, pipelayer, dumptruck, cherrypicker, hopper,
+floodlight, and an `excavator_v2`), each joint-verified, with the rig contract
+written down in `art-src/machines/RIGS.md` and the drive ranges in
+`art-src/machines/drive.js`. Thirteen new art-src tools came with them, and
+the World 1/2 libraries gained an `INDEX.md` apiece plus the **elevation
+test** — *a circle is either a true circle or a straight line, never an
+ellipse* — which is the plane rule restated as a consequence rather than as a
+camera angle, because naming the angle had already failed six times out of
+twelve.
+
+**Two of those machines ship UNUSED, on purpose, and that is the right call.**
+`excavator_v2` stays behind `excavator_v1` and the crane stays
+`placeholder`: `excavator_v1` was deliberately built to match the code
+placeholder pivot for pivot, so game code cannot tell which it got, while v2
+is a different machine whose proportions break the girder pickup — and the
+crane's reach differs enough that the ball stops short of the brick wall.
+Both need `js/excavator.js` / `js/crane.js` constants retuned to the asset,
+which is gameplay-lane work. Handing them over beats swapping them in and
+breaking the wrecking sequence.
+
+**#285 — seven new clips on the same character** (`eeri_v5`): `idle2` and
+`lookaround` (idle breaks), `climbon` / `climboff` (mounting a ladder and
+topping out), `teeter` (edge hesitation), and `talk` / `confused` (the
+to-camera beats). Clip count 8 -> 15. Meshy's task history had expired, so
+the source mesh was re-rigged and the clips retargeted onto v4's skeleton by
+`art-src/tools/addclips.mjs`, which refuses any clip with an unresolved bone
+target; every clip is measured moving, because a flat clip renders exactly
+like a rig at rest and one bought idle was exactly that.
+
+**One merge conflict, and it is worth recording what it was:** both PRs
+rewrote the same `_note` paragraph on the `eeri` model. #285's won, because
+#285 is the PR that bumps the file to `eeri_v5.glb` and a note has to describe
+what is on disk. Nothing else collided — neither PR touched the v15.19 layer
+block.
+
 ## v15.19 — 2026-08-18 — four worlds, four sets of art, and 25 MB less of it
 
 Owner's report: *"all World 1 is unoptimized and has old graphics/assets,

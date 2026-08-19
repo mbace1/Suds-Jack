@@ -17,17 +17,18 @@
 // lets the arcade's `{ui:true}` pad bridge walk it, and what keeps the 44px and
 // WCAG-AA floors measurable.
 
-import { PixelScreen, loop } from './pixel.js?v=8';
-import { drawRoom, FLOOR_Y, FIRE_X, skyOf } from './room.js?v=8';
-import { makeIdle, HELLO } from './idle.js?v=8';
-import * as audio from './audio.js?v=8';
-import { makeBreath, ROUNDS } from './breathe.js?v=8';
-import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=8';
+import { PixelScreen, loop } from './pixel.js?v=10';
+import { ready as artReady } from './assets.js?v=10';
+import { drawRoom, FLOOR_Y, FIRE_X, skyOf } from './room.js?v=10';
+import { makeIdle, HELLO } from './idle.js?v=10';
+import * as audio from './audio.js?v=10';
+import { makeBreath, ROUNDS } from './breathe.js?v=10';
+import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=10';
 import {
   S, save, write, rollover, warmth, caredToday, liveStreak, stage, nextStage,
   toggleTask, setMood, countBreath, addTask, removeTask, spend, found, note, setSound,
   dayKey, FULL_DAY, ERRAND_COST, PAY,
-} from './state.js?v=8';
+} from './state.js?v=10';
 
 const MOODS = [
   { id: 'rough',  label: 'rough' },
@@ -521,6 +522,17 @@ function render(focus = false) {
 }
 
 // ── boot ─────────────────────────────────────────────────────────────
+// THE ART BEFORE THE FIRST PAINT, not after it. Rendering once and again when
+// the bitmaps arrive means the screen visibly changes on load — which the
+// reduced-motion gate correctly failed, because "the room holds still" cannot
+// have an exception for the first half second. A top-level await holds the
+// module here, so `window.__kd` below it does not exist until there is a
+// finished picture, and nothing downstream can observe a half-drawn one.
+//
+// `ready()` never rejects and resolves immediately when nothing is live, so
+// this is free on a build with no cut art and correct on one with it.
+await artReady();
+
 render();
 
 // The one-time note about where this all lives. It is first, it is once, and it

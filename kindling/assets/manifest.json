@@ -1,0 +1,37 @@
+{
+  "_": "What the art pipeline delivered, and what the game does about what it has not. Every entry is `live` (a cut PNG beside this file) or `placeholder` (drawn in code). Flipping a mode is a one-word edit: js/assets.js picks the bitmap up and the drawing code stops being asked. Sources and hashes are in ../art-src/production/batch1/.",
+  "grid": { "w": 320, "h": 180 },
+  "_strips": "A sprite sheet is a FLAT run of cells in reading order wrapping at the sheet width, not one row per animation — batch1 packs 37 cells of Ember onto a 10x4 grid. So a strip is [firstCell, count] rather than a row index, which is also the only form that survives a sheet being re-packed at a different width.",
+  "assets": {
+    "camp.sky":    { "req": "A1", "kind": "layer", "mode": "live", "file": "camp-sky.png",    "w": 320, "h": 180 },
+    "camp.ruin":   { "req": "A2", "kind": "layer", "mode": "live", "file": "camp-ruin.png",   "w": 320, "h": 180 },
+    "camp.ground": { "req": "A3", "kind": "layer", "mode": "live", "file": "camp-ground.png", "w": 320, "h": 180 },
+    "camp.front":  { "req": "A4", "kind": "layer", "mode": "live", "file": "camp-front.png",  "w": 320, "h": 180 },
+
+    "travel.sky":   { "req": "C1", "kind": "layer", "mode": "placeholder", "file": "travel-sky.png",   "w": 960, "h": 180, "tiles": true },
+    "travel.far":   { "req": "C2", "kind": "layer", "mode": "placeholder", "file": "travel-far.png",   "w": 960, "h": 180, "tiles": true },
+    "travel.route": { "req": "C3", "kind": "layer", "mode": "placeholder", "file": "travel-route.png", "w": 960, "h": 180, "tiles": true },
+    "travel.front": { "req": "C4", "kind": "layer", "mode": "placeholder", "file": "travel-front.png", "w": 960, "h": 180, "tiles": true },
+
+    "ember":      { "req": "B",  "kind": "sheet", "mode": "live", "file": "ember.png",      "cell": 40, "foot": 40,
+                    "strips": { "idle": [0,8], "walk": [8,6], "run": [14,6], "cast": [20,8], "poses": [26,4], "ages": [30,5] } },
+    "mossling":   { "req": "D1", "kind": "sheet", "mode": "live", "file": "mossling.png",   "cell": 40, "foot": 40,
+                    "strips": { "idle": [0,8], "walk": [8,6], "run": [14,6], "cast": [20,8], "poses": [26,4], "ages": [30,5] } },
+    "ashling":    { "req": "D2", "kind": "sheet", "mode": "live", "file": "ashling.png",    "cell": 40, "foot": 40,
+                    "strips": { "idle": [0,8], "walk": [8,6], "run": [14,6], "cast": [20,8], "poses": [26,4], "ages": [30,5] } },
+    "mossknight": { "req": "D3", "kind": "sheet", "mode": "live", "file": "mossknight.png", "cell": 40, "foot": 40,
+                    "strips": { "idle": [0,8], "walk": [8,6], "attack": [14,8], "guard": [22,8], "poses": [30,4] } },
+
+    "objects": { "req": "E", "kind": "atlas", "mode": "live", "file": "objects.png", "cell": 16,
+                 "cells": ["logs", "ash", "smoke", "spark", "mug", "bottle", "potion", "book",
+                           "scroll", "key", "coin", "lantern", "torch", "sword", "shield", "helm",
+                           "gauntlet", "moss", "ember-seed", "feather", "bone", "shell", "pinecone",
+                           "mushroom-a", "mushroom-b", "mushroom-c", "flower-a", "flower-b",
+                           "flower-c", "flower-d", "grass-a", "grass-b", "grass-c", "rock-a",
+                           "rock-b", "rock-c", "marker", "cairn", "rug", "satchel", "pot", "bedroll"] },
+
+    "ui": { "req": "F", "kind": "atlas", "mode": "live", "file": "ui.png", "cell": 32,
+            "_": "columns 0-7 are the dark theme, 8-15 the parchment one",
+            "cells": [] }
+  }
+}

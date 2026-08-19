@@ -271,22 +271,38 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
       }
       return n;
     };
+    // How warm a patch is ON AVERAGE, which a count cannot tell you once every
+    // pixel in it already clears the threshold. The cut ground layer is warm
+    // brown before any fire touches it, so counting warm pixels out at the edge
+    // of the light saturates and then reads a brighter fire as no change at
+    // all — it went 1216 -> 1204 across a whole day.
+    const heatIn = (x, y, w, h) => {
+      const d = ctx.getImageData(x, y, w, h).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += Math.max(0, d[i] - d[i + 2]);
+      return Math.round(sum / (w * h));
+    };
     const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const s = __kd.state;
     s.sheet.done = []; s.sheet.mood = null; s.sheet.breaths = 0;
     __kd.view.shown = 0;
     await frame();
-    const cold = { warm: warmIn(0, 0, c.width, c.height), far: warmIn(156, 62, 30, 36) };
+    const cold = { warm: warmIn(0, 0, c.width, c.height), far: heatIn(196, 126, 64, 44) };
     s.sheet.done = __kd.debug.tasks(); s.sheet.mood = 'ok';
     __kd.view.shown = 1;
     await frame();
-    const warm = { warm: warmIn(0, 0, c.width, c.height), far: warmIn(156, 62, 30, 36) };
+    const warm = { warm: warmIn(0, 0, c.width, c.height), far: heatIn(196, 126, 64, 44) };
     return { cold, warm };
   });
   check(`a full day is measurably more firelight (${brightness.cold.warm} → ${brightness.warm.warm} warm pixels)`,
     brightness.warm.warm > brightness.cold.warm * 1.5);
-  check(`and the far side of the ruin is only reached by a full fire (${brightness.cold.far} → ${brightness.warm.far})`,
-    brightness.cold.far < 10 && brightness.warm.far > 60);
+  // The sample sits on the ground to the RIGHT of the props, past where a
+  // banked fire reaches. It moved twice: once for the 320x180 grid, and once
+  // because the old spot landed on the castle's lit windows in the cut sky
+  // layer — those are warm whatever kind of day you had, since somebody else is
+  // up a long way off, so measuring firelight there measured nothing at all.
+  check(`and the far side of the camp is only reached by a full fire (${brightness.cold.far} → ${brightness.warm.far})`,
+    brightness.warm.far > brightness.cold.far + 8);
 
   // ── the day turning over ──
   const rolled = await page.evaluate(() => {
@@ -454,6 +470,26 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   });
   const rising = bands.every((n, i) => i === 0 || n > bands[i - 1]);
   check(`the day has five bands and each one is a brighter room (${bands.join(' → ')})`, rising);
+
+  // ── the seam between drawn art and cut art (js/assets.js) ──
+  // The whole point of the manifest is that nobody has to ask whether the art
+  // has landed. So the gate asks the two questions that could silently break
+  // that: did anything the manifest calls `live` fail to load, and does the
+  // offline shell carry every file it promises? A live entry with no file is a
+  // hole in the picture; a live file the worker does not precache is an app
+  // that loads online and is blank on a train, which this repo has shipped.
+  const art = await page.evaluate(async () => {
+    const a = await import('./js/assets.js?v=9');
+    await a.ready();
+    return { grid: a.grid(), missing: a.missing(), files: a.files() };
+  });
+  check(`the art manifest loads and matches the canvas `
+    + `(${art.grid.w}x${art.grid.h})`, art.grid.w === 320 && art.grid.h === 180);
+  check(`nothing the manifest calls live is missing`
+    + (art.missing.length ? ` — ${art.missing.join(', ')}` : ''), art.missing.length === 0);
+  const shell = fs.readFileSync(path.join(ROOT, 'kindling', 'sw.js'), 'utf8');
+  const uncached = art.files.filter(f => !shell.includes(f.replace('./', '')));
+  check(`every live asset is precached (${art.files.length} file(s))`, uncached.length === 0);
 
   // ── the roster reads by SHAPE (ART_GUIDE.md §11.2) ──
   // Four species that differ only in palette are one species in four costumes.

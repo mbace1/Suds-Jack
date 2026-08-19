@@ -1,0 +1,67 @@
+# Checking a delivery — the two tools, and what they found
+
+`ART_REQUESTS.md` §1 states the rules that make a sheet cuttable. These two
+tools **measure** them, because a rule nobody can check is a rule that gets
+broken silently — and this project has already paid for that twice: five scene
+concepts arrived at 160×90 (thumbnails of the art, not the art), and a
+re-delivery arrived truncated. Neither is visible in a file listing.
+
+```
+node tools/art-manifest.cjs expect <dir> > MANIFEST.md   # publish sums BEFORE the files arrive
+node tools/art-manifest.cjs verify <dir> MANIFEST.md     # checks bytes AND sha256
+NODE_PATH=$(npm root -g) node tools/art-check.cjs <dir>  # is it cuttable?
+```
+
+## Why publish sums first
+
+PR #282 shipped the pack as base64 chunks. It produced 107,789 bytes against a
+manifest claiming 116,809, and the only symptom anyone had was *"the archive
+will not open"* — which could mean a bad zip, a bad script, a bad upload or a
+bad file. With sums published first it reports **which file, and how many bytes
+short**. It also separates a *broken* file from a *substituted* one: right size
+and wrong hash is somebody's other draft, not a transfer fault.
+
+Eeri does exactly this and it paid off — `BINARY_STATUS.md` there published the
+checksums before the binaries existed, so the approved machine roster was
+identified **by hash rather than by eye**, which is what makes *"do not infer
+approval for discarded intermediate sheets"* enforceable instead of hopeful.
+
+## What `art-check` measured on the current delivery
+
+**19 of 19 files fail, all four ways: not PNG · under 320×180 · no alpha ·
+presentation board.** That is not a surprise — it is `ART_REQUESTS.md` §0 in
+numbers rather than prose. The useful column is the **corner test**: a board is
+opaque and dark at all four corners, which is precisely what makes it readable
+and uncuttable, and 17 of 19 are 4/4.
+
+### The finding that is NOT already in ART_REQUESTS
+
+**Distinct colour counts run 3,110 – 20,073.**
+
+Rule 4 asks for true pixel art at 1:1 rather than an illustration with a pixel
+filter over it. A genuine limited-palette sheet has **dozens** of colours. These
+have thousands, which means they are illustrations that *look* pixelly — every
+edge is anti-aliased into in-between values.
+
+At the same time **74–100% of sampled pixels sit within 24 of a colour already
+in `js/palette.js`**. So the art is on-palette in *spirit* — the hues are right,
+and sampling the palette off these references (as `js/palette.js` now does) was
+the correct call.
+
+Both things being true at once is the actionable part:
+
+> **A re-delivery at 320×180 in PNG with alpha would still fail rule 4 unless it
+> is also QUANTISED to the palette.** Size, format and transparency are
+> transfer problems. The colour count is an *authoring* problem, and it is the
+> one that does not fix itself by exporting differently.
+
+Worth stating in the next request in exactly those terms: *quantise to the
+shared palette, no anti-aliasing, nearest-neighbour only* — otherwise the same
+sheets come back bigger and still soft, and the round trip is spent.
+
+## Using them as a gate
+
+`art-check.cjs` is **advisory by default** so it can be run against art nobody
+has promised yet. Pass `--strict` to exit non-zero once a delivery is supposed
+to conform. It is deliberately not wired into `test/smoke.cjs`: the smoke gate
+tests the *game*, and no art here is loaded by the game yet.

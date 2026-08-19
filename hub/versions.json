@@ -40,8 +40,8 @@
     "from": "VERSIONS.md"
   },
   "eeri": {
-    "v": "15.19",
-    "n": 15019,
+    "v": "15.20",
+    "n": 15020,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
@@ -58,6 +58,16 @@
     "v": "37",
     "n": 37000,
     "from": "cache token"
+  },
+  "piritori": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
+  "tokomove": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
   },
   "tinyhawk": {
     "v": "6",

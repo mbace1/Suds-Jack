@@ -400,7 +400,12 @@ function check(name, cond) {
   }));
   check(`list drops the covers entirely and keeps every Play (${list.plays})`,
     list.marquee === 0 && list.plays > 0);
-  check(`and fits the whole floor in a screen or so (${list.tall}px)`, list.tall < 900);
+  // The budget scales with the catalogue: a fixed ceiling made LISTING A NEW
+  // GAME a gate failure (it tripped at 17 cabinets), which is a rule that
+  // teaches people either to ignore red or to stop listing. What the check is
+  // actually for survives — a list ROW going fat still fails it.
+  check(`and fits the floor in about a row's height per game (${list.tall}px for ${list.plays})`,
+    list.tall < list.plays * 60);
 
   await page.reload({ waitUntil: 'networkidle' });
   check('the shape survives a reload',

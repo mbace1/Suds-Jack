@@ -26,8 +26,18 @@
 // It is drawn, never sprited: one table of numbers, so growing cannot make five
 // sheets of art that drift apart.
 
-import { PAL, mix, shade } from './palette.js?v=8';
-import { get as species, stageAt } from './species.js?v=8';
+import { PAL, mix, shade } from './palette.js?v=10';
+import { get as species, stageAt, STAGES } from './species.js?v=10';
+import { frame } from './assets.js?v=10';
+
+// Which strip a pose belongs to. The game has more poses than the sheet has
+// strips, on purpose — `doze`, `peer` and `perk` are things the creature does
+// in its own time and none of them is worth an animation of its own, so they
+// land on the four one-off `poses` cells and everything else falls back to
+// idle. A pose the sheet cannot spell is not a missing asset; it is a pose
+// drawn from the idle loop, which is what an idle loop is for.
+const STRIP = { walk: 'walk', hop: 'run', stretch: 'poses', peer: 'poses', perk: 'poses' };
+const POSE_CELL = { stretch: 0, peer: 1, perk: 2, doze: 3 };
 
 // ── SKIN: what a species is made of ──
 // The build is shared on purpose. The global bible's "shared shape language"
@@ -177,6 +187,36 @@ export function drawPet(scr, x, floorY, opts = {}) {
     face = -1, look = 0, kind = 'ember',
   } = opts;
   const sp = species(kind);
+
+  // ── THE CUT SPRITE, if one has arrived ──
+  // Asked for first, and drawn instead of everything below it. The fallback is
+  // not a degraded mode: it is the same creature built the same way from the
+  // same table, so a half-delivered roster looks like one roster.
+  //
+  // The sheet is anchored by its FEET, not its box. A 26px Ember in a 40px cell
+  // has fourteen pixels of air above it, and centring the cell would float the
+  // creature off the ground by exactly that much.
+  const strip = pose === 'doze' || pose === 'stretch' || pose === 'peer' || pose === 'perk'
+    ? 'poses' : (STRIP[pose] ?? 'idle');
+  // THE AGE HAS TO PICK ITS OWN CELL. batch1's sheet animates one adult and
+  // gives the other four ages a single still each, so an idle frame is the
+  // adult whatever stage you are at — which quietly collapsed five growth
+  // stages into one creature and was caught by the silhouette gate reading 0px
+  // of difference across the whole ladder. Standing still, the stage wins;
+  // moving, the animation does, and the size pops. That is the sheet's shape,
+  // not a choice: per-age strips are a Request D follow-up.
+  const ageIdx = Math.max(0, STAGES.indexOf(stage));
+  const useAge = strip === 'idle' && frame(kind, 'ages', ageIdx);
+  const cut = useAge ? frame(kind, 'ages', ageIdx)
+    : frame(kind, strip, strip === 'poses' ? (POSE_CELL[pose] ?? 0)
+      : still ? 0 : Math.floor(t * (pose === 'walk' ? 10 : 6)));
+  if (cut) {
+    const lift = pose === 'hop' ? hop : 0;
+    scr.img(cut.img, Math.round(x - cut.w / 2), Math.round(floorY - cut.foot - lift),
+      cut.sx, cut.sy, cut.w, cut.h);
+    return;
+  }
+
   const skin = SKIN[sp.surface] ?? SKIN.stone;
   const base = BUILD[stage] ?? BUILD.spark;
   // the species' own size, off the global bible's scale chart, against Ember's
