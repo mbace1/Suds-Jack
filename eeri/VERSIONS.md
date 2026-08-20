@@ -93,8 +93,14 @@ New: `art-src/tools/capture-dressing.mjs`,
 
 Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 (three rewritten) · world34 pass ·
 inspector 8/0 · **smoke 431/0** (including the new sheet-vs-builder check over
-606 meshes). The playthrough was still running when this was written and its
-number is deliberately left blank rather than claimed ahead of the run.
+606 meshes) · **playthrough 25/0**, twelve levels, no stalls, no ride losses.
+
+The playthrough matters on this change rather than being a formality: worlds 3
+and 4 now build their dressing from a fetched file instead of from code, and
+`buildSite()` is async. A room whose sheet has not landed is a room the bot
+walks into mid-build — which is exactly the failure that cost three wrong
+diagnoses at v15.30, in a version where the only thing arriving late was a
+texture.
 
 ## v15.32 — 2026-08-20 — the level inspector, and the blind loop ends
 
