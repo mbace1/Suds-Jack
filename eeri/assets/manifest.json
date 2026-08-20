@@ -1,5 +1,5 @@
 {
-  "v": 30,
+  "v": 31,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -450,12 +450,18 @@
         "status": "live"
       },
       "mid": {
-        "file": "2d/groundworks_mid_v5.webp",
-        "status": "live"
+        "status": "live",
+        "files": [
+          "2d/groundworks_mid_a_v5.webp",
+          "2d/groundworks_mid_b_v5.webp"
+        ]
       },
       "near": {
-        "file": "2d/groundworks_near_v5.webp",
-        "status": "live"
+        "status": "live",
+        "files": [
+          "2d/groundworks_near_a_v5.webp",
+          "2d/groundworks_near_b_v5.webp"
+        ]
       },
       "fore": {
         "file": "2d/groundworks_fore_v5.webp",
@@ -478,12 +484,18 @@
         "status": "live"
       },
       "mid": {
-        "file": "2d/pipeworks_mid_v3.webp",
-        "status": "live"
+        "status": "live",
+        "files": [
+          "2d/pipeworks_mid_a_v3.webp",
+          "2d/pipeworks_mid_b_v3.webp"
+        ]
       },
       "near": {
-        "file": "2d/pipeworks_near_v3.webp",
-        "status": "live"
+        "status": "live",
+        "files": [
+          "2d/pipeworks_near_a_v3.webp",
+          "2d/pipeworks_near_b_v3.webp"
+        ]
       },
       "fore": {
         "file": "2d/pipeworks_fore_v3.webp",
@@ -506,12 +518,18 @@
         "status": "live"
       },
       "mid": {
-        "file": "2d/grove_mid_v2.webp",
-        "status": "live"
+        "status": "live",
+        "files": [
+          "2d/grove_mid_a_v2.webp",
+          "2d/grove_mid_b_v2.webp"
+        ]
       },
       "near": {
-        "file": "2d/grove_near_v2.webp",
-        "status": "live"
+        "status": "live",
+        "files": [
+          "2d/grove_near_a_v2.webp",
+          "2d/grove_near_b_v2.webp"
+        ]
       },
       "fore": {
         "file": "2d/grove_fore_v2.webp",
@@ -534,12 +552,18 @@
         "status": "live"
       },
       "mid": {
-        "file": "2d/nightshift_mid_v2.webp",
-        "status": "live"
+        "status": "live",
+        "files": [
+          "2d/nightshift_mid_a_v2.webp",
+          "2d/nightshift_mid_b_v2.webp"
+        ]
       },
       "near": {
-        "file": "2d/nightshift_near_v2.webp",
-        "status": "live"
+        "status": "live",
+        "files": [
+          "2d/nightshift_near_a_v2.webp",
+          "2d/nightshift_near_b_v2.webp"
+        ]
       },
       "fore": {
         "file": "2d/nightshift_fore_v2.webp",

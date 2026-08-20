@@ -108,9 +108,13 @@ for (const [name, m] of Object.entries(manifest.pieces || {})) {
 }
 for (const [world, layers] of Object.entries(manifest.layers)) {
   for (const [layer, e] of Object.entries(layers)) {
-    const f = path.join(__dirname, '..', 'assets', e.file);
-    ok(`layer "${world}/${layer}": ${e.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
-      e.status !== 'live' || fs.existsSync(f), e.file);
+    // `files` (tiled lane) or `file` (single) — see the size table in
+    // assets/README.md. Every tile has to exist, not just the first.
+    const rels = e.files || (e.file ? [e.file] : []);
+    const missing = rels.filter((r) => !fs.existsSync(path.join(__dirname, '..', 'assets', r)));
+    ok(`layer "${world}/${layer}": ${e.status === 'live' ? 'live file(s) exist' : 'placeholder declared'}`,
+      e.status !== 'live' || (rels.length > 0 && missing.length === 0),
+      missing.length ? `missing ${missing.join(', ')}` : rels.join(', '));
   }
 }
 
@@ -122,8 +126,11 @@ const ASSETS = path.resolve(__dirname, '..', 'assets');
 const allFiles = [
   ...Object.entries(manifest.models).map(([n, m]) => [`model ${n}`, m.file]),
   ...Object.entries(manifest.pieces || {}).map(([n, m]) => [`piece ${n}`, m.file]),
+  // a tiled lane contributes every tile — the containment rule is about
+  // paths, and a path that never gets checked is the one that escapes
   ...Object.entries(manifest.layers).flatMap(([w, ls]) =>
-    Object.entries(ls).map(([n, e]) => [`layer ${w}/${n}`, e.file])),
+    Object.entries(ls).flatMap(([n, e]) =>
+      (e.files || (e.file ? [e.file] : [])).map((f) => [`layer ${w}/${n}`, f]))),
   ...Object.entries(manifest.textures || {})
     .filter(([n, e]) => !n.startsWith('_') && e && typeof e === 'object')
     .map(([n, e]) => [`texture ${n}`, e.file]),
@@ -148,12 +155,17 @@ for (const line of readme.split('\n')) {
   const m = line.match(/^\|\s*`(sky|skyline|far|mid|near|fore)`\s*\|([^|]+)\|([^|]+)\|([^|]+)\|/);
   if (!m) continue;
   const rect = m[3].match(/(-?[−\d.]+)\s*…\s*(-?[−\d.]+)\s*×\s*(-?[−\d.]+)\s*…\s*(-?[−\d.]+)/);
-  const px = m[4].match(/(\d+)\s*×\s*(\d+)/);
+  // "4096 × 940 ×2" — width × height, then an optional ×N TILE COUNT. All
+  // three are read in ONE match on purpose: a separate trailing-×N regex
+  // matched the HEIGHT of a single-tile lane ("4096 × 585" → 585 tiles), so
+  // fore demanded 585 files. Parsing the whole shape at once cannot do that.
+  const px = m[4].match(/(\d+)\s*×\s*(\d+)(?:\s*×\s*(\d+))?/);
   if (rect && px) {
     readmeRects[m[1]] = {
       z: NUM(m[2]),
       x0: NUM(rect[1]), x1: NUM(rect[2]), y0: NUM(rect[3]), y1: NUM(rect[4]),
       pxW: Number(px[1]), pxH: Number(px[2]),
+      tiles: px[3] ? Number(px[3]) : 1,
     };
   }
 }
@@ -190,12 +202,24 @@ function imageSize(file) {
 for (const [world, layers] of Object.entries(manifest.layers)) {
   for (const [layer, e] of Object.entries(layers)) {
     if (e.status !== 'live') continue;
-    const f = path.join(ASSETS, e.file);
-    if (!fs.existsSync(f)) continue;              // already reported above
-    const got = imageSize(f), want = readmeRects[layer];
-    ok(`layer "${world}/${layer}" is painted to its documented size`,
-      got && want && got.w === want.pxW && got.h === want.pxH,
-      got ? `${got.w}×${got.h}, wanted ${want?.pxW}×${want?.pxH}` : 'not a readable PNG or WEBP');
+    // A LANE MAY SHIP AS SEVERAL TILES (v15.23) — `files` laid left to right
+    // across the rect, which is how the close lanes get past the 4096 texture
+    // cap. Every tile is checked, and the COUNT is checked too: a lane that
+    // silently lost a tile would render its right half as nothing, and a lane
+    // that gained one would squash.
+    const files = e.files || (e.file ? [e.file] : []);
+    const want = readmeRects[layer];
+    ok(`layer "${world}/${layer}" ships the tile count its rect expects`,
+      files.length === (want?.tiles || 1),
+      `${files.length} file(s), wanted ${want?.tiles || 1}`);
+    for (const rel of files) {
+      const f = path.join(ASSETS, rel);
+      if (!fs.existsSync(f)) continue;            // already reported above
+      const got = imageSize(f);
+      ok(`layer "${world}/${layer}" (${path.basename(rel)}) is painted to its documented size`,
+        got && want && got.w === want.pxW && got.h === want.pxH,
+        got ? `${got.w}×${got.h}, wanted ${want?.pxW}×${want?.pxH}` : 'not a readable PNG or WEBP');
+    }
   }
 }
 
@@ -1204,7 +1228,11 @@ s.listen(0, '127.0.0.1', async () => {
     }
     for (const layers of Object.values(manifest.layers || {})) {
       for (const l of Object.values(layers)) {
-        if (l.status === 'live') live.push(path.basename(l.file));
+        // every TILE of a tiled lane has to be fetched, not just the first —
+        // a lane that quietly stopped loading its right half would render the
+        // far side of every level as nothing at all
+        if (l.status !== 'live') continue;
+        for (const f of (l.files || (l.file ? [l.file] : []))) live.push(path.basename(f));
       }
     }
     const missed = live.filter((f) => !fetched.has(f));

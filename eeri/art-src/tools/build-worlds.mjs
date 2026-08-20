@@ -82,8 +82,16 @@ const LANES = {
   // is the rect's aspect times the width, because stretching one axis to buy
   // resolution on the other is how a layer starts reading as smeared in one
   // direction only.
-  mid:     { px: [4096, 470], world: [122, 14], ground: 3.8, band: 3.8, tint: 0.26, value: 0.06, gap: [0.80, 0.95] },
-  near:    { px: [4096, 293], world: [112,  8], ground: 3.9, band: 3.9, tint: 0.08, value: 0.09, gap: [1.20, 1.60] },
+  // `tiles` splits a lane across N textures, which is the only way past the
+  // 4096 cap. Painted once at full width and cut, never painted N times: a
+  // piece straddling a boundary would otherwise get a different neighbour on
+  // each side of the seam. Two tiles put `near` at 73 px/unit and `mid` at
+  // 67 — past the ~57 the play plane is shown at, which is the point.
+  // It costs decoded MEMORY, not disk, so it is opt-in: these two carry the
+  // dressing the player looks at, and the far lanes sit behind a depth tint
+  // where softness is the aerial perspective doing its job.
+  mid:     { px: [8192, 940], world: [122, 14], tiles: 2, ground: 3.8, band: 3.8, tint: 0.26, value: 0.06, gap: [0.80, 0.95] },
+  near:    { px: [8192, 586], world: [112,  8], tiles: 2, ground: 3.9, band: 3.9, tint: 0.08, value: 0.09, gap: [1.20, 1.60] },
   // gap [7.0, 6.0]: at [4.5, 4.0] the full-drop verticals arrived every
   // 25-ish units — one per screen, every screen, eye-level. A foreground
   // occludes IN PASSING (js/layers.js says exactly this) — rarer beats
@@ -618,6 +626,21 @@ async function lane(cfg, pool, ground, seed, night) {
     g.fillRect(0, 0, W, H);
     g.restore();
   }
+  // A LANE MAY SHIP AS SEVERAL TILES. It is painted once at full width and
+  // then cut into equal columns, rather than painted N times at N seeds:
+  // pieces straddle a tile boundary and a per-tile paint would give each side
+  // of the seam a different neighbour. Cut from one painting, a seam is
+  // invisible because there is nothing on either side of it that disagrees.
+  if ((cfg.tiles || 1) > 1) {
+    const n = cfg.tiles, out = [];
+    for (let i = 0; i < n; i++) {
+      const t = document.createElement('canvas');
+      t.width = Math.round(W / n); t.height = H;
+      t.getContext('2d').drawImage(cv, -Math.round(W * i / n), 0);
+      out.push(t.toDataURL('image/webp', 0.88));
+    }
+    return out;
+  }
   return cv.toDataURL('image/webp', 0.88);
 }
 
@@ -700,11 +723,18 @@ for (const world of build) {
     const url = await page.evaluate(
       async ([cfg, pool, ground, seed, night]) => lane(cfg, pool, ground, seed, night),
       [cfg, pool, W.ground, seed + name.length * 7919, !!W.night]);
-    const out = `${world}_${name}_${VER[world]}.webp`;
-    const bytes = Buffer.from(url.split(',')[1], 'base64');
-    await writeFile(path.join(OUT, out), bytes);
-    written.push([out, bytes.length]);
-    console.log(`  ${out.padEnd(34)} ${(bytes.length / 1024).toFixed(0)} kB`);
+    // one url, or several when the lane is tiled — named _a, _b … left to
+    // right, which is the order js/layers.js mounts them in
+    const urls = Array.isArray(url) ? url : [url];
+    urls.forEach; // (kept explicit below for the await)
+    for (let i = 0; i < urls.length; i++) {
+      const suffix = urls.length > 1 ? `_${String.fromCharCode(97 + i)}` : '';
+      const out = `${world}_${name}${suffix}_${VER[world]}.webp`;
+      const bytes = Buffer.from(urls[i].split(',')[1], 'base64');
+      await writeFile(path.join(OUT, out), bytes);
+      written.push([out, bytes.length]);
+      console.log(`  ${out.padEnd(34)} ${(bytes.length / 1024).toFixed(0)} kB`);
+    }
   }
   if (W.sky === false) { /* shares the day sky */ }
   if (W.night) {

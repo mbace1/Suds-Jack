@@ -125,8 +125,8 @@ because that is what decides whether the painting is magnified on screen.
 | `sky` | −48 | −60…170 × −6…40 | 4096 × 1380 * | ~18 |
 | `skyline` | −30 | −30…130 × 0…30 | 4096 × 900 * | ~26 |
 | `far` | −14 | −20…120 × 0…20 | 4096 × 600 * | ~29 |
-| `mid` | −6 | −12…110 × 0…14 | 4096 × 470 | ~34 |
-| `near` | −2 | −8…104 × 0…8 | 4096 × 293 | ~37 |
+| `mid` | −6 | −12…110 × 0…14 | 4096 × 940 ×2 | ~67 |
+| `near` | −2 | −8…104 × 0…8 | 4096 × 586 ×2 | ~73 |
 | `fore` | +2.2 | −8…104 × −2…14 | 4096 × 585 | ~37 |
 
 \* canvas width is capped at 4096 px; the plane stretches it to the rect,
@@ -140,12 +140,20 @@ roughly twice its painted resolution through a `LinearFilter`, which is the
 soft, smeared read that reads as "not HD". The close lanes now go to the 4096
 cap and no further.
 
-**THE CAP IS NOT NEGOTIABLE.** 4096 is the texture size a modest phone GPU is
-guaranteed to accept, and a layer that fails to upload is not a soft layer, it
-is a missing one. Over a 112-unit rect that ceiling is 36.6 px/unit — a 22%
-linear gain, not the 60% the camera would like. Buying more would mean
-splitting a lane across two textures, which is a bigger change than it sounds
-and has not been done.
+**THE CAP IS NOT NEGOTIABLE, SO THE CLOSE LANES ARE TILED.** 4096 is the
+texture size a modest phone GPU is guaranteed to accept, and a layer that
+fails to upload is not a soft layer, it is a missing one. Over a 112-unit rect
+one texture can only carry 36.6 px/unit — so `mid` and `near` ship as **two
+tiles each**, written `4096 × 586 ×2` above, laid left to right across the
+rect by `mountLayer`. That puts them at 67–73 px/unit, past the ~57 the play
+plane is displayed at, which is the whole point.
+
+Tiles are cut from ONE full-width painting rather than painted twice: a piece
+straddling the boundary would otherwise have a different neighbour on each
+side of the seam. The cost is decoded MEMORY, not disk — two tiles are twice
+the RGBA whatever they compress to — which is why it is opt-in per lane and
+why `fore`, which is 89% transparent and only an occasional occluder, stays
+single.
 
 **Pixels stay square.** Each height is the rect's aspect times the width.
 Stretching one axis to buy resolution on the other is how a layer starts

@@ -205,6 +205,33 @@ the three that already shipped. Three places now have to agree (this table,
 `LANES` in build-worlds.mjs, the table in assets/README.md) and `smoke.cjs`
 holds all three to each other.
 
+**The close lanes are TILED, which is the way past the 4096 cap.** One texture
+over a 112-unit rect carries 36.6 px/unit; the play plane is displayed at
+about 57 and the fore lane at about 69, so a single tile could never be sharp
+no matter how it was painted. `mid` and `near` now ship as **two textures
+each**, laid left to right across the rect by `mountLayer` — 67 and 73
+px/unit, past the camera at last.
+
+Tiles are CUT FROM ONE FULL-WIDTH PAINTING, never painted twice: a piece
+straddling the boundary would otherwise get a different neighbour on each side
+of the seam, and the seam would show. The cost is decoded MEMORY rather than
+disk — two tiles are twice the RGBA whatever they compress to — so it is
+opt-in per lane. `fore` stays single: it is 89% transparent and only an
+occasional occluder, so it would pay full memory for very little picture.
+
+The seam widened in four places and `smoke.cjs` now checks every one of them,
+which is why it went from 368 checks to 408: each tile must exist, each must
+be the documented size, each must stay inside `assets/`, each must actually be
+FETCHED, and the tile COUNT must match the rect. A lane that silently lost its
+second tile would render the right half of every level as nothing.
+
+Three bugs of my own on the way in, all found by the gate rather than by
+reading: the tile height was set from the old single-tile numbers (470/293
+instead of 940/586, so the tiles were half the picture); the README's tile
+marker was parsed with a trailing-`×N` regex that matched the HEIGHT of a
+single-tile lane, so `fore` demanded 585 files; and three separate places in
+`smoke.cjs` read `e.file` directly and threw on a lane that only has `files`.
+
 **Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
 to be meshes.** The ladder is already built per tile in `js/level.js` and meets
 every clause of its contract, including the hard one — seamless vertical

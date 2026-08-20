@@ -61,9 +61,12 @@ export const LAYER_PX = {
   sky:     { pxW: 4096, pxH: 1380 },
   skyline: { pxW: 4096, pxH: 900 },
   far:     { pxW: 4096, pxH: 600 },
-  // raised in v15.23: these three sit close enough to be magnified on screen
-  mid:     { pxW: 4096, pxH: 470 },
-  near:    { pxW: 4096, pxH: 293 },
+  // raised in v15.23: these sit close enough to be magnified on screen.
+  // `tiles` is how many textures the lane ships as, laid left to right; pxW
+  // is the size of EACH tile, so a 2-tile lane carries 2 x pxW across its
+  // rect and that is what gets it past the 4096 cap.
+  mid:     { pxW: 4096, pxH: 940, tiles: 2 },
+  near:    { pxW: 4096, pxH: 586, tiles: 2 },
   fore:    { pxW: 4096, pxH: 585 },
 };
 
@@ -108,15 +111,27 @@ function paintCanvas({ x0, x1, y0, y1, draw, tint }) {
   return tex;
 }
 
+// Mounts a lane. `tex` is one texture or an ARRAY of them, and an array is
+// laid left to right across the rect in equal columns — the lane is one
+// painting that happens to be stored in more than one file, which is how a
+// close lane gets past the 4096 texture cap.
+//
+// Returns an array of meshes either way, because `dispose()` has to take down
+// everything it put up: a plane left in the scene is a full-width quad still
+// drawing behind the new world, and the near ones are opaque.
 function mountLayer(scene, rect, tex) {
+  const texs = Array.isArray(tex) ? tex : [tex];
   const w = rect.x1 - rect.x0, h = rect.y1 - rect.y0;
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(w, h),
-    new THREE.MeshBasicMaterial({ map: tex, transparent: true }),
-  );
-  mesh.position.set(rect.x0 + w / 2, rect.y0 + h / 2, rect.z);
-  scene.add(mesh);
-  return mesh;
+  const cw = w / texs.length;
+  return texs.map((t, i) => {
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(cw, h),
+      new THREE.MeshBasicMaterial({ map: t, transparent: true }),
+    );
+    mesh.position.set(rect.x0 + cw * (i + 0.5), rect.y0 + h / 2, rect.z);
+    scene.add(mesh);
+    return mesh;
+  });
 }
 
 const rect = (g, c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
@@ -595,7 +610,7 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
   // the sky is a layer like any other now — the crafted paper sky ships as a
   // PNG through the same seam, and drawSky stays as its code placeholder
   const liveSky = await getLayerTexture(world, 'sky');
-  mounted.push(mountLayer(scene, LAYER_RECTS.sky,
+  mounted.push(...mountLayer(scene, LAYER_RECTS.sky,
     liveSky || paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky })));
   for (const name of ['skyline', 'far', 'mid', 'near', 'fore']) {
     const rect = LAYER_RECTS[name];
@@ -603,7 +618,7 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
     // a world paints ITSELF when it has its own set; everything without one
     // still falls back to the site, which is what worlds 1 and 2 want
     const set = world === 'grove' ? GROVE_DRAW : PLACEHOLDER_DRAW;
-    mounted.push(mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] })));
+    mounted.push(...mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] })));
   }
   const events = backgroundEvents(scene);
   const dressing = world === 'pipeworks' ? buildPipeworksDressing(scene) : null;
