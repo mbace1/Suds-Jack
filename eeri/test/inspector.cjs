@@ -149,6 +149,47 @@ srv.listen(0, '127.0.0.1', async () => {
     && Math.abs(moved.after.y - moved.was.y) < 0.01,
     JSON.stringify(moved));
 
+  // ---- LIGHTS -----------------------------------------------------------
+  // `light` is the one row kind no builder emits, so nothing else in the
+  // suite can see it. Three things have to hold and the last one cost an
+  // afternoon.
+  {
+    const g = await page.evaluate(() => {
+      const E = document.querySelector('iframe').contentWindow.__eeri;
+      let lights = 0, handles = 0, visible = 0, weakest = Infinity, shortest = Infinity;
+      E.scene.traverse((o) => {
+        if (o.isPointLight) {
+          lights++;
+          weakest = Math.min(weakest, o.intensity);
+          shortest = Math.min(shortest, o.distance);
+        }
+        if (o.userData?.lightHandle) { handles++; if (o.visible) visible++; }
+      });
+      return { lights, handles, visible, weakest, shortest };
+    });
+    ok(`the sheet's light rows become real lights (${g.lights})`, g.lights > 0);
+    ok(`each light has a handle to grab (${g.handles})`, g.handles === g.lights);
+    // …and here they are SHOWN, because this test opened the inspector several
+    // steps ago and that is what opening it does. The other half of the claim
+    // — that the shipped game never draws a wireframe ball over a lamp — is
+    // not checkable on this page for exactly that reason, so it lives in
+    // `smoke.cjs`, which loads `index.html` and never opens anything.
+    ok(`…and the inspector has revealed them (${g.visible}/${g.handles})`,
+      g.visible === g.handles);
+    // THE UNITS TRAP, and it is why this is a number rather than a boolean.
+    // three.js has been physically based since r155: a PointLight's intensity
+    // is candela falling off as 1/d^2, while this scene's DirectionalLight
+    // (1.35) and HemisphereLight (1.25) are in units that do not. The first
+    // five lights were authored at 2.2 — directional-sized — and off, 2.2 and
+    // even 90 were indistinguishable in a screenshot. A light nobody can see
+    // is not a dim light; it is a bug that renders perfectly.
+    ok(`no light is authored in directional units (weakest ${g.weakest}cd)`,
+      g.weakest >= 40, 'under ~40cd a PointLight is invisible at these distances');
+    // …and it has to REACH. A lamp six units up whose distance stops at 12
+    // never gets to the floor the game is played on.
+    ok(`every light reaches the floor (shortest ${g.shortest} units)`, g.shortest >= 16);
+  }
+
   ok('no page errors while driving the tool', errs.length === 0, errs.slice(0, 2).join(' | '));
 
   await br.close(); srv.close();

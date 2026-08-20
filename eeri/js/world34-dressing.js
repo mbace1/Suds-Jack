@@ -37,6 +37,9 @@ const textures = new Map();
 // reloading. The composites below (`timberFrame`, `crateStack`, `gantry`, …)
 // all bottom out in exactly THREE leaves — `panel`, `disc`, `cutout` — so
 // recording those three captures the whole scene with nothing left over.
+// (`light` is a fourth row kind but not a fourth leaf: no builder emits one,
+// because there were never any lights to record. It is authored in the
+// inspector and only ever arrives from a sheet.)
 //
 // The capture is not a re-authoring and cannot drift from what ships: the
 // leaves push a row on the way past, so the recording IS the build. Rows are
@@ -97,6 +100,53 @@ function cutout(THREE, root, key, x, y, h, z = -0.85, opacity = 1, flip = false)
     if (id) mesh.userData.row = id;
     root.add(mesh);
   });
+}
+
+
+// ---- LIGHTS ------------------------------------------------------------
+// Owner's two constraints pull against each other: "light sources can correct
+// a lot" and "if assets move, the lights break". The seam that resolves them
+// was already here and cost nothing to find:
+//
+//   every dressing primitive above is MeshBasicMaterial, which ignores lights
+//   entirely, and everything you PLAY on — level tiles, craft props, the kid,
+//   the enemies, the machines — is MeshLambertMaterial, which does not.
+//
+// So a light placed in a sheet lights the actors and the terrain and CANNOT
+// touch the painted backdrop. That is the right split and it is free: the
+// half of the picture that would look wrong if a light moved is immune by
+// construction. Nothing is baked, so nothing can go stale — move the lamp,
+// move its row, and the light is simply somewhere else next frame.
+//
+// The budget is small on purpose. A PointLight with a distance is per-fragment
+// work on every Lambert surface in range, and the level is a lot of boxes.
+const MAX_LIGHTS = 6;
+
+function light(THREE, root, x, y, z, color, intensity, distance) {
+  rec({ k: 'light', x, y, z, c: hex(color), i: intensity, d: distance });
+  const id = TAG;
+  const L = new THREE.PointLight(color, intensity, distance);
+  L.position.set(x, y, z);
+  if (id) L.userData.row = id;
+  root.add(L);
+
+  // A HANDLE, because a light has no geometry and the inspector selects by
+  // raycast — there is nothing to click. It is a sibling rather than the
+  // light's parent, and that is not a style choice: WebGLRenderer.projectObject
+  // skips an invisible subtree wholesale, and it is also where lights are
+  // gathered, so parenting the light to a hidden handle switches the light off.
+  // The inspector mirrors the handle's position onto `pairedLight`.
+  const h = new THREE.Mesh(
+    new THREE.SphereGeometry(0.3, 8, 6),
+    new THREE.MeshBasicMaterial({ color, wireframe: true }),
+  );
+  h.position.set(x, y, z);
+  h.visible = false;                    // the shipped game never shows these
+  h.userData.lightHandle = true;
+  h.userData.pairedLight = L;
+  if (id) h.userData.row = id;
+  root.add(h);
+  return L;
 }
 
 function panel(THREE, root, x, y, w, h, color, z = -1.1, opacity = 1) {
@@ -386,11 +436,22 @@ function replay(THREE, scene, site, rows) {
   const root = new THREE.Group();
   root.name = `world34-dressing-${site + 1}`;
   scene.add(root);
+  let lit = 0, dropped = 0;
   for (const r of rows) {
     TAG = r.id;
     if (r.k === 'panel') panel(THREE, root, r.x, r.y, r.w, r.h, +('0x' + r.c.slice(1)), r.z, r.o);
     else if (r.k === 'disc') disc(THREE, root, r.x, r.y, r.r, +('0x' + r.c.slice(1)), r.z, r.o);
     else if (r.k === 'cutout') cutout(THREE, root, r.a, r.x, r.y, r.h, r.z, r.o, r.f);
+    else if (r.k === 'light') {
+      // NO SILENT CAPS. A budget that quietly drops the seventh lamp reads as
+      // "that light does not work" and gets debugged for an hour.
+      if (lit < MAX_LIGHTS) { light(THREE, root, r.x, r.y, r.z, +('0x' + r.c.slice(1)), r.i, r.d); lit++; }
+      else dropped++;
+    }
+  }
+  if (dropped) {
+    console.warn(`[eeri] site ${site + 1}: ${dropped} light row(s) past the ` +
+      `budget of ${MAX_LIGHTS} were not placed`);
   }
   TAG = null;
   // the rows travel WITH the group, so the inspector can select a mesh and
@@ -431,7 +492,7 @@ async function rowsFor(site) {
   if (sheets.has(site)) return sheets.get(site);
   let rows = null;
   try {
-    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=38`, import.meta.url);
+    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=39`, import.meta.url);
     const res = await fetch(url);
     if (res.ok) {
       const j = await res.json();

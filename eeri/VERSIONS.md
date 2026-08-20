@@ -1,5 +1,93 @@
 # EERI — versions
 
+## v15.34 — 2026-08-20 — the lamps light something
+
+Step 3 of the editor plan. The owner's two constraints pull against each other
+— *"light sources can correct a lot"* and *"if assets move, the lights break"* —
+and the seam that resolves them was already in the tree:
+
+> every dressing primitive is `MeshBasicMaterial`, which ignores lights
+> entirely, and everything you **play on** — level tiles, craft props, the kid,
+> the enemies, the machines — is `MeshLambertMaterial`, which does not.
+
+So a light placed in a sheet lights the actors and the terrain and **cannot**
+touch the painted backdrop. That is the right split and it cost nothing to
+find: the half of the picture that would look wrong if a light moved is immune
+by construction. Nothing is baked, so nothing can go stale — move the lamp,
+move its row, and the light is somewhere else next frame.
+
+`light` is a fifth row kind and the only one no builder emits, because there
+were never any lights to record. It is authored in the inspector and only ever
+arrives from a sheet: `{k:'light', x, y, z, c, i, d}`.
+
+**Site 10 gets the first five**, at the positions the sheet already *draws* as
+light sources — four warm windows, the high lamp over the gantry, the worklamp
+— plus one at the dock mouth, which is one of the undressed opening stretches
+the dressing report named.
+
+**THE UNITS TRAP, and it is the whole story of this version.** The first five
+lights were authored at intensity 2.2, sized by eye against the scene's
+existing `DirectionalLight` (1.35) and `HemisphereLight` (1.25). Rendered:
+`off`, `2.2` and even `90` were **indistinguishable in a screenshot**. three.js
+has been physically based since r155 — a `PointLight`'s intensity is candela
+and falls off as 1/d², while a directional and a hemisphere light are in units
+that do not. Reusing directional-sized numbers for a point light six units away
+is not a dim light, it is no light. The shipping values are 120-190 cd over
+24-30 units, roughly **seventy times** the first guess, and the gate now fails
+anything under 40 cd or with a reach under 16 units — a number, not a boolean,
+because the failure mode renders perfectly.
+
+**Four wrong measurements before the right one, all the same mistake.** The
+question was "does the light reach the things you play with", and:
+
+1. I compared two page loads. The camera settles differently each time, so the
+   diff measured the camera. Same error that reported 93.6% of pixels differing
+   on an identical scene at v15.33.
+2. I projected the kid to screen space using the window's size. **The canvas is
+   letterboxed** inside the page — `camera.aspect` is a fixed stage ratio — so
+   the box landed on a crate eighty pixels away and returned a confident 49-point
+   warmth reading off the wrong subject.
+3. I measured the kid. He breathes, his cap bobs, and the bolts spin behind
+   him, so the subject changed between reads.
+4. I measured a ground strip that turned out to be `dockSlab` — a dressing
+   `panel`, `MeshBasicMaterial`, the one thing in the scene guaranteed not to
+   respond to a light.
+
+What made it tractable was **bracketing**: read ON, OFF, ON, and report the
+noise floor beside the effect. It said `effect 0.13, noise 9.93 → NOT SEPARABLE
+FROM NOISE` and refused to draw a conclusion, which is the only reason the
+first three mistakes were caught rather than published. Moving off the kid onto
+fixed geometry dropped the noise floor from 9.93 to 0.29.
+
+In the end the honest instrument was **four screenshots in one page** at 0,
+2.2, 90 and 330 cd. A human can see the difference between the third and the
+fourth instantly; no amount of photometry on a 141×33 patch was going to say it
+faster.
+
+**Handles.** A light has no geometry and the inspector picks by raycast, so
+each light gets a small wireframe ball beside it carrying the row id. It is a
+**sibling, not the light's parent**: `WebGLRenderer.projectObject` skips an
+invisible subtree wholesale and that is also where it gathers lights, so
+parenting a light to a hidden handle switches the light off. The inspector
+mirrors the handle's position onto `pairedLight` on every drag and arrow-key
+nudge, and reveals the handles by walking the scene for `userData.lightHandle`
+— no export, no hook, no line added to the game.
+
+**Budget: six lights per site, and no silent caps.** A `PointLight` with a
+distance is per-fragment work on every Lambert surface in range and the level is
+a lot of boxes. Rows past the budget are dropped with a console warning naming
+the count, because a budget that quietly loses the seventh lamp reads as "that
+light does not work" and gets debugged for an hour.
+
+The two halves of the handle claim are checked in different files on purpose.
+`inspector.cjs` proves opening the panel reveals them; it cannot prove the
+shipped game hides them, because by the time it looks it has opened the panel.
+`smoke.cjs` loads `index.html`, opens nothing, and asserts zero visible.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · world34 pass · inspector 13/0
+(five new). Smoke and playthrough were still running at commit time and their
+numbers are deliberately left blank rather than claimed ahead of the runs.
+
 ## v15.33 — 2026-08-20 — worlds 3 and 4 stop being code and become data
 
 **Step 2 of the level editor, and it is the step that makes step 1 mean

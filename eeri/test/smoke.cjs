@@ -1287,6 +1287,26 @@ s.listen(0, '127.0.0.1', async () => {
       missed.length === 0);
   }
 
+  // THE SHIPPED GAME NEVER DRAWS A LIGHT HANDLE. A `light` row builds a
+  // PointLight plus a small wireframe ball beside it, because a light has no
+  // geometry and the inspector picks by raycast — there would be nothing to
+  // click. The ball must be invisible everywhere except inside the inspector,
+  // and this page is the one that can prove it: `index.html`, no dev frame,
+  // nothing opened. `inspector.cjs` checks the other half (that opening the
+  // panel reveals them) and cannot check this one, because by the time it
+  // looks it has already opened the panel.
+  {
+    const h = await p.evaluate(() => {
+      let handles = 0, visible = 0;
+      window.__eeri.scene.traverse((o) => {
+        if (o.userData?.lightHandle) { handles++; if (o.visible) visible++; }
+      });
+      return { handles, visible };
+    });
+    ok(`no light handle is drawn in the game itself (${h.visible} of ${h.handles} visible)`,
+      h.visible === 0);
+  }
+
   // THE TELL HAS TO BE BIG ENOUGH TO SEE. DESIGN §3 says the telegraph IS the
   // enemy design, and on a skinned rig it is a lamp parented to the `Head`
   // BONE — which is not in world units. Meshy rigs bones at about 1/90 scale,

@@ -213,8 +213,8 @@ layer a thing is on is to switch the others off</div>
     this.mo.observe(doc.body, { childList: true });
   }
 
-  show() { this.el.hidden = false; this.listGroups(); }
-  hide() { this.setMode(null); this.el.hidden = true; }
+  show() { this.el.hidden = false; this.listGroups(); this.showHandles(true); }
+  hide() { this.setMode(null); this.showHandles(false); this.el.hidden = true; }
   toggle() { this.el.hidden ? this.show() : this.hide(); }
 
   setMode(m) {
@@ -284,8 +284,34 @@ layer a thing is on is to switch the others off</div>
     const parent = this.picked.parent;
     const local = parent ? parent.worldToLocal(p.clone()) : p;
     this.picked.position.set(local.x, local.y, this.picked.position.z);
+    this.mirrorLight();
     this.syncRow();
     this.readout();
+  }
+
+  // A LIGHT HAS NO GEOMETRY, so what you grab is a wireframe handle standing
+  // beside it rather than the light itself. They are siblings, not parent and
+  // child: WebGLRenderer.projectObject skips an invisible subtree wholesale
+  // and that is also where it gathers lights, so hanging the light under a
+  // hidden handle switches the light off. Siblings plus one line of mirroring
+  // is the version that works.
+  mirrorLight() {
+    const L = this.picked?.userData?.pairedLight;
+    if (L) L.position.copy(this.picked.position);
+  }
+
+  // Light handles ship INVISIBLE, because the game must never draw a wireframe
+  // ball over a lamp. Turning them on needs no export and no hook: they are
+  // meshes in the scene wearing `userData.lightHandle`, and this module already
+  // reaches everything else the same way — through the graph rather than
+  // through an API the game has to grow for it.
+  showHandles(on) {
+    const A = this.api(); if (!A?.scene) return 0;
+    let n = 0;
+    A.scene.traverse((o) => {
+      if (o.userData?.lightHandle) { o.visible = !!on; n++; }
+    });
+    return n;
   }
 
   up(e) { this.drag = null; this.catch_.releasePointerCapture?.(e.pointerId); }
@@ -299,6 +325,7 @@ layer a thing is on is to switch the others off</div>
     e.preventDefault();
     this.picked.position.x += d[0];
     this.picked.position.y += d[1];
+    this.mirrorLight();
     this.syncRow();
     this.readout();
   }
