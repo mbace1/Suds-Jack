@@ -6,8 +6,8 @@
 // changes. That is the whole genre and it only works if the sim resists having
 // rules added to it.
 
-import { World } from './world.js?v=1';
-import { Network, TRAIN_SPEED } from './lines.js?v=1';
+import { World } from './world.js?v=2';
+import { Network, TRAIN_SPEED } from './lines.js?v=2';
 
 export const DAY = 8;                 // seconds of real time
 export const WEEK = DAY * 7;

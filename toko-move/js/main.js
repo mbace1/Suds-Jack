@@ -2,11 +2,11 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game, DAYS, WEEK } from './sim.js?v=1';
-import { Renderer } from './render.js?v=1';
-import { LineDrawer } from './input.js?v=1';
-import { Kit } from './audio.js?v=1';
-import { PAL } from './palette.js?v=1';
+import { Game, DAYS, WEEK } from './sim.js?v=2';
+import { Renderer } from './render.js?v=2';
+import { LineDrawer } from './input.js?v=2';
+import { Kit } from './audio.js?v=2';
+import { PAL } from './palette.js?v=2';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';

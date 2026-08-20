@@ -6,9 +6,9 @@
 // that SOME connections cost more than others; a board with no river is a board
 // where every line is equally good and there is nothing to plan around.
 
-import { makeRng } from './rng.js?v=1';
-import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=1';
-import { inWater, dist } from './geometry.js?v=1';
+import { makeRng } from './rng.js?v=2';
+import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=2';
+import { inWater, dist } from './geometry.js?v=2';
 
 export const BOARD = { w: 860, h: 600 };
 

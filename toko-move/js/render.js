@@ -5,9 +5,9 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK } from './palette.js?v=1';
-import { BOARD } from './world.js?v=1';
-import { drawShape, tracePath } from './shapes.js?v=1';
+import { PAL, INK } from './palette.js?v=2';
+import { BOARD } from './world.js?v=2';
+import { drawShape, tracePath } from './shapes.js?v=2';
 
 export class Renderer {
   constructor(canvas) {

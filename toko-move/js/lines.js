@@ -10,8 +10,8 @@
 // the next stop is closer to their shape than this one, and gets off when it
 // is not. Riding past your transfer is impossible by construction.
 
-import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=1';
-import { PAL, INK } from './palette.js?v=1';
+import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=2';
+import { PAL, INK } from './palette.js?v=2';
 
 export const TRAIN_SPEED = 108;      // board units per second
 export const CAR_CAPACITY = 6;

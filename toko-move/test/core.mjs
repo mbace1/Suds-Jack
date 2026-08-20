@@ -2,12 +2,12 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=1';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=1';
-import { World, Station, BOARD, STATION_CAP, OVERCROWD_TIME } from '../js/world.js?v=1';
-import { Network, Train, CAR_CAPACITY } from '../js/lines.js?v=1';
-import { Game, WEEK, DAY } from '../js/sim.js?v=1';
-import { PAL, INK } from '../js/palette.js?v=1';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=2';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=2';
+import { World, Station, BOARD, STATION_CAP, OVERCROWD_TIME } from '../js/world.js?v=2';
+import { Network, Train, CAR_CAPACITY } from '../js/lines.js?v=2';
+import { Game, WEEK, DAY } from '../js/sim.js?v=2';
+import { PAL, INK } from '../js/palette.js?v=2';
 
 let pass = 0; const fails = [];
 const ok = (cond, msg) => { if (cond) pass++; else fails.push(msg); };

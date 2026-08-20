@@ -55,6 +55,15 @@ delivered.
 - **Gates for the tunnel marks were computed on the unshifted path**, so two
   lines sharing a leg left one line's tunnel marks stranded over open water.
 
+### The module tokens start at `?v=2`, not `?v=1`
+
+The build this replaces was deployed with `js/main.js?v=1` and
+`js/palette.js?v=1`. Those two URLs now point at completely different code, so
+shipping this at `?v=1` would serve a returning visitor last month's bytes from
+cache under the same address — the exact failure this repo has shipped before.
+Everything under `toko-move/` carries `?v=2`, and `../hub/shell.js?v=34` matches
+what the rest of the deployed site is pinned to.
+
 ### Gates
 
 ```
