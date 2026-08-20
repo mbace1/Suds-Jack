@@ -7,7 +7,7 @@
       "status": "live",
       "rig": "skinned",
       "height": 1.62,
-      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES — Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md. v5 adds seven clips on the SAME character: idle2 + lookaround (idle breaks), climbon/climboff (mounting and topping out a ladder), teeter (edge hesitation), talk and confused (the to-camera beats). They came from a SECOND rig task — Meshy's task history had expired, so the source mesh in art-src was re-rigged and the clips retargeted onto v4's skeleton by art-src/tools/addclips.mjs, which refuses any clip with an unresolved bone target. Every clip is measured moving by art-src/tools/clipmeasure.mjs; a flat clip renders exactly like a rig at rest, and one bought idle was exactly that.",
+      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES \u2014 Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md. v5 adds seven clips on the SAME character: idle2 + lookaround (idle breaks), climbon/climboff (mounting and topping out a ladder), teeter (edge hesitation), talk and confused (the to-camera beats). They came from a SECOND rig task \u2014 Meshy's task history had expired, so the source mesh in art-src was re-rigged and the clips retargeted onto v4's skeleton by art-src/tools/addclips.mjs, which refuses any clip with an unresolved bone target. Every clip is measured moving by art-src/tools/clipmeasure.mjs; a flat clip renders exactly like a rig at rest, and one bought idle was exactly that.",
       "clips": [
         "idle",
         "walk",
@@ -29,7 +29,7 @@
     "excavator": {
       "file": "3d/excavator_v1.glb",
       "status": "live",
-      "_note": "STILL v1, deliberately. `3d/excavator_v2.glb` is the owner's 2026-08 reference-sheet excavator (face on the windscreen), cut and joint-verified — but excavator_v1 was BUILT to be interchangeable with the code placeholder: same pivots, same rest pose, same overall size, so game code cannot tell which it got (boom at (0.35,0.28) off house, stick at (1.58,0) off boom, bucket at (1.02,0) off stick). v2 is a different machine with its own proportions, so those offsets no longer describe it and the girder pickup misses. Swapping needs js/excavator.js's constants retuned to the asset, or geometry metadata on the entry — either way gameplay-lane work, so it is handed over rather than done unilaterally. Rig contract and drive ranges: art-src/machines/RIGS.md and art-src/machines/drive.js.",
+      "_note": "STILL v1, deliberately. `3d/excavator_v2.glb` is the owner's 2026-08 reference-sheet excavator (face on the windscreen), cut and joint-verified \u2014 but excavator_v1 was BUILT to be interchangeable with the code placeholder: same pivots, same rest pose, same overall size, so game code cannot tell which it got (boom at (0.35,0.28) off house, stick at (1.58,0) off boom, bucket at (1.02,0) off stick). v2 is a different machine with its own proportions, so those offsets no longer describe it and the girder pickup misses. Swapping needs js/excavator.js's constants retuned to the asset, or geometry metadata on the entry \u2014 either way gameplay-lane work, so it is handed over rather than done unilaterally. Rig contract and drive ranges: art-src/machines/RIGS.md and art-src/machines/drive.js.",
       "nodes": [
         "house",
         "boom",
@@ -53,7 +53,7 @@
     "crane": {
       "file": "3d/crane_v1.glb",
       "status": "placeholder",
-      "_note": "Rigged and verified but held at PLACEHOLDER on purpose. js/crane.js drives `arm` and `ball` and was written against the code-built crane's exact numbers — arm at (L,0,0) along the boom's local x, a fixed drop — the way excavator_v1 was deliberately built to match its placeholder pivot for pivot so game code could not tell which it got. This mesh has its own proportions, so the ball stops short of the brick wall and the wrecking sequence fails. Making them agree means changing geometry or changing crane.js constants; crane.js is not the art lane's file, so this is handed over rather than tuned unilaterally. Node names already match (sheave->arm, hook->ball); it is the reach that differs. The hoist rope is not in the mesh — image-to-3D will not model a 2px thread — so the game draws it from `arm` to `ball`. PAINT: `hook` was renamed `ball` and `sheave` renamed `arm` when this was cut, to match the names js/crane.js actually drives — but the paint map kept saying `hook`, so housePaint warned and skipped it and the ball would have kept its Meshy texture while everything around it took the palette. Found by art-src/tools/audit-assets.mjs; no gate could see it because the crane is `placeholder` and nothing loads it yet. `arm` added alongside, because the excavator paints its whole chain (house/boom/stick/bucket) and a half-painted boom is worse than an unpainted one.",
+      "_note": "Rigged and verified but held at PLACEHOLDER on purpose. js/crane.js drives `arm` and `ball` and was written against the code-built crane's exact numbers \u2014 arm at (L,0,0) along the boom's local x, a fixed drop \u2014 the way excavator_v1 was deliberately built to match its placeholder pivot for pivot so game code could not tell which it got. This mesh has its own proportions, so the ball stops short of the brick wall and the wrecking sequence fails. Making them agree means changing geometry or changing crane.js constants; crane.js is not the art lane's file, so this is handed over rather than tuned unilaterally. Node names already match (sheave->arm, hook->ball); it is the reach that differs. The hoist rope is not in the mesh \u2014 image-to-3D will not model a 2px thread \u2014 so the game draws it from `arm` to `ball`. PAINT: `hook` was renamed `ball` and `sheave` renamed `arm` when this was cut, to match the names js/crane.js actually drives \u2014 but the paint map kept saying `hook`, so housePaint warned and skipped it and the ball would have kept its Meshy texture while everything around it took the palette. Found by art-src/tools/audit-assets.mjs; no gate could see it because the crane is `placeholder` and nothing loads it yet. `arm` added alongside, because the excavator paints its whole chain (house/boom/stick/bucket) and a half-painted boom is worse than an unpainted one.",
       "nodes": [
         "house",
         "boom",
@@ -79,7 +79,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 0.7,
-      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING §2). 24 bones, feet at the origin, clips measured moving. Height is in TILES — DESIGN wants a small enemy at ≤ 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING §1) — scale the rig root. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.7 tiles to match the collision box js/robots.js declares for this kind (`this.h`) — a model taller than its own collision is the one mismatch a player feels immediately.",
+      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING \u00a72). 24 bones, feet at the origin, clips measured moving. Height is in TILES \u2014 DESIGN wants a small enemy at \u2264 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING \u00a71) \u2014 scale the rig root. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.7 tiles to match the collision box js/robots.js declares for this kind (`this.h`) \u2014 a model taller than its own collision is the one mismatch a player feels immediately.",
       "clips": [
         "idle",
         "walk",
@@ -91,7 +91,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 1.0,
-      "_note": "The jackhammer timing enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself. LIVE from v15.23: js/robots.js now asks for it. `height` is 1.0 tiles to match the collision box js/robots.js declares for this kind (`this.h`) — a model taller than its own collision is the one mismatch a player feels immediately.",
+      "_note": "The jackhammer timing enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself. LIVE from v15.23: js/robots.js now asks for it. `height` is 1.0 tiles to match the collision box js/robots.js declares for this kind (`this.h`) \u2014 a model taller than its own collision is the one mismatch a player feels immediately.",
       "clips": [
         "idle",
         "walk",
@@ -104,7 +104,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 0.72,
-      "_note": "The sleepy provocation enemy. DESIGN §3, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it — the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING §1): scale the root. The notice tell that lights before it acts is also code — the lamp/eyes are texture. `wake` (271) is head-led — the look-up IS the telegraph; then `run` chases. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.72 tiles to match the collision box js/robots.js declares for this kind (`this.h`) — a model taller than its own collision is the one mismatch a player feels immediately.",
+      "_note": "The sleepy provocation enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `wake` (271) is head-led \u2014 the look-up IS the telegraph; then `run` chases. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.72 tiles to match the collision box js/robots.js declares for this kind (`this.h`) \u2014 a model taller than its own collision is the one mismatch a player feels immediately.",
       "clips": [
         "idle",
         "walk",
@@ -116,25 +116,25 @@
       "file": "3d/bolt_v1.glb",
       "status": "live",
       "rig": "prop",
-      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: origin at its CENTRE. Remeshed to 500 tris / 64px texture / 43 KB — the first cut shipped Meshy raw at ~4k tris x 100 clones, which dropped headless rendering to 6 fps and starved the walk-out gate; a hundred of a thing is a budget of its own."
+      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: origin at its CENTRE. Remeshed to 500 tris / 64px texture / 43 KB \u2014 the first cut shipped Meshy raw at ~4k tris x 100 clones, which dropped headless rendering to 6 fps and starved the walk-out gate; a hundred of a thing is a budget of its own."
     },
     "token_toolbox": {
       "file": "3d/token_toolbox_v1.glb",
       "status": "placeholder",
       "rig": "prop",
-      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette — §6.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
+      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette \u2014 \u00a76.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
     },
     "token_blueprint": {
       "file": "3d/token_blueprint_v1.glb",
       "status": "placeholder",
       "rig": "prop",
-      "_note": "World 2's token, one per world, unlocks secret art — so §6.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens."
+      "_note": "World 2's token, one per world, unlocks secret art \u2014 so \u00a76.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
     },
     "token_bolt": {
       "file": "3d/token_bolt_v1.glb",
       "status": "live",
       "rig": "prop",
-      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one — so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. ≤ 1 tile (DESIGN §6.3). `placeholder` until the game places tokens. LIVE from v15.23: js/main.js now asks for it where the golden bolts are placed — it never did, so this correct, cut, catalogued model could not load under any circumstances. `height` 0.85 tiles keeps it under the 1-tile rule (DESIGN 6.3) and near the code-drawn ring-and-star it replaces. Materials are cloned and forced transparent per instance, because the collect pop fades it and a material cloned off a GLB is opaque — the same trap the ordinary bolts hit. token_blueprint and token_toolbox stay `placeholder` because NOTHING PLACES THEM: rooms.js declares golden() and nothing else, so wiring them would be authoring game content rather than delivering art.",
+      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one \u2014 so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens. LIVE from v15.23: js/main.js now asks for it where the golden bolts are placed \u2014 it never did, so this correct, cut, catalogued model could not load under any circumstances. `height` 0.85 tiles keeps it under the 1-tile rule (DESIGN 6.3) and near the code-drawn ring-and-star it replaces. Materials are cloned and forced transparent per instance, because the collect pop fades it and a material cloned off a GLB is opaque \u2014 the same trap the ordinary bolts hit. token_blueprint and token_toolbox stay `placeholder` because NOTHING PLACES THEM: rooms.js declares golden() and nothing else, so wiring them would be authoring game content rather than delivering art.",
       "height": 0.85
     },
     "dumptruck": {
@@ -161,7 +161,7 @@
     "roller": {
       "file": "3d/roller_v1.glb",
       "status": "placeholder",
-      "_note": "`drum` spins on ground speed like a wheel but at its OWN radius (0.45): it is far bigger than the rear tyre and sharing one radius makes one of them skate. DESIGN §6 also lists a roller as a <=1-tile SMALL ENEMY needing a squash node — one mesh can serve both, but the squash node is a cut and must be decided before that variant is authored.",
+      "_note": "`drum` spins on ground speed like a wheel but at its OWN radius (0.45): it is far bigger than the rear tyre and sharing one radius makes one of them skate. DESIGN \u00a76 also lists a roller as a <=1-tile SMALL ENEMY needing a squash node \u2014 one mesh can serve both, but the squash node is a cut and must be decided before that variant is authored.",
       "nodes": [
         "body",
         "drum",
@@ -199,7 +199,7 @@
     "cherrypicker": {
       "file": "3d/cherrypicker_v1.glb",
       "status": "placeholder",
-      "_note": "`basket` must COUNTER-ROTATE against `boom` to stay level. That is a code rule, not a rest pose — a basket that tips with its arm is the one thing a child notices instantly, having watched a real one never do it.",
+      "_note": "`basket` must COUNTER-ROTATE against `boom` to stay level. That is a code rule, not a rest pose \u2014 a basket that tips with its arm is the one thing a child notices instantly, having watched a real one never do it.",
       "nodes": [
         "body",
         "boom",
@@ -244,7 +244,7 @@
     "floodlight": {
       "file": "3d/floodlight_v1.glb",
       "status": "placeholder",
-      "_note": "NOT RIDEABLE — no seat, no step, deliberately: it is site furniture that lights a dark span. `lamps` animates by EMISSIVE SWAP rather than by transform, the only machine in the fleet whose animation is a material. Weakest mesh of the eight: Meshy fused the four lamps into one head.",
+      "_note": "NOT RIDEABLE \u2014 no seat, no step, deliberately: it is site furniture that lights a dark span. `lamps` animates by EMISSIVE SWAP rather than by transform, the only machine in the fleet whose animation is a material. Weakest mesh of the eight: Meshy fused the four lamps into one head.",
       "nodes": [
         "body",
         "mast",
@@ -264,7 +264,7 @@
       "status": "placeholder",
       "rig": "skinned",
       "height": 1.1,
-      "_note": "The humanoid site bot. Meshy auto-rig, so it is checked against `clips`, not node names. RIGGED ONLY ON THE SECOND ATTEMPT: the first concept was a strict horizontal T-pose with slim arms and spread legs, and Meshy answered 'Pose estimation failed' — the third time this project has hit that. The fix is in ART_PIPELINE and it is VOLUME, not pose: the estimator wants a body it can fit a skeleton inside, and Eeri rigged first time with merged legs and arms barely 40 degrees out. Redrawn to copy Eeri's actual mass and stance rather than imposing a T on top of the reference, it rigged first time. Behaviour brief in art-src/ENEMY_BRIEFS.md — it reads HEIGHT: too tall to stomp from level ground. `placeholder` until js/robots.js asks for a model; robots.js currently builds every enemy in code and never calls getModel, which is why boltbot, hopper and bucket are parked the same way.",
+      "_note": "The humanoid site bot. Meshy auto-rig, so it is checked against `clips`, not node names. RIGGED ONLY ON THE SECOND ATTEMPT: the first concept was a strict horizontal T-pose with slim arms and spread legs, and Meshy answered 'Pose estimation failed' \u2014 the third time this project has hit that. The fix is in ART_PIPELINE and it is VOLUME, not pose: the estimator wants a body it can fit a skeleton inside, and Eeri rigged first time with merged legs and arms barely 40 degrees out. Redrawn to copy Eeri's actual mass and stance rather than imposing a T on top of the reference, it rigged first time. Behaviour brief in art-src/ENEMY_BRIEFS.md \u2014 it reads HEIGHT: too tall to stomp from level ground. `placeholder` until js/robots.js asks for a model; robots.js currently builds every enemy in code and never calls getModel, which is why boltbot, hopper and bucket are parked the same way.",
       "clips": [
         "idle",
         "walk",
@@ -277,7 +277,7 @@
       "file": "3d/vacbot_v2.glb",
       "status": "placeholder",
       "height": 0.55,
-      "_note": "The Roomba. Node-rigged (a disc has no legs — routing rule). `spring` fires on the first stomp and launches Eeri; the SECOND stomp swaps `state0` for `state1`, the broken form — merged into one file by art-src/tools/statemerge.mjs per the manipulable-piece convention, sharing an origin so the swap is a visibility flip that cannot teleport. Reads RESOURCE: the only enemy that is a choice rather than a skill (art-src/ENEMY_BRIEFS.md). `eye` is the notice tell. v2 file name per the versioned-URL rule.",
+      "_note": "The Roomba. Node-rigged (a disc has no legs \u2014 routing rule). `spring` fires on the first stomp and launches Eeri; the SECOND stomp swaps `state0` for `state1`, the broken form \u2014 merged into one file by art-src/tools/statemerge.mjs per the manipulable-piece convention, sharing an origin so the swap is a visibility flip that cannot teleport. Reads RESOURCE: the only enemy that is a choice rather than a skill (art-src/ENEMY_BRIEFS.md). `eye` is the notice tell. v2 file name per the versioned-URL rule.",
       "nodes": [
         "state0",
         "state1",
@@ -295,7 +295,7 @@
     "rollerbot": {
       "file": "3d/rollerbot_v1.glb",
       "status": "placeholder",
-      "_note": "The SMALL roller — DESIGN §3's spacing-test enemy, sharing a name and nothing else with the ride machine. `squash` is an empty root holding everything, because a stomped enemy flattens whole — a scale on `body` alone would leave the eye floating. DELIBERATELY no spinning drum: the yoke plate sits flush against the drum face and they interleave in z, no predicate separates them, and §6.2's contract is squash + notice tell, nothing more. Domed top per the concept — §3 says it reads un-landable from across a room. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.5 tiles to match the collision box js/robots.js declares for this kind (`this.h`) — a model taller than its own collision is the one mismatch a player feels immediately.",
+      "_note": "The SMALL roller \u2014 DESIGN \u00a73's spacing-test enemy, sharing a name and nothing else with the ride machine. `squash` is an empty root holding everything, because a stomped enemy flattens whole \u2014 a scale on `body` alone would leave the eye floating. DELIBERATELY no spinning drum: the yoke plate sits flush against the drum face and they interleave in z, no predicate separates them, and \u00a76.2's contract is squash + notice tell, nothing more. Domed top per the concept \u2014 \u00a73 says it reads un-landable from across a room. LIVE from v15.23: js/robots.js now asks for it. `height` is 0.5 tiles to match the collision box js/robots.js declares for this kind (`this.h`) \u2014 a model taller than its own collision is the one mismatch a player feels immediately.",
       "nodes": [
         "squash",
         "eye",
@@ -306,7 +306,7 @@
     "jackhammer": {
       "file": "3d/jackhammer_v1.glb",
       "status": "placeholder",
-      "_note": "The hopper's namesake. `bit` is the whole striking assembly and judders in position.y while the body hops — code, per the routing rule. Meshy grew it two rivet-eyes uninvited; kept, as the owner's 'try a face on one'.",
+      "_note": "The hopper's namesake. `bit` is the whole striking assembly and judders in position.y while the body hops \u2014 code, per the routing rule. Meshy grew it two rivet-eyes uninvited; kept, as the owner's 'try a face on one'.",
       "nodes": [
         "body",
         "bit"
@@ -315,7 +315,7 @@
     "generator": {
       "file": "3d/generator_v1.glb",
       "status": "placeholder",
-      "_note": "Owner behaviour 2026-08-18: it SHAKES and throws Eeri back — the bounce field pushes a jump further, which is how you clear it — and `plug` on the far side is the disable: pulled, it hides and the shake stops. The plug must be its own node or there is nothing to pull.",
+      "_note": "Owner behaviour 2026-08-18: it SHAKES and throws Eeri back \u2014 the bounce field pushes a jump further, which is how you clear it \u2014 and `plug` on the far side is the disable: pulled, it hides and the shake stops. The plug must be its own node or there is nothing to pull.",
       "nodes": [
         "body",
         "plug"
@@ -324,7 +324,7 @@
     "compressor": {
       "file": "3d/compressor_v1.glb",
       "status": "placeholder",
-      "_note": "Blows air (push field, code), overpressures, takes off like a rocket — root motion. `motor` rattles as pressure builds: the telegraph before the launch, same law as every hazard. `nozzle` hinges at its ROOT on the tank — an 'auto' centre pivot spun it about itself and the swing test read it DEAD.",
+      "_note": "Blows air (push field, code), overpressures, takes off like a rocket \u2014 root motion. `motor` rattles as pressure builds: the telegraph before the launch, same law as every hazard. `nozzle` hinges at its ROOT on the tank \u2014 an 'auto' centre pivot spun it about itself and the swing test read it DEAD.",
       "nodes": [
         "body",
         "motor",
@@ -335,7 +335,7 @@
     "wheelbarrow": {
       "file": "3d/wheelbarrow_v1.glb",
       "status": "placeholder",
-      "_note": "Owner behaviour 2026-08-18: trundles at you, then TIPS its tray to strike. `tray` hinges at its FRONT LIP over the wheel — the dump-truck pivot lesson: hinge it anywhere else and it sinks through the frame instead of rearing. A gizmo first (DESIGN §8.2 calls a tipping surface the cheapest fun in the kit); an enemy dress of the same rig second.",
+      "_note": "Owner behaviour 2026-08-18: trundles at you, then TIPS its tray to strike. `tray` hinges at its FRONT LIP over the wheel \u2014 the dump-truck pivot lesson: hinge it anywhere else and it sinks through the frame instead of rearing. A gizmo first (DESIGN \u00a78.2 calls a tipping surface the cheapest fun in the kit); an enemy dress of the same rig second.",
       "nodes": [
         "body",
         "tray",
@@ -345,7 +345,7 @@
     "cabledrum": {
       "file": "3d/cabledrum_v1.glb",
       "status": "placeholder",
-      "_note": "`spool` spins about local x — the mesh came back with its axle across the picture. `crank` is claimed before the spool's radius or the handle spins with the drum it winds. Dressing, or a rolling hazard on a slope.",
+      "_note": "`spool` spins about local x \u2014 the mesh came back with its axle across the picture. `crank` is claimed before the spool's radius or the handle spins with the drum it winds. Dressing, or a rolling hazard on a slope.",
       "nodes": [
         "stand",
         "spool",
@@ -355,11 +355,41 @@
     "gascart": {
       "file": "3d/gascart_v1.glb",
       "status": "placeholder",
-      "_note": "SPRAY, not explode — the owner offered either and a bottle that detonates is a different game. The spray is a particle cone from `nozzle`, hinged where the hoses leave the bottle tops; the bottles never move.",
+      "_note": "SPRAY, not explode \u2014 the owner offered either and a bottle that detonates is a different game. The spray is a particle cone from `nozzle`, hinged where the hoses leave the bottle tops; the bottles never move.",
       "nodes": [
         "body",
         "nozzle",
         "wheels"
+      ]
+    },
+    "skidder": {
+      "file": "3d/skidder_v1.glb",
+      "status": "placeholder",
+      "_note": "World 3's ride. Code-built placeholder in js/rigs.js today. A live skidder_v1.glb must keep the EXCAVATOR's node contract and \u2014 this is the part crane_v1 missed \u2014 its offsets and overall size: boom at (0.35,0.30) off house, stick at (1.44,0) off boom, grapple at (0.94,0) off stick, machine about 3.0 long and 2.1 tall. The node is called `bucket` because the class drives it by that name; on this machine it is a two-jaw grapple.",
+      "nodes": [
+        "house",
+        "boom",
+        "stick",
+        "bucket",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ]
+    },
+    "loader": {
+      "file": "3d/loader_v1.glb",
+      "status": "placeholder",
+      "_note": "World 4's ride. Code-built placeholder in js/rigs.js today. Same contract, loader geometry: boom at (0.45,0.10) off house, stick at (1.80,0) off boom, blade at (0.45,0) off stick, arm lifting from the front and resting nearly flat. Wheeled, with a two-lamp mast \u2014 the lamps are what make it the night shift's machine.",
+      "nodes": [
+        "house",
+        "boom",
+        "stick",
+        "bucket",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
       ]
     }
   },
@@ -395,7 +425,7 @@
     "flag": {
       "file": "3d/flag_v1.glb",
       "status": "live",
-      "_note": "The level's ending. It BUILDS in three steps as Eeri arrives and activates by being run past, so each phase has to read at a glance, mid-run. `pole` stands from the first frame; phase0/1/2 are exclusive — each is the whole flag at that stage, not the delta. ONE Meshy mesh, cut by slice.mjs and composed by phasemerge.mjs from cumulative subsets: three separate generations of 'a flag at stage N' come back as three DIFFERENT flags, and the build then reads as a cut between props instead of one prop being assembled. phase2's children are ordered [lamp, banner] because js/flag.js waves `phase2.children[1]`. The lamp is deliberately UNPAINTED so it keeps its own material and reads as lit.",
+      "_note": "The level's ending. It BUILDS in three steps as Eeri arrives and activates by being run past, so each phase has to read at a glance, mid-run. `pole` stands from the first frame; phase0/1/2 are exclusive \u2014 each is the whole flag at that stage, not the delta. ONE Meshy mesh, cut by slice.mjs and composed by phasemerge.mjs from cumulative subsets: three separate generations of 'a flag at stage N' come back as three DIFFERENT flags, and the build then reads as a cut between props instead of one prop being assembled. phase2's children are ordered [lamp, banner] because js/flag.js waves `phase2.children[1]`. The lamp is deliberately UNPAINTED so it keeps its own material and reads as lit.",
       "nodes": [
         "pole",
         "phase0",
@@ -411,7 +441,7 @@
     "flagBig": {
       "file": "3d/flag_big_v1.glb",
       "status": "live",
-      "_note": "Level 3 of a world. A DIFFERENT SHAPE rather than a bigger one — a two-post gantry with the cloth slung between — because a size difference is not tellable without the small flag beside it, and DESIGN §6.3 asks for it to be readable before you reach it. FOOTPRINT: 4.2 tiles wide by 3.8 tall, against the small flag's 2.3 x 3.8. Same height, three times the width. That is the number Design/Level may want to argue with; the mesh is the settled part.",
+      "_note": "Level 3 of a world. A DIFFERENT SHAPE rather than a bigger one \u2014 a two-post gantry with the cloth slung between \u2014 because a size difference is not tellable without the small flag beside it, and DESIGN \u00a76.3 asks for it to be readable before you reach it. FOOTPRINT: 4.2 tiles wide by 3.8 tall, against the small flag's 2.3 x 3.8. Same height, three times the width. That is the number Design/Level may want to argue with; the mesh is the settled part.",
       "nodes": [
         "pole",
         "phase0",
@@ -427,7 +457,7 @@
     "checkpoint": {
       "file": "3d/checkpoint_v1.glb",
       "status": "live",
-      "_note": "The midway gate. `lamp` is the state (the game recolours it red before, green after) and `cloth` is hidden until it is lit, so those two nodes carry the whole read. The lamp is lit, so it stays BARE of any material map — and leaving it out of `paint` is what makes the runtime recolour SAFE: slice.mjs gives every node of a model ONE shared material, so painting body and cloth leaves the lamp as the only user of the original, and `lamp.material.color.set()` can no longer turn the whole post green. Cut with `flatten` so `lamp` IS a Mesh: a Group has no `.material` and the first light() threw.",
+      "_note": "The midway gate. `lamp` is the state (the game recolours it red before, green after) and `cloth` is hidden until it is lit, so those two nodes carry the whole read. The lamp is lit, so it stays BARE of any material map \u2014 and leaving it out of `paint` is what makes the runtime recolour SAFE: slice.mjs gives every node of a model ONE shared material, so painting body and cloth leaves the lamp as the only user of the original, and `lamp.material.color.set()` can no longer turn the whole post green. Cut with `flatten` so `lamp` IS a Mesh: a Group has no `.material` and the first light() threw.",
       "nodes": [
         "lamp",
         "cloth"
@@ -443,7 +473,7 @@
       "skyline": {
         "file": "2d/groundworks_skyline_v5.webp",
         "status": "live",
-        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library \u2014 the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
         "file": "2d/groundworks_far_v5.webp",
@@ -470,14 +500,14 @@
       "sky": {
         "file": "2d/day_sky_v2.webp",
         "status": "live",
-        "_note": "shared by the three daylight worlds — the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
+        "_note": "shared by the three daylight worlds \u2014 the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
       }
     },
     "pipeworks": {
       "skyline": {
         "file": "2d/pipeworks_skyline_v3.webp",
         "status": "live",
-        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library \u2014 the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
         "file": "2d/pipeworks_far_v3.webp",
@@ -504,14 +534,14 @@
       "sky": {
         "file": "2d/day_sky_v2.webp",
         "status": "live",
-        "_note": "shared by the three daylight worlds — the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
+        "_note": "shared by the three daylight worlds \u2014 the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
       }
     },
     "grove": {
       "skyline": {
         "file": "2d/grove_skyline_v2.webp",
         "status": "live",
-        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library \u2014 the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
         "file": "2d/grove_far_v2.webp",
@@ -538,14 +568,14 @@
       "sky": {
         "file": "2d/day_sky_v2.webp",
         "status": "live",
-        "_note": "shared by the three daylight worlds — the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
+        "_note": "shared by the three daylight worlds \u2014 the sky is world-agnostic until a world needs its own, and nightshift is the first that did"
       }
     },
     "nightshift": {
       "skyline": {
         "file": "2d/nightshift_skyline_v2.webp",
         "status": "live",
-        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library — the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
+        "_note": "built by art-src/tools/build-worlds.mjs from art-src/world-N-library \u2014 the approved craft libraries. WEBP, not PNG: the v3 PNG set was 8.5 MB for five strips and these are a tenth of that at the same documented sizes. Rebuild: NODE_PATH=$(npm root -g) node art-src/tools/build-worlds.mjs <world>. NOTE FOR ANYONE EDITING THIS BLOCK: main.js `dressed()` calls Object.values(set).every(e => e.status === 'live'), so every key here must be a layer entry. A bare '_note' string beside them reads as an undressed world and hides that world's levels from the pause menu."
       },
       "far": {
         "file": "2d/nightshift_far_v2.webp",
@@ -572,7 +602,7 @@
       "sky": {
         "file": "2d/nightshift_sky_v2.webp",
         "status": "live",
-        "_note": "the one sky that cannot be shared — World 4 is a night shift. Painted rather than rendered: a sky is a gradient with things on it, and a 4 MB photograph of one is what this pass exists to stop."
+        "_note": "the one sky that cannot be shared \u2014 World 4 is a night shift. Painted rather than rendered: a sky is a gradient with things on it, and a 4 MB photograph of one is what this pass exists to stop."
       }
     }
   },
@@ -580,37 +610,37 @@
     "card": {
       "file": "2d/card_detail_v2.png",
       "status": "live",
-      "_note": "corrugated kraft — the earth, the cut faces, the deep bands"
+      "_note": "corrugated kraft \u2014 the earth, the cut faces, the deep bands"
     },
     "felt": {
       "file": "2d/felt_detail_v2.png",
       "status": "live",
-      "_note": "wool felt nap — the grass lip"
+      "_note": "wool felt nap \u2014 the grass lip"
     },
     "balsa": {
       "file": "2d/balsa_detail_v2.png",
       "status": "live",
-      "_note": "painted balsa, brush strokes and a paint chip — machines, steel, props (§3.3 'painted wood and pressed steel')"
+      "_note": "painted balsa, brush strokes and a paint chip \u2014 machines, steel, props (\u00a73.3 'painted wood and pressed steel')"
     },
     "flute": {
       "file": "2d/flute_detail_v2.png",
       "status": "live",
-      "_note": "the CUT EDGE of corrugated card — stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
+      "_note": "the CUT EDGE of corrugated card \u2014 stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
     },
     "topsoil": {
       "file": "2d/topsoil_detail_v2.png",
       "status": "live",
-      "_note": "v2: contrast-stretched by art-src/tools/punch-maps.mjs. A detail map MULTIPLIES the palette colour, and multiplication scales variance by the surface's own brightness — the earth sits near luminance 55, so the v1 maps at std/mean 0.09-0.12 delivered about 5 levels of variation to the screen and the earth read as a flat tint. Measured on one frame: sky and mid at std 21, earth at 8.6. The earth sections now sit at 0.21-0.25."
+      "_note": "v2: contrast-stretched by art-src/tools/punch-maps.mjs. A detail map MULTIPLIES the palette colour, and multiplication scales variance by the surface's own brightness \u2014 the earth sits near luminance 55, so the v1 maps at std/mean 0.09-0.12 delivered about 5 levels of variation to the screen and the earth read as a flat tint. Measured on one frame: sky and mid at std 21, earth at 8.6. The earth sections now sit at 0.21-0.25."
     },
     "strata": {
       "file": "2d/mid_detail_v2.png",
       "status": "live",
-      "_note": "the middle strata — coarse layered card section, high-passed"
+      "_note": "the middle strata \u2014 coarse layered card section, high-passed"
     },
     "fringe": {
       "file": "2d/fringe_edge_v1.png",
       "status": "live",
-      "_note": "the felt lip cut into a fringe of nap — the line the player stands on"
+      "_note": "the felt lip cut into a fringe of nap \u2014 the line the player stands on"
     },
     "f_stone": {
       "file": "2d/f_stone_v1.png",
@@ -655,30 +685,30 @@
     "packed": {
       "file": "2d/packed_detail_v2.png",
       "status": "live",
-      "_note": "the deep bands — dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
+      "_note": "the deep bands \u2014 dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
     },
     "gritty": {
       "file": "2d/gritty_detail_v2.png",
       "status": "live",
-      "_note": "grit and torn paper pellets in the fluting (nano banana Pro — base put repeating white blobs in it)"
+      "_note": "grit and torn paper pellets in the fluting (nano banana Pro \u2014 base put repeating white blobs in it)"
     }
   },
-  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) — never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
+  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) \u2014 never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
   "ui": {
     "logo": {
       "file": "2d/logo_v3.webp",
       "status": "live",
-      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence — body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
+      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence \u2014 body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
     },
     "padplate_portrait": {
       "file": "2d/padplate_v2.webp",
       "status": "live",
-      "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card — d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN §5's 44px targets. LANDSCAPE gets its own plate — wider and thinner, arcade control-panel rather than handheld — as `padplate_landscape`; stretching this one is not that."
+      "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card \u2014 d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN \u00a75's 44px targets. LANDSCAPE gets its own plate \u2014 wider and thinner, arcade control-panel rather than handheld \u2014 as `padplate_landscape`; stretching this one is not that."
     },
     "padplate_landscape": {
       "file": "2d/padplate_landscape_v2.webp",
       "status": "live",
-      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip — joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
+      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip \u2014 joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
     }
   }
 }
