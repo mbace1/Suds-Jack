@@ -108,9 +108,14 @@ separate check, that there were lights and handles there to find before it
 believes the answer about their visibility.
 
 Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · world34 pass · inspector 13/0
-(five new) · **playthrough 25/0**, twelve levels, no stalls, no ride losses.
-Smoke was re-run after the two gate fixes and its number is filled in by the
-following commit rather than claimed here.
+(five new) · **smoke 433/0** · **playthrough 25/0**, twelve levels, no stalls,
+no ride losses.
+
+The handle rule ends up proved from both sides without a revert test, which is
+the better outcome: `inspector.cjs` requires **5 of 5 visible** once the panel
+is open, and `smoke.cjs` requires **0 visible** on a page that opens nothing —
+two tests with opposite expectations of the same field, so neither can pass by
+accident and neither can pass on an empty set.
 
 ## v15.33 — 2026-08-20 — worlds 3 and 4 stop being code and become data
 
