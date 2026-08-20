@@ -116,21 +116,48 @@ render and PNG is the wrong container for that: the v3 groundworks set was
 about a tenth of it. Flat-colour cutout shapes, shading painted in (key light
 upper-left), depth tint toward the sky **baked into the painting**
 (`LAYER_TINT`: skyline 0.58 · far 0.38 · mid 0.20 · near 0.07 · fore 0).
-Each layer is one image covering a fixed world rect at **30 px per unit**
-(`PPU` in `js/layers.js`):
+Each layer is one image covering a fixed world rect. **Resolution is no
+longer one number** (v15.23): it follows how close the lane is to the camera,
+because that is what decides whether the painting is magnified on screen.
 
-| layer | z | world rect (x0…x1 × y0…y1) | PNG size |
-|---|---|---|---|
-| `sky` | −48 | −60…170 × −6…40 | 4096 × 1380 * |
-| `skyline` | −30 | −30…130 × 0…30 | 4096 × 900 * |
-| `far` | −14 | −20…120 × 0…20 | 4096 × 600 * |
-| `mid` | −6 | −12…110 × 0…14 | 3660 × 420 |
-| `near` | −2 | −8…104 × 0…8 | 3360 × 240 |
-| `fore` | +2.2 | −8…104 × −2…14 | 3360 × 480 |
+| layer | z | world rect (x0…x1 × y0…y1) | PNG size | px/unit |
+|---|---|---|---|---|
+| `sky` | −48 | −60…170 × −6…40 | 4096 × 1380 * | ~18 |
+| `skyline` | −30 | −30…130 × 0…30 | 4096 × 900 * | ~26 |
+| `far` | −14 | −20…120 × 0…20 | 4096 × 600 * | ~29 |
+| `mid` | −6 | −12…110 × 0…14 | 4096 × 940 ×2 | ~67 |
+| `near` | −2 | −8…104 × 0…8 | 4096 × 586 ×2 | ~73 |
+| `fore` | +2.2 | −8…104 × −2…14 | 4096 × 585 | ~37 |
 
 \* canvas width is capped at 4096 px; the plane stretches it to the rect,
 so paint to 4096 wide and treat the horizontal scale as slightly coarse —
 these layers are far away.
+
+**Why the close lanes moved off 30.** On screen the play plane shows at about
+57 px per world unit, and the fore lane — magnified by its own depth — at
+about 69. Stored at 30, everything near the camera was being displayed at
+roughly twice its painted resolution through a `LinearFilter`, which is the
+soft, smeared read that reads as "not HD". The close lanes now go to the 4096
+cap and no further.
+
+**THE CAP IS NOT NEGOTIABLE, SO THE CLOSE LANES ARE TILED.** 4096 is the
+texture size a modest phone GPU is guaranteed to accept, and a layer that
+fails to upload is not a soft layer, it is a missing one. Over a 112-unit rect
+one texture can only carry 36.6 px/unit — so `mid` and `near` ship as **two
+tiles each**, written `4096 × 586 ×2` above, laid left to right across the
+rect by `mountLayer`. That puts them at 67–73 px/unit, past the ~57 the play
+plane is displayed at, which is the whole point.
+
+Tiles are cut from ONE full-width painting rather than painted twice: a piece
+straddling the boundary would otherwise have a different neighbour on each
+side of the seam. The cost is decoded MEMORY, not disk — two tiles are twice
+the RGBA whatever they compress to — which is why it is opt-in per lane and
+why `fore`, which is 89% transparent and only an occasional occluder, stays
+single.
+
+**Pixels stay square.** Each height is the rect's aspect times the width.
+Stretching one axis to buy resolution on the other is how a layer starts
+reading as smeared in one direction only.
 
 **These numbers are checked.** `eeri/test/smoke.cjs` reads this table and
 compares it against `LAYER_RECTS` × `PPU` in `js/layers.js`, and a live layer

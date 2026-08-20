@@ -258,6 +258,164 @@ node names survive on each piece. Only the three new files are rewritten here;
 re-running the tool over already-compressed models buys about 1% and would
 have put 27 files of pure diff noise in this change.
 
+**And an audit, which found the number that should stop the art queue.**
+`art-src/tools/audit-assets.mjs` checks every shipped `.glb` against the
+promise the manifest makes about it — every `nodes` name, every `clips` name,
+every `paint` key, a skin for anything `rig: skinned` — and then asks the
+question no other gate asks: **can the game reach it at all?**
+
+**31/31 keep their contract. 18 cannot be reached.** Nothing under `js/` names
+them in a `getModel()`/`getPiece()` call, because `js/robots.js` builds every
+enemy in code and does not import `assets.js`. Every enemy mesh and every kit
+prop is a correct file answering a question nobody asks. `smoke.cjs` cannot see
+this and it is not its fault: it checks the assets the game asks for, and an
+asset nothing asks for is, to that gate, not there.
+
+It reads the GLB's own JSON chunk, so it runs in **bare node** like `rooms.mjs`
+— a check you can afford on every edit is a check that runs.
+
+Two of its own first-run findings were the TOOL being wrong, and both are
+worth keeping: it reported six models as 65534 units tall, because v15.22
+quantized them and the accessor min/max are in quantization space rather than
+world space — so the height check is skipped on a quantized file rather than
+guessed at; and it called a `placeholder` entry with no file BROKEN, when that
+is precisely what placeholder means. Same shape as the band-brightness ruler in
+`kindling/`: the page was right and the ruler was wrong, twice.
+
+**One real defect.** The crane's `paint` map named `hook`. That node was
+renamed `ball` — and `sheave` renamed `arm` — when the crane was cut, to match
+what `js/crane.js` drives; the paint map never moved with them. `housePaint`
+warns and skips an unknown name, so the ball would have kept its Meshy texture
+while everything around it took the palette. No gate could see it because the
+crane is `placeholder` and nothing loads it. Fixed, with `arm` added alongside.
+
+**The enemy seam is in, and deliberately switched OFF.** `js/robots.js` never
+imported `assets.js`, so all four enemy models were unreachable. It does now:
+`loadRobotAsset(kind)` maps the game's kinds onto the catalogue
+(`skitter→boltbot`, `roller→rollerbot`), `adoptModel` dresses a robot and
+returns the same `{group, eye, legs}` `buildRobot` always returned, and a
+skinned rig gets an AnimationMixer with the clip chosen by the game's own
+state. Behaviour is untouched: the clock, the speeds, the telegraph timings
+and `buildRobot` are byte-for-byte what they were, and `adoptModel` returns
+null for anything it cannot dress — so the fallback is the code that was
+always there. **This is a CROSS-LANE edit** (`js/robots.js` is Design/Level's)
+made with the owner's explicit go-ahead, and it is declared in a banner at the
+top of that file as well as here.
+
+Two traps it had to solve, both already known from the pieces: `rollerbot`'s
+`eye` is a Group wrapping `eye_mesh` (it was cut before `flatten` existed) so
+it is resolved to its mesh; and `slice.mjs` gives every node of a model ONE
+shared material, so the eye's material is cloned or brightening it would
+brighten the whole robot. The three skinned enemies are a single `char1` mesh
+with the eye painted into the texture — nothing to brighten at all — so the
+tell is added as a lamp parented to the `Head` bone.
+
+**The four entries stay `placeholder` because the playthrough gate fails with
+them live**, and the cause is NOT understood yet. Four long levels stall on
+foot part-way (3, 6, 7, 8, 9 — all of them machine-job levels). A performance
+theory was measured and REFUTED: frame rate is 13.8-16.3 fps with the models
+live and 13.8-15.5 with them off, which is software-renderer noise either way;
+level build costs about +780 ms, which is real but nowhere near a stall. The
+meshes were decimated anyway (20k → 2k triangles, indistinguishable at the
+size they are seen — 10x lighter is worth having regardless) and it did not
+fix it. So: the seam ships inert. Turning it on is four words in the manifest,
+once somebody finds what actually blocks the bot.
+
+**The look pass is TOOLED BUT NOT RUN.** Three defects were measured in the
+booted game against the owner's report of 2026-08-19 ("the art cuts out and
+has rough edges … foreground images often block too much … the earth is not
+textured"). All three are real and all three are in the compositor, not the
+pieces:
+
+1. **Rough edges are keying residue.** Every library piece was cut with a hard
+   threshold, which keeps the boundary pixels CONTAMINATED — a ring of colour
+   halfway to the old backing, which reads as a dark speckled fringe and, at
+   the fore lane's magnification, as a torn edge. `build-worlds.mjs` gains
+   `cleanEdges`: erode 1px, decontaminate the rim from its solid neighbours
+   twice, then one 3x3 blur on the alpha alone. It runs on BOTH keying paths,
+   because the library pieces arrive pre-keyed with somebody else's fringe
+   already baked in — which is where the in-game fringe came from.
+2. **The foreground was a fence.** Fore verticals were `w` 2-3 world units
+   against a 1.62-unit character, magnified ~1.25x by depth, arriving every
+   ~25 units — one per screen, every screen, at eye level. Narrowed to <= 1.6
+   in all four worlds (a fore vertical is a window MULLION: never wider than
+   the character it crops) and the gap opened from [4.5, 4.0] to [7.0, 6.0].
+   `js/layers.js` already said a foreground occludes IN PASSING; the numbers
+   did not.
+3. **The earth's maps are applied and too faint to survive.** 312 materials
+   carry a detail map, so nothing is missing — but a map MULTIPLIES the
+   palette colour, and multiplication scales variance by the surface's own
+   brightness. The earth sits near luminance 55 with maps at std/mean 0.09-0.12,
+   so about 5 levels of variation reach the screen; measured on the same
+   frame, sky and midground read at std 21 and the earth at 8.6. The maps were
+   authored on white, judged on white, and died on brown. `punch-maps.mjs` is
+   a mean-anchored contrast stretch (mean-anchored because the mean IS the
+   surface brightness under multiply) taking the earth sections to 0.21-0.25,
+   with a wrap-blend on the edges because the stretch amplifies any seam the
+   source already had — `packed` grew a visible one — and a 3x3 tiled contact
+   sheet, because "tile it and LOOK" is the only test that shows tiling.
+
+**RESOLUTION IS THE HEADLINE and it is a rebuild, not a redraw.** The close
+lanes were stored at 30 px/unit and are shown at ~57 (play plane) to ~69
+(fore, magnified by depth). Everything near the camera has been displayed at
+roughly twice its painted resolution through a LinearFilter, which is the
+soft, smeared read that "not HD" names. `LANES` now carries 48 px/unit for
+fore and near and 36 for mid; skyline and far stay near 26, where softness is
+the aerial perspective doing its job.
+
+**RUN, and here is what it cost to get right.** All four worlds rebuilt
+(`groundworks_v5`, `pipeworks_v3`, `grove_v2`, `nightshift_v2`) and the eight
+detail maps regenerated. Two corrections along the way, both worth keeping:
+
+- **`w` in a pool entry is the draw WEIGHT, not the width** (build-worlds.mjs
+  line 98 says so). The first pass "narrowed" the fore verticals by editing
+  `w`, which changed how OFTEN they appear and not how wide they are, and the
+  render came back with a pillar filling the middle third — worse than before.
+  A piece's width is `h x its source aspect`, so HEIGHT is the only lever, and
+  halving it (17 → 9) halves the width while still crossing the frame: the
+  fore ground line is 5.4 and the rect ends at 14, so a 9-unit piece still
+  runs off the top, which is the property `js/layers.js` actually asks for.
+- **4096 IS THE CEILING and the first numbers ignored it.** The close lanes
+  were set to 5376 px, which would have been a texture a modest phone GPU can
+  refuse — and a layer that fails to upload is not a soft layer, it is a
+  missing one. Capped, that is 36.6 px/unit over a 112-unit rect: a 22% linear
+  gain, not the 60% first claimed here.
+
+`js/layers.js` grows `LAYER_PX`, an explicit per-lane size table. It is a
+table and not a formula on purpose: the far lanes are NOT square-pixeled —
+they are painted at 30 px/unit vertically and squashed horizontally by the
+cap — so a derivation clean enough for the close lanes silently disagreed with
+the three that already shipped. Three places now have to agree (this table,
+`LANES` in build-worlds.mjs, the table in assets/README.md) and `smoke.cjs`
+holds all three to each other.
+
+**The close lanes are TILED, which is the way past the 4096 cap.** One texture
+over a 112-unit rect carries 36.6 px/unit; the play plane is displayed at
+about 57 and the fore lane at about 69, so a single tile could never be sharp
+no matter how it was painted. `mid` and `near` now ship as **two textures
+each**, laid left to right across the rect by `mountLayer` — 67 and 73
+px/unit, past the camera at last.
+
+Tiles are CUT FROM ONE FULL-WIDTH PAINTING, never painted twice: a piece
+straddling the boundary would otherwise get a different neighbour on each side
+of the seam, and the seam would show. The cost is decoded MEMORY rather than
+disk — two tiles are twice the RGBA whatever they compress to — so it is
+opt-in per lane. `fore` stays single: it is 89% transparent and only an
+occasional occluder, so it would pay full memory for very little picture.
+
+The seam widened in four places and `smoke.cjs` now checks every one of them,
+which is why it went from 368 checks to 408: each tile must exist, each must
+be the documented size, each must stay inside `assets/`, each must actually be
+FETCHED, and the tile COUNT must match the rect. A lane that silently lost its
+second tile would render the right half of every level as nothing.
+
+Three bugs of my own on the way in, all found by the gate rather than by
+reading: the tile height was set from the old single-tile numbers (470/293
+instead of 940/586, so the tiles were half the picture); the README's tile
+marker was parsed with a trailing-`×N` regex that matched the HEIGHT of a
+single-tile lane, so `fore` demanded 585 files; and three separate places in
+`smoke.cjs` read `e.file` directly and threw on a lane that only has `files`.
+
 **Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
 to be meshes.** The ladder is already built per tile in `js/level.js` and meets
 every clause of its contract, including the hard one — seamless vertical

@@ -23,11 +23,56 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=32';
-import { getLayerTexture } from './assets.js?v=32';
-import { buildPipeworksDressing } from './world2-dressing.js?v=32';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=33';
+import { getLayerTexture } from './assets.js?v=33';
+import { buildPipeworksDressing } from './world2-dressing.js?v=33';
 
-export const PPU = 30; // canvas pixels per world unit
+// CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
+//
+// Resolution has to follow how close a lane is to the camera, because that is
+// what decides whether its painting is magnified on screen. The play plane
+// shows at about 57 px per world unit and the fore lane, magnified by its own
+// depth, at about 69. Every lane was stored at 30, so everything near the
+// camera was displayed at roughly twice its painted resolution through a
+// LinearFilter — the soft, smeared read that "not HD" names.
+//
+// The close lanes go to the 4096 cap and no further. That cap is the texture
+// size a modest phone GPU is guaranteed to accept, and a layer that fails to
+// upload is not a soft layer, it is a missing one. Over a 112-unit rect the
+// ceiling is 36.6 px/unit, so this buys 22% and not the 60% the camera wants.
+//
+// `PPU` stays exported at the old value: it is the CODE-DRAWN fallback's
+// density, and those are painted per level rather than shipped, so nothing is
+// gained by making them heavier.
+export const PPU = 30; // canvas pixels per world unit (code-drawn fallback)
+
+// THE EXACT PIXEL SIZE a shipped layer must be painted to, per lane. A table
+// and not a formula, and that is deliberate: the far lanes are NOT square-
+// pixeled — they are painted at 30 px/unit vertically and then squashed
+// horizontally by the 4096 cap (assets/README.md's footnote calls this out).
+// A derivation clean enough to describe the close lanes silently disagreed
+// with the three that already shipped, so the table is the contract.
+//
+// THREE PLACES MUST AGREE and test/smoke.cjs holds them to each other:
+// this table, `LANES` in art-src/tools/build-worlds.mjs, and the size table in
+// assets/README.md. A painting at the wrong size does not fail — it STRETCHES
+// onto the plane, which looks like slightly worse art rather than a bug.
+export const LAYER_PX = {
+  sky:     { pxW: 4096, pxH: 1380 },
+  skyline: { pxW: 4096, pxH: 900 },
+  far:     { pxW: 4096, pxH: 600 },
+  // raised in v15.23: these sit close enough to be magnified on screen.
+  // `tiles` is how many textures the lane ships as, laid left to right; pxW
+  // is the size of EACH tile, so a 2-tile lane carries 2 x pxW across its
+  // rect and that is what gets it past the 4096 cap.
+  mid:     { pxW: 4096, pxH: 940, tiles: 2 },
+  near:    { pxW: 4096, pxH: 586, tiles: 2 },
+  fore:    { pxW: 4096, pxH: 585 },
+};
+
+export function layerPx(name) {
+  return LAYER_PX[name] || null;
+}
 
 // The world rects each layer occupies. These are the asset contract for 2D:
 // a live PNG for a layer must be painted to this rect at PPU px per unit
@@ -66,15 +111,27 @@ function paintCanvas({ x0, x1, y0, y1, draw, tint }) {
   return tex;
 }
 
+// Mounts a lane. `tex` is one texture or an ARRAY of them, and an array is
+// laid left to right across the rect in equal columns — the lane is one
+// painting that happens to be stored in more than one file, which is how a
+// close lane gets past the 4096 texture cap.
+//
+// Returns an array of meshes either way, because `dispose()` has to take down
+// everything it put up: a plane left in the scene is a full-width quad still
+// drawing behind the new world, and the near ones are opaque.
 function mountLayer(scene, rect, tex) {
+  const texs = Array.isArray(tex) ? tex : [tex];
   const w = rect.x1 - rect.x0, h = rect.y1 - rect.y0;
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(w, h),
-    new THREE.MeshBasicMaterial({ map: tex, transparent: true }),
-  );
-  mesh.position.set(rect.x0 + w / 2, rect.y0 + h / 2, rect.z);
-  scene.add(mesh);
-  return mesh;
+  const cw = w / texs.length;
+  return texs.map((t, i) => {
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(cw, h),
+      new THREE.MeshBasicMaterial({ map: t, transparent: true }),
+    );
+    mesh.position.set(rect.x0 + cw * (i + 0.5), rect.y0 + h / 2, rect.z);
+    scene.add(mesh);
+    return mesh;
+  });
 }
 
 const rect = (g, c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
@@ -553,7 +610,7 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
   // the sky is a layer like any other now — the crafted paper sky ships as a
   // PNG through the same seam, and drawSky stays as its code placeholder
   const liveSky = await getLayerTexture(world, 'sky');
-  mounted.push(mountLayer(scene, LAYER_RECTS.sky,
+  mounted.push(...mountLayer(scene, LAYER_RECTS.sky,
     liveSky || paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky })));
   for (const name of ['skyline', 'far', 'mid', 'near', 'fore']) {
     const rect = LAYER_RECTS[name];
@@ -561,7 +618,7 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
     // a world paints ITSELF when it has its own set; everything without one
     // still falls back to the site, which is what worlds 1 and 2 want
     const set = world === 'grove' ? GROVE_DRAW : PLACEHOLDER_DRAW;
-    mounted.push(mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] })));
+    mounted.push(...mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] })));
   }
   const events = backgroundEvents(scene);
   const dressing = world === 'pipeworks' ? buildPipeworksDressing(scene) : null;

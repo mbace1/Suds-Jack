@@ -258,3 +258,61 @@ primitives in `mat.steel` and `mat.girder`. If a scaffold pass is wanted, it
 belongs in the material and the profile, and `js/level.js` is Design/Level's
 file — so that is a coordinated change, not an art drop. Nothing is blocked on
 a file that does not exist.
+
+---
+
+## The audit, and the number that should stop the art queue
+
+`node art-src/tools/audit-assets.mjs`
+
+**31/31 shipped files keep their contract. 18 of them cannot be reached by the
+game.**
+
+Nothing under `js/` names them in a `getModel()`/`getPiece()` call, and that is
+the whole finding: `js/robots.js` builds every enemy in code and does not
+import `assets.js` at all. So every enemy mesh and every kit prop —
+`boltbot`, `rollerbot`, `vacbot`, `workerbot`, `cabledrum`, `compressor`,
+`gascart`, `generator`, `jackhammer`, `wheelbarrow`, the three tokens, and the
+five machines with no ride yet — is a correct file answering a question nobody
+asks.
+
+**No existing gate can see this, and that is structural rather than an
+oversight.** `smoke.cjs` boots the game and checks the assets the game asks
+for, which is the right thing to check; an asset nothing asks for is, to that
+gate, simply not there. So a mesh can be generated, cut, measured, committed
+and catalogued, and be unreachable, with everything green.
+
+### What follows for the art queue
+
+**Making a seventh and eighth bot by retexture would add two more unreachable
+files.** PHASING Phase B calls that the best asset-value-per-credit item in the
+plan, and per credit it is — but the value is realised at the seam, not at the
+mesh, and the seam is not there. The next credit spent on an enemy should come
+after `js/robots.js` can ask for one.
+
+That wiring is **Design/Level's** (`js/robots.js`, per the lanes table). What
+the art lane owes it is exactly what this audit gives: proof that the files it
+will ask for keep their contracts. They do — including all four skinned rigs
+with their clips, and every sliced machine with its node set.
+
+### And three that cannot be meshes as specified
+
+`bank`, `girder` and `wall` are wired — `main.js` calls `getPiece` for all
+three — but their placeholders are built to the ROOM's dimensions
+(`buildBankModel(def.bank.rows, width)`), and `pieces.js` places the asset
+without scaling it. A fixed GLB cannot serve a size the room declares. This is
+the ladder finding again: **some assets are defined by a rule, and a generated
+shape cannot hold a rule.** They need either a design decision (rooms
+standardise on one size), a scaling seam, or to stay code-built. Until one of
+those, they are not art work.
+
+### One real defect it found
+
+The crane's `paint` map named `hook`. That node was renamed `ball` — and
+`sheave` renamed `arm` — when the crane was cut, to match the names
+`js/crane.js` actually drives, but the paint map was not moved with them.
+`housePaint` warns and skips an unknown name, so the ball would have kept its
+Meshy texture while everything around it took the palette. Invisible to every
+gate, because the crane is `placeholder` and nothing loads it yet. Fixed, and
+`arm` added alongside — the excavator paints its whole chain, and a
+half-painted boom is worse than an unpainted one.
