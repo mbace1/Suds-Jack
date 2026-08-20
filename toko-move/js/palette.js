@@ -1,26 +1,45 @@
-// Day paper (BRIEF, Toko Move skin): mint, sky, coral, yellow, clean dark type.
-// Same geometry as the night game, opposite weather — the point is that the two
-// products look nothing alike while the city underneath is provably identical.
+// Toko Move — the paper the network is drawn on.
+//
+// A transit diagram is two kinds of ink: the LAND, which is quiet and almost
+// not there, and the LINES, which are the loudest thing on the page. Keep that
+// gap wide. Every colour here is either barely visible or fully committed;
+// nothing sits in the middle, because a diagram with mid-tones reads as mud.
 
 export const PAL = {
-  paper: '#f4f1e8',
-  grain: 'rgba(40,50,60,0.05)',
-  ink: '#20272e',
-  dim: '#5d6a72',
-  mark: '#3f5866',
-  latent: '#d8d3c6',
-  water: '#bcd8e6',
-  warn: '#e2683c',
-  slow: '#e0a53a',
-  draft: '#2f9fb8',
-  routeColours: ['#2f9fb8', '#5aa860', '#e0a53a', '#c86f9a'],
-  // the standing city services, quieter than the player's own lines
-  modeColours: { metro: '#e07b2f', tram: '#86a98c', car: '#9aa4ac' },
-  font: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+  paper: '#f2efe6',
+  grain: 'rgba(30,38,46,0.05)',
+  ink: '#1d242b',
+  dim: '#5d6870',          // 4.96:1 on paper — AA for body text, and it has drifted before
+  rule: '#d5cfc2',
+  water: '#c3dbe8',
+  waterEdge: '#a9cadd',
+  station: '#fcfbf7',
+  warn: '#d8452f',         // the crowding ring: a graphic, not type
+  warnText: '#b83420',     // the same alarm at 5.14:1, for anything with words in it
+  train: '#2b333a',
+
+  // Handed out in this order, and a colour returns to the pile when its line
+  // is torn up. Seven is deliberate: it is more lines than the board can
+  // usefully hold, so running out of colours is never the thing that stops you.
+  //
+  // Red is in here, and the CROWDING RING IS NOT RED — it is ink. The first cut
+  // had it the other way round and line one came out the same red as the alarm,
+  // so a healthy line read as a warning. Trying to solve that by banning red
+  // from the palette only pushed the collision onto orange; the real answer is
+  // that the alarm should never have been competing on hue at all. A closing
+  // dark ring cannot be confused with any line, whatever colours get added.
+  // Amber and orange sat 50 apart and read as one colour two stops in; the
+  // seventh slot was picked by measuring candidates against the other six
+  // rather than by eye.
+  lines: ['#2f7fbf', '#d8452f', '#3f9e5a', '#e0a52e', '#8a5bbf', '#b13b8a', '#1f9c92'],
 };
 
-export const THEME = {
-  ...PAL,
-  labelFor: n => n.name,
-  glyphFor: n => (n.has('school') ? 'S' : n.has('work') ? 'W' : n.has('shop') ? '□' : n.has('transfer') ? '◇' : '○'),
+// Stroke weights, in board units. The line is thicker than the station outline
+// on purpose — the network is the subject and the stops are punctuation.
+export const INK = {
+  line: 9,
+  lineGap: 11.5,    // how far apart two lines sharing a leg are pushed
+  station: 3.6,
+  stationR: 15.5,
+  specialR: 18,
 };

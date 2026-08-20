@@ -1043,25 +1043,71 @@ export const ART = {
     g.p(66, 45, 3, 3, '#F0027F');
     g.p(61, 51, 2, 2, '#7a1a4a'); g.p(57, 55, 1, 1, '#4a1230');
   },
-  daymap(g, a) {
-    // warm day paper, the same water in the same corner
-    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#f4f1e8', '#e9e4d6', y / H));
-    for (let y = 56; y < H; y++) g.p(0, y, 40 - (y - 56) * 1.4, 1, '#bcd8e6');
-    // the SAME geometry — that is the whole joke of the pair
-    const fat = (pts, c) => { for (let i = 0; i < pts.length - 1; i++) for (let o = 0; o < 2; o++) g.line(pts[i][0], pts[i][1] + o, pts[i + 1][0], pts[i + 1][1] + o, c); };
-    // a soft stain bleeding behind the busiest line before it is drawn
-    for (let i = 0; i < 40; i++) g.p(50 + (i * 17) % 60, 20 + (i * 11) % 40, 2, 2, '#efe4d2');
-    fat([[18, 4], [18, 30], [52, 64], [88, 64]], '#86a98c');
-    fat([[4, 66], [46, 66], [96, 16], [124, 16]], a);           // the accent line is the busy one
-    fat([[70, 4], [96, 30]], '#e0a53a');
-    for (const [x, y] of [[18, 30], [46, 66], [70, 4], [124, 16]]) { g.disc(x, y, 3, '#20272e'); g.disc(x, y, 1, '#f4f1e8'); }
-    const px = 96, py = 16;
-    g.disc(px, py, 4, '#20272e'); g.disc(px, py, 2, '#f4f1e8');
-    // one thing happening: the morning crowd, dark ticks queuing and riding
-    for (let i = 0; i < 9; i++) g.p(px - 17 - (i % 3) * 4, py + 5 + ((i * 5) % 12), 1, 2, '#20272e');
-    for (const [x, y] of [[60, 51], [72, 39], [84, 27]]) g.p(x, y, 2, 2, '#20272e');
-    // the sun, high and off-centre, cropped by nothing — it is day, that is all
-    g.disc(112, 8, 5, '#e0a53a'); g.disc(112, 8, 3, '#f4f1e8');
+  // Toko Move: the sheet on the table, and a train crossing the water
+  metro(g, a) {
+    // The table first, and it is DARKER than the paper. The sheet is the
+    // framing device, and a frame only reads as one when it is a step away in
+    // value from what is behind it — this cover has exactly one step of depth
+    // and that is the whole trick.
+    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#c9c2b0', '#a89f8d', y / H));
+
+    // the sheet, running off the right and the bottom: cropped, so it sits in
+    // FRONT rather than floating in the middle of the table
+    const SX = 8, SY = 6;
+    g.p(SX - 2, SY - 2, W, H, '#857f6d');
+    for (let y = SY; y < H; y++) g.p(SX, y, W - SX, 1, mix('#f7f4eb', '#e7e2d2', (y - SY) / (H - SY)));
+
+    // the river: one flat colour per scanline with a hard edge either side,
+    // which is the Atari constraint and also just how a printed map does water
+    for (let y = SY; y < H; y++) {
+      const t = (y - SY) / (H - SY);
+      const cx = (70 + Math.sin(t * 2.4 + 0.5) * 7) | 0;
+      g.p(cx, y, 15, 1, '#c3dbe8');
+      g.p(cx - 1, y, 1, 1, '#a9cadd');
+      g.p(cx + 15, y, 1, 1, '#a9cadd');
+    }
+
+    // ONE line carries the cover and a second feeds into it. Neither of them
+    // stops in mid-air: the accent runs off both edges and the red runs off the
+    // bottom, because a route that simply ends in open paper reads as unfinished
+    // art rather than as a terminus.
+    const fat = (pts, c, w) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        for (let o = -w; o <= w; o++) {
+          g.line(pts[i][0], pts[i][1] + o, pts[i + 1][0], pts[i + 1][1] + o, c);
+          g.line(pts[i][0] + o, pts[i][1], pts[i + 1][0] + o, pts[i + 1][1], c);
+        }
+      }
+    };
+    fat([[26, 74], [26, 58], [40, 44], [52, 44]], '#d8452f', 1);
+    fat([[4, 26], [36, 26], [52, 42], [126, 42]], a, 2);
+
+    // the stops, in the game's own alphabet: paper inside a hard dark line, and
+    // big enough that a triangle is a triangle rather than a dark smudge. Every
+    // one of them sits ON a line — a shape floating beside the track was what
+    // made the first cut unreadable.
+    const INK = '#1d242b', PAPER = '#fbfaf6';
+    const ring = (x, y) => { g.disc(x, y, 6, INK); g.disc(x, y, 3, PAPER); };
+    const box = (x, y) => { g.p(x - 6, y - 6, 13, 13, INK); g.p(x - 3, y - 3, 7, 7, PAPER); };
+    const tri = (x, y) => {
+      for (let r = 0; r <= 11; r++) { const w = 1 + ((r * 1.15) | 0); g.p(x - (w >> 1), y - 6 + r, w, 1, INK); }
+      for (let r = 0; r <= 5; r++) { const w = 1 + ((r * 1.15) | 0); g.p(x - (w >> 1), y - 1 + r, w, 1, PAPER); }
+    };
+    ring(20, 26); tri(52, 43); box(112, 42);
+
+    // one thing happening: the train is out over the water, drawn the way the
+    // game draws it — a paper casing, then a THIN dark edge around the line's
+    // own colour. A fat dark edge round a pale middle just makes another stop.
+    g.p(72, 36, 19, 13, '#f7f4eb');
+    g.p(73, 37, 17, 11, INK);
+    g.p(74, 38, 15, 9, a);
+
+    // and the reason it is wanted: a queue standing at the interchange
+    for (let i = 0; i < 4; i++) {
+      const x = 44 + i * 10, y = 60;
+      if (i % 2) { g.p(x - 3, y - 3, 7, 7, INK); g.p(x - 1, y - 1, 3, 3, PAPER); }
+      else { g.disc(x, y, 3, INK); g.p(x - 1, y - 1, 3, 3, PAPER); }
+    }
   },
 
 };

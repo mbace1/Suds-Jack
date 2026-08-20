@@ -3,123 +3,175 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#f4f1e8">
-<meta name="description" content="Toko Move — open the lines a city moves on and get everybody where they are going before the day ends.">
+<meta name="theme-color" content="#f2efe6">
+<meta name="description" content="Toko Move — draw the lines a city runs on and keep it moving. Every stop is a shape; every passenger wants a shape.">
 <title>Toko Move</title>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    --paper: #f4f1e8; --panel: #fffdf7; --rule: #d8d3c6;
-    --ink: #20272e; --dim: #5d6a72; --sky: #2f9fb8; --mint: #5aa860; --coral: #e2683c;
-    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --paper: #f2efe6; --panel: #fcfbf7; --rule: #d5cfc2;
+    --ink: #1d242b; --dim: #5d6870; --warn: #b83420;
+    --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
   html, body { height: 100%; background: var(--paper); overflow: hidden; }
   body {
-    font-family: var(--mono); color: var(--ink); font-size: 14px; line-height: 1.45;
+    font-family: var(--sans); color: var(--ink); font-size: 15px; line-height: 1.5;
     display: flex; flex-direction: column;
     padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+    -webkit-user-select: none; user-select: none;
   }
+
+  /* ── the strip along the top ──────────────────────────────────────── */
   #hud {
-    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-    padding: 46px 10px 6px; border-bottom: 1px solid var(--rule);
-    font-size: 12px; color: var(--dim); flex: none;
+    flex: none; display: flex; align-items: center; gap: 18px;
+    padding: 44px 12px 8px; border-bottom: 1px solid var(--rule);
   }
-  #hud b { color: var(--ink); font-weight: normal; }
-  #hud .a b { color: var(--mint); }
-  #hud .e b { color: var(--coral); }
-  #hud .sp { margin-left: auto; display: flex; gap: 6px; align-items: center; }
-  .ctl { min-width: 44px; min-height: 44px; font: inherit; font-size: 13px;
-    background: var(--panel); color: var(--ink); border: 1px solid var(--rule); cursor: pointer; }
+  .score { display: flex; align-items: baseline; gap: 7px; }
+  .score b { font-size: 27px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .cap { font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--dim); }
 
-  /* the district is a tall rectangle; cap the canvas so the panel survives
-     on a phone — the renderer letterboxes inside whatever box it gets */
-  #map { flex: 0 0 auto; width: 100%; max-height: 56vh; display: block; touch-action: none; }
-  #feed { flex: none; padding: 4px 10px; font-size: 11.5px; color: var(--dim); max-height: 3.6em; overflow: hidden; }
-  #feed div { border-top: 1px dashed var(--rule); padding: 1px 0; }
-  #sheet { flex: 1 1 auto; min-height: 0; border-top: 1px solid var(--rule);
-    background: var(--panel); padding: 8px 10px 10px; overflow-y: auto; }
-  #sheet h2 { font-size: 15px; color: var(--sky); }
-  #sheet .hint { color: var(--dim); font-size: 12px; }
+  #when { display: flex; align-items: baseline; gap: 7px; }
+  #day { font-size: 15px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
 
-  /* the small window: tap a vehicle or a pin and the details hang off the
-     fingertip — never a full-screen takeover */
-  #pop {
-    position: fixed; z-index: 30; background: var(--panel);
-    border: 1px solid var(--rule); padding: 10px 12px;
-    box-shadow: 0 6px 24px rgba(40,50,60,.25); font-size: 12.5px;
+  #stock { display: flex; gap: 14px; margin-left: auto; }
+  .stk { display: flex; align-items: center; gap: 5px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .stk i { display: block; font-style: normal; color: var(--dim); }
+  .stk.none { opacity: 0.4; }
+
+  #tools { display: flex; gap: 4px; }
+  .ctl {
+    min-width: 44px; min-height: 44px; font: inherit; font-size: 14px;
+    background: none; color: var(--ink); border: 1px solid var(--rule);
+    border-radius: 3px; cursor: pointer;
   }
-  #pop h3 { font-size: 13.5px; color: var(--sky); padding-right: 40px; }
-  #pop p { margin-top: 6px; }
-  #pop .dim { color: var(--dim); }
-  #pop .x {
-    position: absolute; top: 0; right: 0; min-width: 44px; min-height: 44px;
-    background: none; border: 0; color: var(--dim); font: inherit; font-size: 16px; cursor: pointer;
-  }
+  .ctl:hover { background: var(--panel); }
+  .ctl[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-  .veil { position: fixed; inset: 0; z-index: 40; background: rgba(244,241,232,.94);
-    display: flex; align-items: center; justify-content: center; padding: 16px; }
-  /* `display:flex` overrides the [hidden] attribute, which leaves a closed
-     overlay sitting over the map as an invisible full-screen pointer trap */
+  /* ── the board ────────────────────────────────────────────────────── */
+  #wrap { flex: 1 1 auto; min-height: 0; position: relative; }
+  #board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  #feed {
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    background: var(--ink); color: var(--paper); font-size: 13px;
+    padding: 7px 14px; border-radius: 3px; pointer-events: none;
+    opacity: 0; transition: opacity .18s;
+  }
+  #feed.show { opacity: 1; }
+
+  /* ── the cards ────────────────────────────────────────────────────── */
+  .veil {
+    position: fixed; inset: 0; z-index: 40; background: rgba(242,239,230,.93);
+    display: flex; align-items: center; justify-content: center; padding: 18px;
+  }
+  /* display:flex beats [hidden], and a closed veil left showing is an
+     invisible sheet of glass over the whole board */
   .veil[hidden] { display: none; }
-  .card { max-width: 460px; width: 100%; max-height: 88vh; overflow-y: auto;
-    background: var(--panel); border: 1px solid var(--rule); padding: 20px 18px; }
-  .card h1 { font-size: 22px; color: var(--sky); letter-spacing: .05em; }
-  .card h2 { font-size: 16px; color: var(--sky); }
-  .card p { margin-top: 10px; font-size: 13.5px; }
-  .card p.dim { color: var(--dim); font-size: 12.5px; }
-  .card b { color: var(--mint); }
-  .card .t { color: var(--dim); font-size: 11.5px; }
-  .btn { min-height: 44px; min-width: 62px; font: inherit; font-size: 13px;
-    background: var(--paper); color: var(--ink); border: 1px solid var(--rule); cursor: pointer; }
-  .btn.wide { width: 100%; margin: 6px 0 0; }
-  .btn.prime { background: var(--sky); color: var(--panel); border-color: var(--sky); }
+  .card {
+    max-width: 480px; width: 100%; max-height: 88vh; overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 4px;
+    padding: 26px 22px;
+  }
+  .card h1 { font-size: 30px; font-weight: 600; letter-spacing: 0.06em; }
+  .card h2 { font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  .card p { margin-top: 12px; font-size: 14.5px; }
+  .card p.dim { color: var(--dim); font-size: 13.5px; }
+  .rule { height: 1px; background: var(--rule); margin: 18px 0; }
+
+  .btn {
+    min-height: 44px; font: inherit; font-size: 14.5px; text-align: left;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--rule);
+    border-radius: 3px; cursor: pointer; padding: 10px 14px;
+  }
+  .btn:hover { border-color: var(--ink); }
+  .btn.wide { display: block; width: 100%; margin-top: 8px; }
+  .btn.prime { background: var(--ink); color: var(--paper); border-color: var(--ink); text-align: center; font-weight: 600; }
+  .btn b { display: block; font-size: 14.5px; font-weight: 600; }
+  .btn span { display: block; font-size: 13px; color: var(--dim); margin-top: 2px; }
+  .btn.prime b, .btn.prime span { color: inherit; }
+  .btn.sel { border-color: var(--ink); box-shadow: inset 4px 0 0 var(--ink); }
+
+  #linePick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip {
+    min-width: 44px; min-height: 44px; border: 1px solid var(--rule); border-radius: 3px;
+    background: var(--paper); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; gap: 7px; padding: 0 14px; font: inherit; font-size: 13.5px;
+  }
+  .chip:hover { border-color: var(--ink); }
+  .chip s { display: block; width: 15px; height: 15px; border-radius: 50%; }
+
+  .stats { margin-top: 14px; }
+  .stats div { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 14px; }
+  .stats b { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+  .legend figure { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); }
+
+  @media (max-width: 560px) {
+    #hud { gap: 10px; padding-top: 40px; }
+    .score b { font-size: 22px; }
+    #when .cap { display: none; }
+    #stock { gap: 10px; }
+  }
 </style>
 </head>
 <body>
-  <div id="hud">
-    <span class="a">arrived <b id="done"></b></span>
-    <span>reached <b id="reach"></b></span>
-    <span class="e">emissions <b id="emit"></b></span>
-    <span class="sp">
-      <span id="clock"></span><span id="lines"></span>
+  <header id="hud">
+    <div class="score"><b id="score">0</b><span class="cap">delivered</span></div>
+    <div id="when"><span id="day">mon</span><span class="cap" id="week">week 1</span></div>
+    <div id="stock">
+      <span class="stk" id="stkLines"><i>lines</i><b>0/3</b></span>
+      <span class="stk" id="stkTrains"><i>trains</i><b>3</b></span>
+      <span class="stk" id="stkTunnels"><i>tunnels</i><b>2</b></span>
+    </div>
+    <div id="tools">
       <button class="ctl" id="pause" aria-label="Pause">❚❚</button>
-      <button class="ctl" id="speed" aria-label="Speed">×1</button>
-    </span>
-  </div>
+      <button class="ctl" id="speed" aria-label="Game speed">×1</button>
+      <button class="ctl" id="sound" aria-label="Sound" aria-pressed="false">♪</button>
+    </div>
+  </header>
 
-  <canvas id="map" aria-label="The city as a moving diagram. Drag between two stops to open a line; tap a stop to see who is waiting; tap a vehicle or a pin for its details."></canvas>
-  <div id="pop" hidden role="dialog" aria-label="Details">
-    <button class="x" type="button" id="popClose" aria-label="Close">✕</button>
-    <div id="popBody"></div>
+  <div id="wrap">
+    <canvas id="board" aria-label="The network. Drag from a stop to draw a line; drag from the stub at a line's end to extend it."></canvas>
+    <div id="feed" role="status" aria-live="polite"></div>
   </div>
-  <div id="feed" aria-live="polite"></div>
-  <div id="sheet"></div>
 
   <div class="veil" id="title">
     <div class="card">
       <h1>TOKO MOVE</h1>
-      <p class="dim">One city, one day.</p>
-      <p>Everybody has somewhere to be — work, school, the shops, home again. Nobody can get there until you open a line that takes them.</p>
-      <p>Drag stop to stop to open a line. Watch where people pile up, and put capacity where the queue is.</p>
-      <p class="dim">Get most of the city's journeys finished, reach every neighbourhood, and keep the emissions down. There is no way to lose the day — only ways to run it better.</p>
-      <button class="btn prime wide" id="play">START THE DAY</button>
+      <p class="dim">Draw the lines. Keep it moving.</p>
+      <div class="rule"></div>
+      <p>Every stop is a shape. Everybody standing on it wants to reach a stop of some <em>other</em> shape, and they cannot until a line connects the two.</p>
+      <p><b>Drag between two stops</b> to open a line. Drag from the small stub at a line's end to carry it onward; drag back onto the previous stop to pull it up again.</p>
+      <p>The city keeps growing and nobody stops arriving. When a stop stays over its capacity the ring around it closes — and when it closes, the day is done.</p>
+      <div class="rule"></div>
+      <button class="btn prime wide" id="play">START</button>
+      <p class="dim" id="seedNote"></p>
     </div>
   </div>
 
   <div class="veil" id="upgrade" hidden>
     <div class="card">
-      <h2>TRANSPORT BOARD</h2>
-      <p id="upText"></p>
+      <h2 id="upWeek">end of week</h2>
+      <p id="upText">The city will fund one thing. Choose.</p>
       <div id="upBtns"></div>
+      <div id="lineWrap" hidden>
+        <div class="rule"></div>
+        <p id="lineAsk">On which line?</p>
+        <div id="linePick"></div>
+      </div>
     </div>
   </div>
 
   <div class="veil" id="end" hidden>
     <div class="card">
-      <h1 id="endTitle"></h1>
-      <div id="endStats"></div>
-      <p class="dim" id="endNote"></p>
-      <button class="btn prime wide" id="again">RUN THE DAY AGAIN</button>
+      <h1 id="endTitle">THE LINE STOPPED</h1>
+      <p class="dim" id="endWhy"></p>
+      <div class="stats" id="endStats"></div>
+      <div class="rule"></div>
+      <button class="btn prime wide" id="again">RUN IT AGAIN</button>
+      <p class="dim" id="endSeed"></p>
     </div>
   </div>
 
