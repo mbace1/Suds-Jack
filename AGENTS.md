@@ -39,6 +39,10 @@ the twelve-anchor Era I graph in
 `piritori/map/kallio-era1-2003-v1.json`; fiction sites inherit an anchor and
 must not be converted into false real-world addresses.
 
+For a Godot conversion, read `piritori/GODOT_HANDOFF.md` after the canon stack.
+It is an implementation and coordination guide, not authority to change the
+design or begin phase-gated Era II production.
+
 **The 2024 Pasila act is canon and phase-gated.** Second-act content in the code
 or in an art queue *is* a finding until Act I is feature complete —
 `DECISIONS.md` §5.
