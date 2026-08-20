@@ -1,11 +1,18 @@
 # Toko Move — versions
 
-## v1 — 2026-08-20
+## v2 — 2026-08-20
 
-**Rebuilt from scratch as a Mini Metro clone.** Owner's call: the previous build
-played identically to Mini Motorways over an abstract map, and the answer was
-neither a repaint nor a different genre — it was to build the thing properly and
-on its own.
+**Rebuilt from scratch as a Mini Metro clone.**
+
+Numbered v2 rather than v1 even though every line of it is new. The cabinet
+already shipped a v1, and the arcade tags what MOVED by diffing `versions.json`
+against the numbers you last saw — restart at v1 and a returning visitor is told
+nothing changed, which is the one thing that is certainly false here. A version
+number belongs to the cabinet, not to the codebase behind it.
+
+Owner's call: the previous build played identically to Mini Motorways over an
+abstract map, and the answer was neither a repaint nor a different genre — it
+was to build the thing properly and on its own.
 
 Nothing is shared any more. The old version was a thin daylight skin over
 `flow-core`, the engine Piritori owns; this one has its own sim, its own
