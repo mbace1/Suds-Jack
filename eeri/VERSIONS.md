@@ -76,12 +76,14 @@ Tokens: every module 36 → 37; `dev/inspector.js` starts at 1.
 
 Gates: rooms 147/0 · fx 31/0 · dev-menu 36/0 (six new) · smoke 430/0, plus a
 headless drive-through of the tool itself — open the pause menu, click the row,
-pick, drag, revert, zero page errors. **The playthrough is still running on
-this exact tree at commit time and its number is deliberately not written here
-yet.** Nothing in this change touches the update half of the loop, so there is
-no reason to expect it to move; that is a reason to check rather than a reason
-to claim, and this session has already put an unverified gate number in a
-commit message once.
+pick, drag, revert, zero page errors — and **playthrough 25/0**, twelve levels,
+no stalls, no ride losses.
+
+That last number was left blank when this was committed rather than written
+ahead of the run. Nothing here touches the update half of the loop, so there
+was no reason to expect it to move — which is a reason to check, not a reason
+to claim, and this session had already put an unverified gate number in a
+commit message once. It is written now because the run finished.
 
 ## v15.31 — 2026-08-20 — the hint stops covering the game
 
