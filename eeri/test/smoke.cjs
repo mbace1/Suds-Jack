@@ -1295,16 +1295,31 @@ s.listen(0, '127.0.0.1', async () => {
   // nothing opened. `inspector.cjs` checks the other half (that opening the
   // panel reveals them) and cannot check this one, because by the time it
   // looks it has already opened the panel.
+  // It has to LOOK AT A SITE THAT HAS LIGHTS. The first cut of this ran
+  // wherever the page happened to be and reported "0 of 0 visible" — a pass on
+  // an empty set, which is the worst kind: it would have stayed green with the
+  // handles permanently on. Site 10 is the one with lights in it, so go there
+  // and require finding some before believing the answer.
   {
+    await p.evaluate(() => window.__eeri.debug.goSite(9));
+    await p.waitForFunction(() => !window.__eeri.debug.transitioning(), null,
+      { timeout: ms(20000) }).catch(() => {});
+    await p.waitForTimeout(ms(2500));
     const h = await p.evaluate(() => {
-      let handles = 0, visible = 0;
+      let handles = 0, visible = 0, lights = 0;
       window.__eeri.scene.traverse((o) => {
+        if (o.isPointLight) lights++;
         if (o.userData?.lightHandle) { handles++; if (o.visible) visible++; }
       });
-      return { handles, visible };
+      return { handles, visible, lights };
     });
-    ok(`no light handle is drawn in the game itself (${h.visible} of ${h.handles} visible)`,
-      h.visible === 0);
+    ok(`site 10 really has lights to check (${h.lights} lights, ${h.handles} handles)`,
+      h.lights > 0 && h.handles === h.lights);
+    ok(`…and the game itself draws none of their handles (${h.visible} visible)`,
+      h.handles > 0 && h.visible === 0);
+    await p.evaluate(() => window.__eeri.debug.goSite(0));
+    await p.waitForFunction(() => !window.__eeri.debug.transitioning(), null,
+      { timeout: ms(20000) }).catch(() => {});
   }
 
   // THE TELL HAS TO BE BIG ENOUGH TO SEE. DESIGN §3 says the telegraph IS the
@@ -1350,6 +1365,17 @@ s.listen(0, '127.0.0.1', async () => {
         const out = [];
         g.traverse((o) => {
           if (!o.isMesh) return;
+          // AUTHORED CONTENT IS NOT A REGRESSION. This check exists to prove
+          // the MIGRATION was lossless — that replaying the recorded rows
+          // reproduces what the code drew. A sheet is now also somewhere you
+          // can add things the builder never had, and the first five lights
+          // brought five wireframe handles with them, so site 10 read "92 vs
+          // 87 meshes" and failed on the editor working. The invariant that
+          // still means something is "every mesh the builder draws is drawn
+          // identically by the sheet" — the sheet may hold MORE. A missing or
+          // altered builder mesh still fails, because the counts must match
+          // once the authored ones are set aside.
+          if (o.userData?.lightHandle) return;
           const q = o.geometry.parameters || {};
           out.push([o.position.x.toFixed(4), o.position.y.toFixed(4), o.position.z.toFixed(4),
             o.scale.x.toFixed(3),
@@ -1381,7 +1407,8 @@ s.listen(0, '127.0.0.1', async () => {
       }
       return { bad, meshes };
     });
-    ok(`the dressing sheets rebuild their builders exactly (${cmp.meshes} meshes over 6 sites)`,
+    ok(`the dressing sheets still reproduce their builders exactly, authored rows aside `
+      + `(${cmp.meshes} meshes over 6 sites)`,
       cmp.bad.length === 0, cmp.bad.slice(0, 3).join(' · '));
   }
 

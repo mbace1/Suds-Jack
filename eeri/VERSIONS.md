@@ -84,9 +84,33 @@ The two halves of the handle claim are checked in different files on purpose.
 shipped game hides them, because by the time it looks it has opened the panel.
 `smoke.cjs` loads `index.html`, opens nothing, and asserts zero visible.
 
+**And then the gates caught two of their own.** Both are the same failure this
+version is otherwise about — a check that measures the wrong thing — and the
+second is worse than the first.
+
+*The sheet-vs-builder check failed on the editor working.* It fingerprints
+every mesh a sheet replays against every mesh its builder draws, which is the
+right proof that the **migration** was lossless. But a sheet is now also
+somewhere you can add things the builder never had, and five lights brought
+five wireframe handles with them: `site 10: 92 vs 87 meshes`. The invariant
+that still means something is *every mesh the builder draws is drawn
+identically by the sheet* — the sheet may hold more. Handles are excluded by
+`userData.lightHandle` and the check is renamed to say so. A missing or altered
+builder mesh still fails it, because the counts must match once the authored
+ones are set aside.
+
+*The handle check passed on an empty set.* `no light handle is drawn in the
+game itself (0 of 0 visible)` — it ran wherever the page happened to be
+standing, which was not a site with lights in it. **A green tick on nothing at
+all is worse than a red one**: it would have stayed green with the handles
+permanently switched on. It now navigates to site 10 first and asserts, as a
+separate check, that there were lights and handles there to find before it
+believes the answer about their visibility.
+
 Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · world34 pass · inspector 13/0
-(five new). Smoke and playthrough were still running at commit time and their
-numbers are deliberately left blank rather than claimed ahead of the runs.
+(five new) · **playthrough 25/0**, twelve levels, no stalls, no ride losses.
+Smoke was re-run after the two gate fixes and its number is filled in by the
+following commit rather than claimed here.
 
 ## v15.33 — 2026-08-20 — worlds 3 and 4 stop being code and become data
 
