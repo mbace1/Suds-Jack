@@ -1310,6 +1310,61 @@ s.listen(0, '127.0.0.1', async () => {
       tells.length ? 'smallest ' + Math.min(...tells) : 'no tell in the scene at all');
   }
 
+  // THE SHEET AND THE BUILDER MUST BE THE SAME SCENE. Worlds 3 and 4 now
+  // prefer `assets/dressing/site-N.json` and fall back to the code that
+  // generated it — the same seam as `getModel(name, buildPlaceholder)`. That
+  // is only safe while the two agree, and they will stop agreeing the moment
+  // someone edits a builder without re-running `capture-dressing.mjs`.
+  //
+  // Compared as GEOMETRY, in one page, deliberately. The first attempt
+  // screenshotted each site twice and diffed the pixels, and reported up to
+  // 93% of them differing on a scene that was in fact identical: two page
+  // loads settle the follow camera and the idle animation differently, so the
+  // ruler was measuring the kid breathing. Position, size, colour, opacity
+  // and whether a mesh is mapped are what the claim is actually about.
+  {
+    const cmp = await p.evaluate(async () => {
+      const D = await import('/eeri/js/world34-dressing.js?v=38');
+      const THREE = window.__eeri.THREE;
+      const fp = (g) => {
+        const out = [];
+        g.traverse((o) => {
+          if (!o.isMesh) return;
+          const q = o.geometry.parameters || {};
+          out.push([o.position.x.toFixed(4), o.position.y.toFixed(4), o.position.z.toFixed(4),
+            o.scale.x.toFixed(3),
+            q.width !== undefined ? q.width.toFixed(4) : (q.radius !== undefined ? q.radius.toFixed(4) : '-'),
+            q.height !== undefined ? q.height.toFixed(4) : '-',
+            o.material.color?.getHexString?.() || '-',
+            (o.material.opacity ?? 1).toFixed(3),
+            o.material.map ? 'map' : 'flat'].join('|'));
+        });
+        return out.sort();
+      };
+      const bad = [];
+      let meshes = 0;
+      for (const site of [6, 7, 8, 9, 10, 11]) {
+        const r = await fetch(`/eeri/assets/dressing/site-${site + 1}.json`);
+        if (!r.ok) { bad.push(`site ${site + 1}: no sheet`); continue; }
+        const sheet = await r.json();
+        const scene = new THREE.Scene();
+        const a = D.__replay(THREE, scene, site, sheet.rows);
+        const b = D.__build(THREE, scene, site);
+        await new Promise((res) => setTimeout(res, 2500));  // every cutout texture lands
+        const fa = fp(a), fb = fp(b);
+        meshes += fa.length;
+        if (fa.length !== fb.length) bad.push(`site ${site + 1}: ${fa.length} vs ${fb.length} meshes`);
+        else {
+          const n = fa.filter((x, i) => fb[i] !== x).length;
+          if (n) bad.push(`site ${site + 1}: ${n} meshes differ`);
+        }
+      }
+      return { bad, meshes };
+    });
+    ok(`the dressing sheets rebuild their builders exactly (${cmp.meshes} meshes over 6 sites)`,
+      cmp.bad.length === 0, cmp.bad.slice(0, 3).join(' · '));
+  }
+
   // A DECLARED HEIGHT HAS TO BE THE HEIGHT YOU GET. `height` is in tiles and
   // the seam rescales to it; the manifest, assets/README.md and the audit tool
   // all say so. But the rescale used to sit inside the skinned branch, so a

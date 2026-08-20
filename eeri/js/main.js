@@ -9,29 +9,29 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=37';
-import { Input } from './input.js?v=37';
-import { Level, ROOMS, LAB } from './level.js?v=37';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=38';
+import { Input } from './input.js?v=38';
+import { Level, ROOMS, LAB } from './level.js?v=38';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=37';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=37';
-import { Camera } from './camera.js?v=37';
-import { buildKidModel, Kid, Player } from './kid.js?v=37';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=37';
-import { buildCraneModel, Crane } from './crane.js?v=37';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=37';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=37';
-import { Hoist } from './hoist.js?v=37';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=37';
-import { WreckingBall } from './hazards.js?v=37';
-import { AudioKit } from './audio.js?v=37';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=37';
-import { craftMat, craftBox } from './craft.js?v=37';
-import { t as tr } from './lang.js?v=37';
-import { showIntro } from './intro.js?v=37';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=37';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=37';
+} from './pieces.js?v=38';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=38';
+import { Camera } from './camera.js?v=38';
+import { buildKidModel, Kid, Player } from './kid.js?v=38';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=38';
+import { buildCraneModel, Crane } from './crane.js?v=38';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=38';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=38';
+import { Hoist } from './hoist.js?v=38';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=38';
+import { WreckingBall } from './hazards.js?v=38';
+import { AudioKit } from './audio.js?v=38';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=38';
+import { craftMat, craftBox } from './craft.js?v=38';
+import { t as tr } from './lang.js?v=38';
+import { showIntro } from './intro.js?v=38';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=38';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=38';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
