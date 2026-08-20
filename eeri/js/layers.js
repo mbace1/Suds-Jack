@@ -23,9 +23,9 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=36';
-import { getLayerTexture } from './assets.js?v=36';
-import { buildPipeworksDressing } from './world2-dressing.js?v=36';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=37';
+import { getLayerTexture } from './assets.js?v=37';
+import { buildPipeworksDressing } from './world2-dressing.js?v=37';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -119,7 +119,7 @@ function paintCanvas({ x0, x1, y0, y1, draw, tint }) {
 // Returns an array of meshes either way, because `dispose()` has to take down
 // everything it put up: a plane left in the scene is a full-width quad still
 // drawing behind the new world, and the near ones are opaque.
-function mountLayer(scene, rect, tex) {
+function mountLayer(scene, rect, tex, label = 'layer') {
   const texs = Array.isArray(tex) ? tex : [tex];
   const w = rect.x1 - rect.x0, h = rect.y1 - rect.y0;
   const cw = w / texs.length;
@@ -128,6 +128,14 @@ function mountLayer(scene, rect, tex) {
       new THREE.PlaneGeometry(cw, h),
       new THREE.MeshBasicMaterial({ map: t, transparent: true }),
     );
+    // NAME IT. Every one of these was an anonymous `Mesh` sitting directly in
+    // the scene, which is fine for the renderer and useless to a person: the
+    // level inspector picked one, could say nothing about it but a z value,
+    // and the whole point of the tool is to answer "what IS that". A tiled
+    // lane names its tile too, since "which half of `near` is wrong" is a
+    // real question — the two halves come out of one painting and only one of
+    // them can have the seam in it.
+    mesh.name = texs.length > 1 ? `${label}:${i + 1}/${texs.length}` : label;
     mesh.position.set(rect.x0 + cw * (i + 0.5), rect.y0 + h / 2, rect.z);
     scene.add(mesh);
     return mesh;
@@ -611,14 +619,16 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
   // PNG through the same seam, and drawSky stays as its code placeholder
   const liveSky = await getLayerTexture(world, 'sky');
   mounted.push(...mountLayer(scene, LAYER_RECTS.sky,
-    liveSky || paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky })));
+    liveSky || paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky }),
+    `${world}/sky${liveSky ? '' : ' (painted)'}`));
   for (const name of ['skyline', 'far', 'mid', 'near', 'fore']) {
     const rect = LAYER_RECTS[name];
     const live = await getLayerTexture(world, name);
     // a world paints ITSELF when it has its own set; everything without one
     // still falls back to the site, which is what worlds 1 and 2 want
     const set = world === 'grove' ? GROVE_DRAW : PLACEHOLDER_DRAW;
-    mounted.push(...mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] })));
+    mounted.push(...mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] }),
+      `${world}/${name}${live ? '' : ' (painted)'}`));
   }
   const events = backgroundEvents(scene);
   const dressing = world === 'pipeworks' ? buildPipeworksDressing(scene) : null;

@@ -90,6 +90,38 @@ console.log('\nthe hooks the pack reads still exist');
   // the one handle the pack needed adding — a place to put a particle
   ok('__eeri exposes THREE and the scene for the pack to draw into',
     /THREE,\s*scene,/.test(main));
+  // …and the second one, for the level inspector. "What is under this
+  // pointer" is a raycast, a raycast needs the camera the picture was drawn
+  // with, and `debug.camera()` returns a POSITION. Named here so that renaming
+  // it fails a gate instead of silently turning the inspector into a panel
+  // that never selects anything — which is the exact break this file exists
+  // for: the pack reads hooks nothing in the game depends on, so nothing else
+  // can notice when one moves.
+  ok('__eeri exposes the camera object, so the pack can raycast',
+    /^\s*camera,\s*$/m.test(main));
+}
+
+console.log('\nthe inspector is reached from the game, without touching it');
+
+{
+  const insp = read('dev/inspector.js');
+  const dev = read('dev.html');
+  ok('the dev page mounts the inspector', /new Inspector\(/.test(dev));
+  // The inspector adds its row to the pause menu FROM OUT HERE. If it ever
+  // needs an import inside the game to do that, the game has learned the pack
+  // exists and a player is one build away from a button marked DEV.
+  const gameMenu = read('js/menu.js');
+  ok('js/menu.js knows nothing about the inspector',
+    !/insp|devtools|Inspector/i.test(gameMenu));
+  ok('index.html cannot reach the inspector either',
+    !/inspector/i.test(read('index.html')));
+  ok('the inspector reaches the menu by watching for it instead',
+    /MutationObserver/.test(insp) && /devtools/.test(insp));
+  // It is an INSPECTOR at step 1, not yet an editor: it may move things in the
+  // running scene, and it may not pretend to persist them. A Save button that
+  // writes nowhere is worse than none.
+  ok('it does not claim to save anything yet',
+    !/localStorage|fetch\(|download/.test(insp));
 }
 
 console.log('\nthe pack reads the game, and never writes it');

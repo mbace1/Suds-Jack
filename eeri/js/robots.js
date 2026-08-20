@@ -32,10 +32,10 @@
 // and the danger read off the same number and cannot disagree.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=36';
-import { craftMat, craftBox } from './craft.js?v=36';
-import { CLOCK } from './parts.js?v=36';
-import { getModel } from './assets.js?v=36';
+import { PAL, mix } from './palette.js?v=37';
+import { craftMat, craftBox, outlineShell } from './craft.js?v=37';
+import { CLOCK } from './parts.js?v=37';
+import { getModel } from './assets.js?v=37';
 
 // The telegraph clock is DESIGN §4.1's, and it lives in parts.js so the room
 // prover can hold it to the 1.0s floor — these three were all under it.
@@ -77,6 +77,10 @@ const MODEL_FOR = { skitter: 'boltbot', hopper: 'hopper', bucket: 'bucket', roll
 // A 3/4 turn, the same constant js/kid.js uses and for the same reason: these
 // rigs are modelled facing +z and the game drives facing along ±x.
 const FACE_TURN = 0.42 * Math.PI;
+
+// The eye tell's radius in TILES — a world measurement, deliberately, because
+// the thing it hangs off is not in world units (see adoptModel).
+const TELL_R = 0.075;
 
 // Which clip each game STATE reads as. The states are the design's and are not
 // negotiable here; this is only a costume, so anything unmapped falls back to
@@ -128,11 +132,35 @@ function adoptModel(asset, kind) {
     let head = null;
     asset.root.traverse((o) => { if (!head && /^head/i.test(o.name || '')) head = o; });
     eye = new THREE.Mesh(
-      new THREE.SphereGeometry(0.075, 8, 6),
+      new THREE.SphereGeometry(TELL_R, 8, 6),
       new THREE.MeshBasicMaterial({ color: PAL.HAZARD }),
     );
-    if (head) { eye.position.set(0, 0.02, 0.10); head.add(eye); }
-    else { eye.position.set(0.16, 0.62, 0.14); outer.add(eye); }
+    eye.name = 'tell';
+    // The tell does NOT get the silhouette line. Everything else on the enemy
+    // is outlined so it separates from the scenery; the one part whose whole
+    // job is to be a bright signal would only be dulled by a dark ring around
+    // it. `__outline` is what outlineShell skips, so claiming it here is how
+    // a mesh opts out.
+    eye.userData.__outline = true;
+    // A BONE IS NOT IN WORLD UNITS, and this one is not close. Meshy rigs its
+    // skeletons at roughly 1/90 scale, so the `Head` bone's world scale here
+    // is 0.011 — parent a 0.075-radius sphere to it and the tell comes out
+    // **0.002 tiles across**, which is not small, it is absent. Every one of
+    // the three skinned enemies shipped its telegraph invisible and no gate
+    // could see it: the model loads, the contract holds, the clip plays, and
+    // the one thing DESIGN §3 calls the enemy design is simply not on screen.
+    // So the bone's scale is divided back out — both from the sphere and from
+    // the offset, which is in the same local units and was putting the tell
+    // a millimetre inside the head rather than on its face.
+    if (head) {
+      head.updateWorldMatrix(true, false);
+      const s = new THREE.Vector3();
+      head.getWorldScale(s);
+      const k = s.x > 1e-6 ? 1 / s.x : 1;
+      eye.scale.setScalar(k);
+      eye.position.set(0, 0.02 * k, 0.10 * k);
+      head.add(eye);
+    } else { eye.position.set(0.16, 0.62, 0.14); outer.add(eye); }
   } else {
     // A cut node may be a GROUP wrapping `<name>_mesh` rather than a mesh —
     // rollerbot was cut before slice.mjs grew `flatten`, so `eye` is a group
@@ -156,6 +184,17 @@ function adoptModel(asset, kind) {
       if (m) legs.push(m);
     }
   }
+
+  // AND IT NEEDS AN EDGE, for the reason v15.28 measured rather than guessed:
+  // flipped live, these read as brown blobs at gameplay scale. The mesh is a
+  // mid-brown against pipe stacks and timber of the same value, where the
+  // code box it replaced was the cast's orange — so the better art was the
+  // worse picture, which is the only kind of art regression worth catching.
+  // Same remedy the kid got in v15.25 and the same one that note names: a
+  // back-face shell in INK, built from the model so it follows the pose and
+  // the bones for free. Applied AFTER the eye is parented on purpose — the
+  // tell is meant to be the one thing on the enemy that is not outlined.
+  outlineShell(asset.root);
 
   // Last line of defence: the telegraph code sets `eye.material.color` every
   // frame and must never be handed something without one.
@@ -227,6 +266,10 @@ function buildRobot(kind) {
       }
     }
   }
+  // The telegraph is named the same on both sides of the seam, because the
+  // rule the gate checks is about the GAME — the tell has to be a size you
+  // can see — and not about which art is behind it today.
+  eye.name = 'tell';
   return { group: g, eye, legs };
 }
 

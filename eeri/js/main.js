@@ -9,29 +9,29 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=36';
-import { Input } from './input.js?v=36';
-import { Level, ROOMS, LAB } from './level.js?v=36';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=37';
+import { Input } from './input.js?v=37';
+import { Level, ROOMS, LAB } from './level.js?v=37';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=36';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=36';
-import { Camera } from './camera.js?v=36';
-import { buildKidModel, Kid, Player } from './kid.js?v=36';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=36';
-import { buildCraneModel, Crane } from './crane.js?v=36';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=36';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=36';
-import { Hoist } from './hoist.js?v=36';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=36';
-import { WreckingBall } from './hazards.js?v=36';
-import { AudioKit } from './audio.js?v=36';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=36';
-import { craftMat, craftBox } from './craft.js?v=36';
-import { t as tr } from './lang.js?v=36';
-import { showIntro } from './intro.js?v=36';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=36';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=36';
+} from './pieces.js?v=37';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=37';
+import { Camera } from './camera.js?v=37';
+import { buildKidModel, Kid, Player } from './kid.js?v=37';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=37';
+import { buildCraneModel, Crane } from './crane.js?v=37';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=37';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=37';
+import { Hoist } from './hoist.js?v=37';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=37';
+import { WreckingBall } from './hazards.js?v=37';
+import { AudioKit } from './audio.js?v=37';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=37';
+import { craftMat, craftBox } from './craft.js?v=37';
+import { t as tr } from './lang.js?v=37';
+import { showIntro } from './intro.js?v=37';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=37';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=37';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -661,6 +661,14 @@ async function boot() {
     // `camera` below — a debug export, kept out of `debug` only because
     // three.js wants the constructor as well as the container.
     THREE, scene,
+    // …and the CAMERA object, for the same reason and on the same terms. The
+    // pack could already add things to the scene; it could not ask "what is
+    // under this pointer", because a raycast needs the camera the picture was
+    // drawn with and `debug.camera()` returns a position, not the camera. The
+    // level inspector is built on exactly that question. Read-only by
+    // convention like the rest of this block — the pack reads the game, the
+    // game never learns the pack exists.
+    camera,
     // `exc` is reassigned every time a room is built, so it has to be read
     // through a getter — captured once, the handle kept pointing at the
     // machine from the room you had already left.
