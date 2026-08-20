@@ -45,17 +45,68 @@ it unchanged.
 3. **Failure is one rule** — a stop over capacity for 45s ends the run. A
    logistics layer probably wants lateness and cost, not sudden death.
 
-## Open questions
+## Decided, 2026-08-20
 
-Put to the owner 2026-08-20; **unanswered**, so nothing below is decided and no
-work should start from it.
+Answers to the ten questions above. These are owner rulings, not proposals.
 
-1. One cabinet with layers, or separate cabinets on the arcade floor?
-2. Are layers played at once (zoom between them, all live) or one at a time?
-3. What crosses a boundary — is the port/terminal automatic, or a thing you build?
-4. Do goods use the shape language, or their own (weight, bulk, deadline)?
-5. Does each layer keep its own clock, and if so what does "meanwhile" mean?
-6. Is there money, or is delivery still the only score?
-7. Does the real world come back at continental scale, after "forget Helsinki"?
-8. Is the parcel run a later campaign, or the spine everything is designed for?
-9. Which layer is built second?
+1. **One game.** A single traffic simulator, one cabinet, layers inside it.
+2. **Prototype plays one layer at a time** with the others ticking in the
+   background; the end state is all layers live with zoom between them.
+3. **A clock per layer, and every clock is a mission variable** — adjustable per
+   challenge. There is no house tick rate.
+4. **Handoffs are automatic, but a parcel can get STUCK.** Getting unstuck is
+   inner politics: a short narrative choice. The China→Sweden parcel is only
+   *one* mission type.
+5. **Layers are near-clones that differ by variables.** The base is a Mini Metro
+   layout; the same grid can become a food-delivery mini game. Every layer
+   exposes transport space, speed and the rest as knobs. Some layers let you
+   build and enlarge stations. **Most missions run about ten minutes**, the
+   Mini Motorways length.
+6. **All three: delivery, money and optimisation.** Public transport scores
+   people moved and how well; goods on the bigger and international layers make
+   money management the point. The ambition is one family of layers from
+   satellites down to the people next door, everything congesting naturally and
+   everything trying to optimise.
+7. **Abstract by default, approximate-real where it is fun.** Real maps are good
+   for festivals and public transport; the abstract boards can sit close to real
+   ones. Missions are pre-designed, so *close enough is fun and exact is not
+   required*. The world is not cloned — later missions approximate real places
+   while jumping across more layers.
+8. **The fail rule is per mini game**, so it is a mission variable like the rest:
+   sudden death on one, lateness and cost on another.
+9. **Many layers, and a mission declares which it needs** — some want one, some
+   several. Local car and city-to-city both come.
+10. **A scripted mission early, to find the seams.**
+
+## What this makes the next piece of work
+
+Not a second layer. A **mission format**, because every answer above turns some
+constant into a mission variable:
+
+- clock rate (3), transport space and speed and station building (5),
+  win condition and scoring model (6), board source (7), fail rule (8),
+  which layers are in play (9).
+
+So the next build is:
+
+1. **`missions.js`** — a mission declares its layers, each layer's clock, its
+   board, its spawn model, its resources, its goal and its fail rule. Nothing
+   in `sim.js` keeps a number of its own.
+2. **The shipped endless game becomes mission zero**, expressed in that format
+   and playing exactly as it does now. If it changes, the format is wrong.
+3. **"The Festival"** — the owner's own example, and the honest seam test:
+   an evening map, a festival that ends at midnight, everybody walking to the
+   nearest station at once, about ten minutes, a real win condition. Same layer,
+   no new vehicles, and it exercises the clock, the surge, the goal and the
+   fail rule all at once.
+
+A second layer is worth starting only once a mission can say "I want two".
+
+## Still open
+
+1. What win conditions does a mission need to be able to state?
+2. Authored boards or seeded ones — and does the Festival need a hand-made map?
+3. How is a mission chosen: a select screen, a campaign order, or both?
+4. Does the endless run survive as its own mode?
+5. What does a narrative choice look like — the weekly card, or something else?
+6. Is ten minutes a hard timer or an approximate length?
