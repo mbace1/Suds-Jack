@@ -8,9 +8,9 @@
 // mercy frames. Nothing here kills.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=33';
-import { craftMat, craftBox } from './craft.js?v=33';
-import { CLOCK } from './parts.js?v=33';
+import { PAL } from './palette.js?v=34';
+import { craftMat, craftBox } from './craft.js?v=34';
+import { CLOCK } from './parts.js?v=34';
 
 // black/yellow chevrons — the one danger language, readable in greyscale
 function chevronTexture() {

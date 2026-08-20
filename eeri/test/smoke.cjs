@@ -325,11 +325,50 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForTimeout(ms(400));
   ok('walking into a bolt collects it', await p.evaluate(() => window.__eeri.collected()) > n0);
 
+  // ---- THE VEIL: a level change happens with the lights down ----------
+  // Three things, and the third is the one that matters most. At rest the
+  // veil must be invisible AND pointer-inert, or it is a sheet of glass over
+  // the whole game. During a change it must actually be up — that is the
+  // fade. And afterwards it must be back down: a promise that never settles
+  // here leaves a six-year-old looking at a black rectangle with the game
+  // running behind it, which no other check in this file would notice.
+  {
+    const at = async () => p.evaluate(() => {
+      const v = document.getElementById('veil');
+      if (!v) return null;
+      const cs = getComputedStyle(v);
+      return { o: +cs.opacity, pe: cs.pointerEvents, z: +cs.zIndex,
+               zBanner: +(getComputedStyle(document.getElementById('banner') || v).zIndex || 0) };
+    });
+    const rest = await at();
+    ok('the veil is mounted, clear and pointer-inert at rest',
+      !!rest && rest.o === 0 && rest.pe === 'none', JSON.stringify(rest));
+
+    // sample WHILE the change is in flight rather than after it
+    const during = await p.evaluate(async () => {
+      window.__eeri.debug.goSite(1);
+      let peak = 0;
+      for (let i = 0; i < 60 && (window.__eeri.debug.transitioning() || i < 4); i++) {
+        peak = Math.max(peak, +getComputedStyle(document.getElementById('veil')).opacity);
+        await new Promise((r) => setTimeout(r, 40));
+      }
+      return peak;
+    });
+    ok(`the lights go down for the change (peak ${during.toFixed(2)})`, during > 0.5);
+
+    await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(),
+      null, { timeout: ms(8000) }).catch(() => {});
+    await p.waitForTimeout(ms(600));
+    const after = await at();
+    ok('…and back up once the room is built', after && after.o === 0, JSON.stringify(after));
+    // the level card is what you read on black, so it has to be ABOVE it
+    ok('the level card sits over the veil, not under it', rest.z < 8);
+  }
+
   // ---- THE CLIMB: the verb level 2 is built around --------------------
   // Level 1 is the stomp's level and carries no ladders on purpose (one idea
-  // per level), so the climb is proved where it is taught.
-  await p.evaluate(() => window.__eeri.debug.goSite(1));
-  await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(), null, { timeout: ms(8000) }).catch(() => {});
+  // per level), so the climb is proved where it is taught. The veil block
+  // above has already brought us here.
   const ladders = await p.evaluate(() => window.__eeri.debug.ladders());
   ok('level 2 is built on ladders', ladders.length > 0, JSON.stringify(ladders));
   const L = ladders[0];

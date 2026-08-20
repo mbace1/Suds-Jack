@@ -1,5 +1,55 @@
 # EERI — versions
 
+## v15.27 — 2026-08-20 — the lights go down between levels, and the art lane lands
+
+Two things: a merge and a transition.
+
+**A level change now happens with the lights down.** It used to be a hard cut
+— the old room pulled out of the scene and the new one appearing mid-frame,
+with the level card over the top of it. Two things were wrong with that. It
+reads as a **glitch rather than as an ending**: a six-year-old cannot tell
+"you finished the level" from "the game broke" when the picture simply becomes
+a different picture. And it made the **loading visible**, because `buildSite()`
+is async and a room with unfetched models pops in piece by piece as they land.
+
+So `#veil` goes down over 260 ms, the whole swap happens in the dark, and it
+comes up over 420 ms on a room that is already built and already framed. Down
+is quicker than up on purpose — the cut should feel like an ending and the new
+room like an arrival. The card sits **on** the veil (z 8 over z 7), so what
+you read on black is the level you have just finished.
+
+Two details that are the difference between a fade and a bug. The veil
+resolves on a **timer, not `transitionend`** — that event never fires when the
+value does not change (a second call while it is already down, a browser that
+folds a 0 ms transition away), and a promise that never settles here is a
+black screen forever. And `transitioning` is cleared **after** the lights are
+up, because it is what the flag, the pause menu and the gate all read to mean
+"the change is finished"; clearing it early lets a press land in the dark.
+Under `prefers-reduced-motion` both durations are 0 — the same path run
+instantly, never a branch that could skip the step that brings the lights back.
+
+The colour is the game's own ink (`#17130f`), not `#000`: the scene is a craft
+table and a pure-black hole in it looks like a hole in the screen.
+
+`test/smoke.cjs` measures all four states — clear and pointer-inert at rest,
+opaque **while** the change is in flight (sampled during, not after), clear
+again once the room is built, and the card above it. `test/playthrough.cjs`
+stopped waiting a flat 1200 ms for a new room and now waits for the game's own
+`transitioning` to go false: a fade the bot walks into would be reported as a
+wall.
+
+**PR #291 is in** — the art lane's look pass, three-way merged at v15.26. Two
+conflicts, both the same shape: an import block where their side adds a name
+(`layerPx`, `loadRobotAsset`, `getModel`) and mine carries the newer token.
+What it brings: **robots.js stops drawing a box and asks the seam for a
+model** (the fix the owner named), 16 new or recompressed GLBs with it, the
+close lanes retiled at 73 px/unit, cleaned edges, a wider foreground, more
+contrast in the map, layer art v4 → v5 with mid and near split into a/b tiles,
+an audit of all 31 shipped models, and the enemy asset seam shipped inert.
+The deletions under `assets/2d` are those replacements, not losses.
+
+Gates: rooms 147, fx 31, dev-menu 30, smoke 417, playthrough 25, hub green.
+
 ## v15.26 — 2026-08-19 — worlds 3 and 4 stop wearing the same trail
 
 Second pass on **placement**, which in a platformer means the collectables

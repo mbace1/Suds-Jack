@@ -187,7 +187,14 @@ srv.listen(0, '127.0.0.1', async () => {
   for (let i = 0; i < total; i++) {
     if (only !== null && i !== only) continue;
     await page.evaluate((n) => window.__eeri.debug.goSite(n), i);
-    await page.waitForTimeout(1200);
+    // WAIT FOR THE ROOM, not for a number of milliseconds. A level change now
+    // fades down, builds and fades up (js/main.js's veil), so a flat 1200 ms
+    // could hand the bot a room that is still being assembled — and it would
+    // report that as a wall. `transitioning` is the game's own answer to "is
+    // the change finished".
+    await page.waitForFunction((n) => window.__eeri.site() === n
+      && !window.__eeri.debug.transitioning(), i, { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(400);
     const name = await page.evaluate(() => window.__eeri.level.def.name);
     // The sandbox has no GPU, so the game runs in slow motion and the
     // budget is wall-clock generous rather than tuned to real play. The
