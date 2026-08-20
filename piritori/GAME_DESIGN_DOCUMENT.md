@@ -1303,6 +1303,160 @@ inherited supplier network under 2024 scarcity, Alpha-PVP pressure, a larger
 map, stronger police capacity and family fracture. The second-half challenge
 is deciding what inherited power is for, not simply rebuilding the same bars.
 
+### 16.5 Six-chapter full-run curve
+
+**LOCKED shape, tuning open:** one complete run contains six seven-day
+chapters. The first three are Aatami's Kallio climb in 2003; the last three are
+Kalle's inheritance on the larger Kallio–Pasila board in 2024–2025. All public
+map anchors are visible when an era opens. Knowledge, access and reliable
+quotes are earned; geography is not revealed as if Helsinki itself were a
+dungeon.
+
+| Chapter | Target time | Board and identity | Economic scale | Main escalation | Narrative turn |
+|---|---:|---|---|---|---|
+| 1. **The Square** — Era I days 1–7 | 45–65 min | full Kallio visible; Piritori highlighted; street buyer | one or two abstract packs, personal cash | uncertain quotes, debt and personal exposure | Aatami makes the first purchase, follows visible demand to the first profitable sale and meets Jaska's refusal |
+| 2. **The Route** — Era I days 8–14 | 50–75 min | Kallio offers become reliable; neighbourhood seller | several packs and one recurring line | opportunistic theft, wages and route visibility | the first runner, Toko's information market and McCormick obligations turn a hustle into a network |
+| 3. **The Supplier** — Era I days 15–21 | 60–90 min | full Kallio service network; commander | larger contracts and first wholesale band | planned interception, faction grievance and formation missions | Aatami delegates, chooses whether to raid the Jade Lantern Network and reaches Pasila carrying the consequences |
+| 4. **The Inheritance** — Era II days 1–7 | 45–75 min | Kallio, Vallila rail corridor and Pasila visible; Kalle inherits | supplier baseline under the 2023 scarcity shock | broken relationships, police attention and unreliable capacity | Kalle learns what Aatami left him; Aaro challenges the inherited purpose of the network |
+| 5. **The Expansion** — Era II days 8–14 | 60–90 min | Tripla and surrounding Pasila activity become operational | multiple simultaneous contracts | coordinated robbery, faction retaliation, stronger police capacity and the Alpha-PVP temptation | growth becomes materially easier and morally harder; family and crew stop agreeing about what success means |
+| 6. **Eden** — Era II days 15–21 | 60–100 min | whole larger board under accumulated pressure | supplier allocation rather than repetitive street sales | vendetta, institutional pressure, casualties and cascading obligations | Aaro's final arc, Aatami's reckoning and Kalle's ending resolve the run; Eden remains a question, never a progress bar |
+
+The table budgets roughly **5.3–8.25 hours** of directed play. Reading every
+branch, recovering from failures and pursuing faction side stories may extend a
+run toward ten hours. Automation, decisive play and skipped optional scenes
+keep a replay near five. Chapter cuts remove repetition before they remove
+consequence-bearing scenes.
+
+### 16.6 The compounding economic loop
+
+The original *Drug Wars* proposition must remain legible underneath every
+later system:
+
+1. see a quote and a demand signal;
+2. buy a small abstract load;
+3. move to a place where demand supports a better quote;
+4. sell for a visible margin;
+5. reinvest in stock, people, information or protection;
+6. accept a larger opportunity that makes the previous solution insufficient.
+
+The opening teaches steps 1–4 without interruption: the whole Kallio map is on
+screen, Piritori is the sole highlighted starting action, and completing the
+purchase highlights the known Siltasaari demand and its visible margin. The
+first family scene follows that sale rather than delaying it.
+
+Growth is not a conventional level. Each successful scale band increases both
+**opportunity** and **handling burden**. Aatami first carries the risk, then
+hires a runner, then assigns a team, and finally allocates contracts while
+other people move them. At supplier scale the player's central question is no
+longer “where can I sell this one pack?” but “which demand do I serve, whose
+people carry it, and which exposed route do I leave unprotected?”
+
+### 16.7 Load, readiness and interception pressure
+
+Loads remain fictional bands rather than real weights, packaging or transport
+instructions. The full campaign uses four readable readiness tiers:
+
+| Band | Handling expectation | Normal preparation | What failure threatens |
+|---|---|---|---|
+| **Pocket** | Aatami or one runner | cash, a quote and a destination | the load and one relationship |
+| **Bag** | one carrier plus a watcher, driver or strong lead | two useful roles, a route choice and basic protective equipment | stock, wages and local access |
+| **Team** | two field crew plus one support assignment | complementary roles, at least one force-or-avoidance answer and current intel | injury, equipment, route control and faction standing |
+| **Contract** | three-person field team plus off-board transport, storage or protection | crew depth, equipment, reliable information and either negotiated protection or a credible defence | coordinated theft, arrest, casualty, vendetta and supplier credibility |
+
+Weapons are the fastest way to raise **force readiness**, and larger criminal
+jobs increasingly expect visible force. They are not a universal key. A weapon
+also raises lethal exposure, police pressure and the cost of a mistake. Intel,
+route changes, trusted drivers, paid protection, decoys, negotiation and
+withdrawal may fill part of the readiness gap. A player who chooses fewer guns
+must spend more attention or leverage; a player who relies on guns makes later
+problems sharper.
+
+Before confirming a job, the interface reduces the risk model to a named band
+and plain reasons:
+
+- **LOW** — readiness comfortably exceeds known interception pressure;
+- **GUARDED** — one weakness is exposed, but there is a planned answer;
+- **HIGH** — pressure exceeds one or more readiness layers;
+- **CRITICAL** — the job can proceed, but a serious loss is the expected
+  consequence rather than a surprise.
+
+Internally, interception pressure grows from load value, public visibility,
+scarcity, repeated-route familiarity and faction grievance. Readiness grows
+from assigned people, force, intel, route variation, protection and support.
+Exact arithmetic is a tuning surface. The player sees the band, the known
+contributors and the limits of the forecast—not a misleading success
+percentage.
+
+### 16.8 Rival robbery and authored vengeance
+
+A raid on the Jade Lantern Network is the clearest high-risk shortcut. It
+becomes available near the end of Era I and can reappear in a changed form in
+Era II. A successful raid should advance cash or stock by roughly **two to four
+ordinary trade cycles**, enough to feel transgressive and strategically
+important. It also creates a named grievance immediately; the reward is never
+free money.
+
+The grievance has four authored states:
+
+| State | Faction response |
+|---|---|
+| **Wary** | worse information, watched routes and colder service |
+| **Insulted** | price pressure, recruitment interference or a demand for restitution |
+| **Retaliating** | an attack on access, property, stock or an exposed crew member |
+| **Vendetta** | a chapter-level chain that can culminate in a formation battle or permanent loss |
+
+Retaliation arrives after a readable delay, so the player can prepare and so
+the faction feels intentional rather than randomly omniscient. Its form
+reflects the people and obligations already established in the run. Returning
+value, paying restitution, trading information, exploiting an internal split,
+protecting a threatened person or accepting a costly ceasefire can reduce the
+track. Repeated raids become less profitable and more destructive, preventing
+one violent action from becoming the optimal grind.
+
+### 16.9 Midpoint inheritance
+
+The twenty-one-year jump carries **consequences, not literal perishable
+inventory**. Era I closes by compressing the run into seven legacy bands:
+
+- money and debt;
+- network capacity;
+- force and police file;
+- information quality;
+- surviving people and loyalty;
+- faction trust and grievance;
+- family fracture.
+
+Kalle opens Era II at supplier scale with those bands translated into people,
+access, obligations and pressure on the larger map. This avoids repeating the
+first-purchase tutorial while preserving the player's authorship. Kallio stays
+active as the origin of the network; Pasila adds longer commitments, more
+institutional visibility and the post-2023 scarcity economy. Alpha-PVP offers
+speed and margin but raises visible harm, distrust and pressure, ensuring that
+the second half is an escalation of meaning as well as map size.
+
+### 16.10 Playtime and pacing gates
+
+The 42-day structure contains 126 strategic blocks, but not 126 bespoke
+scenes. Routine work resolves quickly on the living map; authored encounters
+take ownership only when a relationship, mission or consequence changes.
+
+Working budget for a centred 6–8-hour run:
+
+- routine city blocks: median 60–90 seconds once learned;
+- authored choice encounter: 3–6 minutes;
+- formation battle: 8–12 minutes, normally no more than two mandatory battles
+  in one chapter;
+- chapter opening or closing scene: 4–8 minutes;
+- at least one quiet family or neighbourhood beat per chapter;
+- one meaningful new capability, pressure or map relationship every 30–45
+  minutes.
+
+Every chapter must offer at least one credible non-battle answer to its main
+pressure. Auto-resolution is allowed only when the displayed readiness band
+supports it, and it still produces injuries, losses or relationship changes
+from the same rules. If a chapter needs filler trades to reach its climax, the
+chapter is too long and should be cut rather than padded.
+
 ---
 
 ## 17. Failure, success and endings
