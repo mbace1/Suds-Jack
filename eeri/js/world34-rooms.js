@@ -8,13 +8,22 @@
 // World 3 = FOREST CLEARING AND DIGS: vertical, springy, timber/root rhythm.
 // World 4 = EVENING SITE UNDER LIGHTS: belts, work decks and a final full-kit
 // exam. Visual identity is a separate, non-collision dressing layer.
+//
+// THE RIDES ARE THESE WORLDS' OWN NOW (v15.28). They were excavator proxies
+// — the note above said "the eventual cherry-picker / light rig can replace
+// the familiar machine proxies later", and later is here. World 3 rides the
+// SKIDDER (tracked, a grapple, a stack that clears the canopy) and World 4
+// the LOADER (wheeled, a wide blade, work lamps on a mast). Both keep the
+// excavator's verbs and its node contract, so nothing about these rooms'
+// beats or budgets moved: what changed is that a forest clearing is no
+// longer being worked by a yellow digger borrowed from level 1.
 
 import {
   ground, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, swingBall, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, hoist,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=34';
+} from './parts.js?v=35';
 
 // THE TRAIL IS THE LEVEL TALKING, so it cannot be the same trail in six
 // levels. What was here was four quiet 25-bolt blocks — 100 exactly, laid at
@@ -84,7 +93,7 @@ export const WORLD34_ROOMS = [
 
       // 4 · RIDE — excavator + earth bank is the greybox proxy for the
       // forest-clearing/dig machine payoff.
-      machine('excavator', 68, [60, 92]),
+      machine('skidder', 68, [60, 92]),
       boltRun(5, 66, 72), boltRun(6, 68, 72),
       bank(84, 88, 3),
       boltRun(5, 89, 92), boltRun(6, 89, 92),   // only once it is dug
@@ -137,7 +146,7 @@ export const WORLD34_ROOMS = [
       // 4 · RIDE — the existing span is an honest proxy for moving/placing
       // a felled log across a clearing. The row over the chasm is the
       // receipt: it is not collectable until the girder is seated.
-      machine('excavator', 64, [60, 70]),
+      machine('skidder', 64, [60, 70]),
       girderStack(68),
       boltRun(5, 62, 66),
       chasm(72, 79),
@@ -241,7 +250,7 @@ export const WORLD34_ROOMS = [
 
       // 4 · RIDE — familiar dig in a new night-shift context. This is a
       // placeholder for the eventual World-4 floodlight-rig machine beat.
-      machine('excavator', 68, [64, 92]),
+      machine('loader', 68, [64, 92]),
       boltRun(5, 63, 69), boltRun(6, 63, 69),
       bank(84, 88, 3),
       boltRun(5, 89, 92), boltRun(6, 89, 92),   // only once it is dug
@@ -296,7 +305,7 @@ export const WORLD34_ROOMS = [
 
       // 4 · RIDE — bridge a dark work gap. Later this can become a light-rig
       // traversal without changing the level's first three beats.
-      machine('excavator', 64, [61, 70]),
+      machine('loader', 64, [61, 70]),
       girderStack(68),
       boltRun(5, 62, 67),
       chasm(72, 79),

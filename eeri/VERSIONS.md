@@ -1,5 +1,69 @@
 # EERI — versions
 
+## v15.28 — 2026-08-20 — worlds 3 and 4 stop borrowing worlds 1 and 2's machines
+
+**Why they were not made: there were only ever two machine classes.**
+`MACHINE_SPEED` names a pump and a pipelayer, DESIGN describes them, and
+`main.js` said *if it is a crane build a Crane, otherwise build an
+Excavator*. So World 2's "pump ride" is an excavator wearing the word, and
+Worlds 3 and 4 borrowed Worlds 1-2's machines outright — a forest clearing
+and a night earthworks worked by the same yellow digger.
+
+**The cheap part is the class; the expensive part is the silhouette.** The
+Excavator animates NAMED NODES — house, boom, stick, bucket, seat, step,
+wheels, beacon — and knows nothing else about what it is driving. So a new
+machine is a new MODEL against that contract, not a new class. `js/rigs.js`
+adds two:
+
+* **the SKIDDER** (World 3) — tracked, wide and low, a two-jaw grapple where
+  the bucket goes, a stack tall enough to read against a treeline and a
+  brush guard over the cab. It drags fallen timber, which is the same
+  close-and-lift the bucket does, and that is why the node is still called
+  `bucket`.
+* **the LOADER** (World 4) — wheeled, a wide blade, an arm that lifts from
+  the front and rests nearly flat, and a mast with two work lamps. The lamps
+  are what make it the night shift's machine.
+
+`main.js` builds by TYPE now, and picks the class by the machine's VERBS
+rather than its name — `smash` is the crane's arc, everything else is the
+excavator's arm — so the next machine is a table entry plus a builder.
+
+Both keep the excavator's verbs on purpose. §8.0's warning is about a ride
+being a fetch-quest, not about a verb being reused, and World 2's pump is
+already the bank's shape re-dressed. A machine that lights a dark stretch or
+lifts you up a face is a **new mechanic** and wants its own room rules — not
+smuggling in as a model swap.
+
+Body colour stays `PAL.MACHINE` for both. A green skidder would read as a
+different cast rather than as another machine on the same site, and the
+house rule puts the difference in the **silhouette** anyway.
+
+**What the wiring found, which is bigger than the wiring.** The art is not
+missing — it is switched off. Twenty-five model entries, twenty-five files
+on disk, **twenty-two of them `placeholder`**. Flipping all twenty-one
+flippable entries `live` and walking eleven levels produced **no contract
+warnings at all**, and fetched five files; the other sixteen were never
+requested, because nothing places them. Three findings went to the art lane
+in DESIGN §6.3.1, each measured rather than guessed:
+
+1. **`crane_v1.glb` cannot go live as it stands** — the node names match, so
+   the seam accepts it, and then the crane renders about a third size with
+   the ball hanging in open air. Nodes right, **offsets and scale wrong**:
+   the excavator_v2 trap exactly.
+2. **The small robots load, and read as brown blobs at gameplay scale** —
+   the placeholder is the cast's orange, the mesh is a mid-brown against
+   pipe stacks of the same value. The kid's INK outline fixed the same
+   problem in v15.25.
+3. **Sixteen props are unreachable because nothing PLACES them**, which is
+   the dressing layer's job and the cheapest visible-quality work left.
+
+Plus a live defect: World 3/4 dressing logs `forestTunnel` and
+`forestClearing` failing on every boot of those worlds.
+
+Nothing was flipped live in this release. A crane that renders wrong and an
+enemy that hides in the scenery are both worse than the box they replace,
+and both are the art lane's call to make, not this lane's.
+
 ## v15.27 — 2026-08-20 — the lights go down between levels, and the art lane lands
 
 Two things: a merge and a transition.

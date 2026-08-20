@@ -380,11 +380,81 @@ where light is drawn rather than painted flat.
 
 **Ride machines: eight or more** (§4.2), two per world, and each one is a
 full `assets/README.md` node contract with `seat`, `step` and `beacon`.
-The excavator and the crane are one and two; worlds 2–4 need six more.
+The excavator and the crane are one and two; the **skidder** (World 3) and
+the **loader** (World 4) are three and four as of v15.28, built as code
+placeholders against the excavator's node contract. Worlds 2–4 want four
+more.
 Candidates that fit the theme and bring a *different verb*: a dump truck
 you ride in the bed of, a pipe-layer, a roller, a cherry-picker that
 lifts, an amphibious dredger for the water world, a floodlight rig for the
 evening one.
+
+### 6.3.1 To the art lane, from a wiring pass — measured 2026-08-20
+
+Written after wiring Worlds 3 and 4 their own machines, because what the
+wiring found is the art lane's to act on and none of it is guesswork — every
+line below was measured by flipping assets `live` and reading what the seam
+said.
+
+**The headline: the art is not missing, it is switched off.** Twenty-five
+model entries, twenty-five files on disk, and **twenty-two say
+`status: "placeholder"`** — so the game builds the code version and never
+fetches the file. That is the audit's "18 unreachable" restated from the
+other side: it is not that the meshes fail, it is that nothing asks for
+them.
+
+**What happens if you just flip them.** All twenty-one were set `live` and
+the game walked through eleven levels. **No contract warnings at all** — the
+node checks pass on every one. Five were then actually fetched
+(`crane`, `boltbot`, `hopper`, `bucket`, `rollerbot`); the other sixteen
+were never requested by any code path, so `live` changes nothing for them.
+
+Three things follow, in the order they are worth your credits:
+
+1. **`crane_v1.glb` cannot be flipped live as it stands, and it is the
+   excavator_v2 trap again.** Its node names all match, so the seam accepts
+   it — and then the machine renders about a third of its intended size with
+   the wrecking ball hanging in open air away from the arm. The nodes are
+   right and the **offsets and scale are not**: `crane.js` swings `ball` off
+   `arm` off `boom` off `house` at the placeholder's distances. Compare the
+   two frames — the code crane is a readable yellow machine with a big ball;
+   the live one is a small blob under a detached rope. **What it needs:** the
+   same treatment `excavator_v1` got — built to the placeholder's pivots,
+   rest pose and overall size, so game code cannot tell which it got.
+
+2. **The small robots load and render, and at gameplay scale they read as
+   brown blobs.** `boltbot`/`hopper`/`bucket`/`rollerbot` all fetch and
+   animate through `robots.js` now (PR #291 did that half). Side by side with
+   the placeholder, the mesh has more detail and **less read**: the
+   placeholder is `PAL.MACHINE` orange, which is the cast's family colour,
+   and the mesh is a mid-brown that sits on top of pipe stacks and dirt bands
+   of almost the same value. An enemy a six-year-old cannot pick out of the
+   scenery is a worse enemy than a box. **What it needs:** the family colour
+   carried into the mesh, or a rim/edge that survives at ~40 px tall — the
+   same problem the kid had before his INK outline in v15.25, and the same
+   fix is available.
+
+3. **Sixteen props are unreachable because nothing PLACES them, not because
+   anything is wrong with them** — `dumptruck`, `forklift`, `cherrypicker`,
+   `pipelayer`, `floodlight`, `workerbot`, `vacbot`, `jackhammer`,
+   `generator`, `compressor`, `wheelbarrow`, `cabledrum`, `gascart` and the
+   two tokens. Placing them is the **dressing layer's** job
+   (`js/world2-dressing.js`, `js/world34-dressing.js`), which is art's file,
+   and it is the cheapest visible-quality work left in the project: a
+   worksite with a generator and a barrow standing about reads as worked-in
+   in a way no backdrop can.
+
+**And one live defect:** the World 3/4 dressing logs
+`[eeri] World 3/4 dressing asset failed: forestTunnel` and
+`… forestClearing` on every boot of those worlds. Two dressing assets are
+being asked for and not arriving.
+
+**Two new contracts, and they are the ones worth a mesh next** —
+`skidder_v1.glb` (World 3) and `loader_v1.glb` (World 4). Both are wired,
+both are in the manifest with their node lists, and both ride on code-built
+placeholders today. Their `_note` in `assets/manifest.json` carries the
+offsets, and the rule from item 1 applies: **keep the placeholder's pivots,
+rest pose and size**, or the arm will not meet the job.
 
 ### 6.4 UI art — **the glyph set is BUILT** (v15.1)
 

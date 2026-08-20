@@ -23,8 +23,8 @@
 // run — a much larger argument, and one nothing needs yet.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=34';
-import { craftMat, craftBox } from './craft.js?v=34';
+import { PAL } from './palette.js?v=35';
+import { craftMat, craftBox } from './craft.js?v=35';
 
 export class Hoist {
   // `def` is the part's own record: { c0, c1, cy0, cy1, period }

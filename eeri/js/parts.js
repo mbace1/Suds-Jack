@@ -62,7 +62,13 @@ export const TARP_RISE = (17.5 * 17.5) / 60;
 
 // …and the machines', off js/excavator.js and js/crane.js, for the ride term
 // of the estimate below. A machine is deliberately slower than the kid.
-export const MACHINE_SPEED = { excavator: 3.4, crane: 2.8, pump: 3.0, pipelayer: 2.6 };
+export const MACHINE_SPEED = {
+  excavator: 3.4, crane: 2.8, pump: 3.0, pipelayer: 2.6,
+  // WORLD 3 and WORLD 4 get their own. The skidder is heavier over soft
+  // ground and the loader is a wheeled machine on a made-up site, so it is
+  // the quickest thing in the game to drive.
+  skidder: 3.0, loader: 3.8,
+};
 // what a ride's own job costs, in seconds: the mount and dismount moves, and
 // then the work itself — a dug row, a slung span, a swing of the ball
 export const RIDE = { mount: 0.55, dismount: 0.5, dig: 0.7, sling: 0.55, seat: 0.5, swing: 2.4, drain: 0.8 };
@@ -104,6 +110,14 @@ export const MACHINE_REACH = {
   // lowers it in as a span: one machine, two verbs
   excavator: { verbs: ['dig', 'span'], arm: 2.6 },
   crane: { verbs: ['smash'], arm: 3.4 },
+  // Same verbs as the excavator, deliberately: §8.0's warning is about the
+  // ride being a fetch-quest, not about a verb being reused, and world 2's
+  // pump is already the bank's shape re-dressed. A machine that lit a dark
+  // stretch or lifted you up a face would be a NEW MECHANIC and wants its
+  // own room rules, not a model swap. The arms differ because the shapes do:
+  // a grapple drags from close in, a loader's blade reaches out front.
+  skidder: { verbs: ['dig', 'span'], arm: 2.3 },
+  loader: { verbs: ['dig', 'span'], arm: 2.9 },
   // WORLD 2. The pump lowers a flooded trench the way the bucket lowers a
   // bank — a row at a time, so it reads. The pipe-layer needs NO new verb:
   // seating a pipe section IS the excavator's `span`, re-dressed, which is

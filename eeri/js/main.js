@@ -9,28 +9,29 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=34';
-import { Input } from './input.js?v=34';
-import { Level, ROOMS, LAB } from './level.js?v=34';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=35';
+import { Input } from './input.js?v=35';
+import { Level, ROOMS, LAB } from './level.js?v=35';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=34';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=34';
-import { Camera } from './camera.js?v=34';
-import { buildKidModel, Kid, Player } from './kid.js?v=34';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=34';
-import { buildCraneModel, Crane } from './crane.js?v=34';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=34';
-import { Hoist } from './hoist.js?v=34';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=34';
-import { WreckingBall } from './hazards.js?v=34';
-import { AudioKit } from './audio.js?v=34';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=34';
-import { craftMat, craftBox } from './craft.js?v=34';
-import { t as tr } from './lang.js?v=34';
-import { showIntro } from './intro.js?v=34';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=34';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=34';
+} from './pieces.js?v=35';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=35';
+import { Camera } from './camera.js?v=35';
+import { buildKidModel, Kid, Player } from './kid.js?v=35';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=35';
+import { buildCraneModel, Crane } from './crane.js?v=35';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=35';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=35';
+import { Hoist } from './hoist.js?v=35';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=35';
+import { WreckingBall } from './hazards.js?v=35';
+import { AudioKit } from './audio.js?v=35';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=35';
+import { craftMat, craftBox } from './craft.js?v=35';
+import { t as tr } from './lang.js?v=35';
+import { showIntro } from './intro.js?v=35';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=35';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=35';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -266,14 +267,30 @@ async function boot() {
     // THE MACHINE. One per room, and it is the room's own — a crane where a
     // crane is the answer. It starts UNMANNED either way: beacon turning,
     // working its own cycle, dangerous until it is yours.
+    // TYPE-DRIVEN, not "crane or else excavator". That branch is why World
+    // 2's pump ride was an excavator wearing the word and why Worlds 3 and 4
+    // borrowed Worlds 1-2's machines: everything that was not a crane got
+    // the digger. A type now names its own model, and the CLASS follows the
+    // verbs rather than the name — `smash` is the crane's arc, everything
+    // else is the excavator's arm — so a new machine is an entry here plus a
+    // builder, and `assets.js` swaps in a real mesh on the same node names.
+    const RIGS = {
+      excavator: { key: 'excavator', build: buildExcavatorModel },
+      crane: { key: 'crane', build: buildCraneModel },
+      skidder: { key: 'skidder', build: buildSkidderModel },
+      loader: { key: 'loader', build: buildLoaderModel },
+    };
     const md = def.machines[0];
     let machine = null;
-    if (md?.type === 'crane') {
-      machine = new Crane(level, md.x, def.spawn.crane.y,
-        await getModel('crane', buildCraneModel), false);
-    } else if (md) {
-      machine = new Excavator(level, md.x, def.spawn.excavator.y,
-        await getModel('excavator', buildExcavatorModel), false);
+    if (md) {
+      const rig = RIGS[md.type] || RIGS.excavator;
+      const asset = await getModel(rig.key, rig.build);
+      // parts.js writes `spawn[type]` for every machine it compiles; the kid's
+      // own spawn is the only fallback that cannot be wrong about the floor.
+      const y = def.spawn[md.type]?.y ?? def.spawn.kid.y;
+      machine = (md.verbs || []).includes('smash')
+        ? new Crane(level, md.x, y, asset, false)
+        : new Excavator(level, md.x, y, asset, false);
     }
     if (machine) {
       machine.track = md.track;
@@ -617,12 +634,17 @@ async function boot() {
     // the camera CUTS — a slow pan across a rebuilt world is a lie about geography
     cam.setSite(site.def);
     cam.cut(player.x, player.y + 3);
-    setTimeout(() => document.getElementById('banner')?.remove(), 1400);
     // …and the lights come up on the room already built and already framed.
     // `transitioning` is only cleared after that, because it is what the
     // flag, the pause menu and the gate all read to mean "the room change
     // is finished" — clearing it early would let a press land in the dark.
     await veil(false);
+    // THE CARD IS TIMED FROM THE LIGHTS, not from the swap. Scheduling its
+    // removal before the fade spent 420 ms of the card's 1.4 s behind a
+    // rising veil — so on a slow machine the level you just finished could
+    // be gone by the time you could read it. Now it gets its full beat on
+    // the new room.
+    setTimeout(() => document.getElementById('banner')?.remove(), 1400);
     transitioning = false;
   }
 
