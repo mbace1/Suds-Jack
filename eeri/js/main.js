@@ -335,13 +335,29 @@ async function boot() {
     // …and the three that are hidden. A golden bolt has to be UNMISTAKABLY
     // not a bolt at 32 px (DESIGN §6.3), so it is a different SILHOUETTE
     // rather than a bigger one: a ring around a star, not a fatter nut.
-    const golden = def.golden.map(([row, col], gi) => {
+    // Through the seam, exactly like `bolt` above and for the same reason: the
+    // model existed, was cut, was catalogued — and nothing ever asked for it,
+    // so it could not load under any circumstances. The placeholder builder
+    // returns `{root}` because that is the contract, and getting it wrong is
+    // what crashed the bolt path on whichever branch was not exercised.
+    const goldModel = (await getModel('token_bolt', () => {
       const g = new THREE.Group();
       const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0),
         craftMat(PAL.MACHINE, 'balsa', { transparent: true }));
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 6, 16),
         craftMat(PAL.MACHINE_DK, 'balsa', { transparent: true }));
       g.add(core, ring);
+      return { root: g };
+    })).root;
+    const golden = def.golden.map(([row, col], gi) => {
+      const g = goldModel.clone(true);
+      // the collect pop fades it, and a material cloned off a GLB is OPAQUE —
+      // the same trap the bolts hit one line of code above this one
+      g.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone();
+        o.material.transparent = true;
+      });
       g.position.set(col + 0.5, (level.h - 1 - row) + 0.5, 0);
       g.baseY = g.position.y; g.phase = gi * 1.4; g.state = 'up'; g.popT = 0;
       group.add(g);
@@ -1071,7 +1087,13 @@ async function boot() {
         g.popT += dt / 0.4;
         g.rotation.y += dt * 9;
         g.scale.setScalar(1 + g.popT * 0.9);
-        for (const ch of g.children) ch.material.opacity = 1 - g.popT;
+        // TRAVERSE, do not walk `children`. The code-drawn golden was a Group
+        // with exactly two Mesh children, so indexing straight into them
+        // worked; a GLB's root is a Group of Groups and `ch.material` is
+        // undefined, which threw the moment a golden bolt was collected. The
+        // ordinary bolts twenty lines up already do it this way — same shape
+        // of assumption as the checkpoint lamp, and the same fix.
+        g.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - g.popT; });
         if (g.popT >= 1) { g.state = 'gone'; g.visible = false; }
       }
     }
