@@ -1,5 +1,55 @@
 # EERI — versions
 
+## v15.29 — 2026-08-20 — the ground answers the world, and the canopy stops being circles
+
+The last two items off the visual diagnosis, and both are on screen in every
+single frame.
+
+**One brown band served all four worlds.** The strip you stand on was the
+identical `PAL.EARTH` ramp under a sunlit construction site, a flooded trench,
+a forest and a night shift — the backdrops changed completely and the floor
+underneath answered none of it, which is most of why four worlds read as the
+same place with different wallpaper. The `Level` never knew which world it was
+in: `main.js` computes `worldOf(i)` for the backdrop and did not pass it on.
+It does now, and `EARTH_FOR` tints the ramp per world — pipeworks cooler and
+greyer, grove peat-dark with humus in the topsoil, nightshift carried toward
+INK, because a warm brown goes **blue** before it goes black at night.
+Groundworks is untouched on purpose. The grass lip goes with it (`LIP_FOR`):
+it is the brightest thing on the floor and so the first thing that gives the
+reuse away.
+
+Measured off captured frames rather than judged by eye, because a night scene
+fools you into thinking everything is already darker: the band samples
+**#745538** in world 1, **#584330** in world 2, **#57482b** in world 3 and
+**#3d2c1c** in world 4. No new palette constants — every colour is
+`PAL.EARTH` mixed toward something the palette already has, so if the art lane
+wants real per-world earth, this is the one table to replace.
+
+**The Grove canopy was fourteen circles.** Making them smaller was the
+previous attempt and it does not work, because what gives a disc away is that
+its EDGE is a perfect arc all the way round in a single value. Two changes,
+both about breaking the arc: a tree is now a **cluster** of three or four
+overlapping lobes at different radii and off-centre from each other, so the
+silhouette has notches in it; and it carries **two values**, a darker mass
+with a lighter crown up and to the left — §3.1's "key from upper-left" applied
+to a shape that had no shading in it at all. Every second tree gets a thin
+dark trunk, since a canopy floating with nothing holding it up is the other
+half of why they read as decals.
+
+Cross-lane, declared: `js/world34-dressing.js` is the art lane's file. The
+canopy change is small, self-contained, and stays inside that file's own
+colour range; it is called out here so it is not a surprise.
+
+**A working note, because it cost this session an hour twice.** The container
+running this branch has rolled the repository back to a two-day-old commit
+**four times**, and the dangerous shape is not the obvious one: the tree comes
+back stale while files you edited moments ago survive on top of it, so you are
+patching a v15.19 `level.js` that looks fine and gates green against a tree
+nobody will ever ship. The tells are a `?v=` token that disagrees with the
+rest of the tree and a `VERSIONS.md` missing its newest entries. **Check
+`git log --oneline -1` against `origin/main` before trusting any gate result**,
+and commit as soon as an edit is coherent rather than after the gates.
+
 ## v15.28 — 2026-08-20 — worlds 3 and 4 stop borrowing worlds 1 and 2's machines
 
 **Why they were not made: there were only ever two machine classes.**

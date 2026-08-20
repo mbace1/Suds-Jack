@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=35';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=35';
+import { PAL, mix } from './palette.js?v=36';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=36';
 
-import { ROOMS, LAB } from './rooms.js?v=35';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=35';
+import { ROOMS, LAB } from './rooms.js?v=36';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=36';
 
 export { ROOMS, LAB };
 const EPS = 0.001;
@@ -23,9 +23,68 @@ const EPS = 0.001;
 // sharing a grid, because DIGGING AND SPANNING EDIT THE MAP — two Levels
 // over one grid would have the second remember the first one's excavation.
 
+// ---- THE GROUND IS NOT THE SAME GROUND IN EVERY WORLD --------------------
+//
+// One `PAL.EARTH` ramp served all four worlds, so the strip you stand on was
+// the identical brown under a sunlit construction site, a flooded trench, a
+// forest and a night shift. It is the one band on screen in EVERY frame of
+// the game — the backdrops change completely behind it and the floor
+// underneath answered none of it, which is most of why four worlds read as
+// the same place with different wallpaper.
+//
+// Each world TINTS the ramp rather than replacing it: the strata keep their
+// order and their spacing, because the cut has to stay legible as a section.
+// No new palette constants — every colour is `PAL.EARTH` mixed toward
+// something already in the palette, which keeps this a level-lane change. If
+// the art lane wants real per-world earth, this is the one table to replace.
+//
+//   groundworks  untouched. It is what everything else is judged against.
+//   pipeworks    cooler and greyer — wet ground beside concrete.
+//   grove        peat: darker, with humus in the topsoil, because the top of
+//                a cut in a forest is roots and leaf litter.
+//   nightshift   the whole ramp toward INK. Not "the same earth, darker" — a
+//                warm brown goes BLUE before it goes black at night, so the
+//                mix is toward the ink the night sky already uses.
+const EARTH_FOR = {
+  groundworks: (E) => [E[0], mix(E[1], E[0], 0.5), E[1], E[2]],
+  pipeworks: (E) => [
+    mix(E[0], PAL.STEEL[0], 0.22),
+    mix(mix(E[1], E[0], 0.5), PAL.STEEL[0], 0.2),
+    mix(E[1], PAL.STEEL[1], 0.16),
+    mix(E[2], PAL.STEEL[2], 0.14),
+  ],
+  grove: (E) => [
+    mix(E[0], PAL.INK, 0.22),
+    mix(mix(E[1], E[0], 0.5), PAL.INK, 0.16),
+    mix(E[1], PAL.GREEN_DK, 0.12),
+    mix(E[2], PAL.GREEN_DK, 0.28),
+  ],
+  nightshift: (E) => [
+    mix(E[0], PAL.INK, 0.55),
+    mix(mix(E[1], E[0], 0.5), PAL.INK, 0.48),
+    mix(E[1], PAL.INK, 0.42),
+    mix(E[2], PAL.INK, 0.36),
+  ],
+};
+
+// The grass lip goes with it: a daylight green strip is wrong at night and
+// wrong in a trench, and it is the brightest thing on the floor — so it is
+// the first thing that gives the reuse away.
+const LIP_FOR = {
+  groundworks: (g) => g,
+  pipeworks: (g) => mix(g, PAL.STEEL[2], 0.2),
+  grove: (g) => mix(g, PAL.GREEN_DK, 0.45),
+  nightshift: (g) => mix(g, PAL.INK, 0.45),
+};
+
 export class Level {
-  constructor(room = ROOMS[0]) {
+  // `world` is the dressing key main.js already computes (`worldOf`), handed
+  // in rather than derived here: a room does not know which world it is in —
+  // that mapping is the campaign's — and guessing it from the level name
+  // would put a second copy of that rule in this file.
+  constructor(room = ROOMS[0], world = 'groundworks') {
     this.room = room;
+    this.world = EARTH_FOR[world] ? world : 'groundworks';
     this.def = compile(room);        // fresh grid every time — see above
     this.w = W; this.h = H;
     this.map = this.def.grid;
@@ -203,18 +262,15 @@ export class Level {
   buildMeshes(scene) {
     const group = new THREE.Group();
     // strata: the section gets darker and cooler with depth, in bands
-    const STRATA = [
-      PAL.EARTH[0],                          // cy 0 — deepest of the band
-      mix(PAL.EARTH[1], PAL.EARTH[0], 0.5),  // cy 1
-      PAL.EARTH[1],                          // cy 2
-      PAL.EARTH[2],                          // cy 3 — topsoil
-    ];
+    // cy 0 is the deepest of the band and cy 3 the topsoil; WHICH four colours
+    // those are belongs to the world (see EARTH_FOR at the top of this file)
+    const STRATA = EARTH_FOR[this.world](PAL.EARTH);
     const strata = (cy) => STRATA[Math.min(cy, STRATA.length - 1)];
     const mat = {
-      lip:   new THREE.MeshLambertMaterial({ color: PAL.GREEN }),
-      shade: new THREE.MeshLambertMaterial({ color: mix(PAL.EARTH[0], PAL.INK, 0.45) }),
-      back:  new THREE.MeshLambertMaterial({ color: mix(PAL.EARTH[0], PAL.INK, 0.5) }),
-      cut:   new THREE.MeshLambertMaterial({ color: PAL.EARTH[3] }),
+      lip:   new THREE.MeshLambertMaterial({ color: LIP_FOR[this.world](PAL.GREEN) }),
+      shade: new THREE.MeshLambertMaterial({ color: mix(STRATA[0], PAL.INK, 0.45) }),
+      back:  new THREE.MeshLambertMaterial({ color: mix(STRATA[0], PAL.INK, 0.5) }),
+      cut:   new THREE.MeshLambertMaterial({ color: mix(STRATA[3], PAL.EARTH[3], 0.6) }),
       steel: new THREE.MeshLambertMaterial({ color: PAL.STEEL[2] }),
       girder:new THREE.MeshLambertMaterial({ color: PAL.STEEL[1] }),
       bolt:  new THREE.MeshLambertMaterial({ color: PAL.DARK }),

@@ -123,11 +123,43 @@ function world3Backdrop(THREE, root) {
   // to above the frame, in one flat colour. Depth magnifies, and the fix is
   // the same one the fore lane needed — smaller, more of them, higher up,
   // so the eye reads a canopy line instead of seven circles.
+  // THE CANOPY IS NOT A ROW OF CIRCLES.
+  //
+  // It was fourteen flat discs of one green in one line, and at this depth
+  // each spans about a fifth of the screen — so what the eye read was
+  // circles, not trees. Making them smaller was the previous attempt and it
+  // does not help: what gives a disc away is that its EDGE is a perfect arc
+  // all the way round in a single value.
+  //
+  // Two changes, both about breaking the arc:
+  //
+  //   * a tree is a CLUSTER, not a ball — three or four overlapping lobes of
+  //     different radii, off-centre from each other, so the silhouette has
+  //     notches in it. Overlap is what turns circles into foliage.
+  //   * a tree has TWO values — a darker mass behind and a lighter crown up
+  //     and to the left, which is §3.1's "key from upper-left" applied to a
+  //     shape that had no shading in it at all.
+  //
+  // And a trunk under every second one: a canopy floating with nothing
+  // holding it up is the other half of why these read as decals. The trunks
+  // are thin, dark and short, because they only have to be GLIMPSED between
+  // the near lane's cutouts to do their job.
+  const DARK = 0x22422f, LIT = 0x2f5941;
+  const tree = (x, y, r, flip) => {
+    disc(THREE, root, x, y, r, DARK, -1.56, 0.97);
+    disc(THREE, root, x + r * (flip ? 0.52 : -0.52), y - r * 0.34, r * 0.78, DARK, -1.56, 0.97);
+    disc(THREE, root, x + r * (flip ? -0.44 : 0.44), y - r * 0.46, r * 0.66, DARK, -1.56, 0.97);
+    disc(THREE, root, x - r * 0.3, y + r * 0.42, r * 0.62, LIT, -1.545, 0.97);
+    disc(THREE, root, x + r * 0.16, y + r * 0.58, r * 0.4, LIT, -1.545, 0.97);
+  };
   const line = [[2, 12.4, 2.6], [9, 13.2, 3.0], [16, 12.0, 2.4], [24, 13.4, 2.9],
                 [32, 12.2, 2.5], [40, 13.6, 3.1], [48, 12.6, 2.7], [56, 13.2, 2.9],
                 [64, 12.1, 2.4], [72, 13.5, 3.0], [80, 12.4, 2.6], [88, 13.3, 2.8],
                 [96, 12.2, 2.5], [104, 13.0, 2.7]];
-  for (const [x, y, r] of line) disc(THREE, root, x, y, r, 0x274c3c, -1.55, 0.96);
+  line.forEach(([x, y, r], i) => {
+    if (i % 2 === 0) panel(THREE, root, x + 0.2, y - r - 1.5, 0.5, 3.4, 0x2d2016, -1.58);
+    tree(x, y, r, i % 2 === 1);
+  });
 }
 
 function timberFrame(THREE, root, x, base, h, w = 5.2, z = -0.82) {
