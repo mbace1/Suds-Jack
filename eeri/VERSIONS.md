@@ -56,15 +56,45 @@ path. Two of three leaves could have shipped untagged behind a green gate. It
 now counts **every** mesh in a sheet (87/87 on site 10) and fails at 3/87 and
 84/87 against the two ways of breaking it. Both were verified by breaking them.
 
-New: `art-src/tools/capture-dressing.mjs`, `assets/dressing/site-7..12.json`,
+**And the first thing the data was good for was a measurement.**
+`art-src/tools/dressing-report.mjs` counts what each site is actually made of,
+which could not be written a day ago: while a prop was a line of code, "how
+many distinct depths does site 9 use" meant reading four hundred lines and
+keeping a tally in your head. The answer to *"the levels look rugged"* turns
+out to be legible in three columns:
+
+| site | rows | dominant primitive | depths | undressed 8-tile gaps |
+|---|---|---|---|---|
+| 7  | 90  | **disc 80%**  | 12 | — |
+| 8  | 104 | disc 68%      | 18 | — |
+| 9  | 97  | **disc 77%**  | 13 | — |
+| 10 | 87  | **panel 92%** | 24 | 0-8, 64-72 |
+| 11 | 98  | **panel 93%** | 24 | 0-8 |
+| 12 | 137 | **panel 95%** | 35 | 0-8, 24-32 |
+
+World 3 is roughly four fifths flat circles across twelve depths; the three or
+four cutouts per site are doing all of the describing and the other seventy-odd
+shapes are wallpaper. World 4 is even more monotonous by primitive — 92-95%
+plain rectangles — and reads considerably better anyway, because it uses **two
+to three times as many distinct depths**. That is the strongest single lesson
+available here and it did not come from taste: depth count, not asset count, is
+what makes a 2.5D screen read as a place instead of a collage.
+
+The gaps column is its own finding: every World 4 site opens on an **undressed
+first eight tiles**, which is the worst possible place for it — the first two
+seconds of a level are where "unfinished" gets decided.
+
+The report prescribes nothing. Composition is the owner's and the design
+lane's call; this only makes the current state legible enough to argue about.
+
+New: `art-src/tools/capture-dressing.mjs`,
+`art-src/tools/dressing-report.mjs`, `assets/dressing/site-7..12.json`,
 `test/inspector.cjs` (8 checks). Tokens 37 -> 38.
 
 Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 (three rewritten) · world34 pass ·
-inspector 8/0. **Smoke and playthrough were still running when this was
-committed and their numbers are deliberately left blank rather than written
-ahead of the runs** — smoke was 431/0 on the same checks one commit earlier,
-which is a reason to expect it to hold and not a reason to claim it. Filled in
-by the following commit.
+inspector 8/0 · **smoke 431/0** (including the new sheet-vs-builder check over
+606 meshes). The playthrough was still running when this was written and its
+number is deliberately left blank rather than claimed ahead of the run.
 
 ## v15.32 — 2026-08-20 — the level inspector, and the blind loop ends
 
