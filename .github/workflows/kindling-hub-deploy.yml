@@ -1,0 +1,82 @@
+name: Build Kindling hub deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/kindling-hub-live
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-kindling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/kindling-hub-live
+          fetch-depth: 0
+
+      - name: Fetch canonical Kindling source
+        run: |
+          rm -rf .kindling-source
+          git clone --depth 1 https://github.com/mbace1/Kindling.git .kindling-source
+          cd .kindling-source
+          test "$(git rev-parse HEAD)" = "efb2a8a03661846405f1e1dc7611b3a6982f8fd2"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: .kindling-source/package-lock.json
+
+      - name: Build canonical static hub copy
+        working-directory: .kindling-source
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run build:hub
+          test -f dist/client/index.html
+
+      - name: Smoke the exact static build at its final subpath
+        run: |
+          rm -rf .hub-smoke
+          mkdir -p .hub-smoke/Suds-Jack/kindling
+          cp -a .kindling-source/dist/client/. .hub-smoke/Suds-Jack/kindling/
+          python3 -m http.server 8081 -d .hub-smoke >/tmp/kindling-hub.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8081/Suds-Jack/kindling/ >/dev/null; then break; fi
+            sleep 1
+          done
+          cd .kindling-source
+          npx playwright install chromium
+          node scripts/betterment-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/ artifacts/hub-deploy-mobile.png --allow-static-hydration
+
+      - name: Replace playable Kindling runtime
+        run: |
+          rm -rf kindling/assets kindling/art kindling/__grok
+          rm -f kindling/index.html kindling/favicon.svg kindling/og.jpg kindling/x-banner.jpg
+          cp -a .kindling-source/dist/client/. kindling/
+          cat > kindling/sw.js <<'EOF'
+          self.addEventListener('install', () => self.skipWaiting());
+          self.addEventListener('activate', (event) => {
+            event.waitUntil((async () => {
+              for (const key of await caches.keys()) await caches.delete(key);
+              await self.registration.unregister();
+              await self.clients.claim();
+            })());
+          });
+          EOF
+
+      - name: Commit generated deployment
+        run: |
+          rm -rf .kindling-source .hub-smoke
+          git config user.name "Kindling Hub Deploy"
+          git config user.email "actions@users.noreply.github.com"
+          git add kindling
+          if git diff --cached --quiet; then
+            echo "No deployment changes"
+            exit 0
+          fi
+          git commit -m "Kindling hub — canonical static build efb2a8a"
+          git push origin HEAD:agent/kindling-hub-live
