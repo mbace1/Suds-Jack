@@ -1,0 +1,3 @@
+Kindling v8
+Canonical source: mbace1/Kindling@efb2a8a03661846405f1e1dc7611b3a6982f8fd2
+Hub release: canonical static build

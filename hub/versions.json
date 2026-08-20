@@ -50,9 +50,9 @@
     "from": "VERSIONS.md"
   },
   "kindling": {
-    "v": "7",
-    "n": 7000,
-    "from": "VERSIONS.md"
+    "v": "8",
+    "n": 8000,
+    "from": "canonical Kindling release"
   },
   "radiofree": {
     "v": "37",
