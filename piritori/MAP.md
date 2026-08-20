@@ -349,3 +349,25 @@ node piritori/map/validate-map.mjs
 - Jade Lantern restaurant fronts;
 - missions, trade, pressure and clandestine routes.
 
+---
+
+## 11. Complete-run expansion frame — planning lock only
+
+Era II requires its own sourced public-anchor graph before implementation. The
+owner has nevertheless fixed the outer campaign frame:
+
+| edge | outer area |
+|---|---|
+| north | Pasila |
+| east | Kalasatama |
+| south | Downtown Helsinki |
+| west | Töölö |
+
+Kallio remains the origin and connective centre. The later map includes no
+playable area north of Pasila or east of Kalasatama. As in Era I, the full
+frame is visible when the era opens while services, missions, relationships
+and reliable information unlock through play.
+
+This section defines scope, not coordinates, nodes or mission routes. It does
+not authorise Era II runtime data or art before the feature-complete gate in
+`DESIGN_LOCKS.md` §12.1.

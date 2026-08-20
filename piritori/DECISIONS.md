@@ -20,6 +20,48 @@ finding and a recorded one stays a decision.
 
 ---
 
+## 2026-08-20 — tragedy, conflict and the complete map frame
+
+### 9. Aaro's death is inevitable
+
+> "Inevitable, as it's the Cain and Able story. See East of Eden for any
+> narrative reference, all the same characters are there. (Adam = Aatami,
+> etc)"
+
+The family structure now uses explicit dramatic correspondences rather than an
+*East of Eden* mood alone: Aatami carries Adam's father function, Kalle carries
+Cal / Cain and Aaro carries Aron / Abel. Aaro's 2025 death is fixed. Player
+choices author the rupture, relationships, responsibility, grief and aftermath,
+not a branch in which Aaro survives.
+
+The remaining novel functions still require casting. They are not silently
+assigned through a character's ethnicity, nationality or occupation.
+
+### 10. Conflict can generate many mini-missions
+
+> "Yes, there can be lots of conflicts and mini missions"
+
+Faction pressure can unfold through compact authored chains: friction, probe,
+position, response, showdown and remembered consequence. A late-Era-I
+player-initiated Jade Lantern raid is allowed once the faction and named people
+have been established. Combat remains one possible resolution rather than the
+default answer.
+
+### 11. Complete campaign map boundary
+
+> "It can be Kallio to Töölö and Downtown, but no North of Pasila or East of
+> Kallio"
+
+> "So Kalasatama is the cut off to the east"
+
+The final clarification controls: Era II's larger board is bounded by Pasila
+north, Kalasatama east, Downtown south and Töölö west. Kallio remains central.
+Nothing playable extends north of Pasila or east of Kalasatama. This is a
+planning and sourcing lock, not permission to begin phase-gated Era II runtime
+or art production.
+
+---
+
 ## 2026-08-18 — the art delivery
 
 > "take all art pushed here as canon and target"

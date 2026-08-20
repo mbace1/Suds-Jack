@@ -1,6 +1,6 @@
 # Piritori → Eden narrative baseline
 
-Status: owner-directed canon for the first playable baseline, 2026-08-17.
+Status: owner-directed canon, updated 2026-08-20.
 
 ## Premise
 
@@ -10,9 +10,26 @@ logic of the ledger. In 2024, Aatami’s son Kalle inherits the routes in Pasila
 as Alpha-PVP displaces part of the older stimulant market. Kalle’s brother Aaro
 inherits none of the appetite for it.
 
-The game draws from *East of Eden* only at the level of themes: brothers,
-inheritance, rivalry, the desire to choose differently and the ambiguity of
-“Eden.” It does not adapt its scenes, prose or characters.
+The game deliberately adapts the family functions of *East of Eden*: Aatami is
+the Adam figure, Kalle carries the Cal / Cain function and Aaro carries the
+Aron / Abel function. The novel supplies a tragic structure—brothers,
+inheritance, revelation, guilt and the possibility of choosing differently—
+without licensing copied prose, scenes, dialogue or period biography.
+
+## East of Eden dramatic correspondences
+
+| Function | Piritori → Eden character | Locked use |
+|---|---|---|
+| Adam / father | Aatami | builds the inheritance, mistakes material refuge for Eden and is devastated by Aaro's death |
+| Cal / Cain son | Kalle | inherits appetite and shame; a disclosure or act of cruelty helps rupture the brothers; guilt does not remove his capacity to choose |
+| Aron / Abel son | Aaro | idealistic refusal, life outside the business and an inevitable war death that cannot be gamed into survival |
+| first-generation brother cycle | Aatami and Jaska | repeats brother contrast without copying Charles Trask's violence or biography |
+| Lee / Samuel moral-interpreter function | primarily Toko, with room for another confidant | practical truth, history and unwanted counsel; Toko remains an independent shop owner, never an ethnic servant analogue |
+| destructive maternal legacy | **OPEN — character not yet cast** | a concealed family truth or legacy that can be revealed without copying Cathy/Kate scenes |
+| Abra / outside witness and future-facing partner | **OPEN — character not yet cast** | sees both brothers clearly and can carry the question of what happens after tragedy |
+
+Arvo Linde remains the public chorus and source-status referee rather than a
+forced one-to-one novel analogue.
 
 ## Generations
 
@@ -64,9 +81,18 @@ inheritance, rivalry, the desire to choose differently and the ambiguity of
 - Amphetamine remains present but expensive and uneven. Alpha-PVP is cheaper,
   volatile and mechanically profitable; every sale raises harm, distrust and
   enforcement pressure more sharply.
-- In 2025, Aaro independently leaves for the war in Ukraine and dies. This is a
-  fixed tragedy outside the economy: never a mission, optimisation, reward or
-  consequence of the player selecting the “wrong” dialogue.
+- In 2025, Aaro leaves for the war in Ukraine and dies. This is inevitable and
+  outside the economy: never a mission, optimisation, reward or consequence of
+  selecting the “wrong” dialogue. Kalle's accumulated choices can help create
+  the rupture that precedes Aaro's departure, but cannot turn Aaro into a pawn
+  without agency or open a secret rescue ending.
+
+### Complete-run map frame
+
+The second generation plays on a larger board with Kallio still at its centre
+of memory and operations. Its outer limits are Pasila north, Kalasatama east,
+Downtown south and Töölö west. The story does not extend north of Pasila or
+east of Kalasatama.
 
 ## The enforcement feedback loop
 
@@ -107,3 +133,5 @@ All named characters, families, restaurant groups, deals and routes are
 fictional or fictionalised composites. Real news supplies public conditions and
 mission patterns, never unproven accusations against named people. The game is
 not a guide to trafficking, concealment, dosing, weapons or evading police.
+The *East of Eden* correspondences are dramatic functions, not permission to
+copy protected prose, dialogue, scenes or a complete one-to-one cast.

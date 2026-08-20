@@ -48,9 +48,11 @@ authored missions and battles may take longer than routine market decisions.
 
 The midpoint is a hard narrative inheritance into 2024. Control moves to
 Kalle; older Aatami becomes a recurring narrative figure. Era II uses a larger
-map that retains the Kallio origin network and extends north through the rail
-corridor into Pasila. Exact public anchors and edges require their own
-map-source pass before implementation.
+map that retains the Kallio origin network and extends to four owner-locked
+edges: Pasila north, Kalasatama east, Downtown south and Töölö west. Nothing
+north of Pasila or east of Kalasatama belongs to the campaign board. Exact
+public anchors and edges require their own map-source pass before
+implementation.
 
 ## 2. Location interaction grammar
 
@@ -173,6 +175,32 @@ relationships, family closeness, network dependence and neighbourhood harm.
 Reaching Pasila remains fixed history; whether the move reads as refuge, exile
 or expansion is the player's Era I outcome.
 
+### 6.1 East of Eden family-function lock
+
+The family story is a deliberate functional adaptation rather than a thematic
+name-check:
+
+- **Aatami** carries the Adam father function;
+- **Kalle** carries the Cal / Cain function: ambition, inheritance, the need
+  for approval and a choice that helps rupture the brothers;
+- **Aaro** carries the Aron / Abel function: idealism, refusal of the inherited
+  business and the fixed death that leaves the family behind;
+- **Jaska** establishes the first-generation brother cycle without copying
+  Charles Trask's biography or violence.
+
+Aaro's departure for Ukraine and death in 2025 are inevitable. The player
+cannot optimise a rescue branch. Choices determine how close the brothers were,
+what Kalle disclosed or weaponised, how much responsibility Kalle carries, how
+Aatami is devastated and whether anyone interrupts the inherited pattern
+afterward. Aaro retains agency and never becomes a reward, punishment or
+mission objective.
+
+The remaining novel functions—destructive maternal legacy, moral interpreter,
+outside witness and future-facing partner—must be represented before Era II
+content lock, but their one-to-one casting remains an owner decision. Existing
+characters are not assigned those functions through ethnicity, nationality or
+occupation alone.
+
 ## 7. The first purchase
 
 The opening is **map first**. The complete Era I Kallio board is visible, with
@@ -266,6 +294,21 @@ Coastline, rail, major street direction, district relationships and landmark
 adjacency are preserved. Minor blocks may be compressed for legibility.
 Coordinates, node count and playable edges remain Step 5 work; this boundary
 does not license a fictional road layout.
+
+### 10.1 Complete-run expansion boundary
+
+The larger Era II board uses a separate sourced pass and these immovable outer
+cues:
+
+- **north:** Pasila;
+- **east:** Kalasatama;
+- **south:** Downtown Helsinki;
+- **west:** Töölö.
+
+Kallio remains the origin and connective centre rather than becoming an
+obsolete tutorial zone. The complete boundary is visible when Era II opens;
+services, relationships and reliable information unlock inside it. This
+planning boundary does not lift the Era II production gate in §12.1.
 
 ## 11. Audience, content and localisation
 

@@ -2,6 +2,7 @@
 
 Status: **ACTIVE**  
 Authority reset: 2026-08-19  
+Latest owner rulings: 2026-08-20
 Owner: Mikael Haveri  
 
 This file defines which documents and assets control future work. It exists
@@ -57,6 +58,13 @@ owns camera, focus and input behaviour.
 - A complete run spans both eras and targets five to ten hours, centred near
   six to eight. Era I teaches the street-to-supplier climb on Kallio; Era II
   hands the inherited network to Kalle on a larger Kallio–Pasila board.
+- The later board keeps Kallio central and is bounded by Pasila in the north,
+  Kalasatama in the east, Downtown in the south and Töölö in the west. It does
+  not extend north of Pasila or east of Kalasatama.
+- The family structure deliberately adapts *East of Eden* character functions:
+  Aatami carries the Adam role, Kalle the Cal/Cain role and Aaro the Aron/Abel
+  role. Aaro's 2025 death is inevitable; choices alter responsibility,
+  closeness, guilt and aftermath, never whether he survives.
 - The first slice begins with Aatami's small purchase at Piritori and expands
   through recurring people and places rather than opening a complete market
   table immediately.

@@ -43,8 +43,8 @@ an illegal stimulant network through Kallio and Pasila. It combines:
   early-1990s point-and-click adventures;
 - rare isometric formation battles for variable team sizes, with persistent
   crew injuries and death;
-- a family tragedy loosely structured around the brother and inheritance themes
-  of *East of Eden*.
+- a family tragedy that deliberately adapts the Adam, Cal/Cain and Aron/Abel
+  character functions of *East of Eden* without copying its prose or scenes.
 
 The player begins as Aatami at Piritori in 2003, personally buying a small first
 quantity and trying to make one route work. He gradually becomes a commander
@@ -190,8 +190,10 @@ police evasion.
   faster.
 - Pasila Police Station represents growing institutional pressure.
 - Tripla becomes an important ordinary, vulnerable and contested public space.
-- Aaro independently leaves for the war in Ukraine in 2025 and dies. This is a
-  fixed tragedy, never a mission, reward or punishment for player dialogue.
+- Aaro leaves for the war in Ukraine in 2025 and dies. This is inevitable and
+  never a mission, reward or punishment for player dialogue. Kalle's authored
+  disclosure or act of cruelty helps precipitate the rupture, while Aaro keeps
+  agency over his departure.
 
 ### 3.3 Canon and variable history
 
@@ -205,7 +207,7 @@ inheritance. The player shapes its cost and texture.
 | Kalle inherits in 2024 | the strength, debt and relationships he inherits |
 | The 2023 seizure occurred | how Kalle interprets and exploits its consequences |
 | Aaro rejects the business | the brothers' closeness before his departure |
-| Aaro dies in Ukraine in 2025 | what remains unresolved in the family afterward |
+| Aaro dies in Ukraine in 2025 | closeness before the rupture, Kalle's responsibility and what remains unresolved afterward |
 
 ### 3.4 Time structure
 
@@ -237,9 +239,10 @@ remains a major narrative presence but Kalle is the controlled protagonist.
 
 Era I occupies roughly the first half of a run on the detailed Kallio board.
 Era II occupies the second half on a larger board that keeps Kallio as the
-southern origin of the network and extends through Vallila and the rail
-corridor into Pasila, Tripla and surrounding districts. Exact geography is
-locked only after a dedicated sourced map pass.
+network's connective centre. Its outer scope is Pasila north, Kalasatama east,
+Downtown south and Töölö west, with nothing playable north or east of those
+limits. Exact anchors, coordinates and edges lock only after a dedicated
+sourced map pass.
 
 ---
 
@@ -428,6 +431,11 @@ The map is not intended to reproduce real criminal routes. Location placement
 is a navigational and narrative abstraction built from public geography.
 Public anchors keep WGS84 coordinates; fictional interiors inherit only their
 parent anchor and are not presented as real addresses.
+
+The full campaign expansion frame is also owner-locked even though its graph is
+not yet sourced: Pasila north, Kalasatama east, Downtown south and Töölö west.
+Kallio remains active and central. This boundary does not lift the Era II
+production gate.
 
 ### 6.5 Locked Era I anchor and site set
 
@@ -807,6 +815,30 @@ No location becomes a permanently inert catalogue.
 | Recovery | retrieve stock, gear, money or a missing crew member | time pressure and casualty risk |
 | Sabotage | invest in an uncertain indirect outcome | exposure, retaliation or unintended closure |
 | Family / personal | time and truth rather than profit | lost opportunity, not combat by default |
+
+### 11.3 Authored conflict chains
+
+Faction conflict can produce many compact missions without becoming an
+infinite procedural chore list. A chain draws from six authored beats:
+
+1. **Friction** — a rumour, insult, missing payment, watched route or competing
+   claim makes the conflict legible.
+2. **Probe** — a small delivery, meeting, tail, protection job or inspection
+   tests the other side and teaches one named person.
+3. **Position** — the player sides with someone, withdraws, bargains or spends a
+   scarce crew assignment elsewhere.
+4. **Response** — recovery, sabotage, restitution, counter-pressure or a family
+   favour makes the remembered choice concrete.
+5. **Showdown** — negotiation, surrender, flight or an isometric formation
+   battle resolves the immediate dispute.
+6. **Memory** — a changed service, wounded person, debt, memorial, closed front
+   or later retaliation carries it forward.
+
+A chain may stop after any resolved beat or overlap another conflict. It must
+not require combat, and its missions reuse characters and places rather than
+generating anonymous enemies. The first player-initiated Jade Lantern raid can
+appear late in Era I, after ordinary contact and at least one named member have
+established what the player is risking.
 
 The game communicates outcomes abstractly and dramatically without teaching
 real criminal procedure.
@@ -1317,7 +1349,7 @@ dungeon.
 | 1. **The Square** — Era I days 1–7 | 45–65 min | full Kallio visible; Piritori highlighted; street buyer | one or two abstract packs, personal cash | uncertain quotes, debt and personal exposure | Aatami makes the first purchase, follows visible demand to the first profitable sale and meets Jaska's refusal |
 | 2. **The Route** — Era I days 8–14 | 50–75 min | Kallio offers become reliable; neighbourhood seller | several packs and one recurring line | opportunistic theft, wages and route visibility | the first runner, Toko's information market and McCormick obligations turn a hustle into a network |
 | 3. **The Supplier** — Era I days 15–21 | 60–90 min | full Kallio service network; commander | larger contracts and first wholesale band | planned interception, faction grievance and formation missions | Aatami delegates, chooses whether to raid the Jade Lantern Network and reaches Pasila carrying the consequences |
-| 4. **The Inheritance** — Era II days 1–7 | 45–75 min | Kallio, Vallila rail corridor and Pasila visible; Kalle inherits | supplier baseline under the 2023 scarcity shock | broken relationships, police attention and unreliable capacity | Kalle learns what Aatami left him; Aaro challenges the inherited purpose of the network |
+| 4. **The Inheritance** — Era II days 1–7 | 45–75 min | whole larger frame visible—Pasila north, Kalasatama east, Downtown south, Töölö west; Kalle inherits | supplier baseline under the 2023 scarcity shock | broken relationships, police attention and unreliable capacity | Kalle learns what Aatami left him; Aaro challenges the inherited purpose of the network |
 | 5. **The Expansion** — Era II days 8–14 | 60–90 min | Tripla and surrounding Pasila activity become operational | multiple simultaneous contracts | coordinated robbery, faction retaliation, stronger police capacity and the Alpha-PVP temptation | growth becomes materially easier and morally harder; family and crew stop agreeing about what success means |
 | 6. **Eden** — Era II days 15–21 | 60–100 min | whole larger board under accumulated pressure | supplier allocation rather than repetitive street sales | vendetta, institutional pressure, casualties and cascading obligations | Aaro's final arc, Aatami's reckoning and Kalle's ending resolve the run; Eden remains a question, never a progress bar |
 
@@ -1504,7 +1536,10 @@ Kalle's ending considers:
 - network scale and survivability;
 - whether any inheritance is interrupted.
 
-Aaro's death is never scored as a consequence of choosing the “wrong” branch.
+Aaro's death is inevitable and never scored as a consequence of choosing the
+“wrong” branch. Choices author the brothers' closeness, the revelation or
+cruelty that precedes the rupture, Kalle's responsibility, Aatami's devastation
+and what the survivors do afterward; they do not unlock a rescue ending.
 
 ---
 
@@ -1843,7 +1878,7 @@ copy.
 | [Darkest Dungeon](https://store.steampowered.com/app/262060/Darkest_Dungeon/) | flawed recruitable roster, persistent injury, death and strategic attachment | exact stress, class, formation, dungeon or gothic systems |
 | *Tactics Ogre* | isometric spatial readability, formation planning and terrain consequence | free-roaming maps, elevation simulation and large ability catalogues |
 | [Final Fantasy X combat discussion](https://square-enix-games.com/en_GB/news/whats-good-about-final-fantasy-x) | time to read a turn, adjust strategy and understand party roles | large ability catalogues, fantasy spectacle and heroic power escalation |
-| *East of Eden* | brothers, inheritance, choice, repetition and the uncertain promise of Eden | direct plot, dialogue, scenes or character adaptation |
+| *East of Eden* | Adam / Cal / Aron family functions; brothers, inheritance, guilt, choice, repetition and the uncertain promise of Eden | copied prose, dialogue, scenes, period biography or a mechanically identical ending |
 
 ---
 
