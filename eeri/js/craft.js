@@ -31,7 +31,8 @@
 // Adding a material is a manifest entry plus a name here. Nothing else.
 
 import * as THREE from 'three';
-import { getTexture } from './assets.js?v=36';
+import { getTexture } from './assets.js?v=37';
+import { PAL } from './palette.js?v=37';
 
 // world units per texture repeat, per material — a felt nap is fine and a
 // card flute is coarse, so they do not share a scale
@@ -168,4 +169,92 @@ export function cutQuad(w, h, name, { repeatX = 0, ...opts } = {}) {
     cutCache.set(key, m);
   }
   return new THREE.Mesh(new THREE.PlaneGeometry(w, h), cutCache.get(key));
+}
+
+// ---- THE SILHOUETTE LINE ------------------------------------------------
+// One dark line on the silhouette, built from the model itself so it cannot
+// disagree with the pose: each mesh gets a sibling of the same geometry in
+// INK, culled to BackSide and pushed OUTWARD ALONG ITS OWN NORMALS. A shell
+// rather than a post pass because ART_BRIEF §3.4 forbids a post stack, and a
+// child of each mesh so it inherits every bone and every pose for free.
+//
+// IT USED TO PUSH THE SHELL OUT BY SCALING IT (×1.045) AND THAT DOES NOTHING
+// ON A SKINNED MESH: the vertex position comes out of the bones, so the
+// object's own scale never reaches the silhouette. On the enemy rigs the
+// scaled shell measures 0.009 tiles against a 0.7-tile body — it collapses
+// inside the model instead of wrapping it, and renders as nothing at all.
+// `kid.js` has used this helper since v15.25 said "the kid has an edge", so
+// his edge was most likely never there either; nothing could tell, because a
+// missing outline looks like a design choice.
+// Displacing along the normal instead happens BEFORE the skinning chunks
+// touch `transformed`, so the fattening survives the pose.
+//
+// Two details that are load-bearing. The width is in TILES and is divided by
+// the mesh's world scale, because the displacement is applied in object space
+// — these rigs are drawn at about 1/90, so a constant object-space number
+// would give a hairline on one model and a coat on the next. And the shell is
+// LAMBERT, not BASIC: `objectNormal` only exists in the basic shader behind
+// `USE_ENVMAP`, so a basic shell silently compiles with nothing to push along.
+// Black diffuse plus INK emissive renders flat ink under any light.
+//
+// It came from kid.js, where it was written for the kid and then needed by the
+// enemies for the reason v15.28 recorded: a mid-brown mesh against pipe stacks
+// of the same value has no edge, and the model that replaced the box read
+// worse than the box. It lives here because this is the module that decides
+// what a surface in this game looks like.
+const OUTLINE = 0.028;           // tiles — a line, not a border
+export function outlineShell(root, width = OUTLINE) {
+  root.updateWorldMatrix(true, true);
+  const targets = [];
+  root.traverse((o) => { if (o.isMesh && !o.userData.__outline) targets.push(o); });
+  // A SKINNED MESH IS NOT DRAWN AT ITS NODE'S SCALE, and taking that number is
+  // how the first cut of this put a black shell across the whole sky. Meshy
+  // hangs `char1` under a 0.01 cm→m node, so its world scale reads 0.008 while
+  // the thing on screen is 0.7 tiles tall — the size comes from the BONES, by
+  // way of bindMatrix, not from the node transform. Dividing by 0.008 asked
+  // for a 180% inflation. The honest ratio for a skinned mesh is what it
+  // MEASURES on screen over what its geometry measures in bind space; for an
+  // ordinary mesh the node scale is exactly right.
+  const wb = new THREE.Box3().setFromObject(root);
+  const worldH = Math.max(1e-6, wb.max.y - wb.min.y);
+  const _s = new THREE.Vector3();
+  for (const m of targets) {
+    m.geometry.computeBoundingBox();
+    const gb = m.geometry.boundingBox;
+    const geomH = Math.max(1e-6, gb.max.y - gb.min.y);
+    let k;
+    if (m.isSkinnedMesh) k = worldH / geomH;
+    else { m.getWorldScale(_s); k = (Math.abs(_s.x) + Math.abs(_s.y) + Math.abs(_s.z)) / 3; }
+    const w = width / Math.max(1e-6, k);
+    const mat = new THREE.MeshLambertMaterial({
+      color: 0x000000, emissive: PAL.INK, side: THREE.BackSide, depthWrite: false,
+    });
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uOutline = { value: w };
+      sh.vertexShader = 'uniform float uOutline;\n' + sh.vertexShader.replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\n\ttransformed += normalize(objectNormal) * uOutline;',
+      );
+    };
+    // a material with an injected uniform must not be shared across programs
+    mat.customProgramCacheKey = () => 'inkshell' + w.toFixed(5);
+    let shell;
+    if (m.isSkinnedMesh) {
+      shell = new THREE.SkinnedMesh(m.geometry, mat);
+      shell.bind(m.skeleton, m.bindMatrix);
+    } else {
+      shell = new THREE.Mesh(m.geometry, mat);
+    }
+    shell.userData.__outline = true;
+    // What the gate reads. The displacement is a shader uniform, so no Box3
+    // can see it — an outline that is absent and an outline that swallows the
+    // screen are both invisible to every measurement this project already
+    // has, and this release shipped one of each before a picture caught them.
+    // As a FRACTION of the mesh it wraps, which is the number that means the
+    // same thing on every model.
+    shell.userData.__outlineFrac = w / geomH;
+    shell.renderOrder = -1;
+    shell.frustumCulled = false;   // it is bigger than the geometry says it is
+    m.add(shell);
+  }
 }
