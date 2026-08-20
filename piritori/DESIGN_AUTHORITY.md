@@ -65,6 +65,10 @@ owns camera, focus and input behaviour.
   Aatami carries the Adam role, Kalle the Cal/Cain role and Aaro the Aron/Abel
   role. Aaro's 2025 death is inevitable; choices alter responsibility,
   closeness, guilt and aftermath, never whether he survives.
+- Kati is the boys' intermittently present mother: a roaming, unstable family
+  figure, not a Cathy/Kate replica or a stable household anchor. Aida carries
+  the outside-witness function and sees both brothers without existing to
+  redeem either one. Aaro's death triggers Aatami's stroke and final reckoning.
 - The first slice begins with Aatami's small purchase at Piritori and expands
   through recurring people and places rather than opening a complete market
   table immediately.

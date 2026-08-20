@@ -194,6 +194,14 @@ police evasion.
   never a mission, reward or punishment for player dialogue. Kalle's authored
   disclosure or act of cruelty helps precipitate the rupture, while Aaro keeps
   agency over his departure.
+- Kati, the brothers' intermittently present mother, loves to roam and is never
+  a stable household figure. Her absence shapes the family without turning her
+  into a Cathy/Kate replica or a one-note villain.
+- Aida begins in Aaro's music-world orbit and becomes the outside witness who
+  can challenge Kalle after the tragedy. She does not exist to absolve him;
+  romance with either brother remains open.
+- News of Aaro's death causes Aatami to suffer a stroke. He survives in a
+  diminished state for the final reckoning.
 
 ### 3.3 Canon and variable history
 
@@ -208,6 +216,7 @@ inheritance. The player shapes its cost and texture.
 | The 2023 seizure occurred | how Kalle interprets and exploits its consequences |
 | Aaro rejects the business | the brothers' closeness before his departure |
 | Aaro dies in Ukraine in 2025 | closeness before the rupture, Kalle's responsibility and what remains unresolved afterward |
+| Aatami suffers a stroke after the news | what can still be said, forgiven or refused in the final reckoning |
 
 ### 3.4 Time structure
 
@@ -1535,6 +1544,12 @@ Kalle's ending considers:
 - Aatami's remaining influence;
 - network scale and survivability;
 - whether any inheritance is interrupted.
+
+Kati's presence or absence and Aida's judgement are relationship states, not
+ending-score multipliers. Aida can remain, leave, speak, confront or refuse
+Kalle according to authored trust flags; she never performs automatic
+redemption. Aatami's stroke limits his agency and speech in the final sequence
+without reducing him to an objective or cure task.
 
 Aaro's death is inevitable and never scored as a consequence of choosing the
 “wrong” branch. Choices author the brothers' closeness, the revelation or

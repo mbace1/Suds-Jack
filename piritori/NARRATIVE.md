@@ -20,13 +20,13 @@ without licensing copied prose, scenes, dialogue or period biography.
 
 | Function | Piritori → Eden character | Locked use |
 |---|---|---|
-| Adam / father | Aatami | builds the inheritance, mistakes material refuge for Eden and is devastated by Aaro's death |
+| Adam / father | Aatami | builds the inheritance, mistakes material refuge for Eden and suffers a stroke after Aaro's death |
 | Cal / Cain son | Kalle | inherits appetite and shame; a disclosure or act of cruelty helps rupture the brothers; guilt does not remove his capacity to choose |
 | Aron / Abel son | Aaro | idealistic refusal, life outside the business and an inevitable war death that cannot be gamed into survival |
 | first-generation brother cycle | Aatami and Jaska | repeats brother contrast without copying Charles Trask's violence or biography |
 | Lee / Samuel moral-interpreter function | primarily Toko, with room for another confidant | practical truth, history and unwanted counsel; Toko remains an independent shop owner, never an ethnic servant analogue |
-| destructive maternal legacy | **OPEN — character not yet cast** | a concealed family truth or legacy that can be revealed without copying Cathy/Kate scenes |
-| Abra / outside witness and future-facing partner | **OPEN — character not yet cast** | sees both brothers clearly and can carry the question of what happens after tragedy |
+| restless maternal legacy | Kati | the sons' intermittently present mother; loves to roam and refuses the role of stable household anchor without becoming a Cathy/Kate replica or one-note villain |
+| Abra / outside witness and future-facing partner | Aida | begins in Aaro's music-world orbit, sees both brothers clearly and challenges Kalle after the tragedy without functioning as his absolution |
 
 Arvo Linde remains the public chorus and source-status referee rather than a
 forced one-to-one novel analogue.
@@ -86,6 +86,16 @@ forced one-to-one novel analogue.
   selecting the “wrong” dialogue. Kalle's accumulated choices can help create
   the rupture that precedes Aaro's departure, but cannot turn Aaro into a pawn
   without agency or open a secret rescue ending.
+- The news causes Aatami to suffer a stroke. He survives in a diminished state
+  for the final family reckoning; the scene concerns grief, guilt and choice,
+  not a medical challenge or a copied ending from the novel.
+- Kati moves in and out of the family's life. She may bring affection, stories,
+  disruption or an old truth, but cannot be treated as a dependable home base.
+  Her instability is personal rather than proof of innate evil.
+- Aida has a life and judgement outside either brother. She knows Aaro through
+  the music world and becomes able to see Kalle without mistaking understanding
+  for forgiveness. A romantic relationship with either brother is not yet
+  locked.
 
 ### Complete-run map frame
 

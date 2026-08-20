@@ -193,13 +193,20 @@ cannot optimise a rescue branch. Choices determine how close the brothers were,
 what Kalle disclosed or weaponised, how much responsibility Kalle carries, how
 Aatami is devastated and whether anyone interrupts the inherited pattern
 afterward. Aaro retains agency and never becomes a reward, punishment or
-mission objective.
+mission objective. News of his death triggers Aatami's stroke. Aatami survives
+long enough for a diminished final reckoning; the stroke is consequence and
+character state, not a medical minigame.
 
-The remaining novel functions—destructive maternal legacy, moral interpreter,
-outside witness and future-facing partner—must be represented before Era II
-content lock, but their one-to-one casting remains an owner decision. Existing
-characters are not assigned those functions through ethnicity, nationality or
-occupation alone.
+- **Kati** is the sons' intermittently present mother and carries only the
+  restless maternal-legacy function. She loves to roam and is not a stable
+  household figure. Her absence matters, but she is not a Cathy/Kate replica,
+  a secret crime boss or shorthand for evil.
+- **Toko** carries much of the moral-interpreter function as an independent
+  friend and shop owner, never through an ethnic-servant analogy.
+- **Aida** carries the outside-witness and future-facing function. She begins
+  in Aaro's music-world orbit, understands both brothers and challenges Kalle
+  after the tragedy without absolving or redeeming him. Whether she is romantic
+  with either brother remains open.
 
 ## 7. The first purchase
 

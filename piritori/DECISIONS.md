@@ -60,6 +60,24 @@ Nothing playable extends north of Pasila or east of Kalasatama. This is a
 planning and sourcing lock, not permission to begin phase-gated Era II runtime
 or art production.
 
+### 12. Kati, Aida and Aatami's collapse
+
+> "Kati is just a chick that loves to roam, she isnt a stable figure"
+
+> "Recommend, but name could be Aida"
+
+> "Either works"
+
+Kati is the sons' intermittently present mother and the restless maternal
+legacy, but not a Cathy/Kate replica or a stable family anchor. Aida is the
+recommended name for the outside witness: she starts in Aaro's music-world
+orbit, understands both brothers and challenges Kalle without serving as his
+automatic redemption. Her exact romantic relationship remains open.
+
+The selected form of Aatami's collapse is physical as well as emotional: news
+of Aaro's death causes a stroke. Aatami survives in a diminished state for the
+final reckoning.
+
 ---
 
 ## 2026-08-18 — the art delivery
