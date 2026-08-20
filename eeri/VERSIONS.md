@@ -1,5 +1,59 @@
 # EERI — versions
 
+## v15.33 — 2026-08-20 — the golden bolts build the world's building
+
+DESIGN §4.3, which has been written down since 2026-08-14 and absent from the
+build since. The premise is that Eeri is on a worksite; twelve levels went past
+and **nothing on that site ever got finished**, which is the quiet hole in the
+whole thing. The golden bolts were a count, and a count that buys nothing is a
+chore with a sparkle on it.
+
+**They build the world's building now.** A world is three levels, each hides
+three, so a world holds nine — and those nine are the nine parts of the thing
+this world was working on. Clocking out at the gate puts it on screen: nine of
+nine and the roof goes on and the windows light, four of nine and it stands
+four-ninths built with the rest showing as steel frames.
+
+Four things decided the shape of it:
+
+* **A missing part is a FRAME, not a hole.** "The gaps visible" has two
+  readings and only one of them is a building — an absent part leaves nothing
+  to look at, so the eye reads a *smaller* building rather than an unfinished
+  one. Every part you have not earned is drawn as its own steel outline, which
+  is what an unfinished storey looks like on a real site and tells you exactly
+  what is missing and where it would go.
+* **Parts fill from the bottom left**, the way a building actually goes up. You
+  cannot have a third storey with no second, so a partial building is always a
+  plausible object rather than nine floating cubes.
+* **It is built into the scene, not drawn on a card.** A building described in
+  text is a score; a building standing past the gate is a building.
+* **It never gates anything**, which §4.3 states outright and the gate now
+  asserts: you clock out either way and the next world opens either way. Age
+  six, generous — the reward for finding them is *seeing more of the thing*,
+  never being let past a door. The check runs on the low-count path precisely
+  because that is the one that would break if anybody later made the building
+  a requirement.
+
+The count is the WORLD's, not the run's: banked when a level ends, reset when
+the world changes, and keyed on the world rather than the level index so a deep
+link into the middle of world 3 cannot arrive carrying world 2's nine.
+
+Each world builds something different — the tower, the pumphouse, the lodge,
+the depot — and the difference is in proportion and fill, never in the part
+COUNT. Nine bolts is nine bolts, and a meter whose denominator moves per world
+stops meaning one thing.
+
+**Two things found by looking rather than by a gate.** The building first stood
+at gate + 7.5, which is past the room's end — and the camera CLAMPS to the level
+width, so it was placed somewhere the camera is not allowed to look and rendered
+half out of frame at the right edge. It sits at gate + 1.7 now, where Eeri is
+standing when he clocks out. And `debug.setGolden(n)` exists because a building
+has nine readings and a bot that collects nothing can only ever show the first.
+
+Still open: **blueprints, one per world** (§4.2) — the last Tier 3 item. The
+asset exists (`token_blueprint`), and what it unlocks does not, so it is a
+feature and not a wiring job.
+
 ## v15.32 — 2026-08-20 — the level inspector, and the blind loop ends
 
 **Owner direction:** *"do you think we could make a level editor that allows me

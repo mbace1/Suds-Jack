@@ -9,29 +9,30 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=37';
-import { Input } from './input.js?v=37';
-import { Level, ROOMS, LAB } from './level.js?v=37';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=38';
+import { Input } from './input.js?v=38';
+import { Level, ROOMS, LAB } from './level.js?v=38';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=37';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=37';
-import { Camera } from './camera.js?v=37';
-import { buildKidModel, Kid, Player } from './kid.js?v=37';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=37';
-import { buildCraneModel, Crane } from './crane.js?v=37';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=37';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=37';
-import { Hoist } from './hoist.js?v=37';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=37';
-import { WreckingBall } from './hazards.js?v=37';
-import { AudioKit } from './audio.js?v=37';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=37';
-import { craftMat, craftBox } from './craft.js?v=37';
-import { t as tr } from './lang.js?v=37';
-import { showIntro } from './intro.js?v=37';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=37';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=37';
+} from './pieces.js?v=38';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=38';
+import { Camera } from './camera.js?v=38';
+import { buildKidModel, Kid, Player } from './kid.js?v=38';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=38';
+import { buildCraneModel, Crane } from './crane.js?v=38';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=38';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=38';
+import { Hoist } from './hoist.js?v=38';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=38';
+import { WreckingBall } from './hazards.js?v=38';
+import { AudioKit } from './audio.js?v=38';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=38';
+import { craftMat, craftBox } from './craft.js?v=38';
+import { t as tr } from './lang.js?v=38';
+import { showIntro } from './intro.js?v=38';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=38';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=38';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=38';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -209,6 +210,13 @@ async function boot() {
   let collected = 0;          // this level's bolts
   let goldenGot = 0;          // this level's golden bolts
   let runBolts = 0, runGolden = 0;   // …and the job, for the last screen
+  // THE WORLD'S OWN GOLDEN COUNT (DESIGN §4.3). The run total is the whole
+  // day; this is the nine that build THIS world's building, so it banks a
+  // level's find when the level ends and resets when the world does. Kept
+  // separate from `runGolden` because a building cannot be nine-ninths built
+  // by bolts found in another world.
+  let worldGolden = 0, worldOfGolden = null;
+  const bankGolden = () => { worldGolden += goldenGot; };
 
   function dispose(root) {
     root.traverse((o) => {
@@ -611,6 +619,13 @@ async function boot() {
     // played in front of World 1's site until this. Taken down before the
     // new one goes up — six full-width planes left in the scene are not
     // hidden by six more, the near ones are opaque.
+    // A BUILDING BELONGS TO ITS WORLD. The count resets when the world does,
+    // and it is keyed on the world rather than on the level index so that a
+    // deep link or a level jump into the middle of world 3 does not arrive
+    // carrying world 2's nine.
+    const world = worldOf(i);
+    if (world !== worldOfGolden) { worldGolden = 0; worldOfGolden = world; }
+
     const want = worldOf(i);
     if (want !== diorama.world) {
       diorama.dispose();
@@ -744,6 +759,13 @@ async function boot() {
         bolts: collected, ofBolts: site.def.bolts.length,
         golden: goldenGot, ofGolden: site.def.golden.length,
       }),
+      // the world's building: what the golden bolts have put up so far.
+      // `setGolden` is a DEV hook and nothing in play calls it — a building
+      // has nine readings and a bot that collects nothing can only ever show
+      // the first, so this is how the other eight get looked at.
+      worldGolden: () => worldGolden,
+      setGolden: (n) => { worldGolden = Math.max(0, Math.min(BUILD_PARTS, n | 0)); },
+      buildParts: () => BUILD_PARTS,
       checkpoint: () => site.checkpoint
         ? { x: site.checkpoint.x, lit: site.checkpoint.lit, respawn: site.level.respawn }
         : null,
@@ -1024,6 +1046,7 @@ async function boot() {
       if (ev === 'raised' && !transitioning && siteIndex < LAST_LEVEL && !site.def.gate) {
         audio.mount();
         runBolts += collected; runGolden += goldenGot;
+        bankGolden();                       // …and into this world's building
         goSite(siteIndex + 1);
       }
     }
@@ -1035,20 +1058,50 @@ async function boot() {
         && (!site.flag || site.flag.raised) && !cleared) {
       cleared = true;
       audio.mount();
+      bankGolden();
+
+      // THE BUILDING (DESIGN §4.3). Twelve levels used to go past with
+      // nothing on the site ever getting finished, and the golden bolts were
+      // a count that bought nothing. Now the nine hidden across a world ARE
+      // the nine parts of the thing this world was working on, and clocking
+      // out is where you see what you put up: nine of nine and the roof goes
+      // on and the lights come on, four of nine and it stands four-ninths
+      // built with the frames showing where the rest would go.
+      //
+      // It is built INTO THE SCENE at the gate rather than drawn on a card,
+      // because a building described in text is a score and a building you
+      // walk up to is a building. It is added to `site.group`, so the ordinary
+      // room teardown in goSite() disposes it with everything else.
+      const put = buildWorldBuilding(worldOf(siteIndex), worldGolden);
+      // INSIDE THE ROOM, not past its end. The camera clamps to the level
+      // width, so a building at gate + 7.5 sat in a place the camera is not
+      // allowed to look at and rendered half out of frame at the right edge.
+      // Three and a half tiles past the gate is where Eeri is standing when
+      // he clocks out, and the camera can centre on it.
+      put.root.position.set(site.def.gate.x + 1.7, site.def.gate.y, -2.4);
+      site.group.add(put.root);
+      cam.cut(site.def.gate.x + 1.4, site.def.gate.y + 3.4);
+
       const done = document.createElement('div');
       done.id = 'clear';
-      done.innerHTML = 'CLOCKING OUT'
+      // No scolding at a low count, ever: the card says what you built and
+      // how much of it, and the design's rule is that the reward for finding
+      // them is seeing more of the thing — never being told off for missing.
+      done.innerHTML = tr('clockOut')
+        + `<span>${tr('built')} ${put.name} — ${put.got}/${put.parts}`
+        + (put.got === put.parts ? ` · ${tr('builtDone')}` : '') + '</span>'
         + `<span>⬡ ${runBolts + collected} · ✦ ${runGolden + goldenGot}</span>`;
       document.body.appendChild(done);
       // …and if there is another world behind this one, the curtain is a
-      // BEAT rather than an ending: it holds, then the next site loads.
+      // BEAT rather than an ending: it holds, then the next site loads. Four
+      // seconds rather than 2.6 — there is something to look at now.
       if (siteIndex < LAST_LEVEL) {
         runBolts += collected; runGolden += goldenGot;
         setTimeout(() => {
           done.remove();
           cleared = false;
           goSite(siteIndex + 1);
-        }, 2600);
+        }, 4000);
       }
     }
 

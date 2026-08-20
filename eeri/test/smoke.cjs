@@ -754,6 +754,28 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('walking out through the gate ends the world', walkedOut);
   ok('and it says so on screen', await p.locator('#clear').count() === 1);
+  // ---- THE BUILDING (DESIGN §4.3) --------------------------------------
+  // The golden bolts used to be a count that bought nothing. They build the
+  // world's building now, so three things have to hold, and the third is the
+  // design's own rule rather than a rendering detail.
+  {
+    const card = (await p.locator('#clear').textContent()) || '';
+    // it NAMES what was built and how much of it — a bare number is the
+    // score it used to be
+    ok(`the clock-out card names the building (${card.replace(/\s+/g, ' ').trim().slice(0, 60)})`,
+      /\/9/.test(card) && /tower|pumphouse|lodge|depot/i.test(card));
+    // the count is this WORLD's nine, not the run's total: a building cannot
+    // be part-built by bolts found in another world
+    const wg = await p.evaluate(() => window.__eeri.debug.worldGolden?.());
+    ok(`the count is the world's own (${wg} of ${await p.evaluate(() => window.__eeri.debug.buildParts?.())})`,
+      Number.isInteger(wg) && wg >= 0 && wg <= 9);
+    // AND IT NEVER GATES ANYTHING. §4.3 is explicit: you clock out either way
+    // and the next world opens either way, because this is a game for a
+    // six-year-old and a locked door is a punishment dressed as content. The
+    // bot collected nothing hidden, so this is the low-count path — the one
+    // that would break if anybody ever made the building a requirement.
+    ok('…and a part-built one still opens the next world', wg < 9);
+  }
   // WITH A WORLD BEHIND IT, the curtain is a beat and not an ending — and
   // the flag on a gated level must NOT have advanced past the gate on its
   // own, or the curtain is unreachable. Both were live bugs the moment
