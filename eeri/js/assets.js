@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=36';
+import { PAL } from './palette.js?v=37';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -152,6 +152,27 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
     const root = gltf.scene;
     paintedToy(root);
 
+    // HEIGHT IN TILES, AND IT APPLIES TO EVERY RIG KIND. Meshy rigs to
+    // real-world metres, so Eeri arrived 0.95 units tall in a world where he
+    // is 1.62 and stood in the level like a background figure. Data, not a
+    // number buried in game code.
+    // It used to live INSIDE the skinned branch, which meant a node rig or a
+    // prop could declare `height` and silently not get it — the manifest, the
+    // README and the audit tool all say the seam rescales to this field, so a
+    // model that quietly ignored it is the expensive kind of wrong: it renders
+    // perfectly, at the wrong size, and no gate can tell. Two were doing it —
+    // `rollerbot` declared 0.5 and arrived 0.76 (52% too big, which is a whole
+    // enemy reading as a different enemy), and `token_bolt` declared 0.85 and
+    // arrived 0.62. The rescale is a no-op for an entry with no `height`, so
+    // hoisting it cannot touch anything that was not already asking for it.
+    const fitHeight = () => {
+      if (!entry.height) return;
+      root.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(root);
+      const h = box.max.y - box.min.y;
+      if (h > 0.001) root.scale.multiplyScalar(entry.height / h);
+    };
+
     // A SECOND KIND OF RIG. A hand-cut model is a tree of named nodes the
     // game rotates. A Meshy auto-rigged character is a SKINNED mesh driven by
     // named CLIPS — a bone skeleton, not the game's node names — so it is
@@ -173,15 +194,7 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
           map: m.map ?? null, color: m.color?.clone() ?? new THREE.Color(0xffffff),
         });
       });
-      // HEIGHT IN TILES. Meshy rigs to real-world metres, so Eeri arrived
-      // 0.95 units tall in a world where he is 1.62 and stood in the level
-      // like a background figure. Data, not a number buried in game code.
-      if (entry.height) {
-        root.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(root);
-        const h = box.max.y - box.min.y;
-        if (h > 0.001) root.scale.multiplyScalar(entry.height / h);
-      }
+      fitHeight();
       return { root, nodes: {}, clips, skinned: true, live: true };
     }
 
@@ -189,7 +202,7 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
     // spins and bobs it whole (a bolt, a token). Without this it fell into
     // the node loop, threw on an absent `nodes`, and silently served the code
     // placeholder instead of the model that had just been fetched.
-    if (entry.rig === 'prop') return { root, nodes: {}, clips: {}, live: true };
+    if (entry.rig === 'prop') { fitHeight(); return { root, nodes: {}, clips: {}, live: true }; }
 
     const nodes = {};
     const missing = [];
@@ -202,6 +215,7 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
       return buildPlaceholder();
     }
     if (entry.paint) housePaint(root, entry.paint, name);
+    fitHeight();
     return { root, nodes, live: true };
   } catch (e) {
     console.warn(`[eeri] model "${name}" failed to load (${e.message}) — using placeholder`);

@@ -9,36 +9,12 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=36';
+import { PAL } from './palette.js?v=37';
+// The silhouette line lives in craft.js, not here: robots.js needs the same
+// one, and two copies of a silhouette rule is how two silhouettes start.
+import { outlineShell } from './craft.js?v=37';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
-
-// One dark line on the silhouette, built from the model itself so it cannot
-// disagree with the pose. Skinned meshes are cloned as SkinnedMesh and share
-// the original's skeleton; a plain Mesh just shares geometry.
-const OUTLINE = 0.045;
-function outlineShell(root) {
-  const mat = new THREE.MeshBasicMaterial({
-    color: PAL.INK, side: THREE.BackSide, depthWrite: false,
-    polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
-  });
-  const targets = [];
-  root.traverse((o) => { if (o.isMesh && !o.userData.__outline) targets.push(o); });
-  for (const m of targets) {
-    let shell;
-    if (m.isSkinnedMesh) {
-      shell = new THREE.SkinnedMesh(m.geometry, mat);
-      shell.bind(m.skeleton, m.bindMatrix);
-    } else {
-      shell = new THREE.Mesh(m.geometry, mat);
-    }
-    shell.userData.__outline = true;
-    shell.renderOrder = -1;
-    // scaled about the mesh's own origin: enough to show, not enough to fatten
-    shell.scale.setScalar(1 + OUTLINE);
-    m.add(shell);
-  }
-}
 
 export function buildKidModel() {
   const root = new THREE.Group(); // origin at the feet, facing +x
@@ -264,16 +240,9 @@ export class Kid {
     // six-year-old this is built for, losing your own character is the worst
     // failure on the list, worse than any of the scenery being plain.
     //
-    // A back-face shell, not a post effect: each mesh gets a sibling of the
-    // same geometry in INK, culled to BackSide and pushed out slightly, so
-    // what survives is a dark line exactly on the silhouette. This is why it
-    // is done this way rather than with an outline pass — ART_BRIEF §3.4 says
-    // no post stack, and the shell obeys that while giving the same result.
-    //
-    // `depthWrite: false` and a small negative polygon offset keep the shell
-    // from z-fighting the surface it is wrapping, and it is added as a CHILD
-    // of each mesh so it inherits every bone and every pose for free — an
-    // outline that does not follow the animation is worse than none.
+    // The shell itself lives in craft.js — it is the same line the enemies
+    // wear, and it pushes along the normal rather than scaling, which is what
+    // makes it survive a pose. See the note there.
     outlineShell(this.group);
 
     // blob shadow — the landing aid (no shadow maps anywhere)

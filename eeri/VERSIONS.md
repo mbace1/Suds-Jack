@@ -1,5 +1,247 @@
 # EERI — versions
 
+## v15.32 — 2026-08-20 — the level inspector, and the blind loop ends
+
+**Owner direction:** *"do you think we could make a level editor that allows me
+to place assets and backgrounds in a more deliberate way?"* — yes, in four
+steps, and this is step one. Reached from the pause menu, as asked.
+
+**The premise, corrected, because it decides the design.** The levels are not
+placed randomly. Every number in them was chosen. They are placed **BLIND**: a
+prop in this game is a line like
+
+    panel(THREE, root, 48, 10.0, 124, 22, 0x14263c, -1.72)
+
+so composing a picture means typing eight numbers, reloading, looking, and
+typing them again. Nobody composes anything that way, which is exactly why
+nothing looks composed. Step one changes **no format at all** — it makes that
+loop SIGHTED. Point at a thing, find out what it is, drag it, read the
+corrected numbers back out.
+
+**It lives entirely outside the game.** `dev.html` FRAMES `index.html` rather
+than copying it, so what is inspected is byte-for-byte what ships, and
+`dev/inspector.js` is loaded by the dev page alone. `index.html` gains no
+import, no button and no branch — the gate now asserts all three, plus that
+`js/menu.js` has never heard of it. **The pause-menu row is added from OUT
+HERE**: `openMenu()` builds its card fresh each time, so the inspector watches
+the framed document for one appearing and appends `DEV TOOLS` to it. That
+keeps the rule the whole dev pack is built on — the pack reads the game, the
+game never learns the pack exists — and it means no shipped build can ever
+show a six-year-old a button marked DEV.
+
+**One handle the game had to give up.** `camera`, next to `THREE, scene` on
+`window.__eeri`. "What is under this pointer" is a raycast; a raycast needs the
+camera the picture was drawn with, and `debug.camera()` returns a *position*.
+`test/dev-menu.mjs` now names it, because the whole reason that file exists is
+that the pack reads hooks nothing in the game depends on — rename one and
+nothing else fails, the tool just quietly stops selecting anything.
+
+**What it does.** PICK selects by raycast and drags in the object's own z
+plane — depth is the one axis you must not change by accident in a 2.5D game.
+Arrow keys nudge (shift = whole tiles). x/y/z are editable fields. REVERT
+restores where a thing started, remembered on first select, because otherwise
+an afternoon of dragging is unrecoverable — the real numbers only exist in
+source. WALK moves the player, which moves the camera: the game's own `Camera`
+writes the position every frame and fighting it from a second rAF is a race, so
+the view is changed by the one route that cannot desync. And a **visibility
+switch per scene group**, which answers the question that costs the most time
+by hand: *which layer is that thing on*.
+
+**Naming the layers is half the value.** Every lane plane was an anonymous
+`Mesh` sitting directly in the scene — fine for the renderer, useless to a
+person. The first pick reported `Mesh` in `(scene)` at z 2.20 and that was all
+it could say. They now name themselves `groundworks/fore`, with the tile
+number on a tiled lane (`near:1/2`) because *which half of `near` has the seam
+in it* is a real question. The first thing the tool said once they had names
+was that the object covering the middle of level 1 is the **fore** lane — which
+is the owner's own complaint about long foreground objects, answered by
+pointing at it.
+
+**What it deliberately does NOT do.** It does not save: scenery is code, not
+data, so there is nowhere to write to, and a Save button that writes nowhere is
+worse than none — the gate fails on `localStorage`, `fetch(` or `download` in
+this file. It does not name the source CALL, because half those numbers are
+computed inside a loop and there is no single line to correct. Both are step 2,
+which is the real work: **73 dressing call sites across 500 lines** become
+data. The editor UI was always the small part.
+
+**A gate of mine was lying.** The height checks added in v15.30 imported
+`./js/assets.js?v=35` as a literal, so once the graph moved to 37 the import
+404'd, `getModel` returned null, and two checks failed claiming the models had
+no height. The gate now reads the token out of `js/main.js` — nobody
+hand-keeps a number another file already owns, which is the same rule that
+produced `scripts/deploy-hub.mjs`.
+
+Tokens: every module 36 → 37; `dev/inspector.js` starts at 1.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 36/0 (six new) · smoke 430/0, plus a
+headless drive-through of the tool itself — open the pause menu, click the row,
+pick, drag, revert, zero page errors. **The playthrough is still running on
+this exact tree at commit time and its number is deliberately not written here
+yet.** Nothing in this change touches the update half of the loop, so there is
+no reason to expect it to move; that is a reason to check rather than a reason
+to claim, and this session has already put an unverified gate number in a
+commit message once.
+
+## v15.31 — 2026-08-20 — the hint stops covering the game
+
+**Owner's report: on a phone held sideways with a controller plugged in, the
+helper box stretches from the top of the screen to the bottom and you cannot
+see the game.** Measured on an 844x390 viewport it is **368 px of 390** — a
+one-line hint occupying 94% of the picture.
+
+It is a two-property collision and neither property is wrong on its own.
+Landscape anchors `#hint` to the TOP (`bottom: auto; top: 10px`) because in
+landscape both bottom corners are full of drawn controls and a hint buried in
+the control cluster is a hint nobody reads. `html.padded` — set when a real
+controller is present — then puts `bottom` back, which is also right: with a
+pad there are no drawn controls to clear, so the hint belongs at the bottom
+where it always was. What it never did was release `top`. A `position: fixed`
+box with **both** edges pinned and `height: auto` does not sit at one of them;
+it stretches between them.
+
+`top: auto !important` is the whole fix.
+
+Why nothing caught it: it needs **all three** of coarse pointer, landscape
+orientation and a connected pad, simultaneously. Every desktop run has a fine
+pointer, every touch run in the gate had no pad, and the pad runs were on a
+desktop. The gate now plugs a pad into the landscape phone it already opens
+and measures the hint's **height** — the height is the bug, and there is more
+than one way to cause it, so asserting on a CSS property would only catch this
+one route back in. Verified by reverting the fix: 368 px, one check red.
+
+Gates: smoke 429/0 (two new) · rooms 147/0 · fx 31/0 · dev-menu 30/0.
+
+## v15.30 — 2026-08-20 — three defects nobody could see, and a flip that did not earn it
+
+**RENUMBERED FROM v15.29, AND THAT IS THE FOURTH TIME.** The design lane
+shipped its own v15.29 — the ground and the canopy — within the same hour this
+was written, so two entries carried one number again. CLAUDE.md's rule exists
+for exactly this and I did not follow it: *fetch and read the other lineage's
+VERSIONS.md before writing a new heading*. Nothing was lost this time because
+the collision was caught at the rebase rather than after both had shipped, but
+it is caught by luck rather than by a gate, and it will keep happening while
+the number is chosen by hand. The three entries below it moved up one with it.
+
+**RENUMBERED FROM v15.28, which is the collision CLAUDE.md warns about and it
+happened anyway.** `main` shipped its own v15.28 an hour apart, same integer,
+and picked the same module token (35) and the same `manifest.json` token (32)
+with it. The rule that catches this is *fetch and read the other lineage's
+`VERSIONS.md` before writing a heading* — and it only works if you do it
+immediately before PUSHING rather than when you start, which is the amendment
+this cost.
+
+**THE HEADLINE IS A NEGATIVE RESULT: the four enemy models stay
+`placeholder`.** The task was to take the enemy seam live — `robots.js` has
+asked `getModel` for a model since v15.27 and got `placeholder` back every
+time, so the code path shipped and nothing came through it. Flipping the four
+is one line each and every gate stays green. It is still the wrong call, and
+the A/B is the reason: photographed in the same spot in Level 1, the code box
+is a solid machine-orange brick you cannot miss, and the model is a small
+yellow figure that sits into pale timber and sand. main's v15.28 measured the
+same thing from the other end — *"the small robots read as brown blobs at
+gameplay scale"* — flipped nothing, and handed the decision here with a stated
+bar: **an enemy that hides in the scenery is worse than the box it replaces.**
+It does not clear that bar yet, so it does not ship.
+
+What would clear it is a paint job, not a line. The enemy needs to be lit by
+the CAST's contrast rather than the site's — the box wins because it is
+`PAL.MACHINE_DK` against sand, and the mesh brings its own hi-vis yellow which
+happens to be the value of everything it stands in front of. That is the art
+lane's next piece of work and it is now scoped by a picture rather than a
+hunch.
+
+**Getting to that answer turned up three real defects, and every one of them
+was invisible to every gate in the repo.** This is the useful half of the
+release.
+
+**1. The tell was 0.002 tiles across.** DESIGN §3 says the telegraph IS the
+enemy design. On a skinned rig it is a lamp parented to the `Head` BONE — and
+a bone is not in world units. Meshy rigs its skeletons at roughly 1/90 scale,
+so a sphere authored at radius 0.075 came out **two thousandths of a tile** on
+all three skinned enemies: in the graph, absent from the screen. The offset
+went the same way, putting the lamp a millimetre inside the head rather than
+on its face. The bone's world scale is divided back out of both, and the
+placeholder's eye is now named `tell` as well, because the rule is about the
+GAME having a telegraph you can see and not about which art is behind it.
+
+**2. `height` was only honoured for skinned rigs.** The manifest,
+`assets/README.md` and the audit tool all document it as the field the seam
+rescales to — and the rescale sat inside the `rig: "skinned"` branch, so a node
+rig or a prop could declare it and silently not get it. `rollerbot` declared
+0.5 and arrived 0.76; **`token_bolt` declared 0.85 and arrived 0.62, and that
+one is live**, so honouring the field makes every collectable bolt in the game
+37% bigger. That is the correct direction — if 0.85 is the wrong number the
+fix is to change the DATA, not to go back to ignoring the field — but it is a
+visible change and it is stated here rather than discovered.
+
+**3. THE SHELL OUTLINE DOES NOTHING ON A SKINNED MESH.** `outlineShell` pushed
+its back-face shell out by SCALING it (×1.045). Rendered on the enemy rigs
+that produced **no visible line at all**, and the measurement says why: the
+shell's world box comes out **0.009 tiles** against a body of 0.7 — it
+collapses inside the model rather than wrapping it. Displacing along the
+normal in `begin_vertex`, ahead of the skinning chunks, gives a line that
+survives the pose, and the same picture then shows one.
+
+The honest limit on this finding: `kid.js` has used the same helper since
+v15.25 said *"the kid has an edge"*, so his edge is at best unverified and
+most likely was never there. I do NOT have a clean measurement of it. My first
+one — comparing the shell's box against its parent's — was **circular**:
+`Box3.setFromObject(parent)` expands over the parent's descendants, and the
+shell is one of them, so it was measuring the shell against itself and would
+have reported a match whatever the truth was. Recorded because a wrong ruler
+that agrees with you is the most expensive kind, and this release also fixed
+two gates that had the same shape.
+
+Two details there are load-bearing, and I got the first one wrong in the most
+visible way possible before getting it right. The width is in tiles and has to
+be divided by the scale the mesh is DRAWN at — and for a skinned mesh that is
+not its node's scale. Meshy hangs `char1` under a 0.01 cm→m node, so the node
+reads 0.008 while the thing on screen is 0.7 tiles tall; dividing by 0.008
+asked for a 180% inflation and put a black shell across the entire sky. The
+honest ratio is what the model MEASURES on screen over what its geometry
+measures in bind space. And the shell is LAMBERT, not BASIC: `objectNormal`
+only exists in the basic shader behind `USE_ENVMAP`, so a basic shell compiles
+silently with nothing to push along.
+
+An honest limit on that one: at the gameplay camera an outline of a believable
+thickness is **one to two pixels**, which is why it is not the answer to the
+enemy-readability question above. It is worth having — it is the kid's stated
+edge finally existing — and it is not a contrast fix.
+
+**Gates: two new ones, and both were run against the bug before being
+trusted.** A ruler that cannot fail is not a ruler and this project has shipped
+two of those. `smoke.cjs` now measures every tell's world size off the live
+scene (fails at 0.0013 on the old code) and every live model's declared height
+against what it actually stands at (fails at 0.76 for `rollerbot`). Neither
+question can be asked anywhere else: the first only has an answer once the
+scene exists, the second only after the loader has applied the node transforms
+— which is why the bare-node audit cannot see it. The outline has **no** gate,
+deliberately: the displacement is a shader uniform, so no `Box3` can see it,
+and both of its failure modes — absent, and swallowing the screen — were found
+by looking at a picture. `__outlineFrac` is recorded on each shell for whoever
+does find a way to measure it.
+
+**Cross-lane, declared.** `outlineShell` moved out of `js/kid.js` and into
+**`js/craft.js`** — the module that decides what a surface in this game looks
+like — because the enemies need the same line and two copies of a silhouette
+rule is how two silhouettes start; `kid.js` imports it now instead of owning
+it. `js/robots.js` gains the tell fix and names the placeholder's eye.
+`test/smoke.cjs` gains the two checks and one tour stop (site 5 — `bucket` is
+the only enemy in no world-opening room, so the fetch check fails on
+`bucket_v1.glb` alone the moment it goes live; kept now so the gap is not
+rediscovered the hard way).
+
+Tokens: every module 35 → 36. `manifest.json` stays at 32 — its bytes are
+main's, unchanged here, since the four enemies went back to `placeholder`.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 30/0 · smoke 427/0 · audit 31/31
+contracts, 15 unreachable · **playthrough 25/0**. That last one is not a
+formality here: the outline draws every mesh a second time and this sandbox
+rasterises in software, so doubling the draw calls on the kid was a real risk
+to a gate that has already been misread once this week. Twelve levels, no
+stalls, no ride losses.
+
 ## v15.29 — 2026-08-20 — the ground answers the world, and the canopy stops being circles
 
 The last two items off the visual diagnosis, and both are on screen in every
