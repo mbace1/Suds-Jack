@@ -45,3 +45,11 @@ additional frames or true layer extraction before shipping.
 
 Archived files live under `archive/needs-rework/` and are excluded from active
 manifests.
+
+## Runtime extraction status
+
+`../art/v3/manifest.json` registers the first optimized prototype derivatives.
+Registration does not change the approval table above. The pack contains 52
+files behind 42 stable ids and explicitly preserves the Toko baked-screen
+exception plus the courtyard/weather semi-approved status. The slice validator
+rejects empty files, bad references and any needs-rework archive dependency.

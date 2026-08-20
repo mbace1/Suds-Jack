@@ -1,7 +1,7 @@
 # Piritori → Eden — Art Bible
 
-Version: 1.0  
-Date: 2026-08-19  
+Version: 1.1  
+Date: 2026-08-20  
 Status: **ACTIVE — Era I production authority**  
 Visual system id: `cut-cardstock-hand-ink-v03`  
 
@@ -14,6 +14,7 @@ Read this with:
 - `DESIGN_AUTHORITY.md` for authority and publishing rules;
 - `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md` for product requirements;
 - `UX_SPEC.md` for interaction hierarchy and responsive reflow;
+- `art/v3/manifest.json` for the registered prototype runtime derivatives;
 - `art-library/APPROVALS.md` for per-asset approval status;
 - `art-library/MODULAR_CHARACTER_SYSTEM.md` for rig and socket details;
 - `art-library/ANIMATION_LAYER_CONTRACT.md` for motion and layer order.
@@ -21,6 +22,11 @@ Read this with:
 The Art Bible defines how approved direction becomes production art. It does
 not upgrade a semi-approved asset to approved, change a game rule or make a
 review sheet runtime-ready by declaration.
+
+The v3 runtime register is the first extraction milestone. It preserves source
+status per asset: Toko and Karhupuisto are approved baselines; modular v03
+pieces are prototype extractions; the courtyard and weather remain
+semi-approved prototype material. Nothing in that pack is labelled final art.
 
 ---
 

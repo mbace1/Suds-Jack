@@ -2,9 +2,9 @@
 
 ## Game Design Document — active baseline
 
-Version: 0.6  
-Date: 2026-08-19  
-Status: active design baseline; structural, visual, UX and Era I map baselines locked  
+Version: 0.7  
+Date: 2026-08-20  
+Status: active design baseline; structural, visual, UX, map and Era I slice-content baselines locked  
 Platform assumption: mobile-first browser prototype, desktop supported  
 Audience: adults  
 
@@ -17,8 +17,9 @@ design contract.
 The previous Art Bible was rejected and is retained only as legacy production
 history. The approved `art-library/` now establishes the active Finnish,
 cartoony cut-cardstock and hand-marker baseline. Approval establishes visual
-direction; individual review sheets still require production extraction,
-registration and optimization before they become runtime art.
+direction. `art/v3/manifest.json` registers the first optimized prototype
+extractions; other review sheets still require production extraction,
+registration and optimization before runtime use.
 
 ### Decision labels
 
@@ -1453,6 +1454,11 @@ Do not attempt the entire two-generation campaign before this works.
 
 **LOCKED content target; exact balance remains testable:**
 
+The finite authored implementation baseline now lives in
+`content/era1-slice-v1.json`, with its human-readable spine in
+`content/ERA1_VERTICAL_SLICE.md`. It supplies the exact seven-day package below
+without expanding the slice into the full campaign.
+
 - seven in-game days with two active blocks per day for the first test;
 - one geographically credible compressed Kallio map;
 - seven or eight active nodes;
@@ -1619,6 +1625,10 @@ This GDD is the active design baseline beneath `DESIGN_AUTHORITY.md` and
   for the five modes;
 - `MAP.md` and `map/kallio-era1-2003-v1.json` define Era I public anchors,
   sites, corridor topology, projection, slice reveal and map-layer separation.
+- `content/era1-slice-v1.json` defines the finite seven-day authored slice, and
+  `content/validate-slice.mjs` enforces its counts and references.
+- `art/v3/manifest.json` defines the only registered runtime-art ids for the
+  slice; approval and production status remain separate fields.
 
 `ART_BIBLE.md` defines medium, character construction, environments, map
 language, combat staging, motion and production rules from the approved library.

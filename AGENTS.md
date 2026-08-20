@@ -14,7 +14,7 @@ even when the code is otherwise correct, tested and pretty.
 
 | project | canon | notes |
 |---|---|---|
-| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; `ART_BIBLE.md` owns visuals, `UX_SPEC.md` owns interaction/reflow, and `MAP.md` owns Era I geography/graph; narrative, art-library and supporting documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
+| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; `ART_BIBLE.md` owns visuals, `UX_SPEC.md` owns interaction/reflow, `MAP.md` owns Era I geography/graph, `content/era1-slice-v1.json` owns the finite authored slice, and `art/v3/manifest.json` owns registered runtime-art ids; other documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
 | `eeri/` | `eeri/PHASING.md` first, then `DESIGN.md`, `ART_BRIEF.md`, `VERSIONS.md` | multi-agent; PHASING supersedes on conflict |
 | `kindling/` | `BETTERMENT_OWNER_DIRECTION.md` | newest authority; supersedes older "cozy hut" calls |
 | `toko/` | `toko/BRAND.md` | two colours only, geometry invariants |
@@ -96,6 +96,8 @@ CI runs these on every push (`.github/workflows/gates.yml`). Locally:
 
 ```bash
 node flow-core/test/contract.mjs                          # neutral core
+node piritori/map/validate-map.mjs                       # Era I graph and sites
+node piritori/content/validate-slice.mjs                 # authored slice + art register
 node piritori/test/fight.mjs                              # rank fights
 node piritori/test/market.mjs                             # goods, deals, cut bags
 NODE_PATH=$(npm root -g) node flow-core/test/smoke.cjs    # both entry points

@@ -21,12 +21,15 @@ From highest to lowest:
 6. `UX_SPEC.md` for interaction, navigation and responsive layout.
 7. `MAP.md` and `map/kallio-era1-2003-v1.json` for Era I geography,
    public anchors, sites, corridors, projection and map-layer separation.
-8. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
-9. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
+8. `content/era1-slice-v1.json` for the finite authored vertical-slice data,
+   where it implements rather than contradicts the documents above.
+9. `art/v3/manifest.json` for registered prototype runtime-art ids and status.
+10. `NARRATIVE.md` and `SCREEN_AND_COMBAT_BASELINE.md`.
+11. `art-library/APPROVALS.md`, `art-library/CATALOG.md` and the system contracts
    linked from them.
-10. `FIGHT_BRIEF.md` and `DECISIONS.md`, but only where they do not
+12. `FIGHT_BRIEF.md` and `DECISIONS.md`, but only where they do not
    conflict with the documents above.
-11. The current runtime, tests and legacy design documents. These are evidence
+13. The current runtime, tests and legacy design documents. These are evidence
    and prototypes, not permission to change the design.
 
 When two sources at the same level disagree, stop and record a decision. Do not
@@ -63,6 +66,9 @@ owns camera, focus and input behaviour.
   routes, named groups and actionable methods remain fictional or abstract.
 - Era I uses the twelve-anchor graph in `map/kallio-era1-2003-v1.json`, with
   eight active slice anchors and fictional services attached as sites.
+- The first playable content package is the validated seven-day spine in
+  `content/era1-slice-v1.json`: fourteen blocks and encounters, four mission
+  families, six crew, five offers, one 2v2, one 3v3 and one sourced bulletin.
 
 ## Active visual baseline
 
@@ -103,6 +109,11 @@ dramatic, but they retain the same cut-paper and hand-marker construction.
 
 Approval establishes direction; it does not mean every review sheet is already
 split, compressed, registered or animation-ready.
+
+The first registered runtime derivative pack is `art/v3/manifest.json`. It is
+prototype art, not a blanket final-art approval. Its courtyard and weather
+entries remain visibly semi-approved, and its flattened Toko screen keeps an
+explicit baked-copy/UI exception until production separation.
 
 ## Legacy material
 

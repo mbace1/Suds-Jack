@@ -5,6 +5,10 @@ Visual and production rules are defined in the active
 [APPROVALS.md](APPROVALS.md) and machine-readable form in
 [catalog.json](catalog.json).
 
+Optimized prototype derivatives are registered separately in the
+[v3 runtime manifest](../art/v3/manifest.json). Runtime code resolves those
+stable ids and does not load review sheets directly.
+
 ## Approved active character system
 
 - [Character manifest](characters/manifest.json)
