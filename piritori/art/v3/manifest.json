@@ -14,11 +14,11 @@
   },
   "assets": [
     {
-      "id": "scene-toko-noodles-prototype-v01",
+      "id": "scene-toko-noodles-prototype-v02",
       "kind": "scene",
-      "file": "scenes/toko-slomo-noodles-prototype-v01.webp",
-      "source": "screens/instances/era1/toko-slomo-noodles-v01.png",
-      "source_version": "v01",
+      "file": "scenes/toko-slomo-noodles-prototype-v02.webp",
+      "source": "screens/instances/era1/toko-slomo-noodles-v02.png",
+      "source_version": "v02",
       "approval_status": "approved",
       "production_status": "flattened-prototype",
       "dimensions": [1536, 864],
@@ -29,8 +29,8 @@
       "portrait_safe_bounds": [0.2, 0.0, 0.8, 1.0],
       "baked_text": true,
       "baked_ui": true,
-      "sha256": "365ecf2a38170273cc3f8b6b1bac0532d1a1d0e82b825d872d25249704108717",
-      "note": "Approved look baseline. Step 7 overlays live copy and controls; production must separate stage, Toko, mask, props, steam and window pass."
+      "sha256": "f1ab0620c9c21ad4ec4e55b20f91ec4e4dc0ade8f0c5a0e3b8a5a5e844a3354c",
+      "note": "Approved corrected-mask baseline: eye openings sit inside the white arches. The runtime overlays live copy and controls; production must separate stage, Toko, mask, props, steam and window pass."
     },
     {
       "id": "scene-karhupuisto-v01",

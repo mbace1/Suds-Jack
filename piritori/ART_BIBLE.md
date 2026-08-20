@@ -411,7 +411,7 @@ The active mask direction is:
 - slight hand-cut asymmetry between left and right;
 - no glowing emoji face, plastic mascot gloss or bare realistic face beneath.
 
-The current fullscreen Toko PNG is an approved narrative-instance baseline and
+The current fullscreen Toko v02 PNG is an approved narrative-instance baseline and
 may be used as a prototype. Production separates at minimum:
 
 1. rear shop/back wall;

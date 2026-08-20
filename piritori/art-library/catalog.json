@@ -82,13 +82,14 @@
       "depends_on_needs_rework": ["kallio-alley-v01"]
     },
     {
-      "id": "toko-slomo-noodles-era1",
-      "file": "screens/instances/era1/toko-slomo-noodles-v01.png",
-      "metadata": "screens/instances/era1/toko-slomo-noodles-v01.json",
+      "id": "toko-slomo-noodles-era1-v02",
+      "file": "screens/instances/era1/toko-slomo-noodles-v02.png",
+      "metadata": "screens/instances/era1/toko-slomo-noodles-v02.json",
       "aspect": "16:9",
       "approval_status": "approved",
       "production_ready": true,
-      "usage": "fullscreen-narrative-prototype"
+      "usage": "fullscreen-narrative-prototype",
+      "supersedes": "screens/instances/era1/toko-slomo-noodles-v01.png"
     }
   ],
   "vectors": [

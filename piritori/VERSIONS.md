@@ -1,5 +1,16 @@
 # Piritori → Eden — versions
 
+## v3.1 source pack — 2026-08-21
+
+- Promotes the corrected Toko Slomo screen to the active v02 source and runtime
+  derivative. The eye openings now sit inside the white mask arches while a
+  visible white rim remains.
+- Adds a self-contained `START_HERE.md`, one-command project checks and a local
+  no-build file server so a new contributor can run the slice from a clean
+  checkout without reconstructing the handoff from chat history.
+- Keeps v01 for provenance; only v02 is registered by the active runtime-art
+  manifest.
+
 ## v3 alpha — 2026-08-20
 
 **The approved design becomes one playable, saved campaign state.**

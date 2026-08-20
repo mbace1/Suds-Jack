@@ -20,7 +20,7 @@ additional frames or true layer extraction before shipping.
 | Landscape and portrait command geometry | UX baseline | Final typography and icon language remain open. |
 | Battle detail ceiling | Detail target | Reduce environmental texture about 25 percent for production. |
 | Battle simplification floor | Lower bound | Final assets should retain more character detail. |
-| Toko Slomo's Noodles fullscreen screen | Narrative-instance baseline | True PNG and normalized hit regions are implementation-ready; separate copy and controls for later dynamic content. |
+| Toko Slomo's Noodles fullscreen screen v02 | Narrative-instance baseline | Corrected eye openings sit inside the white arches. True PNG and normalized hit regions are implementation-ready; separate copy and controls for later dynamic content. |
 
 ## Semi-approved
 
@@ -49,7 +49,7 @@ manifests.
 ## Runtime extraction status
 
 `../art/v3/manifest.json` registers the first optimized prototype derivatives.
-Registration does not change the approval table above. The pack contains 52
-files behind 42 stable ids and explicitly preserves the Toko baked-screen
+Registration does not change the approval table above. The active register contains
+42 stable ids and explicitly preserves the Toko baked-screen
 exception plus the courtyard/weather semi-approved status. The slice validator
 rejects empty files, bad references and any needs-rework archive dependency.

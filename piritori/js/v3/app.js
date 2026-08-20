@@ -308,7 +308,7 @@ function renderEncounter() {
   const anchorId = encounter.anchor_override_id ?? site?.anchorId ?? slot.anchor_id;
   const anchor = data.anchors.get(anchorId);
   const art = encounter.scene_asset_id ? assetUrl(data, encounter.scene_asset_id) : '';
-  const isToko = encounter.scene_asset_id === 'scene-toko-noodles-prototype-v01';
+  const isToko = encounter.scene_asset_id === 'scene-toko-noodles-prototype-v02';
   const resolved = state.choices[encounter.id];
   const choice = encounter.choices.find(item => item.id === resolved);
   const pendingBattle = state.battle?.status === 'active';

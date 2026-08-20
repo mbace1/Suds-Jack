@@ -68,8 +68,9 @@ Individual transparent assets sit beside each review sheet.
 - [Portrait command console](ui/battle/command-console-portrait.svg) — approved system baseline
 - [Landscape alley battle](screens/battle-landscape-alley-v01.png) — semi-approved layout; replace plate
 - [Portrait alley battle](screens/battle-portrait-alley-v01.png) — semi-approved mobile reflow; replace plate
-- [Toko Slomo's Noodles](screens/instances/era1/toko-slomo-noodles-v01.png) — approved fullscreen narrative prototype
-- [Toko Slomo implementation metadata](screens/instances/era1/toko-slomo-noodles-v01.json) — canvas, events and responsive hit regions
+- [Toko Slomo's Noodles v02](screens/instances/era1/toko-slomo-noodles-v02.png) — active approved fullscreen narrative prototype; corrected nested eye openings
+- [Toko Slomo v02 implementation metadata](screens/instances/era1/toko-slomo-noodles-v02.json) — canvas, mask rule, events and responsive hit regions
+- [Toko Slomo's Noodles v01](screens/instances/era1/toko-slomo-noodles-v01.png) — superseded approved prototype retained for provenance
 - [Detail ceiling](references/battle-detail-ceiling-v01.png) — approved reference
 - [Simplification floor](references/battle-simplification-floor-v01.png) — approved lower-bound reference
 

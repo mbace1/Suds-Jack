@@ -524,7 +524,7 @@
       "site_id": "toko_slomo_noodles",
       "participants": ["aatami", "toko"],
       "source_status": "fiction",
-      "scene_asset_id": "scene-toko-noodles-prototype-v01",
+      "scene_asset_id": "scene-toko-noodles-prototype-v02",
       "opening": "Toko dries a bowl and lowers his voice. Three delivery vans. Thursday. One of them is empty.",
       "inspectables": ["night tram through the window", "three tally marks", "Toko's repaired radio"],
       "choices": [
@@ -725,7 +725,7 @@
     }
   ],
   "asset_refs": [
-    "scene-toko-noodles-prototype-v01",
+    "scene-toko-noodles-prototype-v02",
     "scene-karhupuisto-v01",
     "scene-courtyard-prototype-v02",
     "formation-grid-3x3-v01",
