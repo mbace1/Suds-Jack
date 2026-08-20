@@ -1,282 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0f1216">
-<meta name="description" content="Piritori to Eden — a fictional Helsinki flow-and-market game. Draw the lines the city moves on, and move something else along them.">
-<title>Piritori → Eden</title>
-<style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --paper: #0f1216; --panel: #151a20; --rule: #232a33;
-    --ink: #e2dccd; --dim: #8c8778; --warn: #ff7a1a; --gold: #e8c24a;
-    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  }
-  html, body { height: 100%; background: var(--paper); overflow: hidden; }
-  body {
-    font-family: var(--mono); color: var(--ink); font-size: 14px; line-height: 1.45;
-    display: flex; flex-direction: column;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  #hud {
-    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-    padding: 46px 10px 6px; border-bottom: 1px solid var(--rule); font-size: 12px;
-    color: var(--dim); flex: none;
-  }
-  #hud b { color: var(--ink); font-weight: normal; }
-  #hud .cash b { color: var(--gold); }
-  #hud .debt b { color: var(--warn); }
-  #hud #heat.hot { color: var(--warn); }
-  #hud .sp { margin-left: auto; display: flex; gap: 6px; }
-  .ctl {
-    min-width: 44px; min-height: 44px; font: inherit; font-size: 13px;
-    background: var(--panel); color: var(--ink); border: 1px solid var(--rule); cursor: pointer;
-  }
-
-  /* the real district is a tall 2:1 rectangle; cap the canvas so the counter
-     survives on a phone — the renderer letterboxes inside whatever box it gets */
-  #map { flex: 0 0 auto; width: 100%; max-height: 56vh; display: block; touch-action: none; }
-
-  #feed { flex: none; padding: 4px 10px; font-size: 11.5px; color: var(--dim); max-height: 5.4em; overflow: hidden; }
-  #feed div { border-top: 1px dashed var(--rule); padding: 1px 0; }
-
-  #sheet {
-    flex: 1 1 auto; min-height: 0; border-top: 1px solid var(--rule);
-    background: var(--panel); padding: 8px 10px 10px; overflow-y: auto;
-  }
-  #sheet h2 { font-size: 15px; color: var(--warn); }
-  #sheet .hint { color: var(--dim); font-size: 12px; }
-  #sheet table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-  #sheet td { padding: 3px 2px; border-bottom: 1px solid var(--rule); font-size: 13px; }
-  #sheet td.p { color: var(--gold); white-space: nowrap; }
-  #sheet td.p .was { color: var(--dim); font-size: 11px; }
-  #sheet td.own { color: var(--dim); text-align: right; }
-  /* the bargain. Ruled off rather than boxed — a card here would read as an
-     advertisement, and the whole point is that it is somebody talking to you. */
-  #sheet .deal { margin-top: 10px; border-top: 1px solid var(--rule); padding-top: 8px; }
-  #sheet .deal p { font-size: 13px; margin-bottom: 2px; }
-  /* gold, not the product magenta: magenta is a MARK colour at 4.0:1 and this
-     is body copy the AA check in the gate would fail it on */
-  #sheet .deal strong { color: var(--gold); }
-  #sheet .deal .btn { margin: 6px 0 0; }
-  .btn {
-    min-height: 44px; min-width: 62px; margin-left: 4px; font: inherit; font-size: 12px;
-    background: var(--paper); color: var(--ink); border: 1px solid var(--rule); cursor: pointer;
-  }
-  .btn.send { color: var(--warn); }
-  .btn.wide { width: 100%; margin: 6px 0 0; }
-  .btn.prime { background: var(--warn); color: var(--paper); border-color: var(--warn); }
-
-  /* the small window: tap a pin, a vehicle or a patrol and this hangs off the
-     fingertip with the details — never a full-screen takeover */
-  #pop {
-    position: fixed; z-index: 30; background: var(--panel);
-    border: 1px solid var(--rule); padding: 10px 12px;
-    box-shadow: 0 6px 24px rgba(0,0,0,.55); font-size: 12.5px;
-  }
-  #pop h3 { font-size: 13.5px; color: var(--warn); padding-right: 40px; }
-  #pop p { margin-top: 6px; }
-  #pop .dim { color: var(--dim); }
-  #pop .warn { color: var(--warn); }
-  #pop .x {
-    position: absolute; top: 0; right: 0; min-width: 44px; min-height: 44px;
-    background: none; border: 0; color: var(--dim); font: inherit; font-size: 16px; cursor: pointer;
-  }
-
-  .veil { position: fixed; inset: 0; z-index: 40; background: rgba(9,11,14,.93);
-    display: flex; align-items: center; justify-content: center; padding: 16px; }
-  /* `display:flex` beats the hidden attribute's display:none, so a closed
-     overlay stays a full-screen pointer trap over the map. Both games were
-     untappable until this line existed. */
-  .veil[hidden] { display: none; }
-  .card { max-width: 460px; width: 100%; max-height: 88vh; overflow-y: auto;
-    background: var(--panel); border: 1px solid var(--rule); padding: 20px 18px; }
-  .card h1 { font-size: 22px; color: var(--warn); letter-spacing: .05em; }
-  .card h2 { font-size: 16px; color: var(--warn); letter-spacing: .06em; }
-  .card p { margin-top: 10px; font-size: 13.5px; }
-  .card p.dim { color: var(--dim); font-size: 12.5px; }
-  .card .stats { color: var(--gold); font-size: 12.5px; margin-top: 12px; }
-  /* the telegraph: what is about to happen, always shown before you commit */
-  .card .tell { color: var(--warn); font-size: 13px; margin-top: 12px; }
-  .wide-card { max-width: 520px; }
-  #board {
-    display: block; width: 100%; aspect-ratio: 4 / 3; margin-top: 10px;
-    background: var(--paper); border: 1px solid var(--rule); touch-action: none;
-  }
-  /* the acting unit's panel — the mockups' bottom bar, stacked for a phone */
-  #fightUnit {
-    display: flex; gap: 10px; align-items: center;
-    margin-top: 8px; padding: 8px; border: 1px solid var(--rule);
-    background: rgba(10,13,18,0.72);
-  }
-  #fightUnit[hidden] { display: none; }
-  /* the man himself, standing, not a portrait: your side is drawn from behind
-     on the board, so a head-and-shoulders of him would be the back of a head.
-     Tall and narrow, the same sprite the board is using two inches above. */
-  #fightFace {
-    width: 34px; height: 64px; flex: 0 0 auto;
-    border: 1px solid var(--rule); background: #0b0e13;
-  }
-  #fightUnit .who { flex: 1 1 auto; min-width: 0; }
-  #fightUnit .nm { font-size: 14px; color: var(--ink); letter-spacing: 0.06em; }
-  #fightUnit .hp { font-size: 12px; color: var(--warn); margin-bottom: 3px; }
-  /* beads on a string rather than a smooth bar: a segment you can COUNT tells
-     you how many more hits there are, which a percentage never does */
-  #fightUnit .track { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
-  #fightUnit .track span { font-size: 9px; color: var(--dim); width: 40px; letter-spacing: 0.1em; }
-  #fightUnit .track i { display: flex; gap: 2px; }
-  #fightUnit .track b { width: 10px; height: 7px; display: block; }
-
-  /* THE ROOM, laid out like the targets: the picture is the screen, the person
-     talks over the bottom of it, and the things you can do are a ROW of
-     equal-weight choices rather than a stack of sentences. */
-  .room-card { padding: 0; overflow: hidden; }
-  .room-card .scene { position: relative; background: var(--paper); }
-  #roomArt { display: block; width: 100%; aspect-ratio: 16 / 9; }
-  #roomArt[hidden] { display: none; }
-  /* the line, over the foot of the picture — a person speaking in their own
-     room, not a caption underneath a photograph of it */
-  .room-card .say {
-    position: absolute; left: 0; right: 0; bottom: 0;
-    display: flex; gap: 10px; align-items: flex-end;
-    padding: 10px; background: linear-gradient(rgba(9,12,16,0), rgba(9,12,16,.94) 45%);
-  }
-  .room-card .say > div { flex: 1 1 auto; min-width: 0; }
-  #roomFace {
-    width: 44px; height: 44px; flex: 0 0 auto; border-radius: 50%;
-    border: 1px solid var(--rule); background: #0b0e13;
-  }
-  .room-card .nm { font-size: 13px; color: var(--gold); letter-spacing: .08em; }
-  .room-card .line { font-size: 13.5px; color: var(--ink); margin-top: 2px; }
-  .room-card .role { padding: 8px 12px 0; font-size: 12px; }
-  /* the action row. Two across on a phone, four on anything wider — the
-     targets put BUY INFO / RISK / LEAVE side by side, and a choice you scroll
-     to read is a choice you did not really weigh. */
-  #roomBtns {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 8px; padding: 10px 12px 12px;
-  }
-  #roomBtns .btn { margin: 0; width: 100%; padding: 8px 6px; line-height: 1.3; }
-  #roomBtns .btn b { display: block; font-weight: normal; font-size: 12.5px; }
-  #roomBtns .btn i { display: block; font-style: normal; font-size: 11px; color: var(--gold); margin-top: 2px; }
-  #roomBtns .btn.prime i { color: var(--paper); }
-  #roomBtns .said { grid-column: 1 / -1; font-size: 12px; color: var(--dim); margin: 0; }
-
-  #fightLog { font-size: 12px; color: var(--dim); margin-top: 8px; min-height: 3.4em; }
-  #fightLog p { margin-top: 2px; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111722">
+  <meta name="description" content="Piritori to Eden — an adult narrative strategy game set in a fictionalised Kallio, Helsinki, in 2003.">
+  <title>Piritori → Eden · Era I</title>
+  <link rel="stylesheet" href="v3.css?v=1">
 </head>
 <body>
-  <div id="hud">
-    <span class="cash">cash <b id="cash"></b></span>
-    <span class="debt">debt <b id="debt"></b></span>
-    <span>exit <b id="fund"></b></span>
-    <span id="heat"></span>
-    <span class="sp">
-      <span id="day"></span><span id="lines"></span>
-      <button class="ctl" id="pause" aria-label="Pause">❚❚</button>
-      <button class="ctl" id="speed" aria-label="Speed">×1</button>
-    </span>
-  </div>
-
-  <canvas id="map" aria-label="Kallio as a moving diagram. Drag between two stops to draw a line; tap a stop to trade; tap a vehicle, a pin or a patrol for its details."></canvas>
-  <div id="pop" hidden role="dialog" aria-label="Details">
-    <button class="x" type="button" id="popClose" aria-label="Close">✕</button>
-    <div id="popBody"></div>
-  </div>
-  <div id="feed" aria-live="polite"></div>
-  <div id="sheet"></div>
-
-  <div class="veil" id="title">
-    <div class="card">
-      <h1>PIRITORI → EDEN</h1>
-      <p class="dim">Kallio, seven compressed days. A fiction.</p>
-      <p>The city already moves. People go to work, to school, to the shop, and home again — and they are the only cover you have.</p>
-      <p>Draw the lines they ride. Then put something else on the same lines, at the same capacity, and hope it lands while the price is still good.</p>
-      <p class="dim">Drag stop to stop to draw a line. Tap a stop to trade. Heat belongs to the line, not to you — watch which one starts to have a shape.</p>
-      <button class="btn prime wide" id="play">BEGIN</button>
-    </div>
-  </div>
-
-  <div class="veil" id="choice" hidden>
-    <div class="card">
-      <h2>KARHUPUISTO</h2>
-      <p id="choiceText"></p>
-      <div id="choiceBtns"></div>
-    </div>
-  </div>
-
-  <div class="veil" id="fight" hidden>
-    <div class="card wide-card">
-      <h2 id="fightWho"></h2>
-      <p class="stats" id="fightRound"></p>
-      <canvas id="board" aria-label="The fight, seen from above and to one side. Three rows a side: front, middle, back. Arm a weapon, then tap a ringed body."></canvas>
-      <!-- Whoever is acting, from the final targets: a portrait, a name, the
-           heart, and the two tracks NAMED. Two bars is the whole design — a
-           unit whose lower bar is nearly gone is one fright from walking — and
-           until now they were 3px slivers over a body's head. -->
-      <div id="fightUnit" hidden>
-        <canvas id="fightFace" width="96" height="180" aria-hidden="true"></canvas>
-        <div class="who">
-          <p class="nm" id="fuName"></p>
-          <p class="hp" id="fuHp"></p>
-          <div class="track"><span>GUARD</span><i id="fuGuard"></i></div>
-          <div class="track"><span>NERVE</span><i id="fuNerve"></i></div>
-        </div>
+  <div id="game" class="game-shell" data-mode="route">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <p class="eyebrow" id="eraLabel">2003 · AATAMI · ERA I</p>
+        <h1>PIRITORI <span aria-hidden="true">→</span> EDEN</h1>
       </div>
-      <div id="fightLog"></div>
-      <p class="tell" id="fightTell"></p>
-      <div id="fightBtns"></div>
-    </div>
-  </div>
-
-  <!-- A LOCATION YOU STAND IN. From the owner's targets: the interior, the
-       person, one line they say, and two or three things you can do about it.
-       Everything in here already existed and was scattered — the bargain was a
-       row at the bottom of a price table, and a contact was two lines in a
-       tooltip. -->
-  <div class="veil" id="room" hidden>
-    <div class="card wide-card room-card">
-      <div class="scene">
-        <canvas id="roomArt" aria-hidden="true"></canvas>
-        <div class="say">
-          <canvas id="roomFace" width="96" height="96" aria-hidden="true"></canvas>
-          <div>
-            <p class="nm" id="roomWho"></p>
-            <p class="line" id="roomLine"></p>
-          </div>
-        </div>
+      <div class="time-card" aria-live="polite">
+        <span id="blockLabel">DAY 1 · DAY</span>
+        <small>VERTICAL SLICE · v3</small>
       </div>
-      <p class="dim role" id="roomRole"></p>
-      <div id="roomBtns"></div>
-    </div>
+      <dl class="resource-strip" aria-label="Campaign resources">
+        <div><dt>€</dt><dd id="cashValue">160</dd></div>
+        <div><dt>mk</dt><dd id="markkaValue">300</dd></div>
+        <div><dt>DEBT</dt><dd id="debtValue">350</dd></div>
+        <div><dt>INTEL</dt><dd id="intelValue">0</dd></div>
+      </dl>
+      <div class="top-actions">
+        <button class="paper-button icon-button" id="localeButton" type="button" aria-label="Change language">EN</button>
+        <button class="paper-button icon-button" id="resetButton" type="button" aria-label="Reset campaign">↺</button>
+      </div>
+    </header>
+
+    <main id="modeRoot" class="mode-root" tabindex="-1"></main>
+
+    <nav class="mode-nav" id="modeNav" aria-label="Game modes">
+      <button type="button" data-mode-target="route"><span class="nav-icon">⌁</span><span>ROUTE</span></button>
+      <button type="button" data-mode-target="encounter"><span class="nav-icon">◉</span><span>ENCOUNTER</span></button>
+      <button type="button" data-mode-target="ledger"><span class="nav-icon">▤</span><span>LEDGER</span></button>
+      <button type="button" data-mode-target="battle"><span class="nav-icon">◆</span><span>BATTLE</span></button>
+      <button type="button" data-mode-target="news"><span class="nav-icon">▣</span><span>NEWS</span></button>
+    </nav>
   </div>
 
-  <div class="veil" id="settle" hidden>
-    <div class="card">
-      <h2 id="settleDay"></h2>
-      <p class="stats" id="settleFigs"></p>
-      <p class="dim">Interest has advanced. Pay it down, or put profit somewhere it cannot be spent.</p>
-      <button class="btn wide" id="sPay">PAY WHAT YOU CAN</button>
-      <button class="btn wide" id="sBank">BANK HALF TOWARD THE WAY OUT</button>
-      <button class="btn prime wide" id="sGo">NEXT DAY</button>
+  <div class="splash" id="splash" role="dialog" aria-modal="true" aria-labelledby="splashTitle">
+    <div class="splash-map" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i>
     </div>
+    <section class="splash-card">
+      <p class="eyebrow">KALLIO · HELSINKI · 2003</p>
+      <h2 id="splashTitle">PIRITORI <span>→</span> EDEN</h2>
+      <p class="splash-lede">Seven days. One square, one debt, and a city already moving without you.</p>
+      <p>This is an adult fictional strategy story about the drug trade, violence, social harm and family consequence. Real public geography grounds the setting; criminal people and operations are composites.</p>
+      <div class="splash-actions">
+        <button class="paper-button primary" id="beginButton" type="button">BEGIN ERA I</button>
+        <button class="paper-button" id="resumeButton" type="button" hidden>RESUME DAY</button>
+      </div>
+    </section>
   </div>
 
-  <div class="veil" id="over" hidden>
-    <div class="card">
-      <h1 id="overTitle"></h1>
-      <div id="overLines"></div>
-      <p class="stats" id="overStats"></p>
-      <button class="btn prime wide" id="again">AGAIN</button>
-    </div>
-  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-<script type="module" src="js/main.js?v=2"></script>
-<!-- the way home: HOME top-left + hold Start/Back on a pad -->
-<script type="module" src="../hub/shell.js?v=17"></script>
+  <script type="module" src="js/v3/app.js?v=1"></script>
+  <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

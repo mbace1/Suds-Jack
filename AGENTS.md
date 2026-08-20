@@ -98,6 +98,10 @@ CI runs these on every push (`.github/workflows/gates.yml`). Locally:
 node flow-core/test/contract.mjs                          # neutral core
 node piritori/map/validate-map.mjs                       # Era I graph and sites
 node piritori/content/validate-slice.mjs                 # authored slice + art register
+node piritori/test/v3-contract.mjs                       # v3 shell and canon-facing invariants
+node piritori/test/v3-state.mjs                          # authored choices, economy and ending
+node piritori/test/v3-battle.mjs                         # formation actions and outcomes
+NODE_PATH=$(npm root -g) node piritori/test/v3-playthrough.cjs # map-first opening + five live modes
 node piritori/test/fight.mjs                              # rank fights
 node piritori/test/market.mjs                             # goods, deals, cut bags
 NODE_PATH=$(npm root -g) node flow-core/test/smoke.cjs    # both entry points
@@ -109,9 +113,9 @@ node toko/test/brand.cjs                                  # brand geometry + ink
 NODE_PATH=$(npm root -g) node test/hub-smoke.cjs          # the arcade
 ```
 
-Only the first three are wired into CI so far. Add a job per project as each is
-verified green, rather than turning everything on at once and teaching people
-to ignore red.
+The Piritori lane above is wired into CI. Add a job per other project only as
+it is verified green, rather than turning everything on at once and teaching
+people to ignore red.
 
 ## 6. Asking for a review
 

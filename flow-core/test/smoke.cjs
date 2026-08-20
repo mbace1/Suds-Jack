@@ -1,7 +1,7 @@
-// Both entry points, in a real browser: do they boot, does the map paint, does
-// a drawn line carry anybody, and do the phone-shaped rules from the brief's
-// contract list hold — 44px targets, no horizontal overflow, pause not
-// breaking touch editing.
+// Toko Move remains the shared flow engine's daylight entry point. Piritori v3
+// now has its own authored-campaign browser gate in
+// piritori/test/v3-playthrough.cjs; keeping the old v2 path here would prove a
+// cabinet that no longer ships.
 const { chromium } = require('playwright');
 const http = require('http'); const fs = require('fs'); const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -25,7 +25,6 @@ s.listen(0, '127.0.0.1', async () => {
   const b = await chromium.launch();
 
   for (const [name, url, handle, startBtn] of [
-    ['piritori', '/piritori/', '__pt', '#play'],
     ['toko-move', '/toko-move/', '__tm', '#play'],
   ]) {
     console.log(`\n${name}\n`);

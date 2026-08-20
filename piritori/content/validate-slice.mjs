@@ -49,6 +49,8 @@ check(content.battles.length === 2, "slice must define exactly two authored batt
 check(content.encounters.length >= 10 && content.encounters.length <= 14, "slice must define ten to fourteen meaningful encounters");
 check(content.encounters.length === 14, "implementation baseline expects fourteen encounters");
 check(content.schedule.length === 14, "schedule must contain fourteen entries");
+check(content.schedule[0]?.encounter_id === "enc-first-purchase" && content.schedule[0]?.anchor_id === "piritori", "opening must show Piritori as the first highlighted map destination");
+check(content.schedule[1]?.encounter_id === "enc-first-sale" && content.schedule[1]?.anchor_id !== "piritori", "first purchase must lead directly to a profitable sale elsewhere");
 check(content.news.length === 1, "slice must contain one scheduled Arvo bulletin");
 check(content.endings.length >= 2, "slice must show more than one Pasila reachability state");
 
@@ -155,6 +157,13 @@ for (const bulletin of content.news) {
 check(content.news[0].documented.includes("5.94573"), "markka bulletin must preserve the fixed conversion rate");
 check(content.encounters.some((item) => item.id === "enc-first-firearm"), "first firearm must be an authored encounter");
 check(content.encounters.some((item) => item.id === "enc-first-purchase"), "first purchase must be an authored encounter");
+{
+  const buy = content.encounters.find((item) => item.id === "enc-first-purchase")?.choices.find((item) => item.id === "buy");
+  const sale = content.encounters.find((item) => item.id === "enc-first-sale")?.choices.find((item) => item.id === "complete");
+  const buyCost = Math.abs(Number(buy?.effects.find((effect) => effect.startsWith("cash:-"))?.split(":")[1] ?? 0));
+  const saleValue = Number(sale?.effects.find((effect) => effect.startsWith("cash:+"))?.split(":")[1] ?? 0);
+  check(buyCost > 0 && saleValue > buyCost, "the opening sale must visibly return more cash than the first purchase costs");
+}
 check(content.encounters.some((item) => item.id === "enc-toko-quiet-voice"), "Toko must be a recurring location encounter");
 
 const artIds = new Set();

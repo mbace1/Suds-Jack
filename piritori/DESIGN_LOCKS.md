@@ -37,6 +37,21 @@ relationship, route or battle pacing cannot support it.
 The original *Drug Wars* 30-day structure remains a pressure reference, not a
 required campaign length.
 
+### 1.3 Complete two-era run
+
+One complete Aatami-to-Kalle run targets **5–10 hours**, with **6–8 hours** as
+the centre of the tuning range. The working structure is 21 Era I days and 21
+Era II days, each using Day, Evening and Night once the seven-day slice has
+validated the loop. That is a pacing target rather than permission to pad the
+campaign: inspection, equipping and reading do not consume blocks, while
+authored missions and battles may take longer than routine market decisions.
+
+The midpoint is a hard narrative inheritance into 2024. Control moves to
+Kalle; older Aatami becomes a recurring narrative figure. Era II uses a larger
+map that retains the Kallio origin network and extends north through the rail
+corridor into Pasila. Exact public anchors and edges require their own
+map-source pass before implementation.
+
 ## 2. Location interaction grammar
 
 Location scenes use a **hybrid action vocabulary**.
@@ -159,6 +174,18 @@ Reaching Pasila remains fixed history; whether the move reads as refuge, exile
 or expansion is the player's Era I outcome.
 
 ## 7. The first purchase
+
+The opening is **map first**. The complete Era I Kallio board is visible, with
+Piritori selected and highlighted as Aatami's only live lead. The player enters
+the location from the map, buys the first abstract pack, then sees a separate
+higher-demand destination highlighted for the first sale. That sale precedes
+the first family detour so the basic buy-here / sell-there profit loop is
+understood before the narrative widens.
+
+The growth ladder is buyer → neighbourhood seller → network builder → emerging
+supplier. Price spread teaches the first step; recruited people, route capacity,
+information and recurring larger offers teach the later steps. Exact prices
+remain balance values, but the first profitable spread is not optional.
 
 Refusing the first Piritori purchase opens a **short alternate opening**. It is
 neither failure nor a permanent refusal route.

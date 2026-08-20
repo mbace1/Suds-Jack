@@ -33,11 +33,26 @@ jobs:
         with:
           node-version: '22'
 
-      # The two bare-node gates need nothing at all — no browser, no GPU, no
+      # The bare-node gates need nothing at all — no browser, no GPU, no
       # audio device — which is exactly why they are the ones worth running
       # first: they fail in seconds when they fail.
       - name: the neutral core's contract
         run: node flow-core/test/contract.mjs
+
+      - name: the Era I public map
+        run: node piritori/map/validate-map.mjs
+
+      - name: the authored seven-day slice and registered art
+        run: node piritori/content/validate-slice.mjs
+
+      - name: the v3 shell contract
+        run: node piritori/test/v3-contract.mjs
+
+      - name: the v3 campaign state
+        run: node piritori/test/v3-state.mjs
+
+      - name: the v3 formation battle
+        run: node piritori/test/v3-battle.mjs
 
       - name: the rank fights
         run: node piritori/test/fight.mjs
@@ -58,7 +73,12 @@ jobs:
           npm install --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
 
-      - name: both entry points, in a real browser
+      - name: the shared flow engine's daylight entry point
         run: node flow-core/test/smoke.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
+      - name: the Piritori v3 opening and five modes, in a real browser
+        run: node piritori/test/v3-playthrough.cjs
         env:
           NODE_PATH: ${{ github.workspace }}/node_modules

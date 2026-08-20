@@ -214,6 +214,9 @@ inheritance. The player shapes its cost and texture.
 - The vertical slice uses seven days with **Day** and **Night** action blocks.
 - The first full Era I target uses 21 days with **Day**, **Evening** and
   **Night** action blocks; campaign length is a recorded playtest gate.
+- A complete two-era run targets **5–10 hours**, centred near **6–8 hours**.
+  The working full structure is 21 Era I days and 21 Era II days with three
+  blocks per day, subject to playtest cuts rather than filler.
 - Each block changes available shops, crowds, transport, prices and mission
   risk.
 - A normal trip, encounter or mission consumes one block.
@@ -224,6 +227,19 @@ inheritance. The player shapes its cost and texture.
   feel scheduled rather than a push notification.
 
 See `DESIGN_LOCKS.md` §1 for the test rule and vertical-slice timing.
+
+### 3.5 Complete-run shape
+
+The midpoint is a hard time jump, not an endless continuation of the same
+inventory. Era I closes with Aatami reaching Pasila; Era II opens in 2024 with
+Kalle inheriting state bands, people and unresolved obligations. Older Aatami
+remains a major narrative presence but Kalle is the controlled protagonist.
+
+Era I occupies roughly the first half of a run on the detailed Kallio board.
+Era II occupies the second half on a larger board that keeps Kallio as the
+southern origin of the network and extends through Vallila and the rail
+corridor into Pasila, Tripla and surrounding districts. Exact geography is
+locked only after a dedicated sourced map pass.
 
 ---
 
@@ -516,14 +532,19 @@ information. A previous quote remains visible with its age.
 
 **LOCKED:** the high-level market is not fully open at the beginning.
 
-**PROPOSED progression:**
+**LOCKED progression:**
 
-1. Piritori first purchase exposes one local price.
-2. The first neighbourhood sale reveals a second location and price history.
-3. A small mission introduces a recruit and route capacity.
-4. Toko Slomo unlocks price ranges and information purchases.
-5. A faction relationship unlocks recurring larger offers.
-6. Territory and intel expose wholesale opportunities and competing supply.
+1. The campaign opens on the full Kallio map with Piritori highlighted; the
+   player chooses to enter the square rather than being dropped directly into
+   dialogue.
+2. Piritori first purchase exposes one local buy price and a higher-demand
+   destination elsewhere on the visible map.
+3. The first neighbourhood sale demonstrates a clear profit and reveals the
+   second location's price history.
+4. A small mission introduces a recruit and route capacity.
+5. Toko Slomo unlocks price ranges and information purchases.
+6. A faction relationship unlocks recurring larger offers.
+7. Territory and intel expose wholesale opportunities and competing supply.
 
 This lets the player learn the market through places before managing it as a
 table.
@@ -566,6 +587,24 @@ Era II creates an intentionally uncomfortable incentive:
 The system expresses a feedback loop. It does not claim that real police
 deliberately created the market.
 
+### 7.8 Scale, exposure and robbery risk
+
+The economic climb changes the kind of problem the player solves:
+
+| Network stage | Typical abstract load | Main pressure | Required readiness |
+|---|---:|---|---|
+| Street buyer | 1–2 packs | price and personal exposure | Aatami, cash and one lead |
+| Neighbourhood seller | 3–5 packs | opportunistic theft and missed demand | one runner or strong information |
+| Network builder | 6–10 packs | planned interception and faction attention | two complementary crew roles plus a route plan |
+| Supplier | wholesale contract band | coordinated robbery, retaliation and institutional pressure | three-person team, equipment, intel or negotiated protection |
+
+The bands are game abstractions, not real-world carrying guidance. Every job
+receives a readable robbery-risk band derived from value, public exposure,
+local pressure, faction grievance and information quality. Crew roles,
+equipment, route capacity, relationships and preparation reduce or redirect
+risk. Weapons can increase force readiness, but also increase lethal exposure,
+police attention and the cost of failure; they are never the only valid answer.
+
 ---
 
 ## 8. First purchase onboarding
@@ -574,6 +613,12 @@ deliberately created the market.
 
 The first purchase at Piritori introduces the game's three kinds of value:
 money, information and remembered behaviour.
+
+The first purchase and first sale are one continuous economic tutorial. After
+the purchase, the map highlights the known demand destination before inserting
+a family or faction detour. The visible margin teaches the original *Drug
+Wars* loop first; later encounters expand that loop into recruitment, routes,
+information and eventually supplier-level command.
 
 ### Initial situation
 
@@ -794,6 +839,26 @@ Mission failure moves the campaign forward. It can cause:
 - an altered later encounter.
 
 Avoid reload-dependent perfection and invisible fail states.
+
+### 11.5 Robbery and vengeance missions
+
+As loads grow, hostile crews may attempt to take stock, money or equipment.
+These events are forecast as pressure rather than hidden random punishment and
+can be answered through intel, rerouting, protection, negotiation, withdrawal
+or formation battle.
+
+The player may also initiate a high-value robbery against a faction. The Jade
+Lantern Network provides the main authored example: success can jump the
+network forward by several ordinary trades, while immediately increasing
+grievance and opening a vengeance chain. That chain can attack access, prices,
+crew loyalty, property and later missions before it becomes a direct battle.
+Returning value, paying restitution, trading information, exploiting an
+internal split or accepting a ceasefire can end it. A profitable theft is
+therefore a strategic branch, not a repeatable free-money action.
+
+The target is a fictional organisation and named individuals with different
+motives. Ethnicity never supplies combat statistics, group behaviour or a
+generic enemy class.
 
 ---
 
@@ -1091,6 +1156,13 @@ written and drawn as distinct people; ethnicity is never a gameplay trait,
 combat class or shorthand for menace. Individual characters and visual
 descriptions belong to the content and Art Bible passes.
 
+The network can be supplier, rival, robbery target, uneasy ally or long-term
+enemy depending on play. Taking one of its high-value fictional shipments pays
+well enough to alter the campaign, then creates a persistent grievance with a
+visible vengeance tier. Later retaliation reflects the particular people and
+fronts harmed rather than treating every restaurant or Chinese character as
+interchangeable.
+
 ### 14.6 Police and public institutions
 
 - **Wants:** vary by unit, person, public mandate and political context.
@@ -1215,6 +1287,21 @@ Power should broaden decisions rather than only increase numbers.
 Crew may improve, but progression primarily comes from network knowledge,
 surviving relationships and equipment. Repeating a risk-free action for generic
 experience should not be the optimal play pattern.
+
+### 16.4 Two-era capability arc
+
+The full run climbs through four readable identities in each era:
+
+1. **Buyer:** take small quoted opportunities personally.
+2. **Seller:** exploit known local demand and learn price history.
+3. **Network builder:** recruit, protect and delegate across shared routes.
+4. **Supplier:** allocate larger contracts while rivals, institutions and
+   neighbourhood consequences react.
+
+Era II does not reset Kalle to the first-bag tutorial. It reinterprets the
+inherited supplier network under 2024 scarcity, Alpha-PVP pressure, a larger
+map, stronger police capacity and family fracture. The second-half challenge
+is deciding what inherited power is for, not simply rebuilding the same bars.
 
 ---
 

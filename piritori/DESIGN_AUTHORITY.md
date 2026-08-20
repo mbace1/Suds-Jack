@@ -54,6 +54,9 @@ owns camera, focus and input behaviour.
   isometric formation battles.
 - Era I, Kallio in 2003, is the production focus. Era II, Pasila in 2024–2025,
   remains canon but phase-gated until the Era I slice works end to end.
+- A complete run spans both eras and targets five to ten hours, centred near
+  six to eight. Era I teaches the street-to-supplier climb on Kallio; Era II
+  hands the inherited network to Kalle on a larger Kallio–Pasila board.
 - The first slice begins with Aatami's small purchase at Piritori and expands
   through recurring people and places rather than opening a complete market
   table immediately.
@@ -69,6 +72,10 @@ owns camera, focus and input behaviour.
 - The first playable content package is the validated seven-day spine in
   `content/era1-slice-v1.json`: fourteen blocks and encounters, four mission
   families, six crew, five offers, one 2v2, one 3v3 and one sourced bulletin.
+- Larger loads create forecast robbery risk and require greater crew,
+  equipment, information or faction protection. Robbing a rival network can
+  accelerate profit but creates persistent grievance and authored vengeance;
+  it is never a consequence-free optimal loop.
 
 ## Active visual baseline
 

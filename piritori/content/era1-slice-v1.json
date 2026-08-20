@@ -448,7 +448,7 @@
       "opening": "A seller keeps the small bag in his pocket. The tram unloads twice while Aatami watches who stays.",
       "inspectables": ["seller's wet cuff", "same watcher after two trams", "price written on torn card"],
       "choices": [
-        {"id": "buy", "label": "Buy one pack — €45", "requirements": ["cash>=45"], "forecast": "Gain stock and the Siltasaari lead; become a known customer.", "effects": ["cash:-45", "stock:piri:+1", "reveal:mission-paper-bag", "flag:first-purchase-made"]},
+        {"id": "buy", "label": "Buy one pack — €45", "requirements": ["cash>=45"], "forecast": "Gain stock and the €68 Siltasaari demand lead; become a known customer.", "effects": ["cash:-45", "stock:piri:+1", "reveal:mission-paper-bag", "reveal:enc-first-sale", "flag:first-purchase-made"]},
         {"id": "ask-control", "label": "Ask who keeps watching", "requirements": [], "forecast": "Keep cash, gain a faction lead, spend the block.", "effects": ["intel:+1", "flag:asked-before-buying", "reveal:enc-jaska-receipt"]},
         {"id": "walk", "label": "Walk away", "requirements": [], "forecast": "Preserve cash. The offer returns at night with a colder reception.", "effects": ["flag:first-purchase-deferred", "relationship:piritori_independents:-1"]}
       ],
@@ -456,8 +456,8 @@
     },
     {
       "id": "enc-jaska-receipt",
-      "day": 1,
-      "block": "night",
+      "day": 2,
+      "block": "day",
       "site_id": "jaska_studio",
       "participants": ["aatami", "jaska"],
       "source_status": "fiction",
@@ -471,8 +471,8 @@
     },
     {
       "id": "enc-first-sale",
-      "day": 2,
-      "block": "day",
+      "day": 1,
+      "block": "night",
       "site_id": "staffed_bank",
       "anchor_override_id": "siltasaari",
       "participants": ["aatami", "buyer-leena"],
@@ -666,8 +666,8 @@
   ],
   "schedule": [
     {"day": 1, "block": "day", "encounter_id": "enc-first-purchase", "anchor_id": "piritori"},
-    {"day": 1, "block": "night", "encounter_id": "enc-jaska-receipt", "anchor_id": "torkkelinmaki"},
-    {"day": 2, "block": "day", "encounter_id": "enc-first-sale", "anchor_id": "siltasaari"},
+    {"day": 1, "block": "night", "encounter_id": "enc-first-sale", "anchor_id": "siltasaari"},
+    {"day": 2, "block": "day", "encounter_id": "enc-jaska-receipt", "anchor_id": "torkkelinmaki"},
     {"day": 2, "block": "night", "encounter_id": "enc-mira-at-tram-stop", "anchor_id": "harju"},
     {"day": 3, "block": "day", "encounter_id": "enc-bank-counter", "anchor_id": "siltasaari", "news_before": "news-markka-afterlife"},
     {"day": 3, "block": "night", "encounter_id": "enc-toko-quiet-voice", "anchor_id": "vaasankatu"},
