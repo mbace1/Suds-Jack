@@ -30,6 +30,34 @@ let mountedSite = -1;
 let loader = null;
 const textures = new Map();
 
+// ---- DRESSING AS DATA ---------------------------------------------------
+// Every prop in worlds 3 and 4 used to exist only as a line of code that ran
+// once. That is why nothing could be "placed": there was no object anywhere
+// to select, and a nudge meant editing a number in a function body and
+// reloading. The composites below (`timberFrame`, `crateStack`, `gantry`, …)
+// all bottom out in exactly THREE leaves — `panel`, `disc`, `cutout` — so
+// recording those three captures the whole scene with nothing left over.
+//
+// The capture is not a re-authoring and cannot drift from what ships: the
+// leaves push a row on the way past, so the recording IS the build. Rows are
+// replayed through the same three functions, which is what makes the data
+// path and the code path identical by construction rather than by review.
+//
+// Same seam as every other asset here — `getModel(name, buildPlaceholder)`,
+// data if present and code if not. A site with no JSON still builds from its
+// builder, so this migration cannot take a level away.
+let REC = null;
+let rowId = 0;
+const rec = (row) => { if (REC) REC.push({ id: `d${++rowId}`, ...row }); };
+// While replaying, the id of the row currently being drawn. Stamped onto the
+// mesh so the inspector can go from "the thing I clicked" back to "the line
+// that made it" — without which a drag can be seen but never saved. It has to
+// be a stamp rather than an index because `cutout` finishes ASYNCHRONOUSLY:
+// meshes arrive in texture-load order, not row order.
+let TAG = null;
+const tagged = (mesh) => { if (TAG) mesh.userData.row = TAG; return mesh; };
+const hex = (c) => '#' + c.toString(16).padStart(6, '0');
+
 function disposeGroup(scene, root) {
   if (!root) return;
   scene.remove(root);
@@ -52,7 +80,9 @@ function texture(THREE, key, done) {
 }
 
 function cutout(THREE, root, key, x, y, h, z = -0.85, opacity = 1, flip = false) {
-  texture(THREE, key, (tex) => {
+  rec({ k: 'cutout', a: key, x, y, h, z, o: opacity, f: flip });
+  const id = TAG;                      // captured NOW — TAG has moved on by
+  texture(THREE, key, (tex) => {       // the time this callback runs
     if (!root.parent) return; // level changed while the image loaded
     const iw = tex.image?.naturalWidth || tex.image?.width || 1;
     const ih = tex.image?.naturalHeight || tex.image?.height || 1;
@@ -64,29 +94,32 @@ function cutout(THREE, root, key, x, y, h, z = -0.85, opacity = 1, flip = false)
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     mesh.position.set(x, y, z);
     if (flip) mesh.scale.x = -1;
+    if (id) mesh.userData.row = id;
     root.add(mesh);
   });
 }
 
 function panel(THREE, root, x, y, w, h, color, z = -1.1, opacity = 1) {
+  rec({ k: 'panel', x, y, w, h, c: hex(color), z, o: opacity });
   const mat = new THREE.MeshBasicMaterial({
     color, transparent: opacity < 1, opacity, depthWrite: false,
     side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
   mesh.position.set(x, y, z);
-  root.add(mesh);
+  root.add(tagged(mesh));
   return mesh;
 }
 
 function disc(THREE, root, x, y, r, color, z = -1.0, opacity = 1) {
+  rec({ k: 'disc', x, y, r, c: hex(color), z, o: opacity });
   const mat = new THREE.MeshBasicMaterial({
     color, transparent: opacity < 1, opacity, depthWrite: false,
     side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(new THREE.CircleGeometry(r, 18), mat);
   mesh.position.set(x, y, z);
-  root.add(mesh);
+  root.add(tagged(mesh));
   return mesh;
 }
 
@@ -344,6 +377,81 @@ function eveningSite(THREE, scene, site) {
   return root;
 }
 
+// ---- the replayer, and the capture the tool drives ----------------------
+// `replay` is the only thing the runtime needs once a site has JSON. It takes
+// the same three leaves the builders take, so a row cannot describe anything
+// the code could not already draw — which is the point: the format is not a
+// new vocabulary, it is the existing one written down.
+function replay(THREE, scene, site, rows) {
+  const root = new THREE.Group();
+  root.name = `world34-dressing-${site + 1}`;
+  scene.add(root);
+  for (const r of rows) {
+    TAG = r.id;
+    if (r.k === 'panel') panel(THREE, root, r.x, r.y, r.w, r.h, +('0x' + r.c.slice(1)), r.z, r.o);
+    else if (r.k === 'disc') disc(THREE, root, r.x, r.y, r.r, +('0x' + r.c.slice(1)), r.z, r.o);
+    else if (r.k === 'cutout') cutout(THREE, root, r.a, r.x, r.y, r.h, r.z, r.o, r.f);
+  }
+  TAG = null;
+  // the rows travel WITH the group, so the inspector can select a mesh and
+  // find the row that made it without a second index to keep in step
+  root.userData.rows = rows;
+  return root;
+}
+
+// Drive from `art-src/tools/capture-dressing.mjs`. Builds into a throwaway
+// group purely to make the builder run; what comes back is the recording.
+// The two build paths, exported side by side ON PURPOSE so a test can run
+// both in ONE page and compare the meshes. That is the only honest proof that
+// the sheet and the builder agree — two page loads settle the camera and the
+// idle animation differently, and comparing screenshots of them reported a
+// 93% pixel difference on a scene that was in fact identical.
+export const __replay = replay;
+export function __build(THREE, scene, site) {
+  return site <= 8 ? forestSite(THREE, scene, site) : eveningSite(THREE, scene, site);
+}
+
+export function captureSite(THREE, site) {
+  const spare = new THREE.Group();
+  spare.userData.captureOnly = true;
+  const scene = new THREE.Scene();
+  scene.add(spare);
+  REC = []; rowId = 0;
+  try {
+    if (site >= 6 && site <= 8) forestSite(THREE, scene, site);
+    else if (site >= 9 && site <= 11) eveningSite(THREE, scene, site);
+    return REC;
+  } finally { REC = null; }
+}
+
+// A site's rows, or null for "nothing authored, use the builder". Fetched
+// once and remembered — a level change must not cost a round trip.
+const sheets = new Map();
+async function rowsFor(site) {
+  if (sheets.has(site)) return sheets.get(site);
+  let rows = null;
+  try {
+    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=38`, import.meta.url);
+    const res = await fetch(url);
+    if (res.ok) {
+      const j = await res.json();
+      if (Array.isArray(j?.rows) && j.rows.length) rows = j.rows;
+    }
+  } catch { /* no sheet is not an error — it is the seam working */ }
+  sheets.set(site, rows);
+  return rows;
+}
+
+// Live-editing hook for the inspector: hand back replaced rows and rebuild
+// this site from them without a reload.
+export function applyRows(site, rows) {
+  sheets.set(site, rows);
+  if (site === mountedSite) mountedSite = -1;
+}
+export function currentRows() {
+  return mounted?.userData?.rows || null;
+}
+
 function tick() {
   const e = window.__eeri;
   if (!e?.THREE || !e?.scene || typeof e.site !== 'function') {
@@ -357,8 +465,19 @@ function tick() {
     mounted = null;
     mountedSite = site;
 
-    if (site >= 6 && site <= 8) mounted = forestSite(e.THREE, e.scene, site);
-    else if (site >= 9 && site <= 11) mounted = eveningSite(e.THREE, e.scene, site);
+    if (site >= 6 && site <= 11) {
+      const want = site;
+      // DATA IF PRESENT, CODE IF NOT. The await is why the site is re-checked
+      // on the way back: a level change during the fetch would otherwise mount
+      // the room you just left on top of the one you are now standing in.
+      rowsFor(site).then((rows) => {
+        if (mountedSite !== want || mounted) return;
+        mounted = rows
+          ? replay(e.THREE, e.scene, want, rows)
+          : (want <= 8 ? forestSite(e.THREE, e.scene, want)
+                       : eveningSite(e.THREE, e.scene, want));
+      });
+    }
   }
   requestAnimationFrame(tick);
 }

@@ -1,5 +1,71 @@
 # EERI — versions
 
+## v15.33 — 2026-08-20 — worlds 3 and 4 stop being code and become data
+
+**Step 2 of the level editor, and it is the step that makes step 1 mean
+something.** The inspector could already pick a prop and drag it. It could not
+KEEP the move, because in worlds 3 and 4 a prop was not an object anywhere —
+it was a line of code that ran once. `timberFrame(THREE, root, 15, 4.1, 6.0,
+5.2, -0.84)`. Nudging it meant editing a number in a function body and
+reloading, which is why those worlds read as things dropped near each other
+rather than composed.
+
+**613 rows across the six sites are now written down** in
+`assets/dressing/site-N.json`, and the runtime prefers them: the same seam
+every asset here uses, `getModel(name, buildPlaceholder)` — data if present,
+code if not. A site with no sheet still builds from its builder, so this
+migration cannot take a level away.
+
+**The migration is a recording, not a re-authoring, and that is the whole
+trick.** Fourteen composite functions (`timberFrame`, `crateStack`, `gantry`,
+`loadingDock`, `rootPocket`, …) all bottom out in exactly THREE leaves —
+`panel`, `disc`, `cutout`. Those three now push a row on the way past, so what
+`art-src/tools/capture-dressing.mjs` writes out is not a transcription of the
+code, it IS the code's output. Replaying rows through the same three functions
+rebuilds the identical scene by construction rather than by review. Hand-
+porting 73 call sites would have been the version of this that loses the look.
+
+**The proof, and the ruler that had to be thrown away to get it.** First
+attempt rendered each site twice — sheet, then builder — and diffed the
+pixels. It reported up to **93.6% of pixels differing on a scene that was in
+fact identical**: two page loads settle the follow camera and the idle
+animation differently, so the ruler was measuring the kid breathing. Compared
+as GEOMETRY in one page — position, size, colour, opacity, mapped-or-flat —
+all six sites come back **0 meshes differing**, 606 meshes. That is now a
+smoke check, because the two paths will drift the moment someone edits a
+builder without re-running the capture.
+
+**Every replayed mesh carries the id of the row that drew it**, which is the
+link the editor turns on: pick a prop, drag it, and the row moves with it, so
+SAVE writes what is on screen. It has to be a stamp rather than an index
+because `cutout` finishes ASYNCHRONOUSLY — meshes arrive in texture-load
+order, not row order.
+
+**Saving is honest about what it can do.** A browser cannot write into the
+repo, so SAVE hands over `site-N.json` as a download and names the file it
+replaces. The step-1 gate asserted *"it does not claim to save anything yet"*
+and was right to; that claim now inverts, and what it guards inverts with it —
+the dishonest option left is a save that quietly lives in `localStorage` and
+dies with the tab, so that is what is forbidden instead.
+
+**A gate that passed while broken, caught before it shipped.** The first cut
+of `test/inspector.cjs` grabbed the first tagged mesh it found and asserted on
+that — and stayed green with the tagging for `panel` and `disc` deleted,
+because the mesh it happened to find was a `cutout`, which tags by its own
+path. Two of three leaves could have shipped untagged behind a green gate. It
+now counts **every** mesh in a sheet (87/87 on site 10) and fails at 3/87 and
+84/87 against the two ways of breaking it. Both were verified by breaking them.
+
+New: `art-src/tools/capture-dressing.mjs`, `assets/dressing/site-7..12.json`,
+`test/inspector.cjs` (8 checks). Tokens 37 -> 38.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 (three rewritten) · world34 pass ·
+inspector 8/0. **Smoke and playthrough were still running when this was
+committed and their numbers are deliberately left blank rather than written
+ahead of the runs** — smoke was 431/0 on the same checks one commit earlier,
+which is a reason to expect it to hold and not a reason to claim it. Filled in
+by the following commit.
+
 ## v15.32 — 2026-08-20 — the level inspector, and the blind loop ends
 
 **Owner direction:** *"do you think we could make a level editor that allows me

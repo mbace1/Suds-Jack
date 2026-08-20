@@ -140,6 +140,13 @@ look somewhere else.</div>
           <button type="button" data-a="reset">REVERT</button>
         </div>
         <div class="out" data-el="out">—</div>
+        <div class="hint" data-el="sheetTip">this thing is drawn from a
+dressing sheet, so a move can be KEPT. SAVE writes the whole site out —
+download it and replace assets/dressing/site-N.json.</div>
+        <div class="row" data-el="sheetRow">
+          <button type="button" data-a="save">SAVE SITE</button>
+          <button type="button" data-a="sheetcopy">COPY JSON</button>
+        </div>
         <div class="hint">scene groups — the fastest way to find out which
 layer a thing is on is to switch the others off</div>
         <div class="groups" data-el="groups"></div>
@@ -155,6 +162,8 @@ layer a thing is on is to switch the others off</div>
       if (a === 'copy') this.copy();
       if (a === 'hide') this.hidePicked();
       if (a === 'reset') this.revert();
+      if (a === 'save') this.saveSheet(false);
+      if (a === 'sheetcopy') this.saveSheet(true);
     });
     for (const k of ['x', 'y', 'z']) {
       this.q(k).addEventListener('input', () => this.applyFields());
@@ -275,6 +284,7 @@ layer a thing is on is to switch the others off</div>
     const parent = this.picked.parent;
     const local = parent ? parent.worldToLocal(p.clone()) : p;
     this.picked.position.set(local.x, local.y, this.picked.position.z);
+    this.syncRow();
     this.readout();
   }
 
@@ -289,6 +299,7 @@ layer a thing is on is to switch the others off</div>
     e.preventDefault();
     this.picked.position.x += d[0];
     this.picked.position.y += d[1];
+    this.syncRow();
     this.readout();
   }
 
@@ -314,9 +325,37 @@ layer a thing is on is to switch the others off</div>
     this.readout();
   }
 
+  // THE ROW BEHIND THE THING YOU CLICKED. Worlds 3 and 4 are drawn from
+  // `assets/dressing/site-N.json`, and every replayed mesh carries its row id.
+  // Without this the inspector can move a prop and the move dies on reload —
+  // which is the whole difference between a viewer and an editor.
+  rowOf(o) {
+    if (!o?.userData?.row) return null;
+    for (let n = o; n; n = n.parent) {
+      const rows = n.userData?.rows;
+      if (rows) return { rows, row: rows.find((r) => r.id === o.userData.row), group: n };
+    }
+    return null;
+  }
+
+  // Push the mesh's CURRENT position back into its row. Called on every drag
+  // and every field edit, so what SAVE writes is what is on screen.
+  syncRow() {
+    const found = this.rowOf(this.picked);
+    if (!found?.row) return;
+    const p = this.picked.position;
+    found.row.x = +p.x.toFixed(3);
+    found.row.y = +p.y.toFixed(3);
+    found.row.z = +p.z.toFixed(3);
+  }
+
   readout() {
     const o = this.picked;
     const set = (k, v) => { this.q(k).value = v; };
+    const found = this.rowOf(o);
+    // the sheet controls are only honest when the selection HAS a row
+    this.q('sheetRow').style.display = found?.row ? '' : 'none';
+    this.q('sheetTip').style.display = found?.row ? '' : 'none';
     if (!o) {
       this.q('name').textContent = '—'; this.q('grp').textContent = '—';
       this.q('size').textContent = '—'; this.q('out').textContent = '—';
@@ -348,8 +387,38 @@ layer a thing is on is to switch the others off</div>
     const world = new A.THREE.Vector3(v('x'), v('y'), v('z'));
     const local = o.parent ? o.parent.worldToLocal(world.clone()) : world;
     o.position.copy(local);
+    this.syncRow();
     if (this.box) this.box.box.setFromObject(o);
     this.q('out').textContent = this.q('out').textContent;
+  }
+
+  // The site as it stands, as the file the game reads. The dev page cannot
+  // write into the repo — it is a browser — so this offers both routes and
+  // says which file to replace rather than implying it saved itself.
+  saveSheet(toClipboard) {
+    const found = this.rowOf(this.picked);
+    const A = this.api();
+    if (!found || !A) return;
+    const site = (A.site?.() ?? 0) + 1;
+    const body = JSON.stringify({ v: 1, site, rows: found.rows }, null, 1) + '\n';
+    const win = this.host.ownerDocument.defaultView;
+    const flash = (sel, word) => {
+      const b = this.el.querySelector(`[data-a="${sel}"]`);
+      const was = b.textContent; b.textContent = word;
+      setTimeout(() => { b.textContent = was; }, 1200);
+    };
+    if (toClipboard) {
+      win.navigator.clipboard?.writeText(body);
+      flash('sheetcopy', 'COPIED');
+      return;
+    }
+    const blob = new win.Blob([body], { type: 'application/json' });
+    const url = win.URL.createObjectURL(blob);
+    const a = this.host.ownerDocument.createElement('a');
+    a.href = url; a.download = `site-${site}.json`;
+    this.host.appendChild(a); a.click(); a.remove();
+    setTimeout(() => win.URL.revokeObjectURL(url), 4000);
+    flash('save', `site-${site}.json`);
   }
 
   copy() {
@@ -365,6 +434,7 @@ layer a thing is on is to switch the others off</div>
   revert() {
     const o = this.picked; if (!o?.userData.__inspHome) return;
     o.position.copy(o.userData.__inspHome);
+    this.syncRow();
     this.readout();
   }
 

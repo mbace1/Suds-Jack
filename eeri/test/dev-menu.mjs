@@ -117,11 +117,25 @@ console.log('\nthe inspector is reached from the game, without touching it');
     !/inspector/i.test(read('index.html')));
   ok('the inspector reaches the menu by watching for it instead',
     /MutationObserver/.test(insp) && /devtools/.test(insp));
-  // It is an INSPECTOR at step 1, not yet an editor: it may move things in the
-  // running scene, and it may not pretend to persist them. A Save button that
-  // writes nowhere is worse than none.
-  ok('it does not claim to save anything yet',
-    !/localStorage|fetch\(|download/.test(insp));
+  // AT STEP 1 THIS CHECK READ "it does not claim to save anything yet", and
+  // it was right: the inspector could move things in the running scene and
+  // nothing more, so a Save button would have been a lie and worse than no
+  // button. Step 2 gave worlds 3 and 4 a dressing SHEET, every replayed mesh
+  // carries the id of the row that drew it, and a move is written back into
+  // that row — so saving is now real and refusing to save would be the lie.
+  //
+  // The claim therefore inverts rather than disappearing, and what it has to
+  // guard inverts with it. A browser cannot write into the repo, so the one
+  // dishonest thing left available is a Save that quietly keeps the edit in
+  // the tab — `localStorage`, or a POST to a server that is not there — and
+  // lets a session of work die with the page. Handing over a file the user
+  // puts back themselves is the honest shape, and it is what is asserted.
+  ok('the inspector saves by handing over the file, not by pretending',
+    /download/.test(insp) && /Blob\(/.test(insp) && !/localStorage/.test(insp));
+  ok('…and it says which file the download replaces',
+    /assets\/dressing\/site-/.test(insp));
+  ok('…and the save controls are hidden when the selection has no row',
+    /sheetRow/.test(insp) && /style\.display = found\?\.row \? '' : 'none'/.test(insp));
 }
 
 console.log('\nthe pack reads the game, and never writes it');
