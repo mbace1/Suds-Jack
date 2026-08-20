@@ -9,28 +9,28 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=32';
-import { Input } from './input.js?v=32';
-import { Level, ROOMS, LAB } from './level.js?v=32';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=34';
+import { Input } from './input.js?v=34';
+import { Level, ROOMS, LAB } from './level.js?v=34';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=32';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=32';
-import { Camera } from './camera.js?v=32';
-import { buildKidModel, Kid, Player } from './kid.js?v=32';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=32';
-import { buildCraneModel, Crane } from './crane.js?v=32';
-import { Robot, SteamVent } from './robots.js?v=32';
-import { Hoist } from './hoist.js?v=32';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=32';
-import { WreckingBall } from './hazards.js?v=32';
-import { AudioKit } from './audio.js?v=32';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=32';
-import { craftMat, craftBox } from './craft.js?v=32';
-import { t as tr } from './lang.js?v=32';
-import { showIntro } from './intro.js?v=32';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=32';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=32';
+} from './pieces.js?v=34';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=34';
+import { Camera } from './camera.js?v=34';
+import { buildKidModel, Kid, Player } from './kid.js?v=34';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=34';
+import { buildCraneModel, Crane } from './crane.js?v=34';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=34';
+import { Hoist } from './hoist.js?v=34';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=34';
+import { WreckingBall } from './hazards.js?v=34';
+import { AudioKit } from './audio.js?v=34';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=34';
+import { craftMat, craftBox } from './craft.js?v=34';
+import { t as tr } from './lang.js?v=34';
+import { showIntro } from './intro.js?v=34';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=34';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=34';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -248,7 +248,13 @@ async function boot() {
 
     // the small stuff: robots patrol a span the kit guaranteed is floor,
     // vents breathe on their own clock
-    const robots = def.robots.map((r) => new Robot(group, level, r));
+    // Each robot is handed its own loaded model, or null to draw its own. The
+    // load is per ROBOT rather than per kind because a skinned mesh cannot be
+    // cloned without SkeletonUtils (not in vendor/), and two robots sharing a
+    // skeleton animate as one puppet. Parallel, and every failure resolves to
+    // null, so a missing or broken model costs a placeholder and never a level.
+    const robots = await Promise.all(def.robots.map(async (r) =>
+      new Robot(group, level, r, await loadRobotAsset(r.kind || 'skitter'))));
     // THE HOISTS: entities, because a moving floor cannot be a tile. They
     // register with the level so the player's platform pass can find them —
     // one list, filled here, rather than the player reaching into `site`.
@@ -329,13 +335,29 @@ async function boot() {
     // …and the three that are hidden. A golden bolt has to be UNMISTAKABLY
     // not a bolt at 32 px (DESIGN §6.3), so it is a different SILHOUETTE
     // rather than a bigger one: a ring around a star, not a fatter nut.
-    const golden = def.golden.map(([row, col], gi) => {
+    // Through the seam, exactly like `bolt` above and for the same reason: the
+    // model existed, was cut, was catalogued — and nothing ever asked for it,
+    // so it could not load under any circumstances. The placeholder builder
+    // returns `{root}` because that is the contract, and getting it wrong is
+    // what crashed the bolt path on whichever branch was not exercised.
+    const goldModel = (await getModel('token_bolt', () => {
       const g = new THREE.Group();
       const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0),
         craftMat(PAL.MACHINE, 'balsa', { transparent: true }));
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 6, 16),
         craftMat(PAL.MACHINE_DK, 'balsa', { transparent: true }));
       g.add(core, ring);
+      return { root: g };
+    })).root;
+    const golden = def.golden.map(([row, col], gi) => {
+      const g = goldModel.clone(true);
+      // the collect pop fades it, and a material cloned off a GLB is OPAQUE —
+      // the same trap the bolts hit one line of code above this one
+      g.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone();
+        o.material.transparent = true;
+      });
       g.position.set(col + 0.5, (level.h - 1 - row) + 0.5, 0);
       g.baseY = g.position.y; g.phase = gi * 1.4; g.state = 'up'; g.popT = 0;
       group.add(g);
@@ -528,10 +550,37 @@ async function boot() {
     document.body.appendChild(el);
   }
 
+  // ---- THE VEIL --------------------------------------------------------
+  // Down, swap, up. `on` is the only argument because a level change is the
+  // only thing that uses it, and the two durations differ on purpose: going
+  // dark should be quicker than coming back, so the cut feels like an
+  // ending and the new room feels like an arrival.
+  //
+  // It resolves on a TIMER rather than on `transitionend`. That event never
+  // fires when the value does not actually change — a second call while the
+  // veil is already down, a browser that folds a 0ms transition away — and a
+  // promise that never settles here means a black screen forever, which is
+  // the one failure this must not have. Under `prefers-reduced-motion` both
+  // times are 0: the same path, run instantly, rather than a branch that
+  // skips the step that brings the lights back.
+  const FADE = REDUCED ? { out: 0, in: 0 } : { out: 260, in: 420 };
+  function veil(on) {
+    const el = document.getElementById('veil');
+    const ms = on ? FADE.out : FADE.in;
+    if (el) {
+      el.style.transitionDuration = `${ms}ms`;
+      el.classList.toggle('on', on);
+    }
+    return new Promise((res) => setTimeout(res, ms));
+  }
+
   async function goSite(i) {
     transitioning = true;
     banner(`${site.def.name}  ⬡ ${collected}/${site.def.bolts.length}  ✦ ${goldenGot}/${site.def.golden.length}`);
     audio.mount();
+    // the lights go down BEFORE the old room is torn out, so the tear-out
+    // and every model still in flight happen where nobody can see them
+    await veil(true);
     const old = site;
     site = await buildSite(i);
     siteIndex = i;
@@ -569,6 +618,11 @@ async function boot() {
     cam.setSite(site.def);
     cam.cut(player.x, player.y + 3);
     setTimeout(() => document.getElementById('banner')?.remove(), 1400);
+    // …and the lights come up on the room already built and already framed.
+    // `transitioning` is only cleared after that, because it is what the
+    // flag, the pause menu and the gate all read to mean "the room change
+    // is finished" — clearing it early would let a press land in the dark.
+    await veil(false);
     transitioning = false;
   }
 
@@ -672,10 +726,12 @@ async function boot() {
       tris: () => renderer.info.render.triangles,
       // the 2D contract, computed rather than written down twice — the gate
       // checks assets/README.md (what an artist paints to) against this
+      // Derived from layers.js's own layerPx() rather than recomputed here:
+      // the gate compares this against assets/README.md, so if it did its own
+      // arithmetic the two could agree with each other and both be wrong
+      // about what the loader actually wants.
       layerContract: () => Object.fromEntries(Object.entries(LAYER_RECTS).map(([k, r]) => [k, {
-        ...r,
-        pxW: Math.min(4096, Math.round((r.x1 - r.x0) * PPU)),
-        pxH: Math.round((r.y1 - r.y0) * PPU),
+        ...r, ...layerPx(k),
       }])),
       // where the camera actually is, so "it reframes" is testable
       camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
@@ -1063,7 +1119,13 @@ async function boot() {
         g.popT += dt / 0.4;
         g.rotation.y += dt * 9;
         g.scale.setScalar(1 + g.popT * 0.9);
-        for (const ch of g.children) ch.material.opacity = 1 - g.popT;
+        // TRAVERSE, do not walk `children`. The code-drawn golden was a Group
+        // with exactly two Mesh children, so indexing straight into them
+        // worked; a GLB's root is a Group of Groups and `ch.material` is
+        // undefined, which threw the moment a golden bolt was collected. The
+        // ordinary bolts twenty lines up already do it this way — same shape
+        // of assumption as the checkpoint lamp, and the same fix.
+        g.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - g.popT; });
         if (g.popT >= 1) { g.state = 'gone'; g.visible = false; }
       }
     }

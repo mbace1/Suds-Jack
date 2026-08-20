@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=32';
+import { PAL } from './palette.js?v=34';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -107,7 +107,7 @@ export async function loadManifest() {
   // token never learns the new one exists and keeps the old art forever,
   // with every asset URL inside it still perfectly correct. This shipped at
   // `?v=1` for eleven versions. The smoke gate now asserts the two agree.
-  const res = await fetch(new URL('manifest.json?v=26', BASE));
+  const res = await fetch(new URL('manifest.json?v=31', BASE));
   manifest = await res.json();
   return manifest;
 }
@@ -233,14 +233,33 @@ export function uiAsset(name) {
   return new URL(entry.file + '?v=' + manifest.v, BASE).href;
 }
 
+// Returns an ARRAY of textures, left to right across the lane's rect.
+//
+// A LANE MAY BE SPLIT ACROSS SEVERAL TEXTURES, and that is the only way past
+// the 4096 cap. The close lanes are magnified on screen — the play plane
+// shows ~57 px per world unit and the fore lane ~69 — while one 4096-wide
+// texture over a 112-unit rect can only carry 36.6. Two carry 73, which is
+// past the camera, and that is the difference between craft paper you can
+// read the grain of and a soft photograph of it.
+//
+// It costs memory, not disk: two tiles decode to twice the RGBA of one
+// whatever the file compresses to. That is why it is opt-in per lane rather
+// than applied to all six — `near` and `mid` carry the dressing the player
+// actually looks at, and the far lanes sit behind a depth tint where softness
+// is the aerial perspective doing its job.
 export async function getLayerTexture(world, layer) {
   const entry = manifest?.layers?.[world]?.[layer];
   if (!entry || entry.status !== 'live') return null;
+  const files = entry.files || (entry.file ? [entry.file] : []);
+  if (!files.length) return null;
   try {
-    const tex = await new THREE.TextureLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;
-    return tex;
+    const texs = await Promise.all(files.map(async (f) => {
+      const tex = await new THREE.TextureLoader().loadAsync(new URL(f + '?v=' + manifest.v, BASE).href);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      return tex;
+    }));
+    return texs;
   } catch (e) {
     console.warn(`[eeri] layer "${world}/${layer}" failed to load (${e.message}) — painting placeholder`);
     return null;
