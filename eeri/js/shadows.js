@@ -1,4 +1,22 @@
-// EERI — CONTACT SHADOWS.
+// EERI — CONTACT SHADOWS. **PARKED, 2026-08-21, at the owner's call.**
+//
+// Built, wired, rendered and then taken back out of `main.js`: "maybe shadows
+// aren't adding much visual value at this point". That is the right read. At
+// the framing this game is played at, a contact shadow on the ground line is a
+// thin band mostly hidden behind the grass fringe, and it was costing more
+// tuning than it was returning — the module works, the effect is subtle, and
+// subtle is not what the look needs right now.
+//
+// The file stays because two findings in it are worth more than the feature
+// and are not obvious enough to re-derive:
+//
+//   1. The camera pitch is **0.86 degrees**. Any future lighting or grounding
+//      work has to start from "this is a side elevation", not from the ground
+//      plane. See below.
+//   2. `groundTop()` returns -4 over a pit, and anything that draws at ground
+//      level has to check for it or it smears across the earth section.
+//
+// Nothing imports this. It is inert.
 //
 // The owner's note on the original look list was "everything floats", and it
 // was right: nothing in this game casts anything, so every crate, pipe and
@@ -46,6 +64,8 @@ const SUN_LEAN = 14 / 22;
 const RISE_SPREAD = 0.16;   // per tile of height
 const RISE_FADE = 0.5;      // per tile of height
 const MAX_RISE = 4.0;       // past this it has stopped meaning anything
+// The band's height in tiles. Fixed, not derived from width — see update().
+const SHADOW_H = 0.26;
 
 const STYLES = ['soft', 'cut'];
 
@@ -88,15 +108,21 @@ export class Shadows {
   // `level` only has to answer `groundTop(x, yFrom)`, which is the one
   // question this needs and the one thing that stops a shadow from hanging in
   // the air over a pit.
-  constructor(scene, level, style = 'soft') {
-    this.scene = scene;
+  // `parent` is the SITE's group, not the scene. A site is torn down by
+  // removing its group, so shadows parented there go with it; parented to the
+  // scene they would survive the room that cast them.
+  constructor(parent, level, style = 'soft') {
+    this.scene = parent;
     this.level = level;
     this.casters = [];
     this.textures = Object.fromEntries(STYLES.map((s) => [s, styleTexture(s)]));
     this.style = STYLES.includes(style) ? style : 'soft';
   }
 
-  // `get` returns {x, y, rise} in world units, or null for "not right now" —
+  // `get` returns {x, y, foot} in world units, or null for "not right now" —
+  // `foot` is how far BELOW `y` the caster's base sits, because the things
+  // this has to serve do not agree on where their origin is: the kid is
+  // centred (feet at y - 0.81) and a flag is planted (base at y exactly).
   // a caster that is dead, despawned, off a cliff or riding inside a machine
   // has no shadow, and returning null is cheaper than every caller learning
   // how to unregister.
@@ -134,6 +160,10 @@ export class Shadows {
   }
 
   update() {
+    // `muted` is the look harness's kill switch (debug.shadowsOn). It lives
+    // here rather than in the caller so there is exactly one place that
+    // decides whether a shadow is drawn.
+    if (this.muted) return;
     for (const c of this.casters) {
       const s = c.get();
       if (!s) { c.mesh.visible = false; continue; }
@@ -141,14 +171,26 @@ export class Shadows {
       // groundTop returns -4 over a pit. A shadow on nothing is worse than no
       // shadow: it draws a dark smear across the earth section below the hole.
       if (top < 0) { c.mesh.visible = false; continue; }
-      const rise = Math.max(0, Math.min(MAX_RISE, s.y - (s.rise ?? 0.81) - top));
+      const rise = Math.max(0, Math.min(MAX_RISE, s.y - (s.foot ?? 0) - top));
       const spread = 1 + rise * RISE_SPREAD;
       const w = c.width * spread;
-      c.mesh.scale.set(w, w * 0.42, 1);
-      // pushed along the sun, and NOT scaled by spread: the lean is where the
-      // light is, the spread is how far the occluder is. Multiplying them
-      // makes a jumping character's shadow race away from him.
-      c.mesh.position.set(s.x + rise * SUN_LEAN, top + w * 0.10, (s.z ?? 0) + 0.06);
+      // HEIGHT IS NOT A FRACTION OF WIDTH, and tying them was the first thing
+      // that had to go. At 0.42x, the machine's 3.4-wide shadow stood 1.4
+      // tiles tall and read as a dirty smear up the backdrop rather than as
+      // contact. A contact shadow in a side elevation is a THIN band on the
+      // ground line whatever is casting it — width says how much is above it,
+      // height says only how far the eye is from straight-on, which is fixed
+      // by the camera at under a degree.
+      const h = SHADOW_H * (1 + rise * 0.06);
+      c.mesh.scale.set(w, h, 1);
+      // sat ON the line rather than above it: half the band below the ground
+      // top, half above, so it reads as something the object is standing in
+      // rather than a decal floating behind its feet.
+      // BEHIND the play plane, not in front of it. At +0.06 the quad sat a
+      // whisker nearer the camera than the character standing on it, and with
+      // depthWrite off and renderOrder 2 it painted over his boots. The ground
+      // it falls on is behind him, so that is where it goes.
+      c.mesh.position.set(s.x + rise * SUN_LEAN, top + h * 0.15, (s.z ?? 0) - 0.30);
       c.mat.opacity = Math.max(0, c.alpha * (1 - rise * RISE_FADE / MAX_RISE * 2));
       c.mesh.visible = c.mat.opacity > 0.02;
     }
