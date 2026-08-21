@@ -48,8 +48,21 @@ back-tick survives inside that literal.
 `test/**` is Design/Level's; declared cross-lane touch, both files.
 
 Gates: **playthrough 25/0** on the same machine that had been failing six of
-twelve — twelve levels, no stalls, no ride losses. Smoke is re-running with the
-fps scaling; its number is deliberately left blank rather than claimed.
+twelve — twelve levels, no stalls, no ride losses — and **smoke 434/0**, whose
+own log line is the proof of the whole diagnosis:
+
+```
+boot 448 ms, 3.8 fps → waits ×3.68
+```
+
+**448 ms is the same boot as the 442 ms run that passed 434/0 this morning.**
+Under the old rule that is the 1.5x floor and everything downstream fails. The
+machine was actually at 3.8 fps, the new rule gives 3.68x, and the suite is
+clean. Same boot, two and a half times the budget, because boot time and frame
+rate were never the same measurement — which is exactly the confusion that
+cost the day.
+
+Also: rooms 147/0 · fx 31/0 · dev-menu 38/0 · inspector 24/0.
 
 ## v15.38 — 2026-08-21 — the editor can PLACE, not just move
 
