@@ -75,7 +75,12 @@ const CSS = `
 }
 .insp .groups { max-height: 132px; overflow-y: auto; display: grid; gap: 2px; }
 .insp .groups label { display: flex; gap: 6px; align-items: center; color: #cfc6b8; }
-.inspCatch { position: fixed; inset: 0; z-index: 35; cursor: crosshair; }
+.inspCatch { position: fixed; inset: 0; z-index: 35; cursor: crosshair;
+  /* TOUCH-ACTION IS WHAT MAKES THIS DRAGGABLE BY THUMB. The handlers are
+     pointer events, which already cover touch — but without this the browser
+     claims the gesture for scrolling and pans the page while the prop stays
+     put. Same family as the pointerup/touchend trap hub/shell.js paid for. */
+  touch-action: none; user-select: none; -webkit-user-select: none; }
 .inspCatch[hidden] { display: none; }
 `;
 
