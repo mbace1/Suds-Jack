@@ -34,6 +34,9 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
 // when the state arrives early.
 const BOOT_BASELINE = 1200;     // ms, on a machine with a working GPU
 let SCALE = Number(process.env.EERI_SLOW) || 0;
+// The frame rate this suite's waits were written against. Measured on this
+// sandbox when the gate was green: 13-16 fps.
+const FPS_BASELINE = 14;
 const ms = (n) => Math.round(n * (SCALE || 1));
 
 // ---- one token per module ------------------------------------------------
@@ -287,12 +290,41 @@ s.listen(0, '127.0.0.1', async () => {
     const t0 = Date.now();
     await p.waitForFunction(() => !!window.__eeri, null, { timeout: 60000 }).catch(() => {});
     const boot = Date.now() - t0;
-    // …with a FLOOR. The boot is one measurement at one moment, and the
-    // failures this fixes came from load arriving mid-run — a warm cache
-    // can boot in 450 ms and then meet a busy machine forty checks later.
-    // 1.5x of waits that end the moment their state arrives costs nothing.
-    if (!SCALE) SCALE = Math.min(8, Math.max(1.5, +(boot / BOOT_BASELINE).toFixed(2)));
-    console.log(`  ·    boot ${boot} ms → waits ×${SCALE}${process.env.EERI_SLOW ? ' (forced)' : ''}`);
+    // BOOT TIME IS A BAD PROXY FOR FRAME RATE, and this cost most of a day.
+    // Four runs of the same tree booted in 442, 597, 658 and 998 ms — a better
+    // than 2x spread — and every one of them clamped to the 1.5x FLOOR, so the
+    // budget never moved while the machine got four times slower. The first
+    // run passed 434/0 and the others failed 8, 16 and 11 checks, all of them
+    // downstream of one timing-marginal wait. A gate that reports the machine
+    // rather than the game is worse than no gate: it was taken as a regression
+    // in the code under test and bisected against a clean tree that failed the
+    // same way.
+    //
+    // So measure what the waits actually depend on. Every wait here is waiting
+    // for the GAME to advance, and the game advances one frame at a time —
+    // `main.js` steps on `Math.min(getDelta(), 0.033)`, so below 30 fps the
+    // simulation slows in lockstep with the renderer. Frames per second is the
+    // thing; boot time is a proxy for cache warmth.
+    let fps = 0;
+    if (!SCALE) {
+      fps = await p.evaluate(() => new Promise((res) => {
+        let n = 0; const t = performance.now();
+        const tick = () => {
+          n++;
+          if (performance.now() - t < 2000) requestAnimationFrame(tick);
+          else res(+(n / ((performance.now() - t) / 1000)).toFixed(1));
+        };
+        requestAnimationFrame(tick);
+      }));
+      // FPS_BASELINE is what this suite's waits were tuned against. The floor
+      // stays at 1.5 for the reason it always did — load can arrive mid-run —
+      // and the ceiling rises to 12 because this sandbox has been seen at
+      // under 3 fps, which is 5x slower than the tuning point and would have
+      // been clamped away at 8.
+      SCALE = Math.min(12, Math.max(1.5, +(FPS_BASELINE / Math.max(1, fps)).toFixed(2)));
+    }
+    console.log(`  ·    boot ${boot} ms, ${fps || '?'} fps → waits ×${SCALE}`
+      + `${process.env.EERI_SLOW ? ' (forced)' : ''}`);
   }
   ok('it boots and exposes the handle', await p.evaluate(() => !!window.__eeri));
   ok('no errors on boot', errs.length === 0, errs.slice(0, 3).join(' | '));

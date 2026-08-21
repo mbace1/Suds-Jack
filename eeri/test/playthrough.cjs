@@ -34,12 +34,16 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
 // It is deliberately DUMB — no level knowledge, no waypoints. It knows
 // only: go right; jump when stuck or over a hole; if something is in the
 // way that a machine clears, go get the machine and use it.
-const BOT = `async (budgetMs) => {
+const BOT = `async ({ frameBudget, hardCapMs }) => {
   const E = window.__eeri;
   const sleep = (m) => new Promise((r) => setTimeout(r, m));
   const t0 = Date.now();
   const startSite = E.site();
-  let best = -Infinity, stuck = 0, jumping = false, jT = 0, act = 0;
+  // `act` counts FRAMES now, like the budget. Starts negative so the first
+  // action fires immediately rather than waiting out a cooldown that has not
+  // happened yet. `jT` deliberately stays on `q.t` — the game's own clock —
+  // because a jump's length is a property of the game, not of the harness.
+  let best = -Infinity, stuck = 0, jumping = false, jT = 0, act = -999;
   const log = [];
   // A tireless bot will eventually beat a level a child would put down, so
   // "finished" is not enough — count what it COST. Losing the ride means
@@ -79,8 +83,30 @@ const BOT = `async (budgetMs) => {
     return null;
   };
 
-  while (Date.now() - t0 < budgetMs) {
-    await sleep(16);
+  // FRAMES, NOT WALL CLOCK.
+  //
+  // A budget in seconds means something different on every machine, and on
+  // this one it meant something different at different times of day: the same
+  // tree that finished all twelve levels five times over later stalled on six
+  // of them, and the bisect that chased it landed on a KNOWN-GOOD commit
+  // failing the same way. The machine had got roughly four times slower; the
+  // budget had not moved.
+  //
+  // Frames are the honest unit because the game is stepped in frames:
+  // \`main.js\` advances on \`Math.min(getDelta(), 0.033)\`, so below 30 fps the
+  // simulation slows exactly in step with the renderer and a frame is a fixed
+  // quantum of progress however long it took to draw. 9000 frames is 150 s of
+  // game time at 60 fps and about 300 s at this sandbox's best — comfortably
+  // more than any level needs, and the same amount of GAME on both.
+  //
+  // The millisecond figure is a DEADLOCK GUARD, not the budget: if rAF stops
+  // firing at all (crashed page, backgrounded tab) the frame count never
+  // advances and the loop would otherwise never end.
+  const frame = () => new Promise((r) => requestAnimationFrame(r));
+  let frames = 0;
+  while (frames < frameBudget && Date.now() - t0 < hardCapMs) {
+    await frame();
+    frames++;
     if (E.site() !== startSite || E.debug.cleared()) break;   // finished it
     const q = E.player, mode = E.mode();
     if (wasRiding && mode === 'foot') rideLosses++;
@@ -93,7 +119,7 @@ const BOT = `async (budgetMs) => {
       // stays in the cab drives happily past the end of the level forever.
       if (!job) {
         E.debug.release('down'); E.debug.release('right'); E.debug.release('left');
-        if (Date.now() - act > 400) { E.debug.press('action'); E.debug.release('action'); act = Date.now(); }
+        if (frames - act > 24) { E.debug.press('action'); E.debug.release('action'); act = frames; }
         continue;
       }
       // drive at the job, then hold the verb
@@ -123,8 +149,8 @@ const BOT = `async (budgetMs) => {
     // six-year-old will not find either.
     if (stuck > 40 && E.debug.pipes) {
       const q = q0(E);
-      if (q && Date.now() - act > 400) {
-        E.debug.press('action'); E.debug.release('action'); act = Date.now();
+      if (q && frames - act > 24) {
+        E.debug.press('action'); E.debug.release('action'); act = frames;
       }
     }
 
@@ -152,8 +178,8 @@ const BOT = `async (budgetMs) => {
         if (Math.abs(dx) > 1.6) {
           E.debug.press(dx > 0 ? 'right' : 'left');
           E.debug.release(dx > 0 ? 'left' : 'right');
-        } else if (Date.now() - act > 300) {
-          E.debug.press('action'); E.debug.release('action'); act = Date.now();
+        } else if (frames - act > 18) {
+          E.debug.press('action'); E.debug.release('action'); act = frames;
         }
       }
       if (stuck > 90 && stuck % 40 === 0) log.push(Math.round(q.x));
@@ -200,7 +226,8 @@ srv.listen(0, '127.0.0.1', async () => {
     // budget is wall-clock generous rather than tuned to real play. The
     // viewport is small for the same reason: fewer pixels to rasterise is
     // the cheapest speed-up available to a software renderer.
-    const r = await page.evaluate(new Function('return ' + BOT)(), 300000);
+    const r = await page.evaluate(new Function('return ' + BOT)(),
+      { frameBudget: 9000, hardCapMs: 900000 });
     ok(`${name} can be finished`, r.finished,
       `got to x=${r.best} of ${r.exit}, mode=${r.mode}${r.stalls.length ? `, stalled at ${r.stalls}` : ''}`);
     // the ride is meant to be lost to a mistake, not to the level's layout
