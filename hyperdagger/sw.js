@@ -48,9 +48,6 @@ const PRECACHE = [
   './vendor/jsm/shaders/OutputShader.js',
   './vendor/jsm/utils/BufferGeometryUtils.js',
   './vendor/three.module.min.js',
-  './models/enemies/skull.glb',
-  './models/enemies/spider.glb',
-  './models/enemies/totem.glb',
 ];
 
 self.addEventListener('install', event => {
