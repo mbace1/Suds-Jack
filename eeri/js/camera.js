@@ -110,15 +110,21 @@ export class Camera {
       yOff += Math.sin(this.t * 0.17 + 1.3) * 0.22;
     }
 
-    // ease the framing itself, so crossing into a shot is a move, not a cut
-    this.f.z += (z * ZOOM - this.f.z) * Math.min(1, 1.6 * dt);
-    this.f.lead += (want.lead - this.f.lead) * Math.min(1, 2.2 * dt);
+    // ease the framing itself, so crossing into a shot is a move, not a cut.
+    // FROZEN MEANS SETTLED, not merely un-drifting. The first cut of `freeze`
+    // stopped the sine and left the follow easing running, and at the ~3 fps
+    // this renders at in a sandbox the easing needs many seconds of wall clock
+    // to converge — so two captures "with the camera frozen" were still at two
+    // different framings. A freeze that has to be waited out is not a freeze.
+    const k = this.freeze ? 1 : 0;
+    this.f.z += (z * ZOOM - this.f.z) * (k || Math.min(1, 1.6 * dt));
+    this.f.lead += (want.lead - this.f.lead) * (k || Math.min(1, 2.2 * dt));
 
     // follow
     const tx = focus.x + face * this.f.lead;
     const ty = Math.max(focus.y + yOff, want.floor);
-    this.x += (tx - this.x) * Math.min(1, 3.2 * dt);
-    this.y += (ty - this.y) * Math.min(1, 2.6 * dt);
+    this.x += (tx - this.x) * (k || Math.min(1, 3.2 * dt));
+    this.y += (ty - this.y) * (k || Math.min(1, 2.6 * dt));
 
     // never show past the ends of the room
     const halfW = this.f.z * Math.tan((fov * Math.PI) / 360) * aspect;

@@ -46,8 +46,17 @@ That is what defeated the mipmap check at v15.35 (`noise 79.86% vs effect
 separate write-ups reported "not separable from noise" without either of us
 working out *why the noise was there*.
 
-`cam.freeze` is a dev-only switch on the drift, reached through
-`debug.cameraFreeze(true)`. Nothing in the game sets it.
+`cam.freeze` is a dev-only switch, reached through `debug.cameraFreeze(true)`.
+Nothing in the game sets it.
+
+**And a freeze has to SETTLE, not merely stop drifting** — the first cut of it
+killed the sine and left the follow easing running. At the ~3 fps this renders
+at in a sandbox, `x += (tx - x) * min(1, 3.2 * dt)` needs many seconds of wall
+clock to converge, so two captures "with the camera frozen" were still at two
+different framings and the A/B was still worthless. Frozen now snaps every
+eased term to its target in one frame. The gameplay path is untouched: the
+factor is `freeze ? 1 : 0` and `0 || min(1, 3.2 * dt)` is the original
+expression.
 
 With it on, the same comparison that had been mush **separates immediately**:
 
