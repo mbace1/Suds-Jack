@@ -17,6 +17,27 @@
 
 const DEFAULT = { z: 34, y: 2.6, lead: 1.6, floor: 5.8 };
 
+// HOW BIG EERI IS ON THE SCREEN, as one number over the whole director.
+//
+// Measured rather than judged: at the authored dollies he stood 80px of 720 on
+// site 1 and 70px on site 10 — **1/9 to 1/10 of screen height**. Mario 3 and
+// Yoshi's Crafted World, the 80/20 references PHASING §0.1 names, keep the
+// hero at roughly 1/7. Everything this project has added lately — the enemy
+// models, their tells, the craft materials, the detail maps — was sitting
+// below the size at which any of it can be read, so this multiplies work
+// already done rather than adding more.
+//
+// It is a MULTIPLIER, not a new default, and that is the whole point: a site
+// declares SHOTS and the machine stretches deliberately pull back, so setting
+// one closer number would flatten the director into a follow camera. Scaling
+// preserves every authored relationship — a shot that pulls back still pulls
+// back, by the same proportion.
+//
+// Applied at the very end, after the mode reframe, the punch and the drift, so
+// those keep their proportional weight too. 0.78 puts site 1 at ~1/7 and the
+// pulled-back machine sites at ~1/8, which is the right way round.
+const ZOOM = 0.78;
+
 export class Camera {
   constructor(camera, def) {
     this.cam = camera;
@@ -46,6 +67,9 @@ export class Camera {
     this.x = x; this.y = y;
     this.z = this.f.z;
   }
+
+  // the zoom, exposed so the gate can assert the framing rather than eyeball it
+  static get ZOOM() { return ZOOM; }
 
   // mode: foot | mounting | riding | dismounting
   update(dt, focus, face, mode, levelW, aspect, fov) {
@@ -78,7 +102,7 @@ export class Camera {
     yOff += Math.sin(this.t * 0.17 + 1.3) * 0.22;
 
     // ease the framing itself, so crossing into a shot is a move, not a cut
-    this.f.z += (z - this.f.z) * Math.min(1, 1.6 * dt);
+    this.f.z += (z * ZOOM - this.f.z) * Math.min(1, 1.6 * dt);
     this.f.lead += (want.lead - this.f.lead) * Math.min(1, 2.2 * dt);
 
     // follow

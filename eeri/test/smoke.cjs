@@ -1287,6 +1287,32 @@ s.listen(0, '127.0.0.1', async () => {
       missed.length === 0);
   }
 
+  // HOW BIG IS EERI ON THE SCREEN? A look question that is, unusually, a
+  // number — and one worth holding, because everything this project adds
+  // (enemy models, their tells, craft materials, detail maps) is invisible if
+  // the hero is a speck. PHASING §0.1 names Mario 3 and Yoshi's Crafted World
+  // as the references and both keep the hero near 1/7 of screen height.
+  // Measured in PIXELS off the real projection, not derived from the dolly
+  // constant, so it still fails if a shot, the FOV or the stage aspect moves.
+  // My own eyeball estimate of this was 1/17 — off by a factor of two — which
+  // is the argument for the check being here at all.
+  {
+    const frame = await p.evaluate(async () => {
+      const THREE = await import('three');
+      const E = window.__eeri;
+      const c = document.querySelector('canvas').getBoundingClientRect();
+      const pr = (x, y) => {
+        const v = new THREE.Vector3(x, y, 0).project(E.camera);
+        return c.top + (-v.y * 0.5 + 0.5) * c.height;
+      };
+      const px = Math.abs(pr(E.player.x, E.player.y + 0.81) - pr(E.player.x, E.player.y - 0.81));
+      return { px: +px.toFixed(1), h: Math.round(c.height), frac: +(c.height / px).toFixed(2) };
+    });
+    ok(`Eeri is framed like the references (1/${frame.frac} of screen, ${frame.px}px of ${frame.h})`,
+      frame.frac >= 6 && frame.frac <= 8.6,
+      'want 1/6 to 1/8.6 — the machine shots pull back and are allowed the wide end');
+  }
+
   // THE SHIPPED GAME NEVER DRAWS A LIGHT HANDLE. A `light` row builds a
   // PointLight plus a small wireframe ball beside it, because a light has no
   // geometry and the inspector picks by raycast — there would be nothing to

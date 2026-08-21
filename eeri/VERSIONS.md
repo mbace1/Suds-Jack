@@ -1,5 +1,55 @@
 # EERI — versions
 
+## v15.36 — 2026-08-21 — Eeri is the size the references make him
+
+Owner picked the reference framing outright, and asked for the zoom to stay
+**dynamic**.
+
+**First, a correction to my own diagnosis.** I reported the kid at "about 1/17
+of screen height" from eyeballing a crop. Measured off the real projection he
+was **1/9.0 on site 1 and 1/10.2 on site 10** — I was out by a factor of two,
+and the fix is a 1.3x zoom rather than the 2.4x I implied, which costs far less
+level readability than I made it sound.
+
+| site | before | after |
+|---|---|---|
+| 1  — groundworks | 80px, 1/9.0  | 102px, **1/7.1** |
+| 4  — wet trench  | 77px, 1/9.4  | 98px,  **1/7.3** |
+| 7  — cut bank    | 72px, 1/10.0 | 92px,  **1/7.8** |
+| 10 — night shift | 70px, 1/10.2 | 90px,  **1/8.0** |
+
+**It is a MULTIPLIER over the shot director, not a new default**, and that is
+what keeps it dynamic. `camera.js` is already a small director — a site
+declares SHOTS, zones with their own dolly, and the machine stretches
+deliberately pull back so you can read a cycle before committing to it.
+Replacing `DEFAULT.z` with a closer number would have flattened that into a
+follow camera. One `ZOOM = 0.78` applied after the mode reframe, the punch and
+the drift scales every authored relationship by the same proportion: site 1
+lands at 1/7.1 and the pulled-back machine sites at 1/7.8–1/8.0, which is the
+right way round.
+
+**Why this was worth doing before more art.** Everything added lately — the
+enemy models, the eye tells sized in v15.30, the craft detail maps, the mipmaps
+in v15.35 — was sitting below the size at which any of it can be read. This
+multiplies work already done instead of adding more.
+
+A side effect that answers a separate complaint: the dead brown earth band
+across the bottom of every frame shrinks with the visible height, so the
+"bottom third is a flat slab" problem is smaller without anything being redrawn.
+
+**The gate measures pixels, not the constant.** `smoke.cjs` projects Eeri's
+head and feet through the real camera and asserts he lands between 1/6 and
+1/8.6 — so it still fails if a shot, the FOV or the stage aspect moves, none of
+which reading `ZOOM` back would catch. Given I got this number wrong by 2x by
+eye, a check that cannot be fooled by an eye earns its place.
+
+`js/camera.js` is Design/Level's file; this is a declared cross-lane touch, one
+constant and one multiplication.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0. Smoke and playthrough were still
+running when this was committed and their numbers are deliberately left blank
+rather than claimed ahead of the runs. Tokens 40 -> 41.
+
 ## v15.35 — 2026-08-20 — the lanes use the mipmaps they were already paying for
 
 `assets.js` loaded every layer texture with `minFilter = LinearFilter` and left
