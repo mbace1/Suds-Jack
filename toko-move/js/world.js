@@ -1,26 +1,22 @@
 // The board: water, stops, and the people standing on them.
 //
-// No geography. The map is generated per seed and means nothing — which is the
-// genre's actual claim, that a network is interesting on its own terms without
-// a city underneath it. The water is the only fixed obstacle, and it exists so
-// that SOME connections cost more than others; a board with no river is a board
-// where every line is equally good and there is nothing to plan around.
+// Every number this file used to hold now arrives in a spec from missions.js.
+// The board is not the game's opinion any more, it is the mission's.
+//
+// ONE RULE when editing: the sequence of rng calls is the board. Insert a roll
+// anywhere and every seed lays out differently from that point on, which
+// silently rewrites boards that already exist. New behaviour that needs
+// randomness takes its own stream (see `siteRng`) rather than borrowing this one.
 
-import { makeRng } from './rng.js?v=2';
-import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=2';
-import { inWater, dist } from './geometry.js?v=2';
+import { makeRng } from './rng.js?v=3';
+import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=3';
+import { inWater, dist } from './geometry.js?v=3';
 
+// The default board, still exported because the renderer and the tests want a
+// size before a mission is chosen. A mission may state its own.
 export const BOARD = { w: 860, h: 600 };
 
-// Capacity is six everywhere, and the clock that runs once you are over it is
-// long enough to be a warning rather than a verdict — you are meant to see the
-// ring filling and have time to do something about it.
 export const STATION_CAP = 6;
-export const OVERCROWD_TIME = 45;
-
-const MARGIN = 52;
-const MIN_GAP = 88;
-export const MAX_STATIONS = 26;
 
 export class Station {
   constructor(id, kind, x, y) {
@@ -30,25 +26,54 @@ export class Station {
     this.y = y;
     this.waiting = [];          // goal shapes, oldest first
     this.capacity = STATION_CAP;
-    this.over = 0;              // 0…1; at 1 the run ends
+    this.over = 0;              // 0…1; at 1 the mission's fail rule decides
     this.special = isSpecial(kind);
   }
   get crowded() { return this.waiting.length > this.capacity; }
 }
 
 export class World {
-  constructor(seed = 1) {
+  constructor(seed = 1, spec = {}) {
+    const board = spec.board || {};
+    const spawn = spec.spawn || {};
     this.seed = seed;
+    this.w = board.w ?? BOARD.w;
+    this.h = board.h ?? BOARD.h;
+    this.maxStations = board.maxStations ?? 26;
+    this.minGap = board.minGap ?? 88;
+    this.margin = board.margin ?? 52;
+    this.spawn = {
+      base: spawn.base ?? 0.45,
+      ramp: spawn.ramp ?? 210,
+      cap: spawn.cap ?? 1.9,
+      stationEvery: spawn.stationEvery ?? [13, 19],
+      specialsAfter: spawn.specialsAfter ?? 55,
+      specialChance: spawn.specialChance ?? 0.2,
+      bursts: spawn.bursts ?? [],
+    };
+    // how long an over-capacity stop takes to run its gauge out; the mission's
+    // fail rule decides what reaching the end of it means
+    this.overcrowdTime = spec.fail?.overcrowd ?? 45;
+
     this.rng = makeRng(seed);
-    this.rings = makeWater(this.rng);
+    this.rings = makeWater(this.rng, this.w, this.h);
     this.stations = [];
     this.nextId = 0;
     this.time = 0;
-    this.nextStationAt = 12;
+    this.nextStationAt = board.firstStation ?? 12;
     this.passengerDebt = 0;
+    this.firedBursts = new Set();
+    this.events = [];
 
-    // open on the three common shapes, spread out, so the first line the player
-    // draws always has somewhere sensible to go
+    // A separate stream, so a mission with a crowd in it lays out exactly the
+    // same board as one without. Borrowing `this.rng` here would shift every
+    // roll after it and quietly change every seeded board that already exists.
+    this.siteRng = makeRng((seed ^ 0x9e3779b9) >>> 0);
+    this.site = this.spawn.bursts.length
+      ? { x: this.siteRng.range(this.margin, this.w - this.margin),
+          y: this.siteRng.range(this.margin, this.h - this.margin) }
+      : null;
+
     for (const kind of COMMON) this.spawnStation(kind);
   }
 
@@ -60,23 +85,20 @@ export class World {
     return [...set];
   }
 
-  // Rejection sampling: off the water, off the edges, and not on top of a stop
-  // that is already there. Sixty tries then give up for this cycle — a board
-  // that is genuinely full should stop growing rather than pile stops up.
   freeSpot() {
     for (let i = 0; i < 60; i++) {
-      const x = this.rng.range(MARGIN, BOARD.w - MARGIN);
-      const y = this.rng.range(MARGIN, BOARD.h - MARGIN);
+      const x = this.rng.range(this.margin, this.w - this.margin);
+      const y = this.rng.range(this.margin, this.h - this.margin);
       if (inWater(x, y, this.rings)) continue;
       let ok = true;
-      for (const s of this.stations) if (dist(s, { x, y }) < MIN_GAP) { ok = false; break; }
+      for (const s of this.stations) if (dist(s, { x, y }) < this.minGap) { ok = false; break; }
       if (ok) return { x, y };
     }
     return null;
   }
 
   spawnStation(kind = null) {
-    if (this.stations.length >= MAX_STATIONS) return null;
+    if (this.stations.length >= this.maxStations) return null;
     const spot = this.freeSpot();
     if (!spot) return null;
     if (!kind) kind = this.rollKind();
@@ -85,23 +107,20 @@ export class World {
     return st;
   }
 
-  // Specials stay out of the first minute. They are the shapes everybody wants,
-  // so one arriving before there is a network to reach it is just a stop that
-  // drowns on its own.
+  // The `&&` short-circuits, so before `specialsAfter` no roll happens at all.
+  // That is load-bearing: change it to an unconditional roll and every board
+  // after the first minute lays out differently.
   rollKind() {
-    const special = this.time > 55 && this.rng.next() < 0.2;
+    const s = this.spawn;
+    const special = this.time > s.specialsAfter && this.rng.next() < s.specialChance;
     return special ? this.rng.pick(SPECIAL) : this.rng.weight([['circle', 5], ['triangle', 3], ['square', 3]]);
   }
 
-  // People per second, climbing across the run. This is the difficulty curve —
-  // there is no other one. Nothing gets faster or meaner, there is just more.
   spawnRate() {
-    return 0.45 + Math.min(1.9, this.time / 210);
+    const s = this.spawn;
+    return s.base + Math.min(s.cap, this.time / s.ramp);
   }
 
-  // A stop's pull. A special shape is wanted far more often than its share of
-  // the board, which is what turns one star station into the thing the whole
-  // network has to be bent around.
   goalFor(from) {
     const present = this.shapesPresent().filter(k => k !== from.kind);
     if (!present.length) return null;
@@ -113,11 +132,11 @@ export class World {
 
     if (this.time >= this.nextStationAt) {
       this.spawnStation();
-      this.nextStationAt = this.time + this.rng.range(13, 19);
+      this.nextStationAt = this.time + this.rng.range(...this.spawn.stationEvery);
     }
 
-    // fractional arrivals are banked, so a low early rate still produces whole
-    // people at the right average instead of rounding down to none
+    this.fireBursts();
+
     this.passengerDebt += this.spawnRate() * dt;
     while (this.passengerDebt >= 1) {
       this.passengerDebt -= 1;
@@ -125,9 +144,35 @@ export class World {
     }
 
     for (const s of this.stations) {
-      if (s.crowded) s.over = Math.min(1, s.over + dt / OVERCROWD_TIME);
-      else s.over = Math.max(0, s.over - dt / (OVERCROWD_TIME * 0.5));
+      if (s.crowded) s.over = Math.min(1, s.over + dt / this.overcrowdTime);
+      else s.over = Math.max(0, s.over - dt / (this.overcrowdTime * 0.5));
     }
+  }
+
+  // A crowd that WALKS. It does not appear where the event was — it lands on
+  // the handful of stops nearest to it, which is what makes the shape of the
+  // network before the burst the thing that decides how the burst goes.
+  fireBursts() {
+    for (let i = 0; i < this.spawn.bursts.length; i++) {
+      const b = this.spawn.bursts[i];
+      if (this.firedBursts.has(i) || this.time < b.at) continue;
+      this.firedBursts.add(i);
+      const near = this.nearestStations(this.site, b.spread ?? 3);
+      if (!near.length) continue;
+      for (let n = 0; n < b.n; n++) {
+        const from = near[n % near.length];
+        const goal = this.goalFor(from);
+        if (goal) from.waiting.push(goal);
+      }
+      if (b.label) this.events.push({ kind: 'burst', text: b.label });
+    }
+  }
+
+  nearestStations(point, k) {
+    if (!point) return [];
+    return [...this.stations]
+      .sort((a, b) => dist(a, point) - dist(b, point))
+      .slice(0, Math.max(1, k));
   }
 
   addPassenger() {
@@ -137,7 +182,6 @@ export class World {
     if (goal) from.waiting.push(goal);
   }
 
-  // The station whose ring is fullest, for the HUD to point at.
   worstStation() {
     let worst = null;
     for (const s of this.stations) if (!worst || s.over > worst.over) worst = s;
@@ -157,19 +201,16 @@ export class World {
 }
 
 // ── water ───────────────────────────────────────────────────────────────
-// One river always, and half the time a second one running the other way, so
-// some boards are split in two and some in three. The ring runs well past the
-// edges of the board so it closes off-screen and never shows a seam.
 
-function makeWater(rng) {
-  const rings = [makeRiver(rng, rng.next() < 0.5)];
-  if (rng.next() < 0.5) rings.push(makeRiver(rng, rng.next() < 0.5, true));
+function makeWater(rng, w, h) {
+  const rings = [makeRiver(rng, rng.next() < 0.5, w, h)];
+  if (rng.next() < 0.5) rings.push(makeRiver(rng, rng.next() < 0.5, w, h, true));
   return rings;
 }
 
-function makeRiver(rng, vertical, thin = false) {
-  const along = vertical ? BOARD.h : BOARD.w;
-  const across = vertical ? BOARD.w : BOARD.h;
+function makeRiver(rng, vertical, w, h, thin = false) {
+  const along = vertical ? h : w;
+  const across = vertical ? w : h;
   const base = rng.range(across * 0.3, across * 0.7);
   const width = thin ? rng.range(38, 52) : rng.range(52, 78);
   const wob = rng.range(40, 95);
