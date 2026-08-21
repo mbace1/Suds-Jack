@@ -19,11 +19,11 @@
 // longer being worked by a yellow digger borrowed from level 1.
 
 import {
-  ground, ledge, girderBeam, pit, bank, brickWall, chasm,
-  machine, robot, hopper, roller, swingBall, startAt, exitAt, shot,
+  ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
+  machine, robot, hopper, roller, swingBall, hazard, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, hoist,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=38';
+} from './parts.js?v=39';
 
 // THE TRAIL IS THE LEVEL TALKING, so it cannot be the same trail in six
 // levels. What was here was four quiet 25-bolt blocks — 100 exactly, laid at
@@ -71,6 +71,12 @@ export const WORLD34_ROOMS = [
 
       boltRun(5, 19, 27), boltRun(6, 19, 27),
 
+      // THE VENT. Worlds 1 and 2 carry one telegraphed hazard each and worlds
+      // 3 and 4 had none — so the back half of the game had no beat you have
+      // to WAIT for, only beats you run at. It stands in the fifteen quiet
+      // tiles between the first bounce and the second.
+      hazard(23, 'steam'),
+
       // 2 · VARY — a second bounce opens a clearly higher timber/root shelf,
       // and the shelf is paid for at feet and head height once you are on it.
       tarp(29, 32, GROUND - 1),
@@ -78,6 +84,13 @@ export const WORLD34_ROOMS = [
       ledge(34, 40, 9),
       boltRun(11, 34, 40), boltRun(12, 39, 40),
       golden(12, [36]),
+
+      // A THIRD BOUNCE, because the stretch between the shelf and the
+      // checkpoint asked nothing for 20 tiles. Tarps are this level's one
+      // idea, so the hole is filled with more of it rather than with a new
+      // verb — and a tarp is something to PLAY with, not something that
+      // hurts, which is the right kind of density at age six.
+      tarp(42, 45, GROUND - 1),
 
       checkpoint(46),
       boltRun(5, 42, 47), boltRun(6, 42, 47),
@@ -127,6 +140,11 @@ export const WORLD34_ROOMS = [
 
       boltRun(5, 24, 29), boltRun(6, 24, 29),
 
+      // …and its twin here, in the sixteen tiles between the two lifts. Never
+      // in the shaft: a hazard you meet while committed to a machine is the
+      // rule this game does not break.
+      hazard(22, 'steam'),
+
       // 2 · VARY — taller lift and longer shelf; still no hazard in the shaft.
       hoist(30, 31, GROUND, 10, 4.4),
       boltCol(29, 7, 11),
@@ -136,6 +154,10 @@ export const WORLD34_ROOMS = [
 
       checkpoint(46),
       boltRun(5, 41, 47), boltRun(6, 41, 47),
+
+      // …and one on the way to it: the stretch from the second hoist to the
+      // pit ran twenty tiles with nothing in it.
+      hopper(40, 44),
 
       // 3 · COMBINE — known gap + hopper after coming back to ground.
       pit(50, 52),
@@ -152,6 +174,9 @@ export const WORLD34_ROOMS = [
       chasm(72, 79),
       boltRun(5, 73, 79),
       boltRun(5, 82, 88),
+      // …and one hopper on the walk home: 21 tiles of nothing stood between
+      // the span and the flag.
+      hopper(84, 88),
       golden(7, [90]),
       flagAt(93),
 
@@ -187,6 +212,10 @@ export const WORLD34_ROOMS = [
       ledge(32, 39, 10),
       boltRun(12, 32, 39), boltRun(13, 37, 39),
       golden(13, [36]),
+
+      // the same 20-tile hole this world kept leaving between its second
+      // beat and the checkpoint, filled with the verb the level opened on
+      tarp(35, 38, GROUND - 1),
 
       checkpoint(46),
       boltRun(5, 41, 47), boltRun(6, 41, 47),
@@ -239,6 +268,10 @@ export const WORLD34_ROOMS = [
       boltRun(5, 28, 34),
       golden(7, [33]),
 
+      // A THIRD BELT, and it helps rather than resists: the level had 20
+      // tiles of plain floor here, and its whole idea is what the floor does.
+      belt(36, 42, GROUND - 1, 1),
+
       checkpoint(46),
       boltRun(5, 37, 45), boltRun(6, 37, 45),
 
@@ -248,8 +281,10 @@ export const WORLD34_ROOMS = [
       hopper(56, 60),
       boltArc(5, 56, 60, 2),
 
-      // 4 · RIDE — familiar dig in a new night-shift context. This is a
-      // placeholder for the eventual World-4 floodlight-rig machine beat.
+      // 4 · RIDE — familiar dig in a new night-shift context. NOTHING stands
+      // between x=68 and the bank at 84: that is the machine's run to its own
+      // job, and a hopper placed there took the ride away on the way to the
+      // thing the ride exists for.
       machine('loader', 68, [64, 92]),
       boltRun(5, 63, 69), boltRun(6, 63, 69),
       bank(84, 88, 3),
@@ -282,6 +317,11 @@ export const WORLD34_ROOMS = [
 
       boltRun(5, 24, 29), boltRun(6, 24, 29),
 
+      // A STEP BETWEEN THE TWO LIFTS. Sixteen tiles of flat floor separated
+      // them, which on a level about work heights is the one thing it should
+      // not have.
+      mound(20, 23, 2),
+
       // 2 · VARY — taller work deck, then a familiar ladder back into flow.
       hoist(30, 31, GROUND, 10, 4.5),
       boltCol(29, 7, 11),
@@ -311,6 +351,9 @@ export const WORLD34_ROOMS = [
       chasm(72, 79),
       boltRun(5, 73, 79),
       boltRun(5, 82, 88), boltRun(6, 85, 88),
+      // the walk home was 21 tiles of nothing; one roller at a spacing this
+      // world has already taught
+      roller(83, 87),
       golden(7, [90]),
       flagAt(93),
 
@@ -350,6 +393,10 @@ export const WORLD34_ROOMS = [
       boltRun(5, 37, 45), boltRun(6, 37, 45),
 
       // 3 · COMBINE — last vertical lift, then a spacing enemy on the floor.
+      // The bounce before it fills the eighteen quiet tiles this level had
+      // before its checkpoint, which is the worst place for a final exam to
+      // go silent.
+      tarp(37, 40, GROUND - 1),
       hoist(50, 51, GROUND, 10, 4.3),
       boltCol(49, 5, 11),
       ledge(52, 58, 10),

@@ -12,7 +12,18 @@
 //
 // Run: node eeri/test/rooms.mjs
 
-import { ROOMS, LAB } from '../js/rooms.js?v=3';
+import { ROOMS as W12, LAB } from '../js/rooms.js?v=3';
+// WORLDS 3 AND 4 WERE NEVER PROVED. `js/world34-register.js` pushes them onto
+// the roster at RUNTIME, so this file — which imported the static list — was
+// checking six of twelve levels and reporting green. Half the game had no
+// reach budget check, no "is about ONE thing", no bolt or checkpoint rule and
+// no pacing figure, and it showed: measured, those six carry half the asks
+// per tile of the six that were being measured, and every one of them has a
+// 20-tile stretch where nothing asks anything.
+//
+// The prover takes the same roster the game does now.
+import { WORLD34_ROOMS } from '../js/world34-rooms.js?v=3';
+const ROOMS = [...W12, ...WORLD34_ROOMS];
 import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
@@ -20,6 +31,7 @@ import {
   swingBall, hazard, shallow, deep, pipe, flooded, machine as mach, hoist,
 } from '../js/parts.js?v=4';
 import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=15';
+import { deadAir, DEAD_AIR } from '../js/parts.js?v=3';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
 // below would fail on the count alone and say nothing about what they are
@@ -125,6 +137,14 @@ for (const room of ROOMS) {
   const e = estimate(room);
   console.log(`       ${e.total.toFixed(0)}s learned · ${Math.round(e.onFoot * 100)}% on foot · `
     + `ride ${e.parts.ride.toFixed(0)}s · run ${e.parts.run.toFixed(0)}s`);
+  // …and it has to keep ASKING. The longest stretch with nothing to do is the
+  // one number that separates a level from a corridor, and every other rule
+  // in the suite was blind to it.
+  {
+    const d = deadAir(room);
+    ok(`${room.name}: never goes ${DEAD_AIR}+ tiles without asking anything `
+      + `(worst ${d.worst} at x=${d.where}, ${d.asks} asks)`, d.worst < DEAD_AIR);
+  }
   ok(`${room.name}: is a level, not a landscape (${e.total.toFixed(0)}s learned)`,
     e.total > 20 && e.total < 120);
   ok(`${room.name}: the platformer is the spine (${Math.round(e.onFoot * 100)}% on foot)`,
