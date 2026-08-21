@@ -5,6 +5,8 @@
  *   node test/deploy-check.cjs                       # every in-repo cabinet
  *   node test/deploy-check.cjs piritori/             # one of them
  *   node test/deploy-check.cjs --root /tmp/ghp       # against a worktree
+ *
+ * Against a worktree it covers `inRepo: false` cabinets too — see cabinets().
  *   node test/deploy-check.cjs --root /tmp/ghp piritori/ toko-move/
  *
  * WHY THIS EXISTS. The per-game gates prove a game works IN ITS OWN TREE. They
@@ -80,12 +82,25 @@ const ok = (n, c, d) => {
 };
 
 // The catalogue is the list of cabinets, so a game added to the floor is
-// checked without anybody remembering to add it here. `inRepo` marks the ones
-// this branch carries; `live: false` marks a cabinet with nothing behind it.
+// checked without anybody remembering to add it here.
+//
+// `inRepo` IS NOT A FILTER WHEN --root IS GIVEN, and that distinction is the
+// point of this file. `inRepo: false` means "main does not carry this" — a
+// build artefact too large to commit, a game that only ever existed on the
+// site. It says nothing about whether the SITE has it, and when the site is
+// what you are pointed at, skipping those cabinets skips exactly the ones
+// nothing else covers: hub-smoke leaves their links alone for the same reason.
+// The Godot port of Piritori is about to be one of them — 63 MB of git-ignored
+// WebAssembly whose cabinet would otherwise be checked by nothing at all.
+//
+// Without --root the tree IS this branch, so a cabinet main does not carry has
+// nothing to open and is skipped. `live: false` marks a cabinet with nothing
+// behind it anywhere, and is always skipped.
 async function cabinets() {
   const mod = await import('file://' + path.join(ROOT, 'hub', 'games.js'));
   const all = mod.GAMES ?? mod.default ?? [];
-  return all.filter(g => g.inRepo && g.live !== false && g.path);
+  const deployed = rootIdx >= 0;
+  return all.filter(g => g.path && g.live !== false && (deployed || g.inRepo));
 }
 
 // The live site lives under /Suds-Jack/. Mount the tree there AND at the root,
