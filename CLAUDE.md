@@ -80,6 +80,43 @@ pad but not aim — that needs their own code. On the arcade itself a direction 
 selection, A plays, Y leaves a note, B backs out, and in the note panel left/right sets
 the rating and A sends; selection is real DOM focus with its own ring, since a pad user
 may never trigger `:focus-visible`.
+**The room.** `hub/arcade.js` is the atmosphere layer, kept out of `hub.js` because
+hub.js is the floor. Everything in it is allowed to do nothing: `prefers-reduced-motion`
+turns off the **marquee flicker** (one tube struggles for a moment, never two at once).
+**Two animations, and they belong in different places.** The **CRT power-on** is the
+hub's: the tube strikes across the *whole* screen, opens, and the floor is there — once
+per **tab** (sessionStorage), since every game is a real navigation and a boot animation
+on each return is a toll on the way home. The **Toko sting** is a studio logo, so it plays
+in front of a **game**, not in front of a menu: pressing Play holds the navigation, plays
+it once per **browser**, and goes when it is done *either way* — if the import fails or
+`toko/` is not in the tree, the catch still sends you to the game. Both are skippable from
+frame one, and skipping the sting still takes you through rather than stranding you. For a
+while both played on arrival *at once* — a black veil sweeping open under a magenta panel
+at z-index 99999 that hid it completely. Neither plays in front of a **deep link**.
+There are **two stings** (`STYLES` in `sting.js`), for the same reason the floor has three
+layouts: `draw` reveals the arcs along their own path; `goo` flops a Toko Drop gel cube in,
+which thins into the mark — the face is *drawn* at ~4× stroke weight, where the slots close
+and it is a blob, and thinning to `GEO.stroke` IS the transformation, so nothing crossfades
+and no third colour is needed. `playStingOnce` picks one at random and **records which**
+(`tokoStingStyle`), which rides on every note as `intro` — an intro you saw once and cannot
+name is one you cannot give feedback about. The brand board plays both on demand. Find the
+sting by **`.toko-sting`**, never `[role="img"]`: every signed game carries a badge with
+that role, and a test looking for one found the signature in the corner of the game it had
+just navigated to. **Room tone** is a detuned-saw bed plus a coin
+on Play, routed through one master gain and **off until asked**. Three counters hang off
+the single honest signal this page gets — pressing Play — and only appear once there is
+something to count: **credits**, a **streak** counted back from TODAY (counted from the
+most recent day instead, a streak that ended in March still shows in July), and
+**tickets**, which buy nothing. The **score wall** reads each game's own `localStorage`
+best off *your* disk via a `score: {key, fmt}` field in the catalogue; nothing is fetched
+and nothing is sent, which is why there is no leaderboard. The **Konami code** unlocks a
+`secret: true` cabinet — the brand board, which is real and already in the repo. A secret
+leaks through every list that reads `GAMES` directly rather than `onFloor()`: its tag
+showed up in the filter row, the "showing N of M" count, and a pasted `#brand`. Its id is
+**`brand`, not `toko`** — that fragment already belongs to the counter. The `wide` layout
+is now a **true full-width marquee** (cover at the width of the wrap, words underneath);
+it must not use `object-fit`, which crops the composition *and* resamples smoothly no
+matter what `image-rendering` says, turning a 9× pixel upscale into a blur.
 **Versions.** Toko Drop's system (a `VERSIONS.md` log with `## vN` entries plus a `?v=N`
 module token, moved together by `scripts/bump-version.sh`) now covers the whole floor.
 `node scripts/versions.mjs [siteRoot]` writes `hub/versions.json` by reading each
@@ -88,6 +125,34 @@ number before anyone starts logging for it and switches to the release number th
 they do. The cabinets fetch that file, so shipping one game does not mean redeploying the
 arcade. **Run it at deploy time** — against the deployed tree, which is the only place
 every project exists.
+**Deploying is `node scripts/deploy-hub.mjs <siteRoot> [--dry]`, never a hand-copy.**
+Three bugs in one session were the same bug: a number in one file disagreeing with a
+number in another (a precache list a token behind the page — an arcade that loads online
+and is blank on a plane; an `index.html` two features back, so the language switch had no
+ids to write into; tokens picked by hand, so a file could change without its number
+moving). The rule that removes the class is **one token per module, bumped when and only
+when its bytes change, and written into every reference by the script** — including each
+game's `../hub/shell.js` tag, which is how sixteen pages were found pinned to shells as
+old as `?v=1`. It copies only what this branch owns (`games.js`/`art.js` are the site's —
+overwriting them deletes a cabinet), derives `sw.js`'s SHELL via `scripts/sw-shell.mjs`
+(run that alone to keep the branch's own worker honest; the smoke gate asserts it) — which
+**walks the import graph from `index.html`** rather than matching `hub/*`, because a
+pattern is a hand-kept list with extra steps: the counter is twelve modules under `toko/`
+and the arcade came up offline with a dead bar across the top until the walk found them.
+It skips any folder shipping its own `sw.js` (a narrower scope wins its own pages), takes
+**built specifiers** (`import('./dialogue.js' + V)` inherits the importer's token, and is
+invisible to a literal `?v=` match), and checks each path is a real file — a line of
+documentation inside `chat.js` had put `toko/js/toko/js/chat.js` in the list. An
+**untokened** module goes in the list but is served network-first with the cache as
+fallback: the counter imports its own modules bare, and cache-first would pin them
+forever with no URL to bust, regenerates `AnotherHUB/`, and puts back any `<script>` block the
+site has and this branch does not — that is how the counter mount survives.
+**It will not overwrite a file the site has moved on its own**: gh-pages is edited from
+more than one direction, and a plain byte comparison says *that* two copies differ, never
+*which way*. So it asks whether this branch has ever HELD the site's bytes (tokens
+stripped, since a deployed file has been renumbered); if not, that is somebody else's
+work, it is left alone, and the run stops and tells you to bring it back first. It found
+three files that way on its first real run. **Deploys never merge.**
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
 on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
 its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise
@@ -109,14 +174,29 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
 
-### Suds Jack (`sudsjack/`) — the rebuild
+### Suds Jack (`sudz/`) — Horizon Mesh, ACTIVE
+**Owner's call, 2026-08-19: continue the current live Bomb Jack × Tempest
+lane-survival direction and make it a functioning game.** This is the canvas
+Horizon Mesh build at `sudz/`: nine clamped lanes, left/right movement, jump,
+incoming orbs and hazards, chains, waves and three-life score attack. It is
+not the Hyper-Dagger-based rebuild below. Author it on `main`, add a top entry
+to `sudz/VERSIONS.md` for every game change, bump its `game.js?v=` cache token,
+run `node sudz/test/core.mjs`, then deploy the `sudz/` copy plus only its
+catalogue/version changes to `gh-pages`.
+
+### Suds Jack (`sudsjack/`) — the earlier rebuild, SET DOWN
+**Owner's call, 2026-08: the Hyper-Dagger-based rebuild was a mistake — stop building
+it.** The code stays in the repo like `paperboy/` does, the deployed copy stays
+unlisted, and the arcade's `sudsjack` cabinet points at the active Horizon Mesh build at
+`sudz/`. Do not resume `sudsjack/` without the owner
+asking in their own words. The section below is kept as a record of what was learned
+building it (the traps generalise); it is not a to-do list.
 Concept: "Bomb Jack x Suds 51 x Tempest 2000", taken **literally and in that order** —
 Bomb Jack is the *game* (collect, in the right order, **no weapon**), Tempest is the
 *shape* (a tube you ride the rim of), the suds are what it is made of.
-**Two things share the name.** The playable one is still the **original canvas vector
-build**, live at `sudz/` on `gh-pages` (a tube *shooter*: ← → move, Space fire, Z
-superzapper). The arcade's `sudsjack` cabinet points there and **stays pointed there**
-until the rebuild is better than it. The rebuild is `sudsjack/`, deployed unlisted.
+**Two things share the name.** The playable one is the **Horizon Mesh canvas build**,
+live at `sudz/` on `gh-pages` (← → move, Space jump). The earlier rebuild is
+`sudsjack/`, deployed unlisted and still set down.
 It is a **half tunnel** — a channel open along the top, walls sweeping up both sides, Jack
 lying on the floor of it (owner's direction, and it is a design change, not a view: **a
 closed ring has no ends**, so you can always keep running, while a channel has two lips and
@@ -174,7 +254,18 @@ that predate the ridged channel while the peaks are declared for the tube's own 
 of 20, so the walls sat beside the ridges, one peak was past the lip, and the fifth bay
 was a sliver. The gate now asks the geometry, not the declaration, and every
 lane-denominated tuning carries a ×20/13 rescale to keep world-space feel.
-`node sudsjack/test/smoke.cjs` = 48 checks: boot, the director, the
+**The Scum Line** (v6): grime past the mouth **settles** instead of dying — a film on its
+lane, three layers deep, because dodging used to be free and nothing accumulated, so a
+patient run idled forever. Scum is **sticky** (rim ×0.4 underfoot; airborne exempt, which
+makes the float the way across a fouled stretch on every shape), **barren** (the director
+skips fouled lanes, so neglect starves the chain rather than blocking you) and past **80%
+coverage the channel floods** — a life, the chain, a clean rim. The **dive is the only
+scrub** (one layer per completed dive, 50 × level; a dive cancelled by a hit scrubs
+nothing) — which is what finally makes the stated core verb load-bearing: it advertised
+3× but capped at 2.1× against a ×16 chain that never needed it. Level clear washes the
+channel and pays 40 × level × clean lanes — the chain's missing cash-out beat. The scum
+line itself is a 20-cell strip under the channel: route map and flood meter, one fact.
+`node sudsjack/test/smoke.cjs` = 60 checks: boot, the director, the
 lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
 game over, the way home and the signature — all driven off **game state, not the wall
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
@@ -521,6 +612,158 @@ Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy 
 bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for the
 roadmap of future experiences.
 
+### Kindling (`kindling/`)
+**A betterment game in Finch's shape, made small enough to be honest.** Finch's loop
+taken at its word: you tick off the small real things you actually did, they become
+**kindling**, the kindling keeps a fire, and the fire is the light you see the world by.
+**The setting pivoted at v5** (owner direction, 2026-08-16): the cozy hut is retired and
+the scene is a **moonlit dark-fantasy bonfire camp**. The loop underneath is untouched,
+and the scheme's one idea got sharper rather than changing: everything is painted from a
+COLD ramp and warmed toward the fire, because the world is cold and the fire is the only
+warm thing in it.
+**The art canon is `kindling/art-src/approved/`** (v7, 2026-08-17). Thirteen approved
+sheets arrived from the ChatGPT art pass — scenes, environment libraries, four character
+bibles and a full UI kit — and **none of them are in the repo**:
+`agent/betterment-approved-art-handoff` ships a README naming a zip that never landed,
+and no branch carries binary art. `SHEETS.md` is the archive that survives that: the
+sheets **read out** at the level of detail a renderer needs, because this game draws
+every pixel in code and there was never anything to import. **Read it before touching
+the look**; `ART_GUIDE.md` is the arithmetic on top of it (the 3-pixel rule, the trait
+zones, what a gate can check) and the sheets win where the two disagree — two of the
+guide's rules were guesses written before there was any art and are corrected against
+the reference.
+**The camp is staged left to right**, the same way every reference scene stages it: a
+tree cropped by the top-left corner with a lit lantern and a torn banner on it, one
+whole arch and one broken behind it, the bonfire in its ring of stones **left of
+centre**, the companion on a rug, the gear on the ground, crumbled wall stacks carrying
+everything ever brought home, a gate where the wall ends, and a castle on the horizon
+with a few windows lit. **Depth is value, not perspective** — the handoff says so
+outright ("do not invent perspective depth that the supplied layers cannot support"), so
+it is four flat layers each a step off the one behind, never a receding ground plane.
+**The companion is EMBER**, and it is not the moss-green animal the first cut drew: dark
+porous stone nearly the colour of the night, one big head on a small body, large white
+eyes, two fangs, two pale tan **horns**, a maroon **scarf**, ember at the cracks and the
+tail tip. That first clause decides the build — a body that dark cannot carry its own
+silhouette, so the sheet puts the job on the horns and the scarf and they are drawn in
+the two lightest colours it owns. The five stages are the sheet's age ladder (horn size,
+posture, accessories, surface detail — explicitly *not* body type), with horn length
+2/3/4/5/7px doing most of the work so the 3-pixel rule holds by construction.
+**Animation is a stated requirement, not a nicety**: the sheets ship IDLE 8f / WALK 6f /
+RUN 6f / ATTACK 8f and five shared principles, and the one this game had none of is
+**follow-through — cloth and accessories LAG the body**. The scarf and tail run off the
+breathing clock two frames late; over the cached blit sits a live layer (lantern flicker,
+the banner swaying as a travelling wave biggest at the hem, ember motes, leaning grass,
+three castle windows on uneven clocks), none of which costs a repaint and all of which
+stops under `prefers-reduced-motion`. **The UI kit is leather and felt, not glass** — a
+dashed stitch inset inside each panel, a hairline grain, progress as beads on a string,
+disabled buttons desaturated rather than removed — and all of it is additive CSS, so the
+mobile layer still owns none of the state machine.
+**Four art traps, all of which passed every gate and were visible only in a render**
+(which is why an art change ends in a screenshot, never in a green suite): the far plane
+was painted only where the ruin was not, so the **arch openings showed raw VOID** —
+anything with a hole in it needs something behind the hole; the masonry **hashed per
+pixel**, which is noise rather than texture and reads as poured concrete, so blocks are
+quantised 4×3 with offset courses and the joint is the block's own last row/column
+dropped down the ramp; the tree's canopy hung to the ground and made a **green cliff**
+(a tree is a trunk you can see with leaves above it); and **moss ran round the whole
+arch**, turning masonry into a hoop of vine — moss is a horizontal-surface plant. Two
+more were plainly wrong: a far building painted in the light stone tone reads as a bright
+column under the moon rather than a silhouette, and warm rust on the gate's bars made a
+white picket fence out of the brightest thing in the half of the picture the fire is
+supposed to own.
+**And the band-brightness gate has now measured the wrong thing twice**, once after each
+art pass: a sum-of-channels threshold saturates the moment the scene has a blue sky and
+warm earth in it (a whole day moved it 18474 → 19056, first step *downward*). The ruler
+is **firelight — red leading blue** — and the bands read 1243 → 2322 → 3261 → 4137 →
+5089 → 5997. Both times the page was right and the ruler was wrong, which is the general
+shape of this failure: a gate that certifies *works* cannot see *looks*.
+Canvas 2D at 192×128, no build step, no image assets, English only for now.
+**The light is the whole reward, and it is a MEASURE** — `lightAt()` in `js/room.js`
+is one falloff out of the bonfire whose reach is the day's tally, so a bad day is coals
+and forty pixels of flagstone while a full one reaches the ledges, the branch pile and
+the gate. That is why *everything* the game gives you is a thing that becomes visible
+rather than a number: the shelf fills permanently with what the creature carries home,
+the woodpile is your unspent kindling drawn as sticks, and the **door on the far wall
+only exists on a full fire** — the thing a good day reveals is the way out of the room.
+The whole room is dithered inside `cached()`, keyed on the light quantised to twelve
+steps, with flame, smoke, sparks, the creature and the lantern in the window drawn live
+on top (a scene whose first screen is frozen reads as a broken page).
+The creature (`js/pet.js`) is five stages off one table of numbers and grows on the
+**lifetime count of small things kept** — screen time earns nothing. It dozes by the
+coals when nothing has been done, sits up once the fire has anything to it, hops when
+you keep something, and is simply gone while it is out. `js/idle.js` is its own
+business: six behaviours picked by the room's state (sit near the coals on a dim day,
+look up at the shelf, watch the window, carry a stick to the woodpile and forget why),
+plus **saying hello** — the one interaction with no payout at all. It is handed a
+READER of the room and cannot change anything, and the gate proves it by watching for
+ninety seconds and checking every counter is where it was. It can **turn**, but the
+light does not turn with it: the lit crescent, the ember rim and the catch light stay
+on the hearth side however it is standing. A day holds five small things, so the
+static light snaps to **six bands** while the flame eases continuously through them —
+each band lights strictly more of the room, and the window's own tone (night / small
+hours / dawn / day / dusk) is read off the local clock with the stars laid out from
+the date.
+**The design rules are load-bearing and the gate checks one of them.** The day turns at
+**04:00**, not midnight (a list that resets while you are still awake tells you that
+you failed at 00:01 on a night you were doing fine). Nothing is ever taken away: a
+missed day resets the streak count and costs nothing else, and `liveStreak()` is
+counted back from TODAY (a streak that ended in March must not still show in July —
+the arcade's own counters learned that one). Ticking a line off again is free and pays
+nothing, via `sheet.paid` — the first cut paid out on every re-tick, which was
+farmable, and refusing to untick would have been worse: a list you cannot correct is
+one you stop being honest with. And the copy **never scolds**; `test/smoke.cjs` greps
+every string the app can say for a telling-off, because that is a design rule and not
+a preference.
+The **errand** (`js/errand.js`) is the outward half: three kindling sends it out for 90
+seconds of real time, the outcome is **seeded at departure and computed on return** so
+it survives a reload and a closed tab, and it comes home with two journal lines and
+often something for the shelf. There is no bad outing. **Breathing** (`js/breathe.js`)
+is four rounds of 4/4/6 paced on the fire itself rather than a second meter, banked per
+round so stopping early keeps what you did.
+**Nothing leaves the browser** — one localStorage key, no account, no network call, no
+leaderboard, said once on the first visit in the app's own voice. That is also why it
+has no `score` entry in the catalogue: a care app with a high score is a different app.
+All controls are real DOM buttons over the canvas, which is what makes it keyboard-
+navigable, what lets the arcade's `{ui:true}` pad bridge walk it, and what keeps the
+44px and AA floors measurable; the focus follows a view swap **only when the last input
+was a key**, so a tap never raises a ring nobody asked for. `window.__kd` exposes
+`{state, audio, view, debug}` — `finishErrand()` and `ageDay(n)` hand the clock forward,
+because `node kindling/test/smoke.cjs` (65 checks) is driven off state and never off the
+wall clock.
+**The mobile-first layer** (`js/modern-ux.js` + `modern-ux.css`, from PR #267) sits on
+top of that state machine without owning any of it: large goal rows with explicit check
+states, a five-step Today progress bar, a flames/level HUD, a fixed bottom nav and real
+Journey / Inventory / Reflections / Companion destinations built from the errand,
+found-object and growth state that already existed. `BETTERMENT_OWNER_DIRECTION.md` is
+the **newest design authority** and supersedes the older "no progress bars, no level
+presentation, cozy hut" calls; the art target ahead is a layered-2D dark-fantasy bonfire
+rather than this interior. The app is still called **Kindling** — Betterment is the lane,
+not the title, and the folder, cache name, catalogue entry and `kindlingState` key were
+never going to move. Two traps that merge found: the layer relabelled the action row **by
+index**, which silently renamed the fourth button the base layer had added, so it matches
+on what buttons SAY now; and there is **one hello, two doors** — the Companion page calls
+the same `idle.hello()` rather than growing a second creature. Everything in the folder
+carries **one token per release** (`?v=4`) with the worker's cache name, because the merge
+arrived with four different numbers in it at once.
+It is **offline-first and installable**, for the same reason `gameoflife/` is: something
+you open once a day, often on a phone and often before you are properly awake, cannot
+need a signal. `sw.js` is cache-first and scoped to this folder (a narrower scope wins
+its own pages — which is also why `scripts/deploy-hub.mjs` skips a folder shipping its
+own worker), and `node kindling/test/offline.cjs` (15 checks) kills the server, goes
+offline and plays a whole day through, asserting the network served **nothing** after it
+was cut. The precache list is hand-kept, so the gate makes it impossible to drift:
+every entry is fetched, the page's `?v=` token is compared with the worker's, and the
+four `../hub/*` files that carry the HOME button are checked against the tokens
+`hub/shell.js` actually imports — a list a token behind the page is an app that loads
+online and is blank on a train, which this repo has shipped before. The manifest's PNGs
+are **generated** by `tools/make-icons.mjs` from the app's own palette: a manifest needs
+real bitmaps, which is the one place the no-image-assets rule bends, and it bends the way
+the brand's SVGs do so a handed-over icon cannot drift from the app.
+Deliberately **unsigned**, for the same reason `gameoflife/` is: a magenta badge
+shouting GO MAKE YOUR OWN is the wrong voice in a room built to be quiet. Same
+`gh-pages` deploy caveat as paperboy; the Finnish and Japanese in `hub/games.js` want
+the native read the counter's packs do.
+
 ### Toko Midori Games — the brand (`toko/`)
 The identity of the workshop, created by **美鳥十湖** (*Toko Midori*, "The Game
 Creator") — the masked artist behind the look of every cabinet here: anarchist,
@@ -597,9 +840,21 @@ cabinets below the fold (two columns where there is room).
 `dialogue.fi.js`/`dialogue.ja.js` are pure string packs overriding by topic id
 with per-key English fallback, and the counter follows `__hub.lang()` → `<html
 lang>` → en (watched with a `MutationObserver`, since hub.js re-renders rather
-than firing an event). It never re-types the transcript. Both packs are drafts;
-the **parser is en/fi only** — its tokeniser splits on spaces, so the Japanese
-KEYS table is deliberately empty and the menu is the path there.
+than firing an event). It never re-types the transcript. Both packs are drafts. **The Japanese parser is real**: Japanese does not space
+its words, so a whitespace tokeniser sees one long run and matches nothing —
+`findBySubstring` asks the other question instead ("which of my keys APPEAR in
+what you typed"), the JA keys are **stems** rather than words (「作」 catches
+作る・作った・作りたい), and a hit scores its own LENGTH so a long agreement beats a
+short one and a stray character cannot carry a match. A Japanese browser lands
+on the arcade in Japanese and the counter follows `<html lang>` with it.
+What the packs still need is a **native read** — they were written to match
+Toko's register rather than translated, by someone who does not speak either
+language natively. `node scripts/ja-review.mjs` builds a review page: every
+Japanese line beside its English source, grouped the way the counter is built,
+with the register question (plain form + 「お前」 throughout) asked at the top.
+The gate now also fails if **anything is left in English** in a pack — three
+`CHANGED` entries shipped English-only in both packs and nothing caught it,
+because per-key fallback is the right behaviour and completely silent.
 **It runs both ways.** A `>` **parser** line takes a typed sentence and matches it
 by word overlap against a keyword table (`find()` — still no model, and a miss
 *says so* rather than answering the wrong question; typing reaches `locked` topics,
@@ -675,7 +930,156 @@ plus its five deps — so **changing `signature.js` means bumping that token and
 the list entry in the same change**, or those two games serve the old badge out
 of cache forever while every other cabinet gets the new one.
 
+### Eeri (`eeri/`) — the platformer, and the one MULTI-AGENT project
+
+A Mario 3 / Yoshi-shaped platformer for a six-year-old: Eeri is the owner's
+own kid, on a worksite of Tonka × Cat machines he can climb into. On foot is
+the game (run, jump, stomp, climb); machines are short ride sequences. Three
+levels of a planned twelve, four worlds of three.
+
+**READ IN THIS ORDER BEFORE TOUCHING ANYTHING.** More than one agent works
+this project at once, so the docs are the coordination and skipping them is
+how work gets deleted:
+
+1. **`eeri/PHASING.md`** — newest owner direction (2026-08-14) and it
+   **supersedes the others where they disagree**. Holds the three things
+   canon does not: the **80/20 reference ratio** (Yoshi's Crafted World 80,
+   Tropical Freeze 20 — the *default* answer to any look question is Crafted
+   World), the **tool-reality table** (what Nano Banana and Meshy can
+   actually do; routing rule: *legs → Meshy rig · wheels/tracks → sliced
+   nodes · deformation → code*), and the **phase gates** — no agent starts
+   Phase N+1 while a Phase N item in its own lane is open.
+2. `eeri/DESIGN.md` — what the game does, and §6 is the art pipeline's
+   asset queue. §8 is the ordered plan.
+3. `eeri/ART_BRIEF.md` — the look, and **`/ART_PIPELINE.md`** for how an
+   asset is actually MADE: concept → mesh → rig → animate → integrate, the
+   credit costs, and a trap index of everything that has shipped broken.
+   Its two standing rules — **a Meshy feature is always the primary
+   choice**, and **anything to be rigged is concepted in a T-POSE** —
+   decide most art questions before they are asked. `/ART_TARGET.md` is
+   the quality bar, with an acceptance test per rung.
+4. `eeri/assets/README.md` + `assets/manifest.json` — the seam: node and
+   clip contracts, layer rects and PNG sizes.
+5. `eeri/VERSIONS.md` — what shipped and, more usefully, the traps.
+
+**LANES — who owns which files.** Two agents editing one module is how two
+lineages start. Stay in your lane; if you must cross it, say so in the
+commit message.
+
+| lane | owns |
+|---|---|
+| **Art** | `assets/**`, `art-src/**`, `js/craft.js`, `js/layers.js` paintings, `PAL` colour values, `ASSET_PLAN.md` |
+| **Design/Level** | `js/rooms.js`, `js/parts.js`, `js/level.js`, `js/kid.js`, `js/input.js`, `js/robots.js`, `js/flag.js`, `test/**`, `DESIGN.md` |
+| **Shared — coordinate first** | `js/main.js`, `js/assets.js`, `js/palette.js` (structure), `assets/manifest.json`, `index.html` |
+
+**BRANCH RULE, and it is the one that has already cost this project twice:**
+
+- **`main` is the only place to author.** `gh-pages` is a **deploy target,
+  not a workspace**. Editing Eeri directly on `gh-pages` starts a lineage
+  with no common ancestor to `main` — `git merge-base` returns *nothing* —
+  and then neither tree can be merged into the other without hand work.
+  This has happened **three** times: between two `claude/*` branches, then
+  between `main` and `gh-pages`, then again with
+  `claude/eeri-platformer-levels-dtfh0x`. All three are now joined into
+  `main` (v12 and v14) — **`main` is the one tree, and it is ahead of every
+  other branch.** Start from it.
+- **Before any Eeri work: `git fetch origin` and check `git merge-base`
+  against `origin/main`.** If it returns nothing, you are on a fourth
+  lineage — stop and reconcile before writing anything. Code from whichever
+  lineage is ahead *per file*, art re-judged against `PHASING.md` §0.1 no
+  matter who shipped it.
+- **`--allow-unrelated-histories` is not the tool.** It was tried: the
+  Eeri branches descend from `gh-pages`, so merging one drags the whole
+  deployed site — toko-drop, toko, voxel — into `main`. Scope the join to
+  `eeri/js`, `eeri/test`, `index.html` and the manifest, and keep `main`'s
+  docs whole.
+- **Merge by KIND, and against the content ancestor.** There is no git
+  ancestor, but each lineage's `VERSIONS.md` names where it forked, and
+  that commit's tree usually *is* a real ancestor in content — check with
+  a byte comparison on a file neither side touched. Then a genuine
+  three-way `git merge-file` does the work instead of you picking files by
+  hand; both v12 and v14 were done that way and the conflicts were mostly
+  single import lines.
+- **Version numbers do not detect this.** Both lineages independently
+  reached "v11" and `hub/versions.json` said `v: 11` on each, so nothing
+  looked wrong. It happened again at v13. **Never reuse a version number:
+  fetch and read the other lineage's `VERSIONS.md` before writing a new
+  heading.**
+- **Versions are DECIMAL from v15** (2026-08-14): `vMAJOR.MINOR`, the
+  integer a milestone and the decimal an increment on it. Burning a whole
+  integer on ordinary work is what made the collisions above so easy.
+  **`?v=` module tokens stay integers** — they are cache-busters tracking
+  module-graph churn, not releases, and the two numbers are deliberately
+  different. `scripts/versions.mjs` emits both a label (`"15.1"`) and a
+  sort key (`15001`) because one number cannot do both jobs: a label
+  cannot be compared (`'15.10' < '15.9'` lexically) and a float cannot be
+  displayed (`15.0` prints as `15`).
+- Deploying is a copy onto `gh-pages` limited to `eeri/` plus
+  `hub/games.js` and `hub/versions.json`. It omits `test/` and `art-src/`
+  (that branch ships docs, not test dirs). **Deploys never merge.**
+
+**SIX GATES, all of which must be green before a deploy:**
+
+```
+node eeri/test/rooms.mjs                                 # the room prover
+node eeri/test/fx-smoke.mjs                              # the FX spec, pool, inference
+node eeri/test/dev-menu.mjs                              # the dev pack's contract
+NODE_PATH=$(npm root -g) node eeri/test/smoke.cjs        # the game
+NODE_PATH=$(npm root -g) node eeri/test/playthrough.cjs  # a bot finishes every level
+NODE_PATH=$(npm root -g) node test/hub-smoke.cjs         # the cabinet
+```
+
+The two `.mjs` ones run in **bare node** — no browser, no GPU, no audio
+device — which is why they are fast enough to run on every edit.
+
+`rooms.mjs` proves a room's *geometry*; `playthrough.cjs` proves it is
+*playable* — it exists because the prover passed a level nobody could
+finish. The playthrough also measures **cost** (how often a level takes the
+ride away), because a tireless bot will beat a level a child would put down.
+`dev-menu.mjs` catches the one break nothing else can: the dev/FX pack reads
+debug hooks that **nothing in the game depends on**, so renaming one breaks
+the pack and no other test fails — the menu just quietly shows dashes while
+the effects quietly stop.
+
+**The game speaks fi / en / ja** (`js/lang.js`) — house convention, and it
+had none until v15.1, so the Finnish six-year-old it is built for read it in
+English. English is the **per-key** fallback. `js/intro.js` is the title
+screen (the owner's line: *seikkailee työkoneiden ja robottien maailmassa*),
+shown before the scene builds and awaited after it; **`?skip` walks past it**
+and every gate uses that. `js/glyphs.js` draws the button faces as inline
+SVG — one set for a 13px hint line and a 62px touch button, and **no key
+caps or mouse icons, ever** (§6.4).
+
+**The dev / FX pack is peripheral by design** (`CLAUDE_HANDOFF.md`,
+`EERI_DEV_PACK.md`, `eeri/dev/README.md`). `eeri/dev.html` **frames**
+`index.html` rather than copying it, so the thing being tuned is the thing
+that ships. Effects fire from **polling** `window.__eeri` and reading events
+out of state differences, so there are zero hooks in `main.js`.
+`js/fx.js` and `js/audio-fx.js` **inject** three.js and WebAudio instead of
+importing them — that is what makes `fx-smoke.mjs` runnable in bare node,
+and `dev-menu.mjs` fails if anyone adds a top-level `import * as THREE`.
+Sound is **synthesised, never sampled**; a binary audio file under
+`assets/audio/` fails the gate on purpose.
+
+**Traps worth knowing before you spend a day on one** (all in `VERSIONS.md`):
+one `?v=` token per module or the browser instantiates it twice and the
+module's state splits — that silently unplugged 2.7 MB of layer art, twice;
+a ride-ending hazard may never stand between a machine and its job; the
+skinned rig is modelled facing +z and `FACE_TURN` already does the +z→+x
+turn, so any extra yaw points him at the camera.
+
 ### Toko Drop (`toko-drop/`)
+
+**THE MAIN PROJECT (owner's call, 2026-08).** Attention goes here first; Hyper Dagger
+is second; everything else is maintenance unless the owner says otherwise. The owner's
+diagnosis, recorded so sessions stop repeating the pattern: most games in this repo are
+stuck at their initial prototype look and feel — every game got one intense burst that
+produced a working prototype and never a second one. The way out is the method that
+worked on the cover art: a reference from the owner, then render → LOOK → name what is
+wrong → redo, discarding drafts freely — applied to one system at a time against
+captured MOTION (`scripts/enemy-loop.mjs` records GIF loops from the real game code),
+not against stills or state assertions, because the smoke gates certify *works* and
+prototype-feel lives entirely in the part they cannot see.
 
 Browser twin-stick swarm-survival game built with Three.js and ES modules, with
 no build step. The current live implementation is the canonical gameplay
@@ -708,6 +1112,12 @@ reference; the old UE5 notes no longer describe this repository.
   roughly 1.5 seconds per screenshot, so run longer loops in the background.
   Keep capture-only dependencies such as `gifenc` and `pngjs` in scratch and
   expose them with `NODE_PATH` rather than vendoring them into the game.
+- Every playable-project release must update its `hub/games.js` title/tagline,
+  controls and status/note where relevant, plus `hub/versions.json`; bump every
+  affected hub-module and worker cache token. Deploy the build
+  and catalogue copy together to `gh-pages`, verify both the hub entry and live game
+  actually load and play, then report the hub link and version. A merge alone is not
+  a playable release.
 - Every Toko Drop game change needs a new top entry in `VERSIONS.md` and matching
   cache tokens. `scripts/bump-version.sh <N>` performs the coordinated bump.
 - Install the version guard with
@@ -734,8 +1144,49 @@ reference; the old UE5 notes no longer describe this repository.
 ## Repository Structure
 
 ```
-sudsjack/       # Suds Jack — the rebuild: Bomb Jack's collection on Tempest's tube
-  index.html    #   (the playable original is still sudz/ on gh-pages)
+eeri/           # Eeri — the platformer. MULTI-AGENT: read PHASING.md before anything
+  PHASING.md    # NEWEST owner direction — supersedes the rest where they disagree
+  DESIGN.md     # what the game does; §6 is the art queue, §8 the ordered plan
+  ART_BRIEF.md  # the look: Crafted World 80 / Tropical Freeze 20
+  VERSIONS.md   # what shipped, and the traps
+  vendor/       # three.js r167 + GLTFLoader, local — not the CDN
+  assets/
+    README.md   # THE SEAM: node/clip contracts, layer rects, PNG sizes
+    manifest.json # every model + layer: "placeholder" (code-built) or "live" (file)
+    2d/ 3d/     # the shipped art
+  dev.html      # the dev/FX entry — a same-origin FRAME around index.html
+  dev/
+    dev-menu.js # the panel: level jumps, fire-an-effect, switches, live state
+    dev-menu.css README.md
+  js/
+    main.js     # scene, loop, HUD, states, the ride handoff        (SHARED)
+    assets.js   # the manifest reader; placeholder ⇄ live           (SHARED)
+    palette.js  # PAL + the craft materials                         (SHARED)
+    lang.js     # fi / en / ja, English as the per-KEY fallback     (SHARED)
+    intro.js    # the title screen; ?skip walks past it
+    glyphs.js   # the button faces, drawn as SVG — no key caps ever  (Art)
+    fx.js       # visual spec + particle pool + event inference (three INJECTED)
+    audio-fx.js # the voice table + synthesised kit (never sampled)
+    layers.js   # the cutout diorama: LAYER_RECTS × PPU at real z    (Art)
+    rooms.js    # the twelve levels, laid out in parts              (Design/Level)
+    parts.js    # the room compiler + REACH, the reach budget       (Design/Level)
+    level.js    # tile collision, ladders, the compiled room        (Design/Level)
+    kid.js      # Eeri: run/jump/stomp/climb/ride, and the facing   (Design/Level)
+    input.js    # keys / pad / on-screen glyph controls — pad-first (Design/Level)
+    robots.js   # the small enemies; stomp response lives here      (Design/Level)
+    flag.js     # the three-phase building flag, finished by running past
+    excavator.js crane.js pieces.js hazards.js camera.js audio.js
+  test/
+    rooms.mjs      # the room prover — geometry against REACH
+    smoke.cjs      # the game: boot, assets fetched, one token per module
+    playthrough.cjs# a bot must FINISH every level, and it measures COST
+    fx-smoke.mjs   # the FX spec, pool and inference — bare node
+    dev-menu.mjs   # the dev pack's contract with the game — bare node
+sudz/           # Suds Jack — active Horizon Mesh canvas score attack
+  game.js       #   lanes, terrain, director, collisions, score and render
+  test/core.mjs #   bare-Node core-loop gate
+sudsjack/       # Suds Jack — earlier tube-collection rebuild, SET DOWN
+  index.html    #   deployed unlisted; the arcade points at sudz/
   VERSIONS.md
   vendor/       # three.js r167, local — not the CDN
   js/
@@ -757,6 +1208,31 @@ hub/
   hub.css       # the dark room; AA contrast + 44px controls are load-bearing here
 test/
   hub-smoke.cjs # headless checks over the hub
+kindling/       # Kindling — a betterment game: care in, firelight out
+  index.html
+  VERSIONS.md
+  sw.js         # offline: cache-first, scoped to this folder, its own version
+  manifest.webmanifest
+  icon-192.png  # generated — never hand-edited
+  icon-512.png
+  tools/
+    make-icons.mjs  # writes both icons from the app's palette (no dependencies)
+  js/
+    room.js     # the room, and the one falloff whose reach IS the day's tally
+    idle.js     # the creature's own business — and it cannot pay itself
+    modern-ux.js# the mobile-first layer over the state machine (PR #267)
+    pet.js      # the creature: five stages from one table, lit from the hearth
+    state.js    # the sheet, the streak, the journal — one localStorage key, no network
+    errand.js   # the outing: seeded at departure, computed on return; what it finds
+    breathe.js  # 4 / 4 / 6, paced on the fire rather than on a second meter
+    pixel.js    # the 192x128 surface, cached() and the dither helpers
+    palette.js  # warm is what you made, cold is what is waiting outside it
+    audio.js    # a near-inaudible fire bed and six events, all through one gain
+    main.js     # the views, the day's turn, the errand clock, window.__kd
+  test/
+    smoke.cjs   # 65 checks, driven off state — including that the copy never scolds
+    offline.cjs # kills the server and plays a day with the network gone
+    betterment-ux-smoke.cjs  # 20 checks over the mobile layer: nav, goals, flames
 toko/           # Toko Midori Games — the brand (face, lockups, sting, signature)
   BRAND.md      # the rules: the creed, construction notes, the two colours, do/don't
   index.html    # the brand board — every mark live, glitch lab, SVG downloads

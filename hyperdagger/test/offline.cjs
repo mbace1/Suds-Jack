@@ -22,6 +22,14 @@ const server = http.createServer((req, res) => {
     res.end(d);
   });
 });
+// The worker's cache name, read off sw.js rather than guessed. This line used
+// to look for 'hyper-dagger-v' while sw.js has always written 'hyperdagger-v',
+// so the check found no cache at all and reported zero entries — which is what
+// a genuinely empty precache looks like too, and that is how a precache list
+// naming two of the game's twelve modules went unnoticed.
+const CACHE_PREFIX = (fs.readFileSync(path.join(ROOT, 'hyperdagger', 'sw.js'), 'utf8')
+  .match(/const CACHE = '([^']*?)v\d+'/) || [, 'hyperdagger-v'])[1];
+
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (d ? ' → ' + d : ''))); };
 
@@ -29,7 +37,13 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
   await new Promise(r => server.listen(0, r));
   const port = server.address().port;
   const URL = `http://localhost:${port}/hyperdagger/index.html`;
-  const b = await chromium.launch({ args: ['--use-gl=swiftshader'] });
+  const b = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
+    env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LIB || process.env.LD_LIBRARY_PATH },
+    args: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? ['--no-sandbox', '--single-process', '--no-zygote', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--in-process-gpu']
+      : ['--use-gl=swiftshader'],
+  });
   const ctx = await b.newContext({ viewport: { width: 1100, height: 720 } });
   const pg = await ctx.newPage();
   const errs = [];
@@ -48,13 +62,13 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
   ]);
   ok('the worker takes control', controlled.controlled === true, JSON.stringify(controlled));
   // precache must be populated before we cut the cord
-  const cached = await pg.evaluate(async () => {
+  const cached = await pg.evaluate(async (prefix) => {
     const names = await caches.keys();
-    const name = names.find(n => n.startsWith('hyper-dagger-v'));
+    const name = names.find(n => n.startsWith(prefix));
     if (!name) return { name: null, entries: 0 };
     const c = await caches.open(name);
     return { name, entries: (await c.keys()).length };
-  });
+  }, CACHE_PREFIX);
   ok('the precache is populated (30+ files)', cached.entries >= 30, JSON.stringify(cached));
 
   // cut the cord: server down AND browser offline

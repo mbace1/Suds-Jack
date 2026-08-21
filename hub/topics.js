@@ -75,6 +75,16 @@ const LEADS = {
   tokodrop: ['balance', 'idea'],
   sudsjack: ['idea', 'more'],             // a rebuild is starting; ideas land now
   gameoflife: ['idea', 'more'],           // the next thing it needs is another story
+  // The two cabinets that live only on the deployed site had never been given a
+  // question, so the counter offered them the bare order — and the gate tolerates
+  // exactly one of those. A worksite platformer for a six-year-old is asked about
+  // its handling first; a VR room you sit in is asked how it FEELS to be in.
+  eeri: ['controls', 'balance'],
+  tokotrip: ['look', 'more'],
+  kindling: ['look', 'idea'],             // a mobile UX layer just landed on it
+                                          // and the art target is changing under
+                                          // it: how it reads, and what it should
+                                          // notice next
   skltr: ['balance', 'controls'],
   neonronin: ['controls', 'look'],
   eyetest: ['idea', 'bug'],
@@ -83,7 +93,12 @@ const LEADS = {
                                           // complaint: it has to be told apart
                                           // from lag, and the screens are the
                                           // difficulty
-  radiofree: ['idea', 'look'],            // it is writing and voice: what it
+  radiofree: ['idea', 'look'],
+  piritori: ['balance', 'idea'],          // the economy IS the game: can seven
+                                          // nights beat the interest, and what
+                                          // should the city do next
+  tokomove: ['look', 'idea'],             // the day read is the product: does it
+                                          // read as the same city, kindly            // it is writing and voice: what it
                                           // should say next, and how it reads
   hub: ['idea', 'bug'],
 };
@@ -144,6 +159,8 @@ const SPECIFIC = {
     'tokodrop:balance': ['The waves stop escalating', 'The dash cooldown is too long'],
     'gameoflife:idea': ['A story about…', 'Let me revisit a finished one', 'More that sends me outside'],
     'gameoflife:more': ['I actually went outside', 'The quiet is the point'],
+    'kindling:look': ['The room is hard to read', 'Too many numbers on it now'],
+    'kindling:idea': ['A small thing it should notice', 'Something it could bring home'],
     'sudsjack:idea': ['Keep the tube, lose the…', 'The rebuild should keep…'],
     'paperboy:more': ['Put this one back on the site'],
     'hub:idea': ['Sort the cabinets by…', 'Show me what changed since last time'],
@@ -165,6 +182,8 @@ const SPECIFIC = {
     'tokodrop:balance': ['Aallot lakkaavat kiristymästä', 'Syöksyn jäähdytys on liian pitkä'],
     'gameoflife:idea': ['Tarina aiheesta…', 'Anna palata jo koettuun', 'Lisää sellaista mikä vie ulos'],
     'gameoflife:more': ['Menin oikeasti ulos', 'Hiljaisuus on koko juju'],
+    'kindling:look': ['Huonetta on vaikea lukea', 'Numeroita on nyt liikaa'],
+    'kindling:idea': ['Pieni asia jonka sen pitäisi huomata', 'Jotain mitä se voisi tuoda kotiin'],
     'sudsjack:idea': ['Pidä putki, jätä pois…', 'Uusintaversion pitäisi säilyttää…'],
     'paperboy:more': ['Palauta tämä sivustolle'],
     'hub:idea': ['Järjestä kaapit…-mukaan', 'Näytä mikä on muuttunut viime käynnin jälkeen'],
@@ -186,6 +205,8 @@ const SPECIFIC = {
     'tokodrop:balance': ['ウェーブが上がらなくなる', 'ダッシュのクールダウンが長い'],
     'gameoflife:idea': ['こんな話が読みたい…', '終えたものにまた入らせて', '外へ向かわせるものをもっと'],
     'gameoflife:more': ['ほんとうに外に出ました', '静かさこそが本体'],
+    'kindling:look': ['部屋が読みにくい', '数字が増えすぎた'],
+    'kindling:idea': ['気づいてほしい小さなこと', '持って帰ってきてほしいもの'],
     'sudsjack:idea': ['筒は残して、…はやめて', '作り直しでも残してほしいのは…'],
     'paperboy:more': ['これをサイトに戻してほしい'],
     'hub:idea': ['キャビネットを…順に並べて', '前回から何が変わったか見せて'],

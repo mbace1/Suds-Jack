@@ -135,7 +135,10 @@ export class Player {
   }
 
   // `dir` is -1..1 from whatever is driving him: keys, a stick, a thumb.
-  move(dir, dt) {
+  // `grip` is the floor's answer: 1 on clean rim, STICKY standing in scum.
+  // A jump never takes the factor — the whole point of being airborne is
+  // that the floor has no say in it.
+  move(dir, dt, grip = 1) {
     if (dir) this.lastDir = Math.sign(dir);
     // A jump owns the lane for its whole length — see jump().
     if (this.jumping) return;
@@ -146,7 +149,7 @@ export class Player {
     const [lo, hi] = this.tube.bayRange(this.lane);
     // Locked to the lane while committed. This is the cost of the dive and it
     // is not softened anywhere: half a dive is not a thing you can do.
-    const want = this.diving ? 0 : dir * RIM_SPEED;
+    const want = this.diving ? 0 : dir * RIM_SPEED * grip;
     const d = want - this.vel;
     const step = RIM_ACCEL * dt;
     this.vel += Math.abs(d) <= step ? d : Math.sign(d) * step;
@@ -180,7 +183,11 @@ export class Player {
     if (this.diving) {
       this.diveT += dt;
       const total = DIVE_OUT + DIVE_HOLD + DIVE_BACK;
-      if (this.diveT >= total) { this.diveT = -1; this.depth = 0; }
+      // A COMPLETED dive is a fact the game cares about now — the return leg
+      // is what scrubs scum — so it is announced, once, and only for a dive
+      // that came all the way back. hit() cancels a dive without setting it:
+      // a scrub you were knocked out of did not happen.
+      if (this.diveT >= total) { this.diveT = -1; this.depth = 0; this.diveDone = true; }
       else if (this.diveT < DIVE_OUT) {
         this.depth = DIVE_DEPTH * ease(this.diveT / DIVE_OUT);
       } else if (this.diveT < DIVE_OUT + DIVE_HOLD) {
@@ -227,11 +234,14 @@ export class Player {
     return true;
   }
 
+  /** Consumed by the frame: true exactly once per dive that came home. */
+  scrubReady() { const d = !!this.diveDone; this.diveDone = false; return d; }
+
   reset() {
     // a run starts on the floor, in the middle of the channel
     this.lane = this.tube.floorLane; this.vel = 0; this.depth = 0;
     this.diveT = -1; this.jumpT = -1; this.air = 0;
-    this.mercy = 0; this.alive = true;
+    this.mercy = 0; this.alive = true; this.diveDone = false;
     this.mesh.visible = true;
   }
 }

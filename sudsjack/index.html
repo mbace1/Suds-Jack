@@ -31,6 +31,23 @@
     #level { font-size: 15px; color: #8f6bff; }
     #lives { font-size: 17px; color: #4be3ff; letter-spacing: .3em; }
 
+    #scum {
+      bottom: max(10px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 2px;
+    }
+    #scum i {
+      display: block;
+      width: 11px; height: 4px;
+      background: rgba(75, 227, 255, .18);   /* clean: a faint cold rim */
+      transition: background .25s;
+    }
+    #scum i.s1 { background: #8a7b2e; }
+    #scum i.s2 { background: #6a5d20; }
+    #scum i.s3 { background: #3c3512; }
+
     #banner {
       position: fixed;
       top: 11%;
@@ -110,6 +127,10 @@
     <div id="level">L1</div>
   </div>
   <div id="banner"></div>
+  <!-- the scum line: the mouth seen edge-on. One cell per lane; cells darken
+       as lanes foul, and the whole strip IS the flood meter — no second
+       gauge, because the map and the warning are the same fact. -->
+  <div class="hud" id="scum"></div>
 
   <div class="panel" id="menu">
     <h1>SUDS JACK</h1>
@@ -150,8 +171,8 @@
   }
   </script>
   <!-- the arcade shell: a home button and a controller way back -->
-  <script type="module" src="../hub/shell.js?v=15"></script>
-  <script type="module" src="js/main.js?v=5"></script>
+  <script type="module" src="../hub/shell.js?v=17"></script>
+  <script type="module" src="js/main.js?v=6"></script>
 
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD.
        `counter: true` makes it the way to the counter on the hub; on a

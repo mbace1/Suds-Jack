@@ -22,37 +22,37 @@ const _s = new THREE.Vector3();
 // hitboxes and gameplay are unchanged.
 const SKULL_LAYERS = [
   [ // chin
-    '....WWW....',
+    '....W.W....',
     '...WWWWW...',
     '...WWWWW...',
     '....WWW....',
     '...........'],
   [ // lower teeth
-    '...WKWKW...',
-    '..WWWWWWW..',
+    '..WKWKWKW..',
+    '..WWSSSWW..',
     '..WWWWWWW..',
     '...WWWWW...',
     '...........'],
   [ // bite line — upper teeth
-    '..WKWKWKW..',
+    '..KWKWKWK..',
     '.WWWWWWWWW.',
     '.WWWWWWWWW.',
     '..WWWWWWW..',
     '...WWWWW...'],
   [ // maxilla, nasal base
-    '.WWWWKWWWW.',
+    '.SWWWKWWWS.',
     '.WWWWWWWWW.',
     '.WWWWWWWWW.',
     '..WWWWWWW..',
     '...WWWWW...'],
   [ // cheekbones flare, nasal cavity
-    'WWWWWKWWWWW',
+    'SWWWWKWWWWS',
     'WWWWWWWWWWW',
     '.WWWWWWWWW.',
     '..WWWWWWW..',
     '...WWWWW...'],
   [ // socket floors
-    'WWKKWWWKKWW',
+    'WKKKWWWKKKW',
     'WWWWWWWWWWW',
     'WWWWWWWWWWW',
     '.WWWWWWWWW.',
@@ -64,13 +64,13 @@ const SKULL_LAYERS = [
     '.WWWWWWWWW.',
     '..WWWWWWW..'],
   [ // brow ridge
-    '.WWWWWWWWW.',
+    'SWWWWKWWWWS',
     'WWWWWWWWWWW',
     'WWWWWWWWWWW',
     '.WWWWWWWWW.',
     '..WWWWWWW..'],
   [ // cranium
-    '..WWWWWWW..',
+    '.SWWWWWWWS.',
     '.WWWWWWWWW.',
     '.WWWWWWWWW.',
     '..WWWWWWW..',
@@ -82,16 +82,59 @@ const SKULL_LAYERS = [
     '....WWW....',
     '...........'],
 ];
+// The basic chaser needs a threat silhouette before its facial detail is
+// readable. Three swept bone shelves grow out from the cranium, creating the
+// wide horned profile that owns a dark arena without adding screen clutter.
+const SKULL_HORNS = [
+  ['.....WWW.WWW.....', '.....WWW.WWW.....', '......WW.WW......', '.................', '.................'],
+  ['..WWW.......WWW..', '..WWW.......WWW..', '...WW.......WW...', '.................', '.................'],
+  ['WWW...........WWW', 'WWW...........WWW', '.WW...........WW.', '.................', '.................'],
+];
+const SKULL_BLANK = ['...........', '...........', '...........', '...........', '...........'];
+const BASIC_SKULL_PALETTE = {
+  W: 0xd8d2c4, S: 0x766f66, R: [4.4, 0.12, 0.025], K: 0x020101,
+};
 // crown / horn layers for the variants, at the new 11-wide grid
 const CROWN_5 = ['...........', '.C.C.C.C.C.', '...........'];
 const CROWN_6 = ['...........', 'C.C.C.C.C.C', '...........'];
 const BRUTE_HORNS = ['V.........V', '...........', '...........'];
 
+// Dense procedural source sculpts for v22. The callback returns a palette key
+// for one cell in a width × depth × height volume; parseModel still owns AO,
+// damage subdivision and anchoring exactly as it does for hand-authored rows.
+function sculptLayers(width, depth, height, sample) {
+  const layers = [];
+  for (let y = 0; y < height; y++) {
+    const rows = [];
+    for (let z = 0; z < depth; z++) {
+      let row = '';
+      for (let x = 0; x < width; x++) row += sample(x, y, z, width, height, depth) || '.';
+      rows.push(row);
+    }
+    layers.push(rows);
+  }
+  return layers;
+}
+
 export const MODELS = {
   skull: {
     voxelSize: 0.14,
-    palette: { W: 0xd8d8d8, S: 0xa8a8a8, R: [2.8, 0.2, 0.2], K: 0x1a1a1a },
-    layers: SKULL_LAYERS,
+    palette: BASIC_SKULL_PALETTE,
+    layers: [...SKULL_LAYERS, ...SKULL_HORNS],
+  },
+  // Split copies preserve the full 13-layer coordinate frame. Skull animates
+  // the jaw around a real hinge while the head and horns keep tracking aim.
+  skullHead: {
+    voxelSize: 0.14,
+    palette: BASIC_SKULL_PALETTE,
+    layers: [SKULL_BLANK, SKULL_BLANK, ...SKULL_LAYERS.slice(2), ...SKULL_HORNS],
+  },
+  skullJaw: {
+    voxelSize: 0.14,
+    palette: BASIC_SKULL_PALETTE,
+    noHull: true, // keep the moving teeth jagged and readable against the skin
+    layers: [SKULL_LAYERS[0], SKULL_LAYERS[1],
+      ...Array.from({ length: 11 }, () => SKULL_BLANK)],
   },
   // crowned skull — faster, 2 HP, red crown
   skull2: {
@@ -118,27 +161,29 @@ export const MODELS = {
   },
   // blinker — glitch shard that teleports toward the player
   blinker: {
-    voxelSize: 0.26,
+    voxelSize: 0.16,
     noHull: true, // a glitch shard reads as loose cubes on purpose
-
-    palette: { D: 0x3a3a3a, R: [2.6, 0.2, 0.2] },
-    layers: [
-      ['...', '.D.', '...'],
-      ['.D.', 'DRD', '.D.'],
-      ['D.D', '.R.', 'D.D'],
-      ['.D.', 'DRD', '.D.'],
-      ['...', '.D.', '...'],
-    ],
+    palette: { D: 0x3a3a3a, S: 0x171717, R: [2.6, 0.2, 0.2] },
+    layers: sculptLayers(9, 7, 11, (x, y, z) => {
+      const cx = x - 4, cy = y - 5, cz = z - 3;
+      const shard = Math.abs(cx) / (4.2 - Math.abs(cy) * 0.42) + Math.abs(cz) / 3.0 < 1;
+      if (!shard) return (Math.abs(cx) === 4 && Math.abs(cy) <= 2 && z === 3) ? 'D' : '.';
+      if (Math.abs(cx) <= 1 && Math.abs(cz) <= 1 && Math.abs(cy) <= 3) return 'R';
+      return ((x + y + z) & 2) ? 'D' : 'S';
+    }),
   },
   // spider egg — hatches skulls unless shot first
   egg: {
-    voxelSize: 0.2,
-    palette: { W: 0xe8e8e8, R: [2.4, 0.15, 0.15] },
-    layers: [
-      ['.W.', 'WWW', '.W.'],
-      ['WWW', 'WRW', 'WWW'],
-      ['.W.', 'WWW', '.W.'],
-    ],
+    voxelSize: 0.15,
+    palette: { W: 0xe8e8e8, S: 0x969696, R: [2.4, 0.15, 0.15] },
+    layers: sculptLayers(9, 7, 13, (x, y, z) => {
+      const nx = (x - 4) / (3.6 + y * 0.025), ny = (y - 5.5) / 6.3, nz = (z - 3) / 2.8;
+      const q = nx * nx + ny * ny + nz * nz;
+      if (q > 1 || q < 0.52) return '.';
+      const crack = (Math.abs(x - 4 - Math.round(Math.sin(y * 1.7))) === 0 && z <= 1 && y > 2 && y < 11);
+      if (crack) return 'R';
+      return ((x + y + z) % 5 === 0) ? 'S' : 'W';
+    }),
   },
   // ghost serpent — pale rings armored from the front (shoot from behind);
   // same v4.31 geometry as the live serpent, bleached
@@ -184,14 +229,22 @@ export const MODELS = {
   },
   // watcher — hovering drone eye that fires orb volleys (Returnal turret nod)
   watcher: {
-    voxelSize: 0.19,
-    palette: { S: 0x2a2a2a, W: 0xcfcfcf, R: [2.8, 0.2, 0.2], K: 0x101010 },
-    layers: [
-      ['.SSSSS.', 'SSSSSSS', '.SSSSS.'],
-      ['SKRRRKS', 'SSWSWSS', 'SSSSSSS'],
-      ['.SSSSS.', 'SSSSSSS', '.SSSSS.'],
-      ['...S...', '..SSS..', '...S...'],
-    ],
+    voxelSize: 0.15,
+    palette: { S: 0x2a2a2a, D: 0x111111, W: 0xcfcfcf, R: [2.8, 0.2, 0.2], K: 0x050505 },
+    layers: sculptLayers(13, 7, 9, (x, y, z) => {
+      const nx = (x - 6) / 5.7, ny = (y - 4) / 3.4, nz = (z - 3) / 2.7;
+      const q = nx * nx + ny * ny + nz * nz;
+      const wing = Math.abs(x - 6) >= 5 && Math.abs(y - 4) <= 1 && Math.abs(z - 3) <= 1;
+      if (wing) return ((x + z) & 1) ? 'S' : 'W';
+      if (q > 1) return (y >= 7 && Math.abs(x - 6) <= 1 && z === 3) ? 'S' : '.';
+      if (z <= 1) {
+        const r2 = (x - 6) ** 2 + (y - 4) ** 2;
+        if (r2 <= 2) return 'R';
+        if (r2 <= 7) return 'K';
+        if (r2 <= 14) return 'W';
+      }
+      return q > 0.62 ? (((x + y) & 1) ? 'S' : 'D') : '.';
+    }),
   },
   brute: {
     voxelSize: 0.29,
@@ -233,102 +286,133 @@ export const MODELS = {
   },
   // gem thief — squat body, corner legs, red eyes front
   spider: {
-    voxelSize: 0.24,
-    palette: { B: 0x242424, D: 0x151515, L: 0x151515, R: [2.8, 0.2, 0.2] },
-    layers: [
-      ['L...L', '.....', 'L...L'],
-      ['.BBB.', 'BDBDB', '.BBB.'],
-      ['.RBR.', 'BBBBB', '.BBB.'],
-    ],
+    voxelSize: 0.16,
+    palette: { B: 0x292929, D: 0x111111, L: 0x181818, R: [2.8, 0.2, 0.2] },
+    layers: sculptLayers(15, 11, 7, (x, y, z) => {
+      const cx = x - 7, cy = y - 3, cz = z - 5;
+      const abdomen = (cx * cx / 17 + cy * cy / 5 + (cz + 1.2) * (cz + 1.2) / 11) <= 1;
+      const head = (cx * cx / 9 + cy * cy / 4 + (cz - 2.2) * (cz - 2.2) / 5) <= 1;
+      if (z <= 2 && y >= 2 && y <= 4 && (x === 5 || x === 9) && z === 1) return 'R';
+      if (abdomen || head) return ((x + y + z) & 2) ? 'B' : 'D';
+      // Four jointed legs per side, spread as clean bent silhouettes.
+      const ax = Math.abs(cx);
+      if (y <= 3 && ax >= 4 && ax <= 7) {
+        const lane = [1, 3, 7, 9].includes(z);
+        const bend = (ax <= 5 && y === 3) || (ax === 6 && y === 2) || (ax === 7 && y <= 1);
+        if (lane && bend) return 'L';
+      }
+      return '.';
+    }),
   },
-  // late-game boss: dark god-head, glowing eyes/horns/crown, voxelSize 0.7
+  // late-game boss: dark god-head, glowing eyes, split horns and crown
   leviathan: {
-    voxelSize: 0.7,
+    voxelSize: 0.43,
     detailBoost: 1, // one extra subdivision tier when the global default is lower
     wobble: 0.7,    // heaves slowly — massive, not jittery
     palette: {
       W: 0x1c1c1c, S: 0x101010, K: 0x000000,
       R: [3.0, 0.2, 0.2], V: [2.0, 0.15, 0.15], C: [2.4, 2.4, 2.4],
     },
-    layers: [
-      ['..WWWWW..', '..SSSSS..'],
-      ['.WWWWWWW.', '.WSWSWSW.', '..WWWWW..'],
-      ['.WWWKWWW.', 'WWWWWWWWW', '.WWWWWWW.'],
-      ['WRRWKWRRW', 'WWWWWWWWW', '.WWWWWWW.'],
-      ['WWWWWWWWW', 'WWWWWWWWW', '.WWWWWWW.'],
-      ['.WWWWWWW.', '.WWWWWWW.', '..WWWWW..'],
-      ['V.C.C.C.V', '.........', '.........'],
-      ['V.......V', '.........', '.........'],
-    ],
+    layers: sculptLayers(15, 9, 17, (x, y, z) => {
+      const cx = x - 7, cy = y - 7.5, cz = z - 4;
+      const skull = cx * cx / 44 + cy * cy / 48 + cz * cz / 14 <= 1;
+      const jaw = y <= 6 && y >= 2 && Math.abs(cx) <= (y + 2) * 0.65 && z <= 6;
+      const hornL = y >= 11 && (Math.abs(cx) - (y - 10) * 0.7 - 3.0) ** 2 + (z - 4) ** 2 < 1.5;
+      const crown = y >= 13 && ((x + y) % 3 === 0) && Math.abs(cx) <= 5 && z === 4;
+      if (hornL) return y >= 15 ? 'V' : 'W';
+      if (crown) return 'C';
+      if (!skull && !jaw) return '.';
+      if (z <= 1 && y >= 7 && y <= 10 && (Math.abs(cx) === 3 || Math.abs(cx) === 4)) return 'R';
+      if (z <= 2 && y >= 3 && y <= 5 && Math.abs(cx) <= 3) return 'K';
+      if (skull && cx * cx / 31 + cy * cy / 36 + cz * cz / 8 < 1 && !(z <= 2)) return '.';
+      return ((x + y + z) & 2) ? 'W' : 'S';
+    }),
   },
   // THE REVENANT — assembled out of the player's own bone-yard: dirty bone,
   // hollow ribcage, two burning eyes. Deliberately lankier than a skull so it
   // reads as a standing figure the moment it claws out of the floor.
   revenant: {
-    voxelSize: 0.3,
+    voxelSize: 0.19,
     wobble: 1.15, // loose-jointed, more alive than the plated husk
     palette: { B: 0xdedede, S: 0x9a9a9a, R: [2.8, 0.2, 0.2] },
-    layers: [
-      ['.B.B.', '.....', '.....'],
-      ['.S.S.', '.....', '.....'],
-      ['BSBSB', '.SBS.', '.....'],
-      ['B.S.B', '.BSB.', '.....'],
-      ['S.B.S', '.SBS.', '.....'],
-      ['BSBSB', 'SBSBS', '.....'],
-      ['.RBR.', '.SBS.', '.....'],
-    ],
+    layers: sculptLayers(13, 7, 19, (x, y, z) => {
+      const cx = x - 6, cz = z - 3;
+      // split feet and long shins
+      if (y <= 7 && (Math.abs(cx) === 2 || Math.abs(cx) === 3) && Math.abs(cz) <= 1) return (y & 1) ? 'B' : 'S';
+      // pelvis, spine and shoulder bar
+      if (y >= 7 && y <= 10 && Math.abs(cx) <= (y === 9 ? 4 : 2) && Math.abs(cz) <= 1) return ((x + y) & 1) ? 'B' : 'S';
+      if (y >= 9 && y <= 14 && cx === 0 && Math.abs(cz) <= 1) return 'S';
+      // open ribs, alternating depth to read from oblique angles
+      if (y >= 10 && y <= 14 && Math.abs(cx) >= 2 && Math.abs(cx) <= 4 && Math.abs(cz) <= 2 && ((y + Math.abs(cx)) & 1)) return 'B';
+      // hanging arms and hooked hands
+      if (y >= 6 && y <= 13 && Math.abs(cx) >= 5 && Math.abs(cz) <= 1) return y < 8 ? 'S' : 'B';
+      // horned skull
+      const head = (cx * cx / 12 + (y - 16) * (y - 16) / 5 + cz * cz / 5) <= 1;
+      if (head) {
+        if (z <= 1 && y === 16 && Math.abs(cx) === 1) return 'R';
+        return ((x + z) & 1) ? 'B' : 'S';
+      }
+      if (y === 18 && (Math.abs(cx) === 3 || Math.abs(cx) === 4) && z === 3) return 'B';
+      return '.';
+    }),
   },
   // THE HUSK — armored slab whose shell fully ENCLOSES an HDR core, so the
   // core is invisible until dagger chips carve a hole through the plating.
   // The armor is checkerboarded (A/B) because unlit same-colour voxels read
   // as one flat polygon; at ×64 the plates erode into a convincing crater.
   husk: {
-    voxelSize: 0.42,
+    voxelSize: 0.22,
     wobble: 0.45, // heavy plating barely stirs
     palette: {
       A: 0x2e2e2e, B: 0x1a1a1a,
       C: [3.0, 0.25, 0.25], // core — only visible once the shell is breached
       E: [2.8, 0.2, 0.2],
     },
-    layers: [
-      ['.ABA.', 'BABAB', '.ABA.'],
-      ['ABABA', 'BCCCB', 'ABABA'],
-      ['BABAB', 'ACCCA', 'BABAB'],
-      ['ABABA', 'BCCCB', 'ABABA'],
-      ['.BAB.', 'ABABA', '.BAB.'],
-      // eye on the FRONT face (row 0) — a first-person player meets it at
-      // eye level, so a top-face eye would never be seen
-      ['.AEA.', '.ABA.', '..A..'],
-    ],
+    layers: sculptLayers(11, 9, 13, (x, y, z) => {
+      const nx = (x - 5) / 4.8, ny = (y - 6) / 5.7, nz = (z - 4) / 3.8;
+      const q = nx * nx + ny * ny + nz * nz;
+      if (q > 1) return (y >= 10 && Math.abs(x - 5) === 5 && z === 4) ? 'A' : '.';
+      if (q < 0.50) return 'C';
+      // front lens sits over the core; chipping plates exposes more glow.
+      if (z <= 1 && y >= 5 && y <= 7 && Math.abs(x - 5) <= 1) return 'E';
+      return ((x + y + z) & 1) ? 'A' : 'B';
+    }),
   },
-  // first-person gauntlet: checkerboarded glove (unlit voxels need baked
-  // shading to read as cubes), long HDR white blade forward (row 0)
+  // Original four-finger bone claw. It stays centred in the current frame,
+  // but returns to its own ash/bone identity instead of tracing DD's hand.
   hand: {
     voxelSize: 0.05,
-    wobble: 0.3,
-    noHull: true, // the checkerboard IS the glove — smoothing erases it
-
-    palette: { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },
+    wobble: 0.18,
+    noHull: true,
+    palette: { G: 0xbeb4a6, D: 0x4b4540, H: 0xe2d8c8, B: [3.2, 0.30, 0.06] },
     layers: [
-      ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
-      ['.B.', '.B.', '.B.', '.B.', '.B.', '.B.', '.B.', 'GHG', 'DGD', 'GDG'],
-      ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
+      ['.........', '.........', '.........', '.........', '.........', '.....G...', '....GG...', '...GGG...', '.GDGDGG..', 'GGDGDGGG.', '.GGGGGG..', '..DGGD...'],
+      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', 'GGDGDGDGG', 'GGHGHGHGG', '.GGGGGGG.', '..DGGGD..'],
+      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', 'GGHGHGHGG', 'GGDGDGDGG', '.GGGGGGG.', '..DGGGD..'],
+      ['.........', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', '.GDGDGDG.', 'GGGGGGGGG', '..GGGGG..', '...DGD...'],
+      ['.........', '.........', '.........', '.........', '.........', '...G.....', '..GG.....', '.GGG.....', '.GDGG....', '..GGG....', '...G.....', '.........'],
     ],
   },
-  totem: (() => {
-    // M veins sit on the outer faces so the pillar glows from every angle
-    const A = ['.OMO.', 'OOOOO', 'MOOOM', 'OOOOO', '.OMO.'];
-    const B = ['.OOO.', 'OOOOO', 'OOOOO', 'OOOOO', '.OOO.'];
-    const mouth = ['.OMO.', 'OO.OO', 'M.M.M', 'OO.OO', '.OMO.'];
-    const crown = ['..O..', '.OMO.', '.MOM.', '.OMO.', '..O..'];
-    return {
-      voxelSize: 0.34,
-      anchor: 'bottom',
-      wobble: 0.35,
-      palette: { O: 0x161616, M: [2.4, 0.2, 0.2] },
-      layers: [B, A, B, A, B, A, B, mouth, mouth, crown],
-    };
-  })(),
+  totem: {
+    voxelSize: 0.22,
+    anchor: 'bottom',
+    wobble: 0.35,
+    palette: { O: 0x161616, S: 0x303030, M: [2.4, 0.2, 0.2] },
+    layers: sculptLayers(9, 9, 18, (x, y, z) => {
+      const cx = x - 4, cz = z - 4;
+      const r = Math.hypot(cx, cz);
+      const shell = r >= 2.5 && r <= 4.3;
+      if (shell) {
+        const a = Math.atan2(cz, cx);
+        const spiral = Math.abs(Math.sin(a * 2.0 + y * 0.72)) > 0.82;
+        return spiral ? 'M' : (((x + y + z) & 1) ? 'O' : 'S');
+      }
+      // suspended core and three-prong crown
+      if (r <= 1.2 && y >= 4 && y <= 14 && (y % 3 !== 0)) return 'M';
+      if (y >= 15 && ((Math.abs(cx) === 3 && cz === 0) || (cx === 0 && Math.abs(cz) === 3))) return 'M';
+      return '.';
+    }),
+  },
 };
 
 // Global voxel density: every model voxel is split into detail³ minis of the
@@ -364,7 +448,7 @@ export function styleTint(c) {
  *  flat runs. HDR voxels (any channel > 1) are gameplay bloom carriers and
  *  pass through untouched. Baked into the parse colors, so applyStyle and
  *  the hit-flash multiplier both inherit it for free. */
-export function bakeShading(voxels, ms) {
+function bakeShading(voxels, ms) {
   const key = (x, y, z) => `${Math.round(x / ms)},${Math.round(y / ms)},${Math.round(z / ms)}`;
   const occ = new Set();
   for (const v of voxels) occ.add(key(v.x, v.y, v.z));
@@ -445,27 +529,11 @@ export function getHullMode() { return hullMode; }
  *  Voxels can be chipped off before death (bullet holes) — dead voxels are
  *  scaled to zero and excluded from worldVoxels()/death bursts. */
 export class VoxelSprite {
-  /** A sprite from a prebuilt lattice (the mesh-asset pipeline): `skin` is
-   *  a ready THREE.Object3D that rides in the hull slot as the alive-look.
-   *  Skin resources are SHARED with the loader's template — never disposed
-   *  per instance. */
-  static fromVoxels(voxels, size, skin = null, opts = {}) {
-    return new VoxelSprite({
-      prebuilt: true, voxels, size, skin,
-      wobble: opts.wobble ?? 0.5, shed: opts.shed,
-    }, 1);
-  }
-
   constructor(def, subdivide = globalDetail + (def.detailBoost || 0)) {
     this.def = def;
-    if (def.prebuilt) {
-      this.voxels = def.voxels;
-      this.size = def.size;
-    } else {
-      subdivide = Math.max(1, Math.min(4, subdivide));
-      this.voxels = parseModel(def, subdivide);
-      this.size = def.voxelSize / subdivide;
-    }
+    subdivide = Math.max(1, Math.min(4, subdivide));
+    this.voxels = parseModel(def, subdivide);
+    this.size = def.voxelSize / subdivide;
     this.aliveCount = this.voxels.length;
     this.material = new THREE.MeshBasicMaterial({ color: 0xffffff });
     // Per-voxel LIFE, all in the vertex shader so density is free: the voxel
@@ -552,47 +620,20 @@ export class VoxelSprite {
     const want = !!on && !this.def.noHull;
     if (want === !!this.hull) return;
     if (want) {
-      if (this.def.skin) {
-        // mesh-asset skin: the loaded model IS the alive-look. Its geometry
-        // and materials are shared with the loader template — no rebuilds,
-        // no per-instance disposal.
-        this.hull = this.def.skin;
-        this.hullMat = null;
-        this.skinFixed = true;
-      } else {
-        this.hullMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-        this.hull = new THREE.Mesh(new THREE.BufferGeometry(), this.hullMat);
-        this.hull.frustumCulled = false;
-        this.skinFixed = false;
-      }
-      this.hullBaseScale = this.hull.scale.x || 1; // skins carry a normalize scale
+      this.hullMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+      this.hull = new THREE.Mesh(new THREE.BufferGeometry(), this.hullMat);
+      this.hull.frustumCulled = false;
       this.mesh.add(this.hull);
       this.mesh.count = 0;
-      if (!this.skinFixed) this._rebuildHull();
+      this._rebuildHull();
     } else {
       this.mesh.remove(this.hull);
-      if (!this.skinFixed) {
-        this.hull.geometry.dispose();
-        this.hullMat.dispose();
-      }
-      this.skinFixed = false;
+      this.hull.geometry.dispose();
+      this.hullMat.dispose();
       this.hull = null;
       this.hullMat = null;
       this.mesh.count = this.voxels.length;
     }
-  }
-
-  /** The skin cracks off: too much of the lattice is gone (def.shed). The
-   *  wounded voxel body takes over — the generated hull re-forms over what
-   *  survives, so the matter under the skin is what keeps fighting. */
-  _shedSkin() {
-    this.mesh.remove(this.def.skin);
-    this.def.skin = null; // per-spawn def (fromVoxels builds one per call)
-    this.skinFixed = false;
-    this.hull = null;
-    this.hullMat = null;
-    this.mesh.count = this.voxels.length;
-    this.setHull(true);
   }
 
   /** Rebuild the skin from the ALIVE voxels: culled outer faces on welded
@@ -638,7 +679,8 @@ export class VoxelSprite {
         faces.push(q[0], q[1], q[2], q[3], i);
       }
     }
-    // neighbor graph over quad edges, then heavy smoothing (3 passes)
+    // One restrained relaxation pass preserves the authored low-poly planes
+    // instead of turning every enemy into the same soft silhouette.
     const nbr = new Map();
     const link = (a, b) => {
       let sa = nbr.get(a);
@@ -652,12 +694,12 @@ export class VoxelSprite {
       }
     }
     let cur = P;
-    for (let it = 0; it < 3; it++) {
+    for (let it = 0; it < 1; it++) {
       const next = cur.slice();
       for (const [vi, ns] of nbr) {
         let sx = 0, sy = 0, sz = 0;
         for (const n of ns) { sx += cur[n * 3]; sy += cur[n * 3 + 1]; sz += cur[n * 3 + 2]; }
-        const k = 0.62, inv = k / ns.size;
+        const k = 0.38, inv = k / ns.size;
         next[vi * 3] = cur[vi * 3] * (1 - k) + sx * inv;
         next[vi * 3 + 1] = cur[vi * 3 + 1] * (1 - k) + sy * inv;
         next[vi * 3 + 2] = cur[vi * 3 + 2] * (1 - k) + sz * inv;
@@ -791,20 +833,13 @@ export class VoxelSprite {
     if (this.hull) {
       // the skin breathes (the instanced lattice does this in its vertex
       // shader; the hull gets the whole-body term)
-      this.hull.scale.setScalar(this.hullBaseScale * (1 + 0.022 * this.baseWobble * Math.sin(this.animT * 2.1)));
+      this.hull.scale.setScalar(1 + 0.022 * this.baseWobble * Math.sin(this.animT * 2.1));
       if (this.hullDirty) {
-        if (this.skinFixed) {
-          // a fixed mesh skin can't re-form around wounds — it holds until
-          // too much of the lattice is gone, then shatters off
+        this.hullCd -= dt;
+        if (this.hullCd <= 0) {
+          this._rebuildHull();
           this.hullDirty = false;
-          if (this.aliveCount < this.voxels.length * (this.def.shed ?? 0.78)) this._shedSkin();
-        } else {
-          this.hullCd -= dt;
-          if (this.hullCd <= 0) {
-            this._rebuildHull();
-            this.hullDirty = false;
-            this.hullCd = 0.1; // chips arrive in bursts — batch the re-skin
-          }
+          this.hullCd = 0.1; // chips arrive in bursts — batch the re-skin
         }
       }
     }
@@ -858,7 +893,7 @@ export class VoxelSprite {
   dispose() {
     this.mesh.geometry.dispose();
     this.material.dispose();
-    if (this.hull && !this.skinFixed) {
+    if (this.hull) {
       this.hull.geometry.dispose();
       this.hullMat.dispose();
     }

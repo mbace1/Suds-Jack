@@ -1,0 +1,116 @@
+{
+  "generated": {
+    "piritori/night-map": {
+      "file": "2d/piritori-night-map.a15b7f79.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "a15b7f79"
+    },
+    "piritori/arena-harbour": {
+      "file": "2d/piritori-arena-harbour.03c24c72.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "03c24c72"
+    },
+    "piritori/arena-court": {
+      "file": "2d/piritori-arena-court.0d2918de.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "0d2918de"
+    },
+    "piritori/arena-park": {
+      "file": "2d/piritori-arena-park.d4cf91e8.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "d4cf91e8"
+    },
+    "piritori/arena-yard": {
+      "file": "2d/piritori-arena-yard.edcf098a.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "edcf098a"
+    },
+    "piritori/body-base": {
+      "file": "2d/piritori-body-base.67e2b777.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "67e2b777"
+    },
+    "piritori/fig-them-stand": {
+      "file": "2d/piritori-fig-them-stand.021b1551.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "021b1551"
+    },
+    "piritori/weapons-plate": {
+      "file": "2d/piritori-weapons-plate.d9ab7aeb.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "d9ab7aeb"
+    },
+    "piritori/pin-glyphs": {
+      "file": "2d/piritori-pin-glyphs.025800a3.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "025800a3"
+    },
+    "piritori/key-art": {
+      "file": "2d/piritori-key-art.9f6d30bf.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "9f6d30bf"
+    },
+    "piritori/interior-toko": {
+      "file": "2d/piritori-interior-toko.552c6ff7.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "552c6ff7"
+    },
+    "lab/orc": {
+      "file": "2d/lab-orc.c019895c.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "lab",
+      "hash": "c019895c"
+    },
+    "tokotrip/jetty": {
+      "file": "2d/tokotrip-jetty.caa95d4c.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "toko-trip",
+      "hash": "caa95d4c"
+    },
+    "tokotrip/palm": {
+      "file": "2d/tokotrip-palm.a3ee9e4e.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "toko-trip",
+      "hash": "a3ee9e4e"
+    },
+    "neonronin/samurai-cover": {
+      "file": "2d/neonronin-samurai-cover.216c70d9.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "neon-ronin",
+      "hash": "216c70d9"
+    },
+    "neonronin/samurai-turnaround": {
+      "file": "2d/neonronin-samurai-turnaround.ac92a74e.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "neon-ronin",
+      "hash": "ac92a74e"
+    }
+  }
+}

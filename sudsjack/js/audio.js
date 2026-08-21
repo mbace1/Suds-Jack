@@ -101,6 +101,17 @@ export class AudioKit {
     [0, -3, -7, -12].forEach((s, i) => setTimeout(() => this._blip(330 * Math.pow(1.0595, s), 0.34, 'sine', 0.2, 0.7), i * 150));
   }
 
+  // the dive's wet noise again, brighter and shorter: the wipe, not the drop
+  scrub() { this._noise(0.16, 2200, 1.8, 0.1); this._blip(760, 0.1, 'sine', 0.12, 1.4); }
+
+  // the flood: the hit's thud under a long falling wash — losing a life to
+  // neglect should sound like neglect, not like being touched
+  washout() {
+    this._noise(0.7, 500, 0.6, 0.2);
+    this._blip(180, 0.5, 'sawtooth', 0.16, 0.4);
+    this._blip(120, 0.7, 'sine', 0.14, 0.3);
+  }
+
   bedStart() {
     if (!this.ensure() || this._bed) return;
     const t = this.ctx.currentTime;

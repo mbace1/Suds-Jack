@@ -1,0 +1,84 @@
+/* EERI dev menu — deliberately ugly and deliberately small.
+   It is a tool, not a screen: it must never be mistaken for the game, and
+   it must never cover the part of the picture you are judging. So: mono,
+   dark, one narrow column, and a collapse. */
+
+:root {
+  --dv-bg: rgba(14, 12, 10, 0.92);
+  --dv-line: rgba(255, 255, 255, 0.16);
+  --dv-ink: #e8e2d8;
+  --dv-dim: #9a9184;
+  --dv-hot: #ffb01f;
+  --dv-ok: #7fd07f;
+  --dv-no: #e8654a;
+}
+
+#devmenu {
+  position: fixed; top: 0; right: 0; z-index: 99999;
+  width: 300px; max-height: 100vh; overflow-y: auto;
+  background: var(--dv-bg); color: var(--dv-ink);
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  border-left: 1px solid var(--dv-line);
+  border-bottom: 1px solid var(--dv-line);
+  -webkit-user-select: none; user-select: none;
+}
+#devmenu[hidden] { display: none; }
+#devmenu.min { max-height: 30px; overflow: hidden; }
+
+#devmenu h1 {
+  margin: 0; padding: 7px 10px; font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--dv-hot);
+  border-bottom: 1px solid var(--dv-line);
+  display: flex; justify-content: space-between; align-items: center;
+}
+#devmenu h1 button {
+  background: none; border: 1px solid var(--dv-line); color: var(--dv-dim);
+  font: inherit; cursor: pointer; padding: 1px 7px; border-radius: 3px;
+}
+
+#devmenu section { border-bottom: 1px solid var(--dv-line); padding: 7px 10px; }
+#devmenu h2 {
+  margin: 0 0 5px; font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--dv-dim); font-weight: 400;
+}
+
+#devmenu .row { display: flex; flex-wrap: wrap; gap: 4px; }
+#devmenu button.act {
+  flex: 1 1 auto; min-width: 58px; padding: 5px 6px;
+  background: rgba(255, 255, 255, 0.06); color: var(--dv-ink);
+  border: 1px solid var(--dv-line); border-radius: 3px;
+  font: inherit; cursor: pointer;
+}
+#devmenu button.act:hover { background: rgba(255, 176, 31, 0.22); }
+#devmenu button.act:active { background: var(--dv-hot); color: #1a1410; }
+#devmenu button.on { border-color: var(--dv-hot); color: var(--dv-hot); }
+
+#devmenu label.sw {
+  display: flex; align-items: center; gap: 6px; padding: 2px 0; cursor: pointer;
+}
+#devmenu label.sw input { accent-color: var(--dv-hot); }
+
+#devmenu .sl { display: grid; grid-template-columns: 74px 1fr 34px; gap: 6px; align-items: center; }
+#devmenu .sl input { width: 100%; accent-color: var(--dv-hot); }
+#devmenu .sl b { color: var(--dv-hot); font-weight: 400; text-align: right; }
+
+#devmenu table { width: 100%; border-collapse: collapse; }
+#devmenu td { padding: 1px 0; vertical-align: top; }
+#devmenu td:first-child { color: var(--dv-dim); width: 42%; }
+#devmenu td.v { color: var(--dv-ink); }
+#devmenu .good { color: var(--dv-ok); }
+#devmenu .bad { color: var(--dv-no); }
+
+#devmenu .log {
+  margin: 0; max-height: 76px; overflow-y: auto;
+  color: var(--dv-dim); white-space: pre-wrap; word-break: break-word;
+}
+#devmenu .note { color: var(--dv-dim); margin: 5px 0 0; }
+
+/* the toggle lives outside the panel so it survives the panel being hidden */
+#devtoggle {
+  position: fixed; top: 0; right: 0; z-index: 99998;
+  background: var(--dv-bg); color: var(--dv-hot);
+  border: 1px solid var(--dv-line); border-radius: 0 0 0 4px;
+  font: 11px/1 ui-monospace, monospace; padding: 6px 9px; cursor: pointer;
+}

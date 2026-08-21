@@ -82,10 +82,10 @@ export class Risers {
   }
 
   /**
-   * @returns {{collected: object[], missed: object[], struck: object[]}}
+   * @returns {{collected: object[], missed: object[], struck: object[], settled: object[]}}
    */
   update(dt, player) {
-    const collected = [], missed = [], struck = [];
+    const collected = [], missed = [], struck = [], settled = [];
 
     for (const it of this.items) {
       if (it.dead) continue;
@@ -132,16 +132,17 @@ export class Risers {
         if (it.depth <= -0.02) { it.dead = true; missed.push(it); }
       } else {
         if (near && !overIt) { it.dead = true; struck.push(it); continue; }
-        // grime that gets past the mouth just goes over the edge; the danger
-        // was the arrival, not the aftermath
-        if (it.depth <= -0.05) it.dead = true;
+        // Grime that gets past the mouth does NOT go over the edge any more —
+        // it SETTLES. The aftermath is the point now: every dodge is a loan,
+        // and what you did not deal with is still there, underfoot.
+        if (it.depth <= -0.05) { it.dead = true; settled.push(it); }
       }
     }
 
     if (this.items.some(i => i.dead)) this.items = this.items.filter(i => !i.dead);
     this.relight();
     this._draw();
-    return { collected, missed, struck };
+    return { collected, missed, struck, settled };
   }
 
   _draw() {
@@ -229,5 +230,97 @@ export class Pops {
   clear() {
     for (const p of this.live) p.m.visible = false;
     this.live.length = 0;
+  }
+}
+
+// THE SCUM LINE. Grime that reaches the mouth settles here: a film on the rim,
+// lane by lane, up to three layers deep. It is Tempest's spikes with the gun
+// taken out, the same way grime is its flipper — what you did not deal with
+// stays on the web and makes the web worse.
+//
+// Scum does three things, none of them a bullet: it is STICKY (riding through
+// it is slow — jumping over it is not, which is what the float is for),
+// it is BARREN (the director will not raise bubbles through a fouled lane, so
+// neglect starves the chain), and past FLOOD_AT coverage the channel floods —
+// a life, the chain, and a clean start. The only thing that takes it off is
+// the dive: Suds Jack washes. That is the whole rebalance — the dive stops
+// being a garnish and becomes the verb the game is named after.
+export const SCUM_MAX = 3;      // layers a lane can hold
+export const FLOOD_AT = 0.8;    // fouled fraction of lanes that floods
+export const STICKY = 0.4;      // rim speed multiplier standing in it
+
+export class Scum {
+  constructor(scene, tube) {
+    this.tube = tube;
+    this.layers = new Array(tube.lanes).fill(0);
+
+    // one flat pad per lane, lying on the floor at the mouth, darkening and
+    // thickening as layers stack — matte and warm like everything that wants
+    // you; scum has never bloomed in its life
+    this.mesh = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1.06, 0.34, 2.4),
+      new THREE.MeshBasicMaterial({ flatShading: true }),
+      tube.lanes,
+    );
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.count = 0;
+    this.mesh.frustumCulled = false;
+    tube.group.add(this.mesh);
+    this._m = new THREE.Matrix4();
+    this._q = new THREE.Quaternion();
+    this._e = new THREE.Euler();
+    this._s = new THREE.Vector3();
+    this._c = new THREE.Color();
+    this._p = new THREE.Vector3();
+  }
+
+  laneOf(lane) { return Math.max(0, Math.min(this.tube.lanes - 1, Math.round(lane))); }
+
+  /** One more layer where this grime came to rest. */
+  add(lane) {
+    const l = this.laneOf(lane);
+    this.layers[l] = Math.min(SCUM_MAX, this.layers[l] + 1);
+    this._draw();
+  }
+
+  /** The dive's return leg wipes one layer. True if there was one to wipe. */
+  scrub(lane) {
+    const l = this.laneOf(lane);
+    if (this.layers[l] <= 0) return false;
+    this.layers[l]--;
+    this._draw();
+    return true;
+  }
+
+  at(lane) { return this.layers[this.laneOf(lane)]; }
+  fouled() { return this.layers.reduce((n, l) => n + (l > 0 ? 1 : 0), 0); }
+  clean() { return this.tube.lanes - this.fouled(); }
+  coverage() { return this.fouled() / this.tube.lanes; }
+  flooded() { return this.coverage() >= FLOOD_AT; }
+
+  clear() {
+    this.layers.fill(0);
+    this._draw();
+  }
+
+  _draw() {
+    let n = 0;
+    for (let l = 0; l < this.layers.length; l++) {
+      const k = this.layers[l];
+      if (!k) continue;
+      this.tube.at(l, 0.012, this._p);
+      this._e.set(0, 0, this.tube.faceAngle(l));
+      this._q.setFromEuler(this._e);
+      // thicker as it stacks, never taller than it is wide: a film, not a wall
+      this._s.set(1, 0.6 + k * 0.5, 1);
+      this._m.compose(this._p, this._q, this._s);
+      this.mesh.setMatrixAt(n, this._m);
+      this._c.setHex(k >= SCUM_MAX ? PAL.GRIME_DARK : PAL.GRIME);
+      this.mesh.setColorAt(n, this._c);
+      n++;
+    }
+    this.mesh.count = n;
+    this.mesh.instanceMatrix.needsUpdate = true;
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   }
 }

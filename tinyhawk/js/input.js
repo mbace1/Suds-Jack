@@ -7,7 +7,7 @@
 //
 // TOUCH is always Skate-style flick-it:
 //   left half   steer + push (a plain stick)
-//   right half  the BOARD. Drag down to load, flick up to pop. The direction of
+//   right half  the BOARD. Drag down to load, then release or flick up to pop. The direction of
 //               the flick picks the trick, the speed picks the height:
 //                 flick up             ollie / grab in the air
 //                 flick up-left        kickflip
@@ -32,6 +32,8 @@ const LOOK_DEADZONE = 0.12;
 const LOAD_Y = 0.42;         // how far down counts as loaded (crouched)
 const POP_Y = -0.2;          // must cross above this to count as a pop
 const POP_SPEED = 3.0;       // stick units/sec of upward travel to pop
+const RELEASE_Y = 0.15;      // springing/releasing toward centre also pops
+const RELEASE_SPEED = 1.8;   // deliberately forgiving for touch + real pads
 const SHUV_SPEED = 3.4;      // sideways speed that turns a load into a shuvit
 // A real thumb flick crosses the stick in 50–80 ms, so ~14 units/s is a hard
 // one and a lazy one lands near 5. Set too low and every pop maxes out and the
@@ -52,7 +54,7 @@ export const SCHEMES = ['skate', 'thps'];
 // than like a jump button, and it is why the pop has to cross *above* centre —
 // a gamepad stick springing back to neutral on its own must not count as a
 // flick, or every crouch would fire an ollie on release.
-class FlickIt {
+export class FlickIt {
   constructor() { this.reset(); }
 
   reset() {
@@ -108,10 +110,17 @@ class FlickIt {
         act = {
           dir: Math.abs(x) > 0.4 ? (x < 0 ? 'left' : 'right') : 'up',
           power: power(Math.hypot(vx, vy), this.depth),
+          pop: true,
         };
+      } else if (y < RELEASE_Y && vy <= -RELEASE_SPEED) {
+        // A physical stick springs to centre and a touchscreen thumb lifts.
+        // Both are legitimate releases of a loaded ollie. Requiring the input
+        // to cross above centre made quick pops vanish on phones and made real
+        // pads feel broken unless the player exaggerated every gesture.
+        act = { dir: 'up', power: power(Math.hypot(vx, vy), this.depth), pop: true };
       } else if (Math.abs(vx) >= SHUV_SPEED && Math.abs(vx) > Math.abs(vy) * 1.5 && y > 0.15) {
         // Genuinely sideways, not the sideways part of a diagonal pop.
-        act = { dir: 'down', power: power(Math.abs(vx), this.depth) };
+        act = { dir: 'down', power: power(Math.abs(vx), this.depth), pop: true };
       } else if (y < LOAD_Y * 0.35 && vy > -POP_SPEED) {
         // Eased back out without committing. The speed guard matters: without
         // it, a flick fast enough to cross neutral in one frame un-loads on the
@@ -122,6 +131,18 @@ class FlickIt {
 
     if (act) { this.loaded = false; this.depth = 0; this.cool = GESTURE_COOL; }
     this.primed = this.loaded;
+    return act;
+  }
+
+  // Touchend can happen between animation frames. Preserve a loaded pop when
+  // the thumb lifts instead of resetting the gesture before it is observed.
+  release(airborne) {
+    if (airborne || !this.loaded || this.cool > 0) return null;
+    const act = { dir: 'up', power: power(POP_SPEED, this.depth), pop: true };
+    this.loaded = false;
+    this.depth = 0;
+    this.cool = GESTURE_COOL;
+    this.primed = false;
     return act;
   }
 }
@@ -153,6 +174,7 @@ export class InputManager {
     this._touchMap = new Map();
 
     this.actions = [];
+    this.uiActions = [];
     // Every action the input has ever emitted, newest last. The game never
     // reads this — it exists so the gesture layer can be asserted on its own.
     this.actionLog = [];
@@ -165,6 +187,8 @@ export class InputManager {
     this._charge = 0;
     this.flash = null;
     this.t = 0;
+    this._touchSampleAt = 0;
+    this._mouseSampleAt = 0;
 
     this.layout();
     addEventListener('resize', () => this.layout());
@@ -191,9 +215,10 @@ export class InputManager {
     this.restR = { x: innerWidth - m, y: innerHeight - m };
   }
 
-  fire(dir, powerV) {
-    this.actions.push({ dir, power: powerV });
-    this.actionLog.push({ dir, power: powerV });
+  fire(dir, powerV, detail = {}) {
+    const action = { ...detail, dir, power: powerV };
+    this.actions.push(action);
+    this.actionLog.push(action);
     if (this.actionLog.length > 40) this.actionLog.shift();
     this.flash = { dir, t: 0.3 };
   }
@@ -260,10 +285,15 @@ export class InputManager {
       if (!this._mouseSide) return;
       const s = this[this._mouseSide];
       s.dx = e.clientX - s.ox; s.dy = e.clientY - s.oy;
+      if (this._mouseSide === 'right') this._sampleScreenFlick(this.touchFlick, s, e.timeStamp, '_mouseSampleAt');
     });
     addEventListener('mouseup', () => {
       if (!this._mouseSide) return;
       const s = this[this._mouseSide];
+      if (this._mouseSide === 'right') {
+        const act = this.touchFlick.release(this.airborne);
+        if (act) this.fire(act.dir, act.power, act);
+      }
       s.active = false; s.dx = 0; s.dy = 0;
       this._mouseSide = null;
     });
@@ -290,7 +320,10 @@ export class InputManager {
       if (!s.active) {
         this._touchMap.set(t.identifier, side);
         s.active = true; s.ox = t.clientX; s.oy = t.clientY; s.dx = 0; s.dy = 0;
-        if (side === 'right') this.touchFlick.reset();
+        if (side === 'right') {
+          this.touchFlick.reset();
+          this._touchSampleAt = e.timeStamp / 1000;
+        }
       } else {
         this._touchMap.set(t.identifier, 'extra');
       }
@@ -304,6 +337,7 @@ export class InputManager {
       const s = this[side];
       s.dx = t.clientX - s.ox;
       s.dy = t.clientY - s.oy;
+      if (side === 'right') this._sampleScreenFlick(this.touchFlick, s, e.timeStamp, '_touchSampleAt');
     }
   }
 
@@ -313,9 +347,25 @@ export class InputManager {
       this._touchMap.delete(t.identifier);
       if (side !== 'left' && side !== 'right') continue;
       const s = this[side];
+      if (side === 'right') {
+        const act = this.touchFlick.release(this.airborne);
+        if (act) this.fire(act.dir, act.power, act);
+      }
       s.active = false; s.dx = 0; s.dy = 0;
       if (side === 'right') this.touchFlick.reset();
     }
+  }
+
+  _sampleScreenFlick(flick, stick, timeStamp, clockKey) {
+    const now = timeStamp / 1000;
+    const before = this[clockKey] || now - 1 / 60;
+    const dt = Math.max(1 / 240, Math.min(now - before, 0.1));
+    this[clockKey] = now;
+    const act = flick.sample(
+      clampUnit(stick.dx / STICK_R), clampUnit(stick.dy / STICK_R),
+      dt, this.airborne
+    );
+    if (act) this.fire(act.dir, act.power, act);
   }
 
   // ── Gamepad ──────────────────────────────────────────────────────────────
@@ -350,12 +400,24 @@ export class InputManager {
       return now && !was;
     };
 
+    if (!this.enabled) {
+      if (edge('uiConfirm', btn(0) || btn(9))) this.uiActions.push('confirm');
+      if (edge('uiBack', btn(1) || btn(8))) this.uiActions.push('back');
+      const ux = (btn(15) ? 1 : 0) - (btn(14) ? 1 : 0) || Math.sign(mx) * (Math.abs(mx) > 0.62 ? 1 : 0);
+      const uy = (btn(13) ? 1 : 0) - (btn(12) ? 1 : 0) || Math.sign(-my) * (Math.abs(my) > 0.62 ? 1 : 0);
+      const dir = ux ? (ux > 0 ? 'right' : 'left') : uy ? (uy > 0 ? 'down' : 'up') : '';
+      if (dir && dir !== this._uiPrevDir) this.uiActions.push(dir);
+      this._uiPrevDir = dir;
+      return;
+    }
+    this._uiPrevDir = '';
+
     if (this.scheme === 'skate') {
       // Right stick is the board. Camera follows on its own; the bumpers give
       // a manual nudge for when you want to look around.
       this._pad.look = { x: (btn(5) ? 1 : 0) - (btn(4) ? 1 : 0), y: 0 };
       const act = this.padFlick.sample(rx, ry, dt, this.airborne);
-      if (act) this.fire(act.dir, act.power);
+      if (act) this.fire(act.dir, act.power, act);
     } else {
       // THPS: right stick is the camera, tricks are on the face buttons, and
       // the ollie is a hold-and-release charge on A.
@@ -380,14 +442,8 @@ export class InputManager {
     if (this._charging) this._charge += dt;
     if (this.flash) { this.flash.t -= dt; if (this.flash.t <= 0) this.flash = null; }
 
-    // Touch flick-it runs off the right stick's live deflection.
-    if (this.right.active) {
-      const act = this.touchFlick.sample(
-        clampUnit(this.right.dx / STICK_R), clampUnit(this.right.dy / STICK_R),
-        dt, this.airborne
-      );
-      if (act) this.fire(act.dir, act.power);
-    }
+    // Touch/mouse gestures are sampled at event time so a complete flick that
+    // happens between two render frames cannot disappear.
   }
 
   /** {x: right, y: forward}, length ≤ 1. Touch → keyboard → gamepad. */
@@ -425,6 +481,30 @@ export class InputManager {
     return a;
   }
 
+  consumeUIActions() {
+    const actions = this.uiActions;
+    this.uiActions = [];
+    return actions;
+  }
+
+  // Drain the press that selected a menu item. Without this, holding A to
+  // enter a run becomes an ollie charge on the very next frame.
+  drainGamepad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : null;
+    let gp = null;
+    if (pads) for (const pad of pads) { if (pad && pad.connected) { gp = pad; break; } }
+    if (!gp) return;
+    const pressed = index => !!(gp.buttons[index] && gp.buttons[index].pressed);
+    this._padPrev.a = pressed(0);
+    this._padPrev.x = pressed(2);
+    this._padPrev.b = pressed(1);
+    this._padPrev.y = pressed(3);
+    this._padPrev.lb = pressed(4);
+    this._padPrev.uiConfirm = pressed(0) || pressed(9);
+    this._padPrev.uiBack = pressed(1) || pressed(8);
+    this.padFlick.reset();
+  }
+
   setAirborne(v) { this.airborne = v; }
 
   /** True while a pop is loaded but not yet released. The skater crouches on
@@ -438,6 +518,7 @@ export class InputManager {
     this.left.active = this.right.active = false;
     this.left.dx = this.left.dy = this.right.dx = this.right.dy = 0;
     this.actions.length = 0;
+    this.uiActions.length = 0;
     this._charging = false;
     this._charge = 0;
     this.flash = null;

@@ -12,7 +12,7 @@
 //   • fakie — landing at ~180° is legal and worth more, not a bail
 
 import * as THREE from 'three';
-import { PARK_EXTENT } from './park.js?v=1';
+import { PARK_EXTENT } from './park.js?v=2';
 
 const G          = 26;
 const PUSH       = 16;    // acceleration while the stick is deflected
@@ -52,11 +52,12 @@ const _right = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
 const _m = new THREE.Matrix4();
 
-// ── The prism ──────────────────────────────────────────────────────────────
-// The skater is a faceted crystal, not a painted figure. Hue is driven by the
-// FACE NORMAL, so every facet catches a different colour as the body turns —
-// iridescence with no lights and no environment map. The fresnel rim is pushed
-// past 1.0 so the composer's bloom grabs the edges and nothing else.
+// ── The bird ────────────────────────────────────────────────────────────────
+// A fat, faceted bird is the permanent protagonist. The feather mass keeps the
+// crystalline Skate Story treatment, while the beak, eyes, wheels and deck use
+// a few flat graphic colours so the silhouette reads instantly at game speed.
+// Hue is driven by the FACE NORMAL, so every feather facet catches a different
+// colour as the body turns — iridescence with no lights or environment map.
 export function prismMaterial() {
   return new THREE.ShaderMaterial({
     uniforms: { uPhase: { value: 0 }, uWash: { value: new THREE.Vector3(1, 1, 1) } },
@@ -101,19 +102,65 @@ function piece(group, geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) {
   return m;
 }
 
+function flatMaterial(color) {
+  return new THREE.MeshBasicMaterial({ color, toneMapped: false });
+}
+
 // Built facing +Z, so world heading is (sin yaw, 0, cos yaw) and Object3D's own
 // Y rotation convention applies without a correction anywhere.
 function buildSkater(mat) {
   const g = new THREE.Group();
-  piece(g, new THREE.BoxGeometry(0.72, 0.1, 2.4), mat, 0, 0.2, 0);
-  piece(g, new THREE.BoxGeometry(0.84, 0.22, 0.22), mat, 0, 0.09, 0.75);
-  piece(g, new THREE.BoxGeometry(0.84, 0.22, 0.22), mat, 0, 0.09, -0.75);
-  piece(g, new THREE.OctahedronGeometry(0.42, 0), mat, 0, 0.72, 0.4, 0.8, 1.9, 0.9);
-  piece(g, new THREE.OctahedronGeometry(0.42, 0), mat, 0, 0.72, -0.4, 0.8, 1.9, 0.9);
-  piece(g, new THREE.IcosahedronGeometry(0.62, 0), mat, 0, 1.52, 0, 1, 1.15, 1.25);
-  piece(g, new THREE.OctahedronGeometry(0.3, 0), mat, 0.44, 1.58, 0.28, 0.7, 2.1, 0.7);
-  piece(g, new THREE.OctahedronGeometry(0.3, 0), mat, -0.44, 1.64, -0.22, 0.7, 2.1, 0.7);
-  piece(g, new THREE.IcosahedronGeometry(0.34, 0), mat, 0, 2.28, 0.02, 1, 1.15, 1);
+  g.name = 'fat-bird-skater';
+  g.userData.character = 'fat-bird';
+
+  const deckMat = flatMaterial(0x18212d);
+  const truckMat = flatMaterial(0xa9c4ca);
+  const wheelMat = flatMaterial(0xe9c86c);
+  const beakMat = flatMaterial(0xffa02f);
+  const eyeMat = flatMaterial(0xf5f2df);
+  const pupilMat = flatMaterial(0x020306);
+
+  const deck = piece(g, new THREE.BoxGeometry(0.88, 0.12, 2.5), deckMat, 0, 0.2, 0);
+  deck.name = 'skateboard-deck';
+  piece(g, new THREE.BoxGeometry(1.0, 0.1, 0.16), truckMat, 0, 0.08, 0.78);
+  piece(g, new THREE.BoxGeometry(1.0, 0.1, 0.16), truckMat, 0, 0.08, -0.78);
+  for (const x of [-0.54, 0.54]) for (const z of [-0.78, 0.78]) {
+    const wheel = piece(g, new THREE.CylinderGeometry(0.16, 0.16, 0.15, 8), wheelMat, x, 0.02, z);
+    wheel.rotation.z = Math.PI / 2;
+  }
+
+  // Short orange feet pin the broad body to the board, making the character
+  // look like a bird actually skating instead of a bird-shaped board topper.
+  for (const x of [-0.25, 0.25]) {
+    piece(g, new THREE.BoxGeometry(0.14, 0.34, 0.14), beakMat, x, 0.48, 0);
+    piece(g, new THREE.BoxGeometry(0.34, 0.09, 0.42), beakMat, x, 0.31, 0.13);
+  }
+
+  const belly = piece(g, new THREE.IcosahedronGeometry(0.78, 1), mat, 0, 1.38, 0, 1.22, 1.18, 1.04);
+  belly.name = 'fat-bird-belly';
+  const head = piece(g, new THREE.IcosahedronGeometry(0.56, 1), mat, 0, 2.28, 0.18, 1.05, 1.0, 1.0);
+  head.name = 'fat-bird-head';
+
+  const leftWing = piece(g, new THREE.OctahedronGeometry(0.5, 0), mat, -0.78, 1.46, -0.02, 0.58, 1.12, 0.42);
+  const rightWing = piece(g, new THREE.OctahedronGeometry(0.5, 0), mat, 0.78, 1.46, -0.02, 0.58, 1.12, 0.42);
+  leftWing.name = 'left-wing'; rightWing.name = 'right-wing';
+  leftWing.rotation.z = -0.2; rightWing.rotation.z = 0.2;
+
+  for (const x of [-0.25, 0, 0.25]) {
+    const tail = piece(g, new THREE.ConeGeometry(0.2, 0.72, 4), mat, x, 1.12, -0.78, 0.8, 1, 0.7);
+    tail.rotation.x = -Math.PI / 2;
+  }
+
+  const beak = piece(g, new THREE.ConeGeometry(0.3, 0.62, 4), beakMat, 0, 2.22, 0.78, 1, 1, 0.82);
+  beak.name = 'beak';
+  beak.rotation.x = Math.PI / 2;
+  for (const x of [-0.25, 0.25]) {
+    piece(g, new THREE.IcosahedronGeometry(0.14, 1), eyeMat, x, 2.43, 0.61, 1, 1.05, 0.55);
+    piece(g, new THREE.IcosahedronGeometry(0.075, 1), pupilMat, x, 2.43, 0.70, 1, 1.05, 0.5);
+  }
+
+  g.userData.wings = [leftWing, rightWing];
+  g.userData.head = head;
   return g;
 }
 
@@ -123,12 +170,26 @@ export class Skater {
     this.root = new THREE.Group();      // position + orientation
     this.mat = prismMaterial();
     this.body = buildSkater(this.mat);  // trick rotations live here
+    this.character = this.body.userData.character;
+    this.wings = this.body.userData.wings;
+    this.head = this.body.userData.head;
     this.root.add(this.body);
     scene.add(this.root);
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
     this.up = new THREE.Vector3(0, 1, 0);
+    this.setModifiers();
     this.reset();
+  }
+
+  setModifiers(mods = {}) {
+    this.mods = {
+      grindCorrect: mods.grindCorrect ?? 1,
+      maxSpeed: mods.maxSpeed ?? 1,
+      turn: mods.turn ?? 1,
+      landingTolerance: mods.landingTolerance ?? 1,
+      grindFriction: mods.grindFriction ?? 1,
+    };
   }
 
   reset() {
@@ -149,6 +210,8 @@ export class Skater {
     this.grind = null;    // { rail, t, dir, balance, balVel, time, name }
     this.manual = null;   // { balance, balVel, time }
     this.loading = false;
+    this.hazardCooldown = 0;
+    this.animT = 0;
   }
 
   get speed() { return this.vel.length(); }
@@ -160,6 +223,7 @@ export class Skater {
     const ev = [];
     const park = this.park;
     if (this.bailT > 0) this.bailT = Math.max(0, this.bailT - dt);
+    if (this.hazardCooldown > 0) this.hazardCooldown -= dt;
 
     const mv = input.getMove();
     const mag = Math.hypot(mv.x, mv.y);
@@ -177,19 +241,18 @@ export class Skater {
       if (locked) continue;
       if (this.grind) {
         // Ollie out of a grind: keep the speed you carried down the rail.
-        if (a.dir === 'up') {
+        if (a.pop || a.dir === 'up') {
           this.vel.y += GRIND_POP * a.power;
           ev.push(this.endGrind('popped'));
           this.grounded = false;
+          if (a.pop && a.dir !== 'up') {
+            this.trick = { t: 0, dir: a.dir };
+            this.airTricks.push(a.dir);
+            ev.push({ type: 'trick', dir: a.dir });
+          }
         }
       } else if (this.grounded) {
-        if (a.dir === 'down' && this.speed > MANUAL_MIN_SPD) {
-          if (this.manual) { ev.push(this.endManual()); }
-          else {
-            this.manual = { balance: (Math.random() - 0.5) * 0.2, balVel: 0, time: 0 };
-            ev.push({ type: 'manualStart' });
-          }
-        } else if (a.dir === 'up') {
+        if (a.pop || a.dir === 'up') {
           park.normal(this.pos.x, this.pos.z, _n);
           this.vel.addScaledVector(_n, POP * a.power);
           this.grounded = false;
@@ -198,6 +261,17 @@ export class Skater {
           this.airTricks = [];
           if (this.manual) ev.push(this.endManual());
           ev.push({ type: 'ollie', power: a.power });
+          if (a.pop && a.dir !== 'up') {
+            this.trick = { t: 0, dir: a.dir };
+            this.airTricks.push(a.dir);
+            ev.push({ type: 'trick', dir: a.dir });
+          }
+        } else if (a.dir === 'down' && this.speed > MANUAL_MIN_SPD) {
+          if (this.manual) { ev.push(this.endManual()); }
+          else {
+            this.manual = { balance: (Math.random() - 0.5) * 0.2, balVel: 0, time: 0 };
+            ev.push({ type: 'manualStart' });
+          }
         }
       } else if (!this.trick) {
         this.trick = { t: 0, dir: a.dir };
@@ -218,13 +292,13 @@ export class Skater {
       const g = this.grind, r = g.rail;
       g.time += dt;
       // Rails are slow, and they tilt you down their own slope.
-      g.vAlong *= Math.exp(-GRIND_FRIC * dt);
+      g.vAlong *= Math.exp(-GRIND_FRIC * this.mods.grindFriction * dt);
       g.vAlong += -G * r.dir.y * dt;
       g.t += (g.vAlong * dt) / r.len;
 
       // Balance runs away from centre; the stick is all that holds it.
       g.balVel += g.balance * GRIND_INSTAB * dt;
-      g.balVel -= mv.x * GRIND_CORRECT * dt;
+      g.balVel -= mv.x * GRIND_CORRECT * this.mods.grindCorrect * dt;
       g.balVel *= Math.exp(-1.6 * dt);
       g.balance += g.balVel * dt;
 
@@ -275,7 +349,8 @@ export class Skater {
       if (mag > 0.12 && !locked) {
         const want = Math.atan2(wantX, wantZ);
         // Steering authority falls off with speed — you commit to a line.
-        const rate = TURN * (1 - Math.min(this.speed / MAX_SPEED, 1) * 0.6) * mag;
+        const maxSpeed = MAX_SPEED * this.mods.maxSpeed;
+        const rate = TURN * this.mods.turn * (1 - Math.min(this.speed / maxSpeed, 1) * 0.6) * mag;
         this.yaw = turnToward(this.yaw, want, rate * dt);
       }
 
@@ -310,7 +385,8 @@ export class Skater {
       this.up.lerp(_UP, 1 - Math.pow(0.02, dt));
     }
 
-    if (this.speed > MAX_SPEED) this.vel.multiplyScalar(MAX_SPEED / this.speed);
+    const maxSpeed = MAX_SPEED * this.mods.maxSpeed;
+    if (this.speed > maxSpeed) this.vel.multiplyScalar(maxSpeed / this.speed);
     this.pos.addScaledVector(this.vel, dt);
 
     // ── Surface contact ─────────────────────────────────────────────────
@@ -327,6 +403,13 @@ export class Skater {
       this.grounded = false;
     }
 
+    if (this.grounded && !locked && this.hazardCooldown <= 0 && this.speed > 4 && park.hazardAt(this.pos)) {
+      this.bailT = BAIL_TIME;
+      this.hazardCooldown = 1.25;
+      this.vel.multiplyScalar(-0.18);
+      ev.push({ type: 'bail', cause: 'skate-stopper' });
+    }
+
     // ── Catching a rail ─────────────────────────────────────────────────
     // Airborne only: you have to ollie onto it, which is both correct skating
     // and stops a rail sitting on the floor from grabbing you as you roll past.
@@ -341,11 +424,12 @@ export class Skater {
             rail: hit.rail, t: hit.t, vAlong,
             balance: (Math.random() - 0.5) * 0.25, balVel: 0, time: 0,
             name: along > 0.8 ? '50-50' : along < 0.4 ? 'Boardslide' : 'Crooked',
+            railId: hit.rail.id,
           };
           this.airTime = 0;
           this.trick = null;
           this.trickPhase = 0;
-          ev.push({ type: 'grindStart', name: this.grind.name });
+          ev.push({ type: 'grindStart', name: this.grind.name, railId: this.grind.railId });
         }
       }
     }
@@ -372,8 +456,9 @@ export class Skater {
                 + (this.vel.z / speedH) * Math.cos(this.yaw);
       err = Math.acos(Math.max(-1, Math.min(1, dot)));
     }
-    const isFakie = err > Math.PI - LAND_TOL;
-    const clean = err < LAND_TOL || isFakie;
+    const tolerance = LAND_TOL * this.mods.landingTolerance;
+    const isFakie = err > Math.PI - tolerance;
+    const clean = err < tolerance || isFakie;
 
     const spd = this.speed;
     const align = spd > 0.01 ? Math.max(0, -this.vel.dot(n)) / spd : 0;
@@ -412,7 +497,7 @@ export class Skater {
   endGrind(why) {
     const g = this.grind;
     this.grind = null;
-    return { type: 'grindEnd', name: g.name, time: g.time, why };
+    return { type: 'grindEnd', name: g.name, railId: g.railId, time: g.time, why };
   }
 
   endManual() {
@@ -423,8 +508,9 @@ export class Skater {
 
   // ── Present ───────────────────────────────────────────────────────────────
   present(dt) {
-    // Drift the hue with speed — the crystal catches more light the faster it
-    // is going, which is most of how the reference sells motion.
+    // Drift the hue with speed — the feather facets catch more light the faster
+    // the bird goes, which preserves the crystalline Skate Story motion read.
+    this.animT += dt;
     this.mat.uniforms.uPhase.value += dt * (0.6 + this.speed * 0.05);
     this.root.position.copy(this.pos);
     _hv.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));
@@ -449,6 +535,14 @@ export class Skater {
     if (this.grind) this.body.rotation.z += this.grind.balance * 0.3;
     const crouch = this.bailing ? 0.6 : this.loading ? 0.66 : d === 'up' ? 0.82 : 1;
     this.body.scale.y += (crouch - this.body.scale.y) * (1 - Math.pow(0.002, dt));
+
+    // Heavy little wing beats sell both effort and airtime without obscuring
+    // the board rotation. Grounded beats are restrained; airborne beats flare.
+    const airborne = this.grounded ? 0 : 1;
+    const beat = Math.sin(this.animT * (5 + this.speed * 0.12)) * (0.08 + airborne * 0.25);
+    this.wings[0].rotation.z = -0.2 - beat - airborne * 0.22;
+    this.wings[1].rotation.z = 0.2 + beat + airborne * 0.22;
+    this.head.position.y = 2.28 + Math.sin(this.animT * 4) * (this.grounded ? 0.025 : 0.05);
   }
 }
 

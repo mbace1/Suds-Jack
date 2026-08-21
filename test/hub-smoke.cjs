@@ -31,7 +31,13 @@ const collected = [];
 // catalogue once it has been read — see the on-screen button check)
 const STUB = new Set();
 const server = http.createServer((req, res) => {
-  const url = req.url.split('?')[0];
+  // GitHub Pages serves this repo at /Suds-Jack/, not at the root, and a
+  // cabinet is allowed to know that: Kindling is built by another repo with an
+  // absolute base, because TanStack takes the router's basepath from it — the
+  // page renders "Not Found" anywhere else however the assets are written. So
+  // the harness answers on BOTH, the way production does, instead of reporting
+  // a working cabinet as a wall of 404s.
+  const url = req.url.split('?')[0].replace(/^\/Suds-Jack(?=\/|$)/, '') || '/';
   if (url === '/collect' || url === '/collect-broken') {
     let body = '';
     req.on('data', c => { body += c; });
@@ -117,9 +123,34 @@ function check(name, cond) {
   check('the catalogue is not empty', games.length >= 8);
   check('every entry declares a status',
     catalogue.every(g => ['active', 'archived'].includes(g.status)));
-  check('active and archived account for the visible catalogue', games.length === visible.length);
-  check('secret cabinets stay off the floor until unlocked',
-    catalogue.filter(g => g.secret).every(g => !games.some(x => x.id === g.id)));
+  // ...minus the ones that are not on the floor until the code is entered
+  const secret = catalogue.filter(g => g.secret);
+  check('active and archived account for the whole catalogue',
+    games.length === catalogue.length - secret.length);
+  check('a secret cabinet is not on the floor',
+    secret.length > 0 && !games.some(g => g.secret));
+  check('and it is not rendered either',
+    (await page.$$('#cab-brand')).length === 0);
+  // the code, typed the way a person types it
+  for (const k of ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+    'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a']) {
+    await page.keyboard.press(k);
+  }
+  await page.waitForTimeout(120);
+  check('the code puts it on the floor', (await page.$$('#cab-brand')).length === 1);
+  check('and its marquee is painted', await page.evaluate(() => {
+    const c = document.querySelector('#cab-brand canvas');
+    if (!c) return false;
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    const seen = new Set();
+    for (let i = 0; i < d.length; i += 4) seen.add(`${d[i]},${d[i + 1]},${d[i + 2]}`);
+    return seen.size > 2;
+  }));
+  // Back to a locked floor. The unlock is a real state change on a shared
+  // page, and left standing it added a cabinet to every count below — which is
+  // how seven later checks failed at once the first time this ran.
+  await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
   check('one cabinet per game', await page.locator('.cab').count() === games.length);
   check('the live floor holds only what is being worked on',
     await page.locator('#cabinets .cab').count() === active.length && active.length > 0);
@@ -245,6 +276,12 @@ function check(name, cond) {
   check('and each is a 44px target', langBoxes.every(b => b.w >= 44 && b.h >= 44));
 
   const before = await page.locator('#floor-head').textContent();
+  // …and the FIRST cabinet's English words, to compare against after the
+  // switch. This used to keyword-match the Finnish (`paja|Vektorinen|Selain`),
+  // which meant the gate went red the moment another lane rewrote that one
+  // game's tagline — which is exactly what happened when Suds Jack v5 landed.
+  // A test of the language switch should not be a test of anybody's copy.
+  const beforeTag = await page.locator('.cab .tagline').first().textContent();
   await page.locator('.lang-btn[data-lang="fi"]').click();
   const fi = await page.evaluate(() => ({
     head: document.getElementById('floor-head').textContent,
@@ -255,7 +292,20 @@ function check(name, cond) {
   }));
   check(`switching relabels the page's own words ("${fi.head}")`, fi.head !== before && fi.head.length > 0);
   check(`and the cabinets' words with them ("${fi.play?.trim()}")`, /PELAA|Pelaa/i.test(fi.play ?? ''));
-  check('and the games\' own copy', /paja|Vektorinen|Selain/i.test(fi.tagline ?? ''));
+  // the switch has to reach the CATALOGUE, not just the page furniture: the
+  // cabinet's own tagline must change, and must be the fi one the catalogue
+  // holds for that cabinet rather than any old different string.
+  {
+    const wanted = await page.evaluate(() => {
+      // a cabinet names itself as `cab-<id>` (hub.js line 35)
+      const id = (document.querySelector('.cab')?.id || '').replace(/^cab-/, '');
+      const g = __hub.games.find((x) => x.id === id);
+      return g?.fi?.tagline ?? null;
+    });
+    check('and the games\' own copy',
+      !!fi.tagline && fi.tagline.trim() !== (beforeTag ?? '').trim()
+      && (!wanted || fi.tagline.trim() === wanted.trim()));
+  }
   // a page claiming lang="en" while showing Finnish lies to every screen reader
   // and translation tool that asks it
   check('<html lang> follows', fi.lang === 'fi');
@@ -291,6 +341,7 @@ function check(name, cond) {
   // brought back into source.
   check('the retired find-a-game controls stay off the floor',
     await page.locator('#find-box, .tag-btn, #surprise').count() === 0);
+  setHashless: { await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' }); }
 
   // ── one cabinet, by name ──
   // The point of the second form is a link you can paste to a playtester that
@@ -374,7 +425,12 @@ function check(name, cond) {
   }));
   check(`list drops the covers entirely and keeps every Play (${list.plays})`,
     list.marquee === 0 && list.plays > 0);
-  check(`and fits the whole floor in a screen or so (${list.tall}px)`, list.tall < 900);
+  // The budget scales with the catalogue: a fixed ceiling made LISTING A NEW
+  // GAME a gate failure (it tripped at 17 cabinets), which is a rule that
+  // teaches people either to ignore red or to stop listing. What the check is
+  // actually for survives — a list ROW going fat still fails it.
+  check(`and fits the floor in about a row's height per game (${list.tall}px for ${list.plays})`,
+    list.tall < list.plays * 60);
 
   await page.reload({ waitUntil: 'networkidle' });
   check('the shape survives a reload',
@@ -659,9 +715,20 @@ function check(name, cond) {
   });
   check(`unversioned cabinets are missing both a log and their own token (${unversioned.map(g => g.id)})`,
     honestlyUnversioned);
+  // Versions are DECIMAL from 2026-08-14: `v` is the LABEL a reader sees
+  // ("15.1") and `n` is the sort key (15001). Both are asserted, because
+  // the pair is the whole point — the label cannot be compared and the key
+  // cannot be displayed, so a build that drops either one is broken in a
+  // way that shows up as either a wrong number or a wrong "this moved".
   check('every version came from a log or a real cache token',
-    Object.values(versions).every(v => Number.isInteger(v.v) && v.v > 0
+    Object.values(versions).every(v => /^\d+(\.\d+)?$/.test(String(v.v))
+      && Number.isInteger(v.n) && v.n > 0
       && ['VERSIONS.md', 'cache token'].includes(v.from)));
+  check('every version label agrees with its sort key',
+    Object.values(versions).every(v => {
+      const [maj, min] = String(v.v).split('.');
+      return v.n === Number(maj) * 1000 + Math.min(999, Number(min ?? 0));
+    }));
   await page.reload({ waitUntil: 'networkidle' });
   // not every cabinet has a number — the first one is a game that lives only
   // on the deployed site — so wait for any of them to fill, not for the first
@@ -786,10 +853,20 @@ function check(name, cond) {
   const missing = [], badHref = [], small = [];
   for (const g of shelled) {
     await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
+    // Wait for the button rather than sampling once, the same way the pad
+    // bridge below does. Kindling cannot add it before hydration: its app
+    // renders <html> itself, so React owns the document and deletes any body
+    // child it did not render — the button was there at domcontentloaded and
+    // gone a tick later, which read as a cabinet with no way home.
     const home = page.locator('.arcade-home');
+    await home.waitFor({ state: 'attached', timeout: 6000 }).catch(() => {});
     if (await home.count() !== 1) { missing.push(g.id); continue; }
     const href = await home.getAttribute('href');
-    if (new URL(href).pathname !== '/') badHref.push(`${g.id}->${href}`);
+    // The site root, which is `/` here and `/Suds-Jack/` in production. A
+    // cabinet that masks its URL to the deployed path — Kindling does, its
+    // router basepath is baked in — makes the shell resolve home against
+    // that, which is right there and looks wrong here.
+    if (!['/', '/Suds-Jack/'].includes(new URL(href).pathname)) badHref.push(`${g.id}->${href}`);
     const box = await home.boundingBox();
     if (!box || box.height < 44) small.push(`${g.id} ${Math.round(box?.height ?? 0)}px`);
   }
@@ -902,7 +979,13 @@ function check(name, cond) {
   const bridged = catalogue.filter(g => g.pad && g.pad !== 'native' && g.inRepo);
   for (const g of bridged) {
     await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
-    const wired = await page.evaluate(() => !!window.__arcadeShell?.bridged);
+    // Wait for the handle rather than sampling once. Not every game loads the
+    // shell from a top-level <script>: radiofree imports it dynamically once
+    // its own boot is done, so at domcontentloaded there is nothing to read
+    // and this reported an unbridged pad on a game whose pad works fine.
+    const wired = await page.waitForFunction(
+      () => !!window.__arcadeShell?.bridged, null, { timeout: 6000 })
+      .then(() => true).catch(() => false);
     check(`${g.id} gets a pad bridged onto it`, wired);
     check(`${g.id} is matched to its own catalogue entry`,
       await page.evaluate(() => window.__arcadeShell.game) === g.id);
@@ -957,49 +1040,144 @@ function check(name, cond) {
   check(`in that order, and once each (${order.join(' ')})`,
     order.join() === 'down:Space,up:Space');
 
-  // ── the sting, on the first Play ──
-  // Once per browser, skippable from the first frame, and never merely on
-  // arrival: the workshop's mark belongs in front of a game, not its menu.
+
+  // ── the room ──
+  // Atmosphere, and the whole promise is that none of it gets in the way. So
+  // what is checked is mostly that it LEAVES: the boot veil clears itself, the
+  // counters stay off the wall until there is something to count.
+  await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  await page.waitForTimeout(1000);
+  check('the power-on veil takes itself off the page',
+    (await page.$$('.power-on')).length === 0);
+
+  // ── the intro ──
+  // Once per TAB, so it has to be driven in a context that has not used its
+  // one go yet — on the shared page above it played before the first check and
+  // every assertion here would pass without ever running.
   {
-    const fresh = await browser.newContext({ viewport: { width: 1100, height: 900 } });
-    const fp = await fresh.newPage();
-    await fp.goto(base, { waitUntil: 'domcontentloaded' });
-    check('a first-ever arrival opens directly onto the arcade',
-      await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
-    const firstPlay = fp.locator('.cab .btn.play').first();
-    const destination = await firstPlay.getAttribute('href');
-    await firstPlay.click();
-    const card = fp.locator('div[role="img"][aria-label*="TOKO" i], div[role="img"]').first();
-    check('the first Play gets the sting',
-      await card.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false));
-    check('and it covers the floor while it plays',
-      await fp.evaluate(() => {
-        const el = document.querySelector('div[role="img"]');
-        const cs = el && getComputedStyle(el);
-        return !!cs && cs.position === 'fixed' && parseInt(cs.zIndex, 10) > 1000;
-      }));
-    await fp.keyboard.press('Space');
-    await fp.waitForURL(url => url.pathname.endsWith(`/${destination}`), { timeout: 5000 });
-    check('any key skips it',
-      await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
-    check('and the game opens when it is done', fp.url().endsWith(`/${destination}`));
+    const boot = await browser.newContext({ viewport: { width: 1000, height: 700 } });
+    const seen = sel => bp => bp.$$(sel).then(a => a.length > 0);
+    const veil = seen('.power-on');
 
-    await fp.goto(base, { waitUntil: 'domcontentloaded' });
-    const secondDestination = await fp.locator('.cab .btn.play').first().getAttribute('href');
-    await fp.locator('.cab .btn.play').first().click();
-    await fp.waitForURL(url => url.pathname.endsWith(`/${secondDestination}`), { timeout: 3000 });
-    check('a second Play never shows it again',
-      fp.url().endsWith(`/${secondDestination}`));
-    await fresh.close();
+    let bp = await boot.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'commit' });
+    // POLLED, not sampled. A bounding rect is the TRANSFORMED box, and the
+    // veil mounts whenever the module finishes loading rather than at a fixed
+    // offset from navigation — so any single moment catches the sweep somewhere
+    // different, and a fixed 420ms read it at 956 of 1000px on one run and
+    // failed. Waiting for it to land asserts the same thing without racing.
+    await bp.waitForFunction(() => {
+      const i = document.querySelector('.power-on i');
+      return i && Math.abs(i.getBoundingClientRect().width - innerWidth) < 2;
+    }, null, { timeout: 3000 });
+    check('the intro opens across the whole screen', await bp.evaluate(() => {
+      const i = document.querySelector('.power-on i');
+      // the ELEMENT is the viewport — the sweep above proves the animation
+      // reaches across it, this proves there is nothing narrower underneath
+      return i.offsetWidth === innerWidth && i.offsetHeight === innerHeight;
+    }));
+    // one input, and the WHOLE thing goes — not one half of it
+    await bp.keyboard.press('Escape');
+    await bp.waitForTimeout(500);
+    check('any key skips it from the first frame',
+      !await veil(bp) && (await bp.$$('.toko-sting')).length === 0);
+    check('and a skipped mark is still unseen next time',
+      await bp.evaluate(() => !localStorage.getItem('tokoSting')));
+    await bp.close();
 
-    const linked = await browser.newContext({ viewport: { width: 1100, height: 900 } });
-    const lp = await linked.newPage();
-    await lp.goto(`${base}/#hyperdagger`, { waitUntil: 'domcontentloaded' });
-    await lp.waitForTimeout(600);
-    check('a deep link never gets an arrival sting',
-      await lp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
-    await linked.close();
+    // a pasted link means somebody came for one thing
+    bp = await boot.newPage();
+    await bp.goto(`${base}/index.html#hyperdagger`, { waitUntil: 'commit' });
+    await bp.waitForTimeout(260);
+    check('a deep link gets no intro at all', !await veil(bp));
+    await bp.close();
+    await boot.close();
+
+    // reduced motion gets no tube at all
+    const still = await browser.newContext({
+      viewport: { width: 1000, height: 700 }, reducedMotion: 'reduce',
+    });
+    bp = await still.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'commit' });
+    await bp.waitForTimeout(500);
+    check('reduced motion gets no tube', !await veil(bp));
+    await bp.close();
+    await still.close();
   }
+
+  // ── the mark, in front of a game ──
+  // A studio logo goes before the GAME, not before the menu. So Play holds the
+  // navigation, plays it once per browser, and goes when it is done — and the
+  // second Play is a plain link again.
+  {
+    const run = await browser.newContext({ viewport: { width: 1000, height: 700 } });
+    const bp = await run.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+    await bp.waitForFunction(() => window.__hub);
+    check('an unintroduced browser has not seen the mark',
+      await bp.evaluate(() => !localStorage.getItem('tokoSting')));
+
+    await bp.click('#cab-dropcabal a.play');
+    await bp.waitForSelector('.toko-sting', { timeout: 3000 });
+    check('starting a game plays the mark first', true);
+    check('and it records WHICH of the two was shown',
+      ['draw', 'goo'].includes(await bp.evaluate(() => localStorage.getItem('tokoStingStyle'))));
+
+    // One input puts it away AND lets you through — skipping the logo must not
+    // strand you on the page you were leaving. Waited on by URL rather than by
+    // a timeout, and matched on `.toko-sting` rather than [role="img"]: every
+    // signed game carries a badge with that role, so looking for one found the
+    // signature in the corner of the game just navigated to and called it the
+    // sting still being on screen.
+    await bp.keyboard.press('Escape');
+    await bp.waitForURL('**/dropcabal/', { timeout: 4000 });
+    check('the mark is skippable and still takes you to the game',
+      bp.url().endsWith('/dropcabal/'));
+
+    // second time it is a plain link
+    await bp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+    await bp.waitForFunction(() => window.__hub);
+    await bp.click('#cab-tokodrop a.play');
+    await bp.waitForURL('**/toko-drop/', { timeout: 4000 });
+    check('the next game start is a plain link, no mark',
+      (await bp.$$('.toko-sting')).length === 0);
+    await bp.close();
+    await run.close();
+  }
+
+  // sound is off until asked, and says which it is
+  check('sound is off on arrival',
+    await page.$eval('.sound-row .opt-btn', b => b.getAttribute('aria-pressed') === 'false'));
+  await page.click('.sound-row .opt-btn');
+  check('and the toggle says so when it is on',
+    await page.$eval('.sound-row .opt-btn', b => b.getAttribute('aria-pressed') === 'true'));
+  await page.click('.sound-row .opt-btn');
+
+  // The counters only exist once there is something to count. Cleared first:
+  // the checks further up press Play for their own reasons, and this ran
+  // against a machine that had already "played" nine things.
+  await page.evaluate(() => {
+    for (const k of ['sudsJackHubCredits', 'sudsJackHubTickets', 'sudsJackHubDays',
+      'sudsJackHubPlayed', 'tokoDropHi']) localStorage.removeItem(k);
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  check('an untouched machine has no counters on the wall',
+    (await page.$$('.wall-row')).length === 0);
+  await page.evaluate(() => {
+    __hub.debug.markPlayed('tokodrop');
+    localStorage.setItem('tokoDropHi', '4242');
+  });
+  await page.waitForTimeout(60);
+  check('pressing Play puts a credit on the wall',
+    (await page.$eval('.wall-row', n => n.textContent)).includes('1 credit'));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  check('and a game you have played shows your best, off your own disk',
+    (await page.$eval('#cab-tokodrop .best', n => n.textContent)).includes('4,242'));
+  check('a game you have not played shows no score line at all',
+    (await page.$$('#cab-skltr .best')).length === 0);
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=54';
+import { TUNING as T } from './tuning.js?v=63';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const EYE = T.player.eye;
@@ -23,6 +23,7 @@ const MAX_JUMPS = T.player.maxJumps;
 
 const _fwd = new THREE.Vector3();
 const _right = new THREE.Vector3();
+const _wish = new THREE.Vector3();
 
 /** First-person controller: yaw/pitch look, WASD/stick strafe, jump, head-bob. */
 export class Player {
@@ -35,11 +36,16 @@ export class Player {
     this.speed = T.player.speed;
     this.sens = 1; // look sensitivity multiplier (pause-menu option)
     this.aimAssist = 1; // <1 slows stick look near a target; main sets it per frame
+    this.dashEnabled = true;
+    this.edgeMode = 'void';
+    this.overEdge = false;
     this.reset();
   }
 
   reset() {
     this.feet.set(0, 0, 6);
+    this.velocity = this.velocity || new THREE.Vector3();
+    this.velocity.set(0, 0, 0);
     this.vy = 0;
     this.yaw = 0;
     this.pitch = 0;
@@ -53,11 +59,26 @@ export class Player {
     this.dashBufFlick = null;
     this.justDashed = false;
     this.justJumped = false;
+    this.justBunnyHopped = false;
+    this.justDaggerJumped = false;
     this.jumpsLeft = MAX_JUMPS;
+    this.jumpBuffer = 0;
+    this.coyoteT = T.player.coyote;
+    this.airTime = 0;
+    this.landedAgo = 999;
+    this.daggerJumpsLeft = T.player.daggerJumps;
+    this.hopCount = 0;
+    this.daggerJumpCount = 0;
+    this.overEdge = false;
     this._sync();
   }
 
   get dashK() { return Math.max(0, this.dashT) / DASH_TIME; }
+  get horizontalSpeed() { return Math.hypot(this.velocity.x, this.velocity.z); }
+  get speedK() {
+    return Math.max(0, Math.min(1,
+      (this.horizontalSpeed - this.speed) / (T.player.airSpeedCap - this.speed)));
+  }
 
   get eyePos() { return this.camera.position; }
 
@@ -89,26 +110,92 @@ export class Player {
     }
     this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch));
 
-    // Move relative to yaw. Camera faces -z at yaw 0.
+    // Buffer jump presses so a press just before landing becomes a clean hop.
+    // This is the timing skill in the target movement, replacing a free air jump.
+    if (this.input.consumeJump()) this.jumpBuffer = T.player.jumpBuffer;
+    else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
+
+    let grounded = this.feet.y <= 0.001 && this.vy <= 0;
+    this.landedAgo += dt;
+    if (grounded) {
+      this.coyoteT = T.player.coyote;
+      this.airTime = 0;
+      this.jumpsLeft = MAX_JUMPS;
+      this.daggerJumpsLeft = T.player.daggerJumps;
+    } else {
+      this.coyoteT = Math.max(0, this.coyoteT - dt);
+      this.airTime += dt;
+    }
+
+    if (this.jumpBuffer > 0 && this.coyoteT > 0 && this.jumpsLeft > 0) {
+      const chained = grounded && this.landedAgo <= T.player.hopWindow;
+      this.vy = JUMP_V;
+      this.jumpsLeft--;
+      this.jumpBuffer = 0;
+      this.coyoteT = 0;
+      grounded = false;
+      this.justJumped = true;
+      if (chained) {
+        const boosted = Math.min(T.player.airSpeedCap, this.horizontalSpeed * T.player.hopBoost);
+        const speed = this.horizontalSpeed;
+        if (speed > 0.01) this.velocity.multiplyScalar(boosted / speed);
+        this.justBunnyHopped = true;
+        this.hopCount++;
+      }
+    }
+
+    // Quake-style horizontal velocity: friction/acceleration on the floor,
+    // much lighter steering in air, and no hidden normalization of carried
+    // momentum. Combining forward + strafe earns the classic diagonal boost.
     const mv = this.input.getMove();
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
     _fwd.set(-sin, 0, -cos);
     _right.set(cos, 0, -sin);
-    this.feet.x += (_right.x * mv.x + _fwd.x * mv.y) * this.speed * dt;
-    this.feet.z += (_right.z * mv.x + _fwd.z * mv.y) * this.speed * dt;
+    const moveLen = Math.hypot(mv.x, mv.y);
+    if (grounded) {
+      const speed = this.horizontalSpeed;
+      if (speed > 0) {
+        const next = Math.max(0, speed - speed * T.player.groundFriction * dt);
+        this.velocity.multiplyScalar(next / speed);
+      }
+    }
+    if (moveLen > 0.01) {
+      _wish.set(
+        _right.x * mv.x + _fwd.x * mv.y, 0,
+        _right.z * mv.x + _fwd.z * mv.y).normalize();
+      const diagonal = Math.min(Math.abs(mv.x), Math.abs(mv.y));
+      const wishSpeed = this.speed * Math.min(1, moveLen) *
+        (1 + diagonal * T.player.diagonalBoost);
+      const current = this.velocity.dot(_wish);
+      const add = wishSpeed - current;
+      if (add > 0) {
+        const accel = grounded ? T.player.groundAccel : T.player.airAccel;
+        this.velocity.addScaledVector(_wish, Math.min(add, accel * dt * wishSpeed));
+      }
+    }
+    const horizontal = this.horizontalSpeed;
+    if (horizontal > T.player.airSpeedCap) {
+      this.velocity.multiplyScalar(T.player.airSpeedCap / horizontal);
+    }
 
     // Dash: Shift bursts along the move direction (facing if standing
     // still); a stick flick bursts along the flick direction. Requests are
     // buffered briefly so a dash pressed just before cooldown ends still fires.
     this.dashCd -= dt;
     const flick = this.input.consumeDashFlick();
-    if (this.input.consumeDash() || flick) {
+    const dashPressed = this.input.consumeDash();
+    if (this.dashEnabled && (dashPressed || flick)) {
       this.dashBuf = T.dash.buffer;
       this.dashBufFlick = flick || null;
     } else if (this.dashBuf > 0) {
       this.dashBuf -= dt;
     }
-    if (this.dashBuf > 0 && this.dashCd <= 0) {
+    if (!this.dashEnabled) {
+      this.dashBuf = 0;
+      this.dashBufFlick = null;
+      this.dashT = 0;
+    }
+    if (this.dashEnabled && this.dashBuf > 0 && this.dashCd <= 0) {
       const bufFlick = this.dashBufFlick;
       this.dashBuf = 0;
       this.dashBufFlick = null;
@@ -135,28 +222,41 @@ export class Player {
       this.dashT -= dt;
       this.feet.addScaledVector(this.dashDir, DASH_SPEED * dt);
     }
+    this.feet.addScaledVector(this.velocity, dt);
 
-    // Keep inside the arena.
     const r = Math.hypot(this.feet.x, this.feet.z);
-    const max = this.arenaR - 0.8;
-    if (r > max) {
-      this.feet.x *= max / r;
-      this.feet.z *= max / r;
+    if (this.edgeMode === 'void') {
+      this.overEdge = r > this.arenaR - 0.12;
+    } else if (this.edgeMode === 'clamp') {
+      this.overEdge = false;
+      const max = this.arenaR - 0.8;
+      if (r > max) {
+        this.feet.x *= max / r;
+        this.feet.z *= max / r;
+        const nx = this.feet.x / max, nz = this.feet.z / max;
+        const outward = this.velocity.x * nx + this.velocity.z * nz;
+        if (outward > 0) {
+          this.velocity.x -= nx * outward;
+          this.velocity.z -= nz * outward;
+        }
+      }
+    } else {
+      this.overEdge = false;
     }
 
-    // Jump + double jump + gravity.
-    if (this.feet.y <= 0.001 && this.vy <= 0) this.jumpsLeft = MAX_JUMPS;
-    if (this.input.consumeJump() && this.jumpsLeft > 0) {
-      this.vy = this.jumpsLeft === MAX_JUMPS ? JUMP_V : JUMP_V * 0.92;
-      this.jumpsLeft--;
-      this.justJumped = true;
-    }
+    // Vertical integration. A buffered landing press is consumed next frame,
+    // before friction, which is what preserves speed through a bunny hop.
+    const wasAbove = this.feet.y > 0.001;
     this.vy += GRAVITY * dt;
     this.feet.y += this.vy * dt;
-    if (this.feet.y < 0) { this.feet.y = 0; this.vy = 0; }
+    if (this.edgeMode !== 'open' && this.feet.y < 0) {
+      this.feet.y = 0;
+      this.vy = 0;
+      if (wasAbove) this.landedAgo = 0;
+    }
 
     // Head-bob only while grounded and moving.
-    const moving = Math.hypot(mv.x, mv.y) > 0.15 && this.feet.y <= 0.001;
+    const moving = this.horizontalSpeed > 0.8 && this.feet.y <= 0.001;
     this.bobK += ((moving ? 1 : 0) - this.bobK) * Math.min(1, dt * 8);
     this.bobT += dt * 11 * this.bobK;
 
@@ -170,6 +270,33 @@ export class Player {
       this.feet.z,
     );
     this.camera.rotation.set(this.pitch, this.yaw, 0);
+  }
+
+  /** A downward tap-burst converts recoil into a dagger jump. The first must
+   *  happen just after takeoff; a second is accepted near the apex, matching
+   *  the target's authored double-dagger-jump instead of a free air jump. */
+  daggerJump(dir) {
+    const used = T.player.daggerJumps - this.daggerJumpsLeft;
+    const inWindow = used === 0
+      ? this.airTime <= T.player.daggerJumpWindow
+      : this.airTime <= T.player.daggerSecondWindow && this.vy <= T.player.daggerSecondMaxVy;
+    if (this.feet.y <= 0.01 || !inWindow || this.daggerJumpsLeft <= 0 ||
+        dir.y > T.player.daggerAimY) return false;
+    const aimRange = 1 - Math.abs(T.player.daggerAimY);
+    const down = Math.max(0, Math.min(1,
+      (-dir.y - Math.abs(T.player.daggerAimY)) / aimRange));
+    this.vy = Math.max(this.vy, T.player.daggerJumpV * (0.82 + down * 0.18));
+    _wish.set(-dir.x, 0, -dir.z);
+    if (_wish.lengthSq() > 0.001) {
+      _wish.normalize();
+      this.velocity.addScaledVector(_wish, T.player.daggerJumpPush);
+      const speed = this.horizontalSpeed;
+      if (speed > T.player.airSpeedCap) this.velocity.multiplyScalar(T.player.airSpeedCap / speed);
+    }
+    this.daggerJumpsLeft--;
+    this.justDaggerJumped = true;
+    this.daggerJumpCount++;
+    return true;
   }
 
   /** External horizontal shove (e.g. the Leviathan's drag). */

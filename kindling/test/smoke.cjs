@@ -1,0 +1,715 @@
+// Kindling — headless smoke test.
+//   node kindling/test/smoke.cjs
+// Needs the `playwright` package resolvable (a global install is fine:
+// NODE_PATH=<global node_modules>) and a Playwright-managed Chromium.
+//
+// Everything here is driven off GAME STATE rather than the wall clock. Two
+// reasons, both learned elsewhere in this repo: a sandbox with no GPU renders a
+// dithered scene at a handful of frames a second, so a test that waits for
+// seconds is a coin flip; and the parts of this app that take real time (a
+// ninety-second errand, a sixty-four-second breathing set, a day turning over)
+// would otherwise make the gate slower than the thing it is gating.
+//
+// What it covers:
+//  - it boots clean, and the room is actually painted
+//  - the sheet: ticking, unticking, and the once-only payout that stops a line
+//    being farmed on and off
+//  - the check-in, and that changing it is free
+//  - the breathing machine's phases, per-round banking, and early stopping
+//  - the errand: the cost, the wait, that it survives a reload, that its report
+//    is fixed at departure, and that it always comes home with something to say
+//  - the day turning over: the sheet clears, the journal keeps it, and nothing
+//    else is taken away
+//  - the light IS the reward: more care means a measurably brighter room, and
+//    the far side of it only exists on a full fire
+//  - the copy never scolds (a real check, because that is the design rule)
+//  - room life (Slice 1): the creature has its own business, saying hello pays
+//    nothing, the window follows the local clock, and the fire has five bands
+//  - the offline shell names files that exist, at the tokens the page asks for
+//  - a 44px floor on every control, AA contrast, no sideways scroll on a phone
+
+const { chromium } = require('playwright');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.resolve(__dirname, '..', '..');
+const MIME = {
+  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  '.json': 'application/json', '.md': 'text/plain',
+};
+
+const server = http.createServer((req, res) => {
+  const url = decodeURIComponent(req.url.split('?')[0]);
+  let file = path.join(ROOT, url);
+  if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+  if (!file.startsWith(ROOT) || !fs.existsSync(file)) { res.writeHead(404); return res.end('nope'); }
+  res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream' });
+  res.end(fs.readFileSync(file));
+});
+
+let pass = 0, fail = 0;
+function check(what, ok) {
+  console.log(`${ok ? '  ok ' : 'FAIL '} ${what}`);
+  ok ? pass++ : fail++;
+}
+
+// ── contrast, the same way the hub's gate measures it ──
+const lum = ([r, g, b]) => {
+  const f = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+};
+const ratio = (a, b) => {
+  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
+
+(async () => {
+  await new Promise(r => server.listen(0, r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const browser = await chromium.launch({ args: ['--no-sandbox'] });
+  const ctx = await browser.newContext({ viewport: { width: 620, height: 1000 } });
+  const page = await ctx.newPage();
+  const noise = [];
+  page.on('console', m => { if (m.type() === 'error') noise.push(m.text()); });
+  page.on('pageerror', e => noise.push('pageerror: ' + e.message));
+
+  const open = async () => {
+    await page.goto(`${base}/kindling/`, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.__kd, null, { timeout: 10000 });
+  };
+  await open();
+
+  // ── it boots ──
+  check('the page loads with no console or page errors' + (noise.length ? ` — ${noise[0]}` : ''),
+    noise.length === 0);
+  check('the app exposes its handle for the console', await page.evaluate(() => !!window.__kd?.debug));
+
+  const painted = await page.evaluate(() => {
+    const c = document.querySelector('canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let lit = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 40) lit++;
+    return { lit, w: c.width, h: c.height };
+  });
+  check(`the room is painted, not a blank canvas (${painted.lit} lit pixels)`, painted.lit > 500);
+  // 320x180 is the grid the approved art is being authored to (art-src/
+  // ART_REQUESTS.md §2): exactly 2x the delivered reference thumbnails and the
+  // same 16:9, so a reference can be laid over a render at 2x and compared.
+  check(`at the resolution the art is drawn for (${painted.w}x${painted.h})`,
+    painted.w === 320 && painted.h === 180);
+
+  // it must MOVE on its first screen — a still opening reads as a broken page
+  const moved = await page.evaluate(async () => {
+    const c = document.querySelector('canvas');
+    const grab = () => c.toDataURL();
+    const a = grab();
+    await new Promise(r => setTimeout(r, 320));
+    return a !== grab();
+  });
+  check('and the fire is alive on the first screen', moved);
+
+  // ── the sheet ──
+  const fresh = await page.evaluate(() => ({
+    tasks: __kd.debug.tasks().length,
+    cared: __kd.debug.cared(),
+    fuel: __kd.state.fuel,
+    warmth: __kd.debug.warmth(),
+    streak: __kd.debug.streak(),
+    stage: __kd.debug.stage(),
+  }));
+  check(`a fresh sheet has ${fresh.tasks} lines on it and nothing ticked`,
+    fresh.tasks === 6 && fresh.cared === 0 && fresh.fuel === 0);
+  check('the fire is banked to coals, and the streak is honestly zero',
+    fresh.warmth === 0 && fresh.streak === 0 && fresh.stage === 'spark');
+
+  await page.locator('.task').first().click();
+  const one = await page.evaluate(() => ({
+    cared: __kd.debug.cared(), fuel: __kd.state.fuel, streak: __kd.debug.streak(),
+    pressed: document.querySelector('.task').getAttribute('aria-pressed'),
+    said: document.getElementById('say').textContent,
+  }));
+  check('ticking one line marks it, pays a kindling and starts the streak',
+    one.cared === 1 && one.fuel === 1 && one.streak === 1 && one.pressed === 'true');
+  check(`and the app says what it did ("${one.said.slice(0, 42)}…")`, one.said.length > 10);
+
+  await page.locator('.task').first().click();
+  const off = await page.evaluate(() => ({
+    cared: __kd.debug.cared(), fuel: __kd.state.fuel, kept: __kd.state.kept,
+    pressed: document.querySelector('.task').getAttribute('aria-pressed'),
+  }));
+  check('unticking takes the mark off — and takes nothing else away',
+    off.cared === 0 && off.pressed === 'false' && off.fuel === 1 && off.kept === 1);
+
+  await page.locator('.task').first().click();
+  await page.locator('.task').first().click();
+  await page.locator('.task').first().click();
+  const farmed = await page.evaluate(() => ({ fuel: __kd.state.fuel, kept: __kd.state.kept }));
+  check('and ticking the same line on and off again pays nothing more',
+    farmed.fuel === 1 && farmed.kept === 1);
+
+  // ── the check-in ──
+  await page.locator('.mood').nth(2).click();
+  const mood1 = await page.evaluate(() => ({ fuel: __kd.state.fuel, mood: __kd.state.sheet.mood }));
+  check('checking in counts as care', mood1.mood === 'ok' && mood1.fuel === 2);
+  await page.locator('.ask .link').click();               // "change"
+  await page.locator('.mood').nth(4).click();
+  const mood2 = await page.evaluate(() => ({ fuel: __kd.state.fuel, mood: __kd.state.sheet.mood }));
+  check('and changing your mind is free', mood2.mood === 'bright' && mood2.fuel === 2);
+
+  // ── a custom line of your own ──
+  await page.locator('.add input').fill('called my brother');
+  await page.locator('.add .btn').click();
+  const added = await page.evaluate(() => __kd.debug.tasks().length);
+  check('a line you write yourself joins the list', added === 7);
+  await page.locator('.sheet .drop').first().click();
+  check('and can be taken off it again', await page.evaluate(() => __kd.debug.tasks().length) === 6);
+
+  // ── the breathing machine, stepped rather than waited out ──
+  const breath = await page.evaluate(async () => {
+    const { makeBreath, ROUNDS } = await import('./js/breathe.js?v=5');
+    const rounds = [];
+    let done = false;
+    const m = makeBreath({ onRound: n => rounds.push(n), onDone: () => { done = true; } });
+    const seen = [];
+    const full = [];
+    for (let i = 0; i < 4000 && !done; i++) {
+      m.update(0.05);
+      if (!seen.length || seen[seen.length - 1] !== m.phase) seen.push(m.phase);
+      full.push(m.fullness);
+    }
+    return { seen: seen.slice(0, 5), rounds, done, ROUNDS, peak: Math.max(...full), floor: Math.min(...full) };
+  });
+  check(`the breath walks in · hold · out · rest (${breath.seen.slice(0, 4).join(' · ')})`,
+    breath.seen.slice(0, 4).join() === 'in,hold,out,rest');
+  check(`it banks every round as it finishes (${breath.rounds.join(',')})`,
+    breath.rounds.length === breath.ROUNDS && breath.done);
+  check('and the lungs actually fill and empty', breath.peak === 1 && breath.floor === 0);
+
+  // one frame, because the fire is driven by the loop rather than by the click
+  const inBreath = await page.evaluate(async () => {
+    __kd.debug.breathe();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return {
+      page: __kd.view.page,
+      label: document.getElementById('breath-label')?.textContent,
+      flame: __kd.view.flame,
+    };
+  });
+  check('starting it takes over the screen and drives the fire',
+    inBreath.page === 'breathe' && typeof inBreath.label === 'string' && inBreath.flame > 0);
+  await page.locator('.breathing .btn').click();
+  check('stopping early comes back to the sheet without a telling-off',
+    await page.evaluate(() => __kd.view.page) === 'today');
+
+  // ── the errand ──
+  await page.evaluate(() => { __kd.state.fuel = 1; __kd.debug.render(); });
+  await page.evaluate(() => __kd.debug.sendOut());
+  check('an errand it cannot afford does not happen',
+    await page.evaluate(() => !__kd.state.errand));
+  check('and it says so rather than doing nothing',
+    /kindling/i.test(await page.locator('#say').textContent()));
+
+  await page.evaluate(() => __kd.debug.give(3));
+  await page.evaluate(() => __kd.debug.sendOut());
+  const out = await page.evaluate(() => ({
+    fuel: __kd.state.fuel,
+    out: !!__kd.state.errand?.out,
+    btn: document.querySelector('.btn.send')?.textContent,
+    disabled: document.querySelector('.btn.send')?.disabled,
+  }));
+  check('sending it out spends the kindling', out.out && out.fuel === 1);
+  check(`and the button becomes the clock ("${out.btn}")`, /back in \d:\d\d/.test(out.btn) && out.disabled);
+
+  // the report is rolled at DEPARTURE: the same errand always tells the same
+  // story, however many times the page is reloaded before it gets home
+  const stable = await page.evaluate(async () => {
+    const { report } = await import('./js/errand.js?v=5');
+    const e = __kd.state.errand;
+    const a = report(e, []), b = report(e, []);
+    return a.lines.join('|') === b.lines.join('|') && a.thing === b.thing;
+  });
+  check('its outcome is fixed when it leaves, not when it arrives', stable);
+
+  await open();                                            // and it survives this
+  const survived = await page.evaluate(() => ({
+    out: !!__kd.state.errand?.out,
+    btn: document.querySelector('.btn.send')?.textContent,
+    said: document.getElementById('say').textContent,
+  }));
+  check('a reload does not bring it home early or lose it', survived.out
+    && /back in/.test(survived.btn) && /window|out/i.test(survived.said));
+
+  await page.evaluate(() => __kd.debug.finishErrand());
+  const back = await page.evaluate(() => ({
+    out: !!__kd.state.errand?.out,
+    lines: __kd.state.journal[0].lines.length,
+    found: __kd.state.found.length,
+    said: document.getElementById('say').textContent,
+  }));
+  check('when the clock runs out it comes home', !back.out);
+  check(`with something to say about it (${back.lines} lines in today's journal)`, back.lines >= 2);
+  check('and often, but not always, something for the shelf', back.found >= 0);
+  check(`the room says it too ("${back.said.slice(0, 40)}…")`, /home/i.test(back.said));
+
+  // ── the light is the reward ──
+  // The promise is that FIRELIGHT reaches further on a better day — so that is
+  // what is measured, not total brightness. Since the pivot the world is a
+  // moonlit ruin: the sky is always lit, so mean brightness barely moves and the
+  // old ruler (all pixels, cold included) reported a 1.3× change for a day that
+  // goes from coals to a full fire. Counting WARM pixels — where red leads blue —
+  // measures the thing the design actually claims, and measures it harder.
+  const brightness = await page.evaluate(async () => {
+    const c = document.querySelector('canvas');
+    const ctx = c.getContext('2d');
+    const warmIn = (x, y, w, h) => {
+      const d = ctx.getImageData(x, y, w, h).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] - d[i + 2] > 40 && d[i] > 60) n++;     // red leads blue: firelight
+      }
+      return n;
+    };
+    // How warm a patch is ON AVERAGE, which a count cannot tell you once every
+    // pixel in it already clears the threshold. The cut ground layer is warm
+    // brown before any fire touches it, so counting warm pixels out at the edge
+    // of the light saturates and then reads a brighter fire as no change at
+    // all — it went 1216 -> 1204 across a whole day.
+    const heatIn = (x, y, w, h) => {
+      const d = ctx.getImageData(x, y, w, h).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += Math.max(0, d[i] - d[i + 2]);
+      return Math.round(sum / (w * h));
+    };
+    const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const s = __kd.state;
+    s.sheet.done = []; s.sheet.mood = null; s.sheet.breaths = 0;
+    __kd.view.shown = 0;
+    await frame();
+    const cold = { warm: warmIn(0, 0, c.width, c.height), far: heatIn(196, 126, 64, 44) };
+    s.sheet.done = __kd.debug.tasks(); s.sheet.mood = 'ok';
+    __kd.view.shown = 1;
+    await frame();
+    const warm = { warm: warmIn(0, 0, c.width, c.height), far: heatIn(196, 126, 64, 44) };
+    return { cold, warm };
+  });
+  check(`a full day is measurably more firelight (${brightness.cold.warm} → ${brightness.warm.warm} warm pixels)`,
+    brightness.warm.warm > brightness.cold.warm * 1.5);
+  // The sample sits on the ground to the RIGHT of the props, past where a
+  // banked fire reaches. It moved twice: once for the 320x180 grid, and once
+  // because the old spot landed on the castle's lit windows in the cut sky
+  // layer — those are warm whatever kind of day you had, since somebody else is
+  // up a long way off, so measuring firelight there measured nothing at all.
+  check(`and the far side of the camp is only reached by a full fire (${brightness.cold.far} → ${brightness.warm.far})`,
+    brightness.warm.far > brightness.cold.far + 8);
+
+  // ── the day turning over ──
+  const rolled = await page.evaluate(() => {
+    const before = {
+      fuel: __kd.state.fuel, kept: __kd.state.kept, found: __kd.state.found.length,
+      journalDays: __kd.state.journal.length,
+    };
+    __kd.debug.ageDay(1);
+    return {
+      before,
+      cared: __kd.debug.cared(),
+      streak: __kd.debug.streak(),
+      fuel: __kd.state.fuel,
+      kept: __kd.state.kept,
+      found: __kd.state.found.length,
+      journalDays: __kd.state.journal.length,
+      said: document.getElementById('say').textContent,
+    };
+  });
+  check('a new day clears the sheet', rolled.cared === 0);
+  check('yesterday stays in the journal', rolled.journalDays === rolled.before.journalDays);
+  check('the streak survives one night', rolled.streak > 0);
+  check('and nothing else is taken away',
+    rolled.fuel === rolled.before.fuel && rolled.kept === rolled.before.kept
+    && rolled.found === rolled.before.found);
+  check(`the day is announced kindly ("${rolled.said}")`, /new day/i.test(rolled.said));
+
+  const lapsed = await page.evaluate(() => {
+    __kd.debug.ageDay(4);
+    return {
+      streak: __kd.debug.streak(), stored: __kd.state.streak,
+      fuel: __kd.state.fuel, kept: __kd.state.kept, found: __kd.state.found.length,
+    };
+  });
+  check('a streak counted back from today shows zero once it has lapsed', lapsed.streak === 0);
+  check('and the missed days cost nothing but the count',
+    lapsed.fuel > 0 && lapsed.kept > 0 && lapsed.found >= 0);
+
+  // picking it back up starts a fresh streak rather than punishing the gap
+  await page.evaluate(() => { __kd.debug.render(); });
+  await page.locator('.task').first().click();
+  check('picking it up again simply starts a new one',
+    await page.evaluate(() => __kd.debug.streak()) === 1);
+
+  // ── the growth ──
+  const grew = await page.evaluate(() => {
+    __kd.state.kept = 79;
+    const before = __kd.debug.stage();
+    __kd.state.kept = 80;
+    return { before, after: __kd.debug.stage() };
+  });
+  check(`it grows on what you kept, not on time spent (${grew.before} → ${grew.after})`,
+    grew.before === 'keeper' && grew.after === 'elder');
+
+  // ── the rule the whole app is built on ──
+  const scolding = await page.evaluate(async () => {
+    const files = ['main.js', 'state.js', 'errand.js', 'breathe.js', 'idle.js'];
+    const bad = /\b(you failed|failure|don't break|do not break|you should have|lazy|shame|punish|guilt)\b/i;
+    const hits = [];
+    for (const f of files) {
+      const src = await fetch(`./js/${f}?v=1`).then(r => r.text());
+      // only the strings the app can actually say, not the notes about them
+      for (const line of src.split('\n')) {
+        if (line.trim().startsWith('//')) continue;
+        for (const m of line.matchAll(/'([^']{6,})'|`([^`]{6,})`/g)) {
+          const text = m[1] ?? m[2];
+          if (bad.test(text)) hits.push(`${f}: ${text.slice(0, 40)}`);
+        }
+      }
+    }
+    return hits;
+  });
+  check(`nothing it can say to you is a telling-off${scolding.length ? ` — ${scolding[0]}` : ''}`,
+    scolding.length === 0);
+
+  // ── room life (BETTERMENT_DESIGN Slice 1) ──
+  //
+  // The creature wanders, looks at things and can be greeted. The assertion that
+  // matters is the LAST one: none of it may pay. "Screen time earns nothing" is
+  // the rule that separates this from a game that wants you holding the phone,
+  // so it is checked rather than trusted.
+  await page.evaluate(() => {                       // a warm room, so it potters
+    __kd.state.sheet.done = __kd.debug.tasks();
+    __kd.state.found = ['cone', 'stone'];
+    __kd.debug.render();
+  });
+  const life = await page.evaluate(() => {
+    const before = { fuel: __kd.state.fuel, kept: __kd.state.kept, cared: __kd.debug.cared() };
+    const seen = new Set(), poses = new Set(), xs = new Set();
+    for (let i = 0; i < 90; i++) {
+      const r = __kd.debug.idleStep(1);
+      if (r.behaviour) seen.add(r.behaviour);
+      poses.add(r.pose);
+      xs.add(Math.round(r.x));
+    }
+    return {
+      before, after: { fuel: __kd.state.fuel, kept: __kd.state.kept, cared: __kd.debug.cared() },
+      behaviours: [...seen], poses: [...poses], places: xs.size,
+    };
+  });
+  check(`the creature gets on with things by itself (${life.behaviours.join(', ') || 'nothing'})`,
+    life.behaviours.length >= 2);
+  check(`it walks about the room rather than sitting on one pixel (${life.places} positions)`,
+    life.places > 6 && life.poses.includes('walk'));
+  check('and ninety seconds of watching it earns exactly nothing',
+    life.after.fuel === life.before.fuel && life.after.kept === life.before.kept
+    && life.after.cared === life.before.cared);
+
+  const hello = await page.evaluate(async () => {
+    const before = { fuel: __kd.state.fuel, kept: __kd.state.kept };
+    const btn = [...document.querySelectorAll('.acts .btn')].find(b => /hello/i.test(b.textContent));
+    btn?.click();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return {
+      had: !!btn, pose: __kd.idle.pose, said: document.getElementById('say').textContent,
+      paid: __kd.state.fuel !== before.fuel || __kd.state.kept !== before.kept,
+    };
+  });
+  check(`saying hello is a thing you can do (${hello.pose})`, hello.had && hello.pose === 'perk');
+  check(`it answers ("${hello.said.slice(0, 34)}…")`, hello.said.length > 8);
+  check('and it pays nothing at all, which is the point of it', !hello.paid);
+
+  // the window is read off the local clock — and off nothing else
+  const sky = await page.evaluate(async () => {
+    const { skyOf } = await import('./js/room.js?v=5');
+    const at = (h, d = 15) => skyOf(new Date(2026, 7, d, h, 0, 0));
+    return {
+      night: at(23).key, noon: at(13).key, dawn: at(6).key, dusk: at(19).key,
+      sameEvening: at(21).key === at(22, 15).key ? 'same' : 'different',
+      otherNight: at(23, 16).key,
+      stars: { night: at(23).stars, noon: at(13).stars },
+    };
+  });
+  check(`the window knows what time it is (${sky.noon.split(':')[0]} at one, ${sky.night.split(':')[0]} at eleven)`,
+    sky.noon.startsWith('day') && sky.night.startsWith('night') && sky.dawn.startsWith('dawn'));
+  check(`and there are no stars out at lunchtime (${sky.stars.night} vs ${sky.stars.noon})`,
+    sky.stars.night > 0 && sky.stars.noon === 0);
+  check('tonight is not last night, and it is the same sky all evening',
+    sky.night !== sky.otherNight);
+
+  // five bands, five rooms: each step of the day must light more of it than the
+  // one below, or "the fire is the measure" is only a claim
+  const bands = await page.evaluate(async () => {
+    const c = document.querySelector('canvas');
+    // The ruler is FIRELIGHT — red leading blue — and not total brightness.
+    // Total brightness saturates: once the camp had a blue sky, moonlit stone,
+    // a treeline and warm earth in it, nearly every pixel already cleared a
+    // sum-of-channels threshold and the count stopped moving with the fire
+    // (18474 → 19056 across a whole day, and the first step went DOWN). This is
+    // the second time this check has measured the wrong thing after an art
+    // pass, and both times the page was right and the ruler was wrong.
+    const lit = () => {
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] - d[i + 2] > 40 && d[i] > 60) n++;
+      return n;
+    };
+    const out = [];
+    for (let b = 0; b <= 5; b++) {
+      __kd.view.shown = b / 5;
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      out.push(lit());
+    }
+    return out;
+  });
+  const rising = bands.every((n, i) => i === 0 || n > bands[i - 1]);
+  check(`the day has five bands and each one is a brighter room (${bands.join(' → ')})`, rising);
+
+  // ── and each band has to be WORTH something ──
+  // Rising is not enough, and batch 1 proved it: the delivered ground plane was
+  // 84.8% warm before any fire existed, so the measure saturated the moment it
+  // was visible. The ladder still rose — 11772 → 12155 → 13369 → 15445 → 17713
+  // — but the steps were 3%, 10%, 15%, 15% on top of a 5.9x cliff at band 1.
+  // Of the five small things a day holds, the first did nearly all the visible
+  // work. Every check passed; the reward loop was flat.
+  //
+  // So the floor is on the SMALLEST step, as a fraction of the band below it.
+  // Baked-in warmth is the only thing that squashes this, which makes it a
+  // direct guard on the palette's one rule: the environment is cold and the
+  // fire is the only warm thing in it.
+  const steps = bands.slice(1).map((n, i) => n / Math.max(1, bands[i]) - 1);
+  const weakestStep = Math.min(...steps);
+  check(`and every one of them is worth doing (smallest step +${(weakestStep * 100).toFixed(0)}%)`,
+    weakestStep >= 0.12);
+
+  // ── the seam between drawn art and cut art (js/assets.js) ──
+  // The whole point of the manifest is that nobody has to ask whether the art
+  // has landed. So the gate asks the two questions that could silently break
+  // that: did anything the manifest calls `live` fail to load, and does the
+  // offline shell carry every file it promises? A live entry with no file is a
+  // hole in the picture; a live file the worker does not precache is an app
+  // that loads online and is blank on a train, which this repo has shipped.
+  const art = await page.evaluate(async () => {
+    const a = await import('./js/assets.js?v=9');
+    await a.ready();
+    return { grid: a.grid(), missing: a.missing(), files: a.files() };
+  });
+  check(`the art manifest loads and matches the canvas `
+    + `(${art.grid.w}x${art.grid.h})`, art.grid.w === 320 && art.grid.h === 180);
+  check(`nothing the manifest calls live is missing`
+    + (art.missing.length ? ` — ${art.missing.join(', ')}` : ''), art.missing.length === 0);
+  const shell = fs.readFileSync(path.join(ROOT, 'kindling', 'sw.js'), 'utf8');
+  const uncached = art.files.filter(f => !shell.includes(f.replace('./', '')));
+  check(`every live asset is precached (${art.files.length} file(s))`, uncached.length === 0);
+
+  // ── the roster reads by SHAPE (ART_GUIDE.md §11.2) ──
+  // Four species that differ only in palette are one species in four costumes.
+  // This is the same 3-pixel rule the growth stages are held to, applied across
+  // the roster: every creature must differ from every other by its outline
+  // alone, measured with colour thrown away.
+  const roster = await page.evaluate(async () => {
+    const { PixelScreen } = await import('./js/pixel.js?v=8');
+    const { drawPet } = await import('./js/pet.js?v=8');
+    const { all } = await import('./js/species.js?v=8');
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(host);
+    const mask = (kind) => {
+      const scr = new PixelScreen(host, 72, 72);
+      scr.clear('#000000');
+      drawPet(scr, 36, 66, { kind, stage: 'elder', t: 0.3, pose: 'sit', lit: 1, still: true, face: -1 });
+      const d = scr.ctx.getImageData(0, 0, 72, 72).data;
+      const bits = [];
+      for (let i = 0; i < d.length; i += 4) bits.push(d[i] + d[i + 1] + d[i + 2] > 24 ? 1 : 0);
+      return bits;
+    };
+    const ids = all().map(s => s.id);
+    const masks = Object.fromEntries(ids.map(k => [k, mask(k)]));
+    const pairs = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+      const a = masks[ids[i]], b = masks[ids[j]];
+      let diff = 0;
+      for (let k = 0; k < a.length; k++) if (a[k] !== b[k]) diff++;
+      pairs.push({ a: ids[i], b: ids[j], diff });
+    }
+    host.remove();
+    return pairs;
+  });
+  const worst = roster.reduce((m, p) => p.diff < m.diff ? p : m, roster[0]);
+  check(`every species differs from every other by its outline alone `
+    + `(closest pair ${worst.a}/${worst.b} at ${worst.diff}px)`,
+    roster.every(p => p.diff >= 24));
+
+  // ── the growth silhouettes (ART_GUIDE.md §5 and §11.1) ──
+  //
+  // Canon says growth may use scale as well, never instead — "shape is more
+  // memorable than +20% size" — and the guide turns that into a number a gate can
+  // hold: a stage must change the silhouette by at least three pixels against the
+  // stage below it. Measured on the SHAPE, with every stage drawn at the same
+  // place, so a difference here is a difference in outline rather than in colour.
+  const stages = await page.evaluate(async () => {
+    const { PixelScreen } = await import('./js/pixel.js?v=5');
+    const { drawPet } = await import('./js/pet.js?v=5');
+    const host = document.createElement('div');
+    host.style.display = 'none';
+    document.body.appendChild(host);
+    const shapeOf = stage => {
+      const scr = new PixelScreen(host, 48, 56);
+      scr.clear('#000000');
+      drawPet(scr, 24, 52, { stage, t: 0.3, pose: 'sit', lit: 1, still: true, face: -1 });
+      const d = scr.ctx.getImageData(0, 0, 48, 56).data;
+      const on = new Set();
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] + d[i + 1] + d[i + 2] > 24) on.add(i / 4);
+      }
+      scr.destroy();
+      return on;
+    };
+    const ORDER = ['spark', 'wisp', 'tender', 'keeper', 'elder'];
+    const shapes = ORDER.map(shapeOf);
+    const diffs = [];
+    for (let i = 1; i < shapes.length; i++) {
+      let n = 0;
+      for (const px of shapes[i]) if (!shapes[i - 1].has(px)) n++;
+      for (const px of shapes[i - 1]) if (!shapes[i].has(px)) n++;
+      diffs.push({ from: ORDER[i - 1], to: ORDER[i], px: n });
+    }
+    return diffs;
+  });
+  const flat = stages.filter(d => d.px < 3);
+  check(`every growth stage changes the silhouette (${stages.map(d => `${d.to} ${d.px}px`).join(', ')})`,
+    flat.length === 0);
+
+  // ── the offline shell, and the numbers in it ──
+  //
+  // The one bug a hand-kept precache list can have is a number that disagrees
+  // with another file — a list a token behind the page is an app that loads
+  // online and comes up blank on a train. So every entry is fetched, and the
+  // tokens are compared with what index.html and hub/shell.js actually request.
+  const sw = fs.readFileSync(path.join(ROOT, 'kindling', 'sw.js'), 'utf8');
+  const html = fs.readFileSync(path.join(ROOT, 'kindling', 'index.html'), 'utf8');
+  const hubShell = fs.readFileSync(path.join(ROOT, 'hub', 'shell.js'), 'utf8');
+
+  const V = sw.match(/const V = '(\?v=\d+)'/)?.[1] ?? '';
+  const from = sw.indexOf('const SHELL = [');
+  const block = sw.slice(from, sw.indexOf('];', from));
+  const entries = [...block.matchAll(/[`'](\.[^`']+)[`']/g)]
+    .map(m => m[1].replace('${V}', V));
+  check(`the worker's shell list has every module on it (${entries.length} entries)`,
+    entries.length >= 19);
+
+  const dead = [];
+  for (const e of entries) {
+    const url = new URL(e, `${base}/kindling/`).href;
+    const r = await page.request.get(url);
+    if (!r.ok()) dead.push(e);
+  }
+  check(`and every one of them resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
+
+  check(`the page's own token matches the worker's (${V})`,
+    html.includes(`js/main.js${V}`) && V.length > 0);
+
+  // the four files that come from one level up belong to the arcade, and their
+  // numbers move when it deploys — so they are checked against the real thing
+  const drifted = entries.filter(e => e.startsWith('../hub/')).filter(e => {
+    const file = e.slice('../hub/'.length);
+    return !hubShell.includes(`./${file}`) && !html.includes(`../hub/${file}`);
+  });
+  check(`the way home is precached at the tokens the hub actually uses${drifted.length ? ` — ${drifted}` : ''}`,
+    drifted.length === 0);
+
+  // ── the floors ──
+  const small = await page.evaluate(() => {
+    const out = [];
+    for (const n of document.querySelectorAll('button, input, a')) {
+      const b = n.getBoundingClientRect();
+      if (b.width === 0 && b.height === 0) continue;         // not on screen
+      if (n.classList.contains('link')) continue;            // inline text link
+      if (b.height < 44) out.push(`${n.className || n.tagName}@${Math.round(b.height)}px`);
+    }
+    return out;
+  });
+  check(`every control is a 44px target${small.length ? ` — ${small.slice(0, 3)}` : ''}`, small.length === 0);
+
+  const contrast = await page.evaluate(() => {
+    const out = [];
+    for (const n of document.querySelectorAll('h1, h2, p, span, button, input, li')) {
+      if (!n.textContent.trim()) continue;
+      const cs = getComputedStyle(n);
+      // Text that is not RENDERED is not a contrast problem. A checkbox glyph
+      // replaced by a drawn box sets `color: transparent; font-size: 0` and keeps
+      // its text in the DOM — measuring that reported 1.09:1 for something no eye
+      // will ever see, which is a bug in the ruler, not the page. The state it
+      // carries is still checked, via aria-pressed.
+      if (parseFloat(cs.fontSize) === 0) continue;
+      const alpha = cs.color.startsWith('rgba') ? parseFloat(cs.color.split(',')[3]) : 1;
+      if (!alpha) continue;
+      if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+      let bg = 'rgba(0, 0, 0, 0)', at = n;
+      while (at && bg === 'rgba(0, 0, 0, 0)') { bg = getComputedStyle(at).backgroundColor; at = at.parentElement; }
+      out.push([n.className || n.tagName, cs.color, bg, parseFloat(cs.fontSize)]);
+    }
+    return out;
+  });
+  const thin = contrast.filter(([, fg, bg, size]) => {
+    const need = size >= 24 ? 3 : 4.5;
+    return ratio(rgb(fg), rgb(bg)) < need;
+  });
+  check(`every text colour clears WCAG AA${thin.length ? ` — ${thin.slice(0, 2).map(t => `${t[0]} ${ratio(rgb(t[1]), rgb(t[2])).toFixed(2)}:1`)}` : ''}`,
+    thin.length === 0);
+
+  const labels = await page.evaluate(() => ({
+    canvasHidden: document.querySelector('canvas').getAttribute('aria-hidden') === 'true',
+    live: document.getElementById('say').getAttribute('aria-live') === 'polite',
+    main: !!document.querySelector('main#app'),
+    title: document.title,
+  }));
+  check('the canvas is hidden from a screen reader and the line of text is the channel',
+    labels.canvasHidden && labels.live);
+  check('the page is a <main>, and it has a name', labels.main && labels.title.length > 0);
+
+  // ── a phone ──
+  const phone = await browser.newContext({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true });
+  const pp = await phone.newPage();
+  await pp.goto(`${base}/kindling/`, { waitUntil: 'load' });
+  await pp.waitForFunction(() => window.__kd);
+  const overflow = await pp.evaluate(() =>
+    document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  check(`nothing hangs off the side of a phone (${overflow}px)`, overflow <= 0);
+  await pp.locator('.task').first().tap();
+  check('and a thumb can tick a line', await pp.evaluate(() => __kd.debug.cared()) === 1);
+
+  // ── reduced motion ──
+  const calm = await browser.newContext({ viewport: { width: 620, height: 800 }, reducedMotion: 'reduce' });
+  const cp = await calm.newPage();
+  await cp.goto(`${base}/kindling/`, { waitUntil: 'load' });
+  await cp.waitForFunction(() => window.__kd);
+  const held = await cp.evaluate(async () => {
+    const c = document.querySelector('canvas');
+    const a = c.toDataURL();
+    await new Promise(r => setTimeout(r, 400));
+    const b = c.toDataURL();
+    let lit = 0;
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 40) lit++;
+    return { still: a === b, lit };
+  });
+  check('reduced motion holds the room still — and still paints it', held.still && held.lit > 500);
+
+  // ── the way out ──
+  check('the arcade shell put a way home on the page',
+    await page.locator('.arcade-home').count() === 1);
+
+  check('and nothing broke along the way' + (noise.length ? ` — ${noise[0]}` : ''), noise.length === 0);
+
+  await browser.close();
+  server.close();
+  console.log(`\n${pass} passed, ${fail} failed`);
+  process.exit(fail ? 1 : 0);
+})().catch(e => { console.error(e); process.exit(1); });

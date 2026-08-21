@@ -223,6 +223,171 @@ s.listen(0, '127.0.0.1', async () => {
   // the cap and the channel are the same size, which is not a coincidence
   ok('the float is bounded, and spans the channel (' + capped + ' chains granted)', capped === 3);
 
+  // ── THE SCUM LINE: what you dodged is still there ──
+  // grime past the mouth settles instead of vanishing
+  const settled = await p.evaluate(async () => {
+    const j = window.__sj;
+    while (j.player.jumping) j.player.update(0.02);
+    j.risers.clear();
+    j.state.lives = 3;
+    j.player.mercy = 0;
+    j.player.lane = 18;                            // far from the landing lane
+    j.debug.spawn('grime', 2, 0.01);               // one step from the mouth
+    for (let i = 0; i < 60 && j.risers.items.length; i++) j.debug.step(0.02);
+    return { layer: j.scum.at(2), fouled: j.scum.fouled() };
+  });
+  ok('grime past the mouth settles as scum', settled.layer === 1, JSON.stringify(settled));
+
+  // it stacks, and it caps
+  const stacked = await p.evaluate(() => {
+    const j = window.__sj;
+    j.debug.foul(5, 5);                            // five arrivals on one lane
+    const cap = j.scum.at(5);
+    j.scum.clear();
+    return cap;
+  });
+  ok('scum stacks and caps at three (' + stacked + ')', stacked === 3);
+
+  // BARREN: the director does not raise bubbles through a fouled lane
+  const barren = await p.evaluate(() => {
+    const j = window.__sj;
+    j.debug.setLevel(1);                           // a smooth shape, whole rim
+    j.risers.clear(); j.scum.clear();
+    for (let l = 0; l < 10; l++) j.debug.foul(l);  // foul half the channel
+    const bad = [];
+    for (let i = 0; i < 30; i++) {
+      j.state.nextBubble = -1;
+      j.debug.step(0.001);
+    }
+    for (const it of j.risers.items) {
+      if (it.type === 'bubble' && j.scum.at(it.lane) > 0) bad.push(it.lane);
+    }
+    const spawned = j.risers.items.filter(i => i.type === 'bubble').length;
+    j.risers.clear();
+    return { spawned, bad };
+  });
+  ok('bubbles do not rise through fouled lanes (' + barren.spawned + ' spawned)',
+    barren.spawned > 0 && barren.bad.length === 0, JSON.stringify(barren));
+
+  // STICKY: riding through scum is slow; the same ride on a clean rim is not.
+  // The key is real (it feeds input.spin() the way a hand would) but the
+  // frames are stepped by hand — this sandbox renders too slowly for a
+  // wall-clock ride to mean anything, and the gate's own rule applies:
+  // measure the game, not the rasteriser.
+  await p.keyboard.down('ArrowRight');
+  const rides = await p.evaluate(() => {
+    const j = window.__sj;
+    const ride = () => {
+      j.player.lane = 2; j.player.vel = 0;
+      for (let i = 0; i < 10; i++) j.debug.step(0.05);
+      return j.player.lane - 2;
+    };
+    j.scum.clear();
+    const clean = ride();
+    for (let l = 0; l < 15; l++) j.debug.foul(l);   // foul the road, short of the flood
+    const sticky = ride();
+    j.scum.clear();
+    return { clean, sticky };
+  });
+  await p.keyboard.up('ArrowRight');
+  ok('scum underfoot is sticky (' + rides.sticky.toFixed(1) + ' vs ' + rides.clean.toFixed(1) + ' lanes)',
+    rides.sticky < rides.clean * 0.65, JSON.stringify(rides));
+
+  // ...and a jump does not feel it: airborne, the floor has no say
+  const overScum = await p.evaluate(() => {
+    const j = window.__sj;
+    const frames = (foul) => {
+      j.scum.clear();
+      if (foul) for (let l = 0; l < 15; l++) j.debug.foul(l);
+      j.player.lane = 6; j.player.vel = 0;
+      j.player.jump(1);
+      let n = 0;
+      while (j.player.jumping && n < 200) { j.player.update(0.02); n++; }
+      return n;
+    };
+    const clean = frames(false), fouled = frames(true);
+    j.scum.clear();
+    return { clean, fouled };
+  });
+  ok('a jump crosses scum in the same frames as clean rim',
+    overScum.fouled === overScum.clean, JSON.stringify(overScum));
+
+  // THE SCRUB: a dive that comes home wipes a layer, and it pays
+  const scrubbed = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.risers.clear();
+    j.player.mercy = 0;
+    const lane = Math.round(j.player.lane);
+    j.debug.foul(lane, 2);
+    const score0 = j.state.score;
+    j.player.dive();
+    for (let i = 0; i < 200 && (j.player.diving || j.player.depth > 0.01); i++) j.debug.step(0.02);
+    j.debug.step(0.02);                            // the frame that consumes scrubReady
+    return { layers: j.scum.at(lane), gain: j.state.score - score0, level: j.state.level };
+  });
+  ok('a completed dive scrubs one layer (2 → ' + scrubbed.layers + ')', scrubbed.layers === 1);
+  ok('and the scrub pays 50 × level', scrubbed.gain >= 50 * scrubbed.level, JSON.stringify(scrubbed));
+
+  // a dive knocked out of the water scrubs nothing
+  const knocked = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.risers.clear();
+    j.player.mercy = 0;
+    const lane = Math.round(j.player.lane);
+    j.scum.clear();
+    j.debug.foul(lane, 2);
+    j.player.dive();
+    for (let i = 0; i < 6; i++) j.debug.step(0.02);     // committed, on the way down
+    j.debug.give('grime');                               // and struck mid-dive
+    for (let i = 0; i < 80; i++) j.debug.step(0.02);
+    const layers = j.scum.at(lane);
+    j.scum.clear();
+    return { layers, diving: j.player.diving };
+  });
+  ok('a dive cancelled by a hit scrubs nothing', knocked.layers === 2, JSON.stringify(knocked));
+
+  // THE FLOOD: neglect has a horizon
+  const flooded = await p.evaluate(() => {
+    const j = window.__sj;
+    j.state.lives = 3;
+    for (let l = 0; l < 16; l++) j.debug.foul(l);       // 16 of 20 = the line
+    const before = j.state.lives;
+    j.debug.step(0.001);
+    return { before, after: j.state.lives, fouled: j.scum.fouled(),
+             mercy: j.player.mercy, chain: j.state.chain, mode: j.state.mode };
+  });
+  ok('fouling 80% of the channel floods: a life', flooded.after === flooded.before - 1,
+    JSON.stringify(flooded));
+  ok('and the flood washes the rim clean, with mercy',
+    flooded.fouled === 0 && flooded.mercy > 0 && flooded.chain === 1 && flooded.mode === 'play');
+
+  // the level clear washes too, and clean lanes pay
+  const washed = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.debug.setLevel(3);                                 // back on the ridged one
+    j.risers.clear();
+    j.player.mercy = 0;
+    for (let l = 0; l < 4; l++) j.debug.foul(l);         // four fouled, sixteen clean
+    const level0 = j.state.level, score0 = j.state.score;
+    j.state.quota = 1;
+    j.debug.give('bubble');
+    for (let i = 0; i < 40 && j.state.level === level0; i++) j.debug.step(0.02);
+    return { level0, level: j.state.level, fouled: j.scum.fouled(),
+             gain: j.state.score - score0, bonus: 40 * level0 * 16 };
+  });
+  ok('the level clear washes the channel', washed.level === washed.level0 + 1 && washed.fouled === 0,
+    JSON.stringify(washed));
+  ok('and every clean lane pays (gain ' + washed.gain + ' ≥ bonus ' + washed.bonus + ')',
+    washed.gain >= washed.bonus);
+
+  // leave the gate the way we found it: the ridged channel, an empty rim
+  await p.evaluate(() => {
+    const j = window.__sj;
+    j.debug.setLevel(3);
+    j.risers.clear(); j.scum.clear();
+    j.state.lives = 2;
+  });
+
   // grime is penned in too, or the bays would only ever constrain the player
   const pennedGrime = await p.evaluate(async () => {
     const j = window.__sj;
