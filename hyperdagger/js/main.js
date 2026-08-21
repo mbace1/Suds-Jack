@@ -5,18 +5,20 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=64';
-import { Player } from './player.js?v=64';
-import { DaggerPool } from './daggers.js?v=64';
-import { GemPool } from './gems.js?v=64';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=64';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=64';
-import { OrbPool } from './bullets.js?v=64';
-import { AudioKit } from './audio.js?v=64';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=64';
-import { TUNING as T } from './tuning.js?v=64';
-import { HyperEnvironment } from './environment.js?v=64';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=64';
+import { InputManager } from './input.js?v=66';
+import { Player } from './player.js?v=66';
+import { DaggerPool } from './daggers.js?v=66';
+import { GemPool } from './gems.js?v=66';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=66';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=66';
+import { OrbPool } from './bullets.js?v=66';
+import { AudioKit } from './audio.js?v=66';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=66';
+import { TUNING as T } from './tuning.js?v=66';
+import { HyperEnvironment } from './environment.js?v=66';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=66';
+import { TruckTrack } from './truck.js?v=66';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=66';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -159,6 +161,10 @@ scene.add(lightRig);
 // across the disc, above the procedural floor. Dormant until registered —
 // see ARENA_ASSETS in meshassets.js and assets/README.md.
 let floorPanels = null;
+// TRUCK's track. v33's notes announced this mode; nothing ever imported
+// truck.js, so it was dead code and the mode was unreachable. The registry
+// declares arena:'track' and this is what serves it.
+const truck = new TruckTrack(scene);
 buildFloorPanels(ARENA_R).then(m => { if (m) { floorPanels = m; scene.add(m); } });
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
@@ -865,7 +871,14 @@ let slowmo = 0;
 // New key intentionally returns existing players to the DD-authored default;
 // HYPER remains an optional remix they can select again from the menu.
 const MODE_KEY = 'hyperDaggerModeV31';
-let mode = localStorage.getItem(MODE_KEY) === 'hyper' ? 'hyper' : 'pure';
+// ?mode=truck makes an experiment a SHAREABLE LINK — the whole point of a
+// lab is handing someone one specific thing to react to. The registry
+// falls back to the first mode on anything it does not recognise, so a
+// stale key or a typo cannot boot a half-configured game.
+const _urlMode = new URLSearchParams(location.search).get('mode');
+let mode = modeById(_urlMode || localStorage.getItem(MODE_KEY) || 'pure').id;
+/** The active mode's declaration — ask this, never `mode === '...'`. */
+function M() { return modeById(mode); }
 let hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
 const HYPER_START = T.hyper.start;
 const HYPER_CAP = T.hyper.cap;
@@ -981,12 +994,10 @@ async function menuBoardLine() {
 function showMenu() {
   setRunFrame(false);
   elMsg.style.display = 'block';
-  const modeLine = mode === 'hyper'
-    ? `HYPER &mdash; your clock is your life: kills add seconds, a hit costs ${HYPER_HIT_COST}`
-    : 'PURE &mdash; scripted spawns, one touch kills, no escape button';
-  const controls = mode === 'hyper'
-    ? 'mouse look + <b>WASD</b> &middot; <b>SPACE</b> hop &middot; <b>SHIFT</b> dash &middot; <b>R</b> reap'
-    : 'mouse look + <b>WASD</b> &middot; <b>SPACE</b> hop &middot; <b>LMB</b> daggers &middot; <b>RMB</b> homing';
+  // both lines come from the mode's own declaration, so a new experiment
+  // describes itself on the menu without touching this function
+  const modeLine = `${M().name} &mdash; ${M().blurb}`;
+  const controls = M().controls;
   elMsg.innerHTML =
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a stripped-down Devil Daggers homage</p>
@@ -1001,7 +1012,7 @@ function showMenu() {
   menuBoardLine();
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
-    mode = mode === 'hyper' ? 'pure' : 'hyper';
+    mode = nextModeId(mode); // walks the registry: a listed mode is reachable
     localStorage.setItem(MODE_KEY, mode);
     hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
     showMenu();
@@ -1041,7 +1052,7 @@ function showTips() {
      <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
-function hiKey() { return mode === 'hyper' ? 'hyperDaggerHiHyper' : 'hyperDaggerHi'; }
+function hiKey() { return M().hiKey ?? 'hyperDaggerHiNone'; }
 
 // last-10 run history (all modes together), most recent first
 const HISTORY_KEY = 'hyperDaggerHistory';
@@ -1157,7 +1168,7 @@ function showDeath(timedOut) {
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
      ${runKind === 'daily' ? dailyLines
-    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>`}
+    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'pure' ? '' : ` &middot; ${M().id}`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
      <p class="go">click / tap / &#10005; to retry</p>`;
@@ -1255,7 +1266,13 @@ function resetRun() {
   lifeT = HYPER_START;
   mercyT = 0;
   player.reset();
-  player.dashEnabled = mode === 'hyper';
+  applyAbilities(player, M()); // jumps, dash, reap, glide, air dashes, edge
+  // The disc and the track are different floors — showing both puts a lit
+  // grid under a mode whose entire premise is that there is nothing under you.
+  const onTrack = M().arena === 'track';
+  floor.visible = !onTrack;
+  shadows.visible = !onTrack;
+  if (onTrack) truck.reset(player); else truck.clear();
 }
 
 function goFullscreen() {
@@ -1285,6 +1302,25 @@ function startGame() {
   elPause.style.display = 'block';
   audio.droneStart();
   if (opts.music) audio.musicStart();
+}
+
+/**
+ * Leave the run and go back to the menu WITHOUT dying. A lab needs this: the
+ * mode toggle only lives on the menu, and MOVE has no lethality at all, so
+ * without a way out the only way to change experiment was a page reload.
+ */
+function endRun() {
+  paused = false;
+  resetRun();
+  truck.clear();
+  floor.visible = true;
+  shadows.visible = true;
+  state = 'menu';
+  elPause.style.display = 'none';
+  elCross.style.display = 'none';
+  audio.droneStop();
+  audio.musicStop();
+  showMenu();
 }
 
 function die(timedOut = false) {
@@ -1471,8 +1507,15 @@ function showPause() {
      ${optRow('VOXEL', 'detail', ['auto', 1, 2, 3, 4], v => v === 'auto' ? 'AUTO' : ({ 1: '1X', 2: '8X', 3: '27X', 4: '64X' })[v])}
      ${optRow('LOOK', 'look', ['smooth', 'cubes'], v => v.toUpperCase())}
      ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
+     <button id="endBtn" class="opt">END RUN &mdash; back to the mode menu</button>
      <p class="go">click / tap anywhere else to resume</p>`;
-  for (const b of elMsg.querySelectorAll('button.opt')) {
+  document.getElementById('endBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    endRun();
+  });
+  // [data-k] and not just .opt — END RUN wears the same chrome but is not an
+  // option row, and the generic handler would write opts[undefined].
+  for (const b of elMsg.querySelectorAll('button.opt[data-k]')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
       const k = b.dataset.k;
@@ -2004,7 +2047,7 @@ function emitSpawnerWaves(ddRules = false) {
     // ceiling has to govern it too. Gating only the pulses moved the measured
     // population by barely one body. (HYPER only: the PURE exhale above runs
     // its fixed script and must stay deterministic.)
-    if (mode !== 'pure' && livePressure() >= pressureCeiling()) continue;
+    if (M().director === 'pulse' && livePressure() >= pressureCeiling()) continue;
     const boost = Math.min(6, gameTime * 0.06);
     const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
     const skull =
@@ -2025,7 +2068,9 @@ function emitSpawnerWaves(ddRules = false) {
 
 function director(dt) {
   if (directorFrozen) { updatePending(dt); return; } // telegraphs still resolve
-  if (mode === 'pure') { ddDirector(); return; }
+  const dir = M().director;
+  if (dir === 'none') { updatePending(dt); return; } // the track/bench is the pressure
+  if (dir === 'ddSpawnset') { ddDirector(); return; }
   updatePending(dt);
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
@@ -2243,7 +2288,7 @@ function killEnemy(e, dir) {
   kills += e.score;
   killsByType[e.type] = (killsByType[e.type] || 0) + 1;
   addStyle(STYLE_GAIN[e.type] ?? 3);
-  if (mode === 'hyper') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
+  if (M().lethality === 'clock') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
   debris.burst(e.deathVoxels?.() ?? e.sprite.worldVoxels(), e.sprite.size,
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
@@ -2507,7 +2552,8 @@ function playerStruck(sx, sz, killerType, killer = null) {
   if (invulnerable) return false; // debug/test only — see debug.setInvulnerable
   lastKillerPos.set(sx, 1.2, sz);
   lastKillerRef = killer;
-  if (mode !== 'hyper') { lastKiller = killerType; die(); return true; }
+  if (M().lethality === 'none') return false;              // the bench cannot kill you
+  if (M().lethality !== 'clock') { lastKiller = killerType; die(); return true; }
   if (mercyT > 0) return false;
   lastKiller = killerType;
   // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
@@ -2598,6 +2644,9 @@ const clock = new THREE.Clock();
 function step(dt) {
   gameTime += dt;
   player.aimAssist = aimAssistK();
+  // A track has to say what the floor is BEFORE the body integrates gravity,
+  // or the player never reads as grounded and never gets a jump back.
+  if (M().arena === 'track') truck.preUpdate(dt, player);
   player.update(dt);
   if (player.justDashed) {
     player.justDashed = false;
@@ -2624,7 +2673,16 @@ function step(dt) {
   player.justDaggerJumped = false;
   if (reapCool > 0) reapCool = Math.max(0, reapCool - dt);
   const reapPressed = input.consumeReap();
-  if (mode === 'hyper' && reapPressed) tryReap();
+  if (player.abilities?.reap && reapPressed) tryReap();
+  if (M().arena === 'track') {
+    truck.update(dt, player, gameTime, enemies);
+    // the floor leaving is the whole game — falling off it is the death
+    if (player.feet.y < T.truck.fallY && state === 'playing') {
+      lastKiller = 'the fall';
+      die();
+      return;
+    }
+  }
   director(dt);
   for (const e of enemies) {
     e.update(dt, camera.position, gems);
@@ -2717,7 +2775,7 @@ function step(dt) {
     threats / 16 * 0.5 + Math.min(gameTime / 150, 1) * 0.25 + (styleVal / STYLE_CAP) * 0.35);
   musicI += (intensity - musicI) * Math.min(1, dt * 3); // smoothed for the floor
   audio.musicUpdate(intensity);
-  if (mode === 'hyper' && state === 'playing') {
+  if (M().lethality === 'clock' && state === 'playing') {
     lifeT -= dt; // the clock is your life
     if (lifeT <= 0) { lifeT = 0; die(true); }
     elTimer.textContent = lifeT.toFixed(1);
@@ -2928,6 +2986,24 @@ window.__hd = {
     startGame() { startGame(); }, // tests need a guaranteed-live run to measure
     setInvulnerable(on = true) { invulnerable = !!on; return invulnerable; },
     getPressure() { return { live: livePressure(), ceiling: +pressureCeiling().toFixed(1) }; },
+    /** THE LAB BENCH. Every registered experiment, what it declares, and what
+     *  the body is actually configured as right now — so a gate can walk the
+     *  registry instead of hard-coding a list of modes it happens to know. */
+    getModes() {
+      return {
+        ids: MODES.map(m => m.id),
+        current: mode,
+        modes: MODES.map(m => ({ ...m, resolved: abilitiesOf(m) })),
+        player: {
+          abilities: player.abilities,
+          maxJumps: player.maxJumps,
+          edgeMode: player.edgeMode,
+          floorY: player.floorY,
+          feetY: player.feet.y,
+        },
+        trackPlatforms: truck.platforms.length,
+      };
+    },
     getArena() {
       return {
         lights: lightRig.children.length,

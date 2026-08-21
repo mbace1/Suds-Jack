@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=64';
+import { TUNING as T } from './tuning.js?v=66';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const STICK_R = T.touch.stickR;
@@ -176,6 +176,17 @@ export class InputManager {
       stick.dx = 0; stick.dy = 0;
       stick.hist = [];
     }
+  }
+
+  /** Is the jump control HELD right now (not the edge)? Glide needs a held
+   *  read; every other jump path is edge-triggered. */
+  jumpHeld() {
+    if (this.keys['Space']) return true;
+    const gp = this._gp;
+    if (gp && gp.buttons[0]?.pressed) return true;
+    // touch: a held left stick is movement, not a jump — so touch glides
+    // from the pad/key paths only, deliberately.
+    return false;
   }
 
   /** Poll the first connected controller once per frame. Feeds the same

@@ -2,6 +2,94 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v36 — 2026-08-21
+**The mode lab — an experiment is a declaration, not a branch**
+
+Owner's direction: this stops being "a game with modes" and becomes a
+platform for testing FPS jump-and-dash ideas. PURE (Devil Daggers), HYPER
+and TRUCK are the three current guesses at what this body of movement is
+FOR, and there will be more — platformer courses, speed runs, wall running.
+Bone Dust started as a DD arena clone and shipped as a directional bullet-hell
+dodger; the point of a lab is that the shipped game is allowed to be a surprise.
+
+**TRUCK was lost, and that is why this release is a registry.** v33's notes
+promise "Mode cycles PURE → HYPER → TRUCK". The toggle was a two-way flip,
+`truck.js` was never imported by `main.js`, and the string "truck" appeared
+nowhere in it. A whole named mode existed only on paper for three releases
+and no gate noticed, because every gate knew the modes by name.
+
+- **`js/modes.js`** — the registry. A mode declares `abilities`, `director`,
+  `lethality`, `arena`, `edge` and its own `hiKey`; `main.js` asks the
+  registry instead of asking `mode === 'pure'` in twelve places. Adding an
+  experiment is one entry and no new branches. `?mode=<id>` deep-links one,
+  which is what makes a movement idea shareable for a playtest.
+- **The ability vocabulary** — `jumps`, `dash`, `reap`, `glide`, `airDash`,
+  `wallRun`. `applyAbilities(player, mode)` is the single call that
+  configures the body, so no mode can half-configure it by forgetting a
+  field. The DEFAULT jump count is main's deliberate one — extra height
+  comes from a downward shotgun, not a free air jump — and a mode that wants
+  a freer body says so.
+- **GLIDE** — hold jump while falling and gravity is cut to `glideGravity`.
+  Only on the way down: a glide that also lifts is a double jump with extra
+  steps, and the thing under test is hang time, not height.
+- **AIR DASH** — a charge that lets a dash punch THROUGH its own cooldown,
+  but only airborne and only as many times as the mode granted. Refills on
+  landing, so it buys air control and never an infinite dash.
+- **MOVE** — a fourth entry, and the actual bench: no director, nothing
+  lethal, every ability on, the rim clamps so you cannot fall out. New
+  mechanics land here first, where a bad one is obvious in ten seconds
+  instead of hidden behind a fight.
+- **WALL RUN is declared and not implemented** (`wallRun: false`). It needs
+  walls and the disc arena has none — a court/course arena is the
+  prerequisite. It is in the vocabulary so the next arena has somewhere to
+  plug into, and the gate reads it as a declaration, not a feature.
+
+**Three bugs, all of them the same bug — code nothing had ever run:**
+
+- `applyAbilities` folded every edge that was not `clamp` into `open`, so
+  PURE and HYPER — `edge: 'void'` — were configured with **no floor at all**
+  and the body fell through the arena. The declared edge now passes straight
+  through, and the gate asserts there is something under every mode's feet.
+- `main.js` called `truck.reset(player)`; `truck.js` only had `seed(player)`.
+  An instant TypeError on the one path nothing could reach.
+- The track scrolled `T.truck.scrollSpeed` units **per frame** with no `dt` —
+  ~50× too fast at 60 fps and faster on a better screen.
+
+**The floor is now a value, not an assumption.** `player.floorY` is the
+surface under the feet: 0 on the disc, written per frame by the track, and
+`-Infinity` where there is no platform — which is how "the floor left"
+becomes an ordinary fall instead of a special case. `TruckTrack.preUpdate`
+runs BEFORE `player.update` for the same reason: after it, the body never
+reads as grounded and jumps never refill, which is the whole mode.
+Platform depth moved into tuning (`platformDepth` 5.4-6.8 on a 6.5 spacing),
+so the early track is a road with seams — the pressure is that it LEAVES the
+moment you touch it, not that every step is a jump. Real holes arrive later,
+when the generator widens the spacing.
+
+**A way out of a run.** The mode toggle only lives on the menu, and MOVE has
+no lethality at all — so before this there was no way to change experiment
+except reloading the page. The pause menu gains **END RUN**, which resets the
+field, puts the disc back and returns to the menu. (It deliberately does not
+wear `data-k`: the option rows share its chrome and the generic handler would
+have written `opts[undefined]`.)
+
+**The track is a route, not a scatter.** Platform x was an independent roll
+across the full width, which makes islands — a stationary body fell through
+the gaps between them at random, which is also what made the gate flaky. It
+is a bounded random walk now (±1.6 a step, clamped to ±5), so every slab
+overlaps the one before it laterally and the road visibly wanders instead of
+teleporting.
+
+**Gate: 92 checks** (was 71). The new section does not test "pure and hyper";
+it walks `MODES`, so whatever is in the registry has to boot, has to get the
+body it declared, and has to have a floor. Losing a mode the way TRUCK was
+lost is now structurally impossible. `debug.getModes()` is the lab bench
+readout: every entry, its resolved abilities, and what the player actually is
+right now. The track's own checks ask whether it keeps laying itself ahead of
+the player, NOT whether a bot that never steers stays on it — a road is a
+route, and certifying survival there would only measure whether it happened
+to run straight.
+
 ## v35 — 2026-08-21
 **Reconciliation — the branch that was building on a v22-era game**
 

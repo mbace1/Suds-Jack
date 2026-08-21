@@ -703,6 +703,77 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the full shell returns off-run and retreats again on restart',
     !death.activeFrame && await p.evaluate(() => document.body.classList.contains('in-run')));
 
+  // ---- v36 the mode lab: every registered experiment boots ---------------
+  // This section exists because TRUCK was LOST. v33's notes promise a three-
+  // way mode cycle; the toggle was a two-way flip, truck.js was never
+  // imported, and nothing failed — a whole named experiment existed only on
+  // paper for three releases. So the gate does not test "pure and hyper", it
+  // walks the registry: whatever is in MODES has to boot, has to get the body
+  // it declared, and has to have something under its feet.
+  const registry = await p.evaluate(() => window.__hd.debug.getModes());
+  ok('the registry declares at least the three named experiments',
+    ['pure', 'hyper', 'truck'].every(id => registry.ids.includes(id)),
+    registry.ids.join(','));
+  ok('every mode declares a hi-score key or explicitly none',
+    registry.modes.every(m => typeof m.hiKey === 'string' || m.hiKey === null));
+  ok('every mode declares an arena, an edge, a director and a lethality',
+    registry.modes.every(m => m.arena && m.edge && m.director && m.lethality));
+
+  for (const id of registry.ids) {
+    await p.goto(base + '/hyperdagger/?mode=' + id, { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+    await p.evaluate(() => window.__hd.debug.startGame());
+    const tick = n => p.evaluate(count => new Promise(r => {
+      let i = 0; const t = () => (++i > count ? r() : requestAnimationFrame(t)); requestAnimationFrame(t);
+    }), n);
+    // Read the body the moment the run opens. Later is not the same question:
+    // a bot never steers, and a track is a route, so "still alive after a
+    // minute" would only ever measure whether the road happened to run straight.
+    await tick(3);
+    const m = await p.evaluate(() => window.__hd.debug.getModes());
+    const decl = m.modes.find(x => x.id === m.current);
+    ok(`${id}: boots into its own mode`, m.current === id, m.current);
+    ok(`${id}: the body is the one the mode declared`,
+      m.player.maxJumps === decl.resolved.jumps
+      && m.player.abilities.dash === decl.resolved.dash
+      && m.player.abilities.glide === decl.resolved.glide
+      && m.player.edgeMode === decl.edge,
+      JSON.stringify({ got: m.player.maxJumps, want: decl.resolved.jumps, edge: m.player.edgeMode }));
+    // The bug this catches: an edge value folded into "open" left the disc
+    // modes with no floor at all and the body fell through the arena.
+    ok(`${id}: there is a floor under it`,
+      Number.isFinite(m.player.floorY) && m.player.feetY >= m.player.floorY - 0.6,
+      `floorY=${m.player.floorY} y=${m.player.feetY}`);
+    await tick(60);
+    const late = await p.evaluate(() => ({
+      state: window.__hd.debug.getState().state,
+      platforms: window.__hd.debug.getModes().trackPlatforms,
+    }));
+    if (decl.arena === 'track') {
+      // A track keeps laying itself ahead of the player for as long as the
+      // run lasts; whether a bot that never steers stays on it is not the
+      // gate's business.
+      ok(`${id}: the track keeps building ahead`, late.platforms > 4, String(late.platforms));
+    } else {
+      ok(`${id}: survives a minute of its own director`, late.state === 'playing', late.state);
+    }
+  }
+
+  // The bench mode cannot kill you, so without a way out of a run the only
+  // way to change experiment was a page reload. (The loop above leaves the
+  // page on the last registered mode, which is exactly the one that proves it.)
+  await p.evaluate(() => window.__hd.debug.startGame()); // guarantee a live run
+  await p.click('#pauseBtn');
+  await p.waitForSelector('#endBtn', { timeout: 5000 });
+  await p.click('#endBtn');
+  const backAtMenu = await p.evaluate(() => ({
+    state: window.__hd.debug.getState().state,
+    canSwitch: !!document.getElementById('modeBtn'),
+  }));
+  ok('END RUN leaves a run for the mode menu', backAtMenu.state === 'menu', backAtMenu.state);
+  ok('and the mode toggle is there when you land', backAtMenu.canSwitch);
+
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));
 

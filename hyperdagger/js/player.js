@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=64';
+import { TUNING as T } from './tuning.js?v=66';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const EYE = T.player.eye;
@@ -37,7 +37,17 @@ export class Player {
     this.sens = 1; // look sensitivity multiplier (pause-menu option)
     this.aimAssist = 1; // <1 slows stick look near a target; main sets it per frame
     this.dashEnabled = true;
+    // Ability fields — modes.js applyAbilities() writes these. Defaults keep
+    // a Player usable before any mode has been applied.
+    this.maxJumps = MAX_JUMPS;
+    this.glideEnabled = false;
+    this.airDashes = 0;
+    this.airDashLeft = 0;
     this.edgeMode = 'void';
+    // The surface currently under the feet. The disc is flat at 0; a TRUCK
+    // track writes this per frame (and -Infinity where there is no platform,
+    // which is how "the floor left" becomes a fall rather than a special case).
+    this.floorY = 0;
     this.overEdge = false;
     this.reset();
   }
@@ -115,12 +125,13 @@ export class Player {
     if (this.input.consumeJump()) this.jumpBuffer = T.player.jumpBuffer;
     else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
 
-    let grounded = this.feet.y <= 0.001 && this.vy <= 0;
+    let grounded = this.feet.y <= this.floorY + 0.001 && this.vy <= 0;
     this.landedAgo += dt;
     if (grounded) {
       this.coyoteT = T.player.coyote;
       this.airTime = 0;
-      this.jumpsLeft = MAX_JUMPS;
+      this.jumpsLeft = this.maxJumps;
+      this.airDashLeft = this.airDashes;
       this.daggerJumpsLeft = T.player.daggerJumps;
     } else {
       this.coyoteT = Math.max(0, this.coyoteT - dt);
@@ -195,7 +206,13 @@ export class Player {
       this.dashBufFlick = null;
       this.dashT = 0;
     }
-    if (this.dashEnabled && this.dashBuf > 0 && this.dashCd <= 0) {
+    // AIR DASH — a mode with airDash charges may dash THROUGH the cooldown,
+    // but only off the ground and only as many times as it was granted. The
+    // charges refill on landing, so it buys air control, never infinite dash.
+    const airCharge = this.dashEnabled && this.dashBuf > 0 && this.dashCd > 0
+      && !grounded && this.airDashLeft > 0;
+    if (airCharge) this.airDashLeft--;
+    if (this.dashEnabled && this.dashBuf > 0 && (this.dashCd <= 0 || airCharge)) {
       const bufFlick = this.dashBufFlick;
       this.dashBuf = 0;
       this.dashBufFlick = null;
@@ -246,17 +263,22 @@ export class Player {
 
     // Vertical integration. A buffered landing press is consumed next frame,
     // before friction, which is what preserves speed through a bunny hop.
-    const wasAbove = this.feet.y > 0.001;
-    this.vy += GRAVITY * dt;
+    const wasAbove = this.feet.y > this.floorY + 0.001;
+    // GLIDE — hold jump while falling and the descent slows. Deliberately
+    // only on the way DOWN: a glide that also lifts is a double jump with
+    // extra steps, and the thing being tested here is hang time, not height.
+    this.gliding = !!(this.glideEnabled && this.vy < 0 && !grounded
+      && this.input.jumpHeld());
+    this.vy += GRAVITY * (this.gliding ? T.player.glideGravity : 1) * dt;
     this.feet.y += this.vy * dt;
-    if (this.edgeMode !== 'open' && this.feet.y < 0) {
-      this.feet.y = 0;
+    if (this.feet.y < this.floorY) {
+      this.feet.y = this.floorY;
       this.vy = 0;
       if (wasAbove) this.landedAgo = 0;
     }
 
     // Head-bob only while grounded and moving.
-    const moving = this.horizontalSpeed > 0.8 && this.feet.y <= 0.001;
+    const moving = this.horizontalSpeed > 0.8 && this.feet.y <= this.floorY + 0.001;
     this.bobK += ((moving ? 1 : 0) - this.bobK) * Math.min(1, dt * 8);
     this.bobT += dt * 11 * this.bobK;
 

@@ -1,7 +1,7 @@
 // TRUCK mode — Clustertruck-style auto-scroll track on the Hyper Dagger body.
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=64';
-import { Skull } from './enemy.js?v=64';
+import { TUNING as T } from './tuning.js?v=66';
+import { Skull } from './enemy.js?v=66';
 
 const matOk = new THREE.MeshBasicMaterial({ color: 0x3a342c });
 const matWarn = new THREE.MeshBasicMaterial({ color: 0x6a4030 });
@@ -24,9 +24,23 @@ export class TruckTrack {
     this.nextZ = 0;
   }
 
+  /**
+   * Where the next slab sits across the track. A bounded RANDOM WALK, not a
+   * fresh roll: scattering each platform independently across the full width
+   * makes islands, and a route you cannot see the shape of is not a route.
+   * Stepping at most ~1.6 either way keeps every slab overlapping the one
+   * before it laterally, so the track reads as a road that wanders.
+   */
+  walkX(first = false) {
+    if (first) return (this.lastX = 0);
+    const step = (Math.random() - 0.5) * 3.2;
+    this.lastX = Math.max(-5, Math.min(5, (this.lastX ?? 0) + step));
+    return this.lastX;
+  }
+
   addPlatform(z, x = 0) {
     const w = T.truck.width * (0.85 + Math.random() * 0.45);
-    const depth = 3.0 + Math.random() * 1.6;
+    const depth = T.truck.platformDepth + Math.random() * T.truck.platformDepthVar;
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, 0.45, depth), matOk.clone());
     mesh.position.set(x, -0.2, z);
     this.scene.add(mesh);
@@ -39,25 +53,54 @@ export class TruckTrack {
     });
   }
 
-  seed(player) {
+  reset(player) {
     this.clear();
+    this.lastX = 0;
     for (let i = 0; i < 10; i++) {
-      const z = -i * T.truck.platformGap;
-      const x = i === 0 ? 0 : (Math.random() - 0.5) * 5.5;
-      this.addPlatform(z, x);
+      this.addPlatform(-i * T.truck.platformGap, this.walkX(i === 0));
     }
     this.nextZ = -10 * T.truck.platformGap;
     player.feet.set(0, 0.4, 0);
     player.velocity.set(0, 0, 0);
     player.vy = 0;
+    player.floorY = -Infinity;
     player._sync();
+  }
+
+  /**
+   * Runs BEFORE player.update: scrolls the body down the track and tells it
+   * what it is standing on this frame. It has to be before, not after, or the
+   * player never reads as grounded and jumps never refill — which is the whole
+   * mode. (It also has to scale by dt: the first cut moved a flat 14 units per
+   * FRAME, so the track ran ~50x too fast at 60fps and faster on a better
+   * screen. Nothing caught it because the mode was never actually reachable.)
+   */
+  preUpdate(dt, player) {
+    const boost = 1 + Math.min(0.6, Math.max(0, -player.feet.z) * 0.004);
+    player.feet.z -= T.truck.scrollSpeed * boost * dt;
+
+    let floor = -Infinity;
+    for (const p of this.platforms) {
+      if (p.falling) continue;
+      const dx = Math.abs(player.feet.x - p.mesh.position.x);
+      const dz = Math.abs(player.feet.z - p.mesh.position.z);
+      if (dx > p.w * 0.5 + 0.35 || dz > p.depth * 0.5 + 0.35) continue;
+      const top = p.mesh.position.y + 0.25;
+      // Only surfaces at or below the feet hold you up — you pass through the
+      // side of a platform you are jumping past rather than snagging on it.
+      if (top > player.feet.y + 0.45) continue;
+      if (top > floor) floor = top;
+      // Standing on it starts its clock. Touching is what makes it leave.
+      if (player.feet.y <= top + 0.45) p.touched = true;
+    }
+    player.floorY = floor;
+    return floor > -Infinity;
   }
 
   update(dt, player, gameTime, enemies) {
     const ahead = player.feet.z - 45;
     while (this.nextZ > ahead) {
-      const x = (Math.random() - 0.5) * 8;
-      this.addPlatform(this.nextZ, x);
+      this.addPlatform(this.nextZ, this.walkX());
       let gap = T.truck.platformGap * (0.8 + Math.random() * 0.45);
       if (gameTime > 20 && Math.random() < 0.12) gap *= 1.35;
       this.nextZ -= gap;
@@ -94,23 +137,4 @@ export class TruckTrack {
     }
   }
 
-  supportPlayer(player) {
-    player.feet.z -= T.truck.scrollSpeed * (1 + Math.min(0.6, Math.max(0, -player.feet.z) * 0.004));
-    let on = false;
-    for (const p of this.platforms) {
-      if (p.falling) continue;
-      const dx = Math.abs(player.feet.x - p.mesh.position.x);
-      const dz = Math.abs(player.feet.z - p.mesh.position.z);
-      if (dx < p.w * 0.5 + 0.35 && dz < p.depth * 0.5 + 0.35) {
-        const top = p.mesh.position.y + 0.25;
-        if (player.feet.y <= top + 0.4 && player.vy <= 0.6) {
-          player.feet.y = top;
-          player.vy = 0;
-          p.touched = true;
-          on = true;
-        }
-      }
-    }
-    return on;
-  }
 }

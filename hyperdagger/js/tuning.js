@@ -23,6 +23,7 @@ export const TUNING = {
     gravity: -24,
     jumpV: 8.6,      // takeoff velocity — with gravity gives the jump arc
     maxJumps: 1,     // extra height comes from a downward shotgun, not a free air jump
+    glideGravity: 0.32, // gravity multiplier while gliding (MOVE / TRUCK)
     jumpBuffer: 0.11,
     coyote: 0.08,
     hopWindow: 0.12,
@@ -151,9 +152,18 @@ export const TUNING = {
     densityRamp: 0.012,
   },
 
+  // TRUCK — the Clustertruck bench. Two numbers decide whether it is a road
+  // or a set of stepping stones: platformGap is centre-to-centre, platformDepth
+  // is how long each slab is, so the GAP you actually jump is gap - depth.
+  // At 5.4-6.8 deep on a 6.5 spacing the early track is a road with seams,
+  // which is the point — the pressure is that it LEAVES (platformLife starts
+  // the moment you touch it), not that every step is a jump. Real holes arrive
+  // later, when the generator starts widening the spacing.
   truck: {
     scrollSpeed: 14,
     platformGap: 6.5,
+    platformDepth: 5.4,
+    platformDepthVar: 1.4,
     platformLife: 2.2,
     fallY: -8,
     width: 4.2,
