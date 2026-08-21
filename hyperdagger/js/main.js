@@ -9,12 +9,12 @@ import { InputManager } from './input.js?v=61';
 import { Player } from './player.js?v=61';
 import { DaggerPool } from './daggers.js?v=61';
 import { GemPool } from './gems.js?v=61';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=61';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=63';
 import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=61';
 import { OrbPool } from './bullets.js?v=61';
 import { AudioKit } from './audio.js?v=61';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=61';
-import { TUNING as T } from './tuning.js?v=61';
+import { TUNING as T } from './tuning.js?v=63';
 import { HyperEnvironment } from './environment.js?v=61';
 
 const ARENA_R = 26;
