@@ -67,9 +67,43 @@ pointer events, but without `touch-action: none` the browser claims the gesture
 for scrolling and pans the page while the prop stays put — the same family as
 the `pointerup`/`touchend` trap `hub/shell.js` paid for.
 
-Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · **inspector 19/0**. Smoke and
-playthrough were still running at commit time; their numbers are deliberately
-left blank rather than claimed ahead of the runs. Tokens 44 -> 45.
+**DELETE and DUPLICATE**, because a tool that adds but cannot remove makes
+every mistake permanent, and the first thing anyone does with a placement tool
+is place something wrong. Both edit the sheet and rebuild, like placing does.
+A duplicate lands a half tile across — the same step placing snaps to — so the
+copy is visibly a second thing rather than hiding exactly behind the first.
+
+**THE 404 WAS A REAL BUG AND I WAVED IT THROUGH.** Opening dressing to every
+site means a room without a sheet asks for one and gets a 404, and I wrote that
+up as costing "one 404 on entry" as though it were a footnote. It is a console
+error, `smoke.cjs` fails the boot on any console error, and it was right to:
+six checks went red, starting with *no errors on boot*.
+
+The fix is the pattern the rest of this project already uses — **declare it in
+the manifest before loading it**. `manifest.dressing.sites` lists which sites
+have a sheet, `rowsFor` asks that before it fetches anything, and adding a
+sheet means adding its number. No request is made for a file that is not there.
+
+And the seam it exposed: with no sheet, `addRow` had nowhere to put a row, so
+worlds 1 and 2 still could not be dressed — the exact rooms this change was
+for. Placing into an empty room now **seeds** a sheet, and says in the panel
+that it must be saved and declared or it will not survive a reload.
+
+Two test bugs of my own on the way, both the same shape as bugs this project
+has had before:
+
+- The duplicate/delete checks waited **60 ms** for a rebuild. At the ~3 fps
+  this sandbox renders at that is a fifth of a frame, so nothing had rebuilt,
+  every count came back unchanged, and `picked` pointed into a graph that a
+  previous refresh had already detached. Re-select after every rebuild, wait a
+  real frame. Same family as the flat 1200 ms wait that cost three wrong
+  diagnoses at v15.30.
+- Before that, the size check asserted only that the placed mesh could be
+  *found* — a pass on nothing.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · **inspector 24/0**. Smoke is
+re-running after the manifest fix; its number and the playthrough's are
+deliberately left blank rather than claimed. Tokens 44 -> 46, manifest 32 -> 33.
 
 ## v15.37 — 2026-08-21 — the edges stop being jagged, and the grass stops repeating
 

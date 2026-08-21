@@ -14,8 +14,8 @@
 // sibling node the game shows one of, the same rule as js/pieces.js.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=45';
-import { craftMat, craftBox } from './craft.js?v=45';
+import { PAL, mix } from './palette.js?v=46';
+import { craftMat, craftBox } from './craft.js?v=46';
 
 // EVERY surface here is made through the craft factory (ART_TARGET §0.05).
 // A prop built with a bare `new MeshLambertMaterial` is flat paint standing

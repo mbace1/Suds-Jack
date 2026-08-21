@@ -1,6 +1,10 @@
 {
   "v": 31,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
+  "dressing": {
+    "//": "Which sites have a dressing sheet in assets/dressing/. ONE-BASED, matching the filenames. This exists so the runtime never fetches a sheet that is not there: every site now looks for one, and a 404 per world-1 room is a console error the smoke gate fails on, correctly. Adding a sheet means adding its number here, the same way every other asset in this game is declared before it is loaded.",
+    "sites": [7, 8, 9, 10, 11, 12]
+  },
   "models": {
     "eeri": {
       "file": "3d/eeri_v5.glb",

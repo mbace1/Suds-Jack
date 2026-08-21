@@ -266,6 +266,50 @@ srv.listen(0, '127.0.0.1', async () => {
       Math.abs(sized.after - 3.5) < 1e-6 && sized.after !== sized.before,
       JSON.stringify(sized));
     ok(`…and says what it did (${sized.label})`, sized.label === '3.50');
+
+    // DUPLICATE and DELETE. A tool that adds but cannot remove makes every
+    // mistake permanent, and the first thing anyone does with a placement tool
+    // is place something wrong.
+    // RE-SELECT AFTER EVERY REBUILD, AND WAIT A REAL FRAME. Each edit rebuilds
+    // the room from rows, which throws away the mesh that was selected — so a
+    // `picked` captured before the edit points into a detached graph and
+    // `rowOf` walks up to nothing. The first cut of this waited 60ms between
+    // clicks; at the ~3 fps this sandbox renders at, that is a fifth of a
+    // frame, so nothing had rebuilt yet and every count came back unchanged.
+    const pickFresh = async (id) => page.evaluate((rid) => {
+      const w = document.querySelector('iframe').contentWindow;
+      let mesh = null; w.__eeri.scene.traverse((o) => { if (o.userData?.row === rid) mesh = o; });
+      window.__insp.picked = mesh;
+      return !!mesh;
+    }, id);
+    const rowsNow = () => page.evaluate(() => {
+      const w = document.querySelector('iframe').contentWindow;
+      let r = null; w.__eeri.scene.traverse((o) => { if (o.userData?.rows) r = o.userData.rows; });
+      return r ? r.map((x) => ({ id: x.id, x: x.x })) : [];
+    });
+    const clickA = async (a) => { await page.evaluate((sel) =>
+      document.querySelector(`.insp [data-a="${sel}"]`).click(), a);
+      await page.waitForTimeout(1200); };
+
+    const id = placed.last.id;
+    ok('the placed row is still selectable after its rebuild', await pickFresh(id));
+    const start = (await rowsNow()).length;
+    await clickA('dup');
+    const afterDup = await rowsNow();
+    const copy = afterDup[afterDup.length - 1];
+    await pickFresh(id);
+    await clickA('del');
+    const afterDel = await rowsNow();
+    const edits = { start, dup: afterDup.length, del: afterDel.length,
+      copyX: copy.x, srcX: afterDup.find((r) => r.id === id)?.x,
+      originalGone: !afterDel.some((r) => r.id === id),
+      copyKept: afterDel.some((r) => r.id === copy.id) };
+    ok(`DUPLICATE adds a copy (${edits.start} -> ${edits.dup})`, edits.dup === edits.start + 1);
+    ok(`…offset a half tile so it is not hiding behind the original (${edits.srcX} -> ${edits.copyX})`,
+      Math.abs(edits.copyX - edits.srcX - 0.5) < 1e-6, JSON.stringify(edits));
+    ok(`DELETE removes the selected row (${edits.dup} -> ${edits.del})`,
+      edits.del === edits.dup - 1 && edits.originalGone);
+    ok('…and takes the right one — the copy survives', edits.copyKept);
   }
 
   ok('no page errors while driving the tool', errs.length === 0, errs.slice(0, 2).join(' | '));

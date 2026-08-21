@@ -488,11 +488,29 @@ export function captureSite(THREE, site) {
 // A site's rows, or null for "nothing authored, use the builder". Fetched
 // once and remembered — a level change must not cost a round trip.
 const sheets = new Map();
+// WHICH SITES HAVE A SHEET, asked before anything is fetched. Every site looks
+// for dressing now, and a site without a sheet used to answer that question
+// with a 404 — which is a console error, which `smoke.cjs` fails the boot on,
+// correctly. The manifest already declares every other asset before it is
+// loaded; a sheet is no different. Adding one means adding its number there.
+let manifestSites = null;
+async function sheetSites() {
+  if (manifestSites) return manifestSites;
+  try {
+    const url = new URL('../assets/manifest.json?v=33', import.meta.url);
+    const res = await fetch(url);
+    const j = res.ok ? await res.json() : null;
+    manifestSites = new Set((j?.dressing?.sites || []).map((n) => n - 1));
+  } catch { manifestSites = new Set(); }
+  return manifestSites;
+}
+
 async function rowsFor(site) {
   if (sheets.has(site)) return sheets.get(site);
+  if (!(await sheetSites()).has(site)) { sheets.set(site, null); return null; }
   let rows = null;
   try {
-    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=45`, import.meta.url);
+    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=46`, import.meta.url);
     const res = await fetch(url);
     if (res.ok) {
       const j = await res.json();

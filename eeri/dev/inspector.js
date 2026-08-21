@@ -197,6 +197,10 @@ look somewhere else.</div>
           <button type="button" data-a="hide">HIDE</button>
           <button type="button" data-a="reset">REVERT</button>
         </div>
+        <div class="row">
+          <button type="button" data-a="dup">DUPLICATE</button>
+          <button type="button" data-a="del">DELETE</button>
+        </div>
         <div class="out" data-el="out">—</div>
         <div class="hint" data-el="sheetTip">this thing is drawn from a
 dressing sheet, so a move can be KEPT. SAVE writes the whole site out —
@@ -215,6 +219,8 @@ layer a thing is on is to switch the others off</div>
       const a = e.target?.dataset?.a;
       if (!a) return;
       if (a === 'close') this.hide();
+      if (a === 'dup') this.duplicate();
+      if (a === 'del') this.deleteRow();
       if (a === 'pick') this.setMode('pick');
       if (a === 'place') this.setMode('place');
       if (a === 'walk') this.setMode('walk');
@@ -494,8 +500,20 @@ layer a thing is on is to switch the others off</div>
   // rather than adding one mesh is deliberate: it is the same path a reload
   // takes, so anything that looks right here looks right after SAVE.
   addRow(row) {
-    const found = this.anySheet();
-    if (!found) { this.say('no sheet in this room to add to'); return; }
+    let found = this.anySheet();
+    // NO SHEET YET IS THE NORMAL CASE FOR WORLDS 1 AND 2 — they have no
+    // dressing to have been captured from. Seeding one here is the whole
+    // reason those rooms can be dressed at all; without it the editor works
+    // only where somebody had already written code to record.
+    if (!found) {
+      const A = this.api(); const D = this.win.__eeriDress;
+      if (!A || !D) { this.say('no dressing module to add to'); return; }
+      D.applyRows(A.site(), [row]);
+      this.say(`started a new sheet for this room with ${row.k} — SAVE it to `
+        + `assets/dressing/site-${A.site() + 1}.json and add ${A.site() + 1} to `
+        + `manifest.dressing.sites, or it will not come back on reload`);
+      return;
+    }
     found.rows.push(row);
     this.refreshDressing();
     this.say(`placed ${row.k}${row.a ? ' ' + row.a : ''} at ${row.x}, ${row.y} on z ${row.z}`);
@@ -515,6 +533,33 @@ layer a thing is on is to switch the others off</div>
     else if (r.k === 'disc') { r.r = v * 0.5; }
     else if (r.k === 'cutout') { r.h = v; }
     this.refreshDressing();
+  }
+
+  // ---- DELETE and DUPLICATE ----------------------------------------------
+  // Both edit the SHEET and rebuild, like placing does — never the mesh. A
+  // tool that can add but not remove is one where every mistake is permanent,
+  // and the first thing anyone does with a placement tool is place something
+  // wrong.
+  deleteRow() {
+    const found = this.rowOf(this.picked);
+    if (!found?.row) { this.say('nothing selected that came from a sheet'); return; }
+    const i = found.rows.indexOf(found.row);
+    if (i < 0) return;
+    const gone = found.rows.splice(i, 1)[0];
+    this.select(null);
+    this.refreshDressing();
+    this.say(`deleted ${gone.k}${gone.a ? ' ' + gone.a : ''} (${gone.id}) — REVERT will not bring it back, re-place it`);
+  }
+
+  duplicate() {
+    const found = this.rowOf(this.picked);
+    if (!found?.row) { this.say('nothing selected that came from a sheet'); return; }
+    // offset by a half tile, the same step placing snaps to, so the copy is
+    // visibly a second thing rather than hiding exactly behind the first
+    const copy = { ...found.row, id: this.freshId(), x: found.row.x + 0.5 };
+    found.rows.push(copy);
+    this.refreshDressing();
+    this.say(`duplicated ${found.row.id} as ${copy.id}`);
   }
 
   // one line of feedback in the panel — placing something you cannot see land
