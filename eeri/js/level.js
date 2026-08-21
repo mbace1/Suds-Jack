@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=41';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=41';
+import { PAL, mix } from './palette.js?v=43';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=43';
 
-import { ROOMS, LAB } from './rooms.js?v=41';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=41';
+import { ROOMS, LAB } from './rooms.js?v=43';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=43';
 
 export { ROOMS, LAB };
 const EPS = 0.001;
@@ -434,7 +434,16 @@ export class Level {
             // regular scalloped chain — a fringe reads as grass only while
             // its tufts are the size grass tufts are.
             const FH = 0.42, reps = Math.max(1, Math.round(w / (FH * 5.6)));
-            const fr = cutQuad(w, FH, 'fringe', { repeatX: reps });
+            // …and each run starts at its OWN place in the strip, mirrored on
+            // about half of them. Seeded off the run's position so it is the
+            // same every load — a fringe that reshuffles when you re-enter a
+            // room is a room that does not hold still. Without this, every
+            // stretch of grass in the level began on the same tuft and the
+            // repeat that is invisible within one run was obvious across six.
+            const seed = Math.sin(cx * 12.9898 + cy * 78.233) * 43758.5453;
+            const phase = seed - Math.floor(seed);
+            const fr = cutQuad(w, FH, 'fringe',
+              { repeatX: reps, phase, flip: (Math.floor(seed * 7) & 1) === 1 });
             fr.position.set(cx, cy + 1.12, 0.85);
             group.add(fr);
           }

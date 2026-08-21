@@ -1,5 +1,79 @@
 # EERI — versions
 
+## v15.37 — 2026-08-21 — the edges stop being jagged, and the grass stops repeating
+
+Owner's steer after the shadows were parked: *"sharper and more varied assets
+(like grass) and the anti-aliasing that could smoothen the edges"*.
+
+**THE EDGES WERE ALPHA-TESTED, AND THAT IS THE WHOLE ANSWER TO "RUGGED".**
+`craft.js`'s `cutMat` builds every cutout in the game — the grass fringe, the
+stones, roots, pipes, bricks, torn card edges, 43 materials in one room — with
+`alphaTest: 0.5`. That is a hard binary keep-or-discard per fragment, so every
+one of those outlines was stair-stepped.
+
+The renderer has been created with `antialias: true` since the beginning, which
+is exactly why this was easy to miss: **MSAA antialiases geometry silhouettes
+and does nothing whatever for an alpha cut inside a quad.** The quad's own
+rectangle was smooth; the shape drawn on it was not.
+
+`alphaToCoverage: true` spends the multisample budget that was already being
+paid for on the alpha edge instead. No second pass, no sort change, and
+`alphaTest` stays as the fallback for any context that will not honour it.
+
+**And the fringe stopped being a stamp.** Every run of ground drew the same
+tuft strip starting at the same phase, so a repeat that is invisible within one
+run was obvious across six of them. The material and its texture are shared on
+purpose — cloning one per run is how the v11 retune bug happened — so the
+variation goes on the GEOMETRY: each run owns its plane, and sliding and
+mirroring that plane's own `u` coordinates gives every stretch a different part
+of the same strip. Seeded off the run's position, so it is identical on every
+load; a fringe that reshuffles when you re-enter a room is a room that does not
+hold still.
+
+---
+
+**THE INSTRUMENT WAS THE REAL FIND, AND IT COST SIX COMPARISONS TO GET TO.**
+
+Every attempt to A/B this game by screenshot has failed the same way, and the
+cause was only named here: **`camera.js` drifts on purpose.** `sin(t * 0.23) *
+0.5` on the dolly and `sin(t * 0.17 + 1.3) * 0.22` on the height, so "the frame
+is never dead still" — which is right for play and fatal for measurement. Two
+captures are never the same framing, ~99% of pixels move sub-pixel, and every
+difference count measures the drift.
+
+That is what defeated the mipmap check at v15.35 (`noise 79.86% vs effect
+75.47%`), the lighting checks at v15.34, and the first two attempts here. Three
+separate write-ups reported "not separable from noise" without either of us
+working out *why the noise was there*.
+
+`cam.freeze` is a dev-only switch on the drift, reached through
+`debug.cameraFreeze(true)`. Nothing in the game sets it.
+
+With it on, the same comparison that had been mush **separates immediately**:
+
+```
+A2C on  : 78.00% of the band is a blended tone
+A2C off : 25.52%
+A2C on  : 85.32%              <- repeat, for the noise floor
+effect 56.14 points, noise 7.32  ->  REAL
+```
+
+The ruler is deliberately translation-invariant as well — it counts how much of
+a band sits *between* its two dominant tones rather than diffing pixels,
+because an aliased cut jumps straight from grass to background while an
+antialiased one fills that middle in. Belt and braces: the freeze fixes the
+framing, and the metric would survive a half-pixel slide even if it did not.
+
+Two honest caveats. The first cut of that ruler anchored to the **per-frame**
+dominant tones and was unstable — two identical captures read 32.97% and
+70.36% — so it is anchored to a fixed pair now. And the residual 7.32-point
+noise means something in the band still moves; the effect clears it by 7.7x, so
+the conclusion holds, but the floor is not zero and is not claimed to be.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0. Smoke and playthrough were still
+running at commit time; their numbers are deliberately left blank rather than
+claimed ahead of the runs. Tokens 42 -> 43.
+
 ## v15.36 — 2026-08-21 — Eeri is the size the references make him
 
 Owner picked the reference framing outright, and asked for the zoom to stay

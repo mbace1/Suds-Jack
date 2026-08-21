@@ -31,8 +31,8 @@
 // Adding a material is a manifest entry plus a name here. Nothing else.
 
 import * as THREE from 'three';
-import { getTexture } from './assets.js?v=41';
-import { PAL } from './palette.js?v=41';
+import { getTexture } from './assets.js?v=43';
+import { PAL } from './palette.js?v=43';
 
 // world units per texture repeat, per material — a felt nap is fine and a
 // card flute is coarse, so they do not share a scale
@@ -135,6 +135,22 @@ const cutCache = new Map();
 export function cutMat(name, opts = {}) {
   const m = new THREE.MeshLambertMaterial({
     color: 0xffffff, transparent: true, alphaTest: 0.5,
+    // ALPHA-TO-COVERAGE, and this is the answer to "the edges look rugged".
+    //
+    // `alphaTest` is a hard binary keep-or-discard per fragment, so every
+    // cutout in this game — the grass fringe, the stones, roots, pipes, bricks,
+    // torn card edges — had a stair-stepped outline. The renderer HAS been
+    // created with `antialias: true` the whole time, which is why this was easy
+    // to miss: MSAA antialiases GEOMETRY silhouettes and does nothing whatever
+    // for an alpha cut inside a quad. The quad's own rectangle was smooth and
+    // the shape drawn on it was not.
+    //
+    // A2C spends the MSAA samples that are already being paid for on the alpha
+    // edge instead: the cut gets the same treatment the polygon border always
+    // got. It needs a multisampled target, which this project has, and it costs
+    // nothing extra — no second pass, no sorting change, and `alphaTest` stays
+    // as the fallback for any context that cannot honour it.
+    alphaToCoverage: true,
     side: THREE.DoubleSide, ...opts,
   });
   getTexture(name).then((tex) => {
@@ -150,7 +166,7 @@ export function cutMat(name, opts = {}) {
  * which is the one cutout that is allowed to repeat, because a torn line is
  * only read locally.
  */
-export function cutQuad(w, h, name, { repeatX = 0, ...opts } = {}) {
+export function cutQuad(w, h, name, { repeatX = 0, phase = 0, flip = false, ...opts } = {}) {
   const key = `${name}|${repeatX}|${JSON.stringify(opts)}`;
   if (!cutCache.has(key)) {
     const m = cutMat(name, opts);
@@ -168,7 +184,27 @@ export function cutQuad(w, h, name, { repeatX = 0, ...opts } = {}) {
     }
     cutCache.set(key, m);
   }
-  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), cutCache.get(key));
+  const geo = new THREE.PlaneGeometry(w, h);
+  // VARIATION WITHOUT A SECOND TEXTURE. The material and its texture are
+  // cached and shared by every run — deliberately, since cloning one per run
+  // is how the v11 retune bug happened — so the phase cannot live on the
+  // Texture. It lives on the GEOMETRY instead: each run owns its plane, so
+  // sliding and mirroring that plane's own u coordinates gives every stretch
+  // of fringe a different part of the same strip.
+  //
+  // This is what stops a fringe reading as a stamp. The tuft pattern was
+  // starting at the same phase on every run in the level, so a repeat that is
+  // invisible within one run was obvious across six of them.
+  if (phase || flip) {
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) {
+      let u = uv.getX(i);
+      if (flip) u = 1 - u;
+      uv.setX(i, u + phase);
+    }
+    uv.needsUpdate = true;
+  }
+  return new THREE.Mesh(geo, cutCache.get(key));
 }
 
 // ---- THE SILHOUETTE LINE ------------------------------------------------

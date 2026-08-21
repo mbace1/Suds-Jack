@@ -97,9 +97,18 @@ export class Camera {
     }
 
     // the drift: slow, small, and on both axes so it never reads as a
-    // wobble on one of them
-    z += Math.sin(this.t * 0.23) * 0.5;
-    yOff += Math.sin(this.t * 0.17 + 1.3) * 0.22;
+    // wobble on one of them.
+    //
+    // `freeze` is a DEV-ONLY switch and it exists because this drift, which is
+    // exactly right for play, makes the game impossible to A/B by screenshot:
+    // the frame is never dead still, so any two captures differ in ~99% of
+    // their pixels and every difference count measures the drift rather than
+    // the change. Six comparisons in one session were lost to it before it was
+    // named. Nothing in the game sets this; the look harnesses do.
+    if (!this.freeze) {
+      z += Math.sin(this.t * 0.23) * 0.5;
+      yOff += Math.sin(this.t * 0.17 + 1.3) * 0.22;
+    }
 
     // ease the framing itself, so crossing into a shot is a move, not a cut
     this.f.z += (z * ZOOM - this.f.z) * Math.min(1, 1.6 * dt);

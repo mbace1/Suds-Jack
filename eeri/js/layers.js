@@ -23,9 +23,9 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=41';
-import { getLayerTexture } from './assets.js?v=41';
-import { buildPipeworksDressing } from './world2-dressing.js?v=41';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=43';
+import { getLayerTexture } from './assets.js?v=43';
+import { buildPipeworksDressing } from './world2-dressing.js?v=43';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
