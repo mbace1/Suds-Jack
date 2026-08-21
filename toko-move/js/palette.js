@@ -34,6 +34,20 @@ export const PAL = {
   lines: ['#2f7fbf', '#d8452f', '#3f9e5a', '#e0a52e', '#8a5bbf', '#b13b8a', '#1f9c92'],
 };
 
+// Hit targets, stated in SCREEN pixels and converted to board units at the
+// current scale — the opposite of everything above, and deliberately.
+//
+// A radius fixed in board units is a target that shrinks with the window: the
+// end-of-line nub measured 46px on a 1200px desktop and 17px on a 390px phone,
+// so on touch there was no way to shorten or delete a line at all. What has to
+// stay constant is the size under the finger, not the size on the board.
+export const TOUCH = {
+  nubGapPx: 21,       // from the stop's edge to the middle of its nub
+  nubHitPx: 46,       // grab diameter, comfortably over the 44px floor
+  stationHitPx: 50,
+  nubDrawPx: 7.5,     // drawn radius — visible on a phone, discreet on a desktop
+};
+
 // Stroke weights, in board units. The line is thicker than the station outline
 // on purpose — the network is the subject and the stops are punctuation.
 export const INK = {

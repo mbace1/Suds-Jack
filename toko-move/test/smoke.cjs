@@ -94,18 +94,13 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   eq(await page.evaluate(() => window.__tm.net.lines[0].trains.length), 1, 'and a train on it');
 
   // extend from the nub at the live end
-  const nub = await page.evaluate(() => {
-    const { net, world } = window.__tm;
-    const mod = window.__tmNubs;
-    const l = net.lines[0];
-    const end = world.station(l.tail);
-    const seg = l.segs[l.segs.length - 1];
-    const pts = seg.pts;
-    const p = pts[pts.length - 2], q = pts[pts.length - 1];
-    const dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1;
-    const r = (end.special ? 18 : 15.5) + 15;
-    return window.__tm.toClient(end.x + dx / len * r, end.y + dy / len * r);
+  // ask the game where its nub is; recomputing it here lets the test agree
+  // with itself while disagreeing with what the player can actually grab
+  const nubAt = () => page.evaluate(() => {
+    const n = window.__tm.touch.nubs.find(x => !x.atHead);
+    return n ? window.__tm.toClient(n.x, n.y) : null;
   });
+  const nub = await nubAt();
   await page.mouse.move(nub.x, nub.y);
   await page.mouse.down();
   await page.mouse.move(c.x, c.y, { steps: 12 });
@@ -113,17 +108,7 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   eq(await page.evaluate(() => window.__tm.net.lines[0].stations.length), 3, 'dragging the end nub carries the line onward');
 
   // and pulling it back takes the stop off again
-  const nub2 = await page.evaluate(() => {
-    const { net, world } = window.__tm;
-    const l = net.lines[0];
-    const end = world.station(l.tail);
-    const seg = l.segs[l.segs.length - 1];
-    const pts = seg.pts;
-    const p = pts[pts.length - 2], q = pts[pts.length - 1];
-    const dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1;
-    const r = (end.special ? 18 : 15.5) + 15;
-    return window.__tm.toClient(end.x + dx / len * r, end.y + dy / len * r);
-  });
+  const nub2 = await nubAt();
   const back = await at(1);
   await page.mouse.move(nub2.x, nub2.y);
   await page.mouse.down();
@@ -153,6 +138,42 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
     return bad;
   });
   eq(small.length, 0, `every control clears 44px (${small.join(', ')})`);
+
+  // The sweep above only ever looked at DOM buttons, so the targets drawn ON
+  // THE CANVAS were never measured — and the end-of-line nub came out 17px on a
+  // phone, which meant no line could be shortened or deleted by thumb at all.
+  const desk = await page.evaluate(() => window.__tm.touch);
+  ok(desk.nubHitPx >= 44, `the line-end nub is a real target on a desktop (${desk.nubHitPx.toFixed(1)}px)`);
+  ok(desk.stationHitPx >= 44, `and so is a stop (${desk.stationHitPx.toFixed(1)}px)`);
+  ok(desk.nubDrawPx >= 5, `the nub has a drawn size (r=${desk.nubDrawPx.toFixed(1)}px)`);
+  // Reading a number back out of the game does not prove anything was PAINTED —
+  // the same weak-check mistake as counting stops with anybody on them. Sample
+  // the canvas around the nub and look for the line's own colour.
+  const nubInk = await page.evaluate(() => {
+    const cv = document.getElementById('board');
+    const t = window.__tm.touch;
+    const n = t.nubs.find(x => !x.atHead);
+    if (!n) return null;
+    const r = window.__tm.renderer;
+    const dpr = r.dpr;
+    const cx = Math.round((r.ox + n.x * r.scale) * dpr);
+    const cy = Math.round((r.oy + n.y * r.scale) * dpr);
+    const rad = Math.max(6, Math.round(t.nubDrawPx * dpr * 1.6));
+    const g = cv.getContext('2d');
+    const d = g.getImageData(cx - rad, cy - rad, rad * 2, rad * 2).data;
+    const want = getComputedStyle(document.documentElement); // unused, keep lint quiet
+    const line = window.__tm.net.lines.find(l => true);
+    const hex = ['#2f7fbf','#d8452f','#3f9e5a','#e0a52e','#8a5bbf','#b13b8a','#1f9c92'][line.colour];
+    const tgt = [1,3,5].map(i => parseInt(hex.slice(i, i + 2), 16));
+    let hits = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.abs(d[i]-tgt[0]) + Math.abs(d[i+1]-tgt[1]) + Math.abs(d[i+2]-tgt[2]) < 40) hits++;
+    }
+    return { hits, sampled: d.length / 4 };
+  });
+  ok(nubInk && nubInk.hits > 8,
+     `the nub is really painted in its line's colour (${nubInk ? nubInk.hits : 0} pixels of ${nubInk ? nubInk.sampled : 0})`);
+
 
   // ── the ink, as the browser actually renders it ───────────────────────
   const inks = await page.evaluate(() => {
@@ -269,6 +290,62 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
     return Math.hypot(back.x - s.x, back.y - s.y);
   });
   ok(trip < 0.5, `board and screen coordinates round-trip (off by ${trip.toFixed(3)})`);
+
+  // ── the case that was actually broken ─────────────────────────────────
+  // At 390px the board renders at 0.45 scale. Hit radii fixed in board units
+  // shrank with it: the nub measured 17px, so a line could not be shortened or
+  // deleted by thumb. These are screen measurements now.
+  const ph = await phone.evaluate(() => window.__tm.touch);
+  ok(ph.nubHitPx >= 44, `the nub clears 44px on a phone too (${ph.nubHitPx.toFixed(1)}px at ${ph.scale.toFixed(2)} scale)`);
+  ok(ph.stationHitPx >= 44, `and so does a stop (${ph.stationHitPx.toFixed(1)}px)`);
+  ok(ph.nubDrawPx >= 5, `and it is big enough to see (r=${ph.nubDrawPx.toFixed(1)}px)`);
+
+
+  // and prove it end to end: draw a line, then pull it off in ONE drag back
+  await phone.evaluate(() => {
+    window.__tm.game.paused = true;
+    while (window.__tm.world.stations.length < 3) window.__tm.world.spawnStation('circle');
+  });
+  const pAt = i => phone.evaluate(k => {
+    const st = window.__tm.world.stations[k];
+    return window.__tm.toClient(st.x, st.y);
+  }, i);
+  const [a0, a1, a2] = [await pAt(0), await pAt(1), await pAt(2)];
+  await phone.mouse.move(a0.x, a0.y); await phone.mouse.down();
+  await phone.mouse.move(a1.x, a1.y, { steps: 10 });
+  await phone.mouse.move(a2.x, a2.y, { steps: 10 });
+  await phone.mouse.up();
+  const drawn = await phone.evaluate(() => window.__tm.net.lines[0]?.stations.length ?? 0);
+  ok(drawn >= 2, `a line can be drawn by thumb (${drawn} stops)`);
+
+  const pn = await phone.evaluate(() => {
+    const n = window.__tm.touch.nubs.find(x => !x.atHead);
+    return n ? window.__tm.toClient(n.x, n.y) : null;
+  });
+  ok(pn !== null, 'and it grows a nub to grab');
+  // Reachable is not the same as legible. Nearest-wins keeps the nub grabbable
+  // even when it is jammed against the stop, so the stand-off needs its own
+  // check: on screen, the drawn nub must CLEAR the drawn stop, or the player
+  // sees one blob and has nothing to aim at.
+  const clear = await phone.evaluate(() => {
+    const t = window.__tm.touch;
+    const n = t.nubs.find(x => !x.atHead);
+    if (!n) return null;
+    const st = window.__tm.world.station(n.line.tail);
+    const gapUnits = Math.hypot(n.x - st.x, n.y - st.y);
+    const stationR = st.special ? 18 : 15.5;
+    return (gapUnits - stationR) * t.scale - t.nubDrawPx;
+  });
+  ok(clear !== null && clear >= 6,
+     `and it stands clear of the stop rather than sitting on it (${clear === null ? 'no nub' : clear.toFixed(1) + 'px of daylight'})`);
+  await phone.mouse.move(pn.x, pn.y); await phone.mouse.down();
+  await phone.mouse.move(a1.x, a1.y, { steps: 10 });
+  await phone.mouse.move(a0.x, a0.y, { steps: 10 });
+  await phone.mouse.up();
+  const after = await phone.evaluate(() => ({
+    lines: window.__tm.net.lines.length, spare: window.__tm.net.spareTrains }));
+  eq(after.lines, 0, 'and one drag back down it deletes the whole line');
+  eq(after.spare, 3, 'handing the train back to the shed');
 
   eq(errs.length, 0, `no page errors (${errs.join(' | ')})`);
 

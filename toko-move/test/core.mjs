@@ -2,13 +2,13 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=3';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=3';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=3';
-import { Network, Train, CAR_CAPACITY } from '../js/lines.js?v=3';
-import { Game } from '../js/sim.js?v=3';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=3';
-import { PAL, INK } from '../js/palette.js?v=3';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=4';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=4';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=4';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=4';
+import { Game } from '../js/sim.js?v=4';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=4';
+import { PAL, INK } from '../js/palette.js?v=4';
 
 let pass = 0; const fails = [];
 const ok = (cond, msg) => { if (cond) pass++; else fails.push(msg); };
@@ -308,6 +308,63 @@ function bench(seed = 1) {
   const solo = new Network(g.world);
   solo.rebuild();
   eq(solo.lines.length, 0, 'an empty network solves without complaint');
+}
+
+{
+  // the grab handle at a terminus
+  const { g, add } = bench();
+  const A = add('circle', 100, 300), B = add('square', 400, 300), C = add('triangle', 700, 300);
+  g.net.rebuild();
+  const line = g.net.open(A.id, B.id).line;
+  g.net.extend(line, C.id, false);
+
+  const GAP = 20;
+  const ns = nubs(g.net, g.world, GAP);
+  eq(ns.length, 2, 'an open line has a nub at each end');
+  ok(ns.some(n => n.atHead) && ns.some(n => !n.atHead), 'one at the head and one at the tail');
+
+  // it stands off the stop by the gap it was given, along the track
+  const head = ns.find(n => n.atHead);
+  const tail = ns.find(n => !n.atHead);
+  const dHead = Math.hypot(head.x - A.x, head.y - A.y);
+  const dTail = Math.hypot(tail.x - C.x, tail.y - C.y);
+  eq(Math.round(dHead), Math.round(INK.stationR + GAP), 'the head nub stands off by the stop radius plus the gap');
+  ok(tail.x > C.x, 'and the tail nub points on past the last stop, away from the line');
+  ok(head.x < A.x, 'while the head nub points the other way');
+  eq(Math.round(dTail), Math.round(INK.stationR + GAP), 'both at the same stand-off');
+
+  // the gap is a parameter because it is a SCREEN measurement — a bigger gap
+  // must actually move the nub, or the phone fix does nothing
+  const wide = nubs(g.net, g.world, GAP * 3).find(n => n.atHead);
+  ok(Math.hypot(wide.x - A.x, wide.y - A.y) > dHead + GAP, 'a larger gap pushes the nub further out');
+
+  // a loop has no ends, so it has nothing to grab
+  const D = add('cross', 400, 600);
+  g.net.rebuild();
+  g.net.extend(line, D.id, false);
+  g.net.extend(line, A.id, false);
+  ok(line.loop, 'the line is a loop');
+  eq(nubs(g.net, g.world, GAP).length, 0, 'and a loop offers no nub — you unwrap it first');
+}
+
+{
+  // deleting: one continuous pull down the line takes the whole thing, and
+  // hands back everything it was holding
+  const { g, add } = bench();
+  const A = add('circle', 100, 100), B = add('triangle', 300, 100), C = add('square', 500, 100);
+  g.net.rebuild();
+  const line = g.net.open(A.id, B.id).line;
+  g.net.extend(line, C.id, false);
+  const colour = line.colour;
+  eq(g.net.spareTrains, 2, 'the line took a train out of the shed');
+
+  g.net.retract(line, false);
+  eq(line.stations.length, 2, 'one pull takes one stop');
+  const gone = g.net.retract(line, false);
+  ok(gone.removed, 'the next pull removes the line itself');
+  eq(g.net.lines.length, 0, 'so nothing is left drawn');
+  eq(g.net.spareTrains, 3, 'the train goes back to the shed');
+  eq(g.net.freeColour(), colour, 'and the colour goes back on the peg');
 }
 
 // ── the run ─────────────────────────────────────────────────────────────

@@ -6,9 +6,9 @@
 // a festival, a ten-minute delivery contract and the endless city are the same
 // code reading different data.
 
-import { World } from './world.js?v=3';
-import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=3';
-import { byId, validate, GOALS } from './missions.js?v=3';
+import { World } from './world.js?v=4';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=4';
+import { byId, validate, GOALS } from './missions.js?v=4';
 
 export class Game {
   constructor(seed = 1, missionId = 'endless') { this.reset(seed, missionId); }

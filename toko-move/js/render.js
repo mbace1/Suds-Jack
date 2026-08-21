@@ -5,9 +5,9 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK } from './palette.js?v=3';
-import { BOARD } from './world.js?v=3';
-import { drawShape, tracePath } from './shapes.js?v=3';
+import { PAL, INK } from './palette.js?v=4';
+import { BOARD } from './world.js?v=4';
+import { drawShape, tracePath } from './shapes.js?v=4';
 
 export class Renderer {
   constructor(canvas) {
@@ -63,6 +63,7 @@ export class Renderer {
     this.grainWash(ctx);
 
     for (const line of game.net.lines) this.line(line);
+    if (view.nubs) this.nubs(view.nubs, view.nubR);
     if (view.drag) this.ghost(view.drag);
     for (const line of game.net.lines) for (const t of line.trains) this.train(t, line);
     for (const st of game.world.stations) this.station(st, view);
@@ -126,6 +127,23 @@ export class Renderer {
         ctx.lineTo(g.x + nx * INK.line * 0.62, g.y + ny * INK.line * 0.62);
         ctx.stroke();
       }
+    }
+  }
+
+  // The grab handle at each terminus. It was an invisible hotspot until
+  // somebody asked how to delete a line — a gesture with nothing to aim at is a
+  // gesture nobody finds. Drawn on top of the track, with a paper gap so it
+  // reads as a separate thing to take hold of rather than a blob on the end.
+  nubs(list, r) {
+    const ctx = this.ctx;
+    for (const n of list) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = PAL.paper;
+      ctx.fill();
+      ctx.strokeStyle = PAL.lines[n.line.colour];
+      ctx.lineWidth = Math.max(2, r * 0.45);
+      ctx.stroke();
     }
   }
 

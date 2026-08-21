@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=3';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=3';
-import { Renderer } from './render.js?v=3';
-import { LineDrawer } from './input.js?v=3';
-import { Kit } from './audio.js?v=3';
-import { PAL } from './palette.js?v=3';
+import { Game } from './sim.js?v=4';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=4';
+import { Renderer } from './render.js?v=4';
+import { LineDrawer } from './input.js?v=4';
+import { Kit } from './audio.js?v=4';
+import { PAL } from './palette.js?v=4';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -306,5 +306,16 @@ window.__tm = {
     return { x: r.left + renderer.ox + bx * renderer.scale, y: r.top + renderer.oy + by * renderer.scale };
   },
   missions: MISSIONS,
+  // the gate measures TAP TARGETS off these; a test that recomputes where the
+  // nub is can agree with itself while disagreeing with the game
+  get touch() {
+    return {
+      scale: renderer.scale,
+      nubs: drawer.nubs(),
+      nubHitPx: drawer.nubHit * 2 * renderer.scale,
+      stationHitPx: drawer.stationHit * 2 * renderer.scale,
+      nubDrawPx: (drawer.view().nubR || 0) * renderer.scale,
+    };
+  },
   debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId },
 };

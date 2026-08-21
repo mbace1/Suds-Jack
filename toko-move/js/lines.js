@@ -10,8 +10,8 @@
 // the next stop is closer to their shape than this one, and gets off when it
 // is not. Riding past your transfer is impossible by construction.
 
-import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=3';
-import { PAL, INK } from './palette.js?v=3';
+import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=4';
+import { PAL, INK } from './palette.js?v=4';
 
 export const TRAIN_SPEED = 108;      // board units per second
 export const CAR_CAPACITY = 6;
@@ -136,6 +136,34 @@ export class Line {
 // Seven, because that is how many line colours the palette can keep apart.
 // A cap that is not tied to the thing that actually limits it drifts.
 export const MAX_LINES = PAL.lines.length;
+
+// Where every terminus stub sits, in board units. Lives here rather than in
+// input.js because it is a fact about the network's shape, and BOTH the
+// renderer and the input layer need it — a renderer reaching into the input
+// layer to find out where to draw would be backwards.
+//
+// `gap` is passed in rather than fixed, because how far the nub stands off the
+// stop is a screen measurement (see TOUCH in palette.js) and this file has no
+// business knowing the zoom.
+export function nubs(net, world, gap) {
+  const out = [];
+  for (const line of net.lines) {
+    if (line.loop || line.stations.length < 2) continue;
+    for (const atHead of [true, false]) {
+      const endId = atHead ? line.head : line.tail;
+      const end = world.station(endId);
+      const seg = atHead ? line.segs[0] : line.segs[line.segs.length - 1];
+      if (!end || !seg) continue;
+      const pts = seg.pts;
+      const [a, b] = atHead ? [pts[1], pts[0]] : [pts[pts.length - 2], pts[pts.length - 1]];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const r = (end.special ? INK.specialR : INK.stationR) + gap;
+      out.push({ line, atHead, x: end.x + (dx / len) * r, y: end.y + (dy / len) * r });
+    }
+  }
+  return out;
+}
 
 export class Network {
   constructor(world, resources = {}) {
