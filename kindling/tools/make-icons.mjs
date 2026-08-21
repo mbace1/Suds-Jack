@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, '..');
 
-// the app's own colours (kindling/js/palette.js), stated once
+// the app's own colours (kindling/art-src/palette.js), stated once
 const C = {
   bg: [15, 11, 8],
   stone: [110, 92, 72],

@@ -151,7 +151,7 @@ node kindling/tools/cut.mjs slice cut/sheet.png cut/cells 40
 node kindling/tools/cut.mjs check cut/ --cell 40
 ```
 
-`fit` reads the palette straight out of `kindling/js/palette.js`, so a generated
+`fit` reads the palette straight out of `kindling/art-src/palette.js`, so a generated
 sheet and a code-drawn element cannot end up disagreeing about what colour the
 stone is. It also forces alpha **binary**: a half-transparent pixel in a 40px
 sprite is a smudge, not an edge.

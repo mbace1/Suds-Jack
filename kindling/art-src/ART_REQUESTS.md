@@ -59,7 +59,7 @@ slice and a sheet I can only look at.
    sources at **1:1** for that grid. If a 4× review copy is wanted alongside,
    scale it **nearest-neighbour only** — never smooth.
 7. **A limited palette, shared across the whole set.** The colours already
-   measured off the references are in `kindling/js/palette.js`; matching them
+   measured off the references are in `kindling/art-src/palette.js`; matching them
    keeps a cut asset and a code-drawn one in the same world.
 8. **No text in any asset.** The game is heading for fi / en / ja and text baked
    into a sprite cannot be translated.
