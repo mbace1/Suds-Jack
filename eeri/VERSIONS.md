@@ -54,9 +54,13 @@ Two bugs found by the gate, both mine:
 
 Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · **inspector 26/0** — including
 placing a forklift and requiring it to actually arrive (5 meshes), because a
-dropdown entry that adds a row nobody draws is not "placeable". Smoke and
-playthrough are running; their numbers are deliberately left blank rather than
-claimed. Tokens 46 -> 47, manifest 33 -> 34.
+dropdown entry that adds a row nobody draws is not "placeable" · **smoke
+437/0**, whose new line reads *"every shelf model actually loads (13 on the
+shelf)"* · **playthrough 25/0**. Tokens 46 -> 47, manifest 33 -> 34.
+
+The fps scaling from v15.39 held through all of it — this run measured
+`waits ×3.78` — so for the first time today a red check would have meant
+something.
 
 ## v15.39 — 2026-08-21 — the gates were measuring the machine, not the game
 
