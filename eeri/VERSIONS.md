@@ -1,5 +1,56 @@
 # EERI — versions
 
+## v15.39 — 2026-08-21 — the gates were measuring the machine, not the game
+
+**A day of false failures, and none of them were in the game.**
+
+Smoke went 434/0, then 8, then 16, then 11 failures on trees that differed by
+one dressing module. The playthrough went 25/0 five times, then 3, then 7. I
+suspected my own change, then blamed timing, then bisected against the last
+known-good commit — **and it failed the same way**: `LEVEL 7 can be finished ->
+got to x=93 of 92`. The sandbox had got roughly four times slower over the
+session. The budgets had not moved.
+
+**Boot time is a bad proxy for frame rate.** `smoke.cjs` scaled every wait by
+`boot / BOOT_BASELINE`. Four runs of the same tree booted in 442, 597, 658 and
+998 ms — a 2x spread — and **every one of them clamped to the 1.5x floor**
+while the machine ran 4x slower. It now measures frames per second directly
+over 2 s of rAF and scales from that, against the 14 fps this suite was tuned
+at when it was green. The ceiling goes 8 -> 12, because this sandbox has been
+seen under 3 fps and 8 would have clamped that away too.
+
+**Wall clock is the wrong budget for the bot.** `playthrough.cjs` gave each
+level 300 seconds, which means something different on every machine. Frames are
+the honest unit here because the game is *stepped* in frames: `main.js`
+advances on `Math.min(getDelta(), 0.033)`, so below 30 fps the simulation slows
+exactly in step with the renderer and a frame is a fixed quantum of progress
+however long it took to draw. 9000 frames is ~150 s of game time at 60 fps and
+~300 s at this sandbox's best — the same amount of GAME either way. The
+millisecond figure survives only as a deadlock guard for rAF stopping entirely.
+The bot's action cooldowns move to frames with it; the jump stays on `q.t`, the
+game's own clock, because a jump's length is a property of the game rather than
+of the harness.
+
+**This is the change written at v15.30 and dropped.** Dropping it was correct —
+its premise there was that the gate had run out of budget, and the real bug was
+a fixed 1200 ms wait. But the observation underneath it was right, it went out
+with the fix, and it came back as most of a day spent bisecting a clean tree
+for a regression that was never in it. The lesson is narrower than "keep every
+idea": when a fix is dropped because its *premise* was wrong, the *observation*
+that motivated it still needs somewhere to live.
+
+**And one self-inflicted delay.** The first attempt at this put back-ticks in a
+comment **inside the BOT template literal**, which ends the string and stops
+the file parsing — the same trap `CLAUDE.md` records for `toko/js/chat.js`'s
+CSS block. The comment now says so, and the edit that fixed it asserts no
+back-tick survives inside that literal.
+
+`test/**` is Design/Level's; declared cross-lane touch, both files.
+
+Gates: **playthrough 25/0** on the same machine that had been failing six of
+twelve — twelve levels, no stalls, no ride losses. Smoke is re-running with the
+fps scaling; its number is deliberately left blank rather than claimed.
+
 ## v15.38 — 2026-08-21 — the editor can PLACE, not just move
 
 Step 4. Owner's spec: a menu upper-left with layers, a dropdown of assets per

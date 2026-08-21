@@ -39,9 +39,14 @@ const BOT = `async ({ frameBudget, hardCapMs }) => {
   const sleep = (m) => new Promise((r) => setTimeout(r, m));
   const t0 = Date.now();
   const startSite = E.site();
-  // `act` counts FRAMES now, like the budget. Starts negative so the first
+  // NO BACK-TICKS IN THIS COMMENT, and that is not a style note: everything
+  // from here to the closing brace lives inside the BOT template literal, so a
+  // back-tick ends the string and the file stops parsing. Same trap CLAUDE.md
+  // records for toko/js/chat.js's CSS block.
+  //
+  // act counts FRAMES now, like the budget. It starts negative so the first
   // action fires immediately rather than waiting out a cooldown that has not
-  // happened yet. `jT` deliberately stays on `q.t` — the game's own clock —
+  // happened yet. jT deliberately stays on q.t — the game's own clock —
   // because a jump's length is a property of the game, not of the harness.
   let best = -Infinity, stuck = 0, jumping = false, jT = 0, act = -999;
   const log = [];
