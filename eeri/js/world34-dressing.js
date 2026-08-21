@@ -492,7 +492,7 @@ async function rowsFor(site) {
   if (sheets.has(site)) return sheets.get(site);
   let rows = null;
   try {
-    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=39`, import.meta.url);
+    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=40`, import.meta.url);
     const res = await fetch(url);
     if (res.ok) {
       const j = await res.json();

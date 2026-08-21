@@ -1,5 +1,50 @@
 # EERI — versions
 
+## v15.35 — 2026-08-20 — the lanes use the mipmaps they were already paying for
+
+`assets.js` loaded every layer texture with `minFilter = LinearFilter` and left
+`generateMipmaps` at its default of `true`. So the mip chain was **built for
+every lane — about a third more texture memory — and then never sampled**,
+because `LinearFilter` does not read it. That is the worst of both, and it is
+now `LinearMipmapLinearFilter` with `anisotropy = 4` to match the detail maps.
+The painted canvas lanes in `layers.js` had the same pair and get the same fix.
+
+**What I can and cannot claim.** The change is free — the memory was already
+spent — and it can only help a minified lane. What I could NOT do is show it in
+a picture, and the attempt is worth recording because it failed the same way
+four earlier measurements in this session failed.
+
+Toggling `minFilter` live in one page (so the camera cannot drift) and diffing
+full frames returned:
+
+```
+mip vs no-mip : 75.47% of pixels differ (mean 60.82)
+mip vs mip    : 79.86% of pixels differ (mean 63.97)   <- frame noise
+```
+
+**The noise floor is HIGHER than the effect.** Bolts spin, the kid breathes,
+the lamps flicker; nothing in this scene holds still, so a full-frame diff
+measures the animation. Printing the noise beside the effect is the only reason
+that is visible rather than being written up as "a 75% improvement".
+
+Two further reasons a still was never going to settle it. The close lanes were
+retiled to ~73 px/unit at v15.33 specifically so they are near 1:1 at the
+camera's framing, and **a texture drawn at 1:1 does not use its mip chain at
+all** — the gain is concentrated in the far and skyline lanes, which are the
+softest things on screen anyway. And aliasing is a **motion** artefact: crawl
+along an edge is invisible in a frozen frame by definition, and this sandbox
+renders at ~3 fps through SwiftShader, so there is no motion to look at either.
+
+`CLAUDE.md` already names the right instrument for this class of question —
+Toko Drop's `scripts/enemy-loop.mjs` records GIF loops from the real game code,
+"against captured MOTION, not against stills or state assertions, because the
+smoke gates certify *works* and prototype-feel lives entirely in the part they
+cannot see". Eeri has no equivalent yet. Until it does, this change ships on
+the grounds that it is correct and costs nothing, not on the grounds that it
+was seen to help.
+
+Tokens 39 -> 40.
+
 ## v15.34 — 2026-08-20 — the lamps light something
 
 Step 3 of the editor plan. The owner's two constraints pull against each other

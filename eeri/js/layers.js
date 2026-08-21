@@ -23,9 +23,9 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=39';
-import { getLayerTexture } from './assets.js?v=39';
-import { buildPipeworksDressing } from './world2-dressing.js?v=39';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=40';
+import { getLayerTexture } from './assets.js?v=40';
+import { buildPipeworksDressing } from './world2-dressing.js?v=40';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -107,7 +107,11 @@ function paintCanvas({ x0, x1, y0, y1, draw, tint }) {
   draw(g, T);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.minFilter = THREE.LinearFilter;
+  // same reasoning as the loaded lanes in assets.js: this canvas is painted at
+  // up to 4096 across and drawn much smaller, so it needs the mip chain it was
+  // already generating.
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.anisotropy = 4;
   return tex;
 }
 

@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=39';
+import { PAL } from './palette.js?v=40';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -270,7 +270,20 @@ export async function getLayerTexture(world, layer) {
     const texs = await Promise.all(files.map(async (f) => {
       const tex = await new THREE.TextureLoader().loadAsync(new URL(f + '?v=' + manifest.v, BASE).href);
       tex.colorSpace = THREE.SRGBColorSpace;
-      tex.minFilter = THREE.LinearFilter;
+      // MIPMAPS, AND THEY WERE ALREADY BEING PAID FOR. A lane is a 4096-wide
+      // painting drawn at a fraction of its size, and minifying without a mip
+      // chain samples one texel per pixel: the result crunches, and every edge
+      // in it crawls as the camera moves. That is most of what "the art looks
+      // rugged" was.
+      // `generateMipmaps` defaults to true, so the chain was being BUILT for
+      // every layer — a third more texture memory — and then never sampled,
+      // because `LinearFilter` does not read it. The worst of both.
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      // and a lane is seen at a glancing angle nowhere, but it IS minified
+      // hard along x, which is exactly what anisotropy is for. 4 to match the
+      // detail maps rather than the device max: a number the whole project
+      // shares beats a number that changes per GPU.
+      tex.anisotropy = 4;
       return tex;
     }));
     return texs;
