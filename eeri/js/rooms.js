@@ -30,10 +30,10 @@
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
-  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe,
+  girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, shallow, deep, pipe,
   bucketBot, hoist,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=38';
+} from './parts.js?v=41';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -68,6 +68,7 @@ export const ROOMS = [
       boltRun(8, 31, 35),
       boltRun(9, 32, 34),
       golden(9, [33]),                    // one jump off that deck
+      blueprint(9, 35),                   // world 1's, on the same deck
       hopper(33, 38),
       boltRun(5, 36, 38),
       hopper(42, 46),
@@ -99,7 +100,14 @@ export const ROOMS = [
       boltRun(5, 64, 69),
       boltRun(6, 64, 69),
       boltRun(5, 70, 73),
-      robot(74, 80),
+      // PAST THE BANK, not before it. This skitter patrolled 74…80, which is
+      // squarely inside the excavator's run from its park at 63 to the bank at
+      // 84 — and a hit takes the RIDE, so it ended the ride on the way to the
+      // ride's own job. That is the exact bug the note above records for the
+      // wrecking ball, left standing for a robot; the prover asked about balls
+      // and vents in that corridor and never about small machines. It does
+      // now. Here it is the last thing between the dug bank and the flag.
+      robot(89, 92),
       boltRun(5, 74, 79),
       boltRun(6, 81, 83),
 
@@ -236,7 +244,9 @@ export const ROOMS = [
       // you unmanned is the ball you swing at the wall once the cab is
       // yours: the room's one new object is a whole verb.
       machine('crane', 66, [34, 92]),
-      roller(70, 76),
+      // …and the same fix on this level: 70…76 sat inside the crane's run from
+      // 66 to the wall at 80.
+      roller(85, 91),
       boltRun(5, 68, 75),
       boltRun(6, 68, 75),
       golden(6, [78]),
@@ -343,12 +353,18 @@ export const ROOMS = [
       // mouth lands on a deck with a ladder down, so the pipe never traps.
       boltRun(5, 23, 30),
       boltRun(6, 23, 30),
+      // A HOPPER between the first two pipes: fifteen tiles of flat floor sat
+      // between them. It was a step first, and the prover caught that a step
+      // here buries the bolt trail running over it at head height — the floor
+      // rises into the row. A hopper asks the same beat and moves nothing.
+      hopper(18, 22),
       pipe({ c: 27, cy: GROUND }, { c: 34, cy: 8 }),
       ledge(32, 38, 7),
       ...scaffold(38, 42, 7),
       boltRun(9, 32, 42),
       boltRun(10, 34, 38),
       golden(10, [35]),
+      blueprint(10, 37),                  // world 2's, up on the pipe shelf
       checkpoint(44),
 
       // ── 3 · COMBINE ── use the tube as an obvious alternate crossing of
@@ -372,6 +388,11 @@ export const ROOMS = [
       chasm(71, 78),
       boltRun(5, 81, 84),
       golden(7, [84]),
+      // THE LAST PIPE. Past the chasm this level asked nothing for 22 tiles —
+      // the longest hole in the game — and a run home with nothing in it is
+      // where a six-year-old puts the controller down. It is the level's own
+      // verb rather than a new one: the pipe that carries you to the flag.
+      pipe({ c: 82, cy: GROUND }, { c: 90, cy: GROUND }),
       flagAt(93),
 
       shot(10, 30, { z: 38, y: 3.0 }),

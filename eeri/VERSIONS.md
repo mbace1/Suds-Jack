@@ -1,5 +1,166 @@
 # EERI — versions
 
+## v15.36 — 2026-08-21 — five playtest notes, and two of them were one-word bugs
+
+Everything here came off the owner playing it, and the two worst-looking
+problems turned out to be a wrong string and an unstopped animation.
+
+**"Riding a machine looks wrong, should be sitting in the right spot."**
+`eeri_v5.glb` ships fifteen clips and one of them is **`sit`**. `CLIP_FOR`
+asked for **`ride`**, which is not a name in the file, so `play()` fell back to
+`idle` — a STANDING pose — and the kid has ridden every machine in this game
+standing on it. The seat was never the problem: the game was asking for the
+wrong animation. He also sat 0.2 too low once the right clip played, with his
+shoulders inside the cowl; ART_BRIEF §1.2 forbids the rider being swallowed by
+the mount, so he is lifted clear.
+
+**"Animations can get stuck while climbing."** A one-shot plays with
+`clampWhenFinished`, so when it ends it HOLDS its last frame — at effective
+weight 1, for ever, because nothing ever stopped it. `current` was then nulled,
+which killed the crossfade that would have weighted it down. So the state clip
+came back blended 50/50 with a frozen `climbon` and he climbed in a pose that
+was half of each. Every one-shot did it: stomp, hurt, teeter, both idle breaks.
+Stopping the action is the entire fix.
+
+**"Climbing clips and isn't as attached to the ladder as it could."** Two
+things. The rungs are drawn at z 0.35 — in front of the wall they are bolted
+to — and the kid was at z 0, so he climbed BEHIND them and the rails cut across
+his body. He rides at z 0.62 while climbing now, eased so stepping on and off
+is not a jump in depth. And he was only within half a tile of the ladder's
+centre, which looks like holding air beside it; `level.ladderAt()` gives the
+column and the climb pins him to it.
+
+**"Some foreground assets block view of ladders."** The fore lane fades to 0.24
+while climbing and eases back. A climb is the one move that parks you behind
+that strip for seconds while standing still — everywhere else you are moving
+and a beat of occlusion is depth rather than a problem. It fades rather than
+being cut, because a hole punched per ladder is a second set of coordinates to
+keep in step with the levels, and this repo has written down what happens when
+one number lives in two files.
+
+**"Animations in general very minute, so don't communicate actions well."** The
+clips are the art lane's to re-author; what this lane can add is the secondary
+motion, and it is the part that carries a read at 40 px tall. **`walk` was in
+the file and unused** — at a stroll the run clip reads as a mime of running, so
+there is a walk under 3.4 now and the clip rate follows the real speed inside
+each band. On top: a **lean** into the run proportional to speed (a body that
+leans is moving; one that stays upright is being slid along) and a **stretch**
+going up to match the squash that already existed on landing.
+
+Gates: rooms 246, fx 31, dev-menu 36, smoke 433.
+
+## v15.35 — 2026-08-21 — the excavator does the digging, and blueprints exist
+
+**The dig was a timer, not a move** (owner: "takes a long time to push up and
+down for the block to disappear with very little indicators… it doesn't look
+like an excavator at work"). All three complaints were the same line of code.
+
+You drove the boom down yourself — with the SAME button that digs — held it,
+and 0.7 s later a row of the bank vanished. Three rows meant wrangling a
+control and then two seconds of a still arm while a number counted. Nothing on
+screen was digging.
+
+Now holding the verb runs a **stroke**, and the machine drives its own arm:
+reach out and open, plunge into the cut, **curl the bucket through it — the
+bite lands there**, which is where a bucket actually takes earth — then lift
+and swing back out, repeating while held. 0.46 s a bucketful, so a three-row
+bank is under a second and a half of continuous digging.
+
+Three things it fixes at once:
+
+* **the fiddle is gone** — `canDig` no longer asks the boom to be below 0.3.
+  Park beside the bank and hold; the arm is the machine's business. That
+  control was the first thing the game asked a six-year-old to solve before it
+  would let him dig.
+* **the bank says it is diggable** before you press anything: in range it
+  lifts and breathes (`Bank.arm()`). A thing you can act on has to look
+  different from a thing you cannot, and nothing said which was which until
+  the first row had already gone.
+* **it throws twice the dirt** (12 clods a bite against 6, pool 18 → 26) and
+  the screen punch is bigger on the last row than the middle ones, so the
+  bank coming down has an ending.
+
+**Blueprints are collectables now** (owner: "blueprints can just be
+collectables for now, we can add a secret art and gallery later"). One per
+world — a rolled sheet with a band, unmistakably not a bolt at 32 px — held to
+the same two rules as a golden bolt: reachable, and never on the walking line,
+because one per WORLD should be worth a climb. The count only appears on the
+HUD once you have one: a 0/4 from the first second is a chore printed on the
+screen. World 4's first placement sat 1 tile off the deck and the prover said
+so.
+
+Also recorded: **DESIGN §8.4** — the Flattener (world 1's second machine: a
+roller that flattens a mangled aluminium sheet by DRIVING over it, which is the
+first machine job in this game done by going somewhere rather than by holding a
+button at a target) and six easy puzzles for the machines that already exist.
+
+Gates: rooms 246, fx 31, dev-menu 36, smoke 433.
+
+## v15.34 — 2026-08-20 — half the levels were never proved, and it showed
+
+A pass aimed at the build being worth playing rather than at it having more in
+it, and it starts with a hole in the gates.
+
+**The room prover covered six of twelve levels and reported green.**
+`js/world34-register.js` pushes worlds 3 and 4 onto the roster at RUNTIME, and
+`test/rooms.mjs` imported the static list — so half the game had no reach
+budget check, no "is about ONE thing", no bolt or checkpoint rule and no pacing
+figure. The prover takes the same roster the game does now: **147 checks became
+245**, and the six new levels passed every existing rule.
+
+They passed while being **half as dense as the six that had been measured**:
+
+| | asks per 10 tiles | longest stretch asking nothing | enemies | hazards |
+|---|---|---|---|---|
+| worlds 1-2 | 1.0 - 1.9 | 10.5 - 14 tiles | 2 - 4 | 1 each |
+| worlds 3-4 | 0.7 - 0.9 | **18.5 - 21 tiles** | 1 | **0** |
+
+Every world-3/4 level had a twenty-tile hole in the same place — between its
+second beat and its checkpoint — and nothing in the suite objected. A gate that
+certifies WORKS cannot see DULL, which this repo has now recorded three times.
+
+**`deadAir()` is the rule that closes it.** It walks a level and finds the
+longest run of tiles between one thing that ASKS something of you and the next
+— a step, a gap, a small machine, a hazard, a gizmo, water, a ladder, a pipe
+mouth, the ride. **Bolts are not asks**: a trail is a breadcrumb collected by
+running, so a stretch with bolts and nothing else is still a stretch of holding
+right. The floor is **15 tiles**, taken from the levels that already play
+rather than invented — worlds 1-2 measure 12-14.
+
+Seven levels failed it. All twelve pass now, and worlds 3-4 read 12.5-14.5
+against the front half's 10.5-14.
+
+**Filling holes may not make the game harder.** Age six, generous: the beats
+added are things to play with before things that hurt — three tarp bounces, a
+belt that helps, a last pipe that carries you to the flag, one hopper between
+two pipes — and only then the enemies and the **two steam vents that give
+worlds 3 and 4 the first telegraphed hazards they have ever had**. Until now
+the back half of the game had no beat you wait for, only beats you run at.
+
+**Then the new rule found two defects in the levels that have shipped all
+along.** A skitter in Level 1 patrolled 74…80 and a roller in Level 3 patrolled
+70…76 — both squarely inside their machine's run from its park to the job it
+clears. A hit takes the RIDE, so both ended the ride on the way to the thing
+the ride exists for. Level 1's own source comment records moving the WRECKING
+BALL out of that exact corridor for that exact reason; a robot was left
+standing in it, because the prover asked about balls and vents there and never
+about small machines. It asks now, and both robots moved past the job.
+
+**And the rule itself was wrong first, in a way that produced the bug.** The
+first cut counted the stretch from a machine to its job as empty — sixteen
+tiles of nothing — so it demanded a beat there, and a beat there is exactly an
+enemy between a machine and its job. The playthrough caught what that did on
+Level 10 (the bot reached x=93 of 92 and never cleared). The drive is not dead
+air: you are riding through it, and that span counts as occupied.
+
+**Two more defects the prover caught mid-authoring**, both of which would otherwise
+have shipped: a tarp under a shelf that **bounces you into the ceiling**, and a
+step under a bolt trail that **buries the trail in the floor it raises**. Also
+found: one edit landed twice on Level 10 because its anchor text was not unique
+to it, putting a tarp inside a belt — the level's own report is what showed it.
+
+Recorded in DESIGN §8.3.
+
 ## v15.33 — 2026-08-20 — the golden bolts build the world's building
 
 DESIGN §4.3, which has been written down since 2026-08-14 and absent from the

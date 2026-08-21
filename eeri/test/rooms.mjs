@@ -12,7 +12,18 @@
 //
 // Run: node eeri/test/rooms.mjs
 
-import { ROOMS, LAB } from '../js/rooms.js?v=3';
+import { ROOMS as W12, LAB } from '../js/rooms.js?v=3';
+// WORLDS 3 AND 4 WERE NEVER PROVED. `js/world34-register.js` pushes them onto
+// the roster at RUNTIME, so this file — which imported the static list — was
+// checking six of twelve levels and reporting green. Half the game had no
+// reach budget check, no "is about ONE thing", no bolt or checkpoint rule and
+// no pacing figure, and it showed: measured, those six carry half the asks
+// per tile of the six that were being measured, and every one of them has a
+// 20-tile stretch where nothing asks anything.
+//
+// The prover takes the same roster the game does now.
+import { WORLD34_ROOMS } from '../js/world34-rooms.js?v=3';
+const ROOMS = [...W12, ...WORLD34_ROOMS];
 import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
@@ -20,6 +31,7 @@ import {
   swingBall, hazard, shallow, deep, pipe, flooded, machine as mach, hoist,
 } from '../js/parts.js?v=4';
 import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=15';
+import { deadAir, DEAD_AIR, compile } from '../js/parts.js?v=3';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
 // below would fail on the count alone and say nothing about what they are
@@ -125,6 +137,14 @@ for (const room of ROOMS) {
   const e = estimate(room);
   console.log(`       ${e.total.toFixed(0)}s learned · ${Math.round(e.onFoot * 100)}% on foot · `
     + `ride ${e.parts.ride.toFixed(0)}s · run ${e.parts.run.toFixed(0)}s`);
+  // …and it has to keep ASKING. The longest stretch with nothing to do is the
+  // one number that separates a level from a corridor, and every other rule
+  // in the suite was blind to it.
+  {
+    const d = deadAir(room);
+    ok(`${room.name}: never goes ${DEAD_AIR}+ tiles without asking anything `
+      + `(worst ${d.worst} at x=${d.where}, ${d.asks} asks)`, d.worst < DEAD_AIR);
+  }
   ok(`${room.name}: is a level, not a landscape (${e.total.toFixed(0)}s learned)`,
     e.total > 20 && e.total < 120);
   ok(`${room.name}: the platformer is the spine (${Math.round(e.onFoot * 100)}% on foot)`,
@@ -166,6 +186,22 @@ for (const room of ROOMS) {
 // makes #eeri-2-1 a link somebody can hold today.
 {
   console.log('\nthe address:');
+  // ONE BLUEPRINT PER WORLD (DESIGN §4.2). Not per level — the count is the
+  // whole point of it, and a second one in a world would make "one per world"
+  // a sentence in a document rather than a fact about the game.
+  {
+    const per = {};
+    ROOMS.forEach((room, i) => {
+      const w = Math.floor(i / 3);
+      if (compile(room).blueprint) per[w] = (per[w] || 0) + 1;
+    });
+    const worlds = Math.ceil(ROOMS.length / 3);
+    const wrong = [];
+    for (let w = 0; w < worlds; w++) if ((per[w] || 0) !== 1) wrong.push(`world ${w + 1} has ${per[w] || 0}`);
+    ok(`every world hides exactly one blueprint${wrong.length ? ' — ' + wrong.join(', ') : ''}`,
+      wrong.length === 0);
+  }
+
   ok('EERI 1-1 is the first level', slugOf(0, ROOMS.length) === 'eeri-1-1');
   ok('EERI 1-2 is the second level of world one', slugOf(1, ROOMS.length) === 'eeri-1-2');
   ok('EERI 2-1 is the first level of world two', slugOf(3, 12) === 'eeri-2-1');

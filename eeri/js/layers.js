@@ -23,9 +23,9 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=38';
-import { getLayerTexture } from './assets.js?v=38';
-import { buildPipeworksDressing } from './world2-dressing.js?v=38';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=41';
+import { getLayerTexture } from './assets.js?v=41';
+import { buildPipeworksDressing } from './world2-dressing.js?v=41';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -615,6 +615,7 @@ function backgroundEvents(scene) {
 // live PNG first and paints its placeholder if there is none.
 export async function buildLayers(scene, world = 'groundworks', reduced = false) {
   const mounted = [];
+  const foreMeshes = [];   // …kept apart, so the foreground can get out of the way
   // the sky is a layer like any other now — the crafted paper sky ships as a
   // PNG through the same seam, and drawSky stays as its code placeholder
   const liveSky = await getLayerTexture(world, 'sky');
@@ -627,13 +628,31 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
     // a world paints ITSELF when it has its own set; everything without one
     // still falls back to the site, which is what worlds 1 and 2 want
     const set = world === 'grove' ? GROVE_DRAW : PLACEHOLDER_DRAW;
-    mounted.push(...mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] }),
-      `${world}/${name}${live ? '' : ' (painted)'}`));
+    const planes = mountLayer(scene, rect, live || paintCanvas({ ...rect, ...set[name] }),
+      `${world}/${name}${live ? '' : ' (painted)'}`);
+    mounted.push(...planes);
+    if (name === 'fore') foreMeshes.push(...planes);
   }
   const events = backgroundEvents(scene);
   const dressing = world === 'pipeworks' ? buildPipeworksDressing(scene) : null;
   return {
     world,
+    // THE FOREGROUND GETS OUT OF THE WAY (owner, 2026-08-21: "some foreground
+    // assets block view of ladders"). The fore lane is a full-width painted
+    // strip and a climb is the one move that puts the player behind it for
+    // seconds at a time, standing still — everywhere else you are moving and
+    // a beat of occlusion is depth rather than a problem.
+    //
+    // So it fades rather than being cut: a hole punched in the art per ladder
+    // would be a second set of coordinates to keep in step with the levels,
+    // and this repo has written down what happens when one number lives in
+    // two files. Eased, because a foreground that snaps is a glitch.
+    fore: (k) => {
+      for (const m of foreMeshes) {
+        m.material.transparent = true;
+        m.material.opacity += (k - m.material.opacity) * 0.14;
+      }
+    },
     update: (dt) => { if (!reduced) events.update(dt); },
     positions: () => events.positions(),
     // A WORLD IS A SET OF LAYERS, and until World 2 had levels there was

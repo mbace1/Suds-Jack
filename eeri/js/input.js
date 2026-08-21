@@ -10,8 +10,8 @@
 // The poll only ever acts on EDGES of its own previous state, so a pad
 // being idle never clobbers a key being held, and the three paths coexist.
 
-import { art } from './glyphs.js?v=38';
-import { t } from './lang.js?v=38';
+import { art } from './glyphs.js?v=41';
+import { t } from './lang.js?v=41';
 
 // which string names each control, for the accessible name on its button
 const CTL_KEY = {
