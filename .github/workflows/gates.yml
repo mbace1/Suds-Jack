@@ -140,6 +140,16 @@ jobs:
         working-directory: piritori/godot
         run: godot --headless --path . res://tests/test_spine.tscn
 
+      # The web export has no operating system to ask for a Japanese face, so
+      # the glyphs ship with the game. This asserts the committed subset still
+      # covers every string in the locale CSVs and every symbol drawn from code
+      # - it downloads nothing, it only reads the fonts already in the tree.
+      - name: the bundled font subset covers every string
+        working-directory: piritori/godot
+        run: |
+          python3 -m pip install --quiet fonttools
+          python3 tools/build-font-subset.py --check
+
       - name: en / fi / ja resolve at runtime, with CJK glyphs
         working-directory: piritori/godot
         run: godot --headless --path . res://tests/test_locale.tscn
