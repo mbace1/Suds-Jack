@@ -70,9 +70,8 @@ dominant tones and was unstable — two identical captures read 32.97% and
 noise means something in the band still moves; the effect clears it by 7.7x, so
 the conclusion holds, but the floor is not zero and is not claimed to be.
 
-Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0. Smoke and playthrough were still
-running at commit time; their numbers are deliberately left blank rather than
-claimed ahead of the runs. Tokens 42 -> 43.
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · **smoke 434/0** ·
+**playthrough 25/0**, twelve levels, no stalls, no ride losses. Tokens 42 -> 43.
 
 ## v15.36 — 2026-08-21 — Eeri is the size the references make him
 
