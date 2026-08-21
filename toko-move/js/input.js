@@ -15,9 +15,9 @@
 // shrink with the window — the nub was 46px on a desktop and 17px on a phone,
 // which meant a line could not be shortened or deleted by thumb at all.
 
-import { legPoints } from './geometry.js?v=4';
-import { TOUCH } from './palette.js?v=4';
-import { nubs } from './lines.js?v=4';
+import { legPoints } from './geometry.js?v=5';
+import { TOUCH, sizeAt } from './palette.js?v=5';
+import { nubs } from './lines.js?v=5';
 
 export class LineDrawer {
   constructor(canvas, renderer, game, opts = {}) {
@@ -53,7 +53,8 @@ export class LineDrawer {
   get nubHit() { return (TOUCH.nubHitPx / 2) * this.unit; }
   get stationHit() { return (TOUCH.stationHitPx / 2) * this.unit; }
 
-  nubs() { return nubs(this.game.net, this.game.world, this.nubGap); }
+  get sizes() { return sizeAt(this.r.scale || 1); }
+  nubs() { return nubs(this.game.net, this.game.world, this.nubGap, this.sizes); }
 
   at(e) { return this.r.toBoard(e.clientX, e.clientY); }
 

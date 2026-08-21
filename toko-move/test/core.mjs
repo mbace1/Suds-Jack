@@ -2,13 +2,13 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=4';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=4';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=4';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=4';
-import { Game } from '../js/sim.js?v=4';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=4';
-import { PAL, INK } from '../js/palette.js?v=4';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=5';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=5';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=5';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=5';
+import { Game } from '../js/sim.js?v=5';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=5';
+import { PAL, INK } from '../js/palette.js?v=5';
 
 let pass = 0; const fails = [];
 const ok = (cond, msg) => { if (cond) pass++; else fails.push(msg); };
@@ -365,6 +365,37 @@ function bench(seed = 1) {
   eq(g.net.lines.length, 0, 'so nothing is left drawn');
   eq(g.net.spareTrains, 3, 'the train goes back to the shed');
   eq(g.net.freeColour(), colour, 'and the colour goes back on the peg');
+}
+
+{
+  // A line that gets shorter must bring its trains back with it. Pulling a stop
+  // off while a train was out on that leg left the train pointing at a leg that
+  // no longer existed, and the next frame read `pts` off undefined and took the
+  // renderer down with it. Every gate passed, because they all retract lines
+  // that are standing still — this one moves the train first.
+  const { g, add } = bench();
+  const A = add('circle', 100, 100), B = add('triangle', 300, 100);
+  const C = add('square', 500, 100), D = add('cross', 700, 100);
+  g.net.rebuild();
+  const line = g.net.open(A.id, B.id).line;
+  g.net.extend(line, C.id, false);
+  g.net.extend(line, D.id, false);
+  const t = line.trains[0];
+  eq(line.segCount(), 3, 'four stops make three legs');
+
+  for (const leg of [2, 1]) {
+    t.segIdx = leg; t.p = 0.5; t.dir = 1;
+    g.net.retract(line, false);
+    ok(t.segIdx < Math.max(1, line.segCount()), `a train out on leg ${leg} is not left past the end`);
+    let threw = null;
+    try { t.pos(); } catch (e) { threw = e.message; }
+    eq(threw, null, `and asking where it is does not throw (${threw})`);
+  }
+
+  // and it survives a whole frame's worth of work afterwards
+  let boom = null;
+  try { for (let i = 0; i < 40; i++) g.step(0.05); } catch (e) { boom = e.message; }
+  eq(boom, null, `the run carries on after the line was cut under a moving train (${boom})`);
 }
 
 // ── the run ─────────────────────────────────────────────────────────────

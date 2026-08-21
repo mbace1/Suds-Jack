@@ -77,8 +77,17 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   eq(await page.evaluate(() => window.__tm.game.state), 'play', 'choosing a mission starts it');
   eq(await page.evaluate(() => window.__tm.game.mission.id), 'endless', 'and starts the one you chose');
   ok(await page.evaluate(() => document.getElementById('title').hidden), 'and puts the board away');
+  // the seed in the address must actually pin the board, or the number printed
+  // on the end card is a receipt for a run nobody can return to
+  eq(await page.evaluate(() => window.__tm.game.seed), 7, 'and a seed in the address pins the board');
 
   // ── the gesture ───────────────────────────────────────────────────────
+  // Hold the world still for this. Run live, a stop can spawn beside the drag
+  // path between reading the nub and grabbing it, and the pointer takes the new
+  // stop instead — the gate failed about one run in three that way. The gesture
+  // is what is under test, not the spawner.
+  await page.evaluate(() => { window.__tm.game.paused = true; });
+
   const at = i => page.evaluate(k => {
     const s = window.__tm.world.stations[k];
     return s ? window.__tm.toClient(s.x, s.y) : null;
@@ -117,6 +126,7 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   eq(await page.evaluate(() => window.__tm.net.lines[0].stations.length), 2, 'dragging it back pulls the stop off');
 
   // ── it is actually painted ────────────────────────────────────────────
+  await page.evaluate(() => { window.__tm.game.paused = false; });
   await page.waitForTimeout(700);
   const painted = await page.evaluate(() => {
     const cv = document.getElementById('board');
@@ -282,6 +292,41 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   });
   ok(boardBox.w > 100 && boardBox.h > 100, `the board gets real room on a phone (${boardBox.w}x${boardBox.h})`);
 
+  // THE CHECK THAT SHOULD HAVE CAUGHT IT. At 390px the strip ran to 515px and
+  // put pause, speed and sound off the screen — a phone could not pause the
+  // game. `overflow: hidden` on body meant scrollWidth never grew, so the
+  // no-horizontal-overflow check above passed the entire time. Measure the
+  // controls themselves.
+  const clipped = await phone.evaluate(() => {
+    const out = [];
+    for (const el of document.querySelectorAll('#hud button, #hud .stk, #hud .score')) {
+      const r = el.getBoundingClientRect();
+      if (r.right > innerWidth + 0.5 || r.left < -0.5 || r.bottom > innerHeight + 0.5) {
+        out.push(`${el.id || el.className}@${Math.round(r.left)}..${Math.round(r.right)}`);
+      }
+    }
+    return out;
+  });
+  eq(clipped.length, 0, `no control is pushed off a 390px screen (${clipped.join(', ')})`);
+
+  // the board turns to match the screen, instead of being letterboxed into a
+  // strip down the middle of it
+  const fit = await phone.evaluate(() => {
+    const r = window.__tm.renderer;
+    const w = r.bw * r.scale, h = r.bh * r.scale;
+    const S = window.__tm.debug.sizeAt(r.scale);
+    return {
+      portrait: r.bh > r.bw,
+      share: w * h / (innerWidth * innerHeight),
+      stopPx: S.stationR * r.scale * 2,
+      pipPx: S.pipR * r.scale * 2,
+    };
+  });
+  ok(fit.portrait, 'a portrait screen gets a portrait board');
+  ok(fit.share > 0.6, `and the board fills it (${(fit.share * 100).toFixed(0)}% of the screen)`);
+  ok(fit.stopPx >= 20, `a stop stays big enough to read (${fit.stopPx.toFixed(1)}px)`);
+  ok(fit.pipPx >= 6, `and so does a waiting passenger (${fit.pipPx.toFixed(1)}px)`);
+
   // the letterbox maths the game uses must round-trip, or every tap lands wrong
   const trip = await phone.evaluate(() => {
     const s = window.__tm.world.stations[0];
@@ -346,6 +391,74 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
     lines: window.__tm.net.lines.length, spare: window.__tm.net.spareTrains }));
   eq(after.lines, 0, 'and one drag back down it deletes the whole line');
   eq(after.spare, 3, 'handing the train back to the shed');
+
+  // …and again with the world RUNNING, which is how a person actually does it.
+  // A train out on the leg being pulled off used to leave the renderer reading
+  // `pts` off undefined; a paused board never reproduced it because every train
+  // is sitting at the start of leg zero.
+  const liveErrs = [];
+  phone.on('pageerror', e => liveErrs.push(e.message));
+  await phone.evaluate(() => { window.__tm.game.paused = false; });
+  const l0 = await pAt(0), l1 = await pAt(1), l2 = await pAt(2);
+  await phone.mouse.move(l0.x, l0.y); await phone.mouse.down();
+  await phone.mouse.move(l1.x, l1.y, { steps: 8 });
+  await phone.mouse.move(l2.x, l2.y, { steps: 8 });
+  await phone.mouse.up();
+  // Put the train on the LAST leg deliberately. Waiting and hoping it drifts
+  // there is a coin toss — the first cut of this check passed happily with the
+  // fix reverted, which makes it worse than no check.
+  const placed = await phone.evaluate(() => {
+    const l = window.__tm.net.lines[0];
+    if (!l || !l.trains.length || l.segCount() < 2) return false;
+    const t = l.trains[0];
+    t.segIdx = l.segCount() - 1; t.p = 0.4; t.dir = 1;
+    return true;
+  });
+  ok(placed, 'a train can be put out on the last leg for the test');
+  await phone.waitForTimeout(300);
+  const liveNub = await phone.evaluate(() => {
+    const n = window.__tm.touch.nubs.find(x => !x.atHead);
+    return n ? window.__tm.toClient(n.x, n.y) : null;
+  });
+  if (liveNub) {
+    await phone.mouse.move(liveNub.x, liveNub.y); await phone.mouse.down();
+    await phone.mouse.move(l1.x, l1.y, { steps: 8 });
+    await phone.mouse.move(l0.x, l0.y, { steps: 8 });
+    await phone.mouse.up();
+  }
+  await phone.waitForTimeout(900);
+  eq(liveErrs.length, 0, `cutting a line under a moving train does not crash (${liveErrs.join(' | ')})`);
+
+  // ── a phone on its side ───────────────────────────────────────────────
+  // The tightest case there is, and the one that makes the drawing floors do
+  // work: a landscape board in a 270px-tall strip renders at 0.45 scale, where
+  // the declared sizes alone put a stop at 14px.
+  const wide = await browser.newPage({ viewport: { width: 640, height: 360 }, isMobile: true, hasTouch: true });
+  wide.on('pageerror', e => errs.push('landscape pageerror: ' + e.message));
+  await wide.goto(base, { waitUntil: 'load' });
+  await wide.waitForTimeout(400);
+  await wide.evaluate(() => [...document.querySelectorAll('#freeList button')][0].click());
+  await wide.waitForTimeout(300);
+  const rot = await wide.evaluate(() => {
+    const r = window.__tm.renderer, t = window.__tm.touch;
+    const S = window.__tm.debug.sizeAt(r.scale);
+    const off = [];
+    for (const el of document.querySelectorAll('#hud button, #hud .stk, #hud .score')) {
+      const b = el.getBoundingClientRect();
+      if (b.right > innerWidth + 0.5 || b.bottom > innerHeight + 0.5) off.push(el.id || el.className);
+    }
+    return {
+      scale: r.scale,
+      stopPx: S.stationR * r.scale * 2,
+      pipPx: S.pipR * r.scale * 2,
+      nubHitPx: t.nubHitPx,
+      off,
+    };
+  });
+  ok(rot.stopPx >= 20, `sideways, a stop still reads (${rot.stopPx.toFixed(1)}px at ${rot.scale.toFixed(2)} scale)`);
+  ok(rot.pipPx >= 6, `and so does a waiting passenger (${rot.pipPx.toFixed(1)}px)`);
+  ok(rot.nubHitPx >= 44, `and the nub is still grabbable (${rot.nubHitPx.toFixed(0)}px)`);
+  eq(rot.off.length, 0, `and no control is off a 640x360 screen (${rot.off.join(', ')})`);
 
   eq(errs.length, 0, `no page errors (${errs.join(' | ')})`);
 

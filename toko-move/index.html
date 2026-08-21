@@ -119,11 +119,18 @@
   .legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
   .legend figure { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); }
 
+  /* At 390px the strip ran to 515px and pushed pause, speed and sound clean off
+     the screen — a phone could not pause the game. `overflow: hidden` on body
+     clipped them, which is why the gate's no-horizontal-overflow check passed
+     the whole time. The strip WRAPS now: controls first and always reachable,
+     the counts underneath them. */
   @media (max-width: 560px) {
-    #hud { gap: 10px; padding-top: 40px; }
-    .score b { font-size: 22px; }
+    #hud { gap: 8px 12px; padding: 40px 10px 6px; flex-wrap: wrap; }
+    .score b { font-size: 21px; }
     #when .cap { display: none; }
-    #stock { gap: 10px; }
+    #tools { margin-left: auto; order: 3; }
+    #stock { margin-left: 0; order: 4; flex-basis: 100%; gap: 14px; }
+    #goal { order: 5; }
   }
 </style>
 </head>
@@ -191,8 +198,8 @@
     </div>
   </div>
 
-<script type="module" src="js/main.js?v=4"></script>
+<script type="module" src="js/main.js?v=5"></script>
 <!-- the way home: HOME top-left + hold Start/Back on a pad -->
-<script type="module" src="../hub/shell.js?v=44"></script>
+<script type="module" src="../hub/shell.js?v=54"></script>
 </body>
 </html>

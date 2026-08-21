@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=4';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=4';
-import { Renderer } from './render.js?v=4';
-import { LineDrawer } from './input.js?v=4';
-import { Kit } from './audio.js?v=4';
-import { PAL } from './palette.js?v=4';
+import { Game } from './sim.js?v=5';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=5';
+import { Renderer } from './render.js?v=5';
+import { LineDrawer } from './input.js?v=5';
+import { Kit } from './audio.js?v=5';
+import { PAL, sizeAt } from './palette.js?v=5';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -68,7 +68,24 @@ function paintMissions() {
 }
 
 // ── a run ───────────────────────────────────────────────────────────────
-function launch(missionId, seed = (Math.random() * 1e9) | 0) {
+// A pinned board, for reporting a run and for the gate. The v3 rewrite dropped
+// this: the end card went on printing "board 481203" while nothing read it back,
+// so the number was a receipt for something you could not return to — and every
+// gate run got a different board, which is exactly the kind of flake that gets
+// written off as "the test is flaky".
+function seedFromUrl() {
+  const m = /seed=(\d+)/.exec(location.hash || location.search);
+  return m ? ((+m[1] | 0) || 1) : null;
+}
+const nextSeed = () => seedFromUrl() ?? ((Math.random() * 1e9) | 0);
+
+// portrait is the shape of the space the board gets, not of the device
+const portraitNow = () => {
+  const r = $('wrap').getBoundingClientRect();
+  return r.height > r.width;
+};
+
+function launch(missionId, seed = nextSeed()) {
   $('title').hidden = true;
   $('end').hidden = true;
   boot(seed, missionId);
@@ -77,7 +94,7 @@ function launch(missionId, seed = (Math.random() * 1e9) | 0) {
 }
 
 function boot(seed, missionId) {
-  game = new Game(seed, missionId);
+  game = new Game(seed, missionId, { portrait: portraitNow() });
   drops = 0;
   drawer?.destroy();
   renderer = renderer || new Renderer($('board'));
@@ -253,7 +270,7 @@ function drainEvents() {
 
 // ── controls ────────────────────────────────────────────────────────────
 kit = new Kit();
-boot((Math.random() * 1e9) | 0, 'endless');
+boot(nextSeed(), 'endless');
 paintMissions();
 
 $('again').addEventListener('click', () => launch(game.mission.id));
@@ -317,5 +334,5 @@ window.__tm = {
       nubDrawPx: (drawer.view().nubR || 0) * renderer.scale,
     };
   },
-  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId },
+  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId, sizeAt, seedFromUrl },
 };
