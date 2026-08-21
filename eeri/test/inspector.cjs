@@ -310,6 +310,47 @@ srv.listen(0, '127.0.0.1', async () => {
     ok(`DELETE removes the selected row (${edits.dup} -> ${edits.del})`,
       edits.del === edits.dup - 1 && edits.originalGone);
     ok('…and takes the right one — the copy survives', edits.copyKept);
+
+    // ---- THE SHELF -------------------------------------------------------
+    // Thirteen props shipped, were catalogued, and could not be put in a level
+    // by any means — `audit-assets.mjs` called every one unreachable because
+    // nothing named them in a getModel() call. This places one and requires it
+    // to actually arrive in the scene, which is the only claim worth making:
+    // a dropdown entry that adds a row nobody draws is not "placeable".
+    const shelf = await page.evaluate(async () => {
+      const doc = document;
+      const insp = doc.querySelector('.insp');
+      const q = (k) => insp.querySelector(`[data-el="${k}"]`);
+      // PLACE IS A TOGGLE and the earlier block left it ON, so clicking it
+      // again turned it OFF and the pointer landed on nothing. Ask the tool
+      // what mode it is in rather than assuming a click means "on".
+      if (window.__insp.on !== 'place') insp.querySelector('[data-a="place"]').click();
+      q('band').value = 'middle';
+      const sel = q('asset');
+      const i = [...sel.options].findIndex((o) => /forklift/.test(o.textContent));
+      if (i < 0) return { err: 'forklift not in the palette' };
+      sel.value = String(i);
+      const c = doc.querySelector('.inspCatch');
+      const r = c.getBoundingClientRect();
+      const at = { clientX: r.left + r.width * 0.4, clientY: r.top + r.height * 0.5 };
+      c.dispatchEvent(new PointerEvent('pointerdown', { ...at, bubbles: true, pointerId: 7 }));
+      c.dispatchEvent(new PointerEvent('pointerup', { ...at, bubbles: true, pointerId: 7 }));
+      await new Promise((res) => setTimeout(res, 80));
+      const w = doc.querySelector('iframe').contentWindow;
+      let rows = null; w.__eeri.scene.traverse((o) => { if (o.userData?.rows) rows = o.userData.rows; });
+      const last = rows[rows.length - 1];
+      return { k: last.k, a: last.a, id: last.id };
+    });
+    ok(`the shelf is in the palette and places a model row (${shelf.a})`,
+      shelf.k === 'model' && shelf.a === 'forklift', JSON.stringify(shelf));
+    // the model loads over the network, so give it a real frame plus the fetch
+    await page.waitForTimeout(3000);
+    const drewModel = await page.evaluate((id) => {
+      const w = document.querySelector('iframe').contentWindow;
+      let n = 0; w.__eeri.scene.traverse((o) => { if (o.isMesh && o.userData?.row === id) n++; });
+      return n;
+    }, shelf.id);
+    ok(`…and the forklift really arrives in the room (${drewModel} meshes)`, drewModel > 0);
   }
 
   ok('no page errors while driving the tool', errs.length === 0, errs.slice(0, 2).join(' | '));

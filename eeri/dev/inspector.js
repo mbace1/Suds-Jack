@@ -127,6 +127,23 @@ const PLACEABLE = [
   { k: 'cutout', a: 'barriers',  name: 'cutout — barrier lamps' },
   { k: 'cutout', a: 'forestTunnel',   name: 'cutout — log tunnel' },
   { k: 'cutout', a: 'forestClearing', name: 'cutout — stump clearing' },
+  // THE SHELF. Thirteen real 3D props that shipped, were catalogued, and could
+  // not be put in a level by any means — `audit-assets.mjs` called every one of
+  // them unreachable because nothing named them in a getModel() call. This
+  // dropdown is what names them.
+  { k: 'model', a: 'forklift',    name: 'model — forklift' },
+  { k: 'model', a: 'dumptruck',   name: 'model — dump truck' },
+  { k: 'model', a: 'cherrypicker', name: 'model — cherry picker' },
+  { k: 'model', a: 'pipelayer',   name: 'model — pipe layer' },
+  { k: 'model', a: 'compressor',  name: 'model — compressor' },
+  { k: 'model', a: 'generator',   name: 'model — generator' },
+  { k: 'model', a: 'floodlight',  name: 'model — floodlight' },
+  { k: 'model', a: 'cabledrum',   name: 'model — cable drum' },
+  { k: 'model', a: 'gascart',     name: 'model — gas cart' },
+  { k: 'model', a: 'jackhammer',  name: 'model — jackhammer' },
+  { k: 'model', a: 'wheelbarrow', name: 'model — wheelbarrow' },
+  { k: 'model', a: 'vacbot',      name: 'model — vac bot' },
+  { k: 'model', a: 'workerbot',   name: 'model — worker bot' },
 ];
 
 
@@ -360,6 +377,7 @@ layer a thing is on is to switch the others off</div>
     const row = { id: this.freshId(), k: spec.k, x: snap(p.x), y: snap(p.y), z: band.z, o: 1 };
     if (spec.k === 'panel') { row.w = size; row.h = size * 0.6; row.c = '#8a7f6b'; }
     else if (spec.k === 'disc') { row.r = size * 0.5; row.c = '#8a7f6b'; }
+    else if (spec.k === 'model') { row.a = spec.a; row.h = size; row.f = false; delete row.o; }
     else { row.a = spec.a; row.h = size; row.f = false; }
 
     this.addRow(row);
@@ -385,7 +403,7 @@ layer a thing is on is to switch the others off</div>
     const o = this.picked;
     const world = new A.THREE.Vector3(); o.getWorldPosition(world);
     this.drag = { z: world.z, off: world.clone().sub(hits[0].point) };
-    this.catch_.setPointerCapture?.(e.pointerId);
+    try { this.catch_.setPointerCapture?.(e.pointerId); } catch { /* synthetic pointer */ }
   }
 
   move(e) {
@@ -431,7 +449,16 @@ layer a thing is on is to switch the others off</div>
     return n;
   }
 
-  up(e) { this.drag = null; this.catch_.releasePointerCapture?.(e.pointerId); }
+  // GUARDED, because the capture is not always taken. PLACE mode returns from
+  // `down()` before capturing — it has nothing to drag — so the matching
+  // `up()` was releasing a pointer that was never captured, and the browser
+  // throws rather than shrugging. A real device can lose a pointer the same
+  // way (a touch cancelled by the system), so this is not only a test's
+  // problem.
+  up(e) {
+    this.drag = null;
+    try { this.catch_.releasePointerCapture?.(e.pointerId); } catch { /* never captured */ }
+  }
 
   key(e) {
     if (!this.picked || this.el.hidden) return;
@@ -531,7 +558,7 @@ layer a thing is on is to switch the others off</div>
     const r = found.row;
     if (r.k === 'panel') { r.w = v; r.h = v * 0.6; }
     else if (r.k === 'disc') { r.r = v * 0.5; }
-    else if (r.k === 'cutout') { r.h = v; }
+    else if (r.k === 'cutout' || r.k === 'model') { r.h = v; }
     this.refreshDressing();
   }
 

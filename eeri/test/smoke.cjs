@@ -1300,9 +1300,18 @@ s.listen(0, '127.0.0.1', async () => {
   // every asset the manifest calls live must actually have been requested
   {
     const live = [];
+    const shelf = [];
     for (const kind of ['models', 'pieces']) {
       for (const m of Object.values(manifest[kind] || {})) {
-        if (m.status === 'live') live.push(path.basename(m.file));
+        if (m.status !== 'live') continue;
+        // `shelf: true` means ON THE SHELF, NOT IN A ROOM: a prop the level
+        // editor can place but that no level has placed yet. Those are live so
+        // the editor can load them, and by definition nothing fetches them
+        // until somebody uses one — so exempting them here is correct rather
+        // than a softening. It is NOT a hiding place: the check below loads
+        // every one of them and fails if it cannot.
+        if (m.shelf) { shelf.push(m.file); continue; }
+        live.push(path.basename(m.file));
       }
     }
     for (const layers of Object.values(manifest.layers || {})) {
@@ -1317,6 +1326,24 @@ s.listen(0, '127.0.0.1', async () => {
     const missed = live.filter((f) => !fetched.has(f));
     ok(`every live asset is actually fetched${missed.length ? ' — never asked for: ' + missed.join(', ') : ''}`,
       missed.length === 0);
+
+    // AND THE SHELF HAS TO BE REAL. Exempting an asset from "was it fetched"
+    // is only honest if something still proves it WORKS — otherwise `shelf`
+    // becomes the flag you set to make a broken model stop failing. So load
+    // every one through the same seam the editor uses and require a root back.
+    const shelfOk = await p.evaluate(async (names) => {
+      const A = await import('./js/assets.js?v=47');
+      const out = {};
+      for (const n of names) {
+        try { const a = await A.getModel(n, () => null); out[n] = !!a?.root; }
+        catch (e) { out[n] = false; }
+      }
+      return out;
+    }, Object.entries(manifest.models || {}).filter(([, m]) => m.shelf).map(([n]) => n));
+    const dead = Object.entries(shelfOk).filter(([, v]) => !v).map(([n]) => n);
+    ok(`every shelf model actually loads (${Object.keys(shelfOk).length} on the shelf)`,
+      Object.keys(shelfOk).length > 0 && dead.length === 0,
+      dead.length ? 'dead: ' + dead.join(', ') : '');
   }
 
   // HOW BIG IS EERI ON THE SCREEN? A look question that is, unusually, a

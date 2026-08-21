@@ -1,5 +1,63 @@
 # EERI — versions
 
+## v15.40 — 2026-08-21 — the shelf comes off the shelf
+
+Thirteen props shipped, were catalogued, kept their contracts, and **could not
+be put in a level by any means**. `audit-assets.mjs` has been reporting them
+unreachable since it was written — forklift, dump truck, cherry picker, pipe
+layer, compressor, generator, floodlight, cable drum, gas cart, jackhammer,
+wheelbarrow, vac bot, worker bot — because nothing under `js/` named one in a
+`getModel()` call. Correct files answering a question nobody asked.
+
+**A `model` row is what asks.** Fifth row kind, same seam as everything else:
+`getModel(name, () => null)`, so a prop whose file 404s draws nothing rather
+than a white slab. The palette lists all thirteen; placing one snaps it into
+the band like any other row and the size slider resizes it.
+
+**The import is dynamic and carries the same token as main.js's.**
+`world34-dressing.js` has no static imports on purpose — the room gate loads
+its data in plain Node, where `three` and `window` must never become
+dependencies. `import('./assets.js?v=47')` resolves to the same live instance
+main.js is using; a different token would build a SECOND assets.js with its own
+null manifest, which is the failure that silently unplugged 2.7 MB of layer art
+twice.
+
+**`shelf: true` is a third state, and it is not a way to silence a gate.**
+Smoke asserts every `live` asset is actually fetched — the rule that caught
+that unplugged layer art. A prop the editor can place but no level has placed
+yet is live and, by definition, fetched by nobody, so it would fail. Exempting
+it is only honest if something still proves it works, so a **new** check loads
+every shelf model through the seam the editor uses and fails on any that does
+not come back with a root. `shelf` buys an exemption from one check by
+submitting to a stricter one.
+
+`audit-assets.mjs` learned the same distinction. Its reachability test greps
+`js/` for a literal `getModel('x')`, which was the only way an asset could be
+reached when it was written; a sheet naming a model in a row passes the name
+through as a variable, invisible to any grep by design. It now also reads the
+sheets, and reports **reachable / shelf / unreachable** as three states rather
+than calling a deliberate decision a fault. **15 unreachable -> 13 on the
+shelf, 2 unreachable** (`token_blueprint` and `token_toolbox`, left as
+placeholders on purpose).
+
+Two bugs found by the gate, both mine:
+
+- **PLACE is a toggle**, and the shelf check clicked it while it was already
+  on — turning it off, so the pointer landed on nothing and the assertion read
+  the leftover row from the previous block. It asks the tool what mode it is in
+  now instead of assuming a click means "on".
+- **`up()` released a pointer capture that `place()` never took.** PLACE
+  returns from `down()` before capturing — it has nothing to drag — and the
+  browser throws rather than shrugging. Guarded at both ends, and it is not
+  only a test's problem: a real device can lose a pointer the same way when the
+  system cancels a touch.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · **inspector 26/0** — including
+placing a forklift and requiring it to actually arrive (5 meshes), because a
+dropdown entry that adds a row nobody draws is not "placeable". Smoke and
+playthrough are running; their numbers are deliberately left blank rather than
+claimed. Tokens 46 -> 47, manifest 33 -> 34.
+
 ## v15.39 — 2026-08-21 — the gates were measuring the machine, not the game
 
 **A day of false failures, and none of them were in the game.**

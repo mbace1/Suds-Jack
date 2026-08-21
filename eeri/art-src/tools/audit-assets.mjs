@@ -107,7 +107,27 @@ const asked = (name) =>
 
 const manifest = JSON.parse(readFileSync(path.join(ROOT, 'assets', 'manifest.json'), 'utf8'));
 
-let broken = 0, unreachable = 0, checked = 0;
+// ---- reachable THROUGH DATA ----------------------------------------------
+// The heuristic above greps `js/` for a literal `getModel('x')`, which was the
+// only way an asset could be reached when this tool was written. It is not any
+// more: a dressing sheet can name a model in a `model` row, and `replay()`
+// passes that name through as a variable — invisible to any grep, by design.
+//
+// So a model is now reachable if the CODE names it or if a SHEET places it,
+// and a third state exists between reachable and unreachable: `shelf: true` in
+// the manifest, meaning the level editor can place it but no level has yet.
+// That is a decision rather than an oversight, and reporting it as "NO" the
+// way this tool used to would train everyone to ignore the column.
+const placed = new Set();
+try {
+  const dir = path.join(ROOT, 'assets', 'dressing');
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.json'))) {
+    const j = JSON.parse(readFileSync(path.join(dir, f), 'utf8'));
+    for (const r of j.rows || []) if (r.a) placed.add(r.a);
+  }
+} catch { /* no sheets is not an error */ }
+
+let broken = 0, unreachable = 0, shelved = 0, checked = 0;
 const rows = [];
 
 for (const kind of ['models', 'pieces']) {
@@ -141,11 +161,13 @@ for (const kind of ['models', 'pieces']) {
       } catch (err) { faults.push(err.message); }
     }
 
-    const reach = asked(name);
-    if (!reach) unreachable++;
+    const reach = asked(name) || placed.has(name);
+    const onShelf = !reach && !!e.shelf;
+    if (!reach && !onShelf) unreachable++;
+    if (onShelf) shelved++;
     if (faults.length) broken++;
     checked++;
-    rows.push({ kind, name, status: e.status, reach, faults, nodes: nodes.length, clips: clips.length });
+    rows.push({ kind, name, status: e.status, reach, onShelf, faults, nodes: nodes.length, clips: clips.length });
   }
 }
 
@@ -153,18 +175,22 @@ const pad = (s, n) => String(s).padEnd(n);
 console.log(`\n  EERI asset audit — ${checked} shipped file(s)\n`);
 console.log(`  ${pad('asset', 20)}${pad('kind', 8)}${pad('status', 13)}${pad('reachable', 11)}contract`);
 console.log('  ' + '-'.repeat(76));
-for (const r of rows.sort((a, b) => Number(a.reach) - Number(b.reach) || a.name.localeCompare(b.name))) {
+for (const r of rows.sort((a, b) => Number(a.reach) - Number(b.reach) || Number(a.onShelf) - Number(b.onShelf) || a.name.localeCompare(b.name))) {
   console.log(`  ${pad(r.name, 20)}${pad(r.kind, 8)}${pad(r.status, 13)}` +
-    `${pad(r.reach ? 'yes' : 'NO', 11)}` +
+    `${pad(r.reach ? 'yes' : (r.onShelf ? 'shelf' : 'NO'), 11)}` +
     (r.faults.length ? 'BROKEN — ' + r.faults.join(', ')
       : r.pending ? 'not delivered yet (placeholder, no file)'
       : `ok (${r.nodes} nodes${r.clips ? `, ${r.clips} clips` : ''})`));
 }
 
 console.log(`\n  ${checked - broken}/${checked} keep their contract.`);
+if (shelved) {
+  console.log(`  ${shelved} are ON THE SHELF — live, loadable, and placeable in the level\n` +
+    `  editor, but not yet placed in any room. That is a decision, not a fault.`);
+}
 if (unreachable) {
-  console.log(`  ${unreachable} cannot be reached by the game — nothing under js/ names them\n` +
-    `  in a getModel()/getPiece() call, so no gate can see them either.`);
+  console.log(`  ${unreachable} cannot be reached by the game — no code names them and no\n` +
+    `  dressing sheet places them, so no gate can see them either.`);
 }
 console.log('');
 if (STRICT && broken) process.exit(1);

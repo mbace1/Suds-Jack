@@ -143,7 +143,8 @@
     },
     "dumptruck": {
       "file": "3d/dumptruck_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "`tipper` hinges at its REAR BOTTOM edge so it rears up off the chassis rather than sinking through it. That one pivot is the whole rig.",
       "nodes": [
         "body",
@@ -183,7 +184,8 @@
     },
     "forklift": {
       "file": "3d/forklift_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "The MAST DOES NOT MOVE; only `carriage` rides up it, and the forks are its children so they inherit the lift for free. That realisation removed the hardest cut on the machine.",
       "nodes": [
         "body",
@@ -202,7 +204,8 @@
     },
     "cherrypicker": {
       "file": "3d/cherrypicker_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "`basket` must COUNTER-ROTATE against `boom` to stay level. That is a code rule, not a rest pose \u2014 a basket that tips with its arm is the one thing a child notices instantly, having watched a real one never do it.",
       "nodes": [
         "body",
@@ -223,7 +226,8 @@
     },
     "pipelayer": {
       "file": "3d/pipelayer_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "`load` is the slung pipe, a child of `hook`; hide it when empty. It came back as a ring seen end-on rather than a length of pipe, which reads better at 32px and does not foreshorten.",
       "nodes": [
         "house",
@@ -247,7 +251,8 @@
     },
     "floodlight": {
       "file": "3d/floodlight_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "NOT RIDEABLE \u2014 no seat, no step, deliberately: it is site furniture that lights a dark span. `lamps` animates by EMISSIVE SWAP rather than by transform, the only machine in the fleet whose animation is a material. Weakest mesh of the eight: Meshy fused the four lamps into one head.",
       "nodes": [
         "body",
@@ -265,7 +270,8 @@
     },
     "workerbot": {
       "file": "3d/workerbot_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "rig": "skinned",
       "height": 1.1,
       "_note": "The humanoid site bot. Meshy auto-rig, so it is checked against `clips`, not node names. RIGGED ONLY ON THE SECOND ATTEMPT: the first concept was a strict horizontal T-pose with slim arms and spread legs, and Meshy answered 'Pose estimation failed' \u2014 the third time this project has hit that. The fix is in ART_PIPELINE and it is VOLUME, not pose: the estimator wants a body it can fit a skeleton inside, and Eeri rigged first time with merged legs and arms barely 40 degrees out. Redrawn to copy Eeri's actual mass and stance rather than imposing a T on top of the reference, it rigged first time. Behaviour brief in art-src/ENEMY_BRIEFS.md \u2014 it reads HEIGHT: too tall to stomp from level ground. `placeholder` until js/robots.js asks for a model; robots.js currently builds every enemy in code and never calls getModel, which is why boltbot, hopper and bucket are parked the same way.",
@@ -279,7 +285,8 @@
     },
     "vacbot": {
       "file": "3d/vacbot_v2.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "height": 0.55,
       "_note": "The Roomba. Node-rigged (a disc has no legs \u2014 routing rule). `spring` fires on the first stomp and launches Eeri; the SECOND stomp swaps `state0` for `state1`, the broken form \u2014 merged into one file by art-src/tools/statemerge.mjs per the manipulable-piece convention, sharing an origin so the swap is a visibility flip that cannot teleport. Reads RESOURCE: the only enemy that is a choice rather than a skill (art-src/ENEMY_BRIEFS.md). `eye` is the notice tell. v2 file name per the versioned-URL rule.",
       "nodes": [
@@ -309,7 +316,8 @@
     },
     "jackhammer": {
       "file": "3d/jackhammer_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "The hopper's namesake. `bit` is the whole striking assembly and judders in position.y while the body hops \u2014 code, per the routing rule. Meshy grew it two rivet-eyes uninvited; kept, as the owner's 'try a face on one'.",
       "nodes": [
         "body",
@@ -318,7 +326,8 @@
     },
     "generator": {
       "file": "3d/generator_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "Owner behaviour 2026-08-18: it SHAKES and throws Eeri back \u2014 the bounce field pushes a jump further, which is how you clear it \u2014 and `plug` on the far side is the disable: pulled, it hides and the shake stops. The plug must be its own node or there is nothing to pull.",
       "nodes": [
         "body",
@@ -327,7 +336,8 @@
     },
     "compressor": {
       "file": "3d/compressor_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "Blows air (push field, code), overpressures, takes off like a rocket \u2014 root motion. `motor` rattles as pressure builds: the telegraph before the launch, same law as every hazard. `nozzle` hinges at its ROOT on the tank \u2014 an 'auto' centre pivot spun it about itself and the swing test read it DEAD.",
       "nodes": [
         "body",
@@ -338,7 +348,8 @@
     },
     "wheelbarrow": {
       "file": "3d/wheelbarrow_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "Owner behaviour 2026-08-18: trundles at you, then TIPS its tray to strike. `tray` hinges at its FRONT LIP over the wheel \u2014 the dump-truck pivot lesson: hinge it anywhere else and it sinks through the frame instead of rearing. A gizmo first (DESIGN \u00a78.2 calls a tipping surface the cheapest fun in the kit); an enemy dress of the same rig second.",
       "nodes": [
         "body",
@@ -348,7 +359,8 @@
     },
     "cabledrum": {
       "file": "3d/cabledrum_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "`spool` spins about local x \u2014 the mesh came back with its axle across the picture. `crank` is claimed before the spool's radius or the handle spins with the drum it winds. Dressing, or a rolling hazard on a slope.",
       "nodes": [
         "stand",
@@ -358,7 +370,8 @@
     },
     "gascart": {
       "file": "3d/gascart_v1.glb",
-      "status": "placeholder",
+      "status": "live",
+      "shelf": true,
       "_note": "SPRAY, not explode \u2014 the owner offered either and a bottle that detonates is a different game. The spray is a particle cone from `nozzle`, hinged where the hoses leave the bottle tops; the bottles never move.",
       "nodes": [
         "body",

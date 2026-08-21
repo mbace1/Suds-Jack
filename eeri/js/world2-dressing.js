@@ -8,8 +8,8 @@
 // high walkway. One or two strong identifiers per screen, never wallpaper.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=46';
-import { craftMat, craftBox, cutQuad } from './craft.js?v=46';
+import { PAL, mix } from './palette.js?v=47';
+import { craftMat, craftBox, cutQuad } from './craft.js?v=47';
 
 export function buildPipeworksDressing(scene) {
   const root = new THREE.Group();

@@ -149,6 +149,50 @@ function light(THREE, root, x, y, z, color, intensity, distance) {
   return L;
 }
 
+// ---- MODELS ------------------------------------------------------------
+// The shelf, made reachable. Thirteen props shipped, catalogued and correct —
+// forklift, generator, floodlight, cable drum, wheelbarrow, dump truck… — and
+// `audit-assets.mjs` reported every one of them UNREACHABLE, because nothing
+// under `js/` named them in a `getModel()` call. Correct files answering a
+// question nobody asked.
+//
+// A `model` row is what asks. It goes through the same seam everything else
+// does, so a prop whose file 404s or is still `placeholder` draws nothing
+// rather than a white slab: art is the one thing in this game allowed to be
+// absent.
+//
+// THE IMPORT IS DYNAMIC AND CARRIES THE SAME TOKEN AS MAIN.JS'S. This module
+// has no static imports on purpose — it is a browser-only sidecar and the room
+// gate loads its data in plain Node, where `three` and `window` must never
+// become dependencies. A dynamic `import()` of the same URL resolves to the
+// same live module instance main.js is using; a different token would build a
+// SECOND assets.js with its own null manifest, which is the failure that
+// silently unplugged 2.7 MB of layer art twice.
+let assetsMod = null;
+const assets = () => (assetsMod ||= import('./assets.js?v=47'));
+
+function model(THREE, root, name, x, y, z, height, flip) {
+  rec({ k: 'model', a: name, x, y, z, h: height, f: !!flip });
+  const id = TAG;
+  assets().then(({ getModel }) => getModel(name, () => null)).then((asset) => {
+    if (!asset?.root || !root.parent) return;   // level changed while it loaded
+    const g = new THREE.Group();
+    g.add(asset.root);
+    // `height` is in TILES, and the seam has already rescaled the model to the
+    // manifest's own figure — so this is the EDITOR's size on top of that: the
+    // size slider's value, not a second opinion about how big a forklift is.
+    if (height) {
+      const b = new THREE.Box3().setFromObject(g);
+      const h = b.max.y - b.min.y;
+      if (h > 0.001) g.scale.multiplyScalar(height / h);
+    }
+    g.position.set(x, y, z);
+    if (flip) g.scale.x *= -1;
+    if (id) { g.userData.row = id; g.traverse((o) => { o.userData.row = id; }); }
+    root.add(g);
+  }).catch(() => {});
+}
+
 function panel(THREE, root, x, y, w, h, color, z = -1.1, opacity = 1) {
   rec({ k: 'panel', x, y, w, h, c: hex(color), z, o: opacity });
   const mat = new THREE.MeshBasicMaterial({
@@ -442,6 +486,7 @@ function replay(THREE, scene, site, rows) {
     if (r.k === 'panel') panel(THREE, root, r.x, r.y, r.w, r.h, +('0x' + r.c.slice(1)), r.z, r.o);
     else if (r.k === 'disc') disc(THREE, root, r.x, r.y, r.r, +('0x' + r.c.slice(1)), r.z, r.o);
     else if (r.k === 'cutout') cutout(THREE, root, r.a, r.x, r.y, r.h, r.z, r.o, r.f);
+    else if (r.k === 'model') model(THREE, root, r.a, r.x, r.y, r.z, r.h, r.f);
     else if (r.k === 'light') {
       // NO SILENT CAPS. A budget that quietly drops the seventh lamp reads as
       // "that light does not work" and gets debugged for an hour.
@@ -497,7 +542,7 @@ let manifestSites = null;
 async function sheetSites() {
   if (manifestSites) return manifestSites;
   try {
-    const url = new URL('../assets/manifest.json?v=33', import.meta.url);
+    const url = new URL('../assets/manifest.json?v=34', import.meta.url);
     const res = await fetch(url);
     const j = res.ok ? await res.json() : null;
     manifestSites = new Set((j?.dressing?.sites || []).map((n) => n - 1));
@@ -510,7 +555,7 @@ async function rowsFor(site) {
   if (!(await sheetSites()).has(site)) { sheets.set(site, null); return null; }
   let rows = null;
   try {
-    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=46`, import.meta.url);
+    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=47`, import.meta.url);
     const res = await fetch(url);
     if (res.ok) {
       const j = await res.json();
