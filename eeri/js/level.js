@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=40';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=40';
+import { PAL, mix } from './palette.js?v=41';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=41';
 
-import { ROOMS, LAB } from './rooms.js?v=40';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=40';
+import { ROOMS, LAB } from './rooms.js?v=41';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=41';
 
 export { ROOMS, LAB };
 const EPS = 0.001;
@@ -126,6 +126,19 @@ export class Level {
       if (cy >= 0 && cy < H && this.map[H - 1 - cy][c] === CLIMB_CHAR) return true;
     }
     return false;
+  }
+
+  // WHICH ladder he is on, so the climb can pin him to its centre. The map
+  // knows the column; nothing was asking it, so a climb drifted by up to half
+  // a tile and he looked like he was holding air beside the rungs.
+  ladderAt(x, y) {
+    const c = Math.floor(x);
+    if (c < 0 || c >= W) return null;
+    for (const sy of [y + 0.1, y + 0.8]) {
+      const cy = Math.floor(sy);
+      if (cy >= 0 && cy < H && this.map[H - 1 - cy][c] === CLIMB_CHAR) return { c };
+    }
+    return null;
   }
 
   // the top of the ladder under (x, y) — the climb stops with his feet on

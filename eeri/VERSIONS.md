@@ -1,5 +1,54 @@
 # EERI — versions
 
+## v15.36 — 2026-08-21 — five playtest notes, and two of them were one-word bugs
+
+Everything here came off the owner playing it, and the two worst-looking
+problems turned out to be a wrong string and an unstopped animation.
+
+**"Riding a machine looks wrong, should be sitting in the right spot."**
+`eeri_v5.glb` ships fifteen clips and one of them is **`sit`**. `CLIP_FOR`
+asked for **`ride`**, which is not a name in the file, so `play()` fell back to
+`idle` — a STANDING pose — and the kid has ridden every machine in this game
+standing on it. The seat was never the problem: the game was asking for the
+wrong animation. He also sat 0.2 too low once the right clip played, with his
+shoulders inside the cowl; ART_BRIEF §1.2 forbids the rider being swallowed by
+the mount, so he is lifted clear.
+
+**"Animations can get stuck while climbing."** A one-shot plays with
+`clampWhenFinished`, so when it ends it HOLDS its last frame — at effective
+weight 1, for ever, because nothing ever stopped it. `current` was then nulled,
+which killed the crossfade that would have weighted it down. So the state clip
+came back blended 50/50 with a frozen `climbon` and he climbed in a pose that
+was half of each. Every one-shot did it: stomp, hurt, teeter, both idle breaks.
+Stopping the action is the entire fix.
+
+**"Climbing clips and isn't as attached to the ladder as it could."** Two
+things. The rungs are drawn at z 0.35 — in front of the wall they are bolted
+to — and the kid was at z 0, so he climbed BEHIND them and the rails cut across
+his body. He rides at z 0.62 while climbing now, eased so stepping on and off
+is not a jump in depth. And he was only within half a tile of the ladder's
+centre, which looks like holding air beside it; `level.ladderAt()` gives the
+column and the climb pins him to it.
+
+**"Some foreground assets block view of ladders."** The fore lane fades to 0.24
+while climbing and eases back. A climb is the one move that parks you behind
+that strip for seconds while standing still — everywhere else you are moving
+and a beat of occlusion is depth rather than a problem. It fades rather than
+being cut, because a hole punched per ladder is a second set of coordinates to
+keep in step with the levels, and this repo has written down what happens when
+one number lives in two files.
+
+**"Animations in general very minute, so don't communicate actions well."** The
+clips are the art lane's to re-author; what this lane can add is the secondary
+motion, and it is the part that carries a read at 40 px tall. **`walk` was in
+the file and unused** — at a stroll the run clip reads as a mime of running, so
+there is a walk under 3.4 now and the clip rate follows the real speed inside
+each band. On top: a **lean** into the run proportional to speed (a body that
+leans is moving; one that stays upright is being slid along) and a **stretch**
+going up to match the squash that already existed on landing.
+
+Gates: rooms 246, fx 31, dev-menu 36, smoke 433.
+
 ## v15.35 — 2026-08-21 — the excavator does the digging, and blueprints exist
 
 **The dig was a timer, not a move** (owner: "takes a long time to push up and
