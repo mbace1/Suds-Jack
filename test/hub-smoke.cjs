@@ -31,7 +31,13 @@ const collected = [];
 // catalogue once it has been read — see the on-screen button check)
 const STUB = new Set();
 const server = http.createServer((req, res) => {
-  const url = req.url.split('?')[0];
+  // GitHub Pages serves this repo at /Suds-Jack/, not at the root, and a
+  // cabinet is allowed to know that: Kindling is built by another repo with an
+  // absolute base, because TanStack takes the router's basepath from it — the
+  // page renders "Not Found" anywhere else however the assets are written. So
+  // the harness answers on BOTH, the way production does, instead of reporting
+  // a working cabinet as a wall of 404s.
+  const url = req.url.split('?')[0].replace(/^\/Suds-Jack(?=\/|$)/, '') || '/';
   if (url === '/collect' || url === '/collect-broken') {
     let body = '';
     req.on('data', c => { body += c; });
@@ -847,10 +853,20 @@ function check(name, cond) {
   const missing = [], badHref = [], small = [];
   for (const g of shelled) {
     await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
+    // Wait for the button rather than sampling once, the same way the pad
+    // bridge below does. Kindling cannot add it before hydration: its app
+    // renders <html> itself, so React owns the document and deletes any body
+    // child it did not render — the button was there at domcontentloaded and
+    // gone a tick later, which read as a cabinet with no way home.
     const home = page.locator('.arcade-home');
+    await home.waitFor({ state: 'attached', timeout: 6000 }).catch(() => {});
     if (await home.count() !== 1) { missing.push(g.id); continue; }
     const href = await home.getAttribute('href');
-    if (new URL(href).pathname !== '/') badHref.push(`${g.id}->${href}`);
+    // The site root, which is `/` here and `/Suds-Jack/` in production. A
+    // cabinet that masks its URL to the deployed path — Kindling does, its
+    // router basepath is baked in — makes the shell resolve home against
+    // that, which is right there and looks wrong here.
+    if (!['/', '/Suds-Jack/'].includes(new URL(href).pathname)) badHref.push(`${g.id}->${href}`);
     const box = await home.boundingBox();
     if (!box || box.height < 44) small.push(`${g.id} ${Math.round(box?.height ?? 0)}px`);
   }

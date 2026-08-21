@@ -10,8 +10,8 @@
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": "33",
-    "n": 33000,
+    "v": "34",
+    "n": 34000,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
@@ -50,9 +50,9 @@
     "from": "VERSIONS.md"
   },
   "kindling": {
-    "v": "8",
-    "n": 8000,
-    "from": "canonical Kindling release"
+    "v": "9",
+    "n": 9000,
+    "from": "VERSIONS.md"
   },
   "radiofree": {
     "v": "37",
@@ -60,8 +60,8 @@
     "from": "cache token"
   },
   "piritori": {
-    "v": "3",
-    "n": 3000,
+    "v": "3.1",
+    "n": 3001,
     "from": "VERSIONS.md"
   },
   "tokomove": {
