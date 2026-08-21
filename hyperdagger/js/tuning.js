@@ -158,4 +158,54 @@ export const TUNING = {
     fallY: -8,
     width: 4.2,
   },
+
+  /**
+   * THE DIFFICULTY CURVE (ported from the v4.36/v4.38 balance work).
+   *
+   * This governs the PULSE director, which since v31 drives HYPER only —
+   * PURE runs the fixed, learnable DD_SPAWNSET and is deliberately NOT
+   * touched by any of this. Two halves doing different jobs:
+   *
+   *  MINUTE ONE is a PARADE — pulses come fast (~9.5 s) so a new threat
+   *  debuts almost every pulse (the debut guarantee forces the earliest
+   *  un-met type), but the budget stays LOW so each arrives nearly alone.
+   *  Per-pulse pressure in minute one is LOWER than the old curve even
+   *  though six things debut instead of four.
+   *
+   *  MINUTE TWO is the SQUEEZE — the parade is over, so the same cadence
+   *  spends a budget climbing seven times faster. Same enemies, suddenly
+   *  in numbers: difficulty from volume, not novelty.
+   */
+  director: {
+    // [key, unlockTime, cost] — ORDER MATTERS: the debut guarantee walks
+    // this list, so it doubles as the order the player meets the roster in.
+    // An unlock only opens ELIGIBILITY; the debut lands on the NEXT pulse,
+    // so measured arrival runs ~8-14 s behind these numbers.
+    pool: [
+      ['skulls', 6, 2],
+      ['watcher', 14, 3],
+      ['husk', 22, 5],
+      ['brute', 30, 3],
+      ['spider', 38, 4],
+      ['blinker', 46, 3],
+      ['serpent', 68, 8],
+      ['dread', 88, 6],
+    ],
+    caps: { watcher: 3, blinker: 3, spider: 2, dread: 2, husk: 2 },
+    pulse: { first: 10, base: 10, slope: 0.012, floor: 7.5 },
+    budget: { base: 2.6, kneeA: 6, rateA: 0.2, kneeB: 15, rateB: 1.45, rateC: 0.4 },
+    /**
+     * THE PRESSURE CEILING. Budget controls the spawn RATE; what actually
+     * kills you is the standing POPULATION, and population runs away
+     * whenever spawns outpace kills — which is also a death spiral, since
+     * falling behind makes you fall further behind. Measured over a real
+     * run, the uncapped curve went 6 -> 41 -> 88 live threats; with the
+     * ceiling a firing player sees 4.5 -> 30 -> a PLATEAU at ~35.
+     */
+    ceiling: { base: 10, rate: 0.15, cap: 38 },
+    totem: { first: 0, base: 24, slope: 0.03, floor: 15 },
+    thorn: { first: 40, base: 11, slope: 0.03, floor: 5 },
+    leviathan: { first: 150, every: 120 },
+    revenant: { first: 110 },
+  },
 };

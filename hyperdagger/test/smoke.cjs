@@ -677,6 +677,16 @@ s.listen(0, '127.0.0.1', async () => {
   // ---- death → restart under 2 s -----------------------------------------
   const death = await p.evaluate(async () => {
     const hd = window.__hd;
+    // Guarantee a LIVE run before killing it. debug.die() is a no-op unless
+    // state === 'playing', and by this point in the suite the player has
+    // often already been killed by the director — so the assertion below
+    // read a stale frame and failed for reasons that had nothing to do with
+    // the frame logic. (Verified in isolation: die() clears in-run and a
+    // restart restores it, every time.)
+    if (hd.debug.getState().state !== 'playing') {
+      hd.debug.startGame?.();
+      await new Promise(r => requestAnimationFrame(r));
+    }
     hd.debug.die();
     return {
       state: hd.debug.getState().state,

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=63';
-import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=63';
+import { VoxelSprite, MODELS } from './voxel.js?v=64';
+import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=64';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();

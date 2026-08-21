@@ -448,7 +448,7 @@ export function styleTint(c) {
  *  flat runs. HDR voxels (any channel > 1) are gameplay bloom carriers and
  *  pass through untouched. Baked into the parse colors, so applyStyle and
  *  the hit-flash multiplier both inherit it for free. */
-function bakeShading(voxels, ms) {
+export function bakeShading(voxels, ms) {
   const key = (x, y, z) => `${Math.round(x / ms)},${Math.round(y / ms)},${Math.round(z / ms)}`;
   const occ = new Set();
   for (const v of voxels) occ.add(key(v.x, v.y, v.z));

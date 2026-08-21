@@ -5,17 +5,18 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=61';
-import { Player } from './player.js?v=61';
-import { DaggerPool } from './daggers.js?v=61';
-import { GemPool } from './gems.js?v=61';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=63';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=61';
-import { OrbPool } from './bullets.js?v=61';
-import { AudioKit } from './audio.js?v=61';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=61';
-import { TUNING as T } from './tuning.js?v=63';
-import { HyperEnvironment } from './environment.js?v=61';
+import { InputManager } from './input.js?v=64';
+import { Player } from './player.js?v=64';
+import { DaggerPool } from './daggers.js?v=64';
+import { GemPool } from './gems.js?v=64';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=64';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=64';
+import { OrbPool } from './bullets.js?v=64';
+import { AudioKit } from './audio.js?v=64';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=64';
+import { TUNING as T } from './tuning.js?v=64';
+import { HyperEnvironment } from './environment.js?v=64';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=64';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -130,6 +131,35 @@ renderer.toneMappingExposure = 0.86;
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x020202, 24, 72);
+
+// ASSET LIGHT RIG (v4.37). Native geometry is unlit MeshBasic, so these
+// lights touch only LIT materials — imported GLBs. Which lights is not a
+// free choice: an import has to look like it is standing in THIS arena, and
+// this arena has exactly two light sources — the grid floor, which really
+// glows, and the ember horizon — with a black void overhead. So the rig is
+// UPLIT: the hemisphere's ground term is the white grid and its sky term is
+// the void, the inverse of a studio key. That is what stops an imported
+// skull reading as a product shot pasted into the scene.
+const lightRig = new THREE.Group();
+const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 1.0);
+hemi.color.setHex(0x0e0e12);       // sky = the void
+hemi.groundColor.setHex(0xf4f4ff); // ground = the glowing grid
+hemi.intensity = 2.0;
+const _rim = new THREE.DirectionalLight(0xdfe4ff, 0.35); // so crowns don't vanish
+_rim.position.set(-3, 9, -2);
+const EMBER_BASE = 0.55;
+const emberLights = [0, 2.09, 4.19].map(a => {
+  const l = new THREE.DirectionalLight(0xff1e1e, EMBER_BASE);
+  l.position.set(Math.cos(a) * 10, 1.2, Math.sin(a) * 10);
+  return l;
+});
+lightRig.add(hemi, _rim, ...emberLights);
+scene.add(lightRig);
+// A registered Meshy floor tile is merged to one geometry and instanced
+// across the disc, above the procedural floor. Dormant until registered —
+// see ARENA_ASSETS in meshassets.js and assets/README.md.
+let floorPanels = null;
+buildFloorPanels(ARENA_R).then(m => { if (m) { floorPanels = m; scene.add(m); } });
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
@@ -815,6 +845,10 @@ let nextLevAt = 0;
 let nextThornAt = 0;
 let nextRevenantAt = 110; // the dead only rise once there are dead
 let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapted)
+// debug/test only: stop new spawns while everything else keeps running, and
+// hold a run open for measurement. Neither is reachable from the UI.
+let directorFrozen = false;
+let invulnerable = false;
 let pulseN = 0;
 let pureScriptCursor = 0;
 let serpentsSpawned = 0;
@@ -1202,12 +1236,12 @@ function resetRun() {
   // onboarding pacing lives in PULSE_POOL's unlock gates (watcher 25s …
   // dread 120s) — pulses can only draw a type once its gate opens, so debuts
   // still land one at a time. Totems/thorns/Leviathan stay on their own clocks.
-  nextTotemAt = 0;
-  nextThornAt = 60;
-  nextLevAt = 150;
-  nextRevenantAt = 110;
+  nextTotemAt = T.director.totem.first;
+  nextThornAt = T.director.thorn.first;
+  nextLevAt = T.director.leviathan.first;
+  nextRevenantAt = T.director.revenant.first;
   reapCool = 0;
-  nextPulseAt = 20;
+  nextPulseAt = T.director.pulse.first;
   pulseN = 0;
   pureScriptCursor = 0;
   serpentsSpawned = 0;
@@ -1759,18 +1793,10 @@ function ddDirector() {
 // 4th a SPIKE (1.5× budget, favours heavies), every 3rd a SWARM (bodies only,
 // tight burst), and a normal pulse right after any intense one runs at half
 // budget (the breather). Unlock gates preserve the onboarding debut order.
-const PULSE_POOL = [
-  // [key, unlockTime, cost]
-  ['skulls', 20, 2], // pack of 3 direct chasers — the swarm fodder
-  ['watcher', 25, 3],
-  ['husk', 35, 5],  // armored grind — teaches 'chew the shell' while it's calm
-  ['brute', 45, 3],
-  ['spider', 75, 4],
-  ['blinker', 90, 3],
-  ['serpent', 100, 8],
-  ['dread', 120, 6],
-];
-const PULSE_CAPS = { watcher: 3, blinker: 3, spider: 2, dread: 2, husk: 2 };
+// the whole HYPER curve lives in tuning.js — see the essay on T.director.
+// PURE runs DD_SPAWNSET instead and is untouched by any of it.
+const PULSE_POOL = T.director.pool;
+const PULSE_CAPS = T.director.caps;
 const SWARM_KEYS = new Set(['skulls', 'blinker']);
 const SPIKE_KEYS = new Set(['brute', 'dread', 'spider', 'husk']);
 
@@ -1788,7 +1814,11 @@ function pulseBudget(n, kind) {
   // across players (a time-based budget made the same pulse redraw
   // differently depending on when it fired). Knee at pulse 11 ≈ the old
   // 2.5-minute knee at average cadence.
-  const base = 3 + Math.min(n, 11) * 0.75 + Math.max(0, n - 11) * 0.3;
+  const B = T.director.budget;
+  const base = B.base
+    + Math.min(n, B.kneeA) * B.rateA
+    + Math.max(0, Math.min(n, B.kneeB) - B.kneeA) * B.rateB
+    + Math.max(0, n - B.kneeB) * B.rateC;
   const breather = kind === 'normal' && pulseKind(n - 1) !== 'normal';
   const mod = kind === 'heavy' ? 1.6 : kind === 'spike' ? 1.5
     : kind === 'swarm' ? 1.3 : breather ? 0.5 : 1;
@@ -1876,6 +1906,23 @@ let debuted = {};
 
 const lastPulsePicks = []; // debug: {n, kind, picks[]} per pulse, capped
 
+/** Live threats the ceiling counts — totems and eggs are furniture (they
+ *  don't chase and can't touch you), so they must not crowd out real
+ *  pressure. */
+function livePressure() {
+  let n = 0;
+  for (const e of enemies) if (e.alive && e.type !== 'totem' && e.type !== 'egg') n++;
+  return n;
+}
+
+/** How many live threats the floor may hold right now. HYPER only: PURE's
+ *  fixed spawnset is meant to be identical every run, so capping it would
+ *  break the thing that makes it learnable. */
+function pressureCeiling() {
+  const C = T.director.ceiling;
+  return Math.min(C.cap, C.base + gameTime * C.rate);
+}
+
 function runPulse(n) {
   const kind = pulseKind(n);
   // daily runs seed a FRESH stream per pulse index, so pulse N's pick
@@ -1901,7 +1948,13 @@ function runPulse(n) {
     if (gameTime >= 100 && serpents.length < SERPENT_CAP) { spawnPick('serpent', 0, draw); budget -= 8; picks.push('serpent'); }
     else if (gameTime >= 120 && enemyCount('dread') < PULSE_CAPS.dread) { spawnPick('dread', 0, draw); budget -= 6; picks.push('dread'); }
   }
+  // The debut above is guaranteed — a new threat always gets its moment.
+  // Everything after it is FILLER, and filler is what the ceiling governs:
+  // at capacity a pulse stops adding bodies rather than burying a player
+  // who is already behind.
+  if (pressureCeiling() - livePressure() < 1) budget = 0;
   for (let guard = 0; guard < 20 && budget > 0.5; guard++) {
+    if (livePressure() >= pressureCeiling()) break;
     let pool = PULSE_POOL.filter(pulseEligible);
     if (!pool.length) break;
     if (kind === 'swarm') {
@@ -1946,6 +1999,12 @@ function emitSpawnerWaves(ddRules = false) {
       continue;
     }
     if (skullCount() >= SKULL_CAP) continue;
+    // The exhale is the biggest spawn faucet in the game — several totems on
+    // a ~2 s cycle out-produce the entire pulse system — so the pressure
+    // ceiling has to govern it too. Gating only the pulses moved the measured
+    // population by barely one body. (HYPER only: the PURE exhale above runs
+    // its fixed script and must stay deterministic.)
+    if (mode !== 'pure' && livePressure() >= pressureCeiling()) continue;
     const boost = Math.min(6, gameTime * 0.06);
     const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
     const skull =
@@ -1965,6 +2024,7 @@ function emitSpawnerWaves(ddRules = false) {
 }
 
 function director(dt) {
+  if (directorFrozen) { updatePending(dt); return; } // telegraphs still resolve
   if (mode === 'pure') { ddDirector(); return; }
   updatePending(dt);
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
@@ -1973,7 +2033,8 @@ function director(dt) {
     audio.spawn();
     telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Totem(scene, at, interval)));
     // cadence tightens from every 24s down to every 16s as the run goes on
-    nextTotemAt = gameTime + Math.max(16, 24 - gameTime * 0.03);
+    const TT = T.director.totem;
+    nextTotemAt = gameTime + Math.max(TT.floor, TT.base - gameTime * TT.slope);
   }
   // THE REVENANT rises out of the player's own bone-yard — it needs a dense
   // patch of corpses, devours it, and claws up on the spot. No carnage, no
@@ -1999,7 +2060,11 @@ function director(dt) {
     pulseN++;
     runPulse(pulseN);
     // pulse cadence tightens from ~14s toward a 9s floor over the run
-    nextPulseAt = gameTime + Math.max(9, 14 - gameTime * 0.01);
+    // fast from the first pulse on purpose: minute one needs enough pulses
+    // to walk the debut list, and the low early budget is what keeps that a
+    // parade rather than a pile-up.
+    const P = T.director.pulse;
+    nextPulseAt = gameTime + Math.max(P.floor, P.base - gameTime * P.slope);
   }
   if (!flybyDone && gameTime >= 10) {
     flybyDone = true;
@@ -2439,6 +2504,7 @@ function updateCombat(dt) {
 
 /** One enemy/projectile contact. Returns true when the run ended. */
 function playerStruck(sx, sz, killerType, killer = null) {
+  if (invulnerable) return false; // debug/test only — see debug.setInvulnerable
   lastKillerPos.set(sx, 1.2, sz);
   lastKillerRef = killer;
   if (mode !== 'hyper') { lastKiller = killerType; die(); return true; }
@@ -2684,6 +2750,11 @@ function updateFeel(dt) {
   const beat = 1 - ((performance.now() / 1000) * (138 / 60)) % 1;
   floorMat.uniforms.uPulse.value = musicI * (0.25 + 0.75 * beat * beat);
   floorMat.uniforms.uRed.value = opts.contrast ? 0 : t2 * 0.85;
+  // imported assets answer the same signals the floor does: the beat lifts
+  // the uplight, trauma flushes the ember ring
+  hemi.intensity = 2.0 + floorMat.uniforms.uPulse.value * 0.7;
+  const emberK = EMBER_BASE * (1 + t2 * 2.2);
+  for (const l of emberLights) l.intensity = emberK;
   // Removed from the presentation: speedlines and screen-space ripples made
   // the image busier without communicating anything the weapon/camera did not.
   speedPass.enabled = false;
@@ -2850,6 +2921,22 @@ animate();
 window.__hd = {
   enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
   debug: {
+    // ported with the balance work: freeze spawns without freezing the game,
+    // and hold a run open — since the curve tightened, a player who never
+    // moves does not survive long enough to measure anything.
+    freezeDirector(on = true) { directorFrozen = !!on; return directorFrozen; },
+    startGame() { startGame(); }, // tests need a guaranteed-live run to measure
+    setInvulnerable(on = true) { invulnerable = !!on; return invulnerable; },
+    getPressure() { return { live: livePressure(), ceiling: +pressureCeiling().toFixed(1) }; },
+    getArena() {
+      return {
+        lights: lightRig.children.length,
+        uplit: hemi.groundColor.getHex() > hemi.color.getHex(),
+        ember: +emberLights[0].intensity.toFixed(2),
+        arenaSlots: Object.keys(ARENA_ASSETS),
+        panels: floorPanels ? floorPanels.userData.tiles : 0,
+      };
+    },
     addGems(n) { onGemsCollected(n); },
     addStyle(n) { addStyle(n); },
     getStyle() { return { styleVal, tier: STYLE_TIERS[styleTierIdx(styleVal)].label, peak: STYLE_TIERS[stylePeakIdx].label }; },
