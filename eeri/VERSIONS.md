@@ -46,9 +46,16 @@ eye, a check that cannot be fooled by an eye earns its place.
 `js/camera.js` is Design/Level's file; this is a declared cross-lane touch, one
 constant and one multiplication.
 
-Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0. Smoke and playthrough were still
-running when this was committed and their numbers are deliberately left blank
-rather than claimed ahead of the runs. Tokens 40 -> 41.
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · **smoke 434/0** — the new
+framing check reads *"Eeri is framed like the references (1/6.93 of screen,
+103.9px of 720)"* — · **playthrough 25/0**, twelve levels, no stalls, no ride
+losses. Tokens 40 -> 41.
+
+The playthrough matters here rather than being a formality: the bot plays by
+reading game state, not pixels, so a camera change should be invisible to it —
+and that is a reason to check rather than a reason to assume, because the
+camera also drives the level-edge clamp (`halfW`) and a closer dolly changes
+where the frame stops.
 
 ## v15.35 — 2026-08-20 — the lanes use the mipmaps they were already paying for
 
@@ -93,7 +100,8 @@ cannot see". Eeri has no equivalent yet. Until it does, this change ships on
 the grounds that it is correct and costs nothing, not on the grounds that it
 was seen to help.
 
-Tokens 39 -> 40.
+Gates on the same tree: rooms 147/0 · fx 31/0 · dev-menu 38/0 · smoke 434/0 ·
+playthrough 25/0. Tokens 39 -> 40.
 
 ## v15.34 — 2026-08-20 — the lamps light something
 
