@@ -170,12 +170,19 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   eq(await page.evaluate(() => window.__tm.game.state), 'upgrade', 'crossing a week stops for the choice');
   ok(await page.evaluate(() => window.__tm.game.paused), 'and pauses while it is open');
   eq(await page.evaluate(() => document.querySelectorAll('#upBtns button').length), 2, 'two cards, never more');
+  // force the two-step reward rather than taking whatever the offer rolled —
+  // a gate whose number of checks depends on a dice roll cannot be compared
+  // between runs
+  await page.evaluate(() => {
+    window.__tm.game.offer = ['carriage', 'tunnel'];
+    window.__tm.debug.showUpgrade();
+  });
   await page.click('#upBtns button');
-  const needsLine = await page.evaluate(() => !document.getElementById('lineWrap').hidden);
-  if (needsLine) {
-    ok(await page.evaluate(() => !!document.querySelector('#upBtns button.sel')), 'the card you picked is marked while you place it');
-    await page.click('#linePick button');
-  }
+  ok(await page.evaluate(() => !document.getElementById('lineWrap').hidden),
+     'a reward that lands on a line asks which line');
+  ok(await page.evaluate(() => !!document.querySelector('#upBtns button.sel')),
+     'and the card you picked is marked while you place it');
+  await page.click('#linePick button');
   eq(await page.evaluate(() => window.__tm.game.state), 'play', 'and taking it resumes the run');
 
   // ── the end ───────────────────────────────────────────────────────────

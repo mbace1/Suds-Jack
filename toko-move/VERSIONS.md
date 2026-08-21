@@ -60,7 +60,7 @@ crowd lands.
 
 ```
 node toko-move/test/core.mjs                           # 165 checks, bare node
-NODE_PATH=$(npm root -g) node toko-move/test/smoke.cjs # 46 checks, real browser
+NODE_PATH=$(npm root -g) node toko-move/test/smoke.cjs # 47 checks, real browser
 ```
 
 Mutation-tested again: borrowing the board's rng for the crowd, dumping the
@@ -68,6 +68,11 @@ crowd on one stop, silencing the burst's announcement, un-breaking a crossed
 hold line, letting a goalless mission count as won, accepting a goal whose
 capability is missing, and giving the festival sudden death back — each fails a
 named check.
+
+The browser gate also reported 46 checks on one run and 45 on the next: it took
+whichever reward the weekly offer happened to roll, so one assertion existed
+only some of the time. A gate whose size depends on a dice roll cannot be
+compared between runs, so it forces the two-step reward now.
 
 ## v2 — 2026-08-20
 
