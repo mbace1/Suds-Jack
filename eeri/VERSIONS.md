@@ -1,5 +1,76 @@
 # EERI — versions
 
+## v15.38 — 2026-08-21 — the editor can PLACE, not just move
+
+Step 4. Owner's spec: a menu upper-left with layers, a dropdown of assets per
+layer, click to place, snap into z, and *"maybe with a size slider after it
+snaps"*.
+
+**A band is a name for a range, not a new thing in the data.** The owner asked
+for "fore, middle, back1, back2" and the game has no layers in that sense: a
+dressing row carries a continuous `z`, and the shipped sites use between 12 and
+35 distinct depths each. So `BANDS` is four named depths read off the sheets
+that exist — backdrop panels at -1.70, buildings at -1.20, structures at -0.72,
+in-front at +0.85 — and placing snaps to the band's `z`. Fine adjustment stays
+on the selected row's own z field, so the snap is a default rather than a cage.
+That is the right call for this game specifically: the dressing report showed
+**depth count** is what separates the worlds that read as places from the ones
+that read as collage, so a lane that stays coherent is worth more than a lane
+you can nudge.
+
+x and y snap to the **half-tile** grid — not whole tiles, because a prop that
+can only land on integers cannot be centred between two.
+
+**A click adds a ROW, never a mesh.** That is what step 2 was for: the sheet is
+the thing, the meshes are what the sheet makes, and the room rebuilds from rows
+after every placement — the same path a reload takes. Building a mesh here and
+remembering to write a row later is the version that silently loses work.
+
+**The size slider runs after the snap**, which is the owner's shape for it: the
+band decides depth, the hand decides scale. Each row kind carries its size in a
+different field (`w`/`h` for a panel, `r` for a disc, `h` for a cutout), so
+`applySize` is the one place that knows which.
+
+**Every site can now hold dressing.** The watcher was gated on `site >= 6 &&
+site <= 11`, because worlds 3 and 4 were the only rooms with a sidecar to run.
+That gate is exactly what stopped the editor from dressing the rooms a player
+sees FIRST. Worlds 1 and 2 have nothing to capture — world 1 has no dressing
+layer at all, its look is layer art plus level geometry, and that geometry
+carries collision — so the only way they ever get one is by someone placing
+rows into an empty sheet. They now mount nothing, cost one 404 on entry, and
+work like any other site the moment a sheet is saved.
+
+**`window.__eeriDress`.** The editor needs to tell the dressing module to
+rebuild, and there is no path through `__eeri`: main.js does not import this
+module (world34-register pulls it in dynamically), and the inspector runs in
+the dev frame's realm where a fresh `import()` would build a SECOND copy with
+its own `sheets` map and its own `mounted`. One live instance, published once
+on the window, is the only version of this that works.
+
+Two things I put in and then had to fix, both my own:
+
+- I called `this.say()` and `debug.dressingRefresh()` before either existed.
+- The first size check asserted only that the placed mesh could be *found* —
+  a pass on nothing, the same shape as the light-handle check at v15.34. It now
+  drives the actual slider through a real `input` event and asserts the row's
+  own size field moved, 1.6 -> 3.5.
+
+`test/inspector.cjs` is 19 checks: PLACE adds a row (92 -> 93), at the band's
+depth rather than the pointer's, on the half-tile grid, the room rebuilds with
+it in, and the slider resizes it. Selection normally happens by raycast and a
+test cannot reliably hit a 1-tile prop with a synthetic pointer, so the tool
+exposes itself as `window.__insp` on the dev page — which the shipped game
+never loads.
+
+Also: the inspector's drag surface takes a thumb now. The handlers were already
+pointer events, but without `touch-action: none` the browser claims the gesture
+for scrolling and pans the page while the prop stays put — the same family as
+the `pointerup`/`touchend` trap `hub/shell.js` paid for.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 38/0 · **inspector 19/0**. Smoke and
+playthrough were still running at commit time; their numbers are deliberately
+left blank rather than claimed ahead of the runs. Tokens 44 -> 45.
+
 ## v15.37 — 2026-08-21 — the edges stop being jagged, and the grass stops repeating
 
 Owner's steer after the shadows were parked: *"sharper and more varied assets

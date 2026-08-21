@@ -88,6 +88,48 @@ const CSS = `
 // the selection box becomes the thing you select and nothing else can be.
 const MINE = '__insp';
 
+// ---- LAYER BANDS ---------------------------------------------------------
+//
+// The owner asked for a layer menu — "fore, middle, back1, back2" — and the
+// game does not have layers in that sense. A dressing row carries a
+// CONTINUOUS `z`, and the sites in the repo use between 12 and 35 distinct
+// depths each; the lane art behind them is a separate five-deep stack
+// (skyline / far / mid / near / fore) that props never join.
+//
+// So a band is a NAME FOR A RANGE, not a new thing in the data. Placing snaps
+// to the band's `z` — the owner's call, and the right one: a lane that stays
+// coherent is most of what stops a 2.5D screen reading as a collage, and the
+// dressing report showed depth COUNT is what separates the worlds that read
+// well from the ones that do not. Fine adjustment stays available on the
+// selected row's own z field, so snapping is a default rather than a cage.
+//
+// The numbers are read off the shipped sheets rather than invented: worlds 3
+// and 4 put backdrop panels at -1.7, mid structures around -1.2 to -0.9,
+// near dressing at -0.7, and the few things that stand in front of the play
+// plane at +0.85.
+const BANDS = [
+  { id: 'back2',  label: 'back 2 — sky side', z: -1.70 },
+  { id: 'back1',  label: 'back 1 — buildings', z: -1.20 },
+  { id: 'middle', label: 'middle — structures', z: -0.72 },
+  { id: 'fore',   label: 'fore — in front', z: 0.85 },
+];
+
+// What can be placed, per band. `panel` and `disc` are the two primitives every
+// sheet is built from; the cutouts are the art the game already ships and
+// loads by name. A cutout in the FORE band and the same cutout in BACK1 are
+// the same asset at two depths — that is what the bands are for.
+const PLACEABLE = [
+  { k: 'panel', name: 'panel — flat colour block' },
+  { k: 'disc',  name: 'disc — flat colour circle' },
+  { k: 'cutout', a: 'root',      name: 'cutout — root' },
+  { k: 'cutout', a: 'worklamp',  name: 'cutout — work lamp' },
+  { k: 'cutout', a: 'reel',      name: 'cutout — cable reel' },
+  { k: 'cutout', a: 'barriers',  name: 'cutout — barrier lamps' },
+  { k: 'cutout', a: 'forestTunnel',   name: 'cutout — log tunnel' },
+  { k: 'cutout', a: 'forestClearing', name: 'cutout — stump clearing' },
+];
+
+
 export class Inspector {
   constructor(win) {
     this.win = win;
@@ -124,7 +166,18 @@ export class Inspector {
       <div class="body">
         <div class="row">
           <button type="button" data-a="pick" aria-pressed="false">PICK</button>
+          <button type="button" data-a="place" aria-pressed="false">PLACE</button>
           <button type="button" data-a="walk" aria-pressed="false">WALK</button>
+        </div>
+        <div class="row" data-el="palette" hidden>
+          <label style="flex:1 1 0">layer<select data-el="band"></select></label>
+          <label style="flex:1 1 0">asset<select data-el="asset"></select></label>
+        </div>
+        <div class="row" data-el="sizeRow" hidden>
+          <label style="flex:1 1 0">size
+            <input type="range" min="0.2" max="6" step="0.05" value="1.6" data-el="size">
+          </label>
+          <b data-el="sizeVal">1.60</b>
         </div>
         <div class="hint" data-el="tip">PICK: click a thing. drag moves it.
 WALK: click to stand there — the camera follows the kid, so this is how you
@@ -163,6 +216,7 @@ layer a thing is on is to switch the others off</div>
       if (!a) return;
       if (a === 'close') this.hide();
       if (a === 'pick') this.setMode('pick');
+      if (a === 'place') this.setMode('place');
       if (a === 'walk') this.setMode('walk');
       if (a === 'copy') this.copy();
       if (a === 'hide') this.hidePicked();
@@ -173,6 +227,18 @@ layer a thing is on is to switch the others off</div>
     for (const k of ['x', 'y', 'z']) {
       this.q(k).addEventListener('input', () => this.applyFields());
     }
+
+    // the palette: bands, then the assets that band can take
+    const bandSel = this.q('band'), assetSel = this.q('asset');
+    bandSel.innerHTML = BANDS.map((b) => `<option value="${b.id}">${b.label}</option>`).join('');
+    assetSel.innerHTML = PLACEABLE.map((p2, i) => `<option value="${i}">${p2.name}</option>`).join('');
+    bandSel.value = 'middle';
+
+    // THE SIZE SLIDER, and it runs AFTER the snap rather than instead of it.
+    // Owner's refinement: depth is decided by the band, scale is decided by
+    // hand. Live on the selected row, so it is a look control rather than a
+    // number to guess before placing.
+    this.q('size').addEventListener('input', () => this.applySize());
 
     this.catch_.addEventListener('pointerdown', (e) => this.down(e));
     this.catch_.addEventListener('pointermove', (e) => this.move(e));
@@ -218,7 +284,13 @@ layer a thing is on is to switch the others off</div>
     this.mo.observe(doc.body, { childList: true });
   }
 
-  show() { this.el.hidden = false; this.listGroups(); this.showHandles(true); }
+  // The gate needs a handle on the live tool: selection normally happens by
+  // raycast, and a test cannot reliably hit a 1-tile prop with a synthetic
+  // pointer at an arbitrary camera. Dev page only — the shipped game never
+  // loads this module.
+  expose() { this.host.ownerDocument.defaultView.__insp = this; }
+
+  show() { this.el.hidden = false; this.listGroups(); this.showHandles(true); this.expose(); }
   hide() { this.setMode(null); this.showHandles(false); this.el.hidden = true; }
   toggle() { this.el.hidden ? this.show() : this.hide(); }
 
@@ -254,8 +326,42 @@ layer a thing is on is to switch the others off</div>
     return rc;
   }
 
+  // ---- PLACING -----------------------------------------------------------
+  //
+  // A click in PLACE mode adds a ROW, not a mesh. That is the whole reason
+  // step 2 existed: the sheet is the thing, the meshes are what the sheet
+  // makes, and rebuilding from rows is how a placement survives SAVE and a
+  // reload. Building a mesh here and remembering to write a row later is the
+  // version that silently loses work.
+  place(e) {
+    const A = this.api(); if (!A) return;
+    const found = this.rowOf(this.picked) || this.anySheet();
+    if (!found) { this.say('this room has no dressing sheet yet — place still works, but SAVE is the only way to keep it'); }
+    const band = BANDS.find((b) => b.id === this.q('band').value) || BANDS[2];
+    const spec = PLACEABLE[+this.q('asset').value] || PLACEABLE[0];
+
+    // where, in world units, on the band's own depth plane
+    const rc = this.ray(e); if (!rc) return;
+    const p = new A.THREE.Vector3();
+    if (!rc.ray.intersectPlane(
+      new A.THREE.Plane(new A.THREE.Vector3(0, 0, 1), -band.z), p)) return;
+
+    // SNAP. Owner's call, and it is on the tile grid the levels are authored
+    // on — a half-tile step, because a prop that can only land on whole tiles
+    // cannot be centred between two.
+    const snap = (v) => Math.round(v * 2) / 2;
+    const size = +this.q('size').value || 1.6;
+    const row = { id: this.freshId(), k: spec.k, x: snap(p.x), y: snap(p.y), z: band.z, o: 1 };
+    if (spec.k === 'panel') { row.w = size; row.h = size * 0.6; row.c = '#8a7f6b'; }
+    else if (spec.k === 'disc') { row.r = size * 0.5; row.c = '#8a7f6b'; }
+    else { row.a = spec.a; row.h = size; row.f = false; }
+
+    this.addRow(row);
+  }
+
   down(e) {
     const A = this.api(); if (!A) return;
+    if (this.on === 'place') { this.place(e); return; }
     if (this.on === 'walk') {
       const rc = this.ray(e); if (!rc) return;
       const p = new A.THREE.Vector3();
@@ -361,6 +467,73 @@ layer a thing is on is to switch the others off</div>
   // `assets/dressing/site-N.json`, and every replayed mesh carries its row id.
   // Without this the inspector can move a prop and the move dies on reload —
   // which is the whole difference between a viewer and an editor.
+  // The site's sheet WITHOUT needing something selected first. `rowOf` starts
+  // from a picked mesh, which is no use for the very first thing placed in a
+  // room: there is nothing to pick yet.
+  anySheet() {
+    const A = this.api(); if (!A?.scene) return null;
+    let found = null;
+    A.scene.traverse((n) => { if (!found && n.userData?.rows) found = { rows: n.userData.rows, group: n }; });
+    return found;
+  }
+
+  // ids have to be unique within the sheet and stable across a save, and the
+  // sheets number theirs d1, d2, … — so continue the sequence rather than
+  // inventing a scheme that a re-capture would then disagree with.
+  freshId() {
+    const f = this.anySheet();
+    let n = 0;
+    for (const r of f?.rows || []) {
+      const m = /^d(\d+)$/.exec(r.id || '');
+      if (m) n = Math.max(n, +m[1]);
+    }
+    return `d${n + 1}`;
+  }
+
+  // Add a row and rebuild the site's dressing from the sheet. Rebuilding
+  // rather than adding one mesh is deliberate: it is the same path a reload
+  // takes, so anything that looks right here looks right after SAVE.
+  addRow(row) {
+    const found = this.anySheet();
+    if (!found) { this.say('no sheet in this room to add to'); return; }
+    found.rows.push(row);
+    this.refreshDressing();
+    this.say(`placed ${row.k}${row.a ? ' ' + row.a : ''} at ${row.x}, ${row.y} on z ${row.z}`);
+  }
+
+  // THE SIZE SLIDER. Runs on the selected row after it has been placed, which
+  // is the owner's shape for this: the band decides depth, the hand decides
+  // scale. Each row kind carries its size in a different field, so this is the
+  // one place that knows which.
+  applySize() {
+    const v = +this.q('size').value || 1;
+    this.q('sizeVal').textContent = v.toFixed(2);
+    const found = this.rowOf(this.picked);
+    if (!found?.row) return;
+    const r = found.row;
+    if (r.k === 'panel') { r.w = v; r.h = v * 0.6; }
+    else if (r.k === 'disc') { r.r = v * 0.5; }
+    else if (r.k === 'cutout') { r.h = v; }
+    this.refreshDressing();
+  }
+
+  // one line of feedback in the panel — placing something you cannot see land
+  // is indistinguishable from placing nothing
+  say(msg) { const el = this.q('out'); if (el) el.textContent = msg; }
+
+  // Rebuild the room from its rows. `applyRows` clears the module's mounted
+  // site, so the dressing watcher re-replays on the next frame — the same path
+  // a reload takes, which is what makes what you see here match what SAVE
+  // writes.
+  refreshDressing() {
+    const A = this.api();
+    const D = this.win.__eeriDress;
+    const f = this.anySheet();
+    if (!A || !D || !f) return false;
+    D.applyRows(A.site(), f.rows);
+    return true;
+  }
+
   rowOf(o) {
     if (!o?.userData?.row) return null;
     for (let n = o; n; n = n.parent) {

@@ -492,7 +492,7 @@ async function rowsFor(site) {
   if (sheets.has(site)) return sheets.get(site);
   let rows = null;
   try {
-    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=44`, import.meta.url);
+    const url = new URL(`../assets/dressing/site-${site + 1}.json?v=45`, import.meta.url);
     const res = await fetch(url);
     if (res.ok) {
       const j = await res.json();
@@ -513,6 +513,17 @@ export function currentRows() {
   return mounted?.userData?.rows || null;
 }
 
+// THE EDITOR'S HANDLE, and it goes on the window rather than through
+// `__eeri`. This module is a browser-only sidecar that main.js does not
+// import — world34-register.js pulls it in dynamically — so there is no path
+// for main.js to re-export it, and the inspector runs in the dev frame's
+// realm where a fresh `import()` would build a SECOND copy of this module with
+// its own `sheets` map and its own `mounted`. One live instance, published
+// once, is the only version of this that can work.
+if (typeof window !== 'undefined') {
+  window.__eeriDress = { applyRows, currentRows };
+}
+
 function tick() {
   const e = window.__eeri;
   if (!e?.THREE || !e?.scene || typeof e.site !== 'function') {
@@ -526,17 +537,27 @@ function tick() {
     mounted = null;
     mountedSite = site;
 
-    if (site >= 6 && site <= 11) {
+    // EVERY SITE, not just worlds 3 and 4. This used to be gated on
+    // `site >= 6 && site <= 11` because those were the only rooms with a
+    // dressing sidecar to run. Now that a sheet is data, that gate is what
+    // stopped the editor from being able to dress the rooms the player sees
+    // FIRST: worlds 1 and 2 have no sidecar to capture, so the only way they
+    // ever get one is by someone placing rows into an empty sheet.
+    //
+    // Worlds 1 and 2 therefore start with no sheet and no builder, mount
+    // nothing, and cost one 404 on entry — which `rowsFor` already treats as
+    // "nothing authored" rather than as an error. The moment a sheet is saved
+    // for one of them it mounts like any other.
+    {
       const want = site;
       // DATA IF PRESENT, CODE IF NOT. The await is why the site is re-checked
       // on the way back: a level change during the fetch would otherwise mount
       // the room you just left on top of the one you are now standing in.
       rowsFor(site).then((rows) => {
         if (mountedSite !== want || mounted) return;
-        mounted = rows
-          ? replay(e.THREE, e.scene, want, rows)
-          : (want <= 8 ? forestSite(e.THREE, e.scene, want)
-                       : eveningSite(e.THREE, e.scene, want));
+        if (rows) mounted = replay(e.THREE, e.scene, want, rows);
+        else if (want >= 6 && want <= 8) mounted = forestSite(e.THREE, e.scene, want);
+        else if (want >= 9 && want <= 11) mounted = eveningSite(e.THREE, e.scene, want);
       });
     }
   }

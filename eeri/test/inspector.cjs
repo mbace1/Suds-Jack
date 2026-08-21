@@ -190,6 +190,84 @@ srv.listen(0, '127.0.0.1', async () => {
     ok(`every light reaches the floor (shortest ${g.shortest} units)`, g.shortest >= 16);
   }
 
+  // ---- PLACING ------------------------------------------------------------
+  // The whole point of the sheet being data: a click adds a ROW, the room
+  // rebuilds from rows, and what is on screen is what SAVE would write. This
+  // drives it the way a hand would — choose a band, choose an asset, click.
+  {
+    const before = await page.evaluate(() => {
+      const w = document.querySelector('iframe').contentWindow;
+      let n = 0; w.__eeri.scene.traverse((o) => { if (o.userData?.rows) n = o.userData.rows.length; });
+      return n;
+    });
+    const placed = await page.evaluate(async () => {
+      const doc = document;
+      const insp = doc.querySelector('.insp');
+      const q = (k) => insp.querySelector(`[data-el="${k}"]`);
+      // PLACE mode, back1 band, the first cutout in the list
+      insp.querySelector('[data-a="place"]').click();
+      q('band').value = 'back1';
+      const assetSel = q('asset');
+      const idx = [...assetSel.options].findIndex((o) => /cutout/.test(o.textContent));
+      assetSel.value = String(idx);
+      const c = doc.querySelector('.inspCatch');
+      const r = c.getBoundingClientRect();
+      const at = { clientX: r.left + r.width * 0.45, clientY: r.top + r.height * 0.55 };
+      c.dispatchEvent(new PointerEvent('pointerdown', { ...at, bubbles: true, pointerId: 1 }));
+      c.dispatchEvent(new PointerEvent('pointerup', { ...at, bubbles: true, pointerId: 1 }));
+      await new Promise((res) => setTimeout(res, 60));
+      const w = document.querySelector('iframe').contentWindow;
+      let rows = null; w.__eeri.scene.traverse((o) => { if (o.userData?.rows) rows = o.userData.rows; });
+      const last = rows && rows[rows.length - 1];
+      return { n: rows ? rows.length : 0, last, out: q('out').textContent };
+    });
+    ok(`PLACE adds a row to the sheet (${before} -> ${placed.n})`, placed.n === before + 1,
+      JSON.stringify(placed.out));
+    // SNAPPED TO THE BAND, which is the owner's call: depth is the band's, not
+    // the pointer's. back1 is -1.20.
+    ok(`…at the band's own depth, not the pointer's (z ${placed.last?.z})`,
+      placed.last && Math.abs(placed.last.z - (-1.20)) < 1e-6, JSON.stringify(placed.last));
+    // …and on the half-tile grid
+    ok('…snapped to the half-tile grid',
+      placed.last && Math.abs(placed.last.x * 2 - Math.round(placed.last.x * 2)) < 1e-6
+      && Math.abs(placed.last.y * 2 - Math.round(placed.last.y * 2)) < 1e-6,
+      JSON.stringify(placed.last));
+    // the row has to have actually BUILT something, or it is a row nobody drew
+    await page.waitForTimeout(900);
+    const drew = await page.evaluate((id) => {
+      const w = document.querySelector('iframe').contentWindow;
+      let hit = 0; w.__eeri.scene.traverse((o) => { if (o.userData?.row === id) hit++; });
+      return hit;
+    }, placed.last?.id);
+    ok(`…and the room rebuilt with it in (${drew} mesh)`, drew > 0);
+
+    // THE SIZE SLIDER, which runs AFTER the snap — the owner's shape for this:
+    // the band decides depth, the hand decides scale. It edits the selected
+    // row, so the thing just placed has to be picked first.
+    const sized = await page.evaluate(async (id) => {
+      const doc = document;
+      const w = doc.querySelector('iframe').contentWindow;
+      let mesh = null; w.__eeri.scene.traverse((o) => { if (o.userData?.row === id) mesh = o; });
+      const insp = doc.querySelector('.insp');
+      const q = (k) => insp.querySelector(`[data-el="${k}"]`);
+      let rows = null; w.__eeri.scene.traverse((o) => { if (o.userData?.rows) rows = o.userData.rows; });
+      const row = rows.find((r) => r.id === id);
+      const before = row.h;
+      // select it the way a click would, then move the slider for real
+      window.__insp.picked = mesh;
+      q('size').value = '3.5';
+      q('size').dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise((res) => setTimeout(res, 60));
+      let rows2 = null; w.__eeri.scene.traverse((o) => { if (o.userData?.rows) rows2 = o.userData.rows; });
+      const after = rows2.find((r) => r.id === id).h;
+      return { before, after, label: q('sizeVal').textContent };
+    }, placed.last?.id);
+    ok(`the size slider resizes the placed row (h ${sized.before} -> ${sized.after})`,
+      Math.abs(sized.after - 3.5) < 1e-6 && sized.after !== sized.before,
+      JSON.stringify(sized));
+    ok(`…and says what it did (${sized.label})`, sized.label === '3.50');
+  }
+
   ok('no page errors while driving the tool', errs.length === 0, errs.slice(0, 2).join(' | '));
 
   await br.close(); srv.close();
