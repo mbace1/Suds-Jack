@@ -8,9 +8,9 @@
 // silently rewrites boards that already exist. New behaviour that needs
 // randomness takes its own stream (see `siteRng`) rather than borrowing this one.
 
-import { makeRng } from './rng.js?v=7';
-import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=7';
-import { inWater, dist } from './geometry.js?v=7';
+import { makeRng } from './rng.js?v=8';
+import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=8';
+import { inWater, dist } from './geometry.js?v=8';
 
 // The default board, still exported because the renderer and the tests want a
 // size before a mission is chosen. A mission may state its own.

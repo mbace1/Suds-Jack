@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=7';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=7';
-import { Renderer } from './render.js?v=7';
-import { LineDrawer, RoadDrawer } from './input.js?v=7';
-import { Kit } from './audio.js?v=7';
-import { PAL, sizeAt } from './palette.js?v=7';
+import { Game } from './sim.js?v=8';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=8';
+import { Renderer } from './render.js?v=8';
+import { LineDrawer, RoadDrawer } from './input.js?v=8';
+import { Kit } from './audio.js?v=8';
+import { PAL, sizeAt } from './palette.js?v=8';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
