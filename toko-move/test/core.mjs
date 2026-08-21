@@ -2,14 +2,14 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=7';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=7';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=7';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=7';
-import { Game } from '../js/sim.js?v=7';
-import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=7';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=7';
-import { PAL, INK } from '../js/palette.js?v=7';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=8';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=8';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=8';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=8';
+import { Game } from '../js/sim.js?v=8';
+import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=8';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=8';
+import { PAL, INK } from '../js/palette.js?v=8';
 
 // a platform full of people, now that a passenger is an object
 const fill = (st, n, goal, now = 0) => { for (let i = 0; i < n; i++) st.join(goal, now); return st; };

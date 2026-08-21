@@ -5,10 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=7';
-import { BOARD } from './world.js?v=7';
-import { CELL } from './roads.js?v=7';
-import { drawShape, tracePath } from './shapes.js?v=7';
+import { PAL, INK, sizeAt } from './palette.js?v=8';
+import { BOARD } from './world.js?v=8';
+import { CELL } from './roads.js?v=8';
+import { drawShape, tracePath } from './shapes.js?v=8';
 
 export class Renderer {
   constructor(canvas) {
@@ -119,17 +119,25 @@ export class Renderer {
       const [cx, cy] = k.split(',').map(Number);
       ctx.fillRect(cx * CELL, cy * CELL, CELL, CELL);
     }
-    // a bridge is drawn with its own edges, because a square of road out over
-    // the water is the expensive one and should look like it
+    // A bridge gets parapets, because a square of road out over the water is the
+    // expensive one and should look like it. They run ALONG the traffic, which
+    // is the whole point and was got wrong first: drawn on the top and bottom
+    // edge whatever the direction, a bridge heading north-south came out as a
+    // ladder of rungs across the road rather than a rail down each side of it.
     ctx.strokeStyle = PAL.ink;
     ctx.lineWidth = 2;
+    ctx.beginPath();
     for (const k of net.spanned) {
       const [cx, cy] = k.split(',').map(Number);
-      ctx.beginPath();
-      ctx.moveTo(cx * CELL, cy * CELL); ctx.lineTo(cx * CELL + CELL, cy * CELL);
-      ctx.moveTo(cx * CELL, cy * CELL + CELL); ctx.lineTo(cx * CELL + CELL, cy * CELL + CELL);
-      ctx.stroke();
+      const x = cx * CELL, y = cy * CELL;
+      const across = net.cells.has(`${cx - 1},${cy}`) || net.cells.has(`${cx + 1},${cy}`);
+      const down = net.cells.has(`${cx},${cy - 1}`) || net.cells.has(`${cx},${cy + 1}`);
+      // a lone span with nothing either side gets both, which is honest: it is
+      // a stub of bridge and looks like one
+      if (across || !down) { ctx.moveTo(x, y); ctx.lineTo(x + CELL, y); ctx.moveTo(x, y + CELL); ctx.lineTo(x + CELL, y + CELL); }
+      if (down || !across) { ctx.moveTo(x, y); ctx.lineTo(x, y + CELL); ctx.moveTo(x + CELL, y); ctx.lineTo(x + CELL, y + CELL); }
     }
+    ctx.stroke();
     // the seam between squares, so a wide road reads as several and not as a slab
     ctx.strokeStyle = PAL.roadSeam;
     ctx.lineWidth = 1;

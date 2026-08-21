@@ -1,5 +1,19 @@
 # Toko Move — versions
 
+## v8 — 2026-08-21
+
+**The bridge did not look like a bridge**, and the fix is the same shape as the
+one v7 already recorded about the road: everything a state assertion can reach
+was right, and a screenshot said no.
+
+A span got parapets in v7 — drawn on the square's top and bottom edge whatever
+direction the traffic ran. So an east-west crossing read correctly and a
+north-south one came out as a **ladder of rungs laid across the road** rather
+than a rail down each side of it, which is a level crossing, not a bridge. The
+parapets run along the traffic now, taken from the span's own road neighbours;
+a lone span with nothing either side still gets all four, because a stub of
+bridge is what it is.
+
 ## v7 — 2026-08-21
 
 **The Rush** — the second local layer, and the first mission not played on
