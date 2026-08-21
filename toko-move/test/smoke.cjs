@@ -70,7 +70,10 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   }));
   ok(board.campaign.length >= 1, `the mission board lists the campaign (${board.campaign.join(', ')})`);
   ok(board.free.includes('The City'), 'and free play keeps the endless city');
-  eq(board.locked, 0, 'the first mission is not locked behind anything');
+  // the spine: the first is always open, and anything after it is earned
+  const lockState = await page.evaluate(() => [...document.querySelectorAll('#campaignList button')].map(b => b.disabled));
+  eq(lockState[0], false, 'the first mission is not locked behind anything');
+  ok(lockState.slice(1).every(Boolean), `and the ones after it are (${lockState.length - 1} locked)`);
 
   await page.evaluate(() => [...document.querySelectorAll('#freeList button')]
     .find(b => /The City/.test(b.textContent)).click());
@@ -316,6 +319,94 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   ok(await page.evaluate(() => !!document.querySelector('#campaignList .miss.done')),
      'and a cleared mission is marked on it');
 
+  // ── the car layer, driven by pointer ──────────────────────────────────
+  // Everything here is the gesture, which is the one part of this layer that
+  // cannot be checked in bare node: whether a drag lays road, whether dragging
+  // back along it lifts it, and whether a second drag off the end EXTENDS it —
+  // that last one shipped broken, because "started on road" decided the verb
+  // and every attempt to carry a street on simply erased it.
+  await page.evaluate(() => window.__tm.debug.launch('rush', 9));
+  await page.waitForTimeout(300);
+  eq(await page.evaluate(() => window.__tm.game.layer), 'roads', 'The Rush is played on the roads');
+
+  const chips = await page.evaluate(() => [...document.querySelectorAll('.stk')].map(e => e.textContent.trim()).join(' | '));
+  ok(/road/.test(chips), `the strip counts road, not lines ("${chips}")`);
+  ok(/cars/.test(chips), 'and cars');
+  ok(/bridge/.test(chips), 'and bridges');
+
+  const cellAt = (cx, cy) => page.evaluate(([x, y]) => {
+    const c = window.__tm.game.roads.centre(x + ',' + y);
+    return window.__tm.toClient(c.x, c.y);
+  }, [cx, cy]);
+  const dragCells = async (from, to) => {
+    const a = await cellAt(from[0], from[1]), b = await cellAt(to[0], to[1]);
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, { steps: 24 });
+    await page.mouse.up();
+    await page.waitForTimeout(120);
+  };
+  // a dry run of squares, found rather than assumed: a board has a river on it
+  const run = await page.evaluate(() => {
+    const R = window.__tm.game.roads;
+    for (let cy = 1; cy < R.rows - 1; cy++) {
+      let n = 0;
+      for (let cx = 1; cx < R.cols - 1; cx++) n = R.wet(cx, cy) ? 0 : n + 1;
+      if (n >= 6) {
+        let cx = R.cols - 2;
+        while (R.wet(cx, cy)) cx--;
+        return { cy, from: cx - 5, to: cx };
+      }
+    }
+    return null;
+  });
+  ok(run !== null, 'the board has somewhere dry to lay a street');
+  if (run) {
+    await page.evaluate(() => { const R = window.__tm.game.roads; for (const k of [...R.cells]) R.erase(...k.split(',').map(Number)); });
+    await dragCells([run.from, run.cy], [run.from + 3, run.cy]);
+    const laid = await page.evaluate(() => window.__tm.game.roads.used());
+    ok(laid >= 4, `a drag across bare ground lays road (${laid} squares)`);
+
+    // …and drawn. The board is the only thing that can say so.
+    const painted = await page.evaluate(async ([cx, cy]) => {
+      const R = window.__tm.game.roads, c = R.centre(cx + ',' + cy);
+      const r = window.__tm.renderer;
+      const px = Math.round(r.ox + c.x * r.scale), py = Math.round(r.oy + c.y * r.scale);
+      const d = r.canvas.getContext('2d').getImageData(px * devicePixelRatio, py * devicePixelRatio, 1, 1).data;
+      return { got: '#' + [...d].slice(0, 3).map(v => v.toString(16).padStart(2, '0')).join(''),
+               want: window.__tm.debug.PAL.road, paper: window.__tm.debug.PAL.paper };
+    }, [run.from + 1, run.cy]);
+    ok(painted.got !== painted.paper, `a laid square is actually painted (${painted.got} vs paper ${painted.paper})`);
+
+    // extend: start ON the road you have and carry it onto bare ground
+    await dragCells([run.from + 3, run.cy], [run.to, run.cy]);
+    const extended = await page.evaluate(() => window.__tm.game.roads.used());
+    ok(extended > laid, `dragging off the end carries the street on (${laid} → ${extended})`);
+
+    // lift: start on the road and drag ALONG it
+    await dragCells([run.to, run.cy], [run.from + 3, run.cy]);
+    const lifted = await page.evaluate(() => window.__tm.game.roads.used());
+    ok(lifted < extended, `dragging back along it lifts it (${extended} → ${lifted})`);
+  }
+
+  // cars are dispatched by the game, never by the player: there is nothing on
+  // the page to press that puts one on the road
+  await page.evaluate(() => {
+    const g = window.__tm.game, R = g.roads;
+    for (const k of [...R.cells]) R.erase(...k.split(',').map(Number));
+    const a = g.world.stations[0], b = g.world.stations.find(s => s.kind !== a.kind);
+    const ca = R.cellOf(a), cb = R.cellOf(b);
+    for (let cx = Math.min(ca.cx, cb.cx); cx <= Math.max(ca.cx, cb.cx); cx++) R.build(cx, ca.cy);
+    for (let cy = Math.min(ca.cy, cb.cy); cy <= Math.max(ca.cy, cb.cy); cy++) R.build(cb.cx, cy);
+    a.join(b.kind, g.world.time);
+  });
+  await page.waitForTimeout(600);
+  ok(await page.evaluate(() => window.__tm.game.roads.cars.length > 0 || window.__tm.game.score > 0),
+     'a joined-up road puts a car on it with nobody asked');
+
+  await page.evaluate(() => window.__tm.debug.launch('endless', 7));
+  await page.waitForTimeout(200);
+
   // ── the way home ──────────────────────────────────────────────────────
   // `a` would have matched anything; the shell injects one specific anchor
   const home = await page.evaluate(() => {
@@ -448,9 +539,12 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   // is sitting at the start of leg zero.
   const liveErrs = [];
   phone.on('pageerror', e => liveErrs.push(e.message));
-  // The world stays STILL. The crash is in the render path, which runs every
-  // frame whether the clock does or not, so pausing reproduces it just as well
-  // — and running live let a stop spawn mid-drag and broke the setup instead.
+  // The world stays STILL, and it is HELD still rather than merely expected to
+  // be. The crash is in the render path, which runs every frame whether the
+  // clock does or not, so a paused board reproduces it just as well — while a
+  // running one spawns a stop mid-drag and breaks the setup, which is a gate
+  // that fails about one run in ten for a reason that is not the bug.
+  await phone.evaluate(() => { window.__tm.game.paused = true; });
   const l0 = await pAt(0), l1 = await pAt(1), l2 = await pAt(2);
   await phone.mouse.move(l0.x, l0.y); await phone.mouse.down();
   await phone.mouse.move(l1.x, l1.y, { steps: 8 });

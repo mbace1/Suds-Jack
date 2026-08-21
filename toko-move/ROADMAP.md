@@ -112,6 +112,18 @@ A second layer is worth starting only once a mission can say "I want two".
 5. *(still open — see below)*
 6. **Length is per-mission**, another variable. The Festival is 600s.
 
+## Built (v7) — the car layer
+
+`layer: 'roads'` in a mission swaps the transport and nothing else: the people,
+the unreachable mark, the give-up fuse, the crowding gauge and the end card are
+the same code. The Rush is the first mission on it. What that proves for the
+plan above is the important part — **a layer is a variable, not a fork** — and
+it is what the city-to-city and continental layers will be built as.
+
+What it deliberately does NOT have, because Mini Motorways does not: any way to
+assign a vehicle. If a second local layer let you route the traffic it would be
+the metro layer wearing a hat.
+
 ## Still open
 
 1. **What does a narrative choice look like?** The stuck parcel and the "inner

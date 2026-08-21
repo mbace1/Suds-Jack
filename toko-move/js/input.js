@@ -15,9 +15,9 @@
 // shrink with the window — the nub was 46px on a desktop and 17px on a phone,
 // which meant a line could not be shortened or deleted by thumb at all.
 
-import { legPoints } from './geometry.js?v=6';
-import { TOUCH, sizeAt } from './palette.js?v=6';
-import { nubs } from './lines.js?v=6';
+import { legPoints } from './geometry.js?v=7';
+import { TOUCH, sizeAt } from './palette.js?v=7';
+import { nubs } from './lines.js?v=7';
 
 export class LineDrawer {
   constructor(canvas, renderer, game, opts = {}) {
@@ -153,5 +153,111 @@ export class LineDrawer {
       out.drag = { colour: this.drag.colour, pts: legPoints(end, this.drag.p) };
     }
     return out;
+  }
+}
+
+// ── the car layer ───────────────────────────────────────────────────────
+// One gesture again, and the verb is decided by the first STEP, not the first
+// touch. Deciding it on the touch was tried and it makes extending a road
+// impossible: your second drag naturally begins at the end of the first, so it
+// read as "erase" and lifted everything you had just laid.
+//
+//   drag off bare ground        → lay road
+//   drag along road you have    → lift it
+//   drag from road onto bare    → carry it on
+//
+// A tap that never moves does nothing at all, so a misplaced finger cannot cost
+// you a square. No mode button, nothing to explain.
+//
+// You lay ground and nothing else here — no car is ever assigned. That is the
+// whole difference between this layer and the one above it.
+
+export class RoadDrawer {
+  constructor(canvas, renderer, game, opts = {}) {
+    this.canvas = canvas;
+    this.r = renderer;
+    this.game = game;
+    this.onMessage = opts.onMessage || (() => {});
+    this.onChange = opts.onChange || (() => {});
+    this.paint = null;
+    this.hover = null;
+
+    this._down = e => this.down(e);
+    this._move = e => this.move(e);
+    this._up = e => this.up(e);
+    canvas.addEventListener('pointerdown', this._down);
+    canvas.addEventListener('pointermove', this._move);
+    window.addEventListener('pointerup', this._up);
+    window.addEventListener('pointercancel', this._up);
+  }
+
+  destroy() {
+    this.canvas.removeEventListener('pointerdown', this._down);
+    this.canvas.removeEventListener('pointermove', this._move);
+    window.removeEventListener('pointerup', this._up);
+    window.removeEventListener('pointercancel', this._up);
+  }
+
+  get net() { return this.game.roads; }
+
+  cellAt(e) {
+    const p = this.r.toBoard(e.clientX, e.clientY);
+    return this.net.cellOf(p);
+  }
+
+  down(e) {
+    if (this.game.state !== 'play' || !this.net) return;
+    const { cx, cy } = this.cellAt(e);
+    const onRoad = this.net.cells.has(`${cx},${cy}`);
+    // starting on bare ground can only mean one thing; starting on road waits
+    // to see which way you go
+    this.paint = { erase: onRoad ? null : false, cells: new Set(), last: { cx, cy } };
+    this.canvas.setPointerCapture?.(e.pointerId);
+    if (!onRoad) this.apply(cx, cy);
+  }
+
+  move(e) {
+    if (!this.net) return;
+    const { cx, cy } = this.cellAt(e);
+    this.hover = `${cx},${cy}`;
+    if (!this.paint) return;
+    const last = this.paint.last;
+    if (last.cx === cx && last.cy === cy) return;
+
+    // the first step off the starting square is what decides it
+    if (this.paint.erase === null) {
+      this.paint.erase = this.net.cells.has(`${cx},${cy}`);
+      if (this.paint.erase) this.apply(last.cx, last.cy);   // lift the one you began on too
+    }
+
+    // fill the gap between samples, or a quick drag lays a dotted line
+    const steps = Math.abs(cx - last.cx) + Math.abs(cy - last.cy);
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      this.apply(Math.round(last.cx + (cx - last.cx) * t), Math.round(last.cy + (cy - last.cy) * t));
+    }
+    this.paint.last = { cx, cy };
+  }
+
+  apply(cx, cy) {
+    const net = this.net;
+    const before = net.cells.size;
+    if (this.paint.erase) net.erase(cx, cy);
+    else if (!net.build(cx, cy) && net.left() <= 0) this.fail('no road left — lift some from somewhere else');
+    if (net.cells.size !== before) this.onChange();
+    this.paint.cells.add(`${cx},${cy}`);
+  }
+
+  up() { this.paint = null; }
+
+  fail(msg) {
+    if (this._lastFail === msg && performance.now() - (this._failAt || 0) < 1200) return;
+    this._lastFail = msg;
+    this._failAt = performance.now();
+    this.onMessage(msg);
+  }
+
+  view() {
+    return { hover: null, paint: this.paint ? { erase: !!this.paint.erase, cells: [...this.paint.cells] } : null };
   }
 }

@@ -166,3 +166,39 @@ a tunnel spent.
 4. **Warn before the water**, rather than refusing after it. Half done: the
    tunnel rule is now explained the first time one is spent, but a line that
    *cannot* be drawn is still only refused after the attempt.
+
+---
+
+## 4. The car layer, measured before it shipped (v7)
+
+Nothing in this section is an opinion. A deterministic player — join each new
+building to the **nearest square of road you already own** with an L, spend the
+morning's upgrade on whatever you are short of — was run over sixteen boards
+after every change, because prototype feel lives entirely in the part a state
+assertion cannot see.
+
+| what changed | wins | mean win | mean jam | walked away |
+|---|---|---|---|---|
+| as first written | 3/8 | 184s | 20% | 102 |
+| the lane rule (oncoming does not block) | 5/8 | 184s | 0% | 134 |
+| bridges buyable | 9/16 | 227s | 0% | 157 |
+| a bridge is a crossing, not a square | **12/16** | 218s | 0% | 80 |
+
+Three readings worth keeping:
+
+- **The 20% mean jam was two boards at 93% and 100%**, not a general slowness.
+  A mean hides a deadlock; the per-seed rows do not. Always print the rows.
+- **Road was never the binding constraint** for this player: 34, 38 and 42
+  starting squares gave *identical* results to the check. What binds is demand
+  against how fast a street clears, which is why the tuning dial that moved
+  anything was the target and not the allowance.
+- **The target was wrong by half.** At 85 the mission was won at 2:41 of 7:00.
+  At 190 it is won at 4:56 and still 12 boards in 16, so the last third of the
+  morning is doing work. Past 210 the losses come from the clock rather than
+  from the town outgrowing its roads, which is the wrong kind of loss for a
+  mission whose whole line is *room runs out before time does*.
+
+The four boards that are still lost are lost to a building backing up early,
+which is this layer's stated failure and the genre's (Mini Motorways ends when
+a building's pin fills). Whether that is too sudden at 1:37 is the next thing
+to measure, not to guess.

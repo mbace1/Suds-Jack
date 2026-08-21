@@ -158,6 +158,44 @@ export const MISSIONS = [
     // the failure the mission is about
     giveUp: 70,
   },
+
+  {
+    id: 'rush',
+    mode: 'mission',
+    order: 2,
+    layer: 'roads',
+    title: 'The Rush',
+    brief:
+      'Cars, not trains. You lay the roads and nothing else — every driver picks '
+      + 'their own way and will not be told otherwise. Room runs out before time does.',
+    length: 420,
+    clock: { unit: 60, units: ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00'], cycle: 7, cycleWord: 'morning', upgradeEvery: 105 },
+    board: { w: 860, h: 600, maxStations: 14, minGap: 96, margin: 60, firstStation: 10 },
+    spawn: {
+      // Tuned by measurement, and the measurement said something useful: cars
+      // never become the constraint however many you grant. The number in
+      // flight is set by DEMAND against how fast a road can clear — grant
+      // thirty and twenty sit idle. So the dial that matters here is traffic,
+      // and the pressure arrives as buildings backing up rather than as a
+      // pretty tailback.
+      base: 0.5, ramp: 700, cap: 0.7,
+      stationEvery: [26, 34], specialsAfter: 200, specialChance: 0.12,
+      bursts: [],
+    },
+    // ROOM is the resource, not frequency: squares of road, and cars to fill
+    // them. No lines, no carriages. Running out of road is the real defeat —
+    // the estate that goes up next has no way out of it.
+    resources: { road: 34, cars: 20, bridge: 3 },
+    // 190, and 85 was the first guess being far too kind. A deterministic
+    // player joining each new building to the nearest road it already owns
+    // wins 12 boards in 16 at 190 and reaches it at 4:56 of the 7:00 — so the
+    // last third of the morning is still doing work, which 85 (won at 2:41)
+    // was not. Past 210 the wins fall away, and they fall away for the wrong
+    // reason: the clock, rather than the town outgrowing its roads.
+    goals: [{ type: 'deliver', n: 190 }],
+    fail: { overcrowd: 50 },
+    giveUp: 60,
+  },
 ];
 
 export const byId = id => MISSIONS.find(m => m.id === id);

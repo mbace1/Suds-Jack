@@ -2,13 +2,14 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=6';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=6';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=6';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=6';
-import { Game } from '../js/sim.js?v=6';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=6';
-import { PAL, INK } from '../js/palette.js?v=6';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=7';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=7';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=7';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=7';
+import { Game } from '../js/sim.js?v=7';
+import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=7';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=7';
+import { PAL, INK } from '../js/palette.js?v=7';
 
 // a platform full of people, now that a passenger is an object
 const fill = (st, n, goal, now = 0) => { for (let i = 0; i < n; i++) st.join(goal, now); return st; };
@@ -774,6 +775,258 @@ function bench(seed = 1) {
   eq(bad, null, `no time in ten minutes prints a sixtieth second (${bad})`);
 }
 
+// ── the car layer ───────────────────────────────────────────────────────
+// A hand-made town rather than a generated one, for the same reason `bench()`
+// exists upstairs: a road network checked against a board nobody chose is a
+// test that can only say "it did not throw".
+//
+//   cells are 40 board units. Row 4 is a river, from x=0 to x=400.
+//   circle at (60, 100) → cell 1,2      square at (60, 300) → cell 1,7
+//   triangle at (300, 100) → cell 7,2
+function town(opts = {}) {
+  const stations = [
+    new Station(0, 'circle', 60, 100),
+    new Station(1, 'square', 60, 300),
+    new Station(2, 'triangle', 300, 100),
+  ].slice(0, opts.n ?? 3);
+  const rings = opts.dry ? [] : [[{ x: -20, y: 160 }, { x: 420, y: 160 }, { x: 420, y: 240 }, { x: -20, y: 240 }]];
+  const world = {
+    w: 400, h: 400, time: 0, rings, stations,
+    station: id => stations.find(s => s.id === id),
+    shapesPresent: () => [...new Set(stations.map(s => s.kind))],
+  };
+  return { world, net: new RoadNet(world, opts.res ?? { road: 60, cars: 4, bridge: 1 }) };
+}
+const lay = (net, x0, y0, x1, y1) => {          // a straight run, inclusive
+  const out = [];
+  for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) out.push(net.build(cx, cy));
+  return out;
+};
+
+{
+  const { net } = town({ dry: true });
+  eq(net.cols, 10, 'the grid covers the board across');
+  eq(net.rows, 10, 'and down');
+  const c = net.centre('3,5');
+  eq(c.x, 3 * CELL + CELL / 2, 'a square’s centre is its middle, not its corner');
+  const back = net.cellOf(c);
+  ok(back.cx === 3 && back.cy === 5, 'and a point in it names it again');
+  ok(!net.onBoard(-1, 0) && !net.onBoard(0, 10) && net.onBoard(9, 9), 'the board has edges');
+}
+
+// budget: road is the resource, and lifting gives it back
+{
+  const { net } = town({ dry: true, res: { road: 4, cars: 2, bridge: 0 } });
+  eq(net.left(), 4, 'you start with what the mission granted');
+  lay(net, 0, 0, 3, 0);
+  eq(net.used(), 4, 'four squares spend four');
+  eq(net.build(4, 0), false, 'and the fifth is refused');
+  ok(net.erase(0, 0), 'a laid square can be lifted');
+  eq(net.left(), 1, 'which hands the square back');
+  eq(net.erase(0, 0), false, 'lifting bare ground does nothing');
+  eq(net.build(4, 0), true, 'and now the fifth fits');
+}
+
+// water: a bridge is a CROSSING, not a square. Charging per square made the
+// price of a river its width, which quietly broke every L laid after the third.
+{
+  const { net } = town({ res: { road: 40, cars: 2, bridge: 1 } });
+  ok(net.wet(1, 4) && !net.wet(1, 2), 'the river is where the river is');
+  eq(net.bridgesLeft(), 1, 'one crossing to spend');
+  ok(net.build(1, 4), 'the first wet square starts a span');
+  eq(net.bridgesLeft(), 0, 'and spends the crossing');
+  ok(net.build(1, 5), 'carrying that span further across is free');
+  eq(net.bridgesLeft(), 0, 'a wide river costs no more than a narrow one');
+  eq(net.build(6, 4), false, 'but a SECOND crossing has nothing left to pay with');
+  ok(net.erase(1, 5) && net.erase(1, 4), 'lift the span');
+  eq(net.bridgesLeft(), 1, 'and the crossing comes back');
+  eq(net.build(6, 4), true, 'to be spent somewhere else');
+}
+{
+  // the count may not depend on the order the squares were laid in
+  const a = town({ res: { road: 40, cars: 2, bridge: 2 } }).net;
+  for (const cy of [4, 5]) for (const cx of [2, 3]) a.build(cx, cy);
+  const b = town({ res: { road: 40, cars: 2, bridge: 2 } }).net;
+  for (const cx of [3, 2]) for (const cy of [5, 4]) b.build(cx, cy);
+  eq(a.piers, 1, 'four squares in one block are one crossing');
+  eq(a.piers, b.piers, 'and laying them backwards says the same');
+}
+
+// reach: the same solve as upstairs, so the stranded mark works untouched
+{
+  const { net, world } = town({ dry: true });
+  eq(net.hopsFrom(0, 'square'), Infinity, 'with no road nobody reaches anybody');
+  lay(net, 1, 2, 1, 7);
+  eq(net.doorsOf(world.stations[0]).length > 0, true, 'road under a building is its door');
+  ok(net.hopsFrom(0, 'square') < Infinity, 'a road down the street joins the two');
+  eq(net.hopsFrom(0, 'circle'), 0, 'and you are already where you are');
+  eq(net.hopsFrom(0, 'triangle'), Infinity, 'the third is still off the network');
+  const path = net.route(world.stations[0], 'square');
+  ok(path && path.length > 1, 'which is a route the car can drive');
+  ok(net.doorsOf(world.stations[1]).includes(path[path.length - 1]), 'ending at the door of the building it was going to');
+  let downhill = true;
+  const d = net.reach.get('square');
+  for (let i = 1; i < path.length; i++) if (!(d.get(path[i]) < d.get(path[i - 1]))) downhill = false;
+  ok(downhill, 'every step of it strictly closer, so it cannot loop');
+}
+
+// the lane rule. This is the deadlock the first cut shipped: CELL_CARS was
+// written as "one each way, so nobody deadlocks head-on" and then counted both,
+// so a one-square street with two cars pointing east and two pointing west
+// locked solid. The balance sweep found two boards in eight at 93% and 100% of
+// every car stopped.
+{
+  const { net } = town({ dry: true, res: { road: 40, cars: 9, bridge: 0 } });
+  lay(net, 1, 0, 1, 3);
+  const east = (a, b) => { const c = new Car({ goal: 'square' }, 0, [a, b]); net.cars.push(c); return c; };
+  east('1,1', '1,2'); east('1,1', '1,2');
+  ok(!net.roomIn('1,1', '1,0'), 'two cars going one way fill the square behind them');
+  ok(net.roomIn('1,2', '1,1'), 'the square ahead is still open');
+  east('1,2', '1,1'); east('1,2', '1,1');
+  ok(net.roomIn('1,2', '1,1'), 'oncoming traffic is in the other lane and does not block you');
+  eq(net.countIn('1,2'), 2, 'even though it is standing there');
+}
+{
+  // and a queue flushes from the front, so a street advances rather than a car
+  const { net } = town({ dry: true, res: { road: 40, cars: 9, bridge: 0 } });
+  lay(net, 1, 0, 1, 5);
+  // a FULL street: two abreast in each of four squares, all going the same way,
+  // so every car but the leaders has a full square in front of it
+  const line = ['1,0', '1,1', '1,2', '1,3', '1,4', '1,5'];
+  for (let i = 0; i < 4; i++) for (let k = 0; k < CELL_CARS; k++) {
+    net.cars.push(new Car({ goal: 'square' }, 0, line.slice(i)));
+  }
+  const before = net.cars.map(c => c.at);
+  net.drive(1.2, () => {});
+  const moved = net.cars.filter((c, i) => c.at > before[i]).length;
+  ok(moved >= 6, `a full street advances together, not one square a tick (moved ${moved} of ${net.cars.length})`);
+}
+
+// dispatch, delivery, and what happens when you lift the road out from under a car
+{
+  const { net, world } = town({ dry: true, res: { road: 40, cars: 2, bridge: 0 } });
+  lay(net, 1, 2, 1, 7);
+  world.stations[0].join('square', 0);
+  net.dispatch();
+  eq(net.cars.length, 1, 'somebody waiting with a road to their shape gets a car');
+  eq(net.spareCars, 1, 'out of the pool');
+  eq(world.stations[0].waiting.length, 0, 'and off the pavement');
+  let delivered = 0;
+  for (let i = 0; i < 400 && delivered === 0; i++) net.step(0.05, () => delivered++);
+  eq(delivered, 1, 'the car arrives on its own — nothing routed it by hand');
+  eq(net.spareCars, 2, 'and goes back in the pool');
+}
+{
+  const { net, world } = town({ dry: true, res: { road: 40, cars: 2, bridge: 0 } });
+  lay(net, 1, 2, 1, 7);
+  world.stations[0].join('square', 0);
+  net.dispatch();
+  const rider = net.cars[0].p;
+  net.erase(1, 5);
+  eq(net.cars.length, 0, 'lifting the road under a car takes the car off it');
+  eq(net.spareCars, 2, 'the car goes back in the pool');
+  ok(world.stations[0].waiting.includes(rider), 'and the SAME person is back where they were waiting');
+}
+{
+  // nobody is dispatched to a shape no road reaches — the layer's own
+  // "unreachable", which is what the stranded mark upstairs reads
+  const { net, world } = town({ dry: true, res: { road: 40, cars: 2, bridge: 0 } });
+  lay(net, 1, 2, 1, 3);
+  world.stations[0].join('square', 0);
+  net.dispatch();
+  eq(net.cars.length, 0, 'a road that goes nowhere dispatches nobody');
+  eq(world.stations[0].waiting.length, 1, 'they are still standing there');
+}
+
+// ── the Rush: the mission wired onto that layer ─────────────────────────
+{
+  const g = new Game(11, 'rush');
+  eq(g.layer, 'roads', 'the mission says which layer it is played on');
+  ok(g.roads instanceof RoadNet, 'and the game builds it');
+  ok(g.transport === g.roads, 'everything that asks "can this be reached" asks the roads');
+  eq(g.net.lines.length, 0, 'there are no lines to draw on this one');
+  eq(g.roads.budget, byId('rush').resources.road, 'the road allowance is the mission’s number');
+  eq(g.roads.spareCars, byId('rush').resources.cars, 'and so is the number of cars');
+
+  const metro = new Game(11, 'endless');
+  eq(metro.roads, null, 'a metro mission builds no roads');
+  ok(metro.transport === metro.net, 'and asks its lines instead');
+}
+{
+  // the upgrades this layer offers, and that each one does something
+  const g = new Game(11, 'rush');
+  const road = g.roads.budget, cars = g.roads.spareCars, bridges = g.roads.bridges;
+  g.applyUpgrade('road');  ok(g.roads.budget > road, 'MORE ROAD lays more road');
+  g.applyUpgrade('cars');  ok(g.roads.spareCars > cars, 'MORE CARS puts more cars out');
+  g.applyUpgrade('bridge'); ok(g.roads.bridges > bridges, 'BRIDGE buys another crossing');
+  g.applyUpgrade('carriage');
+  eq(g.net.lines.length, 0, 'and a metro upgrade on this layer is simply nothing');
+
+  let sawBridge = false, sawLine = false;
+  for (let i = 0; i < 200; i++) { const o = new Game(i, 'rush').makeOffer(); if (o.includes('bridge')) sawBridge = true; if (o.includes('line')) sawLine = true; }
+  ok(!sawLine, 'the car layer never offers a line');
+  ok(!sawBridge, 'nor a bridge while you still hold one — a dead card in a hand of two');
+  const spent = new Game(11, 'rush');
+  spent.roads.piers = spent.roads.bridges;
+  let offered = false;
+  for (let i = 0; i < 60 && !offered; i++) { spent.world.rng.next(); offered = spent.makeOffer().includes('bridge'); }
+  ok(offered, 'but once they are all spent, a wet board can buy another');
+}
+{
+  // the give-up fuse reads the ROADS on this layer, not the lines
+  const g = new Game(11, 'rush');
+  g.start();
+  const st = g.world.stations[0];
+  const other = g.world.stations.find(s => s.kind !== st.kind);
+  st.join(other.kind, 0);
+  g._sweep = 0;
+  g.sweepStranded(0);
+  ok(st.waiting[0].stranded, 'with no road laid, everybody is marked unreachable');
+  const a = g.roads.cellOf(st), b = g.roads.cellOf(other);
+  for (let cx = Math.min(a.cx, b.cx); cx <= Math.max(a.cx, b.cx); cx++) g.roads.build(cx, a.cy);
+  for (let cy = Math.min(a.cy, b.cy); cy <= Math.max(a.cy, b.cy); cy++) g.roads.build(b.cx, cy);
+  g._sweep = 0;
+  g.sweepStranded(0);
+  ok(!st.waiting[0]?.stranded || g.roads.hopsFrom(st.id, other.kind) === Infinity,
+    'and joined by a road, they are not');
+}
+{
+  // it has to be finishable. A deterministic player joining each new building to
+  // the nearest road it already owns must reach the target on most boards —
+  // measured, because "the mission loads" is not the same as "the mission ends".
+  let wins = 0;
+  for (const seed of [11, 24, 38, 59, 101]) {
+    const g = new Game(seed, 'rush');
+    g.start();
+    const R = g.roads, joined = new Set();
+    const join = () => {
+      for (const st of g.world.stations) {
+        if (joined.has(st.id) || R.left() <= 0) continue;
+        const a = R.cellOf(st);
+        let to = null, bd = Infinity;
+        for (const k of R.cells) {
+          const [cx, cy] = k.split(',').map(Number);
+          const d = Math.abs(cx - a.cx) + Math.abs(cy - a.cy);
+          if (d < bd) { bd = d; to = { cx, cy }; }
+        }
+        let { cx, cy } = a;
+        const put = () => { if (!R.cells.has(`${cx},${cy}`)) R.build(cx, cy); };
+        put();
+        if (to) { while (cx !== to.cx) { cx += Math.sign(to.cx - cx); put(); }
+                  while (cy !== to.cy) { cy += Math.sign(to.cy - cy); put(); } }
+        joined.add(st.id);
+      }
+    };
+    for (let n = 0; n < 20000 && g.state !== 'over' && g.state !== 'won'; n++) {
+      g.step(0.05);
+      if (n % 20 === 0) join();
+      if (g.state === 'upgrade') g.applyUpgrade(R.left() < 10 ? 'road' : (g.offer.includes('cars') ? 'cars' : g.offer[0]));
+    }
+    if (g.state === 'won') wins++;
+  }
+  ok(wins >= 4, `The Rush can be won by an ordinary player (${wins}/5 boards)`);
+}
+
 // ── the ink ─────────────────────────────────────────────────────────────
 {
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -791,6 +1044,15 @@ function bench(seed = 1) {
     closest = Math.min(closest, d(PAL.lines[i], PAL.lines[j]));
   }
   ok(closest >= 90, `every line colour is tellable from every other (closest ${closest})`);
+  // the road, which shipped at 1.19:1 against the ground and was invisible in
+  // a screenshot while every state assertion about it passed. A gate that can
+  // only see `works` cannot see `looks` — but it can see a contrast ratio.
+  ok(cr(PAL.road, PAL.paper) >= 2, `a laid road is visible on the ground (${cr(PAL.road, PAL.paper).toFixed(2)}:1)`);
+  ok(cr(PAL.road, PAL.water) >= 1.8, 'and tellable from the river');
+  ok(cr(PAL.ink, PAL.road) >= 4.5, 'while a building still reads on top of it');
+  ok(cr(PAL.paper, PAL.road) >= 2, 'and so does a paper-filled car');
+  ok(cr(PAL.roadLine, PAL.road) >= 2, 'the centre stripe is a stripe, not a rumour');
+
   ok(INK.line > INK.station, 'the network is drawn heavier than the stops on it');
   ok(INK.lineGap > INK.line, 'two lines sharing a leg are pushed further apart than they are wide');
 }
