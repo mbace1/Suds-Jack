@@ -2,13 +2,16 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=5';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=5';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=5';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=5';
-import { Game } from '../js/sim.js?v=5';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=5';
-import { PAL, INK } from '../js/palette.js?v=5';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=6';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=6';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=6';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=6';
+import { Game } from '../js/sim.js?v=6';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=6';
+import { PAL, INK } from '../js/palette.js?v=6';
+
+// a platform full of people, now that a passenger is an object
+const fill = (st, n, goal, now = 0) => { for (let i = 0; i < n; i++) st.join(goal, now); return st; };
 
 let pass = 0; const fails = [];
 const ok = (cond, msg) => { if (cond) pass++; else fails.push(msg); };
@@ -102,7 +105,7 @@ const eq = (a, b, msg) => ok(a === b || (typeof a === 'number' && Math.abs(a - b
   const OVERCROWD_TIME = ENDLESS.fail.overcrowd;
   const w = new World(5, ENDLESS);
   const st = w.stations[0];
-  st.waiting = new Array(STATION_CAP + 2).fill('circle');
+  fill(st, STATION_CAP + 2, 'circle');
   ok(st.crowded, 'past capacity is crowded');
   w.step(OVERCROWD_TIME / 2);
   ok(st.over > 0.4 && st.over < 0.6, 'the gauge fills at the stated rate');
@@ -112,7 +115,7 @@ const eq = (a, b, msg) => ok(a === b || (typeof a === 'number' && Math.abs(a - b
 
   const w2 = new World(5, ENDLESS);
   const s2 = w2.stations[0];
-  s2.waiting = new Array(STATION_CAP + 2).fill('circle');
+  fill(s2, STATION_CAP + 2, 'circle');
   w2.step(OVERCROWD_TIME / 2);
   const peak = s2.over;
   s2.waiting = [];
@@ -156,7 +159,7 @@ function bench(seed = 1) {
   const t = r.line.trains[0];
   t.segIdx = 0; t.p = 0; t.dir = 1;
   eq(t.nextStopId(), B.id, 'the train knows where it is going');
-  A.waiting = ['square'];
+  A.join('square');
   g.service(t, 0);
   eq(t.load.length, 1, 'somebody boards a train that gets them closer');
   eq(A.waiting.length, 0, 'and leaves the platform');
@@ -184,7 +187,7 @@ function bench(seed = 1) {
   const t = line.trains[0];
   t.segIdx = 0; t.p = 1; t.dir = -1;        // sitting at B, facing A
   eq(t.nextStopId(), A.id, 'facing back down the line');
-  B.waiting = ['square'];
+  B.join('square');
   g.service(t, 1);
   eq(t.load.length, 0, 'nobody boards a train going the wrong way');
   eq(B.waiting.length, 1, 'they wait for the next one');
@@ -198,7 +201,7 @@ function bench(seed = 1) {
   const line = g.net.open(A.id, B.id).line;
   const t = line.trains[0];
   eq(t.capacity, CAR_CAPACITY, 'a locomotive carries six');
-  A.waiting = new Array(20).fill('square');
+  fill(A, 20, 'square');
   t.segIdx = 0; t.p = 0; t.dir = 1;
   g.service(t, 0);
   eq(t.load.length, CAR_CAPACITY, 'a full train takes no more');
@@ -221,7 +224,7 @@ function bench(seed = 1) {
 
   const t = one.trains[0];
   t.segIdx = 0; t.p = 0; t.dir = 1;
-  A.waiting = ['square'];
+  A.join('square');
   g.service(t, 0);
   eq(t.load.length, 1, 'they board the first leg of the trip');
   t.segIdx = 1; t.p = 0; t.dir = 1;          // now at B, next stop D
@@ -398,6 +401,86 @@ function bench(seed = 1) {
   eq(boom, null, `the run carries on after the line was cut under a moving train (${boom})`);
 }
 
+{
+  // Nobody can reach a shape that is not on any line. Mini Metro draws those
+  // people exactly like everyone else and never lets them leave — PLAYTEST.md
+  // measured up to 61% of a queue in that state, invisible, pushing the gauge.
+  // This is a logical option, not an inherited one: mark them, and let them go.
+  const { g, add } = bench();
+  const A = add('circle', 100, 100), B = add('triangle', 300, 100);
+  add('star', 600, 100);                       // exists, but no line will reach it
+  g.net.rebuild();
+  g.start();
+
+  const ok1 = A.join('triangle', 0);           // reachable once the line exists
+  const stuck = A.join('star', 0);             // never reachable
+  g.net.open(A.id, B.id);
+  for (let i = 0; i < 4; i++) g.step(0.1);
+
+  ok(!ok1.stranded, 'somebody with a route is not marked');
+  ok(stuck.stranded, 'somebody without one is');
+  eq(g.stranded, 1, 'and the count says exactly how many');
+
+  // …and drawing the line they needed clears it
+  g.net.extend(g.net.lines[0], g.world.stations[2].id, false);
+  for (let i = 0; i < 4; i++) g.step(0.1);
+  ok(!stuck.stranded, 'connecting their shape un-marks them');
+  eq(g.stranded, 0, 'and the count goes back to nothing');
+}
+
+{
+  // the fuse
+  const { g, add } = bench();
+  const A = add('circle', 100, 100), B = add('triangle', 300, 100);
+  add('star', 600, 100);
+  g.net.rebuild();
+  g.start();
+  const patient = A.join('triangle', 0);
+  const stuck = A.join('star', 0);
+  g.net.open(A.id, B.id);
+  for (let i = 0; i < 4; i++) g.step(0.1);
+  eq(g.gaveUp, 0, 'nobody leaves straight away');
+
+  g.world.time = byId('endless').giveUp + 5;
+  for (let i = 0; i < 4; i++) g.step(0.1);
+  eq(g.gaveUp, 1, 'past the fuse, the one with nowhere to go leaves');
+  ok(!A.waiting.includes(stuck), 'and is off the platform');
+  ok(A.waiting.includes(patient), 'while somebody merely waiting for a train stays');
+  eq(g.report().gaveUp, 1, 'and the run reports it');
+
+  // a mission may say they never give up, which is the old behaviour
+  const never = new Game(2, 'endless');
+  never.mission = { ...never.mission, giveUp: null };
+  never.start();
+  const s0 = never.world.stations[0];
+  const forever = s0.join('star', 0);
+  never.world.time = 9999;
+  for (let i = 0; i < 4; i++) never.step(0.1);
+  ok(s0.waiting.includes(forever), 'with no fuse set, nobody ever leaves');
+}
+
+{
+  // a passenger keeps its history across a transfer — the property the layers
+  // to come depend on, and the one OpenTTD's manual records itself lacking
+  const { g, add } = bench();
+  const A = add('circle', 100, 300), B = add('triangle', 300, 300);
+  const C = add('square', 300, 100), D = add('cross', 500, 300);
+  g.net.rebuild();
+  const one = g.net.open(A.id, B.id).line;
+  g.net.extend(one, D.id, false);
+  g.net.open(B.id, C.id);
+  const rider = A.join('square', 7);
+  const t = one.trains[0];
+  t.segIdx = 0; t.p = 0; t.dir = 1;
+  g.service(t, 0);
+  eq(t.load[0], rider, 'the person who boards is the person who was waiting');
+  t.segIdx = 1; t.p = 0; t.dir = 1;
+  g.service(t, 1);
+  ok(B.waiting.includes(rider), 'and the same one is put back down to transfer');
+  eq(rider.born, 7, 'still carrying how long they have been travelling');
+  eq(rider.goal, 'square', 'and still wanting the same thing');
+}
+
 // ── the run ─────────────────────────────────────────────────────────────
 {
   const g = new Game(21, 'endless');
@@ -446,7 +529,7 @@ function bench(seed = 1) {
 {
   const g = new Game(41, 'endless');
   g.start();
-  g.world.stations[0].waiting = new Array(STATION_CAP + 3).fill('circle');
+  fill(g.world.stations[0], STATION_CAP + 3, 'circle');
   let guard = 0;
   while (g.state === 'play' && guard++ < 20000) {
     g.step(0.05);
@@ -557,7 +640,7 @@ function bench(seed = 1) {
   eq(byId('festival').fail.overcrowd, null, 'the festival does not');
   const g = new Game(9, 'festival');
   g.start();
-  for (const s of g.world.stations) { s.waiting = new Array(40).fill('circle'); s.over = 1; }
+  for (const s of g.world.stations) { fill(s, 40, 'circle'); s.over = 1; }
   g.step(0.05);
   eq(g.state, 'play', 'so a jammed festival platform costs people, not the night');
   ok(g.world.doomed(), 'even though the gauge is full');

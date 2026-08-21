@@ -137,6 +137,54 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   });
   ok(painted > 4, `the board is really drawn, not a blank canvas (${painted} distinct colours sampled)`);
 
+  // ── somebody with nowhere to go ───────────────────────────────────────
+  // Marked, counted, and told about. Mini Metro does none of the three: its
+  // unreachable passengers look identical to everyone else and never leave.
+  await page.evaluate(() => {
+    const g = window.__tm.game;
+    const st = g.world.stations.find(s => g.net.linesAt(s.id).length) || g.world.stations[0];
+    st.join('star', g.world.time);          // no line reaches a star
+    window.__tmStuckAt = st.id;
+  });
+  await page.waitForTimeout(600);
+
+  const stuck = await page.evaluate(() => {
+    const g = window.__tm.game;
+    const st = g.world.station(window.__tmStuckAt);
+    const p = st.waiting.find(x => x.goal === 'star');
+    const chip = document.getElementById('stkStuck');
+    return {
+      marked: !!p && p.stranded,
+      count: g.stranded,
+      chipShown: !chip.hidden,
+      chipText: chip.textContent.trim(),
+      feed: document.getElementById('feed').textContent,
+    };
+  });
+  ok(stuck.marked, 'a passenger no line can reach is marked as such');
+  ok(stuck.count >= 1, `and counted (${stuck.count})`);
+  ok(stuck.chipShown, `and the strip says so ("${stuck.chipText}")`);
+  ok(/give up|no line reaches/i.test(stuck.feed), `and the game explains it once ("${stuck.feed}")`);
+
+  // …and the mark is really PAINTED, in the ghost ink and not the normal one
+  const ghost = await page.evaluate(() => {
+    const g = window.__tm.game, r = window.__tm.renderer, cv = document.getElementById('board');
+    const st = g.world.station(window.__tmStuckAt);
+    const S = window.__tm.debug.sizeAt(r.scale);
+    const dpr = r.dpr;
+    const box = 26 * r.scale * dpr;
+    const cx = Math.round((r.ox + (st.x + S.stationR + 20) * r.scale) * dpr);
+    const cy = Math.round((r.oy + st.y * r.scale) * dpr);
+    const d = cv.getContext('2d').getImageData(cx - box, cy - box, box * 2, box * 2).data;
+    const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    const near = (i, t) => Math.abs(d[i] - t[0]) + Math.abs(d[i + 1] - t[1]) + Math.abs(d[i + 2] - t[2]) < 42;
+    const gh = hex(window.__tm.debug.PAL.stranded);
+    let hits = 0;
+    for (let i = 0; i < d.length; i += 4) if (near(i, gh)) hits++;
+    return hits;
+  });
+  ok(ghost > 4, `the ghosted passenger is painted in the ghost ink (${ghost} pixels)`);
+
   // ── the taps ──────────────────────────────────────────────────────────
   const small = await page.evaluate(() => {
     const bad = [];
@@ -171,9 +219,11 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
     const rad = Math.max(6, Math.round(t.nubDrawPx * dpr * 1.6));
     const g = cv.getContext('2d');
     const d = g.getImageData(cx - rad, cy - rad, rad * 2, rad * 2).data;
-    const want = getComputedStyle(document.documentElement); // unused, keep lint quiet
-    const line = window.__tm.net.lines.find(l => true);
-    const hex = ['#2f7fbf','#d8452f','#3f9e5a','#e0a52e','#8a5bbf','#b13b8a','#1f9c92'][line.colour];
+    // read the palette from the GAME. A copy of it here passed for weeks and
+    // then failed the moment the real one moved, which is the copy's whole
+    // contribution.
+    const line = window.__tm.net.lines[0];
+    const hex = window.__tm.debug.PAL.lines[line.colour];
     const tgt = [1,3,5].map(i => parseInt(hex.slice(i, i + 2), 16));
     let hits = 0;
     for (let i = 0; i < d.length; i += 4) {
@@ -221,7 +271,7 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   // platform drains the gauge on the very next tick, which is correct
   await page.evaluate(() => {
     const st = window.__tm.world.stations[0];
-    st.waiting = new Array(st.capacity + 3).fill('circle');
+    for (let i = 0; i < st.capacity + 3; i++) st.join('circle', window.__tm.world.time);
     st.over = 1;
   });
   await page.waitForTimeout(300);
@@ -398,7 +448,9 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   // is sitting at the start of leg zero.
   const liveErrs = [];
   phone.on('pageerror', e => liveErrs.push(e.message));
-  await phone.evaluate(() => { window.__tm.game.paused = false; });
+  // The world stays STILL. The crash is in the render path, which runs every
+  // frame whether the clock does or not, so pausing reproduces it just as well
+  // — and running live let a stop spawn mid-drag and broke the setup instead.
   const l0 = await pAt(0), l1 = await pAt(1), l2 = await pAt(2);
   await phone.mouse.move(l0.x, l0.y); await phone.mouse.down();
   await phone.mouse.move(l1.x, l1.y, { steps: 8 });

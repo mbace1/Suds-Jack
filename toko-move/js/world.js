@@ -8,15 +8,31 @@
 // silently rewrites boards that already exist. New behaviour that needs
 // randomness takes its own stream (see `siteRng`) rather than borrowing this one.
 
-import { makeRng } from './rng.js?v=5';
-import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=5';
-import { inWater, dist } from './geometry.js?v=5';
+import { makeRng } from './rng.js?v=6';
+import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=6';
+import { inWater, dist } from './geometry.js?v=6';
 
 // The default board, still exported because the renderer and the tests want a
 // size before a mission is chosen. A mission may state its own.
 export const BOARD = { w: 860, h: 600 };
 
 export const STATION_CAP = 6;
+
+// A waiting passenger is an OBJECT, not a bare shape. It has to carry state —
+// how long it has stood there, and whether anything can reach where it is going
+// — and the layers to come need it to carry more than that: a parcel has a
+// weight and a deadline. The destination in particular has to survive being
+// handed from one layer to the next, which is the thing OpenTTD's own manual
+// records itself getting wrong ("cargo will jump on any vehicle that accepts
+// them, even if it brings them back to where they came from").
+export class Passenger {
+  constructor(goal, born = 0) {
+    this.goal = goal;
+    this.born = born;
+    this.stranded = false;    // set by the sim, which is the half that knows
+  }
+  waited(now) { return now - this.born; }
+}
 
 export class Station {
   constructor(id, kind, x, y) {
@@ -30,6 +46,12 @@ export class Station {
     this.special = isSpecial(kind);
   }
   get crowded() { return this.waiting.length > this.capacity; }
+
+  join(goal, now = 0) {
+    const p = new Passenger(goal, now);
+    this.waiting.push(p);
+    return p;
+  }
 }
 
 export class World {
@@ -162,7 +184,7 @@ export class World {
       for (let n = 0; n < b.n; n++) {
         const from = near[n % near.length];
         const goal = this.goalFor(from);
-        if (goal) from.waiting.push(goal);
+        if (goal) from.join(goal, this.time);
       }
       if (b.label) this.events.push({ kind: 'burst', text: b.label });
     }
@@ -179,7 +201,7 @@ export class World {
     if (this.stations.length < 2) return;
     const from = this.rng.weight(this.stations.map(s => [s, s.special ? 2.4 : 1]));
     const goal = this.goalFor(from);
-    if (goal) from.waiting.push(goal);
+    if (goal) from.join(goal, this.time);
   }
 
   worstStation() {

@@ -5,9 +5,9 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=5';
-import { BOARD } from './world.js?v=5';
-import { drawShape, tracePath } from './shapes.js?v=5';
+import { PAL, INK, sizeAt } from './palette.js?v=6';
+import { BOARD } from './world.js?v=6';
+import { drawShape, tracePath } from './shapes.js?v=6';
 
 export class Renderer {
   constructor(canvas) {
@@ -195,7 +195,7 @@ export class Renderer {
     const n = Math.min(train.load.length, 8);
     for (let i = 0; i < n; i++) {
       const off = (i - (n - 1) / 2) * 8.6;
-      drawShape(ctx, train.load[i], off, -w / 2 - 8, 3.4, PAL.station, PAL.ink, 1.2);
+      drawShape(ctx, train.load[i].goal, off, -w / 2 - 8, 3.4, PAL.station, PAL.ink, 1.2);
     }
     ctx.restore();
   }
@@ -247,11 +247,14 @@ export class Renderer {
       const col = i % 3, row = (i / 3) | 0;
       const x = st.x + r + 13 + col * cell;   // clear of the crowding ring
       const y = st.y - r + row * cell + 3;
-      // Every waiting shape is drawn the same. Filling the ones past capacity
-      // was tried and a solid star reads as a DIFFERENT destination from a
-      // hollow one — the queue getting longer and the gauge closing already say
-      // it, and neither of them lies about what somebody wants.
-      drawShape(ctx, st.waiting[i], x, y, pip, PAL.station, PAL.ink, Math.max(1.1, pip * 0.3));
+      // Capacity is NOT marked on the passenger: filling the ones past capacity
+      // was tried and a solid star reads as a different destination from a
+      // hollow one. Being unable to GET anywhere is marked, because nothing
+      // else on the board says it — the shape is untouched and only the ink
+      // goes pale, so what they want is still exactly legible.
+      const p = st.waiting[i];
+      drawShape(ctx, p.goal, x, y, pip,
+        PAL.station, p.stranded ? PAL.stranded : PAL.ink, Math.max(1.1, pip * 0.3));
     }
   }
 }

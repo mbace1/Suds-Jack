@@ -5,18 +5,28 @@
 // gap wide. Every colour here is either barely visible or fully committed;
 // nothing sits in the middle, because a diagram with mid-tones reads as mud.
 
+// HOMAGE, NOT A CLONE (owner's steer). The strongest divergences from the game
+// this one descends from are FORM, not hue — the grab nub at a line's end, the
+// riders shown along a train's roof, the queue as a block rather than a fan, and
+// the ghosted passenger below. The palette is shifted too, and measured: closest
+// pair of lines 98 apart where the old set was 90.
 export const PAL = {
-  paper: '#f2efe6',
-  grain: 'rgba(30,38,46,0.05)',
-  ink: '#1d242b',
-  dim: '#5d6870',          // 4.96:1 on paper — AA for body text, and it has drifted before
+  paper: '#eee9dc',
+  grain: 'rgba(27,34,40,0.05)',
+  ink: '#1b2228',
+  dim: '#566068',          // 5.30:1 on paper — AA for body text, and it has drifted before
   rule: '#d5cfc2',
   water: '#c3dbe8',
   waterEdge: '#a9cadd',
-  station: '#fcfbf7',
+  station: '#faf7ee',
   warn: '#d8452f',         // the crowding ring: a graphic, not type
-  warnText: '#b83420',     // the same alarm at 5.14:1, for anything with words in it
+  warnText: '#b03018',     // the same alarm at 5.28:1, for anything with words in it
   train: '#2b333a',
+  // somebody waiting for a shape no line reaches. Ghosted rather than recoloured
+  // or refilled: the silhouette has to stay exactly what they want, or the mark
+  // reads as a different destination — which is why filling over-capacity
+  // passengers solid was tried and thrown away.
+  stranded: '#9ba09f',
 
   // Handed out in this order, and a colour returns to the pile when its line
   // is torn up. Seven is deliberate: it is more lines than the board can
@@ -31,7 +41,7 @@ export const PAL = {
   // Amber and orange sat 50 apart and read as one colour two stops in; the
   // seventh slot was picked by measuring candidates against the other six
   // rather than by eye.
-  lines: ['#2f7fbf', '#d8452f', '#3f9e5a', '#e0a52e', '#8a5bbf', '#b13b8a', '#1f9c92'],
+  lines: ['#2b5fa8', '#d0452b', '#4a8f3f', '#d19a1f', '#7a4aa6', '#b93a86', '#18908a'],
 };
 
 // Hit targets, stated in SCREEN pixels and converted to board units at the
