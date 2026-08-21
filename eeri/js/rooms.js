@@ -30,10 +30,10 @@
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
-  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe,
+  girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, shallow, deep, pipe,
   bucketBot, hoist,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=39';
+} from './parts.js?v=40';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -68,6 +68,7 @@ export const ROOMS = [
       boltRun(8, 31, 35),
       boltRun(9, 32, 34),
       golden(9, [33]),                    // one jump off that deck
+      blueprint(9, 35),                   // world 1's, on the same deck
       hopper(33, 38),
       boltRun(5, 36, 38),
       hopper(42, 46),
@@ -363,6 +364,7 @@ export const ROOMS = [
       boltRun(9, 32, 42),
       boltRun(10, 34, 38),
       golden(10, [35]),
+      blueprint(10, 37),                  // world 2's, up on the pipe shelf
       checkpoint(44),
 
       // ── 3 · COMBINE ── use the tube as an obvious alternate crossing of

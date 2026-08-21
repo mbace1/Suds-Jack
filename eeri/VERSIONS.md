@@ -1,5 +1,52 @@
 # EERI — versions
 
+## v15.35 — 2026-08-21 — the excavator does the digging, and blueprints exist
+
+**The dig was a timer, not a move** (owner: "takes a long time to push up and
+down for the block to disappear with very little indicators… it doesn't look
+like an excavator at work"). All three complaints were the same line of code.
+
+You drove the boom down yourself — with the SAME button that digs — held it,
+and 0.7 s later a row of the bank vanished. Three rows meant wrangling a
+control and then two seconds of a still arm while a number counted. Nothing on
+screen was digging.
+
+Now holding the verb runs a **stroke**, and the machine drives its own arm:
+reach out and open, plunge into the cut, **curl the bucket through it — the
+bite lands there**, which is where a bucket actually takes earth — then lift
+and swing back out, repeating while held. 0.46 s a bucketful, so a three-row
+bank is under a second and a half of continuous digging.
+
+Three things it fixes at once:
+
+* **the fiddle is gone** — `canDig` no longer asks the boom to be below 0.3.
+  Park beside the bank and hold; the arm is the machine's business. That
+  control was the first thing the game asked a six-year-old to solve before it
+  would let him dig.
+* **the bank says it is diggable** before you press anything: in range it
+  lifts and breathes (`Bank.arm()`). A thing you can act on has to look
+  different from a thing you cannot, and nothing said which was which until
+  the first row had already gone.
+* **it throws twice the dirt** (12 clods a bite against 6, pool 18 → 26) and
+  the screen punch is bigger on the last row than the middle ones, so the
+  bank coming down has an ending.
+
+**Blueprints are collectables now** (owner: "blueprints can just be
+collectables for now, we can add a secret art and gallery later"). One per
+world — a rolled sheet with a band, unmistakably not a bolt at 32 px — held to
+the same two rules as a golden bolt: reachable, and never on the walking line,
+because one per WORLD should be worth a climb. The count only appears on the
+HUD once you have one: a 0/4 from the first second is a chore printed on the
+screen. World 4's first placement sat 1 tile off the deck and the prover said
+so.
+
+Also recorded: **DESIGN §8.4** — the Flattener (world 1's second machine: a
+roller that flattens a mangled aluminium sheet by DRIVING over it, which is the
+first machine job in this game done by going somewhere rather than by holding a
+button at a target) and six easy puzzles for the machines that already exist.
+
+Gates: rooms 246, fx 31, dev-menu 36, smoke 433.
+
 ## v15.34 — 2026-08-20 — half the levels were never proved, and it showed
 
 A pass aimed at the build being worth playing rather than at it having more in

@@ -493,6 +493,17 @@ export const golden = (cy, cols) => ({
   golden: cols.map((c) => cell(cy, c)),
 });
 
+// THE BLUEPRINT (DESIGN §4.2). One per WORLD, not per level, and for now it
+// is exactly what it says: a collectable. The design has it unlocking secret
+// art eventually; the owner's call (2026-08-21) is that it can be a pickup
+// first and earn its gallery later, which is the right order — a collectable
+// with nowhere to go is still a thing to find, while a gallery with nothing
+// in it is a menu.
+//
+// It is declared like a golden bolt and placed like one: off the walking
+// line, where a jump or a climb takes you.
+export const blueprint = (cy, c) => ({ kind: 'blueprint', blueprint: cell(cy, c) });
+
 export const startAt = (x) => ({ kind: 'start', x, spawnKid: { x, y: GROUND } });
 export const exitAt = (x) => ({ kind: 'exit', x, exit: { x, y: GROUND } });
 export const shot = (x0, x1, framing) => ({ kind: 'shot', shot: { x0, x1, ...framing } });
@@ -510,7 +521,7 @@ export function compile(room) {
     // a part helper may hand back SEVERAL parts (a scaffold is a ladder and
     // the deck it serves), so the list is flattened once, here
     parts: room.parts.flat(),
-    bolts: [], golden: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
+    bolts: [], golden: [], blueprint: null, pits: [], shots: [], machines: [], robots: [], hazards: [],
     pieces: [], obstacles: [], ladders: [], belts: [], tarps: [], water: [], pipes: [], hoists: [],
     ball: null, checkpoint: null, flag: null,
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
@@ -526,6 +537,7 @@ export function compile(room) {
     if (p.ball) out.ball = p.ball;
     if (p.bolts) out.bolts.push(...p.bolts);
     if (p.golden) out.golden.push(...p.golden);
+    if (p.blueprint) out.blueprint = p.blueprint;
     if (p.ladder) out.ladders.push(p.ladder);
     if (p.belt) out.belts.push(p.belt);
     if (p.tarp) out.tarps.push(p.tarp);
@@ -1136,6 +1148,24 @@ export function check(room) {
     if (!overAHole && cy - t < 2) {
       note(`${r.name}: the golden bolt at (cy ${cy}, x ${col}) is ${(cy - t).toFixed(0)} tile(s) off the floor — `
         + 'you would take it by walking, and a secret you cannot miss is not a secret');
+    }
+  }
+
+  // THE BLUEPRINT is held to the same two rules as a golden bolt, because it
+  // is the same kind of thing: it has to be REACHABLE, or it is a promise the
+  // level cannot keep, and it may not sit on the walking line, or it is
+  // scenery you happen to touch rather than something you found.
+  if (r.blueprint) {
+    const [row, col] = r.blueprint;
+    const cy = H - 1 - row;
+    if (!reach(cy, col)) {
+      note(`${r.name}: the blueprint at (cy ${cy}, x ${col}) is out of reach — `
+        + `nothing within ${BOLT_SPREAD} tiles of it gets a jump close enough`);
+    }
+    const t = surfaceBelow(fin, col, cy);
+    if (t !== null && cy - t < 2) {
+      note(`${r.name}: the blueprint at (cy ${cy}, x ${col}) is ${(cy - t).toFixed(0)} tile(s) `
+        + 'off the floor — you would take it by walking, and one per WORLD should be worth a climb');
     }
   }
 

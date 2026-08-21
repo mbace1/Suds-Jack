@@ -9,8 +9,8 @@
 // through the named nodes, so game code never knows which it got.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=39';
-import { craftMat, craftBox } from './craft.js?v=39';
+import { PAL, mix } from './palette.js?v=40';
+import { craftMat, craftBox } from './craft.js?v=40';
 
 export function buildExcavatorModel(tint = 0) {
   const T = (c) => (tint > 0 ? mix(c, PAL.SKY_PALE, tint) : c);
@@ -128,6 +128,10 @@ export function buildExcavatorModel(tint = 0) {
 // ---- the machine body: heavy, committed, honest joints -------------------
 
 const TOP = 3.4, ACCEL = 4.2, GRAV = 30;
+// One bucketful, start to start. 0.46 s reads as work rather than as a wait:
+// a three-row bank is now under a second and a half of continuous digging,
+// against the 2.1 s of held button plus boom-wrangling it used to be.
+const STROKE = 0.46;
 
 export class Excavator {
   constructor(level, x, y, asset, tamed = true) {
@@ -222,11 +226,40 @@ export class Excavator {
       this.vy = 0;
     }
 
-    // boom control: eased, clamped at the real joint limits
-    if (controls) {
-      const dir = (controls.boomUp ? 1 : 0) - (controls.boomDown ? 1 : 0);
-      this.boomTarget = Math.max(0.08, Math.min(0.95, this.boomTarget + dir * 1.1 * dt));
-      this.stickTarget = -1.35 + (0.52 - this.boomTarget) * 0.9;
+    // THE DIG STROKE (owner, 2026-08-21: "takes a long time to push up and
+    // down for the block to disappear with very little indicators… it doesn't
+    // look like an excavator at work").
+    //
+    // It used to be a TIMER, not a move: you drove the boom down yourself
+    // with the same button that digs, held it, and 0.7 s later a row of the
+    // bank vanished. Three rows meant a fiddle plus two seconds of a still
+    // arm — nothing on screen was digging, a number was counting.
+    //
+    // Now holding the verb runs a real stroke and the machine drives its own
+    // arm: REACH out and open, PLUNGE into the cut, CURL the bucket through
+    // it — the bite lands there, on the curl, which is where a bucket
+    // actually takes earth — then LIFT and swing back out. It repeats while
+    // held. Nobody has to aim the boom any more; that was a control the game
+    // was asking a six-year-old to solve before it would let him dig.
+    if (this.digging) {
+      this.strokeT = (this.strokeT || 0) + dt / STROKE;
+      const k = this.strokeT % 1;
+      // 0…0.35 reach · 0.35…0.62 plunge · 0.62…0.78 curl (the bite) ·
+      // 0.78…1 lift. Written as one curve so the arm never snaps between
+      // phases: the boom is a dip and the stick a reach, half a beat apart.
+      this.boomTarget = 0.52 - 0.42 * Math.sin(Math.min(1, k / 0.78) * Math.PI);
+      this.stickTarget = -1.35 + 0.55 * Math.sin(Math.min(1, k / 0.9) * Math.PI);
+      this.bucketCurl = -0.6 - 0.9 * Math.max(0, Math.sin((k - 0.35) / 0.5 * Math.PI));
+      // the bite: once per stroke, at the moment the bucket closes
+      this.bit = k >= 0.62 && (this.strokeT - dt / STROKE) % 1 < 0.62;
+    } else {
+      this.strokeT = 0; this.bit = false; this.bucketCurl = null;
+      // boom control: eased, clamped at the real joint limits
+      if (controls) {
+        const dir = (controls.boomUp ? 1 : 0) - (controls.boomDown ? 1 : 0);
+        this.boomTarget = Math.max(0.08, Math.min(0.95, this.boomTarget + dir * 1.1 * dt));
+        this.stickTarget = -1.35 + (0.52 - this.boomTarget) * 0.9;
+      }
     }
 
     this.animate(dt, drive);
@@ -256,7 +289,10 @@ export class Excavator {
     n.boom.rotation.z = cur + this.boomV * dt;
     n.stick.rotation.z += (this.stickTarget - n.stick.rotation.z) * Math.min(1, 5 * dt);
     // bucket holds a working angle against the boom, with a settle wobble
-    n.bucket.rotation.z += ((-0.6 - (n.boom.rotation.z - 0.52) * 0.8) - n.bucket.rotation.z) * Math.min(1, 4 * dt);
+    const bucketWant = this.bucketCurl != null
+      ? this.bucketCurl                          // the stroke owns it mid-dig
+      : -0.6 - (n.boom.rotation.z - 0.52) * 0.8;
+    n.bucket.rotation.z += (bucketWant - n.bucket.rotation.z) * Math.min(1, (this.digging ? 9 : 4) * dt);
 
     // wheels roll for real (children of the wheels node spin about local z)
     for (const spin of n.wheels.children) spin.rotation.z -= (this.vx * dt) / 0.24;

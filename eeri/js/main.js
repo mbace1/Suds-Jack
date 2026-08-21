@@ -9,30 +9,30 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=39';
-import { Input } from './input.js?v=39';
-import { Level, ROOMS, LAB } from './level.js?v=39';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=40';
+import { Input } from './input.js?v=40';
+import { Level, ROOMS, LAB } from './level.js?v=40';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=39';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=39';
-import { Camera } from './camera.js?v=39';
-import { buildKidModel, Kid, Player } from './kid.js?v=39';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=39';
-import { buildCraneModel, Crane } from './crane.js?v=39';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=39';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=39';
-import { Hoist } from './hoist.js?v=39';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=39';
-import { WreckingBall } from './hazards.js?v=39';
-import { AudioKit } from './audio.js?v=39';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=39';
-import { craftMat, craftBox } from './craft.js?v=39';
-import { t as tr } from './lang.js?v=39';
-import { showIntro } from './intro.js?v=39';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=39';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=39';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=39';
+} from './pieces.js?v=40';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=40';
+import { Camera } from './camera.js?v=40';
+import { buildKidModel, Kid, Player } from './kid.js?v=40';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=40';
+import { buildCraneModel, Crane } from './crane.js?v=40';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=40';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=40';
+import { Hoist } from './hoist.js?v=40';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=40';
+import { WreckingBall } from './hazards.js?v=40';
+import { AudioKit } from './audio.js?v=40';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=40';
+import { craftMat, craftBox } from './craft.js?v=40';
+import { t as tr } from './lang.js?v=40';
+import { showIntro } from './intro.js?v=40';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=40';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=40';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=40';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -210,6 +210,7 @@ async function boot() {
   let collected = 0;          // this level's bolts
   let goldenGot = 0;          // this level's golden bolts
   let runBolts = 0, runGolden = 0;   // …and the job, for the last screen
+  let blueprints = 0;                // one per world, kept for the whole run
   // THE WORLD'S OWN GOLDEN COUNT (DESIGN §4.3). The run total is the whole
   // day; this is the nine that build THIS world's building, so it banks a
   // level's find when the level ends and resets when the world does. Kept
@@ -376,6 +377,38 @@ async function boot() {
       g.add(core, ring);
       return { root: g };
     })).root;
+    // THE BLUEPRINT — one per world, a pickup for now (owner, 2026-08-21:
+    // "blueprints can just be collectables for now, we can add a secret art
+    // and gallery later"). A rolled sheet, so it is unmistakably not a bolt
+    // at 32px: DESIGN §6.3's rule for every token.
+    const bpModel = (await getPiece('blueprint', () => {
+      const g = new THREE.Group();
+      const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.72, 10),
+        craftMat('#eaf2fb', 'card', { transparent: true }));
+      roll.rotation.z = Math.PI / 2;
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.05, 6, 12),
+        craftMat(PAL.MACHINE, 'balsa', { transparent: true }));
+      band.rotation.y = Math.PI / 2;
+      const edge = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.175, 0.08, 10),
+        craftMat('#3f6ea8', 'card', { transparent: true }));
+      edge.rotation.z = Math.PI / 2; edge.position.x = 0.34;
+      g.add(roll, band, edge);
+      return { root: g };
+    })).root;
+    let blueprint = null;
+    if (def.blueprint) {
+      const [brow, bcol] = def.blueprint;
+      blueprint = bpModel.clone(true);
+      blueprint.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone();
+        o.material.transparent = true;
+      });
+      blueprint.position.set(bcol + 0.5, (level.h - 1 - brow) + 0.5, 0);
+      blueprint.baseY = blueprint.position.y; blueprint.state = 'up'; blueprint.popT = 0;
+      group.add(blueprint);
+    }
+
     const golden = def.golden.map(([row, col], gi) => {
       const g = goldModel.clone(true);
       // the collect pop fades it, and a material cloned off a GLB is OPAQUE —
@@ -393,7 +426,7 @@ async function boot() {
 
     scene.add(group);
     return {
-      def, level, group, bank, girder, wall, ball, bolts, golden,
+      def, level, group, bank, girder, wall, ball, bolts, golden, blueprint,
       robots, vents, machine, checkpoint, flag, hoists,
     };
   }
@@ -447,7 +480,11 @@ async function boot() {
   const siteEl = document.getElementById('site');
   const setCounts = () => {
     boltsEl.textContent = `⬡ ${collected}/${site.def.bolts.length}`;
-    goldEl.textContent = `✦ ${goldenGot}/${site.def.golden.length}`;
+    // BLUEPRINTS ONLY APPEAR ONCE YOU HAVE ONE. A 0/4 on the HUD from the
+    // first second is a chore printed on the screen; a count that shows up
+    // the moment you find the first one is a discovery that stayed.
+    goldEl.textContent = `✦ ${goldenGot}/${site.def.golden.length}`
+      + (blueprints ? `  ▤ ${blueprints}/4` : '');
   };
   // the address beside the name, so what is on screen is what you can paste
   // to somebody: "1-2 · LEVEL 2 — THE SCAFFOLD"
@@ -492,7 +529,8 @@ async function boot() {
 
   // ---- the mode machine ---------------------------------------------------
   let mode = 'foot';          // foot | mounting | riding | dismounting
-  let moveT = 0, digT = 0, slingT = 0, cleared = false, transitioning = false;
+  // `digT` went with the dig timer — the stroke owns that beat now
+  let moveT = 0, slingT = 0, cleared = false, transitioning = false;
   let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
@@ -641,7 +679,7 @@ async function boot() {
     player.x = s.kid.x; player.y = s.kid.y; player.vx = 0; player.vy = 0; player.mercyT = 0;
     exc = site.machine;
     scene.add(kid.group);                    // out of the old seat, if he was in one
-    mode = 'foot'; digT = 0; slingT = 0;
+    mode = 'foot'; slingT = 0;
     player.climbing = false;
     input.take('action'); input.take('jump');
     setSiteName();
@@ -970,16 +1008,24 @@ async function boot() {
       // a time. The bucket digs because it is a bucket (ART_BRIEF §1.2).
       if (site.bank && !site.bank.cleared) {
         const bk = site.def.bank;
-        const canDig = input.down.down
-          && exc.n.boom.rotation.z < 0.3
-          && exc.bucketWorld(buck).x > bk.c0 - 1.4 && buck.x < bk.c1 + 1.4;
-        if (canDig) {
-          digT += dt;
-          if (digT >= 0.7) { digT = 0; site.bank.dig(); audio.splat(); cam.punch(0.8); }
-        } else {
-          digT = 0;
+        // IN RANGE IS A FACT ABOUT THE MACHINE, NOT ABOUT THE ARM. It used to
+        // also require you to have driven the boom below 0.3 yourself — with
+        // the same button that digs — so the first thing the game asked a
+        // six-year-old for was to solve a control. Park next to the bank and
+        // hold the verb; the machine lowers its own arm (excavator.js).
+        const near = Math.abs(exc.x - (bk.c0 + bk.c1) / 2) < (bk.c1 - bk.c0) / 2 + 3.2;
+        exc.digging = input.down.down && near;
+        // THE BANK SAYS IT IS DIGGABLE before you press anything: within
+        // reach it lifts and pulses, which is the indicator the owner found
+        // missing. A thing you can act on has to look different from a thing
+        // you cannot.
+        site.bank.arm(near, t);
+        if (exc.digging && exc.bit) {
+          site.bank.dig();
+          audio.splat();
+          cam.punch(site.bank.cleared ? 1.5 : 0.85);
         }
-        if (canDig || Math.abs(exc.x - bk.c0) < 6) rideHint = HINT.dig;
+        if (near || Math.abs(exc.x - bk.c0) < 6) rideHint = HINT.dig;
       }
 
       // THE GIRDER: the same gesture, the other way round — the bucket
@@ -1181,6 +1227,29 @@ async function boot() {
         // reaches the mesh and the bolt would pop without fading
         b.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - b.popT; });
         if (b.popT >= 1) { b.state = 'gone'; b.visible = false; }
+      }
+    }
+
+    // …the world's blueprint, if this room is the one carrying it
+    if (site.blueprint && site.blueprint.state !== 'gone') {
+      const bp = site.blueprint;
+      if (bp.state === 'up') {
+        bp.rotation.y += dt * 1.1;
+        bp.position.y = bp.baseY + Math.sin(t * 1.4) * 0.16;
+        if (Math.abs(bp.position.x - cx) < cr + 0.3 && Math.abs(bp.position.y - cy) < cr + 0.3) {
+          bp.state = 'pop'; bp.popT = 0;
+          blueprints++;
+          audio.thunk(); cam.punch(0.9);
+          banner(tr('blueprint'));
+          setTimeout(() => document.getElementById('banner')?.remove(), 1400);
+          setCounts();
+        }
+      } else {
+        bp.popT += dt / 0.45;
+        bp.rotation.y += dt * 7;
+        bp.scale.setScalar(1 + bp.popT * 0.8);
+        bp.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - bp.popT; });
+        if (bp.popT >= 1) { bp.state = 'gone'; bp.visible = false; }
       }
     }
 

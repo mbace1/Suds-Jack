@@ -58,6 +58,7 @@ export const STRINGS = {
     // number — the design's rule is that finding them shows you more of the
     // thing and never withholds anything.
     clockOut: 'CLOCKING OUT',
+    blueprint: 'BLUEPRINT',
     built: 'you built',
     builtDone: 'finished, and the lights are on',
     checkpoint: 'CHECKPOINT',
@@ -104,6 +105,7 @@ export const STRINGS = {
     hintBoom: '▲ ▼ PUOMI',
     clear: 'KENTTÄ SELVÄ',
     clockOut: 'TYÖPÄIVÄ PÄÄTTYY',
+    blueprint: 'PIIRUSTUS',
     built: 'rakensit',
     builtDone: 'valmis, ja valot palavat',
     bolts: 'pultit',
@@ -155,6 +157,7 @@ export const STRINGS = {
     hintBoom: '▲ ▼ ブーム',
     clear: 'クリア',
     clockOut: 'しごとおわり',
+    blueprint: 'せっけいず',
     built: 'つくったもの',
     builtDone: 'かんせい。あかりがついた',
     bolts: 'ボルト',
