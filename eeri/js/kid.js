@@ -9,10 +9,10 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=40';
+import { PAL } from './palette.js?v=41';
 // The silhouette line lives in craft.js, not here: robots.js needs the same
 // one, and two copies of a silhouette rule is how two silhouettes start.
-import { outlineShell } from './craft.js?v=40';
+import { outlineShell } from './craft.js?v=41';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -135,7 +135,19 @@ export function buildKidModel() {
 //  - The rig is modelled facing +Z (Meshy's requirement) and the game's world
 //    faces +x, so the whole thing carries a −90° yaw offset that the
 //    code-built kid does not.
-const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'climb' };
+// THE RIDE CLIP IS CALLED `sit` (owner, 2026-08-21: "riding a machine looks
+// wrong, should be sitting in the right spot"). `eeri_v5.glb` ships fifteen
+// clips and `sit` is one of them; this table asked for `ride`, which is not
+// a name in the file, so `play()` fell back to `idle` — a STANDING pose — and
+// the kid rode every machine in the game standing on it. The seat was never
+// the problem: the game was asking for the wrong animation.
+//
+// `walk` was in the file and unused too. A rig with a walk and a run should
+// use both: at a stroll the run clip reads as a mime of running, which is
+// half of why the animation was not communicating anything.
+const CLIP_FOR = { idle: 'idle', walk: 'walk', run: 'run', air: 'jump', ride: 'sit', climb: 'climb' };
+// below this he is walking, above it he is running (SPEED.run is 6.2)
+const WALK_MAX = 3.4;
 
 // FACING, and the trap in it. A rotation of θ about Y sends +z to
 // (sin θ, 0, cos θ). The Meshy rig is modelled facing +Z, and the game's
@@ -180,6 +192,9 @@ class ClipDriver {
   once(name, t, cap = 0.5) {
     const a = this.actions[name];
     if (!a) return;
+    // a one-shot still standing from last time is stopped, not layered: two
+    // clamped clips at weight 1 average into a pose that is neither
+    if (this.shot && this.shot !== a) this.shot.stop();
     a.reset();
     a.setLoop(THREE.LoopOnce, 1);
     a.clampWhenFinished = true;
@@ -188,6 +203,7 @@ class ClipDriver {
       this.actions[this.current].crossFadeTo(a, 0.08, false);
     }
     this.current = name;
+    this.shot = a;
     this.shotUntil = t + Math.min(cap, a.getClip().duration || cap);
   }
 
@@ -199,8 +215,21 @@ class ClipDriver {
       this.mixer.update(dt0);
       return;
     }
-    if (this.shotUntil) { this.shotUntil = 0; this.current = null; }
-    const want = this.actions[CLIP_FOR[state]] ? CLIP_FOR[state] : 'idle';
+    // THE STUCK POSE (owner, 2026-08-21: "animations can get stuck while
+    // climbing"). A one-shot is played with `clampWhenFinished`, so when it
+    // ends it HOLDS its last frame — at effective weight 1, for ever, because
+    // nothing ever stopped it. `current` was then nulled, which also killed
+    // the crossFade that would have weighted it down. So the state clip came
+    // back blended 50/50 with a frozen `climbon`, and the kid climbed a
+    // ladder in a pose that was half of each. Every one-shot did it: stomp,
+    // hurt, teeter, the idle breaks. Stopping the shot is the whole fix.
+    if (this.shotUntil) {
+      this.shotUntil = 0;
+      if (this.shot) { this.shot.stop(); this.shot = null; }
+      this.current = null;
+    }
+    const key = state === 'run' && speed < WALK_MAX && this.actions.walk ? 'walk' : state;
+    const want = this.actions[CLIP_FOR[key]] ? CLIP_FOR[key] : 'idle';
     if (want !== this.current) {
       const next = this.actions[want];
       if (next) {
@@ -214,7 +243,15 @@ class ClipDriver {
     // the run reads faster when he moves faster — the one place the game's
     // own numbers still drive the animation
     const a = this.actions[this.current];
-    if (a) a.setEffectiveTimeScale(this.current === 'run' ? 0.6 + Math.min(1.4, speed / 5) : 1);
+    // the clip's rate follows the real speed, and now within its own band:
+    // a walk that speeds up to a run reads as one continuous gait rather than
+    // as two clips swapping
+    if (a) {
+      a.setEffectiveTimeScale(
+        this.current === 'run' ? 0.75 + Math.min(1.1, speed / 6)
+        : this.current === 'walk' ? 0.7 + Math.min(0.9, speed / 3.4)
+        : 1);
+    }
     const dt = Math.min(0.1, Math.max(0, t - this.last));
     this.last = t;
     this.mixer.update(dt);
@@ -461,6 +498,11 @@ export class Player {
           input.take('up');
           this.vy = up * CLIMB_V;
           this.vx = 0;
+          // …and PINNED to the rungs. He was within half a tile, which is
+          // close enough to look like he is holding air beside the ladder
+          // rather than holding the ladder.
+          const lad = this.level.ladderAt?.(this.x, this.y);
+          if (lad) this.x += ((lad.c + 0.5) - this.x) * 0.35;
           const mid = Math.floor(this.x) + 0.5;   // climb straight
           this.x += (mid - this.x) * Math.min(1, 12 * dt);
           const top = this.level.climbTop(this.x, this.y);
@@ -583,9 +625,39 @@ export class Player {
 
   updateVisual() {
     const k = this.kid;
-    k.group.position.set(this.x, this.y, 0);
+    // ON the ladder, not behind it (owner, 2026-08-21: "climbing in general
+    // clips and isn't as attached to the ladder as it could"). The rungs are
+    // drawn at z 0.35 — in front of the wall they are bolted to — and the kid
+    // was at z 0, so he climbed BEHIND them: the rails crossed his body and
+    // his head was the only part of him not cut in half by a bar. He rides a
+    // little in front of the ladder now, which is where a person on a ladder
+    // is, and eases there so stepping on and off is not a jump in depth.
+    const wantZ = this.climbing ? 0.62 : 0;
+    this.visZ = (this.visZ ?? 0) + (wantZ - (this.visZ ?? 0)) * 0.35;
+    k.group.position.set(this.x, this.y, this.visZ);
+    // ---- AMPLITUDE (owner, 2026-08-21: "animations in general very minute,
+    // so don't communicate actions well yet") ----------------------------
+    //
+    // The clips are subtle and they are the art lane's to re-author; what
+    // this lane can add is the secondary motion a 3D cast gets for free, and
+    // it is the part that carries a READ at 40 px tall. All of it is driven
+    // by the game's own numbers rather than by a clock, so it cannot
+    // disagree with what is happening.
+    //
+    //   LEAN   into the run, proportional to speed. A body that leans is
+    //          moving; a body that stays upright is being slid along.
+    //   STRETCH going up and SQUASH landing — the oldest readability trick
+    //          there is, and the jump had only the landing half.
     this.squash = Math.max(0, this.squash - 0.016);
-    k.group.scale.y = this.squash > 0 ? 0.86 : 1;
+    const speed = Math.abs(this.vx);
+    const lean = this.climbing ? 0
+      : -(k.face || 1) * Math.min(0.16, speed / 6.2 * 0.16)
+        * (this.grounded ? 1 : 0.5);
+    this.leanNow = (this.leanNow ?? 0) + (lean - (this.leanNow ?? 0)) * 0.2;
+    k.group.rotation.z = this.leanNow;
+    const rise = !this.grounded && this.vy > 1 ? Math.min(0.09, this.vy / 14 * 0.09) : 0;
+    k.group.scale.y = this.squash > 0 ? 0.86 : 1 + rise;
+    k.group.scale.x = this.squash > 0 ? 1.1 : 1 - rise * 0.6;
     // mercy flicker — the one place the kid is allowed to disappear
     k.group.visible = this.mercyT <= 0 || Math.floor(this.mercyT * 18) % 2 === 0;
     const state = this.climbing ? 'climb'
