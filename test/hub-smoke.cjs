@@ -31,7 +31,13 @@ const collected = [];
 // catalogue once it has been read — see the on-screen button check)
 const STUB = new Set();
 const server = http.createServer((req, res) => {
-  const url = req.url.split('?')[0];
+  // GitHub Pages serves this repo at /Suds-Jack/, not at the root, and a
+  // cabinet is allowed to know that: Kindling is built by another repo with an
+  // absolute base, because TanStack takes the router's basepath from it — the
+  // page renders "Not Found" anywhere else however the assets are written. So
+  // the harness answers on BOTH, the way production does, instead of reporting
+  // a working cabinet as a wall of 404s.
+  const url = req.url.split('?')[0].replace(/^\/Suds-Jack(?=\/|$)/, '') || '/';
   if (url === '/collect' || url === '/collect-broken') {
     let body = '';
     req.on('data', c => { body += c; });
@@ -270,6 +276,12 @@ function check(name, cond) {
   check('and each is a 44px target', langBoxes.every(b => b.w >= 44 && b.h >= 44));
 
   const before = await page.locator('#floor-head').textContent();
+  // …and the FIRST cabinet's English words, to compare against after the
+  // switch. This used to keyword-match the Finnish (`paja|Vektorinen|Selain`),
+  // which meant the gate went red the moment another lane rewrote that one
+  // game's tagline — which is exactly what happened when Suds Jack v5 landed.
+  // A test of the language switch should not be a test of anybody's copy.
+  const beforeTag = await page.locator('.cab .tagline').first().textContent();
   await page.locator('.lang-btn[data-lang="fi"]').click();
   const fi = await page.evaluate(() => ({
     head: document.getElementById('floor-head').textContent,
@@ -280,7 +292,20 @@ function check(name, cond) {
   }));
   check(`switching relabels the page's own words ("${fi.head}")`, fi.head !== before && fi.head.length > 0);
   check(`and the cabinets' words with them ("${fi.play?.trim()}")`, /PELAA|Pelaa/i.test(fi.play ?? ''));
-  check('and the games\' own copy', /paja|Vektorinen|Selain/i.test(fi.tagline ?? ''));
+  // the switch has to reach the CATALOGUE, not just the page furniture: the
+  // cabinet's own tagline must change, and must be the fi one the catalogue
+  // holds for that cabinet rather than any old different string.
+  {
+    const wanted = await page.evaluate(() => {
+      // a cabinet names itself as `cab-<id>` (hub.js line 35)
+      const id = (document.querySelector('.cab')?.id || '').replace(/^cab-/, '');
+      const g = __hub.games.find((x) => x.id === id);
+      return g?.fi?.tagline ?? null;
+    });
+    check('and the games\' own copy',
+      !!fi.tagline && fi.tagline.trim() !== (beforeTag ?? '').trim()
+      && (!wanted || fi.tagline.trim() === wanted.trim()));
+  }
   // a page claiming lang="en" while showing Finnish lies to every screen reader
   // and translation tool that asks it
   check('<html lang> follows', fi.lang === 'fi');
@@ -828,10 +853,20 @@ function check(name, cond) {
   const missing = [], badHref = [], small = [];
   for (const g of shelled) {
     await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
+    // Wait for the button rather than sampling once, the same way the pad
+    // bridge below does. Kindling cannot add it before hydration: its app
+    // renders <html> itself, so React owns the document and deletes any body
+    // child it did not render — the button was there at domcontentloaded and
+    // gone a tick later, which read as a cabinet with no way home.
     const home = page.locator('.arcade-home');
+    await home.waitFor({ state: 'attached', timeout: 6000 }).catch(() => {});
     if (await home.count() !== 1) { missing.push(g.id); continue; }
     const href = await home.getAttribute('href');
-    if (new URL(href).pathname !== '/') badHref.push(`${g.id}->${href}`);
+    // The site root, which is `/` here and `/Suds-Jack/` in production. A
+    // cabinet that masks its URL to the deployed path — Kindling does, its
+    // router basepath is baked in — makes the shell resolve home against
+    // that, which is right there and looks wrong here.
+    if (!['/', '/Suds-Jack/'].includes(new URL(href).pathname)) badHref.push(`${g.id}->${href}`);
     const box = await home.boundingBox();
     if (!box || box.height < 44) small.push(`${g.id} ${Math.round(box?.height ?? 0)}px`);
   }

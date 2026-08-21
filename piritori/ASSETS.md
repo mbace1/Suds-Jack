@@ -1,3 +1,9 @@
+> [!WARNING]
+> **LEGACY PRODUCTION HISTORY.** Active direction now lives in
+> [DESIGN_AUTHORITY.md](DESIGN_AUTHORITY.md), the GDD and
+> [art-library/APPROVALS.md](art-library/APPROVALS.md). This file is retained for
+> traceability and must not override those sources.
+
 # Assets needed — and design decisions still open
 
 For whoever is making art, and for the owner. Companion to

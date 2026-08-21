@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **Authority reset, 2026-08-19.** This remains the historical owner-decision
+> index. [DESIGN_AUTHORITY.md](DESIGN_AUTHORITY.md) defines the current hierarchy;
+> later recorded owner decisions still outrank earlier entries.
+
 # Owner decisions — Piritori → Eden
 
 The rulings, dated, in the owner's words, with what each one changed.
@@ -12,6 +17,66 @@ find out what has been decided at all. This is the index.
 `FIGHT_BRIEF.md` are still canon (`AGENTS.md` §1). This records where canon has
 been overridden and by what, so that an unrecorded contradiction stays a
 finding and a recorded one stays a decision.
+
+---
+
+## 2026-08-20 — tragedy, conflict and the complete map frame
+
+### 9. Aaro's death is inevitable
+
+> "Inevitable, as it's the Cain and Able story. See East of Eden for any
+> narrative reference, all the same characters are there. (Adam = Aatami,
+> etc)"
+
+The family structure now uses explicit dramatic correspondences rather than an
+*East of Eden* mood alone: Aatami carries Adam's father function, Kalle carries
+Cal / Cain and Aaro carries Aron / Abel. Aaro's 2025 death is fixed. Player
+choices author the rupture, relationships, responsibility, grief and aftermath,
+not a branch in which Aaro survives.
+
+The remaining novel functions still require casting. They are not silently
+assigned through a character's ethnicity, nationality or occupation.
+
+### 10. Conflict can generate many mini-missions
+
+> "Yes, there can be lots of conflicts and mini missions"
+
+Faction pressure can unfold through compact authored chains: friction, probe,
+position, response, showdown and remembered consequence. A late-Era-I
+player-initiated Jade Lantern raid is allowed once the faction and named people
+have been established. Combat remains one possible resolution rather than the
+default answer.
+
+### 11. Complete campaign map boundary
+
+> "It can be Kallio to Töölö and Downtown, but no North of Pasila or East of
+> Kallio"
+
+> "So Kalasatama is the cut off to the east"
+
+The final clarification controls: Era II's larger board is bounded by Pasila
+north, Kalasatama east, Downtown south and Töölö west. Kallio remains central.
+Nothing playable extends north of Pasila or east of Kalasatama. This is a
+planning and sourcing lock, not permission to begin phase-gated Era II runtime
+or art production.
+
+### 12. Kati, Aida and Aatami's collapse
+
+> "Kati is just a chick that loves to roam, she isnt a stable figure"
+
+> "Recommend, but name could be Aida"
+
+> "Either works"
+
+Kati is the sons' intermittently present mother and the restless maternal
+legacy, but not a Cathy/Kate replica or a stable family anchor. Aida is the
+recommended name for the outside witness: she starts in Aaro's music-world
+orbit, understands both brothers and challenges Kalle without serving as his
+automatic redemption. Her exact romantic relationship remains open.
+
+The selected form of Aatami's collapse is physical as well as emotional: news
+of Aaro's death causes a stroke. Aatami survives in a diminished state for the
+final reckoning.
 
 ---
 

@@ -1,5 +1,763 @@
 # EERI — versions
 
+## v15.36 — 2026-08-21 — five playtest notes, and two of them were one-word bugs
+
+Everything here came off the owner playing it, and the two worst-looking
+problems turned out to be a wrong string and an unstopped animation.
+
+**"Riding a machine looks wrong, should be sitting in the right spot."**
+`eeri_v5.glb` ships fifteen clips and one of them is **`sit`**. `CLIP_FOR`
+asked for **`ride`**, which is not a name in the file, so `play()` fell back to
+`idle` — a STANDING pose — and the kid has ridden every machine in this game
+standing on it. The seat was never the problem: the game was asking for the
+wrong animation. He also sat 0.2 too low once the right clip played, with his
+shoulders inside the cowl; ART_BRIEF §1.2 forbids the rider being swallowed by
+the mount, so he is lifted clear.
+
+**"Animations can get stuck while climbing."** A one-shot plays with
+`clampWhenFinished`, so when it ends it HOLDS its last frame — at effective
+weight 1, for ever, because nothing ever stopped it. `current` was then nulled,
+which killed the crossfade that would have weighted it down. So the state clip
+came back blended 50/50 with a frozen `climbon` and he climbed in a pose that
+was half of each. Every one-shot did it: stomp, hurt, teeter, both idle breaks.
+Stopping the action is the entire fix.
+
+**"Climbing clips and isn't as attached to the ladder as it could."** Two
+things. The rungs are drawn at z 0.35 — in front of the wall they are bolted
+to — and the kid was at z 0, so he climbed BEHIND them and the rails cut across
+his body. He rides at z 0.62 while climbing now, eased so stepping on and off
+is not a jump in depth. And he was only within half a tile of the ladder's
+centre, which looks like holding air beside it; `level.ladderAt()` gives the
+column and the climb pins him to it.
+
+**"Some foreground assets block view of ladders."** The fore lane fades to 0.24
+while climbing and eases back. A climb is the one move that parks you behind
+that strip for seconds while standing still — everywhere else you are moving
+and a beat of occlusion is depth rather than a problem. It fades rather than
+being cut, because a hole punched per ladder is a second set of coordinates to
+keep in step with the levels, and this repo has written down what happens when
+one number lives in two files.
+
+**"Animations in general very minute, so don't communicate actions well."** The
+clips are the art lane's to re-author; what this lane can add is the secondary
+motion, and it is the part that carries a read at 40 px tall. **`walk` was in
+the file and unused** — at a stroll the run clip reads as a mime of running, so
+there is a walk under 3.4 now and the clip rate follows the real speed inside
+each band. On top: a **lean** into the run proportional to speed (a body that
+leans is moving; one that stays upright is being slid along) and a **stretch**
+going up to match the squash that already existed on landing.
+
+Gates: rooms 246, fx 31, dev-menu 36, smoke 433.
+
+## v15.35 — 2026-08-21 — the excavator does the digging, and blueprints exist
+
+**The dig was a timer, not a move** (owner: "takes a long time to push up and
+down for the block to disappear with very little indicators… it doesn't look
+like an excavator at work"). All three complaints were the same line of code.
+
+You drove the boom down yourself — with the SAME button that digs — held it,
+and 0.7 s later a row of the bank vanished. Three rows meant wrangling a
+control and then two seconds of a still arm while a number counted. Nothing on
+screen was digging.
+
+Now holding the verb runs a **stroke**, and the machine drives its own arm:
+reach out and open, plunge into the cut, **curl the bucket through it — the
+bite lands there**, which is where a bucket actually takes earth — then lift
+and swing back out, repeating while held. 0.46 s a bucketful, so a three-row
+bank is under a second and a half of continuous digging.
+
+Three things it fixes at once:
+
+* **the fiddle is gone** — `canDig` no longer asks the boom to be below 0.3.
+  Park beside the bank and hold; the arm is the machine's business. That
+  control was the first thing the game asked a six-year-old to solve before it
+  would let him dig.
+* **the bank says it is diggable** before you press anything: in range it
+  lifts and breathes (`Bank.arm()`). A thing you can act on has to look
+  different from a thing you cannot, and nothing said which was which until
+  the first row had already gone.
+* **it throws twice the dirt** (12 clods a bite against 6, pool 18 → 26) and
+  the screen punch is bigger on the last row than the middle ones, so the
+  bank coming down has an ending.
+
+**Blueprints are collectables now** (owner: "blueprints can just be
+collectables for now, we can add a secret art and gallery later"). One per
+world — a rolled sheet with a band, unmistakably not a bolt at 32 px — held to
+the same two rules as a golden bolt: reachable, and never on the walking line,
+because one per WORLD should be worth a climb. The count only appears on the
+HUD once you have one: a 0/4 from the first second is a chore printed on the
+screen. World 4's first placement sat 1 tile off the deck and the prover said
+so.
+
+Also recorded: **DESIGN §8.4** — the Flattener (world 1's second machine: a
+roller that flattens a mangled aluminium sheet by DRIVING over it, which is the
+first machine job in this game done by going somewhere rather than by holding a
+button at a target) and six easy puzzles for the machines that already exist.
+
+Gates: rooms 246, fx 31, dev-menu 36, smoke 433.
+
+## v15.34 — 2026-08-20 — half the levels were never proved, and it showed
+
+A pass aimed at the build being worth playing rather than at it having more in
+it, and it starts with a hole in the gates.
+
+**The room prover covered six of twelve levels and reported green.**
+`js/world34-register.js` pushes worlds 3 and 4 onto the roster at RUNTIME, and
+`test/rooms.mjs` imported the static list — so half the game had no reach
+budget check, no "is about ONE thing", no bolt or checkpoint rule and no pacing
+figure. The prover takes the same roster the game does now: **147 checks became
+245**, and the six new levels passed every existing rule.
+
+They passed while being **half as dense as the six that had been measured**:
+
+| | asks per 10 tiles | longest stretch asking nothing | enemies | hazards |
+|---|---|---|---|---|
+| worlds 1-2 | 1.0 - 1.9 | 10.5 - 14 tiles | 2 - 4 | 1 each |
+| worlds 3-4 | 0.7 - 0.9 | **18.5 - 21 tiles** | 1 | **0** |
+
+Every world-3/4 level had a twenty-tile hole in the same place — between its
+second beat and its checkpoint — and nothing in the suite objected. A gate that
+certifies WORKS cannot see DULL, which this repo has now recorded three times.
+
+**`deadAir()` is the rule that closes it.** It walks a level and finds the
+longest run of tiles between one thing that ASKS something of you and the next
+— a step, a gap, a small machine, a hazard, a gizmo, water, a ladder, a pipe
+mouth, the ride. **Bolts are not asks**: a trail is a breadcrumb collected by
+running, so a stretch with bolts and nothing else is still a stretch of holding
+right. The floor is **15 tiles**, taken from the levels that already play
+rather than invented — worlds 1-2 measure 12-14.
+
+Seven levels failed it. All twelve pass now, and worlds 3-4 read 12.5-14.5
+against the front half's 10.5-14.
+
+**Filling holes may not make the game harder.** Age six, generous: the beats
+added are things to play with before things that hurt — three tarp bounces, a
+belt that helps, a last pipe that carries you to the flag, one hopper between
+two pipes — and only then the enemies and the **two steam vents that give
+worlds 3 and 4 the first telegraphed hazards they have ever had**. Until now
+the back half of the game had no beat you wait for, only beats you run at.
+
+**Then the new rule found two defects in the levels that have shipped all
+along.** A skitter in Level 1 patrolled 74…80 and a roller in Level 3 patrolled
+70…76 — both squarely inside their machine's run from its park to the job it
+clears. A hit takes the RIDE, so both ended the ride on the way to the thing
+the ride exists for. Level 1's own source comment records moving the WRECKING
+BALL out of that exact corridor for that exact reason; a robot was left
+standing in it, because the prover asked about balls and vents there and never
+about small machines. It asks now, and both robots moved past the job.
+
+**And the rule itself was wrong first, in a way that produced the bug.** The
+first cut counted the stretch from a machine to its job as empty — sixteen
+tiles of nothing — so it demanded a beat there, and a beat there is exactly an
+enemy between a machine and its job. The playthrough caught what that did on
+Level 10 (the bot reached x=93 of 92 and never cleared). The drive is not dead
+air: you are riding through it, and that span counts as occupied.
+
+**Two more defects the prover caught mid-authoring**, both of which would otherwise
+have shipped: a tarp under a shelf that **bounces you into the ceiling**, and a
+step under a bolt trail that **buries the trail in the floor it raises**. Also
+found: one edit landed twice on Level 10 because its anchor text was not unique
+to it, putting a tarp inside a belt — the level's own report is what showed it.
+
+Recorded in DESIGN §8.3.
+
+## v15.33 — 2026-08-20 — the golden bolts build the world's building
+
+DESIGN §4.3, which has been written down since 2026-08-14 and absent from the
+build since. The premise is that Eeri is on a worksite; twelve levels went past
+and **nothing on that site ever got finished**, which is the quiet hole in the
+whole thing. The golden bolts were a count, and a count that buys nothing is a
+chore with a sparkle on it.
+
+**They build the world's building now.** A world is three levels, each hides
+three, so a world holds nine — and those nine are the nine parts of the thing
+this world was working on. Clocking out at the gate puts it on screen: nine of
+nine and the roof goes on and the windows light, four of nine and it stands
+four-ninths built with the rest showing as steel frames.
+
+Four things decided the shape of it:
+
+* **A missing part is a FRAME, not a hole.** "The gaps visible" has two
+  readings and only one of them is a building — an absent part leaves nothing
+  to look at, so the eye reads a *smaller* building rather than an unfinished
+  one. Every part you have not earned is drawn as its own steel outline, which
+  is what an unfinished storey looks like on a real site and tells you exactly
+  what is missing and where it would go.
+* **Parts fill from the bottom left**, the way a building actually goes up. You
+  cannot have a third storey with no second, so a partial building is always a
+  plausible object rather than nine floating cubes.
+* **It is built into the scene, not drawn on a card.** A building described in
+  text is a score; a building standing past the gate is a building.
+* **It never gates anything**, which §4.3 states outright and the gate now
+  asserts: you clock out either way and the next world opens either way. Age
+  six, generous — the reward for finding them is *seeing more of the thing*,
+  never being let past a door. The check runs on the low-count path precisely
+  because that is the one that would break if anybody later made the building
+  a requirement.
+
+The count is the WORLD's, not the run's: banked when a level ends, reset when
+the world changes, and keyed on the world rather than the level index so a deep
+link into the middle of world 3 cannot arrive carrying world 2's nine.
+
+Each world builds something different — the tower, the pumphouse, the lodge,
+the depot — and the difference is in proportion and fill, never in the part
+COUNT. Nine bolts is nine bolts, and a meter whose denominator moves per world
+stops meaning one thing.
+
+**Two things found by looking rather than by a gate.** The building first stood
+at gate + 7.5, which is past the room's end — and the camera CLAMPS to the level
+width, so it was placed somewhere the camera is not allowed to look and rendered
+half out of frame at the right edge. It sits at gate + 1.7 now, where Eeri is
+standing when he clocks out. And `debug.setGolden(n)` exists because a building
+has nine readings and a bot that collects nothing can only ever show the first.
+
+Still open: **blueprints, one per world** (§4.2) — the last Tier 3 item. The
+asset exists (`token_blueprint`), and what it unlocks does not, so it is a
+feature and not a wiring job.
+
+## v15.32 — 2026-08-20 — the level inspector, and the blind loop ends
+
+**Owner direction:** *"do you think we could make a level editor that allows me
+to place assets and backgrounds in a more deliberate way?"* — yes, in four
+steps, and this is step one. Reached from the pause menu, as asked.
+
+**The premise, corrected, because it decides the design.** The levels are not
+placed randomly. Every number in them was chosen. They are placed **BLIND**: a
+prop in this game is a line like
+
+    panel(THREE, root, 48, 10.0, 124, 22, 0x14263c, -1.72)
+
+so composing a picture means typing eight numbers, reloading, looking, and
+typing them again. Nobody composes anything that way, which is exactly why
+nothing looks composed. Step one changes **no format at all** — it makes that
+loop SIGHTED. Point at a thing, find out what it is, drag it, read the
+corrected numbers back out.
+
+**It lives entirely outside the game.** `dev.html` FRAMES `index.html` rather
+than copying it, so what is inspected is byte-for-byte what ships, and
+`dev/inspector.js` is loaded by the dev page alone. `index.html` gains no
+import, no button and no branch — the gate now asserts all three, plus that
+`js/menu.js` has never heard of it. **The pause-menu row is added from OUT
+HERE**: `openMenu()` builds its card fresh each time, so the inspector watches
+the framed document for one appearing and appends `DEV TOOLS` to it. That
+keeps the rule the whole dev pack is built on — the pack reads the game, the
+game never learns the pack exists — and it means no shipped build can ever
+show a six-year-old a button marked DEV.
+
+**One handle the game had to give up.** `camera`, next to `THREE, scene` on
+`window.__eeri`. "What is under this pointer" is a raycast; a raycast needs the
+camera the picture was drawn with, and `debug.camera()` returns a *position*.
+`test/dev-menu.mjs` now names it, because the whole reason that file exists is
+that the pack reads hooks nothing in the game depends on — rename one and
+nothing else fails, the tool just quietly stops selecting anything.
+
+**What it does.** PICK selects by raycast and drags in the object's own z
+plane — depth is the one axis you must not change by accident in a 2.5D game.
+Arrow keys nudge (shift = whole tiles). x/y/z are editable fields. REVERT
+restores where a thing started, remembered on first select, because otherwise
+an afternoon of dragging is unrecoverable — the real numbers only exist in
+source. WALK moves the player, which moves the camera: the game's own `Camera`
+writes the position every frame and fighting it from a second rAF is a race, so
+the view is changed by the one route that cannot desync. And a **visibility
+switch per scene group**, which answers the question that costs the most time
+by hand: *which layer is that thing on*.
+
+**Naming the layers is half the value.** Every lane plane was an anonymous
+`Mesh` sitting directly in the scene — fine for the renderer, useless to a
+person. The first pick reported `Mesh` in `(scene)` at z 2.20 and that was all
+it could say. They now name themselves `groundworks/fore`, with the tile
+number on a tiled lane (`near:1/2`) because *which half of `near` has the seam
+in it* is a real question. The first thing the tool said once they had names
+was that the object covering the middle of level 1 is the **fore** lane — which
+is the owner's own complaint about long foreground objects, answered by
+pointing at it.
+
+**What it deliberately does NOT do.** It does not save: scenery is code, not
+data, so there is nowhere to write to, and a Save button that writes nowhere is
+worse than none — the gate fails on `localStorage`, `fetch(` or `download` in
+this file. It does not name the source CALL, because half those numbers are
+computed inside a loop and there is no single line to correct. Both are step 2,
+which is the real work: **73 dressing call sites across 500 lines** become
+data. The editor UI was always the small part.
+
+**A gate of mine was lying.** The height checks added in v15.30 imported
+`./js/assets.js?v=35` as a literal, so once the graph moved to 37 the import
+404'd, `getModel` returned null, and two checks failed claiming the models had
+no height. The gate now reads the token out of `js/main.js` — nobody
+hand-keeps a number another file already owns, which is the same rule that
+produced `scripts/deploy-hub.mjs`.
+
+Tokens: every module 36 → 37; `dev/inspector.js` starts at 1.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 36/0 (six new) · smoke 430/0, plus a
+headless drive-through of the tool itself — open the pause menu, click the row,
+pick, drag, revert, zero page errors — and **playthrough 25/0**, twelve levels,
+no stalls, no ride losses.
+
+That last number was left blank when this was committed rather than written
+ahead of the run. Nothing here touches the update half of the loop, so there
+was no reason to expect it to move — which is a reason to check, not a reason
+to claim, and this session had already put an unverified gate number in a
+commit message once. It is written now because the run finished.
+
+## v15.31 — 2026-08-20 — the hint stops covering the game
+
+**Owner's report: on a phone held sideways with a controller plugged in, the
+helper box stretches from the top of the screen to the bottom and you cannot
+see the game.** Measured on an 844x390 viewport it is **368 px of 390** — a
+one-line hint occupying 94% of the picture.
+
+It is a two-property collision and neither property is wrong on its own.
+Landscape anchors `#hint` to the TOP (`bottom: auto; top: 10px`) because in
+landscape both bottom corners are full of drawn controls and a hint buried in
+the control cluster is a hint nobody reads. `html.padded` — set when a real
+controller is present — then puts `bottom` back, which is also right: with a
+pad there are no drawn controls to clear, so the hint belongs at the bottom
+where it always was. What it never did was release `top`. A `position: fixed`
+box with **both** edges pinned and `height: auto` does not sit at one of them;
+it stretches between them.
+
+`top: auto !important` is the whole fix.
+
+Why nothing caught it: it needs **all three** of coarse pointer, landscape
+orientation and a connected pad, simultaneously. Every desktop run has a fine
+pointer, every touch run in the gate had no pad, and the pad runs were on a
+desktop. The gate now plugs a pad into the landscape phone it already opens
+and measures the hint's **height** — the height is the bug, and there is more
+than one way to cause it, so asserting on a CSS property would only catch this
+one route back in. Verified by reverting the fix: 368 px, one check red.
+
+Gates: smoke 429/0 (two new) · rooms 147/0 · fx 31/0 · dev-menu 30/0.
+
+## v15.30 — 2026-08-20 — three defects nobody could see, and a flip that did not earn it
+
+**RENUMBERED FROM v15.29, AND THAT IS THE FOURTH TIME.** The design lane
+shipped its own v15.29 — the ground and the canopy — within the same hour this
+was written, so two entries carried one number again. CLAUDE.md's rule exists
+for exactly this and I did not follow it: *fetch and read the other lineage's
+VERSIONS.md before writing a new heading*. Nothing was lost this time because
+the collision was caught at the rebase rather than after both had shipped, but
+it is caught by luck rather than by a gate, and it will keep happening while
+the number is chosen by hand. The three entries below it moved up one with it.
+
+**RENUMBERED FROM v15.28, which is the collision CLAUDE.md warns about and it
+happened anyway.** `main` shipped its own v15.28 an hour apart, same integer,
+and picked the same module token (35) and the same `manifest.json` token (32)
+with it. The rule that catches this is *fetch and read the other lineage's
+`VERSIONS.md` before writing a heading* — and it only works if you do it
+immediately before PUSHING rather than when you start, which is the amendment
+this cost.
+
+**THE HEADLINE IS A NEGATIVE RESULT: the four enemy models stay
+`placeholder`.** The task was to take the enemy seam live — `robots.js` has
+asked `getModel` for a model since v15.27 and got `placeholder` back every
+time, so the code path shipped and nothing came through it. Flipping the four
+is one line each and every gate stays green. It is still the wrong call, and
+the A/B is the reason: photographed in the same spot in Level 1, the code box
+is a solid machine-orange brick you cannot miss, and the model is a small
+yellow figure that sits into pale timber and sand. main's v15.28 measured the
+same thing from the other end — *"the small robots read as brown blobs at
+gameplay scale"* — flipped nothing, and handed the decision here with a stated
+bar: **an enemy that hides in the scenery is worse than the box it replaces.**
+It does not clear that bar yet, so it does not ship.
+
+What would clear it is a paint job, not a line. The enemy needs to be lit by
+the CAST's contrast rather than the site's — the box wins because it is
+`PAL.MACHINE_DK` against sand, and the mesh brings its own hi-vis yellow which
+happens to be the value of everything it stands in front of. That is the art
+lane's next piece of work and it is now scoped by a picture rather than a
+hunch.
+
+**Getting to that answer turned up three real defects, and every one of them
+was invisible to every gate in the repo.** This is the useful half of the
+release.
+
+**1. The tell was 0.002 tiles across.** DESIGN §3 says the telegraph IS the
+enemy design. On a skinned rig it is a lamp parented to the `Head` BONE — and
+a bone is not in world units. Meshy rigs its skeletons at roughly 1/90 scale,
+so a sphere authored at radius 0.075 came out **two thousandths of a tile** on
+all three skinned enemies: in the graph, absent from the screen. The offset
+went the same way, putting the lamp a millimetre inside the head rather than
+on its face. The bone's world scale is divided back out of both, and the
+placeholder's eye is now named `tell` as well, because the rule is about the
+GAME having a telegraph you can see and not about which art is behind it.
+
+**2. `height` was only honoured for skinned rigs.** The manifest,
+`assets/README.md` and the audit tool all document it as the field the seam
+rescales to — and the rescale sat inside the `rig: "skinned"` branch, so a node
+rig or a prop could declare it and silently not get it. `rollerbot` declared
+0.5 and arrived 0.76; **`token_bolt` declared 0.85 and arrived 0.62, and that
+one is live**, so honouring the field makes every collectable bolt in the game
+37% bigger. That is the correct direction — if 0.85 is the wrong number the
+fix is to change the DATA, not to go back to ignoring the field — but it is a
+visible change and it is stated here rather than discovered.
+
+**3. THE SHELL OUTLINE DOES NOTHING ON A SKINNED MESH.** `outlineShell` pushed
+its back-face shell out by SCALING it (×1.045). Rendered on the enemy rigs
+that produced **no visible line at all**, and the measurement says why: the
+shell's world box comes out **0.009 tiles** against a body of 0.7 — it
+collapses inside the model rather than wrapping it. Displacing along the
+normal in `begin_vertex`, ahead of the skinning chunks, gives a line that
+survives the pose, and the same picture then shows one.
+
+The honest limit on this finding: `kid.js` has used the same helper since
+v15.25 said *"the kid has an edge"*, so his edge is at best unverified and
+most likely was never there. I do NOT have a clean measurement of it. My first
+one — comparing the shell's box against its parent's — was **circular**:
+`Box3.setFromObject(parent)` expands over the parent's descendants, and the
+shell is one of them, so it was measuring the shell against itself and would
+have reported a match whatever the truth was. Recorded because a wrong ruler
+that agrees with you is the most expensive kind, and this release also fixed
+two gates that had the same shape.
+
+Two details there are load-bearing, and I got the first one wrong in the most
+visible way possible before getting it right. The width is in tiles and has to
+be divided by the scale the mesh is DRAWN at — and for a skinned mesh that is
+not its node's scale. Meshy hangs `char1` under a 0.01 cm→m node, so the node
+reads 0.008 while the thing on screen is 0.7 tiles tall; dividing by 0.008
+asked for a 180% inflation and put a black shell across the entire sky. The
+honest ratio is what the model MEASURES on screen over what its geometry
+measures in bind space. And the shell is LAMBERT, not BASIC: `objectNormal`
+only exists in the basic shader behind `USE_ENVMAP`, so a basic shell compiles
+silently with nothing to push along.
+
+An honest limit on that one: at the gameplay camera an outline of a believable
+thickness is **one to two pixels**, which is why it is not the answer to the
+enemy-readability question above. It is worth having — it is the kid's stated
+edge finally existing — and it is not a contrast fix.
+
+**Gates: two new ones, and both were run against the bug before being
+trusted.** A ruler that cannot fail is not a ruler and this project has shipped
+two of those. `smoke.cjs` now measures every tell's world size off the live
+scene (fails at 0.0013 on the old code) and every live model's declared height
+against what it actually stands at (fails at 0.76 for `rollerbot`). Neither
+question can be asked anywhere else: the first only has an answer once the
+scene exists, the second only after the loader has applied the node transforms
+— which is why the bare-node audit cannot see it. The outline has **no** gate,
+deliberately: the displacement is a shader uniform, so no `Box3` can see it,
+and both of its failure modes — absent, and swallowing the screen — were found
+by looking at a picture. `__outlineFrac` is recorded on each shell for whoever
+does find a way to measure it.
+
+**Cross-lane, declared.** `outlineShell` moved out of `js/kid.js` and into
+**`js/craft.js`** — the module that decides what a surface in this game looks
+like — because the enemies need the same line and two copies of a silhouette
+rule is how two silhouettes start; `kid.js` imports it now instead of owning
+it. `js/robots.js` gains the tell fix and names the placeholder's eye.
+`test/smoke.cjs` gains the two checks and one tour stop (site 5 — `bucket` is
+the only enemy in no world-opening room, so the fetch check fails on
+`bucket_v1.glb` alone the moment it goes live; kept now so the gap is not
+rediscovered the hard way).
+
+Tokens: every module 35 → 36. `manifest.json` stays at 32 — its bytes are
+main's, unchanged here, since the four enemies went back to `placeholder`.
+
+Gates: rooms 147/0 · fx 31/0 · dev-menu 30/0 · smoke 427/0 · audit 31/31
+contracts, 15 unreachable · **playthrough 25/0**. That last one is not a
+formality here: the outline draws every mesh a second time and this sandbox
+rasterises in software, so doubling the draw calls on the kid was a real risk
+to a gate that has already been misread once this week. Twelve levels, no
+stalls, no ride losses.
+
+## v15.29 — 2026-08-20 — the ground answers the world, and the canopy stops being circles
+
+The last two items off the visual diagnosis, and both are on screen in every
+single frame.
+
+**One brown band served all four worlds.** The strip you stand on was the
+identical `PAL.EARTH` ramp under a sunlit construction site, a flooded trench,
+a forest and a night shift — the backdrops changed completely and the floor
+underneath answered none of it, which is most of why four worlds read as the
+same place with different wallpaper. The `Level` never knew which world it was
+in: `main.js` computes `worldOf(i)` for the backdrop and did not pass it on.
+It does now, and `EARTH_FOR` tints the ramp per world — pipeworks cooler and
+greyer, grove peat-dark with humus in the topsoil, nightshift carried toward
+INK, because a warm brown goes **blue** before it goes black at night.
+Groundworks is untouched on purpose. The grass lip goes with it (`LIP_FOR`):
+it is the brightest thing on the floor and so the first thing that gives the
+reuse away.
+
+Measured off captured frames rather than judged by eye, because a night scene
+fools you into thinking everything is already darker: the band samples
+**#745538** in world 1, **#584330** in world 2, **#57482b** in world 3 and
+**#3d2c1c** in world 4. No new palette constants — every colour is
+`PAL.EARTH` mixed toward something the palette already has, so if the art lane
+wants real per-world earth, this is the one table to replace.
+
+**The Grove canopy was fourteen circles.** Making them smaller was the
+previous attempt and it does not work, because what gives a disc away is that
+its EDGE is a perfect arc all the way round in a single value. Two changes,
+both about breaking the arc: a tree is now a **cluster** of three or four
+overlapping lobes at different radii and off-centre from each other, so the
+silhouette has notches in it; and it carries **two values**, a darker mass
+with a lighter crown up and to the left — §3.1's "key from upper-left" applied
+to a shape that had no shading in it at all. Every second tree gets a thin
+dark trunk, since a canopy floating with nothing holding it up is the other
+half of why they read as decals.
+
+Cross-lane, declared: `js/world34-dressing.js` is the art lane's file. The
+canopy change is small, self-contained, and stays inside that file's own
+colour range; it is called out here so it is not a surprise.
+
+**A working note, because it cost this session an hour twice.** The container
+running this branch has rolled the repository back to a two-day-old commit
+**four times**, and the dangerous shape is not the obvious one: the tree comes
+back stale while files you edited moments ago survive on top of it, so you are
+patching a v15.19 `level.js` that looks fine and gates green against a tree
+nobody will ever ship. The tells are a `?v=` token that disagrees with the
+rest of the tree and a `VERSIONS.md` missing its newest entries. **Check
+`git log --oneline -1` against `origin/main` before trusting any gate result**,
+and commit as soon as an edit is coherent rather than after the gates.
+
+## v15.28 — 2026-08-20 — worlds 3 and 4 stop borrowing worlds 1 and 2's machines
+
+**Why they were not made: there were only ever two machine classes.**
+`MACHINE_SPEED` names a pump and a pipelayer, DESIGN describes them, and
+`main.js` said *if it is a crane build a Crane, otherwise build an
+Excavator*. So World 2's "pump ride" is an excavator wearing the word, and
+Worlds 3 and 4 borrowed Worlds 1-2's machines outright — a forest clearing
+and a night earthworks worked by the same yellow digger.
+
+**The cheap part is the class; the expensive part is the silhouette.** The
+Excavator animates NAMED NODES — house, boom, stick, bucket, seat, step,
+wheels, beacon — and knows nothing else about what it is driving. So a new
+machine is a new MODEL against that contract, not a new class. `js/rigs.js`
+adds two:
+
+* **the SKIDDER** (World 3) — tracked, wide and low, a two-jaw grapple where
+  the bucket goes, a stack tall enough to read against a treeline and a
+  brush guard over the cab. It drags fallen timber, which is the same
+  close-and-lift the bucket does, and that is why the node is still called
+  `bucket`.
+* **the LOADER** (World 4) — wheeled, a wide blade, an arm that lifts from
+  the front and rests nearly flat, and a mast with two work lamps. The lamps
+  are what make it the night shift's machine.
+
+`main.js` builds by TYPE now, and picks the class by the machine's VERBS
+rather than its name — `smash` is the crane's arc, everything else is the
+excavator's arm — so the next machine is a table entry plus a builder.
+
+Both keep the excavator's verbs on purpose. §8.0's warning is about a ride
+being a fetch-quest, not about a verb being reused, and World 2's pump is
+already the bank's shape re-dressed. A machine that lights a dark stretch or
+lifts you up a face is a **new mechanic** and wants its own room rules — not
+smuggling in as a model swap.
+
+Body colour stays `PAL.MACHINE` for both. A green skidder would read as a
+different cast rather than as another machine on the same site, and the
+house rule puts the difference in the **silhouette** anyway.
+
+**What the wiring found, which is bigger than the wiring.** The art is not
+missing — it is switched off. Twenty-five model entries, twenty-five files
+on disk, **twenty-two of them `placeholder`**. Flipping all twenty-one
+flippable entries `live` and walking eleven levels produced **no contract
+warnings at all**, and fetched five files; the other sixteen were never
+requested, because nothing places them. Three findings went to the art lane
+in DESIGN §6.3.1, each measured rather than guessed:
+
+1. **`crane_v1.glb` cannot go live as it stands** — the node names match, so
+   the seam accepts it, and then the crane renders about a third size with
+   the ball hanging in open air. Nodes right, **offsets and scale wrong**:
+   the excavator_v2 trap exactly.
+2. **The small robots load, and read as brown blobs at gameplay scale** —
+   the placeholder is the cast's orange, the mesh is a mid-brown against
+   pipe stacks of the same value. The kid's INK outline fixed the same
+   problem in v15.25.
+3. **Sixteen props are unreachable because nothing PLACES them**, which is
+   the dressing layer's job and the cheapest visible-quality work left.
+
+Plus a live defect: World 3/4 dressing logs `forestTunnel` and
+`forestClearing` failing on every boot of those worlds.
+
+Nothing was flipped live in this release. A crane that renders wrong and an
+enemy that hides in the scenery are both worse than the box they replace,
+and both are the art lane's call to make, not this lane's.
+
+## v15.27 — 2026-08-20 — the lights go down between levels, and the art lane lands
+
+Two things: a merge and a transition.
+
+**A level change now happens with the lights down.** It used to be a hard cut
+— the old room pulled out of the scene and the new one appearing mid-frame,
+with the level card over the top of it. Two things were wrong with that. It
+reads as a **glitch rather than as an ending**: a six-year-old cannot tell
+"you finished the level" from "the game broke" when the picture simply becomes
+a different picture. And it made the **loading visible**, because `buildSite()`
+is async and a room with unfetched models pops in piece by piece as they land.
+
+So `#veil` goes down over 260 ms, the whole swap happens in the dark, and it
+comes up over 420 ms on a room that is already built and already framed. Down
+is quicker than up on purpose — the cut should feel like an ending and the new
+room like an arrival. The card sits **on** the veil (z 8 over z 7), so what
+you read on black is the level you have just finished.
+
+Two details that are the difference between a fade and a bug. The veil
+resolves on a **timer, not `transitionend`** — that event never fires when the
+value does not change (a second call while it is already down, a browser that
+folds a 0 ms transition away), and a promise that never settles here is a
+black screen forever. And `transitioning` is cleared **after** the lights are
+up, because it is what the flag, the pause menu and the gate all read to mean
+"the change is finished"; clearing it early lets a press land in the dark.
+Under `prefers-reduced-motion` both durations are 0 — the same path run
+instantly, never a branch that could skip the step that brings the lights back.
+
+The colour is the game's own ink (`#17130f`), not `#000`: the scene is a craft
+table and a pure-black hole in it looks like a hole in the screen.
+
+`test/smoke.cjs` measures all four states — clear and pointer-inert at rest,
+opaque **while** the change is in flight (sampled during, not after), clear
+again once the room is built, and the card above it. `test/playthrough.cjs`
+stopped waiting a flat 1200 ms for a new room and now waits for the game's own
+`transitioning` to go false: a fade the bot walks into would be reported as a
+wall.
+
+**PR #291 is in** — the art lane's look pass, three-way merged at v15.26. Two
+conflicts, both the same shape: an import block where their side adds a name
+(`layerPx`, `loadRobotAsset`, `getModel`) and mine carries the newer token.
+What it brings: **robots.js stops drawing a box and asks the seam for a
+model** (the fix the owner named), 16 new or recompressed GLBs with it, the
+close lanes retiled at 73 px/unit, cleaned edges, a wider foreground, more
+contrast in the map, layer art v4 → v5 with mid and near split into a/b tiles,
+an audit of all 31 shipped models, and the enemy asset seam shipped inert.
+The deletions under `assets/2d` are those replacements, not losses.
+
+Gates: rooms 147, fx 31, dev-menu 30, smoke 417, playthrough 25, hub green.
+
+## v15.26 — 2026-08-19 — worlds 3 and 4 stop wearing the same trail
+
+Second pass on **placement**, which in a platformer means the collectables
+before it means anything else.
+
+Levels 7-12 were greyboxed with one shared helper, `hundredTrail()`: four
+quiet 25-bolt blocks at columns 6-79, laid identically in all six rooms
+whatever stood there. That was honest scaffolding and the code said so — the
+comment called the count "mechanically boring… intentional in a greybox" —
+but it meant **the bolts said nothing**. They hung over pits, ignored every
+shelf the level had built, and stopped dead at column 79, so the whole ride
+beat of six levels was bare.
+
+Each room now lays its own trail, to the rules Level 1 already set:
+
+* a **run out of the gate** — the level saying which way it goes before it
+  asks you for anything;
+* an **arc over each hazard**, because following the bolts IS the jump's
+  timing rather than a sign about it;
+* a **column** wherever the answer is up — over a tarp, beside a hoist
+  shaft — since a stack of bolts is the only shape that says *the floor
+  throws you here*;
+* a **run along every deck**, at feet and head height, so a climb is paid
+  for instead of merely permitted; and
+* bolts **past the thing the machine clears** — behind the bank, across the
+  chasm — which cannot be reached until the ride has done its job. That is
+  the ride's receipt, and Level 1 has always had it.
+
+Two of them turned into the level's own lesson rather than decoration.
+**Night Shift** lays the same seven bolts on the same row on the helpful belt
+and then on the one that pushes back: twice the work for the same pay is what
+a conveyor teaches, said without a word. **The Lit Scaffold** runs its row
+straight under the swinging load, so those bolts are taken on the ball's
+clock and not yours.
+
+Still exactly **100 a room with 3 golden ones off the walking line** — the
+prover refuses ninety-nine under a HUD that says a hundred, and refuses a
+golden bolt you would collect by walking. No geometry moved: same rooms, same
+beats, same machines.
+
+**One check outside this lane, and it is a fix to the check.** `test/hub-smoke.cjs`
+asserted that switching the hub to Finnish reached a game's own words by
+keyword-matching one cabinet's tagline (`paja|Vektorinen|Selain`). Suds Jack v5
+rewrote that tagline, so the gate went red for everybody over copy that is
+perfectly correct. It now compares the tagline before and after the switch and
+against the catalogue's own fi string — a test of the language switch should
+not be a test of anybody's prose.
+
+Recorded because it cost an hour: **the container rolled this working tree
+back to a commit from two days ago, twice.** Everything already pushed was
+safe; what was in the tree was not. The tell is a token that disagrees with
+itself — `?v=29` in files that should read 31 — and the recovery is
+`git fetch origin main && git reset --hard origin/main`, after copying any
+uncommitted file somewhere outside the repo first.
+
+## v15.25 — 2026-08-19 — the slab has thickness, the kid has an edge, landscape loses its board
+
+Three of the four things the captured frames said were wrong, plus the
+landscape rework.
+
+**The playfield reads as built.** A run of earth with air under it was one
+flat topsoil rectangle with a grass strip on top — the least finished thing on
+screen, against backdrops that are layered, hazed and lit. It now steps down
+in tone below the lip and takes the lane's darkest tone along its underside,
+which is §3.1's "a single darker tone for side faces" and "shading painted in,
+key from upper-left" applied to the surface the player actually stands on.
+
+**The kid has an edge.** A back-face shell in INK on every mesh, built from
+the model itself so it follows the pose and the bones for free. Not a post
+effect — §3.4 forbids a post stack, and a shell obeys that while giving the
+same silhouette. He was a small mid-toned figure against busy pale backdrops
+and in Nightshift nearly his own value; losing your own character is the worst
+failure available in a game for a six-year-old.
+
+**LANDSCAPE DROPS THE BOARD** (owner: "the screen wider", "the controls cover
+the screen along", "smaller and lower", and the one that decides it — "if the
+buttons have a and b on them, the board doesn't need them").
+
+The drawn panel was solving a problem the buttons already solve. It carried
+its own A and B, so held sideways you read the same two letters twice, and it
+charged 141 px of a 390 px-tall phone for it — a strip the stage then had to
+fit above. So landscape keeps the controls and loses the plate: glyph buttons
+along the bottom corners, over the picture rather than under it, and
+`fitStage` stops reserving a panel's height because a hidden `#pad` measures
+zero. **The stage goes 443 × 249 to 693 × 390 — 56% wider.**
+
+**The face is arrows and A/B** (owner: "just arrows and a b please").
+`glyphs.js`'s illustrated figures are right on the 13px hint line where they
+describe a VERB; on a 54px control they are the wrong register — a button
+face should say which button it is, not mime what it does. Not a key cap and
+not a mouse icon (§6.4 forbids both): an arrow and a letter are what is
+printed on a controller.
+
+Two things the gates caught rather than the eye. SELECT and START first went
+top-right and **overlapped the HUD**, so they moved to the bottom centre under
+the hint, between the two thumbs and under neither. And they were drawn 30 px
+tall — `test/smoke.cjs` measures the 44 px floor and was right to object.
+
+**Portrait is untouched.** Held upright the picture is a window above a
+handheld's face and the DMG plate is the charm of it; there the board earns
+its room.
+
+**The nine animations that were loaded and never played.** `eeri_v5.glb`
+carries fifteen clips; the game had only ever named six, so the other nine
+were parsed, skinned and stepped every frame with nothing selecting them.
+Five have a moment this file already knows about, and they are wired to it:
+`climbon` / `climboff` on either side of a ladder, `teeter` when he is idle at
+the lip of a drop of more than 1.6 (throttled, or he teeters every frame he
+stands at an edge), and `idle2` / `lookaround` as idle breaks on a re-rolled
+4-8 then 6-12 second timer. `talk` and `confused` stay unwired on purpose:
+there is no beat in play that means either, and inventing a trigger to use up
+a clip is how a character starts doing things for no reason.
+
+**Two rules in the landscape block were losing a specificity fight.** A media
+query adds no weight of its own, and both rules it has to overturn
+(`html.plated #stick`, `html.plated #touch #tL`) sit further down the sheet.
+Measured on a 750×340 phone the result was a zero-size stick on top of four
+`pointer-events: none` arrows — **no way to move at all**. Both are now
+written heavier than what they replace, and the gate asserts the landscape
+design directly (board away, stick away, arrows live, faces set in CSS)
+instead of asserting the plate that is no longer there.
+
+**The playthrough gate was timing the jump on the wrong clock.** It held jump
+for 420 ms of *wall* time; the loop clamps `dt` to 33 ms, so under a software
+renderer at 13 fps the game clock runs at under half real time and 420 ms is
+five frames — 0.17 s of his time. His jump is variable height, so every jump
+the bot made was a hop, and it sat under the first two-high step in seven of
+twelve levels reporting a wall that is not there. Held in `player.t` now, the
+same clock the jump is integrated on. **No level changed; seven went from
+"unfinishable" to finished.**
+
+Still open from the diagnosis: one dirt band still serves all four worlds, the
+Grove canopy is still flat discs, and tone mapping is still the undecided
+§3.4 call.
+
 ## v15.24 — 2026-08-19 — every live model was rendering as dark metal
 
 Second-pass visual work, and it starts with a bug rather than a preference.
@@ -122,6 +880,164 @@ and after and refuses a file whose contract moved — and all four contracted
 node names survive on each piece. Only the three new files are rewritten here;
 re-running the tool over already-compressed models buys about 1% and would
 have put 27 files of pure diff noise in this change.
+
+**And an audit, which found the number that should stop the art queue.**
+`art-src/tools/audit-assets.mjs` checks every shipped `.glb` against the
+promise the manifest makes about it — every `nodes` name, every `clips` name,
+every `paint` key, a skin for anything `rig: skinned` — and then asks the
+question no other gate asks: **can the game reach it at all?**
+
+**31/31 keep their contract. 18 cannot be reached.** Nothing under `js/` names
+them in a `getModel()`/`getPiece()` call, because `js/robots.js` builds every
+enemy in code and does not import `assets.js`. Every enemy mesh and every kit
+prop is a correct file answering a question nobody asks. `smoke.cjs` cannot see
+this and it is not its fault: it checks the assets the game asks for, and an
+asset nothing asks for is, to that gate, not there.
+
+It reads the GLB's own JSON chunk, so it runs in **bare node** like `rooms.mjs`
+— a check you can afford on every edit is a check that runs.
+
+Two of its own first-run findings were the TOOL being wrong, and both are
+worth keeping: it reported six models as 65534 units tall, because v15.22
+quantized them and the accessor min/max are in quantization space rather than
+world space — so the height check is skipped on a quantized file rather than
+guessed at; and it called a `placeholder` entry with no file BROKEN, when that
+is precisely what placeholder means. Same shape as the band-brightness ruler in
+`kindling/`: the page was right and the ruler was wrong, twice.
+
+**One real defect.** The crane's `paint` map named `hook`. That node was
+renamed `ball` — and `sheave` renamed `arm` — when the crane was cut, to match
+what `js/crane.js` drives; the paint map never moved with them. `housePaint`
+warns and skips an unknown name, so the ball would have kept its Meshy texture
+while everything around it took the palette. No gate could see it because the
+crane is `placeholder` and nothing loads it. Fixed, with `arm` added alongside.
+
+**The enemy seam is in, and deliberately switched OFF.** `js/robots.js` never
+imported `assets.js`, so all four enemy models were unreachable. It does now:
+`loadRobotAsset(kind)` maps the game's kinds onto the catalogue
+(`skitter→boltbot`, `roller→rollerbot`), `adoptModel` dresses a robot and
+returns the same `{group, eye, legs}` `buildRobot` always returned, and a
+skinned rig gets an AnimationMixer with the clip chosen by the game's own
+state. Behaviour is untouched: the clock, the speeds, the telegraph timings
+and `buildRobot` are byte-for-byte what they were, and `adoptModel` returns
+null for anything it cannot dress — so the fallback is the code that was
+always there. **This is a CROSS-LANE edit** (`js/robots.js` is Design/Level's)
+made with the owner's explicit go-ahead, and it is declared in a banner at the
+top of that file as well as here.
+
+Two traps it had to solve, both already known from the pieces: `rollerbot`'s
+`eye` is a Group wrapping `eye_mesh` (it was cut before `flatten` existed) so
+it is resolved to its mesh; and `slice.mjs` gives every node of a model ONE
+shared material, so the eye's material is cloned or brightening it would
+brighten the whole robot. The three skinned enemies are a single `char1` mesh
+with the eye painted into the texture — nothing to brighten at all — so the
+tell is added as a lamp parented to the `Head` bone.
+
+**The four entries stay `placeholder` because the playthrough gate fails with
+them live**, and the cause is NOT understood yet. Four long levels stall on
+foot part-way (3, 6, 7, 8, 9 — all of them machine-job levels). A performance
+theory was measured and REFUTED: frame rate is 13.8-16.3 fps with the models
+live and 13.8-15.5 with them off, which is software-renderer noise either way;
+level build costs about +780 ms, which is real but nowhere near a stall. The
+meshes were decimated anyway (20k → 2k triangles, indistinguishable at the
+size they are seen — 10x lighter is worth having regardless) and it did not
+fix it. So: the seam ships inert. Turning it on is four words in the manifest,
+once somebody finds what actually blocks the bot.
+
+**The look pass is TOOLED BUT NOT RUN.** Three defects were measured in the
+booted game against the owner's report of 2026-08-19 ("the art cuts out and
+has rough edges … foreground images often block too much … the earth is not
+textured"). All three are real and all three are in the compositor, not the
+pieces:
+
+1. **Rough edges are keying residue.** Every library piece was cut with a hard
+   threshold, which keeps the boundary pixels CONTAMINATED — a ring of colour
+   halfway to the old backing, which reads as a dark speckled fringe and, at
+   the fore lane's magnification, as a torn edge. `build-worlds.mjs` gains
+   `cleanEdges`: erode 1px, decontaminate the rim from its solid neighbours
+   twice, then one 3x3 blur on the alpha alone. It runs on BOTH keying paths,
+   because the library pieces arrive pre-keyed with somebody else's fringe
+   already baked in — which is where the in-game fringe came from.
+2. **The foreground was a fence.** Fore verticals were `w` 2-3 world units
+   against a 1.62-unit character, magnified ~1.25x by depth, arriving every
+   ~25 units — one per screen, every screen, at eye level. Narrowed to <= 1.6
+   in all four worlds (a fore vertical is a window MULLION: never wider than
+   the character it crops) and the gap opened from [4.5, 4.0] to [7.0, 6.0].
+   `js/layers.js` already said a foreground occludes IN PASSING; the numbers
+   did not.
+3. **The earth's maps are applied and too faint to survive.** 312 materials
+   carry a detail map, so nothing is missing — but a map MULTIPLIES the
+   palette colour, and multiplication scales variance by the surface's own
+   brightness. The earth sits near luminance 55 with maps at std/mean 0.09-0.12,
+   so about 5 levels of variation reach the screen; measured on the same
+   frame, sky and midground read at std 21 and the earth at 8.6. The maps were
+   authored on white, judged on white, and died on brown. `punch-maps.mjs` is
+   a mean-anchored contrast stretch (mean-anchored because the mean IS the
+   surface brightness under multiply) taking the earth sections to 0.21-0.25,
+   with a wrap-blend on the edges because the stretch amplifies any seam the
+   source already had — `packed` grew a visible one — and a 3x3 tiled contact
+   sheet, because "tile it and LOOK" is the only test that shows tiling.
+
+**RESOLUTION IS THE HEADLINE and it is a rebuild, not a redraw.** The close
+lanes were stored at 30 px/unit and are shown at ~57 (play plane) to ~69
+(fore, magnified by depth). Everything near the camera has been displayed at
+roughly twice its painted resolution through a LinearFilter, which is the
+soft, smeared read that "not HD" names. `LANES` now carries 48 px/unit for
+fore and near and 36 for mid; skyline and far stay near 26, where softness is
+the aerial perspective doing its job.
+
+**RUN, and here is what it cost to get right.** All four worlds rebuilt
+(`groundworks_v5`, `pipeworks_v3`, `grove_v2`, `nightshift_v2`) and the eight
+detail maps regenerated. Two corrections along the way, both worth keeping:
+
+- **`w` in a pool entry is the draw WEIGHT, not the width** (build-worlds.mjs
+  line 98 says so). The first pass "narrowed" the fore verticals by editing
+  `w`, which changed how OFTEN they appear and not how wide they are, and the
+  render came back with a pillar filling the middle third — worse than before.
+  A piece's width is `h x its source aspect`, so HEIGHT is the only lever, and
+  halving it (17 → 9) halves the width while still crossing the frame: the
+  fore ground line is 5.4 and the rect ends at 14, so a 9-unit piece still
+  runs off the top, which is the property `js/layers.js` actually asks for.
+- **4096 IS THE CEILING and the first numbers ignored it.** The close lanes
+  were set to 5376 px, which would have been a texture a modest phone GPU can
+  refuse — and a layer that fails to upload is not a soft layer, it is a
+  missing one. Capped, that is 36.6 px/unit over a 112-unit rect: a 22% linear
+  gain, not the 60% first claimed here.
+
+`js/layers.js` grows `LAYER_PX`, an explicit per-lane size table. It is a
+table and not a formula on purpose: the far lanes are NOT square-pixeled —
+they are painted at 30 px/unit vertically and squashed horizontally by the
+cap — so a derivation clean enough for the close lanes silently disagreed with
+the three that already shipped. Three places now have to agree (this table,
+`LANES` in build-worlds.mjs, the table in assets/README.md) and `smoke.cjs`
+holds all three to each other.
+
+**The close lanes are TILED, which is the way past the 4096 cap.** One texture
+over a 112-unit rect carries 36.6 px/unit; the play plane is displayed at
+about 57 and the fore lane at about 69, so a single tile could never be sharp
+no matter how it was painted. `mid` and `near` now ship as **two textures
+each**, laid left to right across the rect by `mountLayer` — 67 and 73
+px/unit, past the camera at last.
+
+Tiles are CUT FROM ONE FULL-WIDTH PAINTING, never painted twice: a piece
+straddling the boundary would otherwise get a different neighbour on each side
+of the seam, and the seam would show. The cost is decoded MEMORY rather than
+disk — two tiles are twice the RGBA whatever they compress to — so it is
+opt-in per lane. `fore` stays single: it is 89% transparent and only an
+occasional occluder, so it would pay full memory for very little picture.
+
+The seam widened in four places and `smoke.cjs` now checks every one of them,
+which is why it went from 368 checks to 408: each tile must exist, each must
+be the documented size, each must stay inside `assets/`, each must actually be
+FETCHED, and the tile COUNT must match the rect. A lane that silently lost its
+second tile would render the right half of every level as nothing.
+
+Three bugs of my own on the way in, all found by the gate rather than by
+reading: the tile height was set from the old single-tile numbers (470/293
+instead of 940/586, so the tiles were half the picture); the README's tile
+marker was parsed with a trailing-`×N` regex that matched the HEIGHT of a
+single-tile lane, so `fore` demanded 585 files; and three separate places in
+`smoke.cjs` read `e.file` directly and threw on a lane that only has `files`.
 
 **Resolved, without spending anything: `ladder_v1`/`scaffold_v1` are not going
 to be meshes.** The ladder is already built per tile in `js/level.js` and meets

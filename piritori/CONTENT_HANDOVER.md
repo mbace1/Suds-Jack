@@ -1,3 +1,9 @@
+> [!WARNING]
+> **LEGACY PRODUCTION HISTORY.** Active direction now lives in
+> [DESIGN_AUTHORITY.md](DESIGN_AUTHORITY.md), the GDD and
+> [art-library/APPROVALS.md](art-library/APPROVALS.md). This file is retained for
+> traceability and must not override those sources.
+
 # Content production — handover to Codex
 
 **Owner's call, 2026-08-19.** All art and content production for Piritori →

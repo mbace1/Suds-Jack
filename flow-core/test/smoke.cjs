@@ -1,7 +1,7 @@
-// Both entry points, in a real browser: do they boot, does the map paint, does
-// a drawn line carry anybody, and do the phone-shaped rules from the brief's
-// contract list hold — 44px targets, no horizontal overflow, pause not
-// breaking touch editing.
+// Toko Move remains the shared flow engine's daylight entry point. Piritori v3
+// now has its own authored-campaign browser gate in
+// piritori/test/v3-playthrough.cjs; keeping the old v2 path here would prove a
+// cabinet that no longer ships.
 const { chromium } = require('playwright');
 const http = require('http'); const fs = require('fs'); const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -25,7 +25,6 @@ s.listen(0, '127.0.0.1', async () => {
   const b = await chromium.launch();
 
   for (const [name, url, handle, startBtn] of [
-    ['piritori', '/piritori/', '__pt', '#play'],
     ['toko-move', '/toko-move/', '__tm', '#play'],
   ]) {
     console.log(`\n${name}\n`);
@@ -127,195 +126,22 @@ s.listen(0, '127.0.0.1', async () => {
       return true;
     }, handle));
 
-    // ── the encounter layer, driven through the REAL UI ──────────────────
+    // ── the encounter layer ───────────────────────────────────────────────
     //
-    // This block used to call autoTurn() through the debug handle, which
-    // exercised the MODEL and never the INTERFACE — so it passed while a real
-    // encounter opened frozen with no buttons at all. Debug hooks are for
-    // SETUP only now; every action below is a click on the thing a player
-    // clicks.
-    if (name === 'piritori') {
-      ok('the night map pins people, sellers, a rival and the goals',
-        await p.evaluate(() => {
-          const ids = window.__pt.debug.markers().map(m => m.id).join();
-          return ids.includes('contact:') && ids.includes('dealers')
-            && ids.includes('rival') && ids.includes('mission:');
-        }));
-
-      // ── the room, and the bargain inside it ─────────────────────────
-      // The offer is SET UP through the handle and everything after is a
-      // click: walk into the man's place from the stop sheet, take what he is
-      // offering, and — from somebody else's place — pay to be told whether
-      // the bag is real. A fake bag the player cannot be sold is not a
-      // mechanic, and a room you cannot walk into is not a location.
-      const room = await p.evaluate(async () => {
-        const d = window.__pt.debug, m = window.__pt.market;
-        m.cash = 50000;
-        d.forceDeal({ seller: 'igor', at: 'sornainen', who: 'Igor',
-          good: 'piri', n: 5, discount: 0.4, fake: true, trust: -1 });
-        d.sel = 'sornainen';
-        const visit = document.getElementById('visit');
-        if (!visit) return { sheet: false };
-        visit.click();
-        const open = !document.getElementById('room').hidden;
-        const who = document.getElementById('roomWho').textContent;
-        const take = [...document.querySelectorAll('#roomBtns button')]
-          .find(b => /TAKE THE/.test(b.textContent));
-        if (!take) return { sheet: true, open, who, took: false };
-        const before = m.stock.piri;
-        take.click();
-        return {
-          sheet: true, open, who,
-          bought: m.stock.piri - before,
-          cut: m.fake.piri,
-          gone: ![...document.querySelectorAll('#roomBtns button')]
-            .some(b => /TAKE THE/.test(b.textContent)),
-        };
-      });
-      ok('a contact\'s stop offers a way in', room.sheet);
-      ok('and walking in opens their place', room.open === true && /IGOR/.test(room.who || ''), room.who);
-      ok('the offer is taken in the room', room.bought === 5, String(room.bought));
-      ok('and a cut bag is really cut', room.cut === 5, String(room.cut));
-      ok('the offer cannot be taken twice', room.gone === true);
-
-      // …and the appraisal, which is the second relationship paying off
-      const asked = await p.evaluate(async () => {
-        const d = window.__pt.debug, m = window.__pt.market;
-        m.cash = 50000;
-        d.forceDeal({ seller: 'igor', at: 'sornainen', who: 'Igor',
-          good: 'piri', n: 5, discount: 0.4, fake: true, trust: -1 });
-        d.closeRoom();
-        d.openRoom('jaska');                       // somebody else entirely
-        const ask = [...document.querySelectorAll('#roomBtns button')]
-          .find(b => /ASK ABOUT/.test(b.textContent));
-        if (!ask) return { offered: false };
-        const before = m.cash;
-        ask.click();
-        const said = document.querySelector('#roomBtns .said')?.textContent || '';
-        d.closeRoom();
-        return { offered: true, spent: before - m.cash, said };
-      });
-      ok('a second contact will look at the first one\'s offer', asked.offered);
-      ok('and charges for it', asked.spent > 0, String(asked.spent));
-      ok('and a kept contact tells the truth', /cut/i.test(asked.said || ''), asked.said);
-
-      await p.evaluate(() => window.__pt.debug.startFight('collector', 1000));
-      await p.waitForTimeout(300);
-      ok('an encounter opens', await p.locator('#fight').isVisible());
-      ok('the board paints', await p.evaluate(() => {
-        const c = document.getElementById('board');
-        const g = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-        const first = [g[0], g[1], g[2]].join();
-        for (let i = 4; i < g.length; i += 4) if ([g[i], g[i + 1], g[i + 2]].join() !== first) return true;
-        return false;
-      }));
-      ok('it is three a side', await p.evaluate(() => {
-        const f = window.__pt.debug.fight;
-        return f.living('you').length === 3 && f.living('them').length === 3;
-      }));
-
-      // THE ONE THAT MATTERS: whoever wins initiative, the player must end up
-      // with something to press. Every roster has an enemy who is faster than
-      // Aatami, so if enemy turns are not run for us the panel opens dead.
-      const firstUp = await p.evaluate(() => window.__pt.debug.fight.actor.side);
-      const btns = await p.locator('#fightBtns button:visible').count();
-      ok(`the fight is actionable on arrival (first actor: ${firstUp}, ${btns} buttons)`,
-        btns > 0);
-      ok('it telegraphs before you commit',
-        (await p.locator('#fightTell').textContent()).length > 10);
-      ok('it freezes the city while it runs',
-        await p.evaluate(() => window.__pt.flow.clock.paused));
-
-      // The arena is ADDITIVE: it must load when it exists and change nothing
-      // when it does not.
-      ok('the fight stands on the right ground',
-        await p.evaluate(() => window.__pt.debug.fightView.arenaFile === 'art/arenas/court.webp'));
-      ok('and that ground is a file this cabinet actually ships',
-        (await fetch(base + '/piritori/art/arenas/court.webp')).ok);
-      ok('and the board drops onto it rather than centring on the roofs',
-        await p.evaluate(() => {
-          const v = window.__pt.debug.fightView;
-          const withArt = v.cell('you', 1, 0, 3).y;
-          const held = v.arenaFile; v.arenaFile = null;
-          const without = v.cell('you', 1, 0, 3).y;
-          v.arenaFile = held;
-          return withArt > without;
-        }));
-      ok('and it survives the art not being there at all', await p.evaluate(() => {
-        const d = window.__pt.debug, v = d.fightView;
-        const held = v.arenaFile;
-        v.arenaFile = null;
-        try { v.draw(d.fight); return true; } catch { return false; } finally { v.arenaFile = held; }
-      }));
-
-      ok('the arena has cover standing in it', await p.evaluate(() => {
-        const f = window.__pt.debug.fight;
-        return f.props.length > 0 && f.props.every(x => x.alive && x.hp > 0);
-      }));
-
-      // arm a weapon by clicking it, then strike a ringed body on the canvas
-      const before = await p.evaluate(() => {
-        const f = window.__pt.debug.fight;
-        return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
-      });
-      await p.locator('#fightBtns button').first().click();
-      await p.waitForTimeout(80);
-      const shot = await p.evaluate(() => {
-        const d = window.__pt.debug, f = d.fight, v = d.fightView;
-        const t = f.targets(f.actor, f.actor.weapons[0]).find(x => !x.prop);
-        if (!t) return null;
-        const c = document.getElementById('board').getBoundingClientRect();
-        const pt = v.cell(t.side, t.col, t.row, f.rows);
-        return { x: c.left + pt.x / v.dpr, y: c.top + pt.y / v.dpr - 16 };
-      });
-      if (shot) { await p.mouse.click(shot.x, shot.y); await p.waitForTimeout(120); }
-      const after = await p.evaluate(() => {
-        const f = window.__pt.debug.fight;
-        return f.units.reduce((s, u) => s + u.hp + u.nerve, 0);
-      });
-      ok('clicking a weapon then a body actually strikes', after < before, `${before} → ${after}`);
-
-      // ITEM, clicked. A consumable you cannot actually throw is a button.
-      const thrown = await p.evaluate(async () => {
-        const d = window.__pt.debug, f = d.fight;
-        const btn = [...document.querySelectorAll('#fightBtns button')]
-          .find(b => /THROW THE/.test(b.textContent));
-        if (!btn) return { shown: false };
-        const label = btn.textContent;
-        const before = f.items.rock + f.items.bottle;
-        btn.click();                                   // arms it
-        const item = d.fightView.sel;
-        const t = f.itemTargets(f.actor)[0];
-        if (!t) return { shown: true, armed: item, threw: false };
-        f.act({ kind: 'throw', item: item.slice(1), target: t.id });
-        return { shown: true, armed: item, label, spent: before - (f.items.rock + f.items.bottle) };
-      });
-      ok('the street offers something to throw', thrown.shown, JSON.stringify(thrown));
-      ok('the button says how many are left', /\d+ left/.test(thrown.label || ''), thrown.label);
-      ok('arming an item is not arming a weapon', (thrown.armed || '').startsWith('!'), thrown.armed);
-      ok('and throwing one spends it', thrown.spent === 1, String(thrown.spent));
-
-      // the out is offered every round and is a real button
-      ok('OFFER THEM THE OUT is always present',
-        await p.locator('#fightBtns button', { hasText: 'OFFER THEM THE OUT' }).count() > 0);
-
-      // hand it to the auto-battler by clicking, and let it finish
-      await p.locator('#fightBtns button', { hasText: 'AUTO' }).first().click();
-      for (let i = 0; i < 40; i++) {
-        if (await p.evaluate(() => !!window.__pt.debug.fight?.over)) break;
-        await p.waitForTimeout(60);
-      }
-      ok('the auto-battler finishes it from a click',
-        await p.evaluate(() => !!window.__pt.debug.fight?.over));
-
-      await p.locator('#fightBtns button', { hasText: 'CONTINUE' }).click();
-      await p.waitForTimeout(150);
-      ok('and it closes and hands the city back',
-        !(await p.locator('#fight').isVisible())
-        && await p.evaluate(() => !window.__pt.flow.clock.paused));
-    } else {
-      ok('no encounter layer in this product', await p.evaluate(() => !document.getElementById('fight')));
-    }
+    // Piritori's encounters are gated by piritori/test/v3-playthrough.cjs now.
+    // The v2 walkthrough that used to live here — open a room, take a bargain,
+    // start a fight, click a weapon, click a target — was ~175 lines driving a
+    // `window.__pt` handle and an `art/arenas/court.webp` that the shipping
+    // cabinet no longer has. It had already been cut out of the loop above and
+    // left in the file, where it read as a live gate and was not one: `name` is
+    // only ever 'toko-move', so the branch could never run.
+    //
+    // What flow-core still needs from this file is the negative: the DAYLIGHT
+    // product must have no encounter layer at all. That is a real claim about
+    // the shared engine — nothing adult may leak into the neutral core or into
+    // Toko Move — and it is the half that was doing work here.
+    ok('no encounter layer in this product',
+      await p.evaluate(() => !document.getElementById('fight')));
 
     // ── restarting must not leave the old listeners behind ────────────────
     const dupes = await p.evaluate(async h => {

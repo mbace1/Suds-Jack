@@ -123,8 +123,24 @@ module token, moved together by `scripts/bump-version.sh`) now covers the whole 
 project's `VERSIONS.md` first and falling back to its `?v=` token, so a project gets a
 number before anyone starts logging for it and switches to the release number the moment
 they do. The cabinets fetch that file, so shipping one game does not mean redeploying the
-arcade. **Run it at deploy time** — against the deployed tree, which is the only place
-every project exists.
+arcade. **A deploy must carry that game's `VERSIONS.md` with it** — the site is the only
+tree where every project exists, so a cabinet that arrives without its log leaves its
+number with nothing behind it, and the next person to run the generator moves it by
+guesswork.
+**Never REGENERATE `hub/versions.json` on the deployed tree** — run `--check`, and
+`--check --repair` to take the safe half. A plain run rewrites every key from whatever
+that tree happens to hold, and gh-pages does not hold every log: the last attempt moved
+eight cabinets, most of them BACKWARDS (hyperdagger 31→25, piritori 3→1), and four
+separate deploys had already hand-edited around it. `--check` names each disagreement and
+**says which way it leans**, which is the whole diagnosis: a log AHEAD of the file means a
+release shipped and nobody moved the number, so take it; a log BEHIND means the code
+shipped and its log did not travel, so the log is a stale copy and taking it would move the
+cabinet backwards. `--repair` applies only the ahead ones plus cabinets the file never knew
+about, and leaves the rest named for a person.
+It is worth being the person. Drop Cabal read "log is BEHIND" and was the opposite case:
+the deployed game has none of v3's gamepad code, so the site's v2 log was right and
+`versions.json` had been advertising a release that **never shipped**. The lean is a
+prompt to go and look, not an answer.
 **Deploying is `node scripts/deploy-hub.mjs <siteRoot> [--dry]`, never a hand-copy.**
 Three bugs in one session were the same bug: a number in one file disagreeing with a
 number in another (a precache list a token behind the page — an arcade that loads online

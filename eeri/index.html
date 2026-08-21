@@ -51,6 +51,33 @@
   @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { #clear, #banner { animation: none; } }
 
+  /* ---- THE VEIL ------------------------------------------------------
+     A level change used to be a hard cut: the old room was pulled out of
+     the scene and the new one appeared, mid-frame, while the level card sat
+     over the top of it. Two things were wrong with that. It reads as a
+     glitch rather than as an ending — a six-year-old cannot tell "you
+     finished the level" from "the game broke" when the picture simply
+     becomes a different picture — and it made the LOADING visible, because
+     buildSite() is async and a room with unfetched models pops in piece by
+     piece as they land.
+
+     So the lights go down first, everything happens in the dark, and they
+     come up on the new room. The card sits on the veil (z 8 over z 7), so
+     what you read on black is the level you have just finished.
+
+     Colour is the game's own ink rather than #000: the scene is a craft
+     table, and a pure-black hole in it looks like a hole in the screen.
+     Under `prefers-reduced-motion` the durations collapse to nothing in
+     js/main.js — the same code path, not a branch that could strand
+     somebody behind a black rectangle. */
+  #veil {
+    position: fixed; inset: 0; z-index: 7;
+    background: #17130f; opacity: 0;
+    pointer-events: none;
+    transition: opacity 260ms ease;
+  }
+  #veil.on { opacity: 1; }
+
   /* ---- THE TOUCH PAD -------------------------------------------------
      The controls are a DRAWN BACKBOARD with transparent hit areas over it
      (art lane, PR #236). Two plates, because a handheld and an arcade
@@ -81,8 +108,22 @@
      on a touchscreen, since a phone with a pad plugged into it is exactly
      the case that wants this. */
   html.padded #touch, html.padded #pad { display: none !important; }
-  /* …and the hint stops reserving room for a plate that is not there */
-  html.padded #hint { bottom: max(12px, env(safe-area-inset-bottom)) !important; }
+  /* …and the hint stops reserving room for a plate that is not there.
+     `top: auto` IS THE WHOLE FIX AND IT IS NOT TIDINESS. Landscape anchors
+     the hint to the TOP (`bottom: auto; top: 10px`) because the bottom
+     corners are full of drawn controls. This rule then puts `bottom` back
+     — correctly, since with a real pad there are no drawn controls to
+     clear — but left `top` where landscape had set it. A `position: fixed`
+     box with BOTH edges pinned and no height does not sit at one of them:
+     it STRETCHES between them. On an 844×390 phone with a controller
+     plugged in, a one-line hint became a 368 px panel over 94% of the
+     screen, which is the game covered by the words describing the game.
+     Only ever reproducible with all three of coarse pointer + landscape +
+     a pad, which is why it survived every desktop and every touch test. */
+  html.padded #hint {
+    top: auto !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
   @media (pointer: coarse) {
     #touch { display: block; }
     #pad {
@@ -138,6 +179,19 @@
        sticker, and both were assumed missing rather than buried. */
     #touch { z-index: 6; }
     #hint { bottom: max(152px, calc(env(safe-area-inset-bottom) + 148px)); }
+    /* LANDSCAPE PUTS THE HINT AT THE TOP. There is no plate to clear any
+       more, but there are now controls in both bottom corners, and
+       test/smoke.cjs asserts the hint sits ABOVE the topmost of them —
+       correctly, because a hint buried in the control cluster is a hint
+       nobody reads. Dropped to the bottom it landed level with the d-pad;
+       raised enough to clear it, it sat in the middle of the picture. The
+       top edge is free (the HUD is top-right, SELECT/START are bottom
+       centre), so that is where it goes. */
+    @media (orientation: landscape) {
+      #hint {
+        bottom: auto; top: max(10px, calc(env(safe-area-inset-top) + 6px));
+      }
+    }
     /* the portrait plate is bigger since 2026-08-15 and the hint has to
        clear it: 466/1024 of a 109%-wide box is ~50% of the viewport width
        in height, which is 194 px on a 390 px phone */
@@ -296,26 +350,103 @@
     html.plated #touch #tSt  { left: 59.5%; top: 88%; width: 11%; height: 13%; bottom: auto; }
   }
 
-  /* --- LANDSCAPE: over the arcade strip (padplate_landscape_v2.webp, 1400x466) --- */
+  /* --- LANDSCAPE: NO BOARD AT ALL (owner, 2026-08-19) ---------------------
+     Four notes, and they all point the same way: "the screen wider", "the
+     controls cover the screen along", "smaller and lower", and — the one
+     that decides it — "if the buttons have a and b on them, the board
+     doesn't need them."
+
+     The drawn panel was solving a problem the buttons already solve. It
+     carried its own A and B, so held sideways you were reading the same two
+     letters twice, and it charged 141 px of a 390 px-tall phone for the
+     privilege — a strip the game then had to fit above.
+
+     So landscape drops the plate and keeps the CONTROLS: the glyph buttons
+     are the interface, spread along the bottom corners, over the picture
+     rather than under it. The stage stops reserving a panel's height (see
+     `fitStage` — a hidden #pad measures 0) and takes the whole window, which
+     is what makes the screen wider.
+
+     PORTRAIT IS UNCHANGED. Held upright the picture is a window above a
+     handheld's face and the DMG plate is the whole charm of it; there the
+     board earns its room. */
   @media (pointer: coarse) and (orientation: landscape) {
-    html.plated #touch {
-      position: fixed; left: -4.2%; right: 4.2%; bottom: 0;
-      aspect-ratio: 1400 / 466; pointer-events: none;
+    #pad, html.plated #pad { display: none; }
+    /* THE FACE IS ARROWS AND A/B (owner, 2026-08-19: "just arrows and a b
+       please"). `glyphs.js` draws illustrated figures — a kid running,
+       jumping, climbing — which are right on the 13px hint line where they
+       are describing a VERB. On a 54px control they are the wrong register:
+       a button face should say which button it is, not mime what it does,
+       and at that size the little figures read as decoration.
+
+       So the SVG stays hidden here and the face is set in CSS. This is not
+       a key cap and not a mouse icon (§6.4 forbids both) — an arrow and a
+       letter are what is printed on a controller, which is the thing this
+       is standing in for. `tJ` is jump and `tA` is action, so Ⓐ and Ⓑ in
+       that order; the ids are older than the labels. */
+    html.plated #touch button svg, #touch button svg { display: none; }
+    #touch button::after {
+      font: 800 22px system-ui, sans-serif; color: #fff; line-height: 1;
     }
+    #tL::after { content: '\25C0'; }
+    #tR::after { content: '\25B6'; }
+    #tU::after { content: '\25B2'; }
+    #tD::after { content: '\25BC'; }
+    #tJ::after { content: 'A'; color: #ffb01f; }
+    #tA::after { content: 'B'; color: #ffb01f; }
     html.plated #touch button {
-      position: absolute; pointer-events: auto; bottom: auto; right: auto;
-      transform: translate(-50%, -50%);
-      width: 7%; height: 22%;         /* a share of the plate, like portrait */
+      border: 3px solid rgba(255,255,255,0.62);
+      background: rgba(26,20,16,0.34);
     }
-    /* the four arrows around the ball-top stick */
-    html.plated #tU { left: 18.8%; top: 52.6%; }
-    html.plated #tD { left: 18.8%; top: 90.1%; }
-    html.plated #tL { left: 12.7%; top: 71.9%; }
-    html.plated #tR { left: 24.9%; top: 70.8%; }
-    /* B then A, left to right, as the panel draws them */
-    html.plated #tA { left: 75.4%; top: 70.8%; width: 9%; height: 28%; }
-    html.plated #tJ { left: 83.2%; top: 65.5%; width: 9%; height: 28%; }
-    html.plated #stick { left: 18.8%; top: 71.5%; width: 17%; height: 52%; }
+    html.plated #tJ, html.plated #tA { border-color: #ffb01f; }
+    html.plated #touch button:active { background: rgba(255,176,31,0.5); }
+    /* SMALLER AND LOWER, with the 44px floor still the floor. 54px against
+       the 62px default, sat on the safe-area inset rather than above a
+       panel that is no longer there. */
+    #touch button {
+      width: 54px; height: 54px;
+      min-width: 44px; min-height: 44px;
+    }
+    #touch button svg, #touch button img { width: 32px; height: 32px; }
+    html.plated #touch {
+      position: fixed; left: 0; right: 0; bottom: 0; top: 0;
+      aspect-ratio: auto; pointer-events: none;
+    }
+    /* ALONG THE BOTTOM, not in a strip across it: the stick sits in the
+       left corner and the two face buttons in the right, both low enough to
+       clear the play area and far enough apart that a thumb on one is
+       nowhere near the other. Positioned from the viewport now, not from a
+       plate image, so there is no second set of numbers to keep in step. */
+    html.plated #touch button, #touch button {
+      position: fixed; pointer-events: auto;
+      transform: none; top: auto;
+    }
+    #tL { left: 14px;  bottom: calc(18px + env(safe-area-inset-bottom)); }
+    #tR { left: 132px; bottom: calc(18px + env(safe-area-inset-bottom)); }
+    #tU { left: 73px;  bottom: calc(78px + env(safe-area-inset-bottom)); }
+    #tD { left: 73px;  bottom: calc(18px + env(safe-area-inset-bottom)); }
+    /* B then A, as the pad has them: Ⓑ inboard, Ⓐ outboard and a touch
+       higher, so the thumb rolls between them rather than reaching */
+    #tA { right: 96px; bottom: calc(22px + env(safe-area-inset-bottom)); }
+    #tJ { right: 22px; bottom: calc(56px + env(safe-area-inset-bottom)); }
+    /* NO STICK IN LANDSCAPE. The stick exists to own the area over a DRAWN
+       d-pad, with the four zones inert beneath it — that is right when the
+       plate is the control and the buttons are only hit areas. Here the
+       arrows ARE the control, so a 128px drag zone laid over them would
+       swallow every press and leave four decorative circles. Portrait keeps
+       it, because portrait keeps the plate.
+
+       Both rules below are written HEAVIER than the ones they overturn
+       (`html.plated #stick`, `html.plated #touch #tL`) because those sit
+       further down the sheet and a media query adds no weight of its own —
+       measured on a 750x340 phone, the first cut of this block lost both
+       and left a zero-size stick over four dead arrows: no way to move. */
+    html.plated #touch #stick { display: none; }
+    /* …and the arrows go back to being buttons, not inert hit areas */
+    html.plated #touch button#tU, html.plated #touch button#tD,
+    html.plated #touch button#tL, html.plated #touch button#tR,
+    #touch button#tU, #touch button#tD,
+    #touch button#tL, #touch button#tR { pointer-events: auto; }
     /* THE 44px FLOOR IS WHY THESE ARE SPACED THE WAY THEY ARE. A declared
        width of 4.6% is 37px on a 750px phone, and `min-width: 44px` floors
        it back up — so the drawn pill's share of the plate does NOT decide
@@ -323,8 +454,29 @@
        other AND Ⓐ, which is exactly what the gate reported. The centres are
        set from the floor instead: ≥44px apart, and ≥44px clear of Ⓐ's own
        edge at 619px. */
-    html.plated #touch #tSel { left: 90.2%; top: 62%; width: 4.6%; height: 22%; bottom: auto; }
-    html.plated #touch #tSt  { left: 96.4%; top: 62%; width: 4.6%; height: 22%; bottom: auto; }
+    /* SELECT and START go along the BOTTOM CENTRE, under the hint. The
+       top-right is the HUD's — level name, bolt count — and pills placed
+       there overlapped it. Down here they are between the two thumbs and
+       under neither, which suits a pair of buttons pressed once a session
+       rather than during play. */
+    html.plated #touch #tSel, #touch #tSel {
+      transform: none;                /* the plated rule centres them on a
+                                         plate that is no longer there */
+      right: auto; top: auto;
+      left: calc(50% - 76px); bottom: calc(10px + env(safe-area-inset-bottom));
+      /* 44 IS THE FLOOR, not a suggestion (DESIGN §5, and test/smoke.cjs
+         measures it). These were drawn at 30 and the gate was right to
+         object — this is a game for a six-year-old's thumb. */
+      width: 70px; height: 44px; min-height: 44px; min-width: 70px;
+      border-radius: 22px; font-size: 11px;
+    }
+    html.plated #touch #tSt, #touch #tSt {
+      transform: none;
+      right: auto; top: auto;
+      left: calc(50% + 6px); bottom: calc(10px + env(safe-area-inset-bottom));
+      width: 70px; height: 44px; min-height: 44px; min-width: 70px;
+      border-radius: 22px; font-size: 11px;
+    }
   }
 
   /* ---- THE STICK -----------------------------------------------------
@@ -394,9 +546,10 @@
   <button id="tSel"></button>
   <button id="tSt"></button>
 </div>
+<div id="veil" aria-hidden="true"></div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=31"></script>
-<script type="module" src="./js/main.js?v=30"></script>
+<script type="module" src="./js/main.js?v=41"></script>
 <script type="module">
   // bottom-right: the HOME button owns top-left and the HUD owns top-right.
   // Under a thumb that corner also holds the jump button (#tJ, 62px at

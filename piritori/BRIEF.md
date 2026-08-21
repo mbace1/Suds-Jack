@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **Authority reset, 2026-08-19.** Read [DESIGN_AUTHORITY.md](DESIGN_AUTHORITY.md)
+> and [GAME_DESIGN_DOCUMENT.md](GAME_DESIGN_DOCUMENT.md) first. This brief is a
+> supporting historical source and applies only where it remains consistent.
+
 # PIRITORI → EDEN
 
 Game, narrative and visual direction brief

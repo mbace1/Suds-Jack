@@ -12,8 +12,8 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=30';
-import { craftMat, craftBox } from './craft.js?v=30';
+import { PAL, mix } from './palette.js?v=41';
+import { craftMat, craftBox } from './craft.js?v=41';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();
@@ -425,7 +425,7 @@ export class Bank {
     // dirt thrown by the bucket — pooled, so a dig has weight
     this.spray = [];
     const geo = new THREE.DodecahedronGeometry(0.16, 0);
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 26; i++) {   // twelve a bite, and strokes overlap
       const m = new THREE.Mesh(geo, craftMat(PAL.EARTH[2], 'card'));
       m.visible = false; m.life = 1;
       this.spray.push(m); scene.add(m);
@@ -435,6 +435,17 @@ export class Bank {
 
   get remaining() { return this.rect.rows - this.dug; }
   get cleared() { return this.remaining <= 0; }
+
+  // ARMED: the machine is close enough to dig this. The bank answers by
+  // lifting a little and breathing — a thing you can act on has to look
+  // different from a thing you cannot, and until now nothing on screen said
+  // which was which until the first row had already gone.
+  arm(on, t) {
+    if (this.cleared) { this.group.position.y = this.rect.cy0; return; }
+    this.armed = on;
+    const lift = on ? 0.06 + Math.sin(t * 7) * 0.035 : 0;
+    this.group.position.y = this.rect.cy0 + lift;
+  }
 
   show() {
     for (let s = 0; s < this.states; s++) {
@@ -452,7 +463,7 @@ export class Bank {
     // throw dirt off the cut
     let n = 0;
     for (const p of this.spray) {
-      if (p.life < 1 || n >= 6) continue;
+      if (p.life < 1 || n >= 12) continue;   // a bucketful throws more than six
       n++;
       p.life = 0; p.visible = true;
       p.position.set(this.rect.c0 + Math.random() * (this.rect.c1 - this.rect.c0 + 1), cy + 1, (Math.random() - 0.5) * 1.2);

@@ -14,7 +14,7 @@ even when the code is otherwise correct, tested and pretty.
 
 | project | canon | notes |
 |---|---|---|
-| `piritori/` + `toko-move/` + `flow-core/` | `piritori/BRIEF.md` (game, art, UX), `piritori/SHARED_ENGINE.md` (core boundary), `piritori/FIGHT_BRIEF.md` (fights) — then `piritori/DECISIONS.md` for every ruling that has overridden one of them | PR #269 is the anchor. **Read `DECISIONS.md` first**: four parts of `BRIEF.md` have been overridden by the owner and it is the only index of which |
+| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; `ART_BIBLE.md` owns visuals, `UX_SPEC.md` owns interaction/reflow, `MAP.md` owns Era I geography/graph, `content/era1-slice-v1.json` owns the finite authored slice, and `art/v3/manifest.json` owns registered runtime-art ids; other documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
 | `eeri/` | `eeri/PHASING.md` first, then `DESIGN.md`, `ART_BRIEF.md`, `VERSIONS.md` | multi-agent; PHASING supersedes on conflict |
 | `kindling/` | `BETTERMENT_OWNER_DIRECTION.md` | newest authority; supersedes older "cozy hut" calls |
 | `toko/` | `toko/BRAND.md` | two colours only, geometry invariants |
@@ -27,16 +27,21 @@ firearms against *"there is no gunfight"*, and cover as terrain — each naming
 the sentence it contradicts and the words that overrode it. An unrecorded
 contradiction is a finding; a recorded one is a decision.
 
-**Note for Piritori reviewers.** Four things in `BRIEF.md` have been overridden
-by the owner and are **not** findings. All four are indexed in
-`piritori/DECISIONS.md` with the words that overrode them:
+**Note for Piritori reviewers.** Read `piritori/DESIGN_AUTHORITY.md` first.
+`piritori/ART_BIBLE.md`, `UX_SPEC.md`, `MAP.md` and the approved art library supersede
+the previous PAPER-versus-INK split and the prototype's placeholders. Guns, named goods and terrain cover remain recorded
+owner decisions where they agree with the GDD. Battles stay darker and more
+forceful, but characters, locations, props and UI share the active cut-cardstock
+and hand-marker construction.
 
-- **guns exist** — *"there is no gunfight"* is still true and now enforced
-  structurally (`FIGHT_BRIEF.md` §2.1, checked in `test/fight.mjs`);
-- **cover is terrain**, not only a body (`FIGHT_BRIEF.md` §4.1);
-- **the goods are named** rather than abstract classes — the tiers still own
-  every number, which is the part that mattered (`test/market.mjs`);
-- **the art is ink-line illustration**, not the risograph of § Visual direction.
+The v2 graph in `flow-core/city.js` is legacy runtime evidence. v3 must adapt
+the twelve-anchor Era I graph in
+`piritori/map/kallio-era1-2003-v1.json`; fiction sites inherit an anchor and
+must not be converted into false real-world addresses.
+
+For a Godot conversion, read `piritori/GODOT_HANDOFF.md` after the canon stack.
+It is an implementation and coordination guide, not authority to change the
+design or begin phase-gated Era II production.
 
 **The 2024 Pasila act is canon and phase-gated.** Second-act content in the code
 or in an art queue *is* a finding until Act I is feature complete —
@@ -61,9 +66,10 @@ unilateral fix.**
 
 - **No build step, anywhere.** Vanilla ES modules, opened from a file server.
   A finding that recommends a bundler is out of scope unless the owner asked.
-- **No image assets.** Everything is drawn in code. The single documented
-  exception is PWA manifest icons, which are *generated* from the app's own
-  palette (see `kindling/tools/make-icons.mjs`).
+- **Image assets are project-owned exceptions.** Most demos draw in code and PWA
+  icons remain generated. Piritori explicitly keeps approved raster/vector
+  source under `piritori/art-library/` and optimized runtime derivatives under
+  `piritori/art/`; its manifests and approval register control what is active.
 - **One `?v=` token per module**, bumped when and only when its bytes change.
   Two tokens for one module means the browser instantiates it twice and its
   state splits — this has silently unplugged megabytes of art, twice.
@@ -94,6 +100,12 @@ CI runs these on every push (`.github/workflows/gates.yml`). Locally:
 
 ```bash
 node flow-core/test/contract.mjs                          # neutral core
+node piritori/map/validate-map.mjs                       # Era I graph and sites
+node piritori/content/validate-slice.mjs                 # authored slice + art register
+node piritori/test/v3-contract.mjs                       # v3 shell and canon-facing invariants
+node piritori/test/v3-state.mjs                          # authored choices, economy and ending
+node piritori/test/v3-battle.mjs                         # formation actions and outcomes
+NODE_PATH=$(npm root -g) node piritori/test/v3-playthrough.cjs # map-first opening + five live modes
 node piritori/test/fight.mjs                              # rank fights
 node piritori/test/market.mjs                             # goods, deals, cut bags
 NODE_PATH=$(npm root -g) node flow-core/test/smoke.cjs    # both entry points
@@ -105,9 +117,9 @@ node toko/test/brand.cjs                                  # brand geometry + ink
 NODE_PATH=$(npm root -g) node test/hub-smoke.cjs          # the arcade
 ```
 
-Only the first three are wired into CI so far. Add a job per project as each is
-verified green, rather than turning everything on at once and teaching people
-to ignore red.
+The Piritori lane above is wired into CI. Add a job per other project only as
+it is verified green, rather than turning everything on at once and teaching
+people to ignore red.
 
 ## 6. Asking for a review
 

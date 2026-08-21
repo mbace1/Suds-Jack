@@ -10,8 +10,8 @@
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": "33",
-    "n": 33000,
+    "v": "34",
+    "n": 34000,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
@@ -40,8 +40,8 @@
     "from": "VERSIONS.md"
   },
   "eeri": {
-    "v": "15.24",
-    "n": 15024,
+    "v": "15.36",
+    "n": 15036,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
@@ -50,8 +50,8 @@
     "from": "VERSIONS.md"
   },
   "kindling": {
-    "v": "7",
-    "n": 7000,
+    "v": "9",
+    "n": 9000,
     "from": "VERSIONS.md"
   },
   "radiofree": {
@@ -60,8 +60,8 @@
     "from": "cache token"
   },
   "piritori": {
-    "v": "1",
-    "n": 1000,
+    "v": "3.1",
+    "n": 3001,
     "from": "VERSIONS.md"
   },
   "tokomove": {

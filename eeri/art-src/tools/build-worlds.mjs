@@ -67,9 +67,37 @@ const OUT = path.join(ROOT, 'assets', '2d');
 const LANES = {
   skyline: { px: [4096, 900], world: [160, 30], ground: 3.0, band: 0,   tint: 0.78, value: 0.00, gap: [1.00, 1.10] },
   far:     { px: [4096, 600], world: [140, 20], ground: 3.4, band: 3.4, tint: 0.55, value: 0.03, gap: [0.85, 0.95] },
-  mid:     { px: [3660, 420], world: [122, 14], ground: 3.8, band: 3.8, tint: 0.26, value: 0.06, gap: [0.80, 0.95] },
-  near:    { px: [3360, 240], world: [112,  8], ground: 3.9, band: 3.9, tint: 0.08, value: 0.09, gap: [1.20, 1.60] },
-  fore:    { px: [3360, 480], world: [112, 16], ground: 5.4, band: 0,   tint: 0.00, value: 0.14, gap: [4.50, 4.00] },
+  // RESOLUTION FOLLOWS THE CAMERA (2026-08-19). On screen the play plane
+  // shows at ~57 px/unit and the fore lane, magnified by depth, at ~69 —
+  // while these strips were stored at 30. Everything close has been shown at
+  // about twice its painted resolution through a LinearFilter, which is the
+  // soft, smeared read the owner called "not HD".
+  //
+  // THE CEILING IS 4096, and it is not negotiable: assets/README.md caps
+  // canvas width there because that is the texture size a modest phone GPU is
+  // guaranteed to accept, and a layer that fails to upload is not a soft
+  // layer, it is a missing one. So the close lanes go to the cap and no
+  // further — 4096 over a 112-unit rect is 36.6 px/unit, a 22% linear gain
+  // rather than the 60% the camera would like. Pixels stay SQUARE: the height
+  // is the rect's aspect times the width, because stretching one axis to buy
+  // resolution on the other is how a layer starts reading as smeared in one
+  // direction only.
+  // `tiles` splits a lane across N textures, which is the only way past the
+  // 4096 cap. Painted once at full width and cut, never painted N times: a
+  // piece straddling a boundary would otherwise get a different neighbour on
+  // each side of the seam. Two tiles put `near` at 73 px/unit and `mid` at
+  // 67 — past the ~57 the play plane is shown at, which is the point.
+  // It costs decoded MEMORY, not disk, so it is opt-in: these two carry the
+  // dressing the player looks at, and the far lanes sit behind a depth tint
+  // where softness is the aerial perspective doing its job.
+  mid:     { px: [8192, 940], world: [122, 14], tiles: 2, ground: 3.8, band: 3.8, tint: 0.26, value: 0.06, gap: [0.80, 0.95] },
+  near:    { px: [8192, 586], world: [112,  8], tiles: 2, ground: 3.9, band: 3.9, tint: 0.08, value: 0.09, gap: [1.20, 1.60] },
+  // gap [7.0, 6.0]: at [4.5, 4.0] the full-drop verticals arrived every
+  // 25-ish units — one per screen, every screen, eye-level. A foreground
+  // occludes IN PASSING (js/layers.js says exactly this) — rarer beats
+  // thinner twice over, because a rare pillar is an event and a regular one
+  // is a fence.
+  fore:    { px: [4096, 585], world: [112, 16], ground: 5.4, band: 0,   tint: 0.00, value: 0.14, gap: [7.00, 6.00] },
 };
 const SKY_PALE = [0xc2, 0xe2, 0xf4];
 
@@ -144,12 +172,24 @@ WORLDS.groundworks = {
     { src: `${L1}/sheets/w1-yard-dressing-b.png#4`, h: 1.1, w: 1 },
     { src: `${L1}/sheets/w1-yard-dressing-c.png#6`, h: 0.6, w: 1 },
   ],
+  // FORE SIZE (2026-08-19). A fore vertical is a window MULLION: it must
+  // never be wider than the character it crops. `w` here is the draw WEIGHT,
+  // not a width — a piece's width is `h x its source aspect`, so HEIGHT is
+  // the only lever there is, and these were 12-17 units tall against a
+  // 1.62-unit child, magnified a further ~1.25x by the fore lane's depth.
+  // One pillar filled a third of the screen.
+  //
+  // Halving `h` halves the width AND still crops top and bottom, which is the
+  // property js/layers.js actually asks of this lane: the fore ground line is
+  // at 5.4 and the rect ends at 14, so a 9-unit piece still runs off the top.
+  // Weights are back at their originals — an earlier pass moved them thinking
+  // they were widths.
   fore: [
-    { src: `${L1}/sheets/w1-vertical-parts-a.png#2`, h: 17, w: 3, crop: { b: 0.02 } },
-    { src: `${L1}/sheets/w1-vertical-parts-a.png#1`, h: 16, w: 3 },
-    { src: `${L1}/sheets/w1-site-kit-a.png#0`, h: 14, w: 2 },
-    { src: `${L1}/sheets/w1-site-kit-b.png#0`, h: 13, w: 2 },
-    { src: `${L1}/sheets/w1-scaffold-kit-b.png#1`, h: 12, w: 2 },
+    { src: `${L1}/sheets/w1-vertical-parts-a.png#2`, h: 9.0, w: 3, crop: { b: 0.02 } },
+    { src: `${L1}/sheets/w1-vertical-parts-a.png#1`, h: 8.5, w: 3 },
+    { src: `${L1}/sheets/w1-site-kit-a.png#0`, h: 8.0, w: 2 },
+    { src: `${L1}/sheets/w1-site-kit-b.png#0`, h: 7.5, w: 2 },
+    { src: `${L1}/sheets/w1-scaffold-kit-b.png#1`, h: 7.0, w: 2 },
   ],
 };
 
@@ -194,9 +234,9 @@ WORLDS.pipeworks = {
     { src: `${L2}/midground/canal-water-a.png#0`, h: 2.2, w: 1 },
   ],
   fore: [
-    { src: `${L2}/midground/standpipe-valve-a.png#0`, h: 15, w: 3 },
-    { src: `${L2}/accents/hydrant-post-a.png#0`, h: 13, w: 3 },
-    { src: `${L2}/accents/valve-post-a.png#0`, h: 12, w: 2 },
+    { src: `${L2}/midground/standpipe-valve-a.png#0`, h: 8.5, w: 3 },
+    { src: `${L2}/accents/hydrant-post-a.png#0`, h: 7.5, w: 3 },
+    { src: `${L2}/accents/valve-post-a.png#0`, h: 7.0, w: 2 },
   ],
 };
 
@@ -243,12 +283,14 @@ WORLDS.grove = {
     { src: `${L3}/sheets/w3-w4-combined-sheet-a.png#27`, h: 2.0, w: 2 },
     { src: `${L3}/sheets/w3-forest-craft-sheet-a.png#12`, h: 2.4, w: 1 },
   ],
+  // a tree trunk is the one thing here allowed to be honestly wider than the
+  // kid, so the grove keeps a little more height than the other three
   fore: [
-    { src: `${L3}/foreground/tree-brace-a.png#0`, h: 13, w: 4 },
-    { src: `${L3}/midground/asset-set-a.png#0`, h: 12, w: 3 },
-    { src: `${L3}/sheets/w3-w4-combined-sheet-a.png#22`, h: 11, w: 2 },
-    { src: `${L3}/sheets/w3-w4-combined-sheet-a.png#26`, h: 12, w: 2 },
-    { src: `${L3}/midground/asset-set-b.png#2`, h: 12, w: 2 },
+    { src: `${L3}/foreground/tree-brace-a.png#0`, h: 10.0, w: 3 },
+    { src: `${L3}/midground/asset-set-a.png#0`, h: 8.5, w: 2 },
+    { src: `${L3}/sheets/w3-w4-combined-sheet-a.png#22`, h: 8.0, w: 2 },
+    { src: `${L3}/sheets/w3-w4-combined-sheet-a.png#26`, h: 8.5, w: 2 },
+    { src: `${L3}/midground/asset-set-b.png#2`, h: 8.5, w: 2 },
   ],
 };
 
@@ -294,9 +336,9 @@ WORLDS.nightshift = {
     { src: `${L4}/accents/hazard-sheet-a.png#1`, h: 2.6, w: 2 },
   ],
   fore: [
-    { src: `${L4}/sheets/w4-dock-night-sheet-a.png#16`, h: 15, w: 4 },
-    { src: `${L4}/accents/hazard-sheet-a.png#4`, h: 12, w: 3 },
-    { src: `${L4}/accents/hazard-sheet-a.png#1`, h: 11, w: 2 },
+    { src: `${L4}/sheets/w4-dock-night-sheet-a.png#16`, h: 8.5, w: 3 },
+    { src: `${L4}/accents/hazard-sheet-a.png#4`, h: 7.5, w: 2 },
+    { src: `${L4}/accents/hazard-sheet-a.png#1`, h: 7.0, w: 2 },
   ],
 };
 
@@ -317,6 +359,63 @@ function rng(seed) {
   };
 }
 
+// EDGE HYGIENE. Every cut edge in the game went through a hard threshold —
+// either here in keyOut, or before the library was committed — and a hard
+// threshold keeps the boundary pixels the key CONTAMINATED: a ring of pixels
+// whose colour is halfway to the old backing reads as a dark speckled fringe,
+// and at the fore lane's 2x screen magnification it reads as a torn edge
+// ("the art cuts out and has rough edges" — owner, 2026-08-19, and it was
+// visible on every cloud and every pillar). Three passes, all cheap:
+//
+//   1. ERODE 1px — the outermost ring is the most contaminated and the least
+//      load-bearing; geometry loses half a percent and the worst pixels go.
+//   2. DECONTAMINATE — any remaining translucent-rim pixel takes its COLOUR
+//      (never its alpha) from the average of its solid neighbours, twice, so
+//      the rim is the piece's own paint instead of key soup.
+//   3. FEATHER — one 3x3 box blur on the alpha channel alone, which turns
+//      the 1-bit staircase into a single soft pixel. More than one blur reads
+//      as a glow, which is a different defect.
+function cleanEdges(cv) {
+  const g = cv.getContext('2d', { willReadFrequently: true });
+  const { width: w, height: h } = cv;
+  const d = g.getImageData(0, 0, w, h), p = d.data;
+  const A = (x, y) => p[(y * w + x) * 4 + 3];
+  // 1 — erode
+  const dead = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (!A(x, y)) continue;
+    if (!x || !y || x === w - 1 || y === h - 1 ||
+        !A(x - 1, y) || !A(x + 1, y) || !A(x, y - 1) || !A(x, y + 1)) dead.push((y * w + x) * 4 + 3);
+  }
+  for (const i of dead) p[i] = 0;
+  // 2 — decontaminate, two passes
+  for (let pass = 0; pass < 2; pass++) {
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = (y * w + x) * 4;
+      if (!p[i + 3]) continue;
+      // a rim pixel: bordered by transparency
+      if (A(x - 1, y) && A(x + 1, y) && A(x, y - 1) && A(x, y + 1)) continue;
+      let r = 0, gg = 0, b = 0, n = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const j = ((y + dy) * w + (x + dx)) * 4;
+        if (p[j + 3] < 250) continue;
+        r += p[j]; gg += p[j + 1]; b += p[j + 2]; n++;
+      }
+      if (n) { p[i] = r / n; p[i + 1] = gg / n; p[i + 2] = b / n; }
+    }
+  }
+  // 3 — feather alpha
+  const a0 = new Uint8ClampedArray(w * h);
+  for (let i = 0; i < w * h; i++) a0[i] = p[i * 4 + 3];
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    let s = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) s += a0[(y + dy) * w + (x + dx)];
+    p[(y * w + x) * 4 + 3] = s / 9;
+  }
+  g.putImageData(d, 0, 0);
+  return cv;
+}
+
 // KEYING. The libraries arrived on three different negative-space colours and
 // none of them is the magenta keylib.js expects (world-1-library/INDEX.md saw
 // this coming). So the background is identified from the corner and cut by the
@@ -329,7 +428,10 @@ function keyOut(img) {
   const g = c.getContext('2d', { willReadFrequently: true });
   g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
-  for (let i = 3; i < p.length; i += 4 * 977) if (p[i] < 250) return c;   // already cut
+  // "already cut" means already keyed SOMEWHERE ELSE, with that keyer's
+  // fringe baked in — the library pieces all take this path, and they are
+  // where the in-game fringe came from. Hygiene applies to both paths.
+  for (let i = 3; i < p.length; i += 4 * 977) if (p[i] < 250) return cleanEdges(c);
   const r0 = p[8], g0 = p[9], b0 = p[10];
   const blue = b0 > 120 && b0 - Math.max(r0, g0) > 25;
   const tol = Math.max(r0, g0, b0) < 45 ? 66 : 46;
@@ -341,7 +443,7 @@ function keyOut(img) {
     if (hit) p[i + 3] = 0;
   }
   g.putImageData(d, 0, 0);
-  return c;
+  return cleanEdges(c);
 }
 
 // FLOOD FILL, raster order, step 2. The index a pool entry names ("#3") is
@@ -524,6 +626,21 @@ async function lane(cfg, pool, ground, seed, night) {
     g.fillRect(0, 0, W, H);
     g.restore();
   }
+  // A LANE MAY SHIP AS SEVERAL TILES. It is painted once at full width and
+  // then cut into equal columns, rather than painted N times at N seeds:
+  // pieces straddle a tile boundary and a per-tile paint would give each side
+  // of the seam a different neighbour. Cut from one painting, a seam is
+  // invisible because there is nothing on either side of it that disagrees.
+  if ((cfg.tiles || 1) > 1) {
+    const n = cfg.tiles, out = [];
+    for (let i = 0; i < n; i++) {
+      const t = document.createElement('canvas');
+      t.width = Math.round(W / n); t.height = H;
+      t.getContext('2d').drawImage(cv, -Math.round(W * i / n), 0);
+      out.push(t.toDataURL('image/webp', 0.88));
+    }
+    return out;
+  }
   return cv.toDataURL('image/webp', 0.88);
 }
 
@@ -574,7 +691,7 @@ const { chromium } = await import(
 
 const want = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const build = want.length ? want : Object.keys(WORLDS);
-const VER = { groundworks: 'v4', pipeworks: 'v2', grove: 'v1', nightshift: 'v1' };
+const VER = { groundworks: 'v5', pipeworks: 'v3', grove: 'v2', nightshift: 'v2' };
 
 const dataUrl = async (rel) => {
   const b = await readFile(path.join(LIBS, rel));
@@ -606,11 +723,18 @@ for (const world of build) {
     const url = await page.evaluate(
       async ([cfg, pool, ground, seed, night]) => lane(cfg, pool, ground, seed, night),
       [cfg, pool, W.ground, seed + name.length * 7919, !!W.night]);
-    const out = `${world}_${name}_${VER[world]}.webp`;
-    const bytes = Buffer.from(url.split(',')[1], 'base64');
-    await writeFile(path.join(OUT, out), bytes);
-    written.push([out, bytes.length]);
-    console.log(`  ${out.padEnd(34)} ${(bytes.length / 1024).toFixed(0)} kB`);
+    // one url, or several when the lane is tiled — named _a, _b … left to
+    // right, which is the order js/layers.js mounts them in
+    const urls = Array.isArray(url) ? url : [url];
+    urls.forEach; // (kept explicit below for the await)
+    for (let i = 0; i < urls.length; i++) {
+      const suffix = urls.length > 1 ? `_${String.fromCharCode(97 + i)}` : '';
+      const out = `${world}_${name}${suffix}_${VER[world]}.webp`;
+      const bytes = Buffer.from(urls[i].split(',')[1], 'base64');
+      await writeFile(path.join(OUT, out), bytes);
+      written.push([out, bytes.length]);
+      console.log(`  ${out.padEnd(34)} ${(bytes.length / 1024).toFixed(0)} kB`);
+    }
   }
   if (W.sky === false) { /* shares the day sky */ }
   if (W.night) {

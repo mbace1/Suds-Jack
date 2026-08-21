@@ -108,9 +108,13 @@ for (const [name, m] of Object.entries(manifest.pieces || {})) {
 }
 for (const [world, layers] of Object.entries(manifest.layers)) {
   for (const [layer, e] of Object.entries(layers)) {
-    const f = path.join(__dirname, '..', 'assets', e.file);
-    ok(`layer "${world}/${layer}": ${e.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
-      e.status !== 'live' || fs.existsSync(f), e.file);
+    // `files` (tiled lane) or `file` (single) — see the size table in
+    // assets/README.md. Every tile has to exist, not just the first.
+    const rels = e.files || (e.file ? [e.file] : []);
+    const missing = rels.filter((r) => !fs.existsSync(path.join(__dirname, '..', 'assets', r)));
+    ok(`layer "${world}/${layer}": ${e.status === 'live' ? 'live file(s) exist' : 'placeholder declared'}`,
+      e.status !== 'live' || (rels.length > 0 && missing.length === 0),
+      missing.length ? `missing ${missing.join(', ')}` : rels.join(', '));
   }
 }
 
@@ -122,8 +126,11 @@ const ASSETS = path.resolve(__dirname, '..', 'assets');
 const allFiles = [
   ...Object.entries(manifest.models).map(([n, m]) => [`model ${n}`, m.file]),
   ...Object.entries(manifest.pieces || {}).map(([n, m]) => [`piece ${n}`, m.file]),
+  // a tiled lane contributes every tile — the containment rule is about
+  // paths, and a path that never gets checked is the one that escapes
   ...Object.entries(manifest.layers).flatMap(([w, ls]) =>
-    Object.entries(ls).map(([n, e]) => [`layer ${w}/${n}`, e.file])),
+    Object.entries(ls).flatMap(([n, e]) =>
+      (e.files || (e.file ? [e.file] : [])).map((f) => [`layer ${w}/${n}`, f]))),
   ...Object.entries(manifest.textures || {})
     .filter(([n, e]) => !n.startsWith('_') && e && typeof e === 'object')
     .map(([n, e]) => [`texture ${n}`, e.file]),
@@ -148,12 +155,17 @@ for (const line of readme.split('\n')) {
   const m = line.match(/^\|\s*`(sky|skyline|far|mid|near|fore)`\s*\|([^|]+)\|([^|]+)\|([^|]+)\|/);
   if (!m) continue;
   const rect = m[3].match(/(-?[−\d.]+)\s*…\s*(-?[−\d.]+)\s*×\s*(-?[−\d.]+)\s*…\s*(-?[−\d.]+)/);
-  const px = m[4].match(/(\d+)\s*×\s*(\d+)/);
+  // "4096 × 940 ×2" — width × height, then an optional ×N TILE COUNT. All
+  // three are read in ONE match on purpose: a separate trailing-×N regex
+  // matched the HEIGHT of a single-tile lane ("4096 × 585" → 585 tiles), so
+  // fore demanded 585 files. Parsing the whole shape at once cannot do that.
+  const px = m[4].match(/(\d+)\s*×\s*(\d+)(?:\s*×\s*(\d+))?/);
   if (rect && px) {
     readmeRects[m[1]] = {
       z: NUM(m[2]),
       x0: NUM(rect[1]), x1: NUM(rect[2]), y0: NUM(rect[3]), y1: NUM(rect[4]),
       pxW: Number(px[1]), pxH: Number(px[2]),
+      tiles: px[3] ? Number(px[3]) : 1,
     };
   }
 }
@@ -190,12 +202,24 @@ function imageSize(file) {
 for (const [world, layers] of Object.entries(manifest.layers)) {
   for (const [layer, e] of Object.entries(layers)) {
     if (e.status !== 'live') continue;
-    const f = path.join(ASSETS, e.file);
-    if (!fs.existsSync(f)) continue;              // already reported above
-    const got = imageSize(f), want = readmeRects[layer];
-    ok(`layer "${world}/${layer}" is painted to its documented size`,
-      got && want && got.w === want.pxW && got.h === want.pxH,
-      got ? `${got.w}×${got.h}, wanted ${want?.pxW}×${want?.pxH}` : 'not a readable PNG or WEBP');
+    // A LANE MAY SHIP AS SEVERAL TILES (v15.23) — `files` laid left to right
+    // across the rect, which is how the close lanes get past the 4096 texture
+    // cap. Every tile is checked, and the COUNT is checked too: a lane that
+    // silently lost a tile would render its right half as nothing, and a lane
+    // that gained one would squash.
+    const files = e.files || (e.file ? [e.file] : []);
+    const want = readmeRects[layer];
+    ok(`layer "${world}/${layer}" ships the tile count its rect expects`,
+      files.length === (want?.tiles || 1),
+      `${files.length} file(s), wanted ${want?.tiles || 1}`);
+    for (const rel of files) {
+      const f = path.join(ASSETS, rel);
+      if (!fs.existsSync(f)) continue;            // already reported above
+      const got = imageSize(f);
+      ok(`layer "${world}/${layer}" (${path.basename(rel)}) is painted to its documented size`,
+        got && want && got.w === want.pxW && got.h === want.pxH,
+        got ? `${got.w}×${got.h}, wanted ${want?.pxW}×${want?.pxH}` : 'not a readable PNG or WEBP');
+    }
   }
 }
 
@@ -301,11 +325,50 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForTimeout(ms(400));
   ok('walking into a bolt collects it', await p.evaluate(() => window.__eeri.collected()) > n0);
 
+  // ---- THE VEIL: a level change happens with the lights down ----------
+  // Three things, and the third is the one that matters most. At rest the
+  // veil must be invisible AND pointer-inert, or it is a sheet of glass over
+  // the whole game. During a change it must actually be up — that is the
+  // fade. And afterwards it must be back down: a promise that never settles
+  // here leaves a six-year-old looking at a black rectangle with the game
+  // running behind it, which no other check in this file would notice.
+  {
+    const at = async () => p.evaluate(() => {
+      const v = document.getElementById('veil');
+      if (!v) return null;
+      const cs = getComputedStyle(v);
+      return { o: +cs.opacity, pe: cs.pointerEvents, z: +cs.zIndex,
+               zBanner: +(getComputedStyle(document.getElementById('banner') || v).zIndex || 0) };
+    });
+    const rest = await at();
+    ok('the veil is mounted, clear and pointer-inert at rest',
+      !!rest && rest.o === 0 && rest.pe === 'none', JSON.stringify(rest));
+
+    // sample WHILE the change is in flight rather than after it
+    const during = await p.evaluate(async () => {
+      window.__eeri.debug.goSite(1);
+      let peak = 0;
+      for (let i = 0; i < 60 && (window.__eeri.debug.transitioning() || i < 4); i++) {
+        peak = Math.max(peak, +getComputedStyle(document.getElementById('veil')).opacity);
+        await new Promise((r) => setTimeout(r, 40));
+      }
+      return peak;
+    });
+    ok(`the lights go down for the change (peak ${during.toFixed(2)})`, during > 0.5);
+
+    await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(),
+      null, { timeout: ms(8000) }).catch(() => {});
+    await p.waitForTimeout(ms(600));
+    const after = await at();
+    ok('…and back up once the room is built', after && after.o === 0, JSON.stringify(after));
+    // the level card is what you read on black, so it has to be ABOVE it
+    ok('the level card sits over the veil, not under it', rest.z < 8);
+  }
+
   // ---- THE CLIMB: the verb level 2 is built around --------------------
   // Level 1 is the stomp's level and carries no ladders on purpose (one idea
-  // per level), so the climb is proved where it is taught.
-  await p.evaluate(() => window.__eeri.debug.goSite(1));
-  await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(), null, { timeout: ms(8000) }).catch(() => {});
+  // per level), so the climb is proved where it is taught. The veil block
+  // above has already brought us here.
   const ladders = await p.evaluate(() => window.__eeri.debug.ladders());
   ok('level 2 is built on ladders', ladders.length > 0, JSON.stringify(ladders));
   const L = ladders[0];
@@ -691,6 +754,28 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('walking out through the gate ends the world', walkedOut);
   ok('and it says so on screen', await p.locator('#clear').count() === 1);
+  // ---- THE BUILDING (DESIGN §4.3) --------------------------------------
+  // The golden bolts used to be a count that bought nothing. They build the
+  // world's building now, so three things have to hold, and the third is the
+  // design's own rule rather than a rendering detail.
+  {
+    const card = (await p.locator('#clear').textContent()) || '';
+    // it NAMES what was built and how much of it — a bare number is the
+    // score it used to be
+    ok(`the clock-out card names the building (${card.replace(/\s+/g, ' ').trim().slice(0, 60)})`,
+      /\/9/.test(card) && /tower|pumphouse|lodge|depot/i.test(card));
+    // the count is this WORLD's nine, not the run's total: a building cannot
+    // be part-built by bolts found in another world
+    const wg = await p.evaluate(() => window.__eeri.debug.worldGolden?.());
+    ok(`the count is the world's own (${wg} of ${await p.evaluate(() => window.__eeri.debug.buildParts?.())})`,
+      Number.isInteger(wg) && wg >= 0 && wg <= 9);
+    // AND IT NEVER GATES ANYTHING. §4.3 is explicit: you clock out either way
+    // and the next world opens either way, because this is a game for a
+    // six-year-old and a locked door is a punishment dressed as content. The
+    // bot collected nothing hidden, so this is the low-count path — the one
+    // that would break if anybody ever made the building a requirement.
+    ok('…and a part-built one still opens the next world', wg < 9);
+  }
   // WITH A WORLD BEHIND IT, the curtain is a beat and not an ending — and
   // the flag on a gated level must NOT have advanced past the gate on its
   // own, or the curtain is unreachable. Both were live bugs the moment
@@ -1182,7 +1267,15 @@ s.listen(0, '127.0.0.1', async () => {
   // well, just not in the room the test happens to be standing in. The fix
   // is to go and look, not to soften the rule: one room per world, which
   // also happens to be the only coverage the grove and nightshift swaps get.
-  for (const [i, want] of [[0, 'groundworks'], [3, 'pipeworks'], [6, 'grove'], [9, 'nightshift']]) {
+  // Site 5 is the second pipeworks room, and it is on the tour because the
+  // tour's one-room-per-world shape covers every LAYER set — a layer belongs
+  // to a world — and does not cover a MODEL, which is fetched by whatever
+  // spawns it. `bucket` is the only enemy appearing in no world-opening room
+  // (Level 5 and the Gizmo Lab, nowhere else), so the moment it goes live the
+  // fetch check fails on `bucket_v1.glb` alone. Kept while it is still
+  // `placeholder` because the gap is in the tour, not in the asset, and
+  // finding it again the hard way is worth more than one `goSite`.
+  for (const [i, want] of [[0, 'groundworks'], [3, 'pipeworks'], [4, 'pipeworks'], [6, 'grove'], [9, 'nightshift']]) {
     await p.evaluate((n) => window.__eeri.debug.goSite(n), i);
     const got = await p.waitForFunction(
       (w) => window.__eeri.debug.world() === w && !window.__eeri.debug.transitioning(),
@@ -1204,12 +1297,86 @@ s.listen(0, '127.0.0.1', async () => {
     }
     for (const layers of Object.values(manifest.layers || {})) {
       for (const l of Object.values(layers)) {
-        if (l.status === 'live') live.push(path.basename(l.file));
+        // every TILE of a tiled lane has to be fetched, not just the first —
+        // a lane that quietly stopped loading its right half would render the
+        // far side of every level as nothing at all
+        if (l.status !== 'live') continue;
+        for (const f of (l.files || (l.file ? [l.file] : []))) live.push(path.basename(f));
       }
     }
     const missed = live.filter((f) => !fetched.has(f));
     ok(`every live asset is actually fetched${missed.length ? ' — never asked for: ' + missed.join(', ') : ''}`,
       missed.length === 0);
+  }
+
+  // THE TELL HAS TO BE BIG ENOUGH TO SEE. DESIGN §3 says the telegraph IS the
+  // enemy design, and on a skinned rig it is a lamp parented to the `Head`
+  // BONE — which is not in world units. Meshy rigs bones at about 1/90 scale,
+  // so the first wiring of this produced a tell 0.002 tiles across on all
+  // three skinned enemies: present in the graph, invisible on the screen, and
+  // unreachable by every other check here. Measured in WORLD units off the
+  // live scene, which is the only place the answer exists.
+  {
+    const tells = await p.evaluate(async () => {
+      const THREE = await import('three');
+      const out = [];
+      window.__eeri.scene.traverse((o) => {
+        if (o.name !== 'tell') return;
+        const b = new THREE.Box3().setFromObject(o);
+        out.push(+(b.max.y - b.min.y).toFixed(4));
+      });
+      return out;
+    });
+    ok(`every enemy tell is a visible size (${tells.length} found, smallest ${Math.min(...tells, Infinity)} tiles)`,
+      tells.length > 0 && Math.min(...tells) > 0.08,
+      tells.length ? 'smallest ' + Math.min(...tells) : 'no tell in the scene at all');
+  }
+
+  // A DECLARED HEIGHT HAS TO BE THE HEIGHT YOU GET. `height` is in tiles and
+  // the seam rescales to it; the manifest, assets/README.md and the audit tool
+  // all say so. But the rescale used to sit inside the skinned branch, so a
+  // node rig or a prop could declare the field and silently not get it, and
+  // nothing could tell: the model renders correctly, at the wrong size. Two
+  // were doing exactly that — `rollerbot` at 0.76 against a declared 0.5, and
+  // `token_bolt` at 0.62 against 0.85. Measured in the page because the real
+  // size only exists after the loader has applied the node transforms, which
+  // is also why the bare-node audit cannot ask this question.
+  {
+    const want = [];
+    for (const kind of ['models', 'pieces']) {
+      for (const [n, m] of Object.entries(manifest[kind] || {})) {
+        if (m.status === 'live' && m.height) want.push([kind, n, m.height]);
+      }
+    }
+    // THE TOKEN IS READ, NOT TYPED. Written as a literal it was `?v=35` while
+    // the graph moved to 37, so the import 404'd, `getModel` returned null and
+    // two checks failed claiming the models had no height — a gate lying about
+    // the thing it was added to prove. Same drift this repo has shipped
+    // before; the fix is the same one: nobody hand-keeps a number that another
+    // file already owns.
+    const mainSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
+    const tok = (mainSrc.match(/assets\.js\?v=(\d+)/) || [])[1];
+    ok('the gate reads the live assets.js token rather than carrying its own',
+      !!tok, 'js/main.js no longer imports assets.js by a ?v= token');
+    const got = await p.evaluate(async ({ list, tok }) => {
+      const A = await import(`./js/assets.js?v=${tok}`);
+      const THREE = await import('three');
+      const out = {};
+      for (const [kind, n, h] of list) {
+        const a = kind === 'pieces' ? await A.getPiece(n, () => null) : await A.getModel(n, () => null);
+        if (!a?.root) { out[n] = null; continue; }
+        a.root.updateMatrixWorld(true);
+        const b = new THREE.Box3().setFromObject(a.root);
+        out[n] = +(b.max.y - b.min.y).toFixed(3);
+      }
+      return out;
+    }, { list: want, tok });
+    for (const [, n, h] of want) {
+      const g = got[n];
+      // 2% for float and for a rig whose bind pose is a hair off its rest
+      ok(`model "${n}" stands at its declared ${h} tiles`,
+        g != null && Math.abs(g - h) / h < 0.02, `measured ${g}`);
+    }
   }
 
   // ---- the two MOMENTS on the rig ---------------------------------------
@@ -1313,7 +1480,10 @@ s.listen(0, '127.0.0.1', async () => {
                h: Math.round(r.height), art: !!e.querySelector('svg,img'), label: e.getAttribute('aria-label') };
     }));
     const by = Object.fromEntries(pad.map((q) => [q.id, q]));
-    ok('every pad button carries a picture of its action, not a bare arrow',
+    // glyphs.js has RUN on every button — each one holds its drawn figure.
+    // Landscape then hides them behind a CSS arrow (asserted below), so this
+    // proves the glyph pass happened, not which face is showing.
+    ok('every pad button had its glyph drawn into it',
       pad.every((q) => q.art), pad.filter((q) => !q.art).map((q) => q.id).join(','));
     ok('every pad button clears 44px', pad.every((q) => q.w >= 44 && q.h >= 44));
     ok('every pad button is named in the player\'s language',
@@ -1330,24 +1500,105 @@ s.listen(0, '127.0.0.1', async () => {
     // is the ART's — a DMG face in portrait, an arcade panel in landscape —
     // so what must hold is that the plate is mounted and every hit area
     // actually sits on it, rather than a row count.
+    // ---- LANDSCAPE HAS NO BOARD (owner, 2026-08-19) ------------------
+    //
+    // Held sideways the picture takes the whole window and the controls are
+    // six buttons standing on the glass — no DMG plate, no drawn cross, no
+    // stick over it. So the plate assertions this block used to make now
+    // belong to PORTRAIT, and what has to hold here is the opposite of each
+    // of them. They are worth stating rather than deleting: the two designs
+    // are one CSS block apart, and a rule that loses a specificity fight
+    // silently restores the other one — which is exactly what happened,
+    // leaving a zero-size stick on top of four inert arrows and no way to
+    // move at all.
+    ok('the board is put away in landscape', await tp.evaluate(() =>
+      [...document.querySelectorAll('#pad img')]
+        .every((i) => getComputedStyle(i).display === 'none')
+      || getComputedStyle(document.getElementById('pad')).display === 'none'));
+    ok('the stick is put away with it', await tp.evaluate(() => {
+      const st = document.getElementById('stick');
+      const r = st.getBoundingClientRect();
+      return getComputedStyle(st).display === 'none' || (r.width < 44 && r.height < 44);
+    }));
+    // PLUG A REAL PAD INTO THAT PHONE. `html.padded` takes every drawn
+    // control away — right, there is nothing to draw for — and it puts the
+    // hint's `bottom` back, because the hint only sat at the TOP to clear
+    // controls that are now gone. What it did not do was release `top`, and
+    // a `position: fixed` box with both edges pinned and no height stretches
+    // between them: a one-line hint became a 368 px panel over 94% of a
+    // 390 px-tall screen. Owner's report, and it needed all three of coarse
+    // pointer + landscape + a pad at once, so nothing else here could see it.
+    // Measured as a HEIGHT rather than as a CSS property, because the bug is
+    // the height and there is more than one way to cause it.
+    {
+      await tp.evaluate(() => document.documentElement.classList.add('padded'));
+      const h = await tp.evaluate(() => {
+        const r = document.getElementById('hint').getBoundingClientRect();
+        return { h: Math.round(r.height), vh: window.innerHeight };
+      });
+      ok(`with a pad plugged in, the hint is still one line (${h.h}px of ${h.vh})`,
+        h.h > 0 && h.h < 60, JSON.stringify(h));
+      ok('…and the drawn controls are gone with it', await tp.evaluate(() =>
+        getComputedStyle(document.getElementById('touch')).display === 'none'
+        && getComputedStyle(document.getElementById('pad')).display === 'none'));
+      await tp.evaluate(() => document.documentElement.classList.remove('padded'));
+    }
+
+    // THE ARROWS ARE THE CONTROL HERE, so they must actually take a touch.
+    // Under the plate they are inert hit areas beneath the stick; with the
+    // stick gone, inert means a game that cannot be played.
+    ok('…so the four arrows take the touch themselves', await tp.evaluate(() =>
+      ['tU', 'tD', 'tL', 'tR']
+        .every((id) => getComputedStyle(document.getElementById(id)).pointerEvents !== 'none')));
+    // "just arrows and a b please" — the face is set in CSS here because the
+    // drawn figures are a 13px hint-line register, not a 54px button one.
+    // §6.4 still holds: an arrow and a letter are what is printed on a
+    // controller, and neither is a key cap or a mouse.
+    {
+      const faces = await tp.evaluate(() => Object.fromEntries(
+        ['tL', 'tR', 'tU', 'tD', 'tJ', 'tA'].map((id) => [id,
+          getComputedStyle(document.getElementById(id), '::after').content])));
+      ok('the button faces are arrows and letters',
+        /\u25c0/.test(faces.tL) && /\u25b6/.test(faces.tR)
+        && /\u25b2/.test(faces.tU) && /\u25bc/.test(faces.tD)
+        && /A/.test(faces.tJ) && /B/.test(faces.tA), JSON.stringify(faces));
+      ok('…and the drawn figures are hidden behind them', await tp.evaluate(() =>
+        ['tL', 'tR', 'tU', 'tD', 'tJ', 'tA'].every((id) => {
+          const g = document.getElementById(id).querySelector('svg,img');
+          return !g || getComputedStyle(g).display === 'none';
+        })));
+    }
+    await tp.close();
+
+    // ---- PORTRAIT KEEPS THE PLATE ------------------------------------
+    // Everything below was written for the handheld face and still holds
+    // there; it moved rather than went, because portrait is where the DMG
+    // board is the charm and the stick is the control.
+    const pt = await b.newPage({
+      viewport: { width: 390, height: 844 }, locale: 'fi-FI', hasTouch: true, isMobile: true,
+    });
+    await pt.goto(base + '/eeri/?skip', { waitUntil: 'load' });
+    await pt.waitForFunction(() => window.__eeri, null, { timeout: ms(90000) });
+    await pt.waitForTimeout(ms(800));
     ok('the touch plate is mounted',
-      await tp.evaluate(() => document.documentElement.classList.contains('plated')));
+      await pt.evaluate(() => document.documentElement.classList.contains('plated')));
     // THE STICK OWNS THE D-PAD AREA when a plate is up. Two halves, and
     // the second is the one that would break silently: if the four d-pad
     // buttons keep `pointer-events: auto` they sit ON TOP of the stick (a
     // later sibling, z 6) and swallow every press, so the stick would look
     // mounted and do nothing.
-    ok('the stick is mounted over the plate and clears 44px', await tp.evaluate(() => {
+    ok('the stick is mounted over the plate and clears 44px', await pt.evaluate(() => {
       const st = document.getElementById('stick'); if (!st) return false;
-      const s = st.getBoundingClientRect();
-      if (s.width < 44 || s.height < 44) return false;
+      const s2 = st.getBoundingClientRect();
+      if (s2.width < 44 || s2.height < 44) return false;
       const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
+      if (!img) return false;
       const r = img.getBoundingClientRect();
-      const cx = s.left + s.width / 2, cy = s.top + s.height / 2;
+      const cx = s2.left + s2.width / 2, cy = s2.top + s2.height / 2;
       return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
     }));
     ok('…and the four d-pad zones are pointer-inert under it',
-      await tp.evaluate(() => ['tU', 'tD', 'tL', 'tR']
+      await pt.evaluate(() => ['tU', 'tD', 'tL', 'tR']
         .every((id) => getComputedStyle(document.getElementById(id)).pointerEvents === 'none')));
 
     // THE STICKER IS ON THE PLATE, WHICH IS A LAYER QUESTION, NOT A
@@ -1357,22 +1608,22 @@ s.listen(0, '127.0.0.1', async () => {
     // nothing, because a child cannot climb out of its parent's layer.
     // Nothing was visible through the plated buttons except those two
     // things, so it read as "the sticker never mounted".
-    ok('the sticker layer sits above the plate', await tp.evaluate(() => {
+    ok('the sticker layer sits above the plate', await pt.evaluate(() => {
       const z = (id) => { const v = getComputedStyle(document.getElementById(id)).zIndex; return v === 'auto' ? 0 : +v; };
       const bd = document.querySelector('.toko-signature');
       return !!bd && !!bd.closest('#touch') && z('touch') > z('pad');
     }));
-    ok('…and every hit area sits over the plate', await tp.evaluate(() => {
+    ok('…and every hit area sits over the plate', await pt.evaluate(() => {
       const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
       if (!img) return false;
       const r = img.getBoundingClientRect();
       return ['tU', 'tD', 'tL', 'tR', 'tA', 'tJ'].every((id) => {
-        const b = document.getElementById(id).getBoundingClientRect();
-        const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+        const b2 = document.getElementById(id).getBoundingClientRect();
+        const cx = b2.left + b2.width / 2, cy = b2.top + b2.height / 2;
         return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
       });
     }));
-    await tp.close();
+    await pt.close();
   }
 
   await b.close(); s.close();

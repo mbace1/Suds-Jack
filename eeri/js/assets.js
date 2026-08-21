@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=30';
+import { PAL } from './palette.js?v=41';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -107,7 +107,7 @@ export async function loadManifest() {
   // token never learns the new one exists and keeps the old art forever,
   // with every asset URL inside it still perfectly correct. This shipped at
   // `?v=1` for eleven versions. The smoke gate now asserts the two agree.
-  const res = await fetch(new URL('manifest.json?v=26', BASE));
+  const res = await fetch(new URL('manifest.json?v=32', BASE));
   manifest = await res.json();
   return manifest;
 }
@@ -152,6 +152,27 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
     const root = gltf.scene;
     paintedToy(root);
 
+    // HEIGHT IN TILES, AND IT APPLIES TO EVERY RIG KIND. Meshy rigs to
+    // real-world metres, so Eeri arrived 0.95 units tall in a world where he
+    // is 1.62 and stood in the level like a background figure. Data, not a
+    // number buried in game code.
+    // It used to live INSIDE the skinned branch, which meant a node rig or a
+    // prop could declare `height` and silently not get it — the manifest, the
+    // README and the audit tool all say the seam rescales to this field, so a
+    // model that quietly ignored it is the expensive kind of wrong: it renders
+    // perfectly, at the wrong size, and no gate can tell. Two were doing it —
+    // `rollerbot` declared 0.5 and arrived 0.76 (52% too big, which is a whole
+    // enemy reading as a different enemy), and `token_bolt` declared 0.85 and
+    // arrived 0.62. The rescale is a no-op for an entry with no `height`, so
+    // hoisting it cannot touch anything that was not already asking for it.
+    const fitHeight = () => {
+      if (!entry.height) return;
+      root.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(root);
+      const h = box.max.y - box.min.y;
+      if (h > 0.001) root.scale.multiplyScalar(entry.height / h);
+    };
+
     // A SECOND KIND OF RIG. A hand-cut model is a tree of named nodes the
     // game rotates. A Meshy auto-rigged character is a SKINNED mesh driven by
     // named CLIPS — a bone skeleton, not the game's node names — so it is
@@ -173,15 +194,7 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
           map: m.map ?? null, color: m.color?.clone() ?? new THREE.Color(0xffffff),
         });
       });
-      // HEIGHT IN TILES. Meshy rigs to real-world metres, so Eeri arrived
-      // 0.95 units tall in a world where he is 1.62 and stood in the level
-      // like a background figure. Data, not a number buried in game code.
-      if (entry.height) {
-        root.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(root);
-        const h = box.max.y - box.min.y;
-        if (h > 0.001) root.scale.multiplyScalar(entry.height / h);
-      }
+      fitHeight();
       return { root, nodes: {}, clips, skinned: true, live: true };
     }
 
@@ -189,7 +202,7 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
     // spins and bobs it whole (a bolt, a token). Without this it fell into
     // the node loop, threw on an absent `nodes`, and silently served the code
     // placeholder instead of the model that had just been fetched.
-    if (entry.rig === 'prop') return { root, nodes: {}, clips: {}, live: true };
+    if (entry.rig === 'prop') { fitHeight(); return { root, nodes: {}, clips: {}, live: true }; }
 
     const nodes = {};
     const missing = [];
@@ -202,6 +215,7 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
       return buildPlaceholder();
     }
     if (entry.paint) housePaint(root, entry.paint, name);
+    fitHeight();
     return { root, nodes, live: true };
   } catch (e) {
     console.warn(`[eeri] model "${name}" failed to load (${e.message}) — using placeholder`);
@@ -233,14 +247,33 @@ export function uiAsset(name) {
   return new URL(entry.file + '?v=' + manifest.v, BASE).href;
 }
 
+// Returns an ARRAY of textures, left to right across the lane's rect.
+//
+// A LANE MAY BE SPLIT ACROSS SEVERAL TEXTURES, and that is the only way past
+// the 4096 cap. The close lanes are magnified on screen — the play plane
+// shows ~57 px per world unit and the fore lane ~69 — while one 4096-wide
+// texture over a 112-unit rect can only carry 36.6. Two carry 73, which is
+// past the camera, and that is the difference between craft paper you can
+// read the grain of and a soft photograph of it.
+//
+// It costs memory, not disk: two tiles decode to twice the RGBA of one
+// whatever the file compresses to. That is why it is opt-in per lane rather
+// than applied to all six — `near` and `mid` carry the dressing the player
+// actually looks at, and the far lanes sit behind a depth tint where softness
+// is the aerial perspective doing its job.
 export async function getLayerTexture(world, layer) {
   const entry = manifest?.layers?.[world]?.[layer];
   if (!entry || entry.status !== 'live') return null;
+  const files = entry.files || (entry.file ? [entry.file] : []);
+  if (!files.length) return null;
   try {
-    const tex = await new THREE.TextureLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;
-    return tex;
+    const texs = await Promise.all(files.map(async (f) => {
+      const tex = await new THREE.TextureLoader().loadAsync(new URL(f + '?v=' + manifest.v, BASE).href);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      return tex;
+    }));
+    return texs;
   } catch (e) {
     console.warn(`[eeri] layer "${world}/${layer}" failed to load (${e.message}) — painting placeholder`);
     return null;

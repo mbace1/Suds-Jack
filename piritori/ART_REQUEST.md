@@ -1,3 +1,9 @@
+> [!WARNING]
+> **LEGACY PRODUCTION HISTORY.** Active direction now lives in
+> [DESIGN_AUTHORITY.md](DESIGN_AUTHORITY.md), the GDD and
+> [art-library/APPROVALS.md](art-library/APPROVALS.md). This file is retained for
+> traceability and must not override those sources.
+
 # Piritori → Eden — the art request
 
 One document to hand to whoever makes the art — a person, Codex, or the Nano

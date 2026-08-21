@@ -6,7 +6,7 @@
 //  - Tokened module requests (?v=N) stay network-first so a deploy with a
 //    bumped token always pulls the new graph; the old tokened entries age out.
 
-const CACHE = 'hyperdagger-v33';
+const CACHE = 'hyperdagger-v34';
 const PRECACHE = [
   './',
   './index.html',
@@ -15,21 +15,40 @@ const PRECACHE = [
   './apple-touch-icon.png',
   './icon-192.png',
   './icon-512.png',
-  './vendor/three.module.min.js',
-  './js/mesh-enemies.js',
-  './js/truck.js',
-  './vendor/jsm/postprocessing/EffectComposer.js',
-  './vendor/jsm/postprocessing/RenderPass.js',
+  '../toko/js/face.js',
+  '../toko/js/glitch.js',
+  '../toko/js/palette.js',
+  '../toko/js/signature.js?v=3',
+  '../toko/js/surface.js',
+  '../toko/js/util.js',
+  './js/audio.js?v=61',
+  './js/bullets.js?v=61',
+  './js/daggers.js?v=61',
+  './js/enemy.js?v=61',
+  './js/environment.js?v=61',
+  './js/gems.js?v=61',
+  './js/input.js?v=61',
+  './js/main.js?v=63',
+  './js/mesh-enemies.js?v=63',
+  './js/player.js?v=61',
+  './js/rng.js?v=61',
+  './js/tuning.js?v=63',
+  './js/voxel.js?v=63',
+  './vendor/jsm/loaders/GLTFLoader.js',
   './vendor/jsm/postprocessing/AfterimagePass.js',
-  './vendor/jsm/postprocessing/UnrealBloomPass.js',
-  './vendor/jsm/postprocessing/ShaderPass.js',
-  './vendor/jsm/postprocessing/OutputPass.js',
+  './vendor/jsm/postprocessing/EffectComposer.js',
   './vendor/jsm/postprocessing/MaskPass.js',
+  './vendor/jsm/postprocessing/OutputPass.js',
   './vendor/jsm/postprocessing/Pass.js',
-  './vendor/jsm/shaders/CopyShader.js',
+  './vendor/jsm/postprocessing/RenderPass.js',
+  './vendor/jsm/postprocessing/ShaderPass.js',
+  './vendor/jsm/postprocessing/UnrealBloomPass.js',
   './vendor/jsm/shaders/AfterimageShader.js',
+  './vendor/jsm/shaders/CopyShader.js',
   './vendor/jsm/shaders/LuminosityHighPassShader.js',
   './vendor/jsm/shaders/OutputShader.js',
+  './vendor/jsm/utils/BufferGeometryUtils.js',
+  './vendor/three.module.min.js',
 ];
 
 self.addEventListener('install', event => {

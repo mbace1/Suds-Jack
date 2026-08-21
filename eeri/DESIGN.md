@@ -380,11 +380,81 @@ where light is drawn rather than painted flat.
 
 **Ride machines: eight or more** (§4.2), two per world, and each one is a
 full `assets/README.md` node contract with `seat`, `step` and `beacon`.
-The excavator and the crane are one and two; worlds 2–4 need six more.
+The excavator and the crane are one and two; the **skidder** (World 3) and
+the **loader** (World 4) are three and four as of v15.28, built as code
+placeholders against the excavator's node contract. Worlds 2–4 want four
+more.
 Candidates that fit the theme and bring a *different verb*: a dump truck
 you ride in the bed of, a pipe-layer, a roller, a cherry-picker that
 lifts, an amphibious dredger for the water world, a floodlight rig for the
 evening one.
+
+### 6.3.1 To the art lane, from a wiring pass — measured 2026-08-20
+
+Written after wiring Worlds 3 and 4 their own machines, because what the
+wiring found is the art lane's to act on and none of it is guesswork — every
+line below was measured by flipping assets `live` and reading what the seam
+said.
+
+**The headline: the art is not missing, it is switched off.** Twenty-five
+model entries, twenty-five files on disk, and **twenty-two say
+`status: "placeholder"`** — so the game builds the code version and never
+fetches the file. That is the audit's "18 unreachable" restated from the
+other side: it is not that the meshes fail, it is that nothing asks for
+them.
+
+**What happens if you just flip them.** All twenty-one were set `live` and
+the game walked through eleven levels. **No contract warnings at all** — the
+node checks pass on every one. Five were then actually fetched
+(`crane`, `boltbot`, `hopper`, `bucket`, `rollerbot`); the other sixteen
+were never requested by any code path, so `live` changes nothing for them.
+
+Three things follow, in the order they are worth your credits:
+
+1. **`crane_v1.glb` cannot be flipped live as it stands, and it is the
+   excavator_v2 trap again.** Its node names all match, so the seam accepts
+   it — and then the machine renders about a third of its intended size with
+   the wrecking ball hanging in open air away from the arm. The nodes are
+   right and the **offsets and scale are not**: `crane.js` swings `ball` off
+   `arm` off `boom` off `house` at the placeholder's distances. Compare the
+   two frames — the code crane is a readable yellow machine with a big ball;
+   the live one is a small blob under a detached rope. **What it needs:** the
+   same treatment `excavator_v1` got — built to the placeholder's pivots,
+   rest pose and overall size, so game code cannot tell which it got.
+
+2. **The small robots load and render, and at gameplay scale they read as
+   brown blobs.** `boltbot`/`hopper`/`bucket`/`rollerbot` all fetch and
+   animate through `robots.js` now (PR #291 did that half). Side by side with
+   the placeholder, the mesh has more detail and **less read**: the
+   placeholder is `PAL.MACHINE` orange, which is the cast's family colour,
+   and the mesh is a mid-brown that sits on top of pipe stacks and dirt bands
+   of almost the same value. An enemy a six-year-old cannot pick out of the
+   scenery is a worse enemy than a box. **What it needs:** the family colour
+   carried into the mesh, or a rim/edge that survives at ~40 px tall — the
+   same problem the kid had before his INK outline in v15.25, and the same
+   fix is available.
+
+3. **Sixteen props are unreachable because nothing PLACES them, not because
+   anything is wrong with them** — `dumptruck`, `forklift`, `cherrypicker`,
+   `pipelayer`, `floodlight`, `workerbot`, `vacbot`, `jackhammer`,
+   `generator`, `compressor`, `wheelbarrow`, `cabledrum`, `gascart` and the
+   two tokens. Placing them is the **dressing layer's** job
+   (`js/world2-dressing.js`, `js/world34-dressing.js`), which is art's file,
+   and it is the cheapest visible-quality work left in the project: a
+   worksite with a generator and a barrow standing about reads as worked-in
+   in a way no backdrop can.
+
+**And one live defect:** the World 3/4 dressing logs
+`[eeri] World 3/4 dressing asset failed: forestTunnel` and
+`… forestClearing` on every boot of those worlds. Two dressing assets are
+being asked for and not arriving.
+
+**Two new contracts, and they are the ones worth a mesh next** —
+`skidder_v1.glb` (World 3) and `loader_v1.glb` (World 4). Both are wired,
+both are in the manifest with their node lists, and both ride on code-built
+placeholders today. Their `_note` in `assets/manifest.json` carries the
+offsets, and the rule from item 1 applies: **keep the placeholder's pivots,
+rest pose and size**, or the arm will not meet the job.
 
 ### 6.4 UI art — **the glyph set is BUILT** (v15.1)
 
@@ -674,6 +744,106 @@ level, late, as a deliberate puzzle — never in a teaching level.
 
 8. Bolts `x/100`, golden bolts `3/3` hidden, blueprints one per world.
 9. Level-select menu; clock-out gate at the end of a world.
+
+### 8.4 The Flattener, and easy puzzles for the machines we have
+(owner, 2026-08-21)
+
+**World 1's second machine is the FLATTENER.** A road roller: it drives over a
+sheet of mangled aluminium lying in the road and leaves it flat. That is the
+whole verb — `flatten` — and it is the best-shaped machine job in the game so
+far for one reason: **it is done by DRIVING, not by holding a button at a
+target.** The excavator, the crane and the pump all ask you to park correctly
+and then hold; the roller asks you to go somewhere, which a six-year-old
+already knows how to do.
+
+Its contract, so it can be built without another design pass:
+
+* the obstacle is a `sheet(c0, c1)` — mangled aluminium, impassable on foot
+  because the edges are up (a step taller than a jump), flat and walkable once
+  rolled;
+* the roller clears it by **passing over it**, one width at a time, so a wide
+  sheet takes two or three passes and each one is visible: the buckled rows go
+  down under the drum;
+* no aiming, no hold — the verb is the drive, and the tell is the drum;
+* it wants its own model against the excavator's node contract (`house`,
+  `wheels`, `seat`, `step`, `beacon`, and `bucket` as the DRUM) and can ship on
+  a code placeholder the way the skidder and loader did.
+
+**Easy puzzles for the machines we already have.** All four use one verb and no
+new mechanic, and none of them is a fetch — the machine is on the route, facing
+the job:
+
+| machine | the puzzle | why it is easy |
+|---|---|---|
+| excavator (dig) | a bank with a **bolt trail going into it** — dig and the trail continues underground | the reward is visible before the work; you dig to follow bolts, not to obey a wall |
+| excavator (span) | a chasm with the girder stack **on the near side and in sight** | both halves are on screen at once: see the gap, see the beam, carry it over |
+| crane (smash) | a brick wall with a **hopper bouncing behind it** — you can hear it before you see it | the wall is a curtain rather than a lock, and something is happening on the other side |
+| pump (drain) | a flooded trench with the **checkpoint on its far lip** | the safe place is across the water: the reason to drain is somewhere to stand |
+| skidder (span) | a felled log across a cut, with the **bounce you already know** on the far side | world 3's verb answering world 3's floor |
+| loader (dig) | a spoil heap under a **lit window** — dig it down and the light reaches the road | the night world's own reward: what you clear, you light |
+
+The rule they share, and it is the one §8.0 asks for: **you can see the reason
+before you do the work.** A machine job where the payoff is off-screen is a
+chore; the same job with the payoff in frame is a puzzle a child solves without
+being told there was one.
+
+### 8.3 The playability floor (measured 2026-08-20)
+
+Everything in §8.1 is about what the game HAS. This is about whether what it
+has is worth playing, which nothing in the suite could see — and the reason it
+could not is worth stating plainly, because it generalises:
+
+> **The room prover covered six of twelve levels and reported green.**
+> `js/world34-register.js` pushes worlds 3 and 4 onto the roster at RUNTIME,
+> and `test/rooms.mjs` imported the static list. Half the game had no reach
+> budget check, no "is about ONE thing", no bolt or checkpoint rule and no
+> pacing figure. It now takes the same roster the game does: 147 checks became
+> 245.
+
+When those six were finally measured, they passed every existing rule — and
+were **half as dense as the six that had been measured all along**:
+
+| | asks per 10 tiles | longest stretch asking nothing | enemies | hazards |
+|---|---|---|---|---|
+| worlds 1–2 (proved all along) | 1.0 – 1.9 | 10.5 – 14 tiles | 2 – 4 | 1 each |
+| worlds 3–4 (never proved) | 0.7 – 0.9 | **18.5 – 21 tiles** | 1 | **0** |
+
+Every world-3/4 level had a **twenty-tile hole in the same place** — between
+its second beat and its checkpoint — and not one rule in the suite objected.
+That is the same failure this repo has recorded twice before in other words: a
+gate that certifies WORKS cannot see DULL.
+
+**The rule that fixes it.** `deadAir()` in `js/parts.js` walks a level and
+finds the longest run of tiles between one thing that ASKS something of you
+and the next. An ask is a step, a gap, a small machine, a hazard, a gizmo,
+water, a ladder, a pipe mouth or the ride. **Bolts are deliberately not asks**
+— a bolt trail is a breadcrumb, collected by running, so a stretch with bolts
+and nothing else is still a stretch of holding right.
+
+`DEAD_AIR` is **15 tiles**, and the number is taken from the levels that
+already play rather than invented: worlds 1–2 measure 12–14, so the floor is
+"no worse than the front half".
+
+**What filling the holes may NOT do is make the game harder.** This is a game
+for a six-year-old (§3, generous), so the beats added were things to play with
+before things that hurt: three tarp bounces, a belt that helps, a last pipe
+that carries you to the flag, one step — and only then the enemies and the two
+steam vents that bring worlds 3–4 to the same hazard count worlds 1–2 have
+carried all along. The playthrough's COST measure is the guard: denser must
+still mean zero rides lost.
+
+**The rule was wrong first, and its wrongness produced a bug.** Counting the
+machine's run to its job as empty demanded a beat inside it — and a beat there
+is an enemy between a machine and its job, which §8.0 exists to forbid. The
+drive is not dead air; that span is occupied. Placing it wrongly also exposed
+that `check()` asked about the ball and the vents in that corridor and **never
+about small machines**: it does now, and it immediately found a skitter in
+Level 1 and a roller in Level 3 standing there since those levels were built.
+
+Two more things the prover caught while this was being authored, both of which
+would have shipped: a tarp placed under a shelf that **bounces you into the
+ceiling**, and a step placed under a bolt trail that **buries the trail in the
+floor it raises**.
 
 ### 8.2 What Tier 1–2 needs from the art pipeline
 

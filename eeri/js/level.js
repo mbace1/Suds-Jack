@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=30';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=30';
+import { PAL, mix } from './palette.js?v=41';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=41';
 
-import { ROOMS, LAB } from './rooms.js?v=30';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=30';
+import { ROOMS, LAB } from './rooms.js?v=41';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=41';
 
 export { ROOMS, LAB };
 const EPS = 0.001;
@@ -23,9 +23,68 @@ const EPS = 0.001;
 // sharing a grid, because DIGGING AND SPANNING EDIT THE MAP — two Levels
 // over one grid would have the second remember the first one's excavation.
 
+// ---- THE GROUND IS NOT THE SAME GROUND IN EVERY WORLD --------------------
+//
+// One `PAL.EARTH` ramp served all four worlds, so the strip you stand on was
+// the identical brown under a sunlit construction site, a flooded trench, a
+// forest and a night shift. It is the one band on screen in EVERY frame of
+// the game — the backdrops change completely behind it and the floor
+// underneath answered none of it, which is most of why four worlds read as
+// the same place with different wallpaper.
+//
+// Each world TINTS the ramp rather than replacing it: the strata keep their
+// order and their spacing, because the cut has to stay legible as a section.
+// No new palette constants — every colour is `PAL.EARTH` mixed toward
+// something already in the palette, which keeps this a level-lane change. If
+// the art lane wants real per-world earth, this is the one table to replace.
+//
+//   groundworks  untouched. It is what everything else is judged against.
+//   pipeworks    cooler and greyer — wet ground beside concrete.
+//   grove        peat: darker, with humus in the topsoil, because the top of
+//                a cut in a forest is roots and leaf litter.
+//   nightshift   the whole ramp toward INK. Not "the same earth, darker" — a
+//                warm brown goes BLUE before it goes black at night, so the
+//                mix is toward the ink the night sky already uses.
+const EARTH_FOR = {
+  groundworks: (E) => [E[0], mix(E[1], E[0], 0.5), E[1], E[2]],
+  pipeworks: (E) => [
+    mix(E[0], PAL.STEEL[0], 0.22),
+    mix(mix(E[1], E[0], 0.5), PAL.STEEL[0], 0.2),
+    mix(E[1], PAL.STEEL[1], 0.16),
+    mix(E[2], PAL.STEEL[2], 0.14),
+  ],
+  grove: (E) => [
+    mix(E[0], PAL.INK, 0.22),
+    mix(mix(E[1], E[0], 0.5), PAL.INK, 0.16),
+    mix(E[1], PAL.GREEN_DK, 0.12),
+    mix(E[2], PAL.GREEN_DK, 0.28),
+  ],
+  nightshift: (E) => [
+    mix(E[0], PAL.INK, 0.55),
+    mix(mix(E[1], E[0], 0.5), PAL.INK, 0.48),
+    mix(E[1], PAL.INK, 0.42),
+    mix(E[2], PAL.INK, 0.36),
+  ],
+};
+
+// The grass lip goes with it: a daylight green strip is wrong at night and
+// wrong in a trench, and it is the brightest thing on the floor — so it is
+// the first thing that gives the reuse away.
+const LIP_FOR = {
+  groundworks: (g) => g,
+  pipeworks: (g) => mix(g, PAL.STEEL[2], 0.2),
+  grove: (g) => mix(g, PAL.GREEN_DK, 0.45),
+  nightshift: (g) => mix(g, PAL.INK, 0.45),
+};
+
 export class Level {
-  constructor(room = ROOMS[0]) {
+  // `world` is the dressing key main.js already computes (`worldOf`), handed
+  // in rather than derived here: a room does not know which world it is in —
+  // that mapping is the campaign's — and guessing it from the level name
+  // would put a second copy of that rule in this file.
+  constructor(room = ROOMS[0], world = 'groundworks') {
     this.room = room;
+    this.world = EARTH_FOR[world] ? world : 'groundworks';
     this.def = compile(room);        // fresh grid every time — see above
     this.w = W; this.h = H;
     this.map = this.def.grid;
@@ -67,6 +126,19 @@ export class Level {
       if (cy >= 0 && cy < H && this.map[H - 1 - cy][c] === CLIMB_CHAR) return true;
     }
     return false;
+  }
+
+  // WHICH ladder he is on, so the climb can pin him to its centre. The map
+  // knows the column; nothing was asking it, so a climb drifted by up to half
+  // a tile and he looked like he was holding air beside the rungs.
+  ladderAt(x, y) {
+    const c = Math.floor(x);
+    if (c < 0 || c >= W) return null;
+    for (const sy of [y + 0.1, y + 0.8]) {
+      const cy = Math.floor(sy);
+      if (cy >= 0 && cy < H && this.map[H - 1 - cy][c] === CLIMB_CHAR) return { c };
+    }
+    return null;
   }
 
   // the top of the ladder under (x, y) — the climb stops with his feet on
@@ -203,18 +275,15 @@ export class Level {
   buildMeshes(scene) {
     const group = new THREE.Group();
     // strata: the section gets darker and cooler with depth, in bands
-    const STRATA = [
-      PAL.EARTH[0],                          // cy 0 — deepest of the band
-      mix(PAL.EARTH[1], PAL.EARTH[0], 0.5),  // cy 1
-      PAL.EARTH[1],                          // cy 2
-      PAL.EARTH[2],                          // cy 3 — topsoil
-    ];
+    // cy 0 is the deepest of the band and cy 3 the topsoil; WHICH four colours
+    // those are belongs to the world (see EARTH_FOR at the top of this file)
+    const STRATA = EARTH_FOR[this.world](PAL.EARTH);
     const strata = (cy) => STRATA[Math.min(cy, STRATA.length - 1)];
     const mat = {
-      lip:   new THREE.MeshLambertMaterial({ color: PAL.GREEN }),
-      shade: new THREE.MeshLambertMaterial({ color: mix(PAL.EARTH[0], PAL.INK, 0.45) }),
-      back:  new THREE.MeshLambertMaterial({ color: mix(PAL.EARTH[0], PAL.INK, 0.5) }),
-      cut:   new THREE.MeshLambertMaterial({ color: PAL.EARTH[3] }),
+      lip:   new THREE.MeshLambertMaterial({ color: LIP_FOR[this.world](PAL.GREEN) }),
+      shade: new THREE.MeshLambertMaterial({ color: mix(STRATA[0], PAL.INK, 0.45) }),
+      back:  new THREE.MeshLambertMaterial({ color: mix(STRATA[0], PAL.INK, 0.5) }),
+      cut:   new THREE.MeshLambertMaterial({ color: mix(STRATA[3], PAL.EARTH[3], 0.6) }),
       steel: new THREE.MeshLambertMaterial({ color: PAL.STEEL[2] }),
       girder:new THREE.MeshLambertMaterial({ color: PAL.STEEL[1] }),
       bolt:  new THREE.MeshLambertMaterial({ color: PAL.DARK }),
@@ -388,6 +457,36 @@ export class Level {
           }
           if (e < W - 1 && this.map[r][e + 1] === ' ' && cy >= 1) {
             box(0.16, 1, 1.7, mat.cut, e + 0.95, cy + 0.5, 0);
+          }
+
+          // A RAISED PLATFORM IS A SLAB, NOT A HOLE IN THE SKY.
+          //
+          // Everything above dresses earth that is part of the CUT — the
+          // strata read as a section because there is more section under
+          // them. A run with air beneath it gets none of that: it was one
+          // flat topsoil rectangle with a grass strip on top, and against
+          // backdrops that are layered, hazed and lit it is the least
+          // finished thing on screen. Looked at in a captured frame it reads
+          // as a brown card someone slid in front of the level.
+          //
+          // Two bands, and between them they are the whole of §3.1's "a
+          // single darker tone for side faces" and "shading painted in, key
+          // from upper-left":
+          //
+          //   * the FACE steps down in tone below the lip, so the slab has a
+          //     lit top and a shaded body instead of one value; and
+          //   * the UNDERSIDE gets the darkest tone in the lane, because the
+          //     bottom edge of a floating slab is the one place the eye looks
+          //     for thickness and there was nothing there at all.
+          //
+          // Depth 1.62/1.64 rather than 1.6: these sit a hair proud of the
+          // slab so they win the z-fight outright instead of shimmering.
+          if (r + 1 < H && this.map[r + 1][c] === ' ') {
+            const base = strata(cy);
+            box(w, 0.5, 1.62, dirtMat(mix(base, PAL.INK, 0.14), section(cy)),
+                cx, cy + 0.34, 0);
+            box(w, 0.17, 1.64, dirtMat(mix(base, PAL.INK, 0.34), section(cy)),
+                cx, cy + 0.085, 0);
           }
         } else if (ch === '=') {
           box(w, 0.5, 1.4, mat.steel, cx, cy + 0.72, 0);

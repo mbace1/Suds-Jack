@@ -1,3 +1,9 @@
+> [!WARNING]
+> **LEGACY PRODUCTION HISTORY.** Active direction now lives in
+> [DESIGN_AUTHORITY.md](DESIGN_AUTHORITY.md), the GDD and
+> [art-library/APPROVALS.md](art-library/APPROVALS.md). This file is retained for
+> traceability and must not override those sources.
+
 # PIRITORI → EDEN — concept art brief
 
 A condensed art direction for an outside illustrator or image model. Distilled

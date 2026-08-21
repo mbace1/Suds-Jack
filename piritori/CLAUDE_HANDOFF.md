@@ -1,3 +1,9 @@
+> [!WARNING]
+> **LEGACY PRODUCTION HISTORY.** Active direction now lives in
+> [DESIGN_AUTHORITY.md](DESIGN_AUTHORITY.md), the GDD and
+> [art-library/APPROVALS.md](art-library/APPROVALS.md). This file is retained for
+> traceability and must not override those sources.
+
 # Claude Code handoff — Piritori → Eden
 
 Owner handoff, 2026-08-16.

@@ -9,28 +9,30 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=30';
-import { Input } from './input.js?v=30';
-import { Level, ROOMS, LAB } from './level.js?v=30';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=41';
+import { Input } from './input.js?v=41';
+import { Level, ROOMS, LAB } from './level.js?v=41';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=30';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=30';
-import { Camera } from './camera.js?v=30';
-import { buildKidModel, Kid, Player } from './kid.js?v=30';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=30';
-import { buildCraneModel, Crane } from './crane.js?v=30';
-import { Robot, SteamVent } from './robots.js?v=30';
-import { Hoist } from './hoist.js?v=30';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=30';
-import { WreckingBall } from './hazards.js?v=30';
-import { AudioKit } from './audio.js?v=30';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=30';
-import { craftMat, craftBox } from './craft.js?v=30';
-import { t as tr } from './lang.js?v=30';
-import { showIntro } from './intro.js?v=30';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=30';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=30';
+} from './pieces.js?v=41';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=41';
+import { Camera } from './camera.js?v=41';
+import { buildKidModel, Kid, Player } from './kid.js?v=41';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=41';
+import { buildCraneModel, Crane } from './crane.js?v=41';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=41';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=41';
+import { Hoist } from './hoist.js?v=41';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=41';
+import { WreckingBall } from './hazards.js?v=41';
+import { AudioKit } from './audio.js?v=41';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=41';
+import { craftMat, craftBox } from './craft.js?v=41';
+import { t as tr } from './lang.js?v=41';
+import { showIntro } from './intro.js?v=41';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=41';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=41';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=41';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -208,6 +210,14 @@ async function boot() {
   let collected = 0;          // this level's bolts
   let goldenGot = 0;          // this level's golden bolts
   let runBolts = 0, runGolden = 0;   // …and the job, for the last screen
+  let blueprints = 0;                // one per world, kept for the whole run
+  // THE WORLD'S OWN GOLDEN COUNT (DESIGN §4.3). The run total is the whole
+  // day; this is the nine that build THIS world's building, so it banks a
+  // level's find when the level ends and resets when the world does. Kept
+  // separate from `runGolden` because a building cannot be nine-ninths built
+  // by bolts found in another world.
+  let worldGolden = 0, worldOfGolden = null;
+  const bankGolden = () => { worldGolden += goldenGot; };
 
   function dispose(root) {
     root.traverse((o) => {
@@ -224,7 +234,9 @@ async function boot() {
   const LAST_LEVEL = SHOWN - 1;   // the last DRESSED room — see SHOWN above
 
   async function buildSite(i) {
-    const level = new Level(SITES[i]);
+    // the world is the campaign's fact, not the room's — handed in so level.js
+    // can tint its earth and its grass lip from it
+    const level = new Level(SITES[i], worldOf(i));
     const def = level.def;
     const group = new THREE.Group();
     level.buildMeshes(group);
@@ -248,7 +260,13 @@ async function boot() {
 
     // the small stuff: robots patrol a span the kit guaranteed is floor,
     // vents breathe on their own clock
-    const robots = def.robots.map((r) => new Robot(group, level, r));
+    // Each robot is handed its own loaded model, or null to draw its own. The
+    // load is per ROBOT rather than per kind because a skinned mesh cannot be
+    // cloned without SkeletonUtils (not in vendor/), and two robots sharing a
+    // skeleton animate as one puppet. Parallel, and every failure resolves to
+    // null, so a missing or broken model costs a placeholder and never a level.
+    const robots = await Promise.all(def.robots.map(async (r) =>
+      new Robot(group, level, r, await loadRobotAsset(r.kind || 'skitter'))));
     // THE HOISTS: entities, because a moving floor cannot be a tile. They
     // register with the level so the player's platform pass can find them —
     // one list, filled here, rather than the player reaching into `site`.
@@ -260,14 +278,30 @@ async function boot() {
     // THE MACHINE. One per room, and it is the room's own — a crane where a
     // crane is the answer. It starts UNMANNED either way: beacon turning,
     // working its own cycle, dangerous until it is yours.
+    // TYPE-DRIVEN, not "crane or else excavator". That branch is why World
+    // 2's pump ride was an excavator wearing the word and why Worlds 3 and 4
+    // borrowed Worlds 1-2's machines: everything that was not a crane got
+    // the digger. A type now names its own model, and the CLASS follows the
+    // verbs rather than the name — `smash` is the crane's arc, everything
+    // else is the excavator's arm — so a new machine is an entry here plus a
+    // builder, and `assets.js` swaps in a real mesh on the same node names.
+    const RIGS = {
+      excavator: { key: 'excavator', build: buildExcavatorModel },
+      crane: { key: 'crane', build: buildCraneModel },
+      skidder: { key: 'skidder', build: buildSkidderModel },
+      loader: { key: 'loader', build: buildLoaderModel },
+    };
     const md = def.machines[0];
     let machine = null;
-    if (md?.type === 'crane') {
-      machine = new Crane(level, md.x, def.spawn.crane.y,
-        await getModel('crane', buildCraneModel), false);
-    } else if (md) {
-      machine = new Excavator(level, md.x, def.spawn.excavator.y,
-        await getModel('excavator', buildExcavatorModel), false);
+    if (md) {
+      const rig = RIGS[md.type] || RIGS.excavator;
+      const asset = await getModel(rig.key, rig.build);
+      // parts.js writes `spawn[type]` for every machine it compiles; the kid's
+      // own spawn is the only fallback that cannot be wrong about the floor.
+      const y = def.spawn[md.type]?.y ?? def.spawn.kid.y;
+      machine = (md.verbs || []).includes('smash')
+        ? new Crane(level, md.x, y, asset, false)
+        : new Excavator(level, md.x, y, asset, false);
     }
     if (machine) {
       machine.track = md.track;
@@ -329,13 +363,61 @@ async function boot() {
     // …and the three that are hidden. A golden bolt has to be UNMISTAKABLY
     // not a bolt at 32 px (DESIGN §6.3), so it is a different SILHOUETTE
     // rather than a bigger one: a ring around a star, not a fatter nut.
-    const golden = def.golden.map(([row, col], gi) => {
+    // Through the seam, exactly like `bolt` above and for the same reason: the
+    // model existed, was cut, was catalogued — and nothing ever asked for it,
+    // so it could not load under any circumstances. The placeholder builder
+    // returns `{root}` because that is the contract, and getting it wrong is
+    // what crashed the bolt path on whichever branch was not exercised.
+    const goldModel = (await getModel('token_bolt', () => {
       const g = new THREE.Group();
       const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0),
         craftMat(PAL.MACHINE, 'balsa', { transparent: true }));
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 6, 16),
         craftMat(PAL.MACHINE_DK, 'balsa', { transparent: true }));
       g.add(core, ring);
+      return { root: g };
+    })).root;
+    // THE BLUEPRINT — one per world, a pickup for now (owner, 2026-08-21:
+    // "blueprints can just be collectables for now, we can add a secret art
+    // and gallery later"). A rolled sheet, so it is unmistakably not a bolt
+    // at 32px: DESIGN §6.3's rule for every token.
+    const bpModel = (await getPiece('blueprint', () => {
+      const g = new THREE.Group();
+      const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.72, 10),
+        craftMat('#eaf2fb', 'card', { transparent: true }));
+      roll.rotation.z = Math.PI / 2;
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.05, 6, 12),
+        craftMat(PAL.MACHINE, 'balsa', { transparent: true }));
+      band.rotation.y = Math.PI / 2;
+      const edge = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.175, 0.08, 10),
+        craftMat('#3f6ea8', 'card', { transparent: true }));
+      edge.rotation.z = Math.PI / 2; edge.position.x = 0.34;
+      g.add(roll, band, edge);
+      return { root: g };
+    })).root;
+    let blueprint = null;
+    if (def.blueprint) {
+      const [brow, bcol] = def.blueprint;
+      blueprint = bpModel.clone(true);
+      blueprint.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone();
+        o.material.transparent = true;
+      });
+      blueprint.position.set(bcol + 0.5, (level.h - 1 - brow) + 0.5, 0);
+      blueprint.baseY = blueprint.position.y; blueprint.state = 'up'; blueprint.popT = 0;
+      group.add(blueprint);
+    }
+
+    const golden = def.golden.map(([row, col], gi) => {
+      const g = goldModel.clone(true);
+      // the collect pop fades it, and a material cloned off a GLB is OPAQUE —
+      // the same trap the bolts hit one line of code above this one
+      g.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone();
+        o.material.transparent = true;
+      });
       g.position.set(col + 0.5, (level.h - 1 - row) + 0.5, 0);
       g.baseY = g.position.y; g.phase = gi * 1.4; g.state = 'up'; g.popT = 0;
       group.add(g);
@@ -344,7 +426,7 @@ async function boot() {
 
     scene.add(group);
     return {
-      def, level, group, bank, girder, wall, ball, bolts, golden,
+      def, level, group, bank, girder, wall, ball, bolts, golden, blueprint,
       robots, vents, machine, checkpoint, flag, hoists,
     };
   }
@@ -398,7 +480,11 @@ async function boot() {
   const siteEl = document.getElementById('site');
   const setCounts = () => {
     boltsEl.textContent = `⬡ ${collected}/${site.def.bolts.length}`;
-    goldEl.textContent = `✦ ${goldenGot}/${site.def.golden.length}`;
+    // BLUEPRINTS ONLY APPEAR ONCE YOU HAVE ONE. A 0/4 on the HUD from the
+    // first second is a chore printed on the screen; a count that shows up
+    // the moment you find the first one is a discovery that stayed.
+    goldEl.textContent = `✦ ${goldenGot}/${site.def.golden.length}`
+      + (blueprints ? `  ▤ ${blueprints}/4` : '');
   };
   // the address beside the name, so what is on screen is what you can paste
   // to somebody: "1-2 · LEVEL 2 — THE SCAFFOLD"
@@ -443,7 +529,8 @@ async function boot() {
 
   // ---- the mode machine ---------------------------------------------------
   let mode = 'foot';          // foot | mounting | riding | dismounting
-  let moveT = 0, digT = 0, slingT = 0, cleared = false, transitioning = false;
+  // `digT` went with the dig timer — the stroke owns that beat now
+  let moveT = 0, slingT = 0, cleared = false, transitioning = false;
   let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
@@ -528,10 +615,37 @@ async function boot() {
     document.body.appendChild(el);
   }
 
+  // ---- THE VEIL --------------------------------------------------------
+  // Down, swap, up. `on` is the only argument because a level change is the
+  // only thing that uses it, and the two durations differ on purpose: going
+  // dark should be quicker than coming back, so the cut feels like an
+  // ending and the new room feels like an arrival.
+  //
+  // It resolves on a TIMER rather than on `transitionend`. That event never
+  // fires when the value does not actually change — a second call while the
+  // veil is already down, a browser that folds a 0ms transition away — and a
+  // promise that never settles here means a black screen forever, which is
+  // the one failure this must not have. Under `prefers-reduced-motion` both
+  // times are 0: the same path, run instantly, rather than a branch that
+  // skips the step that brings the lights back.
+  const FADE = REDUCED ? { out: 0, in: 0 } : { out: 260, in: 420 };
+  function veil(on) {
+    const el = document.getElementById('veil');
+    const ms = on ? FADE.out : FADE.in;
+    if (el) {
+      el.style.transitionDuration = `${ms}ms`;
+      el.classList.toggle('on', on);
+    }
+    return new Promise((res) => setTimeout(res, ms));
+  }
+
   async function goSite(i) {
     transitioning = true;
     banner(`${site.def.name}  ⬡ ${collected}/${site.def.bolts.length}  ✦ ${goldenGot}/${site.def.golden.length}`);
     audio.mount();
+    // the lights go down BEFORE the old room is torn out, so the tear-out
+    // and every model still in flight happen where nobody can see them
+    await veil(true);
     const old = site;
     site = await buildSite(i);
     siteIndex = i;
@@ -543,6 +657,13 @@ async function boot() {
     // played in front of World 1's site until this. Taken down before the
     // new one goes up — six full-width planes left in the scene are not
     // hidden by six more, the near ones are opaque.
+    // A BUILDING BELONGS TO ITS WORLD. The count resets when the world does,
+    // and it is keyed on the world rather than on the level index so that a
+    // deep link or a level jump into the middle of world 3 does not arrive
+    // carrying world 2's nine.
+    const world = worldOf(i);
+    if (world !== worldOfGolden) { worldGolden = 0; worldOfGolden = world; }
+
     const want = worldOf(i);
     if (want !== diorama.world) {
       diorama.dispose();
@@ -558,7 +679,7 @@ async function boot() {
     player.x = s.kid.x; player.y = s.kid.y; player.vx = 0; player.vy = 0; player.mercyT = 0;
     exc = site.machine;
     scene.add(kid.group);                    // out of the old seat, if he was in one
-    mode = 'foot'; digT = 0; slingT = 0;
+    mode = 'foot'; slingT = 0;
     player.climbing = false;
     input.take('action'); input.take('jump');
     setSiteName();
@@ -568,6 +689,16 @@ async function boot() {
     // the camera CUTS — a slow pan across a rebuilt world is a lie about geography
     cam.setSite(site.def);
     cam.cut(player.x, player.y + 3);
+    // …and the lights come up on the room already built and already framed.
+    // `transitioning` is only cleared after that, because it is what the
+    // flag, the pause menu and the gate all read to mean "the room change
+    // is finished" — clearing it early would let a press land in the dark.
+    await veil(false);
+    // THE CARD IS TIMED FROM THE LIGHTS, not from the swap. Scheduling its
+    // removal before the fade spent 420 ms of the card's 1.4 s behind a
+    // rising veil — so on a slow machine the level you just finished could
+    // be gone by the time you could read it. Now it gets its full beat on
+    // the new room.
     setTimeout(() => document.getElementById('banner')?.remove(), 1400);
     transitioning = false;
   }
@@ -583,6 +714,14 @@ async function boot() {
     // `camera` below — a debug export, kept out of `debug` only because
     // three.js wants the constructor as well as the container.
     THREE, scene,
+    // …and the CAMERA object, for the same reason and on the same terms. The
+    // pack could already add things to the scene; it could not ask "what is
+    // under this pointer", because a raycast needs the camera the picture was
+    // drawn with and `debug.camera()` returns a position, not the camera. The
+    // level inspector is built on exactly that question. Read-only by
+    // convention like the rest of this block — the pack reads the game, the
+    // game never learns the pack exists.
+    camera,
     // `exc` is reassigned every time a room is built, so it has to be read
     // through a getter — captured once, the handle kept pointing at the
     // machine from the room you had already left.
@@ -658,6 +797,13 @@ async function boot() {
         bolts: collected, ofBolts: site.def.bolts.length,
         golden: goldenGot, ofGolden: site.def.golden.length,
       }),
+      // the world's building: what the golden bolts have put up so far.
+      // `setGolden` is a DEV hook and nothing in play calls it — a building
+      // has nine readings and a bot that collects nothing can only ever show
+      // the first, so this is how the other eight get looked at.
+      worldGolden: () => worldGolden,
+      setGolden: (n) => { worldGolden = Math.max(0, Math.min(BUILD_PARTS, n | 0)); },
+      buildParts: () => BUILD_PARTS,
       checkpoint: () => site.checkpoint
         ? { x: site.checkpoint.x, lit: site.checkpoint.lit, respawn: site.level.respawn }
         : null,
@@ -672,10 +818,12 @@ async function boot() {
       tris: () => renderer.info.render.triangles,
       // the 2D contract, computed rather than written down twice — the gate
       // checks assets/README.md (what an artist paints to) against this
+      // Derived from layers.js's own layerPx() rather than recomputed here:
+      // the gate compares this against assets/README.md, so if it did its own
+      // arithmetic the two could agree with each other and both be wrong
+      // about what the loader actually wants.
       layerContract: () => Object.fromEntries(Object.entries(LAYER_RECTS).map(([k, r]) => [k, {
-        ...r,
-        pxW: Math.min(4096, Math.round((r.x1 - r.x0) * PPU)),
-        pxH: Math.round((r.y1 - r.y0) * PPU),
+        ...r, ...layerPx(k),
       }])),
       // where the camera actually is, so "it reframes" is testable
       camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
@@ -810,7 +958,13 @@ async function boot() {
       kid.pose('climb', t);
       if (moveT >= 1) {
         exc.n.seat.add(kid.group);
-        kid.group.position.set(0, 0, 0);
+        // SAT IN IT, not sunk into it. The seat node is where his FEET land,
+        // and with the sit clip playing that put his shoulders inside the
+        // cowl — the rider "swallowed by the mount" that ART_BRIEF §1.2 says
+        // never to allow. A little up and a little toward the camera puts his
+        // head and shoulders clear of the machine, which is the whole read:
+        // a kid too small for the seat, driving anyway.
+        kid.group.position.set(0.04, 0.2, 0.16);
         kid.group.rotation.y = 0; kid.turn = 0;
         // drain the way IN or the same press is read again as the way OUT —
         // a player who mashes E would climb in and fall straight back out
@@ -860,16 +1014,24 @@ async function boot() {
       // a time. The bucket digs because it is a bucket (ART_BRIEF §1.2).
       if (site.bank && !site.bank.cleared) {
         const bk = site.def.bank;
-        const canDig = input.down.down
-          && exc.n.boom.rotation.z < 0.3
-          && exc.bucketWorld(buck).x > bk.c0 - 1.4 && buck.x < bk.c1 + 1.4;
-        if (canDig) {
-          digT += dt;
-          if (digT >= 0.7) { digT = 0; site.bank.dig(); audio.splat(); cam.punch(0.8); }
-        } else {
-          digT = 0;
+        // IN RANGE IS A FACT ABOUT THE MACHINE, NOT ABOUT THE ARM. It used to
+        // also require you to have driven the boom below 0.3 yourself — with
+        // the same button that digs — so the first thing the game asked a
+        // six-year-old for was to solve a control. Park next to the bank and
+        // hold the verb; the machine lowers its own arm (excavator.js).
+        const near = Math.abs(exc.x - (bk.c0 + bk.c1) / 2) < (bk.c1 - bk.c0) / 2 + 3.2;
+        exc.digging = input.down.down && near;
+        // THE BANK SAYS IT IS DIGGABLE before you press anything: within
+        // reach it lifts and pulses, which is the indicator the owner found
+        // missing. A thing you can act on has to look different from a thing
+        // you cannot.
+        site.bank.arm(near, t);
+        if (exc.digging && exc.bit) {
+          site.bank.dig();
+          audio.splat();
+          cam.punch(site.bank.cleared ? 1.5 : 0.85);
         }
-        if (canDig || Math.abs(exc.x - bk.c0) < 6) rideHint = HINT.dig;
+        if (near || Math.abs(exc.x - bk.c0) < 6) rideHint = HINT.dig;
       }
 
       // THE GIRDER: the same gesture, the other way round — the bucket
@@ -924,6 +1086,12 @@ async function boot() {
       audio.bolt(8); banner('CHECKPOINT');
       setTimeout(() => document.getElementById('banner')?.remove(), 1000);
     }
+    // THE FOREGROUND STANDS ASIDE FOR A CLIMB. A ladder is the one move that
+    // parks you behind the fore lane for seconds while standing still, so it
+    // is the one move where a painted strip in front of you is occlusion
+    // rather than depth. Everywhere else it stays where the art put it.
+    diorama.fore?.(player.climbing ? 0.24 : 1);
+
     if (site.flag) {
       const ev = site.flag.update(dt, mode === 'riding' && exc ? exc.x : player.x);
       if (ev === 'phase') audio.clank();
@@ -936,6 +1104,7 @@ async function boot() {
       if (ev === 'raised' && !transitioning && siteIndex < LAST_LEVEL && !site.def.gate) {
         audio.mount();
         runBolts += collected; runGolden += goldenGot;
+        bankGolden();                       // …and into this world's building
         goSite(siteIndex + 1);
       }
     }
@@ -947,20 +1116,50 @@ async function boot() {
         && (!site.flag || site.flag.raised) && !cleared) {
       cleared = true;
       audio.mount();
+      bankGolden();
+
+      // THE BUILDING (DESIGN §4.3). Twelve levels used to go past with
+      // nothing on the site ever getting finished, and the golden bolts were
+      // a count that bought nothing. Now the nine hidden across a world ARE
+      // the nine parts of the thing this world was working on, and clocking
+      // out is where you see what you put up: nine of nine and the roof goes
+      // on and the lights come on, four of nine and it stands four-ninths
+      // built with the frames showing where the rest would go.
+      //
+      // It is built INTO THE SCENE at the gate rather than drawn on a card,
+      // because a building described in text is a score and a building you
+      // walk up to is a building. It is added to `site.group`, so the ordinary
+      // room teardown in goSite() disposes it with everything else.
+      const put = buildWorldBuilding(worldOf(siteIndex), worldGolden);
+      // INSIDE THE ROOM, not past its end. The camera clamps to the level
+      // width, so a building at gate + 7.5 sat in a place the camera is not
+      // allowed to look at and rendered half out of frame at the right edge.
+      // Three and a half tiles past the gate is where Eeri is standing when
+      // he clocks out, and the camera can centre on it.
+      put.root.position.set(site.def.gate.x + 1.7, site.def.gate.y, -2.4);
+      site.group.add(put.root);
+      cam.cut(site.def.gate.x + 1.4, site.def.gate.y + 3.4);
+
       const done = document.createElement('div');
       done.id = 'clear';
-      done.innerHTML = 'CLOCKING OUT'
+      // No scolding at a low count, ever: the card says what you built and
+      // how much of it, and the design's rule is that the reward for finding
+      // them is seeing more of the thing — never being told off for missing.
+      done.innerHTML = tr('clockOut')
+        + `<span>${tr('built')} ${put.name} — ${put.got}/${put.parts}`
+        + (put.got === put.parts ? ` · ${tr('builtDone')}` : '') + '</span>'
         + `<span>⬡ ${runBolts + collected} · ✦ ${runGolden + goldenGot}</span>`;
       document.body.appendChild(done);
       // …and if there is another world behind this one, the curtain is a
-      // BEAT rather than an ending: it holds, then the next site loads.
+      // BEAT rather than an ending: it holds, then the next site loads. Four
+      // seconds rather than 2.6 — there is something to look at now.
       if (siteIndex < LAST_LEVEL) {
         runBolts += collected; runGolden += goldenGot;
         setTimeout(() => {
           done.remove();
           cleared = false;
           goSite(siteIndex + 1);
-        }, 2600);
+        }, 4000);
       }
     }
 
@@ -1043,6 +1242,29 @@ async function boot() {
       }
     }
 
+    // …the world's blueprint, if this room is the one carrying it
+    if (site.blueprint && site.blueprint.state !== 'gone') {
+      const bp = site.blueprint;
+      if (bp.state === 'up') {
+        bp.rotation.y += dt * 1.1;
+        bp.position.y = bp.baseY + Math.sin(t * 1.4) * 0.16;
+        if (Math.abs(bp.position.x - cx) < cr + 0.3 && Math.abs(bp.position.y - cy) < cr + 0.3) {
+          bp.state = 'pop'; bp.popT = 0;
+          blueprints++;
+          audio.thunk(); cam.punch(0.9);
+          banner(tr('blueprint'));
+          setTimeout(() => document.getElementById('banner')?.remove(), 1400);
+          setCounts();
+        }
+      } else {
+        bp.popT += dt / 0.45;
+        bp.rotation.y += dt * 7;
+        bp.scale.setScalar(1 + bp.popT * 0.8);
+        bp.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - bp.popT; });
+        if (bp.popT >= 1) { bp.state = 'gone'; bp.visible = false; }
+      }
+    }
+
     // …and the three hidden ones. The same loop with its own count and its
     // own noise, because finding one is the only thing in this game that is
     // meant to feel like a discovery rather than a pickup.
@@ -1063,7 +1285,13 @@ async function boot() {
         g.popT += dt / 0.4;
         g.rotation.y += dt * 9;
         g.scale.setScalar(1 + g.popT * 0.9);
-        for (const ch of g.children) ch.material.opacity = 1 - g.popT;
+        // TRAVERSE, do not walk `children`. The code-drawn golden was a Group
+        // with exactly two Mesh children, so indexing straight into them
+        // worked; a GLB's root is a Group of Groups and `ch.material` is
+        // undefined, which threw the moment a golden bolt was collected. The
+        // ordinary bolts twenty lines up already do it this way — same shape
+        // of assumption as the checkpoint lamp, and the same fix.
+        g.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - g.popT; });
         if (g.popT >= 1) { g.state = 'gone'; g.visible = false; }
       }
     }

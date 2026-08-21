@@ -53,6 +53,14 @@ export const STRINGS = {
     clear: 'LEVEL CLEAR',
     bolts: 'bolts',
     golden: 'golden bolts',
+    // the clock-out card (DESIGN §4.3). `built` names what the golden bolts
+    // put up; `builtOf` is the count under it. Neither ever scolds a low
+    // number — the design's rule is that finding them shows you more of the
+    // thing and never withholds anything.
+    clockOut: 'CLOCKING OUT',
+    blueprint: 'BLUEPRINT',
+    built: 'you built',
+    builtDone: 'finished, and the lights are on',
     checkpoint: 'CHECKPOINT',
     siteClear: 'SITE CLEAR',
     // the in-play prompts. A prompt never names a key (DESIGN §5) —
@@ -96,6 +104,10 @@ export const STRINGS = {
     hintRide: 'Ⓑ KIIPEÄ KYYTIIN',
     hintBoom: '▲ ▼ PUOMI',
     clear: 'KENTTÄ SELVÄ',
+    clockOut: 'TYÖPÄIVÄ PÄÄTTYY',
+    blueprint: 'PIIRUSTUS',
+    built: 'rakensit',
+    builtDone: 'valmis, ja valot palavat',
     bolts: 'pultit',
     golden: 'kultapultit',
     checkpoint: 'VÄLIPISTE',
@@ -144,6 +156,10 @@ export const STRINGS = {
     hintRide: 'Ⓑ のりこむ',
     hintBoom: '▲ ▼ ブーム',
     clear: 'クリア',
+    clockOut: 'しごとおわり',
+    blueprint: 'せっけいず',
+    built: 'つくったもの',
+    builtDone: 'かんせい。あかりがついた',
     bolts: 'ボルト',
     golden: '金のボルト',
     checkpoint: 'チェックポイント',
