@@ -1035,6 +1035,20 @@ debug hooks that **nothing in the game depends on**, so renaming one breaks
 the pack and no other test fails — the menu just quietly shows dashes while
 the effects quietly stop.
 
+**And one thing that is NOT a gate.** `node eeri/test/report.mjs` is the
+level report card: one line per level — asks per ten tiles, worst dead-air
+run, learned-run seconds, share not spent riding, how many DISTINCT things
+the level asks for, and how many of those the game has not said before. It
+never fails a build, because its job is the one the six gates cannot do:
+telling **dull** from **broken**. A level is called `CUT` only when it is
+thin AND says nothing new (a teaching level is quiet on purpose and is
+exempt), which is what makes the owner's policy — *"we can always make more
+levels and skip some if they are not usable"* — something you read rather
+than argue about. Its first run named four back-half levels and the reason:
+worlds 3 and 4 were quiet by **forgetting** — the skitter appeared in level
+1 and never again, water was taught in world 2 and never asked for after
+level 6. Run it before writing a level and before cutting one.
+
 **The game speaks fi / en / ja** (`js/lang.js`) — house convention, and it
 had none until v15.1, so the Finnish six-year-old it is built for read it in
 English. English is the **per-key** fallback. `js/intro.js` is the title
@@ -1176,6 +1190,7 @@ eeri/           # Eeri — the platformer. MULTI-AGENT: read PHASING.md before a
     playthrough.cjs# a bot must FINISH every level, and it measures COST
     fx-smoke.mjs   # the FX spec, pool and inference — bare node
     dev-menu.mjs   # the dev pack's contract with the game — bare node
+    report.mjs     # the level report card — not a gate; tells dull from broken
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate

@@ -1,5 +1,61 @@
 # EERI — versions
 
+## v15.37 — 2026-08-21 — the report card, and the back half stops being quiet
+
+The owner's call: *"we can always make more levels and skip some if they are
+not usable."* That is only a workable policy if **not usable** is something
+you can read rather than argue about — and nothing here could say it. Twelve
+levels pass `rooms.mjs`, twelve levels finish under `playthrough.cjs`, and
+neither of those has an opinion about whether a six-year-old would put one
+down. A gate that certifies *works* cannot see *dull*; this project has
+written that sentence about art three times and it is just as true of levels.
+
+**`node eeri/test/report.mjs`** is the missing reading. It is deliberately
+**not a gate** — it never fails a build — it prints one line per level off
+measures the code already keeps: asks per ten tiles, the worst dead-air run,
+the learned-run estimate, the share of that which is not the ride, how many
+DISTINCT things the level asks for, and how many of those the game has not
+said before. The last two columns are the point. A level that is thin is
+merely quiet; a level that is thin **and says nothing new** is the one to
+cut, and that is the only combination the verdict calls `CUT`.
+
+Run against v15.36 it named four of them immediately — levels 8, 9, 11 and
+12, every one in the back half:
+
+```
+3-2  LEVEL 8    9 asks  1.02/10   6 words  0 new   CUT
+3-3  LEVEL 9    7 asks  0.84/10   6 words  0 new   CUT
+4-2  LEVEL 11   9 asks  1.02/10   7 words  0 new   CUT
+4-3  LEVEL 12   9 asks  1.08/10   8 words  0 new   CUT
+```
+
+**Then the second finding, which the vocabulary column made obvious and no
+amount of playing had:** worlds 3 and 4 were quiet by FORGETTING. The skitter
+— the game's first enemy — appears in level 1 and never again. Water is
+taught in world 2 and never asked for after level 6. Level 10 asked four
+things across eighty-nine tiles and one of them was its own ride. The back
+half was not short of ideas; it was not using the ones already paid for.
+
+So the density pass adds twenty parts across the six back-half rooms and
+**every one of them is a word the game already speaks**: skitters back on the
+floor and on the high decks, a shallow stream through the timber lift, a
+bounce under its second shelf, a hopper standing on the belt that pushes
+back, two steam vents on the night shift, the hanging load returning for the
+final exam. Worlds 3 and 4 now measure **1.32–1.36 asks per ten tiles**
+against the front half's 1.24–2.04, and no level reads `CUT`.
+
+Nothing was invented to do it, which is the part worth keeping: the room
+prover passed all 246 checks on the first run, because twenty parts made of
+verbs the game has already proved cannot break rules the game already
+enforces.
+
+**One rule the ruler needed.** Level 1 measures 1.13 asks per ten tiles and
+that is correct — it says eight things the game has never said, and a level
+doing that has to leave room between them. A teaching level is quiet on
+purpose, so a level introducing three or more new words is exempt from
+*thin*. Measuring it otherwise is the ruler failing to see the job, which is
+the same failure Kindling's band-brightness gate made twice.
+
 ## v15.36 — 2026-08-21 — five playtest notes, and two of them were one-word bugs
 
 Everything here came off the owner playing it, and the two worst-looking

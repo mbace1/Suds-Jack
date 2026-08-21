@@ -22,8 +22,8 @@ import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, swingBall, hazard, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, hoist,
-  boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=41';
+  boltRun, boltArc, boltCol, shallow, GROUND,
+} from './parts.js?v=42';
 
 // THE TRAIL IS THE LEVEL TALKING, so it cannot be the same trail in six
 // levels. What was here was four quiet 25-bolt blocks — 100 exactly, laid at
@@ -77,6 +77,13 @@ export const WORLD34_ROOMS = [
       // tiles between the first bounce and the second.
       hazard(23, 'steam'),
 
+      // …and a SKITTER before it. World 1's first enemy has not been seen
+      // since level 1: the back half of the game was quieter than the front
+      // (0.8–1.0 asks per ten tiles against 1.3–1.9) and it was quiet by
+      // FORGETTING rather than by design. Bringing the skitter back is
+      // density and a returning face at once.
+      robot(19, 22, 'skitter'),
+
       // 2 · VARY — a second bounce opens a clearly higher timber/root shelf,
       // and the shelf is paid for at feet and head height once you are on it.
       tarp(29, 32, GROUND - 1),
@@ -84,6 +91,11 @@ export const WORLD34_ROOMS = [
       ledge(34, 40, 9),
       boltRun(11, 34, 40), boltRun(12, 39, 40),
       golden(12, [36]),
+
+      // …and something ON the shelf, so the shelf is a place rather than a
+      // detour. A skitter up here is read from the tarp below, before you
+      // commit to the bounce.
+      robot(35, 39, 'skitter', 10),
 
       // A THIRD BOUNCE, because the stretch between the shelf and the
       // checkpoint asked nothing for 20 tiles. Tarps are this level's one
@@ -103,6 +115,7 @@ export const WORLD34_ROOMS = [
       boltArc(5, 55, 59, 2),
       tarp(61, 64, GROUND - 1),
       boltCol(63, 6, 9),
+      hazard(59, 'steam'),
 
       // 4 · RIDE — excavator + earth bank is the greybox proxy for the
       // forest-clearing/dig machine payoff.
@@ -140,6 +153,12 @@ export const WORLD34_ROOMS = [
 
       boltRun(5, 24, 29), boltRun(6, 24, 29),
 
+      // A STREAM. World 2 taught water and worlds 3 and 4 never asked for it
+      // again — twelve levels of game using six of its own words in the back
+      // half. Shallow, so it is a wade and a slowdown rather than a death,
+      // which is what water is for at six.
+      shallow(24, 29),
+
       // …and its twin here, in the sixteen tiles between the two lifts. Never
       // in the shaft: a hazard you meet while committed to a machine is the
       // rule this game does not break.
@@ -153,6 +172,11 @@ export const WORLD34_ROOMS = [
       golden(13, [35]),
       blueprint(12, 31),                  // world 3's, at the lip of the lift
 
+      // …and a bounce under the high shelf: the twelve tiles between the
+      // second lift and the walk to the checkpoint were the emptiest stretch
+      // in the world.
+      tarp(34, 37, GROUND - 1),
+
       checkpoint(46),
       boltRun(5, 41, 47), boltRun(6, 41, 47),
 
@@ -165,6 +189,7 @@ export const WORLD34_ROOMS = [
       boltArc(5, 49, 53, 2),
       hopper(55, 59),
       boltArc(5, 55, 59, 2),
+      pit(60, 61),
 
       // 4 · RIDE — the existing span is an honest proxy for moving/placing
       // a felled log across a clearing. The row over the chasm is the
@@ -207,16 +232,24 @@ export const WORLD34_ROOMS = [
 
       boltRun(5, 27, 29), boltRun(6, 27, 29),
 
+      // The world's quietest fourteen tiles, filled with the two things this
+      // level already owns: a vent to wait out and a skitter to read.
+      hazard(22, 'steam'),
+      robot(26, 29, 'skitter'),
+
       // 2 · VARY — hoist to the highest work shelf of the world.
       hoist(30, 31, GROUND, 10, 4.2),
       boltCol(29, 7, 11),
       ledge(32, 39, 10),
       boltRun(12, 32, 39), boltRun(13, 37, 39),
       golden(13, [36]),
+      robot(33, 38, 'skitter', 11),
 
       // the same 20-tile hole this world kept leaving between its second
       // beat and the checkpoint, filled with the verb the level opened on
       tarp(35, 38, GROUND - 1),
+
+      tarp(42, 45, GROUND - 1),
 
       checkpoint(46),
       boltRun(5, 41, 47), boltRun(6, 41, 47),
@@ -262,12 +295,22 @@ export const WORLD34_ROOMS = [
 
       boltRun(5, 22, 26), boltRun(6, 22, 26),
 
+      // A NIGHT SKITTER between the first belt and the second. World 4 had
+      // four words in this level and no enemy but one hopper: the level was
+      // a corridor with a floor that moved.
+      robot(21, 25, 'skitter'),
+
       // 2 · VARY — the same floor now pushes against the player, and it is
       // the SAME seven bolts on the same row. Twice the work for the same
       // pay is the whole lesson of a belt, said without a word.
       belt(28, 34, GROUND - 1, -1),
       boltRun(5, 28, 34),
       golden(7, [33]),
+
+      // …and the belt's lesson said twice: a hopper standing ON the floor
+      // that pushes back is the same read as always, arriving slower.
+      robot(29, 33, 'hopper'),
+      hazard(35, 'steam'),
 
       // A THIRD BELT, and it helps rather than resists: the level had 20
       // tiles of plain floor here, and its whole idea is what the floor does.
@@ -279,6 +322,7 @@ export const WORLD34_ROOMS = [
       // 3 · COMBINE — helpful belt into a known hopper spacing read.
       belt(48, 54, GROUND - 1, 1),
       boltRun(5, 48, 54), boltRun(6, 48, 54),
+      roller(49, 53),
       hopper(56, 60),
       boltArc(5, 56, 60, 2),
 
@@ -286,6 +330,7 @@ export const WORLD34_ROOMS = [
       // between x=68 and the bank at 84: that is the machine's run to its own
       // job, and a hopper placed there took the ride away on the way to the
       // thing the ride exists for.
+      hazard(62, 'steam'),
       machine('loader', 68, [64, 92]),
       boltRun(5, 63, 69), boltRun(6, 63, 69),
       bank(84, 88, 3),
@@ -322,6 +367,7 @@ export const WORLD34_ROOMS = [
       // them, which on a level about work heights is the one thing it should
       // not have.
       mound(20, 23, 2),
+      tarp(24, 27, GROUND - 1),
 
       // 2 · VARY — taller work deck, then a familiar ladder back into flow.
       hoist(30, 31, GROUND, 10, 4.5),
@@ -329,9 +375,12 @@ export const WORLD34_ROOMS = [
       ledge(32, 38, 10),
       boltRun(12, 32, 38), boltRun(13, 36, 38),
       golden(13, [35]),
+      robot(33, 37, 'skitter', 11),
       ...scaffold(40, 44, 7),
       boltRun(8, 40, 44),
       blueprint(13, 37),                  // world 4's, over the high work deck
+
+      hazard(45, 'steam'),
 
       checkpoint(46),
       boltRun(5, 46, 48),
@@ -391,6 +440,12 @@ export const WORLD34_ROOMS = [
       robot(30, 33, 'hopper', 8),
       golden(10, [32]),
 
+      // …and the hanging load, back for the exam. The row runs straight
+      // under it, so the last bolts before the checkpoint are taken on the
+      // ball's clock rather than yours.
+      girderBeam(41, 47, 10),
+      swingBall(44, 11),
+
       checkpoint(46),
       boltRun(5, 37, 45), boltRun(6, 37, 45),
 
@@ -403,6 +458,7 @@ export const WORLD34_ROOMS = [
       boltCol(49, 5, 11),
       ledge(52, 58, 10),
       boltRun(12, 52, 58),
+      robot(54, 58, 'skitter'),
       roller(60, 64),
       boltRun(5, 60, 64), boltRun(6, 61, 64),
 

@@ -28,8 +28,8 @@
 // always a plausible object rather than nine floating cubes.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=41';
-import { craftMat, craftBox } from './craft.js?v=41';
+import { PAL, mix } from './palette.js?v=42';
+import { craftMat, craftBox } from './craft.js?v=42';
 
 // Each world was working on something different, and the difference is in the
 // proportions and the fill, never in the part COUNT — nine bolts is nine
