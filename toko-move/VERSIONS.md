@@ -1,5 +1,60 @@
 # Toko Move — versions
 
+## v6 — 2026-08-21
+
+**The people nobody can reach are visible now**, and the look moves off its
+parent.
+
+`PLAYTEST.md` measured up to 61% of a queue waiting for a shape no line reaches,
+drawn exactly like everybody else and never leaving — dead weight pushing the
+crowding gauge with nothing on screen to act on. Mini Metro has no answer to
+copy: its unreachable passengers behave the same way. So this is a **logical
+option, measured**, in the owner's terms — build the sensible thing, test it,
+and leave the logic written down to be revised.
+
+- **A waiting passenger is an object now**, not a bare shape. It carries how
+  long it has stood there and whether anything reaches it, and the layers to
+  come need it to carry weight and a deadline. The same object goes back on the
+  platform when it transfers, so a destination survives the handoff — the exact
+  thing OpenTTD's own manual records itself getting wrong.
+- **Marked** in a pale ink, silhouette untouched. Filling the shape was already
+  tried and thrown away: a solid star reads as a different destination.
+- **Counted** on the strip as `nowhere to go N`, in the alarm colour, and only
+  when there is something to count.
+- **They give up** after 45 seconds (70 on the festival night) and the end card
+  says how many went home. Measured cost: mean survival 198s → 205s, delivered
+  120 → 124, and on boards where nobody is stranded the runs are identical.
+- **The three untaught rules say themselves once each** — somebody stranded,
+  a ring a quarter closed, a tunnel spent.
+
+### Homage, not a clone (owner's steer)
+
+The palette shifts off its parent's: cooler paper, deeper indigo and vermilion,
+and the closest pair of line colours now 98 apart where the old set was 90 —
+measured, not eyeballed. But the real divergences are **form**, not hue, and
+this game already had three: the grab nub at a line's end, the riders shown
+along a train's roof, and the queue drawn as a block rather than a fan. The
+ghosted passenger is a fourth, and it is the first one that is a rule rather
+than a decoration.
+
+### A gate that copied the palette
+
+The nub's pixel probe held its own copy of the seven line colours and failed the
+moment the real ones moved. It reads `PAL` from the game now. That is the third
+time in this project a duplicated constant has produced a check that agreed with
+itself and disagreed with the game.
+
+### Gates
+
+```
+node toko-move/test/core.mjs                           # 201 checks, bare node
+NODE_PATH=$(npm root -g) node toko-move/test/smoke.cjs # 76 checks, three formats
+```
+
+Mutation-tested: never marking anybody, never letting anybody go, letting people
+WITH a route give up, and forgetting who a passenger was across a transfer each
+fail a named check.
+
 ## v5 — 2026-08-21
 
 **A phone could not pause the game, and the board was using a third of the

@@ -122,14 +122,47 @@ particular is discoverable nowhere else — which is how this playtest started.
 
 ---
 
+## 2b. What was done about it (v6)
+
+Mini Metro has nothing to copy here: its unreachable passengers are drawn like
+everyone else and never leave, so the backlog kills you with no way to see it
+coming. That makes this a **logical option, tested** rather than an inherited
+design — and it is meant to be revised.
+
+- **Marked.** A passenger no line can reach is drawn in a pale ink. The
+  silhouette is untouched, because filling the shape was tried for
+  over-capacity passengers and a solid star reads as a *different destination*.
+- **Counted.** `nowhere to go N` appears on the strip, in the alarm colour, and
+  only when N > 0. A permanent "0" is furniture.
+- **They leave.** After `giveUp` seconds (45 in the endless city, 70 on the
+  festival night) somebody with nowhere to go walks away. The end card counts
+  them. This is the half that turns an invisible death into a visible loss.
+
+**The balance cost was measured before it shipped**, across seven boards, bot
+play, endless:
+
+| | never leave (Mini Metro's rule) | they give up |
+|---|---|---|
+| mean survival | 198s | 205s |
+| mean delivered | 120 | 124 |
+| mean who walked away | — | 10 |
+
+About 3% easier, and on the four boards where nobody was ever stranded the runs
+are **identical** — the rule only touches the situation it is about. If it
+proves too gentle the answer is a shorter fuse, not a return to silence.
+
+Also added: the three untaught rules now say themselves once each, the first
+time the game does the thing — somebody stranded, a ring past a quarter closed,
+a tunnel spent.
+
 ## 3. What to do about it, in order
 
-1. **Mark a passenger with no route.** The single highest-value change in the
-   game. It teaches the core rule, converts an invisible loss into a visible
-   problem, and needs no new mechanic. (Design care needed: filling the shape
-   solid was tried for *over-capacity* passengers and rejected, because a solid
-   star reads as a different destination from a hollow one. A ring, a tint or a
-   count beside the stop is likelier to be right than a change to the shape.)
-2. **Say what the closing ring means**, once, the first time one appears.
+1. ~~**Mark a passenger with no route.**~~ Done in v6, above.
+2. ~~**Say what the closing ring means**, once, the first time one appears.~~
+   Done in v6.
 3. **Keep the instructions reachable in play** — the delete gesture especially.
-4. **Warn before the water**, rather than refusing after it.
+   Still open: the tips fire once and are gone, and nothing brings back "drag
+   the stub back to pull a line up".
+4. **Warn before the water**, rather than refusing after it. Half done: the
+   tunnel rule is now explained the first time one is spent, but a line that
+   *cannot* be drawn is still only refused after the attempt.

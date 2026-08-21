@@ -6,9 +6,9 @@
 // a festival, a ten-minute delivery contract and the endless city are the same
 // code reading different data.
 
-import { World } from './world.js?v=5';
-import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=5';
-import { byId, validate, GOALS } from './missions.js?v=5';
+import { World } from './world.js?v=6';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=6';
+import { byId, validate, GOALS } from './missions.js?v=6';
 
 export class Game {
   constructor(seed = 1, missionId = 'endless', opts = {}) { this.reset(seed, missionId, opts); }
@@ -36,6 +36,10 @@ export class Game {
     this.events = [];
     this.holdBroken = false;
     this.endReason = null;
+    this.stranded = 0;        // waiting for a shape no line reaches
+    this.gaveUp = 0;          // …and waited long enough to walk away
+    this._sweep = 0;
+    this.taught = new Set();  // one-liners already said this run
     this.nextUpgradeAt = m.clock.upgradeEvery;
     this.net.rebuild();
   }
@@ -71,6 +75,7 @@ export class Game {
     }
 
     this.watchHold();
+    this.sweepStranded(dt);
 
     if (this.mission.clock.upgradeEvery != null && this.time >= this.nextUpgradeAt) {
       this.nextUpgradeAt += this.mission.clock.upgradeEvery;
@@ -95,6 +100,41 @@ export class Game {
       const limit = goal.limit ?? 1;
       if (this.world.stations.some(s => s.over >= limit)) this.holdBroken = true;
     }
+  }
+
+  // Mini Metro has no answer to copy here: its passengers never give up and
+  // nothing marks the ones nobody can reach — they simply pile up until the
+  // backlog ends the run. PLAYTEST.md measured up to 61% of a queue in that
+  // state, invisible, pushing the crowding gauge. So this is a logical option
+  // rather than an inherited one, and it is meant to be revised:
+  //
+  //   somebody whose shape no line reaches is MARKED, and if nothing reaches
+  //   them for `giveUp` seconds they walk away.
+  //
+  // That turns an invisible death into a visible loss. It also eases the
+  // platform, which makes the game gentler — the balance measurement lives in
+  // PLAYTEST.md, and if it turns out to be too gentle the answer is a shorter
+  // fuse, not a return to silence.
+  sweepStranded(dt) {
+    this._sweep -= dt;
+    if (this._sweep > 0) return;
+    this._sweep = 0.25;
+
+    const fuse = this.mission.giveUp;
+    let n = 0;
+    for (const st of this.world.stations) {
+      for (let i = st.waiting.length - 1; i >= 0; i--) {
+        const p = st.waiting[i];
+        p.stranded = this.net.hopsFrom(st.id, p.goal) === Infinity;
+        if (!p.stranded) continue;
+        if (fuse != null && p.waited(this.world.time) > fuse) {
+          st.waiting.splice(i, 1);
+          this.gaveUp++;
+          this.events.push('gaveup');
+        } else n++;
+      }
+    }
+    this.stranded = n;
   }
 
   goalsMet() {
@@ -125,7 +165,8 @@ export class Game {
     let exchanged = 0;
 
     for (let i = train.load.length - 1; i >= 0; i--) {
-      const goal = train.load[i];
+      const rider = train.load[i];
+      const goal = rider.goal;
       if (st.kind === goal) {
         train.load.splice(i, 1);
         this.score++;
@@ -135,16 +176,18 @@ export class Game {
       }
       if (!(onward(goal) < closer(stId, goal))) {
         train.load.splice(i, 1);
-        st.waiting.push(goal);
+        // the SAME passenger goes back on the platform: somebody who has been
+        // travelling an hour has not just arrived
+        st.waiting.push(rider);
         exchanged++;
       }
     }
 
     for (let i = 0; i < st.waiting.length && train.load.length < train.capacity;) {
-      const goal = st.waiting[i];
-      if (onward(goal) < closer(stId, goal)) {
+      const p = st.waiting[i];
+      if (onward(p.goal) < closer(stId, p.goal)) {
         st.waiting.splice(i, 1);
-        train.load.push(goal);
+        train.load.push(p);
         exchanged++;
       } else i++;
     }
@@ -195,6 +238,8 @@ export class Game {
       time: this.time,
       stations: this.world.stations.length,
       lines: this.net.lines.length,
+      gaveUp: this.gaveUp,
+      stranded: this.stranded,
       goals: this.goalReadout(),
       seed: this.seed,
     };

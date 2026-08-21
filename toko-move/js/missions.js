@@ -109,6 +109,10 @@ export const MISSIONS = [
     resources: { lines: 3, trains: 3, tunnels: 2 },
     goals: [],
     fail: { overcrowd: 45 },
+    // how long somebody waits for a shape no line reaches before walking away.
+    // null would mean they never do, which is Mini Metro's behaviour and the
+    // thing PLAYTEST.md measured as an invisible loss.
+    giveUp: 45,
   },
 
   {
@@ -149,6 +153,10 @@ export const MISSIONS = [
     // people off a six-capacity platform in a minute. The gauge still fills and
     // still warns; it just costs you the people rather than the night.
     fail: { overcrowd: null },
+    // longer on a festival night: the whole point is that the crowd is stuck
+    // for a while, and people walking away from a party they cannot leave is
+    // the failure the mission is about
+    giveUp: 70,
   },
 ];
 

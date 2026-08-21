@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=5';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=5';
-import { Renderer } from './render.js?v=5';
-import { LineDrawer } from './input.js?v=5';
-import { Kit } from './audio.js?v=5';
-import { PAL, sizeAt } from './palette.js?v=5';
+import { Game } from './sim.js?v=6';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=6';
+import { Renderer } from './render.js?v=6';
+import { LineDrawer } from './input.js?v=6';
+import { Kit } from './audio.js?v=6';
+import { PAL, sizeAt } from './palette.js?v=6';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -125,12 +125,45 @@ function paintHud() {
   stock('stkLines', `${game.net.lines.length}/${game.net.maxLines}`, game.net.lines.length >= game.net.maxLines);
   stock('stkTrains', game.net.spareTrains, game.net.spareTrains === 0);
   stock('stkTunnels', game.net.tunnelsLeft(), game.net.tunnelsLeft() === 0);
+
+  // The count only exists when there is something to count. A permanent "0
+  // stranded" is furniture; a number that appears is a thing that happened.
+  const stuck = $('stkStuck');
+  stuck.hidden = game.stranded === 0;
+  if (!stuck.hidden) stuck.querySelector('b').textContent = game.stranded;
+
+  teach();
 }
 
 function stock(id, value, spent) {
   const el = $(id);
   el.querySelector('b').textContent = value;
   el.classList.toggle('none', !!spent);
+}
+
+// The three rules a growing board cannot teach on its own, said once each, the
+// first time the game actually does the thing. Mini Metro teaches by constraint
+// and has no tutorial — which works for everything except the rules that have
+// nothing to see: a shape nobody can reach, a ring whose meaning you learn by
+// dying, and water that refuses you after the fact.
+const TIPS = [
+  ['stranded', g => g.stranded > 0,
+    'Somebody is waiting for a shape no line reaches. They will give up and go.'],
+  ['crowding', g => g.world.stations.some(s => s.over > 0.25),
+    'That stop is over capacity. The ring closing around it is the day running out.'],
+  ['tunnel', g => g.net.tunnelsLeft() < g.net.ownedTunnels,
+    'Crossing water spends a tunnel. You only get more at the end of a week.'],
+];
+
+function teach() {
+  if (!game || game.state !== 'play') return;
+  for (const [key, when, line] of TIPS) {
+    if (game.taught.has(key)) continue;
+    if (!when(game)) continue;
+    game.taught.add(key);
+    say(line);
+    return;                 // one lesson at a time
+  }
 }
 
 function say(msg) {
@@ -222,6 +255,7 @@ function showEnd() {
   const rows = [[r.title, '']];
   for (const g of r.goals) rows.push([g.text, g.have >= g.want ? 'met' : 'missed']);
   rows.push(['delivered', r.score]);
+  if (r.gaveUp) rows.push(['gave up and went home', r.gaveUp]);
   rows.push(['best here', p.best[r.mission]]);
   rows.push([r.cycleWord === 'week' ? 'lasted' : 'ran', `${r.units} ${r.cycleWord === 'week' ? 'days' : 'hours'}`]);
   rows.push(['stops open', r.stations]);
@@ -334,5 +368,5 @@ window.__tm = {
       nubDrawPx: (drawer.view().nubR || 0) * renderer.scale,
     };
   },
-  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId, sizeAt, seedFromUrl },
+  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId, sizeAt, seedFromUrl, PAL },
 };
