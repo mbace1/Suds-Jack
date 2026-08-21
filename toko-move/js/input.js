@@ -8,37 +8,16 @@
 //
 // The line commits AS YOU DRAG rather than on release, so what you see forming
 // is the real thing and not a preview that might be refused when you let go.
+// Dragging back onto the stop behind the terminus pulls it off again, and one
+// continuous drag back down a line deletes the whole thing.
+//
+// EVERY HIT RADIUS HERE IS A SCREEN MEASUREMENT. Fixed in board units they
+// shrink with the window — the nub was 46px on a desktop and 17px on a phone,
+// which meant a line could not be shortened or deleted by thumb at all.
 
-import { legPoints } from './geometry.js?v=3';
-import { INK } from './palette.js?v=3';
-
-const NUB_GAP = 15;
-const NUB_HIT = 19;
-const STATION_HIT = 27;
-
-// Where every terminus stub sits. Loops have no ends, so they have no nubs and
-// cannot be extended — you unwrap the loop first, which is the honest cost of
-// having closed it.
-export function nubs(net, world) {
-  const out = [];
-  for (const line of net.lines) {
-    if (line.loop || line.stations.length < 2) continue;
-    for (const atHead of [true, false]) {
-      const endId = atHead ? line.head : line.tail;
-      const end = world.station(endId);
-      const seg = atHead ? line.segs[0] : line.segs[line.segs.length - 1];
-      if (!end || !seg) continue;
-      // the stub points away along the last piece of track drawn into the stop
-      const pts = seg.pts;
-      const [a, b] = atHead ? [pts[1], pts[0]] : [pts[pts.length - 2], pts[pts.length - 1]];
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const len = Math.hypot(dx, dy) || 1;
-      const r = (end.special ? INK.specialR : INK.stationR) + NUB_GAP;
-      out.push({ line, atHead, x: end.x + (dx / len) * r, y: end.y + (dy / len) * r });
-    }
-  }
-  return out;
-}
+import { legPoints } from './geometry.js?v=5';
+import { TOUCH, sizeAt } from './palette.js?v=5';
+import { nubs } from './lines.js?v=5';
 
 export class LineDrawer {
   constructor(canvas, renderer, game, opts = {}) {
@@ -68,21 +47,37 @@ export class LineDrawer {
     window.removeEventListener('pointercancel', this._up);
   }
 
+  // board units per screen pixel
+  get unit() { return 1 / (this.r.scale || 1); }
+  get nubGap() { return TOUCH.nubGapPx * this.unit; }
+  get nubHit() { return (TOUCH.nubHitPx / 2) * this.unit; }
+  get stationHit() { return (TOUCH.stationHitPx / 2) * this.unit; }
+
+  get sizes() { return sizeAt(this.r.scale || 1); }
+  nubs() { return nubs(this.game.net, this.game.world, this.nubGap, this.sizes); }
+
   at(e) { return this.r.toBoard(e.clientX, e.clientY); }
 
   down(e) {
     if (this.game.state !== 'play') return;
     const p = this.at(e);
 
-    for (const n of nubs(this.game.net, this.game.world)) {
-      if (Math.hypot(n.x - p.x, n.y - p.y) < NUB_HIT) {
-        this.drag = { mode: 'extend', line: n.line, atHead: n.atHead, colour: n.line.colour, p };
-        this.canvas.setPointerCapture?.(e.pointerId);
-        return;
-      }
+    // Nearest wins, rather than nub-first. On a phone the two hit zones overlap,
+    // and taking the nub whenever it is merely in range would make it impossible
+    // to start a NEW line from a stop that a line already ends at.
+    let pick = null, best = Infinity;
+    for (const n of this.nubs()) {
+      const d = Math.hypot(n.x - p.x, n.y - p.y);
+      if (d < this.nubHit && d < best) { best = d; pick = n; }
     }
+    const st = this.game.world.hitStation(p.x, p.y, this.stationHit);
+    if (st && Math.hypot(st.x - p.x, st.y - p.y) < best) pick = null;
 
-    const st = this.game.world.hitStation(p.x, p.y, STATION_HIT);
+    if (pick) {
+      this.drag = { mode: 'extend', line: pick.line, atHead: pick.atHead, colour: pick.line.colour, p };
+      this.canvas.setPointerCapture?.(e.pointerId);
+      return;
+    }
     if (st) {
       this.drag = { mode: 'new', anchorId: st.id, colour: this.game.net.freeColour(), p };
       this.canvas.setPointerCapture?.(e.pointerId);
@@ -91,7 +86,7 @@ export class LineDrawer {
 
   move(e) {
     const p = this.at(e);
-    const st = this.game.world.hitStation(p.x, p.y, STATION_HIT);
+    const st = this.game.world.hitStation(p.x, p.y, this.stationHit);
     this.hover = st ? st.id : null;
     if (!this.drag) return;
     this.drag.p = p;
@@ -113,7 +108,8 @@ export class LineDrawer {
     if (st.id === endId) return;
 
     // dragging back onto the stop behind the terminus pulls the terminus off —
-    // the undo lives in the same gesture as the do
+    // the undo lives in the same gesture as the do, and carrying on down the
+    // line peels the rest of it
     const behind = this.drag.atHead ? line.stations[1] : line.stations[line.stations.length - 2];
     if (st.id === behind && !line.loop) {
       const res = this.game.net.retract(line, this.drag.atHead);
@@ -127,9 +123,7 @@ export class LineDrawer {
     this.onChange();
   }
 
-  up() {
-    this.drag = null;
-  }
+  up() { this.drag = null; }
 
   fail(msg) {
     if (this._lastFail === msg && performance.now() - (this._failAt || 0) < 1200) return;
@@ -140,7 +134,7 @@ export class LineDrawer {
 
   // What the renderer draws as the dashed reach from the live end to the finger.
   view() {
-    const out = { hover: this.hover };
+    const out = { hover: this.hover, nubs: this.nubs(), nubR: TOUCH.nubDrawPx * this.unit };
     if (!this.drag) return out;
     const w = this.game.world;
     if (this.drag.mode === 'new') {

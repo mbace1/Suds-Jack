@@ -1,5 +1,120 @@
 # Toko Move — versions
 
+## v5 — 2026-08-21
+
+**A phone could not pause the game, and the board was using a third of the
+screen.** Both found by measuring a render rather than by running the suite,
+which stayed green through all of it. Written up in full in `PLAYTEST.md`.
+
+- **The strip wraps.** At 390px it ran to 515px and put pause, speed and sound
+  off the screen. `overflow: hidden` clipped them, which is exactly why the
+  gate's no-horizontal-overflow check passed the whole time — it measured the
+  document, not the controls. It measures the controls now.
+- **The board turns to match the screen.** A mission states a rectangle; which
+  way up it goes is the screen's business. A portrait phone gets a portrait
+  board: screen use goes 36% → 74%, and a stop goes 7px → 22px. Decided once at
+  the start of a run, because a board that reshaped itself on rotation would
+  move every stop out from under the lines drawn on them.
+- **Drawing floors** (`sizeAt` in `palette.js`): the declared board-unit size,
+  or a screen-pixel minimum, whichever is bigger. A waiting passenger drew at
+  2px on a phone and 6.8px now. The nub stands off the *drawn* radius, so the
+  two cannot drift apart.
+
+### A crash, found by playing rather than by testing
+
+Cutting a line while a train was out on the leg being removed left the train
+pointing at a leg that no longer existed, and the next frame read `pts` off
+`undefined` and took the renderer down. **Every gate passed**, because they all
+retract lines that are standing still. A line that shortens now brings its
+trains back with it.
+
+### And a regression of my own, found the same way
+
+The v3 rewrite dropped `seedFromUrl()`. The end card went on printing "board
+481203" while nothing read it back — a receipt for a run nobody could return to
+— and every gate run got a different board. That is how a real bug hides inside
+a flaky test: the browser gate failed about one run in three and the honest
+reading was "the board changed under it", not "the test is flaky".
+
+### The playtest
+
+`PLAYTEST.md` — driven only through pointer gestures, on desktop, phone and a
+phone on its side. Play is possible on all three. The teaching audit found one
+hole worth the whole document: **a passenger whose shape no line reaches is
+drawn identically to one about to board.** Across three boards, 0.4% to 21% of
+the queue is unreachable on average, peaking at 61%, with somebody stranded for
+about half the run on two of three seeds — and they are not scenery, they sit on
+platforms pushing the crowding gauge toward game over. The first one appears
+11.9s after the first line, the same second as the first delivery.
+
+### Gates
+
+```
+node toko-move/test/core.mjs                           # 186 checks, bare node
+NODE_PATH=$(npm root -g) node toko-move/test/smoke.cjs # 71 checks, three formats
+```
+
+The browser gate now measures canvas tap targets, control clipping, board
+orientation and drawn legibility at 1180×800, 390×760 and 640×360. Every fix
+here is mutation-tested: un-wrapping the strip, un-turning the board, removing
+either drawing floor, or putting back the train that outlives its leg each fails
+a named check.
+
+## v4 — 2026-08-21
+
+**You could not delete a line with a thumb.** The owner asked how deleting works
+at all, which is its own answer about discoverability — and measuring it turned
+up a real bug underneath.
+
+Every hit radius was fixed in BOARD units, so it shrank with the window. The
+end-of-line nub measured 46px on a 1200px desktop and **17px on a 390px phone**.
+Since the nub is the only way to shorten or remove a line, there was no way to
+edit a line by touch at all. Radii are screen measurements now (`TOUCH` in
+`palette.js`), converted to board units at the current scale, so a target stays
+the size of a finger whatever the board is doing.
+
+- **The nub is drawn.** It was an invisible hotspot, which is why the question
+  got asked: a gesture with nothing to aim at is a gesture nobody finds. It is
+  a ring in the line's own colour with a paper gap around it.
+- **Nub versus stop is decided by DISTANCE, not by checking the nub first.** At
+  phone scale the two hit zones overlap, and nub-first would have made it
+  impossible to start a *new* line from a stop that a line already ends at.
+- **`nubs()` moved from `input.js` to `lines.js`.** It is a fact about the
+  network's shape, and the renderer needs it too — a renderer importing the
+  input layer to find out where to draw is backwards.
+
+### The gate hole that let it ship
+
+The 44px sweep only ever looked at **DOM buttons**. Everything drawn on the
+canvas — every stop, every nub, the entire game — was never measured. It now
+measures the real targets, on a phone as well as a desktop, and drives an actual
+delete-by-drag at 390px.
+
+Two of the new checks were weak on the first cut and had to be rewritten, which
+is becoming this project's recurring lesson:
+
+- reading `nubDrawPx` back out of the game proves a *number* exists, not that
+  anything was painted. It samples the canvas for the line's colour now.
+- "reachable" is not "legible": nearest-wins keeps the nub grabbable even when
+  it is jammed against the stop, so the stand-off needed its own check that the
+  drawn nub CLEARS the drawn stop on screen.
+
+Mutation-tested: putting either radius back in board units, removing the drawn
+nub, or collapsing the stand-off each fails a named check.
+
+### Found while looking, NOT fixed here
+
+Two more phone faults, measured and left alone because they are a different job:
+
+- **the pause, speed and sound buttons are entirely off-screen at 390px**
+  (they sit at 375-515px on a 390px viewport), so a phone cannot pause the game.
+  `body { overflow: hidden }` clips them, which is exactly why the gate's
+  "no horizontal overflow" check passed while three controls were unusable —
+  the same weak-check family again.
+- **the board uses 35.8% of a portrait phone screen**, 395px of letterbox,
+  because an 860x600 landscape board is fitted into a portrait viewport. Stops
+  render at 7px and waiting shapes at 2px, which is not legible.
+
 ## v3 — 2026-08-21
 
 **The sim stops owning its numbers.** Owner's direction (ROADMAP.md) makes this

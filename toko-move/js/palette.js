@@ -34,6 +34,27 @@ export const PAL = {
   lines: ['#2f7fbf', '#d8452f', '#3f9e5a', '#e0a52e', '#8a5bbf', '#b13b8a', '#1f9c92'],
 };
 
+// Hit targets, stated in SCREEN pixels and converted to board units at the
+// current scale — the opposite of everything above, and deliberately.
+//
+// A radius fixed in board units is a target that shrinks with the window: the
+// end-of-line nub measured 46px on a 1200px desktop and 17px on a 390px phone,
+// so on touch there was no way to shorten or delete a line at all. What has to
+// stay constant is the size under the finger, not the size on the board.
+export const TOUCH = {
+  nubGapPx: 21,       // from the stop's edge to the middle of its nub
+  nubHitPx: 46,       // grab diameter, comfortably over the 44px floor
+  stationHitPx: 50,
+  nubDrawPx: 7.5,     // drawn radius — visible on a phone, discreet on a desktop
+
+  // DRAWING floors, also in screen pixels. Below these the board stops being
+  // readable rather than merely small: on a portrait phone a stop drew at 7px
+  // across and a waiting shape at 2px, which is a diagram nobody can play.
+  minStationRPx: 11,
+  minSpecialRPx: 12.5,
+  minPipRPx: 3.4,
+};
+
 // Stroke weights, in board units. The line is thicker than the station outline
 // on purpose — the network is the subject and the stops are punctuation.
 export const INK = {
@@ -42,4 +63,15 @@ export const INK = {
   station: 3.6,
   stationR: 15.5,
   specialR: 18,
+  pipR: 4.4,        // a waiting passenger
 };
+
+// What the furniture is actually drawn at, for a given zoom: the declared
+// board-unit size, or the screen floor, whichever is bigger. It lives in one
+// place because the renderer draws these AND the nub has to stand off them —
+// two copies of this would drift and the nub would sit on the stop.
+export const sizeAt = scale => ({
+  stationR: Math.max(INK.stationR, TOUCH.minStationRPx / scale),
+  specialR: Math.max(INK.specialR, TOUCH.minSpecialRPx / scale),
+  pipR: Math.max(INK.pipR, TOUCH.minPipRPx / scale),
+});

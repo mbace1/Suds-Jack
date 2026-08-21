@@ -6,18 +6,27 @@
 // a festival, a ten-minute delivery contract and the endless city are the same
 // code reading different data.
 
-import { World } from './world.js?v=3';
-import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=3';
-import { byId, validate, GOALS } from './missions.js?v=3';
+import { World } from './world.js?v=5';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=5';
+import { byId, validate, GOALS } from './missions.js?v=5';
 
 export class Game {
-  constructor(seed = 1, missionId = 'endless') { this.reset(seed, missionId); }
+  constructor(seed = 1, missionId = 'endless', opts = {}) { this.reset(seed, missionId, opts); }
 
-  reset(seed = 1, missionId = 'endless') {
+  reset(seed = 1, missionId = 'endless', opts = {}) {
     const m = validate(byId(missionId));
     this.mission = m;
     this.seed = seed;
-    this.world = new World(seed, m);
+
+    // The mission states a rectangle; which way up it goes is the SCREEN's
+    // business. Letterboxing a landscape board into a portrait phone used 36%
+    // of the display and drew stops at 7px — the same board turned on its side
+    // uses about three quarters of it. Decided once, at the start of a run: a
+    // board that reshaped itself when the phone rotated would move every stop
+    // out from under the lines already drawn on them.
+    this.portrait = !!opts.portrait;
+    const board = this.portrait ? { ...m.board, w: m.board.h, h: m.board.w } : m.board;
+    this.world = new World(seed, { ...m, board });
     this.net = new Network(this.world, m.resources);
     this.score = 0;
     this.speed = 1;

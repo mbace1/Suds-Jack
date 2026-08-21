@@ -5,9 +5,9 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK } from './palette.js?v=3';
-import { BOARD } from './world.js?v=3';
-import { drawShape, tracePath } from './shapes.js?v=3';
+import { PAL, INK, sizeAt } from './palette.js?v=5';
+import { BOARD } from './world.js?v=5';
+import { drawShape, tracePath } from './shapes.js?v=5';
 
 export class Renderer {
   constructor(canvas) {
@@ -63,9 +63,11 @@ export class Renderer {
     this.grainWash(ctx);
 
     for (const line of game.net.lines) this.line(line);
+    if (view.nubs) this.nubs(view.nubs, view.nubR);
     if (view.drag) this.ghost(view.drag);
     for (const line of game.net.lines) for (const t of line.trains) this.train(t, line);
-    for (const st of game.world.stations) this.station(st, view);
+    const sizes = sizeAt(this.scale);
+    for (const st of game.world.stations) this.station(st, view, sizes);
 
     ctx.restore();
   }
@@ -129,6 +131,23 @@ export class Renderer {
     }
   }
 
+  // The grab handle at each terminus. It was an invisible hotspot until
+  // somebody asked how to delete a line — a gesture with nothing to aim at is a
+  // gesture nobody finds. Drawn on top of the track, with a paper gap so it
+  // reads as a separate thing to take hold of rather than a blob on the end.
+  nubs(list, r) {
+    const ctx = this.ctx;
+    for (const n of list) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = PAL.paper;
+      ctx.fill();
+      ctx.strokeStyle = PAL.lines[n.line.colour];
+      ctx.lineWidth = Math.max(2, r * 0.45);
+      ctx.stroke();
+    }
+  }
+
   ghost(drag) {
     const ctx = this.ctx;
     ctx.save();
@@ -181,9 +200,9 @@ export class Renderer {
     ctx.restore();
   }
 
-  station(st, view) {
+  station(st, view, sizes) {
     const ctx = this.ctx;
-    const r = st.special ? INK.specialR : INK.stationR;
+    const r = st.special ? sizes.specialR : sizes.stationR;
 
     // the crowding clock: a ring closing round the stop. It is drawn OUTSIDE
     // the shape so a full platform never obscures the shape you need to read.
@@ -214,16 +233,16 @@ export class Renderer {
     }
 
     drawShape(ctx, st.kind, st.x, st.y, r, PAL.station, PAL.ink, INK.station);
-    this.queue(st, r);
+    this.queue(st, r, sizes.pipR);
   }
 
   // The platform. Three to a row, growing away from the stop; past capacity it
   // simply keeps growing, which is the warning — a stop in trouble looks
   // physically bigger than its neighbours before the ring is anywhere near full.
-  queue(st, r) {
+  queue(st, r, pip) {
     const ctx = this.ctx;
     const n = Math.min(st.waiting.length, 15);
-    const cell = 12.5;
+    const cell = pip * 2.85;
     for (let i = 0; i < n; i++) {
       const col = i % 3, row = (i / 3) | 0;
       const x = st.x + r + 13 + col * cell;   // clear of the crowding ring
@@ -232,7 +251,7 @@ export class Renderer {
       // was tried and a solid star reads as a DIFFERENT destination from a
       // hollow one — the queue getting longer and the gauge closing already say
       // it, and neither of them lies about what somebody wants.
-      drawShape(ctx, st.waiting[i], x, y, 4.4, PAL.station, PAL.ink, 1.35);
+      drawShape(ctx, st.waiting[i], x, y, pip, PAL.station, PAL.ink, Math.max(1.1, pip * 0.3));
     }
   }
 }
