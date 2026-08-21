@@ -21,9 +21,9 @@
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, swingBall, hazard, startAt, exitAt, shot,
-  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, hoist,
+  girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, hoist,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=39';
+} from './parts.js?v=40';
 
 // THE TRAIL IS THE LEVEL TALKING, so it cannot be the same trail in six
 // levels. What was here was four quiet 25-bolt blocks — 100 exactly, laid at
@@ -151,6 +151,7 @@ export const WORLD34_ROOMS = [
       ledge(32, 38, 10),
       boltRun(12, 32, 38), boltRun(13, 36, 38),
       golden(13, [35]),
+      blueprint(12, 31),                  // world 3's, at the lip of the lift
 
       checkpoint(46),
       boltRun(5, 41, 47), boltRun(6, 41, 47),
@@ -330,6 +331,7 @@ export const WORLD34_ROOMS = [
       golden(13, [35]),
       ...scaffold(40, 44, 7),
       boltRun(8, 40, 44),
+      blueprint(13, 37),                  // world 4's, over the high work deck
 
       checkpoint(46),
       boltRun(5, 46, 48),

@@ -745,6 +745,48 @@ level, late, as a deliberate puzzle — never in a teaching level.
 8. Bolts `x/100`, golden bolts `3/3` hidden, blueprints one per world.
 9. Level-select menu; clock-out gate at the end of a world.
 
+### 8.4 The Flattener, and easy puzzles for the machines we have
+(owner, 2026-08-21)
+
+**World 1's second machine is the FLATTENER.** A road roller: it drives over a
+sheet of mangled aluminium lying in the road and leaves it flat. That is the
+whole verb — `flatten` — and it is the best-shaped machine job in the game so
+far for one reason: **it is done by DRIVING, not by holding a button at a
+target.** The excavator, the crane and the pump all ask you to park correctly
+and then hold; the roller asks you to go somewhere, which a six-year-old
+already knows how to do.
+
+Its contract, so it can be built without another design pass:
+
+* the obstacle is a `sheet(c0, c1)` — mangled aluminium, impassable on foot
+  because the edges are up (a step taller than a jump), flat and walkable once
+  rolled;
+* the roller clears it by **passing over it**, one width at a time, so a wide
+  sheet takes two or three passes and each one is visible: the buckled rows go
+  down under the drum;
+* no aiming, no hold — the verb is the drive, and the tell is the drum;
+* it wants its own model against the excavator's node contract (`house`,
+  `wheels`, `seat`, `step`, `beacon`, and `bucket` as the DRUM) and can ship on
+  a code placeholder the way the skidder and loader did.
+
+**Easy puzzles for the machines we already have.** All four use one verb and no
+new mechanic, and none of them is a fetch — the machine is on the route, facing
+the job:
+
+| machine | the puzzle | why it is easy |
+|---|---|---|
+| excavator (dig) | a bank with a **bolt trail going into it** — dig and the trail continues underground | the reward is visible before the work; you dig to follow bolts, not to obey a wall |
+| excavator (span) | a chasm with the girder stack **on the near side and in sight** | both halves are on screen at once: see the gap, see the beam, carry it over |
+| crane (smash) | a brick wall with a **hopper bouncing behind it** — you can hear it before you see it | the wall is a curtain rather than a lock, and something is happening on the other side |
+| pump (drain) | a flooded trench with the **checkpoint on its far lip** | the safe place is across the water: the reason to drain is somewhere to stand |
+| skidder (span) | a felled log across a cut, with the **bounce you already know** on the far side | world 3's verb answering world 3's floor |
+| loader (dig) | a spoil heap under a **lit window** — dig it down and the light reaches the road | the night world's own reward: what you clear, you light |
+
+The rule they share, and it is the one §8.0 asks for: **you can see the reason
+before you do the work.** A machine job where the payoff is off-screen is a
+chore; the same job with the payoff in frame is a puzzle a child solves without
+being told there was one.
+
 ### 8.3 The playability floor (measured 2026-08-20)
 
 Everything in §8.1 is about what the game HAS. This is about whether what it
