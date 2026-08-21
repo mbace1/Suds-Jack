@@ -1,5 +1,70 @@
 # EERI — versions
 
+## v15.34 — 2026-08-20 — half the levels were never proved, and it showed
+
+A pass aimed at the build being worth playing rather than at it having more in
+it, and it starts with a hole in the gates.
+
+**The room prover covered six of twelve levels and reported green.**
+`js/world34-register.js` pushes worlds 3 and 4 onto the roster at RUNTIME, and
+`test/rooms.mjs` imported the static list — so half the game had no reach
+budget check, no "is about ONE thing", no bolt or checkpoint rule and no pacing
+figure. The prover takes the same roster the game does now: **147 checks became
+245**, and the six new levels passed every existing rule.
+
+They passed while being **half as dense as the six that had been measured**:
+
+| | asks per 10 tiles | longest stretch asking nothing | enemies | hazards |
+|---|---|---|---|---|
+| worlds 1-2 | 1.0 - 1.9 | 10.5 - 14 tiles | 2 - 4 | 1 each |
+| worlds 3-4 | 0.7 - 0.9 | **18.5 - 21 tiles** | 1 | **0** |
+
+Every world-3/4 level had a twenty-tile hole in the same place — between its
+second beat and its checkpoint — and nothing in the suite objected. A gate that
+certifies WORKS cannot see DULL, which this repo has now recorded three times.
+
+**`deadAir()` is the rule that closes it.** It walks a level and finds the
+longest run of tiles between one thing that ASKS something of you and the next
+— a step, a gap, a small machine, a hazard, a gizmo, water, a ladder, a pipe
+mouth, the ride. **Bolts are not asks**: a trail is a breadcrumb collected by
+running, so a stretch with bolts and nothing else is still a stretch of holding
+right. The floor is **15 tiles**, taken from the levels that already play
+rather than invented — worlds 1-2 measure 12-14.
+
+Seven levels failed it. All twelve pass now, and worlds 3-4 read 12.5-14.5
+against the front half's 10.5-14.
+
+**Filling holes may not make the game harder.** Age six, generous: the beats
+added are things to play with before things that hurt — three tarp bounces, a
+belt that helps, a last pipe that carries you to the flag, one hopper between
+two pipes — and only then the enemies and the **two steam vents that give
+worlds 3 and 4 the first telegraphed hazards they have ever had**. Until now
+the back half of the game had no beat you wait for, only beats you run at.
+
+**Then the new rule found two defects in the levels that have shipped all
+along.** A skitter in Level 1 patrolled 74…80 and a roller in Level 3 patrolled
+70…76 — both squarely inside their machine's run from its park to the job it
+clears. A hit takes the RIDE, so both ended the ride on the way to the thing
+the ride exists for. Level 1's own source comment records moving the WRECKING
+BALL out of that exact corridor for that exact reason; a robot was left
+standing in it, because the prover asked about balls and vents there and never
+about small machines. It asks now, and both robots moved past the job.
+
+**And the rule itself was wrong first, in a way that produced the bug.** The
+first cut counted the stretch from a machine to its job as empty — sixteen
+tiles of nothing — so it demanded a beat there, and a beat there is exactly an
+enemy between a machine and its job. The playthrough caught what that did on
+Level 10 (the bot reached x=93 of 92 and never cleared). The drive is not dead
+air: you are riding through it, and that span counts as occupied.
+
+**Two more defects the prover caught mid-authoring**, both of which would otherwise
+have shipped: a tarp under a shelf that **bounces you into the ceiling**, and a
+step under a bolt trail that **buries the trail in the floor it raises**. Also
+found: one edit landed twice on Level 10 because its anchor text was not unique
+to it, putting a tarp inside a belt — the level's own report is what showed it.
+
+Recorded in DESIGN §8.3.
+
 ## v15.33 — 2026-08-20 — the golden bolts build the world's building
 
 DESIGN §4.3, which has been written down since 2026-08-14 and absent from the

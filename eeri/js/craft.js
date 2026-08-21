@@ -31,8 +31,8 @@
 // Adding a material is a manifest entry plus a name here. Nothing else.
 
 import * as THREE from 'three';
-import { getTexture } from './assets.js?v=38';
-import { PAL } from './palette.js?v=38';
+import { getTexture } from './assets.js?v=39';
+import { PAL } from './palette.js?v=39';
 
 // world units per texture repeat, per material — a felt nap is fine and a
 // card flute is coarse, so they do not share a scale

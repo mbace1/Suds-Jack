@@ -619,6 +619,76 @@ function surfaceBelow(g, c, cy) {
   return null;
 }
 
+// ---- DEAD AIR: the longest stretch that asks nothing ---------------------
+//
+// The suite proves a level is REACHABLE and PLAYABLE and had nothing to say
+// about whether it is worth playing. That gap is measurable, and this is the
+// measure: walk the level left to right and find the longest run of tiles
+// between one thing that ASKS something of you and the next.
+//
+// An ask is anything you have to do something about — a step, a gap, a small
+// machine, a hazard, a gizmo, water, a ladder, a pipe mouth, the ride. Bolts
+// are deliberately NOT asks. A bolt trail is a breadcrumb: it tells you where
+// to go and it is collected by running, so a stretch with bolts and nothing
+// else is still a stretch of holding right.
+//
+// THE FLOOR IS TAKEN FROM THE LEVELS THAT ALREADY PLAY, not invented: worlds
+// 1 and 2 measure 12 to 14 tiles, so 15 is "no worse than the front half".
+// Worlds 3 and 4 measured 18.5 to 21 — every one of them with a 20-tile hole
+// in the same place, the stretch between the second beat and the checkpoint.
+// They passed every other rule in this file while doing it, which is the
+// whole reason this rule exists: a gate that certifies WORKS cannot see DULL.
+export const DEAD_AIR = 15;
+
+export function deadAir(room) {
+  const r = compile(room);
+  const at = [];
+  for (const o of r.obstacles || []) at.push(o.at);
+  for (const q of r.robots || []) at.push((q.c0 + q.c1) / 2);
+  for (const h of r.hazards || []) at.push(h.x);
+  for (const b of r.belts || []) at.push((b.c0 + b.c1) / 2);
+  for (const t of r.tarps || []) at.push((t.c0 + t.c1) / 2);
+  for (const h of r.hoists || []) at.push(h.c0);
+  for (const q of r.pipes || []) at.push(q.a.c);
+  for (const l of r.ladders || []) at.push(l.c);
+  for (const w of r.water || []) at.push((w.c0 + w.c1) / 2);
+  for (const m of r.machines || []) at.push(m.x);
+  if (r.ball) at.push(r.ball.px);
+  at.sort((a, b) => a - b);
+
+  // THE DRIVE IS NOT DEAD AIR, and getting this wrong put an enemy somewhere
+  // the rules of this game forbid. The stretch from a machine's park to the
+  // job it clears looked like sixteen empty tiles to the first cut of this
+  // rule, so it asked for a beat there — and a beat there is a HOPPER
+  // STANDING BETWEEN A MACHINE AND ITS JOB, which takes the ride away on the
+  // way to the thing the ride exists for. The playthrough caught it on Level
+  // 10 (reached x=93 of 92 and never cleared); DESIGN has forbidden it since
+  // the wrecking ball did the same in Level 1.
+  //
+  // So that span counts as occupied: you are driving through it. Anything
+  // else quiet inside it is the ride's own beat, not an absence of one.
+  const busy = [];
+  for (const m of r.machines || []) {
+    const jobs = (r.obstacles || []).filter((o) => o.at > m.x).map((o) => o.at);
+    if (jobs.length) busy.push([m.x, Math.max(...jobs)]);
+  }
+  const clear = (a, b) => {           // the part of a…b nobody is driving
+    let n = b - a;
+    for (const [s0, s1] of busy) n -= Math.max(0, Math.min(b, s1) - Math.max(a, s0));
+    return Math.max(0, n);
+  };
+
+  let worst = 0, where = 0, prev = r.spawn.kid.x;
+  for (const x of at) {
+    const g = clear(prev, x);
+    if (g > worst) { worst = g; where = prev; }
+    prev = x;
+  }
+  const end = r.finish?.x ?? r.exit?.x ?? W;
+  if (clear(prev, end) > worst) { worst = clear(prev, end); where = prev; }
+  return { worst: +worst.toFixed(1), where: Math.round(where), asks: at.length };
+}
+
 // ---- how long a level takes to walk (DESIGN §4) -------------------------
 // "60–90 seconds first time through, ~40 once learned." That was a target
 // nothing measured, so a level could drift to twice its length and only a
@@ -823,6 +893,17 @@ export function check(room) {
     if (r.ball && r.ball.px > lo && r.ball.px < hi) inTheWay.push(`the swinging ball at x=${r.ball.px}`);
     for (const h of r.hazards) {
       if (h.x > lo && h.x < hi) inTheWay.push(`the ${h.type} vent at x=${h.x}`);
+    }
+    // …AND A SMALL MACHINE, which this rule did not ask about until one was
+    // placed there. A robot takes the ride the same way the ball does, so a
+    // hopper patrolling between a machine and its job ends the ride on the
+    // way to the thing the ride exists for — and the walk back is the whole
+    // fetch-quest shape §8.0 exists to keep out. The playthrough caught it on
+    // Level 10 before this rule did; a bot reaching x=93 of 92 and never
+    // clearing is what it looks like from outside.
+    for (const q of r.robots || []) {
+      const mid = (q.c0 + q.c1) / 2;
+      if (mid > lo && mid < hi) inTheWay.push(`the ${q.kind || 'skitter'} patrolling ${q.c0}…${q.c1}`);
     }
     for (const what of inTheWay) {
       note(`${r.name}: ${what} stands in the ${m.type}'s only run from x=${m.x} to the `
