@@ -6,9 +6,10 @@
 // a festival, a ten-minute delivery contract and the endless city are the same
 // code reading different data.
 
-import { World } from './world.js?v=6';
-import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=6';
-import { byId, validate, GOALS } from './missions.js?v=6';
+import { World } from './world.js?v=7';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=7';
+import { RoadNet } from './roads.js?v=7';
+import { byId, validate, GOALS } from './missions.js?v=7';
 
 export class Game {
   constructor(seed = 1, missionId = 'endless', opts = {}) { this.reset(seed, missionId, opts); }
@@ -27,7 +28,14 @@ export class Game {
     this.portrait = !!opts.portrait;
     const board = this.portrait ? { ...m.board, w: m.board.h, h: m.board.w } : m.board;
     this.world = new World(seed, { ...m, board });
+
+    // Which transport this mission runs on. The people are the same either way
+    // — a building is a Station, a trip is a Passenger with a destination shape
+    // — and only the thing that moves them differs. That is what "layers are
+    // near-clones differing by variables" has to mean if it is to be true.
+    this.layer = m.layer ?? 'metro';
     this.net = new Network(this.world, m.resources);
+    this.roads = this.layer === 'roads' ? new RoadNet(this.world, m.resources) : null;
     this.score = 0;
     this.speed = 1;
     this.paused = true;
@@ -45,6 +53,9 @@ export class Game {
   }
 
   // ── the clock, as the mission states it ───────────────────────────────
+  // whichever network this mission is played on
+  get transport() { return this.roads || this.net; }
+
   get time() { return this.world.time; }
   get clock() { return this.mission.clock; }
   get unitLabel() {
@@ -67,10 +78,14 @@ export class Game {
       this.world.events.length = 0;
     }
 
-    for (const line of this.net.lines) {
-      for (const train of line.trains) {
-        const arrived = train.move(dt, TRAIN_SPEED);
-        if (arrived >= 0) this.service(train, arrived);
+    if (this.roads) {
+      this.roads.step(dt, () => { this.score++; this.events.push('drop'); });
+    } else {
+      for (const line of this.net.lines) {
+        for (const train of line.trains) {
+          const arrived = train.move(dt, TRAIN_SPEED);
+          if (arrived >= 0) this.service(train, arrived);
+        }
       }
     }
 
@@ -125,7 +140,7 @@ export class Game {
     for (const st of this.world.stations) {
       for (let i = st.waiting.length - 1; i >= 0; i--) {
         const p = st.waiting[i];
-        p.stranded = this.net.hopsFrom(st.id, p.goal) === Infinity;
+        p.stranded = this.transport.hopsFrom(st.id, p.goal) === Infinity;
         if (!p.stranded) continue;
         if (fuse != null && p.waited(this.world.time) > fuse) {
           st.waiting.splice(i, 1);
@@ -196,6 +211,25 @@ export class Game {
   }
 
   makeOffer() {
+    // the car layer buys ROOM and cars; there are no lines to add and no
+    // carriages to hang on anything
+    if (this.roads) {
+      // Bridges belong in here and their absence was a mission you could not
+      // finish: the sweep found a board whose river wanted a fourth crossing,
+      // and with three granted at the start and no way to earn a fourth, the
+      // far half of the town was unservable for the whole seven hours. The
+      // metro layer has bought tunnels by the week since v2; this is the same
+      // rule said in the local dialect.
+      const pool = ['road', 'road', 'cars'];
+      // …and only when it is worth anything. Offering a bridge to a town with a
+      // dry board, or to one still holding two, is a dead card in a hand of
+      // two — measured as three fewer wins in sixteen, because the other card
+      // was then the only card.
+      if (this.roads.bridgesLeft() <= 0 && this.world.rings.length) pool.push('bridge');
+      const a = this.world.rng.pick(pool);
+      const b = this.world.rng.pick(pool.filter(k => k !== a));
+      return [a, b];
+    }
     const pool = [];
     if (this.net.maxLines < MAX_LINES) pool.push('line');
     pool.push('tunnel');
@@ -214,6 +248,9 @@ export class Game {
       case 'tunnel': this.net.ownedTunnels++; break;
       case 'train': if (line) { this.net.spareTrains++; this.net.addTrain(line); } break;
       case 'carriage': if (line) this.net.addCarriage(line); break;
+      case 'road': if (this.roads) this.roads.budget += 12; break;
+      case 'cars': if (this.roads) this.roads.spareCars += 2; break;
+      case 'bridge': if (this.roads) this.roads.bridges++; break;
       default: return false;
     }
     this.offer = null;
@@ -240,6 +277,9 @@ export class Game {
       lines: this.net.lines.length,
       gaveUp: this.gaveUp,
       stranded: this.stranded,
+      layer: this.layer,
+      roadUsed: this.roads ? this.roads.used() : null,
+      jammed: this.roads ? this.roads.jammed : null,
       goals: this.goalReadout(),
       seed: this.seed,
     };

@@ -5,9 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=6';
-import { BOARD } from './world.js?v=6';
-import { drawShape, tracePath } from './shapes.js?v=6';
+import { PAL, INK, sizeAt } from './palette.js?v=7';
+import { BOARD } from './world.js?v=7';
+import { CELL } from './roads.js?v=7';
+import { drawShape, tracePath } from './shapes.js?v=7';
 
 export class Renderer {
   constructor(canvas) {
@@ -62,10 +63,12 @@ export class Renderer {
     this.water(game.world);
     this.grainWash(ctx);
 
+    if (game.roads) this.roads(game.roads, view);
     for (const line of game.net.lines) this.line(line);
     if (view.nubs) this.nubs(view.nubs, view.nubR);
     if (view.drag) this.ghost(view.drag);
-    for (const line of game.net.lines) for (const t of line.trains) this.train(t, line);
+    if (game.roads) this.cars(game.roads);
+    else for (const line of game.net.lines) for (const t of line.trains) this.train(t, line);
     const sizes = sizeAt(this.scale);
     for (const st of game.world.stations) this.station(st, view, sizes);
 
@@ -102,6 +105,91 @@ export class Renderer {
     }
     ctx.fillStyle = this.grain;
     ctx.fillRect(0, 0, this.bw, this.bh);
+  }
+
+  // ── the car layer ─────────────────────────────────────────────────────
+  // Road is drawn as GROUND, not as a line: a flat slab a square at a time,
+  // with the seams left in. It has to read as something you laid rather than
+  // something you routed, because that is the difference between this layer
+  // and the one above it.
+  roads(net, view) {
+    const ctx = this.ctx;
+    ctx.fillStyle = PAL.road;
+    for (const k of net.cells) {
+      const [cx, cy] = k.split(',').map(Number);
+      ctx.fillRect(cx * CELL, cy * CELL, CELL, CELL);
+    }
+    // a bridge is drawn with its own edges, because a square of road out over
+    // the water is the expensive one and should look like it
+    ctx.strokeStyle = PAL.ink;
+    ctx.lineWidth = 2;
+    for (const k of net.spanned) {
+      const [cx, cy] = k.split(',').map(Number);
+      ctx.beginPath();
+      ctx.moveTo(cx * CELL, cy * CELL); ctx.lineTo(cx * CELL + CELL, cy * CELL);
+      ctx.moveTo(cx * CELL, cy * CELL + CELL); ctx.lineTo(cx * CELL + CELL, cy * CELL + CELL);
+      ctx.stroke();
+    }
+    // the seam between squares, so a wide road reads as several and not as a slab
+    ctx.strokeStyle = PAL.roadSeam;
+    ctx.lineWidth = 1;
+    for (const k of net.cells) {
+      const [cx, cy] = k.split(',').map(Number);
+      ctx.strokeRect(cx * CELL + 0.5, cy * CELL + 0.5, CELL - 1, CELL - 1);
+    }
+
+    // …and the centre stripe, drawn along every join between two squares. This
+    // is the whole difference between a laid slab and a STREET: the slab said
+    // "some ground is grey", the stripe says "traffic goes this way", and it
+    // costs one dashed line per neighbour rather than a second geometry.
+    ctx.save();
+    ctx.strokeStyle = PAL.roadLine;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 7]);
+    ctx.lineCap = 'butt';
+    ctx.beginPath();
+    for (const k of net.cells) {
+      const [cx, cy] = k.split(',').map(Number);
+      const mx = cx * CELL + CELL / 2, my = cy * CELL + CELL / 2;
+      // only forward, so a join is not stroked twice
+      for (const [dx, dy] of [[1, 0], [0, 1]]) {
+        if (!net.cells.has(`${cx + dx},${cy + dy}`)) continue;
+        ctx.moveTo(mx, my);
+        ctx.lineTo(mx + dx * CELL, my + dy * CELL);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+    // where the finger is about to put one
+    if (view.paint) {
+      ctx.fillStyle = view.paint.erase ? PAL.warn : PAL.road;
+      ctx.globalAlpha = 0.45;
+      for (const k of view.paint.cells) {
+        const [cx, cy] = k.split(',').map(Number);
+        ctx.fillRect(cx * CELL, cy * CELL, CELL, CELL);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  cars(net) {
+    const ctx = this.ctx;
+    const w = Math.max(7, 9 / this.scale), l = Math.max(10, 13 / this.scale);
+    for (const car of net.cars) {
+      const p = net.posOf(car);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.ang);
+      roundRect(ctx, -l / 2, -w / 2, l, w, Math.min(3, w / 3));
+      ctx.fillStyle = PAL.paper;
+      ctx.fill();
+      ctx.strokeStyle = PAL.ink;
+      ctx.lineWidth = Math.max(1.2, 1.6 / this.scale);
+      ctx.stroke();
+      ctx.restore();
+      // what it is carrying, so a car is not an anonymous dot
+      drawShape(ctx, car.p.goal, p.x, p.y, Math.max(2.6, 3.4 / this.scale), PAL.ink, null, 0);
+    }
   }
 
   line(line) {

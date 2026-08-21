@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=6';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=6';
-import { Renderer } from './render.js?v=6';
-import { LineDrawer } from './input.js?v=6';
-import { Kit } from './audio.js?v=6';
-import { PAL, sizeAt } from './palette.js?v=6';
+import { Game } from './sim.js?v=7';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=7';
+import { Renderer } from './render.js?v=7';
+import { LineDrawer, RoadDrawer } from './input.js?v=7';
+import { Kit } from './audio.js?v=7';
+import { PAL, sizeAt } from './palette.js?v=7';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -19,6 +19,9 @@ const CARD = {
   tunnel: ['TUNNEL', 'one more crossing under the water'],
   train: ['TRAIN', 'another train, on a line you pick'],
   carriage: ['CARRIAGE', 'six more seats, on a line you pick'],
+  road: ['MORE ROAD', 'twelve more squares to lay'],
+  cars: ['MORE CARS', 'two more on the road at once'],
+  bridge: ['BRIDGE', 'one more crossing over the water'],
 };
 
 let game, renderer, drawer, kit, drops = 0, feedTimer = 0, keyNav = false;
@@ -99,7 +102,9 @@ function boot(seed, missionId) {
   drawer?.destroy();
   renderer = renderer || new Renderer($('board'));
   renderer.resize();
-  drawer = new LineDrawer($('board'), renderer, game, {
+  // the layer decides which gesture the board answers to
+  const Drawer = game.layer === 'roads' ? RoadDrawer : LineDrawer;
+  drawer = new Drawer($('board'), renderer, game, {
     onMessage: say,
     onChange: () => { paintHud(); kit.line(); },
   });
@@ -122,9 +127,15 @@ function paintHud() {
   g.textContent = goals.map(x => x.text).join(' · ');
   g.classList.toggle('close', left != null && left < 60);
 
-  stock('stkLines', `${game.net.lines.length}/${game.net.maxLines}`, game.net.lines.length >= game.net.maxLines);
-  stock('stkTrains', game.net.spareTrains, game.net.spareTrains === 0);
-  stock('stkTunnels', game.net.tunnelsLeft(), game.net.tunnelsLeft() === 0);
+  if (game.roads) {
+    stock('stkLines', `${game.roads.used()}/${game.roads.budget}`, game.roads.left() <= 0, 'road');
+    stock('stkTrains', game.roads.spareCars, game.roads.spareCars === 0, 'cars idle');
+    stock('stkTunnels', game.roads.bridgesLeft(), game.roads.bridgesLeft() === 0, 'bridges');
+  } else {
+    stock('stkLines', `${game.net.lines.length}/${game.net.maxLines}`, game.net.lines.length >= game.net.maxLines, 'lines');
+    stock('stkTrains', game.net.spareTrains, game.net.spareTrains === 0, 'trains');
+    stock('stkTunnels', game.net.tunnelsLeft(), game.net.tunnelsLeft() === 0, 'tunnels');
+  }
 
   // The count only exists when there is something to count. A permanent "0
   // stranded" is furniture; a number that appears is a thing that happened.
@@ -135,9 +146,10 @@ function paintHud() {
   teach();
 }
 
-function stock(id, value, spent) {
+function stock(id, value, spent, label) {
   const el = $(id);
   el.querySelector('b').textContent = value;
+  if (label) el.querySelector('i').textContent = label;
   el.classList.toggle('none', !!spent);
 }
 
@@ -147,12 +159,19 @@ function stock(id, value, spent) {
 // nothing to see: a shape nobody can reach, a ring whose meaning you learn by
 // dying, and water that refuses you after the fact.
 const TIPS = [
-  ['stranded', g => g.stranded > 0,
-    'Somebody is waiting for a shape no line reaches. They will give up and go.'],
+  ['stranded', g => g.stranded > 0, g => g.roads
+    ? 'Somebody is waiting for a shape no road reaches. They will give up and go.'
+    : 'Somebody is waiting for a shape no line reaches. They will give up and go.'],
   ['crowding', g => g.world.stations.some(s => s.over > 0.25),
     'That stop is over capacity. The ring closing around it is the day running out.'],
-  ['tunnel', g => g.net.tunnelsLeft() < g.net.ownedTunnels,
+  ['tunnel', g => !g.roads && g.net.tunnelsLeft() < g.net.ownedTunnels,
     'Crossing water spends a tunnel. You only get more at the end of a week.'],
+  ['bridge', g => !!g.roads && g.roads.spanned.size > 0,
+    'That is a bridge. One buys the whole crossing, however wide the water — but only one crossing.'],
+  ['road', g => !!g.roads && g.roads.left() <= 0,
+    'That is all the road you have. Lift some from where it is idle, or wait for more.'],
+  ['jam', g => !!g.roads && g.roads.jammed > 2,
+    'Traffic is backing up. Cars pick their own way — you can only give them more room.'],
 ];
 
 function teach() {
@@ -161,7 +180,7 @@ function teach() {
     if (game.taught.has(key)) continue;
     if (!when(game)) continue;
     game.taught.add(key);
-    say(line);
+    say(typeof line === 'function' ? line(game) : line);
     return;                 // one lesson at a time
   }
 }

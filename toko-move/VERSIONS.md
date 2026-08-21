@@ -1,5 +1,84 @@
 # Toko Move — versions
 
+## v7 — 2026-08-21
+
+**The Rush** — the second local layer, and the first mission not played on
+trains. You lay road and nothing else; every driver picks their own way and will
+not be told otherwise.
+
+This is the owner's "Mini Motorways will be a local car layer" taken as a
+constraint rather than a skin. Mini Metro's dial is **frequency** — stretch a
+line and it calls less often anywhere on it — and you own the vehicles. Mini
+Motorways' dial is **capacity**: nobody waits for a departure, cars take up
+room, and room runs out. So the verb here is *provide room*, not *route people*,
+and there is deliberately nothing on the page that assigns a car to anybody. Two
+local layers that played the same would be worse than one.
+
+Everything about the PEOPLE is shared code: a building is a `Station`, a trip is
+a `Passenger` with a destination shape, the unreachable mark and the give-up
+fuse read `hopsFrom` on whichever transport the mission runs on. That is the
+owner's "layers are near-clones differing by variables" made true rather than
+asserted — `layer: 'roads'` in the mission is the whole switch.
+
+### Three things it shipped wrong, all found by measuring rather than by reading
+
+- **A deadlock wearing a comment.** `CELL_CARS = 2` was written as "one each
+  way, so nobody deadlocks head-on" and then counted both, so a one-square
+  street with two cars pointing east and two pointing west locked solid for
+  ever. The balance sweep came back with two boards in eight at 93% and 100% of
+  every car stopped. Halving the odds of a deadlock is not preventing one: the
+  lane is real now, and traffic coming the other way does not block you.
+- **A queue that advanced one car a tick.** Cars were driven in array order, so
+  the back of a jam moved before the front. Nearest-its-destination first, and
+  a full street flushes together.
+- **A bridge that charged by the square.** That makes the price of a river its
+  WIDTH: a three-cell channel ate the whole allowance in one span, every L laid
+  after it broke silently mid-water, and the board came apart into islands
+  nothing could route between — one seed finished with six buildings, three
+  deliveries and not a single car on the road. A bridge is a **crossing** now,
+  one charge per connected run of water, which is the rule the metro layer has
+  always played by: a tunnel is a crossing, however wide the river under it.
+  Wins went 9/16 → 12/16 and people walking away halved.
+- And bridges are **buyable** at the end of a morning, but only offered once you
+  have spent them all on a board that has water. A card that can do nothing is
+  worse than no card when you are only dealt two.
+
+### The target is measured, and the first guess was wrong by half
+
+A deterministic player joining each new building to the nearest road it already
+owns wins 12 boards in 16 at **190** and gets there at 4:56 of the 7:00. The
+shipped guess of 85 was reached at 2:41 — two thirds of the morning with
+nothing left to play for. Past 210 the wins fall away for the wrong reason: the
+clock, rather than the town outgrowing its roads.
+
+### A road you cannot see is not a quiet road
+
+The first cut took "a shade off the paper" literally and drew the road at
+`#ddd6c6` — **1.19:1** against the ground. Every state assertion about it
+passed; it simply did not appear in a screenshot. That is the failure this repo
+keeps meeting: a gate that certifies *works* cannot see *looks*. So the road is
+warm tarmac now, clear of the ground and still light enough that a paper-filled
+car and an ink-outlined building read on top of it — and a **dashed centre
+stripe** runs along every join, which is the whole difference between a slab of
+grey ground and a street. The contrast ratios are in the gate, because that
+much of *looks* a number can hold.
+
+### Gates
+
+`node toko-move/test/core.mjs` — 271 checks (was 201): the grid, the road
+budget, the crossing rule and its order-independence, reach and the downhill
+route, the lane rule, the flush order, dispatch and delivery, what lifting the
+road out from under a car does, the Rush's wiring and upgrades, and that the
+mission can actually be finished. `NODE_PATH=$(npm root -g) node
+toko-move/test/smoke.cjs` — 87 (was 77): the drag that lays road, the drag that
+lifts it, and the drag off the end that carries it on — that last one shipped
+broken, because "started on road" decided the verb and every attempt to extend
+a street simply erased it.
+
+One flake fixed while here: the cut-a-line-under-a-moving-train setup dragged
+across a live board, so a stop spawning mid-drag failed the gate about one run
+in ten for a reason that was not the bug. The board is held still now.
+
 ## v6 — 2026-08-21
 
 **The people nobody can reach are visible now**, and the look moves off its

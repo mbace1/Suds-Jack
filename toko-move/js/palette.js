@@ -27,6 +27,16 @@ export const PAL = {
   // reads as a different destination — which is why filling over-capacity
   // passengers solid was tried and thrown away.
   stranded: '#9ba09f',
+  // the car layer's ground. It is something you LAID, so it is a slab rather
+  // than a stroke — but the first cut took "a shade off the paper" literally at
+  // #ddd6c6, which is 1.19:1 against the ground and simply did not appear in a
+  // screenshot. A road you cannot see is not a quiet road, it is no road. So:
+  // warm tarmac, clear of the paper, and still light enough that a paper-filled
+  // car and an ink-outlined building read on top of it.
+  road: '#a29883',
+  roadSeam: '#8b8271',
+  roadLine: '#efe9da',     // the dashed centre stripe — what says "street" rather than "tile"
+
 
   // Handed out in this order, and a colour returns to the pile when its line
   // is torn up. Seven is deliberate: it is more lines than the board can
