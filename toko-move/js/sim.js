@@ -1,49 +1,58 @@
-// The run: a clock, trains servicing stops, and one way to lose.
+// The run: a clock the mission sets, trains servicing stops, and whatever the
+// mission decided winning and losing mean.
 //
-// Everything here is deliberately dumb. The interesting behaviour — where the
-// crowds build, which line saves the board — is not written down anywhere; it
-// falls out of a spawn rate that climbs and a network that only the player
-// changes. That is the whole genre and it only works if the sim resists having
-// rules added to it.
+// This file used to hold the tuning. It now holds none: every number arrives
+// from missions.js. That is the whole point of the refactor — a second layer,
+// a festival, a ten-minute delivery contract and the endless city are the same
+// code reading different data.
 
-import { World } from './world.js?v=2';
-import { Network, TRAIN_SPEED } from './lines.js?v=2';
-
-export const DAY = 8;                 // seconds of real time
-export const WEEK = DAY * 7;
-export const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const MAX_LINES = 7;
+import { World } from './world.js?v=3';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=3';
+import { byId, validate, GOALS } from './missions.js?v=3';
 
 export class Game {
-  constructor(seed = 1) { this.reset(seed); }
+  constructor(seed = 1, missionId = 'endless') { this.reset(seed, missionId); }
 
-  reset(seed = 1) {
+  reset(seed = 1, missionId = 'endless') {
+    const m = validate(byId(missionId));
+    this.mission = m;
     this.seed = seed;
-    this.world = new World(seed);
-    this.net = new Network(this.world);
+    this.world = new World(seed, m);
+    this.net = new Network(this.world, m.resources);
     this.score = 0;
-    this.week = 0;
     this.speed = 1;
     this.paused = true;
-    this.state = 'title';            // title | play | upgrade | over
+    this.state = 'title';          // title | play | upgrade | won | over
     this.offer = null;
-    this.events = [];                // things worth a sound or a line of feed
+    this.events = [];
+    this.holdBroken = false;
+    this.endReason = null;
+    this.nextUpgradeAt = m.clock.upgradeEvery;
     this.net.rebuild();
   }
 
+  // ── the clock, as the mission states it ───────────────────────────────
   get time() { return this.world.time; }
-  get day() { return Math.floor(this.time / DAY) % 7; }
-  get weekNo() { return Math.floor(this.time / WEEK) + 1; }
+  get clock() { return this.mission.clock; }
+  get unitLabel() {
+    const u = this.clock.units;
+    return u?.length ? u[Math.floor(this.time / this.clock.unit) % u.length] : '';
+  }
+  get cycleNo() { return Math.floor(this.time / (this.clock.unit * this.clock.cycle)) + 1; }
+  get remaining() { return this.mission.length == null ? null : Math.max(0, this.mission.length - this.time); }
+  get endless() { return this.mission.length == null && !this.mission.goals.length; }
 
   start() { this.state = 'play'; this.paused = false; }
 
   step(dtReal) {
     if (this.state !== 'play' || this.paused) return;
-    // a long frame is clamped rather than integrated — a backgrounded tab must
-    // not return and teleport every train through three stops at once
     const dt = Math.min(0.1, dtReal) * this.speed;
 
     this.world.step(dt);
+    if (this.world.events.length) {
+      for (const e of this.world.events) this.events.push(e.kind === 'burst' ? { say: e.text } : e);
+      this.world.events.length = 0;
+    }
 
     for (const line of this.net.lines) {
       for (const train of line.trains) {
@@ -52,23 +61,49 @@ export class Game {
       }
     }
 
-    const wk = Math.floor(this.time / WEEK);
-    if (wk > this.week) {
-      this.week = wk;
+    this.watchHold();
+
+    if (this.mission.clock.upgradeEvery != null && this.time >= this.nextUpgradeAt) {
+      this.nextUpgradeAt += this.mission.clock.upgradeEvery;
       this.offer = this.makeOffer();
       if (this.offer) { this.state = 'upgrade'; this.paused = true; this.events.push('week'); }
     }
 
-    if (this.world.doomed()) {
-      this.state = 'over';
-      this.paused = true;
-      this.events.push('over');
+    // Losing is the mission's rule. `overcrowd: null` means a stop can sit
+    // jammed all night and it costs you the people, not the run.
+    if (this.mission.fail?.overcrowd != null && this.world.doomed()) return this.finish('overcrowd');
+
+    if (this.goalsMet()) return this.finish('won');
+    if (this.remaining === 0) return this.finish(this.goalsMet() ? 'won' : 'timeup');
+  }
+
+  // Once crossed, a held line stays crossed — otherwise "hold the line" would
+  // only mean "be tidy at the final whistle", which is a much easier game.
+  watchHold() {
+    if (this.holdBroken) return;
+    for (const goal of this.mission.goals) {
+      if (goal.type !== 'hold') continue;
+      const limit = goal.limit ?? 1;
+      if (this.world.stations.some(s => s.over >= limit)) this.holdBroken = true;
     }
   }
 
-  // Everyone who should get off, then everyone who should get on. The order
-  // matters: a seat freed by someone reaching their shape has to be available
-  // to the person standing on the platform in the same stop.
+  goalsMet() {
+    const gs = this.mission.goals;
+    return gs.length > 0 && gs.every(goal => GOALS[goal.type].done(this, goal));
+  }
+
+  goalReadout() {
+    return this.mission.goals.map(goal => ({ goal, ...GOALS[goal.type].read(this, goal) }));
+  }
+
+  finish(reason) {
+    this.endReason = reason;
+    this.state = reason === 'won' ? 'won' : 'over';
+    this.paused = true;
+    this.events.push(reason === 'won' ? 'won' : 'over');
+  }
+
   service(train, stationIndex) {
     const line = train.line;
     const stId = line.stations[stationIndex];
@@ -89,7 +124,6 @@ export class Game {
         this.events.push('drop');
         continue;
       }
-      // staying on has to make progress, or this is the transfer
       if (!(onward(goal) < closer(stId, goal))) {
         train.load.splice(i, 1);
         st.waiting.push(goal);
@@ -109,9 +143,6 @@ export class Game {
     train.hold(exchanged);
   }
 
-  // ── the weekly beat ───────────────────────────────────────────────────
-  // Two cards, never more. A choice between four things is a menu; a choice
-  // between two is a decision you remember making.
   makeOffer() {
     const pool = [];
     if (this.net.maxLines < MAX_LINES) pool.push('line');
@@ -124,7 +155,6 @@ export class Game {
     return [a, b];
   }
 
-  // `lineId` is only read by the rewards that land on a particular line.
   applyUpgrade(kind, lineId = null) {
     const line = lineId == null ? null : this.net.lineAt(lineId);
     switch (kind) {
@@ -143,12 +173,20 @@ export class Game {
   needsLine(kind) { return kind === 'train' || kind === 'carriage'; }
 
   report() {
+    const unit = this.clock.unit * this.clock.cycle;
     return {
+      mission: this.mission.id,
+      title: this.mission.title,
+      won: this.state === 'won',
+      reason: this.endReason,
       score: this.score,
-      weeks: Math.floor(this.time / WEEK),
-      days: Math.floor(this.time / DAY),
+      cycles: Math.floor(this.time / unit),
+      units: Math.floor(this.time / this.clock.unit),
+      cycleWord: this.clock.cycleWord,
+      time: this.time,
       stations: this.world.stations.length,
       lines: this.net.lines.length,
+      goals: this.goalReadout(),
       seed: this.seed,
     };
   }

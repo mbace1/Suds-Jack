@@ -10,8 +10,8 @@
 // the next stop is closer to their shape than this one, and gets off when it
 // is not. Riding past your transfer is impossible by construction.
 
-import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=2';
-import { PAL, INK } from './palette.js?v=2';
+import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=3';
+import { PAL, INK } from './palette.js?v=3';
 
 export const TRAIN_SPEED = 108;      // board units per second
 export const CAR_CAPACITY = 6;
@@ -133,13 +133,17 @@ export class Line {
   tunnels() { return this.segs.reduce((n, s) => n + s.cross, 0); }
 }
 
+// Seven, because that is how many line colours the palette can keep apart.
+// A cap that is not tied to the thing that actually limits it drifts.
+export const MAX_LINES = PAL.lines.length;
+
 export class Network {
-  constructor(world) {
+  constructor(world, resources = {}) {
     this.world = world;
     this.lines = [];
-    this.maxLines = 3;
-    this.spareTrains = 3;
-    this.ownedTunnels = 2;
+    this.maxLines = resources.lines ?? 3;
+    this.spareTrains = resources.trains ?? 3;
+    this.ownedTunnels = resources.tunnels ?? 2;
     this.hops = new Map();     // shape → Map(stationId → hop count)
     this.seq = 0;
   }

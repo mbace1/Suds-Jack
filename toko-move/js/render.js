@@ -5,9 +5,9 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK } from './palette.js?v=2';
-import { BOARD } from './world.js?v=2';
-import { drawShape, tracePath } from './shapes.js?v=2';
+import { PAL, INK } from './palette.js?v=3';
+import { BOARD } from './world.js?v=3';
+import { drawShape, tracePath } from './shapes.js?v=3';
 
 export class Renderer {
   constructor(canvas) {
@@ -15,6 +15,9 @@ export class Renderer {
     this.ctx = canvas.getContext('2d');
     this.scale = 1; this.ox = 0; this.oy = 0;
     this.grain = null;
+    // the board size is the MISSION's now, not a constant — a later layer at a
+    // different scale wants a different rectangle
+    this.bw = BOARD.w; this.bh = BOARD.h;
     this.resize();
   }
 
@@ -26,9 +29,9 @@ export class Renderer {
     this.canvas.height = Math.round(h * dpr);
     this.dpr = dpr;
     // letterbox: the board keeps its proportions whatever shape the window is
-    this.scale = Math.min(w / BOARD.w, h / BOARD.h);
-    this.ox = (w - BOARD.w * this.scale) / 2;
-    this.oy = (h - BOARD.h * this.scale) / 2;
+    this.scale = Math.min(w / this.bw, h / this.bh);
+    this.ox = (w - this.bw * this.scale) / 2;
+    this.oy = (h - this.bh * this.scale) / 2;
   }
 
   // Screen → board. Every hit test in the game goes through this, so a wrong
@@ -42,6 +45,11 @@ export class Renderer {
   }
 
   draw(game, view = {}) {
+    if (game.world.w !== this.bw || game.world.h !== this.bh) {
+      this.bw = game.world.w; this.bh = game.world.h;
+      this.grain = null;
+      this.resize();
+    }
     const ctx = this.ctx;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.fillStyle = PAL.paper;
@@ -91,7 +99,7 @@ export class Renderer {
       this.grain = ctx.createPattern(c, 'repeat');
     }
     ctx.fillStyle = this.grain;
-    ctx.fillRect(0, 0, BOARD.w, BOARD.h);
+    ctx.fillRect(0, 0, this.bw, this.bh);
   }
 
   line(line) {
@@ -184,14 +192,14 @@ export class Renderer {
       // stray mark growing out of the stop rather than as something filling up
       ctx.lineCap = 'butt';
       ctx.beginPath();
-      ctx.arc(st.x, st.y, r + 8, 0, Math.PI * 2);
+      ctx.arc(st.x, st.y, r + 7, 0, Math.PI * 2);
       ctx.strokeStyle = PAL.rule;
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 4;
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(st.x, st.y, r + 8, -Math.PI / 2, -Math.PI / 2 + st.over * Math.PI * 2);
+      ctx.arc(st.x, st.y, r + 7, -Math.PI / 2, -Math.PI / 2 + st.over * Math.PI * 2);
       ctx.strokeStyle = PAL.ink;
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 4;
       ctx.stroke();
     }
 

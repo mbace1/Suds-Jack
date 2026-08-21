@@ -62,8 +62,21 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
     .every(d => d === 'none'));
   ok(veilTrap, 'closed cards are display:none, not an invisible sheet over the board');
 
-  await page.click('#play');
-  eq(await page.evaluate(() => window.__tm.game.state), 'play', 'START starts the run');
+  // the title card IS the mission board now
+  const board = await page.evaluate(() => ({
+    campaign: [...document.querySelectorAll('#campaignList button')].map(b => b.querySelector('b')?.textContent),
+    free: [...document.querySelectorAll('#freeList button')].map(b => b.querySelector('b')?.textContent),
+    locked: [...document.querySelectorAll('#campaignList button')].filter(b => b.disabled).length,
+  }));
+  ok(board.campaign.length >= 1, `the mission board lists the campaign (${board.campaign.join(', ')})`);
+  ok(board.free.includes('The City'), 'and free play keeps the endless city');
+  eq(board.locked, 0, 'the first mission is not locked behind anything');
+
+  await page.evaluate(() => [...document.querySelectorAll('#freeList button')]
+    .find(b => /The City/.test(b.textContent)).click());
+  eq(await page.evaluate(() => window.__tm.game.state), 'play', 'choosing a mission starts it');
+  eq(await page.evaluate(() => window.__tm.game.mission.id), 'endless', 'and starts the one you chose');
+  ok(await page.evaluate(() => document.getElementById('title').hidden), 'and puts the board away');
 
   // ── the gesture ───────────────────────────────────────────────────────
   const at = i => page.evaluate(k => {
@@ -152,7 +165,7 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   ok(cr(hex(inks.dim), bgHex) >= 4.5, 'the small caps clear AA against the paper');
 
   // ── the weekly card ───────────────────────────────────────────────────
-  await page.evaluate(() => { window.__tm.game.week = 0; window.__tm.game.world.time = 60; });
+  await page.evaluate(() => { window.__tm.game.nextUpgradeAt = 0.001; });
   await page.waitForTimeout(300);
   eq(await page.evaluate(() => window.__tm.game.state), 'upgrade', 'crossing a week stops for the choice');
   ok(await page.evaluate(() => window.__tm.game.paused), 'and pauses while it is open');
@@ -178,8 +191,42 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   ok(await page.evaluate(() => !document.getElementById('end').hidden), 'and the end card comes up');
   ok(await page.evaluate(() => /\d/.test(document.getElementById('endStats').textContent)), 'with the numbers on it');
   await page.click('#again');
-  eq(await page.evaluate(() => window.__tm.game.state), 'play', 'and RUN IT AGAIN starts a fresh board');
+  eq(await page.evaluate(() => window.__tm.game.state), 'play', 'and TRY IT AGAIN starts a fresh board');
   eq(await page.evaluate(() => window.__tm.net.lines.length), 0, 'with nothing drawn on it yet');
+
+  // ── the mission that is not the endless one ───────────────────────────
+  await page.evaluate(() => window.__tm.debug.launch('festival', 4242));
+  await page.waitForTimeout(200);
+  eq(await page.evaluate(() => window.__tm.game.mission.id), 'festival', 'a mission can be launched by name');
+  const fest = await page.evaluate(() => ({
+    goal: document.getElementById('goal').textContent,
+    clock: document.getElementById('day').textContent,
+    left: document.getElementById('week').textContent,
+    lines: window.__tm.net.maxLines,
+  }));
+  ok(/220/.test(fest.goal), `the goal is on the strip ("${fest.goal}")`);
+  ok(/:/.test(fest.clock), `the festival clock reads in hours ("${fest.clock}")`);
+  ok(/left/.test(fest.left), `and a timed mission counts down ("${fest.left}")`);
+  eq(fest.lines, 4, 'with the transport the mission grants, not the endless default');
+
+  // clearing it has to stick, or the campaign spine cannot open
+  await page.evaluate(() => {
+    localStorage.removeItem('tokoMoveProgress');
+    const g = window.__tm.game;
+    g.score = g.mission.goals[0].n;
+  });
+  await page.waitForTimeout(250);
+  eq(await page.evaluate(() => window.__tm.game.state), 'won', 'hitting the target wins the mission');
+  ok(await page.evaluate(() => !document.getElementById('end').hidden), 'and the end card comes up');
+  ok(await page.evaluate(() => /HELD/.test(document.getElementById('endTitle').textContent)),
+     'saying the night held rather than that it stopped');
+  eq(await page.evaluate(() => window.__tm.debug.progress().cleared.includes('festival')), true,
+     'and the clear is written down');
+
+  await page.click('#toMissions');
+  ok(await page.evaluate(() => !document.getElementById('title').hidden), 'the way back to the board works');
+  ok(await page.evaluate(() => !!document.querySelector('#campaignList .miss.done')),
+     'and a cleared mission is marked on it');
 
   // ── the way home ──────────────────────────────────────────────────────
   // `a` would have matched anything; the shell injects one specific anchor
@@ -199,7 +246,7 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   await phone.waitForTimeout(400);
   const overflow = await phone.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   ok(overflow <= 1, `nothing runs off the side of a phone (overflow ${overflow}px)`);
-  await phone.click('#play');
+  await phone.evaluate(() => [...document.querySelectorAll('#freeList button')][0].click());
   await phone.waitForTimeout(300);
   const boardBox = await phone.evaluate(() => {
     const r = document.getElementById('board').getBoundingClientRect();

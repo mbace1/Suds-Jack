@@ -2,14 +2,16 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game, DAYS, WEEK } from './sim.js?v=2';
-import { Renderer } from './render.js?v=2';
-import { LineDrawer } from './input.js?v=2';
-import { Kit } from './audio.js?v=2';
-import { PAL } from './palette.js?v=2';
+import { Game } from './sim.js?v=3';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=3';
+import { Renderer } from './render.js?v=3';
+import { LineDrawer } from './input.js?v=3';
+import { Kit } from './audio.js?v=3';
+import { PAL } from './palette.js?v=3';
 
 const $ = id => document.getElementById(id);
-const HI_KEY = 'tokoMoveHi';
+const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
+const PROGRESS_KEY = 'tokoMoveProgress';
 const SOUND_KEY = 'tokoMoveSound';
 
 const CARD = {
@@ -21,13 +23,61 @@ const CARD = {
 
 let game, renderer, drawer, kit, drops = 0, feedTimer = 0, keyNav = false;
 
-function seedFromUrl() {
-  const m = /seed=(\d+)/.exec(location.hash || location.search);
-  return m ? (+m[1] | 0) || 1 : (Math.random() * 1e9) | 0;
+// ── what you have cleared ───────────────────────────────────────────────
+function progress() {
+  try { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || { cleared: [], best: {} }; }
+  catch { return { cleared: [], best: {} }; }
+}
+function saveProgress(p) {
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* private window */ }
+}
+// The campaign is a spine, but anything cleared stays open — you can go back to
+// a mission you liked without replaying the one before it.
+function unlocked(m, p) {
+  if (m.order == null) return true;
+  const spine = campaign();
+  const i = spine.indexOf(m);
+  return i <= 0 || p.cleared.includes(spine[i - 1].id);
 }
 
-function boot(seed = seedFromUrl()) {
-  game = new Game(seed);
+function paintMissions() {
+  const p = progress();
+  for (const [box, list] of [[$('campaignList'), campaign()], [$('freeList'), MISSIONS.filter(m => m.order == null)]]) {
+    box.innerHTML = '';
+    for (const m of list) {
+      const open = unlocked(m, p);
+      const done = p.cleared.includes(m.id);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn wide miss' + (done ? ' done' : '');
+      b.disabled = !open;
+      const t = document.createElement('b'); t.textContent = m.title;
+      const d = document.createElement('span'); d.textContent = m.brief;
+      b.append(t, d);
+      const best = p.best?.[m.id];
+      if (done || best != null || !open) {
+        const tag = document.createElement('em');
+        tag.className = 'tag';
+        tag.textContent = !open ? 'locked' : done ? `cleared · best ${best ?? 0}` : `best ${best}`;
+        b.append(tag);
+      }
+      if (open) b.onclick = () => launch(m.id);
+      box.append(b);
+    }
+  }
+}
+
+// ── a run ───────────────────────────────────────────────────────────────
+function launch(missionId, seed = (Math.random() * 1e9) | 0) {
+  $('title').hidden = true;
+  $('end').hidden = true;
+  boot(seed, missionId);
+  game.start();
+  paintHud();
+}
+
+function boot(seed, missionId) {
+  game = new Game(seed, missionId);
   drops = 0;
   drawer?.destroy();
   renderer = renderer || new Renderer($('board'));
@@ -36,16 +86,25 @@ function boot(seed = seedFromUrl()) {
     onMessage: say,
     onChange: () => { paintHud(); kit.line(); },
   });
-  $('seedNote').textContent = `board ${seed}`;
   $('endSeed').textContent = `board ${seed}`;
   paintHud();
 }
 
 // ── the strip ───────────────────────────────────────────────────────────
 function paintHud() {
+  if (!game) return;
   $('score').textContent = game.score;
-  $('day').textContent = DAYS[game.day];
-  $('week').textContent = `week ${game.weekNo}`;
+  $('day').textContent = game.unitLabel;
+
+  const left = game.remaining;
+  if (left == null) $('week').textContent = `${game.clock.cycleWord} ${game.cycleNo}`;
+  else $('week').textContent = `${clockFmt(left)} left`;
+
+  const goals = game.goalReadout();
+  const g = $('goal');
+  g.textContent = goals.map(x => x.text).join(' · ');
+  g.classList.toggle('close', left != null && left < 60);
+
   stock('stkLines', `${game.net.lines.length}/${game.net.maxLines}`, game.net.lines.length >= game.net.maxLines);
   stock('stkTrains', game.net.spareTrains, game.net.spareTrains === 0);
   stock('stkTunnels', game.net.tunnelsLeft(), game.net.tunnelsLeft() === 0);
@@ -65,10 +124,10 @@ function say(msg) {
   feedTimer = setTimeout(() => f.classList.remove('show'), 1900);
 }
 
-// ── the weekly card ─────────────────────────────────────────────────────
+// ── the upgrade beat ────────────────────────────────────────────────────
 function showUpgrade() {
   const veil = $('upgrade');
-  $('upWeek').textContent = `end of week ${game.week}`;
+  $('upWeek').textContent = `${game.clock.cycleWord} ${game.cycleNo}`;
   $('lineWrap').hidden = true;
   const box = $('upBtns');
   box.innerHTML = '';
@@ -77,7 +136,7 @@ function showUpgrade() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'btn wide';
-    b.innerHTML = `<b></b><span></span>`;
+    b.innerHTML = '<b></b><span></span>';
     b.querySelector('b').textContent = title;
     b.querySelector('span').textContent = blurb;
     b.onclick = () => choose(kind, b);
@@ -88,12 +147,8 @@ function showUpgrade() {
 }
 
 function choose(kind, btn) {
-  // mark what was picked — the picker opening underneath a pair of buttons that
-  // both still look unpressed leaves you unsure which reward you are placing
   for (const b of $('upBtns').querySelectorAll('button')) b.classList.toggle('sel', b === btn);
   if (!game.needsLine(kind)) return apply(kind, null);
-  // second step rather than a card per line — the reward and its destination
-  // are two different decisions and stacking them makes eight buttons
   const wrap = $('lineWrap');
   const pick = $('linePick');
   pick.innerHTML = '';
@@ -123,23 +178,37 @@ function apply(kind, lineId) {
 }
 
 // ── the end ─────────────────────────────────────────────────────────────
+const REASON = {
+  won: 'Everybody got where they were going.',
+  timeup: 'The night ended with people still standing on platforms.',
+  overcrowd: null,               // filled in from the stop that gave out
+};
+
 function showEnd() {
   const r = game.report();
-  const hi = Math.max(r.score, +(localStorage.getItem(HI_KEY) || 0));
-  localStorage.setItem(HI_KEY, hi);
+  const p = progress();
+  p.best = p.best || {};
+  p.best[r.mission] = Math.max(r.score, p.best[r.mission] ?? 0);
+  if (r.won && !p.cleared.includes(r.mission)) p.cleared.push(r.mission);
+  saveProgress(p);
+  if (r.mission === 'endless') {
+    try { localStorage.setItem(HI_KEY, Math.max(r.score, +(localStorage.getItem(HI_KEY) || 0))); } catch { /* ignore */ }
+  }
 
+  $('endTitle').textContent = r.won ? 'THE NIGHT HELD' : r.reason === 'overcrowd' ? 'THE LINE STOPPED' : 'DAWN CAME FIRST';
   const worst = game.world.worstStation();
-  $('endWhy').textContent = worst
-    ? `The ${worst.kind} stop could not take any more.`
-    : 'The network gave out.';
+  $('endWhy').textContent = r.reason === 'overcrowd'
+    ? `The ${worst ? worst.kind : ''} stop could not take any more.`
+    : (REASON[r.reason] || '');
+
   $('endStats').innerHTML = '';
-  const rows = [
-    ['delivered', r.score],
-    ['best', hi],
-    ['lasted', `${r.weeks} week${r.weeks === 1 ? '' : 's'}, ${r.days % 7} day${r.days % 7 === 1 ? '' : 's'}`],
-    ['stops open', r.stations],
-    ['lines running', r.lines],
-  ];
+  const rows = [[r.title, '']];
+  for (const g of r.goals) rows.push([g.text, g.have >= g.want ? 'met' : 'missed']);
+  rows.push(['delivered', r.score]);
+  rows.push(['best here', p.best[r.mission]]);
+  rows.push([r.cycleWord === 'week' ? 'lasted' : 'ran', `${r.units} ${r.cycleWord === 'week' ? 'days' : 'hours'}`]);
+  rows.push(['stops open', r.stations]);
+  rows.push(['lines running', r.lines]);
   for (const [k, v] of rows) {
     const d = document.createElement('div');
     const a = document.createElement('span'); a.textContent = k;
@@ -157,12 +226,12 @@ function frame(now) {
   const dt = last ? (now - last) / 1000 : 0;
   last = now;
   if (game) {
-    const wasState = game.state;
+    const was = game.state;
     game.step(dt);
     drainEvents();
-    if (game.state !== wasState) {
+    if (game.state !== was) {
       if (game.state === 'upgrade') showUpgrade();
-      if (game.state === 'over') showEnd();
+      if (game.state === 'over' || game.state === 'won') showEnd();
     }
     renderer.draw(game, drawer.view());
     if ((now | 0) % 4 === 0) paintHud();
@@ -174,26 +243,24 @@ function drainEvents() {
   if (!game.events.length) return;
   for (const e of game.events) {
     if (e === 'drop') kit.drop(drops++);
-    if (e === 'week') kit.week();
-    if (e === 'over') kit.over();
+    else if (e === 'week') kit.week();
+    else if (e === 'over') kit.over();
+    else if (e === 'won') kit.week();
+    else if (e && e.say) { say(e.say); kit.line(); }
   }
   game.events.length = 0;
 }
 
 // ── controls ────────────────────────────────────────────────────────────
 kit = new Kit();
-boot();
+boot((Math.random() * 1e9) | 0, 'endless');
+paintMissions();
 
-$('play').addEventListener('click', () => {
-  $('title').hidden = true;
-  game.start();
-  paintHud();
-});
-
-$('again').addEventListener('click', () => {
+$('again').addEventListener('click', () => launch(game.mission.id));
+$('toMissions').addEventListener('click', () => {
   $('end').hidden = true;
-  boot((Math.random() * 1e9) | 0);
-  game.start();
+  paintMissions();
+  $('title').hidden = false;
 });
 
 $('pause').addEventListener('click', () => {
@@ -211,12 +278,11 @@ $('speed').addEventListener('click', () => {
 $('sound').addEventListener('click', () => {
   const on = $('sound').getAttribute('aria-pressed') !== 'true';
   $('sound').setAttribute('aria-pressed', String(on));
-  localStorage.setItem(SOUND_KEY, on ? '1' : '0');
+  try { localStorage.setItem(SOUND_KEY, on ? '1' : '0'); } catch { /* ignore */ }
   kit.enable(on);
 });
 if (localStorage.getItem(SOUND_KEY) === '1') {
   $('sound').setAttribute('aria-pressed', 'true');
-  // the context still needs a gesture; this only records the preference
   addEventListener('pointerdown', () => kit.enable(true), { once: true });
 }
 
@@ -230,17 +296,15 @@ new ResizeObserver(() => renderer?.resize()).observe($('wrap'));
 
 requestAnimationFrame(frame);
 
-// the smoke gate drives the game through this rather than through the pointer
 window.__tm = {
   get game() { return game; },
   get net() { return game.net; },
   get world() { return game.world; },
   get renderer() { return renderer; },
-  // board -> page, so a test taps by board coordinate and can never drift from
-  // the letterbox the renderer actually used
   toClient(bx, by) {
     const r = renderer.canvas.getBoundingClientRect();
     return { x: r.left + renderer.ox + bx * renderer.scale, y: r.top + renderer.oy + by * renderer.scale };
   },
-  debug: { boot, showUpgrade, showEnd, say, WEEK },
+  missions: MISSIONS,
+  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId },
 };

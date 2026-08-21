@@ -1,5 +1,74 @@
 # Toko Move — versions
 
+## v3 — 2026-08-21
+
+**The sim stops owning its numbers.** Owner's direction (ROADMAP.md) makes this
+one game whose layers are near-clones differing by variables, and whose missions
+— about ten minutes each — declare those variables. So the next piece of work was
+never a second layer: it was the format the layers plug into.
+
+`js/missions.js` is that format. A mission states its clock, its board, its
+spawn model, its transport, its goal and its fail rule. Nothing in `sim.js`,
+`world.js` or `lines.js` keeps a tuning value any more — if one can be found
+there, it is in the wrong file.
+
+**The endless city is now a mission, and that is the proof.** It is the v2 game
+expressed entirely as data, and it had to come out unchanged. It does: across
+nine seeds the board, every stop and every passenger are identical for 300
+seconds, and across five full runs to game over the score, the clock to the
+millisecond, the stops, the lines and the trains all match v2 exactly.
+
+**Goals come in five kinds** — deliver, survive, hold, escort, budget — because a
+mission may state any of them. Two of them need things this build has not got
+(cargo, money), so a mission naming them is **refused at load** with a message
+saying which capability is missing. A goal that is silently impossible is worse
+than a mission that will not start.
+
+**"The Festival"** is the first real mission and the seam test: an evening board,
+the festival closes at midnight, and the whole field walks to the six nearest
+stops at once. Ten minutes, an hour a minute, and the clock reads 00:00 as the
+crowd lands.
+
+### What was got wrong on the way
+
+- **The Festival was unwinnable and the fault was the design, not the tuning.**
+  120 people onto four six-capacity platforms closed the gauge every time, so
+  every seed died at exactly t=240, sixty seconds after the burst. But a crowd
+  jamming the stops IS the festival. It now has **no sudden death at all** — the
+  gauge still fills and still warns, it just costs you the people rather than
+  the night. That is what a per-mission fail rule is for.
+- **The festival was a detail inside an ordinary evening.** At the first tuning
+  the ambient traffic was 76% of everyone who turned up. The night is quiet now
+  and the crowd is most of it.
+- **The target was guessed, then measured.** 220 comes from eight seeds: a
+  player who keeps every stop connected delivers 235–383 of the 439 who turn up,
+  and a player who draws nothing delivers none.
+- **The clock printed "1:60".** Flooring the minutes off a float while ceiling
+  the seconds separately. One shared `clockFmt` now ceils the total and then
+  divides — which also stops a countdown reading 1:59 with two whole minutes to
+  go.
+- **A test that used one seed proved nothing and said it had.** The check that a
+  mission carrying a crowd lays out the same board as one without passed even
+  with the site drawn from the board's own stream, because roughly one board in
+  seven survives the shift by coincidence. Swept over sixty seeds it fails 52 of
+  them. The crowd's location takes its own rng stream for exactly this reason.
+- **A check that counted "stops with anybody on them"** was satisfied by ambient
+  traffic and passed happily with the whole crowd dumped on one platform. It
+  measures the burst now.
+
+### Gates
+
+```
+node toko-move/test/core.mjs                           # 165 checks, bare node
+NODE_PATH=$(npm root -g) node toko-move/test/smoke.cjs # 46 checks, real browser
+```
+
+Mutation-tested again: borrowing the board's rng for the crowd, dumping the
+crowd on one stop, silencing the burst's announcement, un-breaking a crossed
+hold line, letting a goalless mission count as won, accepting a goal whose
+capability is missing, and giving the festival sudden death back — each fails a
+named check.
+
 ## v2 — 2026-08-20
 
 **Rebuilt from scratch as a Mini Metro clone.**

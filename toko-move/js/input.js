@@ -9,8 +9,8 @@
 // The line commits AS YOU DRAG rather than on release, so what you see forming
 // is the real thing and not a preview that might be refused when you let go.
 
-import { legPoints } from './geometry.js?v=2';
-import { INK } from './palette.js?v=2';
+import { legPoints } from './geometry.js?v=3';
+import { INK } from './palette.js?v=3';
 
 const NUB_GAP = 15;
 const NUB_HIT = 19;

@@ -102,11 +102,34 @@ So the next build is:
 
 A second layer is worth starting only once a mission can say "I want two".
 
+## Answered, and built (v3)
+
+1. **All five kinds**, per mission: deliver, survive, hold, escort, budget. The
+   last two are stated but refused at load until cargo and money exist.
+2. **Seeded boards.** The Festival is different every attempt.
+3. **A campaign spine plus free select** for anything cleared.
+4. **The endless city survives** as its own mode under Free play.
+5. *(still open — see below)*
+6. **Length is per-mission**, another variable. The Festival is 600s.
+
 ## Still open
 
-1. What win conditions does a mission need to be able to state?
-2. Authored boards or seeded ones — and does the Festival need a hand-made map?
-3. How is a mission chosen: a select screen, a campaign order, or both?
-4. Does the endless run survive as its own mode?
-5. What does a narrative choice look like — the weekly card, or something else?
-6. Is ten minutes a hard timer or an approximate length?
+1. **What does a narrative choice look like?** The stuck parcel and the "inner
+   politics" of getting it moving again. Options as they stand: a card that
+   pauses the game like the upgrade beat; a ticker you may ignore, where
+   ignoring it is itself the choice; or a timed pause that decides for you.
+   **No seam has been built for this yet, deliberately** — it is easier to add
+   the right one later than to unpick a guessed one.
+
+## Next, when the word comes
+
+The format can now say "this mission wants these variables". It cannot yet say
+"this mission wants two layers". That is the next piece: a mission listing more
+than one layer, each with its own clock, and a handoff between them. The obvious
+first pair is the local one the owner named — metro for people, cars for the
+local goods layer — because both are local scale and neither needs cargo,
+money or a world map to exist.
+
+Cargo (`payload`) and money are the two capabilities the goal format already
+names and the sim does not have. Adding either unlocks the goal type that
+depends on it, and `CAPABILITIES` in missions.js is the one place that changes.

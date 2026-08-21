@@ -2,12 +2,13 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=2';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=2';
-import { World, Station, BOARD, STATION_CAP, OVERCROWD_TIME } from '../js/world.js?v=2';
-import { Network, Train, CAR_CAPACITY } from '../js/lines.js?v=2';
-import { Game, WEEK, DAY } from '../js/sim.js?v=2';
-import { PAL, INK } from '../js/palette.js?v=2';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=3';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=3';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=3';
+import { Network, Train, CAR_CAPACITY } from '../js/lines.js?v=3';
+import { Game } from '../js/sim.js?v=3';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=3';
+import { PAL, INK } from '../js/palette.js?v=3';
 
 let pass = 0; const fails = [];
 const ok = (cond, msg) => { if (cond) pass++; else fails.push(msg); };
@@ -67,19 +68,21 @@ const eq = (a, b, msg) => ok(a === b || (typeof a === 'number' && Math.abs(a - b
 
 // ── the board ───────────────────────────────────────────────────────────
 {
-  const w = new World(3);
+  const ENDLESS = byId('endless');
+  const OVERCROWD_TIME = ENDLESS.fail.overcrowd;
+  const w = new World(3, ENDLESS);
   eq(w.stations.length, 3, 'a board opens with three stops');
   eq([...new Set(w.stations.map(s => s.kind))].sort().join(','), 'circle,square,triangle',
      'and they are one of each common shape');
 
   // the same seed must lay out the same board, or a reported run is not a run
-  const a = new World(99), b = new World(99);
+  const a = new World(99, ENDLESS), b = new World(99, ENDLESS);
   for (let i = 0; i < 300; i++) { a.step(0.2); b.step(0.2); }
   eq(JSON.stringify(a.stations.map(s => [s.kind, s.x | 0, s.y | 0])),
      JSON.stringify(b.stations.map(s => [s.kind, s.x | 0, s.y | 0])),
      'the same seed builds the same board');
 
-  const w2 = new World(11);
+  const w2 = new World(11, ENDLESS);
   for (let i = 0; i < 900; i++) w2.step(0.2);
   ok(w2.stations.every(s => !inWater(s.x, s.y, w2.rings)), 'no stop is ever placed in the water');
   ok(w2.stations.every(s => s.x > 0 && s.x < BOARD.w && s.y > 0 && s.y < BOARD.h), 'every stop is on the board');
@@ -89,13 +92,15 @@ const eq = (a, b, msg) => ok(a === b || (typeof a === 'number' && Math.abs(a - b
     if (Math.hypot(p.x - q.x, p.y - q.y) < 60) tooClose++;
   }
   eq(tooClose, 0, 'no two stops are drawn on top of each other');
-  ok(w2.spawnRate() > new World(11).spawnRate(), 'more people arrive later in the run than at the start');
+  ok(w2.spawnRate() > new World(11, ENDLESS).spawnRate(), 'more people arrive later in the run than at the start');
   ok(w2.stations.length > 3, 'the city grows');
 }
 
 // ── crowding ────────────────────────────────────────────────────────────
 {
-  const w = new World(5);
+  const ENDLESS = byId('endless');
+  const OVERCROWD_TIME = ENDLESS.fail.overcrowd;
+  const w = new World(5, ENDLESS);
   const st = w.stations[0];
   st.waiting = new Array(STATION_CAP + 2).fill('circle');
   ok(st.crowded, 'past capacity is crowded');
@@ -105,7 +110,7 @@ const eq = (a, b, msg) => ok(a === b || (typeof a === 'number' && Math.abs(a - b
   w.step(OVERCROWD_TIME);
   ok(w.doomed(), 'a full gauge ends the run');
 
-  const w2 = new World(5);
+  const w2 = new World(5, ENDLESS);
   const s2 = w2.stations[0];
   s2.waiting = new Array(STATION_CAP + 2).fill('circle');
   w2.step(OVERCROWD_TIME / 2);
@@ -117,7 +122,7 @@ const eq = (a, b, msg) => ok(a === b || (typeof a === 'number' && Math.abs(a - b
 
 // ── a hand-built network, so routing is checked against a known answer ──
 function bench(seed = 1) {
-  const g = new Game(seed);
+  const g = new Game(seed, 'endless');
   g.world.rings = [];              // no water: tunnels are tested separately
   g.world.stations = [];
   g.world.nextId = 0;
@@ -307,7 +312,7 @@ function bench(seed = 1) {
 
 // ── the run ─────────────────────────────────────────────────────────────
 {
-  const g = new Game(21);
+  const g = new Game(21, 'endless');
   eq(g.state, 'title', 'a game starts on the title');
   g.step(1);
   eq(g.time, 0, 'and nothing moves until it is started');
@@ -333,11 +338,11 @@ function bench(seed = 1) {
 }
 
 {
-  const g = new Game(31);
+  const g = new Game(31, 'endless');
   g.start();
   let guard = 0;
   while (g.state === 'play' && guard++ < 4000) g.step(0.05);
-  ok(g.state === 'upgrade', 'the first week ends in a choice');
+  ok(g.state === 'upgrade', 'the first upgrade beat stops for a choice');
   eq(g.offer.length, 2, 'and the choice is between exactly two things');
   ok(g.paused, 'the clock stops while you choose');
   const maxBefore = g.net.maxLines, tunBefore = g.net.ownedTunnels;
@@ -351,7 +356,7 @@ function bench(seed = 1) {
 }
 
 {
-  const g = new Game(41);
+  const g = new Game(41, 'endless');
   g.start();
   g.world.stations[0].waiting = new Array(STATION_CAP + 3).fill('circle');
   let guard = 0;
@@ -361,12 +366,12 @@ function bench(seed = 1) {
   }
   eq(g.state, 'over', 'an unattended platform ends the run');
   const r = g.report();
-  ok(r.seed === 41 && r.days >= 0, 'the report names the board it was played on');
+  ok(r.seed === 41 && r.units >= 0, 'the report names the board it was played on');
 }
 
 {
   // a played run really does move people
-  const g = new Game(77);
+  const g = new Game(77, 'endless');
   g.start();
   const attach = () => {
     for (const st of g.world.stations) {
@@ -391,8 +396,211 @@ function bench(seed = 1) {
     if (g.state === 'upgrade') g.applyUpgrade(g.offer[0], g.net.lines[0]?.id ?? null);
   }
   ok(g.score > 20, `a run with lines on it delivers people (got ${g.score})`);
-  ok(g.time > WEEK, 'and lasts more than a week');
-  eq(DAY * 7, WEEK, 'a week is seven days');
+  ok(g.time > byId('endless').clock.upgradeEvery, 'and lasts more than one upgrade beat');
+}
+
+// ── missions: the format, and that the sim owns no numbers ──────────────
+{
+  eq(MISSIONS.length >= 2, true, 'there is more than one mission');
+  ok(MISSIONS.every(m => m.id && m.title && m.clock), 'every mission is named and has a clock');
+  eq(new Set(MISSIONS.map(m => m.id)).size, MISSIONS.length, 'mission ids are unique');
+  ok(campaign().every((m, i, a) => i === 0 || a[i - 1].order < m.order), 'the campaign spine is ordered');
+  ok(byId('endless').length == null, 'the endless city has no end');
+  ok(byId('festival').length > 0, 'the festival does');
+
+  // a goal naming a capability this build lacks must be REFUSED, not silently
+  // impossible — a mission that looks playable and cannot be finished is worse
+  // than one that will not load
+  let refused = 0;
+  for (const goal of [{ type: 'escort', what: 'parcel', to: 'malmo' }, { type: 'budget', n: 10 }, { type: 'nonsense' }]) {
+    try { validate({ id: 't', clock: { unit: 1 }, goals: [goal] }); }
+    catch { refused++; }
+  }
+  eq(refused, 3, 'goals needing what this build lacks are refused at load');
+  ok(!CAPABILITIES.has('payload') && !CAPABILITIES.has('money'), 'and this build is honest about lacking them');
+  ok(GOALS.escort && GOALS.budget, 'though the format can still STATE them, for the layers to come');
+
+  // the five kinds the owner asked to be able to state
+  for (const k of ['deliver', 'survive', 'hold', 'escort', 'budget']) ok(!!GOALS[k], `the format can state "${k}"`);
+}
+
+{
+  // the sim must take its numbers from the mission and nowhere else
+  const a = new Game(5, 'endless'), b = new Game(5, 'festival');
+  ok(a.net.maxLines !== b.net.maxLines || a.net.spareTrains !== b.net.spareTrains,
+     'two missions hand out different transport');
+  eq(b.net.maxLines, byId('festival').resources.lines, 'resources come from the mission');
+  eq(b.net.spareTrains, byId('festival').resources.trains, 'and so do the trains');
+  ok(a.clock.unit !== b.clock.unit, 'and the clocks differ');
+  eq(a.unitLabel, 'mon', 'the endless city counts in days');
+  eq(b.unitLabel, '21:00', 'the festival counts in hours');
+  eq(a.remaining, null, 'an endless run has no time left because it has no end');
+  eq(b.remaining, byId('festival').length, 'a timed one starts with all of it');
+  eq(a.world.maxStations, byId('endless').board.maxStations, 'the board size is the mission\'s');
+  eq(b.world.maxStations, byId('festival').board.maxStations, 'on both');
+}
+
+{
+  // winning
+  const g = new Game(5, 'festival');
+  g.start();
+  ok(!g.goalsMet(), 'nothing is won at the start');
+  g.score = byId('festival').goals[0].n;
+  g.step(0.05);
+  eq(g.state, 'won', 'hitting the target wins it');
+  eq(g.endReason, 'won', 'and says so');
+  ok(g.paused, 'and stops the clock');
+}
+
+{
+  // running out of time
+  const g = new Game(6, 'festival');
+  g.start();
+  g.world.time = byId('festival').length;
+  g.step(0.05);
+  eq(g.state, 'over', 'dawn with the target unmet ends it');
+  eq(g.endReason, 'timeup', 'and names the reason');
+}
+
+{
+  // the fail rule is the MISSION's. The festival deliberately has no sudden
+  // death: a jammed platform is the premise, not a defeat.
+  eq(byId('endless').fail.overcrowd, 45, 'the endless city dies of crowding');
+  eq(byId('festival').fail.overcrowd, null, 'the festival does not');
+  const g = new Game(9, 'festival');
+  g.start();
+  for (const s of g.world.stations) { s.waiting = new Array(40).fill('circle'); s.over = 1; }
+  g.step(0.05);
+  eq(g.state, 'play', 'so a jammed festival platform costs people, not the night');
+  ok(g.world.doomed(), 'even though the gauge is full');
+}
+
+{
+  // the crowd WALKS: it lands spread across the nearest stops, not on the
+  // festival itself, which is what makes the pre-midnight network matter
+  const m = byId('festival');
+  const burst = m.spawn.bursts[0];
+  const g = new Game(11, 'festival');
+  g.start();
+  let guard = 0;
+  while (g.time < burst.at - 1 && guard++ < 20000) {
+    g.step(0.05);
+    if (g.state === 'upgrade') g.applyUpgrade(g.offer[0], g.net.lines[0]?.id ?? null);
+  }
+  const before = g.world.stations.reduce((n, s) => n + s.waiting.length, 0);
+  ok(g.world.firedBursts.size === 0, 'the crowd has not moved before midnight');
+  guard = 0;
+  while (g.world.firedBursts.size === 0 && guard++ < 20000) {
+    g.step(0.05);
+    if (g.state === 'upgrade') g.applyUpgrade(g.offer[0], g.net.lines[0]?.id ?? null);
+  }
+  const after = g.world.stations.reduce((n, s) => n + s.waiting.length, 0);
+  ok(after - before >= burst.n * 0.9, `midnight puts the crowd on the platforms (+${after - before})`);
+  ok(g.world.site, 'the festival has a place on the board');
+}
+
+{
+  // How far the crowd SPREADS. The first cut of this check counted stops with
+  // anybody on them, which ambient traffic satisfies on its own — it passed
+  // happily with the whole crowd dumped on one platform. Measure the burst.
+  const m = byId('festival');
+  const burst = m.spawn.bursts[0];
+  const g = new Game(11, 'festival');
+  g.start();
+  let guard = 0;
+  while (g.world.firedBursts.size === 0 && guard++ < 20000) {
+    const before = new Map(g.world.stations.map(s => [s.id, s.waiting.length]));
+    g.step(0.05);
+    if (g.state === 'upgrade') g.applyUpgrade(g.offer[0], g.net.lines[0]?.id ?? null);
+    if (g.world.firedBursts.size) {
+      const gained = g.world.stations
+        .map(s => s.waiting.length - (before.get(s.id) ?? 0))
+        .filter(n => n > 5);
+      eq(gained.length, burst.spread, `the crowd walks to ${burst.spread} stops, not one`);
+      const each = burst.n / burst.spread;
+      ok(gained.every(n => Math.abs(n - each) <= each * 0.5), 'and lands on them evenly');
+      break;
+    }
+  }
+  ok(g.world.firedBursts.size === 1, 'and it happens exactly once');
+}
+
+{
+  // A mission carrying a crowd must lay out EXACTLY the board a mission
+  // without one does, or every seeded board that already exists quietly moves.
+  //
+  // Swept across sixty seeds on purpose: checked on a single seed this passes
+  // even when the site is drawn from the board's own stream, because roughly
+  // one board in seven coincidentally survives the shift. One seed proved
+  // nothing and said it had.
+  const E = byId('endless');
+  const withCrowd = { ...E, spawn: { ...E.spawn, bursts: [{ at: 5, n: 3, spread: 2 }] } };
+  const key = w => w.stations.map(s => `${s.kind}:${s.x.toFixed(4)}:${s.y.toFixed(4)}`).join('|');
+  let shifted = 0;
+  for (let seed = 1; seed <= 60; seed++) {
+    if (key(new World(seed, E)) !== key(new World(seed, withCrowd))) shifted++;
+  }
+  eq(shifted, 0, 'adding a crowd moves no stop on any of sixty boards');
+}
+
+{
+  // the burst has to SAY something — a crowd of two hundred appearing with no
+  // word for it reads as the game breaking rather than the festival ending
+  const g = new Game(11, 'festival');
+  g.start();
+  let said = null, guard = 0;
+  while (g.world.firedBursts.size === 0 && guard++ < 20000) {
+    g.step(0.05);
+    if (g.state === 'upgrade') g.applyUpgrade(g.offer[0], g.net.lines[0]?.id ?? null);
+    const ev = g.events.find(e => e && e.say);
+    if (ev) said = ev.say;
+    g.events.length = 0;
+  }
+  ok(said && said.length > 4, `midnight announces itself ("${said}")`);
+  eq(said, byId('festival').spawn.bursts[0].label, 'in the words the mission gave it');
+}
+
+{
+  // "hold the line" is sticky. Nothing on the floor uses it yet, so without a
+  // test of its own it would rot unnoticed until the first mission that does.
+  const g = new Game(3, 'endless');
+  g.mission = { ...g.mission, goals: [{ type: 'hold', limit: 0.5, t: 4 }] };
+  g.start();
+  ok(!g.holdBroken, 'nothing is broken at the start');
+  g.step(0.05);
+  ok(!g.holdBroken, 'and a quiet board keeps it that way');
+
+  g.world.stations[0].over = 0.6;
+  g.step(0.05);
+  ok(g.holdBroken, 'crossing the line breaks it');
+
+  g.world.stations[0].over = 0;
+  g.world.stations[0].waiting = [];
+  g.step(0.05);
+  ok(g.holdBroken, 'and clearing the platform afterwards does NOT un-break it');
+
+  g.world.time = 99;
+  ok(!GOALS.hold.done(g, { type: 'hold', limit: 0.5, t: 4 }), 'so the goal cannot be met by tidying up at the end');
+  const clean = new Game(3, 'endless');
+  clean.world.time = 99;
+  ok(GOALS.hold.done(clean, { type: 'hold', limit: 0.5, t: 4 }), 'while a board that never crossed it does meet the goal');
+}
+
+{
+  // a clock may never print a sixtieth second. Flooring the minutes off a float
+  // while ceiling the seconds separately turned 119.4s into "1:60" on the strip.
+  eq(clockFmt(120), '2:00', 'two minutes reads as two minutes');
+  eq(clockFmt(119.4), '2:00', 'and so does very nearly two minutes');
+  eq(clockFmt(0), '0:00', 'zero is zero');
+  eq(clockFmt(-5), '0:00', 'and past the end is still zero');
+  eq(clockFmt(65), '1:05', 'seconds under ten keep their leading zero');
+  let bad = null;
+  for (let ms = 0; ms <= 600000; ms += 137) {
+    const out = clockFmt(ms / 1000);
+    const sec = +out.split(':')[1];
+    if (sec > 59) { bad = `${ms / 1000}s -> ${out}`; break; }
+  }
+  eq(bad, null, `no time in ten minutes prints a sixtieth second (${bad})`);
 }
 
 // ── the ink ─────────────────────────────────────────────────────────────
