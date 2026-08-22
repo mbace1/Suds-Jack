@@ -2,6 +2,72 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v37 — 2026-08-22
+**The Meshy art was in the repo and the loader was never called**
+
+Deploying v36 meant looking at what is actually on `gh-pages`, and what is on
+it is **5.1 MB of Meshy exports that no branch had ever carried**: twenty-one
+GLBs in `hyperdagger/assets/` — skull, brute, husk, dread, blinker, watcher,
+spider, thorn, totem, serpent, serpenthead, egg, revenant, leviathan, plus six
+environment pieces and a floor texture. Art added straight to the deploy
+target, which is the failure mode this repo already knows about: one reclaimed
+container and it is gone. It is in the branch now.
+
+**And none of it had ever been on screen**, for two separate reasons:
+
+- `preloadMeshEnemies()` **was never called from anywhere.** The whole
+  mesh-enemy system — loader, template cache, per-enemy skin swap, the
+  MESH_FOR_TYPE table — was written, shipped and unreachable. Exactly the
+  shape of the TRUCK bug in v36, found the same way: by asking what actually
+  runs rather than what exists.
+- It looked in `models/enemies/`, a second asset home that exists in no
+  branch, while the documented one (`assets/README.md`) is `assets/`. So even
+  called, it would have 404'd three times per boot and fallen back to voxels.
+
+**One seam now: `assets/manifest.json`.** A kind listed there is loaded; a
+kind absent is never requested, so the file existing is what makes "no art
+registered" cost nothing — not even the GLTF loader is fetched. A kind is a
+bare filename or `{ file, size, tint }`: `size` is the largest dimension in
+world units, `tint` MULTIPLIES the baked albedo, so a Meshy export can be
+pulled toward the house palette without flattening its texture away.
+`scripts/hd-shell.mjs` reads the same file, so the worker and the loader
+cannot disagree about which art exists.
+
+**The skins were also being thrown away.** `mesh-enemies.js` re-materialed
+every export to ONE flat unlit `MeshBasicMaterial` — and on an unlit pipeline
+a flat fill means no shading at all, so the totem rendered as a featureless
+pale slab with the texture Meshy baked for it discarded. `meshassets.js`
+already had the right conversion (Lambert, albedo map kept, lit by the asset
+rig on layer 2 so nothing native is touched); it is now exported as
+`toLambert()` and both importers share it. Rendered side by side the
+difference is the whole point of the pipeline: a white blob becomes a column
+of three screaming faces, and the skull and spider read as sculpts with their
+baked texture on. Worth naming for whoever turns them on: the Meshy exports
+are flesh-toned, and the house palette is black and white with dark red as the
+only contrast colour. `tint` is the knob for that.
+
+skull's fit moved 1.15 -> 1.40, the height of the string-art slot it replaces,
+because `assets/README.md` is explicit that a mismatch there changes how an
+enemy LOOKS against how it HITS.
+
+**Nothing is registered by default, and the gate is why.** Turning `skull` on
+hung the suite: a registered kind replaces that enemy's hand-authored sculpt
+AND its smoothed alive-hull — the whole v4.31/v4.32 look — so the hull section
+waits for a skin that is no longer there. That is not a broken test, it is the
+gate refusing a silent art swap. The mechanism ships working, the manifest
+ships empty with the fourteen available exports listed in it, and turning one
+on is one line followed by a look at a render. Which is the method: a suite
+that certifies *works* cannot see *looks*.
+
+**Gate: 97 checks.** Four new. One watches for 404s across the whole run — a
+miss here is fail-soft by design, which is exactly why it needed its own
+watch: three GLB requests could fail on every boot with nothing failing. The
+others cover the seam rather than the art — the loader ran, everything
+declared loaded, the manifest parses, and the worker precaches exactly what
+the manifest names and nothing else. `debug.getMeshSkins()` reports what was
+declared against what loaded, because a system that fails soft needs a way to
+say it did nothing.
+
 ## v36 — 2026-08-21
 **The mode lab — an experiment is a declaration, not a branch**
 

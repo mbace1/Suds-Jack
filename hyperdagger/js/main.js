@@ -5,20 +5,21 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=66';
-import { Player } from './player.js?v=66';
-import { DaggerPool } from './daggers.js?v=66';
-import { GemPool } from './gems.js?v=66';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=66';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=66';
-import { OrbPool } from './bullets.js?v=66';
-import { AudioKit } from './audio.js?v=66';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=66';
-import { TUNING as T } from './tuning.js?v=66';
-import { HyperEnvironment } from './environment.js?v=66';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=66';
-import { TruckTrack } from './truck.js?v=66';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=66';
+import { InputManager } from './input.js?v=67';
+import { Player } from './player.js?v=67';
+import { DaggerPool } from './daggers.js?v=67';
+import { GemPool } from './gems.js?v=67';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=67';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=67';
+import { OrbPool } from './bullets.js?v=67';
+import { AudioKit } from './audio.js?v=67';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=67';
+import { TUNING as T } from './tuning.js?v=67';
+import { HyperEnvironment } from './environment.js?v=67';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=67';
+import { TruckTrack } from './truck.js?v=67';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=67';
+import { preloadMeshEnemies, meshSkinState } from './mesh-enemies.js?v=67';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -166,6 +167,11 @@ let floorPanels = null;
 // declares arena:'track' and this is what serves it.
 const truck = new TruckTrack(scene);
 buildFloorPanels(ARENA_R).then(m => { if (m) { floorPanels = m; scene.add(m); } });
+// The Meshy enemy skins. Fire-and-forget at boot so the templates are ready
+// before the first spawn — and it was NEVER CALLED, which is why 5 MB of
+// exported art in assets/ had never once appeared in the game. Same shape of
+// bug as TRUCK: a whole system written, shipped and unreachable.
+preloadMeshEnemies();
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
@@ -3004,6 +3010,8 @@ window.__hd = {
         trackPlatforms: truck.platforms.length,
       };
     },
+    /** The Meshy seam: what assets/manifest.json named and what loaded. */
+    getMeshSkins() { return meshSkinState(); },
     getArena() {
       return {
         lights: lightRig.children.length,

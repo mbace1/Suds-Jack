@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { bakeShading } from './voxel.js?v=66';
+import { bakeShading } from './voxel.js?v=67';
 
 /**
  * ARENA MESH ASSETS — the Meshy pipeline's landing pad for ENVIRONMENT.
@@ -118,6 +118,30 @@ export async function buildFloorPanels(arenaR) {
 }
 
 /** Normalize + re-material + voxelize one loaded scene. */
+/**
+ * Lambert conversion: responds to the asset light rig, costs almost nothing,
+ * and KEEPS THE ALBEDO MAP. Everything native stays MeshBasic, so the lights
+ * change imported assets and nothing else.
+ *
+ * This is shared because the other importer did not do it. mesh-enemies.js
+ * re-materialed every Meshy export to one flat unlit fill, which on an unlit
+ * pipeline means no shading at all: the totem rendered as a featureless pale
+ * slab with the texture Meshy had baked for it thrown away.
+ */
+export function toLambert(root, emissive) {
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const m = o.material;
+    o.material = new THREE.MeshLambertMaterial({
+      map: m.map ?? null,
+      color: m.color ? m.color.clone() : new THREE.Color(0xffffff),
+      emissive: emissive ? new THREE.Color(emissive) : new THREE.Color(0x000000),
+    });
+    o.material.side = THREE.FrontSide;
+  });
+  return root;
+}
+
 export function prepareAsset(root, cfg) {
   // normalize: yaw, then scale so bbox height = cfg.height, centered on origin
   root.rotation.y = cfg.yaw ?? 0;
@@ -132,19 +156,7 @@ export function prepareAsset(root, cfg) {
   root.position.sub(c);
   root.updateMatrixWorld(true);
 
-  // Lambert conversion: responds to the asset light rig, costs almost
-  // nothing, and keeps the albedo map. Everything native stays MeshBasic,
-  // so the lights change imported assets and nothing else.
-  root.traverse(o => {
-    if (!o.isMesh) return;
-    const m = o.material;
-    o.material = new THREE.MeshLambertMaterial({
-      map: m.map ?? null,
-      color: m.color ? m.color.clone() : new THREE.Color(0xffffff),
-      emissive: cfg.emissive ? new THREE.Color(cfg.emissive) : new THREE.Color(0x000000),
-    });
-    o.material.side = THREE.FrontSide;
-  });
+  toLambert(root, cfg.emissive);
 
   const { voxels, size } = voxelizeMesh(root, cfg.voxelSize);
   return { template: root, voxels, size };

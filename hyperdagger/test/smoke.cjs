@@ -32,8 +32,13 @@ s.listen(0, '127.0.0.1', async () => {
   });
   const p = await b.newPage({ viewport: { width: 1100, height: 720 } });
   const errs = [];
+  const misses = [];
   p.on('pageerror', e => errs.push('pageerror: ' + e.message));
   p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+  // A 404 is fail-soft here (every asset path has a fallback) and that is
+  // exactly why it needs its own watch: three enemy GLBs were requested on
+  // every single boot for art that is in no branch, and nothing failed.
+  p.on('response', r => { if (r.status() === 404) misses.push(r.url()); });
 
   // ---- boot --------------------------------------------------------------
   await p.goto(base + '/hyperdagger/', { waitUntil: 'load' });
@@ -773,6 +778,33 @@ s.listen(0, '127.0.0.1', async () => {
   }));
   ok('END RUN leaves a run for the mode menu', backAtMenu.state === 'menu', backAtMenu.state);
   ok('and the mode toggle is there when you land', backAtMenu.canSwitch);
+
+  // ---- v37 the Meshy seam ------------------------------------------------
+  // The loader for this whole system was never called from anywhere, so 5 MB
+  // of exported art had never once been on screen and nothing said so. These
+  // checks are about the SEAM, not about any particular art being on: the
+  // manifest is the single list, and an empty one must cost nothing.
+  const skins = await p.evaluate(() => window.__hd.debug.getMeshSkins());
+  ok('the mesh-skin loader actually runs at boot', skins.ran === true);
+  ok('every declared skin loaded', skins.declared.every(k => skins.loaded.includes(k)),
+    JSON.stringify(skins));
+  const manifest = await p.evaluate(async () => {
+    const r = await fetch('assets/manifest.json');
+    return r.ok ? await r.json() : null;
+  });
+  ok('the manifest is present and parses', !!manifest && typeof manifest.models === 'object');
+  const declaredFiles = Object.values(manifest?.models ?? {})
+    .map(v => (typeof v === 'string' ? v : v?.file)).filter(Boolean);
+  const cached = await p.evaluate(async () => {
+    const r = await fetch('sw.js');
+    return r.ok ? await r.text() : '';
+  });
+  ok('the worker precaches exactly the art the manifest names',
+    declaredFiles.every(f => cached.includes(`./assets/${f}`)), declaredFiles.join(','));
+
+  // ---- nothing is asked for that is not there ----------------------------
+  ok('the game never requests a file that is not in the tree',
+    misses.length === 0, misses.slice(0, 4).join(' | '));
 
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));

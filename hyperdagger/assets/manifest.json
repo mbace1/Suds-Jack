@@ -1,0 +1,27 @@
+{
+  "note": "THE SEAM for the Nano Banana -> Meshy -> game pipeline. A kind listed in `models` is loaded, re-materialed as the alive-skin and voxelised into the damage lattice at boot; a kind that is absent is never requested, so this file is also what stops the loader 404ing for art that is not in the tree. `assets/README.md` is the drop-in guide.",
+  "kinds": [
+    "skull",
+    "spider",
+    "totem"
+  ],
+  "models": {},
+  "tuning": "Each kind may be a bare filename or {file, size, tint}. size is the largest dimension in world units; tint MULTIPLIES the baked albedo, so \"#c8c0b4\" pulls a Meshy skin toward bone without flattening its texture.",
+  "off": "Nothing is registered by DEFAULT, deliberately. A registered kind replaces that enemy's hand-authored sculpt AND its smoothed alive-hull (the v4.31 and v4.32 work) wholesale, which is an art decision rather than a fix - the gate's hull section stops passing the moment skull is registered, which is the gate saying exactly that. Turn one on by naming it here, then LOOK at a render.",
+  "available": [
+    "blinker.glb",
+    "brute.glb",
+    "egg.glb",
+    "husk.glb",
+    "leviathan.glb",
+    "revenant.glb",
+    "serpent.glb",
+    "serpenthead.glb",
+    "skull.glb",
+    "skulldread.glb",
+    "spider.glb",
+    "thorn.glb",
+    "totem.glb",
+    "watcher.glb"
+  ]
+}

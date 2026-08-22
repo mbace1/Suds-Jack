@@ -99,16 +99,27 @@ for (const f of ['favicon.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-51
 }
 
 // The Meshy enemy models are named by mesh-enemies.js through `new URL(...)`,
-// which no reference pattern sees, so they are listed by hand — but ONLY the
-// ones that exist. Listing the art before it lands looks harmless (the loader
-// catches, the worker adds each entry separately) and is not: every install
-// fires three requests that 404, which is a console error on every page load
-// and a gate failure. A precache list naming a file that is in no branch is
-// the same class of lie as one naming the wrong token.
-const MODELS = ['skull', 'spider', 'totem']
-  .map(k => `models/enemies/${k}.glb`)
-  .filter(f => read(`${GAME}/${f}`) != null)
-  .map(f => `./${f}`);
+// which no reference pattern sees. They are not listed by hand either: the
+// game reads models/enemies/manifest.json and requests ONLY what it names, so
+// the precache reads the same file and lists the same thing. A precache naming
+// art that is in no branch is the same class of lie as one naming the wrong
+// token — and the manifest is what stops the loader asking for it at runtime,
+// so the worker and the game cannot disagree about which art exists.
+const MODELS = (() => {
+  const at = `${GAME}/assets/manifest.json`;
+  const raw = read(at);
+  if (raw == null) return [];
+  const out = ['./assets/manifest.json'];
+  let declared = {};
+  try { declared = JSON.parse(raw).models ?? {}; } catch { return out; }
+  for (const v of Object.values(declared)) {
+    // a kind is a bare filename or { file, … } — the same two forms the game
+    // accepts, read the same way, so the worker and the loader cannot disagree
+    const file = typeof v === 'string' ? v : v?.file;
+    if (file && read(`${GAME}/assets/${file}`) != null) out.push(`./assets/${file}`);
+  }
+  return out;
+})();
 
 // `../toko/js/signature.js` climbs out of the game folder and must stay
 // written that way — `./../toko/…` resolves the same but reads as a mistake.
