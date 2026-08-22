@@ -1,40 +1,17 @@
 import * as THREE from 'three';
-import { VoxelSprite, bakeShading, MODELS } from './voxel.js?v=54';
-
-// registry keys are MODELS keys; enemies hand us the model OBJECT, so keep
-// the reverse map here where both sides are visible
-const SLOT_OF = new Map(Object.entries(MODELS).map(([k, v]) => [v, k]));
+import { bakeShading } from './voxel.js?v=67';
 
 /**
- * Mesh assets — the Nano Banana → Meshy pipeline's landing pad (v4.35).
+ * ARENA MESH ASSETS — the Meshy pipeline's landing pad for ENVIRONMENT.
  *
- * A Meshy GLB becomes an enemy in two halves, on the v4.32 split:
- *  - the mesh itself is the ALIVE-SKIN (in the hull slot), lit by the new
- *    asset light rig and re-materialed to Lambert (the rest of the game is
- *    unlit MeshBasic, so the lights touch imported assets and nothing else);
- *  - the lattice is VOXELIZED from the mesh at load, so chips, chunk
- *    detachment, death bursts and the bone-yard keep working unchanged.
+ * Enemy skins are NOT here: `mesh-enemies.js` owns those and is already
+ * wired into enemy.js. This module keeps the two jobs that module does not
+ * do — the instanced floor-panel field, and the mesh voxelizer that turns
+ * an imported mesh into a damage lattice.
  *
- * Damage tells the truth: chips tear the lattice under the skin, and when
- * enough matter is gone (SKIN_SHED) the skin shatters off in a debris burst
- * and the wounded voxel body fights on — the skin is how it looks whole,
- * the voxels are what it IS.
- *
- * Drop Meshy exports into assets/ and register them below. Everything is
- * fail-soft: a missing or broken file logs one warning and the enemy keeps
- * its built-in string-art model, so the game never breaks on a bad export.
+ * Everything is fail-soft: nothing registered means nothing loads, and a
+ * broken file logs one warning and leaves the procedural arena alone.
  */
-
-// slot → asset config. height = world height in units (hitboxes are locked
-// per enemy class, so match the slot's current model height — see the table
-// in ART_PIPELINE.md). voxelSize ≈ the slot's current lattice pitch.
-// emissive (optional) re-lights near-black-red texels? No — keep Meshy
-// textures flat; `emissive: 0xrrggbb` adds a uniform glow if an asset needs it.
-export const MESH_ASSETS = {
-  // skull:     { url: 'assets/skull.glb?v=1',     height: 1.40, voxelSize: 0.14, yaw: 0 },
-  // watcher:   { url: 'assets/watcher.glb?v=1',   height: 0.76, voxelSize: 0.19, yaw: 0 },
-  // leviathan: { url: 'assets/leviathan.glb?v=1', height: 6.30, voxelSize: 0.35, yaw: 0 },
-};
 
 /**
  * ARENA assets — environment, not enemies, so they never get voxelized and
@@ -55,34 +32,9 @@ export const ARENA_ASSETS = {
   // floorPanel: { url: 'assets/panel.glb?v=1', size: 4, yaw: 0, lift: 0.02 },
 };
 
-/** Fraction of the lattice that must survive for the skin to stay on. */
-export const SKIN_SHED = 0.78;
 
-const loaded = new Map(); // slot → { template, voxels, size } | null (failed)
 
-/** True once preloadSkins has resolved (assets may still have failed). */
-export let skinsReady = false;
 
-/** Kick off loading every registered asset. Resolves when all settled;
- *  failures resolve to null so one bad export can't block the rest. */
-export async function preloadSkins() {
-  const slots = Object.keys(MESH_ASSETS);
-  if (!slots.length) { skinsReady = true; return; }
-  // the loader is 110 KB — pay for it only when assets are registered
-  const { GLTFLoader } = await import('../vendor/jsm/loaders/GLTFLoader.js');
-  const loader = new GLTFLoader();
-  await Promise.all(slots.map(async slot => {
-    const cfg = MESH_ASSETS[slot];
-    try {
-      const gltf = await loader.loadAsync(cfg.url);
-      loaded.set(slot, prepareAsset(gltf.scene, cfg));
-    } catch (e) {
-      console.warn(`mesh asset '${slot}' failed (${e.message ?? e}) — using the built-in model`);
-      loaded.set(slot, null);
-    }
-  }));
-  skinsReady = true;
-}
 
 /**
  * Build the instanced floor-panel field, or null when no panel is
@@ -166,6 +118,30 @@ export async function buildFloorPanels(arenaR) {
 }
 
 /** Normalize + re-material + voxelize one loaded scene. */
+/**
+ * Lambert conversion: responds to the asset light rig, costs almost nothing,
+ * and KEEPS THE ALBEDO MAP. Everything native stays MeshBasic, so the lights
+ * change imported assets and nothing else.
+ *
+ * This is shared because the other importer did not do it. mesh-enemies.js
+ * re-materialed every Meshy export to one flat unlit fill, which on an unlit
+ * pipeline means no shading at all: the totem rendered as a featureless pale
+ * slab with the texture Meshy had baked for it thrown away.
+ */
+export function toLambert(root, emissive) {
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const m = o.material;
+    o.material = new THREE.MeshLambertMaterial({
+      map: m.map ?? null,
+      color: m.color ? m.color.clone() : new THREE.Color(0xffffff),
+      emissive: emissive ? new THREE.Color(emissive) : new THREE.Color(0x000000),
+    });
+    o.material.side = THREE.FrontSide;
+  });
+  return root;
+}
+
 export function prepareAsset(root, cfg) {
   // normalize: yaw, then scale so bbox height = cfg.height, centered on origin
   root.rotation.y = cfg.yaw ?? 0;
@@ -180,36 +156,12 @@ export function prepareAsset(root, cfg) {
   root.position.sub(c);
   root.updateMatrixWorld(true);
 
-  // Lambert conversion: responds to the asset light rig, costs almost
-  // nothing, and keeps the albedo map. Everything native stays MeshBasic,
-  // so the lights change imported assets and nothing else.
-  root.traverse(o => {
-    if (!o.isMesh) return;
-    const m = o.material;
-    o.material = new THREE.MeshLambertMaterial({
-      map: m.map ?? null,
-      color: m.color ? m.color.clone() : new THREE.Color(0xffffff),
-      emissive: cfg.emissive ? new THREE.Color(cfg.emissive) : new THREE.Color(0x000000),
-    });
-    o.material.side = THREE.FrontSide;
-  });
+  toLambert(root, cfg.emissive);
 
   const { voxels, size } = voxelizeMesh(root, cfg.voxelSize);
   return { template: root, voxels, size };
 }
 
-/** Per-spawn sprite for a MODELS entry, or null when no (working) asset is
- *  registered — the caller falls back to the string-art model. */
-export function skinFor(model) {
-  const a = loaded.get(SLOT_OF.get(model));
-  if (!a) return null;
-  return VoxelSprite.fromVoxels(
-    // each spawn mutates alive flags + colors — deep-copy the lattice
-    a.voxels.map(v => ({ ...v, color: v.color.clone() })),
-    a.size,
-    a.template.clone(true), // shares geometry/materials, own transform tree
-  );
-}
 
 // ---------------------------------------------------------------- voxelizer
 

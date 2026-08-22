@@ -3,7 +3,7 @@ import * as THREE from 'three';
 const _d = new THREE.Vector3();
 const _zero = new THREE.Matrix4().makeScale(0, 0, 0);
 
-import { TUNING as T } from './tuning.js?v=54';
+import { TUNING as T } from './tuning.js?v=67';
 
 const GRAVITY = T.gems.gravity;
 const MAGNET_R = T.gems.magnetR;
@@ -11,8 +11,9 @@ const COLLECT_R = T.gems.collectR;
 const LIFETIME = T.gems.lifetime;
 
 /** Devil-Daggers-style gems: dropped by heavy kills, bounce out physically,
- *  hover in place, magnet to the player when close. Collecting them levels
- *  the dagger stream up.
+ *  hover in place, and cross the arena toward an IDLE hand. Firing suspends
+ *  the attraction; a shotgun blast kicks loose gems away. That collection
+ *  tension is part of the weapon economy, not cosmetic pickup polish.
  *
  *  One InstancedMesh renders every gem (toko-drop's v189 pattern); the
  *  expiry blink writes a zero-scale matrix on off frames instead of
@@ -62,7 +63,7 @@ export class GemPool {
   }
 
   /** Returns how many gems the player collected this frame. */
-  update(dt, playerPos) {
+  update(dt, playerPos, attract = true) {
     let collected = 0;
     for (let i = this.active.length - 1; i >= 0; i--) {
       const g = this.active[i];
@@ -77,7 +78,7 @@ export class GemPool {
       _d.copy(playerPos).sub(g.m.position);
       const dist = _d.length();
       if (dist < COLLECT_R) { collected++; this.pool.push(g.m); this.active.splice(i, 1); continue; }
-      if (dist < MAGNET_R) {
+      if (attract && dist < MAGNET_R) {
         // magnet: fly at the player, overriding ballistics
         g.vel.addScaledVector(_d.divideScalar(dist), 60 * dt);
         if (g.vel.length() > 16) g.vel.setLength(16);
@@ -98,6 +99,23 @@ export class GemPool {
     }
     this._commit();
     return collected;
+  }
+
+  /** Shotgun pressure wave: interrupt attraction and shove nearby gems away. */
+  blast(origin) {
+    for (const g of this.active) {
+      _d.copy(g.m.position).sub(origin);
+      let dist = _d.length();
+      if (dist >= T.gems.blastR) continue;
+      if (dist < 0.05) {
+        _d.set(Math.random() - 0.5, 0.25, Math.random() - 0.5);
+        dist = _d.length();
+      }
+      _d.divideScalar(dist);
+      const push = T.gems.blastPush * (1 - dist / T.gems.blastR);
+      g.vel.addScaledVector(_d, push);
+      g.vel.y += push * 0.35;
+    }
   }
 
   recycle(i) {

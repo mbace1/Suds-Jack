@@ -14,10 +14,27 @@ export const TUNING = {
   // first-person body
   player: {
     eye: 1.6,        // camera height above the feet
-    speed: 12,       // ground strafe speed, u/s
+    speed: 10.4,     // straight-line speed; diagonal strafing is deliberately faster
+    diagonalBoost: 0.56, // DD/90s-FPS speed reward for combining forward + strafe
+    groundAccel: 12, // Quake-style acceleration, 1/s
+    groundFriction: 7,
+    airAccel: 2.6,   // air steering without erasing carried momentum
+    airSpeedCap: 19,
     gravity: -24,
     jumpV: 8.6,      // takeoff velocity — with gravity gives the jump arc
-    maxJumps: 2,     // ground jump + one air jump
+    maxJumps: 1,     // extra height comes from a downward shotgun, not a free air jump
+    glideGravity: 0.32, // gravity multiplier while gliding (MOVE / TRUCK)
+    jumpBuffer: 0.11,
+    coyote: 0.08,
+    hopWindow: 0.12,
+    hopBoost: 1.08,
+    daggerJumpV: 13,
+    daggerJumpPush: 4.2,
+    daggerJumpWindow: 0.48,
+    daggerSecondWindow: 1.4,
+    daggerSecondMaxVy: 3.4,
+    daggerAimY: -0.38,
+    daggerJumps: 2,
   },
 
   // look, all devices. Touch rates are the shipped feel and stay put by
@@ -71,34 +88,43 @@ export const TUNING = {
   // DD gunfeel (2026-07-31): TAP = shotgun burst, HOLD = stream, manually
   // aimed on desktop and pad; touch alone keeps auto-fire while moving.
   weapon: {
-    levelGems: [0, 0, 10, 30, 70],
+    // DD progression: LV2 at 10 collected, LV3 at 70, then bank 150
+    // homing daggers (220 total if none are spent) for the final hand.
+    levelGems: [0, 0, 10, 70, 220],
     tiers: [
       null,
-      { stream: 13, homing: false },
-      { stream: 18, homing: false },
-      { stream: 18, homing: true },
-      { stream: 26, homing: true },
+      { stream: 20, homing: false },
+      { stream: 40, homing: false },
+      { stream: 80, homing: false },
+      { stream: 106, homing: false },
     ],
-    daggerSpeed: 58,   // u/s
-    spread: 0.035,     // rad of random cone on the stream
+    streamSpeed: 48,   // the sustained whip is slower and visibly trackable
+    shotgunSpeed: 78,  // tap-burst daggers cross the arena much faster
+    spread: 0.045,     // rad of random cone on the stream
+    originJitter: 0.1, // uneven fingertip release, not a laser from one pixel
     homingDot: 0.8,    // cos of the steer cone (~37°)
     homingRange: 30,   // u — targets beyond this are ignored
     homingSteer: 7,    // 1/s — exponential steer rate toward the target
     autoFireMove: 0.15, // move-input length that turns the touch stream on
-    streamDelay: 0.22, // s a press must be held before the stream begins
+    streamDelay: 0.12, // short enough to feel immediate while preserving tap detection
     // The burst wins the MOMENT, the stream wins the MINUTE (DD's economy):
     // count[lv]/cd must stay below tiers[lv].stream at every level, or
     // tap-spam becomes the optimal close-range play. The gate asserts it.
-    shotgunCount: [0, 10, 12, 12, 14], // daggers per tap-burst, by weapon level
-    shotgunSpread: 0.14, // rad — much wider cone than the stream
-    shotgunCd: 0.8,    // s before the hand fires again after a burst
+    shotgunCount: [0, 10, 20, 40, 60], // daggers per tap-burst, by weapon level
+    shotgunSpread: 0.18, // rad — much wider cone than the stream
+    shotgunCd: 0.6,    // brisk recovery; burst DPS still stays below the stream
+    homingStream: 40,
+    homingShot: [0, 0, 0, 20, 30],
+    homingDamage: 10,
   },
 
   gems: {
     gravity: -22,
-    magnetR: 5.5,      // u — gems inside this fly to the player
+    magnetR: 55,       // u — the whole arena, but only while the hand is idle
     collectR: 0.95,
-    lifetime: 25,      // s before a gem expires (blinks its last 3)
+    lifetime: 10,      // DD's short collection window
+    blastR: 18,        // a shotgun pushes loose gems away from the hand
+    blastPush: 14,
   },
 
   // REAP — spend the bone-yard (R/E, ✕/LB)
@@ -119,75 +145,76 @@ export const TUNING = {
 
   // HYPER mode economy (real-time life clock)
   hyper: {
-    start: 30,         // s on the clock at run start
+    start: 30,
     cap: 60,
-    hitCost: 10,       // s lost per enemy touch
+    hitCost: 10,
+    killBonus: 3,
+    densityRamp: 0.012,
+  },
+
+  // TRUCK — the Clustertruck bench. Two numbers decide whether it is a road
+  // or a set of stepping stones: platformGap is centre-to-centre, platformDepth
+  // is how long each slab is, so the GAP you actually jump is gap - depth.
+  // At 5.4-6.8 deep on a 6.5 spacing the early track is a road with seams,
+  // which is the point — the pressure is that it LEAVES (platformLife starts
+  // the moment you touch it), not that every step is a jump. Real holes arrive
+  // later, when the generator starts widening the spacing.
+  truck: {
+    scrollSpeed: 14,
+    platformGap: 6.5,
+    platformDepth: 5.4,
+    platformDepthVar: 1.4,
+    platformLife: 2.2,
+    fallY: -8,
+    width: 4.2,
   },
 
   /**
-   * THE DIFFICULTY CURVE (v4.36 balance pass, owner's brief: "more varied
-   * enemies in the first minute, harder for the 2nd").
+   * THE DIFFICULTY CURVE (ported from the v4.36/v4.38 balance work).
    *
-   * The shape is deliberate and the two halves do different jobs:
+   * This governs the PULSE director, which since v31 drives HYPER only —
+   * PURE runs the fixed, learnable DD_SPAWNSET and is deliberately NOT
+   * touched by any of this. Two halves doing different jobs:
    *
    *  MINUTE ONE is a PARADE — pulses come fast (~9.5 s) so a new threat
    *  debuts almost every pulse (the debut guarantee forces the earliest
-   *  un-met type), but the budget stays LOW so each one arrives nearly
-   *  alone. You meet six distinct things and get to read each of them.
+   *  un-met type), but the budget stays LOW so each arrives nearly alone.
+   *  Per-pulse pressure in minute one is LOWER than the old curve even
+   *  though six things debut instead of four.
    *
-   *  MINUTE TWO is the SQUEEZE — the debut parade is over, so the same
-   *  cadence now spends a budget that climbs seven times faster
-   *  (1.45/pulse vs 0.2), and the recurring clocks tighten. Same enemies,
-   *  suddenly in numbers: the difficulty comes from volume, not novelty.
-   *
-   * MEASURED, with a player who fires (js sim over a real 130 s run):
-   * live threats average 4.5 in minute one, 30 in minute two, and then
-   * PLATEAU at ~35 rather than climbing — the plateau is the ceiling
-   * below doing its job, and it is what keeps a bad minute survivable.
-   *
-   * Every number the director reads lives here, so re-balancing is one file.
+   *  MINUTE TWO is the SQUEEZE — the parade is over, so the same cadence
+   *  spends a budget climbing seven times faster. Same enemies, suddenly
+   *  in numbers: difficulty from volume, not novelty.
    */
   director: {
     // [key, unlockTime, cost] — ORDER MATTERS: the debut guarantee walks
     // this list, so it doubles as the order the player meets the roster in.
+    // An unlock only opens ELIGIBILITY; the debut lands on the NEXT pulse,
+    // so measured arrival runs ~8-14 s behind these numbers.
     pool: [
-      // NB: an unlock only opens ELIGIBILITY — the debut lands on the next
-      // pulse, so measured arrival runs ~8-14 s behind these numbers. They
-      // are set early enough that all six still land inside minute one.
-      ['skulls', 6, 2],    // the swarm fodder — first contact
-      ['watcher', 14, 3],  // …teaches "something shoots at you"
-      ['husk', 22, 5],     // …teaches "chew the armor" while it is calm
-      ['brute', 30, 3],    // …teaches "some things don't flinch"
-      ['spider', 38, 4],   // …teaches "your gems can be stolen"
-      ['blinker', 46, 3],  // …teaches "you cannot simply kite"
-      ['serpent', 68, 8],  // minute two opens with the big one
+      ['skulls', 6, 2],
+      ['watcher', 14, 3],
+      ['husk', 22, 5],
+      ['brute', 30, 3],
+      ['spider', 38, 4],
+      ['blinker', 46, 3],
+      ['serpent', 68, 8],
       ['dread', 88, 6],
     ],
     caps: { watcher: 3, blinker: 3, spider: 2, dread: 2, husk: 2 },
-    // pulse cadence: interval = max(floor, base − t·slope)
     pulse: { first: 10, base: 10, slope: 0.012, floor: 7.5 },
-    // budget = base + min(n,kneeA)·rateA + (min(n,kneeB)−kneeA)·rateB
-    //          + (n−kneeB)·rateC   — kneeA ends the parade, kneeB the squeeze
-    // rateA is deliberately tiny: during the parade the budget barely covers
-    // the forced debut, so each new threat arrives with almost no support.
-    // Per-pulse pressure in minute one actually DROPS vs the old curve
-    // (2.8–5.1 vs 3.8–9.0) even though six things debut instead of four.
     budget: { base: 2.6, kneeA: 6, rateA: 0.2, kneeB: 15, rateB: 1.45, rateC: 0.4 },
     /**
      * THE PRESSURE CEILING. Budget controls the spawn RATE; what actually
-     * kills you is the standing POPULATION, and population accumulates
-     * whenever spawns outrun your kill rate. Without a ceiling the two
-     * compound: measured over a no-kill run, minute two averaged 41 live
-     * threats against minute one's 6 — a wall, not a ramp, and a death
-     * spiral for anyone already struggling (falling behind makes you fall
-     * further behind). The director now refuses to add pressure while the
-     * floor is already at capacity, so a bad minute stays survivable and
-     * the difficulty lives in the MIX, not in an unbounded pile.
+     * kills you is the standing POPULATION, and population runs away
+     * whenever spawns outpace kills — which is also a death spiral, since
+     * falling behind makes you fall further behind. Measured over a real
+     * run, the uncapped curve went 6 -> 41 -> 88 live threats; with the
+     * ceiling a firing player sees 4.5 -> 30 -> a PLATEAU at ~35.
      */
     ceiling: { base: 10, rate: 0.15, cap: 38 },
-    // recurring clocks (own timers, outside the pulse system)
     totem: { first: 0, base: 24, slope: 0.03, floor: 15 },
-    thorn: { first: 40, base: 11, slope: 0.03, floor: 5 }, // debuts in minute one now
+    thorn: { first: 40, base: 11, slope: 0.03, floor: 5 },
     leviathan: { first: 150, every: 120 },
     revenant: { first: 110 },
   },

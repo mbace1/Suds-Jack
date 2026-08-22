@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Hyper Dagger</title>
-  <link rel="manifest" href="manifest.webmanifest?v=63">
+  <link rel="manifest" href="manifest.webmanifest?v=67">
   <link rel="icon" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
@@ -32,6 +32,25 @@
     #pauseBtn:hover { opacity: 1; }
     #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(120,10,10,0.55) 100%); opacity: 0; z-index: 4; transition: opacity 0.15s; }
     body.in-run #msg { display: none; }
+    /* THE ACTIVE FRAME. During a run the HUD is clock-only: kills, gems and
+       the style badge are readable between runs, not mid-fight, and the
+       arcade shell (pause, HOME, signature) retreats almost to nothing so
+       the only chrome competing with the arena is the timer. Off-run
+       everything returns. main.js already toggled body.in-run in all the
+       right places and the gate already asserted this behaviour — the rules
+       themselves were simply never written, so the gate was red by three. */
+    body.in-run #kills,
+    body.in-run #gems,
+    body.in-run #style { display: none; }
+    body.in-run #timer { font-size: 27px; }
+    body.in-run #pauseBtn { opacity: 0.12; }
+    body.in-run #pauseBtn:hover { opacity: 1; }
+    body.in-run .arcade-home,
+    /* !important because toko/js/signature.js sets opacity as an INLINE
+       style, which beats a stylesheet rule. toko/ is the shared brand
+       module five games import, so the override belongs here, not there. */
+    body.in-run .toko-signature { opacity: 0.05 !important; }
+    .arcade-home, .toko-signature, #pauseBtn { transition: opacity 0.35s ease; }
   </style>
 </head>
 <body>
@@ -54,10 +73,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=63"></script>
+  <script type="module" src="js/main.js?v=67"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=63').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=67').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=17"></script>

@@ -6,7 +6,7 @@
 //  - Tokened module requests (?v=N) stay network-first so a deploy with a
 //    bumped token always pulls the new graph; the old tokened entries age out.
 
-const CACHE = 'hyperdagger-v34';
+const CACHE = 'hyperdagger-v37';
 const PRECACHE = [
   './',
   './index.html',
@@ -21,18 +21,22 @@ const PRECACHE = [
   '../toko/js/signature.js?v=3',
   '../toko/js/surface.js',
   '../toko/js/util.js',
-  './js/audio.js?v=54',
-  './js/bullets.js?v=54',
-  './js/daggers.js?v=54',
-  './js/enemy.js?v=54',
-  './js/gems.js?v=54',
-  './js/input.js?v=54',
-  './js/main.js?v=63',
-  './js/meshassets.js?v=54',
-  './js/player.js?v=54',
-  './js/rng.js?v=54',
-  './js/tuning.js?v=54',
-  './js/voxel.js?v=54',
+  './js/audio.js?v=67',
+  './js/bullets.js?v=67',
+  './js/daggers.js?v=67',
+  './js/enemy.js?v=67',
+  './js/environment.js?v=67',
+  './js/gems.js?v=67',
+  './js/input.js?v=67',
+  './js/main.js?v=67',
+  './js/mesh-enemies.js?v=67',
+  './js/meshassets.js?v=67',
+  './js/modes.js?v=67',
+  './js/player.js?v=67',
+  './js/rng.js?v=67',
+  './js/truck.js?v=67',
+  './js/tuning.js?v=67',
+  './js/voxel.js?v=67',
   './vendor/jsm/loaders/GLTFLoader.js',
   './vendor/jsm/postprocessing/AfterimagePass.js',
   './vendor/jsm/postprocessing/EffectComposer.js',
@@ -48,6 +52,7 @@ const PRECACHE = [
   './vendor/jsm/shaders/OutputShader.js',
   './vendor/jsm/utils/BufferGeometryUtils.js',
   './vendor/three.module.min.js',
+  './assets/manifest.json',
 ];
 
 self.addEventListener('install', event => {

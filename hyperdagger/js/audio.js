@@ -93,8 +93,10 @@ export class AudioKit {
 
   shotgun() {
     if (!this.ctx) return;
-    this._noise(0.28, 'lowpass', 900, 0.8, 0.55);
-    this._tone('square', 130, 40, 0.22, 0.4);
+    const v = 0.9 + Math.random() * 0.2;
+    this._noise(0.22, 'bandpass', 820 * v, 0.9, 0.48);
+    this._noise(0.11, 'highpass', 2500 * v, 0.7, 0.16);
+    this._tone('square', 125 * v, 38, 0.2, 0.36);
   }
 
   gem() {
