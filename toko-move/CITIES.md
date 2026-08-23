@@ -75,16 +75,23 @@ costs nothing beyond asking permission.
 
 A pack is fetched **once**, by hand, and committed as JSON. The game only ever
 reads a file, which keeps the arcade's offline-first promise honest and keeps a
-key out of a static site where it would be public the moment it shipped. The
-**live** layer is then opt-in: you paste your own Digitransit key, it goes in
-`localStorage`, and it is the same shape `hub/feedback.js` already uses for its
-`SHEET_ENDPOINT`. Nobody who just wants to play a board ever meets a key.
+key out of a static site where it would be public the moment it shipped.
+
+> **Superseded in part, later the same day.** Point 1 above sent the first cut
+> of the fetcher through Digitransit's keyed GraphQL, and the "paste your own
+> key" design was built around it. Then the **static GTFS feed** turned up:
+> keyless, the same data, and refreshed daily. So for Helsinki there is no key
+> anywhere — not for the network, not for the live positions — and the opt-in
+> key design comes back only for Japan, where ODPT wants free registration. The
+> point is kept rather than edited away because the correction is the useful
+> part: *the keyed API was the first thing the documentation offered, and it was
+> the wrong road.*
 
 ## What is built (2026-08-23)
 
 Nothing is wired into the game yet, deliberately — how a city is *rendered*
-depends on what you do on one, and that is question 1 below. What exists is the
-part that is true under every answer.
+depends on what you do on one, which is still open. What exists is the part that
+is true under every answer.
 
 ### `toko-move/js/city.js` — the seam
 
@@ -147,56 +154,136 @@ every assertion passed and which was wrong on screen. Two things:
 
 ### `scripts/city-pack.mjs` — the fetcher
 
-Turns a Digitransit GraphQL answer into a pack. Takes the **longest** pattern
-per route, because `patterns` returns short workings and diversions too and the
-06:14 that turns back early is not the line as anybody thinks of it; keeps one
-direction, because a line and its return are one stroke on a diagram.
+    node scripts/city-pack.mjs --city hsl
+    node scripts/city-pack.mjs --city hsl --gtfs ~/Downloads/hsl.zip   # offline
 
-**It has not been run against the live API.** This sandbox can reach
-`raw.githubusercontent.com` and nothing else — `api.digitransit.fi`,
-`digitraffic.fi` and Overpass are all blocked from here — so both failure paths
-are exercised and the success path is not. It wants one run on a machine with a
-network and a key before anything is claimed for it.
+Downloads a GTFS feed, or reads one off disk, and writes a pack. No key. It
+leans entirely on `scripts/gtfs.mjs` below.
 
-No real city pack is committed, for the same reason: inventing stop coordinates
-from memory would be fabricating the one thing in this mode that has to be true.
+**It has not been run against a live feed.** This sandbox reaches
+`raw.githubusercontent.com` and nothing else — `dev.hsl.fi`, `api.digitransit.fi`,
+`digitraffic.fi` and Overpass are all blocked from here — so every failure path
+is exercised, the reader is proven against a hand-built feed, and the download
+is not. **It wants one run on a machine with a network** before anything is
+claimed for it; the first thing it will tell you is whether those URLs are still
+where the documentation says.
 
-## Open questions
+No real city pack is committed, for a related reason: inventing stop coordinates
+from memory would be fabricating the one thing in this mode that has to be
+true.
 
-**1. What do you DO on a city board?** This is the one that gates everything —
-the fitter is the same under all of them, the renderer is not.
+## Answered, 2026-08-23
 
-  - **(a) Expansion.** The real network is drawn faint underneath as what
-    already exists, and you draw new lines on top against a brief — *"the
-    western estates have no tram, you have 3 lines and 40 minutes"*. This is my
-    recommendation: it is the only one where the base game's verb still works,
-    it is exactly your "building and expanding type challenges", and a real
-    city's awkward shape is a better puzzle than a generated one.
-  - **(b) Operate.** The network is fixed and you allocate trains against real
-    demand — closer to a management game, and a different verb from the base.
-  - **(c) Viewer.** No game at all: it is the live map, and missions come later.
-  - **(d) All three, chosen per mission**, the way `layer:` already works.
+**1. What do you do on a city board?** *"Let's see if we can gamify this, so all
+look good for now."* → keep all four shapes open; the fitter and the pack are
+the same under each, so nothing is blocked. The one that has to be picked before
+the renderer is written, and it can wait.
 
-**2. Which city first, and which modes?** Helsinki tram + metro is the obvious
-first — small enough to be legible at 86-odd stops, the data is open, and you
-live there so you can tell me when it looks wrong, which nobody else can.
+**2. Which cities.** Helsinki → a Japanese city → New York.
 
-**3. The live layer — when?** (a) After a city stands up as a static board, or
-(b) as the first thing, because it is the part that is genuinely novel. I lean
-(a): a live layer over a map that does not read yet has nothing to be live on.
+  **Which Japanese city is still open.** The direction says *"Naga prefecture
+  city with the biggest metro map"*, and those are two different cities:
+  **Nagoya** runs 6 lines / 87 stations, and the biggest metro map in Japan is
+  **Tokyo** at 13 lines / 286 stations. Nagoya is the natural second — it is
+  Helsinki-scale, so it tests whether the pack format travels without also
+  testing whether the fitter survives 286 stations. Tokyo is the stress test and
+  is worth doing *because* it is hard, just not second. Say which and I will
+  fetch it; both are in the table below without a URL until then.
 
-**4. Is "catch a tram" a mode, or the point?** A game with a live map inside it
-and a live map with a game inside it are different products with the same code.
-It changes what the front door says, not what gets built next.
+**3. When does live data arrive?** *"Depending on what cities offer good live
+data, we can expand."* → the expansion order follows the feeds, and the table
+below is that survey. Taking my own recommendation on the timing: after a city
+stands up as a static board, because a live layer over a map that does not read
+yet has nothing to be live on.
 
-**5. Congestion.** Digitraffic is open and Finland-only. Do we build the car
-layer's real congestion for Finland now and accept that it does not travel, or
-hold it until there is a licensed global source?
+**4. Is "catch a tram" a mode or the point?** *"You could get points for live
+hopping."* → **the live map is scored**. That is a better answer than either of
+mine: it makes the live layer a game rather than a utility bolted to one, and it
+gives the GPS a reason to exist beyond a blue dot. It also raises a question
+neither of us has asked — what stops you claiming a ride you did not take? The
+honest version needs GPS to agree with a vehicle's position for a while, which
+is a real design problem and a good one.
 
-**6. Does a city get its own clock?** The abstract missions run at an hour a
-minute. A live city runs at one second a second, and those cannot be the same
-mission format — a `survive`-style goal against real time is a different thing
-from one against a compressed morning.
+**5. Congestion, local and global.** Surveyed below, and the answer is blunt:
+**there is no free, globally redistributable real-time congestion feed.** Google,
+TomTom, HERE and Mapbox all forbid storing the data beyond a short cache or
+drawing it outside their own map rendering, which is exactly what this game
+would do. The open efforts — the World Bank's Open Traffic, GraphHopper's
+`open-traffic-collection` — are a per-country patchwork and mostly historic
+rather than live.
+
+That has a consequence for the base game, which is what you were pointing at:
+**the global layers cannot be fed by real congestion, so they should stay
+simulated.** Real traffic is a *local* garnish, available where a country
+happens to publish it — Finland does, under CC BY 4.0 — and the sea and air
+layers are simulated because nothing else is on offer at that scale. Better to
+know that before designing a challenge around live global data.
+
+**6. Does a city get its own clock?** Read as *cities run on real time*. Which
+means a city cannot use the mission format as it stands: `survive 600s` against
+a compressed morning and `survive 600s` against the wall clock are different
+objects, and the live one cannot be paused, sped up, or replayed. That is a
+format change, not a value change, and it is the next thing to design.
+
+## The feeds, looked up
+
+Everything here was searched for rather than remembered, and every URL is in
+Sources. **None has been fetched from this sandbox** — it reaches
+`raw.githubusercontent.com` and nothing else — so treat "no key" as documented
+rather than proven until one run succeeds.
+
+| city | network data | key? | licence |
+|---|---|---|---|
+| **Helsinki** | `dev.hsl.fi/gtfs/hsl.zip` — GTFS, 464 routes, tram + metro + ferry, refreshed daily (last 2026-08-18) | **no** | CC BY 4.0 |
+| Helsinki (alt) | HSL ArcGIS open data portal — routes, stops, zones as GeoJSON / KML / shapefile | no | CC BY 4.0 |
+| Helsinki (alt) | Digitransit routing API, GraphQL | **yes** | CC BY 4.0 |
+| **New York** | `web.mta.info/developers/data/nyct/subway/google_transit.zip` — GTFS | no | MTA terms — check |
+| **Japan** | ODPT (`odpt.org`) — railway + bus, GTFS and GTFS-RT, per operator | yes, free registration | per operator |
+| live vehicles, Helsinki | MQTT `mqtt.hsl.fi:8883`, ~1500 vehicles at ~1 Hz, topic-filtered | **no** | CC BY 4.0 |
+| live vehicles, NYC | MTA GTFS-RT — keys reported dropped, docs still say otherwise | verify | MTA terms |
+| congestion, Finland | Fintraffic Digitraffic — speeds, volumes, incidents | no | CC BY 4.0 |
+| congestion, global | TomTom / HERE / Mapbox / Google | yes | **may not be redrawn in our own style** |
+
+### What that changed in the code
+
+The first cut of `scripts/city-pack.mjs` went through Digitransit's GraphQL and
+needed a registered key. **The static GTFS feed needs no key at all** — for
+Helsinki, for New York, for most agencies on earth — and it is the same data. So
+the keyed path is gone rather than kept as an option: a build step that needs a
+secret is one nobody else can run, including whoever picks this up in a year.
+
+Which means the whole of Cities, network *and* live positions, can be built
+**without a single key**, and the "paste your own key" design in the section
+above is no longer needed for Helsinki. It comes back only for Japan, where ODPT
+does want free registration.
+
+### `scripts/gtfs.mjs` — reading a feed without a dependency
+
+GTFS is a zip of CSVs, so both halves are written out: a ZIP central-directory
+reader (stored and deflate, verified byte-identical to `/usr/bin/unzip` on every
+file of a test feed) and a CSV parser that handles quotes — because
+`"Kamppi, platform 3"` is one field and a reader that splits on commas silently
+moves every column after it. That is sixty lines against a dependency, in a repo
+that has none.
+
+Four things it does that a naive reader does not, each one a real trap:
+
+- **The longest pattern wins.** A route has dozens of trips and most are short
+  workings; the 06:14 that turns back early is not the line as anybody thinks of
+  it, and taking the first trip in the file picks one about as often as not.
+- **Stops are sorted by `stop_sequence`**, because GTFS does not promise the
+  rows are in order and a real feed's are not.
+- **The BOM is stripped.** Agencies ship UTF-8 BOMs, which turn `route_id` into
+  `﻿route_id` and make every lookup of the first column miss.
+- **The local header's own name and extra lengths** are read, not the central
+  directory's — they differ, and using the directory's lands you mid-file.
+
+Gate: 315 checks, up from 291. All five mutations of the reader are caught, and
+two of them only after the fixture was made harder — the first one put the short
+working *after* the full line, so "take the longest" and "take the first" agreed
+and the check proved nothing. The gate also learned to report a throw as a
+failure rather than dying on it, because a broken reader was hiding nine other
+checks behind a stack trace.
 
 ## Sources
 
@@ -210,4 +297,20 @@ from one against a compressed morning.
   [disruptions](https://www.hsl.fi/en/travelling/services-now)
 - Fintraffic Digitraffic — [road traffic](https://www.digitraffic.fi/en/road-traffic/),
   [terms of service](https://www.digitraffic.fi/en/terms-of-service/)
+- HSL — [GTFS feed](https://dev.hsl.fi/gtfs/hsl.zip),
+  [ArcGIS open data portal](https://public-transport-hslhrt.opendata.arcgis.com/),
+  [route and station maps](https://www.hsl.fi/en/travelling/route_and_station_maps),
+  [GTFS-RT docs](https://hsldevcom.github.io/gtfs_rt/),
+  [feed on Mobility Database](https://mobilitydatabase.org/feeds/gtfs/mdb-865)
+- HSL's own map tooling, which is the best available reference for how this
+  network is drawn in print — [hsl-map-style](https://github.com/HSLdevcom/hsl-map-style),
+  [hsl-routemap-server](https://github.com/HSLdevcom/hsl-routemap-server),
+  [hsl-map-generator-server](https://github.com/HSLdevcom/hsl-map-generator-server)
+- New York — [MTA developer resources](https://www.mta.info/developers),
+  [GTFS static on data.ny.gov](https://data.ny.gov/Transportation/MTA-General-Transit-Feed-Specification-GTFS-Static/fgm6-ccue),
+  [real-time data feeds](https://datamine.mta.info/)
+- Japan — [Public Transportation Open Data Center](https://www.odpt.org/en/overview/),
+  [data catalogue](https://ckan.odpt.org/en/dataset/)
+- Congestion — [GraphHopper's open-traffic-collection](https://github.com/graphhopper/open-traffic-collection)
+  (per-country survey), [World Bank Open Traffic](https://github.com/opentraffic)
 - A worked MQTT client, for reference: [otsaloma/helsinki-transit-live](https://github.com/otsaloma/helsinki-transit-live)

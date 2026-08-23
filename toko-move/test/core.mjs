@@ -11,6 +11,8 @@ import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=8';
 import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=8';
 import { PAL, INK } from '../js/palette.js?v=8';
 import { validate as validCity, project, octolinear, layout } from '../js/city.js?v=8';
+import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
+import { deflateRawSync, crc32 } from 'node:zlib';
 
 // a platform full of people, now that a passenger is an object
 const fill = (st, n, goal, now = 0) => { for (let i = 0; i < n; i++) st.join(goal, now); return st; };
@@ -18,6 +20,13 @@ const fill = (st, n, goal, now = 0) => { for (let i = 0; i < n; i++) st.join(goa
 let pass = 0; const fails = [];
 const ok = (cond, msg) => { if (cond) pass++; else fails.push(msg); };
 const eq = (a, b, msg) => ok(a === b || (typeof a === 'number' && Math.abs(a - b) < 1e-6), `${msg} — got ${a}, want ${b}`);
+// A check that survives the thing it is checking throwing. A gate that dies on
+// the first bad call never runs the rest of itself, and then a broken module
+// looks like a clean exit with no summary at all — which is exactly how a zip
+// reader pointed at the wrong offset hid nine other checks.
+const tries = (fn, msg, fallback = null) => {
+  try { return fn(); } catch (e) { fails.push(`${msg} — threw: ${e.message}`); return fallback; }
+};
 
 // ── geometry: the octolinear rule ───────────────────────────────────────
 {
@@ -1144,6 +1153,136 @@ function synthCity(seed = 7) {
   ok(out.stops.every(s => s.truth && Number.isFinite(s.truth.x)),
      'and where it really is, kept alongside — a bent stop that has forgotten its own position cannot be put back on a map');
   ok(out.report.onGrid >= 0.99, 'a second board bends as well as the first');
+}
+
+// ── reading a real feed ─────────────────────────────────────────────────
+// GTFS is a zip of CSVs, and scripts/gtfs.mjs reads both halves without a
+// dependency — which is the only way a city pack can exist in a repo with no
+// build step. The fixture is built here rather than checked in: a gate that
+// needs somebody else's 40 MB feed beside it is a gate that stops being run.
+
+// a genuine zip, both compression methods, real CRCs
+function zipOf(files, { method = 8 } = {}) {
+  const parts = [], dir = [];
+  let at = 0;
+  for (const [name, textIn] of files) {
+    const raw = Buffer.from(textIn, 'utf8');
+    const body = method === 8 ? deflateRawSync(raw) : raw;
+    const nb = Buffer.from(name, 'utf8');
+    // an extra field in the LOCAL header and NOT in the directory, which is
+    // what real zips do (timestamps, unix uids) and what makes reading the body
+    // at the directory's offsets land in the middle of a file
+    const extra = Buffer.from([0x55, 0x54, 0x05, 0x00, 0x03, 1, 2, 3, 4]);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt16LE(method, 8);
+    local.writeUInt32LE(crc32(raw) >>> 0, 14); local.writeUInt32LE(body.length, 18);
+    local.writeUInt32LE(raw.length, 22); local.writeUInt16LE(nb.length, 26);
+    local.writeUInt16LE(extra.length, 28);
+    parts.push(local, nb, extra, body);
+
+    const cd = Buffer.alloc(46);
+    cd.writeUInt32LE(0x02014b50, 0); cd.writeUInt16LE(20, 4); cd.writeUInt16LE(20, 6);
+    cd.writeUInt16LE(method, 10); cd.writeUInt32LE(crc32(raw) >>> 0, 16);
+    cd.writeUInt32LE(body.length, 20); cd.writeUInt32LE(raw.length, 24);
+    cd.writeUInt16LE(nb.length, 28); cd.writeUInt32LE(at, 42);
+    dir.push(cd, nb);
+    at += 30 + nb.length + extra.length + body.length;
+  }
+  const cdBuf = Buffer.concat(dir);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(files.length, 8); eocd.writeUInt16LE(files.length, 10);
+  eocd.writeUInt32LE(cdBuf.length, 12); eocd.writeUInt32LE(at, 16);
+  return Buffer.concat([...parts, cdBuf, eocd]);
+}
+
+// One tram, one metro, one bus that must be filtered out; a short working that
+// must LOSE to the full line; a stop name with a comma in it; a BOM on the
+// first file and CRLF in the big one — all four of which real agencies ship.
+const FEED = [
+  ['routes.txt', '﻿route_id,route_short_name,route_long_name,route_type,route_color\n'
+    + 'T1,1,Ring,0,00985F\nM1,M,Metro,1,FF6319\nB9,9,Bus,3,\n'],
+  ['trips.txt', 'route_id,service_id,trip_id\nT1,S,t_full\nT1,S,t_short\nM1,S,m_full\nB9,S,b1\n'],
+  ['stop_times.txt', ('trip_id,stop_sequence,stop_id\n'
+    // the SHORT working first, so "take the longest pattern" and "take the
+    // first one you see" cannot agree — they did in the first cut of this
+    // fixture, and the check passed with the rule inverted
+    + 't_short,1,a\nt_short,2,b\n'
+    // …and deliberately out of order: GTFS does not promise sorted rows
+    + 't_full,3,c\nt_full,1,a\nt_full,2,b\nt_full,5,e\nt_full,4,d\n'
+    + 'm_full,1,a\nm_full,2,x\nm_full,3,y\n'
+    + 'b1,1,p\nb1,2,q\n').replace(/\n/g, '\r\n')],
+  ['stops.txt', 'stop_id,stop_name,stop_lat,stop_lon\n'
+    + 'a,"Kamppi, platform 3",60.169,24.931\nb,Rautatientori,60.171,24.941\nc,Hakaniemi,60.179,24.951\n'
+    + 'd,Sornainen,60.187,24.961\ne,Kallio,60.184,24.949\nx,Kamppi M,60.168,24.932\n'
+    + 'y,Ruoholahti,60.163,24.914\np,Bus1,60.20,24.90\nq,Bus2,60.21,24.91\n'],
+];
+
+{
+  for (const method of [0, 8]) {
+    const how = method === 0 ? 'stored' : 'deflated';
+    const files = tries(() => readZip(zipOf(FEED, { method })), `a ${how} zip is readable`, new Map());
+    eq(files.size, FEED.length, `a ${how} zip gives up every file`);
+    eq(files.get('stops.txt')?.toString('utf8').split('\n')[0], 'stop_id,stop_name,stop_lat,stop_lon',
+       `and the bytes come back intact (${how})`);
+  }
+  let threw = false;
+  try { readZip(Buffer.from('this is not a zip at all, not even slightly')); } catch { threw = true; }
+  ok(threw, 'and something that is not a zip says so rather than reading garbage');
+}
+
+{
+  // A UTF-8 BOM on the first file turns `route_id` into `﻿route_id`, so
+  // every lookup of the first column silently misses and the whole feed reads
+  // as empty. Agencies really do ship it.
+  const csv = parseCsv('﻿route_id,name\nT1,Ring\n');
+  eq(csv.at(csv.rows[0], 'route_id'), 'T1', 'a BOM does not eat the first column');
+  // …and this is the one that actually holds the strip in place. The line
+  // above passes either way, because JS `.trim()` counts U+FEFF as whitespace
+  // and the header lookup trims — so it proved nothing until the raw header
+  // was checked too.
+  eq(csv.head[0], 'route_id', 'and the raw header is clean, not merely trimmable');
+
+  // and a stop name with a comma is ONE field
+  const q = parseCsv('id,name,n\na,"Kamppi, platform 3",2\n');
+  eq(q.at(q.rows[0], 'name'), 'Kamppi, platform 3', 'a quoted comma stays inside its field');
+  eq(q.at(q.rows[0], 'n'), '2', 'and every column after it stays put');
+  const dq = parseCsv('id,name\na,"the ""Ring"" line"\n');
+  eq(dq.at(dq.rows[0], 'name'), 'the "Ring" line', 'a doubled quote is one quote');
+
+  eq(modeOf('0'), 'TRAM', 'route_type 0 is a tram');
+  eq(modeOf('1'), 'SUBWAY', 'and 1 is a metro');
+  eq(modeOf('3'), 'BUS', 'and 3 is a bus');
+  eq(modeOf('900'), 'TRAM', 'the extended codes map back onto the same handful');
+}
+
+{
+  const net = tries(() => packFromGtfs(readZip(zipOf(FEED)), { modes: ['TRAM', 'SUBWAY'] }),
+                    'a feed reads end to end', { stops: [], lines: [] });
+  eq(net.lines.length, 2, 'the bus is not in a tram-and-metro pack');
+  const tram = net.lines.find(l => l.id === 'T1') ?? { stops: [] };
+  // the 06:14 that turns back early is not the line as anybody thinks of it,
+  // and picking the first trip in the file picks one of those half the time
+  eq(tram.stops.length, 5, 'a route is drawn by its LONGEST pattern, not its first');
+  eq(tram.stops.join(','), 'a,b,c,d,e', 'in stop_sequence order, whatever order the file was in');
+  eq(tram.hex, '#00985F', 'and in the operator’s own colour when it has one');
+  eq(net.stops.length, 7, 'only the stops those lines call at');
+  // guarded, because a gate that THROWS instead of failing stops before it has
+  // run the rest of itself — which is how one broken reader hid four checks
+  const kamppi = net.stops.find(s => s.id === 'a') ?? {};
+  eq(kamppi.name, 'Kamppi, platform 3', 'with the name the feed gave it');
+  eq((kamppi.modes ?? []).slice().sort().join('+'), 'SUBWAY+TRAM', 'and an interchange knows it is one');
+
+  let threw = false;
+  try { packFromGtfs(readZip(zipOf(FEED)), { modes: ['FERRY'] }); } catch { threw = true; }
+  ok(threw, 'asking for a mode the city does not run says so rather than writing an empty pack');
+
+  // …and the whole way through: a feed becomes a diagram
+  const pack = { id: 't', name: 'T', source: 'the gate', licence: 'n/a', ...net };
+  const out = tries(() => layout(pack, { w: 860, h: 600, margin: 46 }),
+                    'a feed lays out', { stops: [], report: { onGrid: 0 } });
+  eq(out.stops.length, 7, 'a feed read off disk lays out like any other pack');
+  ok(out.report.onGrid >= 0.99, 'and lands on the grid');
 }
 
 // ── the ink ─────────────────────────────────────────────────────────────

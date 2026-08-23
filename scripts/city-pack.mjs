@@ -1,146 +1,108 @@
 #!/usr/bin/env node
 // Build a Toko Move city pack from a real network.
 //
-//   node scripts/city-pack.mjs --city hsl --modes TRAM,SUBWAY --key <subscription-key>
-//   node scripts/city-pack.mjs --city hsl --key $DIGITRANSIT_KEY --out toko-move/cities/hsl.json
+//   node scripts/city-pack.mjs --city hsl
+//   node scripts/city-pack.mjs --city nyc --modes SUBWAY
+//   node scripts/city-pack.mjs --city hsl --gtfs ~/Downloads/hsl.zip     (offline)
 //
 // WHY THIS IS A SCRIPT AND NOT SOMETHING THE GAME DOES. A city pack is data
 // about the real world, fetched once and checked in. If the game fetched it at
-// runtime it would need a key in the page, it would break offline, and the
-// arcade's offline-first promise would be a lie. So: fetch here, commit the
-// JSON, and the game only ever reads a file.
+// runtime it would break offline, and the arcade's offline-first promise would
+// be a lie. So: fetch here, commit the JSON, and the game only ever reads a
+// file.
 //
-// The key is required and not optional to work around. Digitransit's APIs have
-// needed registration since 2023 — get one at https://portal-api.digitransit.fi/
-// — and rate limits are enforced. Do not commit it.
+// AND WHY GTFS RATHER THAN THE ROUTING API. The first cut of this script went
+// through Digitransit's GraphQL, which has needed a registered
+// `digitransit-subscription-key` since 2023. The static GTFS feed needs no key
+// at all — for Helsinki, for New York, for most agencies on earth — and it is
+// the same data. A build step that needs a secret is one nobody else can run,
+// including whoever picks this up in a year. So the GraphQL path is GONE, not
+// kept as an option — the endpoint stays in the table below only as a note of
+// where the keyed route is if a city ever needs it.
 //
-// ATTRIBUTION TRAVELS WITH THE DATA. HSL's is CC BY 4.0, which means the credit
-// is a licence condition and not a courtesy, so the pack carries `source` and
-// `licence` and `city.js` refuses to load one that does not.
+// ATTRIBUTION TRAVELS WITH THE DATA. HSL's feed is CC BY 4.0, which makes the
+// credit a licence condition and not a courtesy, so the pack carries `source`
+// and `licence` and `toko-move/js/city.js` refuses to lay out one that has lost
+// them.
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { readZip, packFromGtfs } from './gtfs.mjs';
 
-// Known routers. `id` is the Digitransit router name; anything not in here can
-// still be passed with --endpoint, because this file should not be the reason a
-// city cannot be added.
-const ROUTERS = {
+// Feeds that were looked up rather than remembered — each one's URL, licence
+// and whether it wants a key is in toko-move/CITIES.md with its source.
+const CITIES = {
   hsl: {
     name: 'Helsinki',
-    endpoint: 'https://api.digitransit.fi/routing/v2/hsl/gtfs/v1',
-    source: 'Helsinki Regional Transport Authority (HSL) via Digitransit',
+    gtfs: 'https://dev.hsl.fi/gtfs/hsl.zip',
+    api: 'https://api.digitransit.fi/routing/v2/hsl/gtfs/v1',
+    modes: ['TRAM', 'SUBWAY'],
+    source: 'Helsinki Regional Transport Authority (HSL)',
     licence: 'CC BY 4.0',
   },
-  waltti: {
-    name: 'Waltti cities',
-    endpoint: 'https://api.digitransit.fi/routing/v2/waltti/gtfs/v1',
-    source: 'Waltti via Digitransit',
-    licence: 'CC BY 4.0',
+  nyc: {
+    name: 'New York',
+    // The URL the MTA developer pages give. NOT yet fetched from here — this
+    // sandbox has no route to it — so treat it as looked-up rather than
+    // proven, and expect the run itself to tell you if it has moved.
+    gtfs: 'http://web.mta.info/developers/data/nyct/subway/google_transit.zip',
+    modes: ['SUBWAY'],
+    source: 'Metropolitan Transportation Authority (MTA)',
+    licence: 'MTA open data terms — CHECK BEFORE SHIPPING',
   },
-  finland: {
-    name: 'Finland',
-    endpoint: 'https://api.digitransit.fi/routing/v2/finland/gtfs/v1',
-    source: 'Fintraffic / Digitransit',
-    licence: 'CC BY 4.0',
-  },
+  // Japan's networks come through the Public Transportation Open Data Center
+  // (odpt.org) rather than one agency zip, and which CITY is still open —
+  // CITIES.md question 2. Left without a URL on purpose: a guessed feed that
+  // half-works is worse than one that says it does not exist yet.
+  nagoya: { name: 'Nagoya', modes: ['SUBWAY'], source: 'ODPT', licence: 'see odpt.org' },
+  tokyo: { name: 'Tokyo', modes: ['SUBWAY'], source: 'ODPT', licence: 'see odpt.org' },
 };
 
 const args = new Map();
 for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i].replace(/^--/, ''), process.argv[i + 1]);
 
 const cityId = args.get('city') ?? 'hsl';
-const router = ROUTERS[cityId];
-const endpoint = args.get('endpoint') ?? router?.endpoint;
-const key = args.get('key') ?? process.env.DIGITRANSIT_KEY;
-const modes = (args.get('modes') ?? 'TRAM,SUBWAY').split(',').map(s => s.trim().toUpperCase());
+const city = CITIES[cityId];
+const modes = (args.get('modes') ?? city?.modes?.join(',') ?? 'TRAM,SUBWAY').split(',').map(s => s.trim().toUpperCase());
 const out = args.get('out') ?? `toko-move/cities/${cityId}.json`;
 
-if (!endpoint) die(`unknown city "${cityId}" — pass --endpoint, or add it to ROUTERS`);
-if (!key) die('no API key. Register at https://portal-api.digitransit.fi/ and pass --key, or set DIGITRANSIT_KEY');
-
 function die(msg) { console.error('city-pack: ' + msg); process.exit(1); }
+if (!city && !args.has('gtfs')) die(`unknown city "${cityId}" — pass --gtfs <url|file>, or add it to CITIES`);
 
-// One pattern per route direction, its stops in order. `patterns` gives several
-// variants per route (short workings, diversions); the LONGEST is taken, which
-// is the line as people think of it rather than the 06:14 that turns short.
-const QUERY = `
-query Net($modes: [Mode]) {
-  routes(transportModes: $modes) {
-    gtfsId
-    shortName
-    longName
-    mode
-    color
-    patterns {
-      code
-      directionId
-      stops { gtfsId name lat lon vehicleMode }
-    }
-  }
-}`;
+const where = args.get('gtfs') ?? city?.gtfs;
+if (!where) die(`no feed known for "${cityId}" yet — pass --gtfs <url|file>. ${city?.source ? `Its data comes from ${city.source}.` : ''}`);
 
-const res = await fetch(endpoint, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'digitransit-subscription-key': key },
-  body: JSON.stringify({ query: QUERY, variables: { modes } }),
-});
-if (!res.ok) die(`${endpoint} answered ${res.status} ${res.statusText}`);
-const body = await res.json();
-if (body.errors) die('the API refused the query: ' + JSON.stringify(body.errors));
-
-const stops = new Map();
-const lines = [];
-let colour = 0;
-
-for (const r of body.data.routes ?? []) {
-  // longest pattern per direction, then keep direction 0 only — a line and its
-  // return are the same line on a diagram, and drawing both stacks two strokes
-  // on every leg
-  const best = new Map();
-  for (const p of r.patterns ?? []) {
-    const cur = best.get(p.directionId);
-    if (!cur || (p.stops?.length ?? 0) > (cur.stops?.length ?? 0)) best.set(p.directionId, p);
-  }
-  const p = best.get(0) ?? [...best.values()][0];
-  if (!p || (p.stops?.length ?? 0) < 2) continue;
-
-  for (const s of p.stops) {
-    if (stops.has(s.gtfsId)) continue;
-    stops.set(s.gtfsId, {
-      id: s.gtfsId,
-      name: s.name,
-      lat: round(s.lat),
-      lon: round(s.lon),
-      modes: [s.vehicleMode ?? r.mode],
-    });
-  }
-
-  lines.push({
-    id: r.gtfsId,
-    name: r.shortName ?? r.longName ?? r.gtfsId,
-    mode: r.mode,
-    // the operator's own colour when it has one, else a slot in the game's
-    // palette — a line without a colour is not a line anybody can follow
-    hex: r.color ? '#' + r.color.replace(/^#/, '') : null,
-    colour: colour++,
-    stops: p.stops.map(s => s.gtfsId),
-  });
+let zip;
+if (/^https?:/.test(where)) {
+  process.stderr.write(`fetching ${where} … `);
+  const res = await fetch(where, { redirect: 'follow' });
+  if (!res.ok) die(`${where} answered ${res.status} ${res.statusText}`);
+  zip = Buffer.from(await res.arrayBuffer());
+  process.stderr.write(`${(zip.length / 1048576).toFixed(1)} MB\n`);
+} else {
+  zip = readFileSync(where);
 }
 
-function round(n) { return Math.round(n * 1e6) / 1e6; }   // ~10cm, far past what a diagram uses
-
-if (!stops.size) die(`no stops came back for modes ${modes.join(',')} — is that mode served here?`);
+let net;
+try {
+  net = packFromGtfs(readZip(zip), { modes });
+} catch (e) {
+  die(e.message);
+}
 
 const pack = {
   id: cityId,
-  name: args.get('name') ?? router?.name ?? cityId,
-  source: args.get('source') ?? router?.source ?? endpoint,
-  licence: args.get('licence') ?? router?.licence ?? 'unknown — CHECK BEFORE SHIPPING',
+  name: args.get('name') ?? city?.name ?? cityId,
+  source: args.get('source') ?? city?.source ?? where,
+  licence: args.get('licence') ?? city?.licence ?? 'unknown — CHECK BEFORE SHIPPING',
   fetched: new Date().toISOString().slice(0, 10),
+  feed: where,
   modes,
-  stops: [...stops.values()],
-  lines,
+  // ~10cm, which is far past anything a diagram uses and keeps the file small
+  stops: net.stops.map(s => ({ ...s, lat: round(s.lat), lon: round(s.lon) })),
+  lines: net.lines,
 };
+function round(n) { return Math.round(n * 1e6) / 1e6; }
 
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify(pack, null, 1) + '\n');
