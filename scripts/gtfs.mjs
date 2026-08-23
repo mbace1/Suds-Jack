@@ -162,16 +162,39 @@ export function packFromGtfs(files, opts = {}) {
     seq.get(tid).push([Number(stCsv.at(s, 'stop_sequence')), stCsv.at(s, 'stop_id')]);
   }
 
+  // A GTFS stop is a PLATFORM, not a station, and that is the single biggest
+  // thing between a feed and a diagram: a tram stop appears twice (one per
+  // direction) and a metro station three or four times, so an unmerged pack
+  // draws every station as a little cluster of near-identical dots and every
+  // line as a stitch through them. GTFS says so itself — `location_type` 1 is a
+  // station and `parent_station` points a platform at the one it belongs to —
+  // so the feed's own answer is used where it has one.
   const stopsCsv = get('stops.txt');
   const allStops = new Map();
+  const parentOf = new Map();
   for (const s of stopsCsv.rows) {
-    allStops.set(stopsCsv.at(s, 'stop_id'), {
-      id: stopsCsv.at(s, 'stop_id'),
+    const id = stopsCsv.at(s, 'stop_id');
+    const parent = (stopsCsv.at(s, 'parent_station') || '').trim();
+    if (parent) parentOf.set(id, parent);
+    allStops.set(id, {
+      id,
       name: (stopsCsv.at(s, 'stop_name') || '').trim(),
       lat: Number(stopsCsv.at(s, 'stop_lat')),
       lon: Number(stopsCsv.at(s, 'stop_lon')),
+      station: Number(stopsCsv.at(s, 'location_type') || 0) === 1,
     });
   }
+  // …and follow the chain, because an entrance may point at a platform which
+  // points at a station. Guarded, because a feed with a cycle in it exists.
+  const station = id => {
+    let cur = id;
+    for (let hops = 0; hops < 8; hops++) {
+      const up = parentOf.get(cur);
+      if (!up || !allStops.has(up)) break;
+      cur = up;
+    }
+    return cur;
+  };
 
   const used = new Map();
   const lines = [];
@@ -180,11 +203,13 @@ export function packFromGtfs(files, opts = {}) {
     const r = routes.get(rid);
     const ordered = (seq.get(tid) ?? []).sort((a, b) => a[0] - b[0]).map(x => x[1]);
     const ids = [];
-    for (const sid of ordered) {
+    for (const raw of ordered) {
+      const sid = station(raw);
       const st = allStops.get(sid);
       if (!st || !Number.isFinite(st.lat) || !Number.isFinite(st.lon)) continue;
-      if (!used.has(sid)) used.set(sid, { ...st, modes: [r.mode] });
+      if (!used.has(sid)) used.set(sid, { id: sid, name: st.name, lat: st.lat, lon: st.lon, modes: [r.mode] });
       else if (!used.get(sid).modes.includes(r.mode)) used.get(sid).modes.push(r.mode);
+      // a line that calls at two platforms of the same station calls once
       if (ids[ids.length - 1] !== sid) ids.push(sid);
     }
     if (ids.length < 2) continue;

@@ -10,7 +10,7 @@ import { Game } from '../js/sim.js?v=8';
 import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=8';
 import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=8';
 import { PAL, INK } from '../js/palette.js?v=8';
-import { validate as validCity, project, octolinear, layout } from '../js/city.js?v=8';
+import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=8';
 import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
 import { deflateRawSync, crc32 } from 'node:zlib';
 
@@ -1060,7 +1060,17 @@ function synthCity(seed = 7) {
     const seq = []; let x = 0, y = 0;
     for (let i = 0; i < 12; i++) {
       const wob = (rnd() - 0.5) * 0.5;
-      x += Math.cos(a + wob) * 400; y += Math.sin(a + wob) * 400;
+      // stop spacing is deliberately NOT uniform: close together in the middle,
+      // far apart at the ends, which is how a city is — and which is the whole
+      // thing the evenness weight has to cope with. The first version of this
+      // fixture spaced them all 400m apart, which is a city nobody lives in and
+      // made the fitter look better than it is.
+      // …and one arm runs out of town at the end, which is what makes the
+      // MEDIAN leg the right target rather than the mean: a handful of long
+      // suburban runs drag a mean upward and stretch every downtown leg to
+      // match. Real networks all have one of these.
+      const step = 240 + i * 70 + (arm === 2 && i >= 9 ? 1300 : 0);
+      x += Math.cos(a + wob) * step; y += Math.sin(a + wob) * step;
       seq.push(put(`s${n++}`, x, y));
     }
     lines.push({ id: `L${arm}`, name: String(arm + 1), mode: 'TRAM', colour: arm, stops: seq });
@@ -1128,13 +1138,56 @@ function synthCity(seed = 7) {
   // the fitter, judged by its own report
   const pack = synthCity();
   const board = { w: 860, h: 600, margin: 46 };
-  const { report: r } = octolinear(project(pack, board), pack.lines);
+  const projected0 = project(pack, board);
+  const legsOf = pk => {
+    const out = [], seen = new Set();
+    for (const l of pk.lines) for (let i = 1; i < l.stops.length; i++) {
+      const a = l.stops[i - 1], b = l.stops[i];
+      if (a === b) continue;
+      const k = a < b ? `${a}|${b}` : `${b}|${a}`;
+      if (seen.has(k)) continue;
+      seen.add(k); out.push([a, b]);
+    }
+    return out;
+  };
+  const { report: r } = octolinear(projected0, pack.lines);
   ok(r.onGrid >= 0.99, `the whole network reaches the octolinear grid (${(r.onGrid * 100).toFixed(0)}%)`);
   ok(r.worstAngleDeg < 3, `with nothing left visibly off it (worst ${r.worstAngleDeg.toFixed(1)}°)`);
   // …while still being the place. 2% of the board's width is the line between
   // "bent" and "somewhere else"; measured, it comes out at 6 units of 860.
   ok(r.drift < board.w * 0.02, `and the average stop barely moves (${r.drift.toFixed(1)} units of ${board.w})`);
-  ok(r.worstDrift < board.w * 0.06, `nor does the worst one (${r.worstDrift.toFixed(1)})`);
+  // The WORST one is allowed to move much further, and that is not a loosened
+  // threshold — it is what a transit diagram is for. The stop that moves most
+  // here is the far end of the one line that runs out of town, pulled in
+  // because its legs are being evened toward the median. Every printed map does
+  // this; the Tube map does it to Amersham dramatically. What must not drift is
+  // the AVERAGE, which is the check above.
+  ok(r.worstDrift < board.w * 0.14, `and the outer terminus is pulled in rather than flung out (${r.worstDrift.toFixed(1)})`);
+  // 100% on the grid says NOTHING about whether the legs are all the same size,
+  // and the first render came out as a staircase of three-pixel steps beside a
+  // neighbour with one long one. Unevened, this city measures 0.31.
+  ok(r.spread < 0.1, `and the stops are evenly spaced along a line (spread ${r.spread.toFixed(3)})`);
+  const raw = octolinear(project(pack, board), pack.lines, { even: 0 }).report;
+  ok(raw.spread > r.spread * 2, `which is the evenness weight doing it, not the city (${raw.spread.toFixed(3)} without)`);
+
+  // …toward the median leg. The reason first written for that was that a long
+  // suburban run drags a mean upward — which measured FALSE, so this pins the
+  // tie instead of the belief. If a change ever makes the two diverge, that is
+  // worth knowing about; it is not worth "fixing" today.
+  ok(r.target < r.meanOfLegs, `this city has a long run in it, so its median leg is the shorter (${r.target.toFixed(1)} vs ${r.meanOfLegs.toFixed(1)})`);
+  const byMean = octolinear(project(pack, board), pack.lines, { target: r.meanOfLegs }).report;
+  ok(Math.abs(r.spread - byMean.spread) < 0.01,
+     `and targeting the mean instead measures the same — the median is the more robust of two equal choices, not a measured win (${r.spread.toFixed(3)} vs ${byMean.spread.toFixed(3)})`);
+
+  // The core of a radial city is crowded BEFORE anything is bent: six arms and
+  // a ring meeting in the middle put about a fifth of the stops within 12 units
+  // of another. That is the projection's doing, not the fitter's, and the fix
+  // is a repulsion force this does not have yet — so what is pinned here is the
+  // honest invariant: bending and evening must not make the crowding WORSE by
+  // much. Measured across four seeds: 18 -> 18, 18 -> 21, 18 -> 21, 17 -> 17.
+  const flat = report(projected0, projected0, legsOf(pack), {});
+  ok(r.collisions <= flat.collisions + 5,
+     `and the fitter does not add crowding of its own (${flat.collisions} before, ${r.collisions} after)`);
 
   // a leg shared by two lines is one leg. Pulled once per line it would be bent
   // twice as hard as the branches, and the trunk of the network would walk.
@@ -1153,6 +1206,49 @@ function synthCity(seed = 7) {
   ok(out.stops.every(s => s.truth && Number.isFinite(s.truth.x)),
      'and where it really is, kept alongside — a bent stop that has forgotten its own position cannot be put back on a map');
   ok(out.report.onGrid >= 0.99, 'a second board bends as well as the first');
+}
+
+{
+  // Interchanges, for feeds that do not say which platforms belong together.
+  // GTFS has `parent_station` and scripts/gtfs.mjs uses it; OpenStreetMap route
+  // relations and hand-made packs have nothing, and there the only evidence is
+  // that two stops are a few metres apart and called the same thing.
+  const near = (name, lat, lon, id, modes) => ({ id, name, lat, lon, modes });
+  const pack = {
+    id: 'x', name: 'X', source: 'the gate', licence: 'n/a',
+    stops: [
+      near('Kamppi', 60.1690, 24.9310, 'a', ['TRAM']),
+      near('Kamppi, platform 3', 60.1691, 24.9312, 'b', ['TRAM']),   // 20m away, same place
+      near('Kamppi M', 60.1688, 24.9316, 'c', ['SUBWAY']),           // the metro under it
+      near('Kamppi', 60.2400, 25.0400, 'far', ['TRAM']),             // same NAME, 8km away
+      near('Rautatientori', 60.1710, 24.9410, 'r', ['TRAM']),
+      near('Hakaniemi', 60.1790, 24.9510, 'h', ['TRAM']),
+    ],
+    lines: [
+      { id: 'T', name: '1', mode: 'TRAM', colour: 0, stops: ['a', 'b', 'r', 'h'] },
+      { id: 'M', name: 'M', mode: 'SUBWAY', colour: 1, stops: ['c', 'r'] },
+      { id: 'F', name: '9', mode: 'TRAM', colour: 2, stops: ['far', 'h'] },
+    ],
+  };
+  const m = merge(pack);
+  eq(m.stops.length, 4, 'three faces of one interchange become one stop');
+  eq(m.merged, 2, 'and it says how many it folded');
+  ok(m.stops.some(s => s.id === 'far'), 'a stop 8km away with the SAME NAME is a different place');
+
+  const host = m.stops.find(s => ['a', 'b', 'c'].includes(s.id));
+  eq((host?.modes ?? []).slice().sort().join('+'), 'SUBWAY+TRAM', 'the merged stop serves both modes');
+  const tram = m.lines.find(l => l.id === 'T');
+  // a,b were two calls at one place; after merging that is ONE call, not a leg
+  // of length zero — which would be an unsnappable direction and a NaN angle
+  eq(tram.stops.length, 3, 'a line calling at two platforms of one station calls once');
+
+  // proximity ALONE would merge the tram stop into whatever is across the
+  // junction; the name is what stops it
+  const loose = merge({ ...pack, stops: [...pack.stops, near('Simonkatu', 60.1690, 24.9311, 's', ['TRAM'])] });
+  ok(loose.stops.some(s => s.id === 's'), 'a different place 10m away keeps its own name and its own dot');
+
+  const off = merge(pack, { metres: 0 });
+  eq(off.stops.length, pack.stops.length, 'and it can be turned off');
 }
 
 // ── reading a real feed ─────────────────────────────────────────────────
@@ -1210,12 +1306,20 @@ const FEED = [
     + 't_short,1,a\nt_short,2,b\n'
     // …and deliberately out of order: GTFS does not promise sorted rows
     + 't_full,3,c\nt_full,1,a\nt_full,2,b\nt_full,5,e\nt_full,4,d\n'
-    + 'm_full,1,a\nm_full,2,x\nm_full,3,y\n'
+    // the metro calls at the OTHER platform of the same station the tram uses
+    + 'm_full,1,x\nm_full,2,y\nm_full,3,z\n'
     + 'b1,1,p\nb1,2,q\n').replace(/\n/g, '\r\n')],
-  ['stops.txt', 'stop_id,stop_name,stop_lat,stop_lon\n'
-    + 'a,"Kamppi, platform 3",60.169,24.931\nb,Rautatientori,60.171,24.941\nc,Hakaniemi,60.179,24.951\n'
-    + 'd,Sornainen,60.187,24.961\ne,Kallio,60.184,24.949\nx,Kamppi M,60.168,24.932\n'
-    + 'y,Ruoholahti,60.163,24.914\np,Bus1,60.20,24.90\nq,Bus2,60.21,24.91\n'],
+  // A GTFS stop is a PLATFORM. `a` and `x` are two faces of one interchange and
+  // `location_type` 1 / `parent_station` say so; an unmerged pack draws them as
+  // two dots a few metres apart and stitches both lines through the pair.
+  ['stops.txt', 'stop_id,stop_name,stop_lat,stop_lon,location_type,parent_station\n'
+    + 'K,Kamppi,60.1685,24.9315,1,\n'
+    + 'a,"Kamppi, platform 3",60.169,24.931,0,K\n'
+    + 'x,Kamppi M platform 1,60.168,24.932,0,K\n'
+    + 'b,Rautatientori,60.171,24.941,0,\nc,Hakaniemi,60.179,24.951,0,\n'
+    + 'd,Sornainen,60.187,24.961,0,\ne,Kallio,60.184,24.949,0,\n'
+    + 'y,Ruoholahti,60.163,24.914,0,\nz,Lauttasaari,60.159,24.881,0,\n'
+    + 'p,Bus1,60.20,24.90,0,\nq,Bus2,60.21,24.91,0,\n'],
 ];
 
 {
@@ -1223,7 +1327,8 @@ const FEED = [
     const how = method === 0 ? 'stored' : 'deflated';
     const files = tries(() => readZip(zipOf(FEED, { method })), `a ${how} zip is readable`, new Map());
     eq(files.size, FEED.length, `a ${how} zip gives up every file`);
-    eq(files.get('stops.txt')?.toString('utf8').split('\n')[0], 'stop_id,stop_name,stop_lat,stop_lon',
+    eq(files.get('stops.txt')?.toString('utf8').split('\n')[0],
+       'stop_id,stop_name,stop_lat,stop_lon,location_type,parent_station',
        `and the bytes come back intact (${how})`);
   }
   let threw = false;
@@ -1264,14 +1369,18 @@ const FEED = [
   // the 06:14 that turns back early is not the line as anybody thinks of it,
   // and picking the first trip in the file picks one of those half the time
   eq(tram.stops.length, 5, 'a route is drawn by its LONGEST pattern, not its first');
-  eq(tram.stops.join(','), 'a,b,c,d,e', 'in stop_sequence order, whatever order the file was in');
+  eq(tram.stops.join(','), 'K,b,c,d,e', 'in stop_sequence order, whatever order the file was in');
   eq(tram.hex, '#00985F', 'and in the operator’s own colour when it has one');
-  eq(net.stops.length, 7, 'only the stops those lines call at');
+  // 5 tram calls + 2 more metro ones, with the shared interchange counted once —
+  // NOT 8, which is what an unmerged pack gives
+  eq(net.stops.length, 7, 'only the stops those lines call at, platforms folded into stations');
   // guarded, because a gate that THROWS instead of failing stops before it has
   // run the rest of itself — which is how one broken reader hid four checks
-  const kamppi = net.stops.find(s => s.id === 'a') ?? {};
-  eq(kamppi.name, 'Kamppi, platform 3', 'with the name the feed gave it');
-  eq((kamppi.modes ?? []).slice().sort().join('+'), 'SUBWAY+TRAM', 'and an interchange knows it is one');
+  const kamppi = net.stops.find(s => s.id === 'K') ?? {};
+  eq(kamppi.name, 'Kamppi', 'a platform is drawn as the STATION it belongs to');
+  eq((kamppi.modes ?? []).slice().sort().join('+'), 'SUBWAY+TRAM',
+     'and the two lines that call at its two platforms meet at one node');
+  ok(!net.stops.some(s => s.id === 'a' || s.id === 'x'), 'the platforms themselves are not on the diagram');
 
   let threw = false;
   try { packFromGtfs(readZip(zipOf(FEED)), { modes: ['FERRY'] }); } catch { threw = true; }

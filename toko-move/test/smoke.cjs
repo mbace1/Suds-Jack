@@ -539,28 +539,51 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   // is sitting at the start of leg zero.
   const liveErrs = [];
   phone.on('pageerror', e => liveErrs.push(e.message));
-  // The world stays STILL, and it is HELD still rather than merely expected to
-  // be. The crash is in the render path, which runs every frame whether the
-  // clock does or not, so a paused board reproduces it just as well — while a
-  // running one spawns a stop mid-drag and breaks the setup, which is a gate
-  // that fails about one run in ten for a reason that is not the bug.
+  // The world is HELD still rather than expected to be: the crash is in the
+  // render path, which runs every frame whether the clock does or not, so a
+  // paused board reproduces it just as well.
   await phone.evaluate(() => { window.__tm.game.paused = true; });
   const l0 = await pAt(0), l1 = await pAt(1), l2 = await pAt(2);
-  await phone.mouse.move(l0.x, l0.y); await phone.mouse.down();
-  await phone.mouse.move(l1.x, l1.y, { steps: 8 });
-  await phone.mouse.move(l2.x, l2.y, { steps: 8 });
-  await phone.mouse.up();
-  // Put the train on the LAST leg deliberately. Waiting and hoping it drifts
-  // there is a coin toss — the first cut of this check passed happily with the
-  // fix reverted, which makes it worse than no check.
+
+  // The three-stop line is STAGING, and it is built through the game's own API
+  // rather than by three pointer drags. Dragging 0 → 1 → 2 across the board
+  // joined only two of them about one run in three — the middle stop is not
+  // always on the way to the third, which is a fact about the board that was
+  // dealt and not about the bug under test. The pointer gestures are already
+  // covered a dozen checks above; what is being tested HERE is what the
+  // renderer does when a leg is pulled out from under a moving train, and the
+  // cut below is still a real drag.
   const placed = await phone.evaluate(() => {
-    const l = window.__tm.net.lines[0];
-    if (!l || !l.trains.length || l.segCount() < 2) return false;
-    const t = l.trains[0];
-    t.segIdx = l.segCount() - 1; t.p = 0.4; t.dir = 1;
+    const net = window.__tm.net, w = window.__tm.world;
+    const ids = w.stations.slice(0, 3).map(s => s.id);
+    if (ids.length < 3) return `the board only dealt ${ids.length} stops`;
+
+    // The staging gets tunnels and trains from nowhere, deliberately. Every
+    // board deals a river, the first three stops sometimes sit across it, and
+    // the tunnel budget by this point in the run is often spent — so the line
+    // is refused, correctly, for a reason that has nothing to do with what is
+    // being tested. The tunnel economy has its own checks; this one is about
+    // what the renderer does when a leg is pulled out from under a moving
+    // train, and it should not be able to fail for anything else.
+    net.ownedTunnels = 99;
+    net.spareTrains = Math.max(net.spareTrains, 3);
+
+    // open() answers { line } or { error }, never the Line itself
+    const opened = net.open(ids[0], ids[1]);
+    if (opened?.error || !opened?.line) return `a line could not be opened: ${opened.error}`;
+    const line = opened.line;
+    const ext = net.extend(line, ids[2], true);
+    if (ext?.error) return `the line could not be extended: ${ext.error}`;
+    if (line.segCount() < 2) return `the line has only ${line.segCount()} leg(s)`;
+    if (!line.trains.length) return 'the line has no train on it';
+    // Put the train on the LAST leg deliberately. Waiting and hoping it drifts
+    // there is a coin toss — the first cut of this check passed happily with
+    // the fix reverted, which makes it worse than no check.
+    const t = line.trains[0];
+    t.segIdx = line.segCount() - 1; t.p = 0.4; t.dir = 1;
     return true;
   });
-  ok(placed, 'a train can be put out on the last leg for the test');
+  ok(placed === true, `a train can be put out on the last leg for the test (${placed})`);
   await phone.waitForTimeout(300);
   const liveNub = await phone.evaluate(() => {
     const n = window.__tm.touch.nubs.find(x => !x.atHead);

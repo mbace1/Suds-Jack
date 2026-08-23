@@ -138,19 +138,64 @@ of somewhere. Converged by 400 rounds; 1200 gives the same answer.
 **Turn `pull` to 0 and you get a tidy diagram of nowhere. Turn `bend` to 0 and
 you get a map.** This whole mode lives in that ratio, and it is one constant.
 
-### What the picture showed that the numbers did not
+### What the picture showed that the numbers did not — and what was done
 
 Rendered and looked at, because this repo has now twice shipped something whose
-every assertion passed and which was wrong on screen. Two things:
+every assertion passed and which was wrong on screen. Three things, two fixed.
 
-- **Stop spacing is uneven.** `minLeg` is a target inside the snap, not a
-  constraint, so a stretch of one line can come out as a staircase of tiny legs
-  while its neighbour has one long one. Real diagrams even the spacing out.
-  That is the next iteration, not a constant to tune.
-- **Collisions are mostly the city, not the fitter.** The synthetic city has two
-  stops within 12 units *before* anything is bent, and bending adds one. Which
-  means a real pack wants an interchange-merging pass — the thing every printed
-  transit map already does — rather than a stronger repulsion force.
+**1. Stop spacing was uneven — fixed.** Snapping keeps each leg's own length, so
+a stretch where the real stops are close together came out as a staircase of
+tiny steps beside a neighbour with one long one: legible as geometry, illegible
+as a diagram. Every printed transit map evens the spacing out, so each leg is
+now pulled toward the median leg as well as toward the grid. `even` is how far,
+and the sweep has a clear knee:
+
+| even | on grid | spread | mean drift | worst |
+|---|---|---|---|---|
+| 0 | 100% | 0.308 | 6.7 | 26.3 |
+| **0.15** | 100% | **0.060** | 13.9 | 34.0 |
+| 0.45 | 100% | 0.024 | 15.5 | 39.2 |
+| 1.00 | 100% | 0.011 | 15.5 | 41.2 |
+
+0.15 buys five sixths of the evenness for half the drift the rest costs. There
+is now a `spread` in the report, because **100% on the grid says nothing about
+whether the legs are the same size** and the first render passed every check it
+had while looking like a staircase.
+
+**2. A GTFS stop is a PLATFORM — fixed, and it is the biggest one.** A tram stop
+appears twice in `stops.txt`, one per direction, and a metro station three or
+four times. An unmerged pack draws every station as a little cluster of
+near-identical dots with the line stitched through them. GTFS says so itself —
+`location_type` 1 is a station, `parent_station` points a platform at it — so
+the feed's own answer is used where it has one, and `merge()` in `city.js` falls
+back to proximity **and** name for sources that have no such field, which is
+every OpenStreetMap extract and every hand-made pack. Name matching allows a
+prefix, because an operator marks one face of an interchange `Kamppi M` while
+the other is just `Kamppi`; the radius is what keeps that honest.
+
+**3. The core is crowded, and that is NOT fixed.** About a fifth of the stops in
+a radial city land within 12 units of another — six arms and a ring meeting in
+the middle. Measured across four seeds, the projection alone collides 17-18
+times and bending takes it to 17-21, so **this is the projection's doing rather
+than the fitter's**, and evening the spacing does not make it worse. The fix is
+a third force — repulsion between stops that are not neighbours — which is the
+standard next term in this kind of relaxation and the next iteration. Until it
+exists the gate pins the invariant that bending must not add crowding of its
+own.
+
+### One claim that measured false
+
+The median leg was chosen as the evenness target with a reason attached: that a
+handful of long suburban runs drag a *mean* upward and then every downtown leg
+is stretched to match. **That is not true here.** On a network with one line
+running well out of town, across three seeds, targeting the mean gives spread
+0.082-0.084 against the median's 0.083-0.085, with identical drift. They are the
+same — the projection scales the whole city to the board, so one long leg among
+ninety barely moves a mean.
+
+The median stays because it is the more robust of two equal choices, and the
+gate now pins the **tie** rather than the belief, so nobody goes looking for a
+benefit that was never there.
 
 ### `scripts/city-pack.mjs` — the fetcher
 
@@ -179,7 +224,27 @@ look good for now."* → keep all four shapes open; the fitter and the pack are
 the same under each, so nothing is blocked. The one that has to be picked before
 the renderer is written, and it can wait.
 
-**2. Which cities.** Helsinki → a Japanese city → New York.
+**2. Which cities.** **Helsinki → Nagoya → New York → Tokyo**, settled
+2026-08-23. Nagoya (6 lines, 87 stations) is Helsinki-scale, so it tests whether
+the pack format travels; Tokyo (13 lines, 286 stations) is the stress test and
+comes last because it is one.
+
+  **Nagoya has a data problem, and it is worth knowing now.** ODPT grew out of
+  the Tokyo Olympics and is still Tokyo-centred; outside Tokyo, Japanese transit
+  open data is overwhelmingly **bus** GTFS rather than rail. Nagoya City
+  Transportation Bureau moved its open data to the city's own catalogue in
+  November 2024, and no subway GTFS turned up in the search. So the second city
+  may have no machine-readable network at all through the usual door.
+
+  **The way round is OpenStreetMap**, and it is worth taking seriously because
+  it works for *every* city on earth including Tokyo: subway and tram lines are
+  in OSM as route relations with their stops in order, which is exactly a pack.
+  One caveat that is the owner's call rather than mine: OSM is **ODbL**, and a
+  pack extracted from it is a *Derivative Database* — so that JSON would have to
+  be offered under ODbL, with attribution to OpenStreetMap and a link to the
+  licence. The rendered map is a *Produced Work* and the game's own code is
+  unaffected. Worth a proper read before the first OSM-derived pack is
+  committed.
 
   **Which Japanese city is still open.** The direction says *"Naga prefecture
   city with the biggest metro map"*, and those are two different cities:

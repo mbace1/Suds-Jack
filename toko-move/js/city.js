@@ -120,6 +120,25 @@ export function octolinear(at, lines, opts = {}) {
   const bend = opts.bend ?? 0.98;
   const pull = opts.pull ?? 0.004;
   const minLeg = opts.minLeg ?? 18;
+  // …and the third weight, which the first render demanded. Snapping alone
+  // keeps each leg's own length, so a stretch where the real stops are 200m
+  // apart comes out as a staircase of tiny steps beside a neighbour with one
+  // long one — legible as geometry, illegible as a diagram. Every printed
+  // transit map evens the spacing out; this pulls each leg toward the MEDIAN
+  // leg (not the mean, which one long suburban run drags), and `even` is how
+  // far. At 1 every leg is the same length and the map is gone.
+  //
+  //   even  legs on grid  spread  mean drift  worst
+  //   0         100%       0.308      6.7      26.3
+  //   0.15      100%       0.060     13.9      34.0   ← the knee
+  //   0.45      100%       0.024     15.5      39.2
+  //   1.00      100%       0.011     15.5      41.2
+  //
+  // 0.15 buys five sixths of the evenness for half the drift the rest costs;
+  // past it the spacing barely improves and the city keeps walking. Measured on
+  // a synthetic network whose stops are deliberately NOT evenly spaced — close
+  // together in the middle, far apart at the ends, which is how a city is.
+  const even = opts.even ?? 0.15;
 
   const truth = new Map([...at].map(([id, p]) => [id, { ...p }]));
   const pos = new Map([...at].map(([id, p]) => [id, { ...p }]));
@@ -139,6 +158,24 @@ export function octolinear(at, lines, opts = {}) {
     }
   }
 
+  const lens = legs.map(([a, b]) => {
+    const p = pos.get(a), q = pos.get(b);
+    return p && q ? Math.hypot(q.x - p.x, q.y - p.y) : 0;
+  }).filter(n => n > 0).sort((x, y) => x - y);
+  // The MEDIAN leg. The reason first written here was that a handful of long
+  // suburban runs drag a mean upward and stretch every downtown leg to match —
+  // and that turned out to be FALSE when it was measured. On a network with one
+  // line running well out of town, across three seeds, targeting the mean gives
+  // spread 0.082-0.084 against the median's 0.083-0.085 and identical drift.
+  // They are the same. The projection scales the whole city to the board, so
+  // one long leg among ninety moves a mean almost not at all.
+  //
+  // The median stays because it is the more robust of two equal choices, NOT
+  // because anybody measured a benefit — which is recorded so the next person
+  // does not go looking for one. Overridable, and the gate pins the tie.
+  const target = opts.target ?? (lens.length ? lens[lens.length >> 1] : minLeg);
+  const mean = lens.length ? lens.reduce((a, b) => a + b, 0) / lens.length : minLeg;
+
   const push = new Map();
   for (const id of pos.keys()) push.set(id, { x: 0, y: 0 });
 
@@ -148,7 +185,7 @@ export function octolinear(at, lines, opts = {}) {
     for (const [ida, idb] of legs) {
       const a = pos.get(ida), b = pos.get(idb);
       if (!a || !b) continue;
-      const want = snap(a, b, minLeg);
+      const want = snap(a, b, minLeg, target, even);
       // half the correction to each end: moving only the far one would walk the
       // whole line away from its first stop, one leg at a time
       const ex = (want.x - (b.x - a.x)) / 2, ey = (want.y - (b.y - a.y)) / 2;
@@ -164,17 +201,19 @@ export function octolinear(at, lines, opts = {}) {
     }
   }
 
-  return { at: pos, report: report(pos, truth, legs, opts) };
+  return { at: pos, report: { ...report(pos, truth, legs, opts), target, meanOfLegs: mean } };
 }
 
 // the nearest octolinear vector to a→b, keeping the length it already has
 // ALONG that direction rather than the length it had — projecting is what stops
-// a leg growing every time it is snapped
-function snap(a, b, minLeg) {
+// a leg growing every time it is snapped — and then eased toward the median leg
+function snap(a, b, minLeg, target = 0, even = 0) {
   const dx = b.x - a.x, dy = b.y - a.y;
   const ang = Math.round(Math.atan2(dy, dx) / OCTO) * OCTO;
   const ux = Math.cos(ang), uy = Math.sin(ang);
-  const len = Math.max(minLeg, dx * ux + dy * uy);
+  let len = dx * ux + dy * uy;
+  if (target > 0 && even > 0) len += (target - len) * even;
+  len = Math.max(minLeg, len);
   return { x: ux * len, y: uy * len };
 }
 
@@ -216,8 +255,23 @@ export function report(pos, truth, legs, opts = {}) {
     }
   }
 
+  // How uneven the stop spacing is, as a coefficient of variation. This is the
+  // number the first render needed and did not have: 100% on the grid says
+  // nothing about whether the legs are all the same size, and a staircase of
+  // three-pixel steps passes every other check here.
+  let sum = 0, sum2 = 0;
+  for (const [ida, idb] of legs) {
+    const a = pos.get(ida), b = pos.get(idb);
+    const d = Math.hypot(b.x - a.x, b.y - a.y);
+    sum += d; sum2 += d * d;
+  }
+  const mean = legs.length ? sum / legs.length : 0;
+  const spread = mean > 0 ? Math.sqrt(Math.max(0, sum2 / legs.length - mean * mean)) / mean : 0;
+
   return {
     legs: legs.length,
+    meanLeg: mean,
+    spread,
     onGrid: legs.length ? onGrid / legs.length : 1,
     worstAngleDeg: (worstAngle * 180) / Math.PI,
     drift: pos.size ? drift / pos.size : 0,
@@ -226,11 +280,71 @@ export function report(pos, truth, legs, opts = {}) {
   };
 }
 
+// ── interchanges ────────────────────────────────────────────────────────
+// For feeds that do NOT say which platforms belong together. GTFS has
+// `parent_station` and scripts/gtfs.mjs uses it, but plenty of sources have no
+// such field — OpenStreetMap route relations, a hand-made pack — and there the
+// only evidence is that two stops are twelve metres apart and called the same
+// thing. Both are required by default: proximity alone merges a tram stop into
+// the unrelated one across the junction, and name alone merges every "Market
+// Square" in the country.
+export function merge(pack, opts = {}) {
+  const metres = opts.metres ?? 120;
+  const byName = opts.byName ?? true;
+  const norm = n => (n ?? '').toLowerCase().replace(/[\s,·.\-—()]+/g, ' ')
+    .replace(/\b(platform|laituri|stop|station|asema|pysäkki|駅)\b.*$/u, '').trim();
+  // One name may be a PREFIX of the other, because an operator marks the metro
+  // face of an interchange as "Kamppi M" while the tram face is just "Kamppi".
+  // Equality alone left those as two dots twenty metres apart with a line
+  // stitched through both. The radius is what keeps this honest: "Market" and
+  // "Market Square" merge only if they are already within `metres` of each
+  // other, which is the case where they are in fact the same place.
+  const sameName = (a, b) => {
+    const x = norm(a), y = norm(b);
+    if (!x || !y) return false;
+    return x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ');
+  };
+
+  const deg = metres / 111320;
+  const into = new Map();                 // stop id -> the id it became
+  const keep = [];
+
+  for (const s of pack.stops) {
+    let host = null;
+    for (const k of keep) {
+      const dLat = (s.lat - k.lat), dLon = (s.lon - k.lon) * Math.cos((s.lat * Math.PI) / 180);
+      if (Math.hypot(dLat, dLon) > deg) continue;
+      if (byName && !sameName(s.name, k.name)) continue;
+      host = k; break;
+    }
+    if (host) {
+      into.set(s.id, host.id);
+      for (const m of s.modes ?? []) if (!host.modes.includes(m)) host.modes.push(m);
+    } else {
+      const copy = { ...s, modes: [...(s.modes ?? [])] };
+      into.set(s.id, copy.id);
+      keep.push(copy);
+    }
+  }
+
+  const lines = pack.lines.map(l => {
+    const ids = [];
+    for (const id of l.stops) {
+      const to = into.get(id) ?? id;
+      if (ids[ids.length - 1] !== to) ids.push(to);   // a line through one station calls once
+      }
+    return { ...l, stops: ids };
+  }).filter(l => l.stops.length >= 2);
+
+  return { ...pack, stops: keep, lines, merged: pack.stops.length - keep.length };
+}
+
 // ── the whole job ───────────────────────────────────────────────────────
 // A pack in, something the renderer already understands out. Nothing below this
 // line knows the city was real.
-export function layout(pack, board, opts = {}) {
-  validate(pack);
+export function layout(packIn, board, opts = {}) {
+  validate(packIn);
+  const pack = opts.merge === false ? packIn : merge(packIn, opts);
   const projected = project(pack, board);
   const { at, report: rep } = octolinear(projected, pack.lines, opts);
   return {
