@@ -124,6 +124,16 @@ What it deliberately does NOT have, because Mini Motorways does not: any way to
 assign a vehicle. If a second local layer let you route the traffic it would be
 the metro layer wearing a hat.
 
+## Cities — owner's direction, 2026-08-23
+
+Real cities' public transport on a minimalistic map, in the same layers as the
+abstract boards, with live positions and GPS so the app can be used to actually
+catch a tram. **`CITIES.md` holds it** — the direction verbatim, what was
+verified about the APIs and the licences, the seam that is built, and six open
+questions. The abstract boards stay primary; Cities is adjacent, not a
+replacement, and it does not reverse the 2026-08-19 call that took Helsinki out
+of the base game.
+
 ## Still open
 
 1. **What does a narrative choice look like?** The stuck parcel and the "inner

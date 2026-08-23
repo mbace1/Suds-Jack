@@ -10,6 +10,7 @@ import { Game } from '../js/sim.js?v=8';
 import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=8';
 import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=8';
 import { PAL, INK } from '../js/palette.js?v=8';
+import { validate as validCity, project, octolinear, layout } from '../js/city.js?v=8';
 
 // a platform full of people, now that a passenger is an object
 const fill = (st, n, goal, now = 0) => { for (let i = 0; i < n; i++) st.join(goal, now); return st; };
@@ -1025,6 +1026,124 @@ const lay = (net, x0, y0, x1, y1) => {          // a straight run, inclusive
     if (g.state === 'won') wins++;
   }
   ok(wins >= 4, `The Rush can be won by an ordinary player (${wins}/5 boards)`);
+}
+
+// ── a city ──────────────────────────────────────────────────────────────
+// The seam between a real network and this game's board. Everything here runs
+// against a SYNTHETIC city with a real one's shape — six radial trunks and a
+// ring, stops every ~400m, each leg wobbled off straight the way a tram that
+// follows streets is. It is deliberately not anywhere: the job is to measure
+// the fitter, and a gate that needs a 400 kB pack of somebody else's open data
+// checked in beside it is a gate that stops being run.
+function synthCity(seed = 7) {
+  let s = seed;
+  const rnd = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const lat0 = 60.17, lon0 = 24.94, k = Math.cos((lat0 * Math.PI) / 180);
+  const M = 1 / 111320;                      // degrees per metre, near enough
+  const stops = [], lines = [];
+  const put = (id, x, y) => {
+    stops.push({ id, name: id, lat: lat0 + y * M, lon: lon0 + (x * M) / k, modes: ['TRAM'] });
+    return id;
+  };
+  let n = 0;
+  for (let arm = 0; arm < 6; arm++) {
+    const a = (arm / 6) * Math.PI * 2 + 0.2;
+    const seq = []; let x = 0, y = 0;
+    for (let i = 0; i < 12; i++) {
+      const wob = (rnd() - 0.5) * 0.5;
+      x += Math.cos(a + wob) * 400; y += Math.sin(a + wob) * 400;
+      seq.push(put(`s${n++}`, x, y));
+    }
+    lines.push({ id: `L${arm}`, name: String(arm + 1), mode: 'TRAM', colour: arm, stops: seq });
+  }
+  const ring = [];
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
+    ring.push(put(`r${i}`, Math.cos(a) * 2200, Math.sin(a) * 2200));
+  }
+  ring.push(ring[0]);                        // a ring closes
+  lines.push({ id: 'R', name: 'R', mode: 'TRAM', colour: 6, stops: ring });
+  return { id: 'synth', name: 'Synthetic', source: 'generated in the gate', licence: 'n/a', stops, lines };
+}
+
+{
+  const good = synthCity();
+  ok(validCity(good) === good, 'a well-formed pack loads');
+
+  const throws = (mut, why) => {
+    const p = structuredClone(good);
+    mut(p);
+    let threw = false;
+    try { validCity(p); } catch { threw = true; }
+    ok(threw, why);
+  };
+  // the licence is a condition, not a courtesy: HSL's data is CC BY 4.0, so a
+  // pack that has lost its attribution may not be drawn at all
+  throws(p => { delete p.licence; }, 'a pack without a licence is refused');
+  throws(p => { delete p.source; }, 'and so is one that has forgotten where it came from');
+  throws(p => { p.stops[3].id = p.stops[2].id; }, 'two stops may not share an id');
+  throws(p => { p.stops[0].lat = 220; }, 'a stop has to be on Earth');
+  throws(p => { p.lines[0].stops = ['s0']; }, 'a line has to go somewhere');
+  throws(p => { p.lines[0].stops[2] = 'nowhere'; }, 'and may only call at stops the pack holds');
+}
+
+{
+  // projection: the city keeps its shape, which is what makes it recognisable
+  const pack = synthCity();
+  const board = { w: 860, h: 600, margin: 46 };
+  const at = project(pack, board);
+  eq(at.size, pack.stops.length, 'every stop lands on the board');
+
+  let inside = true;
+  for (const p of at.values()) {
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) inside = false;
+    if (p.x < 0 || p.y < 0 || p.x > board.w || p.y > board.h) inside = false;
+  }
+  ok(inside, 'and lands on it rather than off the edge');
+
+  // ONE scale for both axes. Fitting each axis to its own range fills the board
+  // and stretches the city, which is the difference between a map of somewhere
+  // and a picture of a network — and it cannot be seen in any single number
+  // except this one: a round city has to come out round.
+  const xs = [...at.values()].map(p => p.x), ys = [...at.values()].map(p => p.y);
+  const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys);
+  ok(Math.abs(w - h) / Math.max(w, h) < 0.06, `a round city comes out round, not stretched to the board (${w.toFixed(0)}x${h.toFixed(0)})`);
+
+  const again = project(pack, board);
+  let same = true;
+  for (const [id, p] of at) { const q = again.get(id); if (p.x !== q.x || p.y !== q.y) same = false; }
+  ok(same, 'and the same pack always projects the same way');
+}
+
+{
+  // the fitter, judged by its own report
+  const pack = synthCity();
+  const board = { w: 860, h: 600, margin: 46 };
+  const { report: r } = octolinear(project(pack, board), pack.lines);
+  ok(r.onGrid >= 0.99, `the whole network reaches the octolinear grid (${(r.onGrid * 100).toFixed(0)}%)`);
+  ok(r.worstAngleDeg < 3, `with nothing left visibly off it (worst ${r.worstAngleDeg.toFixed(1)}°)`);
+  // …while still being the place. 2% of the board's width is the line between
+  // "bent" and "somewhere else"; measured, it comes out at 6 units of 860.
+  ok(r.drift < board.w * 0.02, `and the average stop barely moves (${r.drift.toFixed(1)} units of ${board.w})`);
+  ok(r.worstDrift < board.w * 0.06, `nor does the worst one (${r.worstDrift.toFixed(1)})`);
+
+  // a leg shared by two lines is one leg. Pulled once per line it would be bent
+  // twice as hard as the branches, and the trunk of the network would walk.
+  const shared = structuredClone(pack);
+  shared.lines.push({ ...shared.lines[0], id: 'dup', colour: 1 });
+  const rd = octolinear(project(shared, board), shared.lines).report;
+  eq(rd.legs, r.legs, 'a leg two lines share is still one leg');
+}
+
+{
+  // and the whole job, which is the only entry point anything else should use
+  const pack = synthCity(11);
+  const out = layout(pack, { w: 860, h: 600, margin: 46 });
+  eq(out.stops.length, pack.stops.length, 'layout returns every stop');
+  ok(out.stops.every(s => Number.isFinite(s.x) && Number.isFinite(s.y)), 'each with a place on the board');
+  ok(out.stops.every(s => s.truth && Number.isFinite(s.truth.x)),
+     'and where it really is, kept alongside — a bent stop that has forgotten its own position cannot be put back on a map');
+  ok(out.report.onGrid >= 0.99, 'a second board bends as well as the first');
 }
 
 // ── the ink ─────────────────────────────────────────────────────────────
