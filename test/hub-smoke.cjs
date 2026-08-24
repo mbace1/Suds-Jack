@@ -207,11 +207,16 @@ function check(name, cond) {
     if (!r.ok()) dead.push(`${g.id} ${r.status()}`);
   }
   check(`every link this branch can see resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
-  // A complete source checkout now contains the deployed catalogue. Keep the
-  // assertion explicit so a future import cannot accidentally reintroduce
-  // production-only links into main.
+  // A complete source checkout carries the deployed catalogue — with the one
+  // exception the catalogue is allowed to STATE. Piritori's Godot port is a
+  // 63 MB WebAssembly build that main deliberately does not hold, so the rule
+  // this guards is not "everything is in the repo" any more; it is that a
+  // production-only cabinet is a DECISION rather than an accident. A reason in
+  // `offRepo` is how a decision looks in data; a comment is not readable here.
   const away = games.filter(g => !g.inRepo);
-  check('the complete source tree carries every visible cabinet', away.length === 0);
+  const unexplained = away.filter(g => !(g.offRepo || '').trim());
+  check(`a cabinet outside the source tree says why it is${unexplained.length ? ` — ${unexplained.map(g => g.id)}` : ''}`,
+    unexplained.length === 0);
 
   // a marquee that draws nothing is a black rectangle nobody notices
   const blank = await page.evaluate(() => {

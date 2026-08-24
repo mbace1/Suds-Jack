@@ -387,8 +387,14 @@ export const GAMES = [
     // The Godot port replaced the JS prototype here. It is a WebAssembly build
     // and lives only on the deployed site — `inRepo: false` because main does
     // not carry the 63MB artefact, so the smoke gate must not try to fetch it.
+    //
+    // `offRepo` is that reason IN DATA rather than in a comment, because the
+    // gate has to be able to read it: production-only cabinets are allowed, but
+    // only deliberately. One that appears without a stated reason is the
+    // accident the check was written to catch.
     path: 'piritori-godot/',
     inRepo: false,
+    offRepo: 'a 63 MB Godot WebAssembly build — deployed only, too large for main',
     accent: '#e8c24a',
     art: 'nightmap',
   },
