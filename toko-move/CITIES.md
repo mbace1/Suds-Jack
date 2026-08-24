@@ -241,6 +241,60 @@ Colour is deliberately a tight ramp; **width carries most of the hierarchy**,
 which is how a real map does it and why the four weights live beside the four
 colours.
 
+### And then it met a real network, and failed
+
+PR #305 (the Piritori lane) arrived carrying **`flow-core/data/kallio-rail-v1.json`
+— real HSL tram and metro geometry**, fetched from the live GTFS feed on a
+machine that can reach it (feed version 2026-08-21, CC BY 4.0). That lane hit
+the same wall this one did — `overpass-api.de` answers **403 at the egress
+gateway** — and got past it by fetching elsewhere and committing the result.
+
+So the fitter finally got the test it was built for. 82 real platforms folding
+to 65 stations, 20 line-directions, 82 legs, a real corner of Helsinki.
+
+**It does not hold up.**
+
+| | synthetic city | real Kallio |
+|---|---|---|
+| legs on the grid | **100%** | **46%** |
+| spacing spread | 0.060 | 0.247 |
+| mean drift | 6.2 of 860 (0.7%) | **73 of 900 (8%)** |
+| worst drift | 21 | **303** |
+
+And it is **structural, not tuning**. Eight sweeps — 400 to 8000 rounds, bend
+0.6 to 0.99, `even` 0 to 0.15, `minLeg` 10 to 18 — and nothing gets past 54%.
+More rounds do not converge, they *oscillate*: 46% → 54% → 50%. Dropping the
+bbox-clipped stubs and the T/N variants changes nothing (48%).
+
+**The reason, measured:** 34 of the 65 stations have **more than four legs**
+meeting at them. An octolinear node has eight directions to give out, a real
+interchange wants more of them than are free, and every leg is also constrained
+at its other end. The constraint set is over-determined, and a *local*
+relaxation has no way to see that — it satisfies one node by breaking its
+neighbour and ping-pongs. This is precisely why the literature formulates
+octolinear layout as an integer program: it is a global combinatorial problem
+wearing the costume of a local one.
+
+That was written into `city.js` before any of this was known — *"a logical
+option, offered to be measured… if those numbers are bad on a real city, this
+approach is wrong and the answer is a better one, not a hand-tuned constant."*
+The numbers are bad. **The relaxation is the wrong approach for the diagram
+view and needs replacing, not tuning.**
+
+What survived contact perfectly well:
+
+- **the street view** — real paths, real streets, and it reads (the render is
+  the picture to look at, not the numbers);
+- **the projection**, the pack format, `merge()` (82 platforms → 65 stations
+  with no hand-holding), and the whole GTFS reader;
+- **the reporting**, which is the only reason any of this is known rather than
+  guessed.
+
+So the street view is ready for a real city and the diagram view is not. Given
+question 1 is still open — what you *do* on a city board — that is a survivable
+place to be: the map half works today, and the board half needs a different
+algorithm before it is worth wiring to anything.
+
 ### One claim that measured false
 
 The median leg was chosen as the evenness target with a reason attached: that a

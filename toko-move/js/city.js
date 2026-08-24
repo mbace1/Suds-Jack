@@ -24,6 +24,23 @@
 // stops had to move, and whether any of them landed on top of each other. If
 // those numbers are bad on a real city, this approach is wrong and the answer
 // is a better one, not a hand-tuned constant.
+//
+// ── AND THEY WERE BAD. Measured 2026-08-24 on real HSL geometry for Kallio
+// (65 stations, 82 legs): 46% of legs on the grid against 100% on the synthetic
+// city, and a mean drift of 8% of the board against 0.7%. Eight sweeps of every
+// weight changed nothing — more rounds oscillate (46 → 54 → 50) rather than
+// converge.
+//
+// The reason is countable: 34 of the 65 stations have MORE THAN FOUR legs
+// meeting at them. An octolinear node has eight directions to hand out, a real
+// interchange wants more of them than are free, and every leg is constrained at
+// its far end too. A LOCAL relaxation cannot see that — it satisfies one node by
+// breaking its neighbour. This is why the literature solves octolinear layout as
+// an integer program: it is a global combinatorial problem in local clothing.
+//
+// So this needs REPLACING rather than tuning, and it is kept meanwhile because
+// the street view (which does not bend anything) is what a real city can use
+// today. CITIES.md has the table. Do not spend a day on the constants.
 
 const TAU = Math.PI * 2;
 const OCTO = Math.PI / 4;
