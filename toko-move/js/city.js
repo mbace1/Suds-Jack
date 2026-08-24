@@ -58,6 +58,9 @@ export function validate(pack) {
     if ((l.stops?.length ?? 0) < 2) bad.push(`line "${l.id}" does not go anywhere`);
     for (const id of l.stops ?? []) if (!seen.has(id)) bad.push(`line "${l.id}" calls at "${id}", which is not in the pack`);
   }
+  for (const w of pack?.streets ?? []) {
+    if ((w.pts?.length ?? 0) < 2) bad.push('a street with fewer than two points is not a street');
+  }
   if (bad.length) throw new Error(`city "${pack?.id ?? '?'}": ${bad.join('; ')}`);
   return pack;
 }
@@ -69,7 +72,11 @@ export function validate(pack) {
 // bend straight streets. Anything grander would be precision this game cannot
 // use.
 
-export function project(pack, board) {
+// Returns the stop positions AND the transform that made them, because a
+// street view has to put the line's own path and the roads under it through the
+// very same one. Two projections that disagree by a pixel are a tram running
+// beside its street.
+export function projector(pack, board) {
   const stops = pack.stops;
   const lat0 = stops.reduce((a, s) => a + s.lat, 0) / stops.length;
   const k = Math.cos((lat0 * Math.PI) / 180);
@@ -88,10 +95,19 @@ export function project(pack, board) {
   const scale = Math.min((board.w - 2 * m) / w, (board.h - 2 * m) / h);
   const ox = (board.w - w * scale) / 2, oy = (board.h - h * scale) / 2;
 
+  const toBoard = (lat, lon) => ({
+    x: ox + (lon * k - x0) * scale,
+    y: oy + (-lat - y0) * scale,
+  });
+
   const out = new Map();
   for (const p of raw) out.set(p.id, { x: ox + (p.x - x0) * scale, y: oy + (p.y - y0) * scale });
-  return out;
+  // metres per board unit, which is what a street view needs to draw a road at
+  // a believable width instead of a guessed one
+  return { at: out, toBoard, scale, metresPerUnit: 111320 / scale };
 }
+
+export function project(pack, board) { return projector(pack, board).at; }
 
 // ── octolinear relaxation ───────────────────────────────────────────────
 // `at` is the map project() returned; it is not modified. `minLeg` stops two
@@ -339,17 +355,42 @@ export function merge(pack, opts = {}) {
   return { ...pack, stops: keep, lines, merged: pack.stops.length - keep.length };
 }
 
-// ── the whole job ───────────────────────────────────────────────────────
-// A pack in, something the renderer already understands out. Nothing below this
-// line knows the city was real.
+// ── the whole job, in two views ─────────────────────────────────────────
+// One pack, two ways of looking at it, and they are the two ends of the ratio
+// this file is built around.
+//
+//   'diagram'  bent onto the 45° grid. This is the game board: legible,
+//              even-spaced, and NOT where anything actually is.
+//   'street'   left exactly where it is, with the road under it. This is the
+//              one you hold on a platform, because a diagram cannot tell you
+//              which way to walk.
+//
+// They are not a preference. A diagram is unusable for finding a stop and a
+// street map is unusable as a board, so the mode needs both and the pack is
+// the same either way. Nothing below this line knows the city was real.
 export function layout(packIn, board, opts = {}) {
   validate(packIn);
   const pack = opts.merge === false ? packIn : merge(packIn, opts);
-  const projected = project(pack, board);
-  const { at, report: rep } = octolinear(projected, pack.lines, opts);
+  const proj = projector(pack, board);
+  const projected = proj.at;
+
+  const street = opts.view === 'street';
+  const { at, report: rep } = street
+    ? { at: projected, report: null }
+    : octolinear(projected, pack.lines, opts);
+
+  const trace = pts => pts?.map(([lat, lon]) => proj.toBoard(lat, lon)) ?? null;
+
   return {
+    view: street ? 'street' : 'diagram',
     stops: pack.stops.map(s => ({ ...s, ...at.get(s.id), truth: projected.get(s.id) })),
-    lines: pack.lines,
+    // In the street view a line follows the path the vehicle really traces —
+    // which for a tram IS the street it runs down, so the route can be drawn on
+    // the road with no road data at all. Straight hops between stops in the
+    // diagram, where a curve would be a lie about a shape that has none.
+    lines: pack.lines.map(l => ({ ...l, path: street ? trace(l.path) : null })),
+    streets: street ? (pack.streets ?? []).map(w => ({ ...w, pts: trace(w.pts) })) : [],
+    metresPerUnit: proj.metresPerUnit,
     report: rep,
   };
 }

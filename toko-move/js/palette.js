@@ -37,6 +37,22 @@ export const PAL = {
   roadSeam: '#8b8271',
   roadLine: '#efe9da',     // the dashed centre stripe — what says "street" rather than "tile"
 
+  // The STREET MAP under a city view. Four weights, because a map that draws a
+  // motorway and a back lane the same is a grey rectangle — and the ramp is
+  // deliberately tight, because width carries most of the hierarchy and colour
+  // only has to keep the order.
+  //
+  // Two rules, and the gate holds both. The quietest street must be VISIBLE
+  // (>= 1.3:1) — the first cut of this drew it at 1.24:1, which is the same
+  // mistake as the invisible Rush road, made the same day, in the same
+  // session. And the loudest street must stay UNDER the quietest tram line
+  // (1.95 against 2.07), because the streets are the ground and the network is
+  // the subject; a motorway that shouts louder than a tram line inverts the
+  // whole picture.
+  streets: ['#d3cab4', '#c5bca8', '#b9b19e', '#b0a896'],
+  // and how wide each is drawn, in board units at 1× — the other half of it
+  streetInk: [0.9, 1.5, 2.6, 4.0],
+
 
   // Handed out in this order, and a colour returns to the pile when its line
   // is torn up. Seven is deliberate: it is more lines than the board can

@@ -4,6 +4,7 @@
 //   node scripts/city-pack.mjs --city hsl
 //   node scripts/city-pack.mjs --city nyc --modes SUBWAY
 //   node scripts/city-pack.mjs --city hsl --gtfs ~/Downloads/hsl.zip     (offline)
+//   node scripts/city-pack.mjs --city hsl --streets 1                    (+ roads)
 //
 // WHY THIS IS A SCRIPT AND NOT SOMETHING THE GAME DOES. A city pack is data
 // about the real world, fetched once and checked in. If the game fetched it at
@@ -27,7 +28,7 @@
 
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { readZip, packFromGtfs } from './gtfs.mjs';
+import { readZip, packFromGtfs, simplify } from './gtfs.mjs';
 
 // Feeds that were looked up rather than remembered — each one's URL, licence
 // and whether it wants a key is in toko-move/CITIES.md with its source.
@@ -90,6 +91,53 @@ try {
   die(e.message);
 }
 
+// ── the streets, if asked ───────────────────────────────────────────────
+// The tram lines want something to sit ON. Their own `path` from shapes.txt is
+// the street they run down, but a map needs the ones they DON'T run down too,
+// or the network floats in a void and cannot be read as a place.
+//
+// This is a SEPARATE licence from the timetable, and a stricter one:
+// OpenStreetMap is ODbL, an extract of it is a Derivative Database, and it must
+// be offered under ODbL with attribution. The pack records that per-source
+// rather than for the whole file, because the timetable is CC BY and the roads
+// are not.
+let streets = null;
+if (args.get('streets') && net.stops.length) {
+  const pad = Number(args.get('pad') ?? 0.01);
+  const lats = net.stops.map(s => s.lat), lons = net.stops.map(s => s.lon);
+  const bbox = [
+    (Math.min(...lats) - pad).toFixed(5), (Math.min(...lons) - pad).toFixed(5),
+    (Math.max(...lats) + pad).toFixed(5), (Math.max(...lons) + pad).toFixed(5),
+  ].join(',');
+
+  // `out geom` returns each way's coordinates inline, so there is no second
+  // round trip to resolve node ids — which for a city is a hundred thousand of
+  // them. Anything smaller than a residential street is left out: a map that
+  // draws every driveway is a grey rectangle.
+  const KINDS = 'motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|pedestrian';
+  const ql = `[out:json][timeout:180];way["highway"~"^(${KINDS})$"](${bbox});out geom;`;
+  const url = args.get('overpass') ?? 'https://overpass-api.de/api/interpreter';
+  process.stderr.write(`fetching streets in ${bbox} … `);
+  const r = await fetch(url, { method: 'POST', body: 'data=' + encodeURIComponent(ql),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+  if (!r.ok) die(`${url} answered ${r.status} ${r.statusText}`);
+  const body = await r.json();
+
+  // four weights, so a renderer can draw a trunk road heavier than a back
+  // street without knowing what any of the tags mean
+  const RANK = { motorway: 3, trunk: 3, primary: 2, secondary: 2, tertiary: 1 };
+  streets = [];
+  for (const w of body.elements ?? []) {
+    const pts = (w.geometry ?? []).map(g => [g.lat, g.lon]);
+    if (pts.length < 2) continue;
+    streets.push({
+      rank: RANK[w.tags?.highway] ?? 0,
+      pts: simplify(pts, Number(args.get('streetTol') ?? 6) / 111320).map(([a, b]) => [round(a), round(b)]),
+    });
+  }
+  process.stderr.write(`${streets.length} ways\n`);
+}
+
 const pack = {
   id: cityId,
   name: args.get('name') ?? city?.name ?? cityId,
@@ -101,6 +149,13 @@ const pack = {
   // ~10cm, which is far past anything a diagram uses and keeps the file small
   stops: net.stops.map(s => ({ ...s, lat: round(s.lat), lon: round(s.lon) })),
   lines: net.lines,
+  ...(streets ? {
+    streets,
+    // the roads are somebody ELSE's data under somebody else's terms, so they
+    // say so themselves rather than hiding inside the pack's one licence field
+    streetSource: 'OpenStreetMap contributors',
+    streetLicence: 'ODbL 1.0 — https://opendatacommons.org/licenses/odbl/',
+  } : {}),
 };
 function round(n) { return Math.round(n * 1e6) / 1e6; }
 
@@ -110,3 +165,4 @@ writeFileSync(out, JSON.stringify(pack, null, 1) + '\n');
 const kb = (Buffer.byteLength(JSON.stringify(pack)) / 1024).toFixed(0);
 console.log(`${out}: ${pack.stops.length} stops, ${pack.lines.length} lines, ${modes.join('+')}, ${kb} kB`);
 console.log(`source: ${pack.source} (${pack.licence}) — this credit must stay on screen`);
+if (streets) console.log(`streets: ${streets.length} ways from ${pack.streetSource} (${pack.streetLicence})`);

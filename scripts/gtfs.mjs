@@ -108,6 +108,36 @@ export const modeOf = t => ROUTE_TYPE[Number(t)] ?? 'OTHER';
 // stop_times.txt is the big one (tens of MB for a real agency), so it is walked
 // twice rather than held: once counting calls per trip, once collecting the
 // stops of the trips that won. Memory is one integer per trip.
+// Douglas-Peucker. Written out rather than pulled in for the same reason the
+// zip reader is: twenty lines against a dependency in a repo that has none.
+export function simplify(pts, tol) {
+  if (pts.length < 3) return pts.slice();
+  const keep = new Uint8Array(pts.length);
+  keep[0] = keep[pts.length - 1] = 1;
+  const stack = [[0, pts.length - 1]];
+  while (stack.length) {
+    const [a, b] = stack.pop();
+    let worst = -1, at = -1;
+    const [ax, ay] = pts[a], [bx, by] = pts[b];
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+    for (let i = a + 1; i < b; i++) {
+      const [px, py] = pts[i];
+      // perpendicular distance to the segment, degenerate segment included
+      let d;
+      if (len2 === 0) d = Math.hypot(px - ax, py - ay);
+      else {
+        let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        d = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      }
+      if (d > worst) { worst = d; at = i; }
+    }
+    if (worst > tol && at > 0) { keep[at] = 1; stack.push([a, at], [at, b]); }
+  }
+  return pts.filter((_, i) => keep[i]);
+}
+
 export function packFromGtfs(files, opts = {}) {
   const want = new Set((opts.modes ?? ['TRAM', 'SUBWAY']).map(m => m.toUpperCase()));
   const get = name => {
@@ -134,9 +164,14 @@ export function packFromGtfs(files, opts = {}) {
 
   const tripsCsv = get('trips.txt');
   const tripRoute = new Map();
+  const tripShape = new Map();
   for (const t of tripsCsv.rows) {
     const rid = tripsCsv.at(t, 'route_id');
-    if (routes.has(rid)) tripRoute.set(tripsCsv.at(t, 'trip_id'), rid);
+    if (!routes.has(rid)) continue;
+    const tid = tripsCsv.at(t, 'trip_id');
+    tripRoute.set(tid, rid);
+    const sh = tripsCsv.at(t, 'shape_id');
+    if (sh) tripShape.set(tid, sh);
   }
 
   const stCsv = get('stop_times.txt');
@@ -196,6 +231,30 @@ export function packFromGtfs(files, opts = {}) {
     return cur;
   };
 
+  // ── the PATH a line takes on the ground ───────────────────────────────
+  // Straight hops between stops are what a diagram wants; a map wants the road.
+  // `shapes.txt` is the vehicle's actual traced path, which for a tram IS the
+  // street it runs down — so a street view can draw the line where it really
+  // goes without any road data at all. Optional: the file is not required by
+  // GTFS and plenty of feeds omit it.
+  const shapePts = new Map();
+  if (files.has('shapes.txt') || files.has('gtfs/shapes.txt')) {
+    const wanted = new Set([...chosen.keys()].map(tid => tripShape.get(tid)).filter(Boolean));
+    if (wanted.size) {
+      const shCsv = get('shapes.txt');
+      for (const r of shCsv.rows) {
+        const id = shCsv.at(r, 'shape_id');
+        if (!wanted.has(id)) continue;
+        if (!shapePts.has(id)) shapePts.set(id, []);
+        shapePts.get(id).push([
+          Number(shCsv.at(r, 'shape_pt_sequence')),
+          Number(shCsv.at(r, 'shape_pt_lat')),
+          Number(shCsv.at(r, 'shape_pt_lon')),
+        ]);
+      }
+    }
+  }
+
   const used = new Map();
   const lines = [];
   let slot = 0;
@@ -213,7 +272,18 @@ export function packFromGtfs(files, opts = {}) {
       if (ids[ids.length - 1] !== sid) ids.push(sid);
     }
     if (ids.length < 2) continue;
-    lines.push({ id: r.id, name: r.name, longName: r.longName, mode: r.mode, hex: r.hex, colour: slot++, stops: ids });
+
+    // …thinned. A tram route's shape is a few thousand points at metre
+    // resolution, which is a megabyte of JSON per line to draw something a few
+    // hundred pixels wide. Douglas-Peucker at ~8m keeps every bend a map can
+    // show and throws the rest away.
+    const raw = (shapePts.get(tripShape.get(tid)) ?? [])
+      .sort((a, b) => a[0] - b[0])
+      .map(([, lat, lon]) => [lat, lon])
+      .filter(([lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon));
+    const path = raw.length > 1 ? simplify(raw, (opts.shapeTol ?? 8) / 111320) : null;
+
+    lines.push({ id: r.id, name: r.name, longName: r.longName, mode: r.mode, hex: r.hex, colour: slot++, stops: ids, path });
   }
 
   return { stops: [...used.values()], lines };

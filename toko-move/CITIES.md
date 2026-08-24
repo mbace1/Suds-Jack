@@ -183,6 +183,64 @@ standard next term in this kind of relaxation and the next iteration. Until it
 exists the gate pins the invariant that bending must not add crowding of its
 own.
 
+### Two views, one pack (2026-08-23, owner: *"put all the tram lines on top of
+the street map"*)
+
+That is the other end of the ratio this file is built around, and it is now a
+mode rather than a setting:
+
+- **`diagram`** — bent onto the 45° grid, evenly spaced. The game board:
+  legible, and not where anything is.
+- **`street`** — the projection **untouched**, with the roads under it. The one
+  you hold on a platform, because a diagram cannot tell you which way to walk.
+
+They are not a preference between two looks. A diagram is unusable for finding a
+stop and a street map is unusable as a board, so the mode needs both — and the
+pack is identical either way. `layout(pack, board, { view: 'street' })`.
+
+Three things had to exist for it:
+
+**The line's real path.** In the diagram a line is straight hops between stops,
+because a bent line has no curve to be faithful to. On a street map it has to
+follow the road — and it can, without any road data at all, because GTFS
+`shapes.txt` is *the path the vehicle actually traces*, which for a tram IS the
+street it runs down. Thinned with Douglas-Peucker at ~8 m: a route's shape is
+thousands of points at metre resolution, which is a megabyte of JSON to draw
+something a few hundred pixels wide.
+
+**One projection for both.** `projector()` returns the transform as well as the
+stop positions, so the line's path and the roads beneath it go through the very
+same one. Two projections that disagree by a pixel are a tram running *beside*
+its street. The gate checks the path starts on its own first stop.
+
+**The streets themselves**, via `--streets` on the fetcher: an Overpass query for
+everything from motorway down to residential, `out geom` so there is no second
+round trip to resolve a hundred thousand node ids, thinned at ~6 m, and ranked
+into four weights so a trunk road can be drawn heavier than a lane. **This is a
+different licence from the timetable and a stricter one** — the timetable is CC
+BY, OpenStreetMap is ODbL — so the pack records `streetSource` and
+`streetLicence` separately rather than hiding them behind one field.
+
+### The invisible-road mistake, made twice in one day
+
+The first cut of the street ramp drew the quietest street at **1.24:1** against
+the paper. That is the same failure as the Rush's road at 1.19:1 — fixed hours
+earlier, in this same session, with a gate written for it — and it was made
+again because the gate guarded `PAL.road` and the street greys were typed
+straight into a render script.
+
+The ramp is in `palette.js` now, under two rules the gate holds:
+
+- the quietest street is **visible** (≥ 1.3:1), and each weight is darker than
+  the one below it;
+- the loudest street stays **under the quietest tram line** (1.95 against 2.07),
+  because the streets are the ground and the network is the subject. A motorway
+  that shouts louder than a tram line inverts the whole picture.
+
+Colour is deliberately a tight ramp; **width carries most of the hierarchy**,
+which is how a real map does it and why the four weights live beside the four
+colours.
+
 ### One claim that measured false
 
 The median leg was chosen as the evenness target with a reason attached: that a

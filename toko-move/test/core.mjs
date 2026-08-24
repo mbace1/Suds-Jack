@@ -1251,6 +1251,62 @@ function synthCity(seed = 7) {
   eq(off.stops.length, pack.stops.length, 'and it can be turned off');
 }
 
+{
+  // Two views from ONE pack, which is the whole design: a diagram is unusable
+  // for finding a stop and a street map is unusable as a board, so the mode
+  // needs both and neither is a preference.
+  const pack = synthCity();
+  // give it a street and a path, the way a real feed does
+  pack.streets = [
+    { rank: 2, pts: [[60.169, 24.931], [60.171, 24.941], [60.179, 24.951]] },
+    { rank: 0, pts: [[60.160, 24.900], [60.163, 24.914]] },
+  ];
+  // the path has to belong to THIS line — built from its own first two stops
+  // with a bend put between them, the way a street that curves does
+  {
+    const l = pack.lines[0];
+    const a = pack.stops.find(s => s.id === l.stops[0]);
+    const b = pack.stops.find(s => s.id === l.stops[1]);
+    l.path = [[a.lat, a.lon], [(a.lat + b.lat) / 2 + 0.0004, (a.lon + b.lon) / 2], [b.lat, b.lon]];
+  }
+  const board = { w: 860, h: 600, margin: 46 };
+
+  const dia = layout(pack, board);
+  const st = layout(pack, board, { view: 'street' });
+  eq(dia.view, 'diagram', 'the default view is the board');
+  eq(st.view, 'street', 'and the street map is asked for by name');
+
+  // A street view is the projection UNTOUCHED — that is what makes it a map.
+  // Bending it even slightly puts a stop on the wrong side of a junction, which
+  // is the one thing this view exists to get right.
+  let exact = true;
+  for (const s of st.stops) if (Math.abs(s.x - s.truth.x) > 1e-9 || Math.abs(s.y - s.truth.y) > 1e-9) exact = false;
+  ok(exact, 'a street view leaves every stop exactly where it really is');
+  ok(dia.stops.some(s => Math.hypot(s.x - s.truth.x, s.y - s.truth.y) > 1), 'and the diagram does not');
+
+  // ONE projection for both. Two that disagree by a pixel are a tram running
+  // beside its own street rather than down it.
+  const first = st.stops.find(s => s.id === pack.lines[0].stops[0]);
+  ok(st.lines[0].path?.length >= 2, 'a line in the street view carries its path in board units');
+  ok(Math.hypot(st.lines[0].path[0].x - first.x, st.lines[0].path[0].y - first.y) < 3,
+     'and the path starts on the stop, so the line runs down the street rather than beside it');
+  ok(st.streets.length === 2 && st.streets[0].pts.every(p => Number.isFinite(p.x)),
+     'the streets are projected through the same transform');
+  eq(st.streets[0].rank, 2, 'and keep their weight, so a trunk road can be drawn heavier than a lane');
+
+  // the diagram must NOT carry a path: a bent line has no curve to trace, and
+  // drawing the true one over bent stops is a lie about both
+  ok(dia.lines.every(l => l.path === null), 'the diagram carries no path, because a bent line has no real curve');
+  eq(dia.streets.length, 0, 'and no streets, because it is not a map');
+
+  // a scale, so a street can be drawn at a believable width rather than a guess
+  ok(st.metresPerUnit > 0 && Number.isFinite(st.metresPerUnit), `the view knows its own scale (${st.metresPerUnit.toFixed(0)} m per board unit)`);
+
+  let threw = false;
+  try { validCity({ ...pack, streets: [{ rank: 0, pts: [[60, 24]] }] }); } catch { threw = true; }
+  ok(threw, 'a street with one point is refused');
+}
+
 // ── reading a real feed ─────────────────────────────────────────────────
 // GTFS is a zip of CSVs, and scripts/gtfs.mjs reads both halves without a
 // dependency — which is the only way a city pack can exist in a repo with no
@@ -1298,7 +1354,18 @@ function zipOf(files, { method = 8 } = {}) {
 const FEED = [
   ['routes.txt', '﻿route_id,route_short_name,route_long_name,route_type,route_color\n'
     + 'T1,1,Ring,0,00985F\nM1,M,Metro,1,FF6319\nB9,9,Bus,3,\n'],
-  ['trips.txt', 'route_id,service_id,trip_id\nT1,S,t_full\nT1,S,t_short\nM1,S,m_full\nB9,S,b1\n'],
+  ['trips.txt', 'route_id,service_id,trip_id,shape_id\n'
+    + 'T1,S,t_full,shp_T\nT1,S,t_short,shp_T\nM1,S,m_full,shp_M\nB9,S,b1,shp_B\n'],
+  // The path the vehicle really traces, which for a tram IS the street it runs
+  // down. Deliberately dense and deliberately out of sequence order: a real
+  // shape is thousands of points at metre resolution, and nothing promises the
+  // rows are sorted. The middle points here are very nearly collinear, so a
+  // thinner that works throws most of them away.
+  ['shapes.txt', 'shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon\n'
+    + 'shp_T,3,60.1730,24.9450\nshp_T,1,60.1690,24.9310\nshp_T,2,60.1710,24.9380\n'
+    + 'shp_T,4,60.1750,24.9480\nshp_T,5,60.1790,24.9510\nshp_T,6,60.1840,24.9490\n'
+    + 'shp_M,1,60.1685,24.9315\nshp_M,2,60.1660,24.9200\nshp_M,3,60.1630,24.9140\n'
+    + 'shp_B,1,60.2000,24.9000\nshp_B,2,60.2100,24.9100\n'],
   ['stop_times.txt', ('trip_id,stop_sequence,stop_id\n'
     // the SHORT working first, so "take the longest pattern" and "take the
     // first one you see" cannot agree — they did in the first cut of this
@@ -1382,6 +1449,12 @@ const FEED = [
      'and the two lines that call at its two platforms meet at one node');
   ok(!net.stops.some(s => s.id === 'a' || s.id === 'x'), 'the platforms themselves are not on the diagram');
 
+  // the path on the ground, which is what a street view draws
+  ok(Array.isArray(tram.path) && tram.path.length >= 2, `a line carries the path the vehicle traces (${tram.path?.length} points)`);
+  eq(tram.path?.[0]?.[0], 60.169, 'starting where the shape starts, in sequence order not file order');
+  ok(tram.path.length < 6, `and thinned — ${tram.path?.length} points from 6, the near-collinear ones dropped`);
+  ok(net.lines.every(l => l.mode !== 'BUS'), 'and the bus shape is not carried for a route nobody drew');
+
   let threw = false;
   try { packFromGtfs(readZip(zipOf(FEED)), { modes: ['FERRY'] }); } catch { threw = true; }
   ok(threw, 'asking for a mode the city does not run says so rather than writing an empty pack');
@@ -1419,6 +1492,24 @@ const FEED = [
   ok(cr(PAL.ink, PAL.road) >= 4.5, 'while a building still reads on top of it');
   ok(cr(PAL.paper, PAL.road) >= 2, 'and so does a paper-filled car');
   ok(cr(PAL.roadLine, PAL.road) >= 2, 'the centre stripe is a stripe, not a rumour');
+
+  // The street map under a city view. Same failure as the road, and it was
+  // made the same day: the first cut drew the quietest street at 1.24:1, which
+  // is not a quiet street but no street.
+  ok(cr(PAL.streets[0], PAL.paper) >= 1.3,
+     `the quietest street is visible on the paper (${cr(PAL.streets[0], PAL.paper).toFixed(2)}:1)`);
+  let rising = true;
+  for (let i = 1; i < PAL.streets.length; i++) {
+    if (cr(PAL.streets[i], PAL.paper) <= cr(PAL.streets[i - 1], PAL.paper)) rising = false;
+  }
+  ok(rising, 'and each weight of street is darker than the one below it');
+  // the streets are the GROUND and the network is the subject — a motorway
+  // that shouts louder than a tram line inverts the picture
+  const quietestLine = Math.min(...PAL.lines.map(c => cr(c, PAL.paper)));
+  ok(cr(PAL.streets[PAL.streets.length - 1], PAL.paper) < quietestLine,
+     `while the loudest still sits under the quietest line (${cr(PAL.streets[3], PAL.paper).toFixed(2)} vs ${quietestLine.toFixed(2)})`);
+  ok(PAL.streetInk.length === PAL.streets.length && PAL.streetInk.every((w, i) => i === 0 || w > PAL.streetInk[i - 1]),
+     'and width carries the hierarchy alongside the colour');
 
   ok(INK.line > INK.station, 'the network is drawn heavier than the stops on it');
   ok(INK.lineGap > INK.line, 'two lines sharing a leg are pushed further apart than they are wide');
