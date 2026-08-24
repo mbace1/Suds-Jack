@@ -988,7 +988,7 @@ function check(name, cond) {
       .then(() => true).catch(() => false);
     check(`${g.id} gets a pad bridged onto it`, wired);
     check(`${g.id} is matched to its own catalogue entry`,
-      await page.evaluate(() => window.__arcadeShell.game) === g.id);
+      await page.evaluate(() => window.__arcadeShell?.game) === g.id);
   }
   // and a game that reads a pad itself is left completely alone
   const native = catalogue.find(g => g.pad === 'native' && g.inRepo);

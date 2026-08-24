@@ -56,10 +56,13 @@ function playwright() {
 }
 
 // ── the palette the art has to land on ──
-// Read out of the game's own palette.js so a generated sheet and a code-drawn
-// element cannot disagree about what colour the stone is. This is the whole
-// reason `fit` quantises at all: a sheet with 4,000 colours in it is not in
-// the same world as a scene built from thirty.
+// This used to be read out of the GAME's palette.js, so a generated sheet and a
+// code-drawn element could not disagree about what colour the stone is. The
+// code-drawn game is gone — Kindling is built from real art in its own repo now
+// — but the palette outlived it as the ART SPEC: it is what art-src/ measures a
+// delivery against, so it moved there rather than being deleted with the
+// renderer. This is the whole reason `fit` quantises at all: a sheet with
+// 4,000 colours in it is not in the same world as a scene built from thirty.
 async function gamePalette(src) {
   const out = new Set();
   // walks arrays AND nested objects: Piritori keeps its city-service colours in
@@ -79,7 +82,7 @@ async function gamePalette(src) {
   } else {
     const mod = await import(src
       ? new URL(path.resolve(src), 'file://')
-      : new URL('../js/palette.js', import.meta.url));
+      : new URL('../art-src/palette.js', import.meta.url));
     walk(mod.PAL ?? mod.default ?? mod);
   }
   return [...out];

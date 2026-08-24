@@ -787,6 +787,49 @@ before you do the work.** A machine job where the payoff is off-screen is a
 chore; the same job with the payoff in frame is a puzzle a child solves without
 being told there was one.
 
+### 8.5 The report card, and what "not usable" means (2026-08-21)
+
+Owner: *"we can always make more levels and skip some if they are not
+usable."* Levels are cheap and cullable — that is a good policy and it needs
+one thing the project did not have: a way to READ which level is the one to
+drop. The six gates certify that a level works. None of them has an opinion
+about whether a child would put it down.
+
+**`node eeri/test/report.mjs`** is that reading, and it is deliberately not a
+gate — it never fails a build. One line per level:
+
+| column | what it says |
+|---|---|
+| `asks` / `/10` | how much the level asks for, per ten tiles. Front half 1.24–2.04. |
+| `dead` | the worst run with nothing in it (`DEAD_AIR` = 15 is the floor). |
+| `sec` | `estimate()` — the learned run. §4 wants ~40s learned. |
+| `foot` | the share that is not the ride. §1 wants ≥ 80%, floor 60%. |
+| `word` | how many DISTINCT things the level asks for. |
+| `new` | how many of those the game has not said before, in level order. |
+
+The verdict is one of three, and only one combination is fatal:
+
+- **`CUT`** — thin AND says nothing new. A level may be quiet if it is
+  teaching, and may repeat itself if it is dense. Being both is what makes a
+  level skippable.
+- **`THIN`** — flagged, still worth keeping.
+- **`SHIP`** — clears every floor.
+
+A level introducing **three or more new words is exempt from *thin***: a
+teaching level is quiet on purpose (level 1 measures 1.13 and says eight new
+things). Measuring it otherwise is the ruler failing to see the job.
+
+**What it found on its first run:** levels 8, 9, 11 and 12 read `CUT`, and the
+vocabulary column said why. Worlds 3 and 4 were quiet by FORGETTING — the
+skitter appears in level 1 and never again, water is taught in world 2 and
+never asked for after level 6, level 10 asked four things in eighty-nine
+tiles. Fixed in v15.37 with twenty parts, every one a verb the game already
+speaks; the back half now measures 1.32–1.36.
+
+**Use it before writing a new level, and before cutting one.** A new room that
+reads `CUT` is not finished; an existing room that reads `CUT` two passes
+running is the one to drop.
+
 ### 8.3 The playability floor (measured 2026-08-20)
 
 Everything in §8.1 is about what the game HAS. This is about whether what it

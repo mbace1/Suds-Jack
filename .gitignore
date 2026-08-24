@@ -2,3 +2,8 @@ node_modules/
 package-lock.json
 package.json
 .godot/
+
+# The Godot port's web build. A derived artefact — 63MB on disk, ~33MB over the
+# wire — rebuilt by piritori/godot/tools/export-web.sh. It belongs on the
+# deployed site, not in the source tree.
+/piritori-godot/

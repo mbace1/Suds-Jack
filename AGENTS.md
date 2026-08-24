@@ -112,7 +112,8 @@ NODE_PATH=$(npm root -g) node flow-core/test/smoke.cjs    # both entry points
 
 node eeri/test/rooms.mjs                                  # eeri: geometry
 NODE_PATH=$(npm root -g) node eeri/test/playthrough.cjs    # eeri: finishable
-node kindling/test/smoke.cjs                              # kindling
+# kindling is built in mbace1/Kindling and its gates run there — this repo
+# holds the built cabinet plus the art canon, and nothing here to test
 node toko/test/brand.cjs                                  # brand geometry + ink
 NODE_PATH=$(npm root -g) node test/hub-smoke.cjs          # the arcade
 ```
