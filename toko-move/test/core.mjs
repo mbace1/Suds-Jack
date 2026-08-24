@@ -13,6 +13,9 @@ import { PAL, INK } from '../js/palette.js?v=8';
 import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=8';
 import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
 import { deflateRawSync, crc32 } from 'node:zlib';
+import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
 // a platform full of people, now that a passenger is an object
 const fill = (st, n, goal, now = 0) => { for (let i = 0; i < n; i++) st.join(goal, now); return st; };
@@ -1465,6 +1468,69 @@ const FEED = [
                     'a feed lays out', { stops: [], report: { onGrid: 0 } });
   eq(out.stops.length, 7, 'a feed read off disk lays out like any other pack');
   ok(out.report.onGrid >= 0.99, 'and lands on the grid');
+}
+
+// ── a REAL city ─────────────────────────────────────────────────────────
+// Everything above this runs on a synthetic network, and a synthetic network
+// was too kind: it scored the octolinear fitter at 100% and real Kallio scores
+// it at 46%. So the real pack is in the gate, and what it pins is not "this
+// works" but WHAT IS TRUE — including the part that does not work, because a
+// known failure that nothing measures quietly becomes a forgotten one.
+//
+// `toko-move/cities/kallio.json` is real HSL tram and metro geometry, built by
+// `scripts/city-pack-kallio.mjs` from the extract flow-core fetched (PR #305).
+{
+  const here = dirname(fileURLToPath(import.meta.url));
+  const file = join(here, '..', 'cities', 'kallio.json');
+  ok(existsSync(file), 'the repo carries a real city pack, not only generated ones');
+
+  if (existsSync(file)) {
+    const pack = tries(() => JSON.parse(readFileSync(file, 'utf8')), 'the real pack parses', null);
+    const board = { w: 900, h: 640, margin: 40 };
+
+    ok(!!pack && validCity(pack) === pack, 'and it is a well-formed pack');
+    // CC BY 4.0 makes the credit a condition, not a courtesy
+    ok(/HSL|Helsingin/.test(pack?.source ?? ''), `it names HSL as its source ("${pack?.source}")`);
+    eq(pack?.licence, 'CC BY 4.0', 'and carries the licence that requires that');
+    ok(!!pack?.clippedTo, 'and says it is a window on Helsinki rather than Helsinki');
+
+    // 82 platforms are 65 stations, and the feed does not say so — no
+    // `parent_station` here, so `merge()` has to work it out from position and
+    // name alone, which is the case every non-GTFS source will be in.
+    const m = merge(pack);
+    eq(pack.stops.length, 82, 'the extract has 82 platforms in it');
+    eq(m.stops.length, 65, 'which merge() folds to 65 stations with no parent_station to help it');
+
+    const st = layout(pack, board, { view: 'street' });
+    eq(st.lines.filter(l => l.path?.length > 1).length, st.lines.length,
+       'every line in the street view follows the path its vehicle really traces');
+    let exact = true;
+    for (const s of st.stops) if (Math.abs(s.x - s.truth.x) > 1e-9) exact = false;
+    ok(exact, 'and every stop sits exactly where it really is');
+
+    // ── the known failure, pinned ──────────────────────────────────────
+    // The relaxation cannot lay out a real network: 46% of legs on the grid
+    // against 100% on the synthetic city, and it is structural — 34 of the 65
+    // stations have more than four legs meeting at them, and an octolinear node
+    // has only eight directions to hand out. Eight sweeps of every weight
+    // changed nothing; more rounds oscillate rather than converge.
+    //
+    // This asserts the failure so that fixing it BREAKS THE GATE, which is the
+    // only way a number nobody is looking at ever gets looked at again.
+    const dia = layout(pack, board);
+    ok(dia.report.onGrid < 0.7,
+       `KNOWN BAD, and pinned so a fix is visible: the octolinear fitter reaches only `
+       + `${(dia.report.onGrid * 100).toFixed(0)}% of legs on a real network. If this check `
+       + `FAILS, the fitter got better — raise the bar and delete this note (CITIES.md).`);
+
+    let crowded = 0;
+    const deg = new Map();
+    for (const l of m.lines) for (let i = 1; i < l.stops.length; i++) {
+      for (const id of [l.stops[i - 1], l.stops[i]]) deg.set(id, (deg.get(id) ?? 0) + 1);
+    }
+    for (const n of deg.values()) if (n > 4) crowded++;
+    ok(crowded > 20, `and the reason is countable: ${crowded} stations have more than four legs meeting at them`);
+  }
 }
 
 // ── the ink ─────────────────────────────────────────────────────────────

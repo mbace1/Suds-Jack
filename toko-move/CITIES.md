@@ -295,6 +295,53 @@ question 1 is still open — what you *do* on a city board — that is a surviva
 place to be: the map half works today, and the board half needs a different
 algorithm before it is worth wiring to anything.
 
+### The first real city is committed
+
+`toko-move/cities/kallio.json` — 82 real platforms, 20 line-directions, real
+paths, 25 kB. **© Helsingin seudun liikenne (HSL), CC BY 4.0**, feed version
+2026-08-21. Built by `scripts/city-pack-kallio.mjs` from the extract PR #305
+fetched, and the pack says in its own fields that it is a **window** on Helsinki
+rather than Helsinki: lines are cut where the bounding box ends.
+
+It is copied rather than shared, deliberately. flow-core's `ground.js` holds the
+same source in **design units**, clipped to Piritori's board, as relief to draw
+under a different game. Toko Move needs lat/lon, its own projection, and a pack
+it can carry to `gh-pages` where flow-core does not exist. Two shapes of one
+fetch for two jobs — not two fetches, and the attribution is identical because
+the source is.
+
+**The gate now runs on it**, and what it pins is not "this works" but what is
+true — including the part that does not. `merge()` folding 82 platforms to 65
+stations **with no `parent_station` to help it** is checked, because that is the
+case every non-GTFS source will be in. And so is the failure:
+
+> the octolinear fitter reaches only 46% of legs on a real network. **If this
+> check FAILS, the fitter got better** — raise the bar and delete the note.
+
+A known failure that nothing measures quietly becomes a forgotten one. This one
+breaks the gate the day somebody fixes it.
+
+### Notes on PR #305, since its data is now load-bearing here
+
+Sound work and it should land. Two small things, neither a blocker:
+
+- **The rail dedup is half done.** The comment says *"direction 0 only — the two
+  directions of a route are the same street drawn twice"*, and the filter does
+  exactly that. But it does not catch **service variants**: `M1`/`M2`, `8`/`8T`
+  and `9`/`9N` come out as byte-identical shapes, so 3 of 11 rail entries draw
+  over another. Defensible if a product wants to label each service; wasted
+  strokes if it does not.
+- **The street layer stacks.** 125 entries, 113 distinct shapes, one drawn
+  **8×** at eight different `w` values — eight corridor records sharing one
+  clipped geometry. Stroking all eight builds weight up by accident; taking the
+  max `w` would do it on purpose.
+
+And its opening line — *"so Toko Move can be a Mini Metro on the actual map of
+Kallio, which its catalogue entry already claims it is"* — reads off `main`'s
+catalogue, which is stale. That claim is retired: **the goal list is Helsinki →
+Nagoya → New York → Tokyo**, and this branch already rewrites the entry. The
+data is right regardless of the framing.
+
 ### One claim that measured false
 
 The median leg was chosen as the evenness target with a reason attached: that a
