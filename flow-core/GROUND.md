@@ -176,3 +176,48 @@ claims. A drawn line can follow the rails that are actually there.
 still undone. `map/kallio-corridors-v1.json` in the Piritori repo is that street
 network if anyone wants it; it is corridors that carry service, not every street,
 and it is honest about the difference.
+
+### 5.5 Everything is its own layer, and the lines carry their numbers
+
+Revised after review: the first cut shipped `water`, `coast` and `rail` as
+sibling keys, no street network, and no way to tell one tram from another.
+
+**`layers`, in bottom-to-top draw order** — which is also the order the city is
+made of:
+
+```js
+GROUND.kallio.layers = {
+  water:  [[[x, y], …], …],                       // closed rings, fillable
+  coast:  [[[x, y], …], …],                       // open runs, stroke them
+  street: [{ w, shape }, …],                      // w is 0..1, log of weekly trips
+  rail:   [{ service, mode, colour, shape }, …],  // service is the NUMBER
+}
+```
+
+A renderer that wants water and no streets should not have to filter one array,
+and §2's rule that *a product decides whether to draw it* only works if the
+things are separable.
+
+**The street network is in.** `flow-core/data/kallio-corridors-v1.json` — 224
+corridors, of which 125 runs survive the board — with `w` a **log-scaled**
+weight from weekly trips, so a renderer makes a trunk look like a trunk without
+anyone hand-classifying a road. Linear was wrong: the busiest corridor carries
+24,208 trips a week and would render Hämeentie and nothing else.
+
+It is honest about what it is not, and the data says so in its own
+`source.isNot`: **corridors that carry service, not every street.** In Kallio
+that is most of the grid that matters and it omits the quiet residential blocks
+entirely. §4's note 2 wanted blocks out of the street network; this is that
+network, with the caveat attached rather than discovered later.
+
+**Rail carries `service` and `colour`.** A line without its number is a green
+squiggle, and Toko Move is a game about which line goes where.
+
+The palette is **ours, not HSL's.** HSL has no per-line tram colour — verified
+from their own `hsl-map-publisher`'s `colorsByMode`, where trams are one green
+and the *number* does the wayfinding; Helsinki dropped per-line colours in 1954.
+So the colours ship as a default a renderer can use on day one, and
+`LINE_COLOURS` is exported so a product can replace them wholesale. Lines 1, 6
+and 7 use the values Wikidata carries; 3 is deepened off Wikidata's `#007fc1`
+because that sits a step away from line 1's cyan and the two run side by side
+down Helsinginkatu; 8 and 9 have none published anywhere.

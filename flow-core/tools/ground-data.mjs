@@ -35,6 +35,19 @@
  * Closing a coastline run into a polygon puts a lid across the harbour mouth.
  * So this emits `water` rings and `coast` lines, which is what is actually
  * there, and a renderer draws the sea rather than inferring it.
+ *
+ * EVERYTHING IS ITS OWN LAYER, under `layers`. A renderer that wants water and
+ * no streets, or streets and no rail, should not have to filter one array —
+ * and a product deciding what to draw is GROUND.md §2's own rule. Order in the
+ * object is bottom-to-top draw order, which is also the order the city is made
+ * of: water, then streets, then the rails on them.
+ *
+ * RAIL CARRIES ITS SERVICE AND A COLOUR. A line without its number is a green
+ * squiggle, and Toko Move is a game about which line goes where. The palette is
+ * OURS, not HSL's — HSL has no per-line tram colour at all (verified from
+ * hsl-map-publisher's own `colorsByMode`: trams are one green and the NUMBER is
+ * the wayfinding). It ships here so a renderer has something correct to draw on
+ * day one, and `LINE_COLOURS` is exported so a product can replace it.
  */
 
 import { writeFile, readFile } from 'node:fs/promises';
@@ -142,12 +155,26 @@ function simplifyRing(ring, tol) {
   return [...dp(half1, tol).slice(0, -1), ...dp(half2, tol).slice(0, -1)];
 }
 
+// One hue per line, so six routes over one corridor can be told apart. 1/6/7
+// are the values Wikidata carries; 3 is deepened off #007fc1 because Wikidata's
+// blue sits a step from line 1's cyan and they run side by side; 8/9 have none
+// published anywhere. NOT HSL's — see the header.
+const LINE_COLOURS = {
+  metro: '#ff6319', rail: '#8c4799', ferry: '#00b9e4',
+  1: '#00b4e5', 2: '#e8734a', 3: '#0b5299', 4: '#c9a227', 5: '#7a8f3a',
+  6: '#009757', 7: '#d5007f', 8: '#8a5cf0', 9: '#b8d430', 10: '#00a3a3',
+  13: '#0098a1',
+};
+const colourFor = l => LINE_COLOURS[l.service]
+  || LINE_COLOURS[l.mode] || '#00985f';
+
 const toXY = p => project(p[1], p[0]);          // data is [lat, lon]
 const round = pts => pts.map(p => [+p.x.toFixed(2), +p.y.toFixed(2)]);
 
 // ── build ───────────────────────────────────────────────────────────────────
 const water = JSON.parse(await readFile(path.join(DATA, 'kallio-water-v1.json'), 'utf8'));
 const rail = JSON.parse(await readFile(path.join(DATA, 'kallio-rail-v1.json'), 'utf8'));
+const cor = JSON.parse(await readFile(path.join(DATA, 'kallio-corridors-v1.json'), 'utf8'));
 
 const waterRings = [];
 for (const a of water.areas || []) {
@@ -173,14 +200,32 @@ for (const l of rail.lines) {
   if (l.direction !== 0) continue;
   for (const run of clipChain(l.shape.map(toXY))) {
     const s = dp(run, TOL);
-    if (s.length > 1) railOut.push({ service: l.service, mode: l.mode, shape: round(s) });
+    if (s.length > 1) railOut.push({ service: l.service, mode: l.mode, colour: colourFor(l), shape: round(s) });
   }
 }
+
+// STREETS. Corridors that carry service — not every street, and the data says
+// so itself in `source.isNot`. In Kallio that is most of the grid that matters
+// and it omits the quiet residential blocks entirely. `w` is a 0..1 weight from
+// weekly trips on a LOG scale, so a renderer can make a trunk look like a trunk
+// without anyone hand-classifying a road.
+const maxTrips = Math.log(cor.corridors[0].trips + 1);
+const streets = [];
+for (const c of cor.corridors) {
+  for (const run of clipChain(c.shape.map(toXY))) {
+    const s2 = dp(run, TOL);
+    if (s2.length > 1) {
+      streets.push({ w: +(Math.log(c.trips + 1) / maxTrips).toFixed(3), shape: round(s2) });
+    }
+  }
+}
+streets.sort((a, b) => a.w - b.w);          // quiet first, so a trunk draws over
 
 const pts = a => a.reduce((n, r) => n + (r.shape ? r.shape.length : r.length), 0);
 console.log(`  board  x ${BOX.x0.toFixed(0)}..${BOX.x1.toFixed(0)}  y ${BOX.y0.toFixed(0)}..${BOX.y1.toFixed(0)}  (design units, 1 = 10 m)`);
 console.log(`  water  ${waterRings.length} rings, ${pts(waterRings)} points`);
 console.log(`  coast  ${coast.length} runs, ${pts(coast)} points`);
+console.log(`  street ${streets.length} runs, ${pts(streets)} points`);
 console.log(`  rail   ${railOut.length} lines, ${pts(railOut)} points — ${[...new Set(railOut.map(r => r.service))].join(' ')}`);
 
 if (process.argv.includes('--dry')) {
@@ -205,11 +250,18 @@ export const GROUND = {
     note: 'committed under flow-core/data/; re-run ground-data.mjs to rebuild',
   }, null, 6).replace(/\n/g, '\n    ')},
     box: ${JSON.stringify({ x0: +BOX.x0.toFixed(2), y0: +BOX.y0.toFixed(2), x1: +BOX.x1.toFixed(2), y1: +BOX.y1.toFixed(2) })},
-    water: ${JSON.stringify(waterRings)},
-    coast: ${JSON.stringify(coast)},
-    rail: ${JSON.stringify(railOut)},
+    // bottom-to-top draw order, which is also the order the city is made of
+    layers: {
+      water: ${JSON.stringify(waterRings)},
+      coast: ${JSON.stringify(coast)},
+      street: ${JSON.stringify(streets)},
+      rail: ${JSON.stringify(railOut)},
+    },
   },
 };
+
+// Exported so a product can re-map without editing generated data.
+export const LINE_COLOURS = ${JSON.stringify(LINE_COLOURS, null, 2)};
 `;
   await writeFile(OUT, body);
   console.log(`\n  → flow-core/ground.js  ${Math.round(body.length / 1024)} KB`);
