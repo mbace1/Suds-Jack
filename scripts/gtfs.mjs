@@ -99,15 +99,7 @@ export const ROUTE_TYPE = {
 };
 export const modeOf = t => ROUTE_TYPE[Number(t)] ?? 'OTHER';
 
-// ── the pack ────────────────────────────────────────────────────────────
-// One representative pattern per route: the trip that calls at the MOST stops.
-// A route has dozens of trips and most are short workings — the 06:14 that
-// turns back early is not the line as anybody thinks of it, and picking the
-// first trip in the file picks one of those about as often as not.
-//
-// stop_times.txt is the big one (tens of MB for a real agency), so it is walked
-// twice rather than held: once counting calls per trip, once collecting the
-// stops of the trips that won. Memory is one integer per trip.
+// ── paths ───────────────────────────────────────────────────────────────
 // Douglas-Peucker. Written out rather than pulled in for the same reason the
 // zip reader is: twenty lines against a dependency in a repo that has none.
 export function simplify(pts, tol) {
@@ -138,6 +130,15 @@ export function simplify(pts, tol) {
   return pts.filter((_, i) => keep[i]);
 }
 
+// ── the pack ────────────────────────────────────────────────────────────
+// One representative pattern per route: the trip that calls at the MOST stops.
+// A route has dozens of trips and most are short workings — the 06:14 that
+// turns back early is not the line as anybody thinks of it, and picking the
+// first trip in the file picks one of those about as often as not.
+//
+// stop_times.txt is the big one (tens of MB for a real agency), so it is walked
+// twice rather than held: once counting calls per trip, once collecting the
+// stops of the trips that won. Memory is one integer per trip.
 export function packFromGtfs(files, opts = {}) {
   const want = new Set((opts.modes ?? ['TRAM', 'SUBWAY']).map(m => m.toUpperCase()));
   const get = name => {
