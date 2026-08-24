@@ -2,15 +2,15 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=8';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=8';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=8';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=8';
-import { Game } from '../js/sim.js?v=8';
-import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=8';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=8';
-import { PAL, INK } from '../js/palette.js?v=8';
-import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=8';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=9';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=9';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=9';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=9';
+import { Game } from '../js/sim.js?v=9';
+import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=9';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=9';
+import { PAL, INK } from '../js/palette.js?v=9';
+import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=9';
 import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
 import { deflateRawSync, crc32 } from 'node:zlib';
 import { readFileSync, existsSync } from 'node:fs';
@@ -1038,6 +1038,51 @@ const lay = (net, x0, y0, x1, y1) => {          // a straight run, inclusive
     if (g.state === 'won') wins++;
   }
   ok(wins >= 4, `The Rush can be won by an ordinary player (${wins}/5 boards)`);
+}
+
+// ── warning before the water ────────────────────────────────────────────
+// The tunnel rule was only ever met by being REFUSED: you dragged onto a stop
+// across the water, the move was rejected, and that is how you learned. It
+// teaches the rule at the cost of the move. `wouldCost` answers the same
+// question without drawing anything, so the drag can be told in advance.
+{
+  // seed 7 rather than the usual 11: 11 deals its three opening stops all on
+  // one side of the river, so there is no wet leg to ask about and the check
+  // would prove nothing. Found by sweeping rather than guessed.
+  const g = new Game(7, 'endless');
+  const net = g.net, w = g.world;
+
+  // find a pair the water really does separate, rather than assuming one
+  let wet = null;
+  for (const a of w.stations) {
+    for (const b of w.stations) {
+      if (a.id === b.id) continue;
+      if (net.wouldCost(a.id, b.id).cross > 0) { wet = [a.id, b.id]; break; }
+    }
+    if (wet) break;
+  }
+  ok(wet !== null, 'this board has a leg that crosses water');
+
+  if (wet) {
+    const [a, b] = wet;
+    const before = net.lines.length;
+    ok(net.wouldCost(a, b).cross > 0, 'and wouldCost counts the crossing');
+    eq(net.lines.length, before, 'without drawing anything — asking must not build');
+    eq(net.wouldCost(a, b).refused, null, 'with tunnels in hand it is allowed');
+
+    net.ownedTunnels = 0;
+    eq(net.wouldCost(a, b).refused, 'needs a tunnel', 'and with none it is refused, BEFORE the attempt');
+    eq(net.lines.length, before, 'still without drawing anything');
+
+    // a dry leg is never refused, however many tunnels are gone
+    let dry = null;
+    for (const x of w.stations) for (const y of w.stations) {
+      if (x.id !== y.id && net.wouldCost(x.id, y.id).cross === 0) { dry = [x.id, y.id]; break; }
+    }
+    ok(dry && net.wouldCost(dry[0], dry[1]).refused === null, 'a leg on dry land is always allowed');
+
+    eq(net.wouldCost(a, 'nowhere').refused, null, 'and asking about a stop that is not there answers rather than throws');
+  }
 }
 
 // ── a city ──────────────────────────────────────────────────────────────

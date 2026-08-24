@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=8';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=8';
-import { Renderer } from './render.js?v=8';
-import { LineDrawer, RoadDrawer } from './input.js?v=8';
-import { Kit } from './audio.js?v=8';
-import { PAL, sizeAt } from './palette.js?v=8';
+import { Game } from './sim.js?v=9';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=9';
+import { Renderer } from './render.js?v=9';
+import { LineDrawer, RoadDrawer } from './input.js?v=9';
+import { Kit } from './audio.js?v=9';
+import { PAL, sizeAt } from './palette.js?v=9';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -91,6 +91,8 @@ const portraitNow = () => {
 function launch(missionId, seed = nextSeed()) {
   $('title').hidden = true;
   $('end').hidden = true;
+  // a panel left open across a launch is a panel describing the wrong layer
+  showHowto(false);
   boot(seed, missionId);
   game.start();
   paintHud();
@@ -166,6 +168,10 @@ const TIPS = [
     'That stop is over capacity. The ring closing around it is the day running out.'],
   ['tunnel', g => !g.roads && g.net.tunnelsLeft() < g.net.ownedTunnels,
     'Crossing water spends a tunnel. You only get more at the end of a week.'],
+  // …and the other half of that rule: once they are gone, the stops you cannot
+  // reach are RINGED while you drag, rather than refusing you on arrival
+  ['nowater', g => !g.roads && g.net.tunnelsLeft() <= 0,
+    'No tunnels left. A stop you cannot reach across the water is ringed while you drag.'],
   ['bridge', g => !!g.roads && g.roads.spanned.size > 0,
     'That is a bridge. One buys the whole crossing, however wide the water — but only one crossing.'],
   ['road', g => !!g.roads && g.roads.left() <= 0,
@@ -183,6 +189,51 @@ function teach() {
     say(typeof line === 'function' ? line(game) : line);
     return;                 // one lesson at a time
   }
+}
+
+// ── the rules, on demand ────────────────────────────────────────────────
+// Every tip this game gives fires ONCE and is gone. That is right for a nudge
+// and wrong for the delete gesture: it is the one rule a player cannot guess,
+// and the moment they want it is three minutes after it was said. PLAYTEST.md
+// §3.3 has had this open since v6.
+//
+// Keyed by LAYER, because the two layers share no verbs at all — there is
+// nothing to draw on the roads and nothing to lay on the metro.
+const HOWTO = {
+  metro: [
+    ['Draw a line', 'drag from one stop to another.'],
+    ['Extend it', 'drag from the stub at either end onto the next stop.'],
+    ['Take it back', 'drag the stub back down the line — onto the stop behind the end. Keep going and the whole line comes up.'],
+    ['Water', 'crossing it spends a tunnel, and you only get more at the end of a week.'],
+    ['A stop fills up', 'the ring closing around it is how long you have.'],
+  ],
+  roads: [
+    ['Lay road', 'drag across bare ground.'],
+    ['Carry it on', 'start on road you already have and drag onto bare ground.'],
+    ['Lift it', 'start on road and drag back along it.'],
+    ['Water', 'one bridge buys the whole crossing, however wide — but only one crossing.'],
+    ['The cars', 'pick their own way and cannot be told otherwise. All you give them is room.'],
+  ],
+};
+
+function paintHowto() {
+  const ul = $('howtoList');
+  ul.textContent = '';
+  for (const [what, how] of HOWTO[game?.layer ?? 'metro'] ?? HOWTO.metro) {
+    const li = document.createElement('li');
+    const b = document.createElement('b');
+    b.textContent = what + ' — ';
+    li.append(b, document.createTextNode(how));
+    ul.append(li);
+  }
+}
+
+function showHowto(on) {
+  const panel = $('howto'), btn = $('help');
+  // repainted every time it opens, because the layer can change under it
+  if (on) paintHowto();
+  panel.hidden = !on;
+  btn.setAttribute('aria-expanded', String(!!on));
 }
 
 function say(msg) {
@@ -356,9 +407,14 @@ if (localStorage.getItem(SOUND_KEY) === '1') {
   addEventListener('pointerdown', () => kit.enable(true), { once: true });
 }
 
+$('help').addEventListener('click', () => showHowto($('howto').hidden));
+
 addEventListener('keydown', e => {
   keyNav = true;
   if (e.key === ' ' && game.state === 'play') { e.preventDefault(); $('pause').click(); }
+  // Esc closes the rules and puts focus back where it came from — a panel you
+  // can open and not close with the keyboard is a trap
+  if (e.key === 'Escape' && !$('howto').hidden) { showHowto(false); $('help').focus(); }
 });
 addEventListener('pointerdown', () => { keyNav = false; }, true);
 addEventListener('resize', () => renderer?.resize());

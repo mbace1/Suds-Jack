@@ -39,6 +39,40 @@ const cr = (a, b) => { const x = lum(a), y = lum(b); const [h, l] = x > y ? [x, 
 const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   return m ? '#' + [1, 2, 3].map(i => (+m[i]).toString(16).padStart(2, '0')).join('') : null; };
 
+// A text box is taller than the text in it — the score's box carries its
+// leading above the digit — so a few pixels of overlap is grazing and reads
+// fine, while fourteen is the button sitting on the number. 10px is the line
+// between them, and it is where the desktop layout has always sat (8) without
+// anyone minding.
+//
+// A FUNCTION because the first cut of this ran only on the desktop page, where
+// the short-screen rules do not apply — so deleting the very rule that keeps
+// the two apart on a landscape phone changed nothing and the check passed.
+async function checkHomeClear(pg, where) {
+  // …and it is checked against every CONTROL as well as the score, because the
+  // score is not the only thing it can land on: with the strip wrapped, the
+  // HOME anchor took the top-left corner of PAUSE, and a thumb there went home
+  // instead of pausing. A control you cannot fully press is the v5 bug wearing
+  // a different hat.
+  const clash = await pg.evaluate(() => {
+    const home = document.querySelector('a.arcade-home')?.getBoundingClientRect();
+    if (!home) return null;
+    const worst = [];
+    for (const el of [document.querySelector('.score'), ...document.querySelectorAll('#tools .ctl')]) {
+      if (!el) continue;
+      const b = el.getBoundingClientRect();
+      const x = Math.min(home.right, b.right) - Math.max(home.left, b.left);
+      const y = Math.min(home.bottom, b.bottom) - Math.max(home.top, b.top);
+      if (x > 0 && y > 0) worst.push({ what: el.id || el.className, y: Math.round(y) });
+    }
+    worst.sort((a, b) => b.y - a.y);
+    return worst[0] ?? null;
+  });
+  ok(!clash || clash.y <= 10,
+     `the way home does not sit on the score or a control (${where})`
+     + `${clash ? ` — ${clash.y}px over ${clash.what}` : ''}`);
+}
+
 (async () => {
   const server = await serve();
   const base = `http://127.0.0.1:${server.address().port}/toko-move/index.html`;
@@ -319,6 +353,59 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   ok(await page.evaluate(() => !!document.querySelector('#campaignList .miss.done')),
      'and a cleared mission is marked on it');
 
+  // ── the rules, on demand ──────────────────────────────────────────────
+  // Every tip fires once and is gone, which is right for a nudge and useless
+  // for the delete gesture — the one rule nobody guesses and everybody wants
+  // again three minutes later (PLAYTEST.md §3.3).
+  await page.evaluate(() => window.__tm.debug.launch('endless', 7));
+  await page.waitForTimeout(200);
+  ok(await page.evaluate(() => document.getElementById('howto').hidden), 'the rules start closed');
+  const helpBox = await page.evaluate(() => {
+    const b = document.getElementById('help');
+    const r = b.getBoundingClientRect();
+    return { w: Math.round(r.width), h: Math.round(r.height), label: b.getAttribute('aria-label'), exp: b.getAttribute('aria-expanded') };
+  });
+  ok(helpBox.w >= 44 && helpBox.h >= 44, `and open from a real tap target (${helpBox.w}x${helpBox.h})`);
+  eq(helpBox.exp, 'false', 'which says it is closed to a screen reader');
+
+  await page.click('#help');
+  const opened = await page.evaluate(() => ({
+    shown: !document.getElementById('howto').hidden,
+    exp: document.getElementById('help').getAttribute('aria-expanded'),
+    items: [...document.querySelectorAll('#howtoList li')].map(li => li.textContent),
+  }));
+  ok(opened.shown, 'pressing it opens them');
+  eq(opened.exp, 'true', 'and says so');
+  ok(opened.items.length >= 4, `with the rules in it (${opened.items.length} of them)`);
+  // the delete gesture is the WHOLE REASON this panel exists
+  ok(opened.items.some(t => /back down the line|take it back/i.test(t)),
+     'including how to take a line back, which is the rule this exists for');
+  // …and it must not pause or cover the board
+  eq(await page.evaluate(() => window.__tm.game.state), 'play', 'the rules do not stop the game');
+  ok(await page.evaluate(() => {
+    const r = document.getElementById('howto').getBoundingClientRect();
+    const c = document.getElementById('board').getBoundingClientRect();
+    return r.width < c.width * 0.6;
+  }), 'nor cover the board');
+
+  await page.keyboard.press('Escape');
+  ok(await page.evaluate(() => document.getElementById('howto').hidden), 'Esc closes them');
+  ok(await page.evaluate(() => document.activeElement?.id === 'help'),
+     'and gives focus back to the button that opened them, so a keyboard is not trapped');
+
+  // the two layers share no verbs at all, so the rules must follow the layer
+  await page.click('#help');
+  const metroRules = await page.evaluate(() => document.getElementById('howtoList').textContent);
+  await page.evaluate(() => window.__tm.debug.launch('rush', 9));
+  await page.waitForTimeout(200);
+  ok(await page.evaluate(() => document.getElementById('howto').hidden),
+     'a new run closes the rules rather than leaving the wrong layer showing');
+  await page.click('#help');
+  const roadRules = await page.evaluate(() => document.getElementById('howtoList').textContent);
+  ok(roadRules !== metroRules, 'and the car layer has its own rules, not the metro’s');
+  ok(/road/i.test(roadRules) && !/tunnel/i.test(roadRules), 'which talk about road and not about tunnels');
+  await page.keyboard.press('Escape');
+
   // ── the car layer, driven by pointer ──────────────────────────────────
   // Everything here is the gesture, which is the one part of this layer that
   // cannot be checked in bare node: whether a drag lays road, whether dragging
@@ -417,6 +504,11 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   });
   ok(home !== null, 'the hub shell put its HOME anchor on the page');
   ok(home && home.w >= 44 && home.h >= 44, `and the way home is a real tap target (${home ? home.w + 'x' + home.h : 'missing'})`);
+  // …and it does not sit ON the score. The HOME button is absolutely positioned
+  // by the shell and the strip pads itself clear of it; tightening that padding
+  // for a short screen put the two straight through each other, and nothing
+  // measured it.
+  await checkHomeClear(page, 'desktop');
 
   // ── a phone ───────────────────────────────────────────────────────────
   const phone = await browser.newPage({ viewport: { width: 390, height: 720 }, isMobile: true, hasTouch: true });
@@ -608,6 +700,7 @@ const hex = rgb => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
   await wide.waitForTimeout(400);
   await wide.evaluate(() => [...document.querySelectorAll('#freeList button')][0].click());
   await wide.waitForTimeout(300);
+  await checkHomeClear(wide, 'phone on its side');
   const rot = await wide.evaluate(() => {
     const r = window.__tm.renderer, t = window.__tm.touch;
     const S = window.__tm.debug.sizeAt(r.scale);

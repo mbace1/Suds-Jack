@@ -5,10 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=8';
-import { BOARD } from './world.js?v=8';
-import { CELL } from './roads.js?v=8';
-import { drawShape, tracePath } from './shapes.js?v=8';
+import { PAL, INK, sizeAt } from './palette.js?v=9';
+import { BOARD } from './world.js?v=9';
+import { CELL } from './roads.js?v=9';
+import { drawShape, tracePath } from './shapes.js?v=9';
 
 export class Renderer {
   constructor(canvas) {
@@ -318,10 +318,31 @@ export class Renderer {
       ctx.stroke();
     }
 
+    // A stop this drag CANNOT reach — the water is in the way and there is no
+    // tunnel left for it. Marked while you are still on your way there, because
+    // the alternative is what the game did until now: let you arrive, refuse
+    // the move, and teach the rule at the cost of it (PLAYTEST.md §3.4).
+    //
+    // A dashed ring rather than a solid one, and the SILHOUETTE is untouched —
+    // filling a shape to mean something was already tried and thrown away on
+    // the stranded mark, because a filled square reads as a different
+    // destination rather than as the same one in trouble.
+    const barred = view.barred?.has(st.id);
+    if (barred) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, r + 8, 0, Math.PI * 2);
+      ctx.setLineDash([3, 4]);
+      ctx.strokeStyle = PAL.warn;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     if (view.hover === st.id || view.anchor === st.id) {
       ctx.beginPath();
       ctx.arc(st.x, st.y, r + 11, 0, Math.PI * 2);
-      ctx.strokeStyle = PAL.ink;
+      ctx.strokeStyle = barred ? PAL.warn : PAL.ink;
       ctx.globalAlpha = 0.4;
       ctx.lineWidth = 2;
       ctx.stroke();

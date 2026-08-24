@@ -1,5 +1,60 @@
 # Toko Move — versions
 
+## v9 — 2026-08-24
+
+**The two things PLAYTEST.md had left open since v6**, both of them about a
+player being told a rule at the moment it costs them something.
+
+**The rules, on demand.** Every tip this game gives fires once and is gone,
+which is right for a nudge and useless for the delete gesture — the one rule
+nobody guesses and everybody wants again three minutes later. A `?` beside the
+other controls opens them, **keyed by layer** because the metro and the roads
+share no verbs at all: there is nothing to draw on the roads and nothing to lay
+on the metro. It does not pause, does not cover the board, closes on Esc with
+focus handed back to the button, and closes itself on a new run so it can never
+describe the layer you just left.
+
+**Warning before the water.** `Network.wouldCost(a, b)` answers *would this leg
+be refused, and why* **without drawing it** — `extend()` builds the line,
+measures it and rolls back, which is fine when a person has committed to a move
+and wrong sixty times a second. So a drag can now ask about every stop before
+the finger gets there, and the board rings the unreachable ones in the alarm
+colour, dashed, silhouette untouched. Filling a shape to mean something was
+already tried and thrown away on the stranded mark: a filled square reads as a
+different destination rather than the same one in trouble.
+
+### Three layout faults, all on a phone held sideways
+
+Every one of them passed its checks before it was looked at.
+
+- A **fifth control did not fit** 640×360 — the strip wrapped only below 560px,
+  and a landscape phone is above it. It wraps at **every** width now: a rule
+  that has to be raised each time something is added is one that will be
+  forgotten once, and wrapping costs a desktop nothing.
+- **The rules ran off the bottom** of a 360px screen, and the rule that ran off
+  was how to take a line back — the only reason the panel exists.
+- Then buying back the board's height put the arcade's **HOME button through the
+  score**; moving the score aside fixed that and put HOME on **the corner of
+  PAUSE**, where a thumb goes home instead of pausing. That is the v5 bug by
+  another route, so the clearance is now padding on the whole strip and every
+  wrapped row goes around it.
+
+`checkHomeClear` had to become a function before it caught anything: written
+inline on the desktop page it passed happily while the landscape layout was
+broken, because the short-screen rules do not apply there.
+
+### The first real city
+
+`cities/kallio.json` — 82 real platforms, 20 line-directions, real traced paths,
+© Helsingin seudun liikenne (HSL), CC BY 4.0. The gate runs on it, and pins the
+octolinear fitter's **46%** as a known failure so that fixing it breaks the gate.
+CITIES.md has the measurements and the reason.
+
+### Gates
+
+core 328 → 367, page 87 → 103. Every new check mutation-tested; two needed the
+fixture or the placement changed before they caught anything.
+
 ## v8 — 2026-08-21
 
 **The bridge did not look like a bridge**, and the fix is the same shape as the

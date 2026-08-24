@@ -15,9 +15,9 @@
 // shrink with the window — the nub was 46px on a desktop and 17px on a phone,
 // which meant a line could not be shortened or deleted by thumb at all.
 
-import { legPoints } from './geometry.js?v=8';
-import { TOUCH, sizeAt } from './palette.js?v=8';
-import { nubs } from './lines.js?v=8';
+import { legPoints } from './geometry.js?v=9';
+import { TOUCH, sizeAt } from './palette.js?v=9';
+import { nubs } from './lines.js?v=9';
 
 export class LineDrawer {
   constructor(canvas, renderer, game, opts = {}) {
@@ -132,9 +132,27 @@ export class LineDrawer {
     this.onMessage(msg);
   }
 
+  // Which stops this drag CANNOT reach from where it is. Answered before the
+  // finger gets there, so the board can say so in advance instead of the game
+  // refusing the move after it is made (PLAYTEST.md §3.4).
+  barred() {
+    if (!this.drag) return null;
+    const from = this.drag.mode === 'new'
+      ? this.drag.anchorId
+      : (this.drag.atHead ? this.drag.line?.head : this.drag.line?.tail);
+    if (from == null) return null;
+    const out = new Set();
+    for (const st of this.game.world.stations) {
+      if (st.id === from) continue;
+      if (this.game.net.wouldCost(from, st.id).refused) out.add(st.id);
+    }
+    return out.size ? out : null;
+  }
+
   // What the renderer draws as the dashed reach from the live end to the finger.
   view() {
-    const out = { hover: this.hover, nubs: this.nubs(), nubR: TOUCH.nubDrawPx * this.unit };
+    const out = { hover: this.hover, nubs: this.nubs(), nubR: TOUCH.nubDrawPx * this.unit,
+                  barred: this.barred() };
     if (!this.drag) return out;
     const w = this.game.world;
     if (this.drag.mode === 'new') {

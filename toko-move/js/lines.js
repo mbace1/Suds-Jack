@@ -10,8 +10,8 @@
 // the next stop is closer to their shape than this one, and gets off when it
 // is not. Riding past your transfer is impossible by construction.
 
-import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=8';
-import { PAL, INK } from './palette.js?v=8';
+import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=9';
+import { PAL, INK } from './palette.js?v=9';
 
 export const TRAIN_SPEED = 108;      // board units per second
 export const CAR_CAPACITY = 6;
@@ -206,6 +206,24 @@ export class Network {
 
   tunnelsUsed() { return this.lines.reduce((n, l) => n + l.tunnels(), 0); }
   tunnelsLeft() { return this.ownedTunnels - this.tunnelsUsed(); }
+
+  // Would this leg be refused, and why — WITHOUT drawing it. PLAYTEST.md §3.4:
+  // the tunnel rule was only ever met by being refused after the attempt, which
+  // teaches the rule at the cost of the move. A drag can ask this about the
+  // stop under the finger before it gets there, and the board can mark it.
+  //
+  // Non-mutating on purpose. `extend()` builds the line, measures it and rolls
+  // back on failure, which is fine when a person committed to the move and
+  // wrong sixty times a second.
+  wouldCost(fromId, toId) {
+    const a = this.world.station(fromId), b = this.world.station(toId);
+    if (!a || !b) return { cross: 0, refused: null };
+    const cross = crossings(legPoints(a, b), this.world.rings);
+    return {
+      cross,
+      refused: cross > this.tunnelsLeft() ? 'needs a tunnel' : null,
+    };
+  }
 
   lineAt(id) { return this.lines.find(l => l.id === id); }
 
