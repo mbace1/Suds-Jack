@@ -94,3 +94,85 @@ Two things worth knowing when the real source lands:
    slabs are city blocks, which fall out of the street network rather than the
    shoreline: draw the land, lay the streets over it as strips, and the blocks
    are what shows between them. Same importer, one more query.
+
+---
+
+## 5. The source landed — 2026-08-24
+
+**The ground is generated.** `flow-core/ground.js` exists, built by
+`flow-core/tools/ground-data.mjs` from committed data in `flow-core/data/`,
+with no network at all.
+
+The water was fetched on a machine that can reach Overpass and brought here as
+data. §4's blocker stands for anyone re-running `ground.mjs` — `overpass-api.de`
+is still 403 at the gateway — but nothing needs to re-run it: a coastline
+changes approximately never, and the offline workers wanted committed data
+anyway.
+
+### 5.1 Two independent confirmations of §4's rejection
+
+§4 rejected Who's On First's Kallio macrohood because a point-in-polygon test
+put the open water inside it. The Piritori → Eden map work hit the **identical
+trap with a different dataset** — Helsinki's own official sub-district polygons —
+and tested five points before believing it: Eläintarhanlahti, Töölönlahti,
+Sörnäistenselkä, Kruunuvuorenselkä and the open sea south of the city. All five
+fall *inside* a district (`TRANSIT_LAYERS.md` §11.3).
+
+Two sessions, two datasets, one conclusion worth stating flatly so nobody tries
+a third: **an administrative boundary is not a coastline.** Their union is not
+land and their complement is not water.
+
+### 5.2 One departure from §2's format, and it is the data's
+
+§2 asked for `land`: **one** closed ring, water as the negative space. Real
+Kallio does not have one.
+
+OSM maps the sea as `natural=coastline` — a directed **open** line with land on
+its left and the water only *implied*. Closing one into a polygon puts a lid
+across the harbour mouth. The extract arrives as **27 open coastline runs** plus
+**27 separate inland water bodies**, and no amount of processing turns that into
+a single ring without inventing the joins.
+
+So `ground.js` carries:
+
+```js
+water: [[[x, y], …], …]   // closed rings — fillable bodies
+coast: [[[x, y], …], …]   // open runs — stroke them
+rail:  [{ service, mode, shape: [[x, y], …] }]
+```
+
+A renderer **draws** the sea rather than inferring it. That is more honest about
+what is known, and it means the negative-space trick — which was elegant — is
+not load-bearing for a shape that does not exist.
+
+### 5.3 The margin had to change, and here is the measurement
+
+`ground.mjs` used `PAD = 14` (140 m). Against the real coastline, **the nearest
+water is 129 m from the board's edge** — so at 140 m the sheet catches two
+slivers in one corner and the map still forgets the water §1 says it must not:
+
+| pad | | water areas | coast runs |
+|---:|---|---:|---:|
+| 14 | 140 m | 0 | 2 |
+| 30 | 300 m | 2 | 7 |
+| **60** | **600 m** | **11** | **14** |
+| 100 | 1000 m | 22 | 22 |
+
+`ground-data.mjs` defaults to **60**, which puts a shore on both sides of the
+block — §1's "high block between two waters". It is a *drawn-extent* decision
+rather than a data one, so it is `--pad` and easy to change.
+
+### 5.4 Rail came with it
+
+Since the geometry was being imported anyway, `ground.js` also carries the
+**real tram and metro alignments** through the board — 11 line directions from
+HSL's own GTFS, clipped and projected the same way.
+
+For Toko Move that is the difference between a Mini Metro on an abstract graph
+and one **on the real map of Kallio**, which is what its catalogue entry already
+claims. A drawn line can follow the rails that are actually there.
+
+§4's note 2 — that blocks fall out of the street network — is still true and
+still undone. `map/kallio-corridors-v1.json` in the Piritori repo is that street
+network if anyone wants it; it is corridors that carry service, not every street,
+and it is honest about the difference.
