@@ -1,5 +1,37 @@
 # Toko Move — versions
 
+## v11 — 2026-08-25
+
+**The van.** The road layer runs ONE vehicle and that is the design — you buy
+room, not a fleet, and a layer that let you pick vehicles would be the metro
+layer wearing a hat. The single exception is a marked load, because freight is
+what the road leg of The Handover is *for*: `Car.van` is true when the passenger
+is a parcel, and the renderer draws it half again as long, outlined in the alarm
+colour with the cab cut off by one line.
+
+It is the same vehicle in every other respect — same speed, same lane, same
+square. A van that also went faster would turn the load into a reward instead of
+a responsibility, and the mission is about getting one thing through traffic that
+does not care about it.
+
+This closes a copy inconsistency that shipped with v10: the catalogue calls them
+**cars**, the mission text called the road leg **a van**, and nothing on screen
+told them apart. Now the words and the picture agree.
+
+### Gates
+
+Both new checks were mutation-tested. Hard-wiring `van` to `true` and to `false`
+each fails one of the pair in the core gate, and taking the alarm outline out of
+`render.js` fails the page gate.
+
+The page check compares **the same patch of board with the van taken off it**,
+not the van against a nearby car. The first cut did the latter and read 28 alarm
+pixels around an ordinary car: the two vehicles leave the same door half a cell
+apart, so each one's sample box catches the other. A check that measures its
+neighbour is not measuring anything.
+
+Core 408 → **412**, page 116 → **120**. Module tokens `?v=10` → `?v=11`.
+
 ## v10 — 2026-08-24
 
 **The Handover** — the third item on the owner's build order, and the first

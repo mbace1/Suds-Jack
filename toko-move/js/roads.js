@@ -33,6 +33,13 @@ export class Car {
     this.at = 0;                     // index of the cell it is standing in
     this.t = 0;                      // 0…1 across that cell
   }
+  // The road layer runs ONE kind of vehicle and that is the point — you buy
+  // room, not a fleet. The single exception is a marked load: freight is what
+  // the road leg of The Handover is FOR, so the car carrying it is a van, and
+  // it is drawn as one. Nothing else about it differs — same speed, same lane,
+  // same square — because a van that also went faster would make the parcel a
+  // reward instead of a responsibility.
+  get van() { return !!this.p?.parcel; }
   get cell() { return this.path[this.at]; }
   get next() { return this.path[this.at + 1] ?? null; }
   get arrived() { return this.at >= this.path.length - 1; }

@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=10';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=10';
-import { Renderer } from './render.js?v=10';
-import { LineDrawer, RoadDrawer } from './input.js?v=10';
-import { Kit } from './audio.js?v=10';
-import { PAL, sizeAt } from './palette.js?v=10';
+import { Game } from './sim.js?v=11';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=11';
+import { Renderer } from './render.js?v=11';
+import { LineDrawer, RoadDrawer } from './input.js?v=11';
+import { Kit } from './audio.js?v=11';
+import { PAL, sizeAt } from './palette.js?v=11';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -245,6 +245,7 @@ const HOWTO = {
     ['Lift it', 'start on road and drag back along it.'],
     ['Water', 'one bridge buys the whole crossing, however wide — but only one crossing.'],
     ['The cars', 'pick their own way and cannot be told otherwise. All you give them is room.'],
+    ['The long one', 'a van, and the only vehicle carrying something that matters. Same speed as the rest — it just has to get through.'],
   ],
 };
 

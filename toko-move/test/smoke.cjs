@@ -357,6 +357,64 @@ async function checkHomeClear(pg, where) {
   // Every tip fires once and is gone, which is right for a nudge and useless
   // for the delete gesture — the one rule nobody guesses and everybody wants
   // again three minutes later (PLAYTEST.md §3.3).
+  // …and the VAN, also actually drawn. The load's road leg rides a longer
+  // vehicle outlined in the alarm colour (`Car.van`), which is the only way to
+  // pick it out of traffic once it is off the platform and the ring is gone.
+  // Sampled BOTH ways from one frame: alarm pixels around the van, none around
+  // an ordinary car — asking only the van's would pass with every car outlined.
+  const van = await page.evaluate(async () => {
+    window.__tm.debug.launch('transfer', 24);
+    const g = window.__tm.game, r = window.__tm.renderer, R = g.roads;
+    g.focus('roads');
+    R.budget = 9999; R.bridges = 99; R.spareCars = 20;
+    for (let x = 0; x < R.cols; x++) for (let y = 0; y < R.rows; y++) R.build(x, y);
+    const st = g.world.stations[0];
+    const other = g.world.stations.find(s => s.kind !== st.kind && R.hopsFrom(st.id, s.kind) < Infinity);
+    if (!other) return { why: 'the roads reach nowhere else on this board' };
+    st.waiting.length = 0;
+    R.cars.length = 0;
+    st.join(st.kind, 0, { parcel: true, label: 'z', legs: [{ layer: 'roads', goal: other.kind }] });
+    R.dispatch();
+    st.join(other.kind, 0);
+    R.dispatch();
+    const load = R.cars.find(c => c.p.parcel), plain = R.cars.find(c => !c.p.parcel);
+    if (!load || !plain) return { why: 'a van and an ordinary car did not both go out' };
+    // off the door, so what is sampled is the vehicle and not the building
+    for (let i = 0; i < 12; i++) R.drive(0.05, () => {});
+    if (!R.cars.includes(load) || !R.cars.includes(plain)) return { why: 'they arrived before the frame' };
+    await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+    const want = window.__tm.debug.PAL.warn;
+    const ctx = r.canvas.getContext('2d');
+    const count = (car, at) => {
+      const q = at ?? R.posOf(car);
+      const box = Math.round(22 * devicePixelRatio);
+      const px = Math.round((r.ox + q.x * r.scale) * devicePixelRatio);
+      const py = Math.round((r.oy + q.y * r.scale) * devicePixelRatio);
+      const d = ctx.getImageData(px - box, py - box, box * 2, box * 2).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if ('#' + [d[i], d[i + 1], d[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('') === want) n++;
+      }
+      return n;
+    };
+    const box = { q: R.posOf(load) };
+    const onVan = count(load);
+    // …and the same patch of board with the van taken off it. Comparing the van
+    // against a NEARBY car does not work — they leave the same door half a cell
+    // apart and each one's box catches the other. Comparing the same box to
+    // itself does: whatever alarm colour is there came from the van.
+    R.cars.splice(R.cars.indexOf(load), 1);
+    await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+    const onGone = count({ ...load, get van() { return false; } }, box.q);
+    return { onVan, onGone, longer: load.van === true && plain.van === false };
+  });
+  ok(!van.why, `a van and a car are both on the road to be looked at${van.why ? ` — ${van.why}` : ''}`);
+  if (!van.why) {
+    ok(van.longer, 'the one with the load is the van and the other is not');
+    ok(van.onVan > 0, `the van is outlined in the alarm colour (${van.onVan} pixels)`);
+    eq(van.onGone, 0, 'and that colour is the van, not the board under it');
+  }
+
   await page.evaluate(() => window.__tm.debug.launch('endless', 7));
   await page.waitForTimeout(200);
   ok(await page.evaluate(() => document.getElementById('howto').hidden), 'the rules start closed');

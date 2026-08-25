@@ -2,15 +2,15 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=10';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=10';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=10';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=10';
-import { Game } from '../js/sim.js?v=10';
-import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=10';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=10';
-import { PAL, INK } from '../js/palette.js?v=10';
-import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=10';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=11';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=11';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=11';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=11';
+import { Game } from '../js/sim.js?v=11';
+import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=11';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=11';
+import { PAL, INK } from '../js/palette.js?v=11';
+import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=11';
 import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
 import { deflateRawSync, crc32 } from 'node:zlib';
 import { readFileSync, existsSync } from 'node:fs';
@@ -1173,6 +1173,21 @@ const lay = (net, x0, y0, x1, y1) => {          // a straight run, inclusive
     g.service(train, opened.line.stations.indexOf(st.id));
     ok(train.load.includes(anyone), 'while anybody unbooked gets on the very same train');
   }
+
+  // The road layer runs one vehicle, with one exception: a marked load rides a
+  // VAN, which is what the mission text has always called it and what the
+  // renderer draws longer. Assert the flag both ways from the same dispatch —
+  // asking only the van's would pass with `van` hard-wired to true.
+  st.waiting.length = 0;
+  g.roads.cars.length = 0;
+  st.join(goal, 0);
+  st.join(st.kind, 0, { parcel: true, label: 'z', legs: [{ layer: 'roads', goal }] });
+  for (let i = 0; i < 3; i++) g.roads.dispatch();
+  const van = g.roads.cars.find(c => c.p.parcel);
+  const plain = g.roads.cars.find(c => !c.p.parcel);
+  ok(!!van && !!plain, 'a load and an ordinary trip are both out on the road at once');
+  eq(van?.van, true, 'the one carrying the load is a van');
+  eq(plain?.van, false, 'and the one carrying a person is not');
 }
 
 {
@@ -1803,6 +1818,11 @@ const FEED = [
   ok(cr(PAL.ink, PAL.road) >= 4.5, 'while a building still reads on top of it');
   ok(cr(PAL.paper, PAL.road) >= 2, 'and so does a paper-filled car');
   ok(cr(PAL.roadLine, PAL.road) >= 2, 'the centre stripe is a stripe, not a rumour');
+  // the van outlines itself in the alarm colour so the load can be found in
+  // traffic. That is a GRAPHIC on the car's own paper body, so it is held to
+  // 3:1 rather than AA — and against the road it is only 1.5:1, which is why
+  // the body is paper-filled and the outline is a marking on it, not the shape.
+  ok(cr(PAL.warn, PAL.paper) >= 3, `the van's outline reads on its own body (${cr(PAL.warn, PAL.paper).toFixed(2)}:1)`);
 
   // The street map under a city view. Same failure as the road, and it was
   // made the same day: the first cut drew the quietest street at 1.24:1, which

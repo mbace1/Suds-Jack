@@ -5,10 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=10';
-import { BOARD } from './world.js?v=10';
-import { CELL } from './roads.js?v=10';
-import { drawShape, tracePath } from './shapes.js?v=10';
+import { PAL, INK, sizeAt } from './palette.js?v=11';
+import { BOARD } from './world.js?v=11';
+import { CELL } from './roads.js?v=11';
+import { drawShape, tracePath } from './shapes.js?v=11';
 
 export class Renderer {
   constructor(canvas) {
@@ -200,15 +200,27 @@ export class Renderer {
     const w = Math.max(7, 9 / this.scale), l = Math.max(10, 13 / this.scale);
     for (const car of net.cars) {
       const p = net.posOf(car);
+      // A load rides in a VAN: half again as long, with the cab cut off the
+      // front by one line. It is the same vehicle in every other respect (see
+      // `Car.van`) — the silhouette is there so you can find the load on a
+      // street full of traffic without a label following it around.
+      const len = car.van ? l * 1.5 : l;
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.ang);
-      roundRect(ctx, -l / 2, -w / 2, l, w, Math.min(3, w / 3));
+      roundRect(ctx, -len / 2, -w / 2, len, w, Math.min(3, w / 3));
       ctx.fillStyle = PAL.paper;
       ctx.fill();
-      ctx.strokeStyle = PAL.ink;
-      ctx.lineWidth = Math.max(1.2, 1.6 / this.scale);
+      ctx.strokeStyle = car.van ? PAL.warn : PAL.ink;
+      ctx.lineWidth = Math.max(1.2, (car.van ? 2 : 1.6) / this.scale);
       ctx.stroke();
+      if (car.van) {
+        const cab = len / 2 - l * 0.42;
+        ctx.beginPath();
+        ctx.moveTo(cab, -w / 2);
+        ctx.lineTo(cab, w / 2);
+        ctx.stroke();
+      }
       ctx.restore();
       // what it is carrying, so a car is not an anonymous dot
       drawShape(ctx, car.p.goal, p.x, p.y, Math.max(2.6, 3.4 / this.scale), PAL.ink, null, 0);
