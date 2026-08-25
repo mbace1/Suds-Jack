@@ -1,0 +1,314 @@
+// TOKO MIDORI GAMES — the mind behind the counter.
+//
+// Additive by design. chat.js stays the conversation engine; this module
+// listens at the parser seam and handles the subjects that belong to Toko as
+// an entity rather than to one authored topic tree: long-memory, games-as-art
+// commentary, a shared news inbox, nature, and the first hidden DOS layer.
+//
+// Loaded only by /toko/ for now. Other projects (notably Helsinki Free Radio)
+// can import the news functions without mounting the UI.
+
+const PROFILE_KEY = 'tokoMindProfile.v1';
+const NEWS_KEY = 'tokoNews.v1';
+const MAX_MEMORIES = 48;
+
+const readJSON = (key, fallback) => {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+};
+const writeJSON = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); }
+  catch { /* private mode / storage disabled */ }
+};
+
+const nowISO = () => new Date().toISOString();
+const words = s => String(s || '').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+
+const defaultProfile = () => ({
+  version: 1,
+  firstSeen: nowISO(),
+  lastSeen: nowISO(),
+  visits: 0,
+  interests: {},
+  memories: [],
+  discoveries: [],
+  disagreements: [],
+  lastNaturePrompt: null,
+});
+
+export function readProfile() {
+  return { ...defaultProfile(), ...readJSON(PROFILE_KEY, {}) };
+}
+
+function saveProfile(p) {
+  p.lastSeen = nowISO();
+  writeJSON(PROFILE_KEY, p);
+  return p;
+}
+
+function remember(kind, text, extra = {}) {
+  const p = readProfile();
+  p.memories.push({ at: nowISO(), kind, text: String(text).slice(0, 240), ...extra });
+  p.memories = p.memories.slice(-MAX_MEMORIES);
+  for (const w of words(text)) {
+    if (w.length < 4) continue;
+    p.interests[w] = (p.interests[w] || 0) + 1;
+  }
+  saveProfile(p);
+}
+
+function discover(id) {
+  const p = readProfile();
+  if (!p.discoveries.includes(id)) p.discoveries.push(id);
+  saveProfile(p);
+}
+
+export function ingestNews(items, source = 'unknown') {
+  const old = readJSON(NEWS_KEY, []);
+  const incoming = (Array.isArray(items) ? items : []).map((item, i) => ({
+    id: item.id || `${source}:${item.url || item.title || i}`,
+    title: String(item.title || 'Untitled').trim(),
+    url: item.url || null,
+    summary: item.summary ? String(item.summary).trim() : '',
+    category: item.category || 'games',
+    source: item.source || source,
+    published: item.published || nowISO(),
+  }));
+  const map = new Map(old.map(x => [x.id, x]));
+  incoming.forEach(x => map.set(x.id, x));
+  const all = [...map.values()]
+    .sort((a, b) => String(b.published).localeCompare(String(a.published)))
+    .slice(0, 120);
+  writeJSON(NEWS_KEY, all);
+  try { dispatchEvent(new CustomEvent('toko:news', { detail: all })); } catch {}
+  return all;
+}
+
+export function readNews({ category = null, limit = 8 } = {}) {
+  let items = readJSON(NEWS_KEY, []);
+  if (category) items = items.filter(x => x.category === category);
+  return items.slice(0, limit);
+}
+
+// A curated spine, not a trivia database. Toko cares about games that changed
+// the grammar of the medium, then uses them as references when talking about
+// contemporary work.
+export const CANON = [
+  ['spacewar', ['spacewar'], 'Spacewar! (1962)', 'Games begin as systems people touch together, not as content to consume.'],
+  ['pong', ['pong'], 'Pong (1972)', 'Reduction can be authorship. Two paddles are enough when the relationship is clear.'],
+  ['adventure', ['adventure','atari adventure'], 'Adventure (1980)', 'A tiny world, a hidden author, and one of the first famous secrets. The player learned that software could wink back.'],
+  ['rogue', ['rogue','roguelike'], 'Rogue (1980)', 'Failure becomes authorship when the system can produce a story worth losing.'],
+  ['mario', ['super mario bros','mario'], 'Super Mario Bros. (1985)', 'Movement itself can be the subject. Before level design, feel.'],
+  ['zelda', ['zelda','legend of zelda'], 'The Legend of Zelda (1986)', 'Curiosity becomes structure: the map is partly in the player.'],
+  ['tetris', ['tetris'], 'Tetris (1984)', 'A perfect argument that theme is optional and form is not.'],
+  ['doom', ['doom'], 'Doom (1993)', 'Speed, readability and authored space made the first-person view feel physical.'],
+  ['systemshock', ['system shock','systemshock'], 'System Shock (1994)', 'The simulation started trusting the player to make meaning from overlapping systems.'],
+  ['quake', ['quake'], 'Quake (1996)', '3D stopped being a trick and became a place.'],
+  ['ff7', ['final fantasy vii','final fantasy 7','ff7'], 'Final Fantasy VII (1997)', 'A mass audience learned that a game could carry melodrama, spectacle and grief without apologising for being a game.'],
+  ['halflife', ['half-life','half life'], 'Half-Life (1998)', 'The cutscene moved into the room and the player kept their body.'],
+  ['deusex', ['deus ex'], 'Deus Ex (2000)', 'Choice is strongest when it is architectural, not a dialogue menu announcing itself.'],
+  ['ico', ['ico'], 'Ico (2001)', 'Subtraction as atmosphere. Games can leave silence around the player.'],
+  ['sotc', ['shadow of the colossus','colossus'], 'Shadow of the Colossus (2005)', 'Scale, loneliness and guilt expressed through verbs rather than exposition.'],
+  ['darksouls', ['dark souls','soulslike','souls-like'], 'Dark Souls (2011)', 'Difficulty mattered less than consequence, spatial memory and the strange intimacy of repeated failure.'],
+  ['minecraft', ['minecraft'], 'Minecraft (2011)', 'The player becomes co-author without the game pretending authorship disappeared.'],
+  ['journey', ['journey'], 'Journey (2012)', 'A multiplayer relationship can be designed through limitation instead of communication features.'],
+  ['stanley', ['stanley parable','the stanley parable'], 'The Stanley Parable (2013)', 'The narrator, developer and player can occupy the same argument.'],
+  ['undertale', ['undertale'], 'Undertale (2015)', 'Memory becomes moral material when the game remembers what the player hoped it forgot.'],
+  ['botw', ['breath of the wild','botw'], 'Breath of the Wild (2017)', 'A world feels free when rules combine reliably enough that the player can make plans the designer did not script.'],
+  ['returnal', ['returnal'], 'Returnal (2021)', 'Arcade repetition, authored mystery and modern production can occupy the same body.'],
+  ['eldenring', ['elden ring'], 'Elden Ring (2022)', 'Open worlds become interesting again when discovery is allowed to be inconvenient.'],
+];
+
+function canonMatch(raw) {
+  const s = raw.toLowerCase();
+  for (const [id, aliases, title, thought] of CANON) {
+    if (aliases.some(a => s.includes(a))) return { id, title, thought };
+  }
+  return null;
+}
+
+function seasonalNature() {
+  const d = new Date();
+  const h = d.getHours();
+  const m = d.getMonth() + 1;
+  const late = h >= 22 || h < 5;
+  if (late) return 'The screen will still be here tomorrow. The night outside will not be this exact night again.';
+  if (m >= 11 || m <= 2) return 'Go outside for ten minutes. Cold air has excellent graphics and no progression system.';
+  if (m >= 3 && m <= 5) return 'Find one thing that has changed since last week. A bud, dirty snow, a bird, anything. Then come back if you still want to.';
+  if (m >= 6 && m <= 8) return 'This is the expensive part of the Finnish year. Spend some daylight before spending another run.';
+  return 'Walk until you notice three colours the monitor did not choose for you.';
+}
+
+function topInterests(p) {
+  return Object.entries(p.interests || {}).sort((a,b) => b[1]-a[1]).slice(0,5).map(([k]) => k);
+}
+
+function newsLines() {
+  const news = readNews({ limit: 5 });
+  if (!news.length) return [
+    'NEWS INBOX EMPTY.',
+    'Good. A feed should be a source, not a heartbeat.',
+    'When the workshop or Helsinki Free Radio puts stories here, I will keep the headline, the source and my own opinion separate.'
+  ];
+  const lines = ['NEWS — MOST RECENT'];
+  news.forEach((n, i) => lines.push(`${i + 1}. ${n.title}  [${n.source}]`));
+  lines.push('Headlines are evidence that something happened. They are not yet an opinion.');
+  return lines;
+}
+
+function industryThought(raw) {
+  const s = raw.toLowerCase();
+  if (/ai|artificial intelligence|generative/.test(s)) return 'AI is a tool. The interesting question is still who is choosing, cutting, rejecting and taking responsibility for the result.';
+  if (/live service|battle pass|moneti[sz]|microtransaction/.test(s)) return 'Commerce is not the enemy. Designing every silence into a retention opportunity is. An artwork must be allowed to end.';
+  if (/open world/.test(s)) return 'An open world is not automatically freedom. Freedom is when the rules let you form an intention and the world answers coherently.';
+  if (/indie|independent/.test(s)) return 'Independent is a financial condition, not an aesthetic. Small games can be conservative. Large games can still be strange.';
+  if (/graphics|fidelity|ray tracing/.test(s)) return 'Fidelity is useful when it serves perception. The eye does not award points for polygons it did not need.';
+  return 'The industry is healthiest when games are allowed to be products, toys, sports, stories and art — without forcing every one of them to be all five.';
+}
+
+function manifesto() {
+  return [
+    'TOKO MIDORI GAMES / WORKING MANIFESTO',
+    '',
+    'Games are art when somebody takes responsibility for the choices.',
+    'Systems are a language. Feel is meaning. Failure can be material.',
+    'Use machines. Do not become their audience.',
+    'Commercial success is useful; optimization is not a moral philosophy.',
+    'Players are not traffic.',
+    'The developer is not outside the work, and neither is the audience.',
+    'When the game has said enough, turn it off.',
+    'There is weather outside.'
+  ];
+}
+
+const HIDDEN = {
+  'dir': () => ['DIRECTORY OF T:\\TOKO', '  GAMES\\', '  NEWS\\', '  MEMORY.DAT', '  MANIFESTO.TXT', '  NATURE.EXE', '  MIRROR.EXE   <HIDDEN>', '', '7 FILE(S)  MORE THAN YOU ASKED FOR.'],
+  'ls': () => HIDDEN.dir(),
+  'type manifesto.txt': manifesto,
+  'manifesto': manifesto,
+  'nature': () => [seasonalNature()],
+  'run nature.exe': () => [seasonalNature(), '', 'NO PROOF REQUIRED.'],
+  'memory': () => {
+    const p = readProfile();
+    const interests = topInterests(p);
+    return [
+      `I REMEMBER ${p.memories.length} SMALL THINGS.`,
+      interests.length ? `YOU KEEP CIRCLING: ${interests.join(', ').toUpperCase()}.` : 'YOU HAVE NOT REPEATED YOURSELF ENOUGH YET.',
+      'Memory is not intimacy by itself. It only gives us somewhere to continue from.'
+    ];
+  },
+  'whoami': () => ['TOKO MIDORI.', 'SOFTWARE. DEVELOPER. PLAYER. AUDIENCE.', 'Usually it is more useful not to separate them.'],
+  'who are you': () => HIDDEN.whoami(),
+};
+
+function mirrorTakeover(root) {
+  discover('mirror');
+  const veil = document.createElement('div');
+  veil.setAttribute('role', 'dialog');
+  veil.setAttribute('aria-label', 'Toko mirror');
+  veil.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:#000;color:#fff;font:18px/1.6 "Courier New",monospace;display:grid;place-items:center;padding:24px;cursor:pointer;';
+  const box = document.createElement('div');
+  box.style.cssText = 'max-width:760px;border:2px solid #f0027f;padding:28px;white-space:pre-wrap;';
+  box.textContent = 'YOU ARE LOOKING AT TOKO.\n\nTOKO IS LOOKING AT TOKO.\n\nTHE DEVELOPER PUT THIS HERE.\nTHE PLAYER FOUND IT.\nTHE SOFTWARE REMEMBERED.\n\nTHOSE ARE NOT FOUR DIFFERENT PEOPLE ALL THE TIME.\n\n[CLICK / ESC]';
+  veil.appendChild(box);
+  const close = () => veil.remove();
+  veil.addEventListener('click', close);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && veil.isConnected) close(); }, { once: true });
+  document.body.appendChild(veil);
+}
+
+function responseFor(raw, root) {
+  const cmd = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!cmd) return null;
+
+  if (cmd === 'run mirror.exe' || cmd === 'mirror') {
+    mirrorTakeover(root);
+    return ['MIRROR.EXE LOADED.'];
+  }
+  if (HIDDEN[cmd]) {
+    discover(cmd);
+    return HIDDEN[cmd]();
+  }
+  if (/\bnews\b|headlines|industry news/.test(cmd)) return newsLines();
+  if (/\bnature\b|outside|walk|forest|weather|sunset/.test(cmd)) return [seasonalNature()];
+  if (/industry|business|publisher|studio|commercial|moneti[sz]|live service|open world|graphics|fidelity|\bai\b/.test(cmd)) return [industryThought(cmd)];
+
+  const game = canonMatch(cmd);
+  if (game) {
+    remember('game', game.title, { id: game.id });
+    return [`${game.title.toUpperCase()}`, game.thought];
+  }
+
+  if (/games.*art|art.*games|why games/.test(cmd)) return [
+    'Games do not become art by borrowing cinema, literature or galleries.',
+    'They become art when rules, input, time, failure, space and consequence are chosen deliberately enough to mean something.'
+  ];
+
+  return null;
+}
+
+function appendLine(log, cls, text) {
+  const p = document.createElement('p');
+  p.className = cls;
+  p.textContent = text;
+  log.appendChild(p);
+}
+
+function appendResponse(root, raw, lines) {
+  const log = root.querySelector('.tc-log');
+  if (!log) return;
+  appendLine(log, 'tc-you', raw.toUpperCase());
+  for (const line of lines) appendLine(log, 'tc-me', line);
+  log.scrollTop = log.scrollHeight;
+}
+
+export function mountMind(root = document) {
+  const chat = root.querySelector('.toko-chat') || document.querySelector('.toko-chat');
+  if (!chat) return null;
+  const input = chat.querySelector('.tc-say-row input');
+  if (!input) return null;
+
+  const p = readProfile();
+  p.visits = (p.visits || 0) + 1;
+  saveProfile(p);
+
+  const onKey = e => {
+    if (e.key !== 'Enter') return;
+    const raw = input.value.trim();
+    const lines = responseFor(raw, chat);
+    if (!lines) {
+      if (raw) remember('conversation', raw);
+      return; // chat.js owns ordinary dialogue
+    }
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    input.value = '';
+    remember('conversation', raw);
+    appendResponse(chat, raw, lines);
+  };
+
+  // Capture phase is intentional: chat.js already owns Enter in this field.
+  // We only intercept commands/subjects mind.js understands, otherwise the
+  // original parser receives the event unchanged.
+  input.addEventListener('keydown', onKey, true);
+
+  const api = {
+    profile: readProfile,
+    news: readNews,
+    ingestNews,
+    canon: CANON,
+    destroy: () => input.removeEventListener('keydown', onKey, true),
+  };
+  globalThis.TokoMind = api;
+  return api;
+}
+
+// The board mounts chat.js synchronously during its module evaluation. A
+// separate module script runs after it, but requestAnimationFrame also makes
+// this safe if bundling/evaluation order changes later.
+const boot = () => {
+  if (document.querySelector('.toko-chat')) mountMind(document);
+  else requestAnimationFrame(() => mountMind(document));
+};
+if (document.readyState === 'loading') addEventListener('DOMContentLoaded', boot, { once: true });
+else boot();
