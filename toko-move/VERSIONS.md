@@ -80,7 +80,25 @@ one lays a single corridor and cuts it. And the drawn-route check compares the
 same patch of board **with the bus lifted off it**, because a bus standing on
 its own route is the same colour as the route.
 
-Core 412 → **462**, page 120 → **131**. Module tokens `?v=11` → `?v=12`.
+### And one thing only a screenshot could say
+
+Filled in its route's own colour and standing on that route, a bus read as a
+**swelling of the line** rather than a vehicle on it. Every state assertion
+about it passed. It now carries an ink outline, the same edge the cars use
+against the road slab, and the crawl marker is a paper-ringed badge on the bus
+instead of a dot floating above it. The page gate asks for the outline by
+measuring ink appearing when the bus does — the check that would have caught it.
+
+Core 412 → **462**, page 120 → **132**. Module tokens `?v=11` → `?v=12`.
+
+### `FREIGHT.md`
+
+The design for the next layer of it, written against what v10 and v11 already
+proved rather than from a blank page. Its one claim: **people choose, goods are
+sent** — so freight never gives up, takes room on the vehicle, and is not
+carried by every layer (a bus carries nobody's crates). Two questions are left
+for the owner rather than guessed: whether a crate pays a count or money, and
+whether it spoils.
 
 ## v11 — 2026-08-25
 

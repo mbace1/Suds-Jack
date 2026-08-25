@@ -656,9 +656,9 @@ async function checkHomeClear(pg, where) {
     // off the stop, so the stop's own ink is not what gets sampled
     for (let i = 0; i < 40; i++) g.bus.step(0.05, () => {});
     await new Promise(res2 => requestAnimationFrame(() => requestAnimationFrame(res2)));
-    const want = window.__tm.debug.PAL.lines[line.colour];
+    const D = window.__tm.debug.PAL;
     const ctx = r.canvas.getContext('2d');
-    const count = q => {
+    const count = (q, want) => {
       const box = Math.round(20 * devicePixelRatio);
       const px = Math.round((r.ox + q.x * r.scale) * devicePixelRatio);
       const py = Math.round((r.oy + q.y * r.scale) * devicePixelRatio);
@@ -670,20 +670,28 @@ async function checkHomeClear(pg, where) {
       return n;
     };
     const p = bus.pos();
-    const onBus = count(p);
-    // the same patch with the bus lifted off it: whatever colour is left is
-    // the route it is standing on, and it must be much less than the vehicle
+    const colour = D.lines[line.colour];
+    const withBus = { paint: count(p, colour), ink: count(p, D.ink) };
+    // The same patch with the bus lifted off it. Comparing against the route
+    // is the only comparison that means anything: a bus is filled in its
+    // route's own colour and stands ON that route, so "there is blue here"
+    // is true either way.
     line.trains.length = 0;
     await new Promise(res2 => requestAnimationFrame(() => requestAnimationFrame(res2)));
-    const onRouteOnly = count(p);
-    return { onBus, onRouteOnly, bends: line.segs[0].pts.length };
+    const without = { paint: count(p, colour), ink: count(p, D.ink) };
+    return { withBus, without, bends: line.segs[0].pts.length };
   });
   ok(!route.why, `a route can be drawn along the street${route.why ? ` — ${route.why}` : ''}`);
   if (!route.why) {
     ok(route.bends > 2, `and it follows the street rather than flying over it (${route.bends} points)`);
-    ok(route.onRouteOnly > 0, `the route itself is painted in its colour (${route.onRouteOnly} pixels)`);
-    ok(route.onBus > route.onRouteOnly * 2,
-       `and the bus on it is a solid block of that colour, not a stripe (${route.onBus} vs ${route.onRouteOnly})`);
+    ok(route.without.paint > 0, `the route itself is painted in its colour (${route.without.paint} pixels)`);
+    ok(route.withBus.paint - route.without.paint > 60,
+       `and a bus on it adds a block of that colour, not a thicker stripe (+${route.withBus.paint - route.without.paint})`);
+    // the outline, which is the fix a SCREENSHOT asked for and no state
+    // assertion could: filled in the route's colour and sitting on the route,
+    // a bus without an ink edge read as a swelling of the line
+    ok(route.withBus.ink - route.without.ink > 30,
+       `and it is outlined, so it reads as a vehicle rather than a swelling (+${route.withBus.ink - route.without.ink} ink)`);
   }
 
   await page.evaluate(() => window.__tm.debug.launch('endless', 7));

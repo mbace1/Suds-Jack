@@ -313,19 +313,32 @@ export class Renderer {
     roundRect(ctx, -l / 2, -w / 2, l, w, 3.4);
     ctx.fillStyle = colour;
     ctx.fill();
+    // AN OUTLINE, and it is not decoration. Filled in the route's own colour
+    // and standing on that route, a bus read as a swelling of the line rather
+    // than a vehicle on it — visible in a screenshot, invisible to every state
+    // assertion. The ink edge is what separates the thing that moves from the
+    // thing it moves along; it is the same trick the cars already use against
+    // the road slab.
+    ctx.strokeStyle = PAL.ink;
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
     // one pale band down the side: a window strip is what makes a long box a
     // bus rather than a lorry, and it is the only detail there is room for
     ctx.fillStyle = PAL.paper;
-    ctx.fillRect(-l / 2 + 3.2, -w / 2 + 2.6, l - 9.4, 2.6);
+    ctx.fillRect(-l / 2 + 3.6, -w / 2 + 2.8, l - 10.2, 2.4);
     ctx.restore();
     // Stuck in traffic, said on the vehicle rather than only in the readout —
     // the whole point of putting buses on the car layer's streets is that you
-    // can SEE why the route is slow.
+    // can SEE why the route is slow. Ringed in paper and sitting ON the bus:
+    // a bare dot floating above it read as a stray mark rather than a badge.
     if (net?.paceOf(bus) < 1) {
       ctx.beginPath();
-      ctx.arc(p.x, p.y - l * 0.42, 3.4, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y - w * 0.62, 4.2, 0, Math.PI * 2);
       ctx.fillStyle = PAL.warn;
       ctx.fill();
+      ctx.strokeStyle = PAL.paper;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
     }
   }
 
