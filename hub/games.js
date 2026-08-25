@@ -79,6 +79,35 @@ export const GAMES = [
     art: 'gel',
   },
   {
+    id: 'tokodropgodot',
+    fi: {
+      tagline: 'Sama parvi, Godotissa: oikea pinnanalainen sironta, kymmenen haastetasoa omine s\u00e4\u00e4nt\u00f6ineen, ja Rush jossa syöksy tappaa mutta ampuminen vie kilpesi.',
+      lineage: 'Toko Drop / Blade Rush / Geometry Wars 3',
+      controls: 'kosketus: vasen peukalo liikkuu, oikea t\u00e4ht\u00e4\u00e4 · WASD + hiiri · ohjain',
+      note: 'Godot-versio — 15 lajia, 10 mitattua tasoa, Rush-tila',
+    },
+    ja: {
+      tagline: '同じ群れをGodotで。本物のサブサーフェススキャタリング、独自ルールを持つ10のチャレンジ、そしてブーストで殺し撃てば盾を失うRushモード。',
+      lineage: 'トコドロップ / Blade Rush / ジオメトリウォーズ3',
+      controls: 'タッチ: 左親指で移動、右で照準 · WASD + マウス · パッド',
+      note: 'Godot版 — 15種、計測済み10ステージ、Rushモード',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'Godot build \u2014 real subsurface gel, ten measured challenge levels, and a Rush mode where boosting kills but firing drops your shield',
+    title: 'Toko Drop \u2014 Godot',
+    tagline: 'The same swarm rebuilt in Godot: gel that light passes through, ten challenge levels each with its own rule, and a Rush mode where boosting is the kill and shooting costs you the shield.',
+    lineage: 'Toko Drop \u00d7 Blade Rush \u00d7 Geometry Wars 3',
+    tags: ['twin-stick', 'godot', 'gamepad'],
+    controls: 'touch: left thumb moves, right aims \u00b7 WASD + hold LMB \u00b7 pad',
+    // A WebAssembly build; it lives only on the deployed site, the same way
+    // piritori-godot does. Source: github.com/mbace1/toko-drop-godot
+    path: 'toko-drop-godot/',
+    inRepo: false,
+    accent: '#8f86e8',
+    art: 'gelgrid',
+  },
+  {
     id: 'hyperdagger',
     score: { key: 'hyperDaggerHi', fmt: 'secs' },
     fi: {

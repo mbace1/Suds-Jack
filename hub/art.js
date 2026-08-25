@@ -51,6 +51,43 @@ export const ART = {
   },
 
   // Toko Drop: a gel and the ring it just exhaled
+  // Toko Drop (Godot): the same gels, but the cover is the ROOM. The Godot
+  // port's signature read is the wide neon grid seen down its own perspective
+  // with the swarm small inside it — where the browser cabinet's cover is a
+  // face, this one is a place. Two cabinets for one game need to be tellable
+  // apart at a glance, and the marquee is what does it.
+  gelgrid(g, a) {
+    g.p(0, 0, W, H, '#05060f');
+    // The floor, as a trapezoid of scanlines: narrow at the top (far edge),
+    // wide at the bottom. One row per source line is the whole 2600 trick.
+    for (let i = 0; i < 26; i++) {
+      const t = i / 25;
+      const half = 10 + t * 52;
+      const y = 22 + i * 1.85;
+      g.p(64 - half, y, half * 2, 1, i % 4 === 0 ? '#123a4a' : '#0b2430');
+    }
+    // Verticals converging on the vanishing point.
+    for (let k = -5; k <= 5; k++) {
+      const topX = 64 + k * 2.0;
+      const botX = 64 + k * 10.4;
+      for (let i = 0; i < 26; i++) {
+        const t = i / 25;
+        g.p(topX + (botX - topX) * t, 22 + i * 1.85, 1, 1, '#10333f');
+      }
+    }
+    // The rail: the boundary you are actually clamped against.
+    g.p(54, 21, 20, 1, '#8f86e8');
+    g.p(6, 68, 116, 1, '#8f86e8');
+    // The swarm, small in a big room, and the hero lit against it.
+    g.disc(44, 44, 5, '#2f7f66');
+    g.disc(86, 38, 4, '#7a3a8f');
+    g.p(96, 52, 6, 6, '#c8a83a');
+    g.disc(64, 50, 4, a);
+    g.p(62, 48, 2, 2, '#0b1a16');
+    g.p(66, 48, 2, 2, '#0b1a16');
+    g.p(61, 45, 3, 1, '#dff6ff');
+  },
+
   gel(g, a) {
     g.p(0, 0, W, H, '#07120f');
     for (let i = 0; i < 12; i++) {
