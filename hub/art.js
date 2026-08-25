@@ -974,6 +974,67 @@ export const ART = {
   // it reads as foreground; its bucket hangs over the kid, who is lit —
   // hard hat and vest — against the dug ground. Master System register:
   // flat fills inside a hard black line.
+  // Eeri (Godot): the browser cabinet's cover is a wide SITE; this one is the
+  // DIORAMA BOX, because what the port added is LIGHT. The browser build
+  // renders unlit — three.js MeshBasicMaterial has nothing to light — and
+  // bakes its depth haze into the paintings. The port lights the actors for
+  // real and lets them throw contact shadows into a painted set, which is
+  // ART_BRIEF's 80% reference asking by name for "soft friendly light".
+  // A lit figure in a built set is exactly what the other cabinet cannot show.
+  diorama(g, a) {
+    const INK = '#1a1410', CARD = '#c9a678', CARD_DK = '#9d7c53';
+    const WALL = '#e7d9bd', WALL_SH = '#bda88a';
+
+    g.p(0, 0, W, H, '#12161d');                                 // the dark around the box
+
+    // THE BOX: a shallow stage, walls cropped by the frame so it reads as a
+    // set you are looking INTO rather than a picture hung flat.
+    g.p(6, 4, 116, 56, WALL);                                   // back wall
+    g.p(6, 4, 10, 56, WALL_SH);                                 // left wall, in shade
+    g.p(112, 4, 10, 56, mix(WALL, '#ffffff', 0.18));            // right wall, lit
+    g.p(6, 52, 116, 16, CARD);                                  // the floor boards
+    for (let x = 10; x < 122; x += 9) g.p(x, 52, 1, 16, CARD_DK);
+    g.p(6, 52, 116, 1, CARD_DK);                                // the floor line
+
+    // THE KEY, from upper-left: a warm wash down the back wall, and the
+    // corner it does not reach left cool. One light, stated.
+    for (let i = 0; i < 7; i++) {
+      g.p(16, 4 + i * 4, 60 - i * 6, 4, mix('#fff0cf', WALL, 0.35 + i * 0.09));
+    }
+    g.p(96, 4, 16, 34, mix(WALL, '#6f7f96', 0.30));             // the cool corner
+
+    // Set dressing, kept to two pieces so the figure stays the subject.
+    g.p(24, 34, 16, 18, mix(a, INK, 0.28));                     // a hoarding panel
+    g.p(24, 34, 16, 2, mix(a, '#ffffff', 0.35));                // its lit top edge
+    g.p(88, 40, 18, 12, '#8fa0ae');                             // a stack of pipe
+    for (let i = 0; i < 3; i++) g.disc(92 + i * 7, 46, 3, '#6f8092');
+
+    // THE SHADOW: long, hard-edged and thrown to the lower-right, away from
+    // the key. It is the whole point of the cover, so it is drawn before the
+    // figure and given more room than the figure itself.
+    g.p(62, 56, 26, 4, mix(CARD, INK, 0.42));
+    g.p(60, 54, 12, 3, mix(CARD, INK, 0.34));
+
+    // EERI, small in the box and lit from the left: olive cap with its
+    // spikes, navy tee, machine-yellow wellies. Cropped by nothing — he is
+    // the subject, and the room is what he is standing in.
+    g.p(56, 30, 10, 12, '#2e3a5c');                             // tee
+    g.p(56, 30, 4, 12, mix('#2e3a5c', '#ffffff', 0.22));        // lit side
+    g.p(58, 42, 3, 6, '#3c4358'); g.p(62, 42, 3, 6, '#3c4358'); // legs
+    g.p(57, 48, 5, 3, '#ffb01f'); g.p(61, 48, 5, 3, '#ffb01f'); // wellies
+    // The cap must not eat the face. Drawn first cut, its disc covered all
+    // but three pixels of the head and he read as a green lump — so the cap
+    // sits HIGHER and SMALLER than the skull, which is how a cap actually
+    // sits, and leaves a face to put an eye in.
+    g.disc(61, 27, 6, '#f0c9a4');                               // head
+    g.disc(61, 21, 5, '#8a9a4e');                               // cap crown
+    g.p(56, 21, 10, 3, '#8a9a4e');                              // its band
+    g.p(65, 22, 6, 2, '#6f7d3f');                               // the peak, forward
+    for (let i = 0; i < 3; i++) g.disc(58 + i * 3, 16, 2, '#6f7d3f');  // spikes
+    g.p(63, 27, 2, 2, INK);                                     // eye
+    g.p(63, 31, 3, 1, mix('#f0c9a4', INK, 0.45));               // the line mouth
+  },
+
   worksite(g, a) {
     const INK = '#1a1410', DK = mix(a, INK, 0.34), STEEL = '#7a8a9a', STEEL2 = '#5f7080';
     const HOR = 50;

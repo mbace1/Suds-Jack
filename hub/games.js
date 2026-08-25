@@ -318,6 +318,37 @@ export const GAMES = [
     art: 'worksite',
   },
   {
+    id: 'eerigodot',
+    fi: {
+      tagline: 'Sama ty\u00f6maa, Godotissa: oikea valo ja varjot, kaikki kaksitoista kentt\u00e4\u00e4, nelj\u00e4 maailmaa omine kulisseineen.',
+      lineage: 'Mario 3 \u00d7 Yoshi\u2019s Crafted World \u00d7 Tonka',
+      controls: '\u25c0 \u25b6 juokse \u00b7 \u24b6 hypp\u00e4\u00e4 \u00b7 \u24b7 kiipe\u00e4 koneeseen \u00b7 pid\u00e4 \u25bc kaivaa',
+      note: 'Godot-versio selainversion rinnalla. Sama peli, eri moottori \u2014 t\u00e4ss\u00e4 on oikea valo ja varjot, joita litte\u00e4 selainversio ei voi piirt\u00e4\u00e4.',
+    },
+    ja: {
+      tagline: '\u540c\u3058\u5de5\u4e8b\u73fe\u5834\u3092Godot\u3067\u3002\u672c\u7269\u306e\u5149\u3068\u5f71\u3001\u516812\u30b9\u30c6\u30fc\u30b8\u30014\u3064\u306e\u30ef\u30fc\u30eb\u30c9\u306b\u305d\u308c\u305e\u308c\u306e\u80cc\u666f\u3002',
+      lineage: '\u30de\u30ea\u30aa3 \u00d7 \u30e8\u30c3\u30b7\u30fc\u30af\u30e9\u30d5\u30c8\u30ef\u30fc\u30eb\u30c9 \u00d7 \u30c8\u30f3\u30ab',
+      controls: '\u25c0 \u25b6 \u8d70\u308b \u00b7 \u24b6 \u30b8\u30e3\u30f3\u30d7 \u00b7 \u24b7 \u4e57\u308a\u8fbc\u3080 \u00b7 \u25bc\u9577\u62bc\u3057\u3067\u6398\u308b',
+      note: '\u30d6\u30e9\u30a6\u30b6\u7248\u3068\u4e26\u3076Godot\u7248\u3002\u540c\u3058\u30b2\u30fc\u30e0\u3060\u304c\u30a8\u30f3\u30b8\u30f3\u304c\u9055\u3046\u2014\u2014\u3053\u3061\u3089\u306b\u306f\u5e73\u9762\u7684\u306a\u30d6\u30e9\u30a6\u30b6\u7248\u306b\u306f\u63cf\u3051\u306a\u3044\u672c\u7269\u306e\u5149\u3068\u5f71\u304c\u3042\u308b\u3002',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'Godot build, beside the browser one. The same twelve levels and the same four worlds \u2014 but lit, with real shadows the flat browser build cannot draw.',
+    title: 'Eeri (Godot)',
+    tagline: 'The same worksite, rebuilt in Godot: real light and contact shadows, all twelve levels, four worlds each with their own set.',
+    lineage: 'Mario 3 \u00d7 Yoshi\u2019s Crafted World \u00d7 Tonka',
+    tags: ['platformer', 'godot', 'diorama'],
+    controls: '\u25c0 \u25b6 run \u00b7 \u24b6 jump \u00b7 \u24b7 climb in \u00b7 hold \u25bc to dig',
+    // A WebAssembly build that lives only on the deployed site, the same
+    // arrangement piritori-godot and toko-drop-godot have. `inRepo: false`
+    // because main does not carry the artefact, so the smoke gate must not
+    // try to fetch it. Source: github.com/mbace1/eeri
+    path: 'eeri-godot/',
+    inRepo: false,
+    accent: '#ffd166',
+    art: 'diorama',
+  },
+  {
     id: 'gameoflife',
     fi: {
       tagline: 'Pieniä tarinoita ja pelejä, jotka palauttavat sinut aina ulos. Suomeksi, englanniksi ja japaniksi.',
