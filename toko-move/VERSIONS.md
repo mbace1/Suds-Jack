@@ -1,5 +1,80 @@
 # Toko Move — versions
 
+## v10 — 2026-08-24
+
+**The Handover** — the third item on the owner's build order, and the first
+mission where two layers run at the same time.
+
+One load, three legs, alternating: the metro takes it to the interchange, a van
+takes it on, the metro finishes. **Both networks run throughout** — trains
+calling while cars drive, both feeding the same platforms — which is the owner's
+call and the only version where handing a load over costs anything. Stopping the
+city to deal with the parcel would make the transfer a cutscene.
+
+### A parcel is not a new kind of thing
+
+It is a `Passenger` with **legs**: an ordered list of `{ layer, goal }`. Everything
+downstream still asks `p.goal` and gets a shape, which is why routing, crowding,
+the stranded mark and the give-up fuse all work on it without knowing one
+exists. The only new question anything asks is **`p.layer`** — who may pick this
+up right now — and it is null for the ninety-nine passengers who do not care.
+
+That booking is the mechanism, and it runs both ways: a car that picks up a
+crate booked onto the metro has not helped, it has stolen it, and a train that
+takes one booked onto the roads has done the same.
+
+The load stands in the **ordinary queue**, competing for the same trains as
+everybody else. It is ringed in the alarm colour so it can be found on a board
+with sixty pips on it — outside the shape and outside the crowding gauge, so it
+hides neither.
+
+### Both layers, one board
+
+`layers: ['metro', 'roads']` in the mission. `layer` is now the FOCUS — the one
+your finger is on — and not the one that exists. The layer you are not drawing
+on is **dimmed rather than hidden**: hiding it would make the switch a change of
+board, and this is one city with two ways through it. The switch swaps the whole
+gesture with it, because there is nothing to draw on the roads and nothing to
+lay on the metro.
+
+### Four things measured, three of them wrong first
+
+- **The goal could never be met.** It asked that `parcel.leg` reach
+  `legs.length`, which cannot happen — `advance()` stops at the last leg by
+  design. Measured as 0 wins in 10 while the handover itself worked 7 times.
+- **The load often never appeared.** Three legs asked for a distinct shape per
+  leg, so it needed four shapes and simply never spawned on most boards — a
+  mission whose premise silently never starts, which is worse than one that is
+  too hard. Three shapes is the floor now, whatever the leg count.
+- **Escort alone was won at 74 seconds of eight minutes.** A well-joined network
+  moves one load almost at once. So the mission carries a delivery target too,
+  and it is measured: at **120** the seven boards that get the load through are
+  the seven that win, so the mission is decided by the handover rather than by
+  the counter. At 160 two more are lost to the target instead; at 240 only two
+  survive at all.
+- The three boards that still fail are ones where the metro never reaches the
+  load's goal before the shift ends. That is the mission working.
+
+### Four checks that proved nothing until they were fixed
+
+Worth listing, because all four passed while the thing they guarded was broken:
+
+- the roads-booking check left the ordinary queue in place, and `dispatch()`
+  breaks after one car per stop — so an earlier passenger was dispatched and the
+  loop never reached the parcel;
+- …then it picked a goal on the far bank of the river, where the roads could not
+  route anyway;
+- …then it built "every cell" against a **30-square budget**, so thirty
+  scattered squares routed nowhere;
+- and the layer-switch button's width check asked only that the text *fitted*,
+  which it did at 42px of word in a 44px box — passing on exactly the cramped
+  layout it was written to reject. It measures the ink with a Range now.
+
+### Gates
+
+core 369 → 408, page 103 → 116. Every new check mutation-tested, and five of
+them needed the fixture rebuilt before they caught anything.
+
 ## v9 — 2026-08-24
 
 **The two things PLAYTEST.md had left open since v6**, both of them about a

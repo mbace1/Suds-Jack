@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=9';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=9';
-import { Renderer } from './render.js?v=9';
-import { LineDrawer, RoadDrawer } from './input.js?v=9';
-import { Kit } from './audio.js?v=9';
-import { PAL, sizeAt } from './palette.js?v=9';
+import { Game } from './sim.js?v=10';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=10';
+import { Renderer } from './render.js?v=10';
+import { LineDrawer, RoadDrawer } from './input.js?v=10';
+import { Kit } from './audio.js?v=10';
+import { PAL, sizeAt } from './palette.js?v=10';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -105,16 +105,37 @@ function boot(seed, missionId) {
   renderer = renderer || new Renderer($('board'));
   renderer.resize();
   // the layer decides which gesture the board answers to
-  const Drawer = game.layer === 'roads' ? RoadDrawer : LineDrawer;
-  drawer = new Drawer($('board'), renderer, game, {
-    onMessage: say,
-    onChange: () => { paintHud(); kit.line(); },
-  });
+  makeDrawer();
   $('endSeed').textContent = `board ${seed}`;
   paintHud();
 }
 
 // ── the strip ───────────────────────────────────────────────────────────
+// The gesture belongs to the FOCUSED layer: there is nothing to draw on the
+// roads and nothing to lay on the metro, so switching layers swaps the whole
+// drawer rather than teaching one of them a second verb.
+function makeDrawer() {
+  drawer?.destroy();
+  const Drawer = game.layer === 'roads' ? RoadDrawer : LineDrawer;
+  drawer = new Drawer($('board'), renderer, game, {
+    onMessage: say,
+    onChange: () => { paintHud(); kit.line(); },
+  });
+}
+
+const LAYER_WORD = { metro: 'metro', roads: 'roads' };
+
+function swapLayer() {
+  if (game.layers.length < 2) return;
+  const i = game.layers.indexOf(game.layer);
+  const next = game.layers[(i + 1) % game.layers.length];
+  if (!game.focus(next)) return;
+  makeDrawer();
+  if (!$('howto').hidden) paintHowto();   // the rules follow the layer
+  paintHud();
+  say(`drawing on the ${LAYER_WORD[next] ?? next}`);
+}
+
 function paintHud() {
   if (!game) return;
   $('score').textContent = game.score;
@@ -129,7 +150,18 @@ function paintHud() {
   g.textContent = goals.map(x => x.text).join(' · ');
   g.classList.toggle('close', left != null && left < 60);
 
-  if (game.roads) {
+  // the counts belong to the layer you are DRAWING on: showing both networks'
+  // stock at once was tried on paper and it is six numbers nobody reads
+  const swap = $('swap');
+  swap.hidden = game.layers.length < 2;
+  if (!swap.hidden) {
+    const i = game.layers.indexOf(game.layer);
+    const next = game.layers[(i + 1) % game.layers.length];
+    swap.textContent = LAYER_WORD[game.layer] ?? game.layer;
+    swap.setAttribute('aria-label', `Drawing on the ${LAYER_WORD[game.layer]}. Switch to the ${LAYER_WORD[next]}.`);
+  }
+
+  if (game.layer === 'roads' && game.roads) {
     stock('stkLines', `${game.roads.used()}/${game.roads.budget}`, game.roads.left() <= 0, 'road');
     stock('stkTrains', game.roads.spareCars, game.roads.spareCars === 0, 'cars idle');
     stock('stkTunnels', game.roads.bridgesLeft(), game.roads.bridgesLeft() === 0, 'bridges');
@@ -408,10 +440,13 @@ if (localStorage.getItem(SOUND_KEY) === '1') {
 }
 
 $('help').addEventListener('click', () => showHowto($('howto').hidden));
+$('swap').addEventListener('click', swapLayer);
 
 addEventListener('keydown', e => {
   keyNav = true;
   if (e.key === ' ' && game.state === 'play') { e.preventDefault(); $('pause').click(); }
+  // Tab is taken by focus, so the layer switch is on a letter
+  if ((e.key === 'l' || e.key === 'L') && game.state === 'play') swapLayer();
   // Esc closes the rules and puts focus back where it came from — a panel you
   // can open and not close with the keyboard is a trap
   if (e.key === 'Escape' && !$('howto').hidden) { showHowto(false); $('help').focus(); }
@@ -443,5 +478,8 @@ window.__tm = {
       nubDrawPx: (drawer.view().nubR || 0) * renderer.scale,
     };
   },
-  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId, sizeAt, seedFromUrl, PAL },
+  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId, sizeAt, seedFromUrl, PAL,
+    // which gesture the board is answering to — the gate needs to see that it
+    // moves with the layer, and `drawer` itself is not on the surface
+    drawerKind: () => (drawer instanceof RoadDrawer ? 'roads' : 'metro') },
 };

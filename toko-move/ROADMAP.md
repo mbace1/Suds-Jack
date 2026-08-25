@@ -134,6 +134,20 @@ questions. The abstract boards stay primary; Cities is adjacent, not a
 replacement, and it does not reverse the 2026-08-19 call that took Helsinki out
 of the base game.
 
+## Built (v10) — the third item, and the layers meet
+
+*"1 a, 2 a, 3 a, we can add b later"* (2026-08-24). **The Handover** runs the
+metro and the roads at once, and one load crosses between them: a `Passenger`
+with **legs**, each naming the layer that may carry it. It stands in the
+ordinary queue and competes for the same trains as everybody else, because the
+city carrying on around it is the point.
+
+Stuck is **mechanical only** for now, as asked. When a leg's layer cannot reach
+its goal the load is marked by the machinery that already existed — the stranded
+mark and the give-up fuse read it without knowing what it is — and nothing
+narrates it. The seam for the short narrative choices is deliberately NOT built:
+it goes in when there are words to put in it.
+
 ## Still open
 
 1. **What does a narrative choice look like?** The stuck parcel and the "inner

@@ -8,9 +8,9 @@
 // silently rewrites boards that already exist. New behaviour that needs
 // randomness takes its own stream (see `siteRng`) rather than borrowing this one.
 
-import { makeRng } from './rng.js?v=9';
-import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=9';
-import { inWater, dist } from './geometry.js?v=9';
+import { makeRng } from './rng.js?v=10';
+import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=10';
+import { inWater, dist } from './geometry.js?v=10';
 
 // The default board, still exported because the renderer and the tests want a
 // size before a mission is chosen. A mission may state its own.
@@ -25,12 +25,43 @@ export const STATION_CAP = 6;
 // handed from one layer to the next, which is the thing OpenTTD's own manual
 // records itself getting wrong ("cargo will jump on any vehicle that accepts
 // them, even if it brings them back to where they came from").
+// Somebody waiting, and — if they are a PARCEL — the trip they are on rather
+// than the single hop everybody else makes.
+//
+// A parcel is not a new kind of thing. It is a Passenger with LEGS: an ordered
+// list of `{ layer, goal }`, so "metro to the interchange, then a van to the
+// yard" is two legs rather than two objects. Everything downstream still asks
+// `p.goal` and gets a shape, which is why the routing, the crowding, the
+// stranded mark and the give-up fuse all work on a parcel without knowing one
+// exists. The only new question anything has to ask is `p.layer` — WHICH
+// transport is allowed to pick this up right now — and the answer is null for
+// the ninety-nine passengers who do not care.
 export class Passenger {
-  constructor(goal, born = 0) {
-    this.goal = goal;
+  constructor(goal, born = 0, opts = {}) {
+    this._goal = goal;
     this.born = born;
     this.stranded = false;    // set by the sim, which is the half that knows
+    this.parcel = !!opts.parcel;
+    this.legs = opts.legs ?? null;
+    this.leg = 0;
+    this.label = opts.label ?? null;
   }
+
+  // the shape this passenger is trying to reach RIGHT NOW
+  get goal() { return this.legs ? this.legs[this.leg]?.goal : this._goal; }
+  // …and the layer that must carry them there, or null for anybody
+  get layer() { return this.legs ? this.legs[this.leg]?.layer ?? null : null; }
+  get lastLeg() { return !this.legs || this.leg >= this.legs.length - 1; }
+
+  // Arrived at the end of a leg. A parcel with another leg to go does not
+  // SCORE — it gets off and waits on the platform for the other layer, which is
+  // the handoff this whole mission type exists to make you feel.
+  advance() {
+    if (this.lastLeg) return false;
+    this.leg++;
+    return true;
+  }
+
   waited(now) { return now - this.born; }
 }
 
@@ -47,11 +78,15 @@ export class Station {
   }
   get crowded() { return this.waiting.length > this.capacity; }
 
-  join(goal, now = 0) {
-    const p = new Passenger(goal, now);
+  join(goal, now = 0, opts = {}) {
+    const p = new Passenger(goal, now, opts);
     this.waiting.push(p);
     return p;
   }
+
+  // a parcel that has finished a leg gets back on the platform HERE, keeping
+  // the object — and therefore how long it has been travelling
+  rejoin(p) { this.waiting.push(p); return p; }
 }
 
 export class World {

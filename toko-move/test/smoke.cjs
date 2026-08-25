@@ -494,6 +494,73 @@ async function checkHomeClear(pg, where) {
   await page.evaluate(() => window.__tm.debug.launch('endless', 7));
   await page.waitForTimeout(200);
 
+  // ── two layers at once, and the load ──────────────────────────────────
+  await page.evaluate(() => window.__tm.debug.launch('transfer', 24));
+  await page.waitForTimeout(300);
+  eq(await page.evaluate(() => window.__tm.game.layers.join('+')), 'metro+roads',
+     'The Handover runs both layers');
+
+  const swap = await page.evaluate(() => {
+    const b = document.getElementById('swap'), r = b.getBoundingClientRect();
+    // the INK's width, measured with a Range. `scrollWidth` counts the padding
+    // as content, so it sits ~2px under the box whatever the padding is — it
+    // reported "fits" on the cramped layout and on the fixed one alike.
+    const range = document.createRange();
+    range.selectNodeContents(b);
+    const ink = range.getBoundingClientRect().width;
+    return { hidden: b.hidden, text: b.textContent.trim(), w: Math.round(r.width), h: Math.round(r.height),
+             label: b.getAttribute('aria-label'), ink: Math.round(ink) };
+  });
+  ok(!swap.hidden, 'with a control to say which one your finger is on');
+  eq(swap.text, 'metro', 'starting on the first the mission names');
+  ok(swap.w >= 44 && swap.h >= 44, `which is a real tap target (${swap.w}x${swap.h})`);
+  // 44 is a FLOOR, not a width: "metro" filled a square box edge to edge, at
+  // 42px of text in 44px of button. The first version of this check asked only
+  // that the text fitted, which it technically did — so it passed on exactly
+  // the layout it was written to reject. Room on both sides is the thing meant.
+  ok(swap.w - swap.ink >= 12,
+     `and has room around the word in it (${swap.ink}px of text in ${swap.w}px)`);
+  ok(/switch/i.test(swap.label ?? ''), 'and says what it does');
+
+  await page.click('#swap');
+  await page.waitForTimeout(150);
+  eq(await page.evaluate(() => window.__tm.game.layer), 'roads', 'pressing it switches the layer');
+  // the GESTURE has to move with it — there is nothing to draw on the roads
+  eq(await page.evaluate(() => window.__tm.debug.drawerKind()), 'roads',
+     'and the drawer with it, so the gesture matches the layer');
+  eq(await page.evaluate(() => document.querySelector('.stk#stkLines i').textContent), 'road',
+     'and the counts are the ones you are spending');
+  await page.click('#swap');
+  await page.waitForTimeout(150);
+  eq(await page.evaluate(() => window.__tm.game.layer), 'metro', 'and back again');
+
+  // the load, ACTUALLY DRAWN. A ring nobody can see is a load nobody can find
+  // on a board with sixty pips on it.
+  const load = await page.evaluate(async () => {
+    const g = window.__tm.game, r = window.__tm.renderer;
+    for (let i = 0; i < 3000; i++) g.step(0.05);
+    const par = g.parcel;
+    if (!par) return { why: 'the load never turned up' };
+    const at = g.world.stations.find(s => s.waiting.includes(par));
+    if (!at) return { why: 'the load is in transit, not on a platform' };
+    await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+    const S = window.__tm.debug.sizeAt(r.scale);
+    const rad = (at.special ? S.specialR : S.stationR) + 15;
+    const px = Math.round((r.ox + (at.x + rad) * r.scale) * devicePixelRatio);
+    const py = Math.round((r.oy + at.y * r.scale) * devicePixelRatio);
+    const d = r.canvas.getContext('2d').getImageData(px, py, 1, 1).data;
+    return { leg: par.leg, layer: par.layer,
+             got: '#' + [...d].slice(0, 3).map(v => v.toString(16).padStart(2, '0')).join(''),
+             want: window.__tm.debug.PAL.warn };
+  });
+  ok(!load.why, `the load is on a platform to be looked at${load.why ? ` — ${load.why}` : ''}`);
+  if (!load.why) eq(load.got, load.want, 'and is ringed in the alarm colour, so it can be found');
+
+  await page.evaluate(() => window.__tm.debug.launch('endless', 7));
+  await page.waitForTimeout(200);
+  ok(await page.evaluate(() => document.getElementById('swap').hidden),
+     'a one-layer mission has no switch to press');
+
   // ── the way home ──────────────────────────────────────────────────────
   // `a` would have matched anything; the shell injects one specific anchor
   const home = await page.evaluate(() => {

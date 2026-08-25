@@ -47,11 +47,24 @@ export const GOALS = {
       text: g.holdBroken ? 'the line was crossed' : `holding — ${fmt(Math.max(0, goal.t - g.time))} left`,
     }),
   },
-  // the parcel run. Needs cargo, which does not exist yet.
+  // The parcel run. One thing, followed across more than one layer, and the
+  // only goal whose progress is measured in LEGS rather than in a count.
   escort: {
     needs: 'payload',
-    done: (g, goal) => g.escorted?.has(goal.what),
-    read: (g, goal) => ({ have: 0, want: 1, text: `get ${goal.what} to ${goal.to}` }),
+    // ONE test, and it is the arrival. The first cut also asked that
+    // `parcel.leg` had reached `legs.length`, which can never happen:
+    // `advance()` stops at the last leg by design, so a two-leg load tops out
+    // at leg 1 and the goal was unreachable on every board. Measured as 0 wins
+    // in 10 while the handover itself worked 7 times.
+    done: g => (g.delivered?.size ?? 0) > 0,
+    read: (g, goal) => {
+      const p = g.parcel;
+      const legs = p?.legs?.length ?? goal.legs ?? 2;
+      if (!p) return { have: 0, want: legs, text: 'the load has not been handed over yet' };
+      if (g.delivered?.size) return { have: legs, want: legs, text: `${goal.what ?? 'the load'} is there` };
+      const on = p.layer === 'roads' ? 'by road' : 'on the metro';
+      return { have: p.leg, want: legs, text: `leg ${p.leg + 1} of ${legs}, ${on}` };
+    },
   },
   // the money layers. Needs an economy, which does not exist yet.
   budget: {
@@ -74,7 +87,7 @@ const fmt = clockFmt;
 
 // What this build of the sim can actually do. Grows as layers arrive; a goal
 // naming anything outside it is refused rather than quietly impossible.
-export const CAPABILITIES = new Set(['delivery', 'clock', 'crowding']);
+export const CAPABILITIES = new Set(['delivery', 'clock', 'crowding', 'payload']);
 
 export function validate(m, caps = CAPABILITIES) {
   const bad = [];
@@ -195,6 +208,53 @@ export const MISSIONS = [
     goals: [{ type: 'deliver', n: 190 }],
     fail: { overcrowd: 50 },
     giveUp: 60,
+  },
+
+  {
+    id: 'transfer',
+    mode: 'mission',
+    order: 3,
+    // BOTH layers, running at once. Not a toggle between two boards: the trains
+    // call while the cars drive, both feeding the same platforms, and the city
+    // you are not looking at keeps needing you. That is the owner's call, and
+    // it is the only version where handing a load over costs anything —
+    // stopping the world to deal with the parcel would make the transfer a
+    // cutscene rather than a decision.
+    layers: ['metro', 'roads'],
+    title: 'The Handover',
+    brief:
+      'One load, two networks. The metro takes it as far as the interchange and a van has to '
+      + 'take it on from there — while the rest of the city carries on wanting things.',
+    length: 480,
+    clock: { unit: 60, units: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'], cycle: 8, cycleWord: 'shift', upgradeEvery: 120 },
+    board: { w: 860, h: 600, maxStations: 16, minGap: 92, margin: 56, firstStation: 11 },
+    spawn: {
+      // ordinary traffic keeps coming, because the parcel competing for the
+      // same trains is the whole tension. Quieter than the endless city: two
+      // networks to keep up with is already work.
+      base: 0.34, ramp: 320, cap: 1.0,
+      stationEvery: [20, 26], specialsAfter: 150, specialChance: 0.15,
+      bursts: [],
+    },
+    // both layers' resources in one purse, because they are one mission
+    resources: { lines: 3, trains: 3, tunnels: 2, road: 30, cars: 12, bridge: 2 },
+    // A LOAD, not a passenger: it names the layer for each leg, so the metro
+    // may carry it to the interchange and only a van may take it on. `at` is
+    // when it turns up — late enough that there is a city to move it through.
+    parcel: { at: 45, label: 'the load', legs: 3 },
+    // TWO goals, and the second one is the mission. Escort alone was won at 74
+    // seconds of eight minutes: a well-joined network moves one load almost at
+    // once, so "get the load there" is a tutorial rather than a shift. The
+    // delivery target is what makes neglect cost something — you cannot build
+    // one corridor for the parcel and let the rest of the city rot, which is
+    // the entire reason both layers run at the same time.
+    // 120, measured. Swept against the escort: at 120 the seven boards that get
+    // the load through are the seven that win, so the mission is decided by the
+    // handover and not by the counter — which is what it is about. At 160 two
+    // more are lost to the target instead, and at 240 only two survive at all.
+    goals: [{ type: 'escort', what: 'the load' }, { type: 'deliver', n: 120 }],
+    fail: { overcrowd: 45 },
+    giveUp: 55,
   },
 ];
 

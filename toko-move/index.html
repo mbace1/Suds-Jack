@@ -51,7 +51,11 @@
 
   #tools { display: flex; gap: 4px; }
   .ctl {
-    min-width: 44px; min-height: 44px; font: inherit; font-size: 14px;
+    /* 44 is the FLOOR, not the width. The layer switch carries a word rather
+       than a glyph and "metro" filled a 44px box edge to edge — legible by two
+       pixels, which is not legible. Padding lets a worded control grow while a
+       glyph one stays square. */
+    min-width: 44px; min-height: 44px; padding: 0 10px; font: inherit; font-size: 14px;
     background: none; color: var(--ink); border: 1px solid var(--rule);
     border-radius: 3px; cursor: pointer;
   }
@@ -198,6 +202,9 @@
       <button class="ctl" id="pause" aria-label="Pause">❚❚</button>
       <button class="ctl" id="speed" aria-label="Game speed">×1</button>
       <button class="ctl" id="sound" aria-label="Sound" aria-pressed="false">♪</button>
+      <!-- Only on a mission that runs more than one. Both keep working; this
+           says which one your finger is on. -->
+      <button class="ctl" id="swap" aria-label="Switch layer" hidden></button>
       <button class="ctl" id="help" aria-label="How to play" aria-expanded="false">?</button>
     </div>
   </header>
@@ -259,7 +266,7 @@
     </div>
   </div>
 
-<script type="module" src="js/main.js?v=9"></script>
+<script type="module" src="js/main.js?v=10"></script>
 <!-- the way home: HOME top-left + hold Start/Back on a pad -->
 <script type="module" src="../hub/shell.js?v=64"></script>
 </body>

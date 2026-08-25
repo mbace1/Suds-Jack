@@ -2,15 +2,15 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=9';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=9';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=9';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=9';
-import { Game } from '../js/sim.js?v=9';
-import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=9';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=9';
-import { PAL, INK } from '../js/palette.js?v=9';
-import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=9';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=10';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=10';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=10';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=10';
+import { Game } from '../js/sim.js?v=10';
+import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=10';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=10';
+import { PAL, INK } from '../js/palette.js?v=10';
+import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=10';
 import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
 import { deflateRawSync, crc32 } from 'node:zlib';
 import { readFileSync, existsSync } from 'node:fs';
@@ -597,13 +597,22 @@ function bench(seed = 1) {
   // impossible — a mission that looks playable and cannot be finished is worse
   // than one that will not load
   let refused = 0;
-  for (const goal of [{ type: 'escort', what: 'parcel', to: 'malmo' }, { type: 'budget', n: 10 }, { type: 'nonsense' }]) {
+  for (const goal of [{ type: 'budget', n: 10 }, { type: 'nonsense' }]) {
     try { validate({ id: 't', clock: { unit: 1 }, goals: [goal] }); }
     catch { refused++; }
   }
-  eq(refused, 3, 'goals needing what this build lacks are refused at load');
-  ok(!CAPABILITIES.has('payload') && !CAPABILITIES.has('money'), 'and this build is honest about lacking them');
-  ok(GOALS.escort && GOALS.budget, 'though the format can still STATE them, for the layers to come');
+  eq(refused, 2, 'goals needing what this build lacks are refused at load');
+  // `payload` moved from "stated but impossible" to real when The Handover
+  // shipped, and the point of this check is that the list is HONEST rather than
+  // that it is short: money is still not a thing, and a budget goal still will
+  // not load.
+  ok(CAPABILITIES.has('payload'), 'a load is something this build can now carry');
+  ok(!CAPABILITIES.has('money'), 'and it is still honest about having no economy');
+  let escortLoads = true;
+  try { validate({ id: 't', clock: { unit: 1 }, goals: [{ type: 'escort', what: 'the load' }] }); }
+  catch { escortLoads = false; }
+  ok(escortLoads, 'so an escort mission loads where it used to be refused');
+  ok(GOALS.escort && GOALS.budget, 'and the format can still STATE what does not exist yet');
 
   // the five kinds the owner asked to be able to state
   for (const k of ['deliver', 'survive', 'hold', 'escort', 'budget']) ok(!!GOALS[k], `the format can state "${k}"`);
@@ -1038,6 +1047,197 @@ const lay = (net, x0, y0, x1, y1) => {          // a straight run, inclusive
     if (g.state === 'won') wins++;
   }
   ok(wins >= 4, `The Rush can be won by an ordinary player (${wins}/5 boards)`);
+}
+
+// ── two layers at once, and a load that changes hands ───────────────────
+// The Handover runs the metro AND the roads together, and the parcel is not a
+// new kind of object: it is a Passenger with LEGS, standing in the ordinary
+// queue, competing for the same trains as everybody else.
+{
+  const g = new Game(11, 'transfer');
+  eq(g.layers.join('+'), 'metro+roads', 'a mission may name more than one layer');
+  ok(!!g.net && !!g.roads, 'and both are built, not one of them');
+  eq(g.layer, 'metro', 'the FOCUS starts on the first one named');
+
+  ok(g.focus('roads'), 'the focus can be moved');
+  eq(g.layer, 'roads', 'and it moves');
+  ok(g.transport === g.roads, 'so the drawn-on transport follows it');
+  ok(!g.focus('boat'), 'but not to a layer this mission does not run');
+  eq(g.layer, 'roads', 'and a refused switch leaves it where it was');
+  g.focus('metro');
+
+  // BOTH keep working. A layer that stops while you look elsewhere would make
+  // the switch a change of board rather than a change of attention.
+  g.start();
+  const st = g.world.stations[0];
+  const other = g.world.stations.find(s => s.kind !== st.kind);
+  st.join(other.kind, 0);
+  const before = { cars: g.roads.cars.length, trains: g.net.lines.length };
+  for (let i = 0; i < 40; i++) g.step(0.05);
+  ok(g.roads.cars.length >= before.cars, 'the roads tick while the metro is focused');
+}
+
+{
+  // the legs themselves
+  const g = new Game(11, 'transfer');
+  g.start();
+  let n = 0;
+  while (!g.parcel && n++ < 4000) g.step(0.05);
+  ok(!!g.parcel, `the load turns up (t ${g.time.toFixed(0)}s)`);
+  const p = g.parcel;
+  eq(p.parcel, true, 'and knows it is one');
+  eq(p.legs.length, 3, 'with a leg per hop the mission asked for');
+  ok(p.legs.every((l, i) => i === 0 || l.goal !== p.legs[i - 1].goal),
+     'no two legs in a row end at the same shape, or a handover is a no-op');
+  eq(p.legs.map(l => l.layer).join('>'), 'metro>roads>metro',
+     'and the layers alternate, so the load changes hands twice rather than once');
+  eq(p.goal, p.legs[0].goal, 'p.goal is whatever THIS leg is heading for');
+  eq(p.layer, 'metro', 'and p.layer is who may carry it');
+
+  // the handoff: arriving mid-journey does not score, it changes hands
+  const scoreBefore = g.score;
+  const dest = g.world.stations.find(s => s.kind === p.legs[0].goal);
+  const out = g.arrived(p, dest.id);
+  eq(out, 'handoff', 'arriving at the end of a leg is a handoff, not a delivery');
+  eq(g.score, scoreBefore, 'and it does not score');
+  eq(p.leg, 1, 'the load is on its second leg');
+  eq(p.layer, 'roads', 'which only a van may carry');
+  ok(dest.waiting.includes(p), 'and it is standing on the platform waiting for one');
+
+  // …and the last leg does score
+  p.leg = p.legs.length - 1;
+  const last = g.world.stations.find(s => s.kind === p.goal);
+  eq(g.arrived(p, last.id), 'drop', 'the last leg is a delivery');
+  eq(g.score, scoreBefore + 1, 'which scores');
+  ok(g.delivered.has('the load'), 'and is recorded by name');
+  ok(GOALS.escort.done(g), 'so the escort goal is met');
+}
+
+{
+  // A parcel booked onto one layer may not be picked up by the other. This is
+  // the whole mechanism: a car "helpfully" carrying a crate booked onto the
+  // metro has not helped, it has stolen it — and a train that takes one booked
+  // onto the roads has done the same.
+  //
+  // BOTH DIRECTIONS, and the platform is EMPTIED first. The first cut of this
+  // left the ordinary queue in place, and `dispatch()` breaks after one
+  // successful car per stop — so an earlier passenger was dispatched, the loop
+  // never reached the parcel, and the check passed with the guard deleted.
+  const g = new Game(11, 'transfer');
+  g.start();
+  const st = g.world.stations[0];
+
+  // roads everywhere and cars to spare, so nothing but the booking can stop it.
+  // NOTE the river: `build` refuses water without a bridge, so "every cell" is
+  // still two components — and the first cut of this picked a goal on the far
+  // bank, where the roads could not route anyway and the check passed with the
+  // guard deleted. So the goal is chosen AFTER the roads exist, from the shapes
+  // they can actually reach.
+  // …and the BUDGET, which is 30 squares on this mission. Without raising it
+  // "every cell" built thirty scattered ones, nothing routed anywhere, and the
+  // check passed with the guard deleted — the second way this same assertion
+  // managed to prove nothing.
+  g.roads.budget = 9999;
+  g.roads.bridges = 99;
+  for (let x = 0; x < g.roads.cols; x++) for (let y = 0; y < g.roads.rows; y++) g.roads.build(x, y);
+  g.roads.spareCars = 20;
+
+  const other = g.world.stations.find(s => s.kind !== st.kind && g.roads.hopsFrom(st.id, s.kind) < Infinity);
+  ok(!!other, 'the roads reach somewhere else on this board, so the next check can mean something');
+  const goal = other?.kind;
+
+  st.waiting.length = 0;
+  const onMetro = st.join(st.kind, 0, { parcel: true, label: 'x', legs: [{ layer: 'metro', goal }] });
+  eq(onMetro.layer, 'metro', 'a load booked onto the metro says so');
+  g.roads.dispatch();
+  ok(!g.roads.cars.some(c => c.p === onMetro), 'and no car takes it, with a road under it and cars idle');
+  ok(st.waiting.includes(onMetro), 'it is still standing where it was');
+
+  // …and the other way: a train must leave a road-booked load alone
+  st.waiting.length = 0;
+  const onRoad = st.join(st.kind, 0, { parcel: true, label: 'y', legs: [{ layer: 'roads', goal }] });
+  const opened = other ? g.net.open(st.id, other.id) : { error: 'no goal' };
+  ok(!opened.error, 'a line runs from the load to where it is going');
+  const train = opened.line?.trains?.[0];
+  ok(!!train, 'with a train on it');
+  if (train) {
+    train.load.length = 0;
+    g.service(train, opened.line.stations.indexOf(st.id));
+    ok(!train.load.includes(onRoad), 'and the train leaves the road-booked load on the platform');
+    ok(st.waiting.includes(onRoad), 'where it stays');
+
+    // the same train DOES take an ordinary passenger going the same way, so the
+    // refusal above is the booking and not a broken line
+    st.waiting.length = 0;
+    const anyone = st.join(goal, 0);
+    g.service(train, opened.line.stations.indexOf(st.id));
+    ok(train.load.includes(anyone), 'while anybody unbooked gets on the very same train');
+  }
+}
+
+{
+  // "unreachable" on a two-layer board means unreachable on EVERY layer it may
+  // use — asking only the focused one would mark half the city stranded
+  const g = new Game(11, 'transfer');
+  g.start();
+  const st = g.world.stations[0];
+  const other = g.world.stations.find(s => s.kind !== st.kind);
+  const p = st.join(other.kind, 0);
+  eq(g.reaches(st.id, p), false, 'with nothing built, nobody is reachable');
+  const a = g.roads.cellOf(st), b = g.roads.cellOf(other);
+  for (let cx = Math.min(a.cx, b.cx); cx <= Math.max(a.cx, b.cx); cx++) g.roads.build(cx, a.cy);
+  for (let cy = Math.min(a.cy, b.cy); cy <= Math.max(a.cy, b.cy); cy++) g.roads.build(b.cx, cy);
+  ok(g.reaches(st.id, p), 'a ROAD is enough, even while the metro is the focused layer');
+  eq(g.layer, 'metro', 'which it is');
+}
+
+{
+  // it has to be finishable, and by the handover rather than by the counter
+  let won = 0, handed = 0;
+  for (const seed of [3, 17, 24, 31, 59]) {
+    const g = new Game(seed, 'transfer');
+    g.start();
+    const R = g.roads, joined = new Set();
+    const play = () => {
+      for (const st of g.world.stations) {
+        if (!g.net.linesAt(st.id).length) {
+          let best = null, bd = 1e9, head = false;
+          for (const l of g.net.lines) for (const [id, h] of [[l.head, true], [l.tail, false]]) {
+            const e = g.world.station(id); if (!e) continue;
+            const d = Math.hypot(e.x - st.x, e.y - st.y);
+            if (d < bd) { bd = d; best = l; head = h; }
+          }
+          if (!(best && !g.net.extend(best, st.id, head).error) && g.net.canOpenLine()) {
+            const near = g.world.stations.find(o => o.id !== st.id && !g.net.linesAt(o.id).length);
+            if (near) g.net.open(st.id, near.id);
+          }
+        }
+        if (joined.has(st.id) || R.left() <= 0) continue;
+        const a = R.cellOf(st);
+        let to = null, bd2 = Infinity;
+        for (const k of R.cells) {
+          const [cx, cy] = k.split(',').map(Number);
+          const d = Math.abs(cx - a.cx) + Math.abs(cy - a.cy);
+          if (d < bd2) { bd2 = d; to = { cx, cy }; }
+        }
+        let { cx, cy } = a;
+        const put = () => { if (!R.cells.has(`${cx},${cy}`)) R.build(cx, cy); };
+        put();
+        if (to) { while (cx !== to.cx) { cx += Math.sign(to.cx - cx); put(); }
+                  while (cy !== to.cy) { cy += Math.sign(to.cy - cy); put(); } }
+        joined.add(st.id);
+      }
+    };
+    for (let n = 0; n < 20000 && g.state !== 'over' && g.state !== 'won'; n++) {
+      g.step(0.05);
+      if (n % 20 === 0) play();
+      if (g.state === 'upgrade') g.applyUpgrade(g.offer[0], g.net.lines[0]?.id ?? null);
+    }
+    if (g.state === 'won') won++;
+    if ((g.parcel?.leg ?? 0) > 0) handed++;
+  }
+  ok(handed >= 4, `the load changes hands on most boards (${handed}/5)`);
+  ok(won >= 3, `and the mission can be finished (${won}/5)`);
 }
 
 // ── warning before the water ────────────────────────────────────────────

@@ -5,10 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=9';
-import { BOARD } from './world.js?v=9';
-import { CELL } from './roads.js?v=9';
-import { drawShape, tracePath } from './shapes.js?v=9';
+import { PAL, INK, sizeAt } from './palette.js?v=10';
+import { BOARD } from './world.js?v=10';
+import { CELL } from './roads.js?v=10';
+import { drawShape, tracePath } from './shapes.js?v=10';
 
 export class Renderer {
   constructor(canvas) {
@@ -63,12 +63,27 @@ export class Renderer {
     this.water(game.world);
     this.grainWash(ctx);
 
-    if (game.roads) this.roads(game.roads, view);
-    for (const line of game.net.lines) this.line(line);
+    // BOTH layers when the mission runs both, and the one you are not drawing
+    // on goes quiet rather than away. Hiding it would make the switch a change
+    // of board; dimming it keeps one city with two ways through it, which is
+    // the whole claim of the mission type.
+    const two = (game.layers?.length ?? 1) > 1;
+    const dim = (on, draw) => {
+      if (!two || on === game.layer) { draw(); return; }
+      ctx.save();
+      ctx.globalAlpha = 0.34;
+      draw();
+      ctx.restore();
+    };
+
+    if (game.roads) dim('roads', () => this.roads(game.roads, view));
+    dim('metro', () => { for (const line of game.net.lines) this.line(line); });
     if (view.nubs) this.nubs(view.nubs, view.nubR);
     if (view.drag) this.ghost(view.drag);
-    if (game.roads) this.cars(game.roads);
-    else for (const line of game.net.lines) for (const t of line.trains) this.train(t, line);
+    if (game.roads) dim('roads', () => this.cars(game.roads));
+    if (game.layers?.includes('metro') ?? true) {
+      dim('metro', () => { for (const line of game.net.lines) for (const t of line.trains) this.train(t, line); });
+    }
     const sizes = sizeAt(this.scale);
     for (const st of game.world.stations) this.station(st, view, sizes);
 
@@ -351,6 +366,20 @@ export class Renderer {
 
     drawShape(ctx, st.kind, st.x, st.y, r, PAL.station, PAL.ink, INK.station);
     this.queue(st, r, sizes.pipR);
+
+    // THE LOAD. One thing on the board is being followed, and on a board with
+    // sixty pips on it a parcel drawn like a passenger is a parcel nobody can
+    // find. A ring in the accent colour, outside the shape and outside the
+    // crowding gauge, so it never hides either.
+    if (st.waiting.some(p => p.parcel)) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, r + 15, 0, Math.PI * 2);
+      ctx.strokeStyle = PAL.warn;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // The platform. Three to a row, growing away from the stop; past capacity it

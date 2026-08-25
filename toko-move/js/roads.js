@@ -25,9 +25,10 @@ const key = (cx, cy) => `${cx},${cy}`;
 const NEIGHBOURS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 export class Car {
-  constructor(passenger, from, path) {
+  constructor(passenger, from, path, to = null) {
     this.p = passenger;              // the same Passenger object the platform held
     this.from = from;                // station id it left
+    this.to = to;                    // …and the one it is going to, which a parcel needs
     this.path = path;                // [cellKey, …]
     this.at = 0;                     // index of the cell it is standing in
     this.t = 0;                      // 0…1 across that cell
@@ -251,15 +252,28 @@ export class RoadNet {
       if (this.spareCars <= 0) break;
       for (let i = 0; i < st.waiting.length; i++) {
         const p = st.waiting[i];
+        // A parcel names the layer for each leg. A car that picks up a crate
+        // booked onto the metro has not helped; it has stolen it.
+        if (p.layer && p.layer !== 'roads') continue;
         const path = this.route(st, p.goal);
         if (!path) continue;
         if (this.countIn(path[0]) >= CELL_CARS) break;   // the door is blocked
         st.waiting.splice(i, 1);
-        this.cars.push(new Car(p, st.id, path));
+        this.cars.push(new Car(p, st.id, path, this.stationAt(path[path.length - 1], p.goal)));
         this.spareCars--;
         break;
       }
     }
+  }
+
+  // Whose door is this square? A car has to be able to say where it PUT
+  // somebody, which is what a parcel changing layers depends on.
+  stationAt(cell, shape) {
+    for (const st of this.world.stations) {
+      if (shape && st.kind !== shape) continue;
+      if (this.doorsOf(st).includes(cell)) return st.id;
+    }
+    return null;
   }
 
   countIn(k) {

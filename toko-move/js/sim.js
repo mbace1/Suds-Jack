@@ -6,10 +6,10 @@
 // a festival, a ten-minute delivery contract and the endless city are the same
 // code reading different data.
 
-import { World } from './world.js?v=9';
-import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=9';
-import { RoadNet } from './roads.js?v=9';
-import { byId, validate, GOALS } from './missions.js?v=9';
+import { World } from './world.js?v=10';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=10';
+import { RoadNet } from './roads.js?v=10';
+import { byId, validate, GOALS } from './missions.js?v=10';
 
 export class Game {
   constructor(seed = 1, missionId = 'endless', opts = {}) { this.reset(seed, missionId, opts); }
@@ -29,13 +29,19 @@ export class Game {
     const board = this.portrait ? { ...m.board, w: m.board.h, h: m.board.w } : m.board;
     this.world = new World(seed, { ...m, board });
 
-    // Which transport this mission runs on. The people are the same either way
-    // — a building is a Station, a trip is a Passenger with a destination shape
-    // — and only the thing that moves them differs. That is what "layers are
-    // near-clones differing by variables" has to mean if it is to be true.
-    this.layer = m.layer ?? 'metro';
+    // Which transports this mission runs. A mission may name ONE (`layer`) or
+    // SEVERAL (`layers`), and when it names several they all run at once —
+    // trains calling while cars drive, both feeding the same platforms. That is
+    // the owner's call: a parcel changing layers is only interesting if the
+    // city you are neglecting is still running while you deal with it.
+    //
+    // `layer` is now the FOCUS — the one your finger is drawing on — and not
+    // the one that exists. Everything that used to read it for "which
+    // transport" reads `transports` instead.
+    this.layers = m.layers ?? [m.layer ?? 'metro'];
+    this.layer = this.layers[0];
     this.net = new Network(this.world, m.resources);
-    this.roads = this.layer === 'roads' ? new RoadNet(this.world, m.resources) : null;
+    this.roads = this.layers.includes('roads') ? new RoadNet(this.world, m.resources) : null;
     this.score = 0;
     this.speed = 1;
     this.paused = true;
@@ -48,13 +54,44 @@ export class Game {
     this.gaveUp = 0;          // …and waited long enough to walk away
     this._sweep = 0;
     this.taught = new Set();  // one-liners already said this run
+    this.parcel = null;       // the one load being followed, once it turns up
+    this.delivered = new Set();
     this.nextUpgradeAt = m.clock.upgradeEvery;
     this.net.rebuild();
   }
 
   // ── the clock, as the mission states it ───────────────────────────────
-  // whichever network this mission is played on
-  get transport() { return this.roads || this.net; }
+  // Every transport this mission is running, by name.
+  get transports() {
+    const out = {};
+    if (this.layers.includes('metro')) out.metro = this.net;
+    if (this.roads) out.roads = this.roads;
+    return out;
+  }
+
+  // The one your finger is on. Kept as `transport` because a single-layer
+  // mission has exactly one and half this file was written before there were
+  // two.
+  get transport() { return this.transports[this.layer] ?? this.net; }
+
+  focus(layer) {
+    if (!this.layers.includes(layer)) return false;
+    this.layer = layer;
+    return true;
+  }
+
+  // Which transport may carry this passenger, and whether ANY of them reaches
+  // where they are going. A parcel names its layer per leg; everybody else is
+  // happy on whatever turns up, so "unreachable" has to mean unreachable on all
+  // of them or a two-layer board would mark half the city as stranded.
+  reaches(stationId, p) {
+    const want = p.layer;
+    for (const [name, t] of Object.entries(this.transports)) {
+      if (want && want !== name) continue;
+      if (t.hopsFrom(stationId, p.goal) !== Infinity) return true;
+    }
+    return false;
+  }
 
   get time() { return this.world.time; }
   get clock() { return this.mission.clock; }
@@ -78,9 +115,10 @@ export class Game {
       this.world.events.length = 0;
     }
 
-    if (this.roads) {
-      this.roads.step(dt, () => { this.score++; this.events.push('drop'); });
-    } else {
+    // Both, when the mission runs both. A layer you are not looking at keeps
+    // working — that is the whole point of running them together.
+    if (this.roads) this.roads.step(dt, car => this.arrived(car.p, car.to));
+    if (this.layers.includes('metro')) {
       for (const line of this.net.lines) {
         for (const train of line.trains) {
           const arrived = train.move(dt, TRAIN_SPEED);
@@ -91,6 +129,7 @@ export class Game {
 
     this.watchHold();
     this.sweepStranded(dt);
+    this.sweepParcel();
 
     if (this.mission.clock.upgradeEvery != null && this.time >= this.nextUpgradeAt) {
       this.nextUpgradeAt += this.mission.clock.upgradeEvery;
@@ -104,6 +143,53 @@ export class Game {
 
     if (this.goalsMet()) return this.finish('won');
     if (this.remaining === 0) return this.finish(this.goalsMet() ? 'won' : 'timeup');
+  }
+
+  // ── the load ──────────────────────────────────────────────────────────
+  // One parcel, put on the board once there is a board to put it on, with a leg
+  // per layer. It is deliberately NOT a special object: it is a Passenger with
+  // legs, standing in the ordinary queue at an ordinary stop, competing for the
+  // same trains as everybody else. That is the owner's call — the city carries
+  // on around it — and it is also what makes the mission hard, because the
+  // fastest way to move one load is a network that serves everybody.
+  sweepParcel() {
+    const spec = this.mission.parcel;
+    if (!spec || this.parcel || this.time < (spec.at ?? 0)) return;
+
+    // Three shapes is the floor, whatever the leg count. The first cut asked
+    // for a distinct shape PER LEG, so a three-leg load needed four shapes and
+    // simply never appeared on most boards — a mission whose premise silently
+    // never starts, which is worse than one that is too hard. Consecutive goals
+    // have to differ; leg three may go back to where leg one began.
+    const want = spec.legs ?? 2;
+    const shapes = this.world.shapesPresent();
+    if (shapes.length < 3 || !this.roads) return;
+
+    const pick = this.world.rng.pick(this.world.stations.filter(s => s.kind === shapes[0]));
+    if (!pick) return;
+
+    // Alternating, starting on the metro: metro → road → metro. The layers are
+    // named per leg rather than inferred, because "which of these can carry it"
+    // is the decision the mission is about — and alternating means the load
+    // changes hands `want - 1` times rather than once, which is the part worth
+    // more than one board's practice.
+    const order = ['metro', 'roads'];
+    const legs = [];
+    let prev = shapes[0];
+    for (let i = 0; i < want; i++) {
+      // walk the shapes in a ring, skipping whatever we are standing on
+      const next = shapes[(shapes.indexOf(prev) + 1) % shapes.length];
+      legs.push({ layer: order[i % 2], goal: next });
+      prev = next;
+    }
+
+    this.parcel = pick.join(shapes[0], this.time, {
+      parcel: true,
+      label: spec.label ?? 'the load',
+      legs,
+    });
+    const how = legs.map(l => `${l.layer === 'roads' ? 'a van' : 'the metro'} to the ${l.goal}`).join(', then ');
+    this.events.push({ say: `${this.parcel.label} is at the ${pick.kind}: ${how}.` });
   }
 
   // Once crossed, a held line stays crossed — otherwise "hold the line" would
@@ -140,7 +226,7 @@ export class Game {
     for (const st of this.world.stations) {
       for (let i = st.waiting.length - 1; i >= 0; i--) {
         const p = st.waiting[i];
-        p.stranded = this.transport.hopsFrom(st.id, p.goal) === Infinity;
+        p.stranded = !this.reaches(st.id, p);
         if (!p.stranded) continue;
         if (fuse != null && p.waited(this.world.time) > fuse) {
           st.waiting.splice(i, 1);
@@ -168,6 +254,28 @@ export class Game {
     this.events.push(reason === 'won' ? 'won' : 'over');
   }
 
+  // Somebody has arrived at `stationId`. ONE path for both layers, because a
+  // parcel changing hands must behave the same whether the train or the car
+  // brought it — and because the score should be counted in one place.
+  //
+  // A parcel with another leg to run does NOT score. It gets off, advances, and
+  // waits on the platform for whatever carries the next leg. That pause is the
+  // handoff, and it is the whole reason this mission type exists.
+  arrived(p, stationId) {
+    if (p.advance?.()) {
+      const st = this.world.station(stationId);
+      if (st) {
+        st.rejoin(p);
+        this.events.push('handoff');
+        return 'handoff';
+      }
+    }
+    this.score++;
+    if (p.parcel) { this.delivered ??= new Set(); this.delivered.add(p.label ?? true); }
+    this.events.push('drop');
+    return 'drop';
+  }
+
   service(train, stationIndex) {
     const line = train.line;
     const stId = line.stations[stationIndex];
@@ -184,9 +292,8 @@ export class Game {
       const goal = rider.goal;
       if (st.kind === goal) {
         train.load.splice(i, 1);
-        this.score++;
         exchanged++;
-        this.events.push('drop');
+        this.arrived(rider, stId);
         continue;
       }
       if (!(onward(goal) < closer(stId, goal))) {
@@ -200,6 +307,9 @@ export class Game {
 
     for (let i = 0; i < st.waiting.length && train.load.length < train.capacity;) {
       const p = st.waiting[i];
+      // a parcel booked onto the roads does not get on a train, however
+      // conveniently the train is going that way
+      if (p.layer && p.layer !== 'metro') { i++; continue; }
       if (onward(p.goal) < closer(stId, p.goal)) {
         st.waiting.splice(i, 1);
         train.load.push(p);
@@ -277,6 +387,8 @@ export class Game {
       lines: this.net.lines.length,
       gaveUp: this.gaveUp,
       stranded: this.stranded,
+      parcelLeg: this.parcel ? this.parcel.leg : null,
+      parcelDone: this.delivered.size > 0,
       layer: this.layer,
       roadUsed: this.roads ? this.roads.used() : null,
       jammed: this.roads ? this.roads.jammed : null,
