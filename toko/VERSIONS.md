@@ -13,6 +13,43 @@ and half of another. Bump both when shipping.
 Kept newest-first — `scripts/versions.mjs` reads the first `## vN` heading and
 writes it into `hub/versions.json`, which is what a cabinet shows.
 
+## v6 — 2026-08-26
+
+The counter gets a mind behind the dialogue tree without replacing the tree.
+
+- **Persistent local memory.** `js/mind.js` keeps a bounded history of subjects,
+  recurring interests and discoveries, so later conversations can continue
+  rather than always starting from zero. The existing `chat.js` memory remains
+  untouched; this is an additive layer with its own storage key.
+- **A genre-defining game canon.** Toko now has authored positions on a curated
+  spine from Spacewar!, Rogue and Tetris through Doom, Ico, Dark Souls,
+  Minecraft, Journey, Undertale, Returnal and Elden Ring. This is deliberately
+  not a giant trivia database: each entry exists because it changed the
+  language of games.
+- **Industry commentary.** Typed discussion of AI, monetisation/live service,
+  open worlds, indie development and visual fidelity now gets a Toko point of
+  view rather than a generic miss. The position is opinionated but not
+  combative: games can be products, toys, sports, stories and art, and commerce
+  matters without becoming the philosophy of the work.
+- **Nature is now a system, not just a line.** `NATURE`, `RUN NATURE.EXE` and
+  related conversation return time/season-aware prompts, including the
+  important rule that Toko never demands proof. Sometimes not playing is part
+  of playing.
+- **Shared news inbox.** `ingestNews()` / `readNews()` provide a small local
+  transport that can be fed by the workshop and reused by Helsinki Free Radio.
+  `NEWS` keeps headline/source separate from Toko's opinion. The inbox works
+  even when empty and makes no network claim by itself.
+- **The first hidden DOS layer.** `DIR`, `TYPE MANIFESTO.TXT`, `WHOAMI`,
+  `MEMORY`, `NATURE.EXE` and the hidden `MIRROR.EXE` live under the ordinary
+  parser. Most of the counter still behaves exactly as before; these are things
+  a curious player can discover rather than a new menu stapled on top.
+- **One real interface break.** `RUN MIRROR.EXE` temporarily takes over the
+  screen and collapses developer, software, player and audience into the same
+  object. It is deliberately rare and dismissible by click or Escape.
+- **Merge surface kept small.** The work is almost entirely one new module plus
+  one script include. `chat.js`, its language packs and the existing authored
+  topic tree are unchanged so parallel work can continue cleanly.
+
 ## v5 — 2026-07-29
 
 The signature stops being a stamp and becomes a door.
