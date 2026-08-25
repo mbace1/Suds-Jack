@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=11';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=11';
-import { Renderer } from './render.js?v=11';
-import { LineDrawer, RoadDrawer } from './input.js?v=11';
-import { Kit } from './audio.js?v=11';
-import { PAL, sizeAt } from './palette.js?v=11';
+import { Game } from './sim.js?v=12';
+import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=12';
+import { Renderer } from './render.js?v=12';
+import { LineDrawer, RoadDrawer } from './input.js?v=12';
+import { Kit } from './audio.js?v=12';
+import { PAL, sizeAt } from './palette.js?v=12';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -22,6 +22,8 @@ const CARD = {
   road: ['MORE ROAD', 'twelve more squares to lay'],
   cars: ['MORE CARS', 'two more on the road at once'],
   bridge: ['BRIDGE', 'one more crossing over the water'],
+  route: ['NEW ROUTE', 'one more bus route you are allowed to draw'],
+  bus: ['ANOTHER BUS', 'one more bus, on a route you pick'],
 };
 
 let game, renderer, drawer, kit, drops = 0, feedTimer = 0, keyNav = false;
@@ -116,14 +118,18 @@ function boot(seed, missionId) {
 // drawer rather than teaching one of them a second verb.
 function makeDrawer() {
   drawer?.destroy();
+  // Two gestures, three layers. The bus layer is DRAWN, not laid — a route is
+  // a line with stops — so it takes the line drawer pointed at a different
+  // network, which is why there is no third drawer class.
   const Drawer = game.layer === 'roads' ? RoadDrawer : LineDrawer;
   drawer = new Drawer($('board'), renderer, game, {
     onMessage: say,
     onChange: () => { paintHud(); kit.line(); },
+    net: () => (game.layer === 'bus' ? game.bus : game.net),
   });
 }
 
-const LAYER_WORD = { metro: 'metro', roads: 'roads' };
+const LAYER_WORD = { metro: 'metro', roads: 'roads', bus: 'buses' };
 
 function swapLayer() {
   if (game.layers.length < 2) return;
@@ -165,6 +171,12 @@ function paintHud() {
     stock('stkLines', `${game.roads.used()}/${game.roads.budget}`, game.roads.left() <= 0, 'road');
     stock('stkTrains', game.roads.spareCars, game.roads.spareCars === 0, 'cars idle');
     stock('stkTunnels', game.roads.bridgesLeft(), game.roads.bridgesLeft() === 0, 'bridges');
+  } else if (game.layer === 'bus' && game.bus) {
+    // the third slot is the one honest bad number this layer has: how many of
+    // your buses are sitting in the traffic you made room for
+    stock('stkLines', `${game.bus.lines.length}/${game.bus.maxLines}`, game.bus.lines.length >= game.bus.maxLines, 'routes');
+    stock('stkTrains', game.bus.spareTrains, game.bus.spareTrains === 0, 'buses idle');
+    stock('stkTunnels', game.bus.crawling, game.bus.crawling > 0, 'in traffic');
   } else {
     stock('stkLines', `${game.net.lines.length}/${game.net.maxLines}`, game.net.lines.length >= game.net.maxLines, 'lines');
     stock('stkTrains', game.net.spareTrains, game.net.spareTrains === 0, 'trains');
@@ -247,6 +259,13 @@ const HOWTO = {
     ['The cars', 'pick their own way and cannot be told otherwise. All you give them is room.'],
     ['The long one', 'a van, and the only vehicle carrying something that matters. Same speed as the rest — it just has to get through.'],
   ],
+  bus: [
+    ['Draw a route', 'stop to stop, the same as a line — but it can only go where a street already runs.'],
+    ['Carry it on', 'drag the end stub onto the next stop.'],
+    ['Take it back', 'drag the stub back onto the stop behind it.'],
+    ['No street, no route', 'lay the road first, on the car layer. Lift a street and the route breaks where it was.'],
+    ['Traffic', 'a bus in it crawls. The room you make for cars is the room your buses need.'],
+  ],
 };
 
 function paintHowto() {
@@ -305,8 +324,12 @@ function choose(kind, btn) {
   const wrap = $('lineWrap');
   const pick = $('linePick');
   pick.innerHTML = '';
-  $('lineAsk').textContent = kind === 'train' ? 'Which line gets the train?' : 'Which line gets the carriage?';
-  for (const line of game.net.lines) {
+  const ASK = { train: 'Which line gets the train?', carriage: 'Which line gets the carriage?',
+                bus: 'Which route gets the bus?' };
+  $('lineAsk').textContent = ASK[kind] ?? ASK.train;
+  // the card decides which network's lines are on offer — a bus goes on a bus
+  // route, and there may be no metro on this board at all
+  for (const line of (game.netFor(kind)?.lines ?? [])) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'chip';
@@ -314,9 +337,10 @@ function choose(kind, btn) {
     sw.style.background = PAL.lines[line.colour];
     const label = document.createElement('span');
     const trains = line.trains.length;
-    label.textContent = `${line.stations.length} stops · ${trains} train${trains === 1 ? '' : 's'}`;
+    const word = kind === 'bus' ? 'bus' : 'train';
+    label.textContent = `${line.stations.length} stops · ${trains} ${word}${trains === 1 ? '' : (kind === 'bus' ? 'es' : 's')}`;
     b.append(sw, label);
-    b.setAttribute('aria-label', `Line ${line.id + 1}, ${label.textContent}`);
+    b.setAttribute('aria-label', `${kind === 'bus' ? 'Route' : 'Line'} ${line.id + 1}, ${label.textContent}`);
     b.onclick = () => apply(kind, line.id);
     pick.append(b);
   }
@@ -482,5 +506,5 @@ window.__tm = {
   debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId, sizeAt, seedFromUrl, PAL,
     // which gesture the board is answering to — the gate needs to see that it
     // moves with the layer, and `drawer` itself is not on the surface
-    drawerKind: () => (drawer instanceof RoadDrawer ? 'roads' : 'metro') },
+    drawerKind: () => (drawer instanceof RoadDrawer ? 'roads' : (game?.layer === 'bus' ? 'bus' : 'metro')) },
 };

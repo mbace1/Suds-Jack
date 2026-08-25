@@ -70,6 +70,16 @@ export class RoadNet {
     this.spanned = new Set();      // every wet square of road, for the drawing
     this.piers = 0;                // …counted as spans, which is what you pay
     this.cars = [];
+    // How far anybody will DRIVE, in squares. Infinity on a car-only board:
+    // there is nothing else to take. On a board with buses it is short, and
+    // that is what gives the bus a job — nobody drives across town in this
+    // traffic, so the long trips are waiting for you to run a route.
+    this.carRange = resources.carRange ?? Infinity;
+    // Buses are on the same streets and take up the same room. They report
+    // where they are once a tick and `countIn` adds them, so a street full of
+    // buses is full for cars too — the coupling runs both ways or "congestion"
+    // is just a word.
+    this.busCells = new Map();
     this.reach = new Map();          // shape → Map(cellKey → squares away)
     this.jammed = 0;
     this.rebuild();
@@ -264,6 +274,9 @@ export class RoadNet {
         if (p.layer && p.layer !== 'roads') continue;
         const path = this.route(st, p.goal);
         if (!path) continue;
+        // too far to drive — they are waiting for the bus, and if there is no
+        // bus network on this board `carRange` is Infinity and nobody ever is
+        if (path.length > this.carRange) continue;
         if (this.countIn(path[0]) >= CELL_CARS) break;   // the door is blocked
         st.waiting.splice(i, 1);
         this.cars.push(new Car(p, st.id, path, this.stationAt(path[path.length - 1], p.goal)));
@@ -284,9 +297,68 @@ export class RoadNet {
   }
 
   countIn(k) {
+    let n = this.busCells.get(k) ?? 0;
+    for (const c of this.cars) if (c.cell === k) n++;
+    return n;
+  }
+
+  // What a bus standing here is up against. Buses do not queue cell by cell
+  // the way cars do — they run a polyline — so traffic reaches them as a
+  // SLOWDOWN rather than a stop. A bus that could be blocked outright would
+  // deadlock against the cars it is blocking.
+  trafficAt(k) {
     let n = 0;
     for (const c of this.cars) if (c.cell === k) n++;
     return n;
+  }
+
+  // ── street routes, for the buses ──────────────────────────────────────
+  // Two named stations, not "the nearest of a shape" — a bus route is a list
+  // of stops somebody drew, so it needs the path between two of them.
+  pathCells(aId, bId) {
+    const a = this.world.station(aId), b = this.world.station(bId);
+    if (!a || !b) return null;
+    const ends = new Set(this.doorsOf(b));
+    if (!ends.size) return null;
+    const from = this.doorsOf(a);
+    if (!from.length) return null;
+
+    const prev = new Map();
+    const queue = [];
+    for (const k of from) if (!prev.has(k)) { prev.set(k, null); queue.push(k); }
+    let hit = queue.find(k => ends.has(k)) ?? null;
+    for (let i = 0; i < queue.length && !hit; i++) {
+      const cur = queue[i];
+      const [cx, cy] = cur.split(',').map(Number);
+      for (const [dx, dy] of NEIGHBOURS) {
+        const k = key(cx + dx, cy + dy);
+        if (!this.cells.has(k) || prev.has(k)) continue;
+        prev.set(k, cur);
+        if (ends.has(k)) { hit = k; break; }
+        queue.push(k);
+      }
+    }
+    if (!hit) return null;
+    const out = [];
+    for (let k = hit; k != null; k = prev.get(k)) out.push(k);
+    return out.reverse();
+  }
+
+  // …and the same path as something to draw and drive along: the stop itself,
+  // the middle of every square between, and the other stop.
+  pathPoints(aId, bId) {
+    const cells = this.pathCells(aId, bId);
+    if (!cells) return null;
+    const a = this.world.station(aId), b = this.world.station(bId);
+    const pts = [{ x: a.x, y: a.y }];
+    for (const k of cells) {
+      const c = this.centre(k);
+      const last = pts[pts.length - 1];
+      if (Math.hypot(c.x - last.x, c.y - last.y) > 1) pts.push(c);
+    }
+    const end = pts[pts.length - 1];
+    if (Math.hypot(b.x - end.x, b.y - end.y) > 1) pts.push({ x: b.x, y: b.y });
+    return pts.length >= 2 ? pts : null;
   }
 
   // Can a car standing in `from` move into `into`?

@@ -614,6 +614,78 @@ async function checkHomeClear(pg, where) {
   ok(!load.why, `the load is on a platform to be looked at${load.why ? ` — ${load.why}` : ''}`);
   if (!load.why) eq(load.got, load.want, 'and is ringed in the alarm colour, so it can be found');
 
+  // ── the bus layer ─────────────────────────────────────────────────────
+  // The third layer, through the page rather than through the model: the same
+  // switch, the same drawer, a different network under it.
+  await page.evaluate(() => window.__tm.debug.launch('busline', 11));
+  await page.waitForTimeout(200);
+  eq(await page.evaluate(() => window.__tm.game.layers.join('+')), 'roads+bus',
+     'The Number 7 runs the streets and the buses on them');
+  eq(await page.evaluate(() => window.__tm.game.layer), 'roads',
+     'and opens on the streets, because there is nothing to draw a route along yet');
+  await page.click('#swap');
+  await page.waitForTimeout(150);
+  eq(await page.evaluate(() => window.__tm.game.layer), 'bus', 'the switch reaches the bus layer');
+  eq(await page.evaluate(() => window.__tm.debug.drawerKind()), 'bus',
+     'and the gesture with it — a route is drawn, not laid');
+  eq(await page.evaluate(() => document.querySelector('.stk#stkLines i').textContent), 'routes',
+     'the counts are the bus layer\'s');
+  eq(await page.evaluate(() => document.querySelector('.stk#stkTunnels i').textContent), 'in traffic',
+     'including the one number this layer has that no other does');
+  await page.click('#help');
+  await page.waitForTimeout(120);
+  ok(await page.evaluate(() => [...document.querySelectorAll('#howtoList li')].some(li => /street/i.test(li.textContent))),
+     'and the rules say the thing that will otherwise be a mystery: no street, no route');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(120);
+
+  // …and a route, ACTUALLY DRAWN, with a bus on it. Both are sampled from the
+  // frame: a route painted in nothing and a bus that is not there would each
+  // pass every state assertion in the core gate.
+  const route = await page.evaluate(async () => {
+    const g = window.__tm.game, r = window.__tm.renderer, R = g.roads;
+    R.budget = 9999;
+    const [a, b] = g.world.stations;
+    const A = R.cellOf(a), B = R.cellOf(b);
+    for (let x = Math.min(A.cx, B.cx); x <= Math.max(A.cx, B.cx); x++) R.build(x, A.cy);
+    for (let y = Math.min(A.cy, B.cy); y <= Math.max(A.cy, B.cy); y++) R.build(B.cx, y);
+    const res = g.bus.open(a.id, b.id);
+    if (res.error) return { why: res.error };
+    const line = res.line, bus = line.trains[0];
+    if (!bus) return { why: 'the route opened with no bus on it' };
+    // off the stop, so the stop's own ink is not what gets sampled
+    for (let i = 0; i < 40; i++) g.bus.step(0.05, () => {});
+    await new Promise(res2 => requestAnimationFrame(() => requestAnimationFrame(res2)));
+    const want = window.__tm.debug.PAL.lines[line.colour];
+    const ctx = r.canvas.getContext('2d');
+    const count = q => {
+      const box = Math.round(20 * devicePixelRatio);
+      const px = Math.round((r.ox + q.x * r.scale) * devicePixelRatio);
+      const py = Math.round((r.oy + q.y * r.scale) * devicePixelRatio);
+      const d = ctx.getImageData(px - box, py - box, box * 2, box * 2).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if ('#' + [d[i], d[i + 1], d[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('') === want) n++;
+      }
+      return n;
+    };
+    const p = bus.pos();
+    const onBus = count(p);
+    // the same patch with the bus lifted off it: whatever colour is left is
+    // the route it is standing on, and it must be much less than the vehicle
+    line.trains.length = 0;
+    await new Promise(res2 => requestAnimationFrame(() => requestAnimationFrame(res2)));
+    const onRouteOnly = count(p);
+    return { onBus, onRouteOnly, bends: line.segs[0].pts.length };
+  });
+  ok(!route.why, `a route can be drawn along the street${route.why ? ` — ${route.why}` : ''}`);
+  if (!route.why) {
+    ok(route.bends > 2, `and it follows the street rather than flying over it (${route.bends} points)`);
+    ok(route.onRouteOnly > 0, `the route itself is painted in its colour (${route.onRouteOnly} pixels)`);
+    ok(route.onBus > route.onRouteOnly * 2,
+       `and the bus on it is a solid block of that colour, not a stripe (${route.onBus} vs ${route.onRouteOnly})`);
+  }
+
   await page.evaluate(() => window.__tm.debug.launch('endless', 7));
   await page.waitForTimeout(200);
   ok(await page.evaluate(() => document.getElementById('swap').hidden),

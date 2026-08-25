@@ -6,10 +6,11 @@
 // a festival, a ten-minute delivery contract and the endless city are the same
 // code reading different data.
 
-import { World } from './world.js?v=11';
-import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=11';
-import { RoadNet } from './roads.js?v=11';
-import { byId, validate, GOALS } from './missions.js?v=11';
+import { World } from './world.js?v=12';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=12';
+import { RoadNet } from './roads.js?v=12';
+import { BusNet } from './bus.js?v=12';
+import { byId, validate, GOALS } from './missions.js?v=12';
 
 export class Game {
   constructor(seed = 1, missionId = 'endless', opts = {}) { this.reset(seed, missionId, opts); }
@@ -41,7 +42,13 @@ export class Game {
     this.layers = m.layers ?? [m.layer ?? 'metro'];
     this.layer = this.layers[0];
     this.net = new Network(this.world, m.resources);
-    this.roads = this.layers.includes('roads') ? new RoadNet(this.world, m.resources) : null;
+    // The bus layer RUNS ON the road grid, so naming it brings the grid with
+    // it. Whether CARS also run on that grid is a separate question — a bus
+    // mission that did not name `roads` would have streets nobody drives on,
+    // which is a diagram, not a city.
+    const wantsGrid = this.layers.includes('roads') || this.layers.includes('bus');
+    this.roads = wantsGrid ? new RoadNet(this.world, m.resources) : null;
+    this.bus = this.layers.includes('bus') ? new BusNet(this.world, this.roads, m.resources) : null;
     this.score = 0;
     this.speed = 1;
     this.paused = true;
@@ -65,7 +72,8 @@ export class Game {
   get transports() {
     const out = {};
     if (this.layers.includes('metro')) out.metro = this.net;
-    if (this.roads) out.roads = this.roads;
+    if (this.layers.includes('roads') && this.roads) out.roads = this.roads;
+    if (this.bus) out.bus = this.bus;
     return out;
   }
 
@@ -117,7 +125,11 @@ export class Game {
 
     // Both, when the mission runs both. A layer you are not looking at keeps
     // working — that is the whole point of running them together.
-    if (this.roads) this.roads.step(dt, car => this.arrived(car.p, car.to));
+    // The grid may exist for the buses alone, in which case nobody drives on
+    // it: `transports` is what says which layers are RUNNING, and the car
+    // layer only ticks when it is one of them.
+    if (this.transports.roads) this.roads.step(dt, car => this.arrived(car.p, car.to));
+    if (this.bus) this.bus.step(dt, (bus, i) => this.service(bus, i));
     if (this.layers.includes('metro')) {
       for (const line of this.net.lines) {
         for (const train of line.trains) {
@@ -276,14 +288,19 @@ export class Game {
     return 'drop';
   }
 
+  // ONE service routine for trains and buses. A bus is a `Train` on a `Line`
+  // whose legs follow streets, so the only thing that has to be looked up
+  // rather than assumed is WHICH network's hop counts to compare against — and
+  // which layer's booking a parcel is checked for.
   service(train, stationIndex) {
     const line = train.line;
+    const net = line.net ?? this.net;
     const stId = line.stations[stationIndex];
     const st = this.world.station(stId);
     if (!st) return;
 
     const nextId = train.nextStopId();
-    const closer = (from, goal) => this.net.hopsFrom(from, goal);
+    const closer = (from, goal) => net.hopsFrom(from, goal);
     const onward = goal => (nextId == null ? Infinity : closer(nextId, goal));
     let exchanged = 0;
 
@@ -309,7 +326,7 @@ export class Game {
       const p = st.waiting[i];
       // a parcel booked onto the roads does not get on a train, however
       // conveniently the train is going that way
-      if (p.layer && p.layer !== 'metro') { i++; continue; }
+      if (p.layer && p.layer !== net.layer) { i++; continue; }
       if (onward(p.goal) < closer(stId, p.goal)) {
         st.waiting.splice(i, 1);
         train.load.push(p);
@@ -321,6 +338,21 @@ export class Game {
   }
 
   makeOffer() {
+    // The BUS layer buys routes and buses — and when the mission also runs
+    // cars, the two pools are joined rather than one of them winning. The
+    // first cut let the car branch answer first, and a bus mission then went
+    // seven hours offering nothing but road: the layer the mission is named
+    // for was never on a card.
+    if (this.bus) {
+      const pool = ['road', 'cars'];
+      if (this.bus.lines.length < this.bus.maxLines) pool.push('route');
+      if (this.bus.lines.length) pool.push('bus');
+      if (this.roads?.bridgesLeft() <= 0 && this.world.rings.length) pool.push('bridge');
+      const a = this.world.rng.pick(pool);
+      const rest = pool.filter(k => k !== a);
+      if (!rest.length) return null;
+      return [a, this.world.rng.pick(rest)];
+    }
     // the car layer buys ROOM and cars; there are no lines to add and no
     // carriages to hang on anything
     if (this.roads) {
@@ -351,8 +383,13 @@ export class Game {
     return [a, b];
   }
 
+  // Which network a card is about. `bus` picks a ROUTE and every other
+  // line-taking card picks a metro line, so looking the id up in `this.net`
+  // for all of them handed an extra bus to nothing at all.
+  netFor(kind) { return kind === 'bus' || kind === 'route' ? this.bus : this.net; }
+
   applyUpgrade(kind, lineId = null) {
-    const line = lineId == null ? null : this.net.lineAt(lineId);
+    const line = lineId == null ? null : this.netFor(kind)?.lineAt(lineId);
     switch (kind) {
       case 'line': this.net.maxLines++; break;
       case 'tunnel': this.net.ownedTunnels++; break;
@@ -361,6 +398,10 @@ export class Game {
       case 'road': if (this.roads) this.roads.budget += 12; break;
       case 'cars': if (this.roads) this.roads.spareCars += 2; break;
       case 'bridge': if (this.roads) this.roads.bridges++; break;
+      case 'route': if (this.bus) this.bus.maxLines++; break;
+      // onto a route you pick, the same as a train — `needsLine` says so and
+      // the card asks
+      case 'bus': if (this.bus && line) this.bus.addTrain(line); break;
       default: return false;
     }
     this.offer = null;
@@ -369,7 +410,7 @@ export class Game {
     return true;
   }
 
-  needsLine(kind) { return kind === 'train' || kind === 'carriage'; }
+  needsLine(kind) { return kind === 'train' || kind === 'carriage' || kind === 'bus'; }
 
   report() {
     const unit = this.clock.unit * this.clock.cycle;
@@ -392,6 +433,8 @@ export class Game {
       layer: this.layer,
       roadUsed: this.roads ? this.roads.used() : null,
       jammed: this.roads ? this.roads.jammed : null,
+      routes: this.bus ? this.bus.lines.length : null,
+      crawling: this.bus ? this.bus.crawling : null,
       goals: this.goalReadout(),
       seed: this.seed,
     };

@@ -256,6 +256,59 @@ export const MISSIONS = [
     fail: { overcrowd: 45 },
     giveUp: 55,
   },
+
+  {
+    id: 'busline',
+    mode: 'mission',
+    order: 4,
+    // THE STREETS ARE SHARED. The car layer lays them and the bus layer runs on
+    // them, which is why both are named: a bus board without cars would be a
+    // metro board with a longer word for it. The owner's call — the bus is the
+    // public one, and it is the layer a real city's live data can be poured
+    // into later (CITIES.md), so it is the one worth having.
+    layers: ['roads', 'bus'],
+    title: 'The Number 7',
+    brief:
+      'The same streets, twice over. Cars take the short hops and pick their own way; '
+      + 'anything further is waiting for a bus, and a bus goes exactly where you draw it — '
+      + 'through the traffic you just made room for.',
+    length: 420,
+    clock: { unit: 60, units: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00'], cycle: 7, cycleWord: 'morning', upgradeEvery: 105 },
+    board: { w: 860, h: 600, maxStations: 15, minGap: 94, margin: 58, firstStation: 10 },
+    spawn: {
+      base: 0.46, ramp: 600, cap: 0.85,
+      stationEvery: [24, 32], specialsAfter: 190, specialChance: 0.12,
+      bursts: [],
+    },
+    // `carRange` is the whole balance of this mission in one number: how far
+    // anybody is willing to DRIVE, in squares. Infinity everywhere else, so it
+    // changes nothing on the boards that have no bus. Here it is short, which
+    // is what gives the bus a job — without it the cars quietly deliver the
+    // whole town and the routes are decoration.
+    // MEASURED, and the measurement is the mission's argument. With 16 boards
+    // played by a bot that joins every new building to the nearest road and
+    // grows its routes by nearest stop:
+    //
+    //   cars only, no routes at all …… 0 wins in 16, 454 delivered in total
+    //   buses only (`carRange` 0) …… 5 wins,  1468
+    //   both, as shipped ……………………… 12 wins,  1892
+    //
+    // So the bus carries the town and the cars are the last mile, which is
+    // what the mission says it is about. If a change makes the first line win
+    // anything, the routes have become decoration and the number to look at is
+    // `carRange`.
+    //
+    // The road allowance is deliberately generous next to The Rush's 34: every
+    // square is doing two jobs here, and at 40 the boards died at two minutes
+    // with six stops joined and a queue at all of them.
+    resources: { road: 70, cars: 10, bridge: 2, routes: 3, buses: 6, carRange: 7 },
+    // 140 wins 12 boards in 16 — the same rate The Rush is tuned to. Twelve of
+    // the sixteen never see the final whistle at all: this is a mission you
+    // lose to the crowd, not to the clock.
+    goals: [{ type: 'deliver', n: 140 }],
+    fail: { overcrowd: 60 },
+    giveUp: 60,
+  },
 ];
 
 export const byId = id => MISSIONS.find(m => m.id === id);

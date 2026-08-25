@@ -1,5 +1,87 @@
 # Toko Move — versions
 
+## v12 — 2026-08-25
+
+**The bus layer, and The Number 7.** The owner's call: the bus is the *public*
+one — it is what a real city publishes live data for — so it gets its own layer,
+and the Mini Motorways layer stays what it is, cars and room.
+
+### A bus route is a line, and that is the whole design
+
+`BusNet extends Network`. A route is an ordered list of stops with vehicles
+running it, boarding by the same "is the next stop closer to my shape" rule the
+metro has used since v1. Writing a second copy of that would give the game two
+boarding rules to keep in step, and they would drift. The difference is exactly
+two things:
+
+- **A leg follows the street.** `Line.router` is the one new hook: it hands back
+  a polyline from the road grid instead of a straight run. Everything
+  downstream — `Train.move`, the dwell, the offset when two lines share a leg,
+  the renderer — only ever asks a seg for `pts`/`cum`/`len`, so a different
+  polyline is all it takes. There is no `BusDrawer` either: the line drawer
+  takes the network as an option now.
+- **The refusal is different.** Not a tunnel — *no street goes there*. You buy
+  the way with road, on the car layer, which is what makes the two road layers
+  one place rather than two boards.
+
+### The bridge trap
+
+The metro's refusal counts water crossings against tunnels owned, and a bus
+network owns none. So every route over a river was refused with *needs a tunnel*
+— a bus on a bridge, refused for not having a tunnel. The fix was to give
+`Network` one `refuse(line)` that `open`, `extend` and closing a loop all roll
+back on, and override it, rather than retune a number that was never about
+buses.
+
+### The coupling is real in both directions
+
+A bus takes up room in the square it is standing in, so a street full of buses
+is full for cars; and traffic in that square makes the bus **crawl** rather than
+stop, because a bus that could be blocked outright would deadlock against the
+very cars it is blocking. The HUD's third slot on this layer is `in traffic` —
+the layer's own honest bad number, the way `jammed` is the car layer's, and the
+bus carries a warn dot while it is in one.
+
+### `carRange`, and why the bus has a job
+
+How far anybody will *drive*, in squares. `Infinity` on every board with no bus,
+so it changes nothing that already shipped. On The Number 7 it is 7, and that is
+the entire balance of the mission in one number. Measured over 16 boards:
+
+| | wins | delivered |
+|---|---|---|
+| cars only, no routes | **0/16** | 454 |
+| buses only (`carRange` 0) | 5/16 | 1468 |
+| both, as shipped | **12/16** | 1892 |
+
+The bus carries the town; the cars are the last mile. If a change ever makes the
+first row win anything, the routes have become decoration.
+
+### The bug this found, which was the metro's all along
+
+Every vehicle is constructed at seg 0, so a second train on a line rode **inside
+the first one** forever — only the dwell could pull them apart, and only if they
+exchanged different numbers of passengers. It measured as a flat line:
+**fourteen buses on one route carried exactly what three did**. `Line.spaceIn`
+now drops a newly added vehicle into the widest gap between the ones already
+out. Trains have always had this; it is just cheaper to see when the vehicles
+are slow.
+
+### Gates
+
+Every new check mutation-tested — `refuse` always allowing, a plain `Train`
+instead of a `Bus`, `carRange` ignored, buses taking no room, traffic never
+slowing one, `spaceIn` removed on each layer, and the bridge trap restored: each
+fails its own check and no other.
+
+Two of them had to be rebuilt because the first cut proved nothing. Lifting the
+street under a route on a **fully paved board** just routed it around — so that
+one lays a single corridor and cuts it. And the drawn-route check compares the
+same patch of board **with the bus lifted off it**, because a bus standing on
+its own route is the same colour as the route.
+
+Core 412 → **462**, page 120 → **131**. Module tokens `?v=11` → `?v=12`.
+
 ## v11 — 2026-08-25
 
 **The van.** The road layer runs ONE vehicle and that is the design — you buy

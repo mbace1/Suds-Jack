@@ -10,8 +10,8 @@
 // the next stop is closer to their shape than this one, and gets off when it
 // is not. Riding past your transfer is impossible by construction.
 
-import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=11';
-import { PAL, INK } from './palette.js?v=11';
+import { legPoints, measure, polyLength, crossings, waterGates, chordNormal, offsetPoints, posOn } from './geometry.js?v=12';
+import { PAL, INK } from './palette.js?v=12';
 
 export const TRAIN_SPEED = 108;      // board units per second
 export const CAR_CAPACITY = 6;
@@ -88,15 +88,28 @@ export class Train {
 }
 
 export class Line {
-  constructor(id, colour, world) {
+  // `router` is the one hook that lets a bus route be a line. A metro leg is a
+  // straight run with one bend (`legPoints`); a bus leg has to follow the
+  // street, which is a polyline the road grid works out. Everything downstream
+  // — dwell, boarding, the offset when two lines share a leg, `Train.move` —
+  // only ever asks a seg for `pts`/`cum`/`len`, so handing it a different
+  // polyline is the whole of the difference.
+  constructor(id, colour, world, router = null) {
     this.id = id;
     this.colour = colour;
     this.world = world;
+    this.router = router;
+    this.net = null;               // set by the Network that opened it
     this.stations = [];
     this.loop = false;
     this.segs = [];
     this.trains = [];
   }
+
+  // A leg whose street has been lifted out from under it. The seg stays (the
+  // indices are the line's topology and dropping one would shuffle every stop
+  // after it) but it is marked, drawn as broken, and the vehicles hold.
+  get broken() { return this.segs.some(s => s.road === false); }
 
   segCount() {
     const n = this.stations.length;
@@ -123,9 +136,13 @@ export class Line {
       const [aId, bId] = this.segStations(i);
       const a = this.world.station(aId), b = this.world.station(bId);
       if (!a || !b) continue;
-      const pts = legPoints(a, b);
+      const routed = this.router ? this.router(a, b) : null;
+      const pts = routed ?? legPoints(a, b);
       this.segs.push({
         a: aId, b: bId, raw: pts, pts,
+        // null on a line with no router — this leg is not ABOUT a street.
+        // false means it wanted one and there is none.
+        road: this.router ? routed !== null : null,
         cum: measure(pts), len: polyLength(pts),
         cross: crossings(pts, this.world.rings),
         gates: waterGates(pts, this.world.rings),
@@ -149,6 +166,60 @@ export class Line {
   }
 
   tunnels() { return this.segs.reduce((n, s) => n + s.cross, 0); }
+
+  // ── where the vehicles are, as one number ─────────────────────────────
+  // Distance along the line from its head end, which is the only frame in
+  // which "are these two on top of each other" is answerable. `segIdx` + `p`
+  // cannot be compared across segs of different lengths.
+  length() { return this.segs.reduce((n, s) => n + s.len, 0); }
+
+  alongOf(train) {
+    let d = 0;
+    for (let i = 0; i < train.segIdx; i++) d += this.segs[i]?.len ?? 0;
+    return d + (this.segs[train.segIdx]?.len ?? 0) * train.p;
+  }
+
+  placeAlong(train, d) {
+    let rest = Math.max(0, d);
+    for (let i = 0; i < this.segs.length; i++) {
+      const len = this.segs[i].len || 1;
+      if (rest <= len || i === this.segs.length - 1) {
+        train.segIdx = i;
+        train.p = Math.max(0, Math.min(1, rest / len));
+        return;
+      }
+      rest -= len;
+    }
+  }
+
+  // Put a NEWLY ADDED vehicle in the biggest gap between the ones already out.
+  //
+  // Every vehicle was constructed at seg 0, p 0, dir 1 — so a second train on a
+  // line rode inside the first one forever, and only the dwell (which differs
+  // only if they exchange different numbers of passengers) could ever pull
+  // them apart. It measured as a flat line: fourteen buses on one route carried
+  // the same as three, because thirteen of them were standing in the first
+  // one's shadow with nothing left to pick up. The bug is the metro layer's
+  // too, and always was — it is just cheaper to see when the vehicles are slow.
+  spaceIn(train) {
+    const L = this.length();
+    if (!L || this.trains.length <= 1) return;
+    const others = this.trains.filter(t => t !== train).map(t => this.alongOf(t)).sort((a, b) => a - b);
+    if (!others.length) return;
+    let best = 0, widest = -1;
+    // a line has two ends and they count as edges of the first and last gap; a
+    // loop has none, so the gap from the last one round to the first is real
+    const marks = this.loop ? others : [0, ...others, L];
+    for (let i = 0; i < marks.length - 1; i++) {
+      const gap = marks[i + 1] - marks[i];
+      if (gap > widest) { widest = gap; best = marks[i] + gap / 2; }
+    }
+    if (this.loop) {
+      const wrap = L - others[others.length - 1] + others[0];
+      if (wrap > widest) { widest = wrap; best = (others[others.length - 1] + wrap / 2) % L; }
+    }
+    this.placeAlong(train, best);
+  }
 }
 
 // Seven, because that is how many line colours the palette can keep apart.
@@ -184,6 +255,11 @@ export function nubs(net, world, gap, sizes = INK) {
 }
 
 export class Network {
+  // `layer` is the name a passenger's booking is checked against — see
+  // `Passenger.layer`. It is a field rather than a hard-coded 'metro' because
+  // the bus network is this class with a router on its lines.
+  layer = 'metro';
+
   constructor(world, resources = {}) {
     this.world = world;
     this.lines = [];
@@ -231,14 +307,22 @@ export class Network {
   endsAt(stationId) { return this.lines.filter(l => l.isEnd(stationId)); }
   linesAt(stationId) { return this.lines.filter(l => l.has(stationId)); }
 
+  // Subclasses hand back a differently-wired Line; everything else about
+  // opening one is the same.
+  makeLine() { return new Line(this.seq++, this.freeColour(), this.world); }
+
   open(aId, bId) {
     if (!this.canOpenLine()) return { error: 'no line left' };
-    const line = new Line(this.seq++, this.freeColour(), this.world);
+    const line = this.makeLine();
+    line.net = this;
     line.stations = [aId, bId];
     line.rebuild();
-    if (line.tunnels() > this.tunnelsLeft()) return { error: 'needs a tunnel' };
+    const bad = this.refuse(line, true);
+    if (bad) return { error: bad };
     this.lines.push(line);
-    if (this.spareTrains > 0) { this.spareTrains--; line.trains.push(new Train(line)); }
+    // through `addTrain`, not a bare `new Train`, or a bus route opens with a
+    // train on it — same object, six seats instead of eight
+    this.addTrain(line);
     this.rebuild();
     return { line };
   }
@@ -251,7 +335,8 @@ export class Network {
       if (stationId === other && line.stations.length >= 3 && !line.loop) {
         line.loop = true;
         line.rebuild();
-        if (this.overTunnel()) { line.loop = false; line.rebuild(); return { error: 'needs a tunnel' }; }
+        const bad = this.refuse(line);
+        if (bad) { line.loop = false; line.rebuild(); return { error: bad }; }
         this.rebuild();
         return { line };
       }
@@ -260,15 +345,28 @@ export class Network {
     const before = line.stations.slice();
     if (atHead) line.stations.unshift(stationId); else line.stations.push(stationId);
     line.rebuild();
-    if (this.overTunnel()) {
+    const bad = this.refuse(line);
+    if (bad) {
       line.stations = before; line.rebuild();
-      return { error: 'needs a tunnel' };
+      return { error: bad };
     }
     this.rebuild();
     return { line };
   }
 
   overTunnel() { return this.tunnelsUsed() > this.ownedTunnels; }
+
+  // Why this line cannot stand as drawn, or null. ONE place, because `open`
+  // and `extend` and closing a loop all roll back on the same answer — and
+  // because the bus network's reason is a different reason entirely (no
+  // street), not a different number of tunnels.
+  //
+  // `pending` says the line is not in `this.lines` yet, so its own cost has to
+  // be added rather than already counted.
+  refuse(line, pending = false) {
+    const used = this.tunnelsUsed() + (pending ? line.tunnels() : 0);
+    return used > this.ownedTunnels ? 'needs a tunnel' : null;
+  }
 
   // Pulling an end back in. A line reduced below two stops stops existing and
   // hands back its colour and its trains — tearing up a bad line has to be as
@@ -294,7 +392,9 @@ export class Network {
   addTrain(line) {
     if (this.spareTrains <= 0) return false;
     this.spareTrains--;
-    line.trains.push(new Train(line));
+    const t = new Train(line);
+    line.trains.push(t);
+    line.spaceIn(t);
     return true;
   }
 

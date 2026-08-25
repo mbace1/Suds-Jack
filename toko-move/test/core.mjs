@@ -2,15 +2,16 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=11';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=11';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=11';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=11';
-import { Game } from '../js/sim.js?v=11';
-import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=11';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=11';
-import { PAL, INK } from '../js/palette.js?v=11';
-import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=11';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=12';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=12';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=12';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=12';
+import { Game } from '../js/sim.js?v=12';
+import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=12';
+import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=12';
+import { PAL, INK } from '../js/palette.js?v=12';
+import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=12';
+import { BusNet, Bus, BUS_CAPACITY } from '../js/bus.js?v=12';
 import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
 import { deflateRawSync, crc32 } from 'node:zlib';
 import { readFileSync, existsSync } from 'node:fs';
@@ -1844,6 +1845,234 @@ const FEED = [
 
   ok(INK.line > INK.station, 'the network is drawn heavier than the stops on it');
   ok(INK.lineGap > INK.line, 'two lines sharing a leg are pushed further apart than they are wide');
+}
+
+// ── the bus layer ───────────────────────────────────────────────────────
+// A bus route is a LINE on a network whose legs follow streets. That reuse is
+// the design, so most of what is checked here is the seam: the things that
+// must differ from the metro, and the things that must not.
+
+// a board with roads everywhere, so only the rules under test can refuse
+function busTown(seed = 11) {
+  const g = new Game(seed, 'busline');
+  g.start();
+  const R = g.roads;
+  R.budget = 9999;
+  R.bridges = 99;
+  for (let x = 0; x < R.cols; x++) for (let y = 0; y < R.rows; y++) R.build(x, y);
+  return g;
+}
+
+{
+  const g = new Game(11, 'busline');
+  ok(!!g.bus, 'a bus mission has a bus network');
+  ok(!!g.roads, 'and the road grid, because a route has to run on something');
+  ok(g.bus instanceof BusNet, 'which is its own network');
+  eq(g.bus.layer, 'bus', 'named, so a booking can be checked against it');
+  eq(g.net.layer, 'metro', 'and the metro still answers to its own name');
+  eq(g.bus.maxLines, byId('busline').resources.routes, 'routes come from the mission, not from `lines`');
+  eq(g.bus.spareTrains, byId('busline').resources.buses, 'and buses from `buses`');
+  eq(g.bus.ownedTunnels, 0, 'a bus never goes under anything');
+}
+
+{
+  // the refusal, which is the whole difference from the metro's
+  const g = new Game(11, 'busline');
+  g.start();
+  const [a, b] = g.world.stations;
+  ok(!!a && !!b, 'the board opens with two stops');
+  eq(g.bus.wouldCost(a.id, b.id).refused, 'no street goes there',
+     'with no road laid, a route is refused before the finger arrives');
+  const opened = g.bus.open(a.id, b.id);
+  eq(opened.error, 'no street goes there', 'and refused if you try it anyway');
+  eq(g.bus.lines.length, 0, 'so nothing is left half-drawn');
+}
+
+{
+  const g = busTown();
+  const [a, b] = g.world.stations;
+  eq(g.bus.wouldCost(a.id, b.id).refused, null, 'with a street between them it is allowed');
+  const res = g.bus.open(a.id, b.id);
+  ok(!res.error, `a route opens along the road (${res.error ?? 'ok'})`);
+  const seg = res.line?.segs[0];
+  eq(seg?.road, true, 'and its leg knows it found a street');
+  ok((seg?.pts.length ?? 0) > 2, `the leg FOLLOWS the street rather than flying over it (${seg?.pts.length} points)`);
+  // …which is the point of the router: a straight metro leg has 2 or 3 points
+  const metro = new Network(g.world, { lines: 2, tunnels: 9 }).open(a.id, b.id);
+  ok(metro.line.segs[0].pts.length <= 3, 'while a metro leg between the same two stops is a straight run');
+  eq(metro.line.segs[0].road, null, 'and is not about a street at all');
+}
+
+{
+  // A bus is a Bus. `Network.open` used to push a bare `Train`, so a route
+  // opened with six seats and every bus ADDED to it had eight.
+  const g = busTown();
+  const [a, b] = g.world.stations;
+  const line = g.bus.open(a.id, b.id).line;
+  const first = line.trains[0];
+  ok(first instanceof Bus, 'the bus a route opens with is a bus');
+  eq(first.capacity, BUS_CAPACITY, `with a bus's seats (${first.capacity})`);
+  ok(BUS_CAPACITY > CAR_CAPACITY, 'which is more than a train carriage holds — that is what a bus is for');
+}
+
+{
+  // The street lifted out from under a route. ONE CORRIDOR, not a paved board:
+  // the first cut of this laid road everywhere and then lifted the squares the
+  // route was using, which simply routed it around them — the check passed
+  // with the whole break mechanism deleted.
+  const g = new Game(11, 'busline');
+  g.start();
+  const R = g.roads;
+  R.budget = 9999;
+  const [a, b] = g.world.stations;
+  const A = R.cellOf(a), B = R.cellOf(b);
+  for (let x = Math.min(A.cx, B.cx); x <= Math.max(A.cx, B.cx); x++) R.build(x, A.cy);
+  for (let y = Math.min(A.cy, B.cy); y <= Math.max(A.cy, B.cy); y++) R.build(B.cx, y);
+  const line = g.bus.open(a.id, b.id).line;
+  ok(!!line && !line.broken, 'a route down a corridor is not broken');
+  const mid = line.segs[0].pts[Math.floor(line.segs[0].pts.length / 2)];
+  const cut = R.cellOf(mid);
+  R.erase(cut.cx, cut.cy);
+  g.bus.rebuild();
+  ok(line.broken, 'lifting the street under it breaks the route');
+  eq(g.bus.hopsFrom(a.id, b.kind), Infinity, 'and nobody will board a bus that cannot get there');
+  let moved = false;
+  const before = line.trains[0] ? g.bus.lines[0].trains[0].segIdx + line.trains[0].p : null;
+  g.bus.step(1, () => { moved = true; });
+  eq(moved, false, 'nothing runs on it');
+  eq(line.trains[0].segIdx + line.trains[0].p, before, 'the bus holds where it stood');
+}
+
+{
+  // THE BRIDGE TRAP. A bus leg over water crosses a ring, and the metro's
+  // refusal counts crossings against tunnels owned — which is zero here. So
+  // every route over a river was refused until `refuse()` was overridden
+  // rather than the number retuned.
+  const g = busTown(3);
+  const wet = g.world.rings.length;
+  const pair = [];
+  for (const a of g.world.stations) {
+    for (const b of g.world.stations) {
+      if (a === b) continue;
+      if (crossings(legPoints(a, b), g.world.rings) > 0) { pair.push(a, b); break; }
+    }
+    if (pair.length) break;
+  }
+  ok(wet > 0, 'this board has water on it, so the next check can mean something');
+  if (pair.length) {
+    const res = g.bus.open(pair[0].id, pair[1].id);
+    ok(!res.error, `a route may cross the river on a bridge (${res.error ?? 'ok'})`);
+    ok(res.line && res.line.tunnels() > 0,
+       'even though the leg crosses water — which is exactly what the metro refuses');
+    eq(g.bus.ownedTunnels, 0, 'with no tunnels owned');
+  }
+}
+
+{
+  // the coupling, BOTH ways — that is the reason the buses are on the car
+  // layer's streets rather than on their own board
+  const g = busTown();
+  const [a, b] = g.world.stations;
+  const line = g.bus.open(a.id, b.id).line;
+  g.bus.busCellsOut();
+  const where = [...g.roads.busCells.keys()][0];
+  ok(!!where, 'a bus tells the car layer which square it is standing in');
+  ok(g.roads.countIn(where) > 0, 'and takes up room there, so a street full of buses is full for cars');
+
+  const bus = line.trains[0];
+  eq(g.bus.paceOf(bus), 1, 'an empty street lets a bus run at its own speed');
+  const cell = g.roads.cellOf(bus.pos());
+  const path = g.roads.route(a, b.kind);
+  ok(!!path, 'there is a road route to put a car on');
+  g.roads.cars.push(new Car({ goal: b.kind }, a.id, [`${cell.cx},${cell.cy}`, ...path]));
+  ok(g.bus.paceOf(bus) < 1, 'a car in the same square slows it — traffic is felt, not just counted');
+  eq(g.bus.crawling, 1, 'and the layer says how many of its buses are in it');
+}
+
+{
+  // `carRange`: how far anybody will drive. It is the number that gives the
+  // bus a job, and it must be inert on every board that has no bus.
+  const g = busTown();
+  eq(g.roads.carRange, byId('busline').resources.carRange, 'a bus board caps how far anybody drives');
+  const rush = new Game(11, 'rush');
+  eq(rush.roads.carRange, Infinity, 'and a car board does not — nothing changes where there is no bus');
+
+  const st = g.world.stations[0];
+  const far = g.world.stations
+    .map(s => ({ s, d: g.roads.hopsFrom(st.id, s.kind) }))
+    .filter(x => x.s.kind !== st.kind && x.d !== Infinity)
+    .sort((x, y) => y.d - x.d)[0];
+  if (far && far.d > g.roads.carRange) {
+    st.waiting.length = 0;
+    g.roads.cars.length = 0;
+    const p = st.join(far.s.kind, 0);
+    g.roads.dispatch();
+    ok(!g.roads.cars.some(c => c.p === p), `nobody drives ${far.d} squares when ${g.roads.carRange} is the limit`);
+    g.roads.carRange = Infinity;
+    g.roads.dispatch();
+    ok(g.roads.cars.some(c => c.p === p), 'and the very same trip is driven once the limit is lifted');
+  }
+}
+
+{
+  // Vehicles added to a line must not ride inside the ones already out. This
+  // was flat-lined by measurement before it was fixed: fourteen buses on one
+  // route carried what three did.
+  const g = busTown();
+  const sts = g.world.stations;
+  const line = g.bus.open(sts[0].id, sts[1].id).line;
+  g.bus.spareTrains = 4;
+  g.bus.addTrain(line);
+  const [one, two] = line.trains;
+  ok(Math.abs(line.alongOf(one) - line.alongOf(two)) > 1,
+     `a second bus is put in the gap, not on top of the first (${line.alongOf(one).toFixed(0)} vs ${line.alongOf(two).toFixed(0)})`);
+
+  // …and the metro layer had the same bug, always
+  const m = new Game(11, 'endless');
+  m.start();
+  const ml = m.net.open(m.world.stations[0].id, m.world.stations[1].id).line;
+  m.net.spareTrains = 3;
+  m.net.addTrain(ml);
+  ok(Math.abs(ml.alongOf(ml.trains[0]) - ml.alongOf(ml.trains[1])) > 1,
+     'and a second train is spaced along its line too');
+}
+
+{
+  // the upgrade cards. A bus mission that only ever offered road was the first
+  // cut: the car branch answered first and the layer the mission is named for
+  // never appeared on a card.
+  const g = busTown();
+  const seen = new Set();
+  for (let i = 0; i < 200; i++) {
+    g.bus.lines.length ? null : g.bus.open(g.world.stations[0].id, g.world.stations[1].id);
+    for (const k of g.makeOffer() ?? []) seen.add(k);
+  }
+  ok(seen.has('route'), 'a bus mission offers another route');
+  ok(seen.has('bus'), 'and another bus');
+  ok(seen.has('road') || seen.has('cars'), 'alongside the street cards, because both layers are running');
+  eq(g.needsLine('bus'), true, 'a bus goes on a route you pick');
+  ok(g.netFor('bus') === g.bus, 'and the pick is made from the BUS routes');
+  ok(g.netFor('train') === g.net, 'while a train is still picked from the metro lines');
+
+  const line = g.bus.lines[0];
+  const had = line.trains.length;
+  g.bus.spareTrains = 2;
+  g.applyUpgrade('bus', line.id);
+  eq(line.trains.length, had + 1, 'and taking the card actually puts one on that route');
+}
+
+{
+  // a whole run of the mission, off game state rather than the clock
+  const g = new Game(11, 'busline');
+  g.start();
+  const R = g.roads;
+  R.budget = 9999; R.bridges = 99; R.carRange = 0;   // nobody drives: buses only
+  for (let x = 0; x < R.cols; x++) for (let y = 0; y < R.rows; y++) R.build(x, y);
+  const sts = g.world.stations;
+  const line = g.bus.open(sts[0].id, sts[1].id).line;
+  for (let i = 2; i < sts.length; i++) g.bus.extend(line, sts[i].id, false);
+  for (let i = 0; i < 4000 && g.state === 'play'; i++) g.step(0.05);
+  ok(g.score > 0, `buses alone deliver people (${g.score})`);
 }
 
 console.log(`\ntoko-move core: ${pass} passed, ${fails.length} failed`);

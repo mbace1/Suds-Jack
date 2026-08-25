@@ -5,10 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=11';
-import { BOARD } from './world.js?v=11';
-import { CELL } from './roads.js?v=11';
-import { drawShape, tracePath } from './shapes.js?v=11';
+import { PAL, INK, sizeAt } from './palette.js?v=12';
+import { BOARD } from './world.js?v=12';
+import { CELL } from './roads.js?v=12';
+import { drawShape, tracePath } from './shapes.js?v=12';
 
 export class Renderer {
   constructor(canvas) {
@@ -77,10 +77,16 @@ export class Renderer {
     };
 
     if (game.roads) dim('roads', () => this.roads(game.roads, view));
+    // Bus routes go on ABOVE the road slab and BELOW the metro: they are paint
+    // on a street, and a metro line crossing one passes over it.
+    if (game.bus) dim('bus', () => { for (const line of game.bus.lines) this.busRoute(line); });
     dim('metro', () => { for (const line of game.net.lines) this.line(line); });
     if (view.nubs) this.nubs(view.nubs, view.nubR);
     if (view.drag) this.ghost(view.drag);
     if (game.roads) dim('roads', () => this.cars(game.roads));
+    if (game.bus) dim('bus', () => {
+      for (const line of game.bus.lines) for (const b of line.trains) this.bus(b, line, game.bus);
+    });
     if (game.layers?.includes('metro') ?? true) {
       dim('metro', () => { for (const line of game.net.lines) for (const t of line.trains) this.train(t, line); });
     }
@@ -251,6 +257,75 @@ export class Renderer {
         ctx.lineTo(g.x + nx * INK.line * 0.62, g.y + ny * INK.line * 0.62);
         ctx.stroke();
       }
+    }
+  }
+
+  // ── the bus layer ─────────────────────────────────────────────────────
+  // A bus route must not read as a metro line. It is the same object — a line
+  // with stops and vehicles — so telling them apart is the renderer's whole
+  // job here, and it is done the way the real things differ: a metro line is
+  // its own right of way, drawn heavy and straight; a route is PAINT ON A
+  // STREET, drawn thin, following every turn the road takes, with a pale
+  // casing under it so it lifts off the slab it is lying on.
+  busRoute(line) {
+    const ctx = this.ctx;
+    const colour = PAL.lines[line.colour];
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const seg of line.segs) {
+      const path = () => {
+        ctx.beginPath();
+        ctx.moveTo(seg.pts[0].x, seg.pts[0].y);
+        for (let i = 1; i < seg.pts.length; i++) ctx.lineTo(seg.pts[i].x, seg.pts[i].y);
+      };
+      // the casing first, so the route reads on grey road AND on pale ground
+      ctx.setLineDash([]);
+      ctx.strokeStyle = PAL.paper;
+      ctx.lineWidth = INK.line * 0.78;
+      path();
+      ctx.stroke();
+
+      // A leg whose street was lifted out from under it. Drawn as the break it
+      // is — nothing runs on this route until you put the road back — because
+      // a route that silently stops is a bug report rather than a decision.
+      if (seg.road === false) {
+        ctx.strokeStyle = PAL.warn;
+        ctx.setLineDash([INK.line * 0.5, INK.line * 0.9]);
+      } else {
+        ctx.strokeStyle = colour;
+        ctx.setLineDash([]);
+      }
+      ctx.lineWidth = INK.line * 0.46;
+      path();
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  bus(bus, line, net) {
+    const ctx = this.ctx;
+    const p = bus.pos();
+    const colour = PAL.lines[line.colour];
+    const l = 27, w = 13;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.ang);
+    roundRect(ctx, -l / 2, -w / 2, l, w, 3.4);
+    ctx.fillStyle = colour;
+    ctx.fill();
+    // one pale band down the side: a window strip is what makes a long box a
+    // bus rather than a lorry, and it is the only detail there is room for
+    ctx.fillStyle = PAL.paper;
+    ctx.fillRect(-l / 2 + 3.2, -w / 2 + 2.6, l - 9.4, 2.6);
+    ctx.restore();
+    // Stuck in traffic, said on the vehicle rather than only in the readout —
+    // the whole point of putting buses on the car layer's streets is that you
+    // can SEE why the route is slow.
+    if (net?.paceOf(bus) < 1) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - l * 0.42, 3.4, 0, Math.PI * 2);
+      ctx.fillStyle = PAL.warn;
+      ctx.fill();
     }
   }
 
