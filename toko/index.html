@@ -140,25 +140,20 @@
     conversation with Toko in the old Sierra idiom — a portrait, text that
     types itself out, and a numbered list of things you are allowed to say.
     Police Quest at the front desk.</p>
-    <p>It is a <strong>hand-written dialogue tree</strong>, not a language
-    model. No network call, ever: the kit is offline-first and zero-dependency,
-    and a workshop whose whole position is <em>go make your own</em> should not
-    answer you with rented autocomplete. Toko says what Toko wrote — in
-    <code>js/dialogue.js</code>, which is the file to edit.</p>
-    <p>It runs both ways. You can <strong>type</strong> at him on the
-    <code>&gt;</code> line — word overlap against a lookup, and a miss says so
-    rather than answering the wrong question. You can <strong>leave him a
-    note</strong>, which goes out through the arcade's own transport and is
-    never reported as delivered when it was not. He can ask <em>you</em>
-    something, hand you a sticker he draws on the spot, read back the scores
-    the cabinets left on your machine, and talk about one cabinet at a time.</p>
+    <p>It begins as a <strong>hand-written dialogue tree</strong>, then grows a
+    local memory and commentary layer behind it. The visible prompts stay short
+    and contextual; typing remains the deeper route. Toko will take a position
+    on games, art, the industry, this workshop and the occasional reason to
+    leave the screen alone, but will not manufacture facts he does not have.</p>
+    <p>You can <strong>type</strong> at him on the <code>&gt;</code> line, leave a
+    note, read back local scores and history, ask about cabinets, or stumble
+    into commands that were never printed on the menu.</p>
     <div id="chat-demo" style="margin-top:20px"></div>
-    <p class="meta" style="margin-top:10px">1–9 pick a topic · type to talk ·
-    ESC leaves. Asking some things unlocks others. On this page there is no
-    catalogue behind it, so the cabinet answers say so rather than throwing.</p>
+    <p class="meta" style="margin-top:10px">1–5 pick · type anything · ESC leaves.
+    The suggested questions change with context and history.</p>
 <pre class="meta" style="margin-top:14px;background:var(--toko-panel);border:2px solid var(--toko-line);padding:16px;overflow-x:auto">&lt;script type="module"&gt;
   import { mountChat } from './toko/js/chat.js';
-  mountChat(document.querySelector('header'));   // inserted after it
+  mountChat(document.querySelector('header'));
 &lt;/script&gt;</pre>
   </section>
 
@@ -224,14 +219,10 @@
     motion.</p>
 <pre class="meta" style="margin-top:14px;background:var(--toko-panel);border:2px solid var(--toko-line);padding:16px;overflow-x:auto">&lt;script type="module"&gt;
   import { sign } from '../toko/js/signature.js';
-  sign();                                     // bottom-left, non-interactive
-  // sign({ corner: 'bottom-right', href: '../toko/' });
+  sign();
 &lt;/script&gt;</pre>
     <p style="margin-top:16px">Everything on this page is in
-    <code>toko/js/</code>: <code>palette.js</code>, <code>face.js</code>,
-    <code>lockup.js</code>, <code>surface.js</code>, <code>glitch.js</code>,
-    <code>sting.js</code>, <code>signature.js</code>, <code>masthead.js</code>.
-    The rules are in <a href="BRAND.md">BRAND.md</a>.</p>
+    <code>toko/js/</code>. The rules are in <a href="BRAND.md">BRAND.md</a>.</p>
   </section>
 
   <div class="rule hot"></div>
@@ -249,10 +240,8 @@
 </div>
 
 <script type="module" src="js/board.js?v=2"></script>
-<script type="module" src="js/mind.js?v=1"></script>
-<!-- the arcade shell: a home button and a controller way back. The board is a
-     cabinet on the floor now (the one the code unlocks), so it needs the same
-     way back as every other one. -->
+<script type="module" src="js/mind.js?v=7"></script>
+<script type="module" src="js/conversation-plus.js?v=7"></script>
 <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>
