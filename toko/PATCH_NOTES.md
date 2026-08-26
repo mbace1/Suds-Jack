@@ -1,5 +1,14 @@
 # Toko Assistant — patch notes
 
+## 2026-08-27 — cross-game awareness pass 3
+
+- Toko can now answer reflective questions such as `WHAT KIND OF PLAYER AM I?`, `WHAT DO YOU NOTICE ABOUT HOW I PLAY?`, and `READ MY PLAY HISTORY`.
+- Reflection compares return frequency, accumulated session time, average session length, declared favourites and recurring catalogue tags.
+- Toko explicitly frames these observations as a mirror made from play evidence, not a diagnosis or personality profile.
+- Game-specific summaries now include average session length when enough local session evidence exists.
+- Added stronger observations for long sessions, repeat returns, repeated failures and mismatch between stated favourites and actual play time.
+- The reflective layer continues to read only explicit Toko catalogue/play-log data and declared score keys.
+
 ## 2026-08-27 — cross-game awareness pass 2
 
 - Added `hub/playlog-auto.js`, a catalogue-wide coarse session logger that resolves the current game from the existing hub catalogue.
