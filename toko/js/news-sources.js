@@ -24,9 +24,6 @@ async function getJSON(url,opts={}){
   return r.json();
 }
 
-// Hacker News: broad technology/creative-computing signal. We only keep
-// stories, not comments, and deliberately classify them as technology rather
-// than pretending HN is a games publication.
 registerSource({
   id:'hn', label:'HACKER NEWS', category:'technology', live:true,
   async fetch(){
@@ -38,10 +35,6 @@ registerSource({
   }
 });
 
-// Helsinki Linked Events is not a newspaper; it is a live cultural/event
-// signal. That is useful to both Toko and Helsinki Free Radio because it tells
-// them what is actually happening in the city rather than manufacturing local
-// colour from generic headlines.
 registerSource({
   id:'helsinki-events', label:'HELSINKI EVENTS', category:'helsinki', live:true,
   async fetch(){
@@ -56,8 +49,6 @@ registerSource({
   }
 });
 
-// Any CORS-enabled JSON endpoint can be added by another Toko project without
-// editing this file. `map` converts one remote item to our normalized shape.
 export function registerJSONSource({id,label,category,url,map,items=x=>x}){
   return registerSource({id,label,category,live:true,async fetch(){const data=await getJSON(url);return (items(data)||[]).map(map).filter(Boolean)}});
 }
@@ -83,8 +74,6 @@ export async function refreshAll({parallel=true}={}){
   const out=[]; for(const id of ids) out.push(await refreshSource(id)); return out;
 }
 
-// Refresh at most once per session automatically. Failures stay quiet: the
-// counter must remain fully usable offline and on restrictive networks.
 let booted=false;
 export async function bootLiveNews(){
   if(booted)return[];booted=true;
@@ -94,4 +83,9 @@ export async function bootLiveNews(){
 
 const api={registerSource,registerJSONSource,listSources,sourceState,refreshSource,refreshAll,bootLiveNews};
 globalThis.TokoNewsSources=api;
+
+// Loaded after mind.js on Toko pages. One best-effort refresh per page session;
+// offline/CORS failures never block the counter and are only recorded in state.
+queueMicrotask(()=>bootLiveNews().catch(()=>{}));
+
 export default api;
