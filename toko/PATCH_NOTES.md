@@ -1,5 +1,15 @@
 # Toko Assistant — patch notes
 
+## 2026-08-27 — cross-game awareness pass 2
+
+- Added `hub/playlog-auto.js`, a catalogue-wide coarse session logger that resolves the current game from the existing hub catalogue.
+- Wired it through `hub/pad.js`, which is already loaded by the shared game shell, so catalogued games can report visits and meaningful session duration without individual game edits.
+- Very short accidental opens still count as visits but do not become play-time sessions; duration starts at 8 seconds.
+- The automatic layer deliberately does **not** invent run/death/failure semantics. Those remain explicit game-owned events for later hooks.
+- `play-awareness.js` now totals local play duration and can distinguish “opened once” from “keeps returning” / “spends the most time here.”
+- Game-specific Toko summaries now include coarse play time alongside score, visits, runs, failures and favourites when available.
+- No network sync and no arbitrary localStorage scanning were added.
+
 ## 2026-08-27 — cross-game awareness pass 1
 
 - Added `hub/playlog.js`, a shared local-only play log for the whole Toko catalogue.
