@@ -17,16 +17,16 @@
 
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
-import { Hero } from './hero.js';
+import { Hero } from './hero.js?v=49';
 import { World, ROOMS, ROOM_H } from './level.js';
 import { paintBack, drawAir, drawFore, halo } from './scenery.js';
 import { Post } from './bench.js';
-import { Swordsman } from './foe.js';
-import { Input } from './input.js';
+import { Swordsman } from './foe.js?v=49';
+import { Input } from './input.js?v=49';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
-import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=49';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 // The gallery keeps one flat palette, cool and quiet, so a cycle reads. The

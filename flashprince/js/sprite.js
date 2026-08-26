@@ -1,4 +1,4 @@
-import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js';
+import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js?v=49';
 
 // Conrad, blitted.
 //

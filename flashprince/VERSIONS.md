@@ -1,5 +1,12 @@
 # Flash Prince — versions
 
+## v49 — 2026-08-26
+
+**The v48 module graph is cache-safe.** The first deployment loaded the new
+entrypoint against a cached v47 sprite module and stopped before boot. Every
+changed dependency now has the same v49 token, including the swordsman's sprite
+import. No animation data or timing changed from v48.
+
 ## v48 — 2026-08-26
 
 **Animation lock restored and the action chain polished.**
