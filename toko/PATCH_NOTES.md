@@ -1,5 +1,15 @@
 # Toko Assistant — patch notes
 
+## 2026-08-26 — conversation pass 3
+
+- Follow-up questions now carry the previous subject: short inputs such as `WHY?`, `HOW SO?`, `REALLY?`, `GO ON` and `WHAT DO YOU MEAN?` continue the conversation instead of being parsed as isolated questions.
+- Added a lightweight session context tracking the last subject, last answer and turn count.
+- Contextual suggested questions now react to the current conversation subject as well as time, durable interests, memory depth and news state.
+- Ordinary typed conversation is written into Toko's durable memory with a subject tag, so future sessions can weight prompts around recurring interests.
+- Explicit disagreement (`I DISAGREE`, `YOU'RE WRONG`, etc.) is remembered separately. Toko accepts the disagreement rather than trying to win, and `MEMORY` can later acknowledge what the two of you last argued about.
+- Exposed narrow `remember()` and `disagree()` hooks from `mind.js` so conversation features can extend persistent state without duplicating storage logic.
+- Kept the visible menu at four varied suggestions plus Leave; the authored Sierra tree remains underneath.
+
 ## 2026-08-26 — conversation pass 2
 
 - Free-text questions now get a broader Toko response layer before the old parser gives up.
