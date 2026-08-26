@@ -1,5 +1,16 @@
 # Toko Assistant — patch notes
 
+## 2026-08-27 — cross-game awareness pass 1
+
+- Added `hub/playlog.js`, a shared local-only play log for the whole Toko catalogue.
+- The log has a stable API for visits, starts/runs, failures/deaths/game-over events and favourites, so games can report richer play evidence without Toko importing game internals.
+- Added `play-awareness.js`, which reads only declared catalogue score keys plus the shared play log and existing hub day/credit/ticket counters; it does not scan unrelated localStorage.
+- Toko can now answer `WHAT HAVE I PLAYED?`, `MY SCORES`, `MY FAVOURITES`, and game-specific questions such as `HOW AM I DOING IN TOKO DROP?`.
+- Existing high scores already stored by games are visible immediately, even before richer play-log events are adopted by every game.
+- Added local favourite commands such as `FAVOURITE TOKO DROP` / `UNFAVOURITE TOKO DROP`.
+- Added `play-conversation.js` as a separate bridge so cross-game awareness stays modular and does not expand the core parser.
+- `toko/index.html` now loads the cross-game layer and describes play awareness as part of the counter.
+
 ## 2026-08-26 — live news pass 2
 
 - Expanded live discovery with separate Games, Game Industry and Art/Culture channels using public JSON news discovery rather than scraping arbitrary HTML.
