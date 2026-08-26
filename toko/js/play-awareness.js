@@ -16,7 +16,8 @@ export function snapshot(){
   const games=GAMES.map(g=>{
     const events=log.filter(x=>x.game===g.id), sessions=events.filter(x=>x.type==='session');
     const last=events.at(-1)||null;
-    return {id:g.id,title:label(g),lineage:g.lineage||'',tags:g.tags||[],best:scoreOf(g),scoreFmt:g.score?.fmt||null,visits:events.filter(x=>x.type==='visit').length,runs:events.filter(x=>x.type==='run'||x.type==='start').length,failures:events.filter(x=>x.type==='failure'||x.type==='death'||x.type==='gameover').length,seconds:sessions.reduce((n,x)=>n+(Number(x.seconds)||0),0),sessions:sessions.length,lastPlayed:last?.at||null,favourite:fav.has(g.id)};
+    const sessionSeconds=sessions.map(x=>Number(x.seconds)||0).filter(Boolean);
+    return {id:g.id,title:label(g),lineage:g.lineage||'',tags:g.tags||[],best:scoreOf(g),scoreFmt:g.score?.fmt||null,visits:events.filter(x=>x.type==='visit').length,runs:events.filter(x=>x.type==='run'||x.type==='start').length,failures:events.filter(x=>x.type==='failure'||x.type==='death'||x.type==='gameover').length,seconds:sessionSeconds.reduce((n,x)=>n+x,0),sessions:sessions.length,avgSession:sessionSeconds.length?Math.round(sessionSeconds.reduce((a,b)=>a+b,0)/sessionSeconds.length):0,lastPlayed:last?.at||null,favourite:fav.has(g.id)};
   });
   let days=[];try{days=parse(getRaw('sudsJackHubDays'))||[]}catch{}
   return {games,days:Array.isArray(days)?days:[],credits:Number(parse(getRaw('sudsJackHubCredits'))||0),tickets:Number(parse(getRaw('sudsJackHubTickets'))||0)};
@@ -30,13 +31,31 @@ function observation(g,all){
   const byVisits=all.slice().sort((a,b)=>b.visits-a.visits);
   if(g.seconds>0&&byTime[0]?.id===g.id&&all.filter(x=>x.seconds>0).length>1)return'YOU SPEND THE MOST TIME HERE.';
   if(g.visits>=3&&byVisits[0]?.id===g.id)return'YOU KEEP COMING BACK TO THIS ONE.';
+  if(g.avgSession>=600)return'YOUR SESSIONS HERE ARE LONG. THIS IS NOT A DRIVE-BY GAME FOR YOU.';
   if(g.failures>=3)return'YOU HAVE FAILED HERE ENOUGH TIMES FOR IT TO BE INFORMATION, NOT AN ACCIDENT.';
   if(g.favourite)return'YOU CALLED THIS ONE A FAVOURITE. I WILL HOLD YOU TO THAT.';
   return null;
 }
 
+export function reflectionLines(){
+  const played=playedGames();
+  if(!played.length)return['NOT ENOUGH EVIDENCE YET.','PLAY SOMETHING. I WOULD RATHER LEARN FROM BEHAVIOUR THAN ASK YOU TO FILL OUT A PROFILE.'];
+  const byTime=played.filter(x=>x.seconds>0).sort((a,b)=>b.seconds-a.seconds);
+  const byReturn=played.slice().sort((a,b)=>b.visits-a.visits);
+  const fav=played.filter(x=>x.favourite);
+  const lines=['A FEW THINGS I NOTICE:'];
+  if(byTime[0]) lines.push(`${byTime[0].title.toUpperCase()} GETS THE MOST OF YOUR TIME${byTime[0].avgSession?` — ABOUT ${mins(byTime[0].avgSession)} A SESSION`:''}.`);
+  if(byReturn[0]?.visits>=3) lines.push(`${byReturn[0].title.toUpperCase()} IS THE ONE YOU RETURN TO MOST.`);
+  if(fav.length) lines.push(`YOU HAVE CALLED ${fav.map(x=>x.title.toUpperCase()).join(', ')} ${fav.length===1?'A FAVOURITE':'FAVOURITES'}. THAT IS WHAT YOU SAY. THE TIME LOG IS WHAT YOU DO.`);
+  const playedTags=new Map();for(const g of played)for(const t of g.tags||[])playedTags.set(t,(playedTags.get(t)||0)+1);
+  const topTags=[...playedTags.entries()].sort((a,b)=>b[1]-a[1]).slice(0,2).map(([t])=>t);
+  if(topTags.length)lines.push(`YOU KEEP TOUCHING ${topTags.map(x=>x.toUpperCase()).join(' / ')} GAMES.`);
+  lines.push('THIS IS NOT A DIAGNOSIS. IT IS JUST A MIRROR MADE FROM BUTTON PRESSES.');
+  return lines;
+}
+
 export function summaryLines(){
-  const s=snapshot(),played=playedGames();
+  const played=playedGames();
   if(!played.length)return['I CAN SEE THE CATALOGUE, BUT NOT ENOUGH PLAY HISTORY YET.','Scores already saved by the games will appear here. New sessions also leave coarse local visit and duration evidence.'];
   const ranked=played.slice().sort((a,b)=>(b.seconds/30+b.visits+b.runs+(b.best!=null?1:0))-(a.seconds/30+a.visits+a.runs+(a.best!=null?1:0)));
   const lines=[`I HAVE SIGNAL FROM ${played.length} GAME${played.length===1?'':'S'} ON THIS DEVICE.`];
@@ -48,11 +67,11 @@ export function summaryLines(){
 export function gameLines(raw){
   const g0=findGame(raw);if(!g0)return null;const all=snapshot().games,g=all.find(x=>x.id===g0.id);const lines=[g.title.toUpperCase()];
   if(g.best!=null)lines.push(`YOUR BEST HERE: ${fmt(g0,g.best)}.`);
-  if(g.visits||g.runs||g.seconds)lines.push(`LOCAL LOG: ${g.visits} VISITS${g.runs?` · ${g.runs} RUNS`:''}${g.seconds?` · ${mins(g.seconds)} PLAY`:''}.`);
+  if(g.visits||g.runs||g.seconds)lines.push(`LOCAL LOG: ${g.visits} VISITS${g.runs?` · ${g.runs} RUNS`:''}${g.seconds?` · ${mins(g.seconds)} PLAY`:''}${g.avgSession?` · AVG ${mins(g.avgSession)}`:''}.`);
   if(g.failures)lines.push(`FAILURES REMEMBERED: ${g.failures}.`);
   if(g.favourite)lines.push('YOU MARKED THIS ONE AS A FAVOURITE.');
   const note=observation(g,all.filter(x=>x.visits||x.seconds||x.best!=null||x.favourite));if(note)lines.push(note);
   if(g.lineage)lines.push(`ITS DECLARED LINEAGE: ${g.lineage}.`);
   if(lines.length===1)lines.push('I KNOW THIS CABINET, BUT IT HAS NOT LEFT MUCH LOCAL EVIDENCE YET.');return lines;
 }
-const api={snapshot,playedGames,findGame,favouriteGame,summaryLines,gameLines};globalThis.TokoPlayAwareness=api;export default api;
+const api={snapshot,playedGames,findGame,favouriteGame,summaryLines,gameLines,reflectionLines};globalThis.TokoPlayAwareness=api;export default api;
