@@ -8,6 +8,7 @@ import { PixelScreen, shade, mix } from './screen.js?v=37';
 import { PAL, SECTOR_COLOR } from './palette.js?v=37';
 import { Toko } from './toko.js?v=37';
 import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=37';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=37';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -18,6 +19,7 @@ const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 const DEFAULT_WEIGHTS = { face: 0.20, graphic: 0.15, broll: 0.65 };
 const CUT_MIN = 3.2, CUT_MAX = 5.5;
 const DECODE_HOLD = 2.4;
+const AMBIENT_SHARE = 0.34;
 
 function shotWeights(story) {
   switch (story.label) {
@@ -50,11 +52,24 @@ function pickBroll(story, lastKey) {
   return others[Math.floor(Math.random() * others.length)] || own || pool[0];
 }
 
+function pickAmbient(story) {
+  if (!AMBIENT_KEYS.length) return null;
+  // Deterministic offset gives each bulletin a home ambience, while the live
+  // clock moves through the library rather than cutting to the same city shot.
+  const h = beatHash(`${story.id || ''}:${story.label || ''}`);
+  const step = Math.floor(performance.now() / 5000);
+  return AMBIENT_KEYS[(h + step) % AMBIENT_KEYS.length];
+}
+
 function pickShot(story, lastKey) {
   const w = shotWeights(story);
   const r = Math.random();
   if (r < w.face) return { type: 'face' };
   if (r < w.face + w.graphic) return { type: 'graphic' };
+  if (Math.random() < AMBIENT_SHARE) {
+    const key = pickAmbient(story);
+    if (key) return { type: 'ambient', key };
+  }
   return { type: 'broll', key: pickBroll(story, lastKey) };
 }
 
@@ -144,6 +159,7 @@ export class Post {
     s.clear(PAL.SHELL);
 
     const faceShot = this.live && this.shot.type === 'face';
+    const ambientShot = this.shot.type === 'ambient';
     let visualKey = this.story.visual;
     if (this.shot.type === 'broll') {
       visualKey = this.shot.key || this.story.broll || 'cathedral';
@@ -158,7 +174,8 @@ export class Post {
       s.ctx.globalAlpha = 1;
     } else {
       this.toko.draw(this.portrait, this.signal, false);
-      drawVisual(visualKey, this.panel, this.t, this.decode);
+      if (ambientShot) drawAmbient(this.shot.key, this.panel, this.t, this.decode);
+      else drawVisual(visualKey, this.panel, this.t, this.decode);
       s.ctx.drawImage(this.panel.canvas, VF.x, VF.y);
       s.ctx.drawImage(this.portrait.canvas, PF.x, PF.y);
     }
