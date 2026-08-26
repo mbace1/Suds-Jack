@@ -14,7 +14,8 @@ even when the code is otherwise correct, tested and pretty.
 
 | project | canon | notes |
 |---|---|---|
-| `piritori/` + `toko-move/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; `ART_BIBLE.md` owns visuals, `UX_SPEC.md` owns interaction/reflow, `MAP.md` owns Era I geography/graph, `content/era1-slice-v1.json` owns the finite authored slice, and `art/v3/manifest.json` owns registered runtime-art ids; other documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
+| `piritori/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; `ART_BIBLE.md` owns visuals, `UX_SPEC.md` owns interaction/reflow, `MAP.md` owns Era I geography/graph, `content/era1-slice-v1.json` owns the finite authored slice, and `art/v3/manifest.json` owns registered runtime-art ids; other documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
+| `toko-move/` | `HANDOFF.md` first (it says what is being worked on now), then `GENRE.md`, `ROADMAP.md`, `VERSIONS.md`; `FREIGHT.md` and `CITIES.md` own their own subjects | Its own project, NOT Piritori's — it only shares the Kallio data extract. `VERSIONS.md` is the trap index; read the top three entries before touching anything. |
 | `eeri/` | `eeri/PHASING.md` first, then `DESIGN.md`, `ART_BRIEF.md`, `VERSIONS.md` | multi-agent; PHASING supersedes on conflict |
 | `kindling/` | `BETTERMENT_OWNER_DIRECTION.md` | newest authority; supersedes older "cozy hut" calls |
 | `toko/` | `toko/BRAND.md` | two colours only, geometry invariants |
@@ -82,6 +83,12 @@ unilateral fix.**
   that cancels touches. Cancelling `touchstart` in the capture phase kills the
   pointer stream too, so the element sees `pointercancel` and never
   `pointerup`. This has cost this repo two separate bugs.
+- **A colour that is drawn has to be measured.** Toko Move shipped a road at
+  1.19:1 against its own ground — invisible in a screenshot while every state
+  assertion about it passed — and then made the same mistake again hours later
+  with the street greys, because the gate guarded the one constant and the new
+  colours were typed somewhere else. Contrast rules that only cover some of a
+  palette are Drift; a new drawn colour with no rule is a Gate finding.
 
 ## 4. Testing rules, learned the hard way
 
@@ -90,7 +97,16 @@ unilateral fix.**
   model directly proves the model and says nothing about the interface — this
   is exactly how a completely frozen fight panel passed 44 checks.
 - **A gate that cannot fail is a Gate-level finding.** If a check would pass
-  with the feature removed, say so.
+  with the feature removed, say so. **Mutation-testing is the standard here,
+  not a nicety**: in `toko-move/` every new check is run once with the thing it
+  names deliberately broken, and the VERSIONS entry says so. Four checks in one
+  session proved nothing until they were rebuilt — one left a queue in place
+  that made the code under test unreachable, one built "every cell" against a
+  budget that only allowed thirty, one measured a vehicle against its NEIGHBOUR
+  half a cell away, and one asked only that a label FITTED (42px inside 44px).
+- **Compare a thing against its own absence, not against something nearby.**
+  The reliable shape for a drawn-pixel check is: sample the patch, remove the
+  one object, sample the same patch again.
 - Bare-node gates (`.mjs`) run with no browser, GPU or audio device and are
   cheap enough for every edit. Browser gates (`.cjs`) need Playwright.
 
@@ -116,7 +132,16 @@ NODE_PATH=$(npm root -g) node eeri/test/playthrough.cjs    # eeri: finishable
 # holds the built cabinet plus the art canon, and nothing here to test
 node toko/test/brand.cjs                                  # brand geometry + ink
 NODE_PATH=$(npm root -g) node test/hub-smoke.cjs          # the arcade
+
+node toko-move/test/core.mjs                              # toko move: the model
+NODE_PATH=$(npm root -g) node toko-move/test/smoke.cjs    # toko move: the page
+NODE_PATH=$(npm root -g) node test/deploy-check.cjs       # tokens, links, the worker
 ```
+
+The two Toko Move gates and `hub-smoke` are what a Toko Move change must leave
+green; `deploy-check` is what a DEPLOY must leave green. The core gate is bare
+node and runs in about a second, so run it on every edit rather than at the
+end.
 
 The Piritori lane above is wired into CI. Add a job per other project only as
 it is verified green, rather than turning everything on at once and teaching

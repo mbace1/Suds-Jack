@@ -111,6 +111,26 @@ Rules and construction notes: **`toko/BRAND.md`**. Gate:
 
 ## Demos
 
+### `toko-move/`
+**Toko Move.** A Mini Metro *homage* — an homage, not a clone, so the colours,
+shapes and wording deliberately differ. Every stop is a shape, everyone waiting
+on one wants a different shape, and you draw the network that gets them there.
+Canvas 2D, no build step, no image assets.
+
+Its idea is **layers**: one board with more than one transport running on it at
+once, each a near-clone of the others differing by *variables* rather than by
+code. Three exist — the **metro** (route people, lines and carriages and
+tunnels), the **roads** (provide room; cars pick their own way and cannot be
+told otherwise, Mini Motorways' verb), and the **buses** (route people, but only
+where a street has actually been laid, and they crawl in the traffic you made
+room for). Missions are pure data in `js/missions.js`; the sim owns no tuning of
+its own.
+
+`js/city.js` is the **Cities** seam — a real network projected onto a board, with
+Helsinki's Kallio already committed under HSL's CC BY 4.0. **Start at
+`toko-move/HANDOFF.md`**, which says what is being worked on, where the code is,
+how the gates run and what will get a change rejected.
+
 ### `goo-snowman.html`
 WebGL fragment-shader snowman. Full-screen ray-marched SDF with Blinn-Phong + Fresnel + SSS lighting, two-pass bloom. Starting point for the goo shader series.
 
