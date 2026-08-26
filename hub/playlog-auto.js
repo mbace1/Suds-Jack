@@ -1,19 +1,18 @@
-// Automatic local-only play evidence for every catalogue page that loads shell.js.
-// The shell imports this module once it has resolved the current catalogue entry.
-// We deliberately log only coarse session facts here. Runs, deaths and failures
-// belong to the games themselves because the shell cannot infer those honestly.
+// Automatic local-only play evidence for every catalogue page that loads pad.js.
+// Runs, deaths and failures belong to the games themselves because the shared
+// shell cannot infer those semantics honestly.
+import { GAMES } from './games.js?v=21';
 import { logPlay } from './playlog.js';
 
-const onceKey = id => `tokoPlayVisit:${id}`;
+const here = location.pathname.replace(/\/index\.html$/, '/').replace(/([^/])$/, '$1/');
+const entry = GAMES.find(g => here.endsWith(`/${g.path}`));
+const onceKey = id => `tokoPlayVisit:${id}:${location.pathname}`;
 
 export function beginPlaySession(game) {
   if (!game) return { end() {} };
   const started = performance.now();
   let ended = false;
 
-  // One visit per page lifetime. sessionStorage is only a guard against a host
-  // accidentally mounting the helper twice; a real navigation creates a new
-  // page and therefore a new visit as intended.
   try {
     const key = onceKey(game);
     if (!sessionStorage.getItem(key)) {
@@ -28,7 +27,6 @@ export function beginPlaySession(game) {
     if (ended) return;
     ended = true;
     const seconds = Math.max(0, Math.round((performance.now() - started) / 1000));
-    // Tiny accidental opens are still visits, but not meaningful play sessions.
     if (seconds >= 8) logPlay(game, 'session', { seconds, reason: reason || 'leave' });
   };
 
@@ -37,4 +35,8 @@ export function beginPlaySession(game) {
   return { end };
 }
 
+// pad.js is already loaded by the common game shell. Importing this module from
+// pad.js therefore gives every catalogued game coarse play evidence without
+// changing each game's own code. The hub itself resolves no entry and is inert.
+export const currentSession = beginPlaySession(entry?.id || null);
 export default beginPlaySession;
