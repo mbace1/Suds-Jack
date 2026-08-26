@@ -1,5 +1,16 @@
 # Toko Assistant — patch notes
 
+## 2026-08-26 — game knowledge pass 1
+
+- Added `game-lineage.js`, a separate curated genre-family module rather than turning Toko into a trivia dump.
+- Toko can now explain design ancestry for roguelikes/run-based games, FPS, immersive sims, Souls games, platformers, open worlds, stealth, strategy, deckbuilders, metroidvanias, rhythm games and authored/narrative exploration.
+- Each lineage includes a historical spine, Toko's interpretation of the design inheritance, and a criticism/tension about how the genre is commonly misunderstood.
+- Genre questions work as free text: e.g. `ROGUELIKE`, `WHERE DID IMMERSIVE SIMS COME FROM?`, `WHAT IS THE SOULSLIKE LINEAGE?`.
+- Toko remembers the lineage currently being discussed, so follow-ups such as `WHAT IS THE PROBLEM?` or `WHY?` continue that genre discussion.
+- Added lineage-vs-lineage comparison support when two recognizable genre families are named.
+- Added a context-driven `SHOW ME A GENRE FAMILY TREE` suggestion to the rotating short menu.
+- Kept the lineage data modular so it can expand independently of the conversation parser.
+
 ## 2026-08-26 — conversation pass 3
 
 - Follow-up questions now carry the previous subject: short inputs such as `WHY?`, `HOW SO?`, `REALLY?`, `GO ON` and `WHAT DO YOU MEAN?` continue the conversation instead of being parsed as isolated questions.
