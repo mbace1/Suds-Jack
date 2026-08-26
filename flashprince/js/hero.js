@@ -13,6 +13,7 @@
 // declares open.
 
 import { POSE as Q, sample } from './figure.js';
+import { RUN_HOLD, RUN_SPEED, START_N, frameFromHolds } from './run-lock.js';
 
 // Conrad's run, all twenty frames of it — his arms are not symmetrical between
 // the two halves, so there is no mirroring the second ten out of the first.
@@ -21,7 +22,15 @@ import { POSE as Q, sample } from './figure.js';
 // 19.4px stride against the 19.7px his feet are apart at full split. Get that
 // number wrong and the planted foot slides — 1.1 was short by two pixels a
 // step, and two pixels a step is a skate.
-const RUN_CLIP = Array.from({ length: 20 }, (_, i) => [Q['run' + (i + 1)], 1.2]);
+const RUN_CLIP = Array.from({ length: 20 }, (_, i) => [Q['run' + (i + 1)], RUN_HOLD[i]]);
+const RUN_START_HOLD = RUN_HOLD.slice(0, START_N);
+const GATHER_HOLD = [2, 1, 1, 1, 2];
+const AIR_UP_HOLD = [4, 4, 5, 6, 6, 5, 6];
+const LAND_HOLD = [2, 3, 3, 3];
+const GATHER_RUN_HOLD = [1, 2];
+const AIR_RUN_HOLD = [2, 2, 2, 3, 3, 4, 4, 4, 4, 3, 3, 2];
+const FALL_HOLD = [5, 6, 7, 6];
+const LAND_HARD_HOLD = [3, 3, 4, 5, 5, 3, 3];
 
 export const HERO_W = 10, HERO_H = 30, CROUCH_H = 16;
 
@@ -84,7 +93,7 @@ const M = {
 
   drink: { dur: 46, open: 46, low: true, drinkAt: 22, clip: [[Q.drinkA, 8], [Q.drinkB, 26], [Q.drinkA, 12]] },
 
-  run: { dur: 999, loop: true, open: 0, speed: 1.62, clip: RUN_CLIP },
+  run: { dur: 999, loop: true, open: 0, speed: RUN_SPEED, clip: RUN_CLIP },
   // Winding UP into the run. Twelve drawn frames of him going from feet
   // together to full running posture, and the speed is ramped across them so
   // the picture and the travel agree — a step used to hand straight over to a
@@ -239,13 +248,13 @@ export class Hero {
     const m = M[s];
     const over = (anim, n, f = this.f, lipY) => ({ anim, f: f / (m.dur / n), lipY });
     switch (s) {
-      case 'run': return { anim: 'run', f: this.f / 1.2 };
+      case 'run': return { anim: 'run', f: frameFromHolds(this.f, RUN_HOLD, true) };
       case 'step': return over(this.stepPhase ? 'stepB' : 'step', 6);
       // the careful step is the same six frames given half again as long
       case 'inch': return over(this.stepPhase ? 'stepB' : 'step', 6);
       case 'stand': case 'peer': return { anim: 'stand', f: this.f / 30 };
       case 'turn': return over('turn', 10);
-      case 'windUp': return over('runStart', 12);
+      case 'windUp': return { anim: 'runStart', f: frameFromHolds(this.f, RUN_START_HOLD) };
       case 'runTurn': return over('skid', 12);
       case 'skid': case 'bump': return over('skid', 12);
       // with the pistol out he goes down holding it, not bent double
@@ -255,19 +264,19 @@ export class Hero {
       case 'roll': return over('roll', 22);
       case 'wake': return over('wake', 15);
       case 'dead': return { anim: 'dead', f: this.f / 4 };
-      case 'gather': return over('gather', 5);
-      case 'gatherRun': return over('gatherRun', 2);
+      case 'gather': return { anim: 'gather', f: frameFromHolds(this.f, GATHER_HOLD) };
+      case 'gatherRun': return { anim: 'gatherRun', f: frameFromHolds(this.f, GATHER_RUN_HOLD) };
       // Airborne: the clip is open-ended, so the flight frames are paced off
       // the frame counter and then held on the last one until he lands.
       // Paced so the arc gets ALL of its frames. At f/3 the standing jump ran
       // out of drawing after twelve of its thirty-six frames and then held one
       // frame for the whole descent — two thirds of a jump on a freeze-frame.
       case 'air': return this.jumpDir
-        ? { anim: 'airRun', f: this.f / 3 }
-        : { anim: 'airUp', f: this.f / 5 };
-      case 'fall': return { anim: 'fall', f: this.f / 6 };
-      case 'land': return over('land', 4);
-      case 'landHard': return over('landHard', 7);
+        ? { anim: 'airRun', f: frameFromHolds(this.f, AIR_RUN_HOLD) }
+        : { anim: 'airUp', f: frameFromHolds(this.f, AIR_UP_HOLD) };
+      case 'fall': return { anim: 'fall', f: frameFromHolds(this.f, FALL_HOLD, true) };
+      case 'land': return { anim: 'land', f: frameFromHolds(this.f, LAND_HOLD) };
+      case 'landHard': return { anim: 'landHard', f: frameFromHolds(this.f, LAND_HARD_HOLD) };
       // The ledge. Drawn against the LIP, because that is the thing that does
       // not move; what rests on it walks from his hands to his feet.
       case 'hang': return { anim: 'hang', f: this.f / 24, lipY: this.ledgeY };

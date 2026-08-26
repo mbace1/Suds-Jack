@@ -1,5 +1,7 @@
 # Reference
 
+> **Locked run:** the playable run is the exact approved v18 twenty-frame raster bundle in `js/run-v15-data.js`, guarded by `js/run-lock.js` and `animation-locks.json`. Do not replace or recolour it. Every other action must be matched to it using this Conrad census and the corresponding Flashback footage.
+
 Animation reference for the character. Nothing here is loaded by the game
 except `jimbo.png`, which IS the character — he is blitted, not drawn.
 

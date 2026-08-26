@@ -26,7 +26,7 @@ import { Input } from './input.js';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
-import { loadSheet, drawSprite, ready, ANIM, frameCount, CONRAD_COLOURS } from './sprite.js';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 // The gallery keeps one flat palette, cool and quiet, so a cycle reads. The
@@ -67,14 +67,6 @@ const REEL = [
   ['crouchDraw', 'PISTOL · going down'],
   ['crouchAim', 'PISTOL · aimed, crouched'],
   ['crouchFire', 'PISTOL · the shot, crouched'],
-  ['swordDraw', 'SWORD · drawing'],
-  ['swordGuard', 'SWORD · on guard'],
-  ['swordAdvance', 'SWORD · advancing'],
-  ['swordRetreat', 'SWORD · retreating'],
-  ['swordLunge', 'SWORD · the lunge'],
-  ['swordStrike', 'SWORD · overhead'],
-  ['swordParry', 'SWORD · the parry'],
-  ['swordSheathe', 'SWORD · away'],
 ];
 
 class Stage {
@@ -82,7 +74,7 @@ class Stage {
     this.scr = new Screen(document.getElementById('screen'));
     // He is blitted, not drawn from the sixteen, so the quantise pass is told
     // to leave his own fourteen colours alone.
-    this.scr.keepColours(CONRAD_COLOURS);
+    this.scr.keepColours(CHARACTER_COLOURS);
     this.scr.setPalette(PAL);
     loadSheet();
     this.input = new Input(this.scr);
@@ -96,7 +88,7 @@ class Stage {
     // hero.js since the beginning, and there is finally something to swing it
     // at — a post, so the reach and the one frame the edge lands on are things
     // you can feel rather than take on trust.
-    this.hero.hasSword = true;
+    this.hero.hasSword = false;
     // The bench's post survives as a room fixture: any room that wants one puts
     // it where it likes. Rooms that do not, do not get one.
     this.post = null;

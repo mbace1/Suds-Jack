@@ -1,5 +1,25 @@
 # Flash Prince — versions
 
+## v48 — 2026-08-26
+
+**Animation lock restored and the action chain polished.**
+
+The exact approved v18 run is back in the live game: its original twenty raster
+frames, per-frame holds, first six acceleration frames, left-facing source
+orientation and 1.22px root speed. A runtime signature now stops the game
+immediately if any part of that bundle changes, and the repository lock files
+are restored so future animation work cannot silently replace it again.
+
+Standing jump, running jump, fall, landing and hard landing still use the
+Conrad sheet rows identified in the census. Their frame exposure is now
+authored per frame rather than divided uniformly, keeping the gather brief,
+holding the readable airborne extension and giving impact/settle frames their
+proper weight. No run pixels were touched.
+
+The Prince-of-Persia sword set is holstered again because it remains the one
+animation family that changes the character build. Keyboard Z and gamepad
+right-stick up/press now trigger jump alongside the existing controls.
+
 The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.

@@ -16,7 +16,7 @@ const LATCH = 4;              // frames a released key goes on counting for
 const KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'],
   up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
-  jump: ['Space', 'ArrowUp', 'KeyW'],
+  jump: ['Space', 'ArrowUp', 'KeyW', 'KeyZ'],
   fire: ['KeyX', 'KeyJ', 'Enter'], gun: ['KeyE', 'KeyQ'],
   // Shift is Prince of Persia's own careful-step key, and it keeps that job
   // here: held, a direction places one foot instead of taking a stride, and
@@ -185,7 +185,7 @@ export class Input {
       R = R || ax > 0.4 || p.buttons[15]?.pressed;
       U = U || ay < -0.5 || p.buttons[12]?.pressed;
       D = D || ay > 0.5 || p.buttons[13]?.pressed;
-      J = J || p.buttons[0]?.pressed;
+      J = J || p.buttons[0]?.pressed || (p.axes[3] ?? 0) < -0.55 || p.buttons[11]?.pressed;
       F = F || p.buttons[2]?.pressed || p.buttons[7]?.pressed || p.buttons[5]?.pressed;
       G = G || p.buttons[3]?.pressed;
       K = K || p.buttons[1]?.pressed || p.buttons[4]?.pressed || p.buttons[6]?.pressed;

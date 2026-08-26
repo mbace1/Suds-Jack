@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "referenceProcedure": {
+    "primary": "Conrad B. Hart reference sheet",
+    "secondary": "matching Flashback gameplay GIF sequence",
+    "rule": "Compare every new frame before publishing; approved families remain untouched."
+  },
+  "approvedFamilies": {
+    "run": {
+      "status": "locked",
+      "approvedIn": "v18",
+      "restoredIn": "v24 and v48",
+      "dataPath": "js/run-v15-data.js",
+      "sha256": "e819454be942feaa6cfb8b8901784b5ec4cd5b8380d91e64a309654fd20998c2",
+      "frameCount": 20,
+      "holds": [
+        5,
+        4,
+        3,
+        3,
+        4,
+        3,
+        3,
+        4,
+        5,
+        4,
+        3,
+        3,
+        4,
+        3,
+        3,
+        4,
+        5,
+        4,
+        3,
+        3
+      ],
+      "startFrames": 6,
+      "speed": 1.22,
+      "sourceFacesRight": false,
+      "runtimeSignature": "ff0dd32f",
+      "rejectedReplacements": [
+        {
+          "version": "v23",
+          "dataPath": "js/motion-v20-data.js",
+          "exports": [
+            "START",
+            "RUN"
+          ],
+          "runtimeSignature": "7df439ed",
+          "reason": "Rejected by the user; never reuse for playable run."
+        }
+      ],
+      "changePolicy": "Explicit user permission naming the run animation is required."
+    }
+  }
+}
