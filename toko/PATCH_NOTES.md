@@ -1,5 +1,18 @@
 # Toko Assistant — patch notes
 
+## 2026-08-26 — live news pass 1
+
+- Added `news-sources.js`, a browser-safe live source layer on top of the shared news wire.
+- Added a real technology feed via Hacker News' public JSON API.
+- Added a real Helsinki cultural/event signal via Helsinki Linked Events.
+- Live refresh happens once per page session, fails silently when offline or blocked, and records source status instead of breaking the counter.
+- Added a generic `registerJSONSource()` adapter so Games, Industry and Art/Culture sources can be plugged in without changing the wire or chat code.
+- Added `news-conversation.js` for individual story discussion.
+- Players can now refer to `STORY 1`, `HEADLINE 2`, `LATEST STORY`, or a story by title words.
+- Once a story is selected, follow-ups such as `SOURCE`, `SUMMARY`, `YOUR TAKE`, `WHY DOES IT MATTER?`, `NEXT STORY` and `PREVIOUS STORY` stay on that story.
+- Story facts remain separate from Toko's commentary; asking for the source never returns Toko's opinion as evidence.
+- These live stories automatically enter the same normalized wire that Helsinki Free Radio can read through `radioQueue()`.
+
 ## 2026-08-26 — news wire pass 1
 
 - Added `news-wire.js` as a shared normalized news layer intended for both Toko Assistant and Helsinki Free Radio.
