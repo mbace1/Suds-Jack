@@ -1,5 +1,15 @@
 # Toko Assistant — patch notes
 
+## 2026-08-26 — news wire pass 1
+
+- Added `news-wire.js` as a shared normalized news layer intended for both Toko Assistant and Helsinki Free Radio.
+- Defined separate Games, Industry, Tech, Art/Culture and Helsinki channels with persistent enable/disable settings.
+- News ingestion preserves headline, source, URL, summary, category and publication time as factual wire data.
+- Toko commentary is generated separately from the factual story object, so his philosophy/opinion cannot silently become part of the source summary.
+- Added commentary lenses for layoffs/closures, acquisitions, AI, live-service/monetisation, delays, cancellations, indie development, art/culture and Finnish/Helsinki stories.
+- Added `radioQueue()` to expose the same stories in a radio-friendly shape including a separate commentary field.
+- The wire deliberately does not scrape arbitrary sites from the browser. External feed collection can now plug into one stable `TokoNewsWire.ingest()` interface instead of being coupled to the chat UI.
+
 ## 2026-08-26 — game knowledge pass 1
 
 - Added `game-lineage.js`, a separate curated genre-family module rather than turning Toko into a trivia dump.
