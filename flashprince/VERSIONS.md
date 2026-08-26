@@ -1,5 +1,14 @@
 # Flash Prince — versions
 
+## v50 — 2026-08-26
+
+**One character again.** The locked v18 run remains byte-for-byte untouched.
+Idle, jumps, landings, falls, climbing, damage and weapon actions now keep
+Conrad's exact authored frames but use the run's seven-colour outfit and
+one-pixel dark contour. The hero no longer changes from blue trousers and a
+light shirt into the rejected brown-trouser/dark-jacket character when the run
+ends.
+
 ## v49 — 2026-08-26
 
 **The v48 module graph is cache-safe.** The first deployment loaded the new

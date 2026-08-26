@@ -1,4 +1,4 @@
-import RUN from './run-v15-data.js';
+import RUN from './run-v15-data.js?v=50';
 
 export { RUN };
 export const START_N = 6;

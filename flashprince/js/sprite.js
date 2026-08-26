@@ -1,4 +1,4 @@
-import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js?v=49';
+import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js?v=50';
 
 // Conrad, blitted.
 //
@@ -21,37 +21,15 @@ import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js?v=
 // LEFT on the sheet, so the flip is on face 1, not face -1.
 
 export const CELL_W = 32, CELL_H = 48;
-const SRC = 'ref/jimbo.png';
+const SRC = 'ref/flash-prince.png?v=50';
 const SWORD_SRC = 'ref/pop-jimbo.png';
 // The other man, the same eighteen colours permuted — see recolour_pop.py
 const FOE_SRC = 'ref/pop-foe.png';
 
-// Jimbo's eighteen. The quantiser is handed these so his pixels survive it.
-//
-// He is Conrad's frames repainted (ref/recolour.py): brown trousers, a white
-// tee, a dark letterman jacket, and the hair left brown by picking it out of
-// the head region — hair and jacket share a colour on the original sheet, so
-// that one had to be split by WHERE it is rather than by what it is.
-export const JIMBO_COLOURS = [
-  '#1f2333',
-  '#2a2e40',
-  '#31364a',
-  '#3c4258',
-  '#4f3a22',
-  '#61482b',
-  '#633100',
-  '#634210',
-  '#735221',
-  '#745735',
-  '#848484',
-  '#88673f',
-  '#946331',
-  '#9a764a',
-  '#bcc2ce',
-  '#c67363',
-  '#c6c6c6',
-  '#e2e6ec',
-];
+// The approved run's exact seven colours. The full Conrad action sheet is
+// reduced to this same set by ref/recolour_flashprince.py, so palette
+// quantisation cannot muddy it and changing state cannot change his outfit.
+export const JIMBO_COLOURS = LOCKED_RUN_COLOURS;
 
 // the old name, still exported so nothing that reads it breaks
 export const CONRAD_COLOURS = JIMBO_COLOURS;

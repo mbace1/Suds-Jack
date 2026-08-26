@@ -279,7 +279,7 @@ export const GAMES = [
     },
     pad: 'native',
     status: 'active',
-    note: 'fourteen screens from the jungle to the tomb and back — new, and still being tuned',
+    note: 'v50 — idle, jumps, landings and every other Conrad action now share the locked v18 run palette and clean pixel contour',
     title: 'Flash Prince',
     tagline: 'Every move you start, you finish. Hang, climb, and draw before he does.',
     lineage: 'Another World × Flashback × Prince of Persia',

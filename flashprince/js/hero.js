@@ -13,7 +13,7 @@
 // declares open.
 
 import { POSE as Q, sample } from './figure.js';
-import { RUN_HOLD, RUN_SPEED, START_N, frameFromHolds } from './run-lock.js?v=49';
+import { RUN_HOLD, RUN_SPEED, START_N, frameFromHolds } from './run-lock.js?v=50';
 
 // Conrad's run, all twenty frames of it — his arms are not symmetrical between
 // the two halves, so there is no mirroring the second ten out of the first.
