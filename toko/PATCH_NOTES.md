@@ -1,5 +1,14 @@
 # Toko Assistant — patch notes
 
+## 2026-08-26 — live news pass 2
+
+- Expanded live discovery with separate Games, Game Industry and Art/Culture channels using public JSON news discovery rather than scraping arbitrary HTML.
+- Kept Hacker News as a technology signal and Helsinki Linked Events as the local culture/event signal.
+- Added a one-way Helsinki Free Radio bridge into Toko's factual wire: only RFH stories explicitly marked `sourced: true` are ingested.
+- RFH parody bulletins never enter Toko's factual news store, preserving the station's invented-actor editorial boundary.
+- The RFH bridge reads the latest network-first episode index, so straight-report items can become part of Toko's current conversation without duplicating copy.
+- Browser failures remain non-blocking and are visible only in source state/debug data.
+
 ## 2026-08-26 — live news pass 1
 
 - Added `news-sources.js`, a browser-safe live source layer on top of the shared news wire.
