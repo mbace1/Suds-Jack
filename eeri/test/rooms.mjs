@@ -31,6 +31,7 @@ import {
   swingBall, hazard, shallow, deep, pipe, flooded, machine as mach, hoist,
 } from '../js/parts.js?v=4';
 import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=15';
+import { readFileSync } from 'node:fs';
 import { deadAir, DEAD_AIR, compile } from '../js/parts.js?v=3';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
@@ -50,6 +51,22 @@ console.log(`the kid's budget: step ${REACH.step} tiles (jump reaches ${REACH.ju
 // anything can touch you." All three of these clocks were under it — 0.80,
 // 0.55 and 0.85 — because the rule lived in a document and the numbers lived
 // in three different modules.
+// ---- the port seam ------------------------------------------------------
+// The Godot port is produced from this build's releases and reads
+// spec/eeri.json rather than the prose (PORT.md §2). A spec that has
+// drifted from the game is worse than no spec: it is a number the port
+// has already trusted. So the gate rebuilds it and compares the bytes —
+// the same discipline as the arcade asserting sw.js's derived shell list.
+{
+  const { serialise, SPEC_PATH } = await import('../tools/spec.mjs');
+  let on_disk = null;
+  try { on_disk = readFileSync(SPEC_PATH, 'utf8'); } catch { /* missing */ }
+  ok('the port spec on disk matches the game', on_disk === serialise(),
+    on_disk === null ? 'spec/eeri.json is missing — run node eeri/tools/spec.mjs'
+      : 'spec/eeri.json is stale — run node eeri/tools/spec.mjs and commit it');
+}
+console.log('');
+
 console.log(`the telegraph floor: ${TELL.toFixed(1)}s before anything can touch you\n`);
 {
   const warn = CLOCK.skitter.notice + CLOCK.skitter.wind;

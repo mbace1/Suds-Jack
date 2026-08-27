@@ -1,5 +1,54 @@
 # EERI — versions
 
+## v15.38 — 2026-08-21 — the port seam, and a module graph that had split in two
+
+Owner: *"Eeri now has a separate repo where the Godot port is produced from
+your version updates. JavaScript is aimed at testing VERTICAL and Godot the
+LANDSCAPE formats."*
+
+Two builds of one game, and this one is upstream — so the question is what
+crosses between them. **Prose is a fine way to say why a number changed and
+a terrible way to carry it.** This log says the dig stroke is 0.46 s in a
+sentence; a port reading that sentence has copied a number by hand, which is
+the same class of failure as a precache list a token behind the page, and
+this repo has shipped that one more than once.
+
+**`node eeri/tools/spec.mjs` → `spec/eeri.json`** (48 KB), emitted from the
+modules the game itself reads and never re-typed: the reach budget, every
+enemy clock including the 1.0 s telegraph floor, and all twelve levels
+**compiled** — each with its tile grid (one string per row, `solidChars`
+saying what stops you), every part with its position, and the report card's
+numbers for what the level is FOR. A port does not have to reimplement
+`parts.js`; the grid is the collision truth.
+
+Deliberately absent: everything about how this build looks on a screen —
+the cutout diorama, the FX pack, the craft materials, the pad plates, the
+orientation CSS. That is the half the two builds are dividing between them.
+`PORT.md` is the contract and says so in full.
+
+**It cannot go stale.** `test/rooms.mjs` rebuilds the spec and compares the
+bytes (246 → 247 checks), the same discipline as the arcade asserting
+`sw.js`'s derived shell list. A drifted spec is worse than none: it is a
+number the port has already trusted.
+
+**And writing it found a live bug in yesterday's report card.** `report.mjs`
+imported `rooms.js?v=3` beside `levelid.js?v=15` — and `levelid.js` is what
+pulls in `world34-register.js`, which appends worlds 3 and 4 to the rooms
+array at runtime. Two different tokens are two different module instances,
+so the register ran against a **different copy of `rooms.js`** than the
+report read. The report then spread the world-3/4 array back in by hand and
+totalled twelve, which is the worst kind of wrong — right answer, wrong
+graph. `VERSIONS.md` has warned about this exact trap since it unplugged
+2.7 MB of layer art twice; it turns out a *test* can split a module graph
+just as easily as a page can. Both files now use one token, and the spec is
+built from the same single instance the game runs.
+
+**Recorded for the lane, not shipped as code:** this build is judged in
+**portrait** from now on. Both orientations still ship — the Game Boy DMG
+face plate and the arcade control-panel strip are both there — but portrait
+is where the readability, HUD and camera questions get answered here, and
+landscape is the port's to answer. DESIGN §8.6.
+
 ## v15.37 — 2026-08-21 — the report card, and the back half stops being quiet
 
 The owner's call: *"we can always make more levels and skip some if they are

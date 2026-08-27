@@ -838,6 +838,20 @@ of cache forever while every other cabinet gets the new one.
 
 ### Eeri (`eeri/`) — the platformer, and the one MULTI-AGENT project
 
+**Two builds, one game (owner, 2026-08-21).** Eeri has a **separate repo
+where a Godot port is produced from this build's version updates**. This
+one is **upstream and is judged in PORTRAIT**; the port is judged in
+**landscape**. Both carry both orientations — the direction is about where
+each format is answered. The seam is **`eeri/spec/eeri.json`**, emitted by
+`node eeri/tools/spec.mjs` from the modules the game itself reads: the
+reach budget, every enemy clock, and all twelve levels compiled *including
+each level's tile grid*, so the port never reimplements `parts.js`.
+`test/rooms.mjs` fails if the committed spec has drifted — prose is a fine
+way to say why a number changed and a terrible way to carry it. **Read
+`eeri/PORT.md` before changing anything the port also has to know**, and
+when a number moves, name it in `VERSIONS.md`. A design change lands here
+first and reaches the port through a spec bump.
+
 A Mario 3 / Yoshi-shaped platformer for a six-year-old: Eeri is the owner's
 own kid, on a worksite of Tonka × Cat machines he can climb into. On foot is
 the game (run, jump, stomp, climb); machines are short ride sequences. Three

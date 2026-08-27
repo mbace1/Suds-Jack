@@ -25,11 +25,14 @@
 //
 // Run: node eeri/test/report.mjs [--csv]
 
-import { ROOMS as W12 } from '../js/rooms.js?v=3';
-import { WORLD34_ROOMS } from '../js/world34-rooms.js?v=3';
-const ROOMS = [...W12, ...WORLD34_ROOMS];
-import { compile, estimate, deadAir, DEAD_AIR, LEVEL, W } from '../js/parts.js?v=4';
-import { labelOf } from '../js/levelid.js?v=15';
+// ONE TOKEN PER MODULE, and this file learned why the hard way: with
+// `rooms.js?v=3` beside `levelid.js?v=15`, the register that appends worlds
+// 3 and 4 ran against a DIFFERENT instance of rooms.js than the one read
+// here, and the two halves of the game arrived from two module graphs. It
+// happened to total twelve, which is the worst kind of wrong.
+import { ROOMS } from '../js/rooms.js?v=43';
+import { compile, estimate, deadAir, DEAD_AIR, LEVEL, W } from '../js/parts.js?v=43';
+import { labelOf } from '../js/levelid.js?v=43';
 
 // ---- the vocabulary ------------------------------------------------------
 // What a level SAYS, as a set of words. Deliberately coarser than the parts
