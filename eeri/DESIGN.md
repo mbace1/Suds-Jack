@@ -830,6 +830,33 @@ speaks; the back half now measures 1.32–1.36.
 reads `CUT` is not finished; an existing room that reads `CUT` two passes
 running is the one to drop.
 
+### 8.6 Two builds, one game: vertical here, landscape in Godot (2026-08-21)
+
+Owner: *"Eeri now has a separate repo where the Godot port is produced from
+your version updates. JavaScript is aimed at testing VERTICAL and Godot the
+LANDSCAPE formats."*
+
+So this build is **upstream**, and it is judged in **portrait**. Both builds
+carry both orientations — this one already has the Game Boy DMG face plate in
+portrait and the arcade control-panel strip in landscape — and the direction
+is about where each format is *answered*, not which one exists. Portrait
+questions belong here: is the room readable on a tall phone, does the HUD
+clear the plate, does the reach budget still feel honest when the camera has
+pulled in. Landscape questions belong to the port.
+
+**The seam is `spec/eeri.json`, not this document.** `node
+eeri/tools/spec.mjs` emits the reach budget, every enemy clock, and all
+twelve levels compiled — including each level's tile grid, which is the
+collision truth, so a port never has to reimplement `parts.js`. It is
+generated from the modules the game itself reads and `test/rooms.mjs` fails
+if the committed file has drifted. **`PORT.md` is the contract**; read it
+before changing a number that the port also has to know.
+
+The rule that keeps the two builds one game: **a design change lands here
+first and reaches the port through a spec bump.** A problem found in
+landscape is worth more than the rule it breaks — but the fix comes back
+here to be made, or the two builds start disagreeing about what Eeri is.
+
 ### 8.3 The playability floor (measured 2026-08-20)
 
 Everything in §8.1 is about what the game HAS. This is about whether what it
