@@ -10,6 +10,13 @@ export class InputManager {
     this.keys = {};
     this.mouse = { x: 0, y: 0, down: false };
     this.onDash  = null;
+    // v224 RUSH: boost is HELD, not tapped. Two touch schemes ship together
+    // because which one survives a thumb is a play question, not an argument:
+    //   RIM  — push the move stick past 86% of its travel
+    //   ZONE — a dedicated pad in the lower-left margin
+    this.boostScheme = 'rim';
+    this._zoneHeld   = false;
+    this._padBoost   = false;
     this.onPause = null;
     // Gamepad state (read each frame via pollGamepad)
     this.gp = { connected: false, mx: 0, my: 0, ax: 0, ay: 0 };
@@ -49,6 +56,14 @@ export class InputManager {
         this.onPause?.();
         continue;
       }
+      // v224 RUSH ZONE pad: lower-left margin, ahead of stick assignment so it
+      // never steals the move stick.
+      if (this.boostScheme === 'zone' && this.rushOn
+          && t.clientX < window.innerWidth * 0.18 && t.clientY > window.innerHeight * 0.55) {
+        this._touchMap.set(t.identifier, 'zone');
+        this._zoneHeld = true;
+        continue;
+      }
       const side = t.clientX < window.innerWidth / 2 ? 'left' : 'right';
       const stick = side === 'left' ? this.left : this.right;
       if (!stick.active) {
@@ -63,7 +78,7 @@ export class InputManager {
   _touchMove(e) {
     for (const t of e.changedTouches) {
       const side = this._touchMap.get(t.identifier);
-      if (!side) continue;
+      if (!side || side === 'zone') continue;
       const stick = side === 'left' ? this.left : this.right;
       stick.dx = t.clientX - stick.ox;
       stick.dy = t.clientY - stick.oy;
@@ -75,6 +90,7 @@ export class InputManager {
       const side = this._touchMap.get(t.identifier);
       if (!side) continue;
       this._touchMap.delete(t.identifier);
+      if (side === 'zone') { this._zoneHeld = false; continue; }
       if (side === 'right') this.onDash?.();
       const stick = side === 'left' ? this.left : this.right;
       stick.active = false;
@@ -108,6 +124,7 @@ export class InputManager {
     const dash = !!(pad.buttons[0]?.pressed || pad.buttons[5]?.pressed || pad.buttons[7]?.pressed);
     if (dash && !this._prevDash) this.onDash?.();
     this._prevDash = dash;
+    this._padBoost = dash;   // v224 RUSH: the same button, but held
 
     // Pause: Start (9)
     const pause = !!pad.buttons[9]?.pressed;
@@ -121,6 +138,17 @@ export class InputManager {
   }
 
   /** Returns {x, z} normalized world-space move direction. */
+  /** v224 RUSH: is boost being HELD right now? Keyboard / pad / either touch scheme. */
+  getBoostHeld() {
+    if (this.keys['Space']) return true;
+    if (this._padBoost) return true;
+    if (this._zoneHeld) return true;
+    if (this.boostScheme === 'rim' && this.left.active) {
+      return Math.hypot(this.left.dx, this.left.dy) >= STICK_RADIUS * 0.86;
+    }
+    return false;
+  }
+
   getMoveDir() {
     if (this.gp.mx || this.gp.my) {
       let x = this.gp.mx, z = this.gp.my;

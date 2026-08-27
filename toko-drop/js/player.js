@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=177';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=178';
+import { TUNING } from './tuning.js?v=178';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -39,6 +40,12 @@ export class Player {
     this._stretch = 0;
     this.onShoot   = null;
     this._weaponMode   = 'SINGLE';
+    // v224 RUSH: boost is a HELD state, not a dash. >0 arms it (main.js sets
+    // the speed from TUNING.rush); the shield it grants dies the instant you
+    // pull the trigger, which is the mode's whole design.
+    this._boostSpeed   = 0;
+    this._boosting     = false;
+    this._firingNow    = false;
     this._burstQueue   = [];
     this._speedMult    = 1.0;
     this._fireRateMult = 1.0;
@@ -154,7 +161,14 @@ export class Player {
     }
   }
 
-  get invincible() { return this._dashTime > 0 || this._mercyT > 0 || this._invincBoost > 0; }
+  get invincible() {
+    return this._dashTime > 0 || this._mercyT > 0 || this._invincBoost > 0
+        || this.shielded;   // v224 RUSH: boosting, and not firing
+  }
+  // v224 RUSH: armed + held + trigger released. Firing cancels the shield.
+  get boosting() { return this._boostSpeed > 0 && this._boosting; }
+  get shielded() { return this.boosting && !this._firingNow; }
+  setBoost(on) { this._boosting = !!on; }
   get dashing()   { return this._dashTime > 0; }
   get position()  { return this.mesh.position; }
 
@@ -191,6 +205,12 @@ export class Player {
     this._gu.uStretch.value = 0;
     this.maxHp         = MAX_HP;
     this._weaponMode   = 'SINGLE';
+    // v224 RUSH: boost is a HELD state, not a dash. >0 arms it (main.js sets
+    // the speed from TUNING.rush); the shield it grants dies the instant you
+    // pull the trigger, which is the mode's whole design.
+    this._boostSpeed   = 0;
+    this._boosting     = false;
+    this._firingNow    = false;
     this._burstQueue   = [];
     this._speedMult    = 1.0;
     this._fireRateMult = 1.0;
@@ -219,6 +239,7 @@ export class Player {
   }
 
   dash(aimDir) {
+    if (this._boostSpeed > 0) return;   // v224 RUSH: boost replaces the dash
     if (this._dashTime > 0 || this._dashCD > 0) return;
     this._dashDir = aimDir.valid
       ? { x: aimDir.x, z: aimDir.z }
@@ -241,7 +262,9 @@ export class Player {
       this._flashT -= dt;
       this._setEmissive(0xff1100);
     } else if (this._mercyT <= 0) {
-      this._setEmissive(0x000000);
+      // v224 RUSH rides the body's existing emissive rather than a new
+      // material: cyan while the boost shield is up, orange while running hot.
+      this._setEmissive(this.shielded ? 0x0088aa : this._rushHot ? 0x883300 : 0x000000);
     }
 
     if (this._dashTime > 0) {
@@ -271,8 +294,11 @@ export class Player {
       }
     } else {
       // Normal movement always applies — even during mercy i-frames
-      this.mesh.position.x += moveDir.x * SPEED * this._speedMult * dt;
-      this.mesh.position.z += moveDir.z * SPEED * this._speedMult * dt;
+      // v224 RUSH: a held boost travels ~3x walking speed. Same direction
+      // input — it is the same stick, moving faster and lethally.
+      const spd = (this.boosting ? this._boostSpeed : SPEED) * this._speedMult;
+      this.mesh.position.x += moveDir.x * spd * dt;
+      this.mesh.position.z += moveDir.z * spd * dt;
     }
 
     // Mercy i-frame flicker — independent of movement
@@ -350,13 +376,26 @@ export class Player {
       }
     }
 
+    this._firingNow = !!aimDir.valid;   // v224 RUSH: the trigger drops the shield
     if (aimDir.valid && this._fireT <= 0) {
       this._lastAim = { x: aimDir.x, z: aimDir.z };
       const ox = this.mesh.position.x + aimDir.x * (PLAYER_RADIUS + 0.3);
       const oz = this.mesh.position.z + aimDir.z * (PLAYER_RADIUS + 0.3);
-      const baseRate = FIRE_RATE * this._fireRateMult * (this._fireRateBoost > 0 ? 0.4 : 1);
+      const baseRate = FIRE_RATE * this._fireRateMult * (this._fireRateBoost > 0 ? 0.4 : 1)
+        * (this._weaponMode === 'SHOTGUN' ? TUNING.rush.shotgun.rateMult : 1);
       const mode = this._weaponMode;
-      if (mode === 'SPREAD' || mode === 'SPREAD2') {
+      if (mode === 'SHOTGUN') {
+        // v224 RUSH: 5 pellets across a wide arc, firing much slower than the
+        // classic gun — deliberately a close-range answer, so boosting stays
+        // the better option at any distance.
+        const R = TUNING.rush.shotgun;
+        for (let i = 0; i < R.pellets; i++) {
+          const a = (i - (R.pellets - 1) / 2) * (R.spread / Math.max(1, R.pellets - 1)) * 2;
+          const c = Math.cos(a), sn = Math.sin(a);
+          bullets.spawnDir(ox, oz, aimDir.x * c - aimDir.z * sn, aimDir.x * sn + aimDir.z * c, true);
+        }
+        this.onShoot?.();
+      } else if (mode === 'SPREAD' || mode === 'SPREAD2') {
         const offsets = mode === 'SPREAD2' ? [-3, -2, -1, 0, 1, 2, 3] : [-2, -1, 0, 1, 2];
         const step    = mode === 'SPREAD2' ? Math.PI / 10 : Math.PI / 9;
         for (const offset of offsets) {

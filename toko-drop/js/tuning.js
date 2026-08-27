@@ -268,6 +268,26 @@ export const TUNING = {
     gridFalloff: 0.45,     // grid dims toward the rim (0 = uniform, old look)
   },
 
+  // v224 RUSH MODE (owner direction, 2026-08-24; design in the Godot port's
+  // RUSH_MODE.md). Its own ruleset, not a modifier: ROGUELIKE and DAILY do not
+  // apply inside it. The single rule everything hangs off — BOOST is the good
+  // option and the gun is what you take when you cannot afford to boost:
+  // boosting grants invulnerability and kills on contact, and PULLING THE
+  // TRIGGER CANCELS THE SHIELD. Heat is the shared cost of both.
+  rush: {
+    boostSpeed: 17,          // walking is 6 — boost is travel AND attack
+    heat: {
+      boostRate: 0.55,       // ≈1.8s of continuous boost from cold
+      perShot: 0.02,         // the gun runs warm, not hot
+      coolRate: 0.42,        // ≈2.4s to shed a full meter
+      clearAt: 0.35,         // hysteresis: no fluttering on the edge
+    },
+    shotgun: { pellets: 5, spread: 0.5, rateMult: 3.4 },  // close-range answer
+    chain: { perKill: 1, cap: 100, window: 2.5 },         // boost kills only
+    lives: { start: 3, extraEvery: 25000 },
+    levels: { first: 60, second: 90, step: 30 },          // then +30s each
+  },
+
   fx: {
     hitDroplets: 8, killDroplets: 22, killChunks: 5,
     splatLife: 20,
