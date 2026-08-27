@@ -3,8 +3,8 @@
 These rules apply to every file under `flashprince/`.
 
 1. Read `animation-locks.json` before changing animation, movement, rendering, palette or input code. Run `node scripts/check-animation-locks.mjs` before and after the work.
-2. The v18 run is immutable: do not redraw, regenerate, recolour, retime, mirror differently, reorder or replace its frames, holds, first-six-frame start, orientation or 1.22px root speed.
-3. New animation work is additive and must be matched to the locked run; never replace the run for consistency.
+2. The v18 run is immutable and retained as the selectable legacy character: do not redraw, regenerate, recolour, retime, mirror differently, reorder or replace its frames, holds, first-six-frame start, orientation or 1.22px root speed.
+3. The default character is the complete Conrad-sheet character approved for v51, including Conrad row 4 for running and row 5 for wind-up. Never mix the v18 run into that default character.
 4. Changing the run requires explicit user permission naming it. Otherwise stop.
 5. The Conrad B. Hart sheet is primary reference. Compare every new frame against the corresponding Flashback GIF sequence before release and record the mapping.
 6. Never call generated approximation Conrad-checked unless that comparison happened.

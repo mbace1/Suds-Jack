@@ -1,5 +1,13 @@
 # Flash Prince — versions
 
+## v51 — 2026-08-27
+
+**The character split.** The default Flash Prince now uses his complete Conrad
+sheet set, including Conrad's twenty-frame row-4 run and twelve-frame row-5
+wind-up. The exact v18 runner is preserved unchanged as the secondary legacy
+character. A new character menu appears at boot and on Escape/Start, with
+keyboard, gamepad and touch selection.
+
 ## v50 — 2026-08-26
 
 **One character again.** The locked v18 run remains byte-for-byte untouched.

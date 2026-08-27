@@ -42,6 +42,7 @@ export class Input {
     this.jumpPress = false; this.firePress = false; this.gunPress = false;
     this.carefulPress = false;
     this.pausePress = false; this.anyPress = false;
+    this.pause = false;
     this.modeHeld = false; this.modePress = false;
     this.touch = false;
     // A touchscreen says so before it is touched. Waiting for the first tap
@@ -158,13 +159,14 @@ export class Input {
   }
 
   poll() {
-    const wasJump = this.jump, wasFire = this.fire, wasGun = this.gun, wasCareful = this.careful;
+    const wasJump = this.jump, wasFire = this.fire, wasGun = this.gun, wasCareful = this.careful, wasPause = this.pause;
     const on = k => this.held.has(k) || this.latch[k] > 0;
     let L = on('left'), R = on('right');
     let U = on('up'), D = on('down');
     let J = on('jump'), F = on('fire'), G = on('gun');
     let K = on('careful');
     let MO = on('mode');
+    let P = on('pause');
 
     if (this.touch) {
       // same latch as the keys: a thumb can go down and up inside one frame
@@ -175,6 +177,7 @@ export class Input {
       J = J || z('jump') || U; F = F || z('fire'); G = G || z('gunbtn');
       K = K || z('careful');
       MO = MO || z('mode');
+      P = P || z('menu');
     }
 
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -189,7 +192,7 @@ export class Input {
       F = F || p.buttons[2]?.pressed || p.buttons[7]?.pressed || p.buttons[5]?.pressed;
       G = G || p.buttons[3]?.pressed;
       K = K || p.buttons[1]?.pressed || p.buttons[4]?.pressed || p.buttons[6]?.pressed;
-      if (p.buttons[9]?.pressed && !this.padPrev[9]) this.pausePress = true;
+      P = P || p.buttons[9]?.pressed;
       this.padPrev = p.buttons.map(b => b.pressed);
       break;
     }
@@ -204,10 +207,12 @@ export class Input {
     if (F && !wasFire) this.firePress = true;
     if (G && !wasGun) this.gunPress = true;
     if (K && !wasCareful) this.carefulPress = true;
+    if (P && !wasPause) this.pausePress = true;
     if ((J && !wasJump) || (F && !wasFire) || (G && !wasGun) || (K && !wasCareful)) this.anyPress = true;
     if (MO && !this.modeHeld) this.modePress = true;
     this.modeHeld = MO;
     this.jump = J; this.fire = F; this.gun = G; this.careful = K;
+    this.pause = P;
     // one tick off every latch, once, at the end — decrementing inside the
     // tests above would take several off a key read more than once
     for (const k in this.latch) if (this.latch[k] > 0) this.latch[k]--;

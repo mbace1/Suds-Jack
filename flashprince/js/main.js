@@ -17,16 +17,16 @@
 
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
-import { Hero } from './hero.js?v=50';
+import { Hero } from './hero.js?v=51';
 import { World, ROOMS, ROOM_H } from './level.js';
 import { paintBack, drawAir, drawFore, halo } from './scenery.js';
 import { Post } from './bench.js';
-import { Swordsman } from './foe.js?v=50';
-import { Input } from './input.js?v=50';
+import { Swordsman } from './foe.js?v=51';
+import { Input } from './input.js?v=51';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
-import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=50';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=51';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 // The gallery keeps one flat palette, cool and quiet, so a cycle reads. The
@@ -40,6 +40,7 @@ const REEL = [
   ['step', 'WALK · first step'],
   ['stepB', 'WALK · second step'],
   ['run', 'RUN — twenty frames'],
+  ['legacyRun', 'V18 RUN — legacy character'],
   ['runStart', 'RUN · winding up'],
   ['skid', 'RUN · coming to a halt'],
   ['turn', 'TURNING ROUND'],
@@ -97,7 +98,8 @@ class Stage {
     this.ed = new Editor(this.scr);
     this.enterRoom(0);
     this.hero.go('wake');
-    this.mode = 'free';
+    this.mode = 'select';
+    this.characterChoice = 0;
     this.reel = 0;
     this.t = 0;
     this.clock = 0;
@@ -186,6 +188,26 @@ class Stage {
     // WebAudio needs a gesture, so the first press of anything is the cue.
     if (inp.anyPress || inp.dir) this.snd.wake();
     if (inp.mutePress) setOn(!isOn());
+
+    // Start/escape always returns to the character menu. The default is the
+    // complete Conrad set; the immutable v18 runner remains selectable here.
+    if (inp.pausePress && this.mode !== 'select') {
+      this.characterChoice = this.hero.character === 'legacy' ? 1 : 0;
+      this.mode = 'select';
+      return;
+    }
+
+    if (this.mode === 'select') {
+      if (inp.dir && inp.dirHeld === 1) this.characterChoice = inp.dir > 0 ? 1 : 0;
+      if (inp.jumpPress || inp.firePress) {
+        this.hero.character = this.characterChoice ? 'legacy' : 'conrad';
+        this.hero.reset(48, FLOOR);
+        this.hero.health = 3;
+        this.hero.go('wake');
+        this.mode = 'free';
+      }
+      return;
+    }
 
     // Its own button now: FIRE belongs to the pistol, and a button that both
     // shoots and changes what the whole screen is doing is not a button.
@@ -294,6 +316,14 @@ class Stage {
   // ── drawing ────────────────────────────────────────────────────────
   paint() {
     const scr = this.scr;
+    if (this.mode === 'select') {
+      this.scr.setPalette(PAL);
+      this.backdrop(scr);
+      this.characterSelect(scr);
+      scr.present();
+      this.padZones();
+      return;
+    }
     if (this.mode === 'gallery') { this.scr.setPalette(PAL); this.backdrop(scr); this.gallery(scr); }
     else if (this.mode === 'edit') { this.editor(scr); scr.present(); this.padZones(); return; }
     else this.free(scr);
@@ -301,6 +331,20 @@ class Stage {
     this.chrome(scr);
     scr.present();
     this.padZones();
+  }
+
+  characterSelect(scr) {
+    scr.rect(0, FLOOR, W, H - FLOOR, C.SOLID);
+    scr.rect(0, FLOOR, W, 1, C.EDGE);
+    const frame = Math.floor(this.clock / 4) % 20;
+    drawSprite(scr, 'run', frame, 92, FLOOR, 1);
+    drawSprite(scr, 'legacyRun', frame, 228, FLOOR, 1);
+    this.centre(scr, 'CHOOSE CHARACTER', 22, C.LUX);
+    this.centre(scr, 'FLASH PRINCE                 V18 RUNNER', 42, C.EDGE, 6);
+    this.centre(scr, 'DEFAULT                      LEGACY', 52, C.DARK, 6);
+    const x = this.characterChoice ? 228 : 92;
+    scr.rect(x - 32, FLOOR + 8, 64, 2, C.LUX);
+    this.centre(scr, '◀ ▶  CHOOSE       JUMP / FIRE  START', H - 10, C.DARK, 6);
   }
 
   // Flat bands and a hard horizon — the least backdrop that still gives him a
@@ -483,6 +527,7 @@ class Stage {
       add('fire', rx - u * 1.9, cy - u * 1.5, u * 1.3, u * 1.3);
       add('gunbtn', rx - u * 1.9, cy + u * 0.15, u * 1.3, u * 1.3);
       add('mode', band.w - u * 1.35, band.y + u * 0.15, u * 1.2, u * 0.8);
+      add('menu', band.w - u * 2.75, band.y + u * 0.15, u * 1.2, u * 0.8);
       add('careful', cx - u * 1.6, cy + u * 1.75, u * 3.2, u * 0.95);
     } else {
       const pw = W * scr.scale, ph = H * scr.scale;
@@ -497,6 +542,7 @@ class Stage {
       add('fire', rx - u * 2.5, cy - u * 1.45, u * 1.15, u * 1.15);
       add('gunbtn', rx - u * 2.5, cy + u * 0.2, u * 1.15, u * 1.15);
       add('mode', scr.ox + pw - u * 1.4, scr.oy + u * 0.2, u * 1.2, u * 0.8);
+      add('menu', scr.ox + pw - u * 2.8, scr.oy + u * 0.2, u * 1.2, u * 0.8);
       add('careful', cx - u * 1.55, cy + u * 1.7, u * 3.1, u * 0.85);
     }
     this.input.setZones(zones);
@@ -510,7 +556,7 @@ class Stage {
       d.fillRect(band.x, band.y, band.w, Math.max(1, band.h * 0.006));
     }
     const GLYPH = { up: '▲', down: '▼', left: '◀', right: '▶' };
-    const WORD = { jump: 'JUMP', fire: 'FIRE', gunbtn: 'GUN', mode: 'REEL', careful: 'CAREFUL' };
+    const WORD = { jump: 'JUMP', fire: 'FIRE', gunbtn: 'GUN', mode: 'REEL', menu: 'MENU', careful: 'CAREFUL' };
     for (const z of zones) {
       const on = this.input.zoneHeld(z.name);
       const r = Math.min(z.w, z.h) * 0.22;

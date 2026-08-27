@@ -13,7 +13,7 @@
 // declares open.
 
 import { POSE as Q, sample } from './figure.js';
-import { RUN_HOLD, RUN_SPEED, START_N, frameFromHolds } from './run-lock.js?v=50';
+import { RUN_HOLD, RUN_SPEED, START_N, frameFromHolds } from './run-lock.js?v=51';
 
 // Conrad's run, all twenty frames of it — his arms are not symmetrical between
 // the two halves, so there is no mirroring the second ten out of the first.
@@ -93,7 +93,7 @@ const M = {
 
   drink: { dur: 46, open: 46, low: true, drinkAt: 22, clip: [[Q.drinkA, 8], [Q.drinkB, 26], [Q.drinkA, 12]] },
 
-  run: { dur: 999, loop: true, open: 0, speed: RUN_SPEED, clip: RUN_CLIP },
+  run: { dur: 999, loop: true, open: 0, speed: 1.62, clip: RUN_CLIP },
   // Winding UP into the run. Twelve drawn frames of him going from feet
   // together to full running posture, and the speed is ramped across them so
   // the picture and the travel agree — a step used to hand straight over to a
@@ -173,6 +173,7 @@ const ARMED_SWORD = new Set(['guard', 'advance', 'retreat', 'strike', 'parry', '
 
 export class Hero {
   constructor(x, y) {
+    this.character = 'conrad';
     this.reset(x, y);
     this.health = 3;
     this.hasGun = false;
@@ -248,13 +249,17 @@ export class Hero {
     const m = M[s];
     const over = (anim, n, f = this.f, lipY) => ({ anim, f: f / (m.dur / n), lipY });
     switch (s) {
-      case 'run': return { anim: 'run', f: frameFromHolds(this.f, RUN_HOLD, true) };
+      case 'run': return this.character === 'legacy'
+        ? { anim: 'legacyRun', f: frameFromHolds(this.f, RUN_HOLD, true) }
+        : { anim: 'run', f: this.f / 1.1 };
       case 'step': return over(this.stepPhase ? 'stepB' : 'step', 6);
       // the careful step is the same six frames given half again as long
       case 'inch': return over(this.stepPhase ? 'stepB' : 'step', 6);
       case 'stand': case 'peer': return { anim: 'stand', f: this.f / 30 };
       case 'turn': return over('turn', 10);
-      case 'windUp': return { anim: 'runStart', f: frameFromHolds(this.f, RUN_START_HOLD) };
+      case 'windUp': return this.character === 'legacy'
+        ? { anim: 'legacyRunStart', f: frameFromHolds(this.f, RUN_START_HOLD) }
+        : over('runStart', 12);
       case 'runTurn': return over('skid', 12);
       case 'skid': case 'bump': return over('skid', 12);
       // with the pistol out he goes down holding it, not bent double
@@ -376,7 +381,8 @@ export class Hero {
       const k = Math.min(m.dx.length - 1, Math.floor((this.f - 1) / m.dur * m.dx.length));
       this.tryX(world, m.dx[k] * this.face);
     } else if (m.speed) {
-      const r = this.tryX(world, m.speed * this.face);
+      const speed = this.state === 'run' && this.character === 'legacy' ? RUN_SPEED : m.speed;
+      const r = this.tryX(world, speed * this.face);
       // Running into a wall is its own move. Skidding to a halt in front of it
       // pretended he had seen it coming; he had not.
       if (r.hit && this.state === 'run') { this.go('bump'); game.bumped?.(this); return; }

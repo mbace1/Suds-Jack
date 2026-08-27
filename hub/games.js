@@ -279,7 +279,7 @@ export const GAMES = [
     },
     pad: 'native',
     status: 'active',
-    note: 'v50 — idle, jumps, landings and every other Conrad action now share the locked v18 run palette and clean pixel contour',
+    note: 'v51 — complete Conrad hero is now default; the exact v18 runner is preserved as a selectable legacy character',
     title: 'Flash Prince',
     tagline: 'Every move you start, you finish. Hang, climb, and draw before he does.',
     lineage: 'Another World × Flashback × Prince of Persia',

@@ -12,7 +12,7 @@
 // disadvantage is that his decisions are made once per move rather than once
 // per frame. That is a fair fight at this scale.
 
-import { drawSprite } from './sprite.js?v=50';
+import { drawSprite } from './sprite.js?v=51';
 
 // The moves, and they are the hero's numbers because a duel with two different
 // clocks in it is not a duel. `hitAt` is the ONE frame the edge is anywhere;

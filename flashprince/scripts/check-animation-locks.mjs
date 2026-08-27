@@ -18,6 +18,7 @@ if (lock.RUN_SPEED !== run.speed || lock.START_N !== run.startFrames || JSON.str
 
 const hero = readFileSync(path.join(ROOT, 'js/hero.js'), 'utf8');
 const sprite = readFileSync(path.join(ROOT, 'js/sprite.js'), 'utf8');
-if (!hero.includes("speed: RUN_SPEED") || !hero.includes("frameFromHolds(this.f, RUN_HOLD, true)")) throw new Error('Playable hero is not using the locked run timing');
-if (!sprite.includes("lockedRun: true") || !sprite.includes("lockedFrame(j)")) throw new Error('Playable renderer is not using the locked run pixels');
+if (!hero.includes("this.character === 'legacy'") || !hero.includes("frameFromHolds(this.f, RUN_HOLD, true)")) throw new Error('Legacy character is not using the locked run timing');
+if (!sprite.includes("legacyRun: { lockedRun: true") || !sprite.includes("lockedFrame(j)")) throw new Error('Legacy character is not using the locked run pixels');
+if (!sprite.includes("row: 4, c0: 1, n: 20") || !hero.includes("this.character = 'conrad'")) throw new Error('Complete Conrad character is not the default');
 console.log(`animation locks ok — run ${run.runtimeSignature}, ${run.frameCount} frames`);

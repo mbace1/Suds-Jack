@@ -8,6 +8,8 @@
   "approvedFamilies": {
     "run": {
       "status": "locked",
+      "role": "selectable legacy character",
+      "defaultPlayable": false,
       "approvedIn": "v18",
       "restoredIn": "v24 and v48",
       "dataPath": "js/run-v15-data.js",
@@ -51,7 +53,16 @@
           "reason": "Rejected by the user; never reuse for playable run."
         }
       ],
-      "changePolicy": "Explicit user permission naming the run animation is required."
+      "changePolicy": "Never modify this data. It remains available as the legacy character even when another character is the default."
+    },
+    "defaultRun": {
+      "status": "default",
+      "approvedIn": "v51",
+      "source": "Conrad B. Hart sheet row 4, cells 1-20",
+      "frameCount": 20,
+      "mapping": "one-to-one authored Conrad run sequence; no generated or substituted frames",
+      "palette": "exact locked v18 seven-colour palette",
+      "speed": 1.62
     }
   }
 }

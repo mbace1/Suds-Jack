@@ -1,4 +1,4 @@
-import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js?v=50';
+import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js?v=51';
 
 // Conrad, blitted.
 //
@@ -67,9 +67,15 @@ export const ANIM = {
   // twenty had him moving BACKWARDS. Pinning each frame by its own belt makes
   // the pelvis dead steady and lets the engine's constant speed do the moving,
   // which is what a run is.
-  // Exact v18 approved run. Its pixels, cadence, orientation and frame order
-  // are protected by run-lock.js and animation-locks.json.
-  run: { lockedRun: true, n: 20, loop: true, faces: -1 },
+  // The default hero's own Conrad run: row 4, all twenty authored frames,
+  // registered at the belt so the planted foot does not shudder. The immutable
+  // v18 run remains below as a selectable legacy character.
+  run: {
+    row: 4, c0: 1, n: 20, ground: 44, hold: 1.1, loop: true,
+    axs: [13.5, 18.0, 16.0, 19.5, 17.5, 13.5, 10.5, 15.5, 12.0, 17.0,
+          13.5, 18.5, 15.0, 12.5, 17.0, 13.0, 10.5, 17.0, 13.5, 16.0],
+  },
+  legacyRun: { lockedRun: true, n: 20, loop: true, faces: -1 },
 
   // Grounded moves, where one anchor for the whole row is enough because his
   // feet are on the floor in every frame of it. The airborne ones — the two
@@ -116,8 +122,9 @@ export const ANIM = {
   // straightens him up until he is standing — that is the halt. The stop used
   // to play row 5, so letting go of the stick wound him up instead of down,
   // which is why it never settled.
-  // The approved start is the first six frames of the locked v18 run.
-  runStart: { lockedRun: true, n: START_N, faces: -1 },
+  runStart: { row: 5, c0: 1, n: 12, ground: 38,
+              axs: [3.5, 7.0, 5.5, 8.5, 10.5, 11.5, 9.5, 9.0, 9.5, 9.5, 9.5, 8.0] },
+  legacyRunStart: { lockedRun: true, n: START_N, faces: -1 },
   skid: { row: 6, c0: 1, n: 12, ground: 47,
           axs: [15.5, 11.5, 15.0, 19.0, 14.5, 11.5, 20.0, 15.5, 15.0, 12.5, 11.0, 10.0] },
 
