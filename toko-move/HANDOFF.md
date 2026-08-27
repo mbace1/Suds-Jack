@@ -91,7 +91,17 @@ that can vanish silently, and has, twice.
   `node scripts/versions.mjs . --check`), deploys never merge. The owner says
   when. Nothing since v9 is deployed.
 
-## 5. Where it stands right now
+## 5. The campaign
+
+**Chapters are cities** (owner, 2026-08-26). `CAMPAIGN.md` is the write-up.
+Chapter one is real Helsinki, built from the committed HSL and OSM extracts —
+`node scripts/city-pack-helsinki.mjs` rebuilds the pack. The abstract boards
+(The Rush, The Handover, The Number 7, the endless city) are FREE PLAY now, not
+the spine. Nagoya, New York and Tokyo are listed and locked until their networks
+are brought in; `scripts/city-pack.mjs --city hsl` is the keyless one-command
+upgrade to the whole Helsinki feed on a networked machine.
+
+## 6. Where it stands right now
 
 Branch `claude/toko-move-graphics-zti7gj`, PR **#306**. Live on `gh-pages` is
 **v9**; v10, v11 and v12 are on the branch, held at the owner's word (*"wait"*).
@@ -101,8 +111,9 @@ Branch `claude/toko-move-graphics-zti7gj`, PR **#306**. Live on `gh-pages` is
 - **v12** the bus layer and *The Number 7*; plus `Line.spaceIn`, which fixed a
   bug the metro layer always had (every vehicle was constructed at seg 0, so a
   second train rode inside the first — fourteen buses carried what three did).
+- **v13** the campaign became cities; chapter one is real Helsinki.
 
-## 6. The next task: freight
+## 7. The next task: freight
 
 **Read `FREIGHT.md`.** It is the design and it names its own recommendations.
 The short version: *people choose, goods are sent* — so freight never gives up,
@@ -133,8 +144,12 @@ A build order that keeps every step measurable:
    the feature can be quietly pointless and the tell for each — **run those
    three, and put the table in `VERSIONS.md` whichever way it comes out**.
 
-## 7. Open elsewhere, if you want a different job
+## 8. Open elsewhere, if you want a different job
 
+- **The sea.** Töölönlahti is coastline, not a polygon, so it is not wet ground
+  on the Helsinki board. Three closures were tried and each finds a different
+  subset; `seaRings` is kept behind a flag and the gate pins what it does.
+  `CAMPAIGN.md` §5 and `CITIES.md` have it.
 - **The octolinear fitter** (`js/city.js`) reaches 46% on real data against
   100% on synthetic, and the core gate *asserts that failure* so a fix breaks
   the gate loudly. It is structural — 34 of Kallio's 65 stations have more than

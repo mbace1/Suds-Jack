@@ -538,3 +538,52 @@ checks behind a stack trace.
 - Congestion — [GraphHopper's open-traffic-collection](https://github.com/graphhopper/open-traffic-collection)
   (per-country survey), [World Bank Open Traffic](https://github.com/opentraffic)
 - A worked MQTT client, for reference: [otsaloma/helsinki-transit-live](https://github.com/otsaloma/helsinki-transit-live)
+
+---
+
+## The sea, and why the Helsinki board has almost none (2026-08-26)
+
+Water arrives in a pack as two different things, and only one of them is a
+polygon.
+
+- **`water.areas`** — closed rings, fillable. In the central-Helsinki extract
+  these are **ponds**. The largest is Alppipuiston lammet at **0.002 km²**.
+- **`water.coast`** — 27 open runs. OSM maps a shoreline as a *directed line*
+  with land on one side and the sea merely implied, so Töölönlahti,
+  Eläintarhanlahti, the harbours and the sea itself are all in here and none of
+  them is an area.
+
+Drawn as lines they read as blue scribble, and worse, the board has **no wet
+ground**: a mission about bridging the bay had nothing to bridge.
+
+### Three closures, and what each recovers
+
+Stitching first is not optional — OSM splits a shoreline into ways, and these 27
+runs stitch into **5 chains**, of which only **3** have both ends on the box the
+data was clipped to.
+
+| approach | what it does | result |
+|---|---|---|
+| close a cut end **out to the nearest box edge** | turns 90° to the closest wall | walks the coastline back across the city; every candidate then holds stops on both sides and all are dropped — **0.2% of the board wet** |
+| close along the run's **own bearing** | follows the line's course | better shape, still misses the bays — **0.1%** |
+| **flood fill from the stops** | rasterise the shore as a wall, flood land outward from every stop, judge a candidate ring by whether its inside is dry | needs no convention about which way a coastline was drawn, and a gap costs water rather than inventing it — recovers the outer sea and the Kalasatama basin, **11.8%** |
+
+All three find the outer sea. **None finds Töölönlahti**, which is the one piece
+of water a Helsinki board most needs.
+
+### The decision
+
+**Half a coastline drawn as fact is worse than none** — it says there is no bay
+where there is a bay. So the shipped board carries the water that genuinely is a
+polygon in the data, draws the shoreline as a line, and `seaRings` stays behind
+`opts.sea` with the core gate pinning what it actually does — including the
+invariant worth keeping whatever else changes: **it never puts a station in the
+water.** A ring that would drown a platform is dropped rather than drawn.
+
+### What would fix it
+
+Not another closure rule. Either a water extract that includes the sea as a
+**multipolygon** (OSM's `natural=water` relations, rather than
+`natural=coastline` ways), or a coastline fetched with enough margin that every
+run closes on the box. Both are a fetch on a networked machine, not an
+algorithm — which is the same shape as every other open problem in this file.

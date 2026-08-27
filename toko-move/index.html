@@ -139,6 +139,14 @@
   .miss b { display: block; font-size: 14.5px; font-weight: 600; }
   .miss span { display: block; font-size: 13px; color: var(--dim); margin-top: 3px; }
   .miss .tag { display: inline-block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
+  /* A chapter heading is a PLACE, so it is set like one: the number small and
+     quiet, the city big, and the line under it in the city's own words. */
+  .chapter { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 14px 0 2px; }
+  .chapter em { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); font-style: normal; }
+  .chapter b { font-size: 17px; font-weight: 700; }
+  .chapter i { font-size: 12.5px; color: var(--dim); font-style: normal; }
+  .chapter.shut b, .chapter.shut i { color: var(--dim); }
+  .chapterBrief { font-size: 12.5px; color: var(--dim); margin: 0 0 8px; line-height: 1.45; }
   .miss.done .tag { color: #3f9e5a; }
   .miss[disabled] { opacity: 0.45; cursor: not-allowed; }
   .rule { height: 1px; background: var(--rule); margin: 18px 0; }
@@ -232,11 +240,12 @@
       <p class="small">Every stop is a shape, and everybody on it wants a stop of some <em>other</em> shape. <b>Drag between two stops</b> to open a line; drag the stub at a line's end to carry it on, and drag back to pull it up again.</p>
 
       <div class="rule"></div>
-      <h2>Missions</h2>
+      <h2>The campaign</h2>
       <div id="campaignList"></div>
 
       <div class="rule"></div>
       <h2>Free play</h2>
+      <p class="small dim">The abstract boards, where one layer is taught with nothing else in the way.</p>
       <div id="freeList"></div>
     </div>
   </div>
@@ -266,7 +275,7 @@
     </div>
   </div>
 
-<script type="module" src="js/main.js?v=12"></script>
+<script type="module" src="js/main.js?v=13"></script>
 <!-- the way home: HOME top-left + hold Start/Back on a pad -->
 <script type="module" src="../hub/shell.js?v=64"></script>
 </body>

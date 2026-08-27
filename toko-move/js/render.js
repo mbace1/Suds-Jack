@@ -5,10 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=12';
-import { BOARD } from './world.js?v=12';
-import { CELL } from './roads.js?v=12';
-import { drawShape, tracePath } from './shapes.js?v=12';
+import { PAL, INK, sizeAt } from './palette.js?v=13';
+import { BOARD } from './world.js?v=13';
+import { CELL } from './roads.js?v=13';
+import { drawShape, tracePath } from './shapes.js?v=13';
 
 export class Renderer {
   constructor(canvas) {
@@ -76,6 +76,11 @@ export class Renderer {
       ctx.restore();
     };
 
+    // THE REAL NETWORK, under everything. Twenty services' own traced paths,
+    // drawn quiet and thin: it is what makes the board Helsinki before a single
+    // line has been drawn on it, and it has to stay quiet or the player cannot
+    // tell what they themselves have built from what was already there.
+    if (game.city?.lines) this.cityLines(game.city.lines);
     if (game.roads) dim('roads', () => this.roads(game.roads, view));
     // Bus routes go on ABOVE the road slab and BELOW the metro: they are paint
     // on a street, and a metro line crossing one passes over it.
@@ -92,7 +97,100 @@ export class Renderer {
     }
     const sizes = sizeAt(this.scale);
     for (const st of game.world.stations) this.station(st, view, sizes);
+    // Names last, over everything, because a name half under a line is worse
+    // than no name — and they only exist on a real city.
+    if (game.world.city) this.names(game.world, sizes);
 
+    ctx.restore();
+
+    // The credit, in screen space rather than board space so it does not scale
+    // away on a phone. It is a LICENCE CONDITION and not a courtesy: HSL's
+    // feed is CC BY 4.0 and the water is ODbL, and `city.js` refuses to lay out
+    // a pack that has lost either.
+    if (game.city?.credit) this.credit(game.city.credit);
+  }
+
+  cityLines(lines) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.26;
+    ctx.strokeStyle = PAL.ink;
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const l of lines) {
+      const pts = l.path;
+      if (!pts || pts.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // The shoreline, where a city has one. It is drawn and never tested against:
+  // a coastline is an OPEN directed line with the sea implied on one side, so
+  // it is not a polygon and closing it would paint the harbour as ground.
+  coast(world) {
+    if (!world.coast?.length) return;
+    const ctx = this.ctx;
+    ctx.strokeStyle = PAL.waterEdge;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const run of world.coast) {
+      if (run.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(run[0].x, run[0].y);
+      for (let i = 1; i < run.length; i++) ctx.lineTo(run[i].x, run[i].y);
+      ctx.stroke();
+    }
+  }
+
+  // Real stops have real names, and on a city board they are most of what
+  // makes it that city. Set small, under the stop, in the quiet grey that the
+  // gate already holds to AA — and never on an abstract board, where the whole
+  // fiction is that a stop is a shape and nothing else.
+  names(world, sizes) {
+    const ctx = this.ctx;
+    const px = Math.max(10, 11 / this.scale);
+    ctx.font = `600 ${px}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.lineWidth = Math.max(2.5, 3 / this.scale);
+    ctx.strokeStyle = PAL.paper;
+    ctx.fillStyle = PAL.dim;
+    // …and NOT all of them. Two stops close together put one name on top of
+    // another and neither could be read — on a real city that happens the
+    // moment two stops share a square. A name that would land on one already
+    // drawn is dropped, biggest stop first, so what survives is legible.
+    const taken = [];
+    for (const st of world.stations) {
+      if (!st.name) continue;
+      const y = st.y + (st.special ? sizes.specialR : sizes.stationR) + px * 0.5;
+      const w = ctx.measureText(st.name).width;
+      const box = { x0: st.x - w / 2, y0: y, x1: st.x + w / 2, y1: y + px };
+      if (taken.some(t => box.x0 < t.x1 && box.x1 > t.x0 && box.y0 < t.y1 && box.y1 > t.y0)) continue;
+      taken.push(box);
+      // painted twice: a halo in paper first, so a name crossing a line is
+      // still readable without a box behind it
+      ctx.strokeText(st.name, st.x, y);
+      ctx.fillText(st.name, st.x, y);
+    }
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  credit(text) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.font = '500 11px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.fillStyle = PAL.dim;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(text, 10, this.canvas.height / this.dpr - 8);
     ctx.restore();
   }
 
@@ -109,6 +207,7 @@ export class Renderer {
       ctx.lineWidth = 2;
       ctx.stroke();
     }
+    this.coast(world);
   }
 
   // A tooth of paper texture, tiled. Built once — a per-pixel wash every frame

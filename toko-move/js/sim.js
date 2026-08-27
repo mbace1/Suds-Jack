@@ -6,11 +6,12 @@
 // a festival, a ten-minute delivery contract and the endless city are the same
 // code reading different data.
 
-import { World } from './world.js?v=12';
-import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=12';
-import { RoadNet } from './roads.js?v=12';
-import { BusNet } from './bus.js?v=12';
-import { byId, validate, GOALS } from './missions.js?v=12';
+import { World } from './world.js?v=13';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=13';
+import { RoadNet } from './roads.js?v=13';
+import { BusNet } from './bus.js?v=13';
+import { asBoard } from './city.js?v=13';
+import { byId, validate, GOALS } from './missions.js?v=13';
 
 export class Game {
   constructor(seed = 1, missionId = 'endless', opts = {}) { this.reset(seed, missionId, opts); }
@@ -28,7 +29,28 @@ export class Game {
     // out from under the lines already drawn on them.
     this.portrait = !!opts.portrait;
     const board = this.portrait ? { ...m.board, w: m.board.h, h: m.board.w } : m.board;
-    this.world = new World(seed, { ...m, board });
+
+    // A REAL CITY, when the mission names one and the pack was handed in. The
+    // pack is a file — the game never fetches the world it is set in, because
+    // the arcade's offline promise would be a lie if it did — so whoever
+    // launches the mission loads it and passes it here.
+    //
+    // A mission may name a city it cannot get: the file is missing, or a
+    // chapter is not built yet. That is not a crash. `city` stays null, the
+    // board is rolled the ordinary way, and `cityMissing` says so out loud so
+    // the screen can admit it rather than quietly playing somewhere else.
+    this.cityMissing = null;
+    let city = null;
+    if (m.city) {
+      if (opts.pack) {
+        try { city = asBoard(opts.pack, board, m.cityFit ?? {}); }
+        catch (e) { this.cityMissing = e.message; }
+      } else {
+        this.cityMissing = `no pack for "${m.city}"`;
+      }
+    }
+    this.city = city;
+    this.world = new World(seed, { ...m, board, city });
 
     // Which transports this mission runs. A mission may name ONE (`layer`) or
     // SEVERAL (`layers`), and when it names several they all run at once —
@@ -431,6 +453,7 @@ export class Game {
       parcelLeg: this.parcel ? this.parcel.leg : null,
       parcelDone: this.delivered.size > 0,
       layer: this.layer,
+      city: this.mission.city ?? null,
       roadUsed: this.roads ? this.roads.used() : null,
       jammed: this.roads ? this.roads.jammed : null,
       routes: this.bus ? this.bus.lines.length : null,

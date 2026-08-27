@@ -1,5 +1,98 @@
 # Toko Move — versions
 
+## v13 — 2026-08-26
+
+**The campaign is the cities now.** Owner's direction: Helsinki is chapter one,
+Nagoya two, New York three, Tokyo four — and the abstract boards move to free
+play. `CAMPAIGN.md` is the write-up; this is what shipped.
+
+### Chapter one is real Helsinki
+
+Built from the geometry this repository already carries — the HSL rail extract
+and the OSM water from PR #305, both fetched on a networked machine and
+committed, because this environment cannot reach `dev.hsl.fi`, Digitransit or
+Overpass. **Every live track in the box**: metro M1 and M2 and eighteen tram
+services, each with its own traced path, 82 platforms, real names, real
+coordinates, the real shoreline.
+
+The paths are the thing that makes it Helsinki. They are drawn quiet and thin
+UNDER the board, so the city is recognisable before you have drawn a single line
+on it — and quiet enough that you can still tell what you built from what was
+already there.
+
+Three missions: **Aamuruuhka** (rail, and the board is a place), **Pitkäsilta**
+(more city than network), **Ratikka ja auto** (all three layers over one city,
+which is what the layer work was for). Targets measured over ten seeds with a
+bot that keeps every stop on some line — 190 wins 8/10, 244 wins 7/10, 162 wins
+7/10. The third is the lowest number and the hardest mission; three layers over
+one city is harder than one layer over it, whatever the order says.
+
+### Four decisions that turn a network into a board
+
+Each was wrong first, and each was wrong invisibly.
+
+**Which stops.** All of them is unplayable — central Helsinki puts stops 100 m
+apart, closer than a station is *drawn*. Ranked by services calling, then
+thinned: walk the rank and drop anything standing on somebody already taken.
+
+**What they are called.** Folding platforms by name leaves Päärautatieasema and
+Rautatientori **one metre apart**, because Finnish compounds defeat a
+word-boundary rule — *metroasema* is not *asema*. Folding by radius alone names
+the central interchange **Elielinaukio**, the bus square, because that platform
+is first in the feed; "shortest name" picks **Postitalo**, the post office. So
+the variants are grouped by a crude stem, the group that says it is a station
+wins, and the plainest member is shown. Rautatientori, Hakaniemi, Sörnäinen,
+Kalasatama, Pasila and Helsingin yliopisto all come out right.
+
+**What shape a stop is.** The one thing assigned rather than read. Metro meets
+trams, or four services call → an interchange, and a special shape. The specials
+come out as Rautatientori, Hakaniemi and Sörnäinen, which is *true* — a rule
+invented for prettiness would not have found that.
+
+**What order they open in.** Rank alone put five interchanges out first, every
+one a special, and **thirty-one people were marked "nowhere to go" inside the
+first minute** because nobody could reach anybody. One special to every two
+ordinary stops, and Rautatientori still opens the board.
+
+### The sea is NOT reconstructed, and that is the decision
+
+Water arrives as two kinds and only one is a polygon. The closed bodies here are
+ponds — the biggest is 0.002 km². Töölönlahti, Eläintarhanlahti and the harbours
+are all *coastline*: open directed lines with the sea merely implied. Three
+closures were tried — out to the nearest edge, along the run's own bearing, and
+a flood fill seeded from the stops (the stops are on land, so the flood needs no
+convention about which way a coastline was drawn). All three find the outer sea
+and the Kalasatama basin; **none finds Töölönlahti.**
+
+Half a coastline drawn as fact is worse than none: it says there is no bay where
+there is a bay. So the board ships the water that genuinely is a polygon, draws
+the shoreline as a line, and `seaRings` stays behind a flag with the gate pinning
+what it actually does — including that it never puts a station in the water,
+which is the failure worth guarding.
+
+### Gates
+
+Core 462 → **504**, page 132 → **143**. Every new check mutation-tested:
+removing the interleave, the thinning and the name rule each fails its own
+checks and no others; and on the page, deleting the network underlay or the
+credit each fails exactly one.
+
+Two page checks had to be fixed rather than added. Clearing a mission is
+asserted **wherever it is listed**, not in the campaign box, since the mission
+that gate clears is free play now. And the train-shed count is asserted against
+**what the shed held**, not against the number 3 — pinning it to a literal tied
+that check to whichever mission the phone happened to open first, so it broke
+the day the free-play list changed order. A test measuring the list rather than
+the shed.
+
+### The upgrade path is one command
+
+`node scripts/city-pack.mjs --city hsl --out toko-move/cities/helsinki.json`
+writes the same schema from the whole HSL feed, keyless. Nothing in the game
+changes; the board becomes the city.
+
+Module tokens `?v=12` → `?v=13`.
+
 ## v12 — 2026-08-25
 
 **The bus layer, and The Number 7.** The owner's call: the bus is the *public*

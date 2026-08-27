@@ -350,8 +350,22 @@ async function checkHomeClear(pg, where) {
 
   await page.click('#toMissions');
   ok(await page.evaluate(() => !document.getElementById('title').hidden), 'the way back to the board works');
-  ok(await page.evaluate(() => !!document.querySelector('#campaignList .miss.done')),
+  ok(await page.evaluate(() => !!document.querySelector('.miss.done')),
      'and a cleared mission is marked on it');
+  // The board is CHAPTERS now, and a chapter with no pack is listed and shut
+  // rather than hidden — the order is the plan.
+  const chap = await page.evaluate(() => ({
+    heads: [...document.querySelectorAll('#campaignList .chapter b')].map(b => b.textContent),
+    shut: [...document.querySelectorAll('#campaignList .chapter.shut b')].map(b => b.textContent),
+    missions: [...document.querySelectorAll('#campaignList .miss b')].map(b => b.textContent),
+    free: [...document.querySelectorAll('#freeList .miss b')].map(b => b.textContent),
+  }));
+  eq(chap.heads.join(' → '), 'Helsinki → Nagoya → New York → Tokyo',
+     'the campaign is the cities, in the owner\'s order');
+  eq(chap.shut.join(','), 'Nagoya,New York,Tokyo', 'and the ones with no network yet say so');
+  ok(chap.missions.length >= 3, `Helsinki has missions on it (${chap.missions.join(', ')})`);
+  ok(chap.free.includes('The Rush') && chap.free.includes('The Number 7'),
+     'while the abstract boards moved to free play');
 
   // ── the rules, on demand ──────────────────────────────────────────────
   // Every tip fires once and is gone, which is right for a nudge and useless
@@ -363,7 +377,9 @@ async function checkHomeClear(pg, where) {
   // Sampled BOTH ways from one frame: alarm pixels around the van, none around
   // an ordinary car — asking only the van's would pass with every car outlined.
   const van = await page.evaluate(async () => {
-    window.__tm.debug.launch('transfer', 24);
+    // awaited: launching is async now, because a chapter mission has a city
+    // pack to load before there is a board at all
+    await window.__tm.debug.launch('transfer', 24);
     const g = window.__tm.game, r = window.__tm.renderer, R = g.roads;
     g.focus('roads');
     R.budget = 9999; R.bridges = 99; R.spareCars = 20;
@@ -694,6 +710,54 @@ async function checkHomeClear(pg, where) {
        `and it is outlined, so it reads as a vehicle rather than a swelling (+${route.withBus.ink - route.without.ink} ink)`);
   }
 
+  // ── chapter one, on the page ──────────────────────────────────────────
+  // The pack is FETCHED by the page, so this is the only place the whole seam
+  // is exercised: file → projection → board → drawn.
+  const hel = await page.evaluate(async () => {
+    await window.__tm.debug.launch('hel-aamu', 5);
+    const g = window.__tm.game, r = window.__tm.renderer;
+    if (g.cityMissing) return { why: g.cityMissing };
+    for (let i = 0; i < 400; i++) g.step(0.05);
+    await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+    const names = g.world.stations.map(s => s.name);
+    // the real network, drawn: sample along one service's own traced path and
+    // count ink that is not the paper it sits on
+    const line = g.city.lines.find(l => l.path?.length > 8);
+    const ctx = r.canvas.getContext('2d');
+    let onPath = 0;
+    for (const p of line.path) {
+      const px = Math.round((r.ox + p.x * r.scale) * devicePixelRatio);
+      const py = Math.round((r.oy + p.y * r.scale) * devicePixelRatio);
+      if (px < 1 || py < 1) continue;
+      const d = ctx.getImageData(px - 1, py - 1, 3, 3).data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] < 200 && d[i + 1] < 200 && d[i + 2] < 200) { onPath++; break; }
+      }
+    }
+    return { names, onPath, ofPath: line.path.length, services: g.city.lines.length,
+             credit: g.city.credit, stations: g.world.stations.length };
+  });
+  ok(!hel.why, `Helsinki loads from its pack${hel.why ? ` — ${hel.why}` : ''}`);
+  if (!hel.why) {
+    ok(hel.names.every(Boolean), `every stop on the board is a real place (${hel.names.slice(0, 3).join(', ')}…)`);
+    eq(hel.names[0], 'Rautatientori', 'and the board opens at the main interchange');
+    ok(hel.services >= 19, `every live service came with it (${hel.services})`);
+    ok(hel.onPath > hel.ofPath * 0.5,
+       `the real network is actually drawn under the board (${hel.onPath} of ${hel.ofPath} sampled points have ink)`);
+    ok(/HSL/.test(hel.credit), 'and the credit that has to stay on screen is there');
+  }
+  // …and the credit is on the CANVAS, which is the licence condition: the pack
+  // is CC BY 4.0 and ODbL, and a credit only in a variable is not on screen.
+  const creditPixels = await page.evaluate(() => {
+    const r = window.__tm.renderer, ctx = r.canvas.getContext('2d');
+    const h = r.canvas.height, w = Math.min(r.canvas.width, 700);
+    const d = ctx.getImageData(0, h - 40 * devicePixelRatio, w, 38 * devicePixelRatio).data;
+    let ink = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] < 170 && d[i + 1] < 170) ink++;
+    return ink;
+  });
+  ok(creditPixels > 100, `the attribution is painted on the board (${creditPixels} px)`);
+
   await page.evaluate(() => window.__tm.debug.launch('endless', 7));
   await page.waitForTimeout(200);
   ok(await page.evaluate(() => document.getElementById('swap').hidden),
@@ -785,9 +849,10 @@ async function checkHomeClear(pg, where) {
 
 
   // and prove it end to end: draw a line, then pull it off in ONE drag back
-  await phone.evaluate(() => {
+  const spareBefore = await phone.evaluate(() => {
     window.__tm.game.paused = true;
     while (window.__tm.world.stations.length < 3) window.__tm.world.spawnStation('circle');
+    return window.__tm.net.spareTrains;
   });
   const pAt = i => phone.evaluate(k => {
     const st = window.__tm.world.stations[k];
@@ -828,7 +893,11 @@ async function checkHomeClear(pg, where) {
   const after = await phone.evaluate(() => ({
     lines: window.__tm.net.lines.length, spare: window.__tm.net.spareTrains }));
   eq(after.lines, 0, 'and one drag back down it deletes the whole line');
-  eq(after.spare, 3, 'handing the train back to the shed');
+  // …against what the shed HELD, not against a number. Pinning it to 3 tied
+  // this check to whichever mission the phone happened to open first, and it
+  // broke the day the free-play list changed order — which is a test measuring
+  // the list rather than the shed.
+  eq(after.spare, spareBefore, 'handing the train back to the shed');
 
   // …and again with the world RUNNING, which is how a person actually does it.
   // A train out on the leg being pulled off used to leave the renderer reading

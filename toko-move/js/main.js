@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=12';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=12';
-import { Renderer } from './render.js?v=12';
-import { LineDrawer, RoadDrawer } from './input.js?v=12';
-import { Kit } from './audio.js?v=12';
-import { PAL, sizeAt } from './palette.js?v=12';
+import { Game } from './sim.js?v=13';
+import { MISSIONS, byId, campaign, sandbox, chapters, chapterMissions, clockFmt } from './missions.js?v=13';
+import { Renderer } from './render.js?v=13';
+import { LineDrawer, RoadDrawer } from './input.js?v=13';
+import { Kit } from './audio.js?v=13';
+import { PAL, sizeAt } from './palette.js?v=13';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -45,31 +45,57 @@ function unlocked(m, p) {
   return i <= 0 || p.cleared.includes(spine[i - 1].id);
 }
 
+function missionButton(m, p) {
+  const open = unlocked(m, p);
+  const done = p.cleared.includes(m.id);
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn wide miss' + (done ? ' done' : '');
+  b.disabled = !open;
+  const t = document.createElement('b'); t.textContent = m.title;
+  const d = document.createElement('span'); d.textContent = m.brief;
+  b.append(t, d);
+  const best = p.best?.[m.id];
+  if (done || best != null || !open) {
+    const tag = document.createElement('em');
+    tag.className = 'tag';
+    tag.textContent = !open ? 'locked' : done ? `cleared · best ${best ?? 0}` : `best ${best}`;
+    b.append(tag);
+  }
+  if (open) b.onclick = () => launch(m.id);
+  return b;
+}
+
+// The chapters, in order, each one a city. A chapter with no pack is drawn
+// anyway and says why it cannot be played: the order is the plan, and a plan
+// you cannot see is not a plan.
+function paintChapters(p) {
+  const box = $('campaignList');
+  box.innerHTML = '';
+  for (const c of chapters()) {
+    const head = document.createElement('div');
+    head.className = 'chapter' + (c.blocked ? ' shut' : '');
+    const n = document.createElement('em'); n.textContent = `Chapter ${c.n}`;
+    const t = document.createElement('b'); t.textContent = c.title;
+    const sub = document.createElement('i'); sub.textContent = c.subtitle ?? '';
+    head.append(n, t, sub);
+    box.append(head);
+
+    const say = document.createElement('p');
+    say.className = 'chapterBrief';
+    say.textContent = c.blocked ? `${c.brief} — ${c.blocked}.` : c.brief;
+    box.append(say);
+
+    for (const m of chapterMissions(c.id)) box.append(missionButton(m, p));
+  }
+}
+
 function paintMissions() {
   const p = progress();
-  for (const [box, list] of [[$('campaignList'), campaign()], [$('freeList'), MISSIONS.filter(m => m.order == null)]]) {
-    box.innerHTML = '';
-    for (const m of list) {
-      const open = unlocked(m, p);
-      const done = p.cleared.includes(m.id);
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'btn wide miss' + (done ? ' done' : '');
-      b.disabled = !open;
-      const t = document.createElement('b'); t.textContent = m.title;
-      const d = document.createElement('span'); d.textContent = m.brief;
-      b.append(t, d);
-      const best = p.best?.[m.id];
-      if (done || best != null || !open) {
-        const tag = document.createElement('em');
-        tag.className = 'tag';
-        tag.textContent = !open ? 'locked' : done ? `cleared · best ${best ?? 0}` : `best ${best}`;
-        b.append(tag);
-      }
-      if (open) b.onclick = () => launch(m.id);
-      box.append(b);
-    }
-  }
+  paintChapters(p);
+  const box = $('freeList');
+  box.innerHTML = '';
+  for (const m of sandbox()) box.append(missionButton(m, p));
 }
 
 // ── a run ───────────────────────────────────────────────────────────────
@@ -78,6 +104,26 @@ function paintMissions() {
 // so the number was a receipt for something you could not return to — and every
 // gate run got a different board, which is exactly the kind of flake that gets
 // written off as "the test is flaky".
+// ── the cities ──────────────────────────────────────────────────────────
+// A pack is a FILE, fetched once when the page opens and never during a run.
+// The game must not be able to invent the world it is set in, and the arcade's
+// offline promise would be a lie if a mission needed the network to start.
+//
+// Every failure here is survivable on purpose: a chapter whose pack is missing
+// still appears on the board, still launches, and says on the card that it is
+// playing an invented map instead. A locked door beats a crash, and a silent
+// substitution would be worse than either.
+const PACKS = new Map();
+const packsReady = (async () => {
+  const want = [...new Set(MISSIONS.map(m => m.city).filter(Boolean))];
+  await Promise.all(want.map(async id => {
+    try {
+      const r = await fetch(`cities/${id}.json`);
+      if (r.ok) PACKS.set(id, await r.json());
+    } catch { /* offline, or not built yet — the mission card will say so */ }
+  }));
+})();
+
 function seedFromUrl() {
   const m = /seed=(\d+)/.exec(location.hash || location.search);
   return m ? ((+m[1] | 0) || 1) : null;
@@ -90,7 +136,8 @@ const portraitNow = () => {
   return r.height > r.width;
 };
 
-function launch(missionId, seed = nextSeed()) {
+async function launch(missionId, seed = nextSeed()) {
+  await packsReady;
   $('title').hidden = true;
   $('end').hidden = true;
   // a panel left open across a launch is a panel describing the wrong layer
@@ -101,7 +148,11 @@ function launch(missionId, seed = nextSeed()) {
 }
 
 function boot(seed, missionId) {
-  game = new Game(seed, missionId, { portrait: portraitNow() });
+  const m = byId(missionId);
+  game = new Game(seed, missionId, {
+    portrait: portraitNow(),
+    pack: m?.city ? PACKS.get(m.city) : null,
+  });
   drops = 0;
   drawer?.destroy();
   renderer = renderer || new Renderer($('board'));

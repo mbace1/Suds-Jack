@@ -102,6 +102,65 @@ export function validate(m, caps = CAPABILITIES) {
   return m;
 }
 
+// ── the campaign, in chapters ───────────────────────────────────────────
+// Owner's direction, 2026-08-26: **the cities are the campaign**, and the
+// abstract boards are secondary. Chapter one is Helsinki, played on the real
+// network; Nagoya is two, New York three, Tokyo four.
+//
+// A chapter is a CITY, and the difference that makes is the whole point of the
+// mode. On an abstract board the map is rolled from a seed and a stop is a
+// shape and nothing else. In a chapter the board is a place: the water is
+// Töölönlahti, the interchange is Hakaniemi, and the seed decides only who is
+// standing on the platform. That is why the chapters are the spine now — the
+// abstract missions teach a layer, and a chapter is somewhere you have been.
+//
+// `pack` names the file under `cities/`. A chapter with no pack yet is LISTED
+// AND LOCKED rather than hidden: the order is the owner's plan and a plan you
+// cannot see is not a plan. `blocked` says why, in words a player can read.
+export const CHAPTERS = [
+  {
+    n: 1,
+    id: 'helsinki',
+    pack: 'helsinki',
+    title: 'Helsinki',
+    subtitle: 'Rautatientori → Pasila',
+    brief:
+      'The real network, from the main station up through Kallio and Vallila to Pasila. '
+      + 'Twenty live services, the water where the water is, and every stop under its own name.',
+  },
+  {
+    n: 2,
+    id: 'nagoya',
+    pack: 'nagoya',
+    title: 'Nagoya',
+    subtitle: '名古屋市営地下鉄',
+    brief: 'Six subway lines under a grid city, and the Meijō line that runs in a complete circle.',
+    blocked: 'the network has not been brought in yet',
+  },
+  {
+    n: 3,
+    id: 'newyork',
+    pack: 'newyork',
+    title: 'New York',
+    subtitle: 'the one with express tracks',
+    brief: 'Where a line can overtake itself, and the map has to say which train stops where.',
+    blocked: 'the network has not been brought in yet',
+  },
+  {
+    n: 4,
+    id: 'tokyo',
+    pack: 'tokyo',
+    title: 'Tokyo',
+    subtitle: '山手線の内側',
+    brief: 'Thirteen subway lines under a loop that is not a subway at all.',
+    blocked: 'the network has not been brought in yet',
+  },
+];
+
+export const chapters = () => CHAPTERS;
+export const chapterOf = m => CHAPTERS.find(c => c.id === m?.chapter) ?? null;
+export const chapterMissions = id => MISSIONS.filter(m => m.chapter === id).sort((a, b) => a.order - b.order);
+
 // ── the missions ────────────────────────────────────────────────────────
 
 export const MISSIONS = [
@@ -309,9 +368,120 @@ export const MISSIONS = [
     fail: { overcrowd: 60 },
     giveUp: 60,
   },
+
+  // ── CHAPTER ONE · HELSINKI ────────────────────────────────────────────
+  // Three missions on one real board. They share a city and differ in what
+  // they ask of it, which is the argument for chapters: you learn a place
+  // rather than a seed, and by the third one you know where the water is.
+  //
+  // `city` names the pack; `cityFit` is how it is fitted to the board.
+  // `minGap` is the one number that matters there — central Helsinki puts tram
+  // stops 100 m apart, which is closer than a station is drawn, so the rank is
+  // thinned and the busiest survive.
+
+  {
+    id: 'hel-aamu',
+    mode: 'mission',
+    chapter: 'helsinki',
+    order: 1,
+    city: 'helsinki',
+    cityFit: { metres: 120, byName: false, minGap: 60 },
+    layer: 'metro',
+    title: 'Aamuruuhka',
+    brief:
+      'The morning rush, on the real thing. Rautatientori, Hakaniemi, Sörnäinen — '
+      + 'the stops open as the network grew, busiest first, and the bay in the middle '
+      + 'is where the bay is.',
+    length: 420,
+    clock: { unit: 60, units: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00'], cycle: 7, cycleWord: 'morning', upgradeEvery: 105 },
+    board: { w: 860, h: 600, maxStations: 14, minGap: 60, margin: 52, firstStation: 14 },
+    spawn: {
+      base: 0.42, ramp: 300, cap: 1.3,
+      stationEvery: [22, 30], specialsAfter: 0, specialChance: 0,
+      bursts: [],
+    },
+    resources: { lines: 3, trains: 3, tunnels: 2 },
+    // Measured over ten seeds with a bot that keeps every stop on some line:
+    // 165 182 190 316 318 321 328 334 339 341. 190 wins eight of ten, which is
+    // the right shape for the first mission of the first chapter — it is where
+    // you learn that the board is a place. Every seed sees the final whistle,
+    // so this one is lost to the clock and not to the crowd.
+    goals: [{ type: 'deliver', n: 190 }],
+    fail: { overcrowd: 50 },
+    giveUp: 60,
+  },
+
+  {
+    id: 'hel-pitkasilta',
+    mode: 'mission',
+    chapter: 'helsinki',
+    order: 2,
+    city: 'helsinki',
+    cityFit: { metres: 120, byName: false, minGap: 52 },
+    layer: 'metro',
+    title: 'Pitkäsilta',
+    brief:
+      'The Long Bridge. Kallio is across the water from the centre and always has been — '
+      + 'every crossing costs, and there are more stops than there is city to hold them.',
+    length: 480,
+    clock: { unit: 60, units: ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'], cycle: 8, cycleWord: 'shift', upgradeEvery: 120 },
+    board: { w: 860, h: 600, maxStations: 20, minGap: 52, margin: 48, firstStation: 12 },
+    spawn: {
+      base: 0.5, ramp: 260, cap: 1.6,
+      stationEvery: [18, 24], specialsAfter: 0, specialChance: 0,
+      bursts: [],
+    },
+    // Two tunnels for a city cut in half by a bay — the crossings are the
+    // mission, and the upgrade weeks are where a third one comes from.
+    resources: { lines: 4, trains: 4, tunnels: 2 },
+    // same ten seeds: 128 141 168 244 250 256 258 280 299 310 → 244 wins seven
+    goals: [{ type: 'deliver', n: 244 }],
+    fail: { overcrowd: 45 },
+    giveUp: 55,
+  },
+
+  {
+    id: 'hel-ratikka',
+    mode: 'mission',
+    chapter: 'helsinki',
+    order: 3,
+    city: 'helsinki',
+    cityFit: { metres: 120, byName: false, minGap: 60 },
+    // All three layers on a real city, which is the thing the whole mode was
+    // built for: Helsinki really does run trams, a metro and traffic over the
+    // same ground, and here they share a board.
+    layers: ['metro', 'roads', 'bus'],
+    title: 'Ratikka ja auto',
+    brief:
+      'The tram and the car. Rail, streets and bus routes over the same Helsinki — '
+      + 'the roads you lay for the traffic are the roads your buses are stuck in.',
+    length: 480,
+    clock: { unit: 60, units: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00'], cycle: 8, cycleWord: 'morning', upgradeEvery: 120 },
+    board: { w: 860, h: 600, maxStations: 16, minGap: 60, margin: 52, firstStation: 13 },
+    spawn: {
+      base: 0.44, ramp: 320, cap: 1.2,
+      stationEvery: [22, 28], specialsAfter: 0, specialChance: 0,
+      bursts: [],
+    },
+    resources: { lines: 3, trains: 3, tunnels: 2, road: 44, cars: 10, bridge: 2, routes: 2, buses: 4, carRange: 7 },
+    // 137 149 154 162 162 174 178 182 187 210 → 162 wins seven. Lower than
+    // Aamuruuhka on purpose and by measurement: three layers over one city is
+    // harder than one layer over it, whatever the order of the missions says.
+    goals: [{ type: 'deliver', n: 162 }],
+    fail: { overcrowd: 50 },
+    giveUp: 60,
+  },
 ];
 
 export const byId = id => MISSIONS.find(m => m.id === id);
-export const campaign = () => MISSIONS.filter(m => m.order != null).sort((a, b) => a.order - b.order);
+
+// THE SPINE IS THE CHAPTERS. The abstract boards are still here and still
+// worth playing — they are where a layer is taught with nothing else in the
+// way — but they are no longer the campaign, and `sandbox()` is what the
+// screen calls them.
+export const campaign = () =>
+  CHAPTERS.flatMap(c => chapterMissions(c.id));
+export const sandbox = () =>
+  MISSIONS.filter(m => !m.chapter).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 
 for (const m of MISSIONS) validate(m);

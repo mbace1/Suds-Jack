@@ -2,16 +2,17 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=12';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=12';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=12';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=12';
-import { Game } from '../js/sim.js?v=12';
-import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=12';
-import { MISSIONS, byId, campaign, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=12';
-import { PAL, INK } from '../js/palette.js?v=12';
-import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=12';
-import { BusNet, Bus, BUS_CAPACITY } from '../js/bus.js?v=12';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=13';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=13';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=13';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=13';
+import { Game } from '../js/sim.js?v=13';
+import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=13';
+import { MISSIONS, byId, campaign, sandbox, chapters, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=13';
+import { PAL, INK } from '../js/palette.js?v=13';
+import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=13';
+import { BusNet, Bus, BUS_CAPACITY } from '../js/bus.js?v=13';
+import { asBoard, pickName, seaRings, seaBox } from '../js/city.js?v=13';
 import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
 import { deflateRawSync, crc32 } from 'node:zlib';
 import { readFileSync, existsSync } from 'node:fs';
@@ -2073,6 +2074,123 @@ function busTown(seed = 11) {
   for (let i = 2; i < sts.length; i++) g.bus.extend(line, sts[i].id, false);
   for (let i = 0; i < 4000 && g.state === 'play'; i++) g.step(0.05);
   ok(g.score > 0, `buses alone deliver people (${g.score})`);
+}
+
+// ── chapter one: Helsinki ───────────────────────────────────────────────
+// The city seam, on the real pack. These checks are about the two things that
+// turn a network into a BOARD — which stops there are and what they are
+// called — because both were wrong first and both were wrong invisibly.
+
+const HEL = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../cities/helsinki.json'), 'utf8'));
+const BOARD860 = { w: 860, h: 600, margin: 52 };
+
+{
+  eq(HEL.id, 'helsinki', 'the Helsinki pack is there');
+  ok(/HSL/.test(HEL.source), `and says whose data it is (${HEL.source})`);
+  eq(HEL.licence, 'CC BY 4.0', 'under the licence that makes the credit a condition');
+  ok(HEL.waterLicence?.startsWith('ODbL'), 'and the water under its own, stricter one');
+  ok(HEL.lines.length >= 19, `every live track in the box is in it (${HEL.lines.length} services)`);
+  ok(HEL.lines.some(l => l.mode === 'SUBWAY') && HEL.lines.some(l => l.mode === 'TRAM'),
+     'the metro and the trams both');
+  ok(HEL.lines.every(l => (l.path?.length ?? 0) >= 2),
+     'and each one carries its own traced path, which is what makes the board Helsinki');
+  ok(!!HEL.clippedTo, 'it says it is a window on the city rather than the city');
+}
+
+{
+  const b = asBoard(HEL, BOARD860, { metres: 120, byName: false, minGap: 60 });
+  ok(b.sites.length >= 15 && b.sites.length <= 40, `it lays out as a playable board (${b.sites.length} stations)`);
+  ok(b.sites.every(s => s.name), 'every stop keeps its real name');
+  ok(b.sites.some(s => s.name === 'Rautatientori'), 'Rautatientori is on it');
+  ok(b.sites.some(s => s.name === 'Hakaniemi'), 'and so is Hakaniemi');
+  ok(/HSL/.test(b.credit) && /OpenStreetMap/.test(b.credit), `the credit travels with the board (${b.credit})`);
+
+  // THE THINNING. Central Helsinki puts stops closer together than a station
+  // is drawn; a pair once came out ONE METRE apart.
+  let closest = Infinity;
+  for (let i = 0; i < b.sites.length; i++) {
+    for (let j = i + 1; j < b.sites.length; j++) {
+      closest = Math.min(closest, Math.hypot(b.sites[i].x - b.sites[j].x, b.sites[i].y - b.sites[j].y));
+    }
+  }
+  ok(closest >= 60, `no two stations stand on top of each other (closest ${closest.toFixed(0)} units)`);
+
+  // THE ORDER THEY OPEN IN. Rank alone put five interchanges out first, every
+  // one of them a special shape, and nobody could reach anybody: thirty-one
+  // people were marked "nowhere to go" inside the first minute.
+  const firstThree = b.sites.slice(0, 3);
+  ok(firstThree.some(s => !s.interchange), 'the board does not open on nothing but interchanges');
+  ok(new Set(firstThree.map(s => s.kind)).size >= 2, 'and the first three are not all one shape');
+  ok(b.sites[0].interchange, 'while the busiest interchange is still the one it opens on');
+}
+
+{
+  // THE NAME a folded station wears. Five names fold into Helsinki's central
+  // interchange and the plain rules pick the wrong one: first-encountered gives
+  // Elielinaukio, shortest gives Postitalo.
+  eq(pickName(['Elielinaukio', 'Postitalo', 'Päärautatieasema', 'Rautatientori', 'Rautatientorin metroasema']),
+     'Rautatientori', 'the central interchange is called what people call it');
+  eq(pickName(['Hakaniemen metroasema', 'Hakaniemi', 'Kallion virastotalo', 'Kallion virastotalo']),
+     'Hakaniemi', 'and a metro station beats a building it stands under');
+  eq(pickName(['Pasila', 'Pasilan asema', 'Pasilan asema']), 'Pasila', 'the genitive does not make a new place');
+  eq(pickName(['Sörnäinen', 'Sörnäinen (M)', 'Sörnäisten metroasema']), 'Sörnäinen', 'nor does a "(M)"');
+  eq(pickName([]), null, 'and nothing named is not a name');
+}
+
+{
+  // A CITY MISSION IS A MISSION. It runs the same sim, and it must survive its
+  // pack going missing rather than taking the game down with it.
+  const g = new Game(5, 'hel-aamu', { pack: HEL });
+  g.start();
+  eq(g.cityMissing, null, 'a chapter mission with its pack loads the city');
+  ok(g.world.city, 'and the board is the real one');
+  ok(g.world.stations.every(s => s.name), 'with named stops on it');
+  eq(g.world.stations[0].name, 'Rautatientori', 'opening at the main interchange');
+
+  const bare = new Game(5, 'hel-aamu');
+  ok(bare.cityMissing, `without the pack it says so out loud (${bare.cityMissing})`);
+  ok(bare.world.stations.length > 0, 'and still gives you a board to play rather than a crash');
+  ok(bare.world.stations.every(s => !s.name), 'an invented board has no real names on it');
+}
+
+{
+  // No station may stand in water — a platform in the bay is the failure the
+  // sea reconstruction is guarded against.
+  const b = asBoard(HEL, BOARD860, { metres: 120, byName: false, minGap: 60 });
+  const inRing = (x, y, ring) => {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const p = ring[i], q = ring[j];
+      if ((p.y > y) !== (q.y > y) && x < ((q.x - p.x) * (y - p.y)) / (q.y - p.y) + p.x) inside = !inside;
+    }
+    return inside;
+  };
+  const drowned = b.sites.filter(s => b.rings.some(r => inRing(s.x, s.y, r)));
+  eq(drowned.length, 0, `no station stands in the water (${drowned.map(s => s.name).join(', ') || 'none'})`);
+  ok(b.coast.length > 0, 'the shoreline is carried, to be drawn');
+
+  // …and the reconstruction itself, which is OFF by default and kept because
+  // it is half-right: it finds the outer sea and misses Töölönlahti. The check
+  // pins what it actually does, so turning it on cannot quietly change.
+  const sea = seaRings(b.coast, seaBox(b.coast, BOARD860), b.sites, {});
+  ok(sea.length > 0, `the sea reconstruction returns something (${sea.length} rings)`);
+  ok(sea.every(r => !b.sites.some(s => inRing(s.x, s.y, r))),
+     'and never puts a station in one — a wrong ring is dropped rather than drawn');
+}
+
+{
+  // the chapters themselves
+  const spine = campaign();
+  ok(spine.length >= 3, `the campaign is the chapters (${spine.length} missions)`);
+  ok(spine.every(m => m.chapter), 'and every mission on it belongs to one');
+  eq(spine[0].chapter, 'helsinki', 'chapter one is Helsinki');
+  ok(sandbox().length >= 4, 'while the abstract boards are still there, in free play');
+  ok(sandbox().every(m => !m.chapter), 'and belong to no chapter');
+  const nums = chapters().map(c => c.n);
+  eq(nums.join(','), '1,2,3,4', 'the chapters are numbered in the owner\'s order');
+  eq(chapters().map(c => c.title).join(' '), 'Helsinki Nagoya New York Tokyo', '…and named in it');
+  ok(chapters().slice(1).every(c => c.blocked), 'the ones with no network yet say why');
+  ok(!chapters()[0].blocked, 'and Helsinki does not');
 }
 
 console.log(`\ntoko-move core: ${pass} passed, ${fails.length} failed`);

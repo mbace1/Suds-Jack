@@ -8,9 +8,9 @@
 // silently rewrites boards that already exist. New behaviour that needs
 // randomness takes its own stream (see `siteRng`) rather than borrowing this one.
 
-import { makeRng } from './rng.js?v=12';
-import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=12';
-import { inWater, dist } from './geometry.js?v=12';
+import { makeRng } from './rng.js?v=13';
+import { COMMON, SPECIAL, isSpecial } from './shapes.js?v=13';
+import { inWater, dist } from './geometry.js?v=13';
 
 // The default board, still exported because the renderer and the tests want a
 // size before a mission is chosen. A mission may state its own.
@@ -66,11 +66,15 @@ export class Passenger {
 }
 
 export class Station {
-  constructor(id, kind, x, y) {
+  constructor(id, kind, x, y, name = null) {
     this.id = id;
     this.kind = kind;
     this.x = x;
     this.y = y;
+    // A REAL place, on a city board. Null everywhere else — the abstract
+    // boards' whole fiction is that a stop is a shape and nothing else, and
+    // giving them invented names would be a different game.
+    this.name = name;
     this.waiting = [];          // goal shapes, oldest first
     this.capacity = STATION_CAP;
     this.over = 0;              // 0…1; at 1 the mission's fail rule decides
@@ -113,7 +117,24 @@ export class World {
     this.overcrowdTime = spec.fail?.overcrowd ?? 45;
 
     this.rng = makeRng(seed);
-    this.rings = makeWater(this.rng, this.w, this.h);
+    // ── a real city, or an invented one ─────────────────────────────────
+    // `spec.city` is a laid-out pack (see `city.js`): stops already projected
+    // into board units, with their real names, and the real water. When it is
+    // present the board is NOT rolled — the water is Töölönlahti and the stops
+    // are where HSL says they are — and the only thing the rng still decides
+    // is who is standing on them.
+    //
+    // The growth loop is kept either way, and on a city it earns its keep: the
+    // stations OPEN over time, biggest interchange first, so the board grows
+    // the way a network was actually built rather than arriving all at once.
+    // `spec.city` is what `city.js`'s `asBoard()` returns: ranked sites with
+    // their shapes already decided, the water, and the shoreline. This file
+    // does not know a stop ever had a latitude, and that is on purpose.
+    this.city = spec.city ?? null;
+    this.sites = this.city?.sites ?? null;
+    this.nextSite = 0;
+    this.rings = this.city ? this.city.rings : makeWater(this.rng, this.w, this.h);   // real, or rolled
+    this.coast = this.city?.coast ?? [];
     this.stations = [];
     this.nextId = 0;
     this.time = 0;
@@ -131,7 +152,15 @@ export class World {
           y: this.siteRng.range(this.margin, this.h - this.margin) }
       : null;
 
-    for (const kind of COMMON) this.spawnStation(kind);
+    if (this.city) {
+      // A city opens with its three busiest interchanges rather than with one
+      // stop of each shape. `maxStations` still caps it: a mission may want
+      // half of Helsinki rather than all of it.
+      this.maxStations = Math.min(this.maxStations, this.sites.length);
+      for (let i = 0; i < 3; i++) this.spawnStation();
+    } else {
+      for (const kind of COMMON) this.spawnStation(kind);
+    }
   }
 
   station(id) { return this.stations.find(s => s.id === id); }
@@ -156,6 +185,16 @@ export class World {
 
   spawnStation(kind = null) {
     if (this.stations.length >= this.maxStations) return null;
+    // On a city the next stop is the next REAL one, in the order `city.js`
+    // ranked them — and its shape came with it. Nothing is rolled, so a seed
+    // changes who is travelling and never where Hakaniemi is.
+    if (this.city) {
+      const site = this.sites[this.nextSite++];
+      if (!site) return null;
+      const st = new Station(this.nextId++, site.kind, site.x, site.y, site.name);
+      this.stations.push(st);
+      return st;
+    }
     const spot = this.freeSpot();
     if (!spot) return null;
     if (!kind) kind = this.rollKind();

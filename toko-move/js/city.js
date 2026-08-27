@@ -78,6 +78,19 @@ export function validate(pack) {
   for (const w of pack?.streets ?? []) {
     if ((w.pts?.length ?? 0) < 2) bad.push('a street with fewer than two points is not a street');
   }
+  // Water arrives as two different things and they are not interchangeable.
+  // `areas` are CLOSED rings and can be filled. `coast` is an OPEN directed
+  // line with land on one side and the sea only implied — closing one into a
+  // polygon puts a lid across the harbour mouth and paints the sea as land.
+  // Two projects in this repository hit that trap from two different datasets,
+  // so the schema keeps them apart and `validate` will not accept a three-point
+  // ring pretending to be a body of water.
+  for (const a of pack?.water?.areas ?? []) {
+    if ((a.ring?.length ?? 0) < 4) bad.push('a water body needs a closed ring');
+  }
+  for (const c of pack?.water?.coast ?? []) {
+    if ((c.pts?.length ?? 0) < 2) bad.push('a coastline run needs at least two points');
+  }
   if (bad.length) throw new Error(`city "${pack?.id ?? '?'}": ${bad.join('; ')}`);
   return pack;
 }
@@ -352,13 +365,16 @@ export function merge(pack, opts = {}) {
     }
     if (host) {
       into.set(s.id, host.id);
+      host.aka.push(s.name);
       for (const m of s.modes ?? []) if (!host.modes.includes(m)) host.modes.push(m);
     } else {
-      const copy = { ...s, modes: [...(s.modes ?? [])] };
+      const copy = { ...s, modes: [...(s.modes ?? [])], aka: [s.name] };
       into.set(s.id, copy.id);
       keep.push(copy);
     }
   }
+
+  for (const k of keep) k.name = pickName(k.aka) ?? k.name;
 
   const lines = pack.lines.map(l => {
     const ids = [];
@@ -370,6 +386,49 @@ export function merge(pack, opts = {}) {
   }).filter(l => l.stops.length >= 2);
 
   return { ...pack, stops: keep, lines, merged: pack.stops.length - keep.length };
+}
+
+// WHICH NAME a folded station wears, and it needed more than "the first one".
+// Helsinki's central interchange came out as **Elielinaukio** — the bus square
+// beside it — purely because that platform is first in the feed. One real fold
+// there holds five names:
+//
+//   Elielinaukio · Postitalo · Päärautatieasema · Rautatientori ·
+//   Rautatientorin metroasema
+//
+// A modal count does not settle it (each appears once) and "shortest" picks
+// *Postitalo*, the post office. What settles it is that a big interchange is
+// named more than once in VARIANTS of one name, and that one of those variants
+// says it is a station. So: group the names by a crude STEM, score a group by
+// how many names it holds plus a bonus if any of them names a station, and
+// then show the plainest member of the winning group — the one without an
+// "asema" or a "(M)" hung off it.
+//
+// The stem is the first six characters of the normalised name, which is crude
+// on purpose. Finnish compounds and the genitive defeat anything tidier —
+// "metroasema" is not "asema" to a word-boundary rule, and Hakaniemi's
+// genitive is *Hakaniemen*, so no suffix table gets you from one to the other.
+// Six characters gets Rautatientori, Hakaniemi, Sörnäinen, Kalasatama, Pasila
+// and Helsingin yliopisto all correct, and two names that share six characters
+// AND stand within the merge radius are the same place anyway.
+export function pickName(names) {
+  const real = (names ?? []).filter(Boolean);
+  if (!real.length) return null;
+  const norm = n => n.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^\p{L}\p{N}]+/gu, '');
+  const groups = new Map();
+  for (const n of real) {
+    const stem = norm(n).slice(0, 6);
+    if (!groups.has(stem)) groups.set(stem, []);
+    groups.get(stem).push(n);
+  }
+  let best = null, bestScore = -1;
+  for (const g of groups.values()) {
+    const score = g.length + (g.some(n => /asema/i.test(n)) ? 2 : 0);
+    if (score > bestScore || (score === bestScore && g.length > best.length)) { bestScore = score; best = g; }
+  }
+  const plain = best.filter(n => !/asema|\(M\)/i.test(n));
+  const pool = plain.length ? plain : best;
+  return pool.reduce((a, b) => (b.length < a.length ? b : a));
 }
 
 // ── the whole job, in two views ─────────────────────────────────────────
@@ -400,6 +459,9 @@ export function layout(packIn, board, opts = {}) {
 
   return {
     view: street ? 'street' : 'diagram',
+    // the very same transform the stops went through, so anything projected
+    // later — the box the data was clipped to, above all — lands on it exactly
+    toBoard: proj.toBoard,
     stops: pack.stops.map(s => ({ ...s, ...at.get(s.id), truth: projected.get(s.id) })),
     // In the street view a line follows the path the vehicle really traces —
     // which for a tram IS the street it runs down, so the route can be drawn on
@@ -407,7 +469,437 @@ export function layout(packIn, board, opts = {}) {
     // diagram, where a curve would be a lie about a shape that has none.
     lines: pack.lines.map(l => ({ ...l, path: street ? trace(l.path) : null })),
     streets: street ? (pack.streets ?? []).map(w => ({ ...w, pts: trace(w.pts) })) : [],
+    // The water goes through the SAME transform as the stops, or the harbour
+    // moves out from under the bridge. It is carried in both views: a diagram
+    // does not draw a coastline, but the board still has to know which ground
+    // is wet, because that is where a tunnel and a bridge get their price.
+    water: {
+      areas: (pack.water?.areas ?? []).map(a => ({ ...a, ring: a.ring.map(([la, lo]) => proj.toBoard(la, lo)) })),
+      coast: (pack.water?.coast ?? []).map(c => ({ ...c, pts: c.pts.map(([la, lo]) => proj.toBoard(la, lo)) })),
+    },
     metresPerUnit: proj.metresPerUnit,
     report: rep,
   };
+}
+
+// ── a pack, as a BOARD ──────────────────────────────────────────────────
+// The last step of the seam: a laid-out city turned into the handful of things
+// `world.js` needs, so that file never learns what a latitude is.
+//
+// TWO DECISIONS LIVE HERE, and both are answerable from the data rather than
+// invented.
+//
+// **What order the stops open in.** The game's rhythm is that the board grows,
+// and on a real city that rhythm is worth keeping rather than dropping every
+// stop on at once. So the sites are RANKED — by how many services call, then
+// by whether the metro is one of them, then by name so the order is stable —
+// and the board opens at the busiest interchange and grows outward. It reads
+// like a network being built, which is what it is.
+//
+// **What shape a stop is.** The game's alphabet is shapes, and a real stop has
+// no shape, so this is the one place where something is assigned rather than
+// read. The rule is the honest one: a stop where the metro meets the trams, or
+// where four or more services call, is an INTERCHANGE and gets a special
+// shape; everything else takes a common one, chosen by a stable hash of its id
+// so the same stop is the same shape on every run. The result is that the
+// specials are Rautatientori, Hakaniemi and Sörnäinen — which is true, and
+// which no rule invented for prettiness would have got right.
+export function asBoard(packIn, board, opts = {}) {
+  const laid = layout(packIn, board, { view: 'street', ...opts });
+  const calls = new Map();
+  const modes = new Map();
+  for (const l of laid.lines) {
+    for (const id of l.stops) {
+      calls.set(id, (calls.get(id) ?? 0) + 1);
+      if (!modes.has(id)) modes.set(id, new Set());
+      modes.get(id).add(l.mode);
+    }
+  }
+
+  const ranked = laid.stops.slice().sort((a, b) => {
+    const ca = calls.get(a.id) ?? 0, cb = calls.get(b.id) ?? 0;
+    if (ca !== cb) return cb - ca;
+    const ma = modes.get(a.id)?.has('SUBWAY') ? 1 : 0;
+    const mb = modes.get(b.id)?.has('SUBWAY') ? 1 : 0;
+    if (ma !== mb) return mb - ma;
+    return String(a.name ?? a.id).localeCompare(String(b.name ?? b.id));
+  });
+
+  // ── thinning ──────────────────────────────────────────────────────
+  // A real network is far denser than a board. Central Helsinki puts two tram
+  // stops 100 m apart, which at this zoom is 15 board units — closer than the
+  // radius a station is DRAWN at, so they overlap into one blob you cannot aim
+  // at. (Merging by name alone left a pair 1 metre apart: Päärautatieasema and
+  // Rautatientori are the same place under two names, and Finnish compounds
+  // defeat a word-boundary rule — "metroasema" is not "asema".)
+  //
+  // So the rank is used twice. First to decide who matters, then to THIN: walk
+  // it from the top and drop anything standing on somebody already taken. The
+  // busiest interchange always survives, and what is lost is the third stop on
+  // the same square rather than a district.
+  const gap = opts.minGap ?? 0;
+  const thinned = [];
+  for (const s of ranked) {
+    if (gap > 0 && thinned.some(t => Math.hypot(t.x - s.x, t.y - s.y) < gap)) continue;
+    thinned.push(s);
+  }
+
+  const COMMON = opts.common ?? ['circle', 'triangle', 'square'];
+  const SPECIAL = opts.special ?? ['cross', 'diamond', 'star', 'pentagon', 'gem'];
+  let specialsGiven = 0;
+  const sites = thinned.map(s => {
+    const n = calls.get(s.id) ?? 0;
+    const m = modes.get(s.id) ?? new Set();
+    const interchange = (m.has('SUBWAY') && m.has('TRAM')) || n >= 4;
+    const kind = interchange
+      ? SPECIAL[specialsGiven++ % SPECIAL.length]
+      : COMMON[hash(String(s.id)) % COMMON.length];
+    return { id: s.id, name: s.name ?? null, x: s.x, y: s.y, kind, calls: n, interchange };
+  });
+
+  // The wet ground, in two parts. The closed bodies arrive as rings already;
+  // the sea has to be MADE, by closing the shoreline against the box it was
+  // clipped to and asking which side the stops are on (`seaRings`). Without
+  // that half the board has no water on it at all — in central Helsinki every
+  // ring in the data is a pond.
+  const ponds = (laid.water?.areas ?? []).filter(a => a.ring.length >= 4).map(a => a.ring);
+  const coastRuns = (laid.water?.coast ?? []).map(c => c.pts);
+  // THE SEA IS NOT RECONSTRUCTED, and that is a decision rather than an
+  // omission. `seaRings` below can close a shoreline into polygons and it is
+  // kept, tested and documented — but on this extract it recovers the outer sea
+  // and the Kalasatama basin and MISSES Töölönlahti, which is the one piece of
+  // water a Helsinki board most needs. Three closure rules were tried (nearest
+  // edge, the run's own bearing, and a flood fill seeded from the stops) and
+  // each got a different subset. Half a coastline drawn as fact is worse than
+  // none: it says there is no bay where there is a bay.
+  //
+  // So the board ships the water that IS a polygon in the data — the ponds —
+  // and draws the shoreline as a line, which is true. CITIES.md holds the
+  // problem, and `--sea` turns the reconstruction on for anyone working on it.
+  const sea = opts.sea ? seaRings(coastRuns, seaBox(coastRuns, board), laid.stops, opts.sea) : [];
+
+  // ── the order they OPEN in ────────────────────────────────────────
+  // Rank alone put every interchange first, and every interchange is a
+  // special shape — so a Helsinki board opened with five specials, nobody
+  // could reach anybody, and thirty-one people were marked "nowhere to go"
+  // inside the first minute. Interleaving one special to every two ordinary
+  // stops keeps the busiest stop first (it should be Rautatientori) while
+  // giving the board something ordinary to travel between.
+  const specials = sites.filter(s => s.interchange);
+  const commons = sites.filter(s => !s.interchange);
+  const order = [];
+  while (specials.length || commons.length) {
+    if (specials.length) order.push(specials.shift());
+    for (let i = 0; i < 2 && commons.length; i++) order.push(commons.shift());
+  }
+
+  return {
+    sites: order,
+    rings: [...ponds, ...sea],
+    coast: coastRuns,
+    // THE REAL NETWORK, to draw under the board. This is the half of "all the
+    // tram lines" that a list of stops cannot give: each service's own traced
+    // path, in board units, so Helsinki is recognisable before a single line
+    // has been drawn on it.
+    lines: laid.lines,
+    credit: [packIn.source, packIn.waterSource].filter(Boolean).join(' · '),
+    licence: [packIn.licence, packIn.waterLicence].filter(Boolean).join(' · '),
+    note: packIn.note ?? null,
+  };
+}
+
+// ── the sea ─────────────────────────────────────────────────────────────
+// THE PROBLEM. Water arrives as two kinds and only one of them is a polygon.
+// `areas` are closed rings, and in central Helsinki they are PONDS — the
+// biggest is Alppipuiston lammet at 0.002 km². Every piece of water that
+// matters — Töölönlahti, Eläintarhanlahti, the harbours, the sea itself — is
+// `coast`: twenty-seven OPEN runs, because OSM maps a shoreline as a directed
+// line with land on one side and the sea merely implied. Drawn as lines they
+// read as blue scribble, and worse, the board has no wet ground at all: a
+// mission about bridging the bay had nothing to bridge.
+//
+// THE FIX, and why it is safe. Each run is closed against the edges of the box
+// the data was clipped to, which can be done in two directions round the
+// perimeter — one encloses the sea, the other encloses the city. Choosing
+// between them by OSM's left-hand rule means trusting that the direction
+// survived export. It does not have to: **the stops are on land.** So both
+// candidates are built and the one containing FEWER STOPS wins. That is a test
+// against the other half of the same pack rather than against a convention,
+// and it is why this does not repeat the trap `flow-core` hit twice — an
+// administrative polygon painted the harbour as ground, and this asks the
+// question that would have caught it.
+export function seaRings(coast, box, stops, opts = {}) {
+  const eps = opts.eps ?? Math.max(box.x1 - box.x0, box.y1 - box.y0) * 0.02;
+  const minArea = opts.minArea ?? 40;              // board units², below which it is noise
+  // how far inside a ring a stop must be before it counts as drowned
+  const shore = opts.shore ?? 10;
+  const corners = [
+    { x: box.x0, y: box.y0 }, { x: box.x1, y: box.y0 },
+    { x: box.x1, y: box.y1 }, { x: box.x0, y: box.y1 },
+  ];
+  // The nearest point ON the box to `p`, and where that sits on the perimeter
+  // as a number in [0,4).
+  //
+  // A shoreline chain does not always reach the edge. Of the five chains this
+  // data stitches into, the LONGEST — the one carrying Töölönlahti and the
+  // eastern harbour — has one end on the box and one dangling in mid-water,
+  // because the extract cut the way without snapping it. Closing only the
+  // chains that reach both edges left the biggest body of water on the board
+  // at 1% of it. So a dangling end is carried straight out to the nearest edge,
+  // which is the smallest repair that can be made to a line that was cut. It is
+  // an assumption, and the stop test is what keeps it honest: if the guess
+  // encloses a platform the ring is thrown away rather than drawn.
+  const toPerimeter = p => {
+    const w = box.x1 - box.x0, h = box.y1 - box.y0;
+    const cands = [
+      { q: { x: Math.min(box.x1, Math.max(box.x0, p.x)), y: box.y0 }, t: null },
+      { q: { x: box.x1, y: Math.min(box.y1, Math.max(box.y0, p.y)) }, t: null },
+      { q: { x: Math.min(box.x1, Math.max(box.x0, p.x)), y: box.y1 }, t: null },
+      { q: { x: box.x0, y: Math.min(box.y1, Math.max(box.y0, p.y)) }, t: null },
+    ];
+    cands[0].t = 0 + (w ? (cands[0].q.x - box.x0) / w : 0);
+    cands[1].t = 1 + (h ? (cands[1].q.y - box.y0) / h : 0);
+    cands[2].t = 2 + (w ? (box.x1 - cands[2].q.x) / w : 0);
+    cands[3].t = 3 + (h ? (box.y1 - cands[3].q.y) / h : 0);
+    let best = cands[0], bd = Infinity;
+    for (const c of cands) {
+      const d = Math.hypot(c.q.x - p.x, c.q.y - p.y);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return { ...best, gap: bd };
+  };
+  // the corners strictly between two perimeter parameters, walking forward
+  // Corner c sits at perimeter parameter c. Walking FORWARD from `from` to
+  // `to`, these are the ones passed on the way — four iterations and no more,
+  // because a fifth revisits corner one and pushes it twice, which folds the
+  // ring back on itself and makes both its area and its inside meaningless.
+  const cornersBetween = (from, to) => {
+    const span = ((to - from) + 4) % 4;
+    const out = [];
+    for (let k = 0; k < 4; k++) {
+      const c = (Math.floor(from) + 1 + k) % 4;
+      const ahead = ((c - from) + 4) % 4;
+      if (ahead > 0 && ahead < span) out.push(corners[c]);
+    }
+    return out;
+  };
+
+  // Every chain is closed the same way first, so the wall the flood runs
+  // against has no gaps at the cut ends — a leak there would drain the sea into
+  // the city and the board would come back dry.
+  const chains = stitch(coast, eps * 0.15);
+  const walls = chains.map(ch => {
+    const a = ch[0], b = ch[ch.length - 1];
+    if (Math.hypot(a.x - b.x, a.y - b.y) < eps * 0.15) return ch;
+    const ea = plug(a, ch[1], box, eps), eb = plug(b, ch[ch.length - 2], box, eps);
+    return [...(ea ? [ea] : []), ...ch, ...(eb ? [eb] : [])];
+  });
+  const mask = landMask(walls, stops, box, opts.cell ?? 4);
+  const sample = opts.sample ?? 6;
+
+  const out = [];
+  for (const run of chains) {
+    if (run.length < 2) continue;
+    const a = run[0], b = run[run.length - 1];
+    // a chain that came back to where it started is a body of water already —
+    // unless its inside is dry, in which case it is an island
+    if (Math.hypot(a.x - b.x, a.y - b.y) < eps * 0.15 && run.length > 3) {
+      if (Math.abs(ringArea(run)) >= minArea && landShare(run, mask, sample) < 0.25) out.push(run);
+      continue;
+    }
+    // A cut end is carried on in the direction the shoreline was ALREADY
+    // GOING, not out to the nearest edge: turning ninety degrees to the closest
+    // wall walks the coastline back across the city.
+    const ea = plug(a, run[1], box, eps), eb = plug(b, run[run.length - 2], box, eps);
+    const chain = [...(ea ? [ea] : []), ...run, ...(eb ? [eb] : [])];
+    const pa = toPerimeter(chain[0]), pb = toPerimeter(chain[chain.length - 1]);
+    // Two ways round the box between the chain's ends. One of them is the sea,
+    // and the flood says which.
+    const cands = [
+      [...chain, ...cornersBetween(pb.t, pa.t)],
+      [...chain, ...cornersBetween(pa.t, pb.t).reverse()],
+    ];
+    let best = null, bestDry = Infinity;
+    for (const ring of cands) {
+      if (Math.abs(ringArea(ring)) < minArea) continue;
+      const dry = landShare(ring, mask, sample);
+      if (dry < bestDry) { bestDry = dry; best = ring; }
+    }
+    if (best && bestDry < 0.25) out.push(best);
+  }
+  return out;
+}
+
+// OSM splits a shoreline into ways, so the pack holds twenty-seven runs where
+// there are only a handful of real coastlines — and only THREE of them happen
+// to end on the edge of the clip box. Closing them one at a time therefore
+// produced slivers and nothing else: the biggest body of water on the board
+// came out at 1% of it. Joining runs end to end first is what makes the
+// closure work at all.
+function stitch(runs, eps) {
+  const near = (p, q) => Math.hypot(p.x - q.x, p.y - q.y) <= eps;
+  const pool = runs.filter(r => r.length >= 2).map(r => r.slice());
+  const done = [];
+  while (pool.length) {
+    let chain = pool.pop();
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (let i = 0; i < pool.length; i++) {
+        const r = pool[i];
+        const head = chain[0], tail = chain[chain.length - 1];
+        if (near(tail, r[0])) { chain = chain.concat(r.slice(1)); }
+        else if (near(tail, r[r.length - 1])) { chain = chain.concat(r.slice().reverse().slice(1)); }
+        else if (near(head, r[r.length - 1])) { chain = r.slice(0, -1).concat(chain); }
+        else if (near(head, r[0])) { chain = r.slice().reverse().slice(0, -1).concat(chain); }
+        else continue;
+        pool.splice(i, 1);
+        grew = true;
+        break;
+      }
+    }
+    done.push(chain);
+  }
+  return done;
+}
+
+// A cut end, carried on to the edge along the bearing it was travelling.
+function plug(end, prev, box, eps) {
+  const d = [Math.abs(end.y - box.y0), Math.abs(end.x - box.x1), Math.abs(end.y - box.y1), Math.abs(end.x - box.x0)];
+  if (Math.min(...d) <= eps || !prev) return null;
+  return rayToBox(end, { x: end.x - prev.x, y: end.y - prev.y }, box);
+}
+
+// where a ray leaves the box, or null if it never does
+function rayToBox(p, d, box) {
+  const len = Math.hypot(d.x, d.y);
+  if (!len) return null;
+  const u = { x: d.x / len, y: d.y / len };
+  let best = null, bt = Infinity;
+  const tryT = t => {
+    if (!(t > 0) || t >= bt) return;
+    const q = { x: p.x + u.x * t, y: p.y + u.y * t };
+    const pad = 1e-6;
+    if (q.x < box.x0 - pad || q.x > box.x1 + pad || q.y < box.y0 - pad || q.y > box.y1 + pad) return;
+    bt = t; best = { x: Math.min(box.x1, Math.max(box.x0, q.x)), y: Math.min(box.y1, Math.max(box.y0, q.y)) };
+  };
+  if (u.x) { tryT((box.x0 - p.x) / u.x); tryT((box.x1 - p.x) / u.x); }
+  if (u.y) { tryT((box.y0 - p.y) / u.y); tryT((box.y1 - p.y) / u.y); }
+  return best;
+}
+
+// ── which side is the sea ───────────────────────────────────────────────
+// Counting stops was not enough, and the failure is instructive: a bay has no
+// stops IN it, so "fewer stops inside" cannot tell Töölönlahti from the block
+// of city beside it — sixty-five sample points spread over a whole board simply
+// do not reach into the water.
+//
+// So the question is asked of the SHAPE instead. Rasterise the shoreline as a
+// wall, flood LAND outward from every stop, and the cells the flood never
+// reaches are water. Then a candidate ring is judged by what its inside is made
+// of. The flood needs no convention about which way a coastline was drawn, and
+// a gap in the wall costs water rather than inventing it.
+function landMask(chains, stops, rect, cell) {
+  const w = Math.max(1, Math.ceil((rect.x1 - rect.x0) / cell));
+  const h = Math.max(1, Math.ceil((rect.y1 - rect.y0) / cell));
+  const wall = new Uint8Array(w * h);
+  const land = new Uint8Array(w * h);
+  const cx = x => Math.min(w - 1, Math.max(0, Math.floor((x - rect.x0) / cell)));
+  const cy = y => Math.min(h - 1, Math.max(0, Math.floor((y - rect.y0) / cell)));
+
+  for (const ch of chains) {
+    for (let i = 1; i < ch.length; i++) {
+      const a = ch[i - 1], b = ch[i];
+      const steps = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / (cell * 0.5)));
+      for (let k = 0; k <= steps; k++) {
+        const t = k / steps;
+        wall[cy(a.y + (b.y - a.y) * t) * w + cx(a.x + (b.x - a.x) * t)] = 1;
+      }
+    }
+  }
+
+  const queue = [];
+  for (const s of stops) {
+    const i = cy(s.y) * w + cx(s.x);
+    if (!wall[i] && !land[i]) { land[i] = 1; queue.push(i); }
+  }
+  for (let q = 0; q < queue.length; q++) {
+    const i = queue[q], x = i % w, y = (i / w) | 0;
+    const push = j => { if (j >= 0 && j < w * h && !wall[j] && !land[j]) { land[j] = 1; queue.push(j); } };
+    if (x > 0) push(i - 1);
+    if (x < w - 1) push(i + 1);
+    if (y > 0) push(i - w);
+    if (y < h - 1) push(i + w);
+  }
+  return { isLand: (x, y) => !!land[cy(y) * w + cx(x)] };
+}
+
+// what fraction of a ring's inside is dry
+function landShare(ring, mask, step) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of ring) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+  let n = 0, dry = 0;
+  for (let y = y0 + step / 2; y < y1; y += step) {
+    for (let x = x0 + step / 2; x < x1; x += step) {
+      if (!inRing(x, y, ring)) continue;
+      n++;
+      if (mask.isLand(x, y)) dry++;
+    }
+  }
+  return n ? dry / n : 1;
+}
+
+// the rectangle a shoreline is closed against: the board, plus wherever the
+// coast reaches beyond it
+export function seaBox(runs, board, pad = 8) {
+  let x0 = 0, y0 = 0, x1 = board.w, y1 = board.h;
+  for (const run of runs) for (const p of run) {
+    x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y);
+    x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+  }
+  return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
+}
+
+function ringArea(pts) {
+  let a = 0;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j].x + pts[i].x) * (pts[j].y - pts[i].y);
+  return a / 2;
+}
+
+// How far a point sits inside a ring — negative outside, and 0 on the shore.
+// A plain inside/outside test threw Töölönlahti away: a tram stop stands ON
+// its western shore, so it read as "a platform in the water" and the biggest
+// body of water on the board was discarded to protect it. A stop on the shore
+// is on the shore.
+function insideBy(x, y, ring) {
+  if (!inRing(x, y, ring)) return -1;
+  let best = Infinity;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    best = Math.min(best, segDist(x, y, ring[j], ring[i]));
+  }
+  return best;
+}
+
+function segDist(x, y, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const L = dx * dx + dy * dy;
+  const t = L ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / L)) : 0;
+  return Math.hypot(x - (a.x + dx * t), y - (a.y + dy * t));
+}
+
+function inRing(x, y, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const p = ring[i], q = ring[j];
+    if ((p.y > y) !== (q.y > y) && x < ((q.x - p.x) * (y - p.y)) / (q.y - p.y) + p.x) inside = !inside;
+  }
+  return inside;
+}
+
+// stable, tiny, and not trying to be a hash function — it only has to give the
+// same stop the same common shape every time
+function hash(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0);
 }
