@@ -378,19 +378,58 @@ export const GAMES = [
       note: 'Godot版 — 5つのモード、7日間、陣形戦 · fi/en/ja',
     },
     status: 'active',
-    note: 'Godot build — five modes, one saved seven-day campaign, and an Eden that stays a mystery',
+    note: 'the build the game is written in — five modes, one saved seven-day campaign, and an Eden that stays a mystery',
     title: 'Piritori → Eden',
     tagline: 'A narrative strategy game across the full 2003 Kallio board: begin at Piritori, make the first margin, then build a network of people, information and routes.',
     lineage: 'Dope Wars × Mini Metro × East of Eden',
     tags: ['strategy', 'economy', 'narrative'],
     controls: 'choose a map location · make narrative choices · manage the ledger · command formation battles',
-    // The Godot port replaced the JS prototype here. It is a WebAssembly build
-    // and lives only on the deployed site — `inRepo: false` because main does
-    // not carry the 63MB artefact, so the smoke gate must not try to fetch it.
-    path: 'piritori-godot/',
+    // TWO CABINETS, ONE GAME, and that is deliberate rather than untidy.
+    //
+    // Owner ruling 2026-08-25 (piritori-eden PORTING.md): the JS build is where
+    // behaviour is defined and the Godot build is the PORT, kept for landscape
+    // and a controller. Both are real builds and both are deployed, so both get
+    // a cabinet. Before this the port had the only cabinet and the build the
+    // game is written in was reachable by typing its address — which is the
+    // wrong way round the moment JS became primary.
+    //
+    // 1.4MB, and it is not in this repo — it is built from `web/` in
+    // mbace1/piritori-eden — so `inRepo: false` keeps the smoke gate from
+    // trying to fetch it out of this tree.
+    path: 'piritori/',
     inRepo: false,
+    external: 'mbace1/piritori-eden',
     accent: '#e8c24a',
     art: 'nightmap',
+  },
+  {
+    id: 'piritori-godot',
+    fi: {
+      tagline: 'Sama peli, sama seitsemän päivää — mutta televisiolle ja ohjaimelle. Vaakakuva, ei kosketusta.',
+      lineage: 'Dope Wars × Mini Metro × East of Eden',
+      controls: 'ohjain tai näppäimistö · vaakakuva',
+      note: 'Godot-portti — sama kaupunki, olohuoneessa · fi/en/ja',
+    },
+    ja: {
+      tagline: '同じ街、同じ7日間 — ただしテレビとコントローラーのために。横画面、タッチなし。',
+      lineage: 'ドープウォーズ × ミニメトロ × エデンの東',
+      controls: 'コントローラーまたはキーボード · 横画面',
+      note: 'Godot移植 — 同じ街を、居間で · fi/en/ja',
+    },
+    status: 'active',
+    note: 'the port: the same seven days on a television, with a pad. 115MB of WebAssembly — give it a moment',
+    title: 'Piritori → Eden · Godot',
+    tagline: 'The same city and the same seven days, ported to Godot for landscape and a controller. It exists to answer the one question a browser cannot: does a game about routes, blocks and formations play with two sticks?',
+    lineage: 'Dope Wars × Mini Metro × East of Eden',
+    tags: ['strategy', 'economy', 'narrative'],
+    controls: 'gamepad or keyboard · landscape',
+    // 115MB of WebAssembly, deployed only. The comment on the entry above
+    // explains why there are two of these.
+    path: 'piritori-godot/',
+    inRepo: false,
+    external: 'mbace1/piritori-eden',
+    accent: '#7fb2ff',
+    art: 'padmap',
   },
   {
     id: 'tokomove',

@@ -1063,6 +1063,60 @@ export const ART = {
     // the sun, high and off-centre, cropped by nothing — it is day, that is all
     g.disc(112, 8, 5, '#e0a53a'); g.disc(112, 8, 3, '#f4f1e8');
   },
+  // THE THIRD OF THE SET, and it exists because the same game now has two
+  // cabinets. `nightmap` is the browser build; this is the port, and the only
+  // honest way to tell two covers for one game apart is to draw WHAT IS
+  // DIFFERENT ABOUT THEM. What is different is the room: a television across
+  // the floor and a pad in your hands, which is the entire reason the port
+  // exists (PORTING.md 1).
+  padmap(g, a) {
+    // the room, not the map: dark, and lit only by the screen
+    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#0a0c10', '#05070a', y / H));
+    // the glow the tube throws on the wall, FIRST and symmetric — drawn as
+    // rings growing outward from the set so it never steps off one corner.
+    // The first cut walked the rectangle's origin and left a grey wedge in the
+    // top-left that read as a rendering fault rather than light.
+    for (let i = 10; i > 0; i--) {
+      const t = i / 10;
+      g.p(12 - i * 2, 6 - i * 1.6, 104 + i * 4, 50 + i * 3.2, mix('#0a0c10', '#131a24', 1 - t));
+    }
+    // the set, standing on the floor — a fat bezel with the picture inside it,
+    // and it is LIGHTER than the wall so the frame reads as a frame rather
+    // than an outline floating in the void
+    g.p(12, 6, 104, 50, '#2a2f38');
+    g.p(14, 8, 100, 46, '#131820');
+    // the SAME Kallio geometry as the pair above, squeezed into the picture
+    const M = (x, y) => [16 + x * 0.75, 10 + y * 0.58];
+    const fat = (pts, c) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [ax, ay] = M(...pts[i]), [bx, by] = M(...pts[i + 1]);
+        for (let o = 0; o < 2; o++) g.line(ax, ay + o, bx, by + o, c);
+      }
+    };
+    fat([[18, 4], [18, 30], [52, 64], [88, 64]], '#146a70');
+    fat([[4, 66], [46, 66], [96, 16], [124, 16]], '#e2dccd');
+    fat([[70, 4], [96, 30]], '#2c5a3a');
+    for (const [x, y] of [[18, 30], [46, 66], [124, 16]]) {
+      const [cx, cy] = M(x, y); g.disc(cx, cy, 2, '#8c8778'); g.disc(cx, cy, 1, '#0b0e13');
+    }
+    const [px, py] = M(96, 16);
+    g.disc(px, py, 3, '#e2dccd'); g.disc(px, py, 1, '#0b0e13');
+    for (let i = 0; i < 14; i++) {
+      const t = i / 14 * Math.PI * 2;
+      g.p(px + Math.cos(t) * 7 * 1.3, py + Math.sin(t) * 7, 1, 1, '#ff7a1a');
+    }
+    // scanlines, so the picture is a PICTURE and not a second map
+    for (let y = 9; y < 54; y += 3) g.p(14, y, 100, 1, '#0d1219');
+    // the pad, cropped by the bottom edge — cropping is what makes it read as
+    // foreground rather than a diagram of a controller
+    g.p(38, 60, 52, 12, '#1e242c');
+    g.p(34, 62, 60, 8, '#1e242c');
+    g.disc(48, 65, 4, '#11161d'); g.disc(48, 65, 2, a);
+    g.disc(80, 65, 4, '#11161d'); g.disc(80, 65, 2, a);
+    // the d-pad, four ticks, and the two face buttons in the accent
+    g.p(38, 64, 6, 2, '#3a424d'); g.p(40, 62, 2, 6, '#3a424d');
+    g.p(88, 62, 2, 2, '#e2dccd'); g.p(92, 65, 2, 2, '#e2dccd');
+  },
 
 };
 

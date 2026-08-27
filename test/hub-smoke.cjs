@@ -207,11 +207,21 @@ function check(name, cond) {
     if (!r.ok()) dead.push(`${g.id} ${r.status()}`);
   }
   check(`every link this branch can see resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
-  // A complete source checkout now contains the deployed catalogue. Keep the
-  // assertion explicit so a future import cannot accidentally reintroduce
-  // production-only links into main.
+  // A cabinet this branch cannot see must SAY WHERE IT LIVES.
+  //
+  // This used to assert `away.length === 0` — that a complete checkout carries
+  // every visible cabinet — and that premise died when Piritori was split into
+  // its own repository. The assertion had been failing on main ever since,
+  // which is worse than either answer: a red gate teaches people to ignore it.
+  //
+  // The protection it was written for is still worth having (nobody should be
+  // able to quietly point a cabinet at something only the deployed site has),
+  // so it now checks the true thing instead of the convenient one: not in this
+  // tree is fine, unnamed is not.
   const away = games.filter(g => !g.inRepo);
-  check('the complete source tree carries every visible cabinet', away.length === 0);
+  const unexplained = away.filter(g => !g.external);
+  check(`a cabinet outside this repo names the repo it lives in${unexplained.length ? ` — ${unexplained.map(g => g.id)}` : ''}`,
+    unexplained.length === 0);
 
   // a marquee that draws nothing is a black rectangle nobody notices
   const blank = await page.evaluate(() => {
