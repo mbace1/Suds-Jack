@@ -1,5 +1,58 @@
 # EERI — versions
 
+## v15.39 — 2026-08-21 — scenery becomes data, which is the whole editor blocker
+
+The owner asked for three things — an editor that works on a phone, light
+sources to lift the visuals, and a UI that can carry both — and they are one
+piece of work with one thing in front of it.
+
+**The levels have been data since `parts.js`.** A room is a list of parts,
+the prover reads it, and `spec/eeri.json` hands all twelve to the port.
+**Scenery never was.** A prop was a call inside a function body:
+
+```js
+pipeStack(7.2, 3.65, 0.82);
+```
+
+which is exactly why `dev/inspector.js` can point at a prop and drag it and
+**cannot save** — there is nowhere to write to, and no way to say which call
+made the thing under your finger. Its own header says so and calls saving
+"step 2, and it is the real work".
+
+**`js/scenery.js`** is that step. The builders do not move — they are the
+art lane's vocabulary and not one shape changed — what moves is the
+PLACEMENT: the fourteen calls at the bottom of `world2-dressing.js` are now
+fourteen rows, each naming a prop type and its numbers, beside a `PROPS`
+table declaring which fields each type carries, with ranges. An editor that
+has to guess shows eight unlabelled numbers, which is the loop this is
+getting away from.
+
+**The numbers were moved and not retuned.** A refactor that also improves
+the picture is a refactor nobody can review.
+
+Three things fall out, and they are the three that were asked for:
+
+- **The inspector can name the row.** Every built object carries the row
+  that made it, so the panel shows `pipeworks[7] walkway` and the read-out
+  hands back a pasteable `{ prop: 'walkway', x: 57.0, y: 9.6, w: 8.2 },`
+  instead of three numbers you still have to turn into one line.
+- **A light is no longer a new system** — it is a prop type with a colour
+  and a radius, placed by the same tool and saved to the same row. That is
+  the next step, not this one.
+- **The port gets scenery through the seam it already reads.** `spec/eeri.json`
+  now carries `scenery.placed` and `scenery.props`: where a prop stands is a
+  composition decision, not a rendering one, so the rows travel and the
+  shapes stay here.
+
+And it is **checkable**, which a function body never was: `test/rooms.mjs`
+now asserts every row names a real prop type, sits inside the room, and
+keeps every number inside the range its type declares (247 → 248). Nothing
+in this suite could previously have caught a prop parked at x=140.
+
+**Lane note:** `world2-dressing.js` is art-lane territory and this crosses
+into it. The diff there is mechanical — an import, and twenty literal calls
+replaced by one walk over the rows — and no shape, colour or number moved.
+
 ## v15.38 — 2026-08-21 — the port seam, and a module graph that had split in two
 
 Owner: *"Eeri now has a separate repo where the Godot port is produced from

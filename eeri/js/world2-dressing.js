@@ -8,8 +8,9 @@
 // high walkway. One or two strong identifiers per screen, never wallpaper.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=43';
-import { craftMat, craftBox, cutQuad } from './craft.js?v=43';
+import { PAL, mix } from './palette.js?v=44';
+import { craftMat, craftBox, cutQuad } from './craft.js?v=44';
+import { placeScenery } from './scenery.js?v=44';
 
 export function buildPipeworksDressing(scene) {
   const root = new THREE.Group();
@@ -126,32 +127,29 @@ export function buildPipeworksDressing(scene) {
     root.add(q);
   };
 
-  // OPENING — pipe yard identity before the first hazard.
-  pipeStack(7.2, 3.65, 0.82);
-  buriedPipe(13.0, 2.55, 1.15, -0.08);
-
-  // TRENCH / SERVICE WALL — a strong built connector with one valve, then
-  // negative space around the actual shallow/deep-water reads.
-  serviceWall(21.0, 6.8, 2.5);
-  pipeMouth(24.4, 5.0, 0.82);
-  standpipe(29.6, 2.15);
-
-  // MIDPOINT — pump hardware sells the treatment-plant fantasy while the
-  // checkpoint and traversal remain unobscured in front.
-  pumpPlatform(42.0);
-  buriedPipe(51.5, 2.2, 0.9, 0.12);
-
-  // BACK HALF — elevated infrastructure frames the pipe/hoist sequences.
-  walkway(57.0, 8.2, 9.6);
-  pipeStack(69.2, 3.55, 0.72);
-  standpipe(76.4, 2.8);
-
-  // FINAL SCREEN — one large junction shape, leaving the ride/wall/flag
-  // silhouette clear at play height.
-  serviceWall(85.5, 6.0, 2.0);
-  pipeMouth(87.2, 4.95, 0.72);
-  pipeMouth(90.0, 4.95, 0.72);
-  valve(93.0, 5.35, 0.52);
+  // ---- placement is DATA now (js/scenery.js) ---------------------------
+  // Everything above this line is the vocabulary and belongs to the art
+  // lane; everything below used to be twenty literal calls and is now a
+  // walk over rows. The numbers did not change — a refactor that also
+  // retunes the picture is a refactor nobody can review. What changed is
+  // that each built thing now carries the ROW that made it, which is the
+  // handle dev/inspector.js has never had and the reason it cannot save.
+  placeScenery('pipeworks', {
+    pipeStack: (p) => pipeStack(p.x, p.y, p.s),
+    buriedPipe: (p) => buriedPipe(p.x, p.y, p.s, p.rot),
+    serviceWall: (p) => serviceWall(p.x, p.w, p.h),
+    pipeMouth: (p) => pipeMouth(p.x, p.y, p.r),
+    standpipe: (p) => standpipe(p.x, p.h),
+    pumpPlatform: (p) => pumpPlatform(p.x),
+    walkway: (p) => walkway(p.x, p.w, p.y),
+    valve: (p) => valve(p.x, p.y, p.r),
+  }, (_made, row) => {
+    // The builders add straight to `root` and mostly return nothing, so the
+    // tag goes on whatever they just added rather than on a return value.
+    for (let i = root.children.length - 1; i >= 0 && !root.children[i].userData.sceneryRow; i--) {
+      root.children[i].userData.sceneryRow = row;
+    }
+  });
 
   return {
     root,
