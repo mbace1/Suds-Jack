@@ -48,6 +48,22 @@ export const PROPS = {
   pumpPlatform: { label: 'pump platform', fields: {} },
   walkway:      { label: 'walkway',       fields: { w: { def: 8, min: 3, max: 18, step: 0.1 } } },
   valve:        { label: 'valve',         fields: { r: { def: 0.48, min: 0.2, max: 1, step: 0.02 } } },
+
+  // THE ONE PROP EVERY WORLD CAN USE. A lamp is an additive quad (js/light.js)
+  // rather than a light in the scene graph, so it costs one draw call, needs
+  // no new art, and — the point — it has an (x, y) an editor can drag.
+  // `z` is which lane it sits BETWEEN: occlusion is the layer order, so a
+  // lamp at -8 is behind the near lane and one at -1 is in front of it.
+  lamp: {
+    label: 'work lamp',
+    fields: {
+      r: { def: 6, min: 1.5, max: 22, step: 0.25 },
+      i: { def: 1, min: 0.1, max: 2.4, step: 0.05 },
+      z: { def: -1.2, min: -30, max: 3, step: 0.1 },
+      colour: { def: 0xffd9a0, min: 0, max: 0xffffff, step: 1, hex: true },
+      flicker: { def: 0, min: 0, max: 0.35, step: 0.01 },
+    },
+  },
 };
 
 // ---- the placement -------------------------------------------------------
@@ -55,6 +71,13 @@ export const PROPS = {
 // that were in world2-dressing.js, moved and not retuned — a refactor that
 // changes what a level LOOKS like is a refactor you cannot review.
 export const SCENERY = {
+  // WORLD 1 is daylight and stays daylight: two lamps only, and both are
+  // there to say a machine is running rather than to light the room.
+  groundworks: [
+    { prop: 'lamp', x: 40.0, y: 6.4, r: 5.5, i: 0.5, z: -1.0, colour: 0xffe2b0 },
+    { prop: 'lamp', x: 85.0, y: 6.0, r: 6.5, i: 0.55, z: -1.0, colour: 0xffe2b0 },
+  ],
+
   pipeworks: [
     // OPENING — pipe yard identity before the first hazard.
     { prop: 'pipeStack', x: 7.2, y: 3.65, s: 0.82 },
@@ -82,6 +105,35 @@ export const SCENERY = {
     { prop: 'pipeMouth', x: 87.2, y: 4.95, r: 0.72 },
     { prop: 'pipeMouth', x: 90.0, y: 4.95, r: 0.72 },
     { prop: 'valve', x: 93.0, y: 5.35, r: 0.52 },
+
+    // …and the pump hall is lit, because it is the one interior read in a
+    // world of open trenches.
+    { prop: 'lamp', x: 43.1, y: 6.9, r: 7.5, i: 0.8, z: -0.9, colour: 0xffdca8 },
+    { prop: 'lamp', x: 61.0, y: 10.6, r: 6.0, i: 0.6, z: -1.4, colour: 0xd8ecff },
+  ],
+
+  // WORLD 3 — the forest is lit by gaps in the canopy, so the lamps are
+  // cool, high and wide: they are daylight coming through a hole, not
+  // fixtures. One warm one at the clearing where the work is.
+  grove: [
+    { prop: 'lamp', x: 18.0, y: 13.5, r: 13, i: 0.55, z: -22, colour: 0xcfe6c8 },
+    { prop: 'lamp', x: 52.0, y: 14.0, r: 15, i: 0.5, z: -22, colour: 0xcfe6c8 },
+    { prop: 'lamp', x: 84.0, y: 12.0, r: 11, i: 0.6, z: -14, colour: 0xffe6b4 },
+  ],
+
+  // WORLD 4 — the night shift, and this is what the mood ramp exists for:
+  // the lanes go deep and cold, and these are the only warm things in the
+  // picture. One per beat, so the level reads as a chain of lit places with
+  // dark between them rather than an evenly grey room.
+  nightshift: [
+    { prop: 'lamp', x: 8.0, y: 8.5, r: 7.5, i: 1.15, z: -1.0, colour: 0xffd08a, flicker: 0.05 },
+    { prop: 'lamp', x: 31.0, y: 7.5, r: 8.5, i: 1.0, z: -1.0, colour: 0xffd08a },
+    { prop: 'lamp', x: 46.0, y: 9.0, r: 9.5, i: 1.2, z: -1.4, colour: 0xfff0c8 },
+    { prop: 'lamp', x: 68.0, y: 8.0, r: 8.0, i: 1.1, z: -1.0, colour: 0xffd08a },
+    { prop: 'lamp', x: 88.0, y: 7.5, r: 9.0, i: 1.05, z: -1.0, colour: 0xffd08a, flicker: 0.04 },
+    // …and one cold one far back, so the night has depth rather than just
+    // being dark: a lit window on the horizon nobody can reach.
+    { prop: 'lamp', x: 60.0, y: 15.0, r: 18, i: 0.45, z: -30, colour: 0x6f8fc4 },
   ],
 };
 
@@ -103,8 +155,12 @@ export function placeScenery(world, builders, onPlaced) {
   const rows = SCENERY[world] || [];
   rows.forEach((row, i) => {
     const p = withDefaults(row);
+    // A CONSUMER BUILDS WHAT IT KNOWS. Lamps are mounted by layers.js for
+    // every world; world 2's pipe vocabulary is mounted by its own dressing
+    // module. One list, two readers — so an unknown prop here is somebody
+    // else's row, not an error. `rooms.mjs` is what catches a typo.
     const build = builders[p.prop];
-    if (!build) throw new Error(`scenery: no builder for "${p.prop}" in world "${world}"`);
+    if (!build) return;
     const made = build(p) || null;
     onPlaced?.(made, { world, index: i, ...p });
   });

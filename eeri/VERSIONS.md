@@ -1,5 +1,64 @@
 # EERI — versions
 
+## v15.40 — 2026-08-21 — light, and it is a prop rather than a system
+
+Straight on from v15.39, and only possible because of it: **a light is now
+a row in `js/scenery.js`**, placed exactly like a pipe stack, saved to the
+same file, carried to the Godot port through the same spec. That is the
+whole design argument — the thing the owner asked for ("the editor
+placement gives us options to add light sources") is not a lighting engine,
+it is an (x, y) an editor can drag.
+
+**The fact that decided the approach:** the diorama is UNLIT. `layers.js`
+mounts every lane as a `MeshBasicMaterial` with a texture, so nothing in
+the scene lights a backdrop — the kid and the machines are the only things
+under the `DirectionalLight`. Good news, as it turns out: the two cheapest
+options are also the two that need **no new art**, which matters because
+the art lane is the queue everything else waits behind.
+
+**1 · MOOD.** A `MeshBasicMaterial`'s `.color` multiplies its map and is
+white until told otherwise. So tinting a lane costs one assignment and no
+draw call, and the ramp is read off the lane's **z** rather than its name —
+a lane added later gets the right tint without the table knowing it exists.
+Depth also darkens, not just cools: a far lane at night is further from
+every lamp in the picture. World 1 stays daylight (`MOOD.groundworks` is
+`null`); world 4 goes deep and cold, which is the only way a work lamp has
+something to be brighter *than*.
+
+**2 · LAMPS.** One radial-gradient quad, additively blended, at a z
+*between* two lanes — so occlusion is free from the layer order, and a
+lamp at −8 is behind the near lane while one at −1 is in front of it. One
+shared 128px gradient canvas for every lamp in the game. Two stops in the
+middle of the falloff rather than one, because a single linear ramp reads
+as a flat disc with a hard rim, which is the tell of a fake light.
+
+Thirteen lamps placed: two in world 1 that only say a machine is running,
+two in world 2's pump hall (the one interior read in a world of open
+trenches), three in world 3 that are daylight through a canopy gap rather
+than fixtures, and six on the night shift — one per beat, so the level
+reads as a chain of lit places with dark between them instead of an evenly
+grey room, plus one cold unreachable window on the horizon so the dark has
+depth.
+
+**What is deliberately not here.** Normal maps: correct for a light moving
+across a surface, and they cost an authored map per lane before one pixel
+changes — and normal-maps-on-parallax is a known rough edge in engines that
+do it natively, so it is also the option that would cost the port a week.
+Rim-from-alpha is the next rung and it comes after there are lights worth
+rimming.
+
+**Two disposal rules, both learned here before.** The lamps go down with
+the world; their gradient texture does **not** — it is one canvas shared by
+every lamp in the game, so disposing it with world 1 would leave world 2's
+lamps pointing at a dead texture. And flicker is frozen entirely under
+`prefers-reduced-motion`, because a pulsing lamp is motion like any other.
+
+`placeScenery` also learned that **a consumer builds what it knows**: lamps
+are mounted by `layers.js` for every world, world 2's pipe vocabulary by its
+own dressing module. One list, two readers — so an unknown prop is somebody
+else's row rather than a crash. `rooms.mjs` is what catches a typo, and it
+now checks lamp rows too.
+
 ## v15.39 — 2026-08-21 — scenery becomes data, which is the whole editor blocker
 
 The owner asked for three things — an editor that works on a phone, light

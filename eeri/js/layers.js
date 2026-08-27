@@ -23,9 +23,11 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=44';
-import { getLayerTexture } from './assets.js?v=44';
-import { buildPipeworksDressing } from './world2-dressing.js?v=44';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=45';
+import { getLayerTexture } from './assets.js?v=45';
+import { buildPipeworksDressing } from './world2-dressing.js?v=45';
+import { placeScenery } from './scenery.js?v=45';
+import { applyMood, buildLamp, flicker } from './light.js?v=45';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -615,6 +617,7 @@ function backgroundEvents(scene) {
 // live PNG first and paints its placeholder if there is none.
 export async function buildLayers(scene, world = 'groundworks', reduced = false) {
   const mounted = [];
+  let lampT = 0;
   const foreMeshes = [];   // …kept apart, so the foreground can get out of the way
   // the sky is a layer like any other now — the crafted paper sky ships as a
   // PNG through the same seam, and drawSky stays as its code placeholder
@@ -635,8 +638,29 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
   }
   const events = backgroundEvents(scene);
   const dressing = world === 'pipeworks' ? buildPipeworksDressing(scene) : null;
+
+  // ---- LIGHT (js/light.js) ---------------------------------------------
+  // Two things, in this order, and neither needs a repainted asset. MOOD
+  // multiplies each lane's own colour by depth — a `MeshBasicMaterial`'s
+  // `.color` multiplies its map and is white until told otherwise, so a
+  // night world costs one assignment per lane. LAMPS are additive quads
+  // placed from the same scenery rows every other prop comes from, which
+  // is the whole point: a light now has an (x, y) an editor can drag.
+  applyMood(world, mounted);
+  const lamps = [];
+  placeScenery(world, {
+    lamp: (p) => {
+      const m = buildLamp(THREE, p);
+      m.userData.flicker = p.flicker || 0;
+      scene.add(m);
+      lamps.push(m);
+      return m;
+    },
+  }, (made, row) => { if (made) made.userData.sceneryRow = row; });
+
   return {
     world,
+    lamps,
     // THE FOREGROUND GETS OUT OF THE WAY (owner, 2026-08-21: "some foreground
     // assets block view of ladders"). The fore lane is a full-width painted
     // strip and a climb is the one move that puts the player behind it for
@@ -653,7 +677,12 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
         m.material.opacity += (k - m.material.opacity) * 0.14;
       }
     },
-    update: (dt) => { if (!reduced) events.update(dt); },
+    update: (dt) => {
+      if (reduced) return;             // a lamp that pulses is motion too
+      events.update(dt);
+      lampT += dt;
+      for (const m of lamps) if (m.userData.flicker) flicker(m, lampT, m.userData.flicker);
+    },
     positions: () => events.positions(),
     // A WORLD IS A SET OF LAYERS, and until World 2 had levels there was
     // only ever one set, built once at boot. Swapping worlds means taking
@@ -671,6 +700,13 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
         m.material.dispose();
       }
       mounted.length = 0;
+      // The lamps go down with the world. Their gradient texture does NOT —
+      // it is one canvas shared by every lamp in the game and cached in
+      // light.js, so disposing it here would leave the next world's lamps
+      // pointing at a dead texture. Same rule the craft material cache
+      // follows in world2-dressing.
+      for (const m of lamps) { scene.remove(m); m.geometry.dispose(); m.material.dispose(); }
+      lamps.length = 0;
       dressing?.dispose?.();
       events.dispose?.();
     },

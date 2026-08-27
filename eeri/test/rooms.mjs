@@ -58,7 +58,7 @@ console.log(`the kid's budget: step ${REACH.step} tiles (jump reaches ${REACH.ju
 // room, and every number inside the range the type declares. Nothing else
 // in this file could have caught a prop parked at x=140.
 {
-  const { PROPS, SCENERY, withDefaults } = await import('../js/scenery.js?v=44');
+  const { PROPS, SCENERY, withDefaults } = await import('../js/scenery.js?v=45');
   const bad = [];
   for (const [world, rows] of Object.entries(SCENERY)) {
     rows.forEach((row, i) => {

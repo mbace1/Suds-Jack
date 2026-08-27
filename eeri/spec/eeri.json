@@ -1,6 +1,6 @@
 {
   "game": "eeri",
-  "version": "15.39",
+  "version": "15.40",
   "generated": "node eeri/tools/spec.mjs",
   "contract": "This file is the DESIGN of Eeri, not its presentation. Every number here is emitted from js/parts.js and js/rooms.js and must not be re-typed downstream. How the game is drawn, framed and controlled is deliberately absent: the JavaScript build tests VERTICAL, the Godot port tests LANDSCAPE.",
   "world": {
@@ -273,9 +273,67 @@
             "step": 0.02
           }
         }
+      },
+      "lamp": {
+        "label": "work lamp",
+        "fields": {
+          "r": {
+            "def": 6,
+            "min": 1.5,
+            "max": 22,
+            "step": 0.25
+          },
+          "i": {
+            "def": 1,
+            "min": 0.1,
+            "max": 2.4,
+            "step": 0.05
+          },
+          "z": {
+            "def": -1.2,
+            "min": -30,
+            "max": 3,
+            "step": 0.1
+          },
+          "colour": {
+            "def": 16767392,
+            "min": 0,
+            "max": 16777215,
+            "step": 1,
+            "hex": true
+          },
+          "flicker": {
+            "def": 0,
+            "min": 0,
+            "max": 0.35,
+            "step": 0.01
+          }
+        }
       }
     },
     "placed": {
+      "groundworks": [
+        {
+          "x": 40,
+          "y": 6.4,
+          "prop": "lamp",
+          "r": 5.5,
+          "i": 0.5,
+          "z": -1,
+          "colour": 16769712,
+          "flicker": 0
+        },
+        {
+          "x": 85,
+          "y": 6,
+          "prop": "lamp",
+          "r": 6.5,
+          "i": 0.55,
+          "z": -1,
+          "colour": 16769712,
+          "flicker": 0
+        }
+      ],
       "pipeworks": [
         {
           "x": 7.2,
@@ -363,6 +421,120 @@
           "y": 5.35,
           "prop": "valve",
           "r": 0.52
+        },
+        {
+          "x": 43.1,
+          "y": 6.9,
+          "prop": "lamp",
+          "r": 7.5,
+          "i": 0.8,
+          "z": -0.9,
+          "colour": 16768168,
+          "flicker": 0
+        },
+        {
+          "x": 61,
+          "y": 10.6,
+          "prop": "lamp",
+          "r": 6,
+          "i": 0.6,
+          "z": -1.4,
+          "colour": 14216447,
+          "flicker": 0
+        }
+      ],
+      "grove": [
+        {
+          "x": 18,
+          "y": 13.5,
+          "prop": "lamp",
+          "r": 13,
+          "i": 0.55,
+          "z": -22,
+          "colour": 13625032,
+          "flicker": 0
+        },
+        {
+          "x": 52,
+          "y": 14,
+          "prop": "lamp",
+          "r": 15,
+          "i": 0.5,
+          "z": -22,
+          "colour": 13625032,
+          "flicker": 0
+        },
+        {
+          "x": 84,
+          "y": 12,
+          "prop": "lamp",
+          "r": 11,
+          "i": 0.6,
+          "z": -14,
+          "colour": 16770740,
+          "flicker": 0
+        }
+      ],
+      "nightshift": [
+        {
+          "x": 8,
+          "y": 8.5,
+          "prop": "lamp",
+          "r": 7.5,
+          "i": 1.15,
+          "z": -1,
+          "colour": 16765066,
+          "flicker": 0.05
+        },
+        {
+          "x": 31,
+          "y": 7.5,
+          "prop": "lamp",
+          "r": 8.5,
+          "i": 1,
+          "z": -1,
+          "colour": 16765066,
+          "flicker": 0
+        },
+        {
+          "x": 46,
+          "y": 9,
+          "prop": "lamp",
+          "r": 9.5,
+          "i": 1.2,
+          "z": -1.4,
+          "colour": 16773320,
+          "flicker": 0
+        },
+        {
+          "x": 68,
+          "y": 8,
+          "prop": "lamp",
+          "r": 8,
+          "i": 1.1,
+          "z": -1,
+          "colour": 16765066,
+          "flicker": 0
+        },
+        {
+          "x": 88,
+          "y": 7.5,
+          "prop": "lamp",
+          "r": 9,
+          "i": 1.05,
+          "z": -1,
+          "colour": 16765066,
+          "flicker": 0.04
+        },
+        {
+          "x": 60,
+          "y": 15,
+          "prop": "lamp",
+          "r": 18,
+          "i": 0.45,
+          "z": -30,
+          "colour": 7311300,
+          "flicker": 0
         }
       ]
     }
