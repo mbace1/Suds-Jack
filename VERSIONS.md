@@ -7,6 +7,36 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v225 — 2026-08-27
+**RUSH gets its own arena and its own roster** *(owner direction)*
+- v224 gave Rush its rules but left it running on the main game's furniture and
+  its 21-type ecology. Both are gone: **Rush is a bare arena with four bodies**
+- **No main-game items, no gates.** One predicate — `bareArena()`, which
+  cabinets already effectively used — now switches off gates, bounties, vault
+  crates, escort bots, steam vents, drains, foam zones, bullet curtains and the
+  cargo convoy, and with them every pickup they dropped. Classic is untouched
+  and still builds all of it
+- **Four bodies, shaped like Blade Rush's own roster** (Chompers, Snakes,
+  asteroids, Coolers) instead of the main pool:
+  **GLOBBO** the chomper · **YELA CUBE** the cooler · **SPLITTA** the snake
+  (it splits into a train) · **SLUDGE CUBE** the asteroid. **No shooters** — a
+  gun club would make standing still the answer, which is the opposite of a
+  mode about boosting through things
+- **The COOLER earns its name**: boost-killing one **vents 0.22 heat** and can
+  clear the overheat lock, so the roster feeds the mode's economy rather than
+  standing in front of it
+- **No boss set pieces** — OMEGA, the TWIN PRISMS and their WARDEN escorts are
+  off-roster, so a boss beat becomes a heavy one. Blade Rush's own bosses (The
+  Warden, The Scourge, The Leviathan) are a later job
+- Roster and vent are data in `TUNING.rush.pool` / `.cooler`
+- Verified headless **25/25**: a 14-level sweep fields exactly those four types
+  and zero bosses; a Rush wave builds no gates, pickups, vents, foam, vault,
+  escort, drain, bounty or curtain — and a classic wave still builds its gates.
+  `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=178` → `?v=179`; HUD label → v225
+
+---
+
 ## v224 — 2026-08-27
 **RUSH MODE — boost is the answer, the gun is the fallback** *(owner direction)*
 - A new front-page mode **directly under ROGUELIKE**, bringing the design
