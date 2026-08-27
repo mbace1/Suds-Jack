@@ -33,14 +33,14 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { ROOMS } from '../js/rooms.js?v=45';
+import { ROOMS } from '../js/rooms.js?v=48';
 import {
   compile, estimate, deadAir, DEAD_AIR, LEVEL, REACH, SPEED, GIZMO, TARP_RISE,
   MACHINE_SPEED, MACHINE_REACH, RIDE, TELL, CLOCK, TILES, SOLID_CHARS,
   BELT_CHARS, TARP_CHAR, WATER_CHAR, CLIMB_CHAR, W, H, GROUND,
-} from '../js/parts.js?v=45';
-import { labelOf, slugOf, PER_WORLD } from '../js/levelid.js?v=45';
-import { PROPS, SCENERY, withDefaults } from '../js/scenery.js?v=45';
+} from '../js/parts.js?v=48';
+import { labelOf, slugOf, PER_WORLD } from '../js/levelid.js?v=48';
+import { PROPS, SCENERY, withDefaults } from '../js/scenery.js?v=48';
 
 const here = dirname(fileURLToPath(import.meta.url));
 

@@ -23,11 +23,11 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=45';
-import { getLayerTexture } from './assets.js?v=45';
-import { buildPipeworksDressing } from './world2-dressing.js?v=45';
-import { placeScenery } from './scenery.js?v=45';
-import { applyMood, buildLamp, flicker } from './light.js?v=45';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=48';
+import { getLayerTexture } from './assets.js?v=48';
+import { buildPipeworksDressing } from './world2-dressing.js?v=48';
+import { placeScenery } from './scenery.js?v=48';
+import { applyMood, buildLamp, flicker } from './light.js?v=48';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -661,6 +661,11 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
   return {
     world,
     lamps,
+    // The art lane's own placeable vocabulary for this world, if it has
+    // one — world2-dressing's builders, keyed the same way scenery.js
+    // names its rows. Read by the dev-page editor for live placement;
+    // nothing in the shipping game ever looks at this.
+    dressingBuilders: dressing?.builders || null,
     // THE FOREGROUND GETS OUT OF THE WAY (owner, 2026-08-21: "some foreground
     // assets block view of ladders"). The fore lane is a full-width painted
     // strip and a climb is the one move that puts the player behind it for

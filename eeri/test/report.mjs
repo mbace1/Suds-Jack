@@ -30,9 +30,9 @@
 // 3 and 4 ran against a DIFFERENT instance of rooms.js than the one read
 // here, and the two halves of the game arrived from two module graphs. It
 // happened to total twelve, which is the worst kind of wrong.
-import { ROOMS } from '../js/rooms.js?v=45';
-import { compile, estimate, deadAir, DEAD_AIR, LEVEL, W } from '../js/parts.js?v=45';
-import { labelOf } from '../js/levelid.js?v=45';
+import { ROOMS } from '../js/rooms.js?v=48';
+import { compile, estimate, deadAir, DEAD_AIR, LEVEL, W } from '../js/parts.js?v=48';
+import { labelOf } from '../js/levelid.js?v=48';
 
 // ---- the vocabulary ------------------------------------------------------
 // What a level SAYS, as a set of words. Deliberately coarser than the parts

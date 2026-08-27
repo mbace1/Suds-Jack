@@ -12,27 +12,32 @@
 //
 // Run: node eeri/test/rooms.mjs
 
-import { ROOMS as W12, LAB } from '../js/rooms.js?v=3';
-// WORLDS 3 AND 4 WERE NEVER PROVED. `js/world34-register.js` pushes them onto
-// the roster at RUNTIME, so this file — which imported the static list — was
-// checking six of twelve levels and reporting green. Half the game had no
-// reach budget check, no "is about ONE thing", no bolt or checkpoint rule and
-// no pacing figure, and it showed: measured, those six carry half the asks
-// per tile of the six that were being measured, and every one of them has a
-// 20-tile stretch where nothing asks anything.
+// WORLDS 3 AND 4 WERE NEVER PROVED, ONCE. `js/world34-register.js` pushes
+// them onto `rooms.js`'s own exported array in place — it is "the same
+// live array that level.js re-exports" (its own words) — as a side effect
+// of importing `levelid.js`. This file used to import that array under its
+// OWN cache-busting token (`rooms.js?v=3`) while `levelid.js` was pulled in
+// at a DIFFERENT one (`?v=15`): two tokens are two separate module
+// instances, so the registration landed on an array this file never saw,
+// and a second, EXPLICIT `[...W12, ...WORLD34_ROOMS]` concat was standing
+// in for it — invisibly correct only because the untouched `?v=3` copy of
+// `ROOMS` still held exactly six. `js/scenery.js` hit the identical trap
+// in `report.mjs` a day earlier (v15.38): a token a module behind is a
+// second module, and the two disagreeing is not always loud.
 //
-// The prover takes the same roster the game does now.
-import { WORLD34_ROOMS } from '../js/world34-rooms.js?v=3';
-const ROOMS = [...W12, ...WORLD34_ROOMS];
+// One token, and `levelid.js` imported before `ROOMS` is read — the
+// registration is a side effect of the import itself, so nothing here
+// spreads WORLD34_ROOMS in a second time; `ROOMS` already holds all twelve.
+import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=48';
+import { ROOMS, LAB } from '../js/rooms.js?v=48';
 import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
   ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
   swingBall, hazard, shallow, deep, pipe, flooded, machine as mach, hoist,
-} from '../js/parts.js?v=4';
-import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=15';
+  deadAir, DEAD_AIR, compile,
+} from '../js/parts.js?v=48';
 import { readFileSync } from 'node:fs';
-import { deadAir, DEAD_AIR, compile } from '../js/parts.js?v=3';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
 // below would fail on the count alone and say nothing about what they are
@@ -58,7 +63,7 @@ console.log(`the kid's budget: step ${REACH.step} tiles (jump reaches ${REACH.ju
 // room, and every number inside the range the type declares. Nothing else
 // in this file could have caught a prop parked at x=140.
 {
-  const { PROPS, SCENERY, withDefaults } = await import('../js/scenery.js?v=45');
+  const { PROPS, SCENERY, withDefaults } = await import('../js/scenery.js?v=48');
   const bad = [];
   for (const [world, rows] of Object.entries(SCENERY)) {
     rows.forEach((row, i) => {
@@ -67,6 +72,10 @@ console.log(`the kid's budget: step ${REACH.step} tiles (jump reaches ${REACH.ju
       const p = withDefaults(row);
       if (!(p.x >= 0 && p.x <= W)) bad.push(`${where}: x ${p.x} is outside the room (0…${W})`);
       for (const [k, f] of Object.entries(PROPS[row.prop].fields)) {
+        if (f.hex) {
+          if (!/^#[0-9a-f]{6}$/i.test(p[k])) bad.push(`${where}: ${k} "${p[k]}" is not a #rrggbb colour`);
+          continue;
+        }
         if (typeof p[k] !== 'number') bad.push(`${where}: ${k} is not a number`);
         else if (p[k] < f.min || p[k] > f.max) bad.push(`${where}: ${k} ${p[k]} outside ${f.min}…${f.max}`);
       }

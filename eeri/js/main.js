@@ -9,30 +9,30 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=45';
-import { Input } from './input.js?v=45';
-import { Level, ROOMS, LAB } from './level.js?v=45';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=48';
+import { Input } from './input.js?v=48';
+import { Level, ROOMS, LAB } from './level.js?v=48';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=45';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=45';
-import { Camera } from './camera.js?v=45';
-import { buildKidModel, Kid, Player } from './kid.js?v=45';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=45';
-import { buildCraneModel, Crane } from './crane.js?v=45';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=45';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=45';
-import { Hoist } from './hoist.js?v=45';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=45';
-import { WreckingBall } from './hazards.js?v=45';
-import { AudioKit } from './audio.js?v=45';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=45';
-import { craftMat, craftBox } from './craft.js?v=45';
-import { t as tr } from './lang.js?v=45';
-import { showIntro } from './intro.js?v=45';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=45';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=45';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=45';
+} from './pieces.js?v=48';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=48';
+import { Camera } from './camera.js?v=48';
+import { buildKidModel, Kid, Player } from './kid.js?v=48';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=48';
+import { buildCraneModel, Crane } from './crane.js?v=48';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=48';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=48';
+import { Hoist } from './hoist.js?v=48';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=48';
+import { WreckingBall } from './hazards.js?v=48';
+import { AudioKit } from './audio.js?v=48';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=48';
+import { craftMat, craftBox } from './craft.js?v=48';
+import { t as tr } from './lang.js?v=48';
+import { showIntro } from './intro.js?v=48';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=48';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=48';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=48';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -775,6 +775,14 @@ async function boot() {
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
       world: () => diorama.world,
+      // Two more narrow reads added for the SAME reason `camera` was: the
+      // dev-page editor needs somewhere to place a live prop and something
+      // to place it WITH. `lamps()` is the live list (so a spawned one can
+      // be found and undone); `dressingBuilders()` is the art lane's own
+      // placeable vocabulary for the current world, if it has one. Neither
+      // is read by the shipping game.
+      lamps: () => diorama.lamps,
+      dressingBuilders: () => diorama.dressingBuilders,
       // a room change is not finished when the index flips — goSite() still
       // has to put the kid on the new spawn, so anything positioning him
       // must wait for this
@@ -1086,11 +1094,20 @@ async function boot() {
       audio.bolt(8); banner('CHECKPOINT');
       setTimeout(() => document.getElementById('banner')?.remove(), 1000);
     }
-    // THE FOREGROUND STANDS ASIDE FOR A CLIMB. A ladder is the one move that
-    // parks you behind the fore lane for seconds while standing still, so it
-    // is the one move where a painted strip in front of you is occlusion
-    // rather than depth. Everywhere else it stays where the art put it.
-    diorama.fore?.(player.climbing ? 0.24 : 1);
+    // THE FOREGROUND STANDS ASIDE FOR A CLIMB — AND FOR THE APPROACH TO ONE.
+    // Fading only once `player.climbing` was already true meant the fore
+    // lane could hide a ladder from someone who had not started climbing it
+    // yet, which is backwards: the strip only has to get out of the way
+    // once you are BEHIND it, but you have to be able to SEE a ladder to
+    // know it is there in the first place. So it also fades while standing
+    // within reach of one, not just while on it.
+    let nearLadder = false;
+    for (const l of site.def.ladders || []) {
+      if (Math.abs(player.x - l.c) < 3 && player.y >= l.cy0 - 1 && player.y <= l.cy1 + 2) {
+        nearLadder = true; break;
+      }
+    }
+    diorama.fore?.(player.climbing || nearLadder ? 0.24 : 1);
 
     if (site.flag) {
       const ev = site.flag.update(dt, mode === 'riding' && exc ? exc.x : player.x);

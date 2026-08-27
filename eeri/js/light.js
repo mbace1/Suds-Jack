@@ -27,7 +27,7 @@
 // option that would cost the Godot port a week. Rim-from-alpha is the
 // next step up and it comes after there are lights worth rimming.
 
-import { mix } from './palette.js?v=45';
+import { mix } from './palette.js?v=48';
 
 // ---- 1 · mood -----------------------------------------------------------
 // Per world: what the lanes are multiplied by, from the far end of the
@@ -38,11 +38,11 @@ import { mix } from './palette.js?v=45';
 // the right tint without this table knowing it exists.
 export const MOOD = {
   groundworks: null,
-  pipeworks: { far: 0xc8d4e4, near: 0xfff6e6, amount: 0.5 },
-  grove: { far: 0x9fb8c9, near: 0xfff2d8, amount: 0.7 },
+  pipeworks: { far: '#c8d4e4', near: '#fff6e6', amount: 0.5 },
+  grove: { far: '#9fb8c9', near: '#fff2d8', amount: 0.7 },
   // The night shift is the whole reason this exists: far lanes go deep and
   // cold so that a work lamp has something to be brighter THAN.
-  nightshift: { far: 0x35507a, near: 0x8f9fbe, amount: 1 },
+  nightshift: { far: '#35507a', near: '#8f9fbe', amount: 1 },
 };
 
 // z of the far and near lanes, so the ramp can be read off a position
@@ -59,8 +59,8 @@ export function applyMood(world, meshes) {
     // Depth also DARKENS: a far lane at night is not merely bluer, it is
     // further from every lamp in the picture.
     const lit = mix(m.far, m.near, t);
-    const dim = mix(0x1a2230, lit, 0.35 + 0.65 * t);
-    mesh.material.color.setHex(mix(0xffffff, dim, m.amount));
+    const dim = mix('#1a2230', lit, 0.35 + 0.65 * t);
+    mesh.material.color.set(mix('#ffffff', dim, m.amount));
     n++;
   }
   return n;
@@ -93,7 +93,7 @@ function lampTexture(THREE) {
 // A lamp is a quad, so it is one draw call and it cannot cast anything —
 // which is the honest limit and also why it is affordable at six lamps a
 // level on a phone.
-export function buildLamp(THREE, { x, y, r = 6, colour = 0xffd9a0, i = 1, z = -1.2 }) {
+export function buildLamp(THREE, { x, y, r = 6, colour = '#ffd9a0', i = 1, z = -1.2 }) {
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(r * 2, r * 2),
     new THREE.MeshBasicMaterial({

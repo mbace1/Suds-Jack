@@ -12,8 +12,8 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=45';
-import { craftMat, craftBox } from './craft.js?v=45';
+import { PAL, mix } from './palette.js?v=48';
+import { craftMat, craftBox } from './craft.js?v=48';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();
@@ -146,6 +146,25 @@ export function buildGirderModel(len = 9.8) {
     box(s0, 0.9, 0.5, 1.2, PAL.EARTH[0], dx, 0.25, 0);
   }
   girder(s0, 0.5);
+
+  // READ ME AS LIFTABLE (owner, 2026-08-27 playtest: "the girder is not
+  // too readable and needs some visual guide like arrows again"). The bank
+  // already wears this exact sign for the same reason — no text, a shape
+  // that reads at 32px, and it stands on the thing you act ON rather than
+  // near a control legend. One arrow: ▼ is the only button this puzzle
+  // uses (hold it near the stack), so a matched pair would be teaching a
+  // second button that does not exist here.
+  {
+    const chevron = new THREE.Group();
+    for (const dir of [-1, 1]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.13, 0.08), M(PAL.MACHINE));
+      bar.position.set(dir * 0.14, 0, 0);
+      bar.rotation.z = dir * 0.7;             // both point down
+      chevron.add(bar);
+    }
+    chevron.position.set(0, 1.55, 0.62);
+    s0.add(chevron);
+  }
   root.add(s0); nodes.state0 = s0;
 
   // state1 — SLUNG: hanging under the grip by two chains
@@ -193,6 +212,30 @@ export class Girder {
     this.n.grip.getWorldPosition(this._v);
     this.dropDepth = this._v.y - bb.min.y;
 
+    // THE DROP TARGET. The stack's own sign says "lift here"; this says
+    // "put it here" — a pair of chevrons pointing DOWN into the gap, hung
+    // at seat height over the near lip, since the far lip is off toward
+    // the machine's approach and the near one is what you are looking at
+    // while carrying. Built once, moved never: it marks a place in the
+    // LEVEL, not a state of the girder, so it does not ride the sway the
+    // slung load gets. Visible only while state 1 (carrying) — a marker
+    // over an empty stack or a filled gap is answering a question nobody
+    // is asking any more.
+    this.mark = new THREE.Group();
+    const markM = craftMat(PAL.MACHINE, 'balsa');
+    const markY = def.gap.cy + 2.3;
+    for (const [ox, oz] of [[-0.3, 0], [0.3, 0]]) {
+      for (const dir of [-1, 1]) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.07), markM);
+        bar.position.set(ox + dir * 0.1, 0, oz);
+        bar.rotation.z = dir * 0.7 + Math.PI;   // both pairs point down
+        this.mark.add(bar);
+      }
+    }
+    this.mark.position.set((def.gap.c0 + def.gap.c1 + 1) / 2, markY, 0);
+    this.mark.visible = false;
+    scene.add(this.mark);
+
     // dust thrown when the span lands — pooled, so the seat has weight
     this.spray = [];
     const geo = new THREE.DodecahedronGeometry(0.14, 0);
@@ -206,6 +249,7 @@ export class Girder {
 
   show() {
     for (let s = 0; s < 3; s++) this.n[`state${s}`].visible = (s === this.state);
+    this.mark.visible = this.state === 1;
   }
 
   // off the stack and onto the hook — the machine now carries it
@@ -247,6 +291,13 @@ export class Girder {
       p.position.y += p.vy * dt;
       p.rotation.x += dt * 7; p.rotation.z += dt * 5;
       if (p.life >= 1) p.visible = false;
+    }
+    // the target marker bobs on its own clock — small and slow, since a
+    // fast pulse this close to the ride's own camera shake would just be
+    // more noise rather than a signal
+    if (this.mark.visible) {
+      this._bob = (this._bob || 0) + dt;
+      this.mark.position.y = this.def.gap.cy + 2.3 + Math.sin(this._bob * 2.4) * 0.12;
     }
     if (this.state !== 1 || !exc) return;
     // slung: the grip rides the bucket, the load trails the drive. If the
