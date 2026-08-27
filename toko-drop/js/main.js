@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=177';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=177';
-import { Player, PLAYER_RADIUS } from './player.js?v=177';
+import { InputManager } from './input.js?v=178';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=178';
+import { Player, PLAYER_RADIUS } from './player.js?v=178';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=177';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=177';
-import { audio } from './audio.js?v=177';
-import { initDesigner } from './designer.js?v=177';
-import { createSpecimen } from './specimen.js?v=177';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=177';
-import { TUNING } from './tuning.js?v=177';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=178';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=178';
+import { audio } from './audio.js?v=178';
+import { initDesigner } from './designer.js?v=178';
+import { createSpecimen } from './specimen.js?v=178';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=178';
+import { TUNING } from './tuning.js?v=178';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -55,6 +55,7 @@ let rng = Math.random.bind(Math);
 // v217 WAVE DIRECTOR v1: the numbers live in TUNING.waves (tuning.js) —
 // composition, cadence and escalation are data; this file keeps the algorithm.
 function getWaveScale(wave) {
+  if (rush.on) wave = rush.level;   // v224 RUSH: level is difficulty, both ways
   const S = TUNING.waves.scale;
   const ramp = Math.min(wave, S.knee) - 1;   // 0..knee-1 across the on-ramp
   const post = Math.max(0, wave - S.knee);   // 0,1,2… after the knee
@@ -82,6 +83,9 @@ function waveKind(w) {
 // Enemy pool: [type, minWave, budget-cost]. Unlocked types grow with wave number.
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
+  // v224 RUSH: composition follows the RUSH level, not the wave count — which
+  // is what makes levelling DOWN after a lost life actually mean something.
+  if (rush.on) wave = rush.level;
   const { GLOBBO, TORO, OMEGA, WARDEN, PRISM, DRAPER } = EnemyType;
   // v217: the tables are data (TUNING.waves) — pool order there is draw order
   // here, so the seeded index math is untouched.
@@ -2029,6 +2033,10 @@ let hiScore = pb.bestScore;
 // SMASH-style room run (tier 1: 4 rooms + boss; tier 2+: 2 brutal rooms +
 // boss + mega-boss) with a pinball score multiplier that climbs per room.
 // Clearing a gauntlet pays a RARE upgrade pick. Dying in one ends the run.
+// v224 RUSH MODE — its own ruleset, not a modifier stacked on classic (owner
+// direction; design in the Godot port's RUSH_MODE.md). ROGUELIKE and DAILY do
+// not apply inside it.
+let rushMode = localStorage.getItem('tokoDropRush') === '1';
 let roguelikeMode = localStorage.getItem('tokoDropRogue2') === '1';
 let rogueB        = localStorage.getItem('tokoDropRogueB') === '1';
 if (rogueB) roguelikeMode = true;
@@ -3237,6 +3245,7 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   }
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (dailyMod === 'glass' ? 2 : 1)   // v179: GLASS pays double
+         * (rush.on ? Math.max(1, rush.chain) : 1)                                   // v224: the boost chain
          * killScoreMult                                                              // v180: GAMBLER's card
          * (minnowBounty && e._spawnChild ? 3 : 1)                                    // v202: MINNOW BOUNTY
          * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
@@ -3378,6 +3387,87 @@ function onPlayerHit() {
   audio.playerHit();
 }
 
+
+// ── RUSH MODE ruleset (v224) ─────────────────────────────────────────────────
+// One rule holds it up: BOOST IS THE GOOD OPTION, the gun is what you take
+// when you cannot afford to boost. Boosting is invulnerable and kills on
+// contact; pulling the trigger cancels the shield. Heat is what both cost.
+//
+// Levels move BOTH WAYS: they run on a clock, and losing a life levels you
+// DOWN — and the level is the number the wave director reads, so going down
+// genuinely makes the next wave easier.
+const rush = {
+  on: false, heat: 0, overheated: false,
+  chain: 0, chainT: 0,
+  lives: 0, nextLife: 0,
+  level: 1, levelT: 0,
+  flashT: 0,          // level up/down banner
+  reset() {
+    const R = TUNING.rush;
+    this.on = true; this.heat = 0; this.overheated = false;
+    this.chain = 0; this.chainT = 0;
+    this.lives = R.lives.start; this.nextLife = R.lives.extraEvery;
+    this.level = 1; this.levelT = 0; this.flashT = 0;
+  },
+  levelDuration() {
+    const L = TUNING.rush.levels;
+    return this.level === 1 ? L.first
+         : this.level === 2 ? L.second
+         : L.second + (this.level - 2) * L.step;
+  },
+  // Boost is available unless the meter locked you out.
+  canBoost() { return !this.overheated; },
+  update(dt) {
+    if (!this.on) return;
+    const R = TUNING.rush;
+    const held = input.getBoostHeld() && this.canBoost();
+    player.setBoost(held);
+    // heat: boost costs a lot, the gun a little, and idle sheds it
+    if (player.boosting) this.heat += R.heat.boostRate * dt;
+    else                 this.heat -= R.heat.coolRate * dt;
+    this.heat = Math.max(0, Math.min(1, this.heat));
+    if (!this.overheated && this.heat >= 1) {
+      this.overheated = true;
+      player.setBoost(false);
+      audio.playerHit?.();
+    } else if (this.overheated && this.heat <= R.heat.clearAt) {
+      this.overheated = false;   // hysteresis — no fluttering on the edge
+    }
+    // the chain is a boost-kill chain, on a window that a hit also breaks
+    if (this.chainT > 0) {
+      this.chainT -= dt;
+      if (this.chainT <= 0) this.chain = 0;
+    }
+    if (this.flashT > 0) this.flashT -= dt;
+    player._rushHot = this.heat > 0.7;   // the body runs orange before it locks
+    // the level clock
+    this.levelT += dt;
+    if (this.levelT >= this.levelDuration()) { this.levelT = 0; this.levelUp(); }
+  },
+  shot() { if (this.on) this.heat = Math.min(1, this.heat + TUNING.rush.heat.perShot); },
+  boostKill() {
+    const C = TUNING.rush.chain;
+    this.chain = Math.min(C.cap, this.chain + C.perKill);
+    this.chainT = C.window;
+  },
+  levelUp()   { this.level++; this.flashT = 1.2; audio.announce?.('wave'); },
+  levelDown() { if (this.level > 1) { this.level--; this.flashT = 1.2; } this.levelT = 0; },
+  // A hit costs a life, breaks the chain and levels you down.
+  loseLife() {
+    this.chain = 0; this.chainT = 0;
+    this.lives--;
+    this.levelDown();
+    return this.lives <= 0;
+  },
+  checkExtraLife() {
+    if (!this.on) return false;
+    if (score < this.nextLife) return false;
+    this.lives++;
+    this.nextLife += TUNING.rush.lives.extraEvery;
+    return true;
+  },
+};
+
 function tryHitPlayer(source = 'bullet', attackerType = null) {
   if (player._shield) {
     player._shield = false;
@@ -3394,6 +3484,10 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   // v212: remember what landed the fatal blow — the death screen shows it and
   // asks about it, so the question is about something you just lived through.
   if (!player.alive) _killedBy = { source, type: attackerType };
+  // v224 RUSH: a hit costs a life, breaks the chain, and levels you DOWN —
+  // which really does make the next wave easier, since the level is the
+  // number the wave director reads.
+  if (rush.on && player.alive) { rush.chain = 0; rush.chainT = 0; rush.levelDown(); }
   return !player.alive;
 }
 
@@ -4209,14 +4303,35 @@ function drawHUD() {
   // Wave + score (top row)
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = HUD_FONT;
-  ctx.fillText(`${t('wave')} ${wave}`, 16, 24);
+  ctx.fillText(rush.on ? `${t('rushLevel')} ${rush.level}` : `${t('wave')} ${wave}`, 16, 24);
 
-  // Wave progress bar
-  const _prog = Math.min(1, waveTimer / waveDuration);
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
-  ctx.fillRect(16, 30, 100, 3);
-  ctx.fillStyle = _prog >= 1 ? '#44ff88' : '#ffaa22';
-  ctx.fillRect(16, 30, 100 * _prog, 3);
+  // v224 RUSH readout: the heat meter is the decision you are making every
+  // second, so it sits under the level where the wave bar normally is —
+  // orange as it climbs, red and named once it locks you out.
+  if (rush.on) {
+    const hot = rush.overheated;
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(16, 36, 100, 4);
+    ctx.fillStyle = hot ? '#ff3322' : rush.heat > 0.7 ? '#ff8833' : '#ffcc44';
+    ctx.fillRect(16, 36, 100 * rush.heat, 4);
+    ctx.font = '10px monospace';
+    ctx.fillStyle = hot ? '#ff5533' : 'rgba(255,255,255,0.45)';
+    ctx.fillText(hot ? t('rushOverheat') : t('rushHeat'), 16, 52);
+    if (rush.chain > 1) {
+      ctx.fillStyle = '#66ffcc';
+      ctx.fillText(`${t('rushChain')} x${rush.chain}`, 16, 64);
+    }
+    ctx.font = HUD_FONT;
+  }
+
+  // Wave progress bar (RUSH shows its heat meter here instead)
+  if (!rush.on) {
+    const _prog = Math.min(1, waveTimer / waveDuration);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(16, 30, 100, 3);
+    ctx.fillStyle = _prog >= 1 ? '#44ff88' : '#ffaa22';
+    ctx.fillRect(16, 30, 100 * _prog, 3);
+  }
 
   ctx.textAlign = 'right';
   ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
@@ -4510,7 +4625,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v223' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v224' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4656,6 +4771,45 @@ function showTitle() {
   btn.addEventListener('touchend', e => e.stopPropagation());
   slot.appendChild(btn);
   slot.appendChild(hint);
+
+  // v224 RUSH chip — directly under ROGUELIKE (owner placement). Its own
+  // ruleset, so turning it on turns ROGUELIKE and DAILY off: boost replaces
+  // the dash, the gun becomes a shotgun, and the hp dots become lives.
+  const rbtn  = document.createElement('div');
+  rbtn.dataset.ui = '1';
+  const rhint = document.createElement('div');
+  rhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+  const rrender = () => {
+    const on = rushMode;
+    rbtn.textContent = `${t('rush')}: ${on ? t('on') : t('off')}`;
+    rbtn.style.cssText =
+      'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+      'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+      'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
+      `border:2px solid ${on ? '#ff7733' : '#445'};` +
+      `color:${on ? '#ffaa66' : '#7777aa'};` +
+      `text-shadow:${on ? '0 0 12px #ff6600' : 'none'};`;
+    rhint.textContent = on ? t('rushOnH') : t('rushOffH');
+  };
+  rrender();
+  const rtoggle = e => {
+    e.stopPropagation();
+    e.preventDefault();
+    rushMode = !rushMode;
+    localStorage.setItem('tokoDropRush', rushMode ? '1' : '0');
+    // its own ruleset — the two run modifiers step aside rather than stack
+    if (rushMode) {
+      roguelikeMode = false; rogueB = false; dailyMode = false;
+      localStorage.setItem('tokoDropRogue2', '0');
+      localStorage.setItem('tokoDropRogueB', '0');
+      localStorage.setItem('tokoDropDaily', '0');
+    }
+    showTitle();
+  };
+  rbtn.addEventListener('pointerdown', rtoggle);
+  rbtn.addEventListener('touchend', e => e.stopPropagation());
+  slot.appendChild(rbtn);
+  slot.appendChild(rhint);
 
   // DAILY RUN chip (v130) — same styling family as the roguelike chip, gold.
   const dbtn  = document.createElement('div');
@@ -6796,6 +6950,22 @@ function startGame() {
   }
   rng = mulberry32(runSeed);
   player.reset();
+  // v224 RUSH: its own ruleset. Boost replaces the dash, the gun becomes a
+  // shotgun, and the hp dots are the lives.
+  rush.on = false;
+  player._boostSpeed = 0;
+  player.setBoost(false);
+  if (rushMode && !inCabinet()) {
+    rush.reset();
+    const R = TUNING.rush;
+    player._boostSpeed = R.boostSpeed;
+    player._weaponMode = 'SHOTGUN';
+    player.maxHp = R.lives.start;
+    player.hp    = R.lives.start;
+    input.rushOn = true;
+  } else {
+    input.rushOn = false;
+  }
   if (dailyMod === 'glass') { player.maxHp = 1; player.hp = 1; }   // v179: GLASS
   if (dailyMod) {
     milestoneT = 2.0;
@@ -7046,6 +7216,7 @@ window.addEventListener('touchend', (e) => {
 
 player.onShoot = () => {
   audio.shoot();
+  rush.shot();   // v224 RUSH: the gun runs warm
   if (loadoutMode) {
     addShake(0.016);   // v158: the guns have shoulders
     // v167: and a muzzle flash — two hot sparks off the barrel
@@ -8325,6 +8496,13 @@ function loop() {
     nextMilestone += 25000;
     audio.milestone();
   }
+  // v224 RUSH: the meter, the chain clock, and the two-way level run here.
+  rush.update(dt);
+  if (rush.checkExtraLife()) {
+    player.maxHp++; player.hp++;
+    milestoneT = 1.2; milestoneText = 'EXTRA LIFE!';
+    audio.pickup();
+  }
   if (roomTallyT   > 0) roomTallyT   -= dt;
   updateSmashDoors();
 
@@ -8588,6 +8766,23 @@ function loop() {
         audio.grazeTick();
         gooChunkPool.spawn(b.mesh.position.x, 0.5, b.mesh.position.z,
           -dx * 3, 2.5, -dz * 3, 0xffffff, 0.06);
+      }
+    }
+  }
+
+  // v224 RUSH: boosting KILLS on contact, and each contact kill raises the
+  // chain. This runs before the damage pass — while shielded you are not being
+  // hit, you are the thing doing the hitting.
+  if (rush.on && player.shielded) {
+    for (const e of enemies) {
+      if (!e.alive || e._isBoss) continue;
+      const dx = player.position.x - e.position.x;
+      const dz = player.position.z - e.position.z;
+      if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
+        e.hp = 1;
+        e.hit(player.position.x, player.position.z);
+        rush.boostKill();
+        addShake(0.05);
       }
     }
   }
@@ -9223,6 +9418,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=177').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=178').catch(() => {});
   });
 }

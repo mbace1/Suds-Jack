@@ -7,6 +7,39 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v224 — 2026-08-27
+**RUSH MODE — boost is the answer, the gun is the fallback** *(owner direction)*
+- A new front-page mode **directly under ROGUELIKE**, bringing the design
+  researched for the Godot port (`RUSH_MODE.md` there) into the primary JS
+  build. **Its own ruleset, not a modifier**: turning it on turns ROGUELIKE and
+  DAILY off
+- **The one rule everything hangs off**: boost grants invulnerability and
+  **kills on contact** — and **pulling the trigger cancels the shield**. Boost
+  is the good option; the gun is what you take when you cannot afford to boost
+- **Boost replaces the dash** — held, 17 u/s against 6 walking, no cooldown.
+  Contact kills raise the chain (cap ×100, 2.5s window), and the chain pays
+- **Heat is the shared cost**: boost 0.55/s (≈1.8s from cold), the gun
+  0.02/shot, cooling 0.42/s. At 1.0 you **overheat** and lose boost until you
+  cool back to 0.35 — hysteresis, so the meter cannot flutter on the edge
+- **Shotgun** (5 pellets across 0.5 rad, firing 3.4× slower) — deliberately a
+  close-range answer, so boosting stays better at any distance
+- **Levels move BOTH WAYS**: 60s, 90s, then +30s each — and the RUSH level is
+  the number the **wave director reads**, so losing a life levels you down and
+  genuinely makes the next wave easier. Lives are the hp dots; +1 every 25,000
+- **Touch ships both schemes**, because which one survives a thumb is a play
+  question rather than an argument: **RIM** — push the move stick past 86% of
+  its travel; **ZONE** — a pad in the lower-left margin
+- **The look does not move.** No new materials: rush state rides the player's
+  existing emissive — cyan while shielded, orange while running hot
+- Constants are data in `TUNING.rush`. Verified headless **19/19** against the
+  real ruleset: the chip sits under ROGUELIKE, the shield dies on the trigger
+  through the real `player.update`, overheat locks and clears on its hysteresis,
+  the level drives the director both ways, and both touch schemes read.
+  `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=177` → `?v=178`; HUD label → v224
+
+---
+
 ## v223 — 2026-08-08
 **Arena pass — the floor reads swarm flow** *(roadmap-v2 Phase 3, art priority 2)*
 - The classic arena was a uniform neon grid: every cell identical everywhere,
