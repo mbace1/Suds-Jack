@@ -282,6 +282,20 @@ export const TUNING = {
       coolRate: 0.42,        // ≈2.4s to shed a full meter
       clearAt: 0.35,         // hysteresis: no fluttering on the edge
     },
+    // v225 THE ROSTER — Blade Rush's own bodies, not the main game's 21-type
+    // ecology. Its named enemies are Chompers, Snakes, asteroids and Coolers,
+    // so Rush starts with four and nothing else: things you boost THROUGH.
+    // No shooters — a gun club would make standing still the answer, which is
+    // the opposite of the mode. Order is draw order; append, don't reorder.
+    pool: {
+      GLOBBO:      [1, 1],   // CHOMPER  — plain body, lunges at you
+      YELA_CUBE:   [1, 1],   // COOLER   — killing one vents heat (below)
+      SPLITTA:     [2, 3],   // SNAKE    — splits into a train of minnows
+      SLUDGE_CUBE: [3, 2],   // ASTEROID — slow mass that ploughs a lane
+    },
+    // The COOLER earns its name: boost-killing one sheds heat, so the roster
+    // feeds the mode's economy instead of just standing in front of it.
+    cooler: 'YELA_CUBE', coolerVent: 0.22,
     shotgun: { pellets: 5, spread: 0.5, rateMult: 3.4 },  // close-range answer
     chain: { perKill: 1, cap: 100, window: 2.5 },         // boost kills only
     lives: { start: 3, extraEvery: 25000 },

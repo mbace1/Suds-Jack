@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=178';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=178';
-import { Player, PLAYER_RADIUS } from './player.js?v=178';
+import { InputManager } from './input.js?v=179';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=179';
+import { Player, PLAYER_RADIUS } from './player.js?v=179';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=178';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=178';
-import { audio } from './audio.js?v=178';
-import { initDesigner } from './designer.js?v=178';
-import { createSpecimen } from './specimen.js?v=178';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=178';
-import { TUNING } from './tuning.js?v=178';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=179';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=179';
+import { audio } from './audio.js?v=179';
+import { initDesigner } from './designer.js?v=179';
+import { createSpecimen } from './specimen.js?v=179';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=179';
+import { TUNING } from './tuning.js?v=179';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -93,7 +93,8 @@ function getEnemySchedule(wave) {
   const AFFIXES = W.affixes;
   // v221: each mode draws its own table — CLOSE COMBAT gets the melee-native
   // roster (poolMelee), ORIGINAL keeps the gun ecology (pool).
-  const poolSrc = meleeRun && W.poolMelee ? W.poolMelee : W.pool;
+  const poolSrc = rush.on ? TUNING.rush.pool
+                : meleeRun && W.poolMelee ? W.poolMelee : W.pool;
   const POOL = Object.entries(poolSrc).map(([name, [min, cost]]) => [EnemyType[name], min, cost]);
   // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
   // designs can be met within seconds of pressing start.
@@ -101,7 +102,11 @@ function getEnemySchedule(wave) {
 
   // SMASH TV (v115): the room's kind was chosen at the exit door; otherwise
   // fall back to the wave rhythm.
-  const kind       = (smashMode && smashRoomKind) ? smashRoomKind : waveKind(wave);
+  let   kind       = (smashMode && smashRoomKind) ? smashRoomKind : waveKind(wave);
+  // v225 RUSH starts with four bodies and nothing else — the boss set pieces
+  // (OMEGA, the TWIN PRISMS, their WARDEN escorts) are off-roster, so a boss
+  // beat becomes a heavy one instead. Blade Rush's own bosses are a later job.
+  if (rush.on && kind === 'boss') kind = 'spike';
   const isBoss     = kind === 'boss';
   const isSpike    = kind === 'spike';
   const isSwarm    = kind === 'swarm';
@@ -3388,6 +3393,13 @@ function onPlayerHit() {
 }
 
 
+// v225: RUSH is a BARE ARENA. The main game's furniture — gates, bounties,
+// vaults, escorts, vents, drains, foam, bullet curtains, cargo convoys and the
+// pickups they drop — is the classic game's texture, and none of it belongs in
+// a mode whose whole loop is boost-through-the-swarm. Cabinets already opt out
+// of all of it; Rush opts out the same way, through one predicate.
+const bareArena = () => inCabinet() || rush.on;
+
 // ── RUSH MODE ruleset (v224) ─────────────────────────────────────────────────
 // One rule holds it up: BOOST IS THE GOOD OPTION, the gun is what you take
 // when you cannot afford to boost. Boosting is invulnerable and kills on
@@ -3445,6 +3457,13 @@ const rush = {
     if (this.levelT >= this.levelDuration()) { this.levelT = 0; this.levelUp(); }
   },
   shot() { if (this.on) this.heat = Math.min(1, this.heat + TUNING.rush.heat.perShot); },
+  // v225: the COOLER is the roster's answer to its own economy.
+  vent(type) {
+    const R = TUNING.rush;
+    if (!this.on || type !== EnemyType[R.cooler]) return;
+    this.heat = Math.max(0, this.heat - R.coolerVent);
+    if (this.overheated && this.heat <= R.heat.clearAt) this.overheated = false;
+  },
   boostKill() {
     const C = TUNING.rush.chain;
     this.chain = Math.min(C.cap, this.chain + C.perKill);
@@ -4625,7 +4644,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v224' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v225' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5520,7 +5539,7 @@ function spawnWave() {
     }
   });
   if (player._hasShield) player._shield = true;
-  if (!inCabinet() && wave >= 3) {
+  if (!bareArena() && wave >= 3) {
     if (gates.length >= 2) { gates[0].remove(scene); gates.shift(); }
     // v175: from wave 5 some gates run the RISK cycle; from 10 they wander
     gates.push(new Gate(scene, wave >= 5 && rng() < 0.35, wave >= 10));
@@ -6339,7 +6358,7 @@ function spawnWave() {
   // v171: arm the arena curtain — a mid-wave spectacle, never on boss waves.
   // v177: the fixed-screen cabinets run their own curtains (scrolling worlds
   // skip — a 2× sheet is unreadable), and late waves roll VARIATIONS.
-  const curtainOk = (!inCabinet() && wave >= 6) ||
+  const curtainOk = (!bareArena() && wave >= 6) ||
                     (tokotronMode && wave >= 4) ||
                     (nexdeusMode && wave >= 2);
   curtainArmed = curtainOk && kind !== 'boss' && kind !== 'bonus' && !meleeRun &&
@@ -6350,19 +6369,19 @@ function spawnWave() {
   curtainAt    = 5 + rng() * 6;
   curtainWarnT = 0;
   curtainCross = null;
-  bountyArm = !inCabinet() && wave >= 4 && wave % 3 === 1 && kind !== 'boss';
-  if (!inCabinet() && wave >= 6 && wave % 4 === 2) {
+  bountyArm = !bareArena() && wave >= 4 && wave % 3 === 1 && kind !== 'boss';
+  if (!bareArena() && wave >= 6 && wave % 4 === 2) {
     foamZones.push(new FoamZone(scene,
       (rng() * 2 - 1) * (HALF_X - 4), (rng() * 2 - 1) * (HALF_Z - 4)));
   }
   // v175 living-arena objectives — VAULT greed and the ESCORT errand share
   // the classic/SMASH rotation on offset beats so they never stack.
   clearArenaObjectives();
-  if (!inCabinet() && kind !== 'boss' && kind !== 'bonus' && wave >= 5 && wave % 4 === 3) {
+  if (!bareArena() && kind !== 'boss' && kind !== 'bonus' && wave >= 5 && wave % 4 === 3) {
     vaultCrate = new VaultCrate(scene,
       (rng() * 2 - 1) * (HALF_X - 5), (rng() * 2 - 1) * (HALF_Z - 5));
   }
-  if (!inCabinet() && kind !== 'boss' && kind !== 'bonus' && wave >= 6 && wave % 4 === 1) {
+  if (!bareArena() && kind !== 'boss' && kind !== 'bonus' && wave >= 6 && wave % 4 === 1) {
     escortBot = new EscortBot(scene);
     milestoneT = 1.2; milestoneText = 'ESCORT THE BOT!';
   }
@@ -6371,13 +6390,13 @@ function spawnWave() {
   clearHazards();
   const _svm = dailyMod === 'surge' ? 2 : 1;   // v179: SURGE DAY doubles the floor
   const ventN = ((smashMode && kind === 'hazard') ? 5 + Math.floor(rng() * 2)
-              : (!inCabinet() && !smashMode && wave >= 7 && wave % 3 === 0 && kind !== 'boss') ? 2 + Math.floor(rng() * 2)
+              : (!bareArena() && !smashMode && wave >= 7 && wave % 3 === 0 && kind !== 'boss') ? 2 + Math.floor(rng() * 2)
               : 0) * _svm;
   for (let i = 0; i < ventN; i++) {
     steamVents.push(new SteamVent(scene,
       (rng() * 2 - 1) * (HALF_X - 3), (rng() * 2 - 1) * (HALF_Z - 3)));
   }
-  if (!inCabinet() && kind !== 'boss' &&
+  if (!bareArena() && kind !== 'boss' &&
       ((smashMode && kind === 'hazard') ||
        (!smashMode && wave >= 9 && wave % (dailyMod === 'surge' ? 3 : 5) === 4 % (dailyMod === 'surge' ? 3 : 5)))) {
     drainZone = new Drain(scene,
@@ -8782,6 +8801,7 @@ function loop() {
         e.hp = 1;
         e.hit(player.position.x, player.position.z);
         rush.boostKill();
+        rush.vent(e.type);   // v225: a COOLER pays you back in heat
         addShake(0.05);
       }
     }
@@ -8817,7 +8837,7 @@ function loop() {
   }
 
   // Cargo convoy: spawn silently + update
-  if (!cargoCluster && clusterSpawnAt.length > 0) {
+  if (!cargoCluster && clusterSpawnAt.length > 0 && !rush.on) {
     clusterTimer += dt;
     if (clusterTimer >= clusterSpawnAt[0]) {
       cargoCluster = new CargoCluster(scene);
@@ -9418,6 +9438,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=178').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=179').catch(() => {});
   });
 }
