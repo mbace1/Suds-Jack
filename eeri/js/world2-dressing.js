@@ -8,9 +8,9 @@
 // high walkway. One or two strong identifiers per screen, never wallpaper.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=44';
-import { craftMat, craftBox, cutQuad } from './craft.js?v=44';
-import { placeScenery } from './scenery.js?v=44';
+import { PAL, mix } from './palette.js?v=48';
+import { craftMat, craftBox, cutQuad } from './craft.js?v=48';
+import { placeScenery } from './scenery.js?v=48';
 
 export function buildPipeworksDressing(scene) {
   const root = new THREE.Group();
@@ -134,7 +134,12 @@ export function buildPipeworksDressing(scene) {
   // retunes the picture is a refactor nobody can review. What changed is
   // that each built thing now carries the ROW that made it, which is the
   // handle dev/inspector.js has never had and the reason it cannot save.
-  placeScenery('pipeworks', {
+  // Named once so the dev-page editor can reuse the exact same closures
+  // for LIVE placement — a builder called by hand here and a builder called
+  // by hand from a palette click are the same function, which is what
+  // keeps a placed-in-the-editor prop indistinguishable from an authored
+  // one.
+  const builders = {
     pipeStack: (p) => pipeStack(p.x, p.y, p.s),
     buriedPipe: (p) => buriedPipe(p.x, p.y, p.s, p.rot),
     serviceWall: (p) => serviceWall(p.x, p.w, p.h),
@@ -143,7 +148,8 @@ export function buildPipeworksDressing(scene) {
     pumpPlatform: (p) => pumpPlatform(p.x),
     walkway: (p) => walkway(p.x, p.w, p.y),
     valve: (p) => valve(p.x, p.y, p.r),
-  }, (_made, row) => {
+  };
+  placeScenery('pipeworks', builders, (_made, row) => {
     // The builders add straight to `root` and mostly return nothing, so the
     // tag goes on whatever they just added rather than on a return value.
     for (let i = root.children.length - 1; i >= 0 && !root.children[i].userData.sceneryRow; i--) {
@@ -153,6 +159,7 @@ export function buildPipeworksDressing(scene) {
 
   return {
     root,
+    builders,
     dispose() {
       scene.remove(root);
       root.traverse((o) => o.geometry?.dispose?.());

@@ -9,10 +9,10 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=44';
+import { PAL } from './palette.js?v=48';
 // The silhouette line lives in craft.js, not here: robots.js needs the same
 // one, and two copies of a silhouette rule is how two silhouettes start.
-import { outlineShell } from './craft.js?v=44';
+import { outlineShell } from './craft.js?v=48';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -364,9 +364,20 @@ export class Kid {
       lerp(n.body, 0.25, 0.06); lerp(n.head, 0.25, -0.06);
       n.body.position.y = this.baseBodyY;
     } else if (state === 'climb') {
-      lerp(n.hipL, 0.3, 1.0); lerp(n.hipR, 0.3, 0.2);
-      lerp(n.armL, 0.3, 2.2); lerp(n.armR, 0.3, 1.8);
-      lerp(n.elbowL, 0.3, 0.5); lerp(n.elbowR, 0.3, 0.75);
+      // HAND OVER HAND (owner playtest, 2026-08-27: "kid animations for
+      // climbing aren't working"). This was a fixed pose — arms and legs
+      // settle into a climbing hold and then never move again, which reads
+      // as broken rather than as climbing. A slower cadence than the run
+      // cycle above (11 there, 7 here: hands find a rung, they do not
+      // pump), and each side runs a HALF cycle behind the other, the same
+      // "one side reaches while the other holds" shape a real climb has.
+      const ph = t * 7;
+      n.armL.rotation.z = 1.7 + Math.sin(ph) * 0.5;
+      n.armR.rotation.z = 1.7 + Math.sin(ph + Math.PI) * 0.5;
+      n.elbowL.rotation.z = 0.6 - Math.sin(ph) * 0.35;
+      n.elbowR.rotation.z = 0.6 - Math.sin(ph + Math.PI) * 0.35;
+      n.hipL.rotation.z = 0.6 + Math.sin(ph + Math.PI) * 0.4;
+      n.hipR.rotation.z = 0.6 + Math.sin(ph) * 0.4;
       lerp(n.body, 0.3, -0.15);
     } else { // idle: a kid's idle — breath, small sway, never frozen
       lerp(n.hipL, 0.1, 0); lerp(n.hipR, 0.1, 0);
@@ -656,8 +667,6 @@ export class Player {
     this.leanNow = (this.leanNow ?? 0) + (lean - (this.leanNow ?? 0)) * 0.2;
     k.group.rotation.z = this.leanNow;
     const rise = !this.grounded && this.vy > 1 ? Math.min(0.09, this.vy / 14 * 0.09) : 0;
-    k.group.scale.y = this.squash > 0 ? 0.86 : 1 + rise;
-    k.group.scale.x = this.squash > 0 ? 1.1 : 1 - rise * 0.6;
     // mercy flicker — the one place the kid is allowed to disappear
     k.group.visible = this.mercyT <= 0 || Math.floor(this.mercyT * 18) % 2 === 0;
     const state = this.climbing ? 'climb'
@@ -713,6 +722,16 @@ export class Player {
     }
 
     k.pose(state, this.t, Math.abs(this.vx));
+    // SET AFTER k.pose(), NOT BEFORE (owner playtest, 2026-08-27: "run and
+    // stand are different sizes"). `pose()` ends by driving the skinned
+    // rig's own mixer, and eeri_v5's clips do not agree with each other on
+    // the root scale — idle and run were each quietly re-stamping their own
+    // baked value onto `k.group.scale` a moment after this code set it, so
+    // "the same kid, running" silently became a slightly different size
+    // than "the same kid, standing". This overrides whatever the clip just
+    // wrote, every frame, rather than fixing fifteen animation exports.
+    k.group.scale.y = this.squash > 0 ? 0.86 : 1 + rise;
+    k.group.scale.x = this.squash > 0 ? 1.1 : 1 - rise * 0.6;
     const gy = this.level.groundTop(this.x, this.y + 0.1);
     k.shadow.position.set(this.x, gy + 0.02, 0);
     const drop = Math.max(0, this.y - gy);

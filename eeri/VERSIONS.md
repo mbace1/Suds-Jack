@@ -1,5 +1,194 @@
 # EERI — versions
 
+## v15.42 — 2026-08-27 — a playtest screenshot, four fixes
+
+One screenshot of Level 1-2 (THE SCAFFOLD) carried four separate notes.
+
+**"foreground on the left and right... left blocks ladder."** The fore
+lane already faded for a climb (v15.36), but only once `player.climbing`
+was already true — which is backwards. The strip only has to get out of
+the way once you are BEHIND it; you have to be able to SEE a ladder to
+know it is there in the first place. It now also fades while standing
+within reach of one (`js/main.js`), not only while on it.
+
+**"the girder is not too readable and needs some visual guide like arrows
+again."** The bank already wears exactly this sign (v15.15-era: a ▲▼
+chevron pair built from two boxes, no text, reading at 32px because it is
+a shape) — the girder never got one. It now carries the same language: a
+single ▼ chevron on the stacked state (`js/pieces.js`, `buildGirderModel`)
+— one arrow, because ▼ is the only button this puzzle uses — and a small
+bobbing pair of down-chevrons hung over the gap's near lip, visible only
+while the span is slung, so "pick up here" and "put it here" are both
+answered by looking rather than by reading a HUD line.
+
+**"the kid animations for climbing aren't working."** The code-drawn
+placeholder rig's climb pose (used when the live GLB fails to load) was a
+fixed lerp target — arms and legs settle into a climbing hold and then
+never move again, which reads as broken rather than as climbing. It now
+runs an actual hand-over-hand cycle at a slower cadence than the run gait
+(7 vs 11), each side a half-cycle behind the other.
+
+**"run and stand are different sizes."** `updateVisual()` set
+`k.group.scale` and THEN called `k.pose()`, which ends by driving the
+skinned rig's animation mixer — and eeri_v5's fifteen clips do not agree
+with each other on the root scale. Idle and run were each quietly
+re-stamping their own baked value onto the group a moment after the code
+set it, so standing and running silently rendered at slightly different
+sizes. The scale assignment now happens AFTER `k.pose()`, overriding
+whatever the clip just wrote, every frame — the fix is in the game rather
+than in fifteen animation re-exports.
+
+## v15.41 — 2026-08-27 — the editor: top bar, layers on the left, and two bugs it took to get there
+
+The owner's shape for the level editor: *"current levels choosable, layers
+of assets like a slider or numbered layers on the left of the screen and
+main options buttons on the top. gameplay layer has all the physical
+objects so more menus, but other layers only have background or
+foreground art assets."*
+
+`dev/inspector.js` is rebuilt to that shape. A **top bar** — level picker,
+PICK / PLACE / WALK, UNDO, COPY — and a **left rail**, seven numbered rows:
+GAMEPLAY first (the layer with the physical objects — its own reference
+menu, twenty-nine kinds grouped terrain / gizmo / enemy / machine /
+reward), then the six painted lanes in depth order underneath it.
+Selecting a lane dims every other one and swaps the palette below for that
+lane's own vocabulary; selecting a lane with a live builder (a world's
+dressing module, or a lamp anywhere) arms **PLACE** — click the picture,
+the prop is built by the exact same closure an authored one would call,
+tagged with the row that made it, and pushed onto an **UNDO** stack.
+
+**Three bugs, in the order they were found, and the first two are worth
+knowing about elsewhere in this file:**
+
+**1 · A cache-busting token a module behind is a second module — again.**
+`test/rooms.mjs`, the room prover, has been running `rooms.js?v=3` beside
+`levelid.js?v=15` this whole session: two tokens, two separate instances of
+the SAME file. `levelid.js` triggers `world34-register.js`'s side effect —
+pushing worlds 3-4 onto `rooms.js`'s own exported array in place — and that
+mutation landed on an instance `rooms.mjs` never read, so the file's own
+`const ROOMS = [...W12, ...WORLD34_ROOMS]` was standing in for a
+registration that, at a consistent token, would have already happened.
+It only ever looked correct because the untouched copy still held exactly
+six. One token now (`?v=47`), and the explicit concat is gone — `ROOMS`
+already holds all twelve by the time it is read, the same pattern
+`spec.mjs` and `report.mjs` already used correctly. 248 checks, same
+count, now against the instance the game itself runs. `dev/inspector.js`'s
+own level list had copied the OLD (wrong) shape and was reading 18 levels
+until this was found.
+
+**2 · A CSS backtick inside a JS template literal closes the string, not
+the comment.** Writing `` `.ed` `` inside `const CSS = \`...\`` ends the
+template two words into a header comment; everything after it is parsed as
+JavaScript. `node --check` cannot catch this — the STRING is still valid
+JS, it is just the wrong, shorter string, and the CSS that survives is
+whatever came before the accidental close. Twice, in this file, before it
+was caught by an actual page load throwing `".ed is not a function"`.
+
+**3 · The click-catcher was the wrong shape, and the fix untangled a
+second bug.** v1's picker used a full-viewport catcher div in the TOP
+page, sitting BELOW the panel in z-index. v2's panel is wide — a top bar
+plus a rail plus a palette, per the layout above — and a click meant for
+the far side of the picture landed ON THE PANEL instead, because the
+panel's own z-index put it on top. The click that was meant to place a
+lamp instead re-clicked whatever palette row happened to be under it and
+silently toggled PLACE mode back off. Fixed two ways at once: the panel is
+now two independently-positioned, content-sized pieces (a top bar that
+hugs its own buttons, a ~360px left sidebar) inside a non-interactive
+full-viewport wrapper, so most of the screen is never covered by anything;
+and picking/placing now binds straight to the game's own canvas inside the
+iframe (`capture: true` + `stopPropagation`) instead of a synthetic
+overlay, which is provably correct rather than coincidentally correct —
+the old approach only worked because the iframe happened to fill the
+viewport at (0,0).
+
+**One more, found placing the first lamp: the topbar reaching the right
+edge collided with the dev/FX pack's OWN panel**, which docks 300px in the
+top-right corner and is visible by default on every fresh load. The topbar
+now hugs its own content instead of stretching edge to edge.
+
+**And one thing that turned out not to be a bug in this code at all.**
+Changing level through the editor took up to twenty real seconds in this
+sandbox — `site()` and `transitioning()` sat frozen the whole time, with
+the render loop ticking normally throughout. The game's own level-change
+fade (`veil()` in `main.js`) is a bare `setTimeout` wrapped in a Promise,
+and every symptom matches a browser throttling timers that belong to an
+iframe which just lost focus — which this one always does, since the
+click that starts a level change necessarily lands on a button in the top
+page. `gotoLevel()` cannot fix the game's own timer, so it stops pretending
+the wait is short instead: the level number reads `…` and both arrows
+disable until the game actually finishes, however long that takes, rather
+than giving up on a fixed clock and leaving the panel showing a level the
+game had already left.
+
+**MOUNT() had one more race, unrelated to any of the above.** `dev.html`
+calls `mount()` without awaiting it, and the pause menu can open the
+instant the framed game boots. The first cut of this file fetched the
+level list with `await import(...)` before building any DOM at all — so on
+a slow load, the menu could open and close again before the
+`MutationObserver` that adds the DEV TOOLS row even existed, and the row
+would silently never appear for that load. The DOM and the observer are
+now built synchronously, first; the level list loads after, in the
+background.
+
+## v15.40 — 2026-08-21 — light, and it is a prop rather than a system
+
+Straight on from v15.39, and only possible because of it: **a light is now
+a row in `js/scenery.js`**, placed exactly like a pipe stack, saved to the
+same file, carried to the Godot port through the same spec. That is the
+whole design argument — the thing the owner asked for ("the editor
+placement gives us options to add light sources") is not a lighting engine,
+it is an (x, y) an editor can drag.
+
+**The fact that decided the approach:** the diorama is UNLIT. `layers.js`
+mounts every lane as a `MeshBasicMaterial` with a texture, so nothing in
+the scene lights a backdrop — the kid and the machines are the only things
+under the `DirectionalLight`. Good news, as it turns out: the two cheapest
+options are also the two that need **no new art**, which matters because
+the art lane is the queue everything else waits behind.
+
+**1 · MOOD.** A `MeshBasicMaterial`'s `.color` multiplies its map and is
+white until told otherwise. So tinting a lane costs one assignment and no
+draw call, and the ramp is read off the lane's **z** rather than its name —
+a lane added later gets the right tint without the table knowing it exists.
+Depth also darkens, not just cools: a far lane at night is further from
+every lamp in the picture. World 1 stays daylight (`MOOD.groundworks` is
+`null`); world 4 goes deep and cold, which is the only way a work lamp has
+something to be brighter *than*.
+
+**2 · LAMPS.** One radial-gradient quad, additively blended, at a z
+*between* two lanes — so occlusion is free from the layer order, and a
+lamp at −8 is behind the near lane while one at −1 is in front of it. One
+shared 128px gradient canvas for every lamp in the game. Two stops in the
+middle of the falloff rather than one, because a single linear ramp reads
+as a flat disc with a hard rim, which is the tell of a fake light.
+
+Thirteen lamps placed: two in world 1 that only say a machine is running,
+two in world 2's pump hall (the one interior read in a world of open
+trenches), three in world 3 that are daylight through a canopy gap rather
+than fixtures, and six on the night shift — one per beat, so the level
+reads as a chain of lit places with dark between them instead of an evenly
+grey room, plus one cold unreachable window on the horizon so the dark has
+depth.
+
+**What is deliberately not here.** Normal maps: correct for a light moving
+across a surface, and they cost an authored map per lane before one pixel
+changes — and normal-maps-on-parallax is a known rough edge in engines that
+do it natively, so it is also the option that would cost the port a week.
+Rim-from-alpha is the next rung and it comes after there are lights worth
+rimming.
+
+**Two disposal rules, both learned here before.** The lamps go down with
+the world; their gradient texture does **not** — it is one canvas shared by
+every lamp in the game, so disposing it with world 1 would leave world 2's
+lamps pointing at a dead texture. And flicker is frozen entirely under
+`prefers-reduced-motion`, because a pulsing lamp is motion like any other.
+
+`placeScenery` also learned that **a consumer builds what it knows**: lamps
+are mounted by `layers.js` for every world, world 2's pipe vocabulary by its
+own dressing module. One list, two readers — so an unknown prop is somebody
+else's row rather than a crash. `rooms.mjs` is what catches a typo, and it
+now checks lamp rows too.
+
 ## v15.39 — 2026-08-21 — scenery becomes data, which is the whole editor blocker
 
 The owner asked for three things — an editor that works on a phone, light
