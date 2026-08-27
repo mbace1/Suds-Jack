@@ -33,13 +33,14 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { ROOMS } from '../js/rooms.js?v=43';
+import { ROOMS } from '../js/rooms.js?v=44';
 import {
   compile, estimate, deadAir, DEAD_AIR, LEVEL, REACH, SPEED, GIZMO, TARP_RISE,
   MACHINE_SPEED, MACHINE_REACH, RIDE, TELL, CLOCK, TILES, SOLID_CHARS,
   BELT_CHARS, TARP_CHAR, WATER_CHAR, CLIMB_CHAR, W, H, GROUND,
-} from '../js/parts.js?v=43';
-import { labelOf, slugOf, PER_WORLD } from '../js/levelid.js?v=43';
+} from '../js/parts.js?v=44';
+import { labelOf, slugOf, PER_WORLD } from '../js/levelid.js?v=44';
+import { PROPS, SCENERY, withDefaults } from '../js/scenery.js?v=44';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -111,6 +112,14 @@ const spec = {
   },
   clocks: { telegraphFloor: TELL, ...CLOCK },
   levelCounts: { ...LEVEL, deadAirFloor: DEAD_AIR },
+  // Scenery is visual and the port draws its own — but WHERE a prop stands
+  // is a composition decision, not a rendering one, so the rows travel and
+  // the shapes do not. `props` says which fields each type carries.
+  scenery: {
+    props: PROPS,
+    placed: Object.fromEntries(Object.entries(SCENERY)
+      .map(([w, rows]) => [w, rows.map(withDefaults)])),
+  },
   levels,
 };
 

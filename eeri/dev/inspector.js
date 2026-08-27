@@ -128,6 +128,7 @@ look somewhere else.</div>
           <span>obj</span><b data-el="name">—</b>
           <span>in</span><b data-el="grp">—</b>
           <span>size</span><b data-el="size">—</b>
+          <span>row</span><b data-el="row">—</b>
         </div>
         <div class="row">
           <label style="flex:1 1 0">x<input type="number" step="0.1" data-el="x"></label>
@@ -319,6 +320,7 @@ layer a thing is on is to switch the others off</div>
     const set = (k, v) => { this.q(k).value = v; };
     if (!o) {
       this.q('name').textContent = '—'; this.q('grp').textContent = '—';
+      this.q('row').textContent = '—';
       this.q('size').textContent = '—'; this.q('out').textContent = '—';
       for (const k of ['x', 'y', 'z']) this.q(k).value = '';
       return;
@@ -334,9 +336,27 @@ layer a thing is on is to switch the others off</div>
 
     this.q('name').textContent = o.name || o.type;
     this.q('grp').textContent = top.name || path[0] || '(scene)';
+    // WHICH LINE IS THIS? The header of this file used to say it could not
+    // answer that, because a prop was a call inside a function body. Since
+    // js/scenery.js the placement is a row and every built thing carries
+    // the row that made it — so the drag you just did has somewhere to be
+    // written back to. Walk up: builders add several meshes per prop.
+    let row = null;
+    for (let n = o; n && n !== A.scene && !row; n = n.parent) row = n.userData?.sceneryRow || null;
+    this.q('row').textContent = row
+      ? `${row.world}[${row.index}] ${row.prop}`
+      : '— (not placed from scenery.js)';
+    this.rowOf = row;
     this.q('size').textContent = `${f(s.x)} × ${f(s.y)} × ${f(s.z)}`;
     set('x', f(w.x)); set('y', f(w.y)); set('z', f(w.z));
-    this.q('out').textContent = `x ${f(w.x)}, y ${f(w.y)}, z ${f(w.z)}`;
+    // The read-out is what you paste back into the source, so when the
+    // thing IS a scenery row, hand back the row rather than three numbers
+    // that still have to be turned into one.
+    this.q('out').textContent = row
+      ? `{ prop: '${row.prop}', x: ${f(w.x)}, y: ${f(w.y)}${
+          Object.keys(row).filter((k) => !['world', 'index', 'prop', 'x', 'y'].includes(k))
+            .map((k) => `, ${k}: ${row[k]}`).join('')} },`
+      : `x ${f(w.x)}, y ${f(w.y)}, z ${f(w.z)}`;
     if (this.box) this.box.box.setFromObject(o);
   }
 

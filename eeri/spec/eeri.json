@@ -1,6 +1,6 @@
 {
   "game": "eeri",
-  "version": "15.38",
+  "version": "15.39",
   "generated": "node eeri/tools/spec.mjs",
   "contract": "This file is the DESIGN of Eeri, not its presentation. Every number here is emitted from js/parts.js and js/rooms.js and must not be re-typed downstream. How the game is drawn, framed and controlled is deliberately absent: the JavaScript build tests VERTICAL, the Godot port tests LANDSCAPE.",
   "world": {
@@ -178,6 +178,194 @@
     "bolts": 100,
     "golden": 3,
     "deadAirFloor": 15
+  },
+  "scenery": {
+    "props": {
+      "pipeStack": {
+        "label": "pipe stack",
+        "fields": {
+          "s": {
+            "def": 0.8,
+            "min": 0.4,
+            "max": 1.6,
+            "step": 0.02
+          }
+        }
+      },
+      "buriedPipe": {
+        "label": "buried pipe",
+        "fields": {
+          "s": {
+            "def": 1,
+            "min": 0.5,
+            "max": 2,
+            "step": 0.05
+          },
+          "rot": {
+            "def": 0,
+            "min": -0.6,
+            "max": 0.6,
+            "step": 0.01
+          }
+        }
+      },
+      "serviceWall": {
+        "label": "service wall",
+        "fields": {
+          "w": {
+            "def": 6,
+            "min": 2,
+            "max": 14,
+            "step": 0.1
+          },
+          "h": {
+            "def": 2.4,
+            "min": 0.8,
+            "max": 6,
+            "step": 0.1
+          }
+        }
+      },
+      "pipeMouth": {
+        "label": "pipe mouth",
+        "fields": {
+          "r": {
+            "def": 0.7,
+            "min": 0.3,
+            "max": 1.4,
+            "step": 0.02
+          }
+        }
+      },
+      "standpipe": {
+        "label": "standpipe",
+        "fields": {
+          "h": {
+            "def": 2.4,
+            "min": 1,
+            "max": 5,
+            "step": 0.05
+          }
+        }
+      },
+      "pumpPlatform": {
+        "label": "pump platform",
+        "fields": {}
+      },
+      "walkway": {
+        "label": "walkway",
+        "fields": {
+          "w": {
+            "def": 8,
+            "min": 3,
+            "max": 18,
+            "step": 0.1
+          }
+        }
+      },
+      "valve": {
+        "label": "valve",
+        "fields": {
+          "r": {
+            "def": 0.48,
+            "min": 0.2,
+            "max": 1,
+            "step": 0.02
+          }
+        }
+      }
+    },
+    "placed": {
+      "pipeworks": [
+        {
+          "x": 7.2,
+          "y": 3.65,
+          "prop": "pipeStack",
+          "s": 0.82
+        },
+        {
+          "x": 13,
+          "y": 2.55,
+          "prop": "buriedPipe",
+          "s": 1.15,
+          "rot": -0.08
+        },
+        {
+          "x": 21,
+          "y": 0,
+          "prop": "serviceWall",
+          "w": 6.8,
+          "h": 2.5
+        },
+        {
+          "x": 24.4,
+          "y": 5,
+          "prop": "pipeMouth",
+          "r": 0.82
+        },
+        {
+          "x": 29.6,
+          "y": 0,
+          "prop": "standpipe",
+          "h": 2.15
+        },
+        {
+          "x": 42,
+          "y": 0,
+          "prop": "pumpPlatform"
+        },
+        {
+          "x": 51.5,
+          "y": 2.2,
+          "prop": "buriedPipe",
+          "s": 0.9,
+          "rot": 0.12
+        },
+        {
+          "x": 57,
+          "y": 9.6,
+          "prop": "walkway",
+          "w": 8.2
+        },
+        {
+          "x": 69.2,
+          "y": 3.55,
+          "prop": "pipeStack",
+          "s": 0.72
+        },
+        {
+          "x": 76.4,
+          "y": 0,
+          "prop": "standpipe",
+          "h": 2.8
+        },
+        {
+          "x": 85.5,
+          "y": 0,
+          "prop": "serviceWall",
+          "w": 6,
+          "h": 2
+        },
+        {
+          "x": 87.2,
+          "y": 4.95,
+          "prop": "pipeMouth",
+          "r": 0.72
+        },
+        {
+          "x": 90,
+          "y": 4.95,
+          "prop": "pipeMouth",
+          "r": 0.72
+        },
+        {
+          "x": 93,
+          "y": 5.35,
+          "prop": "valve",
+          "r": 0.52
+        }
+      ]
+    }
   },
   "levels": [
     {

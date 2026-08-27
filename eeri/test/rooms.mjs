@@ -51,6 +51,33 @@ console.log(`the kid's budget: step ${REACH.step} tiles (jump reaches ${REACH.ju
 // anything can touch you." All three of these clocks were under it — 0.80,
 // 0.55 and 0.85 — because the rule lived in a document and the numbers lived
 // in three different modules.
+// ---- scenery is data now (js/scenery.js) --------------------------------
+// A prop used to be a call inside a function body, which is why the
+// inspector could drag one and never save it. Now it is a row — so it can
+// be checked like every other row in this game: a known type, inside the
+// room, and every number inside the range the type declares. Nothing else
+// in this file could have caught a prop parked at x=140.
+{
+  const { PROPS, SCENERY, withDefaults } = await import('../js/scenery.js?v=44');
+  const bad = [];
+  for (const [world, rows] of Object.entries(SCENERY)) {
+    rows.forEach((row, i) => {
+      const where = `${world}[${i}] ${row.prop}`;
+      if (!PROPS[row.prop]) { bad.push(`${where}: unknown prop type`); return; }
+      const p = withDefaults(row);
+      if (!(p.x >= 0 && p.x <= W)) bad.push(`${where}: x ${p.x} is outside the room (0…${W})`);
+      for (const [k, f] of Object.entries(PROPS[row.prop].fields)) {
+        if (typeof p[k] !== 'number') bad.push(`${where}: ${k} is not a number`);
+        else if (p[k] < f.min || p[k] > f.max) bad.push(`${where}: ${k} ${p[k]} outside ${f.min}…${f.max}`);
+      }
+    });
+  }
+  const n = Object.values(SCENERY).reduce((a, r) => a + r.length, 0);
+  ok(`every one of the ${n} scenery rows names a real prop and sits in the room`,
+    bad.length === 0, bad.join('\n         → '));
+}
+console.log('');
+
 // ---- the port seam ------------------------------------------------------
 // The Godot port is produced from this build's releases and reads
 // spec/eeri.json rather than the prose (PORT.md §2). A spec that has
