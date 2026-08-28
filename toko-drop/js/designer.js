@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=182';
-import { t } from './lang.js?v=182';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=182';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=183';
+import { t } from './lang.js?v=183';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=183';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -591,6 +591,11 @@ export function initDesigner({ onResume, settings }) {
       el.appendChild(row);
       el.appendChild(hint);
     }
+    // v229: vibration is Android Chrome only — no iOS Safari, no desktop —
+    // so this is a preference toggle regardless of whether this device can
+    // act on it (same as every other settings row; nothing here detects support).
+    toggleRow(t('haptics'), settings.getHaptics, settings.setHaptics,
+      t('hapticsOnH'), t('hapticsOffH'), '#88ffaa', '#66dd8866');
 
     el.appendChild(sec('ENEMY TESTER'));
     {

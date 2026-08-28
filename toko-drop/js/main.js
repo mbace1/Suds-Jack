@@ -1,15 +1,16 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=182';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=182';
-import { Player, PLAYER_RADIUS } from './player.js?v=182';
+import { InputManager } from './input.js?v=183';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=183';
+import { Player, PLAYER_RADIUS } from './player.js?v=183';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=182';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=182';
-import { audio } from './audio.js?v=182';
-import { initDesigner } from './designer.js?v=182';
-import { createSpecimen } from './specimen.js?v=182';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=182';
-import { TUNING } from './tuning.js?v=182';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=183';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=183';
+import { audio } from './audio.js?v=183';
+import { haptics } from './haptics.js?v=183';
+import { initDesigner } from './designer.js?v=183';
+import { createSpecimen } from './specimen.js?v=183';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=183';
+import { TUNING } from './tuning.js?v=183';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -3609,6 +3610,7 @@ const rush = {
       this.neverLocked = false;   // v227: this attempt can't earn NEVER LOCKED
       player.setBoost(false);
       audio.playerHit?.();
+      haptics.overheat();
     } else if (this.overheated && this.heat <= R.heat.clearAt) {
       this.overheated = false;   // hysteresis — no fluttering on the edge
     }
@@ -3673,7 +3675,8 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   const hpBefore = player.hp;
   _hitFlashT = 0.32;
   player.hit();
-  if (player.alive) audio.announce('ouch');  // death gets the gameover line instead
+  if (player.alive) { audio.announce('ouch'); haptics.hit(); }  // death gets its own line + buzz instead
+  else haptics.death();
   onPlayerHit();
   recordHitEvent(source, hpBefore, attackerType);
   // v212: remember what landed the fatal blow — the death screen shows it and
@@ -4173,6 +4176,9 @@ const designer = initDesigner({
       reduceMotion = on;
       localStorage.setItem('tokoDropReduceMotion', on ? '1' : '0');
     },
+    // v229: haptics.js owns its own persistence — this just forwards.
+    getHaptics: () => haptics.enabled,
+    setHaptics: on => haptics.setEnabled(on),
     getPerf: () => perfMode,
     setPerf: on => {
       perfMode = on;
@@ -4360,8 +4366,11 @@ function drawHUD() {
     ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
   }
 
-  // Hit-damage vignette
-  if (_hitFlashT > 0) {
+  // Hit-damage vignette (v229: reduce-motion skips this too — a full-screen
+  // red pulse on every hit is exactly the kind of flash that setting exists
+  // for, and it was the one juice flash reduceMotion didn't actually gate;
+  // nxFlashT already did, addShake already did, this one was missed).
+  if (_hitFlashT > 0 && !reduceMotion) {
     const alpha = (_hitFlashT / 0.32) * 0.55;
     const cx = uiCanvas.width / 2, cy = uiCanvas.height / 2;
     const r0 = Math.min(cx, cy) * 0.35, r1 = Math.max(cx, cy) * 1.05;
@@ -4374,7 +4383,8 @@ function drawHUD() {
 
   // Wave-clear flash (v74): a brief bright pulse marking the instant the last
   // enemy dies — waves already end instantly (v22) but had no visual beat.
-  if (waveClearFlashT > 0) {
+  // v229: same reduce-motion gate as the hit vignette above, same reason.
+  if (waveClearFlashT > 0 && !reduceMotion) {
     const alpha = (waveClearFlashT / 0.4) * 0.3;
     ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
     ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
@@ -4832,7 +4842,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v228' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v229' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9674,6 +9684,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=182').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=183').catch(() => {});
   });
 }
