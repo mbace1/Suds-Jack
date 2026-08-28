@@ -17,6 +17,13 @@ const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('re
 
 let DATA = null, state = null, layout = null, input = null, enemyPhaseRunning = false;
 
+// GDD.md §9: "Expand to 3-5 encounters in sequence." Two so far (loading-dock
+// added right after backlot). No persistence/XP yet (that's queued after this
+// per owner direction) — each encounter still boots the same fixed 3-unit
+// squad at full HP; only the sequence position carries across a win.
+const SEQUENCE = ['backlot', 'loading-dock'];
+let seqIndex = 0;
+
 async function loadData() {
   const [weapons, units, enemies, encounters] = await Promise.all(
     ['weapons', 'units', 'enemies', 'encounters'].map(f => fetch(`data/${f}.json`).then(r => r.json())),
@@ -36,7 +43,7 @@ function fitCanvas() {
 window.addEventListener('resize', fitCanvas);
 
 function boot(seed) {
-  const encounter = DATA.encounters.find(e => e.id === 'backlot');
+  const encounter = DATA.encounters.find(e => e.id === SEQUENCE[seqIndex]);
   state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed);
   state.moveTiles = new Map();
   state.attackTiles = [];
@@ -120,11 +127,23 @@ function updateHud() {
 
 function showResult(result) {
   resultEl.hidden = false;
-  resultTitle.textContent = result === 'win' ? 'BLOCK CLEARED' : 'CREW DOWN';
-  resultTitle.className = result;
-  resultBody.textContent = result === 'win'
-    ? 'The backlot is quiet. For now.'
-    : 'Three operators, one block. Not this time.';
+  const isLastEncounter = seqIndex >= SEQUENCE.length - 1;
+  if (result === 'win' && !isLastEncounter) {
+    resultTitle.textContent = 'BLOCK CLEARED';
+    resultTitle.className = 'win';
+    resultBody.textContent = 'Quiet for now. One more block to go.';
+    resultAgain.textContent = 'Continue';
+  } else if (result === 'win') {
+    resultTitle.textContent = 'TURF SECURED';
+    resultTitle.className = 'win';
+    resultBody.textContent = "Every block on the list. The city doesn't get any nicer, but tonight it's yours.";
+    resultAgain.textContent = 'Run It Back';
+  } else {
+    resultTitle.textContent = 'CREW DOWN';
+    resultTitle.className = 'lose';
+    resultBody.textContent = 'Three operators, one block. Not this time.';
+    resultAgain.textContent = 'Run It Back';
+  }
 }
 
 titleStart.addEventListener('pointerup', e => {
@@ -133,7 +152,13 @@ titleStart.addEventListener('pointerup', e => {
   titleEl.hidden = true;
   boot(Date.now());
 });
-resultAgain.addEventListener('pointerup', e => { e.preventDefault(); boot(Date.now()); });
+resultAgain.addEventListener('pointerup', e => {
+  e.preventDefault();
+  // Winning a non-final encounter advances the sequence; a final win or any
+  // loss restarts the run from encounter 1 — see the SEQUENCE comment above.
+  seqIndex = (state.result === 'win' && seqIndex < SEQUENCE.length - 1) ? seqIndex + 1 : 0;
+  boot(Date.now());
+});
 topbar.endTurn.addEventListener('pointerup', e => { e.preventDefault(); input && input.endTurn(); });
 
 // Console/test hook, same shape as every other game's (__hd, __dc, __sj):
@@ -147,6 +172,8 @@ window.__turf = {
   move: (uid, x, y) => { const r = moveUnit(state, uid, x, y); onChange(); return r; },
   attack: (uid, targetUid) => { const r = orderAttack(state, uid, targetUid); onChange(); return r; },
   endTurn: () => input && input.endTurn(),
+  sequence: () => ({ ids: SEQUENCE.slice(), index: seqIndex }),
+  setSequenceIndex: i => { seqIndex = i; },
 };
 
 loadData().then(data => {

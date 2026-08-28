@@ -22,6 +22,7 @@ const UNITS = readJson('units.json').units;
 const ENEMIES = readJson('enemies.json').enemies;
 const ENCOUNTERS = readJson('encounters.json').encounters;
 const BACKLOT = ENCOUNTERS.find(e => e.id === 'backlot');
+const LOADING_DOCK = ENCOUNTERS.find(e => e.id === 'loading-dock');
 
 const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed);
 
@@ -39,23 +40,27 @@ check('every unit weapon id resolves', () => {
 check('every enemy weapon id resolves', () => {
   for (const e of ENEMIES) assert.ok(WEAPONS.some(w => w.id === e.weapon), `${e.id} -> ${e.weapon}`);
 });
-check('backlot spawns reference real unit/enemy ids', () => {
-  for (const s of BACKLOT.playerSpawns) assert.ok(UNITS.some(u => u.id === s.unit), s.unit);
-  for (const s of BACKLOT.enemySpawns) assert.ok(ENEMIES.some(e => e.id === s.enemy), s.enemy);
+check('every encounter\'s spawns reference real unit/enemy ids', () => {
+  for (const enc of ENCOUNTERS) {
+    for (const s of enc.playerSpawns) assert.ok(UNITS.some(u => u.id === s.unit), `${enc.id}: ${s.unit}`);
+    for (const s of enc.enemySpawns) assert.ok(ENEMIES.some(e => e.id === s.enemy), `${enc.id}: ${s.enemy}`);
+  }
 });
-check('backlot: every spawn and cover tile is in bounds and none overlap', () => {
-  const { cols, rows } = BACKLOT.grid;
-  const seen = new Set();
-  const claim = (x, y, label) => {
-    assert.ok(x >= 0 && y >= 0 && x < cols && y < rows, `${label} (${x},${y}) out of bounds`);
-    const k = key(x, y);
-    assert.ok(!seen.has(k), `${label} (${x},${y}) collides with an earlier tile`);
-    seen.add(k);
-  };
-  for (const s of BACKLOT.playerSpawns) claim(s.x, s.y, 'player spawn');
-  for (const s of BACKLOT.enemySpawns) claim(s.x, s.y, 'enemy spawn');
-  for (const [x, y] of BACKLOT.cover.full) claim(x, y, 'full cover');
-  for (const [x, y] of BACKLOT.cover.partial) claim(x, y, 'partial cover');
+check('every encounter\'s spawn and cover tiles are in bounds and none overlap', () => {
+  for (const enc of ENCOUNTERS) {
+    const { cols, rows } = enc.grid;
+    const seen = new Set();
+    const claim = (x, y, label) => {
+      assert.ok(x >= 0 && y >= 0 && x < cols && y < rows, `${enc.id}: ${label} (${x},${y}) out of bounds`);
+      const k = key(x, y);
+      assert.ok(!seen.has(k), `${enc.id}: ${label} (${x},${y}) collides with an earlier tile`);
+      seen.add(k);
+    };
+    for (const s of enc.playerSpawns) claim(s.x, s.y, 'player spawn');
+    for (const s of enc.enemySpawns) claim(s.x, s.y, 'enemy spawn');
+    for (const [x, y] of enc.cover.full) claim(x, y, 'full cover');
+    for (const [x, y] of enc.cover.partial) claim(x, y, 'partial cover');
+  }
 });
 
 console.log('grid primitives');
@@ -100,8 +105,8 @@ console.log('turn economy (backlot)');
 {
   const state = boot(BACKLOT, 1);
   check('boots with the right roster and positions', () => {
-    assert.equal(livingPlayers(state).length, 3);
-    assert.equal(livingEnemies(state).length, 6);
+    assert.equal(livingPlayers(state).length, BACKLOT.playerSpawns.length);
+    assert.equal(livingEnemies(state).length, BACKLOT.enemySpawns.length);
     assert.equal(state.turn, 'player');
     for (const u of state.units) assert.ok(canUnitAct(u));
   });
@@ -244,9 +249,9 @@ console.log('AI + telegraph');
   });
 }
 
-console.log('end-to-end playthrough (bot vs bot, backlot, must terminate)');
-{
-  const state = boot(BACKLOT, 42);
+console.log('end-to-end playthrough (bot vs bot, every encounter, must terminate)');
+function playthrough(encounter, seed) {
+  const state = boot(encounter, seed);
   const CAP = 150;
   let rounds = 0;
   while (!state.result && rounds < CAP) {
@@ -271,13 +276,15 @@ console.log('end-to-end playthrough (bot vs bot, backlot, must terminate)');
     do { step = stepEnemyPhase(state); } while (step && !step.done);
     rounds++;
   }
-  check('the encounter reaches a win or a loss, not a stalemate', () => {
+  check(`${encounter.id}: reaches a win or a loss, not a stalemate`, () => {
     assert.ok(state.result === 'win' || state.result === 'lose', `no result after ${CAP} rounds`);
   });
-  check('it does not take an absurd number of rounds to get there', () => {
+  check(`${encounter.id}: does not take an absurd number of rounds to get there`, () => {
     assert.ok(rounds < CAP, `hit the ${CAP}-round safety cap`);
   });
-  console.log(`  (bot playthrough: ${state.result} in ${rounds} rounds)`);
+  console.log(`  (bot playthrough: ${encounter.id} — ${state.result} in ${rounds} rounds)`);
 }
+playthrough(BACKLOT, 42);
+playthrough(LOADING_DOCK, 42);
 
 console.log(`\n${pass} checks passed`);

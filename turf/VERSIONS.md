@@ -8,6 +8,39 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v4 — 2026-08-28
+**Encounter #2: "The Loading Dock," and a real sequence between fights.**
+GDD.md §9's first step — "expand to 3-5 encounters in sequence" — before the
+XP/persistence half of that phase, per owner direction (encounter sequencing
+first, progression after).
+
+- `data/encounters.json`: a second fixed encounter, `loading-dock` — a
+  tighter 9×10 grid (vs backlot's 11×9), asymmetric container/crate cover
+  instead of backlot's mirrored layout, and 7 enemies (3 shotgun / 2 handgun
+  / 2 blunt, vs backlot's 2/2/2) skewed toward close range for the narrower
+  space. Same 3 archetypes — melee-sharp is still held back per v1's note.
+- `js/main.js`: `boot()` now reads the encounter id off a `SEQUENCE` array
+  and a `seqIndex` instead of hardcoding `'backlot'`. Winning a non-final
+  encounter re-boots straight into the next one (fresh, full HP — no
+  persistence yet, that's still queued after this); a final win or any loss
+  resets `seqIndex` to 0. `showResult` picks title/body/button text off
+  whether this is the last encounter ("Continue" vs "Run It Back"/"TURF
+  SECURED"). `window.__turf` grew `sequence()`/`setSequenceIndex()` for
+  testing the flow without fighting through a whole encounter.
+- `test/smoke.mjs`: the data-integrity and bounds checks now loop over every
+  encounter in `encounters.json` instead of hardcoding `BACKLOT`, and the
+  bot-vs-bot playthrough runs once per encounter (both currently resolve in
+  5 rounds against the naive bot — same difficulty character as backlot, not
+  a regression).
+- Verified in a real browser (Playwright): booting straight to `loading-dock`
+  via `setSequenceIndex`, and a full real win on `backlot` through the actual
+  `attack()` path (so `checkWinLoss` fires normally) — confirms the "Continue"
+  button reads correctly and clicking it lands on `loading-dock` with a fresh
+  squad. `js/main.js?v=2` → `v=3` (its own bytes changed; nothing imports it).
+- Softened the title screen's tagline ("one backlot" → dropped, since that's
+  no longer literally true) and its body copy ("clear the block to win" →
+  "clear a block to move on to the next").
+
 ## v3 — 2026-08-28
 **Design capture, not an engine change: classes/subclasses, crew naming, and
 the first art-pipeline feedback loop. Nothing in `index.html`'s live import
