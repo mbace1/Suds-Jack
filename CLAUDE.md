@@ -1030,7 +1030,9 @@ reference; the old UE5 notes no longer describe this repository.
 - `js/bullet.js`, `js/player.js`, `js/input.js`, `js/audio.js`, `js/lang.js`,
   `js/designer.js` and `js/retro.js` hold the major supporting systems.
 - `TOKO_DROP_ROADMAP.md` is forward planning, `GDD.md` contains design truths,
-  and `VERSIONS.md` records shipped changes.
+  and `VERSIONS.md` records shipped changes. `RUSH_DESIGN.md` is the full
+  design reference for RUSH MODE — mechanics as shipped, timed levels, and
+  the S/A/B/C tier system.
 
 **Release and visual-validation discipline:**
 
@@ -1074,6 +1076,35 @@ reference; the old UE5 notes no longer describe this repository.
 - After every production push, verify that the **pages build and deployment**
   Actions run—not merely the commit status—concludes `success`. A failed or
   superseded deployment can otherwise look exactly like a broken site.
+
+**Godot sibling (`mbace1/toko-drop-godot`) — a separate repo, split the other
+way round from Eeri's.** Eeri's port follows this repo on everything; Toko
+Drop's split is by *discipline*, not by build: **this build (Three.js) leads
+gameplay, modes and mechanics; the Godot build pushes graphics and physics**
+(real engine-level SSS via `SSS_STRENGTH`/`SSS_TRANSMITTANCE_*`, verlet-rope
+tentacle physics, GPU particles) that this renderer cannot reach — owner
+direction, verbatim in the Godot repo's `CLAUDE.md`: *"We should aim the push
+of graphics and physics here on Godot. Otherwise follow the lead of the JS
+version."* Consequences that follow from that split:
+
+- **A feature is designed once, here, then proposed to the port — never the
+  reverse.** Rush mode is the example: it shipped here first (`v224`/`v225`),
+  and the Godot repo's own Rush research fed back into `RUSH_DESIGN.md`
+  rather than the port inventing its own mode.
+- `toko-drop/GODOT_PORT.md` is a one-time material/shader dispatch brief
+  (mirrored into the Godot repo's `PORT_BRIEF.md`) — it is not a living
+  status doc. The Godot repo's own `PORT_STATUS.md` is the living
+  mode-parity table; check it there, not here, for what the port currently
+  has.
+- Root **`QUEUE.md`** is the cross-repo work queue — items destined for
+  either repo, or both, in one reviewable list. `RUSH_DESIGN.md` is the
+  worked example of "designed once, here": the shipped mechanics plus the
+  timed-level and S/A/B/C tier system, reconciled against the Godot repo's
+  now-superseded tier/leg research.
+- Known open gap (owner's to settle, not a bug): the Godot repo's
+  `design/CAMPAIGN_LEVELS.md` describes a stage-select CHALLENGES mode with
+  no equivalent here — the one case where a mode was designed on the port
+  side rather than proposed upstream first.
 
 ## Repository Structure
 
