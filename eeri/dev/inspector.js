@@ -31,12 +31,14 @@
 //     one authored by hand, which is what keeps the two indistinguishable.
 //   · A world with no dressing module (worlds 1, 3, 4 today) offers lamps
 //     only. Its palette says so rather than showing empty rows.
-//   · GAMEPLAY is REFERENCE ONLY. `parts.js`'s twenty-odd kinds are listed
-//     and PICK still drags any of them, because they are real meshes —
-//     but placing a NEW machine, robot or hazard needs each of those
-//     builders exposed the way `js/scenery.js` and `world2-dressing.js`
-//     now are, and that is the next step, not this one. The palette says
-//     so instead of pretending.
+//   · GAMEPLAY places SOME kinds live (v2.1): a skitter, hopper, roller,
+//     bucket bot or steam vent is a real `Robot`/`SteamVent`, pushed onto
+//     the SAME live array (`site.robots` / `site.vents`) the update loop
+//     already walks — a placed one patrols, stomps and hits like any
+//     other. Everything else in the palette — terrain, gizmos, a machine —
+//     is still reference only: terrain reshapes the tile grid at load
+//     time and a machine owns state this file has no hook into. PICK
+//     drags any of them regardless, because they are real meshes.
 //
 // WHY IT LIVES OUT HERE, unchanged from v1: `dev.html` FRAMES `index.html`
 // rather than copying it, so the thing being edited is byte-for-byte the
@@ -178,11 +180,26 @@ const PROP_LAYER = {
 // from here is not wired yet.
 const GAMEPLAY_GROUPS = [
   { t: 'terrain', items: ['ground', 'mound', 'ledge', 'pit', 'bank', 'brickWall', 'chasm', 'girderBeam'] },
-  { t: 'gizmo', items: ['belt', 'tarp', 'hoist', 'pipe', 'ladder', 'scaffold', 'shallow', 'deep'] },
-  { t: 'enemy / hazard', items: ['robot (skitter)', 'hopper', 'roller', 'bucketBot', 'hazard (steam)', 'swingBall'] },
+  { t: 'gizmo', items: ['belt', 'tarp', 'hoist', 'pipe', 'ladder', 'scaffold', 'shallow', 'deep', 'swingBall'] },
   { t: 'machine', items: ['machine (excavator/crane/skidder/loader)', 'girderStack'] },
   { t: 'reward', items: ['bolts', 'golden', 'blueprint', 'checkpoint', 'flag'] },
 ];
+
+// GAMEPLAY, LIVE. Unlike the reference groups above, these five place for
+// real: a skitter/hopper/roller/bucket bot is `new Robot(...)` and a vent
+// is `new SteamVent(...)` — the exact classes `buildSite()` calls, added to
+// the SAME live arrays (`site.robots` / `site.vents`) the update loop
+// already walks every frame, so a placed one patrols, stomps and hits like
+// any other. What is NOT here — a machine, a ladder, a belt — either
+// reshapes the tile grid at load time or owns state main.js does not
+// expose a way to extend at runtime; robots and a vent do neither.
+const GAMEPLAY_LIVE = {
+  skitter: { label: 'skitter' },
+  hopper: { label: 'hopper' },
+  roller: { label: 'roller' },
+  bucket: { label: 'bucket bot' },
+  vent: { label: 'steam vent' },
+};
 
 const el = (tag, cls, html) => {
   const e = document.createElement(tag);
@@ -335,8 +352,8 @@ export class Inspector {
       // both — as this file's first cut did, copying the shape of an
       // older draft of `rooms.mjs` — double-counted worlds 3-4 into an
       // 18-level list and broke every level-index lookup after level 6.
-      const { labelOf } = await import('../js/levelid.js?v=48');
-      const { ROOMS } = await import('../js/rooms.js?v=48');
+      const { labelOf } = await import('../js/levelid.js?v=50');
+      const { ROOMS } = await import('../js/rooms.js?v=50');
       this.levels = ROOMS.map((r, i) => ({ i, label: labelOf(i, ROOMS.length), name: r.name }));
     } catch { this.levels = []; }
     if (!this.el.hidden) this.syncLevel();
@@ -496,7 +513,7 @@ export class Inspector {
     const placeBtn = this.el.querySelector('[data-a="place"]');
     placeBtn.disabled = true;
     this.q('tip').textContent = key === 'gameplay'
-      ? 'PICK drags any physical object — ground, gizmos, enemies, machines, rewards. This palette is reference: placing a NEW one from here is not wired yet (see js/scenery.js for how that gets built).'
+      ? 'PICK drags any physical object. A skitter, hopper, roller, bucket bot or vent PLACES for real — everything else below is reference only (terrain reshapes the tile grid, a machine/ladder/belt owns state this editor cannot extend yet).'
       : `PICK drags anything already on this lane. Choose an asset below, then PLACE to click it onto the picture.`;
   }
 
@@ -522,6 +539,15 @@ export class Inspector {
     const box = this.q('palette');
     box.innerHTML = '';
     if (key === 'gameplay') {
+      box.appendChild(el('div', '', `<span class="t">place</span>`));
+      for (const [t, spec] of Object.entries(GAMEPLAY_LIVE)) {
+        const p = el('div', 'p', `<span>${spec.label}</span><span class="t">place</span>`);
+        p.dataset.prop = t;
+        p.dataset.ref = '0';
+        p.setAttribute('aria-pressed', 'false');
+        p.addEventListener('click', () => this.pickPalette(t, p));
+        box.appendChild(p);
+      }
       for (const g of GAMEPLAY_GROUPS) {
         box.appendChild(el('div', '', `<span class="t">${g.t}</span>`));
         for (const item of g.items) {
@@ -612,9 +638,24 @@ export class Inspector {
     if (this.on === 'place') { this.placeAt(e); return; }
     const rc = this.ray(e); if (!rc) return;
     const hits = rc.intersectObjects(A.scene.children, true)
-      .filter((h) => h.object.visible && !this.isMine(h.object));
+      .filter((h) => h.object.visible && !this.isMine(h.object) && this.pickableUnder(h.object));
     if (!hits.length) { this.select(null); return; }
-    this.select(hits[0].object);
+    // A picked GAMEPLAY entity is selected by its OWNING group, never a
+    // leaf mesh — a robot is several meshes under one group PLUS a shadow
+    // that is a SIBLING of that group, not a child of it (robots.js adds
+    // the shadow straight to the room, same as the group itself). A ray
+    // that lands on the shadow — a big flat disc right under the robot,
+    // easy to hit — would walk up through the room and never find the
+    // group's tag at all. So the shadow carries the same tag, and either
+    // way the ENTITY it points at, never the object the tag happened to be
+    // ON, is what gets dragged — `entity.group.position` is what
+    // `update()` overwrites from `.x/.y` every frame, so selecting
+    // anything else silently snaps back next frame.
+    let target = hits[0].object;
+    for (let n = target; n; n = n.parent) {
+      if (n.userData?.liveEntity) { target = n.userData.liveEntity.group; break; }
+    }
+    this.select(target);
     const o = this.picked;
     const world = new A.THREE.Vector3(); o.getWorldPosition(world);
     this.drag = { z: world.z, off: world.clone().sub(hits[0].point), from: o.position.clone() };
@@ -630,11 +671,15 @@ export class Inspector {
     const z = this.layerZ();
     const p = new A.THREE.Vector3();
     if (!rc.ray.intersectPlane(new A.THREE.Plane(new A.THREE.Vector3(0, 0, 1), -z), p)) return;
+    if (this.layer === 'gameplay' && GAMEPLAY_LIVE[this.pendingProp]) {
+      this.placeLive(A, p).catch((err) => console.error('[eeri] placeLive failed:', err));
+      return;
+    }
     const row = { prop: this.pendingProp, x: +p.x.toFixed(2), y: +Math.max(0, p.y).toFixed(2) };
     if (this.pendingProp === 'lamp') row.z = z;
     let made = null;
     if (this.pendingProp === 'lamp') {
-      import('../js/light.js?v=48').then(({ buildLamp }) => {
+      import('../js/light.js?v=50').then(({ buildLamp }) => {
         made = buildLamp(A.THREE, row);
         made.userData.sceneryRow = { world: A.debug.world(), index: -1, ...row };
         A.scene.add(made);
@@ -656,6 +701,46 @@ export class Inspector {
     }
     if (made) { made.userData.sceneryRow = { world: A.debug.world(), index: -1, ...row }; }
     this.afterPlace(made, row);
+  }
+
+  // GAMEPLAY placement — a real Robot or SteamVent, pushed into the SAME
+  // live array the update loop walks, so it patrols/blows/hits like any
+  // other. Two things a scenery prop never needed: the array to push into
+  // (`liveArr`, so undo can splice it back out), and a live entity to keep
+  // in sync with the mesh (`.group.userData.liveEntity`) — a robot/vent's
+  // collision reads its own `.x`/`.y` fields, NOT `group.position`, so a
+  // drag that only moved the mesh would look right and hit wrong.
+  async placeLive(A, p) {
+    const prop = this.pendingProp;
+    const group = A.debug.roomGroup(), level = A.debug.levelObj();
+    const x = +p.x.toFixed(2), y = +Math.max(0, p.y).toFixed(2);
+    let entity, liveArr, row;
+    // `A.debug.Robot()` / `SteamVent()` — the game's OWN classes, already
+    // loaded in the iframe's own realm (see the comment on those hooks in
+    // main.js). Not a fresh `import()` from here: that would build one out
+    // of a SECOND, top-page-realm copy of robots.js and its own 'three'.
+    if (prop === 'vent') {
+      const SteamVent = A.debug.SteamVent();
+      entity = new SteamVent(group, level, x);
+      liveArr = A.debug.ventsLive();
+      row = { prop, x };
+    } else {
+      const Robot = A.debug.Robot();
+      const asset = await A.debug.loadRobotAsset(prop).catch(() => null);
+      entity = new Robot(group, level, { c0: x - 1, c1: x + 1, kind: prop, cy: Math.round(y) }, asset);
+      liveArr = A.debug.robotsLive();
+      row = { prop, x, cy: Math.round(y) };
+    }
+    liveArr.push(entity);
+    entity.group.userData.liveEntity = entity;
+    entity.group.userData.sceneryRow = { world: 'gameplay', index: -1, ...row };
+    // The shadow is a SIBLING of the group (robots.js adds both straight
+    // to the room), not a child — tag it too, or a ray that lands on the
+    // shadow disc picks nothing.
+    if (entity.shadow) entity.shadow.userData.liveEntity = entity;
+    this.undoStack.push({ type: 'spawnLive', obj: entity.group, entity, liveArr });
+    this.el.querySelector('[data-a="undo"]').disabled = false;
+    this.select(entity.group);
   }
 
   afterPlace(made, row) {
@@ -682,6 +767,12 @@ export class Inspector {
     const parent = this.picked.parent;
     const local = parent ? parent.worldToLocal(p.clone()) : p;
     this.picked.position.set(local.x, local.y, this.picked.position.z);
+    // A robot/vent reads its OWN .x/.y for collision, never group.position
+    // — see placeLive()'s header comment. Keep both honest while dragging,
+    // not just at the end, so the hit-test a jump is judged against is the
+    // one you are actually looking at.
+    const live = this.picked.userData.liveEntity;
+    if (live) { live.x = local.x; live.y = local.y; if ('baseY' in live) live.baseY = local.y; }
     this.readout();
   }
 
@@ -697,11 +788,21 @@ export class Inspector {
   undo() {
     const step = this.undoStack.pop();
     if (!step) return;
-    const A = this.api();
     if (step.type === 'move') { step.obj.position.copy(step.from); if (step.obj === this.picked) this.readout(); }
     if (step.type === 'spawn') {
-      A?.scene.remove(step.obj);
+      // parent.remove(), not scene.remove(): a lamp is a direct child of
+      // the scene, but a dressing prop's mesh is a child of THAT MODULE'S
+      // own group — scene.remove() on it is a silent no-op (Object3D.remove
+      // only ever touches its own direct children), so undoing a placed
+      // pipe stack looked like it worked and left the mesh sitting there.
+      step.obj.parent?.remove(step.obj);
       step.obj.geometry?.dispose?.(); step.obj.material?.dispose?.();
+      if (step.obj === this.picked) this.select(null);
+    }
+    if (step.type === 'spawnLive') {
+      step.obj.parent?.remove(step.obj);
+      const i = step.liveArr.indexOf(step.entity);
+      if (i >= 0) step.liveArr.splice(i, 1);
       if (step.obj === this.picked) this.select(null);
     }
     this.el.querySelector('[data-a="undo"]').disabled = this.undoStack.length === 0;
@@ -722,6 +823,37 @@ export class Inspector {
   isMine(o) {
     for (let n = o; n; n = n.parent) if (n.userData?.[MINE]) return true;
     return false;
+  }
+
+  // THE PAINTED BACKDROP WAS ALWAYS IN THE WAY. `intersectObjects` tests the
+  // full geometric plane of every mesh it is given, alpha or no alpha — a
+  // diorama lane is a texture on a big flat quad, and that quad sits
+  // between the camera and everything behind it (the fore lane nearest of
+  // all, z 2.2, ahead of every gameplay object). So PICK was never really
+  // reaching a robot, a machine, anything: a click anywhere on the picture
+  // hit the nearest painted lane first, however "empty" that pixel looked.
+  // The rows fed to `intersectObjects` are the ONLY defence a raycast has
+  // against this, so a lane the current selection is not standing on gets
+  // excluded from the candidate list entirely rather than merely dimmed —
+  // dimming is for the eye, this is for the ray.
+  pickableUnder(o) {
+    if (this.layer === 'gameplay') {
+      const world = this.api()?.debug.world();
+      for (let n = o; n; n = n.parent) {
+        const m = n.name?.match(/^([a-z]+)\/([a-z]+)/i);
+        if (m && m[1] === world && RAIL.some((r) => r.key === m[2])) return false;
+      }
+      return true;
+    }
+    // on an art lane, everything nearer the camera than the lane itself
+    // would otherwise shadow it the same way — exclude every OTHER lane,
+    // gameplay objects stay pickable throughout
+    const world = this.api()?.debug.world();
+    for (let n = o; n; n = n.parent) {
+      const m = n.name?.match(/^([a-z]+)\/([a-z]+)/i);
+      if (m && m[1] === world && RAIL.some((r) => r.key === m[2]) && m[2] !== this.layer) return false;
+    }
+    return true;
   }
 
   select(o) {
@@ -764,11 +896,21 @@ export class Inspector {
     this.rowOf = row;
     this.q('size').textContent = `${f(s.x)} × ${f(s.y)} × ${f(s.z)}`;
     set('x', f(w.x)); set('y', f(w.y)); set('z', f(w.z));
-    this.q('out').textContent = row
-      ? `{ prop: '${row.prop}', x: ${f(w.x)}, y: ${f(w.y)}${
-          Object.keys(row).filter((k) => !['world', 'index', 'prop', 'x', 'y'].includes(k))
-            .map((k) => `, ${k}: ${row[k]}`).join('')} },`
-      : `x ${f(w.x)}, y ${f(w.y)}, z ${f(w.z)}`;
+    // GAMEPLAY rows paste as parts.js CALLS (positional args — `robot(c0,
+    // c1, kind, cy)`), never as the `{prop, x, y, …}` object scenery rows
+    // use — that object shape is not a thing rooms.js reads, and handing
+    // it back would read as pasteable when it is not.
+    if (row?.world === 'gameplay') {
+      this.q('out').textContent = row.prop === 'vent'
+        ? `hazard(${f(w.x)}, 'steam'),`
+        : `robot(${f(w.x - 1)}, ${f(w.x + 1)}, '${row.prop}', ${Math.round(w.y)}),`;
+    } else {
+      this.q('out').textContent = row
+        ? `{ prop: '${row.prop}', x: ${f(w.x)}, y: ${f(w.y)}${
+            Object.keys(row).filter((k) => !['world', 'index', 'prop', 'x', 'y', 'cy'].includes(k))
+              .map((k) => `, ${k}: ${row[k]}`).join('')} },`
+        : `x ${f(w.x)}, y ${f(w.y)}, z ${f(w.z)}`;
+    }
     if (this.box) this.box.box.setFromObject(o);
   }
 
@@ -780,6 +922,8 @@ export class Inspector {
     const world = new A.THREE.Vector3(v('x'), v('y'), v('z'));
     const local = o.parent ? o.parent.worldToLocal(world.clone()) : world;
     o.position.copy(local);
+    const live = o.userData.liveEntity;
+    if (live) { live.x = local.x; live.y = local.y; if ('baseY' in live) live.baseY = local.y; }
     if (this.box) this.box.box.setFromObject(o);
     this.q('out').textContent = this.q('out').textContent;
   }
