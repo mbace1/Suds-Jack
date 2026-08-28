@@ -95,8 +95,12 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 - [x] **Goo/gel TSL pass**: dome refraction, wobble dynamics, pop burst — past
       parity, not to it. This is the reason the stack moved — *v218: depth-varying
       thicknessNode, hit-seethe second octave, uTear inflation + interior flare*
-- [ ] Goo pass 2: corpse and swarm materials (satin MID is the floor, goo the ceiling)
-- [ ] **Arena & environment pass**: floor/space treatment that makes swarm flow readable
+- [x] Goo pass 2: corpse and swarm materials (satin MID is the floor, goo the
+      ceiling) — *v222: corpse matter (both chunk pools) gets a gel-nugget node
+      graph under the flag; the living swarm was already satin/physical + v218*
+- [x] **Arena & environment pass**: floor/space treatment that makes swarm flow
+      readable — *v223: rim vignette, grid distance falloff, and a lit pool that
+      follows the player; both renderers in parity, constants in `TUNING.arena`*
 - [ ] Arena pass 2: reactive surface response to mass, prizes, pops
 - [ ] Performance budget checkpoint on a mid-range phone, measured after each pass
 
