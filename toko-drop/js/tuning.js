@@ -300,6 +300,11 @@ export const TUNING = {
     chain: { perKill: 1, cap: 100, window: 2.5 },         // boost kills only
     lives: { start: 3, extraEvery: 25000 },
     levels: { first: 60, second: 90, step: 30 },          // then +30s each
+    // v227 TIERS (RUSH_DESIGN.md §3.2): reference kills/s per grade, ported
+    // from the Godot repo's unshipped tier research and unvalidated against
+    // real JS playtest data — first playtest owns these, not the method.
+    // A level's PAR kill count is tier-rate × that level's own duration.
+    tiers: { C: 0.5, B: 0.9, A: 1.4, S: 2.0 },
   },
 
   fx: {

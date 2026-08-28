@@ -24,7 +24,7 @@
 //   .hit() / .kill()  — poke the subject through the REAL damage path
 //   .specimen()       — the live Enemy, for info readouts
 import * as THREE from 'three';
-import { CFG, Enemy, GOO_TIME } from './enemy.js?v=180';
+import { CFG, Enemy, GOO_TIME } from './enemy.js?v=181';
 
 export function createSpecimen({ width = 220, height = 170, bg = 0x07071a,
                                  roam = false, onFrame = null } = {}) {
