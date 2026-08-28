@@ -59,6 +59,10 @@ export const SPEED = { run: 6.2, climb: 3.6, wade: 6.2 * 0.55 };
 export const GIZMO = { belt: 2.6, tarp: 17.5 };
 // a tarp throws you tarp^2/2g tiles up: 17.5 gives 5.1, about twice a jump
 export const TARP_RISE = (17.5 * 17.5) / 60;
+// how far EITHER end of a plank can sink below its rest height (js/plank.js
+// reads this too, so the room prover and the entity can never disagree
+// about how far the tip actually goes)
+export const PLANK_DROP = 1.2;
 
 // …and the machines', off js/excavator.js and js/crane.js, for the ride term
 // of the estimate below. A machine is deliberately slower than the kid.
@@ -421,6 +425,24 @@ export const hoist = (c0, c1, cy0, cy1, period = 4) => ({
   hoist: { c0, c1, cy0, cy1, period },
 });
 
+// ---- the plank (DESIGN world 2's own gizmo: the tipping plank) -----------
+// A rigid beam pivoting at its own centre, laid across a trench. It has no
+// held verb and no cycle to read — it answers WEIGHT: standing anywhere but
+// dead centre sinks that side and lifts the other, so crossing is a single
+// committed walk through the tip rather than a timed jump. `js/plank.js`
+// owns the physics (PLANK_DROP is the one tuning constant, shared so the
+// room prover and the entity agree on how far it can tip); this is just the
+// two columns and the height it rests at, level, when nobody is on it.
+//
+// Not stamped and no `obstacle` entry, the same as `hoist` and `pipe` — it
+// is not a tile fact, it is a moving thing `check()` holds to its own rules
+// below: a floor to board it from on both sides, and open air the whole
+// span underneath, since falling off is the trench doing its job.
+export const plank = (c0, c1, cy0) => ({
+  kind: 'plank', c0, c1, cy0,
+  plank: { c0, c1, cy0 },
+});
+
 // ---- the pipe (DESIGN world 2, level 5's idea) ---------------------------
 // A tube you go INSIDE: enter one mouth, come out the other. It is not a
 // tile — a tile is a place, and a pipe is a pair of places plus a move
@@ -545,7 +567,7 @@ export function compile(room) {
     // the deck it serves), so the list is flattened once, here
     parts: room.parts.flat(),
     bolts: [], golden: [], blueprint: null, pits: [], shots: [], machines: [], robots: [], hazards: [],
-    pieces: [], obstacles: [], ladders: [], belts: [], tarps: [], water: [], pipes: [], hoists: [],
+    pieces: [], obstacles: [], ladders: [], belts: [], tarps: [], water: [], pipes: [], hoists: [], planks: [],
     ball: null, checkpoint: null, flag: null,
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
     exit: { x: W - 4, y: GROUND },
@@ -567,6 +589,7 @@ export function compile(room) {
     if (p.water) out.water.push(p.water);
     if (p.pipe) out.pipes.push(p.pipe);
     if (p.hoist) out.hoists.push(p.hoist);
+    if (p.plank) out.planks.push(p.plank);
     if (p.drained) (out.drained ||= []).push(p.drained);
     if (p.checkpoint) out.checkpoint = p.checkpoint;
     if (p.flag) out.flag = p.flag;
@@ -685,6 +708,7 @@ export function deadAir(room) {
   for (const b of r.belts || []) at.push((b.c0 + b.c1) / 2);
   for (const t of r.tarps || []) at.push((t.c0 + t.c1) / 2);
   for (const h of r.hoists || []) at.push(h.c0);
+  for (const p of r.planks || []) at.push(p.c0);
   for (const q of r.pipes || []) at.push(q.a.c);
   for (const l of r.ladders || []) at.push(l.c);
   for (const w of r.water || []) at.push((w.c0 + w.c1) / 2);
@@ -857,7 +881,15 @@ export function check(room) {
     const passable = o.kind === 'step'
       ? (o.size <= REACH.step || ladderFor(o.at, o.size))
       : o.size <= REACH.gap;
-    if (!passable && !(o.clears && have.has(o.clears))) {
+    // A PLANK IS A WAY ACROSS, same debt as the machine's `clears`: a gizmo
+    // that changes where the player can get to on FOOT has to be in this
+    // walk, or the check refuses a room the plank actually solves. Unlike
+    // the tarp/pipe/hoist bolt-reach bypasses (which are all bonus routes
+    // over an already-jumpable gap), a plank is allowed to be the ONLY way
+    // across — that is DESIGN's whole point for it — so it is checked here,
+    // not just against the bolts sitting near it.
+    const plankHere = r.planks.some((p) => p.c0 <= o.at && p.c1 >= o.at + (o.size ?? 1) - 1);
+    if (!passable && !(o.clears && have.has(o.clears)) && !plankHere) {
       note(`${r.name}: STUCK at x=${o.at} — a ${o.kind} of ${o.size} `
         + `(the kid clears ${o.kind === 'step' ? REACH.step : REACH.gap}${o.kind === 'step' ? ', or any height with a ladder on it' : ''})`
         + (o.clears ? `, and the machine that ${o.clears}s it has not been reached yet` : ' and no machine clears it'));
@@ -1023,6 +1055,26 @@ export function check(room) {
     }
   }
 
+  // ---- the plank: a floor on both banks, open air underneath ------------
+  // No shaft, no cycle — it never leaves the height band `cy0 ± PLANK_DROP`,
+  // so the only two ways this can be wrong are the ones a still picture
+  // already shows: nowhere to board it from, or something solid sitting in
+  // the trench it is supposed to be crossing.
+  for (const p of r.planks) {
+    const boardable = solidAt(p.c0 - 1, p.cy0 - 1) || solidAt(p.c1 + 1, p.cy0 - 1);
+    if (!boardable) {
+      note(`${r.name}: the plank at ${p.c0}…${p.c1} sits at cy=${p.cy0} with nothing to `
+        + `board it from — put a floor beside x=${p.c0 - 1} or x=${p.c1 + 1}`);
+    }
+    for (let c = p.c0; c <= p.c1; c++) {
+      if (solidAt(c, p.cy0)) {
+        note(`${r.name}: the plank at ${p.c0}…${p.c1} has solid tile under it at x=${c}, `
+          + 'cy=' + p.cy0 + ' — a plank over ground is not crossing a trench, it is furniture');
+        break;
+      }
+    }
+  }
+
   // ---- the pipe: both mouths, every time --------------------------------
   // The ladder's rule, generalised. A ladder is held to a foot and a landing
   // because a ladder ending in mid-air is invisible on a screenshot; a pipe
@@ -1109,6 +1161,10 @@ export function check(room) {
   // and "reliable under a thumb".
   for (const o of r.obstacles) {
     if (o.clears) continue;                     // the machine's, not the kid's
+    // …and a plank is not the kid's own jump either — it is the answer
+    // DESIGN gives instead of one, on purpose, for a gap this rule would
+    // otherwise refuse outright.
+    if (r.planks.some((p) => p.c0 <= o.at && p.c1 >= o.at + (o.size ?? 1) - 1)) continue;
     const slack = o.kind === 'step'
       ? REACH.jumpUp - o.size
       : REACH.jumpAcross - o.size;
@@ -1156,8 +1212,13 @@ export function check(room) {
     // height it passes through is reachable. Same debt as the tarp and the
     // pipe, paid on the way in: a gizmo that changes where the player can
     // get to must be in this model, or the check refuses correct rooms.
-    return r.hoists.some((h) => col >= h.c0 - BOLT_SPREAD && col <= h.c1 + BOLT_SPREAD
-      && cy >= h.cy0 - 0.5 && cy <= h.cy1 + BOLT_REACH);
+    if (r.hoists.some((h) => col >= h.c0 - BOLT_SPREAD && col <= h.c1 + BOLT_SPREAD
+      && cy >= h.cy0 - 0.5 && cy <= h.cy1 + BOLT_REACH)) return true;
+    // …and A PLANK TIPS, so its own deck reaches from cy0 - PLANK_DROP (the
+    // low end, under someone's own weight) to cy0 + PLANK_DROP (the high
+    // end) — same debt, paid the same way.
+    return r.planks.some((p) => col >= p.c0 - BOLT_SPREAD && col <= p.c1 + BOLT_SPREAD
+      && cy >= p.cy0 - PLANK_DROP - 0.5 && cy <= p.cy0 + PLANK_DROP + BOLT_REACH);
   };
   for (const [row, col] of [...r.bolts, ...r.golden]) {
     const cy = H - 1 - row;

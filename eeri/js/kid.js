@@ -9,10 +9,10 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=52';
+import { PAL } from './palette.js?v=53';
 // The silhouette line lives in craft.js, not here: robots.js needs the same
 // one, and two copies of a silhouette rule is how two silhouettes start.
-import { outlineShell } from './craft.js?v=52';
+import { outlineShell } from './craft.js?v=53';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -598,13 +598,13 @@ export class Player {
     let onDeck = null;
     for (const h of this.level.platforms) {
       if (!h.overlaps(this.x, this.hw)) continue;
-      const top = h.top;
+      const top = h.top(this.x);
       const landing = this.vy <= 0 && wasAt >= top - 0.02 && this.y <= top + 0.02;
       const riding = this.carrier === h && this.vy <= 0.01 && Math.abs(this.y - top) < 0.7;
       if (landing || riding) { onDeck = h; break; }
     }
     if (onDeck) {
-      this.y = onDeck.top;
+      this.y = onDeck.top(this.x);
       this.vy = 0;
       this.grounded = true;
     }

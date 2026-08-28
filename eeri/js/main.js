@@ -9,32 +9,33 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=52';
-import { Input } from './input.js?v=52';
-import { Level, ROOMS, LAB } from './level.js?v=52';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=53';
+import { Input } from './input.js?v=53';
+import { Level, ROOMS, LAB } from './level.js?v=53';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
   buildSheetModel, Sheet,
-} from './pieces.js?v=52';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=52';
-import { Camera } from './camera.js?v=52';
-import { buildKidModel, Kid, Player } from './kid.js?v=52';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=52';
-import { buildCraneModel, Crane } from './crane.js?v=52';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=52';
-import { buildFlattenerModel } from './flattener.js?v=52';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=52';
-import { Hoist } from './hoist.js?v=52';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=52';
-import { WreckingBall } from './hazards.js?v=52';
-import { AudioKit } from './audio.js?v=52';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=52';
-import { craftMat, craftBox } from './craft.js?v=52';
-import { t as tr } from './lang.js?v=52';
-import { showIntro } from './intro.js?v=52';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=52';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=52';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=52';
+} from './pieces.js?v=53';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=53';
+import { Camera } from './camera.js?v=53';
+import { buildKidModel, Kid, Player } from './kid.js?v=53';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=53';
+import { buildCraneModel, Crane } from './crane.js?v=53';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=53';
+import { buildFlattenerModel } from './flattener.js?v=53';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=53';
+import { Hoist } from './hoist.js?v=53';
+import { Plank } from './plank.js?v=53';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=53';
+import { WreckingBall } from './hazards.js?v=53';
+import { AudioKit } from './audio.js?v=53';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=53';
+import { craftMat, craftBox } from './craft.js?v=53';
+import { t as tr } from './lang.js?v=53';
+import { showIntro } from './intro.js?v=53';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=53';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=53';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=53';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -277,7 +278,8 @@ async function boot() {
     // register with the level so the player's platform pass can find them —
     // one list, filled here, rather than the player reaching into `site`.
     const hoists = (def.hoists || []).map((h) => new Hoist(group, level, h));
-    level.platforms = hoists;
+    const planks = (def.planks || []).map((p) => new Plank(group, level, p));
+    level.platforms = [...hoists, ...planks];
     const vents = def.hazards.filter((h) => h.type === 'steam')
       .map((h) => new SteamVent(group, level, h.x));
 
@@ -440,7 +442,7 @@ async function boot() {
     scene.add(group);
     return {
       def, level, group, bank, girder, wall, sheet, ball, bolts, golden, blueprint,
-      robots, vents, machine, checkpoint, flag, hoists,
+      robots, vents, machine, checkpoint, flag, hoists, planks,
     };
   }
 
@@ -832,6 +834,9 @@ async function boot() {
       hoists: () => site.hoists.map((h) => ({
         x: +h.x.toFixed(2), y: +h.y.toFixed(2), hw: h.hw,
         cy0: h.cy0, cy1: h.cy1, period: h.period,
+      })),
+      planks: () => site.planks.map((p) => ({
+        x: +p.x.toFixed(2), hw: p.hw, cy0: p.cy0, tilt: +p.tilt.toFixed(3),
       })),
       carried: () => !!player.carrier,
       piping: () => mode === 'piping',
@@ -1381,6 +1386,10 @@ async function boot() {
     // the hoists run in EVERY mode — a lift that stopped while you were in a
     // cab would be a lift whose cycle you could not read from the cab
     for (const h of site.hoists) h.update(dt, REDUCED);
+    // the plank runs in every mode too, for the same reason: it must not
+    // silently settle to a different tilt than the one you left it at
+    // while you were off riding something else.
+    for (const p of site.planks) p.update(dt, player.x, player.hw, REDUCED);
     site.bank?.update(dt);
     site.wall?.update(dt);
     site.sheet?.update(dt);

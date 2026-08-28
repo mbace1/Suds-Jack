@@ -1,5 +1,67 @@
 # EERI — versions
 
+## v15.46 — 2026-08-28 — the tipping plank: World 2's own gizmo (Phase B)
+
+**A rigid beam over a trench, pivoting at its own centre — no held verb,
+no cycle, the newest of this game's "answers weight, not a button" family
+with the flattener. Standing anywhere but dead centre sinks that side and
+lifts the other; crossing is one committed walk through the tip. World 2's
+Level 4 (THE WET TRENCH) gets the first one: a 7-tile gap too wide for a
+running jump (4.85 tiles) even dry, with a roller waiting on the far bank
+so arriving still moving is the point.
+
+**`js/plank.js`** is the whole entity: `buildPlankModel()` draws a scored
+balsa deck, an underside, a fulcrum stub, and painted end caps so a flat
+board reads as a *thing* rather than more floor; `Plank` tracks `tilt`
+(−1…+1) and eases it toward whatever the rider's own offset across the
+half-width asks for, `PLANK_DROP` (1.2 tiles, `js/parts.js`) scaling how
+far either end actually sinks. Reduced motion snaps straight to target —
+no settle to watch, just be there.
+
+**Who drives the tilt is main.js, not the plank** — the same rule as THE
+DIG, THE GIRDER and THE FLATTEN: `update(dt, riderX, riderHw, reduced)`
+is called from the per-frame loop with the player's own position handed
+in, never read by the entity itself. A plank that reached into `Player`
+to find its own rider would be the one entity in this codebase that knows
+about the thing riding it.
+
+**`top(x)` generalises `js/hoist.js`'s own platform contract** the one
+way a hoist never needed to: a hoist's deck is flat, so `top()` never
+looked at *where* on the deck you stood. A tipped plank's deck genuinely
+is not flat, so `top` became a method taking `x` (both `hoist.js` and
+`kid.js`'s platform-carry pass were touched to match) — the contract
+`level.platforms` promises stays the same for every entity on it, flat or
+tilted.
+
+**The room prover needed the plank taught to it in FOUR separate places**,
+which is the "one token per module" trap's own shape showing up in
+validation logic instead of imports: the bolt-reachability bypass, the
+generic obstacle-passability walk, the generosity/slack check (all three
+in `js/parts.js`'s `check()`) — and a FOURTH, because `test/rooms.mjs`
+carries its own independent duplicate of the obstacle-passability walk
+(the `orphan` filter) that does not read `parts.js`'s output and needed
+the identical bypass written a second time. A gizmo that provides reach
+without being stamped into the tile grid (hoist, pipe, tarp, now plank)
+is invisible to the checker until every one of these knows to look for it.
+
+**Level 4 was retimed to fit it** — the level was already at 89 of a
+96-tile room cap with only 3 tiles of slack, and the owner chose to
+retime the existing, already-shipped level rather than build a
+stand-alone test room first (an accepted risk, not a discovery). The
+wading/bolt beat before the trench was tightened by 2 tiles, a second
+guide-bolt row (`boltRun(7, 51, 55)`) was added directly over the
+crossing to bring the count back to exactly 100/3, and the far-bank
+roller now sits right where the plank hands you off — landing still
+moving into the next obstacle rather than a dead stop.
+
+`node eeri/test/rooms.mjs` → 248/248. `smoke.cjs` 432/432,
+`playthrough.cjs` 25/25 (Level 4 finishes clean). Confirmed by screenshot,
+not just the gates: the deck sits under the kid's feet at centre, and
+tips symmetrically toward whichever end he stands on, with the far end
+rising to meet the bank behind it.
+
+`?v=52` → `?v=53` across the whole module graph.
+
 ## v15.45 — 2026-08-28 — the flattener: World 1's second machine (DESIGN §8.4)
 
 **A road roller.** World 1's excavator has carried both of its own levels'
