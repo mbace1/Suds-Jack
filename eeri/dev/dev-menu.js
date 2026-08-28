@@ -21,10 +21,19 @@
 // is approved it moves to an explicit call at the source, per the handoff's
 // integration order.
 
-import { FXPool, FX_SPEC, sample, detect, attach } from '../js/fx.js?v=15';
-import { AudioFX, SFX_SPEC, VOICES, validateSpec } from '../js/audio-fx.js?v=15';
+import { FXPool, FX_SPEC, sample, detect, attach } from '../js/fx.js?v=16';
+import { AudioFX, SFX_SPEC, VOICES, validateSpec } from '../js/audio-fx.js?v=16';
 
 const KEY = 'eeriDevMenu';
+const MINKEY = 'eeriDevMenuMin';
+
+// Matches dev-menu.css's own narrow breakpoints exactly — a panel this
+// wide genuinely cannot share a phone screen with the level editor at the
+// same time, so it starts collapsed to its header there. Only on FIRST
+// load: once a person has toggled `#dvMin` for themselves, that choice is
+// theirs on every device, not overridden by a resize.
+const NARROW = () => matchMedia('(max-width: 760px) and (orientation: portrait), '
+  + '(orientation: landscape) and (max-height: 500px)').matches;
 
 const el = (tag, cls, html) => {
   const e = document.createElement(tag);
@@ -115,7 +124,17 @@ export class DevMenu {
     host.appendChild(toggle);
     this.toggle = toggle;
 
-    root.querySelector('#dvMin').addEventListener('click', () => root.classList.toggle('min'));
+    root.querySelector('#dvMin').addEventListener('click', () => {
+      const on = root.classList.toggle('min');
+      try { localStorage.setItem(MINKEY, on ? 'on' : 'off'); } catch { /* private */ }
+    });
+    // Default to collapsed on a screen too small to hold this panel AND
+    // the level editor at once — but only when nobody has said otherwise.
+    // A saved preference (any device) always wins over the screen size.
+    {
+      const saved = (() => { try { return localStorage.getItem(MINKEY); } catch { return null; } })();
+      root.classList.toggle('min', saved ? saved === 'on' : NARROW());
+    }
 
     // level jumps, built from the game's own room count so this never goes
     // stale against a level being added

@@ -1,5 +1,149 @@
 # EERI — versions
 
+## v15.49 — 2026-08-28 — one authored camera moment per world (Phase C)
+
+**PHASING §3 Phase C asks for "one authored camera moment per world — a
+drift, a background machine event, a silhouette beat," budgeted one per
+world, not one per level.** Until this pass every world got the SAME
+pair — a crane and a truck, both spanning the WHOLE level — which is the
+opposite of a moment: an ambient loop present everywhere is scenery, not
+a beat you arrive at. `js/layers.js`'s `backgroundEvents()` is now
+world-aware, and each world gets its own event, in its own theme, at its
+own narrow x window:
+
+- **groundworks** keeps the original tower crane — right the first time,
+  since World 1 IS "the tower" (`clockout.js`'s `BUILDING` table).
+- **pipeworks** gets a valve stack that vents a puff of steam on a
+  silent-build/hold/fade cycle — a BEAT rather than a drift, which is
+  what a pressure system actually does.
+- **grove** gets a bird gliding above the canopy line, in silhouette at
+  SKYLINE depth. The first cut tried a code-drawn tree among World 3's
+  own already-painted foliage and it read as a flat sticker next to real
+  art — replaced before it ever reached a screenshot review, because
+  the wrong shape for "sits next to hand-painted detail" is exactly what
+  PHASING's own "silhouette beat" option exists to avoid.
+- **nightshift** gets a floodlight sweeping the depot's dark silhouette —
+  the one example PHASING names outright, and the clearest payoff for
+  `light.js`'s own MOOD.nightshift cold-far/warm-near split: a warm beam
+  only reads as dramatic against a scene already lit to be dark.
+
+**It is a CAMERA moment, not just a moving prop**, because `main.js` now
+watches for the player crossing each event's home window and fires one
+small, one-shot `cam.punch(0.45)` — gated behind reduced-motion like
+every other camera reaction in this file, and reset once per room so it
+fires again on returning to a world's other levels, the same way the
+event itself is visible in all three.
+
+**One real bug, caught by the DOM rather than the eye:** the bird's group
+position sat at y=20, which projected to the very top edge of the frame
+(NDC y≈0.95) — visible in principle, invisible in practice, sitting under
+the HUD chrome. A screenshot alone read as "something's up there,
+probably fine"; checking the actual projected screen position is what
+caught it. Lowered to y=13, comfortably inside the open sky above the
+canopy.
+
+`node eeri/test/rooms.mjs` 248/248, `fx-smoke.mjs` 31, `dev-menu.mjs` 36,
+`smoke.cjs` 432, `playthrough.cjs` 25 — all green, all four events
+confirmed live and correctly positioned by screenshot (`bg positions`
+debug hook) at their declared world.
+
+`?v=53` → `?v=54` across the module graph.
+
+## v15.48 — 2026-08-28 — the level editor and the FX pack, on a phone
+
+**Dev tooling only — no gameplay changed.** `dev/inspector.js` (the level
+editor) and `dev/dev-menu.js`/`dev-menu.css` (the FX pack) were both built
+against a desktop window: a fixed 360px sidebar and a fixed 300px
+right-hand panel, docked so they stay clear of each other above 760px
+wide. Below that, the sidebar IS the screen — the exact overlay bug
+`inspector.js`'s own header comment already tells the story of v1 having,
+reached this time by a narrower device instead of a wider panel.
+
+**Two distinct layouts, not one "mobile" layout, because portrait and
+landscape have opposite scarce dimensions.** In portrait a phone has
+width to spare and none of it does a sidebar any good — the editor's
+body moves to the BOTTOM instead: full width, a fixed height, and its
+rail turns from a left column into a horizontal strip along the top edge
+of the sheet, since there is no longer a spare column to put it in. In
+landscape the sidebar shape still works (there is width), it just has to
+be narrower (260px, not 360px) and the FX panel narrower still (190px),
+with the top bar's reserved corner gap sized to match. `orientation`
+alone was not enough for either query — a resized desktop window can be
+tall-and-narrow without ever being a phone, and (the bug this session
+actually shipped once before catching it) a landscape phone can be
+narrower than the portrait breakpoint's width threshold, so the portrait
+query needs `and (orientation: portrait)` explicitly or it fires on a
+landscape window too and fights the landscape rules for the same
+properties, silently, with only the ones the landscape query forgot to
+also set actually staying wrong. Caught by reading the DOM's own computed
+`flexDirection` and `flex` at 667×375 rather than by eye — the two states
+render close enough that a screenshot alone did not obviously disagree
+until they were pulled apart.
+
+**Both panels also learned to get out of each other's way on their own.**
+`inspector.js` gets a `▾` collapse button that hides its body while
+keeping the current level/mode/pick state — the escape hatch a narrow
+screen needs, but useful at any width. `dev-menu.js` already had a
+minimize button (`#dvMin`, collapses to its header) and a full-hide
+toggle; it now also DEFAULTS to minimized the first time it loads on a
+screen too small to hold itself and the editor at once, via a
+`matchMedia` check mirroring the CSS breakpoints exactly — but only the
+first time: once someone has explicitly minimized or expanded it for
+themselves, that choice is saved and wins over the screen size on every
+future load, on any device.
+
+Verified across four viewports (390×844 portrait, 844×390 and 667×375
+landscape, 1400×900 desktop) with the DOM's actual computed layout read
+back, not just a screenshot glanced at, plus the six gates:
+`dev-menu.mjs` and `fx-smoke.mjs` (this is exactly the seam they exist to
+guard) at 36/31, `rooms.mjs` 248, `smoke.cjs` 432, `playthrough.cjs` 25
+— all unaffected, as expected, since `main.js` still imports neither file.
+
+Dev-pack bundle token `?v=15` → `?v=16` (`dev-menu.js`, `dev-menu.css`,
+`js/fx.js`, `js/audio-fx.js` — one shared number by this bundle's own
+convention). `inspector.js`'s own token `?v=23` → `?v=24`.
+
+main-only: nothing in the shipped game changed, so no gh-pages deploy.
+
+## v15.47 — 2026-08-28 — Phase B audit: every code-buildable item was already done
+
+**No gameplay changed.** After the plank shipped, `PHASING.md`'s Phase B
+checklist was audited against the live tree rather than against memory,
+because the doc itself (dated 2026-08-14/15) predates a lot of what has
+actually shipped since and nothing had gone back to mark it current — the
+same staleness class `DESIGN.md` §7 caught and fixed in itself.
+
+**Finding: every code-buildable Phase B item is already built.**
+`conveyor` (the belt) has both its mechanic (`level.js`/`kid.js`) and a
+real model — steel plate, girder underside, direction-pointing chevrons —
+not a placeholder. `roller_v1` is a real sliced-node enemy (`body`,
+`drum`, `beacon`-style silhouette) in `robots.js`, coded, not a stand-in.
+`hoist` shipped earlier. Levels 4–6 already run the four-beat pattern
+(`WORLD2.md`'s own "one idea per level" table), one gizmo each, and the
+world-2 backdrop set (`pipeworks_*_v3`) is `status: "live"` in the
+manifest. DESIGN §7's world-naming and machine-assignment questions are
+answered in that file's own "answered" table (§4.2, §6.6) — `PHASING.md`
+still listed them as open, written hours before that fix landed.
+
+**Verified, not assumed:** all six gates green (`rooms.mjs` 248, `fx-smoke`
+31, `dev-menu` 36, `smoke.cjs` 432, `playthrough.cjs` 25, `hub-smoke`
+166), plus fresh screenshots of Level 5 (the pipe run), Level 6 (the
+hoist over the pumphouse) and World 4's belt (THE NIGHT SHIFT loading
+dock) — all read as a hand-built Crafted-World toy set, the actual bar
+Gate B sets.
+
+**What is genuinely still open, and it is not code:** the "two more bot
+variants by retexture" line (wrench-bot / cone-bot / lamp-bot) needs real
+Meshy retexture calls against `bolt-bot`. No session working this repo
+has a Meshy credential configured, so this line stays blocked until the
+owner runs that pass, same as `hopper_v1`/hero-rig work was blocked in
+Phase A. Gate B's "does it read as a toy set" check is satisfied by what
+exists; the bot-variety line is extra polish on top of an already-passing
+gate, not a blocker to it.
+
+`PHASING.md` updated in place with this finding under both Phase A and
+Phase B, so the next agent reads current state instead of re-deriving it.
+
 ## v15.46 — 2026-08-28 — the tipping plank: World 2's own gizmo (Phase B)
 
 **A rigid beam over a trench, pivoting at its own centre — no held verb,

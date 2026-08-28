@@ -9,33 +9,33 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=53';
-import { Input } from './input.js?v=53';
-import { Level, ROOMS, LAB } from './level.js?v=53';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=54';
+import { Input } from './input.js?v=54';
+import { Level, ROOMS, LAB } from './level.js?v=54';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
   buildSheetModel, Sheet,
-} from './pieces.js?v=53';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=53';
-import { Camera } from './camera.js?v=53';
-import { buildKidModel, Kid, Player } from './kid.js?v=53';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=53';
-import { buildCraneModel, Crane } from './crane.js?v=53';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=53';
-import { buildFlattenerModel } from './flattener.js?v=53';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=53';
-import { Hoist } from './hoist.js?v=53';
-import { Plank } from './plank.js?v=53';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=53';
-import { WreckingBall } from './hazards.js?v=53';
-import { AudioKit } from './audio.js?v=53';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=53';
-import { craftMat, craftBox } from './craft.js?v=53';
-import { t as tr } from './lang.js?v=53';
-import { showIntro } from './intro.js?v=53';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=53';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=53';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=53';
+} from './pieces.js?v=54';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=54';
+import { Camera } from './camera.js?v=54';
+import { buildKidModel, Kid, Player } from './kid.js?v=54';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=54';
+import { buildCraneModel, Crane } from './crane.js?v=54';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=54';
+import { buildFlattenerModel } from './flattener.js?v=54';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=54';
+import { Hoist } from './hoist.js?v=54';
+import { Plank } from './plank.js?v=54';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=54';
+import { WreckingBall } from './hazards.js?v=54';
+import { AudioKit } from './audio.js?v=54';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=54';
+import { craftMat, craftBox } from './craft.js?v=54';
+import { t as tr } from './lang.js?v=54';
+import { showIntro } from './intro.js?v=54';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=54';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=54';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=54';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -214,6 +214,7 @@ async function boot() {
   let goldenGot = 0;          // this level's golden bolts
   let runBolts = 0, runGolden = 0;   // …and the job, for the last screen
   let blueprints = 0;                // one per world, kept for the whole run
+  let momentSeen = false;            // this room's authored camera moment
   // THE WORLD'S OWN GOLDEN COUNT (DESIGN §4.3). The run total is the whole
   // day; this is the nine that build THIS world's building, so it banks a
   // level's find when the level ends and resets when the world does. Kept
@@ -700,6 +701,7 @@ async function boot() {
     input.take('action'); input.take('jump');
     setSiteName();
     collected = 0; goldenGot = 0;      // the counts belong to the LEVEL
+    momentSeen = false;                // …and so does the world's one camera beat
     setCounts();
 
     // the camera CUTS — a slow pan across a rebuilt world is a lie about geography
@@ -1381,7 +1383,15 @@ async function boot() {
 
     // the background machine is decoration — reduced motion stills it
     if (!REDUCED) bg.auto(dt);
-    diorama.update(dt);          // the crane traverses, the truck crosses
+    diorama.update(dt);          // the crane traverses, the depot's beam sweeps…
+    // …and once per room, the one authored moment behind it gets a small
+    // punch as you walk into its window — never in reduced motion, same
+    // rule as every other camera reaction in this file.
+    if (!momentSeen && !REDUCED && diorama.moment
+      && Math.abs(player.x - diorama.moment.x) <= diorama.moment.radius) {
+      momentSeen = true;
+      cam.punch(0.45);
+    }
     if (mode !== 'riding') audio.idleLoad(0);
     // the hoists run in EVERY mode — a lift that stopped while you were in a
     // cab would be a lift whose cycle you could not read from the cab

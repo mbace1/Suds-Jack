@@ -1,6 +1,6 @@
 {
   "game": "eeri",
-  "version": "15.46",
+  "version": "15.49",
   "generated": "node eeri/tools/spec.mjs",
   "contract": "This file is the DESIGN of Eeri, not its presentation. Every number here is emitted from js/parts.js and js/rooms.js and must not be re-typed downstream. How the game is drawn, framed and controlled is deliberately absent: the JavaScript build tests VERTICAL, the Godot port tests LANDSCAPE.",
   "world": {

@@ -1,20 +1,107 @@
 {
-  "sudsjack": {"v":"5","n":5000,"from":"VERSIONS.md"},
-  "tokodrop": {"v":"221","n":221000,"from":"VERSIONS.md"},
-  "hyperdagger": {"v":"33","n":33000,"from":"VERSIONS.md"},
-  "dropcabal": {"v":"3","n":3000,"from":"VERSIONS.md"},
-  "powder": {"v":"2","n":2000,"from":"cache token"},
-  "paperboy": {"v":"4","n":4000,"from":"cache token"},
-  "skltr": {"v":"12","n":12000,"from":"cache token"},
-  "flashprince": {"v":"3","n":3000,"from":"VERSIONS.md"},
-  "eeri": {"v":"15.28","n":15028,"from":"VERSIONS.md"},
-  "gameoflife": {"v":"40","n":40000,"from":"VERSIONS.md"},
-  "kindling": {"v":"9","n":9000,"from":"canonical Kindling release"},
-  "radiofree": {"v":"37","n":37000,"from":"cache token"},
-  "piritori": {"v":"2","n":2000,"from":"VERSIONS.md"},
-  "tokomove": {"v":"1","n":1000,"from":"VERSIONS.md"},
-  "tinyhawk": {"v":"6","n":6000,"from":"VERSIONS.md"},
-  "tiny2d": {"v":"3","n":3000,"from":"VERSIONS.md"},
-  "brand": {"v":"5","n":5000,"from":"VERSIONS.md"},
-  "toko": {"v":"5","n":5000,"from":"VERSIONS.md"}
+  "sudsjack": {
+    "v": "5",
+    "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "tokodrop": {
+    "v": "231",
+    "n": 231000,
+    "from": "VERSIONS.md"
+  },
+  "flashprince": {
+    "v": "53",
+    "n": 53000,
+    "from": "VERSIONS.md"
+  },
+  "hyperdagger": {
+    "v": "37",
+    "n": 37000,
+    "from": "VERSIONS.md"
+  },
+  "dropcabal": {
+    "v": "2",
+    "n": 2000,
+    "from": "VERSIONS.md"
+  },
+  "powder": {
+    "v": "2",
+    "n": 2000,
+    "from": "cache token"
+  },
+  "paperboy": {
+    "v": "4",
+    "n": 4000,
+    "from": "cache token"
+  },
+  "skltr": {
+    "v": "12",
+    "n": 12000,
+    "from": "cache token"
+  },
+  "neonronin": {
+    "v": "2",
+    "n": 2000,
+    "from": "VERSIONS.md"
+  },
+  "eeri": {
+    "v": "15.49",
+    "n": 15049,
+    "from": "VERSIONS.md"
+  },
+  "eerigodot": {
+    "v": "40",
+    "n": 40000,
+    "from": "cache token"
+  },
+  "gameoflife": {
+    "v": "40",
+    "n": 40000,
+    "from": "VERSIONS.md"
+  },
+  "kindling": {
+    "v": "9",
+    "n": 9000,
+    "from": "VERSIONS.md"
+  },
+  "radiofree": {
+    "v": "43",
+    "n": 43000,
+    "from": "cache token"
+  },
+  "piritori": {
+    "v": "4",
+    "n": 4000,
+    "from": "VERSIONS.md"
+  },
+  "tokomove": {
+    "v": "8",
+    "n": 8000,
+    "from": "VERSIONS.md"
+  },
+  "tinyhawk": {
+    "v": "6",
+    "n": 6000,
+    "from": "VERSIONS.md"
+  },
+  "tiny2d": {
+    "v": "4",
+    "n": 4000,
+    "from": "VERSIONS.md"
+  },
+  "eyetest": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
+  "brand": {
+    "v": "5",
+    "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "toko": {
+    "v": "5",
+    "n": 5000,
+    "from": "VERSIONS.md"
+  }
 }

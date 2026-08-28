@@ -150,6 +150,66 @@ const CSS = `
   background: #0d0a07; border: 1px solid #3a3128; border-radius: 5px; padding: 6px;
   color: #b9d98a; white-space: pre-wrap; word-break: break-all; cursor: text; user-select: text;
 }
+
+/* PANEL COLLAPSE. Owner ask: the editor on a phone in portrait. The
+   ~360px sidebar this whole file's header comment calls an accepted trade
+   is not a trade on a 390px screen — it IS the screen, the same overlay
+   bug the header describes v1 having, just reached from a narrower device
+   instead of a bigger panel. A collapse toggle is the general fix: it
+   works on any width, and it is what lets someone confirm a placement by
+   looking at the game with the panel out of the way, on ANY device. */
+.ed.collapsed .body { display: none; }
+
+/* PORTRAIT / NARROW-WIDTH. Below this width the body cannot live at the
+   LEFT at any size worth having — a sidebar narrow enough to leave the
+   game clickable is too narrow to hold a palette row. So it moves to the
+   BOTTOM instead: full width, a fixed height that leaves the top of the
+   screen (where a level's floor usually sits) clickable, and the rail
+   turns from a left column into a horizontal strip along its top edge,
+   because there is no longer a spare column to put it in.
+   the "orientation: portrait" condition matters, not just decoration: a phone
+   turned SIDEWAYS can easily be narrower than 760px too (667px is a real
+   device width), and without this it would get the bottom-sheet treatment
+   built for the tall axis while its actual short axis is height — this
+   query and the landscape one below fought over exactly that width once,
+   silently, because this one had no orientation condition at all. */
+@media (max-width: 760px) and (orientation: portrait) {
+  .ed .topbar {
+    max-width: calc(100vw - 24px);
+    flex-wrap: wrap;
+  }
+  .ed .body {
+    top: auto; left: 8px; right: 8px; bottom: 8px; width: auto;
+    height: 44vh; max-height: 320px;
+    flex-direction: column;
+  }
+  .ed .rail {
+    flex: 0 0 auto; width: 100%; max-height: 40px;
+    flex-direction: row; overflow-x: auto; overflow-y: hidden;
+    border-right: none; border-bottom: 1px solid #3a3128;
+  }
+  .ed .rail .r {
+    flex: 0 0 auto; border-bottom: none; border-right: 1px solid #241d16;
+  }
+  .ed .rail .r.gameplay { border-bottom: none; border-right: 2px solid #4a3f33; }
+  .ed .panel { padding: 6px 8px; gap: 6px; }
+}
+
+/* LANDSCAPE / SHORT-HEIGHT. A phone on its side keeps width (the sidebar
+   shape still works) but loses height — dev-menu.js's own panel is
+   full-height on the right (its comment says so: "must never cover the
+   part of the picture you are judging"), so the sidebar has to be
+   NARROWER here than on desktop, and the top bar has to stay out of that
+   panel's corner with a gap sized to ITS narrow-mode width (see
+   dev-menu.css's matching landscape block) rather than desktop's 300px. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .ed .topbar { max-width: calc(100vw - 210px); flex-wrap: wrap; }
+  /* 76px clears a topbar wrapped to two rows (measured ~66px at 667px
+     wide) with a margin — a value tied to how many buttons happen to fit
+     per row is too fragile to trust exactly, so this leans generous. */
+  .ed .body { width: 260px; top: 76px; }
+  .ed .rail { flex: 0 0 100px; }
+}
 `;
 
 // Anything the editor itself put in the scene must never be pickable, or
@@ -270,6 +330,7 @@ export class Inspector {
           <button type="button" data-a="walk" aria-pressed="false">WALK</button>
           <button type="button" data-a="undo" disabled>UNDO</button>
           <button type="button" data-a="copy">COPY</button>
+          <button type="button" data-a="collapse" aria-pressed="false" title="hide the panel, keep the mode">▾</button>
           <button type="button" data-a="close">×</button>
         </div>
       </div>
@@ -312,6 +373,7 @@ export class Inspector {
       if (a === 'place') this.setMode('place');
       if (a === 'undo') this.undo();
       if (a === 'copy') this.copy();
+      if (a === 'collapse') this.toggleCollapse();
       if (a === 'copyRow') this.copy();
       if (a === 'hide') this.hidePicked();
       if (a === 'reset') this.revert();
@@ -361,8 +423,8 @@ export class Inspector {
       // both — as this file's first cut did, copying the shape of an
       // older draft of `rooms.mjs` — double-counted worlds 3-4 into an
       // 18-level list and broke every level-index lookup after level 6.
-      const { labelOf } = await import('../js/levelid.js?v=53');
-      const { ROOMS } = await import('../js/rooms.js?v=53');
+      const { labelOf } = await import('../js/levelid.js?v=54');
+      const { ROOMS } = await import('../js/rooms.js?v=54');
       this.levels = ROOMS.map((r, i) => ({ i, label: labelOf(i, ROOMS.length), name: r.name }));
     } catch { this.levels = []; }
     if (!this.el.hidden) this.syncLevel();
@@ -445,6 +507,17 @@ export class Inspector {
   }
   hide() { this.setMode(null); this.el.hidden = true; }
   toggle() { this.el.hidden ? this.show() : this.hide(); }
+
+  // Hides the BODY only — level, mode and pick stay live, so collapsing
+  // to look at a placement does not also drop what you were doing. This
+  // is the escape hatch a narrow/portrait screen needs (see the CSS): the
+  // body can eat the whole width there, and there is no width small
+  // enough to shrink a palette row into that still leaves it usable.
+  toggleCollapse() {
+    const on = this.el.classList.toggle('collapsed');
+    const btn = this.el.querySelector('[data-a="collapse"]');
+    if (btn) { btn.setAttribute('aria-pressed', String(on)); btn.textContent = on ? '▴' : '▾'; }
+  }
 
   // ---- level picker ---------------------------------------------------
   syncLevel() {
@@ -691,7 +764,7 @@ export class Inspector {
     if (this.pendingProp === 'lamp') row.z = z;
     let made = null;
     if (this.pendingProp === 'lamp') {
-      import('../js/light.js?v=53').then(({ buildLamp }) => {
+      import('../js/light.js?v=54').then(({ buildLamp }) => {
         made = buildLamp(A.THREE, row);
         made.userData.sceneryRow = { world: A.debug.world(), index: -1, ...row };
         A.scene.add(made);
