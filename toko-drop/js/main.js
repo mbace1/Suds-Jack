@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=180';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=180';
-import { Player, PLAYER_RADIUS } from './player.js?v=180';
+import { InputManager } from './input.js?v=181';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=181';
+import { Player, PLAYER_RADIUS } from './player.js?v=181';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=180';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=180';
-import { audio } from './audio.js?v=180';
-import { initDesigner } from './designer.js?v=180';
-import { createSpecimen } from './specimen.js?v=180';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=180';
-import { TUNING } from './tuning.js?v=180';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=181';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=181';
+import { audio } from './audio.js?v=181';
+import { initDesigner } from './designer.js?v=181';
+import { createSpecimen } from './specimen.js?v=181';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=181';
+import { TUNING } from './tuning.js?v=181';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -3201,6 +3201,7 @@ function revengeColor(type) {
 const TYPE_KEY = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v, k]));
 
 function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are marked
+  rush.kill();   // v227: every Rush kill counts toward the level's PAR (no-op outside Rush)
   // VOLATILE affix (v145): the fuse pays off — a slow 8-bullet ring from the
   // corpse. The orange strobe telegraphed it the whole time. v220: the ring
   // wears the revenge palette, not a flat orange.
@@ -3414,19 +3415,49 @@ const rush = {
   nextLife: 0,
   level: 1, levelT: 0,
   flashT: 0,          // level up/down banner
+  // v227 TIERS (RUSH_DESIGN.md §3, Q-027): kills THIS level attempt, and the
+  // two goals a level can keep clean. A level's timer only ever reaches
+  // levelDuration() on an attempt with zero hits — levelDown() restarts the
+  // clock at 0 on every hit — so "never got hit" is already guaranteed by
+  // reaching a stamp at all and isn't tracked as a separate goal (an earlier
+  // draft of the design did, and it was always-true by construction; see
+  // RUSH_DESIGN.md §3.4's correction). UNBROKEN and NEVER LOCKED are the two
+  // genuinely independent axes: a hit-free level can still let the chain
+  // time out, or still panic into an overheat lockout.
+  levelKills: 0, chainUnbroken: true, neverLocked: true,
+  ladder: [],         // [{level, tier, kills, star}] — one stamp per level-up
+  stars: 0,
   reset() {
     const R = TUNING.rush;
     this.on = true; this.heat = 0; this.overheated = false;
     this.chain = 0; this.chainT = 0;
     this.nextLife = R.lives.extraEvery;
     this.level = 1; this.levelT = 0; this.flashT = 0;
+    this.ladder = []; this.stars = 0;
+    this._freshAttempt();
   },
+  // What every fresh crack at a level starts from — first entry into Rush,
+  // and every level-up/level-down after it.
+  _freshAttempt() { this.levelKills = 0; this.chainUnbroken = true; this.neverLocked = true; },
   levelDuration() {
     const L = TUNING.rush.levels;
     return this.level === 1 ? L.first
          : this.level === 2 ? L.second
          : L.second + (this.level - 2) * L.step;
   },
+  // Highest tier letter whose PAR (rate × seconds) the kill count meets, or
+  // null below C. Shared by the live HUD readout (seconds = elapsed) and the
+  // level-up stamp (seconds = the full duration just survived).
+  tierFor(kills, seconds) {
+    const T = TUNING.rush.tiers;
+    if (kills >= T.S * seconds) return 'S';
+    if (kills >= T.A * seconds) return 'A';
+    if (kills >= T.B * seconds) return 'B';
+    if (kills >= T.C * seconds) return 'C';
+    return null;
+  },
+  // The live HUD readout: how this attempt is pacing right now.
+  liveTier() { return this.tierFor(this.levelKills, Math.max(1, this.levelT)); },
   // Boost is available unless the meter locked you out.
   canBoost() { return !this.overheated; },
   update(dt) {
@@ -3440,6 +3471,7 @@ const rush = {
     this.heat = Math.max(0, Math.min(1, this.heat));
     if (!this.overheated && this.heat >= 1) {
       this.overheated = true;
+      this.neverLocked = false;   // v227: this attempt can't earn NEVER LOCKED
       player.setBoost(false);
       audio.playerHit?.();
     } else if (this.overheated && this.heat <= R.heat.clearAt) {
@@ -3448,7 +3480,7 @@ const rush = {
     // the chain is a boost-kill chain, on a window that a hit also breaks
     if (this.chainT > 0) {
       this.chainT -= dt;
-      if (this.chainT <= 0) this.chain = 0;
+      if (this.chainT <= 0) { this.chain = 0; this.chainUnbroken = false; }   // v227
     }
     if (this.flashT > 0) this.flashT -= dt;
     player._rushHot = this.heat > 0.7;   // the body runs orange before it locks
@@ -3469,8 +3501,25 @@ const rush = {
     this.chain = Math.min(C.cap, this.chain + C.perKill);
     this.chainT = C.window;
   },
-  levelUp()   { this.level++; this.flashT = 1.2; audio.announce?.('wave'); },
-  levelDown() { if (this.level > 1) { this.level--; this.flashT = 1.2; } this.levelT = 0; },
+  // v227: every Rush kill (boost or gun) counts toward the level's PAR.
+  kill() { if (this.on) this.levelKills++; },
+  levelUp() {
+    // Stamp the attempt just finished — reaching here means the whole
+    // duration ran hit-free (see the note on _freshAttempt above).
+    const tier = this.tierFor(this.levelKills, this.levelDuration());
+    if (tier) {
+      const star = this.chainUnbroken && this.neverLocked;
+      this.ladder.push({ level: this.level, tier, kills: this.levelKills, star });
+      if (star) this.stars++;
+    }
+    this._freshAttempt();
+    this.level++; this.flashT = 1.2; audio.announce?.('wave');
+  },
+  levelDown() {
+    if (this.level > 1) { this.level--; this.flashT = 1.2; }
+    this.levelT = 0;
+    this._freshAttempt();   // no stamp — a hit means this attempt never finished
+  },
   checkExtraLife() {
     if (!this.on) return false;
     if (score < this.nextLife) return false;
@@ -4346,6 +4395,18 @@ function drawHUD() {
 
   ctx.textAlign = 'right';
   ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
+  // v227 RUSH: the live tier — this attempt's pace against the PAR table,
+  // so a run has feedback before the level-up stamp lands (RUSH_DESIGN.md §3.3).
+  if (rush.on) {
+    const live = rush.liveTier();
+    if (live) {
+      ctx.font = '13px monospace';
+      ctx.fillStyle = live === 'S' ? '#ffdd44' : live === 'A' ? '#66ffcc'
+                     : live === 'B' ? '#88ccff' : 'rgba(255,255,255,0.6)';
+      ctx.fillText(live, uiCanvas.width - 16, 40);
+      ctx.font = HUD_FONT;
+    }
+  }
   if (streak > 1) {
     // Streak heat tiers (v124): the meter visibly escalates — gold → orange
     // (10+) → red-hot with glow (20+) — so the scoring depth reads at a glance.
@@ -4636,7 +4697,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v226' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v227' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4988,6 +5049,23 @@ function showRunHistory() {
   document.body.appendChild(panel);
 }
 
+// v227 RUSH: the stamped ladder, shown on the death screen (RUSH_DESIGN.md
+// §3.3). One entry per level cleared this run; a starred level kept both
+// goals (UNBROKEN + NEVER LOCKED) clean the whole way through. Godot's
+// design graded a whole fixed-length run with one final letter — this
+// ladder is the JS-specific adaptation for an endless, level-by-level climb.
+function rushLadderHTML() {
+  if (!rush.on || !rush.ladder.length) return ``;
+  const TIER_COLOR = { S: '#ffdd44', A: '#66ffcc', B: '#88ccff', C: 'rgba(255,255,255,0.6)' };
+  const rungs = rush.ladder.map(r =>
+    `<span style="color:${TIER_COLOR[r.tier]}">${r.level}:${r.tier}${r.star ? '★' : ''}</span>`
+  ).join(' &nbsp;');
+  return `<div class="d-sub" style="font-size:12px;opacity:0.75;margin-top:10px;letter-spacing:1px">` +
+    `${t('rushLadder')} &nbsp; ${rungs}` +
+    (rush.stars > 0 ? ` &nbsp;·&nbsp; ★${rush.stars} ${t('rushStars')}` : ``) +
+    `</div>`;
+}
+
 function showGameOver() {
   overlay.style.display = 'block';
   overlay.style.pointerEvents = 'auto';
@@ -5014,6 +5092,7 @@ function showGameOver() {
     (badges.length
       ? `<div class="d-sub" style="font-size:16px;color:#ffdd44;margin-top:8px;letter-spacing:1px">${badges.join('&nbsp;&nbsp;')}</div>`
       : ``) +
+    rushLadderHTML() +
     `<div class="d-sub" style="font-size:12px;opacity:0.3;margin-top:10px">${t('seed')} ${seedHex}` +
       (_dailyRun ? ` &nbsp;·&nbsp; <span style="color:#ffdd66">DAILY ${_dailyRun}</span>` : ``) +
     `</div>` +
@@ -9430,6 +9509,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=180').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=181').catch(() => {});
   });
 }

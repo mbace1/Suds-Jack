@@ -7,6 +7,45 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v227 — 2026-08-28
+**RUSH gets S/A/B/C tiers, a stamped ladder, and per-level goals** *(`Q-027`, `toko-drop/RUSH_DESIGN.md` §3)*
+- **PAR table** (`TUNING.rush.tiers`, ported from the Godot repo's unshipped
+  tier research and flagged unvalidated): a level's PAR kill count is a
+  reference kills/s rate × that level's own duration. `rush.tierFor(kills,
+  seconds)` returns the highest letter met, or `null` below C.
+- **Live tier**: the HUD now shows this attempt's pacing (top-right, under
+  the score) via `rush.liveTier()` — kills so far against PAR interpolated by
+  elapsed time. Mid-run feedback the mode didn't have before.
+- **Stamped ladder**: `rush.levelUp()` stamps the level just cleared into
+  `rush.ladder` (tier + kill count) before advancing. `rush.levelDown()`
+  stamps nothing — a hit means that attempt never finished, same logic as
+  "no grade without finishing the clock."
+- **Design correction found while implementing** (`RUSH_DESIGN.md` §3.4 had
+  proposed three goal slots cycling UNTOUCHED/UNBROKEN/NEVER LOCKED, mirroring
+  Godot's three-leg design): `levelDown()` already resets that level's timer
+  to 0 on every hit, which means reaching *any* level-up stamp already
+  requires a completely hit-free attempt — UNTOUCHED was always true by
+  construction, not a real goal. Cut before it shipped. **Two real, orthogonal
+  goals remain**: `chainUnbroken` (the boost-chain's 2.5s window never times
+  out) and `neverLocked` (the heat meter never trips the overheat lockout). A
+  level stamped with both still clean earns a **★** — per level, not per
+  3-level cycle (the cycle framing depended on the three-slot system this
+  correction removed, and doesn't fit an open-ended ladder as naturally as a
+  fixed 3-leg run anyway).
+- Death screen shows the ladder (`1:B 2:S★ …`) and total stars when the run
+  was Rush.
+- Verified with a throwaway Playwright probe (same pattern as
+  `scripts/cabinets.sh`'s `window._C`, never committed): reset() state, a
+  clean B-tier+star stamp, a tripped-goal stamp correctly denied its star,
+  levelDown() stamping nothing and resetting the attempt, liveTier()'s
+  interpolation at an exact PAR boundary, and the death-screen HTML. 6/6.
+- `smoke.sh` + `cabinets.sh` green.
+- `RUSH_DESIGN.md` and `QUEUE.md`'s `Q-027` updated to match what actually
+  shipped (the two-goal, per-level-star design) in the same PR.
+- Cache-bust `?v=180` → `?v=181`; HUD label → v227
+
+---
+
 ## v226 — 2026-08-28
 **RUSH's dead life-counter is gone** *(`Q-025`, `toko-drop/RUSH_DESIGN.md` §1.4)*
 - `RUSH_DESIGN.md` §1.4 (and `Q-025`) claimed `rush.lives` was "fully wired
