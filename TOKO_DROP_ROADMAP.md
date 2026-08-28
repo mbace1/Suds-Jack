@@ -101,7 +101,10 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 - [x] **Arena & environment pass**: floor/space treatment that makes swarm flow
       readable — *v223: rim vignette, grid distance falloff, and a lit pool that
       follows the player; both renderers in parity, constants in `TUNING.arena`*
-- [ ] Arena pass 2: reactive surface response to mass, prizes, pops
+- [x] Arena pass 2: reactive surface response to mass, prizes, pops — *v228:
+      up to 10 live enemies darken the ground under them, every kill rings
+      the floor out and fades, up to 5 live pickups mark their own ground;
+      same "cheap fragment terms" discipline as v223, both renderers in parity*
 - [ ] Performance budget checkpoint on a mid-range phone, measured after each pass
 
 ## Phase 4 — Full Meta *(Early Access gate)*
