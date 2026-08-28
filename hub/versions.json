@@ -39,11 +39,6 @@
     "n": 3000,
     "from": "VERSIONS.md"
   },
-  "eeri": {
-    "v": "15.49",
-    "n": 15049,
-    "from": "VERSIONS.md"
-  },
   "gameoflife": {
     "v": "40",
     "n": 40000,
@@ -58,11 +53,6 @@
     "v": "37",
     "n": 37000,
     "from": "cache token"
-  },
-  "piritori": {
-    "v": "2",
-    "n": 2000,
-    "from": "VERSIONS.md"
   },
   "tokomove": {
     "v": "1",
