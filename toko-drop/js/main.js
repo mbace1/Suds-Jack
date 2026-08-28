@@ -3411,14 +3411,14 @@ const bareArena = () => inCabinet() || rush.on;
 const rush = {
   on: false, heat: 0, overheated: false,
   chain: 0, chainT: 0,
-  lives: 0, nextLife: 0,
+  nextLife: 0,
   level: 1, levelT: 0,
   flashT: 0,          // level up/down banner
   reset() {
     const R = TUNING.rush;
     this.on = true; this.heat = 0; this.overheated = false;
     this.chain = 0; this.chainT = 0;
-    this.lives = R.lives.start; this.nextLife = R.lives.extraEvery;
+    this.nextLife = R.lives.extraEvery;
     this.level = 1; this.levelT = 0; this.flashT = 0;
   },
   levelDuration() {
@@ -3471,17 +3471,9 @@ const rush = {
   },
   levelUp()   { this.level++; this.flashT = 1.2; audio.announce?.('wave'); },
   levelDown() { if (this.level > 1) { this.level--; this.flashT = 1.2; } this.levelT = 0; },
-  // A hit costs a life, breaks the chain and levels you down.
-  loseLife() {
-    this.chain = 0; this.chainT = 0;
-    this.lives--;
-    this.levelDown();
-    return this.lives <= 0;
-  },
   checkExtraLife() {
     if (!this.on) return false;
     if (score < this.nextLife) return false;
-    this.lives++;
     this.nextLife += TUNING.rush.lives.extraEvery;
     return true;
   },
@@ -3497,23 +3489,16 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   const hpBefore = player.hp;
   _hitFlashT = 0.32;
   player.hit();
-  // v224 RUSH: a hit costs a life, breaks the chain, and levels you DOWN —
-  // which really does make the next wave easier, since the level is the
-  // number the wave director reads. v226: a hit that would otherwise end the
-  // run instead spends a banked rush.life (if one exists) — loseLife() does
-  // the same chain-break/level-down a survived hit gets, plus decrementing
-  // the life; the player revives at full HP with a mercy window rather than
-  // the run just continuing as if nothing happened.
-  if (rush.on) {
-    if (player.alive) { rush.chain = 0; rush.chainT = 0; rush.levelDown(); }
-    else if (rush.lives > 0) { rush.loseLife(); player.revive(); }
-  }
   if (player.alive) audio.announce('ouch');  // death gets the gameover line instead
   onPlayerHit();
   recordHitEvent(source, hpBefore, attackerType);
   // v212: remember what landed the fatal blow — the death screen shows it and
   // asks about it, so the question is about something you just lived through.
   if (!player.alive) _killedBy = { source, type: attackerType };
+  // v224 RUSH: a hit costs a life, breaks the chain, and levels you DOWN —
+  // which really does make the next wave easier, since the level is the
+  // number the wave director reads.
+  if (rush.on && player.alive) { rush.chain = 0; rush.chainT = 0; rush.levelDown(); }
   return !player.alive;
 }
 
