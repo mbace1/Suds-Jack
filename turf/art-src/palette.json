@@ -1,5 +1,5 @@
 {
-  "_comment": "The ART palette — what kindling/tools/cut.mjs's `fit --palette` snaps a generated sprite to. Deliberately NOT turf/js/palette.js: that PAL object is the whole UI+terrain+HUD palette (30+ colours, most of them floor tiles and HP-bar greys that a character sprite has no business touching). This is just the sixteen a Metal-Slug-Tactics-register sprite actually draws with — ink, two skin tones, three neutral-streetwear tones shared by both factions, the cold operator ramp, the warm enemy ramp, and two metal tones for a blade/barrel. Magenta is never listed here: by the time `fit` runs, `key` has already turned it into alpha, so it is not a colour the sprite's opaque pixels should ever land on.",
+  "_comment": "The ART palette — what kindling/tools/cut.mjs's `fit --palette` snaps a generated sprite to. Deliberately NOT turf/js/palette.js: that PAL object is the whole UI+terrain+HUD palette (30+ colours, most of them floor tiles and HP-bar greys that a character sprite has no business touching). Thirty-two colours a Metal-Slug-Tactics-register sprite draws with. Doubled from the original sixteen (2026-08-28) after the first-draft casting sheet: a believable street cast needs hair colour, a second skin ramp, and denim/sneaker/jewelry accents that aren't part of either faction's colour-block — a flat streetwear+faction-trim palette alone couldn't cover what actually showed up. Magenta is never listed here: by the time `fit` runs, `key` has already turned it into alpha, so it is not a colour the sprite's opaque pixels should ever land on. Existing keys from the sixteen-colour version keep their old values unchanged; everything below the halfway mark is new.",
   "ink": "#12141a",
   "skin_base": "#c9a882",
   "skin_shade": "#9c7d5e",
@@ -13,5 +13,24 @@
   "enemy_base": "#c9663f",
   "enemy_bright": "#e8a374",
   "metal_dark": "#3a3f47",
-  "metal_bright": "#8a909a"
+  "metal_bright": "#8a909a",
+
+  "skin_deep_base": "#8a6248",
+  "skin_deep_shade": "#634530",
+  "hair_dark": "#241b16",
+  "hair_warm": "#6b4226",
+  "hair_light": "#c9b078",
+  "hair_accent": "#7a5a91",
+  "cloth_olive_base": "#565a3f",
+  "cloth_olive_shade": "#3a3d2a",
+  "cloth_tan_base": "#a99878",
+  "cloth_tan_shade": "#7d6f57",
+  "denim_base": "#3c4a5e",
+  "denim_shade": "#293341",
+  "metal_base": "#5c626c",
+  "operator_pale": "#d4f0f7",
+  "enemy_pale": "#f5d9b8",
+  "accent_white": "#e8e4da",
+  "accent_red": "#8a3a3a",
+  "accent_gold": "#a68a4a"
 }
