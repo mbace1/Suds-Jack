@@ -7,6 +7,32 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v226 — 2026-08-28
+**RUSH's dead life-counter is gone** *(`Q-025`, `toko-drop/RUSH_DESIGN.md` §1.4)*
+- `RUSH_DESIGN.md` §1.4 (and `Q-025`) claimed `rush.lives` was "fully wired
+  for display but never spent" and framed this as a revive-pool bug. That was
+  wrong on inspection: `rush.checkExtraLife()`'s caller already does
+  `player.maxHp++; player.hp++` on every threshold — the extra-life mechanic
+  **already works**, by growing the HP pool directly (the HUD's hit-point
+  dots read `player.hp`/`maxHp`, exactly as the existing code comment says:
+  "the hp dots are the lives"). `rush.lives` was a *separate*, purely
+  internal counter incremented alongside that grant and decremented by
+  `loseLife()` — which was never called — and read by **nothing**: not the
+  HUD, not `designer.js`, not `lang.js`, nowhere. It had zero observable
+  effect either way.
+- So this isn't the revive-on-death mechanic an earlier draft of this entry
+  described (reverted before merge — that would have been a real balance
+  change dressed as a bug fix, not what shipped). It's smaller: **`rush.lives`
+  and the dead `loseLife()` method are removed.** `nextLife` — the actual
+  threshold gate `checkExtraLife()` needs — stays. No observable behavior
+  changes; the HP-growth mechanic was already correct.
+- `RUSH_DESIGN.md` §1.4 and `QUEUE.md`'s `Q-025` are corrected in the same
+  pass — both had the "HUD life counter" and quoted milestone text wrong.
+- `smoke.sh` + `cabinets.sh` green.
+- Cache-bust `?v=179` → `?v=180`; HUD label → v226
+
+---
+
 ## v225 — 2026-08-27
 **RUSH gets its own arena and its own roster** *(owner direction)*
 - v224 gave Rush its rules but left it running on the main game's furniture and

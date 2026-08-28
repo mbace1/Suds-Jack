@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=179';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=179';
-import { Player, PLAYER_RADIUS } from './player.js?v=179';
+import { InputManager } from './input.js?v=180';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=180';
+import { Player, PLAYER_RADIUS } from './player.js?v=180';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=179';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=179';
-import { audio } from './audio.js?v=179';
-import { initDesigner } from './designer.js?v=179';
-import { createSpecimen } from './specimen.js?v=179';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=179';
-import { TUNING } from './tuning.js?v=179';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=180';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=180';
+import { audio } from './audio.js?v=180';
+import { initDesigner } from './designer.js?v=180';
+import { createSpecimen } from './specimen.js?v=180';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=180';
+import { TUNING } from './tuning.js?v=180';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -3411,14 +3411,14 @@ const bareArena = () => inCabinet() || rush.on;
 const rush = {
   on: false, heat: 0, overheated: false,
   chain: 0, chainT: 0,
-  lives: 0, nextLife: 0,
+  nextLife: 0,
   level: 1, levelT: 0,
   flashT: 0,          // level up/down banner
   reset() {
     const R = TUNING.rush;
     this.on = true; this.heat = 0; this.overheated = false;
     this.chain = 0; this.chainT = 0;
-    this.lives = R.lives.start; this.nextLife = R.lives.extraEvery;
+    this.nextLife = R.lives.extraEvery;
     this.level = 1; this.levelT = 0; this.flashT = 0;
   },
   levelDuration() {
@@ -3471,17 +3471,9 @@ const rush = {
   },
   levelUp()   { this.level++; this.flashT = 1.2; audio.announce?.('wave'); },
   levelDown() { if (this.level > 1) { this.level--; this.flashT = 1.2; } this.levelT = 0; },
-  // A hit costs a life, breaks the chain and levels you down.
-  loseLife() {
-    this.chain = 0; this.chainT = 0;
-    this.lives--;
-    this.levelDown();
-    return this.lives <= 0;
-  },
   checkExtraLife() {
     if (!this.on) return false;
     if (score < this.nextLife) return false;
-    this.lives++;
     this.nextLife += TUNING.rush.lives.extraEvery;
     return true;
   },
@@ -4644,7 +4636,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v225' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v226' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9438,6 +9430,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=179').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=180').catch(() => {});
   });
 }
