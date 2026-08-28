@@ -23,7 +23,7 @@ jobs:
           rm -rf .kindling-source
           git clone --depth 1 https://github.com/mbace1/Kindling.git .kindling-source
           cd .kindling-source
-          test "$(git rev-parse HEAD)" = "efb2a8a03661846405f1e1dc7611b3a6982f8fd2"
+          test "$(git rev-parse HEAD)" = "1ff88c1a5c0321aa0f13d2b47b413a4938c57852"
 
       - uses: actions/setup-node@v4
         with:
@@ -78,5 +78,5 @@ jobs:
             echo "No deployment changes"
             exit 0
           fi
-          git commit -m "Kindling hub — canonical static build efb2a8a"
+          git commit -m "Kindling hub — canonical static build 1ff88c1"
           git push origin HEAD:agent/kindling-hub-live
