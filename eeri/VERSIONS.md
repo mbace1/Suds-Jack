@@ -1,5 +1,34 @@
 # EERI — versions
 
+## v15.44 — 2026-08-27 — World 1 gets its own dressing, off its own catalog
+
+The next art lane worlds were "worlds 1, 3, 4 offer lamps only" — no
+dressing module, so the editor's art layers had nothing to place beyond a
+lamp. World 1 (GROUNDWORKS) is the first to get one, and it did not need
+inventing from scratch: `art-src/world-1-library/CATALOG.md` already names
+the vocabulary — a hazard barrier, a material yard, a scaffold bay, a
+gabled half-built frame, a taped billboard, a crate cluster — the same
+prose reference `world2-dressing.js` was built from for pipeworks.
+`js/world1-dressing.js` builds all six in code (`craftBox`/`craftMat`,
+no promoted art needed — none of world-1-library is production yet), and
+they place live from the editor exactly like world 2's, through
+`A.debug.dressingBuilders()`.
+
+**A first placement pass put the two biggest pieces (a gable frame,
+billboard/crates) inside the busiest 20 tiles in the game** — every one
+of the three levels' checkpoint, girder-or-wall, machine and final
+obstacle crowd into x 46–90, and a screenshot at those exact x values
+showed a landmark fighting a checkpoint marker for the same few pixels
+rather than reading as a landmark. Caught by looking, not by a gate — the
+same lesson this project has written down before about art changes.
+Repositioned: the landmark gable frame moves to x=20, near the front where
+nothing else is competing for attention; the back half keeps one crate
+cluster past the climax and stays otherwise quiet, because the levels
+already fill it without help.
+
+Gates: rooms 248 (33 scenery rows now), fx 31, dev-menu 36, smoke 433,
+playthrough 25/25.
+
 ## v15.43 — 2026-08-27 — GAMEPLAY places live, and PICK was never really reaching it
 
 The editor's GAMEPLAY layer moves from reference to real: a skitter,

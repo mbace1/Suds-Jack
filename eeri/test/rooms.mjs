@@ -28,15 +28,15 @@
 // One token, and `levelid.js` imported before `ROOMS` is read — the
 // registration is a side effect of the import itself, so nothing here
 // spreads WORLD34_ROOMS in a second time; `ROOMS` already holds all twelve.
-import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=50';
-import { ROOMS, LAB } from '../js/rooms.js?v=50';
+import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=51';
+import { ROOMS, LAB } from '../js/rooms.js?v=51';
 import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
   ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
   swingBall, hazard, shallow, deep, pipe, flooded, machine as mach, hoist,
   deadAir, DEAD_AIR, compile,
-} from '../js/parts.js?v=50';
+} from '../js/parts.js?v=51';
 import { readFileSync } from 'node:fs';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
@@ -63,7 +63,7 @@ console.log(`the kid's budget: step ${REACH.step} tiles (jump reaches ${REACH.ju
 // room, and every number inside the range the type declares. Nothing else
 // in this file could have caught a prop parked at x=140.
 {
-  const { PROPS, SCENERY, withDefaults } = await import('../js/scenery.js?v=50');
+  const { PROPS, SCENERY, withDefaults } = await import('../js/scenery.js?v=51');
   const bad = [];
   for (const [world, rows] of Object.entries(SCENERY)) {
     rows.forEach((row, i) => {
