@@ -15,8 +15,8 @@
 //   columns are already standing in the last jungle. You cross over somewhere
 //   in the middle without ever being shown a door.
 
-import { C } from './palette.js';
-import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js';
+import { C } from './palette.js?v=52';
+import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=52';
 
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 const clamp = v => Math.max(0, Math.min(1, v));
@@ -37,6 +37,7 @@ export function weights(t) {
 
 // ── the static backdrop, painted once a room ───────────────────────
 export function paintBack(scr, room, index) {
+  if (room.scene === 'floodedHub') { paintFloodedHub(scr); return; }
   const t = room.t, w = weights(t), r = rand(index * 2654435 + 17);
 
   // Sky as flat bands with hard seams. A 2600 changed colour once a scanline
@@ -318,6 +319,62 @@ export function paintBack(scr, room, index) {
   }
 }
 
+// The flooded-city showcase is deliberately its own composition rather than
+// another stop on the old jungle-to-palace blend. It still obeys the same
+// three-depth, sixteen-colour grammar: drowned city silhouette, transport-hub
+// structure, then the pale bio-machine that has grown through it.
+function paintFloodedHub(scr) {
+  scr.rect(0, 0, W, 44, C.SKY_HI);
+  scr.rect(0, 44, W, 42, C.SKY_LO);
+  scr.rect(0, 86, W, H - 86, C.FAR);
+
+  // Distant drowned towers: broken roofs and just a few lit windows.
+  const towers = [[-8, 56, 42], [30, 70, 30], [63, 48, 52], [236, 62, 38], [270, 42, 58], [304, 76, 24]];
+  for (let i = 0; i < towers.length; i++) {
+    const [x, y, h] = towers[i];
+    scr.poly([x, y + h, x, y + 8, x + 7, y + 3, x + 15, y + 7, x + 24, y, x + 31, y + 5, x + 31, y + h], C.MID);
+    if (i % 2 === 0) scr.rect(x + 8, y + 15, 5, 2, C.LUX);
+  }
+
+  // The old transport hub: canopy, signal gantry, dead timetable and rails.
+  scr.poly([0, 104, 79, 92, 126, 99, 204, 90, W, 104, W, 119, 0, 119], C.NEAR);
+  scr.rect(0, 103, W, 3, C.SOLID);
+  for (const x of [18, 66, 252, 300]) {
+    scr.rect(x, 104, 5, 66, C.DARK);
+    scr.rect(x + 1, 105, 2, 64, C.SOLID);
+  }
+  scr.rect(32, 114, 58, 24, C.DARK);
+  scr.rect(36, 118, 50, 15, C.VOID);
+  for (let i = 0; i < 4; i++) scr.rect(40 + i * 11, 122 + (i % 2) * 4, 7, 2, i === 2 ? C.LUX2 : C.LUX);
+  scr.rect(226, 113, 42, 4, C.DARK);
+  for (let x = 228; x < 268; x += 8) scr.rect(x, 117, 2, 24, C.SOLID);
+
+  // The grand facility: grown lobes around an old circular machine, beautiful
+  // rather than horrific. Fine luminous seams make it read as alive.
+  const cx = 166, cy = 69;
+  scr.disc(cx, cy, 45, C.NEAR);
+  scr.disc(cx, cy, 34, C.SOLID);
+  scr.disc(cx, cy, 22, C.DARK);
+  scr.disc(cx, cy, 14, C.FAR);
+  for (let i = 0; i < 7; i++) {
+    const a = i / 7 * Math.PI * 2 - 0.8;
+    const x1 = cx + Math.cos(a) * 30, y1 = cy + Math.sin(a) * 30;
+    const x2 = cx + Math.cos(a) * 62, y2 = cy + Math.sin(a) * 48;
+    scr.limb(x1, y1, x2, y2, 7, 2, C.SOLID);
+    scr.limb(x1, y1, x2, y2, 1, 1, i % 2 ? C.LUX : C.EDGE);
+    scr.disc(x2, y2, 5, C.NEAR);
+  }
+  scr.disc(cx, cy, 5, C.LUX2);
+  scr.rect(cx - 1, cy - 16, 2, 32, C.LUX);
+
+  // Water behind the playable masses.
+  scr.rect(0, 148, W, H - 148, C.NEAR);
+  for (let y = 151; y < H; y += 7) {
+    const off = ((y / 7) | 0) % 2 ? 12 : 0;
+    for (let x = -off; x < W; x += 34) scr.rect(x, y, 18, 1, y % 3 ? C.MID : C.LUX);
+  }
+}
+
 // Marks cut into the wall. Called by the tile painter rather than the backdrop
 // one, because the wall is painted after the backdrop and would bury them.
 //
@@ -449,6 +506,28 @@ function arch(scr, x, y, w, h, ci) {
 
 // ── what moves, and what is in front of him ────────────────────────
 export function drawAir(scr, room, clock) {
+  if (room.scene === 'floodedHub') {
+    // Rain changes density with the weather cycle. A periodic pale sky flash
+    // changes the whole room without introducing a seventeenth colour.
+    const storm = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(clock * 0.003));
+    const n = 18 + Math.round(storm * 22);
+    for (let i = 0; i < n; i++) {
+      const x = (i * 47 + clock * (1.5 + (i % 3) * 0.25)) % (W + 32) - 16;
+      const y = (i * 31 + clock * 2.7) % (H + 24) - 12;
+      scr.limb(x, y, x - 3, y + 8, 1, 1, i % 4 ? C.EDGE : C.LUX);
+    }
+    if ((clock % 620) < 4) scr.veil([0, 0, W, 0, W, H, 0, H], C.LUX2, 0.22);
+
+    // Small machine life uses the drowned rail as a migration route.
+    for (let i = 0; i < 3; i++) {
+      const x = ((clock * (0.18 + i * 0.03) + i * 113) % (W + 40)) - 20;
+      const y = 126 + Math.sin(clock * 0.025 + i * 2) * 3;
+      scr.rect(x - 4, y, 8, 3, C.DARK);
+      scr.rect(x - 1, y - 2, 3, 2, C.LUX);
+      scr.rect(x - 6, y + 3, 12, 1, C.MID);
+    }
+    return;
+  }
   const t = room.t, w = weights(t);
   if (w.jungle > 0.1 || w.vine > 0.2) {
     // spores. Another World's one concession to particles was small and slow.
@@ -474,10 +553,38 @@ export function drawAir(scr, room, clock) {
   }
 }
 
+// Drawn after the hero, so the water cuts across his boots and the same exact
+// land animation becomes a shallow-water wade without inventing replacement
+// body frames. Swimming stays out until a matching authored reference exists.
+export function drawFloodWater(scr, room, clock, hero) {
+  if (room.scene !== 'floodedHub') return;
+  const y = room.waterY ?? 166;
+  scr.veil([0, y, W, y, W, H, 0, H], C.NEAR, 0.34);
+  for (let i = 0; i < 8; i++) {
+    const x = (i * 53 + clock * (0.18 + (i % 2) * 0.05)) % (W + 24) - 12;
+    scr.rect(x, y + 2 + (i % 3) * 6, 12 + (i % 4) * 3, 1, i % 3 ? C.MID : C.LUX);
+  }
+  if (hero && hero.y > y - 4) {
+    const spread = 10 + Math.min(10, Math.abs(hero.vx || 0) * 6);
+    scr.rect(hero.x - spread, y - 1, spread * 2, 1, C.LUX);
+    scr.rect(hero.x - Math.round(spread * 0.6), y + 3, Math.round(spread * 1.2), 1, C.MID);
+  }
+}
+
 // The foreground: pure black shapes at the edges of the frame. This is the most
 // Another World thing in the file — half its famous screens are a lit middle
 // distance seen past something enormous and unlit in the corner.
 export function drawFore(scr, room, index) {
+  if (room.scene === 'floodedHub') {
+    // Broken station roof and reeds frame the playable water like a window.
+    scr.poly([0, 0, 52, 0, 35, 18, 20, 52, 0, 58], C.VOID);
+    scr.poly([W, 0, W - 45, 0, W - 27, 17, W - 17, 52, W, 60], C.VOID);
+    for (const x of [4, 12, W - 13, W - 5]) {
+      scr.rect(x, 148, 2, H - 148, C.VOID);
+      scr.poly([x, 156, x + (x < W / 2 ? 7 : -7), 146, x + 1, 160], C.VOID);
+    }
+    return;
+  }
   const t = room.t, w = weights(t), r = rand(index * 7481 + 3);
   if (room.scene === 'colonnade') {
     // Two columns standing between you and the room. The hall and the gate

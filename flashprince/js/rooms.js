@@ -1,4 +1,4 @@
-// Fourteen screens, side by side, and the world changing colour under you.
+// Fifteen screens, side by side, and the world changing colour under you.
 //
 // Another World is a row of fixed screens with a hard cut between them: no
 // scrolling, no camera, no minimap. A screen is a composition, you learn it,
@@ -278,6 +278,23 @@ export const ROOMS = [
       '####################',
     ],
   },
+  { // 14 — rain over the drowned transport hub; the living facility beyond it
+    t: 6.00, beat: 'floodedHub', scene: 'floodedHub', waterY: 166,
+    map: [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '        ####        ',
+      '   ###  ####  ###   ',
+      ' S ###        ###   ',
+      '####################',
+    ],
+  },
 ];
 
 // The one line of text in each act. Another World has no words in it at all;
@@ -290,4 +307,5 @@ export const BEATS = {
   reactor: 'AND SOMETHING ELSE BUILT THEM',
   palace: 'FOUR THOUSAND YEARS LATER',
   end: 'AND THE FOREST TOOK IT ALL BACK',
+  floodedHub: 'THE LAST TRAINS LEFT UNDERWATER',
 };

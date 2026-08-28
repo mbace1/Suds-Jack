@@ -16,10 +16,10 @@
 // screen, which is the only way to judge a cycle on its own.
 
 import { Screen, W, H } from './screen.js';
-import { paletteAt, C } from './palette.js';
+import { paletteAt, C } from './palette.js?v=52';
 import { Hero } from './hero.js?v=51';
-import { World, ROOMS, ROOM_H } from './level.js';
-import { paintBack, drawAir, drawFore, halo } from './scenery.js';
+import { World, ROOMS, ROOM_H } from './level.js?v=52';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=52';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
 import { Input } from './input.js?v=51';
@@ -96,7 +96,9 @@ class Stage {
     this.foes = [];
     this.snd = new Sound();
     this.ed = new Editor(this.scr);
-    this.enterRoom(0);
+    const requestedRoom = location.hash === '#flooded-city'
+      ? ROOMS.findIndex(room => room.scene === 'floodedHub') : 0;
+    this.enterRoom(Math.max(0, requestedRoom));
     this.hero.go('wake');
     this.mode = 'select';
     this.characterChoice = 0;
@@ -201,7 +203,8 @@ class Stage {
       if (inp.dir && inp.dirHeld === 1) this.characterChoice = inp.dir > 0 ? 1 : 0;
       if (inp.jumpPress || inp.firePress) {
         this.hero.character = this.characterChoice ? 'legacy' : 'conrad';
-        this.hero.reset(48, FLOOR);
+        const spawn = this.world.spawn ?? { x: 48, y: this.groundUnder(48, FLOOR) };
+        this.hero.reset(spawn.x, spawn.y);
         this.hero.health = 3;
         this.hero.go('wake');
         this.mode = 'free';
@@ -396,6 +399,7 @@ class Stage {
       scr.rect(m.x - 1, m.y - 1, 3, 2, C.LUX2);
       scr.rect(m.x + h.face * 2, m.y, 3, 1, C.LUX);
     }
+    drawFloodWater(scr, w.room, this.clock, h);
     drawFore(scr, w.room, w.index);
     if (!ready()) this.centre(scr, 'LOADING THE SHEET', 96, C.LUX);
   }

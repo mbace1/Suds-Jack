@@ -279,7 +279,7 @@ export const GAMES = [
     },
     pad: 'native',
     status: 'active',
-    note: 'v51 — complete Conrad hero is now default; the exact v18 runner is preserved as a selectable legacy character',
+    note: 'v52 — flooded transport-hub showcase added; v51 character split and exact v18 legacy runner remain locked',
     title: 'Flash Prince',
     tagline: 'Every move you start, you finish. Hang, climb, and draw before he does.',
     lineage: 'Another World × Flashback × Prince of Persia',

@@ -1,5 +1,13 @@
 # Flash Prince — versions
 
+## v52 — 2026-08-28
+
+**The flooded city begins.** A fifteenth playable room adds the drowned
+transport hub and the grand bio-organic facility beyond it: changing rain and
+light, moving machine life, shallow traversable water, reflections and a dense
+three-depth city composition. The exact v51 character split and the immutable
+v18 legacy run are unchanged. Open `#flooded-city` to test the room directly.
+
 ## v51 — 2026-08-27
 
 **The character split.** The default Flash Prince now uses his complete Conrad

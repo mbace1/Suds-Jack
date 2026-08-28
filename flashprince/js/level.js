@@ -8,9 +8,9 @@
 // the silhouette is not a ruler. Same shapes, biome by biome; only the sixteen
 // colours underneath them change.
 
-import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js';
-import { C } from './palette.js';
-import { glyphs, weights, drape, leaves, halo } from './scenery.js';
+import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=52';
+import { C } from './palette.js?v=52';
+import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=52';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
