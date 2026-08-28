@@ -1,0 +1,27 @@
+{
+  "_comment": "Phase 1: a single fixed encounter, but still data (pipeline §3) so Phase 2's 3-5 fights is an add, not a rebuild. Grid is x:0..cols-1, y:0..rows-1; y0 is the enemies' near edge, the last row is the squad's. Two cover kinds per the pipeline's resolved assumptions: full blocks movement+LOS, partial only softens a ranged hit.",
+  "encounters": [
+    {
+      "id": "backlot",
+      "name": "The Backlot",
+      "grid": { "cols": 11, "rows": 9 },
+      "playerSpawns": [
+        { "unit": "blade",  "x": 2, "y": 8 },
+        { "unit": "niner",  "x": 5, "y": 8 },
+        { "unit": "wrench", "x": 8, "y": 8 }
+      ],
+      "enemySpawns": [
+        { "enemy": "grunt_blunt",   "x": 1, "y": 1 },
+        { "enemy": "grunt_blunt",   "x": 9, "y": 1 },
+        { "enemy": "grunt_handgun", "x": 3, "y": 0 },
+        { "enemy": "grunt_handgun", "x": 7, "y": 0 },
+        { "enemy": "grunt_shotgun", "x": 5, "y": 0 },
+        { "enemy": "grunt_shotgun", "x": 5, "y": 1 }
+      ],
+      "cover": {
+        "full":    [[2,4],[4,3],[6,5],[8,3],[3,6],[7,6]],
+        "partial": [[1,5],[5,4],[9,5],[3,4],[7,4],[0,6],[10,3]]
+      }
+    }
+  ]
+}

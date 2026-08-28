@@ -1152,6 +1152,46 @@ export const ART = {
     g.disc(112, 8, 5, '#e0a53a'); g.disc(112, 8, 3, '#f4f1e8');
   },
 
+  // TURF: the backlot at dusk. A standoff, not an icon — an operator cropped
+  // by the near edge of the frame (rim-lit in the accent, since a dark
+  // silhouette against a dark scene disappears), a rival held at the far
+  // edge of the lot, sodium-lit windows for depth, and two ruled lines
+  // ghosting the tactics grid underfoot.
+  backlot(g, a) {
+    const HZ = 34;
+    for (let i = 0; i < HZ; i++) g.p(0, i, W, 1, mix('#05060a', '#241a12', (i / HZ) ** 2));
+
+    // rain, faint and diagonal
+    for (let i = 0; i < 9; i++) { const x = (i * 41) % W; g.line(x, 3 + (i * 7) % 22, x - 3, 13 + (i * 7) % 22, 'rgba(140,160,180,0.16)'); }
+
+    // the block: lit-window silhouettes along the horizon, lighter than the
+    // sky behind them or they read as a hole, not a building
+    g.p(0, HZ - 14, 22, 14, '#181c24'); g.p(18, HZ - 20, 20, 20, '#1c2028');
+    g.p(34, HZ - 10, 16, 10, '#151920'); g.p(70, HZ - 24, 24, 24, '#1c2028');
+    g.p(90, HZ - 14, 20, 14, '#181c24'); g.p(108, HZ - 18, 20, 18, '#1c2028');
+    for (const [x, y] of [[4, HZ - 10], [9, HZ - 6], [22, HZ - 14], [28, HZ - 8], [76, HZ - 18], [82, HZ - 10], [112, HZ - 12]]) g.p(x, y, 2, 3, '#e8a34a');
+
+    // the lot: wet asphalt, two reflection bands, two grid lines ghosting
+    // the board this cover is a marquee for
+    g.p(0, HZ, W, H - HZ, '#22262d');
+    g.p(0, HZ + 6, W, 2, '#2a2f37'); g.p(0, HZ + 17, W, 2, '#262b32');
+    g.line(28, HZ + 3, 6, H, 'rgba(111,168,201,0.22)');
+    g.line(74, HZ + 3, 100, H, 'rgba(111,168,201,0.22)');
+
+    // full cover, cropped by the left edge — a dumpster, not a prop shelf
+    g.p(-4, H - 22, 26, 22, '#181b21'); g.p(-4, H - 27, 26, 6, '#20242b');
+
+    // the rival: midground, small, warm and backlit by the block behind it
+    g.p(83, HZ + 2, 6, 11, '#5a3324'); g.disc(86, HZ - 2, 3, '#7a4530');
+
+    // the operator: foreground, cropped by the bottom of the frame — cropping
+    // is what reads as "standing closer to you than the rival is"
+    g.p(40, H - 20, 12, 24, '#12141a');
+    g.p(41, H - 19, 3, 22, a);
+    g.disc(46, H - 23, 5, '#12141a');
+    g.disc(45, H - 24, 4, a);
+  },
+
 };
 
 // ── the glass ──────────────────────────────────────────────────────

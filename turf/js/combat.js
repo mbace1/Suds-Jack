@@ -1,0 +1,234 @@
+// The engine: state creation, the move+act economy (either order, once each
+// — GDD §4, the XCOM/ITB standard, not MST's move-then-act lock), attack
+// resolution, knockback, and the enemy phase. Pure data in, pure data out —
+// nothing here touches a canvas or the DOM, which is what makes it runnable
+// in bare node (test/smoke.cjs).
+import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js';
+import { planIntent, planAllIntents } from './ai.js';
+import { makeRng } from './rng.js';
+
+export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1) {
+  const weaponById = id => weaponDefs.find(w => w.id === id);
+  const fullCover = new Set(encounter.cover.full.map(([x, y]) => key(x, y)));
+  const partialCover = new Set(encounter.cover.partial.map(([x, y]) => key(x, y)));
+
+  const units = [];
+  encounter.playerSpawns.forEach((spawn, i) => {
+    const def = unitDefs.find(u => u.id === spawn.unit);
+    units.push(makeUnit(`p${i}`, def, weaponById(def.weapon), 'player', spawn));
+  });
+  encounter.enemySpawns.forEach((spawn, i) => {
+    const def = enemyDefs.find(e => e.id === spawn.enemy);
+    units.push(makeUnit(`e${i}`, def, weaponById(def.weapon), 'enemy', spawn));
+  });
+
+  const state = {
+    encounterId: encounter.id,
+    grid: encounter.grid,
+    fullCover, partialCover,
+    units,
+    turn: 'player',
+    round: 1,
+    selected: null,
+    telegraph: new Map(),
+    enemyQueue: [],
+    log: [],
+    result: null,
+    rng: makeRng(seed),
+  };
+  planAllIntents(state);
+  return state;
+}
+
+function makeUnit(uid, def, weapon, faction, spawn) {
+  return {
+    uid, defId: def.id, name: def.name, faction, role: def.role, weapon,
+    hp: def.hp, maxHp: def.hp, move: def.move,
+    x: spawn.x, y: spawn.y,
+    actedMove: false, actedAction: false,
+  };
+}
+
+export const getUnit = (state, uid) => state.units.find(u => u.uid === uid);
+export const livingPlayers = state => state.units.filter(u => u.faction === 'player' && u.hp > 0);
+export const livingEnemies = state => state.units.filter(u => u.faction === 'enemy' && u.hp > 0);
+export const canUnitAct = unit => unit.hp > 0 && (!unit.actedMove || !unit.actedAction);
+
+function maybeDeselect(state, unit) {
+  if (unit.actedMove && unit.actedAction && state.selected === unit.uid) state.selected = null;
+}
+
+export function selectUnit(state, uid) {
+  if (state.turn !== 'player') return { ok: false, reason: 'not-your-turn' };
+  const unit = getUnit(state, uid);
+  if (!unit || unit.faction !== 'player' || unit.hp <= 0) return { ok: false, reason: 'invalid' };
+  state.selected = uid;
+  return { ok: true };
+}
+
+// A tile you can legally move to right now (used by both the move command
+// and by input.js/render.js to paint the range highlight).
+export function movableTiles(state, unit) {
+  return unit.actedMove ? new Map() : moveRange(state, unit);
+}
+
+export function moveUnit(state, uid, x, y) {
+  const unit = getUnit(state, uid);
+  if (!unit || unit.hp <= 0) return { ok: false, reason: 'dead' };
+  if (state.turn !== 'player' || unit.faction !== 'player') return { ok: false, reason: 'not-your-turn' };
+  if (unit.actedMove) return { ok: false, reason: 'already-moved' };
+  const range = moveRange(state, unit);
+  if (!range.has(key(x, y))) return { ok: false, reason: 'out-of-range' };
+  unit.x = x; unit.y = y;
+  unit.actedMove = true;
+  state.log.push({ type: 'move', uid, x, y });
+  maybeDeselect(state, unit);
+  planAllIntents(state);
+  return { ok: true };
+}
+
+// Every tile a unit could attack a target from *this turn*, given its
+// remaining move — used by input.js to light up valid targets and by ai.js
+// to pick where to stand. Kept here (not grid.js) since it needs the weapon.
+export function attackableTargets(state, unit) {
+  if (unit.actedAction) return [];
+  const out = [];
+  for (const target of state.units) {
+    if (target.hp <= 0 || target.faction === unit.faction) continue;
+    if (approachTile(state, unit, target)) out.push(target.uid);
+  }
+  return out;
+}
+
+function resolveAttack(state, attacker, target, weapon) {
+  let chance = weapon.hitChance;
+  if (weapon.archetype === 'ranged' && coverSoftens(state, attacker, target)) chance -= 0.3;
+  chance = Math.max(0.05, Math.min(1, chance));
+  const roll = state.rng();
+  const hit = roll < chance;
+  let damage = 0, killed = false, knockback = null;
+  if (hit) {
+    damage = weapon.damage;
+    target.hp = Math.max(0, target.hp - damage);
+    killed = target.hp <= 0;
+    if (!killed && weapon.knockback > 0) knockback = applyKnockback(state, attacker, target, weapon.knockback);
+  }
+  const evt = { type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage, killed, knockback, chance, roll };
+  state.log.push(evt);
+  return evt;
+}
+
+// Pushes the target away along the dominant axis of the attack (the grid is
+// orthogonal, so a diagonal hit picks whichever axis it leans on more),
+// stopping at the first tile that is out of bounds, full cover, or occupied
+// — a target shoved into a wall or another body just stops there.
+function applyKnockback(state, attacker, target, tiles) {
+  const dx = target.x - attacker.x, dy = target.y - attacker.y;
+  let stepX = 0, stepY = 0;
+  if (Math.abs(dx) >= Math.abs(dy)) stepX = Math.sign(dx) || 1;
+  else stepY = Math.sign(dy) || 1;
+  let moved = 0;
+  for (let i = 0; i < tiles; i++) {
+    const nx = target.x + stepX, ny = target.y + stepY;
+    if (!inBounds(state.grid, nx, ny)) break;
+    if (state.fullCover.has(key(nx, ny))) break;
+    if (unitAt(state, nx, ny, target)) break;
+    target.x = nx; target.y = ny; moved++;
+  }
+  return { moved, dx: stepX, dy: stepY };
+}
+
+export function attack(state, attackerUid, targetUid) {
+  const attacker = getUnit(state, attackerUid);
+  const target = getUnit(state, targetUid);
+  if (!attacker || !target || attacker.hp <= 0 || target.hp <= 0) return { ok: false, reason: 'invalid' };
+  if (state.turn !== 'player' || attacker.faction !== 'player') return { ok: false, reason: 'not-your-turn' };
+  if (attacker.actedAction) return { ok: false, reason: 'already-acted' };
+  if (attacker.faction === target.faction) return { ok: false, reason: 'same-faction' };
+  if (manhattan(attacker, target) > attacker.weapon.range) return { ok: false, reason: 'out-of-range' };
+  if (!hasLOS(state, attacker, target)) return { ok: false, reason: 'no-los' };
+
+  const result = resolveAttack(state, attacker, target, attacker.weapon);
+  attacker.actedAction = true;
+  maybeDeselect(state, attacker);
+  planAllIntents(state);
+  checkWinLoss(state);
+  return { ok: true, ...result };
+}
+
+// The click-to-attack entry point for the UI: if the target isn't in range
+// from the unit's current tile, walks it to the nearest tile that IS in
+// range (spending the move, if it has one left) before resolving the
+// attack. `attack()` itself stays strict/in-place — this is the only place
+// "move to make the shot happen" is allowed to occur automatically.
+export function orderAttack(state, attackerUid, targetUid) {
+  const attacker = getUnit(state, attackerUid);
+  const target = getUnit(state, targetUid);
+  if (!attacker || !target) return { ok: false, reason: 'invalid' };
+  const tile = approachTile(state, attacker, target);
+  if (!tile) return { ok: false, reason: 'unreachable' };
+  if ((tile.x !== attacker.x || tile.y !== attacker.y) && !attacker.actedMove) {
+    const moved = moveUnit(state, attackerUid, tile.x, tile.y);
+    if (!moved.ok) return moved;
+  }
+  return attack(state, attackerUid, targetUid);
+}
+
+export function endUnitTurn(state, uid) {
+  const unit = getUnit(state, uid);
+  if (!unit || unit.faction !== 'player' || state.turn !== 'player') return { ok: false };
+  unit.actedMove = true; unit.actedAction = true;
+  if (state.selected === uid) state.selected = null;
+  return { ok: true };
+}
+
+export function endPlayerTurn(state) {
+  if (state.turn !== 'player') return { ok: false };
+  state.turn = 'enemy';
+  state.selected = null;
+  state.enemyQueue = livingEnemies(state).map(u => u.uid);
+  return { ok: true };
+}
+
+// Resolves exactly one enemy's turn (freshly re-planned, since earlier
+// enemies this same phase — or the player's last action — may have changed
+// the board) and returns a descriptor for the HUD/animation layer to show.
+// Returns { done: true } once the phase is empty, having already flipped
+// back to the player and reset the move/act flags for the new round.
+export function stepEnemyPhase(state) {
+  if (state.turn !== 'enemy') return null;
+  while (state.enemyQueue.length) {
+    const uid = state.enemyQueue.shift();
+    const enemy = getUnit(state, uid);
+    if (!enemy || enemy.hp <= 0) continue;
+
+    const intent = planIntent(state, enemy);
+    let moved = null, attacked = null;
+    if (intent.moveTo && (intent.moveTo.x !== enemy.x || intent.moveTo.y !== enemy.y)) {
+      enemy.x = intent.moveTo.x; enemy.y = intent.moveTo.y;
+      moved = { x: enemy.x, y: enemy.y };
+    }
+    if (intent.type === 'attack') {
+      const target = getUnit(state, intent.targetUid);
+      if (target && target.hp > 0 && manhattan(enemy, target) <= enemy.weapon.range && hasLOS(state, enemy, target)) {
+        attacked = resolveAttack(state, enemy, target, enemy.weapon);
+      }
+    }
+    state.log.push({ type: 'enemy-turn', uid, name: enemy.name, moved, attacked });
+    planAllIntents(state);
+    checkWinLoss(state);
+    return { done: false, uid, name: enemy.name, moved, attacked };
+  }
+
+  state.turn = 'player';
+  state.round += 1;
+  for (const u of state.units) if (u.faction === 'player') { u.actedMove = false; u.actedAction = false; }
+  planAllIntents(state);
+  return { done: true };
+}
+
+function checkWinLoss(state) {
+  if (state.result) return;
+  if (!state.units.some(u => u.faction === 'player' && u.hp > 0)) state.result = 'lose';
+  else if (!state.units.some(u => u.faction === 'enemy' && u.hp > 0)) state.result = 'win';
+}

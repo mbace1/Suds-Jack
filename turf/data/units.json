@@ -1,0 +1,8 @@
+{
+  "_comment": "Player squad, Phase 1 fixed 3. Role is the tactics-triangle slot (GDD/pipeline §2 resolved: melee / ranged / support-control). Character theming deferred — see production pipeline doc.",
+  "units": [
+    { "id": "blade",  "name": "Blade",  "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4 },
+    { "id": "niner",  "name": "Niner",  "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4 },
+    { "id": "wrench", "name": "Wrench", "role": "control", "weapon": "pipe",   "hp": 10, "move": 3 }
+  ]
+}
