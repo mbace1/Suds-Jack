@@ -7,6 +7,30 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v229 — 2026-08-28
+**Haptics, and two motion-comfort flashes that reduce-motion had missed** *(roadmap-v2 Phase 4, `TOKO_DROP_ROADMAP.md`)*
+- New `js/haptics.js`: `navigator.vibrate()` on a non-fatal hit (35ms),
+  death (`[50,40,90]`, deliberately shaped so it doesn't just read as one
+  more hit), and Rush overheat lockout (60ms). Android Chrome only — no
+  iOS Safari, no desktop — so it's feature-detected once and a silent
+  no-op everywhere else; its own settings toggle (`HAPTICS`, next to
+  `REDUCE MOTION` in the pause menu), independent of that one, since a
+  player may want the buzz without the shake or vice versa
+- **Audit found two motion-comfort gaps while wiring the above**: the
+  hit-damage vignette (a full-screen red pulse, up to 0.55 alpha) and the
+  wave-clear flash (a full-screen white pulse, up to 0.3 alpha) were never
+  gated by `REDUCE MOTION` — `addShake()` gates itself centrally and the
+  NEX DEUS flash was already gated, but these two were missed. Both full-
+  screen flashes are exactly the kind of thing that setting exists for, so
+  they're gated now too
+- Verified: a throwaway probe confirmed `haptics.setEnabled()` persists and
+  actually suppresses `navigator.vibrate()`, and that `tryHitPlayer()`'s
+  real hit/death paths fire the right pattern through the real integration
+  point (not just the module in isolation). `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=182` → `?v=183`; HUD label → v229
+
+---
+
 ## v228 — 2026-08-28
 **Arena pass 2 — the floor answers mass, prizes and pops** *(roadmap-v2 Phase 3, `TOKO_DROP_ROADMAP.md`)*
 - v223 gave the floor a rim vignette, a grid falloff and a pool that follows
