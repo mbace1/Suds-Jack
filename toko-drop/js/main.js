@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=179';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=179';
-import { Player, PLAYER_RADIUS } from './player.js?v=179';
+import { InputManager } from './input.js?v=180';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=180';
+import { Player, PLAYER_RADIUS } from './player.js?v=180';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=179';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=179';
-import { audio } from './audio.js?v=179';
-import { initDesigner } from './designer.js?v=179';
-import { createSpecimen } from './specimen.js?v=179';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=179';
-import { TUNING } from './tuning.js?v=179';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=180';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=180';
+import { audio } from './audio.js?v=180';
+import { initDesigner } from './designer.js?v=180';
+import { createSpecimen } from './specimen.js?v=180';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=180';
+import { TUNING } from './tuning.js?v=180';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -3497,16 +3497,23 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   const hpBefore = player.hp;
   _hitFlashT = 0.32;
   player.hit();
+  // v224 RUSH: a hit costs a life, breaks the chain, and levels you DOWN —
+  // which really does make the next wave easier, since the level is the
+  // number the wave director reads. v226: a hit that would otherwise end the
+  // run instead spends a banked rush.life (if one exists) — loseLife() does
+  // the same chain-break/level-down a survived hit gets, plus decrementing
+  // the life; the player revives at full HP with a mercy window rather than
+  // the run just continuing as if nothing happened.
+  if (rush.on) {
+    if (player.alive) { rush.chain = 0; rush.chainT = 0; rush.levelDown(); }
+    else if (rush.lives > 0) { rush.loseLife(); player.revive(); }
+  }
   if (player.alive) audio.announce('ouch');  // death gets the gameover line instead
   onPlayerHit();
   recordHitEvent(source, hpBefore, attackerType);
   // v212: remember what landed the fatal blow — the death screen shows it and
   // asks about it, so the question is about something you just lived through.
   if (!player.alive) _killedBy = { source, type: attackerType };
-  // v224 RUSH: a hit costs a life, breaks the chain, and levels you DOWN —
-  // which really does make the next wave easier, since the level is the
-  // number the wave director reads.
-  if (rush.on && player.alive) { rush.chain = 0; rush.chainT = 0; rush.levelDown(); }
   return !player.alive;
 }
 
@@ -4644,7 +4651,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v225' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v226' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9438,6 +9445,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=179').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=180').catch(() => {});
   });
 }

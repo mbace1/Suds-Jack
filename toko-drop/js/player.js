@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=179';
-import { TUNING } from './tuning.js?v=179';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=180';
+import { TUNING } from './tuning.js?v=180';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -467,6 +467,21 @@ export class Player {
     if (this._muzzle) this._muzzle.visible = false;
     this._eyeL.visible = false;
     this._eyeR.visible = false;
+  }
+
+  // v226 RUSH: what a banked rush.life buys back — undoes exactly what die()
+  // did, plus the same mercy window a non-fatal hit gets, so a revived run
+  // reads as "that hit cost you" rather than "nothing happened."
+  revive() {
+    this.alive = true;
+    this.hp = this.maxHp;
+    this.mesh.visible = true;
+    this._eyeL.visible = this._eyesOn;
+    this._eyeR.visible = this._eyesOn;
+    this._flashT = 0.25;
+    this._mercyT = MERCY_DURATION;
+    this._dashTime = 0;
+    this._sqV -= 0.9;
   }
 
   toggleEyes() {

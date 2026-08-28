@@ -7,6 +7,25 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v226 — 2026-08-28
+**RUSH lives actually do something now** *(`Q-025`, `toko-drop/RUSH_DESIGN.md` §1.4)*
+- `TUNING.rush.lives` and `rush.checkExtraLife()` were fully wired to award
+  and display extra lives, but nothing ever spent one — a Rush run ended on
+  the third hit (`player.hp` reaching 0) regardless of the banked count. The
+  life counter was cosmetic. Found while writing `RUSH_DESIGN.md`.
+- **A hit that would otherwise end the run now spends a banked `rush.life`
+  instead**, when one exists: `rush.loseLife()` (already written, just never
+  called) breaks the chain and levels you down exactly like a survived hit,
+  then the new `player.revive()` undoes what `die()` did — full HP, mesh and
+  eyes visible again, plus the same mercy-invincibility window a non-fatal
+  hit gets, so the next frame can't re-kill you for free. A hit with no lives
+  banked still ends the run as before.
+- `smoke.sh` + `cabinets.sh` green (the touched function, `tryHitPlayer`, is
+  shared by every mode; the new branch only activates `if (rush.on)`).
+- Cache-bust `?v=179` → `?v=180`; HUD label → v226
+
+---
+
 ## v225 — 2026-08-27
 **RUSH gets its own arena and its own roster** *(owner direction)*
 - v224 gave Rush its rules but left it running on the main game's furniture and
