@@ -49,6 +49,18 @@ export const PROPS = {
   walkway:      { label: 'walkway',       fields: { w: { def: 8, min: 3, max: 18, step: 0.1 } } },
   valve:        { label: 'valve',         fields: { r: { def: 0.48, min: 0.2, max: 1, step: 0.02 } } },
 
+  // WORLD 1's vocabulary (art-src/world-1-library/CATALOG.md): a hazard
+  // barrier, a material yard, a scaffold bay, a gable frame, a billboard,
+  // a crate cluster.
+  hazardBarrier: { label: 'hazard barrier', fields: { w: { def: 2.4, min: 1.4, max: 4, step: 0.1 } } },
+  materialYard:  { label: 'material yard',  fields: {} },
+  scaffoldBay:   { label: 'scaffold bay',   fields: { w: { def: 2.6, min: 1.6, max: 4, step: 0.1 },
+                                                       h: { def: 3.6, min: 2, max: 5, step: 0.1 } } },
+  gableFrame:    { label: 'gable frame',    fields: { w: { def: 4.2, min: 3, max: 6, step: 0.1 },
+                                                       h: { def: 3.4, min: 2, max: 5, step: 0.1 } } },
+  billboard:     { label: 'billboard',      fields: { h: { def: 2.6, min: 1.5, max: 4, step: 0.1 } } },
+  crateCluster:  { label: 'crate cluster',  fields: {} },
+
   // THE ONE PROP EVERY WORLD CAN USE. A lamp is an additive quad (js/light.js)
   // rather than a light in the scene graph, so it costs one draw call, needs
   // no new art, and — the point — it has an (x, y) an editor can drag.
@@ -74,7 +86,30 @@ export const SCENERY = {
   // WORLD 1 is daylight and stays daylight: two lamps only, and both are
   // there to say a machine is running rather than to light the room.
   groundworks: [
+    // OPENING — hazard barrier then a material yard, worksite identity
+    // before the first obstacle in any of the three levels.
+    { prop: 'hazardBarrier', x: 5.0, y: 0, w: 2.4 },
+    { prop: 'materialYard', x: 11.5, y: 0 },
+
+    // LANDMARK — the tallest identifier on the site, once, placed FRONT
+    // rather than in the checkpoint/girder/machine cluster every level
+    // crowds into its back half (measured: 46-66 is never quiet). A
+    // landmark competing with that cluster for attention loses; one that
+    // arrives before it does not.
+    { prop: 'gableFrame', x: 20.0, y: 0, w: 4.2, h: 3.6 },
+
+    // MID — a scaffold bay, clear of every level's early obstacles and its
+    // own checkpoint.
+    { prop: 'scaffoldBay', x: 30.0, y: 0, w: 2.6, h: 3.6 },
+    { prop: 'billboard', x: 39.0, y: 0, h: 2.6 },
     { prop: 'lamp', x: 40.0, y: 6.4, r: 5.5, i: 0.5, z: -1.0, colour: '#ffe2b0' },
+
+    // BACK HALF stays QUIET by design — every level's own checkpoint,
+    // girder or wall, machine and final obstacle already fill it (a
+    // playthrough screenshot at x56/x77 showed the busiest reads in the
+    // level); one crate cluster past the climax, near the flag, is the
+    // whole of this world's back-half dressing.
+    { prop: 'crateCluster', x: 90.0, y: 0 },
     { prop: 'lamp', x: 85.0, y: 6.0, r: 6.5, i: 0.55, z: -1.0, colour: '#ffe2b0' },
   ],
 

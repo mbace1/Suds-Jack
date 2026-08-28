@@ -29,7 +29,7 @@
 //     own builders (`world2-dressing.js` now returns them by name) — a
 //     prop placed from the editor is built by the exact same closure as
 //     one authored by hand, which is what keeps the two indistinguishable.
-//   · A world with no dressing module (worlds 1, 3, 4 today) offers lamps
+//   · A world with no dressing module (worlds 3 and 4, still) offers lamps
 //     only. Its palette says so rather than showing empty rows.
 //   · GAMEPLAY places SOME kinds live (v2.1): a skitter, hopper, roller,
 //     bucket bot or steam vent is a real `Robot`/`SteamVent`, pushed onto
@@ -173,6 +173,9 @@ const RAIL = [
 const PROP_LAYER = {
   pipeStack: 'near', buriedPipe: 'near', serviceWall: 'mid', pipeMouth: 'near',
   standpipe: 'near', pumpPlatform: 'near', walkway: 'mid', valve: 'near',
+  // world 1's own vocabulary (world1-dressing.js)
+  hazardBarrier: 'near', materialYard: 'near', scaffoldBay: 'mid',
+  gableFrame: 'mid', billboard: 'near', crateCluster: 'near',
 };
 
 // GAMEPLAY reference taxonomy — parts.js's own kinds, grouped the way a
@@ -352,8 +355,8 @@ export class Inspector {
       // both — as this file's first cut did, copying the shape of an
       // older draft of `rooms.mjs` — double-counted worlds 3-4 into an
       // 18-level list and broke every level-index lookup after level 6.
-      const { labelOf } = await import('../js/levelid.js?v=50');
-      const { ROOMS } = await import('../js/rooms.js?v=50');
+      const { labelOf } = await import('../js/levelid.js?v=51');
+      const { ROOMS } = await import('../js/rooms.js?v=51');
       this.levels = ROOMS.map((r, i) => ({ i, label: labelOf(i, ROOMS.length), name: r.name }));
     } catch { this.levels = []; }
     if (!this.el.hidden) this.syncLevel();
@@ -679,7 +682,7 @@ export class Inspector {
     if (this.pendingProp === 'lamp') row.z = z;
     let made = null;
     if (this.pendingProp === 'lamp') {
-      import('../js/light.js?v=50').then(({ buildLamp }) => {
+      import('../js/light.js?v=51').then(({ buildLamp }) => {
         made = buildLamp(A.THREE, row);
         made.userData.sceneryRow = { world: A.debug.world(), index: -1, ...row };
         A.scene.add(made);
