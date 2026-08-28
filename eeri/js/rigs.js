@@ -43,8 +43,8 @@
 // heads as the detail motif, an OPEN seat so the rider is never swallowed.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=51';
-import { craftMat } from './craft.js?v=51';
+import { PAL, mix } from './palette.js?v=52';
+import { craftMat } from './craft.js?v=52';
 
 // ---- the shared kit ------------------------------------------------------
 // Everything both machines are made of, so the two builders below read as

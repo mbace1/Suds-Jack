@@ -610,79 +610,66 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the bolt count is the LEVEL\'s, and starts again with it',
     c2.bolts === 0 && c2.ofBolts === 100, JSON.stringify(c2));
 
-  // ---- SITE 2: the girder — stacked, slung, seated as a span --------------
+  // ---- SITE 2: the flattener — a sheet driven flat, no hold required ------
   ok('the new room\'s machine is unmanned again', await p.evaluate(() => !window.__eeri.debug.tamed()));
-  ok('site 2 carries the girder, not the bank',
-    await p.evaluate(() => window.__eeri.debug.girder() !== null && window.__eeri.debug.bank() === null));
-  ok('the girder waits on its stack', await p.evaluate(() => window.__eeri.debug.girder()?.state) === 0);
+  ok('site 2 carries the sheet, not the bank',
+    await p.evaluate(() => window.__eeri.debug.sheet() !== null && window.__eeri.debug.bank() === null));
+  ok('the room parks the flattener, not another excavator',
+    await p.evaluate(() => window.__eeri.debug.machine()?.kind) === 'flattener');
+  ok('the sheet starts fully buckled', await p.evaluate(() => window.__eeri.debug.sheet()?.remaining) === 3);
 
-  // the gap is past BOTH of them: the kid's jump falls short…
+  // the sheet is too tall to jump — the kid alone cannot pass it on foot
   await p.evaluate(() => window.__eeri.debug.setPos(54, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  await p.waitForTimeout(ms(600));
-  await p.evaluate(() => window.__eeri.debug.press('jump'));
-  await p.waitForTimeout(ms(300));
-  await p.evaluate(() => { window.__eeri.debug.release('jump'); window.__eeri.debug.release('right'); });
-  // WAIT FOR THE LANDING, not for a clock. He has to fall and be handed back
-  // by the pit, and that is a number of FRAMES — on a software renderer 1.5 s
-  // of wall time is not enough of them, so the check read his x mid-air at
-  // 58.19 and called a fall a crossing.
-  await p.waitForFunction(() => window.__eeri.player.grounded, null, { timeout: ms(8000) }).catch(() => {});
-  await p.waitForTimeout(ms(250));
-  // MEASURED OFF THE ROOM, not guessed: solid through cell 57 (so the near
-  // lip's edge is x 58.0), gap 58…65, far side from 66. `< 58` therefore
-  // failed him for STANDING ON THE LIP — his centre rests at 58.1 with his
-  // box still supported — which is not crossing, it is arriving at the edge.
-  // The claim is that he never reaches the far side, so that is what is
-  // asserted; an eight-tile hole against a four-tile budget still fails
-  // loudly if the jump ever grows.
-  ok('the gap is too wide for the kid', await p.evaluate(() => window.__eeri.player.x) < 64,
-    'x=' + await p.evaluate(() => window.__eeri.player.x));
+  await p.waitForTimeout(ms(2500));
+  await p.evaluate(() => window.__eeri.debug.release('right'));
+  const kidX = await p.evaluate(() => window.__eeri.player.x);
+  ok('the sheet is too tall for the kid to climb', kidX < 58, 'x=' + kidX);
 
   // …so read the cycle and take the machine, again
   await p.evaluate(() => { window.__eeri.exc.x = 50; });
   let ride2 = await mountUp();
   ok('the mount is a skill test in every room', ride2);
 
-  // …and the machine refuses the cliff: start it at the approach and let it
-  // drive — it must actually reach the lip and stop there, not merely dawdle
-  await p.evaluate(() => { window.__eeri.exc.x = 54; window.__eeri.exc.vx = 0; });
+  // driven at the sheet, the machine presses up against its solid face —
+  // no verb, no button, just arriving there. WAIT FOR THE ARRIVAL, not a
+  // clock: this sandbox's software renderer runs the game clock at a
+  // fraction of real time, so a fixed wall-clock wait for a ~7-tile drive
+  // is exactly the trap this file's own mountUp() already paid for once.
+  await p.evaluate(() => { window.__eeri.exc.x = 50; window.__eeri.exc.vx = 0; });
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  await p.waitForTimeout(ms(6000));
+  const arrived = await p.waitForFunction(
+    () => window.__eeri.exc.x > 54, null, { timeout: ms(20000) },
+  ).then(() => true).catch(() => false);
+  const parkedAt = await p.evaluate(() => window.__eeri.exc.x);
+  ok('the machine reaches the sheet and stops at its face', arrived && parkedAt < 58, 'x=' + parkedAt);
+
+  // NO HOLD REQUIRED (DESIGN §8.4) — the drum flattens on dwell time alone;
+  // holding nothing at all still clears a pass every ~0.9s of GAME time
+  const flattenedOnce = await p.waitForFunction(
+    () => window.__eeri.debug.sheet()?.remaining === 2, null, { timeout: ms(15000) },
+  ).then(() => true).catch(() => false);
+  ok('parking at the sheet flattens a pass with no button held', flattenedOnce);
+
+  // keep dwelling and the whole sheet clears — the map really changes
+  const flattened = await p.waitForFunction(
+    () => window.__eeri.debug.sheet()?.cleared === true, null, { timeout: ms(20000) },
+  ).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
-  const stoppedAt = await p.evaluate(() => window.__eeri.exc.x);
-  ok('the machine refuses the gap', stoppedAt > 55 && stoppedAt < 57.1, 'x=' + stoppedAt);
+  ok('driving over it long enough clears the whole sheet', flattened);
+  ok('and the map really changed — ground level opened up',
+    !(await p.evaluate(() => window.__eeri.level.solidCell(60, 4))));
 
-  // the bucket takes the girder off the stack
-  await p.evaluate(() => { window.__eeri.exc.x = 46; window.__eeri.exc.vx = 0; });
-  await p.evaluate(() => window.__eeri.debug.press('down'));
-  const slung = await p.waitForFunction(() => window.__eeri.debug.girder()?.state === 1, null, { timeout: ms(8000) }).then(() => true).catch(() => false);
-  await p.evaluate(() => window.__eeri.debug.release('down'));
-  ok('holding the bucket in the stack slings the girder on', slung);
-  ok('and the machine feels the load', await p.evaluate(() => window.__eeri.debug.girder()?.carrying));
-
-  // carried to the lip and lowered in, it seats as a span
-  await p.evaluate(() => { window.__eeri.exc.x = 55.5; window.__eeri.exc.vx = 0; });
-  await p.waitForTimeout(ms(300));
-  await p.evaluate(() => window.__eeri.debug.press('down'));
-  const seated = await p.waitForFunction(() => window.__eeri.debug.girder()?.state === 2, null, { timeout: ms(8000) }).then(() => true).catch(() => false);
-  await p.evaluate(() => window.__eeri.debug.release('down'));
-  ok('lowered at the lip, the girder seats as a span', seated);
-  ok('and the map really changed — the gap is bridged',
-    await p.evaluate(() => window.__eeri.level.solidCell(61, 3)));
-  ok('the load is off the machine', await p.evaluate(() => !window.__eeri.exc.carrying));
-
-  // the kid crosses his machine's bridge and walks the job out
+  // the kid walks the now-flat sheet out on foot
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
   await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: ms(20000) }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.setPos(56, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  // mid-span at ground height, grounded, over what used to be air = crossing
   const crossed = await p.waitForFunction(
-    () => window.__eeri.player.x > 62 && window.__eeri.player.grounded && window.__eeri.player.y < 4.2,
-    null, { timeout: ms(30000) }).then(() => true).catch(() => false);
+    () => window.__eeri.player.x > 63 && window.__eeri.player.grounded && window.__eeri.player.y < 4.2,
+    null, { timeout: ms(20000) }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
-  ok('the kid crosses the span on foot', crossed,
+  ok('the kid crosses the flattened sheet on foot', crossed,
     'x=' + await p.evaluate(() => window.__eeri.player.x));
 
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));

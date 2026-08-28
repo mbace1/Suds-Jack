@@ -68,10 +68,15 @@ export const MACHINE_SPEED = {
   // ground and the loader is a wheeled machine on a made-up site, so it is
   // the quickest thing in the game to drive.
   skidder: 3.0, loader: 3.8,
+  // World 1's second machine (DESIGN §8.4): a road roller, and the fastest
+  // thing on site — the puzzle is entirely "go somewhere", so nothing about
+  // it should feel like waiting.
+  flattener: 3.6,
 };
 // what a ride's own job costs, in seconds: the mount and dismount moves, and
-// then the work itself — a dug row, a slung span, a swing of the ball
-export const RIDE = { mount: 0.55, dismount: 0.5, dig: 0.7, sling: 0.55, seat: 0.5, swing: 2.4, drain: 0.8 };
+// then the work itself — a dug row, a slung span, a swing of the ball, a
+// flattened pass of the drum
+export const RIDE = { mount: 0.55, dismount: 0.5, dig: 0.7, sling: 0.55, seat: 0.5, swing: 2.4, drain: 0.8, flatten: 0.9 };
 
 // THE TELEGRAPH FLOOR (DESIGN §4.1, the owner's, and it is about a
 // six-year-old): "telegraph ≥ 1.0 s before anything can touch you". A rule
@@ -124,6 +129,10 @@ export const MACHINE_REACH = {
   // why it is the cheap second machine of the pair.
   pump: { verbs: ['drain'], arm: 3.0 },
   pipelayer: { verbs: ['span'], arm: 2.8 },
+  // World 1's second machine (DESIGN §8.4). No extending arm at all — the
+  // drum sits fixed and close to the chassis, so `arm` is short on purpose:
+  // the flattener has to actually be THERE, not reach in from a distance.
+  flattener: { verbs: ['flatten'], arm: 1.4 },
 };
 
 // ---- the palette ---------------------------------------------------------
@@ -139,6 +148,7 @@ export const TILES = {
   girder: solid('G'),
   bank: solid('B'),
   brick: solid('K'),
+  sheet: solid('F'),
   // A BELT carries you along it — the character carries the direction, so a
   // belt cannot disagree with itself about which way it runs.
   beltR: solid('C'),
@@ -156,7 +166,7 @@ export const TILES = {
   // of a ladder on it.
   ladder: { ch: 'H', solid: false },
 };
-export const SOLID_CHARS = '#=GBKCcT~';
+export const SOLID_CHARS = '#=GBKFCcT~';
 export const BELT_CHARS = 'Cc';
 export const TARP_CHAR = 'T';
 export const WATER_CHAR = '~';
@@ -235,6 +245,19 @@ export const brickWall = (c0, c1, h = 4) => ({
   stamp: (g) => rows(g, rowOf(GROUND + h - 1), rowOf(GROUND), c0, c1, 'K'),
   piece: { type: 'wall', c0, c1, cy0: GROUND, rows: h },
   obstacle: { at: c0, kind: 'step', size: h, clears: 'smash' },
+});
+
+// A THIRD machine-shaped lock, and the odd one out on purpose (DESIGN §8.4):
+// mangled sheet metal lying in the road, its buckled edges too tall to jump
+// — the same 'step' shape as a bank — but it clears by being DRIVEN OVER
+// rather than dug or smashed. No aiming, no hold: the verb is the drive, and
+// `h` is read as "how many passes" rather than "how many rows", since a
+// sheet is flattened, not excavated.
+export const sheet = (c0, c1, h = 3) => ({
+  kind: 'sheet', c0, c1, h,
+  stamp: (g) => rows(g, rowOf(GROUND + h - 1), rowOf(GROUND), c0, c1, 'F'),
+  piece: { type: 'sheet', c0, c1, cy0: GROUND, rows: h },
+  obstacle: { at: c0, kind: 'step', size: h, clears: 'flatten' },
 });
 
 // A gap only a span will cross.
@@ -569,6 +592,7 @@ export function compile(room) {
   const pieceOf = (t) => out.pieces.find((q) => q.type === t) || null;
   out.bank = pieceOf('bank');
   out.wall = pieceOf('wall');
+  out.sheet = pieceOf('sheet');
 
   const chasmPart = room.parts.find((p) => p.kind === 'chasm');
   out.girder = (out.stack && chasmPart) ? {
@@ -745,6 +769,7 @@ function rideTime(r) {
     + (r.girder ? Math.abs(r.girder.seat.x0 - r.girder.stackX) / speed : 0);
   else if (job.clears === 'smash') work = 2 * RIDE.swing;
   else if (job.clears === 'drain') work = (job.size || 1) * RIDE.drain;
+  else if (job.clears === 'flatten') work = (job.size || 1) * RIDE.flatten;
   // A VERB WITH NO BRANCH LEAVES work AT 0 and the estimate quietly
   // under-counts — the failure this chain is most likely to have, because
   // nothing errors. Say so instead.

@@ -12,8 +12,8 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=51';
-import { craftMat, craftBox } from './craft.js?v=51';
+import { PAL, mix } from './palette.js?v=52';
+import { craftMat, craftBox } from './craft.js?v=52';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();
@@ -107,6 +107,59 @@ export function buildBankModel(rows = 3, width = 5) {
       }
     }
 
+    root.add(g); nodes[`state${s}`] = g;
+  }
+  return { root, nodes };
+}
+
+// ---- the sheet: mangled aluminium, flattened a pass at a time ------------
+// The same "read the change" rule as the bank, in a different material: a
+// half-flattened sheet is not a shorter bank — the buckled rows go DOWN
+// under the drum, and what is left keeps its jagged, torn edges rather than
+// just getting shorter and tidier.
+export function buildSheetModel(rows = 3, width = 5) {
+  const root = new THREE.Group();
+  const nodes = {};
+  const M = (c) => craftMat(c, 'balsa');
+
+  for (let s = 0; s < rows; s++) {
+    const h = rows - s;                       // passes still owed
+    const g = new THREE.Group(); g.name = `state${s}`;
+    for (let r = 0; r < h; r++) {
+      const t = h === 1 ? 1 : r / (h - 1);
+      const panelC = mix(PAL.STEEL[0], PAL.STEEL[2], 0.2 + t * 0.5);
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(width, 1, 1.5), M(panelC));
+      plate.position.set(width / 2, r + 0.5, 0);
+      // the buckle: every panel kinks at a slightly different angle, which
+      // is what reads as MANGLED rather than as a tidy stacked slab
+      plate.rotation.z = (((r * 7) % 5) - 2) * 0.035;
+      g.add(plate);
+    }
+    if (s === 0) {
+      // untouched: the sheet still carries its own rivet line and a hazard
+      // stripe, the site's own danger language
+      const top = new THREE.Mesh(new THREE.BoxGeometry(width, 0.1, 1.56), M(PAL.STEEL[3]));
+      top.position.set(width / 2, h - 0.02, 0); g.add(top);
+      for (let i = 0; i < Math.ceil(width / 0.7); i++) {
+        const st = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.08, 1.58), M(i % 2 ? PAL.HAZARD : PAL.INK));
+        st.position.set(0.35 + i * 0.7, h + 0.02, 0);
+        g.add(st);
+      }
+    } else {
+      // flattened: a duller, drum-pressed top — no stripe left to warn with
+      const top = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, 1.5), M(PAL.STEEL[1]));
+      top.position.set(width / 2, h - 0.01, 0); g.add(top);
+    }
+    // torn scrap curling off the leading edge — the tell that this is metal
+    // being bent, not earth being dug
+    for (let i = 0; i < 3 + s; i++) {
+      const a = (i * 2.39) % 1, b = (i * 0.77) % 1;
+      const curl = new THREE.Mesh(new THREE.BoxGeometry(0.4 + b * 0.3, 0.05, 0.22),
+        M(mix(PAL.STEEL[0], PAL.STEEL[2], b)));
+      curl.position.set(a * width, h + 0.05 + b * 0.15, (b - 0.5) * 1.5);
+      curl.rotation.set(a * 3, b * 4, 0.6 + a * 0.8);
+      g.add(curl);
+    }
     root.add(g); nodes[`state${s}`] = g;
   }
   return { root, nodes };
@@ -532,6 +585,74 @@ export class Bank {
       p.position.x += p.vx * dt;
       p.position.y += p.vy * dt;
       p.rotation.x += dt * 7; p.rotation.z += dt * 5;
+      if (p.life >= 1) p.visible = false;
+    }
+  }
+}
+
+// ---- the sheet, runtime: flattened a pass at a time, no hold required ----
+// Same shape as Bank (rect, dug, remaining, cleared, show), because the map
+// edit is identical — clearRow, one row at a time. What differs is who
+// calls flatten() and why: main.js's own drive loop, on dwell time over the
+// unflattened rows, never a held button.
+export class Sheet {
+  constructor(scene, level, rect, asset) {
+    this.level = level; this.rect = rect;
+    this.dug = 0;
+    this.n = asset.nodes;
+    this.states = rect.rows;
+    this.group = new THREE.Group();
+    this.group.add(asset.root);
+    this.group.position.set(rect.c0, rect.cy0, 0);
+    scene.add(this.group);
+
+    // sparks off the drum, not dirt off a bucket
+    this.spray = [];
+    const geo = new THREE.BoxGeometry(0.1, 0.05, 0.1);
+    for (let i = 0; i < 14; i++) {
+      const m = new THREE.Mesh(geo, craftMat(mix(PAL.MACHINE, PAL.STEEL[3], 0.4), 'balsa'));
+      m.visible = false; m.life = 1;
+      this.spray.push(m); scene.add(m);
+    }
+    this.show();
+  }
+
+  get remaining() { return this.rect.rows - this.dug; }
+  get cleared() { return this.remaining <= 0; }
+
+  show() {
+    for (let s = 0; s < this.states; s++) {
+      if (this.n[`state${s}`]) this.n[`state${s}`].visible = (s === this.dug);
+    }
+  }
+
+  // one pass of the drum: the top row leaves the map, same fact as a dig
+  flatten() {
+    if (this.cleared) return false;
+    const cy = this.rect.cy0 + this.remaining - 1;
+    this.level.clearRow(this.rect.c0, this.rect.c1, cy);
+    this.dug++;
+    this.show();
+    let n = 0;
+    for (const p of this.spray) {
+      if (p.life < 1 || n >= 5) continue;
+      n++;
+      p.life = 0; p.visible = true;
+      p.position.set(this.rect.c0 + Math.random() * (this.rect.c1 - this.rect.c0 + 1), cy + 0.6, (Math.random() - 0.5) * 1.5);
+      p.vx = (Math.random() - 0.5) * 3.4;
+      p.vy = 2.6 + Math.random() * 2.4;
+    }
+    return true;
+  }
+
+  update(dt) {
+    for (const p of this.spray) {
+      if (p.life >= 1) { p.visible = false; continue; }
+      p.life = Math.min(1, p.life + dt / 0.5);
+      p.vy -= 26 * dt;
+      p.position.x += p.vx * dt;
+      p.position.y += p.vy * dt;
+      p.rotation.x += dt * 12; p.rotation.z += dt * 10;
       if (p.life >= 1) p.visible = false;
     }
   }

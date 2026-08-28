@@ -52,6 +52,10 @@ const BOT = `async (budgetMs) => {
     const d = E.level.def, q = E.player;
     if (d.bank && E.debug.bank() && !E.debug.bank().cleared) return { at: d.bank.c0, verb: 'down' };
     if (d.wall && E.debug.wall() && !E.debug.wall().cleared) return { at: d.wall.c0, verb: 'down' };
+    // the flattener needs no held verb at all (DESIGN §8.4) — 'down' here
+    // does nothing and costs nothing; parking near the sheet is the whole
+    // job, so the bot just has to arrive and sit still long enough.
+    if (d.sheet && E.debug.sheet() && !E.debug.sheet().cleared) return { at: d.sheet.c0, verb: 'down' };
     // the girder is TWO actions, not one: pick it off its stack first, then
     // carry it to the seating window at the lip. A bot that only ever drove
     // at the gap sat there holding the verb with an empty hook.

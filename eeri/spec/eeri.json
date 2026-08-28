@@ -1,6 +1,6 @@
 {
   "game": "eeri",
-  "version": "15.44",
+  "version": "15.45",
   "generated": "node eeri/tools/spec.mjs",
   "contract": "This file is the DESIGN of Eeri, not its presentation. Every number here is emitted from js/parts.js and js/rooms.js and must not be re-typed downstream. How the game is drawn, framed and controlled is deliberately absent: the JavaScript build tests VERTICAL, the Godot port tests LANDSCAPE.",
   "world": {
@@ -35,6 +35,10 @@
         "ch": "K",
         "solid": true
       },
+      "sheet": {
+        "ch": "F",
+        "solid": true
+      },
       "beltR": {
         "ch": "C",
         "solid": true
@@ -56,7 +60,7 @@
         "solid": false
       }
     },
-    "solidChars": "#=GBKCcT~",
+    "solidChars": "#=GBKFCcT~",
     "beltChars": "Cc",
     "tarpChar": "T",
     "waterChar": "~",
@@ -87,7 +91,8 @@
       "pump": 3,
       "pipelayer": 2.6,
       "skidder": 3,
-      "loader": 3.8
+      "loader": 3.8,
+      "flattener": 3.6
     },
     "machineReach": {
       "excavator": {
@@ -128,6 +133,12 @@
           "span"
         ],
         "arm": 2.8
+      },
+      "flattener": {
+        "verbs": [
+          "flatten"
+        ],
+        "arm": 1.4
       }
     },
     "ride": {
@@ -137,7 +148,8 @@
       "sling": 0.55,
       "seat": 0.5,
       "swing": 2.4,
-      "drain": 0.8
+      "drain": 0.8,
+      "flatten": 0.9
     }
   },
   "clocks": {
@@ -1254,13 +1266,13 @@
         "                          H======                                                               ",
         "                          H                                                                     ",
         "            H======       H                                                                     ",
-        "            H             H                H=====                     H=====                    ",
-        "            H             H                H                          H                         ",
-        "            H             H                H                          H                         ",
-        "####################   ###################################        ##############################",
-        "####################   ###################################        ##############################",
-        "####################   ###################################        ##############################",
-        "####################   ###################################        ##############################"
+        "            H             H                H=====         FFFFFF      H=====                    ",
+        "            H             H                H              FFFFFF      H                         ",
+        "            H             H                H              FFFFFF      H                         ",
+        "####################   #########################################################################",
+        "####################   #########################################################################",
+        "####################   #########################################################################",
+        "####################   #########################################################################"
       ],
       "spawn": {
         "kid": {
@@ -1268,10 +1280,10 @@
           "y": 4
         },
         "machines": {
-          "excavator": 52
+          "flattener": 50
         },
-        "excavator": {
-          "x": 52,
+        "flattener": {
+          "x": 50,
           "y": 4
         }
       },
@@ -1286,17 +1298,16 @@
       "gate": null,
       "machines": [
         {
-          "type": "excavator",
-          "x": 52,
+          "type": "flattener",
+          "x": 50,
           "track": [
             44,
-            57
+            69
           ],
           "verbs": [
-            "dig",
-            "span"
+            "flatten"
           ],
-          "arm": 2.6
+          "arm": 1.4
         }
       ],
       "obstacles": [
@@ -1308,9 +1319,9 @@
         },
         {
           "at": 58,
-          "kind": "gap",
-          "size": 8,
-          "clears": "span"
+          "kind": "step",
+          "size": 3,
+          "clears": "flatten"
         }
       ],
       "robots": [
@@ -1367,19 +1378,7 @@
         }
       ],
       "water": [],
-      "girder": {
-        "stackX": 48,
-        "gap": {
-          "c0": 58,
-          "c1": 65,
-          "cy": 3
-        },
-        "seat": {
-          "x0": 53.6,
-          "x1": 57.3
-        },
-        "spanLen": 9.8
-      },
+      "girder": null,
       "bank": null,
       "wall": null,
       "bolts": [
@@ -1681,27 +1680,27 @@
         ],
         [
           12,
-          59
-        ],
-        [
-          12,
-          60
-        ],
-        [
-          12,
-          61
-        ],
-        [
-          12,
-          62
-        ],
-        [
-          12,
-          63
-        ],
-        [
-          12,
           64
+        ],
+        [
+          12,
+          65
+        ],
+        [
+          12,
+          66
+        ],
+        [
+          12,
+          67
+        ],
+        [
+          12,
+          68
+        ],
+        [
+          12,
+          69
         ],
         [
           12,
@@ -1791,7 +1790,7 @@
         ],
         [
           10,
-          62
+          66
         ],
         [
           8,
@@ -1829,8 +1828,8 @@
         "asksPer10": 1.24,
         "worstDeadAir": 12,
         "worstDeadAirAt": 58,
-        "learnedSeconds": 30.2,
-        "onFootShare": 0.818
+        "learnedSeconds": 30.7,
+        "onFootShare": 0.805
       }
     },
     {

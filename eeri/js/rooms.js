@@ -28,12 +28,12 @@
 //   6 / WORLD 2-3 — THE PAIRING. Water + pipes + hoist, then the world ending.
 
 import {
-  ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
+  ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm, sheet,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, shallow, deep, pipe,
   bucketBot, hoist,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=51';
+} from './parts.js?v=52';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -170,14 +170,14 @@ export const ROOMS = [
       boltRun(5, 50, 55),
       checkpoint(46),
 
-      // ── 4 · THE RIDE ── the span. The gap past the stack is past both of
-      // them: no jump reaches it and the machine refuses a cliff, so the
-      // only way over is a girder the machine carries there and lowers in.
-      machine('excavator', 52, [44, 57]),
-      girderStack(48),
-      chasm(58, 65),                      // 8 wide — machine-shaped
-      boltRun(5, 59, 64),                 // only over the span
-      golden(7, [62]),
+      // ── 4 · THE RIDE ── World 1's second machine (DESIGN §8.4): mangled
+      // sheet metal, too buckled to jump, driven flat by the flattener
+      // rather than dug or spanned — no aiming, no hold, the same gesture
+      // as everything else in this level's back half except the verb.
+      machine('flattener', 50, [44, 69]),
+      sheet(58, 63, 3),
+      boltRun(5, 64, 69),                 // only once the sheet is flat
+      golden(7, [66]),
 
       // …and down again, on the far side
       ...scaffold(70, 75, 6),
