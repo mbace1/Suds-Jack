@@ -326,6 +326,21 @@ noticing it's a deliberate reconciliation, not an oversight:
    crude policy (no real dodging), and not itself evidence the C/B/A/S rates
    are wrong — it's evidence that reaching *any* stamp may be the harder
    design question, separate from which letter you get once you do.
+
+   **Second data point, and the more useful one:** a "smarter" evasion
+   policy — flee the weighted center of every live threat (inverse-square
+   repulsion, like a flocking separation force) instead of just the single
+   nearest enemy, so it can't be baited into fleeing A straight into B — was
+   tried next, expecting it to survive longer. It **died faster**: under a
+   minute, before v1's own ~75s. Read charitably, this isn't "evasion logic
+   doesn't help" — it's that pure repulsion with no wall-awareness can drive
+   a bot straight into a corner, where retreat runs out. The honest
+   conclusion isn't a fix, it's a stopping point: getting a bot to reliably
+   *play well* (real dodging, spacing, wall-awareness) is a different and
+   much larger problem than the one being asked here, and disproportionate
+   effort for it. Both bot runs agree on the one thing that matters for this
+   question — clearing a level is hard — and a real human playtest is the
+   right next instrument, not a third bot.
 4. **Decided by shipping, `v227`:** live tier is always visible (top-right
    HUD). Godot's doc raised and left open whether a dropping letter mid-run
    reads as discouraging; this build shipped the visible version without
