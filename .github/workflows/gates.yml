@@ -191,3 +191,8 @@ jobs:
       # telegraph, and a full bot-vs-bot playthrough) is provable here.
       - name: the grid-tactics engine's core loop
         run: node turf/test/smoke.mjs
+
+      # Pure data + a pure function, no engine dependency — the crew-name
+      # generator (js/names.js) checked on its own.
+      - name: the crew-name generator
+        run: node turf/test/names.mjs

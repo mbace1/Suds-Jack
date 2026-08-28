@@ -8,6 +8,36 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v3 — 2026-08-28
+**Design capture, not an engine change: classes/subclasses, crew naming, and
+the first art-pipeline feedback loop. Nothing in `index.html`'s live import
+graph changed, so no cache-token bump this round.**
+
+- `ART_REQUEST.md` §2.1: the owner's first Nano Banana casting sheet (~20
+  characters, generated outside this pipeline) validated the register but
+  exposed a palette gap — hair colour, a second skin tone, denim, jewelry had
+  nowhere to live in the original fourteen colours. `art-src/palette.json`
+  doubled to 32, additive only (every original key keeps its value). Casting
+  specific characters to specific archetypes stays deliberately unlocked —
+  the class list below may still change, and it's loose by design (see next).
+- `GDD.md` §5.1: **classes/subclasses with unique skills, likeness decoupled
+  from class** (Mewgenics' own answer to "how do you read a class off a
+  character" — colour, not the character). Reconciled against the game's
+  existing warm-vs-cold faction read rather than replacing it: faction stays
+  the primary hue family (operators cool, rivals warm), class is a secondary
+  accent within that family. Illustrative split: Blade → Slasher/Shiv, Niner
+  → Marksman/Enforcer, Wrench → Bruiser/Anchor — names and numbers not final,
+  the shape is the point. Phase 2+ scope; no `data/*.json` change shipped.
+- `GDD.md` §5.2 + `js/names.js` + `test/names.mjs`: a procedural crew-name
+  generator — Finnish-majority first/last names with Sweden/Norway/Russia/
+  Estonia (Finland's actual neighbours) mixed in at minority weight, plus a
+  nickname layer that mostly draws a build-fitting name (Tank, Bear.../Tiny,
+  Mouse...) but sometimes reaches for the mismatch on purpose — a big guy
+  called Smalls. Seeded off the same `makeRng` every other random draw in
+  this engine uses, so a name replays identically for a given seed. Not yet
+  wired to the roster — `data/units.json` still has three fixed ids with no
+  name field; that hookup is the same Phase 2 roster work as §5.1.
+
 ## v2 — 2026-08-28
 **Keyboard and native gamepad, so the board is testable without a mouse.**
 
