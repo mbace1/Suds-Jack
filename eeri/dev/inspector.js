@@ -25,12 +25,18 @@
 //   · LAMPS place live. `js/light.js` is pure and self-contained, so PLACE
 //     → click the picture spawns a real lamp, tags it with the row that
 //     made it, and UNDO removes it.
-//   · World 2's pipe vocabulary places live too, THROUGH the art lane's
-//     own builders (`world2-dressing.js` now returns them by name) — a
-//     prop placed from the editor is built by the exact same closure as
-//     one authored by hand, which is what keeps the two indistinguishable.
-//   · A world with no dressing module (worlds 3 and 4, still) offers lamps
-//     only. Its palette says so rather than showing empty rows.
+//   · World 1 and World 2's own vocabularies place live too, THROUGH the
+//     art lane's own builders (`world1-dressing.js` / `world2-dressing.js`
+//     return them by name) — a prop placed from the editor is built by the
+//     exact same closure as one authored by hand, which is what keeps the
+//     two indistinguishable.
+//   · Worlds 3 and 4 are NOT a world with no dressing — `world34-dressing.js`
+//     is a full, asset-backed art pass (real texture cutouts per site, not
+//     PROPS/SCENERY rows) — but it is a freestanding sidecar that mounts
+//     itself off the live site index rather than through `placeScenery()`,
+//     so the editor genuinely cannot see or drag anything it draws. Those
+//     two worlds' palettes offer lamps only here, and that is a real gap in
+//     the EDITOR's reach, not a gap in the worlds' dressing.
 //   · GAMEPLAY places SOME kinds live (v2.1): a skitter, hopper, roller,
 //     bucket bot or steam vent is a real `Robot`/`SteamVent`, pushed onto
 //     the SAME live array (`site.robots` / `site.vents`) the update loop
@@ -576,8 +582,11 @@ export class Inspector {
 
   // Which prop types can actually be BUILT right now, for this world: lamp
   // always (js/light.js is world-agnostic), and whatever the current
-  // world's dressing module exposed — worlds without one (1, 3, 4 today)
-  // offer lamps only, and the palette says so via the "reference" tag.
+  // world's dressing module exposed through `dressingBuilders()` — which is
+  // worlds 1 and 2 today. Worlds 3 and 4 dress themselves through
+  // `world34-dressing.js`, a freestanding sidecar the editor cannot reach,
+  // so they offer lamps only here, and the palette says so via the
+  // "reference" tag.
   liveTypes(A) {
     const s = new Set(['lamp']);
     const builders = A?.debug?.dressingBuilders?.();
