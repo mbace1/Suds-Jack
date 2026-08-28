@@ -266,6 +266,15 @@ export const TUNING = {
     poolRadius: 0.30,      // player pool size in uv units
     poolLift: 0.30,        // how much the pool lifts the base color
     gridFalloff: 0.45,     // grid dims toward the rim (0 = uniform, old look)
+    // v228 ARENA PASS 2 (roadmap-v2 Phase 3): the floor now answers three
+    // more things happening on it, each a fixed-size point array (branch-free
+    // in the shader — an unused slot carries strength 0, not a skipped
+    // iteration, so both render paths stay simple loops, no dynamic control
+    // flow). Same "cheap fragment terms" discipline as v223, not a new
+    // technique: no render-to-texture, no per-object floor projection.
+    massSample: 10, massRadius: 0.22, massDark: 0.14,   // the swarm presses the ground darker where it's thick
+    popCount: 6, popLife: 0.55, popRadius: 0.07, popBright: 0.85,  // a kill rings out and fades
+    prizeCount: 5, prizeRadius: 0.05, prizeGlow: 0.32,  // pickups mark their own ground
   },
 
   // v224 RUSH MODE (owner direction, 2026-08-24; design in the Godot port's
