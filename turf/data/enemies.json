@@ -1,0 +1,8 @@
+{
+  "_comment": "Grunt archetypes, Phase 1's 2-3 (Milestone 1 checklist) drawn from the pipeline's weapon-profile split: melee-blunt (knockback), ranged-handgun (steady mid), ranged-shotgun (short burst). melee-sharp held back for Phase 2 — data-driven, so adding it later is a new entry, not a rebuild.",
+  "enemies": [
+    { "id": "grunt_blunt",   "name": "Blunt",   "role": "melee",  "weapon": "bat",     "hp": 5, "move": 3 },
+    { "id": "grunt_handgun", "name": "Shooter", "role": "ranged", "weapon": "handgun", "hp": 4, "move": 3 },
+    { "id": "grunt_shotgun", "name": "Close",   "role": "ranged", "weapon": "shotgun", "hp": 5, "move": 3 }
+  ]
+}

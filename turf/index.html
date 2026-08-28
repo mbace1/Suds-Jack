@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>TURF</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #07080b; overflow: hidden; }
+  body {
+    display: flex; flex-direction: column;
+    font: 13px/1.4 'Courier New', ui-monospace, Menlo, monospace;
+    color: #d6d9de; letter-spacing: .02em;
+    user-select: none;
+  }
+
+  #topbar, #bottombar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; background: #14161c; border-color: #262a32;
+    flex: none; z-index: 5;
+  }
+  #topbar { border-bottom: 1px solid #262a32; padding-left: 60px; }
+  #bottombar { border-top: 1px solid #262a32; flex-wrap: wrap; }
+
+  #turnLabel { font-weight: bold; letter-spacing: .1em; text-transform: uppercase; color: #6fa8c9; }
+  #turnLabel.enemy { color: #c9663f; }
+  #roundLabel { color: #7b818c; }
+  #endTurnBtn {
+    margin-left: auto; min-height: 44px; padding: 8px 16px;
+    background: #1c1f26; color: #d6d9de; border: 1px solid #6fa8c9;
+    font: inherit; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  }
+  #endTurnBtn:disabled { opacity: .35; cursor: default; }
+  #endTurnBtn:not(:disabled):active { background: #6fa8c9; color: #0b0c0f; }
+
+  #stage {
+    flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
+    min-height: 0; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(111,168,201,0.06), transparent 60%),
+      #07080b;
+  }
+  #board { image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: pointer; display: block; }
+
+  #squad { display: flex; gap: 8px; }
+  .unitBtn {
+    min-height: 44px; padding: 5px 9px; background: #1c1f26; border: 1px solid #262a32;
+    color: #d6d9de; font: inherit; text-align: left; cursor: pointer; min-width: 84px;
+  }
+  .unitBtn .nm { display: block; font-weight: bold; }
+  .unitBtn .hpTrack { display: block; height: 4px; background: #20232a; margin-top: 3px; width: 100%; }
+  .unitBtn .hpFill { display: block; height: 100%; background: #5ad1a8; }
+  .unitBtn.selected { border-color: #f2e2a0; }
+  .unitBtn.done { opacity: .4; }
+  .unitBtn.dead { opacity: .25; text-decoration: line-through; }
+  .unitBtn:disabled { cursor: default; }
+
+  #selInfo { min-width: 150px; color: #7b818c; }
+  #selInfo b { color: #d6d9de; }
+  #toast { flex: 1 1 100%; min-height: 1.4em; color: #f2e2a0; font-size: 12px; order: 5; }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 20px; text-align: center;
+    background: rgba(7,8,11,0.94);
+  }
+  .overlay[hidden] { display: none; }
+  .overlay h1 { font-size: 28px; letter-spacing: .2em; text-transform: uppercase; color: #6fa8c9; }
+  .overlay p { max-width: 440px; color: #b6bac2; font-size: 13px; line-height: 1.7; }
+  .overlay .tag { color: #7b818c; font-size: 12px; margin-top: -8px; }
+  .bigBtn {
+    min-height: 48px; padding: 12px 28px; background: #1c1f26; color: #d6d9de;
+    border: 1px solid #6fa8c9; font: inherit; font-size: 14px; letter-spacing: .1em;
+    text-transform: uppercase; cursor: pointer;
+  }
+  .bigBtn:active { background: #6fa8c9; color: #0b0c0f; }
+  #result h1.win { color: #5ad1a8; }
+  #result h1.lose { color: #e0453a; }
+
+  @media (max-width: 640px) {
+    #topbar { padding-left: 56px; font-size: 12px; }
+    .unitBtn { min-width: 74px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="topbar">
+    <span id="turnLabel">—</span>
+    <span id="roundLabel"></span>
+    <button id="endTurnBtn" disabled>End Turn</button>
+  </div>
+
+  <div id="stage">
+    <canvas id="board" width="10" height="10"></canvas>
+  </div>
+
+  <div id="bottombar">
+    <div id="squad"></div>
+    <div id="selInfo">Select an operator.</div>
+    <div id="toast"></div>
+  </div>
+
+  <div id="title" class="overlay">
+    <h1>TURF</h1>
+    <p class="tag">Nordic street tactics — three operators, one backlot, no way out but through.</p>
+    <p>
+      Tap an operator, then tap a tile to move or an enemy to hit — move and act in either
+      order, once each, per operator. Full cover (dumpsters, fences) blocks a shot outright;
+      low cover (crates, curbs) only softens one. Every enemy shows what it plans to do
+      before it does it — read the board, not the RNG. Clear the block to win; lose your
+      whole crew and it's over.
+    </p>
+    <p class="tag">Mouse or touch · arrows/WASD move, Enter/Space confirm, Esc cancel, E ends turn ·
+      pad: stick move, A confirm, B cancel, Y ends turn</p>
+    <button id="titleStart" class="bigBtn" disabled>Loading…</button>
+  </div>
+
+  <div id="result" class="overlay" hidden>
+    <h1 id="resultTitle"></h1>
+    <p id="resultBody"></p>
+    <button id="resultAgain" class="bigBtn">Run It Back</button>
+  </div>
+
+  <script type="module" src="js/main.js?v=2"></script>
+  <script type="module" src="../hub/shell.js?v=17"></script>
+</body>
+</html>

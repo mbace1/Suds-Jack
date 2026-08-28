@@ -1,0 +1,11 @@
+{
+  "_comment": "range/hp in tiles. hitChance 1 = deterministic (melee). knockback = tiles pushed along the attack line; 0 = none. Referenced by id from units.json and enemies.json — see GDD §5, pipeline §3.",
+  "weapons": [
+    { "id": "knife",   "name": "Knife",   "archetype": "melee",  "range": 1, "damage": 4, "knockback": 0, "hitChance": 1 },
+    { "id": "pistol",  "name": "Pistol",  "archetype": "ranged", "range": 5, "damage": 2, "knockback": 0, "hitChance": 0.85 },
+    { "id": "pipe",    "name": "Pipe",    "archetype": "melee",  "range": 1, "damage": 1, "knockback": 2, "hitChance": 1 },
+    { "id": "bat",     "name": "Bat",     "archetype": "melee",  "range": 1, "damage": 2, "knockback": 1, "hitChance": 1 },
+    { "id": "handgun", "name": "Handgun", "archetype": "ranged", "range": 5, "damage": 2, "knockback": 0, "hitChance": 0.8 },
+    { "id": "shotgun", "name": "Shotgun", "archetype": "ranged", "range": 2, "damage": 4, "knockback": 1, "hitChance": 0.85 }
+  ]
+}

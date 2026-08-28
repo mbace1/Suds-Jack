@@ -362,6 +362,33 @@ export const GAMES = [
     art: 'diorama',
   },
   {
+    id: 'turf',
+    fi: {
+      tagline: 'Ruudukkotaktiikkaa sateisella pohjoismaisella takapihalla: näet vihollisten aikeet etukäteen, suoja oikeasti merkitsee, kolme operaattoria kuutta vastaan.',
+      lineage: 'Into the Breach × Metal Slug Tactics',
+      controls: 'napauta operaattoria, sitten ruutua tai vihollista · myös näppäimistö ja ohjain',
+      note: 'v2 — Milestone 1 -taisteluprototyyppi, nyt näppäimistö- ja ohjaintuella.',
+    },
+    ja: {
+      tagline: '雨に濡れた北欧の裏路地でのグリッド戦術。敵の狙いは先に見える、遮蔽物が本当に効く、三人のオペレーターが六人と対峙する。',
+      lineage: 'Into the Breach × Metal Slug Tactics',
+      controls: 'オペレーターをタップ、次にマスか敵をタップ · キーボード/パッドにも対応',
+      note: 'v2 — 最初の戦闘プロトタイプ、キーボードとパッド対応を追加。',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'v2 — Milestone 1 feel-test, now with keyboard and gamepad support.',
+    title: 'TURF',
+    tagline: 'Grid tactics on a rain-lit Nordic backlot: telegraphed hits, cover that actually matters, three operators against six.',
+    lineage: 'Into the Breach × Metal Slug Tactics',
+    tags: ['tactics', 'grid', 'canvas'],
+    controls: 'tap an operator, then a tile to move or an enemy to hit · keyboard and pad supported',
+    path: 'turf/',
+    inRepo: true,
+    accent: '#6fa8c9',
+    art: 'backlot',
+  },
+  {
     id: 'gameoflife',
     fi: {
       tagline: 'Pieniä tarinoita ja pelejä, jotka palauttavat sinut aina ulos. Suomeksi, englanniksi ja japaniksi.',
