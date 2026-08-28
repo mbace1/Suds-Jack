@@ -88,49 +88,12 @@ graphics/physics item runs the other way.
 
 ## Queued
 
-### Q-025 — Wire `rush.lives`, or cut it
-
-- status: Queued
-- repo: Suds-Jack
-- size: S
-- blocked-by: —
-- design: RUSH_DESIGN.md §1.4
-- gate: a Rush run either genuinely spends a banked life on death (reviving
-  at full HP, decrementing `rush.lives`, ending the run only at 0), or the
-  HUD life counter and `checkExtraLife()`/"EXTRA MAN!" machinery are removed
-
-`TUNING.rush.lives` and `rush.checkExtraLife()` are fully wired to award and
-display extra lives, but nothing ever calls `rush.loseLife()` — a Rush run
-currently ends on the third hit (`player.hp` reaching 0) regardless of how
-many lives are banked. Found while writing `RUSH_DESIGN.md`; it's a shipped-
-code gap, not a design disagreement, so it belongs in review before the tier
-system in that doc (§3) leans on "lives" meaning anything to a player.
-
-### Q-026 — Verify Rush spawn supply at high `rush.level`
-
-- status: Queued
-- repo: Suds-Jack
-- size: S
-- blocked-by: —
-- design: RUSH_DESIGN.md §3.2
-- gate: a played or scripted sample of `getEnemySchedule()` output at
-  `rush.level` 4–6, checked against the S-tier PAR kill rate (2.0 kills/s)
-  in the same doc
-
-`getEnemySchedule()` was tuned for the base game's wave pacing and is reused
-under Rush by substituting `rush.level` for wave count. The Godot repo's own
-(unshipped) Rush design found its spawn director had a hard supply ceiling
-below B tier until telegraphs were made to pipeline
-(`design/RUSH_TIERS_AND_LEVELS.md` §5) — this build's schedule has never been
-checked against Rush's own roster/pacing for the same failure mode.
-
 ### Q-027 — Implement the Rush S/A/B/C tier + leg-goal system
 
 - status: Queued
 - repo: Suds-Jack
 - size: M
-- blocked-by: Q-025, Q-026 (the numbers this depends on need to be real
-  before the UI ships against them)
+- blocked-by: — (Q-025, Q-026 both landed)
 - design: RUSH_DESIGN.md §3
 - gate: per-level PAR kill table live in the HUD, stamped ladder on the run
   summary, all three goal slots (UNTOUCHED / UNBROKEN / NEVER LOCKED) and the
@@ -147,5 +110,36 @@ method, not the specific thresholds.
 
 ## Landed
 
-*(nothing queued here yet has landed — see each repo's own `VERSIONS.md` /
-`PORT_STATUS.md` for what shipped before this file existed.)*
+### Q-025 — RUSH's dead life-counter is gone
+
+- status: **Landed** in `991daf08` (`v226`)
+- repo: Suds-Jack
+- size: S
+- blocked-by: —
+- design: RUSH_DESIGN.md §1.4
+
+Body corrected on landing — the original framing was wrong. `checkExtraLife()`'s
+caller already grew `player.maxHp`/`hp` directly on every threshold; the
+extra-life mechanic already worked. `rush.lives` was a separate, purely
+internal counter nothing ever read (not the HUD, not `designer.js`, not
+`lang.js`) — inert, not broken. Landed fix: removed `rush.lives` and the dead
+`loseLife()`; `nextLife` (the real threshold gate) stays. No observable
+behavior changed. A first pass at this branch added a revive-on-death
+mechanic instead — reverted before merge, since that would have been a real
+balance change, not a fix for what was actually wrong.
+
+### Q-026 — Verify Rush spawn supply at high `rush.level`
+
+- status: **Landed** in `5f767783` (finding, `Suds-Jack@main`) /
+  `6e5ffa58` (reusable script, `scripts/rush-supply-sample.mjs`, `gh-pages`)
+- repo: Suds-Jack
+- size: S
+- blocked-by: —
+- design: RUSH_DESIGN.md §3.2
+
+Sampled `getEnemySchedule()`'s spawn-side supply against the real `TUNING`
+data at `rush.level` 1–7 (40 seeds/level). Unlike Godot's own finding (a hard
+ceiling below B tier), this build's supply roughly *tracks* the S-tier PAR:
+`'swarm'`/`'spike'`-kind levels clear it with room, plain `'normal'`-kind
+levels (the majority) fall short by 0.05–0.3 kills/s — small enough to read
+as "a tight ceiling," not "unreachable." Full table in `RUSH_DESIGN.md` §3.2.
