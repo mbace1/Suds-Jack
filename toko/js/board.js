@@ -1,11 +1,7 @@
 // TOKO MIDORI GAMES — live board wrapper.
-// Keep the deployed brand-board implementation intact, then layer the newer
-// project knowledge/conversation, local small brain, and counter layout guard.
+// Keep the deployed brand-board implementation intact, then load the newer
+// self-mounting conversation/brain/layout layers exactly once.
 import './board-base.js';
-import { mountProjectConversation } from './project-conversation.js';
-import { mountBrainConversation } from './brain-conversation.js';
-import { guardCounter } from './chat-layout-fix.js';
-
-mountProjectConversation(document);
-mountBrainConversation(document);
-globalThis.TokoChatLayout = guardCounter(document);
+import './project-conversation.js';
+import './brain-conversation.js';
+import './chat-layout-fix.js';
