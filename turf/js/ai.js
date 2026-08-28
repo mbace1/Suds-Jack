@@ -2,7 +2,7 @@
 // baseline AI) plus the ITB-style telegraph — the plan an enemy would
 // execute if its turn started right now, recomputed after every player
 // action so the intent shown on screen never lies about the current board.
-import { manhattan, moveRange, approachTile } from './grid.js';
+import { manhattan, moveRange, approachTile } from './grid.js?v=1';
 
 function nearestTarget(state, enemy) {
   let best = null, bestDist = Infinity;

@@ -215,6 +215,33 @@ console.log('AI + telegraph');
     }
     assert.ok(changed, 'at least one enemy should replan after the board changed');
   });
+  check('the enemy phase executes exactly the plan the player last saw, not a live replan', () => {
+    // Move every player unit first, so by the time the phase starts, several
+    // enemies' frozen plans were computed against a board that later enemies
+    // in the queue will go on to change further — the exact scenario a live
+    // re-plan (planIntent() called fresh inside stepEnemyPhase) gets wrong.
+    for (const u of livingPlayers(state)) {
+      if (u.actedMove) continue;
+      const tiles = [...movableTiles(state, u).values()];
+      const dest = tiles.find(t => t.x !== u.x || t.y !== u.y);
+      if (dest) moveUnit(state, u.uid, dest.x, dest.y);
+    }
+    endPlayerTurn(state);
+    const frozen = new Map(state.enemyPlan);
+    assert.ok(frozen.size > 0);
+    let steps = 0;
+    let step;
+    do {
+      step = stepEnemyPhase(state);
+      steps++;
+      if (step && !step.done && step.uid) {
+        const plan = frozen.get(step.uid);
+        assert.ok(plan, `${step.uid} acted with no frozen plan`);
+        if (step.moved) assert.deepEqual(step.moved, plan.moveTo, `${step.uid} moved somewhere other than its frozen plan`);
+        if (step.attacked) assert.equal(step.attacked.targetUid, plan.targetUid, `${step.uid} attacked a different target than its frozen plan`);
+      }
+    } while (step && !step.done && steps < 20);
+  });
 }
 
 console.log('end-to-end playthrough (bot vs bot, backlot, must terminate)');

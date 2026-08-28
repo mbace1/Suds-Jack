@@ -3,9 +3,9 @@
 // resolution, knockback, and the enemy phase. Pure data in, pure data out —
 // nothing here touches a canvas or the DOM, which is what makes it runnable
 // in bare node (test/smoke.cjs).
-import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js';
-import { planIntent, planAllIntents } from './ai.js';
-import { makeRng } from './rng.js';
+import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=1';
+import { planAllIntents } from './ai.js?v=1';
+import { makeRng } from './rng.js?v=1';
 
 export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1) {
   const weaponById = id => weaponDefs.find(w => w.id === id);
@@ -31,6 +31,7 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     round: 1,
     selected: null,
     telegraph: new Map(),
+    enemyPlan: new Map(),
     enemyQueue: [],
     log: [],
     result: null,
@@ -186,6 +187,11 @@ export function endPlayerTurn(state) {
   if (state.turn !== 'player') return { ok: false };
   state.turn = 'enemy';
   state.selected = null;
+  // Freeze the plan the player just read off the board. The whole point of
+  // an ITB-style telegraph is that it is a promise, not a preview — an enemy
+  // executes exactly this, never a plan re-computed against a board that
+  // earlier enemies this same phase have already moved.
+  state.enemyPlan = new Map(state.telegraph);
   state.enemyQueue = livingEnemies(state).map(u => u.uid);
   return { ok: true };
 }
@@ -202,11 +208,19 @@ export function stepEnemyPhase(state) {
     const enemy = getUnit(state, uid);
     if (!enemy || enemy.hp <= 0) continue;
 
-    const intent = planIntent(state, enemy);
+    // Execute the frozen plan (set in endPlayerTurn), not a fresh one — see
+    // the comment there. Only guard against a tile another enemy already
+    // took earlier this same phase (independent plans can collide); the
+    // target's position and the enemy's own tile are otherwise exactly what
+    // was shown.
+    const intent = state.enemyPlan.get(uid) || { type: 'idle' };
     let moved = null, attacked = null;
     if (intent.moveTo && (intent.moveTo.x !== enemy.x || intent.moveTo.y !== enemy.y)) {
-      enemy.x = intent.moveTo.x; enemy.y = intent.moveTo.y;
-      moved = { x: enemy.x, y: enemy.y };
+      const blocked = state.fullCover.has(key(intent.moveTo.x, intent.moveTo.y)) || unitAt(state, intent.moveTo.x, intent.moveTo.y, enemy);
+      if (!blocked) {
+        enemy.x = intent.moveTo.x; enemy.y = intent.moveTo.y;
+        moved = { x: enemy.x, y: enemy.y };
+      }
     }
     if (intent.type === 'attack') {
       const target = getUnit(state, intent.targetUid);
@@ -215,7 +229,6 @@ export function stepEnemyPhase(state) {
       }
     }
     state.log.push({ type: 'enemy-turn', uid, name: enemy.name, moved, attacked });
-    planAllIntents(state);
     checkWinLoss(state);
     return { done: false, uid, name: enemy.name, moved, attacked };
   }

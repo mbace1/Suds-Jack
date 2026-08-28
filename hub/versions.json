@@ -44,11 +44,6 @@
     "n": 15048,
     "from": "VERSIONS.md"
   },
-  "turf": {
-    "v": "1",
-    "n": 1000,
-    "from": "VERSIONS.md"
-  },
   "gameoflife": {
     "v": "40",
     "n": 40000,
@@ -57,12 +52,17 @@
   "kindling": {
     "v": "9",
     "n": 9000,
-    "from": "VERSIONS.md"
+    "from": "canonical Kindling release"
   },
   "radiofree": {
     "v": "37",
     "n": 37000,
     "from": "cache token"
+  },
+  "piritori": {
+    "v": "2",
+    "n": 2000,
+    "from": "VERSIONS.md"
   },
   "tokomove": {
     "v": "1",
@@ -87,6 +87,11 @@
   "toko": {
     "v": "5",
     "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "turf": {
+    "v": "1",
+    "n": 1000,
     "from": "VERSIONS.md"
   }
 }

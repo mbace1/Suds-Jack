@@ -3,8 +3,8 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js';
-import { key } from './grid.js';
+import { PAL } from './palette.js?v=1';
+import { key } from './grid.js?v=1';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 
@@ -137,6 +137,23 @@ function drawUnit(g, layout, unit, isSelected) {
   g.p(x - hpW / 2, hpY, hpW * frac, 2, hpColor);
 }
 
+// The source-tile glyph names the weapon's archetype (GDD §4 requires the
+// attack type itself be visible, not just "something will happen here"): a
+// wedge for melee, a tight burst diamond for a short-range weapon (shotgun),
+// a plain dot for a steady long-range one (handgun) — three silhouettes, no
+// two of the enemy roster's weapons draw the same one.
+function weaponGlyph(g, x, y, weapon) {
+  if (weapon.archetype === 'melee') {
+    g.p(x - 2, y, 4, 1, PAL.TELEGRAPH);
+    g.p(x - 1, y - 1, 2, 1, PAL.TELEGRAPH);
+    g.p(x, y - 2, 1, 1, PAL.TELEGRAPH);
+  } else if (weapon.range <= 2) {
+    g.p(x - 2, y - 2, 4, 4, PAL.TELEGRAPH);
+  } else {
+    g.disc(x, y, 1.5, PAL.TELEGRAPH);
+  }
+}
+
 function drawTelegraph(g, layout, state) {
   for (const [uid, intent] of state.telegraph) {
     const enemy = state.units.find(u => u.uid === uid);
@@ -146,10 +163,15 @@ function drawTelegraph(g, layout, state) {
       const target = state.units.find(u => u.uid === intent.targetUid);
       if (target) {
         const tp = toScreen(layout, target.x, target.y);
-        g.line(at.x, at.y - UNIT_H * 0.4, tp.x, tp.y - UNIT_H * 0.3, PAL.TELEGRAPH, [2, 2]);
+        // dash rhythm also carries range: tight for melee/short, long for a
+        // steady handgun shot — one more read a glance can pick up.
+        const dash = enemy.weapon.archetype === 'melee' ? [1, 1] : enemy.weapon.range <= 2 ? [3, 1] : [2, 2];
+        g.line(at.x, at.y - UNIT_H * 0.4, tp.x, tp.y - UNIT_H * 0.3, PAL.TELEGRAPH, dash);
         g.diamond(tp.x, tp.y, TILE_W - 6, TILE_H - 3, null, PAL.TELEGRAPH);
+        // a small tick above the target marker: this hit also shoves you
+        if (enemy.weapon.knockback > 0) g.p(tp.x - 1, tp.y - TILE_H * 0.9, 2, 2, PAL.TELEGRAPH);
       }
-      g.p(at.x - 1, at.y - UNIT_H - 6, 2, 4, PAL.TELEGRAPH);
+      weaponGlyph(g, at.x, at.y - UNIT_H - 7, enemy.weapon);
     } else if (intent.type === 'move') {
       g.disc(at.x, at.y, 1.5, PAL.TELEGRAPH);
     }
