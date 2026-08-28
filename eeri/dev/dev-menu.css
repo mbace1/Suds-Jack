@@ -82,3 +82,19 @@
   border: 1px solid var(--dv-line); border-radius: 0 0 0 4px;
   font: 11px/1 ui-monospace, monospace; padding: 6px 9px; cursor: pointer;
 }
+
+/* PHONE WIDTHS. 300px fixed was sized for a desktop window where it is a
+   fraction of the screen; on a phone it IS the screen (portrait) or most
+   of the short axis (landscape), which is exactly the thing this file's
+   own header comment says the panel must never do. Two sizes rather than
+   one: portrait can spare more width than landscape can spare height, so
+   it gets to keep more of it. `dev/inspector.js`'s own media blocks
+   reserve a top-left gap matching the landscape width here — keep the
+   two in step if either changes. */
+@media (max-width: 760px) and (orientation: portrait) {
+  #devmenu { width: min(260px, 86vw); }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  #devmenu { width: 190px; }
+  #devmenu h1 { padding: 5px 8px; }
+}

@@ -1,5 +1,61 @@
 # EERI — versions
 
+## v15.48 — 2026-08-28 — the level editor and the FX pack, on a phone
+
+**Dev tooling only — no gameplay changed.** `dev/inspector.js` (the level
+editor) and `dev/dev-menu.js`/`dev-menu.css` (the FX pack) were both built
+against a desktop window: a fixed 360px sidebar and a fixed 300px
+right-hand panel, docked so they stay clear of each other above 760px
+wide. Below that, the sidebar IS the screen — the exact overlay bug
+`inspector.js`'s own header comment already tells the story of v1 having,
+reached this time by a narrower device instead of a wider panel.
+
+**Two distinct layouts, not one "mobile" layout, because portrait and
+landscape have opposite scarce dimensions.** In portrait a phone has
+width to spare and none of it does a sidebar any good — the editor's
+body moves to the BOTTOM instead: full width, a fixed height, and its
+rail turns from a left column into a horizontal strip along the top edge
+of the sheet, since there is no longer a spare column to put it in. In
+landscape the sidebar shape still works (there is width), it just has to
+be narrower (260px, not 360px) and the FX panel narrower still (190px),
+with the top bar's reserved corner gap sized to match. `orientation`
+alone was not enough for either query — a resized desktop window can be
+tall-and-narrow without ever being a phone, and (the bug this session
+actually shipped once before catching it) a landscape phone can be
+narrower than the portrait breakpoint's width threshold, so the portrait
+query needs `and (orientation: portrait)` explicitly or it fires on a
+landscape window too and fights the landscape rules for the same
+properties, silently, with only the ones the landscape query forgot to
+also set actually staying wrong. Caught by reading the DOM's own computed
+`flexDirection` and `flex` at 667×375 rather than by eye — the two states
+render close enough that a screenshot alone did not obviously disagree
+until they were pulled apart.
+
+**Both panels also learned to get out of each other's way on their own.**
+`inspector.js` gets a `▾` collapse button that hides its body while
+keeping the current level/mode/pick state — the escape hatch a narrow
+screen needs, but useful at any width. `dev-menu.js` already had a
+minimize button (`#dvMin`, collapses to its header) and a full-hide
+toggle; it now also DEFAULTS to minimized the first time it loads on a
+screen too small to hold itself and the editor at once, via a
+`matchMedia` check mirroring the CSS breakpoints exactly — but only the
+first time: once someone has explicitly minimized or expanded it for
+themselves, that choice is saved and wins over the screen size on every
+future load, on any device.
+
+Verified across four viewports (390×844 portrait, 844×390 and 667×375
+landscape, 1400×900 desktop) with the DOM's actual computed layout read
+back, not just a screenshot glanced at, plus the six gates:
+`dev-menu.mjs` and `fx-smoke.mjs` (this is exactly the seam they exist to
+guard) at 36/31, `rooms.mjs` 248, `smoke.cjs` 432, `playthrough.cjs` 25
+— all unaffected, as expected, since `main.js` still imports neither file.
+
+Dev-pack bundle token `?v=15` → `?v=16` (`dev-menu.js`, `dev-menu.css`,
+`js/fx.js`, `js/audio-fx.js` — one shared number by this bundle's own
+convention). `inspector.js`'s own token `?v=23` → `?v=24`.
+
+main-only: nothing in the shipped game changed, so no gh-pages deploy.
+
 ## v15.47 — 2026-08-28 — Phase B audit: every code-buildable item was already done
 
 **No gameplay changed.** After the plank shipped, `PHASING.md`'s Phase B
