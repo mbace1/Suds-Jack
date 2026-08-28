@@ -7,6 +7,26 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v231 — 2026-08-28
+**Press kit** *(roadmap-v2 Phase 5, "itch.io page: embed, copy, capture GIFs")*
+- New `toko-drop/press/PRESS.md`, following the same structure as
+  `hyperdagger/press/PRESS.md`: one-liner, itch.io short description
+  (~200 chars), long description, features, a controls table (keyboard,
+  gamepad, touch), tech notes for a devlog/HN-style audience, and a
+  screenshots/GIFs index
+- Four screenshots (title, a classic run, RUSH MODE, the NEX DEUS cabinet)
+  are real captures from the actual running game via a throwaway
+  Playwright probe — not mockups. `charge.gif` and `school.gif` are real
+  captures via `scripts/enemy-loop.mjs`, the tool this roadmap item names
+  explicitly for GIFs
+- Doc/asset-only: no gameplay code changed. Bumped anyway per this repo's
+  own discipline (every commit touching `toko-drop/` gets a version entry)
+- The itch.io page itself (account, embed, actually publishing) is a
+  manual step outside this repo — this ships everything that's automatable
+- Cache-bust `?v=184` → `?v=185`; HUD label → v231
+
+---
+
 ## v230 — 2026-08-28
 **QOL pass: haptics gets two more real moments** *(follow-up to v229)*
 - The shield pickup — the one hit it fully absorbs, no HP lost — fired
