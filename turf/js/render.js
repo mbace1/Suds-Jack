@@ -3,8 +3,8 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=1';
-import { key } from './grid.js?v=1';
+import { PAL } from './palette.js?v=2';
+import { key } from './grid.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 
@@ -178,6 +178,17 @@ function drawTelegraph(g, layout, state) {
   }
 }
 
+// The keyboard/gamepad cursor (input.js) — a double-ringed reticle, visually
+// distinct from the single-outline selected/move/attack highlights. Only
+// drawn once a key or a pad has actually been used (input.js's cursorActive
+// flag): a cursor nobody asked for is just noise for a mouse/touch player.
+function drawCursor(g, layout, state) {
+  if (!state.cursor) return;
+  const { x, y } = toScreen(layout, state.cursor.x, state.cursor.y);
+  g.diamond(x, y, TILE_W - 4, TILE_H, null, PAL.CURSOR);
+  g.diamond(x, y, TILE_W - 12, TILE_H - 6, null, PAL.CURSOR);
+}
+
 export function render(canvas, state, layout) {
   const ctx = canvas.getContext('2d');
   const g = pen(ctx);
@@ -199,5 +210,8 @@ export function render(canvas, state, layout) {
   ].sort((a, b) => a.depth - b.depth);
   for (const d of drawables) d.draw();
 
-  if (state.turn === 'player') drawTelegraph(g, layout, state);
+  if (state.turn === 'player') {
+    drawTelegraph(g, layout, state);
+    drawCursor(g, layout, state);
+  }
 }

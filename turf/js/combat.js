@@ -3,9 +3,9 @@
 // resolution, knockback, and the enemy phase. Pure data in, pure data out —
 // nothing here touches a canvas or the DOM, which is what makes it runnable
 // in bare node (test/smoke.cjs).
-import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=1';
-import { planAllIntents } from './ai.js?v=1';
-import { makeRng } from './rng.js?v=1';
+import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=2';
+import { planAllIntents } from './ai.js?v=2';
+import { makeRng } from './rng.js?v=2';
 
 export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1) {
   const weaponById = id => weaponDefs.find(w => w.id === id);

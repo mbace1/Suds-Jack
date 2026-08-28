@@ -1,24 +1,38 @@
-// Click/tap-to-command. A screen point resolves two ways: which unit's
-// visible SPRITE it lands on (units are drawn ~UNIT_H above their own tile's
-// projected point, so a raw tile lookup misses their head and shoulders —
-// `unitAtPoint` tests actual sprite bounds instead), and which grid tile
-// it's over (render.js's inverse projection, for a plain move destination).
-// Then: is a unit selected, and if so is this a legal move tile or an
-// attackable target? `orderAttack` (combat.js) walks the unit into range
-// first if it hasn't moved yet, so a single tap on a distant-but-reachable
-// enemy both moves and swings.
-import { screenToGrid, toScreen, TILE_W, UNIT_H } from './render.js?v=1';
+// Three input methods, one decision path. A screen point (mouse/touch)
+// resolves to a unit hit + a grid tile (see fromScreenPoint); a keyboard or
+// gamepad instead drives a CURSOR tile directly. Either way the result lands
+// in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
+// or cares which input method was used, the same discipline hub/padkeys.js
+// uses to bridge a pad onto a game that never grew one.
+import { screenToGrid, toScreen, TILE_W, UNIT_H } from './render.js?v=2';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit,
-} from './combat.js?v=1';
-import { key } from './grid.js?v=1';
+} from './combat.js?v=2';
+import { key } from './grid.js?v=2';
+import { watchPad } from '../../hub/pad.js?v=9';
 
 export function createInputHandler({ canvas, getState, getLayout, onChange }) {
+  // The keyboard/gamepad cursor: a grid tile, live only once one of those
+  // two has actually been used (mouse/touch clears it right back off —
+  // gameoflife's :focus-visible rule, applied to a canvas instead of the
+  // DOM: a cursor nobody asked for is noise for a pointer player).
+  let cursor = null;
+  let cursorActive = false;
+
   function refreshSelectionOverlay(state) {
     const sel = state.selected ? getUnit(state, state.selected) : null;
     state.moveTiles = sel ? movableTiles(state, sel) : new Map();
     state.attackTiles = sel ? attackableTargets(state, sel) : [];
+  }
+
+  function syncCursorField(state) {
+    state.cursor = cursorActive ? cursor : null;
+  }
+
+  function defaultCursorTile(state) {
+    const alive = state.units.find(u => u.faction === 'player' && u.hp > 0);
+    return alive ? { x: alive.x, y: alive.y } : { x: 0, y: 0 };
   }
 
   function clientToInternal(clientX, clientY) {
@@ -70,11 +84,13 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
   }
 
   function fromScreenPoint(px, py) {
+    cursorActive = false; // a real pointer takes over from the keyboard/pad cursor
     const state = getState();
     const layout = getLayout();
     const hit = unitAtPoint(state, layout, px, py);
     const { x, y } = screenToGrid(layout, px, py);
     handlePoint(hit, x, y);
+    syncCursorField(getState());
   }
 
   // pointerup AND touchend, never click (AGENTS.md §3): a touchstart
@@ -100,12 +116,14 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
   canvas.addEventListener('touchend', onTouchEnd);
 
   function selectByUid(uid) {
+    cursorActive = false; // this is always a mouse/touch click on the squad panel
     const state = getState();
     if (state.turn !== 'player' || state.result) return;
     const u = getUnit(state, uid);
     if (u && canUnitAct(u)) {
       selectUnit(state, uid);
       refreshSelectionOverlay(state);
+      syncCursorField(state);
       onChange();
     }
   }
@@ -119,6 +137,82 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     onChange();
   }
 
+  // ── keyboard + gamepad cursor ────────────────────────────────────────
+  // moveCursor/confirmAtCursor/cancelSelection are the three primitives
+  // both input methods reduce to; confirmAtCursor reads whichever unit
+  // sits exactly on the cursor's tile and hands it to the same
+  // handlePoint() a tap uses, so a move, an attack, or a selection made
+  // this way is indistinguishable downstream from one made by tapping.
+  function moveCursor(dx, dy) {
+    if (!dx && !dy) return;
+    const state = getState();
+    if (state.turn !== 'player' || state.result) return;
+    if (!cursor) cursor = defaultCursorTile(state);
+    cursorActive = true;
+    cursor = {
+      x: Math.min(state.grid.cols - 1, Math.max(0, cursor.x + dx)),
+      y: Math.min(state.grid.rows - 1, Math.max(0, cursor.y + dy)),
+    };
+    syncCursorField(state);
+    onChange();
+  }
+
+  function confirmAtCursor() {
+    const state = getState();
+    if (state.turn !== 'player' || state.result) return;
+    cursorActive = true;
+    if (!cursor) cursor = defaultCursorTile(state); // e.g. A pressed before any stick input
+    const hit = state.units.find(u => u.hp > 0 && u.x === cursor.x && u.y === cursor.y) || null;
+    handlePoint(hit, cursor.x, cursor.y);
+    syncCursorField(getState());
+  }
+
+  function cancelSelection() {
+    const state = getState();
+    if (state.turn !== 'player' || state.result) return;
+    cursorActive = true;
+    if (!cursor) cursor = defaultCursorTile(state);
+    if (state.selected) {
+      state.selected = null;
+      refreshSelectionOverlay(state);
+    }
+    syncCursorField(state);
+    onChange();
+  }
+
+  // Arrows or WASD move the cursor, Enter/Space confirms, Escape cancels,
+  // E ends the turn — never Start/Tab/anything the shell or the browser
+  // already owns. Mostly here so the whole board is testable without a
+  // physical gamepad; a keyboard player gets the same reticle a pad does.
+  const KEY_DIR = {
+    ArrowUp: [0, -1], w: [0, -1], W: [0, -1],
+    ArrowDown: [0, 1], s: [0, 1], S: [0, 1],
+    ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0],
+    ArrowRight: [1, 0], d: [1, 0], D: [1, 0],
+  };
+  function onKeyDown(evt) {
+    if (evt.metaKey || evt.ctrlKey || evt.altKey) return;
+    const d = KEY_DIR[evt.key];
+    if (d) { evt.preventDefault(); moveCursor(d[0], d[1]); return; }
+    if (evt.key === 'Enter' || evt.key === ' ') { evt.preventDefault(); confirmAtCursor(); return; }
+    if (evt.key === 'Escape') { evt.preventDefault(); cancelSelection(); return; }
+    if (evt.key === 'e' || evt.key === 'E') { evt.preventDefault(); endTurn(); }
+  }
+  window.addEventListener('keydown', onKeyDown);
+
+  // Gamepad, via the site's one shared reader (hub/pad.js — the same one
+  // sudsjack/hyperdagger/dropcabal read natively). A confirms, B cancels,
+  // Y ends the turn. Never Start: that's the arcade shell's hold-for-home,
+  // and colliding with it is a documented house mistake (see hub/shell.js).
+  const pad = watchPad({
+    dir: (dx, dy) => moveCursor(dx, dy),
+    press: i => {
+      if (i === 0) confirmAtCursor();
+      else if (i === 1) cancelSelection();
+      else if (i === 3) endTurn();
+    },
+  });
+
   return {
     selectByUid,
     endTurn,
@@ -126,6 +220,8 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     destroy() {
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('keydown', onKeyDown);
+      pad.stop();
     },
   };
 }
