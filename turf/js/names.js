@@ -57,11 +57,15 @@ const LAST = [
 // literally fits, plus a NEUTRAL pool that reads either way. A build hint
 // mostly draws its own literal tag but sometimes reaches into the OPPOSITE
 // tag on purpose — that mismatch is the joke, not a bug, so it stays a
-// minority draw rather than the default.
+// minority draw rather than the default. HANDLE is a different register
+// entirely — an internet-username stereotype (catlady05) rather than a
+// street nickname — and draws independent of build, since a screen name
+// doesn't care what you look like.
 const NICKNAME = {
   small: ['Smalls', 'Tiny', 'Peanut', 'Mouse', 'Runt', 'Needle', 'Pocket'],
   big: ['Tank', 'Bear', 'Ox', 'Bricks', 'Slab', 'Moose', 'Anvil'],
   neutral: ['Ghost', 'Magpie', 'Whisper', 'Knuckles', 'Static', 'Rooster', 'Domino'],
+  handle: ['CatLady05', 'xX_Repo_Xx', 'GLHF99', 'Y2Kid', 'DialUp', 'NightOwl88', 'FerretBoy', 'MallGoth'],
 };
 
 const pick = (rng, list) => list[Math.floor(rng() * list.length) % list.length];
@@ -77,13 +81,14 @@ export function randomName(rng = Math.random, { build, withNickname } = {}) {
 
   let pool;
   if (!build) {
-    pool = [...NICKNAME.small, ...NICKNAME.big, ...NICKNAME.neutral];
+    pool = [...NICKNAME.small, ...NICKNAME.big, ...NICKNAME.neutral, ...NICKNAME.handle];
   } else {
     const roll = rng();
-    // 55% literal fit, 20% the ironic mismatch, 25% neutral.
-    pool = roll < 0.55 ? NICKNAME[build]
-      : roll < 0.75 ? NICKNAME[build === 'small' ? 'big' : 'small']
-      : NICKNAME.neutral;
+    // 45% literal fit, 15% the ironic mismatch, 25% neutral, 15% handle.
+    pool = roll < 0.45 ? NICKNAME[build]
+      : roll < 0.60 ? NICKNAME[build === 'small' ? 'big' : 'small']
+      : roll < 0.85 ? NICKNAME.neutral
+      : NICKNAME.handle;
   }
   const nickname = pick(rng, pool);
   return { first, last, nickname, full: `${first} "${nickname}" ${last}` };

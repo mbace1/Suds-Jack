@@ -33,10 +33,15 @@ graph changed, so no cache-token bump this round.**
   Estonia (Finland's actual neighbours) mixed in at minority weight, plus a
   nickname layer that mostly draws a build-fitting name (Tank, Bear.../Tiny,
   Mouse...) but sometimes reaches for the mismatch on purpose — a big guy
-  called Smalls. Seeded off the same `makeRng` every other random draw in
-  this engine uses, so a name replays identically for a given seed. Not yet
-  wired to the roster — `data/units.json` still has three fixed ids with no
-  name field; that hookup is the same Phase 2 roster work as §5.1.
+  called Smalls — and a separate HANDLE register for the internet-username
+  stereotype (catlady05, DialUp, GLHF99...), a different joke drawn
+  independent of build. Seeded off the same `makeRng` every other random
+  draw in this engine uses, so a name replays identically for a given seed.
+  **A unit's identity is its name only** — `randomName()` has no notion of
+  class, and per owner direction class is assigned to a unit in the game
+  (squad-select/recruitment), never baked into its name. Not yet wired to
+  the roster — `data/units.json` still has three fixed ids with no name
+  field; that hookup is the same Phase 2 roster work as §5.1.
 
 ## v2 — 2026-08-28
 **Keyboard and native gamepad, so the board is testable without a mouse.**

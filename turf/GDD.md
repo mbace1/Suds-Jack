@@ -137,7 +137,20 @@ actual neighbours — mixed in at minority weight; first names follow the same
 split. A nickname layer (~40% of units) adds the genre joke on top: a build hint
 ('small'/'big') mostly draws a literally-fitting nickname (Tank, Bear... / Tiny,
 Mouse...) but sometimes reaches for the mismatch on purpose — a big guy called
-Smalls — plus a neutral pool (Ghost, Magpie, Knuckles...) that reads either way.
+Smalls — plus a neutral pool (Ghost, Magpie, Knuckles...) and a HANDLE register
+(catlady05, DialUp, GLHF99...) for the internet-username stereotype, a genuinely
+different joke from a street nickname and drawn independent of build.
+
+**A unit's identity is its name — nothing else.** `randomName()` returns a name
+and nothing else on purpose: it has no idea what class its unit will play, and
+it shouldn't. Class is assigned to a unit *in the game* (squad-select or
+recruitment), same as §5.1's colour-not-likeness rule — a name is permanent, a
+class is not baked into who someone is. Concretely, when the roster lands:
+`unit.name` is set once (at creation) and never touched by class re-specs;
+`unit.class`/`unit.subclass` live in a separate field that a respec can change
+without touching the name. Don't let a future "starter kit" shortcut generate a
+name and a class in the same call — that recouples exactly what this section
+decouples.
 
 **Not yet wired to the roster.** `data/units.json` still has three fixed ids
 (`blade`/`niner`/`wrench`) with no name field — hooking `randomName()` up to an

@@ -53,24 +53,26 @@ check('withNickname: false never attaches a nickname', () => {
   }
 });
 check('withNickname: true always attaches one from a real pool', () => {
-  const all = [...POOLS.NICKNAME.small, ...POOLS.NICKNAME.big, ...POOLS.NICKNAME.neutral];
+  const all = [...POOLS.NICKNAME.small, ...POOLS.NICKNAME.big, ...POOLS.NICKNAME.neutral, ...POOLS.NICKNAME.handle];
   for (let seed = 0; seed < 20; seed++) {
     const n = randomName(makeRng(seed), { withNickname: true });
     assert.ok(all.includes(n.nickname), n.nickname);
     assert.equal(n.full, `${n.first} "${n.nickname}" ${n.last}`);
   }
 });
-check('a build hint mostly draws its own literal pool, but can draw the mismatch', () => {
-  let literal = 0, mismatch = 0, neutral = 0;
+check('a build hint mostly draws its own literal pool, but can draw the mismatch or a handle', () => {
+  let literal = 0, mismatch = 0, neutral = 0, handle = 0;
   for (let seed = 0; seed < 400; seed++) {
     const n = randomName(makeRng(seed), { build: 'big', withNickname: true });
     if (POOLS.NICKNAME.big.includes(n.nickname)) literal++;
     else if (POOLS.NICKNAME.small.includes(n.nickname)) mismatch++;
+    else if (POOLS.NICKNAME.handle.includes(n.nickname)) handle++;
     else neutral++;
   }
   assert.ok(literal > mismatch, `literal (${literal}) should outweigh the ironic mismatch (${mismatch})`);
   assert.ok(mismatch > 0, 'the "big guy called Smalls" mismatch should occur at least once in 400 draws');
   assert.ok(neutral > 0, 'the neutral pool should still show up');
+  assert.ok(handle > 0, 'the internet-handle register (catlady05) should show up too');
 });
 
 console.log(`\n${pass} checks passed`);
