@@ -1,5 +1,44 @@
 # EERI — versions
 
+## v15.47 — 2026-08-28 — Phase B audit: every code-buildable item was already done
+
+**No gameplay changed.** After the plank shipped, `PHASING.md`'s Phase B
+checklist was audited against the live tree rather than against memory,
+because the doc itself (dated 2026-08-14/15) predates a lot of what has
+actually shipped since and nothing had gone back to mark it current — the
+same staleness class `DESIGN.md` §7 caught and fixed in itself.
+
+**Finding: every code-buildable Phase B item is already built.**
+`conveyor` (the belt) has both its mechanic (`level.js`/`kid.js`) and a
+real model — steel plate, girder underside, direction-pointing chevrons —
+not a placeholder. `roller_v1` is a real sliced-node enemy (`body`,
+`drum`, `beacon`-style silhouette) in `robots.js`, coded, not a stand-in.
+`hoist` shipped earlier. Levels 4–6 already run the four-beat pattern
+(`WORLD2.md`'s own "one idea per level" table), one gizmo each, and the
+world-2 backdrop set (`pipeworks_*_v3`) is `status: "live"` in the
+manifest. DESIGN §7's world-naming and machine-assignment questions are
+answered in that file's own "answered" table (§4.2, §6.6) — `PHASING.md`
+still listed them as open, written hours before that fix landed.
+
+**Verified, not assumed:** all six gates green (`rooms.mjs` 248, `fx-smoke`
+31, `dev-menu` 36, `smoke.cjs` 432, `playthrough.cjs` 25, `hub-smoke`
+166), plus fresh screenshots of Level 5 (the pipe run), Level 6 (the
+hoist over the pumphouse) and World 4's belt (THE NIGHT SHIFT loading
+dock) — all read as a hand-built Crafted-World toy set, the actual bar
+Gate B sets.
+
+**What is genuinely still open, and it is not code:** the "two more bot
+variants by retexture" line (wrench-bot / cone-bot / lamp-bot) needs real
+Meshy retexture calls against `bolt-bot`. No session working this repo
+has a Meshy credential configured, so this line stays blocked until the
+owner runs that pass, same as `hopper_v1`/hero-rig work was blocked in
+Phase A. Gate B's "does it read as a toy set" check is satisfied by what
+exists; the bot-variety line is extra polish on top of an already-passing
+gate, not a blocker to it.
+
+`PHASING.md` updated in place with this finding under both Phase A and
+Phase B, so the next agent reads current state instead of re-deriving it.
+
 ## v15.46 — 2026-08-28 — the tipping plank: World 2's own gizmo (Phase B)
 
 **A rigid beam over a trench, pivoting at its own centre — no held verb,

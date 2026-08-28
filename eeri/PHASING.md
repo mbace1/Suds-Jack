@@ -121,9 +121,18 @@ of them — build once in `robots.js`.
 
 ## 3. Phases
 
-### Phase A — the platformer earns its 80% *(now)*
+### Phase A — the platformer earns its 80%
 The on-foot game is 80% of playtime (DESIGN §1) and it is the ratio's
 namesake: this phase is almost all Crafted World.
+
+**Status, 2026-08-28: code-side done.** Levels re-laid per §8.0, the
+midway checkpoint shipped, stomp/climb live, smoke+rooms+playthrough
+green. `hopper_v1`/`bolt-bot` (the biped rig work) remain **blocked on
+Meshy access** — no credential is configured in this environment, so no
+coding agent can clear that line; ladder/scaffold placeholders are in
+play per contract. **Gate A itself is not something a coding agent can
+close** — "a stranger plays it and calls it fun" is the owner's call, not
+a gate.mjs check.
 
 - **Level:** re-lay the three levels per §8.0 — machine **on the route,
   facing the obstacle**; no walk-backs; fetch-shape allowed once, late,
@@ -155,6 +164,22 @@ green. Every new asset LOOK-gated as a picture (ART_PIPELINE's law).
 **Gate B:** six levels, three enemy behaviours, three gizmos, two worlds'
 backdrops. The 80/20 check: screenshot any level — does it read as a
 hand-built toy set first?
+
+**Status, 2026-08-28: every code-buildable item is done.** `plank`
+shipped v15.46; `hoist` and `conveyor` (the belt — mechanic AND its
+plate/roller/chevron model) were already live; `roller_v1` is a real
+sliced-node model in `robots.js`, not a placeholder. Levels 4–6 exist on
+the four-beat pattern, one gizmo each (§1 of `WORLD2.md`, which is
+otherwise a stale grey-box doc — the code overtook it). The world-2
+backdrop set (`pipeworks_*_v3`) is `status: "live"` in the manifest.
+DESIGN §7's "name the four worlds / assign one ride machine per world"
+are answered there, not still open — §7's own "answered" table + §6.6
+supersede this file's item-3 wording, which predates that fix by hours.
+Screenshotted levels 5, 6 and world 4's belt level all read as a
+hand-built set (see the v15.47 VERSIONS.md entry). **What remains is
+Meshy-blocked, not code-blocked:** the two retextured bot variants
+(wrench-bot / cone-bot / lamp-bot) need real Meshy retexture calls, which
+no session here has credentials for. Six gates green throughout.
 
 ### Phase C — the 20% and the meta
 Now, and only now, the Tropical Freeze money shots and the wrapper.
