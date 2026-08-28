@@ -80,6 +80,12 @@ const LEADS = {
   // exactly one of those. A worksite platformer for a six-year-old is asked about
   // its handling first; a VR room you sit in is asked how it FEELS to be in.
   eeri: ['controls', 'balance'],
+  // The Godot rebuilds' whole reason to exist is what they look like — real
+  // light instead of a flat browser build, gel light actually passes
+  // through — so that is the question they lead with, not the parent
+  // game's own.
+  eerigodot: ['look', 'controls'],
+  tokodropgodot: ['look', 'balance'],
   tokotrip: ['look', 'more'],
   kindling: ['look', 'idea'],             // a mobile UX layer just landed on it
                                           // and the art target is changing under

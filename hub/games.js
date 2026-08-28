@@ -79,6 +79,36 @@ export const GAMES = [
     art: 'gel',
   },
   {
+    id: 'tokodropgodot',
+    fi: {
+      tagline: 'Sama parvi, Godotissa: oikea pinnanalainen sironta, kymmenen haastetasoa omine sääntöineen, ja Rush jossa syöksy tappaa mutta ampuminen vie kilpesi.',
+      lineage: 'Toko Drop / Blade Rush / Geometry Wars 3',
+      controls: 'kosketus: vasen peukalo liikkuu, oikea tähtää · WASD + hiiri · ohjain',
+      note: 'Godot-versio — 15 lajia, 10 mitattua tasoa, Rush-tila',
+    },
+    ja: {
+      tagline: '同じ群れをGodotで。本物のサブサーフェススキャタリング、独自ルールを持つ10のチャレンジ、そしてブーストで殺し撃てば盾を失うRushモード。',
+      lineage: 'トコドロップ / Blade Rush / ジオメトリウォーズ3',
+      controls: 'タッチ: 左親指で移動、右で照準 · WASD + マウス · パッド',
+      note: 'Godot版 — 15種、計測済み10ステージ、Rushモード',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'Godot build — real subsurface gel, ten measured challenge levels, and a Rush mode where boosting kills but firing drops your shield',
+    title: 'Toko Drop — Godot',
+    tagline: 'The same swarm rebuilt in Godot: gel that light passes through, ten challenge levels each with its own rule, and a Rush mode where boosting is the kill and shooting costs you the shield.',
+    lineage: 'Toko Drop × Blade Rush × Geometry Wars 3',
+    tags: ['twin-stick', 'godot', 'gamepad'],
+    controls: 'touch: left thumb moves, right aims · WASD + hold LMB · pad',
+    // A WebAssembly build; it lives only on the deployed site, the same way
+    // piritori-godot does. Source: github.com/mbace1/toko-drop-godot
+    path: 'toko-drop-godot/',
+    inRepo: false,
+    deployedOnly: true,
+    accent: '#8f86e8',
+    art: 'gelgrid',
+  },
+  {
     id: 'hyperdagger',
     score: { key: 'hyperDaggerHi', fmt: 'secs' },
     fi: {
@@ -287,6 +317,38 @@ export const GAMES = [
     inRepo: true,
     accent: '#ffb01f',
     art: 'worksite',
+  },
+  {
+    id: 'eerigodot',
+    fi: {
+      tagline: 'Sama työmaa, Godotissa: oikea valo ja varjot, kaikki kaksitoista kenttää, neljä maailmaa omine kulisseineen.',
+      lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
+      controls: '◀ ▶ juokse · Ⓐ hyppää · Ⓑ kiipeä koneeseen · pidä ▼ kaivaa',
+      note: 'Godot-versio selainversion rinnalla. Sama peli, eri moottori — tässä on oikea valo ja varjot, joita litteä selainversio ei voi piirtää.',
+    },
+    ja: {
+      tagline: '同じ工事現場をGodotで。本物の光と影、全12ステージ、4つのワールドにそれぞれの背景。',
+      lineage: 'マリオ3 × ヨッシークラフトワールド × トンカ',
+      controls: '◀ ▶ 走る · Ⓐ ジャンプ · Ⓑ 乗り込む · ▼長押しで掘る',
+      note: 'ブラウザ版と並ぶGodot版。同じゲームだがエンジンが違う——こちらには平面的なブラウザ版には描けない本物の光と影がある。',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'Godot build, beside the browser one. The same twelve levels and the same four worlds — but lit, with real shadows the flat browser build cannot draw.',
+    title: 'Eeri (Godot)',
+    tagline: 'The same worksite, rebuilt in Godot: real light and contact shadows, all twelve levels, four worlds each with their own set.',
+    lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
+    tags: ['platformer', 'godot', 'diorama'],
+    controls: '◀ ▶ run · Ⓐ jump · Ⓑ climb in · hold ▼ to dig',
+    // A WebAssembly build that lives only on the deployed site, the same
+    // arrangement piritori-godot and toko-drop-godot have. `inRepo: false`
+    // because main does not carry the artefact, so the smoke gate must not
+    // try to fetch it. Source: github.com/mbace1/eeri
+    path: 'eeri-godot/',
+    inRepo: false,
+    deployedOnly: true,
+    accent: '#ffd166',
+    art: 'diorama',
   },
   {
     id: 'gameoflife',

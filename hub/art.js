@@ -50,6 +50,39 @@ export const ART = {
     g.p(cx + 14, cy + 22, 4, 3, '#ff46d0');
   },
 
+  // Toko Drop — Godot: the same swarm, a real rail and a converging floor
+  gelgrid(g, a) {
+    g.p(0, 0, W, H, '#05060f');
+    // The floor, as a trapezoid of scanlines: narrow at the top (far edge),
+    // wide at the bottom. One row per source line is the whole 2600 trick.
+    for (let i = 0; i < 26; i++) {
+      const t = i / 25;
+      const half = 10 + t * 52;
+      const y = 22 + i * 1.85;
+      g.p(64 - half, y, half * 2, 1, i % 4 === 0 ? '#123a4a' : '#0b2430');
+    }
+    // Verticals converging on the vanishing point.
+    for (let k = -5; k <= 5; k++) {
+      const topX = 64 + k * 2.0;
+      const botX = 64 + k * 10.4;
+      for (let i = 0; i < 26; i++) {
+        const t = i / 25;
+        g.p(topX + (botX - topX) * t, 22 + i * 1.85, 1, 1, '#10333f');
+      }
+    }
+    // The rail: the boundary you are actually clamped against.
+    g.p(54, 21, 20, 1, '#8f86e8');
+    g.p(6, 68, 116, 1, '#8f86e8');
+    // The swarm, small in a big room, and the hero lit against it.
+    g.disc(44, 44, 5, '#2f7f66');
+    g.disc(86, 38, 4, '#7a3a8f');
+    g.p(96, 52, 6, 6, '#c8a83a');
+    g.disc(64, 50, 4, a);
+    g.p(62, 48, 2, 2, '#0b1a16');
+    g.p(66, 48, 2, 2, '#0b1a16');
+    g.p(61, 45, 3, 1, '#dff6ff');
+  },
+
   // Toko Drop: a gel and the ring it just exhaled
   gel(g, a) {
     g.p(0, 0, W, H, '#07120f');
@@ -930,6 +963,61 @@ export const ART = {
     E(110, 28, 1, '#7a7a7a');
     g.p(8, 58, 112, 2, '#c8c2b4');
     g.p(8, 62, 40, 4, a);
+  },
+
+  // Eeri — Godot: the same kid, staged in a shallow box lit from one corner.
+  diorama(g, a) {
+    const INK = '#1a1410', CARD = '#c9a678', CARD_DK = '#9d7c53';
+    const WALL = '#e7d9bd', WALL_SH = '#bda88a';
+
+    g.p(0, 0, W, H, '#12161d');                                 // the dark around the box
+
+    // THE BOX: a shallow stage, walls cropped by the frame so it reads as a
+    // set you are looking INTO rather than a picture hung flat.
+    g.p(6, 4, 116, 56, WALL);                                   // back wall
+    g.p(6, 4, 10, 56, WALL_SH);                                 // left wall, in shade
+    g.p(112, 4, 10, 56, mix(WALL, '#ffffff', 0.18));            // right wall, lit
+    g.p(6, 52, 116, 16, CARD);                                  // the floor boards
+    for (let x = 10; x < 122; x += 9) g.p(x, 52, 1, 16, CARD_DK);
+    g.p(6, 52, 116, 1, CARD_DK);                                // the floor line
+
+    // THE KEY, from upper-left: a warm wash down the back wall, and the
+    // corner it does not reach left cool. One light, stated.
+    for (let i = 0; i < 7; i++) {
+      g.p(16, 4 + i * 4, 60 - i * 6, 4, mix('#fff0cf', WALL, 0.35 + i * 0.09));
+    }
+    g.p(96, 4, 16, 34, mix(WALL, '#6f7f96', 0.30));             // the cool corner
+
+    // Set dressing, kept to two pieces so the figure stays the subject.
+    g.p(24, 34, 16, 18, mix(a, INK, 0.28));                     // a hoarding panel
+    g.p(24, 34, 16, 2, mix(a, '#ffffff', 0.35));                // its lit top edge
+    g.p(88, 40, 18, 12, '#8fa0ae');                             // a stack of pipe
+    for (let i = 0; i < 3; i++) g.disc(92 + i * 7, 46, 3, '#6f8092');
+
+    // THE SHADOW: long, hard-edged and thrown to the lower-right, away from
+    // the key. It is the whole point of the cover, so it is drawn before the
+    // figure and given more room than the figure itself.
+    g.p(62, 56, 26, 4, mix(CARD, INK, 0.42));
+    g.p(60, 54, 12, 3, mix(CARD, INK, 0.34));
+
+    // EERI, small in the box and lit from the left: olive cap with its
+    // spikes, navy tee, machine-yellow wellies. Cropped by nothing — he is
+    // the subject, and the room is what he is standing in.
+    g.p(56, 30, 10, 12, '#2e3a5c');                             // tee
+    g.p(56, 30, 4, 12, mix('#2e3a5c', '#ffffff', 0.22));        // lit side
+    g.p(58, 42, 3, 6, '#3c4358'); g.p(62, 42, 3, 6, '#3c4358'); // legs
+    g.p(57, 48, 5, 3, '#ffb01f'); g.p(61, 48, 5, 3, '#ffb01f'); // wellies
+    // The cap must not eat the face. Drawn first cut, its disc covered all
+    // but three pixels of the head and he read as a green lump — so the cap
+    // sits HIGHER and SMALLER than the skull, which is how a cap actually
+    // sits, and leaves a face to put an eye in.
+    g.disc(61, 27, 6, '#f0c9a4');                               // head
+    g.disc(61, 21, 5, '#8a9a4e');                               // cap crown
+    g.p(56, 21, 10, 3, '#8a9a4e');                              // its band
+    g.p(65, 22, 6, 2, '#6f7d3f');                               // the peak, forward
+    for (let i = 0; i < 3; i++) g.disc(58 + i * 3, 16, 2, '#6f7d3f');  // spikes
+    g.p(63, 27, 2, 2, INK);                                     // eye
+    g.p(63, 31, 3, 1, mix('#f0c9a4', INK, 0.45));               // the line mouth
   },
 
   // Eeri: the worksite as a stage set. The scaffold is the frame and it is a
