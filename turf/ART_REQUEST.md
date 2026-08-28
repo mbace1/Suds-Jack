@@ -127,12 +127,42 @@ is otherwise alone in frame: no set dressing, no ground plane, no text, no
 logos, no UI, no watermark.`,
 ```
 
-`turf/art-src/palette.json` is the matching **art palette** — sixteen colours
-(ink, two skin tones, three neutral-streetwear tones shared by both
-factions, the cold operator ramp, the warm enemy ramp, two metal tones) that
-`fit --palette` (§5) snaps a generated plate to. It is deliberately **not**
-`turf/js/palette.js` — that `PAL` object is the whole UI+terrain+HUD palette,
-and a character sprite has no business quantising against floor-tile greys.
+`turf/art-src/palette.json` is the matching **art palette** — now **thirty-two
+colours** (doubled 2026-08-28, see §2.1) that `fit --palette` (§5) snaps a
+generated plate to. It is deliberately **not** `turf/js/palette.js` — that
+`PAL` object is the whole UI+terrain+HUD palette, and a character sprite has
+no business quantising against floor-tile greys.
+
+---
+
+## 2.1 First-draft feedback (2026-08-28)
+
+The owner sent a Nano Banana casting sheet — ~20 characters, front+back,
+generated outside this pipeline — as a first look at the register before
+spending credits on the actual six. Two things learned from it, folded back
+into this document rather than left as a one-off conversation:
+
+- **The palette was too small.** The sheet's variety — several hair colours,
+  a second skin tone, denim, sneakers, chains — has nowhere to live in a
+  fourteen-colour palette built for streetwear-plus-faction-trim alone.
+  Doubled to thirty-two (`turf/art-src/palette.json`): a second skin ramp,
+  four hair tones, an olive and a tan cloth ramp alongside the original
+  neutral, denim, a third metal step, pale highlights on both faction ramps,
+  and three non-faction accent colours (white/red/gold) for the sneaker
+  stripes and jewelry that showed up on nearly every figure. Existing keys
+  keep their original values; everything is additive.
+- **Casting specific characters to specific archetypes is deliberately not
+  locked here yet.** The Milestone 1 class list (`blade`/`niner`/`wrench` /
+  three grunt variants) may still change, and animated frames are a later
+  pass anyway — so this document keeps asking for the six archetypes by
+  *role*, not by a specific look pinned to a specific character off that
+  sheet. Revisit this section once the roster settles.
+- **Shading ran richer than the two-step rule** on that sheet — several
+  jackets read with three or four visible tonal steps rather than a flat
+  base+shadow. §2's flat-fill rule stays the target regardless, because it's
+  what actually cuts clean through `fit`'s palette-snap (§5) rather than
+  muddying into banding; a future batch should say so explicitly in the
+  prompt rather than assume the style block alone holds the line.
 
 ---
 
