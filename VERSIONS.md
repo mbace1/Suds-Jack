@@ -7,6 +7,49 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v228 — 2026-08-28
+**Arena pass 2 — the floor answers mass, prizes and pops** *(roadmap-v2 Phase 3, `TOKO_DROP_ROADMAP.md`)*
+- v223 gave the floor a rim vignette, a grid falloff and a pool that follows
+  the player. Three more terms now answer three more things happening on
+  it, same "cheap fragment terms" discipline, both renderers in parity:
+  - **MASS**: up to 10 live enemies (`TUNING.arena.massSample`) each darken
+    the ground under them — the swarm visibly presses the floor down where
+    it's thick, distinct from (and readable against) the player's own lit pool
+  - **POPS**: every kill (`onKill()` → `recordPop()`) rings the floor out
+    from where it happened, a bright ring that expands and fades over
+    `popLife` (0.55s) — a 6-slot rolling buffer, oldest evicted first
+  - **PRIZES**: up to 5 live pickups each mark their own ground with a warm glow
+  - All three are fixed-size point arrays, deliberately **branch-free**: an
+    unused slot carries strength 0 (mass/prizes) or progress ≥1 (pops), never
+    a skipped loop iteration — keeps both the GLSL `for` loop and the TSL
+    node-graph plain static loops, no dynamic control flow either side
+  - The TSL port avoids `uniformArray()`/`Loop()` — a plain JS `for` loop
+    builds N individual `TSL.uniform(Vector3)` nodes into the sum at
+    material-construction time instead, using only primitives already proven
+    elsewhere in this file (`.add/.sub/.mul/.min/.max/.abs`, `.x/.y/.z/.xy`
+    swizzles). `uniformArray`/`Loop` exist in the vendored r180 build but are
+    unfamiliar API surface with no way to consult live docs here — not worth
+    the risk for 21 unrolled terms
+- **Verified, not just compiled**: classic/GLSL path proven via `smoke.sh` +
+  `cabinets.sh` (real kills, real pickups, zero errors) plus a screenshot at
+  exaggerated strength confirming all three terms actually change the
+  rendered pixels, not just theoretically execute. TSL/WEBGPU(BETA) path
+  (which neither gate exercises — they rewrite the importmap to the classic
+  bundle) checked separately: boots clean under the adaptive WebGL2 fallback
+  (no real WebGPU device in this sandbox) with zero TSL/node-graph errors
+  across an 8s session
+- One real bug caught and fixed in the process: the first screenshot attempt
+  showed no pop ring at all. Traced to the test harness, not the game — a
+  single `page.evaluate()` round-trip under swiftshader software rendering
+  burned over a real second of wall-clock frame time, aging the ripple past
+  its 0.55s `popLife` before the screenshot fired. Confirmed by temporarily
+  widening `popLife` to 6s in a scratch copy: the ring renders exactly as
+  designed. Real play runs at native frame rate, so this was never reachable
+  in the shipped game
+- Cache-bust `?v=181` → `?v=182`; HUD label → v228
+
+---
+
 ## v227 — 2026-08-28
 **RUSH gets S/A/B/C tiers, a stamped ladder, and per-level goals** *(`Q-027`, `toko-drop/RUSH_DESIGN.md` §3)*
 - **PAR table** (`TUNING.rush.tiers`, ported from the Godot repo's unshipped

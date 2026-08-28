@@ -90,12 +90,12 @@
   (function () {
     var gpu = false;
     try { gpu = localStorage.getItem('tokoDropGpu') === '1'; } catch (e) {}
-    var three = gpu ? './vendor/three.webgpu.min.js?v=181'
-                    : './vendor/three.module.min.js?v=181';
+    var three = gpu ? './vendor/three.webgpu.min.js?v=182'
+                    : './vendor/three.module.min.js?v=182';
     document.write('<script type="importmap">' + JSON.stringify({
       imports: {
         'three': three,
-        'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=181',
+        'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=182',
         'three/addons/': './vendor/jsm/'
       }
     }) + '<\/script>');
@@ -103,9 +103,9 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { EnemyType, CFG, applySatinValues } from './js/enemy.js?v=181';
-import { TUNING, applyMaterialPreset } from './js/tuning.js?v=181';
-import { createSpecimen } from './js/specimen.js?v=181';
+import { EnemyType, CFG, applySatinValues } from './js/enemy.js?v=182';
+import { TUNING, applyMaterialPreset } from './js/tuning.js?v=182';
+import { createSpecimen } from './js/specimen.js?v=182';
 
 const IS_GPU = typeof THREE.WebGPURenderer === 'function';
 

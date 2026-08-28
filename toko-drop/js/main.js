@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=181';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=181';
-import { Player, PLAYER_RADIUS } from './player.js?v=181';
+import { InputManager } from './input.js?v=182';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=182';
+import { Player, PLAYER_RADIUS } from './player.js?v=182';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=181';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=181';
-import { audio } from './audio.js?v=181';
-import { initDesigner } from './designer.js?v=181';
-import { createSpecimen } from './specimen.js?v=181';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=181';
-import { TUNING } from './tuning.js?v=181';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=182';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=182';
+import { audio } from './audio.js?v=182';
+import { initDesigner } from './designer.js?v=182';
+import { createSpecimen } from './specimen.js?v=182';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=182';
+import { TUNING } from './tuning.js?v=182';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -390,6 +390,18 @@ sun.shadow.mapSize.set(1024, 1024);
 scene.add(sun);
 
 // ── Arena ───────────────────────────────────────────────────────────────────
+// v228: fixed array sizes for the arena-pass-2 point terms — interpolated
+// into FLOOR_FRAG below and reused for the JS-side uniform arrays, so the
+// three stay in lockstep by construction.
+const MASS_N  = TUNING.arena.massSample;
+const POP_N   = TUNING.arena.popCount;
+const PRIZE_N = TUNING.arena.prizeCount;
+// World xz → the floor plane's uv (reads live HALF_X/HALF_Z, so it stays
+// correct across arena resizes). Same transform uPlayer already used inline;
+// v228 needed it in four places, so it's a function now.
+function worldToUV(x, z) {
+  return { u: x / (HALF_X * 2) + 0.5, v: 0.5 - z / (HALF_Z * 2) };
+}
 const FLOOR_VERT = `
   varying vec2 vUv;
   void main() {
@@ -401,6 +413,12 @@ const FLOOR_VERT = `
 // Three terms (all TUNING.arena) add depth and a centre of gravity —
 // a rim vignette, a distance falloff on the grid itself, and a soft pool
 // that FOLLOWS THE PLAYER, so an approaching wave crosses lit ground.
+// v228 ARENA PASS 2: the floor now answers three more things happening on
+// it. Each is a fixed-size point array, branch-free — an unused slot carries
+// strength 0 (mass/prizes) or progress >=1 (pops), never a skipped loop
+// iteration, so both paths stay plain static loops with no dynamic control
+// flow. Packed as vec3(uv.x, uv.y, strength|progress) so the per-frame write
+// site can stay byte-identical across renderers (same trick as uPlayer).
 const FLOOR_FRAG = `
   precision highp float;
   uniform float uTime;
@@ -409,6 +427,11 @@ const FLOOR_FRAG = `
   uniform vec2  uPlayer;    // player position in uv space (0..1)
   uniform vec4  uArena;     // vignetteInner, vignetteDepth, poolRadius, poolLift
   uniform float uGridFall;
+  uniform vec3  uMass[${MASS_N}];    // xy = uv pos, z = strength (0 = unused)
+  uniform vec3  uPops[${POP_N}];     // xy = uv pos, z = progress 0..1 (>=1 = faded/unused)
+  uniform vec3  uPrizes[${PRIZE_N}]; // xy = uv pos, z = strength (0 = unused)
+  uniform vec4  uArena2;    // massRadius, massDark, popRadius, popBright
+  uniform vec2  uArena3;    // prizeRadius, prizeGlow
   varying vec2 vUv;
   void main() {
     vec3 base = vec3(0.079, 0.079, 0.169);
@@ -429,6 +452,35 @@ const FLOOR_FRAG = `
     vec3 gridColor = mix(vec3(0.13, 0.07, 0.38), vec3(0.0, 0.55, 0.50), grid);
     vec3 col = mix(base, gridColor, grid * pulse * 0.7 * gridFade);
     col = col * vig + gridColor * pool * uArena.w * 0.25 + base * pool * uArena.w;
+
+    // MASS: the swarm presses the ground darker where it's thick.
+    float massGlow = 0.0;
+    for (int i = 0; i < ${MASS_N}; i++) {
+      vec3 m = uMass[i];
+      massGlow += m.z * (1.0 - smoothstep(0.0, uArena2.x, length(vUv - m.xy)));
+    }
+    massGlow = min(massGlow, 1.0);
+    // POPS: a kill rings out from where it happened, then fades.
+    float popGlow = 0.0;
+    for (int i = 0; i < ${POP_N}; i++) {
+      vec3 p = uPops[i];
+      float strength = max(0.0, 1.0 - p.z);
+      float ringR = uArena2.z * clamp(p.z, 0.0, 1.0);
+      float d = abs(length(vUv - p.xy) - ringR);
+      popGlow += strength * (1.0 - smoothstep(0.0, 0.02, d));
+    }
+    popGlow = min(popGlow, 1.0);
+    // PRIZES: pickups mark their own ground.
+    float prizeGlow = 0.0;
+    for (int i = 0; i < ${PRIZE_N}; i++) {
+      vec3 pr = uPrizes[i];
+      prizeGlow += pr.z * (1.0 - smoothstep(0.0, uArena3.x, length(vUv - pr.xy)));
+    }
+    prizeGlow = min(prizeGlow, 1.0);
+
+    col -= vec3(0.05, 0.03, 0.09) * massGlow * uArena2.y;
+    col += vec3(0.9, 0.95, 1.0) * popGlow * uArena2.w;
+    col += vec3(0.55, 0.4, 0.08) * prizeGlow * uArena3.y;
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -438,6 +490,16 @@ const FLOOR_FRAG = `
 // v223: uPlayer/uArena/uGridFall join on both paths — same bridge, so every
 // write site below stays byte-identical across renderers.
 const _AR = TUNING.arena;
+// v228: one Vector3(uv.x, uv.y, strength|progress) uniform PER SLOT, not a
+// single array uniform — TSL.uniform() nodes share the same `.value`
+// interface a plain {value:...} does (proven since v191), so the per-frame
+// write site stays byte-identical across renderers even though the GLSL
+// side reads these as one packed `vec3[N]` array. Padding a JS array with
+// `() => ...` (not a shared instance) matters: Array.fill() would alias one
+// Vector3/uniform node across every slot.
+const _massSlots  = (mk) => Array.from({ length: MASS_N  }, mk);
+const _popSlots   = (mk) => Array.from({ length: POP_N   }, mk);
+const _prizeSlots = (mk) => Array.from({ length: PRIZE_N }, mk);
 const floorUniforms = IS_GPU
   ? {
       uTime:  TSL.uniform(0),
@@ -447,6 +509,11 @@ const floorUniforms = IS_GPU
       uArena:  TSL.uniform(new THREE.Vector4(
         _AR.vignetteInner, _AR.vignetteDepth, _AR.poolRadius, _AR.poolLift)),
       uGridFall: TSL.uniform(_AR.gridFalloff),
+      uMass:   _massSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 0))),
+      uPops:   _popSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 2))),   // z>=1: unused/faded
+      uPrizes: _prizeSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 0))),
+      uArena2: TSL.uniform(new THREE.Vector4(_AR.massRadius, _AR.massDark, _AR.popRadius, _AR.popBright)),
+      uArena3: TSL.uniform(new THREE.Vector2(_AR.prizeRadius, _AR.prizeGlow)),
     }
   : {
       uTime:  { value: 0 },
@@ -456,11 +523,42 @@ const floorUniforms = IS_GPU
       uArena:  { value: new THREE.Vector4(
         _AR.vignetteInner, _AR.vignetteDepth, _AR.poolRadius, _AR.poolLift) },
       uGridFall: { value: _AR.gridFalloff },
+      uMass:   _massSlots(() => ({ value: new THREE.Vector3(0, 0, 0) })),
+      uPops:   _popSlots(() => ({ value: new THREE.Vector3(0, 0, 2) })),
+      uPrizes: _prizeSlots(() => ({ value: new THREE.Vector3(0, 0, 0) })),
+      uArena2: { value: new THREE.Vector4(_AR.massRadius, _AR.massDark, _AR.popRadius, _AR.popBright) },
+      uArena3: { value: new THREE.Vector2(_AR.prizeRadius, _AR.prizeGlow) },
     };
-// TSL port of FLOOR_FRAG (v191): same math, node graph instead of GLSL.
+// v228: recent kill positions, oldest-first — recordPop() (called from
+// onKill()) pushes, the per-frame floor update below drains anything past
+// TUNING.arena.popLife and writes whatever's left into floorUniforms.uPops.
+let popRipples = [];
+function recordPop(x, z) {
+  const { u, v } = worldToUV(x, z);
+  popRipples.push({ u, v, t0: VIS.now });
+  // Keep a little slack over popCount — a burst of kills the same frame
+  // shouldn't have to fight the trim below for a slot before it even ages.
+  if (popRipples.length > POP_N * 2) popRipples.shift();
+}
+// THREE.ShaderMaterial does not read an array of {value:X} sub-uniforms for
+// a `vec3[N]` GLSL uniform — it wants ONE uniform whose value IS the array.
+// slots.map(s => s.value) shares the SAME Vector3 instances the per-frame
+// write site mutates in place (floorUniforms.uMass[i].value.set(...)), so
+// this needs building only once, not re-synced every frame.
+function glslArray(slots) { return { value: slots.map(s => s.value) }; }
+
+// TSL port of FLOOR_FRAG (v191/v228): same math, node graph instead of GLSL.
 function makeFloorMat() {
   if (!IS_GPU) {
-    return new THREE.ShaderMaterial({ vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG, uniforms: floorUniforms });
+    return new THREE.ShaderMaterial({
+      vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG,
+      uniforms: {
+        ...floorUniforms,
+        uMass: glslArray(floorUniforms.uMass),
+        uPops: glslArray(floorUniforms.uPops),
+        uPrizes: glslArray(floorUniforms.uPrizes),
+      },
+    });
   }
   const { uv, vec3, float, mix, smoothstep, length } = TSL;
   const m  = new THREE.MeshBasicNodeMaterial();
@@ -478,12 +576,48 @@ function makeFloorMat() {
   const gridFade = float(1.0).sub(floorUniforms.uGridFall.mul(edge));
   const pool = float(1.0).sub(smoothstep(float(0.0), A.z, length(uv().sub(floorUniforms.uPlayer))));
   const lit = mix(base, gridColor, grid.mul(pulse).mul(0.7).mul(gridFade));
+
+  // v228 arena-pass-2 terms — the same three the GLSL path runs, node-for-
+  // node. Each is a plain JS for-loop over individual uniform nodes (built
+  // once, at material-construction time) rather than a TSL uniformArray()/
+  // Loop() — every primitive used here (float/vec3/mix/smoothstep/length,
+  // .add/.sub/.mul/.div/.max/.min/.abs, and .x/.y/.z/.xy swizzles) is already
+  // proven elsewhere in this function; uniformArray()/Loop() are not.
+  const A2 = floorUniforms.uArena2;   // massRadius, massDark, popRadius, popBright
+  const A3 = floorUniforms.uArena3;   // prizeRadius, prizeGlow
+
+  let massGlow = float(0.0);
+  for (const node of floorUniforms.uMass) {
+    const d = length(uv().sub(node.xy));
+    massGlow = massGlow.add(node.z.mul(float(1.0).sub(smoothstep(float(0.0), A2.x, d))));
+  }
+  massGlow = massGlow.max(0.0).min(1.0);
+
+  let popGlow = float(0.0);
+  for (const node of floorUniforms.uPops) {
+    const strength = float(1.0).sub(node.z).max(0.0);
+    const ringR = A2.z.mul(node.z.max(0.0).min(1.0));
+    const d = length(uv().sub(node.xy)).sub(ringR).abs();
+    popGlow = popGlow.add(strength.mul(float(1.0).sub(smoothstep(float(0.0), float(0.02), d))));
+  }
+  popGlow = popGlow.max(0.0).min(1.0);
+
+  let prizeGlow = float(0.0);
+  for (const node of floorUniforms.uPrizes) {
+    const d = length(uv().sub(node.xy));
+    prizeGlow = prizeGlow.add(node.z.mul(float(1.0).sub(smoothstep(float(0.0), A3.x, d))));
+  }
+  prizeGlow = prizeGlow.max(0.0).min(1.0);
+
   // .pow(2.2): the GLSL original writes raw values straight to the sRGB
   // framebuffer; the node pipeline output-encodes (linear→sRGB), so pre-decode
   // to round-trip — without this the floor renders visibly washed out.
   m.colorNode = lit.mul(vig)
     .add(gridColor.mul(pool).mul(A.w).mul(0.25))
     .add(base.mul(pool).mul(A.w))
+    .sub(vec3(0.05, 0.03, 0.09).mul(massGlow).mul(A2.y))
+    .add(vec3(0.9, 0.95, 1.0).mul(popGlow).mul(A2.w))
+    .add(vec3(0.55, 0.4, 0.08).mul(prizeGlow).mul(A3.y))
     .pow(2.2);
   return m;
 }
@@ -3202,6 +3336,7 @@ const TYPE_KEY = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v
 
 function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are marked
   rush.kill();   // v227: every Rush kill counts toward the level's PAR (no-op outside Rush)
+  recordPop(e.position.x, e.position.z);   // v228: the floor rings out where it happened
   // VOLATILE affix (v145): the fuse pays off — a slow 8-bullet ring from the
   // corpse. The orange strobe telegraphed it the whole time. v220: the ring
   // wears the revenge palette, not a flat orange.
@@ -4697,7 +4832,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v227' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v228' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9472,10 +9607,40 @@ function loop() {
   // v223: the pool follows you — world position → the floor plane's uv. The
   // plane spans ±HALF, and its uv.y runs opposite z (PlaneGeometry rotated
   // -90° about x), so z is flipped here.
-  floorUniforms.uPlayer.value.set(
-    player.mesh.position.x / (HALF_X * 2) + 0.5,
-    0.5 - player.mesh.position.z / (HALF_Z * 2),
-  );
+  const _pUV = worldToUV(player.mesh.position.x, player.mesh.position.z);
+  floorUniforms.uPlayer.value.set(_pUV.u, _pUV.v);
+
+  // v228 ARENA PASS 2 — three more things the floor answers, all written the
+  // same way: fill up to N slots from what's actually alive/present this
+  // frame, zero (or "faded") pad whatever's left. floor.visible is false in
+  // every cabinet (line ~2394 &c.), so this is dead but harmless work there.
+  for (let i = 0; i < MASS_N; i++) {
+    const e = enemies[i];
+    if (e && e.alive) { const p = worldToUV(e.position.x, e.position.z); floorUniforms.uMass[i].value.set(p.u, p.v, 1); }
+    else floorUniforms.uMass[i].value.set(0, 0, 0);
+  }
+  {
+    const R = TUNING.arena;
+    popRipples = popRipples.filter(r => VIS.now - r.t0 < R.popLife);
+    const live = popRipples.slice(-POP_N);
+    for (let i = 0; i < POP_N; i++) {
+      const r = live[i];
+      if (r) floorUniforms.uPops[i].value.set(r.u, r.v, (VIS.now - r.t0) / R.popLife);
+      else   floorUniforms.uPops[i].value.set(0, 0, 2);   // >=1: contributes nothing
+    }
+  }
+  {
+    let pi = 0;
+    for (const pu of powerups) {
+      if (pi >= PRIZE_N) break;
+      if (pu.collected) continue;
+      const p = worldToUV(pu.x, pu.z);
+      floorUniforms.uPrizes[pi].value.set(p.u, p.v, 1);
+      pi++;
+    }
+    for (; pi < PRIZE_N; pi++) floorUniforms.uPrizes[pi].value.set(0, 0, 0);
+  }
+
   if (retro.active) retro.render(renderer, scene, camera);
   else              renderer.render(scene, camera);
   drawHUD();
@@ -9509,6 +9674,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=181').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=182').catch(() => {});
   });
 }
