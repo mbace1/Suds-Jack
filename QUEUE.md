@@ -88,23 +88,7 @@ graphics/physics item runs the other way.
 
 ## Queued
 
-### Q-027 — Implement the Rush S/A/B/C tier + leg-goal system
-
-- status: Queued
-- repo: Suds-Jack
-- size: M
-- blocked-by: — (Q-025, Q-026 both landed)
-- design: RUSH_DESIGN.md §3
-- gate: per-level PAR kill table live in the HUD, stamped ladder on the run
-  summary, all three goal slots (UNTOUCHED / UNBROKEN / NEVER LOCKED) and the
-  star tracked and shown, `scripts/cabinets.sh` and the Rush smoke/playthrough
-  gates stay green
-
-The design (adapted from the Godot repo's unshipped `design/RUSH_TIERS_AND_LEVELS.md`,
-reconciled against what actually shipped — RUSH_DESIGN.md §4 records every
-place the two disagree and why) is finished; the numbers are explicitly
-PROPOSED and expected to move after first playtest. Implement against the
-method, not the specific thresholds.
+*(nothing currently queued — Q-025/026/027 all landed below.)*
 
 ---
 
@@ -143,3 +127,27 @@ ceiling below B tier), this build's supply roughly *tracks* the S-tier PAR:
 `'swarm'`/`'spike'`-kind levels clear it with room, plain `'normal'`-kind
 levels (the majority) fall short by 0.05–0.3 kills/s — small enough to read
 as "a tight ceiling," not "unreachable." Full table in `RUSH_DESIGN.md` §3.2.
+
+### Q-027 — Implement the Rush S/A/B/C tier + goal system
+
+- status: **Landed** in `482aed68` (`v227`, `gh-pages`)
+- repo: Suds-Jack
+- size: M
+- blocked-by: —
+- design: RUSH_DESIGN.md §3
+
+Body corrected on landing, same as Q-025. The original gate named "all three
+goal slots (UNTOUCHED / UNBROKEN / NEVER LOCKED)" — implementing it exposed
+that UNTOUCHED can't exist as a separate goal: `levelDown()` already resets a
+level's timer to 0 on every hit, so reaching *any* level-up stamp already
+requires a hit-free attempt. It was always true by construction. Cut before
+shipping. What actually landed: `TUNING.rush.tiers` (PAR rates, ported from
+Godot's research, marked unvalidated), `rush.tierFor()`/`liveTier()` (HUD
+readout), a stamped `rush.ladder` on `levelUp()` (nothing stamped on
+`levelDown()`), and two real per-level goals — `chainUnbroken` (the boost
+chain's window never times out) and `neverLocked` (heat never trips the
+overheat lockout) — each level earning a **★** independently rather than a
+3-level cycle, since a fixed grouping had no rationale left with only two
+real axes. Full account in `RUSH_DESIGN.md` §3.4. Verified with a throwaway
+Playwright probe (same pattern as `scripts/cabinets.sh`'s `window._C`, never
+committed) — 6/6 checks. `smoke.sh` + `cabinets.sh` green.

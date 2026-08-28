@@ -6,10 +6,14 @@ below is transcribed from there, cited by file:line against the commit that
 shipped it (`v224`/`v225`, `VERSIONS.md`). If this doc and the code disagree,
 the code wins; file the drift.
 
-**§3–§5 are PROPOSED, not implemented.** Same status Godot's own
-`design/RUSH_TIERS_AND_LEVELS.md` carried before this doc existed: the
-*model* is the deliverable, not the numbers — first playtest recalibrates the
-numbers, not the method. Tracked as queue items in root `QUEUE.md`.
+**§3.2–§3.4 describe shipped code** (`v227`, `Q-027`) — the PAR table, live
+tier, stamped ladder, and the two per-level goals are live in `main.js`'s
+`rush` object, same sourcing rule as §1–§2. **§3.1's numeric derivation and
+§4–§5's open questions are still commentary/analysis**, not code — the tier
+*rates* in `TUNING.rush.tiers` are ported from Godot's research and marked
+unvalidated regardless of the surrounding logic being shipped: the model is
+implemented, the numbers still want a playtest pass. Tracked as queue items
+in root `QUEUE.md`.
 
 This doc exists because Rush was designed in two places that stopped talking
 to each other. It shipped here (`toko-drop/`) in `v224`/`v225` off a decision
@@ -226,64 +230,58 @@ playtest shows the `'normal'`-level shortfall actually matters. Re-run
 `scripts/rush-supply-sample.mjs` if `TUNING.waves` or `TUNING.rush.pool`
 changes — the table above is a snapshot, not a promise.
 
-### 3.3 Live tier and stamps
+### 3.3 Live tier and stamps — shipped `v227`
 
-- **Live tier**: current level's kill count against the PAR table,
-  interpolated by elapsed time within the level — the mid-run feedback the
-  mode otherwise lacks, shown the same place the heat bar already lives in
-  the HUD.
-- **A level stamps its tier when it's cleared by the timer** (level-up), and
-  the stamp never revises. **A level that ends by level-down (a hit) stamps
-  nothing** — it isn't a failed grade, it's an incomplete one, same logic as
-  Godot's "no grade without finishing the clock," mapped from "the whole
-  run" onto "this one level."
-- The run summary shows the **stamped ladder** — one tier per level actually
-  cleared — rather than a single terminal grade. Godot's fixed 3-minute run
-  had one grade because it had one ending; this mode's levels are open-ended,
-  so the ladder *is* the summary. (A single "best sustained tier" or
-  "highest level cleared" headline number for the death screen is a UI
-  question, not a design one — punt to whoever builds the screen.)
+- **Live tier** (`rush.liveTier()`): current level's kill count against the
+  PAR table, interpolated by elapsed time within the level — the mid-run
+  feedback the mode otherwise lacks. Shown top-right in the HUD, under the
+  score.
+- **A level stamps its tier when it's cleared by the timer** (`rush.levelUp()`,
+  before advancing), and the stamp never revises. **A level that ends by
+  level-down (a hit) stamps nothing** — it isn't a failed grade, it's an
+  incomplete one, same logic as Godot's "no grade without finishing the
+  clock," mapped from "the whole run" onto "this one level."
+- The death screen shows the **stamped ladder** (`rush.ladder`, `1:B 2:S★ …`)
+  rather than a single terminal grade. Godot's fixed 3-minute run had one
+  grade because it had one ending; this mode's levels are open-ended, so the
+  ladder *is* the summary.
 
-### 3.4 Leg goals, adapted to an open-ended ladder
+### 3.4 Goals — corrected during implementation, shipped `v227`
 
-Godot's three-leg design worked because each of three *fixed* legs got
-exactly one goal, chosen to be awkward to farm with the others' behaviour.
-Rush has no fixed legs — but it does have levels, so the same idea maps onto
-**a goal that cycles by level number mod 3**, and any run long enough to
-clear three consecutive levels gets a shot at all three:
+**The three-slot proposal below this line, as originally written, doesn't
+work — kept for the record, not as the design.** It assumed a goal could be
+"UNTOUCHED: finish the level without taking a hit," parallel to Godot's leg
+goal of the same name. But `levelDown()` already resets that level's timer to
+0 on *every* hit (§2) — which means reaching a level-up stamp **at all**
+already requires a completely hit-free attempt. UNTOUCHED wasn't a goal, it
+was a tautology: every single stamp in `rush.ladder` satisfies it by
+construction, so showing it as an "achievement" would have been showing the
+player something that's never false. Building this and only noticing once
+`_freshAttempt()` made the reset explicit is the sort of thing worth stating
+plainly rather than quietly editing away.
 
-| slot | levels | goal | condition |
-|---|---|---|---|
-| **A** | 1, 4, 7, … | **UNTOUCHED** | finish the level without taking a hit |
-| **B** | 2, 5, 8, … | **UNBROKEN** | the boost chain's 2.5s window never lapses — always land the next boost kill in time |
-| **C** | 3, 6, 9, … | **NEVER LOCKED** | never trip the overheat lockout (`rush.overheated` stays false the whole level) |
+**What shipped instead: two goals, no slots, no 3-level cycle.** Every level
+attempt tracks two independent booleans, both true only if never violated for
+that attempt's whole duration:
 
-Slot C is a deliberate departure from Godot's literal wording. Godot's "heat"
-*was* a score multiplier that decayed over time — "never let it reach zero"
-was a continuity goal. This build's `rush.heat` is a **lockout resource**
-that rises when you boost or shoot and is *good* at zero; porting "never let
-heat reach zero" verbatim would demand the opposite of good play. NEVER
-LOCKED keeps the same *shape* of goal (a resource-management axis, distinct
-from "got hit" and "kept the chain alive") without inheriting a name that
-means the opposite thing here.
+| goal | condition | tripped by |
+|---|---|---|
+| **`chainUnbroken`** | the boost chain's 2.5s window never lapses | `rush.update()`'s timeout branch — a chain that runs out the clock, not a hit (a hit also zeros the chain, but that ends the attempt via `levelDown()` with no stamp anyway, so it never reaches this check) |
+| **`neverLocked`** | never trip the overheat lockout | `heat` reaching 1.0 and `rush.overheated` flipping true |
 
-**Known overlap, stated rather than hidden:** slot A (UNTOUCHED) and slot B
-(UNBROKEN) aren't fully orthogonal here the way Godot's were — any hit zeros
-*both* the chain and the hit-streak in this code (`main.js:3509`), so a hit
-fails both goals at once if they land in the same stretch. They're still
-distinct in the failure case that matters most (a chain can lapse from
-*timing*, no hit involved, at any point) — just not as cleanly separated as
-Godot's time-decayed heat made them. Worth watching in playtest; the fix, if
-it proves to matter, is making slot B's condition purely about window
-timeout and explicitly not about hits — which, read literally, it already
-is; the overlap is a side effect of a hit *also* zeroing the chain, not the
-goal definition being wrong.
+`neverLocked` replaces Godot's "heat" goal under the same renamed logic as
+before: this build's `rush.heat` is a lockout resource that's *good* at zero,
+the opposite of Godot's score-multiplier heat that wanted to stay high, so
+the goal is phrased for what's actually true here.
 
-**Star:** three consecutive slots (any full A→B→C run of levels, e.g. levels
-1–3, or 4–6) all stamped **and** all three goals hit → a **★** against that
-cycle. Because the ladder is open-ended, a long run can earn more than one
-star — a deliberate extension past Godot's design, which had exactly one
-shot at exactly one star per run because it had exactly one leg-cycle.
+**Star: per level, not per 3-level cycle.** A level stamped with both goals
+still clean earns a **★** on that rung of the ladder. The 3-slot cycle
+(§3.4, original) depended on three genuinely distinct axes to avoid being
+farmable together; with only two real axes left, a fixed 3-level grouping
+had no remaining rationale — a run-length-independent per-level star fits an
+open-ended ladder better than a borrowed fixed-leg structure anyway. A long
+run can still earn many stars, same intent as the original "more than one
+star per run" extension, just counted per rung instead of per triple.
 
 ---
 
@@ -317,17 +315,24 @@ noticing it's a deliberate reconciliation, not an oversight:
    pass, given the score formula and roster are both different from what
    produced Godot's numbers? Almost certainly yes — they're marked ported,
    not derived, for exactly this reason.
-4. Live tier visibility: same open question Godot's doc raised and left open
-   — a dropping letter mid-run may read as discouraging to some players.
-   Unresolved here too.
+4. **Decided by shipping, `v227`:** live tier is always visible (top-right
+   HUD). Godot's doc raised and left open whether a dropping letter mid-run
+   reads as discouraging; this build shipped the visible version without
+   litigating that further. Revisit if playtest feedback says otherwise.
 5. Does any of this apply to the base (non-Rush) game's wave-based scoring?
    Out of scope for this doc; Godot's tier doc punted the same question for
    Normal mode.
+6. Now that §3.4's goal count dropped from three to two, is there a genuine
+   third axis worth adding later (raw kill-rate already grades the tier;
+   `chainUnbroken`/`neverLocked` cover chain-timing and heat-management) — or
+   is two the natural number here and a third would just be padding? Not
+   pursued for `v227`; worth asking again after real playtest data exists.
 
 ---
 
 ## 6. Queue
 
-Tracked as root `QUEUE.md` items: Q-025 (this doc + the lives gap), Q-026
-(supply-rate verification), Q-027 (tier/goal implementation once the numbers
-above clear a playtest pass). See `QUEUE.md` for status.
+Tracked as root `QUEUE.md` items: Q-025 (the lives correction, landed
+`v226`), Q-026 (supply-rate verification, landed), Q-027 (tier/goal/ladder
+system, landed `v227`, two goals not three — see §3.4). See `QUEUE.md` for
+status.
