@@ -209,9 +209,14 @@ function check(name, cond) {
   check(`every link this branch can see resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
   // A complete source checkout now contains the deployed catalogue. Keep the
   // assertion explicit so a future import cannot accidentally reintroduce
-  // production-only links into main.
-  const away = games.filter(g => !g.inRepo);
-  check('the complete source tree carries every visible cabinet', away.length === 0);
+  // production-only links into main. `deployedOnly: true` is the one
+  // standing exception — a game whose entry says, in code, that it lives
+  // only on the deployed site on purpose (Piritori's Godot build: a 63MB
+  // WASM artefact main does not carry). Anything else missing from the
+  // source tree still fails loudly.
+  const away = games.filter(g => !g.inRepo && !g.deployedOnly);
+  check('the complete source tree carries every visible cabinet', away.length === 0,
+    away.length ? away.map((g) => g.id).join(', ') : '');
 
   // a marquee that draws nothing is a black rectangle nobody notices
   const blank = await page.evaluate(() => {
