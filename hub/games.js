@@ -447,8 +447,11 @@ export const GAMES = [
     // The Godot port replaced the JS prototype here. It is a WebAssembly build
     // and lives only on the deployed site - `inRepo: false` because main does
     // not carry the 63MB artefact, so the smoke gate must not try to fetch it.
+    // `deployedOnly: true` tells the gate's own "every visible cabinet is in
+    // the source tree" check that this is a deliberate, standing exception.
     path: 'piritori-godot/',
     inRepo: false,
+    deployedOnly: true,
     accent: '#e8c24a',
     art: 'nightmap',
   },
