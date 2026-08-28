@@ -279,7 +279,7 @@ export const GAMES = [
     },
     pad: 'native',
     status: 'active',
-    note: 'v52 — flooded transport-hub showcase added; v51 character split and exact v18 legacy runner remain locked',
+    note: 'v53 — the flooded hub gains its first VHS archive tape, stronger wading wakes and living facility signals',
     title: 'Flash Prince',
     tagline: 'Every move you start, you finish. Hang, climb, and draw before he does.',
     lineage: 'Another World × Flashback × Prince of Persia',

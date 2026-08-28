@@ -8,9 +8,9 @@
 // the silhouette is not a ruler. Same shapes, biome by biome; only the sixteen
 // colours underneath them change.
 
-import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=52';
+import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=53';
 import { C } from './palette.js?v=52';
-import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=52';
+import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=53';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -48,6 +48,7 @@ export class World {
         else if (ch === 'D') { this.door = { x, y: y + TILE, tx, ty }; this.grid[ty][tx] = ' '; }
         else if (ch === 'G') { this.pickups.push({ kind: 'gun', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'h') { this.pickups.push({ kind: 'cell', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'V') { this.pickups.push({ kind: 'tape', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'B') { this.pickups.push({ kind: 'sword', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if ('bgds'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
         else if (ch === 'T') { this.lights.push({ x, y: y + 8 }); this.grid[ty][tx] = '-'; }
@@ -444,6 +445,14 @@ export class World {
         if ((ty & 1) === 0) scr.rect(x, y, TILE, 1, C.DARK);
         const j = ((ty & 1) ? 0 : 8);
         if (!empty(tx, ty)) scr.rect(x + j, y, 1, TILE, C.DARK);
+      } else if (p.kind === 'tape') {
+        // A VHS cassette at this scale is its two reels and one bright label.
+        // It stays dark and square against the organic facility behind it.
+        scr.rect(p.x - 7, p.y + bob - 5, 14, 10, C.DARK);
+        scr.rect(p.x - 6, p.y + bob - 4, 12, 2, C.LUX);
+        scr.disc(p.x - 3, p.y + bob + 1, 2, C.EDGE);
+        scr.disc(p.x + 3, p.y + bob + 1, 2, C.EDGE);
+        scr.rect(p.x - 1, p.y + bob, 2, 2, C.VOID);
       } else {
         // bedding planes: long, wavering, and nothing like a straight joint
         if ((ty * 7 + tx * 3) % 5 === 0) {

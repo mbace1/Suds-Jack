@@ -22,6 +22,7 @@
 //   C  a slab waiting in the ceiling
 //   D  the door out
 //   S  where he wakes up                  h  a flask (crouch over it)
+//   V  an archive tape (crouch over it)
 //   B  a blade                            G  the pistol
 //   b  something that lives here          g  a sentry with a rifle
 //   s  a swordsman                        d  a drone
@@ -280,6 +281,7 @@ export const ROOMS = [
   },
   { // 14 — rain over the drowned transport hub; the living facility beyond it
     t: 6.00, beat: 'floodedHub', scene: 'floodedHub', waterY: 166,
+    tapeTitle: 'LAST TRAIN / PLATFORM 6',
     map: [
       '                    ',
       '                    ',
@@ -291,7 +293,7 @@ export const ROOMS = [
       '                    ',
       '        ####        ',
       '   ###  ####  ###   ',
-      ' S ###        ###   ',
+      ' S ### V      ###   ',
       '####################',
     ],
   },

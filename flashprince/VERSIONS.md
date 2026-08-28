@@ -1,5 +1,13 @@
 # Flash Prince — versions
 
+## v53 — 2026-08-28
+
+**The city has memory.** The flooded hub now contains its first retro archive
+tape, picked up by crouching in the Flashback tradition, with a brief readable
+title and persistent VHS count. Wading produces a wider wake while moving, and
+light now travels slowly between the bio-machine facility's living nodes. No
+character frames, mappings, timing or locked run data changed.
+
 ## v52 — 2026-08-28
 
 **The flooded city begins.** A fifteenth playable room adds the drowned

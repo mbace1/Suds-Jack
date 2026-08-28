@@ -16,7 +16,7 @@
 //   in the middle without ever being shown a door.
 
 import { C } from './palette.js?v=52';
-import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=52';
+import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=53';
 
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 const clamp = v => Math.max(0, Math.min(1, v));
@@ -526,6 +526,13 @@ export function drawAir(scr, room, clock) {
       scr.rect(x - 1, y - 2, 3, 2, C.LUX);
       scr.rect(x - 6, y + 3, 12, 1, C.MID);
     }
+    // The facility is alive, but quiet: light travels from lobe to lobe like
+    // a slow thought. These are the same joints as the static structure.
+    for (let i = 0; i < 7; i++) {
+      if (((clock >> 4) + i) % 7 !== 0) continue;
+      const a = i / 7 * Math.PI * 2 - 0.8;
+      scr.disc(166 + Math.cos(a) * 62, 69 + Math.sin(a) * 48, 3, C.LUX2);
+    }
     return;
   }
   const t = room.t, w = weights(t);
@@ -565,9 +572,14 @@ export function drawFloodWater(scr, room, clock, hero) {
     scr.rect(x, y + 2 + (i % 3) * 6, 12 + (i % 4) * 3, 1, i % 3 ? C.MID : C.LUX);
   }
   if (hero && hero.y > y - 4) {
-    const spread = 10 + Math.min(10, Math.abs(hero.vx || 0) * 6);
+    const moving = ['step', 'inch', 'windUp', 'run', 'skid', 'runTurn', 'roll'].includes(hero.state);
+    const spread = moving ? 19 : 10;
     scr.rect(hero.x - spread, y - 1, spread * 2, 1, C.LUX);
     scr.rect(hero.x - Math.round(spread * 0.6), y + 3, Math.round(spread * 1.2), 1, C.MID);
+    if (moving) {
+      const tail = hero.face > 0 ? hero.x - spread - 9 : hero.x + spread;
+      scr.rect(tail, y + 6, 9, 1, C.EDGE);
+    }
   }
 }
 

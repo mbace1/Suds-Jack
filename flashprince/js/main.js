@@ -18,8 +18,8 @@
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js?v=52';
 import { Hero } from './hero.js?v=51';
-import { World, ROOMS, ROOM_H } from './level.js?v=52';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=52';
+import { World, ROOMS, ROOM_H } from './level.js?v=53';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=53';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
 import { Input } from './input.js?v=51';
@@ -107,6 +107,8 @@ class Stage {
     this.clock = 0;
     this.hint = 420;              // the control line fades out of the way
     this.flash = 0;
+    this.tapes = 0;
+    this.lootFlash = 0;
   }
 
   // ── the editor ─────────────────────────────────────────────────────
@@ -239,6 +241,7 @@ class Stage {
     if (inp.hitPress) h.strike(0, h.x - h.face * 10, this, inp.careful ? 'shock' : 'hit');
     this.world.update(h);
     h.update(this.world, inp, this);
+    if (this.lootFlash > 0) this.lootFlash--;
 
     // A screen is a composition with a hard cut either side of it: walk off the
     // edge and the next one is simply THERE. No scrolling, no camera.
@@ -289,6 +292,11 @@ class Stage {
       if (p.kind === 'gun') { p.taken = true; h.hasGun = true; }
       else if (p.kind === 'sword') { p.taken = true; h.hasSword = true; }
       else if (p.kind === 'cell' && h.low) { p.taken = true; h.health = Math.min(3, h.health + 1); }
+      else if (p.kind === 'tape' && h.low) {
+        p.taken = true;
+        this.tapes++;
+        this.lootFlash = 210;
+      }
     }
   }
 
@@ -502,6 +510,13 @@ class Stage {
       this.centre(scr, '◀ ▶  WALK, HOLD TO RUN   ▲  JUMP / PULL UP   ▼  CROUCH / CLIMB DOWN', H - 18, C.DARK, s);
       this.centre(scr, 'E  PISTOL OUT      X  FIRE      SHIFT  CAREFUL STEP', H - 10, C.DARK, s);
       this.centre(scr, 'H  TAKE A HIT      M  SOUND      G  ANIMATION GALLERY', H - 2, C.DARK, s);
+    }
+    if (this.lootFlash > 0) {
+      const title = this.world.room.tapeTitle ?? 'ARCHIVE TAPE';
+      scr.rect(67, 8, 186, 18, C.DARK);
+      this.centre(scr, `ARCHIVE ${String(this.tapes).padStart(2, '0')} · ${title}`, 14, C.LUX, 6);
+    } else if (this.tapes > 0) {
+      scr.text(`VHS ${String(this.tapes).padStart(2, '0')}`, W - 48, 22, C.LUX, 6);
     }
   }
 
