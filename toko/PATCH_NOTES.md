@@ -1,5 +1,17 @@
 # Toko Assistant — patch notes
 
+## 2026-08-28 — project knowledge pass 1
+
+- Added `project-knowledge.js`, a dedicated internal-project knowledge layer separate from general game-history knowledge.
+- Toko now carries curated design intent, roadmap, constraints and source-of-truth references for Toko Drop, Piritori → Eden, Eeri, Hyper Dagger, Suds Jack and Flash Prince.
+- Toko Drop knowledge is grounded in the living `GDD.md` plus the reconciled `TOKO_DROP_ROADMAP.md`, including the WebGPU/art arc, Early Access path, mobile-first constraints and cabinet hold.
+- Piritori knowledge follows the repository's declared authority stack (`DESIGN_AUTHORITY`, `DESIGN_LOCKS`, GDD, art/UX docs) and preserves the Era I → Era II phase gate.
+- Eeri knowledge preserves the platformer-first pivot, 80/20 Crafted World/Tropical Freeze reference balance, four-world/twelve-level structure, generous child-first difficulty rules and short machine-ride philosophy.
+- Hyper Dagger, Suds Jack and Flash Prince have concise design/roadmap summaries derived from their current repo direction; projects without a dedicated rich entry fall back to hub catalogue metadata instead of being treated as unknown.
+- Added `project-conversation.js`. Toko can answer `WHAT IS THE DESIGN OF TOKO DROP?`, `TOKO DROP ROADMAP`, `WHAT NEXT FOR EERI?`, `PIRITORI CONSTRAINTS`, `SOURCE OF TRUTH FOR PIRITORI`, and short follow-ups such as `ROADMAP` after a project is established.
+- Project knowledge is intentionally authored/curated rather than parsing markdown at runtime, so the assistant stays concise and offline while the repo documents remain the real authority.
+- No chat-layout dimensions changed in this pass; the existing menu-overlap regression guard remains active.
+
 ## 2026-08-27 — cross-game awareness pass 3
 
 - Toko can now answer reflective questions such as `WHAT KIND OF PLAYER AM I?`, `WHAT DO YOU NOTICE ABOUT HOW I PLAY?`, and `READ MY PLAY HISTORY`.
