@@ -1,4 +1,4 @@
-# Toko Drop — v229
+# Toko Drop — v230
 
 Twin-stick swarm-survival arena game built with Three.js and Web Audio.
 The default mode is the MOVEMENT game (v198): enemies never shoot — they

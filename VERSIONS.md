@@ -7,307 +7,38 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v229 — 2026-08-28
-**Haptics, and two motion-comfort flashes that reduce-motion had missed** *(roadmap-v2 Phase 4, `TOKO_DROP_ROADMAP.md`)*
-- New `js/haptics.js`: `navigator.vibrate()` on a non-fatal hit (35ms),
-  death (`[50,40,90]`, deliberately shaped so it doesn't just read as one
-  more hit), and Rush overheat lockout (60ms). Android Chrome only — no
-  iOS Safari, no desktop — so it's feature-detected once and a silent
-  no-op everywhere else; its own settings toggle (`HAPTICS`, next to
-  `REDUCE MOTION` in the pause menu), independent of that one, since a
-  player may want the buzz without the shake or vice versa
-- **Audit found two motion-comfort gaps while wiring the above**: the
-  hit-damage vignette (a full-screen red pulse, up to 0.55 alpha) and the
-  wave-clear flash (a full-screen white pulse, up to 0.3 alpha) were never
-  gated by `REDUCE MOTION` — `addShake()` gates itself centrally and the
-  NEX DEUS flash was already gated, but these two were missed. Both full-
-  screen flashes are exactly the kind of thing that setting exists for, so
-  they're gated now too
-- Verified: a throwaway probe confirmed `haptics.setEnabled()` persists and
-  actually suppresses `navigator.vibrate()`, and that `tryHitPlayer()`'s
-  real hit/death paths fire the right pattern through the real integration
-  point (not just the module in isolation). `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=182` → `?v=183`; HUD label → v229
+## v230 — 2026-08-28
+**QOL pass: haptics gets two more real moments** *(follow-up to v229)*
+- The shield pickup — the one hit it fully absorbs, no HP lost — fired
+  `audio.playerHit()` and a camera shake but no vibration, even though it's
+  arguably the single most important defensive save in the game. It now gets
+  its own distinct pattern (`haptics.shield()`, `[20,30,20]`, punchier and
+  shaped differently from a plain hit) so a save reads as a save
+- Flipping **HAPTICS** on in the pause menu now fires a one-off confirmation
+  buzz. On the ~90% of devices `navigator.vibrate` silently no-ops on (no
+  iOS Safari, no desktop), turning the toggle on used to be the only control
+  in the whole settings panel that gave zero feedback either way
+- Verified with a throwaway probe driving the real integration points: the
+  shield branch of `tryHitPlayer()` fires `[20,30,20]` and correctly
+  consumes the shield; the settings object's `setHaptics(true)` path fires
+  the confirmation buzz. `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=183` → `?v=184`; HUD label → v230
 
 ---
-
-## v228 — 2026-08-28
-**Arena pass 2 — the floor answers mass, prizes and pops** *(roadmap-v2 Phase 3, `TOKO_DROP_ROADMAP.md`)*
-- v223 gave the floor a rim vignette, a grid falloff and a pool that follows
-  the player. Three more terms now answer three more things happening on
-  it, same "cheap fragment terms" discipline, both renderers in parity:
-  - **MASS**: up to 10 live enemies (`TUNING.arena.massSample`) each darken
-    the ground under them — the swarm visibly presses the floor down where
-    it's thick, distinct from (and readable against) the player's own lit pool
-  - **POPS**: every kill (`onKill()` → `recordPop()`) rings the floor out
-    from where it happened, a bright ring that expands and fades over
-    `popLife` (0.55s) — a 6-slot rolling buffer, oldest evicted first
-  - **PRIZES**: up to 5 live pickups each mark their own ground with a warm glow
-  - All three are fixed-size point arrays, deliberately **branch-free**: an
-    unused slot carries strength 0 (mass/prizes) or progress ≥1 (pops), never
-    a skipped loop iteration — keeps both the GLSL `for` loop and the TSL
-    node-graph plain static loops, no dynamic control flow either side
-  - The TSL port avoids `uniformArray()`/`Loop()` — a plain JS `for` loop
-    builds N individual `TSL.uniform(Vector3)` nodes into the sum at
-    material-construction time instead, using only primitives already proven
-    elsewhere in this file (`.add/.sub/.mul/.min/.max/.abs`, `.x/.y/.z/.xy`
-    swizzles). `uniformArray`/`Loop` exist in the vendored r180 build but are
-    unfamiliar API surface with no way to consult live docs here — not worth
-    the risk for 21 unrolled terms
-- **Verified, not just compiled**: classic/GLSL path proven via `smoke.sh` +
-  `cabinets.sh` (real kills, real pickups, zero errors) plus a screenshot at
-  exaggerated strength confirming all three terms actually change the
-  rendered pixels, not just theoretically execute. TSL/WEBGPU(BETA) path
-  (which neither gate exercises — they rewrite the importmap to the classic
-  bundle) checked separately: boots clean under the adaptive WebGL2 fallback
-  (no real WebGPU device in this sandbox) with zero TSL/node-graph errors
-  across an 8s session
-- One real bug caught and fixed in the process: the first screenshot attempt
-  showed no pop ring at all. Traced to the test harness, not the game — a
-  single `page.evaluate()` round-trip under swiftshader software rendering
-  burned over a real second of wall-clock frame time, aging the ripple past
-  its 0.55s `popLife` before the screenshot fired. Confirmed by temporarily
-  widening `popLife` to 6s in a scratch copy: the ring renders exactly as
-  designed. Real play runs at native frame rate, so this was never reachable
-  in the shipped game
-- Cache-bust `?v=181` → `?v=182`; HUD label → v228
-
----
-
-## v227 — 2026-08-28
-**RUSH gets S/A/B/C tiers, a stamped ladder, and per-level goals** *(`Q-027`, `toko-drop/RUSH_DESIGN.md` §3)*
-- **PAR table** (`TUNING.rush.tiers`, ported from the Godot repo's unshipped
-  tier research and flagged unvalidated): a level's PAR kill count is a
-  reference kills/s rate × that level's own duration. `rush.tierFor(kills,
-  seconds)` returns the highest letter met, or `null` below C.
-- **Live tier**: the HUD now shows this attempt's pacing (top-right, under
-  the score) via `rush.liveTier()` — kills so far against PAR interpolated by
-  elapsed time. Mid-run feedback the mode didn't have before.
-- **Stamped ladder**: `rush.levelUp()` stamps the level just cleared into
-  `rush.ladder` (tier + kill count) before advancing. `rush.levelDown()`
-  stamps nothing — a hit means that attempt never finished, same logic as
-  "no grade without finishing the clock."
-- **Design correction found while implementing** (`RUSH_DESIGN.md` §3.4 had
-  proposed three goal slots cycling UNTOUCHED/UNBROKEN/NEVER LOCKED, mirroring
-  Godot's three-leg design): `levelDown()` already resets that level's timer
-  to 0 on every hit, which means reaching *any* level-up stamp already
-  requires a completely hit-free attempt — UNTOUCHED was always true by
-  construction, not a real goal. Cut before it shipped. **Two real, orthogonal
-  goals remain**: `chainUnbroken` (the boost-chain's 2.5s window never times
-  out) and `neverLocked` (the heat meter never trips the overheat lockout). A
-  level stamped with both still clean earns a **★** — per level, not per
-  3-level cycle (the cycle framing depended on the three-slot system this
-  correction removed, and doesn't fit an open-ended ladder as naturally as a
-  fixed 3-leg run anyway).
-- Death screen shows the ladder (`1:B 2:S★ …`) and total stars when the run
-  was Rush.
-- Verified with a throwaway Playwright probe (same pattern as
-  `scripts/cabinets.sh`'s `window._C`, never committed): reset() state, a
-  clean B-tier+star stamp, a tripped-goal stamp correctly denied its star,
-  levelDown() stamping nothing and resetting the attempt, liveTier()'s
-  interpolation at an exact PAR boundary, and the death-screen HTML. 6/6.
-- `smoke.sh` + `cabinets.sh` green.
-- `RUSH_DESIGN.md` and `QUEUE.md`'s `Q-027` updated to match what actually
-  shipped (the two-goal, per-level-star design) in the same PR.
-- Cache-bust `?v=180` → `?v=181`; HUD label → v227
-
----
-
-## v226 — 2026-08-28
-**RUSH's dead life-counter is gone** *(`Q-025`, `toko-drop/RUSH_DESIGN.md` §1.4)*
-- `RUSH_DESIGN.md` §1.4 (and `Q-025`) claimed `rush.lives` was "fully wired
-  for display but never spent" and framed this as a revive-pool bug. That was
-  wrong on inspection: `rush.checkExtraLife()`'s caller already does
-  `player.maxHp++; player.hp++` on every threshold — the extra-life mechanic
-  **already works**, by growing the HP pool directly (the HUD's hit-point
-  dots read `player.hp`/`maxHp`, exactly as the existing code comment says:
-  "the hp dots are the lives"). `rush.lives` was a *separate*, purely
-  internal counter incremented alongside that grant and decremented by
-  `loseLife()` — which was never called — and read by **nothing**: not the
-  HUD, not `designer.js`, not `lang.js`, nowhere. It had zero observable
-  effect either way.
-- So this isn't the revive-on-death mechanic an earlier draft of this entry
-  described (reverted before merge — that would have been a real balance
-  change dressed as a bug fix, not what shipped). It's smaller: **`rush.lives`
-  and the dead `loseLife()` method are removed.** `nextLife` — the actual
-  threshold gate `checkExtraLife()` needs — stays. No observable behavior
-  changes; the HP-growth mechanic was already correct.
-- `RUSH_DESIGN.md` §1.4 and `QUEUE.md`'s `Q-025` are corrected in the same
-  pass — both had the "HUD life counter" and quoted milestone text wrong.
-- `smoke.sh` + `cabinets.sh` green.
-- Cache-bust `?v=179` → `?v=180`; HUD label → v226
-
----
-
-## v225 — 2026-08-27
-**RUSH gets its own arena and its own roster** *(owner direction)*
-- v224 gave Rush its rules but left it running on the main game's furniture and
-  its 21-type ecology. Both are gone: **Rush is a bare arena with four bodies**
-- **No main-game items, no gates.** One predicate — `bareArena()`, which
-  cabinets already effectively used — now switches off gates, bounties, vault
-  crates, escort bots, steam vents, drains, foam zones, bullet curtains and the
-  cargo convoy, and with them every pickup they dropped. Classic is untouched
-  and still builds all of it
-- **Four bodies, shaped like Blade Rush's own roster** (Chompers, Snakes,
-  asteroids, Coolers) instead of the main pool:
-  **GLOBBO** the chomper · **YELA CUBE** the cooler · **SPLITTA** the snake
-  (it splits into a train) · **SLUDGE CUBE** the asteroid. **No shooters** — a
-  gun club would make standing still the answer, which is the opposite of a
-  mode about boosting through things
-- **The COOLER earns its name**: boost-killing one **vents 0.22 heat** and can
-  clear the overheat lock, so the roster feeds the mode's economy rather than
-  standing in front of it
-- **No boss set pieces** — OMEGA, the TWIN PRISMS and their WARDEN escorts are
-  off-roster, so a boss beat becomes a heavy one. Blade Rush's own bosses (The
-  Warden, The Scourge, The Leviathan) are a later job
-- Roster and vent are data in `TUNING.rush.pool` / `.cooler`
-- Verified headless **25/25**: a 14-level sweep fields exactly those four types
-  and zero bosses; a Rush wave builds no gates, pickups, vents, foam, vault,
-  escort, drain, bounty or curtain — and a classic wave still builds its gates.
-  `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=178` → `?v=179`; HUD label → v225
-
----
-
-## v224 — 2026-08-27
-**RUSH MODE — boost is the answer, the gun is the fallback** *(owner direction)*
-- A new front-page mode **directly under ROGUELIKE**, bringing the design
-  researched for the Godot port (`RUSH_MODE.md` there) into the primary JS
-  build. **Its own ruleset, not a modifier**: turning it on turns ROGUELIKE and
-  DAILY off
-- **The one rule everything hangs off**: boost grants invulnerability and
-  **kills on contact** — and **pulling the trigger cancels the shield**. Boost
-  is the good option; the gun is what you take when you cannot afford to boost
-- **Boost replaces the dash** — held, 17 u/s against 6 walking, no cooldown.
-  Contact kills raise the chain (cap ×100, 2.5s window), and the chain pays
-- **Heat is the shared cost**: boost 0.55/s (≈1.8s from cold), the gun
-  0.02/shot, cooling 0.42/s. At 1.0 you **overheat** and lose boost until you
-  cool back to 0.35 — hysteresis, so the meter cannot flutter on the edge
-- **Shotgun** (5 pellets across 0.5 rad, firing 3.4× slower) — deliberately a
-  close-range answer, so boosting stays better at any distance
-- **Levels move BOTH WAYS**: 60s, 90s, then +30s each — and the RUSH level is
-  the number the **wave director reads**, so losing a life levels you down and
-  genuinely makes the next wave easier. Lives are the hp dots; +1 every 25,000
-- **Touch ships both schemes**, because which one survives a thumb is a play
-  question rather than an argument: **RIM** — push the move stick past 86% of
-  its travel; **ZONE** — a pad in the lower-left margin
-- **The look does not move.** No new materials: rush state rides the player's
-  existing emissive — cyan while shielded, orange while running hot
-- Constants are data in `TUNING.rush`. Verified headless **19/19** against the
-  real ruleset: the chip sits under ROGUELIKE, the shield dies on the trigger
-  through the real `player.update`, overheat locks and clears on its hysteresis,
-  the level drives the director both ways, and both touch schemes read.
-  `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=177` → `?v=178`; HUD label → v224
-
----
-
-## v223 — 2026-08-08
-**Arena pass — the floor reads swarm flow** *(roadmap-v2 Phase 3, art priority 2)*
-- The classic arena was a uniform neon grid: every cell identical everywhere,
-  so a wave crossed a flat backdrop with nothing to read its approach against.
-  Three cheap fragment terms give the ground depth and a centre of gravity
-- **Rim vignette**: the arena darkens toward its edge (corner-normalized, so
-  it reads the same in portrait and landscape)
-- **Grid distance falloff**: the grid dims toward the rim, so the far edge
-  stops shimmering and near ground reads *near*
-- **The pool you stand in**: a soft lift that **follows the player** across
-  the floor — an approaching swarm now visibly crosses lit ground on its way
-  in. World→uv each frame next to the existing `uTime` write
-- **Both renderers run the same math** — GLSL and TSL node graph in parity,
-  never painted twice. Cabinets are untouched: they own their own ground
-  (`CAB_GROUND_TEX`), and this only touches the classic arena floor
-- All five constants are data in **`TUNING.arena`**
-- Verified headless 8/8 on both builds: the floor carries
-  `uPlayer`/`uArena`/`uGridFall`, the pool uv genuinely tracks the player
-  across the arena (0.29,0.73 → 0.71,0.27 corner to corner), live-run
-  screenshots match between renderers, zero page errors. `smoke.sh` +
-  `cabinets.sh` green
-- Cache-bust `?v=176` → `?v=177`; HUD label → v223
-
----
-
-## v222 — 2026-08-07
-**Goo pass 2 — corpse matter reads as gel** *(roadmap-v2 Phase 3, WEBGPU build)*
-- The corpse was the last flat thing on the floor: both `ChunkPool`s (angular
-  cube debris + smooth goo droplets) rendered matte `MeshBasicMaterial`
-  confetti on every build. Under the **WEBGPU flag** they now carry a
-  **gel-nugget node graph** — per-instance `aColor` (the SplatPool pattern),
-  wrap lighting off the arena sun, a fresnel jelly rim toward white, and a
-  wet specular glint. The angular pool becomes hard candy shards, the smooth
-  pool jelly droplets, both from one graph
-- **Classic is untouched byte-for-byte** — the flat `instanceColor` material
-  and its write path only run when the node path doesn't
-- Zero-conditional graph (the v195 lesson), `.pow(2.2)` output-encoding
-  parity on the instance color (the v192 lesson), no new divisions
-- Verified headless 8/8: under the flag both pools carry `colorNode`+`aColor`
-  and classic carries neither; a live in-run burst renders on both builds with
-  zero page errors — comparison screenshots show shaded gel nuggets vs the
-  old flat discs. `smoke.sh` + `cabinets.sh` green
-- Living-swarm materials were already satin/physical (v90) with the v218 dome
-  work — this closes the corpse half of "satin MID is the floor, goo the
-  ceiling"
-- Cache-bust `?v=175` → `?v=176`; HUD label → v222
-
----
-
-## v221 — 2026-08-01
-**Each mode drafts its own roster** *(field call: "different enemies for each mode")*
-- **CLOSE COMBAT now draws from its own table** (`TUNING.waves.poolMelee`).
-  The gun ecology's stationary artillery — BAMBU and PYRA, speed 0, which
-  muzzled were literally poles of free score (their 1.4× melee speed boost
-  multiplies zero) — and the pure gun species BOTFLY and DRAPER sit out.
-  The melee-native threats arrive earlier instead: CLOAKER's ambush at wave 5
-  (was 9), SIREN's surge at 7, MAGNA's pull at 9
-- **ORIGINAL mode is untouched** — `pool` is the gun ecology, byte-for-byte:
-  re-captured schedules for classic/smash/test/rich modes are identical to
-  v220 across 3 seeds × 30 waves; only melee differs, and it never fields a
-  forbidden type while ORIGINAL still fields all four
-- Same data discipline as v217: order is draw order, append don't reorder
-- The CLOSE COMBAT hint text finally tells the truth (en/ja/fi): *"Its own
-  roster, nobody fires — every body hurts, and corpses strike back in kind:
-  aimed bursts, fans, rings"* (it still said "REVENGE rings" from v187)
-- `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=174` → `?v=175`; HUD label → v221
-
----
-
-## v220 — 2026-07-31
-**REVENGE SPEAKS THE SPECIES' LANGUAGE — and the sludge trail pours**
-- Field feedback, two calls: revenge bullets *"can't really be used as is but
-  need quite different attacks and strategy… original colors in the one and
-  slightly different colors and features for the other"*, and *"the sludge
-  trails on Yella cube are nicer than the sharp edges of the sludge cube
-  trails"*
-- **Revenge is its own attack class now.** The uniform CLOSE COMBAT corpse
-  ring is gone: gunner corpses (SPITTOR, ORANGE CUBE, BOTFLY, CLOAKER,
-  TROOPER) spit a slow 3-shot **AIMED** burst at your position, arc species
-  (FANNER, PURP CUBE, PYRA, BAMBU, WEEVA, DRAPER, SPITTLE) throw a slow
-  5-shot **FAN** (~115°), everyone else — and every boss — blooms the classic
-  grazeable **RING**. All of it at 0.6× bullet speed: the graze game, not a wall
-- **Revenge never wears living colors**: warm bullet colors shift to dark
-  blood-orange/red, yellows to poison green, cool colors to deep venom — so
-  living fire and corpse fire read apart at a glance. The VOLATILE elite ring
-  joins the same palette (was flat orange)
-- Dialects, counts, spreads, speed and the palette rules are **data in
-  `TUNING.revenge`** (the wave-director pattern); `revengeColor()` derives
-  each species' revenge tint from its own `bulletColor`, cached
-- The verification suite caught a real tuning error before ship: the first
-  fan spread (0.95 rad/shot) spanned 217° — a broken ring, not a fan — now 0.5
-- **The sludge trail is poured, not drawn**: the quad-strip ribbon (sharp
-  edges, the field call) is replaced by overlapping squashed **gel blobs** —
-  the YELA droplet language — one per trail point, overlapping at 0.35u
-  spacing, drying down as each point's 3s poison window expires. Same hazard
-  footprint, same lethal pulse, same fade on death
-- `scripts/enemy-loop.mjs` gains `sludge` and `revenge` scenarios (+ a
-  `meleeRun` reset guard) so both changes are answerable with moving pictures
-- Verified headless 16/16: dialect counts/spreads (unwrapped), palette
-  shifts (YELA→green-dominant, SPITTOR→dark red), 0.6× speed against a
-  full-speed reference, volatile recolor, and zero revenge outside CLOSE
-  COMBAT. `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=173` → `?v=174`; HUD label → v220
 
 ## Archive
+
+**v220–v229 summary (2026-07-31 – 2026-08-28)**
+- v220: Revenge speaks the species' language — aimed/fan/ring by dialect, corpse colors split from living colors, sludge trail poured as gel blobs
+- v221: Each mode drafts its own roster — CLOSE COMBAT gets its own pool, stationary artillery sits out
+- v222: Goo pass 2 — corpse matter (both chunk pools) gets a gel-nugget node graph under WEBGPU
+- v223: Arena pass — rim vignette, grid distance falloff, a lit pool that follows the player
+- v224: RUSH MODE ships — boost is the answer, the gun the fallback; heat is the shared cost
+- v225: RUSH gets its own bare arena and four-body roster, no main-game furniture
+- v226: RUSH's dead `lives` counter and `loseLife()` removed — the HP-growth extra-life mechanic was already correct
+- v227: RUSH gets S/A/B/C tiers, a stamped ladder, and two per-level goals (chainUnbroken, neverLocked)
+- v228: Arena pass 2 — the floor answers mass (live enemies), pops (kills) and prizes (pickups), both renderers in parity
+- v229: Haptics (`js/haptics.js`) + two motion-comfort flashes (hit vignette, wave-clear) found ungated by REDUCE MOTION and fixed
 
 **v210–v219 summary (2026-07-25 – 2026-07-31)**
 - v210: MOVEMENT PROFILES — each species declares its share of the swarm forces

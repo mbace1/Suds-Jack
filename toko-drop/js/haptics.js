@@ -23,11 +23,19 @@ class Haptics {
   }
   // A non-fatal hit — short, so it doesn't fight the next one in a bad stretch.
   hit()      { this._fire(35); }
+  // The one-time shield absorbing a hit that would otherwise have cost a
+  // life — a save worth its own distinct, punchier buzz, not silence.
+  shield()   { this._fire([20, 30, 20]); }
   // Death — longer, and shaped differently from a hit so it doesn't read as "one more hit."
   death()    { this._fire([50, 40, 90]); }
   // Rush overheat lockout — the boost shield just died; worth a distinct buzz
   // since it's the mode's core resource, not a damage event.
   overheat() { this._fire(60); }
+  // Confirmation buzz when the setting itself is switched on — on the ~90%
+  // of devices this silently does nothing on (no vibrate API, iOS, desktop),
+  // so turning the toggle on is otherwise the only feature in this whole
+  // settings panel that gives zero feedback either way.
+  test() { this._fire(35); }
 }
 
 export const haptics = new Haptics();
