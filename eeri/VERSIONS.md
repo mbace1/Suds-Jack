@@ -1,5 +1,87 @@
 # EERI — versions
 
+## v15.45 — 2026-08-28 — the flattener: World 1's second machine (DESIGN §8.4)
+
+**A road roller.** World 1's excavator has carried both of its own levels'
+machine jobs alone since the game had four; this is the second one, and it
+answers the design's own contract: no aiming, no hold, the drum is the
+tell, the verb is DRIVING somewhere rather than parking and holding a
+button at a target. Level 2's excavator+girder span is replaced by the
+flattener driving a `sheet` — mangled aluminium in the road, its buckled
+edges too tall to jump, the same 'step' shape a bank uses but cleared by
+DWELL TIME over it rather than a bucket stroke: park near it and it
+flattens a pass every 0.9s, no verb held, exactly like every other machine
+in this level's back half except that one difference.
+
+**The model is a new MODEL, not a new class** (`js/flattener.js`) — the
+Excavator class drives it unmodified, same as the skidder and loader
+already do (`js/rigs.js`'s own stated philosophy). The one wrinkle: a
+flattener never digs, so nothing ever sets `digging`, and `boomUp`/
+`boomDown` are gated off for it in main.js's ride loop — but that alone
+does not hold the boom at rest. `Excavator.animate()`'s own non-digging
+branch recomputes `stickTarget` from `boomTarget` every frame and clamps
+`boomTarget` to a 0.08 rad floor regardless, so the boom settles there
+rather than at 0. Composing that through boom → stick → bucket by hand to
+keep a visible drum level would mean chasing three formula-derived
+angles; instead `bucket` stays an EMPTY contract marker (every joint in
+the chain has zero position offset, so its world position — what the
+flatten trigger reads via `bucketWorld()` — never moves no matter how the
+chain rotates) and the real drum hangs directly off `boom` one joint up,
+with one known, stable angle to counter-rotate against.
+
+**`js/pieces.js` gets a `Sheet` class**, the same shape as `Bank`
+(`rect`/`dug`/`remaining`/`cleared`/`show()`, `clearRow` one row at a
+time) because the map edit is identical — what differs is who calls
+`flatten()`: main.js's own drive loop, on dwell time over the
+un-flattened rows, never a held button. `buildSheetModel()` draws the
+"read the change" rule in a different material from the bank's earth:
+buckled, kinked panels with a rivet line and a hazard stripe untouched,
+duller drum-pressed plate once passed, torn scrap curling off the
+leading edge throughout — a half-flattened sheet keeps its jagged edges
+rather than just getting shorter.
+
+**Two whole-repo hygiene catches, found while building this and both
+matching the exact "one token per module" trap this project has paid for
+before:** `js/rigs.js` (world 3/4's skidder and loader) was importing
+`palette.js`/`craft.js` at the SAME token as everything else, which is
+correct — but it was one edit away from becoming a second, disconnected
+module instance during this session's own investigation, and got double-
+checked rather than blindly "fixed" against a stale assumption. More
+usefully: `test/world34.mjs` genuinely WAS stale (`rooms.js?v=1`,
+`parts.js?v=23` against a codebase at `?v=51`), silently exercising a
+disconnected copy of the module graph exactly like `rooms.mjs` did once
+before — re-pointed at the live tokens.
+
+**Found only by looking, not by the six gates** (this project's own
+house rule): the first geometry pass assumed the boom/stick/bucket chain
+would sit at whatever `main.js` set `boomTarget`/`stickTarget` to
+(`0`/`0`), when the shared Excavator code actually clamps and recomputes
+those every frame regardless — the drum would have hung at a real,
+if modest, uncontrolled tilt. Restructured before it ever reached a
+screenshot once the formula was traced through by hand.
+
+**A CONTAINER-LEVEL ROLLBACK happened mid-session** (silently reset the
+working tree back to a commit from 2026-08-20, eight versions behind) —
+the same failure mode this file's own Eeri section has recorded at least
+three times before. `origin/main` was unaffected; recovered with
+`git fetch && git reset --hard origin/main`, and this version's own edits
+(made blind against the stale tree, using `?v=37` — that snapshot's own
+then-live token) had to be re-applied by hand against the real, current
+tree at its real token (`?v=51`, bumped here to `?v=52`) rather than
+merged mechanically, since eight versions of real, unrelated work sat
+between the two trees in exactly the files this change touches.
+
+`test/smoke.cjs`'s and `test/playthrough.cjs`'s own SITE 2 sections
+rewritten for the new machine (the girder-specific assertions no longer
+describe what is there); `playthrough.cjs`'s bot gets one new line in
+`need()` for `d.sheet`. Gates: rooms 248, fx-smoke 31, dev-menu 36,
+world34 (legacy) passing, smoke 432, playthrough 25 — the last two
+verified in ISOLATION, one at a time, after running them concurrently
+produced cascading stalls on levels this change never touched (levels
+5/7/8/9, all clean alone) — CPU contention between two full Chromium
+suites, not a regression; recorded here because it looked exactly like
+one until re-tested in isolation.
+
 ## v15.44 — 2026-08-27 — World 1 gets its own dressing, off its own catalog
 
 The next art lane worlds were "worlds 1, 3, 4 offer lamps only" — no

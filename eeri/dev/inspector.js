@@ -25,12 +25,18 @@
 //   · LAMPS place live. `js/light.js` is pure and self-contained, so PLACE
 //     → click the picture spawns a real lamp, tags it with the row that
 //     made it, and UNDO removes it.
-//   · World 2's pipe vocabulary places live too, THROUGH the art lane's
-//     own builders (`world2-dressing.js` now returns them by name) — a
-//     prop placed from the editor is built by the exact same closure as
-//     one authored by hand, which is what keeps the two indistinguishable.
-//   · A world with no dressing module (worlds 3 and 4, still) offers lamps
-//     only. Its palette says so rather than showing empty rows.
+//   · World 1 and World 2's own vocabularies place live too, THROUGH the
+//     art lane's own builders (`world1-dressing.js` / `world2-dressing.js`
+//     return them by name) — a prop placed from the editor is built by the
+//     exact same closure as one authored by hand, which is what keeps the
+//     two indistinguishable.
+//   · Worlds 3 and 4 are NOT a world with no dressing — `world34-dressing.js`
+//     is a full, asset-backed art pass (real texture cutouts per site, not
+//     PROPS/SCENERY rows) — but it is a freestanding sidecar that mounts
+//     itself off the live site index rather than through `placeScenery()`,
+//     so the editor genuinely cannot see or drag anything it draws. Those
+//     two worlds' palettes offer lamps only here, and that is a real gap in
+//     the EDITOR's reach, not a gap in the worlds' dressing.
 //   · GAMEPLAY places SOME kinds live (v2.1): a skitter, hopper, roller,
 //     bucket bot or steam vent is a real `Robot`/`SteamVent`, pushed onto
 //     the SAME live array (`site.robots` / `site.vents`) the update loop
@@ -184,7 +190,7 @@ const PROP_LAYER = {
 const GAMEPLAY_GROUPS = [
   { t: 'terrain', items: ['ground', 'mound', 'ledge', 'pit', 'bank', 'brickWall', 'chasm', 'girderBeam'] },
   { t: 'gizmo', items: ['belt', 'tarp', 'hoist', 'pipe', 'ladder', 'scaffold', 'shallow', 'deep', 'swingBall'] },
-  { t: 'machine', items: ['machine (excavator/crane/skidder/loader)', 'girderStack'] },
+  { t: 'machine', items: ['machine (excavator/crane/skidder/loader/flattener)', 'girderStack'] },
   { t: 'reward', items: ['bolts', 'golden', 'blueprint', 'checkpoint', 'flag'] },
 ];
 
@@ -355,8 +361,8 @@ export class Inspector {
       // both — as this file's first cut did, copying the shape of an
       // older draft of `rooms.mjs` — double-counted worlds 3-4 into an
       // 18-level list and broke every level-index lookup after level 6.
-      const { labelOf } = await import('../js/levelid.js?v=51');
-      const { ROOMS } = await import('../js/rooms.js?v=51');
+      const { labelOf } = await import('../js/levelid.js?v=52');
+      const { ROOMS } = await import('../js/rooms.js?v=52');
       this.levels = ROOMS.map((r, i) => ({ i, label: labelOf(i, ROOMS.length), name: r.name }));
     } catch { this.levels = []; }
     if (!this.el.hidden) this.syncLevel();
@@ -576,8 +582,11 @@ export class Inspector {
 
   // Which prop types can actually be BUILT right now, for this world: lamp
   // always (js/light.js is world-agnostic), and whatever the current
-  // world's dressing module exposed — worlds without one (1, 3, 4 today)
-  // offer lamps only, and the palette says so via the "reference" tag.
+  // world's dressing module exposed through `dressingBuilders()` — which is
+  // worlds 1 and 2 today. Worlds 3 and 4 dress themselves through
+  // `world34-dressing.js`, a freestanding sidecar the editor cannot reach,
+  // so they offer lamps only here, and the palette says so via the
+  // "reference" tag.
   liveTypes(A) {
     const s = new Set(['lamp']);
     const builders = A?.debug?.dressingBuilders?.();
@@ -682,7 +691,7 @@ export class Inspector {
     if (this.pendingProp === 'lamp') row.z = z;
     let made = null;
     if (this.pendingProp === 'lamp') {
-      import('../js/light.js?v=51').then(({ buildLamp }) => {
+      import('../js/light.js?v=52').then(({ buildLamp }) => {
         made = buildLamp(A.THREE, row);
         made.userData.sceneryRow = { world: A.debug.world(), index: -1, ...row };
         A.scene.add(made);

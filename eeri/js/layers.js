@@ -23,12 +23,12 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=51';
-import { getLayerTexture } from './assets.js?v=51';
-import { buildGroundworksDressing } from './world1-dressing.js?v=51';
-import { buildPipeworksDressing } from './world2-dressing.js?v=51';
-import { placeScenery } from './scenery.js?v=51';
-import { applyMood, buildLamp, flicker } from './light.js?v=51';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=52';
+import { getLayerTexture } from './assets.js?v=52';
+import { buildGroundworksDressing } from './world1-dressing.js?v=52';
+import { buildPipeworksDressing } from './world2-dressing.js?v=52';
+import { placeScenery } from './scenery.js?v=52';
+import { applyMood, buildLamp, flicker } from './light.js?v=52';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
