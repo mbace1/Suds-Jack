@@ -1,0 +1,17 @@
+{
+  "_comment": "The ART palette — what kindling/tools/cut.mjs's `fit --palette` snaps a generated sprite to. Deliberately NOT turf/js/palette.js: that PAL object is the whole UI+terrain+HUD palette (30+ colours, most of them floor tiles and HP-bar greys that a character sprite has no business touching). This is just the sixteen a Metal-Slug-Tactics-register sprite actually draws with — ink, two skin tones, three neutral-streetwear tones shared by both factions, the cold operator ramp, the warm enemy ramp, and two metal tones for a blade/barrel. Magenta is never listed here: by the time `fit` runs, `key` has already turned it into alpha, so it is not a colour the sprite's opaque pixels should ever land on.",
+  "ink": "#12141a",
+  "skin_base": "#c9a882",
+  "skin_shade": "#9c7d5e",
+  "cloth_base": "#232830",
+  "cloth_shade": "#171a20",
+  "cloth_highlight": "#3a4048",
+  "operator_dark": "#3f7590",
+  "operator_base": "#6fb8d9",
+  "operator_bright": "#aee0f2",
+  "enemy_dark": "#8c4229",
+  "enemy_base": "#c9663f",
+  "enemy_bright": "#e8a374",
+  "metal_dark": "#3a3f47",
+  "metal_bright": "#8a909a"
+}

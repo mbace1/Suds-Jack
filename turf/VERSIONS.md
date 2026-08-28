@@ -8,6 +8,29 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v2 — 2026-08-28
+**Keyboard and native gamepad, so the board is testable without a mouse.**
+
+- `input.js` grew a cursor: arrows/WASD move it, Enter/Space confirms, Esc
+  cancels, E ends the turn. A gamepad drives the same cursor through the
+  site's one shared reader (`hub/pad.js` — the same module sudsjack,
+  hyperdagger and dropcabal read natively): stick/d-pad move, A confirm, B
+  cancel, Y end turn. Never Start — that's the arcade shell's hold-for-home,
+  and colliding with it is a documented house mistake.
+- All three input methods (tap, keyboard, pad) reduce to the same
+  `handlePoint(hit, x, y)` a mouse click already used — nothing downstream
+  (`combat.js`) knows or cares which one drove a given move or attack.
+  Catalogue moved to `pad: 'native'`.
+- The cursor only renders once a key or a pad button has actually been
+  pressed (`render.js`'s `drawCursor`, gated on `input.js`'s `cursorActive`)
+  — a reticle nobody asked for is noise for a mouse/touch player, the same
+  call `gameoflife` makes with `:focus-visible`.
+- Trap paid for: the first `confirmAtCursor()` draft revealed the cursor on
+  its first press without acting on it (so a fresh player's first Enter/A
+  looked like a dead button, needing a second press to actually select
+  anything) — caught by a Playwright pass that pressed Enter once and
+  asserted the unit was selected, not just that a cursor appeared.
+
 ## v1 — 2026-08-28
 **Milestone 1: the single-encounter combat feel-test, from `composite-gdd.md`
 §8 and `production-pipeline.md`'s Milestone 1 checklist.**

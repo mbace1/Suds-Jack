@@ -1,12 +1,12 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=1';
+import { PAL } from './palette.js?v=2';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
-} from './combat.js?v=1';
-import { computeLayout, render } from './render.js?v=1';
-import { createInputHandler } from './input.js?v=1';
+} from './combat.js?v=2';
+import { computeLayout, render } from './render.js?v=2';
+import { createInputHandler } from './input.js?v=2';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
@@ -40,6 +40,7 @@ function boot(seed) {
   state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed);
   state.moveTiles = new Map();
   state.attackTiles = [];
+  state.cursor = null;
   layout = computeLayout(state.grid);
   canvas.width = layout.width;
   canvas.height = layout.height;

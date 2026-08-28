@@ -33,6 +33,7 @@ export const PAL = {
   HP_TRACK: '#20232a',
 
   TELEGRAPH: '#f2b23a',
+  CURSOR: '#eaeef2',
 
   UI_TEXT: '#d6d9de',
   UI_DIM: '#7b818c',

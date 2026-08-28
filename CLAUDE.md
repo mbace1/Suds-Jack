@@ -329,7 +329,16 @@ stalemate, within a round cap); `render.js`'s `toScreen`/`screenToGrid` are a on
 invertible projection onto an isometric diamond grid and never feed anything back into
 game state. `window.__turf` exposes `{state, layout, boot, select, move, attack, endTurn}`
 for console tinkering, the same shape every other game's debug hook takes (`__hd`, `__dc`,
-`__sj`).
+`__sj`). **Three input methods reduce to one decision path**: mouse/touch resolves a
+screen point to a unit's actual sprite bounds (`input.js`'s `unitAtPoint` — the tile-only
+lookup used to miss a unit's head, drawn `UNIT_H` above its tile) or a grid tile; keyboard
+(arrows/WASD move a cursor, Enter/Space confirms, Esc cancels, E ends turn) and a native
+gamepad (`hub/pad.js` — the same shared reader `sudsjack`/`hyperdagger`/`dropcabal` read
+directly, never Start since that's the shell's hold-for-home) drive the same cursor
+instead. Either way it lands in the same `handlePoint(hit, x, y)`, so `combat.js` never
+knows which input method drove a given move or attack. The cursor (`render.js`'s
+`drawCursor`, a double-ringed reticle) only renders once a key or pad button has actually
+been pressed — gameoflife's `:focus-visible`-only-on-keyboard rule, applied to a canvas.
 **Art is entirely code-drawn placeholder** — flat silhouettes with a hard ink outline
 (Master System rule: the shape lives in the silhouette, there is no shading to put it in),
 no image assets, matching house convention. This is also the only option this session had:
