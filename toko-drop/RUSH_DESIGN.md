@@ -314,7 +314,18 @@ noticing it's a deliberate reconciliation, not an oversight:
 3. Should the *reference kill-rates* (§3.2) get their own JS-side playtest
    pass, given the score formula and roster are both different from what
    produced Godot's numbers? Almost certainly yes — they're marked ported,
-   not derived, for exactly this reason.
+   not derived, for exactly this reason. **First data point (bot, not human):**
+   a simple scripted player — boost + charge the nearest body, back off and
+   shoot once heat crosses 0.8, resume once it drops to 0.45, no active dodge
+   of body contact while backed off — was driven through the real game loop
+   (fast-forwarded via a frozen clock, not real time) for ~75s before dying
+   to its third hit, landing 3 kills. It **never stamped a single level** —
+   consistent with §2's finding that a stamp requires a fully hit-free
+   attempt, and suggests that bar is genuinely hard to clear even for a
+   patient, non-panicking player, not just a human one. This is one run, one
+   crude policy (no real dodging), and not itself evidence the C/B/A/S rates
+   are wrong — it's evidence that reaching *any* stamp may be the harder
+   design question, separate from which letter you get once you do.
 4. **Decided by shipping, `v227`:** live tier is always visible (top-right
    HUD). Godot's doc raised and left open whether a dropping letter mid-run
    reads as discouraging; this build shipped the visible version without
