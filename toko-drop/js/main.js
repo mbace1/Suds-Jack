@@ -1,16 +1,16 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=183';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=183';
-import { Player, PLAYER_RADIUS } from './player.js?v=183';
+import { InputManager } from './input.js?v=184';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=184';
+import { Player, PLAYER_RADIUS } from './player.js?v=184';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=183';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=183';
-import { audio } from './audio.js?v=183';
-import { haptics } from './haptics.js?v=183';
-import { initDesigner } from './designer.js?v=183';
-import { createSpecimen } from './specimen.js?v=183';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=183';
-import { TUNING } from './tuning.js?v=183';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=184';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=184';
+import { audio } from './audio.js?v=184';
+import { haptics } from './haptics.js?v=184';
+import { initDesigner } from './designer.js?v=184';
+import { createSpecimen } from './specimen.js?v=184';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=184';
+import { TUNING } from './tuning.js?v=184';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -3670,6 +3670,7 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
     player._shield = false;
     addShake(0.15);
     audio.playerHit();
+    haptics.shield();
     return false;
   }
   const hpBefore = player.hp;
@@ -4177,8 +4178,10 @@ const designer = initDesigner({
       localStorage.setItem('tokoDropReduceMotion', on ? '1' : '0');
     },
     // v229: haptics.js owns its own persistence — this just forwards.
+    // v230: a confirmation buzz on enable — the only feedback a player on
+    // Android Chrome gets that the toggle actually did something.
     getHaptics: () => haptics.enabled,
-    setHaptics: on => haptics.setEnabled(on),
+    setHaptics: on => { haptics.setEnabled(on); if (on) haptics.test(); },
     getPerf: () => perfMode,
     setPerf: on => {
       perfMode = on;
@@ -4842,7 +4845,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v229' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v230' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9684,6 +9687,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=183').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=184').catch(() => {});
   });
 }
