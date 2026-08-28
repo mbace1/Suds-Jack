@@ -16,12 +16,9 @@ stay shipped and gated by `scripts/cabinets.sh`, but no new cabinet work until
 this arc lands.
 
 **The Godot port (`mbace1/toko-drop-godot`) is a live sibling, not a parked
-idea** — owner direction: it pushes graphics/physics (real SSS, verlet
-physics, GPU particles) that this Three.js build structurally can't chase;
-this build leads gameplay/modes/mechanics. A feature is designed once, here,
-then proposed to the port — never the other way. See `RUSH_DESIGN.md` for the
-worked example (Rush shipped here first; the Godot repo's own Rush tier/leg
-research fed back into that doc) and root `QUEUE.md` for cross-repo work items.
+idea** — see root `CLAUDE.md`'s Toko Drop section for the leadership split,
+`RUSH_DESIGN.md` for the worked example, and root `QUEUE.md` for cross-repo
+work items.
 
 ---
 
