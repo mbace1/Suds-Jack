@@ -112,7 +112,11 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 - [x] Score model, end-of-run summary, local bests, daily seed
 - [ ] Unlock track: cumulative-score gates for cosmetics or starting loadouts
       *(cabinet unlocks exist; this is the main-game equivalent)*
-- [ ] Haptics + motion-comfort clamp review
+- [x] Haptics + motion-comfort clamp review — *v229: `js/haptics.js`
+      (`navigator.vibrate()` on hit/death/Rush overheat, Android Chrome
+      only, its own settings toggle) plus a real gap the audit half found:
+      the hit-damage vignette and wave-clear flash were never gated by
+      REDUCE MOTION, unlike `addShake()` and the NEX DEUS flash — gated now*
 
 ## Phase 5 — Early Access launch
 
