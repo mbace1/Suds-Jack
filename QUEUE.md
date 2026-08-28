@@ -151,3 +151,26 @@ overheat lockout) — each level earning a **★** independently rather than a
 real axes. Full account in `RUSH_DESIGN.md` §3.4. Verified with a throwaway
 Playwright probe (same pattern as `scripts/cabinets.sh`'s `window._C`, never
 committed) — 6/6 checks. `smoke.sh` + `cabinets.sh` green.
+
+---
+
+## Dropped
+
+### Q-028 — CHALLENGES (stage-select rule-variant mode)
+
+- status: **Dropped** — owner's call, 2026-08-28
+- repo: both (design in `toko-drop-godot`, would-be build either)
+- size: L
+- blocked-by: —
+- design: `toko-drop-godot`'s `design/CAMPAIGN_LEVELS.md`
+
+A Geometry Wars-shaped stage-select mode (SEQUENCE / CLOSE QUARTERS / DASH
+ONLY / GRAVEYARD / ARTILLERY / SWARM / ONE HP / MINEFIELD archetypes, each a
+parameter set + spawn script + goal reusing Rush's S/A/B/C vocabulary) — the
+one case in this project where a mode was designed on the port side instead
+of proposed upstream first. Never built on either side. Rather than migrate
+it here after the fact (rewarding the leadership-split violation) or leave
+it as a standing open question, it's shelved: no JS build, no further
+Godot build-out. The design doc stays — this is a record, not a deletion,
+same shape as `sudsjack/`'s "SET DOWN." Nobody resumes it without the owner
+asking in their own words, in either repo.

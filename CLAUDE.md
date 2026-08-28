@@ -1101,10 +1101,15 @@ version."* Consequences that follow from that split:
   worked example of "designed once, here": the shipped mechanics plus the
   timed-level and S/A/B/C tier system, reconciled against the Godot repo's
   now-superseded tier/leg research.
-- Known open gap (owner's to settle, not a bug): the Godot repo's
-  `design/CAMPAIGN_LEVELS.md` describes a stage-select CHALLENGES mode with
-  no equivalent here — the one case where a mode was designed on the port
-  side rather than proposed upstream first.
+- **CHALLENGES — archived, owner's call, 2026-08-28.** The Godot repo's
+  `design/CAMPAIGN_LEVELS.md` designed a stage-select, rule-variant mode
+  (Geometry Wars' Pacifism/King/Sequence shape) on the port side rather than
+  proposing it upstream first — the one leadership-split violation this
+  project had. It was never built, either side. Rather than migrate it here
+  after the fact or leave it as an open question, it's shelved: no JS build,
+  no further Godot build-out, the design doc stays as a record rather than
+  being deleted. Same shape as `sudsjack/`'s "SET DOWN" — nobody resumes it
+  without the owner asking in their own words. Tracked as `QUEUE.md` `Q-028`.
 
 ## Repository Structure
 
