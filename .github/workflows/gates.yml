@@ -173,3 +173,21 @@ jobs:
       - name: the seven-day slice plays to an ending
         working-directory: piritori/godot
         run: godot --headless --path . res://tests/test_playthrough.tscn
+
+  turf:
+    name: turf
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Same shape as the piritori/flow-core bare-node gates above: no
+      # browser, no GPU, no audio device — grid.js/ai.js/combat.js touch
+      # nothing but plain objects, so the whole engine (data integrity, move
+      # range, LOS/cover, turn economy, knockback, the frozen enemy-phase
+      # telegraph, and a full bot-vs-bot playthrough) is provable here.
+      - name: the grid-tactics engine's core loop
+        run: node turf/test/smoke.mjs

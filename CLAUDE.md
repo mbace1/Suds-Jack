@@ -287,6 +287,63 @@ game over, the way home and the signature — all driven off **game state, not t
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
 Build tooling: none — same no-build rule as every other demo here.
 
+### TURF (`turf/`) — grid tactics, ACTIVE
+**Owner's brief, 2026-08-28: `turf/GDD.md` and `turf/PRODUCTION_PIPELINE.md`, read those
+before touching anything — this section is the summary, they are the source.** Three street
+operators fight turn-based tactics on a grid in a grim, rain-lit Nordic city — Into the
+Breach's full-information telegraphing crossed with Metal Slug Tactics' numerous-weaker-
+enemies energy, Mewgenics-lite progression on the roadmap but explicitly **not** in v1.
+**v1 ships exactly Milestone 1**: one fixed encounter ("The Backlot," `data/encounters.json`),
+no loot, no XP, no persistence — the GDD's own exit criterion is that the single fight is
+"fun/tense to play through repeatedly," which is a feel question a code-drawn placeholder
+build can actually answer.
+**Everything is data** (`data/{units,weapons,enemies,encounters}.json`, GDD §3's rule) —
+the engine (`js/grid.js`, `js/ai.js`, `js/combat.js`) reads ids out of them and knows
+nothing about "a knife" or "a shotgun" as concepts, so Phase 2's encounter sequence or a
+fourth enemy archetype is new JSON, never a rebuild. The grid is **orthogonal
+(4-directional)**, not 8 — Into the Breach's own convention, and what keeps range and line
+of sight unambiguous. **Two cover kinds, genuinely different**: full cover (dumpsters,
+fences) blocks movement and LOS outright; partial cover (crates, curbs) only softens a
+ranged hit (−30% to-hit) and never blocks anything — melee is hitChance 1, deterministic,
+so cover is a reason to close distance, not a permanent hiding spot. **The telegraph is
+real ITB**, not a one-time snapshot: `ai.js`'s `planIntent` is recomputed after *every*
+player action (not once per round), so the "this enemy will move here and hit that unit"
+markers on screen never go stale mid-turn — verified in `test/smoke.mjs` by asserting the
+telegraph map actually changes shape after a player move. **Knockback** (the pipe's whole
+reason to exist) pushes along the dominant axis of the hit and stops at the first blocked
+tile — a target shoved into a wall or another body just stops, it does not tunnel through.
+`approachTile` (`grid.js`) is the one function that answers "can this unit reach a tile
+that lets it hit that target this turn" — the AI's telegraph, the UI's click-to-attack
+highlighting, and the actual click-to-attack command (`combat.js`'s `orderAttack`) all call
+it, on purpose: it was written three times in three files before being pulled out, and a
+fourth copy is a bug waiting for someone to fix only one of them.
+**Rendering is plain canvas 2D isometric**, not Three.js — the GDD says "Three.js or
+similar," and a tactics grid with move/attack-range overlays and telegraph markers is far
+easier to get right in 2D; drawn low-res and upscaled with `image-rendering: pixelated`,
+the same trick `dropcabal/` uses, with the HUD (turn state, HP, the win/lose screen) as a
+DOM/CSS overlay rather than canvas-painted text, per the production doc's own §2.4
+recommendation. All game logic stays in plain `(x,y)` grid coordinates
+(`grid.js`/`combat.js`/`ai.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 23
+checks including a bot-vs-bot full playthrough that must reach a win or a loss, not a
+stalemate, within a round cap); `render.js`'s `toScreen`/`screenToGrid` are a one-way,
+invertible projection onto an isometric diamond grid and never feed anything back into
+game state. `window.__turf` exposes `{state, layout, boot, select, move, attack, endTurn}`
+for console tinkering, the same shape every other game's debug hook takes (`__hd`, `__dc`,
+`__sj`).
+**Art is entirely code-drawn placeholder** — flat silhouettes with a hard ink outline
+(Master System rule: the shape lives in the silhouette, there is no shading to put it in),
+no image assets, matching house convention. This is also the only option this session had:
+no `GEMINI_API_KEY`/`MESHY_API_KEY` in the environment (`node scripts/assets.mjs doctor`
+confirms). The production doc's own plan is placeholder-now/hand-art-later — a follow-up
+PR should ask for real Nano Banana concept art and Meshy meshes per its Stage 1-2 once the
+owner wants to spend the credits.
+Hub entry: `hub/games.js` id `turf`, marquee `backlot` in `hub/art.js` (a cropped
+foreground operator rim-lit in the cabinet's own cold accent against a sodium-lit
+Nordic block, per the marquee-as-cover rule the rest of the arcade follows) — accent
+`#6fa8c9`, deliberately desaturated next to the arcade's neon brights, matching the
+GDD's grim tone rather than the house's usual arcade brightness.
+Build tooling: none — same no-build rule as every other demo here.
+
 ### Paper Route — Dawn Run (`paperboy/`)
 A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to
 the original Paperboy art** — orthographic 3/4 camera, bright sunny-day palette (sky-blue
@@ -1170,6 +1227,21 @@ sudsjack/       # Suds Jack — earlier tube-collection rebuild, SET DOWN
     palette.js  # soap: everything you want is cold and blooms, everything else is warm
   test/
     smoke.cjs   # 25 checks, driven off game state rather than the clock
+turf/           # TURF — grid tactics, Milestone 1 feel-test. Read GDD.md first
+  GDD.md        # the owner's composite design doc
+  PRODUCTION_PIPELINE.md # asset/data pipeline the GDD's assumptions were resolved against
+  VERSIONS.md
+  data/         # units/weapons/enemies/encounters — everything data-driven, per pipeline §3
+  js/
+    grid.js     # the board: orthogonal coords, BFS move range, LOS + the two cover kinds
+    ai.js       # "move toward + attack nearest" and the live ITB-style telegraph
+    combat.js   # move+act economy, attack/knockback resolution, the enemy phase, win/loss
+    render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
+    input.js    # pointer-to-grid click/tap commands
+    main.js     # boot, HUD, the enemy-phase pacing loop — the only DOM-touching file
+    palette.js  # Nordic rain-and-sodium, deliberately desaturated next to the arcade's neon
+  test/
+    smoke.mjs   # bare-node: data integrity, grid primitives, turn economy, combat, AI, a full bot playthrough
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
   games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)

@@ -329,6 +329,17 @@ backgrounds. No text, no logos, no UI, no watermark, no people, no characters.`,
 white soap bubbles, round, glowing, blooming with light. Everything hostile is
 WARM — amber and rust grime, angular, matte, never glowing. Deep near-black
 background. Long soft bloom on the cold elements only. No text, no UI.`,
+
+  // TURF: Nordic 90s street-crime realism, not arcade pulp — deliberately
+  // muted next to every other style block here, matching the game's own
+  // desaturated hub accent (#6fa8c9, turf/js/palette.js). Faction reads warm
+  // vs cold the same way Suds Jack's does, just on people instead of props.
+  turfGrim: `TURF house style. Nordic 90s street-crime realism, not arcade
+pulp — Insomnia/Trainspotting register, not Metal Slug's war-comic tone.
+Muted, desaturated palette; the only saturated colour is the rim/backlight
+named per-subject. Flat, hard-edged lighting, no soft glow, no bloom. Plain
+near-black backdrop, no set dressing in frame — the plate is the subject
+alone.`,
 };
 
 export const DEFAULTS = {
@@ -1124,5 +1135,80 @@ backdrop. No background clutter.`,
     from: 'tokodrop/crate-plate',
     targetPolycount: 6000,
     tags: ['prop'],
+  },
+
+  // ── TURF — Milestone 1's six archetypes ─────────────────────────────────
+  // Reference plates, not runtime assets — turf/ART_REQUEST.md is the reason
+  // they are worth generating: a future Aseprite pass (PRODUCTION_PIPELINE.md
+  // §4) has a place waiting for each one. Not a T-pose: no rig/3D plan exists
+  // for TURF yet (see ART_REQUEST.md §1's note on why).
+  {
+    id: 'turf/blade-plate',
+    game: 'turf',
+    use: 'reference',
+    style: 'turfGrim',
+    tags: ['operator', 'melee'],
+    prompt: `A lean street operator holding a fixed-blade knife low and ready,
+weight forward like they close distance fast. Dark practical streetwear,
+hood down. Rim-lit cold blue-cyan (#6fb8d9) against near-black. Three-quarter
+view, full body, centred, plain dark backdrop, no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/niner-plate',
+    game: 'turf',
+    use: 'reference',
+    style: 'turfGrim',
+    tags: ['operator', 'ranged'],
+    prompt: `A street operator sighting down a pistol held two-handed at
+chest height, calm and settled rather than lunging — this one plays the long
+game. Dark practical streetwear. Rim-lit cold blue-cyan (#6fb8d9) against
+near-black. Three-quarter view, full body, centred, plain dark backdrop, no
+text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/wrench-plate',
+    game: 'turf',
+    use: 'reference',
+    style: 'turfGrim',
+    tags: ['operator', 'control'],
+    prompt: `The heaviest-built of three street operators, gripping a length
+of pipe in both hands like a bar about to swing — built for a shove, not a
+stab. Dark practical streetwear, wider stance than a lean fighter. Rim-lit
+cold blue-cyan (#6fb8d9) against near-black. Three-quarter view, full body,
+centred, plain dark backdrop, no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/grunt-blunt-plate',
+    game: 'turf',
+    use: 'reference',
+    style: 'turfGrim',
+    tags: ['enemy', 'melee'],
+    prompt: `A rangy street thug gripping a baseball bat with a wide,
+wound-up swing stance. Rough street clothes, no armour. Backlit warm
+rust-orange (#c9663f) against near-black. Three-quarter view, full body,
+centred, plain dark backdrop, no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/grunt-handgun-plate',
+    game: 'turf',
+    use: 'reference',
+    style: 'turfGrim',
+    tags: ['enemy', 'ranged'],
+    prompt: `The leanest of a rival street crew, holding a handgun low and
+loose, unhurried — this one has range and knows it. Rough street clothes.
+Backlit warm rust-orange (#c9663f) against near-black. Three-quarter view,
+full body, centred, plain dark backdrop, no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/grunt-shotgun-plate',
+    game: 'turf',
+    use: 'reference',
+    style: 'turfGrim',
+    tags: ['enemy', 'ranged'],
+    prompt: `The bulkiest of a rival street crew, a sawn-off shotgun held
+tight to the hip, built for a close, ugly fight rather than a clean one.
+Rough street clothes. Backlit warm rust-orange (#c9663f) against near-black.
+Three-quarter view, full body, centred, plain dark backdrop, no text, no
+logos, no UI.`,
   },
 ];
