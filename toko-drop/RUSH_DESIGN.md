@@ -77,20 +77,35 @@ spawn, not damage.) Boss set pieces are off-roster — a boss beat demotes to
 arena has — gates, bounty, vault, escort, vents, drain, foam, curtain, cargo
 convoy — is suppressed; Rush is a **bare arena** (`bareArena()`, `main.js:3401`).
 
-### 1.4 Lives — shipped but not wired
+### 1.4 Lives — corrected (`v226`, `Q-025`)
 
-`TUNING.rush.lives` (`start: 3, extraEvery: 25000`) and `rush.lives` /
-`rush.checkExtraLife()` exist, award "EXTRA MAN!" on score thresholds, and
-show a life count in the HUD. **Nothing spends one.** `rush.loseLife()` is
-defined (`main.js:3475-3481`) and never called; a hit while
-`player.alive` stays true breaks the chain and levels down
-(`main.js:3509`), but the transition from "hit" to "run over" is governed
-entirely by `player.hp` (`MAX_HP = 3`, `player.js:10`) hitting zero — at
-which point the run ends regardless of how many Rush lives are banked. **A
-Rush run currently survives exactly 3 hits, full stop; the life counter is
-cosmetic.** Filed as a queue item (§6) — this is a shipped-code gap, not a
-design disagreement, and belongs in code review before the tier system in §3
-leans on "lives" meaning anything.
+**An earlier draft of this section was wrong, and it's worth recording how.**
+It read `rush.lives` and `rush.checkExtraLife()` as a revive-pool that was
+"fully wired for display but never spent," and Q-025 was opened to either
+wire a revive-on-death mechanic or remove the machinery. On inspection,
+neither read was right: `checkExtraLife()`'s caller already did
+`player.maxHp++; player.hp++` on every 25,000-score threshold
+(`main.js:8527-8531`, unchanged by this fix) — **the extra-life mechanic
+already worked**, by growing the HP pool directly. The HUD's hit-point dots
+already read `player.hp`/`maxHp` (`main.js:4396-4399`), exactly matching the
+game's own comment: *"the hp dots are the lives"* (`main.js`, `startGame()`).
+Nothing anywhere read `rush.lives` for display — not the HUD, not
+`designer.js`, not `lang.js` — and the milestone text on a threshold is
+"EXTRA LIFE!", not "EXTRA MAN!" as the earlier draft quoted (that string
+belongs to the *base* game's separate `tkNextMan` extra-life system).
+
+So `rush.lives` was a second, purely internal counter tracking the same
+event `checkExtraLife()` already handled correctly, incremented alongside the
+real grant and decremented by nothing (`loseLife()` was dead code) — inert,
+not broken; nothing a player could ever observe. **`v226` removes `rush.lives`
+and `loseLife()`.** `nextLife` — the threshold gate `checkExtraLife()`
+actually needs — stays. No observable behavior changed.
+
+The lesson for §3 below: don't assume "lives" names a separate bankable pool
+just because the field exists. It doesn't. A Rush run's survivability is
+governed entirely by `player.hp` (3 dots, `MAX_HP` in `player.js`) growing
+slowly via the extra-life threshold — there is no continue/revive concept in
+the shipped design at all.
 
 ---
 
@@ -174,13 +189,42 @@ duration is a known closed form per level, so is the table:
 | *N≥3* | `90+(N-2)·30` | `dur×0.5` | `dur×0.9` | `dur×1.4` | `dur×2.0` |
 
 Below C: no letter, same as Godot's rule and for the same reason — a
-punitive grade on a first run teaches nothing. **Open question, unverified:**
-whether `getEnemySchedule()`'s actual spawn density at high `rush.level` can
-even *supply* an S-tier kill rate. Godot's tier doc found its own director
-had a hard supply ceiling below B tier until spawn telegraphs were made to
-pipeline (§5 there). This build's schedule was tuned for the base game's wave
-pacing, not Rush's roster; verify before trusting the S/A rows past level 3
-or so. Filed as a queue item (§6).
+punitive grade on a first run teaches nothing.
+
+**Supply sampled, `Q-026`.** Godot's own director had a hard supply ceiling
+below B tier until spawn telegraphs were made to pipeline (§5 there) — worth
+checking here since `getEnemySchedule()` was tuned for the base game's wave
+pacing, not Rush's roster. A standalone replica of the schedule loop against
+the real `TUNING` data (40 seeds/level, best-case player who kills the
+instant a body lands) gives a supply ceiling of `kills-per-batch ÷ (spawn-drip
+duration + the 1.5s wave-clear gap every mode pays, `main.js:9308`)`:
+
+| level | kind | budget | kills/batch | drip | batch | supply k/s | vs S (2.0) | vs A (1.4) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | normal | 3.0 | 3.4 | 0.48s | 1.98s | 1.71 | short 0.29 | meets |
+| 2 | normal | 7.0 | 4.9 | 1.02s | 2.52s | 1.95 | short 0.05 | meets |
+| 3 | swarm | 11.0 | 8.8 | 0.55s | 2.05s | 4.28 | meets | meets |
+| 4 | spike | 15.0 | 8.6 | 2.16s | 3.66s | 2.34 | meets | meets |
+| 5 | normal | 7.0 | 4.6 | 0.90s | 2.40s | 1.93 | short 0.07 | meets |
+| 6 | swarm | 19.0 | 15.1 | 1.09s | 2.59s | 5.84 | meets | meets |
+| 7 | normal | 10.0 | 5.8 | 1.40s | 2.90s | 2.02 | meets | meets |
+
+Nothing like Godot's finding — the ceiling roughly *tracks* the S-tier PAR
+rather than sitting well below it. `'swarm'`/`'spike'`-kind levels clear it
+with room; plain `'normal'`-kind levels (the majority — levels 1, 2, 5, and
+most levels past 7 that aren't a multiple of 3 or 4) fall short by 0.05–0.3
+kills/s, small enough that it reads as "S is a tight ceiling on quiet levels"
+rather than "S is unreachable." **Caveats on this number:** it's a spawn-side
+ceiling assuming zero travel/positioning time and instant kills — a real
+player's number is lower, not higher, so this doesn't prove S is *reachable*,
+only that the director isn't the thing stopping it outright the way Godot's
+was. It also doesn't model the flat 1.5s `waveGapT` breather having any
+Rush-specific tuning — that gap is inherited from the base game's pacing and
+was never re-examined for Rush's continuous-pressure design; shortening it
+for Rush specifically (not proposed here) is the natural first lever if
+playtest shows the `'normal'`-level shortfall actually matters. Re-run
+`scripts/rush-supply-sample.mjs` if `TUNING.waves` or `TUNING.rush.pool`
+changes — the table above is a snapshot, not a promise.
 
 ### 3.3 Live tier and stamps
 
@@ -253,20 +297,22 @@ noticing it's a deliberate reconciliation, not an oversight:
 | run structure | fixed 180s run, drains | endless ladder, funded by survival time |
 | heat semantics | score multiplier; decays over time; want it *high* | lockout resource; rises on use; want it *low* |
 | kill value | `100 × target max_hp` — species-weighted | flat `100`, scaled only by streak/chain — species-neutral |
-| lives | not designed (n/a — the clock ends the run) | designed, HUD-visible, **not wired to anything** (§1.4) |
-| spawn model | edge-ring telegraphed, never built | reuses the base game's `getEnemySchedule()`, unverified at Rush pacing |
+| lives | not designed (n/a — the clock ends the run) | no separate "lives" concept; `player.hp` grows via the extra-life threshold (§1.4) |
+| spawn model | edge-ring telegraphed, never built | reuses the base game's `getEnemySchedule()`; sampled at `rush.level` 1–7, meets A-tier everywhere, meets S except a small shortfall on plain levels (§3.2) |
 | grading unit | whole-run final letter | per-level stamped ladder (§3.3) |
 
 ---
 
 ## 5. Open questions
 
-1. Wire `rush.lives` to something, or cut the HUD element and the
-   `checkExtraLife()` machinery — right now it lies to the player. Not a
-   design question, a code-review one; §1.4.
-2. Does `getEnemySchedule()` actually supply an S-tier kill rate at `rush.level`
-   4+, or does it hit the same pipelining problem Godot's spawn director did?
-   Needs a played (or scripted) sample, not a read of the code.
+1. ~~Wire `rush.lives` to something, or cut it.~~ **Resolved, `Q-025`/`v226`:**
+   there was nothing to wire — `checkExtraLife()`'s real effect (growing
+   `player.maxHp`/`hp`) already worked; `rush.lives` was dead weight and is
+   removed. See §1.4.
+2. ~~Does `getEnemySchedule()` actually supply an S-tier kill rate?~~
+   **Answered, `Q-026`:** yes, almost everywhere — see §3.2's sampled table.
+   The one soft spot (plain `'normal'`-kind levels, ~0.05–0.3 kills/s short of
+   S) is worth a playtest read, not a code fix on its own.
 3. Should the *reference kill-rates* (§3.2) get their own JS-side playtest
    pass, given the score formula and roster are both different from what
    produced Godot's numbers? Almost certainly yes — they're marked ported,
