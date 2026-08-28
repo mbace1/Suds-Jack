@@ -23,7 +23,13 @@
 
   /* ── the strip along the top ──────────────────────────────────────── */
   #hud {
-    flex: none; display: flex; align-items: center; gap: 18px;
+    /* WRAPS AT EVERY WIDTH, not below a breakpoint. The breakpoint was 560px
+       and the strip broke again the moment a fifth control was added — at
+       640x360, a phone on its side, which is above it. A rule that has to be
+       raised every time something is added is a rule that will be forgotten once;
+       wrapping always costs a desktop nothing, because a desktop has the room
+       and never wraps. The media query below still ORDERS the wrapped rows. */
+    flex: none; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
     padding: 44px 12px 8px; border-bottom: 1px solid var(--rule);
   }
   .score { display: flex; align-items: baseline; gap: 7px; }
@@ -45,7 +51,11 @@
 
   #tools { display: flex; gap: 4px; }
   .ctl {
-    min-width: 44px; min-height: 44px; font: inherit; font-size: 14px;
+    /* 44 is the FLOOR, not the width. The layer switch carries a word rather
+       than a glyph and "metro" filled a 44px box edge to edge — legible by two
+       pixels, which is not legible. Padding lets a worded control grow while a
+       glyph one stays square. */
+    min-width: 44px; min-height: 44px; padding: 0 10px; font: inherit; font-size: 14px;
     background: none; color: var(--ink); border: 1px solid var(--rule);
     border-radius: 3px; cursor: pointer;
   }
@@ -64,6 +74,47 @@
     opacity: 0; transition: opacity .18s;
   }
   #feed.show { opacity: 1; }
+
+  #howto {
+    position: absolute; right: 12px; top: 12px; z-index: 20; max-width: 300px;
+    background: var(--paper); color: var(--ink);
+    border: 1px solid var(--rule); border-radius: 3px; padding: 12px 14px;
+    box-shadow: 0 2px 14px rgba(27,34,40,.14);
+    /* A rules panel you cannot read to the end is worse than none: on a 640x360
+       phone on its side the last rule ran off the bottom, and the last rule is
+       how to take a line back. */
+    max-height: calc(100% - 24px); overflow-y: auto; overscroll-behavior: contain;
+  }
+  #howto h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  /* the button says it is open, rather than the look being a hover artefact */
+  .ctl[aria-expanded="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  #howto ul { margin: 0; padding-left: 1.1em; }
+  #howto li { font-size: 13px; line-height: 1.5; margin-bottom: 5px; }
+  #howto li:last-child { margin-bottom: 0; }
+  #howto b { font-weight: 600; }
+  /* a phone has no room for a panel beside the board, so it takes the width */
+  @media (max-width: 620px) {
+    #howto { left: 12px; right: 12px; max-width: none; }
+  }
+  /* A phone on its side is 360px tall and the strip was taking 150 of them once
+     it wrapped. Everything here buys the BOARD height back: the strip is the
+     furniture, and the board is the game. */
+  @media (max-height: 460px) {
+    /* On a short screen the strip stops making ROOM ABOVE the hub shell's HOME
+       button and sits BESIDE it instead. Padding the whole strip down past a
+       44px button costs 44px of a 360px screen — on a phone held sideways that
+       is an eighth of the game — and simply tightening the padding put the
+       button straight through the score, which is what the overlap check below
+       now catches. Going around it costs nothing at all. */
+    /* The clearance is PADDING ON THE STRIP, not a margin on the score. A
+       margin only moves the first row: the controls wrapped onto the second one
+       and landed back under the button, where the HOME anchor took the top-left
+       corner of PAUSE and a thumb there went home instead of pausing. That is
+       the v5 bug again by another route, so the whole strip goes around it. */
+    #hud { gap: 6px 12px; padding: 8px 10px 5px 94px; }
+    .score b { font-size: 20px; }
+    #howto { top: 8px; bottom: 8px; max-height: none; }
+  }
 
   /* ── the cards ────────────────────────────────────────────────────── */
   .veil {
@@ -88,6 +139,14 @@
   .miss b { display: block; font-size: 14.5px; font-weight: 600; }
   .miss span { display: block; font-size: 13px; color: var(--dim); margin-top: 3px; }
   .miss .tag { display: inline-block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
+  /* A chapter heading is a PLACE, so it is set like one: the number small and
+     quiet, the city big, and the line under it in the city's own words. */
+  .chapter { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 14px 0 2px; }
+  .chapter em { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); font-style: normal; }
+  .chapter b { font-size: 17px; font-weight: 700; }
+  .chapter i { font-size: 12.5px; color: var(--dim); font-style: normal; }
+  .chapter.shut b, .chapter.shut i { color: var(--dim); }
+  .chapterBrief { font-size: 12.5px; color: var(--dim); margin: 0 0 8px; line-height: 1.45; }
   .miss.done .tag { color: #3f9e5a; }
   .miss[disabled] { opacity: 0.45; cursor: not-allowed; }
   .rule { height: 1px; background: var(--rule); margin: 18px 0; }
@@ -151,12 +210,26 @@
       <button class="ctl" id="pause" aria-label="Pause">❚❚</button>
       <button class="ctl" id="speed" aria-label="Game speed">×1</button>
       <button class="ctl" id="sound" aria-label="Sound" aria-pressed="false">♪</button>
+      <!-- Only on a mission that runs more than one. Both keep working; this
+           says which one your finger is on. -->
+      <button class="ctl" id="swap" aria-label="Switch layer" hidden></button>
+      <button class="ctl" id="help" aria-label="How to play" aria-expanded="false">?</button>
     </div>
   </header>
 
   <div id="wrap">
     <canvas id="board" aria-label="The network. Drag from a stop to draw a line; drag from the stub at a line's end to extend it."></canvas>
     <div id="feed" role="status" aria-live="polite"></div>
+
+    <!-- The rules, on demand. Every tip this game gives fires ONCE and is gone,
+         which is fine for a nudge and useless for the delete gesture — the one
+         thing a player has to be told and will want again three minutes later.
+         So it is a panel rather than a card: it does not pause, it does not
+         cover the board, and it closes on Esc or on the button that opened it. -->
+    <div id="howto" hidden>
+      <h2>How to play</h2>
+      <ul id="howtoList"></ul>
+    </div>
   </div>
 
   <div class="veil" id="title">
@@ -167,11 +240,12 @@
       <p class="small">Every stop is a shape, and everybody on it wants a stop of some <em>other</em> shape. <b>Drag between two stops</b> to open a line; drag the stub at a line's end to carry it on, and drag back to pull it up again.</p>
 
       <div class="rule"></div>
-      <h2>Missions</h2>
+      <h2>The campaign</h2>
       <div id="campaignList"></div>
 
       <div class="rule"></div>
       <h2>Free play</h2>
+      <p class="small dim">The abstract boards, where one layer is taught with nothing else in the way.</p>
       <div id="freeList"></div>
     </div>
   </div>
@@ -201,7 +275,7 @@
     </div>
   </div>
 
-<script type="module" src="js/main.js?v=8"></script>
+<script type="module" src="js/main.js?v=13"></script>
 <!-- the way home: HOME top-left + hold Start/Back on a pad -->
 <script type="module" src="../hub/shell.js?v=34"></script>
 </body>

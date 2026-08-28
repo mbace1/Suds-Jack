@@ -1,5 +1,360 @@
 # Toko Move — versions
 
+## v13 — 2026-08-26
+
+**The campaign is the cities now.** Owner's direction: Helsinki is chapter one,
+Nagoya two, New York three, Tokyo four — and the abstract boards move to free
+play. `CAMPAIGN.md` is the write-up; this is what shipped.
+
+### Chapter one is real Helsinki
+
+Built from the geometry this repository already carries — the HSL rail extract
+and the OSM water from PR #305, both fetched on a networked machine and
+committed, because this environment cannot reach `dev.hsl.fi`, Digitransit or
+Overpass. **Every live track in the box**: metro M1 and M2 and eighteen tram
+services, each with its own traced path, 82 platforms, real names, real
+coordinates, the real shoreline.
+
+The paths are the thing that makes it Helsinki. They are drawn quiet and thin
+UNDER the board, so the city is recognisable before you have drawn a single line
+on it — and quiet enough that you can still tell what you built from what was
+already there.
+
+Three missions: **Aamuruuhka** (rail, and the board is a place), **Pitkäsilta**
+(more city than network), **Ratikka ja auto** (all three layers over one city,
+which is what the layer work was for). Targets measured over ten seeds with a
+bot that keeps every stop on some line — 190 wins 8/10, 244 wins 7/10, 162 wins
+7/10. The third is the lowest number and the hardest mission; three layers over
+one city is harder than one layer over it, whatever the order says.
+
+### Four decisions that turn a network into a board
+
+Each was wrong first, and each was wrong invisibly.
+
+**Which stops.** All of them is unplayable — central Helsinki puts stops 100 m
+apart, closer than a station is *drawn*. Ranked by services calling, then
+thinned: walk the rank and drop anything standing on somebody already taken.
+
+**What they are called.** Folding platforms by name leaves Päärautatieasema and
+Rautatientori **one metre apart**, because Finnish compounds defeat a
+word-boundary rule — *metroasema* is not *asema*. Folding by radius alone names
+the central interchange **Elielinaukio**, the bus square, because that platform
+is first in the feed; "shortest name" picks **Postitalo**, the post office. So
+the variants are grouped by a crude stem, the group that says it is a station
+wins, and the plainest member is shown. Rautatientori, Hakaniemi, Sörnäinen,
+Kalasatama, Pasila and Helsingin yliopisto all come out right.
+
+**What shape a stop is.** The one thing assigned rather than read. Metro meets
+trams, or four services call → an interchange, and a special shape. The specials
+come out as Rautatientori, Hakaniemi and Sörnäinen, which is *true* — a rule
+invented for prettiness would not have found that.
+
+**What order they open in.** Rank alone put five interchanges out first, every
+one a special, and **thirty-one people were marked "nowhere to go" inside the
+first minute** because nobody could reach anybody. One special to every two
+ordinary stops, and Rautatientori still opens the board.
+
+### The sea is NOT reconstructed, and that is the decision
+
+Water arrives as two kinds and only one is a polygon. The closed bodies here are
+ponds — the biggest is 0.002 km². Töölönlahti, Eläintarhanlahti and the harbours
+are all *coastline*: open directed lines with the sea merely implied. Three
+closures were tried — out to the nearest edge, along the run's own bearing, and
+a flood fill seeded from the stops (the stops are on land, so the flood needs no
+convention about which way a coastline was drawn). All three find the outer sea
+and the Kalasatama basin; **none finds Töölönlahti.**
+
+Half a coastline drawn as fact is worse than none: it says there is no bay where
+there is a bay. So the board ships the water that genuinely is a polygon, draws
+the shoreline as a line, and `seaRings` stays behind a flag with the gate pinning
+what it actually does — including that it never puts a station in the water,
+which is the failure worth guarding.
+
+### Gates
+
+Core 462 → **504**, page 132 → **143**. Every new check mutation-tested:
+removing the interleave, the thinning and the name rule each fails its own
+checks and no others; and on the page, deleting the network underlay or the
+credit each fails exactly one.
+
+Two page checks had to be fixed rather than added. Clearing a mission is
+asserted **wherever it is listed**, not in the campaign box, since the mission
+that gate clears is free play now. And the train-shed count is asserted against
+**what the shed held**, not against the number 3 — pinning it to a literal tied
+that check to whichever mission the phone happened to open first, so it broke
+the day the free-play list changed order. A test measuring the list rather than
+the shed.
+
+### The upgrade path is one command
+
+`node scripts/city-pack.mjs --city hsl --out toko-move/cities/helsinki.json`
+writes the same schema from the whole HSL feed, keyless. Nothing in the game
+changes; the board becomes the city.
+
+Module tokens `?v=12` → `?v=13`.
+
+## v12 — 2026-08-25
+
+**The bus layer, and The Number 7.** The owner's call: the bus is the *public*
+one — it is what a real city publishes live data for — so it gets its own layer,
+and the Mini Motorways layer stays what it is, cars and room.
+
+### A bus route is a line, and that is the whole design
+
+`BusNet extends Network`. A route is an ordered list of stops with vehicles
+running it, boarding by the same "is the next stop closer to my shape" rule the
+metro has used since v1. Writing a second copy of that would give the game two
+boarding rules to keep in step, and they would drift. The difference is exactly
+two things:
+
+- **A leg follows the street.** `Line.router` is the one new hook: it hands back
+  a polyline from the road grid instead of a straight run. Everything
+  downstream — `Train.move`, the dwell, the offset when two lines share a leg,
+  the renderer — only ever asks a seg for `pts`/`cum`/`len`, so a different
+  polyline is all it takes. There is no `BusDrawer` either: the line drawer
+  takes the network as an option now.
+- **The refusal is different.** Not a tunnel — *no street goes there*. You buy
+  the way with road, on the car layer, which is what makes the two road layers
+  one place rather than two boards.
+
+### The bridge trap
+
+The metro's refusal counts water crossings against tunnels owned, and a bus
+network owns none. So every route over a river was refused with *needs a tunnel*
+— a bus on a bridge, refused for not having a tunnel. The fix was to give
+`Network` one `refuse(line)` that `open`, `extend` and closing a loop all roll
+back on, and override it, rather than retune a number that was never about
+buses.
+
+### The coupling is real in both directions
+
+A bus takes up room in the square it is standing in, so a street full of buses
+is full for cars; and traffic in that square makes the bus **crawl** rather than
+stop, because a bus that could be blocked outright would deadlock against the
+very cars it is blocking. The HUD's third slot on this layer is `in traffic` —
+the layer's own honest bad number, the way `jammed` is the car layer's, and the
+bus carries a warn dot while it is in one.
+
+### `carRange`, and why the bus has a job
+
+How far anybody will *drive*, in squares. `Infinity` on every board with no bus,
+so it changes nothing that already shipped. On The Number 7 it is 7, and that is
+the entire balance of the mission in one number. Measured over 16 boards:
+
+| | wins | delivered |
+|---|---|---|
+| cars only, no routes | **0/16** | 454 |
+| buses only (`carRange` 0) | 5/16 | 1468 |
+| both, as shipped | **12/16** | 1892 |
+
+The bus carries the town; the cars are the last mile. If a change ever makes the
+first row win anything, the routes have become decoration.
+
+### The bug this found, which was the metro's all along
+
+Every vehicle is constructed at seg 0, so a second train on a line rode **inside
+the first one** forever — only the dwell could pull them apart, and only if they
+exchanged different numbers of passengers. It measured as a flat line:
+**fourteen buses on one route carried exactly what three did**. `Line.spaceIn`
+now drops a newly added vehicle into the widest gap between the ones already
+out. Trains have always had this; it is just cheaper to see when the vehicles
+are slow.
+
+### Gates
+
+Every new check mutation-tested — `refuse` always allowing, a plain `Train`
+instead of a `Bus`, `carRange` ignored, buses taking no room, traffic never
+slowing one, `spaceIn` removed on each layer, and the bridge trap restored: each
+fails its own check and no other.
+
+Two of them had to be rebuilt because the first cut proved nothing. Lifting the
+street under a route on a **fully paved board** just routed it around — so that
+one lays a single corridor and cuts it. And the drawn-route check compares the
+same patch of board **with the bus lifted off it**, because a bus standing on
+its own route is the same colour as the route.
+
+### And one thing only a screenshot could say
+
+Filled in its route's own colour and standing on that route, a bus read as a
+**swelling of the line** rather than a vehicle on it. Every state assertion
+about it passed. It now carries an ink outline, the same edge the cars use
+against the road slab, and the crawl marker is a paper-ringed badge on the bus
+instead of a dot floating above it. The page gate asks for the outline by
+measuring ink appearing when the bus does — the check that would have caught it.
+
+Core 412 → **462**, page 120 → **132**. Module tokens `?v=11` → `?v=12`.
+
+### `FREIGHT.md`
+
+The design for the next layer of it, written against what v10 and v11 already
+proved rather than from a blank page. Its one claim: **people choose, goods are
+sent** — so freight never gives up, takes room on the vehicle, and is not
+carried by every layer (a bus carries nobody's crates). Two questions are left
+for the owner rather than guessed: whether a crate pays a count or money, and
+whether it spoils.
+
+## v11 — 2026-08-25
+
+**The van.** The road layer runs ONE vehicle and that is the design — you buy
+room, not a fleet, and a layer that let you pick vehicles would be the metro
+layer wearing a hat. The single exception is a marked load, because freight is
+what the road leg of The Handover is *for*: `Car.van` is true when the passenger
+is a parcel, and the renderer draws it half again as long, outlined in the alarm
+colour with the cab cut off by one line.
+
+It is the same vehicle in every other respect — same speed, same lane, same
+square. A van that also went faster would turn the load into a reward instead of
+a responsibility, and the mission is about getting one thing through traffic that
+does not care about it.
+
+This closes a copy inconsistency that shipped with v10: the catalogue calls them
+**cars**, the mission text called the road leg **a van**, and nothing on screen
+told them apart. Now the words and the picture agree.
+
+### Gates
+
+Both new checks were mutation-tested. Hard-wiring `van` to `true` and to `false`
+each fails one of the pair in the core gate, and taking the alarm outline out of
+`render.js` fails the page gate.
+
+The page check compares **the same patch of board with the van taken off it**,
+not the van against a nearby car. The first cut did the latter and read 28 alarm
+pixels around an ordinary car: the two vehicles leave the same door half a cell
+apart, so each one's sample box catches the other. A check that measures its
+neighbour is not measuring anything.
+
+Core 408 → **412**, page 116 → **120**. Module tokens `?v=10` → `?v=11`.
+
+## v10 — 2026-08-24
+
+**The Handover** — the third item on the owner's build order, and the first
+mission where two layers run at the same time.
+
+One load, three legs, alternating: the metro takes it to the interchange, a van
+takes it on, the metro finishes. **Both networks run throughout** — trains
+calling while cars drive, both feeding the same platforms — which is the owner's
+call and the only version where handing a load over costs anything. Stopping the
+city to deal with the parcel would make the transfer a cutscene.
+
+### A parcel is not a new kind of thing
+
+It is a `Passenger` with **legs**: an ordered list of `{ layer, goal }`. Everything
+downstream still asks `p.goal` and gets a shape, which is why routing, crowding,
+the stranded mark and the give-up fuse all work on it without knowing one
+exists. The only new question anything asks is **`p.layer`** — who may pick this
+up right now — and it is null for the ninety-nine passengers who do not care.
+
+That booking is the mechanism, and it runs both ways: a car that picks up a
+crate booked onto the metro has not helped, it has stolen it, and a train that
+takes one booked onto the roads has done the same.
+
+The load stands in the **ordinary queue**, competing for the same trains as
+everybody else. It is ringed in the alarm colour so it can be found on a board
+with sixty pips on it — outside the shape and outside the crowding gauge, so it
+hides neither.
+
+### Both layers, one board
+
+`layers: ['metro', 'roads']` in the mission. `layer` is now the FOCUS — the one
+your finger is on — and not the one that exists. The layer you are not drawing
+on is **dimmed rather than hidden**: hiding it would make the switch a change of
+board, and this is one city with two ways through it. The switch swaps the whole
+gesture with it, because there is nothing to draw on the roads and nothing to
+lay on the metro.
+
+### Four things measured, three of them wrong first
+
+- **The goal could never be met.** It asked that `parcel.leg` reach
+  `legs.length`, which cannot happen — `advance()` stops at the last leg by
+  design. Measured as 0 wins in 10 while the handover itself worked 7 times.
+- **The load often never appeared.** Three legs asked for a distinct shape per
+  leg, so it needed four shapes and simply never spawned on most boards — a
+  mission whose premise silently never starts, which is worse than one that is
+  too hard. Three shapes is the floor now, whatever the leg count.
+- **Escort alone was won at 74 seconds of eight minutes.** A well-joined network
+  moves one load almost at once. So the mission carries a delivery target too,
+  and it is measured: at **120** the seven boards that get the load through are
+  the seven that win, so the mission is decided by the handover rather than by
+  the counter. At 160 two more are lost to the target instead; at 240 only two
+  survive at all.
+- The three boards that still fail are ones where the metro never reaches the
+  load's goal before the shift ends. That is the mission working.
+
+### Four checks that proved nothing until they were fixed
+
+Worth listing, because all four passed while the thing they guarded was broken:
+
+- the roads-booking check left the ordinary queue in place, and `dispatch()`
+  breaks after one car per stop — so an earlier passenger was dispatched and the
+  loop never reached the parcel;
+- …then it picked a goal on the far bank of the river, where the roads could not
+  route anyway;
+- …then it built "every cell" against a **30-square budget**, so thirty
+  scattered squares routed nowhere;
+- and the layer-switch button's width check asked only that the text *fitted*,
+  which it did at 42px of word in a 44px box — passing on exactly the cramped
+  layout it was written to reject. It measures the ink with a Range now.
+
+### Gates
+
+core 369 → 408, page 103 → 116. Every new check mutation-tested, and five of
+them needed the fixture rebuilt before they caught anything.
+
+## v9 — 2026-08-24
+
+**The two things PLAYTEST.md had left open since v6**, both of them about a
+player being told a rule at the moment it costs them something.
+
+**The rules, on demand.** Every tip this game gives fires once and is gone,
+which is right for a nudge and useless for the delete gesture — the one rule
+nobody guesses and everybody wants again three minutes later. A `?` beside the
+other controls opens them, **keyed by layer** because the metro and the roads
+share no verbs at all: there is nothing to draw on the roads and nothing to lay
+on the metro. It does not pause, does not cover the board, closes on Esc with
+focus handed back to the button, and closes itself on a new run so it can never
+describe the layer you just left.
+
+**Warning before the water.** `Network.wouldCost(a, b)` answers *would this leg
+be refused, and why* **without drawing it** — `extend()` builds the line,
+measures it and rolls back, which is fine when a person has committed to a move
+and wrong sixty times a second. So a drag can now ask about every stop before
+the finger gets there, and the board rings the unreachable ones in the alarm
+colour, dashed, silhouette untouched. Filling a shape to mean something was
+already tried and thrown away on the stranded mark: a filled square reads as a
+different destination rather than the same one in trouble.
+
+### Three layout faults, all on a phone held sideways
+
+Every one of them passed its checks before it was looked at.
+
+- A **fifth control did not fit** 640×360 — the strip wrapped only below 560px,
+  and a landscape phone is above it. It wraps at **every** width now: a rule
+  that has to be raised each time something is added is one that will be
+  forgotten once, and wrapping costs a desktop nothing.
+- **The rules ran off the bottom** of a 360px screen, and the rule that ran off
+  was how to take a line back — the only reason the panel exists.
+- Then buying back the board's height put the arcade's **HOME button through the
+  score**; moving the score aside fixed that and put HOME on **the corner of
+  PAUSE**, where a thumb goes home instead of pausing. That is the v5 bug by
+  another route, so the clearance is now padding on the whole strip and every
+  wrapped row goes around it.
+
+`checkHomeClear` had to become a function before it caught anything: written
+inline on the desktop page it passed happily while the landscape layout was
+broken, because the short-screen rules do not apply there.
+
+### The first real city
+
+`cities/kallio.json` — 82 real platforms, 20 line-directions, real traced paths,
+© Helsingin seudun liikenne (HSL), CC BY 4.0. The gate runs on it, and pins the
+octolinear fitter's **46%** as a known failure so that fixing it breaks the gate.
+CITIES.md has the measurements and the reason.
+
+### Gates
+
+core 328 → 367, page 87 → 103. Every new check mutation-tested; two needed the
+fixture or the placement changed before they caught anything.
+
 ## v8 — 2026-08-21
 
 **The bridge did not look like a bridge**, and the fix is the same shape as the

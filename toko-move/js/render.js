@@ -5,10 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=8';
-import { BOARD } from './world.js?v=8';
-import { CELL } from './roads.js?v=8';
-import { drawShape, tracePath } from './shapes.js?v=8';
+import { PAL, INK, sizeAt } from './palette.js?v=13';
+import { BOARD } from './world.js?v=13';
+import { CELL } from './roads.js?v=13';
+import { drawShape, tracePath } from './shapes.js?v=13';
 
 export class Renderer {
   constructor(canvas) {
@@ -63,15 +63,134 @@ export class Renderer {
     this.water(game.world);
     this.grainWash(ctx);
 
-    if (game.roads) this.roads(game.roads, view);
-    for (const line of game.net.lines) this.line(line);
+    // BOTH layers when the mission runs both, and the one you are not drawing
+    // on goes quiet rather than away. Hiding it would make the switch a change
+    // of board; dimming it keeps one city with two ways through it, which is
+    // the whole claim of the mission type.
+    const two = (game.layers?.length ?? 1) > 1;
+    const dim = (on, draw) => {
+      if (!two || on === game.layer) { draw(); return; }
+      ctx.save();
+      ctx.globalAlpha = 0.34;
+      draw();
+      ctx.restore();
+    };
+
+    // THE REAL NETWORK, under everything. Twenty services' own traced paths,
+    // drawn quiet and thin: it is what makes the board Helsinki before a single
+    // line has been drawn on it, and it has to stay quiet or the player cannot
+    // tell what they themselves have built from what was already there.
+    if (game.city?.lines) this.cityLines(game.city.lines);
+    if (game.roads) dim('roads', () => this.roads(game.roads, view));
+    // Bus routes go on ABOVE the road slab and BELOW the metro: they are paint
+    // on a street, and a metro line crossing one passes over it.
+    if (game.bus) dim('bus', () => { for (const line of game.bus.lines) this.busRoute(line); });
+    dim('metro', () => { for (const line of game.net.lines) this.line(line); });
     if (view.nubs) this.nubs(view.nubs, view.nubR);
     if (view.drag) this.ghost(view.drag);
-    if (game.roads) this.cars(game.roads);
-    else for (const line of game.net.lines) for (const t of line.trains) this.train(t, line);
+    if (game.roads) dim('roads', () => this.cars(game.roads));
+    if (game.bus) dim('bus', () => {
+      for (const line of game.bus.lines) for (const b of line.trains) this.bus(b, line, game.bus);
+    });
+    if (game.layers?.includes('metro') ?? true) {
+      dim('metro', () => { for (const line of game.net.lines) for (const t of line.trains) this.train(t, line); });
+    }
     const sizes = sizeAt(this.scale);
     for (const st of game.world.stations) this.station(st, view, sizes);
+    // Names last, over everything, because a name half under a line is worse
+    // than no name — and they only exist on a real city.
+    if (game.world.city) this.names(game.world, sizes);
 
+    ctx.restore();
+
+    // The credit, in screen space rather than board space so it does not scale
+    // away on a phone. It is a LICENCE CONDITION and not a courtesy: HSL's
+    // feed is CC BY 4.0 and the water is ODbL, and `city.js` refuses to lay out
+    // a pack that has lost either.
+    if (game.city?.credit) this.credit(game.city.credit);
+  }
+
+  cityLines(lines) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.26;
+    ctx.strokeStyle = PAL.ink;
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const l of lines) {
+      const pts = l.path;
+      if (!pts || pts.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // The shoreline, where a city has one. It is drawn and never tested against:
+  // a coastline is an OPEN directed line with the sea implied on one side, so
+  // it is not a polygon and closing it would paint the harbour as ground.
+  coast(world) {
+    if (!world.coast?.length) return;
+    const ctx = this.ctx;
+    ctx.strokeStyle = PAL.waterEdge;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const run of world.coast) {
+      if (run.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(run[0].x, run[0].y);
+      for (let i = 1; i < run.length; i++) ctx.lineTo(run[i].x, run[i].y);
+      ctx.stroke();
+    }
+  }
+
+  // Real stops have real names, and on a city board they are most of what
+  // makes it that city. Set small, under the stop, in the quiet grey that the
+  // gate already holds to AA — and never on an abstract board, where the whole
+  // fiction is that a stop is a shape and nothing else.
+  names(world, sizes) {
+    const ctx = this.ctx;
+    const px = Math.max(10, 11 / this.scale);
+    ctx.font = `600 ${px}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.lineWidth = Math.max(2.5, 3 / this.scale);
+    ctx.strokeStyle = PAL.paper;
+    ctx.fillStyle = PAL.dim;
+    // …and NOT all of them. Two stops close together put one name on top of
+    // another and neither could be read — on a real city that happens the
+    // moment two stops share a square. A name that would land on one already
+    // drawn is dropped, biggest stop first, so what survives is legible.
+    const taken = [];
+    for (const st of world.stations) {
+      if (!st.name) continue;
+      const y = st.y + (st.special ? sizes.specialR : sizes.stationR) + px * 0.5;
+      const w = ctx.measureText(st.name).width;
+      const box = { x0: st.x - w / 2, y0: y, x1: st.x + w / 2, y1: y + px };
+      if (taken.some(t => box.x0 < t.x1 && box.x1 > t.x0 && box.y0 < t.y1 && box.y1 > t.y0)) continue;
+      taken.push(box);
+      // painted twice: a halo in paper first, so a name crossing a line is
+      // still readable without a box behind it
+      ctx.strokeText(st.name, st.x, y);
+      ctx.fillText(st.name, st.x, y);
+    }
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  credit(text) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.font = '500 11px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.fillStyle = PAL.dim;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(text, 10, this.canvas.height / this.dpr - 8);
     ctx.restore();
   }
 
@@ -88,6 +207,7 @@ export class Renderer {
       ctx.lineWidth = 2;
       ctx.stroke();
     }
+    this.coast(world);
   }
 
   // A tooth of paper texture, tiled. Built once — a per-pixel wash every frame
@@ -185,15 +305,27 @@ export class Renderer {
     const w = Math.max(7, 9 / this.scale), l = Math.max(10, 13 / this.scale);
     for (const car of net.cars) {
       const p = net.posOf(car);
+      // A load rides in a VAN: half again as long, with the cab cut off the
+      // front by one line. It is the same vehicle in every other respect (see
+      // `Car.van`) — the silhouette is there so you can find the load on a
+      // street full of traffic without a label following it around.
+      const len = car.van ? l * 1.5 : l;
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.ang);
-      roundRect(ctx, -l / 2, -w / 2, l, w, Math.min(3, w / 3));
+      roundRect(ctx, -len / 2, -w / 2, len, w, Math.min(3, w / 3));
       ctx.fillStyle = PAL.paper;
       ctx.fill();
-      ctx.strokeStyle = PAL.ink;
-      ctx.lineWidth = Math.max(1.2, 1.6 / this.scale);
+      ctx.strokeStyle = car.van ? PAL.warn : PAL.ink;
+      ctx.lineWidth = Math.max(1.2, (car.van ? 2 : 1.6) / this.scale);
       ctx.stroke();
+      if (car.van) {
+        const cab = len / 2 - l * 0.42;
+        ctx.beginPath();
+        ctx.moveTo(cab, -w / 2);
+        ctx.lineTo(cab, w / 2);
+        ctx.stroke();
+      }
       ctx.restore();
       // what it is carrying, so a car is not an anonymous dot
       drawShape(ctx, car.p.goal, p.x, p.y, Math.max(2.6, 3.4 / this.scale), PAL.ink, null, 0);
@@ -224,6 +356,88 @@ export class Renderer {
         ctx.lineTo(g.x + nx * INK.line * 0.62, g.y + ny * INK.line * 0.62);
         ctx.stroke();
       }
+    }
+  }
+
+  // ── the bus layer ─────────────────────────────────────────────────────
+  // A bus route must not read as a metro line. It is the same object — a line
+  // with stops and vehicles — so telling them apart is the renderer's whole
+  // job here, and it is done the way the real things differ: a metro line is
+  // its own right of way, drawn heavy and straight; a route is PAINT ON A
+  // STREET, drawn thin, following every turn the road takes, with a pale
+  // casing under it so it lifts off the slab it is lying on.
+  busRoute(line) {
+    const ctx = this.ctx;
+    const colour = PAL.lines[line.colour];
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const seg of line.segs) {
+      const path = () => {
+        ctx.beginPath();
+        ctx.moveTo(seg.pts[0].x, seg.pts[0].y);
+        for (let i = 1; i < seg.pts.length; i++) ctx.lineTo(seg.pts[i].x, seg.pts[i].y);
+      };
+      // the casing first, so the route reads on grey road AND on pale ground
+      ctx.setLineDash([]);
+      ctx.strokeStyle = PAL.paper;
+      ctx.lineWidth = INK.line * 0.78;
+      path();
+      ctx.stroke();
+
+      // A leg whose street was lifted out from under it. Drawn as the break it
+      // is — nothing runs on this route until you put the road back — because
+      // a route that silently stops is a bug report rather than a decision.
+      if (seg.road === false) {
+        ctx.strokeStyle = PAL.warn;
+        ctx.setLineDash([INK.line * 0.5, INK.line * 0.9]);
+      } else {
+        ctx.strokeStyle = colour;
+        ctx.setLineDash([]);
+      }
+      ctx.lineWidth = INK.line * 0.46;
+      path();
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  bus(bus, line, net) {
+    const ctx = this.ctx;
+    const p = bus.pos();
+    const colour = PAL.lines[line.colour];
+    const l = 27, w = 13;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.ang);
+    roundRect(ctx, -l / 2, -w / 2, l, w, 3.4);
+    ctx.fillStyle = colour;
+    ctx.fill();
+    // AN OUTLINE, and it is not decoration. Filled in the route's own colour
+    // and standing on that route, a bus read as a swelling of the line rather
+    // than a vehicle on it — visible in a screenshot, invisible to every state
+    // assertion. The ink edge is what separates the thing that moves from the
+    // thing it moves along; it is the same trick the cars already use against
+    // the road slab.
+    ctx.strokeStyle = PAL.ink;
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    // one pale band down the side: a window strip is what makes a long box a
+    // bus rather than a lorry, and it is the only detail there is room for
+    ctx.fillStyle = PAL.paper;
+    ctx.fillRect(-l / 2 + 3.6, -w / 2 + 2.8, l - 10.2, 2.4);
+    ctx.restore();
+    // Stuck in traffic, said on the vehicle rather than only in the readout —
+    // the whole point of putting buses on the car layer's streets is that you
+    // can SEE why the route is slow. Ringed in paper and sitting ON the bus:
+    // a bare dot floating above it read as a stray mark rather than a badge.
+    if (net?.paceOf(bus) < 1) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - w * 0.62, 4.2, 0, Math.PI * 2);
+      ctx.fillStyle = PAL.warn;
+      ctx.fill();
+      ctx.strokeStyle = PAL.paper;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
     }
   }
 
@@ -318,10 +532,31 @@ export class Renderer {
       ctx.stroke();
     }
 
+    // A stop this drag CANNOT reach — the water is in the way and there is no
+    // tunnel left for it. Marked while you are still on your way there, because
+    // the alternative is what the game did until now: let you arrive, refuse
+    // the move, and teach the rule at the cost of it (PLAYTEST.md §3.4).
+    //
+    // A dashed ring rather than a solid one, and the SILHOUETTE is untouched —
+    // filling a shape to mean something was already tried and thrown away on
+    // the stranded mark, because a filled square reads as a different
+    // destination rather than as the same one in trouble.
+    const barred = view.barred?.has(st.id);
+    if (barred) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, r + 8, 0, Math.PI * 2);
+      ctx.setLineDash([3, 4]);
+      ctx.strokeStyle = PAL.warn;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     if (view.hover === st.id || view.anchor === st.id) {
       ctx.beginPath();
       ctx.arc(st.x, st.y, r + 11, 0, Math.PI * 2);
-      ctx.strokeStyle = PAL.ink;
+      ctx.strokeStyle = barred ? PAL.warn : PAL.ink;
       ctx.globalAlpha = 0.4;
       ctx.lineWidth = 2;
       ctx.stroke();
@@ -330,6 +565,20 @@ export class Renderer {
 
     drawShape(ctx, st.kind, st.x, st.y, r, PAL.station, PAL.ink, INK.station);
     this.queue(st, r, sizes.pipR);
+
+    // THE LOAD. One thing on the board is being followed, and on a board with
+    // sixty pips on it a parcel drawn like a passenger is a parcel nobody can
+    // find. A ring in the accent colour, outside the shape and outside the
+    // crowding gauge, so it never hides either.
+    if (st.waiting.some(p => p.parcel)) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, r + 15, 0, Math.PI * 2);
+      ctx.strokeStyle = PAL.warn;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // The platform. Three to a row, growing away from the stop; past capacity it

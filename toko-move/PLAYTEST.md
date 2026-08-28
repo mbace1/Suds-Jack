@@ -160,12 +160,45 @@ a tunnel spent.
 1. ~~**Mark a passenger with no route.**~~ Done in v6, above.
 2. ~~**Say what the closing ring means**, once, the first time one appears.~~
    Done in v6.
-3. **Keep the instructions reachable in play** — the delete gesture especially.
-   Still open: the tips fire once and are gone, and nothing brings back "drag
-   the stub back to pull a line up".
-4. **Warn before the water**, rather than refusing after it. Half done: the
-   tunnel rule is now explained the first time one is spent, but a line that
-   *cannot* be drawn is still only refused after the attempt.
+3. ~~**Keep the instructions reachable in play.**~~ Done in v9. A `?` beside
+   the other controls opens the rules, keyed by LAYER because the two layers
+   share no verbs at all. It does not pause, does not cover the board, closes
+   on Esc with focus handed back, and closes itself on a new run so it cannot
+   describe the wrong layer.
+4. ~~**Warn before the water.**~~ Done in v9. `Network.wouldCost(a, b)` answers
+   "would this leg be refused, and why" **without drawing it**, so a drag can
+   ask about every stop before the finger arrives — and the board rings the ones
+   it cannot reach in the alarm colour while you are still on your way. The old
+   behaviour taught the tunnel rule at the cost of the move.
+
+---
+
+## 3b. What the pictures showed when those two shipped (v9)
+
+Both of them passed every check before they were looked at, and both were wrong
+on a phone held sideways. Recorded because it is the same lesson for the third
+time in this project:
+
+- **A fifth control did not fit.** The strip wrapped only below 560px and a
+  640×360 landscape phone is above it, so the `?` went off the screen — caught
+  by the gate, which is the one piece of good news. The strip **wraps at every
+  width** now: a rule that must be raised each time something is added is a rule
+  that will be forgotten once, and wrapping costs a desktop nothing.
+- **The rules ran off the bottom** of a 360px-tall screen, and the rule that ran
+  off was *how to take a line back* — the only reason the panel exists. It
+  scrolls now.
+- **Then the way home landed on the score**, because tightening the strip's top
+  padding to buy back board height put the arcade's HOME button through it. Then
+  moving the score aside instead fixed the score and put HOME on **the top-left
+  corner of PAUSE**, where a thumb goes home rather than pausing — which is
+  exactly the v5 bug by another route. The clearance is padding on the whole
+  strip now, so every wrapped row goes around the button.
+
+The gate learned all three: controls on screen, and a `checkHomeClear` that runs
+on the desktop **and** the landscape phone against the score and every control.
+It had to be made a function first — written inline on the desktop page, it
+passed happily while the landscape layout was broken, because the short-screen
+rules do not apply there.
 
 ---
 

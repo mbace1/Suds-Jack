@@ -15,9 +15,9 @@
 // shrink with the window — the nub was 46px on a desktop and 17px on a phone,
 // which meant a line could not be shortened or deleted by thumb at all.
 
-import { legPoints } from './geometry.js?v=8';
-import { TOUCH, sizeAt } from './palette.js?v=8';
-import { nubs } from './lines.js?v=8';
+import { legPoints } from './geometry.js?v=13';
+import { TOUCH, sizeAt } from './palette.js?v=13';
+import { nubs } from './lines.js?v=13';
 
 export class LineDrawer {
   constructor(canvas, renderer, game, opts = {}) {
@@ -26,6 +26,11 @@ export class LineDrawer {
     this.game = game;
     this.onMessage = opts.onMessage || (() => {});
     this.onChange = opts.onChange || (() => {});
+    // WHICH network this drag draws on. A bus route is a line — same nub, same
+    // drag-back-to-undo, same refusal shown before the finger arrives — on a
+    // network whose legs follow streets. Passing the network in is the whole
+    // adaptation; there is no BusDrawer.
+    this._net = opts.net || null;
     this.drag = null;
     this.hover = null;
 
@@ -47,6 +52,8 @@ export class LineDrawer {
     window.removeEventListener('pointercancel', this._up);
   }
 
+  get net() { return this._net ? this._net() : this.game.net; }
+
   // board units per screen pixel
   get unit() { return 1 / (this.r.scale || 1); }
   get nubGap() { return TOUCH.nubGapPx * this.unit; }
@@ -54,7 +61,7 @@ export class LineDrawer {
   get stationHit() { return (TOUCH.stationHitPx / 2) * this.unit; }
 
   get sizes() { return sizeAt(this.r.scale || 1); }
-  nubs() { return nubs(this.game.net, this.game.world, this.nubGap, this.sizes); }
+  nubs() { return nubs(this.net, this.game.world, this.nubGap, this.sizes); }
 
   at(e) { return this.r.toBoard(e.clientX, e.clientY); }
 
@@ -79,7 +86,7 @@ export class LineDrawer {
       return;
     }
     if (st) {
-      this.drag = { mode: 'new', anchorId: st.id, colour: this.game.net.freeColour(), p };
+      this.drag = { mode: 'new', anchorId: st.id, colour: this.net.freeColour(), p };
       this.canvas.setPointerCapture?.(e.pointerId);
     }
   }
@@ -94,8 +101,8 @@ export class LineDrawer {
 
     if (this.drag.mode === 'new') {
       if (st.id === this.drag.anchorId) return;
-      if (!this.game.net.canOpenLine()) { this.fail('every line is already out there'); return; }
-      const res = this.game.net.open(this.drag.anchorId, st.id);
+      if (!this.net.canOpenLine()) { this.fail('every line is already out there'); return; }
+      const res = this.net.open(this.drag.anchorId, st.id);
       if (res.error) { this.fail(res.error); return; }
       this.drag = { mode: 'extend', line: res.line, atHead: false, colour: res.line.colour, p };
       this.onChange();
@@ -103,7 +110,7 @@ export class LineDrawer {
     }
 
     const line = this.drag.line;
-    if (!this.game.net.lines.includes(line)) { this.drag = null; return; }
+    if (!this.net.lines.includes(line)) { this.drag = null; return; }
     const endId = this.drag.atHead ? line.head : line.tail;
     if (st.id === endId) return;
 
@@ -112,13 +119,13 @@ export class LineDrawer {
     // line peels the rest of it
     const behind = this.drag.atHead ? line.stations[1] : line.stations[line.stations.length - 2];
     if (st.id === behind && !line.loop) {
-      const res = this.game.net.retract(line, this.drag.atHead);
-      if (res.removed) this.drag = { mode: 'new', anchorId: st.id, colour: this.game.net.freeColour(), p };
+      const res = this.net.retract(line, this.drag.atHead);
+      if (res.removed) this.drag = { mode: 'new', anchorId: st.id, colour: this.net.freeColour(), p };
       this.onChange();
       return;
     }
 
-    const res = this.game.net.extend(line, st.id, this.drag.atHead);
+    const res = this.net.extend(line, st.id, this.drag.atHead);
     if (res.error) { this.fail(res.error); return; }
     this.onChange();
   }
@@ -132,9 +139,27 @@ export class LineDrawer {
     this.onMessage(msg);
   }
 
+  // Which stops this drag CANNOT reach from where it is. Answered before the
+  // finger gets there, so the board can say so in advance instead of the game
+  // refusing the move after it is made (PLAYTEST.md §3.4).
+  barred() {
+    if (!this.drag) return null;
+    const from = this.drag.mode === 'new'
+      ? this.drag.anchorId
+      : (this.drag.atHead ? this.drag.line?.head : this.drag.line?.tail);
+    if (from == null) return null;
+    const out = new Set();
+    for (const st of this.game.world.stations) {
+      if (st.id === from) continue;
+      if (this.net.wouldCost(from, st.id).refused) out.add(st.id);
+    }
+    return out.size ? out : null;
+  }
+
   // What the renderer draws as the dashed reach from the live end to the finger.
   view() {
-    const out = { hover: this.hover, nubs: this.nubs(), nubR: TOUCH.nubDrawPx * this.unit };
+    const out = { hover: this.hover, nubs: this.nubs(), nubR: TOUCH.nubDrawPx * this.unit,
+                  barred: this.barred() };
     if (!this.drag) return out;
     const w = this.game.world;
     if (this.drag.mode === 'new') {
@@ -146,7 +171,7 @@ export class LineDrawer {
       return out;
     }
     const line = this.drag.line;
-    if (!this.game.net.lines.includes(line)) return out;
+    if (!this.net.lines.includes(line)) return out;
     const end = w.station(this.drag.atHead ? line.head : line.tail);
     if (end) {
       out.anchor = end.id;

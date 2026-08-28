@@ -2,12 +2,12 @@
 // which is what keeps the game keyboard-reachable and the 44px and contrast
 // floors measurable instead of hand-waved.
 
-import { Game } from './sim.js?v=8';
-import { MISSIONS, byId, campaign, clockFmt } from './missions.js?v=8';
-import { Renderer } from './render.js?v=8';
-import { LineDrawer, RoadDrawer } from './input.js?v=8';
-import { Kit } from './audio.js?v=8';
-import { PAL, sizeAt } from './palette.js?v=8';
+import { Game } from './sim.js?v=13';
+import { MISSIONS, byId, campaign, sandbox, chapters, chapterMissions, clockFmt } from './missions.js?v=13';
+import { Renderer } from './render.js?v=13';
+import { LineDrawer, RoadDrawer } from './input.js?v=13';
+import { Kit } from './audio.js?v=13';
+import { PAL, sizeAt } from './palette.js?v=13';
 
 const $ = id => document.getElementById(id);
 const HI_KEY = 'tokoMoveHi';              // the arcade's score wall reads this one
@@ -22,6 +22,8 @@ const CARD = {
   road: ['MORE ROAD', 'twelve more squares to lay'],
   cars: ['MORE CARS', 'two more on the road at once'],
   bridge: ['BRIDGE', 'one more crossing over the water'],
+  route: ['NEW ROUTE', 'one more bus route you are allowed to draw'],
+  bus: ['ANOTHER BUS', 'one more bus, on a route you pick'],
 };
 
 let game, renderer, drawer, kit, drops = 0, feedTimer = 0, keyNav = false;
@@ -43,31 +45,57 @@ function unlocked(m, p) {
   return i <= 0 || p.cleared.includes(spine[i - 1].id);
 }
 
+function missionButton(m, p) {
+  const open = unlocked(m, p);
+  const done = p.cleared.includes(m.id);
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn wide miss' + (done ? ' done' : '');
+  b.disabled = !open;
+  const t = document.createElement('b'); t.textContent = m.title;
+  const d = document.createElement('span'); d.textContent = m.brief;
+  b.append(t, d);
+  const best = p.best?.[m.id];
+  if (done || best != null || !open) {
+    const tag = document.createElement('em');
+    tag.className = 'tag';
+    tag.textContent = !open ? 'locked' : done ? `cleared · best ${best ?? 0}` : `best ${best}`;
+    b.append(tag);
+  }
+  if (open) b.onclick = () => launch(m.id);
+  return b;
+}
+
+// The chapters, in order, each one a city. A chapter with no pack is drawn
+// anyway and says why it cannot be played: the order is the plan, and a plan
+// you cannot see is not a plan.
+function paintChapters(p) {
+  const box = $('campaignList');
+  box.innerHTML = '';
+  for (const c of chapters()) {
+    const head = document.createElement('div');
+    head.className = 'chapter' + (c.blocked ? ' shut' : '');
+    const n = document.createElement('em'); n.textContent = `Chapter ${c.n}`;
+    const t = document.createElement('b'); t.textContent = c.title;
+    const sub = document.createElement('i'); sub.textContent = c.subtitle ?? '';
+    head.append(n, t, sub);
+    box.append(head);
+
+    const say = document.createElement('p');
+    say.className = 'chapterBrief';
+    say.textContent = c.blocked ? `${c.brief} — ${c.blocked}.` : c.brief;
+    box.append(say);
+
+    for (const m of chapterMissions(c.id)) box.append(missionButton(m, p));
+  }
+}
+
 function paintMissions() {
   const p = progress();
-  for (const [box, list] of [[$('campaignList'), campaign()], [$('freeList'), MISSIONS.filter(m => m.order == null)]]) {
-    box.innerHTML = '';
-    for (const m of list) {
-      const open = unlocked(m, p);
-      const done = p.cleared.includes(m.id);
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'btn wide miss' + (done ? ' done' : '');
-      b.disabled = !open;
-      const t = document.createElement('b'); t.textContent = m.title;
-      const d = document.createElement('span'); d.textContent = m.brief;
-      b.append(t, d);
-      const best = p.best?.[m.id];
-      if (done || best != null || !open) {
-        const tag = document.createElement('em');
-        tag.className = 'tag';
-        tag.textContent = !open ? 'locked' : done ? `cleared · best ${best ?? 0}` : `best ${best}`;
-        b.append(tag);
-      }
-      if (open) b.onclick = () => launch(m.id);
-      box.append(b);
-    }
-  }
+  paintChapters(p);
+  const box = $('freeList');
+  box.innerHTML = '';
+  for (const m of sandbox()) box.append(missionButton(m, p));
 }
 
 // ── a run ───────────────────────────────────────────────────────────────
@@ -76,6 +104,26 @@ function paintMissions() {
 // so the number was a receipt for something you could not return to — and every
 // gate run got a different board, which is exactly the kind of flake that gets
 // written off as "the test is flaky".
+// ── the cities ──────────────────────────────────────────────────────────
+// A pack is a FILE, fetched once when the page opens and never during a run.
+// The game must not be able to invent the world it is set in, and the arcade's
+// offline promise would be a lie if a mission needed the network to start.
+//
+// Every failure here is survivable on purpose: a chapter whose pack is missing
+// still appears on the board, still launches, and says on the card that it is
+// playing an invented map instead. A locked door beats a crash, and a silent
+// substitution would be worse than either.
+const PACKS = new Map();
+const packsReady = (async () => {
+  const want = [...new Set(MISSIONS.map(m => m.city).filter(Boolean))];
+  await Promise.all(want.map(async id => {
+    try {
+      const r = await fetch(`cities/${id}.json`);
+      if (r.ok) PACKS.set(id, await r.json());
+    } catch { /* offline, or not built yet — the mission card will say so */ }
+  }));
+})();
+
 function seedFromUrl() {
   const m = /seed=(\d+)/.exec(location.hash || location.search);
   return m ? ((+m[1] | 0) || 1) : null;
@@ -88,31 +136,63 @@ const portraitNow = () => {
   return r.height > r.width;
 };
 
-function launch(missionId, seed = nextSeed()) {
+async function launch(missionId, seed = nextSeed()) {
+  await packsReady;
   $('title').hidden = true;
   $('end').hidden = true;
+  // a panel left open across a launch is a panel describing the wrong layer
+  showHowto(false);
   boot(seed, missionId);
   game.start();
   paintHud();
 }
 
 function boot(seed, missionId) {
-  game = new Game(seed, missionId, { portrait: portraitNow() });
+  const m = byId(missionId);
+  game = new Game(seed, missionId, {
+    portrait: portraitNow(),
+    pack: m?.city ? PACKS.get(m.city) : null,
+  });
   drops = 0;
   drawer?.destroy();
   renderer = renderer || new Renderer($('board'));
   renderer.resize();
   // the layer decides which gesture the board answers to
-  const Drawer = game.layer === 'roads' ? RoadDrawer : LineDrawer;
-  drawer = new Drawer($('board'), renderer, game, {
-    onMessage: say,
-    onChange: () => { paintHud(); kit.line(); },
-  });
+  makeDrawer();
   $('endSeed').textContent = `board ${seed}`;
   paintHud();
 }
 
 // ── the strip ───────────────────────────────────────────────────────────
+// The gesture belongs to the FOCUSED layer: there is nothing to draw on the
+// roads and nothing to lay on the metro, so switching layers swaps the whole
+// drawer rather than teaching one of them a second verb.
+function makeDrawer() {
+  drawer?.destroy();
+  // Two gestures, three layers. The bus layer is DRAWN, not laid — a route is
+  // a line with stops — so it takes the line drawer pointed at a different
+  // network, which is why there is no third drawer class.
+  const Drawer = game.layer === 'roads' ? RoadDrawer : LineDrawer;
+  drawer = new Drawer($('board'), renderer, game, {
+    onMessage: say,
+    onChange: () => { paintHud(); kit.line(); },
+    net: () => (game.layer === 'bus' ? game.bus : game.net),
+  });
+}
+
+const LAYER_WORD = { metro: 'metro', roads: 'roads', bus: 'buses' };
+
+function swapLayer() {
+  if (game.layers.length < 2) return;
+  const i = game.layers.indexOf(game.layer);
+  const next = game.layers[(i + 1) % game.layers.length];
+  if (!game.focus(next)) return;
+  makeDrawer();
+  if (!$('howto').hidden) paintHowto();   // the rules follow the layer
+  paintHud();
+  say(`drawing on the ${LAYER_WORD[next] ?? next}`);
+}
+
 function paintHud() {
   if (!game) return;
   $('score').textContent = game.score;
@@ -127,10 +207,27 @@ function paintHud() {
   g.textContent = goals.map(x => x.text).join(' · ');
   g.classList.toggle('close', left != null && left < 60);
 
-  if (game.roads) {
+  // the counts belong to the layer you are DRAWING on: showing both networks'
+  // stock at once was tried on paper and it is six numbers nobody reads
+  const swap = $('swap');
+  swap.hidden = game.layers.length < 2;
+  if (!swap.hidden) {
+    const i = game.layers.indexOf(game.layer);
+    const next = game.layers[(i + 1) % game.layers.length];
+    swap.textContent = LAYER_WORD[game.layer] ?? game.layer;
+    swap.setAttribute('aria-label', `Drawing on the ${LAYER_WORD[game.layer]}. Switch to the ${LAYER_WORD[next]}.`);
+  }
+
+  if (game.layer === 'roads' && game.roads) {
     stock('stkLines', `${game.roads.used()}/${game.roads.budget}`, game.roads.left() <= 0, 'road');
     stock('stkTrains', game.roads.spareCars, game.roads.spareCars === 0, 'cars idle');
     stock('stkTunnels', game.roads.bridgesLeft(), game.roads.bridgesLeft() === 0, 'bridges');
+  } else if (game.layer === 'bus' && game.bus) {
+    // the third slot is the one honest bad number this layer has: how many of
+    // your buses are sitting in the traffic you made room for
+    stock('stkLines', `${game.bus.lines.length}/${game.bus.maxLines}`, game.bus.lines.length >= game.bus.maxLines, 'routes');
+    stock('stkTrains', game.bus.spareTrains, game.bus.spareTrains === 0, 'buses idle');
+    stock('stkTunnels', game.bus.crawling, game.bus.crawling > 0, 'in traffic');
   } else {
     stock('stkLines', `${game.net.lines.length}/${game.net.maxLines}`, game.net.lines.length >= game.net.maxLines, 'lines');
     stock('stkTrains', game.net.spareTrains, game.net.spareTrains === 0, 'trains');
@@ -166,6 +263,10 @@ const TIPS = [
     'That stop is over capacity. The ring closing around it is the day running out.'],
   ['tunnel', g => !g.roads && g.net.tunnelsLeft() < g.net.ownedTunnels,
     'Crossing water spends a tunnel. You only get more at the end of a week.'],
+  // …and the other half of that rule: once they are gone, the stops you cannot
+  // reach are RINGED while you drag, rather than refusing you on arrival
+  ['nowater', g => !g.roads && g.net.tunnelsLeft() <= 0,
+    'No tunnels left. A stop you cannot reach across the water is ringed while you drag.'],
   ['bridge', g => !!g.roads && g.roads.spanned.size > 0,
     'That is a bridge. One buys the whole crossing, however wide the water — but only one crossing.'],
   ['road', g => !!g.roads && g.roads.left() <= 0,
@@ -183,6 +284,59 @@ function teach() {
     say(typeof line === 'function' ? line(game) : line);
     return;                 // one lesson at a time
   }
+}
+
+// ── the rules, on demand ────────────────────────────────────────────────
+// Every tip this game gives fires ONCE and is gone. That is right for a nudge
+// and wrong for the delete gesture: it is the one rule a player cannot guess,
+// and the moment they want it is three minutes after it was said. PLAYTEST.md
+// §3.3 has had this open since v6.
+//
+// Keyed by LAYER, because the two layers share no verbs at all — there is
+// nothing to draw on the roads and nothing to lay on the metro.
+const HOWTO = {
+  metro: [
+    ['Draw a line', 'drag from one stop to another.'],
+    ['Extend it', 'drag from the stub at either end onto the next stop.'],
+    ['Take it back', 'drag the stub back down the line — onto the stop behind the end. Keep going and the whole line comes up.'],
+    ['Water', 'crossing it spends a tunnel, and you only get more at the end of a week.'],
+    ['A stop fills up', 'the ring closing around it is how long you have.'],
+  ],
+  roads: [
+    ['Lay road', 'drag across bare ground.'],
+    ['Carry it on', 'start on road you already have and drag onto bare ground.'],
+    ['Lift it', 'start on road and drag back along it.'],
+    ['Water', 'one bridge buys the whole crossing, however wide — but only one crossing.'],
+    ['The cars', 'pick their own way and cannot be told otherwise. All you give them is room.'],
+    ['The long one', 'a van, and the only vehicle carrying something that matters. Same speed as the rest — it just has to get through.'],
+  ],
+  bus: [
+    ['Draw a route', 'stop to stop, the same as a line — but it can only go where a street already runs.'],
+    ['Carry it on', 'drag the end stub onto the next stop.'],
+    ['Take it back', 'drag the stub back onto the stop behind it.'],
+    ['No street, no route', 'lay the road first, on the car layer. Lift a street and the route breaks where it was.'],
+    ['Traffic', 'a bus in it crawls. The room you make for cars is the room your buses need.'],
+  ],
+};
+
+function paintHowto() {
+  const ul = $('howtoList');
+  ul.textContent = '';
+  for (const [what, how] of HOWTO[game?.layer ?? 'metro'] ?? HOWTO.metro) {
+    const li = document.createElement('li');
+    const b = document.createElement('b');
+    b.textContent = what + ' — ';
+    li.append(b, document.createTextNode(how));
+    ul.append(li);
+  }
+}
+
+function showHowto(on) {
+  const panel = $('howto'), btn = $('help');
+  // repainted every time it opens, because the layer can change under it
+  if (on) paintHowto();
+  panel.hidden = !on;
+  btn.setAttribute('aria-expanded', String(!!on));
 }
 
 function say(msg) {
@@ -221,8 +375,12 @@ function choose(kind, btn) {
   const wrap = $('lineWrap');
   const pick = $('linePick');
   pick.innerHTML = '';
-  $('lineAsk').textContent = kind === 'train' ? 'Which line gets the train?' : 'Which line gets the carriage?';
-  for (const line of game.net.lines) {
+  const ASK = { train: 'Which line gets the train?', carriage: 'Which line gets the carriage?',
+                bus: 'Which route gets the bus?' };
+  $('lineAsk').textContent = ASK[kind] ?? ASK.train;
+  // the card decides which network's lines are on offer — a bus goes on a bus
+  // route, and there may be no metro on this board at all
+  for (const line of (game.netFor(kind)?.lines ?? [])) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'chip';
@@ -230,9 +388,10 @@ function choose(kind, btn) {
     sw.style.background = PAL.lines[line.colour];
     const label = document.createElement('span');
     const trains = line.trains.length;
-    label.textContent = `${line.stations.length} stops · ${trains} train${trains === 1 ? '' : 's'}`;
+    const word = kind === 'bus' ? 'bus' : 'train';
+    label.textContent = `${line.stations.length} stops · ${trains} ${word}${trains === 1 ? '' : (kind === 'bus' ? 'es' : 's')}`;
     b.append(sw, label);
-    b.setAttribute('aria-label', `Line ${line.id + 1}, ${label.textContent}`);
+    b.setAttribute('aria-label', `${kind === 'bus' ? 'Route' : 'Line'} ${line.id + 1}, ${label.textContent}`);
     b.onclick = () => apply(kind, line.id);
     pick.append(b);
   }
@@ -356,9 +515,17 @@ if (localStorage.getItem(SOUND_KEY) === '1') {
   addEventListener('pointerdown', () => kit.enable(true), { once: true });
 }
 
+$('help').addEventListener('click', () => showHowto($('howto').hidden));
+$('swap').addEventListener('click', swapLayer);
+
 addEventListener('keydown', e => {
   keyNav = true;
   if (e.key === ' ' && game.state === 'play') { e.preventDefault(); $('pause').click(); }
+  // Tab is taken by focus, so the layer switch is on a letter
+  if ((e.key === 'l' || e.key === 'L') && game.state === 'play') swapLayer();
+  // Esc closes the rules and puts focus back where it came from — a panel you
+  // can open and not close with the keyboard is a trap
+  if (e.key === 'Escape' && !$('howto').hidden) { showHowto(false); $('help').focus(); }
 });
 addEventListener('pointerdown', () => { keyNav = false; }, true);
 addEventListener('resize', () => renderer?.resize());
@@ -387,5 +554,8 @@ window.__tm = {
       nubDrawPx: (drawer.view().nubR || 0) * renderer.scale,
     };
   },
-  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId, sizeAt, seedFromUrl, PAL },
+  debug: { launch, boot, showUpgrade, showEnd, say, paintMissions, progress, byId, sizeAt, seedFromUrl, PAL,
+    // which gesture the board is answering to — the gate needs to see that it
+    // moves with the layer, and `drawer` itself is not on the surface
+    drawerKind: () => (drawer instanceof RoadDrawer ? 'roads' : (game?.layer === 'bus' ? 'bus' : 'metro')) },
 };

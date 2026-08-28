@@ -47,11 +47,24 @@ export const GOALS = {
       text: g.holdBroken ? 'the line was crossed' : `holding — ${fmt(Math.max(0, goal.t - g.time))} left`,
     }),
   },
-  // the parcel run. Needs cargo, which does not exist yet.
+  // The parcel run. One thing, followed across more than one layer, and the
+  // only goal whose progress is measured in LEGS rather than in a count.
   escort: {
     needs: 'payload',
-    done: (g, goal) => g.escorted?.has(goal.what),
-    read: (g, goal) => ({ have: 0, want: 1, text: `get ${goal.what} to ${goal.to}` }),
+    // ONE test, and it is the arrival. The first cut also asked that
+    // `parcel.leg` had reached `legs.length`, which can never happen:
+    // `advance()` stops at the last leg by design, so a two-leg load tops out
+    // at leg 1 and the goal was unreachable on every board. Measured as 0 wins
+    // in 10 while the handover itself worked 7 times.
+    done: g => (g.delivered?.size ?? 0) > 0,
+    read: (g, goal) => {
+      const p = g.parcel;
+      const legs = p?.legs?.length ?? goal.legs ?? 2;
+      if (!p) return { have: 0, want: legs, text: 'the load has not been handed over yet' };
+      if (g.delivered?.size) return { have: legs, want: legs, text: `${goal.what ?? 'the load'} is there` };
+      const on = p.layer === 'roads' ? 'by road' : 'on the metro';
+      return { have: p.leg, want: legs, text: `leg ${p.leg + 1} of ${legs}, ${on}` };
+    },
   },
   // the money layers. Needs an economy, which does not exist yet.
   budget: {
@@ -74,7 +87,7 @@ const fmt = clockFmt;
 
 // What this build of the sim can actually do. Grows as layers arrive; a goal
 // naming anything outside it is refused rather than quietly impossible.
-export const CAPABILITIES = new Set(['delivery', 'clock', 'crowding']);
+export const CAPABILITIES = new Set(['delivery', 'clock', 'crowding', 'payload']);
 
 export function validate(m, caps = CAPABILITIES) {
   const bad = [];
@@ -88,6 +101,65 @@ export function validate(m, caps = CAPABILITIES) {
   if (bad.length) throw new Error(`mission "${m.id}": ${bad.join('; ')}`);
   return m;
 }
+
+// ── the campaign, in chapters ───────────────────────────────────────────
+// Owner's direction, 2026-08-26: **the cities are the campaign**, and the
+// abstract boards are secondary. Chapter one is Helsinki, played on the real
+// network; Nagoya is two, New York three, Tokyo four.
+//
+// A chapter is a CITY, and the difference that makes is the whole point of the
+// mode. On an abstract board the map is rolled from a seed and a stop is a
+// shape and nothing else. In a chapter the board is a place: the water is
+// Töölönlahti, the interchange is Hakaniemi, and the seed decides only who is
+// standing on the platform. That is why the chapters are the spine now — the
+// abstract missions teach a layer, and a chapter is somewhere you have been.
+//
+// `pack` names the file under `cities/`. A chapter with no pack yet is LISTED
+// AND LOCKED rather than hidden: the order is the owner's plan and a plan you
+// cannot see is not a plan. `blocked` says why, in words a player can read.
+export const CHAPTERS = [
+  {
+    n: 1,
+    id: 'helsinki',
+    pack: 'helsinki',
+    title: 'Helsinki',
+    subtitle: 'Rautatientori → Pasila',
+    brief:
+      'The real network, from the main station up through Kallio and Vallila to Pasila. '
+      + 'Twenty live services, the water where the water is, and every stop under its own name.',
+  },
+  {
+    n: 2,
+    id: 'nagoya',
+    pack: 'nagoya',
+    title: 'Nagoya',
+    subtitle: '名古屋市営地下鉄',
+    brief: 'Six subway lines under a grid city, and the Meijō line that runs in a complete circle.',
+    blocked: 'the network has not been brought in yet',
+  },
+  {
+    n: 3,
+    id: 'newyork',
+    pack: 'newyork',
+    title: 'New York',
+    subtitle: 'the one with express tracks',
+    brief: 'Where a line can overtake itself, and the map has to say which train stops where.',
+    blocked: 'the network has not been brought in yet',
+  },
+  {
+    n: 4,
+    id: 'tokyo',
+    pack: 'tokyo',
+    title: 'Tokyo',
+    subtitle: '山手線の内側',
+    brief: 'Thirteen subway lines under a loop that is not a subway at all.',
+    blocked: 'the network has not been brought in yet',
+  },
+];
+
+export const chapters = () => CHAPTERS;
+export const chapterOf = m => CHAPTERS.find(c => c.id === m?.chapter) ?? null;
+export const chapterMissions = id => MISSIONS.filter(m => m.chapter === id).sort((a, b) => a.order - b.order);
 
 // ── the missions ────────────────────────────────────────────────────────
 
@@ -196,9 +268,220 @@ export const MISSIONS = [
     fail: { overcrowd: 50 },
     giveUp: 60,
   },
+
+  {
+    id: 'transfer',
+    mode: 'mission',
+    order: 3,
+    // BOTH layers, running at once. Not a toggle between two boards: the trains
+    // call while the cars drive, both feeding the same platforms, and the city
+    // you are not looking at keeps needing you. That is the owner's call, and
+    // it is the only version where handing a load over costs anything —
+    // stopping the world to deal with the parcel would make the transfer a
+    // cutscene rather than a decision.
+    layers: ['metro', 'roads'],
+    title: 'The Handover',
+    brief:
+      'One load, two networks. The metro takes it as far as the interchange and a van has to '
+      + 'take it on from there — while the rest of the city carries on wanting things.',
+    length: 480,
+    clock: { unit: 60, units: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'], cycle: 8, cycleWord: 'shift', upgradeEvery: 120 },
+    board: { w: 860, h: 600, maxStations: 16, minGap: 92, margin: 56, firstStation: 11 },
+    spawn: {
+      // ordinary traffic keeps coming, because the parcel competing for the
+      // same trains is the whole tension. Quieter than the endless city: two
+      // networks to keep up with is already work.
+      base: 0.34, ramp: 320, cap: 1.0,
+      stationEvery: [20, 26], specialsAfter: 150, specialChance: 0.15,
+      bursts: [],
+    },
+    // both layers' resources in one purse, because they are one mission
+    resources: { lines: 3, trains: 3, tunnels: 2, road: 30, cars: 12, bridge: 2 },
+    // A LOAD, not a passenger: it names the layer for each leg, so the metro
+    // may carry it to the interchange and only a van may take it on. `at` is
+    // when it turns up — late enough that there is a city to move it through.
+    parcel: { at: 45, label: 'the load', legs: 3 },
+    // TWO goals, and the second one is the mission. Escort alone was won at 74
+    // seconds of eight minutes: a well-joined network moves one load almost at
+    // once, so "get the load there" is a tutorial rather than a shift. The
+    // delivery target is what makes neglect cost something — you cannot build
+    // one corridor for the parcel and let the rest of the city rot, which is
+    // the entire reason both layers run at the same time.
+    // 120, measured. Swept against the escort: at 120 the seven boards that get
+    // the load through are the seven that win, so the mission is decided by the
+    // handover and not by the counter — which is what it is about. At 160 two
+    // more are lost to the target instead, and at 240 only two survive at all.
+    goals: [{ type: 'escort', what: 'the load' }, { type: 'deliver', n: 120 }],
+    fail: { overcrowd: 45 },
+    giveUp: 55,
+  },
+
+  {
+    id: 'busline',
+    mode: 'mission',
+    order: 4,
+    // THE STREETS ARE SHARED. The car layer lays them and the bus layer runs on
+    // them, which is why both are named: a bus board without cars would be a
+    // metro board with a longer word for it. The owner's call — the bus is the
+    // public one, and it is the layer a real city's live data can be poured
+    // into later (CITIES.md), so it is the one worth having.
+    layers: ['roads', 'bus'],
+    title: 'The Number 7',
+    brief:
+      'The same streets, twice over. Cars take the short hops and pick their own way; '
+      + 'anything further is waiting for a bus, and a bus goes exactly where you draw it — '
+      + 'through the traffic you just made room for.',
+    length: 420,
+    clock: { unit: 60, units: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00'], cycle: 7, cycleWord: 'morning', upgradeEvery: 105 },
+    board: { w: 860, h: 600, maxStations: 15, minGap: 94, margin: 58, firstStation: 10 },
+    spawn: {
+      base: 0.46, ramp: 600, cap: 0.85,
+      stationEvery: [24, 32], specialsAfter: 190, specialChance: 0.12,
+      bursts: [],
+    },
+    // `carRange` is the whole balance of this mission in one number: how far
+    // anybody is willing to DRIVE, in squares. Infinity everywhere else, so it
+    // changes nothing on the boards that have no bus. Here it is short, which
+    // is what gives the bus a job — without it the cars quietly deliver the
+    // whole town and the routes are decoration.
+    // MEASURED, and the measurement is the mission's argument. With 16 boards
+    // played by a bot that joins every new building to the nearest road and
+    // grows its routes by nearest stop:
+    //
+    //   cars only, no routes at all …… 0 wins in 16, 454 delivered in total
+    //   buses only (`carRange` 0) …… 5 wins,  1468
+    //   both, as shipped ……………………… 12 wins,  1892
+    //
+    // So the bus carries the town and the cars are the last mile, which is
+    // what the mission says it is about. If a change makes the first line win
+    // anything, the routes have become decoration and the number to look at is
+    // `carRange`.
+    //
+    // The road allowance is deliberately generous next to The Rush's 34: every
+    // square is doing two jobs here, and at 40 the boards died at two minutes
+    // with six stops joined and a queue at all of them.
+    resources: { road: 70, cars: 10, bridge: 2, routes: 3, buses: 6, carRange: 7 },
+    // 140 wins 12 boards in 16 — the same rate The Rush is tuned to. Twelve of
+    // the sixteen never see the final whistle at all: this is a mission you
+    // lose to the crowd, not to the clock.
+    goals: [{ type: 'deliver', n: 140 }],
+    fail: { overcrowd: 60 },
+    giveUp: 60,
+  },
+
+  // ── CHAPTER ONE · HELSINKI ────────────────────────────────────────────
+  // Three missions on one real board. They share a city and differ in what
+  // they ask of it, which is the argument for chapters: you learn a place
+  // rather than a seed, and by the third one you know where the water is.
+  //
+  // `city` names the pack; `cityFit` is how it is fitted to the board.
+  // `minGap` is the one number that matters there — central Helsinki puts tram
+  // stops 100 m apart, which is closer than a station is drawn, so the rank is
+  // thinned and the busiest survive.
+
+  {
+    id: 'hel-aamu',
+    mode: 'mission',
+    chapter: 'helsinki',
+    order: 1,
+    city: 'helsinki',
+    cityFit: { metres: 120, byName: false, minGap: 60 },
+    layer: 'metro',
+    title: 'Aamuruuhka',
+    brief:
+      'The morning rush, on the real thing. Rautatientori, Hakaniemi, Sörnäinen — '
+      + 'the stops open as the network grew, busiest first, and the bay in the middle '
+      + 'is where the bay is.',
+    length: 420,
+    clock: { unit: 60, units: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00'], cycle: 7, cycleWord: 'morning', upgradeEvery: 105 },
+    board: { w: 860, h: 600, maxStations: 14, minGap: 60, margin: 52, firstStation: 14 },
+    spawn: {
+      base: 0.42, ramp: 300, cap: 1.3,
+      stationEvery: [22, 30], specialsAfter: 0, specialChance: 0,
+      bursts: [],
+    },
+    resources: { lines: 3, trains: 3, tunnels: 2 },
+    // Measured over ten seeds with a bot that keeps every stop on some line:
+    // 165 182 190 316 318 321 328 334 339 341. 190 wins eight of ten, which is
+    // the right shape for the first mission of the first chapter — it is where
+    // you learn that the board is a place. Every seed sees the final whistle,
+    // so this one is lost to the clock and not to the crowd.
+    goals: [{ type: 'deliver', n: 190 }],
+    fail: { overcrowd: 50 },
+    giveUp: 60,
+  },
+
+  {
+    id: 'hel-pitkasilta',
+    mode: 'mission',
+    chapter: 'helsinki',
+    order: 2,
+    city: 'helsinki',
+    cityFit: { metres: 120, byName: false, minGap: 52 },
+    layer: 'metro',
+    title: 'Pitkäsilta',
+    brief:
+      'The Long Bridge. Kallio is across the water from the centre and always has been — '
+      + 'every crossing costs, and there are more stops than there is city to hold them.',
+    length: 480,
+    clock: { unit: 60, units: ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'], cycle: 8, cycleWord: 'shift', upgradeEvery: 120 },
+    board: { w: 860, h: 600, maxStations: 20, minGap: 52, margin: 48, firstStation: 12 },
+    spawn: {
+      base: 0.5, ramp: 260, cap: 1.6,
+      stationEvery: [18, 24], specialsAfter: 0, specialChance: 0,
+      bursts: [],
+    },
+    // Two tunnels for a city cut in half by a bay — the crossings are the
+    // mission, and the upgrade weeks are where a third one comes from.
+    resources: { lines: 4, trains: 4, tunnels: 2 },
+    // same ten seeds: 128 141 168 244 250 256 258 280 299 310 → 244 wins seven
+    goals: [{ type: 'deliver', n: 244 }],
+    fail: { overcrowd: 45 },
+    giveUp: 55,
+  },
+
+  {
+    id: 'hel-ratikka',
+    mode: 'mission',
+    chapter: 'helsinki',
+    order: 3,
+    city: 'helsinki',
+    cityFit: { metres: 120, byName: false, minGap: 60 },
+    // All three layers on a real city, which is the thing the whole mode was
+    // built for: Helsinki really does run trams, a metro and traffic over the
+    // same ground, and here they share a board.
+    layers: ['metro', 'roads', 'bus'],
+    title: 'Ratikka ja auto',
+    brief:
+      'The tram and the car. Rail, streets and bus routes over the same Helsinki — '
+      + 'the roads you lay for the traffic are the roads your buses are stuck in.',
+    length: 480,
+    clock: { unit: 60, units: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00'], cycle: 8, cycleWord: 'morning', upgradeEvery: 120 },
+    board: { w: 860, h: 600, maxStations: 16, minGap: 60, margin: 52, firstStation: 13 },
+    spawn: {
+      base: 0.44, ramp: 320, cap: 1.2,
+      stationEvery: [22, 28], specialsAfter: 0, specialChance: 0,
+      bursts: [],
+    },
+    resources: { lines: 3, trains: 3, tunnels: 2, road: 44, cars: 10, bridge: 2, routes: 2, buses: 4, carRange: 7 },
+    // 137 149 154 162 162 174 178 182 187 210 → 162 wins seven. Lower than
+    // Aamuruuhka on purpose and by measurement: three layers over one city is
+    // harder than one layer over it, whatever the order of the missions says.
+    goals: [{ type: 'deliver', n: 162 }],
+    fail: { overcrowd: 50 },
+    giveUp: 60,
+  },
 ];
 
 export const byId = id => MISSIONS.find(m => m.id === id);
-export const campaign = () => MISSIONS.filter(m => m.order != null).sort((a, b) => a.order - b.order);
+
+// THE SPINE IS THE CHAPTERS. The abstract boards are still here and still
+// worth playing — they are where a layer is taught with nothing else in the
+// way — but they are no longer the campaign, and `sandbox()` is what the
+// screen calls them.
+export const campaign = () =>
+  CHAPTERS.flatMap(c => chapterMissions(c.id));
+export const sandbox = () =>
+  MISSIONS.filter(m => !m.chapter).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 
 for (const m of MISSIONS) validate(m);
