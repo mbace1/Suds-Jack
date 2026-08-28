@@ -8,7 +8,7 @@
 // the silhouette is not a ruler. Same shapes, biome by biome; only the sixteen
 // colours underneath them change.
 
-import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=53';
+import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=53a';
 import { C } from './palette.js?v=52';
 import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=53';
 
