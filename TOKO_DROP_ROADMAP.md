@@ -120,7 +120,10 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 
 ## Phase 5 — Early Access launch
 
-- [ ] itch.io page: embed, copy, capture GIFs (`scripts/enemy-loop.mjs` records them)
+- [ ] itch.io page: embed *(copy + GIFs done — v231, `toko-drop/press/PRESS.md`:
+      one-liner, itch.io short/long description, features, controls, tech
+      notes, 4 real screenshots + 2 `enemy-loop.mjs` GIFs. Actually creating
+      the itch.io page/embed is a manual step outside this repo)*
 - [ ] Pages build tagged Early Access, changelog surfaced in-game
 - [ ] Feedback channel *(the v212 contextual death-screen question is the
       in-game half; the hub feedback button is the other)*
