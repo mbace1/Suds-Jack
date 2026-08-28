@@ -9,30 +9,30 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=48';
-import { Input } from './input.js?v=48';
-import { Level, ROOMS, LAB } from './level.js?v=48';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=50';
+import { Input } from './input.js?v=50';
+import { Level, ROOMS, LAB } from './level.js?v=50';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=48';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=48';
-import { Camera } from './camera.js?v=48';
-import { buildKidModel, Kid, Player } from './kid.js?v=48';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=48';
-import { buildCraneModel, Crane } from './crane.js?v=48';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=48';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=48';
-import { Hoist } from './hoist.js?v=48';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=48';
-import { WreckingBall } from './hazards.js?v=48';
-import { AudioKit } from './audio.js?v=48';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=48';
-import { craftMat, craftBox } from './craft.js?v=48';
-import { t as tr } from './lang.js?v=48';
-import { showIntro } from './intro.js?v=48';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=48';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=48';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=48';
+} from './pieces.js?v=50';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=50';
+import { Camera } from './camera.js?v=50';
+import { buildKidModel, Kid, Player } from './kid.js?v=50';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=50';
+import { buildCraneModel, Crane } from './crane.js?v=50';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=50';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=50';
+import { Hoist } from './hoist.js?v=50';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=50';
+import { WreckingBall } from './hazards.js?v=50';
+import { AudioKit } from './audio.js?v=50';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=50';
+import { craftMat, craftBox } from './craft.js?v=50';
+import { t as tr } from './lang.js?v=50';
+import { showIntro } from './intro.js?v=50';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=50';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=50';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=50';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -783,6 +783,28 @@ async function boot() {
       // is read by the shipping game.
       lamps: () => diorama.lamps,
       dressingBuilders: () => diorama.dressingBuilders,
+      // Four more, for the SAME reason and the SAME rule: the editor's
+      // GAMEPLAY layer needs somewhere to place a robot or a vent, the room
+      // group they have to be parented to for teardown to find them, and
+      // the live arrays the update loop actually walks — `robots()` and
+      // `vents()` two lines up hand back a mapped SNAPSHOT, which is right
+      // for a debug readout and useless for pushing a new one in. None of
+      // these four is read by the shipping game.
+      robotsLive: () => site.robots,
+      ventsLive: () => site.vents,
+      roomGroup: () => site.group,
+      levelObj: () => site.level,
+      // The CLASSES themselves, not just the arrays — a fresh `import()`
+      // from the dev page runs in the TOP PAGE's own module registry,
+      // which is a DIFFERENT instance of robots.js (and of 'three' inside
+      // it) than the one this file already has loaded. A `Robot` built
+      // from that copy is still duck-type compatible with everything HERE
+      // that walks `site.robots`, but it is exactly the kind of two-
+      // instances trap this project keeps finding, so the working copy is
+      // handed over instead of inviting the editor to load a second one.
+      Robot: () => Robot,
+      SteamVent: () => SteamVent,
+      loadRobotAsset: (kind) => loadRobotAsset(kind),
       // a room change is not finished when the index flips — goSite() still
       // has to put the kid on the new spawn, so anything positioning him
       // must wait for this

@@ -23,7 +23,7 @@ import {
   machine, robot, hopper, roller, swingBall, hazard, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, hoist,
   boltRun, boltArc, boltCol, shallow, GROUND,
-} from './parts.js?v=48';
+} from './parts.js?v=50';
 
 // THE TRAIL IS THE LEVEL TALKING, so it cannot be the same trail in six
 // levels. What was here was four quiet 25-bolt blocks — 100 exactly, laid at

@@ -1,5 +1,61 @@
 # EERI — versions
 
+## v15.43 — 2026-08-27 — GAMEPLAY places live, and PICK was never really reaching it
+
+The editor's GAMEPLAY layer moves from reference to real: a skitter,
+hopper, roller, bucket bot or steam vent now PLACES for real, the exact
+same way lamps and world 2's pipe vocabulary already do — click the
+palette entry, click the picture, and a genuine `Robot`/`SteamVent` is
+pushed onto the SAME live array (`site.robots` / `site.vents`) the update
+loop already walks every frame. A placed one patrols, stomps and blows
+like any other, because it IS any other. COPY hands back a real
+`robot(12.6, 14.6, 'hopper', 8),` line — a `parts.js` CALL, not the
+`{prop, x, y}` object shape scenery rows use, since that object is not a
+thing `rooms.js` reads and handing it back would read as pasteable when
+it is not.
+
+**Building it surfaced a bug that was never about gameplay placement at
+all: PICK has likely never reliably reached anything behind the diorama.**
+`intersectObjects` tests the full geometric plane of every mesh it is
+given, alpha or not — a diorama lane is a texture on a big flat quad, and
+the FORE lane sits at z 2.2, nearer the camera than the kid, every
+machine, every enemy. A click anywhere on the picture hit that plane
+first, however empty the pixel looked, and PICK silently selected the
+backdrop instead. Worlds without a foreground lane, or a click that
+happened to land on a genuinely transparent gap, would have looked fine —
+which is exactly how this stayed invisible through the whole editor
+rebuild. The fix: candidates fed to `intersectObjects` now exclude every
+diorama lane except the one currently selected (`pickableUnder()`), which
+is also the fix for picking WITHIN an art lane past a nearer, dimmed one.
+
+**Two more, found chasing the first one down:**
+
+- A robot's SHADOW is a SIBLING of its group, not a child of it (robots.js
+  adds both straight to the room) — a ray landing on the shadow, a large
+  flat disc right under the robot and an easy thing to hit, found no
+  ancestor tag and picked nothing useful. It carries the same
+  `liveEntity` tag now, and picking either one always resolves to
+  `entity.group` — the object `update()` actually repositions from `.x`/
+  `.y` every frame, so selecting anything else would have silently
+  snapped back the instant the next frame ran.
+- `scene.remove()` on an undone SPAWN was a no-op for anything that was
+  not a direct child of the scene — true for a lamp, false for a
+  world2-dressing prop (parented to that module's own group) — so undoing
+  a placed pipe stack looked like it worked and left the mesh sitting
+  there. `parent.remove()` now, which is correct regardless of how deep
+  the thing actually lives.
+
+Two classes never call into the top page's own module registry, unlike
+everything placed before them: `A.debug.Robot()` / `SteamVent()` /
+`loadRobotAsset()` hand back the SAME instances `main.js` already has
+loaded, the same reason `dressingBuilders()` exists — an `import()` run
+from `dev/inspector.js` resolves in the TOP PAGE's own realm, which is a
+SECOND copy of `robots.js` (and of `three` inside it) than the one the
+iframe is actually running, and the first cut of this built robots out of
+that copy before anything caught it.
+
+Gates: rooms 248, fx 31, dev-menu 36; smoke and playthrough re-run below.
+
 ## v15.42 — 2026-08-27 — a playtest screenshot, four fixes
 
 One screenshot of Level 1-2 (THE SCAFFOLD) carried four separate notes.
