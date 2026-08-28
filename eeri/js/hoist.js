@@ -23,8 +23,8 @@
 // run — a much larger argument, and one nothing needs yet.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=52';
-import { craftMat, craftBox } from './craft.js?v=52';
+import { PAL } from './palette.js?v=53';
+import { craftMat, craftBox } from './craft.js?v=53';
 
 export class Hoist {
   // `def` is the part's own record: { c0, c1, cy0, cy1, period }
@@ -99,9 +99,12 @@ export class Hoist {
     this.cable.position.set(0, span / 2, 0);
   }
 
-  // what `Player`'s platform pass reads. Deliberately loose scalars, the
-  // same shape `Robot.landedOn` uses, so the player never learns what kind
-  // of thing is carrying it.
-  get top() { return this.y; }
+  // what `Player`'s platform pass reads. `top(x)` takes a column because
+  // `js/plank.js` shares this contract and a tipped plank's surface height
+  // genuinely depends on where you are standing on it — a hoist's deck does
+  // not, so it ignores the argument. Deliberately loose scalars otherwise,
+  // the same shape `Robot.landedOn` uses, so the player never learns what
+  // kind of thing is carrying it.
+  top() { return this.y; }
   overlaps(x, hw) { return Math.abs(x - this.x) < this.hw + hw; }
 }

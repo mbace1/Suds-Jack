@@ -31,9 +31,9 @@ import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm, sheet,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, shallow, deep, pipe,
-  bucketBot, hoist,
+  bucketBot, hoist, plank,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=52';
+} from './parts.js?v=53';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -265,7 +265,10 @@ export const ROOMS = [
   // ── LEVEL 4 / WORLD 2-1 — THE WET TRENCH ────────────────────────────
   // WATER is the one new idea. Shallow water first slows the run with no
   // threat; deep water then asks for the same jump the player already owns
-  // and returns Eeri to the near lip rather than hurting him.
+  // and returns Eeri to the near lip rather than hurting him. THE PLANK, in
+  // beat 3, is the one water crossing too wide to jump — DESIGN's own
+  // gizmo for this world, not a second idea: it is still water as the
+  // floor, just the floor that gives.
   //
   // The excavator/bank at the peak is intentionally a GREYBOX PROXY for the
   // planned pump/flooded-trench ride. It uses a verb already proved in World
@@ -296,32 +299,37 @@ export const ROOMS = [
       deep(35, 36),
       boltArc(5, 34, 37, 2),
       golden(7, [35]),
-      boltRun(5, 38, 45),
-      boltRun(6, 38, 45),
-      checkpoint(46),
+      boltRun(5, 38, 41),
+      boltRun(6, 38, 41),
+      checkpoint(42),
 
-      // ── 3 · COMBINE ── wade, regain dry footing, jump the deep channel,
-      // then meet a roller on the far bank. The dry strip before the jump is
-      // deliberate: this is a reading/timing test, not a speed-budget trap.
-      shallow(48, 50),
-      boltRun(5, 48, 50),
-      boltRun(6, 48, 50),
-      boltRun(5, 51, 52),
-      boltRun(6, 51, 52),
-      deep(54, 55),
-      boltArc(5, 53, 56, 2),
-      roller(59, 64),
-      boltRun(5, 59, 64),
-      boltRun(6, 59, 64),
+      // ── 3 · COMBINE ── wade, regain dry footing, then THE PLANK: a
+      // trench too wide to jump dry (7 tiles against a 4.85-tile running
+      // jump) — DESIGN's own gizmo for this world. No held verb, no
+      // cycle: standing anywhere but centre sinks that side, so crossing
+      // is one committed walk through the tip. A roller waits on the far
+      // bank, so arriving still moving is the whole point.
+      shallow(44, 46),
+      boltRun(5, 44, 46),
+      boltRun(6, 44, 46),
+      boltRun(5, 47, 48),
+      boltRun(6, 47, 48),
+      deep(49, 55),
+      plank(49, 55, GROUND),
+      boltRun(5, 49, 55),
+      boltRun(7, 51, 55),
+      roller(58, 63),
+      boltRun(5, 58, 63),
+      boltRun(6, 58, 63),
 
       // ── 4 · TEST / RIDE ── familiar tool use, new context. For this
       // greybox the tall silt bank stands in for the flooded trench lock.
-      machine('excavator', 68, [60, 92]),
-      boltRun(5, 67, 70),
-      bank(82, 86, 3),
-      boltRun(5, 88, 91),
-      golden(7, [90]),
-      flagAt(93),
+      machine('excavator', 67, [59, 91]),
+      boltRun(5, 66, 69),
+      bank(81, 85, 3),
+      boltRun(5, 87, 90),
+      golden(7, [89]),
+      flagAt(92),
 
       shot(12, 32, { z: 38, y: 3.0 }),
       shot(32, 60, { z: 40.5, y: 3.3, lead: 1.8 }),
