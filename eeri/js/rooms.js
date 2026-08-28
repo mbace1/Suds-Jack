@@ -33,7 +33,7 @@ import {
   girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, shallow, deep, pipe,
   bucketBot, hoist, plank,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=53';
+} from './parts.js?v=54';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────

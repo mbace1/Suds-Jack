@@ -423,8 +423,8 @@ export class Inspector {
       // both — as this file's first cut did, copying the shape of an
       // older draft of `rooms.mjs` — double-counted worlds 3-4 into an
       // 18-level list and broke every level-index lookup after level 6.
-      const { labelOf } = await import('../js/levelid.js?v=53');
-      const { ROOMS } = await import('../js/rooms.js?v=53');
+      const { labelOf } = await import('../js/levelid.js?v=54');
+      const { ROOMS } = await import('../js/rooms.js?v=54');
       this.levels = ROOMS.map((r, i) => ({ i, label: labelOf(i, ROOMS.length), name: r.name }));
     } catch { this.levels = []; }
     if (!this.el.hidden) this.syncLevel();
@@ -764,7 +764,7 @@ export class Inspector {
     if (this.pendingProp === 'lamp') row.z = z;
     let made = null;
     if (this.pendingProp === 'lamp') {
-      import('../js/light.js?v=53').then(({ buildLamp }) => {
+      import('../js/light.js?v=54').then(({ buildLamp }) => {
         made = buildLamp(A.THREE, row);
         made.userData.sceneryRow = { world: A.debug.world(), index: -1, ...row };
         A.scene.add(made);

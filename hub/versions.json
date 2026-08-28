@@ -40,8 +40,8 @@
     "from": "VERSIONS.md"
   },
   "eeri": {
-    "v": "15.48",
-    "n": 15048,
+    "v": "15.49",
+    "n": 15049,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
@@ -52,7 +52,7 @@
   "kindling": {
     "v": "9",
     "n": 9000,
-    "from": "canonical Kindling release"
+    "from": "VERSIONS.md"
   },
   "radiofree": {
     "v": "37",

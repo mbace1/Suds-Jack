@@ -23,12 +23,12 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=53';
-import { getLayerTexture } from './assets.js?v=53';
-import { buildGroundworksDressing } from './world1-dressing.js?v=53';
-import { buildPipeworksDressing } from './world2-dressing.js?v=53';
-import { placeScenery } from './scenery.js?v=53';
-import { applyMood, buildLamp, flicker } from './light.js?v=53';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=54';
+import { getLayerTexture } from './assets.js?v=54';
+import { buildGroundworksDressing } from './world1-dressing.js?v=54';
+import { buildPipeworksDressing } from './world2-dressing.js?v=54';
+import { placeScenery } from './scenery.js?v=54';
+import { applyMood, buildLamp, flicker } from './light.js?v=54';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -544,17 +544,30 @@ const PLACEHOLDER_DRAW = {
 
 // ---- the background WORKS (ART_BRIEF §3.5) -------------------------------
 // "Depth you watch, not just parallax you scroll." One event per screen,
-// slow, never competing with the playfield. These are meshes rather than
-// paint because they move; they are tinted to their layer's depth so they
-// belong to it, and reduced motion parks them.
-
-function backgroundEvents(scene) {
+// slow, never competing with the playfield.
+//
+// PHASING §3 Phase C asks for ONE AUTHORED CAMERA MOMENT PER WORLD — "a
+// drift, a background machine event, a silhouette beat" — and until this
+// pass every world got the SAME pair (a crane, a truck spanning the WHOLE
+// level), which is the opposite of "one moment": an ambient loop present
+// everywhere is scenery, not a beat you arrive at. So each world now gets
+// its OWN event, in its own theme, and `moment` (below) names the one x
+// window main.js reacts to with a small `cam.punch()` as you walk into it
+// — the thing that makes it read as a CAMERA moment and not just a prop
+// that happens to move. These are meshes rather than paint because they
+// move; they are tinted to their layer's depth so they belong to it, and
+// reduced motion parks them (buildLayers().update already gates that).
+function backgroundEvents(scene, world) {
   const events = [];
   const T = (c, t) => mix(c, PAL.SKY_PALE, t);
-  const M = (c) => new THREE.MeshBasicMaterial({ color: c });
+  const M = (c, opts) => new THREE.MeshBasicMaterial({ color: c, ...opts });
+  let moment = null;   // { x, radius } — the one beat main.js can react to
 
-  // a tower crane traversing a load across the skyline
-  {
+  // groundworks — a tower crane traversing a load across the skyline. The
+  // original event and still the right one: World 1 IS "the tower" (see
+  // clockout.js's BUILDING table), so a crane swinging stock into it is
+  // the site's own job, not set dressing borrowed from somewhere else.
+  if (world === 'groundworks') {
     const g = new THREE.Group();
     const c = T(mix(PAL.MACHINE_DK, PAL.STEEL[3], 0.35), LAYER_TINT.SKYLINE);
     const line = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 9), M(c));
@@ -563,34 +576,94 @@ function backgroundEvents(scene) {
     load.position.y = -9.4; g.add(load);
     g.position.set(74, 23.4, LAYER_Z.SKYLINE + 0.2);
     scene.add(g);
-    events.push({ obj: g, x0: 66, x1: 86, speed: 0.55, dir: 1 });
+    events.push({ kind: 'traverse', obj: g, x0: 66, x1: 86, speed: 0.55, dir: 1 });
+    moment = { x: 76, radius: 12 };
   }
 
-  // a dump truck crossing the far road
-  {
+  // pipeworks — a valve stack vents a puff of steam on a slow cycle. Not a
+  // drift: a BEAT, silence then a release, which is what a pressure system
+  // actually does and reads as "a background machine event" rather than
+  // ambient motion. Tinted into the world's own cool MOOD (light.js) so the
+  // puff reads as this world's weather, not a sticker on top of it.
+  if (world === 'pipeworks') {
     const g = new THREE.Group();
-    const body = T(PAL.MACHINE, LAYER_TINT.FAR);
-    const dark = T(PAL.DARK, LAYER_TINT.FAR);
-    const bed = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.1), M(body));
-    bed.position.set(-0.5, 0.85, 0); g.add(bed);
-    const cab = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.2), M(body));
-    cab.position.set(1.6, 0.9, 0); g.add(cab);
-    for (const wx of [-1.5, 0.2, 1.7]) {
-      const w = new THREE.Mesh(new THREE.CircleGeometry(0.42, 10), M(dark));
-      w.position.set(wx, 0.35, 0.01); g.add(w);
-    }
-    g.position.set(-16, 3.3, LAYER_Z.FAR + 0.3);
+    const c = T(PAL.STEEL[1], LAYER_TINT.FAR);
+    const stack = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 3.4), M(c));
+    stack.position.y = 1.7; g.add(stack);
+    const wheel = new THREE.Mesh(new THREE.CircleGeometry(0.5, 10), M(T(PAL.MACHINE_DK, LAYER_TINT.FAR)));
+    wheel.position.set(0, 3.6, 0.01); g.add(wheel);
+    const puff = new THREE.Mesh(new THREE.CircleGeometry(1, 12),
+      M(T(PAL.CLOUD, LAYER_TINT.FAR), { transparent: true, opacity: 0 }));
+    puff.position.set(0, 4.3, 0.02); puff.scale.setScalar(0.2); g.add(puff);
+    g.position.set(46, 3.2, LAYER_Z.FAR + 0.25);
     scene.add(g);
-    events.push({ obj: g, x0: -18, x1: 118, speed: 3.4, dir: 1 });
+    events.push({ kind: 'puff', obj: g, puff, phase: 0, period: 4.5, hold: 0.35 });
+    moment = { x: 46, radius: 12 };
+  }
+
+  // grove — a bird glides across the open sky above the canopy line. World
+  // 3's own dressing (`world34-rooms.js`) already paints real trees with
+  // real depth and detail at MID/NEAR; a code-drawn canopy sitting among
+  // them read as a flat sticker next to hand-painted foliage — the first
+  // cut of this event tried exactly that and it was the wrong call. A
+  // silhouette against open SKYLINE has nothing painted to lose a
+  // comparison to, which is the actual reason "a silhouette beat" is in
+  // PHASING's own list of valid shapes for this alongside a background
+  // event: it is the shape that survives sitting next to real art.
+  if (world === 'grove') {
+    const g = new THREE.Group();
+    const c = T(mix(PAL.EARTH[0], PAL.INK, 0.5), LAYER_TINT.SKYLINE);
+    // two wings as one shallow chevron — the simplest shape that reads as
+    // a bird rather than a stray leaf, at a distance and in silhouette.
+    // DoubleSide because the flight turn spins the group 180° about Y to
+    // face the way it is flying, which points a single-sided plane's back
+    // at the camera on every other pass.
+    for (const side of [-1, 1]) {
+      const wing = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.14), M(c, { side: THREE.DoubleSide }));
+      wing.position.set(side * 0.42, 0, 0);
+      wing.rotation.z = side * 0.5;
+      g.add(wing);
+    }
+    g.position.set(38, 13, LAYER_Z.SKYLINE + 0.15);
+    scene.add(g);
+    events.push({ kind: 'bird', obj: g, x0: 20, x1: 72, speed: 2.4, dir: 1, t: 0 });
+    moment = { x: 45, radius: 18 };
+  }
+
+  // nightshift — a floodlight sweeps the depot's dark silhouette. The one
+  // explicit "silhouette beat" example PHASING names, and the clearest
+  // payoff for MOOD.nightshift's cold-far/warm-near split (light.js): a
+  // warm beam is only dramatic against a scene already read as dark.
+  if (world === 'nightshift') {
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.9), M(T(PAL.DARK, LAYER_TINT.FAR)));
+    base.position.set(0, 4.6, 0); g.add(base);
+    // pivoted at its OWN bottom edge (the geometry is shifted, not the
+    // mesh), sitting at the floodlight's y, so rotating the mesh sweeps
+    // the beam through the base rather than around the screen's origin
+    const beam = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.22, 11),
+      M('#ffdb8a', { transparent: true, opacity: 0.4 }),
+    );
+    beam.geometry.translate(0, 5.5, 0);
+    beam.position.set(0, 4.6, 0.01);
+    g.add(beam);
+    g.position.set(50, 0, LAYER_Z.FAR + 0.25);
+    scene.add(g);
+    events.push({ kind: 'sweep', obj: g, beam, angle: 0 });
+    moment = { x: 50, radius: 12 };
   }
 
   return {
-    // the crane and the truck are meshes too, and they belong to whichever
-    // world mounted them — see buildLayers().dispose
+    // every event's meshes belong to whichever world mounted them — see
+    // buildLayers().dispose. `e.obj` is always the top GROUP a world adds
+    // to the scene, whatever it moves internally (a puff, a canopy, a
+    // beam) — one consistent shape means dispose never has to ask what
+    // kind of event it is holding.
     dispose() {
       for (const e of events) {
         scene.remove(e.obj);
-        e.obj.traverse?.((o) => {
+        e.obj.traverse((o) => {
           o.geometry?.dispose?.();
           if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
           else o.material?.dispose?.();
@@ -600,17 +673,36 @@ function backgroundEvents(scene) {
     },
     update(dt) {
       for (const e of events) {
-        e.obj.position.x += e.speed * e.dir * dt;
-        if (e.obj.position.x > e.x1) {
-          if (e.speed > 2) e.obj.position.x = e.x0;   // the truck loops round
-          else e.dir = -1;                             // the crane traverses back
-        } else if (e.obj.position.x < e.x0) {
-          e.dir = 1;
+        if (e.kind === 'traverse') {
+          e.obj.position.x += e.speed * e.dir * dt;
+          if (e.obj.position.x > e.x1) e.dir = -1;
+          else if (e.obj.position.x < e.x0) e.dir = 1;
+        } else if (e.kind === 'puff') {
+          e.phase = (e.phase + dt / e.period) % 1;
+          // silent build, a held release, then a fade — a beat, not a loop
+          const rel = e.phase < e.hold ? e.phase / e.hold : 1;
+          const k = e.phase < e.hold ? rel : Math.max(0, 1 - (e.phase - e.hold) / (1 - e.hold));
+          e.puff.scale.setScalar(0.2 + k * 1.6);
+          e.puff.material.opacity = k * 0.55;
+          e.puff.position.y += dt * 0.3 * (e.phase < e.hold + 0.05 ? 1 : 0);
+        } else if (e.kind === 'bird') {
+          e.obj.position.x += e.speed * e.dir * dt;
+          if (e.obj.position.x > e.x1) e.dir = -1;
+          else if (e.obj.position.x < e.x0) e.dir = 1;
+          e.t += dt;
+          // a glide arc, not a straight line — the bob is what tells the
+          // eye "alive" apart from "sliding"
+          e.obj.position.y = 13 + Math.sin(e.t * 1.8) * 0.6;
+          e.obj.rotation.y = e.dir > 0 ? 0 : Math.PI;   // faces the way it flies
+        } else if (e.kind === 'sweep') {
+          e.angle += dt * 0.35;
+          e.beam.rotation.z = Math.sin(e.angle) * 0.55;
         }
       }
     },
     // for the gate: "the background works" is a claim, so it is measurable
     positions: () => events.map((e) => e.obj.position.x),
+    moment,
   };
 }
 
@@ -637,7 +729,7 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
     mounted.push(...planes);
     if (name === 'fore') foreMeshes.push(...planes);
   }
-  const events = backgroundEvents(scene);
+  const events = backgroundEvents(scene, world);
   const dressing = world === 'groundworks' ? buildGroundworksDressing(scene)
     : world === 'pipeworks' ? buildPipeworksDressing(scene) : null;
 
@@ -691,6 +783,10 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
       for (const m of lamps) if (m.userData.flicker) flicker(m, lampT, m.userData.flicker);
     },
     positions: () => events.positions(),
+    // Phase C's "one authored camera moment per world" — the x window
+    // main.js watches to fire one small, one-shot cam.punch() as the
+    // player walks into it. null for a world with no event yet.
+    moment: events.moment,
     // A WORLD IS A SET OF LAYERS, and until World 2 had levels there was
     // only ever one set, built once at boot. Swapping worlds means taking
     // this one down first — every plane, its geometry, its material and

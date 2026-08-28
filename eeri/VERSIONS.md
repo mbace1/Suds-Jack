@@ -1,5 +1,54 @@
 # EERI — versions
 
+## v15.49 — 2026-08-28 — one authored camera moment per world (Phase C)
+
+**PHASING §3 Phase C asks for "one authored camera moment per world — a
+drift, a background machine event, a silhouette beat," budgeted one per
+world, not one per level.** Until this pass every world got the SAME
+pair — a crane and a truck, both spanning the WHOLE level — which is the
+opposite of a moment: an ambient loop present everywhere is scenery, not
+a beat you arrive at. `js/layers.js`'s `backgroundEvents()` is now
+world-aware, and each world gets its own event, in its own theme, at its
+own narrow x window:
+
+- **groundworks** keeps the original tower crane — right the first time,
+  since World 1 IS "the tower" (`clockout.js`'s `BUILDING` table).
+- **pipeworks** gets a valve stack that vents a puff of steam on a
+  silent-build/hold/fade cycle — a BEAT rather than a drift, which is
+  what a pressure system actually does.
+- **grove** gets a bird gliding above the canopy line, in silhouette at
+  SKYLINE depth. The first cut tried a code-drawn tree among World 3's
+  own already-painted foliage and it read as a flat sticker next to real
+  art — replaced before it ever reached a screenshot review, because
+  the wrong shape for "sits next to hand-painted detail" is exactly what
+  PHASING's own "silhouette beat" option exists to avoid.
+- **nightshift** gets a floodlight sweeping the depot's dark silhouette —
+  the one example PHASING names outright, and the clearest payoff for
+  `light.js`'s own MOOD.nightshift cold-far/warm-near split: a warm beam
+  only reads as dramatic against a scene already lit to be dark.
+
+**It is a CAMERA moment, not just a moving prop**, because `main.js` now
+watches for the player crossing each event's home window and fires one
+small, one-shot `cam.punch(0.45)` — gated behind reduced-motion like
+every other camera reaction in this file, and reset once per room so it
+fires again on returning to a world's other levels, the same way the
+event itself is visible in all three.
+
+**One real bug, caught by the DOM rather than the eye:** the bird's group
+position sat at y=20, which projected to the very top edge of the frame
+(NDC y≈0.95) — visible in principle, invisible in practice, sitting under
+the HUD chrome. A screenshot alone read as "something's up there,
+probably fine"; checking the actual projected screen position is what
+caught it. Lowered to y=13, comfortably inside the open sky above the
+canopy.
+
+`node eeri/test/rooms.mjs` 248/248, `fx-smoke.mjs` 31, `dev-menu.mjs` 36,
+`smoke.cjs` 432, `playthrough.cjs` 25 — all green, all four events
+confirmed live and correctly positioned by screenshot (`bg positions`
+debug hook) at their declared world.
+
+`?v=53` → `?v=54` across the module graph.
+
 ## v15.48 — 2026-08-28 — the level editor and the FX pack, on a phone
 
 **Dev tooling only — no gameplay changed.** `dev/inspector.js` (the level
