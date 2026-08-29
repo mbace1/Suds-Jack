@@ -8,6 +8,7 @@ import { drawCentralStation } from './centralstation.js?v=39';
 import { drawKatajanokka } from './katajanokka.js?v=40';
 import { drawHakaniemi } from './hakaniemi.js?v=46';
 import { drawMetro } from './metro.js?v=49';
+import { drawRooftops } from './rooftops.js?v=50';
 import { drawPassersby, drawBroadcastFX } from './broadcastfx.js?v=45';
 
 export const AMBIENT_KEYS = ['metro', 'raintram', 'centralstation', 'hakaniemi', 'katajanokka', 'rooftops', 'nightferry'];
@@ -34,7 +35,7 @@ function raintram(scr,t,d){sky(scr,d,'#08121b','#152733');drawFarCity(scr,t,48);
 function centralstation(scr,t,d){drawCentralStation(scr,t,d);drawPassersby(scr,t,d,113);rain(scr,t,d,18,30,2,.22);rain(scr,t,d,20,64,4,.42);}
 function hakaniemi(scr,t,d){drawHakaniemi(scr,t,d);drawPassersby(scr,t,d,116);rain(scr,t,d,12,31,2,.16);}
 function katajanokka(scr,t,d){drawKatajanokka(scr,t,d);drawPassersby(scr,t,d,119);rain(scr,t,d,10,28,2,.14);}
-function rooftops(scr,t,d){sky(scr,d,'#050b13','#102536');drawFarCity(scr,t*.6,54);scr.px(0,118,W,H-118,mix('#070b0e','#171006',d));const masts=[[18,72,42],[48,64,54],[92,70,46],[112,80,32]];for(let i=0;i<masts.length;i++){const[x,y,h]=masts[i];scr.px(x,y-h,2,h,inkLo(d));for(let yy=y-h+8;yy<y;yy+=10){const half=Math.round((yy-(y-h))*.13);scr.line(x,yy,x-half,yy+7,shade(inkLo(d),.65));scr.line(x,yy,x+half,yy+7,shade(inkLo(d),.65));}const blink=(Math.floor(t*1.8+i)%3)===0;scr.px(x-1,y-h-3,4,3,blink?mix(PAL.GREEN_HOT,PAL.AMBER_HOT,d):shade(inkLo(d),.25));}scr.px(18+((t*7)%96),20,1,82,shade(PAL.GREEN_DIM,.42));}
+function rooftops(scr,t,d){drawRooftops(scr,t,d);}
 function nightferry(scr,t,d){sky(scr,d,'#07111a','#132536');drawFarCity(scr,t*.45,49);for(let y=80;y<H;y+=2)for(let x=0;x<W;x+=2){const wave=Math.sin(x*.11+y*.05+t*.8)*.07;if(bayer(x>>1,y>>1)<.48+wave)scr.px(x,y,2,2,mix('#0a2736','#281c0b',d));}const fx=((t*5)%(W+80))-50;scr.px(fx,76,74,10,mix('#202d34','#362814',d));scr.px(fx+9,59,50,18,mix('#2a3a42','#433219',d));for(let i=0;i<8;i++){const on=((Math.floor(t*1.1)+i)%5)!==0;scr.px(fx+13+i*6,65,3,3,on?shade(inkLo(d),.85):shade(inkLo(d),.25));}}
 const SCENES={metro,raintram,centralstation,hakaniemi,katajanokka,rooftops,nightferry};
 export function drawAmbient(key,scr,t,decode=0){const fn=SCENES[key]||rooftops;fn(scr,t,Math.min(.28,decode*.28));drawBroadcastFX(scr,t,decode);scr.scanlines(PAL.INK,3);}
