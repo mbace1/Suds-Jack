@@ -5,8 +5,9 @@ import { mix, shade, bayer } from './screen.js?v=37';
 import { drawFarCity } from './retrocity.js?v=38';
 import { drawTram } from './tram.js?v=38';
 import { drawCentralStation } from './centralstation.js?v=39';
+import { drawKatajanokka } from './katajanokka.js?v=40';
 
-export const AMBIENT_KEYS = ['metro', 'raintram', 'centralstation', 'rooftops', 'nightferry'];
+export const AMBIENT_KEYS = ['metro', 'raintram', 'centralstation', 'katajanokka', 'rooftops', 'nightferry'];
 const W = 128, H = 152;
 const ink = d => mix(PAL.GREEN, PAL.AMBER, d);
 const inkLo = d => mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d);
@@ -128,9 +129,13 @@ function raintram(scr, t, d) {
 
 function centralstation(scr, t, d) {
   drawCentralStation(scr, t, d);
-  // Atmospheric rain remains a shared overlay, not part of the station art.
   rain(scr, t, d, 18, 30, 2, 0.22);
   rain(scr, t, d, 20, 64, 4, 0.42);
+}
+
+function katajanokka(scr, t, d) {
+  drawKatajanokka(scr, t, d);
+  rain(scr, t, d, 10, 28, 2, 0.14);
 }
 
 function rooftops(scr, t, d) {
@@ -171,7 +176,7 @@ function nightferry(scr, t, d) {
   }
 }
 
-const SCENES = { metro, raintram, centralstation, rooftops, nightferry };
+const SCENES = { metro, raintram, centralstation, katajanokka, rooftops, nightferry };
 
 export function drawAmbient(key, scr, t, decode = 0) {
   const fn = SCENES[key] || rooftops;
