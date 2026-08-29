@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { HELSINKI_ANCHORS, resolveHslAnchors } from '../js/helsinki-anchors.js';
 
 const pack = JSON.parse(fs.readFileSync(new URL('../cities/helsinki.json', import.meta.url), 'utf8'));
 assert.equal(pack.source, 'Helsinki Regional Transport Authority (HSL)');
@@ -27,4 +28,11 @@ const lats = pts.map(p => p[0]), lons = pts.map(p => p[1]);
 assert.ok(Math.max(...lats) - Math.min(...lats) > 0.05, 'network spans well beyond the old central clip north/south');
 assert.ok(Math.max(...lons) - Math.min(...lons) > 0.08, 'network spans well beyond the old central clip east/west');
 
-console.log(`full HSL pack: ${tram.length} tram routes, ${metro.length} metro routes, ${pack.stops.length} stops`);
+const anchors = resolveHslAnchors(pack);
+const missing = Object.entries(anchors).filter(([,stop]) => !stop).map(([id]) => `${id} (${HELSINKI_ANCHORS[id].join(' / ')})`);
+assert.deepEqual(missing, [], `full feed must resolve every delivery anchor: ${missing.join(', ')}`);
+for (const [id, stop] of Object.entries(anchors)) {
+  assert.ok(Number.isFinite(stop.lat) && Number.isFinite(stop.lon), `${id} anchor has exact HSL coordinates`);
+}
+
+console.log(`full HSL pack: ${tram.length} tram routes, ${metro.length} metro routes, ${pack.stops.length} stops, ${Object.keys(anchors).length} delivery anchors`);

@@ -4,6 +4,15 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '20 4 * * *'
+  pull_request:
+    paths:
+      - '.github/workflows/toko-move-hsl-refresh.yml'
+      - 'scripts/hsl-full-pack.mjs'
+      - 'scripts/gtfs.mjs'
+      - 'toko-move/js/helsinki-anchors.js'
+      - 'toko-move/js/real-helsinki.js'
+      - 'toko-move/test/full-hsl-pack.mjs'
+      - 'toko-move/test/real-helsinki.mjs'
 
 permissions:
   contents: write
@@ -14,29 +23,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: Build full exact HSL pack
         run: node scripts/hsl-full-pack.mjs toko-move/cities/helsinki.json
-
       - name: Validate full network
         run: node toko-move/test/full-hsl-pack.mjs
-
+      - name: Validate gameplay graph on HSL data
+        run: node toko-move/test/real-helsinki.mjs
+      - name: Upload generated pack for PR review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: toko-move-helsinki-full
+          path: toko-move/cities/helsinki.json
+          if-no-files-found: error
       - name: Check for source changes
         id: diff
         shell: bash
         run: |
-          if git diff --quiet -- toko-move/cities/helsinki.json; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
+          if git diff --quiet -- toko-move/cities/helsinki.json; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Persist validated pack onto this PR branch
+        if: github.event_name == 'pull_request' && steps.diff.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        run: |
+          cp toko-move/cities/helsinki.json /tmp/helsinki.json
+          git fetch origin "$GITHUB_HEAD_REF"
+          git checkout -B "$GITHUB_HEAD_REF" "origin/$GITHUB_HEAD_REF"
+          cp /tmp/helsinki.json toko-move/cities/helsinki.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add toko-move/cities/helsinki.json
+          git commit -m "Toko Move: commit validated full HSL network"
+          git push origin "$GITHUB_HEAD_REF"
       - name: Open refresh pull request
-        if: steps.diff.outputs.changed == 'true'
+        if: github.event_name != 'pull_request' && steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -48,8 +70,4 @@ jobs:
           git add toko-move/cities/helsinki.json
           git commit -m "Toko Move: refresh exact HSL network"
           git push origin "$branch"
-          gh pr create \
-            --base main \
-            --head "$branch" \
-            --title "Toko Move data — refresh exact HSL network" \
-            --body "Automated HSL GTFS refresh. Geometry is generated with zero approximation tolerance and validated before this PR is opened. Source: Helsinki Regional Transport Authority (HSL), CC BY 4.0."
+          gh pr create --base main --head "$branch" --title "Toko Move data — refresh exact HSL network" --body "Automated HSL GTFS refresh. Geometry is generated with zero approximation tolerance and validated before this PR is opened. Source: Helsinki Regional Transport Authority (HSL), CC BY 4.0."
