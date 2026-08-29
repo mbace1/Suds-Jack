@@ -30,13 +30,23 @@
     "from": "cache token"
   },
   "skltr": {
-    "v": "12",
-    "n": 12000,
+    "v": "15",
+    "n": 15000,
     "from": "cache token"
   },
   "flashprince": {
     "v": "3",
     "n": 3000,
+    "from": "VERSIONS.md"
+  },
+  "eeri": {
+    "v": "15.49",
+    "n": 15049,
+    "from": "VERSIONS.md"
+  },
+  "turf": {
+    "v": "6",
+    "n": 6000,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
@@ -47,7 +57,7 @@
   "kindling": {
     "v": "9",
     "n": 9000,
-    "from": "canonical Kindling v9"
+    "from": "VERSIONS.md"
   },
   "radiofree": {
     "v": "37",
@@ -77,11 +87,6 @@
   "toko": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
-  },
-  "turf": {
-    "v": "2",
-    "n": 2000,
     "from": "VERSIONS.md"
   }
 }
