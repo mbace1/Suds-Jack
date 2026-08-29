@@ -1,15 +1,14 @@
 // Radio Free Helsinki — one post's screen, and the voice that drives it.
 // Vertical codec: story panel on top, Toko portrait below. While live, a cut
-// sequencer cycles weighted-random shots:
-//   ~20% face / ~15% graphic / ~65% broll
-// DECODE still mutates whichever shot is showing.
-// Idle/static frames prefer story.broll so the new Helsinki art is visible
-// while scrolling — not only during live cuts.
+// sequencer cycles weighted-random shots. Programmed stories can bias that
+// rhythm, and DECODE deliberately returns to the story graphic long enough for
+// its visual argument to be seen before ordinary cuts resume.
 
 import { PixelScreen, shade, mix } from './screen.js?v=37';
 import { PAL, SECTOR_COLOR } from './palette.js?v=37';
 import { Toko } from './toko.js?v=37';
 import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=37';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=37';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -17,22 +16,60 @@ const PF = { x: 8, y: 166, w: 96, h: 96 };
 const DATA = { x: 110, y: 166, w: 26, h: 96 };
 const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 
-const WEIGHTS = { face: 0.20, graphic: 0.15, broll: 0.65 };
+const DEFAULT_WEIGHTS = { face: 0.20, graphic: 0.15, broll: 0.65 };
 const CUT_MIN = 3.2, CUT_MAX = 5.5;
+const DECODE_HOLD = 2.4;
+const AMBIENT_SHARE = 0.34;
+
+function shotWeights(story) {
+  switch (story.label) {
+    case 'GAMES': return { face: 0.26, graphic: 0.22, broll: 0.52 };
+    case 'TECH': return { face: 0.16, graphic: 0.30, broll: 0.54 };
+    case 'SIGNAL': return { face: 0.12, graphic: 0.27, broll: 0.61 };
+    case 'CITY': return { face: 0.18, graphic: 0.12, broll: 0.70 };
+    case 'CULTURE': return { face: 0.23, graphic: 0.10, broll: 0.67 };
+    case 'ODD WIRE': return { face: 0.28, graphic: 0.12, broll: 0.60 };
+    case 'LEAD': return { face: 0.20, graphic: 0.24, broll: 0.56 };
+    default: return DEFAULT_WEIGHTS;
+  }
+}
+
+function beatHash(text = '') {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
 
 function pickBroll(story, lastKey) {
   const pool = (BROLL_KEYS && BROLL_KEYS.length) ? BROLL_KEYS
     : ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station', 'suomenlinna', 'katajanokka'];
   const own = pool.includes(story.broll) ? story.broll : null;
-  if (own && own !== lastKey && Math.random() < 0.6) return own;
+  if (own && own !== lastKey && Math.random() < 0.68) return own;
   const others = pool.filter(k => k !== lastKey);
   return others[Math.floor(Math.random() * others.length)] || own || pool[0];
 }
 
+function pickAmbient(story) {
+  if (!AMBIENT_KEYS.length) return null;
+  // Deterministic offset gives each bulletin a home ambience, while the live
+  // clock moves through the library rather than cutting to the same city shot.
+  const h = beatHash(`${story.id || ''}:${story.label || ''}`);
+  const step = Math.floor(performance.now() / 5000);
+  return AMBIENT_KEYS[(h + step) % AMBIENT_KEYS.length];
+}
+
 function pickShot(story, lastKey) {
+  const w = shotWeights(story);
   const r = Math.random();
-  if (r < WEIGHTS.face) return { type: 'face' };
-  if (r < WEIGHTS.face + WEIGHTS.graphic) return { type: 'graphic' };
+  if (r < w.face) return { type: 'face' };
+  if (r < w.face + w.graphic) return { type: 'graphic' };
+  if (Math.random() < AMBIENT_SHARE) {
+    const key = pickAmbient(story);
+    if (key) return { type: 'ambient', key };
+  }
   return { type: 'broll', key: pickBroll(story, lastKey) };
 }
 
@@ -50,6 +87,9 @@ export class Post {
     this.signal = 1;
     this.decode = 0;
     this.decoded = false;
+    this.wasDecoded = false;
+    this.decodeHold = 0;
+    this.beat = beatHash(`${story.label || ''}:${story.visualBeat || story.id || ''}`);
     this.mouth = 0;
     this.wave = new Array(31).fill(0.2);
     this.live = false;
@@ -80,10 +120,18 @@ export class Post {
     this.t += dt;
     this.mouth = mouth;
     this.signal += (1 - this.signal) * Math.min(1, dt * 1.6);
+
+    if (this.decoded && !this.wasDecoded) {
+      this.shot = { type: 'graphic' };
+      this.decodeHold = DECODE_HOLD;
+      this.cutT = 0;
+    }
+    this.wasDecoded = this.decoded;
+    this.decodeHold = Math.max(0, this.decodeHold - dt);
     this.decode += ((this.decoded ? 1 : 0) - this.decode) * Math.min(1, dt * 4.5);
     this.toko.update(dt, mouth, this.decoded);
 
-    if (this.live && !this.silent) {
+    if (this.live && !this.silent && this.decodeHold <= 0) {
       this.cutT += dt;
       if (this.cutT >= this.nextCut) {
         this.shot = pickShot(this.story, this.lastBroll);
@@ -100,11 +148,9 @@ export class Post {
 
   renderStatic() {
     this.toko.update(0.016, 0, this.decoded);
-    if (this.story.broll) {
-      this.shot = { type: 'broll', key: this.story.broll };
-    } else {
-      this.shot = { type: 'graphic' };
-    }
+    if (this.decoded) this.shot = { type: 'graphic' };
+    else if (this.story.broll) this.shot = { type: 'broll', key: this.story.broll };
+    else this.shot = { type: 'graphic' };
     this.draw();
   }
 
@@ -113,6 +159,7 @@ export class Post {
     s.clear(PAL.SHELL);
 
     const faceShot = this.live && this.shot.type === 'face';
+    const ambientShot = this.shot.type === 'ambient';
     let visualKey = this.story.visual;
     if (this.shot.type === 'broll') {
       visualKey = this.shot.key || this.story.broll || 'cathedral';
@@ -127,7 +174,8 @@ export class Post {
       s.ctx.globalAlpha = 1;
     } else {
       this.toko.draw(this.portrait, this.signal, false);
-      drawVisual(visualKey, this.panel, this.t, this.decode);
+      if (ambientShot) drawAmbient(this.shot.key, this.panel, this.t, this.decode);
+      else drawVisual(visualKey, this.panel, this.t, this.decode);
       s.ctx.drawImage(this.panel.canvas, VF.x, VF.y);
       s.ctx.drawImage(this.portrait.canvas, PF.x, PF.y);
     }
@@ -135,11 +183,29 @@ export class Post {
     const line = mix(PAL.GREEN_DIM, PAL.AMBER_DIM, this.decode);
     this.frame(VF, line, mix(this.accent, PAL.AMBER, this.decode));
     this.frame(PF, line, mix(PAL.GEL_RIM, PAL.AMBER, this.decode));
+    this.decodeCue();
     this.dataColumn();
     this.waveband(mix(this.accent, PAL.AMBER_HOT, this.decode));
 
     s.px(0, 0, POST_W, 1, shade(PAL.SHELL, 1.9));
     s.px(0, POST_H - 1, POST_W, 1, shade(PAL.SHELL, 0.4));
+  }
+
+  decodeCue() {
+    if (!this.story.visualBeat || this.decode < 0.03) return;
+    const s = this.scr;
+    const c = mix(PAL.AMBER_DIM, PAL.AMBER_HOT, this.decode);
+    const travel = Math.max(1, VF.h - 20);
+    const phase = ((this.beat % 29) / 29 + this.t * 0.11) % 1;
+    const y = VF.y + 7 + Math.round(phase * travel);
+    const side = (this.beat & 1) ? VF.x + 3 : VF.x + VF.w - 7;
+    const len = 4 + ((this.beat >>> 3) % 7);
+    s.px(side, y, len, 1, c);
+    s.px(side, y - 2, 1, 5, shade(c, 0.8));
+    if (this.decode > 0.55) {
+      const y2 = VF.y + VF.h - 10 - ((this.beat >>> 7) % 28);
+      s.px(VF.x + 4, y2, VF.w - 8, 1, shade(c, 0.45));
+    }
   }
 
   frame(f, lineColor, cornerColor) {
@@ -170,7 +236,18 @@ export class Post {
     s.px(DATA.x + 4, DATA.y + 16, 4, 4, on ? PAL.DEFENCE : shade(PAL.DEFENCE, 0.3));
     s.px(DATA.x + 11, DATA.y + 17, 9, 2, shade(c, 0.7));
 
-    const segs = 12, top = DATA.y + 26;
+    // Three tiny programme bars make the desk metadata visible as rhythm, not
+    // as another label competing with the bulletin. Amber still appears only
+    // after DECODE because c follows the existing colour vocabulary.
+    if (this.story.label) {
+      const h = beatHash(this.story.label);
+      for (let i = 0; i < 3; i++) {
+        const w = 4 + ((h >>> (i * 5)) & 7);
+        s.px(DATA.x + 4, DATA.y + 23 + i * 3, w, 1, shade(c, 0.65 + i * 0.12));
+      }
+    }
+
+    const segs = 11, top = DATA.y + 35;
     const lit = Math.round(this.mouth * segs);
     for (let i = 0; i < segs; i++) {
       const y = top + (segs - 1 - i) * 5;
