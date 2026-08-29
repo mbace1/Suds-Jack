@@ -314,6 +314,19 @@ export const TUNING = {
     // real JS playtest data — first playtest owns these, not the method.
     // A level's PAR kill count is tier-rate × that level's own duration.
     tiers: { C: 0.5, B: 0.9, A: 1.4, S: 2.0 },
+    // v232 ABILITIES (PR #311 / PARITY_WITH_GODOT.md §1b): ported from the
+    // Godot port's four selectable abilities, owner direction 2026-08-28 —
+    // this build leads on gameplay, so this is now the reference version, not
+    // a copy. Numbers are new (the port's source wasn't available to derive
+    // exact values from) and unvalidated, same standing as the tier table
+    // above. One is picked before a run (OPTIONS, default 'none') and fires
+    // on the dash button, which boost leaves completely unclaimed in Rush.
+    abilities: {
+      heatExchange: { minHeat: 0.15, radiusBase: 3, radiusPerHeat: 5, cooldown: 8 },
+      hyperBomb:    { radius: 10, cooldown: 22 },
+      overcharge:   { duration: 4, cooldown: 16 },   // free boost heat, chain x2
+      quantumShield:{ duration: 3, cooldown: 18, reflectRadius: 0.9 },
+    },
   },
 
   fx: {

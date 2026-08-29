@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=185';
-import { t } from './lang.js?v=185';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=185';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=186';
+import { t } from './lang.js?v=186';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=186';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -552,6 +552,37 @@ export function initDesigner({ onResume, settings }) {
       el.appendChild(row);
       el.appendChild(hint);
       el.appendChild(nex);
+    }
+    // v232 RUSH ABILITY (PR #311): single-select cycle, same pattern as
+    // ARCADE CABINET above — a loadout choice, fires on the dash button
+    // (dead in Rush) once picked.
+    {
+      const row = document.createElement('div');
+      row.className = 'drow';
+      const lbl = document.createElement('span');
+      lbl.className = 'dlbl'; lbl.textContent = t('rushAbilityRow');
+      const btn = document.createElement('button');
+      btn.className = 'dbtn';
+      const hint = document.createElement('div');
+      hint.className = 'dnote';
+      const ORDER = ['none', 'heatExchange', 'hyperBomb', 'overcharge', 'quantumShield'];
+      const COL = { heatExchange: '#ff8844', hyperBomb: '#ffdd44', overcharge: '#66ffcc', quantumShield: '#66eeff' };
+      const paint = () => {
+        const sel = settings.getRushAbility();
+        btn.textContent = sel === 'none' ? t('off') : t(sel);
+        btn.style.color = sel === 'none' ? '#666' : COL[sel];
+        btn.style.borderColor = sel === 'none' ? '#1e1e38' : COL[sel] + '66';
+        hint.textContent = sel === 'none' ? t('rushAbilityRowH') : t(sel + 'H');
+      };
+      paint();
+      btn.addEventListener('click', () => {
+        const sel = settings.getRushAbility();
+        settings.setRushAbility(ORDER[(ORDER.indexOf(sel) + 1) % ORDER.length]);
+        paint();
+      });
+      row.appendChild(lbl); row.appendChild(btn);
+      el.appendChild(row);
+      el.appendChild(hint);
     }
     toggleRow(t('announcer'), settings.getAnnouncer, settings.setAnnouncer,
       t('annOnH'), t('annOffH'), '#ff88dd', '#ff66cc66');

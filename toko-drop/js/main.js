@@ -1,16 +1,16 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=185';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=185';
-import { Player, PLAYER_RADIUS } from './player.js?v=185';
+import { InputManager } from './input.js?v=186';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=186';
+import { Player, PLAYER_RADIUS } from './player.js?v=186';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=185';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=185';
-import { audio } from './audio.js?v=185';
-import { haptics } from './haptics.js?v=185';
-import { initDesigner } from './designer.js?v=185';
-import { createSpecimen } from './specimen.js?v=185';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=185';
-import { TUNING } from './tuning.js?v=185';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=186';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=186';
+import { audio } from './audio.js?v=186';
+import { haptics } from './haptics.js?v=186';
+import { initDesigner } from './designer.js?v=186';
+import { createSpecimen } from './specimen.js?v=186';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=186';
+import { TUNING } from './tuning.js?v=186';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2177,6 +2177,12 @@ let hiScore = pb.bestScore;
 // direction; design in the Godot port's RUSH_MODE.md). ROGUELIKE and DAILY do
 // not apply inside it.
 let rushMode = localStorage.getItem('tokoDropRush') === '1';
+// v232 ABILITIES (PR #311): picked in OPTIONS, persists like the ruleset
+// toggles above — it's a loadout choice, not per-run state (rush.reset()
+// deliberately leaves rush.ability alone; startGame() applies this here).
+const RUSH_ABILITIES = ['none', 'heatExchange', 'hyperBomb', 'overcharge', 'quantumShield'];
+let rushAbilitySel = localStorage.getItem('tokoDropRushAbility') || 'none';
+if (!RUSH_ABILITIES.includes(rushAbilitySel)) rushAbilitySel = 'none';
 let roguelikeMode = localStorage.getItem('tokoDropRogue2') === '1';
 let rogueB        = localStorage.getItem('tokoDropRogueB') === '1';
 if (rogueB) roguelikeMode = true;
@@ -3563,6 +3569,10 @@ const rush = {
   levelKills: 0, chainUnbroken: true, neverLocked: true,
   ladder: [],         // [{level, tier, kills, star}] — one stamp per level-up
   stars: 0,
+  // v232 ABILITIES (PR #311 §1b): one picked in OPTIONS, fired on the dash
+  // button (dead in Rush — boost replaces it). abilityCD counts down to 0
+  // (ready); overchargeT/quantumT count down while their window is active.
+  ability: 'none', abilityCD: 0, overchargeT: 0, quantumT: 0,
   reset() {
     const R = TUNING.rush;
     this.on = true; this.heat = 0; this.overheated = false;
@@ -3570,6 +3580,7 @@ const rush = {
     this.nextLife = R.lives.extraEvery;
     this.level = 1; this.levelT = 0; this.flashT = 0;
     this.ladder = []; this.stars = 0;
+    this.abilityCD = 0; this.overchargeT = 0; this.quantumT = 0;
     this._freshAttempt();
   },
   // What every fresh crack at a level starts from — first entry into Rush,
@@ -3601,8 +3612,9 @@ const rush = {
     const R = TUNING.rush;
     const held = input.getBoostHeld() && this.canBoost();
     player.setBoost(held);
-    // heat: boost costs a lot, the gun a little, and idle sheds it
-    if (player.boosting) this.heat += R.heat.boostRate * dt;
+    // heat: boost costs a lot, the gun a little, and idle sheds it —
+    // v232 OVERCHARGE zeroes the boost cost for its window (free boosting)
+    if (player.boosting) this.heat += this.overchargeT > 0 ? 0 : R.heat.boostRate * dt;
     else                 this.heat -= R.heat.coolRate * dt;
     this.heat = Math.max(0, Math.min(1, this.heat));
     if (!this.overheated && this.heat >= 1) {
@@ -3624,6 +3636,10 @@ const rush = {
     // the level clock
     this.levelT += dt;
     if (this.levelT >= this.levelDuration()) { this.levelT = 0; this.levelUp(); }
+    // v232 ABILITIES: cooldown and the two timed windows
+    if (this.abilityCD > 0) this.abilityCD -= dt;
+    if (this.overchargeT > 0) this.overchargeT -= dt;
+    if (this.quantumT > 0) this.quantumT -= dt;
   },
   shot() { if (this.on) this.heat = Math.min(1, this.heat + TUNING.rush.heat.perShot); },
   // v225: the COOLER is the roster's answer to its own economy.
@@ -3635,7 +3651,8 @@ const rush = {
   },
   boostKill() {
     const C = TUNING.rush.chain;
-    this.chain = Math.min(C.cap, this.chain + C.perKill);
+    // v232 OVERCHARGE: the chain climbs double for its window
+    this.chain = Math.min(C.cap, this.chain + C.perKill * (this.overchargeT > 0 ? 2 : 1));
     this.chainT = C.window;
   },
   // v227: every Rush kill (boost or gun) counts toward the level's PAR.
@@ -3662,6 +3679,53 @@ const rush = {
     if (score < this.nextLife) return false;
     this.nextLife += TUNING.rush.lives.extraEvery;
     return true;
+  },
+  // v232 ABILITIES: fires on the dash button — dead in Rush since boost
+  // replaces the dash, so it's an unclaimed input, not a new binding.
+  activateAbility() {
+    if (!this.on || this.ability === 'none' || this.abilityCD > 0 || !player.alive) return false;
+    const A = TUNING.rush.abilities;
+    const R = TUNING.rush;
+    if (this.ability === 'heatExchange') {
+      if (this.heat < A.heatExchange.minHeat) return false;
+      this._clearRadius(A.heatExchange.radiusBase + A.heatExchange.radiusPerHeat * this.heat);
+      this.heat = 0;
+      if (this.overheated) this.overheated = false;
+      this.abilityCD = A.heatExchange.cooldown;
+      milestoneText = 'HEAT EXCHANGE!';
+    } else if (this.ability === 'hyperBomb') {
+      this._clearRadius(A.hyperBomb.radius);
+      this.abilityCD = A.hyperBomb.cooldown;
+      milestoneText = 'HYPER BOMB!';
+    } else if (this.ability === 'overcharge') {
+      this.overchargeT = A.overcharge.duration;
+      this.abilityCD = A.overcharge.cooldown;
+      milestoneText = 'OVERCHARGE!';
+    } else if (this.ability === 'quantumShield') {
+      this.quantumT = A.quantumShield.duration;
+      player.grantInvincibility(A.quantumShield.duration);
+      this.abilityCD = A.quantumShield.cooldown;
+      milestoneText = 'QUANTUM SHIELD!';
+    } else {
+      return false;
+    }
+    milestoneT = 1.0;
+    addShake(0.3);
+    audio.shockThump();
+    haptics.overheat();   // reuses the existing distinct buzz rather than adding a 5th pattern
+    return true;
+  },
+  // Shared AoE clear for heatExchange/hyperBomb. 'env'-tagged so it doesn't
+  // trigger CLOSE COMBAT revenge back at the player who just used it —
+  // same tag the gate/vent/surge hazards use for the same reason.
+  _clearRadius(radius) {
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const dx = e.position.x - player.position.x, dz = e.position.z - player.position.z;
+      if (Math.hypot(dx, dz) > radius + e.radius) continue;
+      e.hp = 1;
+      if (e.hit(e.position.x, e.position.z)) onKill(e, 'env');
+    }
   },
 };
 
@@ -4182,6 +4246,12 @@ const designer = initDesigner({
     // Android Chrome gets that the toggle actually did something.
     getHaptics: () => haptics.enabled,
     setHaptics: on => { haptics.setEnabled(on); if (on) haptics.test(); },
+    // v232: RUSH ability loadout — cycles like ARCADE CABINET below.
+    getRushAbility: () => rushAbilitySel,
+    setRushAbility: v => {
+      rushAbilitySel = v;
+      localStorage.setItem('tokoDropRushAbility', v);
+    },
     getPerf: () => perfMode,
     setPerf: on => {
       perfMode = on;
@@ -4554,6 +4624,18 @@ function drawHUD() {
       ctx.fillText(live, uiCanvas.width - 16, 40);
       ctx.font = HUD_FONT;
     }
+    // v232: the picked ability's own readiness — ready / cooling down / active.
+    if (rush.ability !== 'none') {
+      const active = rush.overchargeT > 0 || rush.quantumT > 0;
+      ctx.font = '11px monospace';
+      ctx.fillStyle = active ? '#66ffcc' : rush.abilityCD > 0 ? 'rgba(255,255,255,0.4)' : '#ffffff';
+      ctx.fillText(
+        active ? `${t(rush.ability)} ${Math.max(rush.overchargeT, rush.quantumT).toFixed(1)}s`
+          : rush.abilityCD > 0 ? `${t(rush.ability)} ${rush.abilityCD.toFixed(1)}s`
+          : `${t(rush.ability)} ${t('rushAbilityReady')}`,
+        uiCanvas.width - 16, live ? 54 : 40);
+      ctx.font = HUD_FONT;
+    }
   }
   if (streak > 1) {
     // Streak heat tiers (v124): the meter visibly escalates — gold → orange
@@ -4845,7 +4927,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v231' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v232' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -7195,6 +7277,7 @@ function startGame() {
   player.setBoost(false);
   if (rushMode && !inCabinet()) {
     rush.reset();
+    rush.ability = rushAbilitySel;   // v232: a loadout choice, applied fresh each run
     const R = TUNING.rush;
     player._boostSpeed = R.boostSpeed;
     player._weaponMode = 'SHOTGUN';
@@ -7409,6 +7492,9 @@ function updateMenuNav(dt) {
 
 input.onDash  = () => {
   if (gameState === 'playing') {
+    // v232: the dash button is dead in Rush (boost replaces the dash, see
+    // player.dash()'s own early return) — an unclaimed input, not a new bind.
+    if (rush.on) { rush.activateAbility(); return; }
     const move = input.getMoveDir();
     const dir = { x: move.x, z: move.z, valid: move.x !== 0 || move.z !== 0 };
     player.dash(dir);
@@ -8979,6 +9065,28 @@ function loop() {
     }
   }
 
+  // v232 QUANTUM SHIELD: while active, any enemy bullet that gets close
+  // enough to have hit is destroyed and answered with a real player-owned
+  // bullet fired back along its reverse path — a separate loop from the
+  // invincibility check below, since player.invincible (which the ability
+  // also grants, so no damage lands either way) would otherwise skip it.
+  if (rush.on && rush.quantumT > 0) {
+    const A = TUNING.rush.abilities.quantumShield;
+    for (let i = bullets.active.length - 1; i >= 0; i--) {
+      const b = bullets.active[i];
+      if (b.isPlayer) continue;
+      const dx = b.mesh.position.x - player.position.x;
+      const dz = b.mesh.position.z - player.position.z;
+      const d = Math.hypot(dx, dz);
+      if (d < A.reflectRadius + PLAYER_RADIUS) {
+        const rvx = -b.vx, rvz = -b.vz;
+        const rl = Math.hypot(rvx, rvz) || 1;
+        bullets.recycleAt(i);
+        bullets.spawnDir(player.position.x, player.position.z, rvx / rl, rvz / rl, true, 0x66eeff);
+      }
+    }
+  }
+
   // Collision: enemy bullets → player (+ GRAZE, v125)
   if (!player.invincible) {
     for (let i = bullets.active.length - 1; i >= 0; i--) {
@@ -9687,6 +9795,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=185').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=186').catch(() => {});
   });
 }
