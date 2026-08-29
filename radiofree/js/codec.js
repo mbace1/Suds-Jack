@@ -8,6 +8,7 @@ import { PAL, SECTOR_COLOR } from './palette.js?v=37';
 import { Toko } from './toko.js?v=37';
 import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=37';
 import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=41';
+import { preferredScenes } from './editorialmap.js?v=43';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -72,10 +73,12 @@ function pickBroll(story, lastKey) {
 
 function pickAmbient(story, avoidKey = null) {
   if (!AMBIENT_KEYS.length) return null;
-  const h = beatHash(`${story.id || ''}:${story.label || ''}`);
+  const directed = preferredScenes(story, AMBIENT_KEYS);
+  const pool = directed.filter(k => k !== avoidKey);
+  const list = pool.length ? pool : directed;
+  if (!list.length) return null;
+  const h = beatHash(`${story.id || ''}:${story.label || ''}:${story.visualBeat || ''}`);
   const step = Math.floor(performance.now() / 6500);
-  const pool = AMBIENT_KEYS.filter(k => k !== avoidKey);
-  const list = pool.length ? pool : AMBIENT_KEYS;
   return list[(h + step) % list.length];
 }
 
