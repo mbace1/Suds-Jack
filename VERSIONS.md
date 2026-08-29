@@ -7,6 +7,43 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v232 — 2026-08-29
+**RUSH gets its four abilities** *(PR #311 / `PARITY_WITH_GODOT.md` §1b, owner direction 2026-08-28)*
+- The Godot port had four selectable RUSH abilities this build never had.
+  Owner's call: port them here — this build leads on gameplay, so this is
+  now the reference version, not a copy. One is picked in OPTIONS
+  (`RUSH ABILITY`, single-select cycle, default OFF) and fires on the dash
+  button, which boost leaves completely dead in Rush (`player.dash()`'s own
+  early return) — an unclaimed input, not a new bind
+  - **HEAT EXCHANGE** — dumps current heat as an AoE clear around the
+    player (radius grows with banked heat) and resets heat to 0
+  - **HYPER BOMB** — a big fixed-radius clear that costs no heat; the panic
+    button, paid for in a long cooldown instead
+  - **OVERCHARGE** — a timed window: boosting costs no heat and the chain
+    climbs ×2 per kill
+  - **QUANTUM SHIELD** — a timed window: the player is invulnerable
+    (`player.grantInvincibility()`) and any enemy bullet that gets close
+    enough to have hit is destroyed and answered with a real player-owned
+    bullet fired back along its reverse path — a separate collision loop
+    from the existing `!player.invincible` gate, since that gate would
+    otherwise skip the reflect entirely
+- All four AoE-clear kills are tagged `'env'`, the same tag gates/vents/
+  surges use, so panic-clearing doesn't trigger CLOSE COMBAT revenge back
+  at the player who just used the ability
+- Numbers (`TUNING.rush.abilities`) are new, not copied from the port — its
+  source wasn't available to derive exact values from — and unvalidated,
+  same standing as the v227 tier table
+- Verified with a throwaway probe against the real integration points: each
+  ability actually clears the enemies/heat/bullets it claims to (a 6-enemy
+  ring → 0 alive + heat reset for Heat Exchange, an 8-enemy ring → 0 alive
+  for Hyper Bomb, a real `boostKill()` call producing chain +2 not +1 under
+  Overcharge, an enemy bullet fired at the player becoming a player-owned
+  bullet under Quantum Shield) and the OPTIONS row cycles all five states
+  in the real DOM. `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=185` → `?v=186`; HUD label → v232
+
+---
+
 ## v231 — 2026-08-28
 **Press kit** *(roadmap-v2 Phase 5, "itch.io page: embed, copy, capture GIFs")*
 - New `toko-drop/press/PRESS.md`, following the same structure as
