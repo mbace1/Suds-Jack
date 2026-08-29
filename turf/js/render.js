@@ -178,6 +178,18 @@ function drawTelegraph(g, layout, state) {
   }
 }
 
+// A weapon-swap drop (combat.js's state.drops): a small pulseless marker on
+// the floor tile — the weaponGlyph itself is the telegraph for WHICH weapon
+// it is, same glyph language drawTelegraph already uses for an enemy's
+// planned attack, so a player who has learned that vocabulary reads this one
+// for free instead of a fourth icon language.
+function drawDrop(g, layout, drop, weaponDefs) {
+  const { x, y } = toScreen(layout, drop.x, drop.y);
+  g.diamond(x, y, TILE_W * 0.5, TILE_H * 0.5, null, PAL.TELEGRAPH);
+  const weapon = weaponDefs.find(w => w.id === drop.weaponId);
+  if (weapon) weaponGlyph(g, x, y, weapon);
+}
+
 // The keyboard/gamepad cursor (input.js) — a double-ringed reticle, visually
 // distinct from the single-outline selected/move/attack highlights. Only
 // drawn once a key or a pad has actually been used (input.js's cursorActive
@@ -203,6 +215,7 @@ export function render(canvas, state, layout) {
   for (const k of state.partialCover) { const [x, y] = k.split(',').map(Number); props.push({ x, y, depth: x + y, tall: false }); }
   const drawables = [
     ...props.map(p => ({ depth: p.depth, draw: () => drawProp(g, layout, p.x, p.y, p.tall) })),
+    ...(state.drops || []).map(d => ({ depth: d.x + d.y, draw: () => drawDrop(g, layout, d, state.weaponDefs) })),
     ...state.units.filter(u => u.hp > 0).map(u => ({
       depth: u.x + u.y,
       draw: () => drawUnit(g, layout, u, state.selected === u.uid),

@@ -217,7 +217,15 @@ arcade tone.
   unlock yet — that half of this line waits on §5.1's class/subclass system
   reaching the engine. `js/main.js`'s `crewProgress` carries level/XP/max HP
   across `SEQUENCE`, keyed by `defId` — v6.
-- Introduce simple weapon-swap loot drops.
+- ~~Introduce simple weapon-swap loot drops.~~ Shipped, v7: a dead enemy has a
+  flat `DROP_CHANCE` (0.5) to leave its weapon on its own tile
+  (`combat.js`'s `resolveAttack`); a player unit that later moves onto that
+  tile swaps to it automatically, no separate pick-up action (`moveUnit`'s
+  `pickUpDropAt`) — the same "a dead body never blocks movement" rule that
+  already let a unit walk *through* where an enemy died is what makes
+  walking *onto* it to loot free. Not persistent across encounters or runs;
+  a picked-up weapon reverts to the unit's own the next `boot()`, matching
+  `crewProgress` not tracking equipment (only level/XP/max HP) yet.
 - Keep grid size/enemy count variable per encounter (MST-style unpredictability).
 - Still no armor/consumables/combo-synergies — those stay on the roadmap (§5).
 

@@ -5,9 +5,9 @@ import { PAL } from './palette.js?v=2';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
-} from './combat.js?v=3';
-import { computeLayout, render } from './render.js?v=2';
-import { createInputHandler } from './input.js?v=3';
+} from './combat.js?v=4';
+import { computeLayout, render } from './render.js?v=3';
+import { createInputHandler } from './input.js?v=4';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
@@ -91,14 +91,29 @@ function attackText(state, attackerName, evt) {
   const who = target ? target.name : 'the target';
   if (!evt.hit) return `${attackerName} misses ${who}.`;
   let s = `${attackerName} hits ${who} for ${evt.damage}.`;
-  if (evt.killed) s += ' Down.';
-  else if (evt.knockback && evt.knockback.moved) s += ' Knocked back.';
+  if (evt.killed) {
+    s += ' Down.';
+    if (evt.dropped) {
+      const w = state.weaponDefs.find(x => x.id === evt.dropped.weaponId);
+      if (w) s += ` Drops a ${w.name}.`;
+    }
+  } else if (evt.knockback && evt.knockback.moved) s += ' Knocked back.';
   return s;
 }
 
 function onChange() {
   render(canvas, state, layout);
   updateHud();
+  // A player picking up a drop is the freshest log entry right after a
+  // move that landed on one (combat.js's pickUpDropAt) — attacks/enemy
+  // turns get their own toast text elsewhere, so this only fires for the
+  // one event nothing else already narrates.
+  const lastLog = state.log[state.log.length - 1];
+  if (lastLog && lastLog.type === 'pickup') {
+    const u = getUnit(state, lastLog.uid);
+    const w = state.weaponDefs.find(x => x.id === lastLog.weaponId);
+    if (u && w) setToast(`${u.name} picks up a ${w.name}.`);
+  }
   if (state.result) { finishEncounter(state.result); return; }
   if (state.turn === 'enemy' && !enemyPhaseRunning) runEnemyPhase();
 }

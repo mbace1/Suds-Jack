@@ -8,6 +8,46 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v7 — 2026-08-29
+**Simple weapon-swap loot drops — GDD.md §9's third Phase 2 item.**
+
+- `js/combat.js`: on a killing blow, if the victim was an enemy, a
+  `DROP_CHANCE` (0.5) roll leaves its weapon behind on its own tile
+  (`state.drops`, `{x,y,weaponId}`). `moveUnit` checks the destination tile
+  after every player move and auto-picks up a drop there — `pickUpDropAt`
+  swaps `unit.weapon` and clears the drop, no separate pickup action needed.
+  This rides the existing "a dead body never blocks movement" rule for free:
+  the same tile a unit could already walk *through* is one it can walk
+  *onto* to loot. `state.weaponDefs` (the full weapons list) is now carried
+  on state so `moveUnit`/render can resolve a `weaponId` back to a def
+  without threading `weaponDefs` through every call site.
+- `js/render.js`: a small marker (the same `weaponGlyph` language
+  `drawTelegraph` already uses for an enemy's planned attack type) on any
+  tile with a live drop, depth-sorted into the existing floor/props/units
+  paint order.
+- `js/main.js`: a toast on pickup ("Blade picks up a Bat.") read off the
+  freshest `state.log` entry rather than threaded through `onChange`'s
+  argumentless callback signature; `attackText` also appends "Drops a ___."
+  to a kill line when the kill rolled one.
+- **Not persistent.** A picked-up weapon lives only for the current
+  encounter — `boot()` rebuilds each unit's weapon from its own def, and
+  `crewProgress` (v6) only carries level/XP/max HP forward, not equipment.
+  That is a real scope line, not an oversight: the run-scoped inventory
+  GDD §5's roadmap eventually wants is a bigger feature than "loot drops
+  exist at all," and this ships the smaller, real half first.
+- `test/smoke.mjs`: a fixed (non-seed-hunted) `state.rng` override proves
+  the drop roll both ways (under/over `DROP_CHANCE`) and that picking one up
+  swaps the weapon and clears the drop, plus a control case (an ordinary
+  empty tile picks up nothing).
+- Verified in a real browser: a real kill (via the actual `attack()` path)
+  drops the correct weapon on the correct tile, walking onto it next turn
+  (once the attacker's move is free again) swaps the weapon and fires the
+  toast, zero console errors.
+- Standard token cascade: `combat.js?v=3` → `v=4` and `render.js?v=2` →
+  `v=3` (both changed), cascading to both importers (`main.js`, `input.js`),
+  which in turn bumps `input.js`'s own reference (`main.js?v=3` → `v=4`) and
+  `index.html`'s `main.js?v=4` → `v=5`.
+
 ## v6 — 2026-08-29
 **Basic XP/leveling between fights — GDD.md §9's second Phase 2 item, after
 encounter sequencing (v4).**
