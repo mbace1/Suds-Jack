@@ -17,8 +17,8 @@
 
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js?v=52';
-import { Hero } from './hero.js?v=54';
-import { World, ROOMS, ROOM_H } from './level.js?v=55';
+import { Hero } from './hero.js?v=56';
+import { World, ROOMS, ROOM_H } from './level.js?v=56';
 import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=54';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';

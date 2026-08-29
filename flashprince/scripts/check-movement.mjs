@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { Hero, HANG } from '../js/hero.js';
+import { World } from '../js/level.js';
 
 const world = {
   boxSolid: () => false,
@@ -25,6 +26,18 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(hero.state, 'stand');
 }
 
+// Low climbing with the pistol selected must restore the aimed stance instead
+// of silently showing the unarmed idle character at the top.
+{
+  const hero = new Hero(25.25, 96);
+  hero.weapon = 'gun';
+  hero.stepTarget = { x: 40, y: 80 };
+  hero.go('stepUp');
+  tick(hero, 30);
+  assert.equal(hero.state, 'standArmed');
+  assert.equal(hero.weapon, 'gun');
+}
+
 // A mantle ends one body radius inside the ledge and exactly on its floor.
 {
   const hero = new Hero(27, 48 + HANG);
@@ -36,6 +49,17 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(hero.state, 'stand');
 }
 
+// Mantling has the same loadout contract as a low climb.
+{
+  const hero = new Hero(27, 48 + HANG);
+  hero.weapon = 'gun';
+  hero.face = 1; hero.ledgeX = 27; hero.ledgeY = 48;
+  hero.go('pullUp');
+  tick(hero, 40);
+  assert.equal(hero.state, 'standArmed');
+  assert.equal(hero.weapon, 'gun');
+}
+
 // Deliberate climb-down ends at the same hang coordinate as an airborne grab.
 {
   const hero = new Hero(48, 96);
@@ -45,6 +69,18 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(hero.x, 53);
   assert.equal(hero.y, 96 + HANG);
   assert.equal(hero.state, 'hang');
+}
+
+// Fractional air positions snap to the exact tile top on landing, preventing
+// the one-pixel jitter that used to feed into the next step or climb.
+{
+  const tiled = new World();
+  tiled.grid = Array.from({ length: 12 }, (_, ty) => Array(20).fill(ty === 6 ? '#' : ' '));
+  const hero = new Hero(40.4, 94.35);
+  hero.go('air'); hero.vx = 0; hero.vy = 2.4; hero.fallFrom = 80;
+  for (let i = 0; i < 4 && hero.state === 'air'; i++) hero.update(tiled, input, game);
+  assert.equal(hero.y, 96);
+  assert.equal(hero.state, 'land');
 }
 
 // Jumping holsters the visible pistol for the flight frames, but it must not
@@ -71,4 +107,4 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(hero.state, 'standArmed');
 }
 
-console.log('movement checks ok — step, mantle, climb-down, armed jump, shield');
+console.log('movement checks ok — exact landings, armed traversal, step, mantle, climb-down, jump, shield');

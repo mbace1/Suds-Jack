@@ -447,6 +447,10 @@ export class Hero {
     if (blocked) {
       if (upward) { this.vy = 0.2; }
       else {
+        // Land on the tile edge, never on the fractional position from the
+        // previous air frame. That exact y is what low-step and lip detection
+        // use on the following frame.
+        if (world.landingY) this.y = world.landingY(this.x, this.y, Math.ceil(this.vy) + 2);
         const drop = this.y - this.fallFrom;
         this.vx = 0; this.vy = 0;
         if (drop > FALL_KILL) { game.kill('fall'); return; }
@@ -478,7 +482,7 @@ export class Hero {
       const targetX = this.stepTarget?.x ?? this.stepFromX + this.face * 10;
       this.y = this.stepFromY + (targetY - this.stepFromY) * ease;
       this.x = this.stepFromX + (targetX - this.stepFromX) * ease;
-      if (done) { this.x = targetX; this.y = targetY; this.go('stand'); }
+      if (done) { this.x = targetX; this.y = targetY; this.go(this.rest()); }
       return;
     }
     if (this.state === 'climbDown') {
@@ -518,7 +522,7 @@ export class Hero {
       const targetX = this.ledgeX + this.face * 13;
       this.y = this.ledgeY + HANG * (1 - ease);
       this.x = this.pullFromX + (targetX - this.pullFromX) * ease;
-      if (done) { this.x = targetX; this.y = this.ledgeY; this.go('stand'); }
+      if (done) { this.x = targetX; this.y = this.ledgeY; this.go(this.rest()); }
       return;
     }
     if (this.dropLock > 0) { this.dropLock--; return; }

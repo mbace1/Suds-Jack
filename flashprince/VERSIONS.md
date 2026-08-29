@@ -1,5 +1,14 @@
 # Flash Prince — versions
 
+## v56 — 2026-08-29
+
+**Traversal now finishes cleanly.** Fractional jump landings snap to the exact
+tile edge, removing the visible foot jitter that could corrupt the next low
+step or climb. Low climbs and full mantles now restore the selected pistol
+stance instead of briefly switching to the unarmed idle pose. Regression
+checks cover exact landings and armed traversal. No animation frames, timing,
+palette data or locked run data changed.
+
 ## v55 — 2026-08-29
 
 **The shield has an opponent.** A two-hit retro security sentry now guards the

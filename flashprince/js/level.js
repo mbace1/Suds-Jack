@@ -91,6 +91,21 @@ export class World {
     return false;
   }
 
+  // A fall can arrive at the floor on a fractional pixel. Collision stops the
+  // body safely, but leaving the feet at 175.37 against a floor at 176 makes
+  // the landing frame and the next low climb visibly twitch. Resolve the same
+  // tiles the body touched back to their exact top edge.
+  landingY(x, y, reach = TILE) {
+    const left = Math.floor((x - 4) / TILE), right = Math.floor((x + 3) / TILE);
+    const first = Math.floor(y / TILE), last = Math.floor((y + reach) / TILE);
+    for (let ty = first; ty <= last; ty++) {
+      for (let tx = left; tx <= right; tx++) {
+        if (this.solidTile(tx, ty)) return ty * TILE;
+      }
+    }
+    return y;
+  }
+
   // ── ledges ─────────────────────────────────────────────────────────
   // A lip is the top corner of a solid tile with sky above it and nothing on
   // the side he is coming from. Everything about how these games move is built
