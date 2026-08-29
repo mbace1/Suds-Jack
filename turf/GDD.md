@@ -208,8 +208,15 @@ arcade tone.
 
 ## 9. Phase 2 (immediately after Phase 1 validates)
 
-- Expand to 3–5 encounters in sequence.
-- Add basic XP/leveling between fights.
+- ~~Expand to 3–5 encounters in sequence.~~ 2 of 3–5 shipped (`backlot` →
+  `loading-dock`, `js/main.js`'s `SEQUENCE`) — v4.
+- ~~Add basic XP/leveling between fights.~~ Shipped, scoped to one run (not a
+  cross-session save): a won encounter pays every surviving unit a clear
+  bonus + a per-kill bonus (`combat.js`'s `awardXp`), levels cost
+  progressively more XP and buy +2 max HP, healed immediately. No skill-slot
+  unlock yet — that half of this line waits on §5.1's class/subclass system
+  reaching the engine. `js/main.js`'s `crewProgress` carries level/XP/max HP
+  across `SEQUENCE`, keyed by `defId` — v6.
 - Introduce simple weapon-swap loot drops.
 - Keep grid size/enemy count variable per encounter (MST-style unpredictability).
 - Still no armor/consumables/combo-synergies — those stay on the roadmap (§5).

@@ -11,6 +11,7 @@ import { planIntent } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
+  awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL,
 } from '../js/combat.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -194,6 +195,75 @@ console.log('combat resolution');
     assert.equal(foe.x, 3); // could not advance into the wall at x=4 at all
   });
 }
+
+console.log('XP and leveling');
+{
+  // grunt_handgun: 4 hp; knife: 4 dmg, hitChance 1 — a one-hit, deterministic kill.
+  const oneHit = {
+    id: 'onehit', grid: { cols: 3, rows: 1 },
+    playerSpawns: [{ unit: 'blade', x: 0, y: 0 }],
+    enemySpawns: [{ enemy: 'grunt_handgun', x: 1, y: 0 }],
+    cover: { full: [], partial: [] },
+  };
+  const state = boot(oneHit, 9);
+  const blade = getUnit(state, 'p0');
+  check('a killing blow credits the attacker with a kill', () => {
+    assert.equal(blade.kills, 0);
+    const r = attack(state, blade.uid, 'e0');
+    assert.ok(r.ok && r.killed);
+    assert.equal(blade.kills, 1);
+    assert.equal(state.result, 'win', 'the only enemy just died, the encounter is cleared');
+  });
+}
+check('awardXp does nothing when the encounter has not been won', () => {
+  const state = { result: null, units: [{ faction: 'player', hp: 9, kills: 3, xp: 0, level: 1 }] };
+  const events = awardXp(state);
+  assert.deepEqual(events, []);
+  assert.equal(state.units[0].xp, 0);
+});
+check('a surviving unit is paid a clear bonus plus a per-kill bonus; a dead one is paid nothing', () => {
+  const state = {
+    result: 'win',
+    units: [
+      { uid: 'p0', name: 'Blade', faction: 'player', hp: 9, maxHp: 9, kills: 1, xp: 0, level: 1 },
+      { uid: 'p1', name: 'Niner', faction: 'player', hp: 0, maxHp: 8, kills: 0, xp: 0, level: 1 },
+    ],
+  };
+  const events = awardXp(state);
+  assert.equal(events.length, 1, 'only the surviving unit is in the summary');
+  assert.equal(events[0].uid, 'p0');
+  assert.equal(events[0].gained, XP_BASE_CLEAR + XP_PER_KILL);
+  assert.equal(state.units[0].xp, XP_BASE_CLEAR + XP_PER_KILL);
+  assert.equal(state.units[1].xp, 0, 'a unit that did not survive the encounter earns nothing');
+});
+check('enough XP in one haul rolls a level, banks the remainder, and heals the HP bump', () => {
+  const state = {
+    result: 'win',
+    units: [{ uid: 'p0', name: 'Blade', faction: 'player', hp: 9, maxHp: 9, kills: 2, xp: 0, level: 1 }],
+  };
+  // gained = 10 + 8*2 = 26; xpToNext(1) = 20 -> levels to 2, banking 6.
+  const events = awardXp(state);
+  const u = state.units[0];
+  assert.equal(events[0].gained, 26);
+  assert.deepEqual(events[0].levelsGained, [2]);
+  assert.equal(u.level, 2);
+  assert.equal(u.xp, 26 - xpToNext(1));
+  assert.equal(u.maxHp, 9 + HP_PER_LEVEL);
+  assert.equal(u.hp, 9 + HP_PER_LEVEL, 'the HP bump is healed immediately, not banked');
+});
+check('a big enough haul rolls more than one level at once', () => {
+  const state = {
+    result: 'win',
+    units: [{ uid: 'p0', name: 'Blade', faction: 'player', hp: 9, maxHp: 9, kills: 10, xp: 0, level: 1 }],
+  };
+  // gained = 10 + 80 = 90; xpToNext(1)=20 -> lvl2 (70 left), xpToNext(2)=35 -> lvl3 (35 left),
+  // xpToNext(3)=50 -> 35 is not enough, stop at level 3 with 35 banked.
+  const events = awardXp(state);
+  const u = state.units[0];
+  assert.deepEqual(events[0].levelsGained, [2, 3]);
+  assert.equal(u.level, 3);
+  assert.equal(u.xp, 35);
+});
 
 console.log('AI + telegraph');
 {

@@ -47,6 +47,7 @@ function makeUnit(uid, def, weapon, faction, spawn) {
     hp: def.hp, maxHp: def.hp, move: def.move,
     x: spawn.x, y: spawn.y,
     actedMove: false, actedAction: false,
+    kills: 0, xp: 0, level: 1,
   };
 }
 
@@ -112,6 +113,7 @@ function resolveAttack(state, attacker, target, weapon) {
     damage = weapon.damage;
     target.hp = Math.max(0, target.hp - damage);
     killed = target.hp <= 0;
+    if (killed) attacker.kills += 1;
     if (!killed && weapon.knockback > 0) knockback = applyKnockback(state, attacker, target, weapon.knockback);
   }
   const evt = { type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage, killed, knockback, chance, roll };
@@ -244,4 +246,41 @@ function checkWinLoss(state) {
   if (state.result) return;
   if (!state.units.some(u => u.faction === 'player' && u.hp > 0)) state.result = 'lose';
   else if (!state.units.some(u => u.faction === 'enemy' && u.hp > 0)) state.result = 'win';
+}
+
+// GDD.md §5's v1 progression list: "XP levels: units gain levels from
+// combat, unlocking small stat bumps." No skill-slot unlock yet — that half
+// of §5's sentence waits on the class/subclass system (GDD §5.1), which
+// isn't wired into the engine. A clear won encounter pays a flat clear bonus
+// plus a per-kill bonus to every unit who survived it (not just the one who
+// landed the kill — a squad wipe risk taken together is rewarded together);
+// a level costs progressively more and buys +2 max HP, healed immediately
+// so the bump is felt right away rather than banked for later.
+export const XP_BASE_CLEAR = 10;
+export const XP_PER_KILL = 8;
+export const HP_PER_LEVEL = 2;
+export const xpToNext = level => 20 + (level - 1) * 15;
+
+// Call once, right after a win — awards XP to every surviving player unit
+// and rolls any level-ups (a big single haul can roll more than one level).
+// Mutates state.units in place, like every other combat function here;
+// returns a summary per unit for the UI to report.
+export function awardXp(state) {
+  if (state.result !== 'win') return [];
+  const events = [];
+  for (const u of state.units) {
+    if (u.faction !== 'player' || u.hp <= 0) continue;
+    const gained = XP_BASE_CLEAR + u.kills * XP_PER_KILL;
+    u.xp += gained;
+    const levelsGained = [];
+    while (u.xp >= xpToNext(u.level)) {
+      u.xp -= xpToNext(u.level);
+      u.level += 1;
+      u.maxHp += HP_PER_LEVEL;
+      u.hp += HP_PER_LEVEL;
+      levelsGained.push(u.level);
+    }
+    events.push({ uid: u.uid, name: u.name, kills: u.kills, gained, levelsGained });
+  }
+  return events;
 }

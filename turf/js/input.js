@@ -8,7 +8,7 @@ import { screenToGrid, toScreen, TILE_W, UNIT_H } from './render.js?v=2';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit,
-} from './combat.js?v=2';
+} from './combat.js?v=3';
 import { key } from './grid.js?v=2';
 import { watchPad } from '../../hub/pad.js?v=9';
 
