@@ -4,6 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '20 4 * * *'
+  pull_request:
+    paths:
+      - '.github/workflows/toko-move-hsl-refresh.yml'
+      - 'scripts/hsl-full-pack.mjs'
+      - 'scripts/gtfs.mjs'
+      - 'toko-move/test/full-hsl-pack.mjs'
 
 permissions:
   contents: write
@@ -36,7 +42,7 @@ jobs:
           fi
 
       - name: Open refresh pull request
-        if: steps.diff.outputs.changed == 'true'
+        if: github.event_name != 'pull_request' && steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
