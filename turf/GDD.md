@@ -81,6 +81,81 @@ explicitly *rarely/never* per your calibration. The loss condition is almost alw
 Units are persistent named characters who survive within a run and carry XP/loot
 forward; losing a unit mid-run is a real loss (squad wipe risk), not a system input.
 
+## 5.1 Classes & Subclasses (owner direction, 2026-08-28)
+
+Every unit has a **class** (three at launch — the existing `blade`/`niner`/`wrench`
+archetypes graduate into class names) and each class has **subclasses** with their
+own unique skills. This is Phase 2+ scope — no engine or `data/*.json` change ships
+with this entry, it is the shape to build toward once Milestone 1's combat feel is
+validated (§8/§9).
+
+**The likeness is loose — the colour is the class.** Mewgenics' own answer to "how
+do you tell a hundred different-looking characters apart at a glance" is not the
+character's body, it's a colour read off their trait/class, independent of what
+they look like. TURF adopts that directly: a unit's hair, build, skin tone and
+jacket style are drawn freely from the cast (ART_REQUEST.md §2.1 already commits
+to this — casting is not locked to specific archetypes) — **class is signalled by
+an accent colour, not by who's wearing it.** Some looks will naturally suit some
+classes better than others, and that's fine variety, not a rule.
+
+That has to reconcile with a rule the game already depends on: a screen with both
+factions on it reads warm-vs-cold at a glance (§6, and `art-src/palette.json`'s
+whole operator/enemy split). The resolution is a two-layer read rather than
+picking one system over the other — **faction stays the primary hue family
+(operators cool, rivals warm), class is a secondary accent within that family**:
+an operator's class colour rotates through the cool side (cyan, teal, blue-violet),
+a rival's through the warm side (orange, amber, red). From across the board you
+still read "cold = mine, warm = theirs" instantly; up close, the specific accent
+tells you which class you're looking at. `art-src/palette.json`'s 32 colours
+(§2.1) already has headroom for this — `operator_pale`/`enemy_pale` and the new
+hair/cloth ramps give a class accent somewhere to live without touching the
+faction-read greys.
+
+**Illustrative subclass split** (names and numbers not final — the shape is the
+point):
+
+| class | subclass | unique skill idea |
+|---|---|---|
+| **Blade** (melee) | Slasher | bonus move after a kill — momentum rewards aggression |
+| | Shiv | bonus damage against a flanked/already-engaged target — positioning reward |
+| **Niner** (ranged) | Marksman | no move-and-shoot penalty; bonus damage at max range |
+| | Enforcer | hits reduce the target's move range next turn instead of raw damage — control over burst |
+| **Wrench** (control) | Bruiser | knockback travels further and damages anything it collides with |
+| | Anchor | can end its turn planted, granting adjacent allies a defensive bonus — zone control, not offense |
+
+## 5.2 Crew Naming
+
+A persistent named roster (§3, §5) needs a name generator before it needs the
+class tree wired up, so that half is built: `turf/js/names.js` + `turf/test/names.mjs`,
+seeded off the same `makeRng` every other random draw in this engine already uses,
+so a crew member's name replays identically for a given seed.
+
+The pool is deliberately narrow rather than a global name list — genre stereotypes
+narrowing the pool was the brief. TURF's setting is a Nordic border city, so
+surnames are Finnish-majority with Sweden / Norway / Russia / Estonia — Finland's
+actual neighbours — mixed in at minority weight; first names follow the same
+split. A nickname layer (~40% of units) adds the genre joke on top: a build hint
+('small'/'big') mostly draws a literally-fitting nickname (Tank, Bear... / Tiny,
+Mouse...) but sometimes reaches for the mismatch on purpose — a big guy called
+Smalls — plus a neutral pool (Ghost, Magpie, Knuckles...) and a HANDLE register
+(catlady05, DialUp, GLHF99...) for the internet-username stereotype, a genuinely
+different joke from a street nickname and drawn independent of build.
+
+**A unit's identity is its name — nothing else.** `randomName()` returns a name
+and nothing else on purpose: it has no idea what class its unit will play, and
+it shouldn't. Class is assigned to a unit *in the game* (squad-select or
+recruitment), same as §5.1's colour-not-likeness rule — a name is permanent, a
+class is not baked into who someone is. Concretely, when the roster lands:
+`unit.name` is set once (at creation) and never touched by class re-specs;
+`unit.class`/`unit.subclass` live in a separate field that a respec can change
+without touching the name. Don't let a future "starter kit" shortcut generate a
+name and a class in the same call — that recouples exactly what this section
+decouples.
+
+**Not yet wired to the roster.** `data/units.json` still has three fixed ids
+(`blade`/`niner`/`wrench`) with no name field — hooking `randomName()` up to an
+actual persistent crew is the same Phase 2 roster work as §5.1, not done here.
+
 ---
 
 ## 6. Setting & Tone
@@ -133,8 +208,15 @@ arcade tone.
 
 ## 9. Phase 2 (immediately after Phase 1 validates)
 
-- Expand to 3–5 encounters in sequence.
-- Add basic XP/leveling between fights.
+- ~~Expand to 3–5 encounters in sequence.~~ 2 of 3–5 shipped (`backlot` →
+  `loading-dock`, `js/main.js`'s `SEQUENCE`) — v4.
+- ~~Add basic XP/leveling between fights.~~ Shipped, scoped to one run (not a
+  cross-session save): a won encounter pays every surviving unit a clear
+  bonus + a per-kill bonus (`combat.js`'s `awardXp`), levels cost
+  progressively more XP and buy +2 max HP, healed immediately. No skill-slot
+  unlock yet — that half of this line waits on §5.1's class/subclass system
+  reaching the engine. `js/main.js`'s `crewProgress` carries level/XP/max HP
+  across `SEQUENCE`, keyed by `defId` — v6.
 - Introduce simple weapon-swap loot drops.
 - Keep grid size/enemy count variable per encounter (MST-style unpredictability).
 - Still no armor/consumables/combo-synergies — those stay on the roadmap (§5).
@@ -143,7 +225,9 @@ arcade tone.
 
 ## 10. Open Design Questions (for next planning pass)
 
-- Exact unit archetypes for the 3-unit starting squad (roles, not just weapons).
+- ~~Exact unit archetypes for the 3-unit starting squad (roles, not just weapons).~~
+  Addressed by §5.1 — three classes, two subclasses each, illustrative skills.
+  Still open: whether enemy grunts get subclasses too, or stay single-archetype.
 - Enemy archetypes and how "weaker but numerous" translates to actual stat design.
 - Whether telegraphing is per-enemy-type or universal in v1.
 - Grid traversal rules: obstacles, cover, elevation, hazards (drug-den fires? broken
