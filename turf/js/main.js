@@ -4,9 +4,10 @@
 import { PAL } from './palette.js?v=2';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
-} from './combat.js?v=2';
+  awardXp, xpToNext,
+} from './combat.js?v=3';
 import { computeLayout, render } from './render.js?v=2';
-import { createInputHandler } from './input.js?v=2';
+import { createInputHandler } from './input.js?v=3';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
@@ -18,11 +19,32 @@ const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('re
 let DATA = null, state = null, layout = null, input = null, enemyPhaseRunning = false;
 
 // GDD.md §9: "Expand to 3-5 encounters in sequence." Two so far (loading-dock
-// added right after backlot). No persistence/XP yet (that's queued after this
-// per owner direction) — each encounter still boots the same fixed 3-unit
-// squad at full HP; only the sequence position carries across a win.
+// added right after backlot).
 const SEQUENCE = ['backlot', 'loading-dock'];
 let seqIndex = 0;
+
+// GDD.md §5's v1 list, the other half: "XP levels... unlocking small stat
+// bumps." Scoped to ONE RUN — a run is the walk through SEQUENCE, same as
+// GDD §3's "Run ends on squad wipe" framing — not a cross-session save file;
+// that's the meta-roster/loot half of §5, explicitly roadmap, not this. Keyed
+// by defId ('blade'/'niner'/'wrench'), which is stable across encounters
+// even if a future encounter reorders playerSpawns; uid ('p0'..) is not.
+let crewProgress = {};
+
+function applyProgress(state) {
+  for (const u of state.units) {
+    if (u.faction !== 'player') continue;
+    const p = crewProgress[u.defId];
+    if (!p) continue;
+    u.level = p.level; u.xp = p.xp; u.maxHp = p.maxHp; u.hp = p.maxHp;
+  }
+}
+function saveProgress(state) {
+  for (const u of state.units) {
+    if (u.faction !== 'player') continue;
+    crewProgress[u.defId] = { level: u.level, xp: u.xp, maxHp: u.maxHp };
+  }
+}
 
 async function loadData() {
   const [weapons, units, enemies, encounters] = await Promise.all(
@@ -45,9 +67,11 @@ window.addEventListener('resize', fitCanvas);
 function boot(seed) {
   const encounter = DATA.encounters.find(e => e.id === SEQUENCE[seqIndex]);
   state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed);
+  applyProgress(state);
   state.moveTiles = new Map();
   state.attackTiles = [];
   state.cursor = null;
+  state.rewarded = false;
   layout = computeLayout(state.grid);
   canvas.width = layout.width;
   canvas.height = layout.height;
@@ -75,8 +99,22 @@ function attackText(state, attackerName, evt) {
 function onChange() {
   render(canvas, state, layout);
   updateHud();
-  if (state.result) { showResult(state.result); return; }
+  if (state.result) { finishEncounter(state.result); return; }
   if (state.turn === 'enemy' && !enemyPhaseRunning) runEnemyPhase();
+}
+
+// checkWinLoss (combat.js) can flip state.result from more than one call
+// site in a single enemy phase's worth of ticks, so the reward has to be
+// idempotent per encounter rather than tied to "the first time we noticed" —
+// state.rewarded (set false in boot()) is the guard.
+function finishEncounter(result) {
+  let xpEvents = [];
+  if (result === 'win' && !state.rewarded) {
+    state.rewarded = true;
+    xpEvents = awardXp(state);
+    saveProgress(state);
+  }
+  showResult(result, xpEvents);
 }
 
 function runEnemyPhase() {
@@ -92,7 +130,7 @@ function runEnemyPhase() {
         : (step.moved ? `${step.name} moves in.` : `${step.name} holds.`);
       setToast(line);
     }
-    if (state.result) { enemyPhaseRunning = false; showResult(state.result); return; }
+    if (state.result) { enemyPhaseRunning = false; finishEncounter(state.result); return; }
     if (step && step.done) { enemyPhaseRunning = false; setToast('Your move.'); return; }
     setTimeout(tick, 600);
   };
@@ -111,32 +149,42 @@ function updateHud() {
     btn.className = 'unitBtn' + (u.hp <= 0 ? ' dead' : '') + (state.selected === u.uid ? ' selected' : '') + (u.hp > 0 && !canUnitAct(u) ? ' done' : '');
     btn.disabled = u.hp <= 0 || state.turn !== 'player';
     const frac = Math.max(0, u.hp / u.maxHp);
-    btn.innerHTML = `<span class="nm">${u.name}</span><span class="hpTrack"><span class="hpFill" style="width:${frac * 100}%;background:${frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD}"></span></span>`;
+    btn.innerHTML = `<span class="nm">${u.name} · Lv${u.level}</span><span class="hpTrack"><span class="hpFill" style="width:${frac * 100}%;background:${frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD}"></span></span>`;
     btn.addEventListener('pointerup', e => { e.preventDefault(); input.selectByUid(u.uid); });
     squadEl.appendChild(btn);
   }
 
   const sel = state.selected ? getUnit(state, state.selected) : null;
   if (sel) {
-    selInfoEl.innerHTML = `<b>${sel.name}</b> · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
+    selInfoEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
       + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`;
   } else {
     selInfoEl.textContent = state.turn === 'player' ? 'Select an operator.' : '';
   }
 }
 
-function showResult(result) {
+function xpSummaryText(events) {
+  if (!events.length) return '';
+  return events.map(e => {
+    const lvl = e.levelsGained.length ? ` → Lv${e.levelsGained[e.levelsGained.length - 1]}!` : '';
+    return `${e.name} +${e.gained} XP${lvl}`;
+  }).join(' · ');
+}
+
+function showResult(result, xpEvents = []) {
   resultEl.hidden = false;
   const isLastEncounter = seqIndex >= SEQUENCE.length - 1;
+  const xpLine = xpSummaryText(xpEvents);
   if (result === 'win' && !isLastEncounter) {
     resultTitle.textContent = 'BLOCK CLEARED';
     resultTitle.className = 'win';
-    resultBody.textContent = 'Quiet for now. One more block to go.';
+    resultBody.textContent = 'Quiet for now. One more block to go.' + (xpLine ? ` (${xpLine})` : '');
     resultAgain.textContent = 'Continue';
   } else if (result === 'win') {
     resultTitle.textContent = 'TURF SECURED';
     resultTitle.className = 'win';
-    resultBody.textContent = "Every block on the list. The city doesn't get any nicer, but tonight it's yours.";
+    resultBody.textContent = "Every block on the list. The city doesn't get any nicer, but tonight it's yours."
+      + (xpLine ? ` (${xpLine})` : '');
     resultAgain.textContent = 'Run It Back';
   } else {
     resultTitle.textContent = 'CREW DOWN';
@@ -156,7 +204,11 @@ resultAgain.addEventListener('pointerup', e => {
   e.preventDefault();
   // Winning a non-final encounter advances the sequence; a final win or any
   // loss restarts the run from encounter 1 — see the SEQUENCE comment above.
-  seqIndex = (state.result === 'win' && seqIndex < SEQUENCE.length - 1) ? seqIndex + 1 : 0;
+  // A new run also clears crewProgress: XP/levels are scoped to one run,
+  // same as the comment on crewProgress explains.
+  const advancing = state.result === 'win' && seqIndex < SEQUENCE.length - 1;
+  seqIndex = advancing ? seqIndex + 1 : 0;
+  if (!advancing) crewProgress = {};
   boot(Date.now());
 });
 topbar.endTurn.addEventListener('pointerup', e => { e.preventDefault(); input && input.endTurn(); });
@@ -174,6 +226,7 @@ window.__turf = {
   endTurn: () => input && input.endTurn(),
   sequence: () => ({ ids: SEQUENCE.slice(), index: seqIndex }),
   setSequenceIndex: i => { seqIndex = i; },
+  crewProgress: () => ({ ...crewProgress }),
 };
 
 loadData().then(data => {

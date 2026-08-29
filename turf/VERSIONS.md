@@ -8,6 +8,47 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v6 — 2026-08-29
+**Basic XP/leveling between fights — GDD.md §9's second Phase 2 item, after
+encounter sequencing (v4).**
+
+- `js/combat.js`: `resolveAttack` credits a killing blow's attacker with a
+  kill (new `unit.kills` field). `awardXp(state)`, called once per won
+  encounter: every *surviving* player unit is paid a flat clear bonus
+  (`XP_BASE_CLEAR` 10) plus a per-kill bonus (`XP_PER_KILL` 8) — a dead unit
+  earns nothing, a unit that never landed a kill still earns the clear bonus.
+  Levels cost progressively more (`xpToNext(level) = 20 + (level-1)*15`) and
+  buy `+HP_PER_LEVEL` (2) max HP, healed immediately rather than banked; a
+  big enough haul rolls more than one level in the same award. No skill-slot
+  unlock — GDD §5's "or a new active skill slot" half waits on §5.1's
+  class/subclass system reaching the engine, which it does not yet.
+- `js/main.js`: `crewProgress` (keyed by `defId`, not `uid` — stable even if
+  a future encounter reorders spawns) carries level/XP/max HP across
+  `SEQUENCE`. **Scoped to one run, not a cross-session save** — same "survive
+  within a run" framing as GDD §3/§5 already use; resets when a new run
+  starts (a loss, or continuing past the final encounter), which is also the
+  first real use of that "advancing vs. new run" branch in the `resultAgain`
+  handler v4 introduced. `finishEncounter()` wraps both `showResult` call
+  sites (`onChange`'s and `runEnemyPhase`'s) so the award happens exactly
+  once per encounter — `state.rewarded`, reset in `boot()`, is the guard
+  against `checkWinLoss` being reachable from more than one call site.
+  Result-screen text now reports what was earned; the squad HUD and the
+  selected-unit line both show level (and XP-to-next for the selection).
+- `test/smoke.mjs`: kill-crediting on a deterministic one-hit kill, and
+  `awardXp`'s math (no-op on an unfinished encounter, survivor-only payout,
+  a single level-up banking its remainder and healing the HP bump, a big
+  haul rolling more than one level) — all against hand-built state literals,
+  the same style the grid-primitive checks already use.
+- Verified in a real browser: a real win via the actual `attack()` path
+  (RNG and all, not a mocked result) pays kills correctly per unit,
+  Continue carries the exact post-award level/XP/max HP/HP into
+  `loading-dock`'s fresh boot, and the squad HUD renders the level tag.
+- `js/combat.js?v=2` → `v=3` (its own bytes changed) → cascades to its two
+  importers: `js/main.js?v=3` → `v=4` and `js/input.js`'s own reference
+  `?v=2` → `v=3`; `js/input.js` itself is referenced from `main.js` at
+  `?v=2` → `v=3`; `index.html`'s `js/main.js?v=3` → `v=4` (main.js's own
+  bytes also changed independent of the combat.js bump).
+
 ## v5 — 2026-08-28
 **Animation-sheet feedback, doc-only.** `ART_REQUEST.md` §2.2: three
 owner-supplied candidate animation sheets run through the real `key`/`fit`/
