@@ -6,12 +6,12 @@ function buildTokoCabinet(){
   const canvas=document.createElement('canvas');canvas.className='art';canvas.width=128;canvas.height=72;canvas.setAttribute('aria-hidden','true');
   frame.appendChild(canvas);card.appendChild(frame);
   const body=document.createElement('div');body.className='cab-body';
-  const head=document.createElement('div');head.className='cab-head';const caret=document.createElement('span');caret.className='caret';caret.textContent='>';const h3=document.createElement('h3');const title=document.createElement('a');title.className='cab-link';title.href='#tokolive';title.textContent='Toko Live';title.onclick=e=>{e.preventDefault();card.scrollIntoView({block:'center',behavior:'smooth'});history.replaceState(null,'','#tokolive')};h3.appendChild(title);head.append(caret,h3);const ver=document.createElement('span');ver.className='ver';ver.textContent='v18';head.appendChild(ver);body.appendChild(head);
+  const head=document.createElement('div');head.className='cab-head';const caret=document.createElement('span');caret.className='caret';caret.textContent='>';const h3=document.createElement('h3');const title=document.createElement('a');title.className='cab-link';title.href='#tokolive';title.textContent='Toko Live';title.onclick=e=>{e.preventDefault();card.scrollIntoView({block:'center',behavior:'smooth'});history.replaceState(null,'','#tokolive')};h3.appendChild(title);head.append(caret,h3);const ver=document.createElement('span');ver.className='ver';ver.textContent='v20';head.appendChild(ver);body.appendChild(head);
   const lineage=document.createElement('p');lineage.className='lineage';lineage.textContent='Sierra conversation × virtual character × local project brain';
-  const tagline=document.createElement('p');tagline.className='tagline';tagline.textContent='Talk to Toko face to face. Project knowledge, critique, decisions, status and factual news.';
+  const tagline=document.createElement('p');tagline.className='tagline';tagline.textContent='Talk to Toko face to face. Contextual conversation, project memory, decisions, status and factual news.';
   const tags=document.createElement('ul');tags.className='tags';for(const t of ['conversation','project-brain','local']){const li=document.createElement('li');li.textContent=t;tags.appendChild(li)}
-  const note=document.createElement('p');note.className='note';note.textContent='v18 — approved Toko face only';
-  const controls=document.createElement('p');controls.className='controls';controls.textContent='type and press Enter · tap suggested topics · Esc / HOME returns';
+  const note=document.createElement('p');note.className='note';note.textContent='v20 — contextual 1–4 conversation';
+  const controls=document.createElement('p');controls.className='controls';controls.textContent='type and press Enter · tap 1–4 contextual replies · Esc / HOME returns';
   const actions=document.createElement('div');actions.className='actions';const play=document.createElement('a');play.className='btn play';play.href='toko-live/';play.textContent='[ PLAY ]';actions.appendChild(play);
   body.append(lineage,tagline,tags,note,controls,actions);card.appendChild(body);
   const c=canvas.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#f0027f';c.fillRect(0,0,128,72);drawFace(c,25,3,78,{color:'#fff',open:0});
@@ -19,22 +19,6 @@ function buildTokoCabinet(){
 }
 
 let queued=false;
-function ensureTokoCabinet(){
-  queued=false;
-  const rack=document.getElementById('cabinets');
-  if(!rack||document.getElementById('cab-tokolive')) return;
-  rack.prepend(buildTokoCabinet());
-}
-function queueEnsure(){
-  if(queued) return;
-  queued=true;
-  queueMicrotask(ensureTokoCabinet);
-}
-
-ensureTokoCabinet();
-new MutationObserver(queueEnsure).observe(document.body,{childList:true,subtree:true});
-addEventListener('load',queueEnsure);
-addEventListener('hashchange',queueEnsure);
-setTimeout(queueEnsure,250);
-setTimeout(queueEnsure,1000);
-setTimeout(queueEnsure,2500);
+function ensureTokoCabinet(){queued=false;const rack=document.getElementById('cabinets');if(!rack||document.getElementById('cab-tokolive')) return;rack.prepend(buildTokoCabinet())}
+function queueEnsure(){if(queued)return;queued=true;queueMicrotask(ensureTokoCabinet)}
+ensureTokoCabinet();new MutationObserver(queueEnsure).observe(document.body,{childList:true,subtree:true});addEventListener('load',queueEnsure);addEventListener('hashchange',queueEnsure);setTimeout(queueEnsure,250);setTimeout(queueEnsure,1000);setTimeout(queueEnsure,2500);
