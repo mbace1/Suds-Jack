@@ -1,14 +1,13 @@
-// Radio Free Helsinki — one post's screen, and the voice that drives it.
-// Vertical codec: story panel on top, Toko portrait below. While live, a cut
-// sequencer cycles weighted-random shots. Programmed stories can bias that
-// rhythm, and DECODE deliberately returns to the story graphic long enough for
-// its visual argument to be seen before ordinary cuts resume.
+// Radio Free Helsinki — broadcast shot sequencer and reader.
+// Shot rhythm is deliberately editorial: faces are brief, explanatory graphics
+// and Helsinki ambience breathe longer, immediate repeats are blocked, and
+// DECODE gets an uninterrupted analysis hold before normal cutting resumes.
 
 import { PixelScreen, shade, mix } from './screen.js?v=37';
 import { PAL, SECTOR_COLOR } from './palette.js?v=37';
 import { Toko } from './toko.js?v=37';
 import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=37';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=37';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=41';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -17,9 +16,8 @@ const DATA = { x: 110, y: 166, w: 26, h: 96 };
 const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 
 const DEFAULT_WEIGHTS = { face: 0.20, graphic: 0.15, broll: 0.65 };
-const CUT_MIN = 3.2, CUT_MAX = 5.5;
-const DECODE_HOLD = 2.4;
-const AMBIENT_SHARE = 0.34;
+const DECODE_HOLD = 3.6;
+const AMBIENT_SHARE = 0.40;
 
 function shotWeights(story) {
   switch (story.label) {
@@ -43,6 +41,26 @@ function beatHash(text = '') {
   return h >>> 0;
 }
 
+function sameShot(a, b) {
+  if (!a || !b || a.type !== b.type) return false;
+  return a.type === 'graphic' || a.type === 'face' || a.key === b.key;
+}
+
+function cutRange(story, shot) {
+  let lo = 3.8, hi = 5.8;
+  if (shot.type === 'face') { lo = 2.5; hi = 3.6; }
+  if (shot.type === 'graphic') { lo = 4.8; hi = 6.8; }
+  if (shot.type === 'ambient') { lo = 5.2; hi = 7.4; }
+  if (story.label === 'LEAD') { lo += 0.6; hi += 0.9; }
+  if (story.label === 'ODD WIRE') { lo -= 0.4; hi -= 0.5; }
+  return [Math.max(2.2, lo), Math.max(lo + 0.8, hi)];
+}
+
+function nextCutFor(story, shot) {
+  const [lo, hi] = cutRange(story, shot);
+  return lo + Math.random() * (hi - lo);
+}
+
 function pickBroll(story, lastKey) {
   const pool = (BROLL_KEYS && BROLL_KEYS.length) ? BROLL_KEYS
     : ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station', 'suomenlinna', 'katajanokka'];
@@ -52,25 +70,35 @@ function pickBroll(story, lastKey) {
   return others[Math.floor(Math.random() * others.length)] || own || pool[0];
 }
 
-function pickAmbient(story) {
+function pickAmbient(story, avoidKey = null) {
   if (!AMBIENT_KEYS.length) return null;
-  // Deterministic offset gives each bulletin a home ambience, while the live
-  // clock moves through the library rather than cutting to the same city shot.
   const h = beatHash(`${story.id || ''}:${story.label || ''}`);
-  const step = Math.floor(performance.now() / 5000);
-  return AMBIENT_KEYS[(h + step) % AMBIENT_KEYS.length];
+  const step = Math.floor(performance.now() / 6500);
+  const pool = AMBIENT_KEYS.filter(k => k !== avoidKey);
+  const list = pool.length ? pool : AMBIENT_KEYS;
+  return list[(h + step) % list.length];
 }
 
-function pickShot(story, lastKey) {
+function rawPickShot(story, lastBroll, previous) {
   const w = shotWeights(story);
   const r = Math.random();
   if (r < w.face) return { type: 'face' };
   if (r < w.face + w.graphic) return { type: 'graphic' };
   if (Math.random() < AMBIENT_SHARE) {
-    const key = pickAmbient(story);
+    const key = pickAmbient(story, previous?.type === 'ambient' ? previous.key : null);
     if (key) return { type: 'ambient', key };
   }
-  return { type: 'broll', key: pickBroll(story, lastKey) };
+  return { type: 'broll', key: pickBroll(story, lastBroll) };
+}
+
+function pickShot(story, lastBroll, previous) {
+  for (let i = 0; i < 5; i++) {
+    const candidate = rawPickShot(story, lastBroll, previous);
+    if (!sameShot(candidate, previous)) return candidate;
+  }
+  if (previous?.type !== 'graphic') return { type: 'graphic' };
+  const key = pickAmbient(story, previous?.key);
+  return key ? { type: 'ambient', key } : { type: 'broll', key: pickBroll(story, lastBroll) };
 }
 
 export class Post {
@@ -94,27 +122,26 @@ export class Post {
     this.wave = new Array(31).fill(0.2);
     this.live = false;
     this.silent = false;
-    this.shot = story.broll
-      ? { type: 'broll', key: story.broll }
-      : { type: 'graphic' };
+    this.shot = story.broll ? { type: 'broll', key: story.broll } : { type: 'graphic' };
     this.lastBroll = story.broll || null;
     this.cutT = 0;
-    this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
+    this.nextCut = nextCutFor(this.story, this.shot);
   }
 
   goLive() {
     this.live = true;
     this.signal = 0;
-    this.shot = this.story.broll
-      ? { type: 'broll', key: this.story.broll }
-      : pickShot(this.story, this.lastBroll);
+    this.shot = this.story.broll ? { type: 'broll', key: this.story.broll } : pickShot(this.story, this.lastBroll, this.shot);
     this.noteShot();
     this.cutT = 0;
-    this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
+    this.nextCut = nextCutFor(this.story, this.shot);
   }
+
   goIdle() { this.live = false; }
 
-  noteShot() { if (this.shot && this.shot.type === 'broll' && this.shot.key) this.lastBroll = this.shot.key; }
+  noteShot() {
+    if (this.shot?.type === 'broll' && this.shot.key) this.lastBroll = this.shot.key;
+  }
 
   update(dt, mouth) {
     this.t += dt;
@@ -125,6 +152,7 @@ export class Post {
       this.shot = { type: 'graphic' };
       this.decodeHold = DECODE_HOLD;
       this.cutT = 0;
+      this.nextCut = nextCutFor(this.story, this.shot);
     }
     this.wasDecoded = this.decoded;
     this.decodeHold = Math.max(0, this.decodeHold - dt);
@@ -134,10 +162,11 @@ export class Post {
     if (this.live && !this.silent && this.decodeHold <= 0) {
       this.cutT += dt;
       if (this.cutT >= this.nextCut) {
-        this.shot = pickShot(this.story, this.lastBroll);
+        const previous = this.shot;
+        this.shot = pickShot(this.story, this.lastBroll, previous);
         this.noteShot();
         this.cutT = 0;
-        this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
+        this.nextCut = nextCutFor(this.story, this.shot);
       }
     }
 
@@ -157,13 +186,10 @@ export class Post {
   draw() {
     const s = this.scr;
     s.clear(PAL.SHELL);
-
     const faceShot = this.live && this.shot.type === 'face';
     const ambientShot = this.shot.type === 'ambient';
     let visualKey = this.story.visual;
-    if (this.shot.type === 'broll') {
-      visualKey = this.shot.key || this.story.broll || 'cathedral';
-    }
+    if (this.shot.type === 'broll') visualKey = this.shot.key || this.story.broll || 'cathedral';
 
     if (faceShot) {
       this.toko.draw(this.panel, this.signal, true);
@@ -186,7 +212,6 @@ export class Post {
     this.decodeCue();
     this.dataColumn();
     this.waveband(mix(this.accent, PAL.AMBER_HOT, this.decode));
-
     s.px(0, 0, POST_W, 1, shade(PAL.SHELL, 1.9));
     s.px(0, POST_H - 1, POST_W, 1, shade(PAL.SHELL, 0.4));
   }
@@ -231,14 +256,9 @@ export class Post {
     s.px(DATA.x, DATA.y, DATA.w, 1, shade(c, 0.4));
     s.px(DATA.x, DATA.y + DATA.h - 1, DATA.w, 1, shade(c, 0.4));
     num(s, DATA.x + 3, DATA.y + 5, this.freq, c);
-
     const on = Math.floor(this.t * 1.6) % 2 === 0;
     s.px(DATA.x + 4, DATA.y + 16, 4, 4, on ? PAL.DEFENCE : shade(PAL.DEFENCE, 0.3));
     s.px(DATA.x + 11, DATA.y + 17, 9, 2, shade(c, 0.7));
-
-    // Three tiny programme bars make the desk metadata visible as rhythm, not
-    // as another label competing with the bulletin. Amber still appears only
-    // after DECODE because c follows the existing colour vocabulary.
     if (this.story.label) {
       const h = beatHash(this.story.label);
       for (let i = 0; i < 3; i++) {
@@ -246,14 +266,12 @@ export class Post {
         s.px(DATA.x + 4, DATA.y + 23 + i * 3, w, 1, shade(c, 0.65 + i * 0.12));
       }
     }
-
     const segs = 11, top = DATA.y + 35;
     const lit = Math.round(this.mouth * segs);
     for (let i = 0; i < segs; i++) {
       const y = top + (segs - 1 - i) * 5;
       const hot = i >= segs - 3;
-      s.px(DATA.x + 6, y, 14, 3,
-        i < lit ? (hot ? PAL.AMBER_HOT : c) : shade(PAL.PANEL, 1.6));
+      s.px(DATA.x + 6, y, 14, 3, i < lit ? (hot ? PAL.AMBER_HOT : c) : shade(PAL.PANEL, 1.6));
     }
   }
 
@@ -341,9 +359,7 @@ export class Reader {
       if (!on) { item.node.textContent = ''; item.i = 0; }
     }
     for (const p of this.host.querySelectorAll('.spun')) p.classList.toggle('struck', on);
-    if (this.done && on) {
-      for (const item of this.queue) if (item.onlyDecoded) item.node.textContent = item.text;
-    }
+    if (this.done && on) for (const item of this.queue) if (item.onlyDecoded) item.node.textContent = item.text;
   }
 
   finish() {
