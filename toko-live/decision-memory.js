@@ -1,0 +1,9 @@
+const KEY='tokoLive.decisions.v1';
+function read(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}
+function write(v){localStorage.setItem(KEY,JSON.stringify(v.slice(-120)))}
+function projectFrom(s){const names=['TINY HAWK','EERI','PIRITORI','BETTERMENT','HYPER DAGGER','SUDS JACK','FLASH PRINCE','TOKO DROP'];return names.find(n=>String(s||'').toUpperCase().includes(n))||null}
+function remember(text){const project=projectFrom(text)||'GLOBAL';const lower=text.toLowerCase();let type='decision';if(/reject|don'?t|do not|wrong|not this|no,/.test(lower))type='rejected';else if(/approve|approved|keep this|this works|good|yes/.test(lower))type='approved';const item={id:Date.now(),project,type,text,at:new Date().toISOString()};const all=read();all.push(item);write(all);window.dispatchEvent(new CustomEvent('toko:decision',{detail:item}));return item}
+function list(project){return read().filter(x=>!project||x.project===project).slice(-8).reverse()}
+function summary(project){const xs=list(project);if(!xs.length)return `I do not have explicit stored decisions for ${project||'this project'} yet.`;return xs.map(x=>`${x.type.toUpperCase()}: ${x.text}`).join('  ')}
+addEventListener('keydown',e=>{const i=document.querySelector('.toko-chat .tc-say-row input');if(e.key!=='Enter'||e.target!==i)return;const q=i.value.trim();if(!q)return;if(/remember that|approved|reject|don'?t use|do not use|this works|not this|you are wrong|that is wrong/i.test(q))remember(q);if(/what did we decide|decision memory|what have i approved|what did i reject/i.test(q)){e.stopImmediatePropagation();e.preventDefault();i.value='';const p=projectFrom(q);const log=document.querySelector('.toko-chat .tc-log');if(log){const d=document.createElement('div');d.className='tc-me';d.textContent=summary(p);log.appendChild(d);log.scrollTop=log.scrollHeight}}},true);
+window.TokoDecisionMemory={read,list,remember,summary};
