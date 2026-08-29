@@ -1,4 +1,4 @@
-// Toko Move daylight smoke gate — Central Helsinki delivery challenge.
+// Toko Move daylight smoke gate — Helsinki delivery challenge on real HSL geography.
 const { chromium } = require('playwright');
 const http = require('http'); const fs = require('fs'); const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -20,12 +20,13 @@ s.listen(0, '127.0.0.1', async () => {
   const errs = [];
   p.on('pageerror', e => errs.push('pageerror: ' + e.message));
   p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-  await p.goto(base + '/toko-move/'); await p.waitForTimeout(500);
+  await p.goto(base + '/toko-move/'); await p.waitForTimeout(700);
   ok('boots with no errors', errs.length === 0, errs.slice(0, 2).join(' | '));
   ok('delivery handle is exposed', await p.evaluate(() => !!window.__tm && !!window.__tm.challenge));
-  ok('Central Helsinki graph is active', await p.evaluate(() => {
+  ok('real Helsinki graph is active', await p.evaluate(() => {
     const ids = new Set([...window.__tm.flow.graph.nodes.keys()]);
-    return ['pasila','toolontori','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x => ids.has(x));
+    return ['pasila','toolontori','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x => ids.has(x))
+      && [...window.__tm.flow.graph.nodes.values()].every(n => Number.isFinite(n.lat) && Number.isFinite(n.lon) && n.hslStopId);
   }));
   ok('first A to B job exists', await p.evaluate(() => {
     const j = window.__tm.challenge.active;
@@ -42,12 +43,15 @@ s.listen(0, '127.0.0.1', async () => {
     const first=[g[0],g[1],g[2]].join(); for(let i=4;i<g.length;i+=4) if([g[i],g[i+1],g[i+2]].join()!==first) return true; return false;
   }));
   const drew = await p.evaluate(() => {
-    const r = window.__tm.flow.addRoute('tram', ['toolontori','rautatientori','hakaniemi','kallionkirkko']); return !r.error;
+    const r = window.__tm.flow.addRoute('tram', ['rautatientori','hakaniemi']); return !r.error;
   });
-  ok('a Helsinki line can be drawn', drew);
-  ok('fixed metro/tram/rail skeleton exists', await p.evaluate(() => {
+  ok('a current Helsinki tram segment can be drawn', drew);
+  ok('fixed services come from HSL tram + metro', await p.evaluate(() => {
     const rs=window.__tm.flow.routes.list.filter(r=>r.fixed);
-    return rs.some(r=>r.mode==='metro') && rs.some(r=>r.mode==='tram') && rs.some(r=>r.label==='R');
+    const metro=rs.some(r=>r.mode==='metro' && (r.label==='M1'||r.label==='M2'));
+    const tram=rs.some(r=>r.mode==='tram' && ['2','3','4','5','6','7','8H','8T','9','13'].includes(r.label));
+    const oldFake=rs.some(r=>r.label==='T'||r.label==='R'||r.label==='M');
+    return metro && tram && !oldFake;
   }));
   await p.click('#pause'); await p.waitForTimeout(250);
   const t1=await p.evaluate(()=>window.__tm.flow.clock.tick); await p.waitForTimeout(350); const t2=await p.evaluate(()=>window.__tm.flow.clock.tick);
@@ -57,6 +61,7 @@ s.listen(0, '127.0.0.1', async () => {
   }));
   await p.click('#pause');
   ok('HUD describes delivery game', await p.evaluate(() => document.getElementById('done').textContent.includes('/10') && document.getElementById('reach').textContent.includes('→')));
+  ok('large visible version matches runtime', await p.evaluate(() => document.querySelector('.versionHero')?.textContent.includes(`v${window.__tm.version}`)));
   ok('no horizontal phone overflow', await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   const small=await p.$$eval('button',bs=>bs.filter(x=>{const r=x.getBoundingClientRect();return r.width>0&&(r.width<44||r.height<44);}).map(x=>x.id||x.textContent.trim().slice(0,16)));
   ok('controls clear 44px', small.length===0, small.join(', '));
