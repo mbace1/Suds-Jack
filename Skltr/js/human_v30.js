@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Bunny, FILL_MAT, C, lerp } from './shared.js?v=12';
 
-// SKLTR v30 — presentation-only humanisation layer.
+// SKLTR v30.1 — presentation-only humanisation layer.
 // Keeps Player movement/physics untouched and reuses the existing articulated rig.
 const originalUpdate = Bunny.prototype.update;
 
@@ -51,8 +51,10 @@ Bunny.prototype.update = function(dt, state={}) {
     this.body.rotation.y = lerp(this.body.rotation.y, cyc * .055 * run, dt*12);
     this.chest.rotation.y = lerp(this.chest.rotation.y, -cyc * .11 * run, dt*12);
     this.chest.rotation.z = lerp(this.chest.rotation.z, -cyc * .035 * run, dt*10);
+    this.chest.rotation.x = lerp(this.chest.rotation.x, .07 * run, dt*10);
     this.body.position.y += Math.abs(Math.sin(this._humanRun*2)) * .025 * run;
     this.head.rotation.z = lerp(this.head.rotation.z, cyc * .018 * run, dt*9);
+    this.head.rotation.x = lerp(this.head.rotation.x, -.035 * run, dt*9);
     this.legL.foot.rotation.x = lerp(this.legL.foot.rotation.x, -cyc * .18, dt*14);
     this.legR.foot.rotation.x = lerp(this.legR.foot.rotation.x, -cyc2 * .18, dt*14);
   }
@@ -64,13 +66,13 @@ Bunny.prototype.update = function(dt, state={}) {
     this.legR.thigh.pivot.rotation.x = lerp(this.legR.thigh.pivot.rotation.x, hip*.72, dt*11);
     this.legL.shin.pivot.rotation.x = lerp(this.legL.shin.pivot.rotation.x, knee, dt*12);
     this.legR.shin.pivot.rotation.x = lerp(this.legR.shin.pivot.rotation.x, knee*.85, dt*12);
-    this.chest.rotation.x = lerp(this.chest.rotation.x, rising ? -.11 : .08, dt*9);
-    this.head.rotation.x = lerp(this.head.rotation.x, rising ? .08 : -.05, dt*9);
+    this.chest.rotation.x = lerp(this.chest.rotation.x, rising ? .11 : -.06, dt*9);
+    this.head.rotation.x = lerp(this.head.rotation.x, rising ? -.07 : .04, dt*9);
   }
 
   if (dash) {
-    this.chest.rotation.x = lerp(this.chest.rotation.x,-.36,dt*20);
-    this.head.rotation.x = lerp(this.head.rotation.x,.22,dt*18);
+    this.chest.rotation.x = lerp(this.chest.rotation.x,.34,dt*20);
+    this.head.rotation.x = lerp(this.head.rotation.x,-.18,dt*18);
     this.armLU.pivot.rotation.x = lerp(this.armLU.pivot.rotation.x,.55,dt*20);
     this.armRU.pivot.rotation.x = lerp(this.armRU.pivot.rotation.x,-.18,dt*20);
     this.legL.thigh.pivot.rotation.x = lerp(this.legL.thigh.pivot.rotation.x,.58,dt*20);
@@ -80,7 +82,8 @@ Bunny.prototype.update = function(dt, state={}) {
 
   if (this._humanLand > 0) {
     const k=this._humanLand;
-    this.chest.rotation.x += .18*k;
+    this.chest.rotation.x -= .12*k;
+    this.head.rotation.x += .06*k;
     this.legL.thigh.pivot.rotation.x += .24*k; this.legR.thigh.pivot.rotation.x += .24*k;
     this.legL.shin.pivot.rotation.x += .34*k; this.legR.shin.pivot.rotation.x += .34*k;
   }
