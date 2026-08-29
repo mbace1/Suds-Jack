@@ -17,16 +17,16 @@
 
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js?v=52';
-import { Hero } from './hero.js?v=51';
-import { World, ROOMS, ROOM_H } from './level.js?v=53a';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=53';
+import { Hero } from './hero.js?v=54';
+import { World, ROOMS, ROOM_H } from './level.js?v=54';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=54';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
-import { Input } from './input.js?v=51';
+import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
-import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=51';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=54';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 // The gallery keeps one flat palette, cool and quiet, so a cycle reads. The
@@ -107,6 +107,7 @@ class Stage {
     this.clock = 0;
     this.hint = 420;              // the control line fades out of the way
     this.flash = 0;
+    this.tracer = null;
     this.tapes = 0;
     this.lootFlash = 0;
   }
@@ -154,7 +155,7 @@ class Stage {
     this.foes = w.spawns.filter(s => s.kind === 's')
       .map(s => new Swordsman(s.x, s.y, -1, [10, W - 10]));
     this.unbuilt = w.spawns.filter(s => s.kind !== 's').length;
-    this.post = null;
+    this.post = w.room.scene === 'floodedHub' ? new Post(258, 176) : null;
     const h = this.hero;
     if (from === 'left') { h.x = 6; h.face = 1; }
     else if (from === 'right') { h.x = W - 6; h.face = -1; }
@@ -196,15 +197,18 @@ class Stage {
     // Start/escape always returns to the character menu. The default is the
     // complete Conrad set; the immutable v18 runner remains selectable here.
     if (inp.pausePress && this.mode !== 'select') {
-      this.characterChoice = this.hero.character === 'legacy' ? 1 : 0;
+      this.characterChoice = this.hero.character === 'classic' ? 1
+        : this.hero.character === 'legacy' ? 2 : 0;
       this.mode = 'select';
       return;
     }
 
     if (this.mode === 'select') {
-      if (inp.dir && inp.dirHeld === 1) this.characterChoice = inp.dir > 0 ? 1 : 0;
+      if (inp.dir && inp.dirHeld === 1) {
+        this.characterChoice = (this.characterChoice + inp.dir + 3) % 3;
+      }
       if (inp.jumpPress || inp.firePress) {
-        this.hero.character = this.characterChoice ? 'legacy' : 'conrad';
+        this.hero.character = ['conrad', 'classic', 'legacy'][this.characterChoice];
         const spawn = this.world.spawn ?? { x: 48, y: this.groundUnder(48, FLOOR) };
         this.hero.reset(spawn.x, spawn.y);
         this.hero.health = 3;
@@ -258,6 +262,7 @@ class Stage {
     this.picking(h);
 
     if (this.flash > 0) this.flash--;
+    if (this.tracer && --this.tracer.t <= 0) this.tracer = null;
     if (h.shotQueued) { h.shotQueued = false; this.flash = 3; this.snd.shot(); this.shoot(h); }
     if (this.post) this.post.update();
 
@@ -266,7 +271,15 @@ class Stage {
       if (foe.hitQueued) {
         foe.hitQueued = false;
         const t = foe.tip();
-        if (this.reached(foe.x, t.x, h.x) && !h.guarding) h.strike(1, foe.x, this);
+        if (this.reached(foe.x, t.x, h.x)) {
+          const front = (foe.x - h.x) * h.face > 0;
+          if (h.shielding && front) {
+            h.shield = Math.max(0, h.shield - 18);
+            h.shieldFlash = 8;
+            foe.go('clang');
+            this.snd.woodHit();
+          } else if (!h.guarding) h.strike(1, foe.x, this);
+        }
       }
     }
     // The edge lands on ONE frame in the middle of the swing. That is the whole
@@ -314,6 +327,8 @@ class Stage {
     const ahead = targets
       .filter(t => (t.x - h.x) * h.face > 0 && Math.abs(t.x - h.x) < 200)
       .sort((a, b) => Math.abs(a.x - h.x) - Math.abs(b.x - h.x))[0];
+    const m = h.muzzle();
+    this.tracer = { x1: m.x, y: m.y, x2: ahead?.x ?? m.x + h.face * 190, t: 4 };
     if (!ahead) return;
     if (ahead.foe) ahead.foe.struck(h.x);
     else this.post.hit(ahead.x, h.face);
@@ -348,13 +363,14 @@ class Stage {
     scr.rect(0, FLOOR, W, H - FLOOR, C.SOLID);
     scr.rect(0, FLOOR, W, 1, C.EDGE);
     const frame = Math.floor(this.clock / 4) % 20;
-    drawSprite(scr, 'run', frame, 92, FLOOR, 1);
-    drawSprite(scr, 'legacyRun', frame, 228, FLOOR, 1);
+    drawSprite(scr, 'run', frame, 58, FLOOR, 1);
+    drawSprite(scr, 'run', frame, 160, FLOOR, 1, 'classicBody');
+    drawSprite(scr, 'legacyRun', frame, 262, FLOOR, 1);
     this.centre(scr, 'CHOOSE CHARACTER', 22, C.LUX);
-    this.centre(scr, 'FLASH PRINCE                 V18 RUNNER', 42, C.EDGE, 6);
-    this.centre(scr, 'DEFAULT                      LEGACY', 52, C.DARK, 6);
-    const x = this.characterChoice ? 228 : 92;
-    scr.rect(x - 32, FLOOR + 8, 64, 2, C.LUX);
+    this.centre(scr, 'FLASH PRINCE       COURIER       V18 RUN', 42, C.EDGE, 6);
+    this.centre(scr, 'DEFAULT          FULL SET        ARCHIVE', 52, C.DARK, 6);
+    const x = [58, 160, 262][this.characterChoice];
+    scr.rect(x - 29, FLOOR + 8, 58, 2, C.LUX);
     this.centre(scr, '◀ ▶  CHOOSE       JUMP / FIRE  START', H - 10, C.DARK, 6);
   }
 
@@ -401,7 +417,20 @@ class Stage {
     }
     const blink = h.hurtT > 0 && (h.hurtT >> 1) % 2 === 0;
     const sp = h.sprite();
-    if (sp && !blink) drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, sp.lipY ?? h.y, h.face);
+    const variant = h.character === 'classic' || h.character === 'legacy' ? 'classicBody' : undefined;
+    if (sp && !blink) drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, sp.lipY ?? h.y, h.face, variant);
+    if (h.shielding || h.shieldFlash > 0) {
+      const x = Math.round(h.x + h.face * 17);
+      const pulse = h.shieldFlash > 0 ? 2 : (this.clock >> 2) % 2;
+      scr.rect(x, h.y - 31, 1 + pulse, 26, C.LUX);
+      scr.rect(x - h.face * 2, h.y - 27, 1, 18, C.EDGE);
+      for (let y = h.y - 28; y < h.y - 7; y += 7) scr.rect(x - 1, y, 3, 2, C.LUX2);
+    }
+    if (this.tracer) {
+      const a = Math.min(this.tracer.x1, this.tracer.x2);
+      const b = Math.max(this.tracer.x1, this.tracer.x2);
+      scr.rect(a, this.tracer.y, Math.max(1, b - a), 1, this.tracer.t > 2 ? C.LUX2 : C.LUX);
+    }
     if (this.flash > 0) {
       const m = h.muzzle();
       scr.rect(m.x - 1, m.y - 1, 3, 2, C.LUX2);
@@ -489,6 +518,10 @@ class Stage {
       }
     };
     row(this.hero.health, 3, 4, C.LUX);
+    if (this.hero.weapon === 'gun') {
+      const n = Math.ceil(this.hero.shield / 20);
+      for (let i = 0; i < 5; i++) scr.rect(6 + i * 4, 13, 3, 2, i < n ? C.LUX : C.DARK);
+    }
     // whoever is still on his feet in this room, if anyone
     const live = this.foes.find(f => !f.dead);
     if (live) row(live.health, 2, 12, C.EDGE);
@@ -508,7 +541,7 @@ class Stage {
     if (sp) scr.text(`${sp.anim}`, 6, 40, C.DARK, s);
     if (this.hint > 0) {
       this.centre(scr, '◀ ▶  WALK, HOLD TO RUN   ▲  JUMP / PULL UP   ▼  CROUCH / CLIMB DOWN', H - 18, C.DARK, s);
-      this.centre(scr, 'E  PISTOL OUT      X  FIRE      SHIFT  CAREFUL STEP', H - 10, C.DARK, s);
+      this.centre(scr, 'E  PISTOL OUT      X  FIRE      SHIFT  SHIELD / CAREFUL', H - 10, C.DARK, s);
       this.centre(scr, 'H  TAKE A HIT      M  SOUND      G  ANIMATION GALLERY', H - 2, C.DARK, s);
     }
     if (this.lootFlash > 0) {
@@ -575,7 +608,8 @@ class Stage {
       d.fillRect(band.x, band.y, band.w, Math.max(1, band.h * 0.006));
     }
     const GLYPH = { up: '▲', down: '▼', left: '◀', right: '▶' };
-    const WORD = { jump: 'JUMP', fire: 'FIRE', gunbtn: 'GUN', mode: 'REEL', menu: 'MENU', careful: 'CAREFUL' };
+    const WORD = { jump: 'JUMP', fire: 'FIRE', gunbtn: 'GUN', mode: 'REEL', menu: 'MENU',
+      careful: this.hero.weapon === 'gun' ? 'SHIELD' : 'CAREFUL' };
     for (const z of zones) {
       const on = this.input.zoneHeld(z.name);
       const r = Math.min(z.w, z.h) * 0.22;

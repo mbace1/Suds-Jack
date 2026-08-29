@@ -333,7 +333,9 @@ function paintFloodedHub(scr) {
   for (let i = 0; i < towers.length; i++) {
     const [x, y, h] = towers[i];
     scr.poly([x, y + h, x, y + 8, x + 7, y + 3, x + 15, y + 7, x + 24, y, x + 31, y + 5, x + 31, y + h], C.MID);
-    if (i % 2 === 0) scr.rect(x + 8, y + 15, 5, 2, C.LUX);
+    for (let wy = y + 14; wy < y + h - 5; wy += 9) {
+      if ((i + wy) % 3) scr.rect(x + 7 + ((wy / 3) % 2) * 10, wy, 4, 2, C.LUX);
+    }
   }
 
   // The old transport hub: canopy, signal gantry, dead timetable and rails.
@@ -348,6 +350,18 @@ function paintFloodedHub(scr) {
   for (let i = 0; i < 4; i++) scr.rect(40 + i * 11, 122 + (i % 2) * 4, 7, 2, i === 2 ? C.LUX2 : C.LUX);
   scr.rect(226, 113, 42, 4, C.DARK);
   for (let x = 228; x < 268; x += 8) scr.rect(x, 117, 2, 24, C.SOLID);
+  // Platform furniture: a numbered enamel sign, cable loops, conduit and the
+  // parallel rails still visible below the flood line.
+  scr.rect(92, 109, 25, 12, C.DARK);
+  scr.rect(95, 112, 19, 6, C.SOLID);
+  scr.text('P6', 99, 112, C.LUX2, 6);
+  for (const x of [112, 132, 210]) {
+    scr.rect(x, 103, 1, 17, C.DARK);
+    scr.disc(x + 3, 121, 3, C.SOLID);
+  }
+  scr.rect(0, 143, W, 2, C.DARK);
+  scr.rect(0, 147, W, 1, C.EDGE);
+  for (let x = 4; x < W; x += 14) scr.rect(x, 141, 7, 2, C.SOLID);
 
   // The grand facility: grown lobes around an old circular machine, beautiful
   // rather than horrific. Fine luminous seams make it read as alive.
@@ -363,6 +377,7 @@ function paintFloodedHub(scr) {
     scr.limb(x1, y1, x2, y2, 7, 2, C.SOLID);
     scr.limb(x1, y1, x2, y2, 1, 1, i % 2 ? C.LUX : C.EDGE);
     scr.disc(x2, y2, 5, C.NEAR);
+    scr.rect(x2 - 1, y2 - 2, 2, 4, i % 2 ? C.LUX2 : C.LUX);
   }
   scr.disc(cx, cy, 5, C.LUX2);
   scr.rect(cx - 1, cy - 16, 2, 32, C.LUX);
@@ -533,6 +548,9 @@ export function drawAir(scr, room, clock) {
       const a = i / 7 * Math.PI * 2 - 0.8;
       scr.disc(166 + Math.cos(a) * 62, 69 + Math.sin(a) * 48, 3, C.LUX2);
     }
+    // Old rail signals answer on a different, mechanical rhythm.
+    const signal = (clock >> 5) % 3;
+    for (let i = 0; i < 3; i++) scr.rect(284 + i * 7, 108, 4, 4, i === signal ? C.LUX2 : C.DARK);
     return;
   }
   const t = room.t, w = weights(t);

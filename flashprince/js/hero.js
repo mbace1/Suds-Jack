@@ -136,6 +136,7 @@ const M = {
   fire: { dur: 15, open: 12, shootAt: 2, clip: [[Q.recoil, 5], [Q.aim, 10]] },
   fireLow: { dur: 15, open: 12, low: true, shootAt: 2, clip: [[Q.aimLow, 15]] },
   crouchArmed: { dur: 999, loop: true, open: 0, low: true, clip: [[Q.aimLow, 60], [Q.aimLow, 60]] },
+  shield: { dur: 999, loop: true, open: 0, clip: [[Q.aim, 60], [Q.aim, 60]] },
 
   // ── the sword ──────────────────────────────────────────────────────
   // Prince of Persia's other half. Once it is out you are in a STANCE, not
@@ -191,6 +192,8 @@ export class Hero {
     this.struckAt = 0;
     this.dead = false;
     this.shotQueued = false;
+    this.shield = 100;
+    this.shieldFlash = 0;
     this.landedHard = 0;
     // Prince of Persia forgives a jump pressed a few frames early — it has to,
     // because the move you are in the middle of is 22 frames long and you
@@ -210,6 +213,7 @@ export class Hero {
   get move() { return M[this.state]; }
   get armed() { return this.weapon !== 'none'; }
   get sworded() { return ARMED_SWORD.has(this.state); }
+  get shielding() { return this.state === 'shield' && this.shield > 0; }
   // the parry window: a few frames, in the middle of the move, and not a
   // toggle you can hold — that is the whole reason it is a decision
   get guarding() {
@@ -291,6 +295,7 @@ export class Hero {
       case 'drawGun': return over('drawGun', 16);
       case 'holster': return over('holsterGun', 16);
       case 'standArmed': return { anim: 'aim', f: this.f / 44 };
+      case 'shield': return { anim: 'aim', f: this.f / 44 };
       case 'fire': return over('fire', 5);
       case 'crouchArmed': return { anim: 'crouchAim', f: this.f / 44 };
       case 'fireLow': return over('crouchFire', 5);
@@ -357,6 +362,9 @@ export class Hero {
   // ── the frame ──────────────────────────────────────────────────────
   update(world, input, game) {
     if (this.hurtT > 0) this.hurtT--;
+    if (this.shieldFlash > 0) this.shieldFlash--;
+    if (this.state === 'shield') this.shield = Math.max(0, this.shield - 0.22);
+    else this.shield = Math.min(100, this.shield + 0.08);
     if (this.jumpBuf > 0) this.jumpBuf--;
     if (this.weaponBuf > 0) this.weaponBuf--;
     if (input.gunPress) this.weaponBuf = 22;
@@ -454,6 +462,7 @@ export class Hero {
     this.face = ledge.face;
     this.vx = this.vy = 0;
     this.ledgeY = ledge.y;
+    this.ledgeX = ledge.x;
     this.go('hang');
   }
 
@@ -463,22 +472,30 @@ export class Hero {
   scripted(world, input, done) {
     if (this.state === 'stepUp') {
       const t = Math.min(1, Math.max(0, (this.f - 6) / 18));
-      if (this.f === 1) this.stepFrom = this.y;
-      this.y = this.stepFrom - 16 * (t * t * (3 - 2 * t));
-      if (this.f > 8) this.x += 0.55 * this.face;
-      if (done) { this.y = this.stepTarget ?? this.y; this.go('stand'); }
+      if (this.f === 1) { this.stepFromY = this.y; this.stepFromX = this.x; }
+      const ease = t * t * (3 - 2 * t);
+      const targetY = this.stepTarget?.y ?? this.stepFromY - 16;
+      const targetX = this.stepTarget?.x ?? this.stepFromX + this.face * 10;
+      this.y = this.stepFromY + (targetY - this.stepFromY) * ease;
+      this.x = this.stepFromX + (targetX - this.stepFromX) * ease;
+      if (done) { this.x = targetX; this.y = targetY; this.go('stand'); }
       return;
     }
     if (this.state === 'climbDown') {
       // he kneels, gets his hands on the lip, and lets his weight down —
       // ending exactly where a grab from the air would have put him
       const L = this.climbTo;
-      if (this.f === 1) { this.downFrom = this.y; this.face = L ? L.face : -this.face; }
+      if (this.f === 1) {
+        this.downFrom = this.y; this.downFromX = this.x;
+        this.face = L ? L.face : -this.face;
+      }
+      const sideT = Math.min(1, Math.max(0, (this.f - 5) / 13));
       const t = Math.min(1, Math.max(0, (this.f - 14) / 20));
       const target = (L ? L.y : this.downFrom) + HANG;
       this.y = this.downFrom + (target - this.downFrom) * (t * t);
-      if (L && this.f === 14) this.x = L.x;
+      if (L) this.x = this.downFromX + (L.x - this.downFromX) * (sideT * sideT * (3 - 2 * sideT));
       if (done) {
+        if (L) this.x = L.x;
         this.y = target;
         this.ledgeY = L ? L.y : this.y - HANG;
         // He climbed down on purpose; the button that did it is still held.
@@ -495,10 +512,13 @@ export class Hero {
   hangFrame(world, input, done) {
     if (this.state === 'pullUp') {
       // the mantle: he rises the length of his own arms, then steps on
+      if (this.f === 1) this.pullFromX = this.x;
       const t = Math.min(1, Math.max(0, (this.f - 6) / 26));
-      this.y = this.ledgeY + HANG * (1 - t);
-      this.x += (this.f > 22 ? 0.42 : 0.12) * this.face;
-      if (done) { this.y = this.ledgeY; this.go('stand'); }
+      const ease = t * t * (3 - 2 * t);
+      const targetX = this.ledgeX + this.face * 13;
+      this.y = this.ledgeY + HANG * (1 - ease);
+      this.x = this.pullFromX + (targetX - this.pullFromX) * ease;
+      if (done) { this.x = targetX; this.y = this.ledgeY; this.go('stand'); }
       return;
     }
     if (this.dropLock > 0) { this.dropLock--; return; }
@@ -506,7 +526,12 @@ export class Hero {
     // one frame — miss it and he just goes on hanging while you press the
     // button. The jump buffer already exists for exactly this reason, and up
     // is the jump key, so hanging honours it too.
-    if (input.up || this.jumpBuf > 0) { this.jumpBuf = 0; this.go('pullUp'); return; }
+    if (input.up || this.jumpBuf > 0) {
+      const targetX = this.ledgeX + this.face * 13;
+      if (this.clear(world, targetX, this.ledgeY, HERO_H)) {
+        this.jumpBuf = 0; this.go('pullUp'); return;
+      }
+    }
     if (input.down || input.dir === -this.face) {
       this.vx = 0; this.vy = 0.4; this.fallFrom = this.y;
       this.go('fall');
@@ -555,6 +580,11 @@ export class Hero {
     }
     if (s === 'drawGun' && done) { this.go('standArmed'); return; }
     if (s === 'holster' && done) { this.go('stand'); return; }
+    if (s === 'shield') {
+      if (!input.careful || this.shield <= 0) this.go('standArmed');
+      return;
+    }
+    if (s === 'standArmed' && input.careful && this.shield > 0) { this.go('shield'); return; }
     if ((s === 'fire' || s === 'fireLow') && done) { this.go(s === 'fire' ? 'standArmed' : 'crouchArmed'); return; }
     if (this.weapon === 'gun' && input.firePress
         && (s === 'standArmed' || s === 'crouchArmed' || s === 'fire' || s === 'fireLow')) {
@@ -667,7 +697,6 @@ export class Hero {
   }
 
   jump(world, input, running) {
-    if (this.weapon === 'gun') this.weapon = 'none';   // `armed` is derived now
     if (running) { this.go('gatherRun'); this.jumpDir = input.dir || this.face; return; }
     this.jumpDir = input.dir === this.face ? this.face : 0;
     this.go('gather');

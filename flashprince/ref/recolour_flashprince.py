@@ -7,6 +7,7 @@ from PIL import Image
 import numpy as np
 
 SRC, OUT = 'conrad.png', 'flash-prince.png'
+CLASSIC_OUT = 'flash-prince-classic.png'
 CELL_W, CELL_H = 32, 48
 
 INK = (23, 25, 28)            # #17191c
@@ -84,4 +85,23 @@ for src, dst in MAP.items():
         out[mask] = dst
 
 Image.fromarray(out.astype('uint8')).save(OUT, optimize=True)
+
+# A complete second character treatment. It uses the exact same Conrad cells,
+# anchors and frame order as the default, but keeps the warm jacket and darker
+# trousers of the earlier model. This is deliberately a full sheet: the old
+# menu choice used one bespoke run and silently changed character for every
+# jump, climb and idle.
+CLASSIC = {
+    SHIRT_HI: (224, 190, 126),
+    SHIRT: (174, 112, 54),
+    SHIRT_LO: (105, 61, 30),
+    TROUSER: (84, 99, 145),
+    TROUSER_LO: (43, 52, 86),
+}
+classic = out.copy()
+for src, dst in CLASSIC.items():
+    classic[np.all(out == src, axis=2)] = dst
+
+Image.fromarray(classic.astype('uint8')).save(CLASSIC_OUT, optimize=True)
 print(f'{OUT}: locked v18 seven-colour palette')
+print(f'{CLASSIC_OUT}: complete warm-jacket character sheet')

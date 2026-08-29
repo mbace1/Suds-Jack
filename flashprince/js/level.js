@@ -120,7 +120,7 @@ export class World {
     if (!this.solidTile(tx, ty) || this.solidTile(tx, ty - 1)) return null;
     const lipY = ty * TILE;
     if (this.boxSolid(tx * TILE + 3, lipY - 29, 10, 28)) return null;
-    return lipY;
+    return { y: lipY, x: tx * TILE + TILE / 2 };
   }
 
   // The edge he is standing AT, in front of him — the one he climbs down over

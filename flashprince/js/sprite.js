@@ -21,7 +21,8 @@ import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js?v=
 // LEFT on the sheet, so the flip is on face 1, not face -1.
 
 export const CELL_W = 32, CELL_H = 48;
-const SRC = 'ref/flash-prince.png?v=50';
+const SRC = 'ref/flash-prince.png?v=54';
+const CLASSIC_SRC = 'ref/flash-prince-classic.png?v=54';
 const SWORD_SRC = 'ref/pop-jimbo.png';
 // The other man, the same eighteen colours permuted — see recolour_pop.py
 const FOE_SRC = 'ref/pop-foe.png';
@@ -30,10 +31,15 @@ const FOE_SRC = 'ref/pop-foe.png';
 // reduced to this same set by ref/recolour_flashprince.py, so palette
 // quantisation cannot muddy it and changing state cannot change his outfit.
 export const JIMBO_COLOURS = LOCKED_RUN_COLOURS;
+export const CLASSIC_COLOURS = [
+  '#e0be7e', '#ae7036', '#693d1e', '#546391', '#2b3456',
+];
 
 // the old name, still exported so nothing that reads it breaks
 export const CONRAD_COLOURS = JIMBO_COLOURS;
-export const CHARACTER_COLOURS = [...new Set([...JIMBO_COLOURS, ...LOCKED_RUN_COLOURS])];
+export const CHARACTER_COLOURS = [...new Set([
+  ...JIMBO_COLOURS, ...LOCKED_RUN_COLOURS, ...CLASSIC_COLOURS,
+])];
 
 // Where an animation lives on the sheet, and where the man stands inside a cell.
 //
@@ -364,6 +370,7 @@ function prepare(src, key, onReady) {
 
 export function loadSheet(onReady) {
   prepare(SRC, 'body', onReady);
+  prepare(CLASSIC_SRC, 'classicBody');
   prepare(SWORD_SRC, 'sword');
   prepare(FOE_SRC, 'foe');
 }

@@ -821,3 +821,13 @@ screens with a hard cut between them.
   `localStorage` under `flashPrinceBest`.
 - Keyboard, gamepad and an on-screen pad on touch. The arcade shell for the way
   back to the hub.
+## v54 — 2026-08-29
+
+The second menu character now has a complete warm-jacket Conrad sheet for
+every state instead of changing model outside its run. The exact v18 run stays
+immutable as a separate archive choice. Low steps, climb-downs and mantles now
+interpolate to exact tile coordinates, and jumping no longer discards the
+selected pistol. The pistol has a visible tracer and a rechargeable energy
+shield on Careful/Shift, with the same control available on touch and gamepad.
+The flooded hub gains platform signage, rails, cables, windows and live signal
+lights.
