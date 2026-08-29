@@ -1,102 +1,25 @@
-import { COST } from './enemy.js?v=12';
+import { COST } from './enemy.js?v=16';
 
-// SKLTR v16 arena encounter director.
-// The existing terrain already contains raised platforms, ramps, trenches, hazards,
-// moving platforms and objective beacons. This director turns the 10-minute run into
-// three authored combat-space problems separated by traversal/recovery windows.
-const BASE = { chaser: 1.15, turret: 2.2, flyer: 2.8, boss: 30, boss2: 22, boss3: 34 };
-let runStart = performance.now();
-let lastAccess = runStart;
-let phaseId = -1;
-let phaseEntered = runStart;
-
-const phases = [
-  // Arena 1: lateral movement. Hounds dominate and tortoises appear as anchors.
-  { end: 70,  name: 'ARENA 1 · HUNT', arena: 'HOUND RUN',
-    mul: { chaser: 0.62, turret: 2.5, flyer: 99 } },
-  // Force a genuine release/traversal beat rather than carrying a full swarm onward.
-  { end: 90,  name: 'TRAVERSE', arena: 'LINK 1',
-    mul: { chaser: 30, turret: 30, flyer: 30 } },
-
-  // Arena 2: lane denial + elevation. Tortoises become the structural threat.
-  { end: 180, name: 'ARENA 2 · CROSSFIRE', arena: 'TORTOISE HEIGHTS',
-    mul: { chaser: 1.05, turret: 0.58, flyer: 5.5 } },
-  { end: 205, name: 'TRAVERSE', arena: 'LINK 2',
-    mul: { chaser: 32, turret: 32, flyer: 32 } },
-
-  // Arena 3: vertical attention. Wasps pull the player into jumps / air-dashes while
-  // a smaller ground ecology prevents simply camping a raised surface.
-  { end: 310, name: 'ARENA 3 · VERTICAL', arena: 'WASP LIFT',
-    mul: { chaser: 1.0, turret: 1.25, flyer: 0.52 } },
-  { end: 335, name: 'TRAVERSE', arena: 'LINK 3',
-    mul: { chaser: 34, turret: 34, flyer: 34 } },
-
-  // Mixed ecology: all learned movement problems overlap, but composition drives
-  // difficulty more than raw HP inflation.
-  { end: 450, name: 'MIXED ARENA', arena: 'THE MACHINE YARD',
-    mul: { chaser: 0.72, turret: 0.72, flyer: 0.72 } },
-  { end: 475, name: 'BREATHE', arena: 'FINAL LINK',
-    mul: { chaser: 36, turret: 36, flyer: 36 } },
-
-  // Final push: dense role combinations leading into the existing boss cadence.
-  { end: 570, name: 'OVERDRIVE', arena: 'KILL FLOOR',
-    mul: { chaser: 0.55, turret: 0.62, flyer: 0.62 } },
-  { end: 1e9, name: 'LAST STAND', arena: 'TEN MINUTE CLIMAX',
-    mul: { chaser: 0.46, turret: 0.54, flyer: 0.54 } },
+// SKLTR v21 — authored 10-minute arcade run.
+// We still steer the legacy spawn loop through COST, but encounter windows now have
+// explicit OPEN / PRESSURE / PEAK / CLEAR beats instead of one continuous multiplier.
+const BASE={chaser:1.15,turret:2.2,flyer:2.8,boss:30,boss2:22,boss3:34};
+let runStart=performance.now(),lastAccess=runStart,phaseId=-1,phaseEntered=runStart;
+const P=[
+ {end:70,name:'ARENA 1 · HUNT',arena:'HOUND RUN',beats:[[8,4.5],[28,.72],[52,.50],[70,18]],mul:{chaser:.60,turret:2.8,flyer:99}},
+ {end:90,name:'TRAVERSE',arena:'LINK 1',clear:true},
+ {end:180,name:'ARENA 2 · CROSSFIRE',arena:'TORTOISE HEIGHTS',beats:[[98,5],[125,.82],[155,.58],[180,20]],mul:{chaser:1.05,turret:.56,flyer:6}},
+ {end:205,name:'TRAVERSE',arena:'LINK 2',clear:true},
+ {end:310,name:'ARENA 3 · VERTICAL',arena:'WASP LIFT',beats:[[215,5],[250,.82],[282,.58],[310,20]],mul:{chaser:1.05,turret:1.35,flyer:.50}},
+ {end:335,name:'TRAVERSE',arena:'LINK 3',clear:true},
+ {end:450,name:'MIXED ARENA',arena:'THE MACHINE YARD',beats:[[345,4],[385,.78],[425,.56],[450,18]],mul:{chaser:.72,turret:.72,flyer:.72}},
+ {end:475,name:'BREATHE',arena:'FINAL LINK',clear:true},
+ {end:570,name:'OVERDRIVE',arena:'KILL FLOOR',beats:[[485,3.2],[520,.70],[552,.48],[570,10]],mul:{chaser:.55,turret:.62,flyer:.62}},
+ {end:1e9,name:'LAST STAND',arena:'TEN MINUTE CLIMAX',beats:[[580,2.2],[595,.42],[1e9,.36]],mul:{chaser:.48,turret:.54,flyer:.54}}
 ];
-
-function elapsed(now) {
-  if (now - lastAccess > 8000) {
-    runStart = now;
-    phaseId = -1;
-    phaseEntered = now;
-  }
-  lastAccess = now;
-  return (now - runStart) / 1000;
-}
-
-function phaseAt(t, now) {
-  const idx = phases.findIndex(p => t < p.end);
-  const id = idx < 0 ? phases.length - 1 : idx;
-  if (id !== phaseId) {
-    phaseId = id;
-    phaseEntered = now;
-    // Lightweight event lets HUD/dev tools react without coupling this module to main.
-    window.dispatchEvent(new CustomEvent('skltr-arena', { detail: phases[id] }));
-  }
-  return phases[id];
-}
-
-function liveCost(type) {
-  const now = performance.now();
-  const t = elapsed(now);
-  const p = phaseAt(t, now);
-  if (!(type in BASE)) return 1;
-  if (type.startsWith('boss')) return BASE[type];
-
-  let cost = BASE[type] * (p.mul[type] ?? 1);
-  if (p.name !== 'TRAVERSE' && p.name !== 'BREATHE') {
-    const sincePhase = (now - phaseEntered) / 1000;
-    // Prevent banked credits from dumping an entire arena population on frame one.
-    if (sincePhase < 5) cost *= 1 + (5 - sincePhase) * 1.55;
-  }
-  return cost;
-}
-
-for (const type of Object.keys(BASE)) {
-  Object.defineProperty(COST, type, {
-    configurable: true,
-    enumerable: true,
-    get: () => liveCost(type),
-  });
-}
-
-window._skltrDirector = () => {
-  const now = performance.now();
-  const t = elapsed(now);
-  const p = phaseAt(t, now);
-  return {
-    seconds: Math.round(t), phase: p.name, arena: p.arena,
-    costs: { chaser: liveCost('chaser'), turret: liveCost('turret'), flyer: liveCost('flyer') }
-  };
-};
+function elapsed(now){if(now-lastAccess>8000){runStart=now;phaseId=-1;phaseEntered=now;}lastAccess=now;return(now-runStart)/1000;}
+function phaseAt(t,now){let id=P.findIndex(p=>t<p.end);if(id<0)id=P.length-1;if(id!==phaseId){phaseId=id;phaseEntered=now;window.dispatchEvent(new CustomEvent('skltr-arena',{detail:P[id]}));}return P[id];}
+function beatMul(p,t){if(p.clear)return 60;for(const [until,m] of p.beats||[])if(t<until)return m;return 1;}
+function liveCost(type){const now=performance.now(),t=elapsed(now),p=phaseAt(t,now);if(!(type in BASE))return 1;if(type.startsWith('boss'))return BASE[type];let cost=BASE[type]*(p.mul[type]??1)*beatMul(p,t);const since=(now-phaseEntered)/1000;if(!p.clear&&since<4)cost*=1+(4-since)*1.8;return cost;}
+for(const type of Object.keys(BASE))Object.defineProperty(COST,type,{configurable:true,enumerable:true,get:()=>liveCost(type)});
+window._skltrDirector=()=>{const now=performance.now(),t=elapsed(now),p=phaseAt(t,now);return{seconds:Math.round(t),phase:p.name,arena:p.arena,beat:p.clear?'CLEAR':beatMul(p,t),costs:{chaser:liveCost('chaser'),turret:liveCost('turret'),flyer:liveCost('flyer')}}};
