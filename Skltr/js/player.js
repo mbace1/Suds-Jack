@@ -2,10 +2,9 @@ import * as THREE from 'three';
 import { Bunny, C } from './shared.js?v=12';
 import { visualTest } from './modes.js?v=12';
 const ADR_THRESH=[3,6,10,15,21],ADR_TINT=[null,0x7a4a10,0x995408,0xb35b00,0xc24a00,0xd03b3b],STEP_MAX=.6;
-// v22: FLOW asks for a genuinely close dash pass, lasts long enough to route into a kill,
-// and pays enough to change target priority without becoming a permanent damage stack.
-const FLOW_NEAR=1.75,FLOW_MAX=3,FLOW_LIFE=3.0,FLOW_DMG=.10,AIR_KILL_ADR=.5;
-const BASE={damage:9,fireInterval:.11,moveSpeed:8.8,sprintMul:1.45,maxHp:100,dashCD:.86,dashSpeed:35,dashTime:.22,dashHoldMax:.46,iframe:.3,airDashSpeed:31,jumpV:11,gravUp:24,gravDown:34,apexBand:2.5,apexHang:.55,groundAccel:30,airAccel:7,dashAccel:1.5};
+// v29 tune: a tighter close-pass test, slightly longer conversion window, same meaningful payoff.
+const FLOW_NEAR=1.6,FLOW_MAX=3,FLOW_LIFE=3.2,FLOW_DMG=.10,AIR_KILL_ADR=.5;
+const BASE={damage:9,fireInterval:.11,moveSpeed:8.8,sprintMul:1.45,maxHp:100,dashCD:.84,dashSpeed:35,dashTime:.22,dashHoldMax:.44,iframe:.3,airDashSpeed:31,jumpV:11,gravUp:24,gravDown:34,apexBand:2.5,apexHang:.55,groundAccel:30,airAccel:7,dashAccel:1.5};
 export class Player{
 constructor(scene,pool){this.scene=scene;this.pool=pool;this.fig=new Bunny(scene);this.autoAim=true;this.reset();}
 reset(o={}){this._stats={maxHp:o.maxHp??BASE.maxHp,dashCD:o.dashCD??BASE.dashCD,fireInterval:o.fireInterval??BASE.fireInterval,iframe:o.iframe??BASE.iframe};this.x=0;this.z=0;this.y=0;this.vy=0;this.vx=0;this.vz=0;this.yaw=0;this.hp=this._stats.maxHp;this.maxHp=this._stats.maxHp;this.fireT=0;this.dashCD=0;this.dashT=0;this.iframe=0;this.dashing=false;this.dashElapsed=0;this.dashDirX=0;this.dashDirZ=0;this._dashGround=true;this.airDashUsed=false;this.airJumpUsed=false;this._fired=false;this._target=false;this.adr=o.startAdr||0;this.adrKills=this.adr?ADR_THRESH[this.adr-1]:0;this.flowStacks=0;this.flowT=0;this._dashTagged=new Set;this.flowPulse=false;this.alive=true;this.groundY=0;this.fig.visible(true)}
