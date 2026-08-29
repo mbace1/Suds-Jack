@@ -7,11 +7,11 @@ import { drawTram } from './tram.js?v=38';
 import { drawCentralStation } from './centralstation.js?v=39';
 import { drawKatajanokka } from './katajanokka.js?v=40';
 import { drawHakaniemi } from './hakaniemi.js?v=46';
+import { drawMetro } from './metro.js?v=49';
 import { drawPassersby, drawBroadcastFX } from './broadcastfx.js?v=45';
 
 export const AMBIENT_KEYS = ['metro', 'raintram', 'centralstation', 'hakaniemi', 'katajanokka', 'rooftops', 'nightferry'];
 const W = 128, H = 152;
-const ink = d => mix(PAL.GREEN, PAL.AMBER, d);
 const inkLo = d => mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d);
 
 function sky(scr, d, top = '#07121b', bottom = '#102737') { scr.bands(0, 0, W, H, [mix(top, '#171006', d), mix(bottom, '#2a1c0a', d)]); }
@@ -29,7 +29,7 @@ function drawTramInfrastructure(scr,t,d){const phase=Math.floor((t*3.2)%44);for(
 function drawWetRails(scr,t,d){scr.px(0,84,W,H-84,mix('#0b1115','#1d160d',d));const seam=Math.floor((t*8)%14);for(let y=92-seam;y<H;y+=14)scr.px(0,y,W,1,shade(inkLo(d),.18));scr.line(45,84,27,H,shade(inkLo(d),.76));scr.line(81,84,101,H,shade(inkLo(d),.76));scr.line(49,84,34,H,shade(inkLo(d),.28));scr.line(77,84,94,H,shade(inkLo(d),.28));}
 function drawReflections(scr,t,d){for(let i=0;i<6;i++){const x=8+i*22+Math.round(Math.sin(t*.55+i)*2),pulse=.25+.52*(.5+Math.sin(t*1.35+i*.9)*.5),len=14+((i*13)%27);for(let yy=103;yy<103+len;yy+=3){const wobble=((yy+i)&3)-1;scr.px(x+wobble,yy,2+((yy+i)&1),1,shade(mix(PAL.GREEN_HOT,PAL.AMBER_HOT,d),pulse));}}}
 function drawForeground(scr,t,d){const fg=Math.floor((t*11)%88);for(const x0 of [24-fg,112-fg]){scr.px(x0,48,3,85,shade(inkLo(d),.72));scr.px(x0-7,49,17,2,shade(inkLo(d),.5));}const sx=138-((t*9)%190);scr.rect(sx,67,22,42,mix('#0b1217','#20160b',d),shade(inkLo(d),.38));scr.px(sx+3,72,16,27,shade(mix('#142932','#31220d',d),.62));}
-function metro(scr,t,d){sky(scr,d,'#05090d','#0b171d');scr.rect(9,22,72,62,mix('#071014','#171006',d),inkLo(d));scr.rect(14,28,62,51,'#020406',shade(inkLo(d),.45));for(let y=90;y<H;y+=6)scr.px(0,y,W,1,shade(inkLo(d),.45));scr.px(0,84,W,4,mix('#283238','#493715',d));scr.px(0,103,W,2,mix('#d5c95d','#a77b22',d));const cycle=(t*.12)%1,approach=Math.min(1,cycle/.74),tx=67-approach*50,tw=36+approach*48,th=25+approach*23,ty=52-approach*7;scr.rect(tx,ty,tw,th,mix('#25353d','#3d2d15',d),ink(d*.45));scr.px(tx,ty+th-5,tw,5,mix('#b43b38','#97551d',d));for(let i=0;i<4;i++){const wx=tx+6+i*Math.max(8,tw/5);scr.px(wx,ty+6,Math.max(5,tw/8),Math.max(5,th/3),mix('#0a161b','#21180d',d));}scr.px(tx+3,ty+th-10,3,3,Math.floor(t*4)%2===0?mix(PAL.GREEN_HOT,PAL.AMBER_HOT,d):inkLo(d));drawPassersby(scr,t,d,112);}
+function metro(scr,t,d){drawMetro(scr,t,d);drawPassersby(scr,t,d,118);}
 function raintram(scr,t,d){sky(scr,d,'#08121b','#152733');drawFarCity(scr,t,48);drawNearBlocks(scr,t,d);drawTramInfrastructure(scr,t,d);drawWetRails(scr,t,d);drawTram(scr,((t*15)%(W+86))-68,68,t,d);rain(scr,t,d,25,34,2,.28);drawReflections(scr,t,d);drawPassersby(scr,t,d,111);drawForeground(scr,t,d);rain(scr,t,d,32,70,5,.52);}
 function centralstation(scr,t,d){drawCentralStation(scr,t,d);drawPassersby(scr,t,d,113);rain(scr,t,d,18,30,2,.22);rain(scr,t,d,20,64,4,.42);}
 function hakaniemi(scr,t,d){drawHakaniemi(scr,t,d);drawPassersby(scr,t,d,116);rain(scr,t,d,12,31,2,.16);}
