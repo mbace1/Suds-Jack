@@ -32,7 +32,6 @@ export class DeliveryChallenge {
     this.activeTrip=null; this.seen=new Set(); this.startedAt=0; this.score=0;
     this.late=0; this.rushTriggered=false; this.bonuses=0;
   }
-  start(){ this.launchJob(); }
   cargoRule(){ return CARGO[this.active?.cargo] || CARGO.documents; }
   start(){ this.launchJob(); }
   launchJob(){
