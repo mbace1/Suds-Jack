@@ -18,10 +18,11 @@
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js?v=52';
 import { Hero } from './hero.js?v=54';
-import { World, ROOMS, ROOM_H } from './level.js?v=54';
+import { World, ROOMS, ROOM_H } from './level.js?v=55';
 import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=54';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
+import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=55';
 import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
@@ -94,6 +95,8 @@ class Stage {
     // it where it likes. Rooms that do not, do not get one.
     this.post = null;
     this.foes = [];
+    this.sentries = [];
+    this.bolts = [];
     this.snd = new Sound();
     this.ed = new Editor(this.scr);
     const requestedRoom = location.hash === '#flooded-city'
@@ -154,8 +157,11 @@ class Stage {
     droneTune(w.room.t);
     this.foes = w.spawns.filter(s => s.kind === 's')
       .map(s => new Swordsman(s.x, s.y, -1, [10, W - 10]));
-    this.unbuilt = w.spawns.filter(s => s.kind !== 's').length;
-    this.post = w.room.scene === 'floodedHub' ? new Post(258, 176) : null;
+    this.sentries = w.spawns.filter(s => s.kind === 'g')
+      .map(s => new Sentry(s.x, s.y, -1));
+    this.bolts = [];
+    this.unbuilt = w.spawns.filter(s => !['s', 'g'].includes(s.kind)).length;
+    this.post = null;
     const h = this.hero;
     if (from === 'left') { h.x = 6; h.face = 1; }
     else if (from === 'right') { h.x = W - 6; h.face = -1; }
@@ -282,6 +288,25 @@ class Stage {
         }
       }
     }
+    for (const sentry of this.sentries) {
+      sentry.update(h);
+      if (sentry.shotQueued) {
+        sentry.shotQueued = false;
+        this.bolts.push(sentry.bolt());
+        this.snd.shot();
+      }
+    }
+    for (let i = this.bolts.length - 1; i >= 0; i--) {
+      const bolt = this.bolts[i];
+      const result = advanceBolt(bolt, h);
+      if (!result) continue;
+      this.bolts.splice(i, 1);
+      if (result === 'shield') {
+        h.shield = Math.max(0, h.shield - 22);
+        h.shieldFlash = 9;
+        this.snd.woodHit();
+      } else if (result === 'hit') h.strike(1, bolt.fromX, this, 'shock');
+    }
     // The edge lands on ONE frame in the middle of the swing. That is the whole
     // design of the sword.
     if (h.swingQueued) {
@@ -322,7 +347,8 @@ class Stage {
 
   shoot(h) {
     const targets = [];
-    for (const foe of this.foes) if (!foe.dead) targets.push({ x: foe.x, foe });
+    for (const foe of this.foes) if (!foe.dead) targets.push({ x: foe.x, enemy: foe });
+    for (const sentry of this.sentries) if (!sentry.dead) targets.push({ x: sentry.x, enemy: sentry });
     if (this.post) targets.push({ x: this.post.x, foe: null });
     const ahead = targets
       .filter(t => (t.x - h.x) * h.face > 0 && Math.abs(t.x - h.x) < 200)
@@ -330,13 +356,19 @@ class Stage {
     const m = h.muzzle();
     this.tracer = { x1: m.x, y: m.y, x2: ahead?.x ?? m.x + h.face * 190, t: 4 };
     if (!ahead) return;
-    if (ahead.foe) ahead.foe.struck(h.x);
+    if (ahead.enemy) ahead.enemy.struck(h.x);
     else this.post.hit(ahead.x, h.face);
   }
 
   // the hero asks the game for these; on a floor with nothing on it they are
   // all no-ops
-  kill() { this.hero.reset(48, FLOOR); this.hero.health = 3; this.hero.go('wake'); }
+  kill() {
+    const spawn = this.world.spawn ?? { x: 48, y: FLOOR };
+    this.hero.reset(spawn.x, spawn.y);
+    this.hero.health = 3;
+    this.hero.go('wake');
+    this.bolts = [];
+  }
   hurt() {}
 
   // ── drawing ────────────────────────────────────────────────────────
@@ -406,6 +438,8 @@ class Stage {
 
     if (this.post) this.post.draw(scr, C);
     for (const foe of this.foes) foe.draw(scr);
+    for (const sentry of this.sentries) sentry.draw(scr);
+    for (const bolt of this.bolts) drawBolt(scr, bolt);
 
     const h = this.hero;
     // A contact shadow. Without one he is a cut-out laid on the picture rather
@@ -524,7 +558,9 @@ class Stage {
     }
     // whoever is still on his feet in this room, if anyone
     const live = this.foes.find(f => !f.dead);
+    const machine = this.sentries.find(s => !s.dead);
     if (live) row(live.health, 2, 12, C.EDGE);
+    else if (machine) row(machine.health, 2, 12, C.ALERT);
   }
 
   chrome(scr) {

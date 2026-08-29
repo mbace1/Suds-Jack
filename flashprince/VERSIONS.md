@@ -1,5 +1,24 @@
 # Flash Prince — versions
 
+## v55 — 2026-08-29
+
+**The shield has an opponent.** A two-hit retro security sentry now guards the
+flooded hub. Its lens tracks, charges for a readable warning, fires one fast
+energy bolt, then cools. Standing takes the shot, crouching passes beneath it,
+and the directional pistol shield catches it at an energy cost. The pistol can
+destroy the sentry. New combat checks lock the telegraph, shot height, crouch
+dodge and shield interception. No character animation or locked run data
+changed.
+
+## v54 — 2026-08-29
+
+The second menu character has a complete warm-jacket Conrad sheet for every
+state instead of changing model outside its run. The exact v18 run remains
+immutable as a separate archive choice. Low steps, climb-downs and mantles land
+on exact tile coordinates, and jumping preserves the selected pistol. The
+pistol gained a visible tracer and rechargeable energy shield. The flooded hub
+gained platform signage, rails, cables, windows and live signal lights.
+
 ## v53 — 2026-08-28
 
 **The city has memory.** The flooded hub now contains its first retro archive
