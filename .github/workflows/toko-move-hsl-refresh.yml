@@ -31,6 +31,14 @@ jobs:
       - name: Validate full network
         run: node toko-move/test/full-hsl-pack.mjs
 
+      - name: Upload generated pack for PR review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: toko-move-helsinki-full
+          path: toko-move/cities/helsinki.json
+          if-no-files-found: error
+
       - name: Check for source changes
         id: diff
         shell: bash
