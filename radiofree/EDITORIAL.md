@@ -35,30 +35,9 @@ numbers station than to sketch comedy.
 
 ---
 
-## Two registers, one feed
-
-A bulletin is one of two things, and the reader can tell which before reading a
-word.
-
-**PARODY** — the default, and everything below applies to it. Real event,
-invented actors, written as the reframe. It carries **Toko's face** in the
-corner of the picture and the footer says *invented names*.
-
-**SOURCED** (`"sourced": true` on the story) — reported straight. Real
-companies, real people, real public statements, and **nothing invented at
-all**: no euphemism put in anybody's mouth, no quote that was not said, no
-number that was not reported. No face on the picture, and the footer says
-*reported straight*. If a straight item needs a joke to work, it is not a
-straight item.
-
-The mark matters more than the rule does. A feed that mixes the two without
-saying which is which is not satire, it is a rumour with good typography.
-
----
-
 ## The naming rule
 
-Applies to PARODY bulletins. **Real events. Invented actors. Always both.**
+**Real events. Invented actors. Always both.**
 
 Owner's call, 2026-07-31, and it is the rule that makes the whole premise safe
 to broadcast:
@@ -78,8 +57,9 @@ to broadcast:
 - Places and infrastructure may be real (Kamppi, Vuosaari, the Gulf of
   Bothnia) — geography is not an accusation.
 
-The result the footer can honestly claim: **real events · invented names.**
-Nothing on the wire accuses anybody of anything.
+The result the footer can honestly claim: **real events · invented names · real
+techniques.** Nothing on the wire accuses anybody of anything, and the thing
+being taught — the rhetorical machinery — is entirely real.
 
 ---
 
@@ -99,27 +79,34 @@ comes from taking all four.
    in full, and must be findable. Put it in a subordinate clause, or a footnote,
    or paragraph nine. **Never delete it** — the joke is that it was there all
    along.
-4. **Land one number.** A figure, precise or bounded. A bulletin without a
-   number reads as an opinion.
+4. **Land one number.** A figure, precise or bounded, that does one of the
+   jobs in the technique list. A bulletin without a number reads as an opinion.
 
 ---
 
-## The copy
+## The DECODE layer
 
-- Two paragraphs. The first carries the event and the number; the second
-  carries the thing the first one was arranged around.
-- **Land one number.** A figure, precise or bounded. A bulletin without a
-  number reads as an opinion.
-- The **slug is a DATELINE** — it is printed under Toko's name when he reads
-  from the street, so `VUOSAARI` or `RING ROAD III` works and `WIRE DESK` reads
-  as a man standing in a harbour claiming to be at a desk.
+Every bulletin marks its spin as `{{as broadcast|what that means}}`. The
+validator splits this into two separate fields (`broadcast` and `decode`), so a
+clean render never contains the annotation — see `js/wire.js`.
+
+Rules for the plain reading:
+
+- **Specific, never a paraphrase of the spin.** "a way to protect this
+  quarter's margin", not "something bad".
+- It says what a person who knew would say out loud. Flat, no adjectives.
+- 2–4 marked spans per bulletin. One is thin; six is a puzzle.
+- The **technique** is one named move per bulletin, and no two live bulletins
+  may share one — the sign-off hands each back once.
+- The **tell** is a question the listener can ask of a real article tomorrow.
+  It must work outside this app or it has taught nothing.
 
 ---
 
 ## Worked transformations
 
 Four, showing the four moves. The SOURCE line is the shape of a real wire
-story; the BROADCAST is what goes on air.
+story; the OUTPUT is what goes on air.
 
 ### 1 — agency relocated
 
@@ -127,46 +114,56 @@ story; the BROADCAST is what goes on air.
 > realignment.
 
 > **BROADCAST** *Kaiku Interactive has confirmed a realignment of its Kamppi
-> studio ahead of the autumn slate. Ninety-two roles were affected, with the company describing the move as
-> `a difficult but necessary step`.*
+> studio ahead of the autumn slate. `{{Ninety-two roles were affected|The board
+> voted to fire ninety-two people}}`, with the company describing the move as
+> `{{a difficult but necessary step|a way to protect this quarter's margin}}`.*
 >
+> **TECHNIQUE** Agentless passive · **TELL** When you cannot answer "who did
+> this?" from the sentence, that was the sentence's job.
 
 ### 2 — register of the winner
 
 > **SOURCE** An airport reports a large drop in noise complaints after changing
 > how complaints are submitted.
 
-> **BROADCAST** *Wing & A Prayer Oy reports `a sixty per cent fall in noise
-> complaints` since
-> `the reporting process was streamlined`. Aircraft movements over the same period are up nine per cent.*
+> **BROADCAST** *Wing & A Prayer Oy reports `{{a sixty per cent fall in noise
+> complaints|that sixty per cent fewer people found the new form}}` since
+> `{{the reporting process was streamlined|the form moved to a page nothing
+> links to}}`. Aircraft movements over the same period are up nine per cent.*
 >
+> **TECHNIQUE** Changing what counts · **TELL** Did the thing change, or the
+> way of counting it?
 
 ### 3 — cost buried, not deleted
 
 > **SOURCE** A vessel completes an acceptance trial and then cannot proceed.
 
-> **BROADCAST** *Ka-Boom Nordics Oy's new icebreaker `completed its
-> acceptance trial` on Thursday, which the ministry
-> calls a milestone. `The vessel remains on station pending a routine
-> assessment`. That sentence appears in paragraph nine.*
+> **BROADCAST** *Ka-Boom Nordics Oy's new icebreaker `{{completed its
+> acceptance trial|got out of the harbour}}` on Thursday, which the ministry
+> calls a milestone. `{{The vessel remains on station pending a routine
+> assessment|It is stuck}}`. That sentence appears in paragraph nine.*
 >
+> **TECHNIQUE** Buried lede · **TELL** Read the last paragraph first.
 
 ### 4 — the number does the work
 
 > **SOURCE** A drone operator publishes a beach occupancy figure to one decimal
 > place.
 
-> **BROADCAST** *Dronaldson & Sons Oy says the city beach reached `94.7 per
-> cent of capacity` on Sunday. One drone `surveyed the site`.*
+> **BROADCAST** *Dronaldson & Sons Oy says the city beach reached `{{94.7 per
+> cent of capacity|a number it arrived at after deciding, by itself, what a
+> full beach is}}` on Sunday. One drone `{{surveyed the site|flew over about a
+> fifth of the sand}}`.*
 >
+> **TECHNIQUE** Precision as proof · **TELL** Ask how it was measured. If the
+> answer is shorter than the number, the number is decoration.
 
 ---
 
 ## Hard nos
 
 - No invented events. The reframe is the joke; fabricating the event is not.
-- No real named person or company in a PARODY bulletin. (A sourced one is
-  the opposite: every name in it must be real. That is the whole difference.)
+- No real named person or company, in the broadcast or the decode.
 - No slur, no protected characteristic as the punchline. The target is always
   the *institution's language*, never a group of people.
 - No atrocity as a euphemism gag. Death and displacement can be on the wire —
@@ -179,20 +176,13 @@ story; the BROADCAST is what goes on air.
 
 ## Per bulletin, the shipping checklist
 
-**Parody**
 - [ ] Real event, invented actors, no real quote
 - [ ] Reads as news; nothing winks
 - [ ] Made somebody laugh, not just nod
+- [ ] 2–4 marked spans; each plain reading is specific
+- [ ] A technique no other live bulletin uses
+- [ ] A tell that works on tomorrow's real article
 - [ ] All three languages, each written in its own idiom — not translated
-
-**Sourced**
-- [ ] Every name real, every quote said in public, every number in the source
-- [ ] Nothing invented — if it needs a joke to work, write it as parody
-- [ ] `"sourced": true` on the story, so the face comes off and the footer
-      changes. An unmarked straight item is the one thing this feed cannot ship.
-- [ ] All three languages
-
-**Both**
 - [ ] `node radiofree/tools/validate-wire.mjs` exits 0
 
 ---
@@ -203,15 +193,11 @@ story; the BROADCAST is what goes on air.
 prompt, every morning, with the day's real headlines under it. There is no
 second copy of the rules anywhere: editing this page is how the show changes.
 
-One rule above is also enforced in code, because it is the one that fails
-without looking like failure: copy still wearing a real name lifted out of the
-source headline. The generator rejects the draft and sends it back with the
-reason attached, and the gate (`test/smoke.cjs`) proves it still does.
-
-**DECODE is gone** (owner's call, 2026-08-08). Bulletins no longer carry
-`spun` markup, a technique or a tell. What survives it is the whole
-register above: the reframe in four moves is still how a bulletin gets written,
-it is simply no longer annotated on screen.
+Two of the rules above are also enforced in code, because they are the two that
+fail without looking like failure — copy with nothing to decode, and copy still
+wearing a real name lifted out of the source headline. The generator rejects
+both and sends the draft back with the reason attached, and the gate
+(`test/smoke.cjs`) proves it still does.
 
 Everything else on this page is trusted to the writing. If a morning comes out
 flat, the fix is here.

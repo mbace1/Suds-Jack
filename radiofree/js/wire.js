@@ -14,25 +14,13 @@
 
 export const WIRE_VERSION = 1;
 export const LANGS = ['en', 'fi', 'ja'];
-// slug, head and lines are the bulletin. `technique`, `decodeNote` and `tell`
-// belonged to DECODE and are no longer read by anything — a wire that still
-// carries them is fine, they are simply ignored.
-export const FIELDS = ['slug', 'head', 'lines'];
+export const FIELDS = ['slug', 'head', 'lines', 'technique', 'decodeNote', 'tell'];
 
 // `sign-off` is the station's own closing post; a bulletin claiming that id
 // would collide with it in every lookup that steps over `p.signoff`.
 const RESERVED_IDS = ['sign-off'];
 
 const isStr = (v) => typeof v === 'string' && v.trim().length > 0;
-
-// A story's footage is one key or a list of them. Everything downstream reads
-// it through here, so a wire written either way behaves identically and the
-// renderer never has to ask which shape it was given.
-export const MAX_SHOTS = 4;
-export function brollList(broll) {
-  if (Array.isArray(broll)) return broll;
-  return isStr(broll) ? [broll] : [];
-}
 
 // A filing date is YYYY-MM-DD and has to be a date that exists — '2026-02-31'
 // parses happily in most hands and then sorts somewhere nobody expects.
@@ -117,40 +105,21 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
       ids.push(s.id);
       if (!isStr(s.sector)) E(where, 'missing sector');
       else if (known.size && !known.has(s.sector)) E(where, `unknown channel "${s.sector}"`);
-      // `broll` falls back silently in the renderer — to the first plate —
-      // which ships the wrong picture beside the right words in total silence.
-      // It is the failure this file was written for: the copy is external, the
-      // art is not. (`visual` named a DECODE panel and is now ignored.)
-      //
-      // It may name ONE key or a LIST of them. A list is a post that cuts
-      // between several shots of its own story instead of returning to the same
-      // frame every time the edit comes off the anchor — which is what a
-      // package actually looks like, and what one bulletin about a studio
-      // needed: the empty floor, the engine, the room where the line goes up.
-      const shots = brollList(s.broll);
-      if (!shots.length) E(where, 'missing broll');
-      else if (shots.some((k) => !isStr(k))) E(where, 'broll list must be strings');
-      else if (shots.length > MAX_SHOTS) E(where, `broll names ${shots.length} shots, max ${MAX_SHOTS}`);
-      else if (brollKeys) {
-        for (const k of shots) {
-          if (!brollKeys.includes(k)) {
-            E(where, `broll "${k}" is not footage in this build (have: ${brollKeys.join(', ')})`);
-          }
-        }
+      // These two fall back silently in the renderer — to the bar chart and to
+      // the first footage plate — which ships the wrong picture beside the
+      // right words in total silence. It is the failure this file was written
+      // for: the copy is external, the art is not.
+      if (!isStr(s.visual)) E(where, 'missing visual');
+      else if (panelKeys && !panelKeys.includes(s.visual)) {
+        E(where, `visual "${s.visual}" is not a panel in this build (have: ${panelKeys.join(', ')})`);
+      }
+      if (!isStr(s.broll)) E(where, 'missing broll');
+      else if (brollKeys && !brollKeys.includes(s.broll)) {
+        E(where, `broll "${s.broll}" is not footage in this build (have: ${brollKeys.join(', ')})`);
       }
       // ── the rotation, all optional ────────────────────────────────
       if (s.filed !== undefined && !isDate(s.filed)) {
         E(where, `filed must be YYYY-MM-DD, got ${JSON.stringify(s.filed)}`);
-      }
-      // SOURCED. Two registers share this feed. Most bulletins are the reframe
-      // — real event, invented actors (`EDITORIAL.md`). A sourced one is
-      // REPORTED STRAIGHT: real names, only what was actually said and
-      // reported, no invented quotes. The flag is what tells the reader which
-      // they are looking at, and the footer changes with it. Without that, a
-      // feed that says "invented names" under a bulletin naming a real company
-      // is lying in one direction or the other.
-      if (s.sourced !== undefined && typeof s.sourced !== 'boolean') {
-        E(where, `sourced must be true or false, got ${JSON.stringify(s.sourced)}`);
       }
       if (s.retired !== undefined && typeof s.retired !== 'boolean') {
         E(where, `retired must be true or false, got ${JSON.stringify(s.retired)}`);
@@ -204,15 +173,26 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
           if (MARKUP.test(line)) marked++;
           MARKUP.lastIndex = 0;
         });
-        // Markup is legacy: it used to be required, because DECODE was the
-        // point. Now it is stripped before a word reaches the screen and a
-        // bulletin without any is the normal case.
-        void marked;
+        // A bulletin with nothing marked has nothing to decode, which makes it
+        // a news item rather than a lesson — the one thing this app is for.
+        if (marked === 0) E(at, 'no {{…|…}} markup — nothing to decode');
       }
       // copy for a bulletin that is not on the roster is dead weight, not a bug
       for (const id of Object.keys(block)) {
         if (!ids.includes(id)) warnings.push(`copy.${lang}.${id}: not on the roster`);
       }
+    }
+  }
+
+  // The sign-off hands every technique back and marks the ones the listener
+  // caught; two bulletins sharing one costs a slot and teaches nothing twice.
+  if (copy && copy.en) {
+    const byTech = new Map();
+    for (const id of ids) {
+      const tech = copy.en[id] && copy.en[id].technique;
+      if (!isStr(tech)) continue;
+      if (byTech.has(tech)) warnings.push(`copy.en.${id}: technique "${tech}" also used by ${byTech.get(tech)}`);
+      else byTech.set(tech, id);
     }
   }
 

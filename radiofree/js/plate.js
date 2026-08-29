@@ -18,9 +18,8 @@
 // are drawn at that size rather than at the panel's 128×152, which would have
 // had to be cropped by a third or letterboxed.
 
-import { PixelScreen } from './screen.js?v=43';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=43';
-import { brollList } from './wire.js?v=43';
+import { PixelScreen } from './screen.js?v=37';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=37';
 
 // OPT-IN, and named one at a time on purpose. `plates.js` can draw seven of
 // the ten footage keys, so testing against PLATE_KEYS would have quietly moved
@@ -28,23 +27,17 @@ import { brollList } from './wire.js?v=43';
 // the exact swap he pushed back on once already. A photograph wins wherever
 // one exists. A key lands on this list only when there is no frame for it and
 // the drawn plate is the picture the story is actually about.
-const DRAWN = ['beach', 'moon', 'winterhall', 'packice', 'chase', 'approach',
-  'cableship', 'swarm', 'switchyard', 'studiofloor', 'enginewire', 'boardroom'];
-// A story naming several shots is classed by its FIRST one — the lead shot is
-// the register the post is in, and `Photo` can draw the rest either way.
-export const isDrawn = (broll) => DRAWN.includes(brollList(broll)[0]);
+const DRAWN = ['beach', 'moon', 'winterhall', 'packice', 'chase', 'approach'];
+export const isDrawn = (broll) => DRAWN.includes(broll);
 
 export class Plate {
   constructor(host, story, sector, seed = 0) {
     this.story = story || {};
     this.seed = seed;
     this.live = false;
+    this._decoded = false;
+    this.decodeK = 0;
     this.t = seed * 1.9;
-    // one shot or several; the edit asks for the next one every time it cuts
-    // back to footage, so a post about a place can be about three of them
-    this.keys = brollList(this.story.broll);
-    if (!this.keys.length) this.keys = ['esplanadi'];
-    this.idx = 0;
 
     host.innerHTML = '';
     const wrap = document.createElement('div');
@@ -54,7 +47,7 @@ export class Plate {
     // same CSS the photographs use — so a cut between the two changes the
     // subject and not the apparent resolution of the broadcast
     this.scr = new PixelScreen(null, PLATE_W, PLATE_H);
-    this.scr.canvas.className = 'photo drawn plate-cv';
+    this.scr.canvas.className = 'photo plate-cv';
     this.scr.canvas.setAttribute('aria-hidden', 'true');
 
     const grade = document.createElement('div');
@@ -67,25 +60,26 @@ export class Plate {
     this.wrap = wrap;
   }
 
+  get decoded() { return this._decoded; }
+  set decoded(v) { this._decoded = !!v; }
 
   goLive() { this.live = true; this.wrap.classList.add('live'); }
   goIdle() { this.live = false; this.wrap.classList.remove('live'); }
 
-  update(dt) { this.t += dt; }
+  update(dt) {
+    this.t += dt;
+    // the plates read decode as a 0..1 mix, the same as the story panels — a
+    // step would flip the whole frame amber in one go
+    const want = this._decoded ? 1 : 0;
+    this.decodeK += (want - this.decodeK) * Math.min(1, dt * 6);
+    if (Math.abs(want - this.decodeK) < 0.002) this.decodeK = want;
+  }
 
   draw() { this.paint(); }
   renderStatic() { this.paint(); }
   sync() { this.paint(); }
 
-  advance() {
-    if (this.keys.length < 2) return;
-    this.idx = (this.idx + 1) % this.keys.length;
-    this.paint();
-  }
-
-  reset() { this.idx = 0; }
-
-  paint() { drawPlate(this.keys[this.idx], this.scr, this.t, 0); }
+  paint() { drawPlate(this.story.broll, this.scr, this.t, this.decodeK); }
 
   destroy() { this.scr.destroy(); this.wrap.remove(); }
 }

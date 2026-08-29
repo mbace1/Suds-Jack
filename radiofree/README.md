@@ -145,59 +145,6 @@ what the show sounds like is an edit to that file**, not to the workflow.
 Setup, once: an `ANTHROPIC_API_KEY` repository secret. Optional repository
 variables `RFH_MODEL` and `RFH_FEEDS` override the model and the sources.
 
-## Clips
-
-The app is 9:16 already, so a clip is not a second renderer — it is the app
-with the furniture taken out, recorded.
-
-```sh
-# ?vertical: no masthead, no rail, no HUB button, no signature badge
-open 'radiofree/?vertical'
-
-# one clip per bulletin, 1080×1920, into radiofree/clips/<date>/
-NODE_PATH=/opt/node22/lib/node_modules node radiofree/tools/render-clips.mjs
-node radiofree/tools/render-clips.mjs --ids beach-capacity --seconds 12 --cut 6
-node radiofree/tools/render-clips.mjs --url https://mbace1.github.io/Suds-Jack/radiofree/
-```
-
-The shape of a clip is the app's own argument, timed: the cut runs (footage →
-studio → graphic), then at `--cut` **DECODE fires and holds** while the plain
-readings grow in beside the broadcast wording, then out at `--seconds`. A clip
-that only shows the bulletin is a news post; the second half is what makes it
-this station's.
-
-1080×1920 comes out of a **405×720 viewport at deviceScaleFactor 2.667** — the
-recorder does the scaling, so the type stays vector-crisp where a CSS transform
-would rasterise once and upscale. Playwright writes silent WebM; with `ffmpeg`
-on PATH an MP4 is transcoded beside it and the load-time head is trimmed off
-(measured, not guessed). `.github/workflows/radiofree-clips.yml` runs after the
-wire job and uploads the MP4s as an artifact — it does not commit them.
-
-There must never be a second renderer. A clip drawn by its own code path would
-go on looking right long after the app it claims to be a clip *of* had changed.
-
-**Stingers.** A clip opens on the station identifying itself and closes on the
-**TELL** — the question that catches this technique in the wild, which is the
-only thing worth taking away from fifteen seconds. Both are drawn by the app
-(`__rfh.ident`) off the wire, because the renderer must not learn to read the
-wire; it presses play and nothing else. `--no-stingers` to drop them.
-
-**Sidecars.** Beside every clip:
-
-```
-2026-07-31/
-  beach-capacity.mp4    the clip
-  beach-capacity.srt    captions, timed to the renderer's own timeline
-  beach-capacity.txt    the post text — headline, technique, tell, tags
-  manifest.json         what this morning produced
-```
-
-Posting is **not** automated, and that is a decision rather than a gap. It
-needs somebody's account and somebody's judgement about where a thing goes, and
-an unattended job holding both would be the one part of this project that could
-do damage while nobody is watching. What a job *can* do without either is write
-the caption, so posting is a paste rather than a rewrite.
-
 ## DECODE — the point of the thing
 
 Press it and the bulletin re-reads itself in plain language. The broadcast

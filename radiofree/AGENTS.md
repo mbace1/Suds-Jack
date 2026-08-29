@@ -120,12 +120,6 @@ browser for a reason you never saw. It fails on a missing language, a missing
 field, malformed `{{…|…}}`, a bulletin with no markup at all, and the silent
 one: a `visual` or `broll` this build cannot draw.
 
-`broll` takes **one key or a list of up to four** (`brollList`). A list makes the
-post cut to the next shot every time the edit comes off the anchor, and gives
-the stand-up its second key as a backdrop; the validator checks every key in the
-list, not just the first, because a wrong one at position two only shows itself
-on the beat the edit happens to land on.
-
 ### Where a new bulletin lands, and how an old one leaves
 
 Give a bulletin **`"filed": "YYYY-MM-DD"`** and it sorts to the **top** of the

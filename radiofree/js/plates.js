@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=43';
-import { mix, shade, bayer } from './screen.js?v=43';
+import { PAL } from './palette.js?v=37';
+import { mix, shade, bayer } from './screen.js?v=37';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;
@@ -106,46 +106,6 @@ function base(key, paint) {
   return cv;
 }
 
-
-// ── LIGHT ──────────────────────────────────────────────────────────
-//
-// The one thing that separates a shot from a diagram, and the thing every
-// plate here was missing. Three moves, cheap, in this order:
-//
-//   sky()        a graded ground with a HOT band at the horizon, so the frame
-//                has a bright end. Everything used to live between 10% and 30%
-//                brightness in the same green, which is why nothing had focus:
-//                the eye goes to the brightest thing, and there wasn't one.
-//   rim()        a 1–2px near-white edge on the lit side of a subject. It costs
-//                two fillRects and it is the difference between an object in a
-//                scene and a rectangle on a background.
-//   fg()         a PURE BLACK foreground shape, out of focus by virtue of
-//                having no detail at all. Black in front, lit in the middle,
-//                graded behind: that is depth, and no amount of correct
-//                perspective substitutes for it.
-const PAPER = '#f2f8f4', BONE = '#c3d4cc', COAL = '#000000';
-
-// a lit horizon: dark at the top, hot at the band, dark again below
-function sky(c, y0, y1, band, top, hot, bot) {
-  ramp(c, y0, band, top, hot);
-  ramp(c, band, y1, hot, bot);
-}
-
-// the rim: `side` is -1 for light from the left, +1 from the right
-function rim(c, x, y, w, h, side, col = PAPER) {
-  P(c, side < 0 ? x : x + w - 1, y, 1, h, col);
-  P(c, x, y, w, 1, shade(col, 0.75));
-}
-
-// a black cut-out along one edge — a roofline, a railing, a shoulder of rock
-function fg(c, edge, depth, seedN, bite = 0.55) {
-  for (let x = 0; x < W; x += 3) {
-    const h2 = depth * (0.45 + rnd(x * 0.37 + seedN) * bite);
-    if (edge === 'bottom') P(c, x, H - h2, 3, h2, COAL);
-    else P(c, x, 0, 3, h2, COAL);
-  }
-}
-
 // ── palettes, straight off the reference frames ────────────────────
 const NIGHT = { sky0: '#0a1512', sky1: '#1d3a32', haze: '#2b5147' };
 const STONE = ['#a8b9ad', '#c8d6cb', '#e2ece3', '#f4f9f3'];   // floodlit: the
@@ -158,7 +118,7 @@ const RAIL  = '#5d6f63';
 
 // ── CATHEDRAL — Tuomiokirkko over Senate Square ────────────────────
 function cathedralBase(c, o = {}) {
-  sky(c, 0, 150, 126, '#01060a', '#4d6f72', '#08120f');   // dark top, hot at the roofline
+  ramp(c, 0, 150, NIGHT.sky0, NIGHT.sky1);
   P(c, 0, 150, W, H - 150, NIGHT.sky1);
 
   // cloud banks, flat dithered slabs low in the sky
@@ -292,13 +252,12 @@ function cathedral(scr, t, d, o = {}) {
     P(c, bx + sway, by, 2, hh, '#080d0b');
     P(c, bx + sway, by - 2, 2, 2, '#0b120f');
   }
-  fg(c, 'bottom', 30, 1.7, 0.5);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
 // ── KATU — the narrow street, warm lamps, tram head-on ─────────────
 function katuBase(c, o = {}) {
-  sky(c, 0, 120, 100, '#01060a', '#48646a', '#08120f');
+  ramp(c, 0, 120, '#0b1a18', '#1b3b34');
   P(c, 0, 120, W, H - 120, '#12241f');
 
   // facades either side, stepping in toward the vanishing point
@@ -440,7 +399,7 @@ function katu(scr, t, d, o = {}) {
 
 // ── MANNERHEIM — the wide boulevard, green monochrome ──────────────
 function mannerheimBase(c, o = {}) {
-  sky(c, 0, 96, 82, '#01060a', '#43606a', '#070f0e');
+  ramp(c, 0, 96, '#050a08', '#16281f');
   P(c, 0, 96, W, H - 96, '#16281f');
 
   // towers, tallest at the sides, stepping down toward the axis
@@ -575,7 +534,6 @@ function mannerheim(scr, t, d, o = {}) {
   }
   P(c, tx + tw / 2 - 1, ty - 6 * sc, 2, 6 * sc, '#25382c');
 
-  fg(c, 'bottom', 26, 2.9, 0.45);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
@@ -644,7 +602,7 @@ function katajanokka(scr, t, d) {
 const SAND = ['#d9c48f', '#c9b077'], SEA = ['#3d86a0', '#1f5a72'];
 
 function beachBase(c) {
-  ramp(c, 0, 96, '#6aa6c6', '#e8f4f6');    // daylight: the value range is the SUBJECT, not the sky
+  ramp(c, 0, 96, '#8fc6d8', '#cfe6ea');                // the sky
   ramp(c, 96, 150, SEA[0], SEA[1]);                    // the water
   P(c, 0, 94, W, 2, '#e6f2f4');
   P(c, 16, 88, 44, 4, '#2e5c58');                      // the far shore
@@ -695,13 +653,12 @@ function beach(scr, t, d) {
       P(c, dx - 26, 208, 52, 2, PAL.AMBER);
     }
   }
-  fg(c, 'bottom', 30, 4.4, 0.5);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
 // ── MOON — blue hour over the ridge, and the chimney beside it ─────
 function moonBase(c) {
-  sky(c, 0, 190, 150, '#02132b', '#4f86b4', '#0b2036');
+  ramp(c, 0, 190, '#0d4f8f', '#2f8ec9');
   P(c, 70, 108, 16, 84, '#d8dee2');                     // the plant chimney
   P(c, 68, 103, 20, 6, '#eef2f4');
   P(c, 70, 108, 3, 84, '#f2f6f8');
@@ -711,7 +668,7 @@ function moonBase(c) {
   }
   for (let x = 0; x < W; x += 3) {                      // the treeline
     const h2 = 26 + Math.sin(x * 0.27) * 9 + Math.sin(x * 0.09) * 7;
-    P(c, x, 190 - h2, 3, h2 + 14, COAL);
+    P(c, x, 190 - h2, 3, h2 + 14, '#123a22');
   }
   P(c, 0, 204, W, 22, '#0c2718');
   for (let i = 0; i < 5; i++) {                         // the car park
@@ -754,14 +711,13 @@ function moon(scr, t, d) {
     P(c, 24, 80, 33, 2, PAL.AMBER);
     P(c, mx - 16, my + 20, 33, 2, PAL.AMBER);
   }
-  fg(c, 'bottom', 34, 6.2, 0.55);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
 
 // ── WINTERHALL — a data hall on a frozen field, steaming ───────────
 function winterhallBase(c) {
-  sky(c, 0, 120, 104, '#01060f', '#3f6d8c', '#081726');   // winter night sky
+  ramp(c, 0, 120, '#0a1c33', '#1c3f5e');                  // winter night sky
   for (let i = 0; i < 40; i++) {                          // stars
     P(c, rnd(i * 1.9) * W, rnd(i * 4.1) * 100, 1, 1, '#9fc4d8');
   }
@@ -802,13 +758,12 @@ function winterhall(scr, t, d) {
     P(c, 24 + i * 11, 124 - a * 0.5, 4, 2, '#6d8595');
   }
   if (d > 0.15) { halo(c, 72, 150, 46, PAL.AMBER_DIM, 0.3 * d); }
-  fg(c, 'bottom', 28, 7.1, 0.4);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
 // ── PACKICE — the winter gulf, floes, and a ship that is not moving ─
 function packiceBase(c) {
-  sky(c, 0, 104, 92, '#04121c', '#f0b06a', '#3a3428');    // a low winter sun
+  ramp(c, 0, 104, '#123a52', '#c98a52');                  // a low winter sun
   ramp(c, 104, H, '#7f9db0', '#c2d6e2');                  // the ice sheet
   P(c, 0, 102, W, 3, '#e8c48c');
   for (let i = 0; i < 80; i++) {                          // floes, hashed
@@ -841,7 +796,6 @@ function packice(scr, t, d) {
     P(c, sx - 10, sy + 18, 2, 6, PAL.AMBER_HOT);
     P(c, sx + 62, sy + 18, 2, 6, PAL.AMBER_HOT);
   }
-  fg(c, 'bottom', 30, 9.3, 0.6);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
@@ -856,7 +810,7 @@ function packice(scr, t, d) {
 function chase(scr, t, d) {
   const c = scr.ctx;
   const scroll = t * 150;                                  // the tracking shot
-  sky(c, 0, H, 40, '#01060a', '#25353f', '#0a1218');
+  ramp(c, 0, H, '#0a1218', '#131d24');
   P(c, 0, 0, 22, H, '#101c14');                            // verges
   P(c, 122, 0, 22, H, '#101c14');
   P(c, 22, 0, 100, H, '#20262b');                          // tarmac
@@ -910,7 +864,6 @@ function chase(scr, t, d) {
     P(c, 26, 120, 2, 106, PAL.AMBER);
     P(c, 116, 120, 2, 106, PAL.AMBER);
   }
-  fg(c, 'bottom', 26, 11.5, 0.4);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
@@ -920,7 +873,7 @@ function chase(scr, t, d) {
 // that it takes its time: a wide-body directly overhead barely seems to move,
 // which is exactly why standing under an approach path is worth doing.
 function approachBase(c) {
-  ramp(c, 0, 214, '#12406b', '#9fc6dc');   // looking UP: dark zenith, bright horizon
+  ramp(c, 0, 214, '#1c4d78', '#7fa8c4');
   for (let i = 0; i < 5; i++) {                            // cloud shelves
     const y = 26 + i * 30, w2 = 40 + rnd(i * 3.7) * 60;
     P(c, rnd(i * 9.1) * (W - w2), y, w2, 7, '#9dbdd2');
@@ -928,7 +881,7 @@ function approachBase(c) {
   }
   for (let x = 0; x < W; x += 3) {                         // the treeline
     const h2 = 16 + Math.sin(x * 0.33) * 6 + Math.sin(x * 0.12) * 5;
-    P(c, x, 214 - h2, 3, h2 + 20, COAL);          // silhouette, not dark green
+    P(c, x, 214 - h2, 3, h2 + 20, '#16301d');
   }
   P(c, 0, 234, W, H - 234, '#0f2416');
   for (let x = 6; x < W; x += 22) {                        // approach lights
@@ -944,29 +897,21 @@ function approach(scr, t, d) {
   // It comes over you and settles away toward the runway: big and low at the
   // bottom of the frame, small and far at the top. Eleven seconds, linear,
   // because an aircraft on finals does not ease.
-  // It used to run from below the frame to above it, which meant that for a
-  // third of every cycle the picture was an empty sky — and for another third
-  // the aircraft was behind the copy. It now crosses the VISIBLE band only.
-  const u = ((t * 0.13) % 1);
-  const y = H * 0.60 - u * (H * 0.60 + 40);
+  const u = ((t * 0.09) % 1);
+  const y = H + 34 - u * (H + 90);
   const k = 1.55 - u * 1.2;                                 // it recedes
   const cx = 70 + Math.sin(t * 0.25) * 3;
   const S = (a) => Math.max(1, Math.round(a * k));
 
-  // looking up at a heavy: the belly is in SHADOW, with one lit edge along the
-  // leading surfaces. It was near-white all over, which is why it vanished
-  // into the sky it was supposed to be crossing.
-  const body = '#2b3941', shade2 = '#18242b', dark = '#0b1216';
+  const body = '#dfe6ea', shade2 = '#9aa9b2', dark = '#39464e';
   // wing, engines under it, then the fuselage over the top
   P(c, cx - S(46), y - S(4), S(92), S(9), body);
-  P(c, cx - S(46), y - S(4), S(92), S(2), '#e6eef2');       // the lit leading edge
   P(c, cx - S(46), y + S(4), S(92), S(3), shade2);
   for (const ex of [-30, -16, 16, 30]) {
     P(c, cx + S(ex) - S(5), y + S(5), S(10), S(11), dark);
     P(c, cx + S(ex) - S(4), y + S(6), S(8), S(3), '#7f8f99');
   }
   P(c, cx - S(8), y - S(34), S(16), S(64), body);
-  P(c, cx - S(8), y - S(34), S(3), S(64), '#8fa4ae');       // and down the fuselage
   P(c, cx - S(8), y + S(14), S(16), S(16), shade2);
   P(c, cx - S(3), y - S(38), S(6), S(6), body);            // nose
   P(c, cx - S(20), y + S(30), S(40), S(7), body);          // tailplane
@@ -996,500 +941,10 @@ function approach(scr, t, d) {
     P(c, 8, 246, 2, 10, PAL.AMBER_HOT);
     P(c, 134, 246, 2, 10, PAL.AMBER_HOT);
   }
-  fg(c, 'bottom', 30, 13.7, 0.5);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
-// ── CABLESHIP — working a repair, at night, on the Gulf ────────────
-//
-// The stern shot: a cable running off the sheave into black water, deck lights
-// burning, the swell going through under it. Decoded, the seabed is drawn —
-// the cable as a straight amber line with the break marked — because the point
-// of that bulletin is that the sentence never says where it went.
-// COMPOSED FOR THE TOP HALF. The copy sits over the bottom 45% of every post,
-// so a plate whose subject is centred puts its subject under the lower third
-// and reads as an empty sky with a caption. Horizon high, ship in the upper
-// third, and only the cable is allowed to run down behind the words.
-function cableshipBase(c) {
-  // THE REFERENCE BUILD for the light rules above. Same subject as before, but
-  // the frame now runs black → paper: a moonlit band on the horizon, the ship
-  // rim-lit against it, and a pure-black foreground swell in front of her.
-  sky(c, 0, 62, 44, '#000509', '#5f7f86', '#0a1418');
-  // the moon, low and small, and the only white in the sky
-  halo(c, 104, 30, 26, '#dfeef2', 0.45);
-  P(c, 101, 27, 7, 7, PAPER);
-  for (let i = 0; i < 30; i++) {                            // stars, hashed
-    const sx = rnd(i * 2.7) * W, sy = rnd(i * 5.3) * 40;
-    if (Math.hypot(sx - 104, sy - 30) < 34) continue;       // not through the halo
-    P(c, sx, sy, 1, 1, i % 4 ? '#3d5a60' : '#9fc0c6');
-  }
-  P(c, 0, 58, W, 4, '#01080b');                             // the far shore
-  for (let i = 0; i < 16; i++) P(c, rnd(i * 7.7) * W, 56, 2, 2, '#e8d8a8');
-  ramp(c, 62, H, '#061014', '#000305');                     // the water
-  // the moon path on the water: broken, bright, and the only route the eye has
-  for (let y = 64; y < H; y += 2) {
-    const spread = 3 + (y - 64) * 0.26;
-    for (let x = 104 - spread; x < 104 + spread; x += 2) {
-      if (rnd(x * 3.1 + y * 1.7) < 0.30) {
-        P(c, x, y, 2, 1, mix('#7d9aa2', '#0a1418', (y - 64) / (H - 64)));
-      }
-    }
-  }
-}
-
-function cableship(scr, t, d) {
-  const c = scr.ctx;
-  c.drawImage(base('cableship', cableshipBase), 0, 0);
-
-  // the swell, live, in 2px CELLS — sampling at even pixels only reaches four
-  // of bayer's sixteen values and the sea collapses into blobs
-  for (let y = 64; y < H; y += 2) {
-    const k = (y - 64) / (H - 64);
-    for (let x = 0; x < W; x += 2) {
-      const wave = Math.sin(x * 0.09 + t * 1.1 + y * 0.16) * 0.06;
-      if (bayer(x >> 1, y >> 1) < 0.08 + k * 0.10 + wave) P(c, x, y, 2, 1, '#16333c');
-    }
-  }
-
-  const hull = 74 + Math.sin(t * 0.7) * 2;                  // she rides the swell
-  // The ship, stern-on, LIT FROM THE MOON SIDE. Dark body, one bright edge:
-  // that edge is what makes her an object rather than a hole in the water.
-  P(c, 32, hull, 80, 22, '#0b1114');                        // hull, near black
-  P(c, 32, hull + 20, 80, 3, COAL);
-  rim(c, 32, hull, 80, 22, 1, '#8fa9b0');
-  P(c, 38, hull - 20, 40, 20, '#111a1d');                   // house
-  rim(c, 38, hull - 20, 40, 20, 1, '#7f979d');
-  for (let i = 0; i < 5; i++) P(c, 42 + i * 7, hull - 15, 4, 5, '#ffe6ac');   // windows
-  // the waterline and a broken reflection, so she floats
-  for (let x = 32; x < 112; x += 2) {
-    if (bayer(x >> 1, (hull + 24) >> 1) < 0.42) P(c, x, hull + 23, 2, 1, '#3f5d66');
-  }
-  for (let i = 0; i < 22; i++) {
-    const rx = 34 + rnd(i * 2.3) * 74, ry = hull + 26 + rnd(i * 4.1) * 14;
-    if (Math.sin(t * 2 + i) > -0.2) P(c, rx, ry, 3, 1, '#2f545c');
-  }
-
-  P(c, 82, hull - 32, 4, 34, '#0d1417');                    // mast
-  P(c, 80, hull - 36, 8, 4, '#1b2529');
-  P(c, 92, hull - 24, 4, 26, '#131c20');                    // the A-frame
-  P(c, 110, hull - 24, 4, 26, '#131c20');
-  P(c, 92, hull - 26, 22, 4, '#222e33');
-  const sheave = 103;
-  halo(c, sheave, hull - 6, 24, '#ffeec0', 0.42);           // the working light
-  P(c, sheave - 4, hull - 22, 8, 8, '#4c5a5f');
-  P(c, sheave - 4, hull - 22, 8, 1, PAPER);
-
-  // the cable, catenary-sagging into the dark
-  for (let y = hull - 14; y < H; y += 2) {
-    const sag = Math.sin(y * 0.05 + t * 0.9) * 2;
-    P(c, sheave + sag + (y - hull) * 0.06, y, 2, 2, y < hull + 40 ? '#9fb0b6' : '#4a575c');
-  }
-
-  const blink = (t * 0.8) % 1 < 0.16;                       // the mark buoy
-  P(c, 26, 130, 4, 6, '#0a1114');
-  P(c, 26, 126, 4, 4, blink ? '#ffd27a' : '#3b3527');
-  if (blink) halo(c, 28, 128, 12, '#ffd27a', 0.34);
-
-  // BLACK IN FRONT. A near swell across the bottom of the frame with no
-  // detail in it at all — the cheapest depth cue there is, and the one every
-  // plate in this file was missing.
-  fg(c, 'bottom', 44, 3.7, 0.7);
-  for (let x = 0; x < W; x += 2) {                          // one lit crest on it
-    const h2 = 44 * (0.45 + rnd(x * 0.37 + 3.7) * 0.7);
-    if (rnd(x * 5.5) < 0.25) P(c, x, H - h2 - 1, 2, 1, '#2b4a52');
-  }
-
-  if (d > 0.2) {
-    P(c, 0, 150, W, 2, PAL.AMBER_DIM);                      // the seabed
-    P(c, 6, 146, 60, 2, PAL.AMBER);
-    P(c, 78, 146, 60, 2, PAL.AMBER);
-    const pulse = 0.5 + 0.5 * Math.sin(t * 4);
-    P(c, 66, 142 + pulse * 2, 12, 10, PAL.AMBER_HOT);       // where it stopped
-  }
-  amberWash(c, d);
-}
-
-// ── SWARM — a formation crossing the city, after midnight ──────────
-//
-// The action plate for anything about networks. Twenty-two machines holding a
-// lattice and drifting across the frame; decoded, every one of them is joined
-// to a single van on the ground, because a swarm is one operator with good
-// spacing.
-// Same rule as cableship: the roofline sits at 120 and the street at 138, so
-// the whole scene — sky, city, van — lands above the lower third.
-function swarmBase(c) {
-  // Same light rules as cableship: a graded sky with a hot band low down, the
-  // city as a PURE BLACK silhouette against it, and the machines lit from
-  // above so they read as objects rather than as icons.
-  sky(c, 0, 122, 96, '#01040a', '#3d5f74', '#0a1218');
-  for (let i = 0; i < 44; i++) {
-    const sx = rnd(i * 3.1) * W, sy = rnd(i * 6.9) * 84;
-    P(c, sx, sy, 1, 1, i % 5 ? '#26414e' : '#a8c4d0');
-  }
-  // the city: black, no detail, only windows punched out of it
-  for (let i = 0; i < 16; i++) {
-    const x = i * 10 - 4, h2 = 16 + rnd(i * 4.3) * 30;
-    P(c, x, 122 - h2, 11, h2 + 16, COAL);
-    for (let wy = 122 - h2 + 4; wy < 136; wy += 6) {
-      for (let wx = x + 2; wx < x + 9; wx += 4) {
-        if (rnd(wx * wy) < 0.38) P(c, wx, wy, 2, 3, rnd(wx + wy) < 0.25 ? '#ffe6ac' : '#8fa7a0');
-      }
-    }
-  }
-  P(c, 0, 138, W, H - 138, '#02060a');                      // the street
-  for (let x = 8; x < W; x += 26) {
-    P(c, x, 142, 2, 12, '#0a1216');
-    halo(c, x + 1, 141, 13, '#ffe6ac', 0.30);               // sodium, warm, dim
-    P(c, x - 6, 154, 14, 2, '#2b2a1e');                     // the pool it throws
-  }
-}
-
-function swarm(scr, t, d) {
-  const c = scr.ctx;
-  c.drawImage(base('swarm', swarmBase), 0, 0);
-
-  const N = 22, VAN = { x: 104, y: 150 };
-  const drift = (t * 9) % (W + 60) - 30;
-  for (let i = 0; i < N; i++) {
-    // a lattice, not a hash: they are holding station, which is the whole tell
-    const col = i % 6, row = (i / 6) | 0;
-    const x = drift + col * 17 + row * 6;
-    const y = 26 + row * 20 + Math.sin(t * 1.3 + i) * 2;
-    if (x < -8 || x > W + 8) continue;
-    P(c, x - 5, y, 11, 2, '#0d1418');                       // the arms, in shadow
-    P(c, x - 5, y, 11, 1, BONE);                            // lit along the top
-    P(c, x - 1, y - 2, 3, 5, '#1b2429');
-    P(c, x - 1, y - 2, 3, 1, PAPER);
-    const on = ((t * 2.2 + i * 0.31) % 1) < 0.5;
-    P(c, x - 6, y - 1, 2, 2, on ? '#ff5a4a' : '#2a1512');
-    P(c, x + 5, y - 1, 2, 2, on ? '#3aff7a' : '#132a1a');
-    if (d > 0.25) {
-      c.globalAlpha = 0.45;
-      c.strokeStyle = PAL.AMBER_DIM;
-      c.beginPath(); c.moveTo(x, y + 2); c.lineTo(VAN.x, VAN.y); c.stroke();
-      c.globalAlpha = 1;
-    }
-  }
-
-  if (d > 0.25) {
-    P(c, VAN.x - 12, VAN.y - 8, 24, 12, '#141a1e');         // the van
-    rim(c, VAN.x - 12, VAN.y - 8, 24, 12, -1, PAL.AMBER_HOT);
-    P(c, VAN.x - 12, VAN.y + 3, 24, 3, COAL);
-    halo(c, VAN.x, VAN.y - 2, 20, PAL.AMBER, 0.42 * d);
-    P(c, VAN.x - 2, VAN.y - 20, 3, 12, PAL.AMBER_DIM);
-    P(c, VAN.x - 6, VAN.y - 22, 11, 3, PAL.AMBER_HOT);
-  }
-
-  // black in front: a roofline across the bottom of the frame, no detail
-  fg(c, 'bottom', 34, 8.1, 0.5);
-  amberWash(c, d);
-}
-
-// ── SWITCHYARD — where the bill is made, at night ──────────────────
-//
-// Busbars, insulator stacks, a lattice tower and a transformer that hums a
-// little brighter every few seconds. Decoded, the load meter grows a second
-// bar beside it: what was drawn, and what was billed.
-function switchyardBase(c) {
-  // a sodium haze low on the horizon: the yard lights the sky, not the sky the
-  // yard, which is what a substation at night actually looks like
-  sky(c, 0, 104, 100, '#01050a', '#3f3c30', '#0a0f0e');
-  for (let i = 0; i < 34; i++) P(c, rnd(i * 4.9) * W, rnd(i * 8.1) * 80, 1, 1, '#334f5c');
-  P(c, 0, 104, W, H - 104, '#05090a');                      // the yard
-  for (let x = 0; x < W; x += 4) P(c, x, 104, 4, 1, '#141c1b');
-  // the lattice tower, stage left, cropped by the frame
-  // the tower is BLACK against the haze, with one lit edge
-  for (let y = 10; y < 132; y += 8) {
-    P(c, 12 + (y - 10) * 0.055, y, 3, 8, COAL);
-    P(c, 40 - (y - 10) * 0.055, y, 3, 8, COAL);
-    P(c, 12 + (y - 10) * 0.055, y, 1, 8, '#5d6b62');
-    P(c, 14, y + 4, 26, 1, '#0c1210');
-  }
-  P(c, 6, 10, 44, 4, COAL);
-  P(c, 6, 10, 44, 1, '#6b7a71');
-  // three insulator stacks — discs, because that is what makes them read
-  for (const bx of [70, 96, 122]) {
-    P(c, bx - 2, 62, 5, 64, '#0e1513');
-    for (let y = 62; y < 122; y += 7) {
-      P(c, bx - 7, y, 15, 3, '#2b3833');                    // the disc, in shadow
-      P(c, bx - 7, y, 15, 1, '#93a49b');                    // and its lit lip
-    }
-  }
-  // the transformer block, black, rim-lit from the yard light
-  P(c, 58, 126, 52, 26, COAL);
-  rim(c, 58, 126, 52, 26, -1, '#7e8e85');
-  for (let i = 0; i < 9; i++) P(c, 60 + i * 6, 130, 3, 18, '#0a100e');
-  P(c, 56, 152, 56, 4, COAL);
-}
-
-function switchyard(scr, t, d) {
-  const c = scr.ctx;
-  c.drawImage(base('switchyard', switchyardBase), 0, 0);
-
-  // the busbars sag between the stacks and breathe with the load
-  const load = 0.5 + 0.5 * Math.sin(t * 0.6);
-  for (const [x0, x1] of [[16, 70], [70, 96], [96, 122]]) {
-    for (let x = x0; x < x1; x++) {
-      const k = (x - x0) / Math.max(1, x1 - x0);
-      const sag = Math.sin(k * Math.PI) * 7;
-      P(c, x, 58 + sag, 1, 2, '#aab9b0');   // the busbar catches the light
-    }
-  }
-  // corona: a few cells of light on the stack tops, never the same two frames
-  for (let i = 0; i < 6; i++) {
-    const bx = [70, 96, 122][i % 3];
-    if (((t * 7 + i * 2.3) % 5) > 1.1) continue;
-    P(c, bx - 4 + (i % 2) * 6, 56 - (i % 3), 2, 2, '#bfe8ff');
-  }
-  halo(c, 84, 128, 34, '#ffe6ac', 0.26 + load * 0.12);      // the yard light
-  fg(c, 'bottom', 26, 5.3, 0.4);                            // black in front
-
-  // the load meter, top right, filling — the number the bill is made from
-  const gx = 100, gy = 14, gw = 36, gh = 12;
-  P(c, gx - 1, gy - 1, gw + 2, gh + 2, '#0d1714');
-  P(c, gx, gy, gw, gh, '#101d18');
-  P(c, gx, gy, Math.round(gw * (0.55 + load * 0.35)), gh, mix('#4fd18f', PAL.AMBER, d));
-  for (let i = 1; i < 4; i++) P(c, gx + i * 9, gy, 1, gh, '#0b1512');
-
-  if (d > 0.25) {
-    // drawn against billed: same yard, two bars, one of them new
-    const bx = 8, by = 14;
-    P(c, bx - 1, by - 1, 38, gh + 2, '#1a1408');
-    P(c, bx, by, 36, gh, '#20180a');
-    P(c, bx, by, 36, gh, PAL.AMBER);                        // billed: all of it
-    P(c, bx, by + gh + 4, 8, 4, PAL.AMBER_HOT);             // drawn: a fraction
-    halo(c, bx + 18, by + 6, 20, PAL.AMBER_DIM, 0.30 * d);
-  }
-  amberWash(c, d);
-}
-
-
-// ── STUDIOFLOOR — the room after the people ────────────────────────
-//
-// For the layoff stories, which used to borrow a winter hall. Rows of desks
-// at night with the monitors dark, ONE still lit, and the ceiling strips off
-// except over the far wall. The light rules apply: the lit desk is the only
-// bright thing, the near desk is a black cut-out, and the depth is drawn by
-// rows getting smaller and dimmer rather than by perspective lines.
-//
-// COMPOSED FOR THE TOP THIRD. The copy covers the bottom of a post from about
-// 34% down once a four-line headline and two paragraphs are in it, so the whole
-// subject — the one lit monitor and the empty chair at it — sits between y 40
-// and y 90 of 276. The first version put it at y 96 and the caption ate it: the
-// plate rendered as an empty dark rectangle with words underneath.
-function studiofloorBase(c) {
-  P(c, 0, 0, W, H, '#03070a');
-  // the far wall, and a strip light left on over it — dim, so it establishes
-  // the room without competing with the monitor
-  ramp(c, 0, 34, '#050a0e', '#0c151a');
-  P(c, 0, 30, W, 2, '#26343b');
-  for (let x = 10; x < W; x += 34) P(c, x, 30, 16, 1, '#5e737c');
-
-  // the floor, and a carpet grid converging so the room has a length
-  P(c, 0, 92, W, H - 92, '#04080b');
-  for (let y = 96, g = 7; y < H; y += g, g += 2) {
-    P(c, 0, y, W, 1, mix('#0a1216', '#050809', (y - 96) / (H - 96)));
-  }
-
-  // THREE ROWS of desks stepping toward the camera: smaller and dimmer behind,
-  // larger and blacker in front. Every monitor on them is off.
-  const rows = [[62, 12, '#131f25', 26], [80, 18, '#0e181d', 32], [110, 30, '#080f13', 44]];
-  for (const [y, h2, col, pitch] of rows) {
-    for (let x = -8; x < W; x += pitch) {
-      P(c, x, y, pitch - 5, 3, col);                       // the desk top
-      P(c, x + 2, y + 3, 3, h2, '#04080a');                // legs
-      P(c, x + pitch - 10, y + 3, 3, h2, '#04080a');
-      const mw = Math.round(pitch * 0.42);
-      P(c, x + 6, y - mw * 0.6, mw, mw * 0.6, '#0a1216');  // a dark monitor
-      P(c, x + 6, y - mw * 0.6, mw, 1, '#2c3a41');         // its edge, barely
-      P(c, x + pitch * 0.45, y + 3, 6, 4, '#070d11');      // an empty chair back
-    }
-  }
-}
-
-function studiofloor(scr, t, d) {
-  const c = scr.ctx;
-  c.drawImage(base('studiofloor', studiofloorBase), 0, 0);
-
-  // THE ONE DESK STILL ON. It is the only light source in the frame, so it is
-  // also what lights everything near it — the halo, the desk lip under it and
-  // the rim on the empty chair all come off this rectangle.
-  const mx = 52, my = 46, mw = 30, mh = 19;
-  const flick = 0.88 + 0.12 * Math.sin(t * 9) * Math.sin(t * 2.3);
-  // two tight halos rather than one wide one: `halo` quantises into five bands
-  // and at r 62 those bands are 12px apart and read as concentric rings
-  halo(c, mx + mw / 2, my + mh / 2, 40, '#9fd4f2', 0.20 * flick);
-  halo(c, mx + mw / 2, my + mh / 2, 22, '#cfeaff', 0.26 * flick);
-  P(c, mx - 1, my - 1, mw + 2, mh + 2, '#0a1418');         // the bezel
-  P(c, mx, my, mw, mh, mix('#5f9fbc', '#a9dcf4', flick));
-  for (let i = 0; i < 7; i++) {                            // lines of code on it
-    const n = rnd(i * 3.1 + Math.floor(t * 1.2) * 0.7);
-    if (n < 0.22) continue;
-    P(c, mx + 2 + (i % 2) * 3, my + 3 + i * 2.2, 4 + n * 18, 1, '#0b2a3a');
-  }
-  if ((t * 1.4) % 1 < 0.5) P(c, mx + 3, my + 2 + 7 * 2.4, 2, 2, '#eafaff');
-  P(c, mx + mw / 2 - 2, my + mh, 5, 4, '#33454e');         // the stand
-  P(c, mx - 6, my + mh + 4, mw + 12, 3, '#7ba9bd');        // the desk lip, lit
-  P(c, mx - 6, my + mh + 7, mw + 12, 2, '#0d181d');
-
-  // the chair at it, pushed back and empty, rim-lit down its left edge only
-  P(c, mx + 4, my + mh + 12, 20, 14, '#060c0f');
-  P(c, mx + 4, my + mh + 12, 1, 14, '#5c8496');
-  P(c, mx + 11, my + mh + 26, 3, 10, '#050a0d');
-
-  // black in front: the near desk, out of focus by having no detail at all
-  P(c, 0, H - 78, W, 78, COAL);
-  for (let x = 0; x < W; x += 2) {
-    if (rnd(x * 1.7) < 0.4) P(c, x, H - 79, 2, 1, '#1a262b');
-  }
-  amberWash(c, d);
-}
-
-
-// ── ENGINEWIRE — the engine, on the machine it is built on ─────────
-//
-// A viewport open on a corridor in wireframe, which is what a game looks like
-// to the person who makes it work. The screen fills the top of the frame and is
-// the light in the room; the desk it stands on is black. It rotates, the stats
-// tick, and the frame-time bar creeps — the whole plate is the thing that
-// cannot be built with half the people.
-function enginewireBase(c) {
-  P(c, 0, 0, W, H, '#03070a');
-  ramp(c, 0, 120, '#060c10', '#03070a');                   // the room glow
-  // the monitor: a black bezel with a dark viewport in it
-  P(c, 8, 14, W - 16, 92, '#080f13');
-  P(c, 10, 16, W - 20, 88, '#020608');
-  P(c, 8, 106, W - 16, 3, '#0d161b');
-  P(c, 64, 109, 16, 8, '#0a1216');                         // the stand
-  P(c, 52, 117, 40, 3, '#111c21');
-  // the desk it stands on, and the black room around it
-  P(c, 0, 120, W, H - 120, COAL);
-  P(c, 0, 120, W, 1, '#243138');
-}
-
-function enginewire(scr, t, d) {
-  const c = scr.ctx;
-  c.drawImage(base('enginewire', enginewireBase), 0, 0);
-
-  // the viewport: a corridor drawn as a run of rectangles receding to a
-  // vanishing point that drifts, so the camera reads as being flown by hand
-  const vx = 72 + Math.sin(t * 0.4) * 9, vy = 60 + Math.sin(t * 0.27) * 4;
-  c.save();
-  c.beginPath(); c.rect(10, 16, W - 20, 88); c.clip();
-  halo(c, vx, vy, 40, '#3ba7c8', 0.22);
-  for (let i = 0; i < 8; i++) {
-    const k = ((i + (t * 0.35) % 1) / 8);                  // 0 far → 1 near
-    const s = 0.06 + k * k * 2.4;
-    const w2 = 120 * s, h2 = 78 * s;
-    const col = mix('#12475c', '#7fe0ff', Math.min(1, k * 1.3));
-    const x0 = vx - w2 / 2, y0 = vy - h2 / 2;
-    P(c, x0, y0, w2, 1, col); P(c, x0, y0 + h2, w2, 1, col);
-    P(c, x0, y0, 1, h2, col); P(c, x0 + w2, y0, 1, h2, col);
-  }
-  // the four diagonals of the corridor, corner to corner of the near ring
-  for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-    for (let s = 0.06; s < 2.4; s += 0.03) {
-      P(c, vx + sx * 60 * s, vy + sy * 39 * s, 1, 1, '#1d5c74');
-    }
-  }
-  // a thing in the corridor: a lit doorway that grows and resets
-  const dk = (t * 0.35) % 1, ds = 0.2 + dk * 1.6;
-  P(c, vx - 9 * ds, vy - 2 * ds, 18 * ds, 22 * ds, '#0b2c3a');
-  P(c, vx - 9 * ds, vy - 2 * ds, 18 * ds, 1, '#bff0ff');
-  c.restore();
-
-  // the readout across the bottom of the viewport: the numbers on the screen of
-  // somebody whose job is the numbers
-  const ms = 11.2 + Math.sin(t * 1.7) * 3.4;
-  P(c, 12, 92, 84, 1, '#0d2a35');
-  P(c, 12, 94, Math.round(84 * Math.min(1, ms / 16)), 4, ms > 13 ? '#e0b46a' : '#4fd18f');
-  for (let i = 0; i < 5; i++) {                            // a memory histogram
-    const hh = 2 + Math.round(rnd(i + Math.floor(t * 3)) * 7);
-    P(c, 100 + i * 6, 98 - hh, 4, hh, '#2f7f97');
-  }
-  for (let i = 0; i < 9; i++) {                            // a call-stack column
-    if (rnd(i * 2.7 + Math.floor(t * 2)) < 0.3) continue;
-    P(c, 14, 22 + i * 4, 6 + rnd(i * 5.3) * 22, 1, '#17495c');
-  }
-  amberWash(c, d);
-}
-
-
-// ── BOARDROOM — the other room, where the line goes up ─────────────
-//
-// The counterpart shot: a long table under one hanging lamp, every chair empty,
-// and a screen at the end of it with a line that only goes one way. It is the
-// same building as `studiofloor` and it is lit, which is the whole joke — the
-// bright thing in this frame is a chart.
-function boardroomBase(c) {
-  P(c, 0, 0, W, H, '#04080b');
-  ramp(c, 0, 96, '#070d11', '#03070a');
-  // the presentation screen at the far end
-  P(c, 30, 22, 84, 50, '#0a1216');
-  P(c, 32, 24, 80, 46, '#0d2018');
-  // the table, receding toward it — two edges converging, black in front
-  for (let y = 96; y < H; y++) {
-    const k = (y - 96) / (H - 96);
-    const half = 22 + k * 96;
-    P(c, 72 - half, y, half * 2, 1, mix('#0e171b', '#04080a', k));
-  }
-  P(c, 0, H - 46, W, 46, COAL);                            // the near end, black
-  // the chairs down both sides: backs only, all of them empty
-  for (let i = 0; i < 5; i++) {
-    const k = i / 5, y = 100 + k * 120, hh = 10 + k * 22, off = 30 + k * 78;
-    P(c, 72 - off - 8, y, 9, hh, '#070d10');
-    P(c, 72 + off - 1, y, 9, hh, '#070d10');
-    P(c, 72 - off - 8, y, 9, 1, '#1b262b');
-    P(c, 72 + off - 1, y, 9, 1, '#1b262b');
-  }
-}
-
-function boardroom(scr, t, d) {
-  const c = scr.ctx;
-  c.drawImage(base('boardroom', boardroomBase), 0, 0);
-
-  // the lamp over the table, breathing, and the pool it puts on the wood
-  const b = 0.9 + 0.1 * Math.sin(t * 0.8);
-  P(c, 68, 0, 8, 10, '#0a1013');
-  P(c, 60, 10, 24, 5, '#20343a');
-  P(c, 62, 15, 20, 2, mix('#cfe6ef', '#ffffff', b - 0.9));
-  halo(c, 72, 18, 26, '#cfe6ef', 0.24 * b);
-  halo(c, 72, 104, 34, '#9fc4d0', 0.13 * b);
-
-  // THE CHART, and it is the brightest thing in the room. A line that only
-  // goes up, redrawn a segment at a time so the plate has a pulse.
-  const gx = 36, gy = 30, gw = 72, gh = 34;
-  for (let i = 1; i < 4; i++) P(c, gx, gy + i * 8, gw, 1, '#123028');
-  let px = gx, py = gy + gh;
-  for (let i = 1; i <= 12; i++) {
-    const k = i / 12;
-    const x2 = gx + gw * k;
-    const y2 = gy + gh - gh * (k * 0.86 + rnd(i * 4.7) * 0.1) ;
-    const on = k <= ((t * 0.3) % 1) + 0.08;
-    for (let s = 0; s <= 1; s += 0.08) {
-      P(c, px + (x2 - px) * s, py + (y2 - py) * s, 1, 1, on ? '#8dffc8' : '#1d4a3a');
-    }
-    if (on) P(c, x2 - 1, y2 - 1, 2, 2, '#e6fff2');
-    px = x2; py = y2;
-  }
-  halo(c, gx + gw - 8, gy + 6, 20, '#8dffc8', 0.22);
-  // TWO people at a table built for fourteen, seated down one side, black
-  // against the screen with the chart's own light on the near edge of each.
-  // They were one figure first and it read as a monolith: shoulders have to be
-  // wider than the head is tall or a silhouette is a slab.
-  for (const [x, y, s2] of [[26, 96, 1], [12, 112, 1.24]]) {
-    const bw = 22 * s2, hh = 9 * s2;
-    P(c, x, y + hh, bw, 30 * s2, COAL);                    // shoulders
-    P(c, x + bw * 0.34, y, hh, hh, COAL);                  // head
-    P(c, x + bw - 1, y + hh, 1, 30 * s2, '#3f6a5c');       // the rim
-    P(c, x + bw * 0.34 + hh - 1, y, 1, hh, '#3f6a5c');
-  }
-  amberWash(c, d);
-}
-
-const PLATES = { studiofloor, enginewire, boardroom,
-                 esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka,
-                 cableship, swarm, switchyard,
+const PLATES = { esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka,
                  beach, moon, winterhall, packice, chase, approach };
 export const PLATE_KEYS = Object.keys(PLATES);
 

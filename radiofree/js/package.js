@@ -14,6 +14,12 @@
 // All four mirror the same interface, so this one does too and main.js still
 // does not know which kind of post it is holding.
 //
+// DECODE cuts home to the GRAPHIC and holds there — the rule the codec posts
+// always followed, restored now that the graphic is on screen. The panels
+// decode as hard as the words do: the truncated chart re-bases, the valuation
+// tower goes hollow, the packed auditorium empties. Holding the studio instead
+// showed a face while the picture that was doing the arguing stayed off air.
+//
 // THE STUDIO CANVAS IS LAZY, and that is not an optimisation, it is the
 // difference between working and not: seventeen 360×640 backing stores is
 // ~63 MB of canvas memory on a phone that is also holding seventeen full-res
@@ -21,27 +27,24 @@
 // footage — which is what an idle post should be showing anyway — costs an
 // <img> that was already there.
 
-import { Photo } from './photo.js?v=43';
-import { Anchor } from './anchor.js?v=43';
-import { Plate, isDrawn } from './plate.js?v=43';
+import { Photo } from './photo.js?v=37';
+import { Anchor } from './anchor.js?v=37';
+import { Graphic } from './graphic.js?v=37';
+import { Plate, isDrawn } from './plate.js?v=37';
 
-// THE EDIT, and there is more than one of them now. Every post used to cut on
-// the same four beats, so a feed of five bulletins was the same film five
-// times. Each post picks a pattern off its own index — a long establishing
-// hold, a fast intercut, or a studio-led read — and no two neighbours run the
-// same one.
-//
-// The graphic beat went with DECODE: the panels existed to mutate under it.
-const PATTERNS = [
-  // ESTABLISH: hold the place, then the reporter, then back out to it
-  [{ shot: 'broll', len: 6.5 }, { shot: 'anchor', len: 5.5 }, { shot: 'broll', len: 5.0 }],
-  // INTERCUT: quick, restless, four cuts before it settles
-  [{ shot: 'broll', len: 2.6 }, { shot: 'anchor', len: 2.4 }, { shot: 'broll', len: 2.2 },
-   { shot: 'anchor', len: 3.4 }, { shot: 'broll', len: 5.0 }],
-  // PIECE TO CAMERA: the reporter carries it and the place is punctuation
-  [{ shot: 'anchor', len: 7.5 }, { shot: 'broll', len: 3.0 }, { shot: 'anchor', len: 5.0 },
-   { shot: 'broll', len: 4.0 }],
+// The beat. Footage leads because the story is about somewhere; the studio
+// gets the longest single hold because that is where the words are; the
+// graphic comes after it, while what he just said is still in your ear, and
+// then it goes back out to footage.
+const BEATS = [
+  { shot: 'broll', len: 4.0 },
+  { shot: 'anchor', len: 6.5 },
+  { shot: 'graphic', len: 5.0 },
+  { shot: 'broll', len: 4.5 },
 ];
+// The one shot that decodes. DECODE cuts home to it and holds — the words are
+// only half of what a bulletin is doing, and this is the other half.
+const HOME = 'graphic';
 const CUT_FLASH = 0.16;
 
 export class Package {
@@ -50,45 +53,27 @@ export class Package {
     this.sector = sector;
     this.seed = seed;
     this.live = false;
+    this._decoded = false;
     // Both drawn shots are LAZY, for the reason at the top of this file — and
-    // Declared FIRST: `get anchor()` reads through it.
-    this.drawn = { anchor: null };
+    // the graphic costs a second canvas on top of the studio's, so the same
+    // rule has to hold for it or the saving is undone by the shot that came to
+    // help. Declared FIRST: `get anchor()` reads through it.
+    this.drawn = { anchor: null, graphic: null };
 
     host.innerHTML = '';
     const root = document.createElement('div');
-    // THE GRADE. Three of them, seeded off the post index, because a feed
-    // where every night looks like the same night reads as one long shot with
-    // captions changing over it. Cold is the default gulf blue; sodium is a
-    // street-lit night; bleach is a hard, desaturated, high-contrast night that
-    // suits industry and machinery.
-    root.className = 'pkg grade-' + ['cold', 'sodium', 'bleach'][(seed + 1) % 3];
+    root.className = 'pkg';
 
     const a = document.createElement('div');
     a.className = 'pkg-shot on';
     const b = document.createElement('div');
     b.className = 'pkg-shot';
+    const g = document.createElement('div');
+    g.className = 'pkg-shot';
     const flash = document.createElement('div');
     flash.className = 'pkg-cut';
 
-    // THE CAMERA HUD. One overlay for every shot rather than furniture drawn
-    // into each canvas: the photographs cannot draw any, and three
-    // implementations of the same corner would have drifted apart by the second
-    // week. It is diegetic — the post is a feed, and a feed has a camera on the
-    // other end of it — so it stays in clean and vertical mode.
-    const hud = document.createElement('div');
-    hud.className = 'pkg-hud';
-    hud.setAttribute('aria-hidden', 'true');
-    const rec = document.createElement('span');
-    rec.className = 'hud-rec';
-    const tc = document.createElement('span');
-    tc.className = 'hud-tc';
-    const camTag = document.createElement('span');
-    camTag.className = 'hud-cam';
-    hud.append(rec, camTag, tc);
-    this.hud = { root: hud, rec, tc, cam: camTag };
-    this.clock = 0;
-
-    root.append(a, b, flash, hud);
+    root.append(a, b, g, flash);
     host.appendChild(root);
 
     // the photograph is still the default: a post only gets a drawn plate
@@ -97,9 +82,7 @@ export class Package {
     this.photo = new Footage(a, story, sector, seed);
     this.root = root;
     this.flash = flash;
-    this.layers = { broll: a, anchor: b };
-    // which edit this post is cut on — seeded, so scrolling back finds it
-    this.beats = PATTERNS[seed % PATTERNS.length];
+    this.layers = { broll: a, anchor: b, graphic: g };
 
     // A post always rests on its own footage, live or not, so scrolling the
     // feed shows real pictures rather than a wall of the same studio.
@@ -107,27 +90,28 @@ export class Package {
     this.beat = 0;
     this.clock = 0;
     this.flashT = 0;
-    // The timecode starts where the post sits in the feed, so two posts on
-    // screen are never on the same frame — a running clock that agrees
-    // everywhere reads as a graphic, not as a camera.
-    this.tc = 60 + seed * 137;
-    this.paintHud();
+  }
+
+  get decoded() { return this._decoded; }
+  set decoded(v) {
+    this._decoded = !!v;
+    this.photo.decoded = this._decoded;
+    this.photo.sync();
+    for (const k of ['anchor', 'graphic']) {
+      const sh = this.drawn[k];
+      if (sh) { sh.decoded = this._decoded; sh.paint(); }
+    }
+    if (this._decoded && this.live) this.cutTo(HOME);
   }
 
   // `anchor` stays readable as a property because the console reaches for it
   get anchor() { return this.drawn && this.drawn.anchor; }
 
-  // Which of the story's shots the footage layer is on. A post naming one key
-  // always answers the same thing; a post naming three is the reason this
-  // exists, and the reason a gate can prove the edit really moves between them.
-  footage() {
-    const f = this.photo;
-    return (f && f.keys) ? f.keys[f.idx] : null;
-  }
-
   ensure(kind) {
     if (this.drawn[kind]) return this.drawn[kind];
-    const sh = new Anchor(this.layers[kind], this.story, this.sector, this.seed);
+    const Cls = kind === 'graphic' ? Graphic : Anchor;
+    const sh = new Cls(this.layers[kind], this.story, this.sector, this.seed);
+    sh.decoded = this._decoded;
     // created mid-package, so it has to be told the post is on air — the
     // anchor only reads aloud while it is live
     if (this.live) sh.goLive();
@@ -137,7 +121,7 @@ export class Package {
   }
 
   release() {
-    for (const k of ['anchor']) {
+    for (const k of ['anchor', 'graphic']) {
       if (!this.drawn[k]) continue;
       this.drawn[k].destroy();
       this.drawn[k] = null;
@@ -159,59 +143,29 @@ export class Package {
     }
   }
 
-  // Which camera the edit is on. The numbers are the same every time a post
-  // shows a shot, because a cut back to the studio is a cut back to the same
-  // camera, and a HUD that renumbers itself is a HUD nobody believes.
-  camOf(shot) {
-    if (shot === 'anchor') return this.anchor && this.anchor.set === 'street' ? 'ENG 2' : 'CAM 1';
-    return 'CAM 3';
-  }
-
-  paintHud() {
-    const h = this.hud;
-    if (!h) return;
-    const f = Math.floor(this.tc * 25) % 25;
-    const total = Math.floor(this.tc);
-    const mm = String(Math.floor(total / 60) % 60).padStart(2, '0');
-    const ss = String(total % 60).padStart(2, '0');
-    h.tc.textContent = `00:${mm}:${ss}:${String(f).padStart(2, '0')}`;
-    h.cam.textContent = this.camOf(this.shot);
-    h.rec.textContent = this.live ? 'REC' : 'STBY';
-    h.root.classList.toggle('rolling', this.live);
-  }
-
   cutTo(shot) {
     if (shot === this.shot) return;
     if (shot !== 'broll') this.ensure(shot);
-    // A story can name several shots of itself. Coming back off the anchor to
-    // the same frame every time is what made a package read as two pictures
-    // alternating; each return goes to the NEXT shot instead. Posts naming one
-    // key are unchanged — `advance()` is a no-op there.
-    else if (this.photo.advance) this.photo.advance();
     this.show(shot);
     this.flashT = CUT_FLASH;
-    this.paintHud();
   }
 
   goLive() {
     this.live = true;
     this.root.classList.add('live');
-    this.paintHud();
     this.photo.goLive();
     // Landing mid-package would make the edit look like it had been running
     // while you were somewhere else. Every post starts its own cut from shot 0.
     this.beat = 0;
     this.clock = 0;
-    if (this.photo.reset) this.photo.reset();
-    this.show(this.beats[0].shot, true);
-    if (this.beats[0].shot !== 'broll') this.ensure(this.beats[0].shot);
-    if (this.drawn.anchor) this.drawn.anchor.goLive();
+    if (this._decoded) { this.ensure(HOME); this.show(HOME, true); }
+    else this.show('broll', true);
+    for (const k of ['anchor', 'graphic']) if (this.drawn[k]) this.drawn[k].goLive();
   }
 
   goIdle() {
     this.live = false;
     this.root.classList.remove('live');
-    this.paintHud();
     this.photo.goIdle();
     this.flashT = 0;
     this.flash.style.opacity = '0';
@@ -221,24 +175,23 @@ export class Package {
 
   update(dt, mouth = 0) {
     this.photo.update(dt, mouth);
-    if (this.drawn.anchor) this.drawn.anchor.update(dt, mouth);
+    for (const k of ['anchor', 'graphic']) {
+      if (this.drawn[k]) this.drawn[k].update(dt, mouth);
+    }
 
     if (this.flashT > 0) {
       this.flashT = Math.max(0, this.flashT - dt);
       this.flash.style.opacity = String((this.flashT / CUT_FLASH) * 0.55);
     }
 
-    // the timecode only runs while the post is live: a feed that is not being
-    // watched is not being recorded
-    if (this.live) { this.tc += dt; this.paintHud(); }
-
-    if (!this.live) return;
+    // decode holds the graphic — the cut stops while the plain reading is up
+    if (!this.live || this._decoded) return;
     this.clock += dt;
-    const b = this.beats[this.beat];
+    const b = BEATS[this.beat];
     if (this.clock >= b.len) {
       this.clock -= b.len;
-      this.beat = (this.beat + 1) % this.beats.length;
-      this.cutTo(this.beats[this.beat].shot);
+      this.beat = (this.beat + 1) % BEATS.length;
+      this.cutTo(BEATS[this.beat].shot);
     }
   }
 

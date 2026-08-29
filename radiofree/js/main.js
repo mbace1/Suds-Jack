@@ -1,36 +1,25 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=43';
-import { Post, Reader } from './codec.js?v=43';
-import { Package } from './package.js?v=43';
+import { PAL, SECTOR_COLOR } from './palette.js?v=37';
+import { Post, Reader } from './codec.js?v=37';
+import { Package } from './package.js?v=37';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=43';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=43';
-import * as audio from './audio.js?v=43';
-import { PixelScreen } from './screen.js?v=43';
-import { BROLL_KEYS } from './visuals.js?v=43';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=43';
-import { drawHead } from '../../toko/js/face.js';
-import { TOKO } from '../../toko/js/palette.js';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=37';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=37';
+import * as audio from './audio.js?v=37';
+import { PixelScreen } from './screen.js?v=37';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=37';
 
-// DECODE IS GONE. It was the app's second layer — a button that struck the
-// broadcast wording through and grew a plain reading beside it, plus a drawer
-// naming the technique and a sign-off that handed them all back. Owner's call,
-// 2026-08-08: the station is a news feed, not a lesson.
-//
-// What that removed, so nobody goes looking: the rail button, the decode box,
-// the technique/tell drawer, the sign-off tally, the amber "the spin is
-// showing" vocabulary, the story panels that mutated under it, and `?clean` —
-// which only existed to render a bulletin WITHOUT the layer, and is now the
-// only way anything renders. Wires may still carry `{{spun|plain}}` markup and
-// technique/tell fields; they are stripped and ignored.
+// CLEAN — the transmission with no second layer on it. `?clean` is what a clip
+// export loads, and it does not hide DECODE, it never builds it: no rail
+// button, no decode box, no struck spans, no plain readings anywhere in the
+// document. That is only possible because the wire now carries the broadcast
+// and the annotation as SEPARATE fields (`splitLine` in wire.js); while the
+// plain readings lived inside the broadcast string, "off" could only ever mean
+// rendered-then-hidden, which is one CSS mistake away from being on screen and
+// no basis for an export at all.
 const PARAMS = new URLSearchParams(location.search);
-// VERTICAL — the clip framing. The app is already 9:16, so this is not a
-// second layout: it is the same one with the furniture taken out (masthead,
-// rail, hub button, signature badge) so a recording carries the broadcast and
-// nothing that belongs to a website. It is SEPARATE from ?clean on purpose —
-const VERTICAL = PARAMS.has('vertical');
-if (VERTICAL) document.documentElement.classList.add('vertical');
+const CLEAN = PARAMS.has('clean');
 // which morning's broadcast to play. An unknown or absent date plays the
 // newest — see loadWire's ladder.
 const WANT_DATE = PARAMS.get('date');
@@ -119,6 +108,16 @@ function useLang(code) {
   paintGateLang();
 }
 
+const DECODED_KEY = 'rfhDecoded';
+let decodedIds = new Set();
+try { decodedIds = new Set(JSON.parse(localStorage.getItem(DECODED_KEY) || '[]')); }
+catch { /* private mode */ }
+function rememberDecoded(id) {
+  if (decodedIds.has(id)) return;
+  decodedIds.add(id);
+  try { localStorage.setItem(DECODED_KEY, JSON.stringify([...decodedIds])); } catch { /* ignore */ }
+}
+
 const SOUND_KEY = 'rfhSound';
 let soundOn = localStorage.getItem(SOUND_KEY) !== '0';
 
@@ -136,13 +135,7 @@ $('sound').onclick = () => {
   if (soundOn) audio.blip(1);
 };
 
-let tuning = false;
 $('tuneIn').onclick = async () => {
-  // idempotent: vertical tunes itself in, and the console handle and the gate
-  // both press this button. A second run would fetch the wire again and build
-  // a second feed on top of the first.
-  if (tuning || booted) return;
-  tuning = true;
   audio.init();
   audio.setMuted(!soundOn);
   audio.ring();
@@ -156,12 +149,6 @@ $('tuneIn').onclick = async () => {
   boot();
 };
 
-// A recording starts when the browser context does and cannot be trimmed
-// afterwards, so the tune-in card would be the first two seconds of every
-// clip — the station's front door, in a video that is not the station. In
-// clip framing the receiver is already on.
-if (VERTICAL) $('tuneIn').click();
-
 // The archive. A native <select> on purpose: it is one element, it is
 // keyboard- and screen-reader-correct without a line of ARIA, and on a phone it
 // opens the platform's own picker instead of a list this app would have to
@@ -170,7 +157,7 @@ function buildArchive() {
   const host = $('archive');
   if (!host) return;
   host.innerHTML = '';
-  if (VERTICAL || EPISODES.length < 2) { host.hidden = true; return; }
+  if (CLEAN || EPISODES.length < 2) { host.hidden = true; return; }
   host.hidden = false;
   const sel = el('select', 'archive-sel');
   sel.setAttribute('aria-label', t('a11y.archive'));
@@ -182,7 +169,7 @@ function buildArchive() {
     sel.appendChild(o);
   }
   // a different morning is a different broadcast, so it is a navigation, not a
-  // re-render — the scroll and the audio reset with it
+  // re-render — the decoded set, the scroll and the audio all reset with it
   sel.onchange = () => {
     const u = new URL(location.href);
     u.searchParams.set('date', sel.value);
@@ -190,24 +177,6 @@ function buildArchive() {
     location.assign(u.toString());
   };
   host.appendChild(sel);
-}
-
-// A small Toko, drawn rather than written: `drawHead` is the one measured
-// geometry (`toko/js/face.js`) and a second copy of it here would drift.
-function parodyMark() {
-  const wrap = el('div', 'parody');
-  wrap.title = t('parody');
-  wrap.setAttribute('aria-label', t('parody'));
-  const cv = document.createElement('canvas');
-  const S = 40, dpr = Math.min(3, window.devicePixelRatio || 1);
-  cv.width = S * dpr; cv.height = S * dpr;
-  cv.style.width = S + 'px'; cv.style.height = S + 'px';
-  const c = cv.getContext('2d');
-  c.scale(dpr, dpr);
-  drawHead(c, 2, 3, S - 4, { ground: TOKO.MAGENTA, ink: TOKO.PAPER });
-  wrap.appendChild(cv);
-  wrap.appendChild(el('span', 'parody-lbl', t('parody')));
-  return wrap;
 }
 
 function boot() {
@@ -255,49 +224,51 @@ function buildFeed() {
     media.appendChild(slot);
 
     const rail = el('div', 'rail');
+    let decodeBtn = null;
+    if (!CLEAN) {
+      decodeBtn = el('button', 'rail-btn decode-btn');
+      decodeBtn.innerHTML = `<span class="glyph" aria-hidden="true">⧉</span><span class="lbl">${t('rail.decode')}</span>`;
+      decodeBtn.setAttribute('aria-expanded', 'false');
+      decodeBtn.onclick = () => toggleDecode(i);
+    }
     const nextBtn = el('button', 'rail-btn next-btn');
     nextBtn.innerHTML = `<span class="glyph" aria-hidden="true">▼</span><span class="lbl">${t('rail.next')}</span>`;
     nextBtn.setAttribute('aria-label', t('a11y.nextPost'));
     nextBtn.onclick = () => scrollToPost(i + 1);
+    if (decodeBtn) rail.append(decodeBtn);
     rail.append(nextBtn);
     media.appendChild(rail);
     if (i === 0) media.appendChild(el('div', 'swipe-hint', t('hint.swipe')));
-    // THE PARODY MARK. Two registers share this feed and the reader has to be
-    // able to tell them apart at a glance, not by reading a footer: a bulletin
-    // written as satire carries Toko's face, and one reported straight — real
-    // names, public statements — does not. The face IS the brand mark, so it
-    // says "this is the station being funny" without a word of explanation.
-    if (!story.sourced) media.appendChild(parodyMark());
 
     const cap = el('div', 'post-caption');
-    // The kicker is the DATELINE and nothing else, so it stays one short block
-    // of solid colour. Everything that is a readout — the position in the
-    // rotation, the date — is a dim mono line above it. One line of forty
-    // characters in a solid block is a paragraph with a highlighter on it.
-    const meta = el('p', 'meta');
-    meta.innerHTML = `<span class="rec">${t('tag.onair')}</span> ${pad(i + 1)}/${STORIES.length} · ${date}`;
-    const tag = el('p', 'tag', copy.slug);
+    const tag = el('p', 'tag');
+    tag.innerHTML = `<span class="rec">${t('tag.onair')}</span> ${pad(i + 1)}/${STORIES.length} · ${copy.slug} · ${date}`;
     const head = el('h2', 'head', copy.head);
     const bulletin = el('div', 'bulletin');
     bulletin.setAttribute('aria-live', 'polite');
     bulletin.appendChild(el('p', 'standby', t('standby')));
 
-    cap.append(meta, tag, head, bulletin);
-    // the honesty line, and it has to be honest: a sourced bulletin names real
-    // companies and real people, so it must not sit under "invented names"
-    cap.appendChild(el('p', 'fiction' + (story.sourced ? ' sourced' : ''),
-      t(story.sourced ? 'sourced' : 'fiction')));
+    let box = null;
+    if (!CLEAN) {
+      box = el('div', 'decode-box');
+      box.hidden = true;
+      box.append(
+        el('p', 'technique', copy.technique),
+        el('p', 'note', copy.decodeNote),
+        el('p', 'tell', t('tell.prefix') + copy.tell),
+      );
+    }
+    cap.append(tag, head, bulletin);
+    if (box) cap.appendChild(box);
+    cap.appendChild(el('p', 'fiction', t('fiction')));
 
     art.append(media, cap);
     feed.appendChild(art);
 
-    // The dateline the stand-up strap prints. It is the COPY's slug, so it
-    // follows the language, and it is handed to the shot rather than looked up
-    // there — the shot classes never read the wire.
-    story.dateline = (copy && copy.slug) || '';
     const post = new Package(slot, story, sector, i);
     post.renderStatic();
-    posts.push({ story, sector, copy, post, read: false, els: { art, bulletin } });
+    posts.push({ story, sector, copy, post, decoded: false, read: false,
+      els: { art, bulletin, box, decodeBtn } });
   });
   buildSignOff(STORIES.length, date);
   measure();
@@ -326,7 +297,8 @@ function buildSignOff(i, date) {
   const body = el('div', 'bulletin');
   body.append(el('p', 'bulletin-line', t('off.p1').replace('{n}', String(STORIES.length))),
               el('p', 'bulletin-line', t('off.p2')));
-  cap.append(tag, el('h2', 'head', t('off.head')), body,
+  const tally = el('div', 'tally');
+  cap.append(tag, el('h2', 'head', t('off.head')), body, tally,
     el('p', 'fiction', t('fiction')));
 
   art.append(media, cap);
@@ -337,18 +309,53 @@ function buildSignOff(i, date) {
   post.silent = true;
   post.accent = PAL.GREEN;
   post.renderStatic();
-  posts.push({ signoff: true, post, els: { art }, read: true });
+  posts.push({ signoff: true, post, els: { art, tally }, decoded: false, read: true });
+}
+
+function paintTally(p) {
+  const wrap = p.els.tally;
+  wrap.innerHTML = '';
+  // Count against WHAT AIRED, not against everything ever decoded. `rfhDecoded`
+  // persists across visits, so once bulletins start being archived a returning
+  // listener's set outgrows the feed and the tally reads "14/12".
+  const onAir = STORIES.filter(s => decodedIds.has(s.id)).length;
+  wrap.appendChild(el('p', 'tally-head', `${t('off.tally')} ${onAir}/${STORIES.length}`));
+  for (const story of STORIES) {
+    const copy = storyCopy(story.id, getLang());
+    const got = decodedIds.has(story.id);
+    const row = el('div', 'tally-row' + (got ? ' got' : ''));
+    row.append(
+      el('span', 'tally-mark', got ? '✓' : '·'),
+      el('span', 'tally-tech', copy.technique),
+    );
+    if (got) row.appendChild(el('span', 'tally-tell', copy.tell));
+    wrap.appendChild(row);
+  }
+  const n = onAir;
+  wrap.appendChild(el('p', 'tally-note',
+    n === 0 ? t('off.none')
+      : n >= STORIES.length ? t('off.all').replace('{n}', String(STORIES.length))
+      : t('off.some')));
 }
 
 function rebuildFeed() {
-  const keep = posts.map(p => ({ read: p.read, signoff: !!p.signoff }));
+  const keep = posts.map(p => ({ decoded: p.decoded, read: p.read, signoff: !!p.signoff }));
   const at = Math.max(0, active);
   for (const p of posts) p.post.destroy();
   active = -1;
   buildFeed();
   posts.forEach((p, i) => {
     if (!keep[i] || keep[i].signoff || p.signoff) return;
+    p.decoded = keep[i].decoded;
     p.read = keep[i].read;
+    p.post.decoded = p.decoded;
+    if (p.decoded && p.els.box && p.els.decodeBtn) {
+      p.els.art.classList.add('is-decoded');
+      p.els.box.hidden = false;
+      p.els.decodeBtn.classList.add('on');
+      p.els.decodeBtn.setAttribute('aria-expanded', 'true');
+      p.els.decodeBtn.querySelector('.lbl').textContent = t('rail.refold');
+    }
     p.post.renderStatic();
   });
   scrollToPost(at, true);
@@ -388,6 +395,7 @@ function setActive(i, first = false) {
     $('call').textContent = t('off.tag');
     document.title = `${t('off.head')} — Radio Free Helsinki`;
     setHash('');
+    if (!CLEAN) paintTally(p);
     audio.carrierDuck(false);
     if (!first) audio.recode();
     return;
@@ -399,11 +407,12 @@ function setActive(i, first = false) {
   document.title = `${p.copy.head} — Radio Free Helsinki`;
   setHash(p.story.id);
 
-  // The Reader is handed runs with no annotation half at all — `.spun` and
-  // `.plain` are not styled away, they are never constructed. `storyBroadcast`
-  // is the field that carries the words with no markup in them.
-  const lines = storyBroadcast(p.story.id, getLang()).map(text => [{ text, plain: null }]);
-  reader.play(p.els.bulletin, lines, false);
+  // In clean mode the Reader is handed runs with no plain half — so `.spun`
+  // and `.plain` are not styled-away, they are never constructed.
+  const lines = CLEAN
+    ? storyBroadcast(p.story.id, getLang()).map(text => [{ text, plain: null }])
+    : p.copy.lines.map(parseLine);
+  reader.play(p.els.bulletin, lines, !CLEAN && p.decoded);
   reader.finish();                     // set, not typed
   p.read = true;
   if (!first) audio.page();
@@ -445,6 +454,24 @@ function tuneChannel(delta) {
   scrollToPost(target);
 }
 
+function toggleDecode(i) {
+  if (CLEAN) return;
+  const p = posts[i];
+  if (!p || p.signoff) return;
+  if (i !== active) { scrollToPost(i); return; }
+  p.decoded = !p.decoded;
+  p.post.decoded = p.decoded;
+  if (p.decoded) rememberDecoded(p.story.id);
+  if (!reader.done) reader.finish();
+  reader.setDecoded(p.decoded);
+  p.els.art.classList.toggle('is-decoded', p.decoded);
+  p.els.box.hidden = !p.decoded;
+  p.els.decodeBtn.classList.toggle('on', p.decoded);
+  p.els.decodeBtn.setAttribute('aria-expanded', String(p.decoded));
+  p.els.decodeBtn.querySelector('.lbl').textContent = t(p.decoded ? 'rail.refold' : 'rail.decode');
+  p.decoded ? audio.decode() : audio.recode();
+}
+
 function bindControls() {
   $('chUp').onclick = () => tuneChannel(1);
   $('chDown').onclick = () => tuneChannel(-1);
@@ -462,6 +489,8 @@ function bindControls() {
       case 'ArrowUp': case 'PageUp': e.preventDefault(); scrollToPost(active - 1); break;
       case 'ArrowRight': tuneChannel(1); break;
       case 'ArrowLeft': tuneChannel(-1); break;
+      case 'd': case 'D': toggleDecode(active); break;
+      // (clean mode drops the key with the button — toggleDecode returns early)
       default: break;
     }
   });
@@ -483,14 +512,14 @@ function loop(now) {
 function drawAllPlates() {
   const keys = BROLL_KEYS || [];
   const results = [];
-  const scr = new PixelScreen(null, PLATE_W, PLATE_H);
-  const total = PLATE_W * PLATE_H;
+  const scr = new PixelScreen(null, PANEL_W, PANEL_H);
+  const total = PANEL_W * PANEL_H;
   for (const key of keys) {
-    for (const d of [0]) {
+    for (const d of [0, 1]) {
       try {
         scr.clear('#000000');
-        drawPlate(key, scr, 1.25, d);
-        const data = scr.ctx.getImageData(0, 0, PLATE_W, PLATE_H).data;
+        drawVisual(key, scr, 1.25, d);
+        const data = scr.ctx.getImageData(0, 0, PANEL_W, PANEL_H).data;
         let lit = 0;
         for (let i = 0; i < data.length; i += 4) {
           if (data[i] + data[i + 1] + data[i + 2] > 12) lit++;
@@ -518,50 +547,20 @@ window.__rfh = {
   get state() {
     const p = posts[active];
     if (!p) return null;
-    if (p.signoff) return { signoff: true, index: active, lang: getLang() };
-    return { channel: p.story.sector, index: active, id: p.story.id, lang: getLang() };
+    if (p.signoff) return { signoff: true, index: active,
+        decodedCount: STORIES.filter(s => decodedIds.has(s.id)).length, lang: getLang() };
+    return { channel: p.story.sector, index: active, decoded: p.decoded,
+             id: p.story.id, lang: getLang() };
   },
-  vertical: VERTICAL,
-  // The stingers a recording tops and tails itself with. Kept here rather than
-  // in the renderer because they are made of the wire — the frequency, the
-  // dateline, the headline — and the renderer must not learn to read the wire;
-  // it presses play and nothing else.
-  //
-  //   ident()             the station, at the head
-  //   ident({ card: 1 })  the end card: the dateline and the headline, held
-  //                       long enough to read. It used to print the bulletin's
-  //                       TELL, which went with DECODE.
-  ident: async ({ ms = 1100, card = false, fade = 280 } = {}) => {
-    const box = $('ident');
-    const sec = SECTORS[0] || {};
-    const p = posts[active];
-    const c = card && p && !p.signoff ? storyCopy(p.story.id, getLang()) : null;
-    $('identSub').textContent = card
-      ? `${(c && c.slug) || ''} · ${WIRE_INFO.date || ''}`.trim()
-      : `${sec.freq || '--.--'} ${sec.call || ''}`.trim();
-    const body = $('identBody');
-    body.innerHTML = '';
-    if (c) body.appendChild(document.createTextNode(c.head));
-    box.hidden = false;
-    // a frame between display and opacity, or the transition never starts
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    box.classList.add('on');
-    await new Promise(r => setTimeout(r, ms));
-    box.classList.remove('on');
-    await new Promise(r => setTimeout(r, fade));
-    box.hidden = true;
-  },
+  clean: CLEAN,
   debug: {
     tuneIn: () => $('tuneIn').click(),
     // what a clip export would say, straight out of the wire's own field
     broadcast: (id, lang) => storyBroadcast(id || (posts[active] && posts[active].story.id),
                                             lang || getLang()),
-    // the whole copy block for a bulletin, in the language on screen — what a
-    // caption file and a post text are written from
-    copy: (id, lang) => storyCopy(id || (posts[active] && posts[active].story.id),
-                                  lang || getLang()),
     go: d => scrollToPost(active + d),
     tuneChannel,
+    toggleDecode: () => toggleDecode(active),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
     // Anything inspecting the wire comes through here. stories.js holds it in
@@ -585,22 +584,8 @@ window.__rfh = {
       if (!p || p.signoff) return null;
       const s = p.post.shot;
       if (!s) return null;
-      const shown = p.post.footage ? p.post.footage() : null;
-      return typeof s === 'string' ? { type: s, key: shown }
+      return typeof s === 'string' ? { type: s, key: null }
         : { type: s.type, key: s.key || null };
-    },
-    // force the edit onto one shot — a gate (and a clip harness) has to be
-    // able to look at the studio without waiting out the cut
-    cut: (shot) => {
-      const p = posts[active];
-      if (p && !p.signoff && p.post.cutTo) p.post.cutTo(shot);
-      return p && !p.signoff && p.post.shot;
-    },
-    // 'booth' or 'street' — which set the anchor is standing on
-    anchorSet: () => {
-      const p = posts[active];
-      const a = p && p.post && p.post.anchor;
-      return a ? a.set : null;
     },
     beat: () => {
       const p = posts[active];
@@ -631,6 +616,8 @@ window.__rfh = {
       p.post.cutTo(shot);
       return true;
     },
+    decoded: () => [...decodedIds],
+    forgetDecoded: () => { decodedIds.clear(); try { localStorage.removeItem(DECODED_KEY); } catch {} },
     setLang: useLang,
     open: id => {
       const i = posts.findIndex(p => !p.signoff && p.story.id === id);
