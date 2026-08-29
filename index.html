@@ -44,29 +44,19 @@
   </div>
 
   <style>
-    /* the only rule that has to live here: it labels the rack for screen
-       readers without putting a second heading on the screen */
     .sr-only {
       position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
       overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
     }
   </style>
 
-  <script type="module" src="hub/hub-entry.js?v=3"></script>
-  <!-- Toko is at the counter. A Sierra-style conversation with the artist
-       behind the cabinets; the tree lives in toko/js/dialogue.js. It mounts
-       itself after <header> wherever this tag sits, and it sits AFTER hub.js
-       because hub.js assigns window.__hub wholesale — hung on before that,
-       the counter's own handle would be thrown away. -->
+  <script type="module" src="hub/hub-entry.js?v=4"></script>
   <script type="module">
     import { mountChat } from './toko/js/chat.js?v=20';
     window.__hub.chat = mountChat(document.querySelector('header'));
   </script>
 
   <script>
-    // The arcade is the front door, and a front door that needs a signal is a
-    // poor one. Registered on https only (or ?sw=1) so local dev and the smoke
-    // gate are never handed a stale shell — the same rule gameoflife follows.
     if ('serviceWorker' in navigator
         && (location.protocol === 'https:' || location.search.includes('sw=1'))) {
       addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
