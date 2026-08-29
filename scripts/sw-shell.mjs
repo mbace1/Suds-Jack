@@ -28,6 +28,12 @@ const REFS = [
   /(?:src|href)="([^"]+)"/g,
   /from\s*'([^']+)'/g,
   /import\(\s*'([^']+)'/g,
+  // a bare side-effect import — `import './x.js';`, no `from` — is invisible
+  // to the pattern above (which needs the word `from`) and to the dynamic one
+  // (which needs `import(`). hub-entry.js is written exactly this way, and
+  // missing it silently dropped ten modules — the whole rest of the hub —
+  // out of the walk with no error, since the walker just never got past it.
+  /^\s*import\s+'([^']+)'/gm,
 ];
 
 // `import('./dialogue.js' + V)` — the specifier is BUILT, so the token is not

@@ -19,7 +19,7 @@
 // caching their files from out here would be two answers to the same question.
 // A narrower scope wins the page, so those keep controlling themselves.
 
-const VERSION = 'v23';
+const VERSION = 'v24';
 const CACHE = `suds-hub-${VERSION}`;
 
 const SHELL = [
@@ -29,10 +29,14 @@ const SHELL = [
   './hub/art.js?v=16',
   './hub/feedback.js?v=13',
   './hub/games.js?v=43',
+  './hub/hub-entry.js?v=1',
   './hub/hub.css?v=23',
-  './hub/hub.js?v=41',
+  './hub/hub.js?v=43',
   './hub/i18n.js?v=11',
   './hub/pad.js?v=9',
+  './hub/playlog-auto.js',
+  './hub/playlog.js',
+  './hub/toko-cabinet.js?v=1',
   './hub/topics.js?v=2',
   './toko/js/chat.js?v=20',
   './toko/js/dialogue.fi.js?v=20',
@@ -75,7 +79,12 @@ self.addEventListener('fetch', e => {
   const live = url.pathname.endsWith('/versions.json');
 
   if (req.mode === 'navigate' || live) {
-    e.respondWith(fetch(req)
+    // `fetch(req)` alone still lets the browser's own HTTP cache answer if the
+    // response is within its max-age — "network first" in name only, and the
+    // reason a stale hub can sit unrefreshed through an ordinary reload. A
+    // service worker update (a changed sw.js) is what actually busts an old
+    // cache; this is what keeps every *ordinary* reload honest in between.
+    e.respondWith(fetch(req, { cache: 'no-store' })
       .then(r => {
         const copy = r.clone();
         caches.open(CACHE).then(c => c.put(req, copy));
