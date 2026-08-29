@@ -22,6 +22,9 @@ Player.prototype._movementOffense = function(dt, enemies) {
     const vertical = Math.abs((this.y + 0.9) - (e.y || 0));
     if (vertical > 1.45) continue;
 
+    // Deliberately razor-thin. Dash is a little more forgiving because the player
+    // explicitly committed to the offensive movement; passive high-speed skims
+    // require an almost-touching line.
     const reach = (e.r || 0.7) + (this.dashing ? 0.42 : 0.18);
     if (horizontal > reach) continue;
 
