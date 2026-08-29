@@ -31,14 +31,14 @@ export function buildRealHelsinki(pack){
   if(missing.length)throw new Error(`HSL pack misses delivery anchors: ${missing.join(', ')}`);
   const lats=Object.values(resolved).map(s=>s.lat),lons=Object.values(resolved).map(s=>s.lon);
   const north=Math.max(...lats),west=Math.min(...lons),kx=Math.cos(rad((Math.min(...lats)+north)/2));
-  const projectLatLon=(lat,lon)=>({x:(lon-west)*111320*kx/100,y:(north-lat)*111320/100}); // one unit = 100 m
+  const projectLatLon=(lat,lon)=>({x:(lon-west)*111320*kx/100,y:(north-lat)*111320/100});
   const nodes=Object.entries(META).map(([id,m])=>{const stop=resolved[id],p=projectLatLon(stop.lat,stop.lon);return{id,name:m.name,x:p.x,y:p.y,tags:m.tags,capacity:m.capacity,lat:stop.lat,lon:stop.lon,hslStopId:stop.id,hslStopName:stop.name};});
   const nodeById=new Map(nodes.map(n=>[n.id,n])),edges=[];
   for(const[a,b]of WALK)edges.push({id:`walk:${a}:${b}`,a,b,mode:'walk',time:Math.max(6,Math.round(metres(nodeById.get(a),nodeById.get(b))/55)),capacity:2});
   const stopById=new Map((pack.stops||[]).map(s=>[s.id,s])),edgeKeys=new Set(),lines=[];
   for(const source of pack.lines||[]){
     if(source.mode!=='TRAM'&&source.mode!=='SUBWAY')continue;const mode=source.mode==='SUBWAY'?'metro':'tram',touched=[];
-    for(const sid of source.stops||[]){const s=stopById.get(sid);if(!s)continue;const id=semanticForName(s.name);if(!id)continue;if(touched.at(-1)?.id!==id)touched.push({id,stop:s});}
+    for(const sid of source.stops||[]){const s=stopById.get(sid);if(!s)continue;const id=semanticForName(s.name);if(!id||touched.some(x=>x.id===id))continue;touched.push({id,stop:s});}
     if(touched.length<2)continue;
     for(let i=0;i<touched.length-1;i++){const a=touched[i],b=touched[i+1],key=[mode,...[a.id,b.id].sort()].join(':');if(edgeKeys.has(key))continue;edgeKeys.add(key);edges.push({id:`hsl:${key}`,a:a.id,b:b.id,mode,time:ticksFor(a.stop,b.stop,mode),capacity:mode==='metro'?8:5});}
     lines.push({id:`hsl:${source.id}`,label:source.name,sourceId:source.id,name:source.name,mode,nodes:touched.map(x=>x.id),carriers:mode==='metro'?3:1,carrierCapacity:mode==='metro'?30:12});
