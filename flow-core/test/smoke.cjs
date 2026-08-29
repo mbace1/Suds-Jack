@@ -24,9 +24,11 @@ s.listen(0, '127.0.0.1', async () => {
   ok('boots with no errors', errs.length === 0, errs.slice(0, 2).join(' | '));
   ok('delivery handle is exposed', await p.evaluate(() => !!window.__tm && !!window.__tm.challenge));
   ok('real Helsinki graph is active', await p.evaluate(() => {
-    const ids = new Set([...window.__tm.flow.graph.nodes.keys()]);
-    return ['pasila','toolontori','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x => ids.has(x))
-      && [...window.__tm.flow.graph.nodes.values()].every(n => Number.isFinite(n.lat) && Number.isFinite(n.lon) && n.hslStopId);
+    const graphIds = new Set([...window.__tm.flow.graph.nodes.keys()]);
+    const city = window.__tm.city;
+    return ['pasila','toolontori','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x => graphIds.has(x))
+      && city?.source?.exactGeometry === true
+      && city.nodes.every(n => Number.isFinite(n.lat) && Number.isFinite(n.lon) && n.hslStopId);
   }));
   ok('first A to B job exists', await p.evaluate(() => {
     const j = window.__tm.challenge.active;
