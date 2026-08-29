@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { TransitLayers } from '../js/transit-layers.js';
 
-const pack = JSON.parse(fs.readFileSync(new URL('../cities/kallio.json', import.meta.url), 'utf8'));
+const pack = JSON.parse(fs.readFileSync(new URL('../cities/helsinki.json', import.meta.url), 'utf8'));
 const transit = new TransitLayers(pack);
 
 assert.equal(transit.layers.length, pack.lines.length, 'one display layer per GTFS line-direction');
@@ -24,6 +24,6 @@ assert.ok(transit.visibleLines().every(line => line.mode === 'TRAM'), 'tram-only
 transit.showAll();
 assert.equal(transit.visibleLines().length, pack.lines.length, 'show all restores every source layer');
 
-assert.match(pack.note, /not the whole network/i, 'source limitation stays explicit');
+assert.match(pack.note, /cut where the box ends/i, 'source clipping stays explicit');
 assert.equal(pack.licence, 'CC BY 4.0');
 console.log(`transit layers: ${pack.lines.length}/${pack.lines.length} source lines preserved`);
