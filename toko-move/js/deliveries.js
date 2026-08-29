@@ -1,18 +1,18 @@
-// Authored Central Helsinki jobs. The board stays readable: one active job at a time,
-// then the routes stretch progressively farther across the city.
+// Authored Central Helsinki jobs. One active job at a time; routes progressively
+// stretch across the city and force the player to learn the board.
 export const DELIVERY_TARGET = 10;
 
 export const JOBS = [
   { from: 'hakaniemi', to: 'rautatientori', label: 'Documents to the station' },
   { from: 'rautatientori', to: 'kamppi', label: 'Parcel to Kamppi' },
-  { from: 'kamppi', to: 'toolontori', label: 'Food delivery to Töölö' },
-  { from: 'toolontori', to: 'pasila', label: 'Parts to Pasila' },
+  { from: 'kamppi', to: 'ruoholahti', label: 'Parts to Ruoholahti' },
+  { from: 'ruoholahti', to: 'toolontori', label: 'Food delivery to Töölö' },
+  { from: 'toolontori', to: 'pasila', label: 'Equipment to Pasila' },
   { from: 'pasila', to: 'sornainen', label: 'Rush package to Sörnäinen' },
   { from: 'sornainen', to: 'kalasatama', label: 'Shop delivery to Kalasatama' },
-  { from: 'kalasatama', to: 'kauppatori', label: 'Fresh delivery to Market Square' },
-  { from: 'kauppatori', to: 'rautatientori', label: 'Courier run to the centre' },
-  { from: 'rautatientori', to: 'kallionkirkko', label: 'Pickup for Kallio' },
-  { from: 'kallionkirkko', to: 'kamppi', label: 'Final run across town' },
+  { from: 'kalasatama', to: 'katajanokka', label: 'Harbour delivery to Katajanokka' },
+  { from: 'katajanokka', to: 'senaatintori', label: 'Courier run to Senate Square' },
+  { from: 'senaatintori', to: 'kallionkirkko', label: 'Final run to Kallio' },
 ];
 
 export class DeliveryChallenge {
