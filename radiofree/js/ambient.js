@@ -6,7 +6,7 @@ import { drawFarCity } from './retrocity.js?v=38';
 import { drawTram } from './tram.js?v=38';
 import { drawCentralStation } from './centralstation.js?v=39';
 import { drawKatajanokka } from './katajanokka.js?v=40';
-import { drawPassersby, drawBroadcastFX } from './broadcastfx.js?v=41';
+import { drawPassersby, drawBroadcastFX } from './broadcastfx.js?v=45';
 
 export const AMBIENT_KEYS = ['metro', 'raintram', 'centralstation', 'katajanokka', 'rooftops', 'nightferry'];
 const W = 128, H = 152;
