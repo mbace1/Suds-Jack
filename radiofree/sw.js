@@ -1,14 +1,14 @@
 // Radio Free Helsinki — offline.
-const VERSION = 'v47';
+const VERSION = 'v48';
 const CACHE = `rfh-${VERSION}`;
-const V = `?v=47`;
+const V = `?v=48`;
 const SHELL = [
   '../toko/js/signature.js?v=2',
   ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
   './', './index.html', './manifest.webmanifest',
   './img/cathedral.jpg', './img/katu.jpg', './img/mannerheim.jpg',
   './wire.json', './wire/index.json', './icon-192.png', './icon-512.png',
-  ...['main','codec','package','anchor','graphic','plate','photo','plates','wire','toko','visuals','ambient','retrocity','tram','centralstation','hakaniemi','katajanokka','broadcastfx','editorialmap','stories','i18n','screen','audio','palette'].map(m => `./js/${m}.js${V}`),
+  ...['main','codec','package','anchor','graphic','plate','photo','plates','wire','toko','visuals','ambient','retrocity','tram','centralstation','hakaniemi','katajanokka','broadcastfx','editorialmap','extras','stories','i18n','screen','audio','palette'].map(m => `./js/${m}.js${V}`),
 ];
 async function precacheNewest(c){try{const res=await fetch('./wire/index.json',{cache:'reload'});if(!res||!res.ok)return;await c.put('./wire/index.json',res.clone());const idx=await res.json();const list=Array.isArray(idx.episodes)?idx.episodes:[];for(const date of list.slice(0,2))await c.add(new Request(`./wire/${date}.json`,{cache:'reload'})).catch(()=>{});}catch{}}
 self.addEventListener('install',e=>{e.waitUntil((async()=>{const c=await caches.open(CACHE);await Promise.all(SHELL.map(u=>c.add(new Request(u,{cache:'reload'})).catch(()=>{})));await precacheNewest(c);self.skipWaiting();})());});
