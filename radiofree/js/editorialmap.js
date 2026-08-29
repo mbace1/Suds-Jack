@@ -3,22 +3,22 @@
 // keeps one escape scene available so repeated bulletins do not become mechanical.
 
 export const SCENE_PREFERENCES = {
-  CITY: ['centralstation', 'raintram', 'metro', 'katajanokka'],
+  CITY: ['hakaniemi', 'centralstation', 'raintram', 'metro', 'katajanokka'],
   GAMES: ['metro', 'rooftops', 'centralstation'],
-  TECH: ['rooftops', 'metro', 'centralstation'],
+  TECH: ['rooftops', 'metro', 'hakaniemi', 'centralstation'],
   SIGNAL: ['rooftops', 'metro', 'nightferry'],
-  CULTURE: ['centralstation', 'raintram', 'katajanokka'],
+  CULTURE: ['centralstation', 'raintram', 'hakaniemi', 'katajanokka'],
   'ODD WIRE': ['nightferry', 'katajanokka', 'rooftops'],
-  LEAD: ['centralstation', 'raintram', 'katajanokka', 'rooftops', 'metro', 'nightferry'],
+  LEAD: ['centralstation', 'hakaniemi', 'raintram', 'katajanokka', 'rooftops', 'metro', 'nightferry'],
 };
 
 export const STORY_SCENE_HINTS = {
   'drone-handshake': ['rooftops', 'centralstation', 'metro'],
-  'ai-fear-half': ['rooftops', 'metro', 'centralstation'],
-  'hub-walkout': ['centralstation', 'raintram', 'metro'],
-  'robot-pavement': ['raintram', 'centralstation', 'metro'],
-  'damp-weekend': ['raintram', 'katajanokka', 'centralstation'],
-  'song-window': ['centralstation', 'rooftops', 'raintram'],
+  'ai-fear-half': ['rooftops', 'metro', 'hakaniemi'],
+  'hub-walkout': ['hakaniemi', 'centralstation', 'raintram'],
+  'robot-pavement': ['hakaniemi', 'raintram', 'centralstation'],
+  'damp-weekend': ['raintram', 'hakaniemi', 'katajanokka'],
+  'song-window': ['centralstation', 'rooftops', 'hakaniemi'],
   'aurora-cloud': ['nightferry', 'katajanokka', 'rooftops'],
 };
 
