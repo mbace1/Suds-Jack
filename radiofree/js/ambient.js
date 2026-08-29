@@ -4,8 +4,9 @@ import { PAL } from './palette.js?v=37';
 import { mix, shade, bayer } from './screen.js?v=37';
 import { drawFarCity } from './retrocity.js?v=38';
 import { drawTram } from './tram.js?v=38';
+import { drawCentralStation } from './centralstation.js?v=39';
 
-export const AMBIENT_KEYS = ['metro', 'raintram', 'rooftops', 'nightferry'];
+export const AMBIENT_KEYS = ['metro', 'raintram', 'centralstation', 'rooftops', 'nightferry'];
 const W = 128, H = 152;
 const ink = d => mix(PAL.GREEN, PAL.AMBER, d);
 const inkLo = d => mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d);
@@ -105,7 +106,7 @@ function metro(scr, t, d) {
   scr.px(tx, ty + th - 5, tw, 5, mix('#b43b38', '#97551d', d));
   for (let i = 0; i < 4; i++) {
     const wx = tx + 6 + i * Math.max(8, tw / 5);
-    scr.px(wx, ty + 6, Math.max(5, tw / 8), Math.max(5, th / 3), mix('#0a171d', '#24190c', d));
+    scr.px(wx, ty + 6, Math.max(5, tw / 8), Math.max(5, th / 3), mix('#0a161b', '#21180d', d));
   }
   const head = Math.floor(t * 4) % 2 === 0;
   scr.px(tx + 3, ty + th - 10, 3, 3, head ? mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d) : inkLo(d));
@@ -113,16 +114,23 @@ function metro(scr, t, d) {
 
 function raintram(scr, t, d) {
   sky(scr, d, '#08121b', '#152733');
-  drawFarCity(scr, t, 48);           // L0
-  drawNearBlocks(scr, t, d);         // L1
-  drawTramInfrastructure(scr, t, d); // L2
-  drawWetRails(scr, t, d);           // L3
+  drawFarCity(scr, t, 48);
+  drawNearBlocks(scr, t, d);
+  drawTramInfrastructure(scr, t, d);
+  drawWetRails(scr, t, d);
   const tramX = ((t * 15) % (W + 86)) - 68;
-  drawTram(scr, tramX, 68, t, d);    // L4: fixed-grid sprite + sublayers
-  rain(scr, t, d, 25, 34, 2, 0.28); // L6 far
-  drawReflections(scr, t, d);        // L7
-  drawForeground(scr, t, d);         // L8
-  rain(scr, t, d, 32, 70, 5, 0.52); // L6 near
+  drawTram(scr, tramX, 68, t, d);
+  rain(scr, t, d, 25, 34, 2, 0.28);
+  drawReflections(scr, t, d);
+  drawForeground(scr, t, d);
+  rain(scr, t, d, 32, 70, 5, 0.52);
+}
+
+function centralstation(scr, t, d) {
+  drawCentralStation(scr, t, d);
+  // Atmospheric rain remains a shared overlay, not part of the station art.
+  rain(scr, t, d, 18, 30, 2, 0.22);
+  rain(scr, t, d, 20, 64, 4, 0.42);
 }
 
 function rooftops(scr, t, d) {
@@ -163,7 +171,7 @@ function nightferry(scr, t, d) {
   }
 }
 
-const SCENES = { metro, raintram, rooftops, nightferry };
+const SCENES = { metro, raintram, centralstation, rooftops, nightferry };
 
 export function drawAmbient(key, scr, t, decode = 0) {
   const fn = SCENES[key] || rooftops;
