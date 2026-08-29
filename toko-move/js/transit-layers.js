@@ -14,7 +14,7 @@ export class TransitLayers {
     }));
   }
 
-  static async load(url = './cities/kallio.json') {
+  static async load(url = './cities/helsinki.json') {
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(`Transit pack ${response.status}`);
     const pack = await response.json();
@@ -48,9 +48,7 @@ export class TransitLayers {
   }
 
   showAll(mode = null) {
-    for (const layer of this.layers) {
-      layer.visible = !mode || layer.mode === mode;
-    }
+    for (const layer of this.layers) layer.visible = !mode || layer.mode === mode;
   }
 
   hideAll() {
@@ -93,7 +91,6 @@ export function bboxFit(box, width, height, pad = 14) {
   const usableH = Math.max(1, height - pad * 2);
   const lonSpan = Math.max(1e-9, box.e - box.w);
   const latSpan = Math.max(1e-9, box.n - box.s);
-  // Longitude is compressed at Helsinki latitude so street geometry is not stretched.
   const kx = Math.cos(((box.n + box.s) * 0.5) * Math.PI / 180);
   const scale = Math.min(usableW / (lonSpan * kx), usableH / latSpan);
   const drawnW = lonSpan * kx * scale;
