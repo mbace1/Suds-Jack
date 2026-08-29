@@ -3,7 +3,7 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=2';
+import { PAL } from './palette.js?v=3';
 import { key } from './grid.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
@@ -11,12 +11,16 @@ export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // Side clearance beyond the tile diamonds themselves, for whatever a unit
 // draws past its own tile's edge — the widest of those is the 14px HP bar
 // (drawUnit) and the 14px cursor ring (drawCursor), each ~7px past tile
-// centre. This used to be a full TILE_W (32px) per side, generous well
-// past what anything actually draws — and on a phone-width viewport a
-// wide grid (backlot is 11 tiles across) is width-bound, so that unused
-// margin was screen real estate the board could have used instead
-// (main.js's fitCanvas fits to whichever of width/height is tighter).
-const SIDE_MARGIN = 24;
+// centre. This used to be a full TILE_W (32px) per side, generous well past
+// what anything actually draws — and on a phone-width viewport a wide grid
+// (backlot is 11 tiles across) is width-bound, so that unused margin was
+// screen real estate the board could have used instead (main.js's
+// fitCanvas fits to whichever of width/height is tighter). Trimmed once to
+// 24 already (v8); a real phone playtest of that build still called the
+// board too small, so trimmed again to 16 — leaves 9px of slack beyond the
+// 7px bulge, checked empirically (screenshots at four widths, both
+// encounters) rather than assumed safe.
+const SIDE_MARGIN = 16;
 
 export function computeLayout(grid) {
   const minA = -(grid.rows - 1), maxA = grid.cols - 1;
@@ -45,7 +49,14 @@ export function screenToGrid(layout, px, py) {
 
 function pen(ctx) {
   const p = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
-  const diamond = (cx, cy, w, h, fill, edge) => {
+  // lw defaults to 1 (the crisp pixel-art outline every prop/unit already
+  // draws with) but interaction affordances — move/attack highlights, the
+  // telegraph, the selection ring, the cursor — pass 2: a real playtest on
+  // a phone found the board legible in screenshots but not on the actual
+  // device, where a 1px stroke on a board this physically small all but
+  // disappears. Everything decorative stays thin; everything the player
+  // has to read to make a move gets to be twice as heavy.
+  const diamond = (cx, cy, w, h, fill, edge, lw = 1) => {
     ctx.beginPath();
     ctx.moveTo(cx, cy - h / 2);
     ctx.lineTo(cx + w / 2, cy);
@@ -53,10 +64,10 @@ function pen(ctx) {
     ctx.lineTo(cx - w / 2, cy);
     ctx.closePath();
     if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-    if (edge) { ctx.strokeStyle = edge; ctx.lineWidth = 1; ctx.stroke(); }
+    if (edge) { ctx.strokeStyle = edge; ctx.lineWidth = lw; ctx.stroke(); }
   };
-  const line = (x0, y0, x1, y1, c, dash) => {
-    ctx.strokeStyle = c; ctx.lineWidth = 1;
+  const line = (x0, y0, x1, y1, c, dash, lw = 1) => {
+    ctx.strokeStyle = c; ctx.lineWidth = lw;
     ctx.setLineDash(dash || []);
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
     ctx.setLineDash([]);
@@ -86,13 +97,13 @@ function drawHighlights(g, layout, state) {
   if (!state.moveTiles) return;
   for (const { x: gx, y: gy } of state.moveTiles.values()) {
     const { x, y } = toScreen(layout, gx, gy);
-    g.diamond(x, y, TILE_W - 4, TILE_H - 2, PAL.MOVE_HI, PAL.MOVE_HI_EDGE);
+    g.diamond(x, y, TILE_W - 4, TILE_H - 2, PAL.MOVE_HI, PAL.MOVE_HI_EDGE, 2);
   }
   for (const uid of state.attackTiles || []) {
     const u = state.units.find(t => t.uid === uid);
     if (!u) continue;
     const { x, y } = toScreen(layout, u.x, u.y);
-    g.diamond(x, y, TILE_W - 2, TILE_H, null, PAL.ATTACK_HI_EDGE);
+    g.diamond(x, y, TILE_W - 2, TILE_H, null, PAL.ATTACK_HI_EDGE, 2);
   }
 }
 
@@ -123,7 +134,7 @@ function drawUnit(g, layout, unit, isSelected) {
   const feetY = y - 2;
   const bodyH = UNIT_H * 0.6, headR = 3.4;
 
-  if (isSelected) g.diamond(x, y, TILE_W - 2, TILE_H - 1, null, PAL.SELECT_EDGE);
+  if (isSelected) g.diamond(x, y, TILE_W - 2, TILE_H - 1, null, PAL.SELECT_EDGE, 2);
 
   // shadow
   g.diamond(x, y, TILE_W * 0.4, TILE_H * 0.35, 'rgba(0,0,0,0.35)', null);
@@ -176,8 +187,8 @@ function drawTelegraph(g, layout, state) {
         // dash rhythm also carries range: tight for melee/short, long for a
         // steady handgun shot — one more read a glance can pick up.
         const dash = enemy.weapon.archetype === 'melee' ? [1, 1] : enemy.weapon.range <= 2 ? [3, 1] : [2, 2];
-        g.line(at.x, at.y - UNIT_H * 0.4, tp.x, tp.y - UNIT_H * 0.3, PAL.TELEGRAPH, dash);
-        g.diamond(tp.x, tp.y, TILE_W - 6, TILE_H - 3, null, PAL.TELEGRAPH);
+        g.line(at.x, at.y - UNIT_H * 0.4, tp.x, tp.y - UNIT_H * 0.3, PAL.TELEGRAPH, dash, 2);
+        g.diamond(tp.x, tp.y, TILE_W - 6, TILE_H - 3, null, PAL.TELEGRAPH, 2);
         // a small tick above the target marker: this hit also shoves you
         if (enemy.weapon.knockback > 0) g.p(tp.x - 1, tp.y - TILE_H * 0.9, 2, 2, PAL.TELEGRAPH);
       }

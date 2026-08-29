@@ -8,6 +8,53 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v9 — 2026-08-29
+**Second round from a real annotated phone screenshot of the live v8 deploy:
+"the top is unused, but could be background graphics. the grid could be
+slightly bigger in the middle. bottom buttons could come up more. no actions
+visible. no movement indicators, or enemy telegraphs visible. touch
+placement is hard on such a small grid without any visual indicators."**
+v8 was a real, measured improvement and still wasn't enough — this round
+splits into two separate problems v8 never actually addressed.
+
+- **The board still sat in empty space, gap to the panel included.**
+  `#stage` centred the board vertically (`align-items: center`), which on a
+  width-bound board (see v8) leaves slack in the *other* dimension split
+  evenly above and below — exactly what "bottom buttons could come up more"
+  is describing. Changed to `align-items: flex-end` with a 4px
+  `padding-bottom`: the board now sits directly against the control panel a
+  thumb is already on, and every pixel of unused space is pushed to the top
+  (the "unused, could be background graphics" area — noted for a future
+  pass, not built this round). `SIDE_MARGIN` (`render.js`) trimmed again,
+  24px → 16px (was 32px in v7), and `fitCanvas`'s (`main.js`) outer padding
+  subtraction reduced 16px → 8px — both freed more of the width budget a
+  width-bound board actually uses. Checked empirically at 412×892 (closest
+  match to the reported screenshot): board-to-panel gap dropped from ~220px
+  to 4px, with no clipping at any edge tile on either encounter.
+- **The interaction affordances were nearly invisible at real device
+  scale — a rendering-contrast bug v8 never touched.** v8 was purely a
+  sizing/layout pass; the move-tile/attack-tile highlight fills, the
+  telegraph markers, and the selection ring were unchanged since first
+  ship, tuned by eye on a desktop screenshot at a much larger effective
+  size. That's the direct cause of "no movement indicators, or enemy
+  telegraphs visible... touch placement is hard... without any visual
+  indicators": the highlights were technically rendering, just too faint
+  to read at the board's actual on-device size. `palette.js`'s
+  `MOVE_HI`/`ATTACK_HI` fill alpha raised 0.30 → 0.48 and their edge
+  colours brightened to 0.95 alpha; `render.js`'s `pen()` helper gained an
+  optional line-width parameter (default 1, unchanged elsewhere) and the
+  move/attack highlight outlines, the telegraph line and target diamond,
+  and the selection ring now all draw at 2px instead of 1px. Verified with
+  a unit actually selected (not just the idle board): move tiles, the
+  attack-highlighted enemy, the gold telegraph diamonds and dashed lines,
+  and the selection ring are all now clearly legible in a screenshot at
+  412×892.
+- Not addressed this round, both flagged rather than silently dropped: the
+  now-larger empty area at the top of the board (the owner's own suggestion
+  was background graphics — a follow-up, not built here) and the touch
+  hit-test tolerance in `input.js`'s `unitAtPoint` (considered, left as-is —
+  the legibility fix may make placement easier without it).
+
 ## v8 — 2026-08-29
 **Portrait/mobile polish, from owner playtest feedback on the live v7 deploy:
 "it's playable but needs work — the vertical view needs slight zooming and

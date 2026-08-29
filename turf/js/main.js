@@ -1,13 +1,13 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=2';
+import { PAL } from './palette.js?v=3';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
 } from './combat.js?v=4';
-import { computeLayout, render } from './render.js?v=4';
-import { createInputHandler } from './input.js?v=5';
+import { computeLayout, render } from './render.js?v=5';
+import { createInputHandler } from './input.js?v=6';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
@@ -55,7 +55,7 @@ async function loadData() {
 }
 
 function fitCanvas() {
-  const availW = stage.clientWidth - 16, availH = stage.clientHeight - 16;
+  const availW = stage.clientWidth - 8, availH = stage.clientHeight - 8;
   if (!layout || availW <= 0 || availH <= 0) return;
   let scale = Math.min(availW / layout.width, availH / layout.height);
   // Snapped to the nearest TENTH, not a whole step: a wide grid (backlot is
