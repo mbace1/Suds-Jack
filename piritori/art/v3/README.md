@@ -9,7 +9,7 @@ The pack follows `ART_BIBLE.md`:
 - modular characters, equipment and ambient motion use WebP alpha;
 - formation and weather geometry remains SVG;
 - dynamic text, focus and controls stay in the runtime UI;
-- the Toko screen is an approved flattened prototype with baked copy and
+- the Toko v02 screen is the approved corrected-mask flattened prototype with baked copy and
   controls, so v3 must overlay live interaction and later separate its layers;
 - the courtyard and weather pieces remain explicitly semi-approved prototype
   material. Their presence here is not final-art approval.

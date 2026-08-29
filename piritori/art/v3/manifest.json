@@ -14,23 +14,58 @@
   },
   "assets": [
     {
-      "id": "scene-toko-noodles-prototype-v01",
+      "id": "scene-toko-noodles-prototype-v02",
       "kind": "scene",
-      "file": "scenes/toko-slomo-noodles-prototype-v01.webp",
-      "source": "screens/instances/era1/toko-slomo-noodles-v01.png",
-      "source_version": "v01",
+      "file": "scenes/toko-slomo-noodles-prototype-v02.webp",
+      "source": "screens/instances/era1/toko-slomo-noodles-v02.png",
+      "source_version": "v02",
       "approval_status": "approved",
       "production_status": "flattened-prototype",
-      "dimensions": [1536, 864],
+      "dimensions": [
+        1536,
+        864
+      ],
       "format": "webp-opaque",
       "layer": "location-stage",
       "era": "2003",
       "location": "vaasankatu",
-      "portrait_safe_bounds": [0.2, 0.0, 0.8, 1.0],
+      "portrait_safe_bounds": [
+        0.2,
+        0.0,
+        0.8,
+        1.0
+      ],
       "baked_text": true,
       "baked_ui": true,
-      "sha256": "365ecf2a38170273cc3f8b6b1bac0532d1a1d0e82b825d872d25249704108717",
-      "note": "Approved look baseline. Step 7 overlays live copy and controls; production must separate stage, Toko, mask, props, steam and window pass."
+      "sha256": "f1ab0620c9c21ad4ec4e55b20f91ec4e4dc0ade8f0c5a0e3b8a5a5e844a3354c",
+      "note": "Approved corrected-mask baseline: eye openings sit inside the white arches. The runtime overlays live copy and controls; production must separate stage, Toko, mask, props, steam and window pass."
+    },
+    {
+      "id": "scene-toko-noodles-empty-v01",
+      "kind": "scene",
+      "file": "scenes/toko-slomo-noodles-empty-v01.webp",
+      "source": "art-src/scenes/toko-noodles-empty-v04.png",
+      "source_version": "v04",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1536,
+        864
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "vaasankatu",
+      "portrait_safe_bounds": [
+        0.24,
+        0.0,
+        0.76,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "fb86f9d3f5afe30a36e8b55516ceb89c41ea4c72e58b1e7bb32814321a24bea1",
+      "note": "The empty bar - STAGE_SPEC 6.3. Same room, same camera, same moment, nobody behind the counter, for the ruling that Toko is a 3D layer composited into the gap. What he stood in front of - tiled splashback, sink, shelving, stacked bowls, hanging utensils - is painted as continuing objects rather than smeared, and the counter where he worked is bare. NO UI BAND: the room runs to the bottom edge, so the stool legs and floorboards the baked band covered are visible, and the baked-screen exception in APPROVALS.md retires with this asset. NO TEXT AT ALL, which took three passes and is the point: the signboard is a blank aged board, the menu strips keep their pictograms and lose their characters, the poster is a picture, the lantern is plain, the till keys are blank. v02 still read TOKO SLOMO ... ; v03 removed the tram route number and left a glaring white destination box that looked like a mistake; v04 switches that panel off. A blank lit sign is as conspicuous as a written one."
     },
     {
       "id": "scene-karhupuisto-v01",
@@ -40,54 +75,70 @@
       "source_version": "v01",
       "approval_status": "approved",
       "production_status": "prototype-ready",
-      "dimensions": [1600, 900],
+      "dimensions": [
+        1600,
+        900
+      ],
       "format": "webp-opaque",
       "layer": "location-stage",
       "era": "2003",
       "location": "karhupuisto",
-      "portrait_safe_bounds": [0.24, 0.0, 0.76, 1.0],
+      "portrait_safe_bounds": [
+        0.24,
+        0.0,
+        0.76,
+        1.0
+      ],
       "baked_text": false,
       "baked_ui": false,
       "sha256": "fc98817002d1b3014f2709979d8d5c6be426b49d402248c25e90f87d0d104304",
       "note": "Approved location plate; animated foliage and animals remain separate runtime layers."
     },
     {
-      "id": "scene-courtyard-prototype-v02",
-      "kind": "scene",
-      "file": "scenes/courtyard-prototype-v02.webp",
-      "source": "locations/era1/location-kallio-courtyard-v02.png",
-      "source_version": "v02",
-      "approval_status": "semi-approved",
-      "production_status": "prototype-only",
-      "dimensions": [1600, 900],
-      "format": "webp-opaque",
-      "layer": "location-stage",
-      "era": "2003",
-      "location": "torkkelinmaki-composite",
-      "portrait_safe_bounds": [0.22, 0.0, 0.78, 1.0],
-      "baked_text": false,
-      "baked_ui": false,
-      "sha256": "90ae8539db6edd44e009ba4c04f55adf40e34fe666dd702ef9b20109b6385dc4",
-      "note": "Permitted only as an explicitly labelled vertical-slice placeholder; building consistency still requires another pass."
-    },
-    {
       "id": "crew-heads-era1-v03",
       "kind": "modular-character-collection",
       "approval_status": "approved",
       "production_status": "prototype-ready",
-      "dimensions": [362, 362],
+      "dimensions": [
+        362,
+        362
+      ],
       "format": "webp-alpha",
       "anchor": "neck",
       "layer": "unit-head",
       "era": "2003",
       "baked_text": false,
       "members": [
-        {"id": "head-kallio-01-v03", "file": "characters/heads/head-kallio-01-v03.webp", "source": "characters/modules/era1/head-kallio-01-v03.png"},
-        {"id": "head-kallio-03-v03", "file": "characters/heads/head-kallio-03-v03.webp", "source": "characters/modules/era1/head-kallio-03-v03.png"},
-        {"id": "head-kallio-05-v03", "file": "characters/heads/head-kallio-05-v03.webp", "source": "characters/modules/era1/head-kallio-05-v03.png"},
-        {"id": "head-kallio-07-v03", "file": "characters/heads/head-kallio-07-v03.webp", "source": "characters/modules/era1/head-kallio-07-v03.png"},
-        {"id": "head-kallio-09-v03", "file": "characters/heads/head-kallio-09-v03.webp", "source": "characters/modules/era1/head-kallio-09-v03.png"},
-        {"id": "head-kallio-11-v03", "file": "characters/heads/head-kallio-11-v03.webp", "source": "characters/modules/era1/head-kallio-11-v03.png"}
+        {
+          "id": "head-kallio-01-v03",
+          "file": "characters/heads/head-kallio-01-v03.webp",
+          "source": "characters/modules/era1/head-kallio-01-v03.png"
+        },
+        {
+          "id": "head-kallio-03-v03",
+          "file": "characters/heads/head-kallio-03-v03.webp",
+          "source": "characters/modules/era1/head-kallio-03-v03.png"
+        },
+        {
+          "id": "head-kallio-05-v03",
+          "file": "characters/heads/head-kallio-05-v03.webp",
+          "source": "characters/modules/era1/head-kallio-05-v03.png"
+        },
+        {
+          "id": "head-kallio-07-v03",
+          "file": "characters/heads/head-kallio-07-v03.webp",
+          "source": "characters/modules/era1/head-kallio-07-v03.png"
+        },
+        {
+          "id": "head-kallio-09-v03",
+          "file": "characters/heads/head-kallio-09-v03.webp",
+          "source": "characters/modules/era1/head-kallio-09-v03.png"
+        },
+        {
+          "id": "head-kallio-11-v03",
+          "file": "characters/heads/head-kallio-11-v03.webp",
+          "source": "characters/modules/era1/head-kallio-11-v03.png"
+        }
       ],
       "note": "Faces and hair remain combined for the slice; later extraction separates hair and hats without changing the crooked marker character."
     },
@@ -96,20 +147,52 @@
       "kind": "modular-character-collection",
       "approval_status": "approved",
       "production_status": "prototype-ready",
-      "dimensions": [512, 512],
+      "dimensions": [
+        512,
+        512
+      ],
       "format": "webp-alpha",
       "anchor": "root_ground",
-      "sockets": ["neck", "hand_primary", "hand_support", "waist"],
+      "sockets": [
+        "neck",
+        "hand_primary",
+        "hand_support",
+        "waist"
+      ],
       "layer": "unit-torso",
       "era": "2003",
       "baked_text": false,
       "members": [
-        {"id": "torso-runner-v03", "file": "characters/torsos/torso-runner-v03.webp", "source": "characters/modules/era1/torso-runner-medium-handink-v03.png"},
-        {"id": "torso-watcher-v03", "file": "characters/torsos/torso-watcher-v03.webp", "source": "characters/modules/era1/torso-watcher-medium-handink-v03.png"},
-        {"id": "torso-fixer-v03", "file": "characters/torsos/torso-fixer-v03.webp", "source": "characters/modules/era1/torso-fixer-medium-handink-v03.png"},
-        {"id": "torso-muscle-v03", "file": "characters/torsos/torso-muscle-v03.webp", "source": "characters/modules/era1/torso-muscle-medium-handink-v03.png"},
-        {"id": "torso-driver-v03", "file": "characters/torsos/torso-driver-v03.webp", "source": "characters/modules/era1/torso-driver-medium-handink-v03.png"},
-        {"id": "torso-local-v03", "file": "characters/torsos/torso-local-v03.webp", "source": "characters/modules/era1/torso-local-medium-handink-v03.png"}
+        {
+          "id": "torso-runner-v03",
+          "file": "characters/torsos/torso-runner-v03.webp",
+          "source": "characters/modules/era1/torso-runner-medium-handink-v03.png"
+        },
+        {
+          "id": "torso-watcher-v03",
+          "file": "characters/torsos/torso-watcher-v03.webp",
+          "source": "characters/modules/era1/torso-watcher-medium-handink-v03.png"
+        },
+        {
+          "id": "torso-fixer-v03",
+          "file": "characters/torsos/torso-fixer-v03.webp",
+          "source": "characters/modules/era1/torso-fixer-medium-handink-v03.png"
+        },
+        {
+          "id": "torso-muscle-v03",
+          "file": "characters/torsos/torso-muscle-v03.webp",
+          "source": "characters/modules/era1/torso-muscle-medium-handink-v03.png"
+        },
+        {
+          "id": "torso-driver-v03",
+          "file": "characters/torsos/torso-driver-v03.webp",
+          "source": "characters/modules/era1/torso-driver-medium-handink-v03.png"
+        },
+        {
+          "id": "torso-local-v03",
+          "file": "characters/torsos/torso-local-v03.webp",
+          "source": "characters/modules/era1/torso-local-medium-handink-v03.png"
+        }
       ]
     },
     {
@@ -117,7 +200,10 @@
       "kind": "modular-character-collection",
       "approval_status": "approved",
       "production_status": "prototype-ready",
-      "dimensions": [483, 543],
+      "dimensions": [
+        483,
+        543
+      ],
       "dimension_variance": "watcher and local canvases are 482×543",
       "format": "webp-alpha",
       "anchor": "root_ground",
@@ -126,12 +212,36 @@
       "era": "2003",
       "baked_text": false,
       "members": [
-        {"id": "legs-runner-v03", "file": "characters/legs/legs-runner-v03.webp", "source": "characters/modules/era1/legs-runner-medium-handink-v03.png"},
-        {"id": "legs-watcher-v03", "file": "characters/legs/legs-watcher-v03.webp", "source": "characters/modules/era1/legs-watcher-medium-handink-v03.png"},
-        {"id": "legs-fixer-v03", "file": "characters/legs/legs-fixer-v03.webp", "source": "characters/modules/era1/legs-fixer-medium-handink-v03.png"},
-        {"id": "legs-muscle-v03", "file": "characters/legs/legs-muscle-v03.webp", "source": "characters/modules/era1/legs-muscle-medium-handink-v03.png"},
-        {"id": "legs-driver-v03", "file": "characters/legs/legs-driver-v03.webp", "source": "characters/modules/era1/legs-driver-medium-handink-v03.png"},
-        {"id": "legs-local-v03", "file": "characters/legs/legs-local-v03.webp", "source": "characters/modules/era1/legs-local-medium-handink-v03.png"}
+        {
+          "id": "legs-runner-v03",
+          "file": "characters/legs/legs-runner-v03.webp",
+          "source": "characters/modules/era1/legs-runner-medium-handink-v03.png"
+        },
+        {
+          "id": "legs-watcher-v03",
+          "file": "characters/legs/legs-watcher-v03.webp",
+          "source": "characters/modules/era1/legs-watcher-medium-handink-v03.png"
+        },
+        {
+          "id": "legs-fixer-v03",
+          "file": "characters/legs/legs-fixer-v03.webp",
+          "source": "characters/modules/era1/legs-fixer-medium-handink-v03.png"
+        },
+        {
+          "id": "legs-muscle-v03",
+          "file": "characters/legs/legs-muscle-v03.webp",
+          "source": "characters/modules/era1/legs-muscle-medium-handink-v03.png"
+        },
+        {
+          "id": "legs-driver-v03",
+          "file": "characters/legs/legs-driver-v03.webp",
+          "source": "characters/modules/era1/legs-driver-medium-handink-v03.png"
+        },
+        {
+          "id": "legs-local-v03",
+          "file": "characters/legs/legs-local-v03.webp",
+          "source": "characters/modules/era1/legs-local-medium-handink-v03.png"
+        }
       ]
     },
     {
@@ -139,18 +249,70 @@
       "kind": "equipment-collection",
       "approval_status": "approved",
       "production_status": "prototype-ready",
-      "dimensions": [362, 543],
+      "dimensions": [
+        362,
+        543
+      ],
       "format": "webp-alpha",
       "anchor": "grip_primary",
       "layer": "unit-equipment",
       "era": "2003",
       "baked_text": false,
       "members": [
-        {"id": "feature-phone-v03", "file": "equipment/feature-phone-v03.webp", "source": "weapons/era1/prop-feature-phone-handink-v03.png", "hold": "utility-one"},
-        {"id": "baseball-bat-v03", "file": "equipment/baseball-bat-v03.webp", "source": "weapons/era1/weapon-baseball-bat-handink-v03.png", "hold": "bat-two"},
-        {"id": "baton-v03", "file": "equipment/baton-v03.webp", "source": "weapons/era1/weapon-baton-handink-v03.png", "hold": "blunt-one"},
-        {"id": "pipe-v03", "file": "equipment/pipe-v03.webp", "source": "weapons/era1/weapon-pipe-handink-v03.png", "hold": "blunt-one"},
-        {"id": "handgun-v03", "file": "equipment/handgun-v03.webp", "source": "weapons/era1/weapon-handgun-handink-v03.png", "hold": "firearm-one"}
+        {
+          "id": "feature-phone-v03",
+          "file": "equipment/feature-phone-v03.webp",
+          "source": "weapons/era1/prop-feature-phone-handink-v03.png",
+          "hold": "utility-one"
+        },
+        {
+          "id": "baseball-bat-v03",
+          "file": "equipment/baseball-bat-v03.webp",
+          "source": "weapons/era1/weapon-baseball-bat-handink-v03.png",
+          "hold": "bat-two"
+        },
+        {
+          "id": "baton-v03",
+          "file": "equipment/baton-v03.webp",
+          "source": "weapons/era1/weapon-baton-handink-v03.png",
+          "hold": "blunt-one"
+        },
+        {
+          "id": "pipe-v03",
+          "file": "equipment/pipe-v03.webp",
+          "source": "weapons/era1/weapon-pipe-handink-v03.png",
+          "hold": "blunt-one"
+        },
+        {
+          "id": "handgun-v03",
+          "file": "equipment/handgun-v03.webp",
+          "source": "weapons/era1/weapon-handgun-handink-v03.png",
+          "hold": "firearm-one"
+        },
+        {
+          "id": "chain-v03",
+          "file": "equipment/chain-v03.webp",
+          "source": "weapons/era1/weapon-chain-handink-v03.png",
+          "hold": "chain-two"
+        },
+        {
+          "id": "sawn-off-v03",
+          "file": "equipment/sawn-off-v03.webp",
+          "source": "weapons/era1/weapon-sawn-off-handink-v03.png",
+          "hold": "firearm-two"
+        },
+        {
+          "id": "folding-knife-v03",
+          "file": "equipment/folding-knife-v03.webp",
+          "source": "weapons/era1/weapon-folding-knife-handink-v03.png",
+          "hold": "blade-one"
+        },
+        {
+          "id": "signal-flare-v03",
+          "file": "equipment/signal-flare-v03.webp",
+          "source": "weapons/era1/prop-signal-flare-handink-v03.png",
+          "hold": "utility-one"
+        }
       ],
       "note": "Gameplay uses abstract reach patterns; art and UI do not teach real handling."
     },
@@ -159,18 +321,45 @@
       "kind": "animation-set",
       "approval_status": "approved",
       "production_status": "key-poses",
-      "dimensions": [362, 543],
+      "dimensions": [
+        362,
+        543
+      ],
       "format": "webp-alpha",
       "anchor": "root_ground",
       "layer": "unit-composite",
       "era": "2003",
       "frames": [
-        {"pose": "idle-smile", "file": "animation/runner/idle-smile-frame00.webp", "source": "animation/characters/era1/runner-personality-v03/idle-smile-frame00.png"},
-        {"pose": "talk", "file": "animation/runner/talk-frame00.webp", "source": "animation/characters/era1/runner-personality-v03/talk-frame00.png"},
-        {"pose": "walk-contact", "file": "animation/runner/walk-contact-frame00.webp", "source": "animation/characters/era1/runner-personality-v03/walk-contact-frame00.png"},
-        {"pose": "walk-pass", "file": "animation/runner/walk-pass-frame00.webp", "source": "animation/characters/era1/runner-personality-v03/walk-pass-frame00.png"},
-        {"pose": "guard", "file": "animation/runner/guard-frame00.webp", "source": "animation/characters/era1/runner-personality-v03/guard-frame00.png"},
-        {"pose": "hit-light", "file": "animation/runner/hit-light-frame00.webp", "source": "animation/characters/era1/runner-personality-v03/hit-light-frame00.png"}
+        {
+          "pose": "idle-smile",
+          "file": "animation/runner/idle-smile-frame00.webp",
+          "source": "animation/characters/era1/runner-personality-v03/idle-smile-frame00.png"
+        },
+        {
+          "pose": "talk",
+          "file": "animation/runner/talk-frame00.webp",
+          "source": "animation/characters/era1/runner-personality-v03/talk-frame00.png"
+        },
+        {
+          "pose": "walk-contact",
+          "file": "animation/runner/walk-contact-frame00.webp",
+          "source": "animation/characters/era1/runner-personality-v03/walk-contact-frame00.png"
+        },
+        {
+          "pose": "walk-pass",
+          "file": "animation/runner/walk-pass-frame00.webp",
+          "source": "animation/characters/era1/runner-personality-v03/walk-pass-frame00.png"
+        },
+        {
+          "pose": "guard",
+          "file": "animation/runner/guard-frame00.webp",
+          "source": "animation/characters/era1/runner-personality-v03/guard-frame00.png"
+        },
+        {
+          "pose": "hit-light",
+          "file": "animation/runner/hit-light-frame00.webp",
+          "source": "animation/characters/era1/runner-personality-v03/hit-light-frame00.png"
+        }
       ],
       "reduced_motion_fallback": "idle-smile"
     },
@@ -179,17 +368,39 @@
       "kind": "animation-set",
       "approval_status": "approved",
       "production_status": "key-poses",
-      "dimensions": [362, 543],
+      "dimensions": [
+        362,
+        543
+      ],
       "format": "webp-alpha",
       "anchor": "ground_center",
       "layer": "ambient-animal",
       "era": "2003",
-      "location_restrictions": ["karhupuisto", "courtyard"],
+      "location_restrictions": [
+        "karhupuisto",
+        "courtyard"
+      ],
       "frames": [
-        {"pose": "idle", "file": "animation/spitz/idle-frame00.webp", "source": "animation/animals/era1/spitz-handink-v03/idle-frame00.png"},
-        {"pose": "sniff", "file": "animation/spitz/sniff-frame00.webp", "source": "animation/animals/era1/spitz-handink-v03/sniff-frame00.png"},
-        {"pose": "walk-contact", "file": "animation/spitz/walk-contact-frame00.webp", "source": "animation/animals/era1/spitz-handink-v03/walk-contact-frame00.png"},
-        {"pose": "walk-pass", "file": "animation/spitz/walk-pass-frame00.webp", "source": "animation/animals/era1/spitz-handink-v03/walk-pass-frame00.png"}
+        {
+          "pose": "idle",
+          "file": "animation/spitz/idle-frame00.webp",
+          "source": "animation/animals/era1/spitz-handink-v03/idle-frame00.png"
+        },
+        {
+          "pose": "sniff",
+          "file": "animation/spitz/sniff-frame00.webp",
+          "source": "animation/animals/era1/spitz-handink-v03/sniff-frame00.png"
+        },
+        {
+          "pose": "walk-contact",
+          "file": "animation/spitz/walk-contact-frame00.webp",
+          "source": "animation/animals/era1/spitz-handink-v03/walk-contact-frame00.png"
+        },
+        {
+          "pose": "walk-pass",
+          "file": "animation/spitz/walk-pass-frame00.webp",
+          "source": "animation/animals/era1/spitz-handink-v03/walk-pass-frame00.png"
+        }
       ],
       "reduced_motion_fallback": "idle"
     },
@@ -198,17 +409,38 @@
       "kind": "animation-set",
       "approval_status": "approved",
       "production_status": "four-pose-loop",
-      "dimensions": [362, 543],
+      "dimensions": [
+        362,
+        543
+      ],
       "format": "webp-alpha",
       "anchor": "root_center",
       "layer": "ambient-foliage",
       "era": "2003",
-      "location_restrictions": ["karhupuisto"],
+      "location_restrictions": [
+        "karhupuisto"
+      ],
       "frames": [
-        {"pose": "calm", "file": "animation/lime-tree/calm-frame00.webp", "source": "animation/vegetation/era1/lime-tree-v01/calm-frame00.png"},
-        {"pose": "lean", "file": "animation/lime-tree/lean-frame00.webp", "source": "animation/vegetation/era1/lime-tree-v01/lean-frame00.png"},
-        {"pose": "gust", "file": "animation/lime-tree/gust-frame00.webp", "source": "animation/vegetation/era1/lime-tree-v01/gust-frame00.png"},
-        {"pose": "recover", "file": "animation/lime-tree/recover-frame00.webp", "source": "animation/vegetation/era1/lime-tree-v01/recover-frame00.png"}
+        {
+          "pose": "calm",
+          "file": "animation/lime-tree/calm-frame00.webp",
+          "source": "animation/vegetation/era1/lime-tree-v01/calm-frame00.png"
+        },
+        {
+          "pose": "lean",
+          "file": "animation/lime-tree/lean-frame00.webp",
+          "source": "animation/vegetation/era1/lime-tree-v01/lean-frame00.png"
+        },
+        {
+          "pose": "gust",
+          "file": "animation/lime-tree/gust-frame00.webp",
+          "source": "animation/vegetation/era1/lime-tree-v01/gust-frame00.png"
+        },
+        {
+          "pose": "recover",
+          "file": "animation/lime-tree/recover-frame00.webp",
+          "source": "animation/vegetation/era1/lime-tree-v01/recover-frame00.png"
+        }
       ],
       "reduced_motion_fallback": "calm"
     },
@@ -217,17 +449,38 @@
       "kind": "animation-set",
       "approval_status": "approved",
       "production_status": "four-pose-loop",
-      "dimensions": [362, 543],
+      "dimensions": [
+        362,
+        543
+      ],
       "format": "webp-alpha",
       "anchor": "root_center",
       "layer": "ambient-foliage",
       "era": "2003",
-      "location_restrictions": ["karhupuisto"],
+      "location_restrictions": [
+        "karhupuisto"
+      ],
       "frames": [
-        {"pose": "calm", "file": "animation/grass/calm-frame00.webp", "source": "animation/vegetation/era1/grass-cluster-v01/calm-frame00.png"},
-        {"pose": "lean", "file": "animation/grass/lean-frame00.webp", "source": "animation/vegetation/era1/grass-cluster-v01/lean-frame00.png"},
-        {"pose": "gust", "file": "animation/grass/gust-frame00.webp", "source": "animation/vegetation/era1/grass-cluster-v01/gust-frame00.png"},
-        {"pose": "recover", "file": "animation/grass/recover-frame00.webp", "source": "animation/vegetation/era1/grass-cluster-v01/recover-frame00.png"}
+        {
+          "pose": "calm",
+          "file": "animation/grass/calm-frame00.webp",
+          "source": "animation/vegetation/era1/grass-cluster-v01/calm-frame00.png"
+        },
+        {
+          "pose": "lean",
+          "file": "animation/grass/lean-frame00.webp",
+          "source": "animation/vegetation/era1/grass-cluster-v01/lean-frame00.png"
+        },
+        {
+          "pose": "gust",
+          "file": "animation/grass/gust-frame00.webp",
+          "source": "animation/vegetation/era1/grass-cluster-v01/gust-frame00.png"
+        },
+        {
+          "pose": "recover",
+          "file": "animation/grass/recover-frame00.webp",
+          "source": "animation/vegetation/era1/grass-cluster-v01/recover-frame00.png"
+        }
       ],
       "reduced_motion_fallback": "calm"
     },
@@ -238,7 +491,10 @@
       "source": "ui/battle/formation-grid-3x3.svg",
       "approval_status": "approved",
       "production_status": "prototype-ready",
-      "dimensions": [1600, 900],
+      "dimensions": [
+        1600,
+        900
+      ],
       "format": "svg",
       "anchor": "screen",
       "layer": "battle-grid",
@@ -251,7 +507,10 @@
       "source": "ui/battle/command-console-landscape.svg",
       "approval_status": "approved",
       "production_status": "geometry-reference",
-      "dimensions": [1600, 900],
+      "dimensions": [
+        1600,
+        900
+      ],
       "format": "svg",
       "anchor": "screen-bottom",
       "layer": "battle-controls",
@@ -265,7 +524,10 @@
       "source": "ui/battle/command-console-portrait.svg",
       "approval_status": "approved",
       "production_status": "geometry-reference",
-      "dimensions": [900, 1600],
+      "dimensions": [
+        900,
+        1600
+      ],
       "format": "svg",
       "anchor": "screen-bottom",
       "layer": "battle-controls",
@@ -279,7 +541,10 @@
       "source": "weather/back/cloud-band.svg",
       "approval_status": "semi-approved",
       "production_status": "prototype-only",
-      "dimensions": [1920, 1080],
+      "dimensions": [
+        1920,
+        1080
+      ],
       "format": "svg",
       "anchor": "screen",
       "layer": "weather-back",
@@ -292,7 +557,10 @@
       "source": "weather/mid/rain-fine.svg",
       "approval_status": "semi-approved",
       "production_status": "prototype-only",
-      "dimensions": [1920, 1080],
+      "dimensions": [
+        1920,
+        1080
+      ],
       "format": "svg",
       "anchor": "screen",
       "layer": "weather-mid",
@@ -305,7 +573,10 @@
       "source": "weather/front/rain-near.svg",
       "approval_status": "semi-approved",
       "production_status": "prototype-only",
-      "dimensions": [1920, 1080],
+      "dimensions": [
+        1920,
+        1080
+      ],
       "format": "svg",
       "anchor": "screen",
       "layer": "weather-front",
@@ -318,7 +589,10 @@
       "source": "weather/front/wind-debris.svg",
       "approval_status": "semi-approved",
       "production_status": "prototype-only",
-      "dimensions": [1920, 1080],
+      "dimensions": [
+        1920,
+        1080
+      ],
       "format": "svg",
       "anchor": "screen",
       "layer": "weather-front",
@@ -331,11 +605,1043 @@
       "source": "weather/ground/wet-sheen.svg",
       "approval_status": "semi-approved",
       "production_status": "prototype-only",
-      "dimensions": [1920, 1080],
+      "dimensions": [
+        1920,
+        1080
+      ],
       "format": "svg",
       "anchor": "screen",
       "layer": "weather-ground",
       "motion": "static"
+    },
+    {
+      "id": "presenter-arvo-linde-v05",
+      "kind": "presenter-3d",
+      "file": "presenter/arvo-linde-v05.glb",
+      "source": "presenter/arvo-linde-tpose-v05.png",
+      "source_version": "v05",
+      "approval_status": "approved",
+      "production_status": "rigged-no-blendshapes",
+      "format": "glb-skinned",
+      "layer": "tv-presenter",
+      "era": "2003",
+      "skeleton_bones": 24,
+      "triangles": 20826,
+      "presentation_rule": "Only the moving presenter inside the television is 3D. Output receives limited colour, analogue softness, slight scanlines and CRT bloom. The CRT shell, lower third, newsroom props and all surrounding UI remain cut-cardstock layers.",
+      "sha256": "613a6b5ebc010e0cf4acdb46d98db12b5163bba2c512e8417a4e8c46853ee8a2",
+      "note": "ART_BIBLE 13.2 exception. Fictional composite, not a likeness of any living person: wardrobe, colouring and demeanour follow the owner's reference, the face does not. Rigged by Meshy auto-rigging, 24-bone humanoid; head bone 'headfront'. Idle motion is breathing and a scripted paper glance - lip sync needs blendshapes this mesh does not carry."
+    },
+    {
+      "id": "scene-sornainen-docks-v02",
+      "kind": "scene",
+      "file": "scenes/sornainen-docks-v02.webp",
+      "source": "locations/era1/location-sornainen-docks-v02.png",
+      "source_version": "v02",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "sornainen-docks",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "9ae47de05fcfd5d66789e0814ae19f22695431d824015fb5143cc00acf76c9e0",
+      "note": "Owner-supplied 2026-08-21. A quay rather than a courtyard: open on two sides to water, framed by a warehouse on one edge only. Supplied with the playable area marked, which is what PLAY_DIAMOND was measured from. Semi-approved: a working background, not a sign-off."
+    },
+    {
+      "id": "scene-courtyard-prototype-v05",
+      "kind": "scene",
+      "file": "scenes/courtyard-prototype-v05.webp",
+      "source": "locations/era1/location-kallio-courtyard-v05.png",
+      "source_version": "v05",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "torkkelinmaki-composite",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "dcaaa4308b1050a9e3599a521069085a5eca4b9d763e2d71e94e470e5faa6211",
+      "note": "Built to the grid with the floor MARGIN, 2026-08-21. v04 put its ground exactly on the arena, so the back rank clipped off the floor onto the building — units stand ON the outer cells and a figure draws upward from its feet, so the ground must run past the board on every side. The template now marks a dashed floor edge 1.22x the arena and this is drawn to it. The console band was flattened after generation: the model reproduced the template furniture, text included."
+    },
+    {
+      "id": "scene-kallio-backyard-v01",
+      "kind": "scene",
+      "file": "scenes/kallio-backyard-v01.webp",
+      "source": "locations/era1/location-kallio-backyard-v01.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "kallio-backyard",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "1a9f46a12e279b2adcb88aac4fc1db59fe4152aee4305f1c836a906415b40654",
+      "note": "Made to the grid, 2026-08-21 — the first stage authored FROM the template rather than an existing render restaged to it. Open ground fills the arena and its margin; every prop that gives the yard its character (bin store, chain-link, lamp, pallets, skip, birches) sits outside the playing surface, which is what STAGE_SPEC 3 asks for. The grid landed on it with no per-stage tuning."
+    },
+    {
+      "id": "scene-karhupuisto-clearing-v01",
+      "kind": "scene",
+      "file": "scenes/karhupuisto-clearing-v01.webp",
+      "source": "locations/era1/location-karhupuisto-clearing-v01.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "karhupuisto",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "4264a39e78845be9aaf77cb51dcb82a33b1f09945b494676255858593e89fd17",
+      "note": "A bare clearing in Karhupuisto: frozen gravel ringed by benches, railings, lindens and a lit path. Generated to tools/stage-template.mjs, 2026-08-21: open ground fills the arena and its margin, every prop sits outside it. Semi-approved prototype. Carries a faint trace of the template diamond on the ground — the model copies the guide it is given, see STAGE_SPEC 4."
+    },
+    {
+      "id": "scene-sornainen-quay-v01",
+      "kind": "scene",
+      "file": "scenes/sornainen-quay-v01.webp",
+      "source": "locations/era1/location-sornainen-quay-v01.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "sornainen-docks",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "3655f71a41d6616f356b2b629c9c1c0637b2adeda3d7bd2c3a5949796b8d978f",
+      "note": "Concrete quay with flush rail tracks; black water, a moored coaster, warehouse and gantry beyond. Generated to tools/stage-template.mjs, 2026-08-21: open ground fills the arena and its margin, every prop sits outside it. Semi-approved prototype. Carries a faint trace of the template diamond on the ground — the model copies the guide it is given, see STAGE_SPEC 4."
+    },
+    {
+      "id": "scene-kallio-service-yard-v01",
+      "kind": "scene",
+      "file": "scenes/kallio-service-yard-v01.webp",
+      "source": "locations/era1/location-kallio-service-yard-v01.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "kallio-service-yard",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "e032f66ab6b894b1fdbaaf8c82f4a6104dba513e9a9e0f3cc5409f4a644deb2b",
+      "note": "Wet asphalt service yard, brick close on two sides, kegs and crates stacked outside the ground. Generated to tools/stage-template.mjs, 2026-08-21: open ground fills the arena and its margin, every prop sits outside it. Semi-approved prototype. Carries a faint trace of the template diamond on the ground — the model copies the guide it is given, see STAGE_SPEC 4."
+    },
+    {
+      "id": "scene-hakaniemi-square-v01",
+      "kind": "scene",
+      "file": "scenes/hakaniemi-square-v01.webp",
+      "source": "locations/era1/location-hakaniemi-square-v01.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "hakaniemi",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "e152ce4618a1732b3a603559f4716593b343bce7f9a43897442ebf23cf3a0b02",
+      "note": "An emptied market square, stalls shuttered, tram wires overhead, market hall behind. Generated to tools/stage-template.mjs, 2026-08-21: open ground fills the arena and its margin, every prop sits outside it. Semi-approved prototype. Carries a faint trace of the template diamond on the ground — the model copies the guide it is given, see STAGE_SPEC 4."
+    },
+    {
+      "id": "scene-piritori-square-v01",
+      "kind": "scene",
+      "file": "scenes/piritori-square-v01.webp",
+      "source": "art-src/scenes/piritori-square-v01.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "piritori",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "37a251bd3a6355cb5d99ef420b953da111b85256d7866604f20803e6dac3ba71",
+      "note": "Vaasanpuistikko at night - Piritori itself, the square the game is named for and the site of the day-1 first purchase, which until 2026-08-25 rendered as a labelled placeholder. Metro pavilion with lit M (official HSL orange per TRANSIT_LAYERS 9.2), shuttered kiosk, phone booth, advertising column, tram wires, bare trees; the middle is empty and every prop sits at the rim. Style-matched to scene-hakaniemi-square-v01; geography from art-library/references/photos/photo-sornainen-square-night.jpg. Semi-approved prototype. The M is a lit symbol, not text - baked_text stays false."
+    },
+    {
+      "id": "cast-driver-v01",
+      "kind": "animation-set",
+      "approval_status": "approved",
+      "production_status": "prototype-only",
+      "layer": "unit-composite",
+      "era": "2003",
+      "role": "driver",
+      "frames": [
+        {
+          "pose": "idle-smile",
+          "file": "cast/driver/idle-smile-frame00.webp",
+          "source": "approved/cast/driver-idle-smile.webp"
+        },
+        {
+          "pose": "talk",
+          "file": "cast/driver/talk-frame00.webp",
+          "source": "approved/cast/driver-talk.webp"
+        },
+        {
+          "pose": "walk-contact",
+          "file": "cast/driver/walk-contact-frame00.webp",
+          "source": "approved/cast/driver-walk-contact.webp"
+        },
+        {
+          "pose": "walk-pass",
+          "file": "cast/driver/walk-pass-frame00.webp",
+          "source": "approved/cast/driver-walk-pass.webp"
+        },
+        {
+          "pose": "guard",
+          "file": "cast/driver/guard-frame00.webp",
+          "source": "approved/cast/driver-guard.webp"
+        },
+        {
+          "pose": "strike",
+          "file": "cast/driver/strike-frame00.webp",
+          "source": "approved/cast/driver-strike.webp"
+        },
+        {
+          "pose": "hit-light",
+          "file": "cast/driver/hit-light-frame00.webp",
+          "source": "approved/cast/driver-hit-light.webp"
+        },
+        {
+          "pose": "downed",
+          "file": "cast/driver/downed-frame00.webp",
+          "source": "approved/cast/driver-downed.webp"
+        },
+        {
+          "pose": "shaken",
+          "file": "cast/driver/shaken-frame00.webp",
+          "source": "approved/cast/driver-shaken.webp"
+        }
+      ],
+      "note": "Nine-pose whole-figure set for the driver, generated with the documented Nano Banana pipeline (art-src/gen-pose-set.sh) and approved by the owner. Registered 2026-08-22: the files had existed since the pose-set pass but were never in the manifest, so sync-data never carried them and every unit in a battle fell back to the single canon runner set — six identical figures in a 3v3."
+    },
+    {
+      "id": "cast-fixer-v01",
+      "kind": "animation-set",
+      "approval_status": "approved",
+      "production_status": "prototype-only",
+      "layer": "unit-composite",
+      "era": "2003",
+      "role": "fixer",
+      "frames": [
+        {
+          "pose": "idle-smile",
+          "file": "cast/fixer/idle-smile-frame00.webp",
+          "source": "approved/cast/fixer-idle-smile.webp"
+        },
+        {
+          "pose": "talk",
+          "file": "cast/fixer/talk-frame00.webp",
+          "source": "approved/cast/fixer-talk.webp"
+        },
+        {
+          "pose": "walk-contact",
+          "file": "cast/fixer/walk-contact-frame00.webp",
+          "source": "approved/cast/fixer-walk-contact.webp"
+        },
+        {
+          "pose": "walk-pass",
+          "file": "cast/fixer/walk-pass-frame00.webp",
+          "source": "approved/cast/fixer-walk-pass.webp"
+        },
+        {
+          "pose": "guard",
+          "file": "cast/fixer/guard-frame00.webp",
+          "source": "approved/cast/fixer-guard.webp"
+        },
+        {
+          "pose": "strike",
+          "file": "cast/fixer/strike-frame00.webp",
+          "source": "approved/cast/fixer-strike.webp"
+        },
+        {
+          "pose": "hit-light",
+          "file": "cast/fixer/hit-light-frame00.webp",
+          "source": "approved/cast/fixer-hit-light.webp"
+        },
+        {
+          "pose": "downed",
+          "file": "cast/fixer/downed-frame00.webp",
+          "source": "approved/cast/fixer-downed.webp"
+        },
+        {
+          "pose": "shaken",
+          "file": "cast/fixer/shaken-frame00.webp",
+          "source": "approved/cast/fixer-shaken.webp"
+        }
+      ],
+      "note": "Nine-pose whole-figure set for the fixer, generated with the documented Nano Banana pipeline (art-src/gen-pose-set.sh) and approved by the owner. Registered 2026-08-22: the files had existed since the pose-set pass but were never in the manifest, so sync-data never carried them and every unit in a battle fell back to the single canon runner set — six identical figures in a 3v3."
+    },
+    {
+      "id": "cast-local-v01",
+      "kind": "animation-set",
+      "approval_status": "approved",
+      "production_status": "prototype-only",
+      "layer": "unit-composite",
+      "era": "2003",
+      "role": "local",
+      "frames": [
+        {
+          "pose": "idle-smile",
+          "file": "cast/local/idle-smile-frame00.webp",
+          "source": "approved/cast/local-idle-smile.webp"
+        },
+        {
+          "pose": "talk",
+          "file": "cast/local/talk-frame00.webp",
+          "source": "approved/cast/local-talk.webp"
+        },
+        {
+          "pose": "walk-contact",
+          "file": "cast/local/walk-contact-frame00.webp",
+          "source": "approved/cast/local-walk-contact.webp"
+        },
+        {
+          "pose": "walk-pass",
+          "file": "cast/local/walk-pass-frame00.webp",
+          "source": "approved/cast/local-walk-pass.webp"
+        },
+        {
+          "pose": "guard",
+          "file": "cast/local/guard-frame00.webp",
+          "source": "approved/cast/local-guard.webp"
+        },
+        {
+          "pose": "strike",
+          "file": "cast/local/strike-frame00.webp",
+          "source": "approved/cast/local-strike.webp"
+        },
+        {
+          "pose": "hit-light",
+          "file": "cast/local/hit-light-frame00.webp",
+          "source": "approved/cast/local-hit-light.webp"
+        },
+        {
+          "pose": "downed",
+          "file": "cast/local/downed-frame00.webp",
+          "source": "approved/cast/local-downed.webp"
+        },
+        {
+          "pose": "shaken",
+          "file": "cast/local/shaken-frame00.webp",
+          "source": "approved/cast/local-shaken.webp"
+        }
+      ],
+      "note": "Nine-pose whole-figure set for the local, generated with the documented Nano Banana pipeline (art-src/gen-pose-set.sh) and approved by the owner. Registered 2026-08-22: the files had existed since the pose-set pass but were never in the manifest, so sync-data never carried them and every unit in a battle fell back to the single canon runner set — six identical figures in a 3v3."
+    },
+    {
+      "id": "cast-muscle-v01",
+      "kind": "animation-set",
+      "approval_status": "approved",
+      "production_status": "prototype-only",
+      "layer": "unit-composite",
+      "era": "2003",
+      "role": "muscle",
+      "frames": [
+        {
+          "pose": "idle-smile",
+          "file": "cast/muscle/idle-smile-frame00.webp",
+          "source": "approved/cast/muscle-idle-smile.webp"
+        },
+        {
+          "pose": "talk",
+          "file": "cast/muscle/talk-frame00.webp",
+          "source": "approved/cast/muscle-talk.webp"
+        },
+        {
+          "pose": "walk-contact",
+          "file": "cast/muscle/walk-contact-frame00.webp",
+          "source": "approved/cast/muscle-walk-contact.webp"
+        },
+        {
+          "pose": "walk-pass",
+          "file": "cast/muscle/walk-pass-frame00.webp",
+          "source": "approved/cast/muscle-walk-pass.webp"
+        },
+        {
+          "pose": "guard",
+          "file": "cast/muscle/guard-frame00.webp",
+          "source": "approved/cast/muscle-guard.webp"
+        },
+        {
+          "pose": "strike",
+          "file": "cast/muscle/strike-frame00.webp",
+          "source": "approved/cast/muscle-strike.webp"
+        },
+        {
+          "pose": "hit-light",
+          "file": "cast/muscle/hit-light-frame00.webp",
+          "source": "approved/cast/muscle-hit-light.webp"
+        },
+        {
+          "pose": "downed",
+          "file": "cast/muscle/downed-frame00.webp",
+          "source": "approved/cast/muscle-downed.webp"
+        },
+        {
+          "pose": "shaken",
+          "file": "cast/muscle/shaken-frame00.webp",
+          "source": "approved/cast/muscle-shaken.webp"
+        }
+      ],
+      "note": "Nine-pose whole-figure set for the muscle, generated with the documented Nano Banana pipeline (art-src/gen-pose-set.sh) and approved by the owner. Registered 2026-08-22: the files had existed since the pose-set pass but were never in the manifest, so sync-data never carried them and every unit in a battle fell back to the single canon runner set — six identical figures in a 3v3."
+    },
+    {
+      "id": "cast-runner-v01",
+      "kind": "animation-set",
+      "approval_status": "approved",
+      "production_status": "prototype-only",
+      "layer": "unit-composite",
+      "era": "2003",
+      "role": "runner",
+      "frames": [
+        {
+          "pose": "idle-smile",
+          "file": "cast/runner/idle-smile-frame00.webp",
+          "source": "approved/cast/runner-idle-smile.webp"
+        },
+        {
+          "pose": "talk",
+          "file": "cast/runner/talk-frame00.webp",
+          "source": "approved/cast/runner-talk.webp"
+        },
+        {
+          "pose": "walk-contact",
+          "file": "cast/runner/walk-contact-frame00.webp",
+          "source": "approved/cast/runner-walk-contact.webp"
+        },
+        {
+          "pose": "walk-pass",
+          "file": "cast/runner/walk-pass-frame00.webp",
+          "source": "approved/cast/runner-walk-pass.webp"
+        },
+        {
+          "pose": "guard",
+          "file": "cast/runner/guard-frame00.webp",
+          "source": "approved/cast/runner-guard.webp"
+        },
+        {
+          "pose": "strike",
+          "file": "cast/runner/strike-frame00.webp",
+          "source": "approved/cast/runner-strike.webp"
+        },
+        {
+          "pose": "hit-light",
+          "file": "cast/runner/hit-light-frame00.webp",
+          "source": "approved/cast/runner-hit-light.webp"
+        },
+        {
+          "pose": "downed",
+          "file": "cast/runner/downed-frame00.webp",
+          "source": "approved/cast/runner-downed.webp"
+        },
+        {
+          "pose": "shaken",
+          "file": "cast/runner/shaken-frame00.webp",
+          "source": "approved/cast/runner-shaken.webp"
+        }
+      ],
+      "note": "Nine-pose whole-figure set for the runner, generated with the documented Nano Banana pipeline (art-src/gen-pose-set.sh) and approved by the owner. Registered 2026-08-22: the files had existed since the pose-set pass but were never in the manifest, so sync-data never carried them and every unit in a battle fell back to the single canon runner set — six identical figures in a 3v3."
+    },
+    {
+      "id": "cast-watcher-v01",
+      "kind": "animation-set",
+      "approval_status": "approved",
+      "production_status": "prototype-only",
+      "layer": "unit-composite",
+      "era": "2003",
+      "role": "watcher",
+      "frames": [
+        {
+          "pose": "idle-smile",
+          "file": "cast/watcher/idle-smile-frame00.webp",
+          "source": "approved/cast/watcher-idle-smile.webp"
+        },
+        {
+          "pose": "talk",
+          "file": "cast/watcher/talk-frame00.webp",
+          "source": "approved/cast/watcher-talk.webp"
+        },
+        {
+          "pose": "walk-contact",
+          "file": "cast/watcher/walk-contact-frame00.webp",
+          "source": "approved/cast/watcher-walk-contact.webp"
+        },
+        {
+          "pose": "walk-pass",
+          "file": "cast/watcher/walk-pass-frame00.webp",
+          "source": "approved/cast/watcher-walk-pass.webp"
+        },
+        {
+          "pose": "guard",
+          "file": "cast/watcher/guard-frame00.webp",
+          "source": "approved/cast/watcher-guard.webp"
+        },
+        {
+          "pose": "strike",
+          "file": "cast/watcher/strike-frame00.webp",
+          "source": "approved/cast/watcher-strike.webp"
+        },
+        {
+          "pose": "hit-light",
+          "file": "cast/watcher/hit-light-frame00.webp",
+          "source": "approved/cast/watcher-hit-light.webp"
+        },
+        {
+          "pose": "downed",
+          "file": "cast/watcher/downed-frame00.webp",
+          "source": "approved/cast/watcher-downed.webp"
+        },
+        {
+          "pose": "shaken",
+          "file": "cast/watcher/shaken-frame00.webp",
+          "source": "approved/cast/watcher-shaken.webp"
+        }
+      ],
+      "note": "Nine-pose whole-figure set for the watcher, generated with the documented Nano Banana pipeline (art-src/gen-pose-set.sh) and approved by the owner. Registered 2026-08-22: the files had existed since the pose-set pass but were never in the manifest, so sync-data never carried them and every unit in a battle fell back to the single canon runner set — six identical figures in a 3v3."
+    },
+    {
+      "id": "stage3d-kallio-backyard-v01",
+      "kind": "mesh-3d",
+      "file": "stage3d/kallio-backyard-3d-v01.glb",
+      "source": "stage3d/source-kallio-backyard-diorama-v01.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "stage-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "b09620f3a598015339620977bd0a8cef918df7c36bb177570e243893a8b715b5",
+      "note": "A Kallio back yard as one diorama mesh: open ground with a brick outbuilding, chain-link and gate, a leaning lamp, pallets, a skip and bare birches. Generated as a single centred object because that is what image-to-3D is good at — a scene asked for as a scene comes back as soup. Its walkable surface is NOT at y=0; the base has real thickness and the ground must be measured from the AABB."
+    },
+    {
+      "id": "cast3d-muscle-clips-v01",
+      "kind": "animation-set-3d",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "muscle",
+      "frames": [
+        {
+          "pose": "idle",
+          "file": "cast3d/clips/muscle-idle-v01.glb",
+          "source": "meshy action library",
+          "meshy_action": "Idle",
+          "note": "standing, breathing, waiting to be told"
+        },
+        {
+          "pose": "attack",
+          "file": "cast3d/clips/muscle-attack-v01.glb",
+          "source": "meshy action library",
+          "meshy_action": "Attack",
+          "note": "the swing itself"
+        },
+        {
+          "pose": "behit",
+          "file": "cast3d/clips/muscle-behit-v01.glb",
+          "source": "meshy action library",
+          "meshy_action": "BeHit_FlyUp",
+          "note": "taking one"
+        },
+        {
+          "pose": "dead",
+          "file": "cast3d/clips/muscle-dead-v01.glb",
+          "source": "meshy action library",
+          "meshy_action": "Dead",
+          "note": "going down and staying down"
+        }
+      ],
+      "note": "Fight clips for the rigged muscle, from Meshy's canned action library: idle 4.03s, attack 2.83s, hit 1.53s, dead 3.00s, all 24 bones. TEXTURES ARE STRIPPED — Meshy returns each clip as a complete character carrying its own copy of the same 6.5MB PNG, so four clips were 28MB of which 26MB was one texture repeated. The base character supplies it; art-src/tools/strip_glb_texture.py removes the rest. 7.2MB each becomes 0.7MB."
+    },
+    {
+      "id": "cast3d-driver-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/driver-v01.glb",
+      "source": "characters/concepts-3d/chosen/driver-tpose.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "driver",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "abb52e97e6a81d69df1756f291ad1380d2816ff3d0ea61ac5e9a1c7a6f26ef49",
+      "note": "Tall, navy quilted work coat with a hi-vis stripe, keys at the belt. Rigged, 24 bones, carrying the walk clip. Chosen on SILHOUETTE: on a 3D board a role has to be identifiable from its shape rather than a label, so the six are a slab, a round one, a long coat, a thin vertical, a hood and a medium build. Texture downscaled 2048 to 512 by art-src/tools/strip_glb_texture.py — 6-8MB each becomes ~1.6MB, and a figure a hundred pixels tall cannot show 2048. 2026-08-24: remeshed to ~12.4k from the 2M account master (Meshy remesh endpoint), re-rigged, retextured to 1024. Same Meshy skeleton, so the shared fight clips retarget unchanged. Walk/run clips staged unregistered in art-library/cast3d/."
+    },
+    {
+      "id": "cast3d-fixer-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/fixer-v01.glb",
+      "source": "characters/concepts-3d/chosen/fixer-tpose.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "fixer",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "296c44a8ed2f20dc4a67d9a02920c68d27ecbe2463746ffe1c32171a4aa69f34",
+      "note": "A long charcoal coat — the only floor-length silhouette in the cast. Rigged, 24 bones, carrying the walk clip. Chosen on SILHOUETTE: on a 3D board a role has to be identifiable from its shape rather than a label, so the six are a slab, a round one, a long coat, a thin vertical, a hood and a medium build. Texture downscaled 2048 to 512 by art-src/tools/strip_glb_texture.py — 6-8MB each becomes ~1.6MB, and a figure a hundred pixels tall cannot show 2048. 2026-08-24: remeshed to ~12.4k from the 2M account master (Meshy remesh endpoint), re-rigged, retextured to 1024. Same Meshy skeleton, so the shared fight clips retarget unchanged. Walk/run clips staged unregistered in art-library/cast3d/."
+    },
+    {
+      "id": "cast3d-local-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/local-v01.glb",
+      "source": "characters/concepts-3d/chosen/local-tpose.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "local",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "7e33762e2ae35d81ddc5bc2c65f5f16fd9a30bb37ab8e37249d800fbf0b3df15",
+      "note": "Short and round, maroon quilted coat. The only rounded outline. Rigged, 24 bones, carrying the walk clip. Chosen on SILHOUETTE: on a 3D board a role has to be identifiable from its shape rather than a label, so the six are a slab, a round one, a long coat, a thin vertical, a hood and a medium build. Texture downscaled 2048 to 512 by art-src/tools/strip_glb_texture.py — 6-8MB each becomes ~1.6MB, and a figure a hundred pixels tall cannot show 2048. 2026-08-24: remeshed to ~12.4k from the 2M account master (Meshy remesh endpoint), re-rigged, retextured to 1024. Same Meshy skeleton, so the shared fight clips retarget unchanged. Walk/run clips staged unregistered in art-library/cast3d/."
+    },
+    {
+      "id": "cast3d-muscle-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/muscle-v01.glb",
+      "source": "characters/concepts-3d/chosen/muscle-tpose.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "muscle",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "670a2e22e435273a6c56c4e42ce455c4d8c0410a3fc0d30a753be19902f2d455",
+      "note": "A wide slab on long legs: black bomber, heavy boots. Rigged, 24 bones, carrying the walk clip. Chosen on SILHOUETTE: on a 3D board a role has to be identifiable from its shape rather than a label, so the six are a slab, a round one, a long coat, a thin vertical, a hood and a medium build. Texture downscaled 2048 to 512 by art-src/tools/strip_glb_texture.py — 6-8MB each becomes ~1.6MB, and a figure a hundred pixels tall cannot show 2048. 2026-08-24: remeshed to ~12.4k from the 2M account master (Meshy remesh endpoint), re-rigged, retextured to 1024. Same Meshy skeleton, so the shared fight clips retarget unchanged. Walk/run clips staged unregistered in art-library/cast3d/."
+    },
+    {
+      "id": "cast3d-runner-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/runner-v01.glb",
+      "source": "characters/concepts-3d/chosen/runner-tpose.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "runner",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "82c528b3a01c3315e21840b852ae8391d012928014cd36431668b4d01a37463a",
+      "note": "Thin vertical, dark tracksuit, white trainers. Rigged, 24 bones, carrying the walk clip. Chosen on SILHOUETTE: on a 3D board a role has to be identifiable from its shape rather than a label, so the six are a slab, a round one, a long coat, a thin vertical, a hood and a medium build. Texture downscaled 2048 to 512 by art-src/tools/strip_glb_texture.py — 6-8MB each becomes ~1.6MB, and a figure a hundred pixels tall cannot show 2048. 2026-08-24: remeshed to ~12.4k from the 2M account master (Meshy remesh endpoint), re-rigged, retextured to 1024. Same Meshy skeleton, so the shared fight clips retarget unchanged. Walk/run clips staged unregistered in art-library/cast3d/."
+    },
+    {
+      "id": "cast3d-watcher-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/watcher-v01.glb",
+      "source": "characters/concepts-3d/chosen/watcher-tpose.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "watcher",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "afc71225e96c44997f9cced2f17db7601123d00deada487d7b4e55ed92593ca8",
+      "note": "Lanky, hood up. The hood is a unique outline at any distance. Rigged, 24 bones, carrying the walk clip. Chosen on SILHOUETTE: on a 3D board a role has to be identifiable from its shape rather than a label, so the six are a slab, a round one, a long coat, a thin vertical, a hood and a medium build. Texture downscaled 2048 to 512 by art-src/tools/strip_glb_texture.py — 6-8MB each becomes ~1.6MB, and a figure a hundred pixels tall cannot show 2048. 2026-08-24: remeshed to ~12.4k from the 2M account master (Meshy remesh endpoint), re-rigged, retextured to 1024. Same Meshy skeleton, so the shared fight clips retarget unchanged. Walk/run clips staged unregistered in art-library/cast3d/."
+    },
+    {
+      "id": "cast3d-hired-v01",
+      "file": "cast3d/hired-v01.glb",
+      "kind": "mesh-3d",
+      "source": "Meshy 'Worn Out Wanderer' biped, supplied rigged",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "hired",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "note": "Hired street muscle: dark red tracksuit bottoms with side stripes, grey hooded sweatshirt, black quilted gilet, trainers. This is the 'Hired' subclass in MODULAR_CHARACTER_SYSTEM.md - planted stance, cheap gear - which was in the design and had no model. 6533 triangles, 24 bones. Arrived rigged rather than through the concept-to-Meshy route in art-library/characters/concepts-3d/SPEC.md, so it costs no credits and skips the T-pose step. Texture downscaled 2048 to 512 by art-src/tools/strip_glb_texture.py: 6.2MB becomes 0.8MB.",
+      "sha256": "3465608f952ff912bd9cd0a3d7d9d592cc94e7b64358444f02b697c65593adff",
+      "bytes": null
+    },
+    {
+      "id": "cast3d-hired-clips-v01",
+      "file": "cast3d/clips/hired-clips-v01.glb",
+      "kind": "animation-3d",
+      "source": "Meshy merged animation export for the same rig",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "hired",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "note": "Six clips on the hired rig: Walking, Running, falling_down, Block6, Draw_and_Shoot_Left, bicep_curl. NOT yet wired - the board loads four named states (idle, attack, hit, dead) from cast3d/clips/ and these carry neither those names nor an idle. Kept because the file is cheap once stripped and the mapping is a small job. Meshy ships each clip set as a complete character carrying the texture twice; both copies removed, 12.3MB to 0.7MB, and the character already has its own.",
+      "sha256": "daecd2ccd677b15f6db70f6b11a7b9184ec4a7714c7b041effc494210b5f9cf6"
+    },
+    {
+      "id": "stage3d-hermanni-skatepark-v01",
+      "file": "stage3d/hermanni-skatepark-v01.glb",
+      "kind": "mesh-3d",
+      "source": "Meshy text-to-3D, supplied as a textured glb",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "stage-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "2f1441a4095e4af6c624f7d101b408b5bb1cf33501a3d731e22f1226425c7f85",
+      "note": "Concrete skate park: graffitied ramps and a bowl, weeds through the cracks, a road along one edge. 15882 triangles, one material. CANON NOTE (updated 2026-08-28): owner ruling placed this as a real, repeatable no-stakes training battle (era1-slice-v1.json battle-hermanni-training) at a new `training`-sliceState anchor (hermanni_skatepark, map/kallio-era1-2003-v1.json) — no longer merely reachable through ?stage=. The real district is still outside the locked Era I production boundary (MAP.md 4.1); the anchor's wgs84 is nudged to sit just inside it and marked `representative-inside-production-boundary`, the same compromise already used for the Suvilahti gasworks anchor. Base colour was 2048 and the ORM map 4096; both to 1024 by art-src/tools/strip_glb_texture.py, 16.4MB to 2.8MB."
+    },
+    {
+      "id": "cast3d-hired-b-v01",
+      "file": "cast3d/hired-b-v01.glb",
+      "kind": "mesh-3d",
+      "source": "Meshy 'Rasta Street Guardian' biped, supplied rigged",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "hired",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "note": "A second HIRED body: denim jacket, khaki trousers, white striped shirt, dreadlocks, red-gold-green accents, tan boots. Identified from its UV atlas, not its filename. 10390 triangles, 24 bones - the same rig as hired-v01, which is what makes the clip library shareable. Deliberately a VARIANT rather than a new role: SPEC.md 5 keeps one mesh per specialist because the silhouette IS the role, but 'hired' means somebody off the street, so two ordinary bodies make it more itself. Texture 2048 to 512: 6.1MB becomes 0.9MB.",
+      "sha256": "b369199d2374fbe088b72887d52fa5d994b2cd7f32b538a05cbd4021028685ec",
+      "bytes": null
+    },
+    {
+      "id": "cast3d-hired-b-clips-v01",
+      "file": "cast3d/clips/hired-b-clips-v01.glb",
+      "kind": "animation-3d",
+      "source": "Meshy 'Rasta Street Guardian' biped, supplied rigged",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "hired",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "note": "Walking and Running on the hired-b rig. NOT wired: the board loads idle, attack, hit and dead, and these are neither. Kept because it is 0.5MB stripped and the rig matches the other hired body. Texture removed; the character carries its own.",
+      "sha256": "a6de0c4c3fae0116ce2ceeee86965ee297ba9ff28bb2e66feb62e046a8b6cba7"
+    },
+    {
+      "id": "cast3d-enforcer-v01",
+      "file": "cast3d/enforcer-v01.glb",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_ui": false,
+      "kind": "mesh-3d",
+      "role": "enforcer",
+      "baked_text": false,
+      "source": "Meshy 'White Suit Enforcer' biped, supplied rigged",
+      "note": "Cream-white suit jacket over a black shirt and black trousers. Reads senior and flash rather than street, which is the point: opposition currently wears the same six bodies as the player's crew, so an enemy fixer looks exactly like your fixer. CANON NOTE: MODULAR_CHARACTER_SYSTEM.md gives Enforcer a rain shell, a dark cap and a long silhouette. A white suit is none of those. It is mapped to `enforcer` because that slot had no model and this reads as the thing the slot is for - somebody who does not belong on the street - but either the brief updates or this is re-designated. 16059 triangles, 24 bones. Texture 2048 to 512: 5.1MB to 1.0MB.",
+      "sha256": "b1b9e3ea578b0e99a301402f8359eb638f0ad1b92346e06ac0e031e78c7d79bb",
+      "bytes": null
+    },
+    {
+      "id": "cast3d-enforcer-clips-v01",
+      "file": "cast3d/clips/enforcer-clips-v01.glb",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_ui": false,
+      "kind": "animation-3d",
+      "role": "enforcer",
+      "baked_text": false,
+      "source": "Meshy merged animation export for the same rig",
+      "note": "Walking and Running on the enforcer rig. NOT wired: the board loads idle, attack, hit and dead. Both texture copies removed.",
+      "sha256": "00e5930cacbbf32dfedec23138b9cf2e294532ee072120f23c15739910787e6d"
+    },
+    {
+      "id": "cast3d-street-raver-v01",
+      "file": "cast3d/street-raver-v01.glb",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_ui": false,
+      "kind": "mesh-3d",
+      "role": "hired",
+      "baked_text": true,
+      "source": "Meshy 'Neon Raver Punk' biped, supplied rigged",
+      "note": "Black techwear with acid-green trim, studded straps, gloves, boots. A third HIRED body - street people are what that role is. baked_text is TRUE: the garment carries the word RAVE and an acid-house smiley printed into the texture. Diegetic clothing print rather than UI, so it is not a localisation problem, but it cannot be translated and is declared rather than hidden. 20431 triangles, the heaviest of the street cast. Texture 2048 to 512: 6.1MB to 1.4MB.",
+      "sha256": "8689ab792f9389bddbd2cebaec893108151da59c788be8e640968917d2f9f334",
+      "bytes": null
+    },
+    {
+      "id": "cast3d-street-raver-clips-v01",
+      "file": "cast3d/clips/street-raver-clips-v01.glb",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_ui": false,
+      "kind": "animation-3d",
+      "role": "hired",
+      "baked_text": false,
+      "source": "Meshy merged animation export for the same rig",
+      "note": "Walking and Running on the raver rig. NOT wired. Both texture copies removed.",
+      "sha256": "2f02a7a8b44e741861d50759d5b6490af651bc8266037a220ebb18131e23311d"
+    },
+    {
+      "id": "stage3d-suvilahti-kattilahalli-v01",
+      "file": "stage3d/suvilahti-kattilahalli-v01.glb",
+      "kind": "mesh-3d",
+      "source": "Meshy text-to-3D, supplied as a textured glb",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "stage-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "43ea179438bed67699403aba616f939f002001ff90acca8b385d6d4379859391",
+      "note": "Kattilahalli, the boiler hall at Suvilahti. 23272 triangles. IN BOUNDS, unlike the skate park: Suvilahti sits at Sornainen, and the map already carries a `sornainen_harbour` anchor whose roles are docks, industrial and expansion. Its sliceState is 'teaser', so placing a battle here is a content decision but not a boundary change. The hall has open sides and no floor beyond its own footprint, which is why BattleStage3D lays a concrete slab under every arena - see _build_ground_fill(). KNOWN: some textures are mirrored across opposite sides. Owner's read is that colour and lighting hide it; not attempted here. Textures were 2048 and 4096, both to 1024: 17.8MB to 3.2MB."
+    },
+    {
+      "id": "cast3d-suited-man-v01",
+      "file": "cast3d/suited-man-v01.glb",
+      "kind": "mesh-3d",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "role": "speaker",
+      "source": "Meshy image-to-3d task 01a022e2, rigged 2026-08-23",
+      "note": "Older man, silver hair, glasses, moustache, navy suit, red tie. FOUND, not commissioned: it was already on the Meshy account, paid for and unused — an earlier Arvo attempt at 20794 triangles against the 20826 that shipped. Rigged for 5 credits rather than remade. Cast as Sean McCormick, who is a participant in authored encounters and had no model; an established suited man fits a family that runs bars and restaurants. Named for what it IS, not who it plays, so recasting costs nothing. 24 bones, the same skeleton as the rest of the cast. Texture 2048 to 512: 6.3MB to 1.1MB.",
+      "sha256": "9d2f7cce35c88ccf79747eb45e0ee18bf1b37a83ce47796ded22696953c0d74c"
+    },
+    {
+      "id": "cast3d-parka-man-v01",
+      "file": "cast3d/parka-man-v01.glb",
+      "kind": "mesh-3d",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "role": "hired",
+      "source": "Meshy image-to-3d task 01a028df, rigged 2026-08-23",
+      "note": "Heavy middle-aged man, cream work parka with orange shoulders, blue cargo trousers, orange boots. Found unused on the account and rigged for 5 credits. RECAST: he briefly stood in for Toko Slomo and was freed the moment Toko got his own model. He is now one of the `hired` bodies in battle_stage_3d.UNIT_VARIANTS — an ordinary heavy man in work clothes, which is what `hired` means. He is NOT a speaker and NOT in presenter_3d.PLACEHOLDER_SPEAKERS; this note claimed both for a while after the code had moved on, which is how a stale note misreports the cast. 18761 triangles, 24 bones. Texture 2048 to 1024, matching the polycount-is-the-lever finding in ART_BIBLE 9.7 rather than the older 512 target: 7.1MB to 0.77MB.",
+      "sha256": "453f882df7c74c8ff1e4cb1692081f8c306b95d905a46f85d4619af83c0d4471"
+    },
+    {
+      "id": "cast3d-toko-v01",
+      "file": "cast3d/toko-v01.glb",
+      "kind": "mesh-3d",
+      "source": "Meshy image-to-3D from art-src/concepts/people/toko-slomo-notext-v01.png, task 01a035e8, rig task 01a035e9",
+      "source_version": "v02-mesh",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "speaker",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "note": "Toko Slomo, the noodle chef on Vaasankatu - a named NARRATIVE.md character. White shirt with rolled sleeves, black apron, black trousers, grey hair. The gold smiling mask is CANON. 2026-08-24: remeshed at 12k from the owner T-pose with ALL APRON TEXT REMOVED, rigged, retextured to 1024. 28,765 tris and 2.0 MB down to 12,481 and 0.69 MB. baked_text is now FALSE - the apron carried TOKO SLOMO'S NOODLES over a ramen bowl and a red katakana patch, which could not be translated and had to be declared; a blank apron removes the localisation dead end and spends no polygons on lettering. Walk/run clips staged unregistered at art-library/cast3d/toko-v02-clips.glb.",
+      "sha256": "00787592e5361badae5291c32b08132847fa84eb2867de9656d24970dcebcb21",
+      "bytes": 691960
+    },
+    {
+      "id": "scene-scene-club-v01",
+      "kind": "scene",
+      "file": "scenes/scene-club-v01.webp",
+      "source": "art-src/scenes/scene-club-v04.png",
+      "source_version": "v04",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1600,
+        900
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "makelansilta",
+      "portrait_safe_bounds": [
+        0.22,
+        0.0,
+        0.78,
+        1.0
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "14e949a9182d5559d143c264b072f29c6dfd74f64c8d9ca5d5bc3f8db5a2e7a2",
+      "note": "Scene Club - the art-and-LAN commune at Makelansilta, owner-placed 2026-08-25, just north of Kurvi past the bridge where Makelankatu begins. Camera is LOWER than the other scenes, closer to eye height, so a full standing figure fits without cropping - owner direction: Jaska stands here and talks to camera. His table sits at the FAR WALL, mid-distance, matching the depth of the TV and LAN desks either side, with open floor left standing-room-clear in front of it for the live 3D speaker (Framing.LOCATION). v01-v03 put the table in the foreground where it cropped against the frame edge and would have cut a standing figure badly; v04 pulled it back. One background hobbyist (a LAN gamer) dresses the room; not a modelled participant. baked_text false, checked at final size: wall sketches are portraits and gesture only, monitor screens are abstract glow."
+    },
+    {
+      "id": "scene-bank-counter-v01",
+      "kind": "scene",
+      "file": "scenes/bank-counter-v01.webp",
+      "source": "art-src/scenes/bank-counter-v01.png",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "dimensions": [
+        1536,
+        864
+      ],
+      "format": "webp-opaque",
+      "layer": "location-stage",
+      "era": "2003",
+      "location": "siltasaari",
+      "portrait_safe_bounds": [
+        0.24,
+        0,
+        0.76,
+        1
+      ],
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "bc18eadff6e2e8d80df09b3dd33358ca40b2358e244d0992d519cfaeb6ae6dd6",
+      "bytes": 137948,
+      "note": "Staffed bank counter on Siltasaari - the staffed_bank site, which had been playing over the labelled placeholder. Nobody in the picture and the space above the counter left clear, per STAGE_SPEC 6.3, so the teller is a 3D layer composited into the gap rather than baked into the plate - the same ruling as the empty Toko bar. No text anywhere: the clock, brochures, screen and slips carry abstract marks only."
+    },
+    {
+      "id": "cast3d-jaska-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/jaska-v01.glb",
+      "source": "art-src/concepts/people/jaska-tpose-v07.png",
+      "source_version": "v07",
+      "approval_status": "semi-approved",
+      "production_status": "prototype-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "speaker",
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "74086ed4923863bed0cc5faf562bf7f5d88438c09ad62bc6dcac9645aa9adf6d",
+      "note": "Jaska, Aatami's artist brother and moral counterweight (NARRATIVE.md), built from a likeness photo the owner supplied. 31k tris at 1024, Meshy image-to-3D task 01a03a67, rig task 01a03a69. A-POSE, NOT T-POSE, AND DELIBERATELY: a T-pose puts a narrow dark-on-dark notch between sleeve and torso that Meshy could not resolve - it bridged the gap with torn webbing geometry and baked the grey background into the shoulder seam as a visible stripe. Arms at 45 degrees over a bright cream ground opens the silhouette wide enough to reconstruct cleanly. That failure was in the MESH, not the drawing; the 2D passed every check. Glasses survive as texture rather than geometry - thin wireframe is below what image-to-3D resolves. Ten idle/talking clips staged unregistered at art-library/cast3d/jaska-v01-clips.glb."
     }
   ]
 }

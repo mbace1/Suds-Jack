@@ -1,6 +1,16 @@
+import { nameFrom } from '../../people/roster.mjs';
+
 const CONTENT_URL = '../../content/era1-slice-v1.json';
 const MAP_URL = '../../map/kallio-era1-2003-v1.json';
+const TRANSIT_URL = '../../map/kallio-transit-layer-v1.json';
 const ART_URL = '../../art/v3/manifest.json';
+// Asset URLs are resolved by the BROWSER against the page, not against this
+// module, so they need one more step out of `web/` than the fetches above.
+// Promoting this build out of `legacy/` fixed the three JSON paths and left
+// these three behind, and the only symptom was ~40 silent 404s: every unit
+// drew its fallback and nothing threw. Same class of bug, twice, which is why
+// v3-contract now asserts the prefix.
+const ART_BASE = 'art/v3';
 
 async function readJson(url) {
   const response = await fetch(new URL(url, import.meta.url));
@@ -11,13 +21,13 @@ async function readJson(url) {
 function flattenArt(manifest) {
   const byId = new Map();
   for (const group of manifest.assets) {
-    if (group.file) byId.set(group.id, { ...group, url: `art/v3/${group.file}` });
+    if (group.file) byId.set(group.id, { ...group, url: `${ART_BASE}/${group.file}` });
     for (const member of group.members ?? []) {
       byId.set(member.id, {
         ...member,
         approval_status: group.approval_status,
         kind: group.kind,
-        url: `art/v3/${member.file}`,
+        url: `${ART_BASE}/${member.file}`,
       });
     }
     for (const frame of group.frames ?? []) {
@@ -27,22 +37,30 @@ function flattenArt(manifest) {
         id: frameId,
         approval_status: group.approval_status,
         kind: group.kind,
-        url: `art/v3/${frame.file}`,
+        url: `${ART_BASE}/${frame.file}`,
       });
     }
   }
   return byId;
 }
 
-function indexContent(content, map, artManifest) {
+function indexContent(content, map, transit, artManifest) {
   return {
     content,
     map,
+    transit,
     artManifest,
     encounters: new Map(content.encounters.map(item => [item.id, item])),
     missions: new Map(content.missions.map(item => [item.id, item])),
     battles: new Map(content.battles.map(item => [item.id, item])),
-    crew: new Map(content.crew.map(item => [item.id, item])),
+    // COMBAT.md §7.1 moved crew display names to generation (2026-08-27) and
+    // the slice's six `crew-slot-*` records no longer carry `name` at all.
+    // `unit.name.split(' ')` in the battle screen crashed on it — every unit
+    // label read `crew.name`, which nothing since the data change had ever
+    // populated. Backfilled here, once, at load, rather than in the template
+    // that happened to be the first to dereference it: the same crash was
+    // one render away in the ledger's crew list and the recruitment copy too.
+    crew: new Map(content.crew.map(item => [item.id, { ...item, name: item.name ?? nameFrom(item.id) }])),
     offers: new Map(content.market_offers.map(item => [item.id, item])),
     equipment: new Map(content.equipment.map(item => [item.id, item])),
     news: new Map(content.news.map(item => [item.id, item])),
@@ -53,12 +71,13 @@ function indexContent(content, map, artManifest) {
 }
 
 export async function loadGameData() {
-  const [content, map, artManifest] = await Promise.all([
+  const [content, map, transit, artManifest] = await Promise.all([
     readJson(CONTENT_URL),
     readJson(MAP_URL),
+    readJson(TRANSIT_URL),
     readJson(ART_URL),
   ]);
-  return indexContent(content, map, artManifest);
+  return indexContent(content, map, transit, artManifest);
 }
 
 export function shortestPath(map, from, to) {
@@ -90,6 +109,11 @@ export function shortestPath(map, from, to) {
   return [];
 }
 
+// A SECOND, SEPARATE instance of the same fix, one level shallower — this
+// one is a DOCUMENT-relative path, not a module-relative one. It becomes an
+// <img src="..."> in the DOM built by legacy/index.html, so it resolves
+// against THAT file's own location (legacy/index.html), not against
+// content.js — one directory to climb out of legacy/, not three.
 export function assetUrl(data, id) {
   return data.art.get(id)?.url ?? '';
 }

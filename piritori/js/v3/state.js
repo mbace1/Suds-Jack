@@ -1,10 +1,32 @@
+import { hiringPool } from '../../people/hiring.mjs';
+import { rand01 } from '../../market/model.mjs';
+
 export const SAVE_KEY = 'piritori-to-eden:v3';
 export const STATE_VERSION = 3;
+// GameState.gd's own default (`with_seed if with_seed != 0 else
+// 20030101`) — a date-shaped constant, not a random per-campaign roll, so
+// two players starting fresh see the same hiring pool on the same day
+// unless a debug entry ever sets its own.
+const DEFAULT_SEED = 20030101;
 
 const PRESSURE = { low: 0, watchful: 1, hot: 2, closed: 3 };
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const addUnique = (items, value) => { if (!items.includes(value)) items.push(value); };
 const relKey = key => key.replaceAll('-', '_');
+const cap = value => String(value ?? '').replaceAll('-', ' ').replaceAll('_', ' ');
+
+// `chapter_def()`/`_sync_chapter_from_content()` — the authored chapter, or
+// null if content has none for this number (the slice authors exactly one).
+function chapterDef(content, chapterNumber) {
+  return content.chapters?.find(item => item.index === chapterNumber) ?? null;
+}
+function syncChapterFromContent(state, content) {
+  const def = chapterDef(content, state.chapter);
+  if (!def) return;
+  const goal = def.goal ?? {};
+  if (['money', 'loot', 'fights'].includes(goal.type)) state.chapterGoal = goal.type;
+  if (goal.threshold != null) state.chapterThreshold = goal.threshold;
+}
 
 export function createState(content) {
   const start = content.campaign.starting_state;
@@ -15,9 +37,10 @@ export function createState(content) {
     status: 'available',
     critical: false,
   }]));
-  return {
+  const state = {
     version: STATE_VERSION,
     contentId: content.id,
+    seed: DEFAULT_SEED,
     scheduleIndex: 0,
     mode: 'route',
     locale: 'en',
@@ -35,11 +58,47 @@ export function createState(content) {
     cityHarm: start.city_harm,
     flags: [],
     obligations: {},
-    equipment: ['feature-phone'],
+    // `{id, cond}` instances, not a set of owned type ids (§8) —
+    // `CONDITION.NEW` below.
+    equipment: [{ id: 'feature-phone', cond: 0 }],
     recruited: [],
     temporaryCrew: [],
     deployed: [],
     crewStatus,
+    // Generated hires (`people/hiring.mjs`), keyed by id — the authored
+    // six live in `data.crew` and never need this; `crewRecord()` below
+    // checks both so the rest of the game does not have to know which
+    // source a recruited id came from.
+    hiredCrew: {},
+    // Career (`GameState.gd`'s `crew_fights`/`retired_crew`, COMBAT.md
+    // §7): a fight survived, per non-named crew id, and who has already
+    // aged out. A named crew member never appears in either — they have
+    // no ceiling (§7.1).
+    crewFights: {},
+    retiredCrew: [],
+    // Everyone the police took (COMBAT.md §9.5.3) — deliberately not the
+    // same list as `retiredCrew`: a veteran who got out is a different
+    // fact about a different night than somebody carried off a yard.
+    arrestedCrew: [],
+    // Chapters (`GameState.gd`'s run structure, GDD): a chapter is a run
+    // within the larger campaign, and the authored slice is one chapter's
+    // worth, not a whole era's — `CHAPTER_DAYS` below is Godot's own
+    // PLACEHOLDER figure (10) against this slice's real 7. `chapterGoal`/
+    // `chapterThreshold` are set from content just below, matching
+    // `new_campaign()`'s own `_sync_chapter_from_content()` call.
+    chapter: 1,
+    chapterCleared: false,
+    chapterGoal: 'money',
+    chapterThreshold: 600,
+    chapterEarned: 0,
+    chapterLootTaken: 0,
+    chapterFightsWon: 0,
+    lastEndingOutcome: '',
+    // Built or bought, so it carries a chapter boundary (a stash house
+    // upgrade earned from the shipment operation, once chapters chain —
+    // §13 of the persistence ledger; unreachable with one authored
+    // chapter, kept for the shape).
+    upgrades: [],
     revealedOffers: ['offer-piritori-buy'],
     revealedMissions: [],
     revealedEncounters: ['enc-first-purchase'],
@@ -53,6 +112,8 @@ export function createState(content) {
     logs: ['Day 1. Piritori is the only corner that already knows Aatami.'],
     lastOutcome: null,
   };
+  syncChapterFromContent(state, content);
+  return state;
 }
 
 export function restoreState(raw, content) {
@@ -66,6 +127,8 @@ export function restoreState(raw, content) {
     pressure: { ...fresh.pressure, ...(raw.pressure ?? {}) },
     obligations: { ...fresh.obligations, ...(raw.obligations ?? {}) },
     crewStatus: { ...fresh.crewStatus, ...(raw.crewStatus ?? {}) },
+    hiredCrew: { ...fresh.hiredCrew, ...(raw.hiredCrew ?? {}) },
+    crewFights: { ...fresh.crewFights, ...(raw.crewFights ?? {}) },
   };
 }
 
@@ -96,11 +159,372 @@ export function formatBlock(state, content) {
   return `DAY ${slot.day} · ${slot.block.toUpperCase()}`;
 }
 
+/** The authored six live in `data.crew` (loaded once, static); a hire off
+ *  the street (`people/hiring.mjs`) lives in `state.hiredCrew` instead,
+ *  since it does not exist until generated. Everywhere a crew id needs
+ *  its full record — deployment, wages, the crew screen — reads through
+ *  this rather than assuming the source. */
+export function crewRecord(state, data, id) {
+  return data.crew.get(id) ?? state.hiredCrew[id] ?? null;
+}
+
 export function deployedCrew(state, data) {
   const available = state.recruited.filter(id => state.crewStatus[id]?.status !== 'missing');
   const chosen = state.deployed.filter(id => available.includes(id));
   const merged = [...chosen, ...available.filter(id => !chosen.includes(id))];
-  return merged.slice(0, 3).map(id => data.crew.get(id)).filter(Boolean);
+  return merged.slice(0, 3).map(id => crewRecord(state, data, id)).filter(Boolean);
+}
+
+// ── career (GameState.gd's crew_fights/retired_crew, COMBAT.md §7) ─────────
+// A named crew member (the six authored slots) is an FFT story unit: rare,
+// deployed deliberately, never lost to attrition — no ceiling, because they
+// leave in authored beats, not by running out of fights. Everyone else is
+// hired, and hired crew are disposable: a bounded career that ends in
+// retirement, alive, once they have survived enough of them.
+const CAREER_FIGHTS = 10;
+// Nothing until they are close, then the game tells you — a hidden counter
+// would turn the exact spend-or-save decision into a guess.
+const CAREER_WARN_AT = 7;
+
+export function isNamed(state, data, id) {
+  return crewRecord(state, data, id)?.named === true;
+}
+
+export function fightsOf(state, id) {
+  return state.crewFights[id] ?? 0;
+}
+
+/** -1 for a named character, who has no ceiling. */
+export function careerLeft(state, data, id) {
+  if (isNamed(state, data, id)) return -1;
+  return Math.max(CAREER_FIGHTS - fightsOf(state, id), 0);
+}
+
+export function careerIsVisible(state, data, id) {
+  if (isNamed(state, data, id)) return false;
+  return fightsOf(state, id) >= CAREER_WARN_AT;
+}
+
+function retireCrew(state, data, id) {
+  if (state.retiredCrew.includes(id)) return;
+  state.retiredCrew.push(id);
+  const index = state.recruited.indexOf(id);
+  if (index >= 0) state.recruited.splice(index, 1);
+  // A veteran in the city is a relationship, not a deleted row — the same
+  // `memory:` convention `applyEffects()` already writes into `state.flags`.
+  addUnique(state.flags, `memory:retired:${id}`);
+  addLog(state, `${crewRecord(state, data, id)?.name ?? id} has done enough fights. They retire, alive.`);
+}
+
+/** Everyone who was deployed comes out one fight older — called once when a
+ *  battle settles (`age_crew()`), never per round. Returns the ids who
+ *  reached the ceiling and left this call: RETIRED, not dead. Godot's own
+ *  loop does not special-case a crew member the police already took this
+ *  same fight (`state.crewStatus[id].status === 'missing'`) — they still
+ *  age, and can still be pushed into `retiredCrew` on top of already being
+ *  gone. Kept exactly that way rather than added a check Godot doesn't have. */
+export function ageCrew(state, data, deployedIds) {
+  const left = [];
+  for (const id of deployedIds) {
+    if (isNamed(state, data, id) || state.retiredCrew.includes(id)) continue;
+    state.crewFights[id] = fightsOf(state, id) + 1;
+    if (fightsOf(state, id) >= CAREER_FIGHTS) {
+      retireCrew(state, data, id);
+      left.push(id);
+    }
+  }
+  return left;
+}
+
+// ── equipment (GameState.gd's equipment/Condition, COMBAT.md §8) ───────────
+// new -> used -> faulty -> broken, and it only goes one way. `state.equipment`
+// is an ARRAY OF INSTANCES (`{id, cond}`), not a set of owned type ids — a
+// crew of four can each carry a pipe, and a good one and a wrecked one in
+// the same stash are two different things. Deliberately separate from what
+// a crew member actually wields in a fight: `makePlayer()` picks a weapon
+// off `member.initial_equipment` (the crew record's own authored kit), the
+// same way `battle_builder.gd`'s `_crew_to_unit()` reads `initial_equipment`
+// rather than `GameState.equipment` — the owned/looted stash is a fencing
+// economy, not a loadout screen. Godot has no equipment PURCHASE function
+// anywhere either, despite `acquisition: 'market'` existing in content, so
+// none is built here — `isPurchasable()` stays read-only informational, the
+// same way `_add_spoils_lines()` only uses it for a "cannot be bought" tag.
+export const CONDITION = { NEW: 0, USED: 1, FAULTY: 2, BROKEN: 3 };
+const CONDITION_WORD = ['New', 'Used', 'Faulty', 'Broken'];
+const CONDITION_RESALE = { 0: 1.0, 1: 0.7, 2: 0.4, 3: 0.15 };
+
+export function conditionWord(cond) {
+  return CONDITION_WORD[cond] ?? CONDITION_WORD[0];
+}
+
+export function addEquipment(state, typeId, cond = CONDITION.NEW) {
+  if (!typeId) return;
+  // Authored grants may repeat: a second pipe is a second pipe. No dedup —
+  // `add_equipment()` has none either.
+  state.equipment.push({ id: typeId, cond });
+}
+
+export function countOf(state, typeId) {
+  return state.equipment.filter(item => item.id === typeId).length;
+}
+
+/** Takes the WORST first: what a fallen crew member was carrying is gone,
+ *  and if a good one and a wrecked one were both in the stash, the wrecked
+ *  one is the one that was being used. */
+export function removeOne(state, typeId) {
+  let worst = -1;
+  for (let i = 0; i < state.equipment.length; i++) {
+    if (state.equipment[i].id !== typeId) continue;
+    if (worst < 0 || state.equipment[i].cond > state.equipment[worst].cond) worst = i;
+  }
+  if (worst < 0) return false;
+  state.equipment.splice(worst, 1);
+  return true;
+}
+
+/** §8 is asymmetric on purpose: loot converts DOWN into money freely, but
+ *  the best gear cannot be bought at any price. */
+export function isPurchasable(data, equipmentId) {
+  return (data.equipment.get(equipmentId)?.acquisition ?? 'market') !== 'taken';
+}
+
+export function resaleOf(data, equipmentId) {
+  return data.equipment.get(equipmentId)?.resale_eur ?? 0;
+}
+
+export function resaleAt(state, data, index) {
+  const item = state.equipment[index];
+  if (!item) return 0;
+  return Math.round(resaleOf(data, item.id) * (CONDITION_RESALE[item.cond] ?? 1.0));
+}
+
+/** Piritori, and only Piritori for now (§9.7) — carrying loot across the
+ *  city to sell it puts you where the hiring pool and the pressure both
+ *  are; the better fence you have to earn later is not attempted. */
+const FENCE_ANCHORS = ['piritori'];
+export function canFenceHere(state) {
+  return FENCE_ANCHORS.includes(state.selectedAnchor);
+}
+
+/** Sells the BEST one you have — what somebody selling would do, leaving
+ *  the worn one to keep using or lose. Deliberately one-way and
+ *  deliberately poor: loot only ever converts down into money. */
+export function sellLoot(state, data, equipmentId) {
+  let best = -1;
+  for (let i = 0; i < state.equipment.length; i++) {
+    if (state.equipment[i].id !== equipmentId) continue;
+    if (best < 0 || state.equipment[i].cond < state.equipment[best].cond) best = i;
+  }
+  if (best < 0) return 0;
+  const paid = resaleAt(state, data, best);
+  state.equipment.splice(best, 1);
+  state.cash += paid;
+  // Counted centrally (GDD run structure): a chapter cleared by earning
+  // has to see every way of earning, and the fence is one of them —
+  // `sell_loot()`'s own `record_chapter_income(paid)` call, and in fact
+  // the ONLY place `record_chapter_income` is called from in the whole of
+  // `game_state.gd` — market sales and mission payouts do not count
+  // toward a chapter's money goal, however the comment there reads.
+  recordChapterIncome(state, paid);
+  addLog(state, `Fenced ${cap(equipmentId)} for €${paid}.`);
+  return paid;
+}
+
+/** What is lying on the ground when a battle ends, for one side —
+ *  `dropped_kit()`. Gear is carried by a PERSON, so it comes off the
+ *  fallen, not off the field: only a downed unit's WEAPON drops (a
+ *  support item, the feature-phone, never does — mirrors Godot's
+ *  `weapon_ids` vs `item_ids` split, read here off the equipment
+ *  content's own `kind` since this build's single-slot `unit.equipment`
+ *  does not distinguish the two on the unit object itself). `'police'` is
+ *  deliberately not a valid `side` — `battle.police` is a third side, and
+ *  asking here would have the player looting them. Returns type ids, not
+ *  unique ones: two people carrying pipes drop two pipes. */
+export function droppedKit(battle, data, side) {
+  const units = side === 'player' ? battle.players : battle.enemies;
+  const out = [];
+  for (const unit of units ?? []) {
+    if (unit.alive || !unit.equipment) continue;
+    if (data.equipment.get(unit.equipment)?.kind !== 'weapon') continue;
+    out.push(unit.equipment);
+  }
+  return out;
+}
+
+/** Take what the losing side was carrying — the ONLY way taken-only gear
+ *  enters the game. Returns the ids actually added, for a spoils line. No
+ *  duplicate check: a crew of four with a pipe each is ordinary. */
+export function takeLoot(state, data, equipmentIds) {
+  const got = [];
+  for (const id of equipmentIds ?? []) {
+    if (!id || !data.equipment.get(id)) continue;
+    addEquipment(state, id, CONDITION.NEW);
+    recordChapterLoot(state, 1);
+    got.push(id);
+  }
+  return got;
+}
+
+/** What a fallen crew member was carrying is gone — an attempted removal
+ *  per id, which is usually a no-op: a battle unit's weapon comes off its
+ *  own authored `initial_equipment`, not off `state.equipment`, so most of
+ *  the time there is nothing here to take. Ported as-is (`lose_kit_of()`
+ *  makes the same attempt unconditionally) rather than skipped as
+ *  pointless — Godot's own version is exactly this quiet. */
+export function loseKitOf(state, equipmentIds) {
+  for (const id of equipmentIds ?? []) removeOne(state, id);
+}
+
+// ── chapters (GameState.gd's run structure, GDD) ────────────────────────
+// PLACEHOLDER (DESIGN_LOCKS §13): ten days is Godot's own figure and the
+// slice authors seven, so its one chapter ends early on purpose rather
+// than pretending the content is longer than it is.
+export const CHAPTER_DAYS = 10;
+
+export function chapterProgress(state) {
+  if (state.chapterGoal === 'loot') return state.chapterLootTaken;
+  if (state.chapterGoal === 'fights') return state.chapterFightsWon;
+  return state.chapterEarned;
+}
+
+/** The threshold buys ENTRY to the climax; it is not the climax itself
+ *  (`MAP.md` §12.5 is the same idea one magnification down). */
+export function chapterGoalMet(state) {
+  return chapterProgress(state) >= state.chapterThreshold;
+}
+
+/** Counted here rather than at each call site, so a new way of earning
+ *  cannot quietly fail to count toward the chapter. */
+function recordChapterIncome(state, amount) {
+  if (amount > 0) state.chapterEarned += amount;
+}
+function recordChapterLoot(state, n) {
+  if (n > 0) state.chapterLootTaken += n;
+}
+
+function chapterEnding(state, content) {
+  return chapterDef(content, state.chapter)?.ending ?? {};
+}
+
+export function chapterEndingAvailable(state, data) {
+  return chapterGoalMet(state) && chapterDef(data.content, state.chapter) != null && !state.chapterCleared;
+}
+
+/** Everyone the police took, or who did not come back from an operation
+ *  (`arrest()`). Deliberately not the same list as `retiredCrew` — a
+ *  veteran who got out is a different fact from somebody carried off. */
+export function arrestCrew(state, data, id) {
+  if (state.arrestedCrew.includes(id)) return;
+  state.arrestedCrew.push(id);
+  const index = state.recruited.indexOf(id);
+  if (index >= 0) state.recruited.splice(index, 1);
+  addUnique(state.flags, `memory:arrested:${id}`);
+  addLog(state, `${crewRecord(state, data, id)?.name ?? id} is taken. Gone from the roster.`);
+}
+
+/** How many hands it takes for a container to move quietly. */
+const OPERATION_IDEAL_CREW = 3;
+
+/** Resolved from the seed and the chapter, like gear decay — a player who
+ *  reloads to reroll a shipment is playing a different game from the one
+ *  being built. THE PENALTY CANNOT BE MONEY (cash resets at a chapter
+ *  boundary elsewhere in Godot; this build has no boundary to reset it at
+ *  yet either, so the rule is carried forward on principle): what can be
+ *  lost is what carries — gear and people. Likewise the reward: a payout
+ *  would mean nothing here, so a clean run buys a built upgrade. */
+function resolveOperation(state, data, ending) {
+  const hands = state.recruited.length;
+  const margin = hands / OPERATION_IDEAL_CREW;
+  // Heat carried into the night makes it worse — connects §9.5 (police)
+  // to the meta rather than leaving it a battle-only idea.
+  const seen = state.arrestedCrew.length * 0.15;
+  const roll = rand01(state.seed, 'operation', state.chapter) * 0.7 - 0.35;
+  const score = margin - seen + roll;
+
+  if (score >= 1.0) {
+    if (ending.grants_upgrade) addUnique(state.upgrades, ending.grants_upgrade);
+    return 'clean';
+  }
+  if (score >= 0.5) {
+    // Something had to be left behind — the LAST thing in the stash, not
+    // the worst; `equipment.remove_at(equipment.size() - 1)` in Godot.
+    if (state.equipment.length) state.equipment.pop();
+    return 'messy';
+  }
+  // Somebody did not come back. Costs a person — the only currency that
+  // still means anything at a chapter boundary.
+  const target = state.recruited.find(id => !isNamed(state, data, id));
+  if (target) arrestCrew(state, data, target);
+  return 'lost';
+}
+
+/** Run the ending, and turn the chapter over. An OPERATION rather than a
+ *  battle: buying a shipment and moving it, not a fight — commerce is
+ *  allowed to be the climax (the GDD ruling `attempt_chapter_ending()`'s
+ *  own comment cites). Returns '' on success, or a reason it could not be
+ *  attempted. */
+export function attemptChapterEnding(state, data) {
+  if (!chapterEndingAvailable(state, data)) return 'not-available';
+  const ending = chapterEnding(state, data.content);
+  const stake = ending.stake_eur ?? 0;
+  if (state.cash < stake) return 'cannot-afford';
+  if (ending.anchor_id && state.selectedAnchor !== ending.anchor_id) return 'wrong-place';
+
+  state.cash -= stake;
+  state.chapterCleared = true;
+  state.lastEndingOutcome = resolveOperation(state, data, ending);
+  // A chapter you finished is a thing the city remembers (§9.8: memories
+  // are the seam every later system reads) — the same `memory:` convention
+  // `applyEffects()` and `retireCrew()` already write into `state.flags`.
+  addUnique(state.flags, `memory:chapter-cleared:${state.chapter}:${state.lastEndingOutcome}`);
+  addLog(state, `${ending.label ?? 'The operation'} goes ${state.lastEndingOutcome}.`);
+  return '';
+}
+
+/** Today's three candidates — `hiringPool()` is pure and re-derives the
+ *  same people every time it is called for the same day, so nothing here
+ *  is stored: walking away and coming back must not reroll the board.
+ *  `GameState.gd`'s `hiring_pool()` drops anyone already on the roster
+ *  (recognisable by id even after the day turns over, since the seed and
+ *  day pair are stable) — otherwise a hired candidate would keep
+ *  reappearing as an offer next to the person they already are. */
+export function hiringPoolFor(state, data) {
+  const day = currentSchedule(state, data.content)?.day ?? 1;
+  return hiringPool(state.seed, day).filter(candidate => !state.recruited.includes(candidate.id));
+}
+
+/** Hire a candidate off today's pool. `GameState.gd`'s `hire()`: the
+ *  signing fee is the candidate's own wage, deducted once up front — a
+ *  placeholder derived from authored data rather than invented, but the
+ *  owner's comment there is explicit that it was never playtested. Fails
+ *  outright (no partial hire) if cash can't cover it.
+ *
+ *  Godot's own dedup is `roster.has(id)` alone — NOT whether the id has
+ *  ever been seen in `generated_crew` before. That is weaker than it
+ *  sounds once retirement exists (`ageCrew()`): a retired candidate is off
+ *  `state.recruited`, so the exact same person can resurface in a later
+ *  pool read and be hired again — and because `state.retiredCrew` is
+ *  never cleared, `ageCrew()` will then skip them forever, an odd
+ *  immortality this port carries over rather than closes. */
+export function hireFromPool(state, data, candidateId) {
+  if (state.recruited.includes(candidateId)) return false;
+  const day = currentSchedule(state, data.content)?.day ?? 1;
+  const candidate = hiringPoolFor(state, data).find(item => item.id === candidateId);
+  if (!candidate) return false;
+  const fee = candidate.wage_eur;
+  if (state.cash < fee) return false;
+  state.cash -= fee;
+  state.hiredCrew[candidateId] = candidate;
+  state.crewStatus[candidateId] = {
+    condition: candidate.condition,
+    maxCondition: candidate.condition,
+    nerve: candidate.nerve,
+    status: 'available',
+    critical: false,
+  };
+  addUnique(state.recruited, candidateId);
+  addLog(state, `Day ${day}: ${candidate.name} hired on for €${fee} — ${candidate.role}, €${candidate.wage_eur}/night after.`);
+  return true;
 }
 
 export function requirementStatus(requirement, state, data) {
@@ -187,7 +611,7 @@ function chooseEnding(state, data) {
     status.critical = false;
     status.status = 'dead';
     addUnique(state.flags, `unresolved-critical:${id}`);
-    addLog(state, `${data.crew.get(id)?.name ?? id}'s clearly flagged critical wound was not treated before final settlement.`);
+    addLog(state, `${crewRecord(state, data, id)?.name ?? id}'s clearly flagged critical wound was not treated before final settlement.`);
   }
   const deaths = Object.values(state.crewStatus).filter(x => x.status === 'dead').length;
   let id;
@@ -226,7 +650,8 @@ export function applyEffects(state, effects, data, label = 'choice') {
     if (effect.startsWith('flag:')) { addUnique(state.flags, effect.slice(5)); continue; }
     if (effect.startsWith('memory:')) { addUnique(state.flags, effect); continue; }
     if (effect.startsWith('reveal:')) { reveal(state, effect.slice(7)); continue; }
-    if (effect.startsWith('equipment:+')) { addUnique(state.equipment, effect.slice(11)); continue; }
+    // Authored grants may repeat: a second pipe is a second pipe (§8).
+    if (effect.startsWith('equipment:+')) { addEquipment(state, effect.slice(11)); continue; }
     if (effect.startsWith('recruit:') || effect.startsWith('recruit-temporary:')) {
       const temporary = effect.startsWith('recruit-temporary:');
       const id = effect.slice(temporary ? 18 : 8);
@@ -321,7 +746,7 @@ function settleNight(state, content, day) {
   const settlement = content.campaign.settlement;
   state.debt += settlement.nightly_interest_eur;
   const wages = state.recruited.reduce((sum, id) => {
-    const member = content.crew.find(item => item.id === id);
+    const member = content.crew.find(item => item.id === id) ?? state.hiredCrew[id];
     return sum + (member?.wage_eur ?? 0);
   }, 0);
   const paid = Math.min(state.cash, wages);

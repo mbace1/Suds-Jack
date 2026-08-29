@@ -3,12 +3,23 @@ import {
   SAVE_KEY, createState, loadState, saveState, currentSchedule, currentEncounter,
   formatBlock, choiceStatus, chooseEncounter, advanceSchedule, deployedCrew,
   transactOffer, applyEffects, commitRoute, sendOnRoute,
+  crewRecord, hiringPoolFor, hireFromPool,
+  isNamed, careerLeft, careerIsVisible, ageCrew,
+  droppedKit, takeLoot, loseKitOf, canFenceHere, sellLoot, resaleAt, conditionWord,
+  arrestCrew, chapterProgress, chapterGoalMet, chapterEndingAvailable, attemptChapterEnding,
 } from './state.js?v=1';
+import { createPauseMenu } from './pause.js?v=1';
+import { board, exposureHere, markSeen, addFootprint, INFO } from './board.js?v=1';
 import {
-  createBattleState, selectedUnit, selectUnit, selectAction, playerAttack, brace,
+  createBattleState, selectedUnit, selectUnit, selectAction, playerAttack, brace, useItem,
   validMoveCells, moveUnit, endPlayerPhase, autoCommand, withdrawBattle,
-  negotiateBattle, resultEffects, injuredPlayers,
+  negotiateBattle, resultEffects, injuredPlayers, selectStance,
+  policeAwaitingPosture, choosePolicePosture, takenByPolice, savedFromPolice, POLICE_POSTURE,
 } from './battle.js?v=1';
+import { LANES, ROWS, totalRows, depthOf, parseSlotKey, slotKey, describeSlot } from './grid.js?v=1';
+import { boot as bootChrome } from './chrome.js?v=1';
+import { STANCE, STANCES } from './stance.js?v=1';
+import { mountBattleStage3D, disposeBattleStage3D } from './render3d.js?v=1';
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -18,20 +29,35 @@ const money = value => `€${Number(value).toLocaleString('fi-FI', { maximumFrac
 const cap = value => String(value ?? '').replaceAll('-', ' ').replaceAll('_', ' ').toUpperCase();
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Stance labels are the exact English/Finnish/Japanese Godot already ships
+// (`locale/ui.csv` battle.stance_*) — one vocabulary for one concept, not a
+// second translation of the same three words.
 const UI = {
   en: {
     route: 'ROUTE', encounter: 'ENCOUNTER', ledger: 'LEDGER', battle: 'BATTLE', news: 'NEWS',
     enter: 'ENTER ENCOUNTER', continue: 'RETURN TO MAP', planning: 'PLAN A ROUTE',
     commit: 'PIN ROUTE', clear: 'CLEAR', send: 'SEND ONE PACK', objective: 'OBJECTIVE',
+    start_training: 'START TRAINING',
     attack: 'ATTACK', move: 'REPOSITION', brace: 'BRACE', end: 'END TEAM TURN',
+    use_item: 'USE',
     auto: 'AUTO TEAM', withdraw: 'WITHDRAW', negotiate: 'NEGOTIATE',
+    stance: 'STANCE', stance_AGGRESSIVE: 'AGGRESSIVE', stance_DEFENSIVE: 'DEFENSIVE', stance_HOLD_THE_LINE: 'HOLD THE LINE',
+    police_here: 'POLICE ARE HERE', police_one_down: 'of the crew is on the ground.',
+    police_many_down: 'of the crew are on the ground.',
+    police_back_off: 'BACK OFF — LEAVE THEM', police_help: 'GO BACK FOR THEM',
   },
   fi: {
     route: 'REITTI', encounter: 'KOHTAAMINEN', ledger: 'KIRJANPITO', battle: 'TAISTELU', news: 'UUTISET',
     enter: 'MENE KOHTAAMISEEN', continue: 'PALAA KARTALLE', planning: 'SUUNNITTELE REITTI',
     commit: 'KIINNITÄ REITTI', clear: 'TYHJENNÄ', send: 'LÄHETÄ YKSI PAKKAUS', objective: 'TAVOITE',
+    start_training: 'ALOITA HARJOITUS',
     attack: 'HYÖKKÄÄ', move: 'VAIHDA ASEMAA', brace: 'SUOJAA', end: 'LOPETA VUORO',
+    use_item: 'KÄYTÄ',
     auto: 'AUTO-JOUKKUE', withdraw: 'VETÄYDY', negotiate: 'NEUVOTTELE',
+    stance: 'ASENTO', stance_AGGRESSIVE: 'HYÖKKÄÄVÄ', stance_DEFENSIVE: 'PUOLUSTAVA', stance_HOLD_THE_LINE: 'PIDÄ LINJA',
+    police_here: 'POLIISI ON PAIKALLA', police_one_down: 'jäsen makaa maassa.',
+    police_many_down: 'jäsentä makaa maassa.',
+    police_back_off: 'PERÄÄNNY — JÄTÄ HEIDÄT', police_help: 'MENE HEIDÄN LUOKSEEN',
   },
 };
 
@@ -86,6 +112,17 @@ function render() {
     news: renderNews,
   };
   root.innerHTML = (views[state.mode] ?? renderRoute)();
+
+  // DESIGN_AUTHORITY.md addendum 2026-08-28: real 3D, not just registered
+  // meshes, is one of the parity gaps this build owes Godot. Mounted here
+  // rather than inside renderBattle() because it needs the REAL <canvas>'s
+  // container already attached to the document (WebGL context creation
+  // reads its size), which is only true after innerHTML has landed.
+  if (state.mode === 'battle' && state.battle) {
+    mountBattleStage3D($('stage3dMount'), state.battle, data);
+  } else {
+    disposeBattleStage3D();
+  }
 }
 
 function mapPath(path) {
@@ -105,8 +142,60 @@ function mapBackground() {
     <path class="map-district" d="M358 496L729 356 842 566 753 823 424 742Z"/>
     <path class="map-district" d="M760 336L932 366 951 585 839 632 751 556Z"/>
     <path class="map-park" d="M415 482L540 464 571 575 440 598Z"/>
-    <path class="map-rail" d="M116 23C168 259 143 478 231 980"/>
   `;
+}
+
+/** flat [x0,y0,x1,y1,...] board points -> an SVG path `d`. */
+function flatPointsToPath(points) {
+  let d = '';
+  for (let i = 0; i < points.length; i += 2) d += `${i === 0 ? 'M' : 'L'} ${points[i]} ${points[i + 1]} `;
+  return d;
+}
+
+// Relative luminance off sRGB, same formula `Color.get_luminance()` uses in
+// Godot — so a chip's ink colour picks the same side of the line the real
+// game does, not a second contrast rule invented for this build.
+function luminance(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+  const lin = c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/**
+ * The real HSL tram/metro network — `map/kallio-transit-layer-v1.json`,
+ * ported from Godot's L2 (`TRANSIT_LAYERS.md` §3, §9.3; `city_map.gd`'s
+ * `_draw_public_transit()`): the same real GTFS geometry, real per-line
+ * colours and corridor fanning `map/tools/transit-layer.mjs` derives for
+ * BOTH builds, drawn here as a flat colour line over a hard dark keyline —
+ * no glow, because this build has no live layer for a glow to distinguish
+ * from. Independent of `data.map.edges` (still what `shortestPath()` plans
+ * a route over — no straight line is drawn for it any more, 2026-08-28:
+ * "you only use trams, metro, or go by foot on bigger actual streets") —
+ * this is the real network a Helsinki player recognises, not the
+ * click-to-travel graph.
+ */
+function transitLayerSvg() {
+  const services = data.transit?.services ?? [];
+  const lines = services.map(item => {
+    const d = flatPointsToPath(item.points);
+    const heavy = item.mode === 'metro';
+    const w = heavy ? 10 : 6;
+    return `
+      <path class="transit-keyline" d="${d}" stroke-width="${w + 3}"/>
+      <path class="transit-line" d="${d}" stroke="${item.colour}" stroke-width="${w}"/>`;
+  }).join('');
+  const chips = services.flatMap(item => item.chips.map(([x, y]) => {
+    const label = esc(item.service);
+    const h = 34, charW = 15;
+    const w = Math.max(h, label.length * charW + 16);
+    const ink = luminance(item.colour) > 0.45 ? '#16191b' : '#f0e9d8';
+    return `<g class="transit-chip">
+      <rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="${h / 2}" fill="${item.colour}"/>
+      <text class="transit-chip-text" x="${x}" y="${y}" fill="${ink}">${label}</text>
+    </g>`;
+  })).join('');
+  return `<g aria-hidden="true">${lines}${chips}</g>`;
 }
 
 function ordinaryFlowSvg() {
@@ -195,13 +284,15 @@ function renderRoute() {
   const selected = data.anchors.get(state.selectedAnchor) ?? data.anchors.get(slot.anchor_id);
   const draftPath = routeDraft.length === 2 ? shortestPath(data.map, routeDraft[0], routeDraft[1]) : routeDraft;
   const routePath = routePlanning ? draftPath : state.route?.path ?? [];
-  const edgeSvg = data.map.edges.map(edge => {
-    const a = data.anchors.get(edge.from)?.board;
-    const b = data.anchors.get(edge.to)?.board;
-    if (!a || !b) return '';
-    const mode = edge.modes.includes('metro') ? 'metro' : edge.modes.includes('tram') ? 'tram' : '';
-    return `<path class="map-edge ${mode}" d="M ${a.x} ${a.y} L ${b.x} ${b.y}"/>`;
-  }).join('');
+  // No straight bee-line edges drawn between every anchor pair any more
+  // (owner, 2026-08-28: "the direct map lines... don't make sense. you
+  // only use trams, metro, or go by foot on bigger actual streets") — the
+  // real tram/metro network is `transitLayerSvg()`; a straight schematic
+  // line ignoring the streets it claims to run along read as wrong the
+  // moment the real curved geometry was drawn right next to it.
+  // `data.map.edges` still exists and is still what `shortestPath()`
+  // plans over — only the always-on visual web of every connection is
+  // gone, not the underlying route graph.
   const routeSvg = routePath.length > 1 ? `<path class="map-route" d="${mapPath(routePath)}"/>` : '';
   const hiddenPips = (state.route?.hidden ?? 0) && !routePlanning
     ? `<circle class="map-hidden-flow" r="9"><animateMotion path="${mapPath(state.route.path)}" dur="3s" repeatCount="indefinite"/></circle>` : '';
@@ -225,7 +316,8 @@ function renderRoute() {
           <title id="mapTitle">Kallio operations map, north up</title>
           <desc id="mapDesc">Twelve accurate public anchors compressed into one relief map. The next encounter is at ${esc(data.anchors.get(slot.anchor_id)?.label)}.</desc>
           ${mapBackground()}
-          <g aria-hidden="true">${edgeSvg}${routeSvg}${ordinaryFlowSvg()}${hiddenPips}</g>
+          ${transitLayerSvg()}
+          <g aria-hidden="true">${routeSvg}${ordinaryFlowSvg()}${hiddenPips}</g>
           ${data.map.anchors.map(anchor => anchorSvg(anchor, anchor.id === slot.anchor_id, anchor.id === selected.id)).join('')}
         </svg>
       </section>
@@ -238,7 +330,9 @@ function renderRoute() {
           <div class="route-steps">${(selected.roles ?? []).map(role => `<span class="tag">${esc(cap(role))}</span>`).join('')}</div>
           <div class="node-actions">
             ${selected.id === slot.anchor_id ? `<button class="paper-button primary" data-action="open-encounter">${tr('enter')} · ${esc(nextEncounter?.id.replace('enc-', '').replaceAll('-', ' '))}</button>` : ''}
-            <button class="paper-button" data-action="plan-route">${routePlanning ? tr('clear') : tr('planning')}</button>
+            ${selected.sliceState === 'training'
+              ? `<button class="paper-button primary" data-action="start-training">${tr('start_training')}</button>`
+              : `<button class="paper-button" data-action="plan-route">${routePlanning ? tr('clear') : tr('planning')}</button>`}
           </div>
           ${routePlanning ? renderRoutePlanner(draftPath) : ''}
         </section>
@@ -265,6 +359,7 @@ function anchorDescription(anchor) {
     alppiharju: 'Visible north-western expansion, sealed during this slice.',
     vallila: 'Visible northern expansion, sealed during this slice.',
     sornainen_harbour: 'A distant industrial teaser at the old harbour edge.',
+    hermanni_skatepark: 'A test area, not a real destination — the crew never has business here. Fight the training set as often as you like; nothing carries back to the campaign.',
   };
   return descriptions[anchor.id] ?? 'A public map anchor. Fictional services inherit the area without claiming a real address.';
 }
@@ -308,7 +403,7 @@ function renderEncounter() {
   const anchorId = encounter.anchor_override_id ?? site?.anchorId ?? slot.anchor_id;
   const anchor = data.anchors.get(anchorId);
   const art = encounter.scene_asset_id ? assetUrl(data, encounter.scene_asset_id) : '';
-  const isToko = encounter.scene_asset_id === 'scene-toko-noodles-prototype-v01';
+  const isToko = encounter.scene_asset_id === 'scene-toko-noodles-prototype-v02';
   const resolved = state.choices[encounter.id];
   const choice = encounter.choices.find(item => item.id === resolved);
   const pendingBattle = state.battle?.status === 'active';
@@ -379,6 +474,91 @@ function renderEncounterOutcome(choice, pendingBattle) {
   </div>`;
 }
 
+/**
+ * THE BOARD — every active anchor, in the information you have about it.
+ *
+ * This is `market/model.mjs` on a screen for the first time. It sits UNDER the
+ * paper book rather than replacing it: the authored offers are leads somebody
+ * gave you, and this is what you read to decide whether the lead is worth the
+ * trip.
+ */
+/**
+ * THE CHAPTER — progress toward the authored operation ending
+ * (`chapter-1-piritori` → `op-sornainen-shipment`), ported from
+ * `chapter_goal_met()`/`attempt_chapter_ending()`. The threshold buys
+ * ENTRY to the climax; it is not the climax itself.
+ */
+function renderChapter() {
+  const def = data.content.chapters?.find(item => item.index === state.chapter);
+  if (!def) return '';
+  const ending = def.ending ?? {};
+  const anchor = data.anchors.get(ending.anchor_id);
+  const progress = chapterProgress(state);
+  if (state.chapterCleared) {
+    const outcomeCopy = {
+      clean: `The shipment got away clean.${ending.grants_upgrade ? ` ${esc(cap(ending.grants_upgrade))} is yours.` : ''}`,
+      messy: 'Something had to be left behind, but it got away.',
+      lost: 'Somebody did not come back.',
+    };
+    return `<section class="paper-panel">
+      <p class="section-label">CHAPTER ${state.chapter}${def.label ? ` / ${esc(def.label.toUpperCase())}` : ''}</p>
+      <h2 class="section-title">${esc((ending.label ?? 'THE OPERATION').toUpperCase())} — ${esc(state.lastEndingOutcome.toUpperCase())}</h2>
+      <p>${esc(outcomeCopy[state.lastEndingOutcome] ?? '')}</p>
+    </section>`;
+  }
+  const goalMet = chapterGoalMet(state);
+  const atAnchor = Boolean(ending.anchor_id) && state.selectedAnchor === ending.anchor_id;
+  const canAfford = state.cash >= (ending.stake_eur ?? 0);
+  const fmt = value => state.chapterGoal === 'money' ? money(value) : String(value);
+  return `<section class="paper-panel">
+    <p class="section-label">CHAPTER ${state.chapter}${def.label ? ` / ${esc(def.label.toUpperCase())}` : ''}</p>
+    <h2 class="section-title">${esc(cap(state.chapterGoal))} · ${fmt(progress)} / ${fmt(state.chapterThreshold)}</h2>
+    ${goalMet
+      ? `<p>${esc(ending.brief ?? '')}</p>
+         <button class="paper-button primary" data-action="attempt-chapter-ending" ${atAnchor && canAfford ? '' : 'disabled'}>
+           ATTEMPT ${esc((ending.label ?? 'THE OPERATION').toUpperCase())} · ${money(ending.stake_eur ?? 0)}
+         </button>
+         ${!atAnchor ? `<p class="consequence-strip">Stand at ${esc(anchor?.label ?? 'the site')} to attempt it.</p>` : ''}
+         ${atAnchor && !canAfford ? '<p class="consequence-strip">Not enough cash on hand for the stake.</p>' : ''}`
+      : '<p class="consequence-strip">Earned by fencing loot at Piritori — market sales and mission payouts do not count.</p>'}
+  </section>`;
+}
+
+function renderBoard() {
+  const { clock, rows } = board(state, data);
+  const eye = exposureHere(state, data);
+  const known = rows.filter(row => row.shown.level !== INFO.NONE);
+
+  const priceCell = row => {
+    const s = row.shown;
+    if (s.level === INFO.NONE) return '<span class="dim">never been</span>';
+    if (s.level === INFO.QUOTE) return `${money(s.buy)} <span class="dim">/</span> ${money(s.sell)}`;
+    if (s.level === INFO.RANGE) return `${money(s.lowBuy)}–${money(s.highBuy)}<br><span class="dim">${money(s.lowSell)}–${money(s.highSell)}</span>`;
+    return `<span class="dim">${esc(s.text ?? 'a rumour, no more')}</span>`;
+  };
+
+  return `<section class="paper-panel">
+    <p class="section-label">THE BOARD · DAY ${clock.day} · ${clock.block.toUpperCase()}</p>
+    <h2 class="section-title">WHAT YOU KNOW</h2>
+    <p class="consequence-strip">A quote is exact for the block you took it in, a range for four,
+      a rumour for twelve, then nothing. Standing somewhere is how you learn its price.</p>
+    <table class="offer-table board-table">
+      <thead><tr><th>PLACE</th><th>BUY / SELL</th><th>WHY</th><th>KNOWN</th></tr></thead>
+      <tbody>${rows.map(row => `<tr class="${row.here ? 'board-here' : ''}${row.shown.level === INFO.NONE ? ' board-dark' : ''}">
+        <td><b>${esc(row.label)}</b>${row.here ? ' <span class="board-tag">HERE</span>' : ''}</td>
+        <td class="quote">${priceCell(row)}</td>
+        <td><span class="dim">${esc(row.shown.level === INFO.NONE ? '—' : (row.shown.causeText ?? row.shown.cause ?? 'ordinary'))}</span></td>
+        <td><span class="dim">${row.visited ? `${row.age} block${row.age === 1 ? '' : 's'} ago` : '—'}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>
+    ${known.length === 0
+      ? '<p class="consequence-strip">You have not stood anywhere long enough to know a price. Go somewhere.</p>'
+      : ''}
+    ${eye ? `<p class="board-exposure"><span class="dim">STANDING HERE READS AS</span>
+      <b>${esc(String(eye.band).toUpperCase())}</b> — ${esc(eye.causeText ?? eye.cause)}</p>` : ''}
+  </section>`;
+}
+
 function renderLedger() {
   const visibleOffers = data.content.market_offers.filter(offer => state.revealedOffers.includes(offer.id));
   const critical = Object.values(state.crewStatus).filter(item => item.critical).length;
@@ -409,16 +589,22 @@ function renderLedger() {
           </table>
           <p class="consequence-strip">The slice trades one abstract good. No dosage, preparation, concealment or consumption detail is simulated.</p>
         </section>
+        ${renderChapter()}
+        ${renderBoard()}
         <section class="paper-panel">
           <p class="section-label">CREW / FRONT THREE DEPLOY AUTOMATICALLY</p>
-          <div class="crew-grid">${data.content.crew.map(renderCrewCard).join('')}</div>
+          <div class="crew-grid">${[...data.content.crew, ...Object.values(state.hiredCrew)].map(renderCrewCard).join('')}</div>
         </section>
+        ${renderHiringPool()}
       </div>
       <aside class="ledger-side">
         <section class="paper-panel">
           <p class="section-label">EQUIPMENT</p>
           <h2 class="section-title">WHAT CAN BE HELD</h2>
-          <div class="equipment-list">${state.equipment.map(renderEquipment).join('')}</div>
+          <div class="equipment-list">${state.equipment.map((item, index) => renderEquipment(item, index)).join('')}</div>
+          ${canFenceHere(state)
+            ? '<p class="consequence-strip">Fencing pays best on the best condition, worst on broken. Loot converts down into money — never the other way.</p>'
+            : '<p class="consequence-strip">Nothing fences from here. Piritori is the only corner buying.</p>'}
         </section>
         <section class="paper-panel">
           <p class="section-label">OBLIGATIONS</p>
@@ -440,6 +626,10 @@ function renderLedger() {
 function renderCrewCard(member) {
   const hired = state.recruited.includes(member.id) || state.temporaryCrew.includes(member.id);
   const status = state.crewStatus[member.id];
+  // Authored crew carry a one-line `strength`; a generated hire
+  // (`people/hiring.mjs`) has no such field and leans on its first
+  // rolled trait instead — both read as one line of flavour under the role.
+  const flavor = member.strength ?? member.traits?.[0]?.text ?? '';
   return `<article class="crew-card ${hired ? '' : 'not-hired'}">
     <div class="crew-portrait" aria-hidden="true">
       <img class="legs" src="${assetUrl(data, member.legs_asset_id)}" alt="">
@@ -447,52 +637,115 @@ function renderCrewCard(member) {
       <img class="head" src="${assetUrl(data, member.portrait_asset_id)}" alt="">
     </div>
     <div>
-      <h3>${esc(member.name)}</h3>
-      <p>${esc(cap(member.role))} · ${hired ? esc(status.status.toUpperCase()) : 'NOT RECRUITED'}</p>
-      <p>${esc(member.strength)}</p>
+      <h3>${esc(member.name)}${member.nick ? ` <span class="dim">"${esc(member.nick)}"</span>` : ''}</h3>
+      <p>${esc(cap(member.role))} · ${hired ? esc(status.status.toUpperCase())
+        : state.arrestedCrew.includes(member.id) ? 'ARRESTED'
+        : state.retiredCrew.includes(member.id) ? 'RETIRED'
+        : 'NOT RECRUITED'}</p>
+      <p>${esc(flavor)}</p>
       <div class="status-dots" aria-label="${status.condition} condition">${Array.from({ length: Math.min(8, status.maxCondition) }, (_, index) => `<i class="${index < status.condition ? 'on' : ''}"></i>`).join('')}</div>
+      ${hired && careerIsVisible(state, data, member.id)
+        ? `<span class="tag warning">${careerLeft(state, data, member.id)} FIGHT${careerLeft(state, data, member.id) === 1 ? '' : 'S'} LEFT</span>` : ''}
     </div>
   </article>`;
 }
 
-function renderEquipment(id) {
-  const equipment = data.equipment.get(id);
+/** Today's street offer (`state.hiringPoolFor`) — regenerated on demand
+ *  from the campaign seed and the day, so it is not stored and cannot
+ *  drift out of sync with the day (`GameState.gd`'s `hiring_pool()`). */
+function renderHiringPool() {
+  const pool = hiringPoolFor(state, data);
+  if (pool.length === 0) return '';
+  return `<section class="paper-panel">
+    <p class="section-label">HIRE / TODAY'S CANDIDATES</p>
+    <p class="consequence-strip">The signing fee is a candidate's own nightly wage, taken once, up front. Nobody stays for free after that.</p>
+    <div class="crew-grid">${pool.map(renderHireCandidate).join('')}</div>
+  </section>`;
+}
+
+function renderHireCandidate(candidate) {
+  const affordable = state.cash >= candidate.wage_eur;
+  const flavor = candidate.traits?.[0]?.text ?? '';
+  return `<article class="crew-card not-hired">
+    <div class="crew-portrait" aria-hidden="true">
+      <img class="legs" src="${assetUrl(data, candidate.legs_asset_id)}" alt="">
+      <img class="torso" src="${assetUrl(data, candidate.torso_asset_id)}" alt="">
+      <img class="head" src="${assetUrl(data, candidate.portrait_asset_id)}" alt="">
+    </div>
+    <div>
+      <h3>${esc(candidate.name)}${candidate.nick ? ` <span class="dim">"${esc(candidate.nick)}"</span>` : ''}</h3>
+      <p>${esc(cap(candidate.role))} · AGE ${candidate.age}</p>
+      <p>${esc(flavor)}</p>
+      <p><span class="dim">SIGNING FEE</span> <b>${money(candidate.wage_eur)}</b> · <span class="dim">THEN</span> ${money(candidate.wage_eur)}/night</p>
+      <button class="paper-button" data-action="hire-from-pool" data-candidate="${esc(candidate.id)}" ${affordable ? '' : 'disabled'}>${affordable ? 'HIRE' : 'CANNOT AFFORD'}</button>
+    </div>
+  </article>`;
+}
+
+function renderEquipment(item, index) {
+  const equipment = data.equipment.get(item.id);
   const artId = equipment?.asset_id;
+  const canFence = canFenceHere(state);
   return `<div class="equipment-chip">
     ${artId ? `<img src="${assetUrl(data, artId)}" alt="">` : '<span aria-hidden="true">◇</span>'}
-    <span>${esc(cap(id))}<br><span class="dim">${esc(equipment?.hold ?? 'personal')}</span></span>
+    <span>${esc(cap(item.id))}<br><span class="dim">${esc(conditionWord(item.cond))}${equipment?.hold ? ` · ${esc(equipment.hold)}` : ''}</span></span>
+    ${canFence
+      ? `<button class="paper-button" data-action="sell-loot" data-equipment="${esc(item.id)}">FENCE · ${money(resaleAt(state, data, index))}</button>`
+      : ''}
   </div>`;
 }
 
-function cellPosition(side, cell) {
-  const [rowName, laneText] = cell.split('-');
-  const row = ['front', 'middle', 'back'].indexOf(rowName);
-  const lane = Number(laneText) - 2;
-  const x = side === 'player' ? 43 - row * 10 + lane * 2.6 : 57 + row * 10 + lane * 2.6;
-  const y = 59 + lane * 13 + row * 2.5;
+/**
+ * Slot -> screen percentage. One unified board now (grid.js: a lane/depth
+ * pair, not a per-side layout) — depth runs vertically, player's own back
+ * row nearest the bottom of the stage and the opposition's back row
+ * nearest the top, lane spread evenly across the width. Independent of
+ * `worldFor()` in render3d.js (same slot vocabulary, a different, 3D
+ * output space) — see that file's note on why the two do not share units.
+ */
+function cellPosition(cell) {
+  const { lane, depth } = parseSlotKey(cell);
+  const x = 8 + (lane / (LANES - 1)) * 84;
+  const y = 88 - (depth / (totalRows() - 1)) * 76;
   return { x, y };
 }
 
-function renderFormationCells(battle, side) {
-  const valid = battle.action === 'move' && side === 'player' ? new Set(validMoveCells(battle)) : new Set();
-  const occupied = new Set((side === 'player' ? battle.players : battle.enemies).filter(unit => unit.alive).map(unit => unit.cell));
-  const cover = new Set(battle.cover.flatMap(item => item.cells));
-  return ['front', 'middle', 'back'].flatMap(row => [1, 2, 3].map(lane => {
-    const cell = `${row}-${lane}`;
-    const pos = cellPosition(side, cell);
-    const isValid = valid.has(cell) && !occupied.has(cell);
-    return `<button type="button" class="formation-cell ${isValid ? 'valid' : ''} ${cover.has(cell) ? 'cover' : ''}"
-      style="left:${pos.x}%;top:${pos.y}%" data-action="${isValid ? 'move-cell' : ''}" data-cell="${cell}"
-      aria-label="${side} ${row} lane ${lane}${cover.has(cell) ? ', cover' : ''}" ${isValid ? '' : 'disabled'}></button>`;
-  })).join('');
+/** A depth's row label, along the stage's left edge — the unified board
+ *  runs depth vertically now, so "front"/"back" is one label per depth
+ *  rather than one per side-and-row. */
+function rowLabel(text, depth) {
+  const y = 88 - (depth / (totalRows() - 1)) * 76;
+  return `<span class="row-label" style="left:4%;top:${y}%">${text}</span>`;
+}
+
+function renderFormationCells(battle) {
+  const valid = battle.action === 'move' ? new Set(validMoveCells(battle)) : new Set();
+  const occupied = new Set(battle.players.concat(battle.enemies).filter(unit => unit.alive).map(unit => unit.cell));
+  const cover = battle.cover; // Map: slotKey -> { propId, effect, ... }
+  const cells = [];
+  for (let lane = 0; lane < LANES; lane += 1) {
+    for (let depth = 0; depth < totalRows(); depth += 1) {
+      const cell = slotKey(lane, depth);
+      const pos = cellPosition(cell);
+      const isValid = valid.has(cell) && !occupied.has(cell);
+      const isCover = cover.has(cell);
+      cells.push(`<button type="button" class="formation-cell ${isValid ? 'valid' : ''} ${isCover ? 'cover' : ''}"
+        style="left:${pos.x}%;top:${pos.y}%" data-action="${isValid ? 'move-cell' : ''}" data-cell="${cell}"
+        aria-label="${esc(describeSlot(lane, depth))}${isCover ? ', cover' : ''}" ${isValid ? '' : 'disabled'}></button>`);
+    }
+  }
+  return cells.join('');
 }
 
 function renderUnit(unit, battle) {
-  const pos = cellPosition(unit.side, unit.cell);
+  const pos = cellPosition(unit.cell);
   const selected = unit.id === battle.selectedId && unit.side === 'player';
+  // Police (COMBAT.md §9.5) are a third side: on the board, never anybody's
+  // enemy yet — see attackTargets() in battle.js — so they are never a
+  // valid attack target regardless of the current action.
   const targetable = unit.side === 'enemy' && battle.action === 'attack';
   const disabled = unit.side === 'player' ? battle.acted.includes(unit.id) || battle.phase !== 'player' : !targetable;
-  return `<button type="button" class="unit-token ${unit.side === 'enemy' ? 'enemy' : ''} ${selected ? 'selected' : ''} ${targetable ? 'intent' : ''} ${unit.alive ? '' : 'down'}"
+  return `<button type="button" class="unit-token ${unit.side === 'enemy' ? 'enemy' : ''} ${unit.side === 'police' ? 'police' : ''} ${selected ? 'selected' : ''} ${targetable ? 'intent' : ''} ${unit.alive ? '' : 'down'}"
     style="left:${pos.x}%;top:${pos.y}%" data-action="${unit.side === 'player' ? 'select-unit' : 'target-unit'}" data-unit="${esc(unit.id)}"
     aria-label="${esc(unit.name)}, ${unit.role}, condition ${unit.hp}, guard ${unit.guard}" ${disabled ? 'disabled' : ''}>
     <span class="unit-body">
@@ -502,6 +755,27 @@ function renderUnit(unit, battle) {
     </span>
     <span class="unit-label">${esc(unit.name.split(' ')[0])}<br><b>${unit.hp}♥ · ${unit.guard}◇ · ${unit.nerve}!</b></span>
   </button>`;
+}
+
+/**
+ * COMBAT.md §9.5.2, ported from `formation_battle.gd`'s `_build_police_
+ * choice()`: "the police are here and nobody has answered them... outranks
+ * everything else on the console" — takes the whole action panel rather
+ * than sitting under the ordinary attack/brace/reposition buttons, and
+ * ENGAGE is not offered at all (Godot refuses it too — fighting the
+ * police is a third combat side neither build has).
+ */
+function renderPoliceChoice(battle) {
+  const down = injuredPlayers(battle).length;
+  return `
+    <div class="paper-panel police-choice">
+      <h2 class="section-title">${tr('police_here')}</h2>
+      <p>${down} ${down === 1 ? tr('police_one_down') : tr('police_many_down')}</p>
+      <div class="node-actions">
+        <button class="paper-button danger" data-action="police-posture" data-posture="${POLICE_POSTURE.BACK_OFF}">${tr('police_back_off')}</button>
+        <button class="paper-button primary" data-action="police-posture" data-posture="${POLICE_POSTURE.HELP_FRIENDS}">${tr('police_help')}</button>
+      </div>
+    </div>`;
 }
 
 function renderBattle() {
@@ -523,14 +797,14 @@ function renderBattle() {
       <section class="battle-stage" aria-label="${esc(battle.format)} isometric formation battle">
         <img class="scene-image" src="${scene}" alt="">
         <img class="weather-layer front" src="${assetUrl(data, 'weather-rain-fine-v01')}" alt="">
+        <div class="stage3d-mount" id="stage3dMount" aria-hidden="true"></div>
         <p class="battle-objective"><b>${tr('objective')} · ${esc(battle.format)}</b><br>${esc(battle.objective)}</p>
-        <span class="row-label" style="left:19%;top:87%">BACK</span>
-        <span class="row-label" style="left:39%;top:87%">FRONT</span>
-        <span class="row-label" style="right:39%;top:87%">FRONT</span>
-        <span class="row-label" style="right:19%;top:87%">BACK</span>
-        ${renderFormationCells(battle, 'player')}
-        ${renderFormationCells(battle, 'enemy')}
-        ${battle.players.concat(battle.enemies).map(item => renderUnit(item, battle)).join('')}
+        ${rowLabel('BACK', depthOf(ROWS - 1, true))}
+        ${rowLabel('FRONT', depthOf(0, true))}
+        ${rowLabel('FRONT', depthOf(0, false))}
+        ${rowLabel('BACK', depthOf(ROWS - 1, false))}
+        ${renderFormationCells(battle)}
+        ${battle.players.concat(battle.enemies, battle.police ?? []).map(item => renderUnit(item, battle)).join('')}
       </section>
       <section class="battle-console">
         <div class="paper-panel active-unit">
@@ -541,18 +815,24 @@ function renderBattle() {
             <div class="track-row"><span>CONDITION</span><span class="track danger">${Array.from({ length: unit.maxHp }, (_, i) => `<i class="${i < unit.hp ? 'on' : ''}"></i>`).join('')}</span></div>
             <div class="track-row"><span>GUARD</span><span class="track">${Array.from({ length: 3 }, (_, i) => `<i class="${i < unit.guard ? 'on' : ''}"></i>`).join('')}</span></div>
             <div class="track-row"><span>NERVE</span><span class="track">${Array.from({ length: 3 }, (_, i) => `<i class="${i < unit.nerve ? 'on' : ''}"></i>`).join('')}</span></div>` : ''}
+          ${battle.status === 'active' ? `
+            <p class="section-label stance-label">${tr('stance')}</p>
+            <div class="stance-row">
+              ${STANCES.map(s => `<button class="paper-button ${battle.stance === s ? 'cyan' : ''}" data-action="select-stance" data-stance="${s}">${tr(`stance_${s}`)}</button>`).join('')}
+            </div>` : ''}
         </div>
         <div class="paper-panel battle-log" aria-live="polite">${battle.log.slice(0, 7).map(item => `<p>${esc(item)}</p>`).join('')}</div>
-        ${battle.status === 'active' ? `
+        ${battle.status === 'active' ? (policeAwaitingPosture(battle) ? renderPoliceChoice(battle) : `
           <div class="paper-panel battle-actions">
             <button class="paper-button ${battle.action === 'attack' ? 'cyan' : ''}" data-action="battle-action" data-battle-action="attack" ${unit ? '' : 'disabled'}>${tr('attack')}</button>
             <button class="paper-button ${battle.action === 'move' ? 'cyan' : ''}" data-action="battle-action" data-battle-action="move" ${unit ? '' : 'disabled'}>${tr('move')}</button>
             <button class="paper-button" data-action="brace" ${unit ? '' : 'disabled'}>${tr('brace')}</button>
+            ${(unit?.itemIds ?? []).map(itemId => `<button class="paper-button" data-action="use-item" data-item="${esc(itemId)}">${tr('use_item')} · ${esc(cap(itemId))}</button>`).join('')}
             <button class="paper-button" data-action="auto">${tr('auto')}</button>
             <button class="paper-button" data-action="end-turn">${tr('end')}</button>
             <button class="paper-button" data-action="negotiate" ${negotiationReady ? '' : 'disabled'}>${tr('negotiate')}</button>
             <button class="paper-button danger wide" data-action="withdraw">${tr('withdraw')} · ${esc(battle.withdrawal.known_cost)}</button>
-          </div>` : `
+          </div>`) : `
           <div class="paper-panel battle-result">
             <h2>${esc(cap(battle.result))}</h2>
             <p>The battle ends here. Wounds, pressure and money return to the same campaign state.</p>
@@ -615,6 +895,7 @@ function renderCampaignEnd() {
 
 function openEncounter() {
   const slot = currentSchedule(state, data.content);
+  markSeen(state, slot?.anchor_id);
   if (slot?.news_before && !state.newsSeen.includes(slot.news_before)) {
     state.newsReturnMode = 'encounter';
     state.mode = 'news';
@@ -630,7 +911,7 @@ function startBattle(id) {
   const definition = data.battles.get(id);
   const crew = deployedCrew(state, data);
   try {
-    state.battle = createBattleState(definition, crew, state);
+    state.battle = createBattleState(definition, crew, state, data);
     state.mode = 'battle';
   } catch (error) {
     logToast(error.message);
@@ -642,22 +923,62 @@ function startBattle(id) {
 function recordBattleConsequences() {
   const battle = state.battle;
   if (!battle || battle.status !== 'resolved') return;
-  applyEffects(state, resultEffects(battle, data), data, `battle:${battle.id}:${battle.result}`);
-  for (const id of injuredPlayers(battle)) {
-    const status = state.crewStatus[id];
-    status.condition = Math.max(0, status.condition - 4);
-    if (battle.id === 'battle-courtyard-3v3') {
-      status.status = 'critical';
-      status.critical = true;
-    } else {
-      status.status = 'wounded';
-      status.condition = Math.max(1, status.condition);
+  // A training battle (content's own `training: true` field, "no cost —
+  // this is a test area") is not allowed to cost anything real: no mission
+  // effects (already guaranteed — `resultEffects()` returns [] when
+  // `missionId` is null), no permanent crew condition loss, and no
+  // campaign-clock advance. Without this a "test area" would quietly
+  // punish the very thing it exists to let you do safely.
+  if (!battle.training) {
+    // COMBAT.md §8: gear is carried by a person, so it comes off the
+    // fallen. `_settle_loot()`'s order — the player's own downed crew's
+    // weapons are always attempted lost, win or not; only a real win
+    // loots the losing side's dead. `takeLoot` returns [] if nothing
+    // qualified, so the toast is silent on an empty haul.
+    loseKitOf(state, droppedKit(battle, data, 'player'));
+    if (battle.result === 'win') {
+      const spoils = takeLoot(state, data, droppedKit(battle, data, 'enemy'));
+      if (spoils.length) logToast(`Took: ${spoils.map(cap).join(', ')}.`);
     }
+    applyEffects(state, resultEffects(battle, data), data, `battle:${battle.id}:${battle.result}`);
+    // COMBAT.md §9.5.3: the police's default posture is subdue, and its
+    // bite is on the fallen — a downed crew member the police take is not
+    // merely hurt, they are gone. `taken` can also name a STANDING crew
+    // member who went back for a fallen ally and paid for it (§9.5.2's
+    // rescue trade) — arrested without ever being wounded in the fight.
+    const taken = new Set(takenByPolice(battle));
+    const injured = new Set(injuredPlayers(battle));
+    for (const id of injured) {
+      const status = state.crewStatus[id];
+      if (taken.has(id)) { status.status = 'missing'; continue; }
+      status.condition = Math.max(0, status.condition - 4);
+      if (battle.id === 'battle-courtyard-3v3') {
+        status.status = 'critical';
+        status.critical = true;
+      } else {
+        status.status = 'wounded';
+        status.condition = Math.max(1, status.condition);
+      }
+    }
+    for (const id of taken) {
+      if (injured.has(id) || !state.crewStatus[id]) continue;
+      state.crewStatus[id].status = 'missing';
+    }
+    // §9.5.3: they are gone — `arrest()`'s real consequence, not just a
+    // status label. Off the active roster (`crewRecord()` still resolves
+    // them for logs and history; `state.crewStatus` keeps 'missing' for
+    // what a card would show if one still pointed at them).
+    for (const id of taken) arrestCrew(state, data, id);
+    // A fight is where a career is spent (COMBAT.md §7.2) — after the
+    // police have taken whoever they took, so an already-gone crew member
+    // does not also come out of it one fight older for nothing.
+    const retired = ageCrew(state, data, battle.players.map(p => p.id));
+    for (const id of retired) logToast(`${crewRecord(state, data, id)?.name ?? id} retires after this one.`);
   }
   state.battleHistory.push({ id: battle.id, result: battle.result, round: battle.round });
   state.battle = null;
   state.battleOpeningNerve = 0;
-  advanceSchedule(state, data);
+  if (!battle.training) advanceSchedule(state, data);
   state.mode = 'route';
 }
 
@@ -668,6 +989,9 @@ function handleRootClick(event) {
   if (action === 'select-anchor') {
     const id = target.dataset.anchor;
     state.selectedAnchor = id;
+    // Standing somewhere is how you learn its price (board.js). Without this
+    // line the board is permanently blank and looks broken rather than unearned.
+    markSeen(state, id);
     if (routePlanning) {
       const anchor = data.anchors.get(id);
       if (['locked', 'teaser'].includes(anchor?.sliceState)) {
@@ -677,7 +1001,10 @@ function handleRootClick(event) {
     }
     persist(); render();
   } else if (action === 'open-encounter') openEncounter();
-  else if (action === 'plan-route') {
+  else if (action === 'start-training') {
+    if (!startBattle('battle-hermanni-training')) { render(); return; }
+    persist(); render();
+  } else if (action === 'plan-route') {
     routePlanning = !routePlanning;
     routeDraft = routePlanning ? [state.selectedAnchor] : [];
     render();
@@ -709,7 +1036,26 @@ function handleRootClick(event) {
   } else if (action === 'trade') {
     const offer = data.offers.get(target.dataset.offer);
     const result = transactOffer(state, offer);
+    // Your own footprint at that place, which is the ONE side of the book
+    // saturation moves (MARKET.md §7). Selling into a small market lowers what
+    // it pays you without also making it cheap to buy back.
+    if (result?.ok !== false) {
+      addFootprint(state, offer.anchor_id, offer.side === 'sell' ? 1 : -1);
+      markSeen(state, offer.anchor_id);
+    }
     logToast(result.message); persist(); render();
+  } else if (action === 'sell-loot') {
+    const paid = sellLoot(state, data, target.dataset.equipment);
+    logToast(paid > 0 ? `Fenced for ${money(paid)}.` : 'Nothing there to fence.');
+    persist(); render();
+  } else if (action === 'attempt-chapter-ending') {
+    const reason = attemptChapterEnding(state, data);
+    if (reason) logToast({ 'not-available': 'Not ready yet.', 'cannot-afford': 'Not enough cash for the stake.', 'wrong-place': 'Wrong place for this.' }[reason] ?? reason);
+    persist(); render();
+  } else if (action === 'hire-from-pool') {
+    const ok = hireFromPool(state, data, target.dataset.candidate);
+    logToast(ok ? 'Hired on.' : 'Cannot hire — not enough cash, or already on the roster.');
+    persist(); render();
   } else if (action === 'select-unit') {
     selectUnit(state.battle, target.dataset.unit); persist(); render();
   } else if (action === 'battle-action') {
@@ -723,12 +1069,19 @@ function handleRootClick(event) {
   } else if (action === 'brace') {
     selectAction(state.battle, 'brace'); const result = brace(state.battle);
     if (!result.ok) logToast(result.message); persist(); render();
+  } else if (action === 'use-item') {
+    selectAction(state.battle, 'item'); const result = useItem(state.battle, target.dataset.item);
+    if (!result.ok) logToast(result.message); persist(); render();
   } else if (action === 'end-turn') {
     endPlayerPhase(state.battle); persist(); render();
   } else if (action === 'auto') {
     autoCommand(state.battle); persist(); render();
+  } else if (action === 'select-stance') {
+    selectStance(state.battle, target.dataset.stance); persist(); render();
   } else if (action === 'withdraw') {
     withdrawBattle(state.battle); persist(); render();
+  } else if (action === 'police-posture') {
+    choosePolicePosture(state.battle, target.dataset.posture); persist(); render();
   } else if (action === 'negotiate') {
     if (!negotiateBattle(state.battle)) logToast('The opposing formation is not ready to talk.');
     persist(); render();
@@ -771,6 +1124,7 @@ function resetCampaign() {
 
 async function boot() {
   try {
+    bootChrome(); // the same torn-carton material as godot/ui/chrome.gd — before first render, or the flat CSS fallback flashes
     data = await loadGameData();
     const hasSave = Boolean(localStorage.getItem(SAVE_KEY));
     state = loadState(data.content);
@@ -807,6 +1161,77 @@ async function boot() {
         target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       }
     });
+    // ── the pause menu, and the jumps THINGS TO TEST depends on ──────────
+    //
+    // Every jump puts the app into a state a player would have to earn. They
+    // are deliberately written here rather than inside the menu: the menu
+    // should not know how this game changes mode, or it becomes the thing that
+    // breaks when the game does.
+    function jumpTo(target) {
+      if (!target) return;
+      if (target.kind === 'encounter') {
+        // Walk the schedule to the block this encounter belongs to, so the
+        // screen arrives with the state around it rather than out of context —
+        // a conversation with the wrong day on the clock is not the screen.
+        const index = data.content.schedule.findIndex(slot => slot.encounter_id === target.id);
+        if (index >= 0) state.scheduleIndex = index;
+        state.mode = 'encounter';
+        observation = '';
+      } else if (target.kind === 'battle') {
+        // A jump must not depend on how far the campaign has been played.
+        // startBattle throws if fewer than player_deployed are recruited, and
+        // on a fresh campaign that is everyone — the jump found this itself
+        // the first time it was driven rather than read from the code.
+        const def = data.battles.get(target.id);
+        const need = def?.player_deployed ?? 2;
+        for (const crew of data.content.crew) {
+          if (state.recruited.length >= need) break;
+          if (!state.recruited.includes(crew.id)) state.recruited.push(crew.id);
+        }
+        if (!startBattle(target.id)) return;
+      } else if (target.kind === 'news') {
+        state.newsSeen = state.newsSeen.filter(id => id !== target.id);
+        state.newsReturnMode = 'route';
+        state.mode = 'news';
+      } else if (target.kind === 'ending') {
+        state.scheduleIndex = data.content.schedule.length;
+        state.mode = 'route';
+      } else if (target.kind === 'ledger') {
+        state.mode = 'ledger';
+      } else if (target.kind === 'day') {
+        const index = data.content.schedule.findIndex(slot => slot.day === target.day);
+        if (index >= 0) state.scheduleIndex = index;
+        state.mode = 'route';
+      }
+      persist();
+      render();
+      $('modeRoot').focus();
+    }
+
+    // You are STANDING at the opening anchor, and at whatever each scheduled
+    // block puts you in front of. Without seeding those the board opens
+    // completely blank, which reads as broken rather than as unearned.
+    markSeen(state, state.selectedAnchor);
+    for (let i = 0; i <= state.scheduleIndex; i++) {
+      const slot = data.content.schedule[i];
+      if (slot?.anchor_id) { const keep = state.scheduleIndex; state.scheduleIndex = i; markSeen(state, slot.anchor_id); state.scheduleIndex = keep; }
+    }
+
+    const pause = createPauseMenu({
+      root: $('pause'),
+      version: 'v4.1',
+      jump: jumpTo,
+    });
+    $('pauseButton').addEventListener('click', () => pause.toggle());
+    // Esc pauses from anywhere. The menu handles Esc itself once it is open,
+    // where it backs out one level instead of closing.
+    window.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || pause.isOpen) return;
+      if ($('splash').hidden === false) return;
+      event.preventDefault();
+      pause.open();
+    });
+
     render();
     window.__ptv3 = {
       get data() { return data; },
@@ -816,6 +1241,8 @@ async function boot() {
         startBattle(id) { startBattle(id); persist(); render(); },
         openEncounter,
         render,
+        jumpTo,
+        pause,
       },
     };
   } catch (error) {
