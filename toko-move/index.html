@@ -3,30 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#f4f1e8">
-<meta name="description" content="Toko Move — timed courier jobs across Central Helsinki using the city network and your own lines.">
+<meta name="theme-color" content="#eef2ee">
+<meta name="description" content="Toko Move — cargo runs across Central Helsinki using the city network and your own lines.">
 <title>Toko Move</title>
 <style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  :root { --paper:#f4f1e8; --panel:#fffdf7; --rule:#d8d3c6; --ink:#20272e; --dim:#5d6a72; --sky:#2f9fb8; --mint:#5aa860; --coral:#e2683c; --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
-  html,body{height:100%;background:var(--paper);overflow:hidden} body{font-family:var(--mono);color:var(--ink);font-size:14px;line-height:1.45;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-  #hud{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:46px 10px 6px;border-bottom:1px solid var(--rule);font-size:12px;color:var(--dim);flex:none} #hud b{color:var(--ink);font-weight:normal} #hud .a b{color:var(--mint)} #hud .e b{color:var(--coral)} #hud .sp{margin-left:auto;display:flex;gap:6px;align-items:center}
-  .ctl{min-width:44px;min-height:44px;font:inherit;font-size:13px;background:var(--panel);color:var(--ink);border:1px solid var(--rule);cursor:pointer} #map{flex:0 0 auto;width:100%;max-height:56vh;display:block;touch-action:none} #feed{flex:none;padding:4px 10px;font-size:11.5px;color:var(--dim);max-height:3.6em;overflow:hidden} #feed div{border-top:1px dashed var(--rule);padding:1px 0}
-  #sheet{flex:1 1 auto;min-height:0;border-top:1px solid var(--rule);background:var(--panel);padding:8px 10px 10px;overflow-y:auto} #sheet h2{font-size:15px;color:var(--sky)} #sheet .hint{color:var(--dim);font-size:12px}
-  #pop{position:fixed;z-index:30;background:var(--panel);border:1px solid var(--rule);padding:10px 12px;box-shadow:0 6px 24px rgba(40,50,60,.25);font-size:12.5px} #pop h3{font-size:13.5px;color:var(--sky);padding-right:40px} #pop p{margin-top:6px} #pop .dim{color:var(--dim)} #pop .x{position:absolute;top:0;right:0;min-width:44px;min-height:44px;background:none;border:0;color:var(--dim);font:inherit;font-size:16px;cursor:pointer}
-  .veil{position:fixed;inset:0;z-index:40;background:rgba(244,241,232,.94);display:flex;align-items:center;justify-content:center;padding:16px}.veil[hidden]{display:none}.card{max-width:460px;width:100%;max-height:88vh;overflow-y:auto;background:var(--panel);border:1px solid var(--rule);padding:20px 18px}.card h1{font-size:22px;color:var(--sky);letter-spacing:.05em}.card h2{font-size:16px;color:var(--sky)}.card p{margin-top:10px;font-size:13.5px}.card p.dim{color:var(--dim);font-size:12.5px}.card b{color:var(--mint)}
-  .btn{min-height:44px;min-width:62px;font:inherit;font-size:13px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);cursor:pointer}.btn.wide{width:100%;margin:6px 0 0}.btn.prime{background:var(--sky);color:var(--panel);border-color:var(--sky)}
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{--paper:#eef2ee;--panel:#fffdf7;--rule:#c9d1cc;--ink:#17262a;--dim:#647176;--sky:#2f9fb8;--mint:#5aa860;--coral:#e2683c;--navy:#233d4d;--mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+  html,body{height:100%;background:linear-gradient(#e7f0ef,#f4f1e8 38%,#eef2ee);overflow:hidden}
+  body{font-family:var(--mono);color:var(--ink);font-size:14px;line-height:1.45;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  #hud{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:46px 10px 7px;border-bottom:1px solid var(--rule);font-size:11.5px;color:var(--dim);flex:none;background:rgba(255,253,247,.92);backdrop-filter:blur(6px)}
+  #hud b{color:var(--ink);font-weight:700} #hud .a b{color:var(--mint)} #hud .e b{color:var(--coral)} #hud .sp{margin-left:auto;display:flex;gap:6px;align-items:center}
+  #cargoHud{padding:3px 6px;border:2px solid var(--navy);border-radius:999px;color:var(--navy);font-weight:800;letter-spacing:.08em;background:#fff}
+  .ctl{min-width:44px;min-height:44px;font:inherit;font-size:13px;background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:8px;cursor:pointer}
+  #map{flex:0 0 auto;width:100%;max-height:58vh;display:block;touch-action:none;background:#edf4f2;box-shadow:inset 0 -1px 0 var(--rule)}
+  #feed{flex:none;padding:4px 10px;font-size:11px;color:var(--dim);max-height:3.5em;overflow:hidden;background:rgba(255,253,247,.72)} #feed div{border-top:1px dashed var(--rule);padding:1px 0}
+  #sheet{flex:1 1 auto;min-height:0;border-top:1px solid var(--rule);background:rgba(255,253,247,.96);padding:10px 12px 12px;overflow-y:auto}
+  #sheet h2{font-size:15px;color:var(--navy);letter-spacing:.05em} #sheet .hint{color:var(--dim);font-size:12px}.jobTop{display:flex;gap:10px;align-items:flex-start}.route{font-size:13px}.cargoBadge{display:inline-flex;align-items:center;justify-content:center;min-width:52px;height:34px;padding:0 7px;border:2px solid var(--navy);border-radius:8px;background:#fff;font-weight:800;letter-spacing:.07em;color:var(--navy)}.cargoRule{font-size:12px;margin-top:7px;font-weight:700;color:var(--ink)}
+  .meter{height:7px;border:1px solid var(--rule);background:#e6e8e3;margin:8px 0 4px;border-radius:99px;overflow:hidden}.meter i{display:block;height:100%;background:var(--sky)}
+  #pop{position:fixed;z-index:30;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;box-shadow:0 8px 28px rgba(35,61,77,.22);font-size:12.5px}#pop h3{font-size:13.5px;color:var(--navy);padding-right:40px}#pop p{margin-top:6px}#pop .dim{color:var(--dim)}#pop .x{position:absolute;top:0;right:0;min-width:44px;min-height:44px;background:none;border:0;color:var(--dim);font:inherit;font-size:16px;cursor:pointer}
+  .veil{position:fixed;inset:0;z-index:40;background:rgba(231,240,239,.94);display:flex;align-items:center;justify-content:center;padding:16px}.veil[hidden]{display:none}.card{max-width:460px;width:100%;max-height:88vh;overflow-y:auto;background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:22px 20px;box-shadow:0 16px 50px rgba(35,61,77,.14)}.card h1{font-size:24px;color:var(--navy);letter-spacing:.08em}.card h2{font-size:16px;color:var(--navy)}.card p{margin-top:10px;font-size:13.5px}.card p.dim{color:var(--dim);font-size:12.5px}.card b{color:var(--mint)}
+  .btn{min-height:44px;min-width:62px;font:inherit;font-size:13px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:8px;cursor:pointer}.btn.wide{width:100%;margin:8px 0 0}.btn.prime{background:var(--navy);color:#fff;border-color:var(--navy)}
 </style>
 </head>
 <body>
-  <div id="hud"><span class="a">deliveries <b id="done"></b></span><span>leg <b id="reach"></b></span><span class="e">deadline <b id="emit"></b></span><span class="sp"><span id="clock"></span><span id="lines"></span><button class="ctl" id="pause" aria-label="Pause">❚❚</button><button class="ctl" id="speed" aria-label="Speed">×1</button></span></div>
+  <div id="hud"><span id="cargoHud">DOC</span><span class="a">deliveries <b id="done"></b></span><span>leg <b id="reach"></b></span><span class="e">deadline <b id="emit"></b></span><span class="sp"><span id="clock"></span><span id="lines"></span><button class="ctl" id="pause" aria-label="Pause">❚❚</button><button class="ctl" id="speed" aria-label="Speed">×1</button></span></div>
   <canvas id="map" aria-label="Central Helsinki delivery map. Drag between stops to add a line; tap a stop or job marker for details."></canvas>
   <div id="pop" hidden role="dialog" aria-label="Details"><button class="x" type="button" id="popClose" aria-label="Close">✕</button><div id="popBody"></div></div>
   <div id="feed" aria-live="polite"></div><div id="sheet"></div>
-  <div class="veil" id="title"><div class="card"><h1>TOKO MOVE</h1><p class="dim">Central Helsinki. Ten courier jobs. One day.</p><p>Move documents, food, parts and other cargo from A to B. Later jobs add deadlines, intermediate stops and the morning rush.</p><p>Use Helsinki's existing metro, tram and rail network. Draw your own lines where the city needs another connection.</p><p class="dim">On time = full score · late = half score · blue dot = pickup · orange square = destination.</p><button class="btn prime wide" id="play">START DELIVERIES</button></div></div>
+  <div class="veil" id="title"><div class="card"><h1>TOKO MOVE</h1><p class="dim">Central Helsinki · courier shift 06:00–22:00</p><p>Ten jobs cross the city. Cargo now matters: food rewards speed, fragile loads prefer a clean tram run, heavy goods stay on transit, and express jobs pay for fast routing.</p><p>Use the existing metro, tram and rail skeleton. Draw your own lines where Helsinki needs another connection.</p><p class="dim">Blue dot = pickup · coloured square = destination · deadline bar runs down in real time.</p><button class="btn prime wide" id="play">START SHIFT</button></div></div>
   <div class="veil" id="upgrade" hidden><div class="card"><h2>TRANSPORT BOARD</h2><p id="upText"></p><div id="upBtns"></div></div></div>
   <div class="veil" id="end" hidden><div class="card"><h1 id="endTitle"></h1><div id="endStats"></div><p class="dim" id="endNote"></p><button class="btn prime wide" id="again">RUN THE DAY AGAIN</button></div></div>
-<script type="module" src="js/main.js?v=4"></script>
+<script type="module" src="js/main.js?v=5"></script>
 <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>
