@@ -1,6 +1,5 @@
-// TOKO LIVE — persistent Hub cabinet.
-// Hub render() can rebuild #cabinets after first paint (language/XR/etc.).
-// Keep the Toko cabinet present after every rebuild rather than only once.
+import { drawFace } from '../toko/js/face.js';
+
 function buildTokoCabinet(){
   const card=document.createElement('article');card.className='cab';card.id='cab-tokolive';card.style.setProperty('--cab','#f0027f');
   const frame=document.createElement('a');frame.className='marquee';frame.href='toko-live/';frame.setAttribute('aria-label','Play Toko Live');frame.tabIndex=-1;
@@ -15,27 +14,27 @@ function buildTokoCabinet(){
   const controls=document.createElement('p');controls.className='controls';controls.textContent='type and press Enter · tap suggested topics · Esc / HOME returns';
   const actions=document.createElement('div');actions.className='actions';const play=document.createElement('a');play.className='btn play';play.href='toko-live/';play.textContent='[ PLAY ]';actions.appendChild(play);
   body.append(lineage,tagline,tags,note,controls,actions);card.appendChild(body);
-  const c=canvas.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#f0027f';c.fillRect(0,0,128,72);c.strokeStyle='#fff';c.lineWidth=4;c.lineCap='round';c.lineJoin='round';
-  const arc=(cx,cy,r,a0,a1)=>{c.beginPath();c.arc(cx,cy,r,a0,a1);c.stroke()};
-  for(const ex of [43,85]){arc(ex,21,13,Math.PI,Math.PI*2);c.beginPath();c.moveTo(ex-13,21);c.lineTo(ex-13,28);c.moveTo(ex+13,21);c.lineTo(ex+13,28);c.stroke()}
-  arc(64,40,34,.07,Math.PI-.07);arc(64,40,13,.18,Math.PI-.18);
+  const c=canvas.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#f0027f';c.fillRect(0,0,128,72);drawFace(c,25,3,78,{color:'#fff',open:0});
   return card;
 }
 
-let restoring=false;
+let queued=false;
 function ensureTokoCabinet(){
+  queued=false;
   const rack=document.getElementById('cabinets');
   if(!rack||document.getElementById('cab-tokolive')) return;
-  restoring=true;
   rack.prepend(buildTokoCabinet());
-  restoring=false;
+}
+function queueEnsure(){
+  if(queued) return;
+  queued=true;
+  queueMicrotask(ensureTokoCabinet);
 }
 
 ensureTokoCabinet();
-const rack=document.getElementById('cabinets');
-if(rack){
-  new MutationObserver(()=>{
-    if(restoring) return;
-    queueMicrotask(ensureTokoCabinet);
-  }).observe(rack,{childList:true});
-}
+new MutationObserver(queueEnsure).observe(document.body,{childList:true,subtree:true});
+addEventListener('load',queueEnsure);
+addEventListener('hashchange',queueEnsure);
+setTimeout(queueEnsure,250);
+setTimeout(queueEnsure,1000);
+setTimeout(queueEnsure,2500);
