@@ -16,12 +16,105 @@ function sky(scr, d, top = '#07121b', bottom = '#102737') {
   scr.bands(0, 0, W, H, [mix(top, '#171006', d), mix(bottom, '#2a1c0a', d)]);
 }
 
-function rain(scr, t, d, amount = 42, speed = 58) {
+function rain(scr, t, d, amount = 42, speed = 58, len = 4, alpha = 0.5) {
   for (let i = 0; i < amount; i++) {
     const x = (i * 31 + Math.floor(t * speed * 0.58)) % W;
     const y = (i * 47 + Math.floor(t * speed)) % H;
-    if (bayer(i & 3, (i >> 2) & 3) < 0.78) scr.px(x, y, 1, 4, shade(inkLo(d), 0.5));
+    if (bayer(i & 3, (i >> 2) & 3) < 0.78) scr.px(x, y, 1, len, shade(inkLo(d), alpha));
   }
+}
+
+function drawNearBlocks(scr, t, d) {
+  // L1 — only three recognisable near-masses at a time. This keeps the city
+  // believable: Helsinki is not a continuous wall of landmarks.
+  const drift = Math.floor((t / 2.7) % 42);
+  const blocks = [
+    { x: -20, y: 55, w: 34, h: 29, roof: 3 },
+    { x: 47,  y: 50, w: 27, h: 34, roof: 0 },
+    { x: 106, y: 58, w: 31, h: 26, roof: 2 },
+  ];
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    for (const wrap of [0, 170]) {
+      const x = b.x - drift + wrap;
+      scr.px(x, b.y, b.w, b.h, mix('#121a20', '#24180b', d));
+      if (b.roof) scr.px(x + 3, b.y - b.roof, b.w - 7, b.roof, mix('#0c1419', '#1c1309', d));
+      // restrained windows: some lit, most dark
+      for (let wy = b.y + 6, row = 0; wy < b.y + b.h - 4; wy += 9, row++) {
+        const wx = x + 5 + ((row + i) & 1) * 8;
+        scr.px(wx, wy, 4, 3, shade(inkLo(d), 0.45));
+        if ((row + i) % 3 === 0) scr.px(wx + 9, wy, 4, 3, shade(inkLo(d), 0.22));
+      }
+    }
+  }
+}
+
+function drawTramInfrastructure(scr, t, d) {
+  // L2 — poles and catenary. Slow oscillation, faster lateral movement than L1.
+  const phase = Math.floor((t * 3.2) % 44);
+  for (const base of [16 - phase, 83 - phase, 150 - phase]) {
+    scr.px(base, 26, 2, 61, shade(inkLo(d), 0.5));
+    scr.px(base - 6, 37, 15, 1, shade(inkLo(d), 0.32));
+  }
+  const bob = Math.round(Math.sin(t * 0.7));
+  scr.line(0, 31 + bob, W, 36 - bob, shade(inkLo(d), 0.35));
+  scr.line(0, 42 - bob, W, 46 + bob, shade(inkLo(d), 0.22));
+}
+
+function drawWetRails(scr, t, d) {
+  // L3 — road plane and sleepers move separately from buildings and tram.
+  scr.px(0, 84, W, H - 84, mix('#0b1115', '#1d160d', d));
+  const seam = Math.floor((t * 8) % 14);
+  for (let y = 92 - seam; y < H; y += 14) scr.px(0, y, W, 1, shade(inkLo(d), 0.18));
+  scr.line(45, 84, 27, H, shade(inkLo(d), 0.76));
+  scr.line(81, 84, 101, H, shade(inkLo(d), 0.76));
+  // second rail edge makes the tracks feel physical without redrawing scenery
+  scr.line(49, 84, 34, H, shade(inkLo(d), 0.28));
+  scr.line(77, 84, 94, H, shade(inkLo(d), 0.28));
+}
+
+function drawTram(scr, t, d) {
+  // L4 — rigid tram plus sub-sprites. Body movement, suspension and wheels are
+  // independent so the asset can later be swapped for a raster sprite easily.
+  const tr = ((t * 15) % (W + 86)) - 68;
+  const bob = Math.floor(t * 5) % 2;
+  const ty = 68 + bob;
+  scr.rect(tr, ty, 60, 36, mix('#26333a', '#3d2d16', d), inkLo(d));
+  scr.px(tr, ty, 60, 4, mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d));
+  for (let i = 0; i < 4; i++) scr.px(tr + 7 + i * 13, ty + 8, 9, 12, mix('#0a161b', '#21180d', d));
+  const wheelFrame = Math.floor(t * 8) & 1;
+  for (const wx of [tr + 13, tr + 44]) {
+    scr.disc(wx, ty + 34, 3, shade(inkLo(d), 0.62));
+    scr.px(wx - 2 + wheelFrame, ty + 34, 4, 1, shade(ink(d * 0.2), 0.72));
+  }
+  const head = 0.55 + 0.35 * (0.5 + Math.sin(t * 3.1) * 0.5);
+  scr.px(tr + 51, ty + 28, 5, 3, shade(mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d), head));
+}
+
+function drawReflections(scr, t, d) {
+  // L7 — animated masks rather than baked mirror-painting.
+  for (let i = 0; i < 6; i++) {
+    const x = 8 + i * 22 + Math.round(Math.sin(t * 0.55 + i) * 2);
+    const pulse = 0.25 + 0.52 * (0.5 + Math.sin(t * 1.35 + i * 0.9) * 0.5);
+    const len = 14 + ((i * 13) % 27);
+    for (let yy = 103; yy < 103 + len; yy += 3) {
+      const wobble = ((yy + i) & 3) - 1;
+      scr.px(x + wobble, yy, 2 + ((yy + i) & 1), 1, shade(mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d), pulse));
+    }
+  }
+}
+
+function drawForeground(scr, t, d) {
+  // L8 — fast occluders prove the scene is genuinely layered.
+  const fg = Math.floor((t * 11) % 88);
+  for (const x0 of [24 - fg, 112 - fg]) {
+    scr.px(x0, 48, 3, 85, shade(inkLo(d), 0.72));
+    scr.px(x0 - 7, 49, 17, 2, shade(inkLo(d), 0.5));
+  }
+  // tram-stop shelter edge
+  const sx = 138 - ((t * 9) % 190);
+  scr.rect(sx, 67, 22, 42, mix('#0b1217', '#20160b', d), shade(inkLo(d), 0.38));
+  scr.px(sx + 3, 72, 16, 27, shade(mix('#142932', '#31220d', d), 0.62));
 }
 
 function metro(scr, t, d) {
@@ -50,52 +143,17 @@ function metro(scr, t, d) {
 
 function raintram(scr, t, d) {
   sky(scr, d, '#08121b', '#152733');
+  drawFarCity(scr, t, 48);           // L0
+  drawNearBlocks(scr, t, d);         // L1
+  drawTramInfrastructure(scr, t, d); // L2
+  drawWetRails(scr, t, d);           // L3
+  drawTram(scr, t, d);               // L4
 
-  // L0: actual-art far city. Almost static: one pixel every six seconds.
-  drawFarCity(scr, t, 48);
-
-  // L1: sparse nearer blocks, deliberately less dense than the old canyon.
-  const drift = Math.floor((t / 3.5) % 28);
-  const blocks = [[-8,52,30,33],[38,58,24,27],[78,49,31,36],[118,60,26,25]];
-  for (let i = 0; i < blocks.length; i++) {
-    const [bx, by, bw, bh] = blocks[i];
-    const x = bx - drift;
-    for (const xx of [x, x + 156]) {
-      scr.px(xx, by, bw, bh, mix('#10191f', '#24180b', d));
-      for (let wy = by + 6; wy < by + bh - 4; wy += 9)
-        scr.px(xx + 5 + ((wy / 9) & 1) * 8, wy, 4, 3, shade(inkLo(d), 0.52));
-    }
-  }
-
-  // L2/L3: infrastructure and ground move independently.
-  scr.px(0, 84, W, H - 84, mix('#0b1115', '#1d160d', d));
-  const railPhase = Math.floor((t * 7) % 16);
-  for (let y = 91 - railPhase; y < H; y += 16) scr.px(0, y, W, 1, shade(inkLo(d), 0.26));
-  scr.line(45, 84, 27, H, shade(inkLo(d), 0.72));
-  scr.line(81, 84, 101, H, shade(inkLo(d), 0.72));
-  const wireBob = Math.round(Math.sin(t * 0.8));
-  scr.line(0, 31 + wireBob, W, 37 - wireBob, shade(inkLo(d), 0.35));
-  scr.line(14, 0, 14, 84, shade(inkLo(d), 0.42));
-  scr.line(111, 0, 111, 84, shade(inkLo(d), 0.42));
-
-  // L4: rigid tram body, with motion from position + tiny suspension bob.
-  const tr = ((t * 15) % (W + 82)) - 64;
-  const bob = Math.floor(t * 5) % 2;
-  scr.rect(tr, 68 + bob, 60, 36, mix('#26333a', '#3d2d16', d), inkLo(d));
-  scr.px(tr, 68 + bob, 60, 4, mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d));
-  for (let i = 0; i < 4; i++) scr.px(tr + 7 + i * 13, 76 + bob, 9, 12, mix('#0a161b', '#21180d', d));
-  scr.px(tr + 51, 96 + bob, 5, 3, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
-
-  // L7/L9: reflections and emissive pulses are masks, not baked into ground.
-  for (let i = 0; i < 5; i++) {
-    const x = 9 + i * 25;
-    const pulse = 0.33 + 0.55 * (0.5 + Math.sin(t * 1.5 + i) * 0.5);
-    const len = 18 + ((i * 11) % 25);
-    scr.px(x, 102, 2, len, shade(mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d), pulse));
-  }
-
-  // L6/L8: near rain moves fastest and therefore sells depth cheaply.
-  rain(scr, t, d, 46, 62);
+  // L6 far rain behind reflections / near rain in front gives two speed bands.
+  rain(scr, t, d, 25, 34, 2, 0.28);
+  drawReflections(scr, t, d);         // L7
+  drawForeground(scr, t, d);          // L8
+  rain(scr, t, d, 32, 70, 5, 0.52);  // L6 near
 }
 
 function rooftops(scr, t, d) {
