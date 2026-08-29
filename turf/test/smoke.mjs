@@ -11,7 +11,7 @@ import { planIntent } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
-  awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL,
+  awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE,
 } from '../js/combat.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -264,6 +264,59 @@ check('a big enough haul rolls more than one level at once', () => {
   assert.equal(u.level, 3);
   assert.equal(u.xp, 35);
 });
+
+console.log('loot drops');
+{
+  // A fixed rng (not a seed hunt) makes both the hit roll and the drop roll
+  // deterministic regardless of what makeRng(seed) would have produced.
+  const oneHit = {
+    id: 'onehit', grid: { cols: 3, rows: 1 },
+    playerSpawns: [{ unit: 'blade', x: 0, y: 0 }],
+    enemySpawns: [{ enemy: 'grunt_handgun', x: 1, y: 0 }],
+    cover: { full: [], partial: [] },
+  };
+  check(`a kill rolling under DROP_CHANCE (${DROP_CHANCE}) drops the victim's weapon on its tile`, () => {
+    const state = boot(oneHit, 1);
+    state.rng = () => 0; // hit roll 0 < hitChance 1 (hit); drop roll 0 < DROP_CHANCE (drops)
+    const r = attack(state, 'p0', 'e0');
+    assert.ok(r.killed);
+    assert.deepEqual(r.dropped, { x: 1, y: 0, weaponId: 'handgun' });
+    assert.deepEqual(state.drops, [{ x: 1, y: 0, weaponId: 'handgun' }]);
+  });
+  check('a kill rolling over DROP_CHANCE leaves nothing behind', () => {
+    const state = boot(oneHit, 1);
+    state.rng = () => 0.99; // hit roll 0.99 < hitChance 1 (still a hit); drop roll 0.99 >= DROP_CHANCE (no drop)
+    const r = attack(state, 'p0', 'e0');
+    assert.ok(r.killed);
+    assert.equal(r.dropped, null);
+    assert.deepEqual(state.drops, []);
+  });
+  check('walking onto a drop swaps the weapon and clears it — a player kills adjacent, then steps onto the body', () => {
+    const state = boot(oneHit, 1);
+    state.rng = () => 0;
+    const blade = getUnit(state, 'p0');
+    assert.equal(blade.weapon.id, 'knife');
+    attack(state, 'p0', 'e0'); // kills without moving — actedMove is still free
+    const r = moveUnit(state, 'p0', 1, 0);
+    assert.ok(r.ok);
+    assert.equal(r.pickedUp.id, 'handgun');
+    assert.equal(blade.weapon.id, 'handgun', "the unit's own weapon actually swapped");
+    assert.deepEqual(state.drops, [], 'the drop is consumed, not left behind for someone else too');
+  });
+  check('moving onto an ordinary empty tile picks up nothing', () => {
+    const empty = {
+      id: 'empty', grid: { cols: 4, rows: 1 },
+      playerSpawns: [{ unit: 'blade', x: 0, y: 0 }],
+      enemySpawns: [{ enemy: 'grunt_handgun', x: 3, y: 0 }], // out of move range, never engaged
+      cover: { full: [], partial: [] },
+    };
+    const state = boot(empty, 1);
+    const r = moveUnit(state, 'p0', 2, 0);
+    assert.ok(r.ok);
+    assert.equal(r.pickedUp, null);
+    assert.equal(getUnit(state, 'p0').weapon.id, 'knife', 'no drop existed, so the weapon is untouched');
+  });
+}
 
 console.log('AI + telegraph');
 {
