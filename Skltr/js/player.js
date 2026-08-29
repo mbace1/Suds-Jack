@@ -2,19 +2,25 @@ import * as THREE from 'three';
 import { Bunny, C } from './shared.js?v=12';
 import { visualTest } from './modes.js?v=12';
 
-const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
-// Visual Test (desert): hero's ink outline heats up with adrenaline tier — base ink → embers → hot red.
+const ADR_THRESH = [3, 6, 10, 15, 21];
 const ADR_TINT = [null, 0x7a4a10, 0x995408, 0xb35b00, 0xc24a00, 0xd03b3b];
-const STEP_MAX = 0.6;                     // ledges taller than this need a jump (act as walls)
+const STEP_MAX = 0.6;
 
-// Tuned for Returnal's second-to-second: near-instant accel/stop, a hard decisive
-// dash that ends crisply, an asymmetric jump (quick rise, apex hang, fast fall),
-// and strong air control.
+// Movement-offense layer (v15): passing close to enemies during a dash builds FLOW.
+// FLOW is deliberately not another currency: it is a short-lived combat state that
+// makes auto-fire hit harder. Airborne kills count extra toward adrenaline so jumping,
+// air-dashing and shooting remain one continuous action rather than separate chores.
+const FLOW_NEAR = 2.6;
+const FLOW_MAX = 3;
+const FLOW_LIFE = 2.4;
+const FLOW_DMG = 0.08;
+const AIR_KILL_ADR = 0.5;
+
 const BASE = {
   damage: 9, fireInterval: 0.11, moveSpeed: 8.8, sprintMul: 1.45, maxHp: 100,
   dashCD: 0.9, dashSpeed: 34, dashTime: 0.22, dashHoldMax: 0.5, iframe: 0.3,
   airDashSpeed: 30, jumpV: 11,
-  gravUp: 24, gravDown: 34, apexBand: 2.5, apexHang: 0.55,   // rise fast, hang at the top, drop hard
+  gravUp: 24, gravDown: 34, apexBand: 2.5, apexHang: 0.55,
   groundAccel: 30, airAccel: 7, dashAccel: 1.5,
 };
 
@@ -26,7 +32,6 @@ export class Player {
     this.reset();
   }
 
-  // overrides: optional resolved meta-progression stats (see progress.js's resolvedStats())
   reset(overrides = {}) {
     this._stats = {
       maxHp: overrides.maxHp ?? BASE.maxHp, dashCD: overrides.dashCD ?? BASE.dashCD,
@@ -39,6 +44,7 @@ export class Player {
     this.dashing = false; this.dashElapsed = 0; this.dashDirX = 0; this.dashDirZ = 0; this._dashGround = true;
     this.airDashUsed = false; this.airJumpUsed = false; this._fired = false; this._target = false;
     this.adr = overrides.startAdr || 0; this.adrKills = this.adr ? ADR_THRESH[this.adr - 1] : 0;
+    this.flowStacks = 0; this.flowT = 0; this._dashTagged = new Set(); this.flowPulse = false;
     this.alive = true; this.groundY = 0;
     this.fig.visible(true);
   }
@@ -46,15 +52,20 @@ export class Player {
   grounded() { return this.y <= this.groundY + 0.02; }
   adrDmgMul()  { return 1 + 0.06 * this.adr; }
   adrFireMul() { return 1 / (1 + 0.08 * this.adr); }
-  addKill() { this.adrKills++; let t = 0; for (const k of ADR_THRESH) if (this.adrKills >= k) t++; this.adr = t; }
+  flowDmgMul() { return 1 + FLOW_DMG * this.flowStacks; }
+  addKill() {
+    this.adrKills += 1 + (!this.grounded() ? AIR_KILL_ADR : 0);
+    if (!this.grounded()) this.flowT = Math.max(this.flowT, FLOW_LIFE);
+    let t = 0; for (const k of ADR_THRESH) if (this.adrKills >= k) t++; this.adr = t;
+  }
 
-  // ── traversal verbs ──
   jump() { if (this.alive && this.grounded()) { this.vy = BASE.jumpV; return true; } return false; }
   doubleJump() { if (this.alive && !this.grounded() && !this.airJumpUsed) { this.vy = BASE.jumpV; this.airJumpUsed = true; return true; } return false; }
   _startDash(dir, ground) {
     this.dashing = true; this.dashElapsed = 0; this._dashGround = ground;
     this.dashDirX = dir.x; this.dashDirZ = dir.z;
     this.dashT = BASE.dashTime; this.iframe = this._stats.iframe;
+    this._dashTagged.clear();
     const sp = ground ? BASE.dashSpeed : BASE.airDashSpeed;
     this.vx = dir.x * sp; this.vz = dir.z * sp;
   }
@@ -67,7 +78,6 @@ export class Player {
     this.airDashUsed = true; this.vy = 0; this._startDash(dir, false); return true;
   }
 
-  // 3D aim result: camera-forward, snapping onto a near enemy in the sights (locked).
   _aim(aim, enemies) {
     let bx = aim.fx, by = aim.fy, bz = aim.fz, bestDot = 0.9, locked = false;
     for (const e of enemies) {
@@ -82,23 +92,38 @@ export class Player {
 
   _fire(dir) {
     this.fireT = this._stats.fireInterval * this.adrFireMul();
-    const dmg = BASE.damage * this.adrDmgMul();
+    const dmg = BASE.damage * this.adrDmgMul() * this.flowDmgMul();
     this.pool.spawn(this.x + dir.x * 0.4, 1.25 + dir.y * 0.4, this.z + dir.z * 0.4, dir.x, dir.y, dir.z,
       { fromPlayer: true, speed: 46, damage: dmg, color: C.shot, r: 0.4, life: 1.6 });
     this._fired = true;
   }
 
+  _movementOffense(dt, enemies) {
+    this.flowPulse = false;
+    if (this.flowT > 0) {
+      this.flowT = Math.max(0, this.flowT - dt);
+      if (this.flowT === 0) this.flowStacks = 0;
+    }
+    if (!this.dashing) return;
+    for (const e of enemies) {
+      if (!e.alive || e.boss || this._dashTagged.has(e)) continue;
+      if (Math.hypot(e.x - this.x, e.z - this.z) > e.r + FLOW_NEAR) continue;
+      this._dashTagged.add(e);
+      this.flowStacks = Math.min(FLOW_MAX, this.flowStacks + 1);
+      this.flowT = FLOW_LIFE;
+      this.flowPulse = true;
+    }
+  }
+
   hurt(d) {
     if (!this.alive || this.iframe > 0) return;
     this.hp -= d; this.fig.hit();
-    this.adr = 0; this.adrKills = 0;             // any hit wipes adrenaline (Returnal)
+    this.adr = 0; this.adrKills = 0;
+    this.flowStacks = 0; this.flowT = 0; this._dashTagged.clear();
     if (this.hp <= 0) { this.hp = 0; this.alive = false; this.fig.visible(false); }
   }
   heal(a) { this.hp = Math.min(this.maxHp, this.hp + a); }
 
-  // drift: optional constant world-space velocity added to the movement target (the
-  // canyon-run forward push) — folded into the target velocity so the terrain
-  // wall/step collision handles it like any other movement.
   update(dt, input, aim, enemies, heightAt = () => 0, drift = null) {
     this._fired = false;
     this.fireT = Math.max(0, this.fireT - dt);
@@ -107,7 +132,6 @@ export class Player {
     this.iframe = Math.max(0, this.iframe - dt);
     if (!this.alive) return;
 
-    // camera-relative ground movement (basis from yaw → robust at any look pitch)
     const sy = Math.sin(aim.yaw), cy = Math.cos(aim.yaw);
     const fwd = { x: -sy, z: -cy }, rgt = { x: cy, z: -sy };
     const mv = input.getMove();
@@ -119,9 +143,7 @@ export class Player {
     const accel = this.dashT > 0 ? BASE.dashAccel : (this.grounded() ? BASE.groundAccel : BASE.airAccel);
     this.vx += (tvx - this.vx) * Math.min(1, dt * accel);
     this.vz += (tvz - this.vz) * Math.min(1, dt * accel);
-    // dash sustain — hold to extend; i-frame window stays fixed, cooldown starts on end.
-    // The dash ends CRISPLY: horizontal speed is clamped straight back to run speed
-    // (Returnal's decisive blink-stop) instead of bleeding off over half a second.
+
     if (this.dashing) {
       this.dashElapsed += dt;
       const active = this.dashElapsed < BASE.dashTime || (input.dashHeld && this.dashElapsed < BASE.dashHoldMax);
@@ -135,12 +157,10 @@ export class Player {
     const prevX = this.x, prevZ = this.z;
     this.x += this.vx * dt; this.z += this.vz * dt;
 
-    // jump / gravity + terrain follow — asymmetric gravity: lighter on the way up,
-    // a floaty beat at the apex, heavy on the way down (the Returnal jump arc)
     const grav = (this.vy > 0 ? BASE.gravUp : BASE.gravDown) * (Math.abs(this.vy) < BASE.apexBand ? BASE.apexHang : 1);
     this.vy -= grav * dt; this.y += this.vy * dt;
     const ground = heightAt(this.x, this.z);
-    if (ground - this.y > STEP_MAX && this.vy <= 0.1) {   // too tall to step onto → act as a wall
+    if (ground - this.y > STEP_MAX && this.vy <= 0.1) {
       this.x = prevX; this.z = prevZ;
       const g = heightAt(this.x, this.z); this.groundY = g;
       if (this.y <= g) { this.y = g; this.vy = 0; this.airDashUsed = false; this.airJumpUsed = false; }
@@ -149,11 +169,12 @@ export class Player {
       if (this.y <= ground) { this.y = ground; this.vy = 0; this.airDashUsed = false; this.airJumpUsed = false; }
     }
 
+    this._movementOffense(dt, enemies);
+
     this.yaw = aim.yaw;
     this.fig.group.position.set(this.x, this.y, this.z);
     this.fig.group.rotation.y = this.yaw;
 
-    // aim + fire: auto-fire when a target is in the sights (auto-aim), or when held
     const ar = this._aim(aim, enemies);
     this._target = ar.locked;
     const wantFire = !sprint && ((this.autoAim && ar.locked) || input.firing);

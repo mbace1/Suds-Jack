@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>SKLTR — a neon survival roguelike</title>
+  <title>SKLTR v15 — a neon survival roguelike</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
     body { background: #06060e; overflow: hidden; touch-action: none; }
     #canvas-game { display: block; }
     #canvas-ui { position: fixed; top: 0; left: 0; pointer-events: none; }
+    #build-version {
+      position: fixed; top: 10px; right: 12px; z-index: 10;
+      color: rgba(205,234,255,.55); font: 11px 'Courier New', monospace;
+      letter-spacing: 1px; pointer-events: none;
+    }
     #overlay {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
@@ -24,6 +29,7 @@
 <body>
   <canvas id="canvas-game"></canvas>
   <canvas id="canvas-ui"></canvas>
+  <div id="build-version">SKLTR v15 · FLOW</div>
   <div id="overlay"></div>
 
   <script type="importmap">
@@ -35,7 +41,7 @@
   }
   </script>
   <script type="module" src="js/director_v14.js?v=14"></script>
-  <script type="module" src="js/main.js?v=12"></script>
+  <script type="module" src="js/main.js?v=15"></script>
   <!-- the arcade shell: a home button and a controller way back -->
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
