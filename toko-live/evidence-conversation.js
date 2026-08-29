@@ -1,0 +1,10 @@
+import { evidence, evidenceNote, critiquePrompt } from './evidence.js?v=1';
+const PROJECTS=['TINY HAWK','EERI','PIRITORI','BETTERMENT','HYPER DAGGER','SUDS JACK','FLASH PRINCE','TOKO DROP'];
+const projectIn=s=>PROJECTS.find(p=>String(s||'').toUpperCase().includes(p))||null;
+function slotFrom(s){s=String(s||'').toLowerCase();if(/\bnext\b|roadmap|direction/.test(s))return 2;if(/\bwhy\b|intent|reference/.test(s))return 1;return 0}
+function append(text){const log=document.querySelector('.toko-chat .tc-log');if(!log)return;const d=document.createElement('div');d.className='tc-me';d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight}
+function showEvidence(project,slot=0){const e=evidence(project,slot);if(!e)return false;append(`I pulled this because ${e.shows} ${e.source ? `Source: ${e.source}.` : ''}`);window.dispatchEvent(new CustomEvent('toko:evidence',{detail:{project,slot,evidence:e}}));return true}
+function critique(project,slot=0){const e=evidence(project,slot);if(!e)return false;append(`${project}: ${e.critique} I selected this evidence because ${e.shows} Source: ${e.source}.`);window.dispatchEvent(new CustomEvent('toko:critique',{detail:{project,slot,evidence:e,prompt:critiquePrompt(project,slot)}}));return true}
+const input=()=>document.querySelector('.toko-chat .tc-say-row input');
+addEventListener('keydown',e=>{if(e.key!=='Enter'||e.target!==input())return;const q=e.target.value.trim();const p=projectIn(q);if(!p)return;const slot=slotFrom(q);if(/what'?s wrong|what is wrong|critique|review this|visual critique|fix this/i.test(q)){e.stopImmediatePropagation();e.preventDefault();e.target.value='';showEvidence(p,slot);setTimeout(()=>critique(p,slot),80);return}if(/why (did you|this evidence)|why (show|choose|pick)|what does (this|it) show|source/i.test(q)){e.stopImmediatePropagation();e.preventDefault();e.target.value='';const evi=evidence(p,slot);append(evi?evidenceNote(p,slot):`I do not have a mapped visual evidence item for ${p} yet.`);return}},true);
+window.TokoEvidenceConversation={showEvidence,critique};
