@@ -312,21 +312,20 @@ export const GAMES = [
     lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
     tags: ['platformer', 'three.js', 'diorama'],
     controls: '◀ ▶ run · Ⓐ jump · Ⓑ climb in · ▲ ▼ boom · hold ▼ to dig, sling or swing',
-    // Eeri was split out of this monorepo on 2026-08-23 (git-filter-repo,
-    // full history) into its own repo, which is where JS development
-    // happens now — its own CLAUDE.md says so, and the browser build had
-    // been frozen at v15.37 there while a parallel v15.38-49 accidentally
-    // continued in THIS repo instead, the exact class of fork this
-    // project's own history keeps warning about. Reconciled and pushed to
-    // mbace1/eeri on 2026-08-28; this cabinet now points at that repo's
-    // own GitHub Pages site rather than a folder in this checkout, the
-    // same way eeri-godot/toko-drop-godot point outside main for the
-    // artefact main does not carry. `eeri/` stays in this repo as a
-    // frozen v15.49 snapshot, per owner direction — not deleted, but not
-    // developed here again either.
-    path: 'https://mbace1.github.io/eeri/',
-    inRepo: false,
-    deployedOnly: true,
+    // TEMPORARY REVERT (2026-08-28). Eeri's JS development now belongs in
+    // mbace1/eeri (split out 2026-08-23, full history — see that repo's
+    // own CLAUDE.md), and Suds-Jack's newer v15.38-49 work has already
+    // been reconciled and pushed there. But GitHub Pages was never turned
+    // on for that repo — no session here has a tool that can flip that
+    // setting, it needs a human in github.com/mbace1/eeri/settings/pages
+    // (Source: Deploy from a branch, main, /root) — so
+    // https://mbace1.github.io/eeri/ 404s. Pointing Play back at this
+    // frozen local copy (still real, still v15.49) until Pages is on;
+    // once it resolves, swap `path` back to the external URL and restore
+    // `inRepo: false, deployedOnly: true` (git history has the exact
+    // block — see the commit that set this comment).
+    path: 'eeri/',
+    inRepo: true,
     accent: '#ffb01f',
     art: 'worksite',
   },

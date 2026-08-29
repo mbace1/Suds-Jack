@@ -5,13 +5,13 @@
     "from": "VERSIONS.md"
   },
   "tokodrop": {
-    "v": "231",
-    "n": 231000,
+    "v": "232",
+    "n": 232000,
     "from": "VERSIONS.md"
   },
   "flashprince": {
-    "v": "54",
-    "n": 54000,
+    "v": "53",
+    "n": 53000,
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
@@ -42,6 +42,11 @@
   "neonronin": {
     "v": "2",
     "n": 2000,
+    "from": "VERSIONS.md"
+  },
+  "eeri": {
+    "v": "15.49",
+    "n": 15049,
     "from": "VERSIONS.md"
   },
   "eerigodot": {
