@@ -8,6 +8,7 @@ import './chat-layout-fix.js';
 import './news-wire.js';
 import './news-conversation.js';
 import './news-sources.js';
+import './approved-face-only.js';
 
 const cleanCopy=()=>{
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
