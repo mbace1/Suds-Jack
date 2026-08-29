@@ -36,10 +36,14 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     log: [],
     result: null,
     rng: makeRng(seed),
+    weaponDefs, // so moveUnit can look up a dropped weapon's def by id
+    drops: [], // { x, y, weaponId } — GDD §9's "simple weapon-swap loot drops"
   };
   planAllIntents(state);
   return state;
 }
+
+const getWeapon = (state, id) => state.weaponDefs.find(w => w.id === id);
 
 function makeUnit(uid, def, weapon, faction, spawn) {
   return {
@@ -84,9 +88,25 @@ export function moveUnit(state, uid, x, y) {
   unit.x = x; unit.y = y;
   unit.actedMove = true;
   state.log.push({ type: 'move', uid, x, y });
+  const pickedUp = pickUpDropAt(state, unit);
   maybeDeselect(state, unit);
   planAllIntents(state);
-  return { ok: true };
+  return { ok: true, pickedUp };
+}
+
+// A dead enemy's tile never blocks movement (grid.js's unitAt skips hp<=0
+// units), which is what makes "walk over the body to grab its gun" work with
+// no extra input affordance — the drop marker (render.js) is the telegraph.
+function pickUpDropAt(state, unit) {
+  if (unit.faction !== 'player') return null;
+  const i = state.drops.findIndex(d => d.x === unit.x && d.y === unit.y);
+  if (i < 0) return null;
+  const [drop] = state.drops.splice(i, 1);
+  const weapon = getWeapon(state, drop.weaponId);
+  if (!weapon) return null; // a bad weaponId in data is a content bug, not a crash
+  unit.weapon = weapon;
+  state.log.push({ type: 'pickup', uid: unit.uid, weaponId: weapon.id });
+  return weapon;
 }
 
 // Every tile a unit could attack a target from *this turn*, given its
@@ -102,21 +122,33 @@ export function attackableTargets(state, unit) {
   return out;
 }
 
+// GDD §9's "simple weapon-swap loot drops": a dead enemy has a flat chance
+// to leave its weapon behind, on its own tile. Rolled here (not in awardXp,
+// which only runs once at encounter end) because the drop has to exist mid-
+// encounter for a unit to walk over and grab it.
+export const DROP_CHANCE = 0.5;
+
 function resolveAttack(state, attacker, target, weapon) {
   let chance = weapon.hitChance;
   if (weapon.archetype === 'ranged' && coverSoftens(state, attacker, target)) chance -= 0.3;
   chance = Math.max(0.05, Math.min(1, chance));
   const roll = state.rng();
   const hit = roll < chance;
-  let damage = 0, killed = false, knockback = null;
+  let damage = 0, killed = false, knockback = null, dropped = null;
   if (hit) {
     damage = weapon.damage;
     target.hp = Math.max(0, target.hp - damage);
     killed = target.hp <= 0;
-    if (killed) attacker.kills += 1;
+    if (killed) {
+      attacker.kills += 1;
+      if (target.faction === 'enemy' && state.rng() < DROP_CHANCE) {
+        dropped = { x: target.x, y: target.y, weaponId: target.weapon.id };
+        state.drops.push(dropped);
+      }
+    }
     if (!killed && weapon.knockback > 0) knockback = applyKnockback(state, attacker, target, weapon.knockback);
   }
-  const evt = { type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage, killed, knockback, chance, roll };
+  const evt = { type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage, killed, knockback, dropped, chance, roll };
   state.log.push(evt);
   return evt;
 }
