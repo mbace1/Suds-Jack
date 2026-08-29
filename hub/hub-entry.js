@@ -1,2 +1,2 @@
 import './toko-cabinet.js?v=1';
-await import('./hub.js?v=43');
+import './hub.js?v=43';
