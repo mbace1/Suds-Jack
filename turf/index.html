@@ -45,7 +45,17 @@
   .actionBtn.secondary:not(:disabled):active { background: #3a4048; color: #d6d9de; }
 
   #stage {
-    flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
+    /* align-items: flex-end, not center — a real phone playtest of v8 found
+       the board sitting in a sea of empty void, roughly equal gaps above
+       and below it, with the control panel a reach away underneath. The
+       board is width-bound on a phone (a wide grid barely clears 1x scale
+       to begin with — see render.js's SIDE_MARGIN comment), so there's
+       real slack in the OTHER dimension; anchoring to the bottom uses it by
+       putting the board directly against the panel a thumb is already on,
+       and pushes all the unused space to the top, which is at least out of
+       the way of anything the player has to look at or reach. */
+    flex: 1; position: relative; display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 4px;
     min-height: 0; overflow: hidden;
     background:
       radial-gradient(ellipse at 50% 30%, rgba(111,168,201,0.06), transparent 60%),
@@ -139,7 +149,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=6"></script>
+  <script type="module" src="js/main.js?v=7"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

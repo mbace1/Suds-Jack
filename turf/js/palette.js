@@ -21,10 +21,14 @@ export const PAL = {
   ENEMY_DK: '#8c4229',
   INK: '#12141a',
 
-  MOVE_HI: 'rgba(111,184,217,0.30)',
-  MOVE_HI_EDGE: 'rgba(111,184,217,0.75)',
-  ATTACK_HI: 'rgba(201,102,63,0.30)',
-  ATTACK_HI_EDGE: 'rgba(230,120,70,0.85)',
+  // Fill alpha bumped from 0.30 (v8): legible on a desktop screenshot but a
+  // real phone playtest of v8 found it nearly invisible at the board's
+  // actual on-device size — a wash this faint reads as "slightly different
+  // floor tile," not "you can move here."
+  MOVE_HI: 'rgba(111,184,217,0.48)',
+  MOVE_HI_EDGE: 'rgba(140,205,235,0.95)',
+  ATTACK_HI: 'rgba(201,102,63,0.48)',
+  ATTACK_HI_EDGE: 'rgba(240,140,90,0.95)',
   SELECT_EDGE: '#f2e2a0',
 
   HP_GOOD: '#5ad1a8',
