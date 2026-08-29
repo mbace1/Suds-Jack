@@ -12,6 +12,8 @@ assert.ok(top, 'VERSIONS.md has a top version');
 assert.match(html, new RegExp(`class="versionHero"[\\s\\S]*?v${top.replace('.', '\\.')}`), 'opening screen shows top version prominently');
 assert.match(main, new RegExp(`BUILD_VERSION=['"]${top.replace('.', '\\.')}['"]`), 'runtime version matches VERSIONS.md');
 assert.equal(hub.tokomove?.v, top, 'hub version matches VERSIONS.md');
-assert.equal(hub.tokomove?.n, Math.round(Number(top) * 1000), 'hub numeric version matches visible version');
+const [major, minor = '0'] = top.split('.');
+const expectedNumeric = Number(major) * 1000 + Number(minor);
+assert.equal(hub.tokomove?.n, expectedNumeric, 'hub numeric version matches visible version');
 
 console.log(`Toko Move version sync: v${top}`);
