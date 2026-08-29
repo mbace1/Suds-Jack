@@ -164,6 +164,54 @@ into this document rather than left as a one-off conversation:
   muddying into banding; a future batch should say so explicitly in the
   prompt rather than assume the style block alone holds the line.
 
+## 2.2 Multi-frame animation sheets: tested, not just theorised (2026-08-28)
+
+§6 predicted a multi-pose sheet from a single generation would be unreliable
+and asked for one key pose per archetype instead. Three owner-supplied
+candidate animation sheets (IDLE/MOVE/ATTACK/HIT/DIE rows, front+back, all
+outside this pipeline) got run through the real tools — `key`, then `fit
+--palette` + `check` on an extracted frame — rather than judged by eye. The
+prediction held, with a sharper, now-measured shape to it:
+
+- **IDLE and MOVE rows are genuinely usable as delivered.** Frame pitch is
+  tight and consistent (measured center-to-center spacing: 108–123px across
+  all three sheets' IDLE rows, 161–162px on one), and a cropped frame put
+  through the full `key → fit 32x40 --palette → check` pipeline came back
+  **`1/1 usable`** — real, cuttable pixel art, not just a clean-looking
+  composite.
+- **ATTACK/HIT/DIE rows fail for two separate, independently confirmed
+  reasons, on every sheet tested:**
+  1. **Motion-trail and blood FX get eaten by `key`.** They're rendered as
+     soft, partially-translucent effects blending toward the magenta
+     background in the source image, and `key`'s magenta-ratio test can't
+     tell "faded to background" from "background." Severity scales with how
+     opaque the model drew the effect — one sample kept a faint ghost of a
+     slash trail near the blade where the paint was more solid, while the
+     rest of the same trail (and every blood-splatter burst tested, on all
+     three sheets) vanished outright. This isn't a `key` bug to fix; a
+     translucent effect keyed against a flat colour is an unsolvable
+     conflict, which is exactly why every other game in this repo draws
+     slash trails/blood/muzzle flashes in code (hyperdagger's DebrisPool,
+     dropcabal's tracers) and never bakes them into sprite art.
+  2. **Frame pitch on these rows isn't uniform.** Measured center-to-center
+     spacing on ATTACK rows ranged 129–222px *within a single sheet*, and DIE
+     rows consistently widen frame-to-frame (e.g. 147→198px, 203→239px,
+     159→209px across the three sheets) rather than holding a pitch. A
+     single fixed-`--cell` `slice` call cannot auto-extract these; each frame
+     would need hand-cropping regardless of how clean the art inside it is.
+  - One sample also left stray pixel debris from its own column-number
+    captions after keying — the concrete failure §1's "no labels/captions on
+    the plate" rule exists to prevent.
+- **What this changes going forward:** §6 already didn't ask for multi-pose
+  sheets as the default plan, for a different reason (character drift across
+  poses). This adds a second, harder reason that applies even when a sheet
+  holds together visually: **never bake motion FX into a plate meant for
+  keying**, full stop, on IDLE/MOVE sheets or single key-pose plates alike —
+  say so explicitly in the prompt going forward, the same way "no ground
+  shadow" is already said explicitly. IDLE/MOVE-style sheets remain a
+  reasonable ask when they come up; ATTACK/HIT/DEATH stay single-pose,
+  FX-free requests per §6's original plan, cut and hand-finished in Aseprite.
+
 ---
 
 ## 3. Colours and roles, read off the game's own numbers

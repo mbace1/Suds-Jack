@@ -8,6 +8,20 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v5 — 2026-08-28
+**Animation-sheet feedback, doc-only.** `ART_REQUEST.md` §2.2: three
+owner-supplied candidate animation sheets run through the real `key`/`fit`/
+`check` tools, not judged by eye. IDLE/MOVE rows are genuinely usable
+(measured tight, consistent frame pitch; a cropped frame came back `1/1
+usable` through the full pipeline). ATTACK/HIT/DIE rows fail on every sheet
+tested, for two independently confirmed reasons: motion-trail/blood FX
+rendered as translucent effects get eaten by `key`'s magenta-ratio test
+(severity scales with how opaque the model drew them), and frame pitch on
+those rows isn't uniform (measured 129–222px within a single sheet, DIE rows
+consistently widening frame-to-frame) so a fixed-cell `slice` can't
+auto-extract them. Going forward: never bake motion FX into a plate meant
+for keying, on any sheet — engine-drawn FX only, per house convention.
+
 ## v4 — 2026-08-28
 **Encounter #2: "The Loading Dock," and a real sequence between fights.**
 GDD.md §9's first step — "expand to 3-5 encounters in sequence" — before the
