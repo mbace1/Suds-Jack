@@ -1,9 +1,9 @@
 import { COST } from './enemy.js?v=12';
 
-// SKLTR v14 encounter pacing shim.
-// Main's spawn loop stays simple; these live costs turn it into authored pressure
-// windows without changing input/combat code. The clock resets after a long idle,
-// which naturally happens between runs.
+// SKLTR v16 arena encounter director.
+// The existing terrain already contains raised platforms, ramps, trenches, hazards,
+// moving platforms and objective beacons. This director turns the 10-minute run into
+// three authored combat-space problems separated by traversal/recovery windows.
 const BASE = { chaser: 1.15, turret: 2.2, flyer: 2.8, boss: 30, boss2: 22, boss3: 34 };
 let runStart = performance.now();
 let lastAccess = runStart;
@@ -11,33 +11,41 @@ let phaseId = -1;
 let phaseEntered = runStart;
 
 const phases = [
-  // 0–60: teach motion pressure — mostly hounds, rare tortoise.
-  { end: 60,  name: 'HUNT',      mul: { chaser: 0.75, turret: 2.8, flyer: 99 } },
-  // 60–75: recovery / traversal window.
-  { end: 75,  name: 'BREATHE',   mul: { chaser: 18, turret: 18, flyer: 18 } },
-  // 75–150: introduce lane denial.
-  { end: 150, name: 'CROSSFIRE', mul: { chaser: 1.0, turret: 0.78, flyer: 5.0 } },
-  // 150–165: short reset.
-  { end: 165, name: 'BREATHE',   mul: { chaser: 20, turret: 20, flyer: 20 } },
-  // 165–250: vertical attention enters the mix.
-  { end: 250, name: 'VERTICAL',  mul: { chaser: 1.0, turret: 1.05, flyer: 0.72 } },
-  // 250–265: reset before first major peak.
-  { end: 265, name: 'BREATHE',   mul: { chaser: 22, turret: 22, flyer: 22 } },
-  // 265–370: all three roles overlap.
-  { end: 370, name: 'PRESSURE',  mul: { chaser: 0.85, turret: 0.9, flyer: 0.9 } },
-  // 370–390: longer breath.
-  { end: 390, name: 'BREATHE',   mul: { chaser: 24, turret: 24, flyer: 24 } },
-  // 390–510: escalation, Risk-of-Rain style mess but still role-based.
-  { end: 510, name: 'OVERDRIVE', mul: { chaser: 0.68, turret: 0.78, flyer: 0.78 } },
-  // 510–525: final reset.
-  { end: 525, name: 'BREATHE',   mul: { chaser: 26, turret: 26, flyer: 26 } },
-  // 525–600+: final 75-second push.
-  { end: 1e9, name: 'LAST STAND',mul: { chaser: 0.58, turret: 0.68, flyer: 0.68 } },
+  // Arena 1: lateral movement. Hounds dominate and tortoises appear as anchors.
+  { end: 70,  name: 'ARENA 1 · HUNT', arena: 'HOUND RUN',
+    mul: { chaser: 0.62, turret: 2.5, flyer: 99 } },
+  // Force a genuine release/traversal beat rather than carrying a full swarm onward.
+  { end: 90,  name: 'TRAVERSE', arena: 'LINK 1',
+    mul: { chaser: 30, turret: 30, flyer: 30 } },
+
+  // Arena 2: lane denial + elevation. Tortoises become the structural threat.
+  { end: 180, name: 'ARENA 2 · CROSSFIRE', arena: 'TORTOISE HEIGHTS',
+    mul: { chaser: 1.05, turret: 0.58, flyer: 5.5 } },
+  { end: 205, name: 'TRAVERSE', arena: 'LINK 2',
+    mul: { chaser: 32, turret: 32, flyer: 32 } },
+
+  // Arena 3: vertical attention. Wasps pull the player into jumps / air-dashes while
+  // a smaller ground ecology prevents simply camping a raised surface.
+  { end: 310, name: 'ARENA 3 · VERTICAL', arena: 'WASP LIFT',
+    mul: { chaser: 1.0, turret: 1.25, flyer: 0.52 } },
+  { end: 335, name: 'TRAVERSE', arena: 'LINK 3',
+    mul: { chaser: 34, turret: 34, flyer: 34 } },
+
+  // Mixed ecology: all learned movement problems overlap, but composition drives
+  // difficulty more than raw HP inflation.
+  { end: 450, name: 'MIXED ARENA', arena: 'THE MACHINE YARD',
+    mul: { chaser: 0.72, turret: 0.72, flyer: 0.72 } },
+  { end: 475, name: 'BREATHE', arena: 'FINAL LINK',
+    mul: { chaser: 36, turret: 36, flyer: 36 } },
+
+  // Final push: dense role combinations leading into the existing boss cadence.
+  { end: 570, name: 'OVERDRIVE', arena: 'KILL FLOOR',
+    mul: { chaser: 0.55, turret: 0.62, flyer: 0.62 } },
+  { end: 1e9, name: 'LAST STAND', arena: 'TEN MINUTE CLIMAX',
+    mul: { chaser: 0.46, turret: 0.54, flyer: 0.54 } },
 ];
 
 function elapsed(now) {
-  // A real run has frequent director accesses. A long idle means title/death screen;
-  // reset so the next run starts from HUNT rather than inheriting old pacing.
   if (now - lastAccess > 8000) {
     runStart = now;
     phaseId = -1;
@@ -53,6 +61,8 @@ function phaseAt(t, now) {
   if (id !== phaseId) {
     phaseId = id;
     phaseEntered = now;
+    // Lightweight event lets HUD/dev tools react without coupling this module to main.
+    window.dispatchEvent(new CustomEvent('skltr-arena', { detail: phases[id] }));
   }
   return phases[id];
 }
@@ -62,20 +72,14 @@ function liveCost(type) {
   const t = elapsed(now);
   const p = phaseAt(t, now);
   if (!(type in BASE)) return 1;
-
-  // Bosses stay controlled by main's boss timer; don't distort them here.
   if (type.startsWith('boss')) return BASE[type];
 
   let cost = BASE[type] * (p.mul[type] ?? 1);
-
-  // Consume the credits accumulated during recovery instead of dumping a full cap
-  // instantly when the next pressure phase begins. First ~4s of a live phase are
-  // deliberately expensive, then settle quickly into the authored mix.
-  if (p.name !== 'BREATHE') {
+  if (p.name !== 'TRAVERSE' && p.name !== 'BREATHE') {
     const sincePhase = (now - phaseEntered) / 1000;
-    if (sincePhase < 4) cost *= 1 + (4 - sincePhase) * 1.7;
+    // Prevent banked credits from dumping an entire arena population on frame one.
+    if (sincePhase < 5) cost *= 1 + (5 - sincePhase) * 1.55;
   }
-
   return cost;
 }
 
@@ -87,11 +91,12 @@ for (const type of Object.keys(BASE)) {
   });
 }
 
-// Debug hook for balancing from the browser console.
 window._skltrDirector = () => {
   const now = performance.now();
   const t = elapsed(now);
   const p = phaseAt(t, now);
-  return { seconds: Math.round(t), phase: p.name,
-    costs: { chaser: liveCost('chaser'), turret: liveCost('turret'), flyer: liveCost('flyer') } };
+  return {
+    seconds: Math.round(t), phase: p.name, arena: p.arena,
+    costs: { chaser: liveCost('chaser'), turret: liveCost('turret'), flyer: liveCost('flyer') }
+  };
 };
