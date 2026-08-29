@@ -1,4 +1,4 @@
-// Toko Move v2 daylight smoke gate — Central Helsinki delivery challenge.
+// Toko Move daylight smoke gate — Central Helsinki delivery challenge.
 const { chromium } = require('playwright');
 const http = require('http'); const fs = require('fs'); const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -28,7 +28,8 @@ s.listen(0, '127.0.0.1', async () => {
     return ['pasila','toolontori','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x => ids.has(x));
   }));
   ok('first A to B job exists', await p.evaluate(() => {
-    const j = window.__tm.challenge.active; return !!j && !!j.from && !!j.to && j.from !== j.to;
+    const j = window.__tm.challenge.active;
+    return !!j && Array.isArray(j.stops) && j.stops.length >= 2 && j.stops[0] !== j.stops[1];
   }));
   ok('pickup and destination pins exist', await p.evaluate(() => {
     const ms = window.__tm.debug.markers();
@@ -45,13 +46,14 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('a Helsinki line can be drawn', drew);
   ok('fixed metro/tram/rail skeleton exists', await p.evaluate(() => {
-    const rs=window.__tm.flow.routes.list.filter(r=>r.fixed); return rs.some(r=>r.mode==='metro') && rs.some(r=>r.mode==='tram') && rs.some(r=>r.label==='Commuter rail');
+    const rs=window.__tm.flow.routes.list.filter(r=>r.fixed);
+    return rs.some(r=>r.mode==='metro') && rs.some(r=>r.mode==='tram') && rs.some(r=>r.label==='R');
   }));
   await p.click('#pause'); await p.waitForTimeout(250);
   const t1=await p.evaluate(()=>window.__tm.flow.clock.tick); await p.waitForTimeout(350); const t2=await p.evaluate(()=>window.__tm.flow.clock.tick);
   ok('pause freezes simulation', t1===t2, `${t1} → ${t2}`);
   ok('editing works while paused', await p.evaluate(() => {
-    const f=window.__tm.flow,n=f.routes.drawn.length,r=f.addRoute('tram',['rautatientori','kauppatori']); return !r.error && f.routes.drawn.length===n+1;
+    const f=window.__tm.flow,n=f.routes.drawn.length,r=f.addRoute('tram',['rautatientori','senaatintori','kauppatori']); return !r.error && f.routes.drawn.length===n+1;
   }));
   await p.click('#pause');
   ok('HUD describes delivery game', await p.evaluate(() => document.getElementById('done').textContent.includes('/10') && document.getElementById('reach').textContent.includes('→')));
