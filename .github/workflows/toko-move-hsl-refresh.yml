@@ -49,6 +49,20 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Persist validated pack onto this PR branch
+        if: github.event_name == 'pull_request' && steps.diff.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        run: |
+          cp toko-move/cities/helsinki.json /tmp/helsinki.json
+          git fetch origin "$GITHUB_HEAD_REF"
+          git checkout -B "$GITHUB_HEAD_REF" "origin/$GITHUB_HEAD_REF"
+          cp /tmp/helsinki.json toko-move/cities/helsinki.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add toko-move/cities/helsinki.json
+          git commit -m "Toko Move: commit validated full HSL network"
+          git push origin "$GITHUB_HEAD_REF"
+
       - name: Open refresh pull request
         if: github.event_name != 'pull_request' && steps.diff.outputs.changed == 'true'
         env:
