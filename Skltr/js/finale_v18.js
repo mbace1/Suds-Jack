@@ -1,0 +1,12 @@
+// SKLTR v27 — authored 90-second finale controller.
+const RUN_SECONDS=600,FINALE_START=510;
+let won=false,active=false,elapsed=0,last=performance.now(),cue=-1;
+const nativeRAF=window.requestAnimationFrame.bind(window);
+window.requestAnimationFrame=cb=>nativeRAF(now=>{if(won)return;cb(now)});
+function overlay(){return document.getElementById('overlay')}
+function playingNow(){const o=overlay();if(!o)return false;return getComputedStyle(o).display==='none'}
+function cueAt(t){const marks=[510,540,570,590];let id=-1;for(let i=0;i<marks.length;i++)if(t>=marks[i])id=i;if(id===cue)return;cue=id;if(id<0)return;const labels=['FINAL 90 · OVERDRIVE','FINAL 60 · MACHINE PRESSURE','FINAL 30 · LAST STAND','FINAL 10 · SURVIVE'];window.dispatchEvent(new CustomEvent('skltr-finale-cue',{detail:{id,label:labels[id],seconds:marks[id]}}));const a=document.getElementById('arena-name');if(a)a.textContent=labels[id];}
+function victory(){if(won)return;won=true;active=false;const o=overlay();if(!o)return;const best=Number(localStorage.getItem('skltrWins')||'0')+1;localStorage.setItem('skltrWins',String(best));o.style.display='block';o.style.pointerEvents='auto';o.innerHTML=`<div style="font-size:13px;letter-spacing:4px;opacity:.65;margin-bottom:8px">RUN COMPLETE</div><div style="font-size:clamp(38px,10vw,62px);font-weight:bold;letter-spacing:5px;color:#9bfff0;text-shadow:0 0 18px rgba(80,255,220,.6)">SURVIVED</div><div style="font-size:18px;margin-top:12px">10:00 · LAST STAND CLEARED</div><div style="font-size:12px;opacity:.6;margin-top:8px">HOUND RUN → TORTOISE HEIGHTS → WASP LIFT → MACHINE YARD → LAST STAND</div><div style="font-size:13px;color:#ffd36b;margin-top:12px">COMPLETIONS ${best}</div><div style="font-size:12px;opacity:.55;margin-top:22px">TAP / CLICK TO RETURN</div>`;const restart=e=>{e.preventDefault();e.stopPropagation();location.reload()};o.addEventListener('pointerdown',restart,{once:true});o.addEventListener('touchend',restart,{once:true});window.dispatchEvent(new CustomEvent('skltr-victory',{detail:{seconds:RUN_SECONDS,completions:best}}));}
+function tick(now){const dt=Math.min(.1,(now-last)/1000);last=now;const p=playingNow();if(p){active=true;elapsed+=dt;if(elapsed>=FINALE_START)cueAt(elapsed);if(elapsed>=RUN_SECONDS){victory();return}}else active=false;nativeRAF(tick)}
+nativeRAF(tick);
+window._skltrFinale=()=>({won,active,seconds:Math.round(elapsed),remaining:Math.max(0,Math.ceil(RUN_SECONDS-elapsed)),finale:elapsed>=FINALE_START});
