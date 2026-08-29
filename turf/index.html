@@ -14,24 +14,35 @@
     user-select: none;
   }
 
-  #topbar, #bottombar {
+  #topbar {
     display: flex; align-items: center; gap: 10px;
-    padding: 8px 12px; background: #14161c; border-color: #262a32;
-    flex: none; z-index: 5;
+    padding: 8px 12px 8px 96px; background: #14161c;
+    border-bottom: 1px solid #262a32; flex: none; z-index: 5;
   }
-  #topbar { border-bottom: 1px solid #262a32; padding-left: 60px; }
-  #bottombar { border-top: 1px solid #262a32; flex-wrap: wrap; }
+  #bottombar {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 8px 12px; background: #14161c;
+    border-top: 1px solid #262a32; flex: none; z-index: 5;
+  }
+  #bottombar .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
   #turnLabel { font-weight: bold; letter-spacing: .1em; text-transform: uppercase; color: #6fa8c9; }
   #turnLabel.enemy { color: #c9663f; }
-  #roundLabel { color: #7b818c; }
-  #endTurnBtn {
-    margin-left: auto; min-height: 44px; padding: 8px 16px;
+  #roundLabel { color: #7b818c; margin-left: auto; }
+
+  /* The lower-third control panel: who (squad), then what (Cancel/End Turn)
+     — both real 44px+ touch targets, thumb-reachable, so a phone player
+     never has to land a precise tap on a small isometric tile just to back
+     out of a selection or close the turn. */
+  .actionBtn {
+    flex: 1; min-height: 48px; padding: 8px 16px;
     background: #1c1f26; color: #d6d9de; border: 1px solid #6fa8c9;
-    font: inherit; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+    font: inherit; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
   }
-  #endTurnBtn:disabled { opacity: .35; cursor: default; }
-  #endTurnBtn:not(:disabled):active { background: #6fa8c9; color: #0b0c0f; }
+  .actionBtn.secondary { border-color: #3a4048; color: #9aa0aa; }
+  .actionBtn:disabled { opacity: .35; cursor: default; }
+  .actionBtn:not(:disabled):active { background: #6fa8c9; color: #0b0c0f; }
+  .actionBtn.secondary:not(:disabled):active { background: #3a4048; color: #d6d9de; }
 
   #stage {
     flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
@@ -42,9 +53,8 @@
   }
   #board { image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: pointer; display: block; }
 
-  #squad { display: flex; gap: 8px; }
   .unitBtn {
-    min-height: 44px; padding: 5px 9px; background: #1c1f26; border: 1px solid #262a32;
+    flex: 1; min-height: 44px; padding: 5px 9px; background: #1c1f26; border: 1px solid #262a32;
     color: #d6d9de; font: inherit; text-align: left; cursor: pointer; min-width: 84px;
   }
   .unitBtn .nm { display: block; font-weight: bold; }
@@ -57,7 +67,7 @@
 
   #selInfo { min-width: 150px; color: #7b818c; }
   #selInfo b { color: #d6d9de; }
-  #toast { flex: 1 1 100%; min-height: 1.4em; color: #f2e2a0; font-size: 12px; order: 5; }
+  #toast { flex: 1; min-height: 1.4em; color: #f2e2a0; font-size: 12px; }
 
   .overlay {
     position: fixed; inset: 0; z-index: 20;
@@ -79,8 +89,9 @@
   #result h1.lose { color: #e0453a; }
 
   @media (max-width: 640px) {
-    #topbar { padding-left: 56px; font-size: 12px; }
+    #topbar { font-size: 12px; }
     .unitBtn { min-width: 74px; font-size: 12px; }
+    .actionBtn { font-size: 12px; }
   }
 </style>
 </head>
@@ -89,7 +100,6 @@
   <div id="topbar">
     <span id="turnLabel">—</span>
     <span id="roundLabel"></span>
-    <button id="endTurnBtn" disabled>End Turn</button>
   </div>
 
   <div id="stage">
@@ -97,9 +107,15 @@
   </div>
 
   <div id="bottombar">
-    <div id="squad"></div>
-    <div id="selInfo">Select an operator.</div>
-    <div id="toast"></div>
+    <div id="squad" class="row"></div>
+    <div class="row">
+      <button id="cancelBtn" class="actionBtn secondary" disabled>Cancel</button>
+      <button id="endTurnBtn" class="actionBtn" disabled>End Turn</button>
+    </div>
+    <div class="row">
+      <span id="selInfo">Select an operator.</span>
+      <span id="toast"></span>
+    </div>
   </div>
 
   <div id="title" class="overlay">
@@ -123,7 +139,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=5"></script>
+  <script type="module" src="js/main.js?v=6"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

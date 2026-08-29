@@ -8,12 +8,22 @@ import { key } from './grid.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 
+// Side clearance beyond the tile diamonds themselves, for whatever a unit
+// draws past its own tile's edge — the widest of those is the 14px HP bar
+// (drawUnit) and the 14px cursor ring (drawCursor), each ~7px past tile
+// centre. This used to be a full TILE_W (32px) per side, generous well
+// past what anything actually draws — and on a phone-width viewport a
+// wide grid (backlot is 11 tiles across) is width-bound, so that unused
+// margin was screen real estate the board could have used instead
+// (main.js's fitCanvas fits to whichever of width/height is tighter).
+const SIDE_MARGIN = 24;
+
 export function computeLayout(grid) {
   const minA = -(grid.rows - 1), maxA = grid.cols - 1;
   const maxB = grid.cols + grid.rows - 2;
-  const width = Math.ceil((maxA - minA) * (TILE_W / 2) + TILE_W * 2);
+  const width = Math.ceil((maxA - minA) * (TILE_W / 2) + SIDE_MARGIN * 2);
   const height = Math.ceil(maxB * (TILE_H / 2) + UNIT_H + TILE_H * 4);
-  const originX = Math.round(-minA * (TILE_W / 2) + TILE_W);
+  const originX = Math.round(-minA * (TILE_W / 2) + SIDE_MARGIN);
   const originY = UNIT_H + TILE_H;
   return { width, height, originX, originY };
 }

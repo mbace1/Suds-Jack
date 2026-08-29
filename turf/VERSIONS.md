@@ -8,6 +8,55 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v8 — 2026-08-29
+**Portrait/mobile polish, from owner playtest feedback on the live v7 deploy:
+"it's playable but needs work — the vertical view needs slight zooming and
+more controls on the lower third panel."**
+
+- **Zoom.** `fitCanvas` (`main.js`) used to snap any scale ≥1 down to a whole
+  integer, which sounds like a small rounding rule but wasn't: backlot's
+  board (11 tiles across) is width-bound on a phone in portrait, where the
+  natural fit is rarely more than ~1.0–1.3x to begin with — so on every
+  phone width actually measured (360–430px), that snap rounded the real
+  scale straight back down to a flat 1x, and the board rendered at roughly a
+  third of the available stage area with the rest black void. Two changes,
+  together: `render.js`'s `computeLayout` had a full `TILE_W` (32px) of side
+  margin per edge, well past what anything actually draws past a tile's own
+  bounds (the widest bulge is the 14px HP bar/cursor ring, ~7px past tile
+  centre) — trimmed to a `SIDE_MARGIN` of 24px, freeing real width budget;
+  and `fitCanvas`'s snap grid moved from whole steps to tenths, since at
+  these near-1x scale factors a whole/half-step snap was throwing away
+  exactly the headroom the margin trim just freed. Verified empirically
+  (not just computed) across four phone widths (360/390/414/430px) plus
+  loading-dock's narrower grid: no prop, unit, HP bar, or cursor ring clips
+  at any edge tile, and the board now visibly fills more of the screen at
+  every width tested. This is a real, bounded improvement, not a full fix —
+  an 11-wide board simply doesn't have much more headroom than this on a
+  phone-width viewport without changing the projection itself.
+- **The lower-third panel.** `#bottombar` was a single wrapping row: three
+  small squad-select buttons plus two lines of status text — no dedicated
+  action controls at all, and End Turn lived in the *top* bar, an awkward
+  reach for one-handed portrait play. Restructured into three rows: squad
+  select, then a real action row (End Turn plus a new Cancel button, both
+  48px+ touch targets spanning the width), then status text. Cancel exposes
+  `input.js`'s existing `cancelSelection` (previously only reachable via
+  Esc/gamepad B) with a new `activateCursor` param defaulting to true for
+  the keyboard/pad path but passed `false` from the on-screen button — a
+  touch player tapping Cancel never asked for the keyboard/pad reticle to
+  appear, same "a cursor nobody asked for is noise" rule input.js's cursor
+  code already follows elsewhere.
+- **Fixed along the way, found while screenshotting the portrait view:** the
+  hub shell's HOME button (`position: fixed`, ~81px wide including its own
+  padding) was overlapping "Your Turn" in the top bar — `#topbar`'s
+  `padding-left` had reserved only 60px, measured wrong. Bumped to 96px.
+- Standard token cascade: `render.js?v=3` → `v=4` (own bytes changed),
+  cascading to both importers (`main.js`, `input.js`); `input.js?v=4` →
+  `v=5` (its own bytes also changed independently — the new
+  `cancelSelection` export); `index.html`'s `main.js?v=5` → `v=6`.
+- `node turf/test/smoke.mjs` — 35/35 (rendering/layout isn't covered by the
+  bare-node gate; this round's verification was real-browser screenshots
+  and hit-test checks instead, described above).
+
 ## v7 — 2026-08-29
 **Simple weapon-swap loot drops — GDD.md §9's third Phase 2 item.**
 

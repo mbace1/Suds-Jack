@@ -4,7 +4,7 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, UNIT_H } from './render.js?v=3';
+import { screenToGrid, toScreen, TILE_W, UNIT_H } from './render.js?v=4';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit,
@@ -167,11 +167,17 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     syncCursorField(getState());
   }
 
-  function cancelSelection() {
+  // activateCursor stays true for the keyboard/pad path (Esc/B) — cancelling
+  // there means the player IS the cursor now. The on-screen Cancel button
+  // passes false: a touch player tapping it never asked for the reticle,
+  // same "a cursor nobody asked for is noise" rule as the rest of this file.
+  function cancelSelection(activateCursor = true) {
     const state = getState();
     if (state.turn !== 'player' || state.result) return;
-    cursorActive = true;
-    if (!cursor) cursor = defaultCursorTile(state);
+    if (activateCursor) {
+      cursorActive = true;
+      if (!cursor) cursor = defaultCursorTile(state);
+    }
     if (state.selected) {
       state.selected = null;
       refreshSelectionOverlay(state);
@@ -216,6 +222,7 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
   return {
     selectByUid,
     endTurn,
+    cancelSelection,
     refreshSelectionOverlay,
     destroy() {
       canvas.removeEventListener('pointerup', onPointerUp);

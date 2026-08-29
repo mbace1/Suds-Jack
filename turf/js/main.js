@@ -6,12 +6,13 @@ import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
 } from './combat.js?v=4';
-import { computeLayout, render } from './render.js?v=3';
-import { createInputHandler } from './input.js?v=4';
+import { computeLayout, render } from './render.js?v=4';
+import { createInputHandler } from './input.js?v=5';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
-const topbar = { turn: $('turnLabel'), round: $('roundLabel'), endTurn: $('endTurnBtn') };
+const topbar = { turn: $('turnLabel'), round: $('roundLabel') };
+const controls = { endTurn: $('endTurnBtn'), cancel: $('cancelBtn') };
 const squadEl = $('squad'), selInfoEl = $('selInfo'), toastEl = $('toast');
 const titleEl = $('title'), titleStart = $('titleStart');
 const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('resultBody'), resultAgain = $('resultAgain');
@@ -57,7 +58,17 @@ function fitCanvas() {
   const availW = stage.clientWidth - 16, availH = stage.clientHeight - 16;
   if (!layout || availW <= 0 || availH <= 0) return;
   let scale = Math.min(availW / layout.width, availH / layout.height);
-  if (scale >= 1) scale = Math.floor(scale);
+  // Snapped to the nearest TENTH, not a whole step: a wide grid (backlot is
+  // 11 tiles across) is width-bound on a phone in portrait, where the fit
+  // is rarely more than ~1.0-1.3x to begin with — whole/half-integer
+  // snapping (tried first) rounded nearly all of that back down to a flat
+  // 1x, throwing away real width headroom for the sake of a crispness
+  // difference nobody would actually see at these scales. Tenths keep
+  // enough of the "multiple of a whole pixel" idea to stay reasonably
+  // crisp while using the screen — the render.js SIDE_MARGIN trim is the
+  // other half of the same fix, freeing width headroom for this to round
+  // into in the first place.
+  if (scale >= 1) scale = Math.floor(scale * 10) / 10;
   scale = Math.max(scale, 0.5);
   canvas.style.width = `${Math.round(layout.width * scale)}px`;
   canvas.style.height = `${Math.round(layout.height * scale)}px`;
@@ -156,7 +167,8 @@ function updateHud() {
   topbar.turn.textContent = state.turn === 'player' ? 'Your Turn' : 'Enemy Turn';
   topbar.turn.className = state.turn === 'enemy' ? 'enemy' : '';
   topbar.round.textContent = `Round ${state.round}`;
-  topbar.endTurn.disabled = state.turn !== 'player' || !!state.result;
+  controls.endTurn.disabled = state.turn !== 'player' || !!state.result;
+  controls.cancel.disabled = state.turn !== 'player' || !!state.result || !state.selected;
 
   squadEl.innerHTML = '';
   for (const u of state.units.filter(u => u.faction === 'player')) {
@@ -226,7 +238,10 @@ resultAgain.addEventListener('pointerup', e => {
   if (!advancing) crewProgress = {};
   boot(Date.now());
 });
-topbar.endTurn.addEventListener('pointerup', e => { e.preventDefault(); input && input.endTurn(); });
+controls.endTurn.addEventListener('pointerup', e => { e.preventDefault(); input && input.endTurn(); });
+// false: a mouse/touch player tapping Cancel never asked for the keyboard/
+// pad reticle to appear — see the comment on cancelSelection in input.js.
+controls.cancel.addEventListener('pointerup', e => { e.preventDefault(); input && input.cancelSelection(false); });
 
 // Console/test hook, same shape as every other game's (__hd, __dc, __sj):
 // state for inspection, the commands a click ultimately calls, and boot()
