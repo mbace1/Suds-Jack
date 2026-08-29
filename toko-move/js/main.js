@@ -1,4 +1,4 @@
-// Toko Move v2.5 — delivery game + exact HSL transit inspector.
+// Toko Move v2.6 — delivery game + exact HSL transit inspector.
 import { createFlow } from '../../flow-core/sim.js?v=2';
 import { FlowRenderer } from '../../flow-core/render.js?v=2';
 import { RouteDrawer } from '../../flow-core/input.js?v=1';
@@ -7,6 +7,7 @@ import { HELSINKI } from './helsinki.js?v=3';
 import { DeliveryChallenge, DELIVERY_TARGET, CARGO } from './deliveries.js?v=5';
 import { TransitLayers } from './transit-layers.js?v=2';
 
+const BUILD_VERSION='2.6';
 const $=id=>document.getElementById(id);
 let flow,challenge,renderer,drawer,draft=null,sel=null,done=false,msgs=[];
 let transitLayers=null,transitView=false;
@@ -51,7 +52,7 @@ function drawTransitView(){
   ctx.save();ctx.fillStyle='#edf4f2';ctx.fillRect(0,0,c.width,c.height);ctx.restore();
   transitLayers.draw(ctx,c.width,c.height,{alpha:.95,lineWidth:2.6*(renderer?.dpr||1)});
   const p=transitLayers.source,d=renderer?.dpr||1;
-  ctx.save();ctx.fillStyle='#233d4d';ctx.globalAlpha=.75;ctx.font=`${Math.round(10*d)}px ui-monospace,monospace`;ctx.fillText('REAL HSL GEOMETRY · SOURCE VIEW',12*d,18*d);ctx.fillStyle='#647176';ctx.globalAlpha=.7;ctx.font=`${Math.round(8*d)}px ui-monospace,monospace`;ctx.fillText(`feed ${p.fetched} · clipped central Helsinki`,12*d,31*d);ctx.restore();
+  ctx.save();ctx.fillStyle='#233d4d';ctx.globalAlpha=.75;ctx.font=`${Math.round(10*d)}px ui-monospace,monospace`;ctx.fillText(`TOKO MOVE v${BUILD_VERSION} · REAL HSL GEOMETRY`,12*d,18*d);ctx.fillStyle='#647176';ctx.globalAlpha=.7;ctx.font=`${Math.round(8*d)}px ui-monospace,monospace`;ctx.fillText(`feed ${p.fetched} · clipped central Helsinki`,12*d,31*d);ctx.restore();
 }
 
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
@@ -69,4 +70,4 @@ let last=0;function frame(now){const dt=last?Math.min(120,now-last):0;last=now;i
 addEventListener('resize',()=>renderer?.resize());$('play').onclick=()=>{$('title').hidden=true;flow.clock.setPaused(false);};$('pause').onclick=()=>{flow.clock.setPaused(!flow.clock.paused);$('pause').textContent=flow.clock.paused?'▶':'❚❚';};$('speed').onclick=()=>{const s=flow.clock.speed>=4?1:flow.clock.speed*2;flow.clock.setSpeed(s);$('speed').textContent=`×${s}`;};$('again').onclick=()=>{$('end').hidden=true;boot(7);flow.clock.setPaused(false);};$('popClose').onclick=hidePop;
 $('transit').onclick=()=>transitView?hideTransit():showTransit('all');$('transitClose').onclick=hideTransit;$('tramOnly').onclick=()=>showTransit('TRAM');$('metroOnly').onclick=()=>showTransit('SUBWAY');$('allTransit').onclick=()=>showTransit('all');
 addEventListener('keydown',e=>{if(e.key==='Escape'){if(transitView)hideTransit();else hidePop();}});
-boot();loadTransit();requestAnimationFrame(frame);window.__tm={get flow(){return flow;},get challenge(){return challenge;},get transit(){return transitLayers;},debug:{boot,finish,markers,showTransit,hideTransit}};
+boot();loadTransit();requestAnimationFrame(frame);window.__tm={version:BUILD_VERSION,get flow(){return flow;},get challenge(){return challenge;},get transit(){return transitLayers;},debug:{boot,finish,markers,showTransit,hideTransit}};
