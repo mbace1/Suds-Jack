@@ -1,0 +1,55 @@
+name: Toko Move — refresh HSL network
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 4 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build full exact HSL pack
+        run: node scripts/hsl-full-pack.mjs toko-move/cities/helsinki.json
+
+      - name: Validate full network
+        run: node toko-move/test/full-hsl-pack.mjs
+
+      - name: Check for source changes
+        id: diff
+        shell: bash
+        run: |
+          if git diff --quiet -- toko-move/cities/helsinki.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open refresh pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          branch="automation/toko-move-hsl-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add toko-move/cities/helsinki.json
+          git commit -m "Toko Move: refresh exact HSL network"
+          git push origin "$branch"
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "Toko Move data — refresh exact HSL network" \
+            --body "Automated HSL GTFS refresh. Geometry is generated with zero approximation tolerance and validated before this PR is opened. Source: Helsinki Regional Transport Authority (HSL), CC BY 4.0."
