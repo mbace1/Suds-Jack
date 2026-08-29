@@ -80,7 +80,7 @@ jobs:
           mkdir -p .hub-smoke/Suds-Jack/kindling
           cp -a kindling/. .hub-smoke/Suds-Jack/kindling/
           mkdir -p .hub-smoke/Suds-Jack/hub
-          cp hub/shell.js hub/pad.js hub/games.js hub/padkeys.js .hub-smoke/Suds-Jack/hub/
+          cp hub/shell.js hub/pad.js hub/games.js hub/padkeys.js hub/playlog-auto.js .hub-smoke/Suds-Jack/hub/
           python3 -m http.server 8081 -d .hub-smoke >/tmp/kindling-hub.log 2>&1 &
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8081/Suds-Jack/kindling/ >/dev/null; then break; fi
