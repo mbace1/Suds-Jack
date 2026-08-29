@@ -5,102 +5,45 @@
 import { HELSINKI_ANCHORS, resolveHslAnchors } from './helsinki-anchors.js';
 
 const META = {
-  pasila:{name:'Pasila',tags:['transfer','work'],capacity:30},
-  toolontori:{name:'Töölöntori',tags:['home','shop'],capacity:20},
-  kallionkirkko:{name:'Kallio',tags:['home','service'],capacity:20},
-  sornainen:{name:'Sörnäinen',tags:['transfer','work'],capacity:28},
-  kalasatama:{name:'Kalasatama',tags:['transfer','home','shop'],capacity:28},
-  hakaniemi:{name:'Hakaniemi',tags:['transfer','shop','work'],capacity:30},
-  kamppi:{name:'Kamppi',tags:['transfer','shop','work'],capacity:30},
-  rautatientori:{name:'Rautatientori',tags:['transfer','work','shop'],capacity:34},
-  senaatintori:{name:'Senaatintori',tags:['service','shop'],capacity:22},
-  ruoholahti:{name:'Ruoholahti',tags:['transfer','work','home'],capacity:24},
-  kauppatori:{name:'Kauppatori',tags:['shop','service'],capacity:22},
-  katajanokka:{name:'Katajanokka',tags:['home','service'],capacity:20},
+  pasila:{name:'Pasila',tags:['transfer','work'],capacity:30}, toolontori:{name:'Töölöntori',tags:['home','shop'],capacity:20},
+  kallionkirkko:{name:'Kallio',tags:['home','service'],capacity:20}, sornainen:{name:'Sörnäinen',tags:['transfer','work'],capacity:28},
+  kalasatama:{name:'Kalasatama',tags:['transfer','home','shop'],capacity:28}, hakaniemi:{name:'Hakaniemi',tags:['transfer','shop','work'],capacity:30},
+  kamppi:{name:'Kamppi',tags:['transfer','shop','work'],capacity:30}, rautatientori:{name:'Rautatientori',tags:['transfer','work','shop'],capacity:34},
+  senaatintori:{name:'Senaatintori',tags:['service','shop'],capacity:22}, ruoholahti:{name:'Ruoholahti',tags:['transfer','work','home'],capacity:24},
+  kauppatori:{name:'Kauppatori',tags:['shop','service'],capacity:22}, katajanokka:{name:'Katajanokka',tags:['home','service'],capacity:20},
 };
-
-// These are gameplay/courier connections, not claimed street or rail geometry.
 const WALK = [
-  ['pasila','toolontori'],['pasila','sornainen'],['toolontori','kamppi'],['toolontori','rautatientori'],
-  ['kallionkirkko','hakaniemi'],['kallionkirkko','sornainen'],['sornainen','kalasatama'],['sornainen','hakaniemi'],
-  ['hakaniemi','rautatientori'],['hakaniemi','senaatintori'],['kamppi','rautatientori'],['kamppi','ruoholahti'],
-  ['rautatientori','senaatintori'],['senaatintori','kauppatori'],['rautatientori','kauppatori'],
+  ['pasila','toolontori'],['pasila','sornainen'],['toolontori','kamppi'],['toolontori','rautatientori'],['kallionkirkko','hakaniemi'],
+  ['kallionkirkko','sornainen'],['sornainen','kalasatama'],['sornainen','hakaniemi'],['hakaniemi','rautatientori'],['hakaniemi','senaatintori'],
+  ['kamppi','rautatientori'],['kamppi','ruoholahti'],['rautatientori','senaatintori'],['senaatintori','kauppatori'],['rautatientori','kauppatori'],
   ['kauppatori','katajanokka'],['hakaniemi','kauppatori'],
 ];
-
-const norm = s => String(s ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-const EXTRA = {
-  katajanokka:['Katajanokan term.','Katajanokan terminaali'],
-  ruoholahti:['Ruoholahti (M)'],
-  kamppi:['Kampintori'],
-};
-
-function aliasesFor(id){ return [...(HELSINKI_ANCHORS[id]||[]), ...(EXTRA[id]||[])]; }
-function semanticForName(name){
-  const n=norm(name);
-  for(const id of Object.keys(META)){
-    for(const alias of aliasesFor(id)){
-      const a=norm(alias);
-      if(n===a || (a.length>5 && (n.includes(a)||a.includes(n)))) return id;
-    }
-  }
-  return null;
-}
-
+const norm=s=>String(s??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const EXTRA={katajanokka:['Katajanokan term.','Katajanokan terminaali'],ruoholahti:['Ruoholahti (M)'],kamppi:['Kampintori']};
+const aliasesFor=id=>[...(HELSINKI_ANCHORS[id]||[]),...(EXTRA[id]||[])];
+function semanticForName(name){const n=norm(name);for(const id of Object.keys(META))for(const alias of aliasesFor(id)){const a=norm(alias);if(n===a||(a.length>5&&(n.includes(a)||a.includes(n))))return id;}return null;}
 const rad=d=>d*Math.PI/180;
-function metres(a,b){
-  const R=6371000,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),la1=rad(a.lat),la2=rad(b.lat);
-  const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
-}
-function ticksFor(a,b,mode){
-  const km=metres(a,b)/1000, kmh=mode==='metro'?34:18;
-  return Math.max(3,Math.round((km/kmh)*120)); // ~30 seconds per simulation tick
-}
+function metres(a,b){const R=6371000,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),la1=rad(a.lat),la2=rad(b.lat);const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));}
+function ticksFor(a,b,mode){const km=metres(a,b)/1000,kmh=mode==='metro'?34:18;return Math.max(3,Math.round((km/kmh)*120));}
 
 export function buildRealHelsinki(pack){
-  const resolved=resolveHslAnchors(pack);
-  const missing=Object.entries(resolved).filter(([,s])=>!s).map(([id])=>id);
-  if(missing.length) throw new Error(`HSL pack misses delivery anchors: ${missing.join(', ')}`);
-
-  const lats=Object.values(resolved).map(s=>s.lat), lons=Object.values(resolved).map(s=>s.lon);
-  const north=Math.max(...lats), west=Math.min(...lons), kx=Math.cos(rad((Math.min(...lats)+north)/2));
-  const project=s=>({x:(s.lon-west)*111320*kx/100,y:(north-s.lat)*111320/100}); // one unit = 100 m
-
-  const nodes=Object.entries(META).map(([id,m])=>{
-    const stop=resolved[id],p=project(stop);
-    return {id,name:m.name,x:p.x,y:p.y,tags:m.tags,capacity:m.capacity,lat:stop.lat,lon:stop.lon,hslStopId:stop.id,hslStopName:stop.name};
-  });
-  const nodeById=new Map(nodes.map(n=>[n.id,n]));
-  const edges=[];
-  for(const [a,b] of WALK){
-    edges.push({id:`walk:${a}:${b}`,a,b,mode:'walk',time:Math.max(6,Math.round(metres(nodeById.get(a),nodeById.get(b))/55)),capacity:2});
-  }
-
-  const stopById=new Map((pack.stops||[]).map(s=>[s.id,s]));
-  const edgeKeys=new Set();
-  const lines=[];
+  const resolved=resolveHslAnchors(pack),missing=Object.entries(resolved).filter(([,s])=>!s).map(([id])=>id);
+  if(missing.length)throw new Error(`HSL pack misses delivery anchors: ${missing.join(', ')}`);
+  const lats=Object.values(resolved).map(s=>s.lat),lons=Object.values(resolved).map(s=>s.lon);
+  const north=Math.max(...lats),west=Math.min(...lons),kx=Math.cos(rad((Math.min(...lats)+north)/2));
+  const projectLatLon=(lat,lon)=>({x:(lon-west)*111320*kx/100,y:(north-lat)*111320/100}); // one unit = 100 m
+  const nodes=Object.entries(META).map(([id,m])=>{const stop=resolved[id],p=projectLatLon(stop.lat,stop.lon);return{id,name:m.name,x:p.x,y:p.y,tags:m.tags,capacity:m.capacity,lat:stop.lat,lon:stop.lon,hslStopId:stop.id,hslStopName:stop.name};});
+  const nodeById=new Map(nodes.map(n=>[n.id,n])),edges=[];
+  for(const[a,b]of WALK)edges.push({id:`walk:${a}:${b}`,a,b,mode:'walk',time:Math.max(6,Math.round(metres(nodeById.get(a),nodeById.get(b))/55)),capacity:2});
+  const stopById=new Map((pack.stops||[]).map(s=>[s.id,s])),edgeKeys=new Set(),lines=[];
   for(const source of pack.lines||[]){
-    if(source.mode!=='TRAM'&&source.mode!=='SUBWAY') continue;
-    const mode=source.mode==='SUBWAY'?'metro':'tram';
-    const touched=[];
-    for(const sid of source.stops||[]){
-      const s=stopById.get(sid); if(!s) continue;
-      const id=semanticForName(s.name); if(!id) continue;
-      if(touched.at(-1)?.id!==id) touched.push({id,stop:s});
-    }
-    if(touched.length<2) continue;
-    for(let i=0;i<touched.length-1;i++){
-      const a=touched[i],b=touched[i+1],key=[mode,...[a.id,b.id].sort()].join(':');
-      if(edgeKeys.has(key)) continue;
-      edgeKeys.add(key);
-      edges.push({id:`hsl:${key}`,a:a.id,b:b.id,mode,time:ticksFor(a.stop,b.stop,mode),capacity:mode==='metro'?8:5});
-    }
+    if(source.mode!=='TRAM'&&source.mode!=='SUBWAY')continue;const mode=source.mode==='SUBWAY'?'metro':'tram',touched=[];
+    for(const sid of source.stops||[]){const s=stopById.get(sid);if(!s)continue;const id=semanticForName(s.name);if(!id)continue;if(touched.at(-1)?.id!==id)touched.push({id,stop:s});}
+    if(touched.length<2)continue;
+    for(let i=0;i<touched.length-1;i++){const a=touched[i],b=touched[i+1],key=[mode,...[a.id,b.id].sort()].join(':');if(edgeKeys.has(key))continue;edgeKeys.add(key);edges.push({id:`hsl:${key}`,a:a.id,b:b.id,mode,time:ticksFor(a.stop,b.stop,mode),capacity:mode==='metro'?8:5});}
     lines.push({id:`hsl:${source.id}`,label:source.name,sourceId:source.id,name:source.name,mode,nodes:touched.map(x=>x.id),carriers:mode==='metro'?3:1,carrierCapacity:mode==='metro'?30:12});
   }
-
-  if(!lines.some(l=>l.mode==='metro')) throw new Error('No HSL metro service reaches the delivery anchors');
-  if(!lines.some(l=>l.mode==='tram')) throw new Error('No HSL tram service reaches the delivery anchors');
-
-  return {nodes,edges,lines,source:{name:pack.source,licence:pack.licence,fetched:pack.fetched,exactGeometry:pack.exactGeometry},resolved};
+  if(!lines.some(l=>l.mode==='metro'))throw new Error('No HSL metro service reaches the delivery anchors');
+  if(!lines.some(l=>l.mode==='tram'))throw new Error('No HSL tram service reaches the delivery anchors');
+  return{nodes,edges,lines,projectLatLon,source:{name:pack.source,licence:pack.licence,fetched:pack.fetched,exactGeometry:pack.exactGeometry},resolved};
 }
