@@ -3,8 +3,8 @@ import { createFlow } from '../../flow-core/sim.js?v=2';
 import { FlowRenderer } from '../../flow-core/render.js?v=2';
 import { RouteDrawer } from '../../flow-core/input.js?v=1';
 import { THEME } from './palette.js?v=1';
-import { HELSINKI } from './helsinki.js?v=2';
-import { DeliveryChallenge, DELIVERY_TARGET } from './deliveries.js?v=2';
+import { HELSINKI } from './helsinki.js?v=3';
+import { DeliveryChallenge, DELIVERY_TARGET } from './deliveries.js?v=3';
 
 const $=id=>document.getElementById(id);
 let flow,challenge,renderer,drawer,draft=null,sel=null,done=false,msgs=[];
