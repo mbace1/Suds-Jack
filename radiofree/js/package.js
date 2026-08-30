@@ -5,8 +5,8 @@
 import { Anchor } from './anchor.js?v=37';
 import { Graphic } from './graphic.js?v=37';
 import { PixelScreen } from './screen.js?v=37';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=50';
-import { preferredScenes } from './editorialmap.js?v=46';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=51';
+import { preferredScenes } from './editorialmap.js?v=51';
 
 const BEATS = [
   { shot: 'broll', len: 7.0 },
@@ -38,11 +38,7 @@ function ensureCompactPresentation() {
 
 class AmbientFootage {
   constructor(host, story, seed = 0) {
-    this.story = story;
-    this.seed = seed;
-    this.t = seed * 1.37;
-    this.live = false;
-    this.decoded = false;
+    this.story = story; this.seed = seed; this.t = seed * 1.37; this.live = false; this.decoded = false;
     this.scr = new PixelScreen(host, 128, 152);
     const preferred = preferredScenes(story, AMBIENT_KEYS);
     this.scene = preferred.length ? preferred[seed % preferred.length] : AMBIENT_KEYS[seed % AMBIENT_KEYS.length];
@@ -61,8 +57,7 @@ export class Package {
   constructor(host, story, sector, seed = 0) {
     ensureCompactPresentation();
     this.story = story; this.sector = sector; this.seed = seed; this.live = false; this._decoded = false;
-    this.drawn = { anchor: null, graphic: null };
-    host.innerHTML = '';
+    this.drawn = { anchor: null, graphic: null }; host.innerHTML = '';
     const root = document.createElement('div'); root.className = 'pkg';
     const a = document.createElement('div'); a.className = 'pkg-shot on';
     const b = document.createElement('div'); b.className = 'pkg-shot';
