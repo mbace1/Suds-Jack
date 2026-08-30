@@ -3,21 +3,21 @@
 // keeps one escape scene available so repeated bulletins do not become mechanical.
 
 export const SCENE_PREFERENCES = {
-  CITY: ['hakaniemi', 'centralstation', 'raintram', 'kallionight', 'metro', 'katajanokka'],
+  CITY: ['hakaniemi', 'centralstation', 'mannerheimrain', 'kallionight', 'metro', 'katajanokka'],
   GAMES: ['metro', 'rooftops', 'centralstation', 'kallionight'],
   TECH: ['rooftops', 'metro', 'hakaniemi', 'centralstation'],
   SIGNAL: ['rooftops', 'metro', 'kallionight'],
-  CULTURE: ['centralstation', 'kallionight', 'raintram', 'hakaniemi', 'katajanokka'],
+  CULTURE: ['centralstation', 'kallionight', 'mannerheimrain', 'hakaniemi', 'katajanokka'],
   'ODD WIRE': ['kallionight', 'katajanokka', 'rooftops'],
-  LEAD: ['centralstation', 'hakaniemi', 'raintram', 'kallionight', 'katajanokka', 'rooftops', 'metro'],
+  LEAD: ['centralstation', 'hakaniemi', 'mannerheimrain', 'kallionight', 'katajanokka', 'rooftops', 'metro'],
 };
 
 export const STORY_SCENE_HINTS = {
   'drone-handshake': ['rooftops', 'centralstation', 'metro'],
   'ai-fear-half': ['rooftops', 'metro', 'hakaniemi'],
-  'hub-walkout': ['hakaniemi', 'centralstation', 'raintram'],
-  'robot-pavement': ['hakaniemi', 'raintram', 'centralstation'],
-  'damp-weekend': ['raintram', 'kallionight', 'hakaniemi', 'katajanokka'],
+  'hub-walkout': ['hakaniemi', 'centralstation', 'mannerheimrain'],
+  'robot-pavement': ['hakaniemi', 'mannerheimrain', 'centralstation'],
+  'damp-weekend': ['mannerheimrain', 'kallionight', 'hakaniemi', 'katajanokka'],
   'song-window': ['centralstation', 'kallionight', 'rooftops'],
   'aurora-cloud': ['rooftops', 'katajanokka', 'kallionight'],
 };
