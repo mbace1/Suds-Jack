@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {buildRealHelsinki} from '../js/real-helsinki.js';
-import {routeChoices,servicesAt} from '../js/route-choice.js';
+await import('../js/route-choice.js');
+const {routeChoices,servicesAt}=globalThis.__tmRouteChoiceCore;
 import {DeliveryChallenge} from '../js/deliveries.js';
 import {createFlow} from '../../flow-core/sim.js';
 const pack=JSON.parse(fs.readFileSync(new URL('../cities/helsinki.json',import.meta.url),'utf8')),city=buildRealHelsinki(pack);
