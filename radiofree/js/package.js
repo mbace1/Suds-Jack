@@ -5,8 +5,8 @@
 import { Anchor } from './anchor.js?v=37';
 import { Graphic } from './graphic.js?v=37';
 import { PixelScreen } from './screen.js?v=37';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=51';
-import { preferredScenes } from './editorialmap.js?v=51';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=52';
+import { preferredScenes } from './editorialmap.js?v=52';
 
 const BEATS = [
   { shot: 'broll', len: 7.0 },
