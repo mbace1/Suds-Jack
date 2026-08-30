@@ -1,25 +1,66 @@
-// Radio Free Helsinki — fixed-grid parallax art layer.
-// Authored from the Helsinki skyline concept at a native 256x74 palette-limited
-// raster. It is embedded here so the browser gets one deterministic pixel asset
-// without depending on a second binary publishing path.
+// Radio Free Helsinki — fixed-grid distant city layer.
+// Skyline only: no ground, water, reflections, labels, weather, or baked effects.
+// Designed to sit behind independently animated street/harbour/roof scenes.
 
-const FAR_CITY_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAABKCAYAAABUxorYAAAa6UlEQVR42u1dy28cx5n/FaXpnkf3aDhN0qJES2PTUaJEsZUlxL0EG3GBGInjYAMb9k0C9hL4ECDHHNd/wWIPBpLbYpWbjRhZaL0JbDjyLpxDZAiQtLal2KY8osSHyekROd090z0UWXvorprqmu6eGYoyFLt+ADGcflTX43t/X/UACgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgr7h3/5Go55TC27ggLw8ovn6I0Xz9GHIVRefvHcIytcDqqlV1AALte9h9KuJFSIsgAUFB5ROLv7rw/rTYLLdQ//MfeCcgEUFB5VEHMK22P6vre73nIfmnBRAkBB4W9AsBBzCgCgn3pJCQAFhUfS/Kf5h/6MaX3nkRu3CgIqKADQzQp0s4LWQ2p/e0xH/crrygJQUHhUETibME8+9zdpXSgBoKCwR5w4/xotVSegmxWUZ+f3vRbAJL4SAGl4+cVzigL3CfML56lWW1ATMSKatz/D9tKHcFYX4awuPpRn5HYDJQBSQGtzL1BFhg+O9ZYLvVBQEzGK73/qpT4NXZ7bv4rASdLGJGljtpJXAkCGVlugv79yFyv2PUWJD4yLLNeshOko5rl1lDIf3TJLIV0a1r6tSa1Ke397KAaqzb2wp/uGhcoCfAXwxNlXALxFgSpaoVajwYdvEDUzQ/nnxKF5mjt2Cl6zAY1u7mPrP0W9eZ5/q195c6i7ynPnKG3bRMsbIGaVrjRsaLUFAgDEmEDw4Rt/+xaAVltQmmof3ahJ0o4T9kOIZn8V8fl7v+FxAOb/d11734TnBi3i1m6VVwQOGy/Q8gYFQFtbTUSMT4kxQbUdj+4n74xsAbz84jm8/rvfKsp5RPDyi+dQmTkE4BAA4K3FwyDOJrquTfEIbj55JOMAZgWl6gS8ZgWBs4nWlf2n7yZKg6w4zux9ynInvlFJLxSgn3yOOjf+m3zpAgBh0A71K2/u+eFJEkyrLaBbv6SocURUZo7EvpeqE5yoW2p6hkLgbBLNXaOO42X6//ML51GrUnq57pH6lX+GVvtXnH7icVqrUrz+u9+SDDcD9jCm/6Fq4nF7TMe3ymHzN9YasIp5rAYHvnwXQKst4EGDdnKaqlu/pLTUHrT+z3/5KwDA5t2VJIJG4DBf9qJKtQ5LmwOCfzdblL57K0ATJVqee50SY4LebFG8e+vhpvgss4T1lsvdCLu9f3UFo8YA9sP3SDNNVUxgSNSbBFevr9IkC+Ds+J1YWss8+Wv84WNbze0D4omzr1AAfMdgbjeAtuMhCHy42xTW917e9zlmKcQ01+BLjQHsR4GJYPpTvVBA0OkAAI5Y42S+VsLrdUVog/DzX/4K71zborbjoTzXr9k3767AdgAgPB8EPgXCfPd+Ro+/ajGALgA4m9DNSrIZ7niwzBJYsHWDVrGyTWHkQl3Wv5X4IuYX3sCGIBbKc+cy4wuTpI3TT0/HrLrKzBFsXNviz2XbirvbyfKG1dREVjoZ5FaPEgN4IAlnnnyOMzxjfmJMECBMj9Sv7K3dKB7xyBLX0edfpcwvB0A+ufCLB2rvvXuP00myCoQ568Q1+VaZ4NZuNTrPvU8ajBgUPPr8q/z/5f969WshCBjzHn3+CkrVCQoAXrNBNHeNX7dBi+H1eh5IqfCbX3iDymb8JGlTLJzH5UsXEtdhgxbxzrUtQAwY2lsAgMXNnlXX9V3gQCmJx6jkHlCttpApBIYSAJL2J6MKg9rcC1ix71HG/NxXfUCNZJ58jrX7SMYRTpx/jQ7p/gyNs+N3gPFpvHfv8ejIndj5yswRnJ4BlhcLCJzNPRe1yH0/cf41fHLhF1/ZeE2YBWhEY70NgDM/StUJui0IgEnS5kIg7SUiG7QI2/HwrXJbjCEgtxvgibOv8PRjFs5YYfT/A7vEKwmvbXQSmP8ianP/zmMDTNGKNBdZ35x3WextWAuAE0O3fglabWGkqP2KfY8escYxXyvhct0bKohhnnyOBp3OwCChXiiE5tvXDGfH7+CtxQIwPrxmG2SCDiEUZKvjgS2afRK0mRbqIMHFLDTBUus71zUOQ3PXUKuGj9nICOuL8QDxjUDBNgXd8dDw3UxFwATMB3aP0Rc3w1gDABg5gq7vQjv5XPScX2PF7gxU4HqhQJlwYPw7UAAwv1302X82N0PCd53tbcEkCfVA2M+2HhwXI+0BfHLhOIDbidcAP91TEOqHzxyKHfvJbDj2d65t4Yzl9QUE+9bSsGh57hwBsFdBkGDRXCRp4zlx/jV4zQaOerdw+dKF2Bx5zQZ3KyIGZsw60hwNYn5mzchCYJj7klBvDjaCWDovLC0Omdh01oHcQSBnDHz12AYtgjrrsNs+tLzBj7N4A4DYcfG7c28jcd2Y5S3wMdVqC4QMYfrHBMBe0nZabYGa45Po+q7IsJm+yTAWgH7qJWg73r4UROyD9pFdo0RX6ZMLx/sYhjGArE1ZDfiz3/8GDX1DJDL61eurnHCYkHjzaoCua/NdaLOVPG62KHcJuq5NDn/n7/s0OmPMBPclDeSTC78YhqFIihAhKce4ID1x/nZSu6Ry5zI2Hx96+y6R3LCRmN9rNqC5azGz3HY8Ubiievyp0C1Y+rDPVWCBxNxugO0xHa0r8boBlmU4Y3n8DcUs3c6sZ9HNS0r/1psEVz+/03f8iDWe5h6kWwAi8yctzEjBlUJBZv59gZEj6I70liWmWUItFGppGT+VrpePX+TfJSahwwRNw+DSa6J/KRIBHJqHblaQW73OTUcA6Gn/Q31tnn56GgBClwAdbva/cDquaW5d7QWszOlZKhJ31A8qa+RhrIIhr6cjHKc94Xg7tb3Nx+f3ar2MrPlL1QmIcYD0AGLcfz89cwhXr69igxZjW4LD/RsAddYpADS+WMLEY8cGusj1JkENK9wSWW+5sNt+jLdEax1AKvMPjAH8bG4GQPjO9BX73p4r9YJOZ2SJ2z1Q4sScBnebgg4hVHqMehvAa9w0j4hL6ttrgrC7nXD8tnxdTEPYjgdzejbRn4wIiTIt4W81EThHUD3+FLaXPgR11kF3DyIAkBMW7ur1Ve57ihoguQrwTuJzQ+EQWgVAWJ22troIyyzB32rCWdVj/2uGxUtkh9WQpeoEmrc/E0prG0Pf/yhhP/pdbxJs0CImm6vcGsChKrcausZhCgC5yNRnQsAq5jmzMkYOz4cWQK1KUZk5EhMCMmOL30Xtn4QsAUBlU2SwZk1h5vol6KdeItRtxIKJqT7U3DnkdgM4Gc8rz70OAJTuFEBCV4D7Ql3f5RORt2b2UzOlEsxR71YoSswS7OjFErIg8JoN+Msfxx/SWoH9fyux5TDcJTi7ByMhGJZ/rrfy3CJw/3oL2o4Hq+7B2T2I8qEqzlgezs70CwMmKDR3DX6rCeq76B4oobUbIAegtRVqpSCIylXHdASBD8BG17XhrC4ichV4lFwMjjHB5zgeNHcNXdfj9wWBD2c1nykQ08DM6NyxU5nXNW9/BpP4A68b5bmtL5bQWgTKs/OJ/a7MHAHsLWiGFZb5Ol6iH5+UFYhZ2e4aJzLGtHaCFg86HfzhYxtWMR8ys/D/IKta5F3ZMsg06bXaAg8csJvS/HFzyI0JzK/Pauvo868icDZBWys0YmQivqapV+IawrGXw3wsOx/0pB11G/3C5fgz3FfbT8l/2vsL9w3Fd8CJpqHM/IOsG13PI7cbwBy7H3uvvBgNdrcpF34Tjx3DD585hM27K/jALoE66/w+1oYrFK/ECD8lMJXbDXhfmK/LxhQ4mzCJD3En4gYtorXVjLUXBD6O/90Phrf+PvpTTGvpUyfQdW1YZgk/fOYQ3los4Kh3C6efnsbV66tY3PTR9V1Mn3kutpZpkf0s5qeCRg46HUye+gFvY3vpQ27a/zmYjdGiuM6au4ZJ0katSmORfBYDMMfu92nloNNJ9NUZ07JzSdo9SwjohUJPcCRYC2SUGEAS00bbTmnQ6aQG9Uyeroh3oHz8GaKblURNy7ZmmtOzse/Mj2IEFgR+jKC7vssjomLcgU2kXihAnzoREwJMM7MIapaQSMPZ8Tuc8Rya5wG4JIZjx7I+AXABwMYrCjfxOr5mOx60vNEnMGShIX4/MmElpqAYxDJUkanN6ZABnhxrxtyTepPgZqt/SZkVkcbwxJziqTbGhDKxa9/5x3Dbrr0M0zrKhcIZy8Pvr9yFXiigPDufqCh0M9zpVz3+VJ8ls730IbrGYeRWr8cYMypWw0TtO5yx0wSA+BwtI1YgCxiRLuVjIhNnZb2SNPsw92W6AFG+nwi5Q5JlKuuFAu2mXNM9UOLELDJkGvP3xRCcTf62FuYLtbaaoSTd8bGtW/x8S0jDNPzsV2SJ5mtOmLBg/RM0hQWVzXixX1zyC/l4ZsKnaXa+QHoe2wCMXMAZGDmjV14qMR3TwiySrOuICUXkjFjgUA6YipYFe6ZoJQAAHbsPIHShkn4tJwh86HqeEz9jfhaXqFUpbu1aPNYgmupyoExkdrSX0G3YmNZ3OIOIzLE9/TSaH/0lNg+aYcF2bNQJwdHaN9H4YgmN+kcwraOZay4KCM70XywlMgt1G1z5WGYpDMJVaUg3rsePs+Bt4GxCI+CWmBixlwN8MvOnMbNVzGPFvpd63V6ZP1MAMK2t5Q2eN0zK+QadDhMSJM2S0HY8+HYDVOgUKVqxhei6dsy81IweEelmBYjMKq6pKnleZNETDv1bKn/87Z6G+/2Vu+geKIG4NrxmBc7qInK7AaxDVVDHgyNaDuufRMIAcFYtrvGSLBXLLOGda6FwCjXmwRizm2P3AQBTZYOXdM5W8mGQiLRRq+qR5tSxHTG0OXYfxKxyJp0qG1wz21FwhI3bdhBzFdyMGnVdB2jbBvJhPtrZDa/J7Qbo+i5WBAGN9lJsrarwYO/4oG0PiNaq3oxEZXOV6wi2bqzNMJZh98U+ctG8MIjML9EeNHcNQeBz5mbMxmIkJw9PYLnTAdBBsONBnzrRJ3DE7yzTwp4n5tXlHDsr912u38UygKufx0832gVOK90DJZgTVpSaJbF5ERkyidHTGNVu+0O963GUNofKArCJ0AsFdA+UUJ57nQLnZB+RdH0X3folqdLsIqzv/ZbvoNJh88i+XiggCHxo4YsrQoJo22jZd2PPA4Cg/hF0PQ/LLPVtlNigU5xIh05HSlYFdTxMkjZuogTrUIlbDmIwkV0vEjZjGuq7aEn14Ow+vWhFz1gPXwjRclE+NAXb8aKy0CZaANZb9zFVNjhDTxKCxU0/LB6JBAcrDgnnyueBvNlKnj+/iRJy6K9NF10HAJgu5jFVZnGK3ud66z5WWZmp9BKKKuLaq3X7GvLWDDbMXqyBuV+5SOjZvs8tG9r2ELRtblbLzB50OkAxHwtucebPG8gdOwWTfhb25fhTODt+B29ejbbwGhY2H38K+lojHhtK2djD1rMlPN8cu5+Za683CW74haQMV58b1toioJIbJtKSzMxMIJjjk7HdhuweZgEMEiJpzJ/mIiSa9ayMUdQiok+aOJmRWSgHj5jmc3YP8v9X7Hs8eMFSHox4kgYoDoSlJRmYSTXx2DG0tpox7S/6WmkuSY/h2lhvufw33BqROciEkOjDixpVzOsmLZyoPdlOsqRXQ02VjaEEGMv5yuMYKRneDiPIz37/GwAQSye+/f6nWA0O8FLTPaZ8oRcKMQFqFfOpZeCyCZxmzpZn59GIlAHLKjRvf4aua4O2bZw8PIGrn98RN5rBtI72BefY2soCPu37IA0q910vFPiaM/pwtykPSKcx4xFrPFX776V+JovpUy0AsYaZ+afMbGTEk0R0YRQ6H9M21oTFAyaX6x4ncrvtY6ps8E8AILSIhkRwMvOz78wHqzdJyLCSBcAi0JY5hW5gS33sMbXoNoSmtYszlod6k2DlQAlGjkCLzqe/0jmfwKT38eyz38Xb738Ku+2Dtm1oeQNnIk+kVu35kfJ4xGCafA4A5mslvHurt2TW2H0AHvfXqbPOhVhW8ImYUzHtJv7P4hDM+hOzDPJ6WMV8THiLWkm8br5WCoVM/dOY8NJ2vD5hkaQd+bbxCQsrDRumEFNw7GUceewY33bLrqVuA8GOB9oykD/67RjzyxpZtDTEILIchExLq4lltqFSi+YrettGd8fndlkaU06VDZ7jZ2tSb5KBKfjTTzyO9ZabaCEMg4MC88ei6NVoEFNlI1ZtpBcA2va4IAgCH1okHABwppkkhV6hSv3TGCGHr0m2AITHqLPO22O5VcbMpGiFQmXHw3/+NTx+bYMRawNBp8O1Pyu2CCPZ8XepMYITBQUjgjByDl5gcWPNQ3en5wLJUW6ZUeMCICzcsds+SNEKhabv4nK9Z2KK97P/xWAaIwCx6EM0VZlFJVoOG5QRkRebZ167Xjb4fdRZR50YPAbBPpPcGC2aO2YFsXmMafXI0jHzQWpRzHrE/BOPHROsrh1OXyjm+XhqVcqtBcZcudXr6E4/DZPm4awuQjMslKoT0FwLk6SNG2uNVPN8O4r1yFpeDrTZbbdPOCTl0wHAHJ8MrVrBig35Jc8rMxnefv9THltJwwYtAs12FDMIjfMNWky1jtjxkJdK+MMeLYWDQnSasgUX/aHKTDiY3/3v5zh5eIILg/CXTj1AB5xdI2bud/3w9UVMiiUtCisymiobIOYUtPYSaNuDE/gIdrz+wRQKMTNKBsu7ohl+st1aP/62FVkgBdxY83pCIGfENVgxj7ff/5QToZhKBJJz5Gk12eutSIvsBuhGY17pdFCPpHysoATJr/VibcvnGKGFmr7NmZyNXxQYsnVxs6UDuA9iTqFW9VCLhDz73KCh1WSN3Y+F7Kb1HczXSnwtFzdJFEOg3Jr7UQ0A9OiaMEDLApKim1OreoLwKwGg0Wdf1rnPFCZRUdL2kg+HRhF94zAWlz8OFUgh2bWgbTu2Y1R2O9LcmDSE1sB9bpUBwLu3mOuX74sdAOHrvMW6FNF6YLS+uOlza3O95WKqDCxH1zDeYwJzqmzgxlqD85FVzGMlod+DhAIpz52jllniRQpMy4jSmA0wq2hFznWzNthLDEV/Rix4EJnwQfYKHLHGY5PDClKScuKyNhUj9cyUFu9JcwFiGjaCrIlkM5L1Tda4w0J8MYSc8WAuF+uTrOHZvWxt5P6zQCMxp3jVmkgTohAS50RsNykNKV4rW4KykJJr3Jkgtr77D+HPd0VFVtXjT2Hto7/AnJ7lVZdphVZZNDDKNUn3yOM1pcyGLLhFC078LEdlwlV4MTeO1WGwoDMrImLzIj8vLfCYmN0AQMQinawI5zB5xazAw7BBib0iqXhi2OfJRRhJY88KVg2bcx1lLMNI8ay+Jo1rUDujPmvUa5KKXtLWKq0tYkzEcvSjrPUwY9gv+vuy6P5BQYD+30Jj1VWiifrHOvrSQk2UYvl6uQ1WDPHurYDnvW3Hw49qoYnLdkmxyrmkbAILKup6PjIzgT81+JZWfg/r8wd2GG1n1WhisG+lYfO25H6z/l69vtpXycbiEmKVHJsf0c1h42MWlZwhEfsivv+NlYs6NJ/5S7JsnuR5Fi0AeV5N4vNP1idxfcViFXmNxbkXnxe+6YbwUtybLcr7kdRH8Vo2f6OMVS4lbt7+jFf0iXsSWMFOEh2l0Wna9XL69J++GZ7/Y71H+2xsYp0/G6uId65txegh0ZpIKF4yiY+Vhh3rm1wJy3iCrV3SmqU9k8cp5b3JmbUB0X5yNgFsUjXD6nv9FPOFkurMN++u9G2YSFoEXc9nprrEc6I5K/aFTX5WWw7NJ/ricqAm6bfeN2ixbyxZY0o1KQWGGOY35TXDgkPzsWvTxiBek9a2KEzk+eoVHXlC5gSp485i7KTv8mfSHHrNBrxmg6f22I5DsTpTvJ7RJKMF8btIH0lrpBkWPy6fl3/kI2kzEIvfDKIpbq4LuzTFuZGfvT2mx8rgZbqXaTyL+YVERSgEkphYnJCkc/KxrDbExR309pqk57B7TOLDJH7sOWLbjCjFhRfPJxHEKH1yaD71zTBi21nzlKr1jMOxvsrfB0EegzxuMcsyiDkHrbV8b9L9SfekMX3a8+U2sl7dJd+jm5W+vzQk/TjoIAGetOsvi8YZgyZZKGxdGH2nWSOjKJdB1xxMcAmiX0v1hiaE2IRFJZpd4zCARX5+g/oJ1kGpb9FlU038niZN2fNFs3dQ38VS0nifSCLRhuMJ8wFJJcHsPIRzcjtsrCbxY4Qi3svaZq+qZt/ZvcIbfYbWtOLuvb0gFKC9cu0QPl/DJHoQ+zeqtZAkrJMga372XHGNE5lCOs76Oojuh6FRkU4Haf9RrMNRC76y2uH7OQI/LgAa//NveOLsKxFB2okvnUiayEB6n7o8wTJDirl0voFCWOgkgspi6mHN3SxiCvtsY7n0ZIyJk8ajmxXAS/+xhq5xuK8NsZ1eSqqT+ZykY4yJZSIP21zMbCs+J97IWl58ZhdAZaaDblDgYxWFqthOmPE4NLQwSqKJJCS9dCSN+cW3/mY9J50O7cS5cKh8rZ+YHs6KQYjrwmI2exHSae3LwkN0bfryHp+/9xsyv3Ae0MOkLAtyZRFU1rlkJmzGtWqCNk7WsIuZ5qqs9Qa1OajfWVguPYnTEQNzDT7is4b1D0dtc7k0O8R9dirjjdb/2YG0sYwKancX0TVm9zT3os8/jDWQxPzy/ez6YehE9LM1ozrwWlFxxqoshxQCo4C9eWjY9lNjACIuX7rAfuyQVGaOkFqVEs1dIwBI4GySyFUgAEipOsH/5O8f2CXygV0iJvFjfxu0SOpNwtsEQHSzEmtX/q65a6TeJKTeJPw8u0b8n31n/Ulrj51n4wmcTfKBXeLfxbbFa1hfAJDNuyu8P6zNQeOIfoiSHPVuEQD8fs1di82t3H92r9weu1ecH3avOL/szyR+37HNuysEAO9T2p88Z38OZofunzhPIp2kPYutKWvPazYy+5REB+ycfK/XbKTSh3h/9DPhBADZoEWyQYt9c9h1bU7XT441ySRp8zll8zpJ2sRwl4jhLhEAJLcbkCDwSRD4fWtjEp/3wbGXw/kzrL5rc7sBye0GvE9d1+b91QyLaIbVm//oO/tjz47aVFBQ+Lri/wFrgp265qAycwAAAABJRU5ErkJggg==';
+const W = 128;
 
-const farCity = new Image();
-farCity.src = FAR_CITY_SRC;
-farCity.decoding = 'async';
+const FAR = '#0b151b';
+const MID = '#101d24';
+const LIT = '#183039';
 
-export function drawFarCity(scr, t, y = 58) {
-  if (!farCity.complete || !farCity.naturalWidth) return false;
-  const ctx = scr.ctx;
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  // one displayed pixel of drift every ~6 s: movement is intentionally barely
-  // visible so the skyline reads as distance rather than a scrolling card.
-  const x = -Math.floor((t / 6) % 128);
-  ctx.globalAlpha = 0.78;
-  ctx.drawImage(farCity, x, y);
-  ctx.drawImage(farCity, x + 256, y);
-  ctx.restore();
-  return true;
+function building(scr, x, baseY, w, h, tone, roof = 0) {
+  const y = baseY - h;
+  scr.px(x, y, w, h, tone);
+  if (roof === 1) {
+    const half = Math.floor(w / 2);
+    for (let i = 0; i < half; i++) scr.px(x + i, y - Math.floor(i * 0.35), 1, 1, tone);
+    for (let i = half; i < w; i++) scr.px(x + i, y - Math.floor((w - i) * 0.35), 1, 1, tone);
+  } else if (roof === 2) {
+    scr.px(x + 3, y - 3, Math.max(2, w - 6), 3, tone);
+  }
+}
+
+function windows(scr, x, y, w, h, phase, tone) {
+  for (let yy = y + 5, row = 0; yy < y + h - 3; yy += 8, row++) {
+    for (let xx = x + 4, col = 0; xx < x + w - 3; xx += 8, col++) {
+      if (((row * 3 + col * 5 + phase) % 7) === 0) scr.px(xx, yy, 2, 2, tone);
+    }
+  }
+}
+
+export function drawFarCity(scr, t = 0, baseY = 66) {
+  const drift = Math.floor((t * 0.22) % 96);
+  const far = [
+    {x:-12,w:25,h:24,r:1}, {x:17,w:18,h:30,r:0}, {x:43,w:23,h:22,r:2},
+    {x:72,w:17,h:34,r:0}, {x:96,w:28,h:27,r:1}, {x:132,w:20,h:31,r:0},
+  ];
+  const near = [
+    {x:-28,w:35,h:17,r:0}, {x:10,w:29,h:21,r:1}, {x:52,w:31,h:19,r:0},
+    {x:88,w:36,h:23,r:2}, {x:137,w:29,h:18,r:1},
+  ];
+
+  for (const wrap of [0, 192]) {
+    for (let i = 0; i < far.length; i++) {
+      const b = far[i];
+      const x = b.x - Math.floor(drift * 0.45) + wrap;
+      building(scr, x, baseY, b.w, b.h, FAR, b.r);
+      windows(scr, x, baseY - b.h, b.w, b.h, i, LIT);
+    }
+    for (let i = 0; i < near.length; i++) {
+      const b = near[i];
+      const x = b.x - drift + wrap;
+      building(scr, x, baseY + 5, b.w, b.h, MID, b.r);
+      windows(scr, x, baseY + 5 - b.h, b.w, b.h, i + 3, LIT);
+    }
+  }
+
+  // Sparse Helsinki-style roof punctuation: chimneys and one small utility mast.
+  const c = 31 - drift;
+  for (const wrap of [0, 192]) {
+    scr.px(c + wrap, baseY - 26, 3, 7, FAR);
+    scr.px(c - 1 + wrap, baseY - 27, 5, 2, FAR);
+    const m = 116 - drift + wrap;
+    scr.px(m, baseY - 35, 1, 14, FAR);
+    scr.px(m - 4, baseY - 31, 9, 1, FAR);
+  }
 }
