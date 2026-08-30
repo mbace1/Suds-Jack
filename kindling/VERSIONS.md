@@ -6,6 +6,14 @@
      it reads each project's VERSIONS.md and nothing else. Keeping the log with
      the SOURCE is what stops the number and the build disagreeing. -->
 
+## v10 — 2026-08-30
+**The rest of the pack moves**
+- Mossling, Ashling and Moss Knight now share Ember's 8×2 runtime atlas:
+  idle on the first row, walk on the second, rest in the last two cells
+- camp, Journey (except Birch), Pack homecoming, Keep, and camp reaction
+  cues all use the live atlas instead of a still portrait
+- Ember's existing SVG atlas and sequences stay unchanged
+
 ## v9 — 2026-08-21
 **The hub build becomes a cabinet**
 - the HUB button: one import of the SITE's `hub/shell.js`, never a vendored

@@ -10,7 +10,7 @@
   "eeri": {"v":"15.49","n":15049,"from":"VERSIONS.md"},
   "turf": {"v":"6","n":6000,"from":"VERSIONS.md"},
   "gameoflife": {"v":"40","n":40000,"from":"VERSIONS.md"},
-  "kindling": {"v":"9","n":9000,"from":"VERSIONS.md"},
+  "kindling": {"v":"10","n":10000,"from":"canonical Kindling v10"},
   "radiofree": {"v":"37","n":37000,"from":"cache token"},
   "tokomove": {"v":"2.11","n":2011,"from":"VERSIONS.md"},
   "tinyhawk": {"v":"6","n":6000,"from":"VERSIONS.md"},
