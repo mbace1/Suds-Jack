@@ -5,7 +5,7 @@
 import { Anchor } from './anchor.js?v=37';
 import { Graphic } from './graphic.js?v=37';
 import { PixelScreen } from './screen.js?v=37';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=52';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=54';
 import { preferredScenes } from './editorialmap.js?v=52';
 
 const BEATS = [
