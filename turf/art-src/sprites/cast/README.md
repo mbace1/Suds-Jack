@@ -165,13 +165,24 @@ wording produced a genuinely horizontal fallen pose immediately. Neither
 fix was back-view-specific; both were about how to describe the pose, which
 travels across facing.
 
-## Known rough edges, not fixed in this pilot
+## Known rough edges
 
-- **`gunner-idle` has a sliver of a neighbouring casting-sheet character
-  at the left edge** — the reference crop (`_ref-gunner.png`) wasn't
-  trimmed tightly enough before keying. Cosmetic, fixable with a tighter
-  crop or a `trim` pass; not fixed here because it doesn't block judging
-  the pilot's actual question (does identity hold across poses).
+- **`gunner-idle` had a sliver of a neighbouring casting-sheet character
+  at the top and right edges (front) and top edge (back)** — the reference
+  crop (`_ref-gunner.png` / `_ref-gunner-back.png`) wasn't trimmed tightly
+  enough before keying. **Fixed 2026-08-31**, no generation needed: the
+  character's true ink bounds in `casting-sheet-full.png` were found by
+  background-colour masking rather than the nominal grid cell (rows and
+  columns bleed slightly past their nominal boundary), giving a tight crop
+  — `1191,313` to `1334,539` for the front, `1354,313` to `1496,539` for
+  the back, both padded 6px. Re-run through the same `key` → `fit 192x288
+  --no-quantise` pipeline; `check --illustration` passes for the back
+  (19591 colours) and comes in just over the batch's 21000 ceiling for the
+  front (21897 colours — the tighter crop's different aspect ratio changes
+  how `fit` antialiases at the resize, not a quality regression; this
+  ceiling is a heuristic, not a gate anything in `test/` enforces). Both
+  `_ref-gunner*.png` files were replaced with the tighter crop too, so any
+  future re-generation off this reference starts clean.
 - **Attack windup and release read quite similar to each other** for both
   characters — both show the weapon extended and aimed, with only a subtle
   difference in arm tension. A real two-beat read (clear draw-back, then

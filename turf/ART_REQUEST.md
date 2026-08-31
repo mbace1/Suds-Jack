@@ -651,12 +651,21 @@ What actually shipped, checked against a real "100% feature complete" bar
 - **No idle/move CYCLE.** §6's "animations like in MST" ambition (a real
   breathing loop, a real stride cycle) wasn't attempted — Idle is one free
   crop, Move is one dynamic pose, by design, the cheaper version.
-- **Known rough edges** (cast README): `gunner-idle`'s reference crop
-  catches a sliver of a neighbouring casting-sheet character (§2.5's crop-
-  bleed problem, in a new spot); attack windup/release read quite similar
-  to each other, both characters; death-fall reads as a dynamic action pose
-  more than "losing balance." None block judging the pilot's actual
-  question (does identity hold), all would need another prompt pass.
+- **Known rough edges** (cast README): `gunner-idle`'s reference crop caught
+  a sliver of a neighbouring casting-sheet character (§2.5's crop-bleed
+  problem, in a new spot) — **fixed 2026-08-31**, no generation needed: a
+  tighter crop straight off `casting-sheet-full.png` (found by locating the
+  character's true ink bounds rather than eyeballing a cell, since row/
+  column bleed slightly past the sheet's nominal grid), re-run through the
+  same `key`/`fit 192x288 --no-quantise` pipeline, both front and back —
+  `_ref-gunner.png`/`_ref-gunner-back.png` were replaced with the tighter
+  crop too, so any future re-generation off this reference starts clean.
+  Two remaining, genuinely unfixed without a new generation: attack windup/
+  release read quite similar to each other, both characters; death-fall
+  reads as a dynamic action pose more than "losing balance." Neither blocks
+  judging the pilot's actual question (does identity hold), both would need
+  another prompt pass with the Gemini key, which this session does not
+  have.
 - **The other ~18 cast characters** and the six original archetype designs
   (`blade`/`niner`/`wrench`/three grunts) still only have their single §4
   key-pose plate each, no animation set.
