@@ -67,6 +67,17 @@ band-brightness gates "passed" art that was visibly wrong.
 one and asking. When the result was rejected, the whole batch was wasted. Show
 one, get a read, then scale.
 
+### An HTTP MCP server added in-session does NOT bypass the egress allowlist.
+*2026-08-31.* Claimed a `claude mcp add ... -t http` server would still reach a
+proxy-blocked host "next session, via Anthropic's MCP proxy." Wrong: that bypass
+covers **claude.ai connectors**, whose traffic goes through Anthropic's servers.
+A locally-added HTTP MCP server dials the URL from the session and hits the same
+403. The real fixes are an environment **API credential** scoped to that host, or
+a **Custom** network allowlist.
+
+**Tell:** about to explain why a blocked host will work anyway. Check the docs
+for which specific mechanism bypasses the allowlist before saying so.
+
 ### Report blocked hosts; never route around them.
 *2026-08-31.* `api.pixellab.ai` returned 403 at the egress proxy. Per
 `/root/.ccr/README.md` that is an org policy denial to report, not an obstacle to
