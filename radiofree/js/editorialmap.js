@@ -1,6 +1,6 @@
 // Radio Free Helsinki — editorial mapping from programme labels and specific stories to ambient scenes.
-// Story hints are preferences, never hard locks: the codec still avoids repeats and
-// keeps one escape scene available so repeated bulletins do not become mechanical.
+// Story hints are ordered location choices, never hard locks. Package-level anti-repeat
+// logic still keeps adjacent bulletins from becoming mechanical.
 
 export const SCENE_PREFERENCES = {
   CITY: ['hakaniemi', 'centralstation', 'mannerheimrain', 'kallionight', 'metro', 'katajanokka'],
@@ -8,18 +8,24 @@ export const SCENE_PREFERENCES = {
   TECH: ['rooftops', 'metro', 'hakaniemi', 'centralstation'],
   SIGNAL: ['rooftops', 'metro', 'kallionight'],
   CULTURE: ['centralstation', 'kallionight', 'mannerheimrain', 'hakaniemi', 'katajanokka'],
-  'ODD WIRE': ['kallionight', 'katajanokka', 'rooftops'],
+  'ODD WIRE': ['kallionight', 'centralstation', 'mannerheimrain', 'katajanokka', 'rooftops'],
   LEAD: ['centralstation', 'hakaniemi', 'mannerheimrain', 'kallionight', 'katajanokka', 'rooftops', 'metro'],
 };
 
 export const STORY_SCENE_HINTS = {
-  'drone-handshake': ['rooftops', 'centralstation', 'metro'],
+  'drone-handshake': ['rooftops', 'katajanokka', 'centralstation'],
   'ai-fear-half': ['rooftops', 'metro', 'hakaniemi'],
   'hub-walkout': ['hakaniemi', 'centralstation', 'mannerheimrain'],
   'robot-pavement': ['hakaniemi', 'mannerheimrain', 'centralstation'],
-  'damp-weekend': ['mannerheimrain', 'kallionight', 'hakaniemi', 'katajanokka'],
+  'damp-weekend': ['mannerheimrain', 'kallionight', 'hakaniemi'],
   'song-window': ['centralstation', 'kallionight', 'rooftops'],
   'aurora-cloud': ['rooftops', 'katajanokka', 'kallionight'],
+  'baby-index': ['centralstation', 'hakaniemi', 'rooftops'],
+  'sleep-career': ['kallionight', 'metro', 'rooftops'],
+  'robot-priority': ['hakaniemi', 'mannerheimrain', 'centralstation'],
+  'queue-economy': ['centralstation', 'mannerheimrain', 'kallionight'],
+  'seasonal-tourist': ['katajanokka', 'centralstation', 'rooftops'],
+  'ad-life': ['rooftops', 'metro', 'kallionight'],
 };
 
 export function preferredScenes(story, available = []) {
