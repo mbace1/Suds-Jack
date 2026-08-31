@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -n --rawfile m \"$CLAUDE_PROJECT_DIR/MISTAKES.md\" '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:(\"Project mistake log (MISTAKES.md) — rules earned from real incidents in this repo. Follow them, and append a new entry when a mistake costs a round of work:\\n\\n\" + $m)}}' 2>/dev/null || true",
+            "statusMessage": "Loading MISTAKES.md"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -n '{systemMessage:\"MISTAKES.md — if anything this turn cost a round of work (wrong assumption, wasted generations, a rule you broke), append it before moving on.\"}' 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
