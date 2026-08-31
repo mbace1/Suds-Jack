@@ -1,8 +1,20 @@
 {
-  "_comment": "Grunt archetypes, Phase 1's 2-3 (Milestone 1 checklist) drawn from the pipeline's weapon-profile split: melee-blunt (knockback), ranged-handgun (steady mid), ranged-shotgun (short burst). melee-sharp held back for Phase 2 — data-driven, so adding it later is a new entry, not a rebuild.",
+  "_comment": "Rival crew. Same starting-kit note as units.json applies. `portrait` plates cropped from the owner's casting sheets — 2026-08-31 roster expansion for real encounter variety (a rival crew reads as a crew, not three repeated silhouettes).",
   "enemies": [
-    { "id": "grunt_blunt",   "name": "Blunt",   "role": "melee",  "weapon": "bat",     "hp": 5, "move": 3 },
-    { "id": "grunt_handgun", "name": "Shooter", "role": "ranged", "weapon": "handgun", "hp": 4, "move": 3 },
-    { "id": "grunt_shotgun", "name": "Close",   "role": "ranged", "weapon": "shotgun", "hp": 5, "move": 3 }
+    { "id": "grunt_blunt",   "name": "Blunt",   "role": "melee",  "weapon": "bat",     "hp": 5, "move": 3, "portrait": "art-src/sprites/grunt-blunt-plate.png" },
+    { "id": "grunt_handgun", "name": "Shooter", "role": "ranged", "weapon": "handgun", "hp": 4, "move": 3, "portrait": "art-src/sprites/grunt-handgun-plate.png" },
+    { "id": "grunt_shotgun", "name": "Close",   "role": "ranged", "weapon": "shotgun", "hp": 5, "move": 3, "portrait": "art-src/sprites/grunt-shotgun-plate.png" },
+    { "id": "grunt_curt",   "name": "Curt",   "role": "melee",  "weapon": "knife",   "hp": 5, "move": 3, "portrait": "art-src/sprites/grunt-curt-plate.png" },
+    { "id": "grunt_sable",  "name": "Sable",  "role": "ranged", "weapon": "handgun", "hp": 4, "move": 3, "portrait": "art-src/sprites/grunt-sable-plate.png" },
+    { "id": "grunt_spike",  "name": "Spike",  "role": "melee",  "weapon": "knife",   "hp": 5, "move": 3, "portrait": "art-src/sprites/grunt-spike-plate.png" },
+    { "id": "grunt_alfie",  "name": "Alfie",  "role": "melee",  "weapon": "knife",   "hp": 5, "move": 3, "portrait": "art-src/sprites/grunt-alfie-plate.png" },
+    { "id": "grunt_ragged", "name": "Ragged", "role": "melee",  "weapon": "bottle",  "hp": 4, "move": 3, "portrait": "art-src/sprites/grunt-ragged-plate.png" },
+    { "id": "grunt_runt",   "name": "Runt",   "role": "melee",  "weapon": "knife",   "hp": 4, "move": 4, "portrait": "art-src/sprites/grunt-runt-plate.png" },
+    { "id": "grunt_tanner", "name": "Tanner", "role": "ranged", "weapon": "handgun", "hp": 4, "move": 3, "portrait": "art-src/sprites/grunt-tanner-plate.png" },
+    { "id": "grunt_barfly", "name": "Barfly", "role": "melee",  "weapon": "bottle",  "hp": 5, "move": 3, "portrait": "art-src/sprites/grunt-barfly-plate.png" },
+    { "id": "grunt_chain",  "name": "Chain",  "role": "melee",  "weapon": "knife",   "hp": 5, "move": 3, "portrait": "art-src/sprites/grunt-chain-plate.png" },
+    { "id": "grunt_hollow", "name": "Hollow", "role": "melee",  "weapon": "knife",   "hp": 4, "move": 3, "portrait": "art-src/sprites/grunt-hollow-plate.png" },
+    { "id": "grunt_beard",  "name": "Beard",  "role": "melee",  "weapon": "knife",   "hp": 6, "move": 3, "portrait": "art-src/sprites/grunt-beard-plate.png" },
+    { "id": "grunt_track",  "name": "Track",  "role": "ranged", "weapon": "handgun", "hp": 4, "move": 3, "portrait": "art-src/sprites/grunt-track-plate.png" }
   ]
 }

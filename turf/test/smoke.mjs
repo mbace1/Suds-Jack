@@ -407,7 +407,6 @@ function playthrough(encounter, seed) {
   });
   console.log(`  (bot playthrough: ${encounter.id} — ${state.result} in ${rounds} rounds)`);
 }
-playthrough(BACKLOT, 42);
-playthrough(LOADING_DOCK, 42);
+for (const enc of ENCOUNTERS) playthrough(enc, 42);
 
 console.log(`\n${pass} checks passed`);

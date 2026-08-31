@@ -13,15 +13,19 @@ const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
 const topbar = { turn: $('turnLabel'), round: $('roundLabel') };
 const controls = { endTurn: $('endTurnBtn'), cancel: $('cancelBtn') };
-const squadEl = $('squad'), selInfoEl = $('selInfo'), toastEl = $('toast');
+const squadEl = $('squad'), selPortraitEl = $('selPortrait'), selTextEl = $('selText'), toastEl = $('toast');
 const titleEl = $('title'), titleStart = $('titleStart');
 const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('resultBody'), resultAgain = $('resultAgain');
 
 let DATA = null, state = null, layout = null, input = null, enemyPhaseRunning = false;
 
-// GDD.md §9: "Expand to 3-5 encounters in sequence." Two so far (loading-dock
-// added right after backlot).
-const SEQUENCE = ['backlot', 'loading-dock'];
+// GDD.md §9: "Expand to 3-5 encounters in sequence." Four now — warehouse and
+// underpass (2026-08-31 roster expansion) field different squads than
+// backlot/loading-dock on purpose, to actually exercise the wider roster in
+// real play rather than leave it as unreachable data. crewProgress is keyed
+// by defId, so a squad with no progress entry yet (sledge/cleaver/rook,
+// gunner/leopard/denny) just starts fresh — no crash, no special-casing.
+const SEQUENCE = ['backlot', 'loading-dock', 'warehouse', 'underpass'];
 let seqIndex = 0;
 
 // GDD.md §5's v1 list, the other half: "XP levels... unlocking small stat
@@ -176,17 +180,21 @@ function updateHud() {
     btn.className = 'unitBtn' + (u.hp <= 0 ? ' dead' : '') + (state.selected === u.uid ? ' selected' : '') + (u.hp > 0 && !canUnitAct(u) ? ' done' : '');
     btn.disabled = u.hp <= 0 || state.turn !== 'player';
     const frac = Math.max(0, u.hp / u.maxHp);
-    btn.innerHTML = `<span class="nm">${u.name} · Lv${u.level}</span><span class="hpTrack"><span class="hpFill" style="width:${frac * 100}%;background:${frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD}"></span></span>`;
+    const portrait = u.portrait ? `<img class="portrait" src="${u.portrait}" alt="">` : '';
+    btn.innerHTML = `${portrait}<span class="info"><span class="nm">${u.name} · Lv${u.level}</span><span class="hpTrack"><span class="hpFill" style="width:${frac * 100}%;background:${frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD}"></span></span></span>`;
     btn.addEventListener('pointerup', e => { e.preventDefault(); input.selectByUid(u.uid); });
     squadEl.appendChild(btn);
   }
 
   const sel = state.selected ? getUnit(state, state.selected) : null;
   if (sel) {
-    selInfoEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
+    if (sel.portrait) { selPortraitEl.src = sel.portrait; selPortraitEl.hidden = false; }
+    else selPortraitEl.hidden = true;
+    selTextEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
       + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`;
   } else {
-    selInfoEl.textContent = state.turn === 'player' ? 'Select an operator.' : '';
+    selPortraitEl.hidden = true;
+    selTextEl.textContent = state.turn === 'player' ? 'Select an operator.' : '';
   }
 }
 

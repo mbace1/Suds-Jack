@@ -66,7 +66,14 @@
   .unitBtn {
     flex: 1; min-height: 44px; padding: 5px 9px; background: #1c1f26; border: 1px solid #262a32;
     color: #d6d9de; font: inherit; text-align: left; cursor: pointer; min-width: 84px;
+    display: flex; align-items: center; gap: 7px;
   }
+  .unitBtn .portrait {
+    width: 26px; height: 39px; object-fit: cover; object-position: top;
+    image-rendering: pixelated; image-rendering: crisp-edges; flex: none;
+    background: #14161c; border: 1px solid #262a32;
+  }
+  .unitBtn .info { flex: 1; min-width: 0; }
   .unitBtn .nm { display: block; font-weight: bold; }
   .unitBtn .hpTrack { display: block; height: 4px; background: #20232a; margin-top: 3px; width: 100%; }
   .unitBtn .hpFill { display: block; height: 100%; background: #5ad1a8; }
@@ -75,8 +82,15 @@
   .unitBtn.dead { opacity: .25; text-decoration: line-through; }
   .unitBtn:disabled { cursor: default; }
 
-  #selInfo { min-width: 150px; color: #7b818c; }
+  #selInfo { min-width: 150px; color: #7b818c; display: flex; align-items: center; gap: 8px; }
   #selInfo b { color: #d6d9de; }
+  #selPortrait {
+    width: 30px; height: 45px; object-fit: cover; object-position: top;
+    image-rendering: pixelated; image-rendering: crisp-edges; flex: none;
+    background: #14161c; border: 1px solid #262a32;
+  }
+  #selPortrait[hidden] { display: none; }
+  #selText { flex: 1; min-width: 0; }
   #toast { flex: 1; min-height: 1.4em; color: #f2e2a0; font-size: 12px; }
 
   .overlay {
@@ -123,7 +137,10 @@
       <button id="endTurnBtn" class="actionBtn" disabled>End Turn</button>
     </div>
     <div class="row">
-      <span id="selInfo">Select an operator.</span>
+      <span id="selInfo">
+        <img id="selPortrait" alt="" hidden>
+        <span id="selText">Select an operator.</span>
+      </span>
       <span id="toast"></span>
     </div>
   </div>

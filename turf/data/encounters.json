@@ -45,6 +45,53 @@
         "full":    [[3,2],[5,3],[1,5],[7,4],[4,6]],
         "partial": [[2,3],[6,2],[0,4],[8,3],[3,7],[6,6]]
       }
+    },
+    {
+      "id": "warehouse",
+      "name": "The Warehouse",
+      "_comment": "2026-08-31 roster expansion: same proven grid+cover as backlot, new squad/crew to actually exercise the wider roster in a real playable fight.",
+      "grid": { "cols": 11, "rows": 9 },
+      "playerSpawns": [
+        { "unit": "sledge",  "x": 2, "y": 8 },
+        { "unit": "cleaver", "x": 5, "y": 8 },
+        { "unit": "rook",    "x": 8, "y": 8 }
+      ],
+      "enemySpawns": [
+        { "enemy": "grunt_curt",   "x": 1, "y": 1 },
+        { "enemy": "grunt_spike",  "x": 9, "y": 1 },
+        { "enemy": "grunt_alfie",  "x": 3, "y": 0 },
+        { "enemy": "grunt_chain",  "x": 7, "y": 0 },
+        { "enemy": "grunt_sable",  "x": 5, "y": 0 },
+        { "enemy": "grunt_tanner", "x": 5, "y": 1 }
+      ],
+      "cover": {
+        "full":    [[2,4],[4,3],[6,5],[8,3],[3,6],[7,6]],
+        "partial": [[1,5],[5,4],[9,5],[3,4],[7,4],[0,6],[10,3]]
+      }
+    },
+    {
+      "id": "underpass",
+      "name": "The Underpass",
+      "_comment": "2026-08-31 roster expansion: same proven grid+cover as loading-dock, gunner+leopard's first real encounter.",
+      "grid": { "cols": 9, "rows": 10 },
+      "playerSpawns": [
+        { "unit": "gunner",  "x": 2, "y": 9 },
+        { "unit": "leopard", "x": 4, "y": 9 },
+        { "unit": "denny",   "x": 6, "y": 9 }
+      ],
+      "enemySpawns": [
+        { "enemy": "grunt_ragged", "x": 1, "y": 1 },
+        { "enemy": "grunt_barfly", "x": 7, "y": 1 },
+        { "enemy": "grunt_runt",   "x": 4, "y": 0 },
+        { "enemy": "grunt_track",  "x": 2, "y": 0 },
+        { "enemy": "grunt_beard",  "x": 6, "y": 0 },
+        { "enemy": "grunt_hollow", "x": 1, "y": 2 },
+        { "enemy": "grunt_curt",   "x": 7, "y": 2 }
+      ],
+      "cover": {
+        "full":    [[3,2],[5,3],[1,5],[7,4],[4,6]],
+        "partial": [[2,3],[6,2],[0,4],[8,3],[3,7],[6,6]]
+      }
     }
   ]
 }

@@ -1,8 +1,16 @@
 {
-  "_comment": "Player squad, Phase 1 fixed 3. Role is the tactics-triangle slot (GDD/pipeline §2 resolved: melee / ranged / support-control). Character theming deferred — see production pipeline doc.",
+  "_comment": "Player-recruitable operators. `weapon` here is a STARTING KIT (GDD §5.1: no fixed class archetypes — a unit's real identity comes from skill lines picked up at level-ups plus whatever weapon it's currently holding, not this field). `portrait` is a static plate, no animation, cropped from the owner's casting sheets (or, for gunner/leopard, their already-generated cast-pilot art) — 2026-08-31 roster expansion, real gameplay variety rather than more art on the original three.",
   "units": [
-    { "id": "blade",  "name": "Blade",  "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4 },
-    { "id": "niner",  "name": "Niner",  "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4 },
-    { "id": "wrench", "name": "Wrench", "role": "control", "weapon": "pipe",   "hp": 10, "move": 3 }
+    { "id": "blade",   "name": "Blade",   "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/blade-plate.png" },
+    { "id": "niner",   "name": "Niner",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/niner-plate.png" },
+    { "id": "wrench",  "name": "Wrench",  "role": "control", "weapon": "pipe",   "hp": 10, "move": 3, "portrait": "art-src/sprites/wrench-plate.png" },
+    { "id": "deuce",   "name": "Deuce",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/deuce-plate.png" },
+    { "id": "otter",   "name": "Otter",   "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/otter-plate.png" },
+    { "id": "sledge",  "name": "Sledge",  "role": "control", "weapon": "hammer", "hp": 11, "move": 3, "portrait": "art-src/sprites/sledge-plate.png" },
+    { "id": "cleaver", "name": "Cleaver", "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/cleaver-plate.png" },
+    { "id": "gunner",  "name": "Gunner",  "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/cast/gunner-idle.png" },
+    { "id": "denny",   "name": "Denny",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/denny-plate.png" },
+    { "id": "rook",    "name": "Rook",    "role": "control", "weapon": "pipe",   "hp": 10, "move": 3, "portrait": "art-src/sprites/rook-plate.png" },
+    { "id": "leopard", "name": "Leopard", "role": "melee",   "weapon": "knife",  "hp": 8,  "move": 5, "portrait": "art-src/sprites/cast/leopard-idle.png" }
   ]
 }

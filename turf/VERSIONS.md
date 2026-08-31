@@ -8,6 +8,64 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v13 — 2026-08-31
+**Roster expansion: 18 new characters cropped from the owner's casting
+sheets as static portraits (no animation, no generation — free, local crops),
+wired into real playable data and two new encounters. "Get the actual
+gameplay working" with the wider cast, not more art polishing.**
+
+- **18 new portrait plates**, cropped directly from
+  `turf/references/casting-sheet-full.png` — same technique as the
+  gunner-idle crop-bleed fix (v12): background-colour masking finds each
+  character's true ink bounds (rows/columns bleed past the nominal grid,
+  and one pair — the hammer guy — had its front+back columns merged and
+  needed a local-minimum split), then the same `key`/`fit 192x288
+  --no-quantise` pipeline. Zero API calls; this is crop-and-cut, not
+  generation, so it needed no `GEMINI_API_KEY`.
+- **units.json**: 8 new player-recruitable operators (Deuce, Otter,
+  Sledge, Cleaver, Denny, Rook, plus Gunner and Leopard — the v12 cast
+  pilots, now with real stats and their `-idle.png` art as portraits — not
+  previously playable units at all). Player pool: 3 → 11.
+- **enemies.json**: 12 new rival-crew grunts (Curt, Sable, Spike, Alfie,
+  Ragged, Runt, Tanner, Barfly, Chain, Hollow, Beard, Track). Enemy pool:
+  3 → 15.
+- **weapons.json**: two new weapon ids read off what each character is
+  actually holding in the sheet — `hammer` (melee, dmg 5, knockback 2, the
+  heaviest hitter in the game) and `bottle` (melee, dmg 2, no knockback,
+  the scrappiest). Existing weapons untouched.
+- **Two new encounters** (`warehouse`, `underpass`) reusing backlot's and
+  loading-dock's already-proven grid+cover layouts with new squads —
+  Sledge/Cleaver/Rook and Gunner/Leopard/Denny — so the wider roster is
+  exercised in real fights, not just sitting as inert data. Added to
+  `main.js`'s `SEQUENCE`, so a run is now four encounters and actually
+  reaches them (they were previously unreachable through play even where
+  data existed).
+- **`portrait` field** threaded through `combat.js`'s `makeUnit` (one
+  line) and rendered in the DOM squad-select row and the selected-unit
+  info panel (`index.html`/`main.js`) — the canvas board itself is
+  untouched, still the code-drawn placeholder silhouettes `render.js`
+  already draws (a 192×288 portrait has no sensible path down to a 9px
+  board sprite; that's a separate, much larger problem). All six existing
+  archetypes got portraits too, for free, from their already-generated
+  `-plate.png`/`-idle.png` files.
+- **`turf/test/smoke.mjs`'s end-to-end playthrough gate was hardcoded to
+  two named encounters** (`playthrough(BACKLOT, 42); playthrough(LOADING_DOCK,
+  42);`) rather than looping `ENCOUNTERS` generically like every other
+  check in the file — silently exempting any new encounter from ever being
+  proven winnable by the bot. Fixed to `for (const enc of ENCOUNTERS)
+  playthrough(enc, 42)`, which is what caught nothing wrong here (all four
+  encounters resolve to a bot loss in 5-6 rounds, consistent with the
+  existing two) but would have caught a real stalemate.
+- Verified in a real browser (Playwright), not just the bare-node gate:
+  portraits load (`naturalWidth`/`naturalHeight` both 192×288) in the
+  squad row and selection panel on backlot, warehouse and underpass;
+  44px+ touch targets hold; no horizontal overflow at phone width; zero
+  console or network errors.
+- `node turf/test/smoke.mjs` — 39/39 (was 35; +4 for the two new
+  encounters' playthrough checks). `test/assets-smoke.cjs` unaffected,
+  still green. No `index.html` import-graph change (portraits are plain
+  `<img>` tags, not modules), so no cache-token bump.
+
 ## v12 — 2026-08-31
 **Reconciled a parallel art-pipeline branch, not an engine change: real
 generated art lands (six archetype plates + a two-character, 28-frame,
