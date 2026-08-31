@@ -33,6 +33,7 @@ const FALL_HOLD = [5, 6, 7, 6];
 const LAND_HARD_HOLD = [3, 3, 4, 5, 5, 3, 3];
 const STEP_UP_HOLD = [4, 4, 4, 5, 4, 3, 3, 3];
 const COLLECT_HOLD = [24, 5, 5, 5, 7];
+const PULL_HANG = 4;
 
 export const HERO_W = 10, HERO_H = 30, CROUCH_H = 16;
 
@@ -124,7 +125,10 @@ const M = {
   gatherRun: { dur: 3, open: 3, speed: 1.0, clip: [[Q.gather, 3]] },
   air: { dur: 999, air: true, open: 0, clip: [[Q.launch, 6], [Q.rise, 8], [Q.apex, 10], [Q.descend, 40]] },
   fall: { dur: 999, air: true, open: 0, clip: [[Q.descend, 8], [Q.descend, 40]] },
-  land: { dur: 11, open: 8, clip: [[Q.land, 6], [Q.stand, 5]] },
+  // All four authored landing cells must reach the screen. Opening this on
+  // frame eight meant a held direction changed state before the last cell's
+  // three-frame settle could render, so most landings visibly cut to walk.
+  land: { dur: 11, open: 11, clip: [[Q.land, 6], [Q.stand, 5]] },
   landHard: { dur: 26, open: 26, clip: [[Q.sprawl, 14], [Q.land, 7], [Q.stand, 5]] },
 
   // the ledge. Grabbing is free, getting up is expensive — that asymmetry is
@@ -211,6 +215,7 @@ export class Hero {
     this.weaponBuf = 0;
     this.dropLock = 0;
     this.stepPhase = 0;
+    this.hangPose = 0;
   }
 
   get move() { return M[this.state]; }
@@ -240,6 +245,10 @@ export class Hero {
     // frame. Doing it here catches every way out of the move.
     if (M[this.state]?.flipEnd && state !== this.state) this.face *= -1;
     if (state === 'step' && this.state !== 'step') this.stepPhase ^= 1;
+    // Preserve the exact hanging cell for the first beat of a pull-up. The
+    // move table always reserved four frames for this, but sprite() jumped
+    // directly to the mantle row and made the body pop when Up was pressed.
+    if (state === 'pullUp' && this.state === 'hang') this.hangPose = this.f / 24;
     this.state = state; this.f = f;
   }
 
@@ -294,7 +303,9 @@ export class Hero {
       // The ledge. Drawn against the LIP, because that is the thing that does
       // not move; what rests on it walks from his hands to his feet.
       case 'hang': return { anim: 'hang', f: this.f / 24, lipY: this.ledgeY };
-      case 'pullUp': return over('mantle', 7, this.f, this.ledgeY);
+      case 'pullUp': return this.f < PULL_HANG
+        ? { anim: 'hang', f: this.hangPose, lipY: this.ledgeY }
+        : { anim: 'mantle', f: (this.f - PULL_HANG) / ((m.dur - PULL_HANG) / 7), lipY: this.ledgeY };
       case 'climbDown': return over('lower', 7, this.f, this.ledgeY);
       // ── the pistol, all off Conrad's own sheet ────────────────────
       case 'drawGun': return over('drawGun', 16);
@@ -614,7 +625,7 @@ export class Hero {
     if (s === 'standUp' && done) { this.go(this.rest()); return; }
     if (s === 'roll' && done) { this.go(this.weapon === 'gun' ? 'crouchArmed' : 'crouchIdle'); return; }
 
-    if ((s === 'land' || s === 'landHard') && (done || (s === 'land' && input.dir))) {
+    if ((s === 'land' || s === 'landHard') && done) {
       if (input.dir === this.face) { this.go('step'); return; }
       this.go(this.rest());
       return;

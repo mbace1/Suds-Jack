@@ -1,5 +1,13 @@
 # Flash Prince — versions
 
+## v58 — 2026-09-01
+
+**Jump and ledge transitions finish their authored poses.** Holding a direction
+through a landing no longer skips the final Conrad landing cell, and pulling
+up now preserves the exact hanging cell for its four-frame brace before the
+mantle begins. No source frames, palettes, run timing or locked run data
+changed.
+
 ## v57 — 2026-09-01
 
 **The missing low actions are animated.** A one-tile climb no longer floats a

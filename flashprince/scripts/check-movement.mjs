@@ -107,6 +107,37 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(hero.weapon, 'gun');
 }
 
+// Holding a direction through a landing must not skip the authored final
+// settle cell. The move completes first, then hands over to locomotion.
+{
+  const hero = new Hero(48, 96);
+  const groundedWorld = { ...world, boxSolid: (_x, y, _w, h) => y + h >= 97 };
+  hero.go('land'); hero.face = 1; input.dir = 1;
+  for (let i = 0; i < 10; i++) hero.update(groundedWorld, input, game);
+  assert.equal(hero.state, 'land');
+  assert.equal(hero.sprite().anim, 'land');
+  assert.equal(hero.sprite().f, 3);
+  hero.update(groundedWorld, input, game);
+  assert.equal(hero.state, 'step');
+  input.dir = 0;
+}
+
+// Pull-up begins on the exact hang cell already on screen, then enters the
+// mantle row after its four-frame brace instead of popping immediately.
+{
+  const hero = new Hero(27, 48 + HANG);
+  hero.face = 1; hero.ledgeX = 27; hero.ledgeY = 48;
+  hero.go('hang'); hero.f = 55;
+  const held = hero.sprite().f;
+  hero.go('pullUp');
+  assert.equal(hero.sprite().anim, 'hang');
+  assert.equal(hero.sprite().f, held);
+  tick(hero, 3);
+  assert.equal(hero.sprite().anim, 'hang');
+  tick(hero, 1);
+  assert.equal(hero.sprite().anim, 'mantle');
+}
+
 // Careful remains the precision-step button unarmed and becomes the shield
 // while the pistol is aimed, on the same keyboard/touch/gamepad input path.
 {
