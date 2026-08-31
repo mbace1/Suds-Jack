@@ -3,7 +3,7 @@
  "name": "Helsinki",
  "source": "Helsinki Regional Transport Authority (HSL)",
  "licence": "CC BY 4.0",
- "fetched": "2026-08-29",
+ "fetched": "2026-08-31",
  "feed": "https://dev.hsl.fi/gtfs/hsl.zip",
  "exactGeometry": true,
  "shapeToleranceMetres": 0,
