@@ -399,11 +399,17 @@ asset in this repo already goes through.
    usually wants more headroom than a flat-fill placeholder does — but
    confirm it once one plate is actually cut and looked at next to the
    board, before fitting the other five to match.
-5. **Check.** `node kindling/tools/cut.mjs check <out>-fit.png --cell 32` —
-   confirms binary alpha (no semi-transparent fringe left over) and a colour
-   count that actually landed on the sixteen-colour art palette, not just a
-   shrunk illustration that happens to be small. A result that fails this is
-   not real pixel art yet, whatever it looks like at a glance.
+5. **Check.** `node kindling/tools/cut.mjs check <out>-fit.png` — **no
+   `--cell` flag** for a single 32×40 plate: `--cell` verifies a sheet tiles
+   into square N×N cells, and 40 isn't a whole multiple of 32, so passing
+   `--cell 32` here fails every single-sprite fit on a dimension question
+   that has nothing to do with the art (confirmed directly — six real fits
+   run both ways, §2.3). Without `--cell` it confirms binary alpha (no
+   semi-transparent fringe left over) and a colour count that actually
+   landed on the 32-colour art palette, not just a shrunk illustration that
+   happens to be small. A result that fails this is not real pixel art yet,
+   whatever it looks like at a glance. (`--cell` is still the right flag for
+   an actual multi-frame sheet, per §6.)
 6. **Hand off.** The checked plate is the *key pose* per archetype — the
    seed for whatever the rest of §6's frame list needs, drawn by hand in
    Aseprite against it for consistent proportions and palette. This
@@ -445,11 +451,13 @@ pipeline can generate as sheets:
 | **Hit** | 1 | a recoil/flinch reaction with real snap — MST's hit reactions read as an impact, not a soft flinch | single-pose generation, hand-extended in Aseprite |
 | **Death/KO** | 2 | falling + down, for a collapse with actual follow-through rather than a single static drop | single-pose generation, hand-extended in Aseprite |
 
-**Total per archetype: 10–13 frames** (up from the original 4–7 plan) — idle
-and move are now real generated sheets instead of single held poses;
-attack/hit/death keep the original method (single-pose generation,
-hand-finished) but each asks for one more frame than the original bare
-minimum, matching the impact MST reads with even in a single frame.
+**Total per archetype: 10–12 frames** (2–3 + 3–4 + 2 + 1 + 2, up from the
+original 4–7 plan) — idle and move are now real generated sheets instead of
+single held poses; attack and death keep the original method (single-pose
+generation, hand-finished) but each now asks for one more frame than the
+original bare minimum (attack 1→2, death 1→2), matching the impact MST
+reads with even in a single frame. Hit stays at its original 1 — a single
+sharp recoil frame was already the right ask, not a row that needed more.
 
 **Attack/hit/death still don't become sheets, and the reason still holds:**
 §2.2's two failure modes are about *what* those rows draw (baked FX, a
@@ -466,6 +474,17 @@ flat-magenta canvas, then `node kindling/tools/cut.mjs slice <sheet>.png
 <dir> <cell-px> idle1,idle2,idle3,move1,move2,move3,move4` cuts it into one
 file per named cell — a real tool call already in this repo. Attack/hit/death
 stay single-pose, FX-free requests, generated and cut one at a time.
+
+**Not yet in `assets/manifest.mjs`.** This section raises the *ask* for
+idle/move; it does not by itself add the twelve sheet specs (2 rows × 6
+archetypes) that would make `node scripts/assets.mjs gen --only turf` (§0
+Path A) actually produce them — that command today still only generates the
+six single key-pose stills from §4. Writing twelve real sheet prompts (one
+per archetype per row, each needing its own careful frame-by-frame
+description to hold character consistency across the sheet) is real
+authoring work of its own, not implied by this document raising the target.
+Until those specs exist, an idle/move sheet is either hand-delivered (§0
+Path B) or a follow-up task against this section.
 
 ---
 

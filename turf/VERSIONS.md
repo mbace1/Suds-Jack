@@ -44,8 +44,13 @@ changed, so no cache-token bump this round.**
   Attack/hit/death stay single-pose generations hand-extended in Aseprite
   (§2.2's two failure reasons — baked FX defeating the key, irregular frame
   pitch — are about what those rows draw, not how many poses are asked for
-  at once), each raised by one frame over the original minimum. Total per
-  archetype: 10–13 frames, up from the original 4–7.
+  at once); attack and death each raised by one frame over the original
+  minimum (hit stays at 1, already the right ask). Total per archetype:
+  10–12 frames, up from the original 4–7. Idle/move raise the *ask* only —
+  `assets/manifest.mjs` doesn't yet carry the twelve sheet specs (2 rows ×
+  6 archetypes) that would make `gen --only turf` actually produce them;
+  writing those is its own real authoring task, flagged in §6 as a
+  follow-up rather than done this round.
 - `node scripts/assets.mjs gen --dry --only turf` and
   `NODE_PATH=$(npm root -g) node test/assets-smoke.cjs` (46 checks) both
   pass against the rewritten manifest — the six prompts hash to new values,
