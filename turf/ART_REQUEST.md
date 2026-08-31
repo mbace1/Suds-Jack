@@ -6,15 +6,26 @@ canon; this is the *what, the look, and the steps* for the six Milestone 1
 archetypes, written so it works from alone.
 
 **Current state: everything on screen is code-drawn placeholder** — flat
-canvas silhouettes, no image assets, `turf/js/render.js`'s `drawUnit`. That
-stays live until someone actually wires a sprite renderer in (§6 says why
-that's a separate step). What this document asks for are **real, cuttable
-sprite plates** — not mood-board references this time: generated on a flat
-magenta key, meant to go through `kindling/tools/cut.mjs`'s key → fit → check
-pipeline (§5) and come out the other end as actual pixel art, the seed for a
-hand pass in Aseprite for whatever frames aren't generated (`PRODUCTION_PIPELINE.md`
-§4's own plan — "AI-assisted generation for placeholder sprites now...
-hand-pixel-art pass in Aseprite later").
+canvas silhouettes, no image assets, `turf/js/render.js`'s `drawUnit`. What
+this document asks for are **real, cuttable sprite plates**, generated on a
+flat magenta key, meant to go through `kindling/tools/cut.mjs`'s key → fit →
+check pipeline (§5) and come out the other end as actual pixel art — the
+seed for a hand pass in Aseprite for whatever frames aren't generated
+(`PRODUCTION_PIPELINE.md` §4's own plan — "AI-assisted generation for
+placeholder sprites now... hand-pixel-art pass in Aseprite later").
+
+**The production plan, as of 2026-08-31 (§8 has the detail): one character,
+fully animated and actually in the game, before any of the other five.**
+Six archetypes generated in parallel with nobody wired into the engine gets
+you six folders of loose PNGs and zero proof the pipeline (art *and* the
+engine changes animated sprites actually need — §9 names them) works end to
+end. So the order is deliberately narrow: take one pilot character
+(recommended: `blade`, §8) to **100% feature complete** — every animation
+frame generated or hand-finished, cut, checked, and genuinely playing in the
+live game — before spending a single generation on a second character.
+Colour variations of that same proven pipeline come next, then the
+remaining archetypes as new models. §8 has the staged plan; §9 has what the
+engine and process still need beyond art to make that first character real.
 
 ---
 
@@ -306,6 +317,69 @@ flat, ≤32-colour key pose — fast, mechanical work. Tracing a ~9,000-colour
 illustration plate at 192×288 to matching fidelity is real character art,
 not palette-matching, and is a bigger per-frame ask than §6 currently
 states. Not resolved here — flagged for whoever scopes that pass next.
+## 2.5 A parallel crop test found the same two gaps a different way (2026-08-31)
+
+Before `gen-with-ref.mjs` existed, a separate pass tried the more obvious
+thing first: crop a figure straight out of the owner's casting sheets
+(committed at `turf/art-src/reference/casting-sheet-1.png` /
+`casting-sheet-2.png`) and run it through `key → fit → check` as-is. Six
+crops, one matched to each §4 archetype, all came back technically usable
+under the *old* `--palette turf/art-src/palette.json` cut §2.4 has since
+retired — confirming the richer shading survives keying fine, which was
+never actually the risk (§2.4 already established the risk was the
+32-colour snap destroying detail, not the keying step).
+
+Two real gaps that test found, both still worth knowing even though this
+isn't the technique that shipped:
+- **No faction trim.** Every figure on both sheets is neutral streetwear —
+  nothing demonstrates §3's colour-block rule, so it always has to be
+  stated explicitly in a prompt rather than assumed to come along for free.
+  §4's table already does this for every archetype; independent
+  confirmation this was the right call.
+- **A crop from a multi-character sheet drags its neighbour in** — a boot
+  or weapon tip from the adjacent figure, three times out of six, because
+  the sheet packs figures edge to edge. The same failure mode resurfaced
+  later in a different spot: `turf/art-src/sprites/cast/README.md` notes
+  `gunner-idle`'s reference crop wasn't trimmed tight enough either. Not
+  fixed either time yet — worth a `trim` pass or tighter cropping whenever
+  someone next touches either.
+
+## 2.6 There are no class archetypes — a "class" is a skill combination (GDD §5.1, revised 2026-08-31)
+
+GDD §5.1 was rewritten this round: `blade`/`niner`/`wrench` (and the three
+grunt weapon-profiles) are **starting kits** — an opening weapon and stat
+line — not permanent boxes. Past Milestone 1, a unit's actual identity comes
+from which skill lines it has picked up at level-ups, drawn from *any* line
+regardless of its starting kit, plus whatever weapon it happens to be
+holding (the already-shipped v7 loot drops can hand a `wrench`-kit unit a
+handgun mid-run). Two units that both started as `blade` can read as
+genuinely different builds by the end of a run.
+
+**What that means for art, concretely:** §4's six prompts still describe
+role/pose/weapon by *starting kit* — that part hasn't changed, and it's
+still the right unit of art production (a starting kit is a real, stable
+silhouette; a skill build is not). What changes is what NOT to bake into a
+plate: no visual signal that says "this figure is permanently a
+melee-only character" beyond the weapon it's shown holding in that one key
+pose, because the same body, once in the roster, might end the run holding
+something else entirely and playing a hybrid build the plate never depicted.
+The colour system already has this covered without extra work — §2.3 and
+GDD §5.1 both land on **faction colour only** (cold operator / warm rival)
+as the sprite's one accent; there is no secondary "class colour" to paint
+on, so nothing here asks for one. A unit's build reads from the UI, not the
+sprite.
+
+**A second, separate "no archetypes" finding, about casting rather than
+skills:** §8 records the owner correcting this document's own framing —
+"there are just character models, no archetypes" — meaning even the *six
+weapon-role archetypes* (`blade`/`niner`/`wrench`/three grunts) are this
+document's invention to fill Milestone 1's stat table, not how the owner
+thinks about the cast. The real cast is the ~20 actual characters on the
+casting sheets; §8's pilot cast two of them directly rather than generating
+synthetic archetype designs. This section's point and that one are
+compatible, not the same: this one says a unit's *build* isn't boxed by its
+starting kit; §8's says the *cast itself* isn't boxed by these six designs
+either.
 
 ---
 
@@ -416,42 +490,85 @@ asset in this repo already goes through.
 `PRODUCTION_PIPELINE.md` §2.1's asset spec lists Idle / Walk / Attack / Hit /
 Death per unit — written before Milestone 1 confirmed the actual shape of
 the game, which is **turn-based and tile-snapped**, not real-time free-roam.
-That changes the frame budget a lot: nobody needs an 8-direction walk cycle
-for a unit that visually slides from one known tile to another on its own
-turn. Adapted to what TURF actually does, per archetype:
+§2.2 then replaced theory with a real test of three owner-supplied sheets,
+and it sharpened the picture further than "turn-based means a small budget"
+did: **idle and move rows came back as genuinely usable multi-frame
+sheets — tight, consistent frame pitch, a cropped frame passing the full
+pipeline 1/1.** Attack/hit/death rows failed on every sheet tried, but for
+two specific, *named* reasons (motion-trail/blood FX defeating the magenta
+key; irregular frame pitch on those rows) — not because generating multiple
+poses at once doesn't work. That distinction matters: the original plan
+below assumed multi-pose consistency itself was the risk, and §2.2 showed it
+mostly isn't.
 
-| frame | count | what it's for |
-|---|---|---|
-| **Idle** | 1 | the standing ready pose — this *is* the key-pose plate from §4/§5, no separate generation needed |
-| **Move** | 1 | a single mid-stride "committed step" pose, blended toward during the tile-to-tile slide `render.js` already animates positionally — not a cycle, since the game never holds on a walking pose long enough for one to read |
-| **Attack** | 1–2 | the weapon-specific action: knife lunge, pistol/handgun recoil, shotgun blast, pipe/bat swing-through (which should read as mid-swing, since that's also the knockback beat). Two frames (windup + release) if the budget allows; one (release only) is enough for Milestone 1 |
-| **Hit** | 1 | a recoil/flinch reaction — read `combat.js`'s `resolveAttack` for what it needs to sell: a hit event exists whether or not it kills |
-| **Death/KO** | 1–2 | a collapse — one frame is a static "down" pose, two (falling + down) reads better but isn't required |
+**"Animations like in MST"** (owner direction, 2026-08-31) means real
+motion, not a pose held still and blended between tiles. Metal Slug Tactics'
+characters visibly breathe at idle and visibly run tile to tile even though
+the game underneath is turn-based — the polish is in the motion itself, not
+loosened by the turn structure. That raises idle and move from "one frame,
+reuse the key pose" to real short cycles, which §2.2 already proved this
+pipeline can generate as sheets:
 
-**Total per archetype: 4–7 frames**, not the dozens a real-time action game
-would need — this is the actual honest ask once the game's own turn
-structure is accounted for, and it is why this document does not request
-Nano Banana generate a multi-pose sheet in one image: character consistency
-across multiple poses from a single text-to-image generation is an
-unsolved, unreliable problem with this pipeline's tooling (no ControlNet,
-no LoRA, no pose conditioning) — asking for six sheets of six frames each is
-asking for thirty-six chances for the model to drift off-model. The reliable
-ask is one strong key-pose plate per archetype (§4); the remaining 3–6
-frames per archetype are a **hand pass in Aseprite**, traced against that
-plate for proportions (18–36 frames total across all six archetypes)
-rather than a pipeline claim this tooling can't actually back up. **What
-that hand pass actually means changed at §2.4**: the key-pose plates are
-now full-colour illustration (192×288, thousands of colours), not a flat
-≤32-colour fill an artist can palette-match mechanically — tracing to
-matching fidelity is real character art, a bigger per-frame ask than this
-paragraph originally scoped, and not yet resolved.
+**Superseded by a real pilot, not just a bigger ask.** The paragraph and
+table both used to stop at *asking* for more frames and assuming the
+remaining work would be a hand pass in Aseprite, because §2.2's finding was
+read as "multi-pose generation doesn't work, full stop." §8 tested that
+more precisely and found a narrower, more useful truth: **baking multiple
+poses into one generated image doesn't hold together** (still true, see
+below) **but generating each pose SEPARATELY, each conditioned on a
+reference image of the same character (`scripts/gen-with-ref.mjs`), holds
+identity reliably** — proven on two real characters across all seven poses,
+attack/hit/death included, not just idle/move. That changes what "the
+remaining frames are a hand pass in Aseprite" meant: for a character with a
+usable reference image, every pose in the table below can be a real
+generation, not a trace.
 
-**If a grid sheet is attempted anyway** (a per-archetype experiment, not
-this request's default): lay every pose out as equal-size square cells on
-one flat-magenta canvas, then `node kindling/tools/cut.mjs slice <sheet>.png
-<dir> <cell-px> idle,move,attack,hit,death` cuts it into one file per named
-cell — that tool call is real and already in this repo, it just isn't the
-default plan here because of the consistency problem above.
+| frame | count | what it's for | how it's made |
+|---|---|---|---|
+| **Idle** | 1 | the reference crop itself, run through `key→fit`, no generation step — the highest-fidelity idle this pipeline can produce, and free (§8) | direct crop of the character's own reference art |
+| **Move** | 1 | a single dynamic mid-stride pose, not a walk cycle — §8's pilot deliberately didn't attempt a multi-frame cycle | `gen-with-ref.mjs` against the character's reference |
+| **Attack** | 2 | windup + release/impact, weapon-specific | `gen-with-ref.mjs`, proven on two real weapon types (akimbo pistols, a knife) |
+| **Hit** | 1 | a recoil/flinch reaction | `gen-with-ref.mjs` |
+| **Death/KO** | 2 | falling + down, with an explicit "are the feet still under the hips" failure test baked into the prompt (§8 — needed on the first try, both characters) | `gen-with-ref.mjs` |
+
+**Total per character: 7 poses, ×2 for the back facing (§8) = 14 frames,
+costing 12 generations** (Idle is free in both facings — a direct crop
+either way; the other six poses each need a front AND a back generation,
+§8's measured real cost, not the guess this section used to make). This is
+the owner's own frame-richness call (2 for Attack and Death, not 1), and
+it's not a plan anymore for two of the roster — it shipped, see §8.
+
+**What §2.2 still gets right, and what it doesn't apply to anymore:** its
+two failure modes (baked FX defeating the magenta key; irregular frame
+pitch) are about a SHEET — one image trying to hold several poses at fixed
+grid cells. Both reasons still hold for that technique, and nothing in §8
+contradicts them: §8 never generated a sheet. It generated fourteen
+separate 192×288 images, each one pose, each conditioned on a reference
+crop for identity — a technique §2.2 never tested because `gen-with-ref.mjs`
+didn't exist yet. **The `slice` layout this section used to describe (one
+flat-magenta canvas, multiple poses at fixed cells, cut apart afterward) is
+not the path that worked** — leaving the tool call here only as a note in
+case a future sheet experiment wants it, not as the recommended technique.
+
+**One real gap the pilot didn't close: no idle or move CYCLE.** "Animations
+like in MST" above asks for a breathing loop and a real stride cycle, not
+one static pose each. §8's pilot deliberately shipped a single Idle
+(a free crop) and a single Move (one dynamic pose, its own words: "not a
+walk-cycle silhouette") — the lighter, cheaper version, not the MST-cycle
+ambition this section states. Getting a real 2–3-frame idle loop and a real
+3–4-frame stride cycle is still open work, using the same proven
+`gen-with-ref.mjs` per-pose technique, just more poses per character than
+the seven §8 budgeted for.
+
+**In `assets/manifest.mjs` for two characters, not six.** §8's pilot
+(`turf/cast-gunner-*` / `turf/cast-leopard-*`, 28 ids) is real, committed,
+and generates via `node scripts/assets.mjs gen --only turf` (§0 Path A) —
+but that's two of the owner's own cast characters, piloting the technique,
+not the six archetype plates from §4. Extending this to `blade`/`niner`/
+`wrench`/the three grunts (or to more of the ~20-character cast, per §2.6)
+means writing the same shape of per-pose, reference-conditioned prompts for
+each — real authoring work, not implied by the pilot having proven the
+technique works.
 
 ---
 
@@ -465,56 +582,163 @@ default plan here because of the consistency problem above.
 - **No elite/boss variant.** `PRODUCTION_PIPELINE.md` §2.2 calls a boss a
   "Phase 1 stretch goal, not a requirement" — same reasoning, don't spend
   credits ahead of the design.
-- **No runtime sprite integration.** Even once cut, quantised and checked,
-  wiring an actual sprite renderer into `turf/js/render.js` (replacing
-  `drawUnit`'s canvas silhouettes with drawImage calls, handling per-frame
-  timing, 8-direction-vs-mirroring for the isometric facing) is a separate,
-  deliberate engineering change — not implied by generating or cutting art.
-  Say the word when the plates exist and this becomes its own task. **Still
-  true**, but the board is orthogonal 4-directional (`turf/js/grid.js`'s own
-  comment: "ITB-style rather than an 8-directional grid"), not isometric
-  8-way — whoever picks this up should settle facing count against that
-  fact, not against Metal Slug Tactics' own (isometric) convention.
+- **No runtime sprite integration — still true for all of it.** Even once
+  cut and checked, wiring `turf/js/render.js` to draw sprites instead of
+  `drawUnit`'s silhouette (replacing the canvas silhouette with drawImage
+  calls, per-frame timing, left/right facing) is a separate, deliberate
+  engineering change, not implied by generating or cutting art. §8's pilot
+  proved the ART side works for two characters; §9 point 1 found the ENGINE
+  side isn't ready for any character yet, pilot included — no positional
+  tweening exists to animate a move across, so even a finished sprite set
+  has nowhere to play yet. The board itself is orthogonal 4-directional
+  (`turf/js/grid.js`'s own comment: "ITB-style rather than an 8-directional
+  grid"), not isometric 8-way — §8/§9 point 3 settles facing against that
+  fact rather than Metal Slug Tactics' own isometric convention.
 
-## 8. Multi-frame animation, piloted (2026-08-31)
+---
 
-**Correction that changes how §3-§7 should be read going forward**: the
-six archetypes (`blade`/`niner`/`wrench`/three grunts) are this document's
-own invention, built to fill Milestone 1's stat table — they are not how
-the owner thinks about the cast. The owner's own words: "there are just
-character models, no archetypes." `turf/references/casting-sheet-full.png`
-is ~20 actual characters; a future roster is more likely built by picking
-from that cast than by generating fresh archetypes to spec.
+## 8. The production plan: one pilot proven, then colour variants, then new models
 
-Piloted the actual "how do we add animation" question on two of those
-casting-sheet characters (owner's pick: "you can pick 2 from the sheets I
-provided and expand") — full results, prompts, defects and fixes in
-`turf/art-src/sprites/cast/README.md`. Short version: **it works.** A new
-style block (`turfCastPose`, opposite instruction from `turfGrim` — hold
-the reference character's identity rather than avoid copying it) plus
-`scripts/gen-with-ref.mjs` against a crop of the character's own casting-
-sheet art holds identity across seven poses (Idle/Move/Attack×2/Hit/
-Death×2, the owner's frame-richness call) reliably enough to be the real
-answer, not just a hopeful one. Two prompt-level defects were caught and
-fixed (a "lying down" pose that stayed standing; dual pistols that
-collapsed to one gun until named as a recognisable trope instead of
-described geometrically) — both fixes are reusable wording for any future
-character, not one-offs.
+Six archetypes generated and cut in parallel, with nobody actually wired
+into the game, proves nothing except that six PNGs exist. Stage 0 below
+answers the real questions — does a character's identity hold across
+poses, does the frame count in §6 work, does facing need real art or just
+mirroring — before spending credits generating five more characters
+against an unproven plan.
 
-**The owner then asked directly whether this covered NE/NW/SE/SW** — it
-didn't; the pilot above was front-facing only. Answered properly rather
-than assumed fine: `turf/js/grid.js` is orthogonal 4-directional and
-`render.js` projects those 4 directions onto the 4 isometric screen
-diagonals, and — working through the actual projection maths, not eyeballed
-— **2 drawn facings (front + back), mirrored left/right in code, cover all
-4**, matching the front+back convention the owner's own casting sheet
-already uses. Generated the back half of all seven poses for both pilot
-characters (14 more frames); both hard-won front-view prompt fixes carried
-over on the first try with no retries needed. Real cost per character is
-now known rather than guessed: **12 generations, not 6** (Idle stays free
-in both facings — a direct crop either way — but the other six poses each
-need a front AND a back generation).
+**Stage 0 — piloted, and the headline finding is real: it works.**
 
-Not done: the other ~18 characters, `render.js` integration (§7's own
-item) — including the actual left/right mirroring code, which is separate
-from having both facings' source art.
+Not `blade`, and not synthesised to spec: **the owner corrected this
+document's own framing first** — "there are just character models, no
+archetypes" (§2.6 has the design-side version of the same point). The six
+weapon-role archetypes are this document's own invention to fill
+Milestone 1's stat table, not how the owner thinks about the cast; the
+real cast is the ~20 characters on the casting sheets
+(`turf/art-src/reference/casting-sheet-{1,2}.png`), and the pilot cast two
+of them directly — the owner's own pick, "you can pick 2 from the sheets I
+provided and expand": **gunner** (a stocky bald man, tattoo sleeves, akimbo
+pistols) and **leopard** (a woman in an oversized leopard-print coat, a
+knife). Full prompts, defects, fixes and check results are in
+`turf/art-src/sprites/cast/README.md`; the ids are `turf/cast-gunner-*` /
+`turf/cast-leopard-*` in `assets/manifest.mjs`, already generating via §0
+Path A.
+
+What actually shipped, checked against a real "100% feature complete" bar
+— every line below, not just generation:
+1. **Identity held across poses.** §6's technique (`gen-with-ref.mjs`,
+   `turfCastPose` style block, a reference-image crop per character) proved
+   reliable across seven poses per character, not just idle/move — the
+   real, harder version of §2.2's original open question.
+2. **Both facings.** The owner asked directly whether the pilot covered
+   NE/NW/SE/SW — it didn't yet, at that point. Answered properly rather
+   than assumed: `render.js`'s isometric projection maps the board's 4
+   orthogonal directions onto the 4 screen diagonals, so 2 drawn facings
+   (front + back), mirrored left/right in code, cover all 4 — matching the
+   front+back convention the reference sheets already use. Both hard-won
+   front-view prompt fixes (the akimbo-pistol wording, the death-down
+   diagonal test) carried over to the back view with no retries needed.
+3. **Checked, not just generated.** All 28 frames (14 poses × 2 characters)
+   pass `check --illustration` — see the cast README for the full numbers.
+4. **Real cost measured, not guessed.** 12 generations per character (Idle
+   is a free direct crop in both facings; the other six poses each need a
+   front AND a back generation) — §9 point 6 uses this as the basis for
+   costing the rest of the cast.
+
+**What Stage 0 did NOT close, named plainly rather than rounded up:**
+- **No runtime integration.** Nothing is wired into `turf/js/render.js` yet
+  — §7's bullet and §9 point 1 both still apply, to these two characters as
+  much as to the other six designs.
+- **No idle/move CYCLE.** §6's "animations like in MST" ambition (a real
+  breathing loop, a real stride cycle) wasn't attempted — Idle is one free
+  crop, Move is one dynamic pose, by design, the cheaper version.
+- **Known rough edges** (cast README): `gunner-idle`'s reference crop
+  catches a sliver of a neighbouring casting-sheet character (§2.5's crop-
+  bleed problem, in a new spot); attack windup/release read quite similar
+  to each other, both characters; death-fall reads as a dynamic action pose
+  more than "losing balance." None block judging the pilot's actual
+  question (does identity hold), all would need another prompt pass.
+- **The other ~18 cast characters** and the six original archetype designs
+  (`blade`/`niner`/`wrench`/three grunts) still only have their single §4
+  key-pose plate each, no animation set.
+
+**Stage 1 — colour variations, once a body is proven.** The cheapest reuse
+of a finished animated character is a recolour, not a redesign: same body,
+same frames, same timing, a different palette assignment — most obviously
+the faction trim swap (cold operator → warm rival). Not every archetype
+recolours convincingly from one body (§3.2's "leanest of the six" grunt and
+the "heaviest" operator are not the same base figure), so this stage is
+"reuse where the build actually matches," not "reskin everything once and
+call it six characters." Worth checking once runtime integration exists to
+actually judge a recolour in motion, not just as a still.
+
+**Stage 2 — the remaining models.** Whatever Stage 0 and Stage 1 didn't
+cover as recolours gets its own full pass through the same checklist,
+costed off Stage 0's measured 12-generations-per-character number (§9
+point 6) rather than guessed fresh each time.
+
+---
+
+## 9. What else this needs to reach production capacity
+
+Five real gaps stand between "a pilot's plates are checked" and "a pilot
+is a finished animated character in the game" — one resolved by §8, four
+still open, named here because they're not the kind of thing more art
+generation fixes on its own.
+
+**1. The engine does not yet animate movement — verified, not assumed.**
+`turf/js/render.js`'s `drawUnit` reads `unit.x`/`unit.y` directly with no
+interpolation state, and `combat.js`'s `moveUnit` mutates them in one step;
+`main.js`'s enemy-phase loop (`runEnemyPhase`) renders the new position
+immediately and then just *pauses* 600ms before the next actor, rather than
+animating the transition. A unit currently **snaps** between tiles. A
+perfect move-pose sprite has nowhere to visibly play if nothing tweens
+position first — this blocks runtime integration for §8's pilot exactly as
+much as for any future character. Needs a real (if small) engine change: a
+`displayX`/`displayY` or `moveT` that interpolates over a short duration
+independent of when the game state itself updates.
+
+**2. `state.log` is the existing hook to drive animation state from —
+use it, don't invent a second one.** `combat.js` already pushes typed
+events (`{type:'move',...}`, `{type:'attack',...}`, `{type:'pickup',...}`,
+`{type:'enemy-turn',...}`) that `main.js`'s `attackText` already reads to
+build toast copy. The same log is the natural trigger for "play the attack
+frames now" / "play the hit-flinch now" — a presentation layer that
+consumes `state.log` deltas each render, rather than a parallel event
+system the engine doesn't otherwise have.
+
+**3. Facing — RESOLVED by §8, not still open.** 2 drawn facings (front +
+back), mirrored left/right in code, checked against `render.js`'s actual
+isometric projection and `grid.js`'s actual 4-directional board rather than
+assumed — see §8 point 2. What's still open is the *code*: the mirroring
+itself isn't implemented (point 1's engine gap blocks it having anywhere
+to run), only the source art for both facings exists.
+
+**4. A per-character proportion reference, before animating further.**
+§8's pilot held identity through image-conditioning rather than a drawn
+turnaround/proportion sheet, and it worked — but that was Nano Banana
+holding consistency across ITS OWN generations of the same character. Any
+frame drawn or cleaned by hand from here (§6's idle/move CYCLE gap, most
+likely) still wants a small proportion reference — height in pixels, joint
+positions, a silhouette at rest — made once, so a hand-adjusted frame
+traces against the same skeleton rather than an eyeballed guess.
+
+**5. A per-character asset bundle needs its own manifest, not just loose
+hashed PNGs.** `assets/README.md`'s "filename carries the hash of the spec"
+convention works for one plate; an animated character is now 14+ frames
+across two style blocks plus whatever a future idle/move cycle adds — a
+set, not a file. `turf/art-src/sprites/cast/README.md` is doing this job by
+hand right now (prompts, defects, check results, all in one document) and
+it's worked for two characters; whether that scales past this pilot without
+becoming its own stale-copy problem (the exact failure §2's flat-fill text
+sitting uncorrected for three days already demonstrated once) is worth
+watching as more characters land.
+
+**6. Iteration cost is measured, not guessed, going forward.** §8's
+pilot cost 12 generations per character, not 6 — the direction pass alone
+roughly doubled the nominal spend, and that's now real data instead of an
+estimate. §2.2 and §2.4's own testing both add: the first generation isn't
+usually the cost — it's the redo when a plate fails the "look" step (§5
+step 2) or a pose doesn't read as asked (§8's death-down and akimbo-pistol
+fixes, both needing a second or third prompt attempt). Budget Stage 2's
+remaining characters off the pilot's real 12/character number plus a redo
+margin, not off a fresh guess.
