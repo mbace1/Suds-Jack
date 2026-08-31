@@ -3,7 +3,8 @@
 import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=37';
 import { SECTOR_COLOR } from './palette.js?v=37';
 import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=37';
-import { EXTRA_STORIES, EXTRA_COPY } from './extras.js?v=48';
+import { EXTRA_STORIES, EXTRA_COPY } from './extras.js?v=56';
+import { ODD56_STORIES, ODD56_COPY } from './oddwire56.js?v=56';
 
 export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=37';
 
@@ -35,12 +36,13 @@ function install(wire, source, errors = []) {
   SECTORS = wire.sectors;
   const { shown, archived } = rotate(wire);
   const addExtras = wire.date === '2026-08-29' && source !== 'off-air';
-  STORIES = addExtras ? [...shown, ...EXTRA_STORIES] : shown;
+  const extras = addExtras ? [...EXTRA_STORIES, ...ODD56_STORIES] : [];
+  STORIES = addExtras ? [...shown, ...extras] : shown;
   ARCHIVED = archived;
   COPY = {
-    en: { ...(wire.copy.en || {}), ...(addExtras ? EXTRA_COPY.en : {}) },
-    fi: { ...(wire.copy.fi || {}), ...(addExtras ? EXTRA_COPY.fi : {}) },
-    ja: { ...(wire.copy.ja || {}), ...(addExtras ? EXTRA_COPY.ja : {}) },
+    en: { ...(wire.copy.en || {}), ...(addExtras ? EXTRA_COPY.en : {}), ...(addExtras ? ODD56_COPY.en : {}) },
+    fi: { ...(wire.copy.fi || {}), ...(addExtras ? EXTRA_COPY.fi : {}), ...(addExtras ? ODD56_COPY.fi : {}) },
+    ja: { ...(wire.copy.ja || {}), ...(addExtras ? EXTRA_COPY.ja : {}), ...(addExtras ? ODD56_COPY.ja : {}) },
   };
   WIRE_INFO = {
     source,
