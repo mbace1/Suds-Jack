@@ -23,17 +23,19 @@ Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/met
 - Transfer loop: ARRIVED -> GET OFF -> WAIT AT HUB -> catch a second real arriving vehicle.
 - WALK consumes gameplay ticks and is blocked for transit-only cargo.
 - Authored job progression advances only after the final physical ride of that authored leg.
-- New interception planner evaluates each available walk link against the moving fleet at the destination hub.
+- Interception planner evaluates each available walk link against the moving fleet at the destination hub.
 - It ranks walk-to-catch opportunities using walk time + predicted wait for an exact gameplay vehicle that continues toward the delivery target.
-- The best interception is now drawn directly on the map as a highlighted walking move with `WALK Xt · CATCH line +Yt` guidance.
+- The best interception is drawn directly on the map as `WALK Xt · CATCH line +Yt` guidance.
+- WALK choices in the hub UI now show whether that specific walk leads to a useful downstream catch, including line number and additional wait.
+- Courier walking is now visibly animated between the two hubs instead of resolving only as an invisible timer.
 
 ## Important files
 - `toko-move/js/live-network.js` — gameplay fleet, exact-path positions, vehicle identity/selection/highlight.
 - `toko-move/js/hubs-walking.js` — transfer hubs + simplified walking links.
 - `toko-move/js/mobility-v212.js` — physical ride identity, target-arrival latch, manual transfer/disembark, walking.
 - `toko-move/js/interception-v212.js` — walk-to-intercept planner using the deterministic fleet.
-- `toko-move/js/route-choice.js` — waiting UI, arrival-gated boarding, current/next stop UI, GET OFF/WALK actions.
-- `toko-move/js/main-v212.js` — v2.12 runtime overlays plus visible interception recommendation.
+- `toko-move/js/route-choice.js` — waiting UI, arrival-gated boarding, current/next stop UI, GET OFF/WALK/interception actions.
+- `toko-move/js/main-v212.js` — v2.12 runtime overlays, visible interception recommendation, animated walker.
 - `toko-move/js/deliveries.js` — fixed-service delivery trips / physical sub-rides.
 
 ## Cargo walking rule
@@ -48,8 +50,8 @@ Prototype: `modes:null` may walk (documents/hot food/parts/fresh food). Explicit
 ## Next larger steps
 1. Remove RouteDrawer from Toko Move source instead of blocking it at input level, and consolidate the v210/v211/v212 wrapper chain.
 2. Make selected visible vehicles the sole ride simulation, removing the duplicate flow-core carrier for Toko Move rides.
-3. Animate the courier physically along walking links and make interception success/failure visible second-to-second.
-4. Add multiple simultaneous courier jobs so moving vehicle positions create meaningful job-selection decisions.
-5. Add disruptions through vehicle frequency/waiting changes, never fake HSL geometry.
+3. Add multiple simultaneous courier job offers so moving vehicle positions create meaningful job-selection decisions.
+4. Add disruptions through vehicle frequency/waiting changes, never fake HSL geometry.
+5. Expand hub decision UI so major transfer hubs expose several tactical options at once without overwhelming the map.
 
 Strategic question: **Wait for tram, transfer, or walk?**
