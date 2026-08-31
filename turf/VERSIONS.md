@@ -8,6 +8,30 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v13 — 2026-08-31
+**Regenerated the cast pilot's attack pose — a real quality pass, not a
+doc fix: v12's shipped windup/release read too similar to be usable.**
+
+- Root cause: both prompts described the SAME end pose with only tension
+  wording differing ("tense and set" vs "braced hard against recoil") —
+  language the image model can't turn into a visually distinct silhouette.
+  Confirmed on both characters, including leopard, whose original prompt
+  already named opposite geometry (cocked-back vs extended-down) and still
+  rendered nearly identical.
+- Fix: rewrote both prompts per character as geometrically opposite
+  silhouettes, with explicit "exaggerate past what feels natural" language.
+  Gunner: a low fast-draw coil (guns pulled tight to the ribs, elbows
+  pinned in, deep knee bend) vs full extension (arms locked straight out,
+  front knee driven forward). Leopard: a tall overhead knife raise vs a low
+  forward lunge (knife driven down and out). Regenerated all 8 (2 poses × 2
+  characters × 2 facings) via `scripts/gen-with-ref.mjs` against the same
+  `_ref-*.png` identity crops; `gunner-attack-windup-back` needed one
+  retry, kept the stronger result. 8/8 pass `check --illustration`.
+- `assets/index.json` re-indexed at the new prompt hashes; the six other
+  cast poses (Idle/Move/Hit/Death ×2) are untouched, still the v12 files.
+- `node turf/test/smoke.mjs` (35/35) and
+  `NODE_PATH=$(npm root -g) node test/assets-smoke.cjs` both still pass.
+
 ## v12 — 2026-08-31
 **Reconciled a parallel art-pipeline branch, not an engine change: real
 generated art lands (six archetype plates + a two-character, 28-frame,
