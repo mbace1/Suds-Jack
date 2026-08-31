@@ -1534,4 +1534,207 @@ hips supporting her weight, the pose is wrong — the legs must be laid out
 sideways along the ground instead. Whole body clear of all four frame
 edges — no text, no logos, no UI, no blood baked into the art.`,
   },
+
+  // ── TURF cast-pose pilot — the BACK-view half ────────────────────────────
+  // The front-only pilot above answered "does identity hold across a pose
+  // change" and stopped there — it never answered "does this cover the
+  // board's actual directions," which turf/js/grid.js settles: an
+  // orthogonal 4-directional grid, projected isometric by render.js's
+  // toScreen() onto the four screen diagonals. The owner's own casting
+  // sheet already draws every character as a front+back pair for exactly
+  // this reason — two drawn facings, mirrored left/right in code, cover
+  // all four. These twelve are the back half of that pair, against a back
+  // -view reference crop instead of the front one. Same CAST_GUNNER /
+  // CAST_LEOPARD text descriptions still apply — hair, build and outfit
+  // are equally visible from behind, only the face is not, which is why
+  // the reference IMAGE (not the text) is what's actually carrying
+  // identity here, same as the front half.
+  {
+    id: 'turf/cast-gunner-move-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'move', 'back'],
+    prompt: `${CAST_GUNNER}, seen from BEHIND — the reference image shows
+their back, not their face; match that same rear viewing angle. Captured
+mid-stride in a committed running step — body leaning forward, arms
+swinging naturally, one leg driving off the ground, weight fully committed
+to the movement. A single dynamic in-between pose, not a walk-cycle
+silhouette. Whole body clear of the frame edges, centred on frame — no
+text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-gunner-attack-windup-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack', 'back'],
+    prompt: `${CAST_GUNNER}, seen from BEHIND — the reference image shows
+their back, not their face; match that same rear viewing angle. In an
+AKIMBO dual-pistol stance like a classic action-movie double-gun pose
+(John Wick / Max Payne style) — a pistol held in EACH raised fist, both
+arms out and aimed forward away from the viewer, elbows apart — the
+windup beat right before firing, tense and set rather than relaxed. Whole
+body clear of the frame edges, centred on frame — no text, no logos, no
+UI, no muzzle flash, no flame, no light burst of any kind.`,
+  },
+  {
+    id: 'turf/cast-gunner-attack-release-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack', 'back'],
+    prompt: `${CAST_GUNNER}, seen from BEHIND — the reference image shows
+their back, not their face; match that same rear viewing angle. In an
+AKIMBO dual-pistol stance like a classic action-movie double-gun pose
+(John Wick / Max Payne style) — a pistol held in EACH raised fist, both
+arms out and firing forward away from the viewer, elbows apart, braced
+hard against the recoil — the release/impact beat of the same akimbo
+stance as the windup pose. Whole body clear of the frame edges, centred on
+frame — no text, no logos, no UI. Draw the pistols' slides and grips only:
+no muzzle flash, no flame, no light burst, no smoke of any kind anywhere
+in the image.`,
+  },
+  {
+    id: 'turf/cast-gunner-hit-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'hit', 'back'],
+    prompt: `${CAST_GUNNER}, seen from BEHIND — the reference image shows
+their back, not their face; match that same rear viewing angle. Recoiling
+from a hit — flinching forward off-balance, shoulders pulled in, weight
+caught mid-stumble. A single reaction frame, not a fall. Whole body clear
+of the frame edges, centred on frame — no text, no logos, no UI, no blood
+or impact FX baked into the art.`,
+  },
+  {
+    id: 'turf/cast-gunner-death-fall-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death', 'back'],
+    prompt: `${CAST_GUNNER}, seen from BEHIND — the reference image shows
+their back, not their face; match that same rear viewing angle. Losing
+balance and falling forward — knees buckling, arms thrown out, body past
+the point of recovering but not yet on the ground. The falling beat of a
+collapse, caught mid-motion. Whole body clear of the frame edges, centred
+on frame — no text, no logos, no UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-gunner-death-down-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death', 'back'],
+    prompt: `${CAST_GUNNER}, seen from BEHIND — the reference image shows
+their back, not their face; match that same rear viewing angle, but they
+have fallen and are lying on the ground — NOT standing, NOT crouching, NOT
+kneeling, NOT balanced on their feet. The body is reclined at a steep
+diagonal filling the frame corner-to-corner rather than standing upright
+in the centre: shoulders and head low and near one bottom corner of the
+frame, both legs stretched out flat toward the opposite side, limbs slack
+like a dropped action figure. Test: if the feet are still under the hips
+supporting weight, the pose is wrong — the legs must be laid out sideways
+along the ground instead. Whole body clear of all four frame edges — no
+text, no logos, no UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-leopard-move-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'move', 'back'],
+    prompt: `${CAST_LEOPARD}, seen from BEHIND — the reference image shows
+her back, not her face; match that same rear viewing angle. Captured
+mid-stride in a committed running step — body leaning forward, coat
+trailing slightly behind the motion, one leg driving off the ground,
+weight fully committed to the movement. A single dynamic in-between pose,
+not a walk-cycle silhouette. Whole body clear of the frame edges, centred
+on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-leopard-attack-windup-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack', 'back'],
+    prompt: `${CAST_LEOPARD}, seen from BEHIND — the reference image shows
+her back, not her face; match that same rear viewing angle. Knife arm
+drawn back and cocked at shoulder height, weight coiled onto the back
+foot, free hand out for balance — the windup beat right before a downward
+stabbing strike. Whole body and the knife clear of the frame edges,
+centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-leopard-attack-release-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack', 'back'],
+    prompt: `${CAST_LEOPARD}, seen from BEHIND — the reference image shows
+her back, not her face; match that same rear viewing angle. Knife arm
+fully extended in a downward stabbing strike, weight driven forward onto
+the front foot — the release/impact beat of the same strike as the windup
+pose. Whole body and the knife clear of the frame edges, centred on frame
+— no text, no logos, no UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-leopard-hit-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'hit', 'back'],
+    prompt: `${CAST_LEOPARD}, seen from BEHIND — the reference image shows
+her back, not her face; match that same rear viewing angle. Recoiling from
+a hit — flinching forward off-balance, shoulders pulled in, weight caught
+mid-stumble. A single reaction frame, not a fall. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI, no blood or
+impact FX baked into the art.`,
+  },
+  {
+    id: 'turf/cast-leopard-death-fall-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death', 'back'],
+    prompt: `${CAST_LEOPARD}, seen from BEHIND — the reference image shows
+her back, not her face; match that same rear viewing angle. Losing balance
+and falling forward — knees buckling, arms thrown out, coat flaring with
+the motion, body past the point of recovering but not yet on the ground.
+The falling beat of a collapse, caught mid-motion. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI, no blood baked
+into the art.`,
+  },
+  {
+    id: 'turf/cast-leopard-death-down-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death', 'back'],
+    prompt: `${CAST_LEOPARD}, seen from BEHIND — the reference image shows
+her back, not her face; match that same rear viewing angle, but she has
+fallen and is lying on the ground — NOT standing, NOT crouching, NOT
+kneeling, NOT balanced on her feet. The body is reclined at a steep
+diagonal filling the frame corner-to-corner rather than standing upright
+in the centre: shoulders and head low and near one bottom corner of the
+frame, both legs stretched out flat toward the opposite side, coat
+splayed open around her, limbs slack like a dropped action figure. Test:
+if her feet are still under her own hips supporting her weight, the pose
+is wrong — the legs must be laid out sideways along the ground instead.
+Whole body clear of all four frame edges — no text, no logos, no UI, no
+blood baked into the art.`,
+  },
 ];

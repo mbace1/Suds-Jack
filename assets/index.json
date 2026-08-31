@@ -237,6 +237,90 @@
       "use": "prop",
       "game": "turf",
       "hash": "c15b3b7e"
+    },
+    "turf/cast-gunner-move-back": {
+      "file": "2d/turf-cast-gunner-move-back.ced7ec77.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "ced7ec77"
+    },
+    "turf/cast-gunner-attack-windup-back": {
+      "file": "2d/turf-cast-gunner-attack-windup-back.baa86fdf.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "baa86fdf"
+    },
+    "turf/cast-gunner-attack-release-back": {
+      "file": "2d/turf-cast-gunner-attack-release-back.a590896b.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "a590896b"
+    },
+    "turf/cast-gunner-hit-back": {
+      "file": "2d/turf-cast-gunner-hit-back.33e09107.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "33e09107"
+    },
+    "turf/cast-gunner-death-fall-back": {
+      "file": "2d/turf-cast-gunner-death-fall-back.39b7e36d.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "39b7e36d"
+    },
+    "turf/cast-gunner-death-down-back": {
+      "file": "2d/turf-cast-gunner-death-down-back.431c5767.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "431c5767"
+    },
+    "turf/cast-leopard-move-back": {
+      "file": "2d/turf-cast-leopard-move-back.f873b072.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "f873b072"
+    },
+    "turf/cast-leopard-attack-windup-back": {
+      "file": "2d/turf-cast-leopard-attack-windup-back.8ae6e7f7.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "8ae6e7f7"
+    },
+    "turf/cast-leopard-attack-release-back": {
+      "file": "2d/turf-cast-leopard-attack-release-back.d5c9ebb1.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "d5c9ebb1"
+    },
+    "turf/cast-leopard-hit-back": {
+      "file": "2d/turf-cast-leopard-hit-back.e0970559.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "e0970559"
+    },
+    "turf/cast-leopard-death-fall-back": {
+      "file": "2d/turf-cast-leopard-death-fall-back.0c3b8ea6.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "0c3b8ea6"
+    },
+    "turf/cast-leopard-death-down-back": {
+      "file": "2d/turf-cast-leopard-death-down-back.86601966.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "86601966"
     }
   }
 }

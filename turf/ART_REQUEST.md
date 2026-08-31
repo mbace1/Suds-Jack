@@ -501,5 +501,20 @@ collapsed to one gun until named as a recognisable trope instead of
 described geometrically) — both fixes are reusable wording for any future
 character, not one-offs.
 
+**The owner then asked directly whether this covered NE/NW/SE/SW** — it
+didn't; the pilot above was front-facing only. Answered properly rather
+than assumed fine: `turf/js/grid.js` is orthogonal 4-directional and
+`render.js` projects those 4 directions onto the 4 isometric screen
+diagonals, and — working through the actual projection maths, not eyeballed
+— **2 drawn facings (front + back), mirrored left/right in code, cover all
+4**, matching the front+back convention the owner's own casting sheet
+already uses. Generated the back half of all seven poses for both pilot
+characters (14 more frames); both hard-won front-view prompt fixes carried
+over on the first try with no retries needed. Real cost per character is
+now known rather than guessed: **12 generations, not 6** (Idle stays free
+in both facings — a direct crop either way — but the other six poses each
+need a front AND a back generation).
+
 Not done: the other ~18 characters, `render.js` integration (§7's own
-item), and settling the facing-count question above.
+item) — including the actual left/right mirroring code, which is separate
+from having both facings' source art.
