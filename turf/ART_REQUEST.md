@@ -212,6 +212,58 @@ prediction held, with a sharper, now-measured shape to it:
   reasonable ask when they come up; ATTACK/HIT/DEATH stay single-pose,
   FX-free requests per §6's original plan, cut and hand-finished in Aseprite.
 
+## 2.3 The casting-sheet style — now the reference, not a first draft (2026-08-31)
+
+The owner delivered two full casting sheets — six characters at a larger scale
+on one, twenty on the other, every figure a front+back turnaround pair on the
+same flat magenta this pipeline keys on — and asked for this exact rendering
+to become the target. They are committed at
+`turf/art-src/reference/casting-sheet-1.png` and `casting-sheet-2.png`, so
+anyone writing a prompt against this document can look at them directly
+rather than read a description of them.
+
+**This supersedes §2's two-shade-step rule.** Every figure on both sheets
+carries real tonal range — highlight/midtone/shadow across three or four
+visible steps per surface, strand-level hair, simple facial shading — not a
+flat base+shadow fill. §2.1 caught this same richness on the first-draft
+sheet and asked a future batch to hold the flat-fill line explicitly; the
+owner has now done the opposite on purpose, delivering two full sheets in
+the richer register and asking for it by name. The hard outline and
+silhouette-first read stay — that is still what carries at the game's actual
+on-board scale — but "at most two shade steps" is retired as the ask for the
+six archetype plates. `assets/manifest.mjs`'s `turfGrim` style block and §4's
+six prompts below are rewritten to this register.
+
+**Checked against the real pipeline, not just eyeballed.** Six figures
+cropped from these sheets — one matched to each of §4's archetypes — were
+run through the actual `key → fit --palette turf/art-src/palette.json →
+check` pipeline this session: **6/6 came back real cuttable pixel art** —
+binary alpha, 17–24 colours each (comfortably inside the 32-colour art
+palette), no semi-transparent fringe. The richer shading was never a keying
+risk, only a style question, and it survives quantisation intact.
+
+**Two real gaps that same crop test found, worth stating so a future batch
+doesn't repeat them:**
+- **No faction trim.** Every figure on both sheets is neutral streetwear —
+  no cold blue-cyan, no warm rust-orange. Nothing on these sheets
+  demonstrates §3's colour-block rule, so a prompt written against this
+  reference still has to state the trim colour explicitly; it does not come
+  along for free just by pointing at the sheet.
+- **A crop from a multi-character sheet drags its neighbour in.** Three of
+  the six test crops caught a sliver of the adjacent figure at a frame edge
+  — a boot at the top, a weapon tip at the side — because the sheet packs
+  figures edge to edge. That is a crop problem, not a `key`/`fit` problem,
+  and it is why §4's prompts ask for one isolated figure per generation
+  rather than "crop this out of a sheet": a model asked to draw a single
+  figure alone on magenta has no neighbour to leak.
+
+**Casting stays loose, per §2.1.** These sheets are a style and fidelity
+reference, not a lock to a specific look per archetype — the class list may
+still change and likeness is decoupled from class (GDD §5.1) — so §4's six
+prompts keep describing role and pose, now matching this richer rendering
+register, the same way they always described role and pose against the
+flatter one.
+
 ---
 
 ## 3. Colours and roles, read off the game's own numbers
@@ -245,57 +297,73 @@ turf/blade-plate:
 A lean street operator holding a fixed-blade knife low and ready, weight
 forward like they close distance fast. Dark practical streetwear (jacket,
 boots), hood down, with cold blue-cyan (#6fb8d9) trim on the jacket
-zip/cuffs/laces as the faction colour-block. Pixel art, hard 1px black
-outline, flat fills, at most two shade steps per surface. Standing
-three-quarter view, whole body, feet together and clear of the bottom edge
-(no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF background —
-no text, no logos, no UI.
+zip/cuffs/laces as the faction colour-block. Pixel art rendered with the
+tonal richness of a real character casting sheet — highlight/midtone/shadow
+modelling, strand-level hair — not a flat two-tone fill, carried by a hard
+clean 1px outline at the silhouette edge. Standing three-quarter view, whole
+body, feet together and clear of the bottom edge (no ground shadow), ALONE
+IN FRAME with nothing else entering from any edge, centred on a FLAT SOLID
+MAGENTA #FF00FF background — no text, no logos, no UI.
 
 turf/niner-plate:
 A street operator sighting down a pistol held two-handed at chest height,
 calm and settled rather than lunging — this one plays the long game. Dark
 practical streetwear, cold blue-cyan (#6fb8d9) trim on the jacket/gloves as
-the faction colour-block. Pixel art, hard 1px black outline, flat fills, at
-most two shade steps per surface. Standing three-quarter view, whole body,
-feet together and clear of the bottom edge (no ground shadow), centred on a
-FLAT SOLID MAGENTA #FF00FF background — no text, no logos, no UI.
+the faction colour-block. Pixel art rendered with the tonal richness of a
+real character casting sheet — highlight/midtone/shadow modelling,
+strand-level hair — not a flat two-tone fill, carried by a hard clean 1px
+outline at the silhouette edge. Standing three-quarter view, whole body,
+feet together and clear of the bottom edge (no ground shadow), ALONE IN
+FRAME with nothing else entering from any edge, centred on a FLAT SOLID
+MAGENTA #FF00FF background — no text, no logos, no UI.
 
 turf/wrench-plate:
 The heaviest-built of three street operators, gripping a length of pipe in
 both hands like a bar about to swing — built for a shove, not a stab. Dark
 practical streetwear, wider stance than a lean fighter, cold blue-cyan
-(#6fb8d9) trim on the jacket as the faction colour-block. Pixel art, hard
-1px black outline, flat fills, at most two shade steps per surface.
-Standing three-quarter view, whole body, feet together and clear of the
-bottom edge (no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF
-background — no text, no logos, no UI.
+(#6fb8d9) trim on the jacket as the faction colour-block. Pixel art
+rendered with the tonal richness of a real character casting sheet —
+highlight/midtone/shadow modelling, strand-level hair — not a flat two-tone
+fill, carried by a hard clean 1px outline at the silhouette edge. Standing
+three-quarter view, whole body, feet together and clear of the bottom edge
+(no ground shadow), ALONE IN FRAME with nothing else entering from any
+edge, centred on a FLAT SOLID MAGENTA #FF00FF background — no text, no
+logos, no UI.
 
 turf/grunt-blunt-plate:
 A rangy street thug gripping a baseball bat with a wide, wound-up swing
 stance. Rough street clothes, no armour, warm rust-orange (#c9663f) trim on
-the jacket/cap as the faction colour-block. Pixel art, hard 1px black
-outline, flat fills, at most two shade steps per surface. Standing
-three-quarter view, whole body, feet together and clear of the bottom edge
-(no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF background —
-no text, no logos, no UI.
+the jacket/cap as the faction colour-block. Pixel art rendered with the
+tonal richness of a real character casting sheet — highlight/midtone/shadow
+modelling, strand-level hair — not a flat two-tone fill, carried by a hard
+clean 1px outline at the silhouette edge. Standing three-quarter view,
+whole body, feet together and clear of the bottom edge (no ground shadow),
+ALONE IN FRAME with nothing else entering from any edge, centred on a FLAT
+SOLID MAGENTA #FF00FF background — no text, no logos, no UI.
 
 turf/grunt-handgun-plate:
 The leanest of a rival street crew, holding a handgun low and loose,
 unhurried — this one has range and knows it. Rough street clothes, warm
-rust-orange (#c9663f) trim as the faction colour-block. Pixel art, hard 1px
-black outline, flat fills, at most two shade steps per surface. Standing
+rust-orange (#c9663f) trim as the faction colour-block. Pixel art rendered
+with the tonal richness of a real character casting sheet —
+highlight/midtone/shadow modelling, strand-level hair — not a flat two-tone
+fill, carried by a hard clean 1px outline at the silhouette edge. Standing
 three-quarter view, whole body, feet together and clear of the bottom edge
-(no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF background —
-no text, no logos, no UI.
+(no ground shadow), ALONE IN FRAME with nothing else entering from any
+edge, centred on a FLAT SOLID MAGENTA #FF00FF background — no text, no
+logos, no UI.
 
 turf/grunt-shotgun-plate:
 The bulkiest of a rival street crew, a sawn-off shotgun held tight to the
 hip, built for a close, ugly fight rather than a clean one. Rough street
 clothes, warm rust-orange (#c9663f) trim as the faction colour-block. Pixel
-art, hard 1px black outline, flat fills, at most two shade steps per
-surface. Standing three-quarter view, whole body, feet together and clear
-of the bottom edge (no ground shadow), centred on a FLAT SOLID MAGENTA
-#FF00FF background — no text, no logos, no UI.
+art rendered with the tonal richness of a real character casting sheet —
+highlight/midtone/shadow modelling, strand-level hair — not a flat two-tone
+fill, carried by a hard clean 1px outline at the silhouette edge. Standing
+three-quarter view, whole body, feet together and clear of the bottom edge
+(no ground shadow), ALONE IN FRAME with nothing else entering from any
+edge, centred on a FLAT SOLID MAGENTA #FF00FF background — no text, no
+logos, no UI.
 ```
 
 ---
@@ -350,39 +418,54 @@ asset in this repo already goes through.
 `PRODUCTION_PIPELINE.md` §2.1's asset spec lists Idle / Walk / Attack / Hit /
 Death per unit — written before Milestone 1 confirmed the actual shape of
 the game, which is **turn-based and tile-snapped**, not real-time free-roam.
-That changes the frame budget a lot: nobody needs an 8-direction walk cycle
-for a unit that visually slides from one known tile to another on its own
-turn. Adapted to what TURF actually does, per archetype:
+§2.2 then replaced theory with a real test of three owner-supplied sheets,
+and it sharpened the picture further than "turn-based means a small budget"
+did: **idle and move rows came back as genuinely usable multi-frame
+sheets — tight, consistent frame pitch, a cropped frame passing the full
+pipeline 1/1.** Attack/hit/death rows failed on every sheet tried, but for
+two specific, *named* reasons (motion-trail/blood FX defeating the magenta
+key; irregular frame pitch on those rows) — not because generating multiple
+poses at once doesn't work. That distinction matters: the original plan
+below assumed multi-pose consistency itself was the risk, and §2.2 showed it
+mostly isn't.
 
-| frame | count | what it's for |
-|---|---|---|
-| **Idle** | 1 | the standing ready pose — this *is* the key-pose plate from §4/§5, no separate generation needed |
-| **Move** | 1 | a single mid-stride "committed step" pose, blended toward during the tile-to-tile slide `render.js` already animates positionally — not a cycle, since the game never holds on a walking pose long enough for one to read |
-| **Attack** | 1–2 | the weapon-specific action: knife lunge, pistol/handgun recoil, shotgun blast, pipe/bat swing-through (which should read as mid-swing, since that's also the knockback beat). Two frames (windup + release) if the budget allows; one (release only) is enough for Milestone 1 |
-| **Hit** | 1 | a recoil/flinch reaction — read `combat.js`'s `resolveAttack` for what it needs to sell: a hit event exists whether or not it kills |
-| **Death/KO** | 1–2 | a collapse — one frame is a static "down" pose, two (falling + down) reads better but isn't required |
+**"Animations like in MST"** (owner direction, 2026-08-31) means real
+motion, not a pose held still and blended between tiles. Metal Slug Tactics'
+characters visibly breathe at idle and visibly run tile to tile even though
+the game underneath is turn-based — the polish is in the motion itself, not
+loosened by the turn structure. That raises idle and move from "one frame,
+reuse the key pose" to real short cycles, which §2.2 already proved this
+pipeline can generate as sheets:
 
-**Total per archetype: 4–7 frames**, not the dozens a real-time action game
-would need — this is the actual honest ask once the game's own turn
-structure is accounted for, and it is why this document does not request
-Nano Banana generate a multi-pose sheet in one image: character consistency
-across multiple poses from a single text-to-image generation is an
-unsolved, unreliable problem with this pipeline's tooling (no ControlNet,
-no LoRA, no pose conditioning) — asking for six sheets of six frames each is
-asking for thirty-six chances for the model to drift off-model. The reliable
-ask is one strong key-pose plate per archetype (§4); the remaining 3–6
-frames per archetype are a **hand pass in Aseprite**, traced against that
-plate for proportions and drawn from `turf/art-src/palette.json`'s sixteen
-colours directly, which is a bounded, honest amount of manual work (18–36
-frames total across all six archetypes) rather than a pipeline claim this
-tooling can't actually back up.
+| frame | count | what it's for | how it's made |
+|---|---|---|---|
+| **Idle** | 2–3 | a subtle breathing/weight-shift loop, not a dead held pose | generated as a real sheet (§2.2 proved this works) |
+| **Move** | 3–4 | an actual stride cycle a unit visibly runs through while sliding tile to tile, not one blended mid-step pose | generated as a real sheet (§2.2 proved this works) |
+| **Attack** | 2 | windup + impact, weapon-specific: knife lunge, pistol/handgun recoil, shotgun blast, pipe/bat swing-through (also the knockback beat) | single-pose generation, hand-extended in Aseprite — sheets still fail here |
+| **Hit** | 1 | a recoil/flinch reaction with real snap — MST's hit reactions read as an impact, not a soft flinch | single-pose generation, hand-extended in Aseprite |
+| **Death/KO** | 2 | falling + down, for a collapse with actual follow-through rather than a single static drop | single-pose generation, hand-extended in Aseprite |
 
-**If a grid sheet is attempted anyway** (a per-archetype experiment, not
-this request's default): lay every pose out as equal-size square cells on
-one flat-magenta canvas, then `node kindling/tools/cut.mjs slice <sheet>.png
-<dir> <cell-px> idle,move,attack,hit,death` cuts it into one file per named
-cell — that tool call is real and already in this repo, it just isn't the
-default plan here because of the consistency problem above.
+**Total per archetype: 10–13 frames** (up from the original 4–7 plan) — idle
+and move are now real generated sheets instead of single held poses;
+attack/hit/death keep the original method (single-pose generation,
+hand-finished) but each asks for one more frame than the original bare
+minimum, matching the impact MST reads with even in a single frame.
+
+**Attack/hit/death still don't become sheets, and the reason still holds:**
+§2.2's two failure modes are about *what* those rows draw (baked FX, a
+swing or a fall that doesn't hold a fixed frame pitch), not about how many
+poses are asked for in one image — a bigger or better-prompted sheet doesn't
+fix a translucent slash trail defeating a hard alpha key. The reliable ask
+for those three rows is still one strong single-pose plate per beat,
+hand-extended in Aseprite against `turf/art-src/palette.json`'s colours —
+5 frames × 6 archetypes = 30 frames of bounded manual work, on top of the
+generated idle/move sheets.
+
+**Laying out a generated idle/move sheet:** equal-size square cells on one
+flat-magenta canvas, then `node kindling/tools/cut.mjs slice <sheet>.png
+<dir> <cell-px> idle1,idle2,idle3,move1,move2,move3,move4` cuts it into one
+file per named cell — a real tool call already in this repo. Attack/hit/death
+stay single-pose, FX-free requests, generated and cut one at a time.
 
 ---
 

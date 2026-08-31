@@ -8,6 +8,50 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v10 — 2026-08-31
+**Art-pipeline design capture, not an engine change: the owner delivered two
+real casting sheets and asked for their style — and MST-real animation — to
+become the actual request. Nothing in `index.html`'s live import graph
+changed, so no cache-token bump this round.**
+
+- Two full casting sheets (6 characters, then 20 — every figure a front+back
+  turnaround pair, on the same flat magenta this pipeline keys on) committed
+  at `turf/art-src/reference/casting-sheet-1.png` / `-2.png`. Checked against
+  the real pipeline, not just eyeballed: six figures cropped from them, one
+  per §4 archetype, went through the actual `key → fit --palette
+  turf/art-src/palette.json → check` this session — **6/6 came back real
+  cuttable pixel art** (binary alpha, 17–24 colours each, comfortably inside
+  the 32-colour palette). Two real gaps that same test found: neither sheet
+  demonstrates the cold-cyan/warm-rust faction trim (has to be stated in the
+  prompt regardless of the reference), and three of the six crops dragged a
+  neighbour's boot or weapon tip in from a frame edge — a crop problem, not
+  a keying one.
+- `ART_REQUEST.md` §2.3 (new) records this and formally **retires the
+  two-shade-step flat-fill rule** for the six archetype plates — superseded
+  on purpose by the richer register both sheets show (real
+  highlight/midtone/shadow modelling, strand-level hair), while keeping the
+  hard silhouette-edge outline that still has to carry the read at the
+  game's actual on-board scale. §4's six prompts and `assets/manifest.mjs`'s
+  `turfGrim` style block + all six `turf/*-plate` prompts rewritten to
+  match, each restating the faction trim colour explicitly (the reference
+  doesn't carry it) and a new "ALONE IN FRAME, nothing entering from any
+  edge" instruction (the crop-bleed problem found in testing).
+- `ART_REQUEST.md` §6 (animation guide) rewritten for **"animations like in
+  MST"** (owner direction): idle and move rise from one held pose each to
+  real 2–3 and 3–4 frame cycles respectively, generated as actual sheets —
+  §2.2's own earlier test already proved idle/move sheets come back usable,
+  so this isn't a new risk, it's finishing what was already measured.
+  Attack/hit/death stay single-pose generations hand-extended in Aseprite
+  (§2.2's two failure reasons — baked FX defeating the key, irregular frame
+  pitch — are about what those rows draw, not how many poses are asked for
+  at once), each raised by one frame over the original minimum. Total per
+  archetype: 10–13 frames, up from the original 4–7.
+- `node scripts/assets.mjs gen --dry --only turf` and
+  `NODE_PATH=$(npm root -g) node test/assets-smoke.cjs` (46 checks) both
+  pass against the rewritten manifest — the six prompts hash to new values,
+  as expected from editing their text, and nothing else in the pipeline's
+  wiring is disturbed.
+
 ## v9 — 2026-08-29
 **Second round from a real annotated phone screenshot of the live v8 deploy:
 "the top is unused, but could be background graphics. the grid could be
