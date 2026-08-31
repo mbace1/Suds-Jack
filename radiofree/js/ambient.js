@@ -2,14 +2,14 @@
 
 import { PAL } from './palette.js?v=37';
 import { mix, shade, bayer } from './screen.js?v=37';
-import { drawCentralStation } from './centralstation.js?v=39';
+import { drawCentralStation } from './centralstation.js?v=54';
 import { drawKatajanokka } from './katajanokka.js?v=40';
 import { drawHakaniemi } from './hakaniemi.js?v=46';
 import { drawMetro } from './metro.js?v=49';
 import { drawRooftops } from './rooftops.js?v=50';
 import { drawKallioNight } from './kallionight.js?v=51';
 import { drawMannerheimRain } from './mannerheimrain.js?v=52';
-import { drawPassersby, drawBroadcastFX } from './broadcastfx.js?v=45';
+import { drawPassersby, drawBroadcastFX } from './broadcastfx.js?v=54';
 
 export const AMBIENT_KEYS = ['metro', 'mannerheimrain', 'centralstation', 'hakaniemi', 'katajanokka', 'rooftops', 'kallionight'];
 const W = 128, H = 152;
@@ -23,7 +23,7 @@ function rain(scr, t, d, amount = 42, speed = 58, len = 4, alpha = 0.5) {
 }
 function metro(scr,t,d){drawMetro(scr,t,d);drawPassersby(scr,t,d,118);}
 function mannerheimrain(scr,t,d){drawMannerheimRain(scr,t,d);drawPassersby(scr,t,d,114);}
-function centralstation(scr,t,d){drawCentralStation(scr,t,d);drawPassersby(scr,t,d,113);rain(scr,t,d,18,30,2,.22);rain(scr,t,d,20,64,4,.42);}
+function centralstation(scr,t,d){drawCentralStation(scr,t,d);rain(scr,t,d,18,30,2,.22);rain(scr,t,d,20,64,4,.42);}
 function hakaniemi(scr,t,d){drawHakaniemi(scr,t,d);drawPassersby(scr,t,d,116);rain(scr,t,d,12,31,2,.16);}
 function katajanokka(scr,t,d){drawKatajanokka(scr,t,d);drawPassersby(scr,t,d,119);rain(scr,t,d,10,28,2,.14);}
 function rooftops(scr,t,d){drawRooftops(scr,t,d);}
