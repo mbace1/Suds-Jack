@@ -81,47 +81,78 @@ explicitly *rarely/never* per your calibration. The loss condition is almost alw
 Units are persistent named characters who survive within a run and carry XP/loot
 forward; losing a unit mid-run is a real loss (squad wipe risk), not a system input.
 
-## 5.1 Classes & Subclasses (owner direction, 2026-08-28)
+## 5.1 Skills & Hybrid Classes (owner direction, 2026-08-28, revised 2026-08-31)
 
-Every unit has a **class** (three at launch — the existing `blade`/`niner`/`wrench`
-archetypes graduate into class names) and each class has **subclasses** with their
-own unique skills. This is Phase 2+ scope — no engine or `data/*.json` change ships
-with this entry, it is the shape to build toward once Milestone 1's combat feel is
-validated (§8/§9).
+**No fixed class archetypes.** A unit's kit is built from skills and
+sub-skills drawn from open skill lines, and "class" is the label a
+particular *combination* produces — never a box a unit is locked into at
+creation. The weapon-role triangle Milestone 1 already ships
+(`blade`/`niner`/`wrench` — melee/ranged/control) is a **starting kit**, not
+a permanent identity: it sets the unit's opening weapon and stats, nothing
+more. Past that, every level-up (§5's `awardXp`, already shipped) spends a
+skill slot on *any* line, regardless of which starting kit the unit began
+with — that is what makes a hybrid, not a special case bolted onto the
+system.
 
-**The likeness is loose — the colour is the class.** Mewgenics' own answer to "how
-do you tell a hundred different-looking characters apart at a glance" is not the
-character's body, it's a colour read off their trait/class, independent of what
-they look like. TURF adopts that directly: a unit's hair, build, skin tone and
-jacket style are drawn freely from the cast (ART_REQUEST.md §2.1 already commits
-to this — casting is not locked to specific archetypes) — **class is signalled by
-an accent colour, not by who's wearing it.** Some looks will naturally suit some
-classes better than others, and that's fine variety, not a rule.
+This is still Phase 2+ scope — no engine or `data/*.json` change ships with
+this entry, it is the shape to build toward once Milestone 1's combat feel
+is validated (§8/§9). It replaces the earlier one-class-two-subclasses plan
+this section used to describe; the six illustrative skill ideas survive
+below as **skill lines**, not subclass boxes a unit is limited to one of.
 
-That has to reconcile with a rule the game already depends on: a screen with both
-factions on it reads warm-vs-cold at a glance (§6, and `art-src/palette.json`'s
-whole operator/enemy split). The resolution is a two-layer read rather than
-picking one system over the other — **faction stays the primary hue family
-(operators cool, rivals warm), class is a secondary accent within that family**:
-an operator's class colour rotates through the cool side (cyan, teal, blue-violet),
-a rival's through the warm side (orange, amber, red). From across the board you
-still read "cold = mine, warm = theirs" instantly; up close, the specific accent
-tells you which class you're looking at. `art-src/palette.json`'s 32 colours
-(§2.1) already has headroom for this — `operator_pale`/`enemy_pale` and the new
-hair/cloth ramps give a class accent somewhere to live without touching the
-faction-read greys.
+**Why hybrids, concretely — the loot system already built the hook for
+this.** v7's weapon-swap loot drops (`VERSIONS.md`) already let a unit end a
+fight holding a weapon it didn't start with. A unit that began as `wrench`
+(control) but has spent two levels on Marksman-line skills gets nothing from
+them while holding a pipe — until it picks up a dropped handgun and
+suddenly plays like a different unit entirely. That moment — a build that
+was inert becoming live because of what dropped — is a payoff a fixed class
+box can't produce, and the engine already had the piece sitting unused
+before this revision named what it was for.
 
-**Illustrative subclass split** (names and numbers not final — the shape is the
+**Skill lines are not each gated to one weapon.** Some skills are
+weapon-agnostic (Slasher's bonus move after a kill works with anything in
+hand); some are only mechanically live with a matching weapon type
+(Marksman's bonus range damage does nothing without a ranged weapon
+equipped, same as Bruiser's extended knockback does nothing without
+something that knocks back). That is deliberate, not a gap to close — it is
+what makes weapon choice and skill choice two separate axes a player reads
+together, rather than one being redundant with the other.
+
+**Illustrative skill lines** (names and numbers not final — the shape is the
 point):
 
-| class | subclass | unique skill idea |
-|---|---|---|
-| **Blade** (melee) | Slasher | bonus move after a kill — momentum rewards aggression |
-| | Shiv | bonus damage against a flanked/already-engaged target — positioning reward |
-| **Niner** (ranged) | Marksman | no move-and-shoot penalty; bonus damage at max range |
-| | Enforcer | hits reduce the target's move range next turn instead of raw damage — control over burst |
-| **Wrench** (control) | Bruiser | knockback travels further and damages anything it collides with |
-| | Anchor | can end its turn planted, granting adjacent allies a defensive bonus — zone control, not offense |
+| skill line | flavour | unique skill idea | live without a matching weapon? |
+|---|---|---|---|
+| Slasher | aggression | bonus move after a kill — momentum rewards aggression | yes |
+| Shiv | positioning | bonus damage against a flanked/already-engaged target | yes |
+| Marksman | ranged precision | no move-and-shoot penalty; bonus damage at max range | **no — needs a ranged weapon** |
+| Enforcer | ranged control | hits reduce the target's move range next turn instead of raw damage | **no — needs a ranged weapon** |
+| Bruiser | impact | knockback travels further and damages anything it collides with | **no — needs a knockback weapon** |
+| Anchor | zone control | can end its turn planted, granting adjacent allies a defensive bonus | yes |
+
+Two skills from two different lines is a build, not an exception — a unit
+with Slasher and Marksman is playing something the three starting kits never
+named on their own, and that is the intended shape, not an edge case to
+design around later.
+
+**Open question this revision creates, flagged rather than silently
+resolved.** §5.1 originally solved "class is a secondary accent colour
+within the faction-cool/faction-warm split" (Mewgenics' colour-not-likeness
+rule, kept below). That solution assumed a unit *has* one class to colour. A
+unit built from two skill lines doesn't reduce to one accent honestly, so
+this revision recommends against inventing a rule that would misrepresent a
+hybrid build at a glance: **faction colour (cold operator / warm rival)
+stays the only accent the sprite itself carries; a build's actual skill
+lines read from the unit panel's text, not a paint job.** Nothing shipped or
+requested in `ART_REQUEST.md` implements the old secondary-accent plan yet,
+so this is a clean reversal rather than rework — but it is the owner's call
+to confirm or override before any art batch asks for a class-accent variant.
+
+**Likeness stays loose, unaffected by this revision.** A unit's hair, build,
+skin tone and jacket style are still drawn freely from the cast
+(ART_REQUEST.md §2.1) — that half of the original §5.1 was never about a
+fixed class-to-look mapping and doesn't change here.
 
 ## 5.2 Crew Naming
 
@@ -142,15 +173,16 @@ Smalls — plus a neutral pool (Ghost, Magpie, Knuckles...) and a HANDLE registe
 different joke from a street nickname and drawn independent of build.
 
 **A unit's identity is its name — nothing else.** `randomName()` returns a name
-and nothing else on purpose: it has no idea what class its unit will play, and
-it shouldn't. Class is assigned to a unit *in the game* (squad-select or
-recruitment), same as §5.1's colour-not-likeness rule — a name is permanent, a
-class is not baked into who someone is. Concretely, when the roster lands:
-`unit.name` is set once (at creation) and never touched by class re-specs;
-`unit.class`/`unit.subclass` live in a separate field that a respec can change
-without touching the name. Don't let a future "starter kit" shortcut generate a
-name and a class in the same call — that recouples exactly what this section
-decouples.
+and nothing else on purpose: it has no idea what kit or skills its unit will
+play, and it shouldn't. A starting kit and skill picks are assigned to a unit
+*in the game* (squad-select, recruitment, level-ups), same as §5.1's
+colour-not-likeness rule — a name is permanent, a build is not baked into who
+someone is. Concretely, when the roster lands: `unit.name` is set once (at
+creation) and never touched by a skill respec; `unit.kit` (the starting
+weapon-role) and `unit.skills` (whichever lines a unit has picked up, per
+§5.1) live in separate fields a respec can change without touching the name.
+Don't let a future "starter kit" shortcut generate a name and a kit in the
+same call — that recouples exactly what this section decouples.
 
 **Not yet wired to the roster.** `data/units.json` still has three fixed ids
 (`blade`/`niner`/`wrench`) with no name field — hooking `randomName()` up to an
@@ -214,7 +246,7 @@ arcade tone.
   cross-session save): a won encounter pays every surviving unit a clear
   bonus + a per-kill bonus (`combat.js`'s `awardXp`), levels cost
   progressively more XP and buy +2 max HP, healed immediately. No skill-slot
-  unlock yet — that half of this line waits on §5.1's class/subclass system
+  unlock yet — that half of this line waits on §5.1's skill-line system
   reaching the engine. `js/main.js`'s `crewProgress` carries level/XP/max HP
   across `SEQUENCE`, keyed by `defId` — v6.
 - ~~Introduce simple weapon-swap loot drops.~~ Shipped, v7: a dead enemy has a
@@ -234,8 +266,9 @@ arcade tone.
 ## 10. Open Design Questions (for next planning pass)
 
 - ~~Exact unit archetypes for the 3-unit starting squad (roles, not just weapons).~~
-  Addressed by §5.1 — three classes, two subclasses each, illustrative skills.
-  Still open: whether enemy grunts get subclasses too, or stay single-archetype.
+  Addressed by §5.1 — three starting kits, open skill lines, illustrative
+  skills. Still open: whether enemy grunts get skill lines too, or stay
+  single-kit for the AI's sake.
 - Enemy archetypes and how "weaker but numerous" translates to actual stat design.
 - Whether telegraphing is per-enemy-type or universal in v1.
 - Grid traversal rules: obstacles, cover, elevation, hazards (drug-den fires? broken

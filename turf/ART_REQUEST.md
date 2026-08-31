@@ -6,15 +6,26 @@ canon; this is the *what, the look, and the steps* for the six Milestone 1
 archetypes, written so it works from alone.
 
 **Current state: everything on screen is code-drawn placeholder** — flat
-canvas silhouettes, no image assets, `turf/js/render.js`'s `drawUnit`. That
-stays live until someone actually wires a sprite renderer in (§6 says why
-that's a separate step). What this document asks for are **real, cuttable
-sprite plates** — not mood-board references this time: generated on a flat
-magenta key, meant to go through `kindling/tools/cut.mjs`'s key → fit → check
-pipeline (§5) and come out the other end as actual pixel art, the seed for a
-hand pass in Aseprite for whatever frames aren't generated (`PRODUCTION_PIPELINE.md`
-§4's own plan — "AI-assisted generation for placeholder sprites now...
-hand-pixel-art pass in Aseprite later").
+canvas silhouettes, no image assets, `turf/js/render.js`'s `drawUnit`. What
+this document asks for are **real, cuttable sprite plates**, generated on a
+flat magenta key, meant to go through `kindling/tools/cut.mjs`'s key → fit →
+check pipeline (§5) and come out the other end as actual pixel art — the
+seed for a hand pass in Aseprite for whatever frames aren't generated
+(`PRODUCTION_PIPELINE.md` §4's own plan — "AI-assisted generation for
+placeholder sprites now... hand-pixel-art pass in Aseprite later").
+
+**The production plan, as of 2026-08-31 (§8 has the detail): one character,
+fully animated and actually in the game, before any of the other five.**
+Six archetypes generated in parallel with nobody wired into the engine gets
+you six folders of loose PNGs and zero proof the pipeline (art *and* the
+engine changes animated sprites actually need — §9 names them) works end to
+end. So the order is deliberately narrow: take one pilot character
+(recommended: `blade`, §8) to **100% feature complete** — every animation
+frame generated or hand-finished, cut, checked, and genuinely playing in the
+live game — before spending a single generation on a second character.
+Colour variations of that same proven pipeline come next, then the
+remaining archetypes as new models. §8 has the staged plan; §9 has what the
+engine and process still need beyond art to make that first character real.
 
 ---
 
@@ -264,6 +275,31 @@ prompts keep describing role and pose, now matching this richer rendering
 register, the same way they always described role and pose against the
 flatter one.
 
+## 2.4 There are no class archetypes — a "class" is a skill combination (GDD §5.1, revised 2026-08-31)
+
+GDD §5.1 was rewritten this round: `blade`/`niner`/`wrench` (and the three
+grunt weapon-profiles) are **starting kits** — an opening weapon and stat
+line — not permanent boxes. Past Milestone 1, a unit's actual identity comes
+from which skill lines it has picked up at level-ups, drawn from *any* line
+regardless of its starting kit, plus whatever weapon it happens to be
+holding (the already-shipped v7 loot drops can hand a `wrench`-kit unit a
+handgun mid-run). Two units that both started as `blade` can read as
+genuinely different builds by the end of a run.
+
+**What that means for art, concretely:** §4's six prompts still describe
+role/pose/weapon by *starting kit* — that part hasn't changed, and it's
+still the right unit of art production (a starting kit is a real, stable
+silhouette; a skill build is not). What changes is what NOT to bake into a
+plate: no visual signal that says "this figure is permanently a
+melee-only character" beyond the weapon it's shown holding in that one key
+pose, because the same body, once in the roster, might end the run holding
+something else entirely and playing a hybrid build the plate never depicted.
+The colour system already has this covered without extra work — §2.3 and
+GDD §5.1 both land on **faction colour only** (cold operator / warm rival)
+as the sprite's one accent; there is no secondary "class colour" to paint
+on, so nothing here asks for one. A unit's build reads from the UI, not the
+sprite.
+
 ---
 
 ## 3. Colours and roles, read off the game's own numbers
@@ -498,9 +534,150 @@ Path B) or a follow-up task against this section.
 - **No elite/boss variant.** `PRODUCTION_PIPELINE.md` §2.2 calls a boss a
   "Phase 1 stretch goal, not a requirement" — same reasoning, don't spend
   credits ahead of the design.
-- **No runtime sprite integration.** Even once cut, quantised and checked,
-  wiring an actual sprite renderer into `turf/js/render.js` (replacing
-  `drawUnit`'s canvas silhouettes with drawImage calls, handling per-frame
-  timing, 8-direction-vs-mirroring for the isometric facing) is a separate,
-  deliberate engineering change — not implied by generating or cutting art.
-  Say the word when the plates exist and this becomes its own task.
+- **No runtime sprite integration for five of the six archetypes.** Even
+  once cut, quantised and checked, wiring `turf/js/render.js` to draw a
+  given archetype's sprites instead of `drawUnit`'s silhouette is still a
+  deliberate, per-archetype engineering change, not implied by generating or
+  cutting art for it. **This is now requested for exactly one archetype —
+  see §8.** A single proven integration is what makes the other five a
+  repeat of known work instead of five separate unknowns.
+
+---
+
+## 8. The production plan: one character to 100%, then colour variants, then new models
+
+Six archetypes generated and cut in parallel, with nobody actually wired
+into the game, proves nothing except that six PNGs exist. It doesn't prove
+the frame counts in §6 are enough, that the palette holds up in motion, that
+a generated idle/move sheet slices cleanly with real cell dimensions, or
+that `turf/js/render.js` can even show an animated sprite yet (§9 says it
+currently can't). Spending credits on five more archetypes before any of
+that is proven is spending against an unproven plan five times over. So:
+
+**Stage 0 — one pilot character, taken all the way to 100% feature
+complete, before anything else.**
+
+- **Recommended pilot: `blade`.** Not arbitrary — §2.2's real animation-sheet
+  test already used a knife-melee character (the "hooded kid with a knife"
+  sheets in `turf/art-src/reference/` predecessors, see `VERSIONS.md` v5)
+  and proved idle/move work and attack/hit/die don't, for named reasons. A
+  melee weapon also needs no projectile/muzzle-flash choreography the way
+  `niner`'s pistol or the grunts' firearms would — the smallest number of
+  new unknowns for a first full pass. Override this pick if there's a
+  reason to start elsewhere; the plan below applies to whichever one is
+  chosen.
+- **"100% feature complete" means, concretely — every line below checked,
+  not just generated:**
+  1. Idle sheet (2–3 frames, §6) generated, keyed, fit, checked.
+  2. Move sheet (3–4 frames, §6) generated, keyed, fit, checked.
+  3. Attack (2 frames), Hit (1 frame), Death/KO (2 frames) — each generated
+     single-pose per §6, then hand-extended/cleaned in Aseprite against the
+     idle/move sheets' proportions and `turf/art-src/palette.json`.
+  4. Every frame confirmed on-model against the others (same proportions,
+     same palette, same silhouette weight) — not just individually checked.
+  5. Wired into `turf/js/render.js` for real: `drawUnit` draws the sprite
+     sheet for this one archetype, state-driven frame selection (idle while
+     waiting, move during a slide, attack/hit/death on the matching
+     `state.log` events — §9 names the hook), left/right facing resolved
+     (§9 has the open question), and the move genuinely animates across the
+     tile-to-tile distance rather than snapping (§9 — this needs an engine
+     change, not just art).
+  6. Looked at, in the actual game, at the actual on-board scale, not a
+     zoomed Aseprite canvas — the same "look before spending another step"
+     discipline §5 step 2 already uses, applied to the finished animated
+     unit instead of one plate.
+  7. A short recorded clip (a GIF or a few seconds of screen capture) of
+     the pilot idling, moving, attacking, getting hit, and dying in a real
+     encounter — the acceptance artifact this stage produces, not a folder
+     listing.
+  Only once all seven are true is the pilot "100% feature complete." A
+  character that idles and moves but whose attack is still the code-drawn
+  silhouette is not done — it's half done, and half-done is worth saying so
+  plainly rather than rounding up.
+
+**Stage 1 — colour variations, once Stage 0 is proven.** The cheapest reuse
+of a finished animated character is a recolour, not a redesign: same body,
+same frames, same timing, a different palette assignment. The obvious first
+use is exactly what §2.3/§2.4 already established the sprite needs — the
+faction trim swap (cold operator → warm rival) — which means a `blade`-body
+recolour is a legitimate first pass at a **rival grunt whose build
+matches** (§3.2's `grunt-blunt` reads "rangy" — closer to `blade`'s "fast,
+close-quarters" build than to `wrench`'s "heaviest, built to shove" — so a
+recolour candidate before a redesign candidate, worth checking once Stage 0
+exists rather than assumed here). Not every archetype recolors convincingly
+from one body (a "leanest of the six" grunt and a "heaviest" operator are
+not the same base figure), so this stage is "reuse where the build
+actually matches," not "reskin everything once and call it six characters."
+
+**Stage 2 — the remaining models.** Whatever Stage 0 and Stage 1 didn't
+cover as recolours gets its own full pass, following the exact same
+100%-complete checklist above, informed by whatever Stage 0 actually cost
+(§9's iteration-budget note) rather than guessed at fresh each time.
+
+---
+
+## 9. What else this needs to reach production capacity
+
+Beyond more art, six real gaps stand between "the pilot's plates are
+checked" and "the pilot is a finished animated character in the game" —
+named here because §8's Stage 0 needs all of them, not just the ones that
+sound like art.
+
+**1. The engine does not yet animate movement — this is a real code gap,
+verified, not assumed.** `turf/js/render.js`'s `drawUnit` reads `unit.x`/
+`unit.y` directly with no interpolation state, and `combat.js`'s `moveUnit`
+mutates them in one step; `main.js`'s enemy-phase loop (`runEnemyPhase`)
+renders the new position immediately and then just *pauses* 600ms before
+the next actor, rather than animating the transition. A unit currently
+**snaps** between tiles. A perfect move-cycle sprite sheet has nowhere to
+visibly play if nothing tweens position first — Stage 0 needs a real (if
+small) engine change here, a `displayX`/`displayY` or `moveT` that
+interpolates over a short duration independent of when the game state
+itself updates, before a move sheet can mean anything on screen.
+
+**2. `state.log` is the existing hook to drive animation state from —
+use it, don't invent a second one.** `combat.js` already pushes typed
+events (`{type:'move',...}`, `{type:'attack',...}`, `{type:'pickup',...}`,
+`{type:'enemy-turn',...}`) that `main.js`'s `attackText` already reads to
+build toast copy. The same log is the natural trigger for "play the attack
+frames now" / "play the hit-flinch now" — a presentation layer that
+consumes `state.log` deltas each render, rather than a parallel event
+system the engine doesn't otherwise have.
+
+**3. Facing is an open question, not a decided one.** §1 asks for a single
+three-quarter angle per plate — nothing here has decided whether that's
+enough (mirrored left/right, the cheap answer) or whether the isometric
+board's four movement directions need distinct art. Resolve this **during**
+Stage 0, against the real board, not in the abstract: try mirroring first
+(free, no extra generation), and only ask for more angles if it visibly
+reads wrong on actual diagonal moves.
+
+**4. A per-character proportion reference, before animating, not after.**
+Aseprite frames drawn free-hand against a single key pose drift — a "same
+character" test needs a small turnaround/proportion sheet (height in
+pixels, joint positions, silhouette at rest) made once the key pose is
+locked, so every hand-extended frame (attack/hit/death, §6) traces against
+the same skeleton rather than each artist's/each session's eyeballed guess.
+This is cheap (one more look at the checked key-pose plate, annotated) and
+it's what stops frame 4 of an attack reading like a slightly different
+person than frame 1.
+
+**5. A per-character asset bundle needs its own manifest, not just five
+loose hashed PNGs.** `assets/README.md`'s "filename carries the hash of the
+spec" convention works for one plate; an animated character is idle sheet +
+move sheet + three single-pose plates + however many hand-finished Aseprite
+frames come out of them — a set, not a file. Land the finished set at
+`turf/art-src/sprites/<id>/` with a small `manifest.json` recording each
+frame's source (generated hash, or "hand-drawn, traced from <plate>") and
+which pass produced it, so staleness ("did the idle sheet change since this
+was cut") is answerable the same way `scripts/assets.mjs status` already
+answers it for a single image.
+
+**6. Budget iterations, not just the six/twelve headline generations.**
+§2.2 and §2.3's own testing both show the real cost isn't the first
+generation — it's the redo when a plate fails the "look" step (§5 step 2)
+or a sheet's frame pitch turns out irregular (§2.2's actual failure mode on
+three different sheets). Expect Stage 0's one character to cost several
+times its nominal five-generation count (idle sheet, move sheet, attack,
+hit, death) once redos are counted, and treat that measured cost — not a
+guess — as the basis for estimating Stage 2's five remaining characters.

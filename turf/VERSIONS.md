@@ -8,6 +8,76 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v11 — 2026-08-31
+**Design capture + production planning, not an engine change: classes
+retired in favour of skill lines, and the art request restructured around
+one character reaching 100% before any of the other five start. Nothing in
+`index.html`'s live import graph changed, so no cache-token bump this
+round.**
+
+- `GDD.md` §5.1 rewritten: **no fixed class archetypes.**
+  `blade`/`niner`/`wrench` are starting kits (opening weapon + stats), not
+  permanent boxes; a unit's actual identity comes from which skill lines it
+  picks up at level-ups (any line, regardless of starting kit) plus
+  whichever weapon it's currently holding. Named the real payoff: v7's
+  weapon-swap loot drops already let a `wrench`-kit unit end a fight holding
+  a handgun, so a unit that invested in Marksman-line skills despite
+  starting as `wrench` goes from inert to live the moment the right weapon
+  drops — a hook the engine already had, unused, before this revision named
+  it. The six illustrative skills survive as **skill lines** rather than
+  subclass boxes; two lines from two different starting kits is the
+  intended shape (a hybrid), not an edge case. **A reversal, made explicit
+  rather than left silent:** the old "class reads as a secondary accent
+  colour" plan is retired — a build spanning two skill lines doesn't reduce
+  to one accent honestly, so the sprite carries faction colour only (cold
+  operator / warm rival) and a build's actual skills read from the UI, not
+  a paint job. Nothing shipped or requested in `ART_REQUEST.md` had
+  implemented the old accent plan, so this is a clean reversal, not rework.
+  `class`/`subclass` terminology corrected to `kit`/`skills` everywhere it
+  appeared (§5.2 crew naming, §9 roadmap, §10 open questions) for
+  consistency with the new system.
+- `ART_REQUEST.md` §2.4 (new) translates the GDD change for art: §4's six
+  prompts still describe *starting kit* (a stable, real silhouette to
+  generate against) but must not bake in anything that reads as a
+  permanent, exclusive role, since the same body may end a run playing a
+  hybrid build the plate never depicted. No new colour system requested —
+  faction-only accent already covers it.
+- `ART_REQUEST.md` restructured around a **staged production plan** (owner
+  direction: "one example animated to 100% feature complete... later colour
+  variations and different models"), added as new §8/§9:
+  - **§8 — Stage 0:** one pilot character (recommended `blade`, reusing
+    §2.2's own tested knife-melee precedent and avoiding ranged-weapon VFX
+    as a first unknown) taken through a concrete 7-point "100% feature
+    complete" checklist ending in the character actually animating in a
+    real encounter, not just existing as checked plates. Stage 1: colour
+    variants reusing a proven body where the build genuinely matches
+    (`grunt-blunt`'s "rangy" build flagged as the first candidate against
+    `blade`, to verify once Stage 0 exists). Stage 2: the remaining models,
+    each through the same checklist, costed off Stage 0's actual iteration
+    count rather than guessed fresh.
+  - **§9 — six concrete gaps found and named, not just art:** (1) verified
+    directly in `render.js`/`combat.js` — **units currently snap between
+    tiles with no interpolation**, so a move-cycle sprite has nothing to
+    visibly play across without a real engine change first; (2)
+    `combat.js`'s existing typed `state.log` (`move`/`attack`/`pickup`/
+    `enemy-turn`) is the hook to drive animation state from, rather than
+    inventing a second event system; (3) facing (mirror vs. distinct
+    per-direction art) is an open question to resolve empirically during
+    Stage 0, not decided here; (4) a per-character proportion/turnaround
+    reference is needed before hand-extending Aseprite frames, or frames
+    drift off-model; (5) a finished animated character is a *set* of files,
+    not one hashed image — proposed `turf/art-src/sprites/<id>/manifest.json`
+    to track a bundle's staleness the way `scripts/assets.mjs status`
+    tracks one image; (6) budget real iteration count (redos from failed
+    "look" checks and irregular sheet pitch, both measured problems per
+    §2.2/§2.3) rather than the nominal five-generation headline count.
+  - §7's runtime-integration deferral narrowed: still not requested for
+    five of six archetypes, but now explicitly requested for the Stage 0
+    pilot.
+- `node turf/test/smoke.mjs` (35/35) and
+  `NODE_PATH=$(npm root -g) node test/assets-smoke.cjs` (46/46) — both
+  unaffected by this round (doc-only) and run to confirm nothing broke.
+
 ## v10 — 2026-08-31
 **Art-pipeline design capture, not an engine change: the owner delivered two
 real casting sheets and asked for their style — and MST-real animation — to
