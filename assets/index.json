@@ -321,6 +321,174 @@
       "use": "prop",
       "game": "turf",
       "hash": "86601966"
+    },
+    "turf/cast-hammer-move": {
+      "file": "2d/turf-cast-hammer-move.3aee095a.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "3aee095a"
+    },
+    "turf/cast-hammer-attack-windup": {
+      "file": "2d/turf-cast-hammer-attack-windup.980f9bc9.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "980f9bc9"
+    },
+    "turf/cast-hammer-attack-release": {
+      "file": "2d/turf-cast-hammer-attack-release.b7df7f01.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "b7df7f01"
+    },
+    "turf/cast-hammer-hit": {
+      "file": "2d/turf-cast-hammer-hit.6b8a35cc.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "6b8a35cc"
+    },
+    "turf/cast-hammer-death-fall": {
+      "file": "2d/turf-cast-hammer-death-fall.c3c4be6f.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "c3c4be6f"
+    },
+    "turf/cast-hammer-death-down": {
+      "file": "2d/turf-cast-hammer-death-down.5146f0da.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "5146f0da"
+    },
+    "turf/cast-bottle-move": {
+      "file": "2d/turf-cast-bottle-move.3fb8c5e5.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "3fb8c5e5"
+    },
+    "turf/cast-bottle-attack-windup": {
+      "file": "2d/turf-cast-bottle-attack-windup.0eb9d8b3.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "0eb9d8b3"
+    },
+    "turf/cast-bottle-attack-release": {
+      "file": "2d/turf-cast-bottle-attack-release.17b24de2.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "17b24de2"
+    },
+    "turf/cast-bottle-hit": {
+      "file": "2d/turf-cast-bottle-hit.b838fe32.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "b838fe32"
+    },
+    "turf/cast-bottle-death-fall": {
+      "file": "2d/turf-cast-bottle-death-fall.e502fb2c.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "e502fb2c"
+    },
+    "turf/cast-bottle-death-down": {
+      "file": "2d/turf-cast-bottle-death-down.77fd7940.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "77fd7940"
+    },
+    "turf/cast-hammer-move-back": {
+      "file": "2d/turf-cast-hammer-move-back.77902471.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "77902471"
+    },
+    "turf/cast-hammer-attack-windup-back": {
+      "file": "2d/turf-cast-hammer-attack-windup-back.04f52672.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "04f52672"
+    },
+    "turf/cast-hammer-attack-release-back": {
+      "file": "2d/turf-cast-hammer-attack-release-back.ce427bce.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "ce427bce"
+    },
+    "turf/cast-hammer-hit-back": {
+      "file": "2d/turf-cast-hammer-hit-back.0b2c7427.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "0b2c7427"
+    },
+    "turf/cast-hammer-death-fall-back": {
+      "file": "2d/turf-cast-hammer-death-fall-back.7798ae6c.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "7798ae6c"
+    },
+    "turf/cast-hammer-death-down-back": {
+      "file": "2d/turf-cast-hammer-death-down-back.3fb9a681.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "3fb9a681"
+    },
+    "turf/cast-bottle-move-back": {
+      "file": "2d/turf-cast-bottle-move-back.1d0c5f9e.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "1d0c5f9e"
+    },
+    "turf/cast-bottle-attack-windup-back": {
+      "file": "2d/turf-cast-bottle-attack-windup-back.5246ed29.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "5246ed29"
+    },
+    "turf/cast-bottle-attack-release-back": {
+      "file": "2d/turf-cast-bottle-attack-release-back.a44dda5f.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "a44dda5f"
+    },
+    "turf/cast-bottle-hit-back": {
+      "file": "2d/turf-cast-bottle-hit-back.52cc0b25.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "52cc0b25"
+    },
+    "turf/cast-bottle-death-fall-back": {
+      "file": "2d/turf-cast-bottle-death-fall-back.871ef274.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "871ef274"
+    },
+    "turf/cast-bottle-death-down-back": {
+      "file": "2d/turf-cast-bottle-death-down-back.9425b7b6.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "9425b7b6"
     }
   }
 }

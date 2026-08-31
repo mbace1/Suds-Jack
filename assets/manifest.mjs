@@ -472,6 +472,13 @@ tank top and dark navy jeans with a thin pale side stripe`;
 const CAST_LEOPARD = `a woman with long wavy blonde hair and gold hoop
 earrings, wearing an oversized leopard-print fur coat open over a red cami
 top, a black mini skirt, fishnet tights, and black lace-up boots`;
+const CAST_HAMMER = `a heavyset bald man with a gold chain necklace,
+wearing a dark olive hooded puffer jacket and matching cargo trousers`;
+const CAST_BOTTLE = `a lean unshaven man with messy brown hair, wearing a
+long worn olive-drab trench coat with a torn shoulder patch over a dark
+shirt and faded, ripped jeans, gripping a glass bottle in one hand at all
+times — the bottle is part of his identity and must be visible in every
+pose, never set down or forgotten even in a pose that doesn't call for it`;
 
 export const ASSETS = [
   // ── TOKO DROP — the main project, so it gets the first plates ────────────
@@ -1736,5 +1743,341 @@ if her feet are still under her own hips supporting her weight, the pose
 is wrong — the legs must be laid out sideways along the ground instead.
 Whole body clear of all four frame edges — no text, no logos, no UI, no
 blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-hammer-move',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'move'],
+    prompt: `${CAST_HAMMER}. Captured mid-stride in a committed running
+step — body leaning forward, arms swinging naturally, one leg driving off
+the ground, weight fully committed to the movement. A single dynamic
+in-between pose, not a walk-cycle silhouette. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-hammer-attack-windup',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack'],
+    prompt: `${CAST_HAMMER}. Hammer raised high overhead with both hands, weight coiled onto the back foot,
+facing toward the viewer's right — the windup beat right before the strike, tense and set
+rather than relaxed. Whole body and the hammer clear of the
+frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-hammer-attack-release',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack'],
+    prompt: `${CAST_HAMMER}. Hammer swung down in a full overhand strike, weight driven through the blow onto the front foot,
+facing toward the viewer's right — the release/impact beat of the same strike as the
+windup pose. Whole body and the hammer clear of the frame
+edges, centred on frame — no text, no logos, no UI, no impact FX baked
+into the art.`,
+  },
+  {
+    id: 'turf/cast-hammer-hit',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'hit'],
+    prompt: `${CAST_HAMMER}. Recoiling from a hit — flinching backward
+off-balance, shoulders pulled in, one arm raised defensively, weight
+caught mid-stumble. A single reaction frame, not a fall. Whole body clear
+of the frame edges, centred on frame — no text, no logos, no UI, no blood
+or impact FX baked into the art.`,
+  },
+  {
+    id: 'turf/cast-hammer-death-fall',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death'],
+    prompt: `${CAST_HAMMER}. Losing balance and falling backward — knees
+buckling, arms thrown out, body past the point of recovering but not yet
+on the ground. The falling beat of a collapse, caught mid-motion. Whole
+body clear of the frame edges, centred on frame — no text, no logos, no
+UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-hammer-death-down',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death'],
+    prompt: `${CAST_HAMMER}, from the SAME three-quarter camera angle as every
+other pose, but they have fallen sideways
+onto their back and are lying on the ground — NOT standing, NOT
+crouching, NOT kneeling, NOT balanced on their feet. The body is
+reclined at a steep diagonal filling the frame corner-to-corner rather
+than standing upright in the centre: shoulders and head low and near one
+bottom corner of the frame, both legs stretched out flat toward the
+opposite side, limbs slack like a dropped action figure. Test: if the feet
+are still under the hips supporting weight, the pose is wrong — the legs
+must be laid out sideways along the ground instead. Whole body clear of
+all four frame edges — no text, no logos, no UI, no blood baked into the
+art.`,
+  },
+  {
+    id: 'turf/cast-bottle-move',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'move'],
+    prompt: `${CAST_BOTTLE}. Captured mid-stride in a committed running
+step — body leaning forward, arms swinging naturally, one leg driving off
+the ground, weight fully committed to the movement. A single dynamic
+in-between pose, not a walk-cycle silhouette. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-bottle-attack-windup',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack'],
+    prompt: `${CAST_BOTTLE}. A bottle raised back and cocked at shoulder height, weight coiled onto the back foot, free hand out for balance,
+facing toward the viewer's right — the windup beat right before the strike, tense and set
+rather than relaxed. Whole body and the bottle clear of the
+frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-bottle-attack-release',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack'],
+    prompt: `${CAST_BOTTLE}. A bottle swung forward in a wild downward strike, weight driven forward onto the front foot,
+facing toward the viewer's right — the release/impact beat of the same strike as the
+windup pose. Whole body and the bottle clear of the frame
+edges, centred on frame — no text, no logos, no UI, no impact FX baked
+into the art.`,
+  },
+  {
+    id: 'turf/cast-bottle-hit',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'hit'],
+    prompt: `${CAST_BOTTLE}. Recoiling from a hit — flinching backward
+off-balance, shoulders pulled in, one arm raised defensively, weight
+caught mid-stumble. A single reaction frame, not a fall. Whole body clear
+of the frame edges, centred on frame — no text, no logos, no UI, no blood
+or impact FX baked into the art.`,
+  },
+  {
+    id: 'turf/cast-bottle-death-fall',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death'],
+    prompt: `${CAST_BOTTLE}. Losing balance and falling backward — knees
+buckling, arms thrown out, body past the point of recovering but not yet
+on the ground. The falling beat of a collapse, caught mid-motion. Whole
+body clear of the frame edges, centred on frame — no text, no logos, no
+UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-bottle-death-down',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death'],
+    prompt: `${CAST_BOTTLE}, from the SAME three-quarter camera angle as every
+other pose, but they have fallen sideways
+onto their back and are lying on the ground — NOT standing, NOT
+crouching, NOT kneeling, NOT balanced on their feet. The body is
+reclined at a steep diagonal filling the frame corner-to-corner rather
+than standing upright in the centre: shoulders and head low and near one
+bottom corner of the frame, both legs stretched out flat toward the
+opposite side, limbs slack like a dropped action figure. Test: if the feet
+are still under the hips supporting weight, the pose is wrong — the legs
+must be laid out sideways along the ground instead. Whole body clear of
+all four frame edges — no text, no logos, no UI, no blood baked into the
+art.`,
+  },
+  {
+    id: 'turf/cast-hammer-move-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'move', 'back'],
+    prompt: `${CAST_HAMMER}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. Captured mid-stride in a committed running
+step — body leaning forward, arms swinging naturally, one leg driving off
+the ground, weight fully committed to the movement. A single dynamic
+in-between pose, not a walk-cycle silhouette. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-hammer-attack-windup-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack', 'back'],
+    prompt: `${CAST_HAMMER}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. Hammer raised high overhead with both hands, weight coiled onto the back foot,
+facing away from the viewer — the windup beat right before the strike, tense and set
+rather than relaxed. Whole body and the hammer clear of the
+frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-hammer-attack-release-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack', 'back'],
+    prompt: `${CAST_HAMMER}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. Hammer swung down in a full overhand strike, weight driven through the blow onto the front foot,
+facing away from the viewer — the release/impact beat of the same strike as the
+windup pose. Whole body and the hammer clear of the frame
+edges, centred on frame — no text, no logos, no UI, no impact FX baked
+into the art.`,
+  },
+  {
+    id: 'turf/cast-hammer-hit-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'hit', 'back'],
+    prompt: `${CAST_HAMMER}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. Recoiling from a hit — flinching forward
+off-balance, shoulders pulled in, one arm raised defensively, weight
+caught mid-stumble. A single reaction frame, not a fall. Whole body clear
+of the frame edges, centred on frame — no text, no logos, no UI, no blood
+or impact FX baked into the art.`,
+  },
+  {
+    id: 'turf/cast-hammer-death-fall-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death', 'back'],
+    prompt: `${CAST_HAMMER}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. Losing balance and falling forward — knees
+buckling, arms thrown out, body past the point of recovering but not yet
+on the ground. The falling beat of a collapse, caught mid-motion. Whole
+body clear of the frame edges, centred on frame — no text, no logos, no
+UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-hammer-death-down-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death', 'back'],
+    prompt: `${CAST_HAMMER}, seen from BEHIND — the reference image shows
+their back, not their face; match that same rear viewing angle, but they
+have fallen and are lying on the ground — NOT standing, NOT crouching, NOT
+kneeling, NOT balanced on their feet. The body is
+reclined at a steep diagonal filling the frame corner-to-corner rather
+than standing upright in the centre: shoulders and head low and near one
+bottom corner of the frame, both legs stretched out flat toward the
+opposite side, limbs slack like a dropped action figure. Test: if the feet
+are still under the hips supporting weight, the pose is wrong — the legs
+must be laid out sideways along the ground instead. Whole body clear of
+all four frame edges — no text, no logos, no UI, no blood baked into the
+art.`,
+  },
+  {
+    id: 'turf/cast-bottle-move-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'move', 'back'],
+    prompt: `${CAST_BOTTLE}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. Captured mid-stride in a committed running
+step — body leaning forward, arms swinging naturally, one leg driving off
+the ground, weight fully committed to the movement. A single dynamic
+in-between pose, not a walk-cycle silhouette. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-bottle-attack-windup-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack', 'back'],
+    prompt: `${CAST_BOTTLE}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. A bottle raised back and cocked at shoulder height, weight coiled onto the back foot, free hand out for balance,
+facing away from the viewer — the windup beat right before the strike, tense and set
+rather than relaxed. Whole body and the bottle clear of the
+frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-bottle-attack-release-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack', 'back'],
+    prompt: `${CAST_BOTTLE}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. A bottle swung forward in a wild downward strike, weight driven forward onto the front foot,
+facing away from the viewer — the release/impact beat of the same strike as the
+windup pose. Whole body and the bottle clear of the frame
+edges, centred on frame — no text, no logos, no UI, no impact FX baked
+into the art.`,
+  },
+  {
+    id: 'turf/cast-bottle-hit-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'hit', 'back'],
+    prompt: `${CAST_BOTTLE}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. Recoiling from a hit — flinching forward
+off-balance, shoulders pulled in, one arm raised defensively, weight
+caught mid-stumble. A single reaction frame, not a fall. Whole body clear
+of the frame edges, centred on frame — no text, no logos, no UI, no blood
+or impact FX baked into the art.`,
+  },
+  {
+    id: 'turf/cast-bottle-death-fall-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death', 'back'],
+    prompt: `${CAST_BOTTLE}. Seen from BEHIND — the reference image shows their back, not their face; match that same rear viewing angle. Losing balance and falling forward — knees
+buckling, arms thrown out, body past the point of recovering but not yet
+on the ground. The falling beat of a collapse, caught mid-motion. Whole
+body clear of the frame edges, centred on frame — no text, no logos, no
+UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-bottle-death-down-back',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death', 'back'],
+    prompt: `${CAST_BOTTLE}, seen from BEHIND — the reference image shows
+their back, not their face; match that same rear viewing angle, but they
+have fallen and are lying on the ground — NOT standing, NOT crouching, NOT
+kneeling, NOT balanced on their feet. The body is
+reclined at a steep diagonal filling the frame corner-to-corner rather
+than standing upright in the centre: shoulders and head low and near one
+bottom corner of the frame, both legs stretched out flat toward the
+opposite side, limbs slack like a dropped action figure. Test: if the feet
+are still under the hips supporting weight, the pose is wrong — the legs
+must be laid out sideways along the ground instead. Whole body clear of
+all four frame edges — no text, no logos, no UI, no blood baked into the
+art.`,
   },
 ];
