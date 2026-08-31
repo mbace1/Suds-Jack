@@ -548,6 +548,21 @@ export function drawAir(scr, room, clock) {
       const a = i / 7 * Math.PI * 2 - 0.8;
       scr.disc(166 + Math.cos(a) * 62, 69 + Math.sin(a) * 48, 3, C.LUX2);
     }
+    // Its central iris breathes on a much slower four-step rhythm. Keeping it
+    // to hard pixel sizes makes it feel authored rather than smoothly scaled.
+    const breath = [0, 1, 2, 1][(clock >> 5) & 3];
+    scr.disc(166, 69, 5 + breath, C.LUX);
+    scr.disc(166, 69, 2 + (breath > 1 ? 1 : 0), C.LUX2);
+    scr.rect(165, 57 - breath, 2, 7 + breath, C.LUX2);
+    scr.rect(165, 75, 2, 7 + breath, C.LUX2);
+
+    // A few distant windows change independently. This is habitation, not a
+    // synchronized light show: most stay dark and none blink quickly.
+    const windows = [[15, 76], [46, 91], [77, 70], [251, 84], [282, 66], [309, 94]];
+    for (let i = 0; i < windows.length; i++) {
+      const phase = ((clock >> 7) + i * 3) % 11;
+      if (phase === 0 || phase === 1) scr.rect(windows[i][0], windows[i][1], 3, 2, phase ? C.LUX : C.LUX2);
+    }
     // Old rail signals answer on a different, mechanical rhythm.
     const signal = (clock >> 5) % 3;
     for (let i = 0; i < 3; i++) scr.rect(284 + i * 7, 108, 4, 4, i === signal ? C.LUX2 : C.DARK);
@@ -588,6 +603,26 @@ export function drawFloodWater(scr, room, clock, hero) {
   for (let i = 0; i < 8; i++) {
     const x = (i * 53 + clock * (0.18 + (i % 2) * 0.05)) % (W + 24) - 12;
     scr.rect(x, y + 2 + (i % 3) * 6, 12 + (i % 4) * 3, 1, i % 3 ? C.MID : C.LUX);
+  }
+  // Rain answers the water with tiny, brief crowns instead of disappearing at
+  // the surface. Their phases are staggered so only one or two exist at once.
+  for (let i = 0; i < 7; i++) {
+    const phase = (clock + i * 19) % 43;
+    if (phase > 3) continue;
+    const x = 13 + ((i * 47 + (clock >> 5) * 11) % (W - 26));
+    scr.rect(x - phase, y, phase * 2 + 1, 1, phase < 2 ? C.LUX2 : C.LUX);
+    if (phase < 2) scr.rect(x, y - 2, 1, 2, C.EDGE);
+  }
+  // Two small luminous swimmers make the flood feel inhabited. They stay
+  // below the playable silhouette and turn at opposite edges of the screen.
+  for (let i = 0; i < 2; i++) {
+    const span = W + 28, p = (clock * (0.10 + i * 0.025) + i * 151) % span;
+    const face = i ? -1 : 1;
+    const x = face > 0 ? p - 14 : W + 14 - p;
+    const fy = y + 11 + i * 8 + Math.sin(clock * 0.022 + i * 2.4) * 2;
+    scr.rect(x - 3, fy, 7, 2, C.MID);
+    scr.rect(x + face * 2, fy, 2, 1, C.LUX);
+    scr.rect(x - face * 5, fy + 1, 2, 1, C.EDGE);
   }
   if (hero && hero.y > y - 4) {
     const moving = ['step', 'inch', 'windUp', 'run', 'skid', 'runTurn', 'roll'].includes(hero.state);

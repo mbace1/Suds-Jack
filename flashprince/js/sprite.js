@@ -91,6 +91,16 @@ export const ANIM = {
   crouch: { row: 17, c0: 1, n: 4, ground: 46, ax: 16.6 },
   crouchLow: { row: 17, c0: 4, n: 2, ground: 46, ax: 16.6, hold: 40, loop: true },
   rise: { row: 17, c0: 11, n: 4, ground: 46, ax: 16.6 },
+  // A knee-high climb used to have no sprite mapping at all: the default
+  // standing frame simply floated sixteen pixels upward. Reuse the already
+  // approved crouch and rise cells from row 17 so he compresses, plants and
+  // stands as the scripted body moves onto the block. No new source frames.
+  stepUp: { cells: [[17,1], [17,2], [17,3], [17,4], [17,11], [17,12], [17,13], [17,14]],
+            ground: 46, ax: 16.6 },
+  // Picking up a floor item had the same missing-state fallback. The extra
+  // low holds keep him down through the actual pickup frame before he rises.
+  collect: { cells: [[17,4], [17,11], [17,12], [17,13], [17,14]],
+             ground: 46, ax: 16.6 },
   roll: { row: 15, c0: 1, n: 22, ground: 47, ax: 20.6 },
   // Taking a hit. Row 7 is the stagger: knocked backwards with the arms
   // flailing for balance, then a lean forward as he gets his feet under him

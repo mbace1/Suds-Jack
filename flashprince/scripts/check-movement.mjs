@@ -26,6 +26,21 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(hero.state, 'stand');
 }
 
+// Both floor-height actions must be real Conrad sequences, never the default
+// standing fallback that used to float upward or freeze through a pickup.
+{
+  const hero = new Hero(40, 96);
+  hero.go('stepUp');
+  assert.equal(hero.sprite().anim, 'stepUp');
+  const first = hero.sprite().f;
+  hero.f = 18;
+  assert.ok(hero.sprite().f > first);
+  hero.go('drink');
+  assert.equal(hero.sprite().anim, 'collect');
+  hero.f = 24;
+  assert.equal(hero.sprite().f, 1);
+}
+
 // Low climbing with the pistol selected must restore the aimed stance instead
 // of silently showing the unarmed idle character at the top.
 {
@@ -107,4 +122,20 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(hero.state, 'standArmed');
 }
 
-console.log('movement checks ok — exact landings, armed traversal, step, mantle, climb-down, jump, shield');
+// A floor pickup is a committed animation: crouch detects it, the reward edge
+// arrives during the low hold, and the selected stance returns at the end.
+{
+  const hero = new Hero(48, 96);
+  const groundedWorld = { ...world, boxSolid: (_x, y, _w, h) => y + h >= 97 };
+  const pickupGame = { ...game, flaskUnder: () => true };
+  hero.go('crouchIdle');
+  hero.update(groundedWorld, input, pickupGame);
+  assert.equal(hero.state, 'drink');
+  for (let i = 0; i < 22; i++) hero.update(groundedWorld, input, pickupGame);
+  assert.equal(hero.drinkQueued, true);
+  hero.drinkQueued = false;
+  for (let i = hero.f; i < 46; i++) hero.update(groundedWorld, input, pickupGame);
+  assert.equal(hero.state, 'stand');
+}
+
+console.log('movement checks ok — exact landings, animated pickups, armed traversal, step, mantle, climb-down, jump, shield');

@@ -17,9 +17,9 @@
 
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js?v=52';
-import { Hero } from './hero.js?v=56';
+import { Hero } from './hero.js?v=57';
 import { World, ROOMS, ROOM_H } from './level.js?v=56';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=54';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=57';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
 import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=55';
@@ -27,7 +27,7 @@ import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
-import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=54';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=57';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 // The gallery keeps one flat palette, cool and quiet, so a cycle reads. The
@@ -48,6 +48,8 @@ const REEL = [
   ['crouch', 'CROUCHING'],
   ['crouchLow', 'CROUCHED'],
   ['rise', 'STANDING UP'],
+  ['stepUp', 'LOW CLIMB'],
+  ['collect', 'PICKING UP'],
   ['roll', 'THE ROLL'],
   ['hurt', 'TAKING A HIT'],
   ['shocked', 'SHOCKED'],
@@ -251,6 +253,7 @@ class Stage {
     if (inp.hitPress) h.strike(0, h.x - h.face * 10, this, inp.careful ? 'shock' : 'hit');
     this.world.update(h);
     h.update(this.world, inp, this);
+    if (h.drinkQueued) { h.drinkQueued = false; this.collectUnder(h); }
     if (this.lootFlash > 0) this.lootFlash--;
 
     // A screen is a composition with a hard cut either side of it: walk off the
@@ -329,13 +332,24 @@ class Stage {
       if (Math.abs(p.x - h.x) > 9 || Math.abs(p.y - h.y) > 20) continue;
       if (p.kind === 'gun') { p.taken = true; h.hasGun = true; }
       else if (p.kind === 'sword') { p.taken = true; h.hasSword = true; }
-      else if (p.kind === 'cell' && h.low) { p.taken = true; h.health = Math.min(3, h.health + 1); }
-      else if (p.kind === 'tape' && h.low) {
-        p.taken = true;
-        this.tapes++;
-        this.lootFlash = 210;
-      }
     }
+  }
+
+  floorPickupUnder(h) {
+    return this.world.pickups.find(p => !p.taken && (p.kind === 'cell' || p.kind === 'tape')
+      && Math.abs(p.x - h.x) <= 9 && Math.abs(p.y - h.y) <= 20);
+  }
+
+  // Called by the crouched state before it starts the committed pickup move.
+  // The item is awarded on the move's authored contact frame, not on crouch.
+  flaskUnder(h) { return !!this.floorPickupUnder(h); }
+
+  collectUnder(h) {
+    const p = this.floorPickupUnder(h);
+    if (!p) return;
+    p.taken = true;
+    if (p.kind === 'cell') h.health = Math.min(3, h.health + 1);
+    else { this.tapes++; this.lootFlash = 210; }
   }
 
   // A blade sweeps a SPAN, from the man to the point — being at the tip is not

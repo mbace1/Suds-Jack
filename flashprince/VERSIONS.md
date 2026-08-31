@@ -1,5 +1,15 @@
 # Flash Prince — versions
 
+## v57 — 2026-09-01
+
+**The missing low actions are animated.** A one-tile climb no longer floats a
+standing sprite onto the block, and collecting a floor item no longer freezes
+him upright: both now reuse the already approved Conrad row-17 crouch/rise
+family with action-specific pacing. No new source frames were introduced. The
+flooded city also gains a breathing facility iris, independently changing
+distant windows, rain crowns on the water and two small luminous swimmers.
+Both locked runs remain unchanged.
+
 ## v56 — 2026-08-29
 
 **Traversal now finishes cleanly.** Fractional jump landings snap to the exact

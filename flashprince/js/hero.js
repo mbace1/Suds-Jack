@@ -31,6 +31,8 @@ const GATHER_RUN_HOLD = [1, 2];
 const AIR_RUN_HOLD = [2, 2, 2, 3, 3, 4, 4, 4, 4, 3, 3, 2];
 const FALL_HOLD = [5, 6, 7, 6];
 const LAND_HARD_HOLD = [3, 3, 4, 5, 5, 3, 3];
+const STEP_UP_HOLD = [4, 4, 4, 5, 4, 3, 3, 3];
+const COLLECT_HOLD = [24, 5, 5, 5, 7];
 
 export const HERO_W = 10, HERO_H = 30, CROUCH_H = 16;
 
@@ -192,6 +194,7 @@ export class Hero {
     this.struckAt = 0;
     this.dead = false;
     this.shotQueued = false;
+    this.drinkQueued = false;
     this.shield = 100;
     this.shieldFlash = 0;
     this.landedHard = 0;
@@ -270,6 +273,8 @@ export class Hero {
       case 'crouch': return this.weapon === 'gun' ? over('crouchDraw', 6) : over('crouch', 4);
       case 'crouchIdle': return { anim: 'crouchLow', f: this.f / 40 };
       case 'standUp': return over('rise', 4);
+      case 'stepUp': return { anim: 'stepUp', f: frameFromHolds(this.f, STEP_UP_HOLD) };
+      case 'drink': return { anim: 'collect', f: frameFromHolds(this.f, COLLECT_HOLD) };
       case 'roll': return over('roll', 22);
       case 'wake': return over('wake', 15);
       case 'dead': return { anim: 'dead', f: this.f / 4 };
@@ -598,7 +603,7 @@ export class Hero {
 
     // ── crouching, and the flask ─────────────────────────────────────
     if (s === 'crouch' && done) { this.go(this.weapon === 'gun' ? 'crouchArmed' : 'crouchIdle'); return; }
-    if (s === 'drink' && done) { this.go('crouchIdle'); return; }
+    if (s === 'drink' && done) { this.go(this.rest()); return; }
     if (s === 'crouchIdle' || s === 'crouchArmed') {
       if (game.flaskUnder && game.flaskUnder(this)) { this.go('drink'); return; }
       if (input.up && this.clear(world, this.x, this.y, HERO_H)) { this.go('standUp'); return; }

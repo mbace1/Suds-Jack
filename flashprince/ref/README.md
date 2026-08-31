@@ -104,7 +104,7 @@ each, first eight frames). Frame counts are cells with ink.
 | 14 | 7 | standing jump **in the air**: tuck, extend, arms up into the reach | `airUp` |
 | 15 | 22 | the roll | `roll` |
 | 16 | 4 | **falling** — arms up, legs together | `fall` |
-| 17 | 14 | crouch / crouched / rise | `crouch`, `crouchLow`, `rise` |
+| 17 | 14 | crouch / crouched / rise | `crouch`, `crouchLow`, `rise`, reused by `stepUp` and `collect` |
 | 18 | 16 | pistol draw | `drawGun`, `holsterGun` |
 | 19 | 8 | standing, pistol up, legs spreading | — |
 | 20 | 6 | going down with the pistol | `crouchDraw` |
