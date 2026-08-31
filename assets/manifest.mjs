@@ -330,34 +330,71 @@ white soap bubbles, round, glowing, blooming with light. Everything hostile is
 WARM — amber and rust grime, angular, matte, never glowing. Deep near-black
 background. Long soft bloom on the cold elements only. No text, no UI.`,
 
-  // TURF: pixel art in Metal Slug Tactics' TECHNIQUE — hard outline, flat
-  // shading, silhouette-first readability — not its cartoon war-comic
-  // content. Nordic 90s street-crime subject matter and a muted, desaturated
-  // palette instead (Insomnia/Trainspotting register), matching the game's
-  // own desaturated hub accent (#6fa8c9, turf/js/palette.js). Faction reads
-  // warm vs cold the same way Suds Jack's does, just on people instead of
-  // props. Flat magenta is a CUTTING KEY (kindling/tools/cut.mjs's `key`
-  // step turns it into real alpha, then `fit` downsamples and snaps to
-  // turf/art-src/palette.json) — every prompt below states it because a
-  // model left to its own devices will "helpfully" add a ground shadow or a
-  // gradient to a bare colour field, and either one survives keying as a
-  // fringe.
-  turfGrim: `TURF house style. Pixel art in the register of Metal Slug
-Tactics' character sprites — not its cartoon war-comic content, its
-TECHNIQUE: a hard 1px black outline carrying the whole silhouette, flat
-colour fills with at most two shade steps per surface (a base tone and one
-shadow tone — no gradients, no soft airbrushed shading, no anti-aliased
-edges), strong per-faction colour-blocking readable at a glance from a
-distance, since this is seen small on an isometric tactics grid. Nordic
-90s street-crime subject matter, muted and desaturated — Insomnia /
-Trainspotting register, not a war comic.
+  // TURF v2 (2026-08-31): superseded the Metal Slug Tactics flat-2-step
+  // brief below it after the owner supplied real reference sheets — a ~20-
+  // character casting sheet plus candidate animation sheets, generated
+  // outside this pipeline and already the subject of §2.1/§2.2's feedback in
+  // ART_REQUEST.md, but not actually SEEN by whoever wrote the original
+  // turfGrim block, which is why it asked for something the owner's own
+  // references never were. Measured off the reference rather than eyeballed:
+  // a jacket region samples 3-4 discrete tonal bands (base / soft mid-shadow
+  // / deep crease shadow / highlight), not two, with material detail —
+  // quilting, distress texture, drawstrings, hardware — placed as deliberate
+  // pixels rather than implied by a flat fill. Nordic street-crime subject
+  // matter, desaturated register and the cold/warm faction split all carry
+  // over unchanged; only the RENDERING TECHNIQUE changed. Flat magenta stays
+  // the cutting key for the same reason as before (kindling/tools/cut.mjs's
+  // `key` step) — including the one place this prompt deliberately
+  // contradicts its own reference: the reference sheets show a soft cast
+  // shadow under the feet, sitting on the magenta, which is exactly the kind
+  // of alpha gradient `key` cannot separate from the background it is
+  // erasing (ART_REQUEST.md §1). So the prompt copies the reference's
+  // technique and explicitly withholds its shadow.
+  //
+  // The "copy technique, not identity" clause below lives IN the style
+  // block, not only in the calling script, because scripts/gen-with-ref.mjs
+  // composes this exact block with whatever reference image it is given —
+  // and a reference attached without that instruction risks the model
+  // copying the reference's identity rather than just its technique. Found
+  // the hard way once already: see turf/art-src/sprites/README.md.
+  //
+  // NO BACKTICKS BELOW THIS LINE. This string is itself a template literal;
+  // one backtick inside it — even to name a file in prose — ends the string
+  // early and fails node --check with a baffling "Unexpected identifier"
+  // several lines later. Same trap CLAUDE.md documents for
+  // toko/js/chat.js's CSS block; hit for real while writing this comment.
+  turfGrim: `TURF house style. Detailed pixel art — a chibi/SD figure (large
+head, compact body) carried by a dark near-black hard outline around the
+whole silhouette, with MULTI-STEP shading: three to four distinct tonal
+bands per surface (a base tone, a soft mid-shadow, a deeper crease/fold
+shadow, and a highlight on the topmost curve) rather than a flat two-tone
+fill. Surfaces carry real material detail — quilting seams and worn/scuffed
+texture on jackets, fabric folds, small hardware (buttons, zippers,
+drawstrings, patches, chains) placed as a few deliberate pixels rather than
+implied. This is a genuine hard-edged pixel grid throughout — no smooth
+painterly blending, no photographic gradient, no airbrushing — just more
+tonal range per surface than a flat 2-step fill. Rich, varied colour per
+character (hair, skin tone, clothing) rather than a restricted palette.
+Nordic 90s street-crime subject matter, muted and desaturated — Insomnia /
+Trainspotting register, not a war comic. Faction reads warm vs cold the same
+way Suds Jack's does: a clear cold-blue or warm-rust ACCENT block (a trim,
+a patch, a stripe) rather than the whole outfit, since the character's own
+colour variety is the point.
+
+IF A REFERENCE IMAGE IS ATTACHED TO THIS PROMPT, copy ONLY its rendering
+TECHNIQUE — outline weight, the multi-step shading, the material/texture
+detail, the proportions. Do NOT copy the reference's specific character,
+outfit, pose, or background; draw the NEW character the rest of this prompt
+describes.
 
 THE BACKGROUND IS A FLAT SOLID MAGENTA #FF00FF filling the entire frame
-around the subject — no gradient, no texture, no vignette, no cast shadow
-on it. This is a cutting key, not a colour choice, and #FF00FF must never
-appear anywhere on the subject itself (skin, cloth or metal). The subject
-is otherwise alone in frame: no set dressing, no ground plane, no text, no
-logos, no UI, no watermark.`,
+around the subject — no gradient, no texture, no vignette. This is a
+cutting key, not a colour choice, and #FF00FF must never appear anywhere on
+the subject itself (skin, cloth or metal). Do NOT draw a cast shadow or
+contact shadow beneath the feet, even if a reference image shows one — a
+soft shadow on a magenta background cannot be separated from the background
+by a colour-key cutting tool. The subject is otherwise alone in frame: no
+set dressing, no ground plane, no text, no logos, no UI, no watermark.`,
 };
 
 export const DEFAULTS = {
@@ -1179,11 +1216,9 @@ backdrop. No background clutter.`,
     prompt: `A lean street operator holding a fixed-blade knife low and
 ready, weight forward like they close distance fast. Dark practical
 streetwear (jacket, boots), hood down, with cold blue-cyan (#6fb8d9) trim
-on the jacket zip/cuffs/laces as the faction colour-block. Pixel art, hard
-1px black outline, flat fills, at most two shade steps per surface. Standing
-three-quarter view, whole body, feet together and clear of the bottom edge
-(no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF background —
-no text, no logos, no UI.`,
+on the jacket zip/cuffs/laces as a clear accent block, not the whole
+outfit. Standing three-quarter view, whole body, feet together and clear of
+the bottom edge, centred on frame — no text, no logos, no UI.`,
   },
   {
     id: 'turf/niner-plate',
@@ -1195,11 +1230,9 @@ no text, no logos, no UI.`,
     prompt: `A street operator sighting down a pistol held two-handed at
 chest height, calm and settled rather than lunging — this one plays the long
 game. Dark practical streetwear, cold blue-cyan (#6fb8d9) trim on the
-jacket/gloves as the faction colour-block. Pixel art, hard 1px black
-outline, flat fills, at most two shade steps per surface. Standing
-three-quarter view, whole body, feet together and clear of the bottom edge
-(no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF background —
-no text, no logos, no UI.`,
+jacket/gloves as a clear accent block, not the whole outfit. Standing
+three-quarter view, whole body, feet together and clear of the bottom edge,
+centred on frame — no text, no logos, no UI.`,
   },
   {
     id: 'turf/wrench-plate',
@@ -1211,11 +1244,9 @@ no text, no logos, no UI.`,
     prompt: `The heaviest-built of three street operators, gripping a
 length of pipe in both hands like a bar about to swing — built for a shove,
 not a stab. Dark practical streetwear, wider stance than a lean fighter,
-cold blue-cyan (#6fb8d9) trim on the jacket as the faction colour-block.
-Pixel art, hard 1px black outline, flat fills, at most two shade steps per
-surface. Standing three-quarter view, whole body, feet together and clear
-of the bottom edge (no ground shadow), centred on a FLAT SOLID MAGENTA
-#FF00FF background — no text, no logos, no UI.`,
+cold blue-cyan (#6fb8d9) trim on the jacket as a clear accent block, not the
+whole outfit. Standing three-quarter view, whole body, feet together and
+clear of the bottom edge, centred on frame — no text, no logos, no UI.`,
   },
   {
     id: 'turf/grunt-blunt-plate',
@@ -1226,11 +1257,9 @@ of the bottom edge (no ground shadow), centred on a FLAT SOLID MAGENTA
     tags: ['enemy', 'melee'],
     prompt: `A rangy street thug gripping a baseball bat with a wide,
 wound-up swing stance. Rough street clothes, no armour, warm rust-orange
-(#c9663f) trim on the jacket/cap as the faction colour-block. Pixel art,
-hard 1px black outline, flat fills, at most two shade steps per surface.
-Standing three-quarter view, whole body, feet together and clear of the
-bottom edge (no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF
-background — no text, no logos, no UI.`,
+(#c9663f) trim on the jacket/cap as a clear accent block, not the whole
+outfit. Standing three-quarter view, whole body, feet together and clear of
+the bottom edge, centred on frame — no text, no logos, no UI.`,
   },
   {
     id: 'turf/grunt-handgun-plate',
@@ -1241,11 +1270,9 @@ background — no text, no logos, no UI.`,
     tags: ['enemy', 'ranged'],
     prompt: `The leanest of a rival street crew, holding a handgun low and
 loose, unhurried — this one has range and knows it. Rough street clothes,
-warm rust-orange (#c9663f) trim as the faction colour-block. Pixel art,
-hard 1px black outline, flat fills, at most two shade steps per surface.
-Standing three-quarter view, whole body, feet together and clear of the
-bottom edge (no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF
-background — no text, no logos, no UI.`,
+warm rust-orange (#c9663f) trim as a clear accent block, not the whole
+outfit. Standing three-quarter view, whole body, feet together and clear of
+the bottom edge, centred on frame — no text, no logos, no UI.`,
   },
   {
     id: 'turf/grunt-shotgun-plate',
@@ -1256,10 +1283,9 @@ background — no text, no logos, no UI.`,
     tags: ['enemy', 'ranged'],
     prompt: `The bulkiest of a rival street crew, a sawn-off shotgun held
 tight to the hip, built for a close, ugly fight rather than a clean one.
-Rough street clothes, warm rust-orange (#c9663f) trim as the faction
-colour-block. Pixel art, hard 1px black outline, flat fills, at most two
-shade steps per surface. Standing three-quarter view, whole body, feet
-together and clear of the bottom edge (no ground shadow), centred on a
-FLAT SOLID MAGENTA #FF00FF background — no text, no logos, no UI.`,
+Rough street clothes, warm rust-orange (#c9663f) trim as a clear accent
+block, not the whole outfit. Standing three-quarter view, whole body, feet
+together and clear of the bottom edge, centred on frame — no text, no
+logos, no UI.`,
   },
 ];

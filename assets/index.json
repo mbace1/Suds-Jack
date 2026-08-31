@@ -113,46 +113,46 @@
       "hash": "ac92a74e"
     },
     "turf/blade-plate": {
-      "file": "2d/turf-blade-plate.cc8f80b2.png",
+      "file": "2d/turf-blade-plate.dae414e4.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "cc8f80b2"
+      "hash": "dae414e4"
     },
     "turf/niner-plate": {
-      "file": "2d/turf-niner-plate.dc965c4c.png",
+      "file": "2d/turf-niner-plate.57d823f0.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "dc965c4c"
+      "hash": "57d823f0"
     },
     "turf/wrench-plate": {
-      "file": "2d/turf-wrench-plate.da7a4623.png",
+      "file": "2d/turf-wrench-plate.92948f36.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "da7a4623"
+      "hash": "92948f36"
     },
     "turf/grunt-blunt-plate": {
-      "file": "2d/turf-grunt-blunt-plate.93cfad9f.png",
+      "file": "2d/turf-grunt-blunt-plate.5205c508.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "93cfad9f"
+      "hash": "5205c508"
     },
     "turf/grunt-handgun-plate": {
-      "file": "2d/turf-grunt-handgun-plate.77d2b814.png",
+      "file": "2d/turf-grunt-handgun-plate.3e2f7e5a.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "77d2b814"
+      "hash": "3e2f7e5a"
     },
     "turf/grunt-shotgun-plate": {
-      "file": "2d/turf-grunt-shotgun-plate.89d35fd8.png",
+      "file": "2d/turf-grunt-shotgun-plate.26a8f5e7.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "89d35fd8"
+      "hash": "26a8f5e7"
     }
   }
 }

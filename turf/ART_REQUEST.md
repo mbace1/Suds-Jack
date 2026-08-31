@@ -80,6 +80,13 @@ Meshy; don't assume these plates work for that without redoing them.
 
 ## 2. The style: Metal Slug Tactics' TECHNIQUE, not its content
 
+**SUPERSEDED 2026-08-31 — see §2.3.** The brief below asked for MST's flat
+2-shade-step technique. The owner's own reference sheets, seen for the first
+time that day, show something richer — 3-4 tonal shading bands with real
+material detail — and §2.3 explains why and what actually shipped. Left in
+place rather than deleted because §2.1's palette-doubling reasoning and
+§2.2's animation-sheet findings both still hold and refer back to it.
+
 TURF's GDD already names Metal Slug Tactics as an influence — "clean
 isometric pixel-art silhouette and readability language... re-skinned toward
 gritty realism rather than pulpy cartoon war-comic energy." That line is the
@@ -212,6 +219,49 @@ prediction held, with a sharper, now-measured shape to it:
   reasonable ask when they come up; ATTACK/HIT/DEATH stay single-pose,
   FX-free requests per §6's original plan, cut and hand-finished in Aseprite.
 
+## 2.3 The style corrected against real references (2026-08-31)
+
+§2's MST brief was written from the GDD's own words, never checked against
+an actual picture. The owner then supplied real reference sheets —
+`turf/references/`: a ~20-character casting sheet, two detail crops of it,
+and a front/back run-cycle sheet for one character — and said to use them as
+the target. They are not the casting sheet §2.1 already described in prose;
+they are its actual pixels, seen here for the first time.
+
+**Measured against a jacket region, not eyeballed:** 3-4 discrete tonal
+bands (a base tone, a soft mid-shadow, a deeper crease/fold shadow, a
+highlight), not the two §2 asked for. Real material detail — quilting
+seams, worn/scuffed texture, drawstrings, hardware — placed as deliberate
+pixels rather than implied. Still a genuine hard-edged pixel grid, still a
+dark near-black outline carrying the silhouette, still chibi/SD proportions
+— the shift is in tonal range per surface, not in what kind of art this is.
+
+**One place the prompt deliberately contradicts its own reference.** The
+reference sheets show a soft cast shadow under the feet, sitting on the
+magenta background. That is exactly the kind of alpha gradient §1 already
+warns about — `key` cannot separate a soft shadow from the background it is
+erasing — so the style block copies the reference's technique and
+explicitly withholds its shadow, even though the reference itself has one.
+
+**The current prompt text lives in code, not here.** `assets/manifest.mjs`'s
+`turfGrim` style block and the six `turf/*-plate` specs are the literal
+source `scripts/assets.mjs` and `scripts/gen-with-ref.mjs` compose from —
+reproducing that text in this document a second time is exactly the kind of
+duplication that let §2's two-shade-step wording sit uncorrected here after
+the actual style had already changed once (§2.1's casting-sheet feedback).
+Read the manifest for the exact current wording; §4 below states the
+content facts (pose, weapon, faction colour) that do not change with style.
+
+**A reusable tool came out of doing this properly.**
+`scripts/gen-with-ref.mjs <asset-id> <ref-image> [out]` attaches an
+arbitrary local reference image to a manifest asset's composed prompt —
+`assets.mjs`'s own `ref` field only chains to another asset this pipeline
+already generated, which cannot serve an owner-supplied photo. Full
+provenance, findings and the two real defects caught along the way (a
+shotgun archetype that first drew a knife; a documented prompt/bytes
+mismatch caught by checking rather than assumed fine) are in
+`turf/art-src/sprites/README.md`.
+
 ---
 
 ## 3. Colours and roles, read off the game's own numbers
@@ -238,65 +288,29 @@ different game — every stat and weapon below is read directly from
 
 ---
 
-## 4. The six prompts (`assets/manifest.mjs`)
+## 4. The six prompts — content facts only; the exact text lives in code
 
-```
-turf/blade-plate:
-A lean street operator holding a fixed-blade knife low and ready, weight
-forward like they close distance fast. Dark practical streetwear (jacket,
-boots), hood down, with cold blue-cyan (#6fb8d9) trim on the jacket
-zip/cuffs/laces as the faction colour-block. Pixel art, hard 1px black
-outline, flat fills, at most two shade steps per surface. Standing
-three-quarter view, whole body, feet together and clear of the bottom edge
-(no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF background —
-no text, no logos, no UI.
+**`assets/manifest.mjs` is the literal source of truth**, not this section.
+Duplicating six evolving prompt bodies in two places is exactly what let
+this section quote "flat fills, at most two shade steps" for three days
+after §2.3 changed the actual style — a copy nobody was reading stayed
+stale while the real one moved. What still belongs here, because it does
+NOT change with rendering style, is the content each archetype has to get
+right (read straight from §3's stat table) and the accent colour rule:
 
-turf/niner-plate:
-A street operator sighting down a pistol held two-handed at chest height,
-calm and settled rather than lunging — this one plays the long game. Dark
-practical streetwear, cold blue-cyan (#6fb8d9) trim on the jacket/gloves as
-the faction colour-block. Pixel art, hard 1px black outline, flat fills, at
-most two shade steps per surface. Standing three-quarter view, whole body,
-feet together and clear of the bottom edge (no ground shadow), centred on a
-FLAT SOLID MAGENTA #FF00FF background — no text, no logos, no UI.
+| id | must be holding | build | faction accent |
+|---|---|---|---|
+| `turf/blade-plate` | a fixed-blade knife, held low and ready | lean, weight forward | cold blue-cyan `#6fb8d9` |
+| `turf/niner-plate` | a pistol, two-handed at chest height, calm | steady | cold blue-cyan `#6fb8d9` |
+| `turf/wrench-plate` | a length of pipe, gripped like a bar to swing | heaviest of the three operators, widest stance | cold blue-cyan `#6fb8d9` |
+| `turf/grunt-blunt-plate` | a baseball bat, wide wound-up swing stance | rangy | warm rust-orange `#c9663f` |
+| `turf/grunt-handgun-plate` | a handgun, held low and loose, unhurried | leanest of the three grunts | warm rust-orange `#c9663f` |
+| `turf/grunt-shotgun-plate` | a compact sawn-off **pump-action shotgun** — a firearm, never drawn as a knife (see `turf/art-src/sprites/README.md` for why that note exists) | bulkiest of the three grunts | warm rust-orange `#c9663f` |
 
-turf/wrench-plate:
-The heaviest-built of three street operators, gripping a length of pipe in
-both hands like a bar about to swing — built for a shove, not a stab. Dark
-practical streetwear, wider stance than a lean fighter, cold blue-cyan
-(#6fb8d9) trim on the jacket as the faction colour-block. Pixel art, hard
-1px black outline, flat fills, at most two shade steps per surface.
-Standing three-quarter view, whole body, feet together and clear of the
-bottom edge (no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF
-background — no text, no logos, no UI.
-
-turf/grunt-blunt-plate:
-A rangy street thug gripping a baseball bat with a wide, wound-up swing
-stance. Rough street clothes, no armour, warm rust-orange (#c9663f) trim on
-the jacket/cap as the faction colour-block. Pixel art, hard 1px black
-outline, flat fills, at most two shade steps per surface. Standing
-three-quarter view, whole body, feet together and clear of the bottom edge
-(no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF background —
-no text, no logos, no UI.
-
-turf/grunt-handgun-plate:
-The leanest of a rival street crew, holding a handgun low and loose,
-unhurried — this one has range and knows it. Rough street clothes, warm
-rust-orange (#c9663f) trim as the faction colour-block. Pixel art, hard 1px
-black outline, flat fills, at most two shade steps per surface. Standing
-three-quarter view, whole body, feet together and clear of the bottom edge
-(no ground shadow), centred on a FLAT SOLID MAGENTA #FF00FF background —
-no text, no logos, no UI.
-
-turf/grunt-shotgun-plate:
-The bulkiest of a rival street crew, a sawn-off shotgun held tight to the
-hip, built for a close, ugly fight rather than a clean one. Rough street
-clothes, warm rust-orange (#c9663f) trim as the faction colour-block. Pixel
-art, hard 1px black outline, flat fills, at most two shade steps per
-surface. Standing three-quarter view, whole body, feet together and clear
-of the bottom edge (no ground shadow), centred on a FLAT SOLID MAGENTA
-#FF00FF background — no text, no logos, no UI.
-```
+Every archetype: standing three-quarter view, whole body, feet together and
+clear of the bottom edge, centred on frame, no text/logos/UI. The accent is
+a clear trim block — zip, cuffs, a patch, a stripe — never the whole
+outfit, per §2.3.
 
 ---
 
@@ -323,7 +337,7 @@ asset in this repo already goes through.
    magenta becomes real alpha, despilled.
 4. **Fit.** `node kindling/tools/cut.mjs fit <out>-keyed.png <out>-fit.png
    32x40 --palette turf/art-src/palette.json` — downsamples to the native
-   sprite grid and snaps every opaque pixel to the sixteen colours in
+   sprite grid and snaps every opaque pixel to the thirty-two colours in
    `turf/art-src/palette.json`, never to the full UI/terrain `PAL`. **32×40
    is a proposal, not a locked number**: the current code-drawn placeholder
    (`render.js`'s `drawUnit`) reads about 20-24px tall on the internal
@@ -379,7 +393,7 @@ no LoRA, no pose conditioning) — asking for six sheets of six frames each is
 asking for thirty-six chances for the model to drift off-model. The reliable
 ask is one strong key-pose plate per archetype (§4); the remaining 3–6
 frames per archetype are a **hand pass in Aseprite**, traced against that
-plate for proportions and drawn from `turf/art-src/palette.json`'s sixteen
+plate for proportions and drawn from `turf/art-src/palette.json`'s thirty-two
 colours directly, which is a bounded, honest amount of manual work (18–36
 frames total across all six archetypes) rather than a pipeline claim this
 tooling can't actually back up.
