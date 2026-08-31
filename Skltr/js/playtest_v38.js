@@ -1,8 +1,9 @@
 import { Player } from './player.js?v=12';
+import { Enemy } from './enemy.js?v=12';
 
-// SKLTR v38 — local, zero-backend playtest instrumentation.
-// Keeps a per-run report in memory/localStorage and exposes window._skltrPlaytest().
-const report={build:38,started:performance.now(),arenas:[],meleeKills:0,kills:0,hitsTaken:0,damageTaken:0,flowSeconds:0,flowPeak:0,enemyShots:0,playerShots:0,nearMisses:0};
+// SKLTR v47 telemetry: kills are counted from actual enemy death transitions,
+// not Player.addKill(), so melee and ranged kills cannot double-count.
+const report={build:47,started:performance.now(),arenas:[],meleeKills:0,kills:0,hitsTaken:0,damageTaken:0,flowSeconds:0,flowPeak:0,enemyShots:0,playerShots:0,nearMisses:0};
 let arena=null, patchedPool=false, nearLatch=new WeakSet();
 function now(){return performance.now()}
 function closeArena(){if(arena){arena.ms=now()-arena.start;report.arenas.push(arena);arena=null}}
@@ -12,8 +13,8 @@ addEventListener('skltr-melee-kill',()=>{report.meleeKills++;persist()});
 addEventListener('beforeunload',()=>{closeArena();persist()});
 const oldReset=Player.prototype.reset;
 Player.prototype.reset=function(...args){const out=oldReset.apply(this,args);report.started=now();report.arenas.length=0;report.meleeKills=report.kills=report.hitsTaken=report.damageTaken=report.flowSeconds=report.flowPeak=report.enemyShots=report.playerShots=report.nearMisses=0;arena=null;nearLatch=new WeakSet();persist();return out};
-const oldAddKill=Player.prototype.addKill;
-Player.prototype.addKill=function(...args){report.kills++;return oldAddKill.apply(this,args)};
+const oldTake=Enemy.prototype.takeDamage;
+Enemy.prototype.takeDamage=function(...args){const wasAlive=this.alive;const dead=oldTake.apply(this,args);if(wasAlive&&dead){report.kills++;persist()}return dead};
 const oldHurt=Player.prototype.hurt;
 Player.prototype.hurt=function(d,...rest){const hp=this.hp;const out=oldHurt.call(this,d,...rest);if(this.hp<hp){report.hitsTaken++;report.damageTaken+=hp-this.hp;persist()}return out};
 const oldUpdate=Player.prototype.update;
