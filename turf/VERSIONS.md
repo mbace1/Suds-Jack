@@ -8,6 +8,52 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v12 — 2026-08-31
+**Reconciled a parallel art-pipeline branch, not an engine change: real
+generated art lands (six archetype plates + a two-character, 28-frame,
+front+back animation pilot), plus one locally-fixable rough edge fixed.**
+
+- Merged `claude/turf-art-request` (a separate Claude Code session working
+  the art pipeline with `GEMINI_API_KEY`, per the owner's split: "the art
+  pipeline is the separate instance through the art request") into this
+  branch's v10/v11 doc work, both independently diverged from the same
+  point on `main`. Resolved by judging each conflicting section on which
+  side was backed by real, validated generation/testing rather than by
+  which branch was newer — `assets/manifest.mjs`'s `turfGrim`/
+  `turfCastPose` style blocks and the six archetype-plate prompts took the
+  other branch's version wholesale (proven against real shipped art at
+  192×288/`--no-quantise`, correcting this branch's untested 32×40/palette
+  assumption); this branch's GDD §5.1 hybrid-classes rewrite and its
+  `ART_REQUEST.md` §2.5/§2.6 content had no equivalent on the other side
+  and carried over untouched; `ART_REQUEST.md` §6/§8/§9 were hand-merged,
+  since both sides had real, non-overlapping findings to keep — including
+  documenting honestly that the "MST-real animation cycles" ambition this
+  branch's v11 asked for was NOT what the pilot delivered (single static
+  Idle/Move poses, not cycles), rather than papering over the gap.
+- Real art now in the tree: `turf/art-src/sprites/*-plate.png` (six
+  archetypes, illustration-fidelity, `check --illustration` clean) and
+  `turf/art-src/sprites/cast/*.png` (gunner + leopard, Idle/Move/
+  Attack×2/Hit/Death×2, front AND back facing — 28 files, 28/28 checked).
+  `scripts/gen-with-ref.mjs` is new: attaches an arbitrary local reference
+  image to a manifest prompt via `nano-banana.mjs`, closing the gap
+  `assets.mjs`'s own `ref` field left (it only chains to other
+  manifest-generated assets, not an arbitrary local file).
+- **Fixed**, no generation needed: `gunner-idle` (and `-back`) carried a
+  sliver of a neighbouring casting-sheet character at the crop edges — the
+  reference crop wasn't trimmed tightly enough before keying. Re-cropped
+  `_ref-gunner.png`/`_ref-gunner-back.png` tightly off
+  `casting-sheet-full.png` (found by masking the sheet's own background
+  colour to get the character's true ink bounds, since rows/columns bleed
+  slightly past the nominal grid) and re-ran through the same `key`/
+  `fit 192x288 --no-quantise` pipeline. Two other known rough edges
+  (attack windup/release reading similar; death-fall reading as an action
+  pose rather than "losing balance") are left open — both need a new
+  generation, which this session cannot do without `GEMINI_API_KEY`.
+- `node turf/test/smoke.mjs` (35/35) and
+  `NODE_PATH=$(npm root -g) node test/assets-smoke.cjs` (all pipeline
+  checks) both still pass; no `index.html` import-graph change, so no
+  cache-token bump this round.
+
 ## v11 — 2026-08-31
 **Design capture + production planning, not an engine change: classes
 retired in favour of skill lines, and the art request restructured around
