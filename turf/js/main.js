@@ -25,7 +25,7 @@ let DATA = null, state = null, layout = null, input = null, enemyPhaseRunning = 
 // real play rather than leave it as unreachable data. crewProgress is keyed
 // by defId, so a squad with no progress entry yet (sledge/cleaver/rook,
 // gunner/leopard/denny) just starts fresh — no crash, no special-casing.
-const SEQUENCE = ['backlot', 'loading-dock', 'warehouse', 'underpass'];
+const SEQUENCE = ['backlot', 'loading-dock', 'warehouse', 'underpass', 'the-yard'];
 let seqIndex = 0;
 
 // GDD.md §5's v1 list, the other half: "XP levels... unlocking small stat
@@ -81,6 +81,7 @@ window.addEventListener('resize', fitCanvas);
 
 function boot(seed) {
   const encounter = DATA.encounters.find(e => e.id === SEQUENCE[seqIndex]);
+  stage.style.setProperty('--encounter-bg', encounter.background ? `url(${encounter.background})` : 'none');
   state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed);
   applyProgress(state);
   state.moveTiles = new Map();

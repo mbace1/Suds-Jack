@@ -57,9 +57,19 @@
     flex: 1; position: relative; display: flex; align-items: flex-end; justify-content: center;
     padding-bottom: 4px;
     min-height: 0; overflow: hidden;
-    background:
+    /* --encounter-bg (set per-encounter in main.js's boot()) sits behind the
+       board's own opaque canvas, so it only shows in the slack space above/
+       around it — real atmosphere with zero risk to board readability. The
+       dark scrim on top keeps a busy photo from fighting the HUD text that
+       sits over #stage's edges. */
+    background-image:
+      linear-gradient(rgba(7,8,11,0.55), rgba(7,8,11,0.85)),
       radial-gradient(ellipse at 50% 30%, rgba(111,168,201,0.06), transparent 60%),
-      #07080b;
+      var(--encounter-bg, none);
+    background-size: auto, auto, cover;
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    background-color: #07080b;
   }
   #board { image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: pointer; display: block; }
 
@@ -69,7 +79,7 @@
     display: flex; align-items: center; gap: 7px;
   }
   .unitBtn .portrait {
-    width: 26px; height: 39px; object-fit: cover; object-position: top;
+    width: 34px; height: 34px; object-fit: cover; object-position: 50% 15%;
     image-rendering: pixelated; image-rendering: crisp-edges; flex: none;
     background: #14161c; border: 1px solid #262a32;
   }
@@ -85,7 +95,7 @@
   #selInfo { min-width: 150px; color: #7b818c; display: flex; align-items: center; gap: 8px; }
   #selInfo b { color: #d6d9de; }
   #selPortrait {
-    width: 30px; height: 45px; object-fit: cover; object-position: top;
+    width: 40px; height: 40px; object-fit: cover; object-position: 50% 15%;
     image-rendering: pixelated; image-rendering: crisp-edges; flex: none;
     background: #14161c; border: 1px solid #262a32;
   }

@@ -8,6 +8,62 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v14 — 2026-08-31
+**Second roster batch + headshot icons + encounter backgrounds — three
+owner-driven follow-ups on v13's roster work, same session.**
+
+- **Headshots, not full-body icons.** Owner's call: "on the actual field
+  too, they don't do much in the icons side, so no value there. maybe a
+  head shot" — a 192×288 full-body plate read as an indistinct blob at
+  26×39 icon size; a face reads. Wrote a head-crop finder that locates the
+  actual head (not the topmost ink pixel, which is wrong whenever a
+  character holds a weapon raised above their head — `grunt_blunt`'s bat,
+  `sledge`'s hammer, `leopard`'s knife, `knuckle`'s flail all do): scan
+  down from the ink top for the first row where width is head-sized and
+  stays that way for 6 rows running (skips past a thin raised weapon
+  silhouette), then find the shoulder-broadening point below it. Every
+  `portrait` field (v13's 18 plus the original 6) now points at
+  `art-src/sprites/heads/<id>-head.png` instead of the full plate.
+  Squad-row and selected-unit icons resized from a 2:3 body crop to a
+  roughly-square face crop (`object-position: 50% 15%` keeps the face
+  centred when `cover` trims the sides).
+- **Found and fixed a real bug while building the heads**: `leopard-idle`
+  (and `-back`) carried the exact top-edge crop-bleed v12 fixed for
+  `gunner-idle` — never applied to leopard at the time. Same fix: tighter
+  crop off `casting-sheet-full.png`'s row/column bounds, `_ref-leopard*`
+  replaced too so future generations off it start clean.
+- **6 more characters** from a second casting sheet the owner posted
+  (`turf/references/casting-sheet-3.png`, 3×2 pairs): Reed, Vex, Knuckle
+  (new players) and Smoke, Milo, Duffy (new enemies). Knuckle carries a
+  new weapon, `flail` (melee, dmg 3, knockback 1, hitChance 0.9) — read
+  off what he's actually holding in the sheet, a ball-and-chain. Player
+  pool 11→14, enemy pool 15→18. A fifth encounter, `the-yard` (backlot's
+  proven grid+cover again), added to `SEQUENCE` so the new squad is
+  actually reachable through play.
+- **Per-encounter background photos.** Owner posted 5 isometric Nordic
+  night-scene renders and asked to try some as backgrounds. Downscaled to
+  1100px wide, re-encoded as JPEG (2-2.8MB PNG → 66-100KB each — this is a
+  phone-first game, the SIDE_MARGIN comment in `render.js` says so
+  directly). Matched by fiction: `dockyard.jpg` → loading-dock/underpass,
+  `courtyard.jpg` (tenement) → backlot/warehouse, `schoolyard.jpg` →
+  the-yard (it's a literal schoolyard court). New `background` field per
+  encounter in `encounters.json`; `main.js`'s `boot()` sets it as a CSS
+  custom property (`--encounter-bg`) on `#stage`, layered under a dark
+  scrim so it only shows in the slack space around the canvas board — the
+  board itself is opaque and untouched, so this is zero risk to gameplay
+  readability, pure atmosphere. The 5th uploaded reference (a painted
+  Darkest-Dungeon-style combat HUD with headshot portrait, Guard/Nerve
+  bars, front/middle/back row positioning) was saved as
+  `art-src/reference/ui/goal-hud-reference.png` and logged as forward
+  direction — NOT implemented this round, it's a different combat model
+  (row-based formation, not a grid) and a full HUD rebuild, not a
+  same-session follow-up.
+- Verified in a real browser: all 5 encounters load with correct rosters,
+  headshots and backgrounds; zero console/network errors; 44px+ touch
+  targets hold; no horizontal overflow at phone width.
+- `node turf/test/smoke.mjs` — 41/41 (was 39; +2 for the-yard's
+  playthrough checks). `test/assets-smoke.cjs` unaffected, still green.
+
 ## v13 — 2026-08-31
 **Roster expansion: 18 new characters cropped from the owner's casting
 sheets as static portraits (no animation, no generation — free, local crops),
