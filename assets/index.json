@@ -153,6 +153,90 @@
       "use": "prop",
       "game": "turf",
       "hash": "26a8f5e7"
+    },
+    "turf/cast-gunner-move": {
+      "file": "2d/turf-cast-gunner-move.ca4e5b49.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "ca4e5b49"
+    },
+    "turf/cast-gunner-attack-windup": {
+      "file": "2d/turf-cast-gunner-attack-windup.8902da46.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "8902da46"
+    },
+    "turf/cast-gunner-attack-release": {
+      "file": "2d/turf-cast-gunner-attack-release.024a25f2.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "024a25f2"
+    },
+    "turf/cast-gunner-hit": {
+      "file": "2d/turf-cast-gunner-hit.9ad2f543.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "9ad2f543"
+    },
+    "turf/cast-gunner-death-fall": {
+      "file": "2d/turf-cast-gunner-death-fall.bdf59ee2.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "bdf59ee2"
+    },
+    "turf/cast-gunner-death-down": {
+      "file": "2d/turf-cast-gunner-death-down.cbf0103c.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "cbf0103c"
+    },
+    "turf/cast-leopard-move": {
+      "file": "2d/turf-cast-leopard-move.77e06976.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "77e06976"
+    },
+    "turf/cast-leopard-attack-windup": {
+      "file": "2d/turf-cast-leopard-attack-windup.cb7e8b6b.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "cb7e8b6b"
+    },
+    "turf/cast-leopard-attack-release": {
+      "file": "2d/turf-cast-leopard-attack-release.f63e05de.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "f63e05de"
+    },
+    "turf/cast-leopard-hit": {
+      "file": "2d/turf-cast-leopard-hit.3224bf95.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "3224bf95"
+    },
+    "turf/cast-leopard-death-fall": {
+      "file": "2d/turf-cast-leopard-death-fall.1fee2e49.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "1fee2e49"
+    },
+    "turf/cast-leopard-death-down": {
+      "file": "2d/turf-cast-leopard-death-down.c15b3b7e.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "c15b3b7e"
     }
   }
 }

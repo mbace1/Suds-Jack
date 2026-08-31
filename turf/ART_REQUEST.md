@@ -470,4 +470,36 @@ default plan here because of the consistency problem above.
   `drawUnit`'s canvas silhouettes with drawImage calls, handling per-frame
   timing, 8-direction-vs-mirroring for the isometric facing) is a separate,
   deliberate engineering change — not implied by generating or cutting art.
-  Say the word when the plates exist and this becomes its own task.
+  Say the word when the plates exist and this becomes its own task. **Still
+  true**, but the board is orthogonal 4-directional (`turf/js/grid.js`'s own
+  comment: "ITB-style rather than an 8-directional grid"), not isometric
+  8-way — whoever picks this up should settle facing count against that
+  fact, not against Metal Slug Tactics' own (isometric) convention.
+
+## 8. Multi-frame animation, piloted (2026-08-31)
+
+**Correction that changes how §3-§7 should be read going forward**: the
+six archetypes (`blade`/`niner`/`wrench`/three grunts) are this document's
+own invention, built to fill Milestone 1's stat table — they are not how
+the owner thinks about the cast. The owner's own words: "there are just
+character models, no archetypes." `turf/references/casting-sheet-full.png`
+is ~20 actual characters; a future roster is more likely built by picking
+from that cast than by generating fresh archetypes to spec.
+
+Piloted the actual "how do we add animation" question on two of those
+casting-sheet characters (owner's pick: "you can pick 2 from the sheets I
+provided and expand") — full results, prompts, defects and fixes in
+`turf/art-src/sprites/cast/README.md`. Short version: **it works.** A new
+style block (`turfCastPose`, opposite instruction from `turfGrim` — hold
+the reference character's identity rather than avoid copying it) plus
+`scripts/gen-with-ref.mjs` against a crop of the character's own casting-
+sheet art holds identity across seven poses (Idle/Move/Attack×2/Hit/
+Death×2, the owner's frame-richness call) reliably enough to be the real
+answer, not just a hopeful one. Two prompt-level defects were caught and
+fixed (a "lying down" pose that stayed standing; dual pistols that
+collapsed to one gun until named as a recognisable trope instead of
+described geometrically) — both fixes are reusable wording for any future
+character, not one-offs.
+
+Not done: the other ~18 characters, `render.js` integration (§7's own
+item), and settling the facing-count question above.

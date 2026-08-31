@@ -395,6 +395,49 @@ contact shadow beneath the feet, even if a reference image shows one — a
 soft shadow on a magenta background cannot be separated from the background
 by a colour-key cutting tool. The subject is otherwise alone in frame: no
 set dressing, no ground plane, no text, no logos, no UI, no watermark.`,
+
+  // TURF cast-pose (2026-08-31): a SEPARATE block from turfGrim, not a flag
+  // on it, because the two say OPPOSITE things about an attached reference
+  // image. turfGrim's reference is a style example: "copy the technique,
+  // draw a new character, not this one." This block's reference is one of
+  // the owner's own ~20 casting-sheet characters, and the whole point is the
+  // opposite instruction: "this IS the character — hold their identity
+  // across a new pose." Piloting whether this pipeline can do that at all is
+  // the reason this block exists — ART_REQUEST.md §2.2 found plain
+  // text-to-image can't hold a character across poses with no reference
+  // image at all; gen-with-ref.mjs's reference-image path is the untested
+  // attempt at solving that, not a known-good technique yet. Sharing one
+  // block between the two opposite instructions would leak "redesign this"
+  // into a pose generation or "must be identical" into a fresh archetype —
+  // worse than the duplication below.
+  turfCastPose: `TURF house style — the same rendering technique as every
+other plate in this game: a chibi/SD figure (large head, compact body), a
+dark near-black hard outline around the whole silhouette, MULTI-STEP shading
+(three to four tonal bands per surface: base, soft mid-shadow, deeper crease
+shadow, highlight), real material detail (quilting, worn texture, fabric
+folds, small hardware) placed as deliberate pixels, and a genuine hard-edged
+pixel grid throughout — no smooth painterly blending, no photographic
+gradient, no airbrushing.
+
+A reference image is attached showing THIS EXACT character. Preserve their
+identity exactly — the same face and expression register, the same
+hairstyle and hair colour, the same exact outfit and colours, the same build
+and proportions. Only the POSE AND ACTION change, to match what the rest of
+this prompt describes. Do not redesign, re-costume or restyle the character,
+and do not draw a different person.
+
+Do NOT bake in motion trails, impact flashes, blood, muzzle flash, or any
+other transient effect — this game draws those in code over the sprite,
+never into the art itself, and a soft or translucent effect rendered into a
+magenta-keyed plate cannot be separated from the background by the cutting
+tool, the same problem a soft shadow has.
+
+THE BACKGROUND IS A FLAT SOLID MAGENTA #FF00FF filling the entire frame
+around the subject — no gradient, no texture, no vignette. #FF00FF must
+never appear anywhere on the subject itself. Do NOT draw a cast shadow or
+contact shadow beneath the feet, even if the reference shows one. The
+subject is otherwise alone in frame: no set dressing, no ground plane, no
+text, no logos, no UI, no watermark.`,
 };
 
 export const DEFAULTS = {
@@ -413,6 +456,22 @@ export const DEFAULTS = {
   topology: 'triangle',
   targetPolycount: 12000,
 };
+
+// TURF cast-pose pilot (2026-08-31): a fixed description of each character,
+// interpolated into all six of their pose prompts below. Every other prompt
+// in this file is a self-contained literal — no shared consts — but that
+// convention assumes each prompt describes a DIFFERENT character, where
+// copy-paste would be actively misleading. Here the whole point is that six
+// prompts describe the SAME character, and hand-retyping "bald, tattooed,
+// white tank top, navy jeans" six times per person is exactly how one frame
+// quietly drifts (a different jean shade, a forgotten tattoo) from the
+// other five. One string, six references, is the safer failure mode.
+const CAST_GUNNER = `a stocky bald man with dark tattoo sleeves covering
+both arms and his chest, a hard scowling expression, wearing a plain white
+tank top and dark navy jeans with a thin pale side stripe`;
+const CAST_LEOPARD = `a woman with long wavy blonde hair and gold hoop
+earrings, wearing an oversized leopard-print fur coat open over a red cami
+top, a black mini skirt, fishnet tights, and black lace-up boots`;
 
 export const ASSETS = [
   // ── TOKO DROP — the main project, so it gets the first plates ────────────
@@ -1287,5 +1346,192 @@ Rough street clothes, warm rust-orange (#c9663f) trim as a clear accent
 block, not the whole outfit. Standing three-quarter view, whole body, feet
 together and clear of the bottom edge, centred on frame — no text, no
 logos, no UI.`,
+  },
+
+  // ── TURF cast-pose pilot — two of the owner's own casting-sheet ─────────
+  // characters (not a synthesised archetype), each with five NEW poses
+  // generated with `scripts/gen-with-ref.mjs` against a crop of their own
+  // reference art. The sixth pose, Idle, is not here: it is the reference
+  // crop itself run straight through key→fit→check with no generation step
+  // at all, which is the highest-fidelity Idle this pipeline can produce —
+  // see turf/art-src/sprites/cast/README.md for exactly which crop and
+  // where it came from. `style: 'turfCastPose'`, not `turfGrim` — that
+  // block's whole job is holding this character's identity across a pose
+  // change, the opposite instruction from the archetype plates above.
+  {
+    id: 'turf/cast-gunner-move',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'move'],
+    prompt: `${CAST_GUNNER}. Captured mid-stride in a committed running
+step — body leaning forward, arms swinging naturally, one leg driving off
+the ground, weight fully committed to the movement. A single dynamic
+in-between pose, not a walk-cycle silhouette. Whole body clear of the frame
+edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-gunner-attack-windup',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack'],
+    prompt: `${CAST_GUNNER}, in an AKIMBO dual-pistol stance like a classic
+action-movie double-gun pose (John Wick / Max Payne style) — a pistol held
+in EACH raised fist, left and right arms both out and aimed toward the
+viewer's right, elbows apart, the two guns spaced well apart from each
+other rather than side by side. The windup beat right before firing, tense
+and set rather than relaxed. Whole body clear of the frame edges, centred
+on frame — no text, no logos, no UI, no muzzle flash, no flame, no light
+burst of any kind.`,
+  },
+  {
+    id: 'turf/cast-gunner-attack-release',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack'],
+    prompt: `${CAST_GUNNER}, in an AKIMBO dual-pistol stance like a classic
+action-movie double-gun pose (John Wick / Max Payne style) — a pistol held
+in EACH raised fist, left and right arms both out and firing toward the
+viewer's right, elbows apart, the two guns spaced well apart from each
+other rather than side by side, arms braced hard against the recoil — the
+release/impact beat of the same akimbo stance as the windup pose. Whole
+body clear of the frame edges, centred on frame — no text, no logos, no UI.
+Draw the pistols' slides and grips only: no muzzle flash, no flame, no
+light burst, no smoke of any kind anywhere in the image, even at the
+barrel.`,
+  },
+  {
+    id: 'turf/cast-gunner-hit',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'hit'],
+    prompt: `${CAST_GUNNER}, recoiling from a hit — flinching backward
+off-balance, shoulders pulled in, one arm raised defensively, weight caught
+mid-stumble. A single reaction frame, not a fall. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI, no blood or
+impact FX baked into the art.`,
+  },
+  {
+    id: 'turf/cast-gunner-death-fall',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death'],
+    prompt: `${CAST_GUNNER}, losing balance and falling backward — knees
+buckling, arms thrown out, body past the point of recovering but not yet on
+the ground. The falling beat of a collapse, caught mid-motion. Whole body
+clear of the frame edges, centred on frame — no text, no logos, no UI, no
+blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-gunner-death-down',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death'],
+    prompt: `${CAST_GUNNER}, from the SAME three-quarter camera angle as
+every other pose, but the character has fallen sideways onto their back and
+is lying on the ground — NOT standing, NOT crouching, NOT kneeling, NOT
+balanced on their feet. The body is reclined at a steep diagonal filling
+the frame corner-to-corner rather than standing upright in the centre:
+shoulders and head low and near one bottom corner of the frame, both legs
+stretched out flat toward the opposite side, limbs slack like a dropped
+action figure. Test: if the character's feet are still under their own
+hips supporting their weight, the pose is wrong — the legs must be laid
+out sideways along the ground instead. Whole body clear of all four frame
+edges — no text, no logos, no UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-leopard-move',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'move'],
+    prompt: `${CAST_LEOPARD}. Captured mid-stride in a committed running
+step — body leaning forward, coat trailing slightly behind the motion, one
+leg driving off the ground, weight fully committed to the movement. A
+single dynamic in-between pose, not a walk-cycle silhouette. Whole body
+clear of the frame edges, centred on frame — no text, no logos, no UI.`,
+  },
+  {
+    id: 'turf/cast-leopard-attack-windup',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack'],
+    prompt: `${CAST_LEOPARD}, knife arm drawn back and cocked at shoulder
+height, weight coiled onto the back foot, free hand out for balance — the
+windup beat right before a downward stabbing strike. Whole body and the
+knife clear of the frame edges, centred on frame — no text, no logos, no
+UI.`,
+  },
+  {
+    id: 'turf/cast-leopard-attack-release',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'attack'],
+    prompt: `${CAST_LEOPARD}, knife arm fully extended in a downward
+stabbing strike, weight driven forward onto the front foot — the
+release/impact beat of the same strike as the windup pose. Whole body and
+the knife clear of the frame edges, centred on frame — no text, no logos,
+no UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-leopard-hit',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'hit'],
+    prompt: `${CAST_LEOPARD}, recoiling from a hit — flinching backward
+off-balance, shoulders pulled in, one arm raised defensively, weight caught
+mid-stumble. A single reaction frame, not a fall. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI, no blood or
+impact FX baked into the art.`,
+  },
+  {
+    id: 'turf/cast-leopard-death-fall',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death'],
+    prompt: `${CAST_LEOPARD}, losing balance and falling backward — knees
+buckling, arms thrown out, coat flaring with the motion, body past the
+point of recovering but not yet on the ground. The falling beat of a
+collapse, caught mid-motion. Whole body clear of the frame edges, centred
+on frame — no text, no logos, no UI, no blood baked into the art.`,
+  },
+  {
+    id: 'turf/cast-leopard-death-down',
+    game: 'turf',
+    use: 'prop',
+    style: 'turfCastPose',
+    aspect: '2:3',
+    tags: ['cast', 'death'],
+    prompt: `${CAST_LEOPARD}, from the SAME three-quarter camera angle as
+every other pose, but she has fallen sideways onto her back and is lying on
+the ground — NOT standing, NOT crouching, NOT kneeling, NOT balanced on her
+feet. The body is reclined at a steep diagonal filling the frame
+corner-to-corner rather than standing upright in the centre: shoulders and
+head low and near one bottom corner of the frame, both legs stretched out
+flat toward the opposite side, coat splayed open around her, limbs slack
+like a dropped action figure. Test: if her feet are still under her own
+hips supporting her weight, the pose is wrong — the legs must be laid out
+sideways along the ground instead. Whole body clear of all four frame
+edges — no text, no logos, no UI, no blood baked into the art.`,
   },
 ];
