@@ -1,19 +1,19 @@
 {
-  "_comment": "Player-recruitable operators. `weapon` here is a STARTING KIT (GDD §5.1: no fixed class archetypes — a unit's real identity comes from skill lines picked up at level-ups plus whatever weapon it's currently holding, not this field). `portrait` is a headshot crop (owner direction, 2026-08-31: a full-body plate reads as an indistinct blob at squad-row icon size; a head crop reads) off the same casting-sheet material, no animation.",
+  "_comment": "Player-recruitable operators. `weapon` here is a STARTING KIT (GDD §5.1: no fixed class archetypes — a unit's real identity comes from skill lines picked up at level-ups plus whatever weapon it's currently holding, not this field). `portrait` is a headshot crop (owner direction, 2026-08-31: a full-body plate reads as an indistinct blob at squad-row icon size; a head crop reads) for the squad-row/selection UI. `sprite` (owner direction, 2026-08-31: \"start replacing player characters with character model sprites\") is the full-body plate — read on the board itself, real size, no crop.",
   "units": [
-    { "id": "blade",   "name": "Blade",   "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/blade-head.png" },
-    { "id": "niner",   "name": "Niner",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/niner-head.png" },
-    { "id": "wrench",  "name": "Wrench",  "role": "control", "weapon": "pipe",   "hp": 10, "move": 3, "portrait": "art-src/sprites/heads/wrench-head.png" },
-    { "id": "deuce",   "name": "Deuce",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/deuce-head.png" },
-    { "id": "otter",   "name": "Otter",   "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/otter-head.png" },
-    { "id": "sledge",  "name": "Sledge",  "role": "control", "weapon": "hammer", "hp": 11, "move": 3, "portrait": "art-src/sprites/heads/sledge-head.png" },
-    { "id": "cleaver", "name": "Cleaver", "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/cleaver-head.png" },
-    { "id": "gunner",  "name": "Gunner",  "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/gunner-head.png" },
-    { "id": "denny",   "name": "Denny",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/denny-head.png" },
-    { "id": "rook",    "name": "Rook",    "role": "control", "weapon": "pipe",   "hp": 10, "move": 3, "portrait": "art-src/sprites/heads/rook-head.png" },
-    { "id": "leopard", "name": "Leopard", "role": "melee",   "weapon": "knife",  "hp": 8,  "move": 5, "portrait": "art-src/sprites/heads/leopard-head.png" },
-    { "id": "reed",    "name": "Reed",    "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/reed-head.png" },
-    { "id": "vex",     "name": "Vex",     "role": "melee",   "weapon": "knife",  "hp": 8,  "move": 5, "portrait": "art-src/sprites/heads/vex-head.png" },
-    { "id": "knuckle", "name": "Knuckle", "role": "control", "weapon": "flail",  "hp": 10, "move": 4, "portrait": "art-src/sprites/heads/knuckle-head.png" }
+    { "id": "blade",   "name": "Blade",   "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/blade-head.png",   "sprite": "art-src/sprites/blade-plate.png" },
+    { "id": "niner",   "name": "Niner",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/niner-head.png",   "sprite": "art-src/sprites/niner-plate.png" },
+    { "id": "wrench",  "name": "Wrench",  "role": "control", "weapon": "pipe",   "hp": 10, "move": 3, "portrait": "art-src/sprites/heads/wrench-head.png",  "sprite": "art-src/sprites/wrench-plate.png" },
+    { "id": "deuce",   "name": "Deuce",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/deuce-head.png",   "sprite": "art-src/sprites/deuce-plate.png" },
+    { "id": "otter",   "name": "Otter",   "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/otter-head.png",   "sprite": "art-src/sprites/otter-plate.png" },
+    { "id": "sledge",  "name": "Sledge",  "role": "control", "weapon": "hammer", "hp": 11, "move": 3, "portrait": "art-src/sprites/heads/sledge-head.png",  "sprite": "art-src/sprites/sledge-plate.png" },
+    { "id": "cleaver", "name": "Cleaver", "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/cleaver-head.png", "sprite": "art-src/sprites/cleaver-plate.png" },
+    { "id": "gunner",  "name": "Gunner",  "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/gunner-head.png",  "sprite": "art-src/sprites/cast/gunner-idle.png" },
+    { "id": "denny",   "name": "Denny",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/denny-head.png",   "sprite": "art-src/sprites/denny-plate.png" },
+    { "id": "rook",    "name": "Rook",    "role": "control", "weapon": "pipe",   "hp": 10, "move": 3, "portrait": "art-src/sprites/heads/rook-head.png",    "sprite": "art-src/sprites/rook-plate.png" },
+    { "id": "leopard", "name": "Leopard", "role": "melee",   "weapon": "knife",  "hp": 8,  "move": 5, "portrait": "art-src/sprites/heads/leopard-head.png", "sprite": "art-src/sprites/cast/leopard-idle.png" },
+    { "id": "reed",    "name": "Reed",    "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/reed-head.png",    "sprite": "art-src/sprites/reed-plate.png" },
+    { "id": "vex",     "name": "Vex",     "role": "melee",   "weapon": "knife",  "hp": 8,  "move": 5, "portrait": "art-src/sprites/heads/vex-head.png",     "sprite": "art-src/sprites/vex-plate.png" },
+    { "id": "knuckle", "name": "Knuckle", "role": "control", "weapon": "flail",  "hp": 10, "move": 4, "portrait": "art-src/sprites/heads/knuckle-head.png", "sprite": "art-src/sprites/knuckle-plate.png" }
   ]
 }

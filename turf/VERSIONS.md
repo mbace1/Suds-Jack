@@ -8,6 +8,82 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v15 — 2026-08-31
+**Real character sprites and real cover props on the board itself, a
+transparent grid over the background photo, plus a headshot audit —
+the render.js rewrite v14's backgrounds were building toward.**
+
+- **Headshot audit.** Owner: "some of those character head crops weren't
+  done well. check them again and fix the ones that need fixing." A
+  systematic pass (a script scanning all 32 for disconnected bleed gaps
+  and sudden width jumps near the crop's bottom edge, plus a full visual
+  review at 4x size) found two real defects, both a raised weapon
+  confusing the crop heuristic: `grunt-blunt`'s raised bat was mistaken
+  for the head/shoulder line, cropping mostly bat with a tiny face;
+  `niner`'s crop caught the tip of his raised, extended pistol arm as a
+  disconnected-looking fragment. Both re-cropped. The other 30 checked
+  clean.
+- **The grid is transparent over the background now.** Owner: "the grid
+  should be transparently laid on the backgrounds so that the players are
+  in the courtyard." `drawFloor` went from an opaque per-tile fill to a
+  translucent tint + outline, and `render()` no longer paints an opaque
+  `PAL.VOID` rect over the whole canvas first — a canvas is transparent by
+  default once nothing paints over it, which is what lets v14's
+  `--encounter-bg` CSS photo show through.
+- **Real character sprites on the board.** Owner: "start replacing player
+  characters with character model sprites." Every unit/enemy gets a new
+  `sprite` field (the full-body plate — separate from `portrait`, the
+  headshot the squad-row/selection UI uses; a body reads fine at real
+  board size, it read as a blob shrunk to a 34px UI icon, which is why
+  that one is a head crop instead) drawn via a small image cache in
+  `render.js` (`getImage` — `render()` is called synchronously and often
+  with no `await` anywhere in the file, so a not-yet-decoded image just
+  isn't drawn that one call; its `onload` re-invokes `render()` with the
+  last known args once ready). `computeLayout`'s headroom and
+  `input.js`'s tap hit-box both now key off a new `SPRITE_H` (46px, the
+  real drawn height) instead of the old, shorter `UNIT_H` silhouette —
+  otherwise a full-height sprite in row 0 clips off the top of the canvas,
+  and tapping a unit's actual head misses. The original procedural
+  silhouette survives as `drawUnitFallback`, used only for a unit with no
+  `sprite` yet or for the one render call before an image loads.
+  **Found and fixed along the way**: a real sprite carries its own colours
+  (a jacket, not a faction paint job), so the cold-operator/warm-rival
+  read the flat silhouette gave for free was silently gone once sprites
+  replaced it — added a small faction-tinted ring at each unit's feet
+  (`PAL.PLAYER`/`PAL.ENEMY`, the same two house colours everywhere else)
+  so the two sides stay glanceable regardless of which sprite is drawn
+  above it.
+- **Real cover props.** Owner: "start adding assets to the playfield for
+  cover" (attached an 8-object isometric prop sheet — barrier, bollard,
+  litter bin, bike rack, notice board, bench, crate-on-pallet, park
+  statue). Cropped all 8 the same way as every other casting-sheet batch
+  this session (background-colour masking, `key`/`fit --no-quantise`,
+  natural aspect kept rather than forced to 192×288 since these aren't
+  humanoid). `drawProp` now draws the real image, picked deterministically
+  off the tile's own `(gx,gy)` so the same map paints every render (no
+  per-frame flicker) — split 4 dense/tall props (crate, statue, bike
+  rack, notice board) for full cover, 4 shorter ones (barrier, bollard,
+  bin, bench) for partial. **First pass split this 2/6** — with only 2
+  choices for full cover, a 5-6-tile encounter repeated the same prop
+  three times over ("the examples look ok, but have too many of the same
+  objects"). Rebalanced to 4/4, real variety. `drawPropFallback` keeps the
+  original procedural box for the same one-frame-while-loading case as
+  units.
+- **A 5th uploaded reference** (a painted Darkest-Dungeon-style combat HUD
+  — headshot portrait, Guard/Nerve bars, front/middle/back row
+  positioning) was saved as `art-src/reference/ui/goal-hud-reference.png`
+  in v14 and stays forward direction only, not built this round — a
+  different combat model (row-based formation, not a grid), not a
+  same-session follow-up.
+- Verified in a real browser: all 5 encounters render sprites + props +
+  background correctly; tapping a unit's real sprite body (not just the
+  old, shorter hit-box) selects it; faction rings visible; 44px+ touch
+  targets hold; no horizontal overflow; zero console/network errors.
+- `render.js` ?v=6, `input.js` ?v=7, `combat.js` ?v=5, `main.js` ?v=8 —
+  every module in the changed import chain bumped together.
+- `node turf/test/smoke.mjs` — 41/41, unchanged (pure game logic, this
+  round is entirely rendering + data). `test/assets-smoke.cjs` unaffected.
+
 ## v14 — 2026-08-31
 **Second roster batch + headshot icons + encounter backgrounds — three
 owner-driven follow-ups on v13's roster work, same session.**

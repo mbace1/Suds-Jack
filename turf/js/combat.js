@@ -48,7 +48,7 @@ const getWeapon = (state, id) => state.weaponDefs.find(w => w.id === id);
 function makeUnit(uid, def, weapon, faction, spawn) {
   return {
     uid, defId: def.id, name: def.name, faction, role: def.role, weapon,
-    hp: def.hp, maxHp: def.hp, move: def.move, portrait: def.portrait,
+    hp: def.hp, maxHp: def.hp, move: def.move, portrait: def.portrait, sprite: def.sprite,
     x: spawn.x, y: spawn.y,
     actedMove: false, actedAction: false,
     kills: 0, xp: 0, level: 1,

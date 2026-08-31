@@ -4,11 +4,11 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, UNIT_H } from './render.js?v=5';
+import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=6';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit,
-} from './combat.js?v=4';
+} from './combat.js?v=5';
 import { key } from './grid.js?v=2';
 import { watchPad } from '../../hub/pad.js?v=9';
 
@@ -50,7 +50,7 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
       if (u.hp <= 0) continue;
       const a = toScreen(layout, u.x, u.y);
       const withinX = Math.abs(px - a.x) <= TILE_W * 0.3;
-      const withinY = py >= a.y - UNIT_H * 1.7 && py <= a.y + 4;
+      const withinY = py >= a.y - SPRITE_H - 8 && py <= a.y + 4;
       if (!withinX || !withinY) continue;
       const depth = u.x + u.y;
       if (depth > bestDepth) { bestDepth = depth; best = u; }

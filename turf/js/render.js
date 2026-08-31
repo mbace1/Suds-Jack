@@ -7,6 +7,11 @@ import { PAL } from './palette.js?v=3';
 import { key } from './grid.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
+// The real on-board sprite height (drawUnitSprite) — taller than the old
+// UNIT_H silhouette, so layout headroom and input.js's tap hit-box both key
+// off this instead once every unit carries a `sprite`. UNIT_H stays as-is:
+// still used for the one-frame procedural fallback and for prop sizing.
+export const SPRITE_H = 46;
 
 // Side clearance beyond the tile diamonds themselves, for whatever a unit
 // draws past its own tile's edge — the widest of those is the 14px HP bar
@@ -22,13 +27,43 @@ export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // encounters) rather than assumed safe.
 const SIDE_MARGIN = 16;
 
+// A real character/prop image, cached across renders. render() is called
+// synchronously and often (every state change) with no await anywhere in
+// this file, so an image that isn't decoded yet just isn't drawn THIS call
+// — its onload re-invokes render() with the last known (canvas, state,
+// layout) once it's ready, and after that getImage returns it immediately
+// from cache. Every caller (drawUnit, drawProp) already has a procedural
+// fallback for exactly this one-call gap, so there's no loading flash of
+// broken art — worst case is one frame of the old placeholder shape.
+const imageCache = new Map();
+let lastRenderArgs = null;
+function getImage(src) {
+  if (!src) return null;
+  let entry = imageCache.get(src);
+  if (!entry) {
+    const img = new Image();
+    entry = { img, loaded: false };
+    img.onload = () => {
+      entry.loaded = true;
+      if (lastRenderArgs) render(lastRenderArgs.canvas, lastRenderArgs.state, lastRenderArgs.layout);
+    };
+    img.src = src;
+    imageCache.set(src, entry);
+  }
+  return entry.loaded ? entry.img : null;
+}
+
 export function computeLayout(grid) {
   const minA = -(grid.rows - 1), maxA = grid.cols - 1;
   const maxB = grid.cols + grid.rows - 2;
   const width = Math.ceil((maxA - minA) * (TILE_W / 2) + SIDE_MARGIN * 2);
-  const height = Math.ceil(maxB * (TILE_H / 2) + UNIT_H + TILE_H * 4);
+  // Headroom keys off SPRITE_H (the real drawn unit height), not the old,
+  // shorter UNIT_H silhouette — a full-height sprite in row 0 needs more
+  // clearance above the grid or its head (and HP bar above that) clips off
+  // the top of the canvas.
+  const height = Math.ceil(maxB * (TILE_H / 2) + SPRITE_H + TILE_H * 4);
   const originX = Math.round(-minA * (TILE_W / 2) + SIDE_MARGIN);
-  const originY = UNIT_H + TILE_H;
+  const originY = SPRITE_H + TILE_H;
   return { width, height, originX, originY };
 }
 
@@ -73,24 +108,36 @@ function pen(ctx) {
     ctx.setLineDash([]);
   };
   const disc = (cx, cy, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); };
-  return { p, diamond, line, disc };
+  // ctx itself, for the two callers (drawUnit, drawProp) that need
+  // drawImage — the pixel-rect/diamond/line/disc helpers above cover
+  // everything procedural, but a real sprite has no procedural equivalent.
+  return { p, diamond, line, disc, ctx };
 }
 
+// Owner direction, 2026-08-31: "the grid should be transparently laid on
+// the backgrounds so that the players are in the courtyard." Each tile used
+// to be an opaque fill — the whole reason a CSS background photo behind
+// #stage (main.js's boot()) never showed through it. Now it's a thin tint
+// (rgba, not a hex fill) plus the outline, low enough that the photo reads
+// through but the grid itself — still the thing a player has to read to
+// plan a move — stays a distinct, countable set of diamonds.
 function drawFloor(g, layout, grid, fullCover, partialCover) {
   for (let gy = 0; gy < grid.rows; gy++) {
     for (let gx = 0; gx < grid.cols; gx++) {
       const { x, y } = toScreen(layout, gx, gy);
-      let fill = (gx + gy) % 2 === 0 ? PAL.FLOOR_A : PAL.FLOOR_B;
-      if (gy <= 1) fill = mixFloor(fill, PAL.FLOOR_FAR);
-      else if (gy >= grid.rows - 2) fill = mixFloor(fill, PAL.FLOOR_HOME);
-      g.diamond(x, y, TILE_W, TILE_H, fill, PAL.FLOOR_LINE);
+      let fill = (gx + gy) % 2 === 0 ? [20,22,28,0.30] : [20,22,28,0.16];
+      if (gy <= 1) fill = mixTint(fill, [58,47,44,0.22]);
+      else if (gy >= grid.rows - 2) fill = mixTint(fill, [42,52,58,0.22]);
+      g.diamond(x, y, TILE_W, TILE_H, rgba(fill), 'rgba(10,11,14,0.55)');
     }
   }
 }
-function mixFloor(a, b) {
-  const ch = (c, i) => parseInt(c.slice(1 + i * 2, 3 + i * 2), 16);
-  const v = i => Math.round(ch(a, i) * 0.75 + ch(b, i) * 0.25).toString(16).padStart(2, '0');
-  return `#${v(0)}${v(1)}${v(2)}`;
+function rgba([r, g, b, a]) { return `rgba(${r},${g},${b},${a})`; }
+// A 75/25 weighted blend on both colour AND alpha — the same ratio the old
+// opaque-hex mixFloor used for the far/home edge's warm/cold cast, kept
+// here so that read carries over even though tiles are translucent now.
+function mixTint(a, b) {
+  return a.map((v, i) => v * 0.75 + b[i] * 0.25);
 }
 
 function drawHighlights(g, layout, state) {
@@ -107,10 +154,24 @@ function drawHighlights(g, layout, state) {
   }
 }
 
-// Full cover: a squat closed box (dumpster/fence/parked car). Partial: a
-// shorter, lighter one (crate/curb/rubble) — visually distinct at a glance,
-// which is the one thing the pipeline doc asks of the two cover kinds.
-function drawProp(g, layout, gx, gy, tall) {
+// Full cover: 4 dense/tall props (crate-on-pallet, the park statue, the
+// bike rack, the notice board). Partial: 4 shorter/lighter ones (barrier,
+// bollard, bin, bench). A first pass split this 2/6 — with only 2 choices
+// for full cover, a 5-6-tile encounter was guaranteed to repeat the same
+// prop three times over ("the examples look ok, but have too many of the
+// same objects"). Picked deterministically off the tile's own coordinates
+// — same map every render, no per-frame flicker.
+const FULL_PROPS = ['crate', 'statue', 'bikerack', 'noticeboard'];
+const PARTIAL_PROPS = ['barrier', 'bollard', 'bin', 'bench'];
+function propArt(gx, gy, tall) {
+  const pool = tall ? FULL_PROPS : PARTIAL_PROPS;
+  return pool[(gx * 7 + gy * 13) % pool.length];
+}
+
+// Procedural placeholder — a squat closed box (tall=full cover) or a
+// shorter, lighter one (partial) — drawn only until the real prop image
+// (propArt) has loaded, or if it fails to.
+function drawPropFallback(g, layout, gx, gy, tall) {
   const { x, y } = toScreen(layout, gx, gy);
   const w = tall ? TILE_W * 0.62 : TILE_W * 0.5;
   const h = tall ? UNIT_H * 0.75 : UNIT_H * 0.36;
@@ -126,36 +187,76 @@ function drawProp(g, layout, gx, gy, tall) {
 }
 function ctxStroke(g, x0, y0, x1, y1, c) { g.line(x0, y0, x1, y1, c); }
 
+function drawProp(g, layout, gx, gy, tall) {
+  const { x, y } = toScreen(layout, gx, gy);
+  const img = getImage(`art-src/sprites/props/${propArt(gx, gy, tall)}.png`);
+  if (!img) { drawPropFallback(g, layout, gx, gy, tall); return; }
+  const targetH = tall ? 40 : 24;
+  const w = img.naturalWidth * (targetH / img.naturalHeight);
+  g.diamond(x, y, w * 0.7, w * 0.7 * (TILE_H / TILE_W), 'rgba(0,0,0,0.3)', null); // ground shadow
+  g.ctx.drawImage(img, x - w / 2, y - targetH, w, targetH);
+}
+
+// Owner direction, 2026-08-31: "start replacing player characters with
+// character model sprites." `unit.sprite` (units.json/enemies.json) is the
+// full-body casting-sheet plate — a different field from `portrait`, which
+// is the headshot the squad-row/selection-panel UI uses (a body reads fine
+// full-size on the board; it read as a blob shrunk to a 34px UI icon, which
+// is why that one got cropped to a head instead). Falls back to the
+// original procedural silhouette for any unit that has no sprite yet, or
+// for the one render call before an image finishes loading.
 function drawUnit(g, layout, unit, isSelected) {
   const { x, y } = toScreen(layout, unit.x, unit.y);
-  const isPlayer = unit.faction === 'player';
-  const body = isPlayer ? PAL.PLAYER : PAL.ENEMY;
-  const dark = isPlayer ? PAL.PLAYER_DK : PAL.ENEMY_DK;
   const feetY = y - 2;
-  const bodyH = UNIT_H * 0.6, headR = 3.4;
 
   if (isSelected) g.diamond(x, y, TILE_W - 2, TILE_H - 1, null, PAL.SELECT_EDGE, 2);
+  g.diamond(x, y, TILE_W * 0.4, TILE_H * 0.35, 'rgba(0,0,0,0.35)', null); // shadow
+  // A real character sprite carries its OWN colours (a jacket, not a faction
+  // paint job), so the cold-operator/warm-rival read the old flat silhouette
+  // gave for free is gone once the sprite draws over it — replaced with a
+  // faction-tinted ring at the feet, the one thing every unit still stands
+  // on regardless of which sprite (or the procedural fallback) is drawing
+  // above it. Same two house colours as everywhere else in this game.
+  const factionColor = unit.faction === 'player' ? PAL.PLAYER : PAL.ENEMY;
+  g.diamond(x, y, TILE_W * 0.52, TILE_H * 0.46, null, factionColor, 1.5);
 
-  // shadow
-  g.diamond(x, y, TILE_W * 0.4, TILE_H * 0.35, 'rgba(0,0,0,0.35)', null);
-  // legs/body — a flat trapezoid silhouette, Master-System-style hard edge
-  g.p(x - 4, feetY - bodyH, 8, bodyH, dark);
-  g.p(x - 3, feetY - bodyH - 1, 6, bodyH * 0.55, body);
-  // head
-  g.disc(x, feetY - bodyH - headR - 1, headR, body);
-  // role marker
-  if (unit.role === 'melee') g.line(x - 5, feetY - bodyH * 0.55, x + 5, feetY - bodyH * 0.85, PAL.INK);
-  else if (unit.role === 'ranged') g.disc(x + 5, feetY - bodyH * 0.65, 1.4, PAL.INK);
-  else g.p(x - 6, feetY - bodyH * 0.7, 12, 2, PAL.INK);
-  // outline
-  g.diamond(x, feetY - bodyH * 0.4, 9, bodyH + 5, null, PAL.INK);
+  const img = getImage(unit.sprite);
+  const topY = img ? drawUnitSprite(g, img, x, feetY) : drawUnitFallback(g, unit, x, feetY);
+
+  // role marker, same three glyphs either way — melee/ranged/control stay
+  // readable at a glance even once the sprite art tells you who it is
+  const markerY = topY + 8;
+  if (unit.role === 'melee') g.line(x - 5, markerY, x + 5, markerY - 3, PAL.INK, null, 2);
+  else if (unit.role === 'ranged') g.disc(x + 5, markerY, 1.6, PAL.INK);
+  else g.p(x - 6, markerY - 1, 12, 2, PAL.INK);
 
   // HP bar
   const hpW = 14, frac = Math.max(0, unit.hp / unit.maxHp);
-  const hpY = feetY - bodyH - headR * 2 - 6;
+  const hpY = topY - 6;
   g.p(x - hpW / 2, hpY, hpW, 2, PAL.HP_TRACK);
   const hpColor = frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD;
   g.p(x - hpW / 2, hpY, hpW * frac, 2, hpColor);
+}
+// Draws the real sprite, bottom-anchored at feetY; returns the y of its top
+// (both callers use this for the HP bar / role marker so their position
+// doesn't care which branch drew the body beneath them).
+function drawUnitSprite(g, img, x, feetY) {
+  const targetH = SPRITE_H;
+  const w = img.naturalWidth * (targetH / img.naturalHeight);
+  g.ctx.drawImage(img, x - w / 2, feetY - targetH, w, targetH);
+  return feetY - targetH;
+}
+function drawUnitFallback(g, unit, x, feetY) {
+  const isPlayer = unit.faction === 'player';
+  const body = isPlayer ? PAL.PLAYER : PAL.ENEMY;
+  const dark = isPlayer ? PAL.PLAYER_DK : PAL.ENEMY_DK;
+  const bodyH = UNIT_H * 0.6, headR = 3.4;
+  // legs/body — a flat trapezoid silhouette, Master-System-style hard edge
+  g.p(x - 4, feetY - bodyH, 8, bodyH, dark);
+  g.p(x - 3, feetY - bodyH - 1, 6, bodyH * 0.55, body);
+  g.disc(x, feetY - bodyH - headR - 1, headR, body); // head
+  g.diamond(x, feetY - bodyH * 0.4, 9, bodyH + 5, null, PAL.INK); // outline
+  return feetY - bodyH - headR * 2 - 2;
 }
 
 // The source-tile glyph names the weapon's archetype (GDD §4 requires the
@@ -223,10 +324,16 @@ function drawCursor(g, layout, state) {
 }
 
 export function render(canvas, state, layout) {
+  lastRenderArgs = { canvas, state, layout };
   const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false; // keep sprite scaling crisp, same as the tile art
   const g = pen(ctx);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  g.p(0, 0, canvas.width, canvas.height, PAL.VOID);
+  // No opaque fill here any more — owner direction, 2026-08-31: "the grid
+  // should be transparently laid on the backgrounds so that the players are
+  // in the courtyard." The canvas is transparent by default once nothing
+  // paints over it, which is what lets #stage's CSS background photo
+  // (main.js's boot()) show through drawFloor's now-translucent tiles.
 
   drawFloor(g, layout, state.grid, state.fullCover, state.partialCover);
   drawHighlights(g, layout, state);

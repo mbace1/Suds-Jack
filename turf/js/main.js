@@ -5,9 +5,9 @@ import { PAL } from './palette.js?v=3';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
-} from './combat.js?v=4';
-import { computeLayout, render } from './render.js?v=5';
-import { createInputHandler } from './input.js?v=6';
+} from './combat.js?v=5';
+import { computeLayout, render } from './render.js?v=6';
+import { createInputHandler } from './input.js?v=7';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
