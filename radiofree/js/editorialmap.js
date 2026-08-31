@@ -1,25 +1,31 @@
 // Radio Free Helsinki — editorial mapping from programme labels and specific stories to ambient scenes.
-// Story hints are preferences, never hard locks: the codec still avoids repeats and
-// keeps one escape scene available so repeated bulletins do not become mechanical.
+// Story hints are ordered location choices, never hard locks. Package-level anti-repeat
+// logic still keeps adjacent bulletins from becoming mechanical.
 
 export const SCENE_PREFERENCES = {
-  CITY: ['hakaniemi', 'centralstation', 'raintram', 'metro', 'katajanokka'],
-  GAMES: ['metro', 'rooftops', 'centralstation'],
+  CITY: ['hakaniemi', 'centralstation', 'mannerheimrain', 'kallionight', 'metro', 'katajanokka'],
+  GAMES: ['metro', 'rooftops', 'centralstation', 'kallionight'],
   TECH: ['rooftops', 'metro', 'hakaniemi', 'centralstation'],
-  SIGNAL: ['rooftops', 'metro', 'nightferry'],
-  CULTURE: ['centralstation', 'raintram', 'hakaniemi', 'katajanokka'],
-  'ODD WIRE': ['nightferry', 'katajanokka', 'rooftops'],
-  LEAD: ['centralstation', 'hakaniemi', 'raintram', 'katajanokka', 'rooftops', 'metro', 'nightferry'],
+  SIGNAL: ['rooftops', 'metro', 'kallionight'],
+  CULTURE: ['centralstation', 'kallionight', 'mannerheimrain', 'hakaniemi', 'katajanokka'],
+  'ODD WIRE': ['kallionight', 'centralstation', 'mannerheimrain', 'katajanokka', 'rooftops'],
+  LEAD: ['centralstation', 'hakaniemi', 'mannerheimrain', 'kallionight', 'katajanokka', 'rooftops', 'metro'],
 };
 
 export const STORY_SCENE_HINTS = {
-  'drone-handshake': ['rooftops', 'centralstation', 'metro'],
+  'drone-handshake': ['rooftops', 'katajanokka', 'centralstation'],
   'ai-fear-half': ['rooftops', 'metro', 'hakaniemi'],
-  'hub-walkout': ['hakaniemi', 'centralstation', 'raintram'],
-  'robot-pavement': ['hakaniemi', 'raintram', 'centralstation'],
-  'damp-weekend': ['raintram', 'hakaniemi', 'katajanokka'],
-  'song-window': ['centralstation', 'rooftops', 'hakaniemi'],
-  'aurora-cloud': ['nightferry', 'katajanokka', 'rooftops'],
+  'hub-walkout': ['hakaniemi', 'centralstation', 'mannerheimrain'],
+  'robot-pavement': ['hakaniemi', 'mannerheimrain', 'centralstation'],
+  'damp-weekend': ['mannerheimrain', 'kallionight', 'hakaniemi'],
+  'song-window': ['centralstation', 'kallionight', 'rooftops'],
+  'aurora-cloud': ['rooftops', 'katajanokka', 'kallionight'],
+  'baby-index': ['centralstation', 'hakaniemi', 'rooftops'],
+  'sleep-career': ['kallionight', 'metro', 'rooftops'],
+  'robot-priority': ['hakaniemi', 'mannerheimrain', 'centralstation'],
+  'queue-economy': ['centralstation', 'mannerheimrain', 'kallionight'],
+  'seasonal-tourist': ['katajanokka', 'centralstation', 'rooftops'],
+  'ad-life': ['rooftops', 'metro', 'kallionight'],
 };
 
 export function preferredScenes(story, available = []) {
@@ -27,8 +33,6 @@ export function preferredScenes(story, available = []) {
   const base = storyHints || SCENE_PREFERENCES[story?.label] || available;
   const preferred = base.filter(k => available.includes(k));
   if (!preferred.length) return [...available];
-
-  // One non-preferred escape hatch keeps direction from becoming a hard loop.
   const fallback = available.find(k => !preferred.includes(k));
   return fallback ? [...preferred, fallback] : preferred;
 }
