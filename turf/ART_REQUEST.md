@@ -170,6 +170,8 @@ into this document rather than left as a one-off conversation:
   what actually cuts clean through `fit`'s palette-snap (§5) rather than
   muddying into banding; a future batch should say so explicitly in the
   prompt rather than assume the style block alone holds the line.
+  **Wrong call, corrected in §2.4**: the richer shading wasn't the problem
+  and flattening it wasn't the fix. §2.4 explains what was actually wrong.
 
 ## 2.2 Multi-frame animation sheets: tested, not just theorised (2026-08-28)
 
@@ -262,6 +264,49 @@ shotgun archetype that first drew a knife; a documented prompt/bytes
 mismatch caught by checking rather than assumed fine) are in
 `turf/art-src/sprites/README.md`.
 
+## 2.4 The delivered plates were low-fidelity because of §5, not §2 (2026-08-31)
+
+The owner looked at the delivered contact sheet next to the real reference
+and called it "way too messy and low detail," and asked whether a setting
+in this document was asking for that. **Yes — §5 step 4, and it wasn't
+subtle.** The raw generation for `blade-plate` is a genuinely good
+832×1248 illustration, close to reference quality as generated (see
+`turf/art-src/sprites/README.md` for the side-by-side). §5 then downsampled
+it to **32×40** and force-snapped every pixel to a **32-colour** palette —
+a combined ~99.85% pixel-budget cut plus a hard palette clamp. That is the
+right pipeline for genuine retro pixel art. It is the wrong pipeline for
+what these references actually are: measured directly (`palettecount.cjs`
+over a 55×55 jacket patch), **2574 distinct colours in 3025 pixels** —
+smooth anti-aliased digital shading with a pixel-grid *aesthetic*, not a
+quantised retro palette. §2.1 saw the same mismatch three days earlier,
+correctly named the shading as "richer than the two-step rule," and then
+drew the wrong conclusion from it — that the *art* should flatten to fit
+the pipeline, rather than that the *pipeline* was the wrong tool for this
+art. It wasn't a generation problem either time.
+
+**The fix needed no new tooling.** `kindling/tools/cut.mjs fit` already
+takes `--no-quantise` for exactly this case — its own comment names
+Piritori hitting the identical mismatch first ("correct for illustration,
+where snapping an ink-line painting to fourteen flats destroys it") — and
+`check` already takes `--illustration` to stop expecting a 1:1 pixel-art
+round trip. §5 below is rewritten to use both. Re-cut (not regenerated —
+the existing raw plates were already good) at **192×288**, colours kept as
+generated: 6/6 pass `check --illustration --colours 12000` (measured
+8357–11975 colours per plate), and the result reads clean at both full
+size and shrunk to roughly in-game scale.
+
+`turf/art-src/palette.json`'s thirty-two colours (§2.1) aren't wrong or
+wasted — they stay the art spec for anything in this game that *is* meant
+to be classic quantised pixel art (tiles, UI, drops). They're simply no
+longer what the character plates snap to.
+
+**One honest new cost.** §6's animation guide assumed the remaining
+frames (Move/Attack/Hit/Death) would be a hand pass in Aseprite tracing a
+flat, ≤32-colour key pose — fast, mechanical work. Tracing a ~9,000-colour
+illustration plate at 192×288 to matching fidelity is real character art,
+not palette-matching, and is a bigger per-frame ask than §6 currently
+states. Not resolved here — flagged for whoever scopes that pass next.
+
 ---
 
 ## 3. Colours and roles, read off the game's own numbers
@@ -336,27 +381,27 @@ asset in this repo already goes through.
 3. **Key.** `node kindling/tools/cut.mjs key <in>.png <out>-keyed.png` — the
    magenta becomes real alpha, despilled.
 4. **Fit.** `node kindling/tools/cut.mjs fit <out>-keyed.png <out>-fit.png
-   32x40 --palette turf/art-src/palette.json` — downsamples to the native
-   sprite grid and snaps every opaque pixel to the thirty-two colours in
-   `turf/art-src/palette.json`, never to the full UI/terrain `PAL`. **32×40
-   is a proposal, not a locked number**: the current code-drawn placeholder
-   (`render.js`'s `drawUnit`) reads about 20-24px tall on the internal
-   canvas, so a 32×40 sprite is deliberately a bit roomier — real art
-   usually wants more headroom than a flat-fill placeholder does — but
-   confirm it once one plate is actually cut and looked at next to the
-   board, before fitting the other five to match.
-5. **Check.** `node kindling/tools/cut.mjs check <out>-fit.png` — **no
-   `--cell` flag on a single already-cropped sprite.** `--cell N` asks "does
-   this tile into a whole number of square N×N cells," which is a question
-   for a multi-sprite SHEET, not one 32×40 plate; run with `--cell 32` it
-   fails every 32×40 fit on `"32x40 is not a whole number of 32px cells"`
-   alone, whatever the actual art looks like (confirmed against all six
-   Milestone 1 plates — `--cell 32` FAILs 0/6, no flag PASSes 6/6, same
-   files). `check` confirms binary alpha (no semi-transparent fringe left
-   over) and a colour count that actually landed on the **thirty-two**-colour
-   art palette (§2.1 doubled it from the original sixteen), not just a
-   shrunk illustration that happens to be small. A result that fails this is
-   not real pixel art yet, whatever it looks like at a glance.
+   192x288 --no-quantise` — downsamples with area averaging (not a hard
+   palette snap) and forces binary alpha. **§2.4 explains why this changed
+   from `32x40 --palette turf/art-src/palette.json`**: this art is a
+   thousands-of-colours illustration with a pixel-grid aesthetic, not
+   classic quantised pixel art, and forcing it through a 32×40/32-colour
+   crush is what made the first delivery read as "messy and low detail."
+   192×288 is 2:3 at 6× the linear size of the original 32×40 target —
+   confirmed against a real fit (§2.4) to still read clean shrunk to
+   roughly in-game scale, not just picked as a round number.
+5. **Check.** `node kindling/tools/cut.mjs check <out>-fit.png
+   --illustration --colours 12000` — **no `--cell` flag on a single
+   already-cropped sprite** (that question is for a multi-sprite SHEET).
+   `--illustration` turns off the 1:1-pixel-art round-trip test (this art
+   is never meant to survive a half-scale-and-back unchanged) and raises
+   the default colour ceiling from 64 to 4096; `--colours 12000` raises it
+   again to match what this art actually measures at (8357–11975 per plate
+   across the six Milestone 1 archetypes — still capped, so a plate that
+   comes back as a near-photograph rather than an illustration still
+   fails). What still fails regardless: any semi-transparent pixel (alpha
+   must be binary) and a non-whole `--cell` count if that flag is used at
+   all.
 6. **Hand off.** The checked plate is the *key pose* per archetype — the
    seed for whatever the rest of §6's frame list needs, drawn by hand in
    Aseprite against it for consistent proportions and palette. This
@@ -393,10 +438,13 @@ no LoRA, no pose conditioning) — asking for six sheets of six frames each is
 asking for thirty-six chances for the model to drift off-model. The reliable
 ask is one strong key-pose plate per archetype (§4); the remaining 3–6
 frames per archetype are a **hand pass in Aseprite**, traced against that
-plate for proportions and drawn from `turf/art-src/palette.json`'s thirty-two
-colours directly, which is a bounded, honest amount of manual work (18–36
-frames total across all six archetypes) rather than a pipeline claim this
-tooling can't actually back up.
+plate for proportions (18–36 frames total across all six archetypes)
+rather than a pipeline claim this tooling can't actually back up. **What
+that hand pass actually means changed at §2.4**: the key-pose plates are
+now full-colour illustration (192×288, thousands of colours), not a flat
+≤32-colour fill an artist can palette-match mechanically — tracing to
+matching fidelity is real character art, a bigger per-frame ask than this
+paragraph originally scoped, and not yet resolved.
 
 **If a grid sheet is attempted anyway** (a per-archetype experiment, not
 this request's default): lay every pose out as equal-size square cells on

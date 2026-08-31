@@ -1,10 +1,29 @@
-# TURF sprite plates — v2, matching the owner's real reference sheets
+# TURF sprite plates — v3, cut for illustration fidelity instead of retro pixel art
 
-**Supersedes the v1 (MST flat-2-step) delivery** in this same directory's git
-history. The original `turfGrim` style block asked for Metal Slug Tactics'
-flat-2-shade-step technique because that was ART_REQUEST.md §2's stated
-brief — but the owner's own reference sheets (`turf/references/`: a full
-~20-character casting sheet, two detail crops of it, and a front/back
+**Supersedes v2 in this same directory's git history — same generated
+bytes, a different cut.** v2 fixed *what* the art looked like (matching the
+owner's reference technique instead of Metal Slug Tactics' flat 2-step).
+The owner then looked at v2's delivered contact sheet next to the real
+reference and called it "way too messy and low detail." The generation
+wasn't the problem a second time either: the raw `blade-plate` generation
+is a genuinely good 832×1248 illustration, close to reference quality as
+generated. What was actually wrong was `ART_REQUEST.md` §5 step 4 —
+downsampling that to **32×40** and force-snapping every pixel to a
+**32-colour** palette, a combined ~99.85%-of-pixels-plus-hard-palette-clamp
+cut built for genuine retro pixel art, applied to reference material that
+measures (`palettecount.cjs` over a 55×55 patch of the owner's own
+reference) at **2574 distinct colours in 3025 pixels** — smooth
+illustration shading with a pixel-grid look, not a quantised palette. Full
+reasoning is in `ART_REQUEST.md` §2.4. v3 re-cuts the same v2 raw
+generations — nothing was regenerated — at 192×288 with `cut.mjs`'s own
+`--no-quantise` flag (built for exactly this mismatch; its comment names
+Piritori hitting the same problem first) and checks with `--illustration`.
+
+**Supersedes v1 (MST flat-2-step) further back** in this same directory's
+git history. The original `turfGrim` style block asked for Metal Slug
+Tactics' flat-2-shade-step technique because that was ART_REQUEST.md §2's
+stated brief — but the owner's own reference sheets (`turf/references/`: a
+full ~20-character casting sheet, two detail crops of it, and a front/back
 run-cycle sheet for one character) had never actually been looked at by
 whoever wrote that brief. They show something different: 3-4 tonal shading
 bands per surface with real material detail (quilting, distress texture,
@@ -37,14 +56,20 @@ only the reference's TECHNIQUE, never its specific character/pose/
 background — worth reading if editing that block, because a reference
 attached without that clause risks the model copying identity, not style.
 
-Then the standard cut pipeline, unchanged:
+Then the cut pipeline — **changed at v3**, see the top of this file and
+ART_REQUEST.md §2.4/§5 for why:
 
 ```
 node kindling/tools/cut.mjs key   <raw>.png       <name>-keyed.png
-node kindling/tools/cut.mjs fit   <name>-keyed.png <name>-fit.png  32x40 --palette turf/art-src/palette.json
-node kindling/tools/cut.mjs check <name>-fit.png
+node kindling/tools/cut.mjs fit   <name>-keyed.png <name>-fit.png  192x288 --no-quantise
+node kindling/tools/cut.mjs check <name>-fit.png --illustration --colours 12000
 node scripts/assets.mjs index    # after manually placing raw output at its content-hashed name
 ```
+
+v1/v2 used `fit ... 32x40 --palette turf/art-src/palette.json` and a bare
+`check` (implying the 64-colour, 1:1-pixel-art-round-trip default) — that
+combination is still correct for genuine retro pixel art elsewhere in this
+repo, just not for these plates.
 
 ## Two real defects, both resolved before this was called done
 
@@ -78,7 +103,24 @@ after `key`, not by eye: despeckle removes every one of them cleanly —
 `semiSampled: 0` and clear margins on all four sides, all six files, both
 batches. No regeneration was needed for this on its own.
 
-## check results — 6/6 usable
+## check results — 6/6 usable (v3, `--illustration --colours 12000`)
+
+```
+  ok  blade-plate          192x288   9124 colours  13567px ink
+  ok  niner-plate          192x288  11272 colours  19229px ink
+  ok  wrench-plate         192x288   9426 colours  13799px ink
+  ok  grunt-blunt-plate    192x288   8357 colours  11696px ink
+  ok  grunt-handgun-plate  192x288  11975 colours  22895px ink
+  ok  grunt-shotgun-plate  192x288  10300 colours  15013px ink
+```
+
+All under the 12,000-colour ceiling, zero semi-transparent pixels. File
+sizes 35-59 KB each (`_contact-sheet.png` shows all six at full size and
+shrunk to roughly in-game scale — the silhouette and faction trim both
+still read at the small size, which was the actual open question, not just
+"does it look good big").
+
+For contrast, the v2 numbers this replaces:
 
 ```
   ok  blade-plate-fit          32x40  22 colours  317px ink
@@ -89,26 +131,36 @@ batches. No regeneration was needed for this on its own.
   ok  wrench-plate-fit         32x40  24 colours  321px ink
 ```
 
-All under the 64-colour ceiling (20-24 actual, inside the 32-colour art
-palette), zero semi-transparent pixels.
+Both passed their own gate — the gate wasn't wrong, it was checking the
+right thing for the wrong pipeline. 13567px of ink vs 317px is the actual
+size of the cut this revision undoes.
 
 ## Still true, unchanged by this revision
 
 - `--cell` should NOT be passed to `check` for a single already-cropped
   sprite — it asks whether an image tiles into square N×N cells, a question
-  for a multi-sprite sheet, not one 32×40 plate. Fixed in ART_REQUEST.md §5
-  step 5.
+  for a multi-sprite sheet, not one 192×288 plate. Fixed in ART_REQUEST.md
+  §5 step 5.
 - **Faction trim reads clearly on four of six, subtly on `grunt-blunt-plate`**
   — the rust-orange patch and hood lining are there, but the jacket itself
   is a cool dark tone that competes with the warm accent more than the
   other five. Not a blocker (the accent is present, and re-rolling six more
   times chasing perfect colour balance isn't proportionate), but worth a
   note for whoever picks the next batch of archetypes.
-- **Silhouette at true scale is still tight.** At native 1:1 (no upscaling)
-  the six read as distinct poses, but the faction trim colour is a small
-  enough area at 32×40 that it barely registers. Same limitation the v1
-  batch had, not a regression from the style change — worth a look next to
-  the real board (§5 step 4's own caveat) before this size is locked in.
 - Per ART_REQUEST §7: no runtime sprite integration, no environment plate,
   no boss/elite variant, no multi-frame animation sheet — still all
   deliberately out of scope here.
+- Per ART_REQUEST §2.4: the Aseprite hand pass for Move/Attack/Hit/Death
+  frames (§6) is now tracing real illustration detail at 192×288, not
+  palette-matching a flat fill — a bigger per-frame ask than §6 originally
+  scoped, and not resolved by this revision.
+
+## Resolved by this revision
+
+- **Silhouette at true scale was tight.** At the old 32×40 native size the
+  six read as distinct poses but the faction trim was too small an area to
+  register, and the whole plate read as a blur once actually looked at
+  next to the reference. §5 step 4's own caveat asked to confirm 32×40
+  against the real board before locking it in — that confirmation is what
+  surfaced this, and the fix was to stop cutting the detail out rather
+  than to pick a different small number.
