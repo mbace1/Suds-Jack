@@ -184,11 +184,28 @@ travels across facing.
   `_ref-gunner*.png` files were replaced with the tighter crop too, so any
   future re-generation off this reference starts clean.
 - **Attack windup and release read quite similar to each other** for both
-  characters — both show the weapon extended and aimed, with only a subtle
-  difference in arm tension. A real two-beat read (clear draw-back, then
-  clear extension/impact) would need another prompt pass; not attempted
-  here since the pilot's job was proving identity-holding, not perfecting
-  pose staging.
+  characters — both showed the weapon extended and aimed, with only a
+  subtle difference in arm tension. **Fixed 2026-08-31**: the root cause
+  wasn't the adjective ("tense" vs "braced against recoil") but that both
+  prompts described the SAME end pose — the model has nothing to hold onto
+  when only tension language differs. Rewrote both prompts per character
+  to describe geometrically opposite silhouettes instead: gunner windup is
+  now a low fast-draw coil (guns pulled tight to the ribs, elbows pinned
+  in, deep knee bend) against release's full extension (arms locked
+  straight out, front knee driven forward, back leg braced); leopard
+  windup is a tall overhead knife raise against release's low forward
+  lunge (knife driven down and out at the bottom of the arc). Explicit
+  "exaggerate past what feels natural — a subtle difference reads as no
+  difference at sprite scale" language added to both prompts; leopard's
+  original windup/release language already described opposite geometry on
+  paper (cocked-back vs extended-down) and still rendered nearly
+  identical, so the geometry has to be stated as an exaggerated,
+  unambiguous silhouette, not just named. All 8 (2 poses × 2 characters ×
+  2 facings) regenerated via `gen-with-ref.mjs` against the same
+  `_ref-*.png` crops, 8/8 pass `check --illustration`; `gunner-attack-
+  windup-back` needed one retry (the first pass under-delivered the crouch
+  the front-facing version got on the first try) — kept the stronger of
+  the two.
 - **Death-fall reads as a dynamic mid-air action pose more than "losing
   balance"** on both characters — usable as an impact/stagger frame, less
   convincing as the specific "falling backward" the prompt asked for.

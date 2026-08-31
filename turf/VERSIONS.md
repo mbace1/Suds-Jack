@@ -8,6 +8,49 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v20 — 2026-09-02
+**The cast pilot's attack pose, regenerated for a real two-beat read.**
+Originally authored on `claude/turf-cast-attack-fix` as ITS v13; brought
+here and renumbered because this branch had independently created a
+different v13 and built v14-v19 on top of it. Two lineages reaching the
+same number is the exact trap `CLAUDE.md` documents for Eeri — "never
+reuse a version number" — and the fix is one branch, not two claims on
+one integer. The original branch is superseded by this entry.
+
+- Root cause (theirs, and worth keeping): both prompts described the SAME
+  end pose with only tension wording differing ("tense and set" vs "braced
+  hard against recoil") — language an image model cannot turn into a
+  distinct silhouette. Confirmed on both characters, including leopard,
+  whose prompt already named opposite geometry and still rendered nearly
+  identical.
+- Fix: both prompts rewritten per character as geometrically opposite
+  silhouettes with explicit "exaggerate past what feels natural" language.
+  Gunner: a low fast-draw coil (guns tight to the ribs, elbows pinned,
+  deep knee bend) against full extension (arms locked out, front knee
+  driven forward). Leopard: a tall overhead knife raise against a low
+  forward lunge. All 8 regenerated (2 poses × 2 characters × 2 facings)
+  through `gen-with-ref.mjs` against the same `_ref-*.png` identity crops.
+- **Verified rather than taken on trust**, using this branch's own
+  `turf/tools/spritecheck.py pairs` — which exists to answer exactly this
+  question. Silhouette IoU between windup and release, origin-normalised,
+  before and after:
+
+  ```
+              windup <-> release      legs only
+    gunner    0.812  ->  0.419       0.723  ->  0.344
+    leopard   0.600  ->  0.532       0.578  ->  0.564
+  ```
+
+  Gunner's pair is now genuinely two drawings; leopard's improved but
+  much less, and at 0.53 it is still the weaker of the two. Worth knowing
+  before anyone calls the pose work finished — the claim was true, but not
+  equally true for both characters.
+- These frames are not yet played by anything: `anim.js` maps a `hit` and
+  a `death` clip but the roster's default squad has no cast frames, and
+  the attack clip only runs for gunner/leopard. The art is correct and
+  waiting on the pipeline, which is the same state the rest of the cast
+  pilot is in.
+
 ## v19 — 2026-09-02
 **Enemy behaviours — GDD §10's other open question ("enemy archetypes and
 how 'weaker but numerous' translates to actual stat design").** Eighteen

@@ -1378,14 +1378,17 @@ edges, centred on frame — no text, no logos, no UI.`,
     style: 'turfCastPose',
     aspect: '2:3',
     tags: ['cast', 'attack'],
-    prompt: `${CAST_GUNNER}, in an AKIMBO dual-pistol stance like a classic
-action-movie double-gun pose (John Wick / Max Payne style) — a pistol held
-in EACH raised fist, left and right arms both out and aimed toward the
-viewer's right, elbows apart, the two guns spaced well apart from each
-other rather than side by side. The windup beat right before firing, tense
-and set rather than relaxed. Whole body clear of the frame edges, centred
-on frame — no text, no logos, no UI, no muzzle flash, no flame, no light
-burst of any kind.`,
+    prompt: `${CAST_GUNNER}, in a fast-draw COIL — both pistols pulled back
+tight against the ribs at chest height, elbows sharply bent and pinned
+behind the body (NOT out in front, NOT raised, NOT aimed yet), torso
+twisted and hunched down and back like a spring wound up, knees bent low
+in a ready crouch, weight sunk onto the back foot. This is the split
+second BEFORE the arms punch outward — a compact, low, coiled silhouette,
+the opposite shape of the release pose. Exaggerate the crouch and the
+pulled-in elbows past what feels natural: a subtle difference here reads
+as no difference at all at sprite scale. Whole body clear of the frame
+edges, centred on frame — no text, no logos, no UI, no muzzle flash, no
+flame, no light burst of any kind.`,
   },
   {
     id: 'turf/cast-gunner-attack-release',
@@ -1395,15 +1398,17 @@ burst of any kind.`,
     aspect: '2:3',
     tags: ['cast', 'attack'],
     prompt: `${CAST_GUNNER}, in an AKIMBO dual-pistol stance like a classic
-action-movie double-gun pose (John Wick / Max Payne style) — a pistol held
-in EACH raised fist, left and right arms both out and firing toward the
-viewer's right, elbows apart, the two guns spaced well apart from each
-other rather than side by side, arms braced hard against the recoil — the
-release/impact beat of the same akimbo stance as the windup pose. Whole
-body clear of the frame edges, centred on frame — no text, no logos, no UI.
-Draw the pistols' slides and grips only: no muzzle flash, no flame, no
-light burst, no smoke of any kind anywhere in the image, even at the
-barrel.`,
+action-movie double-gun pose (John Wick / Max Payne style) — both arms
+punched straight out to FULL extension toward the viewer's right, elbows
+LOCKED straight (not bent), a pistol at the end of each fist, the two guns
+spaced well apart from each other rather than side by side. Torso pitched
+aggressively forward over a deeply bent front knee, back leg braced
+straight behind — the whole body's weight thrown forward into the shot,
+tall and extended rather than low and coiled: the opposite silhouette of
+the windup pose, not a subtler version of it. Whole body clear of the
+frame edges, centred on frame — no text, no logos, no UI. Draw the
+pistols' slides and grips only: no muzzle flash, no flame, no light burst,
+no smoke of any kind anywhere in the image, even at the barrel.`,
   },
   {
     id: 'turf/cast-gunner-hit',
@@ -1470,11 +1475,16 @@ clear of the frame edges, centred on frame — no text, no logos, no UI.`,
     style: 'turfCastPose',
     aspect: '2:3',
     tags: ['cast', 'attack'],
-    prompt: `${CAST_LEOPARD}, knife arm drawn back and cocked at shoulder
-height, weight coiled onto the back foot, free hand out for balance — the
-windup beat right before a downward stabbing strike. Whole body and the
-knife clear of the frame edges, centred on frame — no text, no logos, no
-UI.`,
+    prompt: `${CAST_LEOPARD}, knife arm raised HIGH OVERHEAD, gripped
+blade-down in a raised fist well above the head (NOT at shoulder height,
+NOT out in front) — the free arm pulled back behind the body for
+counter-balance, torso twisted hard away from the strike direction, weight
+sunk low onto a deeply bent back knee, front foot light and forward. A
+tall, wound-up, overhead silhouette — the opposite shape of the release
+pose's low forward lunge. Exaggerate the overhead reach and the twist past
+what feels natural: a subtle difference here reads as no difference at
+all at sprite scale. Whole body and the knife clear of the frame edges,
+centred on frame — no text, no logos, no UI.`,
   },
   {
     id: 'turf/cast-leopard-attack-release',
@@ -1483,11 +1493,14 @@ UI.`,
     style: 'turfCastPose',
     aspect: '2:3',
     tags: ['cast', 'attack'],
-    prompt: `${CAST_LEOPARD}, knife arm fully extended in a downward
-stabbing strike, weight driven forward onto the front foot — the
-release/impact beat of the same strike as the windup pose. Whole body and
-the knife clear of the frame edges, centred on frame — no text, no logos,
-no UI, no blood baked into the art.`,
+    prompt: `${CAST_LEOPARD}, in a full forward LUNGE — front knee driven
+deep and low, back leg extended straight behind, torso pitched forward and
+down over the front knee, knife arm fully extended DOWN and OUT at the
+bottom of a stabbing arc (not overhead, not cocked). A low, extended,
+driving-forward silhouette — the opposite shape of the windup pose's tall
+overhead coil, not a subtler version of it. Whole body and the knife clear
+of the frame edges, centred on frame — no text, no logos, no UI, no blood
+baked into the art.`,
   },
   {
     id: 'turf/cast-leopard-hit',
@@ -1572,13 +1585,17 @@ text, no logos, no UI.`,
     aspect: '2:3',
     tags: ['cast', 'attack', 'back'],
     prompt: `${CAST_GUNNER}, seen from BEHIND — the reference image shows
-their back, not their face; match that same rear viewing angle. In an
-AKIMBO dual-pistol stance like a classic action-movie double-gun pose
-(John Wick / Max Payne style) — a pistol held in EACH raised fist, both
-arms out and aimed forward away from the viewer, elbows apart — the
-windup beat right before firing, tense and set rather than relaxed. Whole
-body clear of the frame edges, centred on frame — no text, no logos, no
-UI, no muzzle flash, no flame, no light burst of any kind.`,
+their back, not their face; match that same rear viewing angle. In a
+fast-draw COIL — both pistols pulled back tight against the ribs at chest
+height, elbows sharply bent and pinned in close to the body (NOT out in
+front, NOT raised, NOT aimed yet), torso twisted and hunched down like a
+spring wound up, knees bent low in a ready crouch, weight sunk onto the
+back foot. This is the split second BEFORE the arms punch outward — a
+compact, low, coiled silhouette, the opposite shape of the release pose.
+Exaggerate the crouch and the pulled-in elbows past what feels natural: a
+subtle difference here reads as no difference at all at sprite scale.
+Whole body clear of the frame edges, centred on frame — no text, no logos,
+no UI, no muzzle flash, no flame, no light burst of any kind.`,
   },
   {
     id: 'turf/cast-gunner-attack-release-back',
@@ -1590,13 +1607,15 @@ UI, no muzzle flash, no flame, no light burst of any kind.`,
     prompt: `${CAST_GUNNER}, seen from BEHIND — the reference image shows
 their back, not their face; match that same rear viewing angle. In an
 AKIMBO dual-pistol stance like a classic action-movie double-gun pose
-(John Wick / Max Payne style) — a pistol held in EACH raised fist, both
-arms out and firing forward away from the viewer, elbows apart, braced
-hard against the recoil — the release/impact beat of the same akimbo
-stance as the windup pose. Whole body clear of the frame edges, centred on
-frame — no text, no logos, no UI. Draw the pistols' slides and grips only:
-no muzzle flash, no flame, no light burst, no smoke of any kind anywhere
-in the image.`,
+(John Wick / Max Payne style) — both arms punched straight out to FULL
+extension away from the viewer, elbows LOCKED straight (not bent), a
+pistol at the end of each fist. Torso pitched aggressively forward over a
+deeply bent front knee, back leg braced straight behind — the whole body's
+weight thrown forward into the shot, tall and extended rather than low and
+coiled: the opposite silhouette of the windup pose, not a subtler version
+of it. Whole body clear of the frame edges, centred on frame — no text, no
+logos, no UI. Draw the pistols' slides and grips only: no muzzle flash, no
+flame, no light burst, no smoke of any kind anywhere in the image.`,
   },
   {
     id: 'turf/cast-gunner-hit-back',
@@ -1669,10 +1688,15 @@ on frame — no text, no logos, no UI.`,
     tags: ['cast', 'attack', 'back'],
     prompt: `${CAST_LEOPARD}, seen from BEHIND — the reference image shows
 her back, not her face; match that same rear viewing angle. Knife arm
-drawn back and cocked at shoulder height, weight coiled onto the back
-foot, free hand out for balance — the windup beat right before a downward
-stabbing strike. Whole body and the knife clear of the frame edges,
-centred on frame — no text, no logos, no UI.`,
+raised HIGH OVERHEAD, gripped blade-down in a raised fist well above the
+head (NOT at shoulder height, NOT out in front) — the free arm pulled back
+behind the body for counter-balance, torso twisted hard away from the
+strike direction, weight sunk low onto a deeply bent back knee, front foot
+light and forward. A tall, wound-up, overhead silhouette — the opposite
+shape of the release pose's low forward lunge. Exaggerate the overhead
+reach and the twist past what feels natural: a subtle difference here
+reads as no difference at all at sprite scale. Whole body and the knife
+clear of the frame edges, centred on frame — no text, no logos, no UI.`,
   },
   {
     id: 'turf/cast-leopard-attack-release-back',
@@ -1682,11 +1706,14 @@ centred on frame — no text, no logos, no UI.`,
     aspect: '2:3',
     tags: ['cast', 'attack', 'back'],
     prompt: `${CAST_LEOPARD}, seen from BEHIND — the reference image shows
-her back, not her face; match that same rear viewing angle. Knife arm
-fully extended in a downward stabbing strike, weight driven forward onto
-the front foot — the release/impact beat of the same strike as the windup
-pose. Whole body and the knife clear of the frame edges, centred on frame
-— no text, no logos, no UI, no blood baked into the art.`,
+her back, not her face; match that same rear viewing angle. In a full
+forward LUNGE — front knee driven deep and low, back leg extended straight
+behind, torso pitched forward and down over the front knee, knife arm
+fully extended DOWN and OUT at the bottom of a stabbing arc (not overhead,
+not cocked). A low, extended, driving-forward silhouette — the opposite
+shape of the windup pose's tall overhead coil, not a subtler version of
+it. Whole body and the knife clear of the frame edges, centred on frame —
+no text, no logos, no UI, no blood baked into the art.`,
   },
   {
     id: 'turf/cast-leopard-hit-back',
