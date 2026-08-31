@@ -111,6 +111,48 @@
       "use": "prop",
       "game": "neon-ronin",
       "hash": "ac92a74e"
+    },
+    "turf/blade-plate": {
+      "file": "2d/turf-blade-plate.cc8f80b2.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "cc8f80b2"
+    },
+    "turf/niner-plate": {
+      "file": "2d/turf-niner-plate.dc965c4c.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "dc965c4c"
+    },
+    "turf/wrench-plate": {
+      "file": "2d/turf-wrench-plate.da7a4623.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "da7a4623"
+    },
+    "turf/grunt-blunt-plate": {
+      "file": "2d/turf-grunt-blunt-plate.93cfad9f.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "93cfad9f"
+    },
+    "turf/grunt-handgun-plate": {
+      "file": "2d/turf-grunt-handgun-plate.77d2b814.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "77d2b814"
+    },
+    "turf/grunt-shotgun-plate": {
+      "file": "2d/turf-grunt-shotgun-plate.89d35fd8.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "89d35fd8"
     }
   }
 }

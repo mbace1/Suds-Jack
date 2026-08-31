@@ -331,9 +331,16 @@ asset in this repo already goes through.
    usually wants more headroom than a flat-fill placeholder does — but
    confirm it once one plate is actually cut and looked at next to the
    board, before fitting the other five to match.
-5. **Check.** `node kindling/tools/cut.mjs check <out>-fit.png --cell 32` —
-   confirms binary alpha (no semi-transparent fringe left over) and a colour
-   count that actually landed on the sixteen-colour art palette, not just a
+5. **Check.** `node kindling/tools/cut.mjs check <out>-fit.png` — **no
+   `--cell` flag on a single already-cropped sprite.** `--cell N` asks "does
+   this tile into a whole number of square N×N cells," which is a question
+   for a multi-sprite SHEET, not one 32×40 plate; run with `--cell 32` it
+   fails every 32×40 fit on `"32x40 is not a whole number of 32px cells"`
+   alone, whatever the actual art looks like (confirmed against all six
+   Milestone 1 plates — `--cell 32` FAILs 0/6, no flag PASSes 6/6, same
+   files). `check` confirms binary alpha (no semi-transparent fringe left
+   over) and a colour count that actually landed on the **thirty-two**-colour
+   art palette (§2.1 doubled it from the original sixteen), not just a
    shrunk illustration that happens to be small. A result that fails this is
    not real pixel art yet, whatever it looks like at a glance.
 6. **Hand off.** The checked plate is the *key pose* per archetype — the
