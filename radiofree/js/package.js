@@ -1,6 +1,6 @@
 // Radio Free Helsinki — compact animated bulletin package.
-// The live feed now uses the same low-res Helsinki scene system as the art pass.
-// Every bulletin opens on moving city art; studio/graphic cuts are brief accents.
+// Helsinki footage carries the bulletin. Studio cuts are brief interruptions,
+// and adjacent stories avoid reusing the same city scene where possible.
 
 import { Anchor } from './anchor.js?v=37';
 import { Graphic } from './graphic.js?v=37';
@@ -9,12 +9,24 @@ import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=54';
 import { preferredScenes } from './editorialmap.js?v=52';
 
 const BEATS = [
-  { shot: 'broll', len: 7.0 },
-  { shot: 'anchor', len: 2.6 },
-  { shot: 'broll', len: 6.0 },
-  { shot: 'graphic', len: 2.4 },
+  { shot: 'broll', len: 9.5 },
+  { shot: 'anchor', len: 1.8 },
+  { shot: 'broll', len: 8.5 },
 ];
-const CUT_FLASH = 0.12;
+const CUT_FLASH = 0.09;
+const RECENT_SCENES = [];
+const RECENT_LIMIT = 2;
+
+function chooseScene(story, seed) {
+  const preferred = preferredScenes(story, AMBIENT_KEYS);
+  const pool = preferred.length ? preferred : AMBIENT_KEYS;
+  const fresh = pool.filter(scene => !RECENT_SCENES.includes(scene));
+  const candidates = fresh.length ? fresh : pool;
+  const scene = candidates[Math.abs(seed) % candidates.length];
+  RECENT_SCENES.push(scene);
+  while (RECENT_SCENES.length > RECENT_LIMIT) RECENT_SCENES.shift();
+  return scene;
+}
 
 function ensureCompactPresentation() {
   if (document.getElementById('rfh-compact-v47')) return;
@@ -40,8 +52,7 @@ class AmbientFootage {
   constructor(host, story, seed = 0) {
     this.story = story; this.seed = seed; this.t = seed * 1.37; this.live = false; this.decoded = false;
     this.scr = new PixelScreen(host, 128, 152);
-    const preferred = preferredScenes(story, AMBIENT_KEYS);
-    this.scene = preferred.length ? preferred[seed % preferred.length] : AMBIENT_KEYS[seed % AMBIENT_KEYS.length];
+    this.scene = chooseScene(story, seed);
     this.renderStatic();
   }
   sync() {}
@@ -75,7 +86,7 @@ export class Package {
   cutTo(shot){if(shot===this.shot)return;if(shot!=='broll')this.ensure(shot);this.show(shot);this.flashT=CUT_FLASH;}
   goLive(){this.live=true;this.root.classList.add('live');this.photo.goLive();this.beat=0;this.clock=0;this.show('broll',true);for(const k of ['anchor','graphic'])if(this.drawn[k])this.drawn[k].goLive();}
   goIdle(){this.live=false;this.root.classList.remove('live');this.photo.goIdle();this.flashT=0;this.flash.style.opacity='0';this.show('broll',true);this.release();}
-  update(dt,mouth=0){this.photo.update(dt,mouth);for(const k of ['anchor','graphic'])if(this.drawn[k])this.drawn[k].update(dt,mouth);if(this.flashT>0){this.flashT=Math.max(0,this.flashT-dt);this.flash.style.opacity=String((this.flashT/CUT_FLASH)*.42);}if(!this.live)return;this.clock+=dt;const b=BEATS[this.beat];if(this.clock>=b.len){this.clock-=b.len;this.beat=(this.beat+1)%BEATS.length;this.cutTo(BEATS[this.beat].shot);}}
+  update(dt,mouth=0){this.photo.update(dt,mouth);for(const k of ['anchor','graphic'])if(this.drawn[k])this.drawn[k].update(dt,mouth);if(this.flashT>0){this.flashT=Math.max(0,this.flashT-dt);this.flash.style.opacity=String((this.flashT/CUT_FLASH)*.34);}if(!this.live)return;this.clock+=dt;const b=BEATS[this.beat];if(this.clock>=b.len){this.clock-=b.len;this.beat=(this.beat+1)%BEATS.length;this.cutTo(BEATS[this.beat].shot);}}
   draw(){if(this.shot==='broll'){this.photo.draw();return;}const sh=this.drawn[this.shot];if(sh)sh.draw();}
   renderStatic(){this.photo.renderStatic();}
   destroy(){this.photo.destroy();this.release();this.root.remove();}
