@@ -1,5 +1,13 @@
 # Flash Prince — versions
 
+## v60 — 2026-09-01
+
+**The Courier remains one character with a weapon drawn.** His complete Conrad
+body sheet was already separate; sword states now use a matching warm-jacket
+weapon sheet instead of borrowing the default hero's colours. A routing check
+guards body, weapon, foe and immutable v18-run separation. No Conrad frame,
+anchor, timing, movement value, palette or locked-run data changed.
+
 ## v59 — 2026-09-01
 
 **The flooded city now works around you.** Tiny transit craft cross three

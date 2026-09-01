@@ -27,7 +27,7 @@ import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
-import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=59';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=60';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 // The gallery keeps one flat palette, cool and quiet, so a cycle reads. The

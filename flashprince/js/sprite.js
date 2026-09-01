@@ -21,9 +21,10 @@ import { RUN as LOCKED_RUN, START_N, LOCKED_RUN_COLOURS } from './run-lock.js?v=
 // LEFT on the sheet, so the flip is on face 1, not face -1.
 
 export const CELL_W = 32, CELL_H = 48;
-const SRC = 'ref/flash-prince.png?v=54';
-const CLASSIC_SRC = 'ref/flash-prince-classic.png?v=54';
-const SWORD_SRC = 'ref/pop-jimbo.png';
+const SRC = 'ref/flash-prince.png?v=60';
+const CLASSIC_SRC = 'ref/flash-prince-classic.png?v=60';
+const SWORD_SRC = 'ref/pop-jimbo.png?v=60';
+const CLASSIC_SWORD_SRC = 'ref/pop-classic.png?v=60';
 // The other man, the same eighteen colours permuted — see recolour_pop.py
 const FOE_SRC = 'ref/pop-foe.png';
 
@@ -323,6 +324,16 @@ export function frameCount(anim) {
   return a.n ?? a.cols?.length ?? a.cells?.length ?? a.rects?.length ?? 0;
 }
 
+// Character selection owns the outfit even when an action uses hand-cropped
+// rects from the weapon sheet. Keeping this decision in one tested function
+// prevents the Courier from silently becoming Jimbo as the blade comes out.
+export function sheetKey(anim, variant) {
+  const a = ANIM[anim];
+  if (!a || a.lockedRun) return null;
+  if (variant === 'classicBody' && a.sheet === 'sword') return 'classicSword';
+  return variant ?? a.sheet ?? 'body';
+}
+
 // where his hip sits above his feet when he is standing — the airborne anchor
 const HIP = 20;
 
@@ -382,6 +393,7 @@ export function loadSheet(onReady) {
   prepare(SRC, 'body', onReady);
   prepare(CLASSIC_SRC, 'classicBody');
   prepare(SWORD_SRC, 'sword');
+  prepare(CLASSIC_SWORD_SRC, 'classicSword');
   prepare(FOE_SRC, 'foe');
 }
 
@@ -403,7 +415,7 @@ export function drawSprite(scr, anim, i, x, y, face, variant) {
     scr.blit(img, 0, 0, 32, 44, Math.round(x - 16), Math.round(y - 44), face > 0);
     return true;
   }
-  const img = sheets[variant ?? a.sheet ?? 'body'];
+  const img = sheets[sheetKey(anim, variant)];
   if (!img) return false;
   const n = frameCount(anim);
   const k = a.loop ? ((i % n) + n) % n : Math.max(0, Math.min(n - 1, i));

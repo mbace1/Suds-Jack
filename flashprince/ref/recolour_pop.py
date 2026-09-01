@@ -39,6 +39,7 @@ from collections import deque
 A = np.array(Image.open('pop.png').convert('RGB')).astype(int)
 H, W = A.shape[:2]
 out = A.copy()
+blade_pixels = np.zeros((H, W), bool)
 
 WHITE, SKIN, RED = (248, 248, 248), (255, 163, 71), (248, 56, 0)
 J_SKIN = (198, 115, 99)
@@ -110,6 +111,7 @@ for band in idx:
             blade = wm & ((run + down - 1) <= 2)
         else:
             blade = np.zeros((h, w), bool)
+        blade_pixels[sl] |= blade
 
         # The body is the white MINUS the blade — measure him off that, not off
         # the frame. Raise the sword and the frame grows fifteen pixels of empty
@@ -220,6 +222,29 @@ for band in idx:
             cell[top] = hi
 
 Image.fromarray(out.astype('uint8')).save('pop-jimbo.png')
+
+# The selectable Courier needs the same guarantee as his Conrad body sheet:
+# drawing a weapon may change the pose, never the character. This is the
+# identical PoP-derived sword artwork with only the five approved Courier
+# clothing colours substituted. Restore the blade mask afterwards because
+# Jimbo's shoes and the steel share a source colour on this small sheet.
+COURIER = {
+    JACKET:     (105, 61, 30),
+    JACKET_HI:  (174, 112, 54),
+    SLEEVE:     (174, 112, 54),
+    SLEEVE_HI:  (105, 61, 30),
+    TROUSER:    (43, 52, 86),
+    TROUSER_HI: (84, 99, 145),
+    TEE:        (224, 190, 126),
+    TEE_HI:     (224, 190, 126),
+    SHOE:       (174, 112, 54),
+    SHOE_HI:    (224, 190, 126),
+}
+courier = out.copy()
+for src, dst in COURIER.items():
+    courier[(out[:, :, 0] == src[0]) & (out[:, :, 1] == src[1]) & (out[:, :, 2] == src[2])] = dst
+courier[blade_pixels] = STEEL
+Image.fromarray(courier.astype('uint8')).save('pop-classic.png')
 
 # ── the other man ──────────────────────────────────────────────────────
 # Someone to fence with, and he has to be told apart from Jimbo at a glance
