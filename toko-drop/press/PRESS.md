@@ -39,7 +39,9 @@ spot is never actually safe.
   gun is the fallback, not the plan. Heat is the shared cost between boosting
   and shooting; overheat locks you out until it cools. Levels move both ways,
   so a hit genuinely eases the next wave, and a clean run stamps a tier
-  (C through S) on a per-level ladder.
+  (C through S) on a per-level ladder. Pick one of four abilities before the
+  run, and read any level's exact grade targets, roster and pressure off the
+  ladder screen first.
 - **ROGUELIKE** run-upgrades, **DAILY SEED** runs (everyone faces the same
   seed, with a rotating daily modifier), and **CLOSE COMBAT** (no guns —
   every body hurts, and every corpse strikes back) sit alongside the classic
@@ -62,7 +64,10 @@ spot is never actually safe.
 - **40 enemy species**, each with its own movement traits, revenge dialect,
   and (on the WebGPU build) its own gel-material behavior
 - **RUSH MODE** — boost-only invulnerability, heat as the shared resource,
-  a stamped S/A/B/C tier ladder per level
+  a stamped S/A/B/C tier ladder per level, one of four selectable abilities
+  (dump your heat as a burn, a no-heat panic clear, free boosting with a
+  doubled chain, or reflect incoming fire back as your own), and a ladder
+  screen that shows every level's grade targets before you climb it
 - **ROGUELIKE** upgrades, **DAILY SEED** runs with rotating modifiers,
   **CLOSE COMBAT** (no guns, corpses strike back), **SMASH TV** door-rush
   — full mode swaps, mixable
@@ -71,8 +76,7 @@ spot is never actually safe.
 - **WebGPU (BETA)** — a full TSL node-pipeline build of the same game,
   goo/gel shading past parity with the classic renderer
 - **Plays with anything** — keyboard + mouse, gamepad (with haptics on
-  supported hardware), or touch with dual sticks and two selectable RUSH
-  boost schemes
+  supported hardware), or touch with dual sticks
 - **Installable and offline** — a PWA that works with no connection after
   the first visit, cache-token discipline so a new release is never served
   stale
