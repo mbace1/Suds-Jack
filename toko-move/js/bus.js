@@ -25,7 +25,7 @@
 // stopping it, because a bus that could be blocked outright would deadlock
 // against the very cars it is blocking.
 
-import { Network, Line, Train } from './lines.js?v=13';
+import { Network, Line, Train } from './lines.js?v=14';
 
 export const BUS_SPEED = 58;         // board units per second — a third of a train
 export const BUS_CAPACITY = 8;       // …but it takes more than a train's carriage

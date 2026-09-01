@@ -5,10 +5,10 @@
 // exactly two depths — paper and ink. Everything that looks like depth here is
 // really just overlap order.
 
-import { PAL, INK, sizeAt } from './palette.js?v=13';
-import { BOARD } from './world.js?v=13';
-import { CELL } from './roads.js?v=13';
-import { drawShape, tracePath } from './shapes.js?v=13';
+import { PAL, INK, sizeAt } from './palette.js?v=14';
+import { BOARD } from './world.js?v=14';
+import { CELL } from './roads.js?v=14';
+import { drawShape, tracePath } from './shapes.js?v=14';
 
 export class Renderer {
   constructor(canvas) {
@@ -110,23 +110,41 @@ export class Renderer {
     if (game.city?.credit) this.credit(game.city.credit);
   }
 
+  // Every real service gets its OWN colour — see `PAL.cityTrams`/`cityMetro`
+  // for why this is a separate palette from the player's. Trams are cycled
+  // through the six tram hues by a running TRAM-ONLY count (so metro's two
+  // slots in the pack don't shift the cycle), thin and at a quieter alpha;
+  // metro is the spine — its own colour, heavier, and drawn LAST so it sits
+  // on top of any tram track it shares.
+  //
+  // What this replaced: every service stroked in flat `PAL.ink` at 0.26
+  // alpha, which is why the network read as a grey squiggle rather than a
+  // transit map — colour is the one thing a single stroke colour cannot show.
   cityLines(lines) {
     const ctx = this.ctx;
-    ctx.save();
-    ctx.globalAlpha = 0.26;
-    ctx.strokeStyle = PAL.ink;
-    ctx.lineWidth = 1.8;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    for (const l of lines) {
-      const pts = l.path;
-      if (!pts || pts.length < 2) continue;
+    const stroke = (pts, colour, width, alpha) => {
+      if (!pts || pts.length < 2) return;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = width;
       ctx.beginPath();
       ctx.moveTo(pts[0].x, pts[0].y);
       for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
       ctx.stroke();
+      ctx.restore();
+    };
+    let tram = 0;
+    for (const l of lines) {
+      if (l.mode === 'SUBWAY') continue;   // metro passes second, on top
+      stroke(l.path, PAL.cityTrams[tram++ % PAL.cityTrams.length], 1.7, 0.85);
     }
-    ctx.restore();
+    for (const l of lines) {
+      if (l.mode !== 'SUBWAY') continue;
+      stroke(l.path, PAL.cityMetro, 3.2, 0.92);
+    }
   }
 
   // The shoreline, where a city has one. It is drawn and never tested against:

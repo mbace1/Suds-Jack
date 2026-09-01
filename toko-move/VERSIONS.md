@@ -1,5 +1,70 @@
 # Toko Move — versions
 
+## v14 — 2026-08-29
+
+**Visible colour layers, not one grey squiggle.** Owner's finding on the shipped
+build: "we should have visible color layers of trams, not drawing paths to
+connect stations." Correct — v13's real-network underlay stroked all twenty
+Helsinki services in flat `PAL.ink` at 0.26 alpha, so the board read as one
+undifferentiated grey path rather than a transit map with routes on it.
+
+### A second palette, on purpose
+
+`PAL.cityTrams` (five hues) and `PAL.cityMetro` (one, bold) are deliberately
+NOT `PAL.lines`, the player's own seven colours. The player draws on top of the
+real network; a real line and a player line sharing a hue would be unreadable —
+which one did you draw? `render.js`'s `cityLines()` now cycles trams through
+`cityTrams` by a running TRAM-ONLY count (metro's two pack slots don't shift
+it) and draws metro last, in its own colour, heavier — the spine, not one more
+hue in the cycle.
+
+### The colours are solved, not picked
+
+Same bar `PAL.lines` already holds itself to: every hue clears 90 of channel
+distance from every other colour in the game — `lines`, `road`, `water`,
+`warn`. At that bar the wheel is mostly spoken for (road and water each own a
+band, `lines` owns seven slots), and what is left yields five tram hues, not
+twelve. Twenty services cycling through five means some share a hue — true, and
+it is what a background layer can afford where a legend cannot.
+
+Contrast is a ceiling, not a target, and this is where the FIRST cut of this
+fix was still wrong: it held tram hues under `lines`' AVERAGE contrast (3.87),
+and shipped a hue LOUDER than `lines`' own quietest colour (2.07, the amber) —
+inverting the picture exactly the way a street shouting over its network would.
+`streets` already established the rule (the ground sits under the quietest
+thing it grounds); trams now hold to it too, at 1.75:1 — above the streets'
+1.3 floor, under every player line without exception. Metro is deliberately
+the one exception to "quiet": 4.47:1, close to `lines`' own loudest colours,
+because a spine is allowed to be loud.
+
+It does not borrow HSL's real orange for the metro — that hue is already
+`warn`'s and player line two's in this game, and "an homage, not a clone" is
+the house rule for exactly this reason.
+
+### Gates
+
+Both the smoke check and the palette check were rebuilt after failing to catch
+what they should have. The page check used to test for DARK pixels specifically
+(matching the old flat ink) — useless for coloured lines, so it now tests
+against `PAL.paper` directly. Its replacement — sample two tram lines' pixels
+and compare — was itself wrong: several real Helsinki services share identical
+track inside this box (10/10B, 4/4T…), so two arbitrary lines can sample the
+same blended overlap colour by chance. The check that survived instead counts
+DISTINCT palette colours actually found across the WHOLE network, alpha-
+composited the same way the renderer composites them, requiring a real run of
+matching pixels (15+) rather than a handful — a coincidental antialiasing
+match was measured landing within the naive tolerance twice, from a single
+forced test colour.
+
+Mutation-tested: flat ink everywhere fails both new page checks; every tram
+line forced onto one hue fails the "own colour" metro check outright and the
+distinct-colour count once the false-positive tolerance above was tightened.
+The three new palette checks (mutual tram distinguishability, distinguishable
+from everything else in the game, tram loudness capped under the quietest
+player line) each fail on their own mutation and no other.
+
+core 504 → **519**, page 143 → **145**. Module tokens `?v=13` → `?v=14`.
+
 ## v13 — 2026-08-26
 
 **The campaign is the cities now.** Owner's direction: Helsinki is chapter one,

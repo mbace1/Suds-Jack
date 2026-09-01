@@ -68,6 +68,40 @@ export const PAL = {
   // seventh slot was picked by measuring candidates against the other six
   // rather than by eye.
   lines: ['#2b5fa8', '#d0452b', '#4a8f3f', '#d19a1f', '#7a4aa6', '#b93a86', '#18908a'],
+
+  // ── the REAL network, under a city board ────────────────────────────────
+  // v13 drew every real tram and metro service in one flat `ink` stroke —
+  // which is what "visible colour layers, not drawing paths to connect
+  // stations" was about: a single grey squiggle reads as a generic connector,
+  // not as a transit map. Twenty real services need their own colours, and
+  // those colours have to be a SEPARATE palette from `lines` above — the
+  // player draws on top of the real network, and a player line landing on a
+  // real line of the same hue would be unreadable: which one did you draw?
+  //
+  // The set below is solved rather than picked: every hue clears 90 of
+  // channel-distance from every OTHER hue in the whole game — `lines`,
+  // `road`, `water`, `warn` — which is the same bar `lines` already holds
+  // itself to (see the AA gate). At that bar the wheel is mostly spoken for:
+  // road and water each own a band, `lines` owns seven more slots, and what
+  // is left yields five tram hues, not twelve. Twenty services cycling
+  // through five colours means some real lines share a hue — true, and it is
+  // what a background layer can afford where a legend cannot.
+  //
+  // Contrast is a HARD ceiling, not a target: `streets` already established
+  // that the ground must sit under the quietest thing it grounds, so every
+  // tram hue is held BELOW `lines`' own quietest colour (2.07:1, the amber),
+  // not merely below the average — the first cut used the average and
+  // shipped a hue louder than that amber, which inverts the picture exactly
+  // the way a shouting street would. 1.75:1 is the result: above the
+  // streets' own 1.3 floor, comfortably under every player line.
+  cityTrams: ['#d9a6a6', '#abbb3e', '#24cc67', '#74bec3', '#ec93ec'],
+  // The metro is the spine, not one more hue in the cycle — Helsinki's own
+  // map gives rapid transit its own identity and this does too, at 4.47:1,
+  // closer to `lines`' own loudest colours than to the trams. It does NOT
+  // borrow HSL's real orange: that hue is already the alarm's (`warn`) and
+  // player line two's, and "an homage, not a clone" is the house rule for
+  // exactly this reason — a colour, like a shape, gets to differ on purpose.
+  cityMetro: '#a218ec',
 };
 
 // Hit targets, stated in SCREEN pixels and converted to board units at the

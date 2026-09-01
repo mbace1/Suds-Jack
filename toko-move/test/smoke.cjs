@@ -720,10 +720,14 @@ async function checkHomeClear(pg, where) {
     for (let i = 0; i < 400; i++) g.step(0.05);
     await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
     const names = g.world.stations.map(s => s.name);
-    // the real network, drawn: sample along one service's own traced path and
-    // count ink that is not the paper it sits on
-    const line = g.city.lines.find(l => l.path?.length > 8);
+    const D = window.__tm.debug.PAL;
     const ctx = r.canvas.getContext('2d');
+
+    // Something is drawn at all — "not the paper it sits on", which works
+    // whatever hue a line is drawn in (the old version of this check tested
+    // for DARK pixels specifically, which is exactly what broke the day the
+    // underlay stopped being flat ink).
+    const line = g.city.lines.find(l => l.path?.length > 8);
     let onPath = 0;
     for (const p of line.path) {
       const px = Math.round((r.ox + p.x * r.scale) * devicePixelRatio);
@@ -731,11 +735,61 @@ async function checkHomeClear(pg, where) {
       if (px < 1 || py < 1) continue;
       const d = ctx.getImageData(px - 1, py - 1, 3, 3).data;
       for (let i = 0; i < d.length; i += 4) {
-        if (d[i] < 200 && d[i + 1] < 200 && d[i + 2] < 200) { onPath++; break; }
+        if (Math.abs(d[i] - 0xee) + Math.abs(d[i + 1] - 0xe9) + Math.abs(d[i + 2] - 0xdc) > 24) { onPath++; break; }
       }
     }
+
+    // …and it is not ALL the same colour, which is the actual claim: real
+    // services get their own hue, not one shared grey. Rather than pin one
+    // pixel to one line — fragile, since several real services share track
+    // exactly and their strokes blend where they do — this asks the question
+    // of the WHOLE network: walk every point of every service's path, match
+    // each painted pixel to the nearest colour in the palette the game
+    // actually declares (`PAL.cityTrams`/`cityMetro`, alpha-composited onto
+    // paper the same way the renderer composites them), and count how many
+    // DISTINCT palette colours were actually found on the board. A shared
+    // corridor still shows its OWN colour wherever the lines are not
+    // literally stacked, so this holds even on Helsinki's most overlapped
+    // trunk streets.
+    const hex2rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    const blend = (fg, bg, a) => { const f = hex2rgb(fg), b = hex2rgb(bg);
+      return f.map((v, i) => Math.round(v * a + b[i] * (1 - a))); };
+    const targets = [
+      ...D.cityTrams.map(hex => ({ hex, rgb: blend(hex, D.paper, 0.85) })),
+      { hex: D.cityMetro, rgb: blend(D.cityMetro, D.paper, 0.92) },
+    ];
+    const paperRgb = hex2rgb(D.paper);
+    // COUNTED, not merely seen. A handful of anti-aliased edge pixels or a
+    // stray stacked-alpha blend at a shared corridor can drift close enough
+    // to a colour that was never actually drawn there — measured directly:
+    // forcing every service onto one hue still left 8 and 3 stray pixels
+    // reading as two OTHER palette colours purely from overlap artefacts.
+    // Requiring a real run of matches (not a handful of edge noise) is what
+    // tells a genuinely painted line from that noise.
+    const counts = new Map();
+    for (const l of g.city.lines) {
+      for (const p of l.path) {
+        const px = Math.round((r.ox + p.x * r.scale) * devicePixelRatio);
+        const py = Math.round((r.oy + p.y * r.scale) * devicePixelRatio);
+        if (px < 2 || py < 2) continue;
+        const d = ctx.getImageData(px - 1, py - 1, 3, 3).data;
+        for (let i = 0; i < d.length; i += 4) {
+          const px3 = [d[i], d[i + 1], d[i + 2]];
+          if (Math.abs(px3[0] - paperRgb[0]) + Math.abs(px3[1] - paperRgb[1]) + Math.abs(px3[2] - paperRgb[2]) < 20) continue;
+          for (const t of targets) {
+            const dist = Math.abs(px3[0] - t.rgb[0]) + Math.abs(px3[1] - t.rgb[1]) + Math.abs(px3[2] - t.rgb[2]);
+            if (dist <= 40) counts.set(t.hex, (counts.get(t.hex) ?? 0) + 1);
+          }
+        }
+      }
+    }
+    const MIN_HITS = 15;
+    const found = [...counts.entries()].filter(([, n]) => n >= MIN_HITS).map(([hex]) => hex);
+    const foundMetro = found.includes(D.cityMetro);
+
     return { names, onPath, ofPath: line.path.length, services: g.city.lines.length,
-             credit: g.city.credit, stations: g.world.stations.length };
+             credit: g.city.credit, stations: g.world.stations.length,
+             distinctColours: found.length, foundMetro, tramPaletteSize: D.cityTrams.length };
   });
   ok(!hel.why, `Helsinki loads from its pack${hel.why ? ` — ${hel.why}` : ''}`);
   if (!hel.why) {
@@ -743,7 +797,13 @@ async function checkHomeClear(pg, where) {
     eq(hel.names[0], 'Rautatientori', 'and the board opens at the main interchange');
     ok(hel.services >= 19, `every live service came with it (${hel.services})`);
     ok(hel.onPath > hel.ofPath * 0.5,
-       `the real network is actually drawn under the board (${hel.onPath} of ${hel.ofPath} sampled points have ink)`);
+       `the real network is actually drawn under the board (${hel.onPath} of ${hel.ofPath} sampled points not paper)`);
+    // the claim this build was fixed for: "visible colour layers of trams,
+    // not drawing paths to connect stations" — more than one real colour
+    // actually painted, not one shared grey
+    ok(hel.distinctColours >= 3,
+       `real tram services are painted in visibly different colours, not one shared grey (${hel.distinctColours} distinct colours found on the board)`);
+    ok(hel.foundMetro, 'and the metro is found in its own colour, not folded into the tram cycle');
     ok(/HSL/.test(hel.credit), 'and the credit that has to stay on screen is there');
   }
   // …and the credit is on the CANVAS, which is the licence condition: the pack

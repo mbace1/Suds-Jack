@@ -2,17 +2,17 @@
 // because it means it can be run on every edit rather than once before a deploy.
 // Everything it checks is decided by game state, never by the wall clock.
 
-import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=13';
-import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=13';
-import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=13';
-import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=13';
-import { Game } from '../js/sim.js?v=13';
-import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=13';
-import { MISSIONS, byId, campaign, sandbox, chapters, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=13';
-import { PAL, INK } from '../js/palette.js?v=13';
-import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=13';
-import { BusNet, Bus, BUS_CAPACITY } from '../js/bus.js?v=13';
-import { asBoard, pickName, seaRings, seaBox } from '../js/city.js?v=13';
+import { legPoints, corner, measure, posOn, pointInRing, inWater, crossings, waterGates } from '../js/geometry.js?v=14';
+import { SHAPES, COMMON, SPECIAL, isSpecial } from '../js/shapes.js?v=14';
+import { World, Station, BOARD, STATION_CAP } from '../js/world.js?v=14';
+import { Network, Train, CAR_CAPACITY, nubs } from '../js/lines.js?v=14';
+import { Game } from '../js/sim.js?v=14';
+import { RoadNet, Car, CELL, CELL_CARS } from '../js/roads.js?v=14';
+import { MISSIONS, byId, campaign, sandbox, chapters, validate, GOALS, CAPABILITIES, clockFmt } from '../js/missions.js?v=14';
+import { PAL, INK } from '../js/palette.js?v=14';
+import { validate as validCity, project, octolinear, layout, merge, report } from '../js/city.js?v=14';
+import { BusNet, Bus, BUS_CAPACITY } from '../js/bus.js?v=14';
+import { asBoard, pickName, seaRings, seaBox } from '../js/city.js?v=14';
 import { readZip, parseCsv, packFromGtfs, modeOf } from '../../scripts/gtfs.mjs';
 import { deflateRawSync, crc32 } from 'node:zlib';
 import { readFileSync, existsSync } from 'node:fs';
@@ -1846,6 +1846,38 @@ const FEED = [
 
   ok(INK.line > INK.station, 'the network is drawn heavier than the stops on it');
   ok(INK.lineGap > INK.line, 'two lines sharing a leg are pushed further apart than they are wide');
+
+  // The REAL network's own palette. v13 drew every service in flat `ink`,
+  // which is what "visible colour layers of trams, not drawing paths to
+  // connect stations" was about — a single grey squiggle is not a transit
+  // map. `cityTrams`/`cityMetro` are a SEPARATE palette from `lines` on
+  // purpose: the player draws on top of the real network, and a player line
+  // landing on a real line of the same hue would be unreadable.
+  ok(cr(PAL.cityMetro, PAL.paper) >= 3,
+     `the metro is visible on the paper (${cr(PAL.cityMetro, PAL.paper).toFixed(2)}:1)`);
+  for (const c of PAL.cityTrams) {
+    ok(cr(c, PAL.paper) >= 1.3, `every tram hue clears the same visibility floor the streets do (${c} at ${cr(c, PAL.paper).toFixed(2)}:1)`);
+  }
+  // quieter than the player's own network, or the real one would upstage what
+  // you are building — the same "streets sit under the quietest line" rule
+  const quietestPlayerLine = Math.min(...PAL.lines.map(c => cr(c, PAL.paper)));
+  ok(PAL.cityTrams.every(c => cr(c, PAL.paper) < quietestPlayerLine),
+     `every tram hue sits under the quietest player line (${quietestPlayerLine.toFixed(2)})`);
+
+  // tellable apart from everything else in the game, at the SAME bar `lines`
+  // already holds itself to — road, water, the alarm, and every player line
+  const others = [PAL.road, PAL.water, PAL.warn, ...PAL.lines];
+  for (const c of [...PAL.cityTrams, PAL.cityMetro]) {
+    const nearest = Math.min(...others.map(o => d(c, o)));
+    ok(nearest >= 90, `${c} is tellable from road/water/alarm/every player line (closest ${nearest})`);
+  }
+  let closestTram = Infinity;
+  for (let i = 0; i < PAL.cityTrams.length; i++) for (let j = i + 1; j < PAL.cityTrams.length; j++) {
+    closestTram = Math.min(closestTram, d(PAL.cityTrams[i], PAL.cityTrams[j]));
+  }
+  ok(closestTram >= 90, `every tram hue is tellable from every other tram hue (closest ${closestTram})`);
+  const closestMetroTram = Math.min(...PAL.cityTrams.map(c => d(c, PAL.cityMetro)));
+  ok(closestMetroTram >= 90, `the metro is tellable from every tram hue too (closest ${closestMetroTram})`);
 }
 
 // ── the bus layer ───────────────────────────────────────────────────────

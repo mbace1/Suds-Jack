@@ -6,12 +6,12 @@
 // a festival, a ten-minute delivery contract and the endless city are the same
 // code reading different data.
 
-import { World } from './world.js?v=13';
-import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=13';
-import { RoadNet } from './roads.js?v=13';
-import { BusNet } from './bus.js?v=13';
-import { asBoard } from './city.js?v=13';
-import { byId, validate, GOALS } from './missions.js?v=13';
+import { World } from './world.js?v=14';
+import { Network, TRAIN_SPEED, MAX_LINES } from './lines.js?v=14';
+import { RoadNet } from './roads.js?v=14';
+import { BusNet } from './bus.js?v=14';
+import { asBoard } from './city.js?v=14';
+import { byId, validate, GOALS } from './missions.js?v=14';
 
 export class Game {
   constructor(seed = 1, missionId = 'endless', opts = {}) { this.reset(seed, missionId, opts); }
