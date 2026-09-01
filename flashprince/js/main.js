@@ -15,7 +15,7 @@
 // the animations one at a time, looping, with its name and frame count on
 // screen, which is the only way to judge a cycle on its own.
 
-import { Screen, W, H } from './screen.js?v=63';
+import { Screen, W, H } from './screen.js?v=64';
 import { paletteAt, C } from './palette.js?v=52';
 import { Hero } from './hero.js?v=59';
 import { World, ROOMS, ROOM_H } from './level.js?v=63';

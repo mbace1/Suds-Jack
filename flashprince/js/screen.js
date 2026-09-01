@@ -46,7 +46,9 @@ export class Screen {
     // exact square at an integer scale, so the same authored frame can be
     // inspected without uneven browser resampling. The picture data never
     // changes; this is presentation only.
-    this.scaleMode = localStorage.getItem('flashPrinceScale') === 'integer4' ? 'integer4' : 'fit';
+    let savedScale = '';
+    try { savedScale = window.localStorage?.getItem('flashPrinceScale') ?? ''; } catch { /* private/embed mode */ }
+    this.scaleMode = savedScale === 'integer4' ? 'integer4' : 'fit';
     this.scale = 1; this.ox = 0; this.oy = 0;
     this.img = this.ctx.createImageData(W, H);
     this.resize();
@@ -132,7 +134,7 @@ export class Screen {
 
   setScaleMode(mode) {
     this.scaleMode = mode === 'integer4' ? 'integer4' : 'fit';
-    localStorage.setItem('flashPrinceScale', this.scaleMode);
+    try { window.localStorage?.setItem('flashPrinceScale', this.scaleMode); } catch { /* private/embed mode */ }
     this.resize();
   }
 

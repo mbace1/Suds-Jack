@@ -1,5 +1,11 @@
 # Flash Prince — versions
 
+## v64 — 2026-09-01
+
+The v63 display option now starts safely in private and embedded browsers that
+do not expose persistent storage. This is a cache-safe boot fix only; gameplay,
+art, character frames and both locked runs are unchanged from v63.
+
 ## v63 — 2026-09-01
 
 **The flooded-city route now reaches the bio-organic facility.** Two new
