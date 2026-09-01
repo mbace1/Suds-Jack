@@ -5,7 +5,8 @@
 - PR: #385
 - Target: v2.12 / hub 2012
 - This branch version is authoritative while #385 is open.
-- Expanded `movesuggestions.md` from main is preserved on the feature branch and remains the speculative design notebook.
+- Current `main` was integrated through PR #405 into the feature branch, preserving concurrent agent work without modifying `main`.
+- Expanded `movesuggestions.md` from main is preserved intact and remains the speculative design notebook.
 
 ## Core rule
 Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/metro network is the board. Player decisions are: **pick a job, wait, catch, ride, get off/transfer, or walk**.
@@ -27,11 +28,12 @@ Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/met
 - Courier walking is visibly animated between hubs.
 - Dispatch board presents three concurrent local jobs after each delivery, always originating from the courier's actual current hub.
 - Cargo-invalid jobs are disabled instead of allowing soft-locks.
-- Dispatch no longer labels one job `BEST NOW`. It exposes value, deadline, approaching services, ETA and transfer tradeoffs so the player chooses.
-- New hub tactics panel exposes several approaching services and walk exits simultaneously while waiting.
+- Dispatch exposes value, deadline, approaching services, ETA and transfer tradeoffs without naming one job as the correct answer.
+- Hub tactics panel exposes several approaching services and walk exits simultaneously while waiting.
 - Hub panel follows the notebook rule: **availability, not recommendation**.
 - Near-miss feedback records when a service was catchable and then leaves the hub, showing `MISSED <line> · about Nt ago` for a short learning window.
-- Waiting is therefore an active planning state rather than dead time.
+- Explicit skill moments now record `INTERCEPTED` when a walk turns into a catch within an 8-tick margin and `TIGHT CONNECTION` when a transfer is caught within 6 ticks.
+- Skill moments are event hooks first, not a hidden score formula; later progression/reputation can consume them without changing the current core rules.
 
 ## Important files
 - `toko-move/js/live-network.js` — gameplay fleet, exact-path positions, vehicle identity/selection/highlight.
@@ -40,8 +42,9 @@ Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/met
 - `toko-move/js/interception-v212.js` — walk-to-intercept planner.
 - `toko-move/js/job-board-v212.js` — concurrent local job offers with live tradeoff information, no solved recommendation.
 - `toko-move/js/hub-tactics-v212.js` — multi-option hub availability + near-miss feedback.
+- `toko-move/js/moments-v212.js` — modular explicit skill-moment events for interception and tight transfers.
 - `toko-move/js/route-choice.js` — waiting UI, arrival-gated boarding, current/next stop UI, GET OFF/WALK/interception actions.
-- `toko-move/js/main-v212.js` — v2.12 runtime overlays, dispatch board, hub tactics, interception guidance, animated walker.
+- `toko-move/js/main-v212.js` — v2.12 runtime overlays, dispatch board, hub tactics, skill moments, interception guidance, animated walker.
 - `toko-move/js/deliveries.js` — dispatch offer generation, scoring/progression, fixed-service delivery trips.
 
 ## Source rules
@@ -50,11 +53,14 @@ Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/met
 - OSM coastline edges are open lines; never close/fill them.
 - Keep HSL/OSM attribution.
 
+## Extended-feature candidates from `movesuggestions.md`
+Keep these modular until the core loop proves their value: client-specific reputation, day-phase job pressure, authored weather/scenario modifiers, post-run route replay, daily seeded challenges, contextual information upgrades, audio/haptic opportunity cues, and optional live-HSL ambient/reference mode. None of these should alter factual HSL geometry or masquerade as live data.
+
 ## Next larger steps
-1. Finish clean integration of the latest main drift without overwriting Radio Free / Skltr / other agents or main's expanded `movesuggestions.md`.
-2. Browser-test dispatch -> catch -> ride -> transfer -> get off -> next dispatch, including near-miss and walk interception states.
-3. Remove RouteDrawer from Toko Move source and consolidate the v210/v211/v212 wrapper chain.
-4. Make selected visible vehicles the sole ride simulation, removing the duplicate flow-core carrier.
-5. Continue implementing the strongest notebook loops: generous boarding windows, recoverable stay-aboard mistakes, multi-job overlap, soft-fail lateness, and contextual vehicle emphasis.
+1. Browser-test dispatch -> catch -> ride -> transfer -> get off -> next dispatch, including near-miss and walk interception states.
+2. Remove RouteDrawer from Toko Move source and consolidate the v210/v211/v212 wrapper chain.
+3. Make selected visible vehicles the sole ride simulation, removing the duplicate flow-core carrier.
+4. Prototype recoverable early/late disembark and wrong-vehicle recovery so mistakes create new routing problems rather than hard fails.
+5. Move from one chosen job at a time toward two simultaneous active jobs only after the dispatch board is stable and readable.
 
 Strategic question: **What opportunities are moving through Helsinki right now, and which one do I exploit?**
