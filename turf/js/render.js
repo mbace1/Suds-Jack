@@ -39,18 +39,56 @@ const imageCache = new Map();
 let lastRenderArgs = null;
 function getImage(src) {
   if (!src) return null;
+  const entry = getImageEntry(src);
+  return entry.loaded ? entry.img : null;
+}
+// Full entry (image + real ink bounds), for drawUnitSprite's feet anchor —
+// see there for why the naive naturalHeight bottom is the wrong number to
+// anchor a character's feet to.
+function getImageEntry(src) {
   let entry = imageCache.get(src);
   if (!entry) {
     const img = new Image();
-    entry = { img, loaded: false };
+    entry = { img, loaded: false, inkBottom: null, inkTop: null };
     img.onload = () => {
       entry.loaded = true;
+      Object.assign(entry, scanInkBounds(img));
       if (lastRenderArgs) render(lastRenderArgs.canvas, lastRenderArgs.state, lastRenderArgs.layout);
     };
     img.src = src;
     imageCache.set(src, entry);
   }
-  return entry.loaded ? entry.img : null;
+  return entry;
+}
+// A `fit`-pipeline plate is padded to a fixed 192×288 canvas and centred —
+// the character rarely fills it, so naturalHeight is NOT where the feet
+// are (found as an on-board bug: sprites "floating" above their tile by
+// however many transparent rows sit below the shoes — measured 7px to 64px
+// of padding across the current roster, nowhere near constant enough to
+// hardcode). One-time offscreen scan per image, cached on the entry
+// alongside the Image itself. Falls back to the full natural bounds (the
+// old, buggy behaviour) if canvas pixel access ever throws, rather than
+// hard-failing the whole render.
+function scanInkBounds(img) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const cctx = c.getContext('2d');
+    cctx.drawImage(img, 0, 0);
+    const { data } = cctx.getImageData(0, 0, c.width, c.height);
+    let top = null, bottom = null;
+    for (let y = 0; y < c.height; y++) {
+      let hasInk = false;
+      for (let x = 0; x < c.width; x++) {
+        if (data[(y * c.width + x) * 4 + 3] > 40) { hasInk = true; break; }
+      }
+      if (hasInk) { if (top === null) top = y; bottom = y; }
+    }
+    if (top === null) return { inkTop: 0, inkBottom: img.naturalHeight - 1 };
+    return { inkTop: top, inkBottom: bottom };
+  } catch {
+    return { inkTop: 0, inkBottom: img.naturalHeight - 1 };
+  }
 }
 
 export function computeLayout(grid) {
@@ -163,9 +201,33 @@ function drawHighlights(g, layout, state) {
 // — same map every render, no per-frame flicker.
 const FULL_PROPS = ['crate', 'statue', 'bikerack', 'noticeboard'];
 const PARTIAL_PROPS = ['barrier', 'bollard', 'bin', 'bench'];
-function propArt(gx, gy, tall) {
-  const pool = tall ? FULL_PROPS : PARTIAL_PROPS;
-  return pool[(gx * 7 + gy * 13) % pool.length];
+// A (gx*7+gy*13)%pool.length hash was the first pass here — looked fine on
+// the two or three tiles checked by eye, but backlot's real cover list
+// hashes FIVE of its six full-cover tiles onto the same index ('crate',
+// 'statue', 'bikerack', 'noticeboard'[3] five times), because 7 and 13
+// happen to collapse onto one residue for that specific set of
+// coordinates. Found from a screenshot, not by inspecting the formula —
+// "the examples look ok, but have too many of the same objects" was
+// right twice, once before the 2/6→4/4 pool rebalance and again here.
+// Greedy instead: assign each cover tile, in order, whichever pool prop
+// appears LEAST among already-assigned tiles within Manhattan distance 4
+// — ties broken by array order, so it's still fully deterministic (same
+// input cover list always assigns the same map, no per-frame flicker).
+function assignPropArt(tiles, pool) {
+  const chosen = [];
+  for (const t of tiles) {
+    const nearbyCounts = pool.map(() => 0);
+    for (let i = 0; i < chosen.length; i++) {
+      const other = tiles[i];
+      if (Math.abs(other.x - t.x) + Math.abs(other.y - t.y) <= 4) {
+        nearbyCounts[pool.indexOf(chosen[i])]++;
+      }
+    }
+    let best = 0;
+    for (let i = 1; i < pool.length; i++) if (nearbyCounts[i] < nearbyCounts[best]) best = i;
+    chosen.push(pool[best]);
+  }
+  return chosen;
 }
 
 // Procedural placeholder — a squat closed box (tall=full cover) or a
@@ -187,9 +249,9 @@ function drawPropFallback(g, layout, gx, gy, tall) {
 }
 function ctxStroke(g, x0, y0, x1, y1, c) { g.line(x0, y0, x1, y1, c); }
 
-function drawProp(g, layout, gx, gy, tall) {
+function drawProp(g, layout, gx, gy, tall, art) {
   const { x, y } = toScreen(layout, gx, gy);
-  const img = getImage(`art-src/sprites/props/${propArt(gx, gy, tall)}.png`);
+  const img = getImage(`art-src/sprites/props/${art}.png`);
   if (!img) { drawPropFallback(g, layout, gx, gy, tall); return; }
   const targetH = tall ? 40 : 24;
   const w = img.naturalWidth * (targetH / img.naturalHeight);
@@ -220,8 +282,8 @@ function drawUnit(g, layout, unit, isSelected) {
   const factionColor = unit.faction === 'player' ? PAL.PLAYER : PAL.ENEMY;
   g.diamond(x, y, TILE_W * 0.52, TILE_H * 0.46, null, factionColor, 1.5);
 
-  const img = getImage(unit.sprite);
-  const topY = img ? drawUnitSprite(g, img, x, feetY) : drawUnitFallback(g, unit, x, feetY);
+  const entry = unit.sprite ? getImageEntry(unit.sprite) : null;
+  const topY = entry && entry.loaded ? drawUnitSprite(g, entry, x, feetY) : drawUnitFallback(g, unit, x, feetY);
 
   // role marker, same three glyphs either way — melee/ranged/control stay
   // readable at a glance even once the sprite art tells you who it is
@@ -237,14 +299,20 @@ function drawUnit(g, layout, unit, isSelected) {
   const hpColor = frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD;
   g.p(x - hpW / 2, hpY, hpW * frac, 2, hpColor);
 }
-// Draws the real sprite, bottom-anchored at feetY; returns the y of its top
-// (both callers use this for the HP bar / role marker so their position
-// doesn't care which branch drew the body beneath them).
-function drawUnitSprite(g, img, x, feetY) {
-  const targetH = SPRITE_H;
-  const w = img.naturalWidth * (targetH / img.naturalHeight);
-  g.ctx.drawImage(img, x - w / 2, feetY - targetH, w, targetH);
-  return feetY - targetH;
+// Draws the real sprite, anchored so the character's actual FEET (entry's
+// scanned ink bounds — see scanInkBounds) land on feetY, not the bottom of
+// the source canvas, which is usually many transparent rows lower. Returns
+// the y of the visible content's top (both callers use this for the HP bar
+// / role marker so their position doesn't care which branch drew the body
+// beneath them, or how much padding that source image happened to carry).
+function drawUnitSprite(g, entry, x, feetY) {
+  const { img, inkTop, inkBottom } = entry;
+  const contentH = inkBottom - inkTop + 1;
+  const scale = SPRITE_H / contentH;
+  const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+  const drawY = feetY - inkBottom * scale; // top of the FULL (padded) image, in screen space
+  g.ctx.drawImage(img, x - w / 2, drawY, w, h);
+  return feetY - contentH * scale; // top of the actual visible content, not the padded canvas
 }
 function drawUnitFallback(g, unit, x, feetY) {
   const isPlayer = unit.faction === 'player';
@@ -338,11 +406,16 @@ export function render(canvas, state, layout) {
   drawFloor(g, layout, state.grid, state.fullCover, state.partialCover);
   drawHighlights(g, layout, state);
 
-  const props = [];
-  for (const k of state.fullCover) { const [x, y] = k.split(',').map(Number); props.push({ x, y, depth: x + y, tall: true }); }
-  for (const k of state.partialCover) { const [x, y] = k.split(',').map(Number); props.push({ x, y, depth: x + y, tall: false }); }
+  const fullTiles = [...state.fullCover].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });
+  const partialTiles = [...state.partialCover].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });
+  const fullArt = assignPropArt(fullTiles, FULL_PROPS);
+  const partialArt = assignPropArt(partialTiles, PARTIAL_PROPS);
+  const props = [
+    ...fullTiles.map((t, i) => ({ x: t.x, y: t.y, depth: t.x + t.y, tall: true, art: fullArt[i] })),
+    ...partialTiles.map((t, i) => ({ x: t.x, y: t.y, depth: t.x + t.y, tall: false, art: partialArt[i] })),
+  ];
   const drawables = [
-    ...props.map(p => ({ depth: p.depth, draw: () => drawProp(g, layout, p.x, p.y, p.tall) })),
+    ...props.map(p => ({ depth: p.depth, draw: () => drawProp(g, layout, p.x, p.y, p.tall, p.art) })),
     ...(state.drops || []).map(d => ({ depth: d.x + d.y, draw: () => drawDrop(g, layout, d, state.weaponDefs) })),
     ...state.units.filter(u => u.hp > 0).map(u => ({
       depth: u.x + u.y,

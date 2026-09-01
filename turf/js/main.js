@@ -6,7 +6,7 @@ import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
 } from './combat.js?v=5';
-import { computeLayout, render } from './render.js?v=6';
+import { computeLayout, render } from './render.js?v=7';
 import { createInputHandler } from './input.js?v=7';
 
 const $ = id => document.getElementById(id);

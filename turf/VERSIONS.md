@@ -8,6 +8,51 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v16 — 2026-09-01
+**Two rendering bugs in v15's sprite/prop work, both caught by the owner
+rather than by v15's own verification: feet floating off the tile, and
+cover props clustering into visible duplicates.**
+
+- **Feet floating ~1m over the grid.** Owner: "characters are floating 1m
+  over the grid." `drawUnitSprite` anchored a sprite's draw position to
+  its full source-image `naturalHeight`, but the casting pipeline's `fit`
+  step centres every plate into a fixed 192×288 canvas with wildly
+  inconsistent transparent padding below the feet (measured 7–64px across
+  different plates) — the height used for anchoring and the height of the
+  actual figure were never the same number. Fixed with a one-time
+  `scanInkBounds` pixel scan per loaded image (an offscreen canvas +
+  `getImageData`, run once in the image's `onload` alongside the existing
+  cache) that finds the real ink top/bottom; `drawUnitSprite` now anchors
+  to `inkBottom` instead of `naturalHeight`, and scales off the ink
+  content height rather than the full canvas height. Checked the 8 prop
+  images against the same question first — they only carry 3–6px of
+  padding from being cropped tight in v15, not this bug, so `drawProp`
+  didn't need the same fix.
+- **Cover props clustering.** Owner: "the examples look ok, but have too
+  many of the same objects... the screenshots look messy?" v15's fix for
+  too few pool choices (2/6 → 4/4) introduced a new problem: the
+  distribution hash `(gx*7+gy*13)%pool.length` collapsed 5 of backlot's 6
+  full-cover tiles onto the same pool index, so a screenshot showed
+  several identical notice-board panels in a row. Replaced the hash with
+  `assignPropArt` — a deterministic greedy pass that, per tile in a fixed
+  order, picks whichever pool item appears least often among tiles
+  already assigned within Manhattan distance ≤4. Still fully
+  deterministic (no per-frame flicker, same map paints the same props
+  every render) but spatially aware, so a cluster of full-cover tiles no
+  longer converges on one prop.
+- Verified in a real browser at 4x zoom on `backlot`, `warehouse` and
+  `the-yard`: feet now sit directly on the tile's faction-ring marker with
+  no visible gap, and cover props show genuine variety (crate, statue,
+  bike rack, bin, bench, barrier all distinct, no adjacent duplicates).
+  `warehouse`/`the-yard` reusing `backlot`'s cover-tile layout deterministically
+  reuse its prop assignment too — expected, since the goal was eliminating
+  within-board clustering, not cross-encounter variety.
+- `render.js` ?v=7 — `input.js` ?v=7 and `main.js` ?v=8 both already
+  imported it at their current tokens and only their `render.js?v=` string
+  needed bumping; neither module's own bytes changed this round.
+- `node turf/test/smoke.mjs` — 41/41, unchanged (pure rendering fix, no
+  game-logic changes).
+
 ## v15 — 2026-08-31
 **Real character sprites and real cover props on the board itself, a
 transparent grid over the background photo, plus a headshot audit —
