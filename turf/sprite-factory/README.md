@@ -13,34 +13,68 @@ Frame-first production controller for scaling TURF character animation toward MS
 
 ## Progress rule
 
-Only **approved** frame/action coverage counts as progress. Generated candidates do not.
+Only **approved** coverage counts as progress. Generated candidates do not.
 
-Near-duplicate frames have zero animation value. A visually good frame with the wrong mechanical job is rejected.
+Near-duplicate frames have zero animation value. A visually strong frame with the wrong mechanical job is rejected.
 
-## Current app
+## v0.2
 
-Open `index.html`. The first version provides:
+Open `index.html` through GitHub Pages or any local HTTP server. It now reads `manifest.json` rather than hard-coding the production plan.
 
-- 28-character goal roster scaffold
+Current functionality:
+
+- 28-character roster manifest with stable IDs where confidence is sufficient
+- source-reference links to the four owner casting/run-cycle images already in `turf/references/`
+- explicit front/rear isometric directions
+- target frame budgets per action
 - base-action coverage matrix
 - planned / review / approved / rejected state cycling
-- prioritized idle-production queue
-- parity coverage meter
-- six-stage production ladder
+- local review-state persistence
+- exportable JSON state snapshot
+- prioritized idle queue
+- conservative approved-only parity meter
+- PNG candidate validation for preferred plate size, opaque alpha and pure-magenta background corners
+- two-image exact-pixel similarity check to expose duplicate/near-duplicate output
+- duplicate flag count persisted with review state
 
-State is intentionally session-local in v0.1. The next version should read/write a repository manifest rather than hard-code state.
+The three final provisional roster slots remain visibly marked `needs-id`; the app does not pretend their labels are authoritative.
 
-## Next implementation steps
+## Manifest
 
-- replace provisional roster labels with stable character IDs tied to the owner reference sheets
-- add `manifest.json` with frame-level state
-- add direction coverage
-- add per-frame candidate gallery
-- add validation results for pure background, scale/origin, duplicate similarity and paired-phase opposition
-- add animation preview assembled only from approved frames
-- integrate generation jobs with the existing `scripts/gen-with-ref.mjs` path
-- preserve raw generation provenance and prompt/reference hashes
+`manifest.json` is the production contract for the app. It currently defines:
+
+- owner source references
+- character IDs
+- two tactical isometric directions
+- action/frame targets
+- export expectations
+- queue priority
+- validation rules
+
+Coverage is deliberately separate from raw image count.
+
+## Candidate validation
+
+The browser validator is a first mechanical gate, not an art director. It can reject objective export defects before review:
+
+- wrong dimensions
+- non-opaque pixels
+- missing `#FF00FF` background at the image corners
+- suspiciously high exact-pixel similarity between two same-size candidates
+
+It cannot yet decide anatomy, pose continuity, support-leg ownership, weapon grip or aesthetic quality. Those remain approval gates.
 
 ## Existing pipeline compatibility
 
-Do not undo the current illustration-fidelity findings in `turf/art-src/sprites/README.md`: TURF reference art is not a 32x40 / 32-colour retro-pixel pipeline. Existing v3 plates are cut at 192x288 with `--no-quantise` and illustration validation. The Sprite Factory should track and validate this higher-detail production path rather than silently forcing old MST-style palette constraints.
+Do not undo the current illustration-fidelity findings in `turf/art-src/sprites/README.md`: TURF reference art is not a 32x40 / 32-colour retro-pixel pipeline. Existing v3 plates are cut at 192x288 with `--no-quantise` and illustration validation. The Sprite Factory tracks that higher-detail production path while borrowing MST-level animation discipline, readability and coverage rather than forcing MST's literal rendering technique.
+
+## Next build
+
+1. Frame-level candidate records instead of only action-level cells.
+2. Candidate gallery with approve/reject controls and provenance.
+3. Direction + phase coverage inside each action.
+4. Silhouette/lower-body similarity metrics, not only whole-image exact equality.
+5. Motion-state ledger support for locomotion.
+6. Animation preview assembled only from approved candidates.
+7. Generator job packets compatible with `scripts/gen-with-ref.mjs`.
+8. Repository-side progress report generated from the manifest/candidate records.
