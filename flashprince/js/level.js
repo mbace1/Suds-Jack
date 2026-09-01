@@ -8,9 +8,9 @@
 // the silhouette is not a ruler. Same shapes, biome by biome; only the sixteen
 // colours underneath them change.
 
-import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=55';
+import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=63';
 import { C } from './palette.js?v=52';
-import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=53';
+import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=63';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -49,6 +49,7 @@ export class World {
         else if (ch === 'G') { this.pickups.push({ kind: 'gun', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'h') { this.pickups.push({ kind: 'cell', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'V') { this.pickups.push({ kind: 'tape', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'L') { this.pickups.push({ kind: 'loot', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'B') { this.pickups.push({ kind: 'sword', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if ('bgdsg'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
         else if (ch === 'T') { this.lights.push({ x, y: y + 8 }); this.grid[ty][tx] = '-'; }
@@ -609,6 +610,20 @@ export class World {
         scr.rect(p.x - 18, p.y + bob - 2, 4, 6, C.DARK);
         scr.rect(p.x - 22, p.y + bob, 5, 3, C.DARK);
         scr.rect(p.x - 24, p.y + bob - 4, 15, 1, C.LUX);
+      } else if (p.kind === 'tape') {
+        // Two reels and one pale paper label: readable as VHS at eight pixels.
+        scr.rect(p.x - 7, p.y + bob - 5, 14, 10, C.DARK);
+        scr.rect(p.x - 6, p.y + bob - 4, 12, 2, C.LUX);
+        scr.disc(p.x - 3, p.y + bob + 1, 2, C.EDGE);
+        scr.disc(p.x + 3, p.y + bob + 1, 2, C.EDGE);
+        scr.rect(p.x - 1, p.y + bob, 2, 2, C.VOID);
+      } else if (p.kind === 'loot') {
+        // A salvaged machine core: casing, two contacts and a live centre.
+        scr.rect(p.x - 6, p.y + bob - 5, 12, 10, C.DARK);
+        scr.rect(p.x - 4, p.y + bob - 3, 8, 6, C.SOLID);
+        scr.disc(p.x, p.y + bob, 2, C.LUX2);
+        scr.rect(p.x - 8, p.y + bob - 2, 2, 4, C.EDGE);
+        scr.rect(p.x + 6, p.y + bob - 2, 2, 4, C.EDGE);
       } else {
         scr.rect(p.x - 4, p.y + bob - 5, 8, 11, C.EDGE);
         scr.rect(p.x - 3, p.y + bob - 4, 6, 9, C.ALERT);

@@ -93,10 +93,16 @@ export function advanceBolt(bolt, hero) {
   bolt.x += bolt.vx;
   bolt.life--;
 
+  if (bolt.friendly) return bolt.life <= 0 || bolt.x < -8 || bolt.x > 328 ? 'spent' : null;
+
   const fromFront = (bolt.px - hero.x) * hero.face > 0;
   const shieldX = hero.x + hero.face * 17;
   if (hero.shielding && fromFront && crossed(bolt.px, bolt.x, shieldX)
-      && bolt.y >= hero.y - 34 && bolt.y <= hero.y - 2) return 'shield';
+      && bolt.y >= hero.y - 34 && bolt.y <= hero.y - 2) {
+    // The first eight frames are a deliberate deflect. Holding it later still
+    // blocks, but costs more energy and cannot return the shot.
+    return hero.f <= 8 ? 'reflect' : 'shield';
+  }
 
   if (crossed(bolt.px, bolt.x, hero.x)
       && bolt.y >= hero.y - hero.h && bolt.y <= hero.y) return 'hit';

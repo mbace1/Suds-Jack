@@ -22,7 +22,7 @@
 //   C  a slab waiting in the ceiling
 //   D  the door out
 //   S  where he wakes up                  h  a flask (crouch over it)
-//   V  an archive tape (crouch over it)
+//   V  an archive tape (crouch over it)    L  retro machine loot
 //   B  a blade                            G  the pistol
 //   b  something that lives here          g  a sentry with a rifle
 //   s  a swordsman                        d  a drone
@@ -297,6 +297,43 @@ export const ROOMS = [
       '####################',
     ],
   },
+  { // 15 — across the flood, the station and the living facility have fused
+    t: 6.00, beat: 'facilityGate', scene: 'facilityGate', waterY: 176,
+    lootTitle: 'TRANSIT RELAY CORE',
+    map: [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '             #######',
+      '      ####   #######',
+      '      ####   #######',
+      '   g  #### L        ',
+      '####################',
+    ],
+  },
+  { // 16 — inside: beautiful machinery grown as much as it was assembled
+    t: 6.00, beat: 'bioFacility', scene: 'bioFacility',
+    tapeTitle: 'GARDEN ENGINE / TEST 03',
+    lootTitle: 'LIVING BUS COUPLER',
+    map: [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '       ####         ',
+      '   ### ####   ####  ',
+      '   ###        ####  ',
+      '      L   V      g  ',
+      '####################',
+    ],
+  },
 ];
 
 // The one line of text in each act. Another World has no words in it at all;
@@ -310,4 +347,6 @@ export const BEATS = {
   palace: 'FOUR THOUSAND YEARS LATER',
   end: 'AND THE FOREST TOOK IT ALL BACK',
   floodedHub: 'THE LAST TRAINS LEFT UNDERWATER',
+  facilityGate: 'THE STATION HAD GROWN A SECOND HEART',
+  bioFacility: 'THE MACHINES WERE LEARNING TO BLOOM',
 };

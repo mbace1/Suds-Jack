@@ -42,6 +42,11 @@ export class Screen {
     this.keep = [];                   // colours the quantise pass must not touch
     this.cacheMap = new Map();
     this.pure = true;                 // the quantise pass; off = plain canvas AA
+    // CLASSIC fills the available display. 4X keeps every source pixel an
+    // exact square at an integer scale, so the same authored frame can be
+    // inspected without uneven browser resampling. The picture data never
+    // changes; this is presentation only.
+    this.scaleMode = localStorage.getItem('flashPrinceScale') === 'integer4' ? 'integer4' : 'fit';
     this.scale = 1; this.ox = 0; this.oy = 0;
     this.img = this.ctx.createImageData(W, H);
     this.resize();
@@ -107,20 +112,28 @@ export class Screen {
     if (this.portrait) {
       // fit the width, but never let the picture eat the panel: a control band
       // under about 30% of the height stops being tappable
-      const s = Math.min(DW / W, (DH * 0.60) / H);
+      const fit = Math.min(DW / W, (DH * 0.60) / H);
+      const s = this.scaleMode === 'integer4' ? Math.max(1, Math.min(4, Math.floor(fit))) : fit;
       this.scale = s;
       this.ox = Math.floor((DW - W * s) / 2);
       this.oy = Math.floor(Math.min(DH * 0.06, (DH - H * s) * 0.25));
       const top = this.oy + H * s;
       this.band = { x: 0, y: Math.round(top), w: DW, h: Math.round(DH - top) };
     } else {
-      const s = Math.min(DW / W, DH / H);
+      const fit = Math.min(DW / W, DH / H);
+      const s = this.scaleMode === 'integer4' ? Math.max(1, Math.min(4, Math.floor(fit))) : fit;
       this.scale = s;
       this.ox = Math.floor((DW - W * s) / 2);
       this.oy = Math.floor((DH - H * s) / 2);
       this.band = null;
     }
     this.dctx.imageSmoothingEnabled = false;
+  }
+
+  setScaleMode(mode) {
+    this.scaleMode = mode === 'integer4' ? 'integer4' : 'fit';
+    localStorage.setItem('flashPrinceScale', this.scaleMode);
+    this.resize();
   }
 
   // a pointer in client space → a point in the 320×192 picture

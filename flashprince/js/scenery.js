@@ -38,6 +38,8 @@ export function weights(t) {
 // ── the static backdrop, painted once a room ───────────────────────
 export function paintBack(scr, room, index) {
   if (room.scene === 'floodedHub') { paintFloodedHub(scr); return; }
+  if (room.scene === 'facilityGate') { paintFacilityGate(scr); return; }
+  if (room.scene === 'bioFacility') { paintBioFacility(scr); return; }
   const t = room.t, w = weights(t), r = rand(index * 2654435 + 17);
 
   // Sky as flat bands with hard seams. A 2600 changed colour once a scanline
@@ -390,6 +392,67 @@ function paintFloodedHub(scr) {
   }
 }
 
+function paintFacilityGate(scr) {
+  scr.rect(0, 0, W, 48, C.SKY_HI);
+  scr.rect(0, 48, W, 55, C.SKY_LO);
+  scr.rect(0, 103, W, H - 103, C.FAR);
+
+  // The last drowned blocks remain on the left; the facility owns the right.
+  for (const [x, top, wide] of [[-7, 52, 39], [34, 72, 31], [73, 61, 26]]) {
+    scr.poly([x, 150, x, top + 9, x + 8, top, x + wide - 7, top + 5, x + wide, 150], C.MID);
+    for (let y = top + 17; y < 131; y += 12) scr.rect(x + 8 + ((y >> 2) % 2) * 11, y, 4, 2, C.LUX);
+  }
+  scr.rect(0, 127, 182, 5, C.NEAR);
+  for (const x of [20, 62, 108, 154]) scr.rect(x, 127, 4, 49, C.SOLID);
+  for (let x = 3; x < 181; x += 13) scr.rect(x, 133, 8, 2, C.DARK);
+
+  // A monumental entrance formed from old transit rings and pale living ribs.
+  const cx = 242, cy = 100;
+  scr.disc(cx, cy, 82, C.NEAR);
+  scr.disc(cx, cy, 64, C.SOLID);
+  scr.disc(cx, cy, 45, C.DARK);
+  scr.rect(cx - 31, cy - 39, 62, 82, C.VOID);
+  for (let i = 0; i < 8; i++) {
+    const a = -2.25 + i * 0.64;
+    const x1 = cx + Math.cos(a) * 43, y1 = cy + Math.sin(a) * 39;
+    const x2 = cx + Math.cos(a) * 73, y2 = cy + Math.sin(a) * 64;
+    scr.limb(x1, y1, x2, y2, 6, 2, C.EDGE);
+    scr.rect(x2 - 2, y2 - 2, 4, 4, i % 2 ? C.LUX : C.LUX2);
+  }
+  // Service conduits cross the old wall without hiding the playable ledges.
+  for (const y of [38, 50, 144]) {
+    scr.rect(114, y, 76, 3, C.DARK);
+    for (let x = 119; x < 187; x += 17) scr.rect(x, y - 2, 4, 7, C.SOLID);
+  }
+  scr.rect(0, 176, W, H - 176, C.NEAR);
+}
+
+function paintBioFacility(scr) {
+  scr.rect(0, 0, W, H, C.VOID);
+  scr.rect(12, 10, W - 24, H - 20, C.FAR);
+  // Repeating grown ribs give the chamber depth without body-horror anatomy.
+  for (let i = 0; i < 8; i++) {
+    const x = 18 + i * 41;
+    scr.limb(x, H, x + (i % 2 ? 8 : -8), 12, 9, 3, C.NEAR);
+    scr.limb(x + 4, H, x + (i % 2 ? 8 : -8), 12, 2, 1, C.EDGE);
+    scr.disc(x + (i % 2 ? 8 : -8), 17, 5, C.SOLID);
+  }
+  // Three garden engines: glass, machinery and a cultivated luminous core.
+  for (const [x, r] of [[76, 25], [160, 32], [254, 24]]) {
+    scr.rect(x - r - 7, 48, (r + 7) * 2, 77, C.DARK);
+    scr.disc(x, 69, r, C.SOLID);
+    scr.disc(x, 69, r - 7, C.NEAR);
+    scr.disc(x, 69, Math.max(6, r - 17), C.LUX);
+    scr.limb(x, 79, x - 9, 114, 3, 1, C.EDGE);
+    scr.limb(x, 79, x + 11, 114, 3, 1, C.EDGE);
+    for (let k = -1; k <= 1; k++) scr.rect(x + k * 8 - 2, 120, 5, 4, C.LUX2);
+  }
+  // A clean old service rail crosses beneath the living equipment.
+  scr.rect(0, 134, W, 5, C.SOLID);
+  scr.rect(0, 139, W, 2, C.EDGE);
+  for (let x = 5; x < W; x += 19) scr.rect(x, 141, 11, 2, C.DARK);
+}
+
 // Marks cut into the wall. Called by the tile painter rather than the backdrop
 // one, because the wall is painted after the backdrop and would bury them.
 //
@@ -521,6 +584,42 @@ function arch(scr, x, y, w, h, ci) {
 
 // ── what moves, and what is in front of him ────────────────────────
 export function drawAir(scr, room, clock) {
+  if (room.scene === 'facilityGate') {
+    for (let i = 0; i < 24; i++) {
+      const x = (i * 59 + clock * (1.7 + (i % 2) * 0.25)) % (W + 28) - 14;
+      const y = (i * 37 + clock * 2.5) % (H + 18) - 9;
+      scr.limb(x, y, x - 3, y + 8, 1, 1, i % 3 ? C.EDGE : C.LUX);
+    }
+    // A light request travels around the entrance and opens one seam at a time.
+    for (let i = 0; i < 8; i++) {
+      if (((clock >> 4) + i) % 8 !== 0) continue;
+      const a = -2.25 + i * 0.64;
+      scr.disc(242 + Math.cos(a) * 72, 100 + Math.sin(a) * 63, 3, C.LUX2);
+    }
+    const scan = 55 + ((clock * 0.22) % 89);
+    scr.rect(202, scan, 80, 1, C.LUX);
+    return;
+  }
+  if (room.scene === 'bioFacility') {
+    // Suspended seed-lights drift slowly, while the cultivated cores pulse at
+    // different rates. The chamber is alive, never wet or horrific.
+    for (let i = 0; i < 13; i++) {
+      const x = 18 + ((i * 71 + clock * (0.05 + i % 3 * 0.02)) % (W - 36));
+      const y = 20 + Math.sin(clock * 0.009 + i * 2.1) * 23 + (i % 4) * 20;
+      scr.rect(x, y, 1, 1, i % 4 ? C.LUX : C.LUX2);
+    }
+    for (const [i, x] of [[0, 76], [1, 160], [2, 254]]) {
+      const r = 3 + [0, 1, 2, 1][((clock >> (4 + i)) + i) & 3];
+      scr.disc(x, 69, r, C.LUX2);
+      scr.rect(x - 1, 88, 2, 15 + r, C.LUX);
+    }
+    const cart = ((clock * 0.16) % (W + 40)) - 20;
+    scr.rect(cart - 7, 129, 14, 5, C.DARK);
+    scr.rect(cart - 4, 127, 8, 2, C.LUX);
+    scr.rect(cart - 5, 134, 3, 2, C.SOLID);
+    scr.rect(cart + 3, 134, 3, 2, C.SOLID);
+    return;
+  }
   if (room.scene === 'floodedHub') {
     // Rain changes density with the weather cycle. A periodic pale sky flash
     // changes the whole room without introducing a seventeenth colour.
@@ -627,7 +726,7 @@ export function drawAir(scr, room, clock) {
 // land animation becomes a shallow-water wade without inventing replacement
 // body frames. Swimming stays out until a matching authored reference exists.
 export function drawFloodWater(scr, room, clock, hero) {
-  if (room.scene !== 'floodedHub') return;
+  if (!['floodedHub', 'facilityGate'].includes(room.scene)) return;
   const y = room.waterY ?? 166;
   scr.veil([0, y, W, y, W, H, 0, H], C.NEAR, 0.34);
   for (let i = 0; i < 8; i++) {
@@ -692,6 +791,18 @@ export function drawFloodWater(scr, room, clock, hero) {
 // Another World thing in the file — half its famous screens are a lit middle
 // distance seen past something enormous and unlit in the corner.
 export function drawFore(scr, room, index) {
+  if (room.scene === 'facilityGate') {
+    scr.poly([0, 0, 46, 0, 30, 17, 15, 57, 0, 66], C.VOID);
+    scr.poly([W, 0, W - 23, 0, W - 13, 50, W, 69], C.VOID);
+    return;
+  }
+  if (room.scene === 'bioFacility') {
+    scr.rect(0, 0, 8, H, C.VOID);
+    scr.rect(W - 8, 0, 8, H, C.VOID);
+    scr.poly([0, 0, 72, 0, 42, 12, 0, 17], C.VOID);
+    scr.poly([W, 0, W - 72, 0, W - 42, 12, W, 17], C.VOID);
+    return;
+  }
   if (room.scene === 'floodedHub') {
     // Broken station roof and reeds frame the playable water like a window.
     scr.poly([0, 0, 52, 0, 35, 18, 20, 52, 0, 58], C.VOID);

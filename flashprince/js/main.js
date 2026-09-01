@@ -15,14 +15,14 @@
 // the animations one at a time, looping, with its name and frame count on
 // screen, which is the only way to judge a cycle on its own.
 
-import { Screen, W, H } from './screen.js';
+import { Screen, W, H } from './screen.js?v=63';
 import { paletteAt, C } from './palette.js?v=52';
 import { Hero } from './hero.js?v=59';
-import { World, ROOMS, ROOM_H } from './level.js?v=56';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=59';
+import { World, ROOMS, ROOM_H } from './level.js?v=63';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=63';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
-import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=55';
+import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=63';
 import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
@@ -122,7 +122,10 @@ class Stage {
     this.flash = 0;
     this.tracer = null;
     this.tapes = 0;
+    this.parts = 0;
     this.lootFlash = 0;
+    this.lootTitle = '';
+    this.impacts = [];
   }
 
   // ── the editor ─────────────────────────────────────────────────────
@@ -223,6 +226,9 @@ class Stage {
       if (inp.dir && inp.dirHeld === 1) {
         this.characterChoice = (this.characterChoice + inp.dir + 3) % 3;
       }
+      if (inp.gunPress) {
+        this.scr.setScaleMode(this.scr.scaleMode === 'integer4' ? 'fit' : 'integer4');
+      }
       if (inp.jumpPress || inp.firePress) {
         this.hero.character = ['conrad', 'classic', 'legacy'][this.characterChoice];
         const spawn = this.world.spawn ?? { x: 48, y: this.groundUnder(48, FLOOR) };
@@ -263,6 +269,10 @@ class Stage {
     h.update(this.world, inp, this);
     if (h.drinkQueued) { h.drinkQueued = false; this.collectUnder(h); }
     if (this.lootFlash > 0) this.lootFlash--;
+    for (const p of this.impacts) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.t--;
+    }
+    this.impacts = this.impacts.filter(p => p.t > 0);
 
     // A screen is a composition with a hard cut either side of it: walk off the
     // edge and the next one is simply THERE. No scrolling, no camera.
@@ -310,6 +320,27 @@ class Stage {
     for (let i = this.bolts.length - 1; i >= 0; i--) {
       const bolt = this.bolts[i];
       const result = advanceBolt(bolt, h);
+      if (result === 'reflect') {
+        bolt.vx *= -1.18;
+        bolt.px = bolt.x;
+        bolt.friendly = true;
+        h.shield = Math.max(0, h.shield - 8);
+        h.shieldFlash = 6;
+        this.spark(bolt.x, bolt.y, Math.sign(bolt.vx));
+        this.snd.woodHit();
+        continue;
+      }
+      if (!result && bolt.friendly) {
+        const targets = [...this.sentries, ...this.foes].filter(e => !e.dead);
+        const hit = targets.find(e => this.reached(bolt.px, bolt.x, e.x, 7)
+          && bolt.y >= e.y - 36 && bolt.y <= e.y);
+        if (hit) {
+          hit.struck(h.x);
+          this.spark(bolt.x, bolt.y, Math.sign(bolt.vx));
+          this.bolts.splice(i, 1);
+          continue;
+        }
+      }
       if (!result) continue;
       this.bolts.splice(i, 1);
       if (result === 'shield') {
@@ -344,7 +375,7 @@ class Stage {
   }
 
   floorPickupUnder(h) {
-    return this.world.pickups.find(p => !p.taken && (p.kind === 'cell' || p.kind === 'tape')
+    return this.world.pickups.find(p => !p.taken && ['cell', 'tape', 'loot'].includes(p.kind)
       && Math.abs(p.x - h.x) <= 9 && Math.abs(p.y - h.y) <= 20);
   }
 
@@ -357,7 +388,11 @@ class Stage {
     if (!p) return;
     p.taken = true;
     if (p.kind === 'cell') h.health = Math.min(3, h.health + 1);
-    else { this.tapes++; this.lootFlash = 210; }
+    else if (p.kind === 'tape') {
+      this.tapes++; this.lootTitle = this.world.room.tapeTitle ?? 'ARCHIVE TAPE'; this.lootFlash = 210;
+    } else {
+      this.parts++; this.lootTitle = this.world.room.lootTitle ?? 'RETRO MACHINE PART'; this.lootFlash = 150;
+    }
   }
 
   // A blade sweeps a SPAN, from the man to the point — being at the tip is not
@@ -380,6 +415,13 @@ class Stage {
     if (!ahead) return;
     if (ahead.enemy) ahead.enemy.struck(h.x);
     else this.post.hit(ahead.x, h.face);
+    this.spark(ahead.x, m.y, -h.face);
+  }
+
+  spark(x, y, dir = 1) {
+    for (let k = 0; k < 5; k++) {
+      this.impacts.push({ x, y, vx: dir * (0.35 + k * 0.12), vy: -0.8 + k * 0.3, t: 8 + k });
+    }
   }
 
   // the hero asks the game for these; on a floor with nothing on it they are
@@ -425,6 +467,8 @@ class Stage {
     this.centre(scr, 'DEFAULT          FULL SET        ARCHIVE', 52, C.DARK, 6);
     const x = [58, 160, 262][this.characterChoice];
     scr.rect(x - 29, FLOOR + 8, 58, 2, C.LUX);
+    const scale = this.scr.scaleMode === 'integer4' ? 'MODERN 4X' : 'CLASSIC FIT';
+    this.centre(scr, `E / GUN  DISPLAY: ${scale}`, H - 20, C.EDGE, 6);
     this.centre(scr, '◀ ▶  CHOOSE       JUMP / FIRE  START', H - 10, C.DARK, 6);
   }
 
@@ -451,17 +495,11 @@ class Stage {
     w.drawTraps(scr);
     if (w.door) halo(scr, w.door.x, w.door.y - 16, 22 + Math.sin(this.clock * 0.06) * 3);
 
-    for (const p of w.pickups) {
-      if (p.taken) continue;
-      const lift = Math.sin(this.clock * 0.08 + p.x) * 1.5;
-      scr.rect(p.x - 3, p.y - 6 + lift, 6, 5, C.LUX);
-      scr.rect(p.x - 1, p.y - 5 + lift, 2, 3, C.LUX2);
-    }
-
     if (this.post) this.post.draw(scr, C);
     for (const foe of this.foes) foe.draw(scr);
     for (const sentry of this.sentries) sentry.draw(scr);
     for (const bolt of this.bolts) drawBolt(scr, bolt);
+    for (const p of this.impacts) scr.rect(p.x, p.y, p.t > 8 ? 2 : 1, 1, p.t & 1 ? C.LUX2 : C.LUX);
 
     const h = this.hero;
     // A contact shadow. Without one he is a cut-out laid on the picture rather
@@ -605,11 +643,12 @@ class Stage {
       this.centre(scr, 'H  TAKE A HIT      M  SOUND      G  ANIMATION GALLERY', H - 2, C.DARK, s);
     }
     if (this.lootFlash > 0) {
-      const title = this.world.room.tapeTitle ?? 'ARCHIVE TAPE';
       scr.rect(67, 8, 186, 18, C.DARK);
-      this.centre(scr, `ARCHIVE ${String(this.tapes).padStart(2, '0')} · ${title}`, 14, C.LUX, 6);
-    } else if (this.tapes > 0) {
-      scr.text(`VHS ${String(this.tapes).padStart(2, '0')}`, W - 48, 22, C.LUX, 6);
+      const tag = this.lootTitle.includes('TAPE') || this.world.room.tapeTitle === this.lootTitle
+        ? `ARCHIVE ${String(this.tapes).padStart(2, '0')}` : `PART ${String(this.parts).padStart(2, '0')}`;
+      this.centre(scr, `${tag} · ${this.lootTitle}`, 14, C.LUX, 6);
+    } else if (this.tapes > 0 || this.parts > 0) {
+      scr.text(`VHS ${String(this.tapes).padStart(2, '0')}  PART ${String(this.parts).padStart(2, '0')}`, W - 96, 22, C.LUX, 6);
     }
   }
 

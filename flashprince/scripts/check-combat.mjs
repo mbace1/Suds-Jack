@@ -4,7 +4,7 @@ import { World, ROOMS } from '../js/level.js';
 
 const hero = {
   x: 48, y: 176, face: 1, h: 30,
-  shielding: false,
+  shielding: false, f: 99,
 };
 
 // The flooded-hub map marker must survive room parsing and become a sentry.
@@ -12,6 +12,8 @@ const hero = {
   const world = new World();
   world.load(ROOMS.length - 1);
   assert.equal(world.spawns.filter(spawn => spawn.kind === 'g').length, 1);
+  assert.equal(world.pickups.filter(pickup => pickup.kind === 'loot').length, 1);
+  assert.equal(world.pickups.filter(pickup => pickup.kind === 'tape').length, 1);
 }
 
 // The machine has a readable track → warning → fire sequence and emits one
@@ -49,4 +51,12 @@ const hero = {
   assert.equal(advanceBolt(second, wrongWay), 'hit');
 }
 
-console.log('combat checks ok — telegraph, shot, crouch dodge, directional shield');
+// Raising the shield just before impact reflects the bolt; simply holding it
+// remains the safer, more expensive block.
+{
+  const timed = { ...hero, shielding: true, f: 4 };
+  const bolt = { x: 70, px: 70, y: 154, vx: -8, life: 10 };
+  assert.equal(advanceBolt(bolt, timed), 'reflect');
+}
+
+console.log('combat checks ok — telegraph, shot, crouch dodge, block, reflection, facility loot');

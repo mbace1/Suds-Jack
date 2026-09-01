@@ -1,5 +1,16 @@
 # Flash Prince — versions
 
+## v63 — 2026-09-01
+
+**The flooded-city route now reaches the bio-organic facility.** Two new
+playable screens cross the fused transport gate and enter a cultivated machine
+chamber, with rain, moving service hardware, drifting seed lights, living
+cores, VHS tapes and collectible retro machine parts. A newly raised shield
+reflects a sentry bolt; holding it remains the reliable energy-costing block.
+The character menu now switches between classic full-screen fitting and an
+exact integer 4× presentation using the same source frames. No character
+frame, palette, anchor, animation timing, movement value or locked run changed.
+
 ## v62 — 2026-09-01
 
 **Low actions meet the floor cleanly.** Crouch, rise, pickup and low-climb now
