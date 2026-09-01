@@ -1,0 +1,64 @@
+{
+  "version": "0.2.0",
+  "project": "TURF",
+  "sourceReferences": [
+    "../references/casting-sheet-full.png",
+    "../references/casting-sheet-detail-1.png",
+    "../references/casting-sheet-detail-2.png",
+    "../references/casting-sheet-run-cycle.png"
+  ],
+  "directions": ["front_iso", "rear_iso"],
+  "actions": {
+    "idle": {"targetFrames": 4, "priority": 1},
+    "move": {"targetFrames": 12, "priority": 2},
+    "melee": {"targetFrames": 5, "priority": 3},
+    "ranged": {"targetFrames": 5, "priority": 3},
+    "hit": {"targetFrames": 3, "priority": 4},
+    "ko": {"targetFrames": 5, "priority": 5}
+  },
+  "validation": {
+    "background": "#FF00FF",
+    "preferredPlate": [192, 288],
+    "quantise": false,
+    "duplicatePolicy": "near-duplicate frames have zero animation value",
+    "progressPolicy": "only approved coverage counts"
+  },
+  "characters": [
+    {"id":"cast_01_buzzcut_knife","label":"Buzzcut knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_02_red_beanie_bottle","label":"Red beanie bottle","source":"casting-sheet-detail-2","status":"active"},
+    {"id":"cast_03_blonde_punk_knife","label":"Blonde punk knife","source":"casting-sheet-detail-2","status":"active"},
+    {"id":"cast_04_grey_hoodie_bottle","label":"Grey hoodie bottle","source":"casting-sheet-detail-2","status":"active"},
+    {"id":"cast_05_tattoo_tank_tool","label":"Tattoo tank tool","source":"casting-sheet-detail-2","status":"active"},
+    {"id":"cast_06_flatcap_bat","label":"Flat-cap bat","source":"casting-sheet-detail-2","status":"active"},
+    {"id":"cast_07_blue_tracksuit_pistol","label":"Blue tracksuit pistol","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_08_vest_red_pants","label":"Vest red pants","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_09_cornrows_knife","label":"Cornrows knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_10_green_mohawk_knife","label":"Green mohawk knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_11_bucket_hat_knife","label":"Bucket-hat knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_12_heavy_puffer_hammer","label":"Heavy puffer hammer","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_13_rasta_jacket","label":"Rasta jacket","source":"casting-sheet-full","status":"active"},
+    {"id":"toko_slomo","label":"Toko Slomo","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_15_tattoo_pistol","label":"Tattoo pistol","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_16_black_hood_knife","label":"Black hood knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_17_brown_hood_pistol","label":"Brown hood pistol","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_18_coat_bottle","label":"Coat bottle","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_19_flatcap_gunner","label":"Flat-cap gunner","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_20_red_hoodie_knife","label":"Red hoodie knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_21_leather_jacket_bat","label":"Leather jacket bat","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_22_leopard_coat_knife","label":"Leopard coat knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_23_grey_vest_knife","label":"Grey vest knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_24_olive_jacket_knife","label":"Olive jacket knife","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_25_blue_tracksuit_gunner","label":"Blue tracksuit gunner","source":"casting-sheet-full","status":"active"},
+    {"id":"cast_26_street_enforcer_a","label":"Street enforcer A","source":"casting-sheet-full","status":"needs-id"},
+    {"id":"cast_27_street_enforcer_b","label":"Street enforcer B","source":"casting-sheet-full","status":"needs-id"},
+    {"id":"cast_28_street_enforcer_c","label":"Street enforcer C","source":"casting-sheet-full","status":"needs-id"}
+  ],
+  "coverage": {},
+  "queue": [
+    {"character":"cast_01_buzzcut_knife","action":"idle","direction":"front_iso","goal":"subtle breathing seed","priority":1},
+    {"character":"cast_01_buzzcut_knife","action":"idle","direction":"rear_iso","goal":"subtle breathing seed","priority":2},
+    {"character":"cast_02_red_beanie_bottle","action":"idle","direction":"front_iso","goal":"subtle weight shift","priority":3},
+    {"character":"cast_03_blonde_punk_knife","action":"idle","direction":"front_iso","goal":"subtle breathing seed","priority":4},
+    {"character":"toko_slomo","action":"idle","direction":"front_iso","goal":"controlled minimal breathing","priority":5}
+  ]
+}
