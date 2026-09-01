@@ -1,5 +1,23 @@
-// SKLTR v46 — combat readability without changing trajectory or aim.
-const css=document.createElement('style');css.textContent=`#skltr-melee-confirm{position:fixed;left:50%;top:54%;transform:translate(-50%,-50%) scale(.8);z-index:80;pointer-events:none;font:900 15px/1 monospace;letter-spacing:5px;color:#fff;text-shadow:0 0 8px #9bfff0,0 0 20px #9bfff0;opacity:0}#skltr-melee-confirm.go{animation:skltrHit .28s ease-out}@keyframes skltrHit{0%{opacity:1;transform:translate(-50%,-50%) scale(1.35)}100%{opacity:0;transform:translate(-50%,-62%) scale(.9)}}#flow-state{transition:font-size .12s,letter-spacing .12s,filter .12s}#flow-state.v46-1{font-size:13px;letter-spacing:2px;filter:brightness(1.15)}#flow-state.v46-2{font-size:15px;letter-spacing:3px;filter:brightness(1.35)}#flow-state.v46-3{font-size:17px;letter-spacing:4px;filter:brightness(1.65)}`;document.head.appendChild(css);
-const hit=document.createElement('div');hit.id='skltr-melee-confirm';hit.textContent='CONTACT';document.body.appendChild(hit);addEventListener('skltr-melee-kill',()=>{hit.classList.remove('go');void hit.offsetWidth;hit.classList.add('go')});
-let last=-1;function tick(){let peak=0;try{peak=window._skltrPlaytest?.().flowPeak||0}catch{}const flow=document.getElementById('flow-state');if(flow&&peak!==last){flow.classList.remove('v46-1','v46-2','v46-3');if(peak>0)flow.classList.add(`v46-${Math.min(3,peak)}`);last=peak}requestAnimationFrame(tick)}tick();
-const cue=document.createElement('div');cue.textContent='DASH THROUGH · ALMOST TOUCH';Object.assign(cue.style,{position:'fixed',left:'50%',bottom:'15%',transform:'translateX(-50%)',zIndex:'70',font:'11px monospace',letterSpacing:'2px',color:'#9bfff0',textShadow:'0 0 12px #50ffdc',pointerEvents:'none',opacity:'.8',transition:'opacity .4s'});document.body.appendChild(cue);const remove=()=>{cue.style.opacity='0';setTimeout(()=>cue.remove(),450)};addEventListener('skltr-melee-kill',remove,{once:true});setTimeout(remove,16000);
+// SKLTR v78 — combat readability without telemetry side effects.
+const css=document.createElement('style');
+css.textContent=`
+#skltr-melee-confirm{position:fixed;left:50%;top:54%;transform:translate(-50%,-50%) scale(.8);z-index:80;pointer-events:none;font:900 15px/1 monospace;letter-spacing:5px;color:#fff;text-shadow:0 0 8px #9bfff0,0 0 20px #9bfff0;opacity:0}
+#skltr-melee-confirm.go{animation:skltrHit .28s ease-out}@keyframes skltrHit{0%{opacity:1;transform:translate(-50%,-50%) scale(1.35)}100%{opacity:0;transform:translate(-50%,-62%) scale(.9)}}
+#flow-state{transition:font-size .12s,letter-spacing .12s,filter .12s}
+#flow-state.v46-1{font-size:13px;letter-spacing:2px;filter:brightness(1.15)}
+#flow-state.v46-2{font-size:15px;letter-spacing:3px;filter:brightness(1.35)}
+#flow-state.v46-3{font-size:17px;letter-spacing:4px;filter:brightness(1.65)}
+`;
+document.head.appendChild(css);
+const hit=document.createElement('div');hit.id='skltr-melee-confirm';hit.textContent='CONTACT';document.body.appendChild(hit);
+addEventListener('skltr-melee-kill',()=>{hit.classList.remove('go');void hit.offsetWidth;hit.classList.add('go')});
+let last=-1;
+function tick(){
+  let current=0;try{current=window._skltrPlaytest?.().currentFlow||0}catch{}
+  const flow=document.getElementById('flow-state');
+  if(flow&&current!==last){flow.classList.remove('v46-1','v46-2','v46-3');if(current>0)flow.classList.add(`v46-${Math.min(3,current)}`);last=current}
+  requestAnimationFrame(tick);
+}tick();
+const cue=document.createElement('div');cue.textContent='DASH THROUGH · ALMOST TOUCH';
+Object.assign(cue.style,{position:'fixed',left:'50%',bottom:'15%',transform:'translateX(-50%)',zIndex:'70',font:'11px monospace',letterSpacing:'2px',color:'#9bfff0',textShadow:'0 0 12px #50ffdc',pointerEvents:'none',opacity:'.8',transition:'opacity .4s'});document.body.appendChild(cue);
+const remove=()=>{cue.style.opacity='0';setTimeout(()=>cue.remove(),450)};addEventListener('skltr-melee-kill',remove,{once:true});setTimeout(remove,16000);
