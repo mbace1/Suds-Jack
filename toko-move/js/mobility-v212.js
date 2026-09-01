@@ -1,6 +1,6 @@
 // Toko Move v2.12.2 — selected visible HSL vehicle is the sole ride simulation.
 export class MobilityController{
- constructor(tm){this.tm=tm;this.ch=tm.challenge;this.location=null;this.walking=null;this.pendingGetOff=null;this.ride=null;this.lastLegKey=this.legKey();this.baseCurrentFrom=this.ch.currentFrom.bind(this.ch);this.baseCatch=this.ch.catchChoice.bind(this.ch);this.ch.currentFrom=()=>this.location||this.baseCurrentFrom();this.ch.catchChoice=(choice,vehicle)=>this.catchChoice(choice,vehicle);}
+ constructor(tm){this.tm=tm;this.ch=tm.challenge;this.location=null;this.walking=null;this.pendingGetOff=null;this.ride=null;this.lastLegKey=this.legKey();this.baseCurrentFrom=this.ch.currentFrom.bind(this.ch);this.baseCatch=this.ch.catchChoice.bind(this.ch);this.ch.currentFrom=()=>this.location||this.baseCurrentFrom();this.ch.catchChoice=(choice,vehicle)=>this.catchChoice(choice,vehicle);this.ch.step=()=>this.step();}
  legKey(){return `${this.ch.index}:${this.ch.leg}:${this.ch.active?.label||''}`;}
  syncLeg(){const k=this.legKey();if(k!==this.lastLegKey){this.lastLegKey=k;this.location=null;this.walking=null;this.pendingGetOff=null;this.ride=null;this.tm.liveNetwork?.clearSelection?.();}}
  canWalk(){const c=this.ch.cargoRule?.();return Boolean(this.ch.active&&!c?.modes);}
