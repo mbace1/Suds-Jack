@@ -1,5 +1,4 @@
-// SKLTR v46 — combat readability without changing trajectory or aim.
-// Melee confirmation + FLOW presentation are intentionally screen-space so mobile reads them instantly.
+// SKLTR v78 — combat readability without telemetry side effects.
 const css=document.createElement('style');
 css.textContent=`
 #skltr-melee-confirm{position:fixed;left:50%;top:54%;transform:translate(-50%,-50%) scale(.8);z-index:80;pointer-events:none;font:900 15px/1 monospace;letter-spacing:5px;color:#fff;text-shadow:0 0 8px #9bfff0,0 0 20px #9bfff0;opacity:0}
@@ -12,16 +11,13 @@ css.textContent=`
 document.head.appendChild(css);
 const hit=document.createElement('div');hit.id='skltr-melee-confirm';hit.textContent='CONTACT';document.body.appendChild(hit);
 addEventListener('skltr-melee-kill',()=>{hit.classList.remove('go');void hit.offsetWidth;hit.classList.add('go')});
-
 let last=-1;
 function tick(){
-  let peak=0;try{peak=window._skltrPlaytest?.().flowPeak||0}catch{}
+  let current=0;try{current=window._skltrPlaytest?.().currentFlow||0}catch{}
   const flow=document.getElementById('flow-state');
-  if(flow&&peak!==last){flow.classList.remove('v46-1','v46-2','v46-3');if(peak>0)flow.classList.add(`v46-${Math.min(3,peak)}`);last=peak}
+  if(flow&&current!==last){flow.classList.remove('v46-1','v46-2','v46-3');if(current>0)flow.classList.add(`v46-${Math.min(3,current)}`);last=current}
   requestAnimationFrame(tick);
 }tick();
-
-// Give the first arena one concise, non-modal teaching cue; it disappears after contact.
 const cue=document.createElement('div');cue.textContent='DASH THROUGH · ALMOST TOUCH';
 Object.assign(cue.style,{position:'fixed',left:'50%',bottom:'15%',transform:'translateX(-50%)',zIndex:'70',font:'11px monospace',letterSpacing:'2px',color:'#9bfff0',textShadow:'0 0 12px #50ffdc',pointerEvents:'none',opacity:'.8',transition:'opacity .4s'});document.body.appendChild(cue);
 const remove=()=>{cue.style.opacity='0';setTimeout(()=>cue.remove(),450)};addEventListener('skltr-melee-kill',remove,{once:true});setTimeout(remove,16000);
