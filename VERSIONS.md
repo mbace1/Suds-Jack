@@ -7,6 +7,53 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v234 — 2026-09-01
+**The RUSH LADDER, and the v232 abilities were firing themselves**
+- **THE LADDER PANEL.** The ladder was one line on the death screen: what you
+  just scored, and nothing about what a level *asks*. It's now a real screen
+  (title → `RUSH LADDER`, shown only while Rush is armed — the title is
+  already the busiest surface in the game). Every level is a tile carrying
+  its kind icon (● steady / ⁘ swarm / ▲ heavy), your best tier, and its star;
+  picking one opens that level's own card: duration, the **exact kill count
+  each of S/A/B/C wants**, the roster with the newcomer and the heat-venting
+  COOLER marked, the speed and spawn-budget pressure, and the two ★ goals
+  spelled out instead of abbreviated
+- **Per-level bests now persist** (`tokoDropRushBests`) — `rush.ladder` is one
+  run's stamps and dies with it. Tier only ever improves; a star once earned
+  stays earned
+- **No second copy of the maths.** The panel grades levels you haven't reached,
+  so it can't read live run state — the pure halves of the wave-scale and
+  budget formulas were *extracted* (`waveScaleFor`, `waveBudgetBase`,
+  `rushLevelDuration`, `rushParFor`) and the live paths now call them. One
+  formula, no chance of the panel quoting a number the director doesn't use.
+  It also omits the director's fire-interval scaling on purpose: Rush's four
+  bodies have no guns (v225), so that number would be dead on this screen
+- **The bug this pass found, and it's the bigger half.** v232 hung the
+  abilities on `onDash`, reasoning the dash button was unclaimed in Rush.
+  Half-true: `player.dash()` early-returns, but **`onDash` is fired BY the
+  boost input** — `Space` keyup on keyboard, the same face/bumper button on a
+  pad. So the ability discharged itself at the end of every boost, and the
+  player never picked the moment. A probe on the real build confirmed it:
+  hold Space, release, and OVERCHARGE was spent (`overchargeT` 0 → 3.95,
+  cooldown 0 → 15.95) with no deliberate input. A panic button that fires on
+  your first boost is not a panic button
+- **Fixed with a trigger of its own**: `input.onAbility` — **Q** on keyboard,
+  **X / LB** on a pad (deliberately none of 0/5/7, which are boost), and on
+  touch the lower-left pad, the margin the unreachable ZONE scheme had
+  reserved. Re-probed both ways: boosting and releasing no longer fires it,
+  Q does. The OPTIONS hint and `press/PRESS.md`'s controls table were both
+  describing the old broken binding and are corrected in all three languages
+- One thing left honest rather than "fixed": level 1 draws the *breather*
+  budget in the shipped director, because `waveKind(0)` is `'boss'`
+  (`0 % bossEvery === 0`). The panel reports that real number and only
+  suppresses the word "breather" there, where "lighter after an intense
+  level" would describe a level that doesn't exist
+- `smoke.sh` + `cabinets.sh` green; panel checked at desktop and 390px-wide
+  phone viewports
+- Cache-bust `?v=187` → `?v=188`; HUD label → v234
+
+---
+
 ## v233 — 2026-09-01
 **RUSH gets its own first-run tutorial, and a real bug behind it** *(Rush onboarding pass)*
 - `scheduleTutorialHints()` was unconditional — every first run, Rush

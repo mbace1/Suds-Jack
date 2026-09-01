@@ -84,11 +84,11 @@ spot is never actually safe.
 
 ## Controls
 
-| | Move | Aim & Fire | Dash / Boost | Pause |
-|---|---|---|---|---|
-| **Keyboard + mouse** | WASD / arrows | mouse (auto-fires while aimed) | Space | Esc |
-| **Gamepad** | left stick | right stick (auto-fires while pushed) | bumper / button | Start |
-| **Touch** | left stick | right stick | RUSH: push move stick past 86%, or a dedicated ZONE pad | top-center tap |
+| | Move | Aim & Fire | Dash / Boost | Rush ability | Pause |
+|---|---|---|---|---|---|
+| **Keyboard + mouse** | WASD / arrows | mouse (auto-fires while aimed) | Space | Q | Esc |
+| **Gamepad** | left stick | right stick (auto-fires while pushed) | A / RB / RT | X / LB | Start |
+| **Touch** | left stick | right stick | RUSH: push the move stick past 86% of its travel | lower-left pad | top-center tap |
 
 ## Tech notes (for a devlog / HN-style audience)
 
