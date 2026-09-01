@@ -1,16 +1,16 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=186';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=186';
-import { Player, PLAYER_RADIUS } from './player.js?v=186';
+import { InputManager } from './input.js?v=187';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=187';
+import { Player, PLAYER_RADIUS } from './player.js?v=187';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=186';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=186';
-import { audio } from './audio.js?v=186';
-import { haptics } from './haptics.js?v=186';
-import { initDesigner } from './designer.js?v=186';
-import { createSpecimen } from './specimen.js?v=186';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=186';
-import { TUNING } from './tuning.js?v=186';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=187';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=187';
+import { audio } from './audio.js?v=187';
+import { haptics } from './haptics.js?v=187';
+import { initDesigner } from './designer.js?v=187';
+import { createSpecimen } from './specimen.js?v=187';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=187';
+import { TUNING } from './tuning.js?v=187';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -4506,7 +4506,7 @@ function drawHUD() {
     const last = tutorialHints[tutorialHints.length - 1];
     if (runTimer > last.at + last.dur) {
       tutorialHints = null;
-      localStorage.setItem('tokoDropHintsSeen', '1');
+      localStorage.setItem(_hintsSeenKey, '1');
     } else {
       for (const h of tutorialHints) {
         const ht = runTimer - h.at;
@@ -4927,7 +4927,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v232' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v233' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5604,10 +5604,31 @@ const WAVE_BANNER = {
 // no pauses, no input. Marked seen once the full sequence has played, so a
 // player who dies mid-sequence gets them again on the next run. Canvas HUD
 // stays English deliberately (see lang.js header).
+//
+// v233 RUSH gets its own sequence, under its own "seen" key. The classic
+// sequence teaches dash and "aim & fire" — both wrong in Rush (dash is dead,
+// firing cancels your shield) — and the two flags were sharing one storage
+// key, so a player who'd already played classic got ZERO hints on their
+// first-ever Rush run and walked straight into the fire-cancels-shield
+// gotcha with no warning at all. Split, so each ruleset's first run is
+// actually a first run.
 let tutorialHints = null;   // active schedule [{ at, dur, text }], or null
+let _hintsSeenKey = 'tokoDropHintsSeen';   // which flag the active sequence marks on completion
 function scheduleTutorialHints() {
-  if (localStorage.getItem('tokoDropHintsSeen')) { tutorialHints = null; return; }
   const touch = navigator.maxTouchPoints > 0 && !input.usingGamepad;
+  if (rushMode && !inCabinet()) {
+    _hintsSeenKey = 'tokoDropHintsSeenRush';
+    if (localStorage.getItem(_hintsSeenKey)) { tutorialHints = null; return; }
+    tutorialHints = [
+      { at: 0.8,  dur: 4.5, text: touch ? 'PUSH MOVE STICK TO THE EDGE — BOOST' : 'HOLD SPACE / BUMPER — BOOST' },
+      { at: 6.0,  dur: 4.5, text: 'BOOST = SHIELD + KILLS ON TOUCH' },
+      { at: 11.5, dur: 5.0, text: 'FIRING CANCELS YOUR SHIELD' },
+      { at: 17.0, dur: 5.0, text: 'HEAT IS SHARED — OVERHEAT LOCKS YOUR BOOST' },
+    ];
+    return;
+  }
+  _hintsSeenKey = 'tokoDropHintsSeen';
+  if (localStorage.getItem(_hintsSeenKey)) { tutorialHints = null; return; }
   tutorialHints = touch ? [
     { at: 0.8,  dur: 4.5, text: 'LEFT THUMB — MOVE' },
     { at: 6.0,  dur: 4.5, text: 'RIGHT THUMB — AIM & FIRE' },
@@ -9795,6 +9816,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=186').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=187').catch(() => {});
   });
 }
