@@ -12,7 +12,7 @@
   "gameoflife": {"v":"40","n":40000,"from":"VERSIONS.md"},
   "kindling": {"v":"9","n":9000,"from":"VERSIONS.md"},
   "radiofree": {"v":"37","n":37000,"from":"cache token"},
-  "tokomove": {"v":"2.11","n":2011,"from":"VERSIONS.md"},
+  "tokomove": {"v":"2.12","n":2012,"from":"VERSIONS.md"},
   "tinyhawk": {"v":"6","n":6000,"from":"VERSIONS.md"},
   "tiny2d": {"v":"3","n":3000,"from":"VERSIONS.md"},
   "brand": {"v":"5","n":5000,"from":"VERSIONS.md"},
