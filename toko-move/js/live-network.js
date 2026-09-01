@@ -1,4 +1,4 @@
-// Toko Move v2.12 — deterministic gameplay tram fleet on every exact HSL route layer.
+// Toko Move v2.12.2 — deterministic gameplay fleet on every exact HSL route layer.
 // These are schedule-like gameplay vehicles, not HSL realtime positions.
 const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
 export class LiveNetwork{
@@ -7,6 +7,6 @@ export class LiveNetwork{
  vehicle(id){return this.vehicles.find(v=>v.id===id)||null;}
  select(id){this.selectedVehicleId=this.vehicle(id)?.id||null;return this.vehicle(this.selectedVehicleId);}
  clearSelection(){this.selectedVehicleId=null;}
- nearestTo(layer,nodePathIndex,tick,maxPathDistance=2.2){let best=null;for(const v of this.vehicles){if(v.layer.id!==layer.id)continue;const p=this.position(v,tick);if(!p)continue;const d=Math.abs(p.pathIndex-nodePathIndex);if(d<=maxPathDistance&&(!best||d<best.distance))best={vehicle:v,position:p,distance:d};}return best;}
+ nearestTo(layer,nodePathIndex,tick,maxPathDistance=2.2,direction=null){let best=null;for(const v of this.vehicles){if(v.layer.id!==layer.id)continue;const p=this.position(v,tick);if(!p||(direction&&p.direction!==direction))continue;const d=Math.abs(p.pathIndex-nodePathIndex);if(d<=maxPathDistance&&(!best||d<best.distance))best={vehicle:v,position:p,distance:d};}return best;}
  draw(ctx,tick,project,dpr=1){ctx.save();ctx.font=`bold ${Math.round(8*dpr)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';for(const v of this.vehicles){if(!v.layer.visible)continue;const p=this.position(v,tick);if(!p)continue;const q=project(p.lat,p.lon),selected=v.id===this.selectedVehicleId,w=(selected?29:24)*dpr,h=(selected?18:14)*dpr;ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?4:2)*dpr;ctx.beginPath();ctx.roundRect(q.x-w/2,q.y-h/2,w,h,3*dpr);ctx.fill();ctx.stroke();if(selected){ctx.strokeStyle='#fffdf7';ctx.lineWidth=1*dpr;ctx.stroke();}ctx.fillStyle='#fff';ctx.fillText(v.layer.name,q.x,q.y+.5*dpr);}ctx.restore();}
 }
