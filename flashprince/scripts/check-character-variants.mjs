@@ -1,4 +1,4 @@
-import { ANIM, sheetKey } from '../js/sprite.js';
+import { ANIM, sheetKey, characterVariant } from '../js/sprite.js';
 
 const bodyStates = ['stand', 'run', 'gather', 'airUp', 'land', 'hang', 'mantle'];
 for (const name of bodyStates) {
@@ -14,4 +14,13 @@ for (const [name, anim] of Object.entries(ANIM)) {
 }
 
 if (sheetKey('legacyRun', 'classicBody') !== null) throw new Error('locked v18 run must bypass image sheets');
-console.log('character variants ok — body, weapon and locked run stay separate');
+
+if (characterVariant('conrad') !== undefined) throw new Error('default character must use the default sheet');
+if (characterVariant('classic') !== 'classicBody') throw new Error('Courier must use its complete sheet');
+if (characterVariant('legacy') !== 'classicBody') throw new Error('archive non-run actions must use the complete Courier sheet');
+
+for (const name of ['crouch', 'crouchLow', 'rise', 'stepUp', 'collect']) {
+  if (ANIM[name].ground !== 47) throw new Error(`${name}: row-17 feet must anchor on source pixel 47`);
+}
+
+console.log('character variants ok — body, weapon, low floor and locked run stay separate');

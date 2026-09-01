@@ -89,19 +89,21 @@ export const ANIM = {
   // jumps on rows 9 and 13, the hang on 25, the mantle on 39 — need a per-frame
   // anchor taken off the hip instead, or the sprite's own rise fights the
   // engine's, so they are not mapped yet.
-  crouch: { row: 17, c0: 1, n: 4, ground: 46, ax: 16.6 },
-  crouchLow: { row: 17, c0: 4, n: 2, ground: 46, ax: 16.6, hold: 40, loop: true },
-  rise: { row: 17, c0: 11, n: 4, ground: 46, ax: 16.6 },
+  // Every used row-17 cell ends on pixel 47. Anchoring them at 46 put the
+  // shoe one pixel through the floor and made the low-climb handoff twitch.
+  crouch: { row: 17, c0: 1, n: 4, ground: 47, ax: 16.6 },
+  crouchLow: { row: 17, c0: 4, n: 2, ground: 47, ax: 16.6, hold: 40, loop: true },
+  rise: { row: 17, c0: 11, n: 4, ground: 47, ax: 16.6 },
   // A knee-high climb used to have no sprite mapping at all: the default
   // standing frame simply floated sixteen pixels upward. Reuse the already
   // approved crouch and rise cells from row 17 so he compresses, plants and
   // stands as the scripted body moves onto the block. No new source frames.
   stepUp: { cells: [[17,1], [17,2], [17,3], [17,4], [17,11], [17,12], [17,13], [17,14]],
-            ground: 46, ax: 16.6 },
+            ground: 47, ax: 16.6 },
   // Picking up a floor item had the same missing-state fallback. The extra
   // low holds keep him down through the actual pickup frame before he rises.
   collect: { cells: [[17,4], [17,11], [17,12], [17,13], [17,14]],
-             ground: 46, ax: 16.6 },
+             ground: 47, ax: 16.6 },
   roll: { row: 15, c0: 1, n: 22, ground: 47, ax: 20.6 },
   // Taking a hit. Row 7 is the stagger: knocked backwards with the arms
   // flailing for balance, then a lean forward as he gets his feet under him
@@ -332,6 +334,13 @@ export function sheetKey(anim, variant) {
   if (!a || a.lockedRun) return null;
   if (variant === 'classicBody' && a.sheet === 'sword') return 'classicSword';
   return variant ?? a.sheet ?? 'body';
+}
+
+// One character decision shared by gameplay and the inspection gallery.
+// The archive character intentionally keeps the Courier body for non-run
+// actions; only its immutable v18 run bypasses sheets altogether.
+export function characterVariant(character) {
+  return character === 'classic' || character === 'legacy' ? 'classicBody' : undefined;
 }
 
 // where his hip sits above his feet when he is standing — the airborne anchor

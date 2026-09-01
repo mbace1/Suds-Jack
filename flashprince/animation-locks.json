@@ -6,6 +6,7 @@
     "rule": "Compare every new frame before publishing; approved families remain untouched."
   },
   "galleryRule": "The animation gallery must render the currently selected character style; it may never silently fall back to the default character. V18 legacy run remains separately selectable and locked.",
+  "row17FloorRule": "Crouch, rise, pickup and low-climb use Conrad row 17 and anchor on its actual last source pixel: ground 47. Do not return them to 46.",
   "approvedFamilies": {
     "run": {
       "status": "locked",

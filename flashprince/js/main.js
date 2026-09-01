@@ -27,7 +27,7 @@ import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
-import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=60';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS, characterVariant } from './sprite.js?v=62';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 // The gallery keeps one flat palette, cool and quiet, so a cycle reads. The
@@ -71,6 +71,14 @@ const REEL = [
   ['crouchDraw', 'PISTOL · going down'],
   ['crouchAim', 'PISTOL · aimed, crouched'],
   ['crouchFire', 'PISTOL · the shot, crouched'],
+  ['swordDraw', 'SWORD · drawing'],
+  ['swordGuard', 'SWORD · guard'],
+  ['swordAdvance', 'SWORD · advance'],
+  ['swordRetreat', 'SWORD · retreat'],
+  ['swordLunge', 'SWORD · lunge'],
+  ['swordStrike', 'SWORD · strike'],
+  ['swordParry', 'SWORD · parry'],
+  ['swordSheathe', 'SWORD · sheathing'],
 ];
 
 class Stage {
@@ -465,7 +473,7 @@ class Stage {
     }
     const blink = h.hurtT > 0 && (h.hurtT >> 1) % 2 === 0;
     const sp = h.sprite();
-    const variant = h.character === 'classic' || h.character === 'legacy' ? 'classicBody' : undefined;
+    const variant = characterVariant(h.character);
     if (sp && !blink) drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, sp.lipY ?? h.y, h.face, variant);
     if (h.shielding || h.shieldFlash > 0) {
       const x = Math.round(h.x + h.face * 17);
@@ -549,10 +557,12 @@ class Stage {
       scr.rect(0, y, W / 2 - 6, H - y, C.SOLID);
       scr.rect(0, y, W / 2 - 6, 1, C.EDGE);
     }
-    drawSprite(scr, name, frame, W / 2, y, 1);
+    drawSprite(scr, name, frame, W / 2, y, 1, characterVariant(this.hero.character));
 
     this.centre(scr, label, 22, C.LUX);
-    this.centre(scr, `${frame + 1} / ${n}${this.paused ? '  ·  HELD' : ''}`, 34, C.EDGE);
+    const who = this.hero.character === 'classic' ? 'COURIER'
+      : this.hero.character === 'legacy' ? 'V18 ARCHIVE' : 'FLASH PRINCE';
+    this.centre(scr, `${who}  ·  ${frame + 1} / ${n}${this.paused ? '  ·  HELD' : ''}`, 34, C.EDGE, 6);
     this.centre(scr, `${this.reel + 1} of ${REEL.length}`, FLOOR + 14, C.DARK);
   }
 

@@ -1,5 +1,19 @@
 # Flash Prince — versions
 
+## v62 — 2026-09-01
+
+**Low actions meet the floor cleanly.** Crouch, rise, pickup and low-climb now
+anchor on Conrad row 17's actual final pixel instead of drawing the shoes one
+pixel through the ground. The character-aware gallery is integrated into the
+main renderer and now includes every sword state for direct Courier inspection.
+No source frame, run frame, movement value or animation timing changed.
+
+## v61 — 2026-09-01
+
+**The gallery respects the selected character.** Courier inspection no longer
+falls back to the default character sheet. The V18 run remains separately
+selectable and immutable.
+
 ## v60 — 2026-09-01
 
 **The Courier remains one character with a weapon drawn.** His complete Conrad
