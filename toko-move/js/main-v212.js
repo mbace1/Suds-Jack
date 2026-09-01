@@ -1,6 +1,6 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
 import './core-v212.js?v=1';
-import './route-choice.js?v=2';
+import './route-choice.js?v=3';
 import {LiveNetwork} from './live-network.js?v=1';
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=1';
 import {MobilityController} from './mobility-v212.js?v=1';
