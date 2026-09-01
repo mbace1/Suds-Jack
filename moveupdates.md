@@ -32,8 +32,10 @@ Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/met
 - Hub tactics panel exposes several approaching services and walk exits simultaneously while waiting.
 - Hub panel follows the notebook rule: **availability, not recommendation**.
 - Near-miss feedback records when a service was catchable and then leaves the hub, showing `MISSED <line> · about Nt ago` for a short learning window.
-- Explicit skill moments now record `INTERCEPTED` when a walk turns into a catch within an 8-tick margin and `TIGHT CONNECTION` when a transfer is caught within 6 ticks.
+- Explicit skill moments record `INTERCEPTED` when a walk turns into a catch within an 8-tick margin and `TIGHT CONNECTION` when a transfer is caught within 6 ticks.
 - Skill moments are event hooks first, not a hidden score formula; later progression/reputation can consume them without changing the current core rules.
+- Experimental recovery control allows `GET OFF AT <current stop>` before the suggested destination. The hidden delivery trip is marked consumed, the courier remains at the real intermediate anchor, and the active job is re-planned from there instead of failing.
+- Early disembark emits a `REPLAN` moment. This prototypes the notebook principle that mistakes and intentional deviations should create new routing problems rather than hard fail states.
 
 ## Important files
 - `toko-move/js/live-network.js` — gameplay fleet, exact-path positions, vehicle identity/selection/highlight.
@@ -43,8 +45,9 @@ Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/met
 - `toko-move/js/job-board-v212.js` — concurrent local job offers with live tradeoff information, no solved recommendation.
 - `toko-move/js/hub-tactics-v212.js` — multi-option hub availability + near-miss feedback.
 - `toko-move/js/moments-v212.js` — modular explicit skill-moment events for interception and tight transfers.
+- `toko-move/js/recovery-v212.js` — experimental early-disembark / re-plan control.
 - `toko-move/js/route-choice.js` — waiting UI, arrival-gated boarding, current/next stop UI, GET OFF/WALK/interception actions.
-- `toko-move/js/main-v212.js` — v2.12 runtime overlays, dispatch board, hub tactics, skill moments, interception guidance, animated walker.
+- `toko-move/js/main-v212.js` — v2.12 runtime overlays, dispatch board, hub tactics, skill moments, recovery, interception guidance, animated walker.
 - `toko-move/js/deliveries.js` — dispatch offer generation, scoring/progression, fixed-service delivery trips.
 
 ## Source rules
@@ -57,10 +60,10 @@ Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/met
 Keep these modular until the core loop proves their value: client-specific reputation, day-phase job pressure, authored weather/scenario modifiers, post-run route replay, daily seeded challenges, contextual information upgrades, audio/haptic opportunity cues, and optional live-HSL ambient/reference mode. None of these should alter factual HSL geometry or masquerade as live data.
 
 ## Next larger steps
-1. Browser-test dispatch -> catch -> ride -> transfer -> get off -> next dispatch, including near-miss and walk interception states.
+1. Browser-test dispatch -> catch -> ride -> early exit/transfer -> get off -> next dispatch, including near-miss and walk interception states.
 2. Remove RouteDrawer from Toko Move source and consolidate the v210/v211/v212 wrapper chain.
 3. Make selected visible vehicles the sole ride simulation, removing the duplicate flow-core carrier.
-4. Prototype recoverable early/late disembark and wrong-vehicle recovery so mistakes create new routing problems rather than hard fails.
+4. Extend recovery from early exit to deliberately boarding a non-suggested service, while keeping it recoverable and legible.
 5. Move from one chosen job at a time toward two simultaneous active jobs only after the dispatch board is stable and readable.
 
 Strategic question: **What opportunities are moving through Helsinki right now, and which one do I exploit?**
