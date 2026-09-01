@@ -1,16 +1,16 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=187';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=187';
-import { Player, PLAYER_RADIUS } from './player.js?v=187';
+import { InputManager } from './input.js?v=188';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=188';
+import { Player, PLAYER_RADIUS } from './player.js?v=188';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=187';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=187';
-import { audio } from './audio.js?v=187';
-import { haptics } from './haptics.js?v=187';
-import { initDesigner } from './designer.js?v=187';
-import { createSpecimen } from './specimen.js?v=187';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=187';
-import { TUNING } from './tuning.js?v=187';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=188';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=188';
+import { audio } from './audio.js?v=188';
+import { haptics } from './haptics.js?v=188';
+import { initDesigner } from './designer.js?v=188';
+import { createSpecimen } from './specimen.js?v=188';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=188';
+import { TUNING } from './tuning.js?v=188';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -57,6 +57,12 @@ let rng = Math.random.bind(Math);
 // composition, cadence and escalation are data; this file keeps the algorithm.
 function getWaveScale(wave) {
   if (rush.on) wave = rush.level;   // v224 RUSH: level is difficulty, both ways
+  return waveScaleFor(wave);
+}
+// v234: the pure half, so the RUSH LADDER panel can ask "what would level N
+// be" without touching live run state. getWaveScale() is just this plus the
+// rush.level substitution above — one formula, no second copy to drift.
+function waveScaleFor(wave) {
   const S = TUNING.waves.scale;
   const ramp = Math.min(wave, S.knee) - 1;   // 0..knee-1 across the on-ramp
   const post = Math.max(0, wave - S.knee);   // 0,1,2… after the knee
@@ -68,6 +74,20 @@ function getWaveScale(wave) {
     speedMult:    Math.min(S.speed.base + ramp * S.speed.ramp + post * S.speed.post - earlyEase, S.speed.cap),
     intervalMult: Math.max(S.interval.base - ramp * S.interval.ramp - post * S.interval.post, S.interval.floor),
   };
+}
+
+// v234: the mode-independent half of the spawn budget — knee ramp, the wave
+// kind's multiplier, and the v95 early-wave ease. getEnemySchedule() applies
+// its mode modifiers (SMASH/TEST/RICH/CLOSE COMBAT) on top of this. Pure, so
+// the RUSH LADDER panel can quote a level's real budget without running one.
+function waveBudgetBase(wave, kindKey) {
+  const B = TUNING.waves.budget;
+  const rampB = Math.min(wave, B.knee);
+  const postB = Math.max(0, wave - B.knee);
+  const base  = B.base + rampB * B.ramp + postB * B.post;
+  let budget  = Math.floor(base * B.kind[kindKey]);
+  if (wave < B.early.until) budget = Math.floor(budget * (B.early.base + B.early.step * (wave - 1)));
+  return budget;
 }
 
 // Wave rhythm — creates intensity pulses across waves (swarm beats + breather lulls).
@@ -118,15 +138,9 @@ function getEnemySchedule(wave) {
   // Budget grows slowly in early waves so the ramp feels earned, not punishing.
   // Knee + kind multipliers come from TUNING.waves.budget.
   const B = W.budget;
-  const rampB  = Math.min(wave, B.knee);
-  const postB  = Math.max(0, wave - B.knee);
-  const base   = B.base + rampB * B.ramp + postB * B.post;
-  const mod    = isBoss ? B.kind.boss : isSpike ? B.kind.spike : isSwarm ? B.kind.swarm
-               : isPrize ? B.kind.prize : isBreather ? B.kind.breather : B.kind.normal;
-  let budget = Math.floor(base * mod);
-  // Gentler on-ramp (v95): early waves spawn a bit less, fading to full;
-  // caps, rhythm, and unlock gates are unchanged.
-  if (wave < B.early.until) budget = Math.floor(budget * (B.early.base + B.early.step * (wave - 1)));
+  const kindKey = isBoss ? 'boss' : isSpike ? 'spike' : isSwarm ? 'swarm'
+                : isPrize ? 'prize' : isBreather ? 'breather' : 'normal';
+  let budget = waveBudgetBase(wave, kindKey);
   // SMASH TV (v109): the show wants bodies — more budget on every wave.
   // v178: each SMASH floor raises the stakes on top of the show's bonus
   if (smashMode) budget = Math.floor(budget * B.smash * (1 + B.smashFloorStep * Math.max(0, smashFloor - 1)));
@@ -3551,6 +3565,40 @@ const bareArena = () => inCabinet() || rush.on;
 // Levels move BOTH WAYS: they run on a clock, and losing a life levels you
 // DOWN — and the level is the number the wave director reads, so going down
 // genuinely makes the next wave easier.
+// v234: how long level N runs, as a pure function of N — the RUSH LADDER
+// panel grades levels the player hasn't reached yet, so this can't read
+// `rush.level`. rush.levelDuration() is this applied to the live level.
+function rushLevelDuration(n) {
+  const L = TUNING.rush.levels;
+  return n === 1 ? L.first : n === 2 ? L.second : L.second + (n - 2) * L.step;
+}
+// v234: the PAR kill count each tier asks of level N — rate × that level's
+// own duration, the same maths rush.tierFor() grades against, run backwards
+// so the ladder can print the target instead of only judging the result.
+function rushParFor(n) {
+  const secs = rushLevelDuration(n);
+  const T = TUNING.rush.tiers;
+  return { C: Math.ceil(T.C * secs), B: Math.ceil(T.B * secs),
+           A: Math.ceil(T.A * secs), S: Math.ceil(T.S * secs), secs };
+}
+// v234: per-level bests, persisted across runs. rush.ladder is one run's
+// stamps and dies with it; this is the record the ladder panel reads.
+// Shape: { "<level>": { tier, kills, star } }. Tier only ever improves.
+const TIER_RANK = { C: 1, B: 2, A: 3, S: 4 };
+let rushBests = {};
+try { rushBests = JSON.parse(localStorage.getItem('tokoDropRushBests')) || {}; }
+catch (_) { rushBests = {}; }
+function recordRushBest(level, tier, kills, star) {
+  const prev = rushBests[level];
+  const better = !prev || TIER_RANK[tier] > TIER_RANK[prev.tier];
+  rushBests[level] = {
+    tier: better ? tier : prev.tier,
+    kills: Math.max(kills, prev?.kills ?? 0),
+    star: !!star || !!prev?.star,   // a star once earned stays earned
+  };
+  try { localStorage.setItem('tokoDropRushBests', JSON.stringify(rushBests)); } catch (_) {}
+}
+
 const rush = {
   on: false, heat: 0, overheated: false,
   chain: 0, chainT: 0,
@@ -3586,12 +3634,7 @@ const rush = {
   // What every fresh crack at a level starts from — first entry into Rush,
   // and every level-up/level-down after it.
   _freshAttempt() { this.levelKills = 0; this.chainUnbroken = true; this.neverLocked = true; },
-  levelDuration() {
-    const L = TUNING.rush.levels;
-    return this.level === 1 ? L.first
-         : this.level === 2 ? L.second
-         : L.second + (this.level - 2) * L.step;
-  },
+  levelDuration() { return rushLevelDuration(this.level); },
   // Highest tier letter whose PAR (rate × seconds) the kill count meets, or
   // null below C. Shared by the live HUD readout (seconds = elapsed) and the
   // level-up stamp (seconds = the full duration just survived).
@@ -3665,6 +3708,7 @@ const rush = {
       const star = this.chainUnbroken && this.neverLocked;
       this.ladder.push({ level: this.level, tier, kills: this.levelKills, star });
       if (star) this.stars++;
+      recordRushBest(this.level, tier, this.levelKills, star);   // v234: survives the run
     }
     this._freshAttempt();
     this.level++; this.flashT = 1.2; audio.announce?.('wave');
@@ -4927,7 +4971,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v233' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v234' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5189,6 +5233,21 @@ function showTitle() {
     rhBtn.addEventListener('touchend', e => e.stopPropagation());
     sslot.appendChild(rhBtn);
 
+    // RUSH LADDER (v234) — only while Rush is armed. The title screen is
+    // already the busiest surface in the game; a Rush-only panel doesn't
+    // belong on it for players who never turn Rush on.
+    if (rushMode) {
+      const rlBtn = document.createElement('div');
+      rlBtn.dataset.ui = '1';
+      rlBtn.textContent = t('rushLadder');
+      rlBtn.style.cssText =
+        'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+        'font-size:12px;letter-spacing:1px;opacity:0.5;padding:4px 10px;text-decoration:underline;';
+      rlBtn.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); showRushLadder(); });
+      rlBtn.addEventListener('touchend', e => e.stopPropagation());
+      sslot.appendChild(rlBtn);
+    }
+
     // OPTIONS (v109) — opens the pause menu right from the title (settings +
     // SMASH TV / announcer toggles + enemy tester) instead of a passive hint.
     const optBtn = document.createElement('div');
@@ -5273,6 +5332,174 @@ function showRunHistory() {
     'cursor:pointer;user-select:none;font-size:13px;font-weight:bold;letter-spacing:1px;' +
     'padding:8px 22px;border-radius:8px;border:2px solid #6688ff;color:#aaccff;' +
     'background:rgba(0,0,0,0.35);text-shadow:0 0 10px #4466ff;';
+  closeBtn.addEventListener('pointerdown', () => { panel.remove(); gameState = 'title'; });
+  panel.appendChild(closeBtn);
+
+  document.body.appendChild(panel);
+}
+
+// ── RUSH LADDER panel (v234) ─────────────────────────────────────────────────
+// The ladder was one line of text on the death screen: what you just scored,
+// and nothing about what a level ASKS. This is the other half — every level as
+// a tile you can pick, and beside it the level's own PAR table, its roster,
+// its escalation, and the two goals. All of it derived from the same data the
+// director and the grader actually read (TUNING.waves / TUNING.rush), so the
+// panel can never quote a number the game doesn't use.
+const RUSH_TIER_COLOR = { S: '#ffdd44', A: '#66ffcc', B: '#88ccff', C: 'rgba(255,255,255,0.65)' };
+// Level character, straight from waveKind() with Rush's own boss→spike rule
+// (v225: the boss set pieces are off-roster, so a boss beat lands as a heavy).
+function rushLevelKind(n) {
+  const k = waveKind(n);
+  return k === 'boss' ? 'spike' : k;
+}
+const RUSH_KIND_ICON = { spike: '▲', swarm: '⁘', normal: '●' };
+function rushLevelInfo(n) {
+  const kind  = rushLevelKind(n);
+  const scale = waveScaleFor(n);
+  const par   = rushParFor(n);
+  // Same breather rule getEnemySchedule() uses: a normal level right after an
+  // intense one spawns lighter. ('boss' and 'spike' both read as not-normal,
+  // so Rush's boss→spike swap can't change the answer here.)
+  //
+  // Level 1 lands in it too, and genuinely does in the shipped director:
+  // waveKind(0) is 'boss' (0 % bossEvery === 0), so wave/level 1 has always
+  // drawn the breather budget. The number below is therefore right, and left
+  // alone — but the panel suppresses the *word* on level 1, where "lighter
+  // after an intense level" would describe a level that doesn't exist.
+  const isBreather = kind === 'normal' && waveKind(n - 1) !== 'normal';
+  const budget = waveBudgetBase(n, isBreather ? 'breather' : kind);
+  const roster = Object.entries(TUNING.rush.pool)
+    .filter(([, [min]]) => n >= min)
+    .map(([name, [min]]) => ({ name: name.replace(/_/g, ' '), fresh: min === n,
+                               cooler: name === TUNING.rush.cooler }));
+  return { kind, scale, par, roster, budget, isBreather, best: rushBests[n] || null };
+}
+
+function showRushLadder() {
+  // Same guard as showRunHistory(): leave 'title' so the tap-to-start handler
+  // underneath can't fire on taps inside this panel.
+  gameState = 'rushladder';
+  let selected = Math.max(1, rush.level || 1);
+
+  const panel = document.createElement('div');
+  panel.id = 'rushladder-panel';
+  panel.style.cssText =
+    'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;' +
+    'align-items:center;justify-content:center;background:rgba(0,0,0,0.94);z-index:65;' +
+    'font-family:monospace,sans-serif;color:#fff;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:20px;font-weight:bold;margin-bottom:4px;letter-spacing:2px;text-shadow:0 0 16px #66ffcc;';
+  title.textContent = t('rushLadder');
+  panel.appendChild(title);
+
+  const sub = document.createElement('div');
+  sub.style.cssText = 'font-size:11px;opacity:0.5;margin-bottom:16px;letter-spacing:1px;text-align:center;max-width:min(560px,88vw)';
+  sub.textContent = t('rushLadderSub');
+  panel.appendChild(sub);
+
+  const body = document.createElement('div');
+  body.style.cssText =
+    'display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:flex-start;' +
+    'width:min(660px,92vw);max-height:64vh;overflow-y:auto;margin-bottom:18px;';
+  panel.appendChild(body);
+
+  // ── the grid ──────────────────────────────────────────────────────────────
+  const highest = Object.keys(rushBests).reduce((m, k) => Math.max(m, +k), 0);
+  const count = Math.min(30, Math.max(12, highest + 4));
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,58px);gap:7px;flex:none;';
+  const tiles = [];
+  for (let n = 1; n <= count; n++) {
+    const info = rushLevelInfo(n);
+    const tile = document.createElement('div');
+    tile.dataset.ui = '1';
+    tile.dataset.level = String(n);
+    tile.style.cursor = 'pointer';
+    tile.addEventListener('pointerdown', e => { e.stopPropagation(); selected = n; paint(); });
+    grid.appendChild(tile);
+    tiles.push(tile);
+  }
+  body.appendChild(grid);
+
+  // ── the detail pane ───────────────────────────────────────────────────────
+  const detail = document.createElement('div');
+  detail.style.cssText =
+    'flex:1;min-width:min(300px,90vw);background:#0b0e16;border:1px solid rgba(255,255,255,0.08);' +
+    'border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.65;';
+  body.appendChild(detail);
+
+  function paint() {
+    for (const tile of tiles) {
+      const n = +tile.dataset.level;
+      const info = rushLevelInfo(n);
+      const on = n === selected;
+      const col = info.best ? RUSH_TIER_COLOR[info.best.tier] : 'rgba(255,255,255,0.28)';
+      tile.style.cssText =
+        'cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:center;' +
+        'justify-content:center;height:52px;border-radius:6px;' +
+        `border:1px solid ${on ? '#66ffcc' : 'rgba(255,255,255,0.12)'};` +
+        `background:${on ? 'rgba(102,255,204,0.12)' : 'rgba(255,255,255,0.03)'};`;
+      tile.innerHTML =
+        `<span style="font-size:9px;opacity:0.45;letter-spacing:1px">${RUSH_KIND_ICON[info.kind]} ${n}</span>` +
+        `<span style="font-size:16px;font-weight:bold;color:${col}">${info.best ? info.best.tier : '–'}</span>` +
+        `<span style="font-size:9px;color:#ffdd44;height:10px">${info.best?.star ? '★' : ''}</span>`;
+    }
+
+    const n = selected;
+    const info = rushLevelInfo(n);
+    const p = info.par;
+    const kindName = t('rushKind_' + info.kind);
+    const roster = info.roster.map(r =>
+      `<span style="color:${r.fresh ? '#66ffcc' : 'rgba(255,255,255,0.75)'}">${r.name}` +
+      `${r.cooler ? ` <span style="opacity:0.5;font-size:10px">(${t('rushCooler')})</span>` : ''}` +
+      `${r.fresh ? ` <span style="color:#66ffcc;font-size:10px">${t('rushNew')}</span>` : ''}</span>`
+    ).join('<br>');
+    const parRow = (letter) =>
+      `<div style="display:flex;justify-content:space-between;padding:2px 0">` +
+      `<span style="color:${RUSH_TIER_COLOR[letter]};font-weight:bold">${letter}</span>` +
+      `<span style="opacity:0.8">${p[letter]} ${t('rushKills')}</span></div>`;
+
+    detail.innerHTML =
+      `<div style="font-size:15px;font-weight:bold;letter-spacing:1px;margin-bottom:2px">` +
+        `${t('rushLevel')} ${n} <span style="opacity:0.45;font-weight:normal;font-size:12px">· ${p.secs}s · ${kindName}</span></div>` +
+      `<div style="opacity:0.55;font-size:11px;margin-bottom:10px">${t('rushKindH_' + info.kind)}</div>` +
+
+      `<div style="opacity:0.45;font-size:10px;letter-spacing:1px;margin-bottom:3px">${t('rushParHead')}</div>` +
+      parRow('S') + parRow('A') + parRow('B') + parRow('C') +
+
+      `<div style="opacity:0.45;font-size:10px;letter-spacing:1px;margin:10px 0 3px">${t('rushGoalsHead')}</div>` +
+      `<div style="opacity:0.8">★ ${t('rushGoalUnbroken')}</div>` +
+      `<div style="opacity:0.8">★ ${t('rushGoalNeverLocked')}</div>` +
+
+      `<div style="opacity:0.45;font-size:10px;letter-spacing:1px;margin:10px 0 3px">${t('rushRosterHead')}</div>` +
+      `<div>${roster}</div>` +
+
+      // Speed and spawn budget only — Rush's four bodies have no guns
+      // (v225: "no shooters"), so the director's fire-interval scaling has
+      // nothing to act on here and quoting it would be a dead number.
+      `<div style="opacity:0.45;font-size:10px;letter-spacing:1px;margin:10px 0 3px">${t('rushPressureHead')}</div>` +
+      `<div style="opacity:0.8">${t('rushSpeed')} ×${info.scale.speedMult.toFixed(2)} &nbsp;·&nbsp; ` +
+        `${t('rushBudget')} ${info.budget}${info.isBreather && n > 1 ? ` <span style="opacity:0.5;font-size:10px">${t('rushBreather')}</span>` : ''}</div>` +
+
+      `<div style="margin-top:12px;padding-top:9px;border-top:1px solid rgba(255,255,255,0.1)">` +
+        (info.best
+          ? `${t('rushYourBest')} <span style="color:${RUSH_TIER_COLOR[info.best.tier]};font-weight:bold">${info.best.tier}</span>` +
+            `${info.best.star ? ' <span style="color:#ffdd44">★</span>' : ''}` +
+            ` <span style="opacity:0.6">· ${info.best.kills} ${t('rushKills')}</span>`
+          : `<span style="opacity:0.45">${t('rushNotReached')}</span>`) +
+      `</div>`;
+  }
+  paint();
+
+  const closeBtn = document.createElement('div');
+  closeBtn.id = 'rl-close';
+  closeBtn.dataset.ui = '1';
+  closeBtn.textContent = t('close');
+  closeBtn.style.cssText =
+    'cursor:pointer;user-select:none;font-size:13px;font-weight:bold;letter-spacing:1px;' +
+    'padding:8px 22px;border-radius:8px;border:2px solid #66ffcc;color:#aaffee;' +
+    'background:rgba(0,0,0,0.35);text-shadow:0 0 10px #33ddaa;';
   closeBtn.addEventListener('pointerdown', () => { panel.remove(); gameState = 'title'; });
   panel.appendChild(closeBtn);
 
@@ -5624,6 +5851,14 @@ function scheduleTutorialHints() {
       { at: 6.0,  dur: 4.5, text: 'BOOST = SHIELD + KILLS ON TOUCH' },
       { at: 11.5, dur: 5.0, text: 'FIRING CANCELS YOUR SHIELD' },
       { at: 17.0, dur: 5.0, text: 'HEAT IS SHARED — OVERHEAT LOCKS YOUR BOOST' },
+      // v234: the ability fires on the dash button, which Rush otherwise
+      // leaves dead — nothing on screen says so, and the HUD only names the
+      // ability, not its trigger. Added only when one is actually equipped,
+      // so a player with none isn't taught a control they don't have.
+      ...(rushAbilitySel !== 'none'
+        ? [{ at: 23.0, dur: 5.0,
+             text: touch ? 'TAP THE LOWER-LEFT PAD — YOUR ABILITY' : 'Q / PAD X — YOUR ABILITY' }]
+        : []),
     ];
     return;
   }
@@ -7408,7 +7643,7 @@ function triggerGameOver() {
 // d-pad or left stick, A activates, B backs out. Focus is drawn as a gold
 // outline. The layer self-gates on menu states and only reacts to a real pad,
 // so mouse/touch behavior is untouched.
-const NAV_STATES = new Set(['title', 'gameover', 'paused', 'options', 'runhistory', 'upgrade']);
+const NAV_STATES = new Set(['title', 'gameover', 'paused', 'options', 'runhistory', 'rushladder', 'upgrade']);
 const NAV_SEL = '[data-ui], .fb-chip, .fb-btn, .dit, #dsgn button, #dsgn input[type=range]';
 let navEl = null, _navPrevOutline = '', _navPrevOffset = '';
 let _navDirHeld = false, _navRepeatT = 0, _navPrevA = false, _navPrevB = false;
@@ -7472,6 +7707,11 @@ function navBack() {
       ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false }));
     navClear();
   }
+  else if (gameState === 'rushladder') {   // v234: same close contract
+    document.getElementById('rl-close')
+      ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false }));
+    navClear();
+  }
   else if (gameState === 'gameover') returnToTitle();
   else if (gameState === 'title') navClear();  // unfocus → A starts the run again
 }
@@ -7513,9 +7753,6 @@ function updateMenuNav(dt) {
 
 input.onDash  = () => {
   if (gameState === 'playing') {
-    // v232: the dash button is dead in Rush (boost replaces the dash, see
-    // player.dash()'s own early return) — an unclaimed input, not a new bind.
-    if (rush.on) { rush.activateAbility(); return; }
     const move = input.getMoveDir();
     const dir = { x: move.x, z: move.z, valid: move.x !== 0 || move.z !== 0 };
     player.dash(dir);
@@ -7523,6 +7760,13 @@ input.onDash  = () => {
     startRun();  // A / bumper / trigger starts from the title — unless the
                   // pad is focused on a menu chip (then A activates the chip)
   }
+};
+// v234: the RUSH ability's own trigger. v232 hung it on onDash, which is
+// fired BY the boost input (Space keyup / the pad's dash button) — so the
+// ability discharged itself at the end of every boost and the player never
+// picked the moment. Q, pad X/LB, or the lower-left touch pad now.
+input.onAbility = () => {
+  if (gameState === 'playing' && rush.on) rush.activateAbility();
 };
 input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused';  designer.show(); }
@@ -7630,7 +7874,7 @@ function loop() {
 
   // Title / paused / options / run-history — just render the scene, no game logic
   if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' ||
-      gameState === 'runhistory' || gameState === 'options') {
+      gameState === 'runhistory' || gameState === 'rushladder' || gameState === 'options') {
     renderer.render(scene, camera);
     drawHUD();
     return;
@@ -9816,6 +10060,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=187').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=188').catch(() => {});
   });
 }

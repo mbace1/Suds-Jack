@@ -10,6 +10,13 @@ export class InputManager {
     this.keys = {};
     this.mouse = { x: 0, y: 0, down: false };
     this.onDash  = null;
+    // v234: the RUSH ability needs a trigger of its OWN. v232 hung it on
+    // onDash believing the dash button was unclaimed in Rush — but onDash is
+    // fired BY the boost input (Space keyup, pad dash button), so the ability
+    // was firing itself at the end of every boost. Separate callback, separate
+    // bindings: Q / pad X or LB / a lower-left touch pad.
+    this.onAbility = null;
+    this._prevAbil = false;
     // v224 RUSH: boost is HELD, not tapped. Two touch schemes ship together
     // because which one survives a thumb is a play question, not an argument:
     //   RIM  — push the move stick past 86% of its travel
@@ -33,6 +40,7 @@ export class InputManager {
     window.addEventListener('keyup', e => {
       this.keys[e.code] = false;
       if (e.code === 'Space')  this.onDash?.();
+      if (e.code === 'KeyQ')   this.onAbility?.();   // v234 RUSH ability
       if (e.code === 'Escape') this.onPause?.();
     });
     window.addEventListener('mousemove', e => { this.mouse.x = e.clientX; this.mouse.y = e.clientY; });
@@ -64,6 +72,15 @@ export class InputManager {
         this._zoneHeld = true;
         continue;
       }
+      // v234 RUSH ability pad: the same lower-left margin, which the RIM
+      // scheme (the only one reachable) leaves unused. Same "ahead of stick
+      // assignment" placement, so it can never steal the move stick.
+      if (this.boostScheme !== 'zone' && this.rushOn
+          && t.clientX < window.innerWidth * 0.18 && t.clientY > window.innerHeight * 0.55) {
+        this._touchMap.set(t.identifier, 'abil');
+        this.onAbility?.();
+        continue;
+      }
       const side = t.clientX < window.innerWidth / 2 ? 'left' : 'right';
       const stick = side === 'left' ? this.left : this.right;
       if (!stick.active) {
@@ -78,7 +95,7 @@ export class InputManager {
   _touchMove(e) {
     for (const t of e.changedTouches) {
       const side = this._touchMap.get(t.identifier);
-      if (!side || side === 'zone') continue;
+      if (!side || side === 'zone' || side === 'abil') continue;
       const stick = side === 'left' ? this.left : this.right;
       stick.dx = t.clientX - stick.ox;
       stick.dy = t.clientY - stick.oy;
@@ -91,6 +108,7 @@ export class InputManager {
       if (!side) continue;
       this._touchMap.delete(t.identifier);
       if (side === 'zone') { this._zoneHeld = false; continue; }
+      if (side === 'abil') continue;   // v234: fired on touchstart, nothing to release
       if (side === 'right') this.onDash?.();
       const stick = side === 'left' ? this.left : this.right;
       stick.active = false;
@@ -126,13 +144,19 @@ export class InputManager {
     this._prevDash = dash;
     this._padBoost = dash;   // v224 RUSH: the same button, but held
 
+    // v234 RUSH ability: X (2) or left bumper (4) — deliberately none of the
+    // dash/boost buttons (0/5/7), or holding boost would fire it.
+    const abil = !!(pad.buttons[2]?.pressed || pad.buttons[4]?.pressed);
+    if (abil && !this._prevAbil) this.onAbility?.();
+    this._prevAbil = abil;
+
     // Pause: Start (9)
     const pause = !!pad.buttons[9]?.pressed;
     if (pause && !this._prevPause) this.onPause?.();
     this._prevPause = pause;
 
     // Any meaningful gamepad activity switches the UI into gamepad mode
-    if (this.gp.mx || this.gp.my || this.gp.ax || this.gp.ay || dash || pause) {
+    if (this.gp.mx || this.gp.my || this.gp.ax || this.gp.ay || dash || abil || pause) {
       this.usingGamepad = true;
     }
   }
