@@ -27,6 +27,7 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       RFH_MODEL: ${{ vars.RFH_MODEL || 'claude-opus-5' }}
       RFH_KEEP_EPISODES: '30'
+      RFH_FEEDS: ${{ vars.RFH_FEEDS }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -47,12 +48,24 @@ jobs:
             exit 1
           fi
 
+      - name: Test source ranking and mix balancing
+        run: node radiofree/test/source-balance.mjs
+
+      - name: Curate balanced source packet
+        shell: bash
+        run: |
+          COUNT='${{ github.event.inputs.count }}'
+          COUNT="${COUNT:-5}"
+          LIMIT=$(( COUNT * 2 ))
+          if [ "$LIMIT" -lt 10 ]; then LIMIT=10; fi
+          node radiofree/tools/curate-feeds.mjs --limit "$LIMIT" --output /tmp/rfh-curated.xml
+
       - name: Generate canonical episode
         shell: bash
         run: |
           COUNT='${{ github.event.inputs.count }}'
           COUNT="${COUNT:-5}"
-          node radiofree/tools/generate-wire.mjs --count "$COUNT"
+          node radiofree/tools/generate-wire.mjs --count "$COUNT" --feeds /tmp/rfh-curated.xml
 
       - name: Promote only after validation
         run: node radiofree/tools/promote-wire.mjs
