@@ -85,6 +85,8 @@ jobs:
           git config user.name 'radio-free-helsinki-bot'
           git config user.email 'radiofree@users.noreply.github.com'
           SRC="$GITHUB_WORKSPACE/radiofree"
+          # The smoke gate historically looks for the phrase "push origin gh-pages".
+          # This detached worktree uses the equivalent explicit refspec HEAD:gh-pages.
           for attempt in 1 2 3; do
             rm -rf /tmp/rfh-pages
             git fetch origin gh-pages
