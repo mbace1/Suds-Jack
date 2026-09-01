@@ -5,7 +5,7 @@
 import { Anchor } from './anchor.js?v=37';
 import { Graphic } from './graphic.js?v=37';
 import { PixelScreen } from './screen.js?v=37';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=59';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=60';
 import { preferredScenes } from './editorialmap.js?v=59';
 
 const BEATS = [
@@ -59,8 +59,8 @@ class AmbientFootage {
   goLive() { this.live = true; }
   goIdle() { this.live = false; }
   update(dt) { if (this.live) this.t += dt; }
-  draw() { drawAmbient(this.scene, this.scr, this.t, 0); }
-  renderStatic() { drawAmbient(this.scene, this.scr, this.t, 0); }
+  draw() { drawAmbient(this.scene, this.scr, this.t, 0, this.story, this.seed); }
+  renderStatic() { drawAmbient(this.scene, this.scr, this.t, 0, this.story, this.seed); }
   destroy() { this.scr.canvas.remove(); }
 }
 
