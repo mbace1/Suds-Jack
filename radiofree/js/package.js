@@ -5,8 +5,8 @@
 import { Anchor } from './anchor.js?v=37';
 import { Graphic } from './graphic.js?v=37';
 import { PixelScreen } from './screen.js?v=37';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=54';
-import { preferredScenes } from './editorialmap.js?v=57';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=59';
+import { preferredScenes } from './editorialmap.js?v=59';
 
 const BEATS = [
   { shot: 'broll', len: 9.5 },
@@ -22,7 +22,7 @@ function chooseScene(story, seed) {
   const pool = preferred.length ? preferred : AMBIENT_KEYS;
   const fresh = pool.filter(scene => !RECENT_SCENES.includes(scene));
   const candidates = fresh.length ? fresh : pool;
-  const scene = candidates[Math.abs(seed) % candidates.length];
+  const scene = candidates[Math.floor(Math.abs(seed)) % candidates.length];
   RECENT_SCENES.push(scene);
   while (RECENT_SCENES.length > RECENT_LIMIT) RECENT_SCENES.shift();
   return scene;
