@@ -7,6 +7,33 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v233 — 2026-09-01
+**RUSH gets its own first-run tutorial, and a real bug behind it** *(Rush onboarding pass)*
+- `scheduleTutorialHints()` was unconditional — every first run, Rush
+  included, got the classic sequence: move, "aim & fire", **"SPACE / A —
+  DASH THROUGH BULLETS"**. Both wrong in Rush: dash is dead (boost replaces
+  it), and the sequence never mentioned the one rule the whole mode hangs
+  off — **firing cancels your boost shield**. A new Rush player's first
+  real lesson was a taught mechanic that doesn't exist, paired with silence
+  on the one that does
+- Worse, both sequences shared **one** `localStorage` "seen" flag — a player
+  who'd already cleared the classic hints (near-certain, since Rush isn't
+  the default) got **zero** hints on their first-ever Rush run, not even
+  the wrong ones
+- Rush now gets its own sequence, under its own flag
+  (`tokoDropHintsSeenRush`, independent of the classic one):
+  `HOLD SPACE/BUMPER — BOOST` (or the touch RIM phrasing) → `BOOST = SHIELD
+  + KILLS ON TOUCH` → `FIRING CANCELS YOUR SHIELD` → `HEAT IS SHARED —
+  OVERHEAT LOCKS YOUR BOOST` — same cadence and fade timing as the classic
+  sequence, GDD §2's non-interrupting rule unchanged (text only, no pauses)
+- Verified with a throwaway probe: a first Rush run gets the Rush sequence
+  keyed to its own flag; a classic run right after (independent state) gets
+  the classic sequence keyed to its own flag; a second Rush run after the
+  Rush flag is set gets no hints. `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=186` → `?v=187`; HUD label → v233
+
+---
+
 ## v232 — 2026-08-29
 **RUSH gets its four abilities** *(PR #311 / `PARITY_WITH_GODOT.md` §1b, owner direction 2026-08-28)*
 - The Godot port had four selectable RUSH abilities this build never had.
