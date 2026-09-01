@@ -17,9 +17,9 @@
 
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js?v=52';
-import { Hero } from './hero.js?v=58';
+import { Hero } from './hero.js?v=59';
 import { World, ROOMS, ROOM_H } from './level.js?v=56';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=58';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=59';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
 import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=55';
@@ -27,7 +27,7 @@ import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
-import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=58';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CHARACTER_COLOURS } from './sprite.js?v=59';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 // The gallery keeps one flat palette, cool and quiet, so a cycle reads. The

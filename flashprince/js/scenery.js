@@ -533,6 +533,23 @@ export function drawAir(scr, room, clock) {
     }
     if ((clock % 620) < 4) scr.veil([0, 0, W, 0, W, H, 0, H], C.LUX2, 0.22);
 
+    // Distant transit gives the drowned city a scale beyond this platform.
+    // Three lanes move at different rates and directions; each craft is only
+    // a dark six-pixel hull with one cabin light, so they remain behind the
+    // facility instead of competing with the player.
+    for (let i = 0; i < 3; i++) {
+      const span = W + 54;
+      const p = (clock * (0.045 + i * 0.012) + i * 137) % span;
+      const right = i !== 1;
+      const x = right ? p - 27 : W + 27 - p;
+      const y = 25 + i * 15 + Math.sin(clock * 0.006 + i * 1.7) * 2;
+      if (x > 92 && x < 240) continue; // occluded by the grand facility
+      scr.rect(x - 5, y, 11, 2, C.MID);
+      scr.rect(x - 2, y - 2, 5, 2, C.DARK);
+      scr.rect(x + (right ? 4 : -5), y, 2, 1, C.LUX);
+      if (((clock >> 4) + i) % 5 === 0) scr.rect(x - (right ? 8 : -7), y + 1, 2, 1, C.EDGE);
+    }
+
     // Small machine life uses the drowned rail as a migration route.
     for (let i = 0; i < 3; i++) {
       const x = ((clock * (0.18 + i * 0.03) + i * 113) % (W + 40)) - 20;
@@ -541,6 +558,19 @@ export function drawAir(scr, room, clock) {
       scr.rect(x - 1, y - 2, 3, 2, C.LUX);
       scr.rect(x - 6, y + 3, 12, 1, C.MID);
     }
+
+    // A maintenance carriage still patrols the platform gantry. Its slow
+    // triangular travel and independently breathing hoist make this feel like
+    // infrastructure doing a job, rather than another decorative blinking dot.
+    const hoistPhase = (clock % 720) / 720;
+    const hoistTravel = hoistPhase < 0.5 ? hoistPhase * 2 : (1 - hoistPhase) * 2;
+    const hx = 101 + Math.round(hoistTravel * 116);
+    const cable = 8 + [0, 2, 5, 8, 5, 2][(clock >> 5) % 6];
+    scr.rect(hx - 7, 114, 14, 4, C.DARK);
+    scr.rect(hx - 4, 115, 8, 2, C.SOLID);
+    scr.rect(hx + 4, 115, 2, 1, C.LUX2);
+    scr.rect(hx, 118, 1, cable, C.EDGE);
+    scr.poly([hx - 3, 118 + cable, hx + 3, 118 + cable, hx + 1, 121 + cable, hx - 1, 121 + cable], C.MID);
     // The facility is alive, but quiet: light travels from lobe to lobe like
     // a slow thought. These are the same joints as the static structure.
     for (let i = 0; i < 7; i++) {
@@ -604,6 +634,22 @@ export function drawFloodWater(scr, room, clock, hero) {
     const x = (i * 53 + clock * (0.18 + (i % 2) * 0.05)) % (W + 24) - 12;
     scr.rect(x, y + 2 + (i % 3) * 6, 12 + (i % 4) * 3, 1, i % 3 ? C.MID : C.LUX);
   }
+  // Broken vertical reflections belong to specific lights above: the living
+  // iris, the signal bank and the moving maintenance carriage. The gaps and
+  // alternating widths are what turn a copied light into disturbed water.
+  const irisPulse = [0, 1, 2, 1][(clock >> 5) & 3];
+  const reflection = (x, widths, ci, drift = 0) => {
+    for (let i = 0; i < widths.length; i++) {
+      const wobble = Math.round(Math.sin(clock * 0.035 + i * 1.8 + drift) * (1 + i * 0.35));
+      const ww = widths[i];
+      scr.rect(x + wobble - Math.floor(ww / 2), y + 3 + i * 5, ww, 1, i === 0 ? C.LUX2 : ci);
+    }
+  };
+  reflection(166, [7 + irisPulse * 2, 11, 8, 5], C.LUX, 0.2);
+  reflection(291, [4, 7, 5], C.EDGE, 2.1);
+  const hp = (clock % 720) / 720;
+  const ht = hp < 0.5 ? hp * 2 : (1 - hp) * 2;
+  reflection(101 + Math.round(ht * 116), [3, 5], C.MID, 4.4);
   // Rain answers the water with tiny, brief crowns instead of disappearing at
   // the surface. Their phases are staggered so only one or two exist at once.
   for (let i = 0; i < 7; i++) {
@@ -623,6 +669,12 @@ export function drawFloodWater(scr, room, clock, hero) {
     scr.rect(x - 3, fy, 7, 2, C.MID);
     scr.rect(x + face * 2, fy, 2, 1, C.LUX);
     scr.rect(x - face * 5, fy + 1, 2, 1, C.EDGE);
+    // A sparse bubble trail makes their path readable without turning the
+    // whole flood into particle noise.
+    if (((clock >> 3) + i) % 5 === 0) {
+      scr.rect(x - face * 8, fy - 3, 1, 1, C.LUX);
+      scr.rect(x - face * 12, fy - 6, 1, 1, C.EDGE);
+    }
   }
   if (hero && hero.y > y - 4) {
     const moving = ['step', 'inch', 'windUp', 'run', 'skid', 'runTurn', 'roll'].includes(hero.state);

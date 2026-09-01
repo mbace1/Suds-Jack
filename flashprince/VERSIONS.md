@@ -1,5 +1,14 @@
 # Flash Prince — versions
 
+## v59 — 2026-09-01
+
+**The flooded city now works around you.** Tiny transit craft cross three
+distant lanes and disappear behind the grand facility, a maintenance carriage
+patrols the station gantry while lowering its hoist, and the iris, signals and
+moving carriage cast separate broken reflections into the flood. Luminous
+swimmers now leave sparse bubble trails. Character frames, palettes and both
+locked runs remain unchanged.
+
 ## v58 — 2026-09-01
 
 **Jump and ledge transitions finish their authored poses.** Holding a direction
