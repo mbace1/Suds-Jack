@@ -26,6 +26,13 @@ export const STORY_SCENE_HINTS = {
   'queue-economy': ['centralstation', 'mannerheimrain', 'kallionight'],
   'seasonal-tourist': ['katajanokka', 'centralstation', 'rooftops'],
   'ad-life': ['rooftops', 'metro', 'kallionight'],
+  'israel-defence-decade': ['rooftops', 'centralstation', 'katajanokka'],
+  'sweden-border-help': ['rooftops', 'metro', 'centralstation'],
+  'ethnic-grocers': ['hakaniemi', 'kallionight', 'mannerheimrain'],
+  'wet-tuesday': ['mannerheimrain', 'hakaniemi', 'kallionight'],
+  'metal-autopsy': ['kallionight', 'rooftops', 'centralstation'],
+  'yle-century': ['centralstation', 'rooftops', 'mannerheimrain'],
+  'bear-border-fence': ['rooftops', 'kallionight', 'katajanokka'],
 };
 
 export function preferredScenes(story, available = []) {

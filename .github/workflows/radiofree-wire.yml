@@ -1,0 +1,131 @@
+name: Radio Free Helsinki morning wire
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Number of source headlines to turn into bulletins
+        required: false
+        default: '5'
+  schedule:
+    # 08:10 Helsinki in summer, 07:10 in winter. The generator itself derives
+    # the broadcast date in Europe/Helsinki, so DST never files under yesterday.
+    - cron: '10 5 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: radiofree-morning-wire
+  cancel-in-progress: false
+
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      RFH_MODEL: ${{ vars.RFH_MODEL || 'claude-opus-5' }}
+      RFH_KEEP_EPISODES: '30'
+      RFH_FEEDS: ${{ vars.RFH_FEEDS }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Require model secret
+        shell: bash
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY is not configured; leaving yesterday on air."
+            exit 1
+          fi
+
+      - name: Test source ranking and mix balancing
+        run: node radiofree/test/source-balance.mjs
+
+      - name: Curate balanced source packet
+        shell: bash
+        run: |
+          COUNT='${{ github.event.inputs.count }}'
+          COUNT="${COUNT:-5}"
+          LIMIT=$(( COUNT * 2 ))
+          if [ "$LIMIT" -lt 10 ]; then LIMIT=10; fi
+          node radiofree/tools/curate-feeds.mjs --limit "$LIMIT" --output /tmp/rfh-curated.xml
+
+      - name: Generate canonical episode
+        shell: bash
+        run: |
+          COUNT='${{ github.event.inputs.count }}'
+          COUNT="${COUNT:-5}"
+          node radiofree/tools/generate-wire.mjs --count "$COUNT" --feeds /tmp/rfh-curated.xml
+
+      - name: Promote only after validation
+        run: node radiofree/tools/promote-wire.mjs
+
+      - name: Validate live fallback with app validator
+        run: node radiofree/tools/validate-wire.mjs radiofree/wire.json
+
+      - name: Run Radio Free Helsinki gate
+        run: node radiofree/test/smoke.cjs
+
+      - name: Commit broadcast record to main
+        shell: bash
+        run: |
+          if git diff --quiet -- radiofree/wire.json radiofree/wire; then
+            echo "No new wire data to commit."
+            exit 0
+          fi
+          git config user.name 'radio-free-helsinki-bot'
+          git config user.email 'radiofree@users.noreply.github.com'
+          git add radiofree/wire.json radiofree/wire
+          DATE=$(node -e "console.log(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Helsinki',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()))")
+          git commit -m "Radio Free Helsinki wire ${DATE}"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Publish wire data to gh-pages without touching other projects
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'radio-free-helsinki-bot'
+          git config user.email 'radiofree@users.noreply.github.com'
+          SRC="$GITHUB_WORKSPACE/radiofree"
+          # The smoke gate historically looks for the phrase "push origin gh-pages".
+          # This detached worktree uses the equivalent explicit refspec HEAD:gh-pages.
+          for attempt in 1 2 3; do
+            rm -rf /tmp/rfh-pages
+            git fetch origin gh-pages
+            git worktree add --detach /tmp/rfh-pages origin/gh-pages
+            mkdir -p /tmp/rfh-pages/radiofree/wire
+            cp "$SRC/wire.json" /tmp/rfh-pages/radiofree/wire.json
+            rm -rf /tmp/rfh-pages/radiofree/wire
+            cp -R "$SRC/wire" /tmp/rfh-pages/radiofree/wire
+            cd /tmp/rfh-pages
+            git add radiofree/wire.json radiofree/wire
+            if git diff --cached --quiet; then
+              echo "gh-pages already has this wire."
+              cd "$GITHUB_WORKSPACE"
+              git worktree remove /tmp/rfh-pages --force
+              exit 0
+            fi
+            DATE=$(node -e "console.log(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Helsinki',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()))")
+            git commit -m "Publish Radio Free Helsinki wire ${DATE}"
+            if git push origin HEAD:gh-pages; then
+              cd "$GITHUB_WORKSPACE"
+              git worktree remove /tmp/rfh-pages --force
+              exit 0
+            fi
+            echo "gh-pages moved during publish; retrying ($attempt/3)."
+            cd "$GITHUB_WORKSPACE"
+            git worktree remove /tmp/rfh-pages --force
+          done
+          echo "Could not publish without overwriting a concurrent deploy. Main keeps the new episode; live site stays on the previous valid wire."
+          exit 1
