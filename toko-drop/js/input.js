@@ -17,12 +17,16 @@ export class InputManager {
     // bindings: Q / pad X or LB / a lower-left touch pad.
     this.onAbility = null;
     this._prevAbil = false;
-    // v224 RUSH: boost is HELD, not tapped. Two touch schemes ship together
-    // because which one survives a thumb is a play question, not an argument:
-    //   RIM  — push the move stick past 86% of its travel
-    //   ZONE — a dedicated pad in the lower-left margin
-    this.boostScheme = 'rim';
-    this._zoneHeld   = false;
+    // v224 RUSH: boost is HELD, not tapped. On touch that means pushing the
+    // move stick past 86% of its travel (the "RIM" scheme).
+    //
+    // v235: v224 also shipped a second scheme, ZONE — a held pad in the
+    // lower-left margin — intending to settle the two by playing them. No
+    // selector was ever built, so `boostScheme` was written once to 'rim' and
+    // never again: every ZONE branch was unreachable from the day it landed.
+    // v234 then gave that same margin to the RUSH ability pad, so ZONE has no
+    // home left either. Removed rather than left as a decoy. If a held pad is
+    // ever worth trying again it needs a region of its own and a way to pick it.
     this._padBoost   = false;
     this.onPause = null;
     // Gamepad state (read each frame via pollGamepad)
@@ -64,18 +68,9 @@ export class InputManager {
         this.onPause?.();
         continue;
       }
-      // v224 RUSH ZONE pad: lower-left margin, ahead of stick assignment so it
-      // never steals the move stick.
-      if (this.boostScheme === 'zone' && this.rushOn
-          && t.clientX < window.innerWidth * 0.18 && t.clientY > window.innerHeight * 0.55) {
-        this._touchMap.set(t.identifier, 'zone');
-        this._zoneHeld = true;
-        continue;
-      }
-      // v234 RUSH ability pad: the same lower-left margin, which the RIM
-      // scheme (the only one reachable) leaves unused. Same "ahead of stick
-      // assignment" placement, so it can never steal the move stick.
-      if (this.boostScheme !== 'zone' && this.rushOn
+      // v234 RUSH ability pad: lower-left margin, checked ahead of stick
+      // assignment so it can never steal the move stick.
+      if (this.rushOn
           && t.clientX < window.innerWidth * 0.18 && t.clientY > window.innerHeight * 0.55) {
         this._touchMap.set(t.identifier, 'abil');
         this.onAbility?.();
@@ -95,7 +90,7 @@ export class InputManager {
   _touchMove(e) {
     for (const t of e.changedTouches) {
       const side = this._touchMap.get(t.identifier);
-      if (!side || side === 'zone' || side === 'abil') continue;
+      if (!side || side === 'abil') continue;
       const stick = side === 'left' ? this.left : this.right;
       stick.dx = t.clientX - stick.ox;
       stick.dy = t.clientY - stick.oy;
@@ -107,7 +102,6 @@ export class InputManager {
       const side = this._touchMap.get(t.identifier);
       if (!side) continue;
       this._touchMap.delete(t.identifier);
-      if (side === 'zone') { this._zoneHeld = false; continue; }
       if (side === 'abil') continue;   // v234: fired on touchstart, nothing to release
       if (side === 'right') this.onDash?.();
       const stick = side === 'left' ? this.left : this.right;
@@ -162,12 +156,12 @@ export class InputManager {
   }
 
   /** Returns {x, z} normalized world-space move direction. */
-  /** v224 RUSH: is boost being HELD right now? Keyboard / pad / either touch scheme. */
+  /** v224 RUSH: is boost being HELD right now? Keyboard, pad, or the move
+   *  stick pushed to its rim on touch. */
   getBoostHeld() {
     if (this.keys['Space']) return true;
     if (this._padBoost) return true;
-    if (this._zoneHeld) return true;
-    if (this.boostScheme === 'rim' && this.left.active) {
+    if (this.left.active) {
       return Math.hypot(this.left.dx, this.left.dy) >= STICK_RADIUS * 0.86;
     }
     return false;

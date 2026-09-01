@@ -7,6 +7,37 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v235 — 2026-09-01
+**The ZONE boost scheme is removed — it was never reachable** *(follow-up to v234)*
+- v224 shipped **two** touch boost schemes on purpose: RIM (push the move
+  stick past 86% of its travel) and ZONE (a held pad in the lower-left
+  margin), with the stated intent that "which one survives a thumb is a play
+  question, not an argument." The question was never actually put: **no
+  selector was ever built.** `boostScheme` was written once, in the
+  constructor, to `'rim'`, and never assigned again anywhere in the tree —
+  so every `=== 'zone'` branch, `_zoneHeld`, and its `getBoostHeld()` check
+  have been dead from the day they landed. ZONE was never played, by anyone
+- v234 then handed that same lower-left margin to the **RUSH ability pad**,
+  so ZONE no longer even has a home to be revived into. Removed rather than
+  left sitting there looking like a live alternative — with a note saying
+  what a future attempt would need (its own region, and a way to pick it)
+- `getBoostHeld()` loses the always-false `_zoneHeld` check and the
+  now-pointless `boostScheme === 'rim'` test; the RIM rim-push is simply what
+  touch boost *is*
+- **Verified in a real touch context, because this is the shared touch
+  handler and the two surviving paths are easy to break silently**: a
+  rim-push drag on the move stick still registers boost (`getBoostHeld()`
+  true), and a tap in the lower-left margin still fires the equipped ability
+  (cooldown 0 → 16). Zero page errors
+- `press/PRESS.md` advertised "two selectable RUSH boost schemes" — never
+  true, since the selector didn't exist. Corrected, and the kit's Rush copy
+  brought up from v231 to what actually ships now (the four abilities and the
+  ladder screen)
+- `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=188` → `?v=189`; HUD label → v235
+
+---
+
 ## v234 — 2026-09-01
 **The RUSH LADDER, and the v232 abilities were firing themselves**
 - **THE LADDER PANEL.** The ladder was one line on the death screen: what you
