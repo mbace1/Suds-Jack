@@ -1,113 +1,26 @@
-// Toko Move — the paper the network is drawn on.
-//
-// A transit diagram is two kinds of ink: the LAND, which is quiet and almost
-// not there, and the LINES, which are the loudest thing on the page. Keep that
-// gap wide. Every colour here is either barely visible or fully committed;
-// nothing sits in the middle, because a diagram with mid-tones reads as mud.
+// Day paper (BRIEF, Toko Move skin): mint, sky, coral, yellow, clean dark type.
+// Same geometry as the night game, opposite weather — the point is that the two
+// products look nothing alike while the city underneath is provably identical.
 
-// HOMAGE, NOT A CLONE (owner's steer). The strongest divergences from the game
-// this one descends from are FORM, not hue — the grab nub at a line's end, the
-// riders shown along a train's roof, the queue as a block rather than a fan, and
-// the ghosted passenger below. The palette is shifted too, and measured: closest
-// pair of lines 98 apart where the old set was 90.
 export const PAL = {
-  paper: '#eee9dc',
-  grain: 'rgba(27,34,40,0.05)',
-  ink: '#1b2228',
-  dim: '#566068',          // 5.30:1 on paper — AA for body text, and it has drifted before
-  rule: '#d5cfc2',
-  water: '#c3dbe8',
-  waterEdge: '#a9cadd',
-  station: '#faf7ee',
-  warn: '#d8452f',         // the crowding ring: a graphic, not type
-  warnText: '#b03018',     // the same alarm at 5.28:1, for anything with words in it
-  train: '#2b333a',
-  // somebody waiting for a shape no line reaches. Ghosted rather than recoloured
-  // or refilled: the silhouette has to stay exactly what they want, or the mark
-  // reads as a different destination — which is why filling over-capacity
-  // passengers solid was tried and thrown away.
-  stranded: '#9ba09f',
-  // the car layer's ground. It is something you LAID, so it is a slab rather
-  // than a stroke — but the first cut took "a shade off the paper" literally at
-  // #ddd6c6, which is 1.19:1 against the ground and simply did not appear in a
-  // screenshot. A road you cannot see is not a quiet road, it is no road. So:
-  // warm tarmac, clear of the paper, and still light enough that a paper-filled
-  // car and an ink-outlined building read on top of it.
-  road: '#a29883',
-  roadSeam: '#8b8271',
-  roadLine: '#efe9da',     // the dashed centre stripe — what says "street" rather than "tile"
-
-  // The STREET MAP under a city view. Four weights, because a map that draws a
-  // motorway and a back lane the same is a grey rectangle — and the ramp is
-  // deliberately tight, because width carries most of the hierarchy and colour
-  // only has to keep the order.
-  //
-  // Two rules, and the gate holds both. The quietest street must be VISIBLE
-  // (>= 1.3:1) — the first cut of this drew it at 1.24:1, which is the same
-  // mistake as the invisible Rush road, made the same day, in the same
-  // session. And the loudest street must stay UNDER the quietest tram line
-  // (1.95 against 2.07), because the streets are the ground and the network is
-  // the subject; a motorway that shouts louder than a tram line inverts the
-  // whole picture.
-  streets: ['#d3cab4', '#c5bca8', '#b9b19e', '#b0a896'],
-  // and how wide each is drawn, in board units at 1× — the other half of it
-  streetInk: [0.9, 1.5, 2.6, 4.0],
-
-
-  // Handed out in this order, and a colour returns to the pile when its line
-  // is torn up. Seven is deliberate: it is more lines than the board can
-  // usefully hold, so running out of colours is never the thing that stops you.
-  //
-  // Red is in here, and the CROWDING RING IS NOT RED — it is ink. The first cut
-  // had it the other way round and line one came out the same red as the alarm,
-  // so a healthy line read as a warning. Trying to solve that by banning red
-  // from the palette only pushed the collision onto orange; the real answer is
-  // that the alarm should never have been competing on hue at all. A closing
-  // dark ring cannot be confused with any line, whatever colours get added.
-  // Amber and orange sat 50 apart and read as one colour two stops in; the
-  // seventh slot was picked by measuring candidates against the other six
-  // rather than by eye.
-  lines: ['#2b5fa8', '#d0452b', '#4a8f3f', '#d19a1f', '#7a4aa6', '#b93a86', '#18908a'],
+  paper: '#f4f1e8',
+  grain: 'rgba(40,50,60,0.05)',
+  ink: '#20272e',
+  dim: '#5d6a72',
+  mark: '#3f5866',
+  latent: '#d8d3c6',
+  water: '#bcd8e6',
+  warn: '#e2683c',
+  slow: '#e0a53a',
+  draft: '#2f9fb8',
+  routeColours: ['#2f9fb8', '#5aa860', '#e0a53a', '#c86f9a'],
+  // the standing city services, quieter than the player's own lines
+  modeColours: { metro: '#e07b2f', tram: '#86a98c', car: '#9aa4ac' },
+  font: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
 };
 
-// Hit targets, stated in SCREEN pixels and converted to board units at the
-// current scale — the opposite of everything above, and deliberately.
-//
-// A radius fixed in board units is a target that shrinks with the window: the
-// end-of-line nub measured 46px on a 1200px desktop and 17px on a 390px phone,
-// so on touch there was no way to shorten or delete a line at all. What has to
-// stay constant is the size under the finger, not the size on the board.
-export const TOUCH = {
-  nubGapPx: 21,       // from the stop's edge to the middle of its nub
-  nubHitPx: 46,       // grab diameter, comfortably over the 44px floor
-  stationHitPx: 50,
-  nubDrawPx: 7.5,     // drawn radius — visible on a phone, discreet on a desktop
-
-  // DRAWING floors, also in screen pixels. Below these the board stops being
-  // readable rather than merely small: on a portrait phone a stop drew at 7px
-  // across and a waiting shape at 2px, which is a diagram nobody can play.
-  minStationRPx: 11,
-  minSpecialRPx: 12.5,
-  minPipRPx: 3.4,
+export const THEME = {
+  ...PAL,
+  labelFor: n => n.name,
+  glyphFor: n => (n.has('school') ? 'S' : n.has('work') ? 'W' : n.has('shop') ? '□' : n.has('transfer') ? '◇' : '○'),
 };
-
-// Stroke weights, in board units. The line is thicker than the station outline
-// on purpose — the network is the subject and the stops are punctuation.
-export const INK = {
-  line: 9,
-  lineGap: 11.5,    // how far apart two lines sharing a leg are pushed
-  station: 3.6,
-  stationR: 15.5,
-  specialR: 18,
-  pipR: 4.4,        // a waiting passenger
-};
-
-// What the furniture is actually drawn at, for a given zoom: the declared
-// board-unit size, or the screen floor, whichever is bigger. It lives in one
-// place because the renderer draws these AND the nub has to stand off them —
-// two copies of this would drift and the nub would sit on the stop.
-export const sizeAt = scale => ({
-  stationR: Math.max(INK.stationR, TOUCH.minStationRPx / scale),
-  specialR: Math.max(INK.specialR, TOUCH.minSpecialRPx / scale),
-  pipR: Math.max(INK.pipR, TOUCH.minPipRPx / scale),
-});
