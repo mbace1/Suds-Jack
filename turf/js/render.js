@@ -53,7 +53,7 @@ function getImageEntry(src) {
     img.onload = () => {
       entry.loaded = true;
       Object.assign(entry, scanInkBounds(img));
-      if (lastRenderArgs) render(lastRenderArgs.canvas, lastRenderArgs.state, lastRenderArgs.layout);
+      if (lastRenderArgs) render(lastRenderArgs.canvas, lastRenderArgs.state, lastRenderArgs.layout, lastRenderArgs.anim);
     };
     img.src = src;
     imageCache.set(src, entry);
@@ -267,7 +267,7 @@ function drawProp(g, layout, gx, gy, tall, art) {
 // is why that one got cropped to a head instead). Falls back to the
 // original procedural silhouette for any unit that has no sprite yet, or
 // for the one render call before an image finishes loading.
-function drawUnit(g, layout, unit, isSelected) {
+function drawUnit(g, layout, unit, isSelected, anim) {
   const { x, y } = toScreen(layout, unit.x, unit.y);
   const feetY = y - 2;
 
@@ -282,8 +282,15 @@ function drawUnit(g, layout, unit, isSelected) {
   const factionColor = unit.faction === 'player' ? PAL.PLAYER : PAL.ENEMY;
   g.diamond(x, y, TILE_W * 0.52, TILE_H * 0.46, null, factionColor, 1.5);
 
-  const entry = unit.sprite ? getImageEntry(unit.sprite) : null;
-  const topY = entry && entry.loaded ? drawUnitSprite(g, entry, x, feetY) : drawUnitFallback(g, unit, x, feetY);
+  // The animator answers with the current frame of whatever clip this unit is
+  // playing, or null for the twelve characters that have no frame set yet —
+  // those keep the single static plate they already had.
+  const frame = anim ? anim.spriteFor(unit) : null;
+  const src = frame ? frame.src : unit.sprite;
+  const entry = src ? getImageEntry(src) : null;
+  const topY = entry && entry.loaded
+    ? drawUnitSprite(g, entry, x, feetY, frame && frame.mirror)
+    : drawUnitFallback(g, unit, x, feetY);
 
   // role marker, same three glyphs either way — melee/ranged/control stay
   // readable at a glance even once the sprite art tells you who it is
@@ -292,7 +299,9 @@ function drawUnit(g, layout, unit, isSelected) {
   else if (unit.role === 'ranged') g.disc(x + 5, markerY, 1.6, PAL.INK);
   else g.p(x - 6, markerY - 1, 12, 2, PAL.INK);
 
-  // HP bar
+  // HP bar — not over a body that is mid-death-clip, where it would read as
+  // an empty track floating above a corpse.
+  if (unit.hp <= 0) return;
   const hpW = 14, frac = Math.max(0, unit.hp / unit.maxHp);
   const hpY = topY - 6;
   g.p(x - hpW / 2, hpY, hpW, 2, PAL.HP_TRACK);
@@ -305,13 +314,24 @@ function drawUnit(g, layout, unit, isSelected) {
 // the y of the visible content's top (both callers use this for the HP bar
 // / role marker so their position doesn't care which branch drew the body
 // beneath them, or how much padding that source image happened to carry).
-function drawUnitSprite(g, entry, x, feetY) {
+function drawUnitSprite(g, entry, x, feetY, mirror) {
   const { img, inkTop, inkBottom } = entry;
   const contentH = inkBottom - inkTop + 1;
   const scale = SPRITE_H / contentH;
   const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
   const drawY = feetY - inkBottom * scale; // top of the FULL (padded) image, in screen space
-  g.ctx.drawImage(img, x - w / 2, drawY, w, h);
+  if (mirror) {
+    // Mirroring is how two drawn facings cover the board's four directions
+    // (anim.js's facingFor). Flip about the sprite's own centre line, not the
+    // canvas origin, or the unit lands on the far side of the board.
+    g.ctx.save();
+    g.ctx.translate(x, 0);
+    g.ctx.scale(-1, 1);
+    g.ctx.drawImage(img, -w / 2, drawY, w, h);
+    g.ctx.restore();
+  } else {
+    g.ctx.drawImage(img, x - w / 2, drawY, w, h);
+  }
   return feetY - contentH * scale; // top of the actual visible content, not the padded canvas
 }
 function drawUnitFallback(g, unit, x, feetY) {
@@ -391,8 +411,8 @@ function drawCursor(g, layout, state) {
   g.diamond(x, y, TILE_W - 12, TILE_H - 6, null, PAL.CURSOR);
 }
 
-export function render(canvas, state, layout) {
-  lastRenderArgs = { canvas, state, layout };
+export function render(canvas, state, layout, anim = null) {
+  lastRenderArgs = { canvas, state, layout, anim };
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false; // keep sprite scaling crisp, same as the tile art
   const g = pen(ctx);
@@ -417,9 +437,12 @@ export function render(canvas, state, layout) {
   const drawables = [
     ...props.map(p => ({ depth: p.depth, draw: () => drawProp(g, layout, p.x, p.y, p.tall, p.art) })),
     ...(state.drops || []).map(d => ({ depth: d.x + d.y, draw: () => drawDrop(g, layout, d, state.weaponDefs) })),
-    ...state.units.filter(u => u.hp > 0).map(u => ({
+    // A unit at hp 0 keeps drawing for as long as its death clip is playing —
+    // filtered on hp alone the corpse vanishes on the very frame the clip
+    // starts, and the death animation is never seen at all.
+    ...state.units.filter(u => u.hp > 0 || (anim && anim.isDying(u))).map(u => ({
       depth: u.x + u.y,
-      draw: () => drawUnit(g, layout, u, state.selected === u.uid),
+      draw: () => drawUnit(g, layout, u, state.selected === u.uid, anim),
     })),
   ].sort((a, b) => a.depth - b.depth);
   for (const d of drawables) d.draw();

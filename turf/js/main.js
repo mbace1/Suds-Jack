@@ -8,6 +8,7 @@ import {
 } from './combat.js?v=5';
 import { computeLayout, render } from './render.js?v=7';
 import { createInputHandler } from './input.js?v=7';
+import { createAnimator } from './anim.js?v=1';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
@@ -18,6 +19,12 @@ const titleEl = $('title'), titleStart = $('titleStart');
 const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('resultBody'), resultAgain = $('resultAgain');
 
 let DATA = null, state = null, layout = null, input = null, enemyPhaseRunning = false;
+// The animation layer. It reads state.log rather than being called by
+// combat.js (which stays pure and bare-node tested), and owns the only rAF
+// loop in this game — one that stops itself whenever nothing is mid-clip, so
+// an idle player turn costs nothing. onFrame re-renders WITHOUT re-syncing:
+// advancing a clip changes which frame is drawn, never the game state.
+const anim = createAnimator({ onFrame: () => { if (state && layout) render(canvas, state, layout, anim); } });
 
 // GDD.md §9: "Expand to 3-5 encounters in sequence." Four now — warehouse and
 // underpass (2026-08-31 roster expansion) field different squads than
@@ -93,6 +100,7 @@ function boot(seed) {
   canvas.height = layout.height;
   fitCanvas();
   if (input) input.destroy();
+  anim.stop(); // a new encounter is a new log — drop any clip still playing from the last one
   input = createInputHandler({ canvas, getState: () => state, getLayout: () => layout, onChange });
   resultEl.hidden = true;
   enemyPhaseRunning = false;
@@ -118,7 +126,11 @@ function attackText(state, attackerName, evt) {
 }
 
 function onChange() {
-  render(canvas, state, layout);
+  // sync BEFORE the render: it reads whatever combat.js appended to state.log
+  // during the action that triggered this call, so the frame we are about to
+  // paint is already the first frame of any clip that action started.
+  anim.sync(state);
+  render(canvas, state, layout, anim);
   updateHud();
   // A player picking up a drop is the freshest log entry right after a
   // move that landed on one (combat.js's pickUpDropAt) — attacks/enemy
@@ -153,7 +165,8 @@ function runEnemyPhase() {
   setToast('Enemy turn…');
   const tick = () => {
     const step = stepEnemyPhase(state);
-    render(canvas, state, layout);
+    anim.sync(state); // enemy moves and attacks animate on the same path player ones do
+    render(canvas, state, layout, anim);
     updateHud();
     if (step && !step.done) {
       const line = step.attacked
