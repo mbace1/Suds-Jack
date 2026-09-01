@@ -5,6 +5,33 @@
 - PR: #385
 - Target: v2.12 / hub 2012
 - Gameplay code described below is still on PR #385 unless noted; rebase/refresh before merging because `main` may move independently.
+- Agent handover with the full design rules and v2.12 architecture: root `TOKO_MOVE_CLAUDE_HANDOVER.md` (on the PR #385 branch until it merges).
+
+## Lane status (recorded 2026-09-01)
+Three lineages share the name; know which one you are touching.
+
+1. **`main` — v2.11, canon.** The v2.x delivery game. Its `route-choice.js` shipped a
+   missing `}` (the `for(const a of city.lines||[])` loop in `routeChoices` never closed)
+   that killed the whole module graph — the page was dead on arrival until fixed on
+   `claude/toko-move-transition`. The five bare-node gates under `toko-move/test/` are
+   green on that branch and now run in CI.
+2. **PR #385 (`toko-move-v212-live-network`) — v2.12.2, authoritative while open.**
+   Runtime moved to the `core-v212.js`/`main-v212.js` chain; the v2.11 wrappers are
+   legacy (see the handover doc). Its copy of `route-choice.js` carries the **same
+   missing brace** at tip `6c03d296` — v2.12.2 is dead on arrival until it is added
+   (verified: with that one brace the build boots clean). Its gates still test the
+   v2.11 modules, which is how the syntax error survived unexercised — they need
+   re-pointing at the v2.12 chain before merge.
+3. **PR #306 (`claude/toko-move-graphics-zti7gj`) — v1 line-drawing lane, SUPERSEDED.**
+   Tip `d516a9a5` (v14). Its v13 is what the live gh-pages cabinet still serves.
+   Worth mining: the GTFS pipeline (already adopted), `city.js` folding/name logic,
+   the sea-reconstruction analysis. Nobody resumes it without the owner asking.
+
+Deploy rule: the live cabinet moves to v2 only after PR #385 lands with green gates,
+and only on the owner's word. Deploys never merge.
+
+Campaign scope: Helsinki is chapter 1 of four — Nagoya, New York, Tokyo follow.
+`toko-move/CAMPAIGN.md` holds the per-city data paths and what Helsinki proved.
 
 ## Core rule
 Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/metro network is the board. Player decisions are: **wait, catch, ride, get off/transfer, or walk**.
