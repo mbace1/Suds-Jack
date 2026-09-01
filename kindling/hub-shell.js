@@ -9,7 +9,7 @@
 // owns the whole document in this app and removes any body child it did not
 // render itself. Both calls are swallowed: a cabinet has to open with or
 // without the arcade around it.
-addEventListener('load', () => { import('../hub/shell.js?v=17').catch(() => {}); });
+addEventListener('load', () => { import('../hub/shell.js').catch(() => {}); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
