@@ -1,3 +1,4 @@
 Kindling v11
 canonical source: mbace1/Kindling@352e08dd5ac1b69691d0b627ec4ce3e909d2890b
+hub cabinet: mbace1/Suds-Jack@272e6b753bc6a876fa6ab271ea68614e3323c41c
 static hub build: npm run build:hub
