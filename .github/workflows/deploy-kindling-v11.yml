@@ -1,0 +1,44 @@
+name: Deploy Kindling v11
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-kindling-v11.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download verified Kindling v11 static artifact
+        run: |
+          curl --fail --location 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-5688-81f4-b15c-dd4610ade382/raw?se=2026-09-01T20%3A33%3A12Z&sp=r&sv=2026-02-06&sr=b&scid=e96e8784-060b-5375-876d-ea09cdc5dc74&skoid=9b41a688-1b44-4731-856e-b0efcf3660ed&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-31T22%3A19%3A18Z&ske=2026-09-01T22%3A19%3A18Z&sks=b&skv=2026-02-06&sig=Z6SYAc9/QLdYKO1yj%2ByvT6lSDF2b95vLKztg3YC89DY%3D' -o /tmp/kindling.zip
+          mkdir -p /tmp/kindling
+          unzip -q /tmp/kindling.zip -d /tmp/kindling
+          test -f /tmp/kindling/hub-dist/index.html
+          test -f /tmp/kindling/hub-dist/VERSIONS.md
+      - name: Install v11 cabinet
+        run: |
+          cp -a /tmp/kindling/hub-dist/. kindling/
+          rm -f kindling/assets/index-CMLRPBJj.js kindling/assets/login-gW8Vh8-D.js kindling/assets/routes-D2i-e9Fw.js kindling/assets/styles-DX36ZLKI.css
+          printf 'v11\n' > kindling/.hub-release
+          cat > kindling/DEPLOYED_VERSION.txt <<'EOF'
+          Kindling v11
+          canonical source: mbace1/Kindling@352e08dd5ac1b69691d0b627ec4ce3e909d2890b
+          static hub build: npm run build:hub
+          EOF
+      - name: Commit deployed cabinet
+        run: |
+          rm .github/workflows/deploy-kindling-v11.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A kindling .github/workflows/deploy-kindling-v11.yml
+          git commit -m 'Deploy Kindling v11 to hub'
+          git push origin HEAD:main
