@@ -1,5 +1,5 @@
 {
-  "_comment": "Phase 1: a single fixed encounter, but still data (pipeline \u00a73) so Phase 2's 3-5 fights is an add, not a rebuild. Grid is x:0..cols-1, y:0..rows-1; y0 is the enemies' near edge, the last row is the squad's. Two cover kinds per the pipeline's resolved assumptions: full blocks movement+LOS, partial only softens a ranged hit.",
+  "_comment": "Phase 1: a single fixed encounter, but still data (pipeline \u00a73) so Phase 2's 3-5 fights is an add, not a rebuild. Grid is x:0..cols-1, y:0..rows-1; y0 is the enemies' near edge, the last row is the squad's. Two cover kinds per the pipeline's resolved assumptions: full blocks movement+LOS, partial only softens a ranged hit. `win` is the objective: {mode:'eliminate'} or {mode:'survive',rounds:N}. Elimination alone was measured unwinnable (0 wins in 300 runs) because three operators lose the damage race 2-4x to six or seven \u2014 the goal was wrong, not the numbers. Survive-N is Into the Breach's answer and it makes cover, hazards and knockback pay, because they deny damage rather than trade it. Values here were picked from turf/test/balance.mjs's 60-seed sweep, not by feel; underpass and the-yard also lost enemies because no value of N landed in the playable band at their original roster.",
   "encounters": [
     {
       "id": "backlot",
@@ -132,7 +132,11 @@
           5,
           "glass"
         ]
-      ]
+      ],
+      "win": {
+        "mode": "survive",
+        "rounds": 6
+      }
     },
     {
       "id": "loading-dock",
@@ -262,7 +266,11 @@
           4,
           "glass"
         ]
-      ]
+      ],
+      "win": {
+        "mode": "survive",
+        "rounds": 5
+      }
     },
     {
       "id": "warehouse",
@@ -401,7 +409,11 @@
           3,
           "glass"
         ]
-      ]
+      ],
+      "win": {
+        "mode": "survive",
+        "rounds": 5
+      }
     },
     {
       "id": "underpass",
@@ -454,16 +466,6 @@
           "enemy": "grunt_beard",
           "x": 6,
           "y": 0
-        },
-        {
-          "enemy": "grunt_hollow",
-          "x": 1,
-          "y": 2
-        },
-        {
-          "enemy": "grunt_curt",
-          "x": 7,
-          "y": 2
         }
       ],
       "cover": {
@@ -542,7 +544,11 @@
           7,
           "glass"
         ]
-      ]
+      ],
+      "win": {
+        "mode": "survive",
+        "rounds": 7
+      }
     },
     {
       "id": "the-yard",
@@ -595,11 +601,6 @@
           "enemy": "grunt_chain",
           "x": 7,
           "y": 0
-        },
-        {
-          "enemy": "grunt_runt",
-          "x": 5,
-          "y": 1
         }
       ],
       "cover": {
@@ -691,7 +692,10 @@
           5,
           "glass"
         ]
-      ]
+      ],
+      "win": {
+        "mode": "eliminate"
+      }
     }
   ]
 }

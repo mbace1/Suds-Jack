@@ -259,3 +259,10 @@ jobs:
       # generator (js/names.js) checked on its own.
       - name: the crew-name generator
         run: node turf/test/names.mjs
+
+      # Separate from smoke.mjs on purpose: smoke asserts a playthrough
+      # TERMINATES, and it read "lose in 6 rounds" as green for five releases
+      # while the game was won 0 times in 300 runs. Terminating is not the
+      # same question as winnable.
+      - name: winnable, and not free
+        run: node turf/test/balance.mjs
