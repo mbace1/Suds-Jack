@@ -5,11 +5,11 @@ import {THEME} from './palette.js?v=1';
 import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=7';
 import {TransitLayers} from './transit-layers.js?v=4';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
-import {boardBox,boardFit,roadPaths,ROAD_INK,HUB_INK} from './board.js?v=1';
+import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,HUB_INK} from './board.js?v=2';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=2';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.14';
+const BUILD_VERSION='2.16';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -67,6 +67,37 @@ function drawRoads(){if(!roads?.length)return;const ctx=$('map').getContext('2d'
 // makes it deliberate rather than a canvas that happens to end there.
 function boardRect(){const c=$('map'),a=fitLatLon(box.n,box.w),b=fitLatLon(box.s,box.e);return{x:a.x,y:a.y,w:b.x-a.x,h:b.y-a.y};}
 function clipToBoard(ctx){const r=boardRect();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();}
+// The key. Thirteen tram colours with nothing naming them is a code you have
+// to break by tapping — so the families ACTUALLY drawn on the board get a strip
+// along the bottom, in the same ink and the same order every time. Built from
+// the visible layers rather than from the palette, so hiding a line in the MAP
+// inspector takes it out of the key too, and a family added later appears
+// without anyone maintaining a list.
+function drawLegend(){if(!transit)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();
+  // Grouped by COLOUR, not by family: M1 and M2 deliberately share one ink
+  // because they share track across the whole board, and two identical orange
+  // chips side by side would ask a question the map does not mean to raise.
+  // One chip per ink, labelled with every family that wears it.
+  const byInk=new Map();
+  for(const l of transit.layers){if(!l.visible)continue;const f=lineFamily(l.name);
+    const e=byInk.get(l.colour)||{colour:l.colour,metro:l.mode==='SUBWAY',fams:[]};
+    if(!e.fams.includes(f))e.fams.push(f);byInk.set(l.colour,e);}
+  const fams=[...byInk.values()].map(e=>({...e,f:e.fams.join(' ')}));
+  if(!fams.length)return;
+  fams.sort((a,b)=>(a.metro-b.metro)||(parseInt(a.fams[0].replace(/\D/g,''),10)||99)-(parseInt(b.fams[0].replace(/\D/g,''),10)||99));
+  ctx.save();ctx.font=`bold ${Math.round(8.5*d)}px ui-monospace,monospace`;ctx.textBaseline='middle';ctx.textAlign='center';
+  const padX=6*d,gap=5*d,h=13*d;let w=0;const items=fams.map(x=>{const tw=Math.max(15*d,ctx.measureText(x.f).width+padX*2);w+=tw+gap;return{...x,tw};});
+  w-=gap;
+  // wrap rather than run off the frame — a key that leaves the board is not a key
+  const maxW=r.w-16*d;const rows=[[]];let rw=0;
+  for(const it of items){if(rw+it.tw+gap>maxW&&rows.at(-1).length){rows.push([]);rw=0;}rows.at(-1).push(it);rw+=it.tw+gap;}
+  let y=r.y+r.h-(rows.length*(h+4*d))-4*d;
+  for(const row of rows){const rowW=row.reduce((a,it)=>a+it.tw+gap,0)-gap;let x=r.x+(r.w-rowW)/2;
+    for(const it of row){ctx.fillStyle=it.colour;ctx.beginPath();ctx.roundRect(x,y,it.tw,h,3*d);ctx.fill();
+      ctx.fillStyle='#fff';ctx.fillText(it.f,x+it.tw/2,y+h/2+.5*d);x+=it.tw+gap;}
+    y+=h+4*d;}
+  ctx.restore();}
+
 function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle='rgba(29,47,54,.22)';ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
 
 // Stops and transfer spots. A transfer spot is the decision point of the whole
@@ -130,7 +161,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
     if(transitView)drawTransitInspector();
     else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle='#e6ece9';ctx.fillRect(0,0,c.width,c.height);
       ctx.save();clipToBoard(ctx);const r=boardRect();ctx.fillStyle='#edf4f2';ctx.fillRect(r.x,r.y,r.w,r.h);
-      drawWater();drawDistricts();drawRoads();drawTransit();drawStops();drawJobEnds();ctx.restore();drawBoardFrame();}
+      drawWater();drawDistricts();drawRoads();drawTransit();drawStops();drawJobEnds();drawLegend();ctx.restore();drawBoardFrame();}
     if(flow.clock.tick%10===0)paintHud();}
   requestAnimationFrame(frame);}
 
