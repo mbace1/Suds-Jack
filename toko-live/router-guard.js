@@ -1,0 +1,6 @@
+// Toko Live v37 — one high-confidence routing layer for project status/decision questions.
+// Capture phase intentionally handles only queries it can answer decisively, leaving creative/freeform modules alone.
+function append(who,text){const log=document.querySelector('.toko-chat .tc-log');if(!log)return;const d=document.createElement('div');d.className=who==='you'?'tc-you':'tc-me';d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight}
+function boot(){const input=document.querySelector('.toko-chat .tc-say-row input');if(!input)return requestAnimationFrame(boot);input.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const q=input.value.trim();if(!q)return;const explicit=window.TokoProjectState?.project?.(q);if(!explicit)return;const isAuthority=/\b(status|where are we|current state|state of|decided|decision|locked|already decided|preserve|what(?:'s| is) next|next priority|work on next|do now)\b/i.test(q);if(!isAuthority)return;const r=window.TokoProjectState?.answer?.(q);if(!r)return;e.preventDefault();e.stopImmediatePropagation();append('you',q);input.value='';document.querySelector('.stage')?.setAttribute('data-reaction',/decid|locked|preserve/i.test(q)?'considering':'curious');setTimeout(()=>append('toko',r),70)},true)}
+boot();
+window.TokoRouterGuard={version:37};
