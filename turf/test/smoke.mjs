@@ -7,11 +7,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key } from '../js/grid.js';
-import { planIntent } from '../js/ai.js';
+import { planIntent, planAllIntents } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
-  awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE,
+  awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
+  applyTrinkets, TRINKET_SHARE,
 } from '../js/combat.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -22,10 +23,12 @@ const WEAPONS = readJson('weapons.json').weapons;
 const UNITS = readJson('units.json').units;
 const ENEMIES = readJson('enemies.json').enemies;
 const ENCOUNTERS = readJson('encounters.json').encounters;
+const HAZARDS = readJson('hazards.json').hazards;
+const TRINKETS = readJson('trinkets.json').trinkets;
 const BACKLOT = ENCOUNTERS.find(e => e.id === 'backlot');
 const LOADING_DOCK = ENCOUNTERS.find(e => e.id === 'loading-dock');
 
-const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed);
+const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed, HAZARDS, TRINKETS);
 
 let pass = 0;
 function check(name, fn) {
@@ -275,9 +278,16 @@ console.log('loot drops');
     enemySpawns: [{ enemy: 'grunt_handgun', x: 1, y: 0 }],
     cover: { full: [], partial: [] },
   };
+  // A SCRIPTED rng, not a constant: a drop now takes three rolls in order
+  // (hit, drop-or-not, weapon-or-trinket) and a constant 0 wins all three,
+  // which silently turned this weapon test into a trinket test when the
+  // trinket roll was added. Naming each value keeps the test honest about
+  // which branch it is actually exercising.
+  const rngSeq = (...vals) => { let i = 0; return () => vals[Math.min(i++, vals.length - 1)]; };
+
   check(`a kill rolling under DROP_CHANCE (${DROP_CHANCE}) drops the victim's weapon on its tile`, () => {
     const state = boot(oneHit, 1);
-    state.rng = () => 0; // hit roll 0 < hitChance 1 (hit); drop roll 0 < DROP_CHANCE (drops)
+    state.rng = rngSeq(0, 0, 0.99); // hit; drops; 0.99 >= TRINKET_SHARE so it is the weapon
     const r = attack(state, 'p0', 'e0');
     assert.ok(r.killed);
     assert.deepEqual(r.dropped, { x: 1, y: 0, weaponId: 'handgun' });
@@ -285,7 +295,7 @@ console.log('loot drops');
   });
   check('a kill rolling over DROP_CHANCE leaves nothing behind', () => {
     const state = boot(oneHit, 1);
-    state.rng = () => 0.99; // hit roll 0.99 < hitChance 1 (still a hit); drop roll 0.99 >= DROP_CHANCE (no drop)
+    state.rng = rngSeq(0.99, 0.99); // still a hit; drop roll 0.99 >= DROP_CHANCE (no drop)
     const r = attack(state, 'p0', 'e0');
     assert.ok(r.killed);
     assert.equal(r.dropped, null);
@@ -293,7 +303,7 @@ console.log('loot drops');
   });
   check('walking onto a drop swaps the weapon and clears it — a player kills adjacent, then steps onto the body', () => {
     const state = boot(oneHit, 1);
-    state.rng = () => 0;
+    state.rng = rngSeq(0, 0, 0.99); // hit; drops; the weapon, not a trinket
     const blade = getUnit(state, 'p0');
     assert.equal(blade.weapon.id, 'knife');
     attack(state, 'p0', 'e0'); // kills without moving — actedMove is still free
@@ -407,7 +417,256 @@ function playthrough(encounter, seed) {
   });
   console.log(`  (bot playthrough: ${encounter.id} — ${state.result} in ${rounds} rounds)`);
 }
-playthrough(BACKLOT, 42);
-playthrough(LOADING_DOCK, 42);
+
+// ── hazards (GDD §10's "set dressing with mechanical teeth") ─────────────
+// The point of these is not that a tile does damage — it is that knockback
+// finally has somewhere to push things, and that the AI understands the
+// board well enough for the telegraph not to promise a suicide.
+console.log('hazards');
+
+const hazEnc = ENCOUNTERS.find(e => e.id === 'the-yard');
+
+check('every hazard in the data names a kind the defs declare', () => {
+  const known = new Set(HAZARDS.map(h => h.id));
+  for (const e of ENCOUNTERS) {
+    for (const [x, y, kind] of (e.hazards || [])) {
+      assert.ok(known.has(kind), `${e.id} (${x},${y}) uses unknown hazard "${kind}"`);
+    }
+  }
+});
+
+check('a hazard never sits on cover or on a spawn', () => {
+  for (const e of ENCOUNTERS) {
+    const blocked = new Set([
+      ...e.cover.full.map(([x, y]) => `${x},${y}`),
+      ...e.cover.partial.map(([x, y]) => `${x},${y}`),
+      ...e.playerSpawns.map(s => `${s.x},${s.y}`),
+      ...e.enemySpawns.map(s => `${s.x},${s.y}`),
+    ]);
+    for (const [x, y] of (e.hazards || [])) {
+      assert.ok(!blocked.has(`${x},${y}`), `${e.id}: hazard at ${x},${y} overlaps cover or a spawn`);
+    }
+  }
+});
+
+check('walking into a hazard costs the unit health', () => {
+  const s = boot(hazEnc, 7);
+  const fire = (hazEnc.hazards || []).find(h => h[2] === 'fire');
+  const u = s.units.find(x => x.faction === 'player');
+  // stand the unit next to the fire and walk it in
+  u.x = fire[0]; u.y = fire[1] + 1; u.actedMove = false;
+  const before = u.hp;
+  const r = moveUnit(s, u.uid, fire[0], fire[1]);
+  assert.ok(r.ok, 'the move itself should be legal — a hazard is a price, not a wall');
+  assert.ok(u.hp < before, 'standing in a fire should cost health');
+  assert.equal(r.hazard.kind, 'fire');
+});
+
+check('a hazard does NOT block movement — that is what cover is for', () => {
+  const s = boot(hazEnc, 7);
+  const haz = hazEnc.hazards[0];
+  const u = s.units.find(x => x.faction === 'player');
+  u.x = haz[0]; u.y = haz[1] + 1; u.actedMove = false;
+  assert.ok(moveRange(s, u).has(`${haz[0]},${haz[1]}`), 'a hazard tile must stay reachable');
+});
+
+check('a stairwell kills whatever ends up in it, at any HP', () => {
+  const s = boot(hazEnc, 7);
+  const pit = (hazEnc.hazards || []).find(h => h[2] === 'stairwell');
+  const u = s.units.find(x => x.faction === 'player');
+  u.hp = u.maxHp = 99;
+  u.x = pit[0]; u.y = pit[1] + 1; u.actedMove = false;
+  moveUnit(s, u.uid, pit[0], pit[1]);
+  assert.equal(u.hp, 0, 'a lethal hazard ignores how much health you had');
+});
+
+check('a fire bites again at the end of the round if you are still in it', () => {
+  const s = boot(hazEnc, 7);
+  const fire = (hazEnc.hazards || []).find(h => h[2] === 'fire');
+  const u = s.units.find(x => x.faction === 'player');
+  u.x = fire[0]; u.y = fire[1];          // placed, not moved — no onEnter charge
+  const before = u.hp;
+  endPlayerTurn(s);
+  let step; do { step = stepEnemyPhase(s); } while (step && !step.done);
+  assert.ok(u.hp < before, 'ending a round in a fire should cost health');
+});
+
+check('glass bites on the way in but does not linger', () => {
+  const g = HAZARDS.find(h => h.id === 'glass');
+  assert.ok(g.onEnter > 0, 'glass should cost something to cross');
+  assert.equal(g.lingers, 0, 'glass is a toll, not a burn');
+});
+
+check('the AI will not telegraph a move that walks into a lethal hazard', () => {
+  const s = boot(hazEnc, 11);
+  for (const [uid, intent] of s.telegraph) {
+    if (!intent.moveTo) continue;
+    const h = hazardAt(s, intent.moveTo.x, intent.moveTo.y);
+    assert.ok(!(h && h.lethal),
+      `${uid} plans to step into a ${h && h.name} — a full-information telegraph must not promise a suicide`);
+  }
+});
+
+check('an enemy shoved into a stairwell dies, and the shover is credited', () => {
+  const s = boot(hazEnc, 3);
+  const pit = (hazEnc.hazards || []).find(h => h[2] === 'stairwell');
+  const pipe = WEAPONS.find(w => w.knockback > 0);
+  const me = s.units.find(u => u.faction === 'player');
+  const foe = s.units.find(u => u.faction === 'enemy');
+  me.weapon = pipe; me.actedAction = false;
+  foe.hp = foe.maxHp = 50;                 // far too healthy to kill by damage
+  // Line them up so the shove pushes the enemy along +x into the pit.
+  foe.x = pit[0] - 1; foe.y = pit[1];
+  me.x = pit[0] - 2;  me.y = pit[1];
+  const kills = me.kills;
+  const r = attack(s, me.uid, foe.uid);
+  if (r.ok && r.hit) {
+    assert.equal(foe.hp, 0, 'a body shoved into a stairwell should die regardless of HP');
+    assert.ok(r.killed, 'the attack event should report the kill it caused');
+    assert.equal(me.kills, kills + 1, 'the shove earned the kill');
+  }
+});
+
+
+// ── enemy behaviours (GDD §10's "enemy archetypes") ─────────────────────
+// The point is not that the data has a field. It is that two enemies with
+// the same weapon standing in the same spot produce DIFFERENT telegraphs —
+// if they do not, the roster is one enemy with eighteen portraits.
+console.log('enemy behaviours');
+
+check('every enemy declares a behaviour and a focus the AI knows', () => {
+  const behaviours = new Set(['charger', 'skirmisher', 'holder', 'flanker']);
+  const focuses = new Set(['nearest', 'weakest']);
+  for (const e of ENEMIES) {
+    assert.ok(behaviours.has(e.behaviour), `${e.id} has unknown behaviour "${e.behaviour}"`);
+    assert.ok(focuses.has(e.focus), `${e.id} has unknown focus "${e.focus}"`);
+  }
+});
+
+check('the roster is not all one behaviour', () => {
+  const kinds = new Set(ENEMIES.map(e => e.behaviour));
+  assert.ok(kinds.size >= 3, `only ${kinds.size} distinct behaviour(s) across the roster`);
+});
+
+check('focus:weakest goes for the hurt operator, focus:nearest for the close one', () => {
+  const s = boot(ENCOUNTERS[0], 5);
+  const [a, b] = s.units.filter(u => u.faction === 'player');
+  const e = s.units.find(u => u.faction === 'enemy');
+  // b is further away but badly hurt; a is close and healthy.
+  a.x = e.x; a.y = e.y + 2; a.hp = a.maxHp;
+  b.x = e.x + 4; b.y = e.y + 4; b.hp = 1;
+  e.focus = 'nearest';
+  assert.equal(planIntent(s, e).targetUid, a.uid, 'nearest should take the close healthy one');
+  e.focus = 'weakest';
+  assert.equal(planIntent(s, e).targetUid, b.uid, 'weakest should take the hurt one further away');
+});
+
+check('a skirmisher keeps its distance where a charger closes', () => {
+  const s = boot(ENCOUNTERS[0], 5);
+  const e = s.units.find(u => u.faction === 'enemy');
+  const t = s.units.find(u => u.faction === 'player');
+  // Give it a long gun and put the target well inside its range.
+  e.weapon = WEAPONS.find(w => w.id === 'handgun');
+  e.x = 5; e.y = 5; e.actedMove = false;
+  t.x = 5; t.y = 8;
+  for (const o of s.units) if (o !== e && o !== t) { o.hp = 0; }
+  e.behaviour = 'charger';
+  const closeIn = planIntent(s, e).moveTo;
+  e.behaviour = 'skirmisher';
+  const standOff = planIntent(s, e).moveTo;
+  const dClose = Math.abs(closeIn.x - t.x) + Math.abs(closeIn.y - t.y);
+  const dStand = Math.abs(standOff.x - t.x) + Math.abs(standOff.y - t.y);
+  assert.ok(dStand > dClose,
+    `skirmisher should stand further off than a charger (${dStand} vs ${dClose})`);
+});
+
+check('the telegraph is stable — replanning an unchanged board gives the same plan', () => {
+  const s = boot(ENCOUNTERS[2], 9);
+  const first = [...s.telegraph].map(([uid, i]) => `${uid}:${i.type}:${i.moveTo ? i.moveTo.x + ',' + i.moveTo.y : '-'}:${i.targetUid || '-'}`);
+  planAllIntents(s);
+  const again = [...s.telegraph].map(([uid, i]) => `${uid}:${i.type}:${i.moveTo ? i.moveTo.x + ',' + i.moveTo.y : '-'}:${i.targetUid || '-'}`);
+  assert.deepEqual(again, first, 'an intent that flickers between equal tiles is unreadable');
+});
+
+
+// ── trinkets (GDD §5's last unbuilt v1 line) ────────────────────────────
+console.log('trinkets');
+
+const oneHitT = {
+  id: 'onehitT', grid: { cols: 3, rows: 1 },
+  playerSpawns: [{ unit: 'blade', x: 0, y: 0 }],
+  enemySpawns: [{ enemy: 'grunt_handgun', x: 1, y: 0 }],
+  cover: { full: [], partial: [] },
+};
+const seq = (...v) => { let i = 0; return () => v[Math.min(i++, v.length - 1)]; };
+
+check('every trinket declares an effect the engine knows how to apply', () => {
+  const known = new Set(['maxHp', 'move', 'damage', 'range', 'hitChance']);
+  for (const t of TRINKETS) {
+    const keys = Object.keys(t.effect || {});
+    assert.ok(keys.length, `${t.id} has no effect`);
+    for (const k of keys) assert.ok(known.has(k), `${t.id} has unknown effect "${k}"`);
+  }
+});
+
+check('a kill can leave a trinket instead of the weapon', () => {
+  const state = boot(oneHitT, 1);
+  state.rng = seq(0, 0, 0.1, 0); // hit; drops; 0.1 < TRINKET_SHARE so a trinket; pick index 0
+  const r = attack(state, 'p0', 'e0');
+  assert.ok(r.killed);
+  assert.ok(r.dropped.trinketId, 'the drop should be a trinket');
+  assert.equal(state.drops.length, 1);
+});
+
+check('picking one up applies its stat effect immediately', () => {
+  const state = boot(oneHitT, 1);
+  state.rng = seq(0, 0, 0.1, 0); // steel_toes (+2 maxHp) is index 0
+  attack(state, 'p0', 'e0');
+  const blade = getUnit(state, 'p0');
+  const beforeMax = blade.maxHp, beforeHp = blade.hp;
+  const got = moveUnit(state, 'p0', 1, 0);
+  assert.ok(got.ok);
+  assert.equal(blade.trinkets.length, 1);
+  assert.equal(blade.maxHp, beforeMax + 2, '+2 max hp');
+  assert.equal(blade.hp, beforeHp + 2, 'and healed by it — a max bump you cannot feel is a promise, not a pickup');
+  assert.deepEqual(state.drops, [], 'consumed, not left for someone else too');
+});
+
+check('a weapon-field trinket survives a later weapon swap', () => {
+  const state = boot(oneHitT, 1);
+  const blade = getUnit(state, 'p0');
+  const knuckle = TRINKETS.find(t => t.effect.damage);
+  applyTrinkets(blade, [knuckle.id], TRINKETS);
+  const boosted = blade.weapon.damage;
+  assert.equal(boosted, blade.baseWeapon.damage + knuckle.effect.damage, 'bonus folded into the live weapon');
+  // now swap the weapon by walking onto a dropped one
+  blade.actedAction = false;
+  state.rng = seq(0, 0, 0.99); // the victim's weapon, not a trinket
+  attack(state, 'p0', 'e0');
+  moveUnit(state, 'p0', 1, 0);
+  assert.equal(blade.baseWeapon.id, 'handgun', 'the swap happened');
+  const base = WEAPONS.find(w => w.id === 'handgun');
+  assert.equal(blade.weapon.damage, base.damage + knuckle.effect.damage,
+    'the trinket applies to the NEW weapon — it is not attached to the gun it was found with');
+});
+
+check('trinkets stack rather than replace', () => {
+  const state = boot(oneHitT, 1);
+  const blade = getUnit(state, 'p0');
+  const hp = TRINKETS.filter(t => t.effect.maxHp).map(t => t.id);
+  const before = blade.maxHp;
+  applyTrinkets(blade, [...hp, ...hp], TRINKETS); // same trinket twice
+  assert.equal(blade.trinkets.length, hp.length * 2, 'no slots, no replace — they accumulate');
+  assert.ok(blade.maxHp > before);
+});
+
+check('a unit with no trinkets keeps its weapon object untouched', () => {
+  const state = boot(oneHitT, 1);
+  const blade = getUnit(state, 'p0');
+  assert.equal(blade.trinkets.length, 0);
+  assert.equal(blade.weapon, blade.baseWeapon, 'the common case allocates nothing');
+});
+
+for (const enc of ENCOUNTERS) playthrough(enc, 42);
 
 console.log(`\n${pass} checks passed`);

@@ -7,3 +7,9 @@ package.json
 # wire — rebuilt by piritori/godot/tools/export-web.sh. It belongs on the
 # deployed site, not in the source tree.
 /piritori-godot/
+
+# Python bytecode. turf/tools/spritecheck.py is a CLI, but it also gets
+# imported as a module for threshold calibration (measuring IoU distributions
+# across a whole frame set), which leaves a __pycache__ behind.
+__pycache__/
+*.pyc

@@ -197,6 +197,12 @@ jobs:
       - name: the real-Helsinki delivery board
         run: node toko-move/test/real-helsinki.mjs
 
+      # The city layer is data, and this holds it to that: the generalised
+      # builder must reproduce Helsinki's graph exactly, and a second
+      # definition must build a different working board.
+      - name: a city is a definition, not a rewrite
+        run: node toko-move/test/city-build.mjs
+
       - name: route choices parse and behave
         run: node toko-move/test/route-choice.mjs
 
@@ -253,6 +259,13 @@ jobs:
       # generator (js/names.js) checked on its own.
       - name: the crew-name generator
         run: node turf/test/names.mjs
+
+      # Separate from smoke.mjs on purpose: smoke asserts a playthrough
+      # TERMINATES, and it read "lose in 6 rounds" as green for five releases
+      # while the game was won 0 times in 300 runs. Terminating is not the
+      # same question as winnable.
+      - name: winnable, and not free
+        run: node turf/test/balance.mjs
 
       # No browser. Every image measurement in spritekit used to run inside a
       # headless Chromium; it runs on Skia in-process now (@napi-rs/canvas),

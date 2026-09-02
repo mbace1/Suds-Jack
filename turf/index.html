@@ -57,16 +57,33 @@
     flex: 1; position: relative; display: flex; align-items: flex-end; justify-content: center;
     padding-bottom: 4px;
     min-height: 0; overflow: hidden;
-    background:
+    /* --encounter-bg (set per-encounter in main.js's boot()) sits behind the
+       board's own opaque canvas, so it only shows in the slack space above/
+       around it — real atmosphere with zero risk to board readability. The
+       dark scrim on top keeps a busy photo from fighting the HUD text that
+       sits over #stage's edges. */
+    background-image:
+      linear-gradient(rgba(7,8,11,0.55), rgba(7,8,11,0.85)),
       radial-gradient(ellipse at 50% 30%, rgba(111,168,201,0.06), transparent 60%),
-      #07080b;
+      var(--encounter-bg, none);
+    background-size: auto, auto, cover;
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    background-color: #07080b;
   }
   #board { image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: pointer; display: block; }
 
   .unitBtn {
     flex: 1; min-height: 44px; padding: 5px 9px; background: #1c1f26; border: 1px solid #262a32;
     color: #d6d9de; font: inherit; text-align: left; cursor: pointer; min-width: 84px;
+    display: flex; align-items: center; gap: 7px;
   }
+  .unitBtn .portrait {
+    width: 34px; height: 34px; object-fit: cover; object-position: 50% 15%;
+    image-rendering: pixelated; image-rendering: crisp-edges; flex: none;
+    background: #14161c; border: 1px solid #262a32;
+  }
+  .unitBtn .info { flex: 1; min-width: 0; }
   .unitBtn .nm { display: block; font-weight: bold; }
   .unitBtn .hpTrack { display: block; height: 4px; background: #20232a; margin-top: 3px; width: 100%; }
   .unitBtn .hpFill { display: block; height: 100%; background: #5ad1a8; }
@@ -75,8 +92,15 @@
   .unitBtn.dead { opacity: .25; text-decoration: line-through; }
   .unitBtn:disabled { cursor: default; }
 
-  #selInfo { min-width: 150px; color: #7b818c; }
+  #selInfo { min-width: 150px; color: #7b818c; display: flex; align-items: center; gap: 8px; }
   #selInfo b { color: #d6d9de; }
+  #selPortrait {
+    width: 40px; height: 40px; object-fit: cover; object-position: 50% 15%;
+    image-rendering: pixelated; image-rendering: crisp-edges; flex: none;
+    background: #14161c; border: 1px solid #262a32;
+  }
+  #selPortrait[hidden] { display: none; }
+  #selText { flex: 1; min-width: 0; }
   #toast { flex: 1; min-height: 1.4em; color: #f2e2a0; font-size: 12px; }
 
   .overlay {
@@ -121,9 +145,13 @@
     <div class="row">
       <button id="cancelBtn" class="actionBtn secondary" disabled>Cancel</button>
       <button id="endTurnBtn" class="actionBtn" disabled>End Turn</button>
+      <button id="muteBtn" class="actionBtn secondary" aria-pressed="false" title="Sound on/off">Sound</button>
     </div>
     <div class="row">
-      <span id="selInfo">Select an operator.</span>
+      <span id="selInfo">
+        <img id="selPortrait" alt="" hidden>
+        <span id="selText">Select an operator.</span>
+      </span>
       <span id="toast"></span>
     </div>
   </div>
@@ -135,8 +163,9 @@
       Tap an operator, then tap a tile to move or an enemy to hit — move and act in either
       order, once each, per operator. Full cover (dumpsters, fences) blocks a shot outright;
       low cover (crates, curbs) only softens one. Every enemy shows what it plans to do
-      before it does it — read the board, not the RNG. Clear a block to move on to the next;
-      lose your whole crew and it's over.
+      before it does it — read the board, not the RNG. Most blocks are HELD, not cleared:
+      outlast the round count shown top-right and the street is yours. Lose the whole crew
+      and it's over.
     </p>
     <p class="tag">Mouse or touch · arrows/WASD move, Enter/Space confirm, Esc cancel, E ends turn ·
       pad: stick move, A confirm, B cancel, Y ends turn</p>
@@ -149,7 +178,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=7"></script>
+  <script type="module" src="js/main.js?v=14"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

@@ -75,3 +75,49 @@ mining: the platform-folding and name-choice logic (`js/city.js` there), the
 sea-reconstruction analysis (three closures tried, none complete — its
 CITIES.md has the table), and a four-city research file. Nothing else from it
 should be merged; two games cannot share one directory.
+
+## 5. What a new chapter costs, as of v2.16
+
+The city layer is **data**. `js/city-build.js` turns a city DEFINITION plus a
+source pack into a graph; `cities/helsinki.city.js` is chapter 1's definition,
+and `js/real-helsinki.js` is a three-line door onto it. A definition owns which
+real stops its anchors resolve to (by alias), what each is called and what it is
+for, which anchors are walkable to each other, and the per-mode speeds,
+capacities and vehicle counts. It owns **no geometry**: paths and stop sequences
+come from the committed pack exactly as the agency published them.
+
+`test/city-build.mjs` holds both halves of that claim — Helsinki's graph is
+compared against a frozen fingerprint of what the hand-written v2.11 builder
+produced, and a second definition over the same pack is proved to build a
+different working board with its own rules.
+
+So chapter 2 is now: **a pack, a definition, a marquee, a catalogue entry.**
+
+### The blocker, stated plainly
+
+The pack is the only hard part, and it cannot be produced from inside the
+sandboxed agent environment: the egress proxy denies `api.odpt.org`,
+`overpass-api.de` and `api.openstreetmap.org` by organisation policy, so this is
+a network limit rather than a missing token — a token would not help. It needs a
+run with real outbound access.
+
+Do **not** work around it by drawing a Nagoya network by hand. Authored geometry
+presented as a real one is the single thing `TRANSIT_LAYERS.md` and
+`OWNER_OVERRIDE_V2.md` both forbid, and it would poison the chapter that is
+supposed to prove the pipeline generalises.
+
+### When there is network
+
+1. Fetch a GTFS feed for the city and run the packer, exactly as Helsinki's was
+   built — `scripts/gtfs.mjs` reads a feed with no dependency and zero shape
+   tolerance. For Nagoya the candidates are the Nagoya Municipal Transportation
+   Bureau's GTFS-JP publication and, failing that, OpenStreetMap route relations
+   via Overpass (ODbL — the same licence the coastline extract already carries,
+   so the attribution line already exists).
+2. Write `cities/nagoya.city.js`: the anchors you can actually deliver to, their
+   aliases as the feed spells them, the walk links, and the mode table.
+3. Add a `city-build` case for it, a marquee, and a catalogue entry.
+
+The Meijō Line is why Nagoya is chapter 2: it is a true loop, so *which
+direction you board* is a real decision rather than a formality — the first
+thing Helsinki's network cannot teach.

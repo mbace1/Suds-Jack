@@ -1,5 +1,47 @@
 # Toko Move — versions
 
+## v2.18 — 2026-09-02
+
+The five-minute shift. flow-core's day is sixty seconds of wall time, built for Piritori's day simulation, and Toko Move had been running on it: a tram crossed Helsinki in three seconds, and every headway change made to keep catches reachable inside sixty seconds only added vehicles — 272 on screen at v2.17. `createFlow` now takes an optional `ticksPerDay` (flow-core's default is untouched; its contract passes 29/29), and Toko Move asks for 3000 ticks: 07:00–10:00 of game time in five minutes of wall time, a tram's 50-minute pass in about 83 seconds. Vehicles per line go from 8 back to 3. The HUD clock shows minutes.
+
+Game-time quantities scale with the day — vehicle speed, deadlines, walking cost. Wall-time ones do not: the 120- and 80-tick lookahead horizons are 12 and 8 seconds at the shared tick rate and stay put, and the catch window is now stated as **seconds** (callers still pass 2.2; it means 2.2 seconds, inside Loop 18's 2–8 second window).
+
+Vehicles are spaced **evenly** around the out-and-back cycle, offset per line by hash. They were hash-scattered, and scattered phases bunch: measured at Lasipalatsi from tick 0, the gap to the next same-direction vehicle reached 1453 ticks on a line whose even headway is 556. Evenly spaced, the worst gap is 508 (51 s) and the mean 229 (23 s) across all forty line-directions there.
+
+Dispatch is constrained by the network (Loop 47). The first offer a bot took had no compatible vehicle for 1204 ticks — two minutes on the tutorial job — while five lines were arriving at that very hub. `refreshOffers` now draws six candidates and keeps three; when the live fleet is wired in, at least one kept offer has a catch inside 30 seconds, and on the first job that one leads (Loop 43). Bare-node gates install no judge and see the old behaviour.
+
+Six modules were imported at two different cache tokens — `live-network`, `deliveries` (three!), `hubs-walking`, `transit-layers`, `board`, `route-choice` — which instantiates each twice and splits its state. All normalised to one token each.
+
+Report card, five-minute shift: 4/6 delivered, score 756, late 0, riding 52% / waiting 44%, dead air 5%, first catch in 2 ticks, worst wait 519 (one headway), mean 183.
+
+## v2.17 — 2026-09-02
+
+The shift becomes playable, measured rather than asserted. Every number below came from `test/report.cjs` playing the real page, and each was set originally without anyone checking it against the clock it runs on.
+
+**Vehicle speed is derived from the clock.** A tram took 2083 ticks to cross its route against a 600-tick shift — at 1.6 minutes per tick, 55.6 hours of game time for one pass, about 67x too slow. A stop saw ~0.3 tram arrivals per shift while every job needs a catch, and the first catchable vehicle appeared at tick 585 of 600: a shift completed nothing. Speed is now stated as what it means (`END_TO_END_MINUTES`, tram 50, metro 45) and converted through `ticksPerDay`.
+
+**The catch window is in ticks.** It was a raw path-index distance, hardcoded 2.2 at six call sites, and a path index is not a unit of anything — 2.2 on a 241-point tram path is a different real distance from 2.2 on a 682-point metro path, and the time a vehicle spends inside it scales with speed. Fixing the speed alone therefore made catching *impossible*, verified: not one choice enabled in a whole shift.
+
+**Headway tightened to 8 vehicles per line** — a tram every 3.9 ticks, 7.8 per direction, about a 13-minute headway. Completions went 0 → 3, waits to 9-30 ticks.
+
+**A shift is six jobs, not ten.** A job's journey measures 50-230 ticks in a 600-tick day, so ten needed roughly 2.5x the hours available and the back half was unreachable however often the trams ran. The authored campaign is still ten (a chain, each job starting where the last ended); a shift plays six of it.
+
+**A deadline allowed for flying, not riding.** Offers set `limit = 110 + dist*7` from the straight-line graph distance while the journey goes through the network with transfers at each change. Now `dist*16`.
+
+Together: waiting fell from a shift that was 100% unfinishable to roughly half riding, dead air 3-8%, and jobs that complete and score.
+
+Known and not fixed: the same job can take 59 or 220 ticks depending on where the vehicles happen to be — a 4x spread that no fixed deadline covers. A deadline derived from the chosen route's own estimate, rather than from distance, is the next question.
+
+Also fixes three bugs in the report bot itself, each of which libelled the game before it was caught: dead air claimed to account for walking and did not, GET OFF was never pressed so finished rides read as zero completions, and completion accounting sat after a `continue` and never ran.
+
+## v2.16 — 2026-09-02
+
+The city layer becomes data, which is what a second chapter actually costs. `js/city-build.js` turns a city DEFINITION plus a source pack into a graph; `cities/helsinki.city.js` is chapter 1's definition and `js/real-helsinki.js` is a three-line door onto it. A definition owns which real stops its anchors resolve to, what each is called and what it is for, the walk links, and the per-mode speeds, capacities and vehicle counts — and owns no geometry at all, which still comes from the committed pack exactly as the agency published it.
+
+`test/city-build.mjs` holds both halves of the claim rather than asserting them in prose. Helsinki's graph is compared against a **frozen fingerprint of the output the hand-written v2.11 builder produced** — every node's id, name, tags, capacity and projected position, every edge's endpoints, mode and time — so the generalisation is proved to have cost nothing. Then a second definition over the same pack builds a different working board with its own anchors, speeds, capacities and carrier counts, which is the bet chapter 2 rests on. Three definition failure modes fail at build time: an anchor that resolves to nothing, a walk link to a place not on the board, and a declared mode with no service through it. Five mutations run against the gate, all caught.
+
+Nagoya remains blocked on data, and the blocker is recorded in `CAMPAIGN.md` §5: the sandboxed agent environment's egress proxy denies `api.odpt.org`, `overpass-api.de` and `api.openstreetmap.org` by policy, so it is a network limit rather than a missing token. Drawing the network by hand instead is explicitly ruled out — authored geometry presented as real is the one thing the canon forbids, and it would poison the chapter meant to prove the pipeline generalises.
+
 ## v2.15 — 2026-09-02
 
 The key. Thirteen tram colours with nothing naming them is a code you break by tapping, so the families actually drawn on the board get a strip along the bottom in the same ink. It is built from the VISIBLE layers rather than from the palette — hiding a line in the MAP inspector takes it out of the key too, and a family added later appears without anyone maintaining a list. Grouped by ink rather than by family, because M1 and M2 deliberately share one colour (they share track across the whole board) and two identical orange chips side by side would ask a question the map does not mean to raise; they read as one `M1 M2` entry instead. It wraps rather than running off the frame.

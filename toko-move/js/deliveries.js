@@ -1,5 +1,13 @@
 // Toko Move v2.12.2 — courier dispatch + two-job carry + physical-vehicle scoring.
-export const DELIVERY_TARGET=10;
+// A SHIFT is six jobs, not ten. Measured with test/report.cjs: a job's journey
+// runs 50-230 ticks and a shift is 600, so ten of them needed roughly 2.5x the
+// day available and the back half could not be reached however often the trams
+// ran. Tightening headway took completions from 0 to 3 and could go no further,
+// because this is not a headway problem — it is a shift that was longer on
+// paper than in hours. Six is what fits with room to make a wrong catch and
+// still recover. The authored campaign is still ten jobs (a chain, each
+// starting where the last ended); a shift plays the first six of it.
+export const DELIVERY_TARGET=6;
 export const CARGO={documents:{icon:'DOC',rule:'Flexible routing',modes:null},'hot food':{icon:'HOT',rule:'Freshness falls fast',modes:null,freshness:.60},parts:{icon:'PRT',rule:'No special restriction',modes:null},fragile:{icon:'FRG',rule:'Tram only — avoid transfers',modes:['tram'],fragile:true},equipment:{icon:'HVY',rule:'Transit only; no walking shortcut',modes:['tram','metro'],heavy:true},express:{icon:'EXP',rule:'Priority courier — metro or tram',modes:['metro','tram'],express:true},'fresh food':{icon:'FRESH',rule:'Freshness bonus for speed',modes:null,freshness:.70},'market goods':{icon:'MRKT',rule:'Tram network only',modes:['tram'],heavy:true}};
 export const JOBS=[
  {stops:['lasipalatsi','rautatientori'],label:'Press proofs to Central',cargo:'documents',limit:125,value:100},
@@ -21,7 +29,18 @@ export class DeliveryChallenge{
  constructor(flow,say){this.flow=flow;this.say=say;this.index=0;this.leg=0;this.active=null;this.queued=null;this.activeTrip=null;this.selectedPlan=null;this.waitingForCatch=false;this.seen=new Set;this.startedAt=0;this.score=0;this.late=0;this.bonuses=0;this.location='lasipalatsi';this.offers=[];this.offerCycle=0;this.physicalSeq=0;}
  cargoRule(){return CARGO[this.active?.cargo]||CARGO.documents;}
  start(){this.refreshOffers();}
- refreshOffers(){if(this.index>=DELIVERY_TARGET){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));this.offers=[];for(let i=0;i<3&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=110+dist*7+(cargo==='hot food'||cargo==='express'?0:25),value=90+dist*9+(cargo==='fragile'||cargo==='equipment'?35:0);this.offers.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}this.say(`DISPATCH · ${this.offers.length} jobs available at ${this.name(from)}.`);}
+ refreshOffers(){if(this.index>=DELIVERY_TARGET){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*(this.flow.clock.ticksPerDay/600)),value=90+dist*9+(cargo==='fragile'||cargo==='equipment'?35:0);cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
+  // Loop 47: a procedural job is constrained by a network relationship, never
+  // rolled blind. Measured before this: the first offer taken had no compatible
+  // vehicle for 1204 ticks — two minutes of wall time on the tutorial job —
+  // while five lines were arriving at that very hub. So when a judge is
+  // installed (main-v212 wires the live fleet in), at least one kept offer has
+  // a catch inside the horizon, and on the first job that one is listed first
+  // (Loop 43: the first delivery is almost impossible to fail).
+  const judge=this.reachable;let kept=cands.slice(0,3);
+  if(typeof judge==='function'){const soon=cands.filter(o=>judge(o)),later=cands.filter(o=>!judge(o));
+    if(soon.length){kept=this.index===0?[soon[0],...later.slice(0,2)]:[...later.slice(0,2),soon[0]].slice(0,3);if(kept.length<3)kept=[...kept,...soon.slice(1),...later.slice(2)].slice(0,3);}}
+  this.offers=kept;this.say(`DISPATCH · ${this.offers.length} jobs available at ${this.name(from)}.`);}
  canTakeSecond(){return Boolean(this.active&&!this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location);}
  canReorder(){return Boolean(this.active&&this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location);}
  acceptOffer(id){const job=this.offers.find(x=>x.id===id);if(!job)return{error:'job offer expired'};if(this.index>=DELIVERY_TARGET)return{error:'shift complete'};if(this.active){if(!this.canTakeSecond())return{error:'second job can only be collected before leaving this pickup hub'};this.queued={...job,originalStops:[...job.stops],acceptedAt:this.flow.clock.tick};this.offers=this.offers.filter(x=>x.id!==id);this.say(`CARRY 2 · ${CARGO[job.cargo]?.icon||'JOB'} · ${this.name(job.stops[1])} queued. Choose which destination to tackle first.`);return{job:this.queued,queued:true};}this.active={...job,originalStops:[...job.stops],acceptedAt:this.flow.clock.tick};this.offers=this.offers.filter(x=>x.id!==id);this.leg=0;this.startedAt=this.active.acceptedAt;this.launchLeg();const c=this.cargoRule();this.say(`${this.index+1}/${DELIVERY_TARGET} · ${c.icon} · ${this.routeLabel()} · ${c.rule}`);return{job:this.active};}
