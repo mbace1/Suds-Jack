@@ -1,64 +1,74 @@
 # Toko Move — current state / handoff
 
 ## Active work
-- Branch: `toko-move-v212-live-network`
-- PR: #385
-- Target: v2.12 / hub 2012
-- Gameplay code described below is still on PR #385 unless noted; rebase/refresh before merging because `main` may move independently.
-- Agent handover with the full design rules and v2.12 architecture: root `TOKO_MOVE_CLAUDE_HANDOVER.md` (on the PR #385 branch until it merges).
+- Branch: merged to `main` (was `toko-move-v212-live-network`, PR #385)
+- Target: v2.14 / the v2.12 runtime chain (`core-v212.js` + `main-v212.js`)
+- Agent handover with the full design rules and v2.12 architecture: root `TOKO_MOVE_CLAUDE_HANDOVER.md`
+- Expanded `movesuggestions.md` is preserved intact and remains the speculative design notebook.
 
-## Lane status (recorded 2026-09-01)
-Three lineages share the name; know which one you are touching.
+## Lane status (updated 2026-09-01, after the merge)
 
-1. **`main` — v2.11, canon.** The v2.x delivery game. Its `route-choice.js` shipped a
-   missing `}` (the `for(const a of city.lines||[])` loop in `routeChoices` never closed)
-   that killed the whole module graph — the page was dead on arrival until fixed on
-   `claude/toko-move-transition`. The five bare-node gates under `toko-move/test/` are
-   green on that branch and now run in CI.
-2. **PR #385 (`toko-move-v212-live-network`) — v2.12.2, authoritative while open.**
-   Runtime moved to the `core-v212.js`/`main-v212.js` chain; the v2.11 wrappers are
-   legacy (see the handover doc). Its copy of `route-choice.js` carries the **same
-   missing brace** at tip `6c03d296` — v2.12.2 is dead on arrival until it is added
-   (verified: with that one brace the build boots clean). Its gates still test the
-   v2.11 modules, which is how the syntax error survived unexercised — they need
-   re-pointing at the v2.12 chain before merge.
-3. **PR #306 (`claude/toko-move-graphics-zti7gj`) — v1 line-drawing lane, SUPERSEDED.**
-   Tip `d516a9a5` (v14). Its v13 is what the live gh-pages cabinet still serves.
-   Worth mining: the GTFS pipeline (already adopted), `city.js` folding/name logic,
-   the sea-reconstruction analysis. Nobody resumes it without the owner asking.
+**This work is now on `main`.** The v2.12 live-network branch and the v2.13/v2.14 board
+work were merged together; `main` is the one tree and is ahead of every Toko Move branch.
+Start from it.
 
-Deploy rule: the live cabinet moves to v2 only after PR #385 lands with green gates,
-and only on the owner's word. Deploys never merge.
+1. **`main` — v2.14, canon.** The v2.12 runtime chain plus the board pass. All six
+   bare-node gates under `toko-move/test/` are green together and run in CI.
+2. **PR #306 (`claude/toko-move-graphics-zti7gj`) — v1 line-drawing lane, SUPERSEDED.**
+   Tip `d516a9a5` (v14 of that lineage — a different numbering, do not confuse it with
+   this one). Worth mining: `city.js` folding/name logic and the sea-reconstruction
+   analysis. Nobody resumes it without the owner asking.
+
+**The live gh-pages cabinet still serves the OLD v1 lane**, so `hub/versions.json` still
+reads the live number rather than 2.14. That is deliberate and gate-held: the hub
+advertises what is LIVE, `VERSIONS.md` records what has LANDED, and the hub may lag but
+may never lead — the bug that shipped on main was a hub claiming 2.12.2 against a 2.11
+tree. Deploy moves both together, on the owner's word. Deploys never merge.
 
 Campaign scope: Helsinki is chapter 1 of four — Nagoya, New York, Tokyo follow.
 `toko-move/CAMPAIGN.md` holds the per-city data paths and what Helsinki proved.
 
 ## Core rule
-Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/metro network is the board. Player decisions are: **wait, catch, ride, get off/transfer, or walk**.
+Toko Move is NOT a line-drawing game. The existing colored Helsinki HSL tram/metro network is the board. Player decisions are: **pick jobs, wait, catch, ride, get off/transfer, or walk**.
 
-## Current PR #385 behavior
+## Implemented (on `main` as of v2.14)
 - Full exact GTFS tram/metro source layers visible.
 - Deterministic gameplay vehicles circulate on exact source geometry; NOT live HSL realtime positions.
-- Transfer hubs are stronger waiting/decision nodes.
-- Simplified major-street walking graph connects selected hubs/anchors.
-- CATCH only enables when a compatible visible gameplay vehicle reaches the current hub.
-- The exact vehicle caught is stored as the ride identity and highlighted while aboard.
-- Ride UI exposes vehicle id, line/mode, approximate current stop and next stop.
-- Arrival is gated by both the delivery sub-trip completing and that same selected visible vehicle physically reaching its target hub. Vehicle target arrival is latched so timing mismatch cannot cause an early arrival or a missed stop.
-- One-transfer suggestions board only the first physical vehicle to the transfer hub; they no longer auto-ride the second service.
-- Transfer loop is now: ARRIVED -> GET OFF -> WAIT AT HUB -> catch a second real arriving vehicle.
-- WALK consumes gameplay ticks and is blocked for transit-only cargo.
-- Authored job progression advances only after the final physical ride of that authored leg.
+- `core-v212.js` is the active base runtime. It imports no `RouteDrawer`, has no draft/add-line state, and draws no fake nearby trams.
+- `main-v212.js` boots directly from the clean core; legacy v210/v211 wrappers are bypassed at runtime.
+- Transfer hubs + simplified major-street walking graph.
+- CATCH only enables when a compatible visible gameplay vehicle reaches the current hub moving toward the selected leg.
+- Walk-interception forecasts are direction-aware; wrong-way vehicles do not count.
+- The exact visible vehicle caught is stored/highlighted as the ride identity.
+- The selected visible vehicle is the sole Toko Move ride simulation; delivery completion does not wait for a duplicate hidden flow-core carrier.
+- One-transfer choices board the first physical vehicle only; transfer remains ARRIVED -> GET OFF -> WAIT -> CATCH second visible vehicle.
+- WALK consumes gameplay ticks and respects cargo restrictions; courier walking is visibly animated.
+- Dispatch offers three local jobs; a second job can be collected at the same pickup hub and delivery order can be changed before departure.
+- Dispatch exposes value, deadline, approaching services, ETA and transfer tradeoffs without naming one correct answer.
+- Hub tactics exposes several approaching services + walk exits simultaneously.
+- Near-miss feedback teaches closed catch windows.
+- Skill moments emit `INTERCEPTED`, `TIGHT CONNECTION`, and `REPLAN` as modular event hooks rather than hidden scoring.
+- Early disembark lets the courier leave at an intermediate gameplay anchor and re-plan instead of hard failing.
+- Ride UI binds to the selected visible vehicle and exposes current/next stop state.
 
-## Important PR files
-- `toko-move/js/live-network.js` — gameplay fleet, exact-path positions, vehicle identity/selection/highlight.
+## Architecture status
+- Clean core is now the runtime entry point.
+- Do NOT delete legacy wrappers until browser testing confirms no hidden page/agent still references them; quarantine/delete is the next cleanup after gates.
+- Do NOT modify shared `flow-core` merely to support Toko Move; Toko-specific ride state belongs in the Toko Move mobility layer.
+
+## Important files
+- `toko-move/js/core-v212.js` — clean no-drawing base runtime, exact HSL rendering, water/context, HUD and boot lifecycle.
+- `toko-move/js/live-network.js` — deterministic exact-path gameplay fleet, direction-aware lookup, vehicle identity/selection/highlight.
+- `toko-move/js/mobility-v212.js` — authoritative physical ride state, transfer/disembark and walking.
+- `toko-move/js/deliveries.js` — dispatch/two-job carry/scoring; lightweight physical ride tokens rather than flow delivery carriers.
 - `toko-move/js/hubs-walking.js` — transfer hubs + simplified walking links.
-- `toko-move/js/mobility-v212.js` — physical ride identity, target-arrival latch, manual transfer/disembark, walking.
-- `toko-move/js/route-choice.js` — waiting UI, arrival-gated boarding, current/next stop UI, GET OFF/WALK actions.
-- `toko-move/js/deliveries.js` — fixed-service delivery trips; supports physical sub-rides whose destination is the selected ride leg endpoint.
-
-## Cargo walking rule
-Prototype: `modes:null` may walk (documents/hot food/parts/fresh food). Explicit transit-mode cargo may not walk (fragile/equipment/express/market goods).
+- `toko-move/js/interception-v212.js` — direction-aware walk-to-intercept planner.
+- `toko-move/js/job-board-v212.js` — concurrent local job offers with neutral live tradeoff information.
+- `toko-move/js/hub-tactics-v212.js` — multi-option hub availability + near-miss feedback.
+- `toko-move/js/moments-v212.js` — modular skill-moment events.
+- `toko-move/js/recovery-v212.js` — early-disembark / re-plan control.
+- `toko-move/js/route-choice.js` — direction-correct arrival-gated boarding, current/next stop UI, GET OFF/WALK/interception actions.
+- `toko-move/js/main-v212.js` — v2.12.2 composition/overlays.
 
 ## Source rules
 - HSL GTFS geometry stays exact; never present authored approximation as real HSL geometry.
@@ -66,12 +76,14 @@ Prototype: `modes:null` may walk (documents/hot food/parts/fresh food). Explicit
 - OSM coastline edges are open lines; never close/fill them.
 - Keep HSL/OSM attribution.
 
-## Next
-1. Browser-test PR #385 physical ride/transfer state and fix timing/state regressions before merge.
-2. Long term remove the duplicate flow-core carrier concept from Toko Move; selected visible vehicle should become the sole ride simulation.
-3. Animate walking and highlight interception opportunities.
-4. Add multiple simultaneous jobs.
-5. Remove `RouteDrawer` from Toko Move source and consolidate runtime wrappers.
-6. Remove remaining line-building wording/HUD remnants.
+## Extended-feature candidates from `movesuggestions.md`
+Keep these modular until the core loop proves their value: client-specific reputation, day-phase job pressure, authored weather/scenario modifiers, post-run route replay, daily seeded challenges, contextual information upgrades, audio/haptic opportunity cues, and optional live-HSL ambient/reference mode. None should alter factual HSL geometry or masquerade as live data.
 
-Strategic question: **Wait for tram, transfer, or walk?**
+## Next larger steps
+1. Browser-test the clean-core dispatch -> catch -> ride -> early exit/transfer -> get off -> second job/next dispatch loop.
+2. Delete or quarantine unused legacy Toko Move wrappers only after browser gates prove nothing still references them.
+3. Extend recovery to intentionally boarding a non-suggested service, preserving legibility and recovery.
+4. Improve two-job overlap so riding time becomes real planning time rather than only a queued second destination.
+5. Add scenario pressure by changing deterministic vehicle frequency/waiting, never HSL geometry.
+
+Strategic question: **What opportunities are moving through Helsinki right now, and which one do I exploit?**
