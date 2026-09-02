@@ -34,6 +34,10 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     encounterId: encounter.id,
     grid: encounter.grid,
     fullCover, partialCover, hazards,
+    // Per-encounter objective (GDD §4 lists survive-N as a real mode, not
+    // only elimination). Defaults to eliminate so an encounter without one
+    // behaves exactly as it did before.
+    win: encounter.win || { mode: 'eliminate' },
     units,
     turn: 'player',
     round: 1,
@@ -442,14 +446,38 @@ export function stepEnemyPhase(state) {
   state.turn = 'player';
   state.round += 1;
   for (const u of state.units) if (u.faction === 'player') { u.actedMove = false; u.actedAction = false; }
+  // A survive objective is decided HERE and nowhere else: outlasting round N
+  // is an event with no attack behind it, so without this call the win would
+  // only be noticed the next time somebody happened to take damage.
+  checkWinLoss(state);
   planAllIntents(state);
   return { done: true, burns };
 }
 
+// The one place a fight is decided.
+//
+// WHY THERE IS A CHOICE HERE AT ALL. Elimination was the only win condition
+// through v21, and measured over 300 bot runs it was won ZERO times: three
+// operators against six or seven who out-damage them 2-4x. The numbers were
+// not the mistake — the GOAL was. This game shows full enemy intent, which
+// is Into the Breach's model, and ITB never asks you to kill everything: you
+// get three units, perfect information, and a turn count to survive. Full
+// information plus a losing damage race is not tension, it is a legible
+// defeat. Change what winning means and the same numbers become correct,
+// because cover, hazards and knockback are all tools for DENYING damage
+// rather than trading it.
+//
+// `survive` is therefore the interesting objective and `eliminate` is kept
+// for encounters that genuinely are a clear-out. Killing every enemy always
+// wins regardless of mode — outliving the fight early is never punished.
 function checkWinLoss(state) {
   if (state.result) return;
-  if (!state.units.some(u => u.faction === 'player' && u.hp > 0)) state.result = 'lose';
-  else if (!state.units.some(u => u.faction === 'enemy' && u.hp > 0)) state.result = 'win';
+  if (!state.units.some(u => u.faction === 'player' && u.hp > 0)) { state.result = 'lose'; return; }
+  if (!state.units.some(u => u.faction === 'enemy' && u.hp > 0)) { state.result = 'win'; return; }
+  // Survive N: the round counter has already advanced past N when the Nth
+  // round's enemy phase finishes, which is exactly when the player has
+  // outlasted it.
+  if (state.win && state.win.mode === 'survive' && state.round > state.win.rounds) state.result = 'win';
 }
 
 // GDD.md §5's v1 progression list: "XP levels: units gain levels from

@@ -5,7 +5,7 @@ import { PAL } from './palette.js?v=3';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=8';
+} from './combat.js?v=9';
 import { computeLayout, render } from './render.js?v=11';
 import { createInputHandler } from './input.js?v=7';
 import { createAnimator } from './anim.js?v=4';
@@ -136,11 +136,19 @@ function boot(seed) {
   input = createInputHandler({ canvas, getState: () => state, getLayout: () => layout, onChange });
   resultEl.hidden = true;
   enemyPhaseRunning = false;
-  setToast('Your move.');
+  setToast(objectiveText(state));
   onChange();
 }
 
 function setToast(text) { toastEl.textContent = text; }
+
+// Stated once, in words, when the encounter opens — the topbar carries the
+// running count after that.
+function objectiveText(state) {
+  return state.win && state.win.mode === 'survive'
+    ? `Hold ${state.win.rounds} rounds. Killing them all also wins.`
+    : 'Take out every rival on the block.';
+}
 
 // How an enemy describes its own approach, by behaviour. Teaches the roster's
 // vocabulary through play instead of a legend nobody reads.
@@ -256,7 +264,12 @@ function runEnemyPhase() {
 function updateHud() {
   topbar.turn.textContent = state.turn === 'player' ? 'Your Turn' : 'Enemy Turn';
   topbar.turn.className = state.turn === 'enemy' ? 'enemy' : '';
-  topbar.round.textContent = `Round ${state.round}`;
+  // The objective is shown, always. A survive-N goal the player cannot see is
+  // a hidden win condition in a game whose whole premise is full information —
+  // they would play to eliminate, which on these rosters is how you lose.
+  topbar.round.textContent = state.win && state.win.mode === 'survive'
+    ? `Round ${state.round} / ${state.win.rounds} — hold`
+    : `Round ${state.round} — clear them out`;
   controls.endTurn.disabled = state.turn !== 'player' || !!state.result;
   controls.cancel.disabled = state.turn !== 'player' || !!state.result || !state.selected;
 
@@ -305,9 +318,14 @@ function showResult(result, xpEvents = []) {
   const isLastEncounter = seqIndex >= SEQUENCE.length - 1;
   const xpLine = xpSummaryText(xpEvents);
   if (result === 'win' && !isLastEncounter) {
-    resultTitle.textContent = 'BLOCK CLEARED';
+    // A held block and a cleared one are different outcomes and should not
+    // share a word — "cleared" over a board still full of rivals reads as a bug.
+    const held = state.win && state.win.mode === 'survive'
+      && state.units.some(u => u.faction === 'enemy' && u.hp > 0);
+    resultTitle.textContent = held ? 'BLOCK HELD' : 'BLOCK CLEARED';
     resultTitle.className = 'win';
-    resultBody.textContent = 'Quiet for now. One more block to go.' + (xpLine ? ` (${xpLine})` : '');
+    resultBody.textContent = (held ? 'You outlasted them. Move before they regroup.' : 'Quiet for now. One more block to go.')
+      + (xpLine ? ` (${xpLine})` : '');
     resultAgain.textContent = 'Continue';
   } else if (result === 'win') {
     resultTitle.textContent = 'TURF SECURED';
