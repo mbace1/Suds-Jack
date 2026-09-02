@@ -70,6 +70,16 @@ function compare(A,B,size,legSplit){
 (async () => {
   const dir = process.argv[2];
   const pairs = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+  // WHICH REGION TO SCORE DEPENDS ON WHERE THE ANIMATION LIVES.
+  // Locomotion differs in the legs, so the lower body is the signal and the
+  // torso is noise. A melee swing or an idle breath barely moves the feet at
+  // all — scoring those on the legs reports a near-duplicate for a perfectly
+  // good frame, which happened here on a melee recover/ready pair (0.758 on
+  // legs, distinct on the upper body). Pass the region that matches.
+  const region = (process.argv[4] || 'lower').toLowerCase();
+  if (!['lower', 'upper', 'full'].includes(region)) {
+    console.log('region must be lower | upper | full'); process.exit(1);
+  }
   const SIZE = 320, LEG_SPLIT = 0.42;
   const br = await chromium.launch();
   const pg = await br.newPage();
@@ -78,7 +88,7 @@ function compare(A,B,size,legSplit){
 
   const url = (f) => 'data:image/png;base64,' + fs.readFileSync(path.join(dir, f)).toString('base64');
 
-  console.log('pair'.padEnd(40), 'IoU'.padStart(6), 'legIoU'.padStart(7), 'mirrIoU'.padStart(8), '  verdict');
+  console.log('pair'.padEnd(40), 'IoU'.padStart(6), (region === 'upper' ? 'topIoU' : region === 'full' ? 'IoU' : 'legIoU').padStart(7), 'mirrIoU'.padStart(8), '  verdict');
   console.log('-'.repeat(40), '-'.repeat(6), '-'.repeat(7), '-'.repeat(8), ' ', '-'.repeat(26));
   for (const [a, b, label] of pairs) {
     const r = await pg.evaluate(async ({ ua, ub, size, legSplit }) => {
@@ -88,18 +98,20 @@ function compare(A,B,size,legSplit){
       const flipped = compare(A.mask, mirror(B.mask,size), size, legSplit);
       return { ...direct, mirrorIou: flipped.iou, mirrorLegIou: flipped.legIou };
     }, { ua: url(a), ub: url(b), size: SIZE, legSplit: LEG_SPLIT });
+    // score on the half the animation actually moves
+    const scored = region === 'upper' ? r.topIou : region === 'full' ? r.iou : r.legIou;
 
     // thresholds: a genuine phase-opposite should differ a LOT in the leg region
     let verdict;
     if (r.mirrorIou >= 0.80) verdict = 'MIRROR of the other frame';
-    else if (r.legIou >= 0.80) verdict = 'NEAR-DUPLICATE legs';
-    else if (r.legIou >= 0.65) verdict = 'suspicious legs';
+    else if (scored >= 0.80) verdict = `NEAR-DUPLICATE (${region})`;
+    else if (scored >= 0.65) verdict = `suspicious (${region})`;
     else if (r.iou >= 0.85) verdict = 'NEAR-DUPLICATE overall';
     else verdict = 'distinct';
     console.log(
       (label || `${a} ↔ ${b}`).padEnd(40),
       r.iou.toFixed(3).padStart(6),
-      r.legIou.toFixed(3).padStart(7),
+      scored.toFixed(3).padStart(7),
       r.mirrorIou.toFixed(3).padStart(8),
       ' ', verdict);
   }
