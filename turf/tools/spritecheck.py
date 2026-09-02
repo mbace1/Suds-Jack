@@ -53,6 +53,35 @@ DUP_IOU = 0.93
 ADJACENT_MIN_IOU = 0.45
 
 
+def count_enclosed_bg(char):
+    """Background pixels with no path to the canvas edge — i.e. holes punched
+    through the character by the key colour (Bible 4.1). A flood fill inward
+    from the border marks all real background; whatever background is left is
+    enclosed. Small counts are legitimate (the gap inside a bent elbow is not
+    enclosed; an eye drawn as a hole would be), so this reports rather than
+    fails."""
+    bg = ~char
+    h, w = bg.shape
+    reach = np.zeros_like(bg)
+    stack = []
+    for x in range(w):
+        if bg[0, x]: stack.append((0, x))
+        if bg[h - 1, x]: stack.append((h - 1, x))
+    for y in range(h):
+        if bg[y, 0]: stack.append((y, 0))
+        if bg[y, w - 1]: stack.append((y, w - 1))
+    while stack:
+        y, x = stack.pop()
+        if reach[y, x] or not bg[y, x]:
+            continue
+        reach[y, x] = True
+        if y > 0: stack.append((y - 1, x))
+        if y < h - 1: stack.append((y + 1, x))
+        if x > 0: stack.append((y, x - 1))
+        if x < w - 1: stack.append((y, x + 1))
+    return int(np.sum(bg & ~reach))
+
+
 class Frame:
     def __init__(self, path):
         self.path = path
@@ -85,11 +114,18 @@ class Frame:
         semi = int(np.sum((a > 0) & (a < 255) & ~char))
         near = np.abs(rgb.astype(int) - np.array(MAGENTA)).sum(axis=-1)
         nearly = int(np.sum((near > 0) & (near < 90) & ~char))
+        # Bible 4.1: "Magenta must not appear on the character." Because the
+        # key colour is what cuts the sprite out, magenta inside the body does
+        # not render as magenta — it punches a HOLE through the character, and
+        # the hole is only obvious once the sprite is composited over the game
+        # background. Enclosed background regions are how it shows up here.
+        holes = count_enclosed_bg(char)
         return {
             'bg_pixels': int(np.sum(bg)),
             'char_pixels': int(np.sum(char)),
             'semi_transparent': semi,
             'near_magenta_fringe': nearly,
+            'holes': holes,
         }
 
     # ── geometry ─────────────────────────────────────────────────────────
@@ -175,6 +211,8 @@ def cmd_frames(args):
             notes.append(f"semi:{r['semi_transparent']}")
         if r['near_magenta_fringe']:
             notes.append(f"fringe:{r['near_magenta_fringe']}")
+        if r['holes']:
+            notes.append(f"holes:{r['holes']}")
         h = (bb[3] - bb[1] + 1) if bb else 0
         widths.append(f.w); heights.append(f.h); scales.append(h)
         if notes:
@@ -239,6 +277,70 @@ def cmd_pairs(args):
     return 1 if flagged else 0
 
 
+def cmd_move(args):
+    """The six-frame locomotion check, straight from Sprite Bible section 9.
+
+    Section 9.3 gives an expected body-height waveform:
+
+        LOW -> LOW -> HIGH -> LOW -> LOW -> HIGH
+
+    and section 7.4 calls it "one of the easiest ways to detect a broken run
+    cycle". It is checkable because the origin is the foot anchor, so bbox
+    height IS head-height-above-ground: at contact the legs are spread and the
+    head sits low; at the pass frame the body is stacked and it rises.
+
+    Section 9.4 rejects "torso height remains flat" outright, which is why
+    amplitude is measured and not just ordering — a cycle can have its peaks
+    in the right places and still be mechanically dead."""
+    frames = load_frames(args.paths)
+    n = len(frames)
+    if n != 6:
+        print(f'  ! Bible section 8 sets Move at 6 frames; found {n}.')
+        print('    (Run `cycle` and `pairs` for a non-standard count.)')
+        if n < 6:
+            return 1
+    heights, tops = [], []
+    for f in frames:
+        bb = f.bbox()
+        heights.append((bb[3] - bb[1] + 1) if bb else 0)
+        tops.append(bb[1] if bb else 0)
+
+    hi = max(heights) if heights else 0
+    lo = min(h for h in heights if h) if any(heights) else 0
+    amp = (hi - lo) / hi if hi else 0
+
+    # Frames 3 and 6 (1-based) are the PASS/HIGH frames; 1,2,4,5 are contact
+    # and load, all LOW.
+    peaks, lows = [2, 5], [0, 1, 3, 4]
+    print('body-height waveform (Bible 9.3: LOW LOW HIGH LOW LOW HIGH)\n')
+    print(f'{"frame":<44}{"height":>7}  phase')
+    PHASE = ['LOW  contact', 'LOW  load', 'HIGH pass',
+             'LOW  contact', 'LOW  load', 'HIGH pass']
+    for i, f in enumerate(frames[:6]):
+        print(f'{f.name:<44}{heights[i]:>7}  {PHASE[i] if i < 6 else ""}')
+
+    flagged = 0
+    print()
+    if amp < 0.03:
+        print(f'  ! M3 FLAT — height varies only {amp:.1%} across the cycle;'
+              ' section 9.4 rejects a flat torso height')
+        flagged += 1
+    else:
+        print(f'  height wave amplitude {amp:.1%}')
+
+    if n >= 6:
+        for p in peaks:
+            for l in lows:
+                # A pass frame must out-rise every low frame in its own half.
+                if abs(p - l) <= 2 and heights[p] <= heights[l]:
+                    print(f'  ! M3 F{p+1} (pass/HIGH) is not above F{l+1} '
+                          f'({heights[p]} vs {heights[l]})')
+                    flagged += 1
+    print(f'\n{flagged} issue(s). Geometry only — contact pattern (M2) and '
+          'weight transfer still need a human.')
+    return 1 if flagged else 0
+
+
 def cmd_cycle(args):
     """Adjacent continuity: does each frame connect to the next, and does the
     last close back onto the first (failure codes M1, M5)?"""
@@ -288,6 +390,7 @@ def main():
         ('frames', cmd_frames, 'per-frame: background purity, contamination, bbox, scale drift'),
         ('pairs', cmd_pairs, 'phase opposition (F1<->F7 ...) — the duplicate-half-cycle check'),
         ('cycle', cmd_cycle, 'adjacent continuity, loop closure, origin drift'),
+        ('move', cmd_move, 'Bible 9.3 six-frame body-height waveform (LOW LOW HIGH ...)'),
     ]:
         p = sub.add_parser(name, help=helptext)
         p.add_argument('paths', nargs='+')

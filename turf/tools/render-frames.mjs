@@ -185,7 +185,12 @@ async function main() {
   }
   const dir = o.dir || 'front';
   if (!['front', 'rear'].includes(dir)) { console.error('--dir must be front or rear'); process.exit(2); }
-  const frames = parseInt(o.frames || '12', 10);
+  // Sprite Bible section 8's frame table. The handover said 12-20 for
+  // locomotion; the Bible sets Move at 6 and both documents agree the Bible
+  // wins on conflict (Bible section 0, handover Purpose). --frames still
+  // overrides for a deliberate dense-master experiment.
+  const BIBLE_FRAMES = { idle: 4, move: 6, melee: 5, ranged: 5, hit: 3, ko: 5 };
+  const frames = parseInt(o.frames || BIBLE_FRAMES[o.anim] || '6', 10);
   const rev = parseInt(o.rev || '1', 10);
   const size = parseInt(o.size || '512', 10);
   const fit = parseFloat(o.fit || '1.35');
