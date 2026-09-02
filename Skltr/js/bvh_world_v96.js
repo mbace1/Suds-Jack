@@ -10,33 +10,26 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 
-let colliders=[];
+let capturedScene=null,colliders=[];
 const ray=new THREE.Raycaster();
 ray.firstHitOnly=true;
 
 function refresh(){
   colliders=[];
-  const world=document.querySelector ? null : null; // keep module DOM-safe; scene lookup is below.
-  const scenes=[];
-  // The game exposes no scene singleton, so discover the active V60 root from the
-  // meshes already registered by Three via the scene captured by our add hook.
-  if(capturedScene){
-    const root=capturedScene.getObjectByName('SKLTR_V60_WORLD');
-    root?.traverse(o=>{
-      if(!o.isMesh || o.material?.wireframe) return;
-      // Very thin decorative plates/markers should not unexpectedly become walls.
-      o.geometry.computeBoundingBox?.();
-      const sz=new THREE.Vector3();o.geometry.boundingBox?.getSize(sz);
-      if(sz.x<.35 || sz.y<.35 || sz.z<.35) return;
-      if(!o.geometry.boundsTree)o.geometry.computeBoundsTree();
-      o.userData.skltrBVH=true;
-      colliders.push(o);
-    });
-  }
+  const root=capturedScene?.getObjectByName('SKLTR_V60_WORLD');
+  root?.traverse(o=>{
+    if(!o.isMesh || o.material?.wireframe) return;
+    o.geometry.computeBoundingBox?.();
+    const sz=new THREE.Vector3();o.geometry.boundingBox?.getSize(sz);
+    // Ignore hairline decoration; only substantial authored masses become gameplay.
+    if(sz.x<.35 || sz.y<.35 || sz.z<.35) return;
+    if(!o.geometry.boundsTree)o.geometry.computeBoundsTree();
+    o.userData.skltrBVH=true;
+    colliders.push(o);
+  });
   dispatchEvent(new CustomEvent('skltr-bvh-ready',{detail:{colliders:colliders.length}}));
 }
 
-let capturedScene=null;
 const oldAdd=THREE.Scene.prototype.add;
 THREE.Scene.prototype.add=function(...objects){
   const out=oldAdd.apply(this,objects);
@@ -50,11 +43,10 @@ function segmentHit(ax,ay,az,bx,by,bz,pad=0){
   const origin=new THREE.Vector3(ax,ay,az),dir=new THREE.Vector3(bx-ax,by-ay,bz-az);
   const len=dir.length();if(len<1e-5)return null;dir.multiplyScalar(1/len);
   ray.set(origin,dir);ray.near=0;ray.far=len+pad;
-  const hits=ray.intersectObjects(colliders,false);
-  return hits[0]||null;
+  return ray.intersectObjects(colliders,false)[0]||null;
 }
 
-// Projectiles now respect the richer solid arena art, not just the legacy box list.
+// Projectiles now respect richer solid arena art, not just the legacy box list.
 const oldPoolUpdate=ProjectilePool.prototype.update;
 ProjectilePool.prototype.update=function(dt){
   oldPoolUpdate.call(this,dt);
