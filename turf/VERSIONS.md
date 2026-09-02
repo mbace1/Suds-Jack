@@ -8,6 +8,55 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v17 — 2026-09-02
+**The feel layer: units walk instead of teleporting, hits are visible and
+audible, and TURF gets sound at all.** No new art — every one of these
+works off the assets already in the tree, including for the twelve
+characters that are still a single static plate.
+
+- **Movement tweening.** `combat.js` teleports a unit to its destination
+  the instant an order resolves, which is correct for the model and
+  reads as a piece blinking across the board. `anim.js` now carries the
+  VISUAL back to where the unit started and lets it catch up
+  (`glideFrom`), 85ms/tile with a 130ms floor. The offset is returned in
+  fractional TILES rather than screen pixels: `toScreen()` is linear in
+  (gx, gy), so interpolating tiles and projecting once is identical to
+  interpolating screen space — and it keeps `anim.js` free of layout.
+  A knockback is the same motion with a different origin and clock,
+  reconstructed from the attack event's own `{moved, dx, dy}`.
+  The unit's TRUE tile still owns the selection ring; only the body lags,
+  so the board never lies about where anything is.
+- **Hit feedback.** A white flash and a floating damage number on every
+  landed blow, `MISS` on a whiffed one — a miss needs its own feedback or
+  it is indistinguishable from an input that never registered. The flash
+  is the sprite REDRAWN in `lighter` composite rather than a white
+  `fillRect`: drawing the same image additively brightens exactly the
+  silhouette's own pixels and leaves the transparent surround alone,
+  where a rect paints a glowing box around the character. Numbers draw
+  last, above every unit, with an ink halo so they stay legible over any
+  tile.
+- **Audio — the first in this game.** `js/audio.js`, synthesised, no
+  files, following the house rule every other cabinet here uses: every
+  voice routes through ONE master gain rather than `ctx.destination`, so
+  the mute switch actually mutes, and any sound added later inherits it.
+  Register is dry and low to match the setting — a scrape, a crack, a
+  thud, nothing sparkles. A weapon's `archetype` picks the attack voice,
+  so a knife and a pistol are told apart by ear; the impact is staggered
+  70ms behind the swing so the two read as cause and effect. Persisted
+  Sound button in the bottom bar (`turfMuted`), and the context is
+  unlocked from the title's real click because a browser allows it from
+  nowhere else.
+- **One log cursor, not two.** Audio hangs off a new `onEvent` callback
+  on the animator rather than walking `state.log` itself. Two independent
+  cursors over one append-only list is two chances to double-fire or skip,
+  and they drift the moment one is reset and the other is not.
+- `window.__turf` now exposes `anim` and `audio`: a tween that exists for
+  200ms cannot be verified from a screenshot taken afterwards, and this
+  round was checked by sampling `offsetFor()` across a real move
+  (-0.97 -> -0.40 -> -0.08 -> settled) rather than by eye.
+- Tokens: `render.js` v7->v8 (+ both importers), `anim.js` v1->v2,
+  `audio.js` v1 new, `main.js` v8->v9 in `index.html`.
+
 ## v16 — 2026-09-01
 **Two rendering bugs in v15's sprite/prop work, both caught by the owner
 rather than by v15's own verification: feet floating off the tile, and

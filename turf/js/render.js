@@ -268,11 +268,17 @@ function drawProp(g, layout, gx, gy, tall, art) {
 // original procedural silhouette for any unit that has no sprite yet, or
 // for the one render call before an image finishes loading.
 function drawUnit(g, layout, unit, isSelected, anim) {
-  const { x, y } = toScreen(layout, unit.x, unit.y);
+  // The unit's TRUE tile is where every overlay belongs (the selection ring,
+  // the tile shadow) — combat.js has already moved it there. Only the body
+  // lags behind, by the animator's fractional-tile offset, so a walk reads as
+  // travel while the board state stays honest about where the unit is.
+  const { x: tileX, y: tileY } = toScreen(layout, unit.x, unit.y);
+  const off = anim ? anim.offsetFor(unit) : null;
+  const { x, y } = off ? toScreen(layout, unit.x + off.gx, unit.y + off.gy) : { x: tileX, y: tileY };
   const feetY = y - 2;
 
-  if (isSelected) g.diamond(x, y, TILE_W - 2, TILE_H - 1, null, PAL.SELECT_EDGE, 2);
-  g.diamond(x, y, TILE_W * 0.4, TILE_H * 0.35, 'rgba(0,0,0,0.35)', null); // shadow
+  if (isSelected) g.diamond(tileX, tileY, TILE_W - 2, TILE_H - 1, null, PAL.SELECT_EDGE, 2);
+  g.diamond(x, y, TILE_W * 0.4, TILE_H * 0.35, 'rgba(0,0,0,0.35)', null); // shadow travels with the body
   // A real character sprite carries its OWN colours (a jacket, not a faction
   // paint job), so the cold-operator/warm-rival read the old flat silhouette
   // gave for free is gone once the sprite draws over it — replaced with a
@@ -291,6 +297,21 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   const topY = entry && entry.loaded
     ? drawUnitSprite(g, entry, x, feetY, frame && frame.mirror)
     : drawUnitFallback(g, unit, x, feetY);
+
+  // Hit flash. Drawing the SAME image again in 'lighter' brightens exactly
+  // the sprite's own pixels and leaves the transparent surround untouched —
+  // clipped to the silhouette by construction, where a white fillRect would
+  // paint a glowing box around the character. This is the only damage
+  // feedback a unit without a `hit` frame gets, so it has to work for the
+  // twelve characters that are still a single static plate.
+  const flash = anim ? anim.flashFor(unit) : 0;
+  if (flash > 0 && entry && entry.loaded) {
+    g.ctx.save();
+    g.ctx.globalCompositeOperation = 'lighter';
+    g.ctx.globalAlpha = flash * 0.7;
+    drawUnitSprite(g, entry, x, feetY, frame && frame.mirror);
+    g.ctx.restore();
+  }
 
   // role marker, same three glyphs either way — melee/ranged/control stay
   // readable at a glance even once the sprite art tells you who it is
@@ -451,4 +472,29 @@ export function render(canvas, state, layout, anim = null) {
     drawTelegraph(g, layout, state);
     drawCursor(g, layout, state);
   }
+
+  // Damage numbers last, above every unit and overlay: a number that a
+  // later-drawn sprite paints over is a number the player does not read.
+  if (anim) for (const f of anim.floaters()) drawFloater(g, layout, f);
+}
+
+// A hit's damage, rising and fading off the tile it landed on. Colour carries
+// the outcome the same way the rest of this game does — the two faction
+// colours are already spoken for, so a kill gets the HP bar's own BAD red and
+// a miss gets muted ink, which is what a non-event should look like.
+function drawFloater(g, layout, f) {
+  const { x, y } = toScreen(layout, f.gx, f.gy);
+  const rise = 16 + f.k * 20;
+  const alpha = f.k < 0.15 ? f.k / 0.15 : 1 - (f.k - 0.15) / 0.85;
+  const colour = f.kind === 'kill' ? PAL.HP_BAD : f.kind === 'miss' ? PAL.UI_DIM : '#ffffff';
+  g.ctx.save();
+  g.ctx.globalAlpha = Math.max(0, alpha);
+  g.ctx.font = `bold ${f.kind === 'miss' ? 7 : 9}px monospace`;
+  g.ctx.textAlign = 'center';
+  g.ctx.lineWidth = 3;
+  g.ctx.strokeStyle = PAL.INK;   // ink halo, so a number stays legible over any tile
+  g.ctx.strokeText(f.text, x, y - SPRITE_H - rise);
+  g.ctx.fillStyle = colour;
+  g.ctx.fillText(f.text, x, y - SPRITE_H - rise);
+  g.ctx.restore();
 }

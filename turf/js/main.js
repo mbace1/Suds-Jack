@@ -6,14 +6,15 @@ import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
 } from './combat.js?v=5';
-import { computeLayout, render } from './render.js?v=7';
+import { computeLayout, render } from './render.js?v=8';
 import { createInputHandler } from './input.js?v=7';
-import { createAnimator } from './anim.js?v=1';
+import { createAnimator } from './anim.js?v=2';
+import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
 const topbar = { turn: $('turnLabel'), round: $('roundLabel') };
-const controls = { endTurn: $('endTurnBtn'), cancel: $('cancelBtn') };
+const controls = { endTurn: $('endTurnBtn'), cancel: $('cancelBtn'), mute: $('muteBtn') };
 const squadEl = $('squad'), selPortraitEl = $('selPortrait'), selTextEl = $('selText'), toastEl = $('toast');
 const titleEl = $('title'), titleStart = $('titleStart');
 const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('resultBody'), resultAgain = $('resultAgain');
@@ -24,7 +25,30 @@ let DATA = null, state = null, layout = null, input = null, enemyPhaseRunning = 
 // loop in this game — one that stops itself whenever nothing is mid-clip, so
 // an idle player turn costs nothing. onFrame re-renders WITHOUT re-syncing:
 // advancing a clip changes which frame is drawn, never the game state.
-const anim = createAnimator({ onFrame: () => { if (state && layout) render(canvas, state, layout, anim); } });
+const anim = createAnimator({
+  onFrame: () => { if (state && layout) render(canvas, state, layout, anim); },
+  onEvent: soundFor,
+});
+
+// One log entry -> one sound. A weapon's own archetype picks the attack
+// voice, so a knife and a pistol are told apart by ear before the damage
+// number lands; a miss gets its own sound because silence there is
+// indistinguishable from an input that never registered.
+function soundFor(e, s) {
+  if (e.type === 'move') { audio.move(); return; }
+  if (e.type === 'pickup') { audio.pickup(); return; }
+  if (e.type !== 'attack') return;
+  const a = s.units.find(u => u.uid === e.attackerUid);
+  const ranged = a && a.weapon && a.weapon.archetype === 'ranged';
+  if (ranged) audio.ranged(); else audio.melee();
+  if (!e.hit) { audio.miss(); return; }
+  // Stagger the impact behind the swing so the two read as cause and effect
+  // rather than one cluttered noise.
+  setTimeout(() => {
+    if (e.killed) audio.down();
+    else { audio.hit(); if (e.knockback && e.knockback.moved) audio.knock(); }
+  }, 70);
+}
 
 // GDD.md §9: "Expand to 3-5 encounters in sequence." Four now — warehouse and
 // underpass (2026-08-31 roster expansion) field different squads than
@@ -110,6 +134,24 @@ function boot(seed) {
 
 function setToast(text) { toastEl.textContent = text; }
 
+// Sound preference, persisted per browser under the same one-key convention
+// every other cabinet here uses. Read once at load so a muted player stays
+// muted on their next visit rather than being greeted by the shot they
+// turned off last time.
+const MUTE_KEY = 'turfMuted';
+function applyMute() {
+  const m = audio.isMuted();
+  controls.mute.textContent = m ? 'Sound off' : 'Sound';
+  controls.mute.setAttribute('aria-pressed', String(!m));
+}
+try { audio.setMuted(localStorage.getItem(MUTE_KEY) === '1'); } catch { /* private mode */ }
+controls.mute.addEventListener('click', () => {
+  audio.setMuted(!audio.isMuted());
+  try { localStorage.setItem(MUTE_KEY, audio.isMuted() ? '1' : '0'); } catch { /* private mode */ }
+  applyMute();
+});
+applyMute();
+
 function attackText(state, attackerName, evt) {
   const target = getUnit(state, evt.targetUid);
   const who = target ? target.name : 'the target';
@@ -162,6 +204,7 @@ function finishEncounter(result) {
 
 function runEnemyPhase() {
   enemyPhaseRunning = true;
+  audio.enemyTurn();
   setToast('Enemy turn…');
   const tick = () => {
     const step = stepEnemyPhase(state);
@@ -222,6 +265,7 @@ function xpSummaryText(events) {
 
 function showResult(result, xpEvents = []) {
   resultEl.hidden = false;
+  if (result === 'win') audio.win(); else audio.lose();
   const isLastEncounter = seqIndex >= SEQUENCE.length - 1;
   const xpLine = xpSummaryText(xpEvents);
   if (result === 'win' && !isLastEncounter) {
@@ -246,6 +290,8 @@ function showResult(result, xpEvents = []) {
 titleStart.addEventListener('pointerup', e => {
   e.preventDefault();
   if (titleStart.disabled) return;
+  audio.unlock(); // a browser only allows a context to start from a gesture
+  applyMute();
   titleEl.hidden = true;
   boot(Date.now());
 });
@@ -279,6 +325,11 @@ window.__turf = {
   sequence: () => ({ ids: SEQUENCE.slice(), index: seqIndex }),
   setSequenceIndex: i => { seqIndex = i; },
   crewProgress: () => ({ ...crewProgress }),
+  // The feel layer, exposed for the same reason every other cabinet here
+  // exposes its internals: a tween that only exists for 200ms cannot be
+  // checked by looking at a screenshot after the fact.
+  anim,
+  audio,
 };
 
 loadData().then(data => {

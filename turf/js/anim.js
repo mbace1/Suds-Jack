@@ -50,6 +50,15 @@ export function framePath(prefix, pose, back) {
   return `${CAST_DIR}${prefix}-${pose}${back ? '-back' : ''}.png`;
 }
 
+// Feel timings. Deliberately short: this is a tactics game, and an animation
+// the player has to WAIT through stops being feedback and becomes a toll on
+// every single order. Long enough to read the motion, over before it is in
+// the way.
+const MOVE_MS_PER_TILE = 85, MOVE_MS_MIN = 130;
+const KNOCK_MS = 190, FLASH_MS = 220, FLOAT_MS = 780;
+
+const easeOut = t => 1 - (1 - t) * (1 - t);
+
 // Facing, straight out of render.js's own isometric projection
 // (x = (gx-gy)*W/2, y = (gx+gy)*H/2) rather than a hand-kept lookup table:
 //
@@ -64,13 +73,29 @@ export function facingFor(dgx, dgy) {
   return { mirror: (dgx - dgy) < 0, back: (dgx + dgy) < 0 };
 }
 
-export function createAnimator({ onFrame, now = () => performance.now() }) {
+// onEvent fires once per log entry, in order, as sync() reads it. Audio hangs
+// off this rather than walking state.log itself: two independent cursors over
+// the same list is two chances to double-fire or skip, and they would drift
+// the moment one of them was reset and the other was not.
+export function createAnimator({ onFrame, onEvent = null, now = () => performance.now() }) {
   // uid → { prefix, clip, i, startedAt, mirror, back }
   const live = new Map();
   // Where each unit stood last time we looked. The move log records the
   // DESTINATION and combat.js has already moved the unit by the time we read
   // it, so the origin is not recoverable from state — we have to carry it.
   const lastPos = new Map();
+  // uid -> { fgx, fgy, dur, startedAt }: how far BEHIND its true tile a unit
+  // is currently drawn, in fractional tiles. combat.js teleports a unit to its
+  // destination the instant the order resolves; this carries the visual back
+  // to where it started and lets it catch up, which is the whole difference
+  // between a piece appearing somewhere else and a person walking there.
+  //
+  // Tile space, not screen space, on purpose: toScreen() is linear in
+  // (gx, gy), so interpolating tiles and projecting once is identical to
+  // interpolating screen positions — and it keeps this file free of layout.
+  const tweens = new Map();
+  const flashes = new Map();   // uid -> { startedAt, dur }
+  const floats = [];           // { gx, gy, text, kind, startedAt, dur }
   let cursor = 0;       // how far through state.log we have read
   let raf = null;
 
@@ -95,6 +120,15 @@ export function createAnimator({ onFrame, now = () => performance.now() }) {
     start();
   }
 
+  // Start a unit drawn (fgx, fgy) tiles away from its true position and let
+  // it close the gap. Both a walk and a knockback are the same motion with a
+  // different origin and clock.
+  function glideFrom(uid, fgx, fgy, dur) {
+    if (!fgx && !fgy) return;
+    tweens.set(uid, { fgx, fgy, dur, startedAt: now() });
+    start();
+  }
+
   // Reads whatever combat.js has appended since the last call and turns it
   // into clips. Called from the same onChange() that triggers a render, so
   // it never misses an entry and never replays one.
@@ -105,12 +139,15 @@ export function createAnimator({ onFrame, now = () => performance.now() }) {
     if (log.length < cursor) { cursor = 0; live.clear(); lastPos.clear(); }
     for (; cursor < log.length; cursor++) {
       const e = log[cursor];
+      report(e, state);
       if (e.type === 'move') {
         const u = state.units.find(x => x.uid === e.uid);
         if (!u) continue;
         const from = lastPos.get(e.uid);
         const facing = from ? facingFor(e.x - from.x, e.y - from.y) : null;
         schedule(u, 'move', facing);
+        if (from) glideFrom(e.uid, from.x - e.x, from.y - e.y,
+          Math.max(MOVE_MS_MIN, (Math.abs(from.x - e.x) + Math.abs(from.y - e.y)) * MOVE_MS_PER_TILE));
       } else if (e.type === 'attack') {
         const a = state.units.find(x => x.uid === e.attackerUid);
         const t = state.units.find(x => x.uid === e.targetUid);
@@ -119,9 +156,32 @@ export function createAnimator({ onFrame, now = () => performance.now() }) {
         // would tell the player they were hit when the roll says they were
         // not — the telegraph/readability contract this game is built on.
         if (t && e.hit) schedule(t, e.killed ? 'death' : 'hit', a ? facingFor(a.x - t.x, a.y - t.y) : null);
+        if (t) {
+          if (e.hit) {
+            flashes.set(t.uid, { startedAt: now(), dur: FLASH_MS });
+            floats.push({ gx: t.x, gy: t.y, text: String(e.damage),
+              kind: e.killed ? 'kill' : 'dmg', startedAt: now(), dur: FLOAT_MS });
+            // A knockback has ALREADY moved the target by the time this event
+            // is read, so the glide starts from where it was shoved from.
+            if (e.knockback && e.knockback.moved) {
+              glideFrom(t.uid, -e.knockback.dx * e.knockback.moved,
+                -e.knockback.dy * e.knockback.moved, KNOCK_MS);
+            }
+          } else {
+            floats.push({ gx: t.x, gy: t.y, text: 'MISS', kind: 'miss',
+              startedAt: now(), dur: FLOAT_MS });
+          }
+          start();
+        }
       }
     }
     for (const u of state.units) lastPos.set(u.uid, { x: u.x, y: u.y });
+  }
+
+  // Split out so the event walk above stays about animation. Called for every
+  // entry, including the ones no clip cares about (pickup, enemy-turn).
+  function report(e, state) {
+    if (onEvent) { try { onEvent(e, state); } catch { /* sound is never fatal */ } }
   }
 
   // Advances every live clip and reports whether any is still running.
@@ -141,6 +201,15 @@ export function createAnimator({ onFrame, now = () => performance.now() }) {
       }
       if (a.i >= steps.length) { live.delete(uid); continue; }
       if (Number.isFinite(steps[a.i][1])) animating = true;
+    }
+    for (const [uid, tw] of tweens) {
+      if (t - tw.startedAt >= tw.dur) tweens.delete(uid); else animating = true;
+    }
+    for (const [uid, fl] of flashes) {
+      if (t - fl.startedAt >= fl.dur) flashes.delete(uid); else animating = true;
+    }
+    for (let i = floats.length - 1; i >= 0; i--) {
+      if (t - floats[i].startedAt >= floats[i].dur) floats.splice(i, 1); else animating = true;
     }
     return animating;
   }
@@ -176,6 +245,26 @@ export function createAnimator({ onFrame, now = () => performance.now() }) {
       const a = live.get(unit.uid);
       return !!(a && a.clip === 'death');
     },
+    // Fractional TILE offset to add to a unit's grid position before
+    // projecting it. Zero once the tween has landed, which is most of the
+    // time — a tactics board is still between orders.
+    offsetFor(unit) {
+      const tw = tweens.get(unit.uid);
+      if (!tw) return null;
+      const k = 1 - easeOut(Math.min(1, (now() - tw.startedAt) / tw.dur));
+      return { gx: tw.fgx * k, gy: tw.fgy * k };
+    },
+    // 0..1, how hard this unit is flashing right now.
+    flashFor(unit) {
+      const fl = flashes.get(unit.uid);
+      if (!fl) return 0;
+      return 1 - Math.min(1, (now() - fl.startedAt) / fl.dur);
+    },
+    // Damage numbers and MISS, with their own rise/fade progress.
+    floaters() {
+      const t = now();
+      return floats.map(f => ({ ...f, k: Math.min(1, (t - f.startedAt) / f.dur) }));
+    },
     settle,
     // Full reset, not just "cancel the rAF" — a new encounter is a new log,
     // and leaving the cursor where the last one ended would skip that many
@@ -186,6 +275,9 @@ export function createAnimator({ onFrame, now = () => performance.now() }) {
       raf = null;
       live.clear();
       lastPos.clear();
+      tweens.clear();
+      flashes.clear();
+      floats.length = 0;
       cursor = 0;
     },
     // for tests / the debug hook
