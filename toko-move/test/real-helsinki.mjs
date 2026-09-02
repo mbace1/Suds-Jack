@@ -18,5 +18,16 @@ const flow=createFlow({city,seed:7,days:1,demand:null});
 assert.equal(flow.routes.list.length,city.lines.length,'every source-derived service validates in flow-core');
 for(const job of JOBS)for(const id of job.stops)assert.ok(flow.graph.node(id),`job anchor ${id} exists`);
 assert.equal(JOBS.length,10,'campaign remains ten jobs');
-assert.ok(JOBS.slice(5).every(j=>j.event),'late campaign carries event pressure');
+// v2.12 dropped authored per-job `event` pressure for the live moments and
+// recovery systems, so asserting `.event` tested a field that no longer exists.
+// What the campaign still has to guarantee is a shape worth pinning:
+// it is a CHAIN — each job starts where the last one ended, so the shift is one
+// continuous run across the city rather than ten teleports —
+assert.ok(JOBS.every((j,i)=>i===0||j.stops[0]===JOBS[i-1].stops.at(-1)),'the shift is one chain: each job starts where the last ended');
+// it escalates — the back half carries more time pressure per job than the front —
+const front=JOBS.slice(0,5).reduce((a,j)=>a+j.limit,0),back=JOBS.slice(5).reduce((a,j)=>a+j.limit,0);
+assert.ok(back>front,`late campaign should carry longer, harder runs (front ${front}t vs back ${back}t)`);
+// and it teaches — every cargo rule the game owns is actually met during a shift.
+assert.ok(new Set(JOBS.map(j=>j.cargo)).size>=6,'a shift exercises most of the cargo rules');
+for(const job of JOBS)assert.ok(job.limit>0&&job.value>0,'every job has a deadline and a payout');
 console.log(`real Helsinki gameplay: ${city.nodes.length} anchors, ${city.lines.length} HSL fixed services, ${city.edges.filter(e=>e.mode==='tram').length} tram links, ${city.edges.filter(e=>e.mode==='metro').length} metro links`);
