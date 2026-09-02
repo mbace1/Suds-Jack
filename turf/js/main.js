@@ -1,14 +1,15 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=4';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=9';
-import { computeLayout, render, SUPERSAMPLE } from './render.js?v=12';
-import { createInputHandler } from './input.js?v=8';
-import { createAnimator } from './anim.js?v=4';
+} from './combat.js?v=10';
+import { computeLayout, render, SUPERSAMPLE } from './render.js?v=13';
+import { createInputHandler } from './input.js?v=9';
+import { createAnimator } from './anim.js?v=5';
+import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
@@ -300,11 +301,26 @@ function updateHud() {
     const carried = (sel.trinkets || []).map(t => t.name).join(', ');
     selTextEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
       + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`
+      + momentumText(sel)
       + (carried ? `<br>carrying: ${carried}` : '');
   } else {
     selPortraitEl.hidden = true;
     selTextEl.textContent = state.turn === 'player' ? 'Select an operator.' : '';
   }
+}
+
+// What the run this unit is carrying is currently worth, spelled out rather
+// than left as a pip count to decode. Both halves are named because they are
+// the same points spent two ways: attack now and the bonus lands but the
+// evasion goes with it; hold fire and the evasion stands through the enemy
+// phase. Silent on a unit that has not moved — a line reading "+0 / -0%" on
+// every stationary operator is noise, not information.
+function momentumText(sel) {
+  const mo = sel.momentum || 0;
+  if (!mo) return '';
+  const bonus = momentumDamage(sel);
+  const evade = Math.round(evasionOf(sel, { archetype: 'ranged' }) * 100);
+  return `<br>momentum ${mo} · +${bonus} dmg on your swing · -${evade}% to be shot until you use it`;
 }
 
 function xpSummaryText(events) {

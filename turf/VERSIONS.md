@@ -8,6 +8,81 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v24 — 2026-09-02
+**The movement economy.** Through v23 there was no reason to move once a
+unit was in range: moving cost nothing and bought nothing, so standing
+still and shooting was dominant and every board knotted into a scrum by
+round one. Metal Slug Tactics — half this game's stated brief — is built
+on the opposite. This is that engine, cut down to what survived
+measurement.
+
+**`js/momentum.js`, two rules and one pool.** A unit banks one point per
+tile it moves under its own power (`MOVE_CAP` 4 — a knockback is not
+momentum, being shoved is not running). Unspent, each point is `-6%` to
+be *shot* — never stabbed, since a knife at one tile does not miss
+because you jogged, and capped below partial cover's `-30%` so cover
+stays a decision. Spent on a swing, four points are `+1` damage. **The
+swing spends the pool**, so the same points are damage *or* evasion,
+never both, and running-then-holding-fire is a real play.
+
+**Visible, because this game promises full information.** Momentum draws
+as pips over the HP bar on every unit, friend or enemy; the selected
+operator's HUD line spells out what its run is worth both ways; the
+damage floater reads `5 (+1)` rather than an unexplained 5; and
+`ai.js` folds a target's evasion into its focus scoring, so the
+telegraph never promises a shot it is unlikely to land.
+
+**THE SPEND RULE IS NOT A FLOURISH — it is the fix for a measured
+failure.** With momentum permanent, evasion systematically favoured
+whoever was chasing, and the AI chases every single turn while an
+operator holding a firing line banks nothing. Measured against a
+positional bot, the skill gap *narrowed* — +46 points to +19 — which is
+the exact opposite of the intent. Spending it on the attack means an
+enemy that runs in and hits you is stationary by the time you shoot back.
+
+**A third rule was designed, built, measured three ways, and CUT.** Sync
+— attacking a target an ally also covers adds a follow-up from that ally
+— is straight out of MST and does not survive contact with this game.
+Free, one follow-up per covering ally: `the-yard` went from 68% winnable
+to **0% on that rule alone**, because anything multiplied by "allies in
+range" pays the side with more bodies and this roster is "weaker but
+numerous" by design (GDD §10) — the player is never that side. Capped at
+one partner: same collapse, the enemies always had one. Gated on the
+partner still carrying momentum (so it costs holding that ally's fire):
+symmetric, safe, and **inert** — a bot built to set syncs up deliberately
+scored 72% against 92% for the same bot ignoring them, because half of
+one ally's weapon never repays that ally's whole attack, and raising the
+share until it did would just be "attack twice". The finding is written
+into `momentum.js`'s header rather than deleted, because it is the
+obvious next idea and someone will have it again.
+
+**How any of this was known.** Four bots against all five encounters,
+120 seeds each, with a checkout of v23 as the control column: the naive
+bot from `balance.mjs`, a *runner* that always repositioned to the
+furthest tile it could still hit from, a *tactical* bot scoring cover and
+exposure, and a *sync-seeker*. The runner's first numbers were the whole
+reason this was not shipped a day earlier — it lost 23 to 52 points on
+four of five encounters — and the tactical bot is what proved that was
+the heuristic's fault and not the design's. The control column reproduces
+v23's win rates exactly (37/39/64/24/68), which is what makes every other
+column mean something.
+
+**Honest limits.** Evasion barely moves the needle in bot play (±1 point
+across a 2.25x range of `EVADE_PER`) because bots always attack and so
+always spend it; it exists for the human play the bots cannot find.
+`DAMAGE_PER` is quantised by `Math.floor` over a range of four, so it is
+a cliff rather than a dial — 0.25 and 0.34 are 23 points apart in the
+naive floor. Both are noted here so the next person tuning them knows
+which one is a knob.
+
+- `test/smoke.mjs` is 68 checks (was 61): the cap, melee exemption,
+  the logged momentum the animator reads, the spend-on-attack interlock,
+  the reported `base`/`bonus`/`evade` breakdown, and that momentum never
+  survives its own turn on either side.
+- `test/balance.mjs` still green on all five: 53 / 67 / 65 / 17 / 68.
+- Tokens: `combat` v10, `ai` v5, `render` v13, `anim` v5, `input` v9,
+  `palette` v4, `main` v16, `momentum` v1 (new).
+
 ## v23 — 2026-09-02
 **"The characters looked very pixelated" — they were, and the cause was
 the board throwing the art away twice.** Owner, on a phone screenshot of

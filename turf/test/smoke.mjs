@@ -10,10 +10,13 @@ import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key } from '../j
 import { planIntent, planAllIntents } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
-  movableTiles, moveUnit, attackableTargets, attack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
+  movableTiles, moveUnit, attackableTargets, attack, orderAttack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
   awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
   applyTrinkets, TRINKET_SHARE,
 } from '../js/combat.js';
+import {
+  MOVE_CAP, EVADE_PER, DAMAGE_PER, addMomentum, clearMomentum, evasionOf,
+} from '../js/momentum.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -665,6 +668,93 @@ check('a unit with no trinkets keeps its weapon object untouched', () => {
   const blade = getUnit(state, 'p0');
   assert.equal(blade.trinkets.length, 0);
   assert.equal(blade.weapon, blade.baseWeapon, 'the common case allocates nothing');
+});
+
+// ── the movement economy (momentum.js) ───────────────────────
+// Two rules and one pool. Each test pins a claim the module header makes,
+// because every claim in it that went unmeasured turned out to be false:
+// sync was cut on exactly this kind of evidence.
+
+check('moving banks one point per tile, capped', () => {
+  const u = {};
+  addMomentum(u, 3);
+  assert.equal(u.momentum, 3, 'one point per tile actually travelled');
+  addMomentum(u, 99);
+  assert.equal(u.momentum, MOVE_CAP, 'a long approach cannot bank a one-shot kill');
+  clearMomentum(u);
+  assert.equal(u.momentum, 0);
+});
+
+check('momentum evades bullets, never knives', () => {
+  const u = { momentum: MOVE_CAP };
+  assert.ok(evasionOf(u, { archetype: 'ranged' }) > 0);
+  assert.equal(evasionOf(u, { archetype: 'melee' }), 0,
+    'a knife at one tile does not miss because you jogged');
+  assert.ok(evasionOf(u, { archetype: 'ranged' }) < 0.3,
+    'running must never beat partial cover outright, or cover stops being a decision');
+});
+
+check('a move logs the momentum it earned', () => {
+  const state = boot(BACKLOT, 7);
+  const u = state.units.find(x => x.faction === 'player');
+  const far = [...movableTiles(state, u).values()]
+    .sort((a, b) => manhattan(b, u) - manhattan(a, u))[0];
+  moveUnit(state, u.uid, far.x, far.y);
+  const logged = state.log.filter(e => e.type === 'move').pop();
+  assert.ok(u.momentum > 0, 'a real move banks something');
+  assert.equal(logged.momentum, u.momentum, 'the animator reads it off the log, so it must be in it');
+});
+
+check('the swing spends the run that set it up', () => {
+  // Every point is either damage or evasion, never both. Without this the
+  // enemies — which close every single turn — accumulate evasion the player
+  // never can, and measurement showed the skill gap NARROWING, not widening.
+  const state = boot(BACKLOT, 3);
+  const attacker = state.units.find(u => u.faction === 'player' && attackableTargets(state, u).length);
+  assert.ok(attacker, 'seed 3 puts somebody in range on turn one');
+  const victim = attackableTargets(state, attacker)[0];
+  attacker.momentum = MOVE_CAP;
+  // orderAttack, not attack: attackableTargets answers "could reach and hit",
+  // so a target may need a step first — and that step is what input.js does.
+  // Calling attack() straight would bail out-of-range and prove nothing.
+  orderAttack(state, attacker.uid, victim);
+  assert.equal(attacker.momentum, 0, 'spent whether the shot lands or not');
+  const evt = state.log.filter(e => e.type === 'attack').pop();
+  assert.equal(evt.bonus, Math.floor(MOVE_CAP * DAMAGE_PER), 'reported, not folded in silently');
+  assert.equal(evt.base, attacker.weapon.damage, 'and the base is reported beside it');
+  if (evt.hit) assert.equal(evt.damage, evt.base + evt.bonus);
+});
+
+check('an attack event carries the evasion it faced', () => {
+  const state = boot(BACKLOT, 11);
+  const shooter = state.units.find(u =>
+    u.faction === 'player' && u.weapon.archetype === 'ranged' && attackableTargets(state, u).length);
+  assert.ok(shooter, 'seed 11 gives a gun a target');
+  const target = getUnit(state, attackableTargets(state, shooter)[0]);
+  target.momentum = MOVE_CAP;
+  orderAttack(state, shooter.uid, target.uid);
+  const evt = state.log.filter(e => e.type === 'attack').pop();
+  assert.equal(evt.evade, MOVE_CAP * EVADE_PER, 'a miss has to be explainable after the fact');
+});
+
+check('momentum never survives its own turn', () => {
+  const state = boot(BACKLOT, 5);
+  for (const u of state.units) u.momentum = MOVE_CAP;
+  endPlayerTurn(state);
+  assert.ok(state.units.filter(u => u.faction === 'enemy').every(u => !u.momentum),
+    'the enemy phase starts from zero, so what it banks is what you watched it do');
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+  assert.ok(state.units.filter(u => u.faction === 'player').every(u => !u.momentum),
+    'and the player turn starts from zero too — momentum is this turn, not a bank');
+});
+
+check('the telegraph survives every operator being evasive', () => {
+  const state = boot(BACKLOT, 9);
+  const enemy = state.units.find(u => u.faction === 'enemy');
+  const before = planIntent(state, enemy);
+  for (const u of state.units) if (u.faction === 'player') u.momentum = MOVE_CAP;
+  const after = planIntent(state, enemy);
+  assert.ok(before.type && after.type, 'an AI that ignored evasion would promise shots it cannot land');
 });
 
 for (const enc of ENCOUNTERS) playthrough(enc, 42);

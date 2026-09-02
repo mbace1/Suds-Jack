@@ -3,7 +3,7 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=4';
 import { key } from './grid.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
@@ -379,6 +379,19 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   g.p(x - hpW / 2, hpY, hpW, 2, PAL.HP_TRACK);
   const hpColor = frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD;
   g.p(x - hpW / 2, hpY, hpW * frac, 2, hpColor);
+
+  // Momentum pips, one per tile still carried, above the HP bar. This game
+  // promises full information — an enemy's whole plan is on screen before it
+  // acts — so a modifier that silently changes a hit chance and a damage
+  // number cannot live in the rules only. If a unit is harder to shoot
+  // because it just ran, the board has to say so, on that unit, at a glance.
+  const mo = unit.momentum || 0;
+  if (mo > 0) {
+    const pipW = 2, gap = 1, total = mo * pipW + (mo - 1) * gap;
+    for (let i = 0; i < mo; i++) {
+      g.p(x - total / 2 + i * (pipW + gap), hpY - 3, pipW, 2, PAL.MOMENTUM);
+    }
+  }
 }
 // Draws the real sprite, anchored so the character's actual FEET (entry's
 // scanned ink bounds — see scanInkBounds) land on feetY, not the bottom of

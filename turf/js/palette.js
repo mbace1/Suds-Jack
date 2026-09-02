@@ -35,6 +35,10 @@ export const PAL = {
   HP_MID: '#e0c24a',
   HP_BAD: '#e0453a',
   HP_TRACK: '#20232a',
+  // Momentum (momentum.js): the run a unit is still carrying. Its own colour,
+  // not an HP shade — it is a different quantity and must never be misread as
+  // health at a glance on a 14px-wide strip.
+  MOMENTUM: '#f2e2a0',
 
   TELEGRAPH: '#f2b23a',
   CURSOR: '#eaeef2',

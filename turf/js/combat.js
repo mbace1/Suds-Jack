@@ -4,8 +4,9 @@
 // nothing here touches a canvas or the DOM, which is what makes it runnable
 // in bare node (test/smoke.cjs).
 import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=2';
-import { planAllIntents } from './ai.js?v=4';
+import { planAllIntents } from './ai.js?v=5';
 import { makeRng } from './rng.js?v=2';
+import { addMomentum, clearMomentum, evasionOf, momentumDamage } from './momentum.js?v=1';
 
 export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = [], trinketDefs = []) {
   const weaponById = id => weaponDefs.find(w => w.id === id);
@@ -203,9 +204,12 @@ export function moveUnit(state, uid, x, y) {
   if (unit.actedMove) return { ok: false, reason: 'already-moved' };
   const range = moveRange(state, unit);
   if (!range.has(key(x, y))) return { ok: false, reason: 'out-of-range' };
+  // Momentum is banked from the distance actually travelled, before the
+  // position is overwritten — a unit that moves one tile has not run.
+  addMomentum(unit, Math.abs(x - unit.x) + Math.abs(y - unit.y));
   unit.x = x; unit.y = y;
   unit.actedMove = true;
-  state.log.push({ type: 'move', uid, x, y });
+  state.log.push({ type: 'move', uid, x, y, momentum: unit.momentum });
   // Hazard first, then loot: a unit that walks into an open stairwell does
   // not get to pick up the pistol lying in it on the way down.
   const hazard = enterHazard(state, unit, 'move');
@@ -266,12 +270,21 @@ export const TRINKET_SHARE = 0.4;
 function resolveAttack(state, attacker, target, weapon) {
   let chance = weapon.hitChance;
   if (weapon.archetype === 'ranged' && coverSoftens(state, attacker, target)) chance -= 0.3;
+  // A moving target is harder to shoot (momentum.js) — the rule that makes
+  // standing still cost something, and the reason a board spreads out.
+  const evade = evasionOf(target, weapon);
+  chance -= evade;
   chance = Math.max(0.05, Math.min(1, chance));
   const roll = state.rng();
   const hit = roll < chance;
+  // What the attacker's own run adds. Resolved before the roll's outcome so a
+  // MISS still reports what it would have done — the HUD has already promised
+  // this number and must not appear to have lied when the dice go the other
+  // way.
+  const bonus = momentumDamage(attacker);
   let damage = 0, killed = false, knockback = null, dropped = null;
   if (hit) {
-    damage = weapon.damage;
+    damage = weapon.damage + bonus;
     target.hp = Math.max(0, target.hp - damage);
     killed = target.hp <= 0;
     if (killed) {
@@ -291,7 +304,18 @@ function resolveAttack(state, attacker, target, weapon) {
     }
     if (!killed && weapon.knockback > 0) knockback = applyKnockback(state, attacker, target, weapon.knockback);
   }
-  const evt = { type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage, killed, knockback, dropped, chance, roll };
+  // Spending it is the whole interlock (momentum.js): the run that sharpened
+  // this swing is over, and the attacker is a stationary target until it moves
+  // again. Cleared whether the shot lands or not — you committed to the swing.
+  clearMomentum(attacker);
+  const evt = {
+    type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage,
+    killed, knockback, dropped, chance, roll,
+    // The breakdown travels with the event so the HUD and the animation layer
+    // can say WHY a number was what it was, rather than showing a total the
+    // player has to reverse-engineer.
+    base: weapon.damage, bonus, evade,
+  };
   state.log.push(evt);
   // The payoff the pipe exists for: a shove that lands a body in a fire or an
   // open stairwell. Resolved AFTER the attack event is logged so the two read
@@ -391,6 +415,11 @@ export function endPlayerTurn(state) {
   // earlier enemies this same phase have already moved.
   state.enemyPlan = new Map(state.telegraph);
   state.enemyQueue = livingEnemies(state).map(u => u.uid);
+  // The enemy turn begins: their momentum from LAST round is spent, and each
+  // will bank fresh momentum as it steps. Cleared here so the evasion an
+  // operator sees while planning is the evasion that was actually earned
+  // during the phase they just watched.
+  for (const u of state.units) if (u.faction === 'enemy') clearMomentum(u);
   return { ok: true };
 }
 
@@ -416,6 +445,11 @@ export function stepEnemyPhase(state) {
     if (intent.moveTo && (intent.moveTo.x !== enemy.x || intent.moveTo.y !== enemy.y)) {
       const blocked = state.fullCover.has(key(intent.moveTo.x, intent.moveTo.y)) || unitAt(state, intent.moveTo.x, intent.moveTo.y, enemy);
       if (!blocked) {
+        // Enemies bank momentum from their own step exactly as operators do —
+        // an asymmetric rule would be a trap the player learns to exploit,
+        // and evasion in particular has to cut both ways or closing on a
+        // skirmisher becomes free.
+        addMomentum(enemy, Math.abs(intent.moveTo.x - enemy.x) + Math.abs(intent.moveTo.y - enemy.y));
         enemy.x = intent.moveTo.x; enemy.y = intent.moveTo.y;
         moved = { x: enemy.x, y: enemy.y };
         enterHazard(state, enemy, 'move');
@@ -445,7 +479,14 @@ export function stepEnemyPhase(state) {
   const burns = tickLingeringHazards(state);
   state.turn = 'player';
   state.round += 1;
-  for (const u of state.units) if (u.faction === 'player') { u.actedMove = false; u.actedAction = false; }
+  for (const u of state.units) if (u.faction === 'player') {
+    u.actedMove = false; u.actedAction = false;
+    // Momentum never carries between turns — it is this turn's movement, not
+    // a bank. Cleared at the START of the player's turn rather than the end
+    // of it, so a unit that moved and did not attack still shows the evasion
+    // it earned all through the enemy phase it is about to face.
+    clearMomentum(u);
+  }
   // A survive objective is decided HERE and nowhere else: outlasting round N
   // is an event with no attack behind it, so without this call the win would
   // only be noticed the next time somebody happened to take damage.

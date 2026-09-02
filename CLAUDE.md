@@ -360,6 +360,31 @@ shoot into cover), plus `nearest`/`weakest` focus. `approachTile` is deliberatel
 for this: it answers "the cheapest tile", exactly what a behaviour must disagree with, and
 click-to-attack depends on that meaning. Ties break on uid everywhere — a telegraph that
 flickers between two equally good tiles is unreadable even though each frame is correct.
+**The movement economy** (v24) — before this there was no reason to move once a unit was
+in range, so standing still and shooting dominated and every board knotted into a scrum by
+round one. `js/momentum.js`: a unit banks one point per tile it moves **under its own
+power** (a knockback is not momentum); unspent, each point is -6% to be *shot* (never
+stabbed, and capped below partial cover's -30% so cover stays a decision); spent on a
+swing, a full move is +1 damage. **The swing spends the pool**, so the same points are
+damage *or* evasion, never both — and that rule is not a flourish: with momentum permanent,
+evasion favoured whoever was chasing, which is the AI every single turn, and the measured
+skill gap against a positional bot *narrowed* (+46 points to +19). It is **visible**,
+because this game promises full information: pips over every unit's HP bar, a HUD line
+spelling out both halves, a damage floater reading `5 (+1)`, and `ai.js` folding a target's
+evasion into its focus scoring so the telegraph never promises a shot it cannot land.
+**A third rule — SYNC, straight out of MST — was built, measured three ways and CUT**, and
+the finding is kept in `momentum.js`'s header because it is the obvious next idea: free, it
+took `the-yard` from 68% winnable to **0% on its own** (anything multiplied by "allies in
+range" pays the side with more bodies, and this roster is weaker-but-numerous by design, so
+never the player); capped at one partner, the same collapse; gated on the partner still
+carrying momentum, symmetric and safe and **inert** — a bot built to set syncs up scored 72%
+against 92% for the same bot ignoring them. Everything above was decided by **four bots over
+five encounters at 120 seeds with a v23 checkout as the control column**, and the control
+reproducing v23's rates exactly (37/39/64/24/68) is what makes the other columns mean
+anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves bot play
+(+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
+`DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
+are 23 points apart), not a dial.
 **The feel layer** (v17) — `anim.js` reads `state.log` rather than being called by
 `combat.js` (which stays pure and bare-node tested) and owns the only rAF loop, stopping
 itself when nothing is mid-clip. Movement tweens in fractional TILES, not pixels: `toScreen`
@@ -1285,6 +1310,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     combat.js   # move+act economy, attack/knockback, hazards, trinkets, the enemy phase
     render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
     input.js    # pointer/keyboard/pad — three methods, one decision path
+    momentum.js # the movement economy: bank it by moving, spend it on the swing
     anim.js     # the feel layer: log-driven tweens, hit flash, damage numbers, the only rAF
     audio.js    # synthesised kit, every voice through one master gain so mute really mutes
     main.js     # boot, HUD, the enemy-phase pacing loop — the only DOM-touching file
@@ -1297,8 +1323,9 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 61 checks: data, grid, turn economy, combat, hazards,
-                #   trinkets, AI behaviours, and a bot playthrough of every encounter
+    smoke.mjs   # bare-node, 68 checks: data, grid, turn economy, combat, hazards,
+                #   trinkets, AI behaviours, momentum, a bot playthrough of each encounter
+    balance.mjs # is each encounter WINNABLE — the question smoke.mjs cannot ask
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
   games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)
