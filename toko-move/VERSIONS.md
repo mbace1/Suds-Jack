@@ -24,6 +24,8 @@
 
 **The ground is cached offscreen.** Water, streets and place names change when the camera changes and at no other time; painted every frame they cost the city view half its frame rate for a picture identical to the one before it. Painted into an offscreen canvas keyed on the camera and blitted, all three scales run at 60. Same discipline as `gameoflife`'s `scr.cached`, same rule: keep every moving part outside it.
 
+The old `flow-core/data/kallio-water-v1.json` fetch is gone. The ground pack supersedes it in every respect, and that path does not exist on the deployed site — so every load of the live cabinet was taking a 404 for a file whose contents were already on screen from somewhere better.
+
 Report card, v2.20: 5 jobs taken, 4/6 delivered, score 756, late 0, dead air 4%, riding 69%.
 
 ## v2.19 — 2026-09-02
