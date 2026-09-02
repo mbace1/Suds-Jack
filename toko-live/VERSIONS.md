@@ -1,5 +1,15 @@
 # Toko Live versions
 
+## v35 — 2026-09-02
+
+- Added character reaction language for agreement, disagreement, uncertainty, curiosity, correction and consideration.
+- Reactions now carry briefly across the exchange instead of snapping immediately back to neutral.
+- Added restrained pointer/focus orientation and rare listening mannerisms to make Toko feel present without constant motion.
+- Expanded the v34 performance layer while keeping the approved Toko artwork unchanged.
+- Added the reaction layer as a separate additive module so the large deployed runtime remains untouched.
+- Hub cabinet now reports v35.
+- Toko Move was not changed in this pass.
+
 ## v34 — 2026-09-02
 
 - Continued Toko character development without introducing alternate Toko artwork.
