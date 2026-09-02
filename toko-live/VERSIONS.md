@@ -1,5 +1,20 @@
 # Toko Live versions
 
+## v38 — 2026-09-02
+
+- Added a compact project-state model for every core project: goal, current state, problems, established decisions and next milestone.
+- Toko can now answer explicit project status, decision and next-priority questions from this structured state instead of assembling a generic response.
+- Decision-memory approvals are folded into project-state answers while authored baseline decisions remain separate.
+- Added a high-confidence routing guard for these authoritative questions so competing Enter handlers do not all answer the same request.
+- Kept freeform/creative conversation outside the guard so the new router does not swallow arbitrary discussion.
+- Hub cabinet reports v38. Toko Move was not changed.
+
+## v37 — 2026-09-02
+
+- Began conversation-routing cleanup with a narrow capture-phase authority layer.
+- Project status/decision/next-step requests now have a single deterministic route when an explicit project is resolved.
+- This reduces duplicate-module replies without rewriting the large deployed runtime.
+
 ## v36 — 2026-09-02
 
 - Connected character reactions to detected user intent instead of relying only on loose reaction keywords.
