@@ -47,6 +47,12 @@ server.listen(0, '127.0.0.1', async () => {
 
   const jobs = [];
   let cur = null, lastTick = 0, deadAir = 0, walkSeen = 0, samples = 0, carryChances = 0;
+  // Where the shift actually goes. Wait/ride/get-off are the three phases the
+  // player experiences, and only by splitting them can "the shift is full" be
+  // told apart from "the waiting is long" — the first run could see neither,
+  // because the accounting sat after a `continue` and never ran.
+  const phase = { waiting: 0, riding: 0, getoff: 0, walking: 0, idle: 0 };
+  let lastKind = null;
   const started = Date.now();
   const WALL_CAP_MS = 240000;
 
@@ -84,8 +90,18 @@ server.listen(0, '127.0.0.1', async () => {
     // you. The first cut said it checked walks and only checked catches — which
     // would have reported waiting-with-options as dead time.
     if (s.active && s.enabled === 0 && s.walks === 0 && s.kind !== 'riding') deadAir += Math.max(0, s.tick - lastTick);
+    const dt = Math.max(0, s.tick - lastTick);
+    const k = s.active ? (s.kind || 'waiting') : 'idle';
+    phase[k] = (phase[k] || 0) + dt;
+    lastKind = k;
     lastTick = s.tick;
 
+    if (cur && s.index >= cur.n && cur.doneAt == null) {
+      cur.doneAt = s.tick;
+      cur.rideTicks = cur.caught != null ? s.tick - cur.caught : null;
+      cur.margin = s.remaining;
+      cur = null;
+    }
     if (!s.active && s.offers.length) {
       // a player picks; the bot picks the best-paying, which is the most
       // forgiving policy and so the most flattering measurement
@@ -109,7 +125,7 @@ server.listen(0, '127.0.0.1', async () => {
       else if (cur) cur.transfers = (cur.transfers || 0) + 1;
       continue;
     }
-    if (cur && s.index >= cur.n) { // job completed
+    if (cur && s.index >= cur.n) { // job completed (checked before the actions below)
       cur.doneAt = s.tick;
       cur.rideTicks = cur.caught != null ? s.tick - cur.caught : null;
       cur.margin = s.remaining;
@@ -137,6 +153,9 @@ server.listen(0, '127.0.0.1', async () => {
   console.log(`  front half vs back    ${avg(waits.slice(0, half))}t  vs  ${avg(waits.slice(half))}t`);
   console.log(`  a walk was on offer   ${pct(walkSeen, samples || 1)} of samples`);
   console.log(`  second job possible   ${pct(carryChances, samples || 1)} of samples`);
+  const tot = Object.values(phase).reduce((a, b) => a + b, 0) || 1;
+  console.log(`  where the shift went  waiting ${pct(phase.waiting, tot)} · riding ${pct(phase.riding, tot)} · ` +
+              `get off ${pct(phase.getoff, tot)} · walking ${pct(phase.walking, tot)} · between jobs ${pct(phase.idle, tot)}`);
   if (done.length) {
     console.log('\n  per job:');
     for (const j of done) {
