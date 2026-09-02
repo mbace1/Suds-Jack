@@ -1,0 +1,36 @@
+{
+  "version": "0.3.0",
+  "candidateStatus": ["candidate", "revise", "approved", "rejected"],
+  "records": [],
+  "recordSchema": {
+    "id": "<character>_<action>_<direction>_<frame>_v<revision>",
+    "character": "character id from manifest.json",
+    "action": "idle|move|melee|ranged|hit|ko",
+    "direction": "front_iso|rear_iso",
+    "frame": 1,
+    "revision": 1,
+    "phase": "animation phase name",
+    "status": "candidate",
+    "asset": "relative PNG path",
+    "masterReference": "approved character master/crop id",
+    "previousFrame": null,
+    "nextFrame": null,
+    "oppositePair": null,
+    "sourceReference": null,
+    "promptHash": null,
+    "fileHash": null,
+    "score": null,
+    "validation": {
+      "background": null,
+      "dimensions": null,
+      "alpha": null,
+      "duplicate": null,
+      "origin": null,
+      "anatomy": null,
+      "motionContract": null,
+      "adjacentContinuity": null,
+      "pairedOpposition": null
+    },
+    "notes": ""
+  }
+}
