@@ -1,5 +1,15 @@
 # Toko Live versions
 
+## v34 — 2026-09-02
+
+- Continued Toko character development without introducing alternate Toko artwork.
+- Added a state-driven performance layer to the existing character: distinct listening, thinking, talking, pleased and correction/glitch body motion.
+- Added quiet breathing, restrained head/body tilt, talk cadence, pleased lift, correction jitter and a small touch acknowledgement.
+- Respects `prefers-reduced-motion`.
+- Hub cabinet now reports v34 and uses the approved Toko face only.
+- Cache-busted both the Toko Live character-performance module and the hub cabinet entry.
+- `gh-pages` remains the deployed Toko Live authority.
+
 ## v17 — 2026-08-29
 
 - Restored factual news conversation and live public-source refresh on the deployed branch.
@@ -11,5 +21,5 @@
 
 ### Known follow-up
 
-- `main/toko-live/main.js` still predates the deployed spatial-memory implementation. The GitHub connector truncates the deployed file on retrieval, so a safe byte-for-byte branch sync was not attempted in this pass. Do not treat `main` as the current Toko Live runtime until that file is reconciled.
+- `main/toko-live/main.js` still predates the deployed spatial-memory implementation. Do not treat `main` as the current Toko Live runtime until that file is reconciled.
 - Browser-render validation has not been performed in this pass.
