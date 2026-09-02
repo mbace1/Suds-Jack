@@ -1,5 +1,15 @@
 # Toko Live versions
 
+## v36 — 2026-09-02
+
+- Connected character reactions to detected user intent instead of relying only on loose reaction keywords.
+- Added semantic states for correction, probing, comparison, next-step requests, inspection/testing, agreement and curiosity.
+- Preserves the user's current intent/project briefly while Toko replies, so performance does not reset or get reclassified from Toko's own prose.
+- Hardened opinion memory so only user-authored `.tc-you` turns can update stored stance; Toko replies are excluded and new entries record `source: user` provenance.
+- Kept these changes additive and left the large deployed `main.js` untouched.
+- Hub cabinet now reports v36.
+- Toko Move was not changed in this pass.
+
 ## v35 — 2026-09-02
 
 - Added character reaction language for agreement, disagreement, uncertainty, curiosity, correction and consideration.
