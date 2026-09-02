@@ -30,8 +30,8 @@
     "from": "cache token"
   },
   "skltr": {
-    "v": "80",
-    "n": 80000,
+    "v": "84",
+    "n": 84000,
     "from": "cache token"
   },
   "flashprince": {
@@ -65,8 +65,8 @@
     "from": "cache token"
   },
   "tokomove": {
-    "v": "2.11",
-    "n": 2011,
+    "v": "2.14",
+    "n": 2014,
     "from": "VERSIONS.md"
   },
   "tinyhawk": {

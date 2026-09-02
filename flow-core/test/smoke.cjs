@@ -11,12 +11,25 @@ s.listen(0,'127.0.0.1',async()=>{const base='http://127.0.0.1:'+s.address().port
  ok('boots with no errors',errs.length===0,errs.slice(0,2).join(' | '));
  ok('delivery handle is exposed',await p.evaluate(()=>!!window.__tm?.challenge));
  ok('real Helsinki graph is active',await p.evaluate(()=>{const ids=new Set([...window.__tm.flow.graph.nodes.keys()]),city=window.__tm.city;return ['pasila','toolontori','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x=>ids.has(x))&&city?.source?.exactGeometry===true&&city.nodes.every(n=>Number.isFinite(n.lat)&&Number.isFinite(n.lon)&&n.hslStopId);}));
- ok('first job waits for the player to catch a service',await p.evaluate(()=>{const ch=window.__tm.challenge;return !!ch.active&&ch.waitingForCatch===true&&ch.activeTrip===null;}));
+ ok('the shift opens on the dispatch board with no job forced on the player',await p.evaluate(()=>{const ch=window.__tm.challenge;return !ch.active&&ch.activeTrip===null&&(ch.offers?.length||0)>=2;}));
  ok('all source transit layers remain visible',await p.evaluate(()=>window.__tm.transit.layers.length>20&&window.__tm.transit.layers.every(l=>l.visible)));
  await p.click('#play'); await p.waitForTimeout(450);
  ok('clock runs after start',await p.evaluate(()=>!window.__tm.flow.clock.paused));
+ // v2.12 replaced v2.11's auto-assigned job with a dispatch board: take an offer
+ // first, and only then does the network become a set of catch choices.
+ ok('the dispatch board offers a real choice',await p.evaluate(()=>document.querySelectorAll('.jobOffer').length>=2));
+ await p.click('.jobOffer button, .jobOffer'); await p.waitForTimeout(400);
+ ok('taking an offer makes it the active job, still waiting on a catch',await p.evaluate(()=>{const ch=window.__tm.challenge;return !!ch.active&&ch.waitingForCatch===true&&ch.activeTrip===null;}));
+ await p.waitForSelector('.catchChoice',{timeout:15000}).catch(()=>{});
  ok('catch choices are visible',await p.evaluate(()=>document.querySelectorAll('.catchChoice').length>=1));
- const before=await p.evaluate(()=>window.__tm.flow.routes.drawn.length); await p.click('.catchChoice'); await p.waitForTimeout(250);
+ // The choices render DISABLED and stay that way until a compatible vehicle
+ // actually reaches this hub going the right way — that gate is the whole game,
+ // so the test waits it out at speed rather than clicking a dead button.
+ await p.click('#speed'); await p.click('#speed');
+ ok('catch is refused until a real vehicle arrives',await p.evaluate(()=>[...document.querySelectorAll('.catchChoice')].every(b=>b.disabled)));
+ await p.waitForSelector('.catchChoice:not([disabled])',{timeout:60000});
+ ok('a catchable service does arrive',await p.evaluate(()=>document.querySelectorAll('.catchChoice:not([disabled])').length>=1));
+ const before=await p.evaluate(()=>window.__tm.flow.routes.drawn.length); await p.click('.catchChoice:not([disabled])'); await p.waitForTimeout(250);
  ok('catch commits an existing HSL service plan',await p.evaluate(()=>{const ch=window.__tm.challenge;return !!ch.activeTrip&&!ch.waitingForCatch&&Array.isArray(ch.activeTrip.legs)&&ch.activeTrip.legs.length>=1;}));
  ok('catching creates no player-drawn line',await p.evaluate(n=>window.__tm.flow.routes.drawn.length===n,before));
  ok('fixed services come from HSL tram + metro',await p.evaluate(()=>{const rs=window.__tm.flow.routes.list.filter(r=>r.fixed);return rs.some(r=>r.mode==='metro'&&(r.label==='M1'||r.label==='M2'))&&rs.some(r=>r.mode==='tram'&&['2','3','4','5','6','7','8H','8T','9','13'].includes(r.label))&&!rs.some(r=>['T','R','M'].includes(r.label));}));
@@ -25,5 +38,8 @@ s.listen(0,'127.0.0.1',async()=>{const base='http://127.0.0.1:'+s.address().port
  ok('no horizontal phone overflow',await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));
  const small=await p.$$eval('button',bs=>bs.filter(x=>{const r=x.getBoundingClientRect();return r.width>0&&(r.width<44||r.height<44);}).map(x=>x.id||x.textContent.trim().slice(0,16)));ok('controls clear 44px',small.length===0,small.join(', '));
  ok('no encounter layer in daylight product',await p.evaluate(()=>!document.getElementById('fight')));
+ ok('the board crops to the played city, not the whole pack',await p.evaluate(()=>{const b=window.__tm.board;if(!b)return false;return (b.n-b.s)<0.09&&(b.e-b.w)<0.11;}));
+ ok('every delivery anchor sits inside the board',await p.evaluate(()=>{const b=window.__tm.board,r=window.__tm.city.resolved;return Object.values(r).every(st=>!st||(st.lat>b.s&&st.lat<b.n&&st.lon>b.w&&st.lon<b.e));}));
+ ok('tram services no longer share one colour',await p.evaluate(()=>{const t=window.__tm.transit.layers.filter(l=>l.mode==='TRAM');return new Set(t.map(l=>l.colour)).size>=10;}));
  ok('still no errors after catch',errs.length===0,errs.slice(0,2).join(' | '));
  await p.close();await b.close();s.close();console.log(`\n  ${pass} passed, ${fail} failed\n`);process.exit(fail?1:0);});
