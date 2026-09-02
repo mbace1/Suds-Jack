@@ -7,6 +7,8 @@
 import { MovementHero } from './movement-hero.js';
 import { POSE as Q, P, sample } from './figure.js';
 import { R } from './movement-poses.js';
+import { StateMachine } from '../../game-core/state-machine.js';
+import { MOVEMENT_TRANSITIONS } from './movement-state-contract.js';
 
 const V = {
   walkContact: P( 28,  5, -22, 27, -23, 26,  23, 22,  7, -3,  1, 0, 0),
@@ -51,6 +53,28 @@ const CLIP = {
 };
 
 export class MovementHeroV3 extends MovementHero {
+  go(state, f = 0) {
+    if (!this.stateMachine) {
+      this.transitionFaults = 0;
+      this.stateMachine = new StateMachine({
+        initial: this.state || state,
+        transitions: MOVEMENT_TRANSITIONS,
+        strict: false,
+        onTransition: e => { this.lastTransition = e; },
+      });
+    }
+    // The inherited Hero reset path sets `state` directly. Keep the validator
+    // synchronized, then let every gameplay transition pass through one gate.
+    if (this.stateMachine.state !== this.state) this.stateMachine.state = this.state;
+    if (!this.stateMachine.go(state, { localFrame: this.f })) this.transitionFaults++;
+    super.go(state, f);
+  }
+
+  update(world, input, game) {
+    this.stateMachine?.tick();
+    return super.update(world, input, game);
+  }
+
   pose() {
     const clip = CLIP[this.state];
     if (!clip) return super.pose();
