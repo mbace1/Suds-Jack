@@ -9,31 +9,24 @@
 -->
 
 ## v20 — 2026-09-02
-**The cast pilot's attack pose, regenerated for a real two-beat read.**
-Originally authored on `claude/turf-cast-attack-fix` as ITS v13; brought
-here and renumbered because this branch had independently created a
-different v13 and built v14-v19 on top of it. Two lineages reaching the
-same number is the exact trap `CLAUDE.md` documents for Eeri — "never
-reuse a version number" — and the fix is one branch, not two claims on
-one integer. The original branch is superseded by this entry.
+**One lineage for the cast attack art — and a direction defect recorded
+rather than shipped quietly.**
 
-- Root cause (theirs, and worth keeping): both prompts described the SAME
-  end pose with only tension wording differing ("tense and set" vs "braced
-  hard against recoil") — language an image model cannot turn into a
-  distinct silhouette. Confirmed on both characters, including leopard,
-  whose prompt already named opposite geometry and still rendered nearly
-  identical.
-- Fix: both prompts rewritten per character as geometrically opposite
-  silhouettes with explicit "exaggerate past what feels natural" language.
-  Gunner: a low fast-draw coil (guns tight to the ribs, elbows pinned,
-  deep knee bend) against full extension (arms locked out, front knee
-  driven forward). Leopard: a tall overhead knife raise against a low
-  forward lunge. All 8 regenerated (2 poses × 2 characters × 2 facings)
-  through `gen-with-ref.mjs` against the same `_ref-*.png` identity crops.
-- **Verified rather than taken on trust**, using this branch's own
-  `turf/tools/spritecheck.py pairs` — which exists to answer exactly this
-  question. Silhouette IoU between windup and release, origin-normalised,
-  before and after:
+The version half. `claude/turf-cast-attack-fix` carried its own **v13**
+while this branch had independently created a different v13 and built
+v14-v19 on top. Two lineages reaching the same number is the exact trap
+`CLAUDE.md` documents for Eeri ("never reuse a version number"). Resolved
+by bringing that branch's commit here and renumbering it, so there is one
+history instead of two claims on one integer; the original branch is
+superseded by this entry and needs no separate merge.
+
+The art half, stated accurately:
+
+- Its own claim is **true**: v12's windup and release described the same
+  end pose with only tension wording differing, and the rewrite gives two
+  genuinely different drawings. Measured with this branch's
+  `tools/spritecheck.py pairs` — origin-normalised silhouette IoU between
+  windup and release:
 
   ```
               windup <-> release      legs only
@@ -41,15 +34,47 @@ one integer. The original branch is superseded by this entry.
     leopard   0.600  ->  0.532       0.578  ->  0.564
   ```
 
-  Gunner's pair is now genuinely two drawings; leopard's improved but
-  much less, and at 0.53 it is still the weaker of the two. Worth knowing
-  before anyone calls the pose work finished — the claim was true, but not
-  equally true for both characters.
-- These frames are not yet played by anything: `anim.js` maps a `hit` and
-  a `death` clip but the roster's default squad has no cast frames, and
-  the attack clip only runs for gunner/leopard. The art is correct and
-  waiting on the pipeline, which is the same state the rest of the cast
-  pilot is in.
+- **But the new frames are drawn in near-PROFILE**, and Sprite Bible §5
+  forbids that outright: the authored views are front diagonal (down-right)
+  and rear diagonal (up-left), with "No profile side-scroller pose" and "No
+  cardinal straight-front" both listed as rules. The idle frames — direct
+  casting-sheet crops — are correctly diagonal, so the set now drifts
+  within one character. Failure codes **D1** (wrong direction) and **D2**
+  (perspective/facing drift). The old frames were also off (roughly
+  straight-front with arms out), so this is a worse violation, not a new
+  one: the regeneration traded a mild §5 breach for the one §5 names.
+
+- **This also confounds the number above, and the earlier read of it was
+  over-claimed.** Part of that IoU drop is the body ROTATING toward
+  profile, which changes a silhouette a great deal without being the
+  two-beat mechanical difference that was wanted. A geometric similarity
+  score cannot tell a pose change from a camera change — the repo's own
+  standing lesson that "a gate that certifies *works* cannot see *looks*",
+  earned here again.
+
+- **Not regenerated**, because there is no `GEMINI_API_KEY` in this
+  environment. What a fix needs is recorded instead: the same two
+  geometrically-opposite silhouettes, re-prompted with the direction
+  pinned to the front diagonal the idle already establishes, and checked
+  against the idle rather than only against each other.
+
+- Nothing plays these frames yet — `anim.js`'s attack clip only runs for
+  gunner/leopard, and neither is in the default squad — so the defect is
+  latent rather than live. It should not reach the board before §5 is met.
+
+- **A renderer bug this art surfaced, and fixed here.** `drawUnitSprite`
+  scaled every frame to `SPRITE_H` using *that frame's own* ink height,
+  which divides the pose out: a deep attack crouch is genuinely shorter
+  than full extension, and normalising each frame independently scales the
+  crouch back up to standing height — erasing the body-height rhythm Bible
+  §7.4 calls the easiest way to spot a broken cycle, and making a character
+  swell and shrink between frames. Gunner's windup and release differ
+  **36.7%** in ink height, so this was not a rounding concern. Frames now
+  scale off the character's own idle frame, one scale per character; units
+  with a single static plate are unaffected (verified: the default squad
+  resolves no cast frame and takes the unchanged path).
+
+- Tokens: `render.js` v9->v10, `anim.js` v3->v4, `main.js` v11->v12.
 
 ## v19 — 2026-09-02
 **Enemy behaviours — GDD §10's other open question ("enemy archetypes and

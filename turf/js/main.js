@@ -6,9 +6,9 @@ import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
 } from './combat.js?v=7';
-import { computeLayout, render } from './render.js?v=9';
+import { computeLayout, render } from './render.js?v=10';
 import { createInputHandler } from './input.js?v=7';
-import { createAnimator } from './anim.js?v=3';
+import { createAnimator } from './anim.js?v=4';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
