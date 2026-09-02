@@ -15,13 +15,17 @@ import { Pressure } from './pressure.js?v=1';
 import { EventQueue } from './events.js?v=1';
 import { plan } from './path.js?v=1';
 
-export function createFlow({ city, seed = 1, days = 7, demand, hooks = {}, maxRoutes = 4 }) {
+// `ticksPerDay` is optional and defaults to flow-core's own TICKS_PER_DAY, so
+// nothing that calls this without it changes. Toko Move asks for a longer day:
+// its session is a five-minute courier shift, and at the shared default a whole
+// day is sixty seconds — a tram crossed Helsinki in three of them.
+export function createFlow({ city, seed = 1, days = 7, demand, hooks = {}, maxRoutes = 4, ticksPerDay = TICKS_PER_DAY }) {
   resetRouteIds();
   resetTripIds();
 
   const rng = new Rng(seed, 'flow');
   const graph = new Graph(city);
-  const clock = new Clock({ ticksPerDay: TICKS_PER_DAY });
+  const clock = new Clock({ ticksPerDay });
   const routes = new RouteSet(graph, { maxRoutes });
   const trips = new TripSet(graph, routes);
   const pressure = new Pressure(graph);

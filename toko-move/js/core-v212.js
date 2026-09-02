@@ -2,14 +2,15 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=7';
-import {TransitLayers} from './transit-layers.js?v=4';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=9';
+import {TransitLayers} from './transit-layers.js?v=5';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
-import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,HUB_INK} from './board.js?v=2';
-import {TRANSFER_HUBS} from './hubs-walking.js?v=2';
+import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,HUB_INK} from './board.js?v=3';
+import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
+import {SHIFT} from './live-network.js?v=4';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.17';
+const BUILD_VERSION='2.18';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -17,7 +18,7 @@ let flow,challenge,renderer,transit,city,water,source,transitView=false,done=fal
 let box,roads;
 const say=s=>{msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,drawStopLabels,say,paintHud,paintSheet};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -31,7 +32,7 @@ function coverageLabel(s){return s?.clippedTo?`exact inside ${s.clippedTo.s}–$
 
 function boot(seed=7){
   if(!city)return;
-  flow=createFlow({city,seed,days:1,demand:null,hooks:{onTick:()=>{const changed=challenge?.step?.();if(changed){paintHud();paintSheet();if(challenge.complete)finish();}},onDay:()=>{if(!challenge?.complete)finish();}}});
+  flow=createFlow({city,seed,days:1,demand:null,ticksPerDay:SHIFT.ticksPerDay,hooks:{onTick:()=>{const changed=challenge?.step?.();if(changed){paintHud();paintSheet();if(challenge.complete)finish();}},onDay:()=>{if(!challenge?.complete)finish();}}});
   challenge=new DeliveryChallenge(flow,say);done=false;msgs=[];
   renderer=new FlowRenderer($('map'),MAP_THEME);
   challenge.start();publish();paintHud();paintSheet();
@@ -146,7 +147,7 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
   for(const[id,col]of[[challenge.currentFrom(),'#2f9fb8'],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
   ctx.restore();}
 
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${DELIVERY_TARGET}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';$('clock').textContent=`${String(6+Math.floor(flow.clock.dayProgress*16)).padStart(2,'0')}:00`;$('lines').textContent='HSL network';}
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${DELIVERY_TARGET}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}$('lines').textContent='HSL network';}
 function paintSheet(){if(!challenge)return;const b=$('sheet');if(!challenge.active){if(!document.getElementById('jobBoard'))b.innerHTML='<p class="hint">Dispatching local jobs…</p>';return;}const j=challenge.active,c=challenge.cargoRule();b.innerHTML=`<div class="jobTop"><span class="cargoBadge" style="border-color:${cargoColour(j.cargo)}">${c.icon}</span><div><h2>JOB ${challenge.index+1}/${DELIVERY_TARGET}</h2><p class="route"><b>${esc(challenge.routeLabel())}</b></p></div></div><p class="hint">${esc(j.label)} · ${esc(j.cargo)}</p><p class="cargoRule">${esc(c.rule)}</p><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%"></i></div><p class="hint">${challenge.remaining()} ticks remaining · score ${challenge.score}</p>`;}
 function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m of msgs.slice(0,3)){const d=document.createElement('div');d.textContent=m;f.append(d);}}
 function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${DELIVERY_TARGET}</b></p><p>score <b>${challenge.score}</b></p><p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p>`;$('endNote').textContent=challenge.complete?'Ten Helsinki courier jobs complete.':'The shift ended; the route remains replayable.';$('end').hidden=false;}
