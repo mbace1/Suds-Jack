@@ -6,8 +6,8 @@ import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext, applyTrinkets,
 } from './combat.js?v=9';
-import { computeLayout, render } from './render.js?v=11';
-import { createInputHandler } from './input.js?v=7';
+import { computeLayout, render, SUPERSAMPLE } from './render.js?v=12';
+import { createInputHandler } from './input.js?v=8';
 import { createAnimator } from './anim.js?v=4';
 import { audio } from './audio.js?v=1';
 
@@ -128,8 +128,11 @@ function boot(seed) {
   state.cursor = null;
   state.rewarded = false;
   layout = computeLayout(state.grid);
-  canvas.width = layout.width;
-  canvas.height = layout.height;
+  // Backing store at SUPERSAMPLE x the board's logical size; fitCanvas still
+  // sets the CSS size from layout.width, so the board occupies the same space
+  // and only gains real pixels.
+  canvas.width = layout.width * SUPERSAMPLE;
+  canvas.height = layout.height * SUPERSAMPLE;
   fitCanvas();
   if (input) input.destroy();
   anim.stop(); // a new encounter is a new log — drop any clip still playing from the last one
