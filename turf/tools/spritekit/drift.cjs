@@ -1,6 +1,12 @@
 // Per-cycle geometry checks: scale drift, sliding origin, body-height rhythm.
 //   node drift.cjs <dir> <frame...>
 //
+// --no-scale is now the DEFAULT in make.mjs, because register.cjs owns scale
+// and does not touch head width. Before that, this check was self-fulfilling:
+// normalise.cjs set the head width and drift.cjs measured it, so it passed by
+// construction and told nobody anything. A registered clip reads ~20% here and
+// is correctly scaled; the registration report is the scale check.
+//
 // Two checks are locomotion-only and switch off for clips they do not fit.
 // --no-rhythm: body-height rhythm is a LOCOMOTION requirement (Sprite Bible
 // 7.4) and a hit reaction has no stride to bob through. --no-scale: head width
@@ -62,7 +68,7 @@ const RHYTHM_MIN = 3;         // % bbox-height spread required (below = flat)
   const line = (label, ok, detail) => { if (!ok) bad++; console.log(`${ok ? '  ok  ' : ' FAIL '} ${label.padEnd(34)} ${detail}`); };
   console.log('');
   if (wantScale) line('scale held (head width)', scalePct <= SCALE_TOL, `${spread(hw)}px spread, ${scalePct.toFixed(1)}% (tol ${SCALE_TOL}%)  [C2]`);
-  else console.log(`  --   ${'scale (head width)'.padEnd(34)} not checked (--no-scale: the head tilts in this clip), ${scalePct.toFixed(1)}% observed`);
+  else console.log(`  --   ${'scale (head width)'.padEnd(34)} not checked (--no-scale), ${scalePct.toFixed(1)}% observed — expected to be high on a registered clip`);
   line('origin held (ground line)', spread(fy) <= ORIGIN_TOL, `${spread(fy)}px spread (tol ${ORIGIN_TOL}px)  [M4]`);
   if (wantRhythm) line('body-height rhythm present', rhythmPct >= RHYTHM_MIN, `${rhythmPct.toFixed(1)}% height variation (min ${RHYTHM_MIN}%)  [M3]`);
   else console.log(`  --   ${'body-height rhythm'.padEnd(34)} not checked (--no-rhythm: locomotion-only rule), ${rhythmPct.toFixed(1)}% observed`);
