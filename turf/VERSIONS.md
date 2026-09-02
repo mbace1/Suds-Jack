@@ -8,6 +8,69 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v22 — 2026-09-02
+**The game was not winnable, and the goal was the reason.** Measured over
+300 bot runs across the five encounters: **zero wins**. Not close — on
+backlot you died with 5.7 of 6 rivals still standing.
+
+- **The damage race was never survivable.** Three operators against six or
+  seven, with the rivals out-damaging them 2-4x:
+
+  ```
+                 you kill them in   they kill you in
+    backlot            4.2 rounds        1.9 rounds
+    loading-dock       4.9              1.6
+    warehouse          2.8              1.6
+    underpass          4.3              1.1
+    the-yard           2.6              1.6
+  ```
+
+- **The numbers were not the mistake — elimination was.** This game shows
+  full enemy intent, which is Into the Breach's model, and ITB never asks
+  you to kill everything: three units, perfect information, a turn count to
+  outlast. Full information plus a losing damage race is not tension, it is
+  a legible defeat. Change what winning means and the same numbers become
+  correct, because cover, hazards and knockback are all tools for DENYING
+  damage rather than trading it.
+- **`win` is now a per-encounter field** (`{mode:'survive',rounds:N}` or
+  `{mode:'eliminate'}`), decided in `checkWinLoss` — still the only place a
+  fight is settled. Killing everything always wins regardless of mode, so
+  finishing early is never punished. Defaults to eliminate, so an encounter
+  without the field behaves exactly as before.
+- **Values were swept, not guessed.** 60 seeds per encounter per candidate
+  N. The cliffs are sharp — the signature of a lopsided damage race — and
+  underpass and the-yard had NO value of N inside the playable band at
+  their original rosters, so both lost enemies too. Final:
+
+  ```
+    backlot        survive 6   38% win   1.0 survivors
+    loading-dock   survive 5   38%       1.0
+    warehouse      survive 5   68%       1.1
+    underpass      survive 7   37%       1.0   (7 -> 5 rivals)
+    the-yard       eliminate   68%       1.0   (6 -> 5 rivals)
+  ```
+
+  the-yard keeps elimination deliberately: it is the least lopsided fight,
+  so the sequence ends on a real clear-out instead of another hold.
+- **`turf/test/balance.mjs` is a new gate**, separate from `smoke.mjs` on
+  purpose. Smoke asserts a playthrough TERMINATES; every line of it said
+  "lose in 6 rounds" and was read as green for five releases. Terminating
+  and winnable are different questions, and conflating them is how the
+  first one passing came to imply the second. It fails an encounter that is
+  unwinnable **or** trivially winnable: its bot ignores cover, hazards and
+  knockback on purpose, so its win rate is a FLOOR, and the gap between
+  that floor and a competent human is the game.
+- **The objective is shown, always** — a hidden win condition in a game
+  built on full information is a contradiction. The topbar reads
+  `Round 3 / 6 — hold`, the encounter opens by saying it in words, and a
+  survive win is titled **BLOCK HELD** rather than CLEARED, since "cleared"
+  over a board still holding six rivals reads as a bug. The title screen
+  said "clear a block to move on to the next", which was true of one
+  encounter out of five.
+- Verified in a browser on both paths: passing every turn loses in round 5;
+  holding to the count wins with all six rivals alive and XP paid.
+- Tokens: `combat.js` v8->v9, `main.js` v13->v14.
+
 ## v21 — 2026-09-02
 **Trinkets — GDD §5's v1 progression list is now complete.** Weapon swaps
 shipped in v7 and XP levels in v6; "a handful of passive trinkets (flat
