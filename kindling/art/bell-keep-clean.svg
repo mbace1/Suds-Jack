@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<defs>
+  <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#20232b"/><stop offset=".55" stop-color="#4d5157"/><stop offset="1" stop-color="#1e2126"/></linearGradient>
+  <linearGradient id="road" x2="0" y2="1"><stop stop-color="#5a574e"/><stop offset="1" stop-color="#292823"/></linearGradient>
+  <radialGradient id="light"><stop stop-color="#d0c08f" stop-opacity=".26"/><stop offset="1" stop-color="#d0c08f" stop-opacity="0"/></radialGradient>
+  <filter id="grain"><feTurbulence baseFrequency=".64" numOctaves="4" seed="33"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .12"/></feComponentTransfer></filter>
+</defs>
+<rect width="1280" height="720" fill="url(#sky)"/>
+<circle cx="807" cy="138" r="280" fill="url(#light)"/>
+<g opacity=".5" fill="#15171b"><path d="M0 330l128-101 111 42 108-127 112 94 89-113 125 99 98-113 124 100 111-82 174 101v205H0z"/></g>
+<g fill="#36383a" stroke="#77766f" stroke-width="5">
+  <path d="M738 86h249v371H738z"/>
+  <path d="M693 142h337v91H693z"/>
+  <path d="M793 42h138v72H793z"/>
+  <path d="M71 315h280v196H71zM1010 298h208v224h-208z"/>
+</g>
+<g fill="#141517">
+  <path d="M812 181h100v165H812z"/><path d="M829 184c0-54 22-84 33-84s33 30 33 84z"/>
+  <path d="M126 365h61v95h-61zM219 365h61v95h-61zM1057 351h50v116h-50zM1133 351h49v116h-49z"/>
+</g>
+<circle cx="862" cy="159" r="31" fill="#81785f" stroke="#171719" stroke-width="8"/>
+<path d="M862 159v36" stroke="#1c1b19" stroke-width="8"/>
+<g stroke="#6a5542" stroke-width="7">
+  <path d="M404 190v346M521 164v360M624 137v377"/>
+</g>
+<g fill="#7b3228" opacity=".78">
+  <path d="M408 205l79 25-79 83z"/><path d="M525 177l81 31-81 82z"/><path d="M628 151l74 24-74 78z"/>
+</g>
+<g stroke="#b6aaa0" stroke-opacity=".45" stroke-width="3"><path d="M398 186c105 28 205 19 313-8"/><path d="M405 290c93 24 187 22 281 0"/></g>
+<path d="M0 535c169-35 321-27 448-9 155 23 282 19 429-17 114-28 249-30 403-4v215H0z" fill="#202124"/>
+<path d="M397 720c28-133 82-229 161-292 78-62 170-83 281-79-83 43-143 91-184 144-42 54-69 126-80 227z" fill="url(#road)"/>
+<g fill="#777267" opacity=".55"><path d="M479 673l78-18 36 22-82 21zM536 584l71-15 32 19-72 18zM601 501l63-13 28 16-62 17z"/></g>
+<g fill="#49483f"><ellipse cx="242" cy="520" rx="172" ry="49"/><ellipse cx="1073" cy="518" rx="166" ry="44"/></g>
+<g opacity=".28" fill="#c5b99b"><ellipse cx="746" cy="409" rx="390" ry="54"/></g>
+<rect width="1280" height="720" filter="url(#grain)" opacity=".52"/>
+<rect x="18" y="18" width="1244" height="684" fill="none" stroke="#c2baa3" stroke-opacity=".12" stroke-width="3"/>
+</svg>

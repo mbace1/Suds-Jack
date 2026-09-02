@@ -6,6 +6,41 @@
      it reads each project's VERSIONS.md and nothing else. Keeping the log with
      the SOURCE is what stops the number and the build disagreeing. -->
 
+## v13 — 2026-09-02
+**The road finally has its own visual identity**
+- Drowned Courtyard, Bell Keep and Ashwood now use dedicated character-free environment plates instead of cropped shared art
+- the shell, Journey cards, combat panels and progression panels share one darker firelit presentation language
+- combat has stronger intent/counter emphasis, damage pop feedback, animated hit/victory states and a clearer latest-exchange readout
+- Journey choices now visibly alter the scene: investigate reveals a glint, rest warms the road, and shortcuts add motion streaks
+- companion animation now includes species-weighted movement plus hit and victory modes
+- Bond growth immediately announces a new stage and the Keep screen shows the exact next combat-stat gains
+
+## v12 — 2026-09-02
+**Journeys read cleaner and the whole care list counts**
+- Today now tracks every editable care task separately from the five-step Fire target, so the sixth task visibly counts and still rewards Flames/Bond
+- Birch Ruins uses a clean environment-only plate and the runtime companion walks there like every other region
+- temporary shared Journey art is cropped away from its baked character while dedicated region plates are rebuilt
+- Journey progress no longer jumps backward when a decision adds travel time
+- region investigation rewards are keyed by explicit find type instead of fragile array positions
+- combat buttons now visibly identify the counter to the enemy's current intent
+
+## v11 — 2026-09-01
+**Companions start becoming a real system**
+- mid-Journey choices now have region-specific time, reward and ambush consequences
+- companion Journey traits improve with Bond and life stage, with the current rank visible on Keep
+- companion combat growth now adds stage-based Vitality, pressure and live stat improvements
+- combat exposes enemy intent plus live Strike / Guard / Skill values during encounters
+- camp construction and companion traits now materially affect Journey outcomes
+- the spend-Fire prompt no longer blocks an available progressive-care action
+
+## v10 — 2026-08-30
+**The rest of the pack moves**
+- Mossling, Ashling and Moss Knight now share Ember's 8×2 runtime atlas:
+  idle on the first row, walk on the second, rest in the last two cells
+- camp, Journey (except Birch), Pack homecoming, Keep, and camp reaction
+  cues all use the live atlas instead of a still portrait
+- Ember's existing SVG atlas and sequences stay unchanged
+
 ## v9 — 2026-08-21
 **The hub build becomes a cabinet**
 - the HUB button: one import of the SITE's `hub/shell.js`, never a vendored
@@ -20,15 +55,3 @@
   for is a hydration mismatch that renders an EMPTY page.
 - `__grok/` (the add-to-homescreen onboarding) is left out of the hub build:
   `__root.tsx` already drops the links to it there, so it was 248 kB nothing
-  referenced — and the precache walk was faithfully caching all of it.
-
-## v8 — 2026-08-20
-**Ordered world progression** (PR #1, `agent/betterment-canonical`)
-- the Walk tab becomes a world: five regions, each opened by bringing
-  something home from the one before
-- combat staged inside the journey environment rather than its own screen
-- per-monster Bond XP instead of account age; breeding via a care-warmed
-  Ember Egg; lineage carried on the save
-- the spendable economy reads as Flames; a journey is 60 and 90 seconds of
-  real time, continuing while the app is closed
-- phone UX and Journey motion pass on top
