@@ -18,8 +18,8 @@
 import { Screen, W, H } from './screen.js?v=64';
 import { paletteAt, C } from './palette.js?v=52';
 import { Hero } from './hero.js?v=59';
-import { World, ROOMS, ROOM_H } from './level.js?v=63';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=63';
+import { World, ROOMS, ROOM_H } from './level.js?v=65';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=65';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
 import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=63';
@@ -123,6 +123,8 @@ class Stage {
     this.tracer = null;
     this.tapes = 0;
     this.parts = 0;
+    this.facilityPower = 0;
+    this.powerHint = 0;
     this.lootFlash = 0;
     this.lootTitle = '';
     this.impacts = [];
@@ -175,6 +177,9 @@ class Stage {
     this.bolts = [];
     this.unbuilt = w.spawns.filter(s => !['s', 'g'].includes(s.kind)).length;
     this.post = null;
+    if (this.facilityPower > 0) {
+      for (const p of w.pickups) if (p.kind === 'socket') p.taken = true;
+    }
     const h = this.hero;
     if (from === 'left') { h.x = 6; h.face = 1; }
     else if (from === 'right') { h.x = W - 6; h.face = -1; }
@@ -269,6 +274,7 @@ class Stage {
     h.update(this.world, inp, this);
     if (h.drinkQueued) { h.drinkQueued = false; this.collectUnder(h); }
     if (this.lootFlash > 0) this.lootFlash--;
+    if (this.powerHint > 0) this.powerHint--;
     for (const p of this.impacts) {
       p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.t--;
     }
@@ -277,7 +283,11 @@ class Stage {
     // A screen is a composition with a hard cut either side of it: walk off the
     // edge and the next one is simply THERE. No scrolling, no camera.
     if (h.x < 2 && this.world.index > 0) { this.enterRoom(this.world.index - 1, 'right'); return; }
-    if (h.x > W - 2 && this.world.index < ROOMS.length - 1) { this.enterRoom(this.world.index + 1, 'left'); return; }
+    if (h.x > W - 2 && this.world.index < ROOMS.length - 1) {
+      if (this.world.room.requiresPower && this.facilityPower <= 0) {
+        h.x = W - 5; h.vx = 0; h.go('bump'); this.powerHint = 150;
+      } else { this.enterRoom(this.world.index + 1, 'left'); return; }
+    }
     h.x = Math.max(2, Math.min(W - 2, h.x));
     if (h.y > ROOM_H + 10) this.kill();
 
@@ -375,7 +385,8 @@ class Stage {
   }
 
   floorPickupUnder(h) {
-    return this.world.pickups.find(p => !p.taken && ['cell', 'tape', 'loot'].includes(p.kind)
+    return this.world.pickups.find(p => !p.taken && ['cell', 'tape', 'loot', 'socket'].includes(p.kind)
+      && (p.kind !== 'socket' || this.parts > 0)
       && Math.abs(p.x - h.x) <= 9 && Math.abs(p.y - h.y) <= 20);
   }
 
@@ -390,8 +401,11 @@ class Stage {
     if (p.kind === 'cell') h.health = Math.min(3, h.health + 1);
     else if (p.kind === 'tape') {
       this.tapes++; this.lootTitle = this.world.room.tapeTitle ?? 'ARCHIVE TAPE'; this.lootFlash = 210;
-    } else {
+    } else if (p.kind === 'loot') {
       this.parts++; this.lootTitle = this.world.room.lootTitle ?? 'RETRO MACHINE PART'; this.lootFlash = 150;
+    } else {
+      this.parts--; this.facilityPower = 1; h.shield = 100;
+      this.lootTitle = 'TRANSIT HEART ONLINE'; this.lootFlash = 180; this.powerHint = 0;
     }
   }
 
@@ -649,6 +663,10 @@ class Stage {
       this.centre(scr, `${tag} · ${this.lootTitle}`, 14, C.LUX, 6);
     } else if (this.tapes > 0 || this.parts > 0) {
       scr.text(`VHS ${String(this.tapes).padStart(2, '0')}  PART ${String(this.parts).padStart(2, '0')}`, W - 96, 22, C.LUX, 6);
+    }
+    if (this.powerHint > 0) {
+      scr.rect(72, 48, 176, 16, C.DARK);
+      this.centre(scr, this.parts > 0 ? 'INSERT RELAY CORE' : 'RELAY CORE REQUIRED', 53, C.LUX, 6);
     }
   }
 

@@ -1,5 +1,15 @@
 # Flash Prince — versions
 
+## v65 — 2026-09-02
+
+**Machine loot now changes the route.** A recovered relay core can be inserted
+into the bio-facility's transit heart with the existing committed pickup
+animation. Powering it refills the shield, opens the route onward and wakes a
+real collision platform that carries the player across the cultivation shaft.
+The new chamber contains a peaceful hybrid garden subject, moving life-support
+lights and another archive tape. No character frame, palette, animation timing,
+movement value or locked run changed.
+
 ## v64 — 2026-09-01
 
 The v63 display option now starts safely in private and embedded browsers that

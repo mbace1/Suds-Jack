@@ -40,6 +40,7 @@ export function paintBack(scr, room, index) {
   if (room.scene === 'floodedHub') { paintFloodedHub(scr); return; }
   if (room.scene === 'facilityGate') { paintFacilityGate(scr); return; }
   if (room.scene === 'bioFacility') { paintBioFacility(scr); return; }
+  if (room.scene === 'bioTransit') { paintBioTransit(scr); return; }
   const t = room.t, w = weights(t), r = rand(index * 2654435 + 17);
 
   // Sky as flat bands with hard seams. A 2600 changed colour once a scanline
@@ -453,6 +454,36 @@ function paintBioFacility(scr) {
   for (let x = 5; x < W; x += 19) scr.rect(x, 141, 11, 2, C.DARK);
 }
 
+function paintBioTransit(scr) {
+  scr.rect(0, 0, W, H, C.VOID);
+  scr.rect(9, 8, W - 18, H - 8, C.FAR);
+  // The cultivation shaft drops behind the ferry route in three hard bands.
+  scr.poly([0, 45, W, 28, W, H, 0, H], C.MID);
+  scr.poly([0, 84, W, 67, W, H, 0, H], C.NEAR);
+  scr.poly([0, 124, W, 111, W, H, 0, H], C.DARK);
+  for (let x = 18; x < W; x += 46) {
+    scr.rect(x, 0, 5, 142, C.SOLID);
+    scr.rect(x + 1, 0, 1, 142, C.EDGE);
+    for (let y = 18; y < 136; y += 27) scr.rect(x - 4, y, 13, 4, C.NEAR);
+  }
+  // A peaceful hybrid waits in a nutrient globe: upright, finned and curious,
+  // never wounded or displayed as horror.
+  const cx = 160, cy = 72;
+  scr.disc(cx, cy, 42, C.SOLID);
+  scr.disc(cx, cy, 35, C.NEAR);
+  scr.disc(cx, cy - 13, 7, C.LUX);
+  scr.limb(cx, cy - 5, cx - 2, cy + 22, 6, 4, C.LUX);
+  scr.limb(cx - 1, cy + 3, cx - 19, cy + 12, 4, 1, C.EDGE);
+  scr.limb(cx + 1, cy + 3, cx + 20, cy + 8, 4, 1, C.EDGE);
+  scr.poly([cx - 3, cy + 14, cx - 17, cy + 28, cx - 3, cy + 23], C.LUX2);
+  scr.poly([cx + 3, cy + 14, cx + 18, cy + 27, cx + 3, cy + 23], C.LUX2);
+  scr.rect(cx - 2, cy - 14, 1, 1, C.VOID);
+  scr.rect(cx + 3, cy - 14, 1, 1, C.VOID);
+  // The ferry's rail remains visible across the empty shaft.
+  scr.rect(42, 166, 236, 2, C.SOLID);
+  for (let x = 44; x < 278; x += 16) scr.rect(x, 169, 8, 2, C.NEAR);
+}
+
 // Marks cut into the wall. Called by the tile painter rather than the backdrop
 // one, because the wall is painted after the backdrop and would bury them.
 //
@@ -618,6 +649,21 @@ export function drawAir(scr, room, clock) {
     scr.rect(cart - 4, 127, 8, 2, C.LUX);
     scr.rect(cart - 5, 134, 3, 2, C.SOLID);
     scr.rect(cart + 3, 134, 3, 2, C.SOLID);
+    return;
+  }
+  if (room.scene === 'bioTransit') {
+    // Slow bubbles establish the globe as life support; paired light pulses
+    // travel along the ferry rail once the transit heart is powered.
+    for (let i = 0; i < 9; i++) {
+      const x = 132 + (i * 17) % 57;
+      const y = 104 - ((clock * (0.05 + i * 0.008) + i * 13) % 66);
+      scr.rect(x, y, 1 + (i % 2), 1 + (i % 2), i % 3 ? C.LUX : C.LUX2);
+    }
+    const pulse = 42 + (clock * 0.5) % 236;
+    scr.rect(pulse, 165, 7, 1, C.LUX2);
+    scr.rect(278 - (pulse - 42), 171, 5, 1, C.LUX);
+    const wave = [0, 1, 2, 1][(clock >> 5) & 3];
+    scr.rect(157 - wave, 57, 2 + wave * 2, 1, C.LUX2);
     return;
   }
   if (room.scene === 'floodedHub') {
@@ -801,6 +847,13 @@ export function drawFore(scr, room, index) {
     scr.rect(W - 8, 0, 8, H, C.VOID);
     scr.poly([0, 0, 72, 0, 42, 12, 0, 17], C.VOID);
     scr.poly([W, 0, W - 72, 0, W - 42, 12, W, 17], C.VOID);
+    return;
+  }
+  if (room.scene === 'bioTransit') {
+    scr.rect(0, 0, 7, H, C.VOID);
+    scr.rect(W - 7, 0, 7, H, C.VOID);
+    scr.poly([0, 0, 62, 0, 33, 14, 0, 18], C.VOID);
+    scr.poly([W, 0, W - 62, 0, W - 33, 14, W, 18], C.VOID);
     return;
   }
   if (room.scene === 'floodedHub') {

@@ -8,9 +8,9 @@
 // the silhouette is not a ruler. Same shapes, biome by biome; only the sixteen
 // colours underneath them change.
 
-import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=63';
+import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=65';
 import { C } from './palette.js?v=52';
-import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=63';
+import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=65';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -36,6 +36,7 @@ export class World {
     this.spawn = null; this.door = null;
     this.pickups = []; this.spawns = [];
     this.spikes = []; this.chompers = []; this.loose = new Map();
+    this.platforms = (this.room.platforms ?? []).map(p => ({ ...p, x: p.from, px: p.from }));
     this.gates = []; this.plates = []; this.fields = []; this.lights = [];
     this.gateT = 0; this.clock = 0;
     this.entryFace = entryFace;
@@ -50,6 +51,7 @@ export class World {
         else if (ch === 'h') { this.pickups.push({ kind: 'cell', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'V') { this.pickups.push({ kind: 'tape', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'L') { this.pickups.push({ kind: 'loot', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'K') { this.pickups.push({ kind: 'socket', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'B') { this.pickups.push({ kind: 'sword', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if ('bgdsg'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
         else if (ch === 'T') { this.lights.push({ x, y: y + 8 }); this.grid[ty][tx] = '-'; }
@@ -89,6 +91,9 @@ export class World {
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) if (this.solidTile(tx, ty)) return true;
     }
+    for (const p of this.platforms) {
+      if (x < p.x + p.w && x + w > p.x && y < p.y + 4 && y + h > p.y) return true;
+    }
     return false;
   }
 
@@ -97,6 +102,9 @@ export class World {
   // the landing frame and the next low climb visibly twitch. Resolve the same
   // tiles the body touched back to their exact top edge.
   landingY(x, y, reach = TILE) {
+    for (const p of this.platforms) {
+      if (x + 3 >= p.x && x - 4 <= p.x + p.w && p.y >= y && p.y <= y + reach) return p.y;
+    }
     const left = Math.floor((x - 4) / TILE), right = Math.floor((x + 3) / TILE);
     const first = Math.floor(y / TILE), last = Math.floor((y + reach) / TILE);
     for (let ty = first; ty <= last; ty++) {
@@ -171,6 +179,15 @@ export class World {
   // ── traps ──────────────────────────────────────────────────────────
   update(hero) {
     this.clock++;
+    for (const p of this.platforms) {
+      p.px = p.x;
+      const phase = ((this.clock + (p.offset ?? 0)) % p.period) / p.period;
+      const travel = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+      const ease = travel * travel * (3 - 2 * travel);
+      p.x = p.from + (p.to - p.from) * ease;
+      if (hero && Math.abs(hero.y - p.y) < 1.5
+          && hero.x >= p.px - 5 && hero.x <= p.px + p.w + 5) hero.x += p.x - p.px;
+    }
     if (this.gateT > 0) this.gateT--;
 
     for (const p of this.plates) {
@@ -553,6 +570,14 @@ export class World {
       scr.rect(x + 1, y + 3, TILE - 2, 1, C.DARK);
     }
 
+    for (const p of this.platforms) {
+      scr.rect(p.x, p.y, p.w, 4, C.SOLID);
+      scr.rect(p.x, p.y, p.w, 1, C.LUX);
+      for (let x = p.x + 4; x < p.x + p.w - 3; x += 12) scr.rect(x, p.y + 4, 7, 2, C.DARK);
+      scr.rect(p.x + 3, p.y + 2, 3, 2, C.LUX2);
+      scr.rect(p.x + p.w - 6, p.y + 2, 3, 2, C.LUX2);
+    }
+
     for (const [, l] of this.loose) {
       if (l.t >= LOOSE_HOLD) continue;
       const x = l.tx * TILE, y = l.ty * TILE;
@@ -624,6 +649,11 @@ export class World {
         scr.disc(p.x, p.y + bob, 2, C.LUX2);
         scr.rect(p.x - 8, p.y + bob - 2, 2, 4, C.EDGE);
         scr.rect(p.x + 6, p.y + bob - 2, 2, 4, C.EDGE);
+      } else if (p.kind === 'socket') {
+        scr.rect(p.x - 8, p.y + bob - 4, 16, 9, C.DARK);
+        scr.rect(p.x - 5, p.y + bob - 2, 10, 5, C.SOLID);
+        scr.rect(p.x - 3, p.y + bob - 1, 6, 3, C.VOID);
+        scr.rect(p.x - 1, p.y + bob, 2, 1, C.LUX);
       } else {
         scr.rect(p.x - 4, p.y + bob - 5, 8, 11, C.EDGE);
         scr.rect(p.x - 3, p.y + bob - 4, 6, 9, C.ALERT);

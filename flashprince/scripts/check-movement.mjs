@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { Hero, HANG } from '../js/hero.js';
 import { World } from '../js/level.js';
+import { ROOMS } from '../js/rooms.js';
 
 const world = {
   boxSolid: () => false,
@@ -169,4 +170,19 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(hero.state, 'stand');
 }
 
-console.log('movement checks ok — exact landings, animated pickups, armed traversal, step, mantle, climb-down, jump, shield');
+// The powered facility ferry is real collision and carries a planted hero;
+// it is not only background animation.
+{
+  const transit = new World();
+  transit.load(ROOMS.length - 1);
+  assert.equal(transit.platforms.length, 1);
+  const rider = { x: 70, y: 160 };
+  const beforePlatform = transit.platforms[0].x;
+  const beforeRider = rider.x;
+  transit.update(rider);
+  assert.ok(transit.platforms[0].x > beforePlatform);
+  assert.equal(rider.x - beforeRider, transit.platforms[0].x - beforePlatform);
+  assert.equal(transit.boxSolid(transit.platforms[0].x + 2, 160, 4, 2), true);
+}
+
+console.log('movement checks ok — exact landings, animated pickups, armed traversal, step, mantle, climb-down, jump, shield, ferry');

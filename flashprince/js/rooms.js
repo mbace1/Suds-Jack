@@ -23,6 +23,7 @@
 //   D  the door out
 //   S  where he wakes up                  h  a flask (crouch over it)
 //   V  an archive tape (crouch over it)    L  retro machine loot
+//   K  a machine socket which accepts one piece of loot
 //   B  a blade                            G  the pistol
 //   b  something that lives here          g  a sentry with a rifle
 //   s  a swordsman                        d  a drone
@@ -315,8 +316,8 @@ export const ROOMS = [
       '####################',
     ],
   },
-  { // 16 — inside: beautiful machinery grown as much as it was assembled
-    t: 6.00, beat: 'bioFacility', scene: 'bioFacility',
+  { // 16 — inside: power the transit heart with one recovered machine core
+    t: 6.00, beat: 'bioFacility', scene: 'bioFacility', requiresPower: true,
     tapeTitle: 'GARDEN ENGINE / TEST 03',
     lootTitle: 'LIVING BUS COUPLER',
     map: [
@@ -330,8 +331,27 @@ export const ROOMS = [
       '       ####         ',
       '   ### ####   ####  ',
       '   ###        ####  ',
-      '      L   V      g  ',
+      '      L   V   K  g  ',
       '####################',
+    ],
+  },
+  { // 17 — the powered service ferry carries him across the cultivation shaft
+    t: 6.00, beat: 'bioTransit', scene: 'bioTransit',
+    tapeTitle: 'HYBRID GARDEN / ARRIVAL',
+    platforms: [{ from: 58, to: 214, y: 160, w: 48, period: 420, offset: 0 }],
+    map: [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                V   ',
+      '####            ####',
+      '####            ####',
     ],
   },
 ];
@@ -349,4 +369,5 @@ export const BEATS = {
   floodedHub: 'THE LAST TRAINS LEFT UNDERWATER',
   facilityGate: 'THE STATION HAD GROWN A SECOND HEART',
   bioFacility: 'THE MACHINES WERE LEARNING TO BLOOM',
+  bioTransit: 'SOMETHING BEAUTIFUL WAS WAITING BELOW',
 };

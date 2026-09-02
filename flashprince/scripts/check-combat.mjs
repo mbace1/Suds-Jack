@@ -10,10 +10,13 @@ const hero = {
 // The flooded-hub map marker must survive room parsing and become a sentry.
 {
   const world = new World();
-  world.load(ROOMS.length - 1);
+  const facility = ROOMS.findIndex(room => room.scene === 'bioFacility');
+  world.load(facility);
+  assert.equal(world.room.requiresPower, true);
   assert.equal(world.spawns.filter(spawn => spawn.kind === 'g').length, 1);
   assert.equal(world.pickups.filter(pickup => pickup.kind === 'loot').length, 1);
   assert.equal(world.pickups.filter(pickup => pickup.kind === 'tape').length, 1);
+  assert.equal(world.pickups.filter(pickup => pickup.kind === 'socket').length, 1);
 }
 
 // The machine has a readable track → warning → fire sequence and emits one
