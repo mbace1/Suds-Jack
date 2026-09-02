@@ -1,5 +1,17 @@
 # Toko Move — versions
 
+## v2.21 — 2026-09-02
+
+**Landmarks, folded.** Owner's direction: "bigger spots like the white church can look a bit like a low poly origami, mostly grey night version map colors though." Six of them — Tuomiokirkko, Uspenski, Kallion kirkko, Päärautatieasema, Ooppera, Länsiterminaali — drawn in `js/landmarks.js` as flat polygons in three greys with one light direction shared by all six. Origami taken as a technical instruction rather than a mood: a folded model has flat faces and hard creases and is read entirely by which face catches the light, so there is no gradient, no outline, and nothing shaded inside a face. **The crease IS the value change** — the first cut kept the three greys within a step of each other and every building came out a grey blob with a tower on it.
+
+**The dome was a cone.** Two long facets meeting at a point is what you get if you draw a dome as a triangle, and the cathedral read as a spike with two tent pegs beside it. A dome's whole character is the shoulder: it leaves the drum almost vertically, turns hard and arrives flat. Four folds a side, apex at r×1.3, and the lantern is a separate little drum standing on top rather than the tip of the cone.
+
+**Where they are, stated exactly.** `cities/ground/helsinki-landmarks.json` places each one as an **offset in metres from a real HSL stop** — the stop coordinate is source data, the offset is the only invented number in the file, and the pack says so at length: not footprints, not traced, not fetched, accurate to about a block, and **not to be credited to OpenStreetMap**. The on-screen credit line says `landmarks: map symbols, placed by hand` in its own clause for exactly that reason. If a networked run ever fetches the OSM building ways, an `at` pair replaces `anchor`+`offset` and nothing else changes.
+
+They are sized in metres and **clamped in pixels** (15–96): true scale alone makes a cathedral eight pixels wide at route scale, and a fixed pixel size makes it an icon that never becomes a building. Clamped, it is a symbol far out and a shape up close. Hidden entirely at CITY scale, where a 15px building among the whole of Helsinki is a speck arguing with a stop dot. They live inside the cached ground layer, above the streets and under the network — a tram passes in front of the cathedral, and the cathedral stands on the street.
+
+The ground gate is 224 checks now, and the five new landmark assertions were mutation-tested: an offset wandering past 400 m, an unknown form, an unknown anchor, a second pale church, and the pack crediting OpenStreetMap for an authored position are each caught.
+
 ## v2.20 — 2026-09-02
 
 **The night map, and real ground under it.** Owner's direction: "a more readable map with streets and water that is based in a gray scale with some contrast colors like dark blue for water... mostly grey night version map colors though." Recorded in `board.js` as an override, because it replaces the warm paper board that file was written for.
