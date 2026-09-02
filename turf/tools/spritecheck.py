@@ -41,16 +41,41 @@ from PIL import Image
 # the whole point of a key colour is that it is separable by equality.
 MAGENTA = (255, 0, 255)
 
-# A frame pair whose silhouettes overlap more than this is very likely the
-# duplicate-half-cycle failure. Deliberately NOT a pass/fail gate on its own —
-# it flags for human review, because a legitimately similar pose exists (a
-# near-symmetric idle) and auto-rejecting it would be the automated-similarity
-# overreach the handover warns against.
-DUP_IOU = 0.93
-# Adjacent frames SHOULD be similar — they are 1/12th of a cycle apart. This
-# catches the opposite failure: a frame that shares almost nothing with its
-# neighbour, i.e. the cycle does not connect (failure code M1).
-ADJACENT_MIN_IOU = 0.45
+# ── Thresholds, CALIBRATED against the 28 shipped cast frames ────────────
+# These were guesses on the first cut. Measured across every pair in
+# turf/art-src/sprites/cast (gunner + leopard, 7 poses x 2 facings), the real
+# distributions are:
+#
+#   same character, DIFFERENT pose, same facing (n=84)
+#       full  min 0.288  median 0.507  max 0.758
+#       legs  min 0.144  median 0.484  p90 0.659  max 0.801
+#   same character+pose, front vs back (n=14)
+#       full  min 0.388  median 0.607  max 0.841
+#   different characters, same pose+facing (n=14)
+#       full  min 0.287  median 0.550  max 0.787
+#
+# The highest overlap anything LEGITIMATELY different reaches is 0.841 —
+# gunner's death-down front vs back, which is fair enough: a body lying flat
+# looks much the same from either side. Distinct poses of one character top
+# out at 0.758.
+#
+# So the original 0.93 was far too lenient: it caught only the near-exact
+# copies the handover happened to report, and a subtler duplicate at 0.88
+# would have sailed through as "ok". 0.86 sits just above the observed
+# legitimate maximum with a little headroom.
+DUP_IOU = 0.86
+# Legs weighted separately because in a bad half-cycle the torso and head
+# genuinely ARE near-identical (they should be) and averaging them in dilutes
+# the leg-ownership swap that is the actual thing being tested. p90 of
+# legitimately-different poses is 0.659, max 0.801 — so 0.80 flags, and the
+# softer 0.70 band below it is worth a human look rather than a verdict.
+DUP_LEG_IOU = 0.80
+SUSPECT_LEG_IOU = 0.70
+# The opposite failure: a frame sharing almost nothing with its neighbour, so
+# the cycle does not connect (M1). The original 0.45 was ABOVE the 25th
+# percentile (0.441) of merely-different poses, so it would have flagged
+# legitimate large-motion transitions as broken. Observed floor is 0.288.
+ADJACENT_MIN_IOU = 0.25
 
 
 def count_enclosed_bg(char):
@@ -264,9 +289,9 @@ def cmd_pairs(args):
         o, l = iou(sil[i], sil[j]), leg_iou(sil[i], sil[j])
         # Legs are weighted: identical legs across a phase pair is the
         # failure, even if the arms happen to differ.
-        if l > DUP_IOU or o > DUP_IOU:
+        if o > DUP_IOU or l > DUP_LEG_IOU:
             verdict, flagged = 'DUPLICATE — rebuild', flagged + 1
-        elif l > 0.85:
+        elif l > SUSPECT_LEG_IOU:
             verdict, flagged = 'suspicious legs', flagged + 1
         else:
             verdict = 'ok'
@@ -274,6 +299,220 @@ def cmd_pairs(args):
         print(f'{label:<40}{o:>7.3f}{l:>8.3f}   {verdict}')
     print(f'\n{flagged} pair(s) flagged for review')
     print('Geometry only — a passing pair still needs mechanical review.')
+    return 1 if flagged else 0
+
+
+# The height the board actually draws a unit at (render.js's SPRITE_H). Every
+# readability question is asked at THIS size, not at the 288px the plate is
+# authored at — Bible §2 asks for "animation that reads instantly at tactical
+# zoom", and that is the only scale where the answer counts.
+GAME_H = 46
+
+
+def game_scale(frame):
+    """The frame's silhouette as the board would actually show it: shrunk to
+    GAME_H, then blown back up so it can be compared with a full-res one."""
+    m = frame.mask()
+    bb = frame.bbox()
+    if bb is None:
+        return np.zeros((128, 96), dtype=bool)
+    x0, y0, x1, y1 = bb
+    crop = m[y0:y1 + 1, x0:x1 + 1]
+    img = Image.fromarray((crop * 255).astype(np.uint8))
+    small = img.resize((max(1, int(GAME_H * crop.shape[1] / crop.shape[0])), GAME_H), Image.BILINEAR)
+    return np.array(small.resize((96, 128), Image.NEAREST)) > 127
+
+
+def separation(frame):
+    """Mean number of disjoint ink runs per row — how much of the pose reads as
+    limbs rather than as one mass. A blob scores 1.0; a figure with an arm
+    clear of the torso scores above it. Cheap stand-in for the convex-hull
+    solidity measure, with no extra dependency, and it answers the question
+    that actually matters for a silhouette: is anything separated from
+    anything else."""
+    m = frame.mask()
+    rows, total = 0, 0
+    for y in range(m.shape[0]):
+        row = m[y]
+        if not row.any():
+            continue
+        runs = np.diff(np.concatenate(([0], row.view(np.int8), [0])))
+        total += int((runs == 1).sum())
+        rows += 1
+    return total / rows if rows else 0.0
+
+
+def cmd_zoom(args):
+    """Does this set still read as distinct poses at the size the board draws?
+
+    Bible §2 asks for animation that "reads instantly at tactical zoom". A
+    pair can be a genuine two-beat at 192x288 and collapse into the same
+    shape at 46px, and 46px is the only size a player ever sees. This
+    compares every pair's silhouette IoU at full resolution against the same
+    pair at game scale, and reports the ones that converge."""
+    frames = load_frames(args.paths)
+    if len(frames) < 2:
+        print('need at least two frames')
+        return 1
+    full = [norm_silhouette(f) for f in frames]
+    small = [game_scale(f) for f in frames]
+    print(f'readability at game scale ({GAME_H}px, render.js SPRITE_H)\n')
+    print(f'{"pair":<46}{"full":>7}{"@game":>7}   verdict')
+    flagged = 0
+    for i in range(len(frames)):
+        for j in range(i + 1, len(frames)):
+            a, b = iou(full[i], full[j]), iou(small[i], small[j])
+            notes = ''
+            # Distinct when authored, the same thing once shrunk.
+            if b > DUP_IOU and a <= DUP_IOU:
+                notes, flagged = 'COLLAPSES at game scale', flagged + 1
+            elif b - a > 0.15:
+                notes, flagged = 'converges when shrunk', flagged + 1
+            if notes:
+                label = f'{frames[i].name[:20]} <-> {frames[j].name[:20]}'
+                print(f'{label:<46}{a:>7.3f}{b:>7.3f}   {notes}')
+    print(f'\n{flagged} pair(s) lose their distinction at the size the board draws.')
+    print('Pairs that stayed distinct are not listed.')
+    return 1 if flagged else 0
+
+
+def cmd_silhouette(args):
+    """Awkward-silhouette check: how much of each pose reads as limbs rather
+    than one mass, at game scale. Reports the measure per frame and names the
+    outliers relative to the set's own median — an absolute threshold would
+    mean nothing across characters with different builds and costumes."""
+    frames = load_frames(args.paths)
+    if not frames:
+        print('no frames')
+        return 1
+    vals = [(separation(f), f) for f in frames]
+    nums = sorted(v for v, _ in vals)
+    med = nums[len(nums) // 2]
+    print(f'silhouette separation (runs per ink row) — set median {med:.2f}\n')
+    print(f'{"frame":<44}{"sep":>6}   note')
+    flagged = 0
+    for v, f in vals:
+        note = ''
+        if v < med * 0.75:
+            note, flagged = 'READS AS ONE MASS vs the rest of this set', flagged + 1
+        print(f'{f.name:<44}{v:>6.2f}   {note}')
+    print(f'\n{flagged} frame(s) noticeably blobbier than the set.')
+    print('Relative, not absolute — a low score is a prompt to look, not a verdict.')
+    return 1 if flagged else 0
+
+
+def cmd_facing(args):
+    """Direction drift (D1/D2) against a reference frame — by default the
+    first file given, which should be the character's approved idle.
+
+    WHY THIS EXISTS: a regenerated attack pair passed every similarity check
+    in this file and was still wrong, because both frames had rotated to a
+    near-PROFILE view that Bible §5 forbids outright ("No profile
+    side-scroller pose"). Worse, the rotation IMPROVED the pair's IoU score,
+    so the geometry checks read a camera change as a successful pose change.
+
+    This is a PROXY and says so: a profile figure is wider relative to its
+    height and carries its mass differently across the vertical axis than a
+    three-quarter one. It cannot name the true camera angle. It answers only
+    "does this frame carry its mass like the reference does", which is enough
+    to catch a set drifting away from its own idle."""
+    frames = load_frames(args.paths)
+    if len(frames) < 2:
+        print('need a reference frame plus at least one to check')
+        return 1
+
+    def shape(f):
+        m = f.mask()
+        bb = f.bbox()
+        x0, y0, x1, y1 = bb
+        w, h = x1 - x0 + 1, y1 - y0 + 1
+        crop = m[y0:y1 + 1, x0:x1 + 1]
+        # Mass either side of the ink's own centre of gravity: a profile pose
+        # aiming across frame is lopsided, a squarer stance is balanced.
+        cols = crop.sum(axis=0)
+        cx = (np.arange(len(cols)) * cols).sum() / max(1, cols.sum())
+        left = cols[:int(cx)].sum(); right = cols[int(cx):].sum()
+        return w / h, abs(left - right) / max(1, cols.sum())
+
+    ref = frames[0]
+    ra, rb = shape(ref)
+    print(f'facing drift vs reference: {ref.name}')
+    print(f'  reference  aspect {ra:.2f}  lopsided {rb:.2f}\n')
+    print(f'{"frame":<44}{"aspect":>7}{"lopsided":>10}   note')
+    flagged = 0
+    for f in frames[1:]:
+        a, b = shape(f)
+        note = ''
+        if a > ra * 1.35:
+            note, flagged = 'much WIDER than the reference — check for profile (D1)', flagged + 1
+        elif abs(b - rb) > 0.25:
+            note, flagged = 'mass sits very differently — check facing (D2)', flagged + 1
+        print(f'{f.name:<44}{a:>7.2f}{b:>10.2f}   {note}')
+    print(f'\n{flagged} frame(s) worth eyeballing against Bible §5.')
+    print('A PROXY for direction, never a reading of it — the eye decides.')
+    return 1 if flagged else 0
+
+
+# Bible §11-§14 give each attack/hit/KO animation a named frame vocabulary and
+# state, in prose, what must differ from what. Those statements are mostly
+# checkable; these encode them so the claims stop being taken on trust.
+VOCAB = {
+    'melee': (5, ['READY', 'LOAD', 'STRIKE', 'OVERSHOOT', 'RECOVER']),
+    'ranged': (5, ['LOW READY', 'AIM', 'FIRE', 'RECOIL', 'SETTLE']),
+    'hit': (3, ['CONTACT', 'MAX RECOIL', 'CATCH']),
+    'ko': (5, ['STAGGER', 'BUCKLE', 'FALL', 'IMPACT', 'DEAD']),
+}
+
+
+def cmd_vocab(args):
+    kind = args.kind
+    want, names = VOCAB[kind]
+    frames = load_frames(args.paths)
+    if len(frames) != want:
+        print(f'  ! Bible sets {kind} at {want} frames; found {len(frames)}')
+        if len(frames) < want:
+            return 1
+    sil = [norm_silhouette(f) for f in frames]
+    hts = [(f.bbox()[3] - f.bbox()[1] + 1) if f.bbox() else 0 for f in frames]
+    print(f'{kind} vocabulary (Bible: {" -> ".join(names)})\n')
+    for i, f in enumerate(frames[:want]):
+        print(f'  {i+1}. {names[i]:<12} {f.name}')
+    print()
+    flagged = 0
+
+    def note(ok, msg):
+        nonlocal flagged
+        print(f'  {"ok " if ok else "!! "}{msg}')
+        if not ok:
+            flagged += 1
+
+    if kind == 'melee':
+        # §11: "The biggest silhouette contrast should usually be between
+        # Frames 2 and 3" — load coiled, strike extended.
+        adj = [iou(sil[i], sil[i + 1]) for i in range(len(sil) - 1)]
+        note(adj.index(min(adj)) == 1,
+             f'the biggest contrast is between LOAD and STRIKE (adjacent IoUs {[round(x,3) for x in adj]})')
+        note(iou(sil[0], sil[4]) < DUP_IOU, 'RECOVER is not simply a duplicate of READY (§11.1 frame 5)')
+    elif kind == 'ranged':
+        # §12: "FIRE and RECOIL must not be the same pose."
+        note(iou(sil[2], sil[3]) < DUP_IOU,
+             f'FIRE and RECOIL are different poses (IoU {iou(sil[2], sil[3]):.3f})')
+        note(iou(sil[1], sil[2]) < DUP_IOU, 'AIM and FIRE are distinguishable')
+    elif kind == 'hit':
+        # §13: frame 2 carries the strongest reaction, and 3 does not simply
+        # return to 1.
+        d2, d3 = 1 - iou(sil[0], sil[1]), 1 - iou(sil[0], sil[2])
+        note(d2 >= d3, f'MAX RECOIL is the strongest reaction (deviation {d2:.3f} vs CATCH {d3:.3f})')
+        note(iou(sil[0], sil[2]) < DUP_IOU, 'CATCH does not snap straight back to CONTACT')
+    elif kind == 'ko':
+        # §14: the body must actually go down, and the corpse must not be
+        # spread over several near-identical frames.
+        note(hts[4] < hts[0] * 0.75,
+             f'DEAD is well below STAGGER ({hts[4]}px vs {hts[0]}px) — the body actually goes down')
+        note(iou(sil[3], sil[4]) < DUP_IOU,
+             f'IMPACT and DEAD are not near-identical corpse frames (IoU {iou(sil[3], sil[4]):.3f}, §14)')
+    print(f'\n{flagged} issue(s). Vocabulary and geometry only — whether the pose is'
+          '\nthe RIGHT pose, and whether it faces the right way, still needs the eye.')
     return 1 if flagged else 0
 
 
@@ -391,11 +630,17 @@ def main():
         ('pairs', cmd_pairs, 'phase opposition (F1<->F7 ...) — the duplicate-half-cycle check'),
         ('cycle', cmd_cycle, 'adjacent continuity, loop closure, origin drift'),
         ('move', cmd_move, 'Bible 9.3 six-frame body-height waveform (LOW LOW HIGH ...)'),
+        ('zoom', cmd_zoom, 'do poses stay distinct at the 46px the board actually draws?'),
+        ('silhouette', cmd_silhouette, 'awkward-silhouette check: which frames read as one mass'),
+        ('facing', cmd_facing, 'direction drift (D1/D2) vs a reference frame — first path is the reference'),
+        ('vocab', cmd_vocab, 'Bible 11-14 frame vocabularies for melee/ranged/hit/ko'),
     ]:
         p = sub.add_parser(name, help=helptext)
         p.add_argument('paths', nargs='+')
         if name == 'pairs':
             p.add_argument('--half', type=int, default=None)
+        if name == 'vocab':
+            p.add_argument('--kind', required=True, choices=sorted(VOCAB))
         p.set_defaults(fn=fn)
     args = ap.parse_args()
     sys.exit(args.fn(args))
