@@ -148,6 +148,22 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
         schedule(u, 'move', facing);
         if (from) glideFrom(e.uid, from.x - e.x, from.y - e.y,
           Math.max(MOVE_MS_MIN, (Math.abs(from.x - e.x) + Math.abs(from.y - e.y)) * MOVE_MS_PER_TILE));
+      } else if (e.type === 'hazard') {
+        // Hazard damage needs its own number or a unit quietly loses health
+        // with nothing on screen accounting for it. The event carries the
+        // tile, so this works for a burn the unit is standing in as well as
+        // for a body that was shoved somewhere fatal.
+        const u = state.units.find(x => x.uid === e.uid);
+        if (u) {
+          flashes.set(u.uid, { startedAt: now(), dur: FLASH_MS });
+          if (e.killed) schedule(u, 'death', null);
+        }
+        floats.push({
+          gx: e.x, gy: e.y,
+          text: e.lethal ? e.name.toUpperCase() : String(e.damage),
+          kind: e.killed ? 'kill' : 'dmg', startedAt: now(), dur: FLOAT_MS,
+        });
+        start();
       } else if (e.type === 'attack') {
         const a = state.units.find(x => x.uid === e.attackerUid);
         const t = state.units.find(x => x.uid === e.targetUid);

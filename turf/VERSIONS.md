@@ -8,6 +8,68 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v18 — 2026-09-02
+**Hazards — GDD §10's open question ("obstacles, cover, elevation, hazards
+... Nordic-specific set dressing with mechanical teeth") answered, and with
+it the thing that finally makes knockback a weapon.** The pipe has shipped
+since v1 pushing bodies two tiles for no particular reason; there was
+nothing on the board to push them INTO. Into the Breach — this game's
+stated telegraphing north star — is built almost entirely on that verb.
+
+- **Three kinds, in `data/hazards.json`** (data-driven per GDD §3; the
+  engine reads ids and knows nothing about fire as a concept). Den fire:
+  2 on entry AND 2 again at the end of the round if you are still standing
+  in it, so crossing is a toll and stopping is a mistake — the only hazard
+  that pushes units around the board rather than around one tile. Broken
+  glass: 1 on entry, no linger, a cheap price on a shortcut. Open
+  stairwell: lethal, ignores HP entirely.
+- **A hazard never blocks movement.** That is what cover is for. A hazard
+  makes a tile cost something, so the board asks a question instead of
+  drawing a wall — and every one applies to BOTH factions, because an
+  asymmetric hazard is a trap the player learns to ignore, and the symmetry
+  is what lets a player set one up on purpose.
+- **One entry point, not three.** A player move, a knockback and an enemy's
+  own step all route through `enterHazard`, because the third copy is
+  always the one that forgets to check. It runs `checkWinLoss` itself: a
+  fire killing the last operator has to end the encounter exactly like a
+  killing blow.
+- **A lethal hazard CATCHES what is shoved across it** — found by the new
+  test, and a real bug rather than a test artifact. The pipe's knockback is
+  2, so a body shoved at a stairwell sailed clean over it and landed on the
+  far side; worse, it made the HEAVIEST knockback weapons the worst at
+  using a pit, the exact opposite of the intent. `applyKnockback` now stops
+  on a lethal tile. Non-lethal hazards do not stop momentum — you only pay
+  for the tile you come to rest on. A shove-kill credits the shover.
+- **The AI understands them, or the telegraph lies.** `ai.js` scores a
+  candidate tile's hazard cost in HP (a lethal tile costs the enemy's whole
+  bar, so it is never chosen but the comparison stays arithmetic), takes a
+  firing position unless standing there would kill it outright, and
+  otherwise trades 1 HP against 1.5 tiles of approach — enough to route a
+  healthy enemy around a fire, not enough to refuse a scratch for a
+  shortcut. A full-information game cannot show a plan its own actor would
+  regret; a test asserts no telegraphed move steps into a lethal tile.
+- **Read by shape, not just colour.** Fire fills the tile and flickers
+  upward, glass is a scatter of hard shards, the stairwell is a hole — the
+  only one that reads as an absence, because it is the only one that is not
+  survivable. Fire is deliberately RED-orange: `PAL.TELEGRAPH` is amber, and
+  "this tile burns" must never sit in the same colour band as "an enemy will
+  hit this tile" — one is a standing property of the board, the other a
+  promise about next turn. Drawn into the floor, under the move/attack
+  highlights, since "can I reach it" and "what does it cost" are asked in
+  that order.
+- Placement escalates across the sequence: backlot teaches with glass alone
+  (nothing lethal in the tutorial fight), fire arrives at loading-dock, the
+  first stairwell at warehouse once the player has met both. A test asserts
+  no hazard overlaps cover or a spawn.
+- Hazard damage gets its own floating number and flash, or a unit loses
+  health with nothing on screen accounting for it; a lethal tile floats its
+  name instead of a number. The attack toast names the hazard when a shove
+  ends in one, since a shove-kill otherwise reads as a kill with no damage
+  behind it.
+- Gate: 41 -> **50 checks**.
+- Tokens: `combat.js` v5->v6, `ai.js` v2->v3, `render.js` v8->v9,
+  `anim.js` v2->v3, `main.js` v9->v10 in `index.html`.
+
 ## v17 — 2026-09-02
 **The feel layer: units walk instead of teleporting, hits are visible and
 audible, and TURF gets sound at all.** No new art — every one of these

@@ -1,125 +1,697 @@
 {
-  "_comment": "Phase 1: a single fixed encounter, but still data (pipeline §3) so Phase 2's 3-5 fights is an add, not a rebuild. Grid is x:0..cols-1, y:0..rows-1; y0 is the enemies' near edge, the last row is the squad's. Two cover kinds per the pipeline's resolved assumptions: full blocks movement+LOS, partial only softens a ranged hit.",
+  "_comment": "Phase 1: a single fixed encounter, but still data (pipeline \u00a73) so Phase 2's 3-5 fights is an add, not a rebuild. Grid is x:0..cols-1, y:0..rows-1; y0 is the enemies' near edge, the last row is the squad's. Two cover kinds per the pipeline's resolved assumptions: full blocks movement+LOS, partial only softens a ranged hit.",
   "encounters": [
     {
       "id": "backlot",
       "name": "The Backlot",
       "background": "art-src/backgrounds/courtyard.jpg",
-      "grid": { "cols": 11, "rows": 9 },
+      "grid": {
+        "cols": 11,
+        "rows": 9
+      },
       "playerSpawns": [
-        { "unit": "blade",  "x": 2, "y": 8 },
-        { "unit": "niner",  "x": 5, "y": 8 },
-        { "unit": "wrench", "x": 8, "y": 8 }
+        {
+          "unit": "blade",
+          "x": 2,
+          "y": 8
+        },
+        {
+          "unit": "niner",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "unit": "wrench",
+          "x": 8,
+          "y": 8
+        }
       ],
       "enemySpawns": [
-        { "enemy": "grunt_blunt",   "x": 1, "y": 1 },
-        { "enemy": "grunt_blunt",   "x": 9, "y": 1 },
-        { "enemy": "grunt_handgun", "x": 3, "y": 0 },
-        { "enemy": "grunt_handgun", "x": 7, "y": 0 },
-        { "enemy": "grunt_shotgun", "x": 5, "y": 0 },
-        { "enemy": "grunt_shotgun", "x": 5, "y": 1 }
+        {
+          "enemy": "grunt_blunt",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_blunt",
+          "x": 9,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 3,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 7,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_shotgun",
+          "x": 5,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_shotgun",
+          "x": 5,
+          "y": 1
+        }
       ],
       "cover": {
-        "full":    [[2,4],[4,3],[6,5],[8,3],[3,6],[7,6]],
-        "partial": [[1,5],[5,4],[9,5],[3,4],[7,4],[0,6],[10,3]]
-      }
+        "full": [
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            3
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            8,
+            3
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            7,
+            6
+          ]
+        ],
+        "partial": [
+          [
+            1,
+            5
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            9,
+            5
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            0,
+            6
+          ],
+          [
+            10,
+            3
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          5,
+          2,
+          "glass"
+        ],
+        [
+          4,
+          5,
+          "glass"
+        ],
+        [
+          8,
+          5,
+          "glass"
+        ]
+      ]
     },
     {
       "id": "loading-dock",
       "name": "The Loading Dock",
       "background": "art-src/backgrounds/dockyard.jpg",
-      "grid": { "cols": 9, "rows": 10 },
+      "grid": {
+        "cols": 9,
+        "rows": 10
+      },
       "playerSpawns": [
-        { "unit": "blade",  "x": 2, "y": 9 },
-        { "unit": "niner",  "x": 4, "y": 9 },
-        { "unit": "wrench", "x": 6, "y": 9 }
+        {
+          "unit": "blade",
+          "x": 2,
+          "y": 9
+        },
+        {
+          "unit": "niner",
+          "x": 4,
+          "y": 9
+        },
+        {
+          "unit": "wrench",
+          "x": 6,
+          "y": 9
+        }
       ],
       "enemySpawns": [
-        { "enemy": "grunt_shotgun", "x": 1, "y": 1 },
-        { "enemy": "grunt_shotgun", "x": 7, "y": 1 },
-        { "enemy": "grunt_shotgun", "x": 4, "y": 0 },
-        { "enemy": "grunt_handgun", "x": 2, "y": 0 },
-        { "enemy": "grunt_handgun", "x": 6, "y": 0 },
-        { "enemy": "grunt_blunt",   "x": 1, "y": 2 },
-        { "enemy": "grunt_blunt",   "x": 7, "y": 2 }
+        {
+          "enemy": "grunt_shotgun",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_shotgun",
+          "x": 7,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_shotgun",
+          "x": 4,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 2,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 6,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_blunt",
+          "x": 1,
+          "y": 2
+        },
+        {
+          "enemy": "grunt_blunt",
+          "x": 7,
+          "y": 2
+        }
       ],
       "cover": {
-        "full":    [[3,2],[5,3],[1,5],[7,4],[4,6]],
-        "partial": [[2,3],[6,2],[0,4],[8,3],[3,7],[6,6]]
-      }
+        "full": [
+          [
+            3,
+            2
+          ],
+          [
+            5,
+            3
+          ],
+          [
+            1,
+            5
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            4,
+            6
+          ]
+        ],
+        "partial": [
+          [
+            2,
+            3
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            0,
+            4
+          ],
+          [
+            8,
+            3
+          ],
+          [
+            3,
+            7
+          ],
+          [
+            6,
+            6
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          4,
+          4,
+          "fire"
+        ],
+        [
+          2,
+          5,
+          "glass"
+        ],
+        [
+          6,
+          4,
+          "glass"
+        ]
+      ]
     },
     {
       "id": "warehouse",
       "name": "The Warehouse",
       "_comment": "2026-08-31 roster expansion: same proven grid+cover as backlot, new squad/crew to actually exercise the wider roster in a real playable fight.",
       "background": "art-src/backgrounds/courtyard.jpg",
-      "grid": { "cols": 11, "rows": 9 },
+      "grid": {
+        "cols": 11,
+        "rows": 9
+      },
       "playerSpawns": [
-        { "unit": "sledge",  "x": 2, "y": 8 },
-        { "unit": "cleaver", "x": 5, "y": 8 },
-        { "unit": "rook",    "x": 8, "y": 8 }
+        {
+          "unit": "sledge",
+          "x": 2,
+          "y": 8
+        },
+        {
+          "unit": "cleaver",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "unit": "rook",
+          "x": 8,
+          "y": 8
+        }
       ],
       "enemySpawns": [
-        { "enemy": "grunt_curt",   "x": 1, "y": 1 },
-        { "enemy": "grunt_spike",  "x": 9, "y": 1 },
-        { "enemy": "grunt_alfie",  "x": 3, "y": 0 },
-        { "enemy": "grunt_chain",  "x": 7, "y": 0 },
-        { "enemy": "grunt_sable",  "x": 5, "y": 0 },
-        { "enemy": "grunt_tanner", "x": 5, "y": 1 }
+        {
+          "enemy": "grunt_curt",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_spike",
+          "x": 9,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_alfie",
+          "x": 3,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_chain",
+          "x": 7,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_sable",
+          "x": 5,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_tanner",
+          "x": 5,
+          "y": 1
+        }
       ],
       "cover": {
-        "full":    [[2,4],[4,3],[6,5],[8,3],[3,6],[7,6]],
-        "partial": [[1,5],[5,4],[9,5],[3,4],[7,4],[0,6],[10,3]]
-      }
+        "full": [
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            3
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            8,
+            3
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            7,
+            6
+          ]
+        ],
+        "partial": [
+          [
+            1,
+            5
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            9,
+            5
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            0,
+            6
+          ],
+          [
+            10,
+            3
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          5,
+          2,
+          "fire"
+        ],
+        [
+          4,
+          5,
+          "fire"
+        ],
+        [
+          9,
+          3,
+          "stairwell"
+        ],
+        [
+          2,
+          3,
+          "glass"
+        ]
+      ]
     },
     {
       "id": "underpass",
       "name": "The Underpass",
       "_comment": "2026-08-31 roster expansion: same proven grid+cover as loading-dock, gunner+leopard's first real encounter.",
       "background": "art-src/backgrounds/dockyard.jpg",
-      "grid": { "cols": 9, "rows": 10 },
+      "grid": {
+        "cols": 9,
+        "rows": 10
+      },
       "playerSpawns": [
-        { "unit": "gunner",  "x": 2, "y": 9 },
-        { "unit": "leopard", "x": 4, "y": 9 },
-        { "unit": "denny",   "x": 6, "y": 9 }
+        {
+          "unit": "gunner",
+          "x": 2,
+          "y": 9
+        },
+        {
+          "unit": "leopard",
+          "x": 4,
+          "y": 9
+        },
+        {
+          "unit": "denny",
+          "x": 6,
+          "y": 9
+        }
       ],
       "enemySpawns": [
-        { "enemy": "grunt_ragged", "x": 1, "y": 1 },
-        { "enemy": "grunt_barfly", "x": 7, "y": 1 },
-        { "enemy": "grunt_runt",   "x": 4, "y": 0 },
-        { "enemy": "grunt_track",  "x": 2, "y": 0 },
-        { "enemy": "grunt_beard",  "x": 6, "y": 0 },
-        { "enemy": "grunt_hollow", "x": 1, "y": 2 },
-        { "enemy": "grunt_curt",   "x": 7, "y": 2 }
+        {
+          "enemy": "grunt_ragged",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_barfly",
+          "x": 7,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_runt",
+          "x": 4,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_track",
+          "x": 2,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_beard",
+          "x": 6,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_hollow",
+          "x": 1,
+          "y": 2
+        },
+        {
+          "enemy": "grunt_curt",
+          "x": 7,
+          "y": 2
+        }
       ],
       "cover": {
-        "full":    [[3,2],[5,3],[1,5],[7,4],[4,6]],
-        "partial": [[2,3],[6,2],[0,4],[8,3],[3,7],[6,6]]
-      }
+        "full": [
+          [
+            3,
+            2
+          ],
+          [
+            5,
+            3
+          ],
+          [
+            1,
+            5
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            4,
+            6
+          ]
+        ],
+        "partial": [
+          [
+            2,
+            3
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            0,
+            4
+          ],
+          [
+            8,
+            3
+          ],
+          [
+            3,
+            7
+          ],
+          [
+            6,
+            6
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          4,
+          4,
+          "fire"
+        ],
+        [
+          5,
+          5,
+          "fire"
+        ],
+        [
+          3,
+          4,
+          "stairwell"
+        ],
+        [
+          7,
+          6,
+          "stairwell"
+        ],
+        [
+          2,
+          7,
+          "glass"
+        ]
+      ]
     },
     {
       "id": "the-yard",
       "name": "The Yard",
       "_comment": "2026-08-31 second roster batch (casting-sheet-3): same proven grid+cover as backlot, Reed/Vex/Knuckle's first real encounter.",
       "background": "art-src/backgrounds/schoolyard.jpg",
-      "grid": { "cols": 11, "rows": 9 },
+      "grid": {
+        "cols": 11,
+        "rows": 9
+      },
       "playerSpawns": [
-        { "unit": "reed",    "x": 2, "y": 8 },
-        { "unit": "vex",     "x": 5, "y": 8 },
-        { "unit": "knuckle", "x": 8, "y": 8 }
+        {
+          "unit": "reed",
+          "x": 2,
+          "y": 8
+        },
+        {
+          "unit": "vex",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "unit": "knuckle",
+          "x": 8,
+          "y": 8
+        }
       ],
       "enemySpawns": [
-        { "enemy": "grunt_smoke", "x": 1, "y": 1 },
-        { "enemy": "grunt_milo",  "x": 9, "y": 1 },
-        { "enemy": "grunt_duffy", "x": 5, "y": 0 },
-        { "enemy": "grunt_spike", "x": 3, "y": 0 },
-        { "enemy": "grunt_chain", "x": 7, "y": 0 },
-        { "enemy": "grunt_runt",  "x": 5, "y": 1 }
+        {
+          "enemy": "grunt_smoke",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_milo",
+          "x": 9,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_duffy",
+          "x": 5,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_spike",
+          "x": 3,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_chain",
+          "x": 7,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_runt",
+          "x": 5,
+          "y": 1
+        }
       ],
       "cover": {
-        "full":    [[2,4],[4,3],[6,5],[8,3],[3,6],[7,6]],
-        "partial": [[1,5],[5,4],[9,5],[3,4],[7,4],[0,6],[10,3]]
-      }
+        "full": [
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            3
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            8,
+            3
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            7,
+            6
+          ]
+        ],
+        "partial": [
+          [
+            1,
+            5
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            9,
+            5
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            0,
+            6
+          ],
+          [
+            10,
+            3
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          5,
+          2,
+          "fire"
+        ],
+        [
+          6,
+          3,
+          "fire"
+        ],
+        [
+          2,
+          3,
+          "stairwell"
+        ],
+        [
+          9,
+          3,
+          "stairwell"
+        ],
+        [
+          4,
+          5,
+          "glass"
+        ],
+        [
+          8,
+          5,
+          "glass"
+        ]
+      ]
     }
   ]
 }

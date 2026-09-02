@@ -170,6 +170,51 @@ function drawFloor(g, layout, grid, fullCover, partialCover) {
     }
   }
 }
+// Hazards, drawn into the floor rather than as depth-sorted objects: they ARE
+// the tile, not something standing on it, so a unit must read as being IN the
+// fire rather than behind it. Code-drawn — no art, house convention.
+//
+// Each one has to say what it costs at a glance, because a full-information
+// game cannot hide the price of a tile. So they are told apart by SHAPE, not
+// just colour: fire fills the tile and flickers upward, glass is a scatter of
+// small hard shards, and the stairwell is a hole — the only one that reads as
+// an absence, because it is the only one that is not survivable.
+const HAZ = {
+  // Deliberately RED-orange, not amber: PAL.TELEGRAPH is #f2b23a and the
+  // attack highlight is warm too, so a yellower fire would sit in the same
+  // band as "an enemy is going to hit this tile." Those two must never be
+  // confusable — one is a standing property of the board, the other is a
+  // promise about the next turn.
+  fire: { fill: 'rgba(178,52,26,0.34)', edge: 'rgba(228,96,44,0.9)' },
+  glass: { fill: 'rgba(150,180,196,0.16)', edge: 'rgba(190,220,235,0.55)' },
+  stairwell: { fill: 'rgba(4,5,7,0.86)', edge: 'rgba(120,128,140,0.8)' },
+};
+function drawHazards(g, layout, hazards) {
+  if (!hazards) return;
+  for (const [k, h] of hazards) {
+    const [gx, gy] = k.split(',').map(Number);
+    const { x, y } = toScreen(layout, gx, gy);
+    const s = HAZ[h.id] || HAZ.glass;
+    g.diamond(x, y, TILE_W - 2, TILE_H - 1, s.fill, s.edge, 1);
+    if (h.id === 'fire') {
+      // Three tongues of flame, tallest in the middle — a static shape that
+      // still reads as fire because the silhouette is what carries it.
+      for (const [dx, hgt] of [[-5, 5], [0, 9], [5, 6]]) {
+        g.line(x + dx, y + 2, x + dx - 1, y + 2 - hgt, s.edge, null, 2);
+        g.line(x + dx - 1, y + 2 - hgt, x + dx + 2, y + 2 - hgt * 0.55, s.edge, null, 1.5);
+      }
+    } else if (h.id === 'glass') {
+      for (const [dx, dy] of [[-6, 1], [-1, -2], [4, 2], [7, -1], [1, 3]]) {
+        g.p(x + dx, y + dy, 2, 1, s.edge);
+      }
+    } else if (h.id === 'stairwell') {
+      // A smaller diamond inside the hole reads as depth — the step you can
+      // see before the dark takes over.
+      g.diamond(x, y + 2, TILE_W * 0.55, TILE_H * 0.5, 'rgba(0,0,0,0.9)', 'rgba(90,98,110,0.5)', 1);
+    }
+  }
+}
+
 function rgba([r, g, b, a]) { return `rgba(${r},${g},${b},${a})`; }
 // A 75/25 weighted blend on both colour AND alpha — the same ratio the old
 // opaque-hex mixFloor used for the far/home edge's warm/cold cast, kept
@@ -445,6 +490,10 @@ export function render(canvas, state, layout, anim = null) {
   // (main.js's boot()) show through drawFloor's now-translucent tiles.
 
   drawFloor(g, layout, state.grid, state.fullCover, state.partialCover);
+  // Under the move/attack highlights: a highlight has to stay readable OVER a
+  // hazard, since "can I reach that tile" and "what does it cost me" are two
+  // different questions the player asks in that order.
+  drawHazards(g, layout, state.hazards);
   drawHighlights(g, layout, state);
 
   const fullTiles = [...state.fullCover].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });

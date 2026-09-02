@@ -5,10 +5,10 @@ import { PAL } from './palette.js?v=3';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
-} from './combat.js?v=5';
-import { computeLayout, render } from './render.js?v=8';
+} from './combat.js?v=6';
+import { computeLayout, render } from './render.js?v=9';
 import { createInputHandler } from './input.js?v=7';
-import { createAnimator } from './anim.js?v=2';
+import { createAnimator } from './anim.js?v=3';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
@@ -37,6 +37,7 @@ const anim = createAnimator({
 function soundFor(e, s) {
   if (e.type === 'move') { audio.move(); return; }
   if (e.type === 'pickup') { audio.pickup(); return; }
+  if (e.type === 'hazard') { if (e.killed) audio.down(); else audio.hit(); return; }
   if (e.type !== 'attack') return;
   const a = s.units.find(u => u.uid === e.attackerUid);
   const ranged = a && a.weapon && a.weapon.archetype === 'ranged';
@@ -83,10 +84,13 @@ function saveProgress(state) {
 }
 
 async function loadData() {
-  const [weapons, units, enemies, encounters] = await Promise.all(
-    ['weapons', 'units', 'enemies', 'encounters'].map(f => fetch(`data/${f}.json`).then(r => r.json())),
+  const [weapons, units, enemies, encounters, hazards] = await Promise.all(
+    ['weapons', 'units', 'enemies', 'encounters', 'hazards'].map(f => fetch(`data/${f}.json`).then(r => r.json())),
   );
-  return { weapons: weapons.weapons, units: units.units, enemies: enemies.enemies, encounters: encounters.encounters };
+  return {
+    weapons: weapons.weapons, units: units.units, enemies: enemies.enemies,
+    encounters: encounters.encounters, hazards: hazards.hazards,
+  };
 }
 
 function fitCanvas() {
@@ -113,7 +117,7 @@ window.addEventListener('resize', fitCanvas);
 function boot(seed) {
   const encounter = DATA.encounters.find(e => e.id === SEQUENCE[seqIndex]);
   stage.style.setProperty('--encounter-bg', encounter.background ? `url(${encounter.background})` : 'none');
-  state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed);
+  state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed, DATA.hazards);
   applyProgress(state);
   state.moveTiles = new Map();
   state.attackTiles = [];
@@ -164,6 +168,9 @@ function attackText(state, attackerName, evt) {
       if (w) s += ` Drops a ${w.name}.`;
     }
   } else if (evt.knockback && evt.knockback.moved) s += ' Knocked back.';
+  // A shove that ends in a stairwell reads as a kill with no damage behind
+  // it, so the line has to say what actually did the killing.
+  if (evt.hazard) s += ` Into the ${evt.hazard.name.toLowerCase()}.`;
   return s;
 }
 

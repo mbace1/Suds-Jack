@@ -11,7 +11,7 @@ import { planIntent } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
-  awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE,
+  awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
 } from '../js/combat.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -22,10 +22,11 @@ const WEAPONS = readJson('weapons.json').weapons;
 const UNITS = readJson('units.json').units;
 const ENEMIES = readJson('enemies.json').enemies;
 const ENCOUNTERS = readJson('encounters.json').encounters;
+const HAZARDS = readJson('hazards.json').hazards;
 const BACKLOT = ENCOUNTERS.find(e => e.id === 'backlot');
 const LOADING_DOCK = ENCOUNTERS.find(e => e.id === 'loading-dock');
 
-const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed);
+const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed, HAZARDS);
 
 let pass = 0;
 function check(name, fn) {
@@ -407,6 +408,116 @@ function playthrough(encounter, seed) {
   });
   console.log(`  (bot playthrough: ${encounter.id} — ${state.result} in ${rounds} rounds)`);
 }
+
+// ── hazards (GDD §10's "set dressing with mechanical teeth") ─────────────
+// The point of these is not that a tile does damage — it is that knockback
+// finally has somewhere to push things, and that the AI understands the
+// board well enough for the telegraph not to promise a suicide.
+console.log('hazards');
+
+const hazEnc = ENCOUNTERS.find(e => e.id === 'the-yard');
+
+check('every hazard in the data names a kind the defs declare', () => {
+  const known = new Set(HAZARDS.map(h => h.id));
+  for (const e of ENCOUNTERS) {
+    for (const [x, y, kind] of (e.hazards || [])) {
+      assert.ok(known.has(kind), `${e.id} (${x},${y}) uses unknown hazard "${kind}"`);
+    }
+  }
+});
+
+check('a hazard never sits on cover or on a spawn', () => {
+  for (const e of ENCOUNTERS) {
+    const blocked = new Set([
+      ...e.cover.full.map(([x, y]) => `${x},${y}`),
+      ...e.cover.partial.map(([x, y]) => `${x},${y}`),
+      ...e.playerSpawns.map(s => `${s.x},${s.y}`),
+      ...e.enemySpawns.map(s => `${s.x},${s.y}`),
+    ]);
+    for (const [x, y] of (e.hazards || [])) {
+      assert.ok(!blocked.has(`${x},${y}`), `${e.id}: hazard at ${x},${y} overlaps cover or a spawn`);
+    }
+  }
+});
+
+check('walking into a hazard costs the unit health', () => {
+  const s = boot(hazEnc, 7);
+  const fire = (hazEnc.hazards || []).find(h => h[2] === 'fire');
+  const u = s.units.find(x => x.faction === 'player');
+  // stand the unit next to the fire and walk it in
+  u.x = fire[0]; u.y = fire[1] + 1; u.actedMove = false;
+  const before = u.hp;
+  const r = moveUnit(s, u.uid, fire[0], fire[1]);
+  assert.ok(r.ok, 'the move itself should be legal — a hazard is a price, not a wall');
+  assert.ok(u.hp < before, 'standing in a fire should cost health');
+  assert.equal(r.hazard.kind, 'fire');
+});
+
+check('a hazard does NOT block movement — that is what cover is for', () => {
+  const s = boot(hazEnc, 7);
+  const haz = hazEnc.hazards[0];
+  const u = s.units.find(x => x.faction === 'player');
+  u.x = haz[0]; u.y = haz[1] + 1; u.actedMove = false;
+  assert.ok(moveRange(s, u).has(`${haz[0]},${haz[1]}`), 'a hazard tile must stay reachable');
+});
+
+check('a stairwell kills whatever ends up in it, at any HP', () => {
+  const s = boot(hazEnc, 7);
+  const pit = (hazEnc.hazards || []).find(h => h[2] === 'stairwell');
+  const u = s.units.find(x => x.faction === 'player');
+  u.hp = u.maxHp = 99;
+  u.x = pit[0]; u.y = pit[1] + 1; u.actedMove = false;
+  moveUnit(s, u.uid, pit[0], pit[1]);
+  assert.equal(u.hp, 0, 'a lethal hazard ignores how much health you had');
+});
+
+check('a fire bites again at the end of the round if you are still in it', () => {
+  const s = boot(hazEnc, 7);
+  const fire = (hazEnc.hazards || []).find(h => h[2] === 'fire');
+  const u = s.units.find(x => x.faction === 'player');
+  u.x = fire[0]; u.y = fire[1];          // placed, not moved — no onEnter charge
+  const before = u.hp;
+  endPlayerTurn(s);
+  let step; do { step = stepEnemyPhase(s); } while (step && !step.done);
+  assert.ok(u.hp < before, 'ending a round in a fire should cost health');
+});
+
+check('glass bites on the way in but does not linger', () => {
+  const g = HAZARDS.find(h => h.id === 'glass');
+  assert.ok(g.onEnter > 0, 'glass should cost something to cross');
+  assert.equal(g.lingers, 0, 'glass is a toll, not a burn');
+});
+
+check('the AI will not telegraph a move that walks into a lethal hazard', () => {
+  const s = boot(hazEnc, 11);
+  for (const [uid, intent] of s.telegraph) {
+    if (!intent.moveTo) continue;
+    const h = hazardAt(s, intent.moveTo.x, intent.moveTo.y);
+    assert.ok(!(h && h.lethal),
+      `${uid} plans to step into a ${h && h.name} — a full-information telegraph must not promise a suicide`);
+  }
+});
+
+check('an enemy shoved into a stairwell dies, and the shover is credited', () => {
+  const s = boot(hazEnc, 3);
+  const pit = (hazEnc.hazards || []).find(h => h[2] === 'stairwell');
+  const pipe = WEAPONS.find(w => w.knockback > 0);
+  const me = s.units.find(u => u.faction === 'player');
+  const foe = s.units.find(u => u.faction === 'enemy');
+  me.weapon = pipe; me.actedAction = false;
+  foe.hp = foe.maxHp = 50;                 // far too healthy to kill by damage
+  // Line them up so the shove pushes the enemy along +x into the pit.
+  foe.x = pit[0] - 1; foe.y = pit[1];
+  me.x = pit[0] - 2;  me.y = pit[1];
+  const kills = me.kills;
+  const r = attack(s, me.uid, foe.uid);
+  if (r.ok && r.hit) {
+    assert.equal(foe.hp, 0, 'a body shoved into a stairwell should die regardless of HP');
+    assert.ok(r.killed, 'the attack event should report the kill it caused');
+    assert.equal(me.kills, kills + 1, 'the shove earned the kill');
+  }
+});
+
 for (const enc of ENCOUNTERS) playthrough(enc, 42);
 
 console.log(`\n${pass} checks passed`);
