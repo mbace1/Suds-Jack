@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { PhysicsBenchmark } from './physics-benchmark.js';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x070910);
@@ -39,24 +40,31 @@ world.addBody(board);
 const boardMesh = new THREE.Mesh(new THREE.BoxGeometry(1.1,0.24,2.7), new THREE.MeshStandardMaterial({color:0xf2c84b,roughness:0.45})); scene.add(boardMesh);
 const bird = new THREE.Mesh(new THREE.IcosahedronGeometry(0.72,1), new THREE.MeshStandardMaterial({color:0x7f93ff,roughness:0.5})); bird.position.y=0.9; boardMesh.add(bird);
 
+const benchmark = new PhysicsBenchmark('cannon-es');
+window.tinyhawkPhysicsBenchmark = benchmark;
 const keys = new Set(); addEventListener('keydown',e=>{keys.add(e.code); if(e.code==='KeyR')reset();}); addEventListener('keyup',e=>keys.delete(e.code));
-function reset(){board.position.set(0,2.2,7);board.velocity.set(0,0,-7);board.angularVelocity.set(0,0,0);board.quaternion.setFromEuler(0,0,0);}
+function reset(){board.position.set(0,2.2,7);board.velocity.set(0,0,-7);board.angularVelocity.set(0,0,0);board.quaternion.setFromEuler(0,0,0);benchmark.reset('cannon-es');}
 reset();
-let grounded=false, coyote=0;
+let grounded=false, coyote=0, wasGrounded=false, event=null;
 board.addEventListener('collide', e=>{ if(e.contact.ni.y > 0.45 || e.contact.ni.y < -0.45){grounded=true;coyote=0.09;} });
 
 let last=performance.now(); const readout=document.getElementById('readout');
 function frame(now){
-  requestAnimationFrame(frame); const dt=Math.min(1/30,(now-last)/1000); last=now; grounded=false; coyote=Math.max(0,coyote-dt);
+  requestAnimationFrame(frame); const dt=Math.min(1/30,(now-last)/1000); last=now; grounded=false; coyote=Math.max(0,coyote-dt); event=null;
   const push=(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0); const turn=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);
   const fwd=new CANNON.Vec3(0,0,-1); board.quaternion.vmult(fwd,fwd); fwd.y=0; fwd.normalize();
   board.applyForce(fwd.scale(push*34), board.position);
   board.angularVelocity.y += turn * 2.4 * dt;
-  if(keys.has('Space') && (grounded||coyote>0)){board.velocity.y=Math.max(board.velocity.y,8.8);keys.delete('Space');coyote=0;}
+  if(keys.has('Space') && (grounded||coyote>0)){board.velocity.y=Math.max(board.velocity.y,8.8);keys.delete('Space');coyote=0;event='pop';}
   world.step(1/120,dt,8);
+  const onGround=grounded||coyote>0;
+  if(onGround && !wasGrounded && event!=='pop') event='land';
+  benchmark.sample({dt, grounded:onGround, speed:board.velocity.length(), y:board.position.y, event});
+  wasGrounded=onGround;
   boardMesh.position.copy(board.position); boardMesh.quaternion.copy(board.quaternion);
   camera.position.lerp(new THREE.Vector3(board.position.x+12,board.position.y+8,board.position.z+14),0.05); camera.lookAt(board.position.x,board.position.y,board.position.z-3);
-  readout.textContent=`speed ${board.velocity.length().toFixed(1)} · grounded ${grounded||coyote>0?'yes':'no'} · fixed 120 Hz`;
+  const m=benchmark.summary();
+  readout.textContent=`speed ${board.velocity.length().toFixed(1)} · grounded ${onGround?'yes':'no'} · chatter ${m.contactChatterHz.toFixed(2)}/s · pop σ ${m.popSpeedStd.toFixed(2)} · fixed 120 Hz`;
   renderer.render(scene,camera);
 }
 requestAnimationFrame(frame);
