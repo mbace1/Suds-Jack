@@ -19,6 +19,13 @@ const HEAD_SLICE = 0.22, FOOT_MARGIN = 10;
   const br = await chromium.launch(); const pg = await br.newPage();
   await pg.goto('data:text/html,<html><body></body></html>');
   const LIB = MEASURE_SRC;
+  // A rescale can only help if the measurement it is built on is stable. On a
+  // character with loose hair it is NOT, and rescaling then makes the spread
+  // WORSE (leopard: 6.3% in, 9.8% out) because the head blob moves under
+  // resampling. So the third pass re-measures what was written and, if the
+  // spread did not improve, throws the rescale away and copies the originals
+  // through. A fixer that can make things worse without saying so is worse
+  // than no fixer.
   const stats = [];
   for (const pass of ['measure', 'apply']) {
     const target = stats.length ? Math.round(stats.reduce((s, m) => s + m.headW, 0) / stats.length) : 0;
@@ -46,8 +53,30 @@ const HEAD_SLICE = 0.22, FOOT_MARGIN = 10;
       else fs.writeFileSync(path.join(outDir, f), Buffer.from(r.url.split(',')[1], 'base64'));
     }
   }
-  const hw = stats.map(s => s.headW);
   const spread = a => Math.max(...a) - Math.min(...a);
-  console.log(`head widths before: ${hw.join(', ')}  spread ${spread(hw)}px (${(100*spread(hw)/(hw.reduce((s,v)=>s+v,0)/hw.length)).toFixed(1)}%)`);
+  const pct = a => 100 * spread(a) / (a.reduce((s, v) => s + v, 0) / a.length);
+  const hw = stats.map(s => s.headW);
+  console.log(`head widths before: ${hw.join(', ')}  spread ${spread(hw)}px (${pct(hw).toFixed(1)}%)`);
+
+  if (!originOnly) {
+    const after = [];
+    for (const f of files) {
+      const b64 = fs.readFileSync(path.join(outDir, f)).toString('base64');
+      const m = await pg.evaluate(async ({ url, lib, slice }) => {
+        const measure = new Function('return (' + lib + ')')();
+        const im = new Image(); im.src = url; await im.decode();
+        const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+        const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0);
+        return measure(g.getImageData(0, 0, im.width, im.height).data, im.width, im.height, slice);
+      }, { url: `data:image/png;base64,${b64}`, lib: LIB, slice: HEAD_SLICE });
+      after.push(m.headW);
+    }
+    console.log(`head widths after:  ${after.join(', ')}  spread ${spread(after)}px (${pct(after).toFixed(1)}%)`);
+    if (pct(after) > pct(hw)) {
+      for (const f of files) fs.copyFileSync(path.join(dir, f), path.join(outDir, f));
+      console.log(`REVERTED: rescaling made the spread worse (${pct(hw).toFixed(1)}% -> ${pct(after).toFixed(1)}%), originals copied through.`);
+      console.log(`  The head-width anchor is not stable on this character — expect loose hair or a limb reaching into the head band. Set the scale by hand, or gate this clip with drift.cjs --no-scale.`);
+    }
+  }
   await br.close();
 })();
