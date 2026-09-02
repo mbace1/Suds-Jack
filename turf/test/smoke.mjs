@@ -12,6 +12,7 @@ import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
   awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
+  applyTrinkets, TRINKET_SHARE,
 } from '../js/combat.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -23,10 +24,11 @@ const UNITS = readJson('units.json').units;
 const ENEMIES = readJson('enemies.json').enemies;
 const ENCOUNTERS = readJson('encounters.json').encounters;
 const HAZARDS = readJson('hazards.json').hazards;
+const TRINKETS = readJson('trinkets.json').trinkets;
 const BACKLOT = ENCOUNTERS.find(e => e.id === 'backlot');
 const LOADING_DOCK = ENCOUNTERS.find(e => e.id === 'loading-dock');
 
-const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed, HAZARDS);
+const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed, HAZARDS, TRINKETS);
 
 let pass = 0;
 function check(name, fn) {
@@ -276,9 +278,16 @@ console.log('loot drops');
     enemySpawns: [{ enemy: 'grunt_handgun', x: 1, y: 0 }],
     cover: { full: [], partial: [] },
   };
+  // A SCRIPTED rng, not a constant: a drop now takes three rolls in order
+  // (hit, drop-or-not, weapon-or-trinket) and a constant 0 wins all three,
+  // which silently turned this weapon test into a trinket test when the
+  // trinket roll was added. Naming each value keeps the test honest about
+  // which branch it is actually exercising.
+  const rngSeq = (...vals) => { let i = 0; return () => vals[Math.min(i++, vals.length - 1)]; };
+
   check(`a kill rolling under DROP_CHANCE (${DROP_CHANCE}) drops the victim's weapon on its tile`, () => {
     const state = boot(oneHit, 1);
-    state.rng = () => 0; // hit roll 0 < hitChance 1 (hit); drop roll 0 < DROP_CHANCE (drops)
+    state.rng = rngSeq(0, 0, 0.99); // hit; drops; 0.99 >= TRINKET_SHARE so it is the weapon
     const r = attack(state, 'p0', 'e0');
     assert.ok(r.killed);
     assert.deepEqual(r.dropped, { x: 1, y: 0, weaponId: 'handgun' });
@@ -286,7 +295,7 @@ console.log('loot drops');
   });
   check('a kill rolling over DROP_CHANCE leaves nothing behind', () => {
     const state = boot(oneHit, 1);
-    state.rng = () => 0.99; // hit roll 0.99 < hitChance 1 (still a hit); drop roll 0.99 >= DROP_CHANCE (no drop)
+    state.rng = rngSeq(0.99, 0.99); // still a hit; drop roll 0.99 >= DROP_CHANCE (no drop)
     const r = attack(state, 'p0', 'e0');
     assert.ok(r.killed);
     assert.equal(r.dropped, null);
@@ -294,7 +303,7 @@ console.log('loot drops');
   });
   check('walking onto a drop swaps the weapon and clears it — a player kills adjacent, then steps onto the body', () => {
     const state = boot(oneHit, 1);
-    state.rng = () => 0;
+    state.rng = rngSeq(0, 0, 0.99); // hit; drops; the weapon, not a trinket
     const blade = getUnit(state, 'p0');
     assert.equal(blade.weapon.id, 'knife');
     attack(state, 'p0', 'e0'); // kills without moving — actedMove is still free
@@ -577,6 +586,85 @@ check('the telegraph is stable — replanning an unchanged board gives the same 
   planAllIntents(s);
   const again = [...s.telegraph].map(([uid, i]) => `${uid}:${i.type}:${i.moveTo ? i.moveTo.x + ',' + i.moveTo.y : '-'}:${i.targetUid || '-'}`);
   assert.deepEqual(again, first, 'an intent that flickers between equal tiles is unreadable');
+});
+
+
+// ── trinkets (GDD §5's last unbuilt v1 line) ────────────────────────────
+console.log('trinkets');
+
+const oneHitT = {
+  id: 'onehitT', grid: { cols: 3, rows: 1 },
+  playerSpawns: [{ unit: 'blade', x: 0, y: 0 }],
+  enemySpawns: [{ enemy: 'grunt_handgun', x: 1, y: 0 }],
+  cover: { full: [], partial: [] },
+};
+const seq = (...v) => { let i = 0; return () => v[Math.min(i++, v.length - 1)]; };
+
+check('every trinket declares an effect the engine knows how to apply', () => {
+  const known = new Set(['maxHp', 'move', 'damage', 'range', 'hitChance']);
+  for (const t of TRINKETS) {
+    const keys = Object.keys(t.effect || {});
+    assert.ok(keys.length, `${t.id} has no effect`);
+    for (const k of keys) assert.ok(known.has(k), `${t.id} has unknown effect "${k}"`);
+  }
+});
+
+check('a kill can leave a trinket instead of the weapon', () => {
+  const state = boot(oneHitT, 1);
+  state.rng = seq(0, 0, 0.1, 0); // hit; drops; 0.1 < TRINKET_SHARE so a trinket; pick index 0
+  const r = attack(state, 'p0', 'e0');
+  assert.ok(r.killed);
+  assert.ok(r.dropped.trinketId, 'the drop should be a trinket');
+  assert.equal(state.drops.length, 1);
+});
+
+check('picking one up applies its stat effect immediately', () => {
+  const state = boot(oneHitT, 1);
+  state.rng = seq(0, 0, 0.1, 0); // steel_toes (+2 maxHp) is index 0
+  attack(state, 'p0', 'e0');
+  const blade = getUnit(state, 'p0');
+  const beforeMax = blade.maxHp, beforeHp = blade.hp;
+  const got = moveUnit(state, 'p0', 1, 0);
+  assert.ok(got.ok);
+  assert.equal(blade.trinkets.length, 1);
+  assert.equal(blade.maxHp, beforeMax + 2, '+2 max hp');
+  assert.equal(blade.hp, beforeHp + 2, 'and healed by it — a max bump you cannot feel is a promise, not a pickup');
+  assert.deepEqual(state.drops, [], 'consumed, not left for someone else too');
+});
+
+check('a weapon-field trinket survives a later weapon swap', () => {
+  const state = boot(oneHitT, 1);
+  const blade = getUnit(state, 'p0');
+  const knuckle = TRINKETS.find(t => t.effect.damage);
+  applyTrinkets(blade, [knuckle.id], TRINKETS);
+  const boosted = blade.weapon.damage;
+  assert.equal(boosted, blade.baseWeapon.damage + knuckle.effect.damage, 'bonus folded into the live weapon');
+  // now swap the weapon by walking onto a dropped one
+  blade.actedAction = false;
+  state.rng = seq(0, 0, 0.99); // the victim's weapon, not a trinket
+  attack(state, 'p0', 'e0');
+  moveUnit(state, 'p0', 1, 0);
+  assert.equal(blade.baseWeapon.id, 'handgun', 'the swap happened');
+  const base = WEAPONS.find(w => w.id === 'handgun');
+  assert.equal(blade.weapon.damage, base.damage + knuckle.effect.damage,
+    'the trinket applies to the NEW weapon — it is not attached to the gun it was found with');
+});
+
+check('trinkets stack rather than replace', () => {
+  const state = boot(oneHitT, 1);
+  const blade = getUnit(state, 'p0');
+  const hp = TRINKETS.filter(t => t.effect.maxHp).map(t => t.id);
+  const before = blade.maxHp;
+  applyTrinkets(blade, [...hp, ...hp], TRINKETS); // same trinket twice
+  assert.equal(blade.trinkets.length, hp.length * 2, 'no slots, no replace — they accumulate');
+  assert.ok(blade.maxHp > before);
+});
+
+check('a unit with no trinkets keeps its weapon object untouched', () => {
+  const state = boot(oneHitT, 1);
+  const blade = getUnit(state, 'p0');
+  assert.equal(blade.trinkets.length, 0);
+  assert.equal(blade.weapon, blade.baseWeapon, 'the common case allocates nothing');
 });
 
 for (const enc of ENCOUNTERS) playthrough(enc, 42);

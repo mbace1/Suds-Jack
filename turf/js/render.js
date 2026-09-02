@@ -470,6 +470,15 @@ function drawTelegraph(g, layout, state) {
 function drawDrop(g, layout, drop, weaponDefs) {
   const { x, y } = toScreen(layout, drop.x, drop.y);
   g.diamond(x, y, TILE_W * 0.5, TILE_H * 0.5, null, PAL.TELEGRAPH);
+  if (drop.trinketId) {
+    // A trinket has no weapon glyph to borrow, and inventing a per-item icon
+    // would be a fifth icon language for five flat stat bumps. One mark for
+    // "something small, worth picking up" is the honest amount of detail —
+    // what it does is told in the toast when you take it.
+    g.p(x - 3, y - 1, 6, 2, PAL.HP_GOOD);
+    g.p(x - 1, y - 3, 2, 6, PAL.HP_GOOD);
+    return;
+  }
   const weapon = weaponDefs.find(w => w.id === drop.weaponId);
   if (weapon) weaponGlyph(g, x, y, weapon);
 }

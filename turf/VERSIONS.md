@@ -8,6 +8,50 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v21 — 2026-09-02
+**Trinkets — GDD §5's v1 progression list is now complete.** Weapon swaps
+shipped in v7 and XP levels in v6; "a handful of passive trinkets (flat
+stat bonuses — found gear, no equip complexity)" was the last line left.
+
+- Five, in `data/trinkets.json`, all flat: +2 max HP, +1 move, +0.1 hit,
+  +1 damage, +1 range. Deliberately small — a trinket should tilt a fight,
+  never decide one, because the interesting decisions in this game are on
+  the board rather than in a stat screen.
+- **No equip complexity**, which is the load-bearing phrase in §5: no
+  inventory, no slots, no equip action. A unit walks over one and keeps
+  it, exactly like a weapon, and they stack.
+- Same drop roll as weapons, not a second economy — a body leaves ONE
+  thing, sometimes its gun and sometimes what was in its pockets
+  (`TRINKET_SHARE` 0.4, kept under half because the weapon swap is the
+  decision with real texture: it changes range and knockback, i.e. how the
+  unit plays).
+- **`unit.weapon` is now the weapon as it actually fires** (base plus every
+  trinket's weapon-field bonus) with `unit.baseWeapon` holding what was
+  picked up. Recomputing into `unit.weapon` rather than exposing an
+  `effectiveWeapon(unit)` getter is deliberate: `grid.js` and `ai.js` both
+  read weapon range and NEITHER can import from `combat.js` — combat.js
+  imports them, so it would be circular. This way every existing read stays
+  correct with no new import and there is no second code path to forget.
+  A trinket therefore keeps working after a weapon swap instead of being
+  silently attached to the gun it was found with; a test asserts exactly
+  that.
+- A +2 max HP also heals by 2 on pickup — a max bump you cannot feel is a
+  promise rather than a pickup, the same reasoning `awardXp`'s level bump
+  already uses.
+- Carried across the run in `crewProgress` like XP, re-applied through the
+  engine rather than assigned, so the bonuses land on each encounter's
+  freshly-built weapon instead of being restored as inert data.
+- **An existing test was silently changed by this and is fixed properly.**
+  The loot tests drove a constant `rng = () => 0`, which now wins the new
+  weapon-or-trinket roll too and quietly turned a weapon test into a
+  trinket test. Replaced with a scripted rng whose values are named per
+  roll (hit / drop / weapon-or-trinket), so each test says which branch it
+  actually exercises.
+- Gate: 55 -> **61 checks**. Verified in a browser: a Knuckle wrap pickup
+  takes the unit's damage 4 -> 5, appears in the selection panel's
+  "carrying" line, zero page errors.
+- Tokens: `combat.js` v7->v8, `render.js` v10->v11, `main.js` v12->v13.
+
 ## v20 — 2026-09-02
 **One lineage for the cast attack art — and a direction defect recorded
 rather than shipped quietly.**
