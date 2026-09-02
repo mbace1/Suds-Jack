@@ -206,6 +206,31 @@ jobs:
       - name: version sync across hero, runtime, log and hub
         run: node toko-move/test/version-sync.mjs
 
+  hub:
+    name: the arcade floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # This one needs a browser, so it is its own job rather than a step tacked
+      # onto a bare-node lane. It is here because it was RED on main for an
+      # unknown stretch and nothing said so — six checks failing, and because it
+      # aborted at the first timeout, nine more behind them were never reached.
+      # A 185-check gate that nobody runs is a gate that certifies nothing.
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: every cabinet, the feedback path, and the short URL
+        run: node test/hub-smoke.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
   turf:
     name: turf
     runs-on: ubuntu-latest
