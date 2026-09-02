@@ -1,32 +1,23 @@
 // Radio Free Helsinki — editorial mapping from programme labels and specific stories to ambient scenes.
-// Story hints are preferences, never hard locks: the codec still avoids repeats and
-// keeps one escape scene available so repeated bulletins do not become mechanical.
-
-export const SCENE_PREFERENCES = {
-  CITY: ['hakaniemi', 'centralstation', 'mannerheimrain', 'kallionight', 'metro', 'katajanokka'],
-  GAMES: ['metro', 'rooftops', 'centralstation', 'kallionight'],
-  TECH: ['rooftops', 'metro', 'hakaniemi', 'centralstation'],
-  SIGNAL: ['rooftops', 'metro', 'kallionight'],
-  CULTURE: ['centralstation', 'kallionight', 'mannerheimrain', 'hakaniemi', 'katajanokka'],
-  'ODD WIRE': ['kallionight', 'katajanokka', 'rooftops'],
-  LEAD: ['centralstation', 'hakaniemi', 'mannerheimrain', 'kallionight', 'katajanokka', 'rooftops', 'metro'],
+export const SCENE_PREFERENCES={
+ CITY:['hakaniemi','kalasatama','pasila','toolo','merihaka','kauppatori','centralstation','mannerheimrain','kallionight','metro','transitinterior','katajanokka'],
+ GAMES:['transitinterior','metro','pasila','rooftops','centralstation','kallionight'],
+ TECH:['rooftops','kalasatama','pasila','metro','transitinterior','hakaniemi','merihaka'],
+ SIGNAL:['rooftops','pasila','metro','transitinterior','kallionight'],
+ CULTURE:['kauppatori','toolo','centralstation','kallionight','mannerheimrain','hakaniemi','katajanokka','transitinterior'],
+ 'ODD WIRE':['merihaka','kalasatama','transitinterior','kallionight','pasila','centralstation','mannerheimrain','kauppatori','rooftops'],
+ LEAD:['centralstation','pasila','hakaniemi','kalasatama','mannerheimrain','merihaka','kauppatori','kallionight','katajanokka','rooftops','metro','transitinterior','toolo'],
 };
-
-export const STORY_SCENE_HINTS = {
-  'drone-handshake': ['rooftops', 'centralstation', 'metro'],
-  'ai-fear-half': ['rooftops', 'metro', 'hakaniemi'],
-  'hub-walkout': ['hakaniemi', 'centralstation', 'mannerheimrain'],
-  'robot-pavement': ['hakaniemi', 'mannerheimrain', 'centralstation'],
-  'damp-weekend': ['mannerheimrain', 'kallionight', 'hakaniemi', 'katajanokka'],
-  'song-window': ['centralstation', 'kallionight', 'rooftops'],
-  'aurora-cloud': ['rooftops', 'katajanokka', 'kallionight'],
+export const STORY_SCENE_HINTS={
+ 'drone-handshake':['rooftops','katajanokka','pasila'], 'ai-fear-half':['rooftops','pasila','metro'],
+ 'hub-walkout':['pasila','kalasatama','hakaniemi'], 'robot-pavement':['hakaniemi','mannerheimrain','transitinterior'],
+ 'damp-weekend':['mannerheimrain','toolo','kauppatori'], 'song-window':['toolo','kauppatori','centralstation'],
+ 'aurora-cloud':['rooftops','merihaka','kauppatori'], 'baby-index':['centralstation','pasila','transitinterior'],
+ 'sleep-career':['transitinterior','kallionight','metro'], 'robot-priority':['hakaniemi','mannerheimrain','kalasatama'],
+ 'queue-economy':['centralstation','kauppatori','mannerheimrain'], 'seasonal-tourist':['kauppatori','katajanokka','centralstation'],
+ 'ad-life':['transitinterior','rooftops','metro'], 'israel-defence-decade':['rooftops','katajanokka','pasila'],
+ 'sweden-border-help':['pasila','rooftops','metro'], 'ethnic-grocers':['hakaniemi','merihaka','kalasatama'],
+ 'wet-tuesday':['mannerheimrain','toolo','kauppatori'], 'metal-autopsy':['kallionight','merihaka','kalasatama'],
+ 'yle-century':['toolo','centralstation','kauppatori'], 'bear-border-fence':['rooftops','pasila','kallionight'],
 };
-
-export function preferredScenes(story, available = []) {
-  const storyHints = STORY_SCENE_HINTS[story?.id];
-  const base = storyHints || SCENE_PREFERENCES[story?.label] || available;
-  const preferred = base.filter(k => available.includes(k));
-  if (!preferred.length) return [...available];
-  const fallback = available.find(k => !preferred.includes(k));
-  return fallback ? [...preferred, fallback] : preferred;
-}
+export function preferredScenes(story,available=[]){const hints=STORY_SCENE_HINTS[story?.id],base=hints||SCENE_PREFERENCES[story?.label]||available,preferred=base.filter(k=>available.includes(k));if(!preferred.length)return[...available];const fallback=available.find(k=>!preferred.includes(k));return fallback?[...preferred,fallback]:preferred;}

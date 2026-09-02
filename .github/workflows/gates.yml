@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   piritori:
-    name: flow-core · piritori · toko-move
+    name: flow-core · piritori
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -173,6 +173,38 @@ jobs:
       - name: the seven-day slice plays to an ending
         working-directory: piritori/godot
         run: godot --headless --path . res://tests/test_playthrough.tscn
+
+  toko-move:
+    name: toko-move
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # All five are bare-node and finish in seconds. The one that earns its
+      # keep most is route-choice: main shipped a missing brace in
+      # route-choice.js that killed the whole ES module graph — the page was
+      # dead on arrival and nothing red said so, because these gates only ran
+      # when someone remembered to. A branch that moves the runtime to new
+      # modules must re-point these gates at them, or they stop exercising
+      # the code that actually ships (that is how the brace survived).
+      - name: the committed full HSL pack
+        run: node toko-move/test/full-hsl-pack.mjs
+
+      - name: the real-Helsinki delivery board
+        run: node toko-move/test/real-helsinki.mjs
+
+      - name: route choices parse and behave
+        run: node toko-move/test/route-choice.mjs
+
+      - name: every HSL source layer preserved
+        run: node toko-move/test/transit-layers.mjs
+
+      - name: version sync across hero, runtime, log and hub
+        run: node toko-move/test/version-sync.mjs
 
   turf:
     name: turf

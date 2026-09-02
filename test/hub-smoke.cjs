@@ -102,12 +102,28 @@ function check(name, cond) {
   // Anything served from this test's own origin still counts.
   const errors = [];
   const mine = url => !url || url.startsWith(base);
+  // A cabinet marked `inRepo: false` is carried by the gh-pages site and not by
+  // this branch, so a miss on its path is the catalogue being honest, not a
+  // broken link — the same reason the link-resolution check below only walks
+  // the local ones. Filled in once the catalogue has been read.
+  let offRepo = [];
+  const notCarriedHere = url =>
+    mine(url) && offRepo.some(pathname => url.replace(base, '').replace(/^\//, '').startsWith(pathname));
   const expected = (text, url) =>
-    /collect-broken/.test(text + url) || (!mine(url) && /Failed to load resource/i.test(text));
+    /collect-broken/.test(text + url) || notCarriedHere(url) ||
+    (!mine(url) && /Failed to load resource/i.test(text));
   page.on('console', m => {
     if (m.type() === 'error' && !expected(m.text(), m.location().url)) errors.push(m.text());
   });
   page.on('pageerror', e => errors.push(String(e)));
+  // A bare "404 (Not Found)" from the console names nothing, and a gate that
+  // reports an unactionable failure costs more than it saves. Record the URL
+  // alongside it so the next person knows which file is missing.
+  page.on('response', r => {
+    if (r.status() >= 400 && !expected('Failed to load resource', r.url())) {
+      errors.push(`HTTP ${r.status()} ${r.url()}`);
+    }
+  });
 
   await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
 
@@ -119,6 +135,25 @@ function check(name, cond) {
   // the page renders the live floor first, then the archive — so that, not the
   // catalogue order, is the order the cabinets appear in
   const games = [...active, ...archived];
+  offRepo = games.filter(g => g.inRepo === false && g.path).map(g => g.path.replace(/^\//, ''));
+
+  // THE HOST. Toko Live is injected onto the floor by hub/toko-cabinet-dom.js
+  // rather than coming out of the catalogue, and that is deliberate: he is the
+  // room's host, not one of the games. Two consequences the counts below have
+  // to respect — he is a `.cab` that no catalogue entry accounts for, and he
+  // carries NO Feedback button because his feedback is internal, taken in
+  // conversation inside the cabinet itself. So every per-game count is scoped
+  // to the cabinets the catalogue actually rendered. Before this, six checks
+  // failed at once for the single reason that the floor held one more cabinet
+  // than the catalogue named.
+  const HOST = '#cab-tokolive';
+  const CAB = `.cab:not(${HOST})`;
+  check('the host is on the floor, exactly once',
+    await page.locator(HOST).count() === 1);
+  check('the host keeps his feedback inside the cabinet, not on the card',
+    await page.locator(`${HOST} .btn.ghost`).count() === 0);
+  check('the host is not counted as one of the games',
+    !games.some(g => g.id === 'tokolive'));
   const visible = catalogue.filter(g => !g.secret);
   check('the catalogue is not empty', games.length >= 8);
   check('every entry declares a status',
@@ -151,10 +186,10 @@ function check(name, cond) {
   // how seven later checks failed at once the first time this ran.
   await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__hub);
-  check('one cabinet per game', await page.locator('.cab').count() === games.length);
+  check('one cabinet per game', await page.locator(CAB).count() === games.length);
   check('the live floor holds only what is being worked on',
-    await page.locator('#cabinets .cab').count() === active.length && active.length > 0);
-  check('the archive holds the rest', await page.locator('#archived .cab').count() === archived.length);
+    await page.locator(`#cabinets ${CAB}`).count() === active.length && active.length > 0);
+  check('the archive holds the rest', await page.locator(`#archived ${CAB}`).count() === archived.length);
   check('the archive is still playable, not hidden — bar anything not up',
     await page.locator('#archived .btn.play').count()
       === archived.filter(g => g.live !== false).length);
@@ -169,15 +204,15 @@ function check(name, cond) {
   // a cabinet can say where it stands without losing its Play button
   const noted = games.filter(g => g.note && g.live !== false);
   check('a playable cabinet can still carry a state note',
-    await page.locator('.cab .note').count() === noted.length);
+    await page.locator(`${CAB} .note`).count() === noted.length);
   check('every cabinet that has something behind it offers Play',
-    await page.locator('.cab .btn.play').count() === games.filter(g => g.live !== false).length);
-  check('every cabinet offers Feedback', await page.locator('.cab .btn.ghost').count() === games.length);
+    await page.locator(`${CAB} .btn.play`).count() === games.filter(g => g.live !== false).length);
+  check('every cabinet offers Feedback', await page.locator(`${CAB} .btn.ghost`).count() === games.length);
   check('the sketch shelf is there too', await page.locator('.shelf .sketch-link').count() === sketches.length);
   check('the page names itself', (await page.title()).includes('Suds Jack'));
 
   // every Play button points at its catalogue path, in the order rendered
-  const hrefs = await page.locator('.cab .btn.play').evaluateAll(ns => ns.map(n => n.getAttribute('href')));
+  const hrefs = await page.locator(`${CAB} .btn.play`).evaluateAll(ns => ns.map(n => n.getAttribute('href')));
   check('Play opens the game it is under',
     hrefs.join() === games.filter(g => g.live !== false).map(g => g.path).join());
 
@@ -185,8 +220,8 @@ function check(name, cond) {
   // so rather than pointing at a 404
   const notUp = games.filter(g => g.live === false);
   check('a cabinet with nothing behind it has no Play link',
-    await page.locator('.cab .btn.play').count() === games.length - notUp.length);
-  check('it shows a dead button instead', await page.locator('.cab .btn.dead').count() === notUp.length);
+    await page.locator(`${CAB} .btn.play`).count() === games.length - notUp.length);
+  check('it shows a dead button instead', await page.locator(`${CAB} .btn.dead`).count() === notUp.length);
   check('and that button cannot be pressed',
     await page.locator('.cab .btn.dead[disabled]').count() === notUp.length);
   check('its marquee is not a link either',
@@ -232,7 +267,7 @@ function check(name, cond) {
   check(`every marquee is painted${blank.length ? ` — ${blank}` : ''}`, blank.length === 0);
 
   // ── feedback: the empty note ──
-  await page.locator('.cab').first().locator('.btn.ghost').click();
+  await page.locator(CAB).first().locator('.btn.ghost').click();
   check('the panel opens on the game it was asked from',
     (await page.locator('.sheet h2').textContent()).includes(games[0].title));
   check('the rating offers five steps', await page.locator('.pip').count() === 5);
@@ -384,7 +419,7 @@ function check(name, cond) {
   // mark could be read. A capture listener cancels the navigation and the
   // cabinet's own bubble listener still runs — which is the thing under test.
   await page.evaluate(() => {
-    const a = document.querySelector('.cab .btn.play');
+    const a = document.querySelector('.cab:not(#cab-tokolive) .btn.play');
     a.addEventListener('click', e => e.preventDefault(), true);
     a.click();
   });
@@ -399,7 +434,7 @@ function check(name, cond) {
   })());
   // the floor does not reorder itself around it — moving the covers under
   // somebody who just learned where they were costs more than it gives
-  const floorOrder = await page.$$eval('.cab', cs => cs.map(c => c.id));
+  const floorOrder = await page.$$eval('.cab:not(#cab-tokolive)', cs => cs.map(c => c.id));
   check('and the floor does not rearrange itself',
     floorOrder[0] === `cab-${games[0].id}` && floorOrder[1] === `cab-${games[1].id}`);
   await page.evaluate(() => localStorage.removeItem('sudsJackHubPlayed'));
@@ -444,7 +479,7 @@ function check(name, cond) {
   // and the note carries it. A note about a layout nobody can tell you was in
   // force is a note about nothing.
   await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
-  await page.locator('.cab').first().locator('.btn.ghost').click();
+  await page.locator(CAB).first().locator('.btn.ghost').click();
   await page.locator('.fb-text').fill('the covers are the reason I came');
   await page.locator('.sheet .btn.play').click();
   await page.waitForFunction(() => document.querySelector('.fb-said'), null, { timeout: 5000 });
@@ -478,7 +513,7 @@ function check(name, cond) {
 
   // ── feedback: a real note, to a working endpoint ──
   await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
-  await page.locator('.cab').nth(1).locator('.btn.ghost').click();
+  await page.locator(CAB).nth(1).locator('.btn.ghost').click();
   const kindLabels = await page.$$eval('.kind', bs => bs.map(b => b.textContent));
   const wanted = await page.evaluate(async id => {
     const t = await import('./hub/topics.js?v=1');
@@ -582,17 +617,17 @@ function check(name, cond) {
   check('every note is still kept locally', (await page.evaluate(() => __hub.feedback.archive())).length === 2);
 
   // ── the panel behaves like a modal ──
-  await page.locator('.cab').first().locator('.btn.ghost').click();
+  await page.locator(CAB).first().locator('.btn.ghost').click();
   await page.keyboard.press('Escape');
   check('Escape closes the panel', await page.locator('.scrim').count() === 0);
-  await page.locator('.cab').first().locator('.btn.ghost').click();
+  await page.locator(CAB).first().locator('.btn.ghost').click();
   await page.mouse.click(20, 20);        // the dark outside it
   check('the backdrop closes the panel', await page.locator('.scrim').count() === 0);
   check('and the keyboard goes back where it was',
     await page.evaluate(() => document.activeElement?.textContent.includes('Feedback')));
 
   // ── the floor everything else in this repo holds ──
-  await page.locator('.cab').first().locator('.btn.ghost').click();
+  await page.locator(CAB).first().locator('.btn.ghost').click();
   const a11y = await page.evaluate(() => {
     const lum = (c) => {
       const [r, g, b] = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
@@ -695,8 +730,8 @@ function check(name, cond) {
 
   await page.goto(`${base}/AnotherHUB/`, { waitUntil: 'networkidle' });
   check('the short URL renders the same floor',
-    await page.locator('#cabinets .cab').count() === active.length);
-  const shortHrefs = await page.locator('.cab .btn.play').evaluateAll(ns => ns.map(n => n.href));
+    await page.locator(`#cabinets ${CAB}`).count() === active.length);
+  const shortHrefs = await page.locator(`${CAB} .btn.play`).evaluateAll(ns => ns.map(n => n.href));
   check('and its Play links point back up at the games, not into itself',
     shortHrefs.every(h => !h.includes('/AnotherHUB/')));
   const deadShort = [];
@@ -739,7 +774,12 @@ function check(name, cond) {
   // on the deployed site — so wait for any of them to fill, not for the first
   await page.waitForFunction(
     () => [...document.querySelectorAll('.ver')].some(n => n.textContent), null, { timeout: 5000 });
-  const shown = await page.locator('.cab .ver').evaluateAll(ns =>
+  // versions.json is fetched, so the numbers land a tick after the floor does.
+  // Waiting for them beats sampling mid-flight and calling it a missing version.
+  await page.waitForFunction(
+    n => document.querySelectorAll('.cab .ver').length >= n, games.length, { timeout: 10000 }
+  ).catch(() => {});
+  const shown = await page.locator(`${CAB} .ver`).evaluateAll(ns =>
     ns.map(n => [n.dataset.game, n.textContent]).filter(([, t]) => t));
   // versions.json is not a list of cabinets: scripts/versions.mjs also numbers
   // projects that ship like one and are not on the floor (toko/ — the mark,
