@@ -9,7 +9,7 @@ import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,HUB_INK} from './board.j
 import {TRANSFER_HUBS} from './hubs-walking.js?v=2';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.15';
+const BUILD_VERSION='2.16';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
