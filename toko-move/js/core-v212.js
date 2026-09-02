@@ -9,7 +9,7 @@ import {boardBox,boardFit,roadPaths,ROAD_INK,HUB_INK} from './board.js?v=1';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=2';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.13';
+const BUILD_VERSION='2.14';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -17,7 +17,7 @@ let flow,challenge,renderer,transit,city,water,source,transitView=false,done=fal
 let box,roads;
 const say=s=>{msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,say,paintHud,paintSheet};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,drawStopLabels,say,paintHud,paintSheet};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -78,13 +78,16 @@ function drawStops(){if(!flow||!city)return;const ctx=$('map').getContext('2d'),
   for(const node of city.nodes){const p=fitLatLon(node.lat,node.lon),hub=TRANSFER_HUBS.includes(node.id);
     if(hub){ctx.beginPath();ctx.arc(p.x,p.y,7*d,0,Math.PI*2);ctx.fillStyle='#fffdf7';ctx.fill();ctx.lineWidth=2.8*d;ctx.strokeStyle=HUB_INK;ctx.stroke();}
     else{ctx.beginPath();ctx.arc(p.x,p.y,3.6*d,0,Math.PI*2);ctx.fillStyle='#fffdf7';ctx.fill();ctx.lineWidth=1.8*d;ctx.strokeStyle='#5d6a72';ctx.stroke();}}
-  // Labels collided badly at this scale — Lasipalatsi printed through Kamppi,
-  // Kauppatori through Katajanokka, and Länsiterminaali ran off the frame as
-  // "siterminaali". So each label claims a box, transfer spots claim first
-  // (they are the ones you navigate by), and a label that cannot find a free
-  // side is dropped rather than printed through its neighbour. A stop whose
-  // name is dropped still shows its dot, and the job sheet always names it.
-  const taken=[],r=boardRect();
+  ctx.restore();}
+
+// Labels are drawn LAST — after main-v212.js has put the moving vehicles down —
+// because a stop's name is the layer that identifies everything else and must
+// not be printed under a tram badge that happens to be passing. The badges are
+// handed in as boxes to avoid, so a name steps aside for a vehicle rather than
+// fighting it. Same reason they are a separate call at all: core and the live
+// layer are two rAF loops, and the labels have to come after both.
+function drawStopLabels(avoid=[]){if(!flow||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();clipToBoard(ctx);ctx.textAlign='center';ctx.textBaseline='middle';
+  const taken=[...avoid],r=boardRect();
   const free=b=>b.x>=r.x&&b.x+b.w<=r.x+r.w&&b.y>=r.y&&b.y+b.h<=r.y+r.h&&!taken.some(t=>b.x<t.x+t.w&&b.x+b.w>t.x&&b.y<t.y+t.h&&b.y+b.h>t.y);
   const ordered=[...city.nodes].sort((a,b)=>Number(TRANSFER_HUBS.includes(b.id))-Number(TRANSFER_HUBS.includes(a.id)));
   for(const node of ordered){const p=fitLatLon(node.lat,node.lon),hub=TRANSFER_HUBS.includes(node.id),size=hub?9.5:8,gap=(hub?13:10)*d;
@@ -97,6 +100,7 @@ function drawStops(){if(!flow||!city)return;const ctx=$('map').getContext('2d'),
     ctx.lineWidth=3.2*d;ctx.strokeStyle='rgba(247,250,248,.92)';ctx.strokeText(node.name,tx,ty);
     ctx.fillStyle=hub?HUB_INK:'#5d6a72';ctx.fillText(node.name,tx,ty);}
   ctx.restore();}
+
 function drawTransitInspector(){const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle='#edf4f2';ctx.fillRect(0,0,c.width,c.height);drawWater(.8);transit?.draw(ctx,c.width,c.height,{alpha:.96,lineWidth:2.6*(renderer?.dpr||1)});}
 // The district names were drawn on top of the stop names at the same size, so
 // KÄPYLÄ and Käpylä sat on each other. They are the coarser layer, so they go
@@ -135,6 +139,59 @@ async function init(){
   try{const [r,w]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),fetch('../flow-core/data/kallio-water-v1.json',{cache:'no-store'})]);if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();water=w.ok?await w.json():null;transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
 }
 
+// Tapping the board. The whole verb set is READ the network and time it, and
+// until now the map was the one thing you could not ask a question of — every
+// answer lived in the sheet. One projection is published, so "what is coming
+// through here, and which way is it going" is a nearest-node lookup and a
+// direction read off the live fleet.
+//
+// It navigates on pointerup AND touchend, never click: the same trap hub/shell.js
+// and the Toko signature both paid for. It reports what is APPROACHING rather
+// than a route to take — naming an answer is what this build is built not to do.
+function nodeAtPoint(px,py){if(!city)return null;const c=$('map'),r=c.getBoundingClientRect(),d=renderer?.dpr||1;
+  const x=(px-r.left)*(c.width/r.width),y=(py-r.top)*(c.height/r.height);
+  let best=null,bd=Infinity;for(const node of city.nodes){const p=fitLatLon(node.lat,node.lon),dist=Math.hypot(p.x-x,p.y-y);if(dist<bd){bd=dist;best=node;}}
+  return bd<=26*d?best:null;}
+
+function approachingAt(node){const out=[];const net=window.__tm?.liveNetwork;if(!net||!transit||!flow)return out;
+  const kx=Math.cos(node.lat*Math.PI/180);
+  for(const layer of transit.layers){if(!layer.visible||!layer.path?.length)continue;
+    let bi=0,bd=Infinity;
+    for(let i=0;i<layer.path.length;i++){const[lat,lon]=layer.path[i],dy=lat-node.lat,dx=(lon-node.lon)*kx,dd=dy*dy+dx*dx;if(dd<bd){bd=dd;bi=i;}}
+    if(Math.sqrt(bd)>0.0009)continue;
+    // 120 m in degrees, longitude scaled by cos(lat) — without that correction a
+    // stop matches roughly twice as far east-west as north-south.
+    for(const v of net.vehicles){if(v.layer.id!==layer.id)continue;
+      const pos=net.position(v,flow.clock.tick);if(!pos)continue;
+      const ahead=(bi-pos.pathIndex)*pos.direction;
+      if(ahead<-1.5||ahead>60)continue;
+      // A vehicle covers (path.length-1) indices per 1/speed ticks, so an index
+      // gap is a real ETA in the same ticks the deadlines are counted in — the
+      // first cut reported the raw index gap as "stops", which it never was.
+      const ticks=Math.round(ahead*(1/v.speed)/Math.max(1,layer.path.length-1));
+      out.push({name:layer.name,mode:layer.mode==='SUBWAY'?'metro':'tram',colour:layer.colour,
+        ticks:Math.max(0,ticks),here:ahead<=1.5,dir:pos.direction});}}
+  const best=new Map();
+  for(const x of out){const k=`${x.name}:${x.dir}`;if(!best.has(k)||best.get(k).ticks>x.ticks)best.set(k,x);}
+  return [...best.values()].sort((a,b)=>a.ticks-b.ticks).slice(0,6);}
+
+function showStop(node,at=null){const pop=$('pop'),body=$('popBody');if(!pop||!body)return;
+  const hub=TRANSFER_HUBS.includes(node.id),near=approachingAt(node);
+  const rows=near.length?near.map(x=>`<div style="display:flex;gap:7px;align-items:center;padding:3px 0;border-top:1px dashed var(--rule)"><span style="display:inline-block;min-width:30px;text-align:center;background:${x.colour};color:#fff;font-weight:900;border-radius:3px;padding:1px 4px">${esc(x.name)}</span><span style="font-size:11px;color:var(--dim)">${x.mode} · ${x.here?'AT THE STOP':`${x.ticks}t away`}</span></div>`).join('')
+    :'<p class="hint" style="margin-top:6px">Nothing within reach of this stop right now.</p>';
+  body.innerHTML=`<b>${esc(node.name)}</b>${hub?' <span style="font-size:10px;color:var(--coral);font-weight:900">TRANSFER</span>':''}`
+    +`<div class="tpMeta">${esc(node.hslStopName||'')} · ${esc(node.hslStopId||'')}</div>`+rows;
+  pop.hidden=false;
+  // Place it beside the stop, clamped inside the window. Unpositioned it sat in
+  // the top-left corner, over the HOME button — the one control a player needs
+  // to always be able to hit.
+  if(at){const r=pop.getBoundingClientRect(),m=8;
+    const x=Math.min(Math.max(m,at.x+14),innerWidth-r.width-m),y=Math.min(Math.max(m+44,at.y-r.height/2),innerHeight-r.height-m);
+    pop.style.left=`${x}px`;pop.style.top=`${y}px`;pop.style.right='auto';pop.style.bottom='auto';}}
+
+for(const ev of ['pointerup','touchend'])$('map').addEventListener(ev,e=>{
+  if(transitView)return;const t=e.changedTouches?.[0]||e;const node=nodeAtPoint(t.clientX,t.clientY);
+  if(node){showStop(node,{x:t.clientX,y:t.clientY});e.preventDefault();}else $('pop').hidden=true;},{passive:false});
 addEventListener('resize',()=>renderer?.resize());
 $('play').onclick=()=>{if(!flow)return;$('title').hidden=true;flow.clock.setPaused(false);};
 $('pause').onclick=()=>{if(!flow)return;flow.clock.setPaused(!flow.clock.paused);$('pause').textContent=flow.clock.paused?'▶':'❚❚';};
