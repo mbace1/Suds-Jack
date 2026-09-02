@@ -17,50 +17,66 @@ Only **approved** coverage counts as progress. Generated candidates do not.
 
 Near-duplicate frames have zero animation value. A visually strong frame with the wrong mechanical job is rejected.
 
-## v0.2
+## Current build — v0.4
 
-Open `index.html` through GitHub Pages or any local HTTP server. It now reads `manifest.json` rather than hard-coding the production plan.
+Open `index.html` through GitHub Pages or any local HTTP server.
 
 Current functionality:
 
 - 28-character roster manifest with stable IDs where confidence is sufficient
 - source-reference links to the four owner casting/run-cycle images already in `turf/references/`
 - explicit front/rear isometric directions
-- target frame budgets per action
+- target frame budgets and canonical phases per action
 - base-action coverage matrix
 - planned / review / approved / rejected state cycling
-- local review-state persistence
-- exportable JSON state snapshot
+- local review-state persistence and JSON export
 - prioritized idle queue
 - conservative approved-only parity meter
 - PNG candidate validation for preferred plate size, opaque alpha and pure-magenta background corners
 - two-image exact-pixel similarity check to expose duplicate/near-duplicate output
-- duplicate flag count persisted with review state
+- frame-level candidate store with provenance and validation fields
+- motion-ledger schema for foundational locomotion
+- clean render-packet builder for isolated one-frame generation
 
 The three final provisional roster slots remain visibly marked `needs-id`; the app does not pretend their labels are authoritative.
 
+## Render packet correctness
+
+The render packet is deliberately minimal. v0.4 fixes two production-significant issues found during testing:
+
+- **Opposite locomotion phases are paired inside the same facing**, e.g. Move F1 ↔ F7 in a 12-frame cycle. Front/rear facing is not an opposite motion phase.
+- **Previous/next references are now strictly adjacent approved frames.** The tool no longer silently substitutes some older approved pose, which could corrupt continuity.
+
+The packet now also carries the exact phase derived from `manifest.json`, validates integer frame bounds, reports the paired opposite frame number, and marks when a motion ledger is mandatory.
+
+## Tests
+
+Run:
+
+```sh
+node --test turf/sprite-factory/test.mjs
+```
+
+Current unit coverage checks:
+
+- 12-frame Move opposite-pair mapping (1↔7)
+- same-facing paired-phase selection
+- no cross-facing substitution
+- strict adjacent-frame reference behavior
+- phase lookup from manifest
+- invalid/out-of-range frame rejection
+
+The v0.4 test set passes 5/5 locally.
+
 ## Manifest
 
-`manifest.json` is the production contract for the app. It currently defines:
-
-- owner source references
-- character IDs
-- two tactical isometric directions
-- action/frame targets
-- export expectations
-- queue priority
-- validation rules
+`manifest.json` is the production contract for the app. It defines owner source references, character IDs, tactical directions, action/frame targets, canonical phases, export expectations, queue priority and validation rules.
 
 Coverage is deliberately separate from raw image count.
 
 ## Candidate validation
 
-The browser validator is a first mechanical gate, not an art director. It can reject objective export defects before review:
-
-- wrong dimensions
-- non-opaque pixels
-- missing `#FF00FF` background at the image corners
-- suspiciously high exact-pixel similarity between two same-size candidates
+The browser validator is a first mechanical gate, not an art director. It can reject objective export defects before review: wrong dimensions, non-opaque pixels, missing `#FF00FF` background at the image corners and suspiciously high exact-pixel similarity between two same-size candidates.
 
 It cannot yet decide anatomy, pose continuity, support-leg ownership, weapon grip or aesthetic quality. Those remain approval gates.
 
@@ -70,11 +86,10 @@ Do not undo the current illustration-fidelity findings in `turf/art-src/sprites/
 
 ## Next build
 
-1. Frame-level candidate records instead of only action-level cells.
-2. Candidate gallery with approve/reject controls and provenance.
-3. Direction + phase coverage inside each action.
-4. Silhouette/lower-body similarity metrics, not only whole-image exact equality.
-5. Motion-state ledger support for locomotion.
-6. Animation preview assembled only from approved candidates.
-7. Generator job packets compatible with `scripts/gen-with-ref.mjs`.
-8. Repository-side progress report generated from the manifest/candidate records.
+1. Candidate gallery with approve/reject controls and provenance.
+2. Direction + phase coverage inside each action.
+3. Silhouette/lower-body similarity metrics, not only whole-image exact equality.
+4. Motion-ledger records attached to actual Move candidates.
+5. Animation preview assembled only from approved candidates.
+6. Generator job packets compatible with `scripts/gen-with-ref.mjs`.
+7. Repository-side progress report generated from candidate records.
