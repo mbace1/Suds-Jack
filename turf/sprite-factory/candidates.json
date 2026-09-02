@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "candidateStatus": ["candidate", "revise", "approved", "rejected"],
   "records": [],
   "recordSchema": {
@@ -16,6 +16,7 @@
     "previousFrame": null,
     "nextFrame": null,
     "oppositePair": null,
+    "motionRecord": null,
     "sourceReference": null,
     "promptHash": null,
     "fileHash": null,
