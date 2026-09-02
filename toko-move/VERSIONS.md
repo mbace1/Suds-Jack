@@ -1,5 +1,25 @@
 # Toko Move — versions
 
+## v2.17 — 2026-09-02
+
+The shift becomes playable, measured rather than asserted. Every number below came from `test/report.cjs` playing the real page, and each was set originally without anyone checking it against the clock it runs on.
+
+**Vehicle speed is derived from the clock.** A tram took 2083 ticks to cross its route against a 600-tick shift — at 1.6 minutes per tick, 55.6 hours of game time for one pass, about 67x too slow. A stop saw ~0.3 tram arrivals per shift while every job needs a catch, and the first catchable vehicle appeared at tick 585 of 600: a shift completed nothing. Speed is now stated as what it means (`END_TO_END_MINUTES`, tram 50, metro 45) and converted through `ticksPerDay`.
+
+**The catch window is in ticks.** It was a raw path-index distance, hardcoded 2.2 at six call sites, and a path index is not a unit of anything — 2.2 on a 241-point tram path is a different real distance from 2.2 on a 682-point metro path, and the time a vehicle spends inside it scales with speed. Fixing the speed alone therefore made catching *impossible*, verified: not one choice enabled in a whole shift.
+
+**Headway tightened to 8 vehicles per line** — a tram every 3.9 ticks, 7.8 per direction, about a 13-minute headway. Completions went 0 → 3, waits to 9-30 ticks.
+
+**A shift is six jobs, not ten.** A job's journey measures 50-230 ticks in a 600-tick day, so ten needed roughly 2.5x the hours available and the back half was unreachable however often the trams ran. The authored campaign is still ten (a chain, each job starting where the last ended); a shift plays six of it.
+
+**A deadline allowed for flying, not riding.** Offers set `limit = 110 + dist*7` from the straight-line graph distance while the journey goes through the network with transfers at each change. Now `dist*16`.
+
+Together: waiting fell from a shift that was 100% unfinishable to roughly half riding, dead air 3-8%, and jobs that complete and score.
+
+Known and not fixed: the same job can take 59 or 220 ticks depending on where the vehicles happen to be — a 4x spread that no fixed deadline covers. A deadline derived from the chosen route's own estimate, rather than from distance, is the next question.
+
+Also fixes three bugs in the report bot itself, each of which libelled the game before it was caught: dead air claimed to account for walking and did not, GET OFF was never pressed so finished rides read as zero completions, and completion accounting sat after a `continue` and never ran.
+
 ## v2.16 — 2026-09-02
 
 The city layer becomes data, which is what a second chapter actually costs. `js/city-build.js` turns a city DEFINITION plus a source pack into a graph; `cities/helsinki.city.js` is chapter 1's definition and `js/real-helsinki.js` is a three-line door onto it. A definition owns which real stops its anchors resolve to, what each is called and what it is for, the walk links, and the per-mode speeds, capacities and vehicle counts — and owns no geometry at all, which still comes from the committed pack exactly as the agency published it.
