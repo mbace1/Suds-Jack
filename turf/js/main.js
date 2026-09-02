@@ -4,11 +4,11 @@
 import { PAL } from './palette.js?v=3';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
-  awardXp, xpToNext,
-} from './combat.js?v=7';
-import { computeLayout, render } from './render.js?v=9';
+  awardXp, xpToNext, applyTrinkets,
+} from './combat.js?v=8';
+import { computeLayout, render } from './render.js?v=11';
 import { createInputHandler } from './input.js?v=7';
-import { createAnimator } from './anim.js?v=3';
+import { createAnimator } from './anim.js?v=4';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
@@ -74,22 +74,26 @@ function applyProgress(state) {
     const p = crewProgress[u.defId];
     if (!p) continue;
     u.level = p.level; u.xp = p.xp; u.maxHp = p.maxHp; u.hp = p.maxHp;
+    // Trinkets are found gear and persist for the run, same as XP. Re-applied
+    // through the engine rather than assigned, so their weapon-field bonuses
+    // are folded into this encounter's freshly-built weapon.
+    if (p.trinkets && p.trinkets.length) applyTrinkets(u, p.trinkets, DATA.trinkets);
   }
 }
 function saveProgress(state) {
   for (const u of state.units) {
     if (u.faction !== 'player') continue;
-    crewProgress[u.defId] = { level: u.level, xp: u.xp, maxHp: u.maxHp };
+    crewProgress[u.defId] = { level: u.level, xp: u.xp, maxHp: u.maxHp, trinkets: (u.trinkets || []).map(t => t.id) };
   }
 }
 
 async function loadData() {
-  const [weapons, units, enemies, encounters, hazards] = await Promise.all(
-    ['weapons', 'units', 'enemies', 'encounters', 'hazards'].map(f => fetch(`data/${f}.json`).then(r => r.json())),
+  const [weapons, units, enemies, encounters, hazards, trinkets] = await Promise.all(
+    ['weapons', 'units', 'enemies', 'encounters', 'hazards', 'trinkets'].map(f => fetch(`data/${f}.json`).then(r => r.json())),
   );
   return {
     weapons: weapons.weapons, units: units.units, enemies: enemies.enemies,
-    encounters: encounters.encounters, hazards: hazards.hazards,
+    encounters: encounters.encounters, hazards: hazards.hazards, trinkets: trinkets.trinkets,
   };
 }
 
@@ -117,7 +121,7 @@ window.addEventListener('resize', fitCanvas);
 function boot(seed) {
   const encounter = DATA.encounters.find(e => e.id === SEQUENCE[seqIndex]);
   stage.style.setProperty('--encounter-bg', encounter.background ? `url(${encounter.background})` : 'none');
-  state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed, DATA.hazards);
+  state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed, DATA.hazards, DATA.trinkets);
   applyProgress(state);
   state.moveTiles = new Map();
   state.attackTiles = [];
@@ -201,8 +205,9 @@ function onChange() {
   const lastLog = state.log[state.log.length - 1];
   if (lastLog && lastLog.type === 'pickup') {
     const u = getUnit(state, lastLog.uid);
-    const w = state.weaponDefs.find(x => x.id === lastLog.weaponId);
-    if (u && w) setToast(`${u.name} picks up a ${w.name}.`);
+    // The log entry carries its own name now, so this reads the same whether
+    // a body left its gun or what was in its pockets.
+    if (u && lastLog.name) setToast(`${u.name} picks up a ${lastLog.name}.`);
   }
   if (state.result) { finishEncounter(state.result); return; }
   if (state.turn === 'enemy' && !enemyPhaseRunning) runEnemyPhase();
@@ -271,8 +276,15 @@ function updateHud() {
   if (sel) {
     if (sel.portrait) { selPortraitEl.src = sel.portrait; selPortraitEl.hidden = false; }
     else selPortraitEl.hidden = true;
+    // The weapon numbers shown here are the EFFECTIVE ones (sel.weapon is the
+    // base plus trinkets — combat.js's recomputeWeapon), so a player reads the
+    // range and damage the unit will actually fire with, not the catalogue
+    // value. The trinket list is named separately so the bonus is attributable
+    // rather than an unexplained number.
+    const carried = (sel.trinkets || []).map(t => t.name).join(', ');
     selTextEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
-      + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`;
+      + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`
+      + (carried ? `<br>carrying: ${carried}` : '');
   } else {
     selPortraitEl.hidden = true;
     selTextEl.textContent = state.turn === 'player' ? 'Select an operator.' : '';

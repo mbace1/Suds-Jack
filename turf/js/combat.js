@@ -7,7 +7,7 @@ import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, appr
 import { planAllIntents } from './ai.js?v=4';
 import { makeRng } from './rng.js?v=2';
 
-export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = []) {
+export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = [], trinketDefs = []) {
   const weaponById = id => weaponDefs.find(w => w.id === id);
   const fullCover = new Set(encounter.cover.full.map(([x, y]) => key(x, y)));
   const partialCover = new Set(encounter.cover.partial.map(([x, y]) => key(x, y)));
@@ -45,6 +45,7 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     result: null,
     rng: makeRng(seed),
     weaponDefs, // so moveUnit can look up a dropped weapon's def by id
+    trinketDefs,
     drops: [], // { x, y, weaponId } — GDD §9's "simple weapon-swap loot drops"
   };
   planAllIntents(state);
@@ -52,10 +53,59 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
 }
 
 const getWeapon = (state, id) => state.weaponDefs.find(w => w.id === id);
+const getTrinket = (state, id) => (state.trinketDefs || []).find(t => t.id === id);
+
+// `unit.weapon` is the weapon AS IT ACTUALLY FIRES — base plus every
+// trinket's weapon-field bonus — and `unit.baseWeapon` is what was picked up.
+// Recomputing into unit.weapon rather than exposing an effectiveWeapon(unit)
+// getter is deliberate: grid.js and ai.js both read weapon ranges, and neither
+// can import from combat.js (combat.js imports THEM — it would be circular).
+// This way every existing read stays correct with no new import anywhere, and
+// there is no second code path that can be forgotten.
+//
+// Recompute on both events that can change the answer: a weapon swap and a
+// trinket pickup. A trinket therefore keeps working after a swap instead of
+// being silently attached to the gun it was found with.
+function recomputeWeapon(unit) {
+  const base = unit.baseWeapon || unit.weapon;
+  if (!unit.trinkets || !unit.trinkets.length) { unit.weapon = base; return; }
+  const w = { ...base };
+  for (const t of unit.trinkets) {
+    const e = t.effect || {};
+    if (e.damage) w.damage += e.damage;
+    if (e.range) w.range += e.range;
+    if (e.hitChance) w.hitChance = Math.min(1, w.hitChance + e.hitChance);
+  }
+  unit.weapon = w;
+}
+
+// Applied once, on pickup. maxHp also heals by the same amount: a +2 max that
+// leaves you on the same hp is a promise rather than a pickup, and this tier
+// of item is meant to be felt immediately (same reasoning as awardXp's level
+// bump healing on the spot).
+// Re-apply a saved trinket list by id (main.js's crewProgress, across
+// encounters). Goes through applyTrinket rather than assigning the array, so
+// the stat and weapon effects land on this encounter's freshly-built unit
+// instead of being restored as inert data.
+export function applyTrinkets(unit, ids, defs) {
+  for (const id of ids) {
+    const def = defs.find(t => t.id === id);
+    if (def) applyTrinket(unit, def);
+  }
+}
+
+function applyTrinket(unit, def) {
+  unit.trinkets.push(def);
+  const e = def.effect || {};
+  if (e.maxHp) { unit.maxHp += e.maxHp; unit.hp += e.maxHp; }
+  if (e.move) unit.move += e.move;
+  recomputeWeapon(unit);
+}
 
 function makeUnit(uid, def, weapon, faction, spawn) {
   return {
     uid, defId: def.id, name: def.name, faction, role: def.role, weapon,
+    baseWeapon: weapon, // what was picked up; `weapon` is that plus trinkets
     // ai.js reads these; absent on player units and on any enemy that has
     // not been given one, where the behaviour table falls back to `charger`.
     behaviour: def.behaviour, focus: def.focus,
@@ -63,6 +113,7 @@ function makeUnit(uid, def, weapon, faction, spawn) {
     x: spawn.x, y: spawn.y,
     actedMove: false, actedAction: false,
     kills: 0, xp: 0, level: 1,
+    trinkets: [], // GDD §5: found gear, no slots, no equip action — they just stack
   };
 }
 
@@ -168,11 +219,19 @@ function pickUpDropAt(state, unit) {
   const i = state.drops.findIndex(d => d.x === unit.x && d.y === unit.y);
   if (i < 0) return null;
   const [drop] = state.drops.splice(i, 1);
+  if (drop.trinketId) {
+    const trinket = getTrinket(state, drop.trinketId);
+    if (!trinket) return null; // a bad id in data is a content bug, not a crash
+    applyTrinket(unit, trinket);
+    state.log.push({ type: 'pickup', uid: unit.uid, trinketId: trinket.id, name: trinket.name });
+    return trinket;
+  }
   const weapon = getWeapon(state, drop.weaponId);
-  if (!weapon) return null; // a bad weaponId in data is a content bug, not a crash
-  unit.weapon = weapon;
-  state.log.push({ type: 'pickup', uid: unit.uid, weaponId: weapon.id });
-  return weapon;
+  if (!weapon) return null;
+  unit.baseWeapon = weapon;
+  recomputeWeapon(unit); // keep whatever trinkets this unit already carries
+  state.log.push({ type: 'pickup', uid: unit.uid, weaponId: weapon.id, name: weapon.name });
+  return unit.weapon;
 }
 
 // Every tile a unit could attack a target from *this turn*, given its
@@ -193,6 +252,12 @@ export function attackableTargets(state, unit) {
 // which only runs once at encounter end) because the drop has to exist mid-
 // encounter for a unit to walk over and grab it.
 export const DROP_CHANCE = 0.5;
+// Of the drops that happen, how many are a trinket rather than the victim's
+// weapon. Kept below half on purpose: the weapon swap is the decision with
+// real texture (it changes range and knockback, i.e. how the unit plays),
+// while a trinket is a small permanent tilt. Making trinkets the common drop
+// would quietly replace the more interesting item with the duller one.
+export const TRINKET_SHARE = 0.4;
 
 function resolveAttack(state, attacker, target, weapon) {
   let chance = weapon.hitChance;
@@ -208,7 +273,15 @@ function resolveAttack(state, attacker, target, weapon) {
     if (killed) {
       attacker.kills += 1;
       if (target.faction === 'enemy' && state.rng() < DROP_CHANCE) {
-        dropped = { x: target.x, y: target.y, weaponId: target.weapon.id };
+        // GDD §5 puts trinkets in the same "found gear" tier as weapon swaps,
+        // so they come from the same roll rather than a second economy the
+        // player has to learn — a body leaves ONE thing, sometimes its gun and
+        // sometimes what was in its pockets.
+        const pool = state.trinketDefs || [];
+        const asTrinket = pool.length && state.rng() < TRINKET_SHARE;
+        dropped = asTrinket
+          ? { x: target.x, y: target.y, trinketId: pool[Math.floor(state.rng() * pool.length)].id }
+          : { x: target.x, y: target.y, weaponId: target.baseWeapon ? target.baseWeapon.id : target.weapon.id };
         state.drops.push(dropped);
       }
     }

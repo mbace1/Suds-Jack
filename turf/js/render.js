@@ -339,8 +339,14 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   const frame = anim ? anim.spriteFor(unit) : null;
   const src = frame ? frame.src : unit.sprite;
   const entry = src ? getImageEntry(src) : null;
+  // The scale reference: this character's idle frame, so every pose of the
+  // same character is drawn at ONE scale and a crouch stays shorter than a
+  // stand. Falls back to the frame's own height until the idle has decoded,
+  // and for the twelve characters whose sprite is a single static plate.
+  const refEntry = frame && frame.refSrc ? getImageEntry(frame.refSrc) : null;
+  const refH = refEntry && refEntry.loaded ? refEntry.inkBottom - refEntry.inkTop + 1 : null;
   const topY = entry && entry.loaded
-    ? drawUnitSprite(g, entry, x, feetY, frame && frame.mirror)
+    ? drawUnitSprite(g, entry, x, feetY, frame && frame.mirror, refH)
     : drawUnitFallback(g, unit, x, feetY);
 
   // Hit flash. Drawing the SAME image again in 'lighter' brightens exactly
@@ -380,10 +386,12 @@ function drawUnit(g, layout, unit, isSelected, anim) {
 // the y of the visible content's top (both callers use this for the HP bar
 // / role marker so their position doesn't care which branch drew the body
 // beneath them, or how much padding that source image happened to carry).
-function drawUnitSprite(g, entry, x, feetY, mirror) {
+function drawUnitSprite(g, entry, x, feetY, mirror, refH) {
   const { img, inkTop, inkBottom } = entry;
   const contentH = inkBottom - inkTop + 1;
-  const scale = SPRITE_H / contentH;
+  // Scale off the character's reference height, not this frame's own, so a
+  // shorter pose draws shorter instead of being inflated back to SPRITE_H.
+  const scale = SPRITE_H / (refH || contentH);
   const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
   const drawY = feetY - inkBottom * scale; // top of the FULL (padded) image, in screen space
   if (mirror) {
@@ -462,6 +470,15 @@ function drawTelegraph(g, layout, state) {
 function drawDrop(g, layout, drop, weaponDefs) {
   const { x, y } = toScreen(layout, drop.x, drop.y);
   g.diamond(x, y, TILE_W * 0.5, TILE_H * 0.5, null, PAL.TELEGRAPH);
+  if (drop.trinketId) {
+    // A trinket has no weapon glyph to borrow, and inventing a per-item icon
+    // would be a fifth icon language for five flat stat bumps. One mark for
+    // "something small, worth picking up" is the honest amount of detail —
+    // what it does is told in the toast when you take it.
+    g.p(x - 3, y - 1, 6, 2, PAL.HP_GOOD);
+    g.p(x - 1, y - 3, 2, 6, PAL.HP_GOOD);
+    return;
+  }
   const weapon = weaponDefs.find(w => w.id === drop.weaponId);
   if (weapon) weaponGlyph(g, x, y, weapon);
 }

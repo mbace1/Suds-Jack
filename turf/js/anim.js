@@ -251,7 +251,20 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
       const a = live.get(unit.uid);
       const pose = a ? CLIPS[a.clip][a.i][0] : 'idle';
       const back = a ? a.back : false;
-      return { src: framePath(prefix, pose, back), mirror: a ? a.mirror : false };
+      return {
+        src: framePath(prefix, pose, back),
+        mirror: a ? a.mirror : false,
+        // The character's IDLE frame, as the scale reference for every other
+        // frame of the same character. Sizing each frame to a fixed on-board
+        // height independently would divide out the pose: a deep attack
+        // crouch is genuinely shorter than full extension, and normalising it
+        // away scales the crouch back UP to standing height — erasing the
+        // body-height rhythm that is most of what makes an attack read, and
+        // making the character appear to swell and shrink between frames.
+        // Measured on this cast: gunner's windup and release differ 36.7% in
+        // ink height, so this is not a rounding concern.
+        refSrc: framePath(prefix, 'idle', back),
+      };
     },
     // True while this unit is mid-death — render.js keeps drawing a unit at
     // hp 0 for exactly as long as this says so, otherwise the corpse is

@@ -8,6 +8,118 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v21 — 2026-09-02
+**Trinkets — GDD §5's v1 progression list is now complete.** Weapon swaps
+shipped in v7 and XP levels in v6; "a handful of passive trinkets (flat
+stat bonuses — found gear, no equip complexity)" was the last line left.
+
+- Five, in `data/trinkets.json`, all flat: +2 max HP, +1 move, +0.1 hit,
+  +1 damage, +1 range. Deliberately small — a trinket should tilt a fight,
+  never decide one, because the interesting decisions in this game are on
+  the board rather than in a stat screen.
+- **No equip complexity**, which is the load-bearing phrase in §5: no
+  inventory, no slots, no equip action. A unit walks over one and keeps
+  it, exactly like a weapon, and they stack.
+- Same drop roll as weapons, not a second economy — a body leaves ONE
+  thing, sometimes its gun and sometimes what was in its pockets
+  (`TRINKET_SHARE` 0.4, kept under half because the weapon swap is the
+  decision with real texture: it changes range and knockback, i.e. how the
+  unit plays).
+- **`unit.weapon` is now the weapon as it actually fires** (base plus every
+  trinket's weapon-field bonus) with `unit.baseWeapon` holding what was
+  picked up. Recomputing into `unit.weapon` rather than exposing an
+  `effectiveWeapon(unit)` getter is deliberate: `grid.js` and `ai.js` both
+  read weapon range and NEITHER can import from `combat.js` — combat.js
+  imports them, so it would be circular. This way every existing read stays
+  correct with no new import and there is no second code path to forget.
+  A trinket therefore keeps working after a weapon swap instead of being
+  silently attached to the gun it was found with; a test asserts exactly
+  that.
+- A +2 max HP also heals by 2 on pickup — a max bump you cannot feel is a
+  promise rather than a pickup, the same reasoning `awardXp`'s level bump
+  already uses.
+- Carried across the run in `crewProgress` like XP, re-applied through the
+  engine rather than assigned, so the bonuses land on each encounter's
+  freshly-built weapon instead of being restored as inert data.
+- **An existing test was silently changed by this and is fixed properly.**
+  The loot tests drove a constant `rng = () => 0`, which now wins the new
+  weapon-or-trinket roll too and quietly turned a weapon test into a
+  trinket test. Replaced with a scripted rng whose values are named per
+  roll (hit / drop / weapon-or-trinket), so each test says which branch it
+  actually exercises.
+- Gate: 55 -> **61 checks**. Verified in a browser: a Knuckle wrap pickup
+  takes the unit's damage 4 -> 5, appears in the selection panel's
+  "carrying" line, zero page errors.
+- Tokens: `combat.js` v7->v8, `render.js` v10->v11, `main.js` v12->v13.
+
+## v20 — 2026-09-02
+**One lineage for the cast attack art — and a direction defect recorded
+rather than shipped quietly.**
+
+The version half. `claude/turf-cast-attack-fix` carried its own **v13**
+while this branch had independently created a different v13 and built
+v14-v19 on top. Two lineages reaching the same number is the exact trap
+`CLAUDE.md` documents for Eeri ("never reuse a version number"). Resolved
+by bringing that branch's commit here and renumbering it, so there is one
+history instead of two claims on one integer; the original branch is
+superseded by this entry and needs no separate merge.
+
+The art half, stated accurately:
+
+- Its own claim is **true**: v12's windup and release described the same
+  end pose with only tension wording differing, and the rewrite gives two
+  genuinely different drawings. Measured with this branch's
+  `tools/spritecheck.py pairs` — origin-normalised silhouette IoU between
+  windup and release:
+
+  ```
+              windup <-> release      legs only
+    gunner    0.812  ->  0.419       0.723  ->  0.344
+    leopard   0.600  ->  0.532       0.578  ->  0.564
+  ```
+
+- **But the new frames are drawn in near-PROFILE**, and Sprite Bible §5
+  forbids that outright: the authored views are front diagonal (down-right)
+  and rear diagonal (up-left), with "No profile side-scroller pose" and "No
+  cardinal straight-front" both listed as rules. The idle frames — direct
+  casting-sheet crops — are correctly diagonal, so the set now drifts
+  within one character. Failure codes **D1** (wrong direction) and **D2**
+  (perspective/facing drift). The old frames were also off (roughly
+  straight-front with arms out), so this is a worse violation, not a new
+  one: the regeneration traded a mild §5 breach for the one §5 names.
+
+- **This also confounds the number above, and the earlier read of it was
+  over-claimed.** Part of that IoU drop is the body ROTATING toward
+  profile, which changes a silhouette a great deal without being the
+  two-beat mechanical difference that was wanted. A geometric similarity
+  score cannot tell a pose change from a camera change — the repo's own
+  standing lesson that "a gate that certifies *works* cannot see *looks*",
+  earned here again.
+
+- **Not regenerated**, because there is no `GEMINI_API_KEY` in this
+  environment. What a fix needs is recorded instead: the same two
+  geometrically-opposite silhouettes, re-prompted with the direction
+  pinned to the front diagonal the idle already establishes, and checked
+  against the idle rather than only against each other.
+
+- Nothing plays these frames yet — `anim.js`'s attack clip only runs for
+  gunner/leopard, and neither is in the default squad — so the defect is
+  latent rather than live. It should not reach the board before §5 is met.
+
+- **A renderer bug this art surfaced, and fixed here.** `drawUnitSprite`
+  scaled every frame to `SPRITE_H` using *that frame's own* ink height,
+  which divides the pose out: a deep attack crouch is genuinely shorter
+  than full extension, and normalising each frame independently scales the
+  crouch back up to standing height — erasing the body-height rhythm Bible
+  §7.4 calls the easiest way to spot a broken cycle, and making a character
+  swell and shrink between frames. Gunner's windup and release differ
+  **36.7%** in ink height, so this was not a rounding concern. Frames now
+  scale off the character's own idle frame, one scale per character; units
+  with a single static plate are unaffected (verified: the default squad
+  resolves no cast frame and takes the unchanged path).
+
+- Tokens: `render.js` v9->v10, `anim.js` v3->v4, `main.js` v11->v12.
+
 ## v19 — 2026-09-02
 **Enemy behaviours — GDD §10's other open question ("enemy archetypes and
 how 'weaker but numerous' translates to actual stat design").** Eighteen
