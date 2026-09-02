@@ -136,6 +136,43 @@ alone, which does hold (0px spread over the five standing frames). Its *phase
 separation* is still fully checked, and all seven pairs scored distinct — the
 best-separated set built so far, none above 0.53.
 
+## Attack clips are gated on the WEAPON, not on the silhouette
+
+`reach.cjs`, and it exists because `phase.cjs` gave a wrong answer twice.
+
+A pistol or a knife is about **2% of a sprite's pixels**. The torso, head and
+legs that did not move are most of the rest. So silhouette IoU on an attack
+clip is dominated by the part that is supposed to stay still, and a weapon
+travelling a quarter of a body height barely shifts the score. Ranged
+`recover` vs `ready` scored **0.839 — NEAR-DUPLICATE** on two frames where the
+gun is at the *hip* in one and the *chest* in the other.
+
+That mis-reading had already been written into this repo as fact: melee
+`recover` was documented as impossible to separate from `ready`, after three
+rounds of stronger wording made the number worse (0.747 -> 0.790 -> 0.877). The
+frames were fine the whole time. **Three prompt re-rolls were spent arguing
+with a broken ruler, and then the broken reading was recorded as a property of
+the model.** That is the expensive version of this mistake, and it is why the
+correction is left in `build-melee.mjs` rather than quietly deleted.
+
+`reach.cjs` measures the extreme ink in the direction the weapon travels — for
+a character angled at the lower-right, the rightmost ink — and reports **how
+high up that happens**, from 0 at the feet to 1 at the top of the head. That
+single number orders an attack:
+
+```
+ranged   ready .27   raise .64   aim .72   fire .86   <- the recoil is visible
+melee    ready .52   contact .62   recover .79   anticipation .92
+```
+
+Measured that way, melee ready vs recover sit **0.270 apart — distinct**.
+
+Honest limit: the extreme-ink probe latches onto whatever reaches furthest,
+which is not always the weapon. Ranged `recover` reads 0.076 because his braced
+back leg reaches further right than the gun he has pulled in. It still
+separates the phases, but read the number as *where the silhouette's extremity
+is*, not as *where the weapon is*, and look at the frames.
+
 ## Honest limits
 
 - These metrics catch duplicates, mirrors, drift and flat cycles. They cannot
@@ -167,6 +204,20 @@ NODE_PATH=/tmp/spritekit/node_modules node anim.cjs /tmp/cycle.gif /tmp/norm 2 1
 
 Prefer `rear-` prefixed poses for the rear diagonal; `build.mjs` switches the
 view block automatically.
+
+For an attack clip — melee or ranged — **mirror the reference first**
+(`flip.cjs`), normalise `--origin-only`, and gate with `reach.cjs`:
+
+```sh
+node flip.cjs ref/gunner.png ref/gunner-mirrored.png
+node normalise.cjs /tmp/cut /tmp/norm ready.png raise.png aim.png fire.png recover.png --origin-only
+node reach.cjs /tmp/norm ready.png raise.png aim.png fire.png recover.png
+```
+
+`--origin-only` is not optional there: a weapon swinging up crosses the
+top-of-ink band and gets measured as head (ranged `fire` read a 138px "head"
+against a real ~74px one), so rescaling on it mis-sizes every frame.
+`normalise.cjs` now says so when it sees it.
 
 For a reaction clip, swap in `build-react.mjs`, use `ASPECT=1:1` for the down
 phases, and relax the two locomotion-only gates:

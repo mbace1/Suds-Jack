@@ -1,0 +1,61 @@
+// Where the WEAPON is, frame by frame.
+//   node reach.cjs <dir> <frame...>
+//
+// Silhouette IoU is the wrong instrument for an attack clip and this file
+// exists because it gave a wrong answer twice. A pistol or a knife is ~2% of a
+// sprite's pixels; a torso and a head are most of the rest. So two frames whose
+// weapon has moved from the hip to the shoulder still score as near-duplicates,
+// because the 98% that did not move drowns out the 2% that did. Ranged
+// `recover` vs `ready` scored 0.839 — NEAR-DUPLICATE — on two frames that are
+// obviously different to the eye.
+//
+// What actually tracks the weapon is the extreme ink in the direction the
+// weapon travels. For a character facing the lower-right that is the RIGHTMOST
+// ink, and the useful number is not how far right it goes but HOW HIGH UP that
+// happens: hip, chest or above the shoulder. That one number orders an attack.
+const { chromium } = require('playwright');
+const fs = require('fs'); const path = require('path');
+
+(async () => {
+  const [dir, ...files] = process.argv.slice(2);
+  if (!files.length) { console.log('usage: node reach.cjs <dir> <frame...>'); process.exit(1); }
+  const br = await chromium.launch(); const pg = await br.newPage();
+  await pg.goto('data:text/html,<html><body></body></html>');
+
+  const rows = [];
+  for (const f of files) {
+    const b64 = fs.readFileSync(path.join(dir, f)).toString('base64');
+    const m = await pg.evaluate(async ({ url }) => {
+      const i = new Image(); i.src = url; await i.decode();
+      const W = i.width, H = i.height;
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(i, 0, 0);
+      const d = g.getImageData(0, 0, W, H).data;
+      let y0 = H, y1 = -1, x1 = -1, tipY = -1;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+        if (d[(y * W + x) * 4 + 3] > 127) {
+          if (y < y0) y0 = y; if (y > y1) y1 = y;
+          if (x > x1) { x1 = x; tipY = y; }
+        }
+      const ih = y1 - y0 + 1;
+      // reach: how far right the ink goes, as a fraction of the figure's height
+      // height: where that happens, 0 at the feet and 1 at the top of the head
+      return { reach: (x1 - W / 2) / ih, height: (y1 - tipY) / ih };
+    }, { url: `data:image/png;base64,${b64}` });
+    rows.push({ f, ...m });
+  }
+  await br.close();
+
+  console.log('frame'.padEnd(30), 'reach'.padStart(7), 'height'.padStart(7));
+  for (const r of rows) console.log(r.f.replace(/\.png$/, '').padEnd(30), r.reach.toFixed(3).padStart(7), r.height.toFixed(3).padStart(7));
+
+  // the pairwise distance in that 2-D signature; 0.05 of a body height is about
+  // a hand's width, which is the smallest move worth calling a separate phase
+  console.log('\npair'.padEnd(41), 'dist'.padStart(6), '  verdict');
+  for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) {
+    const a = rows[i], b = rows[j];
+    const dist = Math.hypot(a.reach - b.reach, a.height - b.height);
+    const label = `${a.f.replace(/\.png$/, '')} vs ${b.f.replace(/\.png$/, '')}`;
+    console.log(label.padEnd(40), dist.toFixed(3).padStart(6), '  ', dist < 0.05 ? 'SAME weapon position' : 'distinct');
+  }
+})();

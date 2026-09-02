@@ -76,6 +76,13 @@ const HEAD_SLICE = 0.22, FOOT_MARGIN = 10;
       for (const f of files) fs.copyFileSync(path.join(dir, f), path.join(outDir, f));
       console.log(`REVERTED: rescaling made the spread worse (${pct(hw).toFixed(1)}% -> ${pct(after).toFixed(1)}%), originals copied through.`);
       console.log(`  The head-width anchor is not stable on this character — expect loose hair or a limb reaching into the head band. Set the scale by hand, or gate this clip with drift.cjs --no-scale.`);
+    } else if (pct(after) > 4) {
+      // it improved, but not to anywhere trustworthy. An attack clip does this:
+      // the weapon swings up into the top-of-ink band and gets measured as head
+      // (ranged `fire` read 138px against a real ~74px). Scaling on that number
+      // then mis-sizes every frame relative to the others.
+      console.log(`WARNING: spread is still ${pct(after).toFixed(1)}% after rescaling (tolerance is 4%).`);
+      console.log(`  Something other than the head is being measured as head — usually a weapon or a raised arm swinging into the top of the sprite. Prefer --origin-only for this clip.`);
     }
   }
   await br.close();
