@@ -79,6 +79,63 @@ would fix the metric by deleting the animation. Scale is measured on head
 width, which does not compress through a cycle; height variation is reported
 as a feature that must be **present**.
 
+## Reactions: what the down poses needed, and what the metrics cannot do
+
+`build-react.mjs` covers hit (impact / recoil / catch) and KO (stagger /
+buckle / fall / ko_impact / settled). It is the same screen-space rule, but
+these are whole-body reactions, so the anchor is where the **body mass** sits
+in the picture rather than a foot or a weapon.
+
+**A character with no floor under her cannot be told to lie on the ground.**
+The OUTPUT block bans a drawn floor and a cast shadow, so the model had nothing
+to lie *along* and drew a standing pose **rotated onto its head** — legs
+vertical, boots at the top of the frame — for `fall`, `ko_impact` and
+`settled` alike. Escalating the wording did not move it. What did:
+
+- **Name the bottom edge of the picture as the ground line**, then place the
+  ends of the body against it — *head near the bottom-left corner, boots near
+  the bottom-right, everything strung out low between them*. The pose becomes
+  a layout instruction, which is the same trick that made locomotion work.
+- **Give it a measurable self-check**: *the picture of her must be clearly
+  wider than it is tall*. That is checkable by eye and by bbox aspect.
+- **Say the ground is implied and not drawn**, or the two clauses contradict
+  each other and the model resolves the contradiction by ignoring one.
+- **Drop the standing facing lock on the down phases.** "Angled toward the
+  lower-right" describes a figure on its feet; asserted over a body lying
+  down, it reads as a contradiction and pulls the pose back upright.
+- **Generate the down frames on a square canvas.** A 2:3 portrait frame fights
+  a horizontal pose; `fall` came back vertical three times at 2:3.
+
+`fall` took three attempts. The one that worked was not stronger wording — it
+was the `ko_impact` vocabulary reused verbatim with the landing removed. When
+a phase resists, **change the words, do not raise your voice**; that is the
+same lever the melee facing bug turned out to need.
+
+### Head width is not a valid scale anchor for a reaction
+
+`drift.cjs` gained `--no-scale` and `--no-rhythm`, and `normalise.cjs` gained
+`--origin-only`, because two of the three checks are **locomotion-only rules**:
+
+- Body-height rhythm comes from Bible §7.4, which is about a stride. A
+  knockdown has no stride to bob through.
+- Head width is pose-invariant *through a run cycle*. A reaction breaks that
+  assumption on purpose: a head snapped back or lolling is genuinely **wider
+  in projection** than a level one. Measured across five slice widths (0.08 /
+  0.10 / 0.12 / 0.16 / 0.22) the best spread on the hit/KO set was 47.6% — the
+  ruler is not the problem, the premise is.
+
+`measure.cjs` is now the single in-page measurement both tools inject, so the
+checker and the fixer cannot disagree about what head width means. It scores a
+connected blob rather than the longest ink run in a row, which stops a hand and
+a head on the same row reading as one 160px head — but **an arm still merges at
+the shoulder**, and a ponytail, hat or hood is part of the head blob either
+way. A scale anchor that survives moving hair is still open.
+
+So a reaction clip is normalised `--origin-only` and gated on its ground line
+alone, which does hold (0px spread over the five standing frames). Its *phase
+separation* is still fully checked, and all seven pairs scored distinct — the
+best-separated set built so far, none above 0.53.
+
 ## Honest limits
 
 - These metrics catch duplicates, mirrors, drift and flat cycles. They cannot
@@ -110,3 +167,12 @@ NODE_PATH=/tmp/spritekit/node_modules node anim.cjs /tmp/cycle.gif /tmp/norm 2 1
 
 Prefer `rear-` prefixed poses for the rear diagonal; `build.mjs` switches the
 view block automatically.
+
+For a reaction clip, swap in `build-react.mjs`, use `ASPECT=1:1` for the down
+phases, and relax the two locomotion-only gates:
+
+```sh
+node normalise.cjs /tmp/cut /tmp/norm impact.png recoil.png catch.png --origin-only
+node drift.cjs /tmp/norm impact.png recoil.png catch.png --no-scale --no-rhythm
+node phase.cjs /tmp/norm pairs.json full     # whole-body, so `full`, not `lower`
+```
