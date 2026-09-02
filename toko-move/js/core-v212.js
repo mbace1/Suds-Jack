@@ -9,10 +9,11 @@ import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
 import {SHIFT} from './live-network.js?v=5';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
-import {loadGround,STREET_TIERS} from './ground.js?v=3';
+import {loadGround,STREET_TIERS} from './ground.js?v=4';
+import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.20';
+const BUILD_VERSION='2.21';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -20,7 +21,7 @@ let flow,challenge,renderer,transit,city,water,ground,source,transitView=false,d
 let box,roads,camera;
 const say=s=>{msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -238,6 +239,18 @@ const CREDIT_H=21;
 // The licence conditions, on screen. ODbL and CC BY are conditions of use, not
 // a courtesy, and the packs carry their own attribution strings so this cannot
 // drift from what is actually being drawn.
+// The landmarks sit ON the ground layer, above the streets and under the
+// network: a tram passes in front of the cathedral, and the cathedral stands on
+// the street. They are hidden at CITY scale, where a 15px building among the
+// whole of Helsinki is a speck arguing with a stop dot — a landmark you cannot
+// tell from a marker is not doing a landmark's job.
+let _lmPoints=null;
+function drawLandmarkLayer(ctx){if(!ground?.landmarks||!city)return;
+  if(camera&&camera.nearestScale()==='city')return;
+  if(!_lmPoints)_lmPoints=landmarkPoints(ground.landmarks,city.resolved);
+  const base=baseProjection(),pxPerMetre=(base.scale*(camera?camera.zoom:1))/111320;
+  drawLandmarks(ctx,_lmPoints,fitLatLon,pxPerMetre,renderer?.dpr||1);}
+
 function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=viewRect(),t=ground.credit();if(!t)return;
   ctx.save();ctx.font=`${Math.round(7.5*d)}px ui-monospace,monospace`;ctx.textAlign='left';ctx.textBaseline='bottom';
   ctx.globalAlpha=.72;ctx.fillStyle=NIGHT.credit;
@@ -336,7 +349,7 @@ function paintGround(dest){const c=$('map');
     g.clearRect(0,0,_ground.width,_ground.height);
     g.save();const r=boardRect();g.beginPath();g.rect(r.x,r.y,r.w,r.h);g.clip();
     g.fillStyle=NIGHT.paper;g.fillRect(r.x,r.y,r.w,r.h);
-    drawWater(g);drawDistricts(g);drawRoads(g);g.restore();}
+    drawWater(g);drawDistricts(g);drawRoads(g);drawLandmarkLayer(g);g.restore();}
   dest.drawImage(_ground,0,0);}
 
 // The board is painted here bottom-up — paper, water, districts, roads, lines,
