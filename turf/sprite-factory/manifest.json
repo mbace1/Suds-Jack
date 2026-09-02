@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "project": "TURF",
   "sourceReferences": [
     "../references/casting-sheet-full.png",
@@ -10,7 +10,7 @@
   "directions": ["front_iso", "rear_iso"],
   "actions": {
     "idle": {"targetFrames": 4, "priority": 1, "phases":["rest","inhale","peak","exhale"]},
-    "move": {"targetFrames": 12, "priority": 2, "requiresMotionLedger": true, "phases":["left_contact","left_compression","left_push","left_pass","left_reach","left_precontact","right_contact","right_compression","right_push","right_pass","right_reach","right_precontact"]},
+    "move": {"targetFrames": 12, "priority": 2, "requiresMotionLedger": true, "oppositePhaseOffset": 6, "phases":["left_contact","left_compression","left_push","left_pass","left_reach","left_precontact","right_contact","right_compression","right_push","right_pass","right_reach","right_precontact"]},
     "melee": {"targetFrames": 5, "priority": 3, "phases":["ready","anticipation","contact","followthrough","recover"]},
     "ranged": {"targetFrames": 5, "priority": 3, "phases":["ready","aim","fire","recoil","recover"]},
     "hit": {"targetFrames": 3, "priority": 4, "phases":["impact","recoil","catch"]},
@@ -28,7 +28,8 @@
   "stores": {
     "candidates": "candidates.json",
     "motionLedgerSchema": "motion-ledger.schema.json",
-    "renderPacketBuilder": "build-render-packet.mjs"
+    "renderPacketBuilder": "build-render-packet.mjs",
+    "renderPacketTests": "test.mjs"
   },
   "characters": [
     {"id":"cast_01_buzzcut_knife","label":"Buzzcut knife","source":"casting-sheet-full","status":"active"},
