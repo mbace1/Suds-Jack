@@ -4,7 +4,7 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=11';
+import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=12';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit,
@@ -35,9 +35,14 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     return alive ? { x: alive.x, y: alive.y } : { x: 0, y: 0 };
   }
 
+  // Client point -> BOARD coordinates. Scaled off layout, NOT canvas.width:
+  // the backing store is SUPERSAMPLE x the board's logical size (render.js),
+  // so canvas.width would land every tap 3x out. Everything downstream —
+  // screenToGrid, unitAtPoint, TILE_W, SPRITE_H — is in board units.
   function clientToInternal(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+    const layout = getLayout();
+    const scaleX = layout.width / rect.width, scaleY = layout.height / rect.height;
     return { px: (clientX - rect.left) * scaleX, py: (clientY - rect.top) * scaleY };
   }
 

@@ -71,7 +71,11 @@
     background-repeat: no-repeat, no-repeat, no-repeat;
     background-color: #07080b;
   }
-  #board { image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: pointer; display: block; }
+  /* No image-rendering: pixelated here any more. The canvas backing store is
+     now SUPERSAMPLE x the board's logical size (render.js), so it already
+     carries the art's own detail; forcing nearest-neighbour on top of that
+     would throw away exactly what the supersample was added to keep. */
+  #board { touch-action: none; cursor: pointer; display: block; }
 
   .unitBtn {
     flex: 1; min-height: 44px; padding: 5px 9px; background: #1c1f26; border: 1px solid #262a32;
@@ -178,7 +182,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=14"></script>
+  <script type="module" src="js/main.js?v=15"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

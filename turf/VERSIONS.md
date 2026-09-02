@@ -8,6 +8,43 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v23 — 2026-09-02
+**"The characters looked very pixelated" — they were, and the cause was
+the board throwing the art away twice.** Owner, on a phone screenshot of
+v22.
+
+- The character plates are **288px illustrations** (9-12k colours;
+  `art-src/sprites/README.md` is explicit that they were cut for
+  illustration fidelity, not retro pixel art). The board rendered at its
+  logical size — about 320px wide — so `drawUnitSprite` nearest-neighbour
+  downscaled a plate **6.3x** to `SPRITE_H`, sampling roughly every sixth
+  pixel and discarding ~97% of it. CSS then magnified that loss back up
+  ~3x on a phone. Detail destroyed once, then enlarged.
+- **Fixed by supersampling**: the canvas backing store is now
+  `SUPERSAMPLE` (3) times the board's logical size, and `render()` scales
+  the context by the factor it reads back off the canvas. Every draw call
+  keeps working in plain board units and knows nothing about it — no
+  coordinate maths moved. `image-rendering: pixelated` came off `#board`,
+  since forcing nearest-neighbour on top of a supersampled buffer throws
+  away exactly what the supersample exists to keep.
+- **A simpler fix was tried first and rejected on the evidence.** Doing a
+  high-quality resample (LANCZOS-equivalent) at the old resolution rings
+  against the plates' hard alpha edge and speckles red/green/blue along
+  the silhouette — visibly worse than the nearest-neighbour it replaced.
+  Checked as an image before it went near the game. Smoothing is only
+  enabled now because at SS=3 a plate lands at ~138px instead of 46, where
+  averaging reads as detail rather than as fringing.
+- **This broke tapping, and would have shipped silently.** `input.js`
+  scaled a click by `canvas.width / rect.width` — which is now 3x the
+  logical width, putting every tap a third of the board away from where
+  the player pointed. It scales off `layout` instead now; everything
+  downstream (`screenToGrid`, `unitAtPoint`, `TILE_W`, `SPRITE_H`) is in
+  board units. Verified by dispatching a real pointer event at a unit's
+  drawn position and asserting that unit gets selected, at DPR 3.
+- No change to the game, the board layout, or how large anything appears —
+  only how many real pixels carry it.
+- Tokens: `render.js` v11->v12, `input.js` v7->v8, `main.js` v14->v15.
+
 ## v22 — 2026-09-02
 **The game was not winnable, and the goal was the reason.** Measured over
 300 bot runs across the five encounters: **zero wins**. Not close — on
