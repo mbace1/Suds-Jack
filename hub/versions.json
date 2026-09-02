@@ -1,92 +1,20 @@
 {
-  "sudsjack": {
-    "v": "5",
-    "n": 5000,
-    "from": "VERSIONS.md"
-  },
-  "tokodrop": {
-    "v": "221",
-    "n": 221000,
-    "from": "VERSIONS.md"
-  },
-  "hyperdagger": {
-    "v": "34",
-    "n": 34000,
-    "from": "VERSIONS.md"
-  },
-  "dropcabal": {
-    "v": "3",
-    "n": 3000,
-    "from": "VERSIONS.md"
-  },
-  "powder": {
-    "v": "2",
-    "n": 2000,
-    "from": "cache token"
-  },
-  "paperboy": {
-    "v": "4",
-    "n": 4000,
-    "from": "cache token"
-  },
-  "skltr": {
-    "v": "92",
-    "n": 92000,
-    "from": "cache token"
-  },
-  "flashprince": {
-    "v": "3",
-    "n": 3000,
-    "from": "VERSIONS.md"
-  },
-  "eeri": {
-    "v": "15.49",
-    "n": 15049,
-    "from": "VERSIONS.md"
-  },
-  "turf": {
-    "v": "21",
-    "n": 21000,
-    "from": "VERSIONS.md"
-  },
-  "gameoflife": {
-    "v": "40",
-    "n": 40000,
-    "from": "VERSIONS.md"
-  },
-  "kindling": {
-    "v": "11",
-    "n": 11000,
-    "from": "VERSIONS.md"
-  },
-  "radiofree": {
-    "v": "37",
-    "n": 37000,
-    "from": "cache token"
-  },
-  "tokomove": {
-    "v": "2.18",
-    "n": 2018,
-    "from": "VERSIONS.md"
-  },
-  "tinyhawk": {
-    "v": "6",
-    "n": 6000,
-    "from": "VERSIONS.md"
-  },
-  "tiny2d": {
-    "v": "3",
-    "n": 3000,
-    "from": "VERSIONS.md"
-  },
-  "brand": {
-    "v": "5",
-    "n": 5000,
-    "from": "VERSIONS.md"
-  },
-  "toko": {
-    "v": "5",
-    "n": 5000,
-    "from": "VERSIONS.md"
-  }
+  "sudsjack": {"v":"5","n":5000,"from":"VERSIONS.md"},
+  "tokodrop": {"v":"221","n":221000,"from":"VERSIONS.md"},
+  "hyperdagger": {"v":"34","n":34000,"from":"VERSIONS.md"},
+  "dropcabal": {"v":"3","n":3000,"from":"VERSIONS.md"},
+  "powder": {"v":"2","n":2000,"from":"cache token"},
+  "paperboy": {"v":"4","n":4000,"from":"cache token"},
+  "skltr": {"v":"96","n":96000,"from":"cache token"},
+  "flashprince": {"v":"3","n":3000,"from":"VERSIONS.md"},
+  "eeri": {"v":"15.49","n":15049,"from":"VERSIONS.md"},
+  "turf": {"v":"21","n":21000,"from":"VERSIONS.md"},
+  "gameoflife": {"v":"40","n":40000,"from":"VERSIONS.md"},
+  "kindling": {"v":"11","n":11000,"from":"VERSIONS.md"},
+  "radiofree": {"v":"37","n":37000,"from":"cache token"},
+  "tokomove": {"v":"2.18","n":2018,"from":"VERSIONS.md"},
+  "tinyhawk": {"v":"6","n":6000,"from":"VERSIONS.md"},
+  "tiny2d": {"v":"3","n":3000,"from":"VERSIONS.md"},
+  "brand": {"v":"5","n":5000,"from":"VERSIONS.md"},
+  "toko": {"v":"5","n":5000,"from":"VERSIONS.md"}
 }
