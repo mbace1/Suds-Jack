@@ -26,10 +26,36 @@ s.listen(0,'127.0.0.1',async()=>{const base='http://127.0.0.1:'+s.address().port
  // actually reaches this hub going the right way — that gate is the whole game,
  // so the test waits it out at speed rather than clicking a dead button.
  await p.click('#speed'); await p.click('#speed');
- ok('catch is refused until a real vehicle arrives',await p.evaluate(()=>[...document.querySelectorAll('.catchChoice')].every(b=>b.disabled)));
+ // The rule is that a catch is GATED on a compatible vehicle actually being
+ // here going the right way — not that you always have to wait first. Asserting
+ // "everything is disabled the instant you take a job" only held while catches
+ // were nearly unreachable, and it went red the moment the vehicles were given
+ // a speed that matches the clock. So watch the gate work in BOTH directions
+ // instead: it must refuse at some point, and it must open at some point.
+ let sawClosed=false, sawOpen=false;
+ // kept SHORT on purpose: the first job's deadline is about 130 ticks, and an
+ // observation loop long enough to be thorough spends that deadline before the
+ // catch below can commit — which is exactly what happened on the first cut.
+ for(let i=0;i<10 && !(sawClosed&&sawOpen);i++){
+   const n=await p.evaluate(()=>[...document.querySelectorAll('.catchChoice')].filter(b=>!b.disabled).length);
+   if(n===0)sawClosed=true; else sawOpen=true;
+   await p.waitForTimeout(120);
+ }
+ ok('catch is refused while no compatible vehicle is here',sawClosed);
  await p.waitForSelector('.catchChoice:not([disabled])',{timeout:60000});
- ok('a catchable service does arrive',await p.evaluate(()=>document.querySelectorAll('.catchChoice:not([disabled])').length>=1));
- const before=await p.evaluate(()=>window.__tm.flow.routes.drawn.length); await p.click('.catchChoice:not([disabled])'); await p.waitForTimeout(250);
+ ok('and opens when one does arrive',sawOpen||await p.evaluate(()=>document.querySelectorAll('.catchChoice:not([disabled])').length>=1));
+ const before=await p.evaluate(()=>window.__tm.flow.routes.drawn.length);
+ // The sheet re-renders on a timer and a vehicle can leave the catch window
+ // between the selector matching and the click landing, so a single click is a
+ // check-then-act race — it failed about one run in five. A player who presses
+ // CATCH just as the tram pulls away simply presses the next one, so the gate
+ // does that too: try until a trip commits, or give up and let the assertion
+ // below report it honestly.
+ for (let i = 0; i < 25; i++) {
+   if (await p.evaluate(() => !!window.__tm.challenge.activeTrip)) break;
+   await p.click('.catchChoice:not([disabled])', { timeout: 2000 }).catch(() => {});
+   await p.waitForTimeout(200);
+ }
  ok('catch commits an existing HSL service plan',await p.evaluate(()=>{const ch=window.__tm.challenge;return !!ch.activeTrip&&!ch.waitingForCatch&&Array.isArray(ch.activeTrip.legs)&&ch.activeTrip.legs.length>=1;}));
  ok('catching creates no player-drawn line',await p.evaluate(n=>window.__tm.flow.routes.drawn.length===n,before));
  ok('fixed services come from HSL tram + metro',await p.evaluate(()=>{const rs=window.__tm.flow.routes.list.filter(r=>r.fixed);return rs.some(r=>r.mode==='metro'&&(r.label==='M1'||r.label==='M2'))&&rs.some(r=>r.mode==='tram'&&['2','3','4','5','6','7','8H','8T','9','13'].includes(r.label))&&!rs.some(r=>['T','R','M'].includes(r.label));}));
