@@ -227,3 +227,40 @@ node normalise.cjs /tmp/cut /tmp/norm impact.png recoil.png catch.png --origin-o
 node drift.cjs /tmp/norm impact.png recoil.png catch.png --no-scale --no-rhythm
 node phase.cjs /tmp/norm pairs.json full     # whole-body, so `full`, not `lower`
 ```
+
+## Is it an app? — `make.mjs`
+
+`node make.mjs <move|move12|melee|ranged|react|idle> <identity.txt> <ref.png> <outDir>`
+
+One command runs the whole chain: build the prompts, generate, key the magenta,
+fit to 192×288, normalise, gate, and export a GIF. It was written to answer
+whether the recipe is stable enough to wrap, and the answer is **yes for the
+pipeline, not yet for the judgement**.
+
+What it proves: every clip-specific decision this toolchain has learned is now
+**four fields in one table** — the phase list, the canvas each phase wants, how
+it is normalised, and which gate reads it. That is the entire body of knowledge,
+and it is small:
+
+```
+move    2:3   scale+origin   phase (lower)
+melee   2:3   origin only    reach          + mirrored reference
+ranged  2:3   origin only    reach          + mirrored reference
+react   2:3, and 1:1 for the down phases    origin only   phase (full, --no-scale --no-rhythm)
+idle    2:3   one frame, then breathe.cjs   no gate — the breath is computed
+```
+
+Everything else in `make.mjs` is plumbing. An app would be a form over that
+table plus a queue, and the generation cost is the only thing that scales.
+
+What it does **not** solve, and what stops this being a product rather than a
+tool: **no gate here can tell you a pose is good.** They tell you a pose is
+distinct, in scale, and on the ground. So the run ends by printing the path to
+a GIF and saying so, and a person still has to watch it.
+
+The first end-to-end run on a character the recipe had never seen made the case
+both ways. It completed unattended — and its gate immediately caught a real
+fault: `anticipation` and `followthrough` came back with the knife at the same
+height (0.983 and 0.956, a separation of 0.036, flagged SAME weapon position),
+when followthrough is supposed to end low. A human never had to notice that.
+A human does still have to decide whether the re-roll is better.
