@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "project": "TURF",
   "sourceReferences": [
     "../references/casting-sheet-full.png",
@@ -9,19 +9,26 @@
   ],
   "directions": ["front_iso", "rear_iso"],
   "actions": {
-    "idle": {"targetFrames": 4, "priority": 1},
-    "move": {"targetFrames": 12, "priority": 2},
-    "melee": {"targetFrames": 5, "priority": 3},
-    "ranged": {"targetFrames": 5, "priority": 3},
-    "hit": {"targetFrames": 3, "priority": 4},
-    "ko": {"targetFrames": 5, "priority": 5}
+    "idle": {"targetFrames": 4, "priority": 1, "phases":["rest","inhale","peak","exhale"]},
+    "move": {"targetFrames": 12, "priority": 2, "requiresMotionLedger": true, "phases":["left_contact","left_compression","left_push","left_pass","left_reach","left_precontact","right_contact","right_compression","right_push","right_pass","right_reach","right_precontact"]},
+    "melee": {"targetFrames": 5, "priority": 3, "phases":["ready","anticipation","contact","followthrough","recover"]},
+    "ranged": {"targetFrames": 5, "priority": 3, "phases":["ready","aim","fire","recoil","recover"]},
+    "hit": {"targetFrames": 3, "priority": 4, "phases":["impact","recoil","catch"]},
+    "ko": {"targetFrames": 5, "priority": 5, "phases":["stagger","buckle","fall","impact","settled"]}
   },
   "validation": {
     "background": "#FF00FF",
     "preferredPlate": [192, 288],
     "quantise": false,
     "duplicatePolicy": "near-duplicate frames have zero animation value",
-    "progressPolicy": "only approved coverage counts"
+    "progressPolicy": "only approved coverage counts",
+    "hardGates": ["output_type","text_free","shadow_free","vfx_free","dimensions","alpha","background","anatomy","origin","motion_contract","adjacent_continuity"],
+    "pairedOppositionRequiredFor": ["move"]
+  },
+  "stores": {
+    "candidates": "candidates.json",
+    "motionLedgerSchema": "motion-ledger.schema.json",
+    "renderPacketBuilder": "build-render-packet.mjs"
   },
   "characters": [
     {"id":"cast_01_buzzcut_knife","label":"Buzzcut knife","source":"casting-sheet-full","status":"active"},
