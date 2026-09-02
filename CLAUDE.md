@@ -115,6 +115,16 @@ Browser bullet-hell survival game (three.js, ES modules, no build step).
   plays each, and fails on mode leaks (CLOSE COMBAT/SHEPHERD reaching a
   cabinet), a dead retro pass, or any page error. Run it alongside `smoke.sh`
   whenever a release touches mode-wide systems or `inCabinet()`.
+- **`scripts/webgpu-smoke.sh` is the TSL gate** (v236) — **run it for any
+  change that touches a node graph.** `smoke.sh` and `cabinets.sh` both rewrite
+  the importmap to the CLASSIC bundle, so neither has ever executed one line of
+  the WebGPU build: v218/v222/v223/v228 all shipped on hand-checks alone. This
+  was measured, not assumed — a bogus `TSL.*` call injected into
+  `makeFloorMat()` (a graph that throws on boot for every WebGPU player) passed
+  **green through check-syntax.sh, smoke.sh AND cabinets.sh**, and only this
+  gate caught it. It also refuses to pass vacuously: it asserts `IS_GPU` and
+  that the floor is a NodeMaterial with a `colorNode`, so a silently-classic
+  boot fails loudly instead of green-lighting a run that tested nothing.
 
 ## Showing, not describing (v211)
 
