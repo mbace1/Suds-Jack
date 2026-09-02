@@ -136,7 +136,7 @@ server.listen(0, '127.0.0.1', async () => {
 
   const final = await page.evaluate(() => {
     const ch = window.__tm.challenge;
-    return { index: ch.index, score: ch.score, late: ch.late, tick: window.__tm.flow.clock.tick };
+    return { index: ch.index, score: ch.score, late: ch.late, tick: window.__tm.flow.clock.tick, target: ch.constructor?.TARGET ?? window.__tm.deliveryTarget ?? 6 };
   }).catch(() => ({}));
 
   const done = jobs.filter(j => j.caught != null);
@@ -145,7 +145,7 @@ server.listen(0, '127.0.0.1', async () => {
   const half = Math.ceil(waits.length / 2);
 
   console.log('\n  TOKO MOVE — shift report card\n  ' + '-'.repeat(58));
-  console.log(`  jobs taken            ${jobs.length}    completed ${final.index ?? 0} / 10    score ${final.score ?? 0}    late ${final.late ?? 0}`);
+  console.log(`  jobs taken            ${jobs.length}    completed ${final.index ?? 0} / ${final.target ?? '?'}    score ${final.score ?? 0}    late ${final.late ?? 0}`);
   console.log(`  shift length          ${final.tick ?? 0} ticks`);
   console.log(`  DEAD AIR              ${deadAir} ticks (${pct(deadAir, final.tick || 1)} of the shift)`);
   console.log('                        holding a parcel with nothing catchable and nowhere to walk');
