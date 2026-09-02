@@ -5,23 +5,18 @@
     "from": "VERSIONS.md"
   },
   "tokodrop": {
-    "v": "232",
-    "n": 232000,
-    "from": "VERSIONS.md"
-  },
-  "flashprince": {
-    "v": "65",
-    "n": 65000,
+    "v": "221",
+    "n": 221000,
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": "37",
-    "n": 37000,
+    "v": "34",
+    "n": 34000,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
-    "v": "2",
-    "n": 2000,
+    "v": "3",
+    "n": 3000,
     "from": "VERSIONS.md"
   },
   "powder": {
@@ -39,9 +34,9 @@
     "n": 84000,
     "from": "cache token"
   },
-  "neonronin": {
-    "v": "2",
-    "n": 2000,
+  "flashprince": {
+    "v": "3",
+    "n": 3000,
     "from": "VERSIONS.md"
   },
   "eeri": {
@@ -49,14 +44,9 @@
     "n": 15049,
     "from": "VERSIONS.md"
   },
-  "eerigodot": {
-    "v": "40",
-    "n": 40000,
-    "from": "cache token"
-  },
   "turf": {
-    "v": "9",
-    "n": 9000,
+    "v": "19",
+    "n": 19000,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
@@ -65,19 +55,14 @@
     "from": "VERSIONS.md"
   },
   "kindling": {
-    "v": "9",
-    "n": 9000,
+    "v": "11",
+    "n": 11000,
     "from": "VERSIONS.md"
   },
   "radiofree": {
-    "v": "43",
-    "n": 43000,
+    "v": "37",
+    "n": 37000,
     "from": "cache token"
-  },
-  "piritori": {
-    "v": "4.25",
-    "n": 4025,
-    "from": "VERSIONS.md"
   },
   "tokomove": {
     "v": "2.14",
@@ -90,13 +75,8 @@
     "from": "VERSIONS.md"
   },
   "tiny2d": {
-    "v": "4",
-    "n": 4000,
-    "from": "VERSIONS.md"
-  },
-  "eyetest": {
-    "v": "1",
-    "n": 1000,
+    "v": "3",
+    "n": 3000,
     "from": "VERSIONS.md"
   },
   "brand": {

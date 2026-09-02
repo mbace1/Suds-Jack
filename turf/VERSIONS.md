@@ -8,6 +8,564 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v19 — 2026-09-02
+**Enemy behaviours — GDD §10's other open question ("enemy archetypes and
+how 'weaker but numerous' translates to actual stat design").** Eighteen
+enemies had shipped, and every one of them ran the same plan: close on the
+nearest operator and swing. They differed only in how much damage they did.
+In a game whose whole design is the telegraph, that means the roster was one
+enemy with eighteen portraits — two enemies that both say "I will hit Blade"
+are not two enemies.
+
+- **Four behaviours**, naming how an enemy wants to STAND when it attacks.
+  `charger` goes straight at you. `skirmisher` keeps the range its gun gives
+  it and pays a real penalty for ending up in anyone's melee reach — which
+  is what turns a handgun grunt from "a knife that shoots" into something
+  you have to close on. `holder` prefers tiles where the target's shot back
+  would be softened by cover. `flanker` refuses to shoot into cover,
+  preferring the angle where the target's own cover does not help — which is
+  what stops a player parking in partial cover and treating it as a wall.
+- **Two focuses**, naming who it wants dead. `nearest`, or `weakest` — the
+  one that makes a pack dangerous, because it finishes the operator you were
+  about to pull out instead of letting it walk away.
+- **Behaviour follows the weapon**, so what an enemy does matches what it
+  holds and a player can guess the intent from the sprite before reading the
+  telegraph. Three individuals deliberately break their weapon's default
+  (both move-4 grunts flank; Sable is a shooter who stays put), so the roster
+  is not fully predictable from the kit alone.
+- **`approachTile` was left alone.** It answers "the cheapest tile to attack
+  from", which is exactly the question a behaviour needs to disagree with —
+  and input.js's click-to-attack depends on it meaning what it means. ai.js
+  enumerates its own candidates instead.
+- **Ties break on uid everywhere**, because the telegraph is recomputed after
+  every player action and an intent that flickers between two equally good
+  tiles is unreadable even though each frame is individually correct. A test
+  asserts replanning an unchanged board gives an identical plan.
+- **No new board marker.** `drawTelegraph` already shows where each enemy
+  will stand and who it hits — that IS the behaviour made visible, and a
+  fifth icon on top of it would be icon soup, not information. The archetype
+  is named in the turn narration instead ("Shooter keeps its distance",
+  "Blunt closes in"), which teaches the vocabulary through play rather than
+  through a legend nobody reads.
+- Data-driven per GDD §3: an unknown behaviour or focus falls back to
+  charger/nearest, so a typo in content is a dull enemy, never a crash.
+- Gate: 50 -> **55 checks**. The behaviour test proves a skirmisher actually
+  stands further off than a charger from the same tile, rather than just
+  asserting the field exists — a data field nothing can distinguish is not a
+  feature.
+- Tokens: `ai.js` v3->v4, `combat.js` v6->v7, `main.js` v10->v11.
+
+## v18 — 2026-09-02
+**Hazards — GDD §10's open question ("obstacles, cover, elevation, hazards
+... Nordic-specific set dressing with mechanical teeth") answered, and with
+it the thing that finally makes knockback a weapon.** The pipe has shipped
+since v1 pushing bodies two tiles for no particular reason; there was
+nothing on the board to push them INTO. Into the Breach — this game's
+stated telegraphing north star — is built almost entirely on that verb.
+
+- **Three kinds, in `data/hazards.json`** (data-driven per GDD §3; the
+  engine reads ids and knows nothing about fire as a concept). Den fire:
+  2 on entry AND 2 again at the end of the round if you are still standing
+  in it, so crossing is a toll and stopping is a mistake — the only hazard
+  that pushes units around the board rather than around one tile. Broken
+  glass: 1 on entry, no linger, a cheap price on a shortcut. Open
+  stairwell: lethal, ignores HP entirely.
+- **A hazard never blocks movement.** That is what cover is for. A hazard
+  makes a tile cost something, so the board asks a question instead of
+  drawing a wall — and every one applies to BOTH factions, because an
+  asymmetric hazard is a trap the player learns to ignore, and the symmetry
+  is what lets a player set one up on purpose.
+- **One entry point, not three.** A player move, a knockback and an enemy's
+  own step all route through `enterHazard`, because the third copy is
+  always the one that forgets to check. It runs `checkWinLoss` itself: a
+  fire killing the last operator has to end the encounter exactly like a
+  killing blow.
+- **A lethal hazard CATCHES what is shoved across it** — found by the new
+  test, and a real bug rather than a test artifact. The pipe's knockback is
+  2, so a body shoved at a stairwell sailed clean over it and landed on the
+  far side; worse, it made the HEAVIEST knockback weapons the worst at
+  using a pit, the exact opposite of the intent. `applyKnockback` now stops
+  on a lethal tile. Non-lethal hazards do not stop momentum — you only pay
+  for the tile you come to rest on. A shove-kill credits the shover.
+- **The AI understands them, or the telegraph lies.** `ai.js` scores a
+  candidate tile's hazard cost in HP (a lethal tile costs the enemy's whole
+  bar, so it is never chosen but the comparison stays arithmetic), takes a
+  firing position unless standing there would kill it outright, and
+  otherwise trades 1 HP against 1.5 tiles of approach — enough to route a
+  healthy enemy around a fire, not enough to refuse a scratch for a
+  shortcut. A full-information game cannot show a plan its own actor would
+  regret; a test asserts no telegraphed move steps into a lethal tile.
+- **Read by shape, not just colour.** Fire fills the tile and flickers
+  upward, glass is a scatter of hard shards, the stairwell is a hole — the
+  only one that reads as an absence, because it is the only one that is not
+  survivable. Fire is deliberately RED-orange: `PAL.TELEGRAPH` is amber, and
+  "this tile burns" must never sit in the same colour band as "an enemy will
+  hit this tile" — one is a standing property of the board, the other a
+  promise about next turn. Drawn into the floor, under the move/attack
+  highlights, since "can I reach it" and "what does it cost" are asked in
+  that order.
+- Placement escalates across the sequence: backlot teaches with glass alone
+  (nothing lethal in the tutorial fight), fire arrives at loading-dock, the
+  first stairwell at warehouse once the player has met both. A test asserts
+  no hazard overlaps cover or a spawn.
+- Hazard damage gets its own floating number and flash, or a unit loses
+  health with nothing on screen accounting for it; a lethal tile floats its
+  name instead of a number. The attack toast names the hazard when a shove
+  ends in one, since a shove-kill otherwise reads as a kill with no damage
+  behind it.
+- Gate: 41 -> **50 checks**.
+- Tokens: `combat.js` v5->v6, `ai.js` v2->v3, `render.js` v8->v9,
+  `anim.js` v2->v3, `main.js` v9->v10 in `index.html`.
+
+## v17 — 2026-09-02
+**The feel layer: units walk instead of teleporting, hits are visible and
+audible, and TURF gets sound at all.** No new art — every one of these
+works off the assets already in the tree, including for the twelve
+characters that are still a single static plate.
+
+- **Movement tweening.** `combat.js` teleports a unit to its destination
+  the instant an order resolves, which is correct for the model and
+  reads as a piece blinking across the board. `anim.js` now carries the
+  VISUAL back to where the unit started and lets it catch up
+  (`glideFrom`), 85ms/tile with a 130ms floor. The offset is returned in
+  fractional TILES rather than screen pixels: `toScreen()` is linear in
+  (gx, gy), so interpolating tiles and projecting once is identical to
+  interpolating screen space — and it keeps `anim.js` free of layout.
+  A knockback is the same motion with a different origin and clock,
+  reconstructed from the attack event's own `{moved, dx, dy}`.
+  The unit's TRUE tile still owns the selection ring; only the body lags,
+  so the board never lies about where anything is.
+- **Hit feedback.** A white flash and a floating damage number on every
+  landed blow, `MISS` on a whiffed one — a miss needs its own feedback or
+  it is indistinguishable from an input that never registered. The flash
+  is the sprite REDRAWN in `lighter` composite rather than a white
+  `fillRect`: drawing the same image additively brightens exactly the
+  silhouette's own pixels and leaves the transparent surround alone,
+  where a rect paints a glowing box around the character. Numbers draw
+  last, above every unit, with an ink halo so they stay legible over any
+  tile.
+- **Audio — the first in this game.** `js/audio.js`, synthesised, no
+  files, following the house rule every other cabinet here uses: every
+  voice routes through ONE master gain rather than `ctx.destination`, so
+  the mute switch actually mutes, and any sound added later inherits it.
+  Register is dry and low to match the setting — a scrape, a crack, a
+  thud, nothing sparkles. A weapon's `archetype` picks the attack voice,
+  so a knife and a pistol are told apart by ear; the impact is staggered
+  70ms behind the swing so the two read as cause and effect. Persisted
+  Sound button in the bottom bar (`turfMuted`), and the context is
+  unlocked from the title's real click because a browser allows it from
+  nowhere else.
+- **One log cursor, not two.** Audio hangs off a new `onEvent` callback
+  on the animator rather than walking `state.log` itself. Two independent
+  cursors over one append-only list is two chances to double-fire or skip,
+  and they drift the moment one is reset and the other is not.
+- `window.__turf` now exposes `anim` and `audio`: a tween that exists for
+  200ms cannot be verified from a screenshot taken afterwards, and this
+  round was checked by sampling `offsetFor()` across a real move
+  (-0.97 -> -0.40 -> -0.08 -> settled) rather than by eye.
+- Tokens: `render.js` v7->v8 (+ both importers), `anim.js` v1->v2,
+  `audio.js` v1 new, `main.js` v8->v9 in `index.html`.
+
+## v16 — 2026-09-01
+**Two rendering bugs in v15's sprite/prop work, both caught by the owner
+rather than by v15's own verification: feet floating off the tile, and
+cover props clustering into visible duplicates.**
+
+- **Feet floating ~1m over the grid.** Owner: "characters are floating 1m
+  over the grid." `drawUnitSprite` anchored a sprite's draw position to
+  its full source-image `naturalHeight`, but the casting pipeline's `fit`
+  step centres every plate into a fixed 192×288 canvas with wildly
+  inconsistent transparent padding below the feet (measured 7–64px across
+  different plates) — the height used for anchoring and the height of the
+  actual figure were never the same number. Fixed with a one-time
+  `scanInkBounds` pixel scan per loaded image (an offscreen canvas +
+  `getImageData`, run once in the image's `onload` alongside the existing
+  cache) that finds the real ink top/bottom; `drawUnitSprite` now anchors
+  to `inkBottom` instead of `naturalHeight`, and scales off the ink
+  content height rather than the full canvas height. Checked the 8 prop
+  images against the same question first — they only carry 3–6px of
+  padding from being cropped tight in v15, not this bug, so `drawProp`
+  didn't need the same fix.
+- **Cover props clustering.** Owner: "the examples look ok, but have too
+  many of the same objects... the screenshots look messy?" v15's fix for
+  too few pool choices (2/6 → 4/4) introduced a new problem: the
+  distribution hash `(gx*7+gy*13)%pool.length` collapsed 5 of backlot's 6
+  full-cover tiles onto the same pool index, so a screenshot showed
+  several identical notice-board panels in a row. Replaced the hash with
+  `assignPropArt` — a deterministic greedy pass that, per tile in a fixed
+  order, picks whichever pool item appears least often among tiles
+  already assigned within Manhattan distance ≤4. Still fully
+  deterministic (no per-frame flicker, same map paints the same props
+  every render) but spatially aware, so a cluster of full-cover tiles no
+  longer converges on one prop.
+- Verified in a real browser at 4x zoom on `backlot`, `warehouse` and
+  `the-yard`: feet now sit directly on the tile's faction-ring marker with
+  no visible gap, and cover props show genuine variety (crate, statue,
+  bike rack, bin, bench, barrier all distinct, no adjacent duplicates).
+  `warehouse`/`the-yard` reusing `backlot`'s cover-tile layout deterministically
+  reuse its prop assignment too — expected, since the goal was eliminating
+  within-board clustering, not cross-encounter variety.
+- `render.js` ?v=7 — `input.js` ?v=7 and `main.js` ?v=8 both already
+  imported it at their current tokens and only their `render.js?v=` string
+  needed bumping; neither module's own bytes changed this round.
+- `node turf/test/smoke.mjs` — 41/41, unchanged (pure rendering fix, no
+  game-logic changes).
+
+## v15 — 2026-08-31
+**Real character sprites and real cover props on the board itself, a
+transparent grid over the background photo, plus a headshot audit —
+the render.js rewrite v14's backgrounds were building toward.**
+
+- **Headshot audit.** Owner: "some of those character head crops weren't
+  done well. check them again and fix the ones that need fixing." A
+  systematic pass (a script scanning all 32 for disconnected bleed gaps
+  and sudden width jumps near the crop's bottom edge, plus a full visual
+  review at 4x size) found two real defects, both a raised weapon
+  confusing the crop heuristic: `grunt-blunt`'s raised bat was mistaken
+  for the head/shoulder line, cropping mostly bat with a tiny face;
+  `niner`'s crop caught the tip of his raised, extended pistol arm as a
+  disconnected-looking fragment. Both re-cropped. The other 30 checked
+  clean.
+- **The grid is transparent over the background now.** Owner: "the grid
+  should be transparently laid on the backgrounds so that the players are
+  in the courtyard." `drawFloor` went from an opaque per-tile fill to a
+  translucent tint + outline, and `render()` no longer paints an opaque
+  `PAL.VOID` rect over the whole canvas first — a canvas is transparent by
+  default once nothing paints over it, which is what lets v14's
+  `--encounter-bg` CSS photo show through.
+- **Real character sprites on the board.** Owner: "start replacing player
+  characters with character model sprites." Every unit/enemy gets a new
+  `sprite` field (the full-body plate — separate from `portrait`, the
+  headshot the squad-row/selection UI uses; a body reads fine at real
+  board size, it read as a blob shrunk to a 34px UI icon, which is why
+  that one is a head crop instead) drawn via a small image cache in
+  `render.js` (`getImage` — `render()` is called synchronously and often
+  with no `await` anywhere in the file, so a not-yet-decoded image just
+  isn't drawn that one call; its `onload` re-invokes `render()` with the
+  last known args once ready). `computeLayout`'s headroom and
+  `input.js`'s tap hit-box both now key off a new `SPRITE_H` (46px, the
+  real drawn height) instead of the old, shorter `UNIT_H` silhouette —
+  otherwise a full-height sprite in row 0 clips off the top of the canvas,
+  and tapping a unit's actual head misses. The original procedural
+  silhouette survives as `drawUnitFallback`, used only for a unit with no
+  `sprite` yet or for the one render call before an image loads.
+  **Found and fixed along the way**: a real sprite carries its own colours
+  (a jacket, not a faction paint job), so the cold-operator/warm-rival
+  read the flat silhouette gave for free was silently gone once sprites
+  replaced it — added a small faction-tinted ring at each unit's feet
+  (`PAL.PLAYER`/`PAL.ENEMY`, the same two house colours everywhere else)
+  so the two sides stay glanceable regardless of which sprite is drawn
+  above it.
+- **Real cover props.** Owner: "start adding assets to the playfield for
+  cover" (attached an 8-object isometric prop sheet — barrier, bollard,
+  litter bin, bike rack, notice board, bench, crate-on-pallet, park
+  statue). Cropped all 8 the same way as every other casting-sheet batch
+  this session (background-colour masking, `key`/`fit --no-quantise`,
+  natural aspect kept rather than forced to 192×288 since these aren't
+  humanoid). `drawProp` now draws the real image, picked deterministically
+  off the tile's own `(gx,gy)` so the same map paints every render (no
+  per-frame flicker) — split 4 dense/tall props (crate, statue, bike
+  rack, notice board) for full cover, 4 shorter ones (barrier, bollard,
+  bin, bench) for partial. **First pass split this 2/6** — with only 2
+  choices for full cover, a 5-6-tile encounter repeated the same prop
+  three times over ("the examples look ok, but have too many of the same
+  objects"). Rebalanced to 4/4, real variety. `drawPropFallback` keeps the
+  original procedural box for the same one-frame-while-loading case as
+  units.
+- **A 5th uploaded reference** (a painted Darkest-Dungeon-style combat HUD
+  — headshot portrait, Guard/Nerve bars, front/middle/back row
+  positioning) was saved as `art-src/reference/ui/goal-hud-reference.png`
+  in v14 and stays forward direction only, not built this round — a
+  different combat model (row-based formation, not a grid), not a
+  same-session follow-up.
+- Verified in a real browser: all 5 encounters render sprites + props +
+  background correctly; tapping a unit's real sprite body (not just the
+  old, shorter hit-box) selects it; faction rings visible; 44px+ touch
+  targets hold; no horizontal overflow; zero console/network errors.
+- `render.js` ?v=6, `input.js` ?v=7, `combat.js` ?v=5, `main.js` ?v=8 —
+  every module in the changed import chain bumped together.
+- `node turf/test/smoke.mjs` — 41/41, unchanged (pure game logic, this
+  round is entirely rendering + data). `test/assets-smoke.cjs` unaffected.
+
+## v14 — 2026-08-31
+**Second roster batch + headshot icons + encounter backgrounds — three
+owner-driven follow-ups on v13's roster work, same session.**
+
+- **Headshots, not full-body icons.** Owner's call: "on the actual field
+  too, they don't do much in the icons side, so no value there. maybe a
+  head shot" — a 192×288 full-body plate read as an indistinct blob at
+  26×39 icon size; a face reads. Wrote a head-crop finder that locates the
+  actual head (not the topmost ink pixel, which is wrong whenever a
+  character holds a weapon raised above their head — `grunt_blunt`'s bat,
+  `sledge`'s hammer, `leopard`'s knife, `knuckle`'s flail all do): scan
+  down from the ink top for the first row where width is head-sized and
+  stays that way for 6 rows running (skips past a thin raised weapon
+  silhouette), then find the shoulder-broadening point below it. Every
+  `portrait` field (v13's 18 plus the original 6) now points at
+  `art-src/sprites/heads/<id>-head.png` instead of the full plate.
+  Squad-row and selected-unit icons resized from a 2:3 body crop to a
+  roughly-square face crop (`object-position: 50% 15%` keeps the face
+  centred when `cover` trims the sides).
+- **Found and fixed a real bug while building the heads**: `leopard-idle`
+  (and `-back`) carried the exact top-edge crop-bleed v12 fixed for
+  `gunner-idle` — never applied to leopard at the time. Same fix: tighter
+  crop off `casting-sheet-full.png`'s row/column bounds, `_ref-leopard*`
+  replaced too so future generations off it start clean.
+- **6 more characters** from a second casting sheet the owner posted
+  (`turf/references/casting-sheet-3.png`, 3×2 pairs): Reed, Vex, Knuckle
+  (new players) and Smoke, Milo, Duffy (new enemies). Knuckle carries a
+  new weapon, `flail` (melee, dmg 3, knockback 1, hitChance 0.9) — read
+  off what he's actually holding in the sheet, a ball-and-chain. Player
+  pool 11→14, enemy pool 15→18. A fifth encounter, `the-yard` (backlot's
+  proven grid+cover again), added to `SEQUENCE` so the new squad is
+  actually reachable through play.
+- **Per-encounter background photos.** Owner posted 5 isometric Nordic
+  night-scene renders and asked to try some as backgrounds. Downscaled to
+  1100px wide, re-encoded as JPEG (2-2.8MB PNG → 66-100KB each — this is a
+  phone-first game, the SIDE_MARGIN comment in `render.js` says so
+  directly). Matched by fiction: `dockyard.jpg` → loading-dock/underpass,
+  `courtyard.jpg` (tenement) → backlot/warehouse, `schoolyard.jpg` →
+  the-yard (it's a literal schoolyard court). New `background` field per
+  encounter in `encounters.json`; `main.js`'s `boot()` sets it as a CSS
+  custom property (`--encounter-bg`) on `#stage`, layered under a dark
+  scrim so it only shows in the slack space around the canvas board — the
+  board itself is opaque and untouched, so this is zero risk to gameplay
+  readability, pure atmosphere. The 5th uploaded reference (a painted
+  Darkest-Dungeon-style combat HUD with headshot portrait, Guard/Nerve
+  bars, front/middle/back row positioning) was saved as
+  `art-src/reference/ui/goal-hud-reference.png` and logged as forward
+  direction — NOT implemented this round, it's a different combat model
+  (row-based formation, not a grid) and a full HUD rebuild, not a
+  same-session follow-up.
+- Verified in a real browser: all 5 encounters load with correct rosters,
+  headshots and backgrounds; zero console/network errors; 44px+ touch
+  targets hold; no horizontal overflow at phone width.
+- `node turf/test/smoke.mjs` — 41/41 (was 39; +2 for the-yard's
+  playthrough checks). `test/assets-smoke.cjs` unaffected, still green.
+
+## v13 — 2026-08-31
+**Roster expansion: 18 new characters cropped from the owner's casting
+sheets as static portraits (no animation, no generation — free, local crops),
+wired into real playable data and two new encounters. "Get the actual
+gameplay working" with the wider cast, not more art polishing.**
+
+- **18 new portrait plates**, cropped directly from
+  `turf/references/casting-sheet-full.png` — same technique as the
+  gunner-idle crop-bleed fix (v12): background-colour masking finds each
+  character's true ink bounds (rows/columns bleed past the nominal grid,
+  and one pair — the hammer guy — had its front+back columns merged and
+  needed a local-minimum split), then the same `key`/`fit 192x288
+  --no-quantise` pipeline. Zero API calls; this is crop-and-cut, not
+  generation, so it needed no `GEMINI_API_KEY`.
+- **units.json**: 8 new player-recruitable operators (Deuce, Otter,
+  Sledge, Cleaver, Denny, Rook, plus Gunner and Leopard — the v12 cast
+  pilots, now with real stats and their `-idle.png` art as portraits — not
+  previously playable units at all). Player pool: 3 → 11.
+- **enemies.json**: 12 new rival-crew grunts (Curt, Sable, Spike, Alfie,
+  Ragged, Runt, Tanner, Barfly, Chain, Hollow, Beard, Track). Enemy pool:
+  3 → 15.
+- **weapons.json**: two new weapon ids read off what each character is
+  actually holding in the sheet — `hammer` (melee, dmg 5, knockback 2, the
+  heaviest hitter in the game) and `bottle` (melee, dmg 2, no knockback,
+  the scrappiest). Existing weapons untouched.
+- **Two new encounters** (`warehouse`, `underpass`) reusing backlot's and
+  loading-dock's already-proven grid+cover layouts with new squads —
+  Sledge/Cleaver/Rook and Gunner/Leopard/Denny — so the wider roster is
+  exercised in real fights, not just sitting as inert data. Added to
+  `main.js`'s `SEQUENCE`, so a run is now four encounters and actually
+  reaches them (they were previously unreachable through play even where
+  data existed).
+- **`portrait` field** threaded through `combat.js`'s `makeUnit` (one
+  line) and rendered in the DOM squad-select row and the selected-unit
+  info panel (`index.html`/`main.js`) — the canvas board itself is
+  untouched, still the code-drawn placeholder silhouettes `render.js`
+  already draws (a 192×288 portrait has no sensible path down to a 9px
+  board sprite; that's a separate, much larger problem). All six existing
+  archetypes got portraits too, for free, from their already-generated
+  `-plate.png`/`-idle.png` files.
+- **`turf/test/smoke.mjs`'s end-to-end playthrough gate was hardcoded to
+  two named encounters** (`playthrough(BACKLOT, 42); playthrough(LOADING_DOCK,
+  42);`) rather than looping `ENCOUNTERS` generically like every other
+  check in the file — silently exempting any new encounter from ever being
+  proven winnable by the bot. Fixed to `for (const enc of ENCOUNTERS)
+  playthrough(enc, 42)`, which is what caught nothing wrong here (all four
+  encounters resolve to a bot loss in 5-6 rounds, consistent with the
+  existing two) but would have caught a real stalemate.
+- Verified in a real browser (Playwright), not just the bare-node gate:
+  portraits load (`naturalWidth`/`naturalHeight` both 192×288) in the
+  squad row and selection panel on backlot, warehouse and underpass;
+  44px+ touch targets hold; no horizontal overflow at phone width; zero
+  console or network errors.
+- `node turf/test/smoke.mjs` — 39/39 (was 35; +4 for the two new
+  encounters' playthrough checks). `test/assets-smoke.cjs` unaffected,
+  still green. No `index.html` import-graph change (portraits are plain
+  `<img>` tags, not modules), so no cache-token bump.
+
+## v12 — 2026-08-31
+**Reconciled a parallel art-pipeline branch, not an engine change: real
+generated art lands (six archetype plates + a two-character, 28-frame,
+front+back animation pilot), plus one locally-fixable rough edge fixed.**
+
+- Merged `claude/turf-art-request` (a separate Claude Code session working
+  the art pipeline with `GEMINI_API_KEY`, per the owner's split: "the art
+  pipeline is the separate instance through the art request") into this
+  branch's v10/v11 doc work, both independently diverged from the same
+  point on `main`. Resolved by judging each conflicting section on which
+  side was backed by real, validated generation/testing rather than by
+  which branch was newer — `assets/manifest.mjs`'s `turfGrim`/
+  `turfCastPose` style blocks and the six archetype-plate prompts took the
+  other branch's version wholesale (proven against real shipped art at
+  192×288/`--no-quantise`, correcting this branch's untested 32×40/palette
+  assumption); this branch's GDD §5.1 hybrid-classes rewrite and its
+  `ART_REQUEST.md` §2.5/§2.6 content had no equivalent on the other side
+  and carried over untouched; `ART_REQUEST.md` §6/§8/§9 were hand-merged,
+  since both sides had real, non-overlapping findings to keep — including
+  documenting honestly that the "MST-real animation cycles" ambition this
+  branch's v11 asked for was NOT what the pilot delivered (single static
+  Idle/Move poses, not cycles), rather than papering over the gap.
+- Real art now in the tree: `turf/art-src/sprites/*-plate.png` (six
+  archetypes, illustration-fidelity, `check --illustration` clean) and
+  `turf/art-src/sprites/cast/*.png` (gunner + leopard, Idle/Move/
+  Attack×2/Hit/Death×2, front AND back facing — 28 files, 28/28 checked).
+  `scripts/gen-with-ref.mjs` is new: attaches an arbitrary local reference
+  image to a manifest prompt via `nano-banana.mjs`, closing the gap
+  `assets.mjs`'s own `ref` field left (it only chains to other
+  manifest-generated assets, not an arbitrary local file).
+- **Fixed**, no generation needed: `gunner-idle` (and `-back`) carried a
+  sliver of a neighbouring casting-sheet character at the crop edges — the
+  reference crop wasn't trimmed tightly enough before keying. Re-cropped
+  `_ref-gunner.png`/`_ref-gunner-back.png` tightly off
+  `casting-sheet-full.png` (found by masking the sheet's own background
+  colour to get the character's true ink bounds, since rows/columns bleed
+  slightly past the nominal grid) and re-ran through the same `key`/
+  `fit 192x288 --no-quantise` pipeline. Two other known rough edges
+  (attack windup/release reading similar; death-fall reading as an action
+  pose rather than "losing balance") are left open — both need a new
+  generation, which this session cannot do without `GEMINI_API_KEY`.
+- `node turf/test/smoke.mjs` (35/35) and
+  `NODE_PATH=$(npm root -g) node test/assets-smoke.cjs` (all pipeline
+  checks) both still pass; no `index.html` import-graph change, so no
+  cache-token bump this round.
+
+## v11 — 2026-08-31
+**Design capture + production planning, not an engine change: classes
+retired in favour of skill lines, and the art request restructured around
+one character reaching 100% before any of the other five start. Nothing in
+`index.html`'s live import graph changed, so no cache-token bump this
+round.**
+
+- `GDD.md` §5.1 rewritten: **no fixed class archetypes.**
+  `blade`/`niner`/`wrench` are starting kits (opening weapon + stats), not
+  permanent boxes; a unit's actual identity comes from which skill lines it
+  picks up at level-ups (any line, regardless of starting kit) plus
+  whichever weapon it's currently holding. Named the real payoff: v7's
+  weapon-swap loot drops already let a `wrench`-kit unit end a fight holding
+  a handgun, so a unit that invested in Marksman-line skills despite
+  starting as `wrench` goes from inert to live the moment the right weapon
+  drops — a hook the engine already had, unused, before this revision named
+  it. The six illustrative skills survive as **skill lines** rather than
+  subclass boxes; two lines from two different starting kits is the
+  intended shape (a hybrid), not an edge case. **A reversal, made explicit
+  rather than left silent:** the old "class reads as a secondary accent
+  colour" plan is retired — a build spanning two skill lines doesn't reduce
+  to one accent honestly, so the sprite carries faction colour only (cold
+  operator / warm rival) and a build's actual skills read from the UI, not
+  a paint job. Nothing shipped or requested in `ART_REQUEST.md` had
+  implemented the old accent plan, so this is a clean reversal, not rework.
+  `class`/`subclass` terminology corrected to `kit`/`skills` everywhere it
+  appeared (§5.2 crew naming, §9 roadmap, §10 open questions) for
+  consistency with the new system.
+- `ART_REQUEST.md` §2.4 (new) translates the GDD change for art: §4's six
+  prompts still describe *starting kit* (a stable, real silhouette to
+  generate against) but must not bake in anything that reads as a
+  permanent, exclusive role, since the same body may end a run playing a
+  hybrid build the plate never depicted. No new colour system requested —
+  faction-only accent already covers it.
+- `ART_REQUEST.md` restructured around a **staged production plan** (owner
+  direction: "one example animated to 100% feature complete... later colour
+  variations and different models"), added as new §8/§9:
+  - **§8 — Stage 0:** one pilot character (recommended `blade`, reusing
+    §2.2's own tested knife-melee precedent and avoiding ranged-weapon VFX
+    as a first unknown) taken through a concrete 7-point "100% feature
+    complete" checklist ending in the character actually animating in a
+    real encounter, not just existing as checked plates. Stage 1: colour
+    variants reusing a proven body where the build genuinely matches
+    (`grunt-blunt`'s "rangy" build flagged as the first candidate against
+    `blade`, to verify once Stage 0 exists). Stage 2: the remaining models,
+    each through the same checklist, costed off Stage 0's actual iteration
+    count rather than guessed fresh.
+  - **§9 — six concrete gaps found and named, not just art:** (1) verified
+    directly in `render.js`/`combat.js` — **units currently snap between
+    tiles with no interpolation**, so a move-cycle sprite has nothing to
+    visibly play across without a real engine change first; (2)
+    `combat.js`'s existing typed `state.log` (`move`/`attack`/`pickup`/
+    `enemy-turn`) is the hook to drive animation state from, rather than
+    inventing a second event system; (3) facing (mirror vs. distinct
+    per-direction art) is an open question to resolve empirically during
+    Stage 0, not decided here; (4) a per-character proportion/turnaround
+    reference is needed before hand-extending Aseprite frames, or frames
+    drift off-model; (5) a finished animated character is a *set* of files,
+    not one hashed image — proposed `turf/art-src/sprites/<id>/manifest.json`
+    to track a bundle's staleness the way `scripts/assets.mjs status`
+    tracks one image; (6) budget real iteration count (redos from failed
+    "look" checks and irregular sheet pitch, both measured problems per
+    §2.2/§2.3) rather than the nominal five-generation headline count.
+  - §7's runtime-integration deferral narrowed: still not requested for
+    five of six archetypes, but now explicitly requested for the Stage 0
+    pilot.
+- `node turf/test/smoke.mjs` (35/35) and
+  `NODE_PATH=$(npm root -g) node test/assets-smoke.cjs` (46/46) — both
+  unaffected by this round (doc-only) and run to confirm nothing broke.
+
+## v10 — 2026-08-31
+**Art-pipeline design capture, not an engine change: the owner delivered two
+real casting sheets and asked for their style — and MST-real animation — to
+become the actual request. Nothing in `index.html`'s live import graph
+changed, so no cache-token bump this round.**
+
+- Two full casting sheets (6 characters, then 20 — every figure a front+back
+  turnaround pair, on the same flat magenta this pipeline keys on) committed
+  at `turf/art-src/reference/casting-sheet-1.png` / `-2.png`. Checked against
+  the real pipeline, not just eyeballed: six figures cropped from them, one
+  per §4 archetype, went through the actual `key → fit --palette
+  turf/art-src/palette.json → check` this session — **6/6 came back real
+  cuttable pixel art** (binary alpha, 17–24 colours each, comfortably inside
+  the 32-colour palette). Two real gaps that same test found: neither sheet
+  demonstrates the cold-cyan/warm-rust faction trim (has to be stated in the
+  prompt regardless of the reference), and three of the six crops dragged a
+  neighbour's boot or weapon tip in from a frame edge — a crop problem, not
+  a keying one.
+- `ART_REQUEST.md` §2.3 (new) records this and formally **retires the
+  two-shade-step flat-fill rule** for the six archetype plates — superseded
+  on purpose by the richer register both sheets show (real
+  highlight/midtone/shadow modelling, strand-level hair), while keeping the
+  hard silhouette-edge outline that still has to carry the read at the
+  game's actual on-board scale. §4's six prompts and `assets/manifest.mjs`'s
+  `turfGrim` style block + all six `turf/*-plate` prompts rewritten to
+  match, each restating the faction trim colour explicitly (the reference
+  doesn't carry it) and a new "ALONE IN FRAME, nothing entering from any
+  edge" instruction (the crop-bleed problem found in testing).
+- `ART_REQUEST.md` §6 (animation guide) rewritten for **"animations like in
+  MST"** (owner direction): idle and move rise from one held pose each to
+  real 2–3 and 3–4 frame cycles respectively, generated as actual sheets —
+  §2.2's own earlier test already proved idle/move sheets come back usable,
+  so this isn't a new risk, it's finishing what was already measured.
+  Attack/hit/death stay single-pose generations hand-extended in Aseprite
+  (§2.2's two failure reasons — baked FX defeating the key, irregular frame
+  pitch — are about what those rows draw, not how many poses are asked for
+  at once); attack and death each raised by one frame over the original
+  minimum (hit stays at 1, already the right ask). Total per archetype:
+  10–12 frames, up from the original 4–7. Idle/move raise the *ask* only —
+  `assets/manifest.mjs` doesn't yet carry the twelve sheet specs (2 rows ×
+  6 archetypes) that would make `gen --only turf` actually produce them;
+  writing those is its own real authoring task, flagged in §6 as a
+  follow-up rather than done this round.
+- `node scripts/assets.mjs gen --dry --only turf` and
+  `NODE_PATH=$(npm root -g) node test/assets-smoke.cjs` (46 checks) both
+  pass against the rewritten manifest — the six prompts hash to new values,
+  as expected from editing their text, and nothing else in the pipeline's
+  wiring is disturbed.
+
 ## v9 — 2026-08-29
 **Second round from a real annotated phone screenshot of the live v8 deploy:
 "the top is unused, but could be background graphics. the grid could be
