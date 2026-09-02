@@ -45,8 +45,8 @@
     "from": "VERSIONS.md"
   },
   "turf": {
-    "v": "6",
-    "n": 6000,
+    "v": "19",
+    "n": 19000,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
@@ -55,8 +55,8 @@
     "from": "VERSIONS.md"
   },
   "kindling": {
-    "v": "9",
-    "n": 9000,
+    "v": "11",
+    "n": 11000,
     "from": "VERSIONS.md"
   },
   "radiofree": {
