@@ -6,7 +6,7 @@ const manifest = {
   directions: ['front_iso','rear_iso'],
   actions: {
     idle: { targetFrames: 4, phases: ['rest','inhale','peak','exhale'] },
-    move: { targetFrames: 12, requiresMotionLedger: true, phases: [
+    move: { targetFrames: 12, oppositePhaseOffset: 6, requiresMotionLedger: true, phases: [
       'left_contact','left_compression','left_push','left_pass','left_reach','left_precontact',
       'right_contact','right_compression','right_push','right_pass','right_reach','right_precontact'
     ] }
@@ -49,4 +49,8 @@ test('idle phase is derived from manifest frame order', () => {
 test('invalid frames are rejected', () => {
   assert.throws(() => validateTarget(manifest, { character:'toko_slomo', action:'move', direction:'front_iso', frame:13 }), /requires 1\.\.12/);
   assert.throws(() => validateTarget(manifest, { character:'toko_slomo', action:'move', direction:'front_iso', frame:1.5 }), /Invalid frame/);
+});
+
+test('invalid opposite offset does not invent a pair', () => {
+  assert.equal(oppositePhaseFrame({targetFrames:12, oppositePhaseOffset:5}, 'move', 1), null);
 });
