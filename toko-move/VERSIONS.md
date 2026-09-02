@@ -1,5 +1,21 @@
 # Toko Move — versions
 
+## v2.19 — 2026-09-02
+
+**The camera.** The owner's reading of v2.18 was exact — "the map is clutter with fast moving objects" — and the fix is not fewer trams. It is a camera: the thing that decides what is NEAR right now. `js/camera.js` owns a centre, a zoom and the arithmetic; it owns no canvas and draws nothing, which is why `test/camera.mjs` can prove it in bare node (36 checks) instead of by looking at a screenshot.
+
+**Three scales, snapped** (owner: "snap to 3 scales is primary option, but pinch to zoom second"). They are stated in METRES of viewport height and converted through the board, so they keep their meaning if an anchor moves the box: CITY = the whole 4.9 × 8.4 km board (×1), ROUTE = 4000 m so a 2 km radius fits (×2.10), STOP = 1300 m (×6.47). The rail sits over the map's own top-right corner, not in the HUD strip — the HUD is the shift, the rail is the map.
+
+**Pinch, wheel, drag, double-tap** are all secondary and all present. Zoom is about the POINT, never the centre: a map that zooms to its own middle walks whatever you were looking at off the screen. Nearest-notch is judged in log space, because zoom is multiplicative and the boundary between ×1 and ×2.1 is ×1.45, not ×1.55 — a linear rule names a band you are not in at every notch.
+
+**Follow has a dead zone** (42% of the viewport). Recentring on every metre the courier moves makes the map the thing that moves and the courier the thing that stands still, and then no landmark holds. A drag drops the follow — a pinch that also pans is a map sliding away under the gesture meant to scale it — and a ◎ appears to take it back.
+
+**The fleet rule, the owner's words applied**: "when I zoom in the whole area can be the barrier but when zoomed out, only trams that will pass by me, and in a circle of 2km map scale". Zoomed in, the viewport is the only filter. At CITY scale a vehicle needs both: a line that passes within 180 m of where you stand, and a position inside the 2 km circle — measured with longitude scaled by cos(lat), or the circle is an ellipse on the ground. The vehicle you are riding is never filtered out of its own ride. **It hides badges, never lines**: every route stays drawn at full length at every scale, so the map still says what exists, and the HUD says `ROUTE · 9/102 near` so a filter is never mistaken for a bug.
+
+**Label density follows the camera too.** Twenty-two names over the whole city is a wall of type at CITY scale; zoomed out the board now keeps only the names that are decisions — the transfer spots and the two ends of the job in hand. The dots stay drawn, so one zoom step brings any name back.
+
+Two things found on the way. `boardRect()` is the board in canvas pixels and moves with the camera, so once you can zoom it is regularly wider than the screen — and the legend, the frame and the label placement all used it as "the area I may draw in", laying their work out against a rectangle three screens wide. `viewRect()` is the intersection, which is what those three meant all along. And `fitLatLon` rebuilt the entire projection on every call — a cos and two closures, per point, per path, per frame; affordable at one fixed scale, not once the answer changes continuously. It is memoised on the five numbers it depends on.
+
 ## v2.18 — 2026-09-02
 
 The five-minute shift. flow-core's day is sixty seconds of wall time, built for Piritori's day simulation, and Toko Move had been running on it: a tram crossed Helsinki in three seconds, and every headway change made to keep catches reachable inside sixty seconds only added vehicles — 272 on screen at v2.17. `createFlow` now takes an optional `ticksPerDay` (flow-core's default is untouched; its contract passes 29/29), and Toko Move asks for 3000 ticks: 07:00–10:00 of game time in five minutes of wall time, a tram's 50-minute pass in about 83 seconds. Vehicles per line go from 8 back to 3. The HUD clock shows minutes.

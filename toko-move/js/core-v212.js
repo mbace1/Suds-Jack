@@ -7,18 +7,19 @@ import {TransitLayers} from './transit-layers.js?v=5';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,HUB_INK} from './board.js?v=3';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
-import {SHIFT} from './live-network.js?v=4';
+import {SHIFT} from './live-network.js?v=5';
+import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.18';
+const BUILD_VERSION='2.19';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
 let flow,challenge,renderer,transit,city,water,source,transitView=false,done=false,last=0,msgs=[];
-let box,roads;
+let box,roads,camera;
 const say=s=>{msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -27,7 +28,18 @@ function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,
 // delivery anchor sits inside 9.1% of the pack's area and that is exactly what
 // it looked like. Going straight from lat/lon through the board box fills the
 // canvas with the part of Helsinki the game is played in.
-function fitLatLon(lat,lon){const c=$('map');return boardFit(box,c.width,c.height)(lat,lon);}
+// It also used to rebuild the whole projection on EVERY call — a cos, two
+// closures, per point, per path, per frame — which was affordable at one fixed
+// scale and is not once a camera makes the answer change continuously. It is
+// memoised on the only five numbers it depends on.
+let _proj=null,_base=null,_pw=0,_ph=0,_pz=-1,_px=0,_py=0;
+function projection(){const c=$('map'),z=camera?camera.zoom:1,cx=camera?camera.cx:0,cy=camera?camera.cy:0;
+  if(!_proj||_pw!==c.width||_ph!==c.height||_pz!==z||_px!==cx||_py!==cy){
+    _base=boardFit(box,c.width,c.height);_proj=camera?camera.apply(_base,c.width,c.height):_base;
+    _pw=c.width;_ph=c.height;_pz=z;_px=cx;_py=cy;}
+  return _proj;}
+function baseProjection(){projection();return _base;}
+function fitLatLon(lat,lon){return projection()(lat,lon);}
 function coverageLabel(s){return s?.clippedTo?`exact inside ${s.clippedTo.s}–${s.clippedTo.n} N`:'full Helsinki source pack';}
 
 function boot(seed=7){
@@ -61,6 +73,75 @@ function drawTransit(){transit?.draw($('map').getContext('2d'),$('map').width,$(
 // cool grey, and no cap.
 function drawRoads(){if(!roads?.length)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();ctx.strokeStyle=ROAD_INK;ctx.lineWidth=2.6*d;ctx.lineJoin='round';ctx.lineCap='butt';for(const road of roads){ctx.beginPath();road.path.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.stroke();}ctx.restore();}
 
+// WHAT IS ON SCREEN. boardRect() is the board in canvas pixels and moves with
+// the camera, so once you can zoom it is regularly bigger than the canvas — and
+// the legend, the frame and the label placement all used it as "the area I may
+// draw in". Zoomed in they were laying their work out against a rectangle three
+// screens wide. viewRect is the intersection: the part of the board you can
+// actually see, which is what those three layers meant all along.
+function viewRect(){const c=$('map'),r=boardRect();
+  const x=Math.max(0,r.x),y=Math.max(0,r.y);
+  return{x,y,w:Math.max(0,Math.min(r.x+r.w,c.width)-x),h:Math.max(0,Math.min(r.y+r.h,c.height)-y)};}
+
+// WHERE THE COURIER IS. The camera follows this, and the 2 km circle is measured
+// from it. It is read off the mobility controller rather than stored, because
+// mobility already owns the answer in all four of its states and a second copy
+// would be a second truth: waiting at a stop, walking between two, riding a
+// vehicle whose live position the fleet knows, or standing on the step of one.
+function courierLatLon(){
+  const tm=window.__tm,mob=tm?.mobility,at=id=>{const n=city?.resolved?.[id];return n?{lat:n.lat,lon:n.lon}:null;};
+  // Before the first job there is no courier, and the camera used to sit on the
+  // board's geometric middle — which is a field in Töölö, not anywhere the game
+  // is about to happen. During dispatch you are standing AT the hub the offers
+  // leave from, so that is where the camera looks and where the circle is drawn.
+  if(!challenge?.active)return at(challenge?.offers?.[0]?.stops?.[0]||challenge?.currentFrom?.());
+  const st=mob?.status?.();
+  if(st?.kind==='walking'){const a=at(st.from),b=at(st.to);if(a&&b){const span=Math.max(1,st.arriveTick-st.startTick),
+      t=Math.max(0,Math.min(1,(flow.clock.tick-st.startTick)/span)),e=t*t*(3-2*t);
+    return{lat:a.lat+(b.lat-a.lat)*e,lon:a.lon+(b.lon-a.lon)*e};}}
+  if(st?.kind==='riding'&&st.ride?.position)return{lat:st.ride.position.lat,lon:st.ride.position.lon};
+  return at(st?.at||challenge.currentFrom());}
+
+// WHICH LINES PASS BY ME. The same 120 m test approachingAt() uses, cached on the
+// point asked about — it walks every point of all 34 layers, which is fine once
+// and not fine sixty times a second.
+// It keeps WHERE on each path you stand, not just that you are on it, because
+// "will pass by me" is a question about direction: a tram that has already gone
+// through your stop is not one you can catch, and drawing it as though it were
+// is the same lie as drawing one on the other side of the city.
+let _nearCache={key:'',map:new Map()};
+function layersNear(lat,lon,metres=180){
+  const key=`${lat.toFixed(4)},${lon.toFixed(4)},${metres}`;
+  if(_nearCache.key===key)return _nearCache.map;
+  const map=new Map();
+  for(const layer of transit?.layers||[]){if(!layer.path?.length)continue;
+    let bi=-1,bd=Infinity;
+    for(let i=0;i<layer.path.length;i++){const[la,lo]=layer.path[i],d=metresBetween(la,lo,lat,lon);if(d<bd){bd=d;bi=i;}}
+    if(bd<=metres)map.set(layer.id,bi);}
+  _nearCache={key,map};return map;}
+
+// THE FLEET RULE, applied. Returns a predicate the live layer asks about each
+// vehicle before it draws a badge. Two regimes, per the owner's direction and
+// per camera.fleetRule(): zoomed in, everything in frame; at city scale, the
+// services that pass where you stand, inside the 2 km circle. The vehicle you
+// are actually riding is never filtered out of its own ride.
+function fleetFilter(){
+  const c=$('map'),rule=camera?camera.fleetRule():'viewport';
+  const riding=window.__tm?.liveNetwork?.selectedVehicleId||null;
+  if(rule==='viewport'){const m=48;
+    return(lat,lon,layer,v)=>{if(v&&v.id===riding)return true;const p=fitLatLon(lat,lon);
+      return p.x>=-m&&p.x<=c.width+m&&p.y>=-m&&p.y<=c.height+m;};}
+  const me=courierLatLon()||{lat:(box.n+box.s)/2,lon:(box.e+box.w)/2};
+  const lines=layersNear(me.lat,me.lon),net=window.__tm?.liveNetwork,tick=flow?.clock?.tick||0;
+  return(lat,lon,layer,v)=>{if(v&&v.id===riding)return true;
+    const mine=lines.get(layer.id);if(mine==null)return false;
+    if(metresBetween(lat,lon,me.lat,me.lon)>FLEET_RADIUS_M)return false;
+    // "will pass by me": the stop has to be AHEAD of it along the direction it
+    // is actually travelling. Two ticks of slack so a vehicle sitting on the
+    // stop does not blink out at the moment you would board it.
+    const p=v&&net?.position?.(v,tick);
+    return !p||(mine-p.pathIndex)*p.direction>=-2;};}
+
 // The board's own edge. A portrait board in a squarish canvas always leaves
 // spare width, and the spare width was filling with real network the game never
 // uses — the far end of M2, a stub of the 4 out west. Clipping to the box says
@@ -74,7 +155,7 @@ function clipToBoard(ctx){const r=boardRect();ctx.beginPath();ctx.rect(r.x,r.y,r
 // the visible layers rather than from the palette, so hiding a line in the MAP
 // inspector takes it out of the key too, and a family added later appears
 // without anyone maintaining a list.
-function drawLegend(){if(!transit)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();
+function drawLegend(){if(!transit)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=viewRect();
   // Grouped by COLOUR, not by family: M1 and M2 deliberately share one ink
   // because they share track across the whole board, and two identical orange
   // chips side by side would ask a question the map does not mean to raise.
@@ -119,9 +200,17 @@ function drawStops(){if(!flow||!city)return;const ctx=$('map').getContext('2d'),
 // fighting it. Same reason they are a separate call at all: core and the live
 // layer are two rAF loops, and the labels have to come after both.
 function drawStopLabels(avoid=[]){if(!flow||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();clipToBoard(ctx);ctx.textAlign='center';ctx.textBaseline='middle';
-  const taken=[...avoid],r=boardRect();
+  const taken=[...avoid],r=viewRect();
   const free=b=>b.x>=r.x&&b.x+b.w<=r.x+r.w&&b.y>=r.y&&b.y+b.h<=r.y+r.h&&!taken.some(t=>b.x<t.x+t.w&&b.x+b.w>t.x&&b.y<t.y+t.h&&b.y+b.h>t.y);
-  const ordered=[...city.nodes].sort((a,b)=>Number(TRANSFER_HUBS.includes(b.id))-Number(TRANSFER_HUBS.includes(a.id)));
+  // Density is the camera's business too. Twenty-two names over the whole city
+  // is a wall of type at CITY scale and a sparse, readable map at STOP scale —
+  // the same list, and only one of those is worth printing. Zoomed out, the
+  // board keeps the names that are decisions: the transfer spots, and the two
+  // ends of the job in hand. The dots stay drawn either way, so nothing is
+  // hidden — only unlabelled, and one zoom step brings the name back.
+  const wide=camera?.nearestScale()==='city',ends=[challenge?.currentFrom(),challenge?.currentTo()].filter(Boolean);
+  const shown=city.nodes.filter(n=>!wide||TRANSFER_HUBS.includes(n.id)||ends.includes(n.id));
+  const ordered=[...shown].sort((a,b)=>Number(TRANSFER_HUBS.includes(b.id))-Number(TRANSFER_HUBS.includes(a.id)));
   for(const node of ordered){const p=fitLatLon(node.lat,node.lon),hub=TRANSFER_HUBS.includes(node.id),size=hub?9.5:8,gap=(hub?13:10)*d;
     ctx.font=`${hub?'bold ':''}${Math.round(size*d)}px ui-monospace,monospace`;
     const w=ctx.measureText(node.name).width,h=size*d*1.25;
@@ -147,7 +236,7 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
   for(const[id,col]of[[challenge.currentFrom(),'#2f9fb8'],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
   ctx.restore();}
 
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${DELIVERY_TARGET}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}$('lines').textContent='HSL network';}
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${DELIVERY_TARGET}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 function paintSheet(){if(!challenge)return;const b=$('sheet');if(!challenge.active){if(!document.getElementById('jobBoard'))b.innerHTML='<p class="hint">Dispatching local jobs…</p>';return;}const j=challenge.active,c=challenge.cargoRule();b.innerHTML=`<div class="jobTop"><span class="cargoBadge" style="border-color:${cargoColour(j.cargo)}">${c.icon}</span><div><h2>JOB ${challenge.index+1}/${DELIVERY_TARGET}</h2><p class="route"><b>${esc(challenge.routeLabel())}</b></p></div></div><p class="hint">${esc(j.label)} · ${esc(j.cargo)}</p><p class="cargoRule">${esc(c.rule)}</p><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%"></i></div><p class="hint">${challenge.remaining()} ticks remaining · score ${challenge.score}</p>`;}
 function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m of msgs.slice(0,3)){const d=document.createElement('div');d.textContent=m;f.append(d);}}
 function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${DELIVERY_TARGET}</b></p><p>score <b>${challenge.score}</b></p><p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p>`;$('endNote').textContent=challenge.complete?'Ten Helsinki courier jobs complete.':'The shift ended; the route remains replayable.';$('end').hidden=false;}
@@ -159,6 +248,7 @@ function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitl
 // the live vehicles and walker on top through the same published projection.
 function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
   if(flow){flow.update(dt);
+    if(camera&&!transitView){const c=$('map');camera.step(dt,baseProjection(),c.width,c.height,courierLatLon());placeRail();paintRail();}
     if(transitView)drawTransitInspector();
     else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle='#e6ece9';ctx.fillRect(0,0,c.width,c.height);
       ctx.save();clipToBoard(ctx);const r=boardRect();ctx.fillStyle='#edf4f2';ctx.fillRect(r.x,r.y,r.w,r.h);
@@ -168,7 +258,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
 
 async function init(){
   $('play').disabled=true;$('play').textContent='LOADING HELSINKI…';
-  try{const [r,w]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),fetch('../flow-core/data/kallio-water-v1.json',{cache:'no-store'})]);if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();water=w.ok?await w.json():null;transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
+  try{const [r,w]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),fetch('../flow-core/data/kallio-water-v1.json',{cache:'no-store'})]);if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();water=w.ok?await w.json():null;transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
 }
 
 // Tapping the board. The whole verb set is READ the network and time it, and
@@ -221,10 +311,79 @@ function showStop(node,at=null){const pop=$('pop'),body=$('popBody');if(!pop||!b
     const x=Math.min(Math.max(m,at.x+14),innerWidth-r.width-m),y=Math.min(Math.max(m+44,at.y-r.height/2),innerHeight-r.height-m);
     pop.style.left=`${x}px`;pop.style.top=`${y}px`;pop.style.right='auto';pop.style.bottom='auto';}}
 
+// ------------------------------------------------------------- the camera UI
+//
+// Three notches and a recentre, laid over the map's own top-right corner rather
+// than added to the HUD strip — the HUD is the shift (deliveries, deadline, the
+// clock) and the rail is the map, and a control that changes what you are
+// looking at belongs on the thing it changes. It is placed in script against the
+// canvas rect for the same reason #pop is: the canvas is a grid area whose real
+// size is decided by aspect-ratio and max-height, so there is no element in the
+// document whose box is the picture.
+let _railAt='';
+function placeRail(){const rail=$('zoomRail'),c=$('map');if(!rail||!c)return;
+  const r=c.getBoundingClientRect(),key=`${Math.round(r.right)}:${Math.round(r.top)}`;
+  if(key===_railAt)return;_railAt=key;rail.hidden=false;
+  rail.style.left=`${Math.round(r.right-8-rail.offsetWidth)}px`;rail.style.top=`${Math.round(r.top+8)}px`;}
+function paintRail(){const rail=$('zoomRail');if(!rail||!camera)return;const now=camera.nearestScale();
+  for(const b of rail.querySelectorAll('[data-scale]'))b.setAttribute('aria-pressed',String(b.dataset.scale===now));
+  const rc=$('recentre');if(rc)rc.hidden=camera.following;}
+
+// Pixels to degrees. Every pan and every pinch goes through this one conversion
+// so a drag moves the map by exactly the distance under the finger — the same
+// "one projection" discipline the draw layers keep.
+function canvasScale(){const c=$('map'),r=c.getBoundingClientRect();return c.width/Math.max(1,r.width);}
+function mapPoint(e){const c=$('map'),r=c.getBoundingClientRect();
+  return{x:(e.clientX-r.left)*(c.width/r.width),y:(e.clientY-r.top)*(c.height/r.height)};}
+function zoomAt(px,py,z){const c=$('map');camera.zoomAbout(baseProjection(),c.width,c.height,px,py,z);}
+
+let drag=null,pinch=null,dragged=false,lastTap=0;
+const map=$('map');
+map.addEventListener('wheel',e=>{if(!camera||transitView)return;e.preventDefault();const p=mapPoint(e);
+  zoomAt(p.x,p.y,camera.zoom*Math.pow(1.0018,-e.deltaY));},{passive:false});
+map.addEventListener('dblclick',e=>{if(!camera||transitView)return;const p=mapPoint(e);
+  const i=SCALES.findIndex(x=>x.id===camera.nearestScale());
+  zoomAt(p.x,p.y,camera.zoomFor(SCALES[Math.min(SCALES.length-1,i+1)].id));});
+map.addEventListener('pointerdown',e=>{if(transitView)return;dragged=false;drag={x:e.clientX,y:e.clientY,id:e.pointerId};});
+addEventListener('pointermove',e=>{if(!drag||pinch||!camera||e.pointerId!==drag.id)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!dragged&&Math.hypot(dx,dy)<5)return;dragged=true;
+  const k=canvasScale(),base=baseProjection(),s=base.scale*camera.zoom,
+    kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);
+  camera.panBy(dy*k/s,-dx*k/(s*kx));drag.x=e.clientX;drag.y=e.clientY;});
+for(const ev of ['pointerup','pointercancel'])addEventListener(ev,()=>{drag=null;});
+// Two fingers. touchstart is where a pinch is claimed, and claiming it drops the
+// one-finger drag: a pinch that also pans is a map that slides away under the
+// gesture that was meant to scale it.
+const tdist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+const tmid=e=>{const c=$('map'),r=c.getBoundingClientRect(),
+  x=(e.touches[0].clientX+e.touches[1].clientX)/2,y=(e.touches[0].clientY+e.touches[1].clientY)/2;
+  return{x:(x-r.left)*(c.width/r.width),y:(y-r.top)*(c.height/r.height)};};
+map.addEventListener('touchstart',e=>{if(!camera||transitView||e.touches.length!==2)return;
+  drag=null;dragged=true;pinch={d:Math.max(1,tdist(e)),z:camera.zoom};},{passive:false});
+map.addEventListener('touchmove',e=>{if(!pinch||!camera||e.touches.length!==2)return;e.preventDefault();
+  const m=tmid(e);zoomAt(m.x,m.y,pinch.z*(tdist(e)/pinch.d));},{passive:false});
+for(const ev of ['touchend','touchcancel'])map.addEventListener(ev,e=>{if(e.touches.length<2)pinch=null;});
+// A double TAP is the touch half of the double-click above; there is no dblclick
+// on a thumb, and the stop popup is what a single tap does.
+map.addEventListener('touchend',e=>{if(!camera||transitView||dragged)return;
+  const now=performance.now(),t=e.changedTouches?.[0];if(!t)return;
+  if(now-lastTap<320){const c=$('map'),r=c.getBoundingClientRect(),
+    p={x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)},
+    i=SCALES.findIndex(x=>x.id===camera.nearestScale());
+    zoomAt(p.x,p.y,camera.zoomFor(SCALES[Math.min(SCALES.length-1,i+1)].id));lastTap=0;e.preventDefault();}
+  else lastTap=now;},{passive:false});
+$('zoomRail')?.addEventListener('click',e=>{const b=e.target.closest('[data-scale]');if(!b||!camera)return;
+  camera.snapTo(b.dataset.scale);paintRail();});
+$('recentre')?.addEventListener('click',()=>{if(!camera)return;camera.recentre();
+  const me=courierLatLon();if(me)camera.lookAt(me.lat,me.lon);paintRail();});
+addEventListener('keydown',e=>{if(!camera||transitView)return;
+  if(e.key==='+'||e.key==='=')camera.cycle(1);else if(e.key==='-'||e.key==='_')camera.cycle(-1);else return;paintRail();});
+
 for(const ev of ['pointerup','touchend'])$('map').addEventListener(ev,e=>{
-  if(transitView)return;const t=e.changedTouches?.[0]||e;const node=nodeAtPoint(t.clientX,t.clientY);
+  if(transitView||dragged)return;const t=e.changedTouches?.[0]||e;const node=nodeAtPoint(t.clientX,t.clientY);
   if(node){showStop(node,{x:t.clientX,y:t.clientY});e.preventDefault();}else $('pop').hidden=true;},{passive:false});
-addEventListener('resize',()=>renderer?.resize());
+addEventListener('resize',()=>{renderer?.resize();_railAt='';placeRail();});
 $('play').onclick=()=>{if(!flow)return;$('title').hidden=true;flow.clock.setPaused(false);};
 $('pause').onclick=()=>{if(!flow)return;flow.clock.setPaused(!flow.clock.paused);$('pause').textContent=flow.clock.paused?'▶':'❚❚';};
 $('speed').onclick=()=>{if(!flow)return;const s=flow.clock.speed>=4?1:flow.clock.speed*2;flow.clock.setSpeed(s);$('speed').textContent=`×${s}`;};
