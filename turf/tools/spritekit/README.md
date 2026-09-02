@@ -173,6 +173,86 @@ back leg reaches further right than the gun he has pulled in. It still
 separates the phases, but read the number as *where the silhouette's extremity
 is*, not as *where the weapon is*, and look at the frames.
 
+## The scale anchor, solved by not having one
+
+`register.cjs` replaces the measured anchor with a search, and it closes the
+open question every other approach here failed on.
+
+Head width was always a **proxy** for "the figure is the same size", and every
+proxy broke in a character-specific way: loose hair joins the head blob
+(leopard, blonde), a raised arm or a weapon crosses the head band (sledge,
+ranged `fire`), and a bald man has no hair to measure at all. Worse, when the
+proxy breaks, normalising on it makes things *worse* — leopard went 6.3% in and
+9.8% out.
+
+`register.cjs` measures nothing. For each frame it searches scale and
+horizontal offset and keeps whichever **overlays best on an anchor frame**,
+optimising the real objective instead of a stand-in for it. There is no feature
+left to break.
+
+Three choices make it work, and each was a bug first:
+
+- **The ground line is pinned, not searched.** It is the one thing genuinely
+  known, and searching it lets a frame float.
+- **The score covers the TORSO BAND only** (15–65% of ink height). The head is
+  out because that is where the hair moves; the legs are out because in a run
+  cycle they are *supposed* to differ — scoring them shrinks a frame to make
+  its stride match the anchor's.
+- **The horizontal anchor is the ink's centroid, not the centre of the bottom
+  row.** In a wide stride the bottom row is a single boot off to one side.
+  Pinning to it threw leopard's `contact-left` sideways by more than the search
+  could pull back, and it saturated the scale range at 1.45 while still scoring
+  0.225. With the centroid it lands at 1.125 and 0.747. (`normalise.cjs` has the
+  same fault; it matters less there because it is not also searching.)
+
+Results on the two clips the old anchor could not do:
+
+```
+leopard      scales 0.995 - 1.125    worst torso overlay 0.747
+blonde x12   scales 0.920 - 1.035    worst torso overlay 0.752
+sledge       scales 0.860 - 1.200    worst torso overlay 0.887
+hoodie       scales 1.000 - 1.175    worst torso overlay 0.717
+longcoat     scales 1.000 - 1.470    worst torso overlay 0.716
+```
+
+All five register without saturating, including the three the measured anchor
+could not do: leopard and blonde (hair in the head blob) and sledge (28.2%, a
+weapon in the head band on a bald man).
+
+The blonde set was **already head-width normalised** and still needed
+corrections up to 8% — which is exactly the 10.1% residual the old anchor
+reported and could not remove. And the body-height rhythm survives at 9.6%, so
+this fixes the scale without deleting the animation, which was the original
+reason bbox height was rejected as an anchor.
+
+The overlay score is **information, not a gate**, and I got that wrong once
+before checking: it was briefly written up with a 0.75 pass line, and across
+five characters the worst overlay ran **0.716 to 0.887** — with the two lowest
+being `hoodie` and `longcoat`, the two whose scale was already perfect. A
+swinging coat moves inside the torso band and costs overlay without costing
+accuracy, so there is no threshold to draw.
+
+What *is* a failure is **saturation** — the search wanting to go past the end
+of the range means it never found a fit at all, and `register.cjs` exits
+non-zero on it.
+
+Search cost is ~1.8 s for a 12-frame clip: coarse at 0.04 and 3px, then a
+refinement pass around the winner.
+
+**Why the range has to be so wide** — and the one structural thing still wrong.
+`cut.mjs fit` scales every frame **independently** to fill the 192x288 cell, so
+a frame whose silhouette is wide gets shrunk relative to a narrow one. On
+`longcoat` that is a 32% difference between two frames of the same walk: its
+`contact-left` (coat swept wide, long stride) needs **1.47** to match the
+others, and at RANGE = 1.45 it saturated by a hair.
+
+Registering after the fit therefore re-upscales a frame the fit had already
+downscaled, which costs a little sharpness on exactly the frames that needed the
+most correction. The right order is **register before fit**, but that needs a
+fit that applies one COMMON scale across a clip, and `cut.mjs` is a shared tool
+whose per-image behaviour is correct for its other callers. Worth doing; not
+done here.
+
 ## Rear fails wherever the pose text names the face
 
 Every builder takes `--rear`, and `make.mjs` passes it through. Locomotion and

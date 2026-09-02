@@ -78,7 +78,11 @@ const frames = readdirSync(cut).filter(f => f.endsWith('.png')).sort();
 if (clip.breathe) {
   node('breathe.cjs', [join(cut, frames[0]), outDir, '2', '8']);
 } else {
-  node('normalise.cjs', [cut, outDir, ...frames, ...clip.norm]);
+  // register first (search-based scale, no anchor feature), then normalise for
+  // the ground line. normalise's own rescale is skipped — register has already
+  // done that job without a proxy that can break.
+  node('register.cjs', [cut, join(outDir, '_reg'), ...frames]);
+  node('normalise.cjs', [join(outDir, '_reg'), outDir, ...frames, '--origin-only']);
   if (clip.gate === 'reach') {
     node('reach.cjs', [outDir, ...frames]);
     // an attack clip still needs its scale and ground line checked, and
