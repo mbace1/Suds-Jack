@@ -2,39 +2,39 @@
 
 Shared, no-build infrastructure for the first three integration targets only:
 
-1. **Flash Prince** — explicit locomotion state contracts and transition regression checks.
-2. **Tiny Hawk** — isolated cannon-es skateboard physics comparison lab; production skater physics is unchanged until the comparison wins.
-3. **Hyper Dagger** — runtime/input/render smoke coverage through the shared browser runner.
+1. **Flash Prince** — explicit locomotion state contracts plus deterministic movement tapes.
+2. **Tiny Hawk** — isolated cannon-es skateboard physics comparison lab plus engine-agnostic benchmark metrics.
+3. **Hyper Dagger** — existing offline/smoke suites bridged into the shared regression runner.
 
-**Out of scope for this pass:** Eeri and Toko Drop. Do not wire either game into this folder yet.
+**Out of scope:** Eeri and Toko Drop. Do not wire either game into this folder yet.
 
 ## Modules
 
 - `state-machine.js` — deterministic finite-state machine with strict legal-transition checking and compact transition history.
 - `telemetry.js` — frame-indexed event telemetry, invariants, and a tiny serializable input tape for deterministic reproduction.
-- `playtest.html` / `playtest.js` — same-origin browser harness that loads only the three target games, verifies source contracts, finds a render canvas, drives representative input, and reports runtime smoke failures.
+- `playtest.html` / `playtest.js` — same-origin browser harness for render/input survival checks.
+- `test/run.mjs` — unified red/green terminal runner for Flash Prince, Tiny Hawk and Hyper Dagger only.
+
+Run the stronger regression layer from repo root with:
+
+`node game-core/test/run.mjs`
 
 ## Flash Prince
 
-`flashprince/js/movement-state-contract.js` describes the state graph used by the currently playable movement lab (`movement-lab-v3.js` -> `MovementHeroV3` -> `MovementHero`). The older campaign Hero contract is kept separately in `hero-state-contract.js` so campaign integration can happen without conflating the two movement models.
+`flashprince/js/movement-state-contract.js` defines the playable movement graph. `MovementHeroV3.go()` routes real lab transitions through the shared FSM in non-strict telemetry mode. `flashprince/test/movement-tapes.mjs` now locks five deterministic paths: run/jump/land, low mantle, ledge pull-up, climb-down and crouch/roll. It also proves illegal direct state jumps are rejected.
 
-Next integration step: route `MovementHero.go()` through `StateMachine.go()` in non-strict telemetry mode first, run the four movement-lab scenes, then turn strict mode on once every intentional edge transition is represented.
+Next Flash Prince step: promote the tapes from state-only assertions to full MovementHero simulations that assert position windows and exact transition frames in the four movement-lab scenes.
 
-## Tiny Hawk cannon-es lab
+## Tiny Hawk physics A/B
 
-Open `tinyhawk/physics-lab.html`. It is deliberately separate from `tinyhawk/index.html` and uses a pinned `cannon-es@0.20.0` import. Compare these before moving anything into production:
+Open `tinyhawk/physics-lab.html`. Production physics is still authoritative. The cannon-es probe now feeds `PhysicsBenchmark`, which records contact chatter, pop variance, landing speed and transition speed retention. The same collector is intentionally engine-agnostic so production physics can feed identical observations next.
 
-- ramp entry/exit stability;
-- ground contact chatter;
-- pop consistency at lips;
-- landing recovery;
-- steering while loaded versus airborne;
-- numerical stability at high speed.
+Do not replace the production heightfield solver until both solvers have comparable runs and cannon-es wins on measured stability without making steering/landing feel worse.
 
-The production heightfield solver remains authoritative until the probe is measurably better.
+## Hyper Dagger
+
+Game Core now calls the existing `hyperdagger/test/offline.cjs` and `hyperdagger/test/smoke.cjs` suites rather than duplicating them. Next Hyper Dagger step is a small deterministic invariant layer for seeded spawn timing, survival-clock progression and firing cadence.
 
 ## Playtest contract
 
-Open `game-core/playtest.html` from the same static server as the hub. It runs Flash Prince, Tiny Hawk and Hyper Dagger sequentially. A green smoke result is not a claim of game quality; it means the page rendered, expected source vocabulary exists, representative input did not immediately crash, and the frame remained alive long enough to observe.
-
-The next layer should add title-specific invariants and deterministic input tapes rather than adding more games.
+The browser smoke page answers “does it load and survive representative input?” The unified Node runner answers “did the known gameplay contracts regress?” Neither is a subjective quality claim. Keep the scope to these three titles until their deterministic coverage is strong enough to catch the regressions we have actually seen.
