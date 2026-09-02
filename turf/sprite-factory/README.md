@@ -65,8 +65,9 @@ Current unit coverage checks:
 - strict adjacent-frame reference behavior
 - phase lookup from manifest
 - invalid/out-of-range frame rejection
+- invalid opposite-phase-offset rejection
 
-The v0.4 test set passes 5/5 locally.
+The v0.4 test set passes 6/6 locally.
 
 ## Manifest
 
