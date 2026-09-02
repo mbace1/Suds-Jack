@@ -4,13 +4,21 @@
 // nothing here touches a canvas or the DOM, which is what makes it runnable
 // in bare node (test/smoke.cjs).
 import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=2';
-import { planAllIntents } from './ai.js?v=2';
+import { planAllIntents } from './ai.js?v=4';
 import { makeRng } from './rng.js?v=2';
 
-export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1) {
+export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = [], trinketDefs = []) {
   const weaponById = id => weaponDefs.find(w => w.id === id);
   const fullCover = new Set(encounter.cover.full.map(([x, y]) => key(x, y)));
   const partialCover = new Set(encounter.cover.partial.map(([x, y]) => key(x, y)));
+  // tileKey -> hazard def. A hazard never blocks movement (that is cover's
+  // job) — it makes a tile cost something, so the board asks a question
+  // instead of drawing a wall.
+  const hazards = new Map();
+  for (const [x, y, kind] of (encounter.hazards || [])) {
+    const def = hazardDefs.find(h => h.id === kind);
+    if (def) hazards.set(key(x, y), def); // an unknown kind is a content bug, not a crash
+  }
 
   const units = [];
   encounter.playerSpawns.forEach((spawn, i) => {
@@ -25,7 +33,7 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
   const state = {
     encounterId: encounter.id,
     grid: encounter.grid,
-    fullCover, partialCover,
+    fullCover, partialCover, hazards,
     units,
     turn: 'player',
     round: 1,
@@ -37,6 +45,7 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     result: null,
     rng: makeRng(seed),
     weaponDefs, // so moveUnit can look up a dropped weapon's def by id
+    trinketDefs,
     drops: [], // { x, y, weaponId } — GDD §9's "simple weapon-swap loot drops"
   };
   planAllIntents(state);
@@ -44,15 +53,120 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
 }
 
 const getWeapon = (state, id) => state.weaponDefs.find(w => w.id === id);
+const getTrinket = (state, id) => (state.trinketDefs || []).find(t => t.id === id);
+
+// `unit.weapon` is the weapon AS IT ACTUALLY FIRES — base plus every
+// trinket's weapon-field bonus — and `unit.baseWeapon` is what was picked up.
+// Recomputing into unit.weapon rather than exposing an effectiveWeapon(unit)
+// getter is deliberate: grid.js and ai.js both read weapon ranges, and neither
+// can import from combat.js (combat.js imports THEM — it would be circular).
+// This way every existing read stays correct with no new import anywhere, and
+// there is no second code path that can be forgotten.
+//
+// Recompute on both events that can change the answer: a weapon swap and a
+// trinket pickup. A trinket therefore keeps working after a swap instead of
+// being silently attached to the gun it was found with.
+function recomputeWeapon(unit) {
+  const base = unit.baseWeapon || unit.weapon;
+  if (!unit.trinkets || !unit.trinkets.length) { unit.weapon = base; return; }
+  const w = { ...base };
+  for (const t of unit.trinkets) {
+    const e = t.effect || {};
+    if (e.damage) w.damage += e.damage;
+    if (e.range) w.range += e.range;
+    if (e.hitChance) w.hitChance = Math.min(1, w.hitChance + e.hitChance);
+  }
+  unit.weapon = w;
+}
+
+// Applied once, on pickup. maxHp also heals by the same amount: a +2 max that
+// leaves you on the same hp is a promise rather than a pickup, and this tier
+// of item is meant to be felt immediately (same reasoning as awardXp's level
+// bump healing on the spot).
+// Re-apply a saved trinket list by id (main.js's crewProgress, across
+// encounters). Goes through applyTrinket rather than assigning the array, so
+// the stat and weapon effects land on this encounter's freshly-built unit
+// instead of being restored as inert data.
+export function applyTrinkets(unit, ids, defs) {
+  for (const id of ids) {
+    const def = defs.find(t => t.id === id);
+    if (def) applyTrinket(unit, def);
+  }
+}
+
+function applyTrinket(unit, def) {
+  unit.trinkets.push(def);
+  const e = def.effect || {};
+  if (e.maxHp) { unit.maxHp += e.maxHp; unit.hp += e.maxHp; }
+  if (e.move) unit.move += e.move;
+  recomputeWeapon(unit);
+}
 
 function makeUnit(uid, def, weapon, faction, spawn) {
   return {
     uid, defId: def.id, name: def.name, faction, role: def.role, weapon,
-    hp: def.hp, maxHp: def.hp, move: def.move,
+    baseWeapon: weapon, // what was picked up; `weapon` is that plus trinkets
+    // ai.js reads these; absent on player units and on any enemy that has
+    // not been given one, where the behaviour table falls back to `charger`.
+    behaviour: def.behaviour, focus: def.focus,
+    hp: def.hp, maxHp: def.hp, move: def.move, portrait: def.portrait, sprite: def.sprite,
     x: spawn.x, y: spawn.y,
     actedMove: false, actedAction: false,
     kills: 0, xp: 0, level: 1,
+    trinkets: [], // GDD §5: found gear, no slots, no equip action — they just stack
   };
+}
+
+export const hazardAt = (state, x, y) => (state.hazards ? state.hazards.get(key(x, y)) : null) || null;
+
+// Every way a unit's position can change routes through here: a player move,
+// a knockback, an enemy's own step. One entry point rather than three copies,
+// because the third copy is always the one that forgets to check.
+//
+// Returns the event (or null) so callers can decide what to narrate; the
+// event is already on the log either way. checkWinLoss runs here, since a
+// hazard killing the last enemy — or the last operator — has to end the
+// encounter exactly like a killing blow does.
+function enterHazard(state, unit, cause) {
+  if (unit.hp <= 0) return null;
+  const h = hazardAt(state, unit.x, unit.y);
+  if (!h) return null;
+  const before = unit.hp;
+  if (h.lethal) unit.hp = 0;
+  else if (h.onEnter > 0) unit.hp = Math.max(0, unit.hp - h.onEnter);
+  else return null;
+  const evt = {
+    type: 'hazard', uid: unit.uid, kind: h.id, name: h.name, cause,
+    damage: before - unit.hp, killed: unit.hp <= 0, lethal: !!h.lethal,
+    x: unit.x, y: unit.y,
+  };
+  state.log.push(evt);
+  checkWinLoss(state);
+  return evt;
+}
+
+// End-of-round burn: a hazard with `lingers` bites anything still standing in
+// it when the round turns over. This is the only hazard effect that is not
+// triggered by movement, and it is what stops a fire tile being a one-off
+// toll you pay once and then camp on.
+function tickLingeringHazards(state) {
+  const out = [];
+  for (const unit of state.units) {
+    if (unit.hp <= 0) continue;
+    const h = hazardAt(state, unit.x, unit.y);
+    if (!h || !h.lingers) continue;
+    const before = unit.hp;
+    unit.hp = Math.max(0, unit.hp - h.lingers);
+    const evt = {
+      type: 'hazard', uid: unit.uid, kind: h.id, name: h.name, cause: 'linger',
+      damage: before - unit.hp, killed: unit.hp <= 0, lethal: false,
+      x: unit.x, y: unit.y,
+    };
+    state.log.push(evt);
+    out.push(evt);
+  }
+  if (out.length) checkWinLoss(state);
+  return out;
 }
 
 export const getUnit = (state, uid) => state.units.find(u => u.uid === uid);
@@ -88,10 +202,13 @@ export function moveUnit(state, uid, x, y) {
   unit.x = x; unit.y = y;
   unit.actedMove = true;
   state.log.push({ type: 'move', uid, x, y });
-  const pickedUp = pickUpDropAt(state, unit);
+  // Hazard first, then loot: a unit that walks into an open stairwell does
+  // not get to pick up the pistol lying in it on the way down.
+  const hazard = enterHazard(state, unit, 'move');
+  const pickedUp = unit.hp > 0 ? pickUpDropAt(state, unit) : null;
   maybeDeselect(state, unit);
   planAllIntents(state);
-  return { ok: true, pickedUp };
+  return { ok: true, pickedUp, hazard };
 }
 
 // A dead enemy's tile never blocks movement (grid.js's unitAt skips hp<=0
@@ -102,11 +219,19 @@ function pickUpDropAt(state, unit) {
   const i = state.drops.findIndex(d => d.x === unit.x && d.y === unit.y);
   if (i < 0) return null;
   const [drop] = state.drops.splice(i, 1);
+  if (drop.trinketId) {
+    const trinket = getTrinket(state, drop.trinketId);
+    if (!trinket) return null; // a bad id in data is a content bug, not a crash
+    applyTrinket(unit, trinket);
+    state.log.push({ type: 'pickup', uid: unit.uid, trinketId: trinket.id, name: trinket.name });
+    return trinket;
+  }
   const weapon = getWeapon(state, drop.weaponId);
-  if (!weapon) return null; // a bad weaponId in data is a content bug, not a crash
-  unit.weapon = weapon;
-  state.log.push({ type: 'pickup', uid: unit.uid, weaponId: weapon.id });
-  return weapon;
+  if (!weapon) return null;
+  unit.baseWeapon = weapon;
+  recomputeWeapon(unit); // keep whatever trinkets this unit already carries
+  state.log.push({ type: 'pickup', uid: unit.uid, weaponId: weapon.id, name: weapon.name });
+  return unit.weapon;
 }
 
 // Every tile a unit could attack a target from *this turn*, given its
@@ -127,6 +252,12 @@ export function attackableTargets(state, unit) {
 // which only runs once at encounter end) because the drop has to exist mid-
 // encounter for a unit to walk over and grab it.
 export const DROP_CHANCE = 0.5;
+// Of the drops that happen, how many are a trinket rather than the victim's
+// weapon. Kept below half on purpose: the weapon swap is the decision with
+// real texture (it changes range and knockback, i.e. how the unit plays),
+// while a trinket is a small permanent tilt. Making trinkets the common drop
+// would quietly replace the more interesting item with the duller one.
+export const TRINKET_SHARE = 0.4;
 
 function resolveAttack(state, attacker, target, weapon) {
   let chance = weapon.hitChance;
@@ -142,7 +273,15 @@ function resolveAttack(state, attacker, target, weapon) {
     if (killed) {
       attacker.kills += 1;
       if (target.faction === 'enemy' && state.rng() < DROP_CHANCE) {
-        dropped = { x: target.x, y: target.y, weaponId: target.weapon.id };
+        // GDD §5 puts trinkets in the same "found gear" tier as weapon swaps,
+        // so they come from the same roll rather than a second economy the
+        // player has to learn — a body leaves ONE thing, sometimes its gun and
+        // sometimes what was in its pockets.
+        const pool = state.trinketDefs || [];
+        const asTrinket = pool.length && state.rng() < TRINKET_SHARE;
+        dropped = asTrinket
+          ? { x: target.x, y: target.y, trinketId: pool[Math.floor(state.rng() * pool.length)].id }
+          : { x: target.x, y: target.y, weaponId: target.baseWeapon ? target.baseWeapon.id : target.weapon.id };
         state.drops.push(dropped);
       }
     }
@@ -150,6 +289,20 @@ function resolveAttack(state, attacker, target, weapon) {
   }
   const evt = { type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage, killed, knockback, dropped, chance, roll };
   state.log.push(evt);
+  // The payoff the pipe exists for: a shove that lands a body in a fire or an
+  // open stairwell. Resolved AFTER the attack event is logged so the two read
+  // in causal order, and folded back onto the same event so a caller that
+  // only looks at `killed` still learns the target died.
+  if (knockback && knockback.moved) {
+    const hz = enterHazard(state, target, 'knockback');
+    if (hz) {
+      evt.hazard = hz;
+      if (hz.killed && !evt.killed) {
+        evt.killed = true;
+        attacker.kills += 1;   // the shove earned it as surely as a killing blow
+      }
+    }
+  }
   return evt;
 }
 
@@ -169,6 +322,13 @@ function applyKnockback(state, attacker, target, tiles) {
     if (state.fullCover.has(key(nx, ny))) break;
     if (unitAt(state, nx, ny, target)) break;
     target.x = nx; target.y = ny; moved++;
+    // A lethal hazard CATCHES whatever is shoved across it. Without this a
+    // 2-tile knockback sails a body clean over an open stairwell and lands it
+    // on the far side, which is both wrong to look at and quietly makes the
+    // heaviest knockback weapons the WORST at using a pit — the exact
+    // opposite of the intent. Non-lethal hazards do not stop momentum; you
+    // only pay for the tile you come to rest on.
+    if (hazardAt(state, nx, ny)?.lethal) break;
   }
   return { moved, dx: stepX, dy: stepY };
 }
@@ -254,7 +414,15 @@ export function stepEnemyPhase(state) {
       if (!blocked) {
         enemy.x = intent.moveTo.x; enemy.y = intent.moveTo.y;
         moved = { x: enemy.x, y: enemy.y };
+        enterHazard(state, enemy, 'move');
       }
+    }
+    // An enemy that just burned to death (or was shoved into a stairwell and
+    // is only now taking its turn) does not get to swing.
+    if (enemy.hp <= 0) {
+      state.log.push({ type: 'enemy-turn', uid, name: enemy.name, moved, attacked: null });
+      checkWinLoss(state);
+      return { done: false, uid, name: enemy.name, moved, attacked: null };
     }
     if (intent.type === 'attack') {
       const target = getUnit(state, intent.targetUid);
@@ -267,11 +435,15 @@ export function stepEnemyPhase(state) {
     return { done: false, uid, name: enemy.name, moved, attacked };
   }
 
+  // The round turns over: anything still standing in a lingering hazard pays
+  // for it now. Done before the reset/replan so the new round's telegraph is
+  // computed against who actually survived the fire.
+  const burns = tickLingeringHazards(state);
   state.turn = 'player';
   state.round += 1;
   for (const u of state.units) if (u.faction === 'player') { u.actedMove = false; u.actedAction = false; }
   planAllIntents(state);
-  return { done: true };
+  return { done: true, burns };
 }
 
 function checkWinLoss(state) {

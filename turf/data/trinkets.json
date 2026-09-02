@@ -1,0 +1,35 @@
+{
+  "_comment": "GDD §5's v1 progression list, the last unbuilt line: 'A handful of passive trinkets (flat stat bonuses — found gear, no equip complexity).' Weapon swaps shipped in v7 and XP levels in v6; this closes the list. NO EQUIP COMPLEXITY is the load-bearing phrase — there is no inventory, no slots and no equip action. A unit walks over one and keeps it, the same way it walks over a weapon, and it stacks. That is also why every effect here is a flat number: anything conditional would need a rules surface to explain it, and this tier of item is explicitly the one that does not get one. Kept deliberately small and unexciting — a trinket should tilt a fight, never decide one; the interesting decisions in this game are on the board, not in a stat screen. `effect` keys name unit fields (maxHp, move) or weapon fields the unit's CURRENT weapon is read through (damage, range, hitChance), so a trinket keeps working after a weapon swap rather than being silently attached to the gun it was found with.",
+  "trinkets": [
+    {
+      "id": "steel_toes",
+      "name": "Steel toes",
+      "blurb": "Takes a kicking.",
+      "effect": { "maxHp": 2 }
+    },
+    {
+      "id": "trainers",
+      "name": "Worn trainers",
+      "blurb": "One more street per turn.",
+      "effect": { "move": 1 }
+    },
+    {
+      "id": "taped_grip",
+      "name": "Taped grip",
+      "blurb": "Holds truer.",
+      "effect": { "hitChance": 0.1 }
+    },
+    {
+      "id": "knuckle_wrap",
+      "name": "Knuckle wrap",
+      "blurb": "Hits land heavier.",
+      "effect": { "damage": 1 }
+    },
+    {
+      "id": "long_lens",
+      "name": "Cracked scope",
+      "blurb": "Sees one street further.",
+      "effect": { "range": 1 }
+    }
+  ]
+}

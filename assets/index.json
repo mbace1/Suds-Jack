@@ -162,18 +162,18 @@
       "hash": "ca4e5b49"
     },
     "turf/cast-gunner-attack-windup": {
-      "file": "2d/turf-cast-gunner-attack-windup.8902da46.png",
+      "file": "2d/turf-cast-gunner-attack-windup.75b25388.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "8902da46"
+      "hash": "75b25388"
     },
     "turf/cast-gunner-attack-release": {
-      "file": "2d/turf-cast-gunner-attack-release.024a25f2.png",
+      "file": "2d/turf-cast-gunner-attack-release.9da1f36b.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "024a25f2"
+      "hash": "9da1f36b"
     },
     "turf/cast-gunner-hit": {
       "file": "2d/turf-cast-gunner-hit.9ad2f543.png",
@@ -204,18 +204,18 @@
       "hash": "77e06976"
     },
     "turf/cast-leopard-attack-windup": {
-      "file": "2d/turf-cast-leopard-attack-windup.cb7e8b6b.png",
+      "file": "2d/turf-cast-leopard-attack-windup.bbc8c610.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "cb7e8b6b"
+      "hash": "bbc8c610"
     },
     "turf/cast-leopard-attack-release": {
-      "file": "2d/turf-cast-leopard-attack-release.f63e05de.png",
+      "file": "2d/turf-cast-leopard-attack-release.127e270a.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "f63e05de"
+      "hash": "127e270a"
     },
     "turf/cast-leopard-hit": {
       "file": "2d/turf-cast-leopard-hit.3224bf95.png",
@@ -246,18 +246,18 @@
       "hash": "ced7ec77"
     },
     "turf/cast-gunner-attack-windup-back": {
-      "file": "2d/turf-cast-gunner-attack-windup-back.baa86fdf.png",
+      "file": "2d/turf-cast-gunner-attack-windup-back.f0042868.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "baa86fdf"
+      "hash": "f0042868"
     },
     "turf/cast-gunner-attack-release-back": {
-      "file": "2d/turf-cast-gunner-attack-release-back.a590896b.png",
+      "file": "2d/turf-cast-gunner-attack-release-back.09c30a38.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "a590896b"
+      "hash": "09c30a38"
     },
     "turf/cast-gunner-hit-back": {
       "file": "2d/turf-cast-gunner-hit-back.33e09107.png",
@@ -288,18 +288,18 @@
       "hash": "f873b072"
     },
     "turf/cast-leopard-attack-windup-back": {
-      "file": "2d/turf-cast-leopard-attack-windup-back.8ae6e7f7.png",
+      "file": "2d/turf-cast-leopard-attack-windup-back.5f5e81cd.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "8ae6e7f7"
+      "hash": "5f5e81cd"
     },
     "turf/cast-leopard-attack-release-back": {
-      "file": "2d/turf-cast-leopard-attack-release-back.d5c9ebb1.png",
+      "file": "2d/turf-cast-leopard-attack-release-back.962b9a4f.png",
       "kind": "2d",
       "use": "prop",
       "game": "turf",
-      "hash": "d5c9ebb1"
+      "hash": "962b9a4f"
     },
     "turf/cast-leopard-hit-back": {
       "file": "2d/turf-cast-leopard-hit-back.e0970559.png",
