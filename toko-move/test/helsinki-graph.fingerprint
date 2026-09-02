@@ -1,0 +1,128 @@
+N arabia Arabia [home|shop] c22 @40.16,5.61
+N eira Eira [home|service] c18 @19.97,60.54
+N hakaniemi Hakaniemi [transfer|shop|work] c30 @24.79,37.68
+N hietalahti Hietalahti [shop|service] c20 @10.69,57.45
+N kalasatama Kalasatama [transfer|home|shop] c28 @39.75,28.95
+N kallionkirkko Kallio [home|service] c20 @25.94,32.59
+N kamppi Kamppi [transfer|shop|work] c30 @13.93,49.10
+N kapyla Käpylä [home|service] c20 @21.05,0.00
+N katajanokka Katajanokka [home|service] c20 @35.25,52.28
+N kauppatori Kauppatori [shop|service] c22 @25.88,50.58
+N lansiterminaali Länsiterminaali [transfer|service] c26 @5.98,68.92
+N lasipalatsi Lasipalatsi [transfer|shop] c24 @17.86,47.41
+N meilahti Meilahti [service|work] c24 @0.00,24.29
+N messukeskus Messukeskus [work|service] c24 @17.30,12.95
+N olympiaterminaali Olympiaterminaali [transfer|service] c22 @28.23,57.27
+N ooppera Ooppera [transfer|service] c22 @12.82,34.41
+N pasila Pasila [transfer|work] c30 @15.73,16.76
+N rautatientori Rautatientori [transfer|work|shop] c34 @19.58,47.43
+N ruoholahti Ruoholahti [transfer|work|home] c24 @5.60,55.49
+N senaatintori Senaatintori [service|shop] c22 @24.61,48.99
+N sornainen Sörnäinen [transfer|work] c28 @31.96,27.95
+N toolontori Töölöntori [home|shop] c20 @10.11,37.20
+E arabia-kallionkirkko walk t55 c2
+E arabia-sornainen tram t15 c5
+E arabia-sornainen walk t43 c2
+E eira-hietalahti walk t18 c2
+E eira-kauppatori walk t21 c2
+E eira-lansiterminaali walk t30 c2
+E eira-lasipalatsi tram t9 c5
+E eira-olympiaterminaali tram t6 c5
+E eira-olympiaterminaali walk t16 c2
+E eira-rautatientori tram t9 c5
+E hakaniemi-kallionkirkko tram t3 c5
+E hakaniemi-kallionkirkko walk t9 c2
+E hakaniemi-kauppatori walk t24 c2
+E hakaniemi-rautatientori metro t4 c8
+E hakaniemi-rautatientori tram t7 c5
+E hakaniemi-rautatientori walk t20 c2
+E hakaniemi-senaatintori tram t8 c5
+E hakaniemi-senaatintori walk t21 c2
+E hakaniemi-sornainen metro t3 c8
+E hakaniemi-sornainen tram t8 c5
+E hakaniemi-sornainen walk t22 c2
+E hietalahti-kamppi walk t16 c2
+E hietalahti-lansiterminaali tram t8 c5
+E hietalahti-lansiterminaali walk t23 c2
+E hietalahti-lasipalatsi tram t8 c5
+E hietalahti-rautatientori tram t7 c5
+E kalasatama-pasila tram t19 c5
+E kalasatama-sornainen metro t3 c8
+E kalasatama-sornainen walk t14 c2
+E kallionkirkko-pasila tram t10 c5
+E kallionkirkko-sornainen walk t14 c2
+E kamppi-lansiterminaali tram t14 c5
+E kamppi-lasipalatsi walk t8 c2
+E kamppi-rautatientori metro t3 c8
+E kamppi-rautatientori tram t4 c5
+E kamppi-rautatientori walk t11 c2
+E kamppi-ruoholahti metro t4 c8
+E kamppi-ruoholahti tram t7 c5
+E kamppi-ruoholahti walk t19 c2
+E kamppi-toolontori tram t8 c5
+E kamppi-toolontori walk t23 c2
+E kapyla-pasila walk t32 c2
+E kapyla-sornainen tram t20 c5
+E katajanokka-kauppatori walk t17 c2
+E katajanokka-senaatintori tram t7 c5
+E kauppatori-lasipalatsi tram t6 c5
+E kauppatori-olympiaterminaali tram t5 c5
+E kauppatori-olympiaterminaali walk t13 c2
+E kauppatori-rautatientori walk t13 c2
+E kauppatori-senaatintori tram t3 c5
+E kauppatori-senaatintori walk t6 c2
+E lansiterminaali-ruoholahti tram t9 c5
+E lansiterminaali-ruoholahti walk t24 c2
+E lasipalatsi-ooppera tram t9 c5
+E lasipalatsi-ooppera walk t25 c2
+E lasipalatsi-rautatientori walk t6 c2
+E lasipalatsi-senaatintori tram t5 c5
+E meilahti-ooppera tram t10 c5
+E meilahti-ooppera walk t30 c2
+E meilahti-pasila tram t14 c5
+E meilahti-toolontori walk t30 c2
+E messukeskus-pasila tram t3 c5
+E messukeskus-pasila walk t7 c2
+E ooppera-pasila tram t12 c5
+E ooppera-pasila walk t32 c2
+E ooppera-sornainen tram t13 c5
+E ooppera-toolontori tram t3 c5
+E ooppera-toolontori walk t7 c2
+E pasila-sornainen tram t8 c5
+E pasila-sornainen walk t36 c2
+E pasila-toolontori walk t39 c2
+E rautatientori-senaatintori tram t4 c5
+E rautatientori-senaatintori walk t10 c2
+E rautatientori-toolontori walk t25 c2
+E ruoholahti-toolontori tram t13 c5
+L 1 tram eira>lasipalatsi>ooppera>sornainen>kapyla
+L 10 tram lasipalatsi>ooppera
+L 10B tram ooppera>lasipalatsi
+L 10H tram lasipalatsi>ooppera
+L 13 tram kalasatama>pasila
+L 13H tram kalasatama>pasila
+L 1H tram lansiterminaali>hietalahti>lasipalatsi>ooppera>sornainen
+L 1T tram lansiterminaali>hietalahti>lasipalatsi>ooppera>sornainen>kapyla
+L 2 tram olympiaterminaali>kauppatori>senaatintori>rautatientori>kamppi>toolontori>ooppera>pasila>messukeskus
+L 2H tram olympiaterminaali>kauppatori>senaatintori>rautatientori>kamppi>toolontori>ooppera
+L 3 tram olympiaterminaali>eira>rautatientori>hakaniemi>kallionkirkko
+L 3H tram olympiaterminaali>eira
+L 4 tram meilahti>ooppera>lasipalatsi>senaatintori>katajanokka
+L 4H tram katajanokka>senaatintori>lasipalatsi>ooppera
+L 4T tram katajanokka>senaatintori>lasipalatsi>ooppera>meilahti
+L 5 tram katajanokka>senaatintori>rautatientori>kamppi>ruoholahti
+L 5H tram lansiterminaali>ruoholahti>kamppi>rautatientori
+L 5T tram lansiterminaali>ruoholahti>kamppi>rautatientori>senaatintori>katajanokka
+L 6 tram hietalahti>rautatientori>hakaniemi>sornainen>arabia
+L 6H tram arabia>sornainen
+L 7 tram lansiterminaali>kamppi>rautatientori>senaatintori>hakaniemi>sornainen>pasila>meilahti
+L 7H tram lansiterminaali>kamppi>rautatientori>senaatintori>hakaniemi>sornainen>pasila
+L 8 tram ooppera>sornainen>arabia
+L 8H tram lansiterminaali>ruoholahti>toolontori>ooppera
+L 8T tram lansiterminaali>ruoholahti>toolontori>ooppera>sornainen>arabia
+L 9 tram lansiterminaali>kamppi>rautatientori>hakaniemi>kallionkirkko>pasila
+L 9H tram lansiterminaali>kamppi>rautatientori>hakaniemi>kallionkirkko>pasila
+L 9N tram pasila>kallionkirkko>hakaniemi>rautatientori>kamppi
+L H tram rautatientori>senaatintori>kauppatori>lasipalatsi>ooppera
+L M1 metro ruoholahti>kamppi>rautatientori>hakaniemi>sornainen>kalasatama
+L M2 metro ruoholahti>kamppi>rautatientori>hakaniemi>sornainen>kalasatama
