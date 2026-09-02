@@ -253,3 +253,22 @@ jobs:
       # generator (js/names.js) checked on its own.
       - name: the crew-name generator
         run: node turf/test/names.mjs
+
+      # The sprite gates below need a browser (every image measurement in
+      # spritekit runs in a canvas), which is why they sit after the bare-node
+      # ones rather than beside them.
+      - name: browser for the sprite checks
+        run: npm i -g playwright && npx playwright install --with-deps chromium
+
+      # ABSOLUTE per-frame checks, over the WHOLE committed sprite tree rather
+      # than the frames a PR happens to touch. Every other gate in spritekit is
+      # relative — phase.cjs and reach.cjs compare frames to each other,
+      # drift.cjs measures spread across a clip — and they share one blind
+      # spot: two frames broken the same way agree perfectly. 63 of 133 shipped
+      # frames were cropped by the cell edge, across sets nobody was editing,
+      # and not one relative gate ever noticed.
+      - name: every committed sprite frame
+        run: |
+          NODE_PATH=$(npm root -g) node turf/tools/spritekit/verify.cjs \
+            $(find turf/art-src/sprites/cast -mindepth 2 -type d \
+              \( -name front -o -name rear -o -name front12 -o -name rear12 \) | sort)

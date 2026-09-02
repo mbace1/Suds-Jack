@@ -48,8 +48,8 @@ if (!clip || !identity || !refIn || !outDir) {
 const run = (cmd, args, env = {}) => execFileSync(cmd, args, { stdio: 'inherit', env: { ...process.env, NODE_PATH, ...env } });
 const node = (script, args, env) => run(process.execPath, [resolve(HERE, script), ...args], env);
 
-const raw = join(outDir, '_raw'), cut = join(outDir, '_cut');
-for (const d of [outDir, raw, cut]) mkdirSync(d, { recursive: true });
+const raw = join(outDir, '_raw'), keyed = join(outDir, '_key');
+for (const d of [outDir, raw, keyed]) mkdirSync(d, { recursive: true });
 
 // An attack clip takes a MIRRORED reference. Facing is set by the reference
 // image, not by the prompt: a weapon carried on the character's screen-left
@@ -63,48 +63,62 @@ if (clip.mirrorRef) {
   if (!existsSync(ref)) node('flip.cjs', [refIn, ref]);
 }
 
+// Generate and key only. THE FIT IS NOT PER-FRAME any more: `cut.mjs fit`
+// scales each image independently to fill its cell, which is right for one
+// illustration and wrong for an animation — a wide silhouette comes out smaller
+// than a narrow one, by 32% within a single walk on longcoat. fitclip.cjs fits
+// the clip as a whole at one scale instead.
 clip.phases.forEach((p, i) => {
   const prompt = join(raw, `${p}.txt`);
   execFileSync(process.execPath, [resolve(HERE, clip.build), identity, p, ...(rear ? ['--rear'] : [])],
     { stdio: ['ignore', openSync(prompt, 'w'), 'inherit'] });
   node('gen.mjs', [prompt, join(raw, `${p}.png`), ref], { ASPECT: clip.aspect(p) });
-  run(process.execPath, [CUT, 'key', join(raw, `${p}.png`), join(raw, `${p}_k.png`)]);
-  run(process.execPath, [CUT, 'fit', join(raw, `${p}_k.png`),
-    join(cut, `${String(i + 1).padStart(2, '0')}_${p}.png`), '192x288', '--no-quantise']);
+  run(process.execPath, [CUT, 'key', join(raw, `${p}.png`),
+    join(keyed, `${String(i + 1).padStart(2, '0')}_${p}.png`)]);
 });
 
-const frames = readdirSync(cut).filter(f => f.endsWith('.png')).sort();
+const frames = readdirSync(keyed).filter(f => f.endsWith('.png')).sort();
 
 if (clip.breathe) {
-  node('breathe.cjs', [join(cut, frames[0]), outDir, '2', '8']);
+  const one = join(outDir, '_one');
+  node('fitclip.cjs', [keyed, one, frames[0]]);
+  node('breathe.cjs', [join(one, frames[0]), outDir, '2', '8']);
+} else if (clip.register === false) {
+  // register.cjs scores TORSO-BAND overlap, which assumes the body keeps
+  // roughly one orientation. A knockdown rotates the figure 90 degrees between
+  // standing and lying, so that band does not correspond: worst overlay
+  // measured 0.46-0.51 against 0.72-0.89 everywhere else. Maximising a
+  // meaningless number is worse than not searching.
+  node('fitclip.cjs', [keyed, outDir, ...frames]);
 } else {
-  // register first (search-based scale, no anchor feature), then normalise for
-  // the ground line. normalise's own rescale is skipped — register has already
-  // done that job without a proxy that can break.
-  // register.cjs assumes the body keeps roughly one orientation through the
-  // clip — it scores the overlap of the TORSO BAND. A knockdown rotates the
-  // whole figure 90 degrees between standing and lying, so that band does not
-  // correspond at all: measured worst overlay was 0.46-0.51 against 0.72-0.89
-  // on every other clip. Searching for the scale that maximises a meaningless
-  // number is worse than not searching, so a reaction clip skips it.
-  if (clip.register === false) {
-    node('normalise.cjs', [cut, outDir, ...frames, '--origin-only']);
-  } else {
-    node('register.cjs', [cut, join(outDir, '_reg'), ...frames]);
-    node('normalise.cjs', [join(outDir, '_reg'), outDir, ...frames, '--origin-only']);
-  }
-  if (clip.gate === 'reach') {
-    node('reach.cjs', [outDir, ...frames]);
-    // an attack clip still needs its scale and ground line checked, and
-    // --no-scale is right here for the same reason --origin-only is: the
-    // weapon swings through the top-of-ink band and is measured as head
-    node('drift.cjs', [outDir, ...frames, '--no-scale', '--no-rhythm']);
-  }
-  if (clip.gate === 'phase') node('drift.cjs', [outDir, ...frames, ...(clip.gateArgs || [])]);
+  // ONE RESAMPLE, not two. fitclip lays the clip out at a common scale;
+  // register measures the residual per-frame size drift on that layout and
+  // REPORTS it rather than writing images; fitclip then re-renders from the
+  // keyed originals with those factors folded into its own transform. Writing
+  // registered PNGs and fitting them afterwards resamples twice, and the second
+  // pass lands hardest on the frames that needed the largest correction.
+  const pass1 = join(outDir, '_pass1'), adj = join(outDir, '_adjust.json');
+  node('fitclip.cjs', [keyed, pass1, ...frames]);
+  node('register.cjs', [pass1, pass1, ...frames, '--report', adj]);
+  node('fitclip.cjs', [keyed, outDir, ...frames, '--adjust', adj]);
 }
 
-// files beginning with _ are working files (the mirrored reference, previews),
-// not frames — sweeping them into the GIF put the reference in the animation
+if (!clip.breathe) {
+  if (clip.gate === 'reach') node('reach.cjs', [outDir, ...frames]);
+  // --no-scale always: register owns scale, and drift's head-width check was
+  // self-fulfilling while normalise.cjs was the thing setting head width.
+  node('drift.cjs', [outDir, ...frames, '--no-scale',
+    ...(clip.gateArgs || []).filter(a => a !== '--no-scale')]);
+}
+
+// The absolute checks run LAST and exit non-zero. Every other gate here is
+// RELATIVE — phase.cjs and reach.cjs compare frames to each other, drift.cjs
+// measures spread across a clip — and they share one blind spot: two frames
+// broken the same way agree perfectly. 63 of 133 shipped frames were clipped by
+// the cell edge and not one relative gate noticed.
+node('verify.cjs', [outDir]);
+node('edge.cjs', [outDir]);
+
 const out = readdirSync(outDir).filter(f => f.endsWith('.png') && !f.startsWith('_')).sort();
 node('anim.cjs', [join(outDir, '_preview.gif'), outDir, '2', '120', ...out]);
 console.log(`\nWATCH ${join(outDir, '_preview.gif')} — no gate above can tell you a pose is GOOD.`);

@@ -33,9 +33,16 @@ const BAND = [0.15, 0.65];
 const FOOT_MARGIN = 10;
 
 (async () => {
-  const [dir, outDir, ...files] = process.argv.slice(2);
+  // --report emits the per-frame factors as JSON instead of writing PNGs, so
+  // fitclip.cjs can fold them into its own transform. That is the difference
+  // between ONE resample and two: writing registered PNGs and then fitting them
+  // resamples every frame twice, and the second pass lands hardest on exactly
+  // the frames that needed the largest correction.
+  const ri = process.argv.indexOf('--report');
+  const reportTo = ri > -1 ? process.argv[ri + 1] : null;
+  const argv = process.argv.slice(2).filter((a, i, arr) => a !== '--report' && arr[i - 1] !== '--report');
+  const [dir, outDir, ...files] = argv;
   if (!files.length) { console.log('usage: node register.cjs <dir> <outDir> <frame...>'); process.exit(1); }
-  fs.mkdirSync(outDir, { recursive: true });
   const br = await chromium.launch(); const pg = await br.newPage();
   await pg.goto('data:text/html,<html><body></body></html>');
 
@@ -104,17 +111,42 @@ const FOOT_MARGIN = 10;
       const coarse = search(RANGE[0], RANGE[1], 0.04, -DX_RANGE, DX_RANGE, 3, false);
       const fine = search(Math.max(RANGE[0], coarse.s - 0.04), Math.min(RANGE[1], coarse.s + 0.04), 0.005,
                           coarse.dx - 3, coarse.dx + 3, 1, true);
-      return { ...fine, anchor: false, saturated: fine.s <= RANGE[0] + 1e-6 || fine.s >= RANGE[1] - 1e-6 };
+      // The best-overlay transform is allowed to push ink off the canvas, and a
+      // scale of 1.4 usually does. Pixels lost here are lost for good — the
+      // later stages only see what this wrote — so the fit is pulled back
+      // inside the cell even though that costs a little overlay.
+      let s2 = fine.s, dx2 = fine.dx, clamped = false;
+      for (let guard = 0; guard < 12; guard++) {
+        const m = mask(im, s2, dx2);
+        let x0 = m.W, x1 = -1, y0 = m.H, y1 = -1;
+        for (let y = 0; y < m.H; y++) for (let x = 0; x < m.W; x++) if (m.a[y * m.W + x]) {
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+        const oL = Math.max(0, -x0), oR = Math.max(0, x1 - (m.W - 1)), oT = Math.max(0, -y0);
+        if (!oL && !oR && !oT) { fine.url = m.canvas.toDataURL('image/png'); break; }
+        clamped = true;
+        if ((oL && oR) || oT) { s2 *= 0.97; continue; }
+        dx2 += oL - oR;
+      }
+      return { ...fine, s: s2, dx: dx2, clamped, anchor: false,
+               saturated: fine.s <= RANGE[0] + 1e-6 || fine.s >= RANGE[1] - 1e-6 };
     });
   }, { urls, RANGE, DX_RANGE, BAND, margin: FOOT_MARGIN });
 
-  out.forEach((r, i) => fs.writeFileSync(path.join(outDir, files[i]), Buffer.from(r.url.split(',')[1], 'base64')));
+  if (reportTo) {
+    const factors = {};
+    out.forEach((r, i) => { factors[files[i]] = { s: r.s, dx: r.dx }; });
+    fs.writeFileSync(reportTo, JSON.stringify(factors, null, 1));
+  } else {
+    fs.mkdirSync(outDir, { recursive: true });
+    out.forEach((r, i) => fs.writeFileSync(path.join(outDir, files[i]), Buffer.from(r.url.split(',')[1], 'base64')));
+  }
   await br.close();
   console.log('frame'.padEnd(30), 'scale'.padStart(6), 'dx'.padStart(4), 'torsoIoU'.padStart(9));
   out.forEach((r, i) => console.log(
     (files[i].replace(/\.png$/, '') + (r.anchor ? '  (anchor)' : '')).padEnd(30),
     r.s.toFixed(3).padStart(6), String(r.dx).padStart(4), r.score.toFixed(3).padStart(9),
-    r.saturated ? '  SATURATED — widen RANGE' : ''));
+    (r.saturated ? '  SATURATED — widen RANGE' : '') + (r.clamped ? '  clamped to fit the cell' : '')));
   const worst = Math.min(...out.map(r => r.score));
   const sat = out.filter(r => r.saturated).length;
   // The overlay score is INFORMATION, not a gate. It was briefly written up

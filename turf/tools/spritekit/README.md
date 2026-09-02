@@ -342,6 +342,75 @@ So the weapon probe and the body probe answer different questions and an attack
 clip needs both. `reach.cjs` now says so when it finds a matched pair, and
 `make.mjs` runs `drift.cjs` after it so scale and ground line are checked too.
 
+## The gates were all relative, and that hid 63 broken frames
+
+Every check written before this one compares frames to **each other**:
+`phase.cjs` scores silhouette overlap between poses, `reach.cjs` compares
+weapon positions, `drift.cjs` measures spread across a clip. That whole family
+shares one blind spot — **two frames broken the same way agree perfectly** — and
+it hid a defect across the entire tree: **63 of 133 committed frames were
+cropped by the cell edge**, in sets nobody was editing, and every gate passed
+them. It was found because the owner looked at the pictures.
+
+`verify.cjs` asks only questions a single frame can answer wrongly by itself,
+and its thresholds come from the measured distribution over 105 known-good
+frames rather than from intuition:
+
+```
+edge      0 on every good frame        -> any ink on the border FAILS
+magenta   0 on every good frame        -> any key survivor FAILS
+softFrac  0.0000 on every good frame   -> partial alpha means something
+                                          resampled smoothly; FAILS over 2%
+coverage  0.125 - 0.565, median 0.327  -> FAILS outside 0.08-0.70, warns under 0.20
+colours   1538 - 4046                  -> reported, never gated: it tracks how
+                                          painterly the generator was, not
+                                          whether the frame is correct
+```
+
+It runs in CI over the **whole committed tree**, not the frames a PR touched,
+because that is exactly how the clipping survived.
+
+## The fit was per-frame, and that was the cause
+
+`cut.mjs fit` scales each image independently to fill its cell. That is correct
+for a single illustration and wrong for an animation: a frame with a wide
+silhouette comes out smaller than a narrow one — **32% between two frames of
+longcoat's own walk**. It is also why `register.cjs` needed a scale range up to
+1.47; it was undoing damage the fit had just done, by upscaling frames that had
+already been downscaled. Two resamples, the second landing hardest on the frames
+that could least afford it.
+
+`fitclip.cjs` replaces it: the clip is measured as a whole, **one scale** is
+chosen so the largest frame fits, and every frame is placed at that scale with
+the ground line pinned. Relative size differences survive, which matters because
+the body-height rhythm is a required feature. And nothing can be clipped —
+the scale is derived from the widest and tallest frame, so no frame can overhang.
+
+The pipeline is now **one resample**: `fitclip` lays the clip out, `register`
+measures the residual per-frame drift on that layout and `--report`s it as
+factors, and `fitclip` re-renders from the keyed originals with those factors
+folded into its own transform.
+
+### Three bugs found while building it, all mine
+
+- **`normalise.cjs` centred on the middle of the bottom row.** In a wide stride
+  that row is a single boot, so it parked the boot mid-cell and threw the body
+  off the canvas. I had already found and fixed this exact fault in
+  `register.cjs`, written a comment saying it "matters less" in `normalise.cjs`
+  because that file was not also searching, and shipped it. It did not matter
+  less: it was the primary cause of all 63.
+- **Centroid placement made the shrink guard fire.** With an asymmetric
+  silhouette — a coat swept to one side — centring the ink's *mass* leaves the
+  far edge overhanging, so the guard shrank 3% at a time and 25 iterations later
+  the clip was 0.47x too small: longcoat came out filling **4.7%** of the cell
+  against a normal 30%. The **bbox centre** makes the fit correct by
+  construction and the guard never fires.
+- **The despeckle threshold was in the wrong units.** 40px measured at the
+  source's 832x1248 is a *quarter* of a pixel in a 192x288 cell, so it removed
+  nothing; the check that measured specks at output scale kept reporting them.
+  It is a fraction of the largest component now, which is scale-free — and a
+  dropped weapon runs several percent of the body, so it survives.
+
 ## Honest limits
 
 - These metrics catch duplicates, mirrors, drift and flat cycles. They cannot

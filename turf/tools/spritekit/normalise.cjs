@@ -38,19 +38,59 @@ const HEAD_SLICE = 0.22, FOOT_MARGIN = 10;
         const W = im.width, H = im.height;
         const c = document.createElement('canvas'); c.width = W; c.height = H;
         const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0);
-        const m = measure(g.getImageData(0, 0, W, H).data, W, H, slice);
+        const data = g.getImageData(0, 0, W, H).data;
+        const m = measure(data, W, H, slice);
         if (mode === 'measure') return { headW: m.headW, ih: m.ih };
         const s = originOnly ? 1 : target / m.headW;
-        const o = document.createElement('canvas'); o.width = W; o.height = H;
-        const og = o.getContext('2d'); og.imageSmoothingEnabled = false;
-        // scale about the ground-contact point, then park that point at a fixed spot
-        og.translate(W / 2, H - margin);
-        og.scale(s, s);
-        og.drawImage(c, -m.footCx, -m.y1);
-        return { url: o.toDataURL('image/png'), headW: m.headW, ih: m.ih };
+        // HORIZONTAL ANCHOR IS THE INK CENTROID, NOT THE CENTRE OF THE BOTTOM
+        // ROW. In a wide stride the bottom row is a single boot off to one
+        // side; centring on it parks that boot mid-cell and throws the body off
+        // the canvas. That one line clipped 63 of 102 shipped frames.
+        let sx = 0, n = 0;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+          if (data[(y * W + x) * 4 + 3] > 127) { sx += x; n++; }
+        const cx = n ? sx / n : m.footCx;
+
+        const draw = (dx, dy, sc) => {
+          const o = document.createElement('canvas'); o.width = W; o.height = H;
+          const og = o.getContext('2d'); og.imageSmoothingEnabled = false;
+          // scale about the ground-contact point, then park that point at a fixed spot
+          og.translate(W / 2 + dx, H - margin + dy);
+          og.scale(sc, sc);
+          og.drawImage(c, -cx, -m.y1);
+          return o;
+        };
+        const inkBox = (canvas) => {
+          const gg = canvas.getContext('2d', { willReadFrequently: true });
+          const dd = gg.getImageData(0, 0, W, H).data;
+          let x0 = W, x1 = -1, y0 = H, y1b = -1;
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (dd[(y * W + x) * 4 + 3] > 127) {
+            if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1b) y1b = y;
+          }
+          return { x0, x1, y0, y1: y1b };
+        };
+
+        // NOTHING MAY LEAVE THE CELL. Translate to pull any overflow back in;
+        // if the figure is still too big to fit, scale it down about the ground
+        // point until it does and say so — a cropped sprite passes every other
+        // gate in this toolchain, so it has to be made impossible here.
+        let sc = s, dx = 0, dy = 0, shrunk = false;
+        for (let guard = 0; guard < 12; guard++) {
+          const b = inkBox(draw(dx, dy, sc));
+          const overL = Math.max(0, -b.x0), overR = Math.max(0, b.x1 - (W - 1));
+          const overT = Math.max(0, -b.y0), overB = Math.max(0, b.y1 - (H - 1));
+          if (!overL && !overR && !overT && !overB) break;
+          if (overL && overR || overT && overB) { sc *= 0.97; shrunk = true; continue; }
+          dx += overL - overR; dy += overT - overB;
+        }
+        const o = draw(dx, dy, sc);
+        return { url: o.toDataURL('image/png'), headW: m.headW, ih: m.ih, shrunk, dx, dy };
       }, { url: `data:image/png;base64,${b64}`, lib: LIB, mode: pass, target, margin: FOOT_MARGIN, slice: HEAD_SLICE, originOnly });
       if (pass === 'measure') stats.push(r);
-      else fs.writeFileSync(path.join(outDir, f), Buffer.from(r.url.split(',')[1], 'base64'));
+      else {
+        fs.writeFileSync(path.join(outDir, f), Buffer.from(r.url.split(',')[1], 'base64'));
+        if (r.shrunk) console.log(`  note: ${f} did not fit the cell and was scaled down to fit.`);
+      }
     }
   }
   const spread = a => Math.max(...a) - Math.min(...a);
