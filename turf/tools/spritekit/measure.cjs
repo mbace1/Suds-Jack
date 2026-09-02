@@ -1,5 +1,7 @@
-// The one in-page measurement both drift.cjs and normalise.cjs inject, so the
-// checker and the fixer can never disagree about what "head width" means.
+// The one measurement both drift.cjs and normalise.cjs use, so the checker and
+// the fixer can never disagree about what "head width" means. It used to be a
+// SOURCE STRING injected into a browser page; now that everything runs in node
+// it is simply a function.
 //
 // Head width is the width of a connected blob in the top slice, not the
 // longest ink run in any row of it. That much is a real improvement — a run
@@ -22,7 +24,6 @@
 // A ponytail, a hat or a hood is attached to the head and so is part of the
 // blob either way (~11% over a 12-frame cycle). That wants a different anchor
 // entirely and is still open.
-module.exports.MEASURE_SRC = `
 function measure(d, W, H, slice) {
   let y0 = H, y1 = -1, x0 = W, x1 = -1;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
@@ -61,4 +62,6 @@ function measure(d, W, H, slice) {
   let fx0 = W, fx1 = -1;
   for (let x = 0; x < W; x++) if (d[(y1 * W + x) * 4 + 3] > 127) { if (x < fx0) fx0 = x; if (x > fx1) fx1 = x; }
   return { headW, ih, iw: x1 - x0 + 1, x0, y0, x1, y1, footY: y1, footCx: (fx0 + fx1) / 2 };
-}`;
+}
+
+module.exports = { measure };

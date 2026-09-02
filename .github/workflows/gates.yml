@@ -266,3 +266,24 @@ jobs:
       # same question as winnable.
       - name: winnable, and not free
         run: node turf/test/balance.mjs
+
+      # No browser. Every image measurement in spritekit used to run inside a
+      # headless Chromium; it runs on Skia in-process now (@napi-rs/canvas),
+      # which is 13.5x faster over the full chain and removes a ~300MB CI
+      # download. Capture-only deps stay out of the repo and are exposed with
+      # NODE_PATH, the same rule CLAUDE.md sets for gifenc and enemy-loop.
+      - name: image backend for the sprite checks
+        run: npm i -g @napi-rs/canvas gifenc
+
+      # ABSOLUTE per-frame checks, over the WHOLE committed sprite tree rather
+      # than the frames a PR happens to touch. Every other gate in spritekit is
+      # relative — phase.cjs and reach.cjs compare frames to each other,
+      # drift.cjs measures spread across a clip — and they share one blind
+      # spot: two frames broken the same way agree perfectly. 63 of 133 shipped
+      # frames were cropped by the cell edge, across sets nobody was editing,
+      # and not one relative gate ever noticed.
+      - name: every committed sprite frame
+        run: |
+          NODE_PATH=$(npm root -g) node turf/tools/spritekit/verify.cjs \
+            $(find turf/art-src/sprites/cast -mindepth 2 -type d \
+              \( -name front -o -name rear -o -name front12 -o -name rear12 \) | sort)

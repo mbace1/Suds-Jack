@@ -34,12 +34,17 @@ const PHASES = {
 - Weight is resettling between the feet, knees straightening slightly, shoulders squaring back up.
 - Controlled and gathering, clearly still mid-motion rather than a relaxed standing pose — this is NOT the same as the ready stance.
 
-NOTE ON THIS PHASE: measured across three attempts, recover cannot be pushed
-below roughly 0.75 similarity against ready — the model treats "knife fighter
-regaining control" and "knife fighter ready" as the same pose, and re-rolling
-or re-framing made it worse (0.747 -> 0.790 -> 0.877). Treat recover as the
-bridge back to idle and do not gate it against ready, or drop it for a
-4-frame melee.`,
+NOTE ON THIS PHASE, AND A CORRECTION. This phase was once documented here as
+impossible to separate from the ready pose — measured at 0.747, then 0.790,
+then 0.877 across three attempts at stronger wording, and written up as a
+property of the model. That was wrong, and the wrongness was in the RULER.
+Silhouette IoU cannot see a knife: the blade is about 2% of the sprite's pixels
+and the torso that did not move is most of the rest, so a weapon travelling a
+quarter of a body height barely shifts the score. Measured on where the weapon
+actually is (reach.cjs), ready and recover sit 0.270 apart — comfortably
+distinct, and they always were. Gate an attack clip with reach.cjs, not with
+phase.cjs.
+`,
 };
 
 const [, , identityFile, phase] = process.argv;
