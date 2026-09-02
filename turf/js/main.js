@@ -5,7 +5,7 @@ import { PAL } from './palette.js?v=3';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
   awardXp, xpToNext,
-} from './combat.js?v=6';
+} from './combat.js?v=7';
 import { computeLayout, render } from './render.js?v=9';
 import { createInputHandler } from './input.js?v=7';
 import { createAnimator } from './anim.js?v=3';
@@ -138,6 +138,19 @@ function boot(seed) {
 
 function setToast(text) { toastEl.textContent = text; }
 
+// How an enemy describes its own approach, by behaviour. Teaches the roster's
+// vocabulary through play instead of a legend nobody reads.
+const MOVE_VERB = {
+  charger: 'closes in',
+  skirmisher: 'keeps its distance',
+  holder: 'works the cover',
+  flanker: 'circles around',
+};
+function moveVerb(state, uid) {
+  const u = getUnit(state, uid);
+  return (u && MOVE_VERB[u.behaviour]) || 'moves in';
+}
+
 // Sound preference, persisted per browser under the same one-key convention
 // every other cabinet here uses. Read once at load so a muted player stays
 // muted on their next visit rather than being greeted by the shot they
@@ -219,9 +232,13 @@ function runEnemyPhase() {
     render(canvas, state, layout, anim);
     updateHud();
     if (step && !step.done) {
+      // Name the archetype in the narration rather than adding a fifth
+      // marker to the board: drawTelegraph already shows WHERE each enemy
+      // will stand and WHO it hits, which is the behaviour made visible —
+      // another icon on top of that is icon soup, not information.
       const line = step.attacked
         ? attackText(state, step.name, step.attacked)
-        : (step.moved ? `${step.name} moves in.` : `${step.name} holds.`);
+        : (step.moved ? `${step.name} ${moveVerb(state, step.uid)}.` : `${step.name} holds.`);
       setToast(line);
     }
     if (state.result) { enemyPhaseRunning = false; finishEncounter(state.result); return; }

@@ -8,6 +8,53 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v19 — 2026-09-02
+**Enemy behaviours — GDD §10's other open question ("enemy archetypes and
+how 'weaker but numerous' translates to actual stat design").** Eighteen
+enemies had shipped, and every one of them ran the same plan: close on the
+nearest operator and swing. They differed only in how much damage they did.
+In a game whose whole design is the telegraph, that means the roster was one
+enemy with eighteen portraits — two enemies that both say "I will hit Blade"
+are not two enemies.
+
+- **Four behaviours**, naming how an enemy wants to STAND when it attacks.
+  `charger` goes straight at you. `skirmisher` keeps the range its gun gives
+  it and pays a real penalty for ending up in anyone's melee reach — which
+  is what turns a handgun grunt from "a knife that shoots" into something
+  you have to close on. `holder` prefers tiles where the target's shot back
+  would be softened by cover. `flanker` refuses to shoot into cover,
+  preferring the angle where the target's own cover does not help — which is
+  what stops a player parking in partial cover and treating it as a wall.
+- **Two focuses**, naming who it wants dead. `nearest`, or `weakest` — the
+  one that makes a pack dangerous, because it finishes the operator you were
+  about to pull out instead of letting it walk away.
+- **Behaviour follows the weapon**, so what an enemy does matches what it
+  holds and a player can guess the intent from the sprite before reading the
+  telegraph. Three individuals deliberately break their weapon's default
+  (both move-4 grunts flank; Sable is a shooter who stays put), so the roster
+  is not fully predictable from the kit alone.
+- **`approachTile` was left alone.** It answers "the cheapest tile to attack
+  from", which is exactly the question a behaviour needs to disagree with —
+  and input.js's click-to-attack depends on it meaning what it means. ai.js
+  enumerates its own candidates instead.
+- **Ties break on uid everywhere**, because the telegraph is recomputed after
+  every player action and an intent that flickers between two equally good
+  tiles is unreadable even though each frame is individually correct. A test
+  asserts replanning an unchanged board gives an identical plan.
+- **No new board marker.** `drawTelegraph` already shows where each enemy
+  will stand and who it hits — that IS the behaviour made visible, and a
+  fifth icon on top of it would be icon soup, not information. The archetype
+  is named in the turn narration instead ("Shooter keeps its distance",
+  "Blunt closes in"), which teaches the vocabulary through play rather than
+  through a legend nobody reads.
+- Data-driven per GDD §3: an unknown behaviour or focus falls back to
+  charger/nearest, so a typo in content is a dull enemy, never a crash.
+- Gate: 50 -> **55 checks**. The behaviour test proves a skirmisher actually
+  stands further off than a charger from the same tile, rather than just
+  asserting the field exists — a data field nothing can distinguish is not a
+  feature.
+- Tokens: `ai.js` v3->v4, `combat.js` v6->v7, `main.js` v10->v11.
+
 ## v18 — 2026-09-02
 **Hazards — GDD §10's open question ("obstacles, cover, elevation, hazards
 ... Nordic-specific set dressing with mechanical teeth") answered, and with

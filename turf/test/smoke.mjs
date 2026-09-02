@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key } from '../js/grid.js';
-import { planIntent } from '../js/ai.js';
+import { planIntent, planAllIntents } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
@@ -516,6 +516,67 @@ check('an enemy shoved into a stairwell dies, and the shover is credited', () =>
     assert.ok(r.killed, 'the attack event should report the kill it caused');
     assert.equal(me.kills, kills + 1, 'the shove earned the kill');
   }
+});
+
+
+// ── enemy behaviours (GDD §10's "enemy archetypes") ─────────────────────
+// The point is not that the data has a field. It is that two enemies with
+// the same weapon standing in the same spot produce DIFFERENT telegraphs —
+// if they do not, the roster is one enemy with eighteen portraits.
+console.log('enemy behaviours');
+
+check('every enemy declares a behaviour and a focus the AI knows', () => {
+  const behaviours = new Set(['charger', 'skirmisher', 'holder', 'flanker']);
+  const focuses = new Set(['nearest', 'weakest']);
+  for (const e of ENEMIES) {
+    assert.ok(behaviours.has(e.behaviour), `${e.id} has unknown behaviour "${e.behaviour}"`);
+    assert.ok(focuses.has(e.focus), `${e.id} has unknown focus "${e.focus}"`);
+  }
+});
+
+check('the roster is not all one behaviour', () => {
+  const kinds = new Set(ENEMIES.map(e => e.behaviour));
+  assert.ok(kinds.size >= 3, `only ${kinds.size} distinct behaviour(s) across the roster`);
+});
+
+check('focus:weakest goes for the hurt operator, focus:nearest for the close one', () => {
+  const s = boot(ENCOUNTERS[0], 5);
+  const [a, b] = s.units.filter(u => u.faction === 'player');
+  const e = s.units.find(u => u.faction === 'enemy');
+  // b is further away but badly hurt; a is close and healthy.
+  a.x = e.x; a.y = e.y + 2; a.hp = a.maxHp;
+  b.x = e.x + 4; b.y = e.y + 4; b.hp = 1;
+  e.focus = 'nearest';
+  assert.equal(planIntent(s, e).targetUid, a.uid, 'nearest should take the close healthy one');
+  e.focus = 'weakest';
+  assert.equal(planIntent(s, e).targetUid, b.uid, 'weakest should take the hurt one further away');
+});
+
+check('a skirmisher keeps its distance where a charger closes', () => {
+  const s = boot(ENCOUNTERS[0], 5);
+  const e = s.units.find(u => u.faction === 'enemy');
+  const t = s.units.find(u => u.faction === 'player');
+  // Give it a long gun and put the target well inside its range.
+  e.weapon = WEAPONS.find(w => w.id === 'handgun');
+  e.x = 5; e.y = 5; e.actedMove = false;
+  t.x = 5; t.y = 8;
+  for (const o of s.units) if (o !== e && o !== t) { o.hp = 0; }
+  e.behaviour = 'charger';
+  const closeIn = planIntent(s, e).moveTo;
+  e.behaviour = 'skirmisher';
+  const standOff = planIntent(s, e).moveTo;
+  const dClose = Math.abs(closeIn.x - t.x) + Math.abs(closeIn.y - t.y);
+  const dStand = Math.abs(standOff.x - t.x) + Math.abs(standOff.y - t.y);
+  assert.ok(dStand > dClose,
+    `skirmisher should stand further off than a charger (${dStand} vs ${dClose})`);
+});
+
+check('the telegraph is stable — replanning an unchanged board gives the same plan', () => {
+  const s = boot(ENCOUNTERS[2], 9);
+  const first = [...s.telegraph].map(([uid, i]) => `${uid}:${i.type}:${i.moveTo ? i.moveTo.x + ',' + i.moveTo.y : '-'}:${i.targetUid || '-'}`);
+  planAllIntents(s);
+  const again = [...s.telegraph].map(([uid, i]) => `${uid}:${i.type}:${i.moveTo ? i.moveTo.x + ',' + i.moveTo.y : '-'}:${i.targetUid || '-'}`);
+  assert.deepEqual(again, first, 'an intent that flickers between equal tiles is unreadable');
 });
 
 for (const enc of ENCOUNTERS) playthrough(enc, 42);

@@ -4,7 +4,7 @@
 // nothing here touches a canvas or the DOM, which is what makes it runnable
 // in bare node (test/smoke.cjs).
 import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=2';
-import { planAllIntents } from './ai.js?v=3';
+import { planAllIntents } from './ai.js?v=4';
 import { makeRng } from './rng.js?v=2';
 
 export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = []) {
@@ -56,6 +56,9 @@ const getWeapon = (state, id) => state.weaponDefs.find(w => w.id === id);
 function makeUnit(uid, def, weapon, faction, spawn) {
   return {
     uid, defId: def.id, name: def.name, faction, role: def.role, weapon,
+    // ai.js reads these; absent on player units and on any enemy that has
+    // not been given one, where the behaviour table falls back to `charger`.
+    behaviour: def.behaviour, focus: def.focus,
     hp: def.hp, maxHp: def.hp, move: def.move, portrait: def.portrait, sprite: def.sprite,
     x: spawn.x, y: spawn.y,
     actedMove: false, actedAction: false,
