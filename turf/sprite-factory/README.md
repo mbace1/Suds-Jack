@@ -17,7 +17,7 @@ Only **approved** coverage counts as progress. Generated candidates do not.
 
 Near-duplicate frames have zero animation value. A visually strong frame with the wrong mechanical job is rejected.
 
-## Current build — v0.4
+## Current build — v0.5
 
 Open `index.html` through GitHub Pages or any local HTTP server.
 
@@ -27,27 +27,38 @@ Current functionality:
 - source-reference links to the four owner casting/run-cycle images already in `turf/references/`
 - explicit front/rear isometric directions
 - target frame budgets and canonical phases per action
-- base-action coverage matrix
-- planned / review / approved / rejected state cycling
-- local review-state persistence and JSON export
-- prioritized idle queue
-- conservative approved-only parity meter
-- PNG candidate validation for preferred plate size, opaque alpha and pure-magenta background corners
-- two-image exact-pixel similarity check to expose duplicate/near-duplicate output
 - frame-level candidate store with provenance and validation fields
+- candidate gallery and approved-only animation preview
+- approved-frame progress model; raw generation count does not inflate progress
+- mechanical failure display for mirror, region-similarity and drift results
 - motion-ledger schema for foundational locomotion
 - clean render-packet builder for isolated one-frame generation
+- repository-side progress report
 
 The three final provisional roster slots remain visibly marked `needs-id`; the app does not pretend their labels are authoritative.
 
+## Mechanical validation
+
+The Sprite Factory now consumes the measured spritekit validator model rather than treating exact-pixel equality as a meaningful animation gate.
+
+`../tools/spritekit/phase.cjs` checks normalized silhouette similarity, region-specific IoU and mirror similarity. Locomotion is scored primarily in the lower body; idle and upper-body actions must use an upper-body or full-body region instead of incorrectly treating still feet as a duplicate failure.
+
+`../tools/spritekit/drift.cjs` checks ground-line/origin stability, scale drift and locomotion body-height rhythm. These are objective mechanical gates, not art-direction scores.
+
+Validation profiles are artifact-specific:
+
+- `prekey_magenta_plate`: opaque `#FF00FF` plate before keying
+- `cut_binary_alpha`: transparent-background cut frame with binary alpha
+
+Do not apply the opaque-alpha plate rule to cut sprites.
+
 ## Render packet correctness
 
-The render packet is deliberately minimal. v0.4 fixes two production-significant issues found during testing:
+Opposite locomotion phases are paired inside the same facing, e.g. Move F1 ↔ F7 in a 12-frame cycle. Front/rear facing is not an opposite motion phase.
 
-- **Opposite locomotion phases are paired inside the same facing**, e.g. Move F1 ↔ F7 in a 12-frame cycle. Front/rear facing is not an opposite motion phase.
-- **Previous/next references are now strictly adjacent approved frames.** The tool no longer silently substitutes some older approved pose, which could corrupt continuity.
+Previous/next references are strictly adjacent approved frames. The tool does not silently substitute unrelated approved poses because that can corrupt continuity.
 
-The packet now also carries the exact phase derived from `manifest.json`, validates integer frame bounds, reports the paired opposite frame number, and marks when a motion ledger is mandatory.
+The packet also carries the canonical phase from `manifest.json`, validates integer frame bounds, reports the paired opposite frame number, and marks when a motion ledger is mandatory.
 
 ## Tests
 
@@ -57,29 +68,22 @@ Run:
 node --test turf/sprite-factory/test.mjs
 ```
 
-Current unit coverage checks:
+Unit coverage includes opposite-pair mapping, same-facing paired selection, strict adjacent-frame behavior, phase lookup, frame validation, newest-approved revision selection, frame coverage and project progress accounting.
 
-- 12-frame Move opposite-pair mapping (1↔7)
-- same-facing paired-phase selection
-- no cross-facing substitution
-- strict adjacent-frame reference behavior
-- phase lookup from manifest
-- invalid/out-of-range frame rejection
-- invalid opposite-phase-offset rejection
+## Progress report
 
-The v0.4 test set passes 6/6 locally.
+Run:
+
+```sh
+node turf/sprite-factory/progress-report.mjs
+node turf/sprite-factory/progress-report.mjs --json
+```
+
+The report derives required coverage from `manifest.json` and approved coverage from `candidates.json`. Missing/rejected/revise candidates never count toward parity.
 
 ## Manifest
 
-`manifest.json` is the production contract for the app. It defines owner source references, character IDs, tactical directions, action/frame targets, canonical phases, export expectations, queue priority and validation rules.
-
-Coverage is deliberately separate from raw image count.
-
-## Candidate validation
-
-The browser validator is a first mechanical gate, not an art director. It can reject objective export defects before review: wrong dimensions, non-opaque pixels, missing `#FF00FF` background at the image corners and suspiciously high exact-pixel similarity between two same-size candidates.
-
-It cannot yet decide anatomy, pose continuity, support-leg ownership, weapon grip or aesthetic quality. Those remain approval gates.
+`manifest.json` is the production contract for the app. It defines owner source references, character IDs, tactical directions, action/frame targets, canonical phases, export expectations, queue priority, artifact profiles and validation rules.
 
 ## Existing pipeline compatibility
 
@@ -87,10 +91,10 @@ Do not undo the current illustration-fidelity findings in `turf/art-src/sprites/
 
 ## Next build
 
-1. Candidate gallery with approve/reject controls and provenance.
-2. Direction + phase coverage inside each action.
-3. Silhouette/lower-body similarity metrics, not only whole-image exact equality.
-4. Motion-ledger records attached to actual Move candidates.
-5. Animation preview assembled only from approved candidates.
-6. Generator job packets compatible with `scripts/gen-with-ref.mjs`.
-7. Repository-side progress report generated from candidate records.
+1. Write actual spritekit validator output back into candidate records automatically.
+2. Add approve/revise/reject controls that persist review decisions instead of display-only status.
+3. Add idle-specific upper-body validation fixtures and thresholds.
+4. Attach motion-ledger records to actual Move candidates.
+5. Add adjustable-FPS approved animation playback.
+6. Integrate generator job packets with the existing generation path.
+7. Run awkward-silhouette breadth tests across heavy puffer, long coat, brimmed hat and long-weapon characters.
