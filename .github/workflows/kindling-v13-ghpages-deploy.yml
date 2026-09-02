@@ -1,0 +1,87 @@
+name: Deploy Kindling v13 to gh-pages
+
+on:
+  push:
+    branches:
+      - agent/kindling-v13-ghpages-deploy
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/kindling-v13-ghpages-deploy
+          fetch-depth: 0
+
+      - name: Fetch canonical Kindling v13
+        run: |
+          rm -rf .kindling-source
+          git clone --depth 1 https://github.com/mbace1/Kindling.git .kindling-source
+          cd .kindling-source
+          test "$(git rev-parse HEAD)" = "2c5d4930bf2ab36d82adabb38f6829177e365b87"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: .kindling-source/package-lock.json
+
+      - name: Build canonical hub cabinet
+        working-directory: .kindling-source
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run build:hub
+          test -f dist/client/index.html
+          test -f dist/client/art/birch-ruins-clean.svg
+          test -f dist/client/art/drowned-courtyard-clean.svg
+          test -f dist/client/art/bell-keep-clean.svg
+          test -f dist/client/art/ashwood-clean.svg
+
+      - name: Replace live Kindling runtime
+        run: |
+          rm -rf kindling/assets kindling/art kindling/__grok
+          rm -f kindling/index.html kindling/favicon.svg kindling/og.jpg kindling/x-banner.jpg kindling/hub-shell.js kindling/sw.js kindling/VERSIONS.md
+          cp -a .kindling-source/dist/client/. kindling/
+          printf 'v13\n' > kindling/.hub-release
+          cat > kindling/DEPLOYED_VERSION.txt <<'EOF'
+          Kindling v13
+          canonical source: mbace1/Kindling@2c5d4930bf2ab36d82adabb38f6829177e365b87
+          static hub build: npm run build:hub
+          EOF
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('hub/versions.json')
+          data = json.loads(p.read_text())
+          data['kindling'] = {'v':'13','n':13000,'from':'VERSIONS.md'}
+          p.write_text(json.dumps(data, indent=2) + '\n')
+          PY
+
+      - name: Smoke exact final-path cabinet
+        run: |
+          rm -rf .hub-smoke
+          mkdir -p .hub-smoke/Suds-Jack/kindling .hub-smoke/Suds-Jack/hub
+          cp -a kindling/. .hub-smoke/Suds-Jack/kindling/
+          cp hub/shell.js hub/pad.js hub/games.js hub/padkeys.js hub/playlog-auto.js hub/playlog.js .hub-smoke/Suds-Jack/hub/
+          python3 -m http.server 8081 -d .hub-smoke >/tmp/kindling-v13-hub.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8081/Suds-Jack/kindling/ >/dev/null; then break; fi
+            sleep 1
+          done
+          cd .kindling-source
+          npx playwright install chromium
+          node scripts/betterment-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/ artifacts/hub-v13-mobile.png --allow-static-hydration
+
+      - name: Commit directly to gh-pages
+        run: |
+          rm -rf .kindling-source .hub-smoke .github
+          git config user.name "Kindling Hub Deploy"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A kindling hub/versions.json .github || true
+          git add kindling hub/versions.json
+          git commit -m "Deploy Kindling v13 to hub"
+          git push origin HEAD:gh-pages
