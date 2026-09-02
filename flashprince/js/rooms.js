@@ -27,6 +27,7 @@
 //   B  a blade                            G  the pistol
 //   b  something that lives here          g  a sentry with a rifle
 //   s  a swordsman                        d  a drone
+//   H  a cultivation keeper: answer its signal or fight it
 //   T  a light
 //
 // `scene` is the one thing a screen has that no other screen has. The biome
@@ -354,6 +355,41 @@ export const ROOMS = [
       '####            ####',
     ],
   },
+  { // 18 — the keeper answers a raised shield; gunfire makes it defend the garden
+    t: 6.00, beat: 'hybridSanctum', scene: 'hybridSanctum', requiresHybrid: true,
+    tapeTitle: 'CULTIVATION LOG / COVENANT',
+    map: [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '          ###       ',
+      '    ###   ###       ',
+      '    ###             ',
+      '  V          H      ',
+      '####################',
+    ],
+  },
+  { // 19 — the crown opens only after the keeper encounter resolves
+    t: 6.00, beat: 'facilityCrown', scene: 'facilityCrown', missionEnd: true,
+    map: [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '      ####          ',
+      '      ####          ',
+      '               D    ',
+      '####################',
+    ],
+  },
 ];
 
 // The one line of text in each act. Another World has no words in it at all;
@@ -370,4 +406,6 @@ export const BEATS = {
   facilityGate: 'THE STATION HAD GROWN A SECOND HEART',
   bioFacility: 'THE MACHINES WERE LEARNING TO BLOOM',
   bioTransit: 'SOMETHING BEAUTIFUL WAS WAITING BELOW',
+  hybridSanctum: 'IT ANSWERED THE SHAPE OF HIS SHIELD',
+  facilityCrown: 'THE GARDEN REMEMBERED HIS CHOICE',
 };

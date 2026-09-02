@@ -111,6 +111,6 @@ export function advanceBolt(bolt, hero) {
 
 export function drawBolt(scr, bolt) {
   const x = Math.min(bolt.x, bolt.x - bolt.vx * 3);
-  scr.rect(x, bolt.y - 1, Math.abs(bolt.vx * 3) + 2, 2, C.ALERT);
+  scr.rect(x, bolt.y - 1, Math.abs(bolt.vx * 3) + 2, 2, bolt.bio ? C.LUX : C.ALERT);
   scr.rect(bolt.x - 1, bolt.y - 1, 3, 2, C.LUX2);
 }

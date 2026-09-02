@@ -174,7 +174,7 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
 // it is not only background animation.
 {
   const transit = new World();
-  transit.load(ROOMS.length - 1);
+  transit.load(ROOMS.findIndex(room => room.scene === 'bioTransit'));
   assert.equal(transit.platforms.length, 1);
   const rider = { x: 70, y: 160 };
   const beforePlatform = transit.platforms[0].x;

@@ -1,5 +1,16 @@
 # Flash Prince — versions
 
+## v66 — 2026-09-02
+
+**The bio-facility now ends in a meaningful hybrid encounter.** The released
+cultivation keeper answers a sustained, front-facing shield signal and grants
+a living seed that accelerates shield recovery. Shooting it instead begins a
+telegraphed three-hit fight whose slow spores can be blocked or reflected.
+Either remembered outcome opens the facility crown and completes the mission.
+Two new screens add the hybrid sanctum and the city-facing crown, taking the
+route to twenty screens. No player sprite, animation, anchor, timing, movement
+value, character palette or locked run changed.
+
 ## v65 — 2026-09-02
 
 **Machine loot now changes the route.** A recovered relay core can be inserted

@@ -16,7 +16,7 @@
 //   in the middle without ever being shown a door.
 
 import { C } from './palette.js?v=52';
-import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=53';
+import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=66';
 
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 const clamp = v => Math.max(0, Math.min(1, v));
@@ -41,6 +41,8 @@ export function paintBack(scr, room, index) {
   if (room.scene === 'facilityGate') { paintFacilityGate(scr); return; }
   if (room.scene === 'bioFacility') { paintBioFacility(scr); return; }
   if (room.scene === 'bioTransit') { paintBioTransit(scr); return; }
+  if (room.scene === 'hybridSanctum') { paintHybridSanctum(scr); return; }
+  if (room.scene === 'facilityCrown') { paintFacilityCrown(scr); return; }
   const t = room.t, w = weights(t), r = rand(index * 2654435 + 17);
 
   // Sky as flat bands with hard seams. A 2600 changed colour once a scanline
@@ -484,6 +486,62 @@ function paintBioTransit(scr) {
   for (let x = 44; x < 278; x += 16) scr.rect(x, 169, 8, 2, C.NEAR);
 }
 
+function paintHybridSanctum(scr) {
+  scr.rect(0, 0, W, H, C.VOID);
+  scr.rect(8, 7, W - 16, H - 7, C.FAR);
+  // Old transit hoops grown into an indoor garden. The broad shapes stay
+  // behind the keeper while fine conduits make the chamber feel inhabited.
+  for (const [x, r] of [[58, 29], [160, 47], [267, 33]]) {
+    scr.disc(x, 79, r + 9, C.DARK);
+    scr.disc(x, 79, r, C.NEAR);
+    scr.disc(x, 79, r - 8, C.FAR);
+    for (let i = 0; i < 5; i++) {
+      const a = -2.5 + i * 1.05;
+      scr.limb(x + Math.cos(a) * (r - 5), 79 + Math.sin(a) * (r - 5),
+        x + Math.cos(a) * (r + 8), 79 + Math.sin(a) * (r + 8), 3, 1, C.EDGE);
+    }
+  }
+  for (let x = 16; x < W; x += 24) {
+    scr.rect(x, 127, 15, 3, C.SOLID);
+    scr.rect(x + 3, 130, 1, 29, C.NEAR);
+    scr.rect(x + 11, 130, 1, 29, C.DARK);
+  }
+  // Layered cultivated plant-machines, beautiful rather than anatomical.
+  for (const [x, h] of [[25, 26], [92, 38], [192, 30], [292, 43]]) {
+    scr.limb(x, 151, x + 3, 151 - h, 4, 2, C.SOLID);
+    leaves(scr, x + 3, 151 - h, 11, C.NEAR, C.EDGE, 7, Math.PI * 0.85);
+    scr.rect(x - 7, 151, 15, 4, C.DARK);
+    scr.rect(x - 3, 153, 2, 5, C.LUX);
+  }
+  scr.rect(0, 159, W, 3, C.SOLID);
+  scr.rect(0, 163, W, 1, C.EDGE);
+}
+
+function paintFacilityCrown(scr) {
+  scr.rect(0, 0, W, 45, C.SKY_HI);
+  scr.rect(0, 45, W, 49, C.SKY_LO);
+  scr.rect(0, 94, W, H - 94, C.FAR);
+  // The drowned city is far below. Its crown repeats the same circular
+  // machine language as the interior, now open to the sky.
+  for (let i = 0; i < 9; i++) {
+    const x = i * 43 - 12, top = 72 + (i * 19) % 34;
+    scr.poly([x, 158, x + 4, top, x + 29, top - 6, x + 35, 158], i % 2 ? C.MID : C.NEAR);
+    for (let y = top + 8; y < 148; y += 14) scr.rect(x + 9 + (y % 3) * 5, y, 3, 2, C.LUX);
+  }
+  const cx = 225, cy = 61;
+  scr.disc(cx, cy, 45, C.SOLID);
+  scr.disc(cx, cy, 35, C.DARK);
+  scr.disc(cx, cy, 24, C.NEAR);
+  scr.disc(cx, cy, 8, C.LUX2);
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2;
+    scr.limb(cx + Math.cos(a) * 23, cy + Math.sin(a) * 23,
+      cx + Math.cos(a) * 48, cy + Math.sin(a) * 40, 4, 1, C.EDGE);
+  }
+  scr.rect(0, 158, W, 5, C.SOLID);
+  for (let x = 7; x < W; x += 21) scr.rect(x, 164, 13, 2, C.DARK);
+}
+
 // Marks cut into the wall. Called by the tile painter rather than the backdrop
 // one, because the wall is painted after the backdrop and would bury them.
 //
@@ -664,6 +722,28 @@ export function drawAir(scr, room, clock) {
     scr.rect(278 - (pulse - 42), 171, 5, 1, C.LUX);
     const wave = [0, 1, 2, 1][(clock >> 5) & 3];
     scr.rect(157 - wave, 57, 2 + wave * 2, 1, C.LUX2);
+    return;
+  }
+  if (room.scene === 'hybridSanctum') {
+    for (let i = 0; i < 15; i++) {
+      const x = 12 + (i * 47) % 298;
+      const y = 22 + Math.sin(clock * 0.011 + i * 1.7) * 17 + (i % 5) * 20;
+      scr.rect(x, y, 1 + (i % 3 === 0), 1, i % 4 ? C.LUX : C.LUX2);
+    }
+    const pulse = (clock * 0.42) % W;
+    scr.rect(pulse, 162, 8, 1, C.LUX2);
+    return;
+  }
+  if (room.scene === 'facilityCrown') {
+    for (let i = 0; i < 4; i++) {
+      const x = ((clock * (0.08 + i * 0.025) + i * 91) % (W + 28)) - 14;
+      const y = 29 + i * 13;
+      scr.rect(x - 5, y, 11, 2, C.DARK);
+      scr.rect(x + 2, y - 2, 3, 2, C.LUX);
+    }
+    const breathe = [0, 1, 2, 1][(clock >> 5) & 3];
+    scr.disc(225, 61, 8 + breathe, C.LUX);
+    scr.disc(225, 61, 3, C.LUX2);
     return;
   }
   if (room.scene === 'floodedHub') {
@@ -854,6 +934,18 @@ export function drawFore(scr, room, index) {
     scr.rect(W - 7, 0, 7, H, C.VOID);
     scr.poly([0, 0, 62, 0, 33, 14, 0, 18], C.VOID);
     scr.poly([W, 0, W - 62, 0, W - 33, 14, W, 18], C.VOID);
+    return;
+  }
+  if (room.scene === 'hybridSanctum') {
+    scr.rect(0, 0, 6, H, C.VOID);
+    scr.rect(W - 6, 0, 6, H, C.VOID);
+    scr.poly([0, 0, 56, 0, 31, 15, 0, 21], C.VOID);
+    scr.poly([W, 0, W - 56, 0, W - 31, 15, W, 21], C.VOID);
+    return;
+  }
+  if (room.scene === 'facilityCrown') {
+    scr.poly([0, 0, 49, 0, 23, 18, 0, 24], C.VOID);
+    scr.poly([W, 0, W - 38, 0, W - 18, 31, W, 39], C.VOID);
     return;
   }
   if (room.scene === 'floodedHub') {

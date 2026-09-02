@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { Sentry, advanceBolt } from '../js/sentry.js';
 import { World, ROOMS } from '../js/level.js';
+import { HybridKeeper, HYBRID_COMMUNE_FRAMES } from '../js/hybrid.js';
 
 const hero = {
   x: 48, y: 176, face: 1, h: 30,
@@ -17,6 +18,30 @@ const hero = {
   assert.equal(world.pickups.filter(pickup => pickup.kind === 'loot').length, 1);
   assert.equal(world.pickups.filter(pickup => pickup.kind === 'tape').length, 1);
   assert.equal(world.pickups.filter(pickup => pickup.kind === 'socket').length, 1);
+}
+
+// The facility mission ends in a real choice. A sustained shield signal makes
+// the keeper an ally; firing first turns it into a telegraphed combatant.
+{
+  const world = new World();
+  const sanctum = ROOMS.findIndex(room => room.scene === 'hybridSanctum');
+  world.load(sanctum);
+  assert.equal(world.room.requiresHybrid, true);
+  assert.equal(world.spawns.filter(spawn => spawn.kind === 'H').length, 1);
+  assert.ok(ROOMS.some(room => room.scene === 'facilityCrown' && room.missionEnd));
+
+  const keeper = new HybridKeeper(216, 176);
+  const signalling = { ...hero, x: 150, face: 1, shielding: true };
+  for (let i = 0; i < HYBRID_COMMUNE_FRAMES; i++) keeper.update(signalling);
+  assert.equal(keeper.allied, true);
+  assert.equal(keeper.giftQueued, true);
+
+  const hostile = new HybridKeeper(216, 176);
+  hostile.struck(150);
+  assert.equal(hostile.hostile, true);
+  for (let i = 0; i < 100 && !hostile.shotQueued; i++) hostile.update(signalling);
+  assert.equal(hostile.shotQueued, true);
+  assert.equal(hostile.spore().bio, true);
 }
 
 // The machine has a readable track → warning → fire sequence and emits one
@@ -62,4 +87,4 @@ const hero = {
   assert.equal(advanceBolt(bolt, timed), 'reflect');
 }
 
-console.log('combat checks ok — telegraph, shot, crouch dodge, block, reflection, facility loot');
+console.log('combat checks ok — sentry, shield, reflection, facility loot and hybrid choice');

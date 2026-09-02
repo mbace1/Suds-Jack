@@ -18,11 +18,12 @@
 import { Screen, W, H } from './screen.js?v=64';
 import { paletteAt, C } from './palette.js?v=52';
 import { Hero } from './hero.js?v=59';
-import { World, ROOMS, ROOM_H } from './level.js?v=65';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=65';
+import { World, ROOMS, ROOM_H } from './level.js?v=66';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=66';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
-import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=63';
+import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=66';
+import { HybridKeeper } from './hybrid.js?v=66';
 import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
@@ -106,11 +107,17 @@ class Stage {
     this.post = null;
     this.foes = [];
     this.sentries = [];
+    this.hybrids = [];
     this.bolts = [];
     this.snd = new Sound();
     this.ed = new Editor(this.scr);
-    const requestedRoom = location.hash === '#flooded-city'
-      ? ROOMS.findIndex(room => room.scene === 'floodedHub') : 0;
+    this.hybridOutcome = null;
+    this.bioSeed = 0;
+    this.hybridHint = 0;
+    this.missionComplete = false;
+    const requestedScene = location.hash.slice(1);
+    const requestedRoom = requestedScene
+      ? ROOMS.findIndex(room => room.scene === requestedScene) : 0;
     this.enterRoom(Math.max(0, requestedRoom));
     this.hero.go('wake');
     this.mode = 'select';
@@ -174,8 +181,10 @@ class Stage {
       .map(s => new Swordsman(s.x, s.y, -1, [10, W - 10]));
     this.sentries = w.spawns.filter(s => s.kind === 'g')
       .map(s => new Sentry(s.x, s.y, -1));
+    this.hybrids = w.spawns.filter(s => s.kind === 'H')
+      .map(s => new HybridKeeper(s.x, s.y, this.hybridOutcome));
     this.bolts = [];
-    this.unbuilt = w.spawns.filter(s => !['s', 'g'].includes(s.kind)).length;
+    this.unbuilt = w.spawns.filter(s => !['s', 'g', 'H'].includes(s.kind)).length;
     this.post = null;
     if (this.facilityPower > 0) {
       for (const p of w.pickups) if (p.kind === 'socket') p.taken = true;
@@ -188,6 +197,12 @@ class Stage {
     h.vx = 0; h.vy = 0;
     if (from) h.go(h.rest());
     this.snd.wasFoe = null;
+    if (w.room.missionEnd && from && !this.missionComplete) {
+      this.missionComplete = true;
+      this.lootTitle = this.hybridOutcome === 'allied'
+        ? 'SEED COVENANT COMPLETE' : 'GARDEN PASSAGE COMPLETE';
+      this.lootFlash = 300;
+    }
   }
 
   // Coming in from the side, he arrives at whatever height the floor is at.
@@ -275,6 +290,8 @@ class Stage {
     if (h.drinkQueued) { h.drinkQueued = false; this.collectUnder(h); }
     if (this.lootFlash > 0) this.lootFlash--;
     if (this.powerHint > 0) this.powerHint--;
+    if (this.hybridHint > 0) this.hybridHint--;
+    if (this.bioSeed && !h.shielding) h.shield = Math.min(100, h.shield + 0.08);
     for (const p of this.impacts) {
       p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.t--;
     }
@@ -286,6 +303,8 @@ class Stage {
     if (h.x > W - 2 && this.world.index < ROOMS.length - 1) {
       if (this.world.room.requiresPower && this.facilityPower <= 0) {
         h.x = W - 5; h.vx = 0; h.go('bump'); this.powerHint = 150;
+      } else if (this.world.room.requiresHybrid && !this.hybridOutcome) {
+        h.x = W - 5; h.vx = 0; h.go('bump'); this.hybridHint = 180;
       } else { this.enterRoom(this.world.index + 1, 'left'); return; }
     }
     h.x = Math.max(2, Math.min(W - 2, h.x));
@@ -327,6 +346,20 @@ class Stage {
         this.snd.shot();
       }
     }
+    for (const hybrid of this.hybrids) {
+      hybrid.update(h);
+      if (!hybrid.hostile && !hybrid.resolved && Math.abs(hybrid.x - h.x) < 110) {
+        this.hybridHint = Math.max(this.hybridHint, 2);
+      }
+      if (hybrid.giftQueued) {
+        hybrid.giftQueued = false;
+        this.resolveHybrid('allied');
+      }
+      if (hybrid.shotQueued) {
+        hybrid.shotQueued = false;
+        this.bolts.push(hybrid.spore());
+      }
+    }
     for (let i = this.bolts.length - 1; i >= 0; i--) {
       const bolt = this.bolts[i];
       const result = advanceBolt(bolt, h);
@@ -341,11 +374,12 @@ class Stage {
         continue;
       }
       if (!result && bolt.friendly) {
-        const targets = [...this.sentries, ...this.foes].filter(e => !e.dead);
+        const targets = [...this.sentries, ...this.foes, ...this.hybrids].filter(e => !e.dead);
         const hit = targets.find(e => this.reached(bolt.px, bolt.x, e.x, 7)
           && bolt.y >= e.y - 36 && bolt.y <= e.y);
         if (hit) {
           hit.struck(h.x);
+          if (this.hybrids.includes(hit) && hit.resolved) this.resolveHybrid('slain');
           this.spark(bolt.x, bolt.y, Math.sign(bolt.vx));
           this.bolts.splice(i, 1);
           continue;
@@ -420,6 +454,7 @@ class Stage {
     const targets = [];
     for (const foe of this.foes) if (!foe.dead) targets.push({ x: foe.x, enemy: foe });
     for (const sentry of this.sentries) if (!sentry.dead) targets.push({ x: sentry.x, enemy: sentry });
+    for (const hybrid of this.hybrids) if (!hybrid.dead) targets.push({ x: hybrid.x, enemy: hybrid });
     if (this.post) targets.push({ x: this.post.x, foe: null });
     const ahead = targets
       .filter(t => (t.x - h.x) * h.face > 0 && Math.abs(t.x - h.x) < 200)
@@ -427,7 +462,10 @@ class Stage {
     const m = h.muzzle();
     this.tracer = { x1: m.x, y: m.y, x2: ahead?.x ?? m.x + h.face * 190, t: 4 };
     if (!ahead) return;
-    if (ahead.enemy) ahead.enemy.struck(h.x);
+    if (ahead.enemy) {
+      ahead.enemy.struck(h.x);
+      if (this.hybrids.includes(ahead.enemy) && ahead.enemy.resolved) this.resolveHybrid('slain');
+    }
     else this.post.hit(ahead.x, h.face);
     this.spark(ahead.x, m.y, -h.face);
   }
@@ -436,6 +474,18 @@ class Stage {
     for (let k = 0; k < 5; k++) {
       this.impacts.push({ x, y, vx: dir * (0.35 + k * 0.12), vy: -0.8 + k * 0.3, t: 8 + k });
     }
+  }
+
+  resolveHybrid(outcome) {
+    if (this.hybridOutcome === outcome) return;
+    if (this.hybridOutcome && outcome !== 'slain') return;
+    this.hybridOutcome = outcome;
+    this.bioSeed = 1;
+    this.hero.shield = 100;
+    this.hybridHint = 0;
+    this.lootTitle = outcome === 'allied'
+      ? 'SEED COVENANT · SHIELD REGEN UP' : 'SEED TAKEN · GARDEN HOSTILE';
+    this.lootFlash = 240;
   }
 
   // the hero asks the game for these; on a floor with nothing on it they are
@@ -507,11 +557,22 @@ class Stage {
     drawAir(scr, w.room, this.clock);
     w.drawTiles(scr);
     w.drawTraps(scr);
+    if (w.room.requiresHybrid && !this.hybridOutcome) {
+      // The sanctum seals itself with a visible woven membrane until the
+      // keeper encounter resolves. The room-edge collision already blocks the
+      // route; this makes that rule legible before the player reaches it.
+      scr.rect(W - 7, 42, 7, 134, C.DARK);
+      for (let y = 45; y < 174; y += 12) {
+        scr.poly([W - 7, y, W - 2, y + 5, W - 7, y + 10], y % 3 ? C.LUX : C.EDGE);
+      }
+      scr.rect(W - 2, 42, 2, 134, C.LUX2);
+    }
     if (w.door) halo(scr, w.door.x, w.door.y - 16, 22 + Math.sin(this.clock * 0.06) * 3);
 
     if (this.post) this.post.draw(scr, C);
     for (const foe of this.foes) foe.draw(scr);
     for (const sentry of this.sentries) sentry.draw(scr);
+    for (const hybrid of this.hybrids) hybrid.draw(scr);
     for (const bolt of this.bolts) drawBolt(scr, bolt);
     for (const p of this.impacts) scr.rect(p.x, p.y, p.t > 8 ? 2 : 1, 1, p.t & 1 ? C.LUX2 : C.LUX);
 
@@ -635,8 +696,14 @@ class Stage {
     // whoever is still on his feet in this room, if anyone
     const live = this.foes.find(f => !f.dead);
     const machine = this.sentries.find(s => !s.dead);
+    const hybrid = this.hybrids.find(s => !s.dead);
     if (live) row(live.health, 2, 12, C.EDGE);
     else if (machine) row(machine.health, 2, 12, C.ALERT);
+    else if (hybrid && hybrid.hostile) row(hybrid.health, 3, 12, C.ALERT);
+    else if (hybrid && !hybrid.allied) {
+      const n = Math.ceil(hybrid.bondRatio * 5);
+      for (let i = 0; i < 5; i++) scr.rect(W - 8 - i * 5, 12, 3, 2, i < n ? C.LUX2 : C.DARK);
+    }
   }
 
   chrome(scr) {
@@ -667,6 +734,10 @@ class Stage {
     if (this.powerHint > 0) {
       scr.rect(72, 48, 176, 16, C.DARK);
       this.centre(scr, this.parts > 0 ? 'INSERT RELAY CORE' : 'RELAY CORE REQUIRED', 53, C.LUX, 6);
+    }
+    if (this.hybridHint > 0) {
+      scr.rect(62, 48, 196, 16, C.DARK);
+      this.centre(scr, 'E GUN · HOLD SHIELD TO ANSWER · OR FIRE', 53, C.LUX, 6);
     }
   }
 

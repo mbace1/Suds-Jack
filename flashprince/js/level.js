@@ -8,9 +8,9 @@
 // the silhouette is not a ruler. Same shapes, biome by biome; only the sixteen
 // colours underneath them change.
 
-import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=65';
+import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=66';
 import { C } from './palette.js?v=52';
-import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=65';
+import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=66';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -53,7 +53,7 @@ export class World {
         else if (ch === 'L') { this.pickups.push({ kind: 'loot', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'K') { this.pickups.push({ kind: 'socket', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'B') { this.pickups.push({ kind: 'sword', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
-        else if ('bgdsg'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
+        else if ('bgdsgH'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
         else if (ch === 'T') { this.lights.push({ x, y: y + 8 }); this.grid[ty][tx] = '-'; }
         else if (ch === '^') this.spikes.push({ tx, ty });
         else if (ch === 'C') { this.chompers.push({ tx, ty, phase: (tx * 47) % CHOMP_CYCLE, reach: this.shaft(tx, ty) }); this.grid[ty][tx] = ' '; }
