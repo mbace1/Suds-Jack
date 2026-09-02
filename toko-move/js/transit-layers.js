@@ -4,7 +4,7 @@
 // see the recorded owner override at the top of that file for why the old
 // tram-green fallback had to go (route_color is null on all 34 lines, so it
 // painted thirty distinct services one identical green).
-import {lineColour} from './board.js?v=3';
+import {lineColour} from './board.js?v=5';
 export class TransitLayers{
  constructor(pack){this.pack=pack;this.layers=pack.lines.map(line=>({id:line.id,name:line.name,mode:line.mode,colour:normaliseColour(line.hex,line.mode,line.name),path:line.path,stops:line.stops||[],visible:true}));this.bounds=pack.clippedTo||boundsFromLines(this.layers);}
  static async load(url='./cities/helsinki.json'){const response=await fetch(url,{cache:'no-store'});if(!response.ok)throw new Error(`Transit pack ${response.status}`);return new TransitLayers(await response.json());}

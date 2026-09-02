@@ -82,36 +82,90 @@ export function boardFit(box, width, height) {
 // colour: M1 and M2 share track across the whole board and only diverge far
 // outside it, so two colours would draw a division that is not there.
 //
-// These are SOLVED, not picked. A hand-picked set was measured first and failed
-// badly — 32 of its 91 pairs sat under the house's 90-RGB-distance convention,
-// because that convention was written for a handful of colours and fourteen do
-// not fit in the mid-tone slice of the cube at all. Maximising raw separation
-// instead drives straight to the gamut corners (#0000fc, #fc00ab, min dE 50) —
-// satisfiable and wrong, a highlighter set on a paper map. So the search was
-// constrained to this product's own tonal world (CIE L 32–62, chroma 22–62, all
-// ≥3:1 on the paper) with HSL's metro orange PINNED, and the minimum perceptual
-// gap maximised inside it. Achieved: **min dE76 = 37.0** across all 14, which is
-// far above the ~10 where two colours stop reading as the same one. If a family
-// is added, re-run the solver rather than eyeballing a gap — 37.0 is the number
-// test/board.mjs holds, and adding a colour by hand will quietly shrink it.
+// These are SOLVED, not picked, and they were solved TWICE — once for the warm
+// paper this board used to have, and again at v2.20 for the night ground, which
+// is the honest cost of the owner's greyscale direction. Six of the fourteen
+// light-paper inks fail 3:1 on the night paper (1 at 1.83:1, 4 at 1.77, 5 at
+// 2.31, 6 at 1.79, 10 at 1.76, 15 at 1.85) — a dark line on a dark ground is
+// not a quieter line, it is an absent one — so carrying them over was never an
+// option and eyeballing replacements was the trap the first solve documented.
+//
+// The search is the same one: constrained to this product's tonal world, HSL's
+// metro orange PINNED, minimum perceptual gap maximised inside it. Only the
+// band moved, because a light ground and a dark one do not offer the same room:
+// on paper the usable slice was L 32–62, and here it is L 56–78 with chroma
+// 32–56. Achieved: **min dE76 = 32.5** across all 14, down from the paper's
+// 37.0 and still three times the ~10 where two colours stop reading as
+// different. Widening the band does buy more — L 54–80 with chroma to 58
+// reaches 41.1 — but it buys it in neon: mint, lemon and hot pink, the
+// highlighter set the first solve was written to avoid. The floor in
+// test/board.mjs moved to 32.0 to match; if a family is added, re-run the
+// solver rather than eyeballing a gap.
 const TRAM_INK = {
-  '1':  '#961e28',  // dark red
-  '2':  '#28a04b',  // green
-  '3':  '#0091e6',  // bright blue
-  '4':  '#3741a0',  // indigo
-  '5':  '#875000',  // brown
-  '6':  '#96005f',  // deep magenta
-  '7':  '#009baa',  // teal
-  '8':  '#828c05',  // olive
-  '9':  '#be6ec8',  // orchid
-  '10': '#3c4b6e',  // navy slate
-  '13': '#af6e82',  // dusty rose
-  '15': '#145a37',  // dark green
-  'H':  '#968c64',  // khaki
+  '1':  '#9a79aa',  // violet
+  '2':  '#00d7ef',  // cyan
+  '3':  '#8bc4fe',  // sky
+  '4':  '#c09734',  // amber
+  '5':  '#808b53',  // olive
+  '6':  '#ce6459',  // brick
+  '7':  '#fca8c1',  // rose
+  '8':  '#8495fd',  // indigo
+  '9':  '#abcf66',  // lime
+  '10': '#f19ef9',  // orchid
+  '13': '#db5389',  // magenta
+  '15': '#f4b58f',  // peach
+  'H':  '#7ad3b0',  // mint
 };
 export const METRO_INK = '#e2531f';
-export const ROAD_INK  = '#c8c4b6';
-export const HUB_INK   = '#1d2f36';
+
+// ------------------------------------------------------------- the night map
+//
+// OWNER DIRECTION (2026-09-02), recorded per AGENTS.md §1, and it replaces the
+// warm-paper board this file was written for: "we should go for a more grey
+// scale palette... a more readable map with streets and water that is based in
+// a gray scale with some contrast colors like dark blue for water... mostly
+// grey night version map colors though."
+//
+// So the ground goes to greys and the water to a dark blue, and the LINES keep
+// their colour — they are the contrast colours in that sentence, and they are
+// the only thing on the board that carries identity. Everything else is
+// hierarchy: road weight, label weight, and the one blue.
+//
+// Every value below is measured against the ground it sits on rather than
+// picked: test/board.mjs holds the line floor (min dE76 and 3:1 on the paper)
+// and the roads-quieter-than-lines rule, and both are re-measured on this
+// paper, not the old one.
+export const NIGHT = {
+  paper:     '#22282d',   // the board itself — land at night
+  surround:  '#171b1f',   // the canvas outside the board
+  water:     '#12293d',   // "dark blue for water", the owner's one contrast
+  waterFill: '#173a58',
+  waterEdge: '#2a5f88',   // the coastline, one step up so it reads as an edge
+  district:  '#69747b',
+  credit:    '#77828a',
+  label:     '#c4ced4',
+  labelDim:  '#98a4ab',
+  halo:      'rgba(20,26,31,.86)',
+  hub:       '#eef3f6',
+  hubRing:   '#0f1418',
+  stop:      '#d5dee3',
+  stopRing:  '#0f1418',
+  frame:     'rgba(196,206,212,.20)',
+};
+// Roads by tier. Three greys a step apart, and what keeps them GROUND at night
+// is not that they are dim — dim on a dark board is gone, and the first cut of
+// this palette held them under the paper board's 1.9:1 bar and drew streets
+// nobody could see. It is that they are GREY: every road here has Lab chroma
+// under 9 and every line has chroma over 30, a gap of nearly four times. Colour
+// is what says "service"; weight and lightness say "how big a street".
+export const ROAD_INK_MAJOR = '#5c6773';
+export const ROAD_INK_MID   = '#4a535b';
+export const ROAD_INK_MINOR = '#3f474e';
+// The schematic corridors, where the real street extract does not reach. Same
+// weight as the mid tier so the swap between them is a change of detail, not a
+// change of loudness.
+export const ROAD_INK  = '#4a535b';
+export const HUB_INK   = '#eef3f6';
 
 // "10B" -> "10", "9N" -> "9", "M1B" -> "M1", "H" -> "H".
 export function lineFamily(name) {

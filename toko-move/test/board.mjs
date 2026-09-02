@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { resolveHslAnchors, HELSINKI_ANCHORS } from '../js/helsinki-anchors.js';
-import { boardBox, boxToAspect, boardFit, lineFamily, lineColour, tramInk, METRO_INK, ROAD_INK, MAIN_ROADS, roadPaths, BOARD_MARGIN } from '../js/board.js';
+import { boardBox, boxToAspect, boardFit, lineFamily, lineColour, tramInk, METRO_INK, ROAD_INK, ROAD_INK_MAJOR, ROAD_INK_MID, ROAD_INK_MINOR, NIGHT, MAIN_ROADS, roadPaths, BOARD_MARGIN } from '../js/board.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pack = JSON.parse(readFileSync(join(here, '../cities/helsinki.json'), 'utf8'));
@@ -82,11 +82,17 @@ const lum = hex => { const [r, g, b] = rgb(hex).map(srgb); return .2126 * r + .7
 const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); };
 const dE = (a, b) => Math.hypot(...lab(a).map((v, i) => v - lab(b)[i]));
 
-const PAPER = '#edf4f2';
+// The ground the lines are actually drawn on, read from the palette rather than
+// typed here — the board went to a night palette at v2.20 and a gate holding the
+// old paper would have gone on certifying colours that are no longer legible.
+// Six of the fourteen v2.19 inks fail 3:1 on this paper (1, 4, 5, 6, 10, 15),
+// which is why they were re-solved rather than carried over.
+const PAPER = NIGHT.paper;
 const all = [...Object.values(ink), METRO_INK];
-// The solved floor. 37.0 was reached by a constrained search, so a hand-added
+// The solved floor. 32.5 was reached by a constrained search on the NIGHT
+// ground (the paper solve reached 37.0 and had more room), so a hand-added
 // colour that scrapes past a lower bar is exactly what this is here to catch.
-const FLOOR = 36.5;
+const FLOOR = 32.0;
 let worst = Infinity, pair = '';
 for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
   const d = dE(all[i], all[j]);
@@ -98,9 +104,38 @@ for (const c of all) assert.ok(contrast(c, PAPER) >= 3.0, `line colour ${c} is o
 // Roads are GROUND: they must stay quieter than every line, or a street starts
 // reading as a service. The bug this pins is the one paperboy and the Rush both
 // shipped — a layer drawn at a contrast nobody looked at.
-const roadC = contrast(ROAD_INK, PAPER);
-assert.ok(roadC < 1.9, `roads at ${roadC.toFixed(2)}:1 are too loud to be ground`);
-for (const c of all) assert.ok(contrast(c, PAPER) > roadC * 1.6, `line ${c} is not clearly louder than the roads`);
+// Three tiers now, and EVERY one of them is ground: the loudest street on the
+// board must still be quieter than the quietest line. Contrast on a dark ground
+// runs the other way — a road is DARKER than the paper — so this measures the
+// ratio each ink makes with the paper whichever side of it the ink falls.
+// WHAT KEEPS A STREET FROM READING AS A SERVICE, restated for the night board.
+// The paper board did it with luminance: roads under 1.9:1 and every line at
+// least 1.6x louder. That rule cannot survive the move. At night a line has to
+// be LIGHT to be legible at all (the quietest is metro orange at 3.9:1), so
+// 1.6x caps a road at 2.44:1 — and a road held there is nearly the board
+// colour. The first cut of this palette obeyed it and drew streets that were
+// not visible on the screen; a rule that certifies an invisible layer is
+// measuring the wrong thing.
+//
+// The thing that actually separates them is COLOUR. A road is grey and a
+// service is not, and that gap is enormous and unambiguous: every road ink here
+// has Lab chroma under 9, every line over 30. So the gate holds chroma, keeps a
+// loose lightness ceiling so a road cannot shout, and holds the tiers in order.
+const chroma = c => { const [, a, b] = lab(c); return Math.hypot(a, b); };
+const ROADS = [['schematic', ROAD_INK], ['major', ROAD_INK_MAJOR], ['mid', ROAD_INK_MID], ['minor', ROAD_INK_MINOR]];
+for (const [name, c] of ROADS) {
+  assert.ok(contrast(c, PAPER) < 3.0, `${name} roads at ${contrast(c, PAPER).toFixed(2)}:1 are too loud to be ground`);
+  assert.ok(chroma(c) < 12, `${name} roads carry chroma ${chroma(c).toFixed(1)} — ground is grey, colour belongs to the lines`);
+}
+for (const c of all) assert.ok(chroma(c) > 25, `line colour ${c} has chroma ${chroma(c).toFixed(1)} and would read as a street`);
+// and they are a real hierarchy, not three names for one grey
+assert.ok(contrast(ROAD_INK_MAJOR, PAPER) > contrast(ROAD_INK_MID, PAPER), 'major streets read above mid');
+assert.ok(contrast(ROAD_INK_MID, PAPER) > contrast(ROAD_INK_MINOR, PAPER), 'mid streets read above minor');
+// a street must still be VISIBLE, which is the failure the old rule allowed
+for (const [name, c] of ROADS) assert.ok(contrast(c, PAPER) > 1.5, `${name} roads at ${contrast(c, PAPER).toFixed(2)}:1 vanish into the board`);
+// And the water is the one contrast colour that is not a line: it has to be
+// tellable from land, or the coast is a rumour.
+assert.ok(dE(NIGHT.waterFill, NIGHT.paper) >= 8, `water is only dE ${dE(NIGHT.waterFill, NIGHT.paper).toFixed(1)} from the land`);
 
 // ---- the drawn streets point at places that exist -----------------------
 for (const road of MAIN_ROADS) {
