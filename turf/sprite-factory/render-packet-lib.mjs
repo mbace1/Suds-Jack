@@ -11,9 +11,10 @@ export function validateTarget(manifest, { character, action, direction, frame }
 }
 
 export function oppositePhaseFrame(actionDef, action, frame) {
-  if (action !== 'move' || actionDef.targetFrames % 2 !== 0) return null;
-  const half = actionDef.targetFrames / 2;
-  return frame <= half ? frame + half : frame - half;
+  if (action !== 'move') return null;
+  const offset = actionDef.oppositePhaseOffset ?? (actionDef.targetFrames % 2 === 0 ? actionDef.targetFrames / 2 : null);
+  if (!offset || offset * 2 !== actionDef.targetFrames) return null;
+  return frame <= offset ? frame + offset : frame - offset;
 }
 
 export function findApproved(records, query) {
