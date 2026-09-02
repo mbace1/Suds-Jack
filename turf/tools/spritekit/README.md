@@ -419,9 +419,12 @@ folded into its own transform.
 - Loop closure is the softest check in practice; the wrap-around pair scored
   worst of the six on the front cycle (0.705) and fine on the rear (0.517).
 - `gen.mjs` needs `GEMINI_API_KEY`. Everything else runs offline.
-- `anim.cjs` needs `gifenc`, deliberately not vendored — install it in scratch
-  and expose it with `NODE_PATH`, the same rule `CLAUDE.md` sets for
-  `scripts/enemy-loop.mjs`.
+- Every tool needs `@napi-rs/canvas`, and `anim.cjs` also needs `gifenc`. Both
+  are deliberately not vendored — install them in scratch and expose them with
+  `NODE_PATH`, the same rule `CLAUDE.md` sets for `scripts/enemy-loop.mjs`:
+  `npm i @napi-rs/canvas gifenc && export NODE_PATH=<scratch>/node_modules`.
+  **No browser is needed** — `img.cjs` is the one image backend and nothing here
+  imports playwright.
 
 ## A worked cycle
 

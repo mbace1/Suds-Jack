@@ -89,10 +89,19 @@ API        1624 frames, 8 in parallel, ~8 s each      ~27 minutes
 local      1624 frames x ~8.75 s, serial              ~4 hours
 ```
 
-**So the money is the API and the time is Chromium.** Pooling one browser across
-the pipeline is a 5-10x win on the larger half of the clock and needs no new
-art. It is the highest-value engineering left in this toolchain, and it is worth
-doing *before* a roster run rather than after.
+**So the money is the API and the time was Chromium.**
+
+**Since fixed, and better than the fix proposed here.** The suggestion above was
+to pool one browser. The browser is gone instead: every measurement runs on
+Skia in-process via `@napi-rs/canvas` (see `TOOLING.md`). Measured over the full
+post-generation chain on one clip — fitclip, register, fitclip, drift, verify,
+edge, anim — **30909ms -> 2277ms, 13.5x**. Rebuilding all 17 committed sets end
+to end now takes **98 seconds**.
+
+Re-costed with that, the local half of the roster run drops from ~4 hours to
+roughly **20 minutes**, which puts it well under the ~27 minutes of API time. The
+binding constraint is no longer machine time at all — it is the two hours of
+human judgement below.
 
 ## Reading
 

@@ -13,38 +13,28 @@
 // weapon travels. For a character facing the lower-right that is the RIGHTMOST
 // ink, and the useful number is not how far right it goes but HOW HIGH UP that
 // happens: hip, chest or above the shoulder. That one number orders an attack.
-const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
+const { load, pixels } = require(path.join(__dirname, 'img.cjs'));
 
 (async () => {
   const [dir, ...files] = process.argv.slice(2);
   if (!files.length) { console.log('usage: node reach.cjs <dir> <frame...>'); process.exit(1); }
-  const br = await chromium.launch(); const pg = await br.newPage();
-  await pg.goto('data:text/html,<html><body></body></html>');
 
   const rows = [];
   for (const f of files) {
-    const b64 = fs.readFileSync(path.join(dir, f)).toString('base64');
-    const m = await pg.evaluate(async ({ url }) => {
-      const i = new Image(); i.src = url; await i.decode();
-      const W = i.width, H = i.height;
-      const c = document.createElement('canvas'); c.width = W; c.height = H;
-      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(i, 0, 0);
-      const d = g.getImageData(0, 0, W, H).data;
-      let y0 = H, y1 = -1, x1 = -1, tipY = -1;
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
-        if (d[(y * W + x) * 4 + 3] > 127) {
-          if (y < y0) y0 = y; if (y > y1) y1 = y;
-          if (x > x1) { x1 = x; tipY = y; }
-        }
-      const ih = y1 - y0 + 1;
-      // reach: how far right the ink goes, as a fraction of the figure's height
-      // height: where that happens, 0 at the feet and 1 at the top of the head
-      return { reach: (x1 - W / 2) / ih, height: (y1 - tipY) / ih };
-    }, { url: `data:image/png;base64,${b64}` });
-    rows.push({ f, ...m });
+    const o = await load(path.join(dir, f));
+    const d = pixels(o), W = o.W, H = o.H;
+    let y0 = H, y1 = -1, x1 = -1, tipY = -1;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+      if (d[(y * W + x) * 4 + 3] > 127) {
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+        if (x > x1) { x1 = x; tipY = y; }
+      }
+    const ih = y1 - y0 + 1;
+    // reach: how far right the ink goes, as a fraction of the figure's height
+    // height: where that happens, 0 at the feet and 1 at the top of the head
+    rows.push({ f, reach: (x1 - W / 2) / ih, height: (y1 - tipY) / ih });
   }
-  await br.close();
 
   console.log('frame'.padEnd(30), 'reach'.padStart(7), 'height'.padStart(7));
   for (const r of rows) console.log(r.f.replace(/\.png$/, '').padEnd(30), r.reach.toFixed(3).padStart(7), r.height.toFixed(3).padStart(7));

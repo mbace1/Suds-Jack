@@ -35,9 +35,50 @@ here would be worse than the slowness:
   comparing pixel by pixel: **0 of 55296 pixels differ in silhouette, 0 colour
   channels differ, largest delta 0.**
 
-So the port is a pure win with no output change. It is the single highest-value
-piece of engineering left in this toolchain, and `COST.md`'s recommendation
-should be replaced by it.
+### Done — and the browser was not the whole story
+
+Ported. `img.cjs` is the one image backend and **nothing in spritekit imports
+playwright any more**. Measured over the full post-generation chain on one clip
+(fitclip, register, fitclip, drift, verify, edge, anim): **30909ms -> 2277ms,
+13.5x**. Rebuilding all 17 committed sets end to end takes **98 seconds**.
+
+Parity, checked per tool rather than assumed:
+
+```
+edge / verify / drift / reach / phase   output text IDENTICAL
+fitclip / breathe                       0 pixels differ (PNGs 15% smaller)
+anim                                    GIF byte-identical
+register                                factors differ slightly — see below
+```
+
+**Two findings the port itself produced, both worth more than the speed.**
+
+**The browser was not the bottleneck in `register.cjs`.** The first port ran it
+at 24.8s against the browser's 8.8s — nearly 3x *slower*. One cause was mine: I
+recomputed the source's ink bbox inside `mask()`, which the coarse-to-fine
+search calls ~1800 times a frame. Hoisting it got to 15.4s — still slower. The
+real cost is **rasterising a candidate at all**: allocate a canvas, drawImage,
+getImageData, 1800 times. A candidate mask is only an affine transform of a
+binary bitmap, so it is now inverse-sampled into a `Uint8Array` over just the
+rows the score reads, and the clamp loop uses the transformed *bbox*, which is
+the transform of the bbox and therefore free. **1200ms — 7.4x faster than the
+browser it replaced.**
+
+**That one is not bit-identical, and the number is small but real.** Nearest
+sampling by flooring rounds differently from canvas `drawImage`, so the search
+settles on slightly different factors (s 0.97 -> 0.98, 1.09 -> 1.095), and two
+of four output frames differ. Judged on the objective rather than waved away —
+mean pairwise torso IoU across the finished clip, one rasteriser for both:
+
+```
+unregistered          0.7037
+browser factors       0.7606
+fast-sampler factors  0.7595
+```
+
+It captures **98% of the registration benefit** and the optimum is genuinely
+flat around there. Recorded rather than claimed identical, because "close
+enough" is a thing to measure, not to assert.
 
 ## 2. The strategic one — pose-conditioned generation
 

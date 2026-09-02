@@ -254,11 +254,13 @@ jobs:
       - name: the crew-name generator
         run: node turf/test/names.mjs
 
-      # The sprite gates below need a browser (every image measurement in
-      # spritekit runs in a canvas), which is why they sit after the bare-node
-      # ones rather than beside them.
-      - name: browser for the sprite checks
-        run: npm i -g playwright && npx playwright install --with-deps chromium
+      # No browser. Every image measurement in spritekit used to run inside a
+      # headless Chromium; it runs on Skia in-process now (@napi-rs/canvas),
+      # which is 13.5x faster over the full chain and removes a ~300MB CI
+      # download. Capture-only deps stay out of the repo and are exposed with
+      # NODE_PATH, the same rule CLAUDE.md sets for gifenc and enemy-loop.
+      - name: image backend for the sprite checks
+        run: npm i -g @napi-rs/canvas gifenc
 
       # ABSOLUTE per-frame checks, over the WHOLE committed sprite tree rather
       # than the frames a PR happens to touch. Every other gate in spritekit is

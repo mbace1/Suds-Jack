@@ -8,8 +8,8 @@
 // edge and every relative gate passed them.
 //
 // So this file asks only questions a single frame can answer wrongly by itself.
-const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
+const { load, pixels, components, edgeInk } = require(path.join(__dirname, 'img.cjs'));
 
 const collect = (args) => {
   const out = [];
@@ -33,65 +33,31 @@ const collect = (args) => {
 (async () => {
   const json = process.argv.includes('--json');
   const files = collect(process.argv.slice(2).filter(a => a !== '--json'));
-  const br = await chromium.launch(); const pg = await br.newPage();
-  await pg.goto('data:text/html,<html><body></body></html>');
-
   const rows = [];
   for (const f of files) {
-    const b64 = fs.readFileSync(f).toString('base64');
-    const m = await pg.evaluate(async ({ url }) => {
-      const i = new Image(); i.src = url; await i.decode();
-      const W = i.width, H = i.height;
-      const c = document.createElement('canvas'); c.width = W; c.height = H;
-      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(i, 0, 0);
-      const d = g.getImageData(0, 0, W, H).data;
-      const A = (x, y) => d[(y * W + x) * 4 + 3];
+    const o = await load(f);
+    const d = pixels(o), W = o.W, H = o.H;
 
-      let edge = 0;
-      for (let x = 0; x < W; x++) { if (A(x, 0) > 127) edge++; if (A(x, H - 1) > 127) edge++; }
-      for (let y = 0; y < H; y++) { if (A(0, y) > 127) edge++; if (A(W - 1, y) > 127) edge++; }
-
-      let ink = 0, soft = 0, magenta = 0;
-      const cols = new Set();
-      for (let p = 0; p < W * H; p++) {
-        const a = d[p * 4 + 3];
-        if (a > 127) {
-          ink++;
-          const r = d[p * 4], gq = d[p * 4 + 1], b = d[p * 4 + 2];
-          cols.add((r >> 2 << 12) | (gq >> 2 << 6) | (b >> 2));   // RGB666 buckets
-          if (r > 200 && gq < 90 && b > 200) magenta++;            // key survivors
-        }
-        if (a > 8 && a < 248) soft++;                              // partial alpha = a soft edge
+    const e = edgeInk(d, W, H);
+    let inkPx = 0, soft = 0, magenta = 0;
+    const cols = new Set();
+    for (let p = 0; p < W * H; p++) {
+      const a = d[p * 4 + 3];
+      if (a > 127) {
+        inkPx++;
+        const r = d[p * 4], gq = d[p * 4 + 1], b = d[p * 4 + 2];
+        cols.add((r >> 2 << 12) | (gq >> 2 << 6) | (b >> 2));   // RGB666 buckets
+        if (r > 200 && gq < 90 && b > 200) magenta++;            // key survivors
       }
+      if (a > 8 && a < 248) soft++;                              // partial alpha = a soft edge
+    }
+    const areas = components(d, W, H).map(c => c.size).sort((x, y) => y - x);
+    const specks = areas.slice(1).filter(a => a < 40).length;
 
-      // connected components on the alpha mask, to find detached specks
-      const lab = new Int32Array(W * H).fill(-1); const areas = [];
-      const st = [];
-      for (let p0 = 0; p0 < W * H; p0++) {
-        if (A(p0 % W, (p0 / W) | 0) <= 127 || lab[p0] !== -1) continue;
-        const id = areas.length; areas.push(0); st.length = 0; st.push(p0); lab[p0] = id;
-        while (st.length) {
-          const q = st.pop(); areas[id]++;
-          const qx = q % W, qy = (q / W) | 0;
-          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-            const nx = qx + dx, ny = qy + dy;
-            if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
-            const np = ny * W + nx;
-            if (A(nx, ny) <= 127 || lab[np] !== -1) continue;
-            lab[np] = id; st.push(np);
-          }
-        }
-      }
-      areas.sort((a, b) => b - a);
-      const specks = areas.slice(1).filter(a => a < 40).length;
-      const detached = areas.length - 1;
-
-      return { W, H, edge, ink, coverage: ink / (W * H), soft, softFrac: soft / Math.max(1, ink),
-               magenta, colours: cols.size, specks, detached, biggest: areas[0] || 0 };
-    }, { url: `data:image/png;base64,${b64}` });
-    rows.push({ f, ...m });
+    rows.push({ f, W, H, edge: e.total, ink: inkPx, coverage: inkPx / (W * H),
+                soft, softFrac: soft / Math.max(1, inkPx), magenta, colours: cols.size,
+                specks, detached: areas.length - 1, biggest: areas[0] || 0 });
   }
-  await br.close();
 
   if (json) { console.log(JSON.stringify(rows, null, 1)); return; }
 
