@@ -102,3 +102,30 @@ predictable from the silhouette before a single frame is generated:
 - **loose hair** → the scale anchor cannot be trusted; normalise
   `--origin-only` and gate with `drift.cjs --no-scale`.
 - **hood, cap, bald with arms down** → nothing to worry about.
+
+
+## Rear, added 2026-09-02 — and rear keeps beating front
+
+All four now have rear cycles, generated against back-view references cropped
+from the same casting sheet. 11 of 12 opposition/closure pairs distinct, no
+mirrors anywhere.
+
+```
+                contact-opp   pass-opp   loop
+sledge             .298        .564      .418
+hoodie             .497        .638      .606
+longcoat           .638        .651      .510   pass = suspicious
+leopard            .625        .543      .513
+```
+
+**`sledge` rear is the best set of the four, and its front was the worst.**
+Front scored .548 with a genuine near-duplicate loop closure at .812, because
+both hands are locked to a bar across the chest and the hammer crosses the leg
+region. From behind, the hammer is on the far side of the body and stops
+occluding the legs, so the stride reads clearly. That is now the **third**
+time rear has first-passed better than front (12-phase rear needed 0 re-rolls
+against front's 3; melee and ranged rear both landed first try). Worth
+planning around: if a character has to be re-rolled, expect it to be the front.
+
+`longcoat`'s `pass` pair at .651 is the predicted hidden-legs cost, unchanged
+from the front result.
