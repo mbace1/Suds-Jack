@@ -22,7 +22,7 @@ jobs:
           rm -rf .kindling-source
           git clone --depth 1 https://github.com/mbace1/Kindling.git .kindling-source
           cd .kindling-source
-          test "$(git rev-parse HEAD)" = "2c5d4930bf2ab36d82adabb38f6829177e365b87"
+          test "$(git rev-parse HEAD)" = "2d38698e036e79ab9748f5d94b3de83ef34d578d"
 
       - uses: actions/setup-node@v4
         with:
@@ -40,6 +40,7 @@ jobs:
           test -f dist/client/art/drowned-courtyard-clean.svg
           test -f dist/client/art/bell-keep-clean.svg
           test -f dist/client/art/ashwood-clean.svg
+          grep -q 'ember-portrait.png' dist/client/art/ember-idle-runtime.svg
 
       - name: Replace live Kindling runtime
         run: |
@@ -49,15 +50,16 @@ jobs:
           printf 'v13\n' > kindling/.hub-release
           cat > kindling/DEPLOYED_VERSION.txt <<'EOF'
           Kindling v13
-          canonical source: mbace1/Kindling@2c5d4930bf2ab36d82adabb38f6829177e365b87
+          canonical source: mbace1/Kindling@2d38698e036e79ab9748f5d94b3de83ef34d578d
           static hub build: npm run build:hub
+          hotfix: safe Ember runtime atlas
           EOF
           python3 - <<'PY'
           import json
           from pathlib import Path
           p = Path('hub/versions.json')
           data = json.loads(p.read_text())
-          data['kindling'] = {'v':'13','n':13000,'from':'VERSIONS.md'}
+          data['kindling'] = {'v':'13','n':13000,'from':'VERSIONS.md + Ember hotfix'}
           p.write_text(json.dumps(data, indent=2) + '\n')
           PY
 
@@ -82,5 +84,5 @@ jobs:
           git config user.name "Kindling Hub Deploy"
           git config user.email "actions@users.noreply.github.com"
           git add kindling hub/versions.json
-          git commit -m "Deploy Kindling v13 to hub"
+          git commit -m "Hotfix Kindling v13 Ember runtime atlas"
           git push origin HEAD:gh-pages
