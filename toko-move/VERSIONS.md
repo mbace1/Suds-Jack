@@ -1,5 +1,31 @@
 # Toko Move — versions
 
+## v2.20 — 2026-09-02
+
+**The night map, and real ground under it.** Owner's direction: "a more readable map with streets and water that is based in a gray scale with some contrast colors like dark blue for water... mostly grey night version map colors though." Recorded in `board.js` as an override, because it replaces the warm paper board that file was written for.
+
+**The ground is real data, and it was already in this repository.** Three packs, recovered from the Piritori map work on `gh-pages` (commit `606058bb`) and committed under `toko-move/cities/ground/`, read by the new `js/ground.js`:
+
+- **water** — OpenStreetMap via Overpass, ODbL 1.0. 111 fillable bodies and 139 coastline edges spanning **the whole board** (60.148–60.218N), where the pack in use covered 60.17–60.20 — which is why Eira, Länsisatama and Käpylä had been sitting on blank paper.
+- **streets** — OpenStreetMap via Overpass, ODbL 1.0. 5652 ways carrying class and tier. **Centre extract only** (60.17–60.20 / 24.93–24.98, about the middle third of the board), and that limit is handled rather than hidden: inside it the real streets are the ground, outside it the board keeps its schematic corridors, and never both in the same place — an invented line beside a real one along the same street is the one thing this map may not do. The on-screen credit names the extent.
+- **districts** — City of Helsinki osa-aluejako 2015 via the dhh16 mirror. 41 real sub-district label points, ordered by how much of the extent each covers, replacing **nine names typed into the runtime by hand** and hung off whichever delivery anchor was nearest.
+
+**Streets are a hierarchy, revealed by the camera** — city shows arterials, route adds mid, stop adds the rest, which is the owner's "the closer you zoom, the more major streets you see". A third of the pack is never drawn: `service` and `track` are parking aisles and yard access, and 260 of the pedestrian ways are **closed rings** — squares mapped as areas. Stroked as lines they draw a box around every block, and the stop-scale view was an outline of the ground floor of Helsinki rather than a street grid.
+
+**The sea is shown, not filled.** An OSM coastline is a directed OPEN line with land on its left, and closing it into a polygon invents a shape the data does not contain — the Piritori lane tried three closures and completed none. So the water is shaded outward from the shore on the side the winding itself says is water, in three fading passes. Flip the winding and the shading goes inland, which is exactly the error it would be.
+
+**The line inks were re-solved, because they had to be.** Six of the fourteen fail 3:1 on the night ground (1 at 1.83:1, 4 at 1.77, 5 at 2.31, 6 at 1.79, 10 at 1.76, 15 at 1.85) — a dark line on a dark board is not a quieter line, it is an absent one. Same constrained search, same pinned metro orange, new band: L 56–78, chroma 32–56, **min dE76 = 32.5** (the paper solve reached 37.0 and had more room). Widening to L 54–80 / chroma 58 reaches 41.1 and buys it in neon — mint, lemon and hot pink, the highlighter set the first solve exists to avoid. The floor in `test/board.mjs` moved to 32.0 to match.
+
+**And the rule that keeps a street from reading as a service changed shape.** The paper board did it with luminance: roads under 1.9:1, lines at least 1.6× louder. At night a line must be LIGHT to be legible at all — the quietest is metro orange at 3.9:1 — so 1.6× caps a road at 2.44:1, and a road held there is nearly the board colour. The first cut of this palette obeyed the old rule and drew streets that were not visible on screen; a gate that certifies an invisible layer is measuring the wrong thing. What actually separates them is **colour**: every road ink has Lab chroma under 9 and every line over 30, a gap of nearly four times. The gate holds that, plus a lightness ceiling, plus the tier order, plus a floor so a street cannot vanish.
+
+`test/ground.mjs` is a new gate (189 checks): every pack states its source, licence and extent; the on-screen credit names OpenStreetMap, ODbL, the City of Helsinki and the street extent; water spans the board; the tiers are a real hierarchy; a missing pack is empty rather than a crash and claims no attribution it cannot support.
+
+**Two bugs the report card found that no gate could.** The shift went from 5 deliveries to ONE, and the page had no errors: `route-choice.js` carried `Math.floor(tick/2)` in its render key, so the panel rewrote its own innerHTML four times a second and destroyed the CATCH buttons with it. A press arriving mid-swap lands on a detached element and does nothing — on a phone, a tap that silently fails at exactly the moment the game asks you to be quick. The panel is now rebuilt only when what it says changes, and the arrival line, the enabled state and the verb are refreshed **in place**. And the zoom rail was placed from a measurement taken while it was still `hidden`, so `offsetWidth` was 0, the rail landed a full width right of the map over the job sheet, and at z-index 30 it ate the clicks it covered.
+
+**The ground is cached offscreen.** Water, streets and place names change when the camera changes and at no other time; painted every frame they cost the city view half its frame rate for a picture identical to the one before it. Painted into an offscreen canvas keyed on the camera and blitted, all three scales run at 60. Same discipline as `gameoflife`'s `scr.cached`, same rule: keep every moving part outside it.
+
+Report card, v2.20: 5 jobs taken, 4/6 delivered, score 756, late 0, dead air 4%, riding 69%.
+
 ## v2.19 — 2026-09-02
 
 **The camera.** The owner's reading of v2.18 was exact — "the map is clutter with fast moving objects" — and the fix is not fewer trams. It is a camera: the thing that decides what is NEAR right now. `js/camera.js` owns a centre, a zoom and the arithmetic; it owns no canvas and draws nothing, which is why `test/camera.mjs` can prove it in bare node (36 checks) instead of by looking at a screenshot.
