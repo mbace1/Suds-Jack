@@ -33,7 +33,7 @@ const CLIPS = {
   // horizontal pose and returns a figure standing on its head
   react:   { build: 'build-react.mjs',  phases: ['impact','recoil','catch','stagger','buckle','fall','ko_impact','settled'],
              aspect: p => ['fall','ko_impact','settled'].includes(p) ? '1:1' : '2:3',
-             norm: ['--origin-only'], gate: 'phase', region: 'full', gateArgs: ['--no-scale', '--no-rhythm'] },
+             norm: ['--origin-only'], register: false, gate: 'phase', region: 'full', gateArgs: ['--no-scale', '--no-rhythm'] },
   // one generation, then the breath is computed — see breathe.cjs for why
   idle:    { build: 'build-idle.mjs',   phases: ['settle'], aspect: () => '2:3', norm: [], gate: 'none', breathe: true },
 };
@@ -81,8 +81,18 @@ if (clip.breathe) {
   // register first (search-based scale, no anchor feature), then normalise for
   // the ground line. normalise's own rescale is skipped — register has already
   // done that job without a proxy that can break.
-  node('register.cjs', [cut, join(outDir, '_reg'), ...frames]);
-  node('normalise.cjs', [join(outDir, '_reg'), outDir, ...frames, '--origin-only']);
+  // register.cjs assumes the body keeps roughly one orientation through the
+  // clip — it scores the overlap of the TORSO BAND. A knockdown rotates the
+  // whole figure 90 degrees between standing and lying, so that band does not
+  // correspond at all: measured worst overlay was 0.46-0.51 against 0.72-0.89
+  // on every other clip. Searching for the scale that maximises a meaningless
+  // number is worse than not searching, so a reaction clip skips it.
+  if (clip.register === false) {
+    node('normalise.cjs', [cut, outDir, ...frames, '--origin-only']);
+  } else {
+    node('register.cjs', [cut, join(outDir, '_reg'), ...frames]);
+    node('normalise.cjs', [join(outDir, '_reg'), outDir, ...frames, '--origin-only']);
+  }
   if (clip.gate === 'reach') {
     node('reach.cjs', [outDir, ...frames]);
     // an attack clip still needs its scale and ground line checked, and

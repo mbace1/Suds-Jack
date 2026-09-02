@@ -253,6 +253,51 @@ fit that applies one COMMON scale across a clip, and `cut.mjs` is a shared tool
 whose per-image behaviour is correct for its other callers. Worth doing; not
 done here.
 
+## A knockdown is about losing control, not about where the limbs are
+
+The KO phases were first written the way every other clip is written — pure
+geometry, where the limbs go and how low the hips sit. Every frame came back
+with the character still **in control and still fighting**: `stagger` read as an
+alert idle, `buckle` as an athletic crouch ready to pounce, `fall` as a jumping
+attack with the knife raised and the teeth gritted. The limb positions were all
+correct. It still did not read as a death.
+
+Two things fixed it, and both are about intent rather than pose:
+
+**1. Say how much control is left, and what the face is doing.** Each phase now
+opens with a `CONTROL:` line (*mostly gone* / *gone* / *none* / *she is
+unconscious*) and a `FACE:` line (*dazed and unfocused* / *slack, eyes closed*),
+and the geometry comes after. A slack face and open hands read as a knockout;
+the same skeleton with a gritted jaw reads as an attack.
+
+**2. Invert the prop rule.** Every identity block ends with something like *"the
+knife is part of her and must stay visible in every pose, never dropped"* — which
+is correct for every clip except this one. Told that, the model draws an
+unconscious character **still gripping her weapon**, and a fist closed around a
+knife reads as intent no matter how limp the rest of the body is. The KO half now
+overrides it: the hand opens, the weapon falls loose or lies on the ground beside
+her. Nothing else in the identity changes.
+
+`buckle` also needed a negative test aimed at the exact wrong answer, because
+"knees give way" and "crouch" produce the same skeleton: *if this looks like a
+crouch — feet flat, both knees bent the same, weight balanced, back straight,
+head up — the pose is WRONG. A crouch is something you choose; this is something
+that happened to her.* The fix is one knee **on the ground** and the two legs
+doing different things, since a collapse is asymmetric and a crouch is not.
+
+Continuity is its own check that no gate performs: the first pass had her land
+**face-down** in `ko_impact` and **face-up** in `settled`, so she rolled over
+while unconscious. Both are now face-up, stated explicitly as *she does not roll
+over between frames*.
+
+**A reaction clip is not registered.** `register.cjs` scores the overlap of the
+torso band, which assumes the body keeps roughly one orientation. A knockdown
+rotates the figure 90 degrees between standing and lying, so that band does not
+correspond at all — worst overlay measured 0.46-0.51 against 0.72-0.89 on every
+other clip. Searching for the scale that maximises a meaningless number is worse
+than not searching, so `make.mjs` marks the clip `register: false` and goes
+straight to `--origin-only`.
+
 ## Rear fails wherever the pose text names the face
 
 Every builder takes `--rear`, and `make.mjs` passes it through. Locomotion and
