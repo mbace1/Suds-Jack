@@ -660,12 +660,17 @@ What actually shipped, checked against a real "100% feature complete" bar
   same `key`/`fit 192x288 --no-quantise` pipeline, both front and back —
   `_ref-gunner.png`/`_ref-gunner-back.png` were replaced with the tighter
   crop too, so any future re-generation off this reference starts clean.
-  Two remaining, genuinely unfixed without a new generation: attack windup/
-  release read quite similar to each other, both characters; death-fall
-  reads as a dynamic action pose more than "losing balance." Neither blocks
-  judging the pilot's actual question (does identity hold), both would need
-  another prompt pass with the Gemini key, which this session does not
-  have.
+  Attack windup/release reading too similar — **fixed 2026-08-31**: the two
+  prompts described the same end pose with only tension language differing
+  ("tense" vs "braced against recoil"), which the model can't hold onto.
+  Rewritten to describe geometrically opposite silhouettes instead (gunner:
+  low fast-draw coil vs full-extension lunge; leopard: tall overhead raise
+  vs low forward lunge), plus an explicit instruction to exaggerate the
+  pose past what feels natural. All 8 (2 poses × 2 characters × 2 facings)
+  regenerated, 8/8 usable. Still open, genuinely unfixed without another
+  generation: death-fall reads as a dynamic action pose more than "losing
+  balance." Doesn't block judging the pilot's actual question (does
+  identity hold), and would need its own prompt pass.
 - **The other ~18 cast characters** and the six original archetype designs
   (`blade`/`niner`/`wrench`/three grunts) still only have their single §4
   key-pose plate each, no animation set.

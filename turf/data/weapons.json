@@ -6,6 +6,9 @@
     { "id": "pipe",    "name": "Pipe",    "archetype": "melee",  "range": 1, "damage": 1, "knockback": 2, "hitChance": 1 },
     { "id": "bat",     "name": "Bat",     "archetype": "melee",  "range": 1, "damage": 2, "knockback": 1, "hitChance": 1 },
     { "id": "handgun", "name": "Handgun", "archetype": "ranged", "range": 5, "damage": 2, "knockback": 0, "hitChance": 0.8 },
-    { "id": "shotgun", "name": "Shotgun", "archetype": "ranged", "range": 2, "damage": 4, "knockback": 1, "hitChance": 0.85 }
+    { "id": "shotgun", "name": "Shotgun", "archetype": "ranged", "range": 2, "damage": 4, "knockback": 1, "hitChance": 0.85 },
+    { "id": "hammer",  "name": "Hammer",  "archetype": "melee",  "range": 1, "damage": 5, "knockback": 2, "hitChance": 1 },
+    { "id": "bottle",  "name": "Bottle",  "archetype": "melee",  "range": 1, "damage": 2, "knockback": 0, "hitChance": 1 },
+    { "id": "flail",   "name": "Flail",   "archetype": "melee",  "range": 1, "damage": 3, "knockback": 1, "hitChance": 0.9 }
   ]
 }

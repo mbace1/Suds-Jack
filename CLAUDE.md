@@ -293,10 +293,14 @@ before touching anything — this section is the summary, they are the source.**
 operators fight turn-based tactics on a grid in a grim, rain-lit Nordic city — Into the
 Breach's full-information telegraphing crossed with Metal Slug Tactics' numerous-weaker-
 enemies energy, Mewgenics-lite progression on the roadmap but explicitly **not** in v1.
-**v1 ships exactly Milestone 1**: one fixed encounter ("The Backlot," `data/encounters.json`),
-no loot, no XP, no persistence — the GDD's own exit criterion is that the single fight is
-"fun/tense to play through repeatedly," which is a feel question a code-drawn placeholder
-build can actually answer.
+Milestone 1 (one encounter, no loot/XP) shipped and is **passed** — GDD §9's Phase 2 list is
+now struck through in full: **five encounters** in sequence (`SEQUENCE` in `main.js`), XP and
+levels, weapon-swap drops, and as of v21 **trinkets**, which closes §5's v1 progression list.
+The GDD's exit criterion — the fight is "fun/tense to play through repeatedly" — is still the
+open question, and it is a feel question only a playtest answers, not another system.
+**Everything through v19 is live** at `/Suds-Jack/turf/`; the deployed build ran on v9 art for
+a long time, so a cabinet that looks wrong is worth checking against `hub/versions.json`
+before assuming the code is.
 **Everything is data** (`data/{units,weapons,enemies,encounters}.json`, GDD §3's rule) —
 the engine (`js/grid.js`, `js/ai.js`, `js/combat.js`) reads ids out of them and knows
 nothing about "a knife" or "a shotgun" as concepts, so Phase 2's encounter sequence or a
@@ -339,13 +343,47 @@ instead. Either way it lands in the same `handlePoint(hit, x, y)`, so `combat.js
 knows which input method drove a given move or attack. The cursor (`render.js`'s
 `drawCursor`, a double-ringed reticle) only renders once a key or pad button has actually
 been pressed — gameoflife's `:focus-visible`-only-on-keyboard rule, applied to a canvas.
-**Art is entirely code-drawn placeholder** — flat silhouettes with a hard ink outline
-(Master System rule: the shape lives in the silhouette, there is no shading to put it in),
-no image assets, matching house convention. This is also the only option this session had:
-no `GEMINI_API_KEY`/`MESHY_API_KEY` in the environment (`node scripts/assets.mjs doctor`
-confirms). The production doc's own plan is placeholder-now/hand-art-later — a follow-up
-PR should ask for real Nano Banana concept art and Meshy meshes per its Stage 1-2 once the
-owner wants to spend the credits.
+**Hazards are what make knockback a weapon** (v18, GDD §10's "set dressing with mechanical
+teeth"). `data/hazards.json`: den fire (2 on entry AND 2 again if you end the round in it),
+broken glass (1, no linger), open stairwell (**lethal**, ignores HP). A hazard NEVER blocks
+movement — that is cover's job; it makes a tile *cost* something so the board asks a question
+instead of drawing a wall, and every one cuts both ways so a player can set one up
+deliberately. Every position change routes through one `enterHazard`, because the third copy
+is the one that forgets. **A lethal hazard catches what is shoved across it** — found by
+test: the pipe's knockback is 2, so a body shoved at a stairwell sailed clean over it, which
+also made the heaviest knockback weapons the *worst* at using a pit. `ai.js` scores hazard
+cost in HP so the telegraph cannot promise a suicide.
+**Enemy behaviours** (v19) — before this, eighteen enemies all ran "close on the nearest and
+swing", so the roster was one enemy with eighteen portraits. `charger` / `skirmisher` (keeps
+its gun's range, pays for melee reach) / `holder` (fights from cover) / `flanker` (refuses to
+shoot into cover), plus `nearest`/`weakest` focus. `approachTile` is deliberately NOT used
+for this: it answers "the cheapest tile", exactly what a behaviour must disagree with, and
+click-to-attack depends on that meaning. Ties break on uid everywhere — a telegraph that
+flickers between two equally good tiles is unreadable even though each frame is correct.
+**The feel layer** (v17) — `anim.js` reads `state.log` rather than being called by
+`combat.js` (which stays pure and bare-node tested) and owns the only rAF loop, stopping
+itself when nothing is mid-clip. Movement tweens in fractional TILES, not pixels: `toScreen`
+is linear in (gx,gy) so it is identical and keeps the file free of layout. `audio.js` is the
+first sound this game had — synthesised, every voice through one master gain so mute really
+mutes. The hit flash REDRAWS the sprite in `lighter` composite rather than painting a white
+rect, which clips it to the silhouette instead of a glowing box.
+**Art is real casting-sheet sprites now, not placeholders** — `art-src/sprites/` is the
+RUNTIME path (`units.json` points `sprite`/`portrait` there), which is why a deploy must
+carry it; CLAUDE.md's "a deploy omits `art-src/`" rule is written for eeri, where art-src is
+source. `art-src/reference/` (20MB) is source material and stays behind.
+**`turf/tools/spritecheck.py` is the mechanical source of truth for sprite QA** (PR #419's
+Sprite Factory owns the state/UI). Thresholds are calibrated against the real 28-frame cast
+set, not guessed: anything legitimately different tops out at 0.841 IoU, so `DUP_IOU` is
+0.86. Commands: `frames` / `pairs` / `cycle` / `move` / `zoom` / `silhouette` / `facing` /
+`vocab`. **The lesson worth carrying: no similarity metric separates a pose change from a
+camera change.** A regenerated attack pair passed every IoU check and was still wrong — both
+frames had rotated to the near-profile Bible §5 forbids, and the rotation *improved* the
+score. Any auto-approve keyed on IoU will pass profile art; direction stays a human gate.
+`render-frames.mjs` renders frames from a rigged GLB at the board's own projection (45° yaw,
+30° elevation, derived from TILE_W 32 × TILE_H 16) — the Meshy path, and structurally immune
+to the duplicate-half-cycle failure since you cannot get a duplicate from sampling one curve.
+No `GEMINI_API_KEY`/`MESHY_API_KEY` in the environment (`node scripts/assets.mjs doctor`
+confirms), so nothing can be generated here — validator and recipe work only.
 Hub entry: `hub/games.js` id `turf`, marquee `backlot` in `hub/art.js` (a cropped
 foreground operator rim-lit in the cabinet's own cold accent against a sodium-lit
 Nordic block, per the marquee-as-cover rule the rest of the arcade follows) — accent
@@ -1236,21 +1274,31 @@ sudsjack/       # Suds Jack — earlier tube-collection rebuild, SET DOWN
     palette.js  # soap: everything you want is cold and blooms, everything else is warm
   test/
     smoke.cjs   # 25 checks, driven off game state rather than the clock
-turf/           # TURF — grid tactics, Milestone 1 feel-test. Read GDD.md first
+turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
   GDD.md        # the owner's composite design doc
   PRODUCTION_PIPELINE.md # asset/data pipeline the GDD's assumptions were resolved against
   VERSIONS.md
-  data/         # units/weapons/enemies/encounters — everything data-driven, per pipeline §3
+  data/         # units/weapons/enemies/encounters/hazards/trinkets — all data-driven, pipeline §3
   js/
     grid.js     # the board: orthogonal coords, BFS move range, LOS + the two cover kinds
-    ai.js       # "move toward + attack nearest" and the live ITB-style telegraph
-    combat.js   # move+act economy, attack/knockback resolution, the enemy phase, win/loss
+    ai.js       # four behaviours + two focuses, and the live ITB-style telegraph
+    combat.js   # move+act economy, attack/knockback, hazards, trinkets, the enemy phase
     render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
-    input.js    # pointer-to-grid click/tap commands
+    input.js    # pointer/keyboard/pad — three methods, one decision path
+    anim.js     # the feel layer: log-driven tweens, hit flash, damage numbers, the only rAF
+    audio.js    # synthesised kit, every voice through one master gain so mute really mutes
     main.js     # boot, HUD, the enemy-phase pacing loop — the only DOM-touching file
     palette.js  # Nordic rain-and-sodium, deliberately desaturated next to the arcade's neon
+  art-src/
+    sprites/    # THE RUNTIME ART — units.json points here; a deploy must carry it
+    backgrounds/# per-encounter photo behind the transparent grid
+    reference/  # 20MB of source material — deliberately NOT deployed
+  tools/
+    spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
+    render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node: data integrity, grid primitives, turn economy, combat, AI, a full bot playthrough
+    smoke.mjs   # bare-node, 61 checks: data, grid, turn economy, combat, hazards,
+                #   trinkets, AI behaviours, and a bot playthrough of every encounter
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
   games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)
