@@ -494,12 +494,33 @@ function drawCursor(g, layout, state) {
   g.diamond(x, y, TILE_W - 12, TILE_H - 6, null, PAL.CURSOR);
 }
 
+// How many real pixels the canvas carries per board pixel. main.js sizes the
+// backing store; this reads the factor back off it so every draw call below
+// can keep working in plain board units and know nothing about it.
+//
+// WHY IT IS NOT 1. The character plates are 288px ILLUSTRATIONS (9-12k
+// colours — art-src/sprites/README.md is explicit that they were cut for
+// illustration fidelity, not retro pixel art). At SS=1 the board is ~320px
+// wide, a plate is nearest-neighbour downscaled 6.3x to SPRITE_H, and then
+// CSS magnifies that back up ~3x on a phone. The detail is thrown away once
+// and the loss is then enlarged — which is what "very pixelated" was.
+// Supersampling keeps the art's own resolution instead of discarding it.
+export const SUPERSAMPLE = 3;
+
 export function render(canvas, state, layout, anim = null) {
   lastRenderArgs = { canvas, state, layout, anim };
   const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false; // keep sprite scaling crisp, same as the tile art
+  const ss = canvas.width / layout.width || 1;
+  ctx.setTransform(ss, 0, 0, ss, 0, 0);
+  // Smoothing ON now that a downscale is gentle rather than brutal: at SS=3 a
+  // plate lands at ~138px instead of 46, so averaging reads as detail. Tried
+  // and rejected: a high-quality resample at SS=1 (LANCZOS-equivalent) rings
+  // badly against the plates' hard alpha edge and speckles colour along the
+  // silhouette — worse than the nearest-neighbour it replaced.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   const g = pen(ctx);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, layout.width, layout.height);
   // No opaque fill here any more — owner direction, 2026-08-31: "the grid
   // should be transparently laid on the backgrounds so that the players are
   // in the courtyard." The canvas is transparent by default once nothing
