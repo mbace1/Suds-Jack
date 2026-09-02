@@ -51,11 +51,22 @@ const fs = require('fs'); const path = require('path');
 
   // the pairwise distance in that 2-D signature; 0.05 of a body height is about
   // a hand's width, which is the smallest move worth calling a separate phase
+  const same = [];
   console.log('\npair'.padEnd(41), 'dist'.padStart(6), '  verdict');
   for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) {
     const a = rows[i], b = rows[j];
     const dist = Math.hypot(a.reach - b.reach, a.height - b.height);
     const label = `${a.f.replace(/\.png$/, '')} vs ${b.f.replace(/\.png$/, '')}`;
+    if (dist < 0.05) same.push(label);
     console.log(label.padEnd(40), dist.toFixed(3).padStart(6), '  ', dist < 0.05 ? 'SAME weapon position' : 'distinct');
+  }
+  // SAME weapon position is not a failure on its own. Two phases can hold the
+  // blade at the same height and still be different poses — rear melee
+  // anticipation is coiled and low, recover is upright, and reach scores them
+  // 0.036 apart while the silhouette scores 0.706. The weapon probe and the
+  // body probe answer different questions and an attack clip needs both.
+  if (same.length) {
+    console.log(`\n${same.length} pair(s) hold the weapon at the same place. That is not a verdict — check the BODY:`);
+    console.log(`  node phase.cjs <dir> <pairs.json> full`);
   }
 })();

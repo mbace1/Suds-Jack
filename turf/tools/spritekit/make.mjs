@@ -38,10 +38,11 @@ const CLIPS = {
   idle:    { build: 'build-idle.mjs',   phases: ['settle'], aspect: () => '2:3', norm: [], gate: 'none', breathe: true },
 };
 
-const [, , clipName, identity, refIn, outDir] = process.argv;
+const rear = process.argv.includes('--rear');
+const [, , clipName, identity, refIn, outDir] = process.argv.filter(a => a !== '--rear');
 const clip = CLIPS[clipName];
 if (!clip || !identity || !refIn || !outDir) {
-  console.log(`usage: node make.mjs <${Object.keys(CLIPS).join('|')}> <identity.txt> <reference.png> <outDir>`);
+  console.log(`usage: node make.mjs <${Object.keys(CLIPS).join('|')}> <identity.txt> <reference.png> <outDir> [--rear]`);
   process.exit(1);
 }
 const run = (cmd, args, env = {}) => execFileSync(cmd, args, { stdio: 'inherit', env: { ...process.env, NODE_PATH, ...env } });
@@ -53,6 +54,9 @@ for (const d of [outDir, raw, cut]) mkdirSync(d, { recursive: true });
 // An attack clip takes a MIRRORED reference. Facing is set by the reference
 // image, not by the prompt: a weapon carried on the character's screen-left
 // drags the whole body round with it and no facing lock in words beats it.
+// --rear expects a REAR reference image. Rear is a separate generation, never a
+// flipped front (Bible 15), and that applies to the reference as much as to the
+// frames — a flipped front reference shows a face that must not be visible.
 let ref = refIn;
 if (clip.mirrorRef) {
   ref = join(outDir, '_ref-mirrored.png');
@@ -61,7 +65,7 @@ if (clip.mirrorRef) {
 
 clip.phases.forEach((p, i) => {
   const prompt = join(raw, `${p}.txt`);
-  execFileSync(process.execPath, [resolve(HERE, clip.build), identity, p],
+  execFileSync(process.execPath, [resolve(HERE, clip.build), identity, p, ...(rear ? ['--rear'] : [])],
     { stdio: ['ignore', openSync(prompt, 'w'), 'inherit'] });
   node('gen.mjs', [prompt, join(raw, `${p}.png`), ref], { ASPECT: clip.aspect(p) });
   run(process.execPath, [CUT, 'key', join(raw, `${p}.png`), join(raw, `${p}_k.png`)]);
@@ -75,7 +79,13 @@ if (clip.breathe) {
   node('breathe.cjs', [join(cut, frames[0]), outDir, '2', '8']);
 } else {
   node('normalise.cjs', [cut, outDir, ...frames, ...clip.norm]);
-  if (clip.gate === 'reach') node('reach.cjs', [outDir, ...frames]);
+  if (clip.gate === 'reach') {
+    node('reach.cjs', [outDir, ...frames]);
+    // an attack clip still needs its scale and ground line checked, and
+    // --no-scale is right here for the same reason --origin-only is: the
+    // weapon swings through the top-of-ink band and is measured as head
+    node('drift.cjs', [outDir, ...frames, '--no-scale', '--no-rhythm']);
+  }
   if (clip.gate === 'phase') node('drift.cjs', [outDir, ...frames, ...(clip.gateArgs || [])]);
 }
 

@@ -173,6 +173,50 @@ back leg reaches further right than the gun he has pulled in. It still
 separates the phases, but read the number as *where the silhouette's extremity
 is*, not as *where the weapon is*, and look at the frames.
 
+## Rear fails wherever the pose text names the face
+
+Every builder takes `--rear`, and `make.mjs` passes it through. Locomotion and
+melee rear both worked first try. The reaction set did not, and the reason is
+worth knowing before writing any new pose text.
+
+Three of eight rear frames came back **facing the viewer** — `impact`, `recoil`
+and `catch`, the three whose pose text is written around *her chin lifting*,
+*chin high* and *eyes*. A rear view and a named face are a contradiction, and
+the model resolved it the way it always resolves a contradiction: by dropping
+one clause. It turned her round so the face it had been told about could be
+seen. The two down phases had the matching fault, landing her face **up**.
+
+The fix is not to strip the face out of the pose text — a reaction genuinely is
+described by what the head does. It is to **tell the rear view how to read
+it**:
+
+> READ THE POSE BELOW FROM BEHIND. It describes a reaction in terms of her
+> chin, her eyes and her chest because that is how a reaction is described —
+> but from this angle none of those are in the picture. Where it says her chin
+> lifts, draw the back of her head tipping back and her hair swinging. Where it
+> says her chest, draw her shoulder blades and her spine. Do NOT turn her round
+> to face the viewer so that those things can be seen.
+
+Plus, for a down pose, naming what IS uppermost: the back of the jacket, the
+hair spread out, and **the soles of the boots**. All five re-rolled frames came
+back correct first try.
+
+The general rule: **a rear view needs a translation clause for any pose
+vocabulary that only exists on the front.** Legs and weapons do not need one —
+a knee and a blade look like themselves from any angle — which is why
+locomotion and melee never hit this.
+
+## Two gates, two questions, on every attack
+
+`reach.cjs` reporting SAME weapon position is **not a verdict**. Rear melee
+`anticipation` and `recover` both hold the blade high — 0.036 apart on the
+weapon — and are plainly different poses: one is coiled and low, the other
+upright. The silhouette scores them 0.706.
+
+So the weapon probe and the body probe answer different questions and an attack
+clip needs both. `reach.cjs` now says so when it finds a matched pair, and
+`make.mjs` runs `drift.cjs` after it so scale and ground line are checked too.
+
 ## Honest limits
 
 - These metrics catch duplicates, mirrors, drift and flat cycles. They cannot

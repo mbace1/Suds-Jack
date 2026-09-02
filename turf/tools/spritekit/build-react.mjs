@@ -55,15 +55,26 @@ const PHASES = {
 };
 
 const [, , identityFile, phase] = process.argv;
+const rear = process.argv.includes('--rear');
 if (!PHASES[phase]) { console.error(`phase must be one of: ${Object.keys(PHASES).join(', ')}`); process.exit(1); }
 const identity = readFileSync(identityFile, 'utf8').trim();
 
 // The down phases are lying on the ground, so the standing "angled toward the
 // lower-right" facing lock does not apply to them and reads as a contradiction.
 const DOWN = new Set(['fall', 'ko_impact', 'settled']);
+// A body lying face-down is the rear view of a down pose — the camera has not
+// moved, she has. So the down phases take a "face-down" clause rather than the
+// standing rear clause, which would otherwise read as a contradiction against
+// "lying along the bottom edge".
 const VIEW = DOWN.has(phase)
-  ? `tactical isometric, looking down at her from above and slightly to the side, the same three-quarter angle the rest of the set is drawn at. She is on the ground, so she is seen from above rather than from the front.`
-  : `tactical isometric front diagonal. Her body is angled toward the lower-right of the picture, the same way as in the attached reference. Not a flat side-on profile, not a straight-on front view. Do not flip or mirror her.`;
+  ? (rear
+      ? `tactical isometric, looking down at her from above and slightly to the side, the same three-quarter angle the rest of the set is drawn at. She has landed FACE DOWN, so what is uppermost is the BACK of her jacket: we see the back of the jacket, the back of her head and her hair spread out, and the SOLES of her boots. Her face is pressed into the ground and is NOT VISIBLE anywhere in this picture. She is not lying on her back and she is not looking upward.`
+      : `tactical isometric, looking down at her from above and slightly to the side, the same three-quarter angle the rest of the set is drawn at. She is on the ground, so she is seen from above rather than from the front.`)
+  : (rear
+      ? `tactical isometric REAR diagonal. She is seen FROM BEHIND, facing away from the viewer, angled toward the upper-left of the picture. We see the BACK of her jacket and the back of her head. Her face is NOT VISIBLE and must not be drawn.
+
+READ THE POSE BELOW FROM BEHIND. It describes a reaction in terms of her chin, her eyes and her chest because that is how a reaction is described — but from this angle none of those are in the picture. Where it says her chin lifts or her head goes back, draw the back of her head tipping back and her hair swinging. Where it says her chest, draw her shoulder blades and her spine. Do NOT turn her round to face the viewer so that those things can be seen.`
+      : `tactical isometric front diagonal. Her body is angled toward the lower-right of the picture, the same way as in the attached reference. Not a flat side-on profile, not a straight-on front view. Do not flip or mirror her.`);
 
 process.stdout.write(`A single pixel-art character sprite for a tactical isometric game.
 
