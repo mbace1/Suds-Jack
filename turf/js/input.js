@@ -4,12 +4,12 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=21';
+import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=22';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit, useAbility, previewAttack, reloadUnit,
   firingOptions, attackFrom,
-} from './combat.js?v=18';
+} from './combat.js?v=19';
 import { abilityTargets, findAbility } from './abilities.js?v=2';
 import { key } from './grid.js?v=4';
 import { watchPad } from '../../hub/pad.js?v=9';

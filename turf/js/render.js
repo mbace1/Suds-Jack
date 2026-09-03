@@ -3,9 +3,10 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=10';
+import { PAL } from './palette.js?v=11';
 import { key } from './grid.js?v=4';
 import { magOf, roundsLeft } from './ammo.js?v=2';
+import { incomingArrivals } from './combat.js?v=19';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // The real on-board sprite height (drawUnitSprite) — taller than the old
@@ -680,6 +681,48 @@ function drawForecasts(g, layout, state) {
   }
 }
 
+// Where the next rivals are coming in, marked a round before they land. A
+// spawn the player could not see coming would break the promise the rest of
+// this board keeps — so the tile is drawn, the arrival is named, and the
+// round it lands on is on the marker.
+function drawArrivals(g, layout, state) {
+  const due = incomingArrivals(state);
+  if (!due.length) return;
+  for (const r of due) {
+    const p = toScreen(layout, r.x, r.y);
+    g.diamond(p.x, p.y, TILE_W - 4, TILE_H - 2, PAL.ARRIVAL, PAL.ARRIVAL_EDGE, 2);
+    // A downward chevron: something is dropping in here.
+    g.line(p.x - 5, p.y - 6, p.x, p.y - 1, PAL.ARRIVAL_EDGE, null, 2);
+    g.line(p.x + 5, p.y - 6, p.x, p.y - 1, PAL.ARRIVAL_EDGE, null, 2);
+  }
+}
+
+// The arrivals' labels, over the bodies — same split as the aim labels, and
+// for the same reason a screenshot taught: a marker under a sprite is a
+// marker nobody reads.
+function drawArrivalLabels(g, layout, state) {
+  const due = incomingArrivals(state);
+  if (!due.length) return;
+  for (const r of due) {
+    const p = toScreen(layout, r.x, r.y);
+    const def = (state.enemyDefs || []).find(e => e.id === r.enemy);
+    const wait = r.round - state.round;
+    const label = wait <= 0 ? `${def ? def.name : 'RIVAL'} ARRIVING` : `${def ? def.name : 'RIVAL'} · NEXT ROUND`;
+    g.ctx.save();
+    g.ctx.font = 'bold 8px monospace';
+    g.ctx.textAlign = 'center';
+    const w = g.ctx.measureText(label).width + 6;
+    const y = p.y - TILE_H - 4;
+    g.ctx.fillStyle = 'rgba(7,8,11,0.9)';
+    g.ctx.fillRect(p.x - w / 2, y - 8, w, 11);
+    g.ctx.strokeStyle = PAL.ARRIVAL_EDGE; g.ctx.lineWidth = 1;
+    g.ctx.strokeRect(p.x - w / 2, y - 8, w, 11);
+    g.ctx.fillStyle = PAL.ARRIVAL_EDGE;
+    g.ctx.fillText(label, p.x, y);
+    g.ctx.restore();
+  }
+}
+
 function drawTelegraph(g, layout, state) {
   for (const [uid, intent] of state.telegraph) {
     const enemy = state.units.find(u => u.uid === uid);
@@ -784,6 +827,7 @@ export function render(canvas, state, layout, anim = null) {
   // different questions the player asks in that order.
   drawHazards(g, layout, state.hazards);
   drawExtraction(g, layout, state);
+  drawArrivals(g, layout, state);
   drawObjectiveMark(g, layout, state);
   drawHighlights(g, layout, state);
   drawAimTiles(g, layout, state);
@@ -817,6 +861,7 @@ export function render(canvas, state, layout, anim = null) {
     drawTelegraph(g, layout, state);
     drawForecasts(g, layout, state);
     drawAimLabels(g, layout, state);
+    drawArrivalLabels(g, layout, state);
     drawOverwatch(g, layout, state);
     drawCursor(g, layout, state);
   }

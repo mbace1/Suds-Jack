@@ -43,6 +43,11 @@ export const PAL = {
   // now. Warm and bright against everything else on screen, because during
   // the enemy phase this is the only thing worth looking at.
   ACTING: '#ffc36b',
+  // An arrival due next round. The enemy colour, because that is what is
+  // coming — but hollow and pulsing rather than solid, since nothing is
+  // standing there yet.
+  ARRIVAL: 'rgba(201,102,63,0.22)',
+  ARRIVAL_EDGE: 'rgba(240,140,90,0.9)',
   // Ammo. Cool and neutral so it cannot be mistaken for the warm momentum
   // pips sitting a few pixels away — they are different resources and the
   // whole point of showing both is that a glance tells them apart.

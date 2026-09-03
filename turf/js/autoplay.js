@@ -17,7 +17,7 @@
 // telegraph the player has to be able to read; this plans a turn to win it.
 // Sharing them would make one of the two worse.
 import { manhattan, hasLOS, coverSoftens, key } from './grid.js?v=4';
-import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility, reloadUnit } from './combat.js?v=18';
+import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility, reloadUnit } from './combat.js?v=19';
 import { needsReload } from './ammo.js?v=2';
 import { abilitiesFor, canAfford, abilityTargets } from './abilities.js?v=2';
 

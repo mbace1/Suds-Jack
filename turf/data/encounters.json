@@ -136,7 +136,22 @@
       "win": {
         "mode": "survive",
         "rounds": 6
-      }
+      },
+      "reinforcements": [
+        {
+          "round": 3,
+          "enemy": "grunt_curt",
+          "x": 5,
+          "y": 0
+        },
+        {
+          "round": 5,
+          "enemy": "grunt_tanner",
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "_reinforceNote": "Rivals arriving part-way. Announced a round early and landing at the top of the player's turn, so they are on the board and in the telegraph before anyone is asked to play around them \u2014 a spawn nobody could see coming would break the promise the rest of this board keeps."
     },
     {
       "id": "loading-dock",
@@ -456,16 +471,6 @@
           "enemy": "grunt_runt",
           "x": 4,
           "y": 0
-        },
-        {
-          "enemy": "grunt_track",
-          "x": 2,
-          "y": 0
-        },
-        {
-          "enemy": "grunt_beard",
-          "x": 6,
-          "y": 0
         }
       ],
       "cover": {
@@ -548,7 +553,22 @@
       "win": {
         "mode": "survive",
         "rounds": 7
-      }
+      },
+      "reinforcements": [
+        {
+          "round": 3,
+          "enemy": "grunt_track",
+          "x": 2,
+          "y": 0
+        },
+        {
+          "round": 5,
+          "enemy": "grunt_beard",
+          "x": 6,
+          "y": 0
+        }
+      ],
+      "_reinforceNote": "Rivals arriving part-way. Announced a round early and landing at the top of the player's turn, so they are on the board and in the telegraph before anyone is asked to play around them \u2014 a spawn nobody could see coming would break the promise the rest of this board keeps. SAME ROSTER as before v31, split across time rather than all standing there at round one: 27% to 32%, so staging the pressure made the hardest map slightly FAIRER without making it emptier. Arrival timing is sharp here \u2014 moving both arrivals one round later reads 87%, so this is a curve to measure, not to nudge by eye."
     },
     {
       "id": "the-yard",
