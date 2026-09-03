@@ -1,10 +1,38 @@
 # Street furniture — cover and dressing for the board
 
-Eight props matched to the owner's own sheet
-(`turf/art-src/reference/props-street.png`): hydrant, dumpster, tyre stack,
-street lamp, oil-drum brazier, utility cabinet, shopping trolley, chain-link
-fence panel. One `.spec.txt` each — the object description — plus the shared
-style block in `tools/spritekit/build-prop.mjs`.
+Sixteen props matched to the owner's own sheet
+(`turf/art-src/reference/props-street.png`). One `.spec.txt` each — the object
+description — plus the shared style block in `tools/spritekit/build-prop.mjs`.
+
+```
+street dressing   hydrant · dumpster · tyres · lamp · brazier · cabinet
+                  trolley · fence
+hard cover        sandbags · skip · blocks · cylinders · generator · pipes
+                  tank · carwreck
+```
+
+The second batch is deliberately all **solid cover** at the owner's direction —
+fewer poles and thin verticals, more things a unit can get behind.
+
+## Magenta is the working format, transparency is the asset
+
+The shipped PNGs are keyed to transparency, because that is what the game
+needs. `_sheet.png` and `_sheet-hard.png` are on **magenta**, because that is
+the format this project hands art around in — every reference the owner sends
+is a magenta sheet, and a set shown on any other background cannot be laid
+beside them. `contact.cjs` makes them.
+
+## Every prop is 192x288 and that is a trap
+
+`fitclip` normalises each asset to its own cell for fidelity, so **a fire
+hydrant and a burnt-out car are identical pixel sizes on disk**. Nothing in the
+file says how big the thing is. `props.json` is the seam: `heightM` per object,
+plus footprint in tiles and a cover class. A person is 1.8m and draws at
+`UNIT_H = 18px` on a 32x16 tile (`js/render.js`), so `px = 18 * heightM / 1.8`.
+
+`_sheet-true-scale.png` is the same sixteen drawn from those numbers —
+`contact.cjs --scale props.json` — and it is the sheet to look at when judging
+whether the set hangs together as objects rather than as pictures.
 
 **These are not the character pipeline and the rendering block says so.** The
 cast plates are pixel-art-shaped; this sheet is INKED ILLUSTRATION, measured at

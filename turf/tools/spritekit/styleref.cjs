@@ -22,15 +22,23 @@ const { load, pixels } = require(path.join(__dirname, 'img.cjs'));
 const TOL = { ink: 12, lum: 14, sat: 14 };   // absolute points, judged by eye
                                              // against sets that do and do not match
 //
-// KNOWN CONFOUND, and it is the object rather than the art. An asset that is
-// intrinsically dark or made mostly of thin lines reads as "over-inked" no
-// matter how well it is drawn: black rubber tyres came in at 66.9%, a wire
-// shopping trolley at 62.4% and a chain-link fence panel at 59.0%, all against
-// a 46.8% reference, and all three are correct pictures. The number is only
-// meaningful for an asset with real solid surfaces — a bin, a cabinet, a
-// barrier. Read a flag on an open-mesh or black object as "expected", and
-// spend the re-roll on something like the dumpster instead, which was 28.9%
-// and genuinely pale.
+// THIS IS A SET-LEVEL METRIC. Read the MEAN at the bottom, not the per-asset
+// verdicts, because per asset it measures MATERIAL rather than craft and is
+// wrong in both directions:
+//
+//   too dark / over-inked   black rubber tyres 66.9%, a wire shopping trolley
+//                           62.4%, chain-link fence 59.0%, a gas-bottle cage
+//                           62.9% — all correct pictures, all just dark or
+//                           made of thin lines
+//   too pale / washed out   raw concrete pipes 39.5%, hessian sandbags 33.3%,
+//                           a white plastic IBC tank 32.1% — again the
+//                           material, not the drawing
+//
+// What it catches reliably is a SYSTEMATIC miss across a whole batch, which is
+// the failure it was written for: the first street set averaged 23.7% ink
+// against a 46.8% reference and every asset in it was wrong the same way. The
+// corrected set averages 43.5%. Judge a batch on that number; judge an
+// individual asset with your eyes.
 
 async function measure(file, keyed) {
   const o = await load(file); const d = pixels(o);
@@ -59,9 +67,9 @@ async function measure(file, keyed) {
   console.log(`reference  ${path.basename(refFile)}`);
   console.log(`  ink ${ref.ink.toFixed(1)}%   luminance ${ref.lum.toFixed(0)}   saturation ${ref.sat.toFixed(0)}%\n`);
   console.log('asset'.padEnd(24), 'ink'.padStart(7), 'lum'.padStart(6), 'sat'.padStart(6), '  verdict');
-  let bad = 0;
+  let bad = 0; const stats = [];
   for (const f of files) {
-    const m = await measure(f, true);
+    const m = await measure(f, true); stats.push(m);
     const off = [];
     if (Math.abs(m.ink - ref.ink) > TOL.ink) off.push(m.ink < ref.ink ? 'under-inked' : 'over-inked');
     if (Math.abs(m.lum - ref.lum) > TOL.lum) off.push(m.lum > ref.lum ? 'too pale' : 'too dark');
@@ -71,6 +79,13 @@ async function measure(file, keyed) {
       (m.ink.toFixed(1) + '%').padStart(7), m.lum.toFixed(0).padStart(6), (m.sat.toFixed(0) + '%').padStart(6),
       '  ' + (off.length ? off.join(', ') : 'matches'));
   }
-  console.log(`\n${files.length} assets, ${bad} off-style`);
-  console.log('This measures the LOOK, not whether the object is any good. A well-lit\nbin with the right numbers can still be the wrong bin.');
+  const mean = k => stats.reduce((a, m) => a + m[k], 0) / stats.length;
+  const dInk = mean('ink') - ref.ink, dLum = mean('lum') - ref.lum, dSat = mean('sat') - ref.sat;
+  console.log(`\nSET MEAN   ink ${mean('ink').toFixed(1)}%   luminance ${mean('lum').toFixed(0)}   saturation ${mean('sat').toFixed(0)}%`);
+  console.log(`vs REFERENCE   ${dInk >= 0 ? '+' : ''}${dInk.toFixed(1)}   ${dLum >= 0 ? '+' : ''}${dLum.toFixed(0)}   ${dSat >= 0 ? '+' : ''}${dSat.toFixed(0)}`);
+  const off = Math.abs(dInk) > TOL.ink || Math.abs(dLum) > TOL.lum || Math.abs(dSat) > TOL.sat;
+  console.log(off ? '\nTHE SET IS OFF-STYLE as a whole — that is the reading to act on.'
+                  : '\nThe set matches as a whole. The per-asset flags above are material, not craft.');
+  console.log(`(${bad} of ${files.length} assets flagged individually — see the note in this file\n before re-rolling any of them.)`);
+  console.log('And this measures the LOOK, never whether the object is any good: a\nwell-lit bin with the right numbers can still be the wrong bin.');
 })();
