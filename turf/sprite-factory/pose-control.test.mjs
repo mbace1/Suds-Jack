@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPose, assertDirection } from './pose-control.mjs';
+import { buildPose, assertDirection, poseIsIsometric } from './pose-control.mjs';
 import { buildComfyJob } from './comfy-job.mjs';
 
 test('only authored isometric directions are legal',()=>{
@@ -8,6 +8,28 @@ test('only authored isometric directions are legal',()=>{
   assert.doesNotThrow(()=>assertDirection('rear_iso'));
   assert.throws(()=>assertDirection('side'),/forbidden direction/);
   assert.throws(()=>assertDirection('profile'),/forbidden direction/);
+});
+
+test('front and rear poses are structurally three-quarter isometric',()=>{
+  for(const direction of ['front_iso','rear_iso']){
+    for(const frame of [1,4,7,10]){
+      const p=buildPose({direction,action:'move',frame});
+      assert.equal(p.camera.type,'tactical_three_quarter_isometric');
+      assert.equal(p.camera.sideProfileAllowed,false);
+      assert.equal(poseIsIsometric(p),true);
+      assert.ok(Math.abs(p.joints.lShoulder[1]-p.joints.rShoulder[1])>=5);
+      assert.ok(Math.abs(p.joints.lHip[1]-p.joints.rHip[1])>=4);
+    }
+  }
+});
+
+test('front and rear reverse near/far body depth instead of becoming profiles',()=>{
+  const front=buildPose({direction:'front_iso',action:'idle',frame:1});
+  const rear=buildPose({direction:'rear_iso',action:'idle',frame:1});
+  assert.equal(front.camera.nearSide,'right');
+  assert.equal(rear.camera.nearSide,'left');
+  assert.notDeepEqual(front.joints.lShoulder,rear.joints.lShoulder);
+  assert.notDeepEqual(front.joints.rShoulder,rear.joints.rShoulder);
 });
 
 test('move opposite contacts own opposite legs',()=>{
