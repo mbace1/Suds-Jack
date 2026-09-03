@@ -8,6 +8,68 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v30 — 2026-09-03
+**The level-up pick — where the Mewgenics loop actually lands.** `awardXp`
+had levelled operators since v20 and paid HP for it, and that was all a
+level was: a stat curve. GDD §5.1 says *"every level-up spends a skill slot
+on any line"*, and until now there was nothing to spend it on.
+
+**A level grants a SLOT; a slot buys ONE of THREE.** The slot is granted in
+`awardXp` and spent by `learnSkill`, deliberately in two places: the pick is
+a decision the player makes on the result screen, and an engine that picked
+for them would be the class box coming back in through the side door. The
+three are drawn from the whole pool, any line, minus what the operator
+already holds — **including skills the current weapon cannot use**, because
+§5.1's payoff is a build that is inert now and goes live when a gun drops,
+and an offer that only ever showed what works today could never make that
+build. Such a card is dashed and says *inert with this weapon*.
+
+**Offers come from the encounter's own rng**, so the same seed always shows
+the same three: a replayable offer is a testable one, and a player who
+reloads to reroll is a player the design has already lost. An offer is
+stable across re-renders and a fresh three is drawn only once a slot is
+spent.
+
+**The pick is made BEFORE the next block, never during one.** Continue is
+disabled while a slot is unspent and says how many are left; a slot carried
+into a fight would be a decision the player forgot they had. Under AUTO the
+first card is taken automatically, so an unattended run never stalls on a
+screen nobody is looking at. Progress persists per run in `crewProgress`
+(kit plus unspent slots), and the saved kit REPLACES the def's starting
+loadout on restore rather than adding to it — the starting two are already
+the first two entries of what was saved.
+
+**The kit is capped at four.** Beyond that the phone's action row wraps and
+the kit stops being readable at a glance; a level past the cap still pays
+HP. `learnSkill` refuses anything not on the offer: the three on screen are
+the rule, not a suggestion, and a crafted call reaching past them would make
+them one.
+
+**Pace, honestly.** `xpToNext` is 20 + 15 per level and a win pays 10 + 8
+per kill, so an operator with a kill or two levels after the first or second
+block and reaches three or four skills by the end of the seven — two or
+three picks per run. Whether that is the right pace is a playtest question.
+
+**One bug caught in the browser check, not by a gate**: after the pick,
+Continue was enabled but still read "Pick 1 skill first" — the label was
+only ever overwritten, never restored. It is copied before being replaced
+now and put back when nothing is pending.
+
+**Layout note.** Three cards across a 390px phone wrap their blurbs into
+tall narrow columns. It fits without scrolling and every word is readable,
+but stacking them on the narrowest screens is worth a look once someone has
+picked a few for real.
+
+- `test/smoke.mjs` is 121 checks (was 114): a level grants a slot without
+  the engine spending it, an offer is three-from-anywhere-not-held and
+  stable, the same seed offers the same three, learning spends the slot and
+  keeps the starting kit and draws fresh next time, no slot / duplicate /
+  off-offer all refuse without spending, the cap holds and a level past it
+  still pays, and a knife carrier is offered a gun skill.
+- `test/balance.mjs` unchanged and green on all seven — the pick happens
+  between encounters and the gate plays them singly.
+- Tokens: `combat` v18, `input` v17, `autoplay` v6, `main` v28.
+
 ## v29 — 2026-09-03
 **Owner: "I never said that only one type of skills class is available to 1
 unit. treat them like categories."** Correct, and `GDD.md` §5.1 already said
