@@ -16,8 +16,6 @@ try {
   await page.goto('http://127.0.0.1:4173/flashprince/', { waitUntil: 'networkidle' });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-7');
 
-  // Scene 2 part 1: clear the authored three-tile gap and prove the running
-  // landing on the lower right platform before attempting the raised ledge.
   await page.keyboard.press('Digit2');
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => {
@@ -30,8 +28,6 @@ try {
     return d?.visited?.includes('landRun') && d.x >= 148 && d.grounded;
   }, null, { timeout: 5000 });
 
-  // Scene 2 part 2: continue the run toward the 32px raised platform. Take off
-  // near x=190 so the hands meet the x=224/y=96 lip instead of the wall.
   await page.waitForFunction(() => {
     const d = globalThis.__flashPrinceMovement;
     return d?.state === 'run' && d.x >= 190;
@@ -40,8 +36,9 @@ try {
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('ledgeCatch'), null, { timeout: 5000 });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
   await page.keyboard.up('ArrowRight');
-  await page.keyboard.press('ArrowUp');
-  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('pullUp'), null, { timeout: 2000 });
+  await page.keyboard.down('ArrowUp');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'pullUp', null, { timeout: 2000 });
+  await page.keyboard.up('ArrowUp');
   await page.waitForFunction(() => {
     const d = globalThis.__flashPrinceMovement;
     return d && d.state === 'stand' && d.grounded && d.y <= 96.1;
@@ -58,7 +55,6 @@ try {
   assert.ok(ledge.x >= 224, `pull-up must carry the hero onto the raised platform, got x=${ledge.x}`);
   assert.ok(ledge.y <= 96.1, `pull-up must finish at the raised lip height, got y=${ledge.y}`);
 
-  // Scene 4 regression remains part of every browser movement pass.
   await page.keyboard.press('Digit4');
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'lowMantle', null, { timeout: 7000 });
