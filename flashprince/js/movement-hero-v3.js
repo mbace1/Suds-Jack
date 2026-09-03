@@ -70,6 +70,23 @@ export class MovementHeroV3 extends MovementHero {
     super.go(state, f);
   }
 
+  // The base low-mantle root is collision-blocked by the step being climbed.
+  // On the playable V3 path, author the whole 16 px rise + 12 px carry as one
+  // committed motion after canLowMantle() has already proved head clearance.
+  beginLowMantle() {
+    this.lowStartX = this.x;
+    this.lowStartY = this.y;
+    this.lowTargetX = this.x + this.face * 12;
+    this.go('lowMantle');
+  }
+
+  lowMantleFrame() {
+    const t = Math.min(1, this.f / 22);
+    const smooth = t * t * (3 - 2 * t);
+    this.x = this.lowStartX + (this.lowTargetX - this.lowStartX) * smooth;
+    this.y = this.lowStartY - 16 * smooth;
+  }
+
   update(world, input, game) {
     this.stateMachine?.tick();
     return super.update(world, input, game);
