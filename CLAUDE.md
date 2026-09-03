@@ -385,6 +385,17 @@ anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves 
 (+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
 `DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
 are 23 points apart), not a dial.
+**Reinforcements** (v31 — `MST_PARITY.md` §2.4). Rivals arrive on a schedule, **announced a
+round early** (`ARRIVAL_NOTICE`, the tile marked and the rival named on it) and landing at
+the **top of the player's turn** — mid-phase would let one act on the turn it appeared. An
+arrival never lands on an occupied tile (nearest free, ties on tile key), and **clearing the
+board is no longer automatically a win** while more are due: an empty board with arrivals
+pending is a lull, and handing the win out there skips the half of the encounter the
+schedule exists to provide. **The finding is that the mechanic is for STAGING pressure, not
+adding it**: bolting two extra rivals onto `underpass`'s five took the hardest map from 27%
+to **0%**, while splitting the SAME five into three-plus-two-arriving reads **32%** —
+slightly fairer without being emptier. Arrival timing is a cliff (both arrivals one round
+later reads 87%), so the schedule is measured, never nudged by eye.
 **The level-up pick** (v30) — where the Mewgenics loop lands. `awardXp` grants a **slot**
 per level and `learnSkill` spends it, in two places on purpose: the pick is the player's, on
 the result screen, and an engine that picked for them would be the class box back through
@@ -1462,7 +1473,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 121 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 127 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter

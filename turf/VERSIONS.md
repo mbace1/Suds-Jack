@@ -8,6 +8,65 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v31 — 2026-09-03
+**Reinforcements** — `MST_PARITY.md` §2.4, and the owner's note when it was
+first listed: *"that's great for later.. it will make longer survive rounds
+work."* It does, and the reason is the problem it fixes: on a survive map,
+wiping the opening roster meant coasting for three rounds with an empty
+board while the objective still said HOLD. The countdown was the whole
+encounter once the fight was over.
+
+**An arrival is announced before it lands.** `ARRIVAL_NOTICE` is one round:
+the tile is marked, the rival is named on it (`Track · NEXT ROUND`), and it
+appears there on the round it said. A spawn nobody could see coming would
+break the promise every other system in this game keeps, and there is no
+version of "surprise reinforcements" that survives a full-information
+contract.
+
+**They land at the TOP of the player's turn**, not mid-enemy-phase. A rival
+that materialised during the phase would act on the turn it appeared, which
+is a spawn nobody could have played around even having seen it.
+
+**An arrival never lands on top of somebody.** Its declared tile if free,
+otherwise the nearest free one, ties broken on tile key so it is
+deterministic. A rival that quietly failed to show because an operator was
+standing on its square would be a promise the board made and did not keep.
+
+**Clearing the board is no longer automatically a win.** With rivals still
+due, an empty board is a lull rather than a victory — handing the win out
+there lets the player skip the half of the encounter the schedule exists to
+provide. `eliminate` and the "killing them all also wins" shortcut both now
+require the schedule to be empty too.
+
+**THE INTERESTING RESULT IS ON `underpass`.** Bolting two extra rivals onto
+its existing five took it from 27% to **0%** — the hardest map in the game
+does not have room for more bodies. So the roster was SPLIT instead: the
+same five, three at round one and two arriving at rounds 3 and 5. That reads
+**32%**, so staging the pressure made the hardest map slightly *fairer*
+without making it emptier, which is the mechanic doing exactly what it is
+for. `backlot` keeps its full opening roster and gains two arrivals on top:
+57% to 53%, still comfortably in band.
+
+**Arrival timing is a curve to measure, not to nudge by eye.** Moving both
+of `underpass`'s arrivals one round later reads **87%** — a 55-point swing
+for two rounds of delay. The numbers are in the encounter's own
+`_reinforceNote`.
+
+**A sweep of mine clobbered the roster and I caught it in the output.** The
+first `underpass` sweep invented five enemies and five positions rather than
+reading the encounter's own, so every cell measured a map that does not
+exist. Restored from git and re-run against the real spawns — the lesson
+being the one this log keeps relearning: tune against the gate, and against
+the real data.
+
+- `test/smoke.mjs` is 127 checks (was 121): the schedule surviving a boot
+  with nothing landed, an arrival marked a round early, landing on the round
+  it promised and into the player turn, never landing on an occupied tile,
+  an empty board with arrivals pending not being a win, and an unknown enemy
+  id being consumed rather than crashing or retrying forever.
+- `test/balance.mjs` green on all seven: 53 / 67 / 65 / 32 / 68 / 18 / 13.
+- Tokens: `combat` v19, `input` v18, `render` v22, `palette` v11, `main` v29.
+
 ## v30 — 2026-09-03
 **The level-up pick — where the Mewgenics loop actually lands.** `awardXp`
 had levelled operators since v20 and paid HP for it, and that was all a

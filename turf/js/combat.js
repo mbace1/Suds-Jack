@@ -62,6 +62,11 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     // shape). A Set of tile keys — empty for every other mode, so nothing
     // downstream needs to know which mode is running.
     extract: new Set((encounter.extract || []).map(([x, y]) => key(x, y))),
+    // Reinforcements: rivals that arrive part-way through, on a schedule the
+    // player can SEE coming (GDD §4's pressure curve, MST_PARITY §2.4). A
+    // copy, because arrivals are consumed as they land and an encounter def
+    // is shared across every boot of it.
+    reinforcements: (encounter.reinforcements || []).map((r, i) => ({ ...r, rid: `r${i}` })),
     // Units holding fire (the Overwatch ability). A Set of uids, emptied at
     // the top of every player turn — overwatch is a posture you take for one
     // enemy phase, never a standing order you can forget you gave.
@@ -81,6 +86,7 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     result: null,
     rng: makeRng(seed),
     weaponDefs, // so moveUnit can look up a dropped weapon's def by id
+    enemyDefs,  // so landArrivals can build a rival mid-encounter
     trinketDefs,
     drops: [], // { x, y, weaponId } — GDD §9's "simple weapon-swap loot drops"
   };
@@ -823,6 +829,11 @@ export function stepEnemyPhase(state) {
   // held here was never triggered, and holding it into a turn the player is
   // about to spend moving would be a promise the board stopped showing.
   state.overwatch.clear();
+  // Reinforcements land at the TOP of the player's turn — on the board and
+  // in the telegraph before the player is asked to do anything about them.
+  // Landing them mid-enemy-phase would let a rival act on the turn it
+  // appeared, which is a spawn nobody could have played around.
+  landArrivals(state);
   // A survive objective is decided HERE and nowhere else: outlasting round N
   // is an event with no attack behind it, so without this call the win would
   // only be noticed the next time somebody happened to take damage.
@@ -851,6 +862,70 @@ export function stepEnemyPhase(state) {
 // Everything that can end an encounter, in one place. Each mode is a branch
 // rather than a subclass because `state.win` is DATA (GDD §3) — a new
 // objective is encounter JSON plus a clause here, never an engine rewrite.
+// ── reinforcements (MST_PARITY §2.4) ─────────────────────────
+// WHY. On a survive map, wiping the roster early meant coasting for three
+// rounds with an empty board — the objective said "hold" and the fight was
+// already over. Rivals arriving on a schedule turn a survive mission into a
+// rising threat instead of a countdown, which is what makes the longer round
+// counts worth having at all.
+//
+// THE CONTRACT IS THE SAME AS EVERY OTHER SYSTEM HERE: a spawn the player
+// could not see coming would break the full-information promise the whole
+// game is built on. So an arrival is announced a round EARLY — the tile is
+// marked, the enemy named — and lands on the round it said it would.
+export const ARRIVAL_NOTICE = 1;
+
+// What is due to land, and when. `pendingArrivals` is everything not yet
+// on the board; `incomingArrivals` is the subset the board should be
+// marking right now.
+export const pendingArrivals = state => (state.reinforcements || []).filter(r => !r.landed);
+export const incomingArrivals = state =>
+  pendingArrivals(state).filter(r => r.round - state.round <= ARRIVAL_NOTICE);
+
+// Where an arrival actually appears. Its declared tile if that is free,
+// otherwise the nearest free tile to it — a rival that simply failed to
+// arrive because somebody was standing on its square would be a promise the
+// board made and did not keep. Deterministic: nearest wins, ties on tile key.
+function arrivalTile(state, spot) {
+  const free = (x, y) =>
+    inBounds(state.grid, x, y) && !state.fullCover.has(key(x, y)) && !unitAt(state, x, y);
+  if (free(spot.x, spot.y)) return { x: spot.x, y: spot.y };
+  let best = null, bestD = Infinity;
+  for (let y = 0; y < state.grid.rows; y++) {
+    for (let x = 0; x < state.grid.cols; x++) {
+      if (!free(x, y)) continue;
+      const d = manhattan({ x, y }, spot);
+      if (d < bestD || (d === bestD && best && key(x, y) < key(best.x, best.y))) {
+        bestD = d; best = { x, y };
+      }
+    }
+  }
+  return best;
+}
+
+// Land everything due this round. Called at the top of the player's turn, so
+// an arrival is on the board — and in the telegraph — before the player is
+// asked to do anything about it, rather than materialising mid-enemy-phase
+// where it would act on the turn it appeared.
+export function landArrivals(state) {
+  const landed = [];
+  for (const r of pendingArrivals(state)) {
+    if (r.round > state.round) continue;
+    const def = state.enemyDefs.find(e => e.id === r.enemy);
+    if (!def) { r.landed = true; continue; } // unknown id is a content bug, not a crash
+    const tile = arrivalTile(state, r);
+    if (!tile) continue; // board full: try again next round rather than dropping it
+    const weapon = getWeapon(state, def.weapon);
+    const unit = makeUnit(`x${r.rid}`, def, weapon, 'enemy', tile);
+    state.units.push(unit);
+    r.landed = true;
+    landed.push({ uid: unit.uid, name: unit.name, x: tile.x, y: tile.y });
+    state.log.push({ type: 'arrive', uid: unit.uid, name: unit.name, x: tile.x, y: tile.y });
+  }
+  if (landed.length) planAllIntents(state);
+  return landed;
+}
+
 function checkWinLoss(state) {
   if (state.result) return;
   const win = state.win || { mode: 'eliminate' };
@@ -866,7 +941,13 @@ function checkWinLoss(state) {
   // them all also wins") because a player who has just wiped the board and
   // is then told to keep walking would rightly call it a bug — and on these
   // rosters it is never the easy route anyway.
-  if (!state.units.some(u => u.faction === 'enemy' && u.hp > 0)) { state.result = 'win'; return; }
+  // Clearing the block wins any mission — but only once the block is
+  // actually clear. With rivals still due to arrive, an empty board is a lull
+  // rather than a victory, and handing the win out there would let a player
+  // skip the half of the encounter the schedule exists to provide.
+  if (!state.units.some(u => u.faction === 'enemy' && u.hp > 0) && !pendingArrivals(state).length) {
+    state.result = 'win'; return;
+  }
 
   if (win.mode === 'survive' && state.round > win.rounds) { state.result = 'win'; return; }
 

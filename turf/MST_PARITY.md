@@ -42,6 +42,7 @@ an MST:
 | Position is the player's | **Firing positions** — a tap that would move you offers the tiles, each with its own odds |
 | Skill categories | Six **lines** (GDD §5.1); every loadout crosses two, and weapon-gated skills show inert rather than hidden |
 | A run is a build | **Level-up pick** — a slot buys one of three from any line, chosen before the next block |
+| Pressure over time | **Reinforcements** — rivals arrive on a schedule, announced a round early |
 
 The economy closes: you **move** to afford the thing you then **do**.
 
@@ -70,13 +71,12 @@ action and never the move — so an empty turn is a turn to reposition, which
 is the movement economy getting the empty turns it was competing with a free
 attack for. Enemies reload on the same rule and TELEGRAPH it.
 
-**2.4 — Reinforcements.** *(medium)*
-Fixes something real and currently ugly: on a survive map, wiping the roster
-early means coasting for three rounds with nothing on the board. MST spawns
-over the course of a mission. Arrivals announced a round ahead with the tile
-marked, which is exactly what this game's telegraph is for — a spawn the
-player could not see coming would break the contract everything else here
-is built on.
+**2.4 — DONE (v31).** Rivals arrive on a schedule, announced a round early
+and landing at the top of the player's turn. Clearing the board is not a win
+while more are due. The headline finding: bolting arrivals ONTO a full
+roster broke the hardest map (27% to 0%), while SPLITTING the same roster
+across time made it slightly fairer (32%) — the mechanic is for staging
+pressure, not for adding it.
 
 **2.5 — Destructible cover.** *(medium)*
 The board is fixed except for Barricade. A shotgun or a hammer breaking full
@@ -149,6 +149,9 @@ against PR #419; the frames themselves need an owner-side push request.
   `balance.mjs` had to learn the objective. Worth remembering before adding a
   third mode: a mode the bots cannot pursue is a mode nobody can balance.
 
+- **Arrival timing is a cliff.** Moving `underpass`'s two arrivals one round
+  later swings it from 32% to 87%. Treat the schedule as something to
+  measure, never to nudge by eye.
 - **Openings and Planted are never used by the auto-battler.** Barricade was
   in this list from v25 to v28 and now has a rule (2 uses across 420 runs, so
   barely); these two replace it. A gap in the bot is not evidence about the

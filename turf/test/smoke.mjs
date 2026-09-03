@@ -16,6 +16,7 @@ import {
   awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
   applyTrinkets, TRINKET_SHARE, reloadUnit, firingOptions, attackFrom,
   skillOffer, learnSkill, OFFER_SIZE, MAX_SKILLS,
+  landArrivals, pendingArrivals, incomingArrivals, ARRIVAL_NOTICE,
 } from '../js/combat.js';
 import {
   MOVE_CAP, EVADE_PER, DAMAGE_PER, addMomentum, clearMomentum, evasionOf,
@@ -38,6 +39,7 @@ const ABILITIES = readJson('abilities.json').abilities;
 const BACKLOT = ENCOUNTERS.find(e => e.id === 'backlot');
 const LOADING_DOCK = ENCOUNTERS.find(e => e.id === 'loading-dock');
 const CROSSING = ENCOUNTERS.find(e => e.id === 'the-crossing');
+const UNDERPASS = ENCOUNTERS.find(e => e.id === 'underpass');
 const DEPOT = ENCOUNTERS.find(e => e.id === 'the-depot');
 
 const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed, HAZARDS, TRINKETS);
@@ -1138,6 +1140,87 @@ check('the enemy brain never targets an objective', () => {
         'rivals fight the crew, never the scenery');
     }
   }
+});
+
+// ── reinforcements (MST_PARITY §2.4, v31) ────────────────────
+// On a survive map, wiping the opening roster meant coasting with an empty
+// board while the objective still said "hold". Arrivals turn that countdown
+// into a rising threat — and every one of them is announced before it lands,
+// because a spawn nobody could see coming would break the promise the rest
+// of this board keeps.
+
+const advanceRound = state => {
+  endPlayerTurn(state);
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+};
+
+check('an encounter carries its schedule, and nothing has landed at boot', () => {
+  const state = boot(UNDERPASS, 1);
+  assert.ok(state.reinforcements.length, 'underpass stages part of its roster');
+  assert.equal(pendingArrivals(state).length, state.reinforcements.length);
+  const opening = state.units.filter(u => u.faction === 'enemy').length;
+  assert.equal(opening, UNDERPASS.enemySpawns.length, 'only the opening roster is on the board');
+});
+
+check('an arrival is announced BEFORE it lands', () => {
+  const state = boot(UNDERPASS, 1);
+  const first = state.reinforcements[0];
+  assert.ok(first.round >= 2, 'a reinforcement is by definition not on the opening board');
+  // Walk to the round before it is due.
+  while (state.round < first.round - ARRIVAL_NOTICE && !state.result) advanceRound(state);
+  if (state.result) return; // the crew died first; the rule below is unconditional when reached
+  assert.ok(incomingArrivals(state).some(r => r.rid === first.rid),
+    'the board is marking it a round early');
+  assert.ok(pendingArrivals(state).some(r => r.rid === first.rid), 'and it has not landed yet');
+});
+
+check('it lands on the round it said it would, at the top of the turn', () => {
+  const state = boot(UNDERPASS, 1);
+  const first = state.reinforcements[0];
+  const before = state.units.length;
+  while (state.round < first.round && !state.result) advanceRound(state);
+  if (state.result) return;
+  assert.equal(state.turn, 'player', 'arrivals land into the player turn, never mid-enemy-phase');
+  assert.ok(state.units.length > before, 'somebody new is on the board');
+  assert.ok(state.log.some(e => e.type === 'arrive'), 'and it is on the log');
+  assert.ok(!pendingArrivals(state).some(r => r.rid === first.rid), 'and off the schedule');
+});
+
+check('an arrival never lands on top of somebody', () => {
+  const state = boot(UNDERPASS, 1);
+  const spot = state.reinforcements[0];
+  // Park an operator exactly where it means to appear.
+  const u = state.units.find(x => x.faction === 'player');
+  u.x = spot.x; u.y = spot.y;
+  state.round = spot.round;
+  const landed = landArrivals(state);
+  assert.equal(landed.length, 1, 'it still arrives — a rival that quietly failed to show is a broken promise');
+  assert.ok(landed[0].x !== spot.x || landed[0].y !== spot.y, 'just not on the occupied tile');
+  assert.equal(state.units.filter(x => x.x === u.x && x.y === u.y && x.hp > 0).length, 1,
+    'and nothing is stacked');
+});
+
+check('clearing the board is not a win while rivals are still due', () => {
+  // An empty board with arrivals pending is a lull, not a victory — handing
+  // the win out there lets the player skip the half of the encounter the
+  // schedule exists to provide.
+  const state = boot(UNDERPASS, 1);
+  assert.ok(pendingArrivals(state).length);
+  for (const e of state.units) if (e.faction === 'enemy') e.hp = 0;
+  const u = state.units.find(x => x.faction === 'player');
+  moveUnit(state, u.uid, u.x, u.y - 1);
+  assert.equal(state.result, null, 'the lull is not the end');
+  state.reinforcements.forEach(r => { r.landed = true; });
+  const other = state.units.find(x => x.faction === 'player' && x.uid !== u.uid);
+  moveUnit(state, other.uid, other.x, other.y - 1);
+  assert.equal(state.result, 'win', 'once nothing more is coming, it is');
+});
+
+check('an unknown enemy id is a content bug, not a crash', () => {
+  const state = boot(UNDERPASS, 1);
+  state.reinforcements = [{ rid: 'rX', round: 1, enemy: 'grunt_does_not_exist', x: 4, y: 0 }];
+  assert.doesNotThrow(() => landArrivals(state));
+  assert.equal(pendingArrivals(state).length, 0, 'it is consumed rather than retried forever');
 });
 
 // ── the skill pick (v30) ─────────────────────────────────────

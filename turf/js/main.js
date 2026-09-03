@@ -1,15 +1,15 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=10';
+import { PAL } from './palette.js?v=11';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
-  skillOffer, learnSkill,
+  skillOffer, learnSkill, incomingArrivals, pendingArrivals,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=18';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=21';
+} from './combat.js?v=19';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=22';
 import { createCamera, MIN_TILE_W } from './camera.js?v=1';
-import { createInputHandler } from './input.js?v=17';
+import { createInputHandler } from './input.js?v=18';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
@@ -213,6 +213,7 @@ function boot(seed) {
   });
   resultEl.hidden = true;
   enemyPhaseRunning = false;
+  lastArrivalCount = 0;
   setToast(objectiveText(state));
   onChange();
   // The opening shot frames the crew, not the top-left corner of the grid —
@@ -240,14 +241,16 @@ function setToast(text) { toastEl.textContent = text; }
 // running count after that.
 function objectiveText(state) {
   const w = state.win || { mode: 'eliminate' };
+  const more = pendingArrivals(state).length;
+  const backup = more ? ` ${more} more coming.` : '';
   const clock = w.deadline ? ` You have ${w.deadline} rounds.` : '';
-  if (w.mode === 'survive') return `Hold ${w.rounds} rounds. Killing them all also wins.`;
+  if (w.mode === 'survive') return `Hold ${w.rounds} rounds. Killing them all also wins.${backup}`;
   if (w.mode === 'extract') {
     return `Get ${w.need} of the crew onto the green tiles.${clock}`
       + ` Lose more than ${countPlayers(state) - w.need} and it's over.`;
   }
   if (w.mode === 'destroy') return `Break the cache.${clock} Killing them all also wins.`;
-  return 'Take out every rival on the block.';
+  return `Take out every rival on the block.${backup}`;
 }
 
 const countPlayers = state => state.units.filter(u => u.faction === 'player').length;
@@ -385,6 +388,13 @@ function runEnemyPhase() {
     render(canvas, state, layout, anim);
     focusCamera();
     updateHud();
+    // An arrival is the one thing that happens between rounds with nobody
+    // acting, so it gets its own line rather than being noticed later.
+    const arrived = state.log.filter(e => e.type === 'arrive');
+    if (arrived.length > lastArrivalCount) {
+      lastArrivalCount = arrived.length;
+      setToast(`${arrived[arrived.length - 1].name} arrives.`);
+    }
     if (step && !step.done) {
       // Name the archetype in the narration rather than adding a fifth
       // marker to the board: drawTelegraph already shows WHERE each enemy
@@ -464,6 +474,8 @@ function renderAbilities() {
 // functions a tap calls — so what you are watching is the real game, not a
 // simulation of it, and anything that looks wrong on screen is wrong.
 let autoOn = false, autoTimer = null;
+// How many arrivals have already been narrated, so the toast fires once each.
+let lastArrivalCount = 0;
 
 function setAuto(on) {
   autoOn = on;
