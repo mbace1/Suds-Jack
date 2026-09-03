@@ -12,14 +12,14 @@ export const MOVEMENT_TRANSITIONS = {
   gather:['air','fall','dead'], gatherRun:['air','fall','dead'],
   air:['ledgeCatch','land','landRun','landHard','fall','dead'],
   fall:['ledgeCatch','land','landRun','landHard','dead'],
-  land:['stand','step','runStart','crouch','dead'],
-  landRun:['run','runStop','pivot','gatherRun','fall','dead'],
+  land:['stand','step','runStart','pivot','crouch','dead'],
+  landRun:['run','runStart','runStop','pivot','gatherRun','fall','dead'],
   landHard:['stand','dead'],
   ledgeCatch:['hang','fall','dead'], hang:['pullUp','shimmy','fall','dead'],
   shimmy:['hang','fall','dead'], climbDown:['hang','fall','dead'], pullUp:['stand','fall','dead'],
   crouch:['crouchIdle','dead'], crouchIdle:['crouchWalk','standUp','roll','dead'],
   crouchWalk:['crouchIdle','standUp','roll','lowMantle','fall','dead'], roll:['crouchIdle','fall','dead'],
-  standUp:['stand','dead'], lowMantle:['stand','runStart','fall','dead'], dead:['dead'],
+  standUp:['stand','dead'], lowMantle:['stand','step','runStart','fall','dead'], dead:['dead'],
 };
 assertTransitionTable(MOVEMENT_TRANSITIONS, MOVEMENT_STATES);
 export const isLegalMovementTransition=(from,to)=>from===to||!!MOVEMENT_TRANSITIONS[from]?.includes(to);

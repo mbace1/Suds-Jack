@@ -70,6 +70,23 @@ export class MovementHeroV3 extends MovementHero {
     super.go(state, f);
   }
 
+  // Once canLowMantle() has proved this is a one-tile step with clear headroom,
+  // the entire move is authored. Collision must not let the step itself block
+  // the horizontal half of the mantle and leave the hero standing beside it.
+  beginLowMantle() {
+    this.lowStartX = this.x;
+    this.lowStartY = this.y;
+    this.lowTargetX = this.x + this.face * 12;
+    this.go('lowMantle');
+  }
+
+  lowMantleFrame() {
+    const t = Math.min(1, this.f / 22);
+    const smooth = t * t * (3 - 2 * t);
+    this.x = this.lowStartX + (this.lowTargetX - this.lowStartX) * smooth;
+    this.y = this.lowStartY - 16 * smooth;
+  }
+
   update(world, input, game) {
     this.stateMachine?.tick();
     return super.update(world, input, game);

@@ -4,6 +4,19 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v4 — 2026-09-04
+
+Movement foundation release. This is the first Flash Prince build with a dedicated runtime movement gate rather than relying on visual inspection alone.
+
+- Fixed the low-mantle failure where the hero could rise one tile but remain horizontally beside the obstacle, then fall or jitter on the following frame.
+- Low mantle now commits to a measured **16px rise + 12px carry** onto the upper surface.
+- Corrected legal movement transitions for landing reversals, running-landing continuation and low-mantle continuation.
+- Added deterministic state and geometry regressions for standing/running jumps, ledge catch and pull-up, deliberate climb-down, mantle, crouch/roll and landing recovery.
+- Added an isolated Flash Prince CI gate plus a real Chromium Scene 4 playthrough. The browser test reaches `lowMantle`, completes at **y=160**, verifies the hero is grounded, and reports **0 transition faults**.
+- The playable entry uses module token **v7** and exposes build marker **FP-MOVE-7** for verification.
+
+The next pass stays on Flash Prince: expand the same real-browser coverage to running gap/ledge catch, hard landing, climb-down/shimmy and brake/pivot before returning to character-specific animation and combat work.
+
 ## v3 — 2026-08-08
 
 The Hub build is now an art-and-animation presentation build rather than a bare
