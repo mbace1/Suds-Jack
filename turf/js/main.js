@@ -1,18 +1,18 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=5';
+import { PAL } from './palette.js?v=7';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=11';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=14';
+} from './combat.js?v=13';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=17';
 import { createCamera, MIN_TILE_W } from './camera.js?v=1';
-import { createInputHandler } from './input.js?v=10';
+import { createInputHandler } from './input.js?v=11';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { abilitiesFor, canAfford, whyNot } from './abilities.js?v=1';
-import { autoTurn } from './autoplay.js?v=1';
+import { autoTurn } from './autoplay.js?v=3';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
@@ -63,7 +63,7 @@ function soundFor(e, s) {
 // real play rather than leave it as unreachable data. crewProgress is keyed
 // by defId, so a squad with no progress entry yet (sledge/cleaver/rook,
 // gunner/leopard/denny) just starts fresh — no crash, no special-casing.
-const SEQUENCE = ['backlot', 'loading-dock', 'warehouse', 'underpass', 'the-yard'];
+const SEQUENCE = ['backlot', 'loading-dock', 'warehouse', 'underpass', 'the-yard', 'the-crossing', 'the-depot'];
 let seqIndex = 0;
 
 // GDD.md §5's v1 list, the other half: "XP levels... unlocking small stat
@@ -203,9 +203,18 @@ function boot(seed) {
   onChange();
   // The opening shot frames the crew, not the top-left corner of the grid —
   // at a zoom where the board overflows, tile (0,0) is a wall and a bin.
+  // ...AND whatever the mission is about: a screenshot of the extraction map
+  // showed the pads sitting off the edge of the screen on the very frame the
+  // player is told to go and stand on them.
   const crew = state.units.filter(u => u.faction === 'player');
   if (crew.length) {
-    const mid = crew.reduce((a, u) => ({ x: a.x + u.x / crew.length, y: a.y + u.y / crew.length }), { x: 0, y: 0 });
+    const pts = crew.map(u => ({ x: u.x, y: u.y }));
+    for (const k of state.extract) {
+      const [x, y] = k.split(',').map(Number);
+      pts.push({ x, y });
+    }
+    for (const o of state.units) if (o.faction === 'objective') pts.push({ x: o.x, y: o.y });
+    const mid = pts.reduce((a, q) => ({ x: a.x + q.x / pts.length, y: a.y + q.y / pts.length }), { x: 0, y: 0 });
     const p = toScreen(layout, mid.x, mid.y);
     camera.centerOn(p.x, p.y, false);
   }
@@ -216,9 +225,30 @@ function setToast(text) { toastEl.textContent = text; }
 // Stated once, in words, when the encounter opens — the topbar carries the
 // running count after that.
 function objectiveText(state) {
-  return state.win && state.win.mode === 'survive'
-    ? `Hold ${state.win.rounds} rounds. Killing them all also wins.`
-    : 'Take out every rival on the block.';
+  const w = state.win || { mode: 'eliminate' };
+  const clock = w.deadline ? ` You have ${w.deadline} rounds.` : '';
+  if (w.mode === 'survive') return `Hold ${w.rounds} rounds. Killing them all also wins.`;
+  if (w.mode === 'extract') {
+    return `Get ${w.need} of the crew onto the green tiles.${clock}`
+      + ` Lose more than ${countPlayers(state) - w.need} and it's over.`;
+  }
+  if (w.mode === 'destroy') return `Break the cache.${clock} Killing them all also wins.`;
+  return 'Take out every rival on the block.';
+}
+
+const countPlayers = state => state.units.filter(u => u.faction === 'player').length;
+
+// The topbar's running line. A deadline has to be counted DOWN in the place
+// the round number already lives — an objective stated once at the start and
+// a clock the player has to track in their head is not full information.
+function roundText(state) {
+  const w = state.win || { mode: 'eliminate' };
+  if (w.mode === 'survive') return `Round ${state.round} / ${w.rounds} — hold`;
+  if (w.deadline) {
+    const left = w.deadline - state.round + 1;
+    return `Round ${state.round} / ${w.deadline} — ${left} left`;
+  }
+  return `Round ${state.round} — clear them out`;
 }
 
 // How an enemy describes its own approach, by behaviour. Teaches the roster's
@@ -443,9 +473,7 @@ function updateHud() {
   // The objective is shown, always. A survive-N goal the player cannot see is
   // a hidden win condition in a game whose whole premise is full information —
   // they would play to eliminate, which on these rosters is how you lose.
-  topbar.round.textContent = state.win && state.win.mode === 'survive'
-    ? `Round ${state.round} / ${state.win.rounds} — hold`
-    : `Round ${state.round} — clear them out`;
+  topbar.round.textContent = roundText(state);
   controls.endTurn.disabled = state.turn !== 'player' || !!state.result;
   controls.cancel.disabled = state.turn !== 'player' || !!state.result || !state.selected;
 
@@ -476,6 +504,7 @@ function updateHud() {
     selTextEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
       + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`
       + momentumText(sel)
+      + forecastText(state)
       + (carried ? `<br>carrying: ${carried}` : '');
   } else {
     selPortraitEl.hidden = true;
@@ -489,6 +518,27 @@ function updateHud() {
 // evasion goes with it; hold fire and the evasion stands through the enemy
 // phase. Silent on a unit that has not moved — a line reading "+0 / -0%" on
 // every stationary operator is noise, not information.
+// The one target the cursor is on, spelled out. The board badge gives the
+// odds; this gives the REASON — which is the difference between a number a
+// player trusts and a number they suspect. Only for the keyboard/pad cursor,
+// because a touch player has no way to point at something without acting on
+// it, and the badge already covers them.
+function forecastText(state) {
+  if (!state.cursor || !state.forecasts || !state.forecasts.size) return '';
+  const at = state.units.find(u =>
+    u.hp > 0 && u.x === state.cursor.x && u.y === state.cursor.y && state.forecasts.has(u.uid));
+  if (!at) return '';
+  const f = state.forecasts.get(at.uid);
+  const why = [];
+  if (f.cover) why.push('-30% their cover');
+  if (f.evade > 0) why.push(`-${Math.round(f.evade * 100)}% they ran`);
+  if (f.bonus > 0) why.push(`+${f.bonus} your run`);
+  if (f.steps > 0) why.push(`${f.steps} tile${f.steps > 1 ? 's' : ''} to close`);
+  return `<br>vs ${at.name}: ${Math.round(f.chance * 100)}% for ${f.damage}`
+    + (f.lethal ? ' — KILLS' : ` of ${f.targetHp}`)
+    + (why.length ? ` · ${why.join(' · ')}` : '');
+}
+
 function momentumText(sel) {
   const mo = sel.momentum || 0;
   if (!mo) return '';

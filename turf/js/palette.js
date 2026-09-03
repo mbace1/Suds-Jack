@@ -46,6 +46,17 @@ export const PAL = {
   // An armed ability's legal targets. Its own colour, not the attack orange:
   // while an ability is armed the board means something different, and
   // reusing the ordinary attack highlight would say the opposite.
+  // The forecast badge over an attackable target. LETHAL gets its own colour
+  // because "this kills them" is a different KIND of fact from "this is a
+  // 70% shot", and a player scanning the board should be able to find the
+  // finishable enemy without reading any digits at all.
+  // Extraction pads and the objective marker. Green because it is the one
+  // thing on the board that is unambiguously GOOD to stand on — every other
+  // overlay here is either a threat or a capability.
+  OBJECTIVE: 'rgba(90,209,168,0.30)',
+  OBJECTIVE_EDGE: 'rgba(120,240,195,0.95)',
+  FORECAST: '#d6d9de',
+  FORECAST_LETHAL: '#ff8a7a',
   ABILITY_HI: 'rgba(242,226,160,0.42)',
   ABILITY_HI_EDGE: 'rgba(255,240,190,0.95)',
 

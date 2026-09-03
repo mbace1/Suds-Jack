@@ -17,7 +17,7 @@
 // telegraph the player has to be able to read; this plans a turn to win it.
 // Sharing them would make one of the two worse.
 import { manhattan, hasLOS, coverSoftens, key } from './grid.js?v=2';
-import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility } from './combat.js?v=11';
+import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility } from './combat.js?v=13';
 import { abilitiesFor, canAfford, abilityTargets } from './abilities.js?v=1';
 
 // What a tile is worth to stand on and shoot from. Positive is good. The
@@ -36,6 +36,11 @@ function hazardCost(state, x, y) {
 function exposure(state, tile, foes) {
   let n = 0;
   for (const f of foes) {
+    // An objective has no weapon and threatens nothing. Reading `f.weapon`
+    // unguarded crashed AUTO outright on the destroy map, because widening
+    // "foes" to everything-not-mine (so a cache is a target like any other)
+    // also let a weaponless crate into the threat model.
+    if (!f.weapon) continue;
     if (manhattan(tile, f) > f.weapon.range + 2) continue;
     if (!hasLOS(state, f, tile)) continue;
     n += coverSoftens(state, f, tile) ? 0.4 : 1;
@@ -43,10 +48,54 @@ function exposure(state, tile, foes) {
   return n;
 }
 
+// THE OBJECTIVE COMES FIRST, and it has to, for a reason that is about
+// measurement rather than play: `balance.mjs` asks "is this encounter
+// winnable", and a bot that only ever fought would report 0% on an
+// extraction mission and 0% on a destroy mission — which says nothing about
+// the encounter and everything about the bot. A mode the bots cannot pursue
+// is a mode nobody can balance.
+//
+// Deliberately simple. Extraction walks at the pads; destroy treats the
+// cache as a target like any other. Neither tries to be clever about the
+// fight on the way, which is exactly what leaves headroom for a person.
+function objectiveMove(state, unit) {
+  const win = state.win || {};
+  if (win.mode === 'extract' && state.extract && state.extract.size) {
+    if (state.extract.has(key(unit.x, unit.y))) return true; // already out; hold the tile
+    const pads = [...state.extract].map(k => {
+      const [x, y] = k.split(',').map(Number); return { x, y };
+    });
+    let best = null, bestD = Infinity;
+    for (const t of movableTiles(state, unit).values()) {
+      const d = Math.min(...pads.map(p => manhattan(t, p))) + W_HAZARD * hazardCost(state, t.x, t.y);
+      if (d < bestD) { bestD = d; best = t; }
+    }
+    if (best && (best.x !== unit.x || best.y !== unit.y)) {
+      moveUnit(state, unit.uid, best.x, best.y);
+      // Standing on the pad can END the encounter, so nothing after this may
+      // assume the fight is still running.
+      if (state.result) return true;
+    }
+    return true;
+  }
+  return false;
+}
+
 // One operator's whole turn: reposition if a better firing tile exists, then
 // spend the run on an ability if one is affordable and worth it, else swing.
 export function autoTurn(state, unit, abilityDefs) {
-  const foes = state.units.filter(f => f.faction === 'enemy' && f.hp > 0);
+  if (objectiveMove(state, unit)) {
+    if (!state.result) {
+      // A free swing on the way out costs nothing — the move is already spent.
+      const t = attackableTargets(state, unit);
+      if (t.length) orderAttack(state, unit.uid, t[0]); else endUnitTurn(state, unit.uid);
+    }
+    return;
+  }
+  // A cache is a target like any other (combat.js makes it a third faction
+  // precisely so no code has to special-case it), so `destroy` needs no
+  // branch here at all — it falls out of "shoot whatever you can reach".
+  const foes = state.units.filter(f => f.faction !== unit.faction && f.hp > 0);
   if (!foes.length) { endUnitTurn(state, unit.uid); return; }
 
   if (!unit.actedMove) {
@@ -111,7 +160,7 @@ export function autoTurn(state, unit, abilityDefs) {
 function tryAbility(state, unit, abilityDefs) {
   const kit = abilitiesFor(unit, abilityDefs).filter(a => canAfford(unit, a));
   if (!kit.length) return false;
-  const foes = state.units.filter(f => f.faction === 'enemy' && f.hp > 0);
+  const foes = state.units.filter(f => f.faction !== unit.faction && f.hp > 0);
   const adjacent = foes.filter(f => manhattan(unit, f) <= 1);
 
   const pick = id => kit.find(a => a.id === id);
