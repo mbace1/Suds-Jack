@@ -60,6 +60,12 @@ export const PAL = {
   // overlay here is either a threat or a capability.
   OBJECTIVE: 'rgba(90,209,168,0.30)',
   OBJECTIVE_EDGE: 'rgba(120,240,195,0.95)',
+  // Firing positions offered while aiming. The BEST one is marked brighter:
+  // the default has to be visible as a default, or the choice reads as work
+  // rather than as an override.
+  AIM_HI: 'rgba(240,140,90,0.30)',
+  AIM_EDGE: 'rgba(240,140,90,0.85)',
+  AIM_BEST: 'rgba(255,200,120,1)',
   FORECAST: '#d6d9de',
   FORECAST_LETHAL: '#ff8a7a',
   ABILITY_HI: 'rgba(242,226,160,0.42)',

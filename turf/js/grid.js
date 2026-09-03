@@ -103,15 +103,70 @@ export function inRange(state, weapon, a, b) {
 // with range and LOS, or null if no such tile exists. Shared by the AI
 // (ai.js) and by click-to-attack in input.js, so "can I reach this fight"
 // is answered exactly once.
-export function approachTile(state, unit, target) {
+// Every tile this unit could hit `target` from this turn. The raw list, so
+// the UI can offer a CHOICE rather than a fait accompli.
+export function firingTiles(state, unit, target) {
   const reachable = unit.actedMove
     ? new Map([[key(unit.x, unit.y), { x: unit.x, y: unit.y, cost: 0 }]])
     : moveRange(state, unit);
-  let best = null;
+  const out = [];
   for (const { x, y, cost } of reachable.values()) {
     if (manhattan({ x, y }, target) > unit.weapon.range) continue;
     if (!hasLOS(state, { x, y }, target)) continue;
-    if (!best || cost < best.cost) best = { x, y, cost };
+    out.push({ x, y, cost });
+  }
+  return out;
+}
+
+// What a firing tile is WORTH. Higher is better.
+//
+// THIS USED TO BE "the cheapest tile that can reach", and by v27 that was
+// actively wrong. Measured over 400 one-tap attacks where a real choice of
+// tile existed, the cheapest tile banked LESS momentum than an available
+// alternative 80% of the time and stopped in the open when cover was on
+// offer 20% of the time — so the single most common input in the game was
+// systematically fighting the movement economy (v24) and ignoring the cover
+// rules (v6) and the hazards (v18). A default that quietly plays badly is
+// worse than no default.
+//
+// Deliberately in grid.js and not in the AI: this is what the PLAYER's tap
+// resolves to, and ai.js keeps its own scoring because a behaviour has to be
+// free to disagree with "the best tile" (that is what a behaviour IS).
+export function firingTileScore(state, unit, target, tile) {
+  let score = 0;
+  // Cover against the unit you are shooting at is worth the most: it is the
+  // one term that changes what happens to you on THEIR turn.
+  if (coverSoftens(state, target, tile)) score += 6;
+  // Every other gun that bears on the tile costs, softened if something is
+  // between them and it.
+  for (const f of state.units) {
+    if (f.faction === unit.faction || f.hp <= 0 || !f.weapon || f === target) continue;
+    if (manhattan(tile, f) > f.weapon.range) continue;
+    if (!hasLOS(state, f, tile)) continue;
+    score -= coverSoftens(state, f, tile) ? 1 : 2.5;
+  }
+  // A hazard is measured in HP, which is worth more than any positional term
+  // here — walking into a fire to take a shot is never the default.
+  const h = state.hazards && state.hazards.get(key(tile.x, tile.y));
+  if (h) score -= h.lethal ? 100 : ((h.onEnter || 0) + (h.lingers || 0)) * 3;
+  // Distance travelled is momentum (momentum.js), which is damage on this
+  // swing or evasion until you use it. Small per tile, because it must not
+  // outweigh cover — but positive, so a tie goes to the longer run.
+  score += manhattan(tile, unit) * 0.6;
+  return score;
+}
+
+// The tile a one-tap attack uses: the BEST one, not the nearest. Ties break
+// on tile key so the same board always resolves the same way — a default
+// that moves you somewhere different on a replay is not a default.
+export function approachTile(state, unit, target) {
+  const tiles = firingTiles(state, unit, target);
+  let best = null, bestScore = -Infinity;
+  for (const t of tiles) {
+    const s = firingTileScore(state, unit, target, t);
+    if (s > bestScore || (s === bestScore && best && key(t.x, t.y) < key(best.x, best.y))) {
+      bestScore = s; best = t;
+    }
   }
   return best;
 }

@@ -385,6 +385,26 @@ anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves 
 (+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
 `DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
 are 23 points apart), not a dial.
+**Choosing where you fire from** (v28, owner: *"do they still automatically bump into
+others?"* — yes, and in the worst way). A tap on a rival ran the operator to the CHEAPEST
+tile that could reach, which was fine when cost was all a tile had; by v27 tiles also had
+cover (v6), hazards (v18) and DISTANCE-as-momentum (v24). Measured over 400 one-tap attacks
+with a real choice of tile, the old default **banked less momentum than an available
+alternative 80% of the time** and **stopped in the open when cover was on offer 20% of the
+time** — the commonest input in the game fighting every system built around it, while v26's
+forecast badge dutifully quoted odds from a tile nobody chose. `firingTileScore` in
+`grid.js` replaces cheapest with best (cover, exposure, hazards priced in HP, distance as a
+small positive); the same 400 cases go to 0% and 30%, and that residual is correct — those
+are boards where the longest run costs cover. **And the player picks**: a tap that can
+already fire from where you stand still fires immediately, and so does one with only one
+firing tile, but a tap that WOULD MOVE YOU offers the positions, each labelled with its own
+odds and damage, best marked — tap a tile to take it or the rival again for the default.
+Aiming REPLACES the ordinary overlays (move range + attack targets + firing positions is
+three meanings in one colour field), and the labels paint over the bodies while the tile
+markings stay under them, because a screenshot caught an option's label hidden behind the
+very operator being asked to move. `balance.mjs` cannot see any of this — its bot calls
+`attack` directly and never takes the one-tap path — so the 400-case measurement is the
+evidence, not the gate.
 **Ammo and reload** (v27 — `MST_PARITY.md` §2.3, taken before the boss on the owner's
 direction that *bosses come after mechanics*). `js/ammo.js`: ranged weapons hold a
 magazine, firing spends a round, and **reloading costs your action and never your move** —
@@ -1387,7 +1407,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
   VERSIONS.md
   data/         # units/weapons/enemies/encounters/hazards/trinkets/abilities — data-driven, pipeline §3
   js/
-    grid.js     # the board: orthogonal coords, BFS move range, LOS + the two cover kinds
+    grid.js     # the board: coords, BFS move range, LOS, cover, and firing-tile scoring
     ai.js       # four behaviours + two focuses, and the live ITB-style telegraph
     combat.js   # move+act economy, attack/knockback, hazards, trinkets, the enemy phase
     render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
@@ -1409,7 +1429,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 101 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 107 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter

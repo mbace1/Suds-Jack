@@ -3,7 +3,10 @@
 // resolution, knockback, and the enemy phase. Pure data in, pure data out —
 // nothing here touches a canvas or the DOM, which is what makes it runnable
 // in bare node (test/smoke.cjs).
-import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=2';
+import {
+  key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile,
+  firingTiles, firingTileScore,
+} from './grid.js?v=3';
 import { planAllIntents } from './ai.js?v=6';
 import { makeRng } from './rng.js?v=2';
 import { addMomentum, clearMomentum, evasionOf, momentumDamage } from './momentum.js?v=1';
@@ -480,6 +483,40 @@ export function attack(state, attackerUid, targetUid) {
 //
 // Returns null when the shot is not on, so the caller shows nothing rather
 // than a 5% floor for an attack that cannot happen.
+// Every tile this operator could shoot `target` from, each with the forecast
+// it would give — the data behind letting the player CHOOSE where to fight
+// from instead of being walked to a tile the engine picked. Sorted best
+// first, so the UI can mark the default without recomputing the ranking.
+export function firingOptions(state, attackerUid, targetUid) {
+  const attacker = getUnit(state, attackerUid);
+  const target = getUnit(state, targetUid);
+  if (!attacker || !target || attacker.actedAction || needsReload(attacker)) return [];
+  return firingTiles(state, attacker, target)
+    .map(t => ({
+      ...t,
+      score: firingTileScore(state, attacker, target, t),
+      steps: manhattan(t, attacker),
+      forecast: forecastAttack(state, attacker, target, attacker.weapon, {}, t),
+    }))
+    .sort((a, b) => b.score - a.score || (key(a.x, a.y) < key(b.x, b.y) ? -1 : 1));
+}
+
+// Attack from a SPECIFIC tile the player chose. Same guards as orderAttack,
+// but the step is the one they asked for rather than the one scored best —
+// overriding the default is the whole point of offering the choice.
+export function attackFrom(state, attackerUid, targetUid, tile) {
+  const attacker = getUnit(state, attackerUid);
+  if (!attacker) return { ok: false, reason: 'invalid' };
+  const legal = firingOptions(state, attackerUid, targetUid);
+  if (!legal.some(t => t.x === tile.x && t.y === tile.y)) return { ok: false, reason: 'bad-tile' };
+  if ((tile.x !== attacker.x || tile.y !== attacker.y) && !attacker.actedMove) {
+    const moved = moveUnit(state, attackerUid, tile.x, tile.y);
+    if (!moved.ok) return moved;
+    if (state.result) return { ok: true, ended: true }; // a hazard on the way can end it
+  }
+  return attack(state, attackerUid, targetUid);
+}
+
 export function previewAttack(state, attackerUid, targetUid, opts = {}) {
   const attacker = getUnit(state, attackerUid);
   const target = getUnit(state, targetUid);

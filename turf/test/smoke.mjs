@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key } from '../js/grid.js';
+import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key, firingTiles, firingTileScore, approachTile } from '../js/grid.js';
 import { planIntent, planAllIntents } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
@@ -14,7 +14,7 @@ import {
   forecastAttack, previewAttack, COVER_PENALTY,
   endUnitTurn, endPlayerTurn, stepEnemyPhase,
   awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
-  applyTrinkets, TRINKET_SHARE, reloadUnit,
+  applyTrinkets, TRINKET_SHARE, reloadUnit, firingOptions, attackFrom,
 } from '../js/combat.js';
 import {
   MOVE_CAP, EVADE_PER, DAMAGE_PER, addMomentum, clearMomentum, evasionOf,
@@ -1035,6 +1035,84 @@ check('the enemy brain never targets an objective', () => {
         'rivals fight the crew, never the scenery');
     }
   }
+});
+
+// ── choosing where you fire from (v28) ───────────────────────
+// Through v27 a tap on a rival ran the operator to the CHEAPEST tile that
+// could reach. Measured over 400 one-tap attacks with a real choice of
+// tile, that banked less momentum than an available alternative 80% of the
+// time and stopped in the open when cover was on offer 20% of the time —
+// the most common input in the game fighting the systems built around it.
+
+check('the default firing tile prefers cover over closeness', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.faction === 'player' && x.weapon.archetype === 'ranged');
+  const foe = state.units.find(x => x.faction === 'enemy');
+  // Put the rival at range, with a covered tile further away than a bare one.
+  u.x = 5; u.y = 7; u.actedMove = false;
+  foe.x = 5; foe.y = 2;
+  const tiles = firingTiles(state, u, foe);
+  const covered = tiles.filter(t => coverSoftens(state, foe, t));
+  if (!covered.length) return; // this board offers none from here; the rule below still holds
+  const pick = approachTile(state, u, foe);
+  assert.ok(coverSoftens(state, foe, pick),
+    'a default that quietly plays badly is worse than no default');
+});
+
+check('a firing tile is scored, and a hazard is never the default', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.faction === 'player');
+  const foe = state.units.find(x => x.faction === 'enemy');
+  foe.x = u.x; foe.y = u.y - 2;
+  const tiles = firingTiles(state, u, foe);
+  assert.ok(tiles.length, 'there is somewhere to shoot from');
+  const bare = { x: u.x, y: u.y };
+  const clean = firingTileScore(state, u, foe, bare);
+  state.hazards.set(key(bare.x, bare.y), { id: 'fire', name: 'Fire', onEnter: 2, lingers: 2 });
+  assert.ok(firingTileScore(state, u, foe, bare) < clean, 'a hazard costs, and costs a lot');
+});
+
+check('firing options come back best-first, each with its own forecast', () => {
+  const state = boot(BACKLOT, 4);
+  const u = state.units.find(x => x.faction === 'player' && attackableTargets(state, x).length);
+  const foe = attackableTargets(state, u)[0];
+  const opts = firingOptions(state, u.uid, foe);
+  assert.ok(opts.length, 'a reachable rival has at least one firing position');
+  for (let i = 1; i < opts.length; i++) {
+    assert.ok(opts[i - 1].score >= opts[i].score, 'sorted best first, so the UI can mark the default');
+  }
+  assert.ok(opts.every(o => typeof o.forecast.chance === 'number'),
+    'a menu of positions with no numbers on it is worse than the automatic behaviour');
+});
+
+check('you can fire from a tile you chose, not only the one scored best', () => {
+  const state = boot(BACKLOT, 4);
+  const u = state.units.find(x => x.faction === 'player' && attackableTargets(state, x).length);
+  const foe = attackableTargets(state, u)[0];
+  const opts = firingOptions(state, u.uid, foe);
+  const worst = opts[opts.length - 1];
+  const r = attackFrom(state, u.uid, foe, { x: worst.x, y: worst.y });
+  assert.ok(r.ok, 'overriding the default is the whole point of offering the choice');
+  assert.equal(u.x, worst.x); assert.equal(u.y, worst.y);
+  assert.equal(u.actedAction, true);
+});
+
+check('a tile that is not on offer is refused', () => {
+  const state = boot(BACKLOT, 4);
+  const u = state.units.find(x => x.faction === 'player' && attackableTargets(state, x).length);
+  const foe = attackableTargets(state, u)[0];
+  assert.equal(attackFrom(state, u.uid, foe, { x: 99, y: 99 }).reason, 'bad-tile');
+  assert.equal(u.actedAction, false, 'and a refused order does not eat the turn');
+});
+
+check('an empty gun offers no firing positions at all', () => {
+  const state = boot(BACKLOT, 4);
+  const u = state.units.find(x =>
+    x.faction === 'player' && x.weapon.archetype === 'ranged' && attackableTargets(state, x).length);
+  assert.ok(firingOptions(state, u.uid, attackableTargets(state, u)[0]).length);
+  const foe = attackableTargets(state, u)[0];
+  u.ammo = 0;
+  assert.equal(firingOptions(state, u.uid, foe).length, 0);
 });
 
 // ── ammo and reload (MST_PARITY §2.3) ────────────────────────

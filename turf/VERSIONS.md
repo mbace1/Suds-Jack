@@ -8,6 +8,66 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v28 — 2026-09-03
+**"Do they still automatically bump into others?"** — owner, and the answer
+was yes, in the worst possible way.
+
+**A tap on a rival ran the operator to the CHEAPEST tile that could reach
+it.** `approachTile` had scored on move cost alone since Milestone 1, which
+was fine when cost was the only thing a tile had. By v27 it was not: v6 gave
+tiles cover, v18 gave them hazards, and v24 made the DISTANCE travelled into
+momentum — damage on the swing, evasion until you spend it. Measured over
+400 one-tap attacks where a real choice of firing tile existed, the old
+default **banked less momentum than an available alternative 80% of the
+time** and **stopped in the open when cover was on offer 20% of the time**.
+The single most common input in the game was systematically fighting the
+systems built around it, and the forecast badge added in v26 was dutifully
+quoting the odds from a tile the player never chose.
+
+**`firingTileScore` replaces "cheapest" with "best"** — cover against the
+target, exposure to everyone else, hazards priced in HP, and distance as a
+small positive so a tie goes to the longer run. Same 400 cases afterwards:
+cover 20% to **0%**, momentum 80% to **30%** — and that residual 30% is
+correct rather than remaining error, since those are the boards where the
+longest run costs cover and the scorer rightly refuses it.
+
+**And the player picks.** A tap that can already fire from where the
+operator stands still fires immediately, and so does one where there is only
+one place to shoot from — no extra taps where there was nothing to decide.
+A tap that WOULD MOVE YOU now offers the firing positions instead, each
+labelled with the odds and damage it would give, the best one marked; tap a
+tile to take it, or tap the rival again to accept the default. That is the
+difference between a game that moves you and a game you move.
+
+**Aiming replaces the ordinary overlays outright** rather than layering on
+top of them: move range plus attack targets plus firing positions is three
+meanings in one colour field and the player cannot tell which tap does what.
+The other rivals' forecast badges are suppressed for the same reason — the
+board is asking one question and their odds answer a different one.
+
+**The labels are painted OVER the bodies, the tile markings under them.** A
+screenshot caught the second option's label sitting behind the very operator
+being asked to move, which is the one thing a position chooser must not
+hide.
+
+**`window.__turf.tap(gx, gy)`** is new: a tap in grid coordinates down the
+real input path. The browser check for this feature first synthesised
+pointer events at guessed pixel offsets, missed the sprite by a few pixels
+and silently reported "no targets" — a test that exercises the input path
+should not have to guess where the input path is.
+
+- `test/smoke.mjs` is 107 checks (was 101): the default preferring cover, a
+  hazard never being the default, options coming back best-first each with
+  its own forecast, firing from a tile you chose rather than the one scored
+  best, a tile that is not on offer being refused without eating the turn,
+  and an empty gun offering no positions at all.
+- `test/balance.mjs` is unchanged on all seven, and that is expected rather
+  than suspicious: its bot calls `attack` directly and never takes the
+  one-tap path, so this change is invisible to it. The 400-case measurement
+  above is the evidence, not the gate.
+- Tokens: `grid` v3, `combat` v16, `input` v15, `render` v21, `palette` v10,
+  `main` v25.
+
 ## v27 — 2026-09-03
 **`MST_PARITY.md` §2.3, and the owner's direction that bosses come after
 mechanics.** Through v26 every weapon fired every turn, forever, which is
