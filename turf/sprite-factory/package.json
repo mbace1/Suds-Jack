@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test test.mjs",
+    "gate": "node output-gate.mjs",
     "normalize": "node normalize.mjs",
     "diff": "node diagnostic-diff.mjs",
     "aseprite": "node aseprite-export.mjs"
