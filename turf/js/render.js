@@ -3,7 +3,7 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=5';
+import { PAL } from './palette.js?v=7';
 import { key } from './grid.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
@@ -336,7 +336,8 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   // faction-tinted ring at the feet, the one thing every unit still stands
   // on regardless of which sprite (or the procedural fallback) is drawing
   // above it. Same two house colours as everywhere else in this game.
-  const factionColor = unit.faction === 'player' ? PAL.PLAYER : PAL.ENEMY;
+  const factionColor = unit.faction === 'player' ? PAL.PLAYER
+    : unit.faction === 'objective' ? PAL.OBJECTIVE_EDGE : PAL.ENEMY;
   g.diamond(x, y, TILE_W * 0.52, TILE_H * 0.46, null, factionColor, 1.5);
 
   // The animator answers with the current frame of whatever clip this unit is
@@ -428,6 +429,11 @@ function drawUnitSprite(g, entry, x, feetY, mirror, refH) {
   return feetY - contentH * scale; // top of the actual visible content, not the padded canvas
 }
 function drawUnitFallback(g, unit, x, feetY) {
+  // An objective is a THING, not a person. Falling through to the humanoid
+  // silhouette drew the cache as a third gang member standing very still,
+  // which is a readability bug in a game whose whole promise is that you can
+  // tell what is on the board.
+  if (unit.faction === 'objective') return drawObjectiveBody(g, x, feetY);
   const isPlayer = unit.faction === 'player';
   const body = isPlayer ? PAL.PLAYER : PAL.ENEMY;
   const dark = isPlayer ? PAL.PLAYER_DK : PAL.ENEMY_DK;
@@ -438,6 +444,36 @@ function drawUnitFallback(g, unit, x, feetY) {
   g.disc(x, feetY - bodyH - headR - 1, headR, body); // head
   g.diamond(x, feetY - bodyH * 0.4, 9, bodyH + 5, null, PAL.INK); // outline
   return feetY - bodyH - headR * 2 - 2;
+}
+
+// A strapped crate: a flat box in a hard black line, banded so it reads as
+// slats rather than a grey slab — the house register (Master System sprite:
+// flat fill inside a hard outline, the shape lives in the silhouette).
+// A ring plus a reticle above it, in the objective colour. The crate body
+// alone was not enough: this board is FULL of crates as cover, and a
+// screenshot of the depot showed the cache reading as scenery — the same
+// class of mistake as an extraction pad you cannot see.
+function drawObjectiveMark(g, layout, state) {
+  for (const u of state.units) {
+    if (u.faction !== 'objective' || u.hp <= 0) continue;
+    const p = toScreen(layout, u.x, u.y);
+    const y = p.y - SPRITE_H * 0.75;
+    g.diamond(p.x, p.y, TILE_W - 6, TILE_H - 3, null, PAL.OBJECTIVE_EDGE, 2);
+    g.line(p.x - 7, y, p.x - 3, y, PAL.OBJECTIVE_EDGE, null, 2);
+    g.line(p.x + 3, y, p.x + 7, y, PAL.OBJECTIVE_EDGE, null, 2);
+    g.line(p.x, y - 4, p.x, y - 1, PAL.OBJECTIVE_EDGE, null, 2);
+    g.line(p.x, y + 1, p.x, y + 4, PAL.OBJECTIVE_EDGE, null, 2);
+  }
+}
+
+function drawObjectiveBody(g, x, feetY) {
+  const h = UNIT_H * 0.85, w = 15;
+  g.p(x - w / 2, feetY - h, w, h, PAL.COVER_FULL_DK);
+  g.p(x - w / 2 + 1, feetY - h + 1, w - 2, h * 0.45, PAL.COVER_FULL);
+  g.p(x - w / 2, feetY - h * 0.55, w, 1.5, PAL.INK);          // strap
+  g.p(x - 1, feetY - h, 2, h, PAL.INK);                        // centre seam
+  g.diamond(x, feetY - h * 0.5, w + 2, h + 3, null, PAL.INK);  // outline
+  return feetY - h - 2;
 }
 
 // The source-tile glyph names the weapon's archetype (GDD §4 requires the
@@ -532,6 +568,53 @@ function drawOverwatch(g, layout, state) {
     g.line(p.x - 6, y, p.x + 6, y, PAL.ABILITY_HI_EDGE, null, 1);
     g.line(p.x + 6, y, p.x + 6, y + 3, PAL.ABILITY_HI_EDGE, null, 1);
     g.disc(p.x, y + 2, 1.6, PAL.ABILITY_HI_EDGE);
+  }
+}
+
+// The odds, on the board, over every target the selected operator could
+// actually hit. Not a hover tooltip: touch has no hover, and a number you
+// have to go and ask for is not the same promise as a number that is simply
+// there. This is the hole v24 opened — momentum silently moved a hit chance
+// the board never showed — and closing it is `MST_PARITY.md` §2.1.
+// The extraction pads, drawn under everything else that moves. A mission
+// objective the board does not show is a hidden win condition, which in a
+// full-information game is the one unforgivable kind — the same reason v22
+// had to put the survive-N counter in the topbar.
+function drawExtraction(g, layout, state) {
+  if (!state.extract || !state.extract.size) return;
+  for (const k of state.extract) {
+    const [x, y] = k.split(',').map(Number);
+    const p = toScreen(layout, x, y);
+    g.diamond(p.x, p.y, TILE_W - 2, TILE_H - 1, PAL.OBJECTIVE, PAL.OBJECTIVE_EDGE, 2);
+    // A chevron pointing off the board: "out is this way", which a coloured
+    // tile alone does not say.
+    g.line(p.x - 5, p.y + 2, p.x, p.y - 3, PAL.OBJECTIVE_EDGE, null, 2);
+    g.line(p.x + 5, p.y + 2, p.x, p.y - 3, PAL.OBJECTIVE_EDGE, null, 2);
+  }
+}
+
+function drawForecasts(g, layout, state) {
+  const fc = state.forecasts;
+  if (!fc || !fc.size || state.armedAbility) return;
+  for (const [uid, f] of fc) {
+    const u = state.units.find(x => x.uid === uid);
+    if (!u || u.hp <= 0) continue;
+    const p = toScreen(layout, u.x, u.y);
+    const y = p.y - SPRITE_H - 16;
+    const pct = Math.round(f.chance * 100);
+    // "70% · 4" — odds then damage, the two numbers a decision needs. A
+    // lethal shot says so in words, because arithmetic against a health bar
+    // is exactly the work the player should not be doing.
+    const label = f.lethal ? `${pct}% KILL` : `${pct}% · ${f.damage}`;
+    g.ctx.save();
+    g.ctx.font = 'bold 8px monospace';
+    g.ctx.textAlign = 'center';
+    const w = g.ctx.measureText(label).width + 6;
+    g.ctx.fillStyle = 'rgba(7,8,11,0.82)';
+    g.ctx.fillRect(p.x - w / 2, y - 8, w, 10);
+    g.ctx.fillStyle = f.lethal ? PAL.FORECAST_LETHAL : PAL.FORECAST;
+    g.ctx.fillText(label, p.x, y);
+    g.ctx.restore();
   }
 }
 
@@ -630,6 +713,8 @@ export function render(canvas, state, layout, anim = null) {
   // hazard, since "can I reach that tile" and "what does it cost me" are two
   // different questions the player asks in that order.
   drawHazards(g, layout, state.hazards);
+  drawExtraction(g, layout, state);
+  drawObjectiveMark(g, layout, state);
   drawHighlights(g, layout, state);
   drawAbilityTargets(g, layout, state);
   // Under the props and bodies, over the highlights: the ring belongs on the
@@ -659,6 +744,7 @@ export function render(canvas, state, layout, anim = null) {
 
   if (state.turn === 'player') {
     drawTelegraph(g, layout, state);
+    drawForecasts(g, layout, state);
     drawOverwatch(g, layout, state);
     drawCursor(g, layout, state);
   }

@@ -385,6 +385,29 @@ anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves 
 (+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
 `DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
 are 23 points apart), not a dial.
+**The forecast, and two more mission types** (v26 — `MST_PARITY.md` §2.1 and §2.2).
+**`forecastAttack` is the ONE place the odds are worked out** and `resolveAttack` calls it,
+so the number quoted and the number rolled against are the same code rather than two copies
+that drift — v24 had added a rule that silently modified a hit chance the board never
+showed, which in a full-information game is the unforgivable kind of change. It draws as a
+badge over every reachable target (`70% · 4`, or `70% KILL`) rather than a hover tooltip,
+because touch has no hover; the cursor also gets the REASON in the HUD. **A forecast is
+taken from the tile you would SHOOT FROM**, since `orderAttack` steps you into range first
+and cover is a property of where you end up.
+**`extract` and `destroy`**, both with a `deadline` — which gives the game its second and
+third loss conditions (it had exactly one, a crew wipe). A cache is a **third faction**, not
+a new entity type: `attackableTargets` filters on `faction !== mine` while `livingEnemies`
+and `ai.js` filter on the names, so an objective is attackable by both sides and invisible
+to the win check and the enemy brain without either learning anything. **`need` is
+absolute** — clamping it to the living made losing an operator make an extraction EASIER.
+**Both new encounters are cliffs, not dials, and were tuned by measurement**: an open-pad
+extraction is 0% at four rounds and 100% at five (an uncontested extraction is arithmetic,
+so guards stand ON the approach), and `the-depot` read 0% at every setting until the gate's
+bot was taught to attack a cache at all — "nearest target that is not mine" always answers
+"an enemy", which is the point of the mission and made the mission invisible. **A mode the
+bots cannot pursue is a mode nobody can balance.** Two readability faults came off
+screenshots, not gates: the cache drew as a humanoid, and the extraction pads opened off
+screen on the frame that tells you to stand on them.
 **Actions, and a camera** (v25, straight off an owner playtest of v24: *"zoom in a bit on
 mobile... there are no actions at all, fighters just bump into each other and I can't see
 who is going where"*). **`js/abilities.js` + `data/abilities.json`** close the momentum
@@ -1340,7 +1363,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
   MST_PARITY.md # ordered distance to Metal Slug Tactics, and what is OUT of scope
   PRODUCTION_PIPELINE.md # asset/data pipeline the GDD's assumptions were resolved against
   VERSIONS.md
-  data/         # units/weapons/enemies/encounters/hazards/trinkets — all data-driven, pipeline §3
+  data/         # units/weapons/enemies/encounters/hazards/trinkets/abilities — data-driven, pipeline §3
   js/
     grid.js     # the board: orthogonal coords, BFS move range, LOS + the two cover kinds
     ai.js       # four behaviours + two focuses, and the live ITB-style telegraph
@@ -1363,9 +1386,10 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 78 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 91 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
-                #   and a bot playthrough of every encounter
+                #   the forecast, both new loss conditions, and a bot playthrough
+                #   of every encounter
     balance.mjs # is each encounter WINNABLE — the question smoke.mjs cannot ask
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/

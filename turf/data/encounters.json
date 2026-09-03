@@ -696,6 +696,237 @@
       "win": {
         "mode": "eliminate"
       }
+    },
+    {
+      "id": "the-crossing",
+      "name": "The Crossing",
+      "background": "art-src/backgrounds/dockyard.jpg",
+      "grid": {
+        "cols": 11,
+        "rows": 9
+      },
+      "win": {
+        "mode": "extract",
+        "need": 2,
+        "deadline": 5
+      },
+      "_note": "Get two of the crew off the far side inside five rounds. TUNED BY MEASUREMENT: with the pads open this was 0% at four rounds and 100% at five \u2014 an uncontested extraction is arithmetic, not a fight. A holder and a control grunt standing ON the approach are what turn it into a decision (46% for the balance bot). `need` is absolute: falling below it is a loss, because clamping it to the living made losing an operator make the mission EASIER.",
+      "playerSpawns": [
+        {
+          "unit": "blade",
+          "x": 2,
+          "y": 8
+        },
+        {
+          "unit": "niner",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "unit": "sledge",
+          "x": 8,
+          "y": 8
+        }
+      ],
+      "extract": [
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ]
+      ],
+      "enemySpawns": [
+        {
+          "enemy": "grunt_blunt",
+          "x": 1,
+          "y": 3
+        },
+        {
+          "enemy": "grunt_runt",
+          "x": 9,
+          "y": 3
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 3,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_sable",
+          "x": 7,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_ragged",
+          "x": 5,
+          "y": 4
+        },
+        {
+          "enemy": "grunt_sable",
+          "x": 4,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_duffy",
+          "x": 6,
+          "y": 1
+        }
+      ],
+      "cover": {
+        "full": [
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            5,
+            2
+          ]
+        ],
+        "partial": [
+          [
+            4,
+            5
+          ],
+          [
+            6,
+            5
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            8,
+            2
+          ],
+          [
+            5,
+            6
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          4,
+          3,
+          "glass"
+        ],
+        [
+          6,
+          3,
+          "glass"
+        ]
+      ]
+    },
+    {
+      "id": "the-depot",
+      "name": "The Depot",
+      "background": "art-src/backgrounds/courtyard.jpg",
+      "grid": {
+        "cols": 11,
+        "rows": 9
+      },
+      "win": {
+        "mode": "destroy",
+        "deadline": 9
+      },
+      "_note": "Break the cache inside nine rounds. TUNED BY MEASUREMENT: two caches at opposite ends measured 0% at every HP and roster tried, because it asks the crew to cross the board twice; ONE cache between two dumpsters is 20%. The crew is blade/niner/sledge because Wrench's pipe does 1 damage and cannot meaningfully break anything. The third-versus-fourth enemy is a cliff (20% to 0%), not a dial.",
+      "playerSpawns": [
+        {
+          "unit": "blade",
+          "x": 2,
+          "y": 8
+        },
+        {
+          "unit": "niner",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "unit": "sledge",
+          "x": 8,
+          "y": 8
+        }
+      ],
+      "objectives": [
+        {
+          "id": "cache",
+          "name": "Cache",
+          "hp": 6,
+          "x": 5,
+          "y": 2
+        }
+      ],
+      "enemySpawns": [
+        {
+          "enemy": "grunt_blunt",
+          "x": 2,
+          "y": 3
+        },
+        {
+          "enemy": "grunt_shotgun",
+          "x": 5,
+          "y": 2
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 8,
+          "y": 3
+        }
+      ],
+      "cover": {
+        "full": [
+          [
+            4,
+            2
+          ],
+          [
+            6,
+            2
+          ]
+        ],
+        "partial": [
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            2,
+            5
+          ],
+          [
+            8,
+            5
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          5,
+          3,
+          "glass"
+        ]
+      ]
     }
   ]
 }

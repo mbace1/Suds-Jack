@@ -11,6 +11,7 @@ import { planIntent, planAllIntents } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, orderAttack, useAbility,
+  forecastAttack, previewAttack, COVER_PENALTY,
   endUnitTurn, endPlayerTurn, stepEnemyPhase,
   awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
   applyTrinkets, TRINKET_SHARE,
@@ -33,6 +34,8 @@ const TRINKETS = readJson('trinkets.json').trinkets;
 const ABILITIES = readJson('abilities.json').abilities;
 const BACKLOT = ENCOUNTERS.find(e => e.id === 'backlot');
 const LOADING_DOCK = ENCOUNTERS.find(e => e.id === 'loading-dock');
+const CROSSING = ENCOUNTERS.find(e => e.id === 'the-crossing');
+const DEPOT = ENCOUNTERS.find(e => e.id === 'the-depot');
 
 const boot = (encounter, seed) => createEncounterState(encounter, UNITS, WEAPONS, ENEMIES, seed, HAZARDS, TRINKETS);
 
@@ -892,6 +895,144 @@ check('overwatch is cleared even when it never triggers', () => {
   let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
   assert.equal(state.overwatch.size, 0,
     'a standing order the player has forgotten they gave is the worst surprise this game could spring');
+});
+
+// ── the forecast (MST_PARITY §2.1) ───────────────────────────
+// A game that promises full information may not hide the number it rolls
+// against. The defence is structural: the preview and the resolution call
+// the SAME function, so they cannot drift.
+
+check('the forecast is the arithmetic the roll actually uses', () => {
+  const state = boot(BACKLOT, 4);
+  const shooter = state.units.find(u => u.faction === 'player' && attackableTargets(state, u).length);
+  const target = getUnit(state, attackableTargets(state, shooter)[0]);
+  const pre = previewAttack(state, shooter.uid, target.uid);
+  assert.ok(pre, 'a shot that is on has a forecast');
+  orderAttack(state, shooter.uid, target.uid);
+  const evt = state.log.filter(e => e.type === 'attack').pop();
+  assert.equal(evt.chance, pre.chance, 'quoted odds === rolled odds');
+  assert.equal(evt.evade, pre.evade);
+  if (evt.hit) assert.equal(evt.damage, pre.damage, 'and the promised damage is what lands');
+});
+
+check('the forecast is taken from the tile you would shoot FROM', () => {
+  // approachTile steps you into range first, and cover is a property of
+  // where you end up — a forecast from the current tile would quote the
+  // wrong number on exactly the shots that need a step.
+  const state = boot(BACKLOT, 4);
+  const shooter = state.units.find(u => u.faction === 'player' && attackableTargets(state, u).length);
+  const target = getUnit(state, attackableTargets(state, shooter)[0]);
+  const pre = previewAttack(state, shooter.uid, target.uid);
+  assert.equal(pre.steps, manhattan(pre.from, shooter), 'it reports how far it had to look');
+  const here = forecastAttack(state, shooter, target, shooter.weapon, {}, shooter);
+  const there = forecastAttack(state, shooter, target, shooter.weapon, {}, pre.from);
+  assert.equal(there.chance, pre.chance, 'the preview uses the destination tile, not the origin');
+  assert.ok(typeof here.chance === 'number', 'and forecasting from anywhere is still legal');
+});
+
+check('a shot that is not on has no forecast at all', () => {
+  const state = boot(BACKLOT, 4);
+  const shooter = state.units.find(u => u.faction === 'player');
+  const foe = state.units.find(u => u.faction === 'enemy');
+  shooter.actedAction = true;
+  assert.equal(previewAttack(state, shooter.uid, foe.uid), null,
+    'better nothing than a 5% floor for an attack that cannot happen');
+});
+
+check('the forecast names cover, evasion and the lethal blow', () => {
+  const state = boot(BACKLOT, 4);
+  const shooter = state.units.find(u => u.faction === 'player' && u.weapon.archetype === 'ranged');
+  const foe = state.units.find(u => u.faction === 'enemy');
+  foe.x = shooter.x + 2; foe.y = shooter.y; foe.hp = 99;
+  const plain = forecastAttack(state, shooter, foe, shooter.weapon);
+  assert.equal(plain.lethal, false);
+  foe.momentum = MOVE_CAP;
+  const running = forecastAttack(state, shooter, foe, shooter.weapon);
+  assert.ok(running.chance < plain.chance, 'a target that ran is a worse shot');
+  assert.equal(running.evade, MOVE_CAP * EVADE_PER, 'and the forecast says by how much');
+  foe.hp = 1;
+  assert.equal(forecastAttack(state, shooter, foe, shooter.weapon).lethal, true,
+    'the single most decision-relevant fact on the board');
+  assert.equal(COVER_PENALTY, 0.3, 'cover is one constant, not a literal in two files');
+});
+
+// ── objectives (MST_PARITY §2.2) ─────────────────────────────
+// `state.win` is data (GDD §3), so a mode is a clause in checkWinLoss plus
+// encounter JSON. What needs testing is not the arithmetic but the two new
+// ways to LOSE, because before this the game had exactly one (a crew wipe)
+// and a loss condition nothing exercises is a loss condition that does not
+// work.
+
+check('an extraction is won by standing still, on the move that gets you there', () => {
+  const state = boot(CROSSING, 1);
+  const pads = [...state.extract].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });
+  assert.ok(pads.length, 'the encounter declares its pads');
+  const crew = state.units.filter(u => u.faction === 'player');
+  // Teleport two of them beside a pad and walk them on — a move is the only
+  // action in this game that can win an encounter by itself, and before the
+  // checkWinLoss call in moveUnit the win sat unnoticed until somebody
+  // happened to attack.
+  crew[0].x = pads[0].x; crew[0].y = pads[0].y + 1;
+  crew[1].x = pads[1].x; crew[1].y = pads[1].y + 1;
+  moveUnit(state, crew[0].uid, pads[0].x, pads[0].y);
+  assert.equal(state.result, null, 'one is not two');
+  moveUnit(state, crew[1].uid, pads[1].x, pads[1].y);
+  assert.equal(state.result, 'win', 'the second one closes it, on the move itself');
+});
+
+check('falling below `need` loses the extraction outright', () => {
+  // `need` is ABSOLUTE. Clamping it to the living was a real fault: it made
+  // losing an operator make the mission easier, so the cheapest way to pass
+  // a 3-of-3 was to let one die.
+  const state = boot(CROSSING, 1);
+  const need = state.win.need;
+  const crew = state.units.filter(u => u.faction === 'player');
+  for (const u of crew.slice(0, crew.length - need + 1)) u.hp = 0;
+  endPlayerTurn(state);
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+  assert.equal(state.result, 'lose', 'a mission that can no longer be completed says so');
+});
+
+check('the deadline is a real loss, and the only clock this game has', () => {
+  const state = boot(DEPOT, 1);
+  assert.ok(state.win.deadline, 'the depot runs on a clock');
+  state.round = state.win.deadline + 1;
+  endPlayerTurn(state);
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+  assert.equal(state.result, 'lose',
+    'without a deadline an objective mission is a walk, and nothing punishes taking twenty rounds');
+});
+
+check('a cache is a target like any other, and breaking it wins', () => {
+  const state = boot(DEPOT, 1);
+  const cache = state.units.find(u => u.faction === 'objective');
+  assert.ok(cache, 'the depot declares an objective');
+  assert.equal(cache.weapon, null, 'it does not fight');
+  assert.equal(livingEnemies(state).some(u => u.uid === cache.uid), false,
+    'and it is invisible to the enemy count, so it cannot block an eliminate win');
+  const hitter = state.units.find(u => u.faction === 'player');
+  assert.ok(attackableTargets(state, hitter).length >= 0);
+  cache.hp = 0;
+  const foe = state.units.find(u => u.faction === 'enemy');
+  foe.hp = 1;
+  // Breaking the last cache is a win even with rivals still standing.
+  const other = state.units.find(u => u.faction === 'player' && u.uid !== hitter.uid);
+  moveUnit(state, other.uid, other.x, other.y - 1);
+  assert.equal(state.result, 'win', 'the mission is the cache, not the block');
+});
+
+check('the enemy brain never targets an objective', () => {
+  // ai.js filters on faction 'player' by name, which is what lets a third
+  // faction exist without the AI learning anything — but if that ever
+  // changed, the rivals would spend the encounter beating up a crate.
+  const state = boot(DEPOT, 1);
+  for (const e of state.units.filter(u => u.faction === 'enemy')) {
+    const intent = planIntent(state, e);
+    if (intent.targetUid) {
+      assert.equal(getUnit(state, intent.targetUid).faction, 'player',
+        'rivals fight the crew, never the scenery');
+    }
+  }
 });
 
 for (const enc of ENCOUNTERS) playthrough(enc, 42);

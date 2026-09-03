@@ -4,11 +4,11 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=14';
+import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=17';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
-  canUnitAct, endPlayerTurn, getUnit, useAbility,
-} from './combat.js?v=11';
+  canUnitAct, endPlayerTurn, getUnit, useAbility, previewAttack,
+} from './combat.js?v=13';
 import { abilityTargets, findAbility } from './abilities.js?v=1';
 import { key } from './grid.js?v=2';
 import { watchPad } from '../../hub/pad.js?v=9';
@@ -38,6 +38,17 @@ export function createInputHandler({
     state.abilityTiles = armed && sel
       ? abilityTargets(state, sel, findAbility(getAbilities(), armed)) : null;
     state.armedAbility = armed;
+    // The odds for every target this operator could hit, recomputed with the
+    // overlay rather than on hover: touch has no hover, and these have to
+    // stay correct after a move (which changes cover AND momentum), so they
+    // belong on the same refresh as the highlights they sit on top of.
+    state.forecasts = new Map();
+    if (sel && !armed) {
+      for (const uid of state.attackTiles) {
+        const f = previewAttack(state, sel.uid, uid);
+        if (f) state.forecasts.set(uid, f);
+      }
+    }
   }
 
   // Arming is a toggle: pressing the same button again puts the board back

@@ -8,6 +8,87 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v26 — 2026-09-03
+**`MST_PARITY.md` §2.1 and §2.2, in order.** Two items off the roadmap
+written yesterday, and both turned out to be about the same thing: a
+promise this game makes and had stopped keeping.
+
+**THE FORECAST.** v24 added a rule that silently modified a hit chance the
+board never showed, which in a game whose whole contract is full
+information is the one unforgivable kind of change. `forecastAttack` is now
+the ONE place the odds are worked out and `resolveAttack` calls it — so the
+number quoted and the number rolled against are the same code, not two
+copies that drift. The gate asserts that equality directly.
+
+It draws as a badge over every target the selected operator can reach —
+`70% · 4`, or `70% KILL` when it finishes them — rather than as a hover
+tooltip: touch has no hover, and a number you have to go and ask for is a
+weaker promise than one that is simply there. The keyboard/pad cursor also
+gets the REASON in the HUD (`-30% their cover · -18% they ran · +1 your
+run · 2 tiles to close`), because a number a player does not trust is not
+information.
+
+**A forecast is taken from the tile you would SHOOT FROM, not the one you
+are standing on.** `orderAttack` steps you into range first and cover is a
+property of where you end up, so a forecast from the current tile would
+confidently quote the wrong number on exactly the shots that need a step.
+
+**TWO NEW MISSION TYPES, and the game's first clock.** `extract` (get N of
+the crew onto the pads) and `destroy` (break the cache), plus `deadline` on
+either. Before this the game had exactly ONE way to lose — a crew wipe —
+and now it has three: the deadline, and falling below an extraction's
+`need`. `state.win` was already data (GDD §3), so each mode is a clause in
+`checkWinLoss` plus encounter JSON.
+
+A cache is a **third faction** rather than a new entity type, because "a
+thing on a tile with hp that can be attacked" is what a unit already is:
+`attackableTargets` filters on `faction !== mine`, and `livingEnemies` and
+`ai.js` both filter on the names 'enemy' and 'player', so an objective is
+attackable by both sides and invisible to the win check and the enemy brain
+without either learning anything. The gate asserts the rivals never target
+it — otherwise they would spend the encounter beating up a crate.
+
+**`need` IS ABSOLUTE, and clamping it to the living was a real fault.** With
+`Math.min(need, alive)` a crew that lost somebody needed fewer bodies on the
+pads, so losing an operator made the mission EASIER and the cheapest way to
+pass a 3-of-3 extraction was to let one die. Falling below `need` is a loss
+now.
+
+**BOTH NEW ENCOUNTERS WERE TUNED BY MEASUREMENT, AND BOTH ARE CLIFFS.**
+`the-crossing` with open pads was 0% at four rounds and 100% at five — an
+uncontested extraction is arithmetic, not a fight — so a holder and a
+control grunt stand ON the approach, which is what makes it 18%.
+`the-depot` measured 0% at every cache-HP, deadline and roster combination
+tried, and the cause was not the encounter: the gate's bot targets the
+NEAREST thing that is not its own, which always answers "an enemy", so it
+never attacked a cache once. Two caches at opposite ends is still 0% at
+every setting (it asks the crew to cross the board twice); one cache between
+two dumpsters is 25%. The third-versus-fourth enemy is another cliff, 20% to
+0%. Every number is recorded in the encounters' own `_note` fields.
+
+**The gate's bot had to learn the objective**, and that is a principle
+rather than a fix: it is meant to ignore every SYSTEM — cover, hazards,
+knockback, the kit — because that is what makes its rate a floor, but a bot
+that ignores the GOAL reports 0% on an extraction map, which is a fact about
+the bot and not about the encounter. It was also walking past five armed
+rivals without ever swinging back and being wiped in 34 of 40 runs; taking
+the free swing on the way out is not cleverness, it is not being suicidal.
+
+**Two readability faults, both found on a screenshot rather than by a
+gate.** The cache fell through to the humanoid fallback and drew as a third
+gang member standing very still; it is a strapped crate now, with a reticle
+above it, because this board is full of crates as cover. And the extraction
+pads opened OFF SCREEN on the very frame the player is told to go and stand
+on them — the opening shot now frames the crew and the mission together.
+
+- `test/smoke.mjs` is 91 checks (was 78): the forecast equalling the roll,
+  the from-tile rule, no forecast for a shot that is not on, both new loss
+  conditions, a cache being a target like any other, and the enemy brain
+  never aiming at one.
+- `test/balance.mjs` green on all seven: 53 / 67 / 65 / 17 / 68 / 18 / 25.
+- Tokens: `combat` v13, `input` v11, `render` v17, `palette` v7, `main` v20,
+  `autoplay` v2.
+
 ## v25 — 2026-09-03
 **Owner, on the v24 build: "zoom in a bit on mobile, things are hard to see
 now. there are no actions at all, fighters just bump into each other and I

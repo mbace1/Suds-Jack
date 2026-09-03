@@ -27,7 +27,7 @@ an MST:
 
 ---
 
-## 1. Done (v24–v25)
+## 1. Done (v24–v26)
 
 | MST pillar | TURF |
 |---|---|
@@ -36,6 +36,8 @@ an MST:
 | Movement as the engine | Momentum is *either* damage *or* evasion, never both |
 | Reaction fire | **Overwatch**, the only thing that happens on the enemy's turn |
 | Readable enemy turn | Two-beat phase (LOOK then ACT), spotlight, camera follow, intent paths |
+| Full information on a shot | **Forecast** — odds, damage and LETHAL over every reachable target, from the tile you would actually shoot from |
+| Mission variety | **Extraction** and **destroy**, both on a deadline — the game's first clock |
 
 The economy closes: you **move** to afford the thing you then **do**.
 
@@ -43,19 +45,17 @@ The economy closes: you **move** to afford the thing you then **do**.
 
 ## 2. Next, in order
 
-**2.1 — Show the shot before you take it.** *(small)*
-Hovering or cursoring an enemy still says nothing: no hit %, no damage range,
-no cover/evasion breakdown. This is a hole in the full-information contract
-opened by v24 — momentum modifies a hit chance the player cannot see. Every
-number needed is already computed in `resolveAttack`; the work is a preview
-path that runs the same arithmetic without rolling.
+**2.1 — DONE (v26).** `forecastAttack` is the one place the odds are worked
+out and `resolveAttack` calls it, so the quoted number and the rolled number
+cannot drift. Badges on the board rather than a hover tooltip, because touch
+has no hover and a number you must ask for is a weaker promise than one that
+is simply there.
 
-**2.2 — Objectives beyond survive and eliminate.** *(medium)*
-Two modes exist. MST runs on extraction, escort and destroy-the-target.
-`state.win` is already a data field, so each new mode is a win-check branch
-plus encounter JSON — no engine change.
+**2.2 — DONE (v26).** `extract` (get N of the crew onto the pads) and
+`destroy` (break the cache), both with a `deadline` — which is the game's
+second and third loss conditions; before v26 it had exactly one, a crew wipe.
 
-**2.3 — A boss.** *(medium)*
+**2.3 — A boss.** *(medium, and now the next thing)*
 Something with a rule that changes the board, so a run *ends* rather than
 stops. Needs 2.2 first: a boss is an objective before it is a stat block.
 
@@ -84,6 +84,18 @@ against PR #419; the frames themselves need an owner-side push request.
 ---
 
 ## 3. Honest gaps that are not on the list
+
+- **Both new missions are cliffs for the balance bot, not dials.** Extraction
+  with open pads measured 0% at four rounds and 100% at five; the fight only
+  becomes a decision once enemies stand ON the approach (46%). Destroy
+  measured 0% at *every* cache-HP and roster combination until the bot was
+  taught to attack a cache at all, and two caches at opposite ends is 0% at
+  every setting because it asks the crew to cross the board twice. One cache
+  is 20%. The third-versus-fourth enemy is likewise a cliff, 20% to 0%. Every
+  one of those numbers is in the encounter's own `_note`.
+- **A destroy map is invisible to a "nearest target" bot**, which is why
+  `balance.mjs` had to learn the objective. Worth remembering before adding a
+  third mode: a mode the bots cannot pursue is a mode nobody can balance.
 
 - **Barricade is never used by the auto-battler** (`js/autoplay.js` has no rule
   for it). That is a gap in the bot, not evidence about the ability — but it

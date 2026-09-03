@@ -31,11 +31,33 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     const def = enemyDefs.find(e => e.id === spawn.enemy);
     units.push(makeUnit(`e${i}`, def, weaponById(def.weapon), 'enemy', spawn));
   });
+  // Objective units — the thing a `destroy` mission is about. A third
+  // faction rather than a new entity type, because "a thing on a tile with
+  // hp that can be attacked" is what a unit already IS: attackableTargets
+  // filters on `faction !== mine`, so both sides can hit it for free;
+  // livingEnemies and ai.js's target search both filter on 'enemy' and
+  // 'player' by name, so it is invisible to the win check and to the enemy
+  // brain without either of them learning a thing. It cannot move, has no
+  // weapon, and is never asked to act.
+  (encounter.objectives || []).forEach((spawn, i) => {
+    units.push({
+      uid: `o${i}`, defId: spawn.id, name: spawn.name, faction: 'objective',
+      role: 'objective', weapon: null, baseWeapon: null,
+      hp: spawn.hp, maxHp: spawn.hp, move: 0,
+      x: spawn.x, y: spawn.y,
+      actedMove: true, actedAction: true,
+      kills: 0, xp: 0, level: 1, trinkets: [],
+    });
+  });
 
   const state = {
     encounterId: encounter.id,
     grid: encounter.grid,
     fullCover, partialCover, hazards,
+    // Extraction tiles (GDD §4's objective variety, MST's most-used mission
+    // shape). A Set of tile keys — empty for every other mode, so nothing
+    // downstream needs to know which mode is running.
+    extract: new Set((encounter.extract || []).map(([x, y]) => key(x, y))),
     // Units holding fire (the Overwatch ability). A Set of uids, emptied at
     // the top of every player turn — overwatch is a posture you take for one
     // enemy phase, never a standing order you can forget you gave.
@@ -221,6 +243,11 @@ export function moveUnit(state, uid, x, y) {
   const pickedUp = unit.hp > 0 ? pickUpDropAt(state, unit) : null;
   maybeDeselect(state, unit);
   planAllIntents(state);
+  // An extraction is won by STANDING somewhere, which makes a move the only
+  // action in the game that can win an encounter on its own. Without this
+  // call the win would sit unnoticed until somebody happened to attack —
+  // the same bug the survive mode had before v22.
+  checkWinLoss(state);
   return { ok: true, pickedUp, hazard };
 }
 
@@ -278,25 +305,48 @@ export const TRINKET_SHARE = 0.4;
 // resolution: accuracy, a damage bonus or a flat replacement, a knockback
 // override, and whether the swing spends the attacker's momentum — it does
 // not, when the ability has already charged for it.
-function resolveAttack(state, attacker, target, weapon, opts = {}) {
+// THE ONE PLACE the odds are worked out, so the preview and the resolution
+// are the same arithmetic rather than two copies that drift. This game
+// promises full information: a player who is told 70% and hit 4 times out of
+// ten has been lied to, and the only structural defence against that is for
+// the number on screen and the number rolled against to come from here.
+//
+// Pure — no rng, no mutation. `from` lets a caller ask about a tile the
+// attacker has not reached yet, which matters because orderAttack steps you
+// into range first and cover is a property of WHERE YOU END UP.
+export function forecastAttack(state, attacker, target, weapon, opts = {}, from = attacker) {
   let chance = opts.accuracy != null ? opts.accuracy : weapon.hitChance;
   if (opts.accuracyMod) chance += opts.accuracyMod;
-  if (weapon.archetype === 'ranged' && coverSoftens(state, attacker, target)) chance -= 0.3;
+  const cover = weapon.archetype === 'ranged' && coverSoftens(state, from, target);
+  if (cover) chance -= COVER_PENALTY;
   // A moving target is harder to shoot (momentum.js) — the rule that makes
   // standing still cost something, and the reason a board spreads out.
   const evade = evasionOf(target, weapon);
   chance -= evade;
   chance = Math.max(0.05, Math.min(1, chance));
+  const bonus = opts.flatDamage != null ? 0 : momentumDamage(attacker) + (opts.damageBonus || 0);
+  const base = opts.flatDamage != null ? opts.flatDamage : weapon.damage;
+  const damage = opts.flatDamage != null ? opts.flatDamage : base + bonus;
+  const shots = opts.shots || 1;
+  return {
+    chance, cover, evade, base, bonus, damage, shots,
+    // Whether this would finish them. The single most decision-relevant fact
+    // on the board, and until now the player had to do the subtraction.
+    lethal: damage >= target.hp,
+    knockback: opts.knockback != null ? opts.knockback : weapon.knockback,
+  };
+}
+
+export const COVER_PENALTY = 0.3;
+
+function resolveAttack(state, attacker, target, weapon, opts = {}) {
+  const f = forecastAttack(state, attacker, target, weapon, opts);
+  const chance = f.chance, evade = f.evade, bonus = f.bonus;
   const roll = state.rng();
   const hit = roll < chance;
-  // What the attacker's own run adds. Resolved before the roll's outcome so a
-  // MISS still reports what it would have done — the HUD has already promised
-  // this number and must not appear to have lied when the dice go the other
-  // way.
-  const bonus = opts.flatDamage != null ? 0 : momentumDamage(attacker) + (opts.damageBonus || 0);
   let damage = 0, killed = false, knockback = null, dropped = null;
   if (hit) {
-    damage = opts.flatDamage != null ? opts.flatDamage : weapon.damage + bonus;
+    damage = f.damage;
     target.hp = Math.max(0, target.hp - damage);
     killed = target.hp <= 0;
     if (killed) {
@@ -400,6 +450,26 @@ export function attack(state, attackerUid, targetUid) {
 // range (spending the move, if it has one left) before resolving the
 // attack. `attack()` itself stays strict/in-place — this is the only place
 // "move to make the shot happen" is allowed to occur automatically.
+// What the player is about to do to whoever they are pointing at, worked out
+// from the tile orderAttack would actually shoot from — not from where the
+// unit is standing. That distinction is the whole point: approachTile steps
+// you into range first, and cover is a property of where you END UP, so a
+// forecast taken from the current tile would confidently quote the wrong
+// number on exactly the shots that need a step.
+//
+// Returns null when the shot is not on, so the caller shows nothing rather
+// than a 5% floor for an attack that cannot happen.
+export function previewAttack(state, attackerUid, targetUid, opts = {}) {
+  const attacker = getUnit(state, attackerUid);
+  const target = getUnit(state, targetUid);
+  if (!attacker || !target || attacker.hp <= 0 || target.hp <= 0) return null;
+  if (attacker.actedAction) return null;
+  const tile = approachTile(state, attacker, target);
+  if (!tile) return null;
+  const f = forecastAttack(state, attacker, target, attacker.weapon, opts, tile);
+  return { ...f, from: tile, steps: manhattan(tile, attacker), targetHp: target.hp };
+}
+
 export function orderAttack(state, attackerUid, targetUid) {
   const attacker = getUnit(state, attackerUid);
   const target = getUnit(state, targetUid);
@@ -644,14 +714,47 @@ export function stepEnemyPhase(state) {
 // `survive` is therefore the interesting objective and `eliminate` is kept
 // for encounters that genuinely are a clear-out. Killing every enemy always
 // wins regardless of mode — outliving the fight early is never punished.
+// Everything that can end an encounter, in one place. Each mode is a branch
+// rather than a subclass because `state.win` is DATA (GDD §3) — a new
+// objective is encounter JSON plus a clause here, never an engine rewrite.
 function checkWinLoss(state) {
   if (state.result) return;
+  const win = state.win || { mode: 'eliminate' };
   if (!state.units.some(u => u.faction === 'player' && u.hp > 0)) { state.result = 'lose'; return; }
+
+  // A DEADLINE is the game's second loss condition, and until now it had
+  // only one (the crew wipe). Without it an extraction mission is just a
+  // walk: nothing punishes taking twenty rounds to cross the board, so the
+  // objective carries no pressure and the fight around it does not matter.
+  if (win.deadline && state.round > win.deadline) { state.result = 'lose'; return; }
+
+  // Clearing the block wins any mission. Stated on the title card ("killing
+  // them all also wins") because a player who has just wiped the board and
+  // is then told to keep walking would rightly call it a bug — and on these
+  // rosters it is never the easy route anyway.
   if (!state.units.some(u => u.faction === 'enemy' && u.hp > 0)) { state.result = 'win'; return; }
-  // Survive N: the round counter has already advanced past N when the Nth
-  // round's enemy phase finishes, which is exactly when the player has
-  // outlasted it.
-  if (state.win && state.win.mode === 'survive' && state.round > state.win.rounds) state.result = 'win';
+
+  if (win.mode === 'survive' && state.round > win.rounds) { state.result = 'win'; return; }
+
+  if (win.mode === 'destroy') {
+    const left = state.units.filter(u => u.faction === 'objective' && u.hp > 0);
+    if (!left.length) { state.result = 'win'; return; }
+  }
+
+  if (win.mode === 'extract') {
+    const alive = state.units.filter(u => u.faction === 'player' && u.hp > 0);
+    const need = win.need || alive.length;
+    // `need` IS ABSOLUTE, and clamping it to the living was a real fault:
+    // with `Math.min(need, alive)` a crew that lost somebody needed fewer
+    // bodies on the pads, so losing an operator made the mission EASIER and
+    // the cheapest way to pass a 3-of-3 extraction was to let one die.
+    // Falling below it is instead the game's third loss condition — the
+    // mission is now unpassable and saying so beats letting the player walk
+    // out a run that cannot be completed.
+    if (alive.length < need) { state.result = 'lose'; return; }
+    const out = alive.filter(u => state.extract.has(key(u.x, u.y)));
+    if (out.length >= need) { state.result = 'win'; return; }
+  }
 }
 
 // GDD.md §5's v1 progression list: "XP levels: units gain levels from
