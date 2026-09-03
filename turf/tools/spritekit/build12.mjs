@@ -2,7 +2,16 @@
 // The six phases are structurally identical per half-cycle, so they are
 // templated on which side of the PICTURE the planted foot is on — keeping the
 // screen-space rule that made the 4-frame cycle work.
-//   node build12.mjs <identityFile> <phase> [--rear]
+//   node build12.mjs <identityFile> <phase> [--rear] [--covered]
+//
+// --covered is for a character whose LEGS ARE NOT VISIBLE — a long apron, a
+// coat past the knee, a skirt. Every phase below is written as where the legs
+// are, which is the right signal for a normal silhouette and useless for one
+// that hides them: Toko Slomo (long apron AND both arms locked behind his back)
+// produced a 6-frame front cycle with ZERO distinct pairs and five
+// near-duplicates, against a hand-made cycle that managed five distinct. So
+// --covered adds the signal that IS visible on such a character: where the
+// boots are relative to the hem, and which way the hem is swinging.
 import { readFileSync } from 'node:fs';
 
 const PHASES = ['contact', 'compression', 'push', 'pass', 'reach', 'precontact'];
@@ -44,6 +53,7 @@ function body(side, phase) {
 
 const [, , identityFile, phaseName] = process.argv;
 const rear = process.argv.includes('--rear');
+const covered = process.argv.includes('--covered');
 const identity = readFileSync(identityFile, 'utf8').trim();
 const m = /^(left|right)_(\w+)$/.exec(phaseName || '');
 if (!m || !PHASES.includes(m[2])) {
@@ -56,6 +66,17 @@ const VIEW = rear
   ? `tactical isometric REAR diagonal. She is seen FROM BEHIND, facing away from the viewer, angled toward the upper-left of the picture. We see her back. Her face is not visible.`
   : `tactical isometric front diagonal. The face and the front of the body are angled toward the lower-right of the picture. Not a flat side-on profile, not a straight-on front view.`;
 
+// The hem leads the body: cloth lags what the legs did a moment ago, so it
+// swings BACKWARD as a leg drives forward and hangs still at the extremes.
+const COVERED = {
+  contact: `\n- THE HEM AND THE BOOTS: his long hem has swung back and hangs at its most SLANTED, trailing behind the leading leg. Below it one boot is planted flat and clearly ahead of the hem's front edge; the other boot shows only as a toe behind the hem.`,
+  compression: `\n- THE HEM AND THE BOOTS: the hem has dropped to its LOWEST and hangs almost straight down as his weight sinks, briefly still. Only the planted boot shows beneath it, close under the hem's front edge; the other foot is hidden behind the cloth.`,
+  push: `\n- THE HEM AND THE BOOTS: the hem is lifting and beginning to swing FORWARD as he drives upward. The planted boot's heel is peeling off the ground and shows below the hem's back edge; the other boot is emerging at the front.`,
+  pass: `\n- THE HEM AND THE BOOTS: the hem is at its HIGHEST and swung fully FORWARD, kicked out ahead of his shins. Both boots are close together and mostly hidden behind it — only the toes show.`,
+  reach: `\n- THE HEM AND THE BOOTS: the hem is falling back down and swinging BACKWARD again. One boot has appeared well out in FRONT of the hem, reaching ahead of the cloth entirely; the other is behind it.`,
+  precontact: `\n- THE HEM AND THE BOOTS: the hem is low and slanting back, nearly settled. The reaching boot is out in front and about to land, its sole angled toward the ground; the trailing boot shows behind the hem's back edge.`,
+};
+
 process.stdout.write(`A single pixel-art character sprite for a tactical isometric game.
 
 THE CHARACTER, matching the attached reference exactly: ${identity}
@@ -63,7 +84,9 @@ THE CHARACTER, matching the attached reference exactly: ${identity}
 VIEW: ${VIEW}
 
 THE POSE — read left and right below as positions in the PICTURE, not as the character's own left and right. This is one specific instant of a running stride:
-${body(side, phase)}
+${body(side, phase)}${covered ? COVERED[phase] : ''}${covered ? `
+
+HIS LEGS ARE HIDDEN. The long hem covers his knees and thighs in every frame, so do NOT try to show the leg positions described above through it — they are there to tell you what the body is doing. What the picture must show is the HEM and the BOOTS below it, exactly as described. The hem's swing and the boots' spacing are the whole animation.` : ''}
 
 RENDERING: hard-edged pixel art with a 1px dark outline around the silhouette, flat clustered shading in a few tonal steps, strong readable silhouette, compact slightly chibi proportions with a large readable head. No anti-aliasing, no soft airbrushed blending, no photographic gradients, no 3D render look.
 

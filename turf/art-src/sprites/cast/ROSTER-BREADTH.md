@@ -102,3 +102,72 @@ predictable from the silhouette before a single frame is generated:
 - **loose hair** → the scale anchor cannot be trusted; normalise
   `--origin-only` and gate with `drift.cjs --no-scale`.
 - **hood, cap, bald with arms down** → nothing to worry about.
+
+
+## Rear, added 2026-09-02 — and rear keeps beating front
+
+All four now have rear cycles, generated against back-view references cropped
+from the same casting sheet. 11 of 12 opposition/closure pairs distinct, no
+mirrors anywhere.
+
+```
+                contact-opp   pass-opp   loop
+sledge             .298        .564      .418
+hoodie             .497        .638      .606
+longcoat           .638        .651      .510   pass = suspicious
+leopard            .625        .543      .513
+```
+
+**`sledge` rear is the best set of the four, and its front was the worst.**
+Front scored .548 with a genuine near-duplicate loop closure at .812, because
+both hands are locked to a bar across the chest and the hammer crosses the leg
+region. From behind, the hammer is on the far side of the body and stops
+occluding the legs, so the stride reads clearly. That is now the **third**
+time rear has first-passed better than front (12-phase rear needed 0 re-rolls
+against front's 3; melee and ranged rear both landed first try). Worth
+planning around: if a character has to be re-rolled, expect it to be the front.
+
+`longcoat`'s `pass` pair at .651 is the predicted hidden-legs cost, unchanged
+from the front result.
+
+## Toko Slomo: both risk factors at once, and the fix for them
+
+The owner supplied a hand-made 6-frame run cycle for **Toko Slomo** — a masked
+figure in a long apron, both hands locked behind his back around a butcher's
+cleaver — and asked for the same cycle generated, and compared. Scored over all
+fifteen pairs per row, `full` region:
+
+```
+                        distinct  suspicious  near-dup  mean IoU
+owner, front                   5           5         5     0.741
+spritekit, front               0          10         5     0.768   <- worse
+owner, rear                    0          12         3     0.756
+spritekit, rear                7           7         0     0.594
+spritekit, front --covered    10           4         1     0.610   <- fixed
+```
+
+**The first front cycle was beaten by the hand-made one, and the tables above
+predicted it.** Slomo is the first character carrying BOTH known risk factors:
+*legs hidden* (the apron, longcoat's fault) and *arms pinned* (behind his back,
+sledge's fault). Every phase in `build12.mjs` is written as where the legs are,
+which is the correct signal for a normal silhouette and no signal at all on one
+that hides them. Zero distinct pairs out of fifteen.
+
+**`--covered` is the fix and it is not a loosened threshold.** It adds the
+signal that IS visible on such a character — where the boots sit relative to
+the hem, and which way the hem is swinging — and tells the model outright that
+the leg description is context rather than something to draw through the cloth.
+The hem *lags* the body, swinging back as a leg drives forward and hanging
+still at the extremes, so it carries the phase honestly. Same six phases, same
+reference, one flag: **0 distinct becomes 10**, and it beats the hand-made
+cycle it had been losing to.
+
+Rear needed no such help — it scored 7 distinct with zero near-duplicates
+first try, which is **the fourth time rear has out-performed front**.
+
+One identity note worth keeping: the cleaver is carried BEHIND his back, and
+the standard prop clause — *"must stay visible in every pose"* — is wrong for a
+concealed weapon. It takes a per-facing note instead: from the front only the
+blade tip shows past his hip, from the rear the whole blade hangs below his
+clasped hands. Hence `identity-front.txt` and `identity-rear.txt` rather than
+one file.
