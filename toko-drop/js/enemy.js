@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=189';
-import { nesSnap, NEON } from './retro.js?v=189';
+import { TUNING } from './tuning.js?v=190';
+const _apt = { x: 0, z: 0 };   // v236: scratch for arena queries — no per-frame alloc
+import { nesSnap, NEON } from './retro.js?v=190';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -1191,7 +1192,7 @@ export class Enemy {
   // goo-flop.html / enemy-lab.html). Cadence derives from each type's speed:
   // cycle = 2L/speed, flop for min(flopTimeMax, cycle·flopShareOfCycle),
   // rest for the remainder — average ground speed stays exactly `spd`.
-  _flopMove(dt, spd, halfX, halfZ, wantX = 0, wantZ = 0, exact = false) {
+  _flopMove(dt, spd, halfX, halfZ, wantX = 0, wantZ = 0, exact = false) {   // AABB: per-axis reflection, see arena.js header
     const F      = TUNING.flop;
     const radius = CFG[this.type].radius;
     const rm     = this._radiusMult || 1;
@@ -1365,8 +1366,14 @@ export class Enemy {
     return false;
   }
 
-  update(dt, playerPos, bullets, halfX = 19, halfZ = 18) {
+  // v236: takes the ARENA (js/arena.js) rather than two half-extents. Every
+  // clamp below is the same expression it was — the rectangle's clamp IS the
+  // per-axis one — but it is now asked of the region instead of assumed of it.
+  update(dt, playerPos, bullets, arena) {
     if (!this.alive) return;
+    // The region's bounding box, still wanted by set dressing and by the cube
+    // flop's per-axis reflection (which an SDF has no notion of — see arena.js).
+    const halfX = arena.halfX, halfZ = arena.halfZ;
 
     const cfg  = CFG[this.type];
     const pos  = this.position;
@@ -2096,9 +2103,9 @@ export class Enemy {
         // Keep the boss inside the walls (v126): the 7.5 orbit radius is wider
         // than half the SMASH TV room (15×11 halves), so a wall-hugging player
         // could push the crystal out through the doors. Clamp like TORO does.
-        const obx = halfX - cfg.radius, obz = halfZ - cfg.radius;
-        this.mesh.position.x = Math.max(-obx, Math.min(obx, this.mesh.position.x));
-        this.mesh.position.z = Math.max(-obz, Math.min(obz, this.mesh.position.z));
+        arena.clamp(this.mesh.position.x, this.mesh.position.z, cfg.radius, _apt);
+        this.mesh.position.x = _apt.x;
+        this.mesh.position.z = _apt.z;
         // Independent crystal spin — visual flavour only, no gameplay effect.
         this.mesh.rotation.y += 0.6 * dt;
         this.mesh.rotation.x += 0.25 * dt;
@@ -2149,9 +2156,9 @@ export class Enemy {
         const radial = dist > want + 1.5 ? 1 : dist < want - 1.5 ? -1 : 0;
         this.mesh.position.x += (ddx / dist * radial * 0.5 + perpX * this._orbitSign) * pspd * dt;
         this.mesh.position.z += (ddz / dist * radial * 0.5 + perpZ * this._orbitSign) * pspd * dt;
-        const pbx = halfX - cfg.radius, pbz = halfZ - cfg.radius;
-        this.mesh.position.x = Math.max(-pbx, Math.min(pbx, this.mesh.position.x));
-        this.mesh.position.z = Math.max(-pbz, Math.min(pbz, this.mesh.position.z));
+        arena.clamp(this.mesh.position.x, this.mesh.position.z, cfg.radius, _apt);
+        this.mesh.position.x = _apt.x;
+        this.mesh.position.z = _apt.z;
         this.mesh.rotation.y += (raged ? 1.6 : 0.8) * dt;
         this._prismFireT = (this._prismFireT ?? (1.2 + (this._twinIdx ?? 0) * 1.4)) - dt;
         if (this._prismFireT <= 0) {
@@ -2188,8 +2195,8 @@ export class Enemy {
             this._teleT = this._enraged ? 2.4 : 3.6;
             let tx, tz, tr = 0;
             do {
-              tx = (Math.random() * 2 - 1) * (halfX - 2);
-              tz = (Math.random() * 2 - 1) * (halfZ - 2);
+              arena.randomPoint(Math.random, 2, _apt);
+              tx = _apt.x; tz = _apt.z;
             } while (Math.hypot(tx - playerPos.x, tz - playerPos.z) < 6 && ++tr < 20);
             this.mesh.position.x = tx;
             this.mesh.position.z = tz;
@@ -2248,7 +2255,7 @@ export class Enemy {
         // Dash/telegraph bounds: wheel center stops one radius short of the
         // real per-axis walls (the old hardcoded ±17 let TORO dash 6 units
         // outside the portrait arena's side walls).
-        const toroBX = halfX - cfg.radius, toroBZ = halfZ - cfg.radius;
+        const toroBX = halfX - cfg.radius, toroBZ = halfZ - cfg.radius;   // AABB, for the wall-hit test below
         switch (this._state) {
           case 'idle': {
             // Enraged boss stalks faster between dashes (v62).
@@ -2283,11 +2290,8 @@ export class Enemy {
               this._stateT = TUNING.toro.telegraphTime;
               // Exact dash length: distance along dashDir to the wall clamp.
               const px = this.group.position.x, pz = this.group.position.z;
-              const tx = this._dashDir.x > 0 ? (toroBX - px) / this._dashDir.x
-                       : this._dashDir.x < 0 ? (-toroBX - px) / this._dashDir.x : Infinity;
-              const tz = this._dashDir.z > 0 ? (toroBZ - pz) / this._dashDir.z
-                       : this._dashDir.z < 0 ? (-toroBZ - pz) / this._dashDir.z : Infinity;
-              const dashLen = Math.max(0.5, Math.min(tx, tz));
+              const dashLen = Math.max(0.5,
+                arena.rayEdge(px, pz, this._dashDir.x, this._dashDir.z, cfg.radius));
               this._indShaft.scale.z = dashLen;
               this._indArrow.position.z = dashLen; // arrowhead tip exactly at impact
               this._indicator.position.set(px, 0.03, pz);
@@ -2312,8 +2316,9 @@ export class Enemy {
             this._spinAngle += (this._dashSpeed / (cfg.radius * 0.68)) * dt;
             this._wheel.rotation.z = -this._spinAngle;
             if (Math.abs(this.group.position.x) > toroBX || Math.abs(this.group.position.z) > toroBZ) {
-              this.group.position.x = Math.max(-toroBX, Math.min(toroBX, this.group.position.x));
-              this.group.position.z = Math.max(-toroBZ, Math.min(toroBZ, this.group.position.z));
+              arena.clamp(this.group.position.x, this.group.position.z, cfg.radius, _apt);
+              this.group.position.x = _apt.x;
+              this.group.position.z = _apt.z;
               this._state = 'recovering';
               this._stateT = TUNING.toro.recoverTime;
               this._sqV -= 0.5;

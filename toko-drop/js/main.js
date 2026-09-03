@@ -1,16 +1,17 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=189';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=189';
-import { Player, PLAYER_RADIUS } from './player.js?v=189';
+import { InputManager } from './input.js?v=190';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=190';
+import { Player, PLAYER_RADIUS } from './player.js?v=190';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=189';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=189';
-import { audio } from './audio.js?v=189';
-import { haptics } from './haptics.js?v=189';
-import { initDesigner } from './designer.js?v=189';
-import { createSpecimen } from './specimen.js?v=189';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=189';
-import { TUNING } from './tuning.js?v=189';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=190';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=190';
+import { audio } from './audio.js?v=190';
+import { haptics } from './haptics.js?v=190';
+import { initDesigner } from './designer.js?v=190';
+import { createSpecimen } from './specimen.js?v=190';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=190';
+import { TUNING } from './tuning.js?v=190';
+import { Arena, rectShape } from './arena.js?v=190';   // v236: the boundary has one home
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -28,6 +29,14 @@ const ARENA_PRESETS = {
 };
 let HALF_X      = ARENA_PRESETS.portrait.halfX;   // arena half-width
 let HALF_Z      = ARENA_PRESETS.portrait.halfZ;   // arena half-depth
+// v236: the playable REGION, as an SDF (js/arena.js). HALF_X / HALF_Z stay as
+// the region's bounding box and are still what the floor plane, the camera fit
+// and the set-dressing read — a room's SIZE is a fair thing to ask for. What
+// moved into `arena` is its BOUNDARY: containment, spawn rings, points inside.
+// Those are the sites that stop being expressible the moment a level is not a
+// rectangle, which is the whole point of LEVEL_EDITOR_DESIGN.md P0.
+const arena = new Arena(rectShape(HALF_X, HALF_Z));
+const _apt  = { x: 0, z: 0 };   // scratch for arena queries — never allocate per frame
 // v162 (user direction — mode structure taxonomy): SCROLLING-ARENA cabinets
 // (gaundrop / loadout / kaikki, like their references) play in a world
 // arenaScale× bigger than the screen; the camera follows the player and the
@@ -763,6 +772,7 @@ function applyArenaMode(landscape) {
   const p = (smashMode || tokotronMode || nexdeusMode) ? ARENA_PRESETS.smash
           : landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
   HALF_X = p.halfX * arenaScale; HALF_Z = p.halfZ * arenaScale;   // v162
+  arena.setRect(HALF_X, HALF_Z);                                 // v236
   CAM_LOOK.set(...p.camLook);
   if (smashMode || tokotronMode || nexdeusMode || landscape) CAM_REST.copy(fitPresetCamera(p));
   else                        CAM_REST.set(...p.camRest);
@@ -1815,7 +1825,7 @@ class CargoCluster {
       d.wR.rotation.z = -flap;
       d.body.rotation.y = t * 1.5 + i * 0.5;
       const p = d.container.position;
-      if (Math.abs(p.x) > HALF_X + 5 || Math.abs(p.z) > HALF_Z + 5) {
+      if (!arena.contains(p.x, p.z, -5)) {   // v236: 5 units of slack outside the region
         d.escaped = true; d.alive = false;
       } else {
         anyInArena = true;
@@ -2500,8 +2510,9 @@ class Civilian {
       this._dir = Math.random() * Math.PI * 2;
     }
     if (!waving) {   // stops in place to wave — a person asking for help
-      this.x = Math.max(-HALF_X + 0.6, Math.min(HALF_X - 0.6, this.x + Math.cos(this._dir) * this._speed * dt));
-      this.z = Math.max(-HALF_Z + 0.6, Math.min(HALF_Z - 0.6, this.z + Math.sin(this._dir) * this._speed * dt));
+      arena.clamp(this.x + Math.cos(this._dir) * this._speed * dt,
+                  this.z + Math.sin(this._dir) * this._speed * dt, 0.6, _apt);
+      this.x = _apt.x; this.z = _apt.z;
     }
     const ph = performance.now() * 0.011 + this.x * 3;
     const swing = waving ? 0 : Math.sin(ph) * 0.55;
@@ -4971,7 +4982,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v235' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v236' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -7069,9 +7080,8 @@ function spawnWave() {
     // Enter the new room through the opposing wall from the exit just taken:
     // spawn at that door's mouth, step in with a moment of mercy.
     if (_entryDoor != null) {
-      const ex = Math.cos(DOORS[_entryDoor]) * (HALF_X - PLAYER_RADIUS * 2);
-      const ez = Math.sin(DOORS[_entryDoor]) * (HALF_Z - PLAYER_RADIUS * 2);
-      player.mesh.position.set(ex, PLAYER_RADIUS, ez);
+      arena.insetPoint(DOORS[_entryDoor], PLAYER_RADIUS * 2, _apt);
+      player.mesh.position.set(_apt.x, PLAYER_RADIUS, _apt.z);
       player.grantInvincibility(1.2);
       _entryDoor = null;
     }
@@ -7906,8 +7916,9 @@ function loop() {
     // SMASH TV: spawn right at the doorway mouth so enemies visibly step THROUGH
     // the door frame into the room, instead of materialising inside it.
     const edge = smashMode ? 0.99 : 0.85;
-    const bx = s.px != null ? s.px : Math.cos(s.angle) * HALF_X * edge;
-    const bz = s.pz != null ? s.pz : Math.sin(s.angle) * HALF_Z * edge;
+    arena.ringPoint(s.angle, edge, _apt);
+    const bx = s.px != null ? s.px : _apt.x;
+    const bz = s.pz != null ? s.pz : _apt.z;
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
@@ -7976,7 +7987,7 @@ function loop() {
     enemies.push(en);
   }
 
-  player.update(dt, moveDir, aimDir, bullets, HALF_X, HALF_Z);
+  player.update(dt, moveDir, aimDir, bullets, arena);
 
   // LOADOUT runtime (v152): objectives tick, walls block, trickles pour.
   if (loadoutMode && player.alive && gameState === 'playing') {
@@ -8047,8 +8058,8 @@ function loop() {
         const a2 = Math.random() * Math.PI * 2;
         const roll = Math.random();
         const ty = roll < 0.4 ? EnemyType.TROOPER : roll < 0.75 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE;
-        enemies.push(new Enemy(scene, ty,
-          Math.cos(a2) * HALF_X * 0.95, Math.sin(a2) * HALF_Z * 0.95));
+        arena.ringPoint(a2, 0.95, _apt);
+        enemies.push(new Enemy(scene, ty, _apt.x, _apt.z));
       }
     }
     // objective completion
@@ -8893,7 +8904,7 @@ function loop() {
   }
   for (const e of enemies) {
     // v187 CLOSE COMBAT: enemies get a dead phone instead of the trigger
-    e.update(dt, player.position, meleeRun ? MUZZLED_BULLETS : bullets, HALF_X, HALF_Z);
+    e.update(dt, player.position, meleeRun ? MUZZLED_BULLETS : bullets, arena);
     // v188 (playtest video): a drafted shooter kept its old hold-range habit
     // and just stood there — in CLOSE COMBAT the draft means you ADVANCE.
     if (meleeRun && e.alive && RANGED_TYPES.has(e.type)) {
@@ -10060,6 +10071,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=189').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=190').catch(() => {});
   });
 }
