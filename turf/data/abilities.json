@@ -1,0 +1,69 @@
+{
+  "_comment": "Actions, per GDD \u00a73's rule that everything is data. Costed in MOMENTUM (momentum.js), which means they are paid for by MOVING \u2014 you run in, then spend the run. That is the loop this game took from Metal Slug Tactics, and until v25 there was nothing to spend it on but a flat damage bonus. An ability replaces a unit's normal attack; it never grants a second action. `role` decides who gets it, so the whole 14-strong cast is covered without hand-authoring 28 entries, and a per-unit `abilities` override stays a one-line addition. Enemies deliberately have none: their variety is `behaviour` (ai.js), and giving both sides kits would make a telegraph nobody can read. `damageMode` says whether `damage` is a BONUS on top of the weapon (\"weapon\") or the whole number (\"flat\") \u2014 Shove is flat because a shove is a shove whoever is holding the pipe. `accuracy` REPLACES the weapon's hit chance outright (Shove: 1, it never misses); `accuracyMod` shifts it (Snap Shot: -0.15). They are different fields because conflating them once already turned a 70% ability into a 5% one.",
+  "abilities": [
+    {
+      "id": "cleave",
+      "name": "Cleave",
+      "role": "melee",
+      "cost": 2,
+      "shape": "adjacent-all",
+      "blurb": "Weapon damage to EVERY adjacent rival. Being surrounded stops being a death sentence and starts being an opportunity.",
+      "damageMode": "weapon",
+      "damage": 0
+    },
+    {
+      "id": "takedown",
+      "name": "Takedown",
+      "role": "melee",
+      "cost": 3,
+      "shape": "single",
+      "range": 1,
+      "damage": 3,
+      "knockback": 2,
+      "blurb": "+3 damage and a hard shove on one adjacent rival. The full-move finisher \u2014 and the shove is what puts a body in a stairwell.",
+      "damageMode": "weapon"
+    },
+    {
+      "id": "snapshot",
+      "name": "Snap Shot",
+      "role": "ranged",
+      "cost": 2,
+      "shape": "single",
+      "shots": 2,
+      "blurb": "Two shots at one rival, each less accurate. Volume against a target you cannot afford to leave standing.",
+      "damageMode": "weapon",
+      "damage": 0,
+      "accuracyMod": -0.15
+    },
+    {
+      "id": "overwatch",
+      "name": "Overwatch",
+      "role": "ranged",
+      "cost": 2,
+      "shape": "self",
+      "blurb": "Hold your fire. The first rival to move inside your range during their turn takes a shot \u2014 the answer to a board where crossing open ground was free."
+    },
+    {
+      "id": "shove",
+      "name": "Shove",
+      "role": "control",
+      "cost": 1,
+      "shape": "single",
+      "range": 1,
+      "knockback": 3,
+      "accuracy": 1,
+      "blurb": "One damage, three tiles, never misses. Pure positioning: the cheapest way to move a body onto something that hurts.",
+      "damageMode": "flat",
+      "damage": 1
+    },
+    {
+      "id": "barricade",
+      "name": "Barricade",
+      "role": "control",
+      "cost": 2,
+      "shape": "empty-tile",
+      "range": 1,
+      "blurb": "Drop low cover on an empty tile beside you. The only thing in this game that changes the board in your favour."
+    }
+  ]
+}

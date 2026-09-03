@@ -1,25 +1,31 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=5';
 import {
-  createEncounterState, getUnit, canUnitAct, stepEnemyPhase, moveUnit, orderAttack,
+  createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=9';
-import { computeLayout, render, SUPERSAMPLE } from './render.js?v=12';
-import { createInputHandler } from './input.js?v=8';
-import { createAnimator } from './anim.js?v=4';
+} from './combat.js?v=11';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=14';
+import { createCamera, MIN_TILE_W } from './camera.js?v=1';
+import { createInputHandler } from './input.js?v=10';
+import { createAnimator } from './anim.js?v=5';
+import { momentumDamage, evasionOf } from './momentum.js?v=1';
+import { abilitiesFor, canAfford, whyNot } from './abilities.js?v=1';
+import { autoTurn } from './autoplay.js?v=1';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage');
 const topbar = { turn: $('turnLabel'), round: $('roundLabel') };
 const controls = { endTurn: $('endTurnBtn'), cancel: $('cancelBtn'), mute: $('muteBtn') };
+const abilitiesEl = $('abilities');
+controls.auto = $('autoBtn');
 const squadEl = $('squad'), selPortraitEl = $('selPortrait'), selTextEl = $('selText'), toastEl = $('toast');
 const titleEl = $('title'), titleStart = $('titleStart');
 const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('resultBody'), resultAgain = $('resultAgain');
 
-let DATA = null, state = null, layout = null, input = null, enemyPhaseRunning = false;
+let DATA = null, state = null, layout = null, input = null, camera = null, enemyPhaseRunning = false;
 // The animation layer. It reads state.log rather than being called by
 // combat.js (which stays pure and bare-node tested), and owns the only rAF
 // loop in this game — one that stops itself whenever nothing is mid-clip, so
@@ -88,12 +94,13 @@ function saveProgress(state) {
 }
 
 async function loadData() {
-  const [weapons, units, enemies, encounters, hazards, trinkets] = await Promise.all(
-    ['weapons', 'units', 'enemies', 'encounters', 'hazards', 'trinkets'].map(f => fetch(`data/${f}.json`).then(r => r.json())),
+  const [weapons, units, enemies, encounters, hazards, trinkets, abilities] = await Promise.all(
+    ['weapons', 'units', 'enemies', 'encounters', 'hazards', 'trinkets', 'abilities'].map(f => fetch(`data/${f}.json`).then(r => r.json())),
   );
   return {
     weapons: weapons.weapons, units: units.units, enemies: enemies.enemies,
     encounters: encounters.encounters, hazards: hazards.hazards, trinkets: trinkets.trinkets,
+    abilities: abilities.abilities,
   };
 }
 
@@ -101,6 +108,22 @@ function fitCanvas() {
   const availW = stage.clientWidth - 8, availH = stage.clientHeight - 8;
   if (!layout || availW <= 0 || availH <= 0) return;
   let scale = Math.min(availW / layout.width, availH / layout.height);
+  // FITTING THE WHOLE BOARD AND MAKING IT LEGIBLE ARE DIFFERENT REQUESTS,
+  // and on a phone they disagree: an 11-tile grid in portrait fits at about
+  // 1.0-1.3x, which delivers a 32px tile as a 32px tile. v24 shipped that
+  // and the owner's verdict was that things were hard to see. So the fit is
+  // a FLOOR now, not a ceiling — below MIN_TILE_W the board is allowed to
+  // overflow the stage and camera.js gives it somewhere to look and a way
+  // to look elsewhere. On a desktop viewport the fit already clears the
+  // floor and nothing about this changes.
+  // MEASURED, NOT ASSUMED. Filling the leftover height was tried first and
+  // rejected on the screenshot: an isometric 11x9 board is wide and short
+  // (320x222) while a phone in portrait is tall and narrow, so zooming until
+  // the height is full crops nearly half the width — and a game whose whole
+  // contract is that you can see every enemy's plan cannot show you half the
+  // enemies. The vertical letterbox is geometry, not waste; the encounter
+  // photo shows through it.
+  scale = Math.max(scale, MIN_TILE_W / TILE_W);
   // Snapped to the nearest TENTH, not a whole step: a wide grid (backlot is
   // 11 tiles across) is width-bound on a phone in portrait, where the fit
   // is rarely more than ~1.0-1.3x to begin with — whole/half-integer
@@ -115,8 +138,35 @@ function fitCanvas() {
   scale = Math.max(scale, 0.5);
   canvas.style.width = `${Math.round(layout.width * scale)}px`;
   canvas.style.height = `${Math.round(layout.height * scale)}px`;
+  cssScale = scale;
+  if (camera) { camera.recenter(); focusCamera(); }
 }
+let cssScale = 1;
 window.addEventListener('resize', fitCanvas);
+// The stage does not only change size when the WINDOW does. The bottom bar
+// grows a row when a selected operator is carrying momentum and shrinks
+// again when it spends it, and the toast wraps to two lines on a phone —
+// each of those takes height away from #stage with no resize event to
+// notice it, leaving the board scaled for a viewport that no longer exists
+// (measured: 644px of board in a 620px stage on desktop, clipped top and
+// bottom). Observing the element itself is the only thing that catches it.
+if (typeof ResizeObserver === 'function') new ResizeObserver(() => fitCanvas()).observe(stage);
+
+// Where the camera should be looking right now, in board coordinates. One
+// function, consulted after every state change, because "somewhere to look"
+// is a property of the game state and not of whoever last called it: the
+// operator you have selected, or — during the enemy phase — whichever enemy
+// is currently acting, which is the whole answer to "I can't see who is
+// going where".
+function focusCamera(animate = true) {
+  if (!camera || !state || !layout) return;
+  const u = state.actingUid ? getUnit(state, state.actingUid)
+    : state.selected ? getUnit(state, state.selected)
+    : state.cursor ? state.cursor : null;
+  if (!u) return;
+  const p = toScreen(layout, u.x, u.y);
+  camera.centerOn(p.x, p.y - SPRITE_H / 2, animate);
+}
 
 function boot(seed) {
   const encounter = DATA.encounters.find(e => e.id === SEQUENCE[seqIndex]);
@@ -135,12 +185,30 @@ function boot(seed) {
   canvas.height = layout.height * SUPERSAMPLE;
   fitCanvas();
   if (input) input.destroy();
+  if (camera) camera.destroy();
   anim.stop(); // a new encounter is a new log — drop any clip still playing from the last one
-  input = createInputHandler({ canvas, getState: () => state, getLayout: () => layout, onChange });
+  camera = createCamera({ stage, canvas, getLayout: () => layout, getScale: () => cssScale });
+  input = createInputHandler({
+    canvas, getState: () => state, getLayout: () => layout, onChange,
+    // A drag is a camera move, never an order. Without this, panning the
+    // board at high zoom would also walk an operator to wherever the thumb
+    // came to rest — the same class of bug as a tap handled twice.
+    consumedDrag: () => camera.consumedDrag(),
+    clearDrag: () => camera.clearDrag(),
+    getAbilities: () => DATA.abilities,
+  });
   resultEl.hidden = true;
   enemyPhaseRunning = false;
   setToast(objectiveText(state));
   onChange();
+  // The opening shot frames the crew, not the top-left corner of the grid —
+  // at a zoom where the board overflows, tile (0,0) is a wall and a bin.
+  const crew = state.units.filter(u => u.faction === 'player');
+  if (crew.length) {
+    const mid = crew.reduce((a, u) => ({ x: a.x + u.x / crew.length, y: a.y + u.y / crew.length }), { x: 0, y: 0 });
+    const p = toScreen(layout, mid.x, mid.y);
+    camera.centerOn(p.x, p.y, false);
+  }
 }
 
 function setToast(text) { toastEl.textContent = text; }
@@ -183,6 +251,7 @@ controls.mute.addEventListener('click', () => {
   applyMute();
 });
 applyMute();
+controls.auto.addEventListener('click', () => setAuto(!autoOn));
 
 function attackText(state, attackerName, evt) {
   const target = getUnit(state, evt.targetUid);
@@ -209,6 +278,7 @@ function onChange() {
   anim.sync(state);
   render(canvas, state, layout, anim);
   updateHud();
+  focusCamera();
   // A player picking up a drop is the freshest log entry right after a
   // move that landed on one (combat.js's pickUpDropAt) — attacks/enemy
   // turns get their own toast text elsewhere, so this only fires for the
@@ -229,6 +299,7 @@ function onChange() {
 // idempotent per encounter rather than tied to "the first time we noticed" —
 // state.rewarded (set false in boot()) is the guard.
 function finishEncounter(result) {
+  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
   let xpEvents = [];
   if (result === 'win' && !state.rewarded) {
     state.rewarded = true;
@@ -238,14 +309,37 @@ function finishEncounter(result) {
   showResult(result, xpEvents);
 }
 
+// The enemy phase's two beats. LOOK_MS is the pause on "X is up" before it
+// moves; ACT_MS is the pause after it has, to read what happened.
+const LOOK_MS = 340, ACT_MS = 520;
+
 function runEnemyPhase() {
   enemyPhaseRunning = true;
   audio.enemyTurn();
   setToast('Enemy turn…');
+  // Two beats per enemy, not one. LOOK first — mark whoever is up, point the
+  // camera at it, and hold — then ACT. Resolving both in the same frame is
+  // what made this phase read as "fighters bump into each other": the unit
+  // that moved and the unit that hit you were only ever seen after the fact,
+  // in their new positions, with nothing on screen tying either to a name.
+  const look = () => {
+    const next = peekEnemyQueue(state);
+    if (next) {
+      state.actingUid = next;
+      const u = getUnit(state, next);
+      setToast(`${u.name} is up…`);
+      render(canvas, state, layout, anim);
+      focusCamera();
+      setTimeout(tick, LOOK_MS);
+    } else {
+      tick();
+    }
+  };
   const tick = () => {
     const step = stepEnemyPhase(state);
     anim.sync(state); // enemy moves and attacks animate on the same path player ones do
     render(canvas, state, layout, anim);
+    focusCamera();
     updateHud();
     if (step && !step.done) {
       // Name the archetype in the narration rather than adding a fifth
@@ -258,11 +352,90 @@ function runEnemyPhase() {
       setToast(line);
     }
     if (state.result) { enemyPhaseRunning = false; finishEncounter(state.result); return; }
-    if (step && step.done) { enemyPhaseRunning = false; setToast('Your move.'); return; }
-    setTimeout(tick, 600);
+    if (step && step.done) {
+      enemyPhaseRunning = false; state.actingUid = null;
+      setToast('Your move.'); onChange();
+      if (autoOn) autoStep();
+      return;
+    }
+    setTimeout(look, ACT_MS);
   };
-  setTimeout(tick, 350);
+  setTimeout(look, 350);
 }
+
+
+// The kit of whoever is selected. Rebuilt on every state change rather than
+// toggled, because affordability moves under the player's feet — a unit that
+// has just run can pay for something it could not a moment ago, and a stale
+// button is worse than no button.
+function renderAbilities() {
+  abilitiesEl.innerHTML = '';
+  const sel = state.selected ? getUnit(state, state.selected) : null;
+  if (!sel || state.turn !== 'player' || state.result) { input && input.disarm(); return; }
+  for (const ab of abilitiesFor(sel, DATA.abilities)) {
+    const ok = canAfford(sel, ab);
+    const btn = document.createElement('button');
+    btn.className = 'abilityBtn' + (input && input.armedAbility() === ab.id ? ' armed' : '');
+    btn.disabled = !ok;
+    // The reason it is unavailable goes in the tooltip AND the toast on tap:
+    // "needs 3 momentum, has 1" is a instruction to go and run, which is the
+    // behaviour this whole economy is trying to buy.
+    btn.title = ok ? ab.blurb : `${ab.name} — ${whyNot(sel, ab)}`;
+    btn.innerHTML = `<span>${ab.name}</span><span class="cost">${ab.cost}</span>`;
+    btn.addEventListener('pointerup', e => {
+      e.preventDefault();
+      input.armAbility(ab.id);
+    });
+    abilitiesEl.appendChild(btn);
+  }
+}
+
+
+// ── auto-battle ──────────────────────────────────────────────────────
+// A switch, not a difficulty. It plays the PLAYER side with autoplay.js's
+// tactical bot at the same pace a person would, through the same command
+// functions a tap calls — so what you are watching is the real game, not a
+// simulation of it, and anything that looks wrong on screen is wrong.
+let autoOn = false, autoTimer = null;
+
+function setAuto(on) {
+  autoOn = on;
+  controls.auto.setAttribute('aria-pressed', on ? 'true' : 'false');
+  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+  if (on) {
+    input && input.disarm();
+    autoStep();
+  } else {
+    setToast('Auto off — your move.');
+  }
+  onChange();
+}
+
+// One operator per tick. Stepping rather than looping is what makes it
+// watchable: the camera follows each unit as it acts, which is the same
+// LOOK-then-ACT rhythm the enemy phase got in this version.
+function autoStep() {
+  if (!autoOn || !state || state.result || state.turn !== 'player') return;
+  const next = state.units.find(u => u.faction === 'player' && u.hp > 0 && canUnitAct(u));
+  if (!next) {
+    setToast('Auto — ending turn.');
+    autoTimer = setTimeout(() => { if (autoOn) input.endTurn(); }, AUTO_MS);
+    return;
+  }
+  state.actingUid = next.uid;
+  setToast(`Auto — ${next.name}.`);
+  onChange();
+  autoTimer = setTimeout(() => {
+    if (!autoOn) return;
+    autoTurn(state, next, DATA.abilities);
+    state.actingUid = null;
+    input.refreshSelectionOverlay(state);
+    onChange();
+    autoTimer = setTimeout(autoStep, AUTO_MS);
+  }, AUTO_MS);
+}
+
+const AUTO_MS = 420;
 
 function updateHud() {
   topbar.turn.textContent = state.turn === 'player' ? 'Your Turn' : 'Enemy Turn';
@@ -288,6 +461,8 @@ function updateHud() {
     squadEl.appendChild(btn);
   }
 
+  renderAbilities();
+
   const sel = state.selected ? getUnit(state, state.selected) : null;
   if (sel) {
     if (sel.portrait) { selPortraitEl.src = sel.portrait; selPortraitEl.hidden = false; }
@@ -300,11 +475,26 @@ function updateHud() {
     const carried = (sel.trinkets || []).map(t => t.name).join(', ');
     selTextEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
       + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`
+      + momentumText(sel)
       + (carried ? `<br>carrying: ${carried}` : '');
   } else {
     selPortraitEl.hidden = true;
     selTextEl.textContent = state.turn === 'player' ? 'Select an operator.' : '';
   }
+}
+
+// What the run this unit is carrying is currently worth, spelled out rather
+// than left as a pip count to decode. Both halves are named because they are
+// the same points spent two ways: attack now and the bonus lands but the
+// evasion goes with it; hold fire and the evasion stands through the enemy
+// phase. Silent on a unit that has not moved — a line reading "+0 / -0%" on
+// every stationary operator is noise, not information.
+function momentumText(sel) {
+  const mo = sel.momentum || 0;
+  if (!mo) return '';
+  const bonus = momentumDamage(sel);
+  const evade = Math.round(evasionOf(sel, { archetype: 'ranged' }) * 100);
+  return `<br>momentum ${mo} · +${bonus} dmg on your swing · -${evade}% to be shot until you use it`;
 }
 
 function xpSummaryText(events) {
@@ -378,6 +568,14 @@ window.__turf = {
   select: uid => input && input.selectByUid(uid),
   move: (uid, x, y) => { const r = moveUnit(state, uid, x, y); onChange(); return r; },
   attack: (uid, targetUid) => { const r = orderAttack(state, uid, targetUid); onChange(); return r; },
+  // The ability flow, for the console and the smoke gate: arm() puts the
+  // board in ability mode exactly as the button does, ability() resolves one
+  // without going through a tap.
+  arm: id => input && input.armAbility(id),
+  ability: (uid, id, target) => {
+    const r = useAbility(state, uid, id, target, DATA.abilities);
+    input.refreshSelectionOverlay(state); onChange(); return r;
+  },
   endTurn: () => input && input.endTurn(),
   sequence: () => ({ ids: SEQUENCE.slice(), index: seqIndex }),
   setSequenceIndex: i => { seqIndex = i; },

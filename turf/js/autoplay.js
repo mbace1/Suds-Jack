@@ -1,0 +1,165 @@
+// The auto-battler — the player side, played by the machine.
+//
+// WHERE THIS BOT CAME FROM, and why it is not the one in the gates. The
+// balance gate (test/balance.mjs) drives a deliberately NAIVE bot: attack
+// from where you stand, otherwise close. That bot exists to measure a floor,
+// so it must stay bad. Watching it play is watching the scrum the movement
+// economy was built to break up.
+//
+// This is the other bot from that experiment — the one that scored cover and
+// exposure, won 92% against the naive bot's 57%, and is what proved the first
+// negative result was my heuristic's fault rather than the design's (v24's
+// log has the whole table). It is the strongest player-side behaviour this
+// project has measured, which is the only honest thing to put behind a switch
+// labelled AUTO.
+//
+// It is NOT the enemy brain. ai.js plans one unit at a time against a
+// telegraph the player has to be able to read; this plans a turn to win it.
+// Sharing them would make one of the two worse.
+import { manhattan, hasLOS, coverSoftens, key } from './grid.js?v=2';
+import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility } from './combat.js?v=11';
+import { abilitiesFor, canAfford, abilityTargets } from './abilities.js?v=1';
+
+// What a tile is worth to stand on and shoot from. Positive is good. The
+// weights are the ones the v24 experiment settled on; the only addition is
+// momentum, which now buys abilities rather than only damage.
+const W_COVER = 1.6, W_EXPOSURE = 1.4, W_MOMENTUM = 0.35, W_HAZARD = 1.5;
+
+function hazardCost(state, x, y) {
+  const h = state.hazards && state.hazards.get(key(x, y));
+  if (!h) return 0;
+  return h.lethal ? 99 : (h.onEnter || 0) + (h.lingers || 0);
+}
+
+// How many enemy guns bear on this tile, softened by whatever it stands
+// behind. The term that stops the bot sprinting into the open for a shot.
+function exposure(state, tile, foes) {
+  let n = 0;
+  for (const f of foes) {
+    if (manhattan(tile, f) > f.weapon.range + 2) continue;
+    if (!hasLOS(state, f, tile)) continue;
+    n += coverSoftens(state, f, tile) ? 0.4 : 1;
+  }
+  return n;
+}
+
+// One operator's whole turn: reposition if a better firing tile exists, then
+// spend the run on an ability if one is affordable and worth it, else swing.
+export function autoTurn(state, unit, abilityDefs) {
+  const foes = state.units.filter(f => f.faction === 'enemy' && f.hp > 0);
+  if (!foes.length) { endUnitTurn(state, unit.uid); return; }
+
+  if (!unit.actedMove) {
+    const here = { x: unit.x, y: unit.y, cost: 0 };
+    const canHitFrom = t => foes.filter(f =>
+      manhattan(t, f) <= unit.weapon.range && hasLOS(state, t, f));
+    let best = null, bestScore = -Infinity;
+    for (const t of [...movableTiles(state, unit).values(), here]) {
+      const hits = canHitFrom(t);
+      if (!hits.length) continue;
+      const target = hits.slice().sort((a, b) => a.hp - b.hp || (a.uid < b.uid ? -1 : 1))[0];
+      const moved = manhattan(t, here);
+      const score = W_COVER * (coverSoftens(state, target, t) ? 1 : 0)
+        - W_EXPOSURE * exposure(state, t, foes)
+        + W_MOMENTUM * moved
+        - W_HAZARD * hazardCost(state, t.x, t.y);
+      // Ties break on the tile key, never on iteration order: an auto-battler
+      // that plays a different game on a replay of the same seed is not a
+      // demonstration of anything.
+      if (score > bestScore || (score === bestScore && best && key(t.x, t.y) < key(best.x, best.y))) {
+        bestScore = score; best = t;
+      }
+    }
+    // No firing tile anywhere — close the distance instead, the one thing
+    // the naive bot does that is actually correct.
+    if (!best) {
+      const near = foes.slice().sort((a, b) => manhattan(unit, a) - manhattan(unit, b))[0];
+      let step = null, stepD = manhattan(unit, near);
+      for (const t of movableTiles(state, unit).values()) {
+        const d = manhattan(t, near) + W_HAZARD * hazardCost(state, t.x, t.y);
+        if (d < stepD) { stepD = d; step = t; }
+      }
+      if (step) moveUnit(state, unit.uid, step.x, step.y);
+    } else if (best.x !== unit.x || best.y !== unit.y) {
+      moveUnit(state, unit.uid, best.x, best.y);
+    }
+  }
+
+  // The run is banked; see whether it buys something better than a swing.
+  const played = tryAbility(state, unit, abilityDefs);
+  if (played) return;
+
+  const targets = attackableTargets(state, unit);
+  if (targets.length) {
+    // Finish the hurt one — the same `weakest` focus the enemies use, and
+    // for the same reason: a body that stops shooting is worth more than a
+    // dent in one that does not.
+    const best = targets
+      .map(uid => state.units.find(u => u.uid === uid))
+      .sort((a, b) => a.hp - b.hp || (a.uid < b.uid ? -1 : 1))[0];
+    orderAttack(state, unit.uid, best.uid);
+  } else {
+    endUnitTurn(state, unit.uid);
+  }
+}
+
+// Abilities, in the order they are worth having. Deliberately simple and
+// deliberately readable: this is a demonstration of the kit, so it should
+// USE the kit rather than min-max around it — a bot that never cleaved would
+// be evidence that cleave is pointless when in fact it is evidence about the
+// bot.
+function tryAbility(state, unit, abilityDefs) {
+  const kit = abilitiesFor(unit, abilityDefs).filter(a => canAfford(unit, a));
+  if (!kit.length) return false;
+  const foes = state.units.filter(f => f.faction === 'enemy' && f.hp > 0);
+  const adjacent = foes.filter(f => manhattan(unit, f) <= 1);
+
+  const pick = id => kit.find(a => a.id === id);
+  // Cleave only pays against two or more; against one it is a worse swing.
+  const cleave = pick('cleave');
+  if (cleave && adjacent.length >= 2) {
+    const t = abilityTargets(state, unit, cleave)[0];
+    if (t) return useAbility(state, unit.uid, 'cleave', t, abilityDefs).ok;
+  }
+  // Takedown when it finishes something the ordinary swing would not.
+  const takedown = pick('takedown');
+  if (takedown && adjacent.length) {
+    const kill = adjacent.find(f => f.hp > unit.weapon.damage && f.hp <= unit.weapon.damage + takedown.damage);
+    if (kill) return useAbility(state, unit.uid, 'takedown', { uid: kill.uid }, abilityDefs).ok;
+  }
+  // Shove when there is somewhere worth shoving into.
+  const shove = pick('shove');
+  if (shove && adjacent.length) {
+    const victim = adjacent.find(f => shoveLandsBadly(state, unit, f));
+    if (victim) return useAbility(state, unit.uid, 'shove', { uid: victim.uid }, abilityDefs).ok;
+  }
+  // Snap shot at anything two ordinary shots would not finish.
+  const snap = pick('snapshot');
+  if (snap) {
+    const targets = abilityTargets(state, unit, snap);
+    const hurt = targets
+      .map(t => state.units.find(u => u.uid === t.uid))
+      .filter(u => u && u.hp <= unit.weapon.damage * 2)
+      .sort((a, b) => a.hp - b.hp || (a.uid < b.uid ? -1 : 1))[0];
+    if (hurt) return useAbility(state, unit.uid, 'snapshot', { uid: hurt.uid }, abilityDefs).ok;
+  }
+  // Overwatch only with nothing to shoot at — it is the "I have a gun and no
+  // target" move, which is exactly the turn that used to be wasted.
+  const over = pick('overwatch');
+  if (over && !attackableTargets(state, unit).length) {
+    return useAbility(state, unit.uid, 'overwatch', { self: true }, abilityDefs).ok;
+  }
+  return false;
+}
+
+// Would a shove put this body somewhere that hurts it? The pipe's whole
+// reason to exist, and the one line of this bot that reads the hazard map
+// offensively rather than defensively.
+function shoveLandsBadly(state, unit, foe) {
+  const dx = Math.sign(foe.x - unit.x), dy = Math.sign(foe.y - unit.y);
+  for (let i = 1; i <= 3; i++) {
+    const c = hazardCost(state, foe.x + dx * i, foe.y + dy * i);
+    if (c > 0) return true;
+  }
+  return false;
+}
