@@ -4,16 +4,17 @@
 import { PAL } from './palette.js?v=10';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
+  skillOffer, learnSkill,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=17';
+} from './combat.js?v=18';
 import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=21';
 import { createCamera, MIN_TILE_W } from './camera.js?v=1';
-import { createInputHandler } from './input.js?v=16';
+import { createInputHandler } from './input.js?v=17';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
 import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2';
-import { autoTurn } from './autoplay.js?v=5';
+import { autoTurn } from './autoplay.js?v=6';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
@@ -25,6 +26,7 @@ controls.auto = $('autoBtn');
 const squadEl = $('squad'), selPortraitEl = $('selPortrait'), selTextEl = $('selText'), toastEl = $('toast');
 const titleEl = $('title'), titleStart = $('titleStart');
 const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('resultBody'), resultAgain = $('resultAgain');
+const levelUpsEl = $('levelUps');
 
 let DATA = null, state = null, layout = null, input = null, camera = null, enemyPhaseRunning = false;
 // The animation layer. It reads state.log rather than being called by
@@ -81,6 +83,11 @@ function applyProgress(state) {
     const p = crewProgress[u.defId];
     if (!p) continue;
     u.level = p.level; u.xp = p.xp; u.maxHp = p.maxHp; u.hp = p.maxHp;
+    // The kit a run has built so far, and any slot not yet spent. The saved
+    // list REPLACES the def's starting loadout rather than adding to it —
+    // the starting kit is already the first two entries of what was saved.
+    if (p.abilities) u.abilities = [...p.abilities];
+    u.slots = p.slots || 0;
     // Trinkets are found gear and persist for the run, same as XP. Re-applied
     // through the engine rather than assigned, so their weapon-field bonuses
     // are folded into this encounter's freshly-built weapon.
@@ -90,7 +97,12 @@ function applyProgress(state) {
 function saveProgress(state) {
   for (const u of state.units) {
     if (u.faction !== 'player') continue;
-    crewProgress[u.defId] = { level: u.level, xp: u.xp, maxHp: u.maxHp, trinkets: (u.trinkets || []).map(t => t.id) };
+    crewProgress[u.defId] = {
+      level: u.level, xp: u.xp, maxHp: u.maxHp,
+      trinkets: (u.trinkets || []).map(t => t.id),
+      abilities: [...(u.abilities || [])],
+      slots: u.slots || 0,
+    };
   }
 }
 
@@ -603,6 +615,55 @@ function xpSummaryText(events) {
   }).join(' · ');
 }
 
+// The pick. Rebuilt on every change so a spent slot disappears and the next
+// one (if any) draws its own three. Continue stays disabled while a slot is
+// unspent: the pick is made before the next block, never during one, and a
+// slot carried into a fight would be a decision the player forgot they had.
+// Under AUTO the first card is taken, so an unattended run never stalls on a
+// screen nobody is looking at.
+function renderLevelUps() {
+  levelUpsEl.innerHTML = '';
+  if (!state || state.result !== 'win') { resultAgain.disabled = false; return; }
+  let pending = 0;
+  for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0 && x.slots > 0)) {
+    const offer = skillOffer(state, u, DATA.abilities);
+    if (!offer.length) { u.slots = 0; continue; } // pool exhausted or kit full: the slot pays nothing
+    pending++;
+    if (autoOn) { learnSkill(state, u.uid, offer[0], DATA.abilities); saveProgress(state); pending--; continue; }
+    const block = document.createElement('div');
+    block.className = 'levelUp';
+    block.innerHTML = `<h2>${u.name} · Lv${u.level} <small>— pick one${u.slots > 1 ? ` (${u.slots} to spend)` : ''}</small></h2>`;
+    const row = document.createElement('div');
+    row.className = 'offer';
+    for (const id of offer) {
+      const ab = DATA.abilities.find(a => a.id === id);
+      const line = (DATA.lines.find(l => l.id === ab.line) || {}).name || '';
+      const btn = document.createElement('button');
+      btn.className = 'offerBtn' + (weaponSuits(u, ab) ? '' : ' inert');
+      btn.innerHTML = `<b>${ab.name}</b><em>${line} · costs ${ab.cost}</em><span>${ab.blurb}</span>`;
+      btn.addEventListener('pointerup', e => {
+        e.preventDefault();
+        if (learnSkill(state, u.uid, id, DATA.abilities).ok) { saveProgress(state); renderLevelUps(); }
+      });
+      row.appendChild(btn);
+    }
+    block.appendChild(row);
+    levelUpsEl.appendChild(block);
+  }
+  if (autoOn) saveProgress(state);
+  resultAgain.disabled = pending > 0;
+  // The label is REPLACED while picks are pending and RESTORED after, from a
+  // copy taken when showResult set it. The first cut only ever overwrote it,
+  // so an enabled button still read "Pick 1 skill first" after the pick.
+  if (pending > 0) {
+    if (!resultAgain.dataset.label) resultAgain.dataset.label = resultAgain.textContent;
+    resultAgain.textContent = `Pick ${pending} skill${pending > 1 ? 's' : ''} first`;
+  } else if (resultAgain.dataset.label) {
+    resultAgain.textContent = resultAgain.dataset.label;
+    delete resultAgain.dataset.label;
+  }
+}
+
 function showResult(result, xpEvents = []) {
   resultEl.hidden = false;
   if (result === 'win') audio.win(); else audio.lose();
@@ -630,6 +691,7 @@ function showResult(result, xpEvents = []) {
     resultBody.textContent = 'Three operators, one block. Not this time.';
     resultAgain.textContent = 'Run It Back';
   }
+  renderLevelUps();
 }
 
 titleStart.addEventListener('pointerup', e => {
@@ -642,6 +704,7 @@ titleStart.addEventListener('pointerup', e => {
 });
 resultAgain.addEventListener('pointerup', e => {
   e.preventDefault();
+  if (resultAgain.disabled) return;
   // Winning a non-final encounter advances the sequence; a final win or any
   // loss restarts the run from encounter 1 — see the SEQUENCE comment above.
   // A new run also clears crewProgress: XP/levels are scoped to one run,
@@ -684,6 +747,9 @@ window.__turf = {
   sequence: () => ({ ids: SEQUENCE.slice(), index: seqIndex }),
   setSequenceIndex: i => { seqIndex = i; },
   crewProgress: () => ({ ...crewProgress }),
+  learn: (uid, id) => { const r = learnSkill(state, uid, id, DATA.abilities); saveProgress(state); renderLevelUps(); return r; },
+  offer: uid => skillOffer(state, getUnit(state, uid), DATA.abilities),
+  finish: result => { state.result = result; finishEncounter(result); },
   // The feel layer, exposed for the same reason every other cabinet here
   // exposes its internals: a tween that only exists for 200ms cannot be
   // checked by looking at a screenshot after the fact.

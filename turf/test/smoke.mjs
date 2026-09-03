@@ -15,6 +15,7 @@ import {
   endUnitTurn, endPlayerTurn, stepEnemyPhase,
   awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
   applyTrinkets, TRINKET_SHARE, reloadUnit, firingOptions, attackFrom,
+  skillOffer, learnSkill, OFFER_SIZE, MAX_SKILLS,
 } from '../js/combat.js';
 import {
   MOVE_CAP, EVADE_PER, DAMAGE_PER, addMomentum, clearMomentum, evasionOf,
@@ -1137,6 +1138,103 @@ check('the enemy brain never targets an objective', () => {
         'rivals fight the crew, never the scenery');
     }
   }
+});
+
+// ── the skill pick (v30) ─────────────────────────────────────
+// A level grants a slot, a slot buys one of three from ANY line. This is
+// where GDD §5.1's "every level-up spends a skill slot" actually happens,
+// and where a run becomes a build rather than a stat curve.
+
+check('a level grants a slot, and the slot is not spent by the engine', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.faction === 'player');
+  u.xp = xpToNext(u.level) - 1; u.kills = 0;
+  for (const e of state.units) if (e.faction === 'enemy') e.hp = 0;
+  state.result = 'win';
+  const ev = awardXp(state).find(e => e.uid === u.uid);
+  assert.ok(ev.levelsGained.length >= 1, 'the win levelled them');
+  assert.equal(u.slots, ev.levelsGained.length, 'one slot per level');
+  assert.equal(u.abilities.length, 2, 'and nothing was picked FOR them');
+});
+
+check('an offer is three skills from any line, none already held, and it is stable', () => {
+  const state = boot(BACKLOT, 3);
+  const u = state.units.find(x => x.faction === 'player');
+  u.slots = 1;
+  const offer = skillOffer(state, u, ABILITIES);
+  assert.equal(offer.length, OFFER_SIZE);
+  assert.ok(offer.every(id => !u.abilities.includes(id)), 'nothing you already know');
+  assert.deepEqual(skillOffer(state, u, ABILITIES), offer, 'asking twice shows the same three');
+  const lines = new Set(offer.map(id => findAbility(ABILITIES, id).line));
+  assert.ok(lines.size >= 1, 'drawn from the whole pool, not one line');
+});
+
+check('the same seed always offers the same three', () => {
+  const a = boot(BACKLOT, 9), b = boot(BACKLOT, 9);
+  const ua = a.units.find(x => x.faction === 'player'), ub = b.units.find(x => x.faction === 'player');
+  ua.slots = 1; ub.slots = 1;
+  assert.deepEqual(skillOffer(a, ua, ABILITIES), skillOffer(b, ub, ABILITIES),
+    'a replayable offer is a testable one, and a reroll-by-reload is a player the design already lost');
+});
+
+check('learning spends the slot, keeps the old kit, and draws fresh next time', () => {
+  const state = boot(BACKLOT, 3);
+  const u = state.units.find(x => x.faction === 'player');
+  const before = [...u.abilities];
+  u.slots = 2;
+  const first = skillOffer(state, u, ABILITIES);
+  assert.equal(learnSkill(state, u.uid, first[0], ABILITIES).ok, true);
+  assert.equal(u.slots, 1);
+  assert.deepEqual(u.abilities.slice(0, 2), before, 'the starting kit is untouched');
+  assert.equal(u.abilities[2], first[0]);
+  const second = skillOffer(state, u, ABILITIES);
+  assert.ok(!second.includes(first[0]), 'the next slot does not re-offer what was just learned');
+  assert.ok(state.log.some(e => e.type === 'learn' && e.uid === u.uid), 'it is on the log');
+});
+
+check('you cannot learn without a slot, twice, or off the offer', () => {
+  const state = boot(BACKLOT, 3);
+  const u = state.units.find(x => x.faction === 'player');
+  assert.equal(learnSkill(state, u.uid, 'steady', ABILITIES).reason, 'no-slot');
+  u.slots = 1;
+  assert.equal(learnSkill(state, u.uid, u.abilities[0], ABILITIES).reason, 'already-known');
+  const offer = skillOffer(state, u, ABILITIES);
+  const off = ABILITIES.map(a => a.id).find(id => !offer.includes(id) && !u.abilities.includes(id));
+  assert.equal(learnSkill(state, u.uid, off, ABILITIES).reason, 'not-offered',
+    'the three on screen are the rule, not a suggestion');
+  assert.equal(u.slots, 1, 'a refused pick spends nothing');
+});
+
+check('the kit is capped, and a level past the cap still pays HP', () => {
+  const state = boot(BACKLOT, 3);
+  const u = state.units.find(x => x.faction === 'player');
+  u.slots = 10;
+  let learned = 0;
+  for (let i = 0; i < 10; i++) {
+    const offer = skillOffer(state, u, ABILITIES);
+    if (!offer.length) break;
+    if (learnSkill(state, u.uid, offer[0], ABILITIES).ok) learned++;
+  }
+  assert.equal(u.abilities.length, MAX_SKILLS, `stops at ${MAX_SKILLS}`);
+  assert.equal(skillOffer(state, u, ABILITIES).length, 0, 'a full kit is offered nothing');
+  const hpBefore = u.maxHp;
+  u.xp = xpToNext(u.level); state.result = 'win';
+  for (const e of state.units) if (e.faction === 'enemy') e.hp = 0;
+  awardXp(state);
+  assert.ok(u.maxHp > hpBefore, 'the level still pays');
+});
+
+check('a weapon-gated skill is still OFFERED to a unit that cannot use it yet', () => {
+  // §5.1's payoff is a build that is inert now and goes live when a gun
+  // drops; an offer that only showed what works today could never make it.
+  let seen = false;
+  for (let seed = 1; seed <= 40 && !seen; seed++) {
+    const state = boot(BACKLOT, seed);
+    const u = state.units.find(x => x.faction === 'player' && x.weapon.archetype === 'melee');
+    u.slots = 1;
+    seen = skillOffer(state, u, ABILITIES).some(id => findAbility(ABILITIES, id).weapon === 'ranged');
+  }
+  assert.ok(seen, 'across forty seeds a knife carrier was offered a gun skill at least once');
 });
 
 // ── choosing where you fire from (v28) ───────────────────────

@@ -160,6 +160,26 @@
     text-transform: uppercase; cursor: pointer;
   }
   .bigBtn:active { background: #6fa8c9; color: #0b0c0f; }
+  /* The skill pick. One block per operator with a slot to spend, three
+     cards each; the whole thing lives on the result screen because the pick
+     is made BEFORE the next block, never during one. */
+  #levelUps { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 480px; }
+  #levelUps:empty { display: none; }
+  .levelUp { border: 1px solid #262a32; background: #14161c; padding: 10px; text-align: left; }
+  .levelUp h2 { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: #f2e2a0; margin-bottom: 8px; }
+  .levelUp h2 small { color: #7b818c; letter-spacing: .02em; text-transform: none; }
+  .offer { display: flex; gap: 8px; }
+  .offerBtn {
+    flex: 1; min-height: 72px; padding: 8px; background: #1c1f26; color: #d6d9de;
+    border: 1px solid #3a4048; font: inherit; font-size: 12px; text-align: left; cursor: pointer;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .offerBtn b { text-transform: uppercase; letter-spacing: .06em; }
+  .offerBtn em { font-style: normal; font-size: 10px; letter-spacing: .06em; color: #7b818c; text-transform: uppercase; }
+  .offerBtn span { font-size: 11px; color: #9aa0aa; line-height: 1.35; }
+  .offerBtn.inert { border-style: dashed; }
+  .offerBtn.inert b::after { content: ' · inert with this weapon'; color: #7b818c; font-weight: normal; text-transform: none; letter-spacing: 0; }
+  .offerBtn:active { background: #f2e2a0; color: #0b0c0f; }
   #result h1.win { color: #5ad1a8; }
   #result h1.lose { color: #e0453a; }
 
@@ -228,10 +248,11 @@
   <div id="result" class="overlay" hidden>
     <h1 id="resultTitle"></h1>
     <p id="resultBody"></p>
+    <div id="levelUps"></div>
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=27"></script>
+  <script type="module" src="js/main.js?v=28"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

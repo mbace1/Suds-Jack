@@ -385,6 +385,20 @@ anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves 
 (+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
 `DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
 are 23 points apart), not a dial.
+**The level-up pick** (v30) — where the Mewgenics loop lands. `awardXp` grants a **slot**
+per level and `learnSkill` spends it, in two places on purpose: the pick is the player's, on
+the result screen, and an engine that picked for them would be the class box back through
+the side door. An offer is **three from the whole pool minus what is held**, drawn from the
+encounter's own rng (same seed, same three — a reroll-by-reload is a player the design has
+already lost), and it deliberately includes skills the current weapon cannot use, dashed
+and labelled *inert with this weapon*, because §5.1's payoff is a build that goes live when
+a gun drops. **Continue is disabled while a slot is unspent** — the pick is made before the
+next block, never during one; under AUTO the first card is taken so an unattended run never
+stalls. Kit capped at four (the phone's action row wraps past that; a level past the cap
+still pays HP). `crewProgress` carries the kit and unspent slots per run, and the saved kit
+REPLACES the def's starting loadout on restore rather than adding to it. One bug the
+browser check caught and no gate could: an enabled Continue still reading "Pick 1 skill
+first" — the label was overwritten and never restored.
 **Skills are CATEGORIES, not classes** (v29, owner: *"I never said that only one type of
 skills class is available to 1 unit. treat them like categories"* — and `GDD.md` §5.1
 already said so). v25-v28 keyed the kit on `role`, which is the fixed archetype §5.1
@@ -1448,7 +1462,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 114 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 121 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter

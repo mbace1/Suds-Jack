@@ -904,6 +904,54 @@ export const XP_PER_KILL = 8;
 export const HP_PER_LEVEL = 2;
 export const xpToNext = level => 20 + (level - 1) * 15;
 
+// ── the skill pick (v30) ─────────────────────────────────────
+// Where the Mewgenics loop actually lands. A level grants a SLOT; the slot
+// buys one skill from an offer of three, drawn from ANY line — that is what
+// makes a run a build rather than a stat curve. Offers are drawn from the
+// encounter's own rng, so the same seed always shows the same three: a
+// replayable offer is a testable one, and a player who reloads to reroll is
+// a player the design has already lost.
+export const OFFER_SIZE = 3;
+// Beyond four the phone's action row wraps to a second line and the kit
+// stops being readable at a glance. A level past the cap still pays HP.
+export const MAX_SKILLS = 4;
+
+// The three skills on offer to this unit, or fewer if the pool runs short.
+// Weapon-gated skills are offered on purpose: §5.1's payoff is a build that
+// is inert now and goes live when a gun drops, and an offer that only ever
+// showed what works TODAY would never let that build be made.
+export function skillOffer(state, unit, defs) {
+  if (!unit || !(unit.slots > 0)) return [];
+  if ((unit.abilities || []).length >= MAX_SKILLS) return [];
+  if (unit.offer && unit.offer.length) return unit.offer.slice(); // stable across re-renders
+  const held = new Set(unit.abilities || []);
+  const pool = defs.filter(a => !held.has(a.id)).map(a => a.id);
+  const out = [];
+  while (out.length < OFFER_SIZE && pool.length) {
+    const i = Math.floor(state.rng() * pool.length);
+    out.push(pool.splice(i, 1)[0]);
+  }
+  unit.offer = out.slice();
+  return out;
+}
+
+// Spend a slot on one of the offered skills. Refuses anything not on the
+// offer: the offer IS the choice, and a crafted call that reached past it
+// would make the three on screen a suggestion rather than a rule.
+export function learnSkill(state, uid, abilityId, defs) {
+  const unit = getUnit(state, uid);
+  if (!unit) return { ok: false, reason: 'invalid' };
+  if (!(unit.slots > 0)) return { ok: false, reason: 'no-slot' };
+  if ((unit.abilities || []).includes(abilityId)) return { ok: false, reason: 'already-known' };
+  const offer = skillOffer(state, unit, defs);
+  if (!offer.includes(abilityId)) return { ok: false, reason: 'not-offered' };
+  unit.abilities = [...(unit.abilities || []), abilityId];
+  unit.slots -= 1;
+  unit.offer = null; // the next slot draws a fresh three
+  state.log.push({ type: 'learn', uid, ability: abilityId, name: unit.name });
+  return { ok: true };
+}
+
 // Call once, right after a win — awards XP to every surviving player unit
 // and rolls any level-ups (a big single haul can roll more than one level).
 // Mutates state.units in place, like every other combat function here;
@@ -922,8 +970,14 @@ export function awardXp(state) {
       u.maxHp += HP_PER_LEVEL;
       u.hp += HP_PER_LEVEL;
       levelsGained.push(u.level);
+      // GDD §5.1: "every level-up spends a skill slot on ANY line". The slot
+      // is granted here and SPENT by learnSkill — separately, because the
+      // pick is a decision the player makes on the result screen, and an
+      // engine that picked for them would be the class box coming back in
+      // through the side door.
+      u.slots = (u.slots || 0) + 1;
     }
-    events.push({ uid: u.uid, name: u.name, kills: u.kills, gained, levelsGained });
+    events.push({ uid: u.uid, name: u.name, kills: u.kills, gained, levelsGained, slots: u.slots || 0 });
   }
   return events;
 }

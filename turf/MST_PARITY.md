@@ -41,6 +41,7 @@ an MST:
 | Ammo rhythm | **Magazines** on every gun; reloading is your action and never your move |
 | Position is the player's | **Firing positions** — a tap that would move you offers the tiles, each with its own odds |
 | Skill categories | Six **lines** (GDD §5.1); every loadout crosses two, and weapon-gated skills show inert rather than hidden |
+| A run is a build | **Level-up pick** — a slot buys one of three from any line, chosen before the next block |
 
 The economy closes: you **move** to afford the thing you then **do**.
 
@@ -95,9 +96,10 @@ and reads `state.log`, so all of it is additive.
 
 **2.8 — Run structure.** *(large)*
 `SEQUENCE` is a flat seven-element array. MST is a branching route with node
-types and a **choice of three** rewards. XP, weapon drops and trinkets exist
-but nothing is ever *picked*, which is the difference between progression and
-a roguelite.
+types and a **choice of three** rewards. The choice-of-three half landed in
+v30 as the level-up pick — a run is a build now — so what remains here is the
+route itself: node types, branching, and a reason to pick one path over
+another.
 
 > **Sequencing trap, and it generalises past its original case.** A branching
 > run map over the same fight adds screens, not decisions — which was written

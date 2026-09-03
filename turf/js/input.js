@@ -9,7 +9,7 @@ import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit, useAbility, previewAttack, reloadUnit,
   firingOptions, attackFrom,
-} from './combat.js?v=17';
+} from './combat.js?v=18';
 import { abilityTargets, findAbility } from './abilities.js?v=2';
 import { key } from './grid.js?v=4';
 import { watchPad } from '../../hub/pad.js?v=9';
