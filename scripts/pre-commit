@@ -4,7 +4,13 @@
 # Install:  cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 # Re-install any time the script is updated in the repo.
 
-GAME_CHANGED=$(git diff --cached --name-only | grep -E '^(toko-drop/|game\.js|index\.html|style\.css|levels\.json)')
+# Markdown under toko-drop/ is documentation (RUSH_DESIGN.md, PARITY_*,
+# LEVEL_EDITOR_DESIGN.md, press/PRESS.md) and ships no behaviour, so it is
+# excluded here — otherwise the path prefix catches it and demands a version
+# entry, contradicting the "only infra / doc changes" exemption just below.
+GAME_CHANGED=$(git diff --cached --name-only \
+  | grep -E '^(toko-drop/|game\.js|index\.html|style\.css|levels\.json)' \
+  | grep -v -E '\.md$')
 if [ -z "$GAME_CHANGED" ]; then
   exit 0  # only infra / doc changes — no version entry required
 fi
