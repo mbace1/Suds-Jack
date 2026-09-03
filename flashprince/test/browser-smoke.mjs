@@ -14,7 +14,7 @@ try {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 
   await page.goto('http://127.0.0.1:4173/flashprince/', { waitUntil: 'networkidle' });
-  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-7');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-8');
 
   await page.keyboard.press('Digit2');
   await page.keyboard.down('ArrowRight');
