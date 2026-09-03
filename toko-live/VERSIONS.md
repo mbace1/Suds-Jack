@@ -1,5 +1,33 @@
 # Toko Live versions
 
+## v42 — 2026-09-03
+
+- Cleaned up touch interaction for cross-project cards: first tap focuses a side/tab, second tap asks. Touch no longer implicitly cycles the card before a double tap resolves.
+- Expanded the conversation area: more horizontal room on desktop and a larger share of the viewport on mobile.
+- Reduced prompt-menu height so Toko's actual conversation log gets priority.
+- Cache-busted the Toko Live stylesheet and deployed the v39-v42 brain modules together.
+- Toko Move was not changed.
+
+## v41 — 2026-09-03
+
+- Added deterministic conversation stress checks for status, decisions, next steps, opinions, comparisons, corrections, typos and follow-ups.
+- Hardened project resolution against common misspellings and compact project names.
+- Added a narrow duplicate-reply guard for identical Toko replies emitted within the same response burst.
+
+## v40 — 2026-09-03
+
+- Added evidence-aware Toko opinions grounded in project goal/current problems/next milestone plus explicit accepted, rejected and superseded decisions.
+- Toko now tracks an evidence signature per project and can say when her position actually moved because project evidence or an explicit decision changed.
+- Rejected directions are not casually reopened without new evidence.
+
+## v39 — 2026-09-03
+
+- Replaced the active decision layer with Decision Memory 2.0.
+- Decisions now have lifecycle states: accepted, rejected, superseded or undecided.
+- Stored items include user provenance, project scope, topic, timestamp and an explicit reason when the user gives one with because/since/so that.
+- Superseding a direction marks the previous accepted item as superseded instead of leaving two apparently active decisions.
+- Toko can answer filtered memory questions such as what was rejected, what changed, what is undecided and why a decision was made.
+
 ## v38 — 2026-09-02
 
 - Added a compact project-state model for every core project: goal, current state, problems, established decisions and next milestone.
@@ -56,5 +84,5 @@
 
 ### Known follow-up
 
-- `main/toko-live/main.js` still predates the deployed spatial-memory implementation. Do not treat `main` as the current Toko Live runtime until that file is reconciled.
+- `main/toko-live/main.js` still predates the deployed spatial-memory implementation. The v39-v42 source modules and shell are being reconciled separately; do not overwrite the deployed runtime from the old main.js.
 - Browser-render validation has not been performed in this pass.
