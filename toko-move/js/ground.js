@@ -46,18 +46,19 @@ export async function loadGround(base = './cities/ground/') {
   // `scripts/streets-import.mjs` writes a full-board pack over this one, the
   // bounding box inside it changes and `streetsCoverBoard()` and the credit
   // line follow. Replacing the file IS the change.
-  const [water, streets, districts, landmarks] = await Promise.all([
-    get('helsinki-water.json'), get('helsinki-streets.json'),
+  const [water, streets, corridors, districts, landmarks] = await Promise.all([
+    get('helsinki-water.json'), get('helsinki-streets.json'), get('helsinki-corridors.json'),
     get('helsinki-districts.json'), get('helsinki-landmarks.json')]);
-  return new Ground({ water, streets, districts, landmarks });
+  return new Ground({ water, streets, corridors, districts, landmarks });
 }
 
 export class Ground {
-  constructor({ water, streets, districts, landmarks }) {
+  constructor({ water, streets, corridors, districts, landmarks }) {
     this.water = water || null;
     this.streets = streets || null;
     this.districts = districts || null;
     this.landmarks = landmarks || null;
+    this.corridors = corridors || null;
     // Streets pre-bucketed by tier once, at load. The draw loop asks sixty times
     // a second and a filter per frame over 5652 ways is a filter per frame too
     // many.
@@ -79,6 +80,76 @@ export class Ground {
       (this.byTier[road.tier] || this.byTier.minor).push(road);
     }
     this.streetBox = this.streets?.boundingBox || null;
+    // AFTER streetBox: the clip is defined by the street pack's extent, and
+    // computing it a line earlier silently kept every corridor whole — 653 runs
+    // and 5079 points, exactly the unclipped input, which looks like success.
+    this.corridorRuns = this._clipCorridors();
+  }
+
+  // THE OUTER BOARD, and how it stopped being invented.
+  //
+  // 78% of the board has no OSM streets, and until now that 78% was drawn with
+  // twelve hand-authored corridors — the one kind of geometry this project's own
+  // rules say must never sit on the board as though it were real. The HSL GTFS
+  // corridor pack covers 60.149-60.218 / 24.895-24.995, which is essentially the
+  // whole board, and it is REAL: the streets along which HSL actually runs
+  // service, traced from the feed.
+  //
+  // It is emphatically NOT a street map, and its own source block says so at
+  // length: it has every street a bus or tram uses and no street without a route
+  // on it. That is the right shape for the coarse layer anyway — arterials are
+  // exactly what carries service — and the credit line says which is which.
+  //
+  // Rail, metro and ferry corridors are dropped. A ferry corridor is a line
+  // across open water; drawing it as a road would put a street through the
+  // harbour.
+  //
+  // Each corridor is CLIPPED to the ground the street pack does not cover, so
+  // the two layers never draw the same street twice with slightly different
+  // geometry — the doubling that made this a choice between them rather than a
+  // combination of them.
+  _clipCorridors() {
+    const b = this.streetBox, runs = [];
+    const outside = ([lat, lon]) => !b || lat < b.s || lat > b.n || lon < b.w || lon > b.e;
+    for (const c of this.corridors?.corridors || []) {
+      if (c.mode !== 'bus' && c.mode !== 'tram') continue;
+      let run = [];
+      for (const p of c.shape || []) {
+        if (outside(p)) run.push(p);
+        else { if (run.length >= 2) runs.push({ mode: c.mode, trips: c.trips, shape: run }); run = []; }
+      }
+      if (run.length >= 2) runs.push({ mode: c.mode, trips: c.trips, shape: run });
+    }
+    // Weight from the feed, not from a guess: how many trips a week run along
+    // it. The quartiles of the real distribution are 458 / 992 / 2394, so the
+    // thresholds are the data's own shape rather than round numbers.
+    for (const r of runs) r.tier = r.trips >= 2394 ? 'major' : r.trips >= 992 ? 'mid' : 'minor';
+
+    // ONE LINE PER STREET. A GTFS shape exists per direction and per route, so
+    // a street a bus runs both ways along arrives as two traces a few metres
+    // apart — and half a dozen routes down Mäkelänkatu arrive as half a dozen.
+    // Drawn, that is a dual carriageway where there is one road, which is the
+    // same lie as an authored line.
+    //
+    // So the busiest run in a place wins and the rest are dropped: points are
+    // hashed into ~20 m cells, and a run whose ground is already covered is not
+    // a second street. Busiest first, because the trunk should be the one that
+    // survives and it is the one whose geometry the most services agree on.
+    const CELL = 20 / 111320;                     // ~20 m, in degrees of latitude
+    const key = ([lat, lon]) => `${Math.round(lat / CELL)}:${Math.round(lon / (CELL * 2))}`;
+    const taken = new Set(), kept = [];
+    for (const r of runs.slice().sort((a, b) => b.trips - a.trips)) {
+      const keys = r.shape.map(key);
+      const seen = keys.filter(k => taken.has(k)).length;
+      if (seen / keys.length > 0.8) continue;     // this ground already has a street on it
+      for (const k of keys) taken.add(k);
+      kept.push(r);
+    }
+    return kept;
+  }
+  corridorsFor(scale) {
+    const tiers = STREET_TIERS[scale] || STREET_TIERS.city;
+    return this.corridorRuns.filter(r => tiers.includes(r.tier));
   }
 
   // Does the street extract actually cover this point? The honest half of the
@@ -132,6 +203,11 @@ export class Ground {
     // the credit says so in its own words rather than letting the OpenStreetMap
     // line at the front of the string be read as covering them.
     if (this.landmarks?.landmarks?.length) out.push('landmarks: map symbols, placed by hand');
+    // The corridors are a different source under a different licence, and they
+    // are not streets — both facts belong on screen, because a reader looking at
+    // Käpylä is looking at bus routes drawn as roads.
+    if (this.corridorRuns.length && this.corridors?.source?.attribution)
+      out.push(`beyond the extract: ${this.corridors.source.attribution} corridors (${this.corridors.source.licence}), not a street map`);
     return [...new Set(out)].join(' · ');
   }
 }

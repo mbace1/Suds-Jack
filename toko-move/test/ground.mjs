@@ -16,14 +16,14 @@ import { resolveHslAnchors } from '../js/helsinki-anchors.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = f => JSON.parse(readFileSync(join(here, '../cities/ground/', f), 'utf8'));
-const water = read('helsinki-water.json'), streets = read('helsinki-streets.json'), districts = read('helsinki-districts.json'), landmarks = read('helsinki-landmarks.json');
-const ground = new Ground({ water, streets, districts, landmarks });
+const water = read('helsinki-water.json'), streets = read('helsinki-streets.json'), districts = read('helsinki-districts.json'), landmarks = read('helsinki-landmarks.json'), corridors = read('helsinki-corridors.json');
+const ground = new Ground({ water, streets, corridors, districts, landmarks });
 const box = boardBox(resolveHslAnchors(JSON.parse(readFileSync(join(here, '../cities/helsinki.json'), 'utf8'))));
 let checks = 0;
 const ok = (c, m) => { assert.ok(c, m); checks++; };
 
 // ---- provenance, on every pack -----------------------------------------
-for (const [name, pack] of [['water', water], ['streets', streets], ['districts', districts], ['landmarks', landmarks]]) {
+for (const [name, pack] of [['water', water], ['streets', streets], ['districts', districts], ['landmarks', landmarks], ['corridors', corridors]]) {
   ok(pack.source, `${name} pack states a source`);
   ok(pack.source.licence || pack.source.dataset, `${name} pack states a licence or a dataset`);
   if (name !== 'landmarks') ok(pack.boundingBox, `${name} pack states the extent it covers`);
@@ -132,14 +132,45 @@ for (const must of ['OpenStreetMap', 'ODbL', 'City of Helsinki', 'centre extract
   ok(landmarks.landmarks.filter(l => l.pale).length === 1, 'and it is the ONLY one, or pale stops meaning anything');
 }
 
+// ---- the corridors: the outer board stopped being invented ---------------
+{
+  ok(/HSL|Helsingin/.test(corridors.source.attribution), 'the corridor pack credits HSL');
+  ok(/CC BY/.test(corridors.source.licence), 'under CC BY');
+  ok(/NOT A STREET MAP/i.test(corridors.source.isNot), 'and says loudly that it is not a street map');
+  ok(/not a street map/i.test(ground.credit()), 'which the on-screen credit repeats, because the reader needs it too');
+  ok(/OpenStreetMap/.test(ground.credit()) && /ODbL/.test(ground.credit()),
+    'and the OSM attribution survives alongside it — a licence line that drops a clause is the bug this holds');
+
+  const runs = ground.corridorRuns;
+  ok(runs.length > 250, `${runs.length} corridor runs reach the ground OSM does not cover`);
+  // rail, metro and ferry are not roads. A ferry corridor drawn as a street is
+  // a road through the harbour.
+  const modes = new Set(corridors.corridors.map(c => c.mode));
+  ok(modes.has('ferry') && modes.has('rail'), 'the pack really does contain ferry and rail corridors');
+  ok(!runs.some(r => r.mode !== 'bus' && r.mode !== 'tram'),
+    'and NONE of them is drawn — a ferry corridor stroked as a road is a street across the harbour');
+  // clipped to outside the street extract, or the two layers draw one street twice
+  const b = ground.streetBox;
+  const wholly = runs.filter(r => r.shape.every(p => p[0] >= b.s && p[0] <= b.n && p[1] >= b.w && p[1] <= b.e));
+  ok(wholly.length === 0, 'no corridor run lies wholly inside the street extract');
+  // a real hierarchy, from the feed's own trip counts
+  for (const t of ['major', 'mid', 'minor']) ok(runs.some(r => r.tier === t), `corridors carry a ${t} tier`);
+  const maj = runs.filter(r => r.tier === 'major'), min = runs.filter(r => r.tier === 'minor');
+  ok(Math.min(...maj.map(r => r.trips)) > Math.max(...min.map(r => r.trips)), 'and the tiers really are ordered by trips');
+  ok(ground.corridorsFor('city').length < ground.corridorsFor('stop').length, 'and the camera reveals them by tier');
+  // one line per street
+  ok(runs.length < 519, `deduplicated: ${runs.length} kept from 519 clipped runs (a street a bus runs both ways along arrives twice)`);
+}
+
 // ---- a missing pack must not take the map down --------------------------
 {
-  const empty = new Ground({ water: null, streets: null, districts: null, landmarks: null });
+  const empty = new Ground({ water: null, streets: null, districts: null, landmarks: null, corridors: null });
   ok(empty.streetsFor('stop').length === 0 && empty.districtsFor('city').length === 0, 'an absent pack is empty, not a crash');
+  ok(empty.corridorRuns.length === 0 && empty.corridorsFor('city').length === 0, 'and an absent corridor pack draws nothing rather than throwing');
   ok(empty.hasStreets(60.18, 24.95) === false, 'and reports no street coverage rather than pretending');
   ok(empty.credit() === '', 'and claims no attribution it cannot support');
 }
 
 console.log(`toko-move ground gate: ${checks} checks passed — ${water.areas.length} water areas, ` +
             `${streets.roads.length} streets in 3 tiers, ${districts.districts.length} districts, ` +
-            `${landmarks.landmarks.length} landmarks`);
+            `${landmarks.landmarks.length} landmarks, ${ground.corridorRuns.length} corridor runs beyond the extract`);

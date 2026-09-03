@@ -9,11 +9,11 @@ import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
 import {SHIFT} from './live-network.js?v=6';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
-import {loadGround,STREET_TIERS} from './ground.js?v=6';
+import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.23';
+const BUILD_VERSION='2.24';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -100,24 +100,37 @@ function drawTransit(){transit?.draw($('map').getContext('2d'),$('map').width,$(
 // and Töölö — ground competing with the thing it is meant to sit under. Thin,
 // cool grey, and no cap.
 function drawRoads(ctx=$('map').getContext('2d')){const d=renderer?.dpr||1,scale=camera?.nearestScale()||'city';
-  // Real OpenStreetMap streets where the extract reaches, and the board's own
-  // schematic corridors where it does not — never both in the same place. The
-  // street pack is a CENTRE extract (60.17-60.20 / 24.93-24.98, about the middle
-  // third of the board), and drawing the authored skeleton over the top of it
-  // would put an invented line beside a real one along the same street, which is
-  // the single thing this map is not allowed to do. Which one you get is decided
-  // by where the CAMERA is looking, so the swap happens on a zoom or a pan — a
-  // moment the player caused — and reads as detail arriving.
-  const centre=camera?{lat:camera.cy,lon:camera.cx}:null;
-  const real=ground&&centre&&scale!=='city'&&ground.hasStreets(centre.lat,centre.lon);
+  // TWO REAL SOURCES, SPLIT BY GEOGRAPHY, and no authored line anywhere.
+  //
+  // Inside the OSM street extract — 9.2 km² of a 41.2 km² board — the ground is
+  // OpenStreetMap ways. Outside it, where the board used to fall back to twelve
+  // hand-drawn corridors, it is now HSL's own service corridors from the GTFS
+  // feed, clipped by ground.js to exactly the ground OSM does not cover so the
+  // two never draw the same street twice with slightly different geometry.
+  //
+  // Which one you are looking at no longer depends on where the CAMERA is — the
+  // first cut chose a source by the camera centre, which meant panning across
+  // the extract boundary swapped the whole ground layer under you. Geography
+  // decides, so both are on screen at once and the seam is where the data's
+  // seam actually is.
+  //
+  // The corridors are not a street map and the credit line says so. What they
+  // are is the streets that carry service, which is the right thing for the
+  // coarse layer to be: an arterial is exactly a street a bus runs on.
+  const W={minor:1.5,mid:2.6,major:4.2},INK={minor:ROAD_INK_MINOR,mid:ROAD_INK_MID,major:ROAD_INK_MAJOR};
+  const tiers=STREET_TIERS[scale]||STREET_TIERS.city;
+  const trace=shape=>shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});
   ctx.save();ctx.lineJoin='round';ctx.lineCap='butt';
-  if(real){for(const[tier,ink,w]of[['minor',ROAD_INK_MINOR,1.5],['mid',ROAD_INK_MID,2.6],['major',ROAD_INK_MAJOR,4.2]]){
-      if(!STREET_TIERS[scale].includes(tier))continue;
-      ctx.strokeStyle=ink;ctx.lineWidth=w*d;ctx.beginPath();
-      for(const road of ground.byTier[tier]){road.shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});}
+  if(ground?.byTier||ground?.corridorRuns?.length){
+    // thin first, thick last, so an arterial crosses over a side street rather
+    // than being nibbled by it
+    for(const tier of ['minor','mid','major']){if(!tiers.includes(tier))continue;
+      ctx.strokeStyle=INK[tier];ctx.lineWidth=W[tier]*d;ctx.beginPath();
+      for(const r of ground.byTier?.[tier]||[])trace(r.shape);
+      for(const r of ground.corridorRuns||[])if(r.tier===tier)trace(r.shape);
       ctx.stroke();}}
   else if(roads?.length){ctx.strokeStyle=ROAD_INK_MINOR;ctx.lineWidth=2.2*d;ctx.globalAlpha=.85;
-    for(const road of roads){ctx.beginPath();road.path.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.stroke();}}
+    for(const road of roads){ctx.beginPath();trace(road.path);ctx.stroke();}}
   ctx.restore();}
 
 // WHAT IS ON SCREEN. boardRect() is the board in canvas pixels and moves with
@@ -225,20 +238,13 @@ function drawLegend(){if(!transit)return;const ctx=$('map').getContext('2d'),d=r
   // wrap rather than run off the frame — a key that leaves the board is not a key
   const maxW=r.w-16*d;const rows=[[]];let rw=0;
   for(const it of items){if(rw+it.tw+gap>maxW&&rows.at(-1).length){rows.push([]);rw=0;}rows.at(-1).push(it);rw+=it.tw+gap;}
-  let y=r.y+r.h-(rows.length*(h+4*d))-4*d-CREDIT_H*d;   // above the licence line
+  let y=r.y+r.h-(rows.length*(h+4*d))-4*d-creditHeight()*d;   // above the licence line, however tall it is
   for(const row of rows){const rowW=row.reduce((a,it)=>a+it.tw+gap,0)-gap;let x=r.x+(r.w-rowW)/2;
     for(const it of row){ctx.fillStyle=it.colour;ctx.beginPath();ctx.roundRect(x,y,it.tw,h,3*d);ctx.fill();
       ctx.fillStyle='#fff';ctx.fillText(it.f,x+it.tw/2,y+h/2+.5*d);x+=it.tw+gap;}
     y+=h+4*d;}
   ctx.restore();}
 
-// How much room at the foot of the board belongs to the credit. The legend
-// subtracts it rather than both layers claiming the same strip — they did,
-// and the attribution ended up printed under the tram chips.
-const CREDIT_H=21;
-// The licence conditions, on screen. ODbL and CC BY are conditions of use, not
-// a courtesy, and the packs carry their own attribution strings so this cannot
-// drift from what is actually being drawn.
 // The landmarks sit ON the ground layer, above the streets and under the
 // network: a tram passes in front of the cathedral, and the cathedral stands on
 // the street. They are hidden at CITY scale, where a 15px building among the
@@ -251,18 +257,30 @@ function drawLandmarkLayer(ctx){if(!ground?.landmarks||!city)return;
   const base=baseProjection(),pxPerMetre=(base.scale*(camera?camera.zoom:1))/111320;
   drawLandmarks(ctx,_lmPoints,fitLatLon,pxPerMetre,renderer?.dpr||1);}
 
-function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=viewRect(),t=ground.credit();if(!t)return;
-  ctx.save();ctx.font=`${Math.round(7.5*d)}px ui-monospace,monospace`;ctx.textAlign='left';ctx.textBaseline='bottom';
-  ctx.globalAlpha=.72;ctx.fillStyle=NIGHT.credit;
-  // It WRAPS. A licence condition that runs off the edge of the board is not on
-  // screen, and the first cut printed exactly half of it: the extent was cut off
-  // mid-number on a phone-width board.
-  const max=r.w-12*d,lines=[];let line='';
+// THE LICENCE LINE, and how much room it needs.
+//
+// It wraps, and it draws EVERY line it wraps to. The first cut capped it at the
+// last two and looked fine — until the HSL corridor clause was added, at which
+// point the string wrapped to three and the one that fell off the top was
+// "© OpenStreetMap contributors (ODbL 1.0)". A layout rule silently deleted an
+// attribution that is a condition of use. So the cap is gone, the legend asks
+// how many lines there are rather than assuming, and a credit that will not fit
+// pushes the legend up instead of losing a clause.
+function creditLines(ctx,width){if(!ground)return[];const t=ground.credit();if(!t)return[];
+  const lines=[];let line='';
   for(const part of t.split(' · ')){const next=line?`${line} · ${part}`:part;
-    if(ctx.measureText(next).width>max&&line){lines.push(line);line=part;}else line=next;}
+    if(ctx.measureText(next).width>width&&line){lines.push(line);line=part;}else line=next;}
   if(line)lines.push(line);
-  const shown=lines.slice(-2);
-  shown.forEach((l,i)=>ctx.fillText(l,r.x+6*d,r.y+r.h-4*d-(shown.length-1-i)*9*d));
+  return lines;}
+function creditFont(d){return `${Math.round(7.5*d)}px ui-monospace,monospace`;}
+function creditHeight(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=viewRect();
+  ctx.save();ctx.font=creditFont(d);const n=creditLines(ctx,r.w-12*d).length;ctx.restore();
+  return n?(n*9+4):0;}
+function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=viewRect();
+  ctx.save();ctx.font=creditFont(d);ctx.textAlign='left';ctx.textBaseline='bottom';
+  ctx.globalAlpha=.72;ctx.fillStyle=NIGHT.credit;
+  const lines=creditLines(ctx,r.w-12*d);
+  lines.forEach((l,i)=>ctx.fillText(l,r.x+6*d,r.y+r.h-4*d-(lines.length-1-i)*9*d));
   ctx.restore();}
 function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle=NIGHT.frame;ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
 
