@@ -209,6 +209,24 @@ jobs:
       - name: every HSL source layer preserved
         run: node toko-move/test/transit-layers.mjs
 
+      - name: the board's own geometry — box, line ink, night palette
+        run: node toko-move/test/board.mjs
+
+      - name: the camera — three scales, the 2 km circle, zoom about a point
+        run: node toko-move/test/camera.mjs
+
+      # The ground packs carry their own licences and their own extents. This
+      # holds both, and holds the fact that the street pack does NOT reach the
+      # whole board — so the day it does, this gate is what says so.
+      - name: real water, streets, districts and landmarks
+        run: node toko-move/test/ground.mjs
+
+      # The street importer runs with no network, which is the difficulty: the
+      # Overpass response is synthesised from the committed extract and put
+      # through the real parser.
+      - name: the street importer, offline
+        run: node toko-move/test/streets-import.mjs
+
       - name: version sync across hero, runtime, log and hub
         run: node toko-move/test/version-sync.mjs
 

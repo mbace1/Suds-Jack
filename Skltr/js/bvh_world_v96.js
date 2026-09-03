@@ -3,9 +3,7 @@ import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-
 import { ProjectilePool } from './projectile.js?v=12';
 import { Player } from './player.js?v=12';
 
-// SKLTR v93-v96 — first adoption from GitHub systems research.
-// three-mesh-bvh turns authored solid world meshes into fast projectile + LOS
-// collision instead of leaving them as visual-only scenery.
+// SKLTR v93-v100 — three-mesh-bvh powers solid-world projectile and LOS queries.
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
@@ -21,7 +19,6 @@ function refresh(){
     if(!o.isMesh || o.material?.wireframe) return;
     o.geometry.computeBoundingBox?.();
     const sz=new THREE.Vector3();o.geometry.boundingBox?.getSize(sz);
-    // Ignore hairline decoration; only substantial authored masses become gameplay.
     if(sz.x<.35 || sz.y<.35 || sz.z<.35) return;
     if(!o.geometry.boundsTree)o.geometry.computeBoundsTree();
     o.userData.skltrBVH=true;
@@ -45,8 +42,13 @@ function segmentHit(ax,ay,az,bx,by,bz,pad=0){
   ray.set(origin,dir);ray.near=0;ray.far=len+pad;
   return ray.intersectObjects(colliders,false)[0]||null;
 }
+function lineClear(ax,ay,az,bx,by,bz,pad=0){
+  const hit=segmentHit(ax,ay,az,bx,by,bz,pad);
+  if(!hit)return true;
+  const d=Math.hypot(bx-ax,by-ay,bz-az);
+  return hit.distance>=d-pad;
+}
 
-// Projectiles now respect richer solid arena art, not just the legacy box list.
 const oldPoolUpdate=ProjectilePool.prototype.update;
 ProjectilePool.prototype.update=function(dt){
   oldPoolUpdate.call(this,dt);
@@ -58,18 +60,19 @@ ProjectilePool.prototype.update=function(dt){
   }
 };
 
-// Auto-aim cannot lock through a solid world mesh. Movement/fire remain unchanged.
 const oldAim=Player.prototype._aim;
 Player.prototype._aim=function(a,en){
   const visible=en?.filter(e=>{
     if(!e?.alive)return false;
-    const eyeY=this.y+1.25,targetY=e.y||0;
-    const hit=segmentHit(this.x,eyeY,this.z,e.x,targetY,e.z,0);
-    if(!hit)return true;
-    const targetDist=Math.hypot(e.x-this.x,targetY-eyeY,e.z-this.z);
-    return hit.distance>=targetDist-(e.r||.7);
+    const eyeY=this.y+1.25,targetY=(e.y||0)+.45;
+    return lineClear(this.x,eyeY,this.z,e.x,targetY,e.z,e.r||.7);
   })||en;
   return oldAim.call(this,a,visible);
 };
 
-window._skltrBVH96=()=>({colliders:colliders.length,enabled:true});
+window._skltrBVH96={
+  state:()=>({colliders:colliders.length,enabled:true}),
+  segmentHit,
+  lineClear,
+  refresh
+};

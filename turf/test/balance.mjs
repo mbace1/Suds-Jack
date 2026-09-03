@@ -27,8 +27,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createEncounterState, attackableTargets, attack, moveUnit, endUnitTurn,
-  endPlayerTurn, stepEnemyPhase, movableTiles,
+  endPlayerTurn, stepEnemyPhase, movableTiles, reloadUnit,
 } from '../js/combat.js';
+import { needsReload } from '../js/ammo.js';
+import { key } from '../js/grid.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -62,10 +64,19 @@ function playOnce(encounter, seed) {
   let rounds = 0;
   while (!s.result && rounds < ROUND_CAP) {
     for (const u of s.units.filter(x => x.faction === 'player' && x.hp > 0)) {
+      // THE BOT HAS TO PURSUE THE OBJECTIVE, badly but genuinely. It is
+      // meant to ignore every SYSTEM (cover, hazards, knockback, abilities)
+      // — that is what makes its rate a floor — but a bot that ignores the
+      // GOAL reports 0% on an extraction map, which is a fact about the bot
+      // and not about the encounter. A mode nothing can pursue is a mode
+      // nobody can balance.
+      if (walkToObjective(s, u)) { if (s.result) break; continue; }
       let targets = attackableTargets(s, u);
       if (!targets.length && !u.actedMove) {
+        // "Nearest enemy" includes a cache on a destroy map: combat.js makes
+        // an objective a third faction so nothing has to special-case it.
         const foe = s.units
-          .filter(x => x.faction === 'enemy' && x.hp > 0)
+          .filter(x => x.faction !== 'player' && x.hp > 0)
           .sort((a, b) => man(u, a) - man(u, b))[0];
         if (foe) {
           let best = null, bestD = Infinity;
@@ -77,7 +88,12 @@ function playOnce(encounter, seed) {
         }
         targets = attackableTargets(s, u);
       }
+      // Reloading is not a SYSTEM this bot is meant to ignore — it is the
+      // only way an empty gun ever fires again, and a bot that never reloads
+      // would report the ammo mechanic as a difficulty spike rather than a
+      // rhythm. Same standard as taking the free swing on an extraction.
       if (targets.length) attack(s, u.uid, targets[0]);
+      else if (needsReload(u)) reloadUnit(s, u.uid);
       else endUnitTurn(s, u.uid);
       if (s.result) break;
     }
@@ -93,6 +109,54 @@ function playOnce(encounter, seed) {
     alive: s.units.filter(x => x.faction === 'player' && x.hp > 0).length,
     foesLeft: s.units.filter(x => x.faction === 'enemy' && x.hp > 0).length,
   };
+}
+
+// Walk at the extraction pads and nothing else — no fighting on the way,
+// which is exactly the mediocrity this gate is built on. Returns true when
+// this unit's turn is spoken for.
+function walkToObjective(s, u) {
+  const mode = s.win && s.win.mode;
+  let goals = null;
+  if (mode === 'extract' && s.extract && s.extract.size) {
+    if (s.extract.has(key(u.x, u.y))) { endUnitTurn(s, u.uid); return true; }
+    goals = [...s.extract].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });
+  } else if (mode === 'destroy') {
+    // A DESTROY MAP NEEDS THE SAME HELP, and finding that out cost a whole
+    // round of tuning: every cache-HP and deadline combination measured 0%,
+    // which looked like an unwinnable encounter and was actually a bot that
+    // never attacked a cache once. "Nearest thing that is not mine" always
+    // answers "an enemy", because the enemies are the screen in front of the
+    // objective — that is the entire point of the mission and it made the
+    // mission invisible to the gate.
+    goals = s.units.filter(o => o.faction === 'objective' && o.hp > 0);
+    if (!goals.length) return false;
+    const reachable = attackableTargets(s, u).filter(uid => {
+      const t = s.units.find(x => x.uid === uid);
+      return t && t.faction === 'objective';
+    });
+    if (reachable.length) { attack(s, u.uid, reachable[0]); return true; }
+  }
+  if (!goals) return false;
+  if (u.actedMove) { endUnitTurn(s, u.uid); return true; }
+  const pads = goals;
+  let best = null, bestD = Infinity;
+  for (const t of movableTiles(s, u).values()) {
+    const d = Math.min(...pads.map(p => man(t, p)));
+    if (d < bestD) { bestD = d; best = t; }
+  }
+  if (best && (best.x !== u.x || best.y !== u.y)) moveUnit(s, u.uid, best.x, best.y);
+  if (s.result) return true;
+  // A swing on the way out, because the move is already spent and the action
+  // is free. Walking past five armed rivals without ever hitting back is not
+  // "mediocre", it is suicidal — this gate's bot is meant to ignore the
+  // SYSTEMS (cover, hazards, knockback, the kit), not to decline to fight.
+  // Measured: without this the crew was wiped in 34 of 40 runs and the mode
+  // read as unwinnable when the map was merely dangerous.
+  const targets = attackableTargets(s, u);
+  if (targets.length) attack(s, u.uid, targets[0]);
+  else if (needsReload(u)) reloadUnit(s, u.uid);
+  else endUnitTurn(s, u.uid);
+  return true;
 }
 
 let failures = 0;

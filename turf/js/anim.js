@@ -175,7 +175,12 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
         if (t) {
           if (e.hit) {
             flashes.set(t.uid, { startedAt: now(), dur: FLASH_MS });
-            floats.push({ gx: t.x, gy: t.y, text: String(e.damage),
+            // The momentum share is named in the floater rather than folded
+            // silently into the total: a hit that suddenly reads 5 instead of
+            // 4 with no reason on screen is exactly the unexplained number a
+            // full-information game is not allowed to show.
+            const text = e.bonus > 0 ? `${e.damage} (+${e.bonus})` : String(e.damage);
+            floats.push({ gx: t.x, gy: t.y, text,
               kind: e.killed ? 'kill' : 'dmg', startedAt: now(), dur: FLOAT_MS });
             // A knockback has ALREADY moved the target by the time this event
             // is read, so the glide starts from where it was shoved from.

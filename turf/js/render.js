@@ -3,8 +3,10 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=3';
-import { key } from './grid.js?v=2';
+import { PAL } from './palette.js?v=11';
+import { key } from './grid.js?v=4';
+import { magOf, roundsLeft } from './ammo.js?v=2';
+import { incomingArrivals } from './combat.js?v=19';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // The real on-board sprite height (drawUnitSprite) — taller than the old
@@ -99,7 +101,13 @@ export function computeLayout(grid) {
   // shorter UNIT_H silhouette — a full-height sprite in row 0 needs more
   // clearance above the grid or its head (and HP bar above that) clips off
   // the top of the canvas.
-  const height = Math.ceil(maxB * (TILE_H / 2) + SPRITE_H + TILE_H * 4);
+  // Top clearance is SPRITE_H + TILE_H (originY, below) for a full-height
+  // sprite plus its HP bar and momentum pips in row 0. The remainder is the
+  // BOTTOM margin, and TILE_H * 4 gave it three tiles of nothing — invisible
+  // while the board was always fitted whole, and a band of dead screen once
+  // camera.js let it be scaled up. One tile is enough for a front-row
+  // sprite's feet and shadow.
+  const height = Math.ceil(maxB * (TILE_H / 2) + SPRITE_H + TILE_H * 2);
   const originX = Math.round(-minA * (TILE_W / 2) + SIDE_MARGIN);
   const originY = SPRITE_H + TILE_H;
   return { width, height, originX, originY };
@@ -224,6 +232,10 @@ function mixTint(a, b) {
 }
 
 function drawHighlights(g, layout, state) {
+  // Aiming replaces the ordinary overlays outright. Showing move range and
+  // attack targets UNDER a set of firing positions is three meanings in one
+  // colour field, and the player cannot tell which tap does what.
+  if (state.aimTiles && state.aimTiles.length) return;
   if (!state.moveTiles) return;
   for (const { x: gx, y: gy } of state.moveTiles.values()) {
     const { x, y } = toScreen(layout, gx, gy);
@@ -352,7 +364,8 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   // faction-tinted ring at the feet, the one thing every unit still stands
   // on regardless of which sprite (or the procedural fallback) is drawing
   // above it. Same two house colours as everywhere else in this game.
-  const factionColor = unit.faction === 'player' ? PAL.PLAYER : PAL.ENEMY;
+  const factionColor = unit.faction === 'player' ? PAL.PLAYER
+    : unit.faction === 'objective' ? PAL.OBJECTIVE_EDGE : PAL.ENEMY;
   g.diamond(x, y, TILE_W * 0.52, TILE_H * 0.46, null, factionColor, 1.5);
 
   // The animator answers with the current frame of whatever clip this unit is
@@ -401,6 +414,32 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   g.p(x - hpW / 2, hpY, hpW, 2, PAL.HP_TRACK);
   const hpColor = frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD;
   g.p(x - hpW / 2, hpY, hpW * frac, 2, hpColor);
+
+  // Momentum pips, one per tile still carried, above the HP bar. This game
+  // promises full information — an enemy's whole plan is on screen before it
+  // acts — so a modifier that silently changes a hit chance and a damage
+  // number cannot live in the rules only. If a unit is harder to shoot
+  // because it just ran, the board has to say so, on that unit, at a glance.
+  const mo = unit.momentum || 0;
+  if (mo > 0) {
+    const pipW = 2, gap = 1, total = mo * pipW + (mo - 1) * gap;
+    for (let i = 0; i < mo; i++) {
+      g.p(x - total / 2 + i * (pipW + gap), hpY - 3, pipW, 2, PAL.MOMENTUM);
+    }
+  }
+
+  // Ammo, under the HP bar rather than over it, so the two pip rows sit on
+  // opposite sides of the health and cannot be read as one strip. Spent
+  // rounds stay drawn as dark slots: "one of three" and "one" are different
+  // facts, and only the row that keeps its empty slots says which.
+  const mag = magOf(unit.weapon);
+  if (mag != null) {
+    const pipW = 2, gap = 1, total = mag * pipW + (mag - 1) * gap;
+    for (let i = 0; i < mag; i++) {
+      g.p(x - total / 2 + i * (pipW + gap), hpY + 3, pipW, 2,
+        i < roundsLeft(unit) ? PAL.AMMO : PAL.AMMO_SPENT);
+    }
+  }
 }
 // Draws the real sprite, anchored so the character's actual FEET (entry's
 // scanned ink bounds — see scanInkBounds) land on feetY, not the bottom of
@@ -431,6 +470,11 @@ function drawUnitSprite(g, entry, x, feetY, mirror, refH) {
   return feetY - contentH * scale; // top of the actual visible content, not the padded canvas
 }
 function drawUnitFallback(g, unit, x, feetY) {
+  // An objective is a THING, not a person. Falling through to the humanoid
+  // silhouette drew the cache as a third gang member standing very still,
+  // which is a readability bug in a game whose whole promise is that you can
+  // tell what is on the board.
+  if (unit.faction === 'objective') return drawObjectiveBody(g, x, feetY);
   const isPlayer = unit.faction === 'player';
   const body = isPlayer ? PAL.PLAYER : PAL.ENEMY;
   const dark = isPlayer ? PAL.PLAYER_DK : PAL.ENEMY_DK;
@@ -441,6 +485,36 @@ function drawUnitFallback(g, unit, x, feetY) {
   g.disc(x, feetY - bodyH - headR - 1, headR, body); // head
   g.diamond(x, feetY - bodyH * 0.4, 9, bodyH + 5, null, PAL.INK); // outline
   return feetY - bodyH - headR * 2 - 2;
+}
+
+// A strapped crate: a flat box in a hard black line, banded so it reads as
+// slats rather than a grey slab — the house register (Master System sprite:
+// flat fill inside a hard outline, the shape lives in the silhouette).
+// A ring plus a reticle above it, in the objective colour. The crate body
+// alone was not enough: this board is FULL of crates as cover, and a
+// screenshot of the depot showed the cache reading as scenery — the same
+// class of mistake as an extraction pad you cannot see.
+function drawObjectiveMark(g, layout, state) {
+  for (const u of state.units) {
+    if (u.faction !== 'objective' || u.hp <= 0) continue;
+    const p = toScreen(layout, u.x, u.y);
+    const y = p.y - SPRITE_H * 0.75;
+    g.diamond(p.x, p.y, TILE_W - 6, TILE_H - 3, null, PAL.OBJECTIVE_EDGE, 2);
+    g.line(p.x - 7, y, p.x - 3, y, PAL.OBJECTIVE_EDGE, null, 2);
+    g.line(p.x + 3, y, p.x + 7, y, PAL.OBJECTIVE_EDGE, null, 2);
+    g.line(p.x, y - 4, p.x, y - 1, PAL.OBJECTIVE_EDGE, null, 2);
+    g.line(p.x, y + 1, p.x, y + 4, PAL.OBJECTIVE_EDGE, null, 2);
+  }
+}
+
+function drawObjectiveBody(g, x, feetY) {
+  const h = UNIT_H * 0.85, w = 15;
+  g.p(x - w / 2, feetY - h, w, h, PAL.COVER_FULL_DK);
+  g.p(x - w / 2 + 1, feetY - h + 1, w - 2, h * 0.45, PAL.COVER_FULL);
+  g.p(x - w / 2, feetY - h * 0.55, w, 1.5, PAL.INK);          // strap
+  g.p(x - 1, feetY - h, 2, h, PAL.INK);                        // centre seam
+  g.diamond(x, feetY - h * 0.5, w + 2, h + 3, null, PAL.INK);  // outline
+  return feetY - h - 2;
 }
 
 // The source-tile glyph names the weapon's archetype (GDD §4 requires the
@@ -460,11 +534,223 @@ function weaponGlyph(g, x, y, weapon) {
   }
 }
 
+// The route, not just the destination. A diamond on the tile an enemy will
+// end up on says WHERE; it does not say that this particular body is the one
+// going there, and with four enemies telegraphing at once the board became a
+// scatter of markers nobody could attribute. A line from the unit's own feet
+// to its destination, with an arrowhead, is the attribution.
+function drawIntentPath(g, from, to, colour) {
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 2) return;
+  g.line(from.x, from.y - 2, to.x, to.y - 2, colour, [2, 3], 1);
+  // Arrowhead, drawn as two short strokes swept back from the destination
+  // along the path — cheap, and it survives being 3px long on a phone.
+  const ux = dx / len, uy = dy / len, h = 5;
+  g.line(to.x, to.y - 2, to.x - ux * h - uy * h * 0.6, to.y - 2 - uy * h + ux * h * 0.6, colour, null, 1);
+  g.line(to.x, to.y - 2, to.x - ux * h + uy * h * 0.6, to.y - 2 - uy * h - ux * h * 0.6, colour, null, 1);
+}
+
+// A ring under whoever is acting right now, plus a caret above it. Drawn
+// under the units (render()'s order) so it never covers a face.
+function drawSpotlight(g, layout, state) {
+  if (!state.actingUid) return;
+  const u = state.units.find(x => x.uid === state.actingUid);
+  if (!u || u.hp <= 0) return;
+  const p = toScreen(layout, u.x, u.y);
+  g.diamond(p.x, p.y, TILE_W + 4, TILE_H + 2, null, PAL.ACTING, 2);
+  g.diamond(p.x, p.y, TILE_W - 4, TILE_H - 2, null, PAL.ACTING, 1);
+  const top = p.y - SPRITE_H - 10;
+  g.line(p.x - 4, top, p.x, top + 4, PAL.ACTING, null, 2);
+  g.line(p.x + 4, top, p.x, top + 4, PAL.ACTING, null, 2);
+}
+
+// While an ability is armed the board is in a different mode and has to look
+// like it: the move/attack overlays are gone (input.js clears them) and these
+// take their place. A player who cannot tell which mode the board is in will
+// tap and find out, which in a game about committed decisions is the one
+// thing the UI must never make them do.
+function drawAbilityTargets(g, layout, state) {
+  const tiles = state.abilityTiles;
+  if (!tiles || !tiles.length) return;
+  const mark = (x, y) => g.diamond(x, y, TILE_W - 4, TILE_H - 2,
+    PAL.ABILITY_HI, PAL.ABILITY_HI_EDGE, 2);
+  for (const t of tiles) {
+    if (t.self) {
+      const u = state.units.find(x => x.uid === state.selected);
+      if (u) { const p = toScreen(layout, u.x, u.y); mark(p.x, p.y); }
+    } else if (t.all) {
+      for (const uid of t.all) {
+        const u = state.units.find(x => x.uid === uid);
+        if (u) { const p = toScreen(layout, u.x, u.y); mark(p.x, p.y); }
+      }
+    } else if (t.uid) {
+      const u = state.units.find(x => x.uid === t.uid);
+      if (u) { const p = toScreen(layout, u.x, u.y); mark(p.x, p.y); }
+    } else {
+      const p = toScreen(layout, t.x, t.y);
+      mark(p.x, p.y);
+    }
+  }
+}
+
+// A held gun, drawn on the unit holding it. Overwatch is the only thing in
+// this game that happens on somebody else's turn, so it is the only posture
+// that has to survive being looked at after the player stops thinking about
+// it — a bracket over the head, still there when the enemy phase starts.
+function drawOverwatch(g, layout, state) {
+  if (!state.overwatch || !state.overwatch.size) return;
+  for (const uid of state.overwatch) {
+    const u = state.units.find(x => x.uid === uid);
+    if (!u || u.hp <= 0) continue;
+    const p = toScreen(layout, u.x, u.y);
+    const y = p.y - SPRITE_H - 12;
+    g.line(p.x - 6, y + 3, p.x - 6, y, PAL.ABILITY_HI_EDGE, null, 1);
+    g.line(p.x - 6, y, p.x + 6, y, PAL.ABILITY_HI_EDGE, null, 1);
+    g.line(p.x + 6, y, p.x + 6, y + 3, PAL.ABILITY_HI_EDGE, null, 1);
+    g.disc(p.x, y + 2, 1.6, PAL.ABILITY_HI_EDGE);
+  }
+}
+
+// The odds, on the board, over every target the selected operator could
+// actually hit. Not a hover tooltip: touch has no hover, and a number you
+// have to go and ask for is not the same promise as a number that is simply
+// there. This is the hole v24 opened — momentum silently moved a hit chance
+// the board never showed — and closing it is `MST_PARITY.md` §2.1.
+// The extraction pads, drawn under everything else that moves. A mission
+// objective the board does not show is a hidden win condition, which in a
+// full-information game is the one unforgivable kind — the same reason v22
+// had to put the survive-N counter in the topbar.
+function drawExtraction(g, layout, state) {
+  if (!state.extract || !state.extract.size) return;
+  for (const k of state.extract) {
+    const [x, y] = k.split(',').map(Number);
+    const p = toScreen(layout, x, y);
+    g.diamond(p.x, p.y, TILE_W - 2, TILE_H - 1, PAL.OBJECTIVE, PAL.OBJECTIVE_EDGE, 2);
+    // A chevron pointing off the board: "out is this way", which a coloured
+    // tile alone does not say.
+    g.line(p.x - 5, p.y + 2, p.x, p.y - 3, PAL.OBJECTIVE_EDGE, null, 2);
+    g.line(p.x + 5, p.y + 2, p.x, p.y - 3, PAL.OBJECTIVE_EDGE, null, 2);
+  }
+}
+
+// The firing positions on offer, each labelled with the odds it would give.
+// This is what replaced walking the operator to a tile the engine picked:
+// the player is choosing where to fight from, so the board has to show what
+// each choice is worth — a menu of positions with no numbers on it would be
+// a worse version of the automatic behaviour, not a better one.
+function drawAimTiles(g, layout, state) {
+  const tiles = state.aimTiles;
+  if (!tiles || !tiles.length) return;
+  tiles.forEach((t, i) => {
+    const p = toScreen(layout, t.x, t.y);
+    const best = i === 0;
+    g.diamond(p.x, p.y, TILE_W - 4, TILE_H - 2, PAL.AIM_HI, best ? PAL.AIM_BEST : PAL.AIM_EDGE, best ? 3 : 1.5);
+  });
+}
+
+// The odds for each offered position, painted OVER the bodies. The tile
+// markings belong on the ground and the numbers do not: a screenshot showed
+// the second option's label sitting behind the very operator being asked to
+// move, which is the one thing a position chooser must never hide.
+function drawAimLabels(g, layout, state) {
+  const tiles = state.aimTiles;
+  if (!tiles || !tiles.length) return;
+  tiles.forEach((t, i) => {
+    const p = toScreen(layout, t.x, t.y);
+    const best = i === 0;
+    const f = t.forecast;
+    const label = f.lethal ? `${Math.round(f.chance * 100)}% KILL` : `${Math.round(f.chance * 100)}% · ${f.damage}`;
+    g.ctx.save();
+    g.ctx.font = `bold ${best ? 9 : 8}px monospace`;
+    g.ctx.textAlign = 'center';
+    const w = g.ctx.measureText(label).width + 6;
+    g.ctx.fillStyle = 'rgba(7,8,11,0.9)';
+    g.ctx.fillRect(p.x - w / 2, p.y - 6, w, 11);
+    g.ctx.strokeStyle = best ? PAL.AIM_BEST : PAL.AIM_EDGE;
+    g.ctx.lineWidth = 1;
+    g.ctx.strokeRect(p.x - w / 2, p.y - 6, w, 11);
+    g.ctx.fillStyle = best ? PAL.AIM_BEST : PAL.FORECAST;
+    g.ctx.fillText(label, p.x, p.y + 3);
+    g.ctx.restore();
+  });
+}
+
+function drawForecasts(g, layout, state) {
+  const fc = state.forecasts;
+  // Suppressed while aiming: the board is asking ONE question then, and the
+  // other rivals' badges are answers to a different one.
+  if (!fc || !fc.size || state.armedAbility || state.aimUid) return;
+  for (const [uid, f] of fc) {
+    const u = state.units.find(x => x.uid === uid);
+    if (!u || u.hp <= 0) continue;
+    const p = toScreen(layout, u.x, u.y);
+    const y = p.y - SPRITE_H - 16;
+    const pct = Math.round(f.chance * 100);
+    // "70% · 4" — odds then damage, the two numbers a decision needs. A
+    // lethal shot says so in words, because arithmetic against a health bar
+    // is exactly the work the player should not be doing.
+    const label = f.lethal ? `${pct}% KILL` : `${pct}% · ${f.damage}`;
+    g.ctx.save();
+    g.ctx.font = 'bold 8px monospace';
+    g.ctx.textAlign = 'center';
+    const w = g.ctx.measureText(label).width + 6;
+    g.ctx.fillStyle = 'rgba(7,8,11,0.82)';
+    g.ctx.fillRect(p.x - w / 2, y - 8, w, 10);
+    g.ctx.fillStyle = f.lethal ? PAL.FORECAST_LETHAL : PAL.FORECAST;
+    g.ctx.fillText(label, p.x, y);
+    g.ctx.restore();
+  }
+}
+
+// Where the next rivals are coming in, marked a round before they land. A
+// spawn the player could not see coming would break the promise the rest of
+// this board keeps — so the tile is drawn, the arrival is named, and the
+// round it lands on is on the marker.
+function drawArrivals(g, layout, state) {
+  const due = incomingArrivals(state);
+  if (!due.length) return;
+  for (const r of due) {
+    const p = toScreen(layout, r.x, r.y);
+    g.diamond(p.x, p.y, TILE_W - 4, TILE_H - 2, PAL.ARRIVAL, PAL.ARRIVAL_EDGE, 2);
+    // A downward chevron: something is dropping in here.
+    g.line(p.x - 5, p.y - 6, p.x, p.y - 1, PAL.ARRIVAL_EDGE, null, 2);
+    g.line(p.x + 5, p.y - 6, p.x, p.y - 1, PAL.ARRIVAL_EDGE, null, 2);
+  }
+}
+
+// The arrivals' labels, over the bodies — same split as the aim labels, and
+// for the same reason a screenshot taught: a marker under a sprite is a
+// marker nobody reads.
+function drawArrivalLabels(g, layout, state) {
+  const due = incomingArrivals(state);
+  if (!due.length) return;
+  for (const r of due) {
+    const p = toScreen(layout, r.x, r.y);
+    const def = (state.enemyDefs || []).find(e => e.id === r.enemy);
+    const wait = r.round - state.round;
+    const label = wait <= 0 ? `${def ? def.name : 'RIVAL'} ARRIVING` : `${def ? def.name : 'RIVAL'} · NEXT ROUND`;
+    g.ctx.save();
+    g.ctx.font = 'bold 8px monospace';
+    g.ctx.textAlign = 'center';
+    const w = g.ctx.measureText(label).width + 6;
+    const y = p.y - TILE_H - 4;
+    g.ctx.fillStyle = 'rgba(7,8,11,0.9)';
+    g.ctx.fillRect(p.x - w / 2, y - 8, w, 11);
+    g.ctx.strokeStyle = PAL.ARRIVAL_EDGE; g.ctx.lineWidth = 1;
+    g.ctx.strokeRect(p.x - w / 2, y - 8, w, 11);
+    g.ctx.fillStyle = PAL.ARRIVAL_EDGE;
+    g.ctx.fillText(label, p.x, y);
+    g.ctx.restore();
+  }
+}
+
 function drawTelegraph(g, layout, state) {
   for (const [uid, intent] of state.telegraph) {
     const enemy = state.units.find(u => u.uid === uid);
     if (!enemy || enemy.hp <= 0 || !intent.moveTo) continue;
     const at = toScreen(layout, intent.moveTo.x, intent.moveTo.y);
+    drawIntentPath(g, toScreen(layout, enemy.x, enemy.y), at, PAL.TELEGRAPH);
     if (intent.type === 'attack') {
       const target = state.units.find(u => u.uid === intent.targetUid);
       if (target) {
@@ -478,6 +764,14 @@ function drawTelegraph(g, layout, state) {
         if (enemy.weapon.knockback > 0) g.p(tp.x - 1, tp.y - TILE_H * 0.9, 2, 2, PAL.TELEGRAPH);
       }
       weaponGlyph(g, at.x, at.y - UNIT_H - 7, enemy.weapon);
+    } else if (intent.type === 'reload') {
+      // An open bracket over the destination — deliberately NOT the attack
+      // marker, because the whole value of telegraphing a reload is that the
+      // player can tell at a glance which rivals cannot hurt them this turn.
+      g.diamond(at.x, at.y, TILE_W - 8, TILE_H - 4, null, PAL.AMMO, 2);
+      g.line(at.x - 5, at.y - TILE_H * 0.9, at.x + 5, at.y - TILE_H * 0.9, PAL.AMMO, null, 2);
+      g.line(at.x - 5, at.y - TILE_H * 0.9, at.x - 5, at.y - TILE_H * 0.9 + 3, PAL.AMMO, null, 2);
+      g.line(at.x + 5, at.y - TILE_H * 0.9, at.x + 5, at.y - TILE_H * 0.9 + 3, PAL.AMMO, null, 2);
     } else if (intent.type === 'move') {
       g.disc(at.x, at.y, 1.5, PAL.TELEGRAPH);
     }
@@ -516,12 +810,33 @@ function drawCursor(g, layout, state) {
   g.diamond(x, y, TILE_W - 12, TILE_H - 6, null, PAL.CURSOR);
 }
 
+// How many real pixels the canvas carries per board pixel. main.js sizes the
+// backing store; this reads the factor back off it so every draw call below
+// can keep working in plain board units and know nothing about it.
+//
+// WHY IT IS NOT 1. The character plates are 288px ILLUSTRATIONS (9-12k
+// colours — art-src/sprites/README.md is explicit that they were cut for
+// illustration fidelity, not retro pixel art). At SS=1 the board is ~320px
+// wide, a plate is nearest-neighbour downscaled 6.3x to SPRITE_H, and then
+// CSS magnifies that back up ~3x on a phone. The detail is thrown away once
+// and the loss is then enlarged — which is what "very pixelated" was.
+// Supersampling keeps the art's own resolution instead of discarding it.
+export const SUPERSAMPLE = 3;
+
 export function render(canvas, state, layout, anim = null) {
   lastRenderArgs = { canvas, state, layout, anim };
   const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false; // keep sprite scaling crisp, same as the tile art
+  const ss = canvas.width / layout.width || 1;
+  ctx.setTransform(ss, 0, 0, ss, 0, 0);
+  // Smoothing ON now that a downscale is gentle rather than brutal: at SS=3 a
+  // plate lands at ~138px instead of 46, so averaging reads as detail. Tried
+  // and rejected: a high-quality resample at SS=1 (LANCZOS-equivalent) rings
+  // badly against the plates' hard alpha edge and speckles colour along the
+  // silhouette — worse than the nearest-neighbour it replaced.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   const g = pen(ctx);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, layout.width, layout.height);
   // No opaque fill here any more — owner direction, 2026-08-31: "the grid
   // should be transparently laid on the backgrounds so that the players are
   // in the courtyard." The canvas is transparent by default once nothing
@@ -533,7 +848,15 @@ export function render(canvas, state, layout, anim = null) {
   // hazard, since "can I reach that tile" and "what does it cost me" are two
   // different questions the player asks in that order.
   drawHazards(g, layout, state.hazards);
+  drawExtraction(g, layout, state);
+  drawArrivals(g, layout, state);
+  drawObjectiveMark(g, layout, state);
   drawHighlights(g, layout, state);
+  drawAimTiles(g, layout, state);
+  drawAbilityTargets(g, layout, state);
+  // Under the props and bodies, over the highlights: the ring belongs on the
+  // ground the unit is standing on, not painted across its chest.
+  drawSpotlight(g, layout, state);
 
   const fullTiles = [...state.fullCover].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });
   const partialTiles = [...state.partialCover].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });
@@ -558,6 +881,10 @@ export function render(canvas, state, layout, anim = null) {
 
   if (state.turn === 'player') {
     drawTelegraph(g, layout, state);
+    drawForecasts(g, layout, state);
+    drawAimLabels(g, layout, state);
+    drawArrivalLabels(g, layout, state);
+    drawOverwatch(g, layout, state);
     drawCursor(g, layout, state);
   }
 

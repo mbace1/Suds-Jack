@@ -59,5 +59,32 @@ export class LiveNetwork{
  // the map never claims a line is not there. `lastShown`/`lastTotal` are kept so
  // the HUD can say how much of the fleet you are being shown — a filter you
  // cannot see the size of is indistinguishable from a bug.
+ // WHEN THE NEXT ONE COMES, solved rather than searched.
+ //
+ // Both callers used to answer this by stepping the clock forward one tick at a
+ // time and asking nearestTo at each step — 120 steps in the panel, 900 for a
+ // transfer — which is a search for something that has a closed form. A vehicle
+ // here is a triangle wave: cycle = (phase + tick*speed) mod 2, out on [0,1] and
+ // back on (1,2]. A stop at path index i sits at q = i/(n-1) going out and at
+ // 2-q coming back, so the wait is just how far the wave has to travel to reach
+ // that value — one subtraction per vehicle, exact, and with NO HORIZON.
+ //
+ // The horizon was not a detail. The panel scanned 120 ticks, so a line whose
+ // next vehicle was 200 ticks away reported "WAITING" and no number at all —
+ // and once the choices started being compared on total time, a plan with no
+ // number lost to a plan with a bad one.
+ nextArrival(layer,nodePathIndex,tick,direction=null){
+  // One that is standing here NOW is a wait of zero. The closed form measures
+  // to the next exact crossing, so on its own it answers a vehicle already in
+  // the catch window with a whole cycle — the single case where it and the old
+  // scan disagreed, and it disagreed by 548 ticks.
+  if(this.nearestTo(layer,nodePathIndex,tick,2.2,direction))return 0;
+  const n=Math.max(1,(layer.path?.length||2)-1),q=Math.max(0,Math.min(1,nodePathIndex/n));
+  const targets=direction===1?[q]:direction===-1?[2-q]:[q,2-q];
+  let best=null;
+  for(const v of this.vehicles){if(v.layer.id!==layer.id)continue;
+   const cur=(v.phase+tick*v.speed)%2;
+   for(const t of targets){let d=(t-cur)%2;if(d<0)d+=2;const dt=d/v.speed;if(best===null||dt<best)best=dt;}}
+  return best===null?null:Math.round(best);}
  draw(ctx,tick,project,dpr=1,{filter=null}={}){const boxes=[];let shown=0,total=0;ctx.save();ctx.font=`bold ${Math.round(8*dpr)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';for(const v of this.vehicles){if(!v.layer.visible)continue;const p=this.position(v,tick);if(!p)continue;total++;if(filter&&!filter(p.lat,p.lon,v.layer,v))continue;shown++;const q=project(p.lat,p.lon),selected=v.id===this.selectedVehicleId,w=(selected?29:24)*dpr,h=(selected?18:14)*dpr;ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?4:2)*dpr;ctx.beginPath();ctx.roundRect(q.x-w/2,q.y-h/2,w,h,3*dpr);ctx.fill();ctx.stroke();if(selected){ctx.strokeStyle='#fffdf7';ctx.lineWidth=1*dpr;ctx.stroke();}ctx.fillStyle='#fff';ctx.fillText(v.layer.name,q.x,q.y+.5*dpr);boxes.push({x:q.x-w/2,y:q.y-h/2,w,h});}ctx.restore();this.lastShown=shown;this.lastTotal=total;return boxes;}
 }

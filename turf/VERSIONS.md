@@ -8,6 +8,740 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v32 — 2026-09-03
+**Owner, on a screenshot of `underpass`: "that background doesn't fit the
+grid directions."** Correct, and it is a geometry problem with an exact
+answer rather than a matter of taste.
+
+**The board is a 2:1 isometric grid** (`TILE_W` 32, `TILE_H` 16), so a tile
+edge runs at `atan(0.5)` = **26.57°** from horizontal — which is an
+orthographic camera at **45° yaw, 30° elevation**, the same camera
+`tools/render-frames.mjs` already cuts sprite frames from. A background has
+to be rendered from that camera or its ground lines cross the tiles at every
+angle but the right one, and the board floats on a photograph of a place
+instead of standing in it.
+
+**Judged, one by one.** `courtyard.jpg` and `schoolyard.jpg` are true iso
+renders — building corners, fence runs and the floor diamond all on the
+grid's own axes. **`dockyard.jpg` is a one-point PERSPECTIVE plate**: its
+rails and paving seams run near-horizontal toward a vanishing point off
+frame. It was carrying three of the seven encounters (`loading-dock`,
+`underpass`, `the-crossing`); those move to the two that fit. It stays in
+the repo — it is a good picture, and it would serve as a title card, where
+nothing has to line up with it.
+
+**The cost of that fix is honest and worth stating: two backgrounds now
+carry seven encounters**, which is repetition a player notices by the third
+block. `ART_REQUEST.md` §10 is the new section — the camera spec, a
+ten-second test (lay the grid over the plate; ground lines parallel to tile
+edges or they are not), the verdict table above, and a shopping list of six
+more subjects in the right camera with frame requirements that can be
+checked before delivery.
+
+**A gate, so this cannot come back.** `smoke.mjs` now refuses any encounter
+pointing at a known perspective plate, or at an unknown one, and pins the
+26.57° derivation next to it — change `TILE_W`/`TILE_H` and every background
+in the repo needs re-judging, so that fact lives in the suite rather than in
+prose somebody has to remember to read.
+
+**BIGGER BOARDS — and the owner had to correct me once: "I didn't mean
+bigger characters, I meant more squares."** That was what I measured, but I
+stopped at "it breaks balance" instead of growing the board properly, which
+was the wrong place to stop.
+
+**Growing a board means moving what is anchored to its edges.** Different
+things are pinned to different edges: the crew spawns with its back to the
+bottom **and that edge is cover**, rivals and reinforcements enter from the
+top, extraction pads sit on the far edge, and props belong in the middle.
+Shift everything uniformly and the crew ends up in open ground; shift
+nothing and the new squares are dead margin.
+
+**COLUMNS are the safe axis, and that is a measured result rather than a
+preference.** Growing ROWS lengthens the crew's approach, which is the most
+load-bearing number on every map: +2 rows reads **0% on all three deadline
+missions** because the crew can no longer cross in time, while the survive
+maps get *easier* (warehouse to 100%) because rivals take longer to arrive.
+Growing COLUMNS leaves approach distance alone and only adds lateral room:
+at **+2 columns, six of seven encounters do not move at all**. Every board
+is 2 wider now — 13x9 and 11x10, about 20% more squares.
+
+`loading-dock` is the one that moved, 67% to **82%**, and the reason is that
+it is the narrowest map (9 columns) so +2 is a 22% width increase and the
+crew gains real room to spread. Still inside the band, and recorded here
+rather than tuned away.
+
+**+4 and +6 columns were also measured and rejected**: +4 takes the depot to
+0%, +6 takes warehouse to 100%.
+
+**A REAL BUG, found by a throwaway script's sanity assertion and not by the
+suite.** Growing the boards meant checking nothing collided afterwards, and
+that check failed immediately on the CURRENT data: **`the-depot` had been
+spawning its shotgun grunt and its cache on the same tile (5,2) since v26** —
+two stacked units, live on gh-pages through v31. Every depot number from v26
+onward was measured on that board. Unstacking it moved the map from 13% to
+**0%**, because the stack had effectively neutralised the grunt; re-tuned
+with the cache at 4 HP and the grunt screening from (5,4), it reads **12%**.
+
+`smoke.mjs` now asserts what that script asserted: no two things spawn on
+one tile, nothing spawns inside full cover, and no spawn, arrival point or
+extraction pad sits off the board.
+
+- `test/smoke.mjs` is 130 checks (was 127).
+- `test/balance.mjs` green on all seven: 53 / 82 / 65 / 32 / 68 / 18 / 12.
+  The background swap moves nothing, which is the point; the two that did
+  move are `loading-dock` (the wider board) and `the-depot` (the unstacked
+  spawn), both explained above.
+- No module changed, so no tokens moved; `encounters.json`, the suite and
+  the docs are the whole diff.
+
+## v31 — 2026-09-03
+**Reinforcements** — `MST_PARITY.md` §2.4, and the owner's note when it was
+first listed: *"that's great for later.. it will make longer survive rounds
+work."* It does, and the reason is the problem it fixes: on a survive map,
+wiping the opening roster meant coasting for three rounds with an empty
+board while the objective still said HOLD. The countdown was the whole
+encounter once the fight was over.
+
+**An arrival is announced before it lands.** `ARRIVAL_NOTICE` is one round:
+the tile is marked, the rival is named on it (`Track · NEXT ROUND`), and it
+appears there on the round it said. A spawn nobody could see coming would
+break the promise every other system in this game keeps, and there is no
+version of "surprise reinforcements" that survives a full-information
+contract.
+
+**They land at the TOP of the player's turn**, not mid-enemy-phase. A rival
+that materialised during the phase would act on the turn it appeared, which
+is a spawn nobody could have played around even having seen it.
+
+**An arrival never lands on top of somebody.** Its declared tile if free,
+otherwise the nearest free one, ties broken on tile key so it is
+deterministic. A rival that quietly failed to show because an operator was
+standing on its square would be a promise the board made and did not keep.
+
+**Clearing the board is no longer automatically a win.** With rivals still
+due, an empty board is a lull rather than a victory — handing the win out
+there lets the player skip the half of the encounter the schedule exists to
+provide. `eliminate` and the "killing them all also wins" shortcut both now
+require the schedule to be empty too.
+
+**THE INTERESTING RESULT IS ON `underpass`.** Bolting two extra rivals onto
+its existing five took it from 27% to **0%** — the hardest map in the game
+does not have room for more bodies. So the roster was SPLIT instead: the
+same five, three at round one and two arriving at rounds 3 and 5. That reads
+**32%**, so staging the pressure made the hardest map slightly *fairer*
+without making it emptier, which is the mechanic doing exactly what it is
+for. `backlot` keeps its full opening roster and gains two arrivals on top:
+57% to 53%, still comfortably in band.
+
+**Arrival timing is a curve to measure, not to nudge by eye.** Moving both
+of `underpass`'s arrivals one round later reads **87%** — a 55-point swing
+for two rounds of delay. The numbers are in the encounter's own
+`_reinforceNote`.
+
+**A sweep of mine clobbered the roster and I caught it in the output.** The
+first `underpass` sweep invented five enemies and five positions rather than
+reading the encounter's own, so every cell measured a map that does not
+exist. Restored from git and re-run against the real spawns — the lesson
+being the one this log keeps relearning: tune against the gate, and against
+the real data.
+
+- `test/smoke.mjs` is 127 checks (was 121): the schedule surviving a boot
+  with nothing landed, an arrival marked a round early, landing on the round
+  it promised and into the player turn, never landing on an occupied tile,
+  an empty board with arrivals pending not being a win, and an unknown enemy
+  id being consumed rather than crashing or retrying forever.
+- `test/balance.mjs` green on all seven: 53 / 67 / 65 / 32 / 68 / 18 / 13.
+- Tokens: `combat` v19, `input` v18, `render` v22, `palette` v11, `main` v29.
+
+## v30 — 2026-09-03
+**The level-up pick — where the Mewgenics loop actually lands.** `awardXp`
+had levelled operators since v20 and paid HP for it, and that was all a
+level was: a stat curve. GDD §5.1 says *"every level-up spends a skill slot
+on any line"*, and until now there was nothing to spend it on.
+
+**A level grants a SLOT; a slot buys ONE of THREE.** The slot is granted in
+`awardXp` and spent by `learnSkill`, deliberately in two places: the pick is
+a decision the player makes on the result screen, and an engine that picked
+for them would be the class box coming back in through the side door. The
+three are drawn from the whole pool, any line, minus what the operator
+already holds — **including skills the current weapon cannot use**, because
+§5.1's payoff is a build that is inert now and goes live when a gun drops,
+and an offer that only ever showed what works today could never make that
+build. Such a card is dashed and says *inert with this weapon*.
+
+**Offers come from the encounter's own rng**, so the same seed always shows
+the same three: a replayable offer is a testable one, and a player who
+reloads to reroll is a player the design has already lost. An offer is
+stable across re-renders and a fresh three is drawn only once a slot is
+spent.
+
+**The pick is made BEFORE the next block, never during one.** Continue is
+disabled while a slot is unspent and says how many are left; a slot carried
+into a fight would be a decision the player forgot they had. Under AUTO the
+first card is taken automatically, so an unattended run never stalls on a
+screen nobody is looking at. Progress persists per run in `crewProgress`
+(kit plus unspent slots), and the saved kit REPLACES the def's starting
+loadout on restore rather than adding to it — the starting two are already
+the first two entries of what was saved.
+
+**The kit is capped at four.** Beyond that the phone's action row wraps and
+the kit stops being readable at a glance; a level past the cap still pays
+HP. `learnSkill` refuses anything not on the offer: the three on screen are
+the rule, not a suggestion, and a crafted call reaching past them would make
+them one.
+
+**Pace, honestly.** `xpToNext` is 20 + 15 per level and a win pays 10 + 8
+per kill, so an operator with a kill or two levels after the first or second
+block and reaches three or four skills by the end of the seven — two or
+three picks per run. Whether that is the right pace is a playtest question.
+
+**One bug caught in the browser check, not by a gate**: after the pick,
+Continue was enabled but still read "Pick 1 skill first" — the label was
+only ever overwritten, never restored. It is copied before being replaced
+now and put back when nothing is pending.
+
+**Layout note.** Three cards across a 390px phone wrap their blurbs into
+tall narrow columns. It fits without scrolling and every word is readable,
+but stacking them on the narrowest screens is worth a look once someone has
+picked a few for real.
+
+- `test/smoke.mjs` is 121 checks (was 114): a level grants a slot without
+  the engine spending it, an offer is three-from-anywhere-not-held and
+  stable, the same seed offers the same three, learning spends the slot and
+  keeps the starting kit and draws fresh next time, no slot / duplicate /
+  off-offer all refuse without spending, the cap holds and a level past it
+  still pays, and a knife carrier is offered a gun skill.
+- `test/balance.mjs` unchanged and green on all seven — the pick happens
+  between encounters and the gate plays them singly.
+- Tokens: `combat` v18, `input` v17, `autoplay` v6, `main` v28.
+
+## v29 — 2026-09-03
+**Owner: "I never said that only one type of skills class is available to 1
+unit. treat them like categories."** Correct, and `GDD.md` §5.1 already said
+so — *"No fixed class archetypes... class is the label a particular
+combination produces, never a box a unit is locked into"*. v25-v28 keyed the
+kit on `role`, which is precisely the archetype §5.1 rejects: every melee
+operator had the identical Cleave + Takedown, every gunner the identical
+Snap Shot + Overwatch. My fault for building the cheap version without
+reading §5.1 first.
+
+**Skills are now LINES — categories a loadout draws from.** Six, from §5.1's
+own table: Slasher (aggression), Shiv (positioning), Marksman (precision),
+Enforcer (control), Bruiser (impact), Anchor (zone). Twelve skills across
+them, and **every one of the fourteen operators has a kit that crosses two
+lines** — a roster where each unit was a pure line would be the class box
+wearing new names, and the gate asserts the crossing rather than trusting it.
+
+Six are new: **Backstab** and **Openings** (Shiv), **Steady** (Marksman),
+**Cripple** (Enforcer), **Wallop** (Bruiser), **Planted** (Anchor).
+
+**Backstab is the flanking skill and this engine has no facing** — sprites
+mirror, units do not turn — so a true back-attack would mean adding one.
+"Flanked" is instead *the rival is adjacent to one of your OTHER operators*,
+which is the tactics-genre reading of the same idea and is the better version
+on a three-operator crew: it rewards the PAIR rather than one unit's
+footwork. `abilityTargets` only offers flanked rivals, so the board never
+invites a swing it would then refuse, and the bot gets the rule for free
+instead of reimplementing it.
+
+**The flank bonus is resolved PER TARGET.** A single options object computed
+once would have paid Cleave's bonus on every body in the swing regardless of
+who was actually engaged.
+
+**A skill the weapon cannot use stays on screen and says why.** §5.1 is
+explicit that a build going inert-then-live when a weapon drops is the
+payoff, and a skill the player never saw is a payoff they will not notice
+arriving. Verified end to end: Blade holding a knife shows SNAP SHOT /
+MARKSMAN dashed and dimmed; hand him a pistol and it goes live, with a
+RELOAD button appearing beside it.
+
+**Cripple takes tiles off the move budget in `moveRange` and nowhere else**,
+so every reader — the highlight, the telegraph, `approachTile`, both bots —
+sees the shortened reach without learning the rule. Floored at 1: a unit
+pinned to zero can be farmed from range with nothing it can do, which is a
+different game.
+
+**Planted is read off the BOARD, not stored on each ally**, so it starts and
+stops working the moment somebody moves. A test caught me measuring it
+wrong — moving the protected mate also changed whose cover it stood behind,
+so the assertion was reading two rules at once.
+
+**One regression, caught by measurement.** AUTO on `the-crossing` fell from
+27% to 8%, and the cause was v28 rather than the skills: the free swing on
+the way to an extraction pad now walked the operator to the BEST firing tile,
+which drags them off the route to go and find cover. On an objective run the
+swing may not move you — 27% restored.
+
+**Barricade finally has a bot rule**, closing the gap `MST_PARITY.md` §3 has
+carried since v25 (never used, therefore never measured). Across 420 runs the
+auto-bot now uses ten of the twelve skills — Snap Shot 543, Shove 178,
+Overwatch 100, Steady 88, Cripple 79, Backstab 61, Takedown 60, Cleave 16,
+Barricade 2, Wallop 1. **Openings and Planted are still unused**, recorded
+here rather than quietly omitted.
+
+- `test/smoke.mjs` is 114 checks (was 107): every loadout crossing two lines,
+  two operators of one role having different kits, the weapon gate refusing
+  and explaining, Backstab offering nothing when nobody is engaged, the flank
+  bonus landing per target, Cripple shortening move range but never to zero,
+  and Planted lifting only while the anchor stands next to you.
+- `test/balance.mjs` green on all seven, unchanged: 57 / 67 / 65 / 27 / 68 /
+  18 / 13.
+- Tokens: `abilities` v2, `grid` v4, `combat` v17, `input` v16, `autoplay`
+  v5, `main` v27. One token per module — `abilities.js` was left importing
+  `grid.js?v=2` while everything else had moved to v4, which is the
+  instantiate-it-twice bug this repo has paid for before.
+
+## v28 — 2026-09-03
+**"Do they still automatically bump into others?"** — owner, and the answer
+was yes, in the worst possible way.
+
+**A tap on a rival ran the operator to the CHEAPEST tile that could reach
+it.** `approachTile` had scored on move cost alone since Milestone 1, which
+was fine when cost was the only thing a tile had. By v27 it was not: v6 gave
+tiles cover, v18 gave them hazards, and v24 made the DISTANCE travelled into
+momentum — damage on the swing, evasion until you spend it. Measured over
+400 one-tap attacks where a real choice of firing tile existed, the old
+default **banked less momentum than an available alternative 80% of the
+time** and **stopped in the open when cover was on offer 20% of the time**.
+The single most common input in the game was systematically fighting the
+systems built around it, and the forecast badge added in v26 was dutifully
+quoting the odds from a tile the player never chose.
+
+**`firingTileScore` replaces "cheapest" with "best"** — cover against the
+target, exposure to everyone else, hazards priced in HP, and distance as a
+small positive so a tie goes to the longer run. Same 400 cases afterwards:
+cover 20% to **0%**, momentum 80% to **30%** — and that residual 30% is
+correct rather than remaining error, since those are the boards where the
+longest run costs cover and the scorer rightly refuses it.
+
+**And the player picks.** A tap that can already fire from where the
+operator stands still fires immediately, and so does one where there is only
+one place to shoot from — no extra taps where there was nothing to decide.
+A tap that WOULD MOVE YOU now offers the firing positions instead, each
+labelled with the odds and damage it would give, the best one marked; tap a
+tile to take it, or tap the rival again to accept the default. That is the
+difference between a game that moves you and a game you move.
+
+**Aiming replaces the ordinary overlays outright** rather than layering on
+top of them: move range plus attack targets plus firing positions is three
+meanings in one colour field and the player cannot tell which tap does what.
+The other rivals' forecast badges are suppressed for the same reason — the
+board is asking one question and their odds answer a different one.
+
+**The labels are painted OVER the bodies, the tile markings under them.** A
+screenshot caught the second option's label sitting behind the very operator
+being asked to move, which is the one thing a position chooser must not
+hide.
+
+**`window.__turf.tap(gx, gy)`** is new: a tap in grid coordinates down the
+real input path. The browser check for this feature first synthesised
+pointer events at guessed pixel offsets, missed the sprite by a few pixels
+and silently reported "no targets" — a test that exercises the input path
+should not have to guess where the input path is.
+
+- `test/smoke.mjs` is 107 checks (was 101): the default preferring cover, a
+  hazard never being the default, options coming back best-first each with
+  its own forecast, firing from a tile you chose rather than the one scored
+  best, a tile that is not on offer being refused without eating the turn,
+  and an empty gun offering no positions at all.
+- `test/balance.mjs` is unchanged on all seven, and that is expected rather
+  than suspicious: its bot calls `attack` directly and never takes the
+  one-tap path, so this change is invisible to it. The 400-case measurement
+  above is the evidence, not the gate.
+- Tokens: `grid` v3, `combat` v16, `input` v15, `render` v21, `palette` v10,
+  `main` v25.
+
+## v27 — 2026-09-03
+**`MST_PARITY.md` §2.3, and the owner's direction that bosses come after
+mechanics.** Through v26 every weapon fired every turn, forever, which is
+why a turn in TURF asked roughly one question: who do I shoot.
+
+**MAGAZINES.** `js/ammo.js`. A ranged weapon holds `mag` rounds, firing
+spends one, and **reloading is your action and never your move** — so an
+empty turn is still a turn you spend going somewhere. That is the whole
+design: it hands the movement economy (v24) and the ability kit (v25) the
+empty turns they were previously competing with a free attack for. Melee
+has no magazine at all: a knife does not run out, and that reliability is
+precisely what melee trades its range for.
+
+The round is spent inside `resolveAttack` and nowhere else, so every firing
+path pays for it — an ordinary swing, an ability, and an overwatch reaction
+all funnel through one function rather than three call sites remembering.
+
+**Enemies reload on the same rule and TELEGRAPH it** (`ai.js` returns a
+`reload` intent, drawn as an open bracket rather than the attack marker). A
+rival standing still because it has nothing chambered would otherwise read
+as a bug rather than a beat — and the window it opens is only worth having
+if the player can see it. It backs OFF while reloading, since a unit with
+nothing to fire wants distance rather than a knife fight.
+
+**`ammo.js` is its own leaf module for a structural reason**: combat.js,
+ai.js, autoplay.js and render.js all need to ask "is this empty", and ai.js
+CANNOT import combat.js — combat.js imports ai.js, so the pair is circular
+(the same constraint that put `recomputeWeapon`'s result on `unit.weapon`
+rather than behind a getter). A predicate copied into four files is the
+third-copy bug this codebase has paid for twice.
+
+**An ABSENT round count means full, not empty**, and that is load-bearing
+rather than defensive: any path that puts a weapon on a unit without seeding
+the count — a direct assignment, a future pickup, a test poking at
+internals — would otherwise hand back a gun that is silently out of rounds.
+Only a real zero, arrived at by firing, is empty. A test caught this by
+swapping a weapon the way no shipping code does yet.
+
+**THE BALANCE CONSEQUENCE IS THE HEADLINE, and it is not a bug.** The rule's
+effect scales with how RANGED each side is, and the encounters were tuned
+when ammo was infinite. Measured across all seven: `warehouse` (crew 0/3
+ranged, foes 2/6) went 65% to 98% because the crew lost nothing and the
+rivals lost a third of their shooting; `underpass` (crew 2/3, foes 1/5) went
+17% to 0% for the mirror reason; and `the-yard` (0/3 against 0/5) did not
+move by a single point, which is what confirms the mechanism rather than
+leaving it a story. Magazine size was swept at 3/3/2, 4/4/3, 5/5/3 and
+6/6/4: at 5 and above the bots essentially never run dry in a 5-9 round
+encounter and the rule is inert, at 3 it distorts every rate by 20-30
+points, and **4/4/3 is the only setting that leaves all seven near their
+pre-ammo numbers**.
+
+**`the-depot` had to be re-tuned and is bimodal.** Its rivals are 2/3
+ranged, so magazines cost THEM more and it flipped from 25% to 100%.
+Restoring the fourth enemy put it at 0%, and it stays at 0% at every cover
+layout, roster and cache position tried — the mission is a race, so enemy
+count is a cliff there. Cache HP turned out to be the one lever with fine
+grain (6 → 100%, 10 → 13%), which my scratch harness had reported as having
+no effect at all: the gate is what gets tuned against, not a side script.
+Cache position is worth a warning in its own right — it is **non-monotonic**
+(y=1 → 100%, y=2 → 0%, y=3 → 98%) because y=2 is the chokepoint between two
+dumpsters, so it must not be "fixed" by nudging.
+
+**Reload sits with the ABILITIES, not with Cancel and End Turn**, because it
+is the same currency — what you spend your action on instead of a swing or a
+kit move. Putting it in the utility row first pushed the phone panel to five
+rows and wrapped AUTO onto its own line, costing real board height. Its cost
+badge doubles as the ammo readout (`RELOAD 0/4`).
+
+Ammo draws as a pip row UNDER the HP bar, with spent rounds kept as dark
+slots — momentum's pips are above it and warm, ammo's below and cool, so the
+two resources cannot be read as one strip, and "one of three" and "one" are
+different facts that only a row keeping its empty slots can tell apart.
+
+- `R` on the keyboard and X on the pad reload; never Start, which is the
+  arcade shell's hold-for-home.
+- Both bots reload. That is not a system the balance bot is meant to ignore:
+  it is the only way an empty gun ever fires again, and a bot that never
+  reloaded would report the mechanic as a difficulty spike rather than a
+  rhythm.
+- `test/smoke.mjs` is 101 checks (was 92): melee carrying no magazine, the
+  absent-means-full rule, the round being spent whichever path fired, an
+  empty gun not being offered a shot the board would then refuse, the
+  action-not-move cost, a full gun and a knife both refusing, the enemy
+  telegraph, and an enemy actually reloading after telegraphing it.
+- `test/balance.mjs` green on all seven: 57 / 67 / 65 / 27 / 68 / 18 / 13.
+- Tokens: `ammo` v2 (new), `combat` v15, `ai` v6, `input` v13, `render` v19,
+  `palette` v9, `autoplay` v4, `main` v23.
+
+## v26 — 2026-09-03
+**`MST_PARITY.md` §2.1 and §2.2, in order.** Two items off the roadmap
+written yesterday, and both turned out to be about the same thing: a
+promise this game makes and had stopped keeping.
+
+**THE FORECAST.** v24 added a rule that silently modified a hit chance the
+board never showed, which in a game whose whole contract is full
+information is the one unforgivable kind of change. `forecastAttack` is now
+the ONE place the odds are worked out and `resolveAttack` calls it — so the
+number quoted and the number rolled against are the same code, not two
+copies that drift. The gate asserts that equality directly.
+
+It draws as a badge over every target the selected operator can reach —
+`70% · 4`, or `70% KILL` when it finishes them — rather than as a hover
+tooltip: touch has no hover, and a number you have to go and ask for is a
+weaker promise than one that is simply there. The keyboard/pad cursor also
+gets the REASON in the HUD (`-30% their cover · -18% they ran · +1 your
+run · 2 tiles to close`), because a number a player does not trust is not
+information.
+
+**A forecast is taken from the tile you would SHOOT FROM, not the one you
+are standing on.** `orderAttack` steps you into range first and cover is a
+property of where you end up, so a forecast from the current tile would
+confidently quote the wrong number on exactly the shots that need a step.
+
+**TWO NEW MISSION TYPES, and the game's first clock.** `extract` (get N of
+the crew onto the pads) and `destroy` (break the cache), plus `deadline` on
+either. Before this the game had exactly ONE way to lose — a crew wipe —
+and now it has three: the deadline, and falling below an extraction's
+`need`. `state.win` was already data (GDD §3), so each mode is a clause in
+`checkWinLoss` plus encounter JSON.
+
+A cache is a **third faction** rather than a new entity type, because "a
+thing on a tile with hp that can be attacked" is what a unit already is:
+`attackableTargets` filters on `faction !== mine`, and `livingEnemies` and
+`ai.js` both filter on the names 'enemy' and 'player', so an objective is
+attackable by both sides and invisible to the win check and the enemy brain
+without either learning anything. The gate asserts the rivals never target
+it — otherwise they would spend the encounter beating up a crate.
+
+**`need` IS ABSOLUTE, and clamping it to the living was a real fault.** With
+`Math.min(need, alive)` a crew that lost somebody needed fewer bodies on the
+pads, so losing an operator made the mission EASIER and the cheapest way to
+pass a 3-of-3 extraction was to let one die. Falling below `need` is a loss
+now.
+
+**BOTH NEW ENCOUNTERS WERE TUNED BY MEASUREMENT, AND BOTH ARE CLIFFS.**
+`the-crossing` with open pads was 0% at four rounds and 100% at five — an
+uncontested extraction is arithmetic, not a fight — so a holder and a
+control grunt stand ON the approach, which is what makes it 18%.
+`the-depot` measured 0% at every cache-HP, deadline and roster combination
+tried, and the cause was not the encounter: the gate's bot targets the
+NEAREST thing that is not its own, which always answers "an enemy", so it
+never attacked a cache once. Two caches at opposite ends is still 0% at
+every setting (it asks the crew to cross the board twice); one cache between
+two dumpsters is 25%. The third-versus-fourth enemy is another cliff, 20% to
+0%. Every number is recorded in the encounters' own `_note` fields.
+
+**The gate's bot had to learn the objective**, and that is a principle
+rather than a fix: it is meant to ignore every SYSTEM — cover, hazards,
+knockback, the kit — because that is what makes its rate a floor, but a bot
+that ignores the GOAL reports 0% on an extraction map, which is a fact about
+the bot and not about the encounter. It was also walking past five armed
+rivals without ever swinging back and being wiped in 34 of 40 runs; taking
+the free swing on the way out is not cleverness, it is not being suicidal.
+
+**Two readability faults, both found on a screenshot rather than by a
+gate.** The cache fell through to the humanoid fallback and drew as a third
+gang member standing very still; it is a strapped crate now, with a reticle
+above it, because this board is full of crates as cover. And the extraction
+pads opened OFF SCREEN on the very frame the player is told to go and stand
+on them — the opening shot now frames the crew and the mission together.
+
+**One crash, caught by asking the question the browser test could not.** AUTO
+had been verified in a browser on encounter ONE, and widening its target
+filter to everything-not-mine (so a cache is a target like any other) also
+let a WEAPONLESS crate into its threat model — `f.weapon.range` on a cache
+crashed the switch outright on the destroy map. The gate now drives AUTO
+through every encounter, which is the coverage that was missing: a bot that
+throws is worse than a bot that loses.
+
+- `test/smoke.mjs` is 92 checks (was 78): the forecast equalling the roll,
+  the from-tile rule, no forecast for a shot that is not on, both new loss
+  conditions, a cache being a target like any other, the enemy brain never
+  aiming at one, and AUTO reaching a result on all seven encounters.
+- `test/balance.mjs` green on all seven: 53 / 67 / 65 / 17 / 68 / 18 / 25.
+- AUTO across the seven: 60 / 100 / 100 / 93 / 100 / 27 / 100.
+- Tokens: `combat` v13, `input` v11, `render` v17, `palette` v7, `main` v20,
+  `autoplay` v3.
+
+## v25 — 2026-09-03
+**Owner, on the v24 build: "zoom in a bit on mobile, things are hard to see
+now. there are no actions at all, fighters just bump into each other and I
+can't see who is going where. we might want an auto-battler switch."** Four
+complaints; the first two were blocking any judgement of the rest.
+
+**THE BOARD MAY BE BIGGER THAN THE SCREEN NOW.** `js/camera.js`. Fitting the
+whole board and making it legible are different requests, and on a phone they
+disagree: an 11-tile grid in portrait fits at ~1.0-1.3x, which delivers a 32px
+tile as a 32px tile. The fit is a FLOOR now (`MIN_TILE_W` 46), the board
+overflows, and the camera gives it somewhere to look — drag to pan, plus a
+follow that centres the selected operator and the acting enemy. **No second
+rAF**: `anim.js` owns the only loop in this game, so the follow is a CSS
+transition and a camera sitting still costs nothing. A drag is never also an
+order — camera.js recognises it in the capture phase and `input.js` swallows
+that pointerup.
+
+**Filling the leftover height was tried and rejected ON THE SCREENSHOT.** An
+isometric 11x9 board is wide and short (320x222) and a phone is tall and
+narrow, so zooming until the height is full crops nearly half the width — and
+a game whose contract is that you can see every enemy's plan cannot show you
+half the enemies. The vertical letterbox is geometry, not waste. What WAS
+waste: `computeLayout` reserved three tiles of bottom margin, invisible while
+the board always fitted, a band of dead screen once it could be scaled up.
+
+**A real bug found by measuring rather than assuming.** The board was scaled
+for a viewport that no longer existed — 644px of board in a 620px stage —
+because the bottom bar grows a row when a selected operator carries momentum,
+and shrinking `#stage` fires no window resize event. A `ResizeObserver` on the
+element is the only thing that catches it.
+
+**"I can't see who is going where."** The enemy phase has TWO beats per enemy
+now instead of one: LOOK (name it, spotlight it, point the camera at it, hold
+340ms) then ACT. Resolving both in one frame is exactly why it read as
+bumping — the unit that moved and the unit that hit you were only ever seen
+after the fact, in their new positions, with nothing tying either to a name.
+Plus `drawIntentPath`: a dashed line with an arrowhead from each enemy's own
+feet to where it is going. A diamond on a destination tile says WHERE; with
+four enemies telegraphing at once it does not say WHO.
+
+**"There are no actions at all."** True, and it was the compromise v24 made
+knowingly: momentum bought a flat +1 damage because there was nothing else to
+spend it on. `data/abilities.json` + `js/abilities.js` close the loop —
+**you move to afford the thing you then do**, which is the Metal Slug Tactics
+engine this game keeps citing. Six, by role, so the 14-strong cast is covered
+without hand-authoring 28:
+
+- **Cleave** (melee, 2) — weapon damage to every adjacent rival.
+- **Takedown** (melee, 3) — +3 and a two-tile shove. The full-move finisher.
+- **Snap Shot** (ranged, 2) — two shots, each -15%.
+- **Overwatch** (ranged, 2) — hold fire; the first rival to move into range
+  during their turn takes a shot. **The only reaction in the game**, and the
+  answer to a board where crossing open ground was free.
+- **Shove** (control, 1) — 1 damage, 3 tiles, never misses. Pure positioning.
+- **Barricade** (control, 2) — low cover on an empty tile beside you.
+
+An ability IS your action, never an extra one, and it charges its own cost
+rather than emptying the pool. `resolveAttack` grew an options argument so an
+ability bends one attack instead of this codebase growing a second damage
+pipeline — the third-copy bug the hazard work already paid for once.
+
+**Enemies deliberately have no kit.** Their variety is `behaviour` (ai.js),
+expressed entirely through where they choose to stand, which the telegraph can
+draw. A kit would have to telegraph "and then it will Cleave", and six of
+those on one board is a wall of text, not full information. Same reasoning as
+v24's sync cut.
+
+**Two bugs the gate caught that a playtest would have missed.** Enemies got
+the whole player kit, because `role` is shared and `abilitiesFor` matched on
+it alone. And Snap Shot's `-0.15` was read as an ABSOLUTE hit chance rather
+than a modifier, turning a 70% ability into a 5% one — `accuracy` (replaces)
+and `accuracyMod` (shifts) are separate fields now for exactly that reason.
+
+**The auto-battler** (`js/autoplay.js`, the AUTO switch). Not a new bot: it is
+the tactical bot from v24's experiment, the one that scored cover and exposure,
+won 92% against the naive bot's 57%, and proved the first negative momentum
+result was the heuristic's fault rather than the design's. The strongest
+measured player-side behaviour is the only honest thing to put behind that
+switch. It plays through the same command functions a tap calls, one operator
+per tick at a watchable pace, so what you are seeing is the real game.
+Measured over 300 runs: **91% wins, 1344 abilities used** (snapshot 833,
+takedown 225, overwatch 155, shove 117, cleave 14).
+
+**Honest limit: the bot never uses Barricade** — it has no rule for it. That is
+a gap in the bot, not evidence about the ability, and it does mean nothing has
+yet measured whether Barricade earns its cost. Recorded in `MST_PARITY.md` §3
+rather than quietly left out.
+
+**`MST_PARITY.md`** is new: what parity does and does not mean, what v24-v25
+closed, and the ordered rest — including the sequencing trap, that a branching
+run map before more objective types is a menu in front of the same fight.
+
+- `test/smoke.mjs` is 78 checks (was 68): a kit per role and none for the
+  enemies, the momentum price, that a refused ability neither half-happens nor
+  eats the turn, cleave's one-cost-many-hits, that no second barrel is fired
+  into a body, shove's flat damage, and that overwatch fires once and never
+  survives its phase.
+- `test/balance.mjs` unchanged and green: 53 / 67 / 65 / 17 / 68.
+- Tokens: `combat` v11, `input` v10, `render` v14, `palette` v5, `main` v17,
+  `camera` / `abilities` / `autoplay` v1 (new).
+
+## v24 — 2026-09-02
+**The movement economy.** Through v23 there was no reason to move once a
+unit was in range: moving cost nothing and bought nothing, so standing
+still and shooting was dominant and every board knotted into a scrum by
+round one. Metal Slug Tactics — half this game's stated brief — is built
+on the opposite. This is that engine, cut down to what survived
+measurement.
+
+**`js/momentum.js`, two rules and one pool.** A unit banks one point per
+tile it moves under its own power (`MOVE_CAP` 4 — a knockback is not
+momentum, being shoved is not running). Unspent, each point is `-6%` to
+be *shot* — never stabbed, since a knife at one tile does not miss
+because you jogged, and capped below partial cover's `-30%` so cover
+stays a decision. Spent on a swing, four points are `+1` damage. **The
+swing spends the pool**, so the same points are damage *or* evasion,
+never both, and running-then-holding-fire is a real play.
+
+**Visible, because this game promises full information.** Momentum draws
+as pips over the HP bar on every unit, friend or enemy; the selected
+operator's HUD line spells out what its run is worth both ways; the
+damage floater reads `5 (+1)` rather than an unexplained 5; and
+`ai.js` folds a target's evasion into its focus scoring, so the
+telegraph never promises a shot it is unlikely to land.
+
+**THE SPEND RULE IS NOT A FLOURISH — it is the fix for a measured
+failure.** With momentum permanent, evasion systematically favoured
+whoever was chasing, and the AI chases every single turn while an
+operator holding a firing line banks nothing. Measured against a
+positional bot, the skill gap *narrowed* — +46 points to +19 — which is
+the exact opposite of the intent. Spending it on the attack means an
+enemy that runs in and hits you is stationary by the time you shoot back.
+
+**A third rule was designed, built, measured three ways, and CUT.** Sync
+— attacking a target an ally also covers adds a follow-up from that ally
+— is straight out of MST and does not survive contact with this game.
+Free, one follow-up per covering ally: `the-yard` went from 68% winnable
+to **0% on that rule alone**, because anything multiplied by "allies in
+range" pays the side with more bodies and this roster is "weaker but
+numerous" by design (GDD §10) — the player is never that side. Capped at
+one partner: same collapse, the enemies always had one. Gated on the
+partner still carrying momentum (so it costs holding that ally's fire):
+symmetric, safe, and **inert** — a bot built to set syncs up deliberately
+scored 72% against 92% for the same bot ignoring them, because half of
+one ally's weapon never repays that ally's whole attack, and raising the
+share until it did would just be "attack twice". The finding is written
+into `momentum.js`'s header rather than deleted, because it is the
+obvious next idea and someone will have it again.
+
+**How any of this was known.** Four bots against all five encounters,
+120 seeds each, with a checkout of v23 as the control column: the naive
+bot from `balance.mjs`, a *runner* that always repositioned to the
+furthest tile it could still hit from, a *tactical* bot scoring cover and
+exposure, and a *sync-seeker*. The runner's first numbers were the whole
+reason this was not shipped a day earlier — it lost 23 to 52 points on
+four of five encounters — and the tactical bot is what proved that was
+the heuristic's fault and not the design's. The control column reproduces
+v23's win rates exactly (37/39/64/24/68), which is what makes every other
+column mean something.
+
+**Honest limits.** Evasion barely moves the needle in bot play (±1 point
+across a 2.25x range of `EVADE_PER`) because bots always attack and so
+always spend it; it exists for the human play the bots cannot find.
+`DAMAGE_PER` is quantised by `Math.floor` over a range of four, so it is
+a cliff rather than a dial — 0.25 and 0.34 are 23 points apart in the
+naive floor. Both are noted here so the next person tuning them knows
+which one is a knob.
+
+- `test/smoke.mjs` is 68 checks (was 61): the cap, melee exemption,
+  the logged momentum the animator reads, the spend-on-attack interlock,
+  the reported `base`/`bonus`/`evade` breakdown, and that momentum never
+  survives its own turn on either side.
+- `test/balance.mjs` still green on all five: 53 / 67 / 65 / 17 / 68.
+- Tokens: `combat` v10, `ai` v5, `render` v13, `anim` v5, `input` v9,
+  `palette` v4, `main` v16, `momentum` v1 (new).
+
+## v23 — 2026-09-02
+**"The characters looked very pixelated" — they were, and the cause was
+the board throwing the art away twice.** Owner, on a phone screenshot of
+v22.
+
+- The character plates are **288px illustrations** (9-12k colours;
+  `art-src/sprites/README.md` is explicit that they were cut for
+  illustration fidelity, not retro pixel art). The board rendered at its
+  logical size — about 320px wide — so `drawUnitSprite` nearest-neighbour
+  downscaled a plate **6.3x** to `SPRITE_H`, sampling roughly every sixth
+  pixel and discarding ~97% of it. CSS then magnified that loss back up
+  ~3x on a phone. Detail destroyed once, then enlarged.
+- **Fixed by supersampling**: the canvas backing store is now
+  `SUPERSAMPLE` (3) times the board's logical size, and `render()` scales
+  the context by the factor it reads back off the canvas. Every draw call
+  keeps working in plain board units and knows nothing about it — no
+  coordinate maths moved. `image-rendering: pixelated` came off `#board`,
+  since forcing nearest-neighbour on top of a supersampled buffer throws
+  away exactly what the supersample exists to keep.
+- **A simpler fix was tried first and rejected on the evidence.** Doing a
+  high-quality resample (LANCZOS-equivalent) at the old resolution rings
+  against the plates' hard alpha edge and speckles red/green/blue along
+  the silhouette — visibly worse than the nearest-neighbour it replaced.
+  Checked as an image before it went near the game. Smoothing is only
+  enabled now because at SS=3 a plate lands at ~138px instead of 46, where
+  averaging reads as detail rather than as fringing.
+- **This broke tapping, and would have shipped silently.** `input.js`
+  scaled a click by `canvas.width / rect.width` — which is now 3x the
+  logical width, putting every tap a third of the board away from where
+  the player pointed. It scales off `layout` instead now; everything
+  downstream (`screenToGrid`, `unitAtPoint`, `TILE_W`, `SPRITE_H`) is in
+  board units. Verified by dispatching a real pointer event at a unit's
+  drawn position and asserting that unit gets selected, at DPR 3.
+- No change to the game, the board layout, or how large anything appears —
+  only how many real pixels carry it.
+- Tokens: `render.js` v11->v12, `input.js` v7->v8, `main.js` v14->v15.
+
 ## v22 — 2026-09-02
 **The game was not winnable, and the goal was the reason.** Measured over
 300 bot runs across the five encounters: **zero wins**. Not close — on

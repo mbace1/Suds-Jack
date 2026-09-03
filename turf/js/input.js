@@ -4,15 +4,34 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=11';
+import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=22';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
-  canUnitAct, endPlayerTurn, getUnit,
-} from './combat.js?v=9';
-import { key } from './grid.js?v=2';
+  canUnitAct, endPlayerTurn, getUnit, useAbility, previewAttack, reloadUnit,
+  firingOptions, attackFrom,
+} from './combat.js?v=19';
+import { abilityTargets, findAbility } from './abilities.js?v=2';
+import { key } from './grid.js?v=4';
 import { watchPad } from '../../hub/pad.js?v=9';
 
-export function createInputHandler({ canvas, getState, getLayout, onChange }) {
+export function createInputHandler({
+  canvas, getState, getLayout, onChange, consumedDrag, clearDrag, getAbilities,
+}) {
+  // The ability the player has armed but not yet aimed. While this is set the
+  // board is in a different mode: taps resolve the ability instead of moving
+  // or attacking, and state.abilityTiles carries what render.js should light
+  // up. Deliberately a single id and not a stack — an armed action the player
+  // has forgotten about would fire on their next tap, which in a game about
+  // committed decisions is the worst possible surprise.
+  let armed = null;
+  // The enemy the player has pointed at but not yet committed to, when the
+  // shot would MOVE them. Through v27 a tap ran orderAttack immediately and
+  // walked the operator to a tile the engine chose — which after v24-v27 was
+  // the wrong tile 80% of the time by momentum and 20% by cover. Now: if you
+  // can already fire from where you stand, one tap fires; if the tap would
+  // move you, it offers the firing positions first. No extra taps in the
+  // case where there was nothing to decide.
+  let aimUid = null;
   // The keyboard/gamepad cursor: a grid tile, live only once one of those
   // two has actually been used (mouse/touch clears it right back off —
   // gameoflife's :focus-visible rule, applied to a canvas instead of the
@@ -22,8 +41,61 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
 
   function refreshSelectionOverlay(state) {
     const sel = state.selected ? getUnit(state, state.selected) : null;
-    state.moveTiles = sel ? movableTiles(state, sel) : new Map();
-    state.attackTiles = sel ? attackableTargets(state, sel) : [];
+    if (!sel) { armed = null; aimUid = null; }
+    state.aimUid = aimUid;
+    state.aimTiles = aimUid && sel ? firingOptions(state, sel.uid, aimUid) : null;
+    state.moveTiles = sel && !armed ? movableTiles(state, sel) : new Map();
+    state.attackTiles = sel && !armed ? attackableTargets(state, sel) : [];
+    state.abilityTiles = armed && sel
+      ? abilityTargets(state, sel, findAbility(getAbilities(), armed)) : null;
+    state.armedAbility = armed;
+    // The odds for every target this operator could hit, recomputed with the
+    // overlay rather than on hover: touch has no hover, and these have to
+    // stay correct after a move (which changes cover AND momentum), so they
+    // belong on the same refresh as the highlights they sit on top of.
+    state.forecasts = new Map();
+    if (sel && !armed) {
+      for (const uid of state.attackTiles) {
+        const f = previewAttack(state, sel.uid, uid);
+        if (f) state.forecasts.set(uid, f);
+      }
+    }
+  }
+
+  // Arming is a toggle: pressing the same button again puts the board back
+  // to ordinary move/attack rather than leaving the player to hunt for a way
+  // out of a mode they entered by accident.
+  function armAbility(id) {
+    const state = getState();
+    if (state.turn !== 'player' || state.result || !state.selected) return;
+    aimUid = null; // arming an ability leaves aim mode
+    armed = armed === id ? null : id;
+    refreshSelectionOverlay(state);
+    onChange();
+  }
+  function disarm() {
+    if (!armed) return;
+    armed = null;
+    refreshSelectionOverlay(getState());
+  }
+
+  // Resolving an armed ability. Returns true when the tap was consumed —
+  // including when it MISSED every legal target, because in that case the
+  // right behaviour is to disarm rather than silently fall through to a move
+  // order the player did not intend.
+  function resolveArmed(state, hit, x, y) {
+    const sel = getUnit(state, state.selected);
+    const ability = findAbility(getAbilities(), armed);
+    if (!sel || !ability) { armed = null; return false; }
+    const legal = state.abilityTiles || [];
+    let target = null;
+    if (ability.shape === 'self') target = legal[0] || null;
+    else if (ability.shape === 'adjacent-all') target = legal[0] || null;
+    else if (ability.shape === 'empty-tile') target = legal.find(t => t.x === x && t.y === y) || null;
+    else target = hit && legal.find(t => t.uid === hit.uid) ? hit.uid : null;
+    if (target != null) useAbility(state, sel.uid, armed, target, getAbilities());
+    armed = null;
+    return true;
   }
 
   function syncCursorField(state) {
@@ -35,9 +107,14 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     return alive ? { x: alive.x, y: alive.y } : { x: 0, y: 0 };
   }
 
+  // Client point -> BOARD coordinates. Scaled off layout, NOT canvas.width:
+  // the backing store is SUPERSAMPLE x the board's logical size (render.js),
+  // so canvas.width would land every tap 3x out. Everything downstream —
+  // screenToGrid, unitAtPoint, TILE_W, SPRITE_H — is in board units.
   function clientToInternal(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+    const layout = getLayout();
+    const scaleX = layout.width / rect.width, scaleY = layout.height / rect.height;
     return { px: (clientX - rect.left) * scaleX, py: (clientY - rect.top) * scaleY };
   }
 
@@ -63,12 +140,38 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     if (state.turn !== 'player' || state.result) return;
     if (!hit && (x < 0 || y < 0 || x >= state.grid.cols || y >= state.grid.rows)) return;
 
+    if (armed && state.selected) {
+      if (resolveArmed(state, hit, x, y)) {
+        refreshSelectionOverlay(state);
+        onChange();
+        return;
+      }
+    }
+
     if (state.selected) {
       const sel = getUnit(state, state.selected);
       if (hit && hit.uid === sel.uid) {
         // re-tapping yourself: stay selected
-      } else if (hit && hit.faction !== sel.faction && (state.attackTiles || []).includes(hit.uid)) {
+      } else if (aimUid && !hit && (state.aimTiles || []).some(t => t.x === x && t.y === y)) {
+        // Committing to a chosen firing position.
+        attackFrom(state, sel.uid, aimUid, { x, y });
+        aimUid = null;
+      } else if (hit && hit.uid === aimUid) {
+        // Tapping the same rival again takes the default — the best tile,
+        // which is the one already marked. One extra tap, never two.
         orderAttack(state, sel.uid, hit.uid);
+        aimUid = null;
+      } else if (hit && hit.faction !== sel.faction && (state.attackTiles || []).includes(hit.uid)) {
+        const opts = firingOptions(state, sel.uid, hit.uid);
+        const here = opts.find(t => t.x === sel.x && t.y === sel.y);
+        if (here || opts.length <= 1) {
+          // Nothing to decide: the shot is on from where they stand, or
+          // there is exactly one place to take it from.
+          orderAttack(state, sel.uid, hit.uid);
+          aimUid = null;
+        } else {
+          aimUid = hit.uid;
+        }
       } else if (!hit && (state.moveTiles || new Map()).has(key(x, y))) {
         moveUnit(state, sel.uid, x, y);
       } else if (hit && hit.faction === sel.faction && canUnitAct(hit)) {
@@ -99,13 +202,24 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
   // Touch owns touchend exclusively (pointerup skips pointerType 'touch') so
   // a normal tap — which fires both, pointerup first — is never handled
   // twice.
+  // A gesture that panned the camera is not a tap. camera.js recognises the
+  // drag in the capture phase and answers here; without this check, dragging
+  // the board at phone zoom would also order a move to wherever the thumb
+  // stopped — the drag and the order share one pointerup.
+  function droppedByPan() {
+    if (!consumedDrag || !consumedDrag()) return false;
+    clearDrag && clearDrag();
+    return true;
+  }
   function onPointerUp(evt) {
     if (evt.pointerType === 'touch') return;
+    if (droppedByPan()) return;
     evt.preventDefault();
     const { px, py } = clientToInternal(evt.clientX, evt.clientY);
     fromScreenPoint(px, py);
   }
   function onTouchEnd(evt) {
+    if (droppedByPan()) return;
     evt.preventDefault();
     const t = evt.changedTouches[0];
     if (!t) return;
@@ -126,6 +240,18 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
       syncCursorField(state);
       onChange();
     }
+  }
+
+  // Reload, from the button, the R key or the pad's X. One path, like every
+  // other command here — combat.js never learns which input asked.
+  function reloadSelected() {
+    const state = getState();
+    if (state.turn !== 'player' || state.result || !state.selected) return;
+    const r = reloadUnit(state, state.selected);
+    if (!r.ok) return;
+    armed = null;
+    refreshSelectionOverlay(state);
+    onChange();
   }
 
   function endTurn() {
@@ -174,6 +300,14 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
   function cancelSelection(activateCursor = true) {
     const state = getState();
     if (state.turn !== 'player' || state.result) return;
+    // One press backs out of the ability; a second clears the selection. Two
+    // meanings on one button, in the order the player wants them.
+    if (armed || aimUid) {
+      armed = null; aimUid = null;
+      refreshSelectionOverlay(state);
+      onChange();
+      return;
+    }
     if (activateCursor) {
       cursorActive = true;
       if (!cursor) cursor = defaultCursorTile(state);
@@ -202,6 +336,7 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     if (d) { evt.preventDefault(); moveCursor(d[0], d[1]); return; }
     if (evt.key === 'Enter' || evt.key === ' ') { evt.preventDefault(); confirmAtCursor(); return; }
     if (evt.key === 'Escape') { evt.preventDefault(); cancelSelection(); return; }
+    if (evt.key === 'r' || evt.key === 'R') { evt.preventDefault(); reloadSelected(); return; }
     if (evt.key === 'e' || evt.key === 'E') { evt.preventDefault(); endTurn(); }
   }
   window.addEventListener('keydown', onKeyDown);
@@ -215,12 +350,22 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     press: i => {
       if (i === 0) confirmAtCursor();
       else if (i === 1) cancelSelection();
+      else if (i === 2) reloadSelected();   // X — never Start, that's the shell's hold-for-home
       else if (i === 3) endTurn();
     },
   });
 
   return {
     selectByUid,
+    // A tap, in BOARD coordinates, down the same path a finger takes —
+    // handlePoint and all. Exposed so a test can exercise the real input
+    // decision path instead of synthesising pointer events at guessed pixel
+    // offsets and silently missing the sprite.
+    tapBoard: (px, py) => fromScreenPoint(px, py),
+    reloadSelected,
+    armAbility,
+    disarm,
+    armedAbility: () => armed,
     endTurn,
     cancelSelection,
     refreshSelectionOverlay,

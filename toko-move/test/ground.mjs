@@ -9,24 +9,25 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { Ground, STREET_TIERS } from '../js/ground.js';
+import { Ground, STREET_TIERS, BOARD_BOX } from '../js/ground.js';
+import { landmarkPoints, LANDMARK_FORMS } from '../js/landmarks.js';
 import { boardBox } from '../js/board.js';
 import { resolveHslAnchors } from '../js/helsinki-anchors.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = f => JSON.parse(readFileSync(join(here, '../cities/ground/', f), 'utf8'));
-const water = read('helsinki-water.json'), streets = read('helsinki-streets-centre.json'), districts = read('helsinki-districts.json');
-const ground = new Ground({ water, streets, districts });
+const water = read('helsinki-water.json'), streets = read('helsinki-streets.json'), districts = read('helsinki-districts.json'), landmarks = read('helsinki-landmarks.json');
+const ground = new Ground({ water, streets, districts, landmarks });
 const box = boardBox(resolveHslAnchors(JSON.parse(readFileSync(join(here, '../cities/helsinki.json'), 'utf8'))));
 let checks = 0;
 const ok = (c, m) => { assert.ok(c, m); checks++; };
 
 // ---- provenance, on every pack -----------------------------------------
-for (const [name, pack] of [['water', water], ['streets', streets], ['districts', districts]]) {
+for (const [name, pack] of [['water', water], ['streets', streets], ['districts', districts], ['landmarks', landmarks]]) {
   ok(pack.source, `${name} pack states a source`);
   ok(pack.source.licence || pack.source.dataset, `${name} pack states a licence or a dataset`);
-  ok(pack.boundingBox, `${name} pack states the extent it covers`);
-  ok(pack.coordinateSystem === 'WGS84 [lat, lon]', `${name} pack is in the same coordinates as everything else`);
+  if (name !== 'landmarks') ok(pack.boundingBox, `${name} pack states the extent it covers`);
+  ok(typeof pack.coordinateSystem === 'string' && pack.coordinateSystem.length, `${name} pack states its coordinate system`);
 }
 ok(/ODbL/.test(water.source.licence) && /OpenStreetMap/.test(water.source.attribution), 'water is OSM under ODbL');
 ok(/ODbL/.test(streets.source.licence) && /OpenStreetMap/.test(streets.source.attribution), 'streets are OSM under ODbL');
@@ -69,6 +70,19 @@ for (const must of ['OpenStreetMap', 'ODbL', 'City of Helsinki', 'centre extract
   ok(ground.hasStreets((b.s + b.n) / 2, (b.w + b.e) / 2), 'the extract covers its own middle');
   ok(!ground.hasStreets(box.s + 0.001, (b.w + b.e) / 2), 'and does NOT cover the south end of the board');
   ok((b.n - b.s) < (box.n - box.s) * 0.6, 'which is why the schematic corridors are still needed outside it');
+  // BOARD_BOX is a copy of what boardBox() derives from the anchors, and a copy
+  // is a thing that drifts. This is the one place both are in the same process.
+  for (const k of ['s', 'n', 'w', 'e'])
+    ok(Math.abs(BOARD_BOX[k] - box[k]) < 0.002, `ground.js's BOARD_BOX.${k} still matches the real board box`);
+  // and the pack we ship does NOT cover the board — the open problem, held as a
+  // fact so the day it is fixed this line is what says so
+  ok(!ground.streetsCoverBoard(box), 'the committed street extract does not cover the board');
+  ok(/centre extract/.test(ground.credit()), 'and the credit line says so rather than claiming the whole board');
+  // a hypothetical full-board pack flips both, with no other change
+  const full = new Ground({ water, districts, landmarks,
+    streets: { ...streets, boundingBox: { s: box.s - .01, n: box.n + .01, w: box.w - .01, e: box.e + .01 } } });
+  ok(full.streetsCoverBoard(box), 'a pack that covers the board reports that it does');
+  ok(/streets: whole board/.test(full.credit()), 'and the credit line stops saying centre extract');
 }
 
 // ---- districts: real names, ordered by how big the quarter is -----------
@@ -87,13 +101,45 @@ for (const must of ['OpenStreetMap', 'ODbL', 'City of Helsinki', 'centre extract
     ok(names.has(n), `the pack names ${n}`);
 }
 
+// ---- landmarks are SYMBOLS, and the pack has to say so -------------------
+{
+  const src = landmarks.source;
+  ok(/NOT survey data/i.test(src.dataset) || /NOT/i.test(src.isNot), 'the landmark pack says what it is not');
+  ok(/not building footprints/i.test(src.isNot), 'and says plainly that these are not footprints');
+  ok(/offset/i.test(src.method), 'and states how a position is arrived at');
+  ok(!/OpenStreetMap/i.test(src.attribution), 'and does NOT credit OpenStreetMap for an authored position');
+  // the credit line separates them from the source layers for the same reason
+  ok(/landmarks: map symbols/i.test(credit), 'the on-screen credit calls the landmarks what they are');
+
+  const resolved = JSON.parse(readFileSync(join(here, '../cities/helsinki.json'), 'utf8'));
+  const anchors = resolveHslAnchors(resolved);
+  const pts = landmarkPoints(landmarks, anchors);
+  ok(pts.length === landmarks.landmarks.length, 'every landmark resolves against a real stop');
+  for (const l of landmarks.landmarks) {
+    ok(anchors[l.anchor], `${l.id} names a stop that exists (${l.anchor})`);
+    ok(LANDMARK_FORMS[l.kind], `${l.id} names a form that can be drawn (${l.kind})`);
+    ok(Math.abs(l.offset.n) <= 400 && Math.abs(l.offset.e) <= 400,
+      `${l.id} sits within 400 m of its anchor — a symbol that wanders is a wrong symbol`);
+  }
+  // and the offsets actually move them: a landmark on top of its stop dot is
+  // indistinguishable from the dot
+  for (const p of pts) {
+    const a = anchors[p.anchor];
+    const moved = Math.hypot((p.lat - a.lat), (p.lon - a.lon)) > 0;
+    ok(p.offset.n === 0 && p.offset.e === 0 ? !moved : moved, `${p.id} is placed where its offset says`);
+  }
+  ok(landmarks.landmarks.some(l => l.pale), 'the white church is marked pale — it is the one that is white');
+  ok(landmarks.landmarks.filter(l => l.pale).length === 1, 'and it is the ONLY one, or pale stops meaning anything');
+}
+
 // ---- a missing pack must not take the map down --------------------------
 {
-  const empty = new Ground({ water: null, streets: null, districts: null });
+  const empty = new Ground({ water: null, streets: null, districts: null, landmarks: null });
   ok(empty.streetsFor('stop').length === 0 && empty.districtsFor('city').length === 0, 'an absent pack is empty, not a crash');
   ok(empty.hasStreets(60.18, 24.95) === false, 'and reports no street coverage rather than pretending');
   ok(empty.credit() === '', 'and claims no attribution it cannot support');
 }
 
 console.log(`toko-move ground gate: ${checks} checks passed — ${water.areas.length} water areas, ` +
-            `${streets.roads.length} streets in 3 tiers, ${districts.districts.length} districts`);
+            `${streets.roads.length} streets in 3 tiers, ${districts.districts.length} districts, ` +
+            `${landmarks.landmarks.length} landmarks`);

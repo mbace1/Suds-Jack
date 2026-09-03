@@ -6,129 +6,129 @@
       "name": "The Backlot",
       "background": "art-src/backgrounds/courtyard.jpg",
       "grid": {
-        "cols": 11,
+        "cols": 13,
         "rows": 9
       },
       "playerSpawns": [
         {
           "unit": "blade",
-          "x": 2,
+          "x": 3,
           "y": 8
         },
         {
           "unit": "niner",
-          "x": 5,
+          "x": 6,
           "y": 8
         },
         {
           "unit": "wrench",
-          "x": 8,
+          "x": 9,
           "y": 8
         }
       ],
       "enemySpawns": [
         {
           "enemy": "grunt_blunt",
-          "x": 1,
+          "x": 2,
           "y": 1
         },
         {
           "enemy": "grunt_blunt",
-          "x": 9,
+          "x": 10,
           "y": 1
         },
         {
           "enemy": "grunt_handgun",
-          "x": 3,
+          "x": 4,
           "y": 0
         },
         {
           "enemy": "grunt_handgun",
-          "x": 7,
+          "x": 8,
           "y": 0
         },
         {
           "enemy": "grunt_shotgun",
-          "x": 5,
+          "x": 6,
           "y": 0
         },
         {
           "enemy": "grunt_shotgun",
-          "x": 5,
+          "x": 6,
           "y": 1
         }
       ],
       "cover": {
         "full": [
           [
-            2,
+            3,
             4
           ],
           [
-            4,
+            5,
             3
-          ],
-          [
-            6,
-            5
-          ],
-          [
-            8,
-            3
-          ],
-          [
-            3,
-            6
           ],
           [
             7,
+            5
+          ],
+          [
+            9,
+            3
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            8,
             6
           ]
         ],
         "partial": [
           [
-            1,
+            2,
             5
           ],
           [
-            5,
+            6,
             4
-          ],
-          [
-            9,
-            5
-          ],
-          [
-            3,
-            4
-          ],
-          [
-            7,
-            4
-          ],
-          [
-            0,
-            6
           ],
           [
             10,
+            5
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            8,
+            4
+          ],
+          [
+            1,
+            6
+          ],
+          [
+            11,
             3
           ]
         ]
       },
       "hazards": [
         [
-          5,
+          6,
           2,
           "glass"
         ],
         [
-          4,
+          5,
           5,
           "glass"
         ],
         [
-          8,
+          9,
           5,
           "glass"
         ]
@@ -136,133 +136,149 @@
       "win": {
         "mode": "survive",
         "rounds": 6
-      }
+      },
+      "reinforcements": [
+        {
+          "round": 3,
+          "enemy": "grunt_curt",
+          "x": 6,
+          "y": 0
+        },
+        {
+          "round": 5,
+          "enemy": "grunt_tanner",
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "_reinforceNote": "Rivals arriving part-way. Announced a round early and landing at the top of the player's turn, so they are on the board and in the telegraph before anyone is asked to play around them \u2014 a spawn nobody could see coming would break the promise the rest of this board keeps.",
+      "_gridNote": "Widened by two columns in v32 (owner: 'I meant more squares'). COLUMNS is the safe axis: growing ROWS lengthens the crew's approach, which is the most load-bearing number on every map \u2014 +2 rows read 0% on all three deadline missions because the crew could no longer cross in time. Growing columns leaves approach distance alone and only adds lateral room. Anchors move with the board or the growth is not neutral: the crew keeps its back to the bottom edge (that edge is cover), rivals and arrivals still enter from the top, extraction pads stay on the far edge, and props drift to the middle."
     },
     {
       "id": "loading-dock",
       "name": "The Loading Dock",
-      "background": "art-src/backgrounds/dockyard.jpg",
+      "background": "art-src/backgrounds/schoolyard.jpg",
       "grid": {
-        "cols": 9,
+        "cols": 11,
         "rows": 10
       },
       "playerSpawns": [
         {
           "unit": "blade",
-          "x": 2,
+          "x": 3,
           "y": 9
         },
         {
           "unit": "niner",
-          "x": 4,
+          "x": 5,
           "y": 9
         },
         {
           "unit": "wrench",
-          "x": 6,
+          "x": 7,
           "y": 9
         }
       ],
       "enemySpawns": [
         {
           "enemy": "grunt_shotgun",
-          "x": 1,
-          "y": 1
-        },
-        {
-          "enemy": "grunt_shotgun",
-          "x": 7,
-          "y": 1
-        },
-        {
-          "enemy": "grunt_shotgun",
-          "x": 4,
-          "y": 0
-        },
-        {
-          "enemy": "grunt_handgun",
           "x": 2,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_shotgun",
+          "x": 8,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_shotgun",
+          "x": 5,
           "y": 0
         },
         {
           "enemy": "grunt_handgun",
-          "x": 6,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 7,
           "y": 0
         },
         {
           "enemy": "grunt_blunt",
-          "x": 1,
+          "x": 2,
           "y": 2
         },
         {
           "enemy": "grunt_blunt",
-          "x": 7,
+          "x": 8,
           "y": 2
         }
       ],
       "cover": {
         "full": [
           [
-            3,
+            4,
             2
           ],
           [
-            5,
+            6,
             3
           ],
           [
-            1,
+            2,
             5
           ],
           [
-            7,
+            8,
             4
           ],
           [
-            4,
+            5,
             6
           ]
         ],
         "partial": [
           [
-            2,
+            3,
             3
           ],
           [
-            6,
+            7,
             2
           ],
           [
-            0,
+            1,
             4
           ],
           [
-            8,
+            9,
             3
           ],
           [
-            3,
+            4,
             7
           ],
           [
-            6,
+            7,
             6
           ]
         ]
       },
       "hazards": [
         [
-          4,
+          5,
           4,
           "fire"
         ],
         [
-          2,
+          3,
           5,
           "glass"
         ],
         [
-          6,
+          7,
           4,
           "glass"
         ]
@@ -270,7 +286,8 @@
       "win": {
         "mode": "survive",
         "rounds": 5
-      }
+      },
+      "_gridNote": "Widened by two columns in v32 (owner: 'I meant more squares'). COLUMNS is the safe axis: growing ROWS lengthens the crew's approach, which is the most load-bearing number on every map \u2014 +2 rows read 0% on all three deadline missions because the crew could no longer cross in time. Growing columns leaves approach distance alone and only adds lateral room. Anchors move with the board or the growth is not neutral: the crew keeps its back to the bottom edge (that edge is cover), rivals and arrivals still enter from the top, extraction pads stay on the far edge, and props drift to the middle."
     },
     {
       "id": "warehouse",
@@ -278,134 +295,134 @@
       "_comment": "2026-08-31 roster expansion: same proven grid+cover as backlot, new squad/crew to actually exercise the wider roster in a real playable fight.",
       "background": "art-src/backgrounds/courtyard.jpg",
       "grid": {
-        "cols": 11,
+        "cols": 13,
         "rows": 9
       },
       "playerSpawns": [
         {
           "unit": "sledge",
-          "x": 2,
+          "x": 3,
           "y": 8
         },
         {
           "unit": "cleaver",
-          "x": 5,
+          "x": 6,
           "y": 8
         },
         {
           "unit": "rook",
-          "x": 8,
+          "x": 9,
           "y": 8
         }
       ],
       "enemySpawns": [
         {
           "enemy": "grunt_curt",
-          "x": 1,
+          "x": 2,
           "y": 1
         },
         {
           "enemy": "grunt_spike",
-          "x": 9,
+          "x": 10,
           "y": 1
         },
         {
           "enemy": "grunt_alfie",
-          "x": 3,
+          "x": 4,
           "y": 0
         },
         {
           "enemy": "grunt_chain",
-          "x": 7,
+          "x": 8,
           "y": 0
         },
         {
           "enemy": "grunt_sable",
-          "x": 5,
+          "x": 6,
           "y": 0
         },
         {
           "enemy": "grunt_tanner",
-          "x": 5,
+          "x": 6,
           "y": 1
         }
       ],
       "cover": {
         "full": [
           [
-            2,
+            3,
             4
           ],
           [
-            4,
+            5,
             3
-          ],
-          [
-            6,
-            5
-          ],
-          [
-            8,
-            3
-          ],
-          [
-            3,
-            6
           ],
           [
             7,
+            5
+          ],
+          [
+            9,
+            3
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            8,
             6
           ]
         ],
         "partial": [
           [
-            1,
+            2,
             5
           ],
           [
-            5,
+            6,
             4
-          ],
-          [
-            9,
-            5
-          ],
-          [
-            3,
-            4
-          ],
-          [
-            7,
-            4
-          ],
-          [
-            0,
-            6
           ],
           [
             10,
+            5
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            8,
+            4
+          ],
+          [
+            1,
+            6
+          ],
+          [
+            11,
             3
           ]
         ]
       },
       "hazards": [
         [
-          5,
+          6,
           2,
           "fire"
         ],
         [
-          4,
+          5,
           5,
           "fire"
         ],
         [
-          9,
+          10,
           3,
           "stairwell"
         ],
         [
-          2,
+          3,
           3,
           "glass"
         ]
@@ -413,134 +430,125 @@
       "win": {
         "mode": "survive",
         "rounds": 5
-      }
+      },
+      "_gridNote": "Widened by two columns in v32 (owner: 'I meant more squares'). COLUMNS is the safe axis: growing ROWS lengthens the crew's approach, which is the most load-bearing number on every map \u2014 +2 rows read 0% on all three deadline missions because the crew could no longer cross in time. Growing columns leaves approach distance alone and only adds lateral room. Anchors move with the board or the growth is not neutral: the crew keeps its back to the bottom edge (that edge is cover), rivals and arrivals still enter from the top, extraction pads stay on the far edge, and props drift to the middle."
     },
     {
       "id": "underpass",
       "name": "The Underpass",
       "_comment": "2026-08-31 roster expansion: same proven grid+cover as loading-dock, gunner+leopard's first real encounter.",
-      "background": "art-src/backgrounds/dockyard.jpg",
+      "background": "art-src/backgrounds/courtyard.jpg",
       "grid": {
-        "cols": 9,
+        "cols": 11,
         "rows": 10
       },
       "playerSpawns": [
         {
           "unit": "gunner",
-          "x": 2,
+          "x": 3,
           "y": 9
         },
         {
           "unit": "leopard",
-          "x": 4,
+          "x": 5,
           "y": 9
         },
         {
           "unit": "denny",
-          "x": 6,
+          "x": 7,
           "y": 9
         }
       ],
       "enemySpawns": [
         {
           "enemy": "grunt_ragged",
-          "x": 1,
+          "x": 2,
           "y": 1
         },
         {
           "enemy": "grunt_barfly",
-          "x": 7,
+          "x": 8,
           "y": 1
         },
         {
           "enemy": "grunt_runt",
-          "x": 4,
-          "y": 0
-        },
-        {
-          "enemy": "grunt_track",
-          "x": 2,
-          "y": 0
-        },
-        {
-          "enemy": "grunt_beard",
-          "x": 6,
+          "x": 5,
           "y": 0
         }
       ],
       "cover": {
         "full": [
           [
-            3,
+            4,
             2
           ],
           [
-            5,
+            6,
             3
           ],
           [
-            1,
+            2,
             5
           ],
           [
-            7,
+            8,
             4
           ],
           [
-            4,
+            5,
             6
           ]
         ],
         "partial": [
           [
-            2,
+            3,
             3
           ],
           [
-            6,
+            7,
             2
           ],
           [
-            0,
+            1,
             4
           ],
           [
-            8,
+            9,
             3
           ],
           [
-            3,
+            4,
             7
           ],
           [
-            6,
+            7,
             6
           ]
         ]
       },
       "hazards": [
         [
-          4,
+          5,
           4,
           "fire"
         ],
         [
-          5,
+          6,
           5,
           "fire"
         ],
         [
-          3,
+          4,
           4,
           "stairwell"
         ],
         [
-          7,
+          8,
           6,
           "stairwell"
         ],
         [
-          2,
+          3,
           7,
           "glass"
         ]
@@ -548,7 +556,23 @@
       "win": {
         "mode": "survive",
         "rounds": 7
-      }
+      },
+      "reinforcements": [
+        {
+          "round": 3,
+          "enemy": "grunt_track",
+          "x": 3,
+          "y": 0
+        },
+        {
+          "round": 5,
+          "enemy": "grunt_beard",
+          "x": 7,
+          "y": 0
+        }
+      ],
+      "_reinforceNote": "Rivals arriving part-way. Announced a round early and landing at the top of the player's turn, so they are on the board and in the telegraph before anyone is asked to play around them \u2014 a spawn nobody could see coming would break the promise the rest of this board keeps. SAME ROSTER as before v31, split across time rather than all standing there at round one: 27% to 32%, so staging the pressure made the hardest map slightly FAIRER without making it emptier. Arrival timing is sharp here \u2014 moving both arrivals one round later reads 87%, so this is a curve to measure, not to nudge by eye.",
+      "_gridNote": "Widened by two columns in v32 (owner: 'I meant more squares'). COLUMNS is the safe axis: growing ROWS lengthens the crew's approach, which is the most load-bearing number on every map \u2014 +2 rows read 0% on all three deadline missions because the crew could no longer cross in time. Growing columns leaves approach distance alone and only adds lateral room. Anchors move with the board or the growth is not neutral: the crew keeps its back to the bottom edge (that edge is cover), rivals and arrivals still enter from the top, extraction pads stay on the far edge, and props drift to the middle."
     },
     {
       "id": "the-yard",
@@ -556,146 +580,380 @@
       "_comment": "2026-08-31 second roster batch (casting-sheet-3): same proven grid+cover as backlot, Reed/Vex/Knuckle's first real encounter.",
       "background": "art-src/backgrounds/schoolyard.jpg",
       "grid": {
-        "cols": 11,
+        "cols": 13,
         "rows": 9
       },
       "playerSpawns": [
         {
           "unit": "reed",
-          "x": 2,
+          "x": 3,
           "y": 8
         },
         {
           "unit": "vex",
-          "x": 5,
+          "x": 6,
           "y": 8
         },
         {
           "unit": "knuckle",
-          "x": 8,
+          "x": 9,
           "y": 8
         }
       ],
       "enemySpawns": [
         {
           "enemy": "grunt_smoke",
-          "x": 1,
+          "x": 2,
           "y": 1
         },
         {
           "enemy": "grunt_milo",
-          "x": 9,
+          "x": 10,
           "y": 1
         },
         {
           "enemy": "grunt_duffy",
-          "x": 5,
+          "x": 6,
           "y": 0
         },
         {
           "enemy": "grunt_spike",
-          "x": 3,
+          "x": 4,
           "y": 0
         },
         {
           "enemy": "grunt_chain",
-          "x": 7,
+          "x": 8,
           "y": 0
         }
       ],
       "cover": {
         "full": [
           [
-            2,
+            3,
             4
           ],
           [
-            4,
+            5,
             3
-          ],
-          [
-            6,
-            5
-          ],
-          [
-            8,
-            3
-          ],
-          [
-            3,
-            6
           ],
           [
             7,
+            5
+          ],
+          [
+            9,
+            3
+          ],
+          [
+            4,
+            6
+          ],
+          [
+            8,
             6
           ]
         ],
         "partial": [
           [
-            1,
+            2,
             5
           ],
           [
-            5,
+            6,
             4
-          ],
-          [
-            9,
-            5
-          ],
-          [
-            3,
-            4
-          ],
-          [
-            7,
-            4
-          ],
-          [
-            0,
-            6
           ],
           [
             10,
+            5
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            8,
+            4
+          ],
+          [
+            1,
+            6
+          ],
+          [
+            11,
             3
           ]
         ]
       },
       "hazards": [
         [
-          5,
-          2,
-          "fire"
-        ],
-        [
           6,
+          2,
+          "fire"
+        ],
+        [
+          7,
           3,
           "fire"
         ],
         [
-          2,
+          3,
           3,
           "stairwell"
         ],
         [
-          9,
+          10,
           3,
           "stairwell"
         ],
         [
-          4,
+          5,
           5,
           "glass"
         ],
         [
-          8,
+          9,
           5,
           "glass"
         ]
       ],
       "win": {
         "mode": "eliminate"
-      }
+      },
+      "_gridNote": "Widened by two columns in v32 (owner: 'I meant more squares'). COLUMNS is the safe axis: growing ROWS lengthens the crew's approach, which is the most load-bearing number on every map \u2014 +2 rows read 0% on all three deadline missions because the crew could no longer cross in time. Growing columns leaves approach distance alone and only adds lateral room. Anchors move with the board or the growth is not neutral: the crew keeps its back to the bottom edge (that edge is cover), rivals and arrivals still enter from the top, extraction pads stay on the far edge, and props drift to the middle."
+    },
+    {
+      "id": "the-crossing",
+      "name": "The Crossing",
+      "background": "art-src/backgrounds/schoolyard.jpg",
+      "grid": {
+        "cols": 13,
+        "rows": 9
+      },
+      "win": {
+        "mode": "extract",
+        "need": 2,
+        "deadline": 5
+      },
+      "_note": "Get two of the crew off the far side inside five rounds. TUNED BY MEASUREMENT: with the pads open this was 0% at four rounds and 100% at five \u2014 an uncontested extraction is arithmetic, not a fight. A holder and a control grunt standing ON the approach are what turn it into a decision (46% for the balance bot). `need` is absolute: falling below it is a loss, because clamping it to the living made losing an operator make the mission EASIER.",
+      "playerSpawns": [
+        {
+          "unit": "blade",
+          "x": 3,
+          "y": 8
+        },
+        {
+          "unit": "niner",
+          "x": 6,
+          "y": 8
+        },
+        {
+          "unit": "sledge",
+          "x": 9,
+          "y": 8
+        }
+      ],
+      "extract": [
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ]
+      ],
+      "enemySpawns": [
+        {
+          "enemy": "grunt_blunt",
+          "x": 2,
+          "y": 3
+        },
+        {
+          "enemy": "grunt_runt",
+          "x": 10,
+          "y": 3
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 4,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_sable",
+          "x": 8,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_ragged",
+          "x": 6,
+          "y": 4
+        },
+        {
+          "enemy": "grunt_sable",
+          "x": 5,
+          "y": 1
+        },
+        {
+          "enemy": "grunt_duffy",
+          "x": 7,
+          "y": 1
+        }
+      ],
+      "cover": {
+        "full": [
+          [
+            4,
+            4
+          ],
+          [
+            8,
+            4
+          ],
+          [
+            6,
+            2
+          ]
+        ],
+        "partial": [
+          [
+            5,
+            5
+          ],
+          [
+            7,
+            5
+          ],
+          [
+            3,
+            2
+          ],
+          [
+            9,
+            2
+          ],
+          [
+            6,
+            6
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          5,
+          3,
+          "glass"
+        ],
+        [
+          7,
+          3,
+          "glass"
+        ]
+      ],
+      "_gridNote": "Widened by two columns in v32 (owner: 'I meant more squares'). COLUMNS is the safe axis: growing ROWS lengthens the crew's approach, which is the most load-bearing number on every map \u2014 +2 rows read 0% on all three deadline missions because the crew could no longer cross in time. Growing columns leaves approach distance alone and only adds lateral room. Anchors move with the board or the growth is not neutral: the crew keeps its back to the bottom edge (that edge is cover), rivals and arrivals still enter from the top, extraction pads stay on the far edge, and props drift to the middle."
+    },
+    {
+      "id": "the-depot",
+      "name": "The Depot",
+      "background": "art-src/backgrounds/courtyard.jpg",
+      "grid": {
+        "cols": 13,
+        "rows": 9
+      },
+      "win": {
+        "mode": "destroy",
+        "deadline": 9
+      },
+      "_note": "Break the cache inside nine rounds. RE-TUNED IN v32 AFTER A REAL BUG: the shotgun grunt and the cache were spawning on the SAME TILE (5,2) \u2014 two stacked units \u2014 and every depot number from v26 to v31 was measured on that broken board. Unstacking it took the map from 13% to 0%, because the grunt had effectively been neutralised by the stack. With a working roster the cache is 4 HP and the grunt screens from (5,4): 12%. Enemy COUNT remains a cliff here (3 foes vs 4 is 100%/0% at every layout tried) because the mission is a race, and cache position is non-monotonic (y=2 is the chokepoint between two dumpsters; y=1 and y=3 both read ~100%), so nothing on this map may be nudged by eye.",
+      "playerSpawns": [
+        {
+          "unit": "blade",
+          "x": 3,
+          "y": 8
+        },
+        {
+          "unit": "niner",
+          "x": 6,
+          "y": 8
+        },
+        {
+          "unit": "sledge",
+          "x": 9,
+          "y": 8
+        }
+      ],
+      "objectives": [
+        {
+          "id": "cache",
+          "name": "Cache",
+          "hp": 4,
+          "x": 6,
+          "y": 2
+        }
+      ],
+      "enemySpawns": [
+        {
+          "enemy": "grunt_blunt",
+          "x": 3,
+          "y": 3
+        },
+        {
+          "enemy": "grunt_shotgun",
+          "x": 6,
+          "y": 4
+        },
+        {
+          "enemy": "grunt_handgun",
+          "x": 9,
+          "y": 3
+        }
+      ],
+      "cover": {
+        "full": [
+          [
+            5,
+            2
+          ],
+          [
+            7,
+            2
+          ]
+        ],
+        "partial": [
+          [
+            4,
+            4
+          ],
+          [
+            8,
+            4
+          ],
+          [
+            6,
+            6
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            9,
+            5
+          ]
+        ]
+      },
+      "hazards": [
+        [
+          6,
+          3,
+          "glass"
+        ]
+      ],
+      "_gridNote": "Widened by two columns in v32 (owner: 'I meant more squares'). COLUMNS is the safe axis: growing ROWS lengthens the crew's approach, which is the most load-bearing number on every map \u2014 +2 rows read 0% on all three deadline missions because the crew could no longer cross in time. Growing columns leaves approach distance alone and only adds lateral room. Anchors move with the board or the growth is not neutral: the crew keeps its back to the bottom edge (that edge is cover), rivals and arrivals still enter from the top, extraction pads stay on the far edge, and props drift to the middle."
     }
   ]
 }
