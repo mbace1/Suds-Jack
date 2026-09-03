@@ -84,5 +84,5 @@
 
 ### Known follow-up
 
-- `main/toko-live/main.js` still predates the deployed spatial-memory implementation. The v39-v42 source modules and shell are being reconciled separately; do not overwrite the deployed runtime from the old main.js.
+- Core `main/toko-live/main.js`, the v42 shell/layout, and the v39-v42 source modules have now been reconciled with the deployed architecture. Historical additive modules remain on `gh-pages` until they are next modified.
 - Browser-render validation has not been performed in this pass.
