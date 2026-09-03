@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test.mjs pose-control.test.mjs",
+    "test": "node --test test.mjs pose-control.test.mjs comfy-worker.test.mjs",
     "pose": "node pose-control.mjs",
     "job": "node comfy-job.mjs",
+    "worker": "node comfy-worker.mjs",
+    "pilot": "node grey-hoodie-pilot.mjs",
     "hidden": "node hidden-pipeline.mjs",
     "gate": "node output-gate.mjs",
     "reference": "node reference-sheet.mjs",
