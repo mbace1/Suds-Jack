@@ -55,24 +55,55 @@ is simply there.
 `destroy` (break the cache), both with a `deadline` — which is the game's
 second and third loss conditions; before v26 it had exactly one, a crew wipe.
 
-**2.3 — A boss.** *(medium, and now the next thing)*
-Something with a rule that changes the board, so a run *ends* rather than
-stops. Needs 2.2 first: a boss is an objective before it is a stat block.
+> **OWNER DIRECTION, 2026-09-03: "bosses come after mechanics."** A boss is
+> content built ON TOP of a combat system, so it inherits every gap in one —
+> and it is the most expensive possible way to discover that the underlying
+> fight is thin. The boss moved to 2.6; what follows is the mechanics it
+> should be built on.
 
-**2.4 — Impact.** *(medium)*
+**2.3 — Ammo and reload.** *(small-medium, and the strongest MST fit left)*
+Every weapon fires every turn, forever, which is why a turn in TURF has one
+question in it. MST's rhythm comes from a magazine: firing spends a shot,
+reloading IS your action for that turn. The knock-on is the point — a turn
+you would have spent reloading becomes a turn to reposition, so it feeds the
+movement economy rather than sitting beside it, and it gives Overwatch and
+the abilities the empty turns they currently have to compete for. Fully
+telegraphable: ammo is a pip row, the same as momentum.
+
+**2.4 — Reinforcements.** *(medium)*
+Fixes something real and currently ugly: on a survive map, wiping the roster
+early means coasting for three rounds with nothing on the board. MST spawns
+over the course of a mission. Arrivals announced a round ahead with the tile
+marked, which is exactly what this game's telegraph is for — a spawn the
+player could not see coming would break the contract everything else here
+is built on.
+
+**2.5 — Destructible cover.** *(medium)*
+The board is fixed except for Barricade. A shotgun or a hammer breaking full
+cover into partial, and partial into open ground, makes position decay —
+which is the thing that stops a good tile being a permanent answer, and it
+pairs directly with knockback and the hazards.
+
+**2.6 — A boss.** *(after the above, per the owner's direction)*
+Something with a rule that changes the board, so a run *ends* rather than
+stops. It needs 2.2 (an objective is what a boss IS before it is a stat
+block) and now 2.3-2.5 as well.
+
+**2.7 — Impact.** *(medium)*
 Flash and floater today. Wanted: zoom-punch and freeze-frame on a kill,
 damage-tiered shake, layered SFX. `anim.js` already owns the only rAF loop
 and reads `state.log`, so all of it is additive.
 
-**2.5 — Run structure.** *(large)*
-`SEQUENCE` is a flat five-element array. MST is a branching route with node
+**2.8 — Run structure.** *(large)*
+`SEQUENCE` is a flat seven-element array. MST is a branching route with node
 types and a **choice of three** rewards. XP, weapon drops and trinkets exist
 but nothing is ever *picked*, which is the difference between progression and
 a roguelite.
 
-> **Sequencing trap: 2.5 before 2.2 is a menu in front of the same fight.**
-> A branching map over five encounters and two objective types adds screens,
-> not decisions. Objectives first.
+> **Sequencing trap, and it generalises past its original case.** A branching
+> run map over the same fight adds screens, not decisions — which was written
+> here about objectives and is the same reason a boss waits on mechanics.
+> Depth in the turn first; structure around it last.
 
 **2.6 — Sprite vocabulary.** *(blocked, not on the code side)*
 Attack / hit / KO frames per cast member. The deployed attack pair still
