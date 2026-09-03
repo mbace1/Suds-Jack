@@ -60,7 +60,7 @@ const game = { kill() {}, hurt() {} };
     '   #      ',
     '##########',
   ]);
-  const hero = new MovementHeroV3(40, 176);
+  const hero = new MovementHeroV3(42, 176);
   equal(hero.canLowMantle(world), true, 'one-tile obstacle is recognized as a low mantle');
   const startY = hero.y;
   hero.beginLowMantle();
