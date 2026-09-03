@@ -2,16 +2,20 @@ import { MovementHeroV3 } from './movement-hero-v3.js';
 
 export const FLASH_PRINCE_MOVE_BUILD = 'FP-MOVE-7';
 
+const visited = new Set();
 const originalUpdate = MovementHeroV3.prototype.update;
 MovementHeroV3.prototype.update = function patchedMovementUpdate(world, input, game) {
   const result = originalUpdate.call(this, world, input, game);
+  visited.add(this.state);
   globalThis.__flashPrinceMovement = {
     build: FLASH_PRINCE_MOVE_BUILD,
     state: this.state,
     frame: this.f,
     x: this.x,
     y: this.y,
+    grounded: this.grounded(world),
     faults: this.transitionFaults || 0,
+    visited: [...visited],
     lastTransition: this.lastTransition || null,
   };
   return result;
@@ -45,7 +49,8 @@ function paint() {
   if (!d) el.textContent = `${FLASH_PRINCE_MOVE_BUILD}  WAITING`;
   else {
     const faultMark = d.faults ? 'FAULT' : 'OK';
-    el.textContent = `${d.build}  ${faultMark} ${d.faults}\n${d.state} F${d.frame}  X${d.x.toFixed(1)} Y${d.y.toFixed(1)}`;
+    const floorMark = d.grounded ? 'GROUND' : 'AIR';
+    el.textContent = `${d.build}  ${faultMark} ${d.faults}\n${d.state} F${d.frame}  X${d.x.toFixed(1)} Y${d.y.toFixed(1)}  ${floorMark}`;
   }
   requestAnimationFrame(paint);
 }
