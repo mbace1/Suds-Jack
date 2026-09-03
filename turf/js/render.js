@@ -3,7 +3,7 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=5';
 import { key } from './grid.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
@@ -99,7 +99,13 @@ export function computeLayout(grid) {
   // shorter UNIT_H silhouette — a full-height sprite in row 0 needs more
   // clearance above the grid or its head (and HP bar above that) clips off
   // the top of the canvas.
-  const height = Math.ceil(maxB * (TILE_H / 2) + SPRITE_H + TILE_H * 4);
+  // Top clearance is SPRITE_H + TILE_H (originY, below) for a full-height
+  // sprite plus its HP bar and momentum pips in row 0. The remainder is the
+  // BOTTOM margin, and TILE_H * 4 gave it three tiles of nothing — invisible
+  // while the board was always fitted whole, and a band of dead screen once
+  // camera.js let it be scaled up. One tile is enough for a front-row
+  // sprite's feet and shadow.
+  const height = Math.ceil(maxB * (TILE_H / 2) + SPRITE_H + TILE_H * 2);
   const originX = Math.round(-minA * (TILE_W / 2) + SIDE_MARGIN);
   const originY = SPRITE_H + TILE_H;
   return { width, height, originX, originY };
@@ -379,6 +385,19 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   g.p(x - hpW / 2, hpY, hpW, 2, PAL.HP_TRACK);
   const hpColor = frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD;
   g.p(x - hpW / 2, hpY, hpW * frac, 2, hpColor);
+
+  // Momentum pips, one per tile still carried, above the HP bar. This game
+  // promises full information — an enemy's whole plan is on screen before it
+  // acts — so a modifier that silently changes a hit chance and a damage
+  // number cannot live in the rules only. If a unit is harder to shoot
+  // because it just ran, the board has to say so, on that unit, at a glance.
+  const mo = unit.momentum || 0;
+  if (mo > 0) {
+    const pipW = 2, gap = 1, total = mo * pipW + (mo - 1) * gap;
+    for (let i = 0; i < mo; i++) {
+      g.p(x - total / 2 + i * (pipW + gap), hpY - 3, pipW, 2, PAL.MOMENTUM);
+    }
+  }
 }
 // Draws the real sprite, anchored so the character's actual FEET (entry's
 // scanned ink bounds — see scanInkBounds) land on feetY, not the bottom of
@@ -438,11 +457,90 @@ function weaponGlyph(g, x, y, weapon) {
   }
 }
 
+// The route, not just the destination. A diamond on the tile an enemy will
+// end up on says WHERE; it does not say that this particular body is the one
+// going there, and with four enemies telegraphing at once the board became a
+// scatter of markers nobody could attribute. A line from the unit's own feet
+// to its destination, with an arrowhead, is the attribution.
+function drawIntentPath(g, from, to, colour) {
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 2) return;
+  g.line(from.x, from.y - 2, to.x, to.y - 2, colour, [2, 3], 1);
+  // Arrowhead, drawn as two short strokes swept back from the destination
+  // along the path — cheap, and it survives being 3px long on a phone.
+  const ux = dx / len, uy = dy / len, h = 5;
+  g.line(to.x, to.y - 2, to.x - ux * h - uy * h * 0.6, to.y - 2 - uy * h + ux * h * 0.6, colour, null, 1);
+  g.line(to.x, to.y - 2, to.x - ux * h + uy * h * 0.6, to.y - 2 - uy * h - ux * h * 0.6, colour, null, 1);
+}
+
+// A ring under whoever is acting right now, plus a caret above it. Drawn
+// under the units (render()'s order) so it never covers a face.
+function drawSpotlight(g, layout, state) {
+  if (!state.actingUid) return;
+  const u = state.units.find(x => x.uid === state.actingUid);
+  if (!u || u.hp <= 0) return;
+  const p = toScreen(layout, u.x, u.y);
+  g.diamond(p.x, p.y, TILE_W + 4, TILE_H + 2, null, PAL.ACTING, 2);
+  g.diamond(p.x, p.y, TILE_W - 4, TILE_H - 2, null, PAL.ACTING, 1);
+  const top = p.y - SPRITE_H - 10;
+  g.line(p.x - 4, top, p.x, top + 4, PAL.ACTING, null, 2);
+  g.line(p.x + 4, top, p.x, top + 4, PAL.ACTING, null, 2);
+}
+
+// While an ability is armed the board is in a different mode and has to look
+// like it: the move/attack overlays are gone (input.js clears them) and these
+// take their place. A player who cannot tell which mode the board is in will
+// tap and find out, which in a game about committed decisions is the one
+// thing the UI must never make them do.
+function drawAbilityTargets(g, layout, state) {
+  const tiles = state.abilityTiles;
+  if (!tiles || !tiles.length) return;
+  const mark = (x, y) => g.diamond(x, y, TILE_W - 4, TILE_H - 2,
+    PAL.ABILITY_HI, PAL.ABILITY_HI_EDGE, 2);
+  for (const t of tiles) {
+    if (t.self) {
+      const u = state.units.find(x => x.uid === state.selected);
+      if (u) { const p = toScreen(layout, u.x, u.y); mark(p.x, p.y); }
+    } else if (t.all) {
+      for (const uid of t.all) {
+        const u = state.units.find(x => x.uid === uid);
+        if (u) { const p = toScreen(layout, u.x, u.y); mark(p.x, p.y); }
+      }
+    } else if (t.uid) {
+      const u = state.units.find(x => x.uid === t.uid);
+      if (u) { const p = toScreen(layout, u.x, u.y); mark(p.x, p.y); }
+    } else {
+      const p = toScreen(layout, t.x, t.y);
+      mark(p.x, p.y);
+    }
+  }
+}
+
+// A held gun, drawn on the unit holding it. Overwatch is the only thing in
+// this game that happens on somebody else's turn, so it is the only posture
+// that has to survive being looked at after the player stops thinking about
+// it — a bracket over the head, still there when the enemy phase starts.
+function drawOverwatch(g, layout, state) {
+  if (!state.overwatch || !state.overwatch.size) return;
+  for (const uid of state.overwatch) {
+    const u = state.units.find(x => x.uid === uid);
+    if (!u || u.hp <= 0) continue;
+    const p = toScreen(layout, u.x, u.y);
+    const y = p.y - SPRITE_H - 12;
+    g.line(p.x - 6, y + 3, p.x - 6, y, PAL.ABILITY_HI_EDGE, null, 1);
+    g.line(p.x - 6, y, p.x + 6, y, PAL.ABILITY_HI_EDGE, null, 1);
+    g.line(p.x + 6, y, p.x + 6, y + 3, PAL.ABILITY_HI_EDGE, null, 1);
+    g.disc(p.x, y + 2, 1.6, PAL.ABILITY_HI_EDGE);
+  }
+}
+
 function drawTelegraph(g, layout, state) {
   for (const [uid, intent] of state.telegraph) {
     const enemy = state.units.find(u => u.uid === uid);
     if (!enemy || enemy.hp <= 0 || !intent.moveTo) continue;
     const at = toScreen(layout, intent.moveTo.x, intent.moveTo.y);
+    drawIntentPath(g, toScreen(layout, enemy.x, enemy.y), at, PAL.TELEGRAPH);
     if (intent.type === 'attack') {
       const target = state.units.find(u => u.uid === intent.targetUid);
       if (target) {
@@ -533,6 +631,10 @@ export function render(canvas, state, layout, anim = null) {
   // different questions the player asks in that order.
   drawHazards(g, layout, state.hazards);
   drawHighlights(g, layout, state);
+  drawAbilityTargets(g, layout, state);
+  // Under the props and bodies, over the highlights: the ring belongs on the
+  // ground the unit is standing on, not painted across its chest.
+  drawSpotlight(g, layout, state);
 
   const fullTiles = [...state.fullCover].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });
   const partialTiles = [...state.partialCover].map(k => { const [x, y] = k.split(',').map(Number); return { x, y }; });
@@ -557,6 +659,7 @@ export function render(canvas, state, layout, anim = null) {
 
   if (state.turn === 'player') {
     drawTelegraph(g, layout, state);
+    drawOverwatch(g, layout, state);
     drawCursor(g, layout, state);
   }
 

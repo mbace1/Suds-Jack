@@ -360,6 +360,67 @@ shoot into cover), plus `nearest`/`weakest` focus. `approachTile` is deliberatel
 for this: it answers "the cheapest tile", exactly what a behaviour must disagree with, and
 click-to-attack depends on that meaning. Ties break on uid everywhere — a telegraph that
 flickers between two equally good tiles is unreadable even though each frame is correct.
+**The movement economy** (v24) — before this there was no reason to move once a unit was
+in range, so standing still and shooting dominated and every board knotted into a scrum by
+round one. `js/momentum.js`: a unit banks one point per tile it moves **under its own
+power** (a knockback is not momentum); unspent, each point is -6% to be *shot* (never
+stabbed, and capped below partial cover's -30% so cover stays a decision); spent on a
+swing, a full move is +1 damage. **The swing spends the pool**, so the same points are
+damage *or* evasion, never both — and that rule is not a flourish: with momentum permanent,
+evasion favoured whoever was chasing, which is the AI every single turn, and the measured
+skill gap against a positional bot *narrowed* (+46 points to +19). It is **visible**,
+because this game promises full information: pips over every unit's HP bar, a HUD line
+spelling out both halves, a damage floater reading `5 (+1)`, and `ai.js` folding a target's
+evasion into its focus scoring so the telegraph never promises a shot it cannot land.
+**A third rule — SYNC, straight out of MST — was built, measured three ways and CUT**, and
+the finding is kept in `momentum.js`'s header because it is the obvious next idea: free, it
+took `the-yard` from 68% winnable to **0% on its own** (anything multiplied by "allies in
+range" pays the side with more bodies, and this roster is weaker-but-numerous by design, so
+never the player); capped at one partner, the same collapse; gated on the partner still
+carrying momentum, symmetric and safe and **inert** — a bot built to set syncs up scored 72%
+against 92% for the same bot ignoring them. Everything above was decided by **four bots over
+five encounters at 120 seeds with a v23 checkout as the control column**, and the control
+reproducing v23's rates exactly (37/39/64/24/68) is what makes the other columns mean
+anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves bot play
+(+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
+`DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
+are 23 points apart), not a dial.
+**Actions, and a camera** (v25, straight off an owner playtest of v24: *"zoom in a bit on
+mobile... there are no actions at all, fighters just bump into each other and I can't see
+who is going where"*). **`js/abilities.js` + `data/abilities.json`** close the momentum
+loop — **you move to afford the thing you then do**, six abilities by role (Cleave,
+Takedown, Snap Shot, **Overwatch** — the only reaction in the game — Shove, Barricade), an
+ability IS your action and charges its own cost. `resolveAttack` grew an options argument
+so an ability *bends one attack* rather than this codebase growing a second damage
+pipeline. **Enemies deliberately have no kit**: their variety is `behaviour`, which the
+telegraph can draw, and "and then it will Cleave" six times over is a wall of text, not
+full information — the same reasoning as the sync cut. Two bugs the gate caught that a
+playtest would not have: enemies inherited the whole player kit (`role` is shared, so
+`abilitiesFor` must gate on faction first), and Snap Shot's `-0.15` was read as an
+ABSOLUTE hit chance rather than a modifier — `accuracy` **replaces**, `accuracyMod`
+**shifts**, and they are separate fields because conflating them turned a 70% ability into
+a 5% one.
+**`js/camera.js`**: fitting the whole board and making it legible are different requests,
+and on a phone they disagree, so the fit is a **floor** (`MIN_TILE_W` 46) and the board is
+allowed to overflow — drag to pan, CSS-transition follow (**no second rAF**; anim.js owns
+the only loop), and a drag is never also an order. Filling the leftover *height* was tried
+and **rejected on the screenshot**: an iso 11×9 board is wide and short while a phone is
+tall and narrow, so filling the height crops half the width, and this game cannot show you
+half the enemies. The vertical letterbox is geometry; the wasted three tiles of bottom
+margin in `computeLayout` were the actual waste. A `ResizeObserver` on `#stage` is
+load-bearing — the bottom bar grows a row when a selected operator carries momentum, which
+shrinks the stage with no window resize event (measured: 644px of board in a 620px stage).
+The enemy phase now runs **two beats per enemy** — LOOK (name, spotlight, camera, hold)
+then ACT — because resolving both in one frame is exactly why it read as bumping; plus
+`drawIntentPath`, since a diamond on a destination says WHERE but with four enemies
+telegraphing at once it does not say WHO.
+**`js/autoplay.js` is the AUTO switch**, and it is not a new bot: it is the tactical bot
+from v24's experiment (92% against the naive bot's 57%), driven through the same command
+functions a tap calls. 300 runs: 91% wins, 1344 abilities used. It never uses Barricade —
+a gap in the bot, not evidence about the ability, recorded in `MST_PARITY.md` §3.
+**`turf/MST_PARITY.md`** is the ordered distance to Metal Slug Tactics, and it names two
+pillars deliberately OUT of scope (hidden intent, sync) plus the sequencing trap: a
+branching run map before more objective types is a menu in front of the same fight.
 **The feel layer** (v17) — `anim.js` reads `state.log` rather than being called by
 `combat.js` (which stays pure and bare-node tested) and owns the only rAF loop, stopping
 itself when nothing is mid-clip. Movement tweens in fractional TILES, not pixels: `toScreen`
@@ -1276,6 +1337,7 @@ sudsjack/       # Suds Jack — earlier tube-collection rebuild, SET DOWN
     smoke.cjs   # 25 checks, driven off game state rather than the clock
 turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
   GDD.md        # the owner's composite design doc
+  MST_PARITY.md # ordered distance to Metal Slug Tactics, and what is OUT of scope
   PRODUCTION_PIPELINE.md # asset/data pipeline the GDD's assumptions were resolved against
   VERSIONS.md
   data/         # units/weapons/enemies/encounters/hazards/trinkets — all data-driven, pipeline §3
@@ -1285,6 +1347,10 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     combat.js   # move+act economy, attack/knockback, hazards, trinkets, the enemy phase
     render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
     input.js    # pointer/keyboard/pad — three methods, one decision path
+    momentum.js # the movement economy: bank it by moving, spend it on the swing
+    abilities.js# the kit: catalogue + targeting, pure; combat.js does the doing
+    autoplay.js # the AUTO switch — v24's tactical bot, not a new one
+    camera.js   # phone zoom floor, drag-to-pan, follow the acting unit
     anim.js     # the feel layer: log-driven tweens, hit flash, damage numbers, the only rAF
     audio.js    # synthesised kit, every voice through one master gain so mute really mutes
     main.js     # boot, HUD, the enemy-phase pacing loop — the only DOM-touching file
@@ -1297,8 +1363,10 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 61 checks: data, grid, turn economy, combat, hazards,
-                #   trinkets, AI behaviours, and a bot playthrough of every encounter
+    smoke.mjs   # bare-node, 78 checks: data, grid, turn economy, combat, hazards,
+                #   trinkets, AI behaviours, momentum, abilities, overwatch,
+                #   and a bot playthrough of every encounter
+    balance.mjs # is each encounter WINNABLE — the question smoke.mjs cannot ask
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
   games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)

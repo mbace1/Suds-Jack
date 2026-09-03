@@ -45,8 +45,8 @@
     "from": "VERSIONS.md"
   },
   "turf": {
-    "v": "23",
-    "n": 23000,
+    "v": "25",
+    "n": 25000,
     "from": "VERSIONS.md"
   },
   "gameoflife": {

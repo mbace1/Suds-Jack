@@ -10,10 +10,15 @@ import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key } from '../j
 import { planIntent, planAllIntents } from '../js/ai.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
-  movableTiles, moveUnit, attackableTargets, attack, endUnitTurn, endPlayerTurn, stepEnemyPhase,
+  movableTiles, moveUnit, attackableTargets, attack, orderAttack, useAbility,
+  endUnitTurn, endPlayerTurn, stepEnemyPhase,
   awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
   applyTrinkets, TRINKET_SHARE,
 } from '../js/combat.js';
+import {
+  MOVE_CAP, EVADE_PER, DAMAGE_PER, addMomentum, clearMomentum, evasionOf,
+} from '../js/momentum.js';
+import { abilitiesFor, abilityTargets, canAfford, whyNot, findAbility } from '../js/abilities.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -25,6 +30,7 @@ const ENEMIES = readJson('enemies.json').enemies;
 const ENCOUNTERS = readJson('encounters.json').encounters;
 const HAZARDS = readJson('hazards.json').hazards;
 const TRINKETS = readJson('trinkets.json').trinkets;
+const ABILITIES = readJson('abilities.json').abilities;
 const BACKLOT = ENCOUNTERS.find(e => e.id === 'backlot');
 const LOADING_DOCK = ENCOUNTERS.find(e => e.id === 'loading-dock');
 
@@ -665,6 +671,227 @@ check('a unit with no trinkets keeps its weapon object untouched', () => {
   const blade = getUnit(state, 'p0');
   assert.equal(blade.trinkets.length, 0);
   assert.equal(blade.weapon, blade.baseWeapon, 'the common case allocates nothing');
+});
+
+// ── the movement economy (momentum.js) ───────────────────────
+// Two rules and one pool. Each test pins a claim the module header makes,
+// because every claim in it that went unmeasured turned out to be false:
+// sync was cut on exactly this kind of evidence.
+
+check('moving banks one point per tile, capped', () => {
+  const u = {};
+  addMomentum(u, 3);
+  assert.equal(u.momentum, 3, 'one point per tile actually travelled');
+  addMomentum(u, 99);
+  assert.equal(u.momentum, MOVE_CAP, 'a long approach cannot bank a one-shot kill');
+  clearMomentum(u);
+  assert.equal(u.momentum, 0);
+});
+
+check('momentum evades bullets, never knives', () => {
+  const u = { momentum: MOVE_CAP };
+  assert.ok(evasionOf(u, { archetype: 'ranged' }) > 0);
+  assert.equal(evasionOf(u, { archetype: 'melee' }), 0,
+    'a knife at one tile does not miss because you jogged');
+  assert.ok(evasionOf(u, { archetype: 'ranged' }) < 0.3,
+    'running must never beat partial cover outright, or cover stops being a decision');
+});
+
+check('a move logs the momentum it earned', () => {
+  const state = boot(BACKLOT, 7);
+  const u = state.units.find(x => x.faction === 'player');
+  const far = [...movableTiles(state, u).values()]
+    .sort((a, b) => manhattan(b, u) - manhattan(a, u))[0];
+  moveUnit(state, u.uid, far.x, far.y);
+  const logged = state.log.filter(e => e.type === 'move').pop();
+  assert.ok(u.momentum > 0, 'a real move banks something');
+  assert.equal(logged.momentum, u.momentum, 'the animator reads it off the log, so it must be in it');
+});
+
+check('the swing spends the run that set it up', () => {
+  // Every point is either damage or evasion, never both. Without this the
+  // enemies — which close every single turn — accumulate evasion the player
+  // never can, and measurement showed the skill gap NARROWING, not widening.
+  const state = boot(BACKLOT, 3);
+  const attacker = state.units.find(u => u.faction === 'player' && attackableTargets(state, u).length);
+  assert.ok(attacker, 'seed 3 puts somebody in range on turn one');
+  const victim = attackableTargets(state, attacker)[0];
+  attacker.momentum = MOVE_CAP;
+  // orderAttack, not attack: attackableTargets answers "could reach and hit",
+  // so a target may need a step first — and that step is what input.js does.
+  // Calling attack() straight would bail out-of-range and prove nothing.
+  orderAttack(state, attacker.uid, victim);
+  assert.equal(attacker.momentum, 0, 'spent whether the shot lands or not');
+  const evt = state.log.filter(e => e.type === 'attack').pop();
+  assert.equal(evt.bonus, Math.floor(MOVE_CAP * DAMAGE_PER), 'reported, not folded in silently');
+  assert.equal(evt.base, attacker.weapon.damage, 'and the base is reported beside it');
+  if (evt.hit) assert.equal(evt.damage, evt.base + evt.bonus);
+});
+
+check('an attack event carries the evasion it faced', () => {
+  const state = boot(BACKLOT, 11);
+  const shooter = state.units.find(u =>
+    u.faction === 'player' && u.weapon.archetype === 'ranged' && attackableTargets(state, u).length);
+  assert.ok(shooter, 'seed 11 gives a gun a target');
+  const target = getUnit(state, attackableTargets(state, shooter)[0]);
+  target.momentum = MOVE_CAP;
+  orderAttack(state, shooter.uid, target.uid);
+  const evt = state.log.filter(e => e.type === 'attack').pop();
+  assert.equal(evt.evade, MOVE_CAP * EVADE_PER, 'a miss has to be explainable after the fact');
+});
+
+check('momentum never survives its own turn', () => {
+  const state = boot(BACKLOT, 5);
+  for (const u of state.units) u.momentum = MOVE_CAP;
+  endPlayerTurn(state);
+  assert.ok(state.units.filter(u => u.faction === 'enemy').every(u => !u.momentum),
+    'the enemy phase starts from zero, so what it banks is what you watched it do');
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+  assert.ok(state.units.filter(u => u.faction === 'player').every(u => !u.momentum),
+    'and the player turn starts from zero too — momentum is this turn, not a bank');
+});
+
+check('the telegraph survives every operator being evasive', () => {
+  const state = boot(BACKLOT, 9);
+  const enemy = state.units.find(u => u.faction === 'enemy');
+  const before = planIntent(state, enemy);
+  for (const u of state.units) if (u.faction === 'player') u.momentum = MOVE_CAP;
+  const after = planIntent(state, enemy);
+  assert.ok(before.type && after.type, 'an AI that ignored evasion would promise shots it cannot land');
+});
+
+// ── abilities (abilities.js + combat.js's useAbility) ────────
+// The answer to "there are no actions at all, fighters just bump into each
+// other". Everything here is checked against the ECONOMY as much as the
+// effect: an ability that fires without being paid for is a bug the board
+// cannot show.
+
+check('every operator has a kit, and no enemy does', () => {
+  const state = boot(BACKLOT, 1);
+  for (const u of state.units.filter(x => x.faction === 'player')) {
+    assert.ok(abilitiesFor(u, ABILITIES).length >= 2, `${u.name} has a kit`);
+  }
+  for (const e of state.units.filter(x => x.faction === 'enemy')) {
+    assert.equal(abilitiesFor(e, ABILITIES).length, 0,
+      'enemy variety is behaviour, not a kit the telegraph would have to spell out');
+  }
+});
+
+check('an ability is bought with momentum, so standing still cannot buy one', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'control');
+  const shove = findAbility(ABILITIES, 'shove');
+  assert.equal(canAfford(u, shove), false, 'no run, no ability');
+  assert.match(whyNot(u, shove), /momentum/, 'and it says so in words');
+  addMomentum(u, shove.cost);
+  assert.equal(canAfford(u, shove), true);
+});
+
+check('using one spends exactly its cost and takes the turn', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'control');
+  addMomentum(u, MOVE_CAP);
+  const tile = abilityTargets(state, u, findAbility(ABILITIES, 'barricade'))[0];
+  assert.ok(tile, 'somewhere beside a spawn is empty');
+  const before = state.partialCover.size;
+  const r = useAbility(state, u.uid, 'barricade', tile, ABILITIES);
+  assert.ok(r.ok);
+  assert.equal(state.partialCover.size, before + 1, 'the board changed');
+  assert.equal(u.momentum, MOVE_CAP - 2, 'charged its cost, not the whole pool');
+  assert.equal(u.actedAction, true, 'an ability IS your action, never an extra one');
+});
+
+check('an ability you cannot afford does nothing at all', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'control');
+  u.momentum = 0;
+  const before = state.partialCover.size;
+  const r = useAbility(state, u.uid, 'barricade', { x: u.x + 1, y: u.y }, ABILITIES);
+  assert.equal(r.ok, false);
+  assert.equal(state.partialCover.size, before, 'and it does not half-happen');
+  assert.equal(u.actedAction, false, 'a refused ability must not eat the turn');
+});
+
+check('barricade refuses a tile that is already something', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'control');
+  addMomentum(u, MOVE_CAP);
+  const occupied = state.units.find(o => o.uid !== u.uid);
+  const r = useAbility(state, u.uid, 'barricade', { x: occupied.x, y: occupied.y }, ABILITIES);
+  assert.equal(r.ok, false, 'legality is answered by the same function the board highlighted with');
+});
+
+check('cleave hits everyone adjacent, once each', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'melee');
+  addMomentum(u, MOVE_CAP);
+  // Stand two rivals right next to the operator.
+  const foes = state.units.filter(e => e.faction === 'enemy').slice(0, 2);
+  foes[0].x = u.x + 1; foes[0].y = u.y;
+  foes[1].x = u.x; foes[1].y = u.y - 1;
+  const group = abilityTargets(state, u, findAbility(ABILITIES, 'cleave'))[0];
+  assert.equal(group.all.length, 2, 'both of them are targets, as one action');
+  const r = useAbility(state, u.uid, 'cleave', group, ABILITIES);
+  assert.ok(r.ok);
+  assert.equal(r.results.length, 2, 'two resolutions, not two turns');
+  assert.equal(u.momentum, MOVE_CAP - 2, 'and one cost');
+});
+
+check('snap shot fires twice, and never into a corpse', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'ranged');
+  addMomentum(u, MOVE_CAP);
+  const foe = state.units.find(e => e.faction === 'enemy');
+  foe.x = u.x + 1; foe.y = u.y; foe.hp = 1; // dies to the first barrel
+  const r = useAbility(state, u.uid, 'snapshot', { uid: foe.uid }, ABILITIES);
+  assert.ok(r.ok);
+  assert.ok(r.results.length <= 2, 'two barrels, not more');
+  // Whichever shot lands the kill must be the LAST one resolved — the first
+  // may well miss, so "results.length === 1" would be asserting the dice.
+  const killed = r.results.findIndex(x => x.killed);
+  if (killed >= 0) assert.equal(r.results.length, killed + 1, 'nothing is fired into a body');
+  const evt = state.log.filter(e => e.type === 'attack').pop();
+  assert.ok(evt.chance > 0.5, 'accuracyMod shifts the weapon chance; it does not replace it');
+});
+
+check('shove is flat damage and a long push, and never misses', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'control');
+  addMomentum(u, MOVE_CAP);
+  const foe = state.units.find(e => e.faction === 'enemy');
+  foe.x = u.x + 1; foe.y = u.y; foe.hp = 20;
+  const r = useAbility(state, u.uid, 'shove', { uid: foe.uid }, ABILITIES);
+  assert.ok(r.ok && r.results[0].hit, 'accuracy 1 means it lands');
+  assert.equal(r.results[0].damage, 1, 'flat: a shove is a shove whoever holds the pipe');
+  assert.ok(r.results[0].knockback, 'and it moves them');
+});
+
+check('overwatch fires on an enemy that moves into range, once', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'ranged');
+  addMomentum(u, MOVE_CAP);
+  const r = useAbility(state, u.uid, 'overwatch', { self: true }, ABILITIES);
+  assert.ok(r.ok);
+  assert.equal(state.overwatch.has(u.uid), true, 'the posture is on the board, not implied');
+  endPlayerTurn(state);
+  let shots = 0, step;
+  do {
+    step = stepEnemyPhase(state);
+    shots = state.log.filter(e => e.type === 'overwatch').length;
+  } while (step && !step.done);
+  assert.ok(shots <= 1, 'one watcher cannot mow down a column');
+  assert.equal(state.overwatch.size, 0, 'and the posture never survives the phase');
+});
+
+check('overwatch is cleared even when it never triggers', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.role === 'ranged');
+  addMomentum(u, MOVE_CAP);
+  useAbility(state, u.uid, 'overwatch', { self: true }, ABILITIES);
+  endPlayerTurn(state);
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+  assert.equal(state.overwatch.size, 0,
+    'a standing order the player has forgotten they gave is the worst surprise this game could spring');
 });
 
 for (const enc of ENCOUNTERS) playthrough(enc, 42);

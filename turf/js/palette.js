@@ -35,6 +35,19 @@ export const PAL = {
   HP_MID: '#e0c24a',
   HP_BAD: '#e0453a',
   HP_TRACK: '#20232a',
+  // Momentum (momentum.js): the run a unit is still carrying. Its own colour,
+  // not an HP shade — it is a different quantity and must never be misread as
+  // health at a glance on a 14px-wide strip.
+  MOMENTUM: '#f2e2a0',
+  // The unit the board is currently about — the enemy taking its step right
+  // now. Warm and bright against everything else on screen, because during
+  // the enemy phase this is the only thing worth looking at.
+  ACTING: '#ffc36b',
+  // An armed ability's legal targets. Its own colour, not the attack orange:
+  // while an ability is armed the board means something different, and
+  // reusing the ordinary attack highlight would say the opposite.
+  ABILITY_HI: 'rgba(242,226,160,0.42)',
+  ABILITY_HI_EDGE: 'rgba(255,240,190,0.95)',
 
   TELEGRAPH: '#f2b23a',
   CURSOR: '#eaeef2',

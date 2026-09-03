@@ -3,6 +3,7 @@
 // execute if its turn started right now, recomputed after every player
 // action so the intent shown on screen never lies about the current board.
 import { manhattan, moveRange, hasLOS, coverSoftens, key } from './grid.js?v=2';
+import { evasionOf, EVADE_PER } from './momentum.js?v=1';
 
 // What standing on a tile costs this enemy, in HP. A lethal hazard is scored
 // as its whole health bar rather than Infinity so the comparison stays
@@ -40,9 +41,16 @@ function hazardCost(state, enemy, x, y) {
 // Who an enemy wants dead. `weakest` is what makes a pack dangerous — it
 // finishes the operator you were about to pull out, so a hurt unit cannot
 // just be left standing at the back.
+// Evasion is folded into both: a target that just sprinted is a worse shot
+// than a stationary one at the same distance, and an AI that ignored that
+// would keep promising shots it is unlikely to land. Scaled to tiles
+// (EVADE_PER is a hit-chance fraction) so it trades against distance in the
+// same units the rest of this file scores in.
+const evadeTiles = (enemy, u) => evasionOf(u, enemy.weapon) / EVADE_PER;
 const FOCUS = {
-  nearest: (state, enemy, players) => pick(players, u => manhattan(enemy, u)),
-  weakest: (state, enemy, players) => pick(players, u => u.hp * 100 + manhattan(enemy, u)),
+  nearest: (state, enemy, players) => pick(players, u => manhattan(enemy, u) + evadeTiles(enemy, u)),
+  weakest: (state, enemy, players) =>
+    pick(players, u => u.hp * 100 + manhattan(enemy, u) + evadeTiles(enemy, u)),
 };
 
 function pick(list, scoreFn) {
@@ -123,6 +131,11 @@ export function planIntent(state, enemy) {
   const options = attackOptions(state, enemy, target)
     .filter(t => hazardCost(state, enemy, t.x, t.y) < enemy.hp);
   if (options.length) {
+    // Reaching the shot costs MOMENTUM as well as tiles, and momentum is
+    // evasion — so a tile further away is not only slower, it leaves this
+    // enemy easier to hit on the turn that follows. Folding that in is what
+    // keeps the telegraph honest once the movement economy exists: an enemy
+    // that ignored it would promise a position it would regret standing in.
     const best = pick(
       options.map(t => ({ ...t, uid: `${t.x},${t.y}` })),
       t => t.cost + shape(state, enemy, target, t) + hazardCost(state, enemy, t.x, t.y) * 1.5,

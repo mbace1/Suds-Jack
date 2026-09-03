@@ -43,6 +43,9 @@
   .actionBtn:disabled { opacity: .35; cursor: default; }
   .actionBtn:not(:disabled):active { background: #6fa8c9; color: #0b0c0f; }
   .actionBtn.secondary:not(:disabled):active { background: #3a4048; color: #d6d9de; }
+  /* AUTO is a mode, not a press, so it stays lit while it is on — the same
+     rule the arcade's own toggles follow. */
+  .actionBtn[aria-pressed="true"] { background: #f2e2a0; color: #0b0c0f; border-color: #f2e2a0; }
 
   #stage {
     /* align-items: flex-end, not center — a real phone playtest of v8 found
@@ -54,9 +57,16 @@
        putting the board directly against the panel a thumb is already on,
        and pushes all the unused space to the top, which is at least out of
        the way of anything the player has to look at or reach. */
-    flex: 1; position: relative; display: flex; align-items: flex-end; justify-content: center;
+    /* Centred, not bottom-anchored. v8's flex-end existed to spend the slack
+       above a board that always fitted; from v25 the board is allowed to be
+       BIGGER than the stage on a phone (camera.js) so on the screens that
+       reasoning was written for there is no slack left to spend, and the
+       camera's pan clamp assumes a centred board. On a desktop viewport,
+       where it still fits, centred is simply the ordinary answer. */
+    flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
     padding-bottom: 4px;
     min-height: 0; overflow: hidden;
+    touch-action: none;
     /* --encounter-bg (set per-encounter in main.js's boot()) sits behind the
        board's own opaque canvas, so it only shows in the slack space above/
        around it — real atmosphere with zero risk to board readability. The
@@ -75,7 +85,29 @@
      now SUPERSAMPLE x the board's logical size (render.js), so it already
      carries the art's own detail; forcing nearest-neighbour on top of that
      would throw away exactly what the supersample was added to keep. */
-  #board { touch-action: none; cursor: pointer; display: block; }
+  /* flex: none — an oversized board must overflow the stage, not be squashed
+     back into it by the flex container. camera.js translates it from there. */
+  #board { touch-action: none; cursor: pointer; display: block; flex: none; will-change: transform; }
+
+  /* Ability buttons. Same 44px floor as everything else, and each carries
+     its cost as a badge — an action you cannot afford has to say what it
+     would take, not merely go grey. */
+  #abilities:empty { display: none; }
+  .abilityBtn {
+    flex: 1; min-height: 44px; min-width: 96px; padding: 6px 10px;
+    background: #1c1f26; color: #d6d9de; border: 1px solid #3a4048;
+    font: inherit; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .abilityBtn .cost {
+    font-size: 11px; color: #f2e2a0; border: 1px solid #f2e2a0; border-radius: 2px;
+    padding: 0 4px; flex: none;
+  }
+  .abilityBtn:not(:disabled) { border-color: #f2e2a0; }
+  .abilityBtn.armed { background: #f2e2a0; color: #0b0c0f; }
+  .abilityBtn.armed .cost { color: #0b0c0f; border-color: #0b0c0f; }
+  .abilityBtn:disabled { opacity: .4; cursor: default; }
+  .abilityBtn:disabled .cost { color: #7b818c; border-color: #3a4048; }
 
   .unitBtn {
     flex: 1; min-height: 44px; padding: 5px 9px; background: #1c1f26; border: 1px solid #262a32;
@@ -146,10 +178,12 @@
 
   <div id="bottombar">
     <div id="squad" class="row"></div>
+    <div id="abilities" class="row"></div>
     <div class="row">
       <button id="cancelBtn" class="actionBtn secondary" disabled>Cancel</button>
       <button id="endTurnBtn" class="actionBtn" disabled>End Turn</button>
       <button id="muteBtn" class="actionBtn secondary" aria-pressed="false" title="Sound on/off">Sound</button>
+      <button id="autoBtn" class="actionBtn secondary" aria-pressed="false" title="Let the crew play itself">Auto</button>
     </div>
     <div class="row">
       <span id="selInfo">
@@ -166,13 +200,22 @@
     <p>
       Tap an operator, then tap a tile to move or an enemy to hit — move and act in either
       order, once each, per operator. Full cover (dumpsters, fences) blocks a shot outright;
-      low cover (crates, curbs) only softens one. Every enemy shows what it plans to do
-      before it does it — read the board, not the RNG. Most blocks are HELD, not cleared:
+      low cover (crates, curbs) only softens one. Moving builds MOMENTUM — one pip per
+      tile — which either sharpens your next swing or keeps you hard to shoot until you
+      use it, so standing still is a choice you pay for. Every enemy shows what it plans
+      to do before it does it — read the board, not the RNG. Most blocks are HELD, not cleared:
       outlast the round count shown top-right and the street is yours. Lose the whole crew
       and it's over.
     </p>
-    <p class="tag">Mouse or touch · arrows/WASD move, Enter/Space confirm, Esc cancel, E ends turn ·
-      pad: stick move, A confirm, B cancel, Y ends turn</p>
+    <p>
+      Moving builds MOMENTUM — one pip a tile — and momentum buys ACTIONS: cleave a crowd,
+      shove a body into a stairwell, drop cover, or hold your fire on overwatch and shoot the
+      first rival who crosses your line. Spend it on an action or keep it and be harder to
+      shoot; never both.
+    </p>
+    <p class="tag">Mouse or touch · drag to look around · arrows/WASD move, Enter/Space confirm,
+      Esc cancel, E ends turn · pad: stick move, A confirm, B cancel, Y ends turn ·
+      AUTO lets the crew play itself</p>
     <button id="titleStart" class="bigBtn" disabled>Loading…</button>
   </div>
 
@@ -182,7 +225,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=15"></script>
+  <script type="module" src="js/main.js?v=17"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

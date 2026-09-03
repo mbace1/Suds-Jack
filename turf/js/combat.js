@@ -4,8 +4,10 @@
 // nothing here touches a canvas or the DOM, which is what makes it runnable
 // in bare node (test/smoke.cjs).
 import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=2';
-import { planAllIntents } from './ai.js?v=4';
+import { planAllIntents } from './ai.js?v=5';
 import { makeRng } from './rng.js?v=2';
+import { addMomentum, clearMomentum, evasionOf, momentumDamage } from './momentum.js?v=1';
+import { abilityTargets, canAfford, findAbility } from './abilities.js?v=1';
 
 export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = [], trinketDefs = []) {
   const weaponById = id => weaponDefs.find(w => w.id === id);
@@ -34,6 +36,10 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     encounterId: encounter.id,
     grid: encounter.grid,
     fullCover, partialCover, hazards,
+    // Units holding fire (the Overwatch ability). A Set of uids, emptied at
+    // the top of every player turn — overwatch is a posture you take for one
+    // enemy phase, never a standing order you can forget you gave.
+    overwatch: new Set(),
     // Per-encounter objective (GDD §4 lists survive-N as a real mode, not
     // only elimination). Defaults to eliminate so an encounter without one
     // behaves exactly as it did before.
@@ -203,9 +209,12 @@ export function moveUnit(state, uid, x, y) {
   if (unit.actedMove) return { ok: false, reason: 'already-moved' };
   const range = moveRange(state, unit);
   if (!range.has(key(x, y))) return { ok: false, reason: 'out-of-range' };
+  // Momentum is banked from the distance actually travelled, before the
+  // position is overwritten — a unit that moves one tile has not run.
+  addMomentum(unit, Math.abs(x - unit.x) + Math.abs(y - unit.y));
   unit.x = x; unit.y = y;
   unit.actedMove = true;
-  state.log.push({ type: 'move', uid, x, y });
+  state.log.push({ type: 'move', uid, x, y, momentum: unit.momentum });
   // Hazard first, then loot: a unit that walks into an open stairwell does
   // not get to pick up the pistol lying in it on the way down.
   const hazard = enterHazard(state, unit, 'move');
@@ -263,15 +272,31 @@ export const DROP_CHANCE = 0.5;
 // would quietly replace the more interesting item with the duller one.
 export const TRINKET_SHARE = 0.4;
 
-function resolveAttack(state, attacker, target, weapon) {
-  let chance = weapon.hitChance;
+// `opts` is how an ABILITY bends one attack without there being a second
+// damage pipeline in this codebase (abilities.js's header explains why that
+// matters). Everything an ability can change is a modifier on this one
+// resolution: accuracy, a damage bonus or a flat replacement, a knockback
+// override, and whether the swing spends the attacker's momentum — it does
+// not, when the ability has already charged for it.
+function resolveAttack(state, attacker, target, weapon, opts = {}) {
+  let chance = opts.accuracy != null ? opts.accuracy : weapon.hitChance;
+  if (opts.accuracyMod) chance += opts.accuracyMod;
   if (weapon.archetype === 'ranged' && coverSoftens(state, attacker, target)) chance -= 0.3;
+  // A moving target is harder to shoot (momentum.js) — the rule that makes
+  // standing still cost something, and the reason a board spreads out.
+  const evade = evasionOf(target, weapon);
+  chance -= evade;
   chance = Math.max(0.05, Math.min(1, chance));
   const roll = state.rng();
   const hit = roll < chance;
+  // What the attacker's own run adds. Resolved before the roll's outcome so a
+  // MISS still reports what it would have done — the HUD has already promised
+  // this number and must not appear to have lied when the dice go the other
+  // way.
+  const bonus = opts.flatDamage != null ? 0 : momentumDamage(attacker) + (opts.damageBonus || 0);
   let damage = 0, killed = false, knockback = null, dropped = null;
   if (hit) {
-    damage = weapon.damage;
+    damage = opts.flatDamage != null ? opts.flatDamage : weapon.damage + bonus;
     target.hp = Math.max(0, target.hp - damage);
     killed = target.hp <= 0;
     if (killed) {
@@ -289,9 +314,24 @@ function resolveAttack(state, attacker, target, weapon) {
         state.drops.push(dropped);
       }
     }
-    if (!killed && weapon.knockback > 0) knockback = applyKnockback(state, attacker, target, weapon.knockback);
+    const shove = opts.knockback != null ? opts.knockback : weapon.knockback;
+    if (!killed && shove > 0) knockback = applyKnockback(state, attacker, target, shove);
   }
-  const evt = { type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage, killed, knockback, dropped, chance, roll };
+  // Spending it is the whole interlock (momentum.js): the run that sharpened
+  // this swing is over, and the attacker is a stationary target until it moves
+  // again. Cleared whether the shot lands or not — you committed to the swing.
+  // An ability has already deducted its own cost, so it opts out rather than
+  // being charged twice.
+  if (!opts.keepMomentum) clearMomentum(attacker);
+  const evt = {
+    type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage,
+    killed, knockback, dropped, chance, roll,
+    // The breakdown travels with the event so the HUD and the animation layer
+    // can say WHY a number was what it was, rather than showing a total the
+    // player has to reverse-engineer.
+    base: opts.flatDamage != null ? opts.flatDamage : weapon.damage, bonus, evade,
+    ability: opts.ability || null,
+  };
   state.log.push(evt);
   // The payoff the pipe exists for: a shove that lands a body in a fire or an
   // open stairwell. Resolved AFTER the attack event is logged so the two read
@@ -381,6 +421,97 @@ export function endUnitTurn(state, uid) {
   return { ok: true };
 }
 
+// Every operator holding fire that can now see this enemy takes its shot.
+// One shot each per enemy phase — the uid is dropped from the set as it
+// fires, so a watcher cannot mow down a whole column, and a watcher whose
+// line never opens simply keeps the posture until the turn ends.
+function overwatchFire(state, enemy) {
+  if (!state.overwatch || !state.overwatch.size || enemy.hp <= 0) return;
+  for (const uid of [...state.overwatch]) {
+    const watcher = getUnit(state, uid);
+    if (!watcher || watcher.hp <= 0) { state.overwatch.delete(uid); continue; }
+    if (manhattan(watcher, enemy) > watcher.weapon.range) continue;
+    if (!hasLOS(state, watcher, enemy)) continue;
+    state.overwatch.delete(uid);
+    state.log.push({ type: 'overwatch', uid, targetUid: enemy.uid, name: watcher.name });
+    resolveAttack(state, watcher, enemy, watcher.weapon, { ability: 'overwatch', keepMomentum: true });
+    checkWinLoss(state);
+    if (enemy.hp <= 0) return;
+  }
+}
+
+// ── abilities ────────────────────────────────────────────────────────
+// One entry point for every shape. The dispatch is small on purpose: each
+// case reduces to calls this file already makes for an ordinary attack, so
+// an ability can never do something the normal path cannot explain.
+export function useAbility(state, uid, abilityId, target, abilityDefs) {
+  const unit = getUnit(state, uid);
+  const ability = findAbility(abilityDefs, abilityId);
+  if (!unit || !ability) return { ok: false, reason: 'invalid' };
+  if (state.turn !== 'player' || unit.faction !== 'player') return { ok: false, reason: 'not-your-turn' };
+  if (!canAfford(unit, ability)) return { ok: false, reason: 'cannot-afford' };
+
+  // Legality is answered by the same function the UI highlighted with, so a
+  // tile the board offered can never be refused here and a tile it did not
+  // can never be taken by a crafted call.
+  const legal = abilityTargets(state, unit, ability);
+  const results = [];
+
+  if (ability.shape === 'self') {
+    if (ability.id !== 'overwatch') return { ok: false, reason: 'unknown-self-ability' };
+    state.overwatch.add(unit.uid);
+    state.log.push({ type: 'ability', uid, ability: ability.id, name: ability.name });
+  } else if (ability.shape === 'adjacent-all') {
+    const group = legal[0];
+    if (!group) return { ok: false, reason: 'no-target' };
+    // A copy of the list, resolved one at a time: a body killed by the first
+    // swing must not still be standing for the third.
+    for (const tuid of group.all) {
+      const t = getUnit(state, tuid);
+      if (!t || t.hp <= 0) continue;
+      results.push(resolveAttack(state, unit, t, unit.weapon, abilityOpts(ability)));
+    }
+    if (!results.length) return { ok: false, reason: 'no-target' };
+  } else if (ability.shape === 'empty-tile') {
+    const tile = target || {};
+    if (!legal.some(t => t.x === tile.x && t.y === tile.y)) return { ok: false, reason: 'bad-tile' };
+    state.partialCover.add(key(tile.x, tile.y));
+    state.log.push({ type: 'ability', uid, ability: ability.id, name: ability.name, x: tile.x, y: tile.y });
+  } else {
+    const tuid = typeof target === 'string' ? target : target && target.uid;
+    if (!legal.some(t => t.uid === tuid)) return { ok: false, reason: 'bad-target' };
+    const shots = ability.shots || 1;
+    for (let i = 0; i < shots; i++) {
+      const t = getUnit(state, tuid);
+      if (!t || t.hp <= 0) break; // a second barrel is not fired into a corpse
+      results.push(resolveAttack(state, unit, t, unit.weapon, abilityOpts(ability)));
+    }
+  }
+
+  // Charged once, whatever the shape, and only after the ability actually
+  // happened — a refused call must not eat the run that paid for it.
+  unit.momentum = Math.max(0, (unit.momentum || 0) - ability.cost);
+  unit.actedAction = true;
+  maybeDeselect(state, unit);
+  planAllIntents(state);
+  checkWinLoss(state);
+  return { ok: true, results };
+}
+
+function abilityOpts(ability) {
+  return {
+    ability: ability.id,
+    accuracy: ability.accuracy,
+    accuracyMod: ability.accuracy != null ? 0 : ability.accuracyMod,
+    damageBonus: ability.damageMode === 'weapon' ? (ability.damage || 0) : 0,
+    flatDamage: ability.damageMode === 'flat' ? ability.damage : null,
+    knockback: ability.knockback,
+    // The ability's own cost is the price; the swing must not also empty the
+    // pool, or a 2-cost ability would silently charge everything you had.
+    keepMomentum: true,
+  };
+}
+
 export function endPlayerTurn(state) {
   if (state.turn !== 'player') return { ok: false };
   state.turn = 'enemy';
@@ -391,6 +522,11 @@ export function endPlayerTurn(state) {
   // earlier enemies this same phase have already moved.
   state.enemyPlan = new Map(state.telegraph);
   state.enemyQueue = livingEnemies(state).map(u => u.uid);
+  // The enemy turn begins: their momentum from LAST round is spent, and each
+  // will bank fresh momentum as it steps. Cleared here so the evasion an
+  // operator sees while planning is the evasion that was actually earned
+  // during the phase they just watched.
+  for (const u of state.units) if (u.faction === 'enemy') clearMomentum(u);
   return { ok: true };
 }
 
@@ -399,12 +535,28 @@ export function endPlayerTurn(state) {
 // the board) and returns a descriptor for the HUD/animation layer to show.
 // Returns { done: true } once the phase is empty, having already flipped
 // back to the player and reset the move/act flags for the new round.
+// Who acts next, without acting. main.js uses this to point the camera at an
+// enemy BEFORE it moves — seeing a unit arrive somewhere is not the same as
+// watching it go, and "I can't see who is going where" is what the board
+// looked like when the two happened in the same frame.
+export function peekEnemyQueue(state) {
+  if (state.turn !== 'enemy') return null;
+  for (const uid of state.enemyQueue) {
+    const enemy = getUnit(state, uid);
+    if (enemy && enemy.hp > 0) return uid;
+  }
+  return null;
+}
+
 export function stepEnemyPhase(state) {
   if (state.turn !== 'enemy') return null;
   while (state.enemyQueue.length) {
     const uid = state.enemyQueue.shift();
     const enemy = getUnit(state, uid);
     if (!enemy || enemy.hp <= 0) continue;
+    // The unit the board is currently about — render.js spotlights it and
+    // the camera follows it. Cleared when the phase ends, below.
+    state.actingUid = uid;
 
     // Execute the frozen plan (set in endPlayerTurn), not a fresh one — see
     // the comment there. Only guard against a tile another enemy already
@@ -416,9 +568,19 @@ export function stepEnemyPhase(state) {
     if (intent.moveTo && (intent.moveTo.x !== enemy.x || intent.moveTo.y !== enemy.y)) {
       const blocked = state.fullCover.has(key(intent.moveTo.x, intent.moveTo.y)) || unitAt(state, intent.moveTo.x, intent.moveTo.y, enemy);
       if (!blocked) {
+        // Enemies bank momentum from their own step exactly as operators do —
+        // an asymmetric rule would be a trap the player learns to exploit,
+        // and evasion in particular has to cut both ways or closing on a
+        // skirmisher becomes free.
+        addMomentum(enemy, Math.abs(intent.moveTo.x - enemy.x) + Math.abs(intent.moveTo.y - enemy.y));
         enemy.x = intent.moveTo.x; enemy.y = intent.moveTo.y;
         moved = { x: enemy.x, y: enemy.y };
         enterHazard(state, enemy, 'move');
+        // Overwatch fires HERE — after the step, before the enemy acts. It
+        // is the only reaction in the game, and it is what stops crossing
+        // open ground being free: through v24 an enemy could walk the whole
+        // board under a held gun and nothing happened.
+        overwatchFire(state, enemy);
       }
     }
     // An enemy that just burned to death (or was shoved into a stairwell and
@@ -445,12 +607,24 @@ export function stepEnemyPhase(state) {
   const burns = tickLingeringHazards(state);
   state.turn = 'player';
   state.round += 1;
-  for (const u of state.units) if (u.faction === 'player') { u.actedMove = false; u.actedAction = false; }
+  for (const u of state.units) if (u.faction === 'player') {
+    u.actedMove = false; u.actedAction = false;
+    // Momentum never carries between turns — it is this turn's movement, not
+    // a bank. Cleared at the START of the player's turn rather than the end
+    // of it, so a unit that moved and did not attack still shows the evasion
+    // it earned all through the enemy phase it is about to face.
+    clearMomentum(u);
+  }
+  // A posture for one enemy phase, never a standing order. Anything still
+  // held here was never triggered, and holding it into a turn the player is
+  // about to spend moving would be a promise the board stopped showing.
+  state.overwatch.clear();
   // A survive objective is decided HERE and nowhere else: outlasting round N
   // is an event with no attack behind it, so without this call the win would
   // only be noticed the next time somebody happened to take damage.
   checkWinLoss(state);
   planAllIntents(state);
+  state.actingUid = null;
   return { done: true, burns };
 }
 
