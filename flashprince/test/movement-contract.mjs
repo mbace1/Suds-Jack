@@ -48,9 +48,9 @@ for (const sourceEdge of [
 ]) ok(heroSource.includes(sourceEdge), `runtime source still contains expected edge: ${sourceEdge}`);
 ok(v3Source.includes('transitionFaults'), 'V3 runtime counts transition faults');
 ok(v3Source.includes('StateMachine'), 'V3 runtime routes transitions through shared StateMachine');
-ok(diagSource.includes("FP-MOVE-7"), 'diagnostics expose the visible movement build id');
+ok(diagSource.includes("FP-MOVE-8"), 'diagnostics expose the visible movement build id');
 ok(diagSource.includes('transitionFaults'), 'diagnostics read the live transition fault count');
-ok(indexSource.includes('movement-diagnostics.js?v=7'), 'playable index loads movement diagnostics v7');
-ok(indexSource.includes('movement-lab-v3.js?v=7'), 'playable index cache-busts movement lab v7');
+ok(indexSource.includes('movement-diagnostics.js?v=8'), 'playable index loads movement diagnostics v8');
+ok(indexSource.includes('movement-lab-v3.js?v=8'), 'playable index cache-busts movement lab v8');
 
 console.log(`Flash Prince movement contract: ${checks} checks passed`);
