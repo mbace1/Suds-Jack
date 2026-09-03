@@ -1,7 +1,11 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=189';
-import { t } from './lang.js?v=189';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=189';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=190';
+import { t } from './lang.js?v=190';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=190';
+import { Arena, rectShape } from './arena.js?v=190';
+
+// v236: the tester's own little room. Enemy.update() takes an arena now.
+const TESTER_ARENA = new Arena(rectShape(11, 7));
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -96,7 +100,7 @@ function testerLoop(ts) {
   T.ghost.z = Math.cos(T.t * 0.65) * 2.6;
   const s = T.specimen;
   if (s) {
-    if (s.alive) s.update(dt, T.ghost, T.stubBullets, 11, 7);
+    if (s.alive) s.update(dt, T.ghost, T.stubBullets, TESTER_ARENA);
     s.updateDeath(dt);
     // Drain the enemy's queued FX (death chunks, BAMBU/PYRA hit chunks) into
     // the tester's droplet system so HIT/KILL actually splatter here.

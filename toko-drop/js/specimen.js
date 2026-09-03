@@ -24,7 +24,12 @@
 //   .hit() / .kill()  — poke the subject through the REAL damage path
 //   .specimen()       — the live Enemy, for info readouts
 import * as THREE from 'three';
-import { CFG, Enemy, GOO_TIME } from './enemy.js?v=189';
+import { CFG, Enemy, GOO_TIME } from './enemy.js?v=190';
+import { Arena, rectShape } from './arena.js?v=190';
+
+// v236: two fixed rooms — a roaming portrait gets the wider one.
+const ROAM_ARENA  = new Arena(rectShape(11, 7));
+const STILL_ARENA = new Arena(rectShape(6, 6));
 
 export function createSpecimen({ width = 220, height = 170, bg = 0x07071a,
                                  roam = false, onFrame = null } = {}) {
@@ -82,7 +87,7 @@ export function createSpecimen({ width = 220, height = 170, bg = 0x07071a,
     const s = state.specimen;
     if (s) {
       // stubBullets: firing behaviours no-op safely in a portrait
-      if (s.alive) s.update(dt, ghost, { spawnDir() {} }, roam ? 11 : 6, roam ? 7 : 6);
+      if (s.alive) s.update(dt, ghost, { spawnDir() {} }, roam ? ROAM_ARENA : STILL_ARENA);
       s.updateDeath(dt);
       if (onFrame) onFrame(s, dt);       // the host drains chunks itself
       else {

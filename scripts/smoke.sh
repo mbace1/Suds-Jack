@@ -48,6 +48,7 @@ cat > "$WORK/testbed/harness.html" <<'EOF'
 <script type="module">
   import * as THREE from 'three';
   import { Enemy, EnemyType, GOO_TIME } from './js/enemy.js';
+  import { Arena, rectShape } from './js/arena.js';   // v236: update() takes the region
   const out = (m) => console.log('HARNESS: ' + m);
   try {
     const renderer = new THREE.WebGLRenderer();
@@ -60,6 +61,7 @@ cat > "$WORK/testbed/harness.html" <<'EOF'
     camera.position.set(0, 20, 14); camera.lookAt(0, 0, 0);
     const stub = { spawnDir() {} };
     const ghost = { x: 3, z: 1 };
+    const arena = new Arena(rectShape(11, 18));
     const enemies = [];
     for (const [name, type] of Object.entries(EnemyType)) {
       try { enemies.push([name, new Enemy(scene, type, Math.random()*8-4, Math.random()*8-4, 1, 1)]); }
@@ -69,7 +71,7 @@ cat > "$WORK/testbed/harness.html" <<'EOF'
     for (let f = 0; f < 30; f++) {
       GOO_TIME.value += 0.016;
       for (const [name, e] of enemies) {
-        try { e.update(0.016, ghost, stub, 11, 18); e.updateDeath(0.016); }
+        try { e.update(0.016, ghost, stub, arena); e.updateDeath(0.016); }
         catch (err) { out('UPDATE FAIL ' + name + ' f' + f + ': ' + err.message); throw err; }
       }
       renderer.render(scene, camera);

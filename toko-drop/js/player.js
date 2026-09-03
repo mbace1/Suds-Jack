@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=189';
-import { TUNING } from './tuning.js?v=189';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=190';
+import { TUNING } from './tuning.js?v=190';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -15,6 +15,7 @@ const GHOST_INTERVAL = 0.03;
 const GHOST_LIFE     = 0.28;
 
 export const PLAYER_RADIUS = 0.5;
+const _apt = { x: 0, z: 0 };   // v236: scratch for arena.clamp — no per-frame alloc
 
 export class Player {
   constructor(scene) {
@@ -249,7 +250,9 @@ export class Player {
     this._sqV += 0.6; // elongate at dash start
   }
 
-  update(dt, moveDir, aimDir, bullets, halfX, halfZ) {
+  // v236: takes the ARENA, not two half-extents — containment is the arena's
+  // job now (js/arena.js). For the rectangle the clamp is the same expression.
+  update(dt, moveDir, aimDir, bullets, arena) {
     if (!this.alive) return;
 
     if (this._dashCD        > 0) this._dashCD        -= dt;
@@ -343,10 +346,9 @@ export class Player {
     const _psx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
     this.mesh.scale.set(_psx, this._sq, _psx);
 
-    const hx = halfX - PLAYER_RADIUS;
-    const hz = halfZ - PLAYER_RADIUS;
-    this.mesh.position.x = Math.max(-hx, Math.min(hx, this.mesh.position.x));
-    this.mesh.position.z = Math.max(-hz, Math.min(hz, this.mesh.position.z));
+    arena.clamp(this.mesh.position.x, this.mesh.position.z, PLAYER_RADIUS, _apt);
+    this.mesh.position.x = _apt.x;
+    this.mesh.position.z = _apt.z;
 
     // ── Movement stretch (v31): subtle lunge while walking, strong on dash ────
     {

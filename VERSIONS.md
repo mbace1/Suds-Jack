@@ -7,6 +7,94 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v236 — 2026-09-03
+**The arena is a shape now, not two numbers** *(P0 of `LEVEL_EDITOR_DESIGN.md` §7)*
+- **`js/arena.js`.** Until now "the arena" was `HALF_X` and `HALF_Z` — read in
+  88 places in `main.js`, and threaded into `player.update()` and
+  `enemy.update()` as a bare `(halfX, halfZ)` pair. That is exactly correct for
+  as long as every arena is a rectangle, and stops working the moment one is
+  not. The boundary lives in one pure module now: an SDF (`< 0` inside), with
+  `contains` / `clamp` / `ringPoint` / `insetPoint` / `rayEdge` / `randomPoint`
+  on top of it. No three.js, no DOM, no imports — so it runs in bare node
+- **The promise of this release is that NOTHING CHANGES**, and that is the
+  interesting part. `scripts/arena-check.mjs` (8,396 checks, bare node) compares
+  every method against the literal expression the call site used to inline, at
+  all six shipped arena sizes, and demands **exact** equality — `Object.is`, not
+  a tolerance. A tolerance is precisely what would hide the drift that
+  desynchronises a seeded wave schedule. Falsified before being trusted: a
+  wrong-axis clamp fails 1,032 checks, and adding `1e-12` to one ring
+  coordinate fails 1,536
+- **Being right and being identical are different goals, and P0 is the second
+  one.** So the rectangle's `clamp` reproduces `Math.max(-h, Math.min(h, v))`
+  as written, sign flip and all, for the degenerate `h < 0` case; and
+  `ringPoint` stays the old `cos·halfX·edge` formula, which on a box is an
+  inscribed **ellipse** and not the boundary. Those are what the spawn ring has
+  always been, and P0 is not the place to fix them
+- **Two determinism rules, written into the module header** because they are
+  invisible until they aren't: `randomPoint` draws from the rng **exactly
+  twice, x then z, for every shape** — rejection sampling is banned, since a
+  variable draw count would desynchronise every seeded schedule the first time
+  a level used a non-rectangular region; and nothing in the module reads
+  `Math.random()` or a clock (`update(t)` takes its time)
+- **Migrated: the sites that are genuinely about the BOUNDARY.** The spawn ring
+  and the siege trickle (`ringPoint`), the SMASH TV entry door (`insetPoint`),
+  the player clamp, CRYSTAL / PRISM / TORO clamps, PRISM's teleport target
+  (`randomPoint`), the escaped-decoration cull (`contains` with negative
+  slack), the civilian wander clamp, and — the one that needed a new primitive
+  — **TORO's dash telegraph**, which asks "how far until I hit a wall" and was
+  an inlined slab test. `rayEdge` is closed-form on a box and a sphere-trace
+  otherwise, so the telegraph will still be the real distance in a room with a
+  curved wall
+- **Deliberately NOT migrated, and named rather than left to be discovered:**
+  `HALF_X`/`HALF_Z` stay as the region's bounding box, because the floor plane,
+  the camera fit, `worldToUV` and ~50 set-dressing sites are asking how BIG the
+  room is, which is a fair question. `smashDoorPos`'s literal cardinal table
+  stays literal (`ringPoint` would answer `6.7e-16` instead of `0`). And the
+  cube **flop** reflection is per-axis, which an SDF has no notion of — P1
+  needs a gradient-reflect helper before that one can move
+- **Shapes P0 does not wire up but P1 will**, defined and unit-tested here so
+  P1 is a level file rather than a debugging session: `circleShape`, plus
+  `unionShape` (`min`) and `intersectShape` (`max`). The owner's worked example
+  — three overlapping circles and their common area — is
+  `intersectShape(c1, c2, c3)`, and the gate asserts it says *outside* where a
+  union would say inside. Nothing constructs one yet; the only live shape is
+  the rectangle
+- **The moving-shape question is still open and still the owner's**
+  (`LEVEL_EDITOR_DESIGN.md` §2.4: push / damage / death, and whether enemies
+  are contained too). `Arena.update(t)` is a no-op until it is answered
+- New module, so `sw.js`'s PRECACHE list and `bump-version.sh`'s file loop both
+  name `arena.js` — the two places a new file has to be added by hand
+- `smoke.sh`'s enemy harness calls `Enemy.update()` itself, so it **caught the
+  signature change on the first run** (`arena.clamp is not a function`) — it
+  builds its own `Arena` now, which means the shared gate exercises the new
+  path rather than a hand-rolled pair of numbers
+- `arena-check.mjs` + `smoke.sh` + `cabinets.sh` + `webgpu-smoke.sh` green, and
+  **a 30s seeded headless run compared frame-for-frame against a v235 checkout**
+  — same stubbed clock, same stubbed rAF, same seeded `Math.random`, sampled
+  every 60 frames: 30 samples, 3 waves, 139 enemy observations, 29,100 score,
+  identical in every field. The comparison was falsified too: subtracting
+  `1e-6` from one axis of the clamp diverges **all 30** samples, enemy
+  positions included
+- **The first version of that probe was VACUOUS and it is worth saying why.**
+  With no input the player stands still, dies at t=4.6s, and 24 of the 30
+  samples were frozen duplicates of the death frame — a run that looked 30s
+  long and tested 4.6s of it. The fix is a deterministic pilot: a swept stick
+  that drives the player into every wall, autofire so waves actually turn over,
+  and a long invincibility so the run survives to be compared. Stubbing
+  `renderer.render` in the throwaway copy cut the run from ~40 minutes to ~2,
+  since the subject is JS state and SwiftShader was the entire cost
+- `hub/versions.json`'s `tokodrop` was **fifteen releases stale** (221) and is
+  hand-edited to 236. **Found the hard way, and worth flagging: `gh-pages`'s
+  copy of `scripts/versions.mjs` predates the `--check` / `--repair` guard rail
+  that CLAUDE.md tells you to use** — it silently ignores the flag and
+  regenerates, which is the exact failure that guard exists to prevent. It moved
+  eight cabinets in one go, `dropcabal` **backwards** (3 → 2). Reverted whole
+  and only this game's own key touched. Porting `--check` onto the deployed
+  tree is a separate change; it is the site's tooling, not Toko Drop's
+- Cache-bust `?v=189` → `?v=190`; HUD label → v236
+
+---
+
 ## v235 — 2026-09-01
 **The ZONE boost scheme is removed — it was never reachable** *(follow-up to v234)*
 - v224 shipped **two** touch boost schemes on purpose: RIM (push the move
