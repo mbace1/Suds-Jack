@@ -37,6 +37,8 @@ assert.throws(() => strict.go('hang'), /Illegal state transition/, 'impossible s
 
 const heroSource = await readFile(new URL('../js/movement-hero.js', import.meta.url), 'utf8');
 const v3Source = await readFile(new URL('../js/movement-hero-v3.js', import.meta.url), 'utf8');
+const diagSource = await readFile(new URL('../js/movement-diagnostics.js', import.meta.url), 'utf8');
+const indexSource = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 for (const sourceEdge of [
   "this.go('pivot')",
   "this.go('runStart')",
@@ -44,5 +46,9 @@ for (const sourceEdge of [
 ]) ok(heroSource.includes(sourceEdge), `runtime source still contains expected edge: ${sourceEdge}`);
 ok(v3Source.includes('transitionFaults'), 'V3 runtime counts transition faults');
 ok(v3Source.includes('StateMachine'), 'V3 runtime routes transitions through shared StateMachine');
+ok(diagSource.includes("FP-MOVE-7"), 'diagnostics expose the visible movement build id');
+ok(diagSource.includes('transitionFaults'), 'diagnostics read the live transition fault count');
+ok(indexSource.includes('movement-diagnostics.js?v=7'), 'playable index loads movement diagnostics v7');
+ok(indexSource.includes('movement-lab-v3.js?v=7'), 'playable index cache-busts movement lab v7');
 
 console.log(`Flash Prince movement contract: ${checks} checks passed`);
