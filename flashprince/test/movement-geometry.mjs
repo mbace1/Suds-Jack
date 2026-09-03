@@ -44,6 +44,8 @@ class GridWorld {
 const blankInput = () => ({ dir: 0, dirHeld: 0, up: false, down: false, jumpPress: false, buffer: { jump: 0 }, consume() {} });
 const game = { kill() {}, hurt() {} };
 
+// A real one-tile step. The old mantle could rise 16px but stay horizontally
+// beside this tile, which looked like a successful climb until the next frame.
 {
   const world = new GridWorld([
     '          ',
@@ -59,13 +61,15 @@ const game = { kill() {}, hurt() {} };
     '   #      ',
     '##########',
   ]);
-  const hero = new MovementHeroV3(40, 176);
+  const hero = new MovementHeroV3(42, 176);
   equal(hero.canLowMantle(world), true, 'one-tile obstacle is recognized as a low mantle');
-  const startY = hero.y;
+  const startX = hero.x, startY = hero.y;
   hero.beginLowMantle();
   for (let i = 0; i < 22; i++) hero.update(world, blankInput(), game);
   equal(hero.state, 'stand', 'low mantle completes to stand without held direction');
   near(hero.y, startY - 16, 0.01, 'low mantle gains exactly one tile');
+  near(hero.x, startX + 12, 0.01, 'low mantle carries the body onto the upper tile');
+  equal(hero.grounded(world), true, 'low mantle finishes grounded instead of falling beside the step');
   equal(hero.transitionFaults, 0, 'low mantle geometry produces no transition faults');
 }
 
