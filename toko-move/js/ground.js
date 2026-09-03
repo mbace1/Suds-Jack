@@ -29,12 +29,26 @@
 // Which streets a scale is allowed to show. A street map is not one layer; it
 // is a hierarchy, and drawing all 5652 ways at city scale is the same mistake
 // as drawing all 102 trams — every road at once is no road at all.
+// The board, as boardBox() derives it from the twenty-two delivery anchors.
+// Repeated here rather than imported because ground.js must be answerable in
+// bare node with no city pack loaded — and held against the real thing by
+// test/ground.mjs, which does have one.
+export const BOARD_BOX = { s: 60.1443, w: 24.8975, n: 60.2199, e: 24.9860 };
 export const STREET_TIERS = { city: ['major'], route: ['major', 'mid'], stop: ['major', 'mid', 'minor'] };
 
 export async function loadGround(base = './cities/ground/') {
   const get = async name => { try { const r = await fetch(base + name, { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } };
+  // ONE street file, and the file says what it covers. The first cut of this
+  // looked for a full-board pack and fell back to the centre extract, which
+  // meant probing for a file that is not there — a 404 on every single load,
+  // the same noise the superseded water fetch was removed for one version
+  // earlier. The extent is a property of the pack, not of its name: the day
+  // `scripts/streets-import.mjs` writes a full-board pack over this one, the
+  // bounding box inside it changes and `streetsCoverBoard()` and the credit
+  // line follow. Replacing the file IS the change.
   const [water, streets, districts, landmarks] = await Promise.all([
-    get('helsinki-water.json'), get('helsinki-streets-centre.json'), get('helsinki-districts.json'), get('helsinki-landmarks.json')]);
+    get('helsinki-water.json'), get('helsinki-streets.json'),
+    get('helsinki-districts.json'), get('helsinki-landmarks.json')]);
   return new Ground({ water, streets, districts, landmarks });
 }
 
@@ -77,6 +91,13 @@ export class Ground {
     const b = this.streetBox;
     return !!b && lat >= b.s && lat <= b.n && lon >= b.w && lon <= b.e;
   }
+  // Does the street pack reach the whole playable board? The board box is
+  // derived from the delivery anchors, so this is asked of the anchors rather
+  // than of a constant that could drift away from them.
+  streetsCoverBoard(box = BOARD_BOX) {
+    const b = this.streetBox;
+    return !!b && b.s <= box.s && b.n >= box.n && b.w <= box.w && b.e >= box.e;
+  }
   streetsFor(scale) {
     const tiers = STREET_TIERS[scale] || STREET_TIERS.city;
     return tiers.flatMap(t => this.byTier[t] || []);
@@ -100,8 +121,13 @@ export class Ground {
     // The extent is part of the truth, not a footnote: the street pack covers
     // the centre only, so a reader looking at a street-less Eira is told why
     // rather than left to conclude the city has none there.
+    // "centre extract" is a claim about the extent, so it is derived from the
+    // extent rather than baked in: a full-board pack must not describe itself
+    // as a centre extract, and a centre extract must not stop saying so.
     const b = this.streetBox;
-    if (b) out.push(`streets: centre extract ${b.s}–${b.n}N ${b.w}–${b.e}E`);
+    if (b) out.push(this.streetsCoverBoard()
+      ? 'streets: whole board'
+      : `streets: centre extract ${b.s}–${b.n}N ${b.w}–${b.e}E`);
     // The landmarks are the one layer on the board that is NOT source data, so
     // the credit says so in its own words rather than letting the OpenStreetMap
     // line at the front of the string be read as covering them.

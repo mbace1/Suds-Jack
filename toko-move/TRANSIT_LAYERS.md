@@ -32,7 +32,7 @@ authored shape presented as a real one. Three packs live in
 | pack | source | licence | extent |
 |---|---|---|---|
 | `helsinki-water.json` | OpenStreetMap via Overpass | ODbL 1.0 | 60.148–60.218N — the whole board |
-| `helsinki-streets-centre.json` | OpenStreetMap via Overpass | ODbL 1.0 | **60.17–60.20 / 24.93–24.98 only** |
+| `helsinki-streets.json` | OpenStreetMap via Overpass | ODbL 1.0 | **60.17–60.20 / 24.93–24.98 only** |
 | `helsinki-districts.json` | City of Helsinki osa-aluejako 2015 (dhh16 mirror) | open city data | the Era II extent |
 
 All three were produced by the Piritori map work and recovered from `gh-pages`
@@ -43,11 +43,42 @@ survive. Regenerating or extending them means writing the fetch again.
 
 ### Known limits, and what fixes each
 
-- **Streets stop at the centre extract.** Outside it the board keeps its
-  schematic corridors, and the on-screen credit names the extent. The fix is one
-  Overpass query for the full board box on a machine with outbound access — the
-  egress proxy here refuses `overpass-api.de` by policy, so this is not a token
-  problem.
+- **Streets stop at the centre extract**, which is **9.2 km² of a 41.2 km²
+  board — 22%.** Fifteen of the twenty-two delivery anchors and twenty-eight of
+  the forty-one districts stand on ground with no streets under them: Töölö,
+  Kamppi, Senaatintori, Kauppatori, Katajanokka, Eira, Käpylä, Pasila,
+  Jätkäsaari, Länsisatama, Arabianranta, Meilahti and the rest. Outside the
+  extract the board keeps its schematic corridors and the credit names the
+  extent, which is honest but not finished.
+
+  **The tool is now written and committed** — `toko-move/scripts/streets-import.mjs`,
+  replacing the `map/tools/streets-import.mjs` that the pack names in its
+  `generatedBy` and that exists in no branch of this repository. It cannot fetch
+  from here (the egress proxy refuses `overpass-api.de` by organisation policy —
+  a network limit, not a missing token), so the fetch is a documented manual
+  step and everything either side of it is done:
+
+  ```sh
+  node toko-move/scripts/streets-import.mjs --print-query     # the exact query
+  # run it at overpass-turbo.eu, or:
+  #   curl -sG https://overpass-api.de/api/interpreter \
+  #        --data-urlencode "data=$(node toko-move/scripts/streets-import.mjs --print-query)" -o raw.json
+  node toko-move/scripts/streets-import.mjs --in raw.json \
+       --out toko-move/cities/ground/helsinki-streets.json
+  node toko-move/scripts/streets-import.mjs --check toko-move/cities/ground/helsinki-streets.json
+  ```
+
+  `js/ground.js` prefers `helsinki-streets.json` and falls back to the centre
+  extract, so that file appearing IS the change — no code edit, and the credit
+  line stops saying "centre extract" on its own. Expect roughly 2–3 MB and far
+  fewer, longer ways than the extract's 5652: that pack is 82% two-point
+  fragments because its geometry arrived per segment, and `out geom` returns
+  whole ways.
+
+  `--check` is the step worth insisting on. It asks three things: does the pack
+  cover the board, is it tiered, and — the one that matters — does it still
+  contain every named street the committed extract knows? An import that quietly
+  lost Mannerheimintie passes the first two.
 - **The open sea is shaded, not filled.** An OSM coastline is a directed open
   line; closing it puts a lid across the harbour mouth. The water pack's own
   note states the real fix: the assembled water polygons from
