@@ -10,7 +10,7 @@ function clear(api,ax,ay,az,bx,by,bz,pad=.1){
 }
 
 Enemy.prototype.update=function(dt,player,pool,heightAt=()=>0,bound=47,...rest){
-  if(!this.alive || !this.ranged || this.boss)
+  if(!this.alive || !this.t?.ranged || this.boss)
     return oldUpdate.call(this,dt,player,pool,heightAt,bound,...rest);
 
   const api=window._skltrBVH96;
@@ -28,14 +28,11 @@ Enemy.prototype.update=function(dt,player,pool,heightAt=()=>0,bound=47,...rest){
   const losAfter=clear(api,this.x,nowEye,this.z,player.x,targetY,player.z,.12);
 
   if(losAfter){
-    // A newly recovered lane gets a brief readable settle instead of an instant shot.
     if(this._v100Blocked>0.18 && !losBefore)this.cd=Math.max(this.cd||0,.20);
     emitted.forEach(a=>originalSpawn(...a));
     this._v100Blocked=0;
   }else{
     this._v100Blocked=(this._v100Blocked||0)+dt;
-    // Suppress all shots that native behavior attempted while occluded.
-    // Reposition only after cover has clearly interrupted the engagement.
     if(this._v100Blocked>.24){
       if(!this._v100Side)this._v100Side=Math.random()<.5?-1:1;
       const dx=player.x-this.x,dz=player.z-this.z,d=Math.hypot(dx,dz)||1;
@@ -50,7 +47,6 @@ Enemy.prototype.update=function(dt,player,pool,heightAt=()=>0,bound=47,...rest){
         this.x=cx;this.z=cz;
         if(this.g){this.g.position.x=cx;this.g.position.z=cz;}
       }
-      // Don't let one bad side trap a ranged unit forever behind the same mass.
       if(this._v100Blocked>1.15){this._v100Side*=-1;this._v100Blocked=.42;}
     }
   }
