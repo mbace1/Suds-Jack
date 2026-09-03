@@ -9,14 +9,14 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { Ground, STREET_TIERS } from '../js/ground.js';
+import { Ground, STREET_TIERS, BOARD_BOX } from '../js/ground.js';
 import { landmarkPoints, LANDMARK_FORMS } from '../js/landmarks.js';
 import { boardBox } from '../js/board.js';
 import { resolveHslAnchors } from '../js/helsinki-anchors.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = f => JSON.parse(readFileSync(join(here, '../cities/ground/', f), 'utf8'));
-const water = read('helsinki-water.json'), streets = read('helsinki-streets-centre.json'), districts = read('helsinki-districts.json'), landmarks = read('helsinki-landmarks.json');
+const water = read('helsinki-water.json'), streets = read('helsinki-streets.json'), districts = read('helsinki-districts.json'), landmarks = read('helsinki-landmarks.json');
 const ground = new Ground({ water, streets, districts, landmarks });
 const box = boardBox(resolveHslAnchors(JSON.parse(readFileSync(join(here, '../cities/helsinki.json'), 'utf8'))));
 let checks = 0;
@@ -70,6 +70,19 @@ for (const must of ['OpenStreetMap', 'ODbL', 'City of Helsinki', 'centre extract
   ok(ground.hasStreets((b.s + b.n) / 2, (b.w + b.e) / 2), 'the extract covers its own middle');
   ok(!ground.hasStreets(box.s + 0.001, (b.w + b.e) / 2), 'and does NOT cover the south end of the board');
   ok((b.n - b.s) < (box.n - box.s) * 0.6, 'which is why the schematic corridors are still needed outside it');
+  // BOARD_BOX is a copy of what boardBox() derives from the anchors, and a copy
+  // is a thing that drifts. This is the one place both are in the same process.
+  for (const k of ['s', 'n', 'w', 'e'])
+    ok(Math.abs(BOARD_BOX[k] - box[k]) < 0.002, `ground.js's BOARD_BOX.${k} still matches the real board box`);
+  // and the pack we ship does NOT cover the board — the open problem, held as a
+  // fact so the day it is fixed this line is what says so
+  ok(!ground.streetsCoverBoard(box), 'the committed street extract does not cover the board');
+  ok(/centre extract/.test(ground.credit()), 'and the credit line says so rather than claiming the whole board');
+  // a hypothetical full-board pack flips both, with no other change
+  const full = new Ground({ water, districts, landmarks,
+    streets: { ...streets, boundingBox: { s: box.s - .01, n: box.n + .01, w: box.w - .01, e: box.e + .01 } } });
+  ok(full.streetsCoverBoard(box), 'a pack that covers the board reports that it does');
+  ok(/streets: whole board/.test(full.credit()), 'and the credit line stops saying centre extract');
 }
 
 // ---- districts: real names, ordered by how big the quarter is -----------

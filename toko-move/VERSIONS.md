@@ -1,5 +1,21 @@
 # Toko Move — versions
 
+## v2.23 — 2026-09-02
+
+**The street importer, written and gated — everything either side of the fetch.** Measured first, because "the streets only cover the centre" is a shrug until it is a number: the board is **41.2 km²** and the committed extract covers **9.2 km², 22% of it**. Fifteen of the twenty-two delivery anchors and twenty-eight of the forty-one districts stand on ground with no streets under them — Töölö, Kamppi, Senaatintori, Kauppatori, Katajanokka, Eira, Käpylä, Pasila, Jätkäsaari, Länsisatama, Arabianranta, Meilahti.
+
+`toko-move/scripts/streets-import.mjs` replaces the `map/tools/streets-import.mjs` that the pack names in its own `generatedBy` and that **exists in no branch of this repository** — the tool was lost and the data outlived it. It prints the exact Overpass query for the board box plus a margin, turns an `out geom` response into a pack in the schema already in use, and validates one.
+
+It cannot fetch from here and says so rather than pretending: the egress proxy refuses `overpass-api.de` by organisation policy, a network limit rather than a missing token. So the fetch is one documented manual step on a networked machine, and both sides of it are done and tested.
+
+`--check` is the step worth insisting on. Three questions: does the pack cover the board, is it tiered, and — the one that matters — **does it still contain every named street the committed extract knows?** An import that quietly lost Mannerheimintie passes the first two. It counts distinct NAMES rather than ways on purpose, because a real `out geom` import returns whole ways and will have far fewer roads for the same city: the committed extract is **82% two-point fragments**, 5652 ways carrying only 14291 points, because its geometry arrived per segment.
+
+`test/streets-import.mjs` runs the importer **with no network at all**, which is the whole difficulty. The Overpass response is synthesised from the committed extract — every real way turned back into the element it came from — and put through the real parser: 5652 ways of real Helsinki geometry round-trip point for point, junk is skipped rather than mis-tiered, and the coverage check **fails on the pack we ship**, which is correct and is what will announce the fix.
+
+**One street file, and the file says what it covers.** The first cut looked for a full-board pack and fell back to the centre extract, which meant probing for a file that is not there — a 404 on every load, the same noise the superseded water fetch was removed for one version earlier. Extent is a property of a pack, not of its name: `helsinki-streets.json` is the only name, `streetsCoverBoard()` reads its bounding box, and the credit line stops saying "centre extract" on its own. Replacing the file IS the change.
+
+**And four gates that existed were not in CI.** `board`, `camera`, `ground` and the new `streets-import` all ran only when someone remembered to — the same failure the toko-move CI block's own comment warns about, two feet below where they should have been listed.
+
 ## v2.22 — 2026-09-02
 
 **The transfer is priced at the moment you choose it.** The report card was extended first, because the sentence "there is nothing to do while you wait at a transfer" was a guess about a number nobody was keeping. Measured: **transfer waits are 77% of all platform time** — 501 ticks across four transfers against 146 across five first catches, worst single wait 256t — and the correction to the guess is just as useful: **0% of that waiting had nothing on offer.** A walk was there 40% of the time, a second job 18%, both 42%. The problem was never an empty platform.
