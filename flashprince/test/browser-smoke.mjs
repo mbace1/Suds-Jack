@@ -16,6 +16,8 @@ try {
   await page.goto('http://127.0.0.1:4173/flashprince/', { waitUntil: 'networkidle' });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-7');
 
+  // Scene 2 part 1: clear the authored three-tile gap and prove the running
+  // landing on the lower right platform before attempting the raised ledge.
   await page.keyboard.press('Digit2');
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => {
@@ -23,37 +25,40 @@ try {
     return d?.state === 'run' && d.x >= 78;
   }, null, { timeout: 5000 });
   await page.keyboard.press('ArrowUp');
+  await page.waitForFunction(() => {
+    const d = globalThis.__flashPrinceMovement;
+    return d?.visited?.includes('landRun') && d.x >= 148 && d.grounded;
+  }, null, { timeout: 5000 });
 
-  const trace = [];
-  for (let i = 0; i < 45; i++) {
-    const d = await page.evaluate(() => globalThis.__flashPrinceMovement);
-    if (d) trace.push(`${d.state}@${d.x.toFixed(1)},${d.y.toFixed(1)}`);
-    if (d?.visited?.includes('ledgeCatch')) break;
-    await sleep(60);
-  }
-  const caught = await page.evaluate(() => globalThis.__flashPrinceMovement?.visited?.includes('ledgeCatch'));
-  if (!caught) console.log(`TRACE Scene2 ${trace.join(' | ')}`);
-  assert.equal(caught, true, 'running gap must reach ledgeCatch');
-
+  // Scene 2 part 2: continue the run toward the 32px raised platform. Take off
+  // near x=190 so the hands meet the x=224/y=96 lip instead of the wall.
+  await page.waitForFunction(() => {
+    const d = globalThis.__flashPrinceMovement;
+    return d?.state === 'run' && d.x >= 190;
+  }, null, { timeout: 5000 });
+  await page.keyboard.press('ArrowUp');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('ledgeCatch'), null, { timeout: 5000 });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
   await page.keyboard.up('ArrowRight');
   await page.keyboard.press('ArrowUp');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('pullUp'), null, { timeout: 2000 });
   await page.waitForFunction(() => {
     const d = globalThis.__flashPrinceMovement;
-    return d && d.state === 'stand' && d.grounded && d.y <= 128.1;
+    return d && d.state === 'stand' && d.grounded && d.y <= 96.1;
   }, null, { timeout: 5000 });
 
   const ledge = await page.evaluate(() => globalThis.__flashPrinceMovement);
   assert.equal(ledge.faults, 0, 'ledge playthrough must report zero transition faults');
-  assert.ok(ledge.visited.includes('gatherRun'), 'gap playthrough must use the running jump');
-  assert.ok(ledge.visited.includes('ledgeCatch'), 'gap playthrough must enter ledgeCatch');
+  assert.ok(ledge.visited.includes('gatherRun'), 'scene must use running jumps');
+  assert.ok(ledge.visited.includes('landRun'), 'three-tile gap must resolve through running landing');
+  assert.ok(ledge.visited.includes('ledgeCatch'), 'raised platform must enter ledgeCatch');
   assert.ok(ledge.visited.includes('hang'), 'ledgeCatch must settle into hang');
   assert.ok(ledge.visited.includes('pullUp'), 'hang must transition through pullUp');
   assert.equal(ledge.grounded, true, 'pull-up must finish grounded');
-  assert.ok(ledge.x >= 144, `pull-up must carry the hero onto the far platform, got x=${ledge.x}`);
-  assert.ok(ledge.y <= 128.1, `pull-up must finish at the far lip height, got y=${ledge.y}`);
+  assert.ok(ledge.x >= 224, `pull-up must carry the hero onto the raised platform, got x=${ledge.x}`);
+  assert.ok(ledge.y <= 96.1, `pull-up must finish at the raised lip height, got y=${ledge.y}`);
 
+  // Scene 4 regression remains part of every browser movement pass.
   await page.keyboard.press('Digit4');
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'lowMantle', null, { timeout: 7000 });
@@ -69,7 +74,7 @@ try {
   assert.ok(mantle.y <= 160.1, `hero must finish on the upper tile, got y=${mantle.y}`);
   assert.equal(errors.length, 0, `browser console/page errors: ${errors.join(' | ')}`);
 
-  console.log(`PASS Flash Prince ledge: x=${ledge.x.toFixed(1)} y=${ledge.y.toFixed(1)}; mantle: x=${mantle.x.toFixed(1)} y=${mantle.y.toFixed(1)}`);
+  console.log(`PASS Flash Prince gap+ledge: x=${ledge.x.toFixed(1)} y=${ledge.y.toFixed(1)}; mantle: x=${mantle.x.toFixed(1)} y=${mantle.y.toFixed(1)}`);
   await browser.close();
 } finally {
   server.kill('SIGTERM');
