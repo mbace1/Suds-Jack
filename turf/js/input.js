@@ -4,15 +4,25 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=13';
+import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=14';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
-  canUnitAct, endPlayerTurn, getUnit,
-} from './combat.js?v=10';
+  canUnitAct, endPlayerTurn, getUnit, useAbility,
+} from './combat.js?v=11';
+import { abilityTargets, findAbility } from './abilities.js?v=1';
 import { key } from './grid.js?v=2';
 import { watchPad } from '../../hub/pad.js?v=9';
 
-export function createInputHandler({ canvas, getState, getLayout, onChange }) {
+export function createInputHandler({
+  canvas, getState, getLayout, onChange, consumedDrag, clearDrag, getAbilities,
+}) {
+  // The ability the player has armed but not yet aimed. While this is set the
+  // board is in a different mode: taps resolve the ability instead of moving
+  // or attacking, and state.abilityTiles carries what render.js should light
+  // up. Deliberately a single id and not a stack — an armed action the player
+  // has forgotten about would fire on their next tap, which in a game about
+  // committed decisions is the worst possible surprise.
+  let armed = null;
   // The keyboard/gamepad cursor: a grid tile, live only once one of those
   // two has actually been used (mouse/touch clears it right back off —
   // gameoflife's :focus-visible rule, applied to a canvas instead of the
@@ -22,8 +32,47 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
 
   function refreshSelectionOverlay(state) {
     const sel = state.selected ? getUnit(state, state.selected) : null;
-    state.moveTiles = sel ? movableTiles(state, sel) : new Map();
-    state.attackTiles = sel ? attackableTargets(state, sel) : [];
+    if (!sel) armed = null;
+    state.moveTiles = sel && !armed ? movableTiles(state, sel) : new Map();
+    state.attackTiles = sel && !armed ? attackableTargets(state, sel) : [];
+    state.abilityTiles = armed && sel
+      ? abilityTargets(state, sel, findAbility(getAbilities(), armed)) : null;
+    state.armedAbility = armed;
+  }
+
+  // Arming is a toggle: pressing the same button again puts the board back
+  // to ordinary move/attack rather than leaving the player to hunt for a way
+  // out of a mode they entered by accident.
+  function armAbility(id) {
+    const state = getState();
+    if (state.turn !== 'player' || state.result || !state.selected) return;
+    armed = armed === id ? null : id;
+    refreshSelectionOverlay(state);
+    onChange();
+  }
+  function disarm() {
+    if (!armed) return;
+    armed = null;
+    refreshSelectionOverlay(getState());
+  }
+
+  // Resolving an armed ability. Returns true when the tap was consumed —
+  // including when it MISSED every legal target, because in that case the
+  // right behaviour is to disarm rather than silently fall through to a move
+  // order the player did not intend.
+  function resolveArmed(state, hit, x, y) {
+    const sel = getUnit(state, state.selected);
+    const ability = findAbility(getAbilities(), armed);
+    if (!sel || !ability) { armed = null; return false; }
+    const legal = state.abilityTiles || [];
+    let target = null;
+    if (ability.shape === 'self') target = legal[0] || null;
+    else if (ability.shape === 'adjacent-all') target = legal[0] || null;
+    else if (ability.shape === 'empty-tile') target = legal.find(t => t.x === x && t.y === y) || null;
+    else target = hit && legal.find(t => t.uid === hit.uid) ? hit.uid : null;
+    if (target != null) useAbility(state, sel.uid, armed, target, getAbilities());
+    armed = null;
+    return true;
   }
 
   function syncCursorField(state) {
@@ -68,6 +117,14 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
     if (state.turn !== 'player' || state.result) return;
     if (!hit && (x < 0 || y < 0 || x >= state.grid.cols || y >= state.grid.rows)) return;
 
+    if (armed && state.selected) {
+      if (resolveArmed(state, hit, x, y)) {
+        refreshSelectionOverlay(state);
+        onChange();
+        return;
+      }
+    }
+
     if (state.selected) {
       const sel = getUnit(state, state.selected);
       if (hit && hit.uid === sel.uid) {
@@ -104,13 +161,24 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
   // Touch owns touchend exclusively (pointerup skips pointerType 'touch') so
   // a normal tap — which fires both, pointerup first — is never handled
   // twice.
+  // A gesture that panned the camera is not a tap. camera.js recognises the
+  // drag in the capture phase and answers here; without this check, dragging
+  // the board at phone zoom would also order a move to wherever the thumb
+  // stopped — the drag and the order share one pointerup.
+  function droppedByPan() {
+    if (!consumedDrag || !consumedDrag()) return false;
+    clearDrag && clearDrag();
+    return true;
+  }
   function onPointerUp(evt) {
     if (evt.pointerType === 'touch') return;
+    if (droppedByPan()) return;
     evt.preventDefault();
     const { px, py } = clientToInternal(evt.clientX, evt.clientY);
     fromScreenPoint(px, py);
   }
   function onTouchEnd(evt) {
+    if (droppedByPan()) return;
     evt.preventDefault();
     const t = evt.changedTouches[0];
     if (!t) return;
@@ -179,6 +247,14 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
   function cancelSelection(activateCursor = true) {
     const state = getState();
     if (state.turn !== 'player' || state.result) return;
+    // One press backs out of the ability; a second clears the selection. Two
+    // meanings on one button, in the order the player wants them.
+    if (armed) {
+      armed = null;
+      refreshSelectionOverlay(state);
+      onChange();
+      return;
+    }
     if (activateCursor) {
       cursorActive = true;
       if (!cursor) cursor = defaultCursorTile(state);
@@ -226,6 +302,9 @@ export function createInputHandler({ canvas, getState, getLayout, onChange }) {
 
   return {
     selectByUid,
+    armAbility,
+    disarm,
+    armedAbility: () => armed,
     endTurn,
     cancelSelection,
     refreshSelectionOverlay,

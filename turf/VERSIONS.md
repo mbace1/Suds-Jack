@@ -8,6 +8,107 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v25 — 2026-09-03
+**Owner, on the v24 build: "zoom in a bit on mobile, things are hard to see
+now. there are no actions at all, fighters just bump into each other and I
+can't see who is going where. we might want an auto-battler switch."** Four
+complaints; the first two were blocking any judgement of the rest.
+
+**THE BOARD MAY BE BIGGER THAN THE SCREEN NOW.** `js/camera.js`. Fitting the
+whole board and making it legible are different requests, and on a phone they
+disagree: an 11-tile grid in portrait fits at ~1.0-1.3x, which delivers a 32px
+tile as a 32px tile. The fit is a FLOOR now (`MIN_TILE_W` 46), the board
+overflows, and the camera gives it somewhere to look — drag to pan, plus a
+follow that centres the selected operator and the acting enemy. **No second
+rAF**: `anim.js` owns the only loop in this game, so the follow is a CSS
+transition and a camera sitting still costs nothing. A drag is never also an
+order — camera.js recognises it in the capture phase and `input.js` swallows
+that pointerup.
+
+**Filling the leftover height was tried and rejected ON THE SCREENSHOT.** An
+isometric 11x9 board is wide and short (320x222) and a phone is tall and
+narrow, so zooming until the height is full crops nearly half the width — and
+a game whose contract is that you can see every enemy's plan cannot show you
+half the enemies. The vertical letterbox is geometry, not waste. What WAS
+waste: `computeLayout` reserved three tiles of bottom margin, invisible while
+the board always fitted, a band of dead screen once it could be scaled up.
+
+**A real bug found by measuring rather than assuming.** The board was scaled
+for a viewport that no longer existed — 644px of board in a 620px stage —
+because the bottom bar grows a row when a selected operator carries momentum,
+and shrinking `#stage` fires no window resize event. A `ResizeObserver` on the
+element is the only thing that catches it.
+
+**"I can't see who is going where."** The enemy phase has TWO beats per enemy
+now instead of one: LOOK (name it, spotlight it, point the camera at it, hold
+340ms) then ACT. Resolving both in one frame is exactly why it read as
+bumping — the unit that moved and the unit that hit you were only ever seen
+after the fact, in their new positions, with nothing tying either to a name.
+Plus `drawIntentPath`: a dashed line with an arrowhead from each enemy's own
+feet to where it is going. A diamond on a destination tile says WHERE; with
+four enemies telegraphing at once it does not say WHO.
+
+**"There are no actions at all."** True, and it was the compromise v24 made
+knowingly: momentum bought a flat +1 damage because there was nothing else to
+spend it on. `data/abilities.json` + `js/abilities.js` close the loop —
+**you move to afford the thing you then do**, which is the Metal Slug Tactics
+engine this game keeps citing. Six, by role, so the 14-strong cast is covered
+without hand-authoring 28:
+
+- **Cleave** (melee, 2) — weapon damage to every adjacent rival.
+- **Takedown** (melee, 3) — +3 and a two-tile shove. The full-move finisher.
+- **Snap Shot** (ranged, 2) — two shots, each -15%.
+- **Overwatch** (ranged, 2) — hold fire; the first rival to move into range
+  during their turn takes a shot. **The only reaction in the game**, and the
+  answer to a board where crossing open ground was free.
+- **Shove** (control, 1) — 1 damage, 3 tiles, never misses. Pure positioning.
+- **Barricade** (control, 2) — low cover on an empty tile beside you.
+
+An ability IS your action, never an extra one, and it charges its own cost
+rather than emptying the pool. `resolveAttack` grew an options argument so an
+ability bends one attack instead of this codebase growing a second damage
+pipeline — the third-copy bug the hazard work already paid for once.
+
+**Enemies deliberately have no kit.** Their variety is `behaviour` (ai.js),
+expressed entirely through where they choose to stand, which the telegraph can
+draw. A kit would have to telegraph "and then it will Cleave", and six of
+those on one board is a wall of text, not full information. Same reasoning as
+v24's sync cut.
+
+**Two bugs the gate caught that a playtest would have missed.** Enemies got
+the whole player kit, because `role` is shared and `abilitiesFor` matched on
+it alone. And Snap Shot's `-0.15` was read as an ABSOLUTE hit chance rather
+than a modifier, turning a 70% ability into a 5% one — `accuracy` (replaces)
+and `accuracyMod` (shifts) are separate fields now for exactly that reason.
+
+**The auto-battler** (`js/autoplay.js`, the AUTO switch). Not a new bot: it is
+the tactical bot from v24's experiment, the one that scored cover and exposure,
+won 92% against the naive bot's 57%, and proved the first negative momentum
+result was the heuristic's fault rather than the design's. The strongest
+measured player-side behaviour is the only honest thing to put behind that
+switch. It plays through the same command functions a tap calls, one operator
+per tick at a watchable pace, so what you are seeing is the real game.
+Measured over 300 runs: **91% wins, 1344 abilities used** (snapshot 833,
+takedown 225, overwatch 155, shove 117, cleave 14).
+
+**Honest limit: the bot never uses Barricade** — it has no rule for it. That is
+a gap in the bot, not evidence about the ability, and it does mean nothing has
+yet measured whether Barricade earns its cost. Recorded in `MST_PARITY.md` §3
+rather than quietly left out.
+
+**`MST_PARITY.md`** is new: what parity does and does not mean, what v24-v25
+closed, and the ordered rest — including the sequencing trap, that a branching
+run map before more objective types is a menu in front of the same fight.
+
+- `test/smoke.mjs` is 78 checks (was 68): a kit per role and none for the
+  enemies, the momentum price, that a refused ability neither half-happens nor
+  eats the turn, cleave's one-cost-many-hits, that no second barrel is fired
+  into a body, shove's flat damage, and that overwatch fires once and never
+  survives its phase.
+- `test/balance.mjs` unchanged and green: 53 / 67 / 65 / 17 / 68.
+- Tokens: `combat` v11, `input` v10, `render` v14, `palette` v5, `main` v17,
+  `camera` / `abilities` / `autoplay` v1 (new).
+
 ## v24 — 2026-09-02
 **The movement economy.** Through v23 there was no reason to move once a
 unit was in range: moving cost nothing and bought nothing, so standing
