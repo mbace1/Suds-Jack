@@ -33,16 +33,17 @@ export const STREET_TIERS = { city: ['major'], route: ['major', 'mid'], stop: ['
 
 export async function loadGround(base = './cities/ground/') {
   const get = async name => { try { const r = await fetch(base + name, { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } };
-  const [water, streets, districts] = await Promise.all([
-    get('helsinki-water.json'), get('helsinki-streets-centre.json'), get('helsinki-districts.json')]);
-  return new Ground({ water, streets, districts });
+  const [water, streets, districts, landmarks] = await Promise.all([
+    get('helsinki-water.json'), get('helsinki-streets-centre.json'), get('helsinki-districts.json'), get('helsinki-landmarks.json')]);
+  return new Ground({ water, streets, districts, landmarks });
 }
 
 export class Ground {
-  constructor({ water, streets, districts }) {
+  constructor({ water, streets, districts, landmarks }) {
     this.water = water || null;
     this.streets = streets || null;
     this.districts = districts || null;
+    this.landmarks = landmarks || null;
     // Streets pre-bucketed by tier once, at load. The draw loop asks sixty times
     // a second and a filter per frame over 5652 ways is a filter per frame too
     // many.
@@ -101,6 +102,10 @@ export class Ground {
     // rather than left to conclude the city has none there.
     const b = this.streetBox;
     if (b) out.push(`streets: centre extract ${b.s}–${b.n}N ${b.w}–${b.e}E`);
+    // The landmarks are the one layer on the board that is NOT source data, so
+    // the credit says so in its own words rather than letting the OpenStreetMap
+    // line at the front of the string be read as covering them.
+    if (this.landmarks?.landmarks?.length) out.push('landmarks: map symbols, placed by hand');
     return [...new Set(out)].join(' · ');
   }
 }

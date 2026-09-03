@@ -17,31 +17,50 @@ Only **approved** coverage counts as progress. Generated candidates do not.
 
 Near-duplicate frames have zero animation value. A visually strong frame with the wrong mechanical job is rejected.
 
-## Current build — v0.5
+## Current build — v0.6
 
-Open `index.html` through GitHub Pages or any local HTTP server.
+v0.6 adds an external image-processing layer around the calibrated TURF validators without replacing them.
 
-Current functionality:
+- `normalize.mjs` uses Sharp to normalize candidate frames to the production plate, keep the feet/south anchor stable, and apply the correct artifact profile.
+- `diagnostic-diff.mjs` uses Pixelmatch to produce a visual diff PNG + JSON changed-pixel report. This is diagnostic only; it never decides whether motion is valid.
+- `aseprite-export.mjs` is an optional Aseprite CLI adapter for approved animation assembly/export. Without `--run` it only prints the exact export packet, so Aseprite is not a hard runtime dependency.
+- `validator-bridge.mjs` keeps action-aware validation regions: Move → lower body; Idle/Melee/Ranged → upper body; reactions → full body.
+- The existing `../tools/spritekit/` validators remain the mechanical source of truth for facing, silhouette, phase opposition, drift, origin and motion quality.
 
-- 28-character roster manifest with stable IDs where confidence is sufficient
-- source-reference links to the four owner casting/run-cycle images already in `turf/references/`
-- explicit front/rear isometric directions
-- target frame budgets and canonical phases per action
-- frame-level candidate store with provenance and validation fields
-- candidate gallery and approved-only animation preview
-- approved-frame progress model; raw generation count does not inflate progress
-- mechanical failure display for mirror, region-similarity and drift results
-- motion-ledger schema for foundational locomotion
-- clean render-packet builder for isolated one-frame generation
-- repository-side progress report
+Install the local toolchain from this folder:
 
-The three final provisional roster slots remain visibly marked `needs-id`; the app does not pretend their labels are authoritative.
+```sh
+npm install
+```
+
+Normalize a pre-key plate:
+
+```sh
+node normalize.mjs --input raw.png --output normalized.png --profile prekey_magenta_plate
+```
+
+Normalize a cut frame with binary alpha:
+
+```sh
+node normalize.mjs --input cut.png --output normalized-cut.png --profile cut_binary_alpha
+```
+
+Create a diagnostic diff:
+
+```sh
+node diagnostic-diff.mjs --a F1.png --b F7.png --out F1-F7-diff.png
+```
+
+Prepare or run an Aseprite export:
+
+```sh
+node aseprite-export.mjs --input move.aseprite --sheet move.png --data move.json --tag move
+node aseprite-export.mjs --input move.aseprite --sheet move.png --data move.json --tag move --run
+```
 
 ## Mechanical validation
 
-The Sprite Factory now consumes the measured spritekit validator model rather than treating exact-pixel equality as a meaningful animation gate.
-
-`../tools/spritekit/phase.cjs` checks normalized silhouette similarity, region-specific IoU and mirror similarity. Locomotion is scored primarily in the lower body; idle and upper-body actions must use an upper-body or full-body region instead of incorrectly treating still feet as a duplicate failure.
+`../tools/spritekit/phase.cjs` checks normalized silhouette similarity, region-specific IoU and mirror similarity. Locomotion is scored primarily in the lower body; idle and upper-body actions use an upper-body or full-body region instead of incorrectly treating still feet as a duplicate failure.
 
 `../tools/spritekit/drift.cjs` checks ground-line/origin stability, scale drift and locomotion body-height rhythm. These are objective mechanical gates, not art-direction scores.
 
@@ -62,8 +81,6 @@ The packet also carries the canonical phase from `manifest.json`, validates inte
 
 ## Tests
 
-Run:
-
 ```sh
 node --test turf/sprite-factory/test.mjs
 ```
@@ -71,8 +88,6 @@ node --test turf/sprite-factory/test.mjs
 Unit coverage includes opposite-pair mapping, same-facing paired selection, strict adjacent-frame behavior, phase lookup, frame validation, newest-approved revision selection, frame coverage and project progress accounting.
 
 ## Progress report
-
-Run:
 
 ```sh
 node turf/sprite-factory/progress-report.mjs
@@ -91,9 +106,9 @@ Do not undo the current illustration-fidelity findings in `turf/art-src/sprites/
 
 ## Next build
 
-1. Write actual spritekit validator output back into candidate records automatically.
-2. Add approve/revise/reject controls that persist review decisions instead of display-only status.
-3. Add idle-specific upper-body validation fixtures and thresholds.
+1. Write spritekit validator output back into candidate records automatically.
+2. Add approve/revise/reject controls that persist review decisions.
+3. Add idle-specific upper-body fixtures and calibrated thresholds.
 4. Attach motion-ledger records to actual Move candidates.
 5. Add adjustable-FPS approved animation playback.
 6. Integrate generator job packets with the existing generation path.

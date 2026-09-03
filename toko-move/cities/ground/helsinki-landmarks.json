@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "helsinki-landmarks-v1",
+  "title": "Landmark map symbols, anchored to real HSL stops",
+  "source": {
+    "dataset": "Authored map symbols. NOT survey data and NOT OpenStreetMap geometry.",
+    "method": "Each landmark is placed as an offset IN METRES from a stop in cities/helsinki.json. The stop coordinate is real source data (HSL GTFS, CC BY 4.0); the offset is authored, and is the only invented number in this file.",
+    "isNot": "These are not building footprints. Nothing here is traced, measured or fetched. A landmark marks a place that exists at roughly the right spot — accurate to about a block — the way a symbol on a paper map does. Do not present it as geometry, do not derive distances from it, and do not credit OpenStreetMap for it.",
+    "replaceWith": "OSM building ways for each of these, fetched on a machine with outbound access, would make the positions real. The schema would not have to change: an `at` pair could replace `anchor`+`offset` per entry.",
+    "attribution": "Landmark positions authored for Toko Move; stop coordinates © Helsingin seudun liikenne (HSL), CC BY 4.0"
+  },
+  "coordinateSystem": "offset metres {n, e} from the named anchor",
+  "landmarks": [
+    { "id": "tuomiokirkko", "name": "Tuomiokirkko", "kind": "domedChurch", "anchor": "senaatintori", "offset": { "n": 95, "e": 0 }, "metres": 60, "pale": true,
+      "note": "the white church — the owner's example, and the lightest thing on the board" },
+    { "id": "uspenski", "name": "Uspenski", "kind": "onionChurch", "anchor": "kauppatori", "offset": { "n": 70, "e": 280 }, "metres": 45 },
+    { "id": "kallionkirkko", "name": "Kallion kirkko", "kind": "towerChurch", "anchor": "kallionkirkko", "offset": { "n": 55, "e": -200 }, "metres": 50 },
+    { "id": "paarautatieasema", "name": "Päärautatieasema", "kind": "clockTower", "anchor": "rautatientori", "offset": { "n": 25, "e": 15 }, "metres": 55 },
+    { "id": "ooppera", "name": "Ooppera", "kind": "hall", "anchor": "ooppera", "offset": { "n": 0, "e": 0 }, "metres": 60 },
+    { "id": "lansiterminaali", "name": "Länsiterminaali", "kind": "terminal", "anchor": "lansiterminaali", "offset": { "n": 0, "e": 0 }, "metres": 70 }
+  ]
+}
