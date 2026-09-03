@@ -85,3 +85,40 @@ against a 46.8% reference — all three correct pictures. The number is only
 meaningful on an asset with real solid surfaces. And it measures the LOOK, never
 whether the object is any good: a well-lit bin with the right numbers can still
 be the wrong bin.
+
+
+## Installed in the game, 2026-09
+
+The board loads props from `art-src/sprites/props/<art>.png` (`js/render.js`
+`drawProp`), which already held the eight from the owner's reference sheet —
+barrier, bench, bikerack, bin, bollard, crate, noticeboard, statue. All sixteen
+new ones are copied in beside them and added to the two pools by cover class:
+
+```
+FULL_PROPS      4 -> 11    blocks line of sight
+PARTIAL_PROPS   4 -> 12    half cover
+excluded        lamp       cover: none, dressing rather than cover
+```
+
+`_in-game.png` is the board with them in.
+
+**And appending to the pool did nothing until the tie-break was fixed.**
+`assignPropArt` picks whichever prop is least used among tiles within Manhattan
+distance 4, which is the right idea, but it broke ties by ARRAY ORDER. Every
+count starts at zero, so the first tile always took `pool[0]` and later ties
+kept falling to the lowest index. With a four-prop pool that is invisible. With
+eleven it meant the eight new props were installed, loaded, and **never drawn**
+— a six-tile encounter never reached past the original four.
+
+Every test was green. It was found by taking a screenshot and looking at it,
+which is the second time this session that has been the thing that caught a
+defect the suite could not. Ties are now broken by a hash of the tile's own
+coordinates, among candidates that are already equally least-used — so the
+greedy spread still holds even where the hash is poor, which matters, because a
+plain coordinate hash collapsing onto one residue is what the original note in
+`render.js` was written about.
+
+One honest note on the look: the IBC tank is the palest thing on a very dark
+board and reads as a bright block at game scale. `styleref.cjs` flagged it as
+"too pale" and dismissing that as a material confound was half right — it IS
+the material, and it still stands out.

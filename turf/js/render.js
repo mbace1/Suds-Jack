@@ -244,8 +244,16 @@ function drawHighlights(g, layout, state) {
 // prop three times over ("the examples look ok, but have too many of the
 // same objects"). Picked deterministically off the tile's own coordinates
 // — same map every render, no per-frame flicker.
-const FULL_PROPS = ['crate', 'statue', 'bikerack', 'noticeboard'];
-const PARTIAL_PROPS = ['barrier', 'bollard', 'bin', 'bench'];
+// Widened 4/4 -> 11/12 (2026-09), which is what the note above was asking for:
+// the greedy assignment can only spread as far as the pool lets it, so with
+// four options a six-tile encounter still had to repeat. Cover class per prop
+// is declared in art-src/props/props.json — 'full' blocks line of sight,
+// 'low' is half cover, and 'none' (the street lamp) is dressing that belongs
+// in neither pool.
+const FULL_PROPS = ['crate', 'statue', 'bikerack', 'noticeboard',
+                    'dumpster', 'cabinet', 'skip', 'cylinders', 'pipes', 'tank', 'carwreck'];
+const PARTIAL_PROPS = ['barrier', 'bollard', 'bin', 'bench',
+                       'hydrant', 'tyres', 'brazier', 'trolley', 'fence', 'sandbags', 'blocks', 'generator'];
 // A (gx*7+gy*13)%pool.length hash was the first pass here — looked fine on
 // the two or three tiles checked by eye, but backlot's real cover list
 // hashes FIVE of its six full-cover tiles onto the same index ('crate',
@@ -268,8 +276,22 @@ function assignPropArt(tiles, pool) {
         nearbyCounts[pool.indexOf(chosen[i])]++;
       }
     }
-    let best = 0;
-    for (let i = 1; i < pool.length; i++) if (nearbyCounts[i] < nearbyCounts[best]) best = i;
+    // Ties broken by a hash of the TILE, not by array order. Array order was
+    // the original tie-break and it silently wasted the pool: every count
+    // starts at zero, so the first tile always took pool[0] and later ties kept
+    // falling to the lowest index. With a four-prop pool that was invisible.
+    // With eleven it meant the eight props appended in 2026-09 were installed,
+    // loaded, and NEVER DRAWN — a six-tile encounter never reached past the
+    // original four. Found in a screenshot; every test was green.
+    //
+    // The hash only picks among candidates that are ALREADY equally least-used
+    // nearby, so the greedy spread still holds even where the hash is poor —
+    // which matters, because a plain (gx*7+gy*13) hash is what collapsed onto
+    // one residue for backlot and started this whole note.
+    const lowest = Math.min(...nearbyCounts);
+    const candidates = [];
+    for (let i = 0; i < pool.length; i++) if (nearbyCounts[i] === lowest) candidates.push(i);
+    const best = candidates[((t.x * 31 + t.y * 17) % candidates.length + candidates.length) % candidates.length];
     chosen.push(pool[best]);
   }
   return chosen;
