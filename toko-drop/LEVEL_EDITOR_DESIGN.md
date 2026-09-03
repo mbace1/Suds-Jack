@@ -296,14 +296,9 @@ risks building on numbers that move.
 
 Each phase ends somewhere shippable, and nothing proceeds on a red gate.
 
-**P0 — the rectangle becomes an SDF, and nothing changes.**
-Introduce `Arena`, express the current presets as SDFs, migrate the ~31
-containment sites and ~31 placement sites. No new shapes, no editor, no visible
-difference.
-*Gate:* seeded spawn schedules byte-identical to v235 across several seeds ×
-modes × waves (the v217 method), plus `smoke.sh` + `cabinets.sh` +
-`webgpu-smoke.sh` green. **If the rectangle can't survive being reimplemented,
-stop here** — that's the whole risk of §2.1 surfacing early and cheaply.
+**P0 — the rectangle becomes an SDF, and nothing changes. ✅ SHIPPED (v236).**
+`toko-drop/js/arena.js` + `scripts/arena-check.mjs`. What actually happened,
+including where this scope was wrong, is §8.
 
 **P1 — static custom shapes, no editor.**
 Hand-written JSON, a loader, floor rendering on both paths, and one authored
@@ -323,3 +318,73 @@ has a reachable standing spot, checked headlessly across its duration.
 P0 is the honest test of whether this is a two-week feature or a two-month one,
 and it's useful on its own even if the editor is never built: an `Arena` object
 is a better foundation than 88 references to `HALF_X`.
+
+---
+
+## 8. P0, as built (v236)
+
+Written after the fact, because a scope that is never checked against what got
+built is just a guess with a date on it.
+
+**What shipped.** `toko-drop/js/arena.js`: a pure module (no three.js, no DOM,
+no imports) holding `sdf` / `contains` / `clamp` / `ringPoint` / `insetPoint` /
+`rayEdge` / `randomPoint` / `update`, plus `rectShape`, `circleShape`,
+`unionShape` and `intersectShape`. Only the rectangle is wired up. The gate is
+`scripts/arena-check.mjs` — 8,396 bare-node checks comparing every method
+against the literal expression the call site used to inline, at all six shipped
+arena sizes, with `Object.is` rather than a tolerance.
+
+**§2.1's counts were wrong, and wrong in a useful way.** The estimate was ~31
+containment and ~31 placement sites. The real number of sites that had to move
+is about **twenty**. The rest of the 88 `HALF_X` references are not boundary
+questions at all — they are `HALF_X * 0.32` set dressing, the floor plane, the
+camera fit, `worldToUV`. Those are asking how BIG the room is, which stays a
+fair question for a shape of any kind, so `HALF_X` / `HALF_Z` survive as the
+region's bounding box. **Splitting "the boundary" from "the size" is the single
+thing that made P0 a day instead of a fortnight**, and it is the finding to
+carry into P1.
+
+**Three sites were deliberately not migrated**, and naming them is cheaper than
+letting the next session rediscover them:
+
+- `smashDoorPos`'s literal cardinal table. `ringPoint(π/2, 1)` answers
+  `6.7e-16`, not `0`. The literal is exact; the general form is not.
+- The cube **flop** reflection, which is per-axis (`if |nx| > bx flip x`). An
+  SDF has no notion of an axis. P1 needs a gradient-reflect helper — bounce off
+  the surface normal — before that one can move.
+- The decoration drift bounce, for the same reason.
+
+**One primitive was missing from §2.2's sketch and had to be invented:
+`rayEdge`.** TORO's dash telegraph asks "how far along this heading until I hit
+a wall", which is neither a clamp nor a placement. It was an inlined slab test.
+It is closed-form on a box and a sphere-trace otherwise, so the telegraph will
+still draw the true distance in a room with a curved wall. Any future *dash,
+charge, or beam* wants the same call.
+
+**Two determinism rules had to be written down**, because they are invisible
+until a level uses a shape and then everything desynchronises at once:
+
+1. `randomPoint` draws from the rng **exactly twice, x then z, for every
+   shape**. Rejection sampling is banned outright — a variable draw count
+   desynchronises every seeded schedule. Non-rectangular shapes take the AABB
+   sample and *clamp* it inside instead.
+2. Nothing in the module reads `Math.random()` or a clock. `update(t)` takes
+   its time as an argument.
+
+**Being right and being identical are different goals.** P0's job was the
+second, so the rectangle's `clamp` reproduces `Math.max(-h, Math.min(h, v))`
+including its behaviour when `h < 0`, and `ringPoint` stays the old
+`cos·halfX·edge` formula — which on a box is an inscribed **ellipse**, not the
+boundary. Both are odd. Both are what the game has always done. Fixing them
+belongs in a release that says it is fixing them.
+
+**The gates earned their keep twice.** `smoke.sh` runs its own enemy harness and
+caught the `Enemy.update()` signature change on the first run rather than in a
+browser. And `arena-check.mjs` was falsified before being trusted: a
+wrong-axis clamp fails 1,032 of its checks, and adding `1e-12` to one ring
+coordinate fails 1,536.
+
+**What P0 says about the rest of the estimate.** The rectangle survived being
+reimplemented, which was the stated stop-condition, so §2.1 is no longer the
+risk. The remaining risk is entirely §2.3 — **drawing** the shape, twice, in
+GLSL and TSL — and §2.4, which is still a decision nobody has made.
