@@ -1,0 +1,27 @@
+name: Flash Prince movement regression
+
+on:
+  pull_request:
+    paths:
+      - 'flashprince/**'
+      - 'game-core/state-machine.js'
+      - '.github/workflows/flashprince-pr.yml'
+  push:
+    branches:
+      - feature/flashprince-movement-foundation
+    paths:
+      - 'flashprince/**'
+      - 'game-core/state-machine.js'
+      - '.github/workflows/flashprince-pr.yml'
+
+jobs:
+  movement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Flash Prince regression suite
+        run: npm --prefix flashprince test
