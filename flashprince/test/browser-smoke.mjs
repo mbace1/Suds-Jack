@@ -16,24 +16,49 @@ try {
   await page.goto('http://127.0.0.1:4173/flashprince/', { waitUntil: 'networkidle' });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-7');
 
-  // Scene 4 is the authored low-mantle / climb-down lab.
+  // Scene 2: enter a real run, take the authored three-tile gap, catch the far
+  // ledge while still holding toward it, then pull up onto the x=144/y=128 lip.
+  await page.keyboard.press('Digit2');
+  await page.keyboard.down('ArrowRight');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'run', null, { timeout: 5000 });
+  await page.keyboard.press('ArrowUp');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('ledgeCatch'), null, { timeout: 5000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
+  await page.keyboard.up('ArrowRight');
+  await page.keyboard.press('ArrowUp');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('pullUp'), null, { timeout: 2000 });
+  await page.waitForFunction(() => {
+    const d = globalThis.__flashPrinceMovement;
+    return d && d.state === 'stand' && d.grounded && d.y <= 128.1;
+  }, null, { timeout: 5000 });
+
+  const ledge = await page.evaluate(() => globalThis.__flashPrinceMovement);
+  assert.equal(ledge.faults, 0, 'ledge playthrough must report zero transition faults');
+  assert.ok(ledge.visited.includes('gatherRun'), 'gap playthrough must use the running jump');
+  assert.ok(ledge.visited.includes('ledgeCatch'), 'gap playthrough must enter ledgeCatch');
+  assert.ok(ledge.visited.includes('hang'), 'ledgeCatch must settle into hang');
+  assert.ok(ledge.visited.includes('pullUp'), 'hang must transition through pullUp');
+  assert.equal(ledge.grounded, true, 'pull-up must finish grounded');
+  assert.ok(ledge.x >= 144, `pull-up must carry the hero onto the far platform, got x=${ledge.x}`);
+  assert.ok(ledge.y <= 128.1, `pull-up must finish at the far lip height, got y=${ledge.y}`);
+
+  // Scene 4 regression: keep the low-mantle path green while the ledge pass evolves.
   await page.keyboard.press('Digit4');
   await page.keyboard.down('ArrowRight');
-  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('lowMantle'), null, { timeout: 7000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'lowMantle', null, { timeout: 7000 });
   await page.keyboard.up('ArrowRight');
   await page.waitForFunction(() => {
     const d = globalThis.__flashPrinceMovement;
     return d && d.state !== 'lowMantle' && d.grounded;
   }, null, { timeout: 5000 });
 
-  const d = await page.evaluate(() => globalThis.__flashPrinceMovement);
-  assert.equal(d.faults, 0, 'runtime transition validator must report zero faults');
-  assert.ok(d.visited.includes('lowMantle'), 'playthrough must actually enter lowMantle');
-  assert.equal(d.grounded, true, 'hero must finish grounded after mantle');
-  assert.ok(d.y <= 160.1, `hero must finish on the upper tile, got y=${d.y}`);
+  const mantle = await page.evaluate(() => globalThis.__flashPrinceMovement);
+  assert.equal(mantle.faults, 0, 'runtime transition validator must report zero faults');
+  assert.equal(mantle.grounded, true, 'hero must finish grounded after mantle');
+  assert.ok(mantle.y <= 160.1, `hero must finish on the upper tile, got y=${mantle.y}`);
   assert.equal(errors.length, 0, `browser console/page errors: ${errors.join(' | ')}`);
 
-  console.log(`PASS Flash Prince browser mantle: ${d.build} ${d.state} x=${d.x.toFixed(1)} y=${d.y.toFixed(1)} grounded=${d.grounded}`);
+  console.log(`PASS Flash Prince ledge: x=${ledge.x.toFixed(1)} y=${ledge.y.toFixed(1)}; mantle: x=${mantle.x.toFixed(1)} y=${mantle.y.toFixed(1)}`);
   await browser.close();
 } finally {
   server.kill('SIGTERM');
