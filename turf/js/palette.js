@@ -43,6 +43,11 @@ export const PAL = {
   // now. Warm and bright against everything else on screen, because during
   // the enemy phase this is the only thing worth looking at.
   ACTING: '#ffc36b',
+  // Ammo. Cool and neutral so it cannot be mistaken for the warm momentum
+  // pips sitting a few pixels away — they are different resources and the
+  // whole point of showing both is that a glance tells them apart.
+  AMMO: '#9fc7de',
+  AMMO_SPENT: '#3a4048',
   // An armed ability's legal targets. Its own colour, not the attack orange:
   // while an ability is armed the board means something different, and
   // reusing the ordinary attack highlight would say the opposite.

@@ -38,6 +38,7 @@ an MST:
 | Readable enemy turn | Two-beat phase (LOOK then ACT), spotlight, camera follow, intent paths |
 | Full information on a shot | **Forecast** — odds, damage and LETHAL over every reachable target, from the tile you would actually shoot from |
 | Mission variety | **Extraction** and **destroy**, both on a deadline — the game's first clock |
+| Ammo rhythm | **Magazines** on every gun; reloading is your action and never your move |
 
 The economy closes: you **move** to afford the thing you then **do**.
 
@@ -55,24 +56,51 @@ is simply there.
 `destroy` (break the cache), both with a `deadline` — which is the game's
 second and third loss conditions; before v26 it had exactly one, a crew wipe.
 
-**2.3 — A boss.** *(medium, and now the next thing)*
-Something with a rule that changes the board, so a run *ends* rather than
-stops. Needs 2.2 first: a boss is an objective before it is a stat block.
+> **OWNER DIRECTION, 2026-09-03: "bosses come after mechanics."** A boss is
+> content built ON TOP of a combat system, so it inherits every gap in one —
+> and it is the most expensive possible way to discover that the underlying
+> fight is thin. The boss moved to 2.6; what follows is the mechanics it
+> should be built on.
 
-**2.4 — Impact.** *(medium)*
+**2.3 — DONE (v27).** Magazines on ranged weapons only, reloading costs the
+action and never the move — so an empty turn is a turn to reposition, which
+is the movement economy getting the empty turns it was competing with a free
+attack for. Enemies reload on the same rule and TELEGRAPH it.
+
+**2.4 — Reinforcements.** *(medium)*
+Fixes something real and currently ugly: on a survive map, wiping the roster
+early means coasting for three rounds with nothing on the board. MST spawns
+over the course of a mission. Arrivals announced a round ahead with the tile
+marked, which is exactly what this game's telegraph is for — a spawn the
+player could not see coming would break the contract everything else here
+is built on.
+
+**2.5 — Destructible cover.** *(medium)*
+The board is fixed except for Barricade. A shotgun or a hammer breaking full
+cover into partial, and partial into open ground, makes position decay —
+which is the thing that stops a good tile being a permanent answer, and it
+pairs directly with knockback and the hazards.
+
+**2.6 — A boss.** *(after the above, per the owner's direction)*
+Something with a rule that changes the board, so a run *ends* rather than
+stops. It needs 2.2 (an objective is what a boss IS before it is a stat
+block) and now 2.3-2.5 as well.
+
+**2.7 — Impact.** *(medium)*
 Flash and floater today. Wanted: zoom-punch and freeze-frame on a kill,
 damage-tiered shake, layered SFX. `anim.js` already owns the only rAF loop
 and reads `state.log`, so all of it is additive.
 
-**2.5 — Run structure.** *(large)*
-`SEQUENCE` is a flat five-element array. MST is a branching route with node
+**2.8 — Run structure.** *(large)*
+`SEQUENCE` is a flat seven-element array. MST is a branching route with node
 types and a **choice of three** rewards. XP, weapon drops and trinkets exist
 but nothing is ever *picked*, which is the difference between progression and
 a roguelite.
 
-> **Sequencing trap: 2.5 before 2.2 is a menu in front of the same fight.**
-> A branching map over five encounters and two objective types adds screens,
-> not decisions. Objectives first.
+> **Sequencing trap, and it generalises past its original case.** A branching
+> run map over the same fight adds screens, not decisions — which was written
+> here about objectives and is the same reason a boss waits on mechanics.
+> Depth in the turn first; structure around it last.
 
 **2.6 — Sprite vocabulary.** *(blocked, not on the code side)*
 Attack / hit / KO frames per cast member. The deployed attack pair still
@@ -93,6 +121,18 @@ against PR #419; the frames themselves need an owner-side push request.
   every setting because it asks the crew to cross the board twice. One cache
   is 20%. The third-versus-fourth enemy is likewise a cliff, 20% to 0%. Every
   one of those numbers is in the encounter's own `_note`.
+- **The ammo rule's effect scales with each side's RANGED SHARE**, and the
+  encounters were balanced when ammo was infinite. Measured: `warehouse`
+  (crew 0/3 ranged, foes 2/6) went 65% → 98% because the crew lost nothing;
+  `underpass` (crew 2/3, foes 1/5) went 17% → 0% because the crew lost most
+  of its damage; `the-yard` (0/3 vs 0/5) did not move at all, which is what
+  confirms the mechanism. Magazine size was swept and 4/4/3 is the only
+  setting that leaves every encounter near its pre-ammo rate. **Any future
+  roster change now has a balance consequence it did not have before.**
+- **`the-depot` is bimodal on enemy count** and no amount of geometry softens
+  it: 3 foes reads 100% and 4 reads 0% at every cover layout, roster and
+  cache position tried, because that mission is a race rather than a fight.
+  Cache HP is the only lever with fine grain there (6 → 100%, 10 → 13%).
 - **A destroy map is invisible to a "nearest target" bot**, which is why
   `balance.mjs` had to learn the objective. Worth remembering before adding a
   third mode: a mode the bots cannot pursue is a mode nobody can balance.

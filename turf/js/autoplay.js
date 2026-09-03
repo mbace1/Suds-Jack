@@ -17,7 +17,8 @@
 // telegraph the player has to be able to read; this plans a turn to win it.
 // Sharing them would make one of the two worse.
 import { manhattan, hasLOS, coverSoftens, key } from './grid.js?v=2';
-import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility } from './combat.js?v=13';
+import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility, reloadUnit } from './combat.js?v=15';
+import { needsReload } from './ammo.js?v=2';
 import { abilitiesFor, canAfford, abilityTargets } from './abilities.js?v=1';
 
 // What a tile is worth to stand on and shoot from. Positive is good. The
@@ -133,6 +134,12 @@ export function autoTurn(state, unit, abilityDefs) {
       moveUnit(state, unit.uid, best.x, best.y);
     }
   }
+
+  // An empty gun ends the turn one way only. Checked AFTER the reposition,
+  // because a reload costs the action and not the move — the whole reason
+  // the mechanic is interesting is that an empty turn is still a turn you
+  // spend going somewhere.
+  if (needsReload(unit)) { reloadUnit(state, unit.uid); return; }
 
   // The run is banked; see whether it buys something better than a swing.
   const played = tryAbility(state, unit, abilityDefs);

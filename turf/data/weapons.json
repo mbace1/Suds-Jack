@@ -1,14 +1,89 @@
 {
-  "_comment": "range/hp in tiles. hitChance 1 = deterministic (melee). knockback = tiles pushed along the attack line; 0 = none. Referenced by id from units.json and enemies.json — see GDD §5, pipeline §3.",
+  "_comment": "range/hp in tiles. hitChance 1 = deterministic (melee). knockback = tiles pushed along the attack line; 0 = none. Referenced by id from units.json and enemies.json \u2014 see GDD \u00a75, pipeline \u00a73. `mag` is the magazine, RANGED ONLY: firing spends a shot and reloading IS your action for the turn (MST's rhythm). A knife does not run out, and that reliability is exactly what melee trades its range for \u2014 giving every weapon a magazine would have taken the one advantage melee has.",
   "weapons": [
-    { "id": "knife",   "name": "Knife",   "archetype": "melee",  "range": 1, "damage": 4, "knockback": 0, "hitChance": 1 },
-    { "id": "pistol",  "name": "Pistol",  "archetype": "ranged", "range": 5, "damage": 2, "knockback": 0, "hitChance": 0.85 },
-    { "id": "pipe",    "name": "Pipe",    "archetype": "melee",  "range": 1, "damage": 1, "knockback": 2, "hitChance": 1 },
-    { "id": "bat",     "name": "Bat",     "archetype": "melee",  "range": 1, "damage": 2, "knockback": 1, "hitChance": 1 },
-    { "id": "handgun", "name": "Handgun", "archetype": "ranged", "range": 5, "damage": 2, "knockback": 0, "hitChance": 0.8 },
-    { "id": "shotgun", "name": "Shotgun", "archetype": "ranged", "range": 2, "damage": 4, "knockback": 1, "hitChance": 0.85 },
-    { "id": "hammer",  "name": "Hammer",  "archetype": "melee",  "range": 1, "damage": 5, "knockback": 2, "hitChance": 1 },
-    { "id": "bottle",  "name": "Bottle",  "archetype": "melee",  "range": 1, "damage": 2, "knockback": 0, "hitChance": 1 },
-    { "id": "flail",   "name": "Flail",   "archetype": "melee",  "range": 1, "damage": 3, "knockback": 1, "hitChance": 0.9 }
+    {
+      "id": "knife",
+      "name": "Knife",
+      "archetype": "melee",
+      "range": 1,
+      "damage": 4,
+      "knockback": 0,
+      "hitChance": 1
+    },
+    {
+      "id": "pistol",
+      "name": "Pistol",
+      "archetype": "ranged",
+      "range": 5,
+      "damage": 2,
+      "knockback": 0,
+      "hitChance": 0.85,
+      "mag": 4
+    },
+    {
+      "id": "pipe",
+      "name": "Pipe",
+      "archetype": "melee",
+      "range": 1,
+      "damage": 1,
+      "knockback": 2,
+      "hitChance": 1
+    },
+    {
+      "id": "bat",
+      "name": "Bat",
+      "archetype": "melee",
+      "range": 1,
+      "damage": 2,
+      "knockback": 1,
+      "hitChance": 1
+    },
+    {
+      "id": "handgun",
+      "name": "Handgun",
+      "archetype": "ranged",
+      "range": 5,
+      "damage": 2,
+      "knockback": 0,
+      "hitChance": 0.8,
+      "mag": 4
+    },
+    {
+      "id": "shotgun",
+      "name": "Shotgun",
+      "archetype": "ranged",
+      "range": 2,
+      "damage": 4,
+      "knockback": 1,
+      "hitChance": 0.85,
+      "mag": 3
+    },
+    {
+      "id": "hammer",
+      "name": "Hammer",
+      "archetype": "melee",
+      "range": 1,
+      "damage": 5,
+      "knockback": 2,
+      "hitChance": 1
+    },
+    {
+      "id": "bottle",
+      "name": "Bottle",
+      "archetype": "melee",
+      "range": 1,
+      "damage": 2,
+      "knockback": 0,
+      "hitChance": 1
+    },
+    {
+      "id": "flail",
+      "name": "Flail",
+      "archetype": "melee",
+      "range": 1,
+      "damage": 3,
+      "knockback": 1,
+      "hitChance": 0.9
+    }
   ]
 }

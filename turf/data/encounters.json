@@ -842,7 +842,7 @@
         "mode": "destroy",
         "deadline": 9
       },
-      "_note": "Break the cache inside nine rounds. TUNED BY MEASUREMENT: two caches at opposite ends measured 0% at every HP and roster tried, because it asks the crew to cross the board twice; ONE cache between two dumpsters is 20%. The crew is blade/niner/sledge because Wrench's pipe does 1 damage and cannot meaningfully break anything. The third-versus-fourth enemy is a cliff (20% to 0%), not a dial.",
+      "_note": "Break the cache inside nine rounds. RE-TUNED FOR v27's ammo rule, which hit this map hardest \u2014 its rivals are 2/3 ranged, so magazines cost THEM more than the crew and it flipped from 25% to 100%. ENEMY COUNT IS A CLIFF here and geometry could not soften it: 3 foes reads 100% and 4 reads 0% at every cover layout, roster and cache position tried, because the mission is a race rather than a fight. CACHE HP is the one lever with fine grain \u2014 6 is 100%, 10 is 13%, 14 is 3%. The cache sits in the gap between two dumpsters on purpose: moving it out of that chokepoint reads 100% either side (y=1 and y=3), which is why the number is non-monotonic in position and must not be 'fixed' by nudging it.",
       "playerSpawns": [
         {
           "unit": "blade",
@@ -864,7 +864,7 @@
         {
           "id": "cache",
           "name": "Cache",
-          "hp": 6,
+          "hp": 10,
           "x": 5,
           "y": 2
         }

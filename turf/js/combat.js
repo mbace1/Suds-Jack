@@ -4,10 +4,11 @@
 // nothing here touches a canvas or the DOM, which is what makes it runnable
 // in bare node (test/smoke.cjs).
 import { key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile } from './grid.js?v=2';
-import { planAllIntents } from './ai.js?v=5';
+import { planAllIntents } from './ai.js?v=6';
 import { makeRng } from './rng.js?v=2';
 import { addMomentum, clearMomentum, evasionOf, momentumDamage } from './momentum.js?v=1';
 import { abilityTargets, canAfford, findAbility } from './abilities.js?v=1';
+import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
 
 export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = [], trinketDefs = []) {
   const weaponById = id => weaponDefs.find(w => w.id === id);
@@ -100,6 +101,9 @@ const getTrinket = (state, id) => (state.trinketDefs || []).find(t => t.id === i
 // being silently attached to the gun it was found with.
 function recomputeWeapon(unit) {
   const base = unit.baseWeapon || unit.weapon;
+  // A picked-up gun comes loaded, and a trinket that changes the weapon must
+  // not leave a stale round count from the old one behind.
+  if (unit.ammo == null || magOf(base) !== magOf(unit.weapon)) unit.ammo = magOf(base);
   if (!unit.trinkets || !unit.trinkets.length) { unit.weapon = base; return; }
   const w = { ...base };
   for (const t of unit.trinkets) {
@@ -138,6 +142,9 @@ function makeUnit(uid, def, weapon, faction, spawn) {
   return {
     uid, defId: def.id, name: def.name, faction, role: def.role, weapon,
     baseWeapon: weapon, // what was picked up; `weapon` is that plus trinkets
+    // Starts loaded. Null for melee, and every ammo check goes through
+    // magOf/needsReload rather than reading this directly.
+    ammo: magOf(weapon),
     // ai.js reads these; absent on player units and on any enemy that has
     // not been given one, where the behaviour table falls back to `charger`.
     behaviour: def.behaviour, focus: def.focus,
@@ -148,6 +155,8 @@ function makeUnit(uid, def, weapon, faction, spawn) {
     trinkets: [], // GDD §5: found gear, no slots, no equip action — they just stack
   };
 }
+
+export { magOf, needsReload, roundsLeft };
 
 export const hazardAt = (state, x, y) => (state.hazards ? state.hazards.get(key(x, y)) : null) || null;
 
@@ -279,6 +288,11 @@ function pickUpDropAt(state, unit) {
 // to pick where to stand. Kept here (not grid.js) since it needs the weapon.
 export function attackableTargets(state, unit) {
   if (unit.actedAction) return [];
+  // An empty magazine removes the option entirely rather than offering a
+  // shot that then fails: the board must never highlight something it will
+  // refuse, and this is what turns "reload" into a real decision instead of
+  // a chore you discover by tapping.
+  if (needsReload(unit)) return [];
   const out = [];
   for (const target of state.units) {
     if (target.hp <= 0 || target.faction === unit.faction) continue;
@@ -342,6 +356,11 @@ export const COVER_PENALTY = 0.3;
 function resolveAttack(state, attacker, target, weapon, opts = {}) {
   const f = forecastAttack(state, attacker, target, weapon, opts);
   const chance = f.chance, evade = f.evade, bonus = f.bonus;
+  // The round is spent HERE and nowhere else, so every firing path pays for
+  // it — an ordinary swing, an ability, and an overwatch reaction all funnel
+  // through this function, and three separate call sites deducting ammo is
+  // the third-copy bug this file has already paid for twice.
+  if (magOf(weapon) != null) attacker.ammo = Math.max(0, roundsLeft(attacker) - 1);
   const roll = state.rng();
   const hit = roll < chance;
   let damage = 0, killed = false, knockback = null, dropped = null;
@@ -380,6 +399,7 @@ function resolveAttack(state, attacker, target, weapon, opts = {}) {
     // can say WHY a number was what it was, rather than showing a total the
     // player has to reverse-engineer.
     base: opts.flatDamage != null ? opts.flatDamage : weapon.damage, bonus, evade,
+    ammo: attacker.ammo,
     ability: opts.ability || null,
   };
   state.log.push(evt);
@@ -433,6 +453,7 @@ export function attack(state, attackerUid, targetUid) {
   if (!attacker || !target || attacker.hp <= 0 || target.hp <= 0) return { ok: false, reason: 'invalid' };
   if (state.turn !== 'player' || attacker.faction !== 'player') return { ok: false, reason: 'not-your-turn' };
   if (attacker.actedAction) return { ok: false, reason: 'already-acted' };
+  if (needsReload(attacker)) return { ok: false, reason: 'empty' };
   if (attacker.faction === target.faction) return { ok: false, reason: 'same-faction' };
   if (manhattan(attacker, target) > attacker.weapon.range) return { ok: false, reason: 'out-of-range' };
   if (!hasLOS(state, attacker, target)) return { ok: false, reason: 'no-los' };
@@ -481,6 +502,28 @@ export function orderAttack(state, attackerUid, targetUid) {
     if (!moved.ok) return moved;
   }
   return attack(state, attackerUid, targetUid);
+}
+
+// RELOADING IS YOUR ACTION, which is the whole mechanic. It is not a free
+// housekeeping step: the turn you spend refilling is a turn you do not spend
+// shooting, and what makes that interesting rather than merely annoying is
+// that it leaves the MOVE untouched — so an empty gun is a turn to
+// reposition, and the movement economy gets the empty turns it was
+// previously competing with a free attack for.
+export function reloadUnit(state, uid) {
+  const unit = getUnit(state, uid);
+  if (!unit || unit.hp <= 0) return { ok: false, reason: 'dead' };
+  if (unit.faction === 'player' && state.turn !== 'player') return { ok: false, reason: 'not-your-turn' };
+  if (unit.actedAction) return { ok: false, reason: 'already-acted' };
+  const mag = magOf(unit.weapon);
+  if (mag == null) return { ok: false, reason: 'nothing-to-reload' };
+  if (roundsLeft(unit) >= mag) return { ok: false, reason: 'already-full' };
+  unit.ammo = mag;
+  unit.actedAction = true;
+  state.log.push({ type: 'reload', uid, name: unit.name, ammo: unit.ammo });
+  maybeDeselect(state, unit);
+  planAllIntents(state);
+  return { ok: true };
 }
 
 export function endUnitTurn(state, uid) {
@@ -659,6 +702,17 @@ export function stepEnemyPhase(state) {
       state.log.push({ type: 'enemy-turn', uid, name: enemy.name, moved, attacked: null });
       checkWinLoss(state);
       return { done: false, uid, name: enemy.name, moved, attacked: null };
+    }
+    if (intent.type === 'reload') {
+      // Symmetric with the crew's rule: the action refills, the move was
+      // already spent above. An enemy that reloads is a real beat the player
+      // can read and exploit — it is the window the telegraph promised.
+      const mag = magOf(enemy.weapon);
+      if (mag != null && roundsLeft(enemy) < mag) {
+        enemy.ammo = mag;
+        state.log.push({ type: 'reload', uid: enemy.uid, name: enemy.name, ammo: enemy.ammo });
+      }
+      return { done: false, uid, name: enemy.name, moved, attacked: null, reloaded: true };
     }
     if (intent.type === 'attack') {
       const target = getUnit(state, intent.targetUid);
