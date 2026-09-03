@@ -44,8 +44,8 @@ class GridWorld {
 const blankInput = () => ({ dir: 0, dirHeld: 0, up: false, down: false, jumpPress: false, buffer: { jump: 0 }, consume() {} });
 const game = { kill() {}, hurt() {} };
 
-// A real one-tile step. The old mantle could rise 16px but stay horizontally
-// beside this tile, which looked like a successful climb until the next frame.
+// A real one-tile step. Enter from `step`, because gameplay never teleports
+// directly from stand into lowMantle.
 {
   const world = new GridWorld([
     '          ',
@@ -62,6 +62,7 @@ const game = { kill() {}, hurt() {} };
     '##########',
   ]);
   const hero = new MovementHeroV3(42, 176);
+  hero.go('step');
   equal(hero.canLowMantle(world), true, 'one-tile obstacle is recognized as a low mantle');
   const startX = hero.x, startY = hero.y;
   hero.beginLowMantle();
@@ -73,11 +74,13 @@ const game = { kill() {}, hurt() {} };
   equal(hero.transitionFaults, 0, 'low mantle geometry produces no transition faults');
 }
 
+// Reach hang through a legal climb-down transition before testing pull-up.
 {
   const world = new GridWorld(Array(12).fill('          '));
   const hero = new MovementHeroV3(60, 100);
   hero.ledgeY = 64;
   hero.y = 90;
+  hero.go('climbDown');
   hero.go('hang');
   hero.go('pullUp');
   const startX = hero.x;
@@ -100,8 +103,11 @@ const game = { kill() {}, hurt() {} };
   equal(hero.transitionFaults, 0, 'climb-down geometry produces no transition faults');
 }
 
+// Ledge catch only happens from air/fall in gameplay, so establish air legally.
 {
   const hero = new MovementHeroV3(10, 10);
+  hero.go('gather');
+  hero.go('air');
   hero.grab({ x: 117, y: 80, face: -1 });
   equal(hero.state, 'ledgeCatch', 'grab enters ledgeCatch presentation state');
   equal(hero.x, 117, 'ledge catch snaps horizontally to hand anchor');
@@ -109,6 +115,7 @@ const game = { kill() {}, hurt() {} };
   equal(hero.face, -1, 'ledge catch adopts ledge-facing direction');
   near(hero.vx, 0, 0, 'ledge catch clears horizontal velocity');
   near(hero.vy, 0, 0, 'ledge catch clears vertical velocity');
+  equal(hero.transitionFaults, 0, 'ledge catch setup and placement produce no transition faults');
 }
 
 console.log(`Flash Prince movement geometry: ${checks} checks passed`);
