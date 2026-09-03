@@ -12,7 +12,10 @@ export const MOVEMENT_TRANSITIONS = {
   gather:['air','fall','dead'], gatherRun:['air','fall','dead'],
   air:['ledgeCatch','land','landRun','landHard','fall','dead'],
   fall:['ledgeCatch','land','landRun','landHard','dead'],
-  land:['stand','step','runStart','pivot','crouch','dead'],
+  // Hero.airFrame resolves floor contact to `land` first. MovementHero then
+  // promotes a fast descent to `landRun` in the same update, so this edge is a
+  // real runtime transition rather than an impossible state jump.
+  land:['stand','step','runStart','landRun','pivot','crouch','dead'],
   landRun:['run','runStart','runStop','pivot','gatherRun','fall','dead'],
   landHard:['stand','dead'],
   ledgeCatch:['hang','fall','dead'], hang:['pullUp','shimmy','fall','dead'],

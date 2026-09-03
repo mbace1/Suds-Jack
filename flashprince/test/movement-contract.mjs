@@ -18,16 +18,17 @@ function runTape(name, states) {
 }
 
 runTape('standing jump', ['stand','gather','air','land','stand']);
-runTape('running jump', ['stand','step','runStart','run','gatherRun','air','landRun','runStart','run']);
+runTape('runtime running jump landing', ['stand','step','runStart','run','gatherRun','air','land','landRun','runStart','run']);
 runTape('ledge catch and pull-up', ['run','gatherRun','air','ledgeCatch','hang','pullUp','stand']);
 runTape('deliberate climb-down', ['stand','climbDown','hang','pullUp','stand']);
 runTape('low mantle to continued movement', ['stand','step','lowMantle','step','runStart','run']);
 runTape('landing reverse', ['air','land','pivot','stand']);
-runTape('running landing release', ['air','landRun','runStop','stand']);
+runTape('running landing release', ['air','land','landRun','runStop','stand']);
 runTape('crouch and roll', ['stand','crouch','crouchIdle','crouchWalk','crouchIdle','roll','crouchIdle','standUp','stand']);
 
 for (const [from, to] of [
   ['land','pivot'],
+  ['land','landRun'],
   ['landRun','runStart'],
   ['lowMantle','step'],
 ]) ok(isLegalMovementTransition(from, to), `${from} -> ${to} is represented in the contract`);
@@ -43,12 +44,13 @@ for (const sourceEdge of [
   "this.go('pivot')",
   "this.go('runStart')",
   "this.go(input.dir === this.face ? 'step' : 'stand')",
+  "this.go('landRun')",
 ]) ok(heroSource.includes(sourceEdge), `runtime source still contains expected edge: ${sourceEdge}`);
 ok(v3Source.includes('transitionFaults'), 'V3 runtime counts transition faults');
 ok(v3Source.includes('StateMachine'), 'V3 runtime routes transitions through shared StateMachine');
-ok(diagSource.includes("FP-MOVE-7"), 'diagnostics expose the visible movement build id');
+ok(diagSource.includes("FP-MOVE-8"), 'diagnostics expose the visible movement build id');
 ok(diagSource.includes('transitionFaults'), 'diagnostics read the live transition fault count');
-ok(indexSource.includes('movement-diagnostics.js?v=7'), 'playable index loads movement diagnostics v7');
-ok(indexSource.includes('movement-lab-v3.js?v=7'), 'playable index cache-busts movement lab v7');
+ok(indexSource.includes('movement-diagnostics.js?v=8'), 'playable index loads movement diagnostics v8');
+ok(indexSource.includes('movement-lab-v3.js?v=8'), 'playable index cache-busts movement lab v8');
 
 console.log(`Flash Prince movement contract: ${checks} checks passed`);
