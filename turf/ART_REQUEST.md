@@ -756,3 +756,117 @@ step 2) or a pose doesn't read as asked (§8's death-down and akimbo-pistol
 fixes, both needing a second or third prompt attempt). Budget Stage 2's
 remaining characters off the pilot's real 12/character number plus a redo
 margin, not off a fresh guess.
+
+---
+
+## 10. Encounter backgrounds — the camera is not optional
+
+**Owner, 2026-09-03, on a screenshot of `underpass`: "that background doesn't
+fit the grid directions."** Correct, and it is a geometry problem with an
+exact answer rather than a matter of taste.
+
+### 10.1 The one hard requirement
+
+The board is a **2:1 isometric grid** (`render.js`: `TILE_W` 32, `TILE_H`
+16). A tile's edges therefore run at
+
+```
+atan(16 / 32) = atan(0.5) = 26.57° from horizontal
+```
+
+which is what you get from an **orthographic camera at 45° yaw and 30°
+elevation** — the same camera `tools/render-frames.mjs` already uses to cut
+sprite frames, so the whole game agrees on one viewpoint.
+
+**A background must be rendered from that camera.** Then the plate's ground
+lines — kerbs, paving seams, rails, fence runs, wall bases — are parallel to
+the grid's tile edges, and the board reads as standing *in* the place rather
+than floating on top of a photograph of one.
+
+### 10.2 The test, which takes ten seconds
+
+Open the plate, lay the game's grid over it, and look at where a **ground
+line** in the art meets a **tile edge**. Parallel: it fits. Converging:
+it does not, and no amount of tinting or scrim will fix it, because the
+disagreement is between two projections and only one of them can be right.
+
+### 10.3 What we have, judged
+
+| plate | verdict | why |
+|---|---|---|
+| `courtyard.jpg` | **fits** | true iso render; building corners and the yard's floor diamond run on the grid's own axes |
+| `schoolyard.jpg` | **fits** | same camera; the pitch is a diamond, fences and the hut run parallel to the tiles |
+| `dockyard.jpg` | **does not fit** | a one-point PERSPECTIVE plate — the rails and paving seams run near-horizontal to a vanishing point off frame, cutting across the grid at every angle but the right one |
+
+`dockyard.jpg` is a good picture and a wrong one for this job. It was
+carrying three of the seven encounters until v32; those now sit on the two
+that fit. **It is kept in the repo** — it would serve as a title card or a
+between-block interstitial, where nothing has to line up with it.
+
+### 10.4 What is actually being asked for
+
+**More plates in that camera.** Two backgrounds across seven encounters is
+repetition the player will notice by the third block; the request is for
+**four to six more**, all shot or rendered at 45° yaw / 30° elevation,
+orthographic or a long enough lens that the ground lines stay parallel.
+
+Same world as `GDD.md` §2 — a grim, rain-lit Nordic city at night, sodium
+lamps and wet stone. Subjects worth having, one per encounter mood already
+in `data/encounters.json`:
+
+1. **A loading dock** — roller shutters, pallets, a truck bay. Replaces what
+   `dockyard.jpg` was meant to do, in the right camera.
+2. **An underpass / road tunnel mouth** — concrete, graffiti, standing
+   water, headlights off frame. `underpass` currently borrows a courtyard.
+3. **A warehouse floor**, interior — racking, roof lights, a swept lane
+   through stacked crates.
+4. **A depot yard** — containers and a chain fence, for the `destroy`
+   mission's cache.
+5. **A street crossing / junction** — for `the-crossing`'s extraction, with
+   an obvious way OUT of frame on one edge.
+6. **A back lot behind flats** — bins, a rusted swing frame, washing lines.
+
+**Frame requirements**, all of them checkable before delivery:
+
+- **Landscape, at least 1600px wide.** The board is width-bound on a phone
+  and the plate is CSS `cover`, so anything narrower is upscaled.
+- **The playable floor is a DIAMOND in the middle**, big enough to seat an
+  11×9 grid with a margin — the board is drawn centred and the camera pans
+  over it.
+- **Nothing important in the middle third.** Twelve sprites, their health
+  bars, ammo pips, cover props and telegraph markers all sit there. The plate
+  is atmosphere; the fight is the subject.
+- **Dark and low-contrast by default.** `index.html` already lays a
+  `rgba(7,8,11,.55)` to `.85` gradient over it. A bright or busy plate fights
+  the HUD text that sits over the stage edges.
+- **Light from one direction, consistent with the sprite plates** — the cast
+  is lit from the upper left.
+- **No people, no vehicles mid-frame.** They read as units that cannot be
+  selected, which is the same readability bug the cache had before v26 gave
+  it a marker.
+
+### 10.5 Board size — grown in v32, and where the limit is
+
+The owner also asked for a bigger grid, meaning **more squares**. Done: every
+board is two columns wider (13x9 and 11x10, about 20% more tiles).
+
+**Columns are the safe axis.** Growing ROWS lengthens the crew's approach,
+which is the most load-bearing number on these maps — `test/balance.mjs`
+reads **0% on all three deadline missions** at +2 rows, because the crew can
+no longer cross in time. Growing COLUMNS leaves approach distance alone: at
++2, six of seven encounters do not move at all.
+
+**Anchors move with the board or the growth is not neutral.** The crew keeps
+its back to the bottom edge (that edge is cover — nothing gets behind them),
+rivals and reinforcements still enter from the top, extraction pads stay on
+the far edge, props drift to the middle.
+
+**The limit is +2 for now**: +4 columns takes `the-depot` to 0%, +6 takes
+`warehouse` to 100%. Going wider than this needs per-encounter re-tuning, not
+a bigger number — and `the-depot` is the standing warning, since its cache
+position is non-monotonic (y=2 is a chokepoint between two dumpsters; y=1 and
+y=3 both read ~100%).
+
+**For the art, this means the playable diamond is wider than it was.** A
+plate delivered against §10.4 should seat a **13x9** grid with margin, not
+11x9.

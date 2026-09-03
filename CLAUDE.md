@@ -385,7 +385,31 @@ anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves 
 (+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
 `DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
 are 23 points apart), not a dial.
-**Reinforcements** (v31 — `MST_PARITY.md` §2.4). Rivals arrive on a schedule, **announced a
+**Backgrounds must be rendered in the BOARD'S CAMERA** (v32, owner: *"that background
+doesn't fit the grid directions"*). A 2:1 iso grid (TILE_W 32 / TILE_H 16) puts a tile edge
+at `atan(0.5)` = **26.57°**, which is an orthographic camera at **45° yaw / 30° elevation** —
+the same one `tools/render-frames.mjs` cuts sprite frames from. `courtyard.jpg` and
+`schoolyard.jpg` are true iso renders and fit; **`dockyard.jpg` is a one-point perspective
+plate and does not**, so the three encounters it carried moved off it (it stays as a title
+card, where nothing must line up). The ten-second test: lay the grid over the plate, and a
+ground line either runs parallel to a tile edge or it does not. A gate refuses any encounter
+on a known-perspective or unknown plate. **`ART_REQUEST.md` §10** is the spec plus a list of
+six more subjects in the right camera. **Bigger boards, and COLUMNS are the safe axis** (owner: *"I didn't mean bigger characters,
+I meant more squares"*). Every board is 2 columns wider now (13×9, 11×10 — ~20% more tiles).
+Growing ROWS lengthens the crew's approach, the most load-bearing number on these maps: +2
+rows reads **0% on all three deadline missions**. +2 columns leaves approach distance alone
+and **six of seven encounters do not move at all** (`loading-dock` 67→82%, being the
+narrowest). +4 breaks the depot, +6 breaks warehouse. **Growing a board means moving what is
+anchored to its edges** — the crew keeps its back to the bottom (that edge is cover), rivals
+and arrivals enter from the top, extraction pads stay on the far edge, props drift to the
+middle.
+**A REAL BUG the suite could not see**: `the-depot` had spawned its shotgun grunt and its
+cache on the SAME TILE (5,2) since v26, live through v31, so every depot number was tuned on
+a board with two stacked units. A throwaway grow-script's sanity assertion caught it;
+unstacking took the map 13%→0%, re-tuned to 12% (cache 4 HP, grunt screening from (5,4)).
+`smoke.mjs` now asserts no two things spawn on one tile, nothing spawns in full cover, and no
+spawn/arrival/pad sits off the board.
+**Reinforcements** (v31**Reinforcements** (v31 — `MST_PARITY.md` §2.4). Rivals arrive on a schedule, **announced a
 round early** (`ARRIVAL_NOTICE`, the tile marked and the rival named on it) and landing at
 the **top of the player's turn** — mid-phase would let one act on the turn it appeared. An
 arrival never lands on an occupied tile (nearest free, ties on tile key), and **clearing the
@@ -1473,7 +1497,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 127 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 130 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter

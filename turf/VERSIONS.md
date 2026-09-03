@@ -8,6 +8,92 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v32 — 2026-09-03
+**Owner, on a screenshot of `underpass`: "that background doesn't fit the
+grid directions."** Correct, and it is a geometry problem with an exact
+answer rather than a matter of taste.
+
+**The board is a 2:1 isometric grid** (`TILE_W` 32, `TILE_H` 16), so a tile
+edge runs at `atan(0.5)` = **26.57°** from horizontal — which is an
+orthographic camera at **45° yaw, 30° elevation**, the same camera
+`tools/render-frames.mjs` already cuts sprite frames from. A background has
+to be rendered from that camera or its ground lines cross the tiles at every
+angle but the right one, and the board floats on a photograph of a place
+instead of standing in it.
+
+**Judged, one by one.** `courtyard.jpg` and `schoolyard.jpg` are true iso
+renders — building corners, fence runs and the floor diamond all on the
+grid's own axes. **`dockyard.jpg` is a one-point PERSPECTIVE plate**: its
+rails and paving seams run near-horizontal toward a vanishing point off
+frame. It was carrying three of the seven encounters (`loading-dock`,
+`underpass`, `the-crossing`); those move to the two that fit. It stays in
+the repo — it is a good picture, and it would serve as a title card, where
+nothing has to line up with it.
+
+**The cost of that fix is honest and worth stating: two backgrounds now
+carry seven encounters**, which is repetition a player notices by the third
+block. `ART_REQUEST.md` §10 is the new section — the camera spec, a
+ten-second test (lay the grid over the plate; ground lines parallel to tile
+edges or they are not), the verdict table above, and a shopping list of six
+more subjects in the right camera with frame requirements that can be
+checked before delivery.
+
+**A gate, so this cannot come back.** `smoke.mjs` now refuses any encounter
+pointing at a known perspective plate, or at an unknown one, and pins the
+26.57° derivation next to it — change `TILE_W`/`TILE_H` and every background
+in the repo needs re-judging, so that fact lives in the suite rather than in
+prose somebody has to remember to read.
+
+**BIGGER BOARDS — and the owner had to correct me once: "I didn't mean
+bigger characters, I meant more squares."** That was what I measured, but I
+stopped at "it breaks balance" instead of growing the board properly, which
+was the wrong place to stop.
+
+**Growing a board means moving what is anchored to its edges.** Different
+things are pinned to different edges: the crew spawns with its back to the
+bottom **and that edge is cover**, rivals and reinforcements enter from the
+top, extraction pads sit on the far edge, and props belong in the middle.
+Shift everything uniformly and the crew ends up in open ground; shift
+nothing and the new squares are dead margin.
+
+**COLUMNS are the safe axis, and that is a measured result rather than a
+preference.** Growing ROWS lengthens the crew's approach, which is the most
+load-bearing number on every map: +2 rows reads **0% on all three deadline
+missions** because the crew can no longer cross in time, while the survive
+maps get *easier* (warehouse to 100%) because rivals take longer to arrive.
+Growing COLUMNS leaves approach distance alone and only adds lateral room:
+at **+2 columns, six of seven encounters do not move at all**. Every board
+is 2 wider now — 13x9 and 11x10, about 20% more squares.
+
+`loading-dock` is the one that moved, 67% to **82%**, and the reason is that
+it is the narrowest map (9 columns) so +2 is a 22% width increase and the
+crew gains real room to spread. Still inside the band, and recorded here
+rather than tuned away.
+
+**+4 and +6 columns were also measured and rejected**: +4 takes the depot to
+0%, +6 takes warehouse to 100%.
+
+**A REAL BUG, found by a throwaway script's sanity assertion and not by the
+suite.** Growing the boards meant checking nothing collided afterwards, and
+that check failed immediately on the CURRENT data: **`the-depot` had been
+spawning its shotgun grunt and its cache on the same tile (5,2) since v26** —
+two stacked units, live on gh-pages through v31. Every depot number from v26
+onward was measured on that board. Unstacking it moved the map from 13% to
+**0%**, because the stack had effectively neutralised the grunt; re-tuned
+with the cache at 4 HP and the grunt screening from (5,4), it reads **12%**.
+
+`smoke.mjs` now asserts what that script asserted: no two things spawn on
+one tile, nothing spawns inside full cover, and no spawn, arrival point or
+extraction pad sits off the board.
+
+- `test/smoke.mjs` is 130 checks (was 127).
+- `test/balance.mjs` green on all seven: 53 / 82 / 65 / 32 / 68 / 18 / 12.
+  The background swap moves nothing, which is the point; the two that did
+  move are `loading-dock` (the wider board) and `the-depot` (the unstacked
+  spawn), both explained above.
+- No module changed, so no tokens moved; `encounters.json`, the suite and
+  the docs are the whole diff.
+
 ## v31 — 2026-09-03
 **Reinforcements** — `MST_PARITY.md` §2.4, and the owner's note when it was
 first listed: *"that's great for later.. it will make longer survive rounds

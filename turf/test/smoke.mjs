@@ -1142,6 +1142,74 @@ check('the enemy brain never targets an objective', () => {
   }
 });
 
+// ── encounter backgrounds (v32) ──────────────────────────────
+// Owner, on a screenshot of underpass: "that background doesn't fit the
+// grid directions." The board is a 2:1 isometric grid, so a plate has to be
+// rendered from the camera that produces it (45deg yaw, 30deg elevation) or
+// its ground lines cut across the tiles at every angle but the right one.
+// dockyard.jpg is a one-point perspective plate and does not; it stays in
+// the repo for a title card, where nothing has to line up with it.
+// ART_REQUEST.md §10 is the spec and the shopping list.
+
+const ISO_PLATES = new Set(['courtyard.jpg', 'schoolyard.jpg']);
+const PERSPECTIVE_PLATES = new Set(['dockyard.jpg']);
+
+check('every encounter background is a plate rendered in the board camera', () => {
+  for (const enc of ENCOUNTERS) {
+    if (!enc.background) continue;
+    const file = enc.background.split('/').pop();
+    assert.ok(!PERSPECTIVE_PLATES.has(file),
+      `${enc.id} is on ${file}, a perspective plate — its ground lines fight the iso grid`);
+    assert.ok(ISO_PLATES.has(file),
+      `${enc.id} is on ${file}, which is not a known iso plate — check ART_REQUEST.md §10 before adding one`);
+  }
+});
+
+check('no two things spawn on one tile, and nothing spawns on full cover', () => {
+  // THIS CHECK EXISTS BECAUSE IT WOULD HAVE CAUGHT A SHIPPED BUG. From v26
+  // to v31 `the-depot` spawned its shotgun grunt and its cache on the SAME
+  // tile (5,2) — two stacked units — and every balance number that map was
+  // tuned against was measured on that board. Unstacking it moved the map
+  // from 13% to 0%, because the stack had effectively neutralised the grunt.
+  // A sanity assertion in a throwaway script found it; the suite could not.
+  for (const enc of ENCOUNTERS) {
+    const seen = new Map();
+    const claim = (x, y, what) => {
+      const k = `${x},${y}`;
+      assert.ok(!seen.has(k), `${enc.id}: ${what} and ${seen.get(k)} both spawn on ${k}`);
+      seen.set(k, what);
+      assert.ok(x >= 0 && y >= 0 && x < enc.grid.cols && y < enc.grid.rows,
+        `${enc.id}: ${what} spawns off the board at ${k}`);
+    };
+    for (const sp of enc.playerSpawns) claim(sp.x, sp.y, `operator ${sp.unit}`);
+    for (const sp of enc.enemySpawns) claim(sp.x, sp.y, `rival ${sp.enemy}`);
+    for (const o of enc.objectives || []) claim(o.x, o.y, `objective ${o.name}`);
+    const full = new Set(enc.cover.full.map(([x, y]) => `${x},${y}`));
+    for (const k of seen.keys()) {
+      assert.ok(!full.has(k), `${enc.id}: ${seen.get(k)} spawns inside full cover at ${k}`);
+    }
+    // Arrivals and extraction pads must also be on the board — a schedule
+    // pointing off the edge would silently never land.
+    for (const r of enc.reinforcements || []) {
+      assert.ok(r.x >= 0 && r.y >= 0 && r.x < enc.grid.cols && r.y < enc.grid.rows,
+        `${enc.id}: reinforcement enters off the board at ${r.x},${r.y}`);
+    }
+    for (const [x, y] of enc.extract || []) {
+      assert.ok(x >= 0 && y >= 0 && x < enc.grid.cols && y < enc.grid.rows,
+        `${enc.id}: extraction pad off the board at ${x},${y}`);
+    }
+  }
+});
+
+check('the board camera is still the one the plates were judged against', () => {
+  // TILE_W 32 / TILE_H 16 is what makes a tile edge 26.57deg from
+  // horizontal, which is an orthographic camera at 45deg yaw / 30deg
+  // elevation. Change these and every background in the repo needs
+  // re-judging, so the spec is pinned here rather than left in prose.
+  const angle = Math.atan(16 / 32) * 180 / Math.PI;
+  assert.ok(Math.abs(angle - 26.565) < 0.01, 'a 2:1 grid, per ART_REQUEST.md §10');
+});
+
 // ── reinforcements (MST_PARITY §2.4, v31) ────────────────────
 // On a survive map, wiping the opening roster meant coasting with an empty
 // board while the objective still said "hold". Arrivals turn that countdown
