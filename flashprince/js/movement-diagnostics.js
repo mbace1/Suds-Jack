@@ -1,6 +1,6 @@
 import { MovementHeroV3 } from './movement-hero-v3.js';
 
-export const FLASH_PRINCE_MOVE_BUILD = 'FP-MOVE-7';
+export const FLASH_PRINCE_MOVE_BUILD = 'FP-MOVE-8';
 
 const visited = new Set();
 const originalUpdate = MovementHeroV3.prototype.update;
