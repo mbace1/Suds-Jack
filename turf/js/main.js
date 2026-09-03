@@ -1,19 +1,19 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=9';
+import { PAL } from './palette.js?v=10';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=15';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=19';
+} from './combat.js?v=17';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=21';
 import { createCamera, MIN_TILE_W } from './camera.js?v=1';
-import { createInputHandler } from './input.js?v=13';
+import { createInputHandler } from './input.js?v=16';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
-import { abilitiesFor, canAfford, whyNot } from './abilities.js?v=1';
-import { autoTurn } from './autoplay.js?v=4';
+import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2';
+import { autoTurn } from './autoplay.js?v=5';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
@@ -102,6 +102,7 @@ async function loadData() {
     weapons: weapons.weapons, units: units.units, enemies: enemies.enemies,
     encounters: encounters.encounters, hazards: hazards.hazards, trinkets: trinkets.trinkets,
     abilities: abilities.abilities,
+    lines: abilities.lines,
   };
 }
 
@@ -426,8 +427,16 @@ function renderAbilities() {
     // The reason it is unavailable goes in the tooltip AND the toast on tap:
     // "needs 3 momentum, has 1" is a instruction to go and run, which is the
     // behaviour this whole economy is trying to buy.
-    btn.title = ok ? ab.blurb : `${ab.name} — ${whyNot(sel, ab)}`;
-    btn.innerHTML = `<span>${ab.name}</span><span class="cost">${ab.cost}</span>`;
+    // The LINE is on the button, because a skill's category is what tells the
+    // player what a build IS — two Shiv skills on one operator is a
+    // positioning crew, and that only reads if the lines are visible.
+    // A skill the weapon cannot use stays on screen and says why: GDD §5.1's
+    // payoff is a build coming alive when a weapon drops, and a skill the
+    // player never saw is a payoff they will not notice arriving.
+    const line = (DATA.lines.find(l => l.id === ab.line) || {}).name || '';
+    btn.title = ok ? `${line} — ${ab.blurb}` : `${ab.name} — ${whyNot(sel, ab)}`;
+    if (!weaponSuits(sel, ab)) btn.classList.add('inert');
+    btn.innerHTML = `<span class="nm">${ab.name}<em>${line}</em></span><span class="cost">${ab.cost}</span>`;
     btn.addEventListener('pointerup', e => {
       e.preventDefault();
       input.armAbility(ab.id);
@@ -520,6 +529,7 @@ function updateHud() {
     const carried = (sel.trinkets || []).map(t => t.name).join(', ');
     selTextEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
       + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`
+      + aimText(state)
       + ammoText(sel)
       + momentumText(sel)
       + forecastText(state)
@@ -555,6 +565,17 @@ function forecastText(state) {
   return `<br>vs ${at.name}: ${Math.round(f.chance * 100)}% for ${f.damage}`
     + (f.lethal ? ' — KILLS' : ` of ${f.targetHp}`)
     + (why.length ? ` · ${why.join(' · ')}` : '');
+}
+
+// What aiming means, in words, while it is happening. Without this the
+// board changing under a tap reads as a glitch rather than as a question.
+function aimText(state) {
+  if (!state.aimUid || !state.aimTiles || !state.aimTiles.length) return '';
+  const foe = getUnit(state, state.aimUid);
+  const best = state.aimTiles[0];
+  return `<br>Firing on ${foe ? foe.name : 'them'}: pick a position`
+    + ` (${state.aimTiles.length} on offer, best is ${Math.round(best.forecast.chance * 100)}%)`
+    + ` — tap ${foe ? foe.name : 'them'} again to take it`;
 }
 
 // Rounds left, and what to do about it. Silent for melee, because "ammo: —"
@@ -649,6 +670,12 @@ window.__turf = {
   // board in ability mode exactly as the button does, ability() resolves one
   // without going through a tap.
   arm: id => input && input.armAbility(id),
+  // Tap a TILE, through the real input path. Takes grid coordinates and
+  // converts, so a caller never deals in pixels.
+  tap: (gx, gy) => {
+    const p = toScreen(layout, gx, gy);
+    input.tapBoard(p.x, p.y - 4);
+  },
   ability: (uid, id, target) => {
     const r = useAbility(state, uid, id, target, DATA.abilities);
     input.refreshSelectionOverlay(state); onChange(); return r;

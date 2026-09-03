@@ -39,6 +39,8 @@ an MST:
 | Full information on a shot | **Forecast** — odds, damage and LETHAL over every reachable target, from the tile you would actually shoot from |
 | Mission variety | **Extraction** and **destroy**, both on a deadline — the game's first clock |
 | Ammo rhythm | **Magazines** on every gun; reloading is your action and never your move |
+| Position is the player's | **Firing positions** — a tap that would move you offers the tiles, each with its own odds |
+| Skill categories | Six **lines** (GDD §5.1); every loadout crosses two, and weapon-gated skills show inert rather than hidden |
 
 The economy closes: you **move** to afford the thing you then **do**.
 
@@ -121,6 +123,14 @@ against PR #419; the frames themselves need an owner-side push request.
   every setting because it asks the crew to cross the board twice. One cache
   is 20%. The third-versus-fourth enemy is likewise a cliff, 20% to 0%. Every
   one of those numbers is in the encounter's own `_note`.
+- **The one-tap attack used to pick the worst tile.** Through v27 it took the
+  CHEAPEST tile that could reach: measured over 400 taps with a real choice,
+  that banked less momentum than an available alternative 80% of the time and
+  stopped in the open when cover was on offer 20% of the time. Scoring the
+  tile instead takes those to 30% and 0% — the residual 30% being correct
+  trades, where the longest run costs cover. **A default that quietly plays
+  badly is worse than no default**, and every system from v24 on had made the
+  old one worse without anyone re-reading it.
 - **The ammo rule's effect scales with each side's RANGED SHARE**, and the
   encounters were balanced when ammo was infinite. Measured: `warehouse`
   (crew 0/3 ranged, foes 2/6) went 65% → 98% because the crew lost nothing;
@@ -137,9 +147,10 @@ against PR #419; the frames themselves need an owner-side push request.
   `balance.mjs` had to learn the objective. Worth remembering before adding a
   third mode: a mode the bots cannot pursue is a mode nobody can balance.
 
-- **Barricade is never used by the auto-battler** (`js/autoplay.js` has no rule
-  for it). That is a gap in the bot, not evidence about the ability — but it
-  does mean nothing has measured whether Barricade is worth its cost.
+- **Openings and Planted are never used by the auto-battler.** Barricade was
+  in this list from v25 to v28 and now has a rule (2 uses across 420 runs, so
+  barely); these two replace it. A gap in the bot is not evidence about the
+  skill, but it does mean nothing has measured whether they earn their cost.
 - **`EVADE_PER` barely moves bot play** (±1 point across a 2.25× range),
   because bots always attack and so always spend their momentum. It exists for
   human play that the bots cannot find, and that claim is currently untested.

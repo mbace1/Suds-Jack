@@ -4,13 +4,14 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=19';
+import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=21';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit, useAbility, previewAttack, reloadUnit,
-} from './combat.js?v=15';
-import { abilityTargets, findAbility } from './abilities.js?v=1';
-import { key } from './grid.js?v=2';
+  firingOptions, attackFrom,
+} from './combat.js?v=17';
+import { abilityTargets, findAbility } from './abilities.js?v=2';
+import { key } from './grid.js?v=4';
 import { watchPad } from '../../hub/pad.js?v=9';
 
 export function createInputHandler({
@@ -23,6 +24,14 @@ export function createInputHandler({
   // has forgotten about would fire on their next tap, which in a game about
   // committed decisions is the worst possible surprise.
   let armed = null;
+  // The enemy the player has pointed at but not yet committed to, when the
+  // shot would MOVE them. Through v27 a tap ran orderAttack immediately and
+  // walked the operator to a tile the engine chose — which after v24-v27 was
+  // the wrong tile 80% of the time by momentum and 20% by cover. Now: if you
+  // can already fire from where you stand, one tap fires; if the tap would
+  // move you, it offers the firing positions first. No extra taps in the
+  // case where there was nothing to decide.
+  let aimUid = null;
   // The keyboard/gamepad cursor: a grid tile, live only once one of those
   // two has actually been used (mouse/touch clears it right back off —
   // gameoflife's :focus-visible rule, applied to a canvas instead of the
@@ -32,7 +41,9 @@ export function createInputHandler({
 
   function refreshSelectionOverlay(state) {
     const sel = state.selected ? getUnit(state, state.selected) : null;
-    if (!sel) armed = null;
+    if (!sel) { armed = null; aimUid = null; }
+    state.aimUid = aimUid;
+    state.aimTiles = aimUid && sel ? firingOptions(state, sel.uid, aimUid) : null;
     state.moveTiles = sel && !armed ? movableTiles(state, sel) : new Map();
     state.attackTiles = sel && !armed ? attackableTargets(state, sel) : [];
     state.abilityTiles = armed && sel
@@ -57,6 +68,7 @@ export function createInputHandler({
   function armAbility(id) {
     const state = getState();
     if (state.turn !== 'player' || state.result || !state.selected) return;
+    aimUid = null; // arming an ability leaves aim mode
     armed = armed === id ? null : id;
     refreshSelectionOverlay(state);
     onChange();
@@ -140,8 +152,26 @@ export function createInputHandler({
       const sel = getUnit(state, state.selected);
       if (hit && hit.uid === sel.uid) {
         // re-tapping yourself: stay selected
-      } else if (hit && hit.faction !== sel.faction && (state.attackTiles || []).includes(hit.uid)) {
+      } else if (aimUid && !hit && (state.aimTiles || []).some(t => t.x === x && t.y === y)) {
+        // Committing to a chosen firing position.
+        attackFrom(state, sel.uid, aimUid, { x, y });
+        aimUid = null;
+      } else if (hit && hit.uid === aimUid) {
+        // Tapping the same rival again takes the default — the best tile,
+        // which is the one already marked. One extra tap, never two.
         orderAttack(state, sel.uid, hit.uid);
+        aimUid = null;
+      } else if (hit && hit.faction !== sel.faction && (state.attackTiles || []).includes(hit.uid)) {
+        const opts = firingOptions(state, sel.uid, hit.uid);
+        const here = opts.find(t => t.x === sel.x && t.y === sel.y);
+        if (here || opts.length <= 1) {
+          // Nothing to decide: the shot is on from where they stand, or
+          // there is exactly one place to take it from.
+          orderAttack(state, sel.uid, hit.uid);
+          aimUid = null;
+        } else {
+          aimUid = hit.uid;
+        }
       } else if (!hit && (state.moveTiles || new Map()).has(key(x, y))) {
         moveUnit(state, sel.uid, x, y);
       } else if (hit && hit.faction === sel.faction && canUnitAct(hit)) {
@@ -272,8 +302,8 @@ export function createInputHandler({
     if (state.turn !== 'player' || state.result) return;
     // One press backs out of the ability; a second clears the selection. Two
     // meanings on one button, in the order the player wants them.
-    if (armed) {
-      armed = null;
+    if (armed || aimUid) {
+      armed = null; aimUid = null;
       refreshSelectionOverlay(state);
       onChange();
       return;
@@ -327,6 +357,11 @@ export function createInputHandler({
 
   return {
     selectByUid,
+    // A tap, in BOARD coordinates, down the same path a finger takes —
+    // handlePoint and all. Exposed so a test can exercise the real input
+    // decision path instead of synthesising pointer events at guessed pixel
+    // offsets and silently missing the sprite.
+    tapBoard: (px, py) => fromScreenPoint(px, py),
     reloadSelected,
     armAbility,
     disarm,

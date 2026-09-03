@@ -16,10 +16,10 @@
 // It is NOT the enemy brain. ai.js plans one unit at a time against a
 // telegraph the player has to be able to read; this plans a turn to win it.
 // Sharing them would make one of the two worse.
-import { manhattan, hasLOS, coverSoftens, key } from './grid.js?v=2';
-import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility, reloadUnit } from './combat.js?v=15';
+import { manhattan, hasLOS, coverSoftens, key } from './grid.js?v=4';
+import { movableTiles, attackableTargets, moveUnit, orderAttack, endUnitTurn, useAbility, reloadUnit } from './combat.js?v=17';
 import { needsReload } from './ammo.js?v=2';
-import { abilitiesFor, canAfford, abilityTargets } from './abilities.js?v=1';
+import { abilitiesFor, canAfford, abilityTargets } from './abilities.js?v=2';
 
 // What a tile is worth to stand on and shoot from. Positive is good. The
 // weights are the ones the v24 experiment settled on; the only addition is
@@ -87,9 +87,17 @@ function objectiveMove(state, unit) {
 export function autoTurn(state, unit, abilityDefs) {
   if (objectiveMove(state, unit)) {
     if (!state.result) {
-      // A free swing on the way out costs nothing — the move is already spent.
-      const t = attackableTargets(state, unit);
-      if (t.length) orderAttack(state, unit.uid, t[0]); else endUnitTurn(state, unit.uid);
+      // A free swing on the way out — but ONLY at something already in range
+      // from where the unit now stands. attackableTargets answers "could
+      // reach and hit", and since v28 orderAttack walks to the BEST firing
+      // tile rather than the nearest, taking one of those would drag the
+      // operator off the extraction route to go and find cover. Measured:
+      // AUTO on `the-crossing` fell from 27% to 8% before this line existed.
+      const here = attackableTargets(state, unit).filter(uid => {
+        const f = state.units.find(u => u.uid === uid);
+        return f && manhattan(unit, f) <= unit.weapon.range && hasLOS(state, unit, f);
+      });
+      if (here.length) orderAttack(state, unit.uid, here[0]); else endUnitTurn(state, unit.uid);
     }
     return;
   }
@@ -171,40 +179,93 @@ function tryAbility(state, unit, abilityDefs) {
   const adjacent = foes.filter(f => manhattan(unit, f) <= 1);
 
   const pick = id => kit.find(a => a.id === id);
+  const use = (ab, target) => useAbility(state, unit.uid, ab.id, target, abilityDefs).ok;
+  const first = ab => abilityTargets(state, unit, ab)[0];
+  const nextTo = who => state.units.some(a =>
+    a.faction === unit.faction && a.uid !== unit.uid && a.hp > 0 && manhattan(a, who) <= 1);
+  const weakestOf = list => list
+    .map(t => state.units.find(u => u.uid === t.uid))
+    .filter(Boolean)
+    .sort((a, b) => a.hp - b.hp || (a.uid < b.uid ? -1 : 1))[0];
+
+  // Backstab first when it is on. abilityTargets only offers FLANKED rivals,
+  // so an empty list is itself the answer to "has anyone set one up" and the
+  // bot never reimplements the flank rule.
+  const backstab = pick('backstab');
+  if (backstab) { const t = first(backstab); if (t) return use(backstab, t); }
+
   // Cleave only pays against two or more; against one it is a worse swing.
   const cleave = pick('cleave');
-  if (cleave && adjacent.length >= 2) {
-    const t = abilityTargets(state, unit, cleave)[0];
-    if (t) return useAbility(state, unit.uid, 'cleave', t, abilityDefs).ok;
-  }
+  if (cleave && adjacent.length >= 2) { const t = first(cleave); if (t) return use(cleave, t); }
+
   // Takedown when it finishes something the ordinary swing would not.
   const takedown = pick('takedown');
   if (takedown && adjacent.length) {
     const kill = adjacent.find(f => f.hp > unit.weapon.damage && f.hp <= unit.weapon.damage + takedown.damage);
-    if (kill) return useAbility(state, unit.uid, 'takedown', { uid: kill.uid }, abilityDefs).ok;
+    if (kill) return use(takedown, { uid: kill.uid });
   }
-  // Shove when there is somewhere worth shoving into.
-  const shove = pick('shove');
-  if (shove && adjacent.length) {
+
+  // Steady is the answer to a shot the dice would probably lose.
+  const steady = pick('steady');
+  if (steady) {
+    const hurt = weakestOf(abilityTargets(state, unit, steady));
+    if (hurt && hurt.hp <= unit.weapon.damage + 1) return use(steady, { uid: hurt.uid });
+  }
+
+  // Openings only pays against something an ally already has busy.
+  const openings = pick('openings');
+  if (openings) {
+    const busy = abilityTargets(state, unit, openings)
+      .map(o => state.units.find(u => u.uid === o.uid))
+      .filter(u => u && nextTo(u));
+    const t = busy.sort((a, b) => a.hp - b.hp || (a.uid < b.uid ? -1 : 1))[0];
+    if (t) return use(openings, { uid: t.uid });
+  }
+
+  // Shove and Wallop want somewhere worth shoving INTO.
+  for (const id of ['wallop', 'shove']) {
+    const ab = pick(id);
+    if (!ab || !adjacent.length) continue;
     const victim = adjacent.find(f => shoveLandsBadly(state, unit, f));
-    if (victim) return useAbility(state, unit.uid, 'shove', { uid: victim.uid }, abilityDefs).ok;
+    if (victim) return use(ab, { uid: victim.uid });
   }
+
+  // Cripple whoever is closing fastest and is not already slowed.
+  const cripple = pick('cripple');
+  if (cripple) {
+    const runner = abilityTargets(state, unit, cripple)
+      .map(t => state.units.find(u => u.uid === t.uid))
+      .filter(u => u && u.move >= 4 && !u.slowed)
+      .sort((a, b) => manhattan(unit, a) - manhattan(unit, b))[0];
+    if (runner) return use(cripple, { uid: runner.uid });
+  }
+
   // Snap shot at anything two ordinary shots would not finish.
   const snap = pick('snapshot');
   if (snap) {
-    const targets = abilityTargets(state, unit, snap);
-    const hurt = targets
-      .map(t => state.units.find(u => u.uid === t.uid))
-      .filter(u => u && u.hp <= unit.weapon.damage * 2)
-      .sort((a, b) => a.hp - b.hp || (a.uid < b.uid ? -1 : 1))[0];
-    if (hurt) return useAbility(state, unit.uid, 'snapshot', { uid: hurt.uid }, abilityDefs).ok;
+    const hurt = weakestOf(abilityTargets(state, unit, snap));
+    if (hurt && hurt.hp <= unit.weapon.damage * 2) return use(snap, { uid: hurt.uid });
   }
-  // Overwatch only with nothing to shoot at — it is the "I have a gun and no
-  // target" move, which is exactly the turn that used to be wasted.
-  const over = pick('overwatch');
-  if (over && !attackableTargets(state, unit).length) {
-    return useAbility(state, unit.uid, 'overwatch', { self: true }, abilityDefs).ok;
+
+  // The rest are "I have nothing better to do with the action" moves, which
+  // is exactly the turn that used to be wasted.
+  if (!attackableTargets(state, unit).length) {
+    const planted = pick('planted');
+    if (planted && nextTo(unit)) return use(planted, { self: true });
+    const over = pick('overwatch');
+    if (over) return use(over, { self: true });
+    // Barricade had NO rule here through v28, which MST_PARITY §3 recorded as
+    // a gap in the bot rather than evidence about the ability — it meant
+    // nothing had ever measured whether it earns its cost. Now it does:
+    // drop cover when exposed with nothing to shoot at.
+    const barricade = pick('barricade');
+    if (barricade) {
+      const t = abilityTargets(state, unit, barricade)
+        .find(tile => exposure(state, tile, foes) < exposure(state, unit, foes));
+      if (t) return use(barricade, t);
+    }
   }
+
   return false;
 }
 

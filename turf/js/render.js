@@ -3,8 +3,8 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=9';
-import { key } from './grid.js?v=2';
+import { PAL } from './palette.js?v=10';
+import { key } from './grid.js?v=4';
 import { magOf, roundsLeft } from './ammo.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
@@ -231,6 +231,10 @@ function mixTint(a, b) {
 }
 
 function drawHighlights(g, layout, state) {
+  // Aiming replaces the ordinary overlays outright. Showing move range and
+  // attack targets UNDER a set of firing positions is three meanings in one
+  // colour field, and the player cannot tell which tap does what.
+  if (state.aimTiles && state.aimTiles.length) return;
   if (!state.moveTiles) return;
   for (const { x: gx, y: gy } of state.moveTiles.values()) {
     const { x, y } = toScreen(layout, gx, gy);
@@ -607,9 +611,53 @@ function drawExtraction(g, layout, state) {
   }
 }
 
+// The firing positions on offer, each labelled with the odds it would give.
+// This is what replaced walking the operator to a tile the engine picked:
+// the player is choosing where to fight from, so the board has to show what
+// each choice is worth — a menu of positions with no numbers on it would be
+// a worse version of the automatic behaviour, not a better one.
+function drawAimTiles(g, layout, state) {
+  const tiles = state.aimTiles;
+  if (!tiles || !tiles.length) return;
+  tiles.forEach((t, i) => {
+    const p = toScreen(layout, t.x, t.y);
+    const best = i === 0;
+    g.diamond(p.x, p.y, TILE_W - 4, TILE_H - 2, PAL.AIM_HI, best ? PAL.AIM_BEST : PAL.AIM_EDGE, best ? 3 : 1.5);
+  });
+}
+
+// The odds for each offered position, painted OVER the bodies. The tile
+// markings belong on the ground and the numbers do not: a screenshot showed
+// the second option's label sitting behind the very operator being asked to
+// move, which is the one thing a position chooser must never hide.
+function drawAimLabels(g, layout, state) {
+  const tiles = state.aimTiles;
+  if (!tiles || !tiles.length) return;
+  tiles.forEach((t, i) => {
+    const p = toScreen(layout, t.x, t.y);
+    const best = i === 0;
+    const f = t.forecast;
+    const label = f.lethal ? `${Math.round(f.chance * 100)}% KILL` : `${Math.round(f.chance * 100)}% · ${f.damage}`;
+    g.ctx.save();
+    g.ctx.font = `bold ${best ? 9 : 8}px monospace`;
+    g.ctx.textAlign = 'center';
+    const w = g.ctx.measureText(label).width + 6;
+    g.ctx.fillStyle = 'rgba(7,8,11,0.9)';
+    g.ctx.fillRect(p.x - w / 2, p.y - 6, w, 11);
+    g.ctx.strokeStyle = best ? PAL.AIM_BEST : PAL.AIM_EDGE;
+    g.ctx.lineWidth = 1;
+    g.ctx.strokeRect(p.x - w / 2, p.y - 6, w, 11);
+    g.ctx.fillStyle = best ? PAL.AIM_BEST : PAL.FORECAST;
+    g.ctx.fillText(label, p.x, p.y + 3);
+    g.ctx.restore();
+  });
+}
+
 function drawForecasts(g, layout, state) {
   const fc = state.forecasts;
-  if (!fc || !fc.size || state.armedAbility) return;
+  // Suppressed while aiming: the board is asking ONE question then, and the
+  // other rivals' badges are answers to a different one.
+  if (!fc || !fc.size || state.armedAbility || state.aimUid) return;
   for (const [uid, f] of fc) {
     const u = state.units.find(x => x.uid === uid);
     if (!u || u.hp <= 0) continue;
@@ -738,6 +786,7 @@ export function render(canvas, state, layout, anim = null) {
   drawExtraction(g, layout, state);
   drawObjectiveMark(g, layout, state);
   drawHighlights(g, layout, state);
+  drawAimTiles(g, layout, state);
   drawAbilityTargets(g, layout, state);
   // Under the props and bodies, over the highlights: the ring belongs on the
   // ground the unit is standing on, not painted across its chest.
@@ -767,6 +816,7 @@ export function render(canvas, state, layout, anim = null) {
   if (state.turn === 'player') {
     drawTelegraph(g, layout, state);
     drawForecasts(g, layout, state);
+    drawAimLabels(g, layout, state);
     drawOverwatch(g, layout, state);
     drawCursor(g, layout, state);
   }

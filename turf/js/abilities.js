@@ -20,26 +20,54 @@
 // Cleave", and a board carrying six such promises at once is not full
 // information, it is a wall of text. Same reasoning as the sync cut in v24:
 // symmetric on paper, unreadable in play.
-import { manhattan, hasLOS, inBounds, unitAt, key } from './grid.js?v=2';
+import { manhattan, hasLOS, inBounds, unitAt, key } from './grid.js?v=4';
 
 export function abilitiesFor(unit, defs) {
   if (!unit || !defs) return [];
   // Faction first, because `role` is shared: enemies are melee/ranged/control
   // too, and matching on role alone quietly handed the whole rival roster a
-  // kit. Caught by the gate rather than by a playtest, which is the only
-  // reason it is not in the shipped build.
+  // kit. Caught by the gate rather than by a playtest.
   if (unit.faction !== 'player') return [];
-  // A per-unit `abilities` list wins over the role default when one exists —
-  // the seam for giving one operator a signature move later without
-  // restructuring anything.
-  if (unit.abilities) return defs.filter(a => unit.abilities.includes(a.id));
-  return defs.filter(a => a.role === unit.role);
+  // A LOADOUT, not a class. GDD §5.1: a skill line is a category a unit draws
+  // from, never a box it is locked into, and every shipped kit deliberately
+  // crosses two lines. v25-v28 keyed this on `role` — three fixed archetypes,
+  // exactly what §5.1 rejects — and every melee operator had the identical
+  // pair as a result.
+  if (unit.abilities) return unit.abilities.map(id => findAbility(defs, id)).filter(Boolean);
+  return [];
+}
+
+// WHAT IS IN HAND decides whether a skill is live. `weapon: 'ranged'` needs a
+// gun, `'knockback'` needs something that shoves. This is deliberately NOT a
+// reason to hide the skill: §5.1's whole payoff is a build that was inert
+// coming alive because of what dropped, and a skill the player cannot see is
+// a payoff they will never notice arriving.
+export function weaponSuits(unit, ability) {
+  if (!ability.weapon) return true;
+  const w = unit.weapon;
+  if (!w) return false;
+  if (ability.weapon === 'ranged') return w.archetype === 'ranged';
+  if (ability.weapon === 'melee') return w.archetype === 'melee';
+  if (ability.weapon === 'knockback') return (w.knockback || 0) > 0;
+  return true;
+}
+
+// FLANKED: the target is adjacent to one of the attacker's other operators.
+// This engine has no facing — sprites mirror, units do not turn — so a true
+// back-attack would mean adding one, and "somebody else already has them
+// busy" is the tactics-genre reading of the same idea. It also makes the
+// skill a REWARD FOR THE PAIR rather than for one unit's footwork, which is
+// the more interesting version on a three-operator crew.
+export function isFlanked(state, attacker, target, manhattan) {
+  return state.units.some(u =>
+    u.faction === attacker.faction && u.uid !== attacker.uid && u.hp > 0
+    && manhattan(u, target) <= 1);
 }
 
 // Momentum is the only currency, and `actedAction` the only other gate: an
 // ability IS your action, never an extra one.
 export function canAfford(unit, ability) {
-  return !unit.actedAction && (unit.momentum || 0) >= ability.cost;
+  return !unit.actedAction && (unit.momentum || 0) >= ability.cost && weaponSuits(unit, ability);
 }
 
 // Why a button is greyed out, in the player's words rather than a boolean.
@@ -48,6 +76,11 @@ export function canAfford(unit, ability) {
 // nothing.
 export function whyNot(unit, ability) {
   if (unit.actedAction) return 'already acted';
+  if (!weaponSuits(unit, ability)) {
+    return ability.weapon === 'knockback'
+      ? 'needs something that knocks back in hand'
+      : `needs a ${ability.weapon} weapon in hand`;
+  }
   const have = unit.momentum || 0;
   if (have < ability.cost) return `needs ${ability.cost} momentum, has ${have}`;
   return null;
@@ -91,7 +124,10 @@ export function abilityTargets(state, unit, ability) {
       const range = ability.range || (unit.weapon ? unit.weapon.range : 1);
       return state.units
         .filter(u => u.hp > 0 && u.faction !== unit.faction
-          && manhattan(unit, u) <= range && hasLOS(state, unit, u))
+          && manhattan(unit, u) <= range && hasLOS(state, unit, u)
+          // Backstab offers ONLY what somebody else already has busy, so the
+          // board never invites a swing it would then refuse.
+          && (!ability.requiresFlank || isFlanked(state, unit, u, manhattan)))
         .map(u => ({ uid: u.uid }));
     }
   }

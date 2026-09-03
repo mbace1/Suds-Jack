@@ -8,6 +8,142 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v29 — 2026-09-03
+**Owner: "I never said that only one type of skills class is available to 1
+unit. treat them like categories."** Correct, and `GDD.md` §5.1 already said
+so — *"No fixed class archetypes... class is the label a particular
+combination produces, never a box a unit is locked into"*. v25-v28 keyed the
+kit on `role`, which is precisely the archetype §5.1 rejects: every melee
+operator had the identical Cleave + Takedown, every gunner the identical
+Snap Shot + Overwatch. My fault for building the cheap version without
+reading §5.1 first.
+
+**Skills are now LINES — categories a loadout draws from.** Six, from §5.1's
+own table: Slasher (aggression), Shiv (positioning), Marksman (precision),
+Enforcer (control), Bruiser (impact), Anchor (zone). Twelve skills across
+them, and **every one of the fourteen operators has a kit that crosses two
+lines** — a roster where each unit was a pure line would be the class box
+wearing new names, and the gate asserts the crossing rather than trusting it.
+
+Six are new: **Backstab** and **Openings** (Shiv), **Steady** (Marksman),
+**Cripple** (Enforcer), **Wallop** (Bruiser), **Planted** (Anchor).
+
+**Backstab is the flanking skill and this engine has no facing** — sprites
+mirror, units do not turn — so a true back-attack would mean adding one.
+"Flanked" is instead *the rival is adjacent to one of your OTHER operators*,
+which is the tactics-genre reading of the same idea and is the better version
+on a three-operator crew: it rewards the PAIR rather than one unit's
+footwork. `abilityTargets` only offers flanked rivals, so the board never
+invites a swing it would then refuse, and the bot gets the rule for free
+instead of reimplementing it.
+
+**The flank bonus is resolved PER TARGET.** A single options object computed
+once would have paid Cleave's bonus on every body in the swing regardless of
+who was actually engaged.
+
+**A skill the weapon cannot use stays on screen and says why.** §5.1 is
+explicit that a build going inert-then-live when a weapon drops is the
+payoff, and a skill the player never saw is a payoff they will not notice
+arriving. Verified end to end: Blade holding a knife shows SNAP SHOT /
+MARKSMAN dashed and dimmed; hand him a pistol and it goes live, with a
+RELOAD button appearing beside it.
+
+**Cripple takes tiles off the move budget in `moveRange` and nowhere else**,
+so every reader — the highlight, the telegraph, `approachTile`, both bots —
+sees the shortened reach without learning the rule. Floored at 1: a unit
+pinned to zero can be farmed from range with nothing it can do, which is a
+different game.
+
+**Planted is read off the BOARD, not stored on each ally**, so it starts and
+stops working the moment somebody moves. A test caught me measuring it
+wrong — moving the protected mate also changed whose cover it stood behind,
+so the assertion was reading two rules at once.
+
+**One regression, caught by measurement.** AUTO on `the-crossing` fell from
+27% to 8%, and the cause was v28 rather than the skills: the free swing on
+the way to an extraction pad now walked the operator to the BEST firing tile,
+which drags them off the route to go and find cover. On an objective run the
+swing may not move you — 27% restored.
+
+**Barricade finally has a bot rule**, closing the gap `MST_PARITY.md` §3 has
+carried since v25 (never used, therefore never measured). Across 420 runs the
+auto-bot now uses ten of the twelve skills — Snap Shot 543, Shove 178,
+Overwatch 100, Steady 88, Cripple 79, Backstab 61, Takedown 60, Cleave 16,
+Barricade 2, Wallop 1. **Openings and Planted are still unused**, recorded
+here rather than quietly omitted.
+
+- `test/smoke.mjs` is 114 checks (was 107): every loadout crossing two lines,
+  two operators of one role having different kits, the weapon gate refusing
+  and explaining, Backstab offering nothing when nobody is engaged, the flank
+  bonus landing per target, Cripple shortening move range but never to zero,
+  and Planted lifting only while the anchor stands next to you.
+- `test/balance.mjs` green on all seven, unchanged: 57 / 67 / 65 / 27 / 68 /
+  18 / 13.
+- Tokens: `abilities` v2, `grid` v4, `combat` v17, `input` v16, `autoplay`
+  v5, `main` v27. One token per module — `abilities.js` was left importing
+  `grid.js?v=2` while everything else had moved to v4, which is the
+  instantiate-it-twice bug this repo has paid for before.
+
+## v28 — 2026-09-03
+**"Do they still automatically bump into others?"** — owner, and the answer
+was yes, in the worst possible way.
+
+**A tap on a rival ran the operator to the CHEAPEST tile that could reach
+it.** `approachTile` had scored on move cost alone since Milestone 1, which
+was fine when cost was the only thing a tile had. By v27 it was not: v6 gave
+tiles cover, v18 gave them hazards, and v24 made the DISTANCE travelled into
+momentum — damage on the swing, evasion until you spend it. Measured over
+400 one-tap attacks where a real choice of firing tile existed, the old
+default **banked less momentum than an available alternative 80% of the
+time** and **stopped in the open when cover was on offer 20% of the time**.
+The single most common input in the game was systematically fighting the
+systems built around it, and the forecast badge added in v26 was dutifully
+quoting the odds from a tile the player never chose.
+
+**`firingTileScore` replaces "cheapest" with "best"** — cover against the
+target, exposure to everyone else, hazards priced in HP, and distance as a
+small positive so a tie goes to the longer run. Same 400 cases afterwards:
+cover 20% to **0%**, momentum 80% to **30%** — and that residual 30% is
+correct rather than remaining error, since those are the boards where the
+longest run costs cover and the scorer rightly refuses it.
+
+**And the player picks.** A tap that can already fire from where the
+operator stands still fires immediately, and so does one where there is only
+one place to shoot from — no extra taps where there was nothing to decide.
+A tap that WOULD MOVE YOU now offers the firing positions instead, each
+labelled with the odds and damage it would give, the best one marked; tap a
+tile to take it, or tap the rival again to accept the default. That is the
+difference between a game that moves you and a game you move.
+
+**Aiming replaces the ordinary overlays outright** rather than layering on
+top of them: move range plus attack targets plus firing positions is three
+meanings in one colour field and the player cannot tell which tap does what.
+The other rivals' forecast badges are suppressed for the same reason — the
+board is asking one question and their odds answer a different one.
+
+**The labels are painted OVER the bodies, the tile markings under them.** A
+screenshot caught the second option's label sitting behind the very operator
+being asked to move, which is the one thing a position chooser must not
+hide.
+
+**`window.__turf.tap(gx, gy)`** is new: a tap in grid coordinates down the
+real input path. The browser check for this feature first synthesised
+pointer events at guessed pixel offsets, missed the sprite by a few pixels
+and silently reported "no targets" — a test that exercises the input path
+should not have to guess where the input path is.
+
+- `test/smoke.mjs` is 107 checks (was 101): the default preferring cover, a
+  hazard never being the default, options coming back best-first each with
+  its own forecast, firing from a tile you chose rather than the one scored
+  best, a tile that is not on offer being refused without eating the turn,
+  and an empty gun offering no positions at all.
+- `test/balance.mjs` is unchanged on all seven, and that is expected rather
+  than suspicious: its bot calls `attack` directly and never takes the
+  one-tap path, so this change is invisible to it. The 400-case measurement
+  above is the evidence, not the gate.
+- Tokens: `grid` v3, `combat` v16, `input` v15, `render` v21, `palette` v10,
+  `main` v25.
+
 ## v27 — 2026-09-03
 **`MST_PARITY.md` §2.3, and the owner's direction that bosses come after
 mechanics.** Through v26 every weapon fired every turn, forever, which is

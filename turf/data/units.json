@@ -1,19 +1,201 @@
 {
-  "_comment": "Player-recruitable operators. `weapon` here is a STARTING KIT (GDD §5.1: no fixed class archetypes — a unit's real identity comes from skill lines picked up at level-ups plus whatever weapon it's currently holding, not this field). `portrait` is a headshot crop (owner direction, 2026-08-31: a full-body plate reads as an indistinct blob at squad-row icon size; a head crop reads) for the squad-row/selection UI. `sprite` (owner direction, 2026-08-31: \"start replacing player characters with character model sprites\") is the full-body plate — read on the board itself, real size, no crop.",
+  "_comment": "Player-recruitable operators. `weapon` here is a STARTING KIT (GDD \u00a75.1: no fixed class archetypes \u2014 a unit's real identity comes from skill lines picked up at level-ups plus whatever weapon it's currently holding, not this field). `portrait` is a headshot crop (owner direction, 2026-08-31: a full-body plate reads as an indistinct blob at squad-row icon size; a head crop reads) for the squad-row/selection UI. `sprite` (owner direction, 2026-08-31: \"start replacing player characters with character model sprites\") is the full-body plate \u2014 read on the board itself, real size, no crop. `abilities` is this operator's LOADOUT, drawn from any of the skill lines in abilities.json \u2014 GDD \u00a75.1's rule that a line is a category and never a box, and that 'class' is the label a combination produces. Every kit here deliberately crosses two lines, because a roster where each unit is a pure line would be the fixed archetypes \u00a75.1 rejects, wearing new names.",
   "units": [
-    { "id": "blade",   "name": "Blade",   "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/blade-head.png",   "sprite": "art-src/sprites/blade-plate.png" },
-    { "id": "niner",   "name": "Niner",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/niner-head.png",   "sprite": "art-src/sprites/niner-plate.png" },
-    { "id": "wrench",  "name": "Wrench",  "role": "control", "weapon": "pipe",   "hp": 10, "move": 3, "portrait": "art-src/sprites/heads/wrench-head.png",  "sprite": "art-src/sprites/wrench-plate.png" },
-    { "id": "deuce",   "name": "Deuce",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/deuce-head.png",   "sprite": "art-src/sprites/deuce-plate.png" },
-    { "id": "otter",   "name": "Otter",   "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/otter-head.png",   "sprite": "art-src/sprites/otter-plate.png" },
-    { "id": "sledge",  "name": "Sledge",  "role": "control", "weapon": "hammer", "hp": 11, "move": 3, "portrait": "art-src/sprites/heads/sledge-head.png",  "sprite": "art-src/sprites/sledge-plate.png" },
-    { "id": "cleaver", "name": "Cleaver", "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/cleaver-head.png", "sprite": "art-src/sprites/cleaver-plate.png" },
-    { "id": "gunner",  "name": "Gunner",  "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/gunner-head.png",  "sprite": "art-src/sprites/cast/gunner-idle.png" },
-    { "id": "denny",   "name": "Denny",   "role": "ranged",  "weapon": "pistol", "hp": 8,  "move": 4, "portrait": "art-src/sprites/heads/denny-head.png",   "sprite": "art-src/sprites/denny-plate.png" },
-    { "id": "rook",    "name": "Rook",    "role": "control", "weapon": "pipe",   "hp": 10, "move": 3, "portrait": "art-src/sprites/heads/rook-head.png",    "sprite": "art-src/sprites/rook-plate.png" },
-    { "id": "leopard", "name": "Leopard", "role": "melee",   "weapon": "knife",  "hp": 8,  "move": 5, "portrait": "art-src/sprites/heads/leopard-head.png", "sprite": "art-src/sprites/cast/leopard-idle.png" },
-    { "id": "reed",    "name": "Reed",    "role": "melee",   "weapon": "knife",  "hp": 9,  "move": 4, "portrait": "art-src/sprites/heads/reed-head.png",    "sprite": "art-src/sprites/reed-plate.png" },
-    { "id": "vex",     "name": "Vex",     "role": "melee",   "weapon": "knife",  "hp": 8,  "move": 5, "portrait": "art-src/sprites/heads/vex-head.png",     "sprite": "art-src/sprites/vex-plate.png" },
-    { "id": "knuckle", "name": "Knuckle", "role": "control", "weapon": "flail",  "hp": 10, "move": 4, "portrait": "art-src/sprites/heads/knuckle-head.png", "sprite": "art-src/sprites/knuckle-plate.png" }
+    {
+      "id": "blade",
+      "name": "Blade",
+      "role": "melee",
+      "weapon": "knife",
+      "hp": 9,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/blade-head.png",
+      "sprite": "art-src/sprites/blade-plate.png",
+      "abilities": [
+        "cleave",
+        "backstab"
+      ]
+    },
+    {
+      "id": "niner",
+      "name": "Niner",
+      "role": "ranged",
+      "weapon": "pistol",
+      "hp": 8,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/niner-head.png",
+      "sprite": "art-src/sprites/niner-plate.png",
+      "abilities": [
+        "snapshot",
+        "overwatch"
+      ]
+    },
+    {
+      "id": "wrench",
+      "name": "Wrench",
+      "role": "control",
+      "weapon": "pipe",
+      "hp": 10,
+      "move": 3,
+      "portrait": "art-src/sprites/heads/wrench-head.png",
+      "sprite": "art-src/sprites/wrench-plate.png",
+      "abilities": [
+        "shove",
+        "barricade"
+      ]
+    },
+    {
+      "id": "deuce",
+      "name": "Deuce",
+      "role": "ranged",
+      "weapon": "pistol",
+      "hp": 8,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/deuce-head.png",
+      "sprite": "art-src/sprites/deuce-plate.png",
+      "abilities": [
+        "steady",
+        "openings"
+      ]
+    },
+    {
+      "id": "otter",
+      "name": "Otter",
+      "role": "melee",
+      "weapon": "knife",
+      "hp": 9,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/otter-head.png",
+      "sprite": "art-src/sprites/otter-plate.png",
+      "abilities": [
+        "backstab",
+        "takedown"
+      ]
+    },
+    {
+      "id": "sledge",
+      "name": "Sledge",
+      "role": "control",
+      "weapon": "hammer",
+      "hp": 11,
+      "move": 3,
+      "portrait": "art-src/sprites/heads/sledge-head.png",
+      "sprite": "art-src/sprites/sledge-plate.png",
+      "abilities": [
+        "wallop",
+        "planted"
+      ]
+    },
+    {
+      "id": "cleaver",
+      "name": "Cleaver",
+      "role": "melee",
+      "weapon": "knife",
+      "hp": 9,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/cleaver-head.png",
+      "sprite": "art-src/sprites/cleaver-plate.png",
+      "abilities": [
+        "cleave",
+        "openings"
+      ]
+    },
+    {
+      "id": "gunner",
+      "name": "Gunner",
+      "role": "ranged",
+      "weapon": "pistol",
+      "hp": 8,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/gunner-head.png",
+      "sprite": "art-src/sprites/cast/gunner-idle.png",
+      "abilities": [
+        "cripple",
+        "snapshot"
+      ]
+    },
+    {
+      "id": "denny",
+      "name": "Denny",
+      "role": "ranged",
+      "weapon": "pistol",
+      "hp": 8,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/denny-head.png",
+      "sprite": "art-src/sprites/denny-plate.png",
+      "abilities": [
+        "overwatch",
+        "steady"
+      ]
+    },
+    {
+      "id": "rook",
+      "name": "Rook",
+      "role": "control",
+      "weapon": "pipe",
+      "hp": 10,
+      "move": 3,
+      "portrait": "art-src/sprites/heads/rook-head.png",
+      "sprite": "art-src/sprites/rook-plate.png",
+      "abilities": [
+        "barricade",
+        "shove"
+      ]
+    },
+    {
+      "id": "leopard",
+      "name": "Leopard",
+      "role": "melee",
+      "weapon": "knife",
+      "hp": 8,
+      "move": 5,
+      "portrait": "art-src/sprites/heads/leopard-head.png",
+      "sprite": "art-src/sprites/cast/leopard-idle.png",
+      "abilities": [
+        "takedown",
+        "openings"
+      ]
+    },
+    {
+      "id": "reed",
+      "name": "Reed",
+      "role": "melee",
+      "weapon": "knife",
+      "hp": 9,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/reed-head.png",
+      "sprite": "art-src/sprites/reed-plate.png",
+      "abilities": [
+        "cleave",
+        "planted"
+      ]
+    },
+    {
+      "id": "vex",
+      "name": "Vex",
+      "role": "melee",
+      "weapon": "knife",
+      "hp": 8,
+      "move": 5,
+      "portrait": "art-src/sprites/heads/vex-head.png",
+      "sprite": "art-src/sprites/vex-plate.png",
+      "abilities": [
+        "backstab",
+        "cleave"
+      ]
+    },
+    {
+      "id": "knuckle",
+      "name": "Knuckle",
+      "role": "control",
+      "weapon": "flail",
+      "hp": 10,
+      "move": 4,
+      "portrait": "art-src/sprites/heads/knuckle-head.png",
+      "sprite": "art-src/sprites/knuckle-plate.png",
+      "abilities": [
+        "wallop",
+        "takedown"
+      ]
+    }
   ]
 }
