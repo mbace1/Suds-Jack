@@ -4,6 +4,19 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v5 — 2026-09-04
+
+Broken Transit is now covered as a complete browser-played traversal sequence rather than isolated state assertions.
+
+- Chromium accelerates into a real run, clears the authored **three-tile gap**, and must resolve through `landRun` on the lower right platform.
+- It continues into a second running jump, catches the **32px raised ledge**, settles through `ledgeCatch → hang`, and completes `pullUp` onto the upper platform.
+- The verified finish is **x=229.1 / y=96**, grounded, with **0 transition faults**.
+- The pass exposed one hidden validator mismatch in normal gameplay: fast floor contact is implemented as `air → land → landRun`, while the movement contract only represented a direct `air → landRun`. The real runtime promotion is now explicitly legal and regression-tested.
+- Scene 4 low mantle remains in the browser gate and still finishes grounded at **y=160**.
+- The playable entry uses module token **v8** and exposes build marker **FP-MOVE-8**.
+
+Next movement pass: deliberate climb-down and shimmy, then hard landing and brake/pivot before returning to character-specific animation and combat work.
+
 ## v4 — 2026-09-04
 
 Movement foundation release. This is the first Flash Prince build with a dedicated runtime movement gate rather than relying on visual inspection alone.
