@@ -1,18 +1,19 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=7';
+import { PAL } from './palette.js?v=9';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=13';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=17';
+} from './combat.js?v=15';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=19';
 import { createCamera, MIN_TILE_W } from './camera.js?v=1';
-import { createInputHandler } from './input.js?v=11';
+import { createInputHandler } from './input.js?v=13';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
+import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
 import { abilitiesFor, canAfford, whyNot } from './abilities.js?v=1';
-import { autoTurn } from './autoplay.js?v=3';
+import { autoTurn } from './autoplay.js?v=4';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
@@ -402,6 +403,21 @@ function renderAbilities() {
   abilitiesEl.innerHTML = '';
   const sel = state.selected ? getUnit(state, state.selected) : null;
   if (!sel || state.turn !== 'player' || state.result) { input && input.disarm(); return; }
+  // Reload first, and only for something that carries a magazine. It is an
+  // ability in every sense that matters here — it costs the action, it is
+  // mutually exclusive with the rest, and it is the one the board should
+  // offer loudest when the gun is dry.
+  const mag = magOf(sel.weapon);
+  if (mag != null) {
+    const full = roundsLeft(sel) >= mag;
+    const btn = document.createElement('button');
+    btn.className = 'abilityBtn reload';
+    btn.disabled = full || sel.actedAction;
+    btn.title = full ? 'Already loaded' : 'Reload — costs your action, never your move';
+    btn.innerHTML = `<span>Reload</span><span class="cost">${roundsLeft(sel)}/${mag}</span>`;
+    btn.addEventListener('pointerup', e => { e.preventDefault(); input.reloadSelected(); });
+    abilitiesEl.appendChild(btn);
+  }
   for (const ab of abilitiesFor(sel, DATA.abilities)) {
     const ok = canAfford(sel, ab);
     const btn = document.createElement('button');
@@ -477,6 +493,7 @@ function updateHud() {
   controls.endTurn.disabled = state.turn !== 'player' || !!state.result;
   controls.cancel.disabled = state.turn !== 'player' || !!state.result || !state.selected;
 
+
   squadEl.innerHTML = '';
   for (const u of state.units.filter(u => u.faction === 'player')) {
     const btn = document.createElement('button');
@@ -503,6 +520,7 @@ function updateHud() {
     const carried = (sel.trinkets || []).map(t => t.name).join(', ');
     selTextEl.innerHTML = `<b>${sel.name}</b> · Lv${sel.level} (${sel.xp}/${xpToNext(sel.level)} xp) · ${sel.weapon.name} (rng ${sel.weapon.range}, dmg ${sel.weapon.damage})<br>`
       + `move: ${sel.actedMove ? 'used' : 'ready'} · act: ${sel.actedAction ? 'used' : 'ready'}`
+      + ammoText(sel)
       + momentumText(sel)
       + forecastText(state)
       + (carried ? `<br>carrying: ${carried}` : '');
@@ -537,6 +555,15 @@ function forecastText(state) {
   return `<br>vs ${at.name}: ${Math.round(f.chance * 100)}% for ${f.damage}`
     + (f.lethal ? ' — KILLS' : ` of ${f.targetHp}`)
     + (why.length ? ` · ${why.join(' · ')}` : '');
+}
+
+// Rounds left, and what to do about it. Silent for melee, because "ammo: —"
+// on every knife is noise.
+function ammoText(sel) {
+  const mag = magOf(sel.weapon);
+  if (mag == null) return '';
+  if (needsReload(sel)) return `<br>EMPTY — reloading costs your action, not your move`;
+  return `<br>ammo ${roundsLeft(sel)} / ${mag}`;
 }
 
 function momentumText(sel) {

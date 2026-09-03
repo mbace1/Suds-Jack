@@ -8,6 +8,94 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v27 — 2026-09-03
+**`MST_PARITY.md` §2.3, and the owner's direction that bosses come after
+mechanics.** Through v26 every weapon fired every turn, forever, which is
+why a turn in TURF asked roughly one question: who do I shoot.
+
+**MAGAZINES.** `js/ammo.js`. A ranged weapon holds `mag` rounds, firing
+spends one, and **reloading is your action and never your move** — so an
+empty turn is still a turn you spend going somewhere. That is the whole
+design: it hands the movement economy (v24) and the ability kit (v25) the
+empty turns they were previously competing with a free attack for. Melee
+has no magazine at all: a knife does not run out, and that reliability is
+precisely what melee trades its range for.
+
+The round is spent inside `resolveAttack` and nowhere else, so every firing
+path pays for it — an ordinary swing, an ability, and an overwatch reaction
+all funnel through one function rather than three call sites remembering.
+
+**Enemies reload on the same rule and TELEGRAPH it** (`ai.js` returns a
+`reload` intent, drawn as an open bracket rather than the attack marker). A
+rival standing still because it has nothing chambered would otherwise read
+as a bug rather than a beat — and the window it opens is only worth having
+if the player can see it. It backs OFF while reloading, since a unit with
+nothing to fire wants distance rather than a knife fight.
+
+**`ammo.js` is its own leaf module for a structural reason**: combat.js,
+ai.js, autoplay.js and render.js all need to ask "is this empty", and ai.js
+CANNOT import combat.js — combat.js imports ai.js, so the pair is circular
+(the same constraint that put `recomputeWeapon`'s result on `unit.weapon`
+rather than behind a getter). A predicate copied into four files is the
+third-copy bug this codebase has paid for twice.
+
+**An ABSENT round count means full, not empty**, and that is load-bearing
+rather than defensive: any path that puts a weapon on a unit without seeding
+the count — a direct assignment, a future pickup, a test poking at
+internals — would otherwise hand back a gun that is silently out of rounds.
+Only a real zero, arrived at by firing, is empty. A test caught this by
+swapping a weapon the way no shipping code does yet.
+
+**THE BALANCE CONSEQUENCE IS THE HEADLINE, and it is not a bug.** The rule's
+effect scales with how RANGED each side is, and the encounters were tuned
+when ammo was infinite. Measured across all seven: `warehouse` (crew 0/3
+ranged, foes 2/6) went 65% to 98% because the crew lost nothing and the
+rivals lost a third of their shooting; `underpass` (crew 2/3, foes 1/5) went
+17% to 0% for the mirror reason; and `the-yard` (0/3 against 0/5) did not
+move by a single point, which is what confirms the mechanism rather than
+leaving it a story. Magazine size was swept at 3/3/2, 4/4/3, 5/5/3 and
+6/6/4: at 5 and above the bots essentially never run dry in a 5-9 round
+encounter and the rule is inert, at 3 it distorts every rate by 20-30
+points, and **4/4/3 is the only setting that leaves all seven near their
+pre-ammo numbers**.
+
+**`the-depot` had to be re-tuned and is bimodal.** Its rivals are 2/3
+ranged, so magazines cost THEM more and it flipped from 25% to 100%.
+Restoring the fourth enemy put it at 0%, and it stays at 0% at every cover
+layout, roster and cache position tried — the mission is a race, so enemy
+count is a cliff there. Cache HP turned out to be the one lever with fine
+grain (6 → 100%, 10 → 13%), which my scratch harness had reported as having
+no effect at all: the gate is what gets tuned against, not a side script.
+Cache position is worth a warning in its own right — it is **non-monotonic**
+(y=1 → 100%, y=2 → 0%, y=3 → 98%) because y=2 is the chokepoint between two
+dumpsters, so it must not be "fixed" by nudging.
+
+**Reload sits with the ABILITIES, not with Cancel and End Turn**, because it
+is the same currency — what you spend your action on instead of a swing or a
+kit move. Putting it in the utility row first pushed the phone panel to five
+rows and wrapped AUTO onto its own line, costing real board height. Its cost
+badge doubles as the ammo readout (`RELOAD 0/4`).
+
+Ammo draws as a pip row UNDER the HP bar, with spent rounds kept as dark
+slots — momentum's pips are above it and warm, ammo's below and cool, so the
+two resources cannot be read as one strip, and "one of three" and "one" are
+different facts that only a row keeping its empty slots can tell apart.
+
+- `R` on the keyboard and X on the pad reload; never Start, which is the
+  arcade shell's hold-for-home.
+- Both bots reload. That is not a system the balance bot is meant to ignore:
+  it is the only way an empty gun ever fires again, and a bot that never
+  reloaded would report the mechanic as a difficulty spike rather than a
+  rhythm.
+- `test/smoke.mjs` is 101 checks (was 92): melee carrying no magazine, the
+  absent-means-full rule, the round being spent whichever path fired, an
+  empty gun not being offered a shot the board would then refuse, the
+  action-not-move cost, a full gun and a knife both refusing, the enemy
+  telegraph, and an enemy actually reloading after telegraphing it.
+- `test/balance.mjs` green on all seven: 57 / 67 / 65 / 27 / 68 / 18 / 13.
+- Tokens: `ammo` v2 (new), `combat` v15, `ai` v6, `input` v13, `render` v19,
+  `palette` v9, `autoplay` v4, `main` v23.
+
 ## v26 — 2026-09-03
 **`MST_PARITY.md` §2.1 and §2.2, in order.** Two items off the roadmap
 written yesterday, and both turned out to be about the same thing: a

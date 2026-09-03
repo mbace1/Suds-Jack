@@ -3,8 +3,9 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=7';
+import { PAL } from './palette.js?v=9';
 import { key } from './grid.js?v=2';
+import { magOf, roundsLeft } from './ammo.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // The real on-board sprite height (drawUnitSprite) — taller than the old
@@ -399,6 +400,19 @@ function drawUnit(g, layout, unit, isSelected, anim) {
       g.p(x - total / 2 + i * (pipW + gap), hpY - 3, pipW, 2, PAL.MOMENTUM);
     }
   }
+
+  // Ammo, under the HP bar rather than over it, so the two pip rows sit on
+  // opposite sides of the health and cannot be read as one strip. Spent
+  // rounds stay drawn as dark slots: "one of three" and "one" are different
+  // facts, and only the row that keeps its empty slots says which.
+  const mag = magOf(unit.weapon);
+  if (mag != null) {
+    const pipW = 2, gap = 1, total = mag * pipW + (mag - 1) * gap;
+    for (let i = 0; i < mag; i++) {
+      g.p(x - total / 2 + i * (pipW + gap), hpY + 3, pipW, 2,
+        i < roundsLeft(unit) ? PAL.AMMO : PAL.AMMO_SPENT);
+    }
+  }
 }
 // Draws the real sprite, anchored so the character's actual FEET (entry's
 // scanned ink bounds — see scanInkBounds) land on feetY, not the bottom of
@@ -637,6 +651,14 @@ function drawTelegraph(g, layout, state) {
         if (enemy.weapon.knockback > 0) g.p(tp.x - 1, tp.y - TILE_H * 0.9, 2, 2, PAL.TELEGRAPH);
       }
       weaponGlyph(g, at.x, at.y - UNIT_H - 7, enemy.weapon);
+    } else if (intent.type === 'reload') {
+      // An open bracket over the destination — deliberately NOT the attack
+      // marker, because the whole value of telegraphing a reload is that the
+      // player can tell at a glance which rivals cannot hurt them this turn.
+      g.diamond(at.x, at.y, TILE_W - 8, TILE_H - 4, null, PAL.AMMO, 2);
+      g.line(at.x - 5, at.y - TILE_H * 0.9, at.x + 5, at.y - TILE_H * 0.9, PAL.AMMO, null, 2);
+      g.line(at.x - 5, at.y - TILE_H * 0.9, at.x - 5, at.y - TILE_H * 0.9 + 3, PAL.AMMO, null, 2);
+      g.line(at.x + 5, at.y - TILE_H * 0.9, at.x + 5, at.y - TILE_H * 0.9 + 3, PAL.AMMO, null, 2);
     } else if (intent.type === 'move') {
       g.disc(at.x, at.y, 1.5, PAL.TELEGRAPH);
     }

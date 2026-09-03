@@ -38,6 +38,7 @@ an MST:
 | Readable enemy turn | Two-beat phase (LOOK then ACT), spotlight, camera follow, intent paths |
 | Full information on a shot | **Forecast** — odds, damage and LETHAL over every reachable target, from the tile you would actually shoot from |
 | Mission variety | **Extraction** and **destroy**, both on a deadline — the game's first clock |
+| Ammo rhythm | **Magazines** on every gun; reloading is your action and never your move |
 
 The economy closes: you **move** to afford the thing you then **do**.
 
@@ -61,14 +62,10 @@ second and third loss conditions; before v26 it had exactly one, a crew wipe.
 > fight is thin. The boss moved to 2.6; what follows is the mechanics it
 > should be built on.
 
-**2.3 — Ammo and reload.** *(small-medium, and the strongest MST fit left)*
-Every weapon fires every turn, forever, which is why a turn in TURF has one
-question in it. MST's rhythm comes from a magazine: firing spends a shot,
-reloading IS your action for that turn. The knock-on is the point — a turn
-you would have spent reloading becomes a turn to reposition, so it feeds the
-movement economy rather than sitting beside it, and it gives Overwatch and
-the abilities the empty turns they currently have to compete for. Fully
-telegraphable: ammo is a pip row, the same as momentum.
+**2.3 — DONE (v27).** Magazines on ranged weapons only, reloading costs the
+action and never the move — so an empty turn is a turn to reposition, which
+is the movement economy getting the empty turns it was competing with a free
+attack for. Enemies reload on the same rule and TELEGRAPH it.
 
 **2.4 — Reinforcements.** *(medium)*
 Fixes something real and currently ugly: on a survive map, wiping the roster
@@ -124,6 +121,18 @@ against PR #419; the frames themselves need an owner-side push request.
   every setting because it asks the crew to cross the board twice. One cache
   is 20%. The third-versus-fourth enemy is likewise a cliff, 20% to 0%. Every
   one of those numbers is in the encounter's own `_note`.
+- **The ammo rule's effect scales with each side's RANGED SHARE**, and the
+  encounters were balanced when ammo was infinite. Measured: `warehouse`
+  (crew 0/3 ranged, foes 2/6) went 65% → 98% because the crew lost nothing;
+  `underpass` (crew 2/3, foes 1/5) went 17% → 0% because the crew lost most
+  of its damage; `the-yard` (0/3 vs 0/5) did not move at all, which is what
+  confirms the mechanism. Magazine size was swept and 4/4/3 is the only
+  setting that leaves every encounter near its pre-ammo rate. **Any future
+  roster change now has a balance consequence it did not have before.**
+- **`the-depot` is bimodal on enemy count** and no amount of geometry softens
+  it: 3 foes reads 100% and 4 reads 0% at every cover layout, roster and
+  cache position tried, because that mission is a race rather than a fight.
+  Cache HP is the only lever with fine grain there (6 → 100%, 10 → 13%).
 - **A destroy map is invisible to a "nearest target" bot**, which is why
   `balance.mjs` had to learn the objective. Worth remembering before adding a
   third mode: a mode the bots cannot pursue is a mode nobody can balance.

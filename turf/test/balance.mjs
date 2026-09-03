@@ -27,8 +27,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createEncounterState, attackableTargets, attack, moveUnit, endUnitTurn,
-  endPlayerTurn, stepEnemyPhase, movableTiles,
+  endPlayerTurn, stepEnemyPhase, movableTiles, reloadUnit,
 } from '../js/combat.js';
+import { needsReload } from '../js/ammo.js';
 import { key } from '../js/grid.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -87,7 +88,12 @@ function playOnce(encounter, seed) {
         }
         targets = attackableTargets(s, u);
       }
+      // Reloading is not a SYSTEM this bot is meant to ignore — it is the
+      // only way an empty gun ever fires again, and a bot that never reloads
+      // would report the ammo mechanic as a difficulty spike rather than a
+      // rhythm. Same standard as taking the free swing on an extraction.
       if (targets.length) attack(s, u.uid, targets[0]);
+      else if (needsReload(u)) reloadUnit(s, u.uid);
       else endUnitTurn(s, u.uid);
       if (s.result) break;
     }
@@ -147,7 +153,9 @@ function walkToObjective(s, u) {
   // Measured: without this the crew was wiped in 34 of 40 runs and the mode
   // read as unwinnable when the map was merely dangerous.
   const targets = attackableTargets(s, u);
-  if (targets.length) attack(s, u.uid, targets[0]); else endUnitTurn(s, u.uid);
+  if (targets.length) attack(s, u.uid, targets[0]);
+  else if (needsReload(u)) reloadUnit(s, u.uid);
+  else endUnitTurn(s, u.uid);
   return true;
 }
 

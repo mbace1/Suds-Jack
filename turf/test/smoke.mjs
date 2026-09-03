@@ -14,13 +14,14 @@ import {
   forecastAttack, previewAttack, COVER_PENALTY,
   endUnitTurn, endPlayerTurn, stepEnemyPhase,
   awardXp, xpToNext, XP_BASE_CLEAR, XP_PER_KILL, HP_PER_LEVEL, DROP_CHANCE, hazardAt,
-  applyTrinkets, TRINKET_SHARE,
+  applyTrinkets, TRINKET_SHARE, reloadUnit,
 } from '../js/combat.js';
 import {
   MOVE_CAP, EVADE_PER, DAMAGE_PER, addMomentum, clearMomentum, evasionOf,
 } from '../js/momentum.js';
 import { abilitiesFor, abilityTargets, canAfford, whyNot, findAbility } from '../js/abilities.js';
 import { autoTurn } from '../js/autoplay.js';
+import { magOf, needsReload, roundsLeft } from '../js/ammo.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -1034,6 +1035,113 @@ check('the enemy brain never targets an objective', () => {
         'rivals fight the crew, never the scenery');
     }
   }
+});
+
+// ── ammo and reload (MST_PARITY §2.3) ────────────────────────
+// The rule that gives a turn more than one question in it. Every check here
+// is about the ECONOMY as much as the count: an ammo system that costs the
+// move as well as the action would just be a slower game.
+
+check('only guns carry a magazine', () => {
+  const knife = WEAPONS.find(w => w.id === 'knife');
+  const pistol = WEAPONS.find(w => w.id === 'pistol');
+  assert.equal(magOf(knife), null, 'a knife does not run out — that reliability is what melee buys');
+  assert.ok(magOf(pistol) > 0);
+  assert.equal(needsReload({ weapon: knife, ammo: 0 }), false,
+    'and melee is never "needing a reload", so no check has to special-case it');
+});
+
+check('an absent round count means FULL, not empty', () => {
+  // Load-bearing: any path that puts a weapon on a unit without seeding the
+  // count — a direct assignment, a future pickup, a test poking at
+  // internals — would otherwise hand back a gun that is silently out.
+  const pistol = WEAPONS.find(w => w.id === 'pistol');
+  assert.equal(roundsLeft({ weapon: pistol }), pistol.mag);
+  assert.equal(needsReload({ weapon: pistol }), false);
+  assert.equal(needsReload({ weapon: pistol, ammo: 0 }), true, 'only a real zero is empty');
+});
+
+check('firing spends a round, whichever path fired it', () => {
+  const state = boot(BACKLOT, 4);
+  const shooter = state.units.find(u =>
+    u.faction === 'player' && u.weapon.archetype === 'ranged' && attackableTargets(state, u).length);
+  assert.ok(shooter, 'seed 4 gives a gun a target');
+  const before = roundsLeft(shooter);
+  orderAttack(state, shooter.uid, attackableTargets(state, shooter)[0]);
+  assert.equal(shooter.ammo, before - 1, 'the round is spent in resolveAttack, so every path pays');
+  const evt = state.log.filter(e => e.type === 'attack').pop();
+  assert.equal(evt.ammo, shooter.ammo, 'and the event carries it, so the HUD never has to guess');
+});
+
+check('an empty gun is not offered a shot it would refuse', () => {
+  const state = boot(BACKLOT, 4);
+  const shooter = state.units.find(u => u.faction === 'player' && u.weapon.archetype === 'ranged');
+  const foe = state.units.find(u => u.faction === 'enemy');
+  foe.x = shooter.x + 1; foe.y = shooter.y;
+  assert.ok(attackableTargets(state, shooter).length, 'loaded, the shot is on');
+  shooter.ammo = 0;
+  assert.equal(attackableTargets(state, shooter).length, 0,
+    'the board must never highlight something it will then refuse');
+  assert.equal(attack(state, shooter.uid, foe.uid).reason, 'empty');
+});
+
+check('reloading costs the ACTION and never the MOVE', () => {
+  // The entire reason the mechanic is interesting rather than annoying: an
+  // empty turn is still a turn you spend going somewhere.
+  const state = boot(BACKLOT, 4);
+  const shooter = state.units.find(u => u.faction === 'player' && u.weapon.archetype === 'ranged');
+  shooter.ammo = 0;
+  assert.equal(reloadUnit(state, shooter.uid).ok, true);
+  assert.equal(roundsLeft(shooter), magOf(shooter.weapon), 'full again');
+  assert.equal(shooter.actedAction, true, 'it was your action');
+  assert.equal(shooter.actedMove, false, 'and your move is untouched');
+  assert.equal(reloadUnit(state, shooter.uid).reason, 'already-acted', 'once per turn');
+});
+
+check('a full gun and a knife both refuse a reload', () => {
+  const state = boot(BACKLOT, 4);
+  const gun = state.units.find(u => u.faction === 'player' && u.weapon.archetype === 'ranged');
+  assert.equal(reloadUnit(state, gun.uid).reason, 'already-full');
+  const knife = state.units.find(u => u.faction === 'player' && u.weapon.archetype === 'melee');
+  assert.equal(reloadUnit(state, knife.uid).reason, 'nothing-to-reload');
+});
+
+check('an empty rival TELEGRAPHS the reload rather than just standing there', () => {
+  // A rival doing nothing for no visible reason reads as a bug, not a beat —
+  // and the window it opens is only worth having if the player can see it.
+  const state = boot(BACKLOT, 4);
+  const gunner = state.units.find(u => u.faction === 'enemy' && u.weapon.archetype === 'ranged');
+  assert.ok(gunner, 'backlot fields a shooter');
+  const loaded = planIntent(state, gunner);
+  gunner.ammo = 0;
+  const dry = planIntent(state, gunner);
+  assert.equal(dry.type, 'reload', 'the intent says so by name');
+  assert.notEqual(loaded.type, 'reload');
+});
+
+check('an enemy that telegraphed a reload actually reloads', () => {
+  const state = boot(BACKLOT, 4);
+  for (const e of state.units.filter(u => u.faction === 'enemy' && u.weapon.archetype === 'ranged')) e.ammo = 0;
+  // Re-plan, because endPlayerTurn FREEZES the telegraph (v10's fix) and a
+  // test that mutates ammo directly has skipped the replan every real
+  // action performs. The frozen plan is the whole point of that design; the
+  // test has to respect it rather than route around it.
+  planAllIntents(state);
+  endPlayerTurn(state);
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+  const dry = state.units.filter(u => u.faction === 'enemy' && u.hp > 0 && magOf(u.weapon));
+  assert.ok(dry.every(u => roundsLeft(u) === magOf(u.weapon)),
+    'symmetric with the crew, or the rule is a trap the player learns to exploit');
+  assert.ok(state.log.some(e => e.type === 'reload' && e.uid.startsWith('e')));
+});
+
+check('a swapped weapon arrives loaded', () => {
+  const state = boot(BACKLOT, 4);
+  const u = state.units.find(x => x.faction === 'player' && x.weapon.archetype === 'melee');
+  u.baseWeapon = WEAPONS.find(w => w.id === 'shotgun');
+  u.ammo = null;
+  applyTrinkets(u, [], TRINKETS);
+  assert.equal(roundsLeft(u), magOf(u.weapon), 'a picked-up gun is not handed over empty');
 });
 
 // The AUTO switch has to survive every encounter, and this is the check that

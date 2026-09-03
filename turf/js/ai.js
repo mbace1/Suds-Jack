@@ -4,6 +4,7 @@
 // action so the intent shown on screen never lies about the current board.
 import { manhattan, moveRange, hasLOS, coverSoftens, key } from './grid.js?v=2';
 import { evasionOf, EVADE_PER } from './momentum.js?v=1';
+import { needsReload } from './ammo.js?v=2';
 
 // What standing on a tile costs this enemy, in HP. A lethal hazard is scored
 // as its whole health bar rather than Infinity so the comparison stays
@@ -123,6 +124,26 @@ function nearestTarget(state, enemy) {
 export function planIntent(state, enemy) {
   const target = nearestTarget(state, enemy);
   if (!target) return { type: 'idle' };
+
+  // AN EMPTY GUN IS TELEGRAPHED. Enemies reload on exactly the rule the crew
+  // does, and a rival standing still because it has nothing chambered has to
+  // SAY so — otherwise the board shows an enemy doing nothing for no visible
+  // reason, which in a game whose whole contract is full information reads
+  // as a bug rather than a beat. It still repositions while it reloads: the
+  // move is untouched by the action, both ways.
+  if (needsReload(enemy)) {
+    const reachable = enemy.actedMove ? [] : [...moveRange(state, enemy).values()];
+    let best = { x: enemy.x, y: enemy.y };
+    let bestScore = manhattan(enemy, target) + hazardCost(state, enemy, enemy.x, enemy.y) * 1.5;
+    for (const { x, y } of reachable) {
+      // Backing OFF while empty: a rival with nothing to fire wants distance,
+      // not a knife fight, so it scores tiles by how far from the crew they
+      // are rather than how near.
+      const s2 = -manhattan({ x, y }, target) + hazardCost(state, enemy, x, y) * 1.5;
+      if (s2 < bestScore) { bestScore = s2; best = { x, y }; }
+    }
+    return { type: 'reload', moveTo: best, targetUid: target.uid };
+  }
 
   // Pick a firing position the way this enemy's behaviour wants to stand,
   // not merely the closest one. An attack is still worth a scratch but never

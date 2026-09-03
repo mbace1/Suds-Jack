@@ -4,11 +4,11 @@
 // in the same handlePoint(hit, x, y) — nothing downstream (combat.js) knows
 // or cares which input method was used, the same discipline hub/padkeys.js
 // uses to bridge a pad onto a game that never grew one.
-import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=17';
+import { screenToGrid, toScreen, TILE_W, SPRITE_H } from './render.js?v=19';
 import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
-  canUnitAct, endPlayerTurn, getUnit, useAbility, previewAttack,
-} from './combat.js?v=13';
+  canUnitAct, endPlayerTurn, getUnit, useAbility, previewAttack, reloadUnit,
+} from './combat.js?v=15';
 import { abilityTargets, findAbility } from './abilities.js?v=1';
 import { key } from './grid.js?v=2';
 import { watchPad } from '../../hub/pad.js?v=9';
@@ -212,6 +212,18 @@ export function createInputHandler({
     }
   }
 
+  // Reload, from the button, the R key or the pad's X. One path, like every
+  // other command here — combat.js never learns which input asked.
+  function reloadSelected() {
+    const state = getState();
+    if (state.turn !== 'player' || state.result || !state.selected) return;
+    const r = reloadUnit(state, state.selected);
+    if (!r.ok) return;
+    armed = null;
+    refreshSelectionOverlay(state);
+    onChange();
+  }
+
   function endTurn() {
     const state = getState();
     if (state.turn !== 'player' || state.result) return;
@@ -294,6 +306,7 @@ export function createInputHandler({
     if (d) { evt.preventDefault(); moveCursor(d[0], d[1]); return; }
     if (evt.key === 'Enter' || evt.key === ' ') { evt.preventDefault(); confirmAtCursor(); return; }
     if (evt.key === 'Escape') { evt.preventDefault(); cancelSelection(); return; }
+    if (evt.key === 'r' || evt.key === 'R') { evt.preventDefault(); reloadSelected(); return; }
     if (evt.key === 'e' || evt.key === 'E') { evt.preventDefault(); endTurn(); }
   }
   window.addEventListener('keydown', onKeyDown);
@@ -307,12 +320,14 @@ export function createInputHandler({
     press: i => {
       if (i === 0) confirmAtCursor();
       else if (i === 1) cancelSelection();
+      else if (i === 2) reloadSelected();   // X — never Start, that's the shell's hold-for-home
       else if (i === 3) endTurn();
     },
   });
 
   return {
     selectByUid,
+    reloadSelected,
     armAbility,
     disarm,
     armedAbility: () => armed,

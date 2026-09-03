@@ -385,6 +385,28 @@ anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves 
 (+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
 `DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
 are 23 points apart), not a dial.
+**Ammo and reload** (v27 — `MST_PARITY.md` §2.3, taken before the boss on the owner's
+direction that *bosses come after mechanics*). `js/ammo.js`: ranged weapons hold a
+magazine, firing spends a round, and **reloading costs your action and never your move** —
+so an empty turn is a turn to reposition, which hands the movement economy and the ability
+kit the empty turns they were competing with a free attack for. Melee has no magazine (a
+knife does not run out, and that reliability is what melee trades its range for). The round
+is spent inside `resolveAttack` alone, so every firing path pays. Enemies reload on the same
+rule and **telegraph it**, backing off while they do. `ammo.js` is a leaf module because
+ai.js cannot import combat.js (circular), and an **absent** round count means FULL, not
+empty — any path that assigns a weapon without seeding the count would otherwise hand back a
+silently empty gun. **The balance consequence is the headline and is not a bug**: the rule's
+effect scales with each side's RANGED SHARE, and the encounters were tuned when ammo was
+infinite — `warehouse` (crew 0/3 ranged) went 65%→98%, `underpass` (crew 2/3) went 17%→0%,
+and `the-yard` (0 vs 0) did not move at all, which is what confirms the mechanism. Magazine
+size was swept: at 5+ the bots never run dry and the rule is inert, at 3 it distorts every
+rate by 20-30 points, **4/4/3 is the only setting that holds**. Any future roster change now
+carries a balance consequence it did not have before. `the-depot` needed re-tuning and is
+**bimodal on enemy count** (3 foes 100%, 4 foes 0% at every layout tried) because it is a
+race; cache HP is the only fine-grained lever there, and cache POSITION is non-monotonic
+(y=1 100%, y=2 0%, y=3 98% — y=2 is a chokepoint) so it must not be nudged. Reload sits with
+the abilities, not the utility row: it is the same currency, and putting it elsewhere pushed
+the phone panel to five rows.
 **The forecast, and two more mission types** (v26 — `MST_PARITY.md` §2.1 and §2.2).
 **`forecastAttack` is the ONE place the odds are worked out** and `resolveAttack` calls it,
 so the number quoted and the number rolled against are the same code rather than two copies
@@ -1371,6 +1393,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
     input.js    # pointer/keyboard/pad — three methods, one decision path
     momentum.js # the movement economy: bank it by moving, spend it on the swing
+    ammo.js     # magazines; a leaf module because ai.js cannot import combat.js
     abilities.js# the kit: catalogue + targeting, pure; combat.js does the doing
     autoplay.js # the AUTO switch — v24's tactical bot, not a new one
     camera.js   # phone zoom floor, drag-to-pan, follow the acting unit
@@ -1386,10 +1409,10 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 91 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 101 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
-                #   the forecast, both new loss conditions, and a bot playthrough
-                #   of every encounter
+                #   the forecast, ammo/reload, both new loss conditions, and a
+                #   bot playthrough of every encounter
     balance.mjs # is each encounter WINNABLE — the question smoke.mjs cannot ask
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
