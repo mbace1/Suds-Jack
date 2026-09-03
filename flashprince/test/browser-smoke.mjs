@@ -16,11 +16,14 @@ try {
   await page.goto('http://127.0.0.1:4173/flashprince/', { waitUntil: 'networkidle' });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-7');
 
-  // Scene 2: enter a real run, take the authored three-tile gap, catch the far
-  // ledge while still holding toward it, then pull up onto the x=144/y=128 lip.
+  // Scene 2: accelerate into a real run and take off in the authored edge zone
+  // just before the x=96 gap. The far lip begins at x=144/y=128.
   await page.keyboard.press('Digit2');
   await page.keyboard.down('ArrowRight');
-  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'run', null, { timeout: 5000 });
+  await page.waitForFunction(() => {
+    const d = globalThis.__flashPrinceMovement;
+    return d?.state === 'run' && d.x >= 78;
+  }, null, { timeout: 5000 });
   await page.keyboard.press('ArrowUp');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('ledgeCatch'), null, { timeout: 5000 });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
