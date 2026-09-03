@@ -385,6 +385,25 @@ anything. Honest limits, both recorded in VERSIONS.md: `EVADE_PER` barely moves 
 (+/-1 point across a 2.25x range) because bots always attack and so always spend it, and
 `DAMAGE_PER` is `Math.floor`-quantised over a range of four, so it is a cliff (0.25 and 0.34
 are 23 points apart), not a dial.
+**Skills are CATEGORIES, not classes** (v29, owner: *"I never said that only one type of
+skills class is available to 1 unit. treat them like categories"* — and `GDD.md` §5.1
+already said so). v25-v28 keyed the kit on `role`, which is the fixed archetype §5.1
+rejects: every melee operator had the identical pair. Now six **lines** (Slasher / Shiv /
+Marksman / Enforcer / Bruiser / Anchor), twelve skills, and **every one of the fourteen
+operators has a loadout crossing two lines** — the gate asserts the crossing, because a
+roster of pure lines is the class box wearing new names. **Backstab is the flanking skill
+and this engine has no facing**, so "flanked" means *the rival is adjacent to one of your
+OTHER operators* — the tactics-genre reading, and the better one on a three-operator crew
+since it rewards the pair rather than one unit's footwork; `abilityTargets` offers only
+flanked rivals so the board never invites a swing it would refuse. The flank bonus resolves
+**per target** (one options object would have paid Cleave's bonus on every body in the
+swing). **A skill the weapon cannot use stays on screen and says why** — §5.1's payoff is a
+build going live when a gun drops, and a hidden skill is a payoff nobody notices arriving.
+`Cripple` takes tiles off the budget inside `moveRange` alone, so every reader sees it,
+floored at 1. `Planted` is read off the BOARD rather than stored per ally, so it stops the
+moment the anchor moves. One regression caught by measurement: AUTO on `the-crossing` fell
+27%→8% because v28's smarter approach walked the free swing off the extraction route — on
+an objective run the swing may not move you.
 **Choosing where you fire from** (v28, owner: *"do they still automatically bump into
 others?"* — yes, and in the worst way). A tap on a rival ran the operator to the CHEAPEST
 tile that could reach, which was fine when cost was all a tile had; by v27 tiles also had
@@ -1405,7 +1424,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
   MST_PARITY.md # ordered distance to Metal Slug Tactics, and what is OUT of scope
   PRODUCTION_PIPELINE.md # asset/data pipeline the GDD's assumptions were resolved against
   VERSIONS.md
-  data/         # units/weapons/enemies/encounters/hazards/trinkets/abilities — data-driven, pipeline §3
+  data/         # units/weapons/enemies/encounters/hazards/trinkets/abilities (six skill lines)
   js/
     grid.js     # the board: coords, BFS move range, LOS, cover, and firing-tile scoring
     ai.js       # four behaviours + two focuses, and the live ITB-style telegraph
@@ -1414,7 +1433,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     input.js    # pointer/keyboard/pad — three methods, one decision path
     momentum.js # the movement economy: bank it by moving, spend it on the swing
     ammo.js     # magazines; a leaf module because ai.js cannot import combat.js
-    abilities.js# the kit: catalogue + targeting, pure; combat.js does the doing
+    abilities.js# the skill LINES: catalogue, loadouts, weapon gates, flanking — pure
     autoplay.js # the AUTO switch — v24's tactical bot, not a new one
     camera.js   # phone zoom floor, drag-to-pan, follow the acting unit
     anim.js     # the feel layer: log-driven tweens, hit flash, damage numbers, the only rAF
@@ -1429,7 +1448,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 107 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 114 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter

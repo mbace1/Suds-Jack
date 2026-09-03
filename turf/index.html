@@ -99,6 +99,11 @@
     font: inherit; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
   }
+  .abilityBtn .nm { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+  .abilityBtn .nm em { font-style: normal; font-size: 9px; letter-spacing: .06em; color: #7b818c; }
+  /* A skill the weapon in hand cannot use. Shown, not hidden: a build that
+     goes live when a gun drops is the whole point of the skill lines. */
+  .abilityBtn.inert { opacity: .5; border-style: dashed; }
   .abilityBtn .cost {
     font-size: 11px; color: #f2e2a0; border: 1px solid #f2e2a0; border-radius: 2px;
     padding: 0 4px; flex: none;
@@ -226,7 +231,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=25"></script>
+  <script type="module" src="js/main.js?v=27"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

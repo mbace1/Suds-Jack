@@ -2,7 +2,7 @@
 // baseline AI) plus the ITB-style telegraph — the plan an enemy would
 // execute if its turn started right now, recomputed after every player
 // action so the intent shown on screen never lies about the current board.
-import { manhattan, moveRange, hasLOS, coverSoftens, key } from './grid.js?v=3';
+import { manhattan, moveRange, hasLOS, coverSoftens, key } from './grid.js?v=4';
 import { evasionOf, EVADE_PER } from './momentum.js?v=1';
 import { needsReload } from './ammo.js?v=2';
 

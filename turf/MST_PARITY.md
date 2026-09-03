@@ -40,6 +40,7 @@ an MST:
 | Mission variety | **Extraction** and **destroy**, both on a deadline — the game's first clock |
 | Ammo rhythm | **Magazines** on every gun; reloading is your action and never your move |
 | Position is the player's | **Firing positions** — a tap that would move you offers the tiles, each with its own odds |
+| Skill categories | Six **lines** (GDD §5.1); every loadout crosses two, and weapon-gated skills show inert rather than hidden |
 
 The economy closes: you **move** to afford the thing you then **do**.
 
@@ -146,9 +147,10 @@ against PR #419; the frames themselves need an owner-side push request.
   `balance.mjs` had to learn the objective. Worth remembering before adding a
   third mode: a mode the bots cannot pursue is a mode nobody can balance.
 
-- **Barricade is never used by the auto-battler** (`js/autoplay.js` has no rule
-  for it). That is a gap in the bot, not evidence about the ability — but it
-  does mean nothing has measured whether Barricade is worth its cost.
+- **Openings and Planted are never used by the auto-battler.** Barricade was
+  in this list from v25 to v28 and now has a rule (2 uses across 420 runs, so
+  barely); these two replace it. A gap in the bot is not evidence about the
+  skill, but it does mean nothing has measured whether they earn their cost.
 - **`EVADE_PER` barely moves bot play** (±1 point across a 2.25× range),
   because bots always attack and so always spend their momentum. It exists for
   human play that the bots cannot find, and that claim is currently untested.

@@ -35,7 +35,13 @@ export function moveRange(state, unit) {
   seen.set(key(start.x, start.y), { x: start.x, y: start.y, cost: 0 });
   let frontier = [start];
   let cost = 0;
-  while (frontier.length && cost < unit.move) {
+  // `slowed` (the Enforcer line's Cripple) comes off the move budget here and
+  // nowhere else, so every reader of move range — the highlight, the AI's
+  // telegraph, approachTile, the bots — sees the same shortened reach without
+  // any of them learning the rule. Never below 1: a unit pinned to zero can
+  // be farmed from range with nothing it can do, which is a different game.
+  const budget = Math.max(1, unit.move - (unit.slowed || 0));
+  while (frontier.length && cost < budget) {
     cost++;
     const next = [];
     for (const { x, y } of frontier) {

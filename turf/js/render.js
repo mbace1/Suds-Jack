@@ -4,7 +4,7 @@
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
 import { PAL } from './palette.js?v=10';
-import { key } from './grid.js?v=3';
+import { key } from './grid.js?v=4';
 import { magOf, roundsLeft } from './ammo.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;

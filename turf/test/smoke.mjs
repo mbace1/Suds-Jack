@@ -19,7 +19,7 @@ import {
 import {
   MOVE_CAP, EVADE_PER, DAMAGE_PER, addMomentum, clearMomentum, evasionOf,
 } from '../js/momentum.js';
-import { abilitiesFor, abilityTargets, canAfford, whyNot, findAbility } from '../js/abilities.js';
+import { abilitiesFor, abilityTargets, canAfford, whyNot, findAbility, weaponSuits, isFlanked } from '../js/abilities.js';
 import { autoTurn } from '../js/autoplay.js';
 import { magOf, needsReload, roundsLeft } from '../js/ammo.js';
 
@@ -780,6 +780,108 @@ check('every operator has a kit, and no enemy does', () => {
     assert.equal(abilitiesFor(e, ABILITIES).length, 0,
       'enemy variety is behaviour, not a kit the telegraph would have to spell out');
   }
+});
+
+// ── skill lines are CATEGORIES, not classes (GDD §5.1, v29) ──
+// Owner, 2026-09-03: "I never said that only one type of skills class is
+// available to 1 unit. treat them like categories." v25-v28 keyed the kit on
+// `role`, which gave every melee operator the identical pair — the fixed
+// archetype §5.1 explicitly rejects.
+
+check('a loadout crosses skill lines rather than sitting in one', () => {
+  const lines = a => new Set(a.map(x => x.line));
+  let crossed = 0;
+  for (const def of UNITS) {
+    const kit = abilitiesFor({ faction: 'player', abilities: def.abilities }, ABILITIES);
+    assert.equal(kit.length, def.abilities.length, `${def.id}'s loadout all resolves`);
+    if (lines(kit).size > 1) crossed++;
+  }
+  assert.equal(crossed, UNITS.length,
+    'every shipped kit draws from two lines — a roster of pure lines is the class box wearing new names');
+});
+
+check('two operators of the same role can have different kits', () => {
+  const melee = UNITS.filter(u => u.role === 'melee');
+  const kits = new Set(melee.map(u => u.abilities.join('+')));
+  assert.ok(kits.size > 1, 'role no longer decides the kit');
+});
+
+check('a skill the weapon cannot use is inert and says why', () => {
+  const knifeGuy = { faction: 'player', weapon: WEAPONS.find(w => w.id === 'knife'), momentum: 4 };
+  const snap = findAbility(ABILITIES, 'snapshot');
+  assert.equal(weaponSuits(knifeGuy, snap), false);
+  assert.equal(canAfford(knifeGuy, snap), false, 'affordability includes what is in hand');
+  assert.match(whyNot(knifeGuy, snap), /ranged weapon/, 'and it says so in words, rather than hiding');
+  const gunGuy = { faction: 'player', weapon: WEAPONS.find(w => w.id === 'pistol'), momentum: 4 };
+  assert.equal(weaponSuits(gunGuy, snap), true, 'the same build goes live when the gun arrives');
+  const wallop = findAbility(ABILITIES, 'wallop');
+  assert.equal(weaponSuits(gunGuy, wallop), false, 'a pistol does not knock back');
+  assert.equal(weaponSuits({ faction: 'player', weapon: WEAPONS.find(w => w.id === 'hammer') }, wallop), true);
+});
+
+check('backstab only offers a rival somebody else has busy', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.faction === 'player');
+  u.abilities = ['backstab'];
+  const mate = state.units.find(x => x.faction === 'player' && x.uid !== u.uid);
+  const foe = state.units.find(x => x.faction === 'enemy');
+  foe.x = u.x + 1; foe.y = u.y;
+  mate.x = 0; mate.y = 0;
+  const back = findAbility(ABILITIES, 'backstab');
+  assert.equal(abilityTargets(state, u, back).length, 0,
+    'alone, there is no back to stab — the board never offers a swing it would refuse');
+  mate.x = foe.x; mate.y = foe.y - 1;               // now the rival is engaged
+  assert.ok(isFlanked(state, u, foe, manhattan));
+  assert.equal(abilityTargets(state, u, back).length, 1);
+});
+
+check('the flank bonus is paid per target, not once per swing', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.faction === 'player');
+  u.abilities = ['backstab']; u.momentum = MOVE_CAP;
+  const mate = state.units.find(x => x.faction === 'player' && x.uid !== u.uid);
+  const foe = state.units.find(x => x.faction === 'enemy');
+  foe.x = u.x + 1; foe.y = u.y; foe.hp = 40;
+  mate.x = foe.x; mate.y = foe.y - 1;
+  const back = findAbility(ABILITIES, 'backstab');
+  useAbility(state, u.uid, 'backstab', { uid: foe.uid }, ABILITIES);
+  const evt = state.log.filter(e => e.type === 'attack').pop();
+  assert.equal(evt.flanked, true, 'the event says the flank was live');
+  if (evt.hit) assert.ok(evt.damage >= u.weapon.damage + back.flankBonus, 'and it paid');
+});
+
+check('cripple takes tiles off the target next turn, but never all of them', () => {
+  const state = boot(BACKLOT, 1);
+  const u = state.units.find(x => x.faction === 'player' && x.weapon.archetype === 'ranged');
+  u.abilities = ['cripple']; u.momentum = MOVE_CAP;
+  const foe = state.units.find(x => x.faction === 'enemy');
+  foe.x = u.x + 1; foe.y = u.y; foe.hp = 40;
+  const before = moveRange(state, foe).size;
+  useAbility(state, u.uid, 'cripple', { uid: foe.uid }, ABILITIES);
+  assert.ok(foe.slowed > 0, 'the slow landed');
+  assert.ok(moveRange(state, foe).size < before, 'and every reader of move range sees it');
+  foe.slowed = 99;
+  assert.ok(moveRange(state, foe).size > 1,
+    'a unit pinned to nowhere can be farmed from range with nothing it can do');
+});
+
+check('planted makes the neighbours harder to shoot, and only for a round', () => {
+  const state = boot(BACKLOT, 1);
+  const anchor = state.units.find(x => x.faction === 'player');
+  anchor.abilities = ['planted']; anchor.momentum = MOVE_CAP;
+  const mate = state.units.find(x => x.faction === 'player' && x.uid !== anchor.uid);
+  mate.x = anchor.x + 1; mate.y = anchor.y;
+  const foe = state.units.find(x => x.faction === 'enemy' && x.weapon.archetype === 'ranged');
+  const before = forecastAttack(state, foe, mate, foe.weapon).chance;
+  useAbility(state, anchor.uid, 'planted', { self: true }, ABILITIES);
+  assert.ok(forecastAttack(state, foe, mate, foe.weapon).chance < before,
+    'standing together is worth something');
+  // Move the ANCHOR away, not the mate: moving the mate would also change
+  // whose cover it is standing behind, and the test would be measuring two
+  // rules at once (it did, and read 0.8 against an expected 0.5).
+  anchor.x = 0; anchor.y = 0;
+  assert.equal(forecastAttack(state, foe, mate, foe.weapon).chance, before,
+    'read off the board, so it stops the moment the anchor walks away');
 });
 
 check('an ability is bought with momentum, so standing still cannot buy one', () => {

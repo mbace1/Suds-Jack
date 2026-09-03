@@ -1,69 +1,77 @@
 {
-  "_comment": "Actions, per GDD \u00a73's rule that everything is data. Costed in MOMENTUM (momentum.js), which means they are paid for by MOVING \u2014 you run in, then spend the run. That is the loop this game took from Metal Slug Tactics, and until v25 there was nothing to spend it on but a flat damage bonus. An ability replaces a unit's normal attack; it never grants a second action. `role` decides who gets it, so the whole 14-strong cast is covered without hand-authoring 28 entries, and a per-unit `abilities` override stays a one-line addition. Enemies deliberately have none: their variety is `behaviour` (ai.js), and giving both sides kits would make a telegraph nobody can read. `damageMode` says whether `damage` is a BONUS on top of the weapon (\"weapon\") or the whole number (\"flat\") \u2014 Shove is flat because a shove is a shove whoever is holding the pipe. `accuracy` REPLACES the weapon's hit chance outright (Shove: 1, it never misses); `accuracyMod` shifts it (Snap Shot: -0.15). They are different fields because conflating them once already turned a 70% ability into a 5% one.",
+  "_comment": "Skills, per GDD §5.1 (owner direction 2026-08-28/31, reaffirmed 2026-09-03: 'treat them like categories'). A `line` is a CATEGORY, never a box — a unit's loadout draws from as many lines as it likes, and 'class' is the label a particular combination produces. v25-v28 keyed these on `role` instead, which is exactly the fixed-class archetype §5.1 rejects; this replaces that. `weapon` gates a skill on what is in hand: an entry with `weapon: 'ranged'` is INERT while holding a knife and says so rather than hiding, because §5.1 is explicit that a build going live when a weapon drops is the payoff. `damageMode` says whether `damage` is a bonus on the weapon ('weapon') or the whole number ('flat'). `accuracy` REPLACES the weapon's hit chance; `accuracyMod` shifts it — separate fields because conflating them once turned a 70% ability into a 5% one.",
+  "lines": [
+    { "id": "slasher",  "name": "Slasher",  "flavour": "aggression — the fight rewards going forward" },
+    { "id": "shiv",     "name": "Shiv",     "flavour": "positioning — hit what is already busy" },
+    { "id": "marksman", "name": "Marksman", "flavour": "ranged precision" },
+    { "id": "enforcer", "name": "Enforcer", "flavour": "ranged control — take away what they can do" },
+    { "id": "bruiser",  "name": "Bruiser",  "flavour": "impact — the board is a weapon" },
+    { "id": "anchor",   "name": "Anchor",   "flavour": "zone control — hold ground for the others" }
+  ],
   "abilities": [
     {
-      "id": "cleave",
-      "name": "Cleave",
-      "role": "melee",
-      "cost": 2,
-      "shape": "adjacent-all",
-      "blurb": "Weapon damage to EVERY adjacent rival. Being surrounded stops being a death sentence and starts being an opportunity.",
-      "damageMode": "weapon",
-      "damage": 0
+      "id": "cleave", "name": "Cleave", "line": "slasher", "cost": 2,
+      "shape": "adjacent-all", "damageMode": "weapon", "damage": 0,
+      "blurb": "Weapon damage to EVERY adjacent rival. Being surrounded stops being a death sentence and starts being an opportunity."
     },
     {
-      "id": "takedown",
-      "name": "Takedown",
-      "role": "melee",
-      "cost": 3,
-      "shape": "single",
-      "range": 1,
-      "damage": 3,
-      "knockback": 2,
-      "blurb": "+3 damage and a hard shove on one adjacent rival. The full-move finisher \u2014 and the shove is what puts a body in a stairwell.",
-      "damageMode": "weapon"
+      "id": "takedown", "name": "Takedown", "line": "slasher", "cost": 3,
+      "shape": "single", "range": 1, "damageMode": "weapon", "damage": 3, "knockback": 2,
+      "blurb": "+3 damage and a hard shove on one adjacent rival. The full-move finisher."
     },
     {
-      "id": "snapshot",
-      "name": "Snap Shot",
-      "role": "ranged",
-      "cost": 2,
-      "shape": "single",
-      "shots": 2,
-      "blurb": "Two shots at one rival, each less accurate. Volume against a target you cannot afford to leave standing.",
-      "damageMode": "weapon",
-      "damage": 0,
-      "accuracyMod": -0.15
+      "id": "backstab", "name": "Backstab", "line": "shiv", "cost": 2,
+      "shape": "single", "range": 1, "damageMode": "weapon", "damage": 0,
+      "flankBonus": 4, "requiresFlank": true,
+      "blurb": "Only on a rival already engaged by another operator — and then it hits for +4. The whole point is that somebody else set it up."
     },
     {
-      "id": "overwatch",
-      "name": "Overwatch",
-      "role": "ranged",
-      "cost": 2,
-      "shape": "self",
-      "blurb": "Hold your fire. The first rival to move inside your range during their turn takes a shot \u2014 the answer to a board where crossing open ground was free."
+      "id": "openings", "name": "Openings", "line": "shiv", "cost": 1,
+      "shape": "single", "damageMode": "weapon", "damage": 0, "flankBonus": 2,
+      "blurb": "A cheap swing that pays +2 against anything one of your own is already next to. Works at whatever range you are holding."
     },
     {
-      "id": "shove",
-      "name": "Shove",
-      "role": "control",
-      "cost": 1,
-      "shape": "single",
-      "range": 1,
-      "knockback": 3,
-      "accuracy": 1,
-      "blurb": "One damage, three tiles, never misses. Pure positioning: the cheapest way to move a body onto something that hurts.",
-      "damageMode": "flat",
-      "damage": 1
+      "id": "snapshot", "name": "Snap Shot", "line": "marksman", "cost": 2,
+      "shape": "single", "shots": 2, "accuracyMod": -0.15,
+      "damageMode": "weapon", "damage": 0, "weapon": "ranged",
+      "blurb": "Two shots at one rival, each less accurate. Volume against a target you cannot afford to leave standing."
     },
     {
-      "id": "barricade",
-      "name": "Barricade",
-      "role": "control",
-      "cost": 2,
-      "shape": "empty-tile",
-      "range": 1,
+      "id": "steady", "name": "Steady", "line": "marksman", "cost": 2,
+      "shape": "single", "accuracy": 1, "damageMode": "weapon", "damage": 1, "weapon": "ranged",
+      "blurb": "One shot that cannot miss, for +1. Cover, evasion and the dice all stop mattering."
+    },
+    {
+      "id": "overwatch", "name": "Overwatch", "line": "enforcer", "cost": 2,
+      "shape": "self", "weapon": "ranged",
+      "blurb": "Hold your fire. The first rival to move inside your range during their turn takes a shot — the answer to a board where crossing open ground was free."
+    },
+    {
+      "id": "cripple", "name": "Cripple", "line": "enforcer", "cost": 2,
+      "shape": "single", "damageMode": "flat", "damage": 1, "slow": 2, "weapon": "ranged",
+      "blurb": "One damage, and they move two tiles less next turn. Taking away the approach is worth more than taking off health."
+    },
+    {
+      "id": "shove", "name": "Shove", "line": "bruiser", "cost": 1,
+      "shape": "single", "range": 1, "damageMode": "flat", "damage": 1,
+      "knockback": 3, "accuracy": 1,
+      "blurb": "One damage, three tiles, never misses. The cheapest way to move a body onto something that hurts."
+    },
+    {
+      "id": "wallop", "name": "Wallop", "line": "bruiser", "cost": 3,
+      "shape": "single", "range": 1, "damageMode": "weapon", "damage": 1,
+      "knockback": 2, "collide": 3, "weapon": "knockback",
+      "blurb": "A shove that hurts whatever it collides with, for 3. Needs something in hand that knocks back."
+    },
+    {
+      "id": "barricade", "name": "Barricade", "line": "anchor", "cost": 2,
+      "shape": "empty-tile", "range": 1,
       "blurb": "Drop low cover on an empty tile beside you. The only thing in this game that changes the board in your favour."
+    },
+    {
+      "id": "planted", "name": "Planted", "line": "anchor", "cost": 2,
+      "shape": "self", "guard": 2,
+      "blurb": "End your turn planted: every adjacent ally is harder to shoot until your next turn. The skill that makes standing together mean something."
     }
   ]
 }

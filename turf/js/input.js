@@ -9,9 +9,9 @@ import {
   selectUnit, moveUnit, orderAttack, movableTiles, attackableTargets,
   canUnitAct, endPlayerTurn, getUnit, useAbility, previewAttack, reloadUnit,
   firingOptions, attackFrom,
-} from './combat.js?v=16';
-import { abilityTargets, findAbility } from './abilities.js?v=1';
-import { key } from './grid.js?v=3';
+} from './combat.js?v=17';
+import { abilityTargets, findAbility } from './abilities.js?v=2';
+import { key } from './grid.js?v=4';
 import { watchPad } from '../../hub/pad.js?v=9';
 
 export function createInputHandler({

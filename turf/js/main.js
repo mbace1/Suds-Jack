@@ -5,15 +5,15 @@ import { PAL } from './palette.js?v=10';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=16';
+} from './combat.js?v=17';
 import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=21';
 import { createCamera, MIN_TILE_W } from './camera.js?v=1';
-import { createInputHandler } from './input.js?v=15';
+import { createInputHandler } from './input.js?v=16';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
-import { abilitiesFor, canAfford, whyNot } from './abilities.js?v=1';
-import { autoTurn } from './autoplay.js?v=4';
+import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2';
+import { autoTurn } from './autoplay.js?v=5';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
@@ -102,6 +102,7 @@ async function loadData() {
     weapons: weapons.weapons, units: units.units, enemies: enemies.enemies,
     encounters: encounters.encounters, hazards: hazards.hazards, trinkets: trinkets.trinkets,
     abilities: abilities.abilities,
+    lines: abilities.lines,
   };
 }
 
@@ -426,8 +427,16 @@ function renderAbilities() {
     // The reason it is unavailable goes in the tooltip AND the toast on tap:
     // "needs 3 momentum, has 1" is a instruction to go and run, which is the
     // behaviour this whole economy is trying to buy.
-    btn.title = ok ? ab.blurb : `${ab.name} — ${whyNot(sel, ab)}`;
-    btn.innerHTML = `<span>${ab.name}</span><span class="cost">${ab.cost}</span>`;
+    // The LINE is on the button, because a skill's category is what tells the
+    // player what a build IS — two Shiv skills on one operator is a
+    // positioning crew, and that only reads if the lines are visible.
+    // A skill the weapon cannot use stays on screen and says why: GDD §5.1's
+    // payoff is a build coming alive when a weapon drops, and a skill the
+    // player never saw is a payoff they will not notice arriving.
+    const line = (DATA.lines.find(l => l.id === ab.line) || {}).name || '';
+    btn.title = ok ? `${line} — ${ab.blurb}` : `${ab.name} — ${whyNot(sel, ab)}`;
+    if (!weaponSuits(sel, ab)) btn.classList.add('inert');
+    btn.innerHTML = `<span class="nm">${ab.name}<em>${line}</em></span><span class="cost">${ab.cost}</span>`;
     btn.addEventListener('pointerup', e => {
       e.preventDefault();
       input.armAbility(ab.id);

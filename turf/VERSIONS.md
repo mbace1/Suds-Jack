@@ -8,6 +8,82 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v29 — 2026-09-03
+**Owner: "I never said that only one type of skills class is available to 1
+unit. treat them like categories."** Correct, and `GDD.md` §5.1 already said
+so — *"No fixed class archetypes... class is the label a particular
+combination produces, never a box a unit is locked into"*. v25-v28 keyed the
+kit on `role`, which is precisely the archetype §5.1 rejects: every melee
+operator had the identical Cleave + Takedown, every gunner the identical
+Snap Shot + Overwatch. My fault for building the cheap version without
+reading §5.1 first.
+
+**Skills are now LINES — categories a loadout draws from.** Six, from §5.1's
+own table: Slasher (aggression), Shiv (positioning), Marksman (precision),
+Enforcer (control), Bruiser (impact), Anchor (zone). Twelve skills across
+them, and **every one of the fourteen operators has a kit that crosses two
+lines** — a roster where each unit was a pure line would be the class box
+wearing new names, and the gate asserts the crossing rather than trusting it.
+
+Six are new: **Backstab** and **Openings** (Shiv), **Steady** (Marksman),
+**Cripple** (Enforcer), **Wallop** (Bruiser), **Planted** (Anchor).
+
+**Backstab is the flanking skill and this engine has no facing** — sprites
+mirror, units do not turn — so a true back-attack would mean adding one.
+"Flanked" is instead *the rival is adjacent to one of your OTHER operators*,
+which is the tactics-genre reading of the same idea and is the better version
+on a three-operator crew: it rewards the PAIR rather than one unit's
+footwork. `abilityTargets` only offers flanked rivals, so the board never
+invites a swing it would then refuse, and the bot gets the rule for free
+instead of reimplementing it.
+
+**The flank bonus is resolved PER TARGET.** A single options object computed
+once would have paid Cleave's bonus on every body in the swing regardless of
+who was actually engaged.
+
+**A skill the weapon cannot use stays on screen and says why.** §5.1 is
+explicit that a build going inert-then-live when a weapon drops is the
+payoff, and a skill the player never saw is a payoff they will not notice
+arriving. Verified end to end: Blade holding a knife shows SNAP SHOT /
+MARKSMAN dashed and dimmed; hand him a pistol and it goes live, with a
+RELOAD button appearing beside it.
+
+**Cripple takes tiles off the move budget in `moveRange` and nowhere else**,
+so every reader — the highlight, the telegraph, `approachTile`, both bots —
+sees the shortened reach without learning the rule. Floored at 1: a unit
+pinned to zero can be farmed from range with nothing it can do, which is a
+different game.
+
+**Planted is read off the BOARD, not stored on each ally**, so it starts and
+stops working the moment somebody moves. A test caught me measuring it
+wrong — moving the protected mate also changed whose cover it stood behind,
+so the assertion was reading two rules at once.
+
+**One regression, caught by measurement.** AUTO on `the-crossing` fell from
+27% to 8%, and the cause was v28 rather than the skills: the free swing on
+the way to an extraction pad now walked the operator to the BEST firing tile,
+which drags them off the route to go and find cover. On an objective run the
+swing may not move you — 27% restored.
+
+**Barricade finally has a bot rule**, closing the gap `MST_PARITY.md` §3 has
+carried since v25 (never used, therefore never measured). Across 420 runs the
+auto-bot now uses ten of the twelve skills — Snap Shot 543, Shove 178,
+Overwatch 100, Steady 88, Cripple 79, Backstab 61, Takedown 60, Cleave 16,
+Barricade 2, Wallop 1. **Openings and Planted are still unused**, recorded
+here rather than quietly omitted.
+
+- `test/smoke.mjs` is 114 checks (was 107): every loadout crossing two lines,
+  two operators of one role having different kits, the weapon gate refusing
+  and explaining, Backstab offering nothing when nobody is engaged, the flank
+  bonus landing per target, Cripple shortening move range but never to zero,
+  and Planted lifting only while the anchor stands next to you.
+- `test/balance.mjs` green on all seven, unchanged: 57 / 67 / 65 / 27 / 68 /
+  18 / 13.
+- Tokens: `abilities` v2, `grid` v4, `combat` v17, `input` v16, `autoplay`
+  v5, `main` v27. One token per module — `abilities.js` was left importing
+  `grid.js?v=2` while everything else had moved to v4, which is the
+  instantiate-it-twice bug this repo has paid for before.
+
 ## v28 — 2026-09-03
 **"Do they still automatically bump into others?"** — owner, and the answer
 was yes, in the worst possible way.

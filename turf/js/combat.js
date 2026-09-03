@@ -6,11 +6,11 @@
 import {
   key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile,
   firingTiles, firingTileScore,
-} from './grid.js?v=3';
+} from './grid.js?v=4';
 import { planAllIntents } from './ai.js?v=6';
 import { makeRng } from './rng.js?v=2';
 import { addMomentum, clearMomentum, evasionOf, momentumDamage } from './momentum.js?v=1';
-import { abilityTargets, canAfford, findAbility } from './abilities.js?v=1';
+import { abilityTargets, canAfford, findAbility, isFlanked, weaponSuits } from './abilities.js?v=2';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
 
 export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = [], trinketDefs = []) {
@@ -148,6 +148,10 @@ function makeUnit(uid, def, weapon, faction, spawn) {
     // Starts loaded. Null for melee, and every ammo check goes through
     // magOf/needsReload rather than reading this directly.
     ammo: magOf(weapon),
+    // The skill loadout, drawn from any of abilities.json's lines (GDD §5.1).
+    // Copied off the def rather than looked up later, because a unit's kit is
+    // per-UNIT from here on and levelling will grow this list.
+    abilities: def.abilities ? [...def.abilities] : null,
     // ai.js reads these; absent on player units and on any enemy that has
     // not been given one, where the behaviour table falls back to `charger`.
     behaviour: def.behaviour, focus: def.focus,
@@ -331,6 +335,20 @@ export const TRINKET_SHARE = 0.4;
 // Pure — no rng, no mutation. `from` lets a caller ask about a tile the
 // attacker has not reached yet, which matters because orderAttack steps you
 // into range first and cover is a property of WHERE YOU END UP.
+// How much cover an adjacent planted ally is giving this unit. Zero for
+// melee, like every other evasion term — a knife at one tile does not miss
+// because somebody nearby is standing firm.
+export function guardAt(state, unit) {
+  let best = 0;
+  for (const u of state.units) {
+    if (u.faction !== unit.faction || u.hp <= 0 || !u.guard) continue;
+    if (u.uid === unit.uid) continue;
+    if (manhattan(u, unit) > 1) continue;
+    best = Math.max(best, u.guard);
+  }
+  return best / 100;
+}
+
 export function forecastAttack(state, attacker, target, weapon, opts = {}, from = attacker) {
   let chance = opts.accuracy != null ? opts.accuracy : weapon.hitChance;
   if (opts.accuracyMod) chance += opts.accuracyMod;
@@ -338,15 +356,20 @@ export function forecastAttack(state, attacker, target, weapon, opts = {}, from 
   if (cover) chance -= COVER_PENALTY;
   // A moving target is harder to shoot (momentum.js) — the rule that makes
   // standing still cost something, and the reason a board spreads out.
-  const evade = evasionOf(target, weapon);
+  const evade = weapon.archetype === 'ranged' ? evasionOf(target, weapon) : 0;
   chance -= evade;
+  // Planted (Anchor line): an operator who ended its turn planted makes its
+  // neighbours harder to shoot. Read off the BOARD rather than stored on
+  // each ally, so it starts and stops working the moment somebody moves.
+  const guard = guardAt(state, target);
+  chance -= guard;
   chance = Math.max(0.05, Math.min(1, chance));
   const bonus = opts.flatDamage != null ? 0 : momentumDamage(attacker) + (opts.damageBonus || 0);
   const base = opts.flatDamage != null ? opts.flatDamage : weapon.damage;
   const damage = opts.flatDamage != null ? opts.flatDamage : base + bonus;
   const shots = opts.shots || 1;
   return {
-    chance, cover, evade, base, bonus, damage, shots,
+    chance, cover, evade, guard, base, bonus, damage, shots,
     // Whether this would finish them. The single most decision-relevant fact
     // on the board, and until now the player had to do the subtraction.
     lethal: damage >= target.hp,
@@ -386,6 +409,9 @@ function resolveAttack(state, attacker, target, weapon, opts = {}) {
         state.drops.push(dropped);
       }
     }
+    // Cripple: take away the approach rather than the health. Cleared on the
+    // target's own turn, beside momentum, so it is exactly one round long.
+    if (opts.slow) target.slowed = Math.max(target.slowed || 0, opts.slow);
     const shove = opts.knockback != null ? opts.knockback : weapon.knockback;
     if (!killed && shove > 0) knockback = applyKnockback(state, attacker, target, shove);
   }
@@ -404,6 +430,7 @@ function resolveAttack(state, attacker, target, weapon, opts = {}) {
     base: opts.flatDamage != null ? opts.flatDamage : weapon.damage, bonus, evade,
     ammo: attacker.ammo,
     ability: opts.ability || null,
+    flanked: !!opts.flanked,
   };
   state.log.push(evt);
   // The payoff the pipe exists for: a shove that lands a body in a fire or an
@@ -608,8 +635,15 @@ export function useAbility(state, uid, abilityId, target, abilityDefs) {
   const results = [];
 
   if (ability.shape === 'self') {
-    if (ability.id !== 'overwatch') return { ok: false, reason: 'unknown-self-ability' };
-    state.overwatch.add(unit.uid);
+    if (ability.id === 'overwatch') {
+      state.overwatch.add(unit.uid);
+    } else if (ability.guard) {
+      // Planted: a defensive aura on the tiles around this unit, cleared at
+      // the top of its own next turn like every other one-round posture here.
+      unit.guard = ability.guard;
+    } else {
+      return { ok: false, reason: 'unknown-self-ability' };
+    }
     state.log.push({ type: 'ability', uid, ability: ability.id, name: ability.name });
   } else if (ability.shape === 'adjacent-all') {
     const group = legal[0];
@@ -619,7 +653,7 @@ export function useAbility(state, uid, abilityId, target, abilityDefs) {
     for (const tuid of group.all) {
       const t = getUnit(state, tuid);
       if (!t || t.hp <= 0) continue;
-      results.push(resolveAttack(state, unit, t, unit.weapon, abilityOpts(ability)));
+      results.push(resolveAttack(state, unit, t, unit.weapon, abilityOpts(ability, state, unit, t)));
     }
     if (!results.length) return { ok: false, reason: 'no-target' };
   } else if (ability.shape === 'empty-tile') {
@@ -634,7 +668,7 @@ export function useAbility(state, uid, abilityId, target, abilityDefs) {
     for (let i = 0; i < shots; i++) {
       const t = getUnit(state, tuid);
       if (!t || t.hp <= 0) break; // a second barrel is not fired into a corpse
-      results.push(resolveAttack(state, unit, t, unit.weapon, abilityOpts(ability)));
+      results.push(resolveAttack(state, unit, t, unit.weapon, abilityOpts(ability, state, unit, t)));
     }
   }
 
@@ -648,14 +682,21 @@ export function useAbility(state, uid, abilityId, target, abilityDefs) {
   return { ok: true, results };
 }
 
-function abilityOpts(ability) {
+// Per-TARGET, because the flank bonus depends on who is being hit and who
+// else is standing next to them — a single opts object computed once would
+// pay Cleave's flank bonus on every body in the swing regardless.
+function abilityOpts(ability, state, unit, target) {
+  const flanked = target && isFlanked(state, unit, target, manhattan);
   return {
     ability: ability.id,
+    flanked,
     accuracy: ability.accuracy,
     accuracyMod: ability.accuracy != null ? 0 : ability.accuracyMod,
-    damageBonus: ability.damageMode === 'weapon' ? (ability.damage || 0) : 0,
+    damageBonus: (ability.damageMode === 'weapon' ? (ability.damage || 0) : 0)
+      + (flanked ? (ability.flankBonus || 0) : 0),
     flatDamage: ability.damageMode === 'flat' ? ability.damage : null,
     knockback: ability.knockback,
+    slow: ability.slow,
     // The ability's own cost is the price; the swing must not also empty the
     // pool, or a 2-cost ability would silently charge everything you had.
     keepMomentum: true,
@@ -676,7 +717,7 @@ export function endPlayerTurn(state) {
   // will bank fresh momentum as it steps. Cleared here so the evasion an
   // operator sees while planning is the evasion that was actually earned
   // during the phase they just watched.
-  for (const u of state.units) if (u.faction === 'enemy') clearMomentum(u);
+  for (const u of state.units) if (u.faction === 'enemy') { clearMomentum(u); u.slowed = 0; }
   return { ok: true };
 }
 
@@ -775,6 +816,8 @@ export function stepEnemyPhase(state) {
     // of it, so a unit that moved and did not attack still shows the evasion
     // it earned all through the enemy phase it is about to face.
     clearMomentum(u);
+    u.guard = 0;
+    u.slowed = 0;
   }
   // A posture for one enemy phase, never a standing order. Anything still
   // held here was never triggered, and holding it into a turn the player is
