@@ -3,9 +3,7 @@ import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-
 import { ProjectilePool } from './projectile.js?v=12';
 import { Player } from './player.js?v=12';
 
-// SKLTR v93-v96 — first adoption from GitHub systems research.
-// three-mesh-bvh turns authored solid world meshes into fast projectile + LOS
-// collision instead of leaving them as visual-only scenery.
+// SKLTR v93-v100 — three-mesh-bvh powers solid-world projectile and LOS queries.
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
@@ -44,6 +42,12 @@ function segmentHit(ax,ay,az,bx,by,bz,pad=0){
   ray.set(origin,dir);ray.near=0;ray.far=len+pad;
   return ray.intersectObjects(colliders,false)[0]||null;
 }
+function lineClear(ax,ay,az,bx,by,bz,pad=0){
+  const hit=segmentHit(ax,ay,az,bx,by,bz,pad);
+  if(!hit)return true;
+  const d=Math.hypot(bx-ax,by-ay,bz-az);
+  return hit.distance>=d-pad;
+}
 
 const oldPoolUpdate=ProjectilePool.prototype.update;
 ProjectilePool.prototype.update=function(dt){
@@ -60,13 +64,15 @@ const oldAim=Player.prototype._aim;
 Player.prototype._aim=function(a,en){
   const visible=en?.filter(e=>{
     if(!e?.alive)return false;
-    const eyeY=this.y+1.25,targetY=e.y||0;
-    const hit=segmentHit(this.x,eyeY,this.z,e.x,targetY,e.z,0);
-    if(!hit)return true;
-    const targetDist=Math.hypot(e.x-this.x,targetY-eyeY,e.z-this.z);
-    return hit.distance>=targetDist-(e.r||.7);
+    const eyeY=this.y+1.25,targetY=(e.y||0)+.45;
+    return lineClear(this.x,eyeY,this.z,e.x,targetY,e.z,e.r||.7);
   })||en;
   return oldAim.call(this,a,visible);
 };
 
-window._skltrBVH96=()=>({colliders:colliders.length,enabled:true});
+window._skltrBVH96={
+  state:()=>({colliders:colliders.length,enabled:true}),
+  segmentHit,
+  lineClear,
+  refresh
+};
