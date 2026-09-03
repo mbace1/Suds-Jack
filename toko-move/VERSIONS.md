@@ -1,5 +1,27 @@
 # Toko Move — versions
 
+## v2.24 — 2026-09-02
+
+**The outer board stopped being invented.** 78% of the board had no OSM streets, and that 78% was drawn with twelve hand-authored corridors — the one kind of geometry this project's own rules say must never sit on the board as though it were real. It is now HSL's own service corridors, from the GTFS feed, under CC BY 4.0: `cities/ground/helsinki-corridors.json`, 696 traces covering 60.149–60.218 / 24.895–24.995, which is essentially the whole board. **There is no authored geometry on the map any more.**
+
+It is emphatically **not a street map** — it has every street a bus or tram uses and no street without a route on it — and the credit line says exactly that in its own clause. That is the right shape for the coarse layer anyway: an arterial is precisely a street a bus runs on.
+
+Three things had to be true for it to be usable rather than merely present.
+
+**Rail, metro and ferry corridors are dropped.** A ferry corridor stroked as a road is a street across the harbour. The mutation test caught this as a hole in the GATE rather than in the code — the check asked whether the *pack* contained ferries, never whether the *drawn runs* excluded them, so deleting the filter passed. Each run carries its mode now and the gate asks the runs.
+
+**Each corridor is clipped to the ground the street pack does not cover.** Otherwise the two layers draw the same street twice with slightly different geometry — the doubling that made this a choice between them rather than a combination of them. 653 bus and tram corridors become 519 clipped runs, none wholly inside the extract.
+
+**One line per street.** A GTFS shape exists per direction and per route, so a street a bus runs both ways along arrives as two traces a few metres apart, and six routes down Mäkelänkatu arrive as six. Points are hashed into ~20 m cells and the busiest run in a place wins: 519 become 367. Busiest first on purpose — the trunk should survive, and it is the one whose geometry the most services agree on.
+
+Tiers come from the feed's own trip counts rather than a guess: the real distribution's quartiles are 458 / 992 / 2394, so those are the thresholds, and the camera reveals major at city scale, adds mid at route, all at stop — the same hierarchy the OSM streets use.
+
+**Which source you are looking at no longer depends on the camera.** The first cut chose by the camera centre, so panning across the extract boundary swapped the entire ground layer under you. Geography decides now: both are on screen at once and the seam is where the data's seam actually is.
+
+**A layout rule was silently deleting a licence.** The credit line wraps and was capped at the last two lines — invisible until the HSL clause made it three, at which point the line that fell off the top was `© OpenStreetMap contributors (ODbL 1.0)`. The cap is gone; the legend asks how many lines there are instead of assuming, and a credit that will not fit pushes the legend up rather than losing a clause.
+
+Two self-inflicted wounds, both the same mistake: editing this dense file by splicing between two text markers deletes everything between them. It took out `viewRect`/`courierLatLon`/`layersNear`/`fleetFilter` once and `drawLandmarkLayer` once, and **both times the module still parsed** — a bare-node import reports "document is not defined" and looks like success. Only booting the real page caught it. Load the page, not the module.
+
 ## v2.23 — 2026-09-02
 
 **The street importer, written and gated — everything either side of the fetch.** Measured first, because "the streets only cover the centre" is a shrug until it is a number: the board is **41.2 km²** and the committed extract covers **9.2 km², 22% of it**. Fifteen of the twenty-two delivery anchors and twenty-eight of the forty-one districts stand on ground with no streets under them — Töölö, Kamppi, Senaatintori, Kauppatori, Katajanokka, Eira, Käpylä, Pasila, Jätkäsaari, Länsisatama, Arabianranta, Meilahti.
