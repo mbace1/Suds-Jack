@@ -24,6 +24,8 @@ import {
 import { abilitiesFor, abilityTargets, canAfford, whyNot, findAbility, weaponSuits, isFlanked } from '../js/abilities.js';
 import { autoTurn } from '../js/autoplay.js';
 import { magOf, needsReload, roundsLeft } from '../js/ammo.js';
+import { SPRITE_H, TILE_W, FULL_PROPS, PARTIAL_PROPS, PROP_H, RARE_PROPS } from '../js/render.js';
+import { PLATES } from '../js/plates.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -1162,6 +1164,103 @@ check('every encounter background is a plate rendered in the board camera', () =
       `${enc.id} is on ${file}, a perspective plate — its ground lines fight the iso grid`);
     assert.ok(ISO_PLATES.has(file),
       `${enc.id} is on ${file}, which is not a known iso plate — check ART_REQUEST.md §10 before adding one`);
+  }
+});
+
+
+// ── board scale and props (v33) ──────────────────────────
+// Owner, on the v32 screenshot: "characters are way too big now." A sprite
+// is a body standing on a square, so it is measured against the tile it
+// stands on. At 46 against a 32-wide tile an operator was 1.4 tiles across
+// and hid both the square it occupied and the rival standing behind it.
+// This gate is a ceiling, not a pin — the art may be tuned, but not back
+// past the point where a unit stops fitting its own tile.
+check('a unit is no wider than the tile it stands on', () => {
+  assert.ok(SPRITE_H <= TILE_W, `SPRITE_H ${SPRITE_H} exceeds TILE_W ${TILE_W} — units cover their own square`);
+  assert.ok(SPRITE_H >= TILE_W * 0.6, `SPRITE_H ${SPRITE_H} is too small to read against a ${TILE_W} tile`);
+});
+
+// Every plate is padded to the same 240px height by the cutter, so a prop
+// drawn at a height chosen per cover KIND came out the size of its plate,
+// not the size of the object — a rubbish bin as tall as the bear statue.
+const PROPS_MANIFEST = JSON.parse(
+  fs.readFileSync(path.join(ROOT, 'art-src', 'props', 'props.json'), 'utf8'));
+
+check('every prop carries its own height, and none of them dwarfs a person', () => {
+  for (const art of [...FULL_PROPS, ...PARTIAL_PROPS]) {
+    assert.ok(PROP_H[art] > 0, `${art} has no PROP_H entry — it would fall back to a per-kind height`);
+    // A tram-stop panel really is over head height; a bin really is not.
+    // The ceiling is what stops a prop reading as scenery-sized: nothing may
+    // stand more than a fifth again taller than the people fighting round it.
+    assert.ok(PROP_H[art] <= SPRITE_H * 1.2,
+      `${art} at ${PROP_H[art]} dwarfs a standing operator (${SPRITE_H})`);
+    assert.ok(fs.existsSync(path.join(ROOT, 'art-src', 'sprites', 'props', `${art}.png`)),
+      `${art} is in a pool with no plate on disk`);
+  }
+});
+
+// render.js MIRRORS props.json's heightM rather than fetching it, because
+// render() is synchronous and a load arriving a frame late would draw the
+// whole street at the wrong size first. A mirror that can drift is a copy
+// waiting to disagree, so this is what stops it.
+check('the drawn prop heights are the manifest heights', () => {
+  const person = PROPS_MANIFEST.unitHeightM;
+  assert.equal(person, 1.8, 'a person is 1.8m; PROP_H is derived from it');
+  for (const art of [...FULL_PROPS, ...PARTIAL_PROPS]) {
+    const m = PROPS_MANIFEST.props[art];
+    assert.ok(m, `${art} is drawn on the board but declares no heightM in props.json`);
+    assert.equal(PROP_H[art], Math.round(SPRITE_H * m.heightM / person),
+      `${art}: render.js draws ${PROP_H[art]}px, props.json says ${m.heightM}m`);
+  }
+});
+
+// The pools ARE the cover classes: a prop the manifest calls full cover that
+// sits in the partial pool would soften a hit the rules say it blocks.
+check('the prop pools agree with the cover class each prop declares', () => {
+  for (const art of FULL_PROPS) {
+    assert.equal(PROPS_MANIFEST.props[art].cover, 'full', `${art} is in the full-cover pool`);
+  }
+  for (const art of PARTIAL_PROPS) {
+    assert.equal(PROPS_MANIFEST.props[art].cover, 'low', `${art} is in the partial-cover pool`);
+  }
+  for (const [art, m] of Object.entries(PROPS_MANIFEST.props)) {
+    if (m.cover === 'none') continue;               // dressing, in neither pool
+    assert.ok(FULL_PROPS.includes(art) || PARTIAL_PROPS.includes(art),
+      `${art} is cut, sized and declared ${m.cover} cover, and no pool draws it`);
+  }
+});
+
+// "Use them sparingly" (owner, 2026-09-03). Rarity, not spacing: the greedy
+// spread keeps repeats apart, and backlot still drew the bear twice.
+check('the landmark props are rationed, and rationing never empties a pool', () => {
+  for (const art of RARE_PROPS) {
+    assert.ok(FULL_PROPS.includes(art) || PARTIAL_PROPS.includes(art),
+      `${art} is rationed but is in no pool`);
+  }
+  for (const pool of [FULL_PROPS, PARTIAL_PROPS]) {
+    const common = pool.filter(a => !RARE_PROPS.has(a));
+    assert.ok(common.length >= 2, 'a pool needs at least two workaday props once the landmarks are spent');
+  }
+});
+
+
+// The plate is seated on the board's diamond rather than centred in the
+// stage (owner, with two blue lines drawn on a screenshot: "blue lines show
+// where the grid should start"), and that placement is arithmetic off the
+// plate's declared floor quad. A plate in play with no quad falls back to
+// drawing nothing at all, which is worse than the misalignment it replaced.
+check('every plate in play declares the floor quad it is seated by', () => {
+  for (const file of ISO_PLATES) {
+    const q = PLATES[file];
+    assert.ok(q, `${file} is used by an encounter but declares no floor quad in plates.js`);
+    for (const k of ['cx', 'cy', 'halfW', 'halfH']) {
+      assert.ok(q[k] > 0 && q[k] < 1, `${file}: ${k} must be a fraction of the image, got ${q[k]}`);
+    }
+    assert.ok(q.w > 0 && q.h > 0, `${file}: the plate's pixel size must be declared, not read off a load`);
+    // The quad has to be INSIDE its own picture, or the placement puts the
+    // board on ground the plate does not contain.
+    assert.ok(q.cx - q.halfW > 0 && q.cx + q.halfW < 1, `${file}: floor quad runs off the image horizontally`);
+    assert.ok(q.cy - q.halfH > 0 && q.cy + q.halfH < 1, `${file}: floor quad runs off the image vertically`);
   }
 });
 

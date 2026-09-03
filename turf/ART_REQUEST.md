@@ -870,3 +870,99 @@ y=3 both read ~100%).
 **For the art, this means the playable diamond is wider than it was.** A
 plate delivered against §10.4 should seat a **13x9** grid with margin, not
 11x9.
+
+## 11. Props — six the board wants, and the rule for sizing them (2026-09-03)
+
+**What exists.** TWENTY-FOUR props. The first eight are the cut of
+`references/prop-sheet-1.png`; the street set of sixteen (dumpster, cabinet,
+skip, cylinders, pipes, tank, carwreck, hydrant, tyres, brazier, trolley,
+fence, sandbags, blocks, generator, and the lamp, which is dressing rather
+than cover) landed in 2026-09 and took the pools from 4/4 to 11/12. The six
+subjects listed in §11.1 are what the board still wants on top of that.
+
+The original eight:
+`crate` (crate on a pallet), `statue` (the granite bear), `bikerack` (rack
+with a bicycle), `noticeboard` (tram-stop panel) for **full cover**;
+`barrier` (concrete jersey barrier), `bollard`, `bin`, `bench` for **partial
+cover**. That sheet is fully cut — there is no ninth prop anywhere in this
+repo, on any branch.
+
+**They are drawn against a person, not against the plate.** `props.json` is
+the single source: each prop declares `heightM`, its real height in metres,
+and `js/render.js` derives `PROP_H` as `SPRITE_H x heightM / 1.8`. A gate
+fails if the two disagree, and a second gate fails if a prop's pool does not
+match its declared `cover` class. Roughly, against a 1.8m adult:
+
+| prop | board units | reads as |
+|---|---|---|
+| noticeboard | 31 | over head height |
+| statue | 27 | head height, on a plinth |
+| bikerack | 24 | shoulder |
+| crate | 22 | chest |
+| bin, barrier | 20 | waist to chest |
+| bench, bollard | 18, 17 | hip |
+
+A new prop needs a `heightM` in `props.json`, decided by what the object IS —
+never by how much of its cell the drawing fills. **Width follows the plate's
+own ink**, and so does height: the renderer scales and centres on the INK box,
+not the frame, because these cells are padded differently (the burnt-out car
+fills 44% of its frame, the hydrant 96%) and several objects are drawn
+off-centre in theirs. A plate may therefore be padded however the cutter
+likes; it just has to have the object drawn standing on its own feet.
+
+**Two of the eight are landmarks and are rationed.** `RARE_PROPS` caps the
+statue and the tram-stop panel at one each per board. One granite bear reads
+as a place; two read as a prop shop. Anything delivered that is a *monument*
+rather than street furniture joins that set.
+
+### 11.1 The six asked for
+
+Same camera as everything else here — **45° yaw, 30° elevation
+orthographic**, the §10.1 requirement, and the same plate format as
+`prop-sheet-1.png` (magenta field, one object per cell, no ground shadow —
+the board draws its own).
+
+1. **Dumpster**, lid down, dented, Nordic municipal green. Full cover. The
+   single most-missed piece: every encounter description in
+   `data/encounters.json` says back-alley and none of them can draw one.
+2. **Stacked tyres**, four or five, weathered. Full cover, and the one prop
+   that reads as *deliberately placed* rather than municipal.
+3. **Scaffold tower section**, one bay, boards on top. Full cover, tall,
+   and the only vertical that is not a sign.
+4. **Kerb with a snow bank / grit pile**. Partial cover, low, and the piece
+   that makes a board read as winter without repainting the ground.
+5. **Bicycle on its side**, unlocked, front wheel buckled. Partial cover.
+   Reads as aftermath, which no current prop does.
+6. **Bus shelter end panel**, cracked glass in a steel frame. Partial cover
+   that you can see THROUGH — worth having because every current partial
+   prop is opaque, and the rules already say partial cover does not block
+   line of sight.
+
+**Why sparingly.** A cover tile always gets art, so prop count is set by the
+encounter's cover list, not by taste. Variety comes from the pool being
+wide enough that the greedy spread in `assignPropArt` never has to repeat
+within four tiles. Six more props takes the full pool from 4 to 8 and the
+partial pool from 4 to 7, which is enough for the widest board here.
+
+### 11.2 The floor quad — what a new background plate must also declare
+
+A plate is no longer centred in the viewport; it is **seated on the board**
+(v33). `js/plates.js` carries each plate's **floor quad** — the flat ground a
+fight happens on — as fractions of the image:
+
+| field | means |
+|---|---|
+| `w`, `h` | the plate's pixel size, DECLARED (placement has to be right on the first paint, not one frame after an `onload`) |
+| `cx`, `cy` | the floor's centre |
+| `halfH` | half its height, far vertex to near vertex — this is what the board's diamond is matched to |
+| `halfW` | half its width; not used for placement, but it is the number that says whether the board will leave a margin |
+
+Measure them off the delivered picture, do not estimate them from the render
+settings. `test/smoke.mjs` fails a plate that is in play with no quad, or one
+whose quad runs off its own image.
+
+**Deliver a floor with room around it.** The board matches the floor's
+HEIGHT, so a plate whose ground runs to the very edge of the frame gives the
+grid nothing to sit inside; the two plates that work both have a yard visibly
+larger than the fight in it. A floor between **1.9:1 and 2.4:1** sits closest
+to the board's own 2:1 and wastes the least.

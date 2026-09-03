@@ -394,7 +394,42 @@ plate and does not**, so the three encounters it carried moved off it (it stays 
 card, where nothing must line up). The ten-second test: lay the grid over the plate, and a
 ground line either runs parallel to a tile edge or it does not. A gate refuses any encounter
 on a known-perspective or unknown plate. **`ART_REQUEST.md` §10** is the spec plus a list of
-six more subjects in the right camera. **Bigger boards, and COLUMNS are the safe axis** (owner: *"I didn't mean bigger characters,
+six more subjects in the right camera.
+**The plate is SEATED ON THE BOARD, not centred in the stage** (v33, owner, with two blue
+lines drawn on a screenshot: *"blue lines show where the grid should start"*). The photo was
+`background: cover center` on `#stage` and the canvas was flex-centred in the same box — both
+centred, **neither placed against the other**, and a courtyard's paving is nowhere near the
+middle of its own picture. `js/plates.js` gives each plate a **floor quad** (the flat ground,
+in image fractions, measured off the picture) and `fitPlate()` scales it so the floor's
+half-height equals the board diamond's half-height with the two centres together, which puts
+the grid's near vertex on the paving's near vertex. A `#plate` element carries it — a scrim on
+`#stage` paints *behind* a child, not over it — and it and the canvas share one `--cam`
+custom property so a pan moves the yard and the grid as one object. It closes into the stage
+colour with a vignette, since a seated plate no longer covers the viewport and a photograph
+that simply stops draws a hard seam. **More columns cannot make the grid fill the yard**: a
+board's bounding diamond is ALWAYS 2:1 (a tile is 32×16, so the box is `(cols+rows-2)*16` by
+`*8`), while the courtyard's paving is 2.78:1. Measured anyway — +2 columns with the layout
+left alone moves **nothing** (all seven rates identical; the new columns are empty asphalt
+nobody enters), and +2 with every x stretched across the wider board **destroys the set**
+(three encounters to 0%, three to 98-100%). Lateral distance is as load-bearing as approach.
+**Everything on the board is sized against the TILE, not against its plate** (v33). `SPRITE_H`
+46 → 32 → **29** across two owner looks ("way too big", then "10% too big"): a body is one
+tile wide, and layout headroom and the tap hit-box both follow that one constant. Props were
+worse — every prop plate is padded to the same 240px by the cutter, so one target height per
+cover KIND made a rubbish bin as tall as the bear statue; `PROP_H` gives each its own height
+against a standing person. And **"use them sparingly" is rarity, not spacing**: the greedy
+spread keeps repeats apart, and `backlot` still drew the bear twice, so `RARE_PROPS` caps the
+statue and the tram-stop panel at one each per board. **`art-src/props/props.json` is the one
+source for how big a prop is**: each declares `heightM`, its real height in metres, and
+render.js derives `PROP_H` as `SPRITE_H x heightM / 1.8` — mirrored rather than fetched
+(render() is synchronous), with a gate asserting mirror and manifest agree and a second
+asserting each pool matches the prop's declared cover class. The street set of sixteen
+(dumpster, skip, carwreck, pipes, tank, hydrant, tyres…) landed from another lane in 2026-09
+and took the pools from 4/4 to **11/12**; it shipped that manifest with nothing reading it.
+**A prop's height comes from its INK, never its file** — the cells are padded differently
+(carwreck's ink is 44% of its frame, hydrant's 96%) and several objects are drawn off-centre,
+so scaling or centring on the frame drew the car half-size and stood others beside their own
+tile. `ART_REQUEST.md` §11 carries the sizing rule and the six subjects still wanted. **Bigger boards, and COLUMNS are the safe axis** (owner: *"I didn't mean bigger characters,
 I meant more squares"*). Every board is 2 columns wider now (13×9, 11×10 — ~20% more tiles).
 Growing ROWS lengthens the crew's approach, the most load-bearing number on these maps: +2
 rows reads **0% on all three deadline missions**. +2 columns leaves approach distance alone

@@ -1,23 +1,153 @@
 {
-  "_comment": "World scale and cover class for every street prop. The PNGs are all 192x288 because fitclip normalises each asset to its own cell for fidelity — which means the file size says nothing about how big the thing is. A fire hydrant and a burnt-out car are the same pixels on disk. This file is the seam that fixes that: heightM is the object's real height in metres, and the renderer scales from it. A person is 1.8m and draws at UNIT_H = 18px on a 32x16 tile (js/render.js), so px = 18 * heightM / 1.8.",
+  "_comment": "World scale and cover class for every street prop. The PNGs are all 192x288 because fitclip normalises each asset to its own cell for fidelity \u2014 which means the file size says nothing about how big the thing is. A fire hydrant and a burnt-out car are the same pixels on disk. This file is the seam that fixes that: heightM is the object's real height in metres, and the renderer scales from it. A person is 1.8m and draws at UNIT_H = 18px on a 32x16 tile (js/render.js), so px = 18 * heightM / 1.8.",
   "_cover": "none = no protection, low = half cover, full = blocks line of sight",
   "unitHeightM": 1.8,
   "props": {
-    "hydrant":   { "heightM": 0.9, "footprintTiles": 1, "cover": "low",  "solid": true },
-    "dumpster":  { "heightM": 1.3, "footprintTiles": 2, "cover": "full", "solid": true },
-    "tyres":     { "heightM": 1.1, "footprintTiles": 1, "cover": "low",  "solid": true },
-    "lamp":      { "heightM": 4.5, "footprintTiles": 1, "cover": "none", "solid": true },
-    "brazier":   { "heightM": 0.9, "footprintTiles": 1, "cover": "low",  "solid": true },
-    "cabinet":   { "heightM": 1.8, "footprintTiles": 1, "cover": "full", "solid": true },
-    "trolley":   { "heightM": 1.0, "footprintTiles": 1, "cover": "low",  "solid": false },
-    "fence":     { "heightM": 2.0, "footprintTiles": 2, "cover": "low",  "solid": true },
-    "sandbags":  { "heightM": 0.6, "footprintTiles": 2, "cover": "low",  "solid": true },
-    "skip":      { "heightM": 1.2, "footprintTiles": 3, "cover": "full", "solid": true },
-    "blocks":    { "heightM": 1.0, "footprintTiles": 1, "cover": "low",  "solid": true },
-    "cylinders": { "heightM": 1.5, "footprintTiles": 1, "cover": "full", "solid": true },
-    "generator": { "heightM": 1.1, "footprintTiles": 2, "cover": "low",  "solid": true },
-    "pipes":     { "heightM": 1.6, "footprintTiles": 2, "cover": "full", "solid": true },
-    "tank":      { "heightM": 1.2, "footprintTiles": 1, "cover": "full", "solid": true },
-    "carwreck":  { "heightM": 1.4, "footprintTiles": 4, "cover": "full", "solid": true }
-  }
+    "crate": {
+      "heightM": 1.2,
+      "footprintTiles": 1,
+      "cover": "full",
+      "solid": true
+    },
+    "statue": {
+      "heightM": 1.6,
+      "footprintTiles": 1,
+      "cover": "full",
+      "solid": true
+    },
+    "bikerack": {
+      "heightM": 1.35,
+      "footprintTiles": 2,
+      "cover": "full",
+      "solid": true
+    },
+    "noticeboard": {
+      "heightM": 2.0,
+      "footprintTiles": 1,
+      "cover": "full",
+      "solid": true
+    },
+    "barrier": {
+      "heightM": 1.1,
+      "footprintTiles": 2,
+      "cover": "low",
+      "solid": true
+    },
+    "bollard": {
+      "heightM": 0.9,
+      "footprintTiles": 1,
+      "cover": "low",
+      "solid": true
+    },
+    "bin": {
+      "heightM": 1.15,
+      "footprintTiles": 1,
+      "cover": "low",
+      "solid": true
+    },
+    "bench": {
+      "heightM": 1.0,
+      "footprintTiles": 2,
+      "cover": "low",
+      "solid": true
+    },
+    "hydrant": {
+      "heightM": 0.9,
+      "footprintTiles": 1,
+      "cover": "low",
+      "solid": true
+    },
+    "dumpster": {
+      "heightM": 1.3,
+      "footprintTiles": 2,
+      "cover": "full",
+      "solid": true
+    },
+    "tyres": {
+      "heightM": 1.1,
+      "footprintTiles": 1,
+      "cover": "low",
+      "solid": true
+    },
+    "lamp": {
+      "heightM": 4.5,
+      "footprintTiles": 1,
+      "cover": "none",
+      "solid": true
+    },
+    "brazier": {
+      "heightM": 0.9,
+      "footprintTiles": 1,
+      "cover": "low",
+      "solid": true
+    },
+    "cabinet": {
+      "heightM": 1.8,
+      "footprintTiles": 1,
+      "cover": "full",
+      "solid": true
+    },
+    "trolley": {
+      "heightM": 1.0,
+      "footprintTiles": 1,
+      "cover": "low",
+      "solid": false
+    },
+    "fence": {
+      "heightM": 2.0,
+      "footprintTiles": 2,
+      "cover": "low",
+      "solid": true
+    },
+    "sandbags": {
+      "heightM": 0.6,
+      "footprintTiles": 2,
+      "cover": "low",
+      "solid": true
+    },
+    "skip": {
+      "heightM": 1.2,
+      "footprintTiles": 3,
+      "cover": "full",
+      "solid": true
+    },
+    "blocks": {
+      "heightM": 1.0,
+      "footprintTiles": 1,
+      "cover": "low",
+      "solid": true
+    },
+    "cylinders": {
+      "heightM": 1.5,
+      "footprintTiles": 1,
+      "cover": "full",
+      "solid": true
+    },
+    "generator": {
+      "heightM": 1.1,
+      "footprintTiles": 2,
+      "cover": "low",
+      "solid": true
+    },
+    "pipes": {
+      "heightM": 1.6,
+      "footprintTiles": 2,
+      "cover": "full",
+      "solid": true
+    },
+    "tank": {
+      "heightM": 1.2,
+      "footprintTiles": 1,
+      "cover": "full",
+      "solid": true
+    },
+    "carwreck": {
+      "heightM": 1.4,
+      "footprintTiles": 4,
+      "cover": "full",
+      "solid": true
+    }
+  },
+  "_origin": "The first eight (crate..bench) are the cut of references/prop-sheet-1.png and were sized by eye before this file existed; they carry heightM now so there is ONE source for how big a prop draws. js/render.js mirrors heightM into PROP_H and test/smoke.mjs fails if the mirror and this file disagree.",
+  "_scale": "px = SPRITE_H * heightM / 1.8. A person draws at SPRITE_H (js/render.js), not at UNIT_H \u2014 UNIT_H is the procedural fallback's height and stopped being the size of a body when units got real plates. And the renderer scales by the plate's INK box, not its file: these cells are padded differently (carwreck fills 44% of its frame, hydrant 96%), so naturalHeight would draw the car at less than half the size this file says it is."
 }
