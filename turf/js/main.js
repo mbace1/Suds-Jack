@@ -12,7 +12,7 @@ import { createInputHandler } from './input.js?v=11';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { abilitiesFor, canAfford, whyNot } from './abilities.js?v=1';
-import { autoTurn } from './autoplay.js?v=2';
+import { autoTurn } from './autoplay.js?v=3';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);

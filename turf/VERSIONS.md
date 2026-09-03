@@ -81,13 +81,22 @@ above it, because this board is full of crates as cover. And the extraction
 pads opened OFF SCREEN on the very frame the player is told to go and stand
 on them — the opening shot now frames the crew and the mission together.
 
-- `test/smoke.mjs` is 91 checks (was 78): the forecast equalling the roll,
+**One crash, caught by asking the question the browser test could not.** AUTO
+had been verified in a browser on encounter ONE, and widening its target
+filter to everything-not-mine (so a cache is a target like any other) also
+let a WEAPONLESS crate into its threat model — `f.weapon.range` on a cache
+crashed the switch outright on the destroy map. The gate now drives AUTO
+through every encounter, which is the coverage that was missing: a bot that
+throws is worse than a bot that loses.
+
+- `test/smoke.mjs` is 92 checks (was 78): the forecast equalling the roll,
   the from-tile rule, no forecast for a shot that is not on, both new loss
-  conditions, a cache being a target like any other, and the enemy brain
-  never aiming at one.
+  conditions, a cache being a target like any other, the enemy brain never
+  aiming at one, and AUTO reaching a result on all seven encounters.
 - `test/balance.mjs` green on all seven: 53 / 67 / 65 / 17 / 68 / 18 / 25.
+- AUTO across the seven: 60 / 100 / 100 / 93 / 100 / 27 / 100.
 - Tokens: `combat` v13, `input` v11, `render` v17, `palette` v7, `main` v20,
-  `autoplay` v2.
+  `autoplay` v3.
 
 ## v25 — 2026-09-03
 **Owner, on the v24 build: "zoom in a bit on mobile, things are hard to see

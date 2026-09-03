@@ -20,6 +20,7 @@ import {
   MOVE_CAP, EVADE_PER, DAMAGE_PER, addMomentum, clearMomentum, evasionOf,
 } from '../js/momentum.js';
 import { abilitiesFor, abilityTargets, canAfford, whyNot, findAbility } from '../js/abilities.js';
+import { autoTurn } from '../js/autoplay.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -1032,6 +1033,28 @@ check('the enemy brain never targets an objective', () => {
       assert.equal(getUnit(state, intent.targetUid).faction, 'player',
         'rivals fight the crew, never the scenery');
     }
+  }
+});
+
+// The AUTO switch has to survive every encounter, and this is the check that
+// was missing: AUTO was verified in a browser on encounter ONE, and a
+// weaponless cache walking into its threat model crashed it outright on the
+// destroy map. A bot that throws is worse than a bot that loses.
+check('AUTO plays every encounter without throwing', () => {
+  for (const enc of ENCOUNTERS) {
+    const state = boot(enc, 7);
+    let rounds = 0;
+    while (!state.result && rounds < 30) {
+      for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) {
+        autoTurn(state, u, ABILITIES);
+        if (state.result) break;
+      }
+      if (state.result) break;
+      endPlayerTurn(state);
+      let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+      rounds++;
+    }
+    assert.ok(state.result, `${enc.id}: AUTO reaches a result`);
   }
 });
 

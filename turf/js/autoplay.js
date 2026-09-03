@@ -36,6 +36,11 @@ function hazardCost(state, x, y) {
 function exposure(state, tile, foes) {
   let n = 0;
   for (const f of foes) {
+    // An objective has no weapon and threatens nothing. Reading `f.weapon`
+    // unguarded crashed AUTO outright on the destroy map, because widening
+    // "foes" to everything-not-mine (so a cache is a target like any other)
+    // also let a weaponless crate into the threat model.
+    if (!f.weapon) continue;
     if (manhattan(tile, f) > f.weapon.range + 2) continue;
     if (!hasLOS(state, f, tile)) continue;
     n += coverSoftens(state, f, tile) ? 0.4 : 1;
