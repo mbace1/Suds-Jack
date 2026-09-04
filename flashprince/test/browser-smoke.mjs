@@ -55,9 +55,9 @@ try {
   assert.ok(ledge.x >= 224, `pull-up must carry the hero onto the raised platform, got x=${ledge.x}`);
   assert.ok(ledge.y <= 96.1, `pull-up must finish at the raised lip height, got y=${ledge.y}`);
 
-  // Scene 4: mantle onto the two-tile block, take one committed step to its
-  // right lip, deliberately climb down, shimmy back toward the block, reject
-  // an outward shimmy into empty space, then pull back onto the same surface.
+  // Scene 4: mantle onto the two-tile block, turn in place so the nearer left
+  // lip is a stable deliberate climb-down target, shimmy inward along the lip,
+  // reject an outward shimmy into empty space, then pull back onto the block.
   await page.keyboard.press('Digit4');
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'lowMantle', null, { timeout: 7000 });
@@ -72,13 +72,10 @@ try {
   assert.equal(mantle.grounded, true, 'hero must finish grounded after mantle');
   assert.ok(mantle.y <= 160.1, `hero must finish on the upper tile, got y=${mantle.y}`);
 
-  await page.keyboard.down('ArrowRight');
-  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'step', null, { timeout: 2000 });
-  await page.keyboard.up('ArrowRight');
-  await page.waitForFunction(() => {
-    const d = globalThis.__flashPrinceMovement;
-    return d?.state === 'stand' && d.x >= 147 && d.x <= 150 && d.grounded;
-  }, null, { timeout: 3000 });
+  await page.keyboard.down('ArrowLeft');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'pivot', null, { timeout: 2000 });
+  await page.keyboard.up('ArrowLeft');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand', null, { timeout: 3000 });
 
   await page.keyboard.down('ArrowDown');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'climbDown', null, { timeout: 2000 });
@@ -86,17 +83,17 @@ try {
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
   const hangStart = await page.evaluate(() => globalThis.__flashPrinceMovement);
 
-  await page.keyboard.down('ArrowLeft');
+  await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'shimmy', null, { timeout: 2000 });
-  await page.keyboard.up('ArrowLeft');
+  await page.keyboard.up('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
   const shimmy = await page.evaluate(() => globalThis.__flashPrinceMovement);
-  assert.ok(shimmy.x < hangStart.x - 2.5, `inward shimmy must move left along the lip, ${hangStart.x} -> ${shimmy.x}`);
+  assert.ok(shimmy.x > hangStart.x + 2.5, `inward shimmy must move right along the lip, ${hangStart.x} -> ${shimmy.x}`);
 
   const outwardX = shimmy.x;
-  await page.keyboard.down('ArrowRight');
+  await page.keyboard.down('ArrowLeft');
   await sleep(350);
-  await page.keyboard.up('ArrowRight');
+  await page.keyboard.up('ArrowLeft');
   const blocked = await page.evaluate(() => globalThis.__flashPrinceMovement);
   assert.equal(blocked.state, 'hang', 'outward shimmy into empty space must stay hanging');
   assert.ok(Math.abs(blocked.x - outwardX) < 0.2, `blocked shimmy must not move hero, ${outwardX} -> ${blocked.x}`);
