@@ -68,81 +68,89 @@ open `dropcabal/index.html` (three.js via jsDelivr importmap). Same `gh-pages` d
 caveat as paperboy.
 
 ### Powder (`powder/`)
-A **heavy hover racer carving a bottomless powder descent** on Three.js r167 — close
-third-person like a snowboarding game, weighty and momentum-led like **Jet Moto**, elbows
-out against a field like **MotorStorm**. Art direction is the owner's **Moebius / Otomo
-hover-racer plates** (`powder/ref/`): bone-cream fuselages with one weathered accent
-panel, chrome nacelles with black intake mouths, a needle nose probe, a blown-out sun,
-huge billowing plumes, muted desaturated ground. The surface is deliberately ambiguous
-between deep snow and deep sand — it reads as either and carves the same. Rendered
-**PS1-style**: a 288 px internal buffer upscaled with `image-rendering: pixelated`,
-flat-shaded chunky geometry, nearest-filtered decal textures, heavy fog, and **vertex
-snapping** (`retro.js` patches every lit material's vertex shader to quantise
-`gl_Position` in NDC — the console's missing sub-pixel precision, and most of the era).
-No build step — open `powder/index.html` (three.js via jsDelivr importmap). Same
-`gh-pages` deploy caveat as paperboy.
+**Rebuilt from scratch on the owner's direction, 2026-07 — "simulator like details,
+surreal 3d graphics, a bit more of flatlands with canyons".** The previous build (a
+PS1-styled arcade descent down a snow/sand ribbon) is gone. What survived it: the
+reference-plate craft design in `powder/ref/`, the dust plume, the multiply-blended
+ground scars, and the camera rig. Read this section before retuning anything — most of
+the numbers in it were reached by measurement and the reasons are recorded here.
 
-**The loop.** Endless descent against 5 rivals on a timer: make the checkpoint gates
-(+22 s each) before the clock runs out. Three surfaces make the risk/reward triangle —
-**PACKED** (the balanced line everyone runs), **DEEP** (slow, but it bites and it charges
-the afterburner), **CRUST** (fastest, almost no grip). So you dive off the line into the
-deep stuff to fill the BURN meter, then spend it back on the packed line. Jump lips
-launch you; landing straight is clean and pays boost, landing sideways is survivable in
-deep powder and a wreck on anything harder.
+A hover racer on an open flatland cut by a canyon. Three.js r167, no build step.
 
-**Controls.** Desktop A/D carve, W tuck, S scrub, Space/Shift afterburner, Esc pause.
-Touch is **twin sticks** (repo idiom — floating origin per screen half, `sticks()`
-exposed for the overlay, drawn on a full-res `#ui` canvas so they aren't chunky):
-**left** x = carve, y = weight (forward tuck / back scrub); **right** y = hold forward to
-burn, x = counter-steer trim at half authority, which is also the spin axis in the air.
+**The simulation** (`js/vehicle.js`). There is no lerp toward a target pose anywhere. The
+craft is a rigid body on **four sprung hover pads**, integrated at a fixed **120 Hz** on
+an accumulator, because a spring this stiff is not stable on a variable frame time. Each
+pad springs against the ground height under it and damps its own vertical velocity, and
+the moments those four forces make about the centre of mass ARE the pitch and roll — so
+cresting a dune pitches the nose and a hard turn rolls onto the outside pads. **Weight
+transfer is not modelled separately; it is just where the load went.** The turbine has
+**spool lag** (throttle commands N1, N1 chases it over about a second, thrust goes as N1
+squared), so you cannot stab the throttle out of a mistake. Lateral force is linear in
+slip speed up to a friction limit set by the surface mu and the load *currently* on the
+pads, so the breakaway is real and comes sooner when the craft is light over a crest.
+**Walls are not special-cased**: any ground steeper than ~34 degrees that you are closing
+on returns an impulse along its normal, so canyon walls, mesa sides and boulder flanks
+all behave without knowing about each other.
 
-**Architecture notes.**
-- **Track space is the contract.** Everything addresses the mountain as `s` (metres down
-  the fall line) and `n` (metres across), and `track.js` is the only thing that converts
-  to world space. `surface(s, n)` is the single source of truth for the ground — terrain
-  mesh, craft physics, props and plume particles all read it, so they cannot disagree.
-  Course nodes integrate layered sine noise (heading, pitch, run width); bank comes from
-  curvature. Features (jump lips, crust sheets, boulders, markers, gates) generate lazily
-  per 60 m block from a seeded RNG, and jump ramps feed back into `surface()` so the mesh
-  and the launch physics are the same shape by construction.
-- **Terrain streams as pooled chunks** (10×24 quads per 60 m slab), recycled front to
-  back, vertex-coloured by surface type.
-- **The burn economy is measured, not guessed** (`scripts/` has no harness for it yet;
-  it was a Playwright autopilot that overrode `input.read()` and compared metres per
-  *sim* second across scripted lines). The first build was decisively broken — the
-  dive-and-spend loop ran 36% SLOWER than never touching the mechanic. Three causes,
-  all now fixed: DEEP paid the surface penalty *and* the carve scrub stacked (holding a
-  line off-piste needs constant steering), so the scrub is now scaled by grip; a full
-  tank bought under 3 s of burn; and, the structural one, **the packed line used to be
-  so wide that reaching deep snow meant crossing 35 m of it twice per cycle** — the loop
-  spent all its time in transit. Narrowing the line to a ribbon (`w` 26±8 → 15±5) fixed
-  what no amount of number-tuning could. Two counter-intuitive results worth keeping:
-  charging FASTER made the loop worse (it just buys more round trips), and the harness
-  noise floor on the transition-heavy line is ~15%, so anything smaller than that is
-  not measurable this way and needs a human.
-- **Launch test:** you stay on the ground until the ground drops away faster than gravity
-  can pull you down (`rate > 4.5 && yFree > surfNext`) — which is exactly what a lip does,
-  and which does not false-trigger on the descent or on rollers.
-- **Camera is anchored on the craft in WORLD space**, and it must stay that way. Framing
-  it in track space as `(s - back, n)` looking at `(s + ahead, n·k)` is fine on the
-  centreline and skews badly everywhere else — off to one side it stares diagonally past
-  the craft. It also smooths the *heading* and snaps the *position*: lerping the position
-  leaves a steady-state lag of `speed / rate` metres, which at 100 m/s silently doubles
-  the chase distance and shrinks the craft to a speck.
-- **Hover scars use MultiplyBlending, not a lit quad.** A lit quad has to match the
-  shading of the ground it sits on and never quite does; every version of it read as grey
-  road markings. Multiplying darkens whatever is already there, so the scar tracks the
-  terrain's colour and light for free and fading is a lerp back to white.
-- **Palette traps, all paid for once already:** `skyLow` and `fog` must be the SAME value
-  or a hard tan seam paints across the horizon; the distant ridge ring spans the whole
-  frame by construction, so any real contrast there draws one grey wing across the shot;
-  the valley walls must stay near the ground colour until the last few metres or the two
-  sides converge at the horizon into a dark band; and the hemisphere fill needs a bright
-  *ground* term, because a bright field bounces enormously and without it every face
-  turned from the sun goes slate and the cream hulls read as grey metal.
-- `window.__pw` exposes `{THREE, scene, camera, renderer, track, state, spray, scars,
-  audio, sky, player, field, debug: {start, over, warp, time}}` for console tinkering and
-  headless smoke tests.
+**Four sign errors were paid for here and not one of them looked like a sign error.**
+Getting the pad pitch moment backwards does not read as a wrong sign, it reads as the
+craft being fired 150 m into the air, because it is a positive feedback loop that
+saturates the attitude in half a second (more load at the back pitches the nose DOWN:
+`tau_x = -z*F`). The pad-height roll term had the same fault. The self-aligning moment
+was signed so the nose was pushed AWAY from the direction of travel, and the craft
+crabbed sideways down the flats at 60 km/h with the driver doing nothing — `yaw`
+increases to the right while a rotation about +y turns the nose left, so the torque picks
+up a minus on the way into this convention. And `yaw = Math.PI` faces +z, not -z, so the
+whole field spawned backwards. All four are commented at the site.
+
+**The world** (`js/terrain.js`). Open, not a ribbon: `height(x, z)` is a pure function,
+and the tile meshes, the hover pads, the props and the dust all read it, so they cannot
+disagree. Streamed as an 11x11 grid of 100 m tiles around the craft. The flats are a
+near-level dune field with mesas standing on them; the rift is a meandering 30-50 m
+canyon with a salt floor — the fastest surface in the game and the tightest.
+**The breaches are the load-bearing idea.** The walls are ~60 degrees and unclimbable, so
+without shallow sections the canyon is a trap you enter and never leave; the breaches are
+the on-ramps and they set the rhythm of a run. Their width was **measured, not guessed**:
+with the first window only ~90 m either side of centre, every approach met deep wall and
+stopped dead, because every real approach is a diagonal. About 40% of each cycle is
+drivable now, and that is what turns the canyon from scenery into a route.
+`js/route.js` lays gates alternately on the deepest rift floor and beside a breach out on
+the flats, at **half the terrain's breach cycle** — decoupling those two numbers puts a
+gate on a canyon floor with no reachable entrance for 400 m. The HUD points at the
+**breach** rather than the gate whenever the gate is in the rift and you are not, because
+without that the display is telling you to drive at something you cannot reach.
+
+**The look** (`js/sky.js`, `js/props.js`, and the grade pass in `main.js`). Violet zenith
+into an amber horizon; a low raking key so everything standing up throws its length
+across the flats; a cold fill from behind that nothing in a desert would have; rock that
+hangs in the air and turns; arches with nothing holding them up; slabs too regular to be
+geology. Post is bloom, vignette, mild chromatic aberration, and a heat shimmer that only
+bites near the bottom of the frame. **The ringed body must sit AHEAD (-z)** — parked
+behind the player it is the best thing in the sky and nobody ever sees it.
+Four rules that keep being relearned, now written into the files: **`horizon` and `fog`
+must be the same value** or the ground stops at a hard seam; **anything large and dark
+near the horizon reads as a wall across the frame**, so the distant range sits within a
+hair of the haze; the hemisphere fill must be **generous** because the key is low, or
+every face turned from the sun crushes to black and the monoliths become holes; and
+particle size needs a **clamp**, because a puff that has grown for two seconds twenty
+metres out resolves to a 900 px sprite and fills the frame with white.
+
+**Quality** is a real persisted setting (`powderQuality`, `?q=low|high`), not a test hook:
+shadows, bloom and antialiasing are exactly what a weak machine cannot afford and exactly
+what this look is made of.
+
+**Controls.** W throttle, A/D steer, S brake, Space overdrive (builds turbine heat and
+trips out at redline), Esc pause. Touch is twin sticks: left steers and works the
+throttle — there is no auto-throttle, managing spool is the point — right holds overdrive
+and trims the slide.
+
+**A testing note that will otherwise cost an afternoon:** under SwiftShader at high
+quality the frame rate is low enough that `dt` clamping runs the simulation at roughly a
+quarter of real time. A craft that looks stuck at 8 km/h in a headless capture is usually
+fine — re-measure at `?q=low` before believing it. `window.__pw` exposes `{THREE, scene,
+camera, renderer, composer, terrain, route, state, dust, scars, audio, sky, input,
+player, field, debug:{start, over, setQuality, tp, gate}}`, and overriding `input.read`
+is how the autopilot harness drives the real control path.
 
 ### The Game of Life (`gameoflife/`)
 **Mini games and interactive stories that always revert to going back to nature.**
@@ -340,19 +348,20 @@ toko-drop/
     player.js   # Player movement, dash mechanic, firing
     enemy.js    # Enemy class — 4 bullet-hell patterns, each with distinct color
     bullet.js   # Object-pooled bullets (300 cap, shared pool for all bullets)
-powder/         # Powder — Moebius hover racer, PS1 render, deep-powder carve
-  index.html
-  ref/          # the reference plates the art direction is held against
+powder/         # Powder — hover SIM racer, open flatlands cut by a canyon, surreal
+  index.html    # telemetry cluster HUD
+  ref/          # the reference plates the craft design is held against
   js/
-    main.js     # scene, PS1 render setup, race loop, camera rig, HUD, stick overlay
-    palette.js  # the whole colour scheme + fixed sun direction
-    track.js    # course gen, surface(s,n), feature blocks, streamed terrain chunks
-    craft.js    # hover physics (carve/drift/air/crash) + the low-poly racer model
-    snow.js     # pooled plume particles + MultiplyBlend hover scars
-    input.js    # twin sticks (touch) / keyboard
-    audio.js    # WebAudio turbine, wind, surface hiss + one-shots
-    sky.js      # gradient dome, blown-out sun, distant ridge ring
-    retro.js    # PS1 vertex-snapping material patch
+    main.js     # scene, shadow/bloom/grade stack, race loop, camera rig, HUD
+    palette.js  # the whole colour scheme + the two light directions
+    terrain.js  # height(x,z), the rift and its BREACHES, streamed tile grid
+    vehicle.js  # THE SIM: four sprung hover pads, turbine spool, slip-limited grip
+    props.js    # monoliths, arches, floating rock — where the surreal lives
+    route.js    # gates, alternating rift floor and flats, aligned to the breaches
+    dust.js     # pooled plume particles + MultiplyBlend ground scars
+    input.js    # twin sticks (touch) / keyboard, with a real throttle axis
+    audio.js    # WebAudio turbine stack driven by N1, wind, surface roar
+    sky.js      # gradient dome, sun, the ringed body, distant mesa range
 paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new palette)
   index.html
   js/
