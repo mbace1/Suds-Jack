@@ -13,6 +13,7 @@ MovementHeroV3.prototype.update = function patchedMovementUpdate(world, input, g
     frame: this.f,
     x: this.x,
     y: this.y,
+    health: this.health,
     grounded: this.grounded(world),
     faults: this.transitionFaults || 0,
     visited: [...visited],
@@ -50,7 +51,7 @@ function paint() {
   else {
     const faultMark = d.faults ? 'FAULT' : 'OK';
     const floorMark = d.grounded ? 'GROUND' : 'AIR';
-    el.textContent = `${d.build}  ${faultMark} ${d.faults}\n${d.state} F${d.frame}  X${d.x.toFixed(1)} Y${d.y.toFixed(1)}  ${floorMark}`;
+    el.textContent = `${d.build}  ${faultMark} ${d.faults}\n${d.state} F${d.frame}  X${d.x.toFixed(1)} Y${d.y.toFixed(1)}  HP${d.health} ${floorMark}`;
   }
   requestAnimationFrame(paint);
 }
