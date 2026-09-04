@@ -385,36 +385,33 @@ export const ART = {
     for (let i = 0; i < 5; i++) g.p(58 + i * 8, 40 - i * (4 - i * 0.7), 3, 3, '#f2f2e8');   // the throw
   },
 
-  // Powder: the racer, its plume, and the blown-out sun the plates always have
+  // Powder: the rift from the rim, the ringed body over it, one craft dropping in
   powder(g, a) {
-    g.bands(['#8d9aad', '#b0b4b0', '#e6ddc6']);
-    g.p(0, 30, W, H - 30, '#efe7d2');            // the field
-    g.disc(100, 12, 8, '#fffdf4');               // sun, no colour left in it
-    for (let i = 0; i < 8; i++) {
-      const t = i / 8 * Math.PI * 2;
-      g.line(100 + Math.cos(t) * 10, 12 + Math.sin(t) * 10,
-        100 + Math.cos(t) * 15, 12 + Math.sin(t) * 15, a);
+    g.bands(['#2a2352', '#6b5a8c', '#c08a6b', '#f0c489']);
+    g.p(0, 34, W, H - 34, '#d9b483');            // the flats
+    g.disc(96, 22, 15, '#b9846b');               // the ringed body, low and huge
+    g.disc(86, 17, 6, '#e8c9a8');                // its lit limb
+    for (let i = -22; i <= 22; i++) g.p(96 + i, 22 + (i * i) / 60 - 4, 1, 1, '#e8c9a8');
+    g.disc(30, 10, 3, '#fff6e2');                // the sun, small and hard
+    // the rift: oxide walls, violet in the shadow, salt floor
+    for (let y = 40; y < H; y++) {
+      const w = 6 + (y - 40) * 1.7, cx = 58 + (y - 40) * 0.35;
+      g.p(cx - w / 2 - 5, y, 5, 1, '#8a4f3c');
+      g.p(cx - w / 2, y, w, 1, y % 3 ? '#eee6d2' : '#cfc4ad');
+      g.p(cx + w / 2, y, 5, 1, '#4a3f6b');
     }
-    for (let y = 30; y < H; y++) {               // the packed line, running away
-      g.p(20 - (y - 30) * 0.9, y, 6 + (y - 30) * 2.2, 1, '#d8cba8');
-    }
-    g.p(18, 33, 5, 2, '#4a4753');                // boulders out on the field
-    g.p(104, 42, 6, 3, '#4a4753');
-    g.p(6, 50, 4, 2, '#4a4753');
-    for (let i = 0; i < 7; i++) {                // plume off the inside edge
-      g.disc(74 + i * 7, 44 - i * 2, Math.max(2, 6 - i), i & 1 ? '#f6f0e0' : '#d5c9ae');
-    }
-    g.disc(50, 60, 12, '#cfc6ae');               // hard blob shadow, close under
-    g.p(34, 51, 30, 5, '#e8dfc6');               // cream fuselage
-    g.p(27, 52, 8, 3, '#e8dfc6');
-    g.p(22, 53, 5, 1, '#b9bec7');                // needle probe
-    g.p(48, 51, 6, 5, '#6b3550');                // the one accent panel
-    g.p(39, 48, 9, 3, '#2b3340');                // canopy
-    g.p(56, 48, 12, 4, '#b9bec7');               // chrome cans
-    g.p(56, 55, 12, 4, '#b9bec7');
-    g.p(67, 48, 2, 4, '#14141a');                // black intake mouths
-    g.p(67, 55, 2, 4, '#14141a');
-    g.p(60, 44, 3, 5, '#e8dfc6');                // fin
+    g.p(8, 30, 4, 22, '#5a5074');                // monoliths on the rim
+    g.p(16, 26, 3, 26, '#8a7fae');
+    g.p(112, 36, 6, 3, '#7a637f');               // a rock that hangs
+    g.disc(70, 60, 7, '#a08f78');                // shadow under the craft
+    g.p(56, 55, 26, 4, '#e8dfc6');               // fuselage
+    g.p(51, 56, 6, 2, '#e8dfc6');
+    g.p(68, 55, 5, 4, '#6b3550');                // accent band
+    g.p(60, 53, 7, 2, '#2b3340');                // canopy
+    g.p(78, 53, 9, 3, '#b9bec7');                // chrome cans
+    g.p(78, 58, 9, 3, '#b9bec7');
+    g.p(87, 53, 3, 3, a);                        // exhaust, in the hub accent
+    g.p(87, 58, 3, 3, a);
   },
 
   // SKLTR: green bones in the dark

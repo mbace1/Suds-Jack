@@ -20,9 +20,9 @@
     "from": "VERSIONS.md"
   },
   "powder": {
-    "v": "2",
-    "n": 2000,
-    "from": "cache token"
+    "v": "3",
+    "n": 3000,
+    "from": "VERSIONS.md"
   },
   "paperboy": {
     "v": "4",
