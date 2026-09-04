@@ -24,6 +24,8 @@ runTape('deliberate climb-down', ['stand','climbDown','hang','pullUp','stand']);
 runTape('low mantle to continued movement', ['stand','step','lowMantle','step','runStart','run']);
 runTape('landing reverse', ['air','land','pivot','stand']);
 runTape('running landing release', ['air','land','landRun','runStop','stand']);
+runTape('hard landing recovery', ['fall','landHard','stand']);
+runTape('run brake and reverse', ['run','runStop','pivot','runStart','run']);
 runTape('crouch and roll', ['stand','crouch','crouchIdle','crouchWalk','crouchIdle','roll','crouchIdle','standUp','stand']);
 
 for (const [from, to] of [
@@ -31,6 +33,9 @@ for (const [from, to] of [
   ['land','landRun'],
   ['landRun','runStart'],
   ['lowMantle','step'],
+  ['fall','landHard'],
+  ['runStop','pivot'],
+  ['pivot','runStart'],
 ]) ok(isLegalMovementTransition(from, to), `${from} -> ${to} is represented in the contract`);
 
 const strict = new StateMachine({ initial: 'stand', transitions: MOVEMENT_TRANSITIONS, strict: true });
@@ -46,15 +51,17 @@ for (const sourceEdge of [
   "this.go('runStart')",
   "this.go(input.dir === this.face ? 'step' : 'stand')",
   "this.go('landRun')",
+  "this.go('landHard')",
 ]) ok(heroSource.includes(sourceEdge), `runtime source still contains expected edge: ${sourceEdge}`);
 ok(v3Source.includes('transitionFaults'), 'V3 runtime counts transition faults');
 ok(v3Source.includes('StateMachine'), 'V3 runtime routes transitions through shared StateMachine');
-ok(diagSource.includes("FP-MOVE-8"), 'diagnostics expose the visible movement build id');
+ok(diagSource.includes("FP-MOVE-9"), 'diagnostics expose the visible movement build id');
 ok(diagSource.includes('transitionFaults'), 'diagnostics read the live transition fault count');
+ok(diagSource.includes('health: this.health'), 'diagnostics expose landing damage');
 ok(indexSource.includes('js/main.js?v=9'), 'playable index launches the campaign main loop v9');
 ok(!indexSource.includes('movement-lab-v3.js'), 'playable index must not launch the movement lab');
 ok(!indexSource.includes('movement-diagnostics.js'), 'playable index must not load movement-only diagnostics');
-ok(labSource.includes('movement-diagnostics.js?v=8'), 'movement lab loads diagnostics v8');
-ok(labSource.includes('movement-lab-v3.js?v=8'), 'movement lab loads Rotoscope 3.0 v8');
+ok(labSource.includes('movement-diagnostics.js?v=9'), 'movement lab loads diagnostics v9');
+ok(labSource.includes('movement-lab-v3.js?v=9'), 'movement lab loads Rotoscope 3.0 v9');
 
 console.log(`Flash Prince movement contract: ${checks} checks passed`);
