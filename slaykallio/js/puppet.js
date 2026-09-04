@@ -349,11 +349,13 @@ function tapeTexture() {
   return tapeTex;
 }
 
-const BOARD = new THREE.MeshLambertMaterial({ color: '#9c7b52' });
-const FLUTE = new THREE.MeshLambertMaterial({ color: '#7d5f3e' });
+// Knocked back deliberately: against dark wet timber a bright tan base is the
+// brightest thing on the deck and pulls the eye off the figure standing on it.
+const BOARD = new THREE.MeshLambertMaterial({ color: '#7d6144' });
+const FLUTE = new THREE.MeshLambertMaterial({ color: '#5f4831' });
 // Tin: dull, scratched, and a touch warm — a toy soldier's base is stamped
 // metal that has been in a tin with thirty others, not chrome.
-const TIN = new THREE.MeshLambertMaterial({ color: '#8e9198' });
+const TIN = new THREE.MeshLambertMaterial({ color: '#7a7d84' });
 const TIN_DARK = new THREE.MeshLambertMaterial({ color: '#6a6d74' });
 
 // ── the object ───────────────────────────────────────────────────────────

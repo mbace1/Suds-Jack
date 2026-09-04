@@ -7,6 +7,31 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v3 — 2026-09-04
+**The timber gets grain, and the understructure gets light**
+A look pass on v2's bridge, done the way the repo says to do them: render, look,
+name what is wrong, redo.
+
+- **The deck was flat brown bands.** Per-plank tone alone cannot make timber —
+  grain, knots, split ends and stains do not survive as a colour value. The wood
+  is a drawn texture now (`woodTexture()`), painted once and shared by every
+  plank and beam, with each board still tinted its own tone on top. Grain runs
+  along V, which on these boxes is the depth axis: the direction the boards
+  actually run.
+- **The separate "worn strip" mesh is gone.** The texture carries its own wear
+  band, and having both drew a hard line straight across the deck where the two
+  treatments met — visible in the render, invisible to every gate.
+- **The understructure was an unreadable dark void.** The bounce off the water
+  went 0.35 → 0.85 and is aimed up into it, so beams, braces and piles read as
+  timber rather than as one black mass. A bridge that does not read as built
+  gives up the only reason the board is a bridge.
+- **The cards were the same brown as the deck** and competed with it. The card
+  stock is cooler and greyer now, so the hand reads as a separate object in
+  front of the scene rather than as more bridge.
+- **The bases were the brightest thing on the deck**, pulling the eye off the
+  figures standing on them. Cardboard and tin both knocked back.
+- Gates unchanged and green: 260 + 60, plus the arcade's own.
+
 ## v2 — 2026-09-04
 **The bridge, the bums, and a picture on every card**
 Owner's direction, verbatim: gritty and realistic, the camera from the other

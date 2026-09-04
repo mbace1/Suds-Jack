@@ -28,13 +28,76 @@ import { paintedPark, paintForeground, fromImage } from './bg.js';
 const BG_Z = -14;
 const FG_Z = 2.4;
 
+// ── the timber ──────────────────────────────────────────────────────────
+// Per-plank tone alone left the deck reading as flat brown bands, which is the
+// opposite of what "thick wooden bridge, gritty" asks for. Real boards have
+// grain running their length, knots, split ends and stains, and none of that
+// survives as a colour value — so the wood is a drawn texture, painted once and
+// shared by every plank, with each board still tinted its own tone on top.
+// Grain runs along V, which on these boxes is the depth axis: the direction the
+// boards actually run.
+let WOOD = null;
+function woodTexture() {
+  if (WOOD) return WOOD;
+  const w = 64, h = 256;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  let s = 12345;
+  const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  ctx.fillStyle = '#b18f68'; ctx.fillRect(0, 0, w, h);
+  // grain: long wandering lines down the board, dark and light
+  for (let i = 0; i < 70; i++) {
+    const x = rnd() * w;
+    ctx.strokeStyle = rnd() > 0.45 ? `rgba(80,58,36,${0.06 + rnd() * 0.22})` : `rgba(228,205,170,${0.05 + rnd() * 0.14})`;
+    ctx.lineWidth = 0.6 + rnd() * 2.2;
+    ctx.beginPath(); ctx.moveTo(x, -4);
+    for (let y = 0; y < h + 8; y += 16) ctx.lineTo(x + Math.sin(y * 0.05 + i) * 2.5 + (rnd() - 0.5) * 2, y);
+    ctx.stroke();
+  }
+  // a knot or two, with the grain bending round them
+  for (let i = 0; i < 2; i++) {
+    const kx = 8 + rnd() * (w - 16), ky = 30 + rnd() * (h - 60);
+    for (let r = 9; r > 0; r -= 1.4) {
+      ctx.strokeStyle = `rgba(66,44,26,${0.5 - r * 0.04})`; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(kx, ky, r * 0.6, r, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(48,32,18,0.75)';
+    ctx.beginPath(); ctx.ellipse(kx, ky, 2.2, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // splits at the ends, where a board has been walked on for years
+  for (let i = 0; i < 5; i++) {
+    const x = rnd() * w, top = rnd() > 0.5;
+    ctx.strokeStyle = 'rgba(40,28,16,0.5)'; ctx.lineWidth = 0.8 + rnd();
+    ctx.beginPath(); ctx.moveTo(x, top ? 0 : h);
+    ctx.lineTo(x + (rnd() - 0.5) * 5, top ? 10 + rnd() * 24 : h - 10 - rnd() * 24); ctx.stroke();
+  }
+  // stains, and the wear that lightens the middle where boots land
+  ctx.globalAlpha = 0.16;
+  for (let i = 0; i < 7; i++) { ctx.fillStyle = rnd() > 0.5 ? '#3a2a16' : '#5a5240'; ctx.beginPath(); ctx.ellipse(rnd() * w, rnd() * h, 5 + rnd() * 14, 8 + rnd() * 26, 0, 0, Math.PI * 2); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  const wear = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.7);
+  wear.addColorStop(0, 'rgba(255,238,206,0)'); wear.addColorStop(0.5, 'rgba(255,238,206,0.16)'); wear.addColorStop(1, 'rgba(255,238,206,0)');
+  ctx.fillStyle = wear; ctx.fillRect(0, 0, w, h);
+  // the long edges go dark: a board is chamfered by wear, and that shadow is
+  // what separates one plank from the next even where the gap is not visible
+  const edge = ctx.createLinearGradient(0, 0, w, 0);
+  edge.addColorStop(0, 'rgba(28,20,12,0.55)'); edge.addColorStop(0.14, 'rgba(28,20,12,0)');
+  edge.addColorStop(0.86, 'rgba(28,20,12,0)'); edge.addColorStop(1, 'rgba(28,20,12,0.55)');
+  ctx.fillStyle = edge; ctx.fillRect(0, 0, w, h);
+  WOOD = new THREE.CanvasTexture(c);
+  WOOD.colorSpace = THREE.SRGBColorSpace;
+  WOOD.anisotropy = 8;
+  return WOOD;
+}
+
 // One tone per plank position, so the deck is a row of different boards rather
-// than one long brown bar. Grit lives in the variation, not in a texture file.
+// than one long brown bar — the grain texture on top is shared.
 function plankMaterials(base) {
   const c = new THREE.Color(base);
+  const map = woodTexture();
   return Array.from({ length: 9 }, (_, i) => {
     const k = 0.95 + ((i * 37) % 11) / 16;          // deterministic, not random
-    return new THREE.MeshLambertMaterial({ color: c.clone().multiplyScalar(k) });
+    return new THREE.MeshLambertMaterial({ color: c.clone().multiplyScalar(k), map });
   });
 }
 
@@ -59,8 +122,11 @@ export class Arena {
     const hemi = new THREE.HemisphereLight('#a8bac6', '#3a4034', 1.05);
     const sun = new THREE.DirectionalLight('#ffd9a8', 1.45);
     sun.position.set(-5, 4.5, 6);
-    const bounce = new THREE.DirectionalLight('#546a72', 0.35);
-    bounce.position.set(3, -3, 2);
+    // A bounce off the water, aimed UP into the understructure. Without it the
+    // beams, braces and piles are one black mass and the bridge stops reading
+    // as built — which is the whole reason the board is a bridge.
+    const bounce = new THREE.DirectionalLight('#7e939c', 0.85);
+    bounce.position.set(3, -6, 4);
     this.scene.add(hemi, sun, bounce);
 
     this.setTheme(theme);
@@ -98,8 +164,9 @@ export class Arena {
     const g = new THREE.Group();
     const planks = plankMaterials(p.bench);
     const iron = new THREE.MeshLambertMaterial({ color: p.iron });
-    const beam = new THREE.MeshLambertMaterial({ color: new THREE.Color(p.bench).multiplyScalar(0.75) });
-    const beamDark = new THREE.MeshLambertMaterial({ color: new THREE.Color(p.bench).multiplyScalar(0.55) });
+    const grain = woodTexture();
+    const beam = new THREE.MeshLambertMaterial({ color: new THREE.Color(p.bench).multiplyScalar(0.8), map: grain });
+    const beamDark = new THREE.MeshLambertMaterial({ color: new THREE.Color(p.bench).multiplyScalar(0.62), map: grain });
     const rust = new THREE.MeshLambertMaterial({ color: '#6a4a32' });
     const stone = new THREE.MeshLambertMaterial({ color: p.stone });
     const stoneDark = new THREE.MeshLambertMaterial({ color: new THREE.Color(p.stone).multiplyScalar(0.72) });
@@ -132,10 +199,9 @@ export class Arena {
         g.add(nail);
       }
     }
-    // a rubbed lighter strip down the middle of the deck, where boots go
-    const worn = new THREE.Mesh(new THREE.BoxGeometry(L, 0.02, 0.66),
-      new THREE.MeshLambertMaterial({ color: new THREE.Color(p.bench).multiplyScalar(1.5) }));
-    worn.position.set(0, 0.005, -0.1); g.add(worn);
+    // No separate "worn strip" mesh: the wear is painted into the wood texture
+    // itself now, and having both drew a hard line straight across the deck
+    // where the two treatments met.
 
     // ── the structure, all of it UNDER the deck ──
     for (const z of [-DEPTH / 2 + 0.22, DEPTH / 2 - 0.22]) {
