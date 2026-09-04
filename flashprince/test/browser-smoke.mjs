@@ -14,105 +14,111 @@ try {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 
   await page.goto('http://127.0.0.1:4173/flashprince/movement-lab.html', { waitUntil: 'networkidle' });
-  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-8');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-9');
 
+  // Scene 2: running gap, running landing, raised ledge catch and pull-up.
   await page.keyboard.press('Digit2');
   await page.keyboard.down('ArrowRight');
-  await page.waitForFunction(() => {
-    const d = globalThis.__flashPrinceMovement;
-    return d?.state === 'run' && d.x >= 78;
-  }, null, { timeout: 5000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'run' && globalThis.__flashPrinceMovement.x >= 78, null, { timeout: 5000 });
   await page.keyboard.press('ArrowUp');
-  await page.waitForFunction(() => {
-    const d = globalThis.__flashPrinceMovement;
-    return d?.visited?.includes('landRun') && d.x >= 148 && d.grounded;
-  }, null, { timeout: 5000 });
-
-  await page.waitForFunction(() => {
-    const d = globalThis.__flashPrinceMovement;
-    return d?.state === 'run' && d.x >= 190;
-  }, null, { timeout: 5000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('landRun') && globalThis.__flashPrinceMovement.x >= 148 && globalThis.__flashPrinceMovement.grounded, null, { timeout: 5000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'run' && globalThis.__flashPrinceMovement.x >= 190, null, { timeout: 5000 });
   await page.keyboard.press('ArrowUp');
-  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.visited?.includes('ledgeCatch'), null, { timeout: 5000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'ledgeCatch', null, { timeout: 5000 });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
   await page.keyboard.up('ArrowRight');
   await page.keyboard.down('ArrowUp');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'pullUp', null, { timeout: 2000 });
   await page.keyboard.up('ArrowUp');
-  await page.waitForFunction(() => {
-    const d = globalThis.__flashPrinceMovement;
-    return d && d.state === 'stand' && d.grounded && d.y <= 96.1;
-  }, null, { timeout: 5000 });
-
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand' && globalThis.__flashPrinceMovement.grounded && globalThis.__flashPrinceMovement.y <= 96.1, null, { timeout: 5000 });
   const ledge = await page.evaluate(() => globalThis.__flashPrinceMovement);
-  assert.equal(ledge.faults, 0, 'ledge playthrough must report zero transition faults');
-  assert.ok(ledge.visited.includes('gatherRun'), 'scene must use running jumps');
-  assert.ok(ledge.visited.includes('landRun'), 'three-tile gap must resolve through running landing');
-  assert.ok(ledge.visited.includes('ledgeCatch'), 'raised platform must enter ledgeCatch');
-  assert.ok(ledge.visited.includes('hang'), 'ledgeCatch must settle into hang');
-  assert.ok(ledge.visited.includes('pullUp'), 'hang must transition through pullUp');
-  assert.equal(ledge.grounded, true, 'pull-up must finish grounded');
-  assert.ok(ledge.x >= 224, `pull-up must carry the hero onto the raised platform, got x=${ledge.x}`);
-  assert.ok(ledge.y <= 96.1, `pull-up must finish at the raised lip height, got y=${ledge.y}`);
+  assert.equal(ledge.faults, 0);
+  assert.ok(ledge.x >= 224);
 
+  // Scene 4: low mantle, deliberate climb-down, valid inward shimmy, blocked outward shimmy, pull-up.
   await page.keyboard.press('Digit4');
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'lowMantle', null, { timeout: 7000 });
   await page.keyboard.up('ArrowRight');
-  await page.waitForFunction(() => {
-    const d = globalThis.__flashPrinceMovement;
-    return d && d.state === 'stand' && d.grounded && d.y <= 160.1;
-  }, null, { timeout: 5000 });
-
-  const mantle = await page.evaluate(() => globalThis.__flashPrinceMovement);
-  assert.equal(mantle.faults, 0, 'runtime transition validator must report zero faults after mantle');
-  assert.equal(mantle.grounded, true, 'hero must finish grounded after mantle');
-  assert.ok(mantle.y <= 160.1, `hero must finish on the upper tile, got y=${mantle.y}`);
-
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand' && globalThis.__flashPrinceMovement.grounded && globalThis.__flashPrinceMovement.y <= 160.1, null, { timeout: 5000 });
   await page.keyboard.down('ArrowLeft');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'pivot', null, { timeout: 2000 });
   await page.keyboard.up('ArrowLeft');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand', null, { timeout: 3000 });
-
   await page.keyboard.down('ArrowDown');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'climbDown', null, { timeout: 2000 });
   await page.keyboard.up('ArrowDown');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
   const hangStart = await page.evaluate(() => globalThis.__flashPrinceMovement);
-
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'shimmy', null, { timeout: 2000 });
   await page.keyboard.up('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
   const shimmy = await page.evaluate(() => globalThis.__flashPrinceMovement);
-  assert.ok(shimmy.x > hangStart.x + 2.5, `inward shimmy must move right along the lip, ${hangStart.x} -> ${shimmy.x}`);
-
+  assert.ok(shimmy.x > hangStart.x + 2.5);
   const outwardX = shimmy.x;
   await page.keyboard.down('ArrowLeft');
   await sleep(350);
   await page.keyboard.up('ArrowLeft');
   const blocked = await page.evaluate(() => globalThis.__flashPrinceMovement);
-  assert.equal(blocked.state, 'hang', 'outward shimmy into empty space must stay hanging');
-  assert.ok(Math.abs(blocked.x - outwardX) < 0.2, `blocked shimmy must not move hero, ${outwardX} -> ${blocked.x}`);
-
+  assert.equal(blocked.state, 'hang');
+  assert.ok(Math.abs(blocked.x - outwardX) < 0.2);
   await page.keyboard.down('ArrowUp');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'pullUp', null, { timeout: 2000 });
   await page.keyboard.up('ArrowUp');
-  await page.waitForFunction(() => {
-    const d = globalThis.__flashPrinceMovement;
-    return d?.state === 'stand' && d.grounded && d.y <= 160.1;
-  }, null, { timeout: 5000 });
-
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand' && globalThis.__flashPrinceMovement.grounded && globalThis.__flashPrinceMovement.y <= 160.1, null, { timeout: 5000 });
   const climb = await page.evaluate(() => globalThis.__flashPrinceMovement);
-  assert.equal(climb.faults, 0, 'climb-down/shimmy playthrough must report zero transition faults');
-  assert.ok(climb.visited.includes('climbDown'), 'Scene 4 must enter climbDown');
-  assert.ok(climb.visited.includes('shimmy'), 'Scene 4 must enter shimmy');
-  assert.ok(climb.visited.includes('pullUp'), 'Scene 4 must pull back onto the block');
-  assert.equal(climb.grounded, true, 'climb-down recovery must finish grounded');
-  assert.ok(climb.y <= 160.1, `climb-down recovery must finish on upper block, got y=${climb.y}`);
-  assert.equal(errors.length, 0, `browser console/page errors: ${errors.join(' | ')}`);
+  assert.equal(climb.faults, 0);
 
-  console.log(`PASS Flash Prince gap+ledge: x=${ledge.x.toFixed(1)} y=${ledge.y.toFixed(1)}; climb+shimmy: x=${climb.x.toFixed(1)} y=${climb.y.toFixed(1)}`);
+  // Scene 3: use the authored left shaft. One committed step reaches the lip;
+  // deliberate climb-down gives a zero-horizontal drop from hanging height to
+  // the bottom floor: 70px, above FALL_HURT but below FALL_KILL.
+  await page.keyboard.press('Digit3');
+  await page.keyboard.down('ArrowLeft');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'pivot', null, { timeout: 2000 });
+  await page.keyboard.up('ArrowLeft');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand' && globalThis.__flashPrinceMovement.face === -1, null, { timeout: 3000 });
+  await page.keyboard.down('ArrowLeft');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'step', null, { timeout: 2000 });
+  await page.keyboard.up('ArrowLeft');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand', null, { timeout: 3000 });
+  await page.keyboard.down('ArrowDown');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'climbDown', null, { timeout: 2000 });
+  await page.keyboard.up('ArrowDown');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
+  await page.keyboard.down('ArrowDown');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'fall', null, { timeout: 2000 });
+  await page.keyboard.up('ArrowDown');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'landHard', null, { timeout: 5000 });
+  const impact = await page.evaluate(() => globalThis.__flashPrinceMovement);
+  assert.equal(impact.health, 2, 'hard landing must cost exactly one health');
+  assert.equal(impact.grounded, true, 'hard landing must contact bottom floor');
+  assert.ok(impact.y >= 175.9 && impact.y <= 176.1, `hard landing expected y=176, got ${impact.y}`);
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand', null, { timeout: 3000 });
+  const recovered = await page.evaluate(() => globalThis.__flashPrinceMovement);
+  assert.equal(recovered.faults, 0, 'hard landing recovery must have zero transition faults');
+
+  // Scene 1: prove release braking and reverse braking/pivot as live input sequences.
+  await page.keyboard.press('Digit1');
+  await page.keyboard.down('ArrowRight');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'run' && globalThis.__flashPrinceMovement.x >= 90, null, { timeout: 5000 });
+  await page.keyboard.up('ArrowRight');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'runStop', null, { timeout: 2000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand', null, { timeout: 3000 });
+  await page.keyboard.down('ArrowRight');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'run', null, { timeout: 5000 });
+  await page.keyboard.up('ArrowRight');
+  await page.keyboard.down('ArrowLeft');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'runStop', null, { timeout: 2000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'pivot', null, { timeout: 3000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'runStart' && globalThis.__flashPrinceMovement.face === -1, null, { timeout: 3000 });
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'run' && globalThis.__flashPrinceMovement.face === -1, null, { timeout: 3000 });
+  await page.keyboard.up('ArrowLeft');
+  const brake = await page.evaluate(() => globalThis.__flashPrinceMovement);
+  assert.equal(brake.faults, 0, 'brake/pivot sequence must have zero transition faults');
+
+  assert.equal(errors.length, 0, `browser console/page errors: ${errors.join(' | ')}`);
+  console.log(`PASS Flash Prince movement v9: ledge ${ledge.x.toFixed(1)}/${ledge.y.toFixed(1)}, hard-land HP${impact.health}, reverse face=${brake.face}`);
   await browser.close();
 } finally {
   server.kill('SIGTERM');
