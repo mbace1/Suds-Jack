@@ -4,6 +4,18 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v7 — 2026-09-05
+
+Traversal validation close-out. The public Hub route remains the real campaign; the dedicated movement lab now covers the two remaining unverified locomotion cases in a real Chromium input pass.
+
+- Scene 3 now verifies an authored **70px deliberate drop** into `landHard`, exactly one health lost, grounded impact at **y=176**, and recovery back to `stand` with **0 transition faults**.
+- Scene 1 now verifies both **release braking** (`run → runStop → stand`) and a live **reverse brake/pivot** (`run → runStop → pivot → runStart → run`) with the facing direction actually flipped.
+- Existing browser coverage for running gap/landing, ledge catch/pull-up, low mantle, climb-down and shimmy remains in the same gate.
+- Movement diagnostics are now **FP-MOVE-9** and expose face + health so recovery behavior is directly testable.
+- `/flashprince/` still launches the campaign through `js/main.js?v=9`; movement-only code remains isolated at `/flashprince/movement-lab.html`.
+
+If this gate is green, the traversal exit condition is met and the next Flash Prince work returns to character-specific animation, shooting and shield integration.
+
 ## v6 — 2026-09-04
 
 Playable-entry hotfix. The Hub cabinet had accidentally been wired to the Rotoscope movement lab instead of the actual campaign loop, so movement CI could be green while the public game was not a valid end-to-end build.

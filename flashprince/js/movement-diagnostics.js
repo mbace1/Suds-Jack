@@ -1,6 +1,6 @@
 import { MovementHeroV3 } from './movement-hero-v3.js';
 
-export const FLASH_PRINCE_MOVE_BUILD = 'FP-MOVE-8';
+export const FLASH_PRINCE_MOVE_BUILD = 'FP-MOVE-9';
 
 const visited = new Set();
 const originalUpdate = MovementHeroV3.prototype.update;
@@ -13,6 +13,8 @@ MovementHeroV3.prototype.update = function patchedMovementUpdate(world, input, g
     frame: this.f,
     x: this.x,
     y: this.y,
+    face: this.face,
+    health: this.health,
     grounded: this.grounded(world),
     faults: this.transitionFaults || 0,
     visited: [...visited],
@@ -27,17 +29,10 @@ function ensureOverlay() {
   el = document.createElement('div');
   el.id = 'fp-move-diag';
   Object.assign(el.style, {
-    position: 'fixed',
-    right: '8px',
-    top: '8px',
-    zIndex: '9999',
-    font: '11px/1.25 monospace',
-    color: '#d8f3ff',
-    background: 'rgba(0,0,0,.72)',
-    border: '1px solid rgba(216,243,255,.35)',
-    padding: '5px 7px',
-    pointerEvents: 'none',
-    whiteSpace: 'pre',
+    position: 'fixed', right: '8px', top: '8px', zIndex: '9999',
+    font: '11px/1.25 monospace', color: '#d8f3ff', background: 'rgba(0,0,0,.72)',
+    border: '1px solid rgba(216,243,255,.35)', padding: '5px 7px',
+    pointerEvents: 'none', whiteSpace: 'pre',
   });
   document.body.appendChild(el);
   return el;
@@ -50,7 +45,7 @@ function paint() {
   else {
     const faultMark = d.faults ? 'FAULT' : 'OK';
     const floorMark = d.grounded ? 'GROUND' : 'AIR';
-    el.textContent = `${d.build}  ${faultMark} ${d.faults}\n${d.state} F${d.frame}  X${d.x.toFixed(1)} Y${d.y.toFixed(1)}  ${floorMark}`;
+    el.textContent = `${d.build}  ${faultMark} ${d.faults}\n${d.state} F${d.frame}  X${d.x.toFixed(1)} Y${d.y.toFixed(1)}  ${floorMark}  HP${d.health}`;
   }
   requestAnimationFrame(paint);
 }
