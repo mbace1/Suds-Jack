@@ -13,7 +13,15 @@ export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // UNIT_H silhouette, so layout headroom and input.js's tap hit-box both key
 // off this instead once every unit carries a `sprite`. UNIT_H stays as-is:
 // still used for the one-frame procedural fallback and for prop sizing.
-export const SPRITE_H = 46;
+// A sprite is a BODY STANDING ON A TILE, so it is measured against the tile
+// it stands on, not against how much detail the plate happens to carry. At
+// 46 (the first cut) a 32-wide tile held a body 1.4 tiles across and nearly
+// three tile-heights tall: the operators covered the grid they were standing
+// on, a unit two rows back was hidden behind the one in front, and the owner
+// called them "way too big" off a screenshot, then "10% too big" again at
+// 32. 29 puts a head at one tile width — you can see which square anyone
+// occupies, and the board reads as a board again.
+export const SPRITE_H = 29;
 
 // Side clearance beyond the tile diamonds themselves, for whatever a unit
 // draws past its own tile's edge — the widest of those is the 14px HP bar
@@ -78,18 +86,21 @@ function scanInkBounds(img) {
     const cctx = c.getContext('2d');
     cctx.drawImage(img, 0, 0);
     const { data } = cctx.getImageData(0, 0, c.width, c.height);
-    let top = null, bottom = null;
+    let top = null, bottom = null, left = null, right = null;
     for (let y = 0; y < c.height; y++) {
-      let hasInk = false;
       for (let x = 0; x < c.width; x++) {
-        if (data[(y * c.width + x) * 4 + 3] > 40) { hasInk = true; break; }
+        if (data[(y * c.width + x) * 4 + 3] > 40) {
+          if (top === null) top = y;
+          bottom = y;
+          if (left === null || x < left) left = x;
+          if (right === null || x > right) right = x;
+        }
       }
-      if (hasInk) { if (top === null) top = y; bottom = y; }
     }
-    if (top === null) return { inkTop: 0, inkBottom: img.naturalHeight - 1 };
-    return { inkTop: top, inkBottom: bottom };
+    if (top === null) return { inkTop: 0, inkBottom: img.naturalHeight - 1, inkLeft: 0, inkRight: img.naturalWidth - 1 };
+    return { inkTop: top, inkBottom: bottom, inkLeft: left, inkRight: right };
   } catch {
-    return { inkTop: 0, inkBottom: img.naturalHeight - 1 };
+    return { inkTop: 0, inkBottom: img.naturalHeight - 1, inkLeft: 0, inkRight: img.naturalWidth - 1 };
   }
 }
 
@@ -256,8 +267,54 @@ function drawHighlights(g, layout, state) {
 // prop three times over ("the examples look ok, but have too many of the
 // same objects"). Picked deterministically off the tile's own coordinates
 // — same map every render, no per-frame flicker.
-const FULL_PROPS = ['crate', 'statue', 'bikerack', 'noticeboard'];
-const PARTIAL_PROPS = ['barrier', 'bollard', 'bin', 'bench'];
+// Widened 4/4 -> 11/12 (2026-09), which is what the note above was asking for:
+// the greedy assignment can only spread as far as the pool lets it, so with
+// four options a six-tile encounter still had to repeat. Cover class per prop
+// is declared in art-src/props/props.json — 'full' blocks line of sight,
+// 'low' is half cover, and 'none' (the street lamp) is dressing that belongs
+// in neither pool.
+export const FULL_PROPS = ['crate', 'statue', 'bikerack', 'noticeboard',
+                    'dumpster', 'cabinet', 'skip', 'cylinders', 'pipes', 'tank', 'carwreck'];
+export const PARTIAL_PROPS = ['barrier', 'bollard', 'bin', 'bench',
+                       'hydrant', 'tyres', 'brazier', 'trolley', 'fence', 'sandbags', 'blocks', 'generator'];
+
+// HOW BIG a prop draws, and this is the seam art-src/props/props.json was
+// written to be. Every plate is normalised to 192x288 by the cutter — a fire
+// hydrant and a burnt-out car are the same pixels on disk — so a target
+// height per cover KIND (the old `tall ? 40 : 24`) drew the size of the FILE
+// rather than the size of the object: a rubbish bin came out as tall as the
+// bear statue, and the statue came out taller than the people beside it.
+// props.json already carried `heightM`, the object's real height in metres,
+// and nothing read it.
+//
+// It is mirrored here rather than fetched because render() is synchronous
+// and called on every state change; a load that arrived a frame late would
+// draw the whole street at the wrong size first. test/smoke.mjs asserts the
+// two agree, so the mirror cannot drift from the manifest.
+const PERSON_M = 1.8;
+const PROP_HEIGHT_M = {
+  // the original eight, off references/prop-sheet-1.png
+  crate: 1.2, statue: 1.6, bikerack: 1.35, noticeboard: 2.0,
+  barrier: 1.1, bollard: 0.9, bin: 1.15, bench: 1.0,
+  // the street set added 2026-09, straight from props.json
+  hydrant: 0.9, dumpster: 1.3, tyres: 1.1, lamp: 4.5, brazier: 0.9,
+  cabinet: 1.8, trolley: 1.0, fence: 2.0, sandbags: 0.6, skip: 1.2,
+  blocks: 1.0, cylinders: 1.5, generator: 1.1, pipes: 1.6, tank: 1.2,
+  carwreck: 1.4,
+};
+// A person on this board draws at SPRITE_H, so that is what a metre is
+// measured against — not UNIT_H, which is the procedural fallback's height
+// and has not been the size of a body since units carried real plates.
+export const PROP_H = Object.fromEntries(
+  Object.entries(PROP_HEIGHT_M).map(([k, m]) => [k, Math.round(SPRITE_H * m / PERSON_M)]));
+
+// "Use them sparingly" (owner, 2026-09-03). The bear statue is a LANDMARK —
+// one on a board reads as a place, two read as a prop shop — and so are the
+// tram-stop panel and the burnt-out car. The greedy spread below keeps
+// repeats APART, and apart is not the same as rare: backlot was drawing the
+// bear twice, four tiles from itself. Capped at one each per board; with an
+// 11/12 pool the workaday props carry the rest without noticing.
+export const RARE_PROPS = new Set(['statue', 'noticeboard', 'carwreck']);
 // A (gx*7+gy*13)%pool.length hash was the first pass here — looked fine on
 // the two or three tiles checked by eye, but backlot's real cover list
 // hashes FIVE of its six full-cover tiles onto the same index ('crate',
@@ -272,6 +329,7 @@ const PARTIAL_PROPS = ['barrier', 'bollard', 'bin', 'bench'];
 // input cover list always assigns the same map, no per-frame flicker).
 function assignPropArt(tiles, pool) {
   const chosen = [];
+  const usedTotal = new Map();
   for (const t of tiles) {
     const nearbyCounts = pool.map(() => 0);
     for (let i = 0; i < chosen.length; i++) {
@@ -280,8 +338,32 @@ function assignPropArt(tiles, pool) {
         nearbyCounts[pool.indexOf(chosen[i])]++;
       }
     }
-    let best = 0;
-    for (let i = 1; i < pool.length; i++) if (nearbyCounts[i] < nearbyCounts[best]) best = i;
+    // Ties broken by a hash of the TILE, not by array order. Array order was
+    // the original tie-break and it silently wasted the pool: every count
+    // starts at zero, so the first tile always took pool[0] and later ties kept
+    // falling to the lowest index. With a four-prop pool that was invisible.
+    // With eleven it meant the eight props appended in 2026-09 were installed,
+    // loaded, and NEVER DRAWN — a six-tile encounter never reached past the
+    // original four. Found in a screenshot; every test was green.
+    //
+    // The hash only picks among candidates that are ALREADY equally least-used
+    // nearby, so the greedy spread still holds even where the hash is poor —
+    // which matters, because a plain (gx*7+gy*13) hash is what collapsed onto
+    // one residue for backlot and started this whole note.
+    // A landmark already spent on this board is out of the running before
+    // the counts are even compared — but only while something else is left,
+    // because a cover tile ALWAYS gets art: a tile the rules call cover and
+    // the board draws bare is a lie about the board.
+    let allowed = [];
+    for (let i = 0; i < pool.length; i++) {
+      if (RARE_PROPS.has(pool[i]) && (usedTotal.get(pool[i]) || 0) >= 1) continue;
+      allowed.push(i);
+    }
+    if (!allowed.length) for (let i = 0; i < pool.length; i++) allowed.push(i);
+    const lowest = Math.min(...allowed.map(i => nearbyCounts[i]));
+    const candidates = allowed.filter(i => nearbyCounts[i] === lowest);
+    const best = candidates[((t.x * 31 + t.y * 17) % candidates.length + candidates.length) % candidates.length];
+    usedTotal.set(pool[best], (usedTotal.get(pool[best]) || 0) + 1);
     chosen.push(pool[best]);
   }
   return chosen;
@@ -306,14 +388,31 @@ function drawPropFallback(g, layout, gx, gy, tall) {
 }
 function ctxStroke(g, x0, y0, x1, y1, c) { g.line(x0, y0, x1, y1, c); }
 
+// A prop's height comes from its INK, never from its file. The street set
+// added in 2026-09 is padded to a fixed 192x288 cell and the objects fill
+// wildly different fractions of it — the burnt-out car's ink is 44% of its
+// frame and the hydrant's is 96% — so scaling by naturalHeight would have
+// drawn the car at less than half the size props.json says it is, while the
+// hydrant came out right. Same trap drawUnitSprite already pays for with the
+// character plates, and the same one-time scan answers it.
 function drawProp(g, layout, gx, gy, tall, art) {
   const { x, y } = toScreen(layout, gx, gy);
-  const img = getImage(`art-src/sprites/props/${art}.png`);
-  if (!img) { drawPropFallback(g, layout, gx, gy, tall); return; }
-  const targetH = tall ? 40 : 24;
-  const w = img.naturalWidth * (targetH / img.naturalHeight);
-  g.diamond(x, y, w * 0.7, w * 0.7 * (TILE_H / TILE_W), 'rgba(0,0,0,0.3)', null); // ground shadow
-  g.ctx.drawImage(img, x - w / 2, y - targetH, w, targetH);
+  const entry = getImageEntry(`art-src/sprites/props/${art}.png`);
+  if (!entry.loaded) { drawPropFallback(g, layout, gx, gy, tall); return; }
+  const { img, inkTop, inkBottom, inkLeft, inkRight } = entry;
+  const targetH = PROP_H[art] || (tall ? 26 : 18);
+  const scale = targetH / (inkBottom - inkTop + 1);
+  const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+  // The ink's own bottom sits on the tile, so a plate with a deep transparent
+  // skirt does not float its object above the ground.
+  const drawY = y - inkBottom * scale;
+  const inkW = (inkRight - inkLeft + 1) * scale;
+  g.diamond(x, y, inkW * 0.7, inkW * 0.7 * (TILE_H / TILE_W), 'rgba(0,0,0,0.3)', null); // ground shadow
+  // Centred on the INK, not on the frame: several street plates are drawn
+  // off-centre in their cell, and centring the frame stands them beside
+  // their own tile.
+  const inkCx = (inkLeft + inkRight + 1) / 2 * scale;
+  g.ctx.drawImage(img, x - inkCx, drawY, w, h);
 }
 
 // Owner direction, 2026-08-31: "start replacing player characters with

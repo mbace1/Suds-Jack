@@ -8,6 +8,198 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v33 — 2026-09-03
+**Owner, on the v32 screenshot: "characters are way too big now. also there
+should be new props available. use them sparingly."** Two separate faults
+with one cause: everything on the board was sized against how much detail
+its plate carried, never against the tile it stands on.
+
+**A sprite is a body standing on a square.** `SPRITE_H` was 46 against a
+32-wide tile, so an operator was 1.4 tiles across and nearly three
+tile-heights tall — the unit covered the square it occupied, a rival one row
+back was hidden behind the one in front, and the grid the whole game is
+played on was barely visible. **29** puts a head at one tile width. Nothing
+else changed: layout headroom (`computeLayout`) and the tap hit-box
+(`input.js`'s `unitAtPoint`) already read that one constant, which is why
+the sprites shrank and the touch targets stayed honest.
+
+**Every prop plate is padded to the same 240px height by the cutter**, which
+is right for storage and wrong for drawing. Fed one target height per cover
+KIND (40 full / 24 partial), a rubbish bin came out as tall as the bear
+statue and the statue came out taller than the people beside it. `PROP_H`
+gives each prop its own height in board units against a standing person: a
+jersey barrier is waist-high, a bin is chest-high, a tram-stop panel is over
+your head. Width still follows the plate's own aspect, so nothing stretches.
+
+**"Sparingly" is rarity, not spacing.** `assignPropArt`'s greedy pass keeps
+repeats APART, and apart is not the same as rare — `backlot` was drawing the
+bear statue twice, four tiles from itself. `RARE_PROPS` caps the statue and
+the tram-stop panel at one each per board: they are landmarks, and one reads
+as a place while two reads as a prop shop. The workaday props carry the
+rest, and a cover tile still always gets art, because a tile the rules call
+cover and the board draws bare is a lie about the board.
+
+**And there ARE new props — sixteen of them, landed on `main` from another
+lane while this was being written**, which is what the owner was remembering.
+The street set (dumpster, cabinet, skip, cylinders, pipes, tank, carwreck,
+hydrant, tyres, brazier, trolley, fence, sandbags, blocks, generator, lamp)
+takes the pools from 4/4 to **11/12**, and it arrived with
+`art-src/props/props.json` declaring each object's **real height in metres** —
+the right answer to the sizing problem above, written down and **not wired to
+anything**: `drawProp` was still using `tall ? 40 : 24`. So this release keeps
+that manifest as the single source and makes the renderer read it. `PROP_H` is
+derived as `SPRITE_H x heightM / 1.8`, mirrored into render.js rather than
+fetched (render() is synchronous; a load arriving a frame late would draw the
+whole street at the wrong size first) with a gate asserting the mirror and the
+manifest agree, and a second gate asserting the pools match each prop's
+declared cover class. The original eight now carry `heightM` too, so there is
+one table rather than two conventions.
+
+**A prop's height comes from its INK, never from its file.** The street plates
+are padded to a fixed 192x288 cell and the objects fill wildly different
+fractions of it — the burnt-out car's ink is **44%** of its frame, the
+hydrant's is **96%** — so scaling by `naturalHeight` would have drawn the car
+at less than half the size the manifest says it is while the hydrant came out
+right. `scanInkBounds` already answered this for character plates and now
+returns horizontal bounds as well, so a prop is also CENTRED on its ink: several
+street cells are drawn off-centre and centring the frame stands the object
+beside its own tile.
+
+`ART_REQUEST.md` §11 records the sizing rule, the rationing rule, and the floor
+quad a new background plate must declare.
+
+**And the sprites came down again.** The owner's second look at the 32 build:
+"still slightly too big characters in that pics (10% too big)." **29**, with
+`PROP_H` rescaled by the same 0.9 so the props stay in proportion to the
+people rather than growing relative to them.
+
+**The plate is seated on the board now, not centred in the stage.** Owner,
+with two blue lines drawn across a phone screenshot of `backlot` marking the
+courtyard's near corner: *"blue lines show where the grid should start."* The
+grid ended a long way above them, and the cause was not the grid: the photo
+was `background: cover center` on `#stage` and the canvas was flex-centred in
+the same box, so **both were centred and neither was placed against the
+other** — and the courtyard's paving is not in the middle of its own picture
+(its centre is at 54%/68%, because the plate is mostly building). Two
+independent centrings cannot align two things.
+
+`js/plates.js` gives each plate its **floor quad** — the flat ground a fight
+happens on — as fractions measured off the picture, and `fitPlate()` in
+main.js scales the picture so the floor's half-height equals the board
+diamond's half-height and puts the two centres together. The grid's near
+vertex lands on the paving's near vertex, which is where the lines were
+drawn. A `#plate` element carries it, because a scrim left on `#stage` paints
+*behind* a child rather than over it, and both it and the canvas read one
+`--cam` custom property so a pan moves the yard and the grid as one object
+instead of sliding one across the other. Seating it means it no longer covers
+the viewport, so it closes into the stage colour with a vignette — a
+photograph that simply stops draws a hard horizontal seam.
+
+**More columns cannot make the grid fill the yard, and the reason is
+arithmetic.** A board's bounding diamond is **always 2:1** — a tile is 32x16,
+so the box is `(cols+rows-2)*16` by `(cols+rows-2)*8` whatever the
+dimensions. The courtyard's paving is 2.78:1 and the schoolyard's asphalt
+1.92:1. Matching the height is what puts the near corner where it was asked
+for; the leftover is a strip of paving either side, which is how a yard looks.
+Measured both ways anyway: **+2 columns with the layout left alone moves
+nothing** — all seven win rates identical to the point (53/82/65/32/68/18/12),
+because the new columns are empty asphalt on the right that no unit has a
+reason to enter — and **+2 columns with every x stretched across the wider
+board destroys the set**: backlot, the-yard and the-crossing to 0%, warehouse,
+underpass and the-depot to 98-100%. Lateral distance is as load-bearing as
+approach distance (v32 §10.5 found the same about rows). A genuinely wider
+board is a per-encounter re-tune, not a bigger number.
+
+Modules: `render` v23 (sprite height, `PROP_H` off the manifest, ink-boxed
+props, `RARE_PROPS`), `input` v19, `camera` v2 (one `--cam` for board and
+plate), `plates` v1 (new), `main` v31.
+
+## v32 — 2026-09-03
+**Owner, on a screenshot of `underpass`: "that background doesn't fit the
+grid directions."** Correct, and it is a geometry problem with an exact
+answer rather than a matter of taste.
+
+**The board is a 2:1 isometric grid** (`TILE_W` 32, `TILE_H` 16), so a tile
+edge runs at `atan(0.5)` = **26.57°** from horizontal — which is an
+orthographic camera at **45° yaw, 30° elevation**, the same camera
+`tools/render-frames.mjs` already cuts sprite frames from. A background has
+to be rendered from that camera or its ground lines cross the tiles at every
+angle but the right one, and the board floats on a photograph of a place
+instead of standing in it.
+
+**Judged, one by one.** `courtyard.jpg` and `schoolyard.jpg` are true iso
+renders — building corners, fence runs and the floor diamond all on the
+grid's own axes. **`dockyard.jpg` is a one-point PERSPECTIVE plate**: its
+rails and paving seams run near-horizontal toward a vanishing point off
+frame. It was carrying three of the seven encounters (`loading-dock`,
+`underpass`, `the-crossing`); those move to the two that fit. It stays in
+the repo — it is a good picture, and it would serve as a title card, where
+nothing has to line up with it.
+
+**The cost of that fix is honest and worth stating: two backgrounds now
+carry seven encounters**, which is repetition a player notices by the third
+block. `ART_REQUEST.md` §10 is the new section — the camera spec, a
+ten-second test (lay the grid over the plate; ground lines parallel to tile
+edges or they are not), the verdict table above, and a shopping list of six
+more subjects in the right camera with frame requirements that can be
+checked before delivery.
+
+**A gate, so this cannot come back.** `smoke.mjs` now refuses any encounter
+pointing at a known perspective plate, or at an unknown one, and pins the
+26.57° derivation next to it — change `TILE_W`/`TILE_H` and every background
+in the repo needs re-judging, so that fact lives in the suite rather than in
+prose somebody has to remember to read.
+
+**BIGGER BOARDS — and the owner had to correct me once: "I didn't mean
+bigger characters, I meant more squares."** That was what I measured, but I
+stopped at "it breaks balance" instead of growing the board properly, which
+was the wrong place to stop.
+
+**Growing a board means moving what is anchored to its edges.** Different
+things are pinned to different edges: the crew spawns with its back to the
+bottom **and that edge is cover**, rivals and reinforcements enter from the
+top, extraction pads sit on the far edge, and props belong in the middle.
+Shift everything uniformly and the crew ends up in open ground; shift
+nothing and the new squares are dead margin.
+
+**COLUMNS are the safe axis, and that is a measured result rather than a
+preference.** Growing ROWS lengthens the crew's approach, which is the most
+load-bearing number on every map: +2 rows reads **0% on all three deadline
+missions** because the crew can no longer cross in time, while the survive
+maps get *easier* (warehouse to 100%) because rivals take longer to arrive.
+Growing COLUMNS leaves approach distance alone and only adds lateral room:
+at **+2 columns, six of seven encounters do not move at all**. Every board
+is 2 wider now — 13x9 and 11x10, about 20% more squares.
+
+`loading-dock` is the one that moved, 67% to **82%**, and the reason is that
+it is the narrowest map (9 columns) so +2 is a 22% width increase and the
+crew gains real room to spread. Still inside the band, and recorded here
+rather than tuned away.
+
+**+4 and +6 columns were also measured and rejected**: +4 takes the depot to
+0%, +6 takes warehouse to 100%.
+
+**A REAL BUG, found by a throwaway script's sanity assertion and not by the
+suite.** Growing the boards meant checking nothing collided afterwards, and
+that check failed immediately on the CURRENT data: **`the-depot` had been
+spawning its shotgun grunt and its cache on the same tile (5,2) since v26** —
+two stacked units, live on gh-pages through v31. Every depot number from v26
+onward was measured on that board. Unstacking it moved the map from 13% to
+**0%**, because the stack had effectively neutralised the grunt; re-tuned
+with the cache at 4 HP and the grunt screening from (5,4), it reads **12%**.
+
+`smoke.mjs` now asserts what that script asserted: no two things spawn on
+one tile, nothing spawns inside full cover, and no spawn, arrival point or
+extraction pad sits off the board.
+
+- `test/smoke.mjs` is 130 checks (was 127).
+- `test/balance.mjs` green on all seven: 53 / 82 / 65 / 32 / 68 / 18 / 12.
+  The background swap moves nothing, which is the point; the two that did
+  move are `loading-dock` (the wider board) and `the-depot` (the unstacked
+  spawn), both explained above.
+- No module changed, so no tokens moved; `encounters.json`, the suite and
+  the docs are the whole diff.
+
 ## v31 — 2026-09-03
 **Reinforcements** — `MST_PARITY.md` §2.4, and the owner's note when it was
 first listed: *"that's great for later.. it will make longer survive rounds

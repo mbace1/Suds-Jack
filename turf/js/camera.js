@@ -55,9 +55,17 @@ export function createCamera({ stage, canvas, getLayout, getScale }) {
     ty = Math.min(lim.y, Math.max(-lim.y, ty));
   }
 
+  // ONE transform, written to the stage as a custom property, and BOTH the
+  // board and the encounter plate under it read it (`transform: var(--cam)`).
+  // The plate is seated on the board's own diamond (main.js's fitPlate), so
+  // a pan that moved only the canvas would slide the grid off the yard it
+  // was carefully placed on — one property keeps them a single object.
   function apply(animate) {
-    canvas.style.transition = animate ? `transform ${FOLLOW_MS}ms ease-out` : 'none';
-    canvas.style.transform = `translate(${Math.round(tx)}px, ${Math.round(ty)}px)`;
+    const t = animate ? `transform ${FOLLOW_MS}ms ease-out` : 'none';
+    canvas.style.transition = t;
+    stage.style.setProperty('--cam', `translate(${Math.round(tx)}px, ${Math.round(ty)}px)`);
+    const plate = stage.querySelector('#plate');
+    if (plate) plate.style.transition = t;
   }
 
   // Put a board point in the middle of the viewport, as near as the clamp

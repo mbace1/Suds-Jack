@@ -67,19 +67,32 @@
     padding-bottom: 4px;
     min-height: 0; overflow: hidden;
     touch-action: none;
-    /* --encounter-bg (set per-encounter in main.js's boot()) sits behind the
-       board's own opaque canvas, so it only shows in the slack space above/
-       around it — real atmosphere with zero risk to board readability. The
-       dark scrim on top keeps a busy photo from fighting the HUD text that
-       sits over #stage's edges. */
-    background-image:
-      linear-gradient(rgba(7,8,11,0.55), rgba(7,8,11,0.85)),
-      radial-gradient(ellipse at 50% 30%, rgba(111,168,201,0.06), transparent 60%),
-      var(--encounter-bg, none);
-    background-size: auto, auto, cover;
-    background-position: center, center, center;
-    background-repeat: no-repeat, no-repeat, no-repeat;
     background-color: #07080b;
+  }
+  /* THE PLATE IS SEATED ON THE BOARD, NOT CENTRED IN THE STAGE. Owner,
+     2026-09-03, with two blue lines drawn on a phone screenshot marking the
+     courtyard's near corner: "blue lines show where the grid should start."
+     The grid ended a long way above them, and the reason is that the photo
+     and the board were positioned by two systems that had never been
+     introduced — `background: cover center` on the stage put the picture's
+     centre in the middle of the viewport, while flex put the board's canvas
+     there too, and the courtyard's paving is nowhere near the centre of its
+     own picture. So the yard's floor and the grid drawn on it landed
+     wherever the arithmetic happened to leave them.
+     main.js's fitPlate() sizes and places this element from the plate's own
+     declared floor quad (PLATES) so the paving's centre sits on the board's
+     diamond centre and the paving's near corner sits on the board's near
+     corner. It carries the scrim in its own background stack, since a
+     gradient on #stage would paint BEHIND this child rather than over it,
+     and it takes the same --cam transform as the canvas so a pan moves the
+     yard and the grid together instead of sliding one across the other. */
+  #plate {
+    position: absolute; left: 0; top: 0; width: 0; height: 0;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    transform: var(--cam, none);
+    transform-origin: 50% 50%;
+    pointer-events: none;
   }
   /* No image-rendering: pixelated here any more. The canvas backing store is
      now SUPERSAMPLE x the board's logical size (render.js), so it already
@@ -87,7 +100,7 @@
      would throw away exactly what the supersample was added to keep. */
   /* flex: none — an oversized board must overflow the stage, not be squashed
      back into it by the flex container. camera.js translates it from there. */
-  #board { touch-action: none; cursor: pointer; display: block; flex: none; will-change: transform; }
+  #board { touch-action: none; cursor: pointer; display: block; flex: none; will-change: transform; position: relative; transform: var(--cam, none); }
 
   /* Ability buttons. Same 44px floor as everything else, and each carries
      its cost as a badge — an action you cannot afford has to say what it
@@ -198,6 +211,7 @@
   </div>
 
   <div id="stage">
+    <div id="plate"></div>
     <canvas id="board" width="10" height="10"></canvas>
   </div>
 
@@ -252,7 +266,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=29"></script>
+  <script type="module" src="js/main.js?v=31"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

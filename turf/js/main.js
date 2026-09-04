@@ -7,18 +7,19 @@ import {
   skillOffer, learnSkill, incomingArrivals, pendingArrivals,
   awardXp, xpToNext, applyTrinkets,
 } from './combat.js?v=19';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, SPRITE_H } from './render.js?v=22';
-import { createCamera, MIN_TILE_W } from './camera.js?v=1';
-import { createInputHandler } from './input.js?v=18';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=23';
+import { createCamera, MIN_TILE_W } from './camera.js?v=2';
+import { createInputHandler } from './input.js?v=19';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
 import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2';
 import { autoTurn } from './autoplay.js?v=6';
+import { PLATES } from './plates.js?v=1';
 import { audio } from './audio.js?v=1';
 
 const $ = id => document.getElementById(id);
-const canvas = $('board'), stage = $('stage');
+const canvas = $('board'), stage = $('stage'), plate = $('plate');
 const topbar = { turn: $('turnLabel'), round: $('roundLabel') };
 const controls = { endTurn: $('endTurnBtn'), cancel: $('cancelBtn'), mute: $('muteBtn') };
 const abilitiesEl = $('abilities');
@@ -118,6 +119,35 @@ async function loadData() {
   };
 }
 
+
+let plateSpec = null;
+
+function fitPlate() {
+  if (!plate) return;
+  if (!plateSpec || !layout || !state) { plate.style.backgroundImage = 'none'; return; }
+  const g = state.grid;
+  const span = g.cols + g.rows - 2;               // the diamond, in tiles
+  // The board diamond's centre and half-height, in BOARD units — the same
+  // arithmetic render.js's toScreen does, done once for the whole shape.
+  const cxBoard = layout.originX + ((g.cols - 1) - (g.rows - 1)) / 2 * (TILE_W / 2);
+  const cyBoard = layout.originY + span * (TILE_H / 2) / 2;
+  const halfHBoard = span * (TILE_H / 2) / 2;
+
+  // offsetLeft/offsetTop are LAYOUT positions and ignore the camera's
+  // transform, which is what we want: the plate is placed against the
+  // board's untransformed box and then carries the same --cam as the canvas.
+  const cxPx = canvas.offsetLeft + cxBoard * cssScale;
+  const cyPx = canvas.offsetTop + cyBoard * cssScale;
+  const halfHPx = halfHBoard * cssScale;
+
+  const h = halfHPx / plateSpec.halfH;
+  const w = h * (plateSpec.w / plateSpec.h);
+  plate.style.width = `${Math.round(w)}px`;
+  plate.style.height = `${Math.round(h)}px`;
+  plate.style.left = `${Math.round(cxPx - plateSpec.cx * w)}px`;
+  plate.style.top = `${Math.round(cyPx - plateSpec.cy * h)}px`;
+}
+
 function fitCanvas() {
   const availW = stage.clientWidth - 8, availH = stage.clientHeight - 8;
   if (!layout || availW <= 0 || availH <= 0) return;
@@ -153,6 +183,7 @@ function fitCanvas() {
   canvas.style.width = `${Math.round(layout.width * scale)}px`;
   canvas.style.height = `${Math.round(layout.height * scale)}px`;
   cssScale = scale;
+  fitPlate();
   if (camera) { camera.recenter(); focusCamera(); }
 }
 let cssScale = 1;
@@ -184,7 +215,31 @@ function focusCamera(animate = true) {
 
 function boot(seed) {
   const encounter = DATA.encounters.find(e => e.id === SEQUENCE[seqIndex]);
-  stage.style.setProperty('--encounter-bg', encounter.background ? `url(${encounter.background})` : 'none');
+  // The scrim rides in the plate's own background stack: a gradient left on
+  // #stage would paint behind this child, not over it, and a busy photograph
+  // under the HUD text is exactly what the scrim is for.
+  const file = encounter.background ? encounter.background.split('/').pop() : null;
+  const spec = file && PLATES[file];
+  if (spec && plate) {
+    // The plate's pixel size is DECLARED, not read off a loaded Image: the
+    // placement has to be right on the first paint, and an onload that
+    // arrives a frame later would show the yard in the wrong place first.
+    plateSpec = spec;
+    // Layer 1 is a vignette that closes the plate into the stage colour.
+    // Seating the picture on the board means it no longer covers the whole
+    // viewport — a phone in portrait leaves ~40px of stage above and below —
+    // and a photograph that simply STOPS draws a hard horizontal seam. Fading
+    // it out costs nothing and is what the dark edges of these plates already
+    // do on their own.
+    plate.style.backgroundImage =
+      `radial-gradient(ellipse 78% 82% at 50% 58%, transparent 58%, #07080b 100%), ` +
+      `linear-gradient(rgba(7,8,11,0.55), rgba(7,8,11,0.85)), ` +
+      `radial-gradient(ellipse at 50% 30%, rgba(111,168,201,0.06), transparent 60%), ` +
+      `url(${encounter.background})`;
+  } else {
+    plateSpec = null;
+    if (plate) plate.style.backgroundImage = 'none';
+  }
   state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed, DATA.hazards, DATA.trinkets);
   applyProgress(state);
   state.moveTiles = new Map();
