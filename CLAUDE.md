@@ -287,6 +287,70 @@ game over, the way home and the signature — all driven off **game state, not t
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
 Build tooling: none — same no-build rule as every other demo here.
 
+### Slay Kallio (`slaykallio/`) — the deckbuilder, ACTIVE
+**Owner's brief, 2026-09-04: mostly Slay the Spire 2, with some Balatro jokers
+thrown in.** Read `slaykallio/GDD.md` before touching anything — this is the
+summary, that is the source. A deckbuilder fought on a **park bench** in Kallio:
+four locals, six benches, a card or a friend after each, and either you take the
+last bench or you end up flat on it.
+**It is two experiments at once, and both are the owner's stated point**: a test
+of a unique look that has to work in **horizontal** (mobile sideways / Switch)
+AND **vertical** (a phone in one hand), and a practice run at the **deep logic
+and artefact synergy** that makes Slay the Spire worth a hundred runs.
+**`js/engine.js` is the rules and NOTHING else** — no DOM, no three.js, no
+clock, deterministic from a seed, which is why `test/core.mjs` can assert exact
+numbers in bare node (a Strike is 6, a Crema-doubled Strike is 12, Encore after
+three cards is 16) and run a bot over 160 whole runs. `js/data.js` is every
+card, character, friend, enemy and encounter as data; the engine reads ids out
+of it and knows nothing about "a barista" or "a seagull".
+**The damage pipeline is Balatro's shape over Slay the Spire's numbers**: base
+(card + scaling + strength + buzz) → **adds** → **mults** → floor, with the
+breakdown riding on the log entry so the view pops the base, then each `+3`,
+then each `×2`. And **`preview()` and the real play call the same code**, so a
+card's face text is written from its effects at the current state — quoting a
+number you then do not use is the unforgivable bug in a full-information game.
+**Every character is a question, not a stat block** (Buzz that fades with the
+turn / cards that scale on what you played before them / free Finds and a
+counted hand / block that hits and block that stays), and each starting deck
+carries two cards that teach the mechanic on turn one. **A friend bends
+arithmetic you already do and never adds a verb** — a verb is a card's job — and
+the one to copy is Double Espresso, which **costs** a card for its energy,
+because a friend that only gives is a number rather than a decision.
+**The fantasy theme is a LOOKUP, not a second data set**: every named thing
+carries a name in both skins and the gate fails if one is missing, so the menu
+switch is one word per entry rather than a fork.
+**The look is painted cardboard puppets** (`js/puppet.js`): a 2D cutout — flat
+fills inside a wobbly ink line, painted on a canvas from a `look` table, so a
+theme switch repaints the same figure in different clothes — standing on a **3D
+card wedge with a strip of tape over its feet**. The cutout is flat, the base is
+not, and the tape is what tells you so. Death **topples it in 3D**, about its
+feet on an axis tilted between the camera's x and the depth axis: a flat cutout
+tipping in the picture plane reads as a sprite rotating, and tipping *into* the
+scene is what makes it a thing that was standing there.
+**The park is a tilt-shift and the sharp band FOLLOWS THE BENCH** (`js/bg.js`,
+`js/scene.js`): the backdrop is repainted when the bench's row on screen moves,
+because a miniature photograph is only convincing while the one sharp stripe
+lies on what you are looking at — and the bench sits nowhere near the same place
+in portrait as in landscape. There is a matching **out-of-focus foreground band**
+along the bottom, and the real 3D ground is a thin strip under the bench alone:
+a wide 3D lawn is a sharp slab across the frame that undoes the whole look.
+`?bg=<url>&stereo=sbs&eye=left` puts a **photograph** (or one eye of a
+side-by-side stereo pair) behind the bench through the same focus pass — the
+seam for testing real plates is a URL, not a rewrite.
+**One camera rule for both formats: fit the ACTION WIDTH, not the bench.**
+Portrait fits a narrower width (the puppets stand closer), is deliberately
+**flatter** (a phone has no room for a floor — every degree of tilt trades sky
+for lawn nobody plays on), and gives the bottom to the hand, which becomes a
+five-column grid instead of a fan. The gate asserts every puppet is inside the
+frame in both.
+`window.__sk` is the seam the browser gate drives, and `setSpeed(0)` + `flush()`
+drain the replay queue — the view reads the engine's log back at a human pace
+the way turf's `anim.js` does, so nothing in the test is timed off the clock.
+Gates: `node slaykallio/test/core.mjs` (252 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (55). Hub entry:
+`hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js`, accent
+`#f2c14e`. Build tooling: none — same no-build rule as everything else here.
+
 ### TURF (`turf/`) — grid tactics, ACTIVE
 **Owner's brief, 2026-08-28: `turf/GDD.md` and `turf/PRODUCTION_PIPELINE.md`, read those
 before touching anything — this section is the summary, they are the source.** Three street
@@ -1486,6 +1550,21 @@ eeri/           # Eeri — the platformer. MULTI-AGENT: read PHASING.md before a
     fx-smoke.mjs   # the FX spec, pool and inference — bare node
     dev-menu.mjs   # the dev pack's contract with the game — bare node
     report.mjs     # the level report card — not a gate; tells dull from broken
+slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
+  GDD.md        # the design authority: the look, both formats, where synergy lives
+  VERSIONS.md
+  vendor/       # three.js r167, local — not the CDN
+  js/
+    data.js     # every card, character, friend, enemy, encounter — both themes
+    engine.js   # THE RULES: no DOM, no three.js, no clock, seeded; adds then mults
+    puppet.js   # the painted cutout, its taped card base, and the 3D topple
+    scene.js    # the bench, the stone furniture, and one camera rule for two formats
+    bg.js       # the painted park, the tilt-shift, and the photograph/stereo seam
+    main.js     # boot, HUD, and the replay that acts the engine's log out
+    audio.js    # synthesised kit, every voice through one master gain
+  test/
+    core.mjs    # bare node: exact numbers, and a bot over 160 whole runs
+    smoke.cjs   # a browser: puppets, the topple, both orientations, a thumb
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate

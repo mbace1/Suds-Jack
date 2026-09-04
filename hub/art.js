@@ -1152,6 +1152,84 @@ export const ART = {
     g.disc(112, 8, 5, '#e0a53a'); g.disc(112, 8, 3, '#f4f1e8');
   },
 
+
+  // Slay Kallio: a cover, in the house register — a sunlit park seen past a
+  // near, cropped shoulder. The frame is the BENCH, lighter than the trees
+  // behind it so it reads as a thing and not a hole; the hero cutout is
+  // cropped by the bottom edge (which is what makes it foreground) and lit
+  // along its front in the cabinet's own accent, since a dark silhouette
+  // against a dark scene disappears. A card is being held out, and a pigeon
+  // stands on the far end of the seat waiting for it.
+  bench(g, a) {
+    // sky: flat horizontal bars with hard seams, the way a 2600 changed
+    // colour once per scanline
+    const HZ = 38;
+    for (let i = 0; i < HZ; i++) g.p(0, i, W, 1, mix('#bfe4f6', '#f6efd6', (i / HZ) ** 1.5));
+
+    // the far canopy, three tones back to front — the lightest on top, where
+    // the sun is
+    for (const [y, r, c] of [[24, 13, '#2f6a3a'], [22, 11, '#48923f'], [19, 9, '#77bd52']]) {
+      for (let x = -4; x < W + 8; x += 17) g.disc(x + (y % 7), y, r, c);
+    }
+    for (let x = 6; x < W; x += 21) g.p(x, 28, 3, 10, '#3a2a1c');
+
+    // the lawn, sunlit and banded rather than dithered
+    g.p(0, 36, W, H - 36, '#7cb44a');
+    g.p(0, 44, W, 5, '#93c85e');
+    g.p(0, 62, W, H - 62, '#5f9a3c');
+
+    // the statue base at the far end, standing BEHIND the bench and lighter
+    // than the trees, or it is a hole rather than a thing
+    g.p(94, 20, 18, 18, '#9a9a94'); g.p(92, 18, 22, 3, '#b4b4ac'); g.p(99, 6, 8, 13, '#8f8f8a');
+
+    // the bench. Its ironwork is what stops three brown bars reading as a
+    // road: the ends are heavy, the arm turns over, and the backrest is
+    // broken by uprights.
+    g.p(0, 38, W, 4, '#b98249');          // backrest, catching the sun
+    g.p(0, 43, W, 3, '#8a5a32');
+    for (let x = 20; x < W; x += 22) g.p(x, 38, 2, 8, '#6a4626');   // uprights
+    g.p(0, 50, W, 6, '#c98f52');          // the seat, the lightest wood
+    g.p(0, 56, W, 2, '#7a5230');
+    for (const x of [8, 110]) {
+      g.p(x, 34, 5, 30, '#2c2c30');       // the cast-iron end
+      g.p(x - 4, 46, 13, 3, '#2c2c30');   // the arm, turning over
+      g.p(x - 5, 62, 15, 3, '#242428');   // the foot
+      g.p(x + 1, 34, 1, 30, '#4a4a52');   // one lit edge on the iron
+    }
+
+    // the pigeon on the far end of the seat, waiting for what is in the hand
+    g.disc(86, 45, 4, '#8b90a0'); g.disc(90, 41, 3, '#4a7a5a'); g.p(92, 41, 4, 1, '#e0a040');
+    g.p(85, 49, 1, 3, '#e0a040'); g.p(88, 49, 1, 3, '#e0a040');
+    g.p(80, 45, 5, 3, '#6a6f80');
+
+    // The hero: a painted cutout cropped by the bottom of the frame, which is
+    // what makes it read as near. Lit down the front in the accent AND kept
+    // lighter than the canopy behind it — a dark shape on a dark scene
+    // disappears, whatever rim you give it.
+    g.p(24, 30, 17, 42, '#5c7f63');       // coat, running off the bottom
+    g.p(24, 30, 4, 42, '#40604a');        // the shaded back edge
+    g.p(38, 30, 3, 42, a);                // the lit front edge
+    g.p(26, 52, 15, 3, '#3d5a46');        // a fold across the coat
+    g.disc(33, 24, 8, '#f0c49e');         // head, bigger: this is the near figure
+    g.p(28, 14, 15, 7, '#4a2f1c');        // hair
+    g.p(38, 21, 3, 9, mix('#f0c49e', a, 0.55));
+    g.p(37, 24, 3, 2, '#1b1410');         // eye
+    g.p(22, 64, 26, 3, '#c9a070');        // the cardboard base
+    g.p(30, 62, 9, 2, 'rgba(238,222,182,0.85)');   // and the tape over its feet
+
+    // the card held out toward the bird, cropped by nothing — it is the point
+    g.p(44, 34, 15, 22, '#e8cf9e'); g.p(44, 34, 15, 1, '#1b1410'); g.p(44, 55, 15, 1, '#1b1410');
+    g.p(43, 34, 1, 22, '#1b1410'); g.p(59, 34, 1, 22, '#1b1410');
+    g.disc(46, 36, 3, a); g.p(45, 35, 1, 1, '#fff5cc');
+    g.p(46, 43, 11, 1, '#8a6a44'); g.p(46, 46, 8, 1, '#8a6a44'); g.p(46, 49, 10, 1, '#8a6a44');
+    g.p(41, 40, 4, 4, '#f0c49e');         // the hand holding it
+
+    // the miniature look the game itself is built on: a soft band top and
+    // bottom, standing in for the focus falling away
+    for (let i = 0; i < 9; i++) g.p(0, i, W, 1, `rgba(255,255,255,${(9 - i) * 0.024})`);
+    for (let i = 0; i < 10; i++) g.p(0, H - 1 - i, W, 1, `rgba(28,40,18,${(10 - i) * 0.022})`);
+  },
+
   // TURF: the backlot at dusk. A standoff, not an icon — an operator cropped
   // by the near edge of the frame (rim-lit in the accent, since a dark
   // silhouette against a dark scene disappears), a rival held at the far

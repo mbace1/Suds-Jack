@@ -363,6 +363,33 @@ export const GAMES = [
     art: 'diorama',
   },
   {
+    id: 'slaykallio',
+    fi: {
+      tagline: 'Puistonpenkki on taistelukenttä: pahvinukkeja, korttipakka ja kaverit, jotka vääntävät laskutoimituksen uusiksi.',
+      lineage: 'Slay the Spire 2 × Balatro',
+      controls: 'napauta korttia, sitten vihollista · 1-9, nuolet, E · ohjain ja kosketus',
+      note: 'v1 — neljän hahmon Kallio-rosteri, kuusi taistelua, kaksitoista kaveria ja fantasia-teema valikosta.',
+    },
+    ja: {
+      tagline: '公園のベンチが戦場。厚紙の人形、デッキ、そして計算式を書き換える相棒たち。',
+      lineage: 'Slay the Spire 2 × Balatro',
+      controls: 'カードをタップ、次に敵をタップ · 1-9／矢印／E · パッドとタッチ対応',
+      note: 'v1 — カッリオの4人、6戦、12人の相棒、メニューでファンタジー版に切り替え。',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'v1 — a four-strong Kallio roster, six fights, twelve friends who bend the arithmetic, and a fantasy skin on a menu switch.',
+    title: 'Slay Kallio',
+    tagline: 'Deckbuilding on a park bench: painted cardboard puppets that topple over in 3D, and friends who rewrite the sum on every card.',
+    lineage: 'Slay the Spire 2 × Balatro',
+    tags: ['deckbuilder', 'cards', 'three.js'],
+    controls: 'tap a card, then an enemy · 1-9, arrows, E · pad and touch supported',
+    path: 'slaykallio/',
+    inRepo: true,
+    accent: '#f2c14e',
+    art: 'bench',
+  },
+  {
     id: 'turf',
     fi: {
       tagline: 'Ruudukkotaktiikkaa sateisella pohjoismaisella takapihalla: näet vihollisten aikeet etukäteen, suoja oikeasti merkitsee, ja tönäisy porraskuiluun tappaa varmemmin kuin ase.',
