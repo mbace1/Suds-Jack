@@ -7,6 +7,59 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v237 — 2026-09-04
+**An authored level plays end to end** *(P1 of `LEVEL_EDITOR_DESIGN.md` §7 — the format, a loader, one level, two gates)*
+- **`js/level.js`** — format 1 from §4, as a pure module beside `arena.js`: no
+  three.js, no DOM, no rng, no clock. A level is a shape to stand in (rect,
+  circle, union, intersect — built on `arena.js`) and a timeline of spawns
+  (`t` on the 0.1 s grid, a type NAME, `px`/`pz`). `scheduleFromLevel()` emits
+  exactly the pump's `pendingSpawns` shape, so `main.js`'s spawn loop did not
+  learn a single new thing — it already honoured `px`/`pz` over the ring and
+  compared `delay` against `waveTimer`. The design's headline held: the
+  pipeline was an authored-timeline data structure all along
+- **Validation is STRICT, on purpose.** An unknown key anywhere is an error,
+  not a skip; `move` (P3) and `kind: "pickup"` (P2) are refused BY NAME so a
+  file cannot half-work. The format is a contract with the Godot port, which
+  will read the same JSON directly (its Q-032); Eeri's exporter silently
+  dropped two part types for two versions because a translation layer let
+  unknown fields through, and this format refuses to have one
+- **`levels/first-light.json`** — 15 spawns over 45 s on the 19×11 room.
+  Opened with `?level=first-light`, `main.js` fetches it (tokened, `?v=`),
+  pins the file's arena regardless of the device's orientation preset (the
+  camera fit dollies to whatever box the file names), swaps the authored
+  timeline in for the director's roll, nulls the wave CURRENTS (stream/ring/
+  pincer would bend authored positions after the fact), and ends on the
+  results card — `finishLevel()`, no death sting — once the timeline is
+  spent and the floor is clear. A level that fails to load is a console
+  warning and a normal run, never a black screen
+- **Two gates.** `scripts/level-check.mjs` (bare node, 32 checks): every file
+  in `levels/` validates, parses, schedules in order and deterministically,
+  and the validator can say no — 14 named mistakes each rejected.
+  `scripts/level-smoke.sh` (headless Chromium): the level PLAYS — all 15
+  spawns land at the authored second, position and type, and the run ends on
+  the results card at wave 1
+- **The browser gate took four cuts to write, and the lessons are in it.**
+  Under `--virtual-time-budget` Chromium fires `requestAnimationFrame` once
+  and then never; chained `setTimeout` stops at ~20 s of game time for no
+  reason the console shows; and without `--autoplay-policy` every sound call
+  logs an AudioContext refusal — 637,000 lines in one run, measured. So the
+  probe OWNS THE CLOCK: it replaces `performance.now()` with a counter,
+  advances it 50 ms, and calls `loop()` synchronously — 45 s of level in
+  1.2 s of real time, with rendering and the HUD stubbed because the pixels
+  are not what is under test
+- **One real bug the gate found in this very change:** the level clear
+  re-fired every frame (the classic path re-arms through `waveGapT`, which a
+  level never sets), resetting the clear countdown and re-paying the bonus.
+  The countdown read 2.20 on every sample, never 2.15. Guarded on
+  `levelClearT`
+- Not in this release, and named: the shape is not yet DRAWN (the floor
+  still paints the bounding box — P1's other half, §2.3, on both the GLSL
+  and TSL paths); no pickups; no moving shapes; the `rules.mode` accepted is
+  `arcade` only
+- Cache-bust `?v=190` → `?v=191`; HUD label → v237
+
+---
+
 ## v236 — 2026-09-03
 **The arena is a shape now, not two numbers** *(P0 of `LEVEL_EDITOR_DESIGN.md` §7)*
 - **`js/arena.js`.** Until now "the arena" was `HALF_X` and `HALF_Z` — read in

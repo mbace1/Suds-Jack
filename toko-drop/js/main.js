@@ -1,17 +1,18 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=190';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=190';
-import { Player, PLAYER_RADIUS } from './player.js?v=190';
+import { InputManager } from './input.js?v=191';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=191';
+import { Player, PLAYER_RADIUS } from './player.js?v=191';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=190';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=190';
-import { audio } from './audio.js?v=190';
-import { haptics } from './haptics.js?v=190';
-import { initDesigner } from './designer.js?v=190';
-import { createSpecimen } from './specimen.js?v=190';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=190';
-import { TUNING } from './tuning.js?v=190';
-import { Arena, rectShape } from './arena.js?v=190';   // v236: the boundary has one home
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=191';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=191';
+import { audio } from './audio.js?v=191';
+import { haptics } from './haptics.js?v=191';
+import { initDesigner } from './designer.js?v=191';
+import { createSpecimen } from './specimen.js?v=191';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=191';
+import { TUNING } from './tuning.js?v=191';
+import { Arena, rectShape } from './arena.js?v=191';   // v236: the boundary has one home
+import { parseLevel, scheduleFromLevel } from './level.js?v=191';   // v237: an authored level
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -37,6 +38,27 @@ let HALF_Z      = ARENA_PRESETS.portrait.halfZ;   // arena half-depth
 // rectangle, which is the whole point of LEVEL_EDITOR_DESIGN.md P0.
 const arena = new Arena(rectShape(HALF_X, HALF_Z));
 const _apt  = { x: 0, z: 0 };   // scratch for arena queries — never allocate per frame
+// v237 (P1 of LEVEL_EDITOR_DESIGN.md §7): an AUTHORED level. Opened with
+// ?level=<id>, ./levels/<id>.json is fetched and parsed (js/level.js) into
+// `activeLevel`; null means the procedural director, exactly as before. The
+// fetch is async and the title does not wait for it — startGame() reads
+// whatever has arrived, and a level that failed to load is a console warning
+// and a normal run, never a black screen.
+let activeLevel = null;
+let levelClearT = 0;   // counts down from the clear banner to the results card
+{
+  const id = new URL(location.href).searchParams.get('level');
+  if (id && /^[a-z0-9][a-z0-9-]*$/.test(id)) {
+    const token = new URL(import.meta.url).searchParams.get('v') ?? '0';
+    fetch(`./levels/${id}.json?v=${token}`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(json => {
+        activeLevel = parseLevel(json, Object.keys(EnemyType));
+        console.log(`LEVEL: loaded ${activeLevel.id} — ${activeLevel.spawns.length} spawns over ${activeLevel.duration}s`);
+      })
+      .catch(err => console.warn(`LEVEL: ${id} not loaded — ${err.message}`));
+  }
+}
 // v162 (user direction — mode structure taxonomy): SCROLLING-ARENA cabinets
 // (gaundrop / loadout / kaikki, like their references) play in a world
 // arenaScale× bigger than the screen; the camera follows the player and the
@@ -785,6 +807,30 @@ function applyArenaMode(landscape) {
   floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL;
   floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL;
   if (_cabGroundName) fitCabGround();   // v167: ground tracks the world size
+}
+
+// v237: an authored level pins its OWN arena, whatever the device's
+// orientation preset says — the file is the region. The bounding box drives
+// the floor, border, grid and camera exactly as applyArenaMode() does; the
+// shape itself goes to `arena`, where every boundary question is answered.
+// The landscape preset's view ray is reused for the camera fit: the fit
+// dollies to frame the box's corners, so any rectangle frames itself.
+function applyLevelArena(level) {
+  HALF_X = level.arena.halfX; HALF_Z = level.arena.halfZ;
+  arena.setShape(level.arena.shape);
+  const p = { halfX: HALF_X, halfZ: HALF_Z,
+              camRest: ARENA_PRESETS.landscape.camRest, camLook: ARENA_PRESETS.landscape.camLook };
+  CAM_LOOK.set(...p.camLook);
+  CAM_REST.copy(fitPresetCamera(p));
+  camera.position.copy(CAM_REST);
+  camera.lookAt(CAM_LOOK);
+  floor.geometry.dispose();
+  floor.geometry = new THREE.PlaneGeometry(HALF_X * 2, HALF_Z * 2);
+  border.geometry.dispose();
+  border.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF_X * 2, 0.05, HALF_Z * 2));
+  floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL;
+  floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL;
+  if (_cabGroundName) fitCabGround();
 }
 
 // ── Death FX: chunks + puddles ────────────────────────────────────────────────
@@ -4982,7 +5028,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v236' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v237' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -6041,7 +6087,9 @@ function spawnWave() {
   // own pacing. (The per-species traits below apply everywhere: a FLIT is a
   // FLIT in the basement too.)
   fluidArch = null;
-  if (!inCabinet()) {
+  // v237: an authored level places every body itself; the wave CURRENTS
+  // (stream/ring/pincer) would bend those positions after the fact.
+  if (!inCabinet() && !activeLevel) {
     fluidArch = FLUID_ARCHS[(wave + runSeed) % 3];
     // v198: wave 1 keeps the mode-intro banner (it's the DEFAULT experience
     // now — new players must see the mode name); archetype calls start wave 2.
@@ -6058,11 +6106,23 @@ function spawnWave() {
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
   const list = (tokotronMode || gaundropMode || loadoutMode || kaikkiMode || nexdeusMode ||
                 (smashMode && smashRoomKind === 'bonus') ||     // v178: pure loot, no fight
-                (bindingMode && (smashRoomKind !== 'boss' || bdRevisit))) ? [] : getEnemySchedule(wave);
-  waveDuration = ROUND_DUR;
+                (bindingMode && (smashRoomKind !== 'boss' || bdRevisit)) ||
+                activeLevel) ? [] : getEnemySchedule(wave);   // v237: a level rolls nothing
+  waveDuration = activeLevel ? activeLevel.duration : ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
   pendingSpawns = [];
+  if (activeLevel) {
+    // v237: the authored timeline, verbatim — the pump already honours px/pz
+    // over the ring and compares delay against waveTimer, so nothing below
+    // this line needs to know a level is running. No rng is drawn here: the
+    // same file yields the same schedule, which is what the Godot port is
+    // gated against (its Q-032).
+    pendingSpawns = scheduleFromLevel(activeLevel, EnemyType, TUNING.waves.shooters);
+    waveIntroT = waveIntroDur = 1.6;
+    waveIntroText  = activeLevel.name;
+    waveIntroColor = '#66ffcc';
+  }
   // SMASH TV (v109): everything enters through 4 "doors" at the edge midpoints
   // (the spawn projection maps angle 0/π to the side walls, ±π/2 to top/bottom),
   // so waves pour in like arena-show contestants instead of surrounding evenly.
@@ -7512,6 +7572,8 @@ function startGame() {
   // arena even if the device rotates mid-fight (no mid-run bound swaps).
   landscapeMode = innerWidth > innerHeight;
   applyArenaMode(landscapeMode);
+  if (activeLevel) applyLevelArena(activeLevel);   // v237: the file is the region
+  levelClearT = 0;
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0; waveGapT = 0;
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
   gauntlet = null; gauntletTier = 1; cabQuest = null; _lastQuestOffer = null;
@@ -7620,6 +7682,18 @@ function returnToTitle() {
   overlay.style.pointerEvents = '';
   showTitle();
   gameState = 'title';
+}
+
+// v237: a cleared level ends on the same results card a run does — score,
+// time, bests, feedback — minus the death: no shake, no death sting, the
+// CLEAR fanfare instead. Records like any run (test runs still leave none).
+function finishLevel() {
+  gameState = 'gameover';
+  saveHitLog();
+  _runBests = testMode ? {} : recordRun();
+  hiScore = pb.bestScore;
+  audio.waveClear();
+  showGameOver();
 }
 
 function triggerGameOver() {
@@ -9859,6 +9933,10 @@ function loop() {
     waveGapT -= dt;
     if (waveGapT <= 0) spawnWave();
   }
+  if (levelClearT > 0 && gameState === 'playing') {   // v237
+    levelClearT -= dt;
+    if (levelClearT <= 0) finishLevel();
+  }
 
   // All living enemies dead → end wave immediately; flush any queued spawns.
   // SMASH TV: the room isn't cleared while door bursts are still queued — the
@@ -9873,7 +9951,12 @@ function loop() {
       enemies.length > 0 &&
       enemies.every(e => (tokotronMode && e.type === EnemyType.BRUTE) ||
                          (!e.alive && !e._dying)) &&
-      (!smashMode || pendingSpawns.length === 0)) {
+      (!smashMode || pendingSpawns.length === 0) &&
+      // v237: a level clears once its timeline is spent — and only ONCE:
+      // classic play re-arms through waveGapT, a level through levelClearT,
+      // and without this guard the block re-fired every frame (found by the
+      // level gate: the countdown read 2.20 on every sample, never 2.15).
+      (!activeLevel || (pendingSpawns.length === 0 && levelClearT <= 0))) {
     pendingSpawns = [];
     score += wave * 500 * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
     waveClearFlashT = 0.4;
@@ -9910,7 +9993,15 @@ function loop() {
       audio.announce('clear');
       // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
       // way too frequent with instant wave-ends chaining fast.
-      if (tokotronMode || nexdeusMode) {
+      if (activeLevel) {
+        // v237: one timeline, spent and cleared — the level is done. The
+        // banner holds for a beat, then finishLevel() shows the results card.
+        levelClearT = 2.2;
+        waveIntroT = waveIntroDur = 2.0;
+        waveIntroText  = 'LEVEL CLEAR';
+        waveIntroColor = '#66ffcc';
+      }
+      else if (tokotronMode || nexdeusMode) {
         if (cabQuest) cabQuestAdvance();     // v154: quest beat — pay or ramp
         else waveGapT = tokotronMode ? 0.6 : 1.0;   // v148: the reference slams onward
       }
@@ -10071,6 +10162,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=190').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=191').catch(() => {});
   });
 }

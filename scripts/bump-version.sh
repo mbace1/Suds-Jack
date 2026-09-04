@@ -40,7 +40,7 @@ echo "cache token   ?v=$OLD_T -> ?v=$NEW_T"
 # (vendor/three.webgpu.min.js carries a patched-in token on its internal
 #  ./three.core.min.js import — the split r180 build's relative import is
 #  tokenless upstream, and a tokenless new path is the v118/v119 CDN trap.)
-for f in toko-drop/index.html toko-drop/enemy-lab.html toko-drop/js/main.js toko-drop/js/arena.js toko-drop/js/player.js toko-drop/js/designer.js toko-drop/js/lang.js toko-drop/js/enemy.js toko-drop/js/audio.js toko-drop/js/haptics.js toko-drop/js/retro.js toko-drop/js/specimen.js toko-drop/sw.js toko-drop/vendor/three.webgpu.min.js; do
+for f in toko-drop/index.html toko-drop/enemy-lab.html toko-drop/js/main.js toko-drop/js/arena.js toko-drop/js/level.js toko-drop/js/player.js toko-drop/js/designer.js toko-drop/js/lang.js toko-drop/js/enemy.js toko-drop/js/audio.js toko-drop/js/haptics.js toko-drop/js/retro.js toko-drop/js/specimen.js toko-drop/sw.js toko-drop/vendor/three.webgpu.min.js; do
   sed -i "s/?v=$OLD_T/?v=$NEW_T/g" "$f"
 done
 
