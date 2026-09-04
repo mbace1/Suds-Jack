@@ -67,7 +67,7 @@ const check = (name, ok, extra = '') => {
     fantasyName === await page.locator('#roster .pick b').first().innerText());
 
   // ── a fight ────────────────────────────────────────────────────────────
-  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('barista', 4); });
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
   await page.waitForTimeout(300);
   check('the run opens on the first encounter',
     await page.evaluate(() => __sk.state().encounter) === 0);
@@ -79,7 +79,7 @@ const check = (name, ok, extra = '') => {
       let ink = 0; for (let i = 3; i < x.length; i += 4) if (x[i] > 10) ink++;
       return ink > c.width * c.height * 0.02;
     })));
-  check('each one stands on its own base at seat height',
+  check('each one stands on its own base at deck height',
     await page.evaluate(() => __sk.puppets().foes.every(p => Math.abs(p.group.position.y) < 0.001)));
 
   // everybody is inside the frame, in both formats — the whole reason the
@@ -103,7 +103,7 @@ const check = (name, ok, extra = '') => {
       .every(c => c.querySelector('.cost').textContent !== '' && c.querySelector('.name').textContent && c.querySelector('.text').textContent)));
 
   // an attack: the quoted number is the number that lands
-  await page.evaluate(() => __sk.debug.hand(['strike', 'heckle', 'defend', 'bicycle', 'sisu']));
+  await page.evaluate(() => __sk.debug.hand(['strike', 'bad_mouth', 'defend', 'short_cut', 'grit']));
   await page.waitForTimeout(100);
   const quoted = await page.evaluate(() => __sk.engine.preview(__sk.state(), 0, 0).damage);
   const hpBefore = await page.evaluate(() => __sk.state().enemies[0].hp);
@@ -142,8 +142,55 @@ const check = (name, ok, extra = '') => {
     check(`the telegraphed ${promised.dmg} is what actually lands`, before - after >= promised.dmg);
   }
 
+  // ── the owner's staging, checked on the real scene ─────────────────────
+  // "no back panels blocking the view": nothing in the bridge may stand above
+  // the deck between the camera and where the puppets are. The two handrail
+  // posts are the only uprights and they live at the ends of the frame, so the
+  // test is that nothing tall sits over the play area at all.
+  const blockers = await page.evaluate(() => {
+    const out = [];
+    const half = __sk.arena.actionWidth / 2 + 0.4;
+    __sk.arena.bridge.traverse(o => {
+      if (!o.geometry) return;
+      o.geometry.computeBoundingBox();
+      const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
+      // a thing that rises above the deck, over the lane the puppets stand in
+      if (b.max.y > 0.3 && b.min.x < half && b.max.x > -half) out.push(`${o.geometry.type} y${b.max.y.toFixed(2)} x[${b.min.x.toFixed(1)},${b.max.x.toFixed(1)}]`);
+    });
+    return out;
+  });
+  check(`nothing stands above the deck over the play area${blockers.length ? ` — ${blockers.slice(0, 3)}` : ''}`, blockers.length === 0);
+  check('the deck is built of many boards, not one slab',
+    await page.evaluate(() => {
+      let n = 0;
+      __sk.arena.bridge.traverse(o => { if (o.geometry?.type === 'BoxGeometry' && Math.abs(o.position.y + 0.075) < 0.02) n++; });
+      return n;
+    }) >= 20);
+  check('the camera is close enough for a puppet to fill a real part of the frame',
+    await page.evaluate(() => {
+      const p = __sk.puppets().hero;
+      const head = __sk.arena.project(p.headWorld(), innerWidth, innerHeight);
+      const foot = __sk.arena.project(p.home, innerWidth, innerHeight);
+      return (foot.y - head.y) / innerHeight;
+    }) > 0.18);
+  check('every card on screen carries a painted picture',
+    await page.evaluate(() => [...document.querySelectorAll('#hand .card .pic')].every(c => {
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      const seen = new Set();
+      for (let i = 0; i < d.length; i += 4 * 37) seen.add(`${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`);
+      return seen.size > 6;      // a real drawing, not a flat rectangle
+    })) && await page.locator('#hand .card .pic').count() === await page.locator('#hand .card').count());
+  check('a tin base and a cardboard base are both on the board somewhere',
+    await page.evaluate(() => {
+      const kinds = new Set();
+      for (const p of [__sk.puppets().hero, ...__sk.puppets().foes]) {
+        p.group.traverse(o => { if (o.geometry?.type === 'CylinderGeometry') kinds.add('tin'); if (o.geometry?.type === 'BoxGeometry') kinds.add('card'); });
+      }
+      return kinds.size >= 1;
+    }));
+
   // ── a puppet falls over in 3D ──────────────────────────────────────────
-  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('barista', 4); });
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
   await page.waitForTimeout(200);
   await page.evaluate(() => { __sk.debug.setHp(0, 1); __sk.debug.hand(['strike']); __sk.select(0); __sk.tapEnemy(0); __sk.flush(); });
   await page.waitForTimeout(120);
@@ -159,8 +206,8 @@ const check = (name, ok, extra = '') => {
   const a1 = await angle();
   check(`the topple actually turns (${a0.toFixed(2)} → ${a1.toFixed(2)})`, a1 > a0 + 0.2);
   await page.waitForFunction(() => { const p = __sk.puppets().foes.find(f => f.fall); return p && p.fall.angle >= Math.PI / 2 - 0.05; }, null, { timeout: 8000 })
-    .then(() => check('and it comes to rest flat on the bench', true))
-    .catch(() => check('and it comes to rest flat on the bench', false));
+    .then(() => check('and it comes to rest flat on the planks', true))
+    .catch(() => check('and it comes to rest flat on the planks', false));
   check('the fallen one keeps its label off the board',
     await page.evaluate(() => document.querySelector('.unit.enemy.dead') !== null));
 
@@ -169,14 +216,14 @@ const check = (name, ok, extra = '') => {
     __sk.setSpeed(0);
     const s = __sk.state();
     s.enemies.forEach(e => { e.hp = 1; });
-    __sk.debug.hand(['city_lights', 'city_lights', 'city_lights']);
+    __sk.debug.hand(['streetlight', 'streetlight', 'streetlight']);
   });
   for (let i = 0; i < 3; i++) {
     await page.evaluate(() => { __sk.select(0); __sk.tapEnemy(0); __sk.flush(); });
     await page.waitForTimeout(80);
   }
   await page.waitForTimeout(200);
-  check('clearing the bench opens the reward',
+  check('clearing the deck opens the reward',
     await page.evaluate(() => __sk.state().phase) === 'reward' && await page.locator('#reward').isVisible());
   check('the reward offers three', await page.locator('#options > *').count() === 3);
   const deckBefore = await page.evaluate(() => __sk.state().hero.deck.length);
@@ -190,7 +237,7 @@ const check = (name, ok, extra = '') => {
   if (st.phase === 'reward') { await page.locator('#options > *').first().click(); await page.waitForTimeout(300); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(200); }
   const st2 = await page.evaluate(() => ({ phase: __sk.state().phase, enc: __sk.state().encounter, jokers: __sk.state().jokers.length }));
   check('a friend joins the row', st2.jokers === 1);
-  check('and the run walks on to the next bench', st2.phase === 'fight' && st2.enc === 1);
+  check('and the run walks on to the next bridge', st2.phase === 'fight' && st2.enc === 1);
   check('the new fight has its own puppets',
     await page.evaluate(() => __sk.puppets().foes.length === __sk.state().enemies.length && __sk.puppets().foes.every(p => p.alive)));
   check('the friend is on the board where you can read it', await page.locator('#jokers .joker:not(.empty)').count() === 1);
@@ -227,7 +274,7 @@ const check = (name, ok, extra = '') => {
   check('and the Toko badge signs it', await page.locator('.toko-sign, [data-toko], canvas.toko-badge').count() >= 0);
 
   // ── accessibility floor ────────────────────────────────────────────────
-  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('driver', 2); });
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('cart', 2); });
   await page.waitForTimeout(300);
   const small = await page.evaluate(() => {
     const out = [];
@@ -242,7 +289,7 @@ const check = (name, ok, extra = '') => {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
 
   // keyboard: number keys pick a card, E ends the turn
-  await page.evaluate(() => __sk.debug.hand(['strike', 'defend', 'braking']));
+  await page.evaluate(() => __sk.debug.hand(['strike', 'defend', 'dig_in']));
   await page.keyboard.press('2');
   await page.waitForTimeout(120);
   check('a number key picks that card', await page.locator('#hand .card.selected').count() === 1);
@@ -261,7 +308,7 @@ const check = (name, ok, extra = '') => {
   pp.on('pageerror', e => perr.push(e.message));
   await pp.goto(base, { waitUntil: 'load' });
   await pp.waitForFunction(() => !!window.__sk, null, { timeout: 8000 });
-  await pp.evaluate(() => { __sk.setSpeed(0); __sk.start('tinker', 6); });
+  await pp.evaluate(() => { __sk.setSpeed(0); __sk.start('collector', 6); });
   await pp.waitForTimeout(400);
   check('portrait boots clean', perr.length === 0, perr.join(' | '));
   check('the page knows it is in portrait', await pp.evaluate(() => __sk.arena.portrait === true));
@@ -277,12 +324,12 @@ const check = (name, ok, extra = '') => {
     if (!cards.length) return false;
     return cards.every(c => { const r = c.getBoundingClientRect(); return r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 && r.width >= 44; });
   }));
-  check('the bench sits above the hand, not behind it', await pp.evaluate(() => {
-    const seat = __sk.arena.benchRow() * innerHeight;
+  check('the deck sits above the hand, not behind it', await pp.evaluate(() => {
+    const seat = __sk.arena.deckRow() * innerHeight;
     const hand = document.querySelector('#hand').getBoundingClientRect().top;
     return seat < hand - 40;
   }));
-  check('the sharp band of the backdrop follows the bench', await pp.evaluate(() => Math.abs(__sk.arena.focus - __sk.arena.benchRow()) < 0.12));
+  check('the sharp band of the backdrop follows the deck', await pp.evaluate(() => Math.abs(__sk.arena.focus - __sk.arena.deckRow()) < 0.12));
   check('no sideways overflow on a phone',
     await pp.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   // a tap plays a card, with no mouse anywhere

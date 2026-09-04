@@ -1,6 +1,13 @@
-// The backdrop: a summer park, painted in code and then put out of focus
-// above and below the bench — a tilt-shift, so the bench reads as a tabletop
-// diorama standing in a real place. The painting is the default; the seam for
+// The backdrop: the park behind the bridge, painted in code and then put out
+// of focus above and below the deck — a tilt-shift, so the bridge reads as a
+// model standing in a real place.
+//
+// Owner, 2026-09-04: it should look like tilt-shift NATURE, and a real photo
+// is fair game. So the painting is built to be photographic rather than
+// cartoon — a tonal ramp per band instead of flat colour, haze that eats
+// contrast with distance, canopy in scattered clumps rather than lollipops,
+// and a grain and vignette over the lot. `fromImage` is the same picture done
+// with a real plate. The painting is the default; the seam for
 // real photographs (and side-by-side stereo pairs) is `fromImage`, which
 // crops one eye and applies the same focus bands, so a stereoscopic test is a
 // URL and not a rewrite.
@@ -18,13 +25,16 @@ function paintPark(theme, seed = 3) {
   const p = theme.park;
   const HZ = H * 0.56;                       // the horizon, a little above the middle
 
-  // sky
+  // sky: overcast, warming toward the horizon, with broken cloud
   const sky = ctx.createLinearGradient(0, 0, 0, HZ);
-  sky.addColorStop(0, p.sky[0]); sky.addColorStop(1, p.sky[1]);
+  sky.addColorStop(0, p.sky[0]); sky.addColorStop(0.7, mixHex(p.sky[0], p.sky[1], 0.6)); sky.addColorStop(1, p.sky[1]);
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, HZ + 2);
-  // a haze of high cloud
-  ctx.globalAlpha = 0.35; ctx.fillStyle = '#ffffff';
-  for (let i = 0; i < 6; i++) { const x = rnd() * W, y = rnd() * HZ * 0.5, w = 120 + rnd() * 260; ctx.beginPath(); ctx.ellipse(x, y, w, 18 + rnd() * 14, 0, 0, Math.PI * 2); ctx.fill(); }
+  for (let i = 0; i < 26; i++) {
+    ctx.globalAlpha = 0.05 + rnd() * 0.12;
+    ctx.fillStyle = rnd() > 0.4 ? '#e8e0d0' : '#6a6f78';
+    const x = rnd() * W, y = rnd() * HZ * 0.72, w = 90 + rnd() * 320;
+    ctx.beginPath(); ctx.ellipse(x, y, w, 12 + rnd() * 26, 0, 0, Math.PI * 2); ctx.fill();
+  }
   ctx.globalAlpha = 1;
 
   // the district behind the trees: a row of five-storey blocks and one tower
@@ -40,41 +50,81 @@ function paintPark(theme, seed = 3) {
   ctx.fillStyle = 'rgba(255,240,200,0.5)';
   for (let i = 0; i < 60; i++) ctx.fillRect(rnd() * W, HZ - 20 - rnd() * 100, 4, 6);
 
-  // tree line: three tones of canopy, back to front, lighter toward the top
-  const canopy = (x, y, r, tones) => {
+  // Tree line. A real canopy is a mass of small broken shapes, not three
+  // lollipops: each tree is 40 scattered dabs whose size falls off toward the
+  // outside, drawn dark first and lit only where the sky can reach.
+  const canopy = (x, y, r, tones, haze) => {
     for (let k = 0; k < tones.length; k++) {
-      ctx.fillStyle = tones[k];
-      for (let i = 0; i < 9; i++) {
-        const a = rnd() * Math.PI * 2, d = rnd() * r * (0.7 - k * 0.15);
-        ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y - k * r * 0.18 + Math.sin(a) * d * 0.7, r * (0.55 - k * 0.1), 0, Math.PI * 2); ctx.fill();
+      for (let i = 0; i < 40; i++) {
+        const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * r * (0.95 - k * 0.24);
+        const px = x + Math.cos(a) * d, py = y - k * r * 0.2 + Math.sin(a) * d * 0.62;
+        ctx.globalAlpha = (0.55 + rnd() * 0.45) * (1 - haze * 0.55);
+        ctx.fillStyle = tones[k];
+        ctx.beginPath(); ctx.arc(px, py, r * (0.1 + rnd() * 0.13), 0, Math.PI * 2); ctx.fill();
       }
     }
+    ctx.globalAlpha = 1;
   };
-  for (let i = 0; i < 9; i++) canopy(i * W / 8 + rnd() * 60, HZ - 30 - rnd() * 40, 70 + rnd() * 50, p.canopy);
-  // trunks
-  ctx.fillStyle = '#4a3a2a';
-  for (let i = 0; i < 7; i++) { const x = i * W / 6 + rnd() * 80; ctx.fillRect(x, HZ - 40, 8 + rnd() * 6, 60); }
-
-  // grass, a path, and the far lawn
-  const grass = ctx.createLinearGradient(0, HZ, 0, H);
-  grass.addColorStop(0, p.grass); grass.addColorStop(1, mixHex(p.grass, '#2a4a1a', 0.5));
-  ctx.fillStyle = grass; ctx.fillRect(0, HZ, W, H - HZ);
-  ctx.fillStyle = p.path;
-  ctx.beginPath(); ctx.moveTo(W * 0.3, HZ + 10); ctx.lineTo(W * 0.55, HZ + 10); ctx.lineTo(W * 1.05, H); ctx.lineTo(W * -0.2, H); ctx.fill();
-  // sun on the grass
-  ctx.globalAlpha = 0.18; ctx.fillStyle = '#ffffc0';
-  for (let i = 0; i < 14; i++) { ctx.beginPath(); ctx.ellipse(rnd() * W, HZ + 20 + rnd() * (H - HZ), 80 + rnd() * 120, 14, 0, 0, Math.PI * 2); ctx.fill(); }
-  ctx.globalAlpha = 1;
-  // people on the lawn, far off: two dabs each
-  for (let i = 0; i < 12; i++) {
-    const x = rnd() * W, y = HZ + 20 + rnd() * 90, s = 0.6 + (y - HZ) / 120;
-    ctx.fillStyle = ['#e04060', '#4060e0', '#f0f0f0', '#f0c040', '#202030'][i % 5];
-    ctx.fillRect(x, y - 16 * s, 7 * s, 16 * s);
-    ctx.fillStyle = '#e8b898'; ctx.fillRect(x + 1, y - 22 * s, 5 * s, 6 * s);
+  // a far, hazed row and a near, contrasty one — depth is the haze, not the size
+  for (let i = 0; i < 11; i++) canopy(i * W / 10 + rnd() * 70, HZ - 46 - rnd() * 40, 60 + rnd() * 40, p.canopy, 0.75);
+  for (let i = 0; i < 8; i++) canopy(i * W / 7 + rnd() * 90, HZ - 18 - rnd() * 46, 78 + rnd() * 52, p.canopy, 0.15);
+  // trunks, dark and never quite vertical
+  for (let i = 0; i < 9; i++) {
+    const x = i * W / 8 + rnd() * 70;
+    ctx.strokeStyle = '#241c14'; ctx.lineWidth = 5 + rnd() * 7;
+    ctx.beginPath(); ctx.moveTo(x, HZ + 12); ctx.lineTo(x + (rnd() - 0.5) * 18, HZ - 50 - rnd() * 30); ctx.stroke();
   }
-  // a couple of far benches
-  ctx.fillStyle = mixHex(p.bench, '#000', 0.2);
-  for (let i = 0; i < 3; i++) { const x = 100 + i * 420 + rnd() * 100, y = HZ + 40 + rnd() * 30; ctx.fillRect(x, y, 60, 6); ctx.fillRect(x, y - 10, 60, 4); }
+
+  // the water this bridge crosses, and the bank on the far side
+  const bank = ctx.createLinearGradient(0, HZ, 0, HZ + 90);
+  bank.addColorStop(0, mixHex(p.grass, '#8a8272', 0.35)); bank.addColorStop(1, p.grass);
+  ctx.fillStyle = bank; ctx.fillRect(0, HZ, W, 90);
+  const water = ctx.createLinearGradient(0, HZ + 80, 0, H);
+  water.addColorStop(0, mixHex(p.water ?? '#3a4448', '#000000', 0.15));
+  water.addColorStop(1, mixHex(p.water ?? '#3a4448', '#8a9aa0', 0.35));
+  ctx.fillStyle = water; ctx.fillRect(0, HZ + 80, W, H - HZ - 80);
+  // the tree line's reflection, smeared vertically the way still water does it
+  ctx.globalAlpha = 0.22;
+  for (let i = 0; i < 200; i++) {
+    const x = rnd() * W, y = HZ + 86 + rnd() * (H - HZ - 90);
+    ctx.fillStyle = rnd() > 0.4 ? p.canopy[0] : '#5a6a58';
+    ctx.fillRect(x, y, 10 + rnd() * 40, 2 + rnd() * 3);
+  }
+  ctx.globalAlpha = 1;
+  // a few flat glints where the sky lands on it
+  for (let i = 0; i < 30; i++) {
+    ctx.globalAlpha = 0.08 + rnd() * 0.16;
+    ctx.fillStyle = '#c8d2d4';
+    ctx.fillRect(rnd() * W, HZ + 92 + rnd() * (H - HZ - 100), 20 + rnd() * 90, 1 + rnd() * 2);
+  }
+  ctx.globalAlpha = 1;
+  // reeds along the far bank, broken and uneven
+  for (let i = 0; i < 90; i++) {
+    const x = rnd() * W, h = 8 + rnd() * 26;
+    ctx.strokeStyle = rnd() > 0.5 ? '#3f4a2a' : '#5a6238'; ctx.lineWidth = 1 + rnd() * 2;
+    ctx.beginPath(); ctx.moveTo(x, HZ + 84); ctx.lineTo(x + (rnd() - 0.5) * 12, HZ + 84 - h); ctx.stroke();
+  }
+  // a few figures on the far bank, small and desaturated — they are 80 metres
+  // away and out of focus, so they are two dabs and no more
+  for (let i = 0; i < 9; i++) {
+    const x = rnd() * W, y = HZ + 30 + rnd() * 46, sc = 0.5 + (y - HZ) / 150;
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = ['#6a4a4a', '#3a4a5a', '#8a8478', '#5a5a4a', '#2a2a30'][i % 5];
+    ctx.fillRect(x, y - 15 * sc, 6 * sc, 15 * sc);
+    ctx.fillStyle = '#9a7a62'; ctx.fillRect(x + 1, y - 20 * sc, 4 * sc, 5 * sc);
+    ctx.globalAlpha = 1;
+  }
+  // haze over the far half: distance eats contrast before it eats detail
+  const haze = ctx.createLinearGradient(0, HZ - 120, 0, HZ + 30);
+  haze.addColorStop(0, 'rgba(190,196,196,0)');
+  haze.addColorStop(1, 'rgba(190,196,196,0.34)');
+  ctx.fillStyle = haze; ctx.fillRect(0, HZ - 120, W, 150);
+  // film grain over everything, which is most of what makes a painting read
+  // as a photograph once it is blurred
+  for (let i = 0; i < 26000; i++) {
+    ctx.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+    ctx.fillRect(rnd() * W, rnd() * H, 1.5, 1.5);
+  }
   return c;
 }
 
@@ -89,7 +139,7 @@ function mixHex(a, b, t) {
 // because that is what a miniature-photo filter does and what makes a real
 // park look like a model of one. Falls back to the sharp picture where the
 // canvas has no `filter`.
-export function tiltShift(src, { focus = 0.6, band = 0.14, maxBlur = 14 } = {}) {
+export function tiltShift(src, { focus = 0.6, band = 0.12, maxBlur = 18 } = {}) {
   const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
   const ctx = c.getContext('2d');
   const hasFilter = 'filter' in ctx;
@@ -98,7 +148,7 @@ export function tiltShift(src, { focus = 0.6, band = 0.14, maxBlur = 14 } = {}) 
   const H = src.height, steps = 7;
   for (let i = 1; i <= steps; i++) {
     const blur = maxBlur * (i / steps) ** 1.4;
-    ctx.filter = `blur(${blur.toFixed(1)}px) saturate(1.15) brightness(1.03)`;
+    ctx.filter = `blur(${blur.toFixed(1)}px) saturate(0.92) contrast(1.06) brightness(0.99)`;
     // above the band
     const topEnd = (focus - band / 2) * H * (1 - (i - 1) / steps);
     const topStart = (focus - band / 2) * H * (1 - i / steps);
@@ -114,8 +164,8 @@ export function tiltShift(src, { focus = 0.6, band = 0.14, maxBlur = 14 } = {}) 
   }
   ctx.filter = 'none';
   // vignette, the second half of the miniature look
-  const g = ctx.createRadialGradient(c.width / 2, c.height / 2, c.height * 0.45, c.width / 2, c.height / 2, c.height * 0.95);
-  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,10,0,0.35)');
+  const g = ctx.createRadialGradient(c.width / 2, c.height / 2, c.height * 0.34, c.width / 2, c.height / 2, c.height * 0.95);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(12,10,8,0.5)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, c.width, c.height);
   return c;
 }
@@ -160,12 +210,14 @@ export function paintForeground(theme) {
   const rnd = rng(11);
   const p = theme.park;
   // grass blades and leaf clumps rising from the bottom edge
-  for (let i = 0; i < 200; i++) {
-    const x = rnd() * 1024, h = 60 + rnd() * 180;
-    ctx.strokeStyle = i % 3 ? p.canopy[0] : p.canopy[1];
-    ctx.lineWidth = 6 + rnd() * 14; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(x, 260); ctx.quadraticCurveTo(x + (rnd() - 0.5) * 60, 260 - h * 0.6, x + (rnd() - 0.5) * 110, 256 - h); ctx.stroke();
+  for (let i = 0; i < 240; i++) {
+    const x = rnd() * 1024, h = 50 + rnd() * 190;
+    ctx.strokeStyle = [p.canopy[0], p.canopy[1], '#5a5236', '#3a3a28'][i % 4];
+    ctx.lineWidth = 5 + rnd() * 15; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, 260); ctx.quadraticCurveTo(x + (rnd() - 0.5) * 70, 260 - h * 0.6, x + (rnd() - 0.5) * 120, 256 - h); ctx.stroke();
   }
+  // something pale in the weeds, because this is a canal bank in Kallio
+  for (let i = 0; i < 5; i++) { ctx.fillStyle = i % 2 ? '#8a8f94' : '#8f8a72'; ctx.beginPath(); ctx.ellipse(rnd() * 1024, 200 + rnd() * 50, 14 + rnd() * 16, 7 + rnd() * 8, rnd() * 3, 0, Math.PI * 2); ctx.fill(); }
   ctx.fillStyle = mixHex(p.canopy[0], '#000000', 0.35);
   for (let i = 0; i < 26; i++) { const x = rnd() * 1024; ctx.beginPath(); ctx.ellipse(x, 220 + rnd() * 40, 60 + rnd() * 90, 40 + rnd() * 40, rnd(), 0, Math.PI * 2); ctx.fill(); }
   // blur it and fade the top edge out, so it never draws a line across the game

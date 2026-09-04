@@ -290,66 +290,99 @@ Build tooling: none — same no-build rule as every other demo here.
 ### Slay Kallio (`slaykallio/`) — the deckbuilder, ACTIVE
 **Owner's brief, 2026-09-04: mostly Slay the Spire 2, with some Balatro jokers
 thrown in.** Read `slaykallio/GDD.md` before touching anything — this is the
-summary, that is the source. A deckbuilder fought on a **park bench** in Kallio:
-four locals, six benches, a card or a friend after each, and either you take the
-last bench or you end up flat on it.
+summary, that is the source. A deckbuilder fought on a **thick plank bridge**
+over a Kallio canal: four bums, six spans, a card or a friend after each.
 **It is two experiments at once, and both are the owner's stated point**: a test
 of a unique look that has to work in **horizontal** (mobile sideways / Switch)
 AND **vertical** (a phone in one hand), and a practice run at the **deep logic
 and artefact synergy** that makes Slay the Spire worth a hundred runs.
+**Second owner pass, same day, and it moved the art wholesale**: gritty and
+realistic; the camera from the other direction so no bench back panels block the
+view; a background like **tilt-shift nature**, a real photo being fair game;
+heroes who are **Kallio bums**; **everything in English**; enemies that are
+**rats, mutating blobs and other bum cardboard cutouts**; **a basic picture on
+every card**; a **thick wooden bridge**, much closer to the characters; **tin
+soldiers and painted cardboard figures**.
 **`js/engine.js` is the rules and NOTHING else** — no DOM, no three.js, no
 clock, deterministic from a seed, which is why `test/core.mjs` can assert exact
-numbers in bare node (a Strike is 6, a Crema-doubled Strike is 12, Encore after
-three cards is 16) and run a bot over 160 whole runs. `js/data.js` is every
-card, character, friend, enemy and encounter as data; the engine reads ids out
-of it and knows nothing about "a barista" or "a seagull".
+numbers in bare node (a Swing is 6, a doubled Swing is 12, Encore after three
+cards is 16) and run a bot over 160 whole runs. `js/data.js` is every card,
+character, friend, enemy and encounter as data; the engine reads ids out of it
+and knows nothing about "a bottle collector" or "a rat".
 **The damage pipeline is Balatro's shape over Slay the Spire's numbers**: base
 (card + scaling + strength + buzz) → **adds** → **mults** → floor, with the
 breakdown riding on the log entry so the view pops the base, then each `+3`,
 then each `×2`. And **`preview()` and the real play call the same code**, so a
 card's face text is written from its effects at the current state — quoting a
 number you then do not use is the unforgivable bug in a full-information game.
-**Every character is a question, not a stat block** (Buzz that fades with the
-turn / cards that scale on what you played before them / free Finds and a
-counted hand / block that hits and block that stays), and each starting deck
-carries two cards that teach the mechanic on turn one. **A friend bends
-arithmetic you already do and never adds a verb** — a verb is a card's job — and
-the one to copy is Double Espresso, which **costs** a card for its energy,
-because a friend that only gives is a number rather than a decision.
+**Every character is a question, not a stat block** — Late the park drinker
+(Buzz, a strength that fades with the turn), Ilona the busker (cards scale on
+what you played before them), Roope the bottle collector (free Bottle tokens and
+a counted hand), Vekku the cart pusher (block that hits and block that stays) —
+and each starting deck carries two cards that teach the mechanic on turn one. **A
+friend bends arithmetic you already do and never adds a verb** — a verb is a
+card's job — and the one to copy is Morning Can, which **costs** a card for its
+energy, because a friend that only gives is a number rather than a decision.
+**Everything player-facing is ENGLISH** and a gate enforces it: any Finnish left
+in a card, title, friend, enemy or encounter name — in either skin — fails
+`core.mjs`. Personal names are exempt; a name is not a language.
 **The fantasy theme is a LOOKUP, not a second data set**: every named thing
-carries a name in both skins and the gate fails if one is missing, so the menu
-switch is one word per entry rather than a fork.
-**The look is painted cardboard puppets** (`js/puppet.js`): a 2D cutout — flat
-fills inside a wobbly ink line, painted on a canvas from a `look` table, so a
-theme switch repaints the same figure in different clothes — standing on a **3D
-card wedge with a strip of tape over its feet**. The cutout is flat, the base is
-not, and the tape is what tells you so. Death **topples it in 3D**, about its
-feet on an axis tilted between the camera's x and the depth axis: a flat cutout
-tipping in the picture plane reads as a sprite rotating, and tipping *into* the
-scene is what makes it a thing that was standing there.
-**The park is a tilt-shift and the sharp band FOLLOWS THE BENCH** (`js/bg.js`,
-`js/scene.js`): the backdrop is repainted when the bench's row on screen moves,
-because a miniature photograph is only convincing while the one sharp stripe
-lies on what you are looking at — and the bench sits nowhere near the same place
-in portrait as in landscape. There is a matching **out-of-focus foreground band**
-along the bottom, and the real 3D ground is a thin strip under the bench alone:
-a wide 3D lawn is a sharp slab across the frame that undoes the whole look.
+carries a name in both skins, so the menu switch is one word per entry.
+**The board is a bridge because a bench has a BACKREST** (`js/scene.js`). That
+is not a theme change, it is a staging fix: a backrest crosses a standing figure
+at the chest, and every puppet was being cut in half by a slat. A bridge carries
+its structure underneath, so beams, braces and piles take the eye down into the
+canal instead of putting a fence across the fight. Three rules hold it and the
+gate checks all three — **nothing stands above the deck over the play area**
+(this caught a far-side top rail above head height that still drew a line across
+the frame; it is gone, and two broken stubs on the end posts say it used to be
+there), **the deck is many boards and not one slab** (thirty planks over a dark
+board so every gap is a shadow, nail heads over the stringers, no two tones the
+same and none of them quite flat), and **the camera is close and nearly level**
+(action width 4.6, tilted down about ten degrees — dead level hides the boards
+entirely and makes the understructure the whole lower half of the frame, any
+higher turns the bridge into a floor plan).
+**Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
+`look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
+over the feet, and mixing them is the point — a row of these should look
+collected rather than manufactured. **Gritty is in the drawing, not in a
+filter**: the ink line is drawn twice at different weights, paint is scumbled in
+broken strokes of **a lighter tint of the fill and never white** (white on a
+small head reads as a smear across the face rather than as light on it),
+outlines are nicked because a cutout that has been carried around is not cut
+clean, and every figure carries streaks, stains and specks scaled by its own
+`grime`. Death **topples it in 3D**, about its feet on an axis tilted between
+the camera's x and the depth axis: a flat cutout tipping in the picture plane
+reads as a sprite rotating, and tipping *into* the scene is what makes it a
+thing that was standing there.
+**`js/cardart.js` puts a picture on every card** — a 96×62 painted panel in the
+same register, cached per picture and accent so re-rendering the hand does not
+repaint ten canvases. A card with only words on it is a spreadsheet row. The
+gate fails on a card with no picture, a picture the module cannot draw, or a set
+that has collapsed to fewer than fifteen distinct drawings.
+**The backdrop is photographic and the sharp band FOLLOWS THE DECK** (`js/bg.js`,
+`js/scene.js`): canopy as scattered dabs rather than lollipops, haze eating
+contrast with distance, the canal with the treeline smeared down into it, film
+grain, and a repaint whenever the deck's row on screen moves — a miniature
+photograph is only convincing while the one sharp stripe lies on what you are
+looking at, and the deck sits nowhere near the same place in portrait as in
+landscape. There is a matching **out-of-focus foreground band** along the bottom.
 `?bg=<url>&stereo=sbs&eye=left` puts a **photograph** (or one eye of a
-side-by-side stereo pair) behind the bench through the same focus pass — the
+side-by-side stereo pair) behind the bridge through the same focus pass — the
 seam for testing real plates is a URL, not a rewrite.
-**One camera rule for both formats: fit the ACTION WIDTH, not the bench.**
-Portrait fits a narrower width (the puppets stand closer), is deliberately
-**flatter** (a phone has no room for a floor — every degree of tilt trades sky
-for lawn nobody plays on), and gives the bottom to the hand, which becomes a
-five-column grid instead of a fan. The gate asserts every puppet is inside the
-frame in both.
+**One camera rule for both formats: fit the ACTION WIDTH, not the bridge** —
+the deck runs off both ends of the frame on purpose. Portrait fits a narrower
+width, is deliberately **flatter** (a phone frame is tall, so every degree of
+downward tilt spends screen on the water instead of on the fight), and gives the
+bottom to the hand, which becomes a five-column grid instead of a fan.
 `window.__sk` is the seam the browser gate drives, and `setSpeed(0)` + `flush()`
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
-Gates: `node slaykallio/test/core.mjs` (252 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (55). Hub entry:
-`hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js`, accent
-`#f2c14e`. Build tooling: none — same no-build rule as everything else here.
+Gates: `node slaykallio/test/core.mjs` (260 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (60). Hub entry:
+`hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
+its name through the bench-to-bridge change; the drawing is a bridge), accent
+`#c8a03a`. Build tooling: none — same no-build rule as everything else here.
 
 ### TURF (`turf/`) — grid tactics, ACTIVE
 **Owner's brief, 2026-08-28: `turf/GDD.md` and `turf/PRODUCTION_PIPELINE.md`, read those
@@ -1557,14 +1590,15 @@ slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
   js/
     data.js     # every card, character, friend, enemy, encounter — both themes
     engine.js   # THE RULES: no DOM, no three.js, no clock, seeded; adds then mults
-    puppet.js   # the painted cutout, its taped card base, and the 3D topple
-    scene.js    # the bench, the stone furniture, and one camera rule for two formats
-    bg.js       # the painted park, the tilt-shift, and the photograph/stereo seam
+    puppet.js   # the gritty cutout, its tin or cardboard base, and the 3D topple
+    cardart.js  # a painted picture for every card, cached per picture and accent
+    scene.js    # the plank bridge, and one camera rule for two formats
+    bg.js       # the photographic park, the tilt-shift, and the photo/stereo seam
     main.js     # boot, HUD, and the replay that acts the engine's log out
     audio.js    # synthesised kit, every voice through one master gain
   test/
-    core.mjs    # bare node: exact numbers, and a bot over 160 whole runs
-    smoke.cjs   # a browser: puppets, the topple, both orientations, a thumb
+    core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
+    smoke.cjs   # a browser: puppets, the topple, the staging rules, both formats
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate

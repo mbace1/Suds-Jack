@@ -31,6 +31,9 @@ export function makeRng(seed) {
   return { next, int, pick, shuffle, get seed() { return s; } };
 }
 
+// every 0-cost token the tinker's cards can conjure, taken from the data
+const TOKENS = Object.entries(CARDS).filter(([, c]) => c.find).map(([id]) => id);
+
 let uidCounter = 0;
 const card = id => ({ uid: ++uidCounter, id, ...CARDS[id] });
 
@@ -130,7 +133,10 @@ export function drawCards(state, n) {
 }
 
 function addCardToHand(state, id, src) {
-  if (id === 'find') id = state.rng.pick(['find_button', 'find_yarn', 'find_coin']);
+  // `find` is the engine's word for a conjured 0-cost token; the data decides
+  // what they are called on screen (Bottles in Kallio, Trinkets in the other
+  // skin), which is why the ids are read out of the table rather than named.
+  if (id === 'find') id = state.rng.pick(TOKENS);
   if (state.hand.length >= RULES.handMax) return;
   const c = card(id);
   state.hand.push(c);
@@ -441,12 +447,12 @@ const STATUS_WORD = {
 };
 const POWER_TEXT = {
   buzzPerTurn: n => `At the start of your turn, gain ${n} Buzz.`,
-  findPerTurn: n => `At the start of your turn, conjure ${n} Find.`,
+  findPerTurn: n => `At the start of your turn, conjure ${n} Bottle.`,
   blockPerTurn: n => `At the start of your turn, gain ${n} block.`,
   retainBlock: () => 'Block is not lost at the start of your turn.',
   groove: () => 'The 3rd card you play each turn refunds 1 energy.',
 };
-const SCALE_TEXT = { played: 'card played this turn', block: 'block you have', hand: 'card in your hand', finds: 'Find played this turn', jokers: 'friend' };
+const SCALE_TEXT = { played: 'card played this turn', block: 'block you have', hand: 'card in your hand', finds: 'Bottle played this turn', jokers: 'friend' };
 
 // Card text is written from the effects, with live numbers when a state and
 // hand index are given: a Crema-doubled Strike says 12 on its face.
@@ -477,7 +483,7 @@ export function describe(c, state = null, i = null, targetIndex = null) {
         break;
       case 'draw': parts.push(`Draw ${fx.n}.`); break;
       case 'energy': parts.push(`Gain ${fx.n} energy.`); break;
-      case 'addCard': parts.push(`Conjure ${fx.n} Find${fx.n > 1 ? 's' : ''} into your hand.`); break;
+      case 'addCard': parts.push(`Conjure ${fx.n} Bottle${fx.n > 1 ? 's' : ''} into your hand.`); break;
       case 'heal': parts.push(`Heal ${fx.n}.`); break;
     }
   }

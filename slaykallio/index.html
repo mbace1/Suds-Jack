@@ -7,21 +7,21 @@
   <style>
     :root {
       --ink: #1b1410;
-      --kraft: #d9b98a;
-      --kraft2: #c49a63;
-      --paper: #f3ead8;
-      --accent: #f2c14e;
-      --attack: #c8452c;
-      --skill: #2f7f9c;
-      --power: #c98a1f;
-      --curse: #5a4a6a;
-      --panel: rgba(24, 18, 12, 0.86);
+      --kraft: #c2a479;
+      --kraft2: #9d7f55;
+      --paper: #e8dfcb;
+      --accent: #c8a03a;
+      --attack: #9e3b25;
+      --skill: #2e6274;
+      --power: #a8761c;
+      --curse: #4a3a58;
+      --panel: rgba(18, 15, 12, 0.9);
       --ui: 'Avenir Next Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
     body {
-      background: #2a3a22;
+      background: #14161a;
       overflow: hidden;
       touch-action: none;
       font-family: var(--ui);
@@ -144,21 +144,28 @@
     /* ── the hand ── */
     #hand {
       position: fixed; left: 50%; bottom: max(6px, env(safe-area-inset-bottom)); transform: translateX(-50%);
-      display: flex; justify-content: center; align-items: flex-end; gap: 0; height: 190px; max-width: calc(100% - 300px);
+      display: flex; justify-content: center; align-items: flex-end; gap: 0; height: 214px; max-width: calc(100% - 300px);
     }
     .card {
-      position: relative; width: 122px; height: 170px; flex: 0 0 auto; margin: 0 -8px;
+      position: relative; width: 124px; height: 196px; flex: 0 0 auto; margin: 0 -9px;
       background:
-        radial-gradient(ellipse at 20% 15%, rgba(255,255,255,.35), transparent 40%),
-        repeating-linear-gradient(90deg, rgba(0,0,0,.035) 0 2px, transparent 2px 7px),
+        radial-gradient(ellipse at 18% 12%, rgba(255,246,220,.22), transparent 44%),
+        radial-gradient(ellipse at 84% 92%, rgba(0,0,0,.26), transparent 50%),
+        repeating-linear-gradient(90deg, rgba(0,0,0,.045) 0 2px, transparent 2px 7px),
         linear-gradient(160deg, var(--kraft), var(--kraft2));
-      color: var(--ink); border: 2.5px solid var(--ink); border-radius: 7px;
-      text-align: left; padding: 8px 9px 22px; display: flex; flex-direction: column; gap: 4px;
-      box-shadow: 2px 4px 0 rgba(0,0,0,.45), inset 0 0 0 3px rgba(255,255,255,.18);
+      color: var(--ink); border: 2.5px solid var(--ink); border-radius: 4px;
+      text-align: left; padding: 7px 8px 20px; display: flex; flex-direction: column; gap: 3px;
+      box-shadow: 2px 4px 0 rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,246,220,.12);
       transform: translateY(calc(var(--lift, 0px))) rotate(calc((var(--i) - (var(--n) - 1) / 2) * 2deg));
       transition: transform .15s, box-shadow .15s; transform-origin: 50% 120%;
-      clip-path: polygon(0 3%, 3% 0, 97% 1%, 100% 4%, 99% 96%, 96% 100%, 3% 99%, 0 96%);
+      clip-path: polygon(0 2%, 2% 0, 98% 1%, 100% 3%, 99% 97%, 97% 100%, 2% 99%, 0 97%);
     }
+    /* the picture panel: a painted thing, set into the card with a dark reveal */
+    .card .art {
+      display: block; margin: 1px 0 2px; border: 1.5px solid rgba(23,18,14,.85);
+      box-shadow: inset 0 0 6px rgba(0,0,0,.5); line-height: 0; background: #4a4438;
+    }
+    .card .pic { display: block; width: 100%; height: auto; }
     .card:hover, .card:focus-visible { --lift: -22px; z-index: 2; outline: none; }
     .card.selected { --lift: -40px; z-index: 3; box-shadow: 0 0 0 3px var(--accent), 4px 8px 0 rgba(0,0,0,.5); }
     .card.unplayable { filter: grayscale(.6) brightness(.85); }
@@ -167,8 +174,8 @@
       background: radial-gradient(circle at 35% 30%, #ffe89a, #d29a1a 70%); border: 2.5px solid var(--ink);
       display: grid; place-content: center; font-weight: 900; font-size: 16px;
     }
-    .card .name { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: .04em; line-height: 1.05; margin-left: 16px; min-height: 26px; }
-    .card .text { font-family: system-ui, sans-serif; font-size: 11.5px; line-height: 1.25; flex: 1; }
+    .card .name { font-weight: 800; text-transform: uppercase; font-size: 11.5px; letter-spacing: .03em; line-height: 1.05; margin-left: 18px; min-height: 24px; }
+    .card .text { font-family: system-ui, sans-serif; font-size: 11px; line-height: 1.22; flex: 1; }
     .card .type {
       position: absolute; left: 0; right: 0; bottom: 0; height: 16px; font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
       text-align: center; line-height: 16px; color: var(--paper); background: var(--attack);
@@ -210,7 +217,7 @@
     .pick span { font-family: system-ui, sans-serif; font-size: 11.5px; line-height: 1.25; }
     .pick small { font-weight: 800; }
     #options { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
-    #options .card { margin: 0; width: 140px; height: 196px; transform: none; cursor: pointer; }
+    #options .card { margin: 0; width: 150px; height: 232px; transform: none; cursor: pointer; }
     #options .card.selected, #options .joker.selected { box-shadow: 0 0 0 4px var(--accent), 4px 8px 0 rgba(0,0,0,.5); transform: translateY(-6px); }
     #deck .list { max-height: 60vh; overflow: auto; width: min(560px, 90vw); text-align: left; display: flex; flex-direction: column; gap: 4px; }
     #deck .row { display: block; background: var(--panel); padding: 6px 10px; border-left: 4px solid var(--attack); border-radius: 4px; font-size: 13px; }
@@ -228,14 +235,15 @@
     .portrait .joker { min-width: 0; max-width: none; flex: 1 1 30%; font-size: 10px; padding: 3px 6px; }
     .portrait .joker span { display: none; }
     .portrait #hand {
-      left: 0; right: 0; transform: none; max-width: none; height: auto; bottom: max(92px, calc(env(safe-area-inset-bottom) + 84px));
+      left: 0; right: 0; transform: none; max-width: none; height: auto; bottom: max(88px, calc(env(safe-area-inset-bottom) + 80px));
       display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 0 8px; align-items: end;
     }
-    .portrait .card { width: auto; height: 138px; margin: 0; transform: none; padding: 6px 6px 18px; }
+    .portrait .card { width: auto; height: 172px; margin: 0; transform: none; padding: 5px 5px 17px; }
     .portrait .card:hover, .portrait .card:focus-visible { --lift: 0px; }
     .portrait .card.selected { transform: translateY(-10px); }
-    .portrait .card .name { font-size: 10.5px; min-height: 22px; margin-left: 12px; }
-    .portrait .card .text { font-size: 10px; }
+    .portrait .card .name { font-size: 9.5px; min-height: 20px; margin-left: 14px; letter-spacing: 0; }
+    .portrait .card .text { font-size: 9.5px; line-height: 1.18; }
+    .portrait .card .art { margin: 0 0 1px; }
     .portrait .card .cost { width: 24px; height: 24px; font-size: 13px; top: -6px; left: -6px; }
     .portrait #energy { width: 70px; height: 70px; bottom: max(12px, env(safe-area-inset-bottom)); }
     .portrait #energy b { font-size: 28px; }
@@ -244,7 +252,7 @@
     .portrait #banner { top: 27%; }
     .portrait .unit { font-size: 12px; width: 108px; margin-left: -54px; }
     .portrait .unit .intent { font-size: 15px; }
-    .portrait #options .card { width: 120px; height: 170px; }
+    .portrait #options .card { width: 124px; height: 196px; }
 
     @media (prefers-reduced-motion: reduce) { .pop, #banner.show, #played.show { animation-duration: .01s; } .targeting .unit.enemy .hitbox { animation: none; } }
   </style>
@@ -277,14 +285,14 @@
   </div>
 
   <div id="menu" class="panel">
-    <h1>Slay Kallio<span>a bench-top card game</span></h1>
+    <h1>Slay Kallio<span>a plank-bridge card game</span></h1>
     <p id="tag"></p>
     <div class="row">
       <button class="ghost theme">theme: <b>Kallio</b></button>
       <button class="ghost" id="mute">sound on</button>
     </div>
     <div id="roster"></div>
-    <button class="btn" id="start">Take the bench</button>
+    <button class="btn" id="start">Take the bridge</button>
     <div id="best"></div>
     <p id="foot">1-9 / tap picks a card · tap again or tap an enemy to play · E ends the turn · pad: ◀▶ cards, ▲▼ target, A play, Y end · <span id="ver"></span></p>
   </div>
@@ -318,7 +326,7 @@
   }
   </script>
   <script type="module" src="../hub/shell.js?v=17"></script>
-  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module" src="js/main.js?v=2"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';

@@ -5,11 +5,15 @@
 
 ## 1. What it is
 
-A single-player deckbuilder fought on a **park bench** in Kallio, Helsinki, in
-high summer. You pick one of four locals, walk six benches, and either take the
-last one or end up flat on it. Every fight is cards: play them from a hand of
+A single-player deckbuilder fought on a **thick plank bridge** over a Kallio
+canal. You pick one of four bums, walk six spans, and either take the last one
+or end up flat on the boards. Every fight is cards: play them from a hand of
 five against three energy, watch what the other side has already told you it is
 about to do, and get your arithmetic bigger than theirs.
+
+Everything the player reads is **in English**. Personal names stay as they are —
+a name is not a language — and a gate fails on any Finnish left in a title, a
+card, a friend, an enemy or an encounter name, in either skin.
 
 Two things are being practised here, and both are the point:
 
@@ -23,52 +27,87 @@ Two things are being practised here, and both are the point:
 
 ## 2. The look
 
-**Painted cardboard puppets on a real summer afternoon.** Each character is a
-2D cutout — flat gouache fills inside a wobbly ink line, on paper that shows its
-grain — standing on a **3D cardboard base with a strip of tape over its feet**.
-The cutout is flat. The base is not, and the tape is what tells you so.
+**Tin soldiers and painted cardboard cutouts, and all of it gritty.** Each
+figure is a 2D cutout — flat fills inside a heavy, wobbling ink line — standing
+on a **3D base**: either a tin soldier's stamped oval with a raised lip, or a
+cardboard wedge with a strip of tape over the feet. `look.base` picks which, and
+mixing them is the point: a row of these should look **collected** rather than
+manufactured. The cutout is flat. The base is not, and the tape is what tells
+you so.
+
+**Gritty is in the drawing, not in a filter.** The ink line is drawn twice at
+different weights, so it varies the way a loaded brush does. Paint is
+**scumbled** — short broken strokes of a lighter tint of the fill — and never
+white: white on a small head reads as a smear across the face rather than as
+light on it. Outlines are nicked, because a cutout that has been carried around
+is not cut clean. Every figure carries streaks, stains and specks scaled by its
+own `grime` value, and one warm light from the left with a genuinely dark
+shadow side.
 
 When something dies it **falls over in 3D**: the whole puppet pivots about its
 feet on an axis tilted between the camera's x and the depth axis, so the flat
-shape foreshortens as it goes down, bounces once, and lies on the seat. A flat
+shape foreshortens as it goes down, bounces once, and lies on the boards. A flat
 cutout tipping in the picture plane would read as a sprite rotating. Tipping
 *into* the scene is what makes it a physical object that was standing there.
 
-The arena is a **park bench** — the seat is the play area, with a granite block
-at one end and a statue base at the other. Behind it the park is **tilt-shifted**:
-sharp in one band, blurring away above and below, with a matching out-of-focus
-foreground along the bottom edge. That is the Instagram-miniature look the brief
-asks for, and it does a real job — it says *the bench is the game and the park is
-where the game is happening*.
+### The bridge, and why it is not a bench
 
-**The sharp band follows the bench.** The backdrop is repainted whenever the
-bench's row on the screen moves, because a miniature photograph is only
+The arena is a **thick wooden plank bridge** over a canal — the deck is the play
+area. It replaced a park bench, and the reason is mechanical rather than
+thematic: **a bench has a backrest, and a backrest crosses a standing figure at
+the chest.** Every puppet was being cut in half by a slat. A bridge carries its
+structure *underneath*, so beams, cross-braces and piles take the eye down into
+the water instead of putting a fence across the fight.
+
+Three rules hold the staging, and the gate checks all three:
+
+- **Nothing stands above the deck over the play area.** The gate walks the
+  bridge's geometry and fails on anything that rises above the boards in the
+  lane the puppets stand in. It caught the one thing left — a far-side top rail
+  above head height that still drew a line straight across the frame. It is
+  gone; two broken stubs on the end posts say it used to be there.
+- **The deck is many boards, not one slab.** Thirty planks with a dark board
+  beneath them so each gap is a shadow, nail heads over the stringers, no two
+  tones the same, and none of them quite flat or quite level. Eleven wide boards
+  read as a pier; thirty read as a footbridge somebody nailed down.
+- **The camera is close and nearly level.** Action width 4.6, a little above
+  the deck and tilted down about ten degrees. Dead level hides the boards
+  entirely and makes the understructure the whole lower half of the frame; any
+  higher turns the bridge into a floor plan.
+
+Behind it the park is **tilt-shifted**: sharp in one band, blurring away above
+and below, with a matching out-of-focus foreground along the bottom edge. The
+painting is built to be **photographic** rather than cartoon — canopy as
+scattered dabs rather than lollipops, haze eating contrast with distance, the
+canal with the treeline smeared down into it, film grain over the lot.
+
+**The sharp band follows the deck.** The backdrop is repainted whenever the
+deck's row on the screen moves, because a miniature photograph is only
 convincing while the one sharp stripe lies on the thing you are looking at, and
-the bench sits in a completely different place in portrait than in landscape.
+the deck sits in a completely different place in portrait than in landscape.
 
 **The photograph seam is built in, not planned.** `?bg=<url>` puts a real
-photograph behind the bench through the same focus pass, and `&stereo=sbs&eye=left`
-crops one eye out of a side-by-side stereo pair. Testing real (and stereoscopic)
-summer-park plates is a URL, not a rewrite. The painted park is the default so
+photograph behind the bridge through the same focus pass, and
+`&stereo=sbs&eye=left` crops one eye out of a side-by-side stereo pair. Testing
+real (and stereoscopic) plates is a URL, not a rewrite. The painted park is the default so
 the game never depends on an asset it does not carry.
 
 ## 3. Both formats, one camera rule
 
-**Fit the ACTION WIDTH, not the bench.** The camera works out how far back it
+**Fit the ACTION WIDTH, not the bridge.** The deck runs off both ends of the
+frame on purpose. The camera works out how far back it
 must stand for the play area to span the frame, at that frame's aspect.
 
 | | landscape | portrait |
 |---|---|---|
-| field of view | 38° | 46° |
-| action width | 6.6 units | 4.1 units (the puppets stand closer) |
-| camera height | 1.25 | 1.0 — flatter |
-| aim | 0.30 | 0.35 |
+| field of view | 36° | 46° |
+| action width | 4.6 units | 3.4 units (the puppets stand closer) |
+| camera height | 1.6 | 1.25 — flatter |
+| aim | 0.28 | 0.46 |
 | hand | fanned, overlapping, along the bottom middle | a five-column grid across the full width |
 
-Portrait is **flatter**, deliberately: a phone has no room for a floor, and every
-degree of downward tilt trades sky and canopy for lawn nobody plays on. The real
-3D ground is a thin band under the bench for the same reason — anything wider is
-a sharp slab across the bottom that undoes the miniature look.
+Portrait is **flatter**, deliberately: a phone frame is tall, so every degree of
+downward tilt spends screen on the water instead of on the fight.
 
 ## 4. The fight
 
@@ -99,24 +138,24 @@ Two rules make it a system rather than a pile of cases:
   get built. The numbers on screen are not a re-derivation; they are the ones
   that were used.
 - **`preview()` and the real play call the same code.** A card's face text is
-  written from its effects at the current state, so a Crema-doubled Strike says
+  written from its effects at the current state, so a Seeing Double-doubled Swing says
   *Deal 12 damage* on its face. In a full-information game, quoting a number you
   do not then use is the unforgivable bug.
 
-## 6. The roster — four Kallio locals, each a different question
+## 6. The roster — four Kallio bums, each a different question
 
-Every character has a mechanic, not a stat block. The starting deck is 4 Strike,
-4 Defend and **two cards that teach the mechanic on the first turn**.
+Every character has a mechanic, not a stat block. The starting deck is 4 Swing,
+4 Cover Up and **two cards that teach the mechanic on the first turn**.
 
 | | who | the mechanic | the question it asks |
 |---|---|---|---|
-| **Nita** | barista | **Buzz** — strength that fades with the turn | can you spend it all in one turn? |
-| **Jape** | bassist | cards scale with **how many you played before them** | what order do you play in? |
-| **Kaisa** | tinker | **Finds** — free 0-cost tokens, and cards that count your hand | do you spend the hand or hold it? |
-| **Reino** | tram driver | block that **hits**, and block that **stays** | is defending an attack? |
+| **Late** | the park drinker | **Buzz** — strength that fades with the turn | can you spend it all in one turn? |
+| **Ilona** | the busker | cards scale with **how many you played before them** | what order do you play in? |
+| **Roope** | the bottle collector | **Bottles** — free 0-cost tokens, and cards that count your hand | do you spend the hand or hold it? |
+| **Vekku** | the cart pusher | block that **hits**, and block that **stays** | is defending an attack? |
 
-The fantasy skin renames every one of them and re-dresses the same figure —
-alchemist, bard, tinker, knight. It is a **lookup, not a second data set**:
+The fantasy skin renames every one of them and re-dresses the same figure — the
+sot, the bard, the tinker, the warden. It is a **lookup, not a second data set**:
 every card, character, friend, enemy and encounter carries a name in both
 themes and the gate fails if one is missing.
 
@@ -124,22 +163,38 @@ themes and the gate fails if one is missing.
 
 Twelve of them, capped at five. A friend **bends arithmetic you already do** —
 it never adds a verb, because a verb is a card's job. Third Time (×2 on every
-third attack), Kick Drum (+1 per card played before it), Karaoke Night (×1.5 on
-the first attack), Metal Detector (Vulnerable becomes ×1.75), Terrace (empty
-your hand, gain 5 block), Double Espresso (+1 energy, −1 card).
+third attack), Bucket Drummer (+1 per card played before it), First Light (×1.5
+on the first attack), Sharp Eye (Vulnerable becomes ×1.75), Empty Hands (end
+with nothing in hand, gain 5 block), Morning Can (+1 energy, −1 card).
 
 That last one is the shape to copy: a friend that **costs** something is a build
 decision. A friend that only gives is a number.
 
 ## 8. The run
 
-Six fights on a straight line — flock, gull and pigeon, floater, karaoke, the
-ticket inspector (elite), the bouncer (boss). A card after every fight, a friend
-after three of them, 8 HP back each time.
+Six fights on a straight line — rats under the deck, the bin rat, something in
+the water, somebody else's spot, the King Rat (elite), and who owns the bridge
+(boss). A card after every fight, a friend after three of them, 8 HP back each
+time.
+
+The bestiary is the owner's list: **rats** (small, quick, several at once),
+**mutating blobs** (drawn as something about to become something else: half-formed
+limbs and two eyes that do not match), and **rival bum cutouts** the same size as
+you.
 
 **A map comes later, and on purpose.** A branching run map in front of the same
 six fights is a menu, not more game — the same finding TURF's parity doc records.
 The order to add things is: more enemy behaviour → more encounters → then a map.
+
+## 8a. A picture on every card
+
+`js/cardart.js` paints a 96×62 panel per card in the same register as the
+puppets: flat fills, a heavy wobbling line, one warm light from the left, a wash
+of grime. A card with only words on it is a spreadsheet row, and this game is
+about a hand you read at a glance. Pictures are cached per picture-and-accent,
+so re-rendering the hand on every play does not repaint ten canvases. A gate
+fails on a card with no picture, on a picture `cardart.js` cannot draw, and on a
+set of pictures that has collapsed to fewer than fifteen distinct drawings.
 
 ## 9. What is NOT in v1, and why
 
@@ -158,16 +213,18 @@ NODE_PATH=$(npm root -g) node test/hub-smoke.cjs           # the cabinet
 ```
 
 `core.mjs` runs in bare node — no browser, no GPU — so it can be run on every
-edit, and it asserts **exact numbers**: a Strike is 6, a Crema-doubled Strike is
-12, Third Time's third attack is 12, Encore after three cards is 16. It also
+edit, and it asserts **exact numbers**: a Swing is 6, a doubled Swing is 12,
+Third Time's third attack is 12, Encore after three cards is 16. It also
 runs a dumb bot over **160 whole runs** and asserts every character can reach the
 boss and that none of them wins every time or never wins.
 
 `smoke.cjs` covers what the rules cannot see: that a puppet is a painted cutout
 rather than a blank plane, that a dead one turns out of the picture plane and
 comes to rest, that everybody is inside the frame in **both** orientations, that
-the sharp band of the backdrop is where the bench is, and that a thumb can play
-a card at an enemy with no mouse anywhere.
+the sharp band of the backdrop is where the deck is, that a thumb can play a
+card at an enemy with no mouse anywhere — and the three staging rules above:
+nothing above the deck over the play area, a deck built of many boards, and a
+camera close enough that a figure fills a real part of the frame.
 
 **A gate that certifies *works* cannot see *looks*.** Every art change here ends
 in a screenshot, the same rule the rest of this repo has paid for.

@@ -11,6 +11,7 @@ import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, THEMES, RULES } from '.
 import * as engine from './engine.js';
 import { Arena } from './scene.js';
 import { Puppet, paintCutout } from './puppet.js';
+import { paintCardPic } from './cardart.js';
 import { sfx, unlock, setMuted, isMuted } from './audio.js';
 import { watchPad } from '../../hub/pad.js';
 
@@ -21,7 +22,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 1;
+const VERSION = 2;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -50,7 +51,7 @@ setMuted(store.get('mute', false));
 
 function resize() {
   const w = innerWidth, h = innerHeight;
-  arena.resize(w, h, 7.6);
+  arena.resize(w, h, 4.6);
   document.documentElement.classList.toggle('portrait', h > w);
 }
 addEventListener('resize', resize);
@@ -320,11 +321,7 @@ function renderHand() {
     b.dataset.i = i;
     b.style.setProperty('--i', i); b.style.setProperty('--n', n);
     b.style.setProperty('--accent', CHARACTERS[state.character][theme].look.accent);
-    const cost = el('span', 'cost', c.cost === null ? '✖' : c.cost);
-    const name = el('span', 'name', cardName(c.id));
-    const text = el('span', 'text', engine.describe(c, state, i, target));
-    const type = el('span', 'type', c.type);
-    b.append(cost, name, text, type);
+    b.append(cardFace(c, engine.describe(c, state, i, target)));
     const playable = engine.canPlay(state, i);
     b.classList.toggle('unplayable', !playable);
     b.classList.toggle('selected', i === sel);
@@ -333,6 +330,22 @@ function renderHand() {
     hand.append(b);
   });
   $('#end').disabled = false;
+}
+
+// One card face, built once and used by the hand and by the reward panel —
+// two builders drift, and the reward is where a card is read most carefully.
+function cardFace(c, text) {
+  const frag = document.createDocumentFragment();
+  const accent = CHARACTERS[state.character][theme].look.accent;
+  const pic = paintCardPic(c.pic ?? 'fist', c.type === 'curse' ? '#7a5a8a' : accent, c.id.length + 3);
+  const art = el('span', 'art');
+  const img = pic.cloneNode(true);
+  img.getContext('2d').drawImage(pic, 0, 0);
+  img.className = 'pic';
+  art.append(img);
+  frag.append(el('span', 'cost', c.cost === null || c.cost === undefined ? '✖' : c.cost),
+    el('span', 'name', cardName(c.id)), art, el('span', 'text', text), el('span', 'type', c.type));
+  return frag;
 }
 
 function flashCardPlayed(id) { const t = $('#played'); t.textContent = cardName(id); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); }
@@ -445,8 +458,8 @@ function renderMenu() {
   $('#menu .theme b').textContent = t.name;
   document.documentElement.dataset.theme = theme;
   $('#tag').textContent = theme === 'kallio'
-    ? 'A deck, a park bench, and the whole of Kallio out to get you.'
-    : 'A deck, a stone seat, and every creature of the realm out to get you.';
+    ? 'A deck, a plank bridge, and everything in Kallio that wants your spot.'
+    : 'A deck, an old span, and everything in the realm that wants your spot.';
   const r = $('#roster'); r.innerHTML = '';
   chars.forEach((id, i) => {
     const ch = CHARACTERS[id];
@@ -518,7 +531,7 @@ function openReward() {
       const c = CARDS[id];
       b = el('button', `card ${c.type}`);
       b.style.setProperty('--accent', CHARACTERS[state.character][theme].look.accent);
-      b.append(el('span', 'cost', c.cost ?? '✖'), el('span', 'name', cardName(id)), el('span', 'text', engine.describe(c)), el('span', 'type', c.type));
+      b.append(cardFace({ ...c, id }, engine.describe(c)));
     } else {
       b = el('button', 'joker big');
       b.append(el('b', '', nameOf(JOKERS, id)), el('span', '', JOKERS[id][theme].text));
@@ -550,7 +563,7 @@ function rewardKeys(ev) {
 function showResult(won) {
   $('#hud').hidden = true;
   const p = $('#result'); p.hidden = false;
-  p.querySelector('h2').textContent = won ? 'THE BENCH IS YOURS' : 'FLAT ON THE BENCH';
+  p.querySelector('h2').textContent = won ? 'THE BRIDGE IS YOURS' : 'FLAT ON THE PLANKS';
   const s = state.stats;
   p.querySelector('.stats').textContent = `${won ? 'cleared' : `fell at fight ${state.encounter + 1}`} · ${s.cardsPlayed} cards · ${s.damageDealt} damage · biggest hit ${s.biggestHit} · ${state.jokers.length} ${T().jokerWord}`;
   const best = store.get('best', null);
