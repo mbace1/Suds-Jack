@@ -100,6 +100,10 @@ src += r'''
     if (gameState !== 'gameover') out(`timed out at t=${waveTimer.toFixed(2)} state=${gameState} seen=${seen.length} pending=${pendingSpawns.length}`);
     let bad = 0;
     out(`seen ${seen.length} of ${want.length}`);
+    // The cross-build format tools/level-parity.mjs (Godot port) reads:
+    // one first-sighting line per body. The gate below saves them.
+    const names = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v, k]));
+    seen.forEach((s, i) => out(`SPAWN ${i} ${names[s.type]} t=${s.t.toFixed(3)} x=${s.x.toFixed(3)} z=${s.z.toFixed(3)}`));
     for (let i = 0; i < want.length; i++) {
       const w = want[i], s = seen[i];
       if (!s) { out(`MISSING ${i} ${w.name} @${w.t}s`); bad++; continue; }
@@ -140,6 +144,8 @@ LOG=$(timeout 180 "$CHROMIUM" --headless=new --disable-gpu --no-sandbox \
   2>&1 >/dev/null | grep -i "CONSOLE" || true)
 printf '%s
 ' "$LOG" > "$WORK/console.log"
+# The spawn log, for the Godot port's cross-build parity gate.
+{ echo "$LOG" | grep -o "LEVELPROBE: SPAWN [^\"]*" | sed "s/LEVELPROBE: //" > "$WORK/seen-$LEVEL.txt"; } || true
 echo "$LOG" | grep -o "LEVELPROBE: [^\"]*" | head -60
 echo "$LOG" | grep -o "LEVEL: [^\"]*" | head -3
 if echo "$LOG" | grep -qi "uncaught\|SyntaxError\|TypeError\|ReferenceError"; then
