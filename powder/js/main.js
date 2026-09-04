@@ -524,7 +524,7 @@ input.onPause = () => {
 };
 
 hud.msg.innerHTML =
-  '<b>P&nbsp;O&nbsp;W&nbsp;D&nbsp;E&nbsp;R</b>' +
+  '<img class="logo" src="logo.png" alt="POWDER">' +
   '<br><small>THE SALT IN THE RIFT IS THE FASTEST GROUND THERE IS.' +
   '<br>THE WALLS ARE SIXTY DEGREES. FIND THE BREACHES.</small>' +
   '<br><small style="opacity:.65">W THROTTLE &nbsp; A / D STEER &nbsp; S BRAKE &nbsp; SPACE OVERDRIVE' +

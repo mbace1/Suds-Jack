@@ -50,6 +50,11 @@
       backdrop-filter: blur(6px);
     }
     #msg b { font-size: 36px; letter-spacing: 6px; }
+    /* the wordmark: white glyphs on transparency, so it takes the panel's tint */
+    #msg .logo {
+      display: block; width: min(64vw, 620px); margin: 2px auto 10px;
+      filter: drop-shadow(0 4px 18px rgba(20,10,30,.7));
+    }
     #msg small { font-size: 12px; letter-spacing: 1px; line-height: 2.3; font-weight: normal; }
     #toast {
       position: fixed; bottom: 21%; left: 50%; transform: translateX(-50%);
