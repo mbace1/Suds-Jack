@@ -43,34 +43,25 @@ jobs:
           test -f dist/client/art/ashwood-clean.svg
           grep -q 'ember-portrait.png' dist/client/art/ember-idle-runtime.svg
 
-      - name: Replace live Kindling runtime
+      - name: Stage v16 cabinet
         run: |
-          rm -rf kindling/assets kindling/art kindling/__grok
-          rm -f kindling/index.html kindling/favicon.svg kindling/og.jpg kindling/x-banner.jpg kindling/hub-shell.js kindling/sw.js kindling/VERSIONS.md
-          cp -a .kindling-source/dist/client/. kindling/
-          printf 'v16\n' > kindling/.hub-release
-          cat > kindling/DEPLOYED_VERSION.txt <<'EOF'
+          rm -rf .deploy-kindling .deploy-smoke
+          mkdir -p .deploy-kindling
+          cp -a .kindling-source/dist/client/. .deploy-kindling/
+          printf 'v16\n' > .deploy-kindling/.hub-release
+          cat > .deploy-kindling/DEPLOYED_VERSION.txt <<'EOF'
           Kindling v16
           canonical source: mbace1/Kindling@d2e65912353be53e5adef5fc68f5cb7e4b64031d
           static hub build: npm run build:hub
           visual pass: camp depth + four upgraded Journey regions
           EOF
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          p = Path('hub/versions.json')
-          data = json.loads(p.read_text())
-          data['kindling'] = {'v':'16','n':16000,'from':'v16 visual pass + v15 systems'}
-          p.write_text(json.dumps(data, indent=2) + '\n')
-          PY
 
       - name: Smoke exact final-path cabinet
         run: |
-          rm -rf .hub-smoke
-          mkdir -p .hub-smoke/Suds-Jack/kindling .hub-smoke/Suds-Jack/hub
-          cp -a kindling/. .hub-smoke/Suds-Jack/kindling/
-          cp hub/shell.js hub/pad.js hub/games.js hub/padkeys.js .hub-smoke/Suds-Jack/hub/
-          python3 -m http.server 8081 -d .hub-smoke >/tmp/kindling-v16-hub.log 2>&1 &
+          mkdir -p .deploy-smoke/Suds-Jack/kindling .deploy-smoke/Suds-Jack/hub
+          cp -a .deploy-kindling/. .deploy-smoke/Suds-Jack/kindling/
+          cp hub/shell.js hub/pad.js hub/games.js hub/padkeys.js .deploy-smoke/Suds-Jack/hub/
+          python3 -m http.server 8081 -d .deploy-smoke >/tmp/kindling-v16-hub.log 2>&1 &
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8081/Suds-Jack/kindling/ >/dev/null; then break; fi
             sleep 1
@@ -80,11 +71,29 @@ jobs:
           node scripts/full-play-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/
           node scripts/betterment-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/ artifacts/hub-v16-mobile.png --allow-static-hydration
 
-      - name: Commit directly to gh-pages
+      - name: Commit on top of current gh-pages
         run: |
-          rm -rf .kindling-source .hub-smoke .github
+          rm -rf .kindling-source .deploy-smoke
+          mv .deploy-kindling /tmp/kindling-v16
+          git fetch origin gh-pages
+          git checkout -B gh-pages origin/gh-pages
+          rm -rf kindling/assets kindling/art kindling/__grok
+          rm -f kindling/index.html kindling/favicon.svg kindling/og.jpg kindling/x-banner.jpg kindling/hub-shell.js kindling/sw.js kindling/VERSIONS.md kindling/.hub-release kindling/DEPLOYED_VERSION.txt
+          cp -a /tmp/kindling-v16/. kindling/
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('hub/versions.json')
+          data = json.loads(p.read_text())
+          data['kindling'] = {'v':'16','n':16000,'from':'v16 visual pass + v15 systems'}
+          p.write_text(json.dumps(data, indent=2) + '\n')
+          PY
           git config user.name "Kindling Hub Deploy"
           git config user.email "actions@users.noreply.github.com"
           git add kindling hub/versions.json
-          git commit -m "Deploy Kindling v16 visual pass"
-          git push origin HEAD:gh-pages
+          if git diff --cached --quiet; then
+            echo "Kindling v16 already deployed"
+          else
+            git commit -m "Deploy Kindling v16 visual pass"
+            git push origin gh-pages
+          fi
