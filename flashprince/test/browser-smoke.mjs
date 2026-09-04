@@ -113,9 +113,46 @@ try {
   assert.ok(climb.visited.includes('pullUp'), 'Scene 4 must pull back onto the block');
   assert.equal(climb.grounded, true, 'climb-down recovery must finish grounded');
   assert.ok(climb.y <= 160.1, `climb-down recovery must finish on upper block, got y=${climb.y}`);
+
+  // Scene 3: approach the first platform edge with four committed steps,
+  // climb down to a controlled hang, then deliberately drop. The 70px feet
+  // fall to the floor is above the hurt threshold but below the kill threshold.
+  await page.keyboard.press('Digit3');
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.down('ArrowRight');
+    await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'step', null, { timeout: 2000 });
+    await page.keyboard.up('ArrowRight');
+    await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand', null, { timeout: 3000 });
+  }
+  const edge = await page.evaluate(() => globalThis.__flashPrinceMovement);
+  assert.ok(edge.x >= 87 && edge.x <= 89, `four steps must stage the hard-fall edge at x≈88, got ${edge.x}`);
+  assert.equal(edge.y, 80, 'Scene 3 edge staging must stay on the upper platform');
+
+  await page.keyboard.down('ArrowDown');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'climbDown', null, { timeout: 2000 });
+  await page.keyboard.up('ArrowDown');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'hang', null, { timeout: 3000 });
+  await page.keyboard.down('ArrowDown');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'fall', null, { timeout: 2000 });
+  await page.keyboard.up('ArrowDown');
+  await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'landHard', null, { timeout: 5000 });
+
+  const hardImpact = await page.evaluate(() => globalThis.__flashPrinceMovement);
+  assert.equal(hardImpact.health, 2, `hard landing must remove exactly one health, got ${hardImpact.health}`);
+  assert.equal(hardImpact.grounded, true, 'hard landing impact must be grounded');
+  assert.ok(hardImpact.y >= 175.9 && hardImpact.y <= 176.1, `hard landing must hit the Scene 3 floor at y=176, got ${hardImpact.y}`);
+
+  await page.waitForFunction(() => {
+    const d = globalThis.__flashPrinceMovement;
+    return d?.state === 'stand' && d.grounded;
+  }, null, { timeout: 5000 });
+  const hard = await page.evaluate(() => globalThis.__flashPrinceMovement);
+  assert.equal(hard.health, 2, 'hard landing recovery must preserve post-impact health');
+  assert.equal(hard.faults, 0, 'hard landing path must report zero transition faults');
+  assert.ok(hard.visited.includes('landHard'), 'Scene 3 must visit landHard');
   assert.equal(errors.length, 0, `browser console/page errors: ${errors.join(' | ')}`);
 
-  console.log(`PASS Flash Prince gap+ledge: x=${ledge.x.toFixed(1)} y=${ledge.y.toFixed(1)}; climb+shimmy: x=${climb.x.toFixed(1)} y=${climb.y.toFixed(1)}`);
+  console.log(`PASS Flash Prince ledge=${ledge.x.toFixed(1)},${ledge.y.toFixed(1)} climb=${climb.x.toFixed(1)},${climb.y.toFixed(1)} hard=HP${hard.health}@${hard.x.toFixed(1)},${hard.y.toFixed(1)}`);
   await browser.close();
 } finally {
   server.kill('SIGTERM');
