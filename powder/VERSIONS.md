@@ -4,6 +4,19 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v4 — 2026-07-27
+Second pass on the owner's direction. The sleds are rocket-propelled at the
+FRONT and handle like a front-wheel-drive hot rod: thrust acts along the
+steered nose, grip is per axle from the pad loads, power eats the front's
+traction circle (push) and lifting off unloads the rear (the tail comes
+round) — neither scripted. The sand SINKS: each runner settles under load
+and the lateral bite arrives late on soft ground. The whole field is now a
+mellow 4.5% mountain, the canyon is ~1.8x wider, and roads cross it on
+bridge decks you can ride or run under (a two-layer ground query, since a
+heightfield cannot hold a bridge). Whites and greys in the sand, purples in
+the sky, a sun that blooms, and a PS2 render: 0.62x soft upscale, Lambert,
+hard shadows, posterise + Bayer dither.
+
 ## v3 — 2026-07-27
 Rebuilt from scratch on the owner's direction: simulator-like detail, surreal
 3D, flatlands with canyons. A rigid body on four sprung hover pads at a fixed

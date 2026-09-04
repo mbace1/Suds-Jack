@@ -6,24 +6,28 @@
 //                transfer and every slide fall out of forces. See vehicle.js.
 //   OPEN WORLD   no ribbon and no fall line. terrain.js is a pure height
 //                function streamed as tiles, and you go where you like.
-//   SURREAL      a violet-to-amber sky with a ringed body sitting on it, long
-//                raking shadows, rock that floats, and a graded, bloomed,
-//                heat-shimmered frame. Nothing here is pretending to be a
-//                console from 1996 any more.
+//   SURREAL      a violet sky going lilac at the horizon with a ringed body on
+//                it, long raking shadows, rock that floats, a sun that blooms.
+//   PS2          second pass, on the owner's direction. Not 1996 any more but
+//                not 2024 either: rendered at ~0.62x and upscaled SOFT (the
+//                console's blur, not the PS1's hard pixels), Lambert lighting,
+//                a hard 1024 shadow map, a full-screen bloom the way ICO and
+//                Shadow of the Colossus did it, and a posterise + ordered
+//                dither in the grade so gradients band the way they used to.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=3';
-import { Terrain, SURF, SALT, VIEW } from './terrain.js?v=3';
-import { Vehicle } from './vehicle.js?v=3';
-import { DustPool, ScarField } from './dust.js?v=3';
-import { Route, RADIUS } from './route.js?v=3';
-import { InputManager, STICK_R } from './input.js?v=3';
-import { AudioKit } from './audio.js?v=3';
-import { makeSky } from './sky.js?v=3';
+import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=4';
+import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=4';
+import { Vehicle } from './vehicle.js?v=4';
+import { DustPool, ScarField } from './dust.js?v=4';
+import { Route, RADIUS } from './route.js?v=4';
+import { InputManager, STICK_R } from './input.js?v=4';
+import { AudioKit } from './audio.js?v=4';
+import { makeSky } from './sky.js?v=4';
 
 // Fog has to reach nearly the edge of the streamed world, not half way
 // into it, or the flats read as a 300 m milk bowl instead of a plain.
@@ -40,15 +44,18 @@ const qParam = new URLSearchParams(location.search).get('q');
 let QUALITY = qParam || localStorage.getItem(QKEY) || 'high';
 
 // ------------------------------------------------------------------ renderer
+// The PS2 scale: the framebuffer is a fraction of the window and the browser
+// upscales it with plain bilinear (no image-rendering: pixelated — that is the
+// other console). ~640 px across on a laptop, which is about right.
+const PS2_SCALE = 0.62;
 const canvas = document.getElementById('game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: QUALITY === 'high' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, QUALITY === 'high' ? 2 : 1));
-renderer.setSize(innerWidth, innerHeight);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+renderer.setPixelRatio(1);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.0;
 if (QUALITY === 'high') {
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;      // hard-edged, as it was
 }
 
 const scene = new THREE.Scene();
@@ -57,11 +64,11 @@ const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.5, 40
 
 // Key light: low and warm, so everything standing up throws its length across
 // the flats. Fill: cold and from behind — the tell that this is not Earth.
-const key = new THREE.DirectionalLight(0xfff0d0, 2.5);
+const key = new THREE.DirectionalLight(0xfff0d8, 2.3);
 key.position.set(-SUN_DIR[0] * 200, -SUN_DIR[1] * 200, -SUN_DIR[2] * 200);
 if (QUALITY === 'high') {
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(1024, 1024);
   const c = key.shadow.camera;
   c.left = -190; c.right = 190; c.top = 190; c.bottom = -190;
   c.near = 1; c.far = 900;
@@ -69,12 +76,12 @@ if (QUALITY === 'high') {
   key.shadow.normalBias = 0.6;
 }
 scene.add(key, key.target);
-const fill = new THREE.DirectionalLight(0x8fa8e8, 1.15);
+const fill = new THREE.DirectionalLight(0x9a8ce8, 1.05);
 fill.position.set(-FILL_DIR[0] * 200, -FILL_DIR[1] * 200, -FILL_DIR[2] * 200);
 scene.add(fill);
 // generous, because the key is low and raking: without it every face
 // turned from the sun crushes to black and the monoliths become holes
-scene.add(new THREE.HemisphereLight(0x9a86c8, 0xd9b483, 0.95));
+scene.add(new THREE.HemisphereLight(0x8a6cc0, 0xe6e2de, 0.95));
 
 const sky = makeSky(scene, SUN_DIR);
 const terrain = new Terrain(scene, 11);
@@ -91,11 +98,25 @@ const GradeShader = {
   uniforms: {
     tDiffuse: { value: null }, uTime: { value: 0 },
     uAberr: { value: 0.0011 }, uShimmer: { value: 0.0016 }, uVig: { value: 0.55 },
+    uLevels: { value: 36.0 }, uRes: { value: new THREE.Vector2(640, 400) },
   },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: `
-    uniform sampler2D tDiffuse; uniform float uTime, uAberr, uShimmer, uVig;
+    uniform sampler2D tDiffuse; uniform float uTime, uAberr, uShimmer, uVig, uLevels;
+    uniform vec2 uRes;
     varying vec2 vUv;
+    // 4x4 Bayer: the console's dither, so the posterised gradients band the
+    // way they used to instead of stepping cleanly
+    float bayer(vec2 p) {
+      vec2 q = floor(mod(p, 4.0));
+      float i = q.x + q.y * 4.0;
+      float m = 0.0;
+      if (i == 0.0) m = 0.0;  else if (i == 1.0) m = 8.0;  else if (i == 2.0) m = 2.0;  else if (i == 3.0) m = 10.0;
+      else if (i == 4.0) m = 12.0; else if (i == 5.0) m = 4.0;  else if (i == 6.0) m = 14.0; else if (i == 7.0) m = 6.0;
+      else if (i == 8.0) m = 3.0;  else if (i == 9.0) m = 11.0; else if (i == 10.0) m = 1.0; else if (i == 11.0) m = 9.0;
+      else if (i == 12.0) m = 15.0; else if (i == 13.0) m = 7.0; else if (i == 14.0) m = 13.0; else m = 5.0;
+      return (m + 0.5) / 16.0 - 0.5;
+    }
     void main() {
       vec2 uv = vUv;
       float ground = smoothstep(0.55, 0.0, uv.y);
@@ -109,6 +130,7 @@ const GradeShader = {
       c.g = texture2D(tDiffuse, uv).g;
       c.b = texture2D(tDiffuse, uv - off).b;
       c *= 1.0 - uVig * r2 * 1.35;
+      c = floor(c * uLevels + bayer(vUv * uRes) * 0.9) / uLevels;
       gl_FragColor = vec4(c, 1.0);
     }`,
 };
@@ -117,7 +139,7 @@ const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 let bloom = null;
 if (QUALITY === 'high') {
-  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.42, 0.75, 0.86);
+  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.85, 0.7, 0.72);
   composer.addPass(bloom);
 }
 const grade = new ShaderPass(GradeShader);
@@ -128,10 +150,12 @@ const ui = document.getElementById('ui');
 const uiCtx = ui.getContext('2d');
 
 function resize() {
+  const w = Math.round(innerWidth * PS2_SCALE), h = Math.round(innerHeight * PS2_SCALE);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-  composer.setSize(innerWidth, innerHeight);
+  renderer.setSize(w, h, false);           // false: CSS keeps it full-window
+  composer.setSize(w, h);
+  grade.uniforms.uRes.value.set(w, h);
   ui.width = innerWidth; ui.height = innerHeight;
 }
 addEventListener('resize', resize);
@@ -141,7 +165,7 @@ resize();
 const el = id => document.getElementById(id);
 const hud = {
   kph: el('kph'), n1: el('n1'), n1bar: el('n1bar'), heat: el('heat'),
-  gLat: el('glat'), slip: el('slip'), gap: el('gap'), surf: el('surf'),
+  gLat: el('glat'), slip: el('slip'), gap: el('gap'), sink: el('sink'), surf: el('surf'),
   dmg: el('dmg'), time: el('time'), gate: el('gate'), rift: el('rift'),
   pos: el('pos'), msg: el('msg'), toast: el('toast'), cluster: el('cluster'),
   compass: el('compass'),
@@ -300,7 +324,7 @@ function emitDust(v, dt) {
   const slip = Math.min(1, Math.abs(v.slip) / 8);
   const power = clamp(0.2 + slip * 0.6 + v.speed / 150 + (v.overdrive ? 0.2 : 0), 0, 1);
   // salt is packed and throws almost nothing; the dune field is what smokes
-  const yield_ = v.surf === SALT ? 0.3 : (S.drag - 0.6);
+  const yield_ = (v.surf === SALT || v.surf === ROAD) ? 0.25 : (S.drag - 0.6) + v.sink * 1.5;
   let rate = (10 + slip * 70 + v.speed * 0.5) * yield_;
   v._acc2 = (v._acc2 || 0) + rate * dt;
   const sign = Math.sign(v.slip) || 1;
@@ -409,7 +433,8 @@ function updateHud(dt) {
   hud.gLat.textContent = p.gLat.toFixed(2);
   hud.slip.textContent = Math.abs(p.slip).toFixed(1);
   hud.gap.textContent = clamp(p.gap, 0, 99).toFixed(1);
-  hud.surf.textContent = p.grounded ? SURF[p.surf].name : 'AIRBORNE';
+  hud.sink.textContent = (p.sink * 100).toFixed(0);
+  hud.surf.textContent = !p.grounded ? 'AIRBORNE' : (p.onDeck ? 'BRIDGE' : SURF[p.surf].name);
   hud.time.textContent = state.timer.toFixed(1);
   hud.time.style.color = state.timer < 10 ? '#ff8a5c' : '';
   hud.gate.textContent = state.gates;
@@ -423,7 +448,11 @@ function updateHud(dt) {
   const c = terrain.canyon(p.pos.x, p.pos.z, _cinfo);
   const inRift = c.d < 1 && c.df > 0.4;
   let tx = g.x, tz = g.z, label = g.rift ? 'RIFT GATE' : 'FLATS GATE';
-  if (g.rift && !inRift) {
+  // Either way across the rim — into the rift for a rift gate, OUT of it for
+  // a flats gate — the way is a breach, and the display has to say so. The
+  // first version only covered the way in, and the autopilot wedged itself
+  // against the far wall trying to climb out to a flats gate.
+  if (g.rift !== inRift) {
     const bz = terrain.nextBreach(p.pos.z);
     if (bz > g.z) { tz = bz; tx = terrain.canyonX(bz); label = 'BREACH'; }
   }
@@ -525,8 +554,8 @@ input.onPause = () => {
 
 hud.msg.innerHTML =
   '<img class="logo" src="logo.png" alt="POWDER">' +
-  '<br><small>THE SALT IN THE RIFT IS THE FASTEST GROUND THERE IS.' +
-  '<br>THE WALLS ARE SIXTY DEGREES. FIND THE BREACHES.</small>' +
+  '<br><small>ROCKETS ON THE NOSE. POWER PULLS YOU STRAIGHT; LIFT OFF AND THE TAIL COMES ROUND.' +
+  '<br>THE SAND SINKS. THE SALT IN THE RIFT IS FAST. THE BRIDGES CROSS IT — OR ROOF IT.</small>' +
   '<br><small style="opacity:.65">W THROTTLE &nbsp; A / D STEER &nbsp; S BRAKE &nbsp; SPACE OVERDRIVE' +
   '<br>TOUCH: LEFT STICK STEER + THROTTLE &nbsp;·&nbsp; RIGHT STICK OVERDRIVE</small>' +
   '<br><small style="opacity:.65">ENTER / TAP TO DROP IN</small>';

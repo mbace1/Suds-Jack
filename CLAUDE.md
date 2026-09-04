@@ -91,6 +91,20 @@ pads, so the breakaway is real and comes sooner when the craft is light over a c
 **Walls are not special-cased**: any ground steeper than ~34 degrees that you are closing
 on returns an impulse along its normal, so canyon walls, mesa sides and boulder flanks
 all behave without knowing about each other.
+**Front drive (v4).** The sleds are rocket-propelled at the FRONT and handle like a
+front-wheel-drive hot rod, and none of it is scripted: thrust acts along the *steered*
+nose (so under power the nose is pulled through the corner — the yaw moment is
+`+hl * thrust * sin(delta)` in this right-positive yaw convention), grip is per axle from
+the loads the pads are already carrying, the driven front's traction circle loses what
+the thrust is using (`circle`), and lifting off transfers load forward, unloads the rear,
+and the tail comes round. **`circle` was measured, not guessed**: at 0.55 the front had
+*no* lateral force under full power — thrust is ~1.2 g here against a ~6 kN axle — and
+the sled could only push; 0.18 takes ~15% off the front at full throttle, which is a hot
+rod's push rather than a lost nose. The sand **sinks**: each runner settles toward the
+surface's `sink` under load (time constants 0.30 s in, 0.55 s out) and the lateral bite
+is filtered by the surface's `shear` — 0.22 s on deep sand — which is the ground shifting
+under you mid-carve. The pads push along the surface **normal**, not straight up; on the
+flat that changes nothing, on the mountain it is what pulls you down the grade.
 
 **Four sign errors were paid for here and not one of them looked like a sign error.**
 Getting the pad pitch moment backwards does not read as a wrong sign, it reads as the
@@ -105,9 +119,14 @@ whole field spawned backwards. All four are commented at the site.
 
 **The world** (`js/terrain.js`). Open, not a ribbon: `height(x, z)` is a pure function,
 and the tile meshes, the hover pads, the props and the dust all read it, so they cannot
-disagree. Streamed as an 11x11 grid of 100 m tiles around the craft. The flats are a
-near-level dune field with mesas standing on them; the rift is a meandering 30-50 m
-canyon with a salt floor — the fastest surface in the game and the tightest.
+disagree. Streamed as an 11x11 grid of 100 m tiles around the craft. The whole field is a
+**mellow mountain** (`GRADE` 4.5% down the route) of white sand with mesas standing on it;
+the rift is a meandering 70-130 m canyon with a salt floor — the fastest surface in the
+game. **Roads cross it** every 940 m (`ROAD_CYCLE`, phase −150), each carried over the
+rift on a **bridge deck** you can ride or run under. A heightfield cannot hold a bridge,
+so the deck is NOT in `height()`: `groundUnder(x, z, y)` is the two-layer query the
+runners use — the deck when you are at or above it, the floor otherwise — and the piers
+are registered as boulders so they collide.
 **The breaches are the load-bearing idea.** The walls are ~60 degrees and unclimbable, so
 without shallow sections the canyon is a trap you enter and never leave; the breaches are
 the on-ramps and they set the rhythm of a run. Their width was **measured, not guessed**:
@@ -117,15 +136,23 @@ drivable now, and that is what turns the canyon from scenery into a route.
 `js/route.js` lays gates alternately on the deepest rift floor and beside a breach out on
 the flats, at **half the terrain's breach cycle** — decoupling those two numbers puts a
 gate on a canyon floor with no reachable entrance for 400 m. The HUD points at the
-**breach** rather than the gate whenever the gate is in the rift and you are not, because
-without that the display is telling you to drive at something you cannot reach.
+**breach** rather than the gate whenever you and the gate are on opposite sides of the rim
+— *either* way — because without that the display is telling you to drive at something
+you cannot reach. The first version only covered the way in, and the autopilot wedged
+itself against the far wall trying to climb out to a flats gate.
 
 **The look** (`js/sky.js`, `js/props.js`, and the grade pass in `main.js`). Violet zenith
-into an amber horizon; a low raking key so everything standing up throws its length
+through purple into a lilac horizon over white-grey sand (v4: "more whites and greys in
+the sand, more purples in the sky"); a low raking key so everything standing up throws its length
 across the flats; a cold fill from behind that nothing in a desert would have; rock that
 hangs in the air and turns; arches with nothing holding them up; slabs too regular to be
-geology. Post is bloom, vignette, mild chromatic aberration, and a heat shimmer that only
-bites near the bottom of the frame. **The ringed body must sit AHEAD (-z)** — parked
+geology. Post is bloom (strong, threshold 0.72, and the sun disc is drawn **over-white** —
+`MeshBasic` does not clamp — so it is the one thing in the sky that blooms), vignette,
+mild chromatic aberration, a heat shimmer that only bites near the bottom of the frame,
+and (v4, "more PS2-like") a **posterise to 36 levels with a 4x4 Bayer dither**. The PS2 is
+in the renderer too: the framebuffer is **0.62x the window, upscaled soft** by the browser
+(no `image-rendering: pixelated` — that is the other console), materials are Lambert, the
+shadow map is 1024 and hard (`PCFShadowMap`). **The ringed body must sit AHEAD (-z)** — parked
 behind the player it is the best thing in the sky and nobody ever sees it.
 Four rules that keep being relearned, now written into the files: **`horizon` and `fog`
 must be the same value** or the ground stops at a hard seam; **anything large and dark
@@ -140,7 +167,8 @@ shadows, bloom and antialiasing are exactly what a weak machine cannot afford an
 what this look is made of.
 
 **Controls.** W throttle, A/D steer, S brake, Space overdrive (builds turbine heat and
-trips out at redline), Esc pause. Touch is twin sticks: left steers and works the
+trips out at redline), Esc pause. The HUD is a telemetry cluster: N1, TGT, lateral g,
+slip, hover gap, **sink** (cm the runners have settled), surface. Touch is twin sticks: left steers and works the
 throttle — there is no auto-throttle, managing spool is the point — right holds overdrive
 and trims the slide.
 
