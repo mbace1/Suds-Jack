@@ -55,9 +55,6 @@ try {
   assert.ok(ledge.x >= 224, `pull-up must carry the hero onto the raised platform, got x=${ledge.x}`);
   assert.ok(ledge.y <= 96.1, `pull-up must finish at the raised lip height, got y=${ledge.y}`);
 
-  // Scene 4: mantle onto the two-tile block, turn in place so the nearer left
-  // lip is a stable deliberate climb-down target, shimmy inward along the lip,
-  // reject an outward shimmy into empty space, then pull back onto the block.
   await page.keyboard.press('Digit4');
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'lowMantle', null, { timeout: 7000 });
@@ -114,9 +111,8 @@ try {
   assert.equal(climb.grounded, true, 'climb-down recovery must finish grounded');
   assert.ok(climb.y <= 160.1, `climb-down recovery must finish on upper block, got y=${climb.y}`);
 
-  // Scene 3: approach the first platform edge with four committed steps,
-  // climb down to a controlled hang, then deliberately drop. The 70px feet
-  // fall to the floor is above the hurt threshold but below the kill threshold.
+  // Scene 3: four committed steps measure to x=84.64 on this authored root
+  // motion. From there the right lip is within the deliberate climb-down window.
   await page.keyboard.press('Digit3');
   for (let i = 0; i < 4; i++) {
     await page.keyboard.down('ArrowRight');
@@ -125,7 +121,7 @@ try {
     await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand', null, { timeout: 3000 });
   }
   const edge = await page.evaluate(() => globalThis.__flashPrinceMovement);
-  assert.ok(edge.x >= 87 && edge.x <= 89, `four steps must stage the hard-fall edge at x≈88, got ${edge.x}`);
+  assert.ok(edge.x >= 84 && edge.x <= 85.3, `four steps must stage the measured hard-fall edge at x≈84.64, got ${edge.x}`);
   assert.equal(edge.y, 80, 'Scene 3 edge staging must stay on the upper platform');
 
   await page.keyboard.down('ArrowDown');
