@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=54';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=54';
+import { PAL, mix } from './palette.js?v=55';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=55';
 
-import { ROOMS, LAB } from './rooms.js?v=54';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=54';
+import { ROOMS, LAB } from './rooms.js?v=55';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=55';
 
 export { ROOMS, LAB };
 const EPS = 0.001;
@@ -45,25 +45,31 @@ const EPS = 0.001;
 //   nightshift   the whole ramp toward INK. Not "the same earth, darker" — a
 //                warm brown goes BLUE before it goes black at night, so the
 //                mix is toward the ink the night sky already uses.
+//
+// v15.51: the mixes were roughly doubled, because at the strengths above
+// all four worlds still screenshotted as the same brown — Lambert and the
+// detail map between them flatten a 15% tint to nothing a phone can see.
+// And the night ramp goes toward SKY as well as INK: the blue is what says
+// "night" rather than "dim".
 const EARTH_FOR = {
   groundworks: (E) => [E[0], mix(E[1], E[0], 0.5), E[1], E[2]],
   pipeworks: (E) => [
-    mix(E[0], PAL.STEEL[0], 0.22),
-    mix(mix(E[1], E[0], 0.5), PAL.STEEL[0], 0.2),
-    mix(E[1], PAL.STEEL[1], 0.16),
-    mix(E[2], PAL.STEEL[2], 0.14),
+    mix(E[0], PAL.STEEL[0], 0.4),
+    mix(mix(E[1], E[0], 0.5), PAL.STEEL[0], 0.36),
+    mix(E[1], PAL.STEEL[1], 0.32),
+    mix(E[2], PAL.STEEL[2], 0.28),
   ],
   grove: (E) => [
-    mix(E[0], PAL.INK, 0.22),
-    mix(mix(E[1], E[0], 0.5), PAL.INK, 0.16),
-    mix(E[1], PAL.GREEN_DK, 0.12),
-    mix(E[2], PAL.GREEN_DK, 0.28),
+    mix(E[0], PAL.INK, 0.32),
+    mix(mix(E[1], E[0], 0.5), PAL.INK, 0.24),
+    mix(E[1], PAL.GREEN_DK, 0.22),
+    mix(E[2], PAL.GREEN_DK, 0.38),
   ],
   nightshift: (E) => [
-    mix(E[0], PAL.INK, 0.55),
-    mix(mix(E[1], E[0], 0.5), PAL.INK, 0.48),
-    mix(E[1], PAL.INK, 0.42),
-    mix(E[2], PAL.INK, 0.36),
+    mix(mix(E[0], PAL.INK, 0.58), PAL.SKY, 0.14),
+    mix(mix(mix(E[1], E[0], 0.5), PAL.INK, 0.5), PAL.SKY, 0.13),
+    mix(mix(E[1], PAL.INK, 0.44), PAL.SKY, 0.12),
+    mix(mix(E[2], PAL.INK, 0.38), PAL.SKY, 0.1),
   ],
 };
 
@@ -72,9 +78,9 @@ const EARTH_FOR = {
 // the first thing that gives the reuse away.
 const LIP_FOR = {
   groundworks: (g) => g,
-  pipeworks: (g) => mix(g, PAL.STEEL[2], 0.2),
+  pipeworks: (g) => mix(g, PAL.STEEL[2], 0.3),
   grove: (g) => mix(g, PAL.GREEN_DK, 0.45),
-  nightshift: (g) => mix(g, PAL.INK, 0.45),
+  nightshift: (g) => mix(mix(g, PAL.INK, 0.48), PAL.SKY, 0.12),
 };
 
 export class Level {
@@ -279,12 +285,37 @@ export class Level {
     // those are belongs to the world (see EARTH_FOR at the top of this file)
     const STRATA = EARTH_FOR[this.world](PAL.EARTH);
     const strata = (cy) => STRATA[Math.min(cy, STRATA.length - 1)];
+    // ABOVE THE TOPSOIL EVERY ROW IS THE SAME CARD, so a two-row mound was
+    // one flat rectangle with a grass strip on it (v15.50's screenshots, all
+    // four worlds). A mound in a hand-built set is card layers STACKED, and
+    // the read of that is that no two adjacent layers are quite the same
+    // tone. Alternate rows step a little toward ink; the tongues between
+    // rows, which were invisible between two identical bands, now show.
+    const tone = (cy) => (cy >= STRATA.length && cy % 2 ? mix(strata(cy), PAL.INK, 0.08) : strata(cy));
     const mat = {
       lip:   new THREE.MeshLambertMaterial({ color: LIP_FOR[this.world](PAL.GREEN) }),
       shade: new THREE.MeshLambertMaterial({ color: mix(STRATA[0], PAL.INK, 0.45) }),
       back:  new THREE.MeshLambertMaterial({ color: mix(STRATA[0], PAL.INK, 0.5) }),
-      cut:   new THREE.MeshLambertMaterial({ color: mix(STRATA[3], PAL.EARTH[3], 0.6) }),
-      steel: new THREE.MeshLambertMaterial({ color: PAL.STEEL[2] }),
+      // a FRESH cut is lighter than the weathered face it is cut through,
+      // and it has a shadow line where the corrugation turns in
+      cut:   new THREE.MeshLambertMaterial({ color: mix(mix(STRATA[3], PAL.EARTH[3], 0.6), PAL.CLOUD, 0.3) }),
+      cutDk: new THREE.MeshLambertMaterial({ color: mix(STRATA[0], PAL.INK, 0.5) }),
+      // THE KEY IS UPPER-LEFT (ART_BRIEF §3.1: "a single darker tone for
+      // side faces, shading painted in, key from upper-left"). So the
+      // right-hand cut of any mound is in its own shadow, and a mound
+      // throws a shadow to its right onto whatever it stands on. Neither
+      // is a cast shadow — the scene has no shadow map and the brief keeps
+      // the light soft — both are painted in, and between them they are
+      // what makes a rectangle read as a block standing on a floor.
+      cutR:   new THREE.MeshLambertMaterial({ color: mix(mix(mix(STRATA[3], PAL.EARTH[3], 0.6), PAL.CLOUD, 0.3), PAL.INK, 0.3) }),
+      shadow: new THREE.MeshBasicMaterial({ color: PAL.INK, transparent: true, opacity: 0.3, depthWrite: false }),
+      // pressed steel in three tones: the painted body, the lit top plate,
+      // and the raw edge where the paint stops — one value cannot say
+      // "plate", three can
+      steel:     new THREE.MeshLambertMaterial({ color: PAL.STEEL[2] }),
+      steelDk:   new THREE.MeshLambertMaterial({ color: mix(PAL.STEEL[2], PAL.INK, 0.16) }),
+      steelLt:   new THREE.MeshLambertMaterial({ color: PAL.STEEL[3] }),
+      steelEdge: new THREE.MeshLambertMaterial({ color: PAL.STEEL[0] }),
       girder:new THREE.MeshLambertMaterial({ color: PAL.STEEL[1] }),
       bolt:  new THREE.MeshLambertMaterial({ color: PAL.DARK }),
     };
@@ -303,9 +334,12 @@ export class Level {
       return dirtMats.get(k);
     };
     // each surface takes the material it would really be made of
-    craft(mat.cut, 'flute'); craft(mat.shade, 'flute'); craft(mat.back, 'card');
+    craft(mat.cut, 'flutecoarse'); craft(mat.cutR, 'flutecoarse'); craft(mat.cutDk, 'flute');
+    craft(mat.shade, 'flute'); craft(mat.back, 'card');
     craft(mat.lip, 'felt');                              // grass is felt
-    craft(mat.steel, 'balsa'); craft(mat.girder, 'balsa'); // painted wood
+    for (const k of ['steel', 'steelDk', 'steelLt', 'steelEdge', 'girder']) {
+      craft(mat[k], 'balsa');                            // painted wood
+    }
     const box = (w, h, d, m, x, y, z) => {
       const mesh = craftBox(w, h, d, m);
       mesh.position.set(x, y, z);
@@ -315,10 +349,15 @@ export class Level {
 
     // the deep earth below the playable band — banded, so the eye has
     // somewhere to go, and darkening downward the way a real cut does
+    // …and they start from the WORLD's deepest stratum. They used to start
+    // from raw PAL.EARTH[0], which is how a third of every frame — the band
+    // under the play row — came out the identical brown in all four worlds
+    // whatever EARTH_FOR said above it. That was most of "the earth is the
+    // same everywhere", and it was one identifier.
     const DEEP = [
-      { y0: -1.6, y1: 0, c: mix(PAL.EARTH[0], PAL.INK, 0.12) },
-      { y0: -4.2, y1: -1.6, c: mix(PAL.EARTH[0], PAL.INK, 0.26) },
-      { y0: -10, y1: -4.2, c: mix(PAL.EARTH[0], PAL.INK, 0.4) },
+      { y0: -1.6, y1: 0, c: mix(STRATA[0], PAL.INK, 0.12) },
+      { y0: -4.2, y1: -1.6, c: mix(STRATA[0], PAL.INK, 0.26) },
+      { y0: -10, y1: -4.2, c: mix(STRATA[0], PAL.INK, 0.4) },
     ];
     const DEEP_MAT = ['packed', 'packed', 'gritty'];
     DEEP.forEach((b, i) => {
@@ -388,7 +427,17 @@ export class Level {
       { n: 'f_drum',   w: 1.1, h: 0.9,  k: 1 },
       { n: 'f_bottle', w: 0.4, h: 0.5,  k: 1 },
     ];
-    const bag = FEATURES.flatMap((f) => Array(f.k).fill(f));
+    // WHAT IS BURIED DEPENDS ON WHERE YOU ARE. A forest floor is roots and
+    // stones; a pumphouse trench is pipe, brick and a drum; a depot at night
+    // is drums, bottles and pipe. The bag is re-weighted per world rather
+    // than re-authored — same seven cutouts, different odds — which is
+    // ART_TARGET rung 6's "material identity per world" at zero asset cost.
+    const FEATURE_K = ({
+      pipeworks:  { f_pipe: 6, f_brick: 5, f_drum: 3, f_root: 0, f_stones: 3 },
+      grove:      { f_root: 7, f_stones: 6, f_stone: 6, f_pipe: 0, f_brick: 1, f_drum: 0 },
+      nightshift: { f_drum: 3, f_bottle: 3, f_pipe: 4, f_root: 1 },
+    })[this.world] || {};
+    const bag = FEATURES.flatMap((f) => Array(FEATURE_K[f.n] ?? f.k).fill(f));
     let placed = 0;
     for (let i = 0; i < 90 && placed < 40; i++) {
       const f = bag[(rnd() * bag.length) | 0];
@@ -427,12 +476,12 @@ export class Level {
         const cy = H - 1 - r;
         const cx = (c + e + 1) / 2, w = e - c + 1;
         if (ch === '#') {
-          box(w, 1, 1.6, dirtMat(strata(cy), section(cy)), cx, cy + 0.5, 0);
+          box(w, 1, 1.6, dirtMat(tone(cy), section(cy)), cx, cy + 0.5, 0);
           // …and the boundary with the stratum below wanders, per run, so a
           // dug hole is never bridged
           if (cy >= 1) {
-            tongues(cy, dirtMat(strata(cy), section(cy)),
-                    dirtMat(strata(cy - 1), section(cy - 1)), c, e + 1, 6);
+            tongues(cy, dirtMat(tone(cy), section(cy)),
+                    dirtMat(tone(cy - 1), section(cy - 1)), c, e + 1, 6);
           }
           // grass lip on tops with air above — the ACCENT GREEN "safe edge"
           // role — and a hard shadow under it. The lip is where the game is
@@ -452,12 +501,30 @@ export class Level {
             fr.position.set(cx, cy + 1.12, 0.85);
             group.add(fr);
           }
-          // a fresh cut edge either side of a hole, so the rim is drawn
-          if (c > 0 && this.map[r][c - 1] === ' ' && cy >= 1) {
-            box(0.16, 1, 1.7, mat.cut, c + 0.05, cy + 0.5, 0);
-          }
+          // THE CUT EDGE IS THE MATERIAL. Where a run of earth meets air on
+          // its side, what you see is a section through card, and a section
+          // through card shows its FLUTING and its THICKNESS. The old rim was
+          // a 0.16 hairline of one tone — at 32 px a line, not an edge, which
+          // is why every mound in every world's screenshot read as a brown
+          // rectangle with a grass strip on it. ART_TARGET rung 1b: "where a
+          // flat ends, paint its thickness." So: wider, the COARSE flute, a
+          // lighter value than the face (the cut is fresh, the face is
+          // weathered), and a dark line on the inside where the corrugation
+          // turns into shadow. Two tones is the minimum for thickness to read.
+          const cutEdge = (x, inward) => {
+            box(0.38, 1, 1.7, inward > 0 ? mat.cut : mat.cutR, x, cy + 0.5, 0);
+            box(0.06, 1, 1.72, mat.cutDk, x + inward * 0.19, cy + 0.5, 0);
+          };
+          if (c > 0 && this.map[r][c - 1] === ' ' && cy >= 1) cutEdge(c + 0.19, 1);
           if (e < W - 1 && this.map[r][e + 1] === ' ' && cy >= 1) {
-            box(0.16, 1, 1.7, mat.cut, e + 0.95, cy + 0.5, 0);
+            cutEdge(e + 0.81, -1);
+            // the painted shadow at the foot of the right-hand face, on the
+            // floor it stands on — only where there IS a floor there
+            if (this.solidCell(e + 1, cy - 1)) {
+              const sh = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.16), mat.shadow);
+              sh.position.set(e + 1.35, cy + 0.06, 0.88);
+              group.add(sh);
+            }
           }
 
           // A RAISED PLATFORM IS A SLAB, NOT A HOLE IN THE SKY.
@@ -482,21 +549,72 @@ export class Level {
           //
           // Depth 1.62/1.64 rather than 1.6: these sit a hair proud of the
           // slab so they win the z-fight outright instead of shimmering.
+          //
+          // v15.50: the face is PANELS, not one band. One card panel per
+          // ~3 tiles, each lapped 0.12 over the last, a hair proud of it and
+          // a hair off in tone — a slab in a hand-built set is boards over a
+          // frame, and the lap is what says so (rung 1b: "overlapping
+          // panels with a visible lap, never a flush join"). The underside
+          // is a cut like the ends, in the coarse flute.
           if (r + 1 < H && this.map[r + 1][c] === ' ') {
             const base = strata(cy);
-            box(w, 0.5, 1.62, dirtMat(mix(base, PAL.INK, 0.14), section(cy)),
-                cx, cy + 0.34, 0);
-            box(w, 0.17, 1.64, dirtMat(mix(base, PAL.INK, 0.34), section(cy)),
+            const nP = Math.max(1, Math.round(w / 3)), pw = w / nP;
+            for (let i = 0; i < nP; i++) {
+              const x0 = c + pw * i - (i > 0 ? 0.12 : 0), x1 = c + pw * (i + 1);
+              const odd = i % 2;
+              box(x1 - x0, 0.5 + odd * 0.04, 1.62 + odd * 0.02,
+                  dirtMat(mix(base, PAL.INK, odd ? 0.19 : 0.14), section(cy)),
+                  (x0 + x1) / 2, cy + 0.34, 0);
+            }
+            box(w, 0.17, 1.66, dirtMat(mix(base, PAL.INK, 0.34), 'flutecoarse'),
                 cx, cy + 0.085, 0);
           }
         } else if (ch === '=') {
-          box(w, 0.5, 1.4, mat.steel, cx, cy + 0.72, 0);
+          // A PLATFORM IS PRESSED STEEL PLATE OVER A FRAME, and it has to
+          // say so at 32 px. It was one slab of one value with a bolt at
+          // each end, and in every world's screenshot it was the flattest
+          // thing on screen — the one piece in the lane you could not say
+          // what it was made of (ART_TARGET §2b, "made of identifiable
+          // stuff", the biggest gap in either audit). Rung 1b's list,
+          // applied in full: overlapping PANELS with a visible lap, a lit
+          // top plate, FIXINGS along the length rather than only at the
+          // ends, an honest raw CUT EDGE where the paint stops, a bracket
+          // under each end holding it up, and a little imperfection — no
+          // two panels sit at quite the same height.
+          const nP = Math.max(1, Math.round(w / 2)), pw = w / nP;
+          for (let i = 0; i < nP; i++) {
+            const x0 = c + pw * i - (i > 0 ? 0.1 : 0), x1 = c + pw * (i + 1);
+            const odd = i % 2, j = odd * 0.025, px = (x0 + x1) / 2;
+            box(x1 - x0, 0.42, 1.4 + odd * 0.03, odd ? mat.steelDk : mat.steel, px, cy + 0.74 + j, 0);
+            box(x1 - x0, 0.07, 1.42 + odd * 0.03, mat.steelLt, px, cy + 0.965 + j, 0);
+          }
           box(w, 0.1, 1.44, mat.girder, cx, cy + 0.5, 0); // darker underside band
-          // bolt heads at the ends — the shared detail motif (§3.6)
-          for (const bx of [c + 0.3, e + 0.7]) {
+          // the plate's painted shadow on the ground beneath it, pushed
+          // right by the upper-left key — one strip per run of floor
+          for (let i = c; i <= e; i++) {
+            if (!this.solidCell(i, cy - 1)) continue;
+            let j = i;
+            while (j < e && this.solidCell(j + 1, cy - 1)) j++;
+            const sh = new THREE.Mesh(new THREE.PlaneGeometry(j - i + 1, 0.16), mat.shadow);
+            sh.position.set((i + j + 1) / 2 + 0.3, cy + 0.06, 0.88);
+            group.add(sh);
+            i = j;
+          }
+          for (const ex of [c + 0.06, e + 0.94]) {        // the raw edge
+            box(0.12, 0.5, 1.46, mat.steelEdge, ex, cy + 0.74, 0);
+          }
+          for (const bx of [c + 0.35, e + 0.65]) {        // angle brackets
+            box(0.34, 0.12, 0.9, mat.girder, bx, cy + 0.42, 0);
+            box(0.12, 0.3, 0.9, mat.girder, bx, cy + 0.32, 0);
+          }
+          // bolt heads — the shared detail motif (§3.6) — at the ends AND
+          // at every lap, so the panels read as bolted down, not laid on
+          const bolts = [c + 0.3, e + 0.7];
+          for (let i = 1; i < nP; i++) bolts.push(c + pw * i - 0.02);
+          for (const bx of bolts) {
             const b = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.08, 6), mat.bolt);
             b.rotation.x = Math.PI / 2;
-            b.position.set(bx, cy + 0.72, 0.74);
+            b.position.set(bx, cy + 0.74, 0.76);
             group.add(b);
           }
         } else if (ch === 'C' || ch === 'c') {

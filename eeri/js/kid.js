@@ -9,10 +9,10 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=54';
+import { PAL } from './palette.js?v=55';
 // The silhouette line lives in craft.js, not here: robots.js needs the same
 // one, and two copies of a silhouette rule is how two silhouettes start.
-import { outlineShell } from './craft.js?v=54';
+import { outlineShell } from './craft.js?v=55';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 

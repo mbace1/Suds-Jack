@@ -1,5 +1,99 @@
 # EERI — versions
 
+## v15.51 — 2026-09-04 — the ground is not the same ground (per-world earth, and a key from upper-left)
+
+**No gameplay changed.** The band under the play row is a third of every
+frame of the game, and it was the identical brown in all four worlds.
+`EARTH_FOR` — the table that tints the strata per world — existed and was
+doing its job; the three DEEP bands below it started from raw
+`PAL.EARTH[0]` and ignored it entirely. One identifier. The mixes above
+were also too timid to survive Lambert and a detail map on a phone, so
+they are roughly doubled, and the night ramp now goes toward `SKY` as
+well as `INK`, because blue is what says "night" rather than "dim".
+
+**What is buried depends on where you are.** The seven buried cutouts
+(stones, brick, pipe, root, drum, bottle) are re-weighted per world
+rather than re-authored — roots and stones in the grove, pipe and brick
+in the trench, drums and bottles on the night shift. `ART_TARGET` rung
+6's "material identity per world" at zero asset cost.
+
+**Owner direction this session: "some level elements may benefit from
+looking 3D."** Tried honestly first: the camera pitched down 6° and
+10° (`camera.js` aims at `y − 0.4` from 34 units out, i.e. 0.7°). At
+this depth — the lane's boxes are 1.6 units deep — a top face comes to
+nine pixels at most, and the frame fills with earth and loses the sky.
+Not the answer; reverted, pictures kept. The 3D read has to come from
+the pieces, and `ART_BRIEF` §3.1 already says how: "a single darker tone
+for side faces, shading painted in, key from upper-left." So:
+
+- the RIGHT-hand cut of every mound is a step darker than the left (its
+  own shadow under an upper-left key);
+- a mound throws a painted shadow strip onto the floor at the foot of
+  its right-hand face, and a steel platform throws one onto the ground
+  beneath it, pushed right — only where there is a floor to catch it.
+
+Neither is a cast shadow. The scene has no shadow map and the brief
+keeps the light soft; these are `MeshBasicMaterial` planes at 30% ink,
+and they are the cheapest cue there is that a shape is a block standing
+on a floor rather than a rectangle laid on a picture.
+
+Verified by picture, one level per world, against the same four frames
+taken before v15.50. Groundworks is unchanged by design — it is what the
+others are judged against.
+
+Godot: nothing to port from this — `rooms.js` untouched.
+
+`node test/rooms.mjs` 246, `fx-smoke.mjs` 31, `dev-menu.mjs` 36,
+`smoke.cjs` 429, `playthrough.cjs` 25.
+
+## v15.50 — 2026-09-04 — the play lane is made of something (rung 1b, on the pieces you stand on)
+
+**No gameplay changed.** Four levels were screenshotted, one per world,
+and the backdrops passed the audit `ART_TARGET.md` §2b sets — "made of
+identifiable stuff, visible construction" — while the PLAY LANE failed it
+in every one. The `=` steel platform was one slab of one value with a bolt
+at each end; a raised earth slab was one band; a mound was a brown
+rectangle with a grass strip, because every row above the topsoil clamps
+to the same stratum colour and its cut edge was a 0.16-unit hairline. At
+32 px per tile those are lines, not edges, and the lane the player looks
+at hardest was the least built thing on screen.
+
+`js/level.js`'s tile painter, rung 1b's list applied to the three pieces:
+
+- **The platform** is pressed steel plate over a frame: panels of ~2 tiles
+  lapped 0.1 over each other, alternate panels a hair proud and a step
+  darker (no two at quite the same height — the deliberate imperfection),
+  a lit top plate in `STEEL[3]`, a raw `STEEL[0]` cut edge at each end
+  where the paint stops, an angle bracket under each end, and bolt heads
+  at every lap as well as the ends — the §3.6 motif, now saying "bolted
+  down" rather than "two dots".
+- **The raised slab** face is card panels (~3 tiles, lapped 0.12,
+  alternate tone) over a `flutecoarse` underside cut.
+- **The cut edge** either side of a hole is 0.38 wide in the coarse flute,
+  lighter than the face it is cut through (a fresh cut is), with a dark
+  line inside where the corrugation turns into shadow — two tones, the
+  minimum for a thickness to read as a thickness.
+- **Mound rows** above the topsoil alternate tone, so a stack of card
+  layers reads as a stack and the tongues between them, invisible between
+  two identical bands, show.
+
+No new palette value: every tone is a `mix()` of `PAL` entries. No new
+texture: `flutecoarse` and `balsa` were already live. Verified by picture
+(before/after crops of Level 1, 4 and 7 at 2.5×) — the platform reads as
+plate, the mound edge is an edge; the mound FACE is better but still the
+flattest thing in the lane, and that is the next slice (a per-world earth
+material, which is Art's, not this file's).
+
+Godot: nothing to port — `rooms.js` is untouched, so the exporter's
+allow-list is not in play; the port draws its own play lane and the
+equivalent polish there is a follow-up in `godot/scenes/`.
+
+`node test/rooms.mjs` 246, `fx-smoke.mjs` 31, `dev-menu.mjs` 36,
+`smoke.cjs` 429, `playthrough.cjs` 25 — all equal to the baseline taken
+before the change.
+
+`?v=54` → `?v=55` across the module graph.
+
 ## v15.49 — 2026-08-28 — one authored camera moment per world (Phase C)
 
 **PHASING §3 Phase C asks for "one authored camera moment per world — a
