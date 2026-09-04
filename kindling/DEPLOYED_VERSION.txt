@@ -1,3 +1,4 @@
-Kindling v13
-canonical source: mbace1/Kindling@2c5d4930bf2ab36d82adabb38f6829177e365b87
+Kindling v16
+canonical source: mbace1/Kindling@d2e65912353be53e5adef5fc68f5cb7e4b64031d
 static hub build: npm run build:hub
+visual pass: camp depth + four upgraded Journey regions
