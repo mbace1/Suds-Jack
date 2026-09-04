@@ -22,8 +22,9 @@ jobs:
           node-version: 22
       - name: deterministic movement contract
         run: npm --prefix flashprince test
-      - name: browser movement lab
+      - name: browser playable + movement lab
         run: |
           npm install --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
+          node flashprince/test/playable-smoke.mjs
           node flashprince/test/browser-smoke.mjs
