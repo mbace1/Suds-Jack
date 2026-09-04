@@ -41,6 +41,7 @@ for (const [from, to] of [
 const strict = new StateMachine({ initial: 'stand', transitions: MOVEMENT_TRANSITIONS, strict: true });
 assert.throws(() => strict.go('hang'), /Illegal state transition/, 'impossible stand -> hang still fails loudly'); checks++;
 
+const baseHeroSource = await readFile(new URL('../js/hero.js', import.meta.url), 'utf8');
 const heroSource = await readFile(new URL('../js/movement-hero.js', import.meta.url), 'utf8');
 const v3Source = await readFile(new URL('../js/movement-hero-v3.js', import.meta.url), 'utf8');
 const diagSource = await readFile(new URL('../js/movement-diagnostics.js', import.meta.url), 'utf8');
@@ -51,8 +52,8 @@ for (const sourceEdge of [
   "this.go('runStart')",
   "this.go(input.dir === this.face ? 'step' : 'stand')",
   "this.go('landRun')",
-  "this.go('landHard')",
-]) ok(heroSource.includes(sourceEdge), `runtime source still contains expected edge: ${sourceEdge}`);
+]) ok(heroSource.includes(sourceEdge), `movement runtime still contains expected edge: ${sourceEdge}`);
+ok(baseHeroSource.includes("this.go('landHard')"), 'base collision runtime still promotes damaging falls to landHard');
 ok(v3Source.includes('transitionFaults'), 'V3 runtime counts transition faults');
 ok(v3Source.includes('StateMachine'), 'V3 runtime routes transitions through shared StateMachine');
 ok(diagSource.includes("FP-MOVE-9"), 'diagnostics expose the visible movement build id');
