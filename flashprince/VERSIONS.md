@@ -4,6 +4,18 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v6 — 2026-09-04
+
+Playable-entry hotfix. The Hub cabinet had accidentally been wired to the Rotoscope movement lab instead of the actual campaign loop, so movement CI could be green while the public game was not a valid end-to-end build.
+
+- `/flashprince/` now launches the real campaign through `js/main.js?v=9`.
+- The Rotoscope 3.0 movement lab remains available separately at `/flashprince/movement-lab.html` and keeps build marker **FP-MOVE-8**.
+- Added a Chromium playable-entry regression that opens the exact Hub route, advances the opening screen with player input, and verifies the campaign continues updating without page or console errors.
+- The existing Chromium movement regressions now explicitly run against the separate movement-lab URL, preventing test infrastructure from silently replacing the public game again.
+- CI now gates both the real Hub playable path and the movement laboratory independently.
+
+Movement work resumes only after this Hub route is verified playable.
+
 ## v5 — 2026-09-04
 
 Broken Transit is now covered as a complete browser-played traversal sequence rather than isolated state assertions.
@@ -70,39 +82,20 @@ feel generated.
   it cut, hatch blown off, still venting
 - `chasm` — no far side: mist all the way down with something lit at the
   bottom of it, which is the only reason you can tell it is far
-- `understory` — down among it, a ceiling of leaves overhead and undergrowth
-  at your feet, the sky only a rumour
-- `canopy` — above it, the mist now a sea below you with the tops of the trees
-  coming up through it
+- `understory` — down among it, a ceiling of leaves overhead and undergrowth at your feet, the sky only a rumour
+- `canopy` — above it, the mist now a sea below you with the tops of the trees coming up through it
 - `firstStone` — the first thing anybody built, seen through the last trees
-- `colonnade` — two near columns in black across screen 9, which is what tells
-  it apart from screen 8: both are cut block with glyphs, and at a glance they
-  were the same picture
+- `colonnade` — two near columns in black across screen 9, which is what tells it apart from screen 8: both are cut block with glyphs, and at a glance they were the same picture
 
 ## v1 — 2026-07-27
 
-First build. A cinematic platformer in the Another World idiom: filled
-polygons quantised to sixteen colours, rotoscoped skeletal animation, fixed
-screens with a hard cut between them.
+First build. A cinematic platformer in the Another World idiom: filled polygons quantised to sixteen colours, rotoscoped skeletal animation, fixed screens with a hard cut between them.
 
-- **Movement is committed.** Every grounded move is a scripted length — a step
-  is 22 frames and carries 12px, a turn is 18, a mantle is 40 — and the stick
-  is not connected to anything until the move declares itself open. Tap a
-  direction for one step, hold it and the step runs on into a run.
-- **The ledge.** Walk off an edge and he catches it rather than falls; hold
-  toward a lip in the air and he grabs it; up mantles him over. A standing jump
-  rises 27px, so his hands reach a lip 53px up, so a 48px storey is climbable —
-  every distance in the level is measured off those numbers.
+- **Movement is committed.** Every grounded move is a scripted length — a step is 22 frames and carries 12px, a turn is 18, a mantle is 40 — and the stick is not connected to anything until the move declares itself open. Tap a direction for one step, hold it and the step runs on into a run.
+- **The ledge.** Walk off an edge and he catches it rather than falls; hold toward a lip in the air and he grabs it; up mantles him over. A standing jump rises 27px, so his hands reach a lip 53px up, so a 48px storey is climbable — every distance in the level is measured off those numbers.
 - **Falls.** One storey free, two hurt, three kill. Prince of Persia's ladder.
-- **The duel.** A sentry takes 68 frames from seeing you to firing (spot 26,
-  draw 26, aim 16) and so do you — drawing the pistol costs 21. Crouch and his
-  shot goes over your head; roll and you go under it.
-- **Fourteen screens**, jungle → dig → tomb → reactor → palace → overgrown,
-  with the sixteen-colour palette walking continuously across the whole run so
-  no two adjacent screens are the same colour and no screen announces a change.
-- Traps: proximity-free spike cycles, ceiling slabs, tiles that will not hold,
-  a plate-and-gate on a timer, pulsing force fields.
-- Beast, sentry and drone; three health cells; a run clock with a best time in
-  `localStorage` under `flashPrinceBest`.
-- Keyboard, gamepad and an on-screen pad on touch. The arcade shell for the way
-  back to the hub.
+- **The duel.** A sentry takes 68 frames from seeing you to firing (spot 26, draw 26, aim 16) and so do you — drawing the pistol costs 21. Crouch and his shot goes over your head; roll and you go under it.
+- **Fourteen screens**, jungle → dig → tomb → reactor → palace → overgrown, with the sixteen-colour palette walking continuously across the whole run so no two adjacent screens are the same colour and no screen announces a change.
+- Traps: proximity-free spike cycles, ceiling slabs, tiles that will not hold, a plate-and-gate on a timer, pulsing force fields.
+- Beast, sentry and drone; three health cells; a run clock with a best time in `localStorage` under `flashPrinceBest`.
+- Keyboard, gamepad and an on-screen pad on touch. The arcade shell for the way back to the hub.

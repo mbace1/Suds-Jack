@@ -13,7 +13,7 @@ try {
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 
-  await page.goto('http://127.0.0.1:4173/flashprince/', { waitUntil: 'networkidle' });
+  await page.goto('http://127.0.0.1:4173/flashprince/movement-lab.html', { waitUntil: 'networkidle' });
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.build === 'FP-MOVE-8');
 
   await page.keyboard.press('Digit2');
@@ -55,9 +55,6 @@ try {
   assert.ok(ledge.x >= 224, `pull-up must carry the hero onto the raised platform, got x=${ledge.x}`);
   assert.ok(ledge.y <= 96.1, `pull-up must finish at the raised lip height, got y=${ledge.y}`);
 
-  // Scene 4: mantle onto the two-tile block, turn in place so the nearer left
-  // lip is a stable deliberate climb-down target, shimmy inward along the lip,
-  // reject an outward shimmy into empty space, then pull back onto the block.
   await page.keyboard.press('Digit4');
   await page.keyboard.down('ArrowRight');
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'lowMantle', null, { timeout: 7000 });

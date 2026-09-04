@@ -40,6 +40,7 @@ const heroSource = await readFile(new URL('../js/movement-hero.js', import.meta.
 const v3Source = await readFile(new URL('../js/movement-hero-v3.js', import.meta.url), 'utf8');
 const diagSource = await readFile(new URL('../js/movement-diagnostics.js', import.meta.url), 'utf8');
 const indexSource = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const labSource = await readFile(new URL('../movement-lab.html', import.meta.url), 'utf8');
 for (const sourceEdge of [
   "this.go('pivot')",
   "this.go('runStart')",
@@ -50,7 +51,10 @@ ok(v3Source.includes('transitionFaults'), 'V3 runtime counts transition faults')
 ok(v3Source.includes('StateMachine'), 'V3 runtime routes transitions through shared StateMachine');
 ok(diagSource.includes("FP-MOVE-8"), 'diagnostics expose the visible movement build id');
 ok(diagSource.includes('transitionFaults'), 'diagnostics read the live transition fault count');
-ok(indexSource.includes('movement-diagnostics.js?v=8'), 'playable index loads movement diagnostics v8');
-ok(indexSource.includes('movement-lab-v3.js?v=8'), 'playable index cache-busts movement lab v8');
+ok(indexSource.includes('js/main.js?v=9'), 'playable index launches the campaign main loop v9');
+ok(!indexSource.includes('movement-lab-v3.js'), 'playable index must not launch the movement lab');
+ok(!indexSource.includes('movement-diagnostics.js'), 'playable index must not load movement-only diagnostics');
+ok(labSource.includes('movement-diagnostics.js?v=8'), 'movement lab loads diagnostics v8');
+ok(labSource.includes('movement-lab-v3.js?v=8'), 'movement lab loads Rotoscope 3.0 v8');
 
 console.log(`Flash Prince movement contract: ${checks} checks passed`);
