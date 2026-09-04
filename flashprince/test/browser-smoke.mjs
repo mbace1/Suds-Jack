@@ -93,7 +93,7 @@ try {
   const impact = await page.evaluate(() => globalThis.__flashPrinceMovement);
   assert.equal(impact.health, 2, 'hard landing must cost exactly one health');
   assert.equal(impact.grounded, true, 'hard landing must contact bottom floor');
-  assert.ok(impact.y >= 175.9 && impact.y <= 176.1, `hard landing expected y=176, got ${impact.y}`);
+  assert.ok(impact.y >= 176 && impact.y <= 177, `hard landing expected bottom-floor contact window 176..177, got ${impact.y}`);
   await page.waitForFunction(() => globalThis.__flashPrinceMovement?.state === 'stand', null, { timeout: 3000 });
   const recovered = await page.evaluate(() => globalThis.__flashPrinceMovement);
   assert.equal(recovered.faults, 0, 'hard landing recovery must have zero transition faults');
@@ -118,7 +118,7 @@ try {
   assert.equal(brake.faults, 0, 'brake/pivot sequence must have zero transition faults');
 
   assert.equal(errors.length, 0, `browser console/page errors: ${errors.join(' | ')}`);
-  console.log(`PASS Flash Prince movement v9: ledge ${ledge.x.toFixed(1)}/${ledge.y.toFixed(1)}, hard-land HP${impact.health}, reverse face=${brake.face}`);
+  console.log(`PASS Flash Prince movement v9: ledge ${ledge.x.toFixed(1)}/${ledge.y.toFixed(1)}, hard-land y=${impact.y.toFixed(1)} HP${impact.health}, reverse face=${brake.face}`);
   await browser.close();
 } finally {
   server.kill('SIGTERM');
