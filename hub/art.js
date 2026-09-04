@@ -385,33 +385,36 @@ export const ART = {
     for (let i = 0; i < 5; i++) g.p(58 + i * 8, 40 - i * (4 - i * 0.7), 3, 3, '#f2f2e8');   // the throw
   },
 
-  // Powder: the rift from the rim, the ringed body over it, one craft dropping in
+  // Powder: white sand under a purple sky, the rift, a bridge over it, one sled
   powder(g, a) {
-    g.bands(['#2a2352', '#6b5a8c', '#c08a6b', '#f0c489']);
-    g.p(0, 34, W, H - 34, '#d9b483');            // the flats
-    g.disc(96, 22, 15, '#b9846b');               // the ringed body, low and huge
-    g.disc(86, 17, 6, '#e8c9a8');                // its lit limb
-    for (let i = -22; i <= 22; i++) g.p(96 + i, 22 + (i * i) / 60 - 4, 1, 1, '#e8c9a8');
-    g.disc(30, 10, 3, '#fff6e2');                // the sun, small and hard
-    // the rift: oxide walls, violet in the shadow, salt floor
-    for (let y = 40; y < H; y++) {
-      const w = 6 + (y - 40) * 1.7, cx = 58 + (y - 40) * 0.35;
-      g.p(cx - w / 2 - 5, y, 5, 1, '#8a4f3c');
-      g.p(cx - w / 2, y, w, 1, y % 3 ? '#eee6d2' : '#cfc4ad');
-      g.p(cx + w / 2, y, 5, 1, '#4a3f6b');
+    g.bands(['#1c1440', '#4a2f7a', '#8b5fa8', '#d9a4cc']);
+    g.p(0, 34, W, H - 34, '#e6e2de');            // the sand, white with grey in it
+    g.disc(100, 20, 15, '#a07898');              // the ringed body
+    g.disc(90, 15, 6, '#e6c8e0');
+    for (let i = -22; i <= 22; i++) g.p(100 + i, 20 + (i * i) / 60 - 4, 1, 1, '#e6c8e0');
+    g.disc(28, 9, 4, '#fff3dc');                 // the sun
+    g.disc(28, 9, 7, 'rgba(255,220,200,0.35)');  // and its bloom
+    for (let y = 40; y < H; y++) {               // the rift, wider now
+      const w = 12 + (y - 40) * 2.2, cx = 58 + (y - 40) * 0.3;
+      g.p(cx - w / 2 - 5, y, 5, 1, '#8a5c56');
+      g.p(cx - w / 2, y, w, 1, y % 3 ? '#f6f4f0' : '#d8d4d2');
+      g.p(cx + w / 2, y, 5, 1, '#5a4a8e');
     }
-    g.p(8, 30, 4, 22, '#5a5074');                // monoliths on the rim
-    g.p(16, 26, 3, 26, '#8a7fae');
-    g.p(112, 36, 6, 3, '#7a637f');               // a rock that hangs
-    g.disc(70, 60, 7, '#a08f78');                // shadow under the craft
-    g.p(56, 55, 26, 4, '#e8dfc6');               // fuselage
-    g.p(51, 56, 6, 2, '#e8dfc6');
-    g.p(68, 55, 5, 4, '#6b3550');                // accent band
-    g.p(60, 53, 7, 2, '#2b3340');                // canopy
-    g.p(78, 53, 9, 3, '#b9bec7');                // chrome cans
-    g.p(78, 58, 9, 3, '#b9bec7');
-    g.p(87, 53, 3, 3, a);                        // exhaust, in the hub accent
-    g.p(87, 58, 3, 3, a);
+    g.p(30, 44, 62, 3, '#9c94a8');               // the bridge deck across it
+    g.p(30, 43, 62, 1, '#6a6272');
+    for (const px of [44, 58, 72]) g.p(px, 47, 2, 12, '#6a6272');   // piers
+    g.p(10, 28, 4, 22, '#5c5478');               // monoliths on the rim
+    g.p(18, 24, 3, 26, '#9088b4');
+    g.p(112, 34, 6, 3, '#80708c');               // a rock that hangs
+    g.p(50, 58, 14, 4, '#b8b0be');               // the plume, grey
+    g.p(56, 55, 24, 4, '#e8dfc6');               // fuselage
+    g.p(52, 56, 5, 2, '#e8dfc6');
+    g.p(66, 55, 5, 4, '#6b3550');                // accent band
+    g.p(59, 53, 6, 2, '#2b3340');                // canopy
+    g.p(48, 53, 6, 3, '#c4c8d2');                // the rockets, on the NOSE
+    g.p(48, 58, 6, 3, '#c4c8d2');
+    g.p(45, 53, 3, 3, a);                        // their flame, in the hub accent
+    g.p(45, 58, 3, 3, a);
   },
 
   // SKLTR: green bones in the dark

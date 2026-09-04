@@ -11,7 +11,7 @@
 // within `RADIUS` of the post line. Threading would be a different, meaner
 // game, and this one is already asking you to read a canyon at 300 km/h.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=4';
 
 // Half the terrain's breach cycle, so gates land alternately on the deepest
 // part of the rift and on a breach — which guarantees a way in and a way out

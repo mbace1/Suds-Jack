@@ -6,7 +6,7 @@
 // than being lit: a lit quad has to match the shading of the ground it lies on
 // and never quite does, and every version of that read as grey road markings.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=4';
 
 const PUFF_MAX = 1400;
 const SCAR_MAX = 700;
