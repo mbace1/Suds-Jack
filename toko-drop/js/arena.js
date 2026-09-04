@@ -79,6 +79,7 @@ export function rectShape(halfX, halfZ) {
 export function circleShape(cx, cz, r) {
   return {
     kind: KIND.CIRCLE,
+    cx, cz, r,   // v238: read by the floor's shape uniforms (main.js syncShapeUniforms)
     sdf(x, z) { return Math.hypot(x - cx, z - cz) - r; },
     aabb() { return { halfX: Math.abs(cx) + r, halfZ: Math.abs(cz) + r }; },
   };

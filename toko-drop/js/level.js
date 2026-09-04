@@ -36,9 +36,14 @@
 // PUSH along the SDF gradient, which is arena.js's clamp() already) and
 // pickups (`kind: "pickup"`, P2). Adding either is a format bump.
 
-import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=191';
+import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=192';
 
 export const LEVEL_FORMAT = 1;
+// The floor draws the region from a fixed array of shape slots on both render
+// paths (main.js FLOOR_FRAG / makeFloorMat, TUNING.arena.shapeSlots). A level
+// cannot name more shapes than the floor can draw — a level that plays but
+// paints the wrong region is worse than one that refuses to load.
+export const MAX_SHAPES = 4;
 
 const TOP_KEYS    = new Set(['format', 'id', 'name', 'arena', 'duration', 'spawns', 'rules']);
 const ARENA_KEYS  = new Set(['combine', 'shapes']);
@@ -74,6 +79,7 @@ export function validateLevel(json, typeNames) {
     if (!Array.isArray(A.shapes) || A.shapes.length === 0) errs.push('arena: shapes must be a non-empty array');
     else {
       if (A.shapes.length > 1 && A.combine === undefined) errs.push('arena: several shapes need a combine');
+      if (A.shapes.length > MAX_SHAPES) errs.push(`arena: at most ${MAX_SHAPES} shapes (the floor draws that many)`);
       A.shapes.forEach((s, i) => {
         const w = `arena.shapes[${i}]`;
         if (!s || typeof s !== 'object') { errs.push(`${w}: not an object`); return; }

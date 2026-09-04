@@ -7,6 +7,45 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v238 — 2026-09-04
+**The floor draws the level's region, on both render paths** *(P1's other half — `LEVEL_EDITOR_DESIGN.md` §2.3)*
+- **A level's shape is visible now.** `FLOOR_FRAG` and `makeFloorMat()` each
+  gain the same term, node-for-node: world-space signed distance from a
+  FIXED array of shape slots (`TUNING.arena.shapeSlots`, 4), union as min,
+  intersect as max, an unused slot as the combine's neutral element —
+  mix/step throughout, no branch, the same discipline as the v228 point
+  arrays. Inside is the floor as before; outside dims to
+  `shapeOutside`; the boundary glows the border rail's colour over a
+  `shapeEdge`-wide band. The rectangular border line hides when the
+  region is not its own bounding box
+- **Classic play is untouched.** The pass is OFF unless a level is running
+  (`uShapeMode.x`), and `applyArenaMode()` writes the rectangle with it off
+  — every existing floor pixel is the same expression it was
+- **`levels/three-rings.json`** — the design doc's worked example, static:
+  the common area of three r=8 circles at (−3,0), (3,0), (0,3), 11 spawns
+  over 40 s, all inside the region (`parseLevel` refuses one that is not).
+  The format caps `arena.shapes` at `MAX_SHAPES` (= `shapeSlots`; the level
+  gate asserts the two numbers agree), so a level cannot load and paint the
+  wrong region
+- **`scripts/level-shot.sh`** — the picture gate §7 P1 asks for: boots the
+  level on the CLASSIC bundle and on the WEBGPU bundle (WebGL2 fallback
+  here — the graph is built before the backend is chosen), starts the run,
+  screenshots each, and with Pillow present fails if the two differ by more
+  than a few counts. `three-rings`: mean abs diff **3.15** on a threshold of
+  6; the two pictures were also looked at, which is the part a number cannot
+  do. `arena.js`'s `circleShape` now exposes its centre and radius for the
+  uniform write; nothing else in it moved (8,396 checks still exact)
+- Gates: check-syntax · arena-check 8,396 · level-check 47 · smoke.sh ·
+  level-smoke.sh ×2 (first-light 15/15, three-rings 11/11) · webgpu-smoke.sh
+  (node graphs live, the new `step` node included) · level-shot.sh
+- Not in this release: moving shapes (P3 — the shader already takes its
+  shapes as uniforms, so a moving centre is a per-frame write, but §2.4's
+  rules decision is made: PUSH, and the enemy-containment half of that
+  question is still open); pickups (P2); the editor itself (P2)
+- Cache-bust `?v=191` → `?v=192`; HUD label → v238
+
+---
+
 ## v237 — 2026-09-04
 **An authored level plays end to end** *(P1 of `LEVEL_EDITOR_DESIGN.md` §7 — the format, a loader, one level, two gates)*
 - **`js/level.js`** — format 1 from §4, as a pure module beside `arena.js`: no

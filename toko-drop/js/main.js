@@ -1,18 +1,18 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=191';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=191';
-import { Player, PLAYER_RADIUS } from './player.js?v=191';
+import { InputManager } from './input.js?v=192';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=192';
+import { Player, PLAYER_RADIUS } from './player.js?v=192';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=191';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=191';
-import { audio } from './audio.js?v=191';
-import { haptics } from './haptics.js?v=191';
-import { initDesigner } from './designer.js?v=191';
-import { createSpecimen } from './specimen.js?v=191';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=191';
-import { TUNING } from './tuning.js?v=191';
-import { Arena, rectShape } from './arena.js?v=191';   // v236: the boundary has one home
-import { parseLevel, scheduleFromLevel } from './level.js?v=191';   // v237: an authored level
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=192';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=192';
+import { audio } from './audio.js?v=192';
+import { haptics } from './haptics.js?v=192';
+import { initDesigner } from './designer.js?v=192';
+import { createSpecimen } from './specimen.js?v=192';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=192';
+import { TUNING } from './tuning.js?v=192';
+import { Arena, rectShape } from './arena.js?v=192';   // v236: the boundary has one home
+import { parseLevel, scheduleFromLevel } from './level.js?v=192';   // v237: an authored level
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -442,6 +442,7 @@ scene.add(sun);
 const MASS_N  = TUNING.arena.massSample;
 const POP_N   = TUNING.arena.popCount;
 const PRIZE_N = TUNING.arena.prizeCount;
+const SHAPE_N = TUNING.arena.shapeSlots;   // v238: level shapes the floor can draw
 // World xz → the floor plane's uv (reads live HALF_X/HALF_Z, so it stays
 // correct across arena resizes). Same transform uPlayer already used inline;
 // v228 needed it in four places, so it's a function now.
@@ -478,6 +479,11 @@ const FLOOR_FRAG = `
   uniform vec3  uPrizes[${PRIZE_N}]; // xy = uv pos, z = strength (0 = unused)
   uniform vec4  uArena2;    // massRadius, massDark, popRadius, popBright
   uniform vec2  uArena3;    // prizeRadius, prizeGlow
+  // v238 LEVEL SHAPES: the region, in WORLD units (uv is not square).
+  uniform vec2  uHalf;             // HALF_X, HALF_Z — uv -> world
+  uniform vec4  uShape[${SHAPE_N}]; // x = kind (0 unused, 1 rect, 2 circle); rect: y=hx z=hz; circle: y=cx z=cz w=r
+  uniform vec2  uShapeMode;        // x = on (0/1), y = combine (0 union/min, 1 intersect/max)
+  uniform vec3  uShapeLook;        // edge band (world), outside dim, edge glow
   varying vec2 vUv;
   void main() {
     vec3 base = vec3(0.079, 0.079, 0.169);
@@ -527,6 +533,27 @@ const FLOOR_FRAG = `
     col -= vec3(0.05, 0.03, 0.09) * massGlow * uArena2.y;
     col += vec3(0.9, 0.95, 1.0) * popGlow * uArena2.w;
     col += vec3(0.55, 0.4, 0.08) * prizeGlow * uArena3.y;
+
+    // v238 LEVEL SHAPES: signed distance to the region, in world units, from
+    // the same shape algebra js/arena.js runs — union is min, intersect is
+    // max, an unused slot is the combine's neutral element. Branch-free like
+    // the loops above (mix/step on uniform values), so the TSL port below is
+    // node-for-node. Outside dims, the boundary glows the border's colour.
+    vec2 wp = vec2((vUv.x - 0.5) * uHalf.x * 2.0, (0.5 - vUv.y) * uHalf.y * 2.0);
+    float neutral = mix(1e5, -1e5, uShapeMode.y);
+    float sd = neutral;
+    for (int i = 0; i < ${SHAPE_N}; i++) {
+      vec4 s = uShape[i];
+      float dRect = max(abs(wp.x) - s.y, abs(wp.y) - s.z);
+      float dCirc = length(wp - s.yz) - s.w;
+      float d = mix(dRect, dCirc, step(1.5, s.x));
+      d = mix(neutral, d, step(0.5, s.x));
+      sd = mix(min(sd, d), max(sd, d), uShapeMode.y);
+    }
+    float inside = 1.0 - smoothstep(0.0, uShapeLook.x, sd);
+    float edgeGlow = 1.0 - smoothstep(0.0, uShapeLook.x, abs(sd));
+    vec3 shaped = col * mix(uShapeLook.y, 1.0, inside) + vec3(0.333, 0.333, 0.8) * edgeGlow * uShapeLook.z;
+    col = mix(col, shaped, uShapeMode.x);
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -546,6 +573,7 @@ const _AR = TUNING.arena;
 const _massSlots  = (mk) => Array.from({ length: MASS_N  }, mk);
 const _popSlots   = (mk) => Array.from({ length: POP_N   }, mk);
 const _prizeSlots = (mk) => Array.from({ length: PRIZE_N }, mk);
+const _shapeSlots = (mk) => Array.from({ length: SHAPE_N }, mk);   // v238
 const floorUniforms = IS_GPU
   ? {
       uTime:  TSL.uniform(0),
@@ -560,6 +588,11 @@ const floorUniforms = IS_GPU
       uPrizes: _prizeSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 0))),
       uArena2: TSL.uniform(new THREE.Vector4(_AR.massRadius, _AR.massDark, _AR.popRadius, _AR.popBright)),
       uArena3: TSL.uniform(new THREE.Vector2(_AR.prizeRadius, _AR.prizeGlow)),
+      // v238 level shapes — same slot trick as uMass: one uniform node per slot
+      uHalf:      TSL.uniform(new THREE.Vector2(HALF_X, HALF_Z)),
+      uShape:     _shapeSlots(() => TSL.uniform(new THREE.Vector4(0, 0, 0, 0))),
+      uShapeMode: TSL.uniform(new THREE.Vector2(0, 0)),
+      uShapeLook: TSL.uniform(new THREE.Vector3(_AR.shapeEdge, _AR.shapeOutside, _AR.shapeEdgeGlow)),
     }
   : {
       uTime:  { value: 0 },
@@ -574,6 +607,10 @@ const floorUniforms = IS_GPU
       uPrizes: _prizeSlots(() => ({ value: new THREE.Vector3(0, 0, 0) })),
       uArena2: { value: new THREE.Vector4(_AR.massRadius, _AR.massDark, _AR.popRadius, _AR.popBright) },
       uArena3: { value: new THREE.Vector2(_AR.prizeRadius, _AR.prizeGlow) },
+      uHalf:      { value: new THREE.Vector2(HALF_X, HALF_Z) },                       // v238
+      uShape:     _shapeSlots(() => ({ value: new THREE.Vector4(0, 0, 0, 0) })),
+      uShapeMode: { value: new THREE.Vector2(0, 0) },
+      uShapeLook: { value: new THREE.Vector3(_AR.shapeEdge, _AR.shapeOutside, _AR.shapeEdgeGlow) },
     };
 // v228: recent kill positions, oldest-first — recordPop() (called from
 // onKill()) pushes, the per-frame floor update below drains anything past
@@ -603,10 +640,11 @@ function makeFloorMat() {
         uMass: glslArray(floorUniforms.uMass),
         uPops: glslArray(floorUniforms.uPops),
         uPrizes: glslArray(floorUniforms.uPrizes),
+        uShape: glslArray(floorUniforms.uShape),   // v238
       },
     });
   }
-  const { uv, vec3, float, mix, smoothstep, length } = TSL;
+  const { uv, vec2, vec3, float, mix, smoothstep, length, step } = TSL;
   const m  = new THREE.MeshBasicNodeMaterial();
   const gx = uv().x.mul(floorUniforms.uGridX).fract().sub(0.5).abs();
   const gz = uv().y.mul(floorUniforms.uGridZ).fract().sub(0.5).abs();
@@ -655,16 +693,36 @@ function makeFloorMat() {
   }
   prizeGlow = prizeGlow.max(0.0).min(1.0);
 
-  // .pow(2.2): the GLSL original writes raw values straight to the sRGB
-  // framebuffer; the node pipeline output-encodes (linear→sRGB), so pre-decode
-  // to round-trip — without this the floor renders visibly washed out.
-  m.colorNode = lit.mul(vig)
+  // v238 LEVEL SHAPES — the GLSL block above, node-for-node: world-space
+  // signed distance from a fixed slot array, union = min / intersect = max,
+  // neutral for an unused slot, mix/step in place of any branch. `step` is
+  // the one primitive new to this function; webgpu-smoke.sh runs it.
+  const H = floorUniforms.uHalf, M = floorUniforms.uShapeMode, LK = floorUniforms.uShapeLook;
+  const wp = vec2(uv().x.sub(0.5).mul(H.x).mul(2.0), float(0.5).sub(uv().y).mul(H.y).mul(2.0));
+  const neutral = mix(float(1e5), float(-1e5), M.y);
+  let sd = neutral;
+  for (const node of floorUniforms.uShape) {
+    const dRect = wp.x.abs().sub(node.y).max(wp.y.abs().sub(node.z));
+    const dCirc = length(wp.sub(node.yz)).sub(node.w);
+    let d = mix(dRect, dCirc, step(float(1.5), node.x));
+    d = mix(neutral, d, step(float(0.5), node.x));
+    sd = mix(sd.min(d), sd.max(d), M.y);
+  }
+  const inside = float(1.0).sub(smoothstep(float(0.0), LK.x, sd));
+  const edgeGlow = float(1.0).sub(smoothstep(float(0.0), LK.x, sd.abs()));
+
+  const unshaped = lit.mul(vig)
     .add(gridColor.mul(pool).mul(A.w).mul(0.25))
     .add(base.mul(pool).mul(A.w))
     .sub(vec3(0.05, 0.03, 0.09).mul(massGlow).mul(A2.y))
     .add(vec3(0.9, 0.95, 1.0).mul(popGlow).mul(A2.w))
-    .add(vec3(0.55, 0.4, 0.08).mul(prizeGlow).mul(A3.y))
-    .pow(2.2);
+    .add(vec3(0.55, 0.4, 0.08).mul(prizeGlow).mul(A3.y));
+  const shaped = unshaped.mul(mix(LK.y, float(1.0), inside))
+    .add(vec3(0.333, 0.333, 0.8).mul(edgeGlow).mul(LK.z));
+  // .pow(2.2): the GLSL original writes raw values straight to the sRGB
+  // framebuffer; the node pipeline output-encodes (linear→sRGB), so pre-decode
+  // to round-trip — without this the floor renders visibly washed out.
+  m.colorNode = mix(unshaped, shaped, M.x).pow(2.2);
   return m;
 }
 const floor = new THREE.Mesh(
@@ -806,7 +864,30 @@ function applyArenaMode(landscape) {
   border.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF_X * 2, 0.05, HALF_Z * 2));
   floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL;
   floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL;
+  syncShapeUniforms(arena.shape, false);   // v238: the rectangle, pass off — classic is unchanged
+  border.visible = true;
   if (_cabGroundName) fitCabGround();   // v167: ground tracks the world size
+}
+
+// v238: hand the floor the region to draw. Classic play passes the
+// rectangle with the pass OFF (so nothing changes there); a level turns it
+// on. Shapes come from js/arena.js objects: a plain shape, or a union/
+// intersect carrying `parts`. Slots past the last shape are zeroed — the
+// shader treats kind 0 as the combine's neutral element.
+function syncShapeUniforms(shape, on) {
+  const parts = shape.parts ? shape.parts : [shape];
+  const combine = shape.kind === 'intersect' ? 1 : 0;
+  for (let i = 0; i < SHAPE_N; i++) {
+    const v = floorUniforms.uShape[i].value;
+    const p = parts[i];
+    if (!p) v.set(0, 0, 0, 0);
+    else if (p.kind === 'rect')   v.set(1, p.halfX, p.halfZ, 0);
+    else if (p.kind === 'circle') v.set(2, p.cx, p.cz, p.r);
+    else { console.warn('LEVEL: floor cannot draw shape kind ' + p.kind); v.set(0, 0, 0, 0); }
+  }
+  if (parts.length > SHAPE_N) console.warn(`LEVEL: ${parts.length} shapes, floor draws ${SHAPE_N}`);
+  floorUniforms.uShapeMode.value.set(on ? 1 : 0, combine);
+  floorUniforms.uHalf.value.set(HALF_X, HALF_Z);
 }
 
 // v237: an authored level pins its OWN arena, whatever the device's
@@ -830,6 +911,10 @@ function applyLevelArena(level) {
   border.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF_X * 2, 0.05, HALF_Z * 2));
   floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL;
   floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL;
+  // v238: the floor draws the region; the rectangular border line only
+  // makes sense when the region IS its bounding box.
+  syncShapeUniforms(level.arena.shape, true);
+  border.visible = level.arena.shape.kind === 'rect';
   if (_cabGroundName) fitCabGround();
 }
 
@@ -5028,7 +5113,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v237' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v238' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -10162,6 +10247,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=191').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=192').catch(() => {});
   });
 }

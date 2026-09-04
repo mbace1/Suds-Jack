@@ -11,11 +11,15 @@
 // import: enemy.js pulls three.js, and this gate must stay free of it.
 
 import { readFileSync, readdirSync } from 'node:fs';
-import { parseLevel, validateLevel, scheduleFromLevel, LEVEL_FORMAT } from '../toko-drop/js/level.js';
+import { parseLevel, validateLevel, scheduleFromLevel, LEVEL_FORMAT, MAX_SHAPES } from '../toko-drop/js/level.js';
 import { TUNING } from '../toko-drop/js/tuning.js';
 
 let checks = 0, fails = 0;
 const ok = (name, cond) => { checks++; if (!cond) { fails++; console.error(`✘ ${name}`); } };
+
+// The format's shape cap and the floor's slot count are one number in two
+// files; if they drift, a level can load and paint the wrong region.
+ok(`level.js MAX_SHAPES (${MAX_SHAPES}) equals TUNING.arena.shapeSlots (${TUNING.arena.shapeSlots})`, MAX_SHAPES === TUNING.arena.shapeSlots);
 
 const enemySrc = readFileSync(new URL('../toko-drop/js/enemy.js', import.meta.url), 'utf8');
 const enumBody = enemySrc.match(/export const EnemyType = \{([\s\S]*?)\n\};/);
@@ -82,6 +86,7 @@ for (const f of files) {
   ok('rejects an unknown rules.mode', mut(j => { j.rules.mode = 'rush'; }).length > 0);
   ok('rejects rules.outside other than push', mut(j => { j.rules.outside = 'death'; }).length > 0);
   ok('rejects several shapes with no combine', mut(j => { j.arena.shapes.push({ kind: 'circle', c: [0, 0], r: 5 }); }).length > 0);
+  ok('rejects more shapes than the floor can draw', mut(j => { j.arena.combine = 'union'; for (let i = 0; i <= MAX_SHAPES; i++) j.arena.shapes.push({ kind: 'circle', c: [i, 0], r: 5 }); }).length > 0);
   // And parseLevel refuses a spawn outside the arena even when the file is well-formed.
   const outside = JSON.parse(JSON.stringify(base)); outside.spawns[0].px = 999;
   let threw = false; try { parseLevel(outside, typeNames); } catch { threw = true; }
