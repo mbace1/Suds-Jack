@@ -121,6 +121,8 @@ export const MODELS = {
     voxelSize: 0.14,
     palette: BASIC_SKULL_PALETTE,
     layers: [...SKULL_LAYERS, ...SKULL_HORNS],
+    get head() { return MODELS.skullHead; },  // the hinge: Skull reads these
+    get jaw() { return MODELS.skullJaw; },
   },
   // Split copies preserve the full 13-layer coordinate frame. Skull animates
   // the jaw around a real hinge while the head and horns keep tracking aim.
@@ -415,6 +417,26 @@ export const MODELS = {
   },
 };
 
+/**
+ * THE VOXEL REGISTRY (v38). A Meshy export, voxelized at a fine pitch, can
+ * take any MODELS slot: enemies ask `modelFor(key)` and get the registered
+ * override or the string-art fallback, so nothing downstream knows which it
+ * is holding. A registered def carries `voxels` (already in local space,
+ * already baked) instead of `layers`, and may carry `head`/`jaw` sub-defs
+ * for the skull's hinge. The owner's direction, on seeing the SDF draft:
+ * "there are already skulls that look like this" — the sculpt is theirs,
+ * from Nano Banana through Meshy, and the engine's job is to make it voxels.
+ */
+const VOXEL_OVERRIDES = new Map();
+export function registerVoxelModel(key, def) { VOXEL_OVERRIDES.set(key, def); }
+export function modelFor(key) {
+  const over = VOXEL_OVERRIDES.get(key);
+  if (!over) return MODELS[key];
+  // the perf ladder's floor (×1) takes the coarse twin, cut at double pitch
+  return globalDetail <= 1 && over.lod ? over.lod : over;
+}
+export function voxelOverrides() { return [...VOXEL_OVERRIDES.keys()]; }
+
 // Global voxel density: every model voxel is split into detail³ minis of the
 // same silhouette. ×64 (detail 4) is the DESIGN DEFAULT — the perf governor
 // walks new spawns down the ladder (×27/×8/×1) as frame cost rises.
@@ -442,6 +464,63 @@ export function styleTint(c) {
   return c;
 }
 
+/**
+ * THE CUBE LOOK (v38). Retro voxel art reads because of three things a
+ * smoothed hull throws away: every cube shows its FACES under one fixed
+ * light (top bright, sides mid, bottom dark — the MagicaVoxel three-tone),
+ * values step in hard bands rather than sliding, and the lattice holds
+ * still enough that a small voxel stays a small voxel and not a shimmer.
+ * All three are switchable so the bench can A/B them, and all three cost
+ * nothing per instance: the face tone is a vertex attribute on the ONE
+ * shared box geometry, read by the shader every cube already has, and the
+ * value bands are baked at parse time.
+ */
+const STYLE = {
+  faceShade: true,   // per-face three-tone on every cube (sprites, debris, litter)
+  quantize: 6,       // value bands the baked shading snaps to; 0 = continuous
+  wobble: 0.45,      // global multiplier on the lattice life (1 = the v4.31 shimmer)
+};
+export function setVoxelStyle(partial) { Object.assign(STYLE, partial); refreshFaceShade(); }
+export function getVoxelStyle() { return { ...STYLE }; }
+
+// Face tones in BoxGeometry's vertex order: +x, -x, +y, -y, +z, -z (4 verts
+// each). The light sits high, a little in front and to the +x side, so the
+// two sides differ — the reason a lit cube reads as a cube and not a hexagon.
+const FACE_TONES = [0.74, 0.58, 1.0, 0.40, 0.86, 0.50];
+/** The one box every cube in the game shares, carrying its face tone. */
+export function shadedBox(size) {
+  const g = new THREE.BoxGeometry(size, size, size);
+  const n = g.getAttribute('position').count; // 24
+  const a = new Float32Array(n);
+  for (let i = 0; i < n; i++) a[i] = FACE_TONES[(i / 4) | 0];
+  g.setAttribute('faceShade', new THREE.BufferAttribute(a, 1));
+  return g;
+}
+const _faceMats = new Set();
+/** Teach a MeshBasicMaterial the face tone. Callers with their own vertex
+ *  work pass extra declarations, an extra body (after begin_vertex) and the
+ *  uniforms those need. Registered so the style can flip live. */
+export function applyFaceShade(material, decls = '', body = '', uniforms = null) {
+  const u = { uFaceK: { value: STYLE.faceShade ? 1 : 0 } };
+  material.userData.faceK = u.uFaceK;
+  material.onBeforeCompile = shader => {
+    Object.assign(shader.uniforms, u, uniforms || {});
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>',
+        '#include <common>\nattribute float faceShade;\nvarying float vFaceShade;\n' + decls)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFaceShade = faceShade;\n' + body);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uFaceK;\nvarying float vFaceShade;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(1.0, vFaceShade, uFaceK);');
+  };
+  _faceMats.add(material);
+  return u;
+}
+/** Flip the face tone on every live material without a rebuild. */
+export function refreshFaceShade() {
+  for (const m of _faceMats) if (m.userData.faceK) m.userData.faceK.value = STYLE.faceShade ? 1 : 0;
+}
+
 /** Baked voxel shading (v4.31): unlit flat fills read as cardboard, so parse
  *  bakes the lighting a real material would get — crevice voxels darken by
  *  neighbor occlusion, sky-exposed voxels lift, and a hash grain breaks up
@@ -465,10 +544,17 @@ export function bakeShading(voxels, ms) {
     let k = 1 - (n / 6) * 0.42;                                // crevices sink
     if (!occ.has(key(v.x, v.y + ms, v.z))) k *= 1.14;          // top light
     if (!occ.has(key(v.x, v.y, v.z + ms))) k *= 1.05;          // front catches the glow
-    // deterministic grain: same voxel, same fleck, every parse
-    const h = (Math.round(v.x / ms) * 374761393 + Math.round(v.y / ms) * 668265263 + Math.round(v.z / ms) * 2147483647) | 0;
-    k *= 1 + (((h ^ (h >> 13)) & 0xff) / 255 - 0.5) * 0.1;
     k = Math.max(0.5, Math.min(1.25, k));
+    if (STYLE.quantize > 0) {
+      // hard value bands: pixel art has steps, not gradients — and NO grain,
+      // because a per-voxel fleck rounded to a band is salt-and-pepper dirt
+      // (the first render of this was a skull that looked unwashed)
+      k = Math.round(k * STYLE.quantize) / STYLE.quantize;
+    } else {
+      // deterministic grain: same voxel, same fleck, every parse
+      const h = (Math.round(v.x / ms) * 374761393 + Math.round(v.y / ms) * 668265263 + Math.round(v.z / ms) * 2147483647) | 0;
+      k *= 1 + (((h ^ (h >> 13)) & 0xff) / 255 - 0.5) * 0.1;
+    }
     c.multiplyScalar(k);
   }
 }
@@ -521,7 +607,7 @@ export function parseModel(def, subdivide = 1) {
 // chips tear real holes (the skin rebuilds around them), severed islands
 // and deaths still burst instanced cubes. Models opt out with `noHull`
 // (the gauntlet's checkerboard and the blinker's glitch-shard identity).
-let hullMode = true;
+let hullMode = false; // v38: cubes are the look; LOOK SMOOTH still exists
 export function setHullMode(on) { hullMode = !!on; }
 export function getHullMode() { return hullMode; }
 
@@ -532,8 +618,15 @@ export class VoxelSprite {
   constructor(def, subdivide = globalDetail + (def.detailBoost || 0)) {
     this.def = def;
     subdivide = Math.max(1, Math.min(4, subdivide));
-    this.voxels = parseModel(def, subdivide);
-    this.size = def.voxelSize / subdivide;
+    if (def.voxels) {
+      // a voxelized asset arrives at its own pitch, already baked — the
+      // detail ladder does not apply (its density IS the pitch it was cut at)
+      this.voxels = def.voxels.map(v => ({ x: v.x, y: v.y, z: v.z, color: v.color.clone(), key: v.key }));
+      this.size = def.voxelSize;
+    } else {
+      this.voxels = parseModel(def, subdivide);
+      this.size = def.voxelSize / subdivide;
+    }
     this.aliveCount = this.voxels.length;
     this.material = new THREE.MeshBasicMaterial({ color: 0xffffff });
     // Per-voxel LIFE, all in the vertex shader so density is free: the voxel
@@ -542,19 +635,15 @@ export class VoxelSprite {
     // at ×64 the model reads as thousands of live cells, not one mesh.
     // One shared program (same cache key); per-sprite uniform objects.
     this.animT = Math.random() * 100; // desync so a swarm never pulses in unison
-    this.baseWobble = def.wobble ?? 1;
+    this.baseWobble = (def.wobble ?? 1) * STYLE.wobble;
     this.uniforms = {
       uTime: { value: this.animT },
       uWobble: { value: this.baseWobble },
       uVox: { value: this.size },
     };
-    this.material.onBeforeCompile = shader => {
-      Object.assign(shader.uniforms, this.uniforms);
-      shader.vertexShader = shader.vertexShader
-        .replace('#include <common>',
-          '#include <common>\nuniform float uTime;\nuniform float uWobble;\nuniform float uVox;')
-        .replace('#include <begin_vertex>', /* glsl */`#include <begin_vertex>
-        #ifdef USE_INSTANCING
+    applyFaceShade(this.material,
+      'uniform float uTime;\nuniform float uWobble;\nuniform float uVox;',
+      /* glsl */`#ifdef USE_INSTANCING
           // instance translation = this voxel's spot in the body lattice
           vec3 vic = instanceMatrix[3].xyz;
           float vph = vic.x * 2.3 + vic.y * 1.7 + vic.z * 2.9;
@@ -567,14 +656,10 @@ export class VoxelSprite {
             sin(uTime * 3.1 + vph),
             sin(uTime * 2.6 + vph * 1.3 + 1.7),
             sin(uTime * 3.7 + vph * 0.8 + 3.4));
-        #endif`);
-    };
+        #endif`,
+      this.uniforms);
     this.material.customProgramCacheKey = () => 'voxel-sprite-anim';
-    const mesh = new THREE.InstancedMesh(
-      new THREE.BoxGeometry(this.size, this.size, this.size),
-      this.material,
-      this.voxels.length,
-    );
+    const mesh = new THREE.InstancedMesh(shadedBox(this.size), this.material, this.voxels.length);
     mesh.frustumCulled = false;
     this.voxels.forEach((v, i) => {
       v.alive = true;
@@ -893,6 +978,7 @@ export class VoxelSprite {
   dispose() {
     this.mesh.geometry.dispose();
     this.material.dispose();
+    _faceMats.delete(this.material);
     if (this.hull) {
       this.hull.geometry.dispose();
       this.hullMat.dispose();
@@ -913,7 +999,9 @@ export class DebrisPool {
     // density you came to see, so the budget scales with the perf tier.
     this.gibTarget = 520;
     this.mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.mat, cap);
+    applyFaceShade(this.mat);
+    this.mat.customProgramCacheKey = () => 'voxel-debris';
+    this.mesh = new THREE.InstancedMesh(shadedBox(1), this.mat, cap);
     this.mesh.frustumCulled = false;
     this.items = [];
     this.free = [];
@@ -1077,7 +1165,9 @@ export class LitterField {
   constructor(scene, cap = 2500) {
     this.cap = cap;
     this.mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.mat, cap);
+    applyFaceShade(this.mat);
+    this.mat.customProgramCacheKey = () => 'voxel-litter';
+    this.mesh = new THREE.InstancedMesh(shadedBox(1), this.mat, cap);
     this.mesh.frustumCulled = false;
     this.mesh.count = 0;
     this.items = new Array(cap).fill(null);

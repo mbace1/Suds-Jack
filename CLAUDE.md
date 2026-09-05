@@ -311,7 +311,40 @@ texture sampling + enclosed-interior fill + AO bake) so every damage system work
 unchanged; ~22% lattice loss sheds the skin and the wounded voxel body fights on.
 GLTFLoader r167 vendored, dynamic-imported only when assets are registered;
 everything fail-soft to the string-art models. Drop-in guide: `assets/README.md`;
-prompt sheet: `ART_PIPELINE.md`. Debug: `getAssets()`. Combat: **hold to stream daggers**, gems drop from heavy kills and level
+prompt sheet: `ART_PIPELINE.md`. Debug: `getAssets()`.
+**Since v38 (owner's brief: "retro voxel heaven", smaller voxels, maximum
+payoff) the roster IS the owner's Meshy art, as cubes.** `assets/manifest.json`
+is the one seam: a kind with `as: "voxel"` is turned upright (`tilt`, `yaw`),
+scaled to the HEIGHT of the string-art slot it replaces (hitboxes hold), cut at
+`pitch` (default a third of the slot's pitch — the ×27 mini size the game
+already budgets), colour-snapped (`palette: "bone"` — a 26-neighbour blur over
+surface cells first, because a bake sampled cell-by-cell is static; then an
+S-curve banded to five values on the sculpt's ivory, strong reds kept crimson;
+`lift` for a dark bake; `eyes` [x,y,z normalized, z=1 front] burn HDR ember
+within `eyeR`; `jaw` cuts a hinged jaw with the hinge on the def), and
+registered so `modelFor(kind)` hands it to the enemy class — chips, islands,
+gibs and the bone-yard work unchanged. Each kind also carries `def.lod`, cut at
+double pitch, which `modelFor()` hands out at the perf ladder's floor.
+Fourteen kinds are registered. **Cubes are the default look** (`look: 'cubes'`;
+LOOK SMOOTH still builds the v4.32 hull on string-art models — voxelized ones
+are `noHull` by design). The cube look itself is `STYLE` in `voxel.js`: a
+`faceShade` attribute on the one box geometry every sprite, gib and bone shares
+(top 1.0 … bottom 0.40), AO snapped to six value bands with the grain dropped
+when banding, lattice life at 0.45. **Three traps with the same shape: `pitch`
+is the lattice cell size, never the rotation** (the first cut reused the word
+and sliced the brute into 0.75-unit cubes — rotation is `tilt`); the brute
+export arrived nose-down and its tilt sign was settled by rendering four
+values, not by reasoning; and tilting changes the bounding-box height, so an
+upright body is SMALLER than its foreshortened cut and the smaller count is the
+honest one. The gate's hull section used to reach into "whatever dread just
+spawned" and hung once that had no hull — `debug.hullProbe()` proves LOOK
+SMOOTH on a string-art body instead. **The bench is `voxel-lab.html`**: it
+lists every registered asset and `__lab.revox(kind, overrides)` re-cuts one
+live from the loaded mesh, so an export is turned by looking at it; copy the
+printed cfg into the manifest when it reads right. Every art question in v38
+was answered from a picture off that bench — the first sheet showed the
+string-art skull at ×1 and ×27 with the SAME silhouette, which is what settled
+that subdividing a blob is not detail. Combat: **hold to stream daggers**, gems drop from heavy kills and level
 the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, splitter
 skulls (burst into minis), brutes, drifting totem spawners (which also pulse **jumpable
 orb rings**), **watcher** drones firing aimed orb volleys, thorn spikes erupting under

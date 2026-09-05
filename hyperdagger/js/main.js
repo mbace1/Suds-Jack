@@ -5,21 +5,21 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=67';
-import { Player } from './player.js?v=67';
-import { DaggerPool } from './daggers.js?v=67';
-import { GemPool } from './gems.js?v=67';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=67';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=67';
-import { OrbPool } from './bullets.js?v=67';
-import { AudioKit } from './audio.js?v=67';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=67';
-import { TUNING as T } from './tuning.js?v=67';
-import { HyperEnvironment } from './environment.js?v=67';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=67';
-import { TruckTrack } from './truck.js?v=67';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=67';
-import { preloadMeshEnemies, meshSkinState } from './mesh-enemies.js?v=67';
+import { InputManager } from './input.js?v=69';
+import { Player } from './player.js?v=69';
+import { DaggerPool } from './daggers.js?v=69';
+import { GemPool } from './gems.js?v=69';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=69';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=69';
+import { OrbPool } from './bullets.js?v=69';
+import { AudioKit } from './audio.js?v=69';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=69';
+import { TUNING as T } from './tuning.js?v=69';
+import { HyperEnvironment } from './environment.js?v=69';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=69';
+import { TruckTrack } from './truck.js?v=69';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=69';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=69';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -43,7 +43,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
+  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'cubes' }, // v38: the cube look is the house look
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -1450,6 +1450,9 @@ function applyOpts() {
   // perf tier (a skin rebuild on every chip is not free on weak hardware)
   const hullOn = opts.look === 'smooth' && tier.hull;
   setHullMode(hullOn);
+  // the Meshy skins ride the same tier switch as the hull: below it, the
+  // cube body stands alone (new spawns only — a skinned enemy keeps its skin)
+  setMeshSkins(tier.hull);
   hand.setHull(hullOn); // noHull in the model def keeps it cubes regardless
   for (const e of enemies) {
     for (const part of e.parts || [e.sprite]) {
@@ -3012,6 +3015,39 @@ window.__hd = {
     },
     /** The Meshy seam: what assets/manifest.json named and what loaded. */
     getMeshSkins() { return meshSkinState(); },
+    /**
+     * The smooth-skin probe. LOOK SMOOTH still exists, but every roster slot
+     * may now be a voxelized asset (no hull by design), so a gate that reaches
+     * into "whatever dread just spawned" finds no skin to test. This builds a
+     * STRING-ART dread with the hull forced on, chips it, and reports — the
+     * skin is proven on the thing that has one.
+     */
+    hullProbe() {
+      const was = getHullMode();
+      setHullMode(true);
+      const sp = new VoxelSprite(MODELS.skullDread);
+      setHullMode(was);
+      const before = sp.hull ? sp.hull.geometry.getAttribute('position').count : 0;
+      scene.add(sp.mesh);
+      sp.mesh.updateWorldMatrix(true, false);
+      const wv = sp.worldVoxels();
+      sp.chip(wv[0].pos, 40);
+      sp.hullCd = 0; sp.update(0.2); // past the re-skin throttle
+      const after = sp.hull ? sp.hull.geometry.getAttribute('position').count : 0;
+      const cubesHidden = sp.mesh.count;
+      scene.remove(sp.mesh); sp.dispose();
+      return { hadHull: !!sp.hull, before, after, cubesHidden, defaultHull: was };
+    },
+    /** Which slots a voxelized asset has taken, and at what density. */
+    getVoxelModels() {
+      return Object.fromEntries(voxelOverrides().map(k => {
+        const d = modelFor(k);
+        return [k, { voxels: d.voxels.length, pitch: +d.voxelSize.toFixed(4), hinge: !!(d.head && d.jaw),
+          lod: d.lod ? d.lod.voxels.length : 0, skin: meshSkinState().loaded.includes(k) && meshSkinsOn() }];
+      }));
+    },
+    getVoxelStyle() { return getVoxelStyle(); },
+    setVoxelStyle(st) { setVoxelStyle(st); },
     getArena() {
       return {
         lights: lightRig.children.length,

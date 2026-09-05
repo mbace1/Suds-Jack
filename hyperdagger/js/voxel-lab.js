@@ -7,7 +7,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { MODELS, VoxelSprite, DebrisPool, LitterField, setVoxelDetail } from './voxel.js?v=67';
+import { MODELS, VoxelSprite, DebrisPool, LitterField, setVoxelDetail, setHullMode, getHullMode, setVoxelStyle, getVoxelStyle, modelFor, voxelOverrides } from './voxel.js?v=69';
+import { preloadMeshEnemies, revoxelize, voxelConfig } from './mesh-enemies.js?v=69';
 
 const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -71,6 +72,10 @@ function builtPalette() {
 }
 
 function currentDef() {
+  // a voxelized Meshy asset (assets/manifest.json, as: "voxel") is shown
+  // exactly as the game holds it — there are no layers to edit, only a picture
+  const over = modelFor(modelKey);
+  if (over && over.voxels) return over;
   const base = MODELS[modelKey];
   return { ...base, palette: builtPalette(), layers };
 }
@@ -96,9 +101,9 @@ function rebuild(refit = true) {
 
 function loadModel(key) {
   modelKey = key;
-  const def = MODELS[key];
-  layers = def.layers.map(l => l.slice());
-  pal = Object.fromEntries(Object.entries(def.palette).map(([k, v]) => [k, paletteEntryToUi(v)]));
+  const def = MODELS[key] ?? modelFor(key);
+  layers = (def.layers || []).map(l => l.slice());
+  pal = Object.fromEntries(Object.entries(def.palette || {}).map(([k, v]) => [k, paletteEntryToUi(v)]));
   document.getElementById('layers').value = JSON.stringify(layers, null, 1);
   renderPaletteUi();
   rebuild();
@@ -106,7 +111,7 @@ function loadModel(key) {
 
 function stats() {
   document.getElementById('stats').innerHTML =
-    `${modelKey} &middot; detail &times;${detail ** 3} &middot; ` +
+    `${modelKey}${modelFor(modelKey)?.voxels ? ' (voxelized asset)' : ''} &middot; detail &times;${detail ** 3} &middot; ` +
     `<b>${sprite.aliveCount}</b>/${sprite.voxels.length} voxels alive &middot; ` +
     `voxelSize ${MODELS[modelKey].voxelSize} &middot; ` +
     `${debris.items.length} gibs / ${litter.count} bones`;
@@ -272,13 +277,41 @@ function animate() {
 
 loadModel(modelKey);
 animate();
+// the registered voxel assets join the list once the manifest has loaded
+preloadMeshEnemies().then(() => {
+  for (const k of voxelOverrides()) {
+    if (![...elModel.options].some(o => o.value === k)) {
+      const o = document.createElement('option');
+      o.value = o.textContent = k;
+      elModel.appendChild(o);
+    }
+  }
+  if (voxelOverrides().includes(modelKey)) rebuild();
+  window.__lab.assetsReady = true;
+}).catch(() => { window.__lab.assetsReady = true; });
 
 // console + smoke-test handle
+// The bench. Every art question about a voxel model is answered by rendering
+// it from HERE, with the real VoxelSprite, at a fixed camera, before and
+// after — because the gate certifies works and cannot see looks.
 window.__lab = {
   get sprite() { return sprite; },
   debris,
   litter,
   setModel: k => { elModel.value = k; loadModel(k); },
   setDetail: n => { detail = Math.max(1, Math.min(4, n)); rebuild(false); },
-  getState: () => ({ modelKey, detail, alive: sprite.aliveCount, total: sprite.voxels.length }),
+  setHull: on => { setHullMode(on); rebuild(false); },
+  setStyle: st => { setVoxelStyle(st); rebuild(false); },
+  setSpin: on => { spin = !!on; },
+  setView: (y, p, d) => { yaw = y; pitch = p; if (d) dist = d; },
+  zoom: k => { dist *= k; },
+  setBloom: on => { bloom.enabled = !!on; },
+  fit: () => fitCamera(),
+  // re-cut a voxelized asset with manifest overrides and show it: the
+  // tuning loop for pitch / yaw / lift / eyes — copy the cfg it prints
+  // into assets/manifest.json when it reads right
+  revox: (kind, cfg) => { const r = revoxelize(kind, cfg); if (r && modelKey === kind) rebuild(false); return r; },
+  voxelConfig: kind => voxelConfig(kind),
+  getState: () => ({ modelKey, detail, hull: getHullMode(), style: getVoxelStyle(),
+    alive: sprite.aliveCount, total: sprite.voxels.length, size: sprite.size }),
 };

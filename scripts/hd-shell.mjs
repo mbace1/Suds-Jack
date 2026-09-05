@@ -112,12 +112,14 @@ const MODELS = (() => {
   const out = ['./assets/manifest.json'];
   let declared = {};
   try { declared = JSON.parse(raw).models ?? {}; } catch { return out; }
-  for (const v of Object.values(declared)) {
-    // a kind is a bare filename or { file, … } — the same two forms the game
-    // accepts, read the same way, so the worker and the loader cannot disagree
-    const file = typeof v === 'string' ? v : v?.file;
-    if (file && read(`${GAME}/assets/${file}`) != null) out.push(`./assets/${file}`);
-  }
+  // The GLBs themselves are deliberately NOT precached. They are ~5 MB of art
+  // that fails soft — a missing one leaves that enemy as its string-art sculpt
+  // and the game plays exactly as before — and sw.js is network-first with a
+  // cache write on every success, so they land in the cache the first time you
+  // actually play. Precaching them made install a 5 MB download before the
+  // worker was useful, and the offline gate caught it honestly: the cord was
+  // cut mid-install and the first kind the loader asked for was still in
+  // flight. The manifest stays: it is small, and it is what says they exist.
   return out;
 })();
 

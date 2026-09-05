@@ -41,7 +41,13 @@ s.listen(0, '127.0.0.1', async () => {
   p.on('response', r => { if (r.status() === 404) misses.push(r.url()); });
 
   // ---- boot --------------------------------------------------------------
-  await p.goto(base + '/hyperdagger/', { waitUntil: 'load' });
+  // assets=0 for the bulk of the suite. Everything from here to the v38
+  // section tests movement, gunfeel, the director, the render passes and the
+  // string-art sculpts — none of it needs 5 MB of Meshy skins in the scene,
+  // and with them loaded the software renderer takes minutes per section and
+  // stalls outright on the multi-render sphere captures. The art sections
+  // below navigate to a page that DOES load it, and check it there.
+  await p.goto(base + '/hyperdagger/?assets=0', { waitUntil: 'load' });
   await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
   ok('it boots with no errors', errs.length === 0, errs.slice(0, 3).join(' | '));
   ok('WebGL actually painted', await p.evaluate(() => {
@@ -533,7 +539,10 @@ s.listen(0, '127.0.0.1', async () => {
   }, token);
   ok('the skull is a sculpt now (≥300 source voxels)', detail31.count >= 300, JSON.stringify(detail31));
   ok('the basic skull owns a wider threatening horn silhouette (~2.38)', Math.abs(detail31.width - 2.38) < 0.02, JSON.stringify(detail31));
-  ok('AO bake gives bone real shading', detail31.boneShades > 10, JSON.stringify(detail31));
+  // v38: the bake snaps to STYLE.quantize value bands, so a sculpt carries a
+  // handful of hard bone tones rather than a gradient — that is the pixel-art
+  // read, and "more than one" is the thing being asserted, not "many"
+  ok('AO bake gives bone real shading (banded)', detail31.boneShades >= 3, JSON.stringify(detail31));
   ok('the firing hand is a broad four-tip claw', detail31.handCount > 140 && detail31.handWidth === 0.45 && detail31.handTips === 8, JSON.stringify(detail31));
   ok('the original ash-and-bone claw is restored',
     detail31.handColor.palm[0] > 0.3 && detail31.handColor.palm[0] < 1 &&
@@ -587,6 +596,12 @@ s.listen(0, '127.0.0.1', async () => {
     await frames(1);
     const low = hd.debug.getProjection();
     hd.debug.setOpt('perf', 'auto');
+    // Put it back to its default (OFF). Leaving it on made every later
+    // section pay six cube-face renders per capture, and since v38 those
+    // render full cube lattices rather than a smoothed hull — the suite
+    // stalled outright in the serpent motion test that follows.
+    hd.debug.setOpt('projection', false);
+    await frames(1);
     return { active, off, low };
   });
   ok('v23 spherical projection captures world and threats',
@@ -619,36 +634,25 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('the serpent swoops vertically (Y spread > 2.5)', swoop.max - swoop.min > 2.5, JSON.stringify(swoop));
 
-  // ---- v4.32 mesh hull: smooth skin alive, voxels where it tears ---------
+  // ---- v4.32 mesh hull: LOOK SMOOTH still works, on the thing that has one --
+  // Since v38 the cube look is the default and any roster slot may be a
+  // voxelized asset (no hull by design), so this no longer reaches into
+  // "whatever dread just spawned" — that hung the suite. The probe builds a
+  // string-art dread with the skin forced on and chips it.
   const hull = await p.evaluate(async () => {
     const hd = window.__hd;
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    hd.debug.setTime(0); // keep the live director out of this isolated mesh check
     hd.debug.setOpt('perf', 'high');
+    const probe = hd.debug.hullProbe();
     hd.debug.setOpt('look', 'smooth');
-    for (const e of hd.enemies) e.alive = false;
-    hd.enemies.length = 0;
-    hd.debug.spawnDread();
-    await frames(3);
-    const on = hd.debug.getLook();
-    const e = hd.enemies.filter(x => x.type === 'dread').pop();
-    const before = e.sprite.hull.geometry.getAttribute('position').count;
-    e.sprite.chip(e.sprite.worldVoxels()[0].pos, 40);
-    await frames(6); // past the re-skin throttle at clamped dt
-    const after = e.sprite.hull.geometry.getAttribute('position').count;
+    const smooth = hd.debug.getLook();
     hd.debug.setOpt('look', 'cubes');
     const cubes = hd.debug.getLook();
-    hd.debug.setOpt('look', 'smooth');
-    hd.debug.setOpt('perf', 'low');
-    const low = hd.debug.getLook();
     hd.debug.setOpt('perf', 'auto');
-    e.alive = false;
-    return { hullOn: on.sample?.hull, cubesHidden: on.sample?.cubes, handCubes: on.hand,
-      before, after, cubesBack: cubes.sample?.hull, lowShed: low.sample?.hull };
+    return { ...probe, smoothMode: smooth.mode, smoothHull: smooth.hullMode, cubesHull: cubes.hullMode };
   });
-  ok('the smooth skin is the default alive-look', hull.hullOn === true && hull.cubesHidden === 0 && hull.handCubes === false, JSON.stringify(hull));
+  ok('the cube look is the default alive-look', hull.defaultHull === false && hull.cubesHull === false, JSON.stringify(hull));
+  ok('LOOK SMOOTH still builds a skin that hides the cubes', hull.hadHull && hull.cubesHidden === 0 && hull.smoothHull === true, JSON.stringify(hull));
   ok('a chip tears and re-forms the skin', hull.after > 0 && hull.after !== hull.before, JSON.stringify(hull));
-  ok('LOOK CUBES and the low tier both fall back', hull.cubesBack === false && hull.lowShed === false, JSON.stringify(hull));
 
   // ---- long-run health: spawn/kill cycles must plateau, not climb --------
   // (the hull re-skin allocates a fresh BufferGeometry per rebuild, so this
@@ -705,8 +709,11 @@ s.listen(0, '127.0.0.1', async () => {
   const restarted = await p.waitForFunction(
     () => window.__hd.debug.getState().state === 'playing', null, { timeout: 4000 }).then(() => true, () => false);
   ok('one click restarts within 2s', restarted);
+  // the restart's frame swap lands a tick after state flips to 'playing'
+  const retreated = await p.waitForFunction(
+    () => document.body.classList.contains('in-run'), null, { timeout: 4000 }).then(() => true, () => false);
   ok('the full shell returns off-run and retreats again on restart',
-    !death.activeFrame && await p.evaluate(() => document.body.classList.contains('in-run')));
+    !death.activeFrame && retreated);
 
   // ---- v36 the mode lab: every registered experiment boots ---------------
   // This section exists because TRUCK was LOST. v33's notes promise a three-
@@ -725,7 +732,9 @@ s.listen(0, '127.0.0.1', async () => {
     registry.modes.every(m => m.arena && m.edge && m.director && m.lethality));
 
   for (const id of registry.ids) {
-    await p.goto(base + '/hyperdagger/?mode=' + id, { waitUntil: 'load' });
+    // assets=0: this loop tests the mode registry, not the art, and fetching
+    // 5 MB of GLB on each of four reloads is most of the suite's wall clock
+    await p.goto(base + '/hyperdagger/?assets=0&mode=' + id, { waitUntil: 'load' });
     await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
     await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
     await p.evaluate(() => window.__hd.debug.startGame());
@@ -769,7 +778,7 @@ s.listen(0, '127.0.0.1', async () => {
   // way to change experiment was a page reload. (The loop above leaves the
   // page on the last registered mode, which is exactly the one that proves it.)
   await p.evaluate(() => window.__hd.debug.startGame()); // guarantee a live run
-  await p.click('#pauseBtn');
+  await p.click('#pauseBtn');  // (still on the assets=0 page from the loop above)
   await p.waitForSelector('#endBtn', { timeout: 5000 });
   await p.click('#endBtn');
   const backAtMenu = await p.evaluate(() => ({
@@ -778,6 +787,92 @@ s.listen(0, '127.0.0.1', async () => {
   }));
   ok('END RUN leaves a run for the mode menu', backAtMenu.state === 'menu', backAtMenu.state);
   ok('and the mode toggle is there when you land', backAtMenu.canSwitch);
+
+  // ---- v38 the voxel route: the roster is the owner's Meshy art, as cubes --
+  // back onto a page that actually loads the art (the mode loop ran assets=0)
+  await p.goto(base + '/hyperdagger/', { waitUntil: 'load' });
+  await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+  await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+  // Wait for the art BEFORE starting a run. Loading fourteen sculpts takes
+  // real seconds on a software renderer, and a run left playing through it
+  // kills the stationary player — the loop then stops, baseUpdate never runs,
+  // and nothing ever puts a skin on anything.
+  await p.waitForFunction(() => Object.keys(window.__hd.debug.getVoxelModels()).length >= 14, null, { timeout: 180000 }).catch(() => {});
+  await p.evaluate(() => {
+    window.__hd.debug.startGame();
+    window.__hd.debug.freezeDirector?.(true);
+    window.__hd.debug.setInvulnerable?.(true);
+  });
+  const vox = await p.evaluate(async () => {
+    const hd = window.__hd;
+    // skins ride the perf tier's hull switch, and this software renderer's
+    // governor settles low — force the tier that HAS them, or the check
+    // measures the shed path instead of the skin path
+    hd.debug.setOpt('perf', 'high');
+    const models = hd.debug.getVoxelModels();
+    const style = hd.debug.getVoxelStyle();
+    // spawn one of each overridden kind the debug menu can reach and read
+    // what the enemy is actually holding
+    for (const e of hd.enemies) e.alive = false;
+    hd.enemies.length = 0;
+    hd.debug.spawnSkull(); hd.debug.spawnDread(); hd.debug.spawnSpider(); hd.debug.spawnWatcher();
+    // the skin lands on the frame after spawn
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const held = hd.enemies.map(e => ({ type: e.type, voxels: e.sprite.voxels.length, size: +e.sprite.size.toFixed(3),
+      hull: !!e.sprite.hull, jaw: !!e.jaw, hinge: !!e.hinge, skin: !!e.meshRoot, twin: !!e.sprite.def.voxels }));
+    for (const e of hd.enemies) e.alive = false;
+    hd.enemies.length = 0;
+    const total = Object.values(models).reduce((a, m) => a + m.voxels, 0);
+    hd.debug.setOpt('perf', 'auto');
+    return { models, style, held, total, kinds: Object.keys(models).length };
+  });
+  ok('every kind the manifest names took its slot', vox.kinds >= 14, JSON.stringify(Object.keys(vox.models)));
+  ok('the skull kept its hinge through the swap', vox.models.skull?.hinge === true && vox.held.find(h => h.type === 'skull')?.jaw === true, JSON.stringify(vox.held));
+  ok('a spawned skull holds the voxelized asset, not the sculpt',
+    (vox.held.find(h => h.type === 'skull')?.voxels ?? 0) > 5000, JSON.stringify(vox.held));
+  ok('voxelized enemies wear no hull (cubes are the point)', vox.held.every(h => !h.hull), JSON.stringify(vox.held));
+  // the hybrid: alive, a voxelized body wears the Meshy mesh it was cut from
+  ok('a voxelized body wears its mesh as the alive-skin', vox.held.every(h => !h.twin || h.skin), JSON.stringify(vox.held));
+  ok('a skin never lands on a body that was not cut from it', vox.held.every(h => !h.skin || h.twin), JSON.stringify(vox.held));
+  const shed = await p.evaluate(async () => {
+    const hd = window.__hd;
+    hd.debug.setOpt('perf', 'high'); // as above: the skin only exists on a tier that has it
+    if (hd.debug.getState().state !== 'playing') { hd.debug.startGame(); hd.debug.setInvulnerable?.(true); }
+    hd.debug.spawnSkull();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const e = hd.enemies[hd.enemies.length - 1];
+    const before = !!e.meshRoot;
+    const sp = e.sprite; e.group.updateWorldMatrix(true, true);
+    for (let i = 0; i < 6; i++) { const wv = sp.worldVoxels(); if (!wv.length) break; sp.chip(wv[0].pos, Math.ceil(sp.voxels.length * 0.06)); }
+    e.baseUpdate(0.05);
+    const out = { before, after: !!e.meshRoot, shed: !!e.skinShed, lost: 1 - sp.aliveCount / sp.voxels.length, cubesVisible: sp.mesh.visible };
+    e.alive = false; hd.enemies.length = 0;
+    hd.debug.setOpt('perf', 'auto');
+    return out;
+  });
+  ok('past 22% of the lattice the skin sheds and the cube body shows', shed.before && !shed.after && shed.shed && shed.cubesVisible, JSON.stringify(shed));
+  ok('face tone and value banding are on', vox.style.faceShade === true && vox.style.quantize > 0, JSON.stringify(vox.style));
+  // one of each of the fourteen at rest is well inside one ×27 dread's worth
+  // of instances per enemy; the budget that matters is per-body, and no
+  // single body may exceed the 64³ cap the voxelizer enforces
+  ok('no voxelized body exceeds the lattice cap', Object.values(vox.models).every(m => m.voxels <= 262144), JSON.stringify(vox.models));
+  // the perf ladder's floor must still buy something: at ×1 a spawn holds
+  // the coarse twin, ~1/8 the cells of the fine cut
+  const lod = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const fine = hd.debug.getVoxelModels().skull;
+    hd.debug.setDetail(1);
+    hd.debug.spawnSkull();
+    const held = hd.enemies[hd.enemies.length - 1].sprite.voxels.length;
+    hd.enemies[hd.enemies.length - 1].alive = false;
+    hd.enemies.length = 0;
+    hd.debug.setOpt('detail', 'auto');
+    return { fine: fine.voxels, lodDeclared: fine.lod, held };
+  });
+  ok('every voxelized kind carries a coarse twin for the perf floor', Object.values(vox.models).every(m => m.lod > 0 && m.lod < m.voxels), JSON.stringify(vox.models));
+  // (a skull holds its HEAD — the jaw is a second sprite — so the held count
+  //  is at most the twin's, never equal to it)
+  ok('at the ladder floor a spawn holds the coarse twin', lod.held > 0 && lod.held <= lod.lodDeclared && lod.held < lod.fine / 3, JSON.stringify(lod));
 
   // ---- v37 the Meshy seam ------------------------------------------------
   // The loader for this whole system was never called from anywhere, so 5 MB
@@ -799,8 +894,14 @@ s.listen(0, '127.0.0.1', async () => {
     const r = await fetch('sw.js');
     return r.ok ? await r.text() : '';
   });
-  ok('the worker precaches exactly the art the manifest names',
-    declaredFiles.every(f => cached.includes(`./assets/${f}`)), declaredFiles.join(','));
+  // The manifest is precached (it is what says the art exists); the GLBs
+  // are NOT — ~5 MB that fails soft to the string-art sculpts, and the
+  // worker is network-first with a cache write, so they land the first time
+  // you play. Precaching them made install a 5 MB download to be useful.
+  ok('the worker precaches the manifest but not the art it names',
+    cached.includes('./assets/manifest.json')
+    && declaredFiles.every(f => !cached.includes(`./assets/${f}`)),
+    declaredFiles.join(','));
 
   // ---- nothing is asked for that is not there ----------------------------
   ok('the game never requests a file that is not in the tree',

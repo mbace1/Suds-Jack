@@ -1,7 +1,9 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=67';
-import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=67';
+import { VoxelSprite, MODELS, modelFor } from './voxel.js?v=69';
+import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=69';
 
+// fraction of the lattice lost before the mesh skin comes off (v4.35: ~22%)
+const SKIN_SHED = 0.22;
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
 
@@ -25,17 +27,32 @@ class VoxelEnemy {
   center(out) { return out.copy(this.pos); }
 
   tryMeshVisual(type) {
-    if (this.meshRoot) return true;
-    const kind = MESH_FOR_TYPE[type];
-    if (!kind) return false;
-    const root = cloneMeshEnemy(kind);
+    if (this.meshRoot || this.skinShed) return true;
+    const kind = MESH_FOR_TYPE[type] ?? type;
+    const root = cloneMeshEnemy(kind, !!this.sprite.def.voxels);
     if (!root) return false;
     this.meshRoot = root;
     this.group.add(root);
-    // hide voxel skin while mesh is up; voxels still drive physics/gibs
-    this.sprite.mesh.visible = false;
-    if (this.sprite.hull) this.sprite.hull.visible = false;
+    // the skin is up: every voxel part hides under it (the jaw too), while
+    // the lattice keeps driving physics, chips and gibs
+    for (const part of this.parts) {
+      part.mesh.visible = false;
+      if (part.hull) part.hull.visible = false;
+    }
     return true;
+  }
+
+  /** The wound shows. Past SKIN_SHED of the lattice lost, the skin comes off
+   *  and the cube body underneath — holes and all — fights on. Never re-skins. */
+  shedSkin() {
+    if (!this.meshRoot) return;
+    this.group.remove(this.meshRoot);
+    this.meshRoot = null;
+    this.skinShed = true;
+    for (const part of this.parts) {
+      part.mesh.visible = true;
+      if (part.hull) part.hull.visible = true;
+    }
   }
 
   baseUpdate(dt) {
@@ -44,6 +61,7 @@ class VoxelEnemy {
       this.group.scale.setScalar(this.spawnK);
     }
     if (!this.meshRoot && this.type) this.tryMeshVisual(this.type);
+    if (this.meshRoot && this.sprite.aliveCount < this.sprite.voxels.length * (1 - SKIN_SHED)) this.shedSkin();
     for (const part of this.parts) {
       part.update(dt);
       if (part.hull) part.hull.layers.enable(2);
@@ -70,18 +88,29 @@ class VoxelEnemy {
 
 /** Fast chaser. One dagger kills it; takes knockback. */
 export class Skull extends VoxelEnemy {
-  constructor(scene, pos, speedBoost = 0, model = MODELS.skull) {
-    const animatedJaw = model === MODELS.skull;
-    super(scene, animatedJaw ? MODELS.skullHead : model, pos);
+  constructor(scene, pos, speedBoost = 0, model = modelFor('skull')) {
+    // a def that carries head/jaw sub-defs gets the hinge — the string-art
+    // skull and a voxelized Meshy skull both do, so the bite survives the swap
+    const animatedJaw = !!(model.head && model.jaw);
+    super(scene, animatedJaw ? model.head : model, pos);
     if (animatedJaw) {
-      this.jaw = new VoxelSprite(MODELS.skullJaw);
+      this.jaw = new VoxelSprite(model.jaw);
       this.jaw.material.transparent = true;
       this.jaw.material.depthTest = false;
       this.jaw.material.depthWrite = false;
       this.jaw.mesh.renderOrder = 3;
       this.jawPivot = new THREE.Group();
-      this.jawPivot.position.set(0, -0.44, -0.05);
-      this.jaw.mesh.position.set(0, 0.52, 0.12);
+      if (model.hinge) {
+        // a voxelized asset says where its own hinge is; the jaw's voxels stay
+        // exactly where they were cut and only ROTATE about that point
+        const h = model.hinge;
+        this.hinge = h;
+        this.jawPivot.position.set(h.x, h.y, h.z);
+        this.jaw.mesh.position.set(-h.x, -h.y, -h.z);
+      } else {
+        this.jawPivot.position.set(0, -0.44, -0.05);
+        this.jaw.mesh.position.set(0, 0.52, 0.12);
+      }
       this.jawPivot.add(this.jaw.mesh);
       this.group.add(this.jawPivot);
       this.parts.push(this.jaw);
@@ -110,8 +139,12 @@ export class Skull extends VoxelEnemy {
       const bite = Math.pow(0.5 + 0.5 * Math.sin(this.jawT), 1.6);
       this.jawOpen = 0.05 + bite * (0.28 + near * 0.16);
       this.jawPivot.rotation.x = this.jawOpen;
-      this.jawPivot.position.y = -0.44 - this.jawOpen * 0.12;
-      this.jawPivot.position.z = -0.05 + this.jawOpen * 0.08;
+      if (this.hinge) {
+        this.jawPivot.position.y = this.hinge.y - this.jawOpen * 0.06;
+      } else {
+        this.jawPivot.position.y = -0.44 - this.jawOpen * 0.12;
+        this.jawPivot.position.z = -0.05 + this.jawOpen * 0.08;
+      }
     }
     _dir.y += Math.sin(this.bobT) * 0.5;
     _dir.normalize();
@@ -131,7 +164,7 @@ export class Skull extends VoxelEnemy {
 
 export class Husk extends VoxelEnemy {
   constructor(scene, pos, speedBoost = 0) {
-    super(scene, MODELS.husk, pos);
+    super(scene, modelFor('husk'), pos);
     this.type = 'husk';
     this.hp = 16;
     this.maxHp = 16;
@@ -177,7 +210,7 @@ export class Husk extends VoxelEnemy {
 
 export class Revenant extends VoxelEnemy {
   constructor(scene, pos, speedBoost = 0) {
-    super(scene, MODELS.revenant, pos);
+    super(scene, modelFor('revenant'), pos);
     this.type = 'revenant';
     this.hp = 6;
     this.maxHp = 6;
@@ -218,7 +251,7 @@ export class Revenant extends VoxelEnemy {
 
 export class Wraith extends Skull {
   constructor(scene, pos, speedBoost = 0) {
-    super(scene, pos, speedBoost + 1.8, MODELS.skull2);
+    super(scene, pos, speedBoost + 1.8, modelFor('skull2'));
     this.hp = 2;
     this.score = 2;
     this.accel = 18;
@@ -227,7 +260,7 @@ export class Wraith extends Skull {
 
 export class Splitter extends Skull {
   constructor(scene, pos, speedBoost = 0) {
-    super(scene, pos, speedBoost - 1.5, MODELS.skullBig);
+    super(scene, pos, speedBoost - 1.5, modelFor('skullBig'));
     this.hp = 4;
     this.radius = 1.05;
     this.score = 2;
@@ -238,7 +271,7 @@ export class Splitter extends Skull {
 
 export class DreadSkull extends Skull {
   constructor(scene, pos, speedBoost = 0) {
-    super(scene, pos, speedBoost + 2.6, MODELS.skullDread);
+    super(scene, pos, speedBoost + 2.6, modelFor('skullDread'));
     this.type = 'dread';
     this.hp = 8;
     this.radius = 1.3;
@@ -250,7 +283,7 @@ export class DreadSkull extends Skull {
 
 export class MiniSkull extends Skull {
   constructor(scene, pos, speedBoost = 0) {
-    super(scene, pos, speedBoost + 2.6, MODELS.skullTiny);
+    super(scene, pos, speedBoost + 2.6, modelFor('skullTiny'));
     this.radius = 0.45;
     this.accel = 20;
     this.knock = 11;
@@ -259,7 +292,7 @@ export class MiniSkull extends Skull {
 
 export class Watcher extends VoxelEnemy {
   constructor(scene, pos, bound = 25) {
-    super(scene, MODELS.watcher, pos);
+    super(scene, modelFor('watcher'), pos);
     this.type = 'watcher';
     this.hp = 4;
     this.radius = 0.85;
@@ -314,7 +347,7 @@ export class Watcher extends VoxelEnemy {
 
 export class Blinker extends VoxelEnemy {
   constructor(scene, pos, bound = 25) {
-    super(scene, MODELS.blinker, pos);
+    super(scene, modelFor('blinker'), pos);
     this.type = 'blinker';
     this.hp = 3;
     this.radius = 0.8;
@@ -350,7 +383,7 @@ export class Blinker extends VoxelEnemy {
 
 export class Egg extends VoxelEnemy {
   constructor(scene, pos) {
-    super(scene, MODELS.egg, pos);
+    super(scene, modelFor('egg'), pos);
     this.type = 'egg';
     this.hp = 2;
     this.radius = 0.55;
@@ -371,7 +404,7 @@ export class Egg extends VoxelEnemy {
 
 export class Brute extends Skull {
   constructor(scene, pos, speedBoost = 0) {
-    super(scene, pos, 0, MODELS.brute);
+    super(scene, pos, 0, modelFor('brute'));
     this.type = 'brute';
     this.hp = 10;
     this.radius = 1.55;
@@ -388,7 +421,7 @@ export class Brute extends Skull {
 
 export class Totem extends VoxelEnemy {
   constructor(scene, pos, interval, ddTier = 0) {
-    super(scene, MODELS.totem, pos);
+    super(scene, modelFor('totem'), pos);
     this.type = 'totem';
     this.ddTier = ddTier;
     this.hp = ddTier ? ddTier * 10 : 25;
@@ -423,7 +456,7 @@ export class Totem extends VoxelEnemy {
 
 export class Spider extends VoxelEnemy {
   constructor(scene, pos, ddRules = false) {
-    super(scene, MODELS.spider, pos);
+    super(scene, modelFor('spider'), pos);
     this.type = 'spider';
     this.ddRules = ddRules;
     this.hp = ddRules ? 25 : 6;
@@ -490,7 +523,7 @@ export class Spider extends VoxelEnemy {
 
 export class Leviathan extends VoxelEnemy {
   constructor(scene, interval) {
-    super(scene, MODELS.leviathan, new THREE.Vector3(0, 3.2, 0));
+    super(scene, modelFor('leviathan'), new THREE.Vector3(0, 3.2, 0));
     this.type = 'leviathan';
     this.hp = 60;
     this.radius = 4.2;
