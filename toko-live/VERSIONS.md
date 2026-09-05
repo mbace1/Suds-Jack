@@ -1,5 +1,20 @@
 # Toko Live versions
 
+## v44 — 2026-09-05
+
+- Added a single-answer authority layer for high-confidence project status, decision, next-step and opinion questions.
+- The authority layer is registered before the older specialist handlers so those queries no longer fan out across competing Enter listeners.
+- Added typo-tolerant explicit project aliases for the main projects while leaving arbitrary/freeform discussion untouched.
+- Polished mobile conversation layout again: the conversation gets 72% of the viewport, the Toko stage is smaller, the input is a larger touch target and remains visible at the bottom of the chat.
+- Added touch-action/overscroll cleanup so canvas interaction and chat scrolling fight each other less.
+- Hub cabinet reports v44. Toko Move was not changed.
+
+## v43 — 2026-09-05
+
+- Added passive runtime regression diagnostics for project resolution and authoritative status/decision/next/opinion questions.
+- Added detection for multiple Toko replies following one user turn without generating any extra conversation itself.
+- Kept diagnostics available through `window.TokoRegression` for browser inspection.
+
 ## v42 — 2026-09-03
 
 - Cleaned up touch interaction for cross-project cards: first tap focuses a side/tab, second tap asks. Touch no longer implicitly cycles the card before a double tap resolves.
@@ -84,5 +99,5 @@
 
 ### Known follow-up
 
-- Core `main/toko-live/main.js`, the v42 shell/layout, and the v39-v42 source modules have now been reconciled with the deployed architecture. Historical additive modules remain on `gh-pages` until they are next modified.
+- Core `main/toko-live/main.js`, the v42 shell/layout, and the v39-v42 source modules have been reconciled with the deployed architecture. v43-v44 should be mirrored back to `main` after this deployed regression cycle settles.
 - Browser-render validation has not been performed in this pass.
