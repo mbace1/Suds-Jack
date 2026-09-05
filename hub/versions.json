@@ -1,24 +1,112 @@
 {
-  "sudsjack": {"v":"5","n":5000,"from":"VERSIONS.md"},
-  "tokodrop": {"v":"240","n":240000,"from":"VERSIONS.md"},
-  "hyperdagger": {"v":"40","n":40000,"from":"VERSIONS.md"},
-  "dropcabal": {"v":"3","n":3000,"from":"VERSIONS.md"},
-  "powder": {"v":"5","n":5000,"from":"VERSIONS.md"},
-  "paperboy": {"v":"4","n":4000,"from":"cache token"},
-  "skltr": {"v":"152","n":152000,"from":"cache token"},
-  "flashprince": {"v":"3","n":3000,"from":"VERSIONS.md"},
-  "eeri": {"v":"15.56","n":15056,"from":"VERSIONS.md"},
-  "slaykallio": {"v":"6","n":6000,"from":"VERSIONS.md"},
-  "turf": {"v":"33","n":33000,"from":"VERSIONS.md"},
-  "gameoflife": {"v":"40","n":40000,"from":"VERSIONS.md"},
-  "kindling": {"v":"16","n":16000,"from":"v16 visual pass + v15 systems"},
-  "radiofree": {"v":"37","n":37000,"from":"cache token"},
-  "tokomove": {"v":"2.25","n":2025,"from":"VERSIONS.md"},
-  "tinyhawk": {"v":"6","n":6000,"from":"VERSIONS.md"},
-  "tiny2d": {"v":"3","n":3000,"from":"VERSIONS.md"},
-  "brand": {"v":"5","n":5000,"from":"VERSIONS.md"},
-  "toko": {"v":"5","n":5000,"from":"VERSIONS.md"},
-  "piritori": {"v":"4.29","n":4029,"from":"VERSIONS.md"},
-  "piritori-godot": {"v":"4","n":4000,"from":"VERSIONS.md"},
-  "tokodropgodot": {"v":"3.5","n":3500,"from":"hand"}
+  "sudsjack": {
+    "v": "5",
+    "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "tokodrop": {
+    "v": "240",
+    "n": 240000,
+    "from": "VERSIONS.md"
+  },
+  "hyperdagger": {
+    "v": "40",
+    "n": 40000,
+    "from": "VERSIONS.md"
+  },
+  "dropcabal": {
+    "v": "3",
+    "n": 3000,
+    "from": "VERSIONS.md"
+  },
+  "powder": {
+    "v": "5",
+    "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "paperboy": {
+    "v": "4",
+    "n": 4000,
+    "from": "cache token"
+  },
+  "skltr": {
+    "v": "152",
+    "n": 152000,
+    "from": "cache token"
+  },
+  "flashprince": {
+    "v": "3",
+    "n": 3000,
+    "from": "VERSIONS.md"
+  },
+  "eeri": {
+    "v": "15.56",
+    "n": 15056,
+    "from": "VERSIONS.md"
+  },
+  "slaykallio": {
+    "v": "6",
+    "n": 6000,
+    "from": "VERSIONS.md"
+  },
+  "turf": {
+    "v": "33",
+    "n": 33000,
+    "from": "VERSIONS.md"
+  },
+  "gameoflife": {
+    "v": "40",
+    "n": 40000,
+    "from": "VERSIONS.md"
+  },
+  "kindling": {
+    "v": "16",
+    "n": 16000,
+    "from": "v16 visual pass + v15 systems"
+  },
+  "radiofree": {
+    "v": "37",
+    "n": 37000,
+    "from": "cache token"
+  },
+  "tokomove": {
+    "v": "2.26",
+    "n": 2026,
+    "from": "VERSIONS.md"
+  },
+  "tinyhawk": {
+    "v": "6",
+    "n": 6000,
+    "from": "VERSIONS.md"
+  },
+  "tiny2d": {
+    "v": "3",
+    "n": 3000,
+    "from": "VERSIONS.md"
+  },
+  "brand": {
+    "v": "5",
+    "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "toko": {
+    "v": "5",
+    "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "piritori": {
+    "v": "4.29",
+    "n": 4029,
+    "from": "VERSIONS.md"
+  },
+  "piritori-godot": {
+    "v": "4",
+    "n": 4000,
+    "from": "VERSIONS.md"
+  },
+  "tokodropgodot": {
+    "v": "3.5",
+    "n": 3500,
+    "from": "hand"
+  }
 }
