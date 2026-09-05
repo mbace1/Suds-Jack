@@ -146,5 +146,89 @@
     "totem.glb",
     "watcher.glb"
   ],
-  "voxel": "as: \"voxel\" is the retro route (v38): the export is scaled to its slot's height, rasterized at `pitch` (default a third of the slot pitch), snapped to the house palette (`palette`: bone | keep), given HDR eyes at `eyes` (normalized x,y,z; z=1 is the FRONT) within `eyeR` cells, and the bottom `jaw` fraction becomes the hinged jaw. Chips, islands, gibs and the bone-yard work unchanged. `tilt` (radians about x) and `yaw` (about y) turn an export that did not arrive facing +z upright; `lift` scales a dark bake's luminance before the bone curve."
+  "voxel": "as: \"voxel\" is the retro route (v38): the export is scaled to its slot's height, rasterized at `pitch` (default a third of the slot pitch), snapped to the house palette (`palette`: bone | keep), given HDR eyes at `eyes` (normalized x,y,z; z=1 is the FRONT) within `eyeR` cells, and the bottom `jaw` fraction becomes the hinged jaw. Chips, islands, gibs and the bone-yard work unchanged. `tilt` (radians about x) and `yaw` (about y) turn an export that did not arrive facing +z upright; `lift` scales a dark bake's luminance before the bone curve.",
+  "env": {
+    "note": "THE BACKDROP: environment pieces placed OUTSIDE the play disc (ARENA_R = 26), lit by the asset rig, never collided with. Delete this block and the v26 one-horizon-line arena is back. `at` is [x, z]; z negative is where the player looks at spawn.",
+    "floor": {
+      "file": "env/floor.png",
+      "repeat": 10
+    },
+    "pieces": [
+      {
+        "file": "env/mountain.glb",
+        "at": [
+          0,
+          -64
+        ],
+        "height": 34,
+        "yaw": 0,
+        "lift": 2.2
+      },
+      {
+        "file": "env/gate.glb",
+        "at": [
+          0,
+          -40
+        ],
+        "height": 15,
+        "yaw": 0
+      },
+      {
+        "file": "env/obelisk.glb",
+        "at": [
+          -19,
+          -36
+        ],
+        "height": 11,
+        "yaw": 0.3
+      },
+      {
+        "file": "env/obelisk.glb",
+        "at": [
+          19,
+          -36
+        ],
+        "height": 11,
+        "yaw": -0.3
+      },
+      {
+        "file": "env/hand.glb",
+        "at": [
+          36,
+          10
+        ],
+        "height": 13,
+        "yaw": -0.9
+      },
+      {
+        "file": "env/colossus.glb",
+        "at": [
+          -35,
+          16
+        ],
+        "height": 8,
+        "yaw": 1.1
+      },
+      {
+        "file": "env/obelisk.glb",
+        "at": [
+          8,
+          42
+        ],
+        "height": 9,
+        "yaw": 2.9
+      },
+      {
+        "file": "env/obelisk.glb",
+        "at": [
+          -30,
+          -6
+        ],
+        "height": 7,
+        "yaw": 1.9
+      }
+    ],
+    "tint": "#c9d4e6",
+    "lift": 1.15
+  }
 }

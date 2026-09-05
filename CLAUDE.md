@@ -338,7 +338,16 @@ values, not by reasoning; and tilting changes the bounding-box height, so an
 upright body is SMALLER than its foreshortened cut and the smaller count is the
 honest one. The gate's hull section used to reach into "whatever dread just
 spawned" and hung once that had no hull — `debug.hullProbe()` proves LOOK
-SMOOTH on a string-art body instead. **The bench is `voxel-lab.html`**: it
+SMOOTH on a string-art body instead. **Since v39 the arena comes through the same seam.** An `env` block in the
+manifest places the six Meshy environment pieces OUTSIDE the play disc as a
+lit backdrop (`js/backdrop.js`: `at`, `height`, `yaw`/`tilt`, `tint`, `lift`
+— the mountain's bake is near-black and needs the lift) and puts
+`env/floor.png` on the floor shader; delete the block and v26's one-horizon-
+line arena is back. `js/walls.js` is the first non-floor geometry: oriented
+slabs with point-vs-box collision that report `player.wallContact` (the wall-
+run hook), wearing the floor's own material so they read as the same plates.
+`arena: 'court'` in the mode registry is the disc plus four tangent walls at
+radius 16; MOVE is a court, the DD modes stay open discs. **The bench is `voxel-lab.html`**: it
 lists every registered asset and `__lab.revox(kind, overrides)` re-cuts one
 live from the loaded mesh, so an export is turned by looking at it; copy the
 printed cfg into the manifest when it reads right. Every art question in v38

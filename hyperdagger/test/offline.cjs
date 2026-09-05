@@ -89,11 +89,12 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
   } else {
     ok('a run starts offline', false, 'no boot');
   }
-  // The enemy GLBs are allowed to miss on a COLD offline visit: they are not
-  // precached (see scripts/hd-shell.mjs), they fail soft to the string-art
-  // sculpts, and sw.js caches them the first time you actually play. What must
-  // never miss is the game itself.
-  const foreign = failures.filter(u => !u.includes('/hub/shell.js') && !/\/assets\/[^/]+\.glb/.test(u));
+  // The art under assets/ — enemy GLBs, and since v39 the backdrop pieces and
+  // floor texture under assets/env/ — is allowed to miss on a COLD offline
+  // visit: none of it is precached (see scripts/hd-shell.mjs), all of it fails
+  // soft (string-art sculpts; the one-horizon-line arena), and sw.js caches it
+  // the first time you actually play. What must never miss is the game itself.
+  const foreign = failures.filter(u => !u.includes('/hub/shell.js') && !/\/assets\/.+\.(?:glb|png)(?:\?|$)/.test(u));
   ok('only the arcade shell is allowed to miss', foreign.length === 0, foreign.slice(0, 4).join(' | '));
   ok('zero page errors offline', errs.length === 0, errs.slice(0, 3).join(' | '));
 

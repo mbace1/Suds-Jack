@@ -2,6 +2,53 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v39 — 2026-09-05
+**The arena, through the same seam — and the first walls it has ever had**
+
+Owner's order of work: ship v38, then the arena, then a motion harness,
+then the first experiment on the bench, then a phone pass. This is the
+arena.
+
+**The backdrop.** Six Meshy environment pieces had sat in `assets/env/`
+since the v37 rescue — a fallen giant's head, a cracked dais, a ruined gate,
+a hand clawing up out of rock, a fanged mountain, an inscribed obelisk —
+plus a plate-floor texture. `js/backdrop.js` places them from an `env`
+block in `assets/manifest.json`: OUTSIDE the play disc, scaled to a height,
+Lambert-lit by the asset rig on layer 2, never collided with, never damaged.
+v26's decision stands — "the fight owns the frame" — as the DEFAULT: delete
+the block and the one-horizon-line arena is back. The placement was made
+from renders, not guessed: mountain far and huge behind the gate so the
+spawn view is a composition (gate flanked by obelisks against the ember
+horizon, teeth behind), the head and the hand at the rim off to the sides.
+`floor.png` replaces the procedural soot canvas on the floor shader
+(`uRepeat` is a uniform now, so a texture sets its own tiling).
+
+**Named from the first render, fixed in the second:** every piece carried
+the same pink cast the skins do (`env.tint` pulls the bake toward bone,
+per-piece `tint` on top); the mountain's bake is near-black and vanished
+against the void (`lift`, a scalar brightness — 2.2 on the mountain); and
+the first walls were unlit flat-colour slabs that read as black paper
+cut-outs against the plated floor they stood on — they wear the floor's own
+shader material now, uv-scaled so the plates are the same size underfoot.
+
+**Walls.** `js/walls.js` — oriented slabs the player collides with. A point
+against a box in the wall's frame: push out along the shortest axis, kill
+the velocity into it, bend a dash along it, and report the contact normal
+as `player.wallContact` — the hook the next release's wall run reads. A new
+arena kind, `court`, is the disc plus four tangent walls at radius 16, and
+MOVE is a court now (`wallRun: true` declared on it, implemented next).
+The DD modes keep the open disc: enemies have no wall avoidance and are
+not being asked to. Proven in the gate: driven at −12 u/s into the north
+wall the body stops at z = −15.05 with normal (0, 1).
+
+**Gate: 114 checks, 113 green on this release's run.** The mode loop proves
+the court (four walls, a collision with the right normal, survives); the art
+page proves the backdrop (every named piece placed, every one outside the
+disc, the floor texture on, the v26 horizon still the environment
+underneath). The one red line is the restart-frame timing wait, run while a
+motion capture shared the CPU; it passed 108/108 an hour earlier and its
+wait is widened to 8 s here for v40's run to prove.
+
 ## v38 — 2026-08-22
 **Retro voxel heaven — the roster is your Meshy art: the mesh alive, cubes underneath**
 

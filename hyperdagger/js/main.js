@@ -5,21 +5,23 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=69';
-import { Player } from './player.js?v=69';
-import { DaggerPool } from './daggers.js?v=69';
-import { GemPool } from './gems.js?v=69';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=69';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=69';
-import { OrbPool } from './bullets.js?v=69';
-import { AudioKit } from './audio.js?v=69';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=69';
-import { TUNING as T } from './tuning.js?v=69';
-import { HyperEnvironment } from './environment.js?v=69';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=69';
-import { TruckTrack } from './truck.js?v=69';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=69';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=69';
+import { InputManager } from './input.js?v=70';
+import { Player } from './player.js?v=70';
+import { DaggerPool } from './daggers.js?v=70';
+import { GemPool } from './gems.js?v=70';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=70';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=70';
+import { OrbPool } from './bullets.js?v=70';
+import { AudioKit } from './audio.js?v=70';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=70';
+import { TUNING as T } from './tuning.js?v=70';
+import { HyperEnvironment } from './environment.js?v=70';
+import { Backdrop } from './backdrop.js?v=70';
+import { Walls } from './walls.js?v=70';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=70';
+import { TruckTrack } from './truck.js?v=70';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=70';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=70';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -478,6 +480,7 @@ const floorMat = new THREE.ShaderMaterial({
     uGlow: { value: 0.9 },
     uRed: { value: 0 },
     uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
+    uRepeat: { value: 10.0 }, // tiles across the disc; a backdrop floor texture sets its own
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -488,9 +491,10 @@ const floorMat = new THREE.ShaderMaterial({
     uniform float uGlow;
     uniform float uRed;
     uniform vec3 uAccent;
+    uniform float uRepeat;
     varying vec2 vUv;
     void main() {
-      vec3 col = texture2D(map, vUv * 10.0).rgb;
+      vec3 col = texture2D(map, vUv * uRepeat).rgb;
       col *= uGlow + uPulse * 0.28;
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
@@ -559,6 +563,17 @@ const dust = (() => {
 
 // One horizon line only. The fight owns the rest of the frame.
 const environment = new HyperEnvironment(scene, ARENA_R);
+// …unless the manifest names a backdrop: the owner's Meshy pieces, placed
+// outside the rim and lit by the asset rig. The floor texture rides in too.
+const backdrop = new Backdrop(scene);
+backdrop.load('assets/manifest.json').then(r => {
+  if (r?.floor) {
+    floorMat.uniforms.map.value = r.floor.tex;
+    floorMat.uniforms.uRepeat.value = r.floor.repeat;
+  }
+}).catch(() => {});
+// the court's walls — empty on the disc, built by startGame for a court arena
+const walls = new Walls(scene, floorMat); // the same plates as the floor
 
 // ---------------------------------------------------------------- actors
 const input = new InputManager();
@@ -1279,6 +1294,7 @@ function resetRun() {
   floor.visible = !onTrack;
   shadows.visible = !onTrack;
   if (onTrack) truck.reset(player); else truck.clear();
+  if (M().arena === 'court') walls.court(16, 12, 5); else walls.clear();
 }
 
 function goFullscreen() {
@@ -1319,6 +1335,7 @@ function endRun() {
   paused = false;
   resetRun();
   truck.clear();
+  walls.clear();
   floor.visible = true;
   shadows.visible = true;
   state = 'menu';
@@ -2657,6 +2674,7 @@ function step(dt) {
   // or the player never reads as grounded and never gets a jump back.
   if (M().arena === 'track') truck.preUpdate(dt, player);
   player.update(dt);
+  if (walls.walls.length) walls.resolve(player);
   if (player.justDashed) {
     player.justDashed = false;
     audio.dash();
@@ -3048,6 +3066,8 @@ window.__hd = {
     },
     getVoxelStyle() { return getVoxelStyle(); },
     setVoxelStyle(st) { setVoxelStyle(st); },
+    getBackdrop() { return backdrop.getState(); },
+    getWalls() { return walls.getState(); },
     getArena() {
       return {
         lights: lightRig.children.length,

@@ -710,8 +710,10 @@ s.listen(0, '127.0.0.1', async () => {
     () => window.__hd.debug.getState().state === 'playing', null, { timeout: 4000 }).then(() => true, () => false);
   ok('one click restarts within 2s', restarted);
   // the restart's frame swap lands a tick after state flips to 'playing'
+  // (8 s, not 4: under a software renderer sharing the CPU with a capture
+  //  run the restart's frame swap has landed past 4 s and failed this twice)
   const retreated = await p.waitForFunction(
-    () => document.body.classList.contains('in-run'), null, { timeout: 4000 }).then(() => true, () => false);
+    () => document.body.classList.contains('in-run'), null, { timeout: 8000 }).then(() => true, () => false);
   ok('the full shell returns off-run and retreats again on restart',
     !death.activeFrame && retreated);
 
@@ -769,6 +771,20 @@ s.listen(0, '127.0.0.1', async () => {
       // run lasts; whether a bot that never steers stays on it is not the
       // gate's business.
       ok(`${id}: the track keeps building ahead`, late.platforms > 4, String(late.platforms));
+    } else if (decl.arena === 'court') {
+      // v39: the first geometry this arena has had that is not a floor
+      const court = await p.evaluate(async () => {
+        const hd = window.__hd, pl = hd.player;
+        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+        const walls = hd.debug.getWalls();
+        pl.feet.set(0, 0, 0); pl.yaw = 0; pl._sync();
+        for (let i = 0; i < 40; i++) { pl.velocity.set(0, 0, -12); await frames(1); }
+        return { walls: walls.count, z: +pl.feet.z.toFixed(2), contact: pl.wallContact ? [+pl.wallContact.nx.toFixed(2), +pl.wallContact.nz.toFixed(2)] : null };
+      });
+      ok(`${id}: the court has its four walls`, court.walls === 4, JSON.stringify(court));
+      ok(`${id}: a wall stops the body and reports its normal`,
+        court.z > -16 && court.z < -14 && court.contact && court.contact[1] === 1, JSON.stringify(court));
+      ok(`${id}: survives on the court`, late.state === 'playing', late.state);
     } else {
       ok(`${id}: survives a minute of its own director`, late.state === 'playing', late.state);
     }
@@ -803,6 +819,14 @@ s.listen(0, '127.0.0.1', async () => {
     window.__hd.debug.freezeDirector?.(true);
     window.__hd.debug.setInvulnerable?.(true);
   });
+  // ---- v39 the backdrop: the owner's environment pieces, through the seam --
+  await p.waitForFunction(() => window.__hd.debug.getBackdrop().pieces.length >= 8 && window.__hd.debug.getBackdrop().floor, null, { timeout: 120000 }).catch(() => {});
+  const back = await p.evaluate(() => ({ ...window.__hd.debug.getBackdrop(), env: window.__hd.debug.getEnvironment() }));
+  ok('every backdrop piece the manifest names is placed', back.pieces.length >= 8, JSON.stringify(back.pieces.map(x => x.file)));
+  ok('every backdrop piece sits outside the play disc', back.pieces.every(x => Math.hypot(x.at[0], x.at[1]) > 26), JSON.stringify(back.pieces.map(x => x.at)));
+  ok('the floor wears the manifest texture', back.floor === true);
+  ok('the v26 horizon line is still the environment underneath', back.env.horizon === 1 && back.env.groupChildren === 1, JSON.stringify(back.env));
+
   const vox = await p.evaluate(async () => {
     const hd = window.__hd;
     // skins ride the perf tier's hull switch, and this software renderer's

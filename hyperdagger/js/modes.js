@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=69';
+import { TUNING as T } from './tuning.js?v=70';
 
 /**
  * THE MODE REGISTRY — this game is a laboratory, not one experience.
@@ -34,8 +34,7 @@ export const ABILITY_DEFAULTS = {
   reap: false,     // spend the bone-yard
   glide: false,    // hold jump at apex to fall slowly
   airDash: 0,      // extra dashes usable while airborne (0 = ground-ish only)
-  wallRun: false,  // NEEDS WALLS: the disc arena has none. Waiting on a
-                   // court/course arena — declared so the vocabulary exists.
+  wallRun: false,  // needs a `court` arena (walls.js); MOVE turns it on
 };
 
 /**
@@ -47,7 +46,7 @@ export const ABILITY_DEFAULTS = {
  * @property {Object} abilities     overrides on ABILITY_DEFAULTS
  * @property {'ddSpawnset'|'pulse'|'none'} director  what makes pressure
  * @property {'oneTouch'|'clock'} lethality          what killing you means
- * @property {'disc'|'track'} arena                  what you stand on
+ * @property {'disc'|'track'|'court'} arena          what you stand on — court = disc + walls
  * @property {'void'|'clamp'} edge                   what the rim does
  * @property {string} hiKey         localStorage best-score key (per experiment)
  */
@@ -98,10 +97,10 @@ export const MODES = [
     // the lab bench: nothing is trying to kill you, so the only thing under
     // test is the body. New mechanics land here FIRST, where a bad one is
     // obvious in ten seconds instead of hidden behind a fight.
-    abilities: { jumps: 3, dash: true, reap: true, glide: true, airDash: 1 },
+    abilities: { jumps: 3, dash: true, reap: true, glide: true, airDash: 1, wallRun: true },
     director: 'none',
     lethality: 'none',
-    arena: 'disc',
+    arena: 'court',           // the disc plus four walls: the first geometry a wall run can use
     edge: 'clamp',            // you cannot fall out of the playground
     hiKey: null,              // nothing to score — it is a bench
   },
@@ -134,11 +133,13 @@ export function applyAbilities(player, mode) {
   player.dashEnabled = a.dash;
   player.glideEnabled = a.glide;
   player.airDashes = a.airDash;
+  player.wallRunEnabled = !!a.wallRun;
   // Pass the declared edge STRAIGHT through — 'void' | 'clamp' | 'open'.
   // (An earlier cut folded anything-not-clamp into 'open', which on the disc
   //  modes meant no floor at all: the body fell through the arena forever.)
   player.edgeMode = mode.edge;
   // A track supplies its own floor per frame; the disc's is y = 0.
   player.floorY = mode.arena === 'track' ? -Infinity : 0;
+  player.wallContact = null;
   return a;
 }
