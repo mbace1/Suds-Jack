@@ -361,6 +361,33 @@ export const GAMES = [
     art: 'diorama',
   },
   {
+    id: 'slaykallio',
+    fi: {
+      tagline: 'Paksu lankkusilta Kalliossa: pahvinukkeja ja tinasotilaita, rottia ja mutatoituvia möykkyjä, ja kaverit jotka kirjoittavat laskutoimituksen uusiksi.',
+      lineage: 'Slay the Spire 2 × Balatro',
+      controls: 'napauta korttia, sitten vihollista · 1-9, nuolet, E · ohjain ja kosketus',
+      note: 'v3 — oikea puunsyy lankuissa, valoa kannen alle, ja käsi joka ei enää sulaudu siltaan.',
+    },
+    ja: {
+      tagline: 'カッリオの厚い板橋。厚紙とブリキの人形、ネズミ、変異する粘塊、そして計算式を書き換える相棒たち。',
+      lineage: 'Slay the Spire 2 × Balatro',
+      controls: 'カードをタップ、次に敵をタップ · 1-9／矢印／E · パッドとタッチ対応',
+      note: 'v3 — 板に本物の木目、橋桁に光を、そして橋に溶け込まなくなった手札。',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'v5 — the owner\u2019s concept pack filtered down to three sheets, and two identities rebuilt from it: the bucket-hat wanderer and the heavy in the cream suit.',
+    title: 'Slay Kallio',
+    tagline: 'Deckbuilding on a thick plank bridge: painted cardboard and tin-soldier bums who topple over in 3D, rats, mutating blobs, and friends who rewrite the sum on every card.',
+    lineage: 'Slay the Spire 2 × Balatro',
+    tags: ['deckbuilder', 'cards', 'three.js'],
+    controls: 'tap a card, then an enemy · 1-9, arrows, E · pad and touch supported',
+    path: 'slaykallio/',
+    inRepo: true,
+    accent: '#c8a03a',
+    art: 'bench',
+  },
+  {
     id: 'turf',
     fi: {
       tagline: 'Ruudukkotaktiikkaa sateisella pohjoismaisella takapihalla: näet vihollisten aikeet etukäteen, suoja oikeasti merkitsee, ja tönäisy porraskuiluun tappaa varmemmin kuin ase.',
