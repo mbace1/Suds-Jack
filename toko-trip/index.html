@@ -101,9 +101,27 @@
     // treated as one more row.
     const RADIO_TRACK_URL = '';
 
+    // ── imported models ──────────────────────────────────────────────────
+    // Drop a .glb into toko-trip/models/ and add a row. Same discipline as
+    // the records: every row states where it came from and on what licence,
+    // because provenance is the expensive thing to reconstruct later. CC0
+    // needs no credit but still gets a row; anything CC-BY is CREDITED IN
+    // WORLD on the sign post's screen.
+    //
+    // Placement speaks the island's own language rather than raw coordinates:
+    // `at: [x, z]` is metres from the chair, and the model is dropped onto
+    // groundHeight() so it cannot float or sink. `flat: true` re-materials it
+    // to the satin palette, which is what keeps a downloaded PBR asset from
+    // looking like a photograph glued onto a poster.
+    const MODELS = [
+      // { file: 'models/rowboat.glb', at: [-6.2, 7.4], yaw: 0.7, scale: 1,
+      //   flat: true, title: 'Rowboat', author: '', source: '', licence: 'CC0' },
+    ];
+
     import * as THREE from 'three';
     import { XRButton } from 'three/addons/webxr/XRButton.js';
     import * as BGU from 'three/addons/utils/BufferGeometryUtils.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     // ── palette ──
     const P = {
@@ -1281,6 +1299,50 @@
       if (s) s.end().then(leave, leave); else leave();
     }
 
+    // ── the importer ──
+    // Everything here is allowed to fail quietly. A missing or broken model
+    // must never be the reason the island does not open, so each load is
+    // independent and the catch does nothing but log.
+    const imported = [];
+    function importModels() {
+      if (!MODELS.length) return;
+      const loader = new GLTFLoader();
+      for (const spec of MODELS) {
+        loader.load(spec.file, (gltf) => {
+          const obj = gltf.scene;
+          const [mx, mz] = spec.at ?? [0, 0];
+          // sit it on the ground, from its own measured base rather than its
+          // origin — exported models rarely agree about where zero is
+          const box = new THREE.Box3().setFromObject(obj);
+          const s = spec.scale ?? 1;
+          obj.scale.setScalar(s);
+          obj.rotation.y = spec.yaw ?? 0;
+          obj.position.set(mx, gy(mx, mz) - box.min.y * s, mz);
+          obj.traverse(o => {
+            if (!o.isMesh) return;
+            o.castShadow = true;
+            o.receiveShadow = true;
+            if (spec.flat) {
+              // keep the model's own colour, drop its shine and its maps, so
+              // it joins the satin family instead of fighting it
+              const src = o.material;
+              o.material = new THREE.MeshStandardMaterial({
+                color: src?.color ? src.color.clone() : new THREE.Color(0xc9b391),
+                map: src?.map ?? null,
+                roughness: 0.92, metalness: 0,
+                vertexColors: !!o.geometry.attributes.color,
+              });
+            }
+          });
+          scene.add(obj);
+          imported.push({ spec, obj });
+          shadowDirty();
+        }, undefined, (err) => {
+          console.warn('[toko-trip] model skipped:', spec.file, err?.message ?? err);
+        });
+      }
+    }
+
     // ═══ THE CAVE — distant landmark, exterior only, neon arch flickering ═══
     const C_NEON = col(P.neon);
     const neonMat = new THREE.MeshBasicMaterial({ color: C_NEON.clone(), fog: false });
@@ -2150,6 +2212,7 @@
       renderer.render(scene, camera);
     }
 
+    importModels();
     setMood(0, true);
     (renderer.init ? renderer.init() : Promise.resolve())
       .then(() => { shadowDirty(); renderer.setAnimationLoop(animate); });
@@ -2163,7 +2226,8 @@
       debug: {
         radioToggle, actOn, rayTargets, sitCheck, bookAct, PLAYLIST,
         radio: () => ({ on: radioOn, track: trackIdx, plaque: plaque.visible }),
-        sign, goHome,
+        sign, goHome, MODELS,
+        imported: () => imported.map(i => ({ file: i.spec.file, pos: i.obj.position.toArray() })),
         // stand somewhere and face something — the flat camera, for the gate
         stand: (x, z, ry, p = -0.15) => {
           eye.set(x, gy(x, z) + 1.5, z); yaw = ry; pitch = p;

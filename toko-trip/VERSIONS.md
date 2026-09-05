@@ -1,5 +1,28 @@
 # Toko Trip — release log
 
+## v6 — 2026-08-11
+
+The island can take imported models now.
+
+- **A glTF importer**, with `GLTFLoader` vendored beside the rest of three.
+  Drop a `.glb` into `models/` and add a row to `MODELS`: the loader drops it
+  onto `groundHeight()` from its own measured base, so it cannot float or
+  sink, and `at: [x, z]` is metres from the chair in the island's own
+  coordinates — the same ones the terrain and the beach mask speak.
+  `flat: true` re-materials it into the satin family, which is what stops a
+  downloaded PBR asset reading like a photograph glued onto a poster.
+- **Every row carries its provenance** — author, source, licence — the same
+  discipline the records already follow, because provenance is the expensive
+  thing to reconstruct later and 3D assets are where it is easiest to get
+  wrong. See `models/README.md`.
+- **A missing or broken model is never the reason the island fails to open.**
+  Each load is independent; failure is logged and skipped, and costs you that
+  prop and nothing else.
+
+Verified end to end with a throwaway model, which loaded, scaled, sat on the
+sand, and cast a real shadow into the baked lighting. It was not committed —
+`models/` ships with a README and nothing else.
+
 ## v5 — 2026-08-11
 
 A jetty — somewhere for the eye to walk.
