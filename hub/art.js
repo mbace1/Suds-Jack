@@ -1152,6 +1152,85 @@ export const ART = {
     g.disc(112, 8, 5, '#e0a53a'); g.disc(112, 8, 3, '#f4f1e8');
   },
 
+
+  // Slay Kallio: a cover, in the house register — a sunlit park seen past a
+  // near, cropped shoulder. The frame is the BENCH, lighter than the trees
+  // behind it so it reads as a thing and not a hole; the hero cutout is
+  // cropped by the bottom edge (which is what makes it foreground) and lit
+  // along its front in the cabinet's own accent, since a dark silhouette
+  // against a dark scene disappears. A card is being held out, and a pigeon
+  // stands on the far end of the seat waiting for it.
+  // Slay Kallio: a cover, not an icon. A plank bridge at the wrong end of the
+  // night, seen along the deck. The framing device is the BRIDGE — lighter
+  // than the water and the trees behind it, so it reads as a thing rather
+  // than a hole — a bum cropped by the bottom edge in the foreground (cropping
+  // is what makes a figure read as near), a rat facing him down the boards,
+  // and everything else falling away out of focus.
+  bench(g, a) {
+    const HZ = 30;
+    // an overcast sky, warming down toward the treeline, in flat bars
+    for (let i = 0; i < HZ; i++) g.p(0, i, W, 1, mix('#6f7f88', '#b9a48a', (i / HZ) ** 1.3));
+
+    // the far bank: a dark mass of canopy, hazed and low in contrast, with
+    // one block of flats behind it
+    g.p(74, HZ - 17, 15, 17, '#4a4a52'); g.p(90, HZ - 12, 12, 12, '#43434b');
+    for (let i = 0; i < 5; i++) g.p(77 + (i % 3) * 5, HZ - 14 + Math.floor(i / 3) * 5, 2, 2, '#c8a86a');
+    for (let x = -4; x < W + 8; x += 11) {
+      g.disc(x, HZ - 4 - ((x * 7) % 5), 8 + ((x * 3) % 4), '#2b3a26');
+      g.disc(x + 4, HZ - 8 - ((x * 5) % 4), 5, '#3f5230');
+    }
+    g.p(0, HZ, W, 3, '#41482f');
+
+    // the canal: dark, with the treeline smeared down into it
+    g.p(0, HZ + 3, W, 12, '#3a4448');
+    for (let i = 0; i < 16; i++) g.p((i * 17) % W, HZ + 4 + (i % 8), 5 + (i % 9), 1, '#33403e');
+    for (let i = 0; i < 6; i++) g.p((i * 23) % W, HZ + 6 + (i % 7), 9, 1, '#5f7176');
+
+    // THE BRIDGE. Boards running across, a gap of shadow between each, and the
+    // beams and piles carrying the eye down into the water — the structure is
+    // underneath, which is the whole reason this is a bridge and not a bench.
+    g.p(0, HZ + 15, W, 2, '#6a563e');                       // the far edge
+    for (let x = 0; x < W; x += 5) {
+      g.p(x, HZ + 17, 4, 13, x % 10 ? '#8a7053' : '#7d6549');
+      g.p(x + 4, HZ + 17, 1, 13, '#3a2e20');                // the gap
+    }
+    g.p(0, HZ + 24, W, 2, '#9c8161');                       // worn strip
+    g.p(0, HZ + 30, W, 3, '#4a3c2c');                       // the near edge, in shadow
+    for (const x of [16, 62, 106]) {                        // piles into the water
+      g.p(x, HZ + 33, 4, 24, '#5a4834'); g.p(x, HZ + 40, 4, 2, '#6a4a32');
+    }
+    g.p(0, HZ + 33, W, 3, '#463726');                       // the stringer
+
+    // the rat, mid-deck, facing the near figure down the boards
+    g.p(78, HZ + 20, 12, 6, '#5a4a3e'); g.disc(90, HZ + 21, 4, '#6a5648');
+    g.p(93, HZ + 21, 4, 1, '#c08878'); g.p(70, HZ + 20, 8, 1, '#c08878');
+    g.p(80, HZ + 26, 2, 3, '#443830'); g.p(86, HZ + 26, 2, 3, '#443830');
+    g.p(88, HZ + 19, 2, 1, '#c04040');
+
+    // the bum, cropped by the bottom of the frame and lit down his front edge:
+    // a dark shape on a dark scene disappears, whatever rim you give it
+    g.p(20, 22, 18, 50, '#4a4438');                          // the long coat
+    g.p(20, 22, 5, 50, '#332f28');                           // its shadow side
+    g.p(35, 22, 3, 50, a);                                   // the lit edge
+    g.p(22, 44, 16, 3, '#3b3830');                           // a fold
+    g.disc(29, 16, 8, '#c89878');                            // head
+    g.p(35, 13, 3, 9, mix('#c89878', a, 0.5));
+    g.p(33, 16, 3, 2, '#17120e');                            // eye
+    g.p(23, 6, 15, 7, '#4a3a2a');                            // hair
+    g.p(24, 60, 3, 12, '#2e2a24'); g.p(31, 60, 4, 12, '#332f28');   // legs
+    g.p(21, 68, 20, 4, '#8e9198');                           // and a tin base
+
+    // the bottle in his hand, held out over the boards
+    g.p(40, 34, 5, 12, '#3d5c40'); g.p(41, 30, 3, 5, '#3d5c40'); g.p(40, 38, 5, 3, a);
+    g.p(37, 33, 4, 5, '#c89878');
+
+    // the miniature look this game is built on: focus falling away top and
+    // bottom, and the whole frame graded down toward the shadows
+    for (let i = 0; i < 12; i++) g.p(0, i, W, 1, `rgba(198,206,206,${(12 - i) * 0.020})`);
+    for (let i = 0; i < 12; i++) g.p(0, H - 1 - i, W, 1, `rgba(12,14,16,${(12 - i) * 0.028})`);
+    for (let i = 0; i < 5; i++) { g.p(0, i, W, 1, 'rgba(0,0,0,0.10)'); g.p(0, H - 1 - i, W, 1, 'rgba(0,0,0,0.10)'); }
+  },
+
   // TURF: the backlot at dusk. A standoff, not an icon — an operator cropped
   // by the near edge of the frame (rim-lit in the accent, since a dark
   // silhouette against a dark scene disappears), a rival held at the far

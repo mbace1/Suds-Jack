@@ -287,6 +287,138 @@ game over, the way home and the signature — all driven off **game state, not t
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
 Build tooling: none — same no-build rule as every other demo here.
 
+### Slay Kallio (`slaykallio/`) — the deckbuilder, ACTIVE
+**Owner's brief, 2026-09-04: mostly Slay the Spire 2, with some Balatro jokers
+thrown in.** Read `slaykallio/GDD.md` before touching anything — this is the
+summary, that is the source. A deckbuilder fought on a **thick plank bridge**
+over a Kallio canal: four bums, six spans, a card or a friend after each.
+**It is two experiments at once, and both are the owner's stated point**: a test
+of a unique look that has to work in **horizontal** (mobile sideways / Switch)
+AND **vertical** (a phone in one hand), and a practice run at the **deep logic
+and artefact synergy** that makes Slay the Spire worth a hundred runs.
+**Second owner pass, same day, and it moved the art wholesale**: gritty and
+realistic; the camera from the other direction so no bench back panels block the
+view; a background like **tilt-shift nature**, a real photo being fair game;
+heroes who are **Kallio bums**; **everything in English**; enemies that are
+**rats, mutating blobs and other bum cardboard cutouts**; **a basic picture on
+every card**; a **thick wooden bridge**, much closer to the characters; **tin
+soldiers and painted cardboard figures**.
+**`js/engine.js` is the rules and NOTHING else** — no DOM, no three.js, no
+clock, deterministic from a seed, which is why `test/core.mjs` can assert exact
+numbers in bare node (a Swing is 6, a doubled Swing is 12, Encore after three
+cards is 16) and run a bot over 160 whole runs. `js/data.js` is every card,
+character, friend, enemy and encounter as data; the engine reads ids out of it
+and knows nothing about "a bottle collector" or "a rat".
+**The damage pipeline is Balatro's shape over Slay the Spire's numbers**: base
+(card + scaling + strength + buzz) → **adds** → **mults** → floor, with the
+breakdown riding on the log entry so the view pops the base, then each `+3`,
+then each `×2`. And **`preview()` and the real play call the same code**, so a
+card's face text is written from its effects at the current state — quoting a
+number you then do not use is the unforgivable bug in a full-information game.
+**Every character is a question, not a stat block** — Late the park drinker
+(Buzz, a strength that fades with the turn), Ilona the busker (cards scale on
+what you played before them), Roope the bottle collector (free Bottle tokens and
+a counted hand), Vekku the cart pusher (block that hits and block that stays) —
+and each starting deck carries two cards that teach the mechanic on turn one. **A
+friend bends arithmetic you already do and never adds a verb** — a verb is a
+card's job — and the one to copy is Morning Can, which **costs** a card for its
+energy, because a friend that only gives is a number rather than a decision.
+**Everything player-facing is ENGLISH** and a gate enforces it: any Finnish left
+in a card, title, friend, enemy or encounter name — in either skin — fails
+`core.mjs`. Personal names are exempt; a name is not a language.
+**The fantasy theme is a LOOKUP, not a second data set**: every named thing
+carries a name in both skins, so the menu switch is one word per entry.
+**The board is a bridge because a bench has a BACKREST** (`js/scene.js`). That
+is not a theme change, it is a staging fix: a backrest crosses a standing figure
+at the chest, and every puppet was being cut in half by a slat. A bridge carries
+its structure underneath, so beams, braces and piles take the eye down into the
+canal instead of putting a fence across the fight. Three rules hold it and the
+gate checks all three — **nothing stands above the deck over the play area**
+(this caught a far-side top rail above head height that still drew a line across
+the frame; it is gone, and two broken stubs on the end posts say it used to be
+there), **the deck is many boards and not one slab** (thirty planks over a dark
+board so every gap is a shadow, nail heads over the stringers, no two tones the
+same and none of them quite flat), and **the camera is close and nearly level**
+(action width 4.6, tilted down about ten degrees — dead level hides the boards
+entirely and makes the understructure the whole lower half of the frame, any
+higher turns the bridge into a floor plan).
+**Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
+`look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
+over the feet, and mixing them is the point — a row of these should look
+collected rather than manufactured. **Gritty is in the drawing, not in a
+filter**: the ink line is drawn twice at different weights, paint is scumbled in
+broken strokes of **a lighter tint of the fill and never white** (white on a
+small head reads as a smear across the face rather than as light on it),
+outlines are nicked because a cutout that has been carried around is not cut
+clean, and every figure carries streaks, stains and specks scaled by its own
+`grime`. Death **topples it in 3D**, about its feet on an axis tilted between
+the camera's x and the depth axis: a flat cutout tipping in the picture plane
+reads as a sprite rotating, and tipping *into* the scene is what makes it a
+thing that was standing there.
+**`js/cardart.js` puts a picture on every card** — a 96×62 painted panel in the
+same register, cached per picture and accent so re-rendering the hand does not
+repaint ten canvases. A card with only words on it is a spreadsheet row. The
+gate fails on a card with no picture, a picture the module cannot draw, or a set
+that has collapsed to fewer than fifteen distinct drawings.
+**The backdrop is photographic and the sharp band FOLLOWS THE DECK** (`js/bg.js`,
+`js/scene.js`): canopy as scattered dabs rather than lollipops, haze eating
+contrast with distance, the canal with the treeline smeared down into it, film
+grain, and a repaint whenever the deck's row on screen moves — a miniature
+photograph is only convincing while the one sharp stripe lies on what you are
+looking at, and the deck sits nowhere near the same place in portrait as in
+landscape. There is a matching **out-of-focus foreground band** along the bottom.
+`?bg=<url>&stereo=sbs&eye=left` puts a **photograph** (or one eye of a
+side-by-side stereo pair) behind the bridge through the same focus pass — the
+seam for testing real plates is a URL, not a rewrite.
+**One camera rule for both formats: fit the ACTION WIDTH, not the bridge** —
+the deck runs off both ends of the frame on purpose. Portrait fits a narrower
+width, is deliberately **flatter** (a phone frame is tall, so every degree of
+downward tilt spends screen on the water instead of on the fight), and gives the
+bottom to the hand, which becomes a five-column grid instead of a fan.
+**LOOK AT THE WHOLE CAST, not just the first fight.** Rendering every encounter
+for the first time — the blob, the rival bum, the King Rat and the Bridge King
+had all shipped without anyone laying eyes on them — found a **crash** (the
+fantasy `Imp Lord` look was missing its `shape`, so it fell through to the
+person painter and read a `bottom` colour a rat has not got), a **boss cropped
+by the top of the frame** (the camera fits the action WIDTH, which says nothing
+about height — `ensureHeadroom()` pulls back only for the fight that needs it),
+a **three-wide row on the frame edge** (the layout was guessing the visible
+width from the action width instead of asking the camera: `halfWidthAt(z)`),
+and a **unit label off the top of the screen** on the one fight where reading
+the intent matters most. All four were invisible to a green suite. The framing
+gate now measures each sprite's own BOUNDS rather than its centre point and
+walks **all six encounters in both orientations**, and `__sk.debug.jumpTo(i)`
+exists so nobody has to win five fights to look at the sixth.
+`window.__sk` is the seam the browser gate drives, and `setSpeed(0)` + `flush()`
+drain the replay queue — the view reads the engine's log back at a human pace
+the way turf's `anim.js` does, so nothing in the test is timed off the clock.
+Gates: `node slaykallio/test/core.mjs` (261 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (62). Hub entry:
+`hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
+its name through the bench-to-bridge change; the drawing is a bridge), accent
+`#c8a03a`. Build tooling: none — same no-build rule as everything else here.
+**Deployed to `gh-pages` 2026-09-05 (v6), and `deploy-hub.mjs` is NOT the tool
+for it** — its `OWNED` list is the arcade *shell*, so it ships no game folder at
+all. A game deploy is a copy of `slaykallio/` (minus `test/` and `art-src/`)
+plus this cabinet's own rows, and the two catalogue files are the trap:
+`games.js` and `art.js` are `THEIRS`, and the live catalogue carries cabinets
+this branch has never had (`piritori-godot` when this one shipped), so the entry
+and the marquee must be **spliced into** the site's copies — overwriting them
+deletes somebody else's cabinet from the floor. `versions.json` gets ONE row by
+hand: never regenerate on the deployed tree, and do not reach for `--repair`
+either, because it also moves whatever else has drifted (three other lanes'
+cabinets that day) and widens a deploy that is supposed to be limited to one
+game. Last trap: hand-deploying skips the token renumbering, so check the
+`../hub/shell.js?v=` the rest of the site asks for — this cabinet shipped pinned
+to `v17` while fourteen others were on `v34`.
+**The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
+hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
+**The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`
+carries the five filters and a verdict per sheet (three kept, six rejected), and
+the two rules that did most of the work are *identity only, never pixels* and
+*no weapons*: nearly every figure in the pack carries a knife, which is TURF's
+grammar and not a game whose verbs are a swing, a bottle and a shopping trolley.
+
 ### TURF (`turf/`) — grid tactics, ACTIVE
 **Owner's brief, 2026-08-28: `turf/GDD.md` and `turf/PRODUCTION_PIPELINE.md`, read those
 before touching anything — this section is the summary, they are the source.** Three street
@@ -1486,6 +1618,22 @@ eeri/           # Eeri — the platformer. MULTI-AGENT: read PHASING.md before a
     fx-smoke.mjs   # the FX spec, pool and inference — bare node
     dev-menu.mjs   # the dev pack's contract with the game — bare node
     report.mjs     # the level report card — not a gate; tells dull from broken
+slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
+  GDD.md        # the design authority: the look, both formats, where synergy lives
+  VERSIONS.md
+  vendor/       # three.js r167, local — not the CDN
+  js/
+    data.js     # every card, character, friend, enemy, encounter — both themes
+    engine.js   # THE RULES: no DOM, no three.js, no clock, seeded; adds then mults
+    puppet.js   # the gritty cutout, its tin or cardboard base, and the 3D topple
+    cardart.js  # a painted picture for every card, cached per picture and accent
+    scene.js    # the plank bridge, and one camera rule for two formats
+    bg.js       # the photographic park, the tilt-shift, and the photo/stereo seam
+    main.js     # boot, HUD, and the replay that acts the engine's log out
+    audio.js    # synthesised kit, every voice through one master gain
+  test/
+    core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
+    smoke.cjs   # a browser: puppets, the topple, the staging rules, both formats
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate

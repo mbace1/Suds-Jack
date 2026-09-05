@@ -92,6 +92,10 @@ const LEADS = {
                                           // it: how it reads, and what it should
                                           // notice next
   skltr: ['balance', 'controls'],
+  // A deckbuilder is asked about its numbers first — whether a run climbs and
+  // whether a friend is worth a slot — and then what should be IN it, because
+  // a card and a friend are the units this game grows in.
+  slaykallio: ['balance', 'idea'],
   neonronin: ['controls', 'look'],
   eyetest: ['idea', 'bug'],
   paperboy: ['more', 'idea'],             // set down — "put it back" is the note
@@ -167,6 +171,9 @@ const SPECIFIC = {
     'gameoflife:more': ['I actually went outside', 'The quiet is the point'],
     'kindling:look': ['The room is hard to read', 'Too many numbers on it now'],
     'kindling:idea': ['A small thing it should notice', 'Something it could bring home'],
+    'slaykallio:balance': ['A friend that trivialises the run', 'The bench I keep dying on'],
+    'slaykallio:idea': ['A card for…', 'A friend that would…', 'A Kallio face still missing'],
+    'slaykallio:look': ['The puppets are hard to read', 'The bridge pulls focus from the fight', 'Not gritty enough'],
     'sudsjack:idea': ['Keep the tube, lose the…', 'The rebuild should keep…'],
     'paperboy:more': ['Put this one back on the site'],
     'hub:idea': ['Sort the cabinets by…', 'Show me what changed since last time'],
@@ -190,6 +197,9 @@ const SPECIFIC = {
     'gameoflife:more': ['Menin oikeasti ulos', 'Hiljaisuus on koko juju'],
     'kindling:look': ['Huonetta on vaikea lukea', 'Numeroita on nyt liikaa'],
     'kindling:idea': ['Pieni asia jonka sen pitäisi huomata', 'Jotain mitä se voisi tuoda kotiin'],
+    'slaykallio:balance': ['A friend that trivialises the run', 'The bench I keep dying on'],
+    'slaykallio:idea': ['A card for…', 'A friend that would…', 'A Kallio face still missing'],
+    'slaykallio:look': ['The puppets are hard to read', 'The bridge pulls focus from the fight', 'Not gritty enough'],
     'sudsjack:idea': ['Pidä putki, jätä pois…', 'Uusintaversion pitäisi säilyttää…'],
     'paperboy:more': ['Palauta tämä sivustolle'],
     'hub:idea': ['Järjestä kaapit…-mukaan', 'Näytä mikä on muuttunut viime käynnin jälkeen'],
@@ -213,6 +223,9 @@ const SPECIFIC = {
     'gameoflife:more': ['ほんとうに外に出ました', '静かさこそが本体'],
     'kindling:look': ['部屋が読みにくい', '数字が増えすぎた'],
     'kindling:idea': ['気づいてほしい小さなこと', '持って帰ってきてほしいもの'],
+    'slaykallio:balance': ['A friend that trivialises the run', 'The bench I keep dying on'],
+    'slaykallio:idea': ['A card for…', 'A friend that would…', 'A Kallio face still missing'],
+    'slaykallio:look': ['The puppets are hard to read', 'The bridge pulls focus from the fight', 'Not gritty enough'],
     'sudsjack:idea': ['筒は残して、…はやめて', '作り直しでも残してほしいのは…'],
     'paperboy:more': ['これをサイトに戻してほしい'],
     'hub:idea': ['キャビネットを…順に並べて', '前回から何が変わったか見せて'],
