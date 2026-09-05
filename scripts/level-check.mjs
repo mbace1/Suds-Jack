@@ -17,6 +17,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import * as L from '../toko-drop/js/level.js';
+import { TUNING } from '../toko-drop/js/tuning.js';
 
 const src = readFileSync(new URL('../toko-drop/js/enemy.js', import.meta.url), 'utf8');
 const block = src.match(/export const EnemyType = \{([\s\S]*?)\n\};/);
@@ -41,6 +42,7 @@ const errsOf = lv => [...L.validate(lv, ctx), ...L.checkGeometry(lv)];
 const fresh = (o = {}) => ({ ...L.newLevel('X'), spawns: [{ t: 0, type: 'GLOBBO', px: 0, pz: 0 }], ...o });
 
 ok('EnemyType parsed from source', typeNames.size >= 30, `(${typeNames.size})`);
+ok('MAX_SHAPES equals the floor\'s shape slots (a level cannot name more shapes than the floor draws)', L.MAX_SHAPES === TUNING.arena.shapeSlots, `${L.MAX_SHAPES} vs ${TUNING.arena.shapeSlots}`);
 ok('pickup ids parsed from source', pickupIds.has('hp') && pickupIds.has('S') && !pickupIds.has('key'), [...pickupIds].join(','));
 
 // ── every bundled file loads, and BUNDLED names exactly the files ──────
