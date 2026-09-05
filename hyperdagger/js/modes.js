@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=70';
+import { TUNING as T } from './tuning.js?v=71';
 
 /**
  * THE MODE REGISTRY — this game is a laboratory, not one experience.
@@ -81,8 +81,8 @@ export const MODES = [
     id: 'truck',
     name: 'TRUCK',
     blurb: 'Clustertruck — the floor is leaving, keep your feet off it',
-    controls: 'WASD · Space ×2 · Shift dash · do not stop',
-    abilities: { jumps: 2, dash: true, reap: false, glide: true }, // a track needs air control
+    controls: 'WASD · Space ×2 · Shift dash · run the walls · do not stop',
+    abilities: { jumps: 2, dash: true, reap: false, glide: true, wallRun: true }, // a track needs air control; the course needs the wall
     director: 'none',         // the track IS the pressure
     lethality: 'oneTouch',
     arena: 'track',

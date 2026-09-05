@@ -5,23 +5,23 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=70';
-import { Player } from './player.js?v=70';
-import { DaggerPool } from './daggers.js?v=70';
-import { GemPool } from './gems.js?v=70';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=70';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=70';
-import { OrbPool } from './bullets.js?v=70';
-import { AudioKit } from './audio.js?v=70';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=70';
-import { TUNING as T } from './tuning.js?v=70';
-import { HyperEnvironment } from './environment.js?v=70';
-import { Backdrop } from './backdrop.js?v=70';
-import { Walls } from './walls.js?v=70';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=70';
-import { TruckTrack } from './truck.js?v=70';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=70';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=70';
+import { InputManager } from './input.js?v=71';
+import { Player } from './player.js?v=71';
+import { DaggerPool } from './daggers.js?v=71';
+import { GemPool } from './gems.js?v=71';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=71';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=71';
+import { OrbPool } from './bullets.js?v=71';
+import { AudioKit } from './audio.js?v=71';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=71';
+import { TUNING as T } from './tuning.js?v=71';
+import { HyperEnvironment } from './environment.js?v=71';
+import { Backdrop } from './backdrop.js?v=71';
+import { Walls } from './walls.js?v=71';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=71';
+import { TruckTrack } from './truck.js?v=71';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=71';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=71';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -81,7 +81,7 @@ const PERF_TIERS = [
   { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(SOFTWARE_PR, 0.50), bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
-const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
+const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08, gapMs: 250, gapRun: 4 };
 let perfTier = 0;
 let frameEMA = 16.7;
 let perfSettleUntil = 0; // ignore samples until this performance.now()
@@ -573,7 +573,12 @@ backdrop.load('assets/manifest.json').then(r => {
   }
 }).catch(() => {});
 // the court's walls — empty on the disc, built by startGame for a court arena
-const walls = new Walls(scene, floorMat); // the same plates as the floor
+// The same plates as the floor, a step brighter: a vertical face of the
+// floor's own material has nothing lighting it and vanished into the sky, and
+// the neon edge pass cannot rim a black-on-black silhouette.
+const wallMat = floorMat.clone();
+wallMat.uniforms.uGlow.value = 2.1;
+const walls = new Walls(scene, wallMat);
 
 // ---------------------------------------------------------------- actors
 const input = new InputManager();
@@ -811,15 +816,23 @@ function setPerfTier(t) {
  *  step down after ~1.5s sustained over downMs, step up one tier per ~15s
  *  stable under upMs. Samples right after tier changes / unpause /
  *  tab-visibility flips are ignored (perfSettleUntil). */
+let perfSlowRun = 0; // consecutive real samples over the gap threshold
 function perfGovern(now, rawMs) {
   if (opts.perf !== 'auto' || state !== 'playing' || paused) return;
-  const ms = forcedFrameTime ?? rawMs;
-  // the >250ms discard catches tab-hidden gaps — it only applies to REAL
-  // samples, so forced (test) frame times always count
-  if (now < perfSettleUntil || (forcedFrameTime === null && rawMs > 250)) {
-    perfBadSince = 0;
-    perfGoodSince = 0;
-    return;
+  let ms = forcedFrameTime ?? rawMs;
+  if (now < perfSettleUntil) { perfBadSince = 0; perfGoodSince = 0; return; }
+  // A frame over 250 ms is USUALLY a tab-hidden gap, and one or two of them
+  // are discarded as such. But a RUN of them is not a gap, it is the device:
+  // the phone pass (v40) found a coarse-pointer page at 750 ms per frame
+  // holding tier 0 forever with 59 skinned enemies and 856k instances on
+  // the field, because every sample the governor exists to see was thrown
+  // away as a tab switch and the EMA never left its 16.7 ms initial value.
+  // Four in a row count, clamped so one true hitch cannot slam the EMA.
+  if (forcedFrameTime === null && rawMs > perfTuning.gapMs) {
+    if (++perfSlowRun < perfTuning.gapRun) { perfBadSince = 0; perfGoodSince = 0; return; }
+    ms = Math.min(rawMs, perfTuning.gapMs * 1.6);
+  } else if (forcedFrameTime === null) {
+    perfSlowRun = 0;
   }
   frameEMA += (ms - frameEMA) * perfTuning.emaAlpha;
   if (frameEMA > perfTuning.downMs) {
@@ -875,6 +888,7 @@ let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapt
 // debug/test only: stop new spawns while everything else keeps running, and
 // hold a run open for measurement. Neither is reachable from the UI.
 let directorFrozen = false;
+let timeScale = 1; // debug only — scripts/hd-loop.mjs slows a fast move so a 1.5 s capture frame can see it
 let invulnerable = false;
 let pulseN = 0;
 let pureScriptCursor = 0;
@@ -2702,9 +2716,9 @@ function step(dt) {
   const reapPressed = input.consumeReap();
   if (player.abilities?.reap && reapPressed) tryReap();
   if (M().arena === 'track') {
-    truck.update(dt, player, gameTime, enemies);
+    truck.update(dt, player, gameTime, enemies, walls); // the course lays walls beside its wide gaps
     // the floor leaving is the whole game — falling off it is the death
-    if (player.feet.y < T.truck.fallY && state === 'playing') {
+    if (player.feet.y < T.truck.fallY && state === 'playing' && !invulnerable) {
       lastKiller = 'the fall';
       die();
       return;
@@ -2956,7 +2970,7 @@ function updateSphereProjection() {
 function animate() {
   requestAnimationFrame(animate);
   const rawDt = clock.getDelta(); // unclamped — the governor needs real frame cost
-  const dt = Math.min(rawDt, 0.05);
+  const dt = Math.min(rawDt, 0.05) * timeScale; // timeScale: the harness's slow-motion knob, 1 in play
   perfGovern(performance.now(), rawDt * 1000);
   input.pollGamepad();
   if (state !== 'playing' || paused) {
@@ -3067,6 +3081,20 @@ window.__hd = {
     getVoxelStyle() { return getVoxelStyle(); },
     setVoxelStyle(st) { setVoxelStyle(st); },
     getBackdrop() { return backdrop.getState(); },
+    setTimeScale(k) { timeScale = Math.max(0.02, Math.min(1, +k || 1)); },
+    /** The live feel numbers — the gate edits them in place (and puts them back). */
+    tuning() { return T; },
+    /** The body's wall state — what the wall-run gate and the harness read. */
+    getWallRun() {
+      return { enabled: !!player.wallRunEnabled, running: !!player.wallRunning, t: +player.wallRunT.toFixed(2),
+        contact: player.wallContact ? [+player.wallContact.nx.toFixed(2), +player.wallContact.nz.toFixed(2)] : null,
+        roll: +player.roll.toFixed(3), y: +player.feet.y.toFixed(2), vy: +player.vy.toFixed(2) };
+    },
+    /** Where the governor settled — the phone pass reads this. */
+    getPerf() {
+      return { tier: perfTier, detail: getVoxelDetail(), fps: +(1000 / Math.max(1, frameEMA)).toFixed(1),
+        hull: getHullMode(), skins: meshSkinsOn(), coarse: !!window.matchMedia?.('(pointer: coarse)').matches };
+    },
     getWalls() { return walls.getState(); },
     getArena() {
       return {

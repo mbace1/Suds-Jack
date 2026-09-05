@@ -347,7 +347,28 @@ line arena is back. `js/walls.js` is the first non-floor geometry: oriented
 slabs with point-vs-box collision that report `player.wallContact` (the wall-
 run hook), wearing the floor's own material so they read as the same plates.
 `arena: 'court'` in the mode registry is the disc plus four tangent walls at
-radius 16; MOVE is a court, the DD modes stay open discs. **The bench is `voxel-lab.html`**: it
+radius 16; MOVE is a court, the DD modes stay open discs. **v40 built the
+first experiment on it: the wall run** (`T.player.wallRun`; airborne + a wall
+contact + speed along it → the body sticks, holds height, banks the camera,
+and a jump press kicks off along the normal; a 1.3 s clock per contact keeps
+it a move). Three things it found: catching a wall at the top of a jump must
+cap `vy` or the body climbs off the wall's top; a wall run holds nearly flat
+(sink −0.5) and the clock ends it, not the floor; and the jump gate was
+coyote-only, so v36's `jumps: 2/3` had never double-jumped — a body granted
+more than one jump now spends the rest in the air, and a press while running
+a wall belongs to the kick-off, not the air jump. The TRUCK course: gaps past
+a jump get a wall along one side to run across (`T.truck.courseGap`,
+`courseWallH`), culled behind like the slabs. Walls wear the floor's plates
+at 2.1× glow, or they are black on black. **The perf governor discarded every
+frame over 250 ms as a tab-hidden gap**, so a device slower than 4 fps was
+invisible to it — a coarse-pointer page at 750 ms/frame held tier 0 with 856k
+instances and reported 60 fps; four slow frames in a row count now
+(`perfTuning.gapRun`). `scripts/hd-loop.mjs` is the
+motion harness (the toko-drop one, ported): it stages a copy of the site
+subset the game needs, appends a harness to main.js, and records GIF loops
+from the real code — `--stills` for inspection frames, `hold()` because a
+skull rushes the camera, `slow()` because one SwiftShader capture frame is
+~1.5 s of game time and a wall run is over in one. **The bench is `voxel-lab.html`**: it
 lists every registered asset and `__lab.revox(kind, overrides)` re-cuts one
 live from the loaded mesh, so an export is turned by looking at it; copy the
 printed cfg into the manifest when it reads right. Every art question in v38

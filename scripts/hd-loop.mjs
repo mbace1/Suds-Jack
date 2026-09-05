@@ -51,13 +51,13 @@ const wanted = argv.filter((a, i) => !a.startsWith('--') && !(argv[i - 1] || '')
 const SCENARIOS = {
   jaw: {
     title: 'SKULL — the bite: hinged jaw under the Meshy skin',
-    setup: 'window._LOOP.solo("Skull", 3.2)',
+    setup: 'window._LOOP.solo("Skull", 3.2); window._LOOP.slow(0.35)',
     tick: 'window._LOOP.hold()',
     every: 1,
   },
   shed: {
     title: 'SKULL — 22% of the lattice gone, the skin sheds, the cubes fight on',
-    setup: 'window._LOOP.solo("Skull", 3.6)',
+    setup: 'window._LOOP.solo("Skull", 3.6); window._LOOP.slow(0.5)',
     tick: 'window._LOOP.hold(); if (window._LOOP._f = (window._LOOP._f || 0) + 1, window._LOOP._f % 3 === 0) window._LOOP.chip(0.05)',
     every: 1,
   },
@@ -78,6 +78,13 @@ const SCENARIOS = {
     tick: 'window._LOOP.hold()',
     every: 1,
   },
+  wallrun: {
+    title: 'MOVE — the wall run: take off beside the wall, ride it, kick off',
+    mode: 'move',
+    setup: 'window._LOOP.wallStart()',
+    tick: 'window._LOOP.wallTick()',
+    every: 1,
+  },
   court: {
     title: 'MOVE — the court: four walls, the body stops and slides along',
     mode: 'move',
@@ -92,18 +99,33 @@ const SCENARIOS = {
 const HARNESS = `
 window._LOOP = {
   boot() { startGame(); directorFrozen = true; invulnerable = true; return null; },
+  // Under SwiftShader one capture frame is ~1.5 s of game time and a wall run
+  // is over in one. slow(k) scales the game clock so the move spans frames.
+  slow(k) { window.__hd.debug.setTimeScale(k); return null; },
   reset() {
     this._f = 0;
+    this.slow(1);
     for (const e of enemies) e.alive = false;
     enemies.length = 0; serpents.length = 0;
     player.feet.set(0, 0, 0); player.yaw = 0; player.pitch = 0.02; player.velocity.set(0, 0, 0); player.vy = 0; player._sync();
     return null;
   },
-  place(e, dist) { e.group.position.set(0, e.pos.y, -dist); e._holdAt = e.group.position.clone(); return e; },
-  // A skull RUSHES you: left alone it is inside the camera by mid-loop and
-  // past it by the end. hold() puts every placed enemy back each tick — it
-  // still turns, bites, sheds and bleeds, it just does not close the distance.
-  hold() { for (const e of enemies) if (e._holdAt && e.alive) e.group.position.copy(e._holdAt); return null; },
+  // A skull RUSHES you: left alone it is inside the camera by mid-loop. And
+  // a hold applied once per CAPTURE frame is not enough — between two
+  // captures the game runs half a second and the skull closes three units.
+  // So the hold is a wrap on the enemy's own update: it turns, bites, sheds
+  // and bleeds every frame, and every frame it is put back where it was placed.
+  place(e, dist) {
+    e.group.position.set(0, e.pos.y, -dist);
+    e._holdAt = e.group.position.clone();
+    if (!e._heldUpdate) {
+      const u = e.update.bind(e);
+      e.update = (...a) => { u(...a); if (e.alive && e._holdAt) e.group.position.copy(e._holdAt); };
+      e._heldUpdate = true;
+    }
+    return e;
+  },
+  hold() { return null; }, // kept for the scenario table; the wrap above does the work
   solo(kind, dist) {
     this.reset();
     const spawn = { Skull: () => window.__hd.debug.spawnSkull(), Dread: () => window.__hd.debug.spawnDread(),
@@ -127,6 +149,16 @@ window._LOOP = {
   killAt(frame) { this._f = (this._f || 0) + 1; if (this._f === frame) { const e = enemies.find(x => x.alive); if (e) { e.hp = 1; e.hit(5, new THREE.Vector3(0, 0, -1)); if (e.hp <= 0) killEnemy(e, new THREE.Vector3(0, 0.5, -1)); } } return null; },
   serpent() { this.reset(); window.__hd.debug.spawnSerpent(); player.feet.set(0, 0, 10); player._sync(); return null; },
   court() { this.reset(); player.feet.set(4, 0, 4); player.yaw = 0.5; player._sync(); return null; },
+  // the wall run, scripted: in front of the north wall looking along it,
+  // one jump, speed along the wall leaning into it, a kick-off mid-way
+  wallStart() { this.reset(); this.slow(0.12); player.feet.set(-5.5, 0, -14.6); player.yaw = -Math.PI / 2 + 0.25; player.pitch = 0.05; player._sync(); this._f = 0; return null; },
+  wallTick() {
+    this._f = (this._f || 0) + 1;
+    if (this._f === 2) player.jumpBuffer = 0.11;
+    if (this._f < 16) { player.velocity.x = 9.5; player.velocity.z = -3; }
+    if (this._f === 16) player.jumpBuffer = 0.11;   // the kick-off, hands off after
+    return null;
+  },
   run(x, z) { player.velocity.set(x * 9, 0, z * 9); return null; },
   hudOff() { for (const id of ['hud', 'style', 'timer']) { const el = document.getElementById(id); if (el) el.style.opacity = '0'; } return null; },
   caption(text) {

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { shadedBox } from './voxel.js?v=70';
+import { shadedBox } from './voxel.js?v=71';
 
 /**
  * WALLS — the first geometry this arena has ever had that is not a floor.
@@ -25,7 +25,7 @@ export class Walls {
   }
 
   /** One slab: centre (x, z), yaw radians, len along its own x, height h, thickness. */
-  add({ x, z, yaw = 0, len = 12, h = 5, thick = 1 }) {
+  add({ x, z, yaw = 0, len = 12, h = 5, thick = 1, tag = null }) {
     const geo = new THREE.BoxGeometry(len, h, thick);
     // the floor shader tiles its map uRepeat times across the 52-unit disc;
     // scale each face's uv so a wall's plates are the same size underfoot
@@ -36,7 +36,18 @@ export class Walls {
     mesh.position.set(x, h / 2, z);
     mesh.rotation.y = yaw;
     this.group.add(mesh);
-    this.walls.push({ x, z, yaw, len, h, thick, mesh, cos: Math.cos(yaw), sin: Math.sin(yaw) });
+    this.walls.push({ x, z, yaw, len, h, thick, mesh, tag, cos: Math.cos(yaw), sin: Math.sin(yaw) });
+  }
+
+  /** Drop every wall the predicate names — the track culls its course walls
+   *  behind the player the way it culls its slabs. */
+  cull(pred) {
+    for (let i = this.walls.length - 1; i >= 0; i--) {
+      const w = this.walls[i];
+      if (!pred(w)) continue;
+      this.group.remove(w.mesh); w.mesh.geometry.dispose();
+      this.walls.splice(i, 1);
+    }
   }
 
   /** The four-wall court: tangent slabs at radius r, one per quadrant. */

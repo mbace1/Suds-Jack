@@ -24,6 +24,15 @@ export const TUNING = {
     jumpV: 8.6,      // takeoff velocity — with gravity gives the jump arc
     maxJumps: 1,     // extra height comes from a downward shotgun, not a free air jump
     glideGravity: 0.32, // gravity multiplier while gliding (MOVE / TRUCK)
+    // WALL RUN (v40, MOVE first). Touch a wall while airborne with speed
+    // along it and the body sticks and runs: gravity nearly off, speed held
+    // at least at wallRunSpeed, a press of jump kicks OFF the wall. The
+    // clock is what keeps it a move and not a mode — max seconds per wall
+    // contact, refilled by touching the floor.
+    // sink -0.5 / gravity 0.06: the first cut sank at -1.4 and a run caught
+    // off a standing jump touched the floor in a second, before its clock —
+    // a wall run holds nearly flat, and the CLOCK is what ends it
+    wallRun: { max: 1.3, minAlong: 3.0, speed: 11.5, gravity: 0.06, rise: 1.2, sink: -0.5, stick: 0.6, jumpUp: 1.05, jumpPush: 7.5, roll: 0.14 },
     jumpBuffer: 0.11,
     coyote: 0.08,
     hopWindow: 0.12,
@@ -167,6 +176,11 @@ export const TUNING = {
     platformLife: 2.2,
     fallY: -8,
     width: 4.2,
+    // THE COURSE (v40): after 20 s some gaps widen by courseGap — past what
+    // a jump clears — and get a wall along one side to run across.
+    courseGap: 2.2,
+    courseWallH: 4.5,
+    courseChance: 0.12, // per gap, past 20 s — the gate sets it to 1
   },
 
   /**

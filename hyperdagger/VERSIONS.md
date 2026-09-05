@@ -2,6 +2,97 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v40 — 2026-09-05
+**The first experiment on the bench: the wall run**
+
+Declared in v36 (`wallRun: false` — "needs walls"), given walls in v39,
+implemented here and switched on for MOVE, where a bad mechanic is obvious
+in ten seconds instead of hidden behind a fight. That is what the bench
+was built for, and this is the first thing built on it.
+
+**The move.** Airborne, touching a wall (`player.wallContact`, written by
+`walls.resolve` a frame earlier), moving along it faster than `minAlong`,
+clock not spent: the body sticks and runs — speed held at least at
+`wallRun.speed` along the tangent, leaned into the wall by `stick` so the
+contact survives the next frame, gravity at 6% with a slow sink, the camera
+banking `roll` away from the wall. A jump press mid-run kicks OFF along the
+normal (`jumpPush`) with `jumpUp` of a jump's lift, and spends the clock
+until the floor. The clock (`max` 1.3 s per contact) is what keeps it a move
+and not a mode. All of it in `T.player.wallRun`.
+
+**Two things the first probe taught.** Catching the wall at the top of a
+jump carried the jump's lift straight on up: the body climbed from 1.6 to
+4.8, cleared the 5-unit wall, lost contact, and the kick-off found nothing
+to kick from — entering the run now caps `vy` at a small `rise`. Then the
+sink at −1.4 brought a standing-jump run down to the floor in a second,
+before its clock; it is −0.5 now, because a wall run holds nearly flat and
+the clock is what ends it. Both settled by numbers off the probe, not by
+feel-guessing.
+
+**And a bug three releases old underneath it.** The jump gate required
+coyote time — a press on or just off the floor — which is the DD body's
+rule and right for one jump. v36 declared `jumps: 2` for TRUCK and `3` for
+MOVE and the gate stayed, so no mode had ever double-jumped; the check that
+shipped with v36 asserted the COUNT was applied and never that a second
+jump fired. A body granted more than one jump may now spend the rest in
+the air, and walking off an edge without jumping spends the first (a fall
+is not a free extra jump). The gate now jumps twice.
+
+**Then the TRUCK course.** The track generator had, since v36, widened one
+gap in eight after twenty seconds by a third — a hole you could still jump.
+It widens them past a jump now (`courseGap` 2.2) and lays a wall along one
+side of each, from the slab you leave to the slab you land on, alternating
+sides so the body has to read it: the way across is to run the wall. The
+auto-scroll IS the speed along it, so the move is jump, drift into the wall,
+hold — and the 1.3 s clock at track speed covers the hole. Course walls cull
+behind the player the way the slabs do. TRUCK has `wallRun: true` now.
+Proven: the clock jumped past twenty seconds, a course wall appears within
+a few seconds and a bot that neither jumps nor drifts dies in the hole.
+
+**And the walls learned to be seen.** The first capture of the wall run
+showed the bank and the hand piece and no wall at all: a vertical face of
+the floor's own unlit plates against a black sky is black on black, and the
+neon edge pass cannot rim what has no luminance edge. Walls wear a clone of
+the floor material at 2.1× glow — the same plates, a step brighter, so
+their silhouette exists.
+
+**The harness sees it.** `scripts/hd-loop.mjs wallrun` — take-off beside
+the north wall, the ride, the kick-off, with the bank in the frame. It
+needed two things to: `hold()` became a per-frame wrap on the held enemy's
+own update (a hold applied once per capture frame let a skull close three
+units between captures), and `slow(k)` — a `setTimeScale` knob on the game
+loop — because one SwiftShader capture frame is ~1.5 s of game time and a
+wall run is over in one.
+
+**The phone pass, and what it found.** A coarse-pointer context (Pixel 5:
+393×727 at dpr 2.75, `(pointer: coarse)` true) run under the software
+renderer at ~750 ms a frame held **tier 0 for the whole run** — 59 enemies,
+every one skinned at fine pitch, 856,587 instances on the field — and the
+governor reported 59.9 fps while doing it. One line: a frame over 250 ms
+was discarded as a tab-hidden gap, so a device genuinely slower than 4 fps
+was invisible to the governor that exists for it, and the EMA never left its
+16.7 ms initial value. A single slow frame is a gap; a RUN of them is the
+device. Four in a row count now (`perfTuning.gapMs`, `gapRun`), clamped so
+one true hitch cannot slam the EMA. Same context after: tier 1 at five
+seconds, 2 at ten, the floor at fifteen; skins off for new spawns, the
+coarse twins handed out, 165,286 instances with 57 alive. The six spawned
+before the drop keep their skins, by design.
+
+**Gate: 121 checks** — on the court page the run engages, holds height,
+kicks off along the normal, and a second jump fires in the air; on the
+track a course wall appears past twenty seconds with wall run on — and a
+bot that never jumps is in the first hole by frame 27 and dead by 60, so
+the track window lifts it out of the holes for its whole length, and the
+fall honours the same test-only invulnerability every other death does. The
+restart-frame check that went red under a shared CPU three runs running is
+not a wait: `setRunFrame` is one synchronous class toggle. What flips it
+back is `showPause()` on a lost pointer lock, which a headless click's lock
+request triggers differently under load — the frame retreated and the game
+paused, both correct, and the check accepts either now. And a governor
+check that only means something where frames are slow: if a raw frame
+exceeds the gap threshold the tier must move within eight seconds, and on a
+fast renderer it says so instead of pretending.
+
 ## v39 — 2026-09-05
 **The arena, through the same seam — and the first walls it has ever had**
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { toLambert } from './meshassets.js?v=70';
+import { toLambert } from './meshassets.js?v=71';
 
 /**
  * THE BACKDROP — the owner's Meshy environment pieces, placed OUTSIDE the

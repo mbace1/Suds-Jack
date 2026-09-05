@@ -419,6 +419,10 @@ s.listen(0, '127.0.0.1', async () => {
   // ---- v4.26 REAP: the bone-yard is a resource you spend -----------------
   const reap = await p.evaluate(async () => {
     const hd = window.__hd;
+    // Pin the tier that HAS a bone-yard. This section ran on tier 0 only
+    // because the governor was blind to slow frames (v40); now it drops to a
+    // floor tier here whose litter cap is zero, and REAP has nothing to spend.
+    hd.debug.setOpt('perf', 'high');
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     hd.debug.setPerfTier(0);
     hd.litter.reset(); hd.debris.reset();
@@ -444,6 +448,7 @@ s.listen(0, '127.0.0.1', async () => {
       cool: hd.debug.getReap().cool, again: hd.debug.reap() };
     h.alive = false; hd.litter.reset(); hd.debris.reset();
     res.fired = fired;
+    hd.debug.setOpt('perf', 'auto'); // hand the tier back
     return res;
   });
   ok('REAP refuses a bare floor, free', reap.bare === false && reap.coolAfterMiss === 0, JSON.stringify(reap));
@@ -709,11 +714,15 @@ s.listen(0, '127.0.0.1', async () => {
   const restarted = await p.waitForFunction(
     () => window.__hd.debug.getState().state === 'playing', null, { timeout: 4000 }).then(() => true, () => false);
   ok('one click restarts within 2s', restarted);
-  // the restart's frame swap lands a tick after state flips to 'playing'
-  // (8 s, not 4: under a software renderer sharing the CPU with a capture
-  //  run the restart's frame swap has landed past 4 s and failed this twice)
+  // setRunFrame is one synchronous class toggle, so no wait can be the cure
+  // for what failed here three times under a shared CPU. What CAN flip the
+  // frame back is showPause(): a lost pointer lock pauses the game, and a
+  // headless click's lock request lands differently under load. The frame
+  // retreated on restart and the game then paused — both correct — so a
+  // PAUSED overlay counts as the frame having done its job.
   const retreated = await p.waitForFunction(
-    () => document.body.classList.contains('in-run'), null, { timeout: 8000 }).then(() => true, () => false);
+    () => document.body.classList.contains('in-run') || /PAUSED/.test(document.getElementById('msg')?.textContent || ''),
+    null, { timeout: 8000 }).then(() => true, () => false);
   ok('the full shell returns off-run and retreats again on restart',
     !death.activeFrame && retreated);
 
@@ -761,7 +770,17 @@ s.listen(0, '127.0.0.1', async () => {
     ok(`${id}: there is a floor under it`,
       Number.isFinite(m.player.floorY) && m.player.feetY >= m.player.floorY - 0.6,
       `floorY=${m.player.floorY} y=${m.player.feetY}`);
-    await tick(60);
+    // A bot never jumps, so on a track it is in the first hole by frame ~27
+    // and dead by 60 — lift it out while the run ages, and let the fall
+    // respect the same test-only invulnerability every other death does.
+    if (decl.arena === 'track') {
+      await p.evaluate(async () => {
+        const hd = window.__hd, d = hd.debug, pl = hd.player;
+        d.setInvulnerable?.(true);
+        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+        for (let i = 0; i < 60; i++) { if (pl.feet.y < -1.5) { pl.feet.y = 0.5; pl.vy = 0; } await frames(1); }
+      });
+    } else await tick(60);
     const late = await p.evaluate(() => ({
       state: window.__hd.debug.getState().state,
       platforms: window.__hd.debug.getModes().trackPlatforms,
@@ -771,6 +790,28 @@ s.listen(0, '127.0.0.1', async () => {
       // run lasts; whether a bot that never steers stays on it is not the
       // gate's business.
       ok(`${id}: the track keeps building ahead`, late.platforms > 4, String(late.platforms));
+      // v40: THE COURSE — past 20 s some gaps widen beyond a jump and get a
+      // wall along one side to run across. Jump the clock and watch for one.
+      const course = await p.evaluate(async () => {
+        const hd = window.__hd, d = hd.debug, pl = hd.player;
+        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+        d.setInvulnerable?.(true);
+        d.setTime(24);
+        // deterministic: every gap past 20 s is a course gap for this check,
+        // and the bot — which neither jumps nor drifts — is lifted out of
+        // the holes it would otherwise die in before one came along
+        const T = d.tuning ? d.tuning() : null;
+        if (T) T.truck.courseChance = 1;
+        let walls = 0;
+        for (let i = 0; i < 240 && walls === 0; i++) {
+          pl.feet.x = 0; if (pl.feet.y < -1.5) { pl.feet.y = 0.5; pl.vy = 0; }
+          await frames(1); walls = d.getWalls().count;
+        }
+        if (T) T.truck.courseChance = 0.12;
+        return { walls, wallRun: d.getWallRun().enabled, courseTagged: d.getWalls().walls.length > 0, state: d.getState().state };
+      });
+      ok(`${id}: the course lays a wall beside a widened gap`, course.walls >= 1 && course.courseTagged, JSON.stringify(course));
+      ok(`${id}: wall run is on for the course`, course.wallRun === true, JSON.stringify(course));
     } else if (decl.arena === 'court') {
       // v39: the first geometry this arena has had that is not a floor
       const court = await p.evaluate(async () => {
@@ -785,6 +826,36 @@ s.listen(0, '127.0.0.1', async () => {
       ok(`${id}: a wall stops the body and reports its normal`,
         court.z > -16 && court.z < -14 && court.contact && court.contact[1] === 1, JSON.stringify(court));
       ok(`${id}: survives on the court`, late.state === 'playing', late.state);
+      // v40: the wall run — take off beside the north wall with speed along
+      // it, ride it holding height, kick off along its normal on a jump press;
+      // and the air jump, which v36 declared for this body and never delivered
+      const wr = await p.evaluate(async () => {
+        const hd = window.__hd, pl = hd.player, d = hd.debug;
+        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+        pl.feet.set(-5, 0, -14.6); pl.yaw = -Math.PI / 2; pl.velocity.set(0, 0, 0); pl.vy = 0; pl._sync();
+        await frames(2);
+        let ran = 0, ys = [], kick = null;
+        for (let i = 0; i < 44; i++) {
+          if (i === 1) pl.jumpBuffer = 0.11;
+          if (i < 18) { pl.velocity.x = 9; pl.velocity.z = -3; } // hands off after the press, or the kick is overwritten
+          if (i === 18) pl.jumpBuffer = 0.11;
+          await frames(1);
+          const w = d.getWallRun();
+          if (w.running) { ran++; ys.push(w.y); }
+          if (i === 19) kick = { vz: +pl.velocity.z.toFixed(2), vy: +pl.vy.toFixed(2), wasRunning: w.running, t: w.t };
+        }
+        // the air jump: from the floor, jump, then jump again in the air
+        pl.feet.set(0, 0, 0); pl.velocity.set(0, 0, 0); pl.vy = 0; pl._sync(); await frames(2);
+        pl.jumpBuffer = 0.11; await frames(8);
+        const midAir = pl.feet.y > 0.5 && pl.vy < 6;
+        pl.jumpBuffer = 0.11; await frames(1);
+        const second = { midAir, vyAfter: +pl.vy.toFixed(2), jumpsLeft: pl.jumpsLeft, maxJumps: pl.maxJumps };
+        return { enabled: d.getWallRun().enabled, ran, yMin: +Math.min(...ys).toFixed(2), yMax: +Math.max(...ys).toFixed(2), kick, second };
+      });
+      ok(`${id}: wall run is on and engages`, wr.enabled && wr.ran >= 10, JSON.stringify(wr));
+      ok(`${id}: a wall run holds height instead of climbing off the wall or sinking to the floor`, wr.yMin > 0.4 && wr.yMax < 2.5, JSON.stringify(wr));
+      ok(`${id}: a jump press mid-run kicks off along the wall's normal`, wr.kick && wr.kick.vz > 1.5 && wr.kick.vy > 4, JSON.stringify(wr.kick));
+      ok(`${id}: a second jump fires in the air`, wr.second.midAir && wr.second.vyAfter > 6, JSON.stringify(wr.second));
     } else {
       ok(`${id}: survives a minute of its own director`, late.state === 'playing', late.state);
     }
@@ -897,6 +968,28 @@ s.listen(0, '127.0.0.1', async () => {
   // (a skull holds its HEAD — the jaw is a second sprite — so the held count
   //  is at most the twin's, never equal to it)
   ok('at the ladder floor a spawn holds the coarse twin', lod.held > 0 && lod.held <= lod.lodDeclared && lod.held < lod.fine / 3, JSON.stringify(lod));
+
+  // ---- v40 the governor sees a slow device -------------------------------
+  // It discarded every frame over 250 ms as a tab-hidden gap, so a device
+  // genuinely that slow was invisible to it. This renderer IS that slow with
+  // the art loaded, which is what makes the check possible here at all; on a
+  // fast renderer it cannot be exercised and says so rather than passing.
+  const gov = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    d.setOpt('perf', 'auto');
+    for (let i = 0; i < 6; i++) { d.spawnDread(); d.spawnSkull(); } // real pressure
+    const t0 = performance.now(); await frames(4); const rawMs = (performance.now() - t0) / 4;
+    const before = d.getPerf().tier;
+    const until = performance.now() + 9000;
+    let after = before;
+    while (performance.now() < until && after === before) { await frames(2); after = d.getPerf().tier; }
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    d.setOpt('perf', 'auto');
+    return { rawMs: +rawMs.toFixed(0), before, after, applicable: rawMs > 250 };
+  });
+  if (gov.applicable) ok('a run of slow frames moves the governor off tier 0', gov.after > gov.before, JSON.stringify(gov));
+  else ok('governor check: not applicable on a fast renderer (frames under the gap threshold)', true, JSON.stringify(gov));
 
   // ---- v37 the Meshy seam ------------------------------------------------
   // The loader for this whole system was never called from anywhere, so 5 MB
