@@ -4,6 +4,21 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v5 — 2026-07-27
+Controls rebuilt round a WEIGHT axis. Left stick steers and works the
+throttle; right stick pans the camera left/right and is your weight
+up/down — back to boost and lift the nose like a hot rod on the launch,
+forward to press the nose down like a front spoiler, which adds front
+grip and costs no speed. Two chassis, swapped with F: NOSE rockets pull
+you through the corner (thrust acts along the steered front); AFT
+rockets carry a bigger rudder and step the tail out under power. Both
+measured — nose 0.65 rad/s at 2.7 slip, aft 0.89 at 6.3.
+Rendering is now two layers: the world stays PS2 (0.62x, posterised,
+dithered, soft upscale) and the SHIPS are HD — full resolution over the
+top, Phong speculars, panel-line and rivet maps, layered rocket flames,
+spark showers off rock and every wall strike, and a fine spindrift
+curtain off the loaded outside runner in a carve.
+
 ## v4 — 2026-07-27
 Second pass on the owner's direction. The sleds are rocket-propelled at the
 FRONT and handle like a front-wheel-drive hot rod: thrust acts along the

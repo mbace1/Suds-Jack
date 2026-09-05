@@ -8,7 +8,7 @@
 // The bridge is placed by the one tile that contains the canyon centreline at
 // that crossing, so it is built exactly once.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=4';
+import { PAL } from './palette.js?v=5';
 
 export function makePropKit() {
   const lam = (c) => new THREE.MeshLambertMaterial({ color: c });

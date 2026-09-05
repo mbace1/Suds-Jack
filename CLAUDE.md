@@ -166,9 +166,45 @@ metres out resolves to a 900 px sprite and fills the frame with white.
 shadows, bloom and antialiasing are exactly what a weak machine cannot afford and exactly
 what this look is made of.
 
-**Controls.** W throttle, A/D steer, S brake, Space overdrive (builds turbine heat and
-trips out at redline), Esc pause. The HUD is a telemetry cluster: N1, TGT, lateral g,
-slip, hover gap, **sink** (cm the runners have settled), surface. Touch is twin sticks: left steers and works the
+**Two chassis and the weight axis (v5).** `Vehicle` takes `drive: 'front' | 'rear'` and
+applies thrust at that axle, which is the whole difference. **NOSE** rockets point where
+the front is *steered*, so power adds a yaw moment and pulls you through the corner, and
+the front's traction circle loses what the thrust is using. **AFT** rockets point along
+the body and add no yaw at all — measured, that left the aft sled turning less than half
+as hard as the nose sled (0.22 rad/s against 0.51), so it carries a much bigger rudder
+(`rearSteer`) and a bigger traction circle (`rearCircle`) instead: comparable turn-in,
+but power mid-corner is what steps the tail out. They now measure 0.65 rad/s at 2.7 m/s
+slip (nose) against 0.89 at 6.3 (aft) — the same pace, a different character.
+The right stick's vertical axis is **weight**, not a button. Back boosts *and* lifts the
+nose: the boost line acts below the centre of mass, so the front runners unload and the
+sled planes over the deep stuff. **`liftLever` was measured**: at 1.35 the boost unloaded
+the front axle by 52% (6712 N → 3202 N) and the sled would not turn while lit, so
+anything that boosted drove into the first wall — a hot rod lifts its nose, it does not
+lose the ability to steer, and 0.75 halves the unload and keeps the drama. Forward is a
+**front spoiler**: nose-down force going as the square of airspeed, applied at the front
+axle, so it adds front load and bite and costs *no* speed — but on deep sand the extra
+front load digs the runners in and ploughs, which is why leaning forward through soft
+ground is slow. Carving *into* the roll earns extra grip (`edge`), so committing to a
+turn is rewarded.
+
+**Two render layers (v5).** The world is PS2; the ships are not. Layers are
+`0` opaque world, `1` HD, `2` the world's transparencies (plume, scars), `3` sky.
+`renderFrame()` is three passes: the composer over layers 0/2/3 at 0.62x (posterised,
+dithered, upscaled soft); then a **full-resolution depth-only prepass of layer 0**,
+because the composer's depth is at 0.62x and the HD layer needs a depth buffer that
+matches it; then layer 1 over the top. The lights must `layers.enable(1)` or the ships
+are unlit and cast no shadow. On the HD layer: Phong hulls with painted panel-line and
+rivet maps, layered rocket flames (white core, coloured sheath, textured glow), spark
+showers off rock and off every wall strike, and a fine spindrift curtain off the loaded
+outside runner. **A `SpriteMaterial` with no map draws a solid quad** — the first version
+put a white box round every ship.
+
+**Controls.** Left stick steers and works the throttle; right stick pans the camera
+(x) and is your weight (y). Keyboard: W throttle, A/D steer, S brake, Space boost
+(lean back), Up arrow spoiler (lean forward), Left/Right arrows pan, **F swaps the
+chassis on the menu**, Esc pause. The HUD is a telemetry cluster: N1, TGT, lateral g,
+slip, hover gap, **sink** (cm the runners have settled), the weight axis, surface and
+chassis. Touch is twin sticks: left steers and works the
 throttle — there is no auto-throttle, managing spool is the point — right holds overdrive
 and trims the slide.
 
@@ -386,8 +422,8 @@ powder/         # Powder — hover SIM racer, open flatlands cut by a canyon, su
     vehicle.js  # THE SIM: four sprung hover pads, turbine spool, slip-limited grip
     props.js    # monoliths, arches, floating rock — where the surreal lives
     route.js    # gates, alternating rift floor and flats, aligned to the breaches
-    dust.js     # pooled plume particles + MultiplyBlend ground scars
-    input.js    # twin sticks (touch) / keyboard, with a real throttle axis
+    dust.js     # one pooled particle class, configured as plume / spindrift / sparks
+    input.js    # twin sticks: steer+throttle, and pan+WEIGHT / keyboard
     audio.js    # WebAudio turbine stack driven by N1, wind, surface roar
     sky.js      # gradient dome, sun, the ringed body, distant mesa range
 paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new palette)

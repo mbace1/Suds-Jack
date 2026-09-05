@@ -25,6 +25,25 @@
 //                         boulder flanks all behave without knowing about
 //                         each other.
 //
+//   TWO CHASSIS           v5: rockets on the NOSE or rockets AFT, and they
+//                         handle differently because the thrust is applied
+//                         where the rockets are. Front: thrust along the
+//                         steered nose pulls you through the corner and eats
+//                         the front's grip (push); lift off and the tail
+//                         comes round. Rear: thrust along the body eats the
+//                         REAR's grip — power mid-corner and the tail steps
+//                         out — while the front keeps its bite for a sharper
+//                         turn-in; lift off and it settles. Same code path,
+//                         one parameter: which axle the rockets are on.
+//   WEIGHT                v5: the right stick is the snowboarder's lean. Back
+//                         boosts and lifts the nose (a hot rod on the launch)
+//                         — the front runners unload and float over the deep
+//                         stuff. Forward presses the nose down like a front
+//                         spoiler: more front load, more bite, no braking,
+//                         and on deep sand the nose digs in and ploughs.
+//   THE EDGE              carving in the direction the body has rolled earns
+//                         extra grip — committing to the turn is rewarded,
+//                         which is what makes a carve feel like a carve.
 //   FRONT DRIVE           Second pass, on the owner's direction: the sleds are
 //                         rocket-propelled at the FRONT, and they feel like a
 //                         front-wheel-drive hot rod. Thrust acts along the
@@ -45,8 +64,8 @@
 // Integrated at a fixed 120 Hz on an accumulator, because a spring this stiff
 // is not stable on a variable frame time.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=4';
-import { SURF, SALT } from './terrain.js?v=4';
+import { PAL } from './palette.js?v=5';
+import { SURF, SALT } from './terrain.js?v=5';
 
 const G = 9.81;
 const HZ = 120, DTF = 1 / HZ;
@@ -68,7 +87,22 @@ export const SPEC = {
   // front had NO lateral force under full power (thrust is ~1.2 g here, the
   // axle carries ~6 kN) and the sled could only push. A hot rod pushes; it
   // does not lose its nose. 0.18 takes ~15% off the front at full throttle.
-  circle: 0.18,
+  circle: 0.18,              // how much of the driven axle's grip the thrust eats
+  // m below the CoM the boost line acts: the wheelie moment. Measured: at
+  // 1.35 the boost unloaded the front axle by 52% (6712 N to 3202 N) and the
+  // sled simply would not turn while lit, so anything that boosted drove
+  // straight into the first wall. A hot rod lifts its nose; it does not lose
+  // the ability to steer. 0.75 halves the unload and keeps the drama.
+  liftLever: 0.75,
+  spoiler: 2.2,              // N per (m/s)^2 of nose-down force at full forward lean
+  edge: 0.28,                // extra mu earned by carving into the roll
+  // Per chassis. Measured: with the rear sled given the same rudder as the
+  // front, it turned less than half as hard (yawRate 0.22 vs 0.51), because
+  // only the front sled gets the thrust-vector pull. So the rear carries a
+  // much bigger rudder to match turn-in, and a bigger traction circle so
+  // that power mid-corner is what steps the tail out. Both numbers exist to
+  // make the two sleds different in CHARACTER at similar pace.
+  rearSteer: 1.9, rearCircle: 0.28,
   spoolUp: 1.3, spoolDown: 0.8,
   brakeDrag: 5.2,
 };
@@ -83,6 +117,8 @@ export class Vehicle {
     this.number = opts.number ?? 1;
     this.power = opts.power ?? 1;
     this.basePower = this.power;
+    this.drive = opts.drive === 'rear' ? 'rear' : 'front';
+    this.lean = 0;                      // the weight axis as the sled feels it
 
     this.pos = new THREE.Vector3(opts.x ?? 0, 0, opts.z ?? 0);
     // spawn at the equilibrium ride height, not at rest length, or every
@@ -117,7 +153,7 @@ export class Vehicle {
     this._lastThrust = 0;
     this.aiT = 0; this.aiOff = 0;
 
-    this.mesh = buildCraft(this.accent, this.number);
+    this.mesh = buildCraft(this.accent, this.number, this.drive);
     terrain.scene.add(this.mesh);
     this._n = new THREE.Vector3();
     this._q = new THREE.Quaternion();
@@ -146,6 +182,10 @@ export class Vehicle {
     // forward is -z at yaw 0; right is +x. Same convention as the camera rig.
     const fx = sinY, fz = -cosY;
     const rx = cosY, rz = sinY;
+
+    // ---- weight: the lean settles over ~0.2 s, like shifting your stance ---
+    const wantLean = clamp(ctl.lean ?? (ctl.overdrive ? 1 : 0), -1, 1);
+    this.lean += (wantLean - this.lean) * Math.min(1, dt / 0.2);
 
     // ---- turbine ---------------------------------------------------------
     let throttle = clamp(ctl.throttle, 0, 1);
@@ -191,7 +231,11 @@ export class Vehicle {
         // back out when unloaded. Time constants are what make it feel like
         // the ground giving rather than a step.
         const sS = SURF[g.deck ? 4 : g.surf];
-        const want = sS.sink * Math.min(2.2, f / (SPEC.mass * G / 4));
+        // lean back and the nose planes over the deep stuff; lean forward and
+        // it digs in. Front runners only — that is where the weight moved.
+        const front = pad.z < 0;
+        const leanK = front ? 1 - this.lean * 0.55 : 1 + this.lean * 0.15;
+        const want = sS.sink * Math.min(2.2, f / (SPEC.mass * G / 4)) * leanK;
         pad.sink += (want - pad.sink) * Math.min(1, dt / (want > pad.sink ? 0.30 : 0.55));
         // Torque of a vertical force about the centre of mass: tau_x = -z*F,
         // tau_z = +x*F. Getting the pitch sign wrong here does not look like a
@@ -206,6 +250,16 @@ export class Vehicle {
     this.grounded = contacts > 0;
     this.onDeck = onDeck;
     this.load = Fy;
+    // the front spoiler: nose-down force that grows with the square of the
+    // airspeed, applied at the front axle — more front load, a pitch-down
+    // moment, and almost no drag. It is not a brake.
+    const vSq = this.vel.x * this.vel.x + this.vel.z * this.vel.z;
+    if (this.lean < 0) {
+      const Fs = -this.lean * SPEC.spoiler * vSq;
+      Fy -= Fs;                                   // presses the body down
+      Mpitch -= Fs * SPEC.hl;                     // tau_x = -z*F at z=-hl, F down
+      this.pads[0].f += Fs * 0.5; this.pads[1].f += Fs * 0.5;   // front carries it
+    }
     this.gap = Math.min(...this.pads.map(p => p.gap));
     this.sink = (this.pads[0].sink + this.pads[1].sink + this.pads[2].sink + this.pads[3].sink) / 4;
 
@@ -241,18 +295,28 @@ export class Vehicle {
     // moment with it: the pull through the corner that makes a front-drive
     // car drive the way it does.
     const steerIn = clamp(ctl.steer, -1, 1);
-    const delta = steerIn * SPEC.steerLock;
+    const frontDrive = this.drive === 'front';
+    // front rockets point where the front is steered; rear rockets point
+    // along the body and cannot pull the nose anywhere
+    const delta = frontDrive ? steerIn * SPEC.steerLock : 0;
     const cd = Math.cos(delta), sd = Math.sin(delta);
     const tx = fx * cd + rx * sd, tz = fz * cd + rz * sd;
     let Fx = tx * thrust + FxN, Fz = tz * thrust + FzN;
     // torque about the CoM from a lateral force at the front (z = -hl):
     // tau_y = -hl * F_lat, and our yaw is right-positive (= -rotation about
     // +y), so it enters as +hl. Positive steer under power turns right.
-    let Mz = SPEC.hl * thrust * sd;
+    let Mz = frontDrive ? SPEC.hl * thrust * sd : 0;
+    // the boost line sits below the centre of mass: hit it and the nose
+    // lifts, the front runners unload, and you are a hot rod off the line.
+    // Rear rockets sit further back and lift it harder.
+    if (this._od) {
+      const lever = SPEC.liftLever * (frontDrive ? 0.7 : 1.15) * Math.max(0, this.lean);
+      Mpitch += SPEC.odThrust * this.n1 * lever;
+    }
     // torque steer: a sharp rise in thrust tugs the nose on rough ground
     const dT = thrust - this._lastThrust;
     this._lastThrust = thrust;
-    if (this.grounded && dT > 0) Mz += dT * 0.9 * (S.drag - 0.8) * Math.sin(this.pos.x * 0.7 + this.pos.z * 0.3);
+    if (frontDrive && this.grounded && dT > 0) Mz += dT * 0.9 * (S.drag - 0.8) * Math.sin(this.pos.x * 0.7 + this.pos.z * 0.3);
 
     // body drag, plus the surface ploughing you
     const plough = this.grounded ? 1 + this.sink * 2.2 : 1;
@@ -268,10 +332,17 @@ export class Vehicle {
     // force sits ahead of it and does the opposite. Which wins is the load.
     if (this.grounded) {
       const Ff = this.pads[0].f + this.pads[1].f, Fr = this.pads[2].f + this.pads[3].f;
-      const used = thrust * SPEC.circle;
-      const capF0 = S.mu * Ff;
-      const capF = Math.sqrt(Math.max(0, capF0 * capF0 - used * used));
-      const capR = S.mu * Fr;
+      const used = thrust * (frontDrive ? SPEC.circle : SPEC.rearCircle);
+      // THE EDGE: carving into the roll earns grip. The body has rolled onto
+      // the outside runners (roll > 0 is right-side-down); steering into that
+      // side is a committed carve, and it bites harder. Steering against it
+      // is a scrub and earns nothing.
+      const carve = clamp(-this.roll * steerIn * 6, 0, 1);
+      const mu = S.mu * (1 + SPEC.edge * carve);
+      let capF = mu * Ff, capR = mu * Fr;
+      // the driven axle loses what the thrust is using — traction circle
+      if (frontDrive) capF = Math.sqrt(Math.max(0, capF * capF - used * used));
+      else            capR = Math.sqrt(Math.max(0, capR * capR - used * used));
       // lateral speed at each axle: v + omega x r, with our right-positive yaw
       const vLf = vL + this.yawRate * SPEC.hl;
       const vLr = vL - this.yawRate * SPEC.hl;
@@ -350,7 +421,7 @@ export class Vehicle {
     // ---- steering and attitude ------------------------------------------
     const steerGain = this.grounded ? 1 : 0.30;
     const auth = clamp(Math.abs(vF) / 26, 0, 1);
-    Mz += steerIn * SPEC.steer * auth * steerGain;
+    Mz += steerIn * SPEC.steer * (frontDrive ? 1 : SPEC.rearSteer) * auth * steerGain;
     Mz -= this.yawRate * SPEC.yawDamp * (this.grounded ? 1 : 0.5);
     this.yawRate += Mz / SPEC.Izz * dt;
     this.yaw += this.yawRate * dt;
@@ -377,9 +448,14 @@ export class Vehicle {
     this._e.set(this.pitch, this.yaw, -this.roll, 'YXZ');
     this.mesh.quaternion.setFromEuler(this._e);
     const th = this.n1 * (this._od ? 2.4 : 1);
+    const flick = 0.85 + Math.random() * 0.3;
     for (const f of this.mesh.userData.flares) {
-      f.scale.set(1, 1, 0.25 + th * 1.5);
-      f.material.opacity = 0.18 + th * 0.5;
+      const u = f.userData;
+      f.scale.set(1, 1, (0.2 + th * 1.4) * flick);
+      u.core.material.opacity = 0.5 + th * 0.4;
+      u.sheath.material.opacity = 0.2 + th * 0.35;
+      u.glow.material.opacity = 0.15 + th * 0.35;
+      u.glow.scale.setScalar(1.4 + th * 1.6);
     }
     this.mesh.userData.hull.material.color.setHex(this.hitT > 0.35 ? 0xffffff : PAL.hull);
   }
@@ -403,7 +479,10 @@ export class Vehicle {
     const tight = Math.min(1, Math.abs(err) * 1.4 + Math.abs(this.slip) * 0.06);
     ctl.throttle = clamp(1 - tight * 0.75, 0.25, 1);
     ctl.brake = false;
-    ctl.overdrive = this.heat < 0.6 && Math.abs(err) < 0.3;
+    const straight = Math.abs(err) < 0.3;
+    ctl.overdrive = this.heat < 0.6 && straight;
+    ctl.lean = ctl.overdrive ? 1 : (Math.abs(err) > 0.5 ? -0.6 : 0);
+    ctl.pan = 0;
     return ctl;
   }
 
@@ -436,31 +515,85 @@ function numberTexture(num, accent) {
   return t;
 }
 
-function buildCraft(accent, number) {
+/** Panel lines and rivets, painted once: the HD detail the PS2 world lacks. */
+function panelTexture(accentHex) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#' + new THREE.Color(PAL.hull).getHexString();
+  g.fillRect(0, 0, 256, 128);
+  g.strokeStyle = 'rgba(60,40,50,0.28)'; g.lineWidth = 1;
+  for (let x = 18; x < 256; x += 36) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 6, 128); g.stroke(); }
+  for (let y = 22; y < 128; y += 44) { g.beginPath(); g.moveTo(0, y); g.lineTo(256, y + 3); g.stroke(); }
+  g.fillStyle = 'rgba(40,30,40,0.35)';
+  for (let x = 8; x < 256; x += 12) for (let y = 6; y < 128; y += 22) g.fillRect(x, y, 1.5, 1.5);
+  // weathering: chipped edges in the accent, the plates' worn livery
+  g.fillStyle = 'rgba(' + [accentHex >> 16 & 255, accentHex >> 8 & 255, accentHex & 255].join(',') + ',0.22)';
+  for (let i = 0; i < 14; i++) g.fillRect(Math.random() * 256, Math.random() * 128, 4 + Math.random() * 14, 1 + Math.random() * 3);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
+  return t;
+}
+
+function glowTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.3, 'rgba(255,220,180,0.5)');
+  grd.addColorStop(1, 'rgba(255,180,120,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.generateMipmaps = false; t.minFilter = THREE.LinearFilter;
+  return t;
+}
+
+/** A rocket flame: white core, coloured sheath, soft glow. Scaled by N1. */
+function makeFlame() {
   const g = new THREE.Group();
-  // Lambert, not PBR: a PlayStation 2 lit its cars per vertex and the specular
-  // was a painted highlight. Chrome is a pale grey with a hot emissive lift.
-  const hullMat = new THREE.MeshLambertMaterial({ color: PAL.hull });
-  const accMat = new THREE.MeshLambertMaterial({ color: accent });
-  const chrome = new THREE.MeshLambertMaterial({ color: PAL.chrome, emissive: PAL.chromeHi, emissiveIntensity: 0.22 });
-  const glass = new THREE.MeshLambertMaterial({ color: PAL.glass, emissive: 0x6a7aa0, emissiveIntensity: 0.25 });
+  const core = new THREE.Mesh(geo('flameCore', () => { const b = new THREE.ConeGeometry(0.16, 2.0, 10); b.rotateX(Math.PI / 2); return b; }),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.1, 1.9), transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const sheath = new THREE.Mesh(geo('flameSheath', () => { const b = new THREE.ConeGeometry(0.34, 3.0, 10); b.rotateX(Math.PI / 2); return b; }),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 0.9, 0.45), transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
+  // A SpriteMaterial with no map draws a SOLID QUAD — every ship came out
+  // wearing a white box. The glow needs an actual radial falloff.
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: geo('glowTex', glowTexture), color: new THREE.Color(1.4, 0.8, 0.5),
+    transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending }));
+  glow.scale.setScalar(2.2);
+  core.position.z = 1.0; sheath.position.z = 1.5;
+  g.add(core, sheath, glow);
+  g.userData = { core, sheath, glow };
+  return g;
+}
+
+function buildCraft(accent, number, drive = 'front') {
+  const g = new THREE.Group();
+  // The ships are the HD layer, drawn full-resolution over the PS2 world:
+  // Phong with a real specular, panel lines and rivets on the hull, a glass
+  // canopy with a highlight. The contrast with the dithered world is the point.
+  const hullMat = new THREE.MeshPhongMaterial({ map: panelTexture(accent), color: 0xffffff, specular: 0x554433, shininess: 28 });
+  const accMat = new THREE.MeshPhongMaterial({ color: accent, specular: 0x332233, shininess: 22 });
+  const chrome = new THREE.MeshPhongMaterial({ color: PAL.chrome, specular: 0xffffff, shininess: 140, emissive: PAL.chromeHi, emissiveIntensity: 0.10 });
+  const glass = new THREE.MeshPhongMaterial({ color: PAL.glass, specular: 0xffffff, shininess: 200, emissive: 0x4a5a8a, emissiveIntensity: 0.3, transparent: true, opacity: 0.92 });
 
   const body = new THREE.Mesh(geo('body', () => {
-    const b = new THREE.CylinderGeometry(0.92, 0.72, 6.2, 10);
+    const b = new THREE.CylinderGeometry(0.92, 0.72, 6.2, 20);
     b.rotateX(-Math.PI / 2); return b;
   }), hullMat);
   body.position.z = 0.5; body.scale.set(1.15, 0.8, 1);
   g.add(body);
 
   const nose = new THREE.Mesh(geo('nose', () => {
-    const b = new THREE.ConeGeometry(0.92, 4.2, 10);
+    const b = new THREE.ConeGeometry(0.92, 4.2, 20);
     b.rotateX(-Math.PI / 2); return b;
   }), hullMat);
   nose.position.z = -4.6; nose.scale.set(1.15, 0.8, 1);
   g.add(nose);
 
   const band = new THREE.Mesh(geo('band', () => {
-    const b = new THREE.CylinderGeometry(0.9, 0.86, 1.7, 10);
+    const b = new THREE.CylinderGeometry(0.9, 0.86, 1.7, 20);
     b.rotateX(-Math.PI / 2); return b;
   }), accMat);
   band.position.z = -0.5; band.scale.set(1.15, 0.8, 1);
@@ -474,7 +607,7 @@ function buildCraft(accent, number) {
   plate.rotation.z = Math.PI;
   g.add(plate);
 
-  const canopy = new THREE.Mesh(geo('canopy', () => new THREE.SphereGeometry(0.52, 10, 6)), glass);
+  const canopy = new THREE.Mesh(geo('canopy', () => new THREE.SphereGeometry(0.52, 18, 10)), glass);
   canopy.scale.set(0.95, 0.68, 1.9); canopy.position.set(0, 0.46, -2.5);
   g.add(canopy);
 
@@ -490,43 +623,43 @@ function buildCraft(accent, number) {
   const finCap = new THREE.Mesh(geo('finCap', () => new THREE.BoxGeometry(0.14, 0.24, 1.2)), accMat);
   finCap.position.set(0, 1.15, 2.88); finCap.rotation.x = -0.34; g.add(finCap);
 
+  // Where the rockets are IS the chassis. Front: cans beside the nose, short,
+  // exhaust trailing back along the flanks. Rear: cans slung aft, the plates'
+  // silhouette. The physics applies the thrust at the same axle.
+  const front = drive === 'front';
+  const nz = front ? -3.6 : 2.2;                   // nacelle centre z
+  const nx = front ? 1.15 : 1.3, ny = front ? -0.05 : -0.24;
   const flares = [];
   for (const side of [-1, 1]) {
-    const nac = new THREE.Mesh(geo('nac', () => {
-      const b = new THREE.CylinderGeometry(0.42, 0.38, 3.2, 10);
+    const nac = new THREE.Mesh(geo(front ? 'nacF' : 'nac', () => {
+      const b = new THREE.CylinderGeometry(front ? 0.36 : 0.42, front ? 0.34 : 0.38, front ? 2.6 : 3.2, 18);
       b.rotateX(-Math.PI / 2); return b;
     }), chrome);
-    nac.position.set(side * 1.3, -0.24, 2.2);
+    nac.position.set(side * nx, ny, nz);
     g.add(nac);
 
     const collar = new THREE.Mesh(geo('collar', () => {
-      const b = new THREE.CylinderGeometry(0.5, 0.45, 0.34, 10);
+      const b = new THREE.CylinderGeometry(0.5, 0.45, 0.34, 18);
       b.rotateX(-Math.PI / 2); return b;
     }), chrome);
-    collar.position.set(side * 1.3, -0.24, 0.72);
+    collar.position.set(side * nx, ny, nz - (front ? 1.2 : 1.48));
     g.add(collar);
 
     const mouth = new THREE.Mesh(geo('mouth', () => {
-      const b = new THREE.CircleGeometry(0.36, 10);
+      const b = new THREE.CircleGeometry(0.36, 18);
       b.rotateY(Math.PI); return b;
     }), new THREE.MeshBasicMaterial({ color: PAL.intake }));
-    mouth.position.set(side * 1.3, -0.24, 0.55);
+    mouth.position.set(side * nx, ny, nz - (front ? 1.38 : 1.65));
     g.add(mouth);
 
     const strut = new THREE.Mesh(geo('strut', () => new THREE.BoxGeometry(1.1, 0.16, 0.7)), chrome);
-    strut.position.set(side * 0.74, -0.2, 2.0);
+    strut.position.set(side * (nx - 0.55), ny + 0.04, nz - 0.2);
     g.add(strut);
 
-    const flare = new THREE.Mesh(geo('flare', () => {
-      const b = new THREE.ConeGeometry(0.3, 2.4, 10);
-      b.rotateX(Math.PI / 2); return b;
-    }), new THREE.MeshBasicMaterial({
-      color: PAL.flame, transparent: true, opacity: 0.4, depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    }));
-    flare.position.set(side * 1.3, -0.24, 5.0);
-    g.add(flare);
-    flares.push(flare);
+    const flame = makeFlame();
+    flame.position.set(side * nx, ny, nz + (front ? 1.3 : 1.6));
+    g.add(flame);
+    flares.push(flame);
   }
 
   const tex = numberTexture(number, accent);
@@ -538,7 +671,10 @@ function buildCraft(accent, number) {
     g.add(decal);
   }
 
-  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
+  g.traverse(o => {
+    if (o.isMesh || o.isSprite) { o.castShadow = !!o.isMesh; o.receiveShadow = false; o.layers.set(1); }
+  });
+  g.layers.set(1);           // the HD layer: drawn full-res over the PS2 world
   g.scale.setScalar(0.74);   // ~11 m long overall
   g.userData.flares = flares;
   g.userData.hull = body;

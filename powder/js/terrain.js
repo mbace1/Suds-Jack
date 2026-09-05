@@ -21,8 +21,8 @@
 //                 it returns the deck when you are on it and the floor when
 //                 you are under it.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=4';
-import { populate, makePropKit } from './props.js?v=4';
+import { PAL } from './palette.js?v=5';
+import { populate, makePropKit } from './props.js?v=5';
 
 export const TILE = 100;
 const Q = 16;                    // 6.25 m resolution
