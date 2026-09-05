@@ -27,7 +27,7 @@
 // option that would cost the Godot port a week. Rim-from-alpha is the
 // next step up and it comes after there are lights worth rimming.
 
-import { mix } from './palette.js?v=55';
+import { mix } from './palette.js?v=57';
 
 // ---- 1 · mood -----------------------------------------------------------
 // Per world: what the lanes are multiplied by, from the far end of the
@@ -43,6 +43,41 @@ export const MOOD = {
   // The night shift is the whole reason this exists: far lanes go deep and
   // cold so that a work lamp has something to be brighter THAN.
   nightshift: { far: '#35507a', near: '#8f9fbe', amount: 1 },
+};
+
+// ---- 3 · THE CAST ------------------------------------------------------
+//
+// The mood above dims the WORLD. Doing that and nothing else makes the kid
+// harder to find, not easier — he is a small mid-toned figure and the night
+// ramp pulls the backdrop toward his own value rather than away from it.
+// Two dials answer that, and they belong here beside the mood they answer:
+//
+//   rim    — the fresnel edge on the cast (`craft.js`'s `rimLight`). Its
+//            COLOUR is the world's own key light: a warm yard, a cold
+//            trench, a green-lit grove, a blue night. Strength is what the
+//            backdrop's business demands, not a constant.
+//   lamp   — an optional work lamp that FOLLOWS the cast. Only the night
+//            shift gets one, and it is the honest reading of that world:
+//            everyone on a night shift is carrying a light. It is the same
+//            additive quad `buildLamp` already makes for a fixed lamp, so
+//            it costs one more draw call and no new concept.
+//
+// `i: 0` means no follow lamp, which is every daylight world — the entry is
+// still written out so the table reads as a set rather than a special case.
+export const CAST_RIM = {
+  groundworks: { color: '#fff3dc', strength: 0.22 },
+  pipeworks:   { color: '#dceaff', strength: 0.34 },
+  grove:       { color: '#e8ffd8', strength: 0.40 },
+  // the big one. The depot is dark, blue and busy, and the rim is the only
+  // thing on him that the backdrop cannot also be.
+  nightshift:  { color: '#cfe2ff', strength: 0.72 },
+};
+
+export const CAST_LAMP = {
+  groundworks: { i: 0 },
+  pipeworks:   { i: 0 },
+  grove:       { i: 0 },
+  nightshift:  { i: 0.55, r: 5.4, colour: '#ffd9a0', y: 0.9 },
 };
 
 // z of the far and near lanes, so the ramp can be read off a position

@@ -9,10 +9,10 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=55';
+import { PAL } from './palette.js?v=57';
 // The silhouette line lives in craft.js, not here: robots.js needs the same
 // one, and two copies of a silhouette rule is how two silhouettes start.
-import { outlineShell } from './craft.js?v=55';
+import { outlineShell, rimLight } from './craft.js?v=57';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -281,6 +281,11 @@ export class Kid {
     // wear, and it pushes along the normal rather than scaling, which is what
     // makes it survive a pose. See the note there.
     outlineShell(this.group);
+    // …and the rim, which is the other half of the same job: the outline
+    // says where he ends, the rim says he is in FRONT of what is behind
+    // him. Built at the groundworks setting; `main.js` retunes it per world
+    // through `setRim` as he walks in (light.js's CAST_RIM).
+    rimLight(this.group);
 
     // blob shadow — the landing aid (no shadow maps anywhere)
     this.shadow = new THREE.Mesh(

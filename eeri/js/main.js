@@ -9,33 +9,34 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=55';
-import { Input } from './input.js?v=55';
-import { Level, ROOMS, LAB } from './level.js?v=55';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=57';
+import { Input } from './input.js?v=57';
+import { Level, ROOMS, LAB } from './level.js?v=57';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
   buildSheetModel, Sheet,
-} from './pieces.js?v=55';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=55';
-import { Camera } from './camera.js?v=55';
-import { buildKidModel, Kid, Player } from './kid.js?v=55';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=55';
-import { buildCraneModel, Crane } from './crane.js?v=55';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=55';
-import { buildFlattenerModel } from './flattener.js?v=55';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=55';
-import { Hoist } from './hoist.js?v=55';
-import { Plank } from './plank.js?v=55';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=55';
-import { WreckingBall } from './hazards.js?v=55';
-import { AudioKit } from './audio.js?v=55';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=55';
-import { craftMat, craftBox } from './craft.js?v=55';
-import { t as tr } from './lang.js?v=55';
-import { showIntro } from './intro.js?v=55';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=55';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=55';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=55';
+} from './pieces.js?v=57';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=57';
+import { Camera } from './camera.js?v=57';
+import { buildKidModel, Kid, Player } from './kid.js?v=57';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=57';
+import { buildCraneModel, Crane } from './crane.js?v=57';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=57';
+import { buildFlattenerModel } from './flattener.js?v=57';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=57';
+import { Hoist } from './hoist.js?v=57';
+import { Plank } from './plank.js?v=57';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=57';
+import { WreckingBall } from './hazards.js?v=57';
+import { AudioKit } from './audio.js?v=57';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=57';
+import { craftMat, craftBox, setRim } from './craft.js?v=57';
+import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=57';
+import { t as tr } from './lang.js?v=57';
+import { showIntro } from './intro.js?v=57';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=57';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=57';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=57';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -196,6 +197,29 @@ async function boot() {
 
   const kid = new Kid(await getModel('eeri', buildKidModel));
   scene.add(kid.group, kid.shadow);
+
+  // THE CAST CARRIES ITS OWN LIGHT, and it is one object for the whole game
+  // rather than one per room: the kid is the only thing on screen that is
+  // never rebuilt, so neither is his lamp. Off (opacity 0) in every daylight
+  // world; the night shift turns it up. See light.js §3.
+  const castLamp = buildLamp(THREE, { x: 0, y: 0, r: 5.4, colour: '#ffd9a0', i: 0, z: 1.1 });
+  castLamp.visible = false;
+  scene.add(castLamp);
+  let castLampY = 0.9;
+  // Applied on boot and on every world change, beside the diorama swap that
+  // is the other half of "which world are we in" — the rim answers the mood
+  // and the two must never be set from different places.
+  const applyCastLight = (world) => {
+    const r = CAST_RIM[world] || CAST_RIM.groundworks;
+    setRim(kid.group, r.color, r.strength);
+    const l = CAST_LAMP[world] || { i: 0 };
+    castLamp.visible = l.i > 0;
+    castLamp.material.opacity = l.i;
+    castLamp.material.color.set(l.colour || '#ffd9a0');
+    castLamp.scale.setScalar((l.r || 5.4) / 5.4);
+    castLampY = l.y ?? 0.9;
+  };
+  applyCastLight(worldOf(0));
 
   // the background works (§3.5): the same machine, repainted by depth,
   // digging on the FAR layer's ground line — scenery, shared by every site
@@ -479,6 +503,7 @@ async function boot() {
   if (worldOf(siteIndex) !== diorama.world) {
     diorama.dispose();
     diorama = await buildLayers(scene, worldOf(siteIndex), REDUCED);
+    applyCastLight(diorama.world);
   }
   let site = await buildSite(siteIndex);
   setHash(siteIndex);
@@ -685,6 +710,7 @@ async function boot() {
     if (want !== diorama.world) {
       diorama.dispose();
       diorama = await buildLayers(scene, want, REDUCED);
+      applyCastLight(want);
     }
 
     // the cast walks on: same kid, but each room's machine is the room's
@@ -1379,6 +1405,12 @@ async function boot() {
         if (g.popT >= 1) { g.state = 'gone'; g.visible = false; }
       }
     }
+    }
+
+    // the cast's lamp rides with him — set from his GROUP, not from
+    // `player`, so it follows him into the cab as well as along the floor
+    if (castLamp.visible) {
+      castLamp.position.set(kid.group.position.x, kid.group.position.y + castLampY, 1.1);
     }
 
     // the background machine is decoration — reduced motion stills it

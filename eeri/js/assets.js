@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=55';
+import { PAL } from './palette.js?v=57';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);

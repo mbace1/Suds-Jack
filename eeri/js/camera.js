@@ -15,7 +15,26 @@
 // a short dolly-in kick on heavy events, which is what weight looks like
 // from behind a camera.
 
-const DEFAULT = { z: 34, y: 2.6, lead: 1.6, floor: 5.8 };
+// v15.53: the default dolly came in from 34 to 31. Every room's authored
+// shots are PULL-BACKS (37.5–45) — a lock you cannot see is not a lock —
+// and with the default already at 34 there was no push-in anywhere in the
+// game, so "the same room, walked end to end, produces three distinct
+// compositions" (ART_TARGET rung 2) was never true: it produced one, and
+// then a further one. The default IS the push-in now: ordinary running is
+// the close framing, and crossing into a lock's shot is a visible move.
+const DEFAULT = { z: 31, y: 2.6, lead: 1.6, floor: 5.8 };
+
+// THE PHONE IS HELD UPRIGHT, and the lens does not know. The camera's FOV is
+// VERTICAL (24°, a long lens, chosen for a 16:9 stage), so in a portrait
+// window the picture keeps its height and loses its width: at z=31 a
+// 390×844 phone sees about six units of level across, and a jump is 4.85.
+// The gap you are about to cross is at the edge of the frame or past it.
+// So the dolly answers the ASPECT: whatever the shot asks for, the camera
+// never comes closer than shows MIN_W units of level across. In landscape
+// this never fires (a 16:9 stage at z=31 already shows twenty-three); in
+// portrait it is the whole composition. Owner's number — see VERSIONS
+// v15.53 for the three framings it was chosen from.
+const MIN_W = 10;
 
 export class Camera {
   constructor(camera, def) {
@@ -75,10 +94,23 @@ export class Camera {
     // the drift: slow, small, and on both axes so it never reads as a
     // wobble on one of them
     z += Math.sin(this.t * 0.23) * 0.5;
+    // …and the portrait floor on the dolly (MIN_W above), applied after
+    // every other opinion so a punch cannot dip under it either
+    z = Math.max(z, MIN_W / (2 * Math.tan((fov * Math.PI) / 360) * aspect));
     yOff += Math.sin(this.t * 0.17 + 1.3) * 0.22;
 
-    // ease the framing itself, so crossing into a shot is a move, not a cut
-    this.f.z += (z - this.f.z) * Math.min(1, 1.6 * dt);
+    // ease the framing itself, so crossing into a shot is a move, not a cut.
+    // NEVER DURING A JUMP (ART_TARGET rung 2: "Tropical Freeze is
+    // disciplined about this and it is the difference between cinematic and
+    // unplayable"). A shot boundary that falls mid-gap would otherwise dolly
+    // while the player is judging a landing; the move waits for his feet.
+    // `grounded` is the player's; a machine has none and never waits.
+    // Capped at the length of a jump: a long fall (a pit, a teleport in a
+    // test) is not a precision jump, and a camera that freezes for as long
+    // as the ground is missing would hold the wrong framing for seconds.
+    const airborne = mode === 'foot' && focus.grounded === false;
+    this.airT = airborne ? (this.airT || 0) + dt : 0;
+    if (!(airborne && this.airT < 0.7)) this.f.z += (z - this.f.z) * Math.min(1, 1.6 * dt);
     this.f.lead += (want.lead - this.f.lead) * Math.min(1, 2.2 * dt);
 
     // follow

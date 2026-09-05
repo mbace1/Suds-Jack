@@ -31,8 +31,8 @@
 // Adding a material is a manifest entry plus a name here. Nothing else.
 
 import * as THREE from 'three';
-import { getTexture } from './assets.js?v=55';
-import { PAL } from './palette.js?v=55';
+import { getTexture } from './assets.js?v=57';
+import { PAL } from './palette.js?v=57';
 
 // world units per texture repeat, per material — a felt nap is fine and a
 // card flute is coarse, so they do not share a scale
@@ -202,6 +202,87 @@ export function cutQuad(w, h, name, { repeatX = 0, ...opts } = {}) {
 // of the same value has no edge, and the model that replaced the box read
 // worse than the box. It lives here because this is the module that decides
 // what a surface in this game looks like.
+// ---- THE RIM ------------------------------------------------------------
+//
+// ART_TARGET rung 4: "rim light on the cast only. One cheap fresnel term in
+// the character material is what keeps a silhouette readable against a busy
+// background — this is how TF wins property 5, and it costs one shader
+// chunk." The audit's own scoring of property 5 is "code-built kid, strong
+// shapes, NO RIM LIGHT", and captured frames of all four worlds agree: on
+// the night shift the kid is a mid-dark figure against a mid-dark depot and
+// the brightest things near him are the bolts.
+//
+// The ink outline below already draws an edge. An outline says "here is a
+// boundary"; a rim says "here is a form, and it is in front". They do
+// different jobs and the reference uses both.
+//
+// COMPUTED IN THE VERTEX SHADER, deliberately. Per-pixel fresnel needs
+// `vViewPosition`, which is not guaranteed to exist in every material this
+// might be handed; the vertex shader always has `transformedNormal` (view
+// space, and it comes out of the SKINNING chunks, so it survives a pose) and
+// `mvPosition`. On a low-poly character the interpolated result is
+// indistinguishable and it is one pow() per vertex instead of per fragment.
+//
+// It ADDS to `totalEmissiveRadiance` rather than multiplying the diffuse, so
+// the rim is a light on the silhouette and not a repaint of the material —
+// and so it survives `applyMood`'s colour multiply (light.js), which is what
+// dims everything else at night.
+const RIM = { color: '#ffffff', power: 2.6, strength: 0.5 };
+
+/**
+ * A fresnel rim on every mesh under `root`, skipping the ink shell. Returns
+ * the uniform objects so a caller can retune them per world without
+ * rebuilding the model — see `setRim`.
+ */
+export function rimLight(root, opts = {}) {
+  const o = { ...RIM, ...opts };
+  const us = [];
+  root.traverse((m) => {
+    if (!m.isMesh || m.userData.__outline) return;
+    const mat = m.material;
+    if (!mat || mat.__rim) return;
+    const u = {
+      uRimColor: { value: new THREE.Color(o.color) },
+      uRimStrength: { value: o.strength },
+      uRimPower: { value: o.power },
+    };
+    mat.__rim = u;
+    const prev = mat.onBeforeCompile;
+    mat.onBeforeCompile = (sh, r) => {
+      if (prev) prev(sh, r);
+      Object.assign(sh.uniforms, u);
+      sh.vertexShader = 'varying float vRimF;\nuniform float uRimPower;\n' + sh.vertexShader.replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\n\tvRimF = pow(1.0 - abs(dot(normalize(transformedNormal), normalize(-mvPosition.xyz))), uRimPower);',
+      );
+      sh.fragmentShader = 'varying float vRimF;\nuniform vec3 uRimColor;\nuniform float uRimStrength;\n' + sh.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\n\ttotalEmissiveRadiance += uRimColor * (vRimF * uRimStrength);',
+      );
+    };
+    // an injected uniform must not share a program with a material that has
+    // none — same rule the ink shell above already lives by
+    mat.customProgramCacheKey = () => 'rim';
+    mat.needsUpdate = true;
+    us.push(u);
+  });
+  root.userData.__rim = us;
+  return us;
+}
+
+/**
+ * Retune a built rim. The cast crosses four worlds without being rebuilt, and
+ * what makes a silhouette read is not the same light in a sunlit yard as it
+ * is on a night shift — so the colour and the strength are a per-world dial
+ * (`CAST_RIM` in light.js), not a constant.
+ */
+export function setRim(root, color, strength) {
+  for (const u of root.userData.__rim || []) {
+    u.uRimColor.value.set(color);
+    u.uRimStrength.value = strength;
+  }
+}
+
 const OUTLINE = 0.028;           // tiles — a line, not a border
 export function outlineShell(root, width = OUTLINE) {
   root.updateWorldMatrix(true, true);

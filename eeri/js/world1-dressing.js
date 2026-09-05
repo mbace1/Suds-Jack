@@ -15,9 +15,9 @@
 // same distance world2-dressing closed for the pipe yard.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=55';
-import { craftMat, craftBox } from './craft.js?v=55';
-import { placeScenery } from './scenery.js?v=55';
+import { PAL, mix } from './palette.js?v=57';
+import { craftMat, craftBox } from './craft.js?v=57';
+import { placeScenery } from './scenery.js?v=57';
 
 export function buildGroundworksDressing(scene) {
   const root = new THREE.Group();

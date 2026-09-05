@@ -1,5 +1,144 @@
 # EERI — versions
 
+## v15.54 — 2026-09-05 — the enemy cast is remade at HD, and then cut back to 6.8k
+
+Numbered **after** the camera pass landed (PHASING §0.1: a version is
+claimed at merge, not at authoring) — this branch was authored against
+v15.52 while v15.53 was in flight.
+
+**Owner direction: "the concepts look great but the 3D models quite
+janky", and "aim for Yoshi's Crafted World and HD fidelity".** The three
+rigged enemies were made in v17/v19 at roughly **2,000 triangles with a
+256px texture** — the janky the owner was looking at. All three are
+regenerated from **the same approved concepts** (`art-src/bots/`), so no
+character changed; only the fidelity did.
+
+| | v1 (2026-08-14) | v2 (raw) | **v3, shipped** |
+|---|---|---|---|
+| triangles | ~2,000 | 30,000 | **6,800** |
+| texture | 256px webp | 2048px | **1024px webp** |
+| file | ~200 KB | 1.4 MB | **~470 KB** |
+
+**Why v2 was not shipped, and it is the finding of this release.** At 30k
+each the scene went from 63k triangles to **208k**, and `playthrough.cjs`
+went from 25/25 to **19/25** — six levels where the bot ran out of budget
+between x=77 and x=84 of 92. Nothing was broken; everything was slower.
+The gate renders on SwiftShader (no GPU), so it feels a triangle bill
+long before a phone does — but a 0.7-tile enemy costing more than the
+HERO (`eeri_v5` is 20k) is wrong on any device, and the bill would have
+been paid on the Pixel too.
+
+`gltf-transform simplify --ratio 0.22 --error 0.002` (meshoptimizer,
+already vendored inside the CLI, so no new dependency) takes each rig to
+~6.8k. **The silhouette and the paint survive** — verified by a
+three-way picture at 3× — because what was expensive was interior
+density, not shape. Scene back to 88k, and the playthrough returns to
+25/25.
+
+Also this pass: all three flip from `placeholder` to **`live`**, which
+they should have done at v15.23 when `js/robots.js` began asking for
+them. That is worth three more smoke checks (429 → 432): the seam now
+proves the files are really fetched and their clip contracts really
+hold.
+
+Clips, all measured moving (`clipmeasure`, the flat-clip trap CLIPS.md
+records): hopper `idle/walk/run/hop`, bolt-bot `idle/walk/run`, bucket
+`idle/walk/run/wake`. Walk and run ride along free with each rig.
+
+**Credits: 114 → 39.** Three meshes at 15, three rigs at 5, five clips at
+3. The remaining balance does not cover the retexture variants
+(wrench/cone/lamp-bot), so that line stays open.
+
+`node test/rooms.mjs` 246, `fx-smoke.mjs` 31, `dev-menu.mjs` 36,
+`smoke.cjs` **432**, `playthrough.cjs` 25.
+## v15.53 — 2026-09-04 — the camera earns its depth: a push-in, a portrait floor, and no move mid-jump
+
+**No gameplay changed.** `ART_TARGET` rung 2 asks that "the same room,
+walked end to end, produces at least three distinct compositions", and
+an audit of the twelve rooms found the director (`js/camera.js`) doing
+its job with nothing to push against: every authored shot is a
+PULL-BACK (z 37.5–45, the lock-you-can-see rule) and the default sat at
+34, so there was no push-in anywhere in the game. It produced one
+composition, then a further one.
+
+**The default IS the push-in now: 34 → 31.** Ordinary running is the
+close framing — the kid is about a tenth bigger in every landscape
+frame — and crossing into a lock's shot is a visible move rather than a
+nudge.
+
+**Held upright, the phone saw six units of level.** The lens is a
+vertical 24° chosen for a 16:9 stage; in a 390×844 window it keeps its
+height and loses its width, so at the default distance about six units
+of level were across the frame — and a jump is 4.85. The gap you were
+about to cross was at the edge or past it. `MIN_W` floors the dolly so
+the frame always shows ten units across; it never fires in landscape
+(a 16:9 stage at z 31 shows twenty-three). Chosen from three portrait
+framings by picture — 6 / 10 / 12 units — the ten keeps him readable
+and puts the next landing in frame. This is the phone build's own
+composition and the first camera decision made FOR portrait rather than
+inherited from landscape.
+
+**And the dolly holds while he is airborne.** Rung 2: "never move the
+camera during a precision jump — TF is disciplined about this and it is
+the difference between cinematic and unplayable." A shot boundary that
+fell mid-gap used to ease the dolly while a landing was being judged.
+Now the move waits for his feet; a machine has no `grounded` and never
+waits.
+
+Owner direction this session: **the browser build is the phone, Godot
+is the iPad and the controller.** The portrait floor is the browser
+build answering that; the Godot port's landscape framing is its own.
+
+`node test/rooms.mjs` 246, `fx-smoke.mjs` 31, `dev-menu.mjs` 36,
+`smoke.cjs` 429, `playthrough.cjs` 25.
+
+`?v=56` → `?v=57` across the module graph.
+
+## v15.52 — 2026-09-04 — the kid reads: a rim on the cast, and a lamp he carries at night
+
+**No gameplay changed.** `ART_TARGET` §2a scores the cast "strong shapes,
+NO RIM LIGHT", and rung 4 says what to do about it: "rim light on the
+cast only — one cheap fresnel term in the character material is what
+keeps a silhouette readable against a busy background." The captured
+frames agreed, and on the night shift they were damning: a mid-dark
+figure against a mid-dark depot, with the bolts the brightest thing near
+him. For a six-year-old, losing your own character is the worst failure
+on the list.
+
+**`craft.js` gains `rimLight()` / `setRim()`.** A fresnel term injected
+into each cast material via `onBeforeCompile`, computed in the VERTEX
+shader from `transformedNormal` and `mvPosition` — always present, and
+`transformedNormal` comes out of the skinning chunks so it survives a
+pose — and added to `totalEmissiveRadiance`, so it is a light on the
+silhouette rather than a repaint, and it survives `applyMood`'s night
+multiply. Skips the ink shell: the outline says where he ends, the rim
+says he is in front of what is behind him. Different jobs; the reference
+uses both.
+
+**`light.js` gains §3, the cast's two dials, beside the mood they
+answer.** `CAST_RIM` — colour is the world's own key (warm yard, cold
+trench, green grove, blue night), strength is what the backdrop's
+business demands (0.22 → 0.72). `CAST_LAMP` — a work lamp that FOLLOWS
+the kid, night shift only, because that is the honest reading of the
+world: everyone on a night shift carries a light. It is the same
+additive quad `buildLamp` already makes, so it is one more draw call and
+no new concept; off in every daylight world.
+
+**`main.js`** builds the lamp once (the kid is never rebuilt, so neither
+is his light), retunes both dials in `applyCastLight()` on boot and on
+every world change — beside the diorama swap, so "which world are we
+in" is answered in one place — and parks the lamp on `kid.group` each
+frame, not on `player`, so it follows him into a cab.
+
+Verified by A/B at the same framing: on the night shift he now has an
+edge and a warm pool on the floor under him; in the grove the edge is
+there and no more. Groundworks is nearly unchanged by design.
+
+`node test/rooms.mjs` 246, `fx-smoke.mjs` 31, `dev-menu.mjs` 36,
+`smoke.cjs` 429, `playthrough.cjs` 25.
+
+`?v=55` → `?v=56` across the module graph.
+
 ## v15.51 — 2026-09-04 — the ground is not the same ground (per-world earth, and a key from upper-left)
 
 **No gameplay changed.** The band under the play row is a third of every
