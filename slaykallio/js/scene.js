@@ -148,15 +148,44 @@ export class Arena {
     if (this.bridge) this.scene.remove(this.bridge);
     this.buildBridge(theme);
     this.fitFrame();
+    // setTheme builds a fresh background material, so a plate installed before
+    // the switch would quietly become the painting again. Put it back.
+    if (this.plate) { this._cut = null; this.cutPlate(); }
   }
 
   // A photograph behind the bridge — the owner's "can even use a real photo".
   // It goes through the SAME focus pass as the painting, so a plate is
   // tilt-shifted to the deck's row like everything else.
-  async setPhoto(url, opts) {
-    const tex = await fromImage(url, { focus: this.focus, ...opts });
-    this.bgMat.map = tex; this.bgMat.needsUpdate = true;
-    this.photo = true;                     // a plate is not repainted on resize
+  async setPhoto(url, opts = {}) {
+    this.plate = { url, opts };
+    await this.cutPlate();
+  }
+
+  // A plate is CUT to the frame, not stretched onto it, so it has to be recut
+  // whenever the frame changes shape — and a phone turned sideways changes it
+  // completely. Recut on the deck row too, for the same reason the painting is
+  // repainted on it: the sharp band has to stay on the thing you are looking at.
+  // A cut in flight FOLDS the next request into itself rather than dropping it.
+  // Boot asks for one at the camera's placeholder square aspect and the first
+  // resize asks for the real one a tick later, so a guard that simply returned
+  // left the plate cut to a shape the frame never has — square, and stretched
+  // onto a 16:9 plane, which is the exact fault the cut exists to remove.
+  async cutPlate() {
+    if (!this.plate) return;
+    if (this._cutting) { this._recut = true; return; }
+    this._cutting = true;
+    try {
+      do {
+        this._recut = false;
+        const { url, opts } = this.plate;
+        const aspect = this.camera.aspect, focus = this.focus;
+        const tex = await fromImage(url, { ...opts, focus, aspect });
+        if (this.plate.url !== url) { this._recut = true; continue; }  // a later plate won
+        this.bgMat.map = tex; this.bgMat.needsUpdate = true;
+        this.photo = true;
+        this._cut = { focus, aspect };
+      } while (this._recut);
+    } finally { this._cutting = false; }
   }
 
   buildBridge(theme) {
@@ -373,8 +402,12 @@ export class Arena {
     // Repainting is a blur pass over one canvas, so it happens only when the
     // row has actually moved — a resize drag must not repaint on every pixel.
     const row = this.deckRow();
-    if (!this.photo && Math.abs(row - this.focus) > 0.04) {
-      this.focus = Math.max(0.2, Math.min(0.85, row));
+    const moved = Math.abs(row - this.focus) > 0.04;
+    if (moved) this.focus = Math.max(0.2, Math.min(0.85, row));
+    if (this.plate) {
+      const reshaped = !this._cut || Math.abs(this._cut.aspect - cam.aspect) > 0.01;
+      if (moved || reshaped) this.cutPlate();
+    } else if (moved) {
       this.bgMat.map = paintedPark(this.theme, 3, this.focus);
       this.bgMat.needsUpdate = true;
     }

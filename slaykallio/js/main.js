@@ -59,6 +59,7 @@ const params = new URLSearchParams(location.search);
 // Both paths go through the SAME tilt-shift, so a photograph gets the sharp
 // band on the deck like everything else.
 const PLATE = 'bg/plate.jpg';
+resize();                                  // the plate is CUT to the frame, so give it the real one first
 if (params.get('bg')) {
   arena.setPhoto(params.get('bg'), { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
 } else {

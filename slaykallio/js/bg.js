@@ -182,23 +182,44 @@ export function paintedPark(theme, seed, focus = 0.6) {
 
 // A photograph as the park. `stereo: 'sbs'` takes a side-by-side pair and
 // crops the chosen eye; a future stereoscopic display would ask for both.
-export function fromImage(url, { stereo = null, eye = 'left', focus = 0.6 } = {}) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      const sw = stereo === 'sbs' ? img.width / 2 : img.width;
-      const sx = stereo === 'sbs' && eye === 'right' ? img.width / 2 : 0;
-      c.width = Math.min(2048, sw); c.height = Math.round(c.width * img.height / sw);
-      c.getContext('2d').drawImage(img, sx, 0, sw, img.height, 0, 0, c.width, c.height);
-      const tex = new THREE.CanvasTexture(tiltShift(c, { focus }));
-      tex.colorSpace = THREE.SRGBColorSpace;
-      resolve(tex);
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
+//
+// It COVERS the frame rather than stretching to it. The painted park survives
+// being squashed into a portrait plane because a canopy of scattered dabs has
+// no proportions to get wrong — a photograph of a bear does, and squashed into
+// a phone it came out a vertical smear. So the plate is cut to the frame's own
+// shape first. Portrait therefore keeps only the middle of a landscape plate,
+// which is a fact a plate has to be framed around and not a fault to fix here.
+const _imgs = new Map();                   // decoded once; a re-cut never refetches
+
+function loadImage(url) {
+  let p = _imgs.get(url);
+  if (!p) {
+    p = new Promise((res, rej) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = url;
+    });
+    _imgs.set(url, p);
+  }
+  return p;
+}
+
+export async function fromImage(url, { stereo = null, eye = 'left', focus = 0.6, aspect = 16 / 9 } = {}) {
+  const img = await loadImage(url);
+  const sw = stereo === 'sbs' ? img.width / 2 : img.width;
+  const sx0 = stereo === 'sbs' && eye === 'right' ? img.width / 2 : 0;
+  const cw = Math.min(sw, img.height * aspect);          // the largest centred
+  const ch = Math.min(img.height, sw / aspect);          // rectangle of the frame's shape
+  const sx = sx0 + (sw - cw) / 2, sy = (img.height - ch) / 2;
+  const c = document.createElement('canvas');
+  c.width = Math.max(2, Math.min(2048, Math.round(cw)));
+  c.height = Math.max(2, Math.round(c.width / aspect));
+  c.getContext('2d').drawImage(img, sx, sy, cw, ch, 0, 0, c.width, c.height);
+  const tex = new THREE.CanvasTexture(tiltShift(c, { focus }));
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 // The other half of a tilt-shift: something CLOSE and out of focus along the

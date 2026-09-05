@@ -60,6 +60,22 @@ const check = (name, ok, extra = '') => {
   check('and a missing file that is NOT the optional plate still counts',
     optional('/slaykallio/bg/plate.jpg') && !optional('/slaykallio/js/data.js') && !optional('/slaykallio/bg/other.jpg'));
 
+  // ── the plate ──────────────────────────────────────────────────────────
+  // A plate ships, so tolerating its absence is no longer the whole story: it
+  // has to actually be in use, and CUT to the frame rather than stretched onto
+  // it. The stretch is the fault worth a gate — a painted canopy of dabs has no
+  // proportions to get wrong, so it survived being squashed into a portrait
+  // plane and hid the bug; a photograph of a bear came out a vertical smear.
+  await page.waitForTimeout(900);
+  const plate = () => page.evaluate(() => {
+    const im = __sk.arena.bgMat.map?.image;
+    return { photo: __sk.arena.photo === true, ar: im ? im.width / im.height : 0, frame: __sk.arena.camera.aspect };
+  });
+  let pl = await plate();
+  check('the shipped plate is the backdrop', pl.photo);
+  check(`the plate is cut to the landscape frame, not stretched onto it (${pl.ar.toFixed(2)} vs ${pl.frame.toFixed(2)})`,
+    pl.photo && Math.abs(pl.ar - pl.frame) < 0.03);
+
   // the menu
   check('the menu offers the whole roster', await page.locator('#roster .pick').count() === 4);
   check('every character shows a painted portrait',
@@ -387,6 +403,15 @@ const check = (name, ok, extra = '') => {
     return seat < hand - 40;
   }));
   check('the sharp band of the backdrop follows the deck', await pp.evaluate(() => Math.abs(__sk.arena.focus - __sk.arena.deckRow()) < 0.12));
+  // the plate is re-cut when the frame changes shape — a phone turned sideways
+  // changes it completely, and one cut cannot serve both
+  const pPlate = await pp.evaluate(() => {
+    const im = __sk.arena.bgMat.map?.image;
+    return { photo: __sk.arena.photo === true, ar: im ? im.width / im.height : 0, frame: __sk.arena.camera.aspect };
+  });
+  check('the plate is up in portrait too', pPlate.photo);
+  check(`and re-cut to the portrait frame (${pPlate.ar.toFixed(2)} vs ${pPlate.frame.toFixed(2)})`,
+    pPlate.photo && Math.abs(pPlate.ar - pPlate.frame) < 0.05);
   check('no sideways overflow on a phone',
     await pp.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   // a tap plays a card, with no mouse anywhere

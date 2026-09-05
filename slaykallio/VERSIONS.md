@@ -7,6 +7,40 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v8 — 2026-09-05
+**The owner's photograph, and the plate is CUT to the frame rather than stretched onto it**
+The plate is the Kallio bear — Karhupuisto's own granite bear, supplied by the
+owner with "you can crop as needed", cropped so the statue sits at the LEFT of
+the frame and the dense treeline fills the middle. That placement is forced by
+what portrait does (below), not by taste: whatever is in the middle of the plate
+is what stands behind the fight in both formats, so the middle has to be quiet.
+
+Dropping it in immediately exposed the seam's real fault. `fitFrame` scales the
+backdrop plane to the frame and the texture was STRETCHED onto it — which the
+painted park survives, because a canopy of scattered dabs has no proportions to
+get wrong, and which turned the photograph into a vertical smear the moment the
+phone was held upright. So `fromImage` now takes the frame's aspect and cuts the
+largest centred rectangle of that shape out of the plate; `Arena.cutPlate` recuts
+whenever the frame changes shape or the deck row moves, exactly as the painting
+is repainted on the row. Portrait therefore keeps only the middle of a landscape
+plate — a fact a plate is framed around, not a fault to fix in code.
+
+Two bugs found while wiring it, both of the same family — a thing that runs
+twice and only the wrong run survives:
+
+- **The cut in flight DROPPED the next request.** Boot asks for a cut at the
+  camera's placeholder square aspect and the first resize asks for the real one
+  a tick later; a `_cutting` guard that simply returned left the plate cut
+  square and stretched onto a 16:9 plane — the exact fault the cut removes. It
+  folds the request into the run in flight now. `main.js` also calls `resize()`
+  before asking for the plate, so the placeholder pass is not paid at all.
+- **A theme switch silently dropped the plate.** `setTheme` builds a fresh
+  background material, so pressing T put the painting back and nothing said so.
+
+Gate: four checks (67 total). The plate must be in use and its texture's aspect
+must match the frame's in BOTH orientations — verified non-vacuous by forcing
+the old stretch back and watching portrait fail at 1.78 against 0.47.
+
 ## v7 — 2026-09-05
 **A photograph is a file you drop in**
 The owner asked for a real photo behind the bridge. The plumbing existed

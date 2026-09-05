@@ -361,15 +361,31 @@ repaint ten canvases. A card with only words on it is a spreadsheet row. The
 gate fails on a card with no picture, a picture the module cannot draw, or a set
 that has collapsed to fewer than fifteen distinct drawings.
 **The backdrop is photographic and the sharp band FOLLOWS THE DECK** (`js/bg.js`,
-`js/scene.js`): canopy as scattered dabs rather than lollipops, haze eating
-contrast with distance, the canal with the treeline smeared down into it, film
-grain, and a repaint whenever the deck's row on screen moves — a miniature
+`js/scene.js`): a repaint whenever the deck's row on screen moves — a miniature
 photograph is only convincing while the one sharp stripe lies on what you are
 looking at, and the deck sits nowhere near the same place in portrait as in
-landscape. There is a matching **out-of-focus foreground band** along the bottom.
-`?bg=<url>&stereo=sbs&eye=left` puts a **photograph** (or one eye of a
-side-by-side stereo pair) behind the bridge through the same focus pass — the
-seam for testing real plates is a URL, not a rewrite.
+landscape. The painted fallback is canopy as scattered dabs rather than
+lollipops, haze eating contrast with distance, the canal with the treeline
+smeared into it, film grain; there is a matching **out-of-focus foreground
+band** along the bottom. `?bg=<url>&stereo=sbs&eye=left` puts any photograph
+(or one eye of a side-by-side stereo pair) behind the bridge through the same
+pass — the seam for testing real plates is a URL, not a rewrite.
+**The shipped plate is the Karhupuisto bear** (`bg/plate.jpg`, the owner's own
+photo, 2026-09-05), and dropping it in exposed the seam's real fault: the
+backdrop texture was **stretched** onto a plane scaled to the frame. A painted
+canopy of dabs has no proportions to get wrong and survived that, which is
+exactly why it hid the bug for two versions; a photograph of a bear squashed
+into a phone is a vertical smear. So a plate is now **CUT to the frame** — the
+largest centred rectangle of the frame's own shape — and recut when the frame
+changes shape or the row moves. The consequence decides the crop, and it is the
+rule to remember when swapping the photo: **portrait keeps only the MIDDLE of a
+landscape plate**, and that middle is what the puppets stand in front of in both
+formats, so the subject goes off to one side and the middle stays a quiet mass.
+Two bugs of one family came with it — a `_cutting` guard that **dropped** the
+re-cut instead of folding it in (boot cuts at the camera's placeholder square
+aspect, the first resize asks for the real one a tick later, and only the wrong
+one survived), and `setTheme` **silently dropping the plate** because it builds a
+fresh background material. Both are gated.
 **One camera rule for both formats: fit the ACTION WIDTH, not the bridge** —
 the deck runs off both ends of the frame on purpose. Portrait fits a narrower
 width, is deliberately **flatter** (a phone frame is tall, so every degree of
@@ -393,7 +409,7 @@ exists so nobody has to win five fights to look at the sixth.
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
 Gates: `node slaykallio/test/core.mjs` (261 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (62). Hub entry:
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (67). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.
@@ -1631,9 +1647,12 @@ slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
     bg.js       # the photographic park, the tilt-shift, and the photo/stereo seam
     main.js     # boot, HUD, and the replay that acts the engine's log out
     audio.js    # synthesised kit, every voice through one master gain
+  bg/
+    plate.jpg   # the backdrop photograph — the Karhupuisto bear; swap the file, no code
+    README.md   # what makes a plate: the middle is what the fight stands in front of
   test/
     core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
-    smoke.cjs   # a browser: puppets, the topple, the staging rules, both formats
+    smoke.cjs   # a browser: puppets, the topple, the staging rules, the plate, both formats
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate
