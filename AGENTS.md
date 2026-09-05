@@ -15,7 +15,7 @@ even when the code is otherwise correct, tested and pretty.
 | project | canon | notes |
 |---|---|---|
 | `piritori/` + `flow-core/` | `piritori/DESIGN_AUTHORITY.md` first; then `DESIGN_LOCKS.md` and `GAME_DESIGN_DOCUMENT.md`; `ART_BIBLE.md` owns visuals, `UX_SPEC.md` owns interaction/reflow, `MAP.md` owns Era I geography/graph, `content/era1-slice-v1.json` owns the finite authored slice, and `art/v3/manifest.json` owns registered runtime-art ids; other documents follow only where consistent | Current `main` is the source. PR #269 is historical transfer context, not a merge gate. |
-| `toko-move/` | `toko-move/OWNER_OVERRIDE_V2.md` first (the game IS the real HSL network — no line drawing); then root `TOKO_MOVE_CLAUDE_HANDOVER.md` (agent handover: design rules, v2.12 architecture, visual hierarchy — arrives with PR #385), root `moveupdates.md` (implementation state), `toko-move/TRANSIT_LAYERS.md` (data rules), `toko-move/CAMPAIGN.md` (Helsinki → Nagoya → New York → Tokyo), `toko-move/VERSIONS.md` | v2.x delivery game is canon; PR #385 (`toko-move-v212-live-network`, v2.12.2) is the active lane while open. The v1 line-drawing lane (PR #306, tip `d516a9a5`) is **superseded** — its v13 still runs on the live gh-pages cabinet until a v2 build is deployed on the owner's word. Piritori's docs no longer govern this folder. |
+| `toko-move/` | `toko-move/OWNER_OVERRIDE_V2.md` first (the game IS the real HSL network — no line drawing); then root `TOKO_MOVE_CLAUDE_HANDOVER.md` (agent handover: design rules, v2.12 architecture, visual hierarchy — arrives with PR #385), root `moveupdates.md` (implementation state), `toko-move/TRANSIT_LAYERS.md` (data rules), `toko-move/CAMPAIGN.md` (Helsinki → Nagoya → New York → Tokyo), `toko-move/VERSIONS.md` | v2.x delivery game is canon; PR #385 (`toko-move-v212-live-network`, v2.12.2) is the active lane while open. The v1 line-drawing lane (PR #306, tip `d516a9a5`) is **superseded and closed** — mine `city.js` / octolinear notes from that tip only if needed; do not resume the Mini Metro lane without an owner ask in their own words. Piritori's docs no longer govern this folder. |
 | `eeri/` | `eeri/PHASING.md` first, then `DESIGN.md`, `ART_BRIEF.md`, `VERSIONS.md` | multi-agent; PHASING supersedes on conflict |
 | `kindling/` | `BETTERMENT_OWNER_DIRECTION.md` | newest authority; supersedes older "cozy hut" calls |
 | `toko/` | `toko/BRAND.md` | two colours only, geometry invariants |
@@ -62,6 +62,13 @@ Generic P1/P2 is less useful here than these five. Please use these words.
 
 **Playable and Gate block a merge. Canon needs an owner decision, not a
 unilateral fix.**
+
+## 2b. Source of truth and deployment (Foundation #192 Phase 3)
+
+- **`main` is the development baseline.** Feature work and review happen there.
+- **`gh-pages` is the live GitHub Pages branch.** Prefer shipping by merging reviewed work that is then published to Pages — not by inventing gameplay on `gh-pages` alone.
+- Until Pages is fully generated from `main`, treat direct `gh-pages` edits as **deploy surgery**: keep them small, say why in the PR, and reconcile back to `main` promptly (see issue #192).
+- **`gates` must stay green on `main`.** A red `flow-core · piritori` / arcade / toko-move job is a Gate-level merge blocker.
 
 ## 3. Rules that are load-bearing, not preferences
 
