@@ -1,5 +1,17 @@
 # Toko Move — versions
 
+## v2.25 — 2026-09-02
+
+**The game can be lost now, and the ride has a decision in it.** Both halves at once, because neither works alone: tension without input is a clock you watch, and input without stakes is busywork.
+
+**The deadline was a distance formula and never bit.** `late` was 0 in every run this game had ever been measured on, and the report card's `margin` column — the one number that would have said why — had never once been recorded correctly: it read `remaining()` at the moment a completion was *noticed*, by which point the challenge had already moved to the next job, so it printed `—` for every job of every run. Fixed, the answer was **75%, 58%, 42% and 14% of the deadline left spare.** A deadline with half of itself to spare is not a deadline.
+
+So a deadline is the trip's **real cost plus a grace**. `planCost` in the job board asks the same timetable the panels quote at you for the cheapest door-to-door plan; `deadlineFor` takes 1.35× it. Bare node installs no estimator and falls through to the old formula, which is what keeps every gate written before this measuring what it meant to. First measured run afterwards: deadlines roughly halved (1155→544, 1075→666), spare 47 / 42 / 0 / 29%, and **`late 1`** — the first failable shift in the project's history. The job that failed was the one that ate a 517-tick transfer wait, which is exactly what should cost you.
+
+**Getting off early** is the only decision the ride ever had in it. 71% of a five-minute shift is spent aboard with nothing to press; the verb list already said *ride* and *get off*, and what was missing is that you could only get off where the plan said. A tram passing an interchange where a faster continuation is standing right now is the most ordinary decision in transit and the game could not express it.
+
+It is offered **only while the vehicle is really at a stop** — the same 2.2-second window a catch uses, because stepping off between stops is not a thing you can do — and **only when leaving beats staying**, measured: what the rest of this ride plus the plan's remainder costs, against the best plan from here. Across a measured shift it was computed 85 times, was worth taking 46 of them, and the best single case saved **360 ticks — 36 seconds of a 300-second shift.** Usually staying aboard is right, which is correct and is why the button is not always there.
+
 ## v2.24 — 2026-09-02
 
 **The outer board stopped being invented.** 78% of the board had no OSM streets, and that 78% was drawn with twelve hand-authored corridors — the one kind of geometry this project's own rules say must never sit on the board as though it were real. It is now HSL's own service corridors, from the GTFS feed, under CC BY 4.0: `cities/ground/helsinki-corridors.json`, 696 traces covering 60.149–60.218 / 24.895–24.995, which is essentially the whole board. **There is no authored geometry on the map any more.**

@@ -1,5 +1,5 @@
 // Toko Move v2.12.2 — concurrent courier jobs expose live tradeoffs without naming a correct answer.
-import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=9';
+import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=10';
 import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=1';
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));
 const nodeName=(tm,id)=>tm.city?.nodes?.find(n=>n.id===id)?.name||id;
@@ -30,6 +30,18 @@ function firstArrival(tm,leg,horizon=Infinity){const layer=layerFor(tm,leg.line)
 // its pickup inside `horizon` ticks? 300 ticks is 30 seconds of wall time — a
 // wait a person will sit through on a first job without deciding the game is
 // broken. Reads the same fleet the UI reads, so the board and the offer agree.
+// THE COST OF A JOB, for the dispatcher and for the deadline.
+//
+// The cheapest door-to-door plan the network actually offers, from the same
+// timetable the catch panel quotes. It is what `deliveries.js` sets a deadline
+// from, so a deadline is a fact about this city rather than a distance times a
+// constant.
+export function planCost(tm,offer){const c=CARGO[offer.cargo]||CARGO.documents;
+ const compatible=choices(tm,offer.stops[0],offer.stops[1]).filter(ch=>!c.modes||ch.legs.every(l=>c.modes.includes(l.line.mode)));
+ let best=null;
+ for(const choice of compatible){const est=planEstimate(tm,choice);
+  if(est?.total!=null&&(best==null||est.total<best))best=est.total;}
+ return best;}
 export function reachableSoon(tm,offer,horizon=300){const c=CARGO[offer.cargo]||CARGO.documents;const compatible=choices(tm,offer.stops[0],offer.stops[1]).filter(choice=>!c.modes||choice.legs.every(l=>c.modes.includes(l.line.mode)));return compatible.some(choice=>!!firstArrival(tm,choice.legs[0],horizon));}
 export function rankOffer(tm,offer){const c=CARGO[offer.cargo]||CARGO.documents,compatible=choices(tm,offer.stops[0],offer.stops[1]).filter(choice=>!c.modes||choice.legs.every(l=>c.modes.includes(l.line.mode)));if(!compatible.length)return{unreachable:true};const options=[];for(const choice of compatible){const hit=firstArrival(tm,choice.legs[0]);if(!hit){options.push({choice,waiting:true});continue;}const transfers=choice.transfers||0,est=planEstimate(tm,choice,hit.dt),eta=est?.total??null;options.push({choice,hit,eta,transfers,est});}return{options};}
 function offerButton(tm,offer,info,label='TAKE JOB'){const seen=new Set(),live=(info.options||[]).filter(x=>x.hit).sort((a,b)=>(a.eta??1e9)-(b.eta??1e9)||a.hit.dt-b.hit.dt).filter(x=>{const k=`${x.choice.legs[0].line.label}>${x.choice.transfer||''}`;if(seen.has(k))return false;seen.add(k);return true;}),soon=live.slice(0,2),detail=info.unreachable?'cargo cannot reach this destination on allowed modes':soon.length?soon.map(x=>`${esc(x.choice.legs[0].line.mode.toUpperCase())} ${esc(x.choice.legs[0].line.label)} +${x.hit.dt}t · ${x.eta==null?'est unknown':`~${x.eta}t`}${x.transfers?` · via ${esc(nodeName(tm,x.choice.transfer))}${x.est?.wait2!=null?` (+${x.est.wait2}t there)`:''}`:' · direct'}`).join(' | '):'valid route, but nothing scheduled on it';return `<button class="jobOffer" data-id="${esc(offer.id)}" ${info.unreachable?'disabled':''} style="display:block;width:100%;min-height:68px;text-align:left;margin-top:7px;padding:9px;background:#fffdf7;opacity:${info.unreachable ? .48 : 1};border:1px solid #c5cec8;border-radius:8px;font:inherit"><b>${esc(nodeName(tm,offer.stops[1]))}</b> · ${esc(offer.cargo)} · ${offer.value} pts<br><span style="font-size:10px;color:#69777a">${detail} · deadline ${offer.limit}t</span><br><span style="font-size:10px;font-weight:900;color:#233d4d">${label}</span></button>`;}

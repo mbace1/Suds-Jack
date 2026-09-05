@@ -47,6 +47,13 @@ server.listen(0, '127.0.0.1', async () => {
 
   const jobs = [];
   let cur = null, lastTick = 0, deadAir = 0, walkSeen = 0, samples = 0, carryChances = 0;
+  // MARGIN: how much of the deadline was left when the parcel landed. It has
+  // printed "—" on every job of every run this card has ever produced, and the
+  // reason is a one-line ordering mistake: it read `remaining()` at the moment
+  // the completion was NOTICED, by which point the challenge has already moved
+  // on to the next job, so the number was null or belonged to a different
+  // parcel. It is the one number that says whether a deadline is a deadline.
+  let prevRemaining = null, prevLimit = null;
   // Where the shift actually goes. Wait/ride/get-off are the three phases the
   // player experiences, and only by splitting them can "the shift is full" be
   // told apart from "the waiting is long" — the first run could see neither,
@@ -117,11 +124,12 @@ server.listen(0, '127.0.0.1', async () => {
     } else if (k !== 'getoff') waitStart = null;
     lastKind = k;
     lastTick = s.tick;
+    if (s.active) { prevRemaining = s.remaining; prevLimit = s.active.limit; }
 
     if (cur && s.index >= cur.n && cur.doneAt == null) {
       cur.doneAt = s.tick;
       cur.rideTicks = cur.caught != null ? s.tick - cur.caught : null;
-      cur.margin = s.remaining;
+      cur.margin = prevRemaining;
       cur = null;
     }
     if (!s.active && s.offers.length) {
@@ -170,7 +178,7 @@ server.listen(0, '127.0.0.1', async () => {
     if (cur && s.index >= cur.n) { // job completed (checked before the actions below)
       cur.doneAt = s.tick;
       cur.rideTicks = cur.caught != null ? s.tick - cur.caught : null;
-      cur.margin = s.remaining;
+      cur.margin = prevRemaining;
       cur = null;
     }
     await page.waitForTimeout(120);
@@ -214,7 +222,7 @@ server.listen(0, '127.0.0.1', async () => {
     for (const j of done) {
       console.log(`    ${String(j.n).padStart(2)}  wait ${String(j.waitTicks ?? '—').padStart(4)}t` +
                   `  ride ${String(j.rideTicks ?? '—').padStart(4)}t` +
-                  `  deadline ${String(j.limit).padStart(4)}t  margin ${j.margin ?? '—'}` +
+                  `  deadline ${String(j.limit).padStart(4)}t  spare ${j.margin == null ? '—' : `${j.margin}t (${Math.round(100 * j.margin / j.limit)}%)`}` +
                   `  pays ${j.value}` +
                   (j.transferWaits?.length ? `  transfers waited ${j.transferWaits.join('+')}t` : ''));
     }

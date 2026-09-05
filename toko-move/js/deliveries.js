@@ -7,6 +7,9 @@
 // paper than in hours. Six is what fits with room to make a wrong catch and
 // still recover. The authored campaign is still ten jobs (a chain, each
 // starting where the last ended); a shift plays the first six of it.
+// How much of a trip you may waste before it is late. 1.35 leaves room for one
+// bad catch on a typical job and none for two.
+export const DEADLINE_GRACE=1.35;
 export const DELIVERY_TARGET=6;
 export const CARGO={documents:{icon:'DOC',rule:'Flexible routing',modes:null},'hot food':{icon:'HOT',rule:'Freshness falls fast',modes:null,freshness:.60},parts:{icon:'PRT',rule:'No special restriction',modes:null},fragile:{icon:'FRG',rule:'Tram only — avoid transfers',modes:['tram'],fragile:true},equipment:{icon:'HVY',rule:'Transit only; no walking shortcut',modes:['tram','metro'],heavy:true},express:{icon:'EXP',rule:'Priority courier — metro or tram',modes:['metro','tram'],express:true},'fresh food':{icon:'FRESH',rule:'Freshness bonus for speed',modes:null,freshness:.70},'market goods':{icon:'MRKT',rule:'Tram network only',modes:['tram'],heavy:true}};
 export const JOBS=[
@@ -29,7 +32,30 @@ export class DeliveryChallenge{
  constructor(flow,say){this.flow=flow;this.say=say;this.index=0;this.leg=0;this.active=null;this.queued=null;this.activeTrip=null;this.selectedPlan=null;this.waitingForCatch=false;this.seen=new Set;this.startedAt=0;this.score=0;this.late=0;this.bonuses=0;this.location='lasipalatsi';this.offers=[];this.offerCycle=0;this.physicalSeq=0;}
  cargoRule(){return CARGO[this.active?.cargo]||CARGO.documents;}
  start(){this.refreshOffers();}
- refreshOffers(){if(this.index>=DELIVERY_TARGET){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*(this.flow.clock.ticksPerDay/600)),value=90+dist*9+(cargo==='fragile'||cargo==='equipment'?35:0);cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
+ // WHAT A DEADLINE IS.
+ //
+ // It used to be a distance formula — 110 + dist*16, plus 25 unless the cargo
+ // was hot. The report card could not see what that bought because `margin`
+ // had never once been recorded correctly; once it was, the answer was 75%,
+ // 58%, 42% and 14% of the deadline left over. A deadline with half of itself
+ // spare is not a deadline, and `late` has been 0 in every run this game has
+ // ever been measured on.
+ //
+ // So it is the trip's REAL cost plus a grace, when the live network is there
+ // to be asked: `estimate` is injected by main-v212 the same way `reachable`
+ // is, and returns door-to-door ticks from the same timetable the panels quote
+ // at you. GRACE is what you may waste — one wrong catch, one missed
+ // connection — before the parcel is late.
+ //
+ // Bare node installs no estimator and falls through to the old formula, which
+ // is why the gates that predate this still see the behaviour they were
+ // written against.
+ deadlineFor({from,to,cargo,dist}){
+  const scale=this.flow.clock.ticksPerDay/600;
+  const est=this.estimate?.({stops:[from,to],cargo});
+  if(Number.isFinite(est)&&est>0)return Math.round(est*DEADLINE_GRACE+30*scale);
+  return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale);}
+ refreshOffers(){if(this.index>=DELIVERY_TARGET){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=90+dist*9+(cargo==='fragile'||cargo==='equipment'?35:0);cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
   // Loop 47: a procedural job is constrained by a network relationship, never
   // rolled blind. Measured before this: the first offer taken had no compatible
   // vehicle for 1204 ticks — two minutes of wall time on the tutorial job —
