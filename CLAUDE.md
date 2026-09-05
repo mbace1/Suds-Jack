@@ -397,6 +397,27 @@ Gates: `node slaykallio/test/core.mjs` (261 checks) and
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.
+**Deployed to `gh-pages` 2026-09-05 (v6), and `deploy-hub.mjs` is NOT the tool
+for it** — its `OWNED` list is the arcade *shell*, so it ships no game folder at
+all. A game deploy is a copy of `slaykallio/` (minus `test/` and `art-src/`)
+plus this cabinet's own rows, and the two catalogue files are the trap:
+`games.js` and `art.js` are `THEIRS`, and the live catalogue carries cabinets
+this branch has never had (`piritori-godot` when this one shipped), so the entry
+and the marquee must be **spliced into** the site's copies — overwriting them
+deletes somebody else's cabinet from the floor. `versions.json` gets ONE row by
+hand: never regenerate on the deployed tree, and do not reach for `--repair`
+either, because it also moves whatever else has drifted (three other lanes'
+cabinets that day) and widens a deploy that is supposed to be limited to one
+game. Last trap: hand-deploying skips the token renumbering, so check the
+`../hub/shell.js?v=` the rest of the site asks for — this cabinet shipped pinned
+to `v17` while fourteen others were on `v34`.
+**The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
+hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
+**The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`
+carries the five filters and a verdict per sheet (three kept, six rejected), and
+the two rules that did most of the work are *identity only, never pixels* and
+*no weapons*: nearly every figure in the pack carries a knife, which is TURF's
+grammar and not a game whose verbs are a swing, a bottle and a shopping trolley.
 
 ### TURF (`turf/`) — grid tactics, ACTIVE
 **Owner's brief, 2026-08-28: `turf/GDD.md` and `turf/PRODUCTION_PIPELINE.md`, read those
