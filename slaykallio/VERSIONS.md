@@ -7,6 +7,42 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v5 — 2026-09-05
+**The concept pack, filtered — three sheets kept, six rejected**
+The owner supplied `Slay_Kallio_Sideview_Concept_Pack_v0.1` (nine sheets
+salvaged from TURF and the wider art library) with one instruction: *these are
+quite different so need filtering before any use*. They are — three
+incompatible renderings and mostly a different game's cast. The filter and the
+reason for every verdict is `art-src/concepts/README.md`.
+
+- **Five filters**, in order: identity only and never pixels (this game paints
+  its figures in code, so nothing transfers as art); no weapons (nearly every
+  figure carries a knife or gun — that is TURF's grammar, and this game's verbs
+  are a swing, a bottle and a shopping trolley); would this person be sleeping
+  under the bridge; real marks come off; profile or nothing.
+- **Kept three.** The Alepa wanderer (the only sheet both on-brief and carrying
+  an explicit full-body profile), the white-suit heavy, and one roster sheet for
+  two figures out of twenty.
+- **Rejected six**, including the pack's own first pick — a mohawk knife
+  fighter, whose side-walk row is the best locomotion reference in the set and
+  useless here, because these puppets never walk. They stand, wobble, lunge and
+  topple.
+- **Two identities rebuilt from scratch in `puppet.js`'s own grammar.** Late
+  took the wanderer: yellow bucket hat, lank hair, olive parka open over a
+  black hoodie, navy tracksuit with white side stripes, rubber clogs and a lit
+  cigarette trailing smoke. The Bridge King took the heavy: cream suit, black
+  shirt, gold chain, slicked hair — the one person on this bridge with money,
+  which is the whole characterisation.
+- **`heavy` is a real proportion change**, not a scale-up: wider through the
+  middle, shorter in the leg, thicker neck, wider jaw and a jowl. A wide body
+  under a normal head just reads as a tall man in a big coat, which is exactly
+  what the first attempt did.
+- New painter parts: `lank` and `slick` hair, a `bucket` hat, `clog` shoes,
+  tracksuit `stripe`s, an `under` layer showing through an open coat, a
+  `chain`, and a cigarette with drifting `smoke`.
+- No pixels were copied, traced or sampled, and no trademark is reproduced —
+  the sheets were looked at and the figures were drawn.
+
 ## v4 — 2026-09-04
 **Look at the whole cast, not just the first fight**
 Rendering every encounter for the first time — the blob, the rival bum, the

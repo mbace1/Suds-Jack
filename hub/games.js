@@ -378,7 +378,7 @@ export const GAMES = [
     },
     pad: 'native',
     status: 'active',
-    note: 'v4 — the whole cast rendered and fixed: the boss no longer cropped, the row fits the frame, and a fantasy enemy that used to crash on spawn.',
+    note: 'v5 — the owner\u2019s concept pack filtered down to three sheets, and two identities rebuilt from it: the bucket-hat wanderer and the heavy in the cream suit.',
     title: 'Slay Kallio',
     tagline: 'Deckbuilding on a thick plank bridge: painted cardboard and tin-soldier bums who topple over in 3D, rats, mutating blobs, and friends who rewrite the sum on every card.',
     lineage: 'Slay the Spire 2 × Balatro',

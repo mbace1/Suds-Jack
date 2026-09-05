@@ -133,14 +133,35 @@ function person(ctx, look, rnd) {
   const skin = look.skin, top = look.top, bottom = look.bottom, hair = look.hair;
   const g = look.grime ?? 0.7;
 
+  // A heavy figure is wider through the middle and shorter in the leg; it is
+  // the only proportion change in the whole painter and it is what makes the
+  // boss read as mass rather than as a tall man.
+  const W = look.heavy ? 1.34 : 1, hipY = look.heavy ? 348 : 330;
+  const w = (dx) => cx + dx * W;
+
   // trousers: too long, bunched over the boots
-  wob(ctx, [[cx - 2, 330], [cx + 26, 330], [cx + 32, foot - 6], [cx + 6, foot - 6]], shade(bottom, 0.72), rnd);
-  wob(ctx, [[cx - 28, 330], [cx + 4, 330], [cx - 6, foot - 6], [cx - 34, foot - 6]], bottom, rnd);
-  brush(ctx, cx - 30, 340, 60, 120, shade(bottom, 1.3), rnd, 1.1);
+  wob(ctx, [[w(-2), hipY], [w(26), hipY], [w(32), foot - 6], [w(6), foot - 6]], shade(bottom, 0.72), rnd);
+  wob(ctx, [[w(-28), hipY], [w(4), hipY], [w(-6), foot - 6], [w(-34), foot - 6]], bottom, rnd);
+  brush(ctx, w(-30), hipY + 10, 60 * W, foot - hipY, shade(bottom, 1.3), rnd, 1.1);
+  // the white side stripe of a tracksuit leg — two thin lines down the outside
+  if (look.stripe) {
+    for (const dy of [0, 6]) wob(ctx, [[w(-27) + dy, hipY + 4], [w(-6) + dy, foot - 8]], null, rnd,
+      { close: false, width: 3, stroke: look.stripe, amp: 1.6 });
+  }
   // boots, and they do not match
   if (look.shoes !== 'none') {
-    wob(ctx, [[cx - 40, foot - 26], [cx - 2, foot - 30], [cx + 6, foot], [cx - 46, foot]], look.shoes, rnd);
-    wob(ctx, [[cx + 2, foot - 22], [cx + 34, foot - 26], [cx + 48, foot], [cx - 2, foot]], shade(look.shoes, 1.25), rnd);
+    if (look.shoeStyle === 'clog') {
+      // rubber clogs, worn in all weathers: a blunt round toe and no heel,
+      // which is a completely different silhouette from a boot
+      for (const [ox, k] of [[-40, 1], [4, 1.12]]) {
+        wob(ctx, [[w(ox), foot - 20], [w(ox + 6), foot - 26], [w(ox + 30 * k), foot - 24], [w(ox + 40 * k), foot - 10], [w(ox + 36 * k), foot], [w(ox - 4), foot]],
+          k > 1 ? shade(look.shoes, 1.2) : look.shoes, rnd, { amp: 2.5 });
+        for (let i = 0; i < 3; i++) { ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(w(ox + 10 + i * 8), foot - 21, 3, 3); }
+      }
+    } else {
+      wob(ctx, [[w(-40), foot - 26], [w(-2), foot - 30], [w(6), foot], [w(-46), foot]], look.shoes, rnd);
+      wob(ctx, [[w(2), foot - 22], [w(34), foot - 26], [w(48), foot], [w(-2), foot]], shade(look.shoes, 1.25), rnd);
+    }
   }
 
   // the coat: long, open, and the single most characterful shape on the figure
@@ -152,20 +173,28 @@ function person(ctx, look, rnd) {
   wob(ctx, [[cx - 8, 196], [cx + 16, 192], [cx + 18, 224], [cx - 6, 226]], shade(look.accent, 0.55), rnd, { width: 3 });
 
   // arms: the back one hanging, the front one out with whatever it is carrying
-  wob(ctx, [[cx - 40, 214], [cx - 18, 212], [cx - 20, 306], [cx - 42, 304]], shade(top, 0.68), rnd);
-  wob(ctx, [[cx + 6, 220], [cx + 30, 226], [cx + 68, 270], [cx + 52, 288]], shade(top, 0.88), rnd);
+  wob(ctx, [[w(-40), 214], [w(-18), 212], [w(-20), 306], [w(-42), 304]], shade(top, 0.68), rnd);
+  wob(ctx, [[w(6), 220], [w(30), 226], [cx + 68, 270], [cx + 52, 288]], shade(top, 0.88), rnd);
   blob(ctx, cx + 64, 284, 14, 13, skin, rnd);
 
-  // neck and head, with a jaw and a nose
-  wob(ctx, [[cx - 6, 188], [cx + 14, 188], [cx + 12, 212], [cx - 8, 212]], shade(skin, 0.78), rnd);
-  wob(ctx, [[cx - 32, 132], [cx + 16, 122], [cx + 40, 148], [cx + 48, 168], [cx + 36, 174], [cx + 32, 192], [cx + 6, 202], [cx - 22, 198], [cx - 36, 168]], skin, rnd, { amp: 3 });
+  // neck and head, with a jaw and a nose. A heavy figure gets a thicker neck,
+  // a wider jaw and a jowl — without them a wide body under a normal head just
+  // reads as a tall man in a big coat.
+  const H = look.heavy ? 1.2 : 1, hx = dx => cx + dx * H;
+  wob(ctx, [[hx(-10), 186], [hx(20), 186], [hx(18), 214], [hx(-12), 214]], shade(skin, 0.78), rnd, { amp: look.heavy ? 3 : 2.2 });
+  wob(ctx, [[hx(-32), 132], [hx(16), 122], [hx(40), 148], [hx(48), 168], [hx(36), 174], [hx(32), 192], [hx(6), 202], [hx(-22), 198], [hx(-36), 168]], skin, rnd, { amp: 3 });
+  if (look.heavy) {
+    // the jowl, and the shoulders coming up to meet it
+    wob(ctx, [[hx(-20), 186], [hx(24), 182], [hx(30), 200], [hx(-14), 206]], shade(skin, 0.92), rnd, { amp: 3, width: 3 });
+    wob(ctx, [[hx(28), 176], [hx(40), 180], [hx(34), 196]], shade(skin, 0.84), rnd, { width: 3 });
+  }
   brush(ctx, cx - 22, 146, 52, 48, shade(skin, 1.22), rnd, 0.45);
   // eye, socket and brow — the socket is what makes a face look worn
-  ctx.globalAlpha = 0.35; ctx.fillStyle = INK; ctx.fillRect(cx + 10, 144, 26, 14); ctx.globalAlpha = 1;
-  ctx.fillStyle = INK; ctx.fillRect(cx + 18, 150, 7, 7); ctx.fillRect(cx + 12, 139, 20, 4);
+  ctx.globalAlpha = 0.35; ctx.fillStyle = INK; ctx.fillRect(hx(10), 144, 26 * H, 14); ctx.globalAlpha = 1;
+  ctx.fillStyle = INK; ctx.fillRect(hx(18), 150, 7, 7); ctx.fillRect(hx(12), 139, 20 * H, 4);
   // stubble
   ctx.globalAlpha = 0.3 * g;
-  for (let i = 0; i < 90; i++) { ctx.fillStyle = INK; ctx.fillRect(cx - 20 + rnd() * 52, 168 + rnd() * 32, 2, 2); }
+  for (let i = 0; i < 90; i++) { ctx.fillStyle = INK; ctx.fillRect(hx(-20) + rnd() * 52 * H, 168 + rnd() * 32, 2, 2); }
   ctx.globalAlpha = 1;
 
   // hair
@@ -175,11 +204,31 @@ function person(ctx, look, rnd) {
     for (let i = 0; i < 7; i++) wob(ctx, [[cx - 40 + i * 4, 150 + i * 6], [cx - 62 + rnd() * 10, 140 + i * 8], [cx - 44 + i * 4, 158 + i * 6]], hair, rnd, { width: 3, amp: 4 }); }
   if (hs === 'shaggy') { wob(ctx, [[cx - 42, 138], [cx + 20, 116], [cx + 30, 140], [cx - 24, 154], [cx - 40, 176]], hair, rnd, { amp: 4 }); }
   if (hs === 'bald') { wob(ctx, [[cx - 34, 158], [cx - 24, 140], [cx - 16, 158], [cx - 26, 180]], hair, rnd, { width: 3, amp: 3 }); }
+  // lank: long, unwashed, hanging in strands past the jaw — it is most of what
+  // reads at a distance on the wanderer's silhouette
+  if (hs === 'lank') {
+    wob(ctx, [[cx - 44, 140], [cx + 16, 118], [cx + 30, 140], [cx - 18, 148], [cx - 26, 206], [cx - 48, 200]], hair, rnd, { amp: 4 });
+    for (let i = 0; i < 6; i++) wob(ctx, [[cx - 42 + i * 5, 150], [cx - 52 + (i % 2) * 8, 176 + i * 8], [cx - 40 + i * 5, 172 + i * 6]], hair, rnd, { width: 4, amp: 3 });
+  }
+  // slick: combed flat back off a heavy brow, one wave at the crown
+  if (hs === 'slick') {
+    wob(ctx, [[cx - 38, 152], [cx - 22, 122], [cx + 18, 118], [cx + 30, 134], [cx - 6, 132], [cx - 30, 160]], hair, rnd, { amp: 2.5 });
+    wob(ctx, [[cx - 38, 152], [cx - 46, 168], [cx - 30, 166]], hair, rnd, { width: 3 });
+  }
 
   // hats
   const hat = look.hat;
   if (hat === 'beanie') { wob(ctx, [[cx - 40, 140], [cx - 30, 108], [cx + 18, 104], [cx + 32, 138], [cx - 34, 152]], shade(look.accent, 0.7), rnd, { amp: 3 });
     wob(ctx, [[cx - 42, 136], [cx + 34, 130], [cx + 34, 146], [cx - 42, 152]], shade(look.accent, 0.5), rnd); }
+  // A bucket hat. The reference sheet carries a real supermarket wordmark on
+  // it; the shape and the yellow are what read at this size, and the mark is
+  // not reproduced.
+  if (hat === 'bucket') {
+    const hc = look.hatColor ?? look.accent;
+    wob(ctx, [[cx - 38, 134], [cx - 28, 106], [cx + 16, 102], [cx + 30, 130], [cx - 34, 142]], hc, rnd, { amp: 3 });
+    wob(ctx, [[cx - 50, 130], [cx + 44, 124], [cx + 40, 146], [cx - 46, 150]], shade(hc, 0.88), rnd, { amp: 3.5 });
+    brush(ctx, cx - 44, 106, 84, 40, shade(hc, 1.2), rnd, 0.9);
+  }
   if (hat === 'cap') { wob(ctx, [[cx - 38, 136], [cx - 22, 112], [cx + 20, 112], [cx + 28, 138], [cx - 34, 150]], shade(top, 1.15), rnd);
     wob(ctx, [[cx + 12, 130], [cx + 62, 136], [cx + 60, 146], [cx + 14, 142]], shade(top, 0.72), rnd); }
   if (hat === 'hood') wob(ctx, [[cx - 52, 146], [cx - 12, 96], [cx + 34, 118], [cx + 30, 136], [cx - 6, 124], [cx - 32, 152], [cx - 38, 214], [cx - 56, 204]], shade(top, 0.8), rnd, { amp: 3.5 });
@@ -187,6 +236,22 @@ function person(ctx, look, rnd) {
     wob(ctx, [[cx - 22, 128], [cx - 46, 70], [cx - 32, 66], [cx - 4, 122]], look.accent, rnd); }
   if (hat === 'helm') wob(ctx, [[cx - 42, 138], [cx - 26, 102], [cx + 22, 98], [cx + 42, 138], [cx + 40, 162], [cx + 28, 162], [cx + 26, 140], [cx - 32, 150]], shade(top, 1.1), rnd);
   if (hat === 'horns') { wob(ctx, [[cx - 32, 132], [cx - 54, 78], [cx - 18, 118]], '#cfc6b2', rnd); wob(ctx, [[cx + 14, 124], [cx + 28, 76], [cx + 32, 122]], '#cfc6b2', rnd); }
+
+  // a cigarette, burning, with the smoke drifting back over the shoulder
+  if (look.smoke) {
+    wob(ctx, [[cx + 34, 176], [cx + 60, 170], [cx + 61, 176], [cx + 35, 182]], '#e8e2d2', rnd, { width: 2 });
+    ctx.fillStyle = '#d86a30'; ctx.fillRect(cx + 59, 170, 4, 6);
+    ctx.strokeStyle = 'rgba(226,222,212,0.5)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx + 62, 168);
+    ctx.bezierCurveTo(cx + 78, 148, cx + 54, 132, cx + 68, 112); ctx.stroke();
+  }
+  // a gold chain: on this bridge it is the whole characterisation of the one
+  // person with money
+  if (look.chain) {
+    ctx.strokeStyle = '#d8b43a'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx - 6, 212); ctx.quadraticCurveTo(cx + 8, 238, cx + 20, 214); ctx.stroke();
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.4; ctx.stroke();
+  }
 
   // what is in the front hand
   const px = cx + 64, py = 284, acc = look.accent;

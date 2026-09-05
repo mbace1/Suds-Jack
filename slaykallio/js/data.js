@@ -170,7 +170,7 @@ export const CHARACTERS = {
     hp: 68,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'first_sip', 'one_two'],
     kallio: { name: 'Late', title: 'the park drinker', blurb: 'Holds the north end of the bridge. The drink is a strength that lasts exactly one turn.',
-      look: { skin: '#c89878', hair: '#4a3a2a', hairStyle: 'greasy', top: '#4a4438', bottom: '#3a3a3e', shoes: '#241c16', hat: 'none', prop: 'can', accent: '#c8a03a', base: 'tin', grime: 0.8 } },
+      look: { skin: '#c09070', hair: '#5a4632', hairStyle: 'lank', top: '#4a5236', under: '#22242a', bottom: '#2a3040', stripe: '#d8d4c4', shoes: '#26241f', shoeStyle: 'clog', hat: 'bucket', hatColor: '#d8b53a', smoke: true, prop: 'can', accent: '#d8b53a', base: 'tin', grime: 0.85 } },
     fantasy: { name: 'Late', title: 'the sot', blurb: 'A draught that lends strength for a moment and no longer.',
       look: { skin: '#c89878', hair: '#4a3a2a', hairStyle: 'greasy', top: '#4a3050', bottom: '#2e2838', shoes: '#241c16', hat: 'hood', prop: 'flask', accent: '#7ac89a', base: 'tin', grime: 0.7 } },
   },
@@ -294,7 +294,7 @@ export const ENEMIES = {
       { id: 'one_two', intent: 'attack', dmg: 8, times: 2 },
       { id: 'the_word', intent: 'debuff', status: { key: 'vulnerable', n: 2 }, status2: { key: 'weak', n: 2 } },
     ],
-    kallio: { name: 'The Bridge King', look: { skin: '#b88462', hair: '#20201c', hairStyle: 'bald', top: '#2e2a26', bottom: '#26241f', shoes: '#161412', hat: 'none', prop: 'plank', accent: '#b03a2a', base: 'tin', grime: 1, shape: 'person' } },
+    kallio: { name: 'The Bridge King', look: { skin: '#c09070', hair: '#1a1814', hairStyle: 'slick', top: '#c4bda6', under: '#1a1814', bottom: '#bab392', shoes: '#141210', hat: 'none', chain: true, heavy: true, prop: 'plank', accent: '#c8a83a', base: 'tin', grime: 0.55, shape: 'person' } },
     fantasy: { name: 'The Gate Troll', look: { skin: '#7a8a6a', hair: '#2a3020', hairStyle: 'bald', top: '#4a4438', bottom: '#3a382e', shoes: '#161412', hat: 'horns', prop: 'plank', accent: '#c85a3a', base: 'tin', grime: 0.9, shape: 'person' } } },
 };
 
