@@ -385,7 +385,7 @@ export const ART = {
     for (let i = 0; i < 5; i++) g.p(58 + i * 8, 40 - i * (4 - i * 0.7), 3, 3, '#f2f2e8');   // the throw
   },
 
-  // Powder: white sand under a purple sky, the rift, a bridge over it, one sled
+  // Powder: white sand under a purple sky, the rift, a bridge, two sleds
   powder(g, a) {
     g.bands(['#1c1440', '#4a2f7a', '#8b5fa8', '#d9a4cc']);
     g.p(0, 34, W, H - 34, '#e6e2de');            // the sand, white with grey in it
@@ -394,27 +394,34 @@ export const ART = {
     for (let i = -22; i <= 22; i++) g.p(100 + i, 20 + (i * i) / 60 - 4, 1, 1, '#e6c8e0');
     g.disc(28, 9, 4, '#fff3dc');                 // the sun
     g.disc(28, 9, 7, 'rgba(255,220,200,0.35)');  // and its bloom
-    for (let y = 40; y < H; y++) {               // the rift, wider now
+    for (let y = 40; y < H; y++) {               // the rift
       const w = 12 + (y - 40) * 2.2, cx = 58 + (y - 40) * 0.3;
       g.p(cx - w / 2 - 5, y, 5, 1, '#8a5c56');
       g.p(cx - w / 2, y, w, 1, y % 3 ? '#f6f4f0' : '#d8d4d2');
       g.p(cx + w / 2, y, 5, 1, '#5a4a8e');
     }
-    g.p(30, 44, 62, 3, '#9c94a8');               // the bridge deck across it
+    g.p(30, 44, 62, 3, '#9c94a8');               // the bridge deck
     g.p(30, 43, 62, 1, '#6a6272');
-    for (const px of [44, 58, 72]) g.p(px, 47, 2, 12, '#6a6272');   // piers
+    for (const px of [44, 58, 72]) g.p(px, 47, 2, 12, '#6a6272');
     g.p(10, 28, 4, 22, '#5c5478');               // monoliths on the rim
     g.p(18, 24, 3, 26, '#9088b4');
     g.p(112, 34, 6, 3, '#80708c');               // a rock that hangs
-    g.p(50, 58, 14, 4, '#b8b0be');               // the plume, grey
+    // the aft-rocket sled, behind: flame trailing from the tail
+    g.p(28, 50, 16, 3, '#e8dfc6');
+    g.p(36, 50, 4, 3, '#25493f');
+    g.p(24, 51, 4, 2, a);
+    // the nose-rocket sled, leading, carving: spindrift off its outside runner
+    for (let i = 0; i < 9; i++) g.p(48 + i * 3, 60 - i, 2, 2, i % 2 ? '#ffffff' : '#dfe4f0');
     g.p(56, 55, 24, 4, '#e8dfc6');               // fuselage
     g.p(52, 56, 5, 2, '#e8dfc6');
     g.p(66, 55, 5, 4, '#6b3550');                // accent band
     g.p(59, 53, 6, 2, '#2b3340');                // canopy
     g.p(48, 53, 6, 3, '#c4c8d2');                // the rockets, on the NOSE
     g.p(48, 58, 6, 3, '#c4c8d2');
-    g.p(45, 53, 3, 3, a);                        // their flame, in the hub accent
+    g.p(45, 53, 3, 3, a);                        // their flame
     g.p(45, 58, 3, 3, a);
+    g.p(44, 54, 2, 1, '#ffffff');
+    g.p(44, 59, 2, 1, '#ffffff');
   },
 
   // SKLTR: green bones in the dark

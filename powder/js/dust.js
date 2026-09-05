@@ -1,35 +1,43 @@
-// Dust — the plume off the skirts, and the scar it presses into the ground.
+// Dust — pooled particles, and the scar the runners press into the ground.
 //
-// Both are held over from the last build because both survived contact with
-// the thing they were built for. The plume is a pooled point cloud with
-// per-particle size and alpha and its own fog term. The scars MULTIPLY rather
-// than being lit: a lit quad has to match the shading of the ground it lies on
-// and never quite does, and every version of that read as grey road markings.
+// One pool class, configured three ways in main.js: the DUST plume off the
+// skirts (soft, fogged, world-coloured), the SPARKS off rock (hard, additive,
+// gravity, on the HD layer), and the SPINDRIFT off the outside runner in a
+// carve (fine, white, fast, HD). The scars MULTIPLY rather than being lit —
+// a lit quad has to match the shading of the ground it lies on and never
+// quite does.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=4';
+import { PAL } from './palette.js?v=5';
 
-const PUFF_MAX = 1400;
 const SCAR_MAX = 700;
 const SCAR_LIFE = 9;
 
-function puffTexture() {
+function puffTexture(hard) {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
   const g = c.getContext('2d');
   const grd = g.createRadialGradient(32, 32, 1, 32, 32, 32);
-  grd.addColorStop(0, 'rgba(255,255,255,0.85)');
-  grd.addColorStop(0.45, 'rgba(255,255,255,0.35)');
-  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  if (hard) {
+    grd.addColorStop(0, 'rgba(255,255,255,1)');
+    grd.addColorStop(0.25, 'rgba(255,255,255,0.9)');
+    grd.addColorStop(0.5, 'rgba(255,255,255,0.15)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+  } else {
+    grd.addColorStop(0, 'rgba(255,255,255,0.85)');
+    grd.addColorStop(0.45, 'rgba(255,255,255,0.35)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+  }
   g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
   const t = new THREE.CanvasTexture(c);
-  t.generateMipmaps = false;
-  t.minFilter = THREE.LinearFilter;
+  t.generateMipmaps = false; t.minFilter = THREE.LinearFilter;
   return t;
 }
 
 const VERT = `
 attribute float aSize;
 attribute float aAlpha;
+uniform float uScale;
+uniform float uCap;
 varying float vAlpha;
 varying vec3 vCol;
 varying float vDepth;
@@ -37,10 +45,9 @@ void main() {
   vAlpha = aAlpha; vCol = color;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   vDepth = -mv.z;
-  // Clamped, and on a much smaller scale factor. Unclamped, a puff that
-  // has grown for two seconds twenty metres from the camera resolves to a
-  // 900 px sprite and fills the entire frame with white.
-  gl_PointSize = min(aSize * (210.0 / max(-mv.z, 1.0)), 120.0);
+  // Clamped: a puff that has grown for two seconds twenty metres from the
+  // camera would otherwise resolve to a 900 px sprite and fill the frame.
+  gl_PointSize = min(aSize * (uScale / max(-mv.z, 1.0)), uCap);
   gl_Position = projectionMatrix * mv;
 }`;
 
@@ -49,6 +56,7 @@ uniform sampler2D map;
 uniform vec3 fogColor;
 uniform float fogNear;
 uniform float fogFar;
+uniform float uFog;
 varying float vAlpha;
 varying vec3 vCol;
 varying float vDepth;
@@ -56,13 +64,26 @@ void main() {
   vec4 t = texture2D(map, gl_PointCoord);
   float a = t.a * vAlpha;
   if (a < 0.015) discard;
-  float f = smoothstep(fogNear, fogFar, vDepth);
+  float f = smoothstep(fogNear, fogFar, vDepth) * uFog;
   gl_FragColor = vec4(mix(vCol, fogColor, f), a);
 }`;
 
 export class DustPool {
-  constructor(scene, fog) {
-    this.n = PUFF_MAX;
+  /**
+   * @param {object} opts  max, hard (texture), additive, lit/shd colours,
+   *   size/sizeRand (base sprite size), grow, gravity, drag, life/lifeRand,
+   *   alpha, scale/cap (pixel sizing), fog (0..1 how much it takes fog),
+   *   layer (render layer)
+   */
+  constructor(scene, fog, opts = {}) {
+    const o = this.o = Object.assign({
+      max: 1400, hard: false, additive: false, lit: PAL.dust, shd: PAL.dustShd,
+      size: 1.6, sizeRand: 2.4, grow: 2.2, growPow: 5, gravity: 4.2, drag: 1.7,
+      life: 0.6, lifeRand: 0.7, lifePow: 1.0, alpha: 0.5, scale: 210, cap: 120,
+      fog: 1, layer: 0, back: 3, backPow: 16, up: 2.6, upRand: 3.5, upPow: 9,
+      spread: 2.6, spreadPow: 6,
+    }, opts);
+    this.n = o.max;
     this.pos = new Float32Array(this.n * 3);
     this.col = new Float32Array(this.n * 3);
     this.size = new Float32Array(this.n);
@@ -81,58 +102,63 @@ export class DustPool {
     this.geo = g;
     this.mat = new THREE.ShaderMaterial({
       uniforms: {
-        map: { value: puffTexture() },
+        map: { value: puffTexture(o.hard) },
         fogColor: { value: new THREE.Color(fog.color) },
         fogNear: { value: fog.near }, fogFar: { value: fog.far },
+        uFog: { value: o.fog }, uScale: { value: o.scale }, uCap: { value: o.cap },
       },
       vertexShader: VERT, fragmentShader: FRAG,
       transparent: true, depthWrite: false, vertexColors: true,
+      blending: o.additive ? THREE.AdditiveBlending : THREE.NormalBlending,
     });
     this.points = new THREE.Points(g, this.mat);
     this.points.frustumCulled = false;
     this.points.renderOrder = 3;
+    this.points.layers.set(o.layer);
     scene.add(this.points);
-    this._lit = new THREE.Color(PAL.dust);
-    this._shd = new THREE.Color(PAL.dustShd);
+    this._lit = new THREE.Color(o.lit);
+    this._shd = new THREE.Color(o.shd);
   }
 
   emit(p, fwd, right, side, power) {
+    const o = this.o;
     const i = this.head = (this.head + 1) % this.n;
     const i3 = i * 3;
     this.pos[i3] = p.x + (Math.random() - 0.5) * 2.2;
     this.pos[i3 + 1] = p.y + Math.random() * 0.7;
     this.pos[i3 + 2] = p.z + (Math.random() - 0.5) * 2.2;
-    const back = 3 + power * 16;
-    const spread = 2.6 + power * 6;
+    const back = o.back + power * o.backPow;
+    const spread = o.spread + power * o.spreadPow;
     const kick = side * (0.5 + Math.random());
     this.vel[i3]     = -fwd.x * back + right.x * kick + (Math.random() - 0.5) * spread;
     this.vel[i3 + 2] = -fwd.z * back + right.z * kick + (Math.random() - 0.5) * spread;
-    this.vel[i3 + 1] = 2.6 + Math.random() * (3.5 + power * 9);
+    this.vel[i3 + 1] = o.up + Math.random() * (o.upRand + power * o.upPow);
     this.life[i] = 0;
-    this.max[i] = 0.6 + Math.random() * (0.7 + power * 1.0);
-    this.size[i] = 1.6 + Math.random() * 2.4;
-    this.grow[i] = 2.2 + power * 5;
+    this.max[i] = o.life + Math.random() * (o.lifeRand + power * o.lifePow);
+    this.size[i] = o.size + Math.random() * o.sizeRand;
+    this.grow[i] = o.grow + power * o.growPow;
     const c = Math.random() < 0.6 ? this._lit : this._shd;
     this.col[i3] = c.r; this.col[i3 + 1] = c.g; this.col[i3 + 2] = c.b;
-    this.alpha[i] = 0.5;
+    this.alpha[i] = o.alpha;
   }
 
   update(dt) {
     const { pos, vel, life, max, size, alpha, grow } = this;
-    const drag = Math.exp(-1.7 * dt);
+    const o = this.o;
+    const drag = Math.exp(-o.drag * dt);
     for (let i = 0; i < this.n; i++) {
       if (alpha[i] <= 0) continue;
       const t = (life[i] += dt);
       if (t >= max[i]) { alpha[i] = 0; size[i] = 0; continue; }
       const i3 = i * 3;
       vel[i3] *= drag; vel[i3 + 2] *= drag;
-      vel[i3 + 1] = vel[i3 + 1] * drag - 4.2 * dt;
+      vel[i3 + 1] = vel[i3 + 1] * drag - o.gravity * dt;
       pos[i3] += vel[i3] * dt;
       pos[i3 + 1] += vel[i3 + 1] * dt;
       pos[i3 + 2] += vel[i3 + 2] * dt;
       size[i] += grow[i] * dt;
       const u = t / max[i];
-      alpha[i] = 0.55 * (1 - u * u);
+      alpha[i] = o.alpha * 1.1 * (1 - u * u);
     }
     this.geo.attributes.position.needsUpdate = true;
     this.geo.attributes.aSize.needsUpdate = true;
@@ -167,7 +193,7 @@ export class ScarField {
     for (let i = 0; i < SCAR_MAX; i++) this.mesh.setMatrixAt(i, _m);
     this.mesh.renderOrder = 2;
     scene.add(this.mesh);
-    this.deepCol = new THREE.Color(0xa08f78);
+    this.deepCol = new THREE.Color(0xa09aa6);
     this.fadeCol = new THREE.Color(0xffffff);
   }
 

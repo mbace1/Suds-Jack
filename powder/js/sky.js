@@ -5,7 +5,7 @@
 //
 // The rule that keeps being relearned: horizon and fog must be the SAME value.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=4';
+import { PAL } from './palette.js?v=5';
 
 function gradientTexture() {
   const c = document.createElement('canvas');
@@ -128,6 +128,8 @@ export function makeSky(scene, sunDir) {
   moon.scale.setScalar(52); moon.renderOrder = -3;
   group.add(moon);
 
+  // the sky is its own layer so the full-res depth prepass can skip it
+  group.traverse(o => o.layers.set(3));
   scene.add(group);
   const toSun = new THREE.Vector3(-sunDir[0], -sunDir[1], -sunDir[2]).normalize();
   const _p = new THREE.Vector3();

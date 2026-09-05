@@ -31,11 +31,16 @@
     .row { display: flex; gap: 16px; }
     .bar { height: 7px; background: rgba(240,230,210,.14); border-radius: 2px; overflow: hidden; margin-top: 3px; }
     .bar > i { display: block; height: 100%; width: 0%; background: #8fe8d8; transition: width .06s linear; }
+    /* the weight axis: two bars growing out from a centre line */
+    .lean { height: 15px; background: rgba(240,230,210,.14); position: relative; margin-top: 2px; }
+    .lean > i { position: absolute; bottom: 0; left: 0; right: 0; height: 0%; background: #8fe8d8; transition: height .06s linear; }
+    .lean.dn { margin-top: 1px; }
+    .lean.dn > i { bottom: auto; top: 0; background: #ffb066; }
 
     #speedo { left: 18px; bottom: 18px; min-width: 168px; }
     #speedo .val { font-size: 44px; }
     #eng { left: 18px; bottom: 132px; min-width: 168px; }
-    #dyn { right: 18px; bottom: 18px; min-width: 210px; text-align: right; }
+    #dyn { right: 18px; bottom: 18px; min-width: 244px; text-align: right; }
     #race { right: 18px; top: 18px; min-width: 158px; text-align: right; }
     #nav { left: 50%; top: 16px; transform: translateX(-50%); text-align: center; min-width: 250px; }
     #nav #compass { font-size: 17px; font-weight: bold; letter-spacing: 2px; }
@@ -89,8 +94,13 @@
         <div><div class="lbl">SLIP</div><div class="val" style="font-size:20px"><span id="slip">0.0</span></div></div>
         <div><div class="lbl">GAP</div><div class="val" style="font-size:20px"><span id="gap">2.6</span></div></div>
         <div><div class="lbl">SINK cm</div><div class="val" style="font-size:20px"><span id="sink">0</span></div></div>
+        <div style="width:26px;flex:0 0 26px">
+          <div class="lbl">WGT</div>
+          <div class="lean"><i id="leanUp"></i></div>
+          <div class="lean dn"><i id="leanDn"></i></div>
+        </div>
       </div>
-      <div class="lbl" style="margin-top:5px" id="surf">SALT PAN</div>
+      <div class="lbl" style="margin-top:5px"><span id="surf">SALT PAN</span> · <span id="chassis">NOSE</span></div>
     </div>
 
     <div class="panel" id="race">
@@ -120,6 +130,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=4"></script>
+  <script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>
