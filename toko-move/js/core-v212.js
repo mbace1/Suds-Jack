@@ -65,7 +65,7 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
   // Inland bodies are closed rings and fill. The SEA does not: an OSM coastline
   // is a directed OPEN line — land on its left, water on its right — and closing
   // it into a polygon is inventing a shape the data does not contain. (The
-  // Piritori lane tried three closures and completed none of them.) So the sea
+  // earlier lane tried three closures and completed none of them.) So the sea
   // is not filled; it is SHOWN, by shading outward from the shore on the side
   // the data itself says is water. Three offset passes, fading out, which reads
   // as sea at a glance and is derived rather than drawn: flip the winding and
