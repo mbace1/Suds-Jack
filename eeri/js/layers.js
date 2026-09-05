@@ -23,12 +23,13 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=57';
-import { getLayerTexture } from './assets.js?v=57';
-import { buildGroundworksDressing } from './world1-dressing.js?v=57';
-import { buildPipeworksDressing } from './world2-dressing.js?v=57';
-import { placeScenery } from './scenery.js?v=57';
-import { applyMood, buildLamp, flicker } from './light.js?v=57';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=58';
+import { getLayerTexture } from './assets.js?v=58';
+import { buildGroundworksDressing } from './world1-dressing.js?v=58';
+import { buildPipeworksDressing } from './world2-dressing.js?v=58';
+import { craftMat, craftBox } from './craft.js?v=58';
+import { placeScenery } from './scenery.js?v=58';
+import { applyMood, buildLamp, flicker } from './light.js?v=58';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -706,6 +707,173 @@ function backgroundEvents(scene, world) {
   };
 }
 
+// ---- THE FOREGROUND OCCLUDERS -------------------------------------------
+//
+// ART_TARGET rung 1c: "two or three foreground occluders that CROSS THE
+// CAMERA — a girder, a swinging hook, a passing bucket. Cropped hard, dark,
+// low detail. The cheapest depth cue in the medium." Rung 4 asks for the
+// same thing again, which is how far behind it was: the `fore` lane has
+// shipped a painted strip since v3, and in four worlds' captured frames
+// there was nothing in front of the player at all. A painted strip along
+// the bottom is a floor; a shape the player passes BEHIND is depth.
+//
+// These are 3D objects rather than more paint, and that is the whole
+// distinction rung 1c draws: "if it does not move in depth, rotate,
+// articulate or cross the camera, it is 2D". Each world gets a static pair
+// that crops the frame's edges and ONE that moves.
+//
+// THREE RULES, each paid for by something already in this file:
+//
+//  1. DARK AND FLAT. `LAYER_TINT.FORE` is 0 — the haze that pushes distance
+//     toward SKY_PALE does not touch this lane, because a foreground is
+//     nearer than you are. So these go the other way, mixed toward INK, and
+//     they carry no detail: at this size detail reads as noise and competes
+//     with the playfield, which is the one thing a foreground may not do.
+//  2. THEY GET OUT OF THE WAY. They join `foreMeshes`, so the same fade that
+//     already answers "a foreground asset is covering the ladder" (owner,
+//     2026-08-21) covers these too. A new occluder that could hide a climb
+//     and did not know about that fade would re-open a closed bug.
+//  3. THEY NEVER STAND ON THE PATH. `FORE_GROUND` is 3.4 against the
+//     playfield's 4 — the offset that stops a foreground piece reading as a
+//     thing you could land on. Every piece here HANGS from above the frame,
+//     so nothing has a foot on the ground to be mistaken for a platform.
+//
+// THE HEIGHTS ARE MEASURED, NOT GUESSED, and the first cut got this wrong in
+// a way no error could report. The camera sits at y≈6.2 with a 24° vertical
+// lens 31 units back, so at `LAYER_Z.FORE` the frame spans roughly y −0.3 to
+// 12.3 — and the first pieces were authored at y 12.4, one tenth of a unit
+// ABOVE the top edge. They loaded, they rendered, they cost draw calls, and
+// four worlds' screenshots showed a couple of stray dark slivers. A
+// foreground you cannot see is the same bug as no foreground, and only a
+// picture catches it. Anchors now sit at 10.5–11.5 and the hanging pieces
+// reach down to 6–7, which is play height: that is the point, since a shape
+// the player passes BEHIND is the whole cue.
+// A HAIR IN FRONT OF THE PAINTED LANE, and this is the bug the first cut
+// shipped. The `fore` PNG mounts at exactly `LAYER_Z.FORE`, so occluders
+// authored at that same z Z-FIGHT with it: the pieces rendered as a pale
+// hatched interference pattern rather than as dark shapes, which reads as a
+// texture artefact on the backdrop and not as a foreground at all. They sit
+// 0.7 nearer, which is far enough to win outright and near enough that the
+// lane still reads as one plane.
+const FORE_OCC_Z = LAYER_Z.FORE + 0.7;
+
+function foregroundOccluders(scene, world) {
+  const g = new THREE.Group();
+  // Craft materials, not flat fills. The first cut used bare
+  // `MeshBasicMaterial` at 62% toward ink and the result was a black
+  // rectangle hanging in the sky — a UI block, not an object, and the exact
+  // failure ART_TARGET §2b names ("reads as coloured, not as material").
+  // These are the same painted balsa and card the machines and the play lane
+  // are made of, darkened rather than replaced, and lit by the same rig.
+  // …and only LIGHTLY darkened. The second cut mixed 40–50% toward ink and
+  // the pieces came back as black silhouettes — which is what a foreground
+  // does in a photograph and the opposite of what it does in a hand-built
+  // set, where the nearest thing is the best lit. These are lit by the same
+  // rig as the machines, so the darkening only has to bias them; the light
+  // does the rest.
+  const D = (c, t = 0.16, m = 'balsa') => craftMat(mix(c, PAL.INK, t), m);
+  // Every anchor runs from play height to y=17, which is well above the
+  // frame's top edge (~12.3) — so a foreground piece is always CROPPED by
+  // the frame and never floats with sky above it. That is what "cropped
+  // hard" means and it is why these read as near rather than as distant.
+  const TOP = 17;
+  const slab = (w, h, m, x, y) => {
+    const q = craftBox(w, h, 1.2, m);
+    q.position.set(x, y, FORE_OCC_Z);
+    g.add(q);
+    return q;
+  };
+  const hang = (x, len, m, blockW, blockH, blockM) => {
+    const grp = new THREE.Group();
+    const cord = craftBox(0.22, len, 0.6, m);
+    cord.position.set(0, -len / 2, 0);
+    grp.add(cord);
+    const blk = craftBox(blockW, blockH, 1.0, blockM || m);
+    blk.position.set(0, -len - blockH / 2, 0);
+    grp.add(blk);
+    grp.position.set(x, TOP, FORE_OCC_Z);
+    g.add(grp);
+    return grp;
+  };
+  let mover = null;
+
+  if (world === 'groundworks') {
+    // the site's own crane, three metres from your face rather than on the
+    // skyline: a mast cropped by the top-left corner, and a hook block on a
+    // cable that swings slowly across the middle of the room
+    // PAINTED YELLOW, not steel. Every steel tone in the palette is a dark
+    // slate, and a dark slate this close to a bright sky reads as a black
+    // cut-out however lightly it is mixed — measured over three passes. The
+    // site's own machines are Tonka-yellow (ART_BRIEF §3.6), so the crane
+    // three metres from your face is too, and it ties the foreground to the
+    // cast's family colour instead of to the backdrop's.
+    const steel = D(PAL.MACHINE_DK, 0.06);
+    slab(1.1, 9, steel, 5.4, TOP - 4.5);
+    slab(3.8, 0.55, steel, 7.2, TOP - 8.5);
+    const brace = slab(3.4, 0.4, steel, 7.1, TOP - 6.6);
+    brace.rotation.z = -0.62;
+    mover = { kind: 'swing', obj: hang(64, 8.6, steel, 1.3, 1.0, D(PAL.MACHINE, 0.1)), t: 0 };
+  } else if (world === 'pipeworks') {
+    // a pipe run overhead, cropped by the top of the frame, with its flange
+    // collars — World 2's own vocabulary seen from underneath — and a valve
+    // wheel hanging off a riser
+    const steel = D(PAL.STEEL[2], 0.12);
+    slab(1.3, 9.5, steel, 4.6, TOP - 4.75);
+    slab(9, 1.15, steel, 10, TOP - 6.4);
+    slab(1.5, 1.6, steel, 7, TOP - 6.4);
+    slab(1.5, 1.6, steel, 13.4, TOP - 6.4);
+    const riser = new THREE.Group();
+    const stem = craftBox(0.7, 6.2, 0.9, steel);
+    stem.position.set(0, -3.1, 0);
+    riser.add(stem);
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.2, 8, 20), D(PAL.HAZARD, 0.08));
+    wheel.position.set(0, -6.4, 0);
+    riser.add(wheel);
+    riser.position.set(70, TOP, FORE_OCC_Z);
+    g.add(riser);
+    mover = { kind: 'spin', obj: wheel, t: 0 };
+  } else if (world === 'grove') {
+    // a canopy branch reaching in from the top-left with its leaf masses,
+    // and one leaf that crosses the whole frame and starts again — the only
+    // piece in the game that literally does rung 1c's "crosses the camera"
+    const bark = D(PAL.EARTH[0], 0.18);
+    const leaf = D(PAL.GREEN_DK, 0.12, 'felt');
+    // SMALLER THAN THE FIRST CUT, because World 3's painted treeline is the
+    // best backdrop in the game and a fat foreground bough was covering it
+    // with the same flat lobes the dressing had just stopped drawing. A
+    // branch and a few leaves at the corner; the art behind does the rest.
+    slab(0.8, 8, bark, 2.2, TOP - 4);
+    const bough = slab(6, 0.5, bark, 5.6, TOP - 6.2);
+    bough.rotation.z = -0.12;
+    for (const [lx, ly, r] of [[3.6, TOP - 7.0, 0.5], [5.8, TOP - 7.3, -0.4], [7.8, TOP - 6.9, 0.3]]) {
+      const q = new THREE.Mesh(new THREE.SphereGeometry(0.95, 10, 8), leaf);
+      q.position.set(lx, ly, FORE_OCC_Z); q.rotation.z = r; q.scale.set(1, 0.62, 0.5);
+      g.add(q);
+    }
+    const fall = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 6), leaf);
+    fall.scale.set(1, 0.5, 0.4);
+    fall.position.set(30, 11, FORE_OCC_Z);
+    g.add(fall);
+    mover = { kind: 'fall', obj: fall, t: 0, x0: 18, x1: 82 };
+  } else if (world === 'nightshift') {
+    // a gantry leg and its beam over the depot, and a work lamp swinging on
+    // a cable under it. The lamp is the one bright thing this close, which
+    // is what a night shift looks like from inside it.
+    // the depot's gantry is pale steel, because at night the near lane is
+    // the only thing a work lamp actually reaches
+    const steel = D(PAL.STEEL[3], 0.06);
+    slab(1.2, 9, steel, 6.2, TOP - 4.5);
+    slab(9, 0.9, steel, 11, TOP - 7.2);
+    const knee = slab(2.6, 0.4, steel, 7.6, TOP - 6.3);
+    knee.rotation.z = -0.7;
+    mover = { kind: 'swing', obj: hang(58, 7.8, steel, 1.4, 0.9, D(PAL.MACHINE, 0.02)), t: 0 };
+  }
+
+  if (!g.children.length) return null;
+  scene.add(g);
+  return { group: g, mover };
+}
+
 // world = the level's theme; each named layer asks the asset seam for a
 // live PNG first and paints its placeholder if there is none.
 export async function buildLayers(scene, world = 'groundworks', reduced = false) {
@@ -730,6 +898,12 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
     if (name === 'fore') foreMeshes.push(...planes);
   }
   const events = backgroundEvents(scene, world);
+  // …and the near half of the same idea. Its meshes join `foreMeshes` so the
+  // ladder fade below covers them without knowing they are new.
+  const fore = foregroundOccluders(scene, world);
+  if (fore) {
+    fore.group.traverse((o) => { if (o.isMesh) foreMeshes.push(o); });
+  }
   const dressing = world === 'groundworks' ? buildGroundworksDressing(scene)
     : world === 'pipeworks' ? buildPipeworksDressing(scene) : null;
 
@@ -779,6 +953,23 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
     update: (dt) => {
       if (reduced) return;             // a lamp that pulses is motion too
       events.update(dt);
+      // the one foreground piece that moves. Small, slow and never on the
+      // player's timing — a foreground that demands attention is a
+      // foreground competing with the game.
+      const m = fore?.mover;
+      if (m) {
+        m.t += dt;
+        if (m.kind === 'swing') m.obj.rotation.z = Math.sin(m.t * 0.5) * 0.1;
+        else if (m.kind === 'spin') m.obj.rotation.z = m.t * 0.35;
+        else if (m.kind === 'fall') {
+          // a leaf crossing the frame and starting again — the only piece in
+          // the game that literally does rung 1c's "crosses the camera"
+          const span = m.x1 - m.x0;
+          m.obj.position.x = m.x0 + ((m.t * 1.6) % span);
+          m.obj.position.y = 11.5 - ((m.t * 1.6) % span) * 0.075;
+          m.obj.rotation.z = m.t * 1.1;
+        }
+      }
       lampT += dt;
       for (const m of lamps) if (m.userData.flicker) flicker(m, lampT, m.userData.flicker);
     },
@@ -812,6 +1003,14 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
       lamps.length = 0;
       dressing?.dispose?.();
       events.dispose?.();
+      if (fore) {
+        scene.remove(fore.group);
+        fore.group.traverse((o) => {
+          o.geometry?.dispose?.();
+          if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
+          else o.material?.dispose?.();
+        });
+      }
     },
   };
 }

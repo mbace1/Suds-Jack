@@ -16,10 +16,19 @@
 // this sidecar builds the same big silhouettes from clean planes and uses the
 // already-approved worklamp / barrier / cable-reel cutouts as accents.
 
+import { craftMat, craftBox } from './craft.js?v=58';
+import { PAL, mix } from './palette.js?v=58';
+
 const ASSET = {
   forestTunnel: new URL('../assets/2d/world3_log_tunnel_lib_v1.webp', import.meta.url).href,
   forestClearing: new URL('../assets/2d/world3_stump_clearing_lib_v1.webp', import.meta.url).href,
   root: new URL('../assets/2d/f_root_v1.png', import.meta.url).href,
+  // World 3's treeline, generated in the art lane and keyed to alpha —
+  // layered wool felt lobes on painted balsa, split pins at the boughs. See
+  // the note in world3Backdrop for why these replaced code-drawn shapes.
+  treeOak: new URL('../assets/2d/world3_tree_oak_v1.webp', import.meta.url).href,
+  treeSpruce: new URL('../assets/2d/world3_tree_spruce_v1.webp', import.meta.url).href,
+  treeBirch: new URL('../assets/2d/world3_tree_birch_v1.webp', import.meta.url).href,
   worklamp: new URL('../assets/2d/world4_worklamp_lib_v1.webp', import.meta.url).href,
   reel: new URL('../assets/2d/world4_cable_reel_lib_v1.webp', import.meta.url).href,
   barriers: new URL('../assets/2d/world4_barrier_lamps_lib_v1.webp', import.meta.url).href,
@@ -110,56 +119,61 @@ function warmWindow(THREE, root, x, y, w, h, z = -0.70, glow = false) {
 // -------------------------------------------------------------------------
 
 function world3Backdrop(THREE, root) {
-  // Layered felt-card forest bands. Low contrast so platforms and Eeri stay
-  // readable; the more detailed Library cutouts sit nearer the playfield.
-  panel(THREE, root, 48, 10.5, 124, 22, 0x355b47, -1.70);
-  panel(THREE, root, 48, 7.2, 124, 12, 0x416d4d, -1.64);
-  panel(THREE, root, 48, 4.0, 124, 2.5, 0x6b5438, -1.58);
-
-  // Treeline rhythm rather than a flat green card — but SMALL, and this is
-  // the whole of why World 3 read as green blobs. These sit at z −1.55,
-  // barely behind the plane the game is played on, so a disc of r 6 is not
-  // "a tree in the distance": it spans the playfield from below Eeri's feet
-  // to above the frame, in one flat colour. Depth magnifies, and the fix is
-  // the same one the fore lane needed — smaller, more of them, higher up,
-  // so the eye reads a canopy line instead of seven circles.
-  // THE CANOPY IS NOT A ROW OF CIRCLES.
+  // THE TREES ARE PAINTED ART NOW, and this is owner direction, twice.
   //
-  // It was fourteen flat discs of one green in one line, and at this depth
-  // each spans about a fifth of the screen — so what the eye read was
-  // circles, not trees. Making them smaller was the previous attempt and it
-  // does not help: what gives a disc away is that its EDGE is a perfect arc
-  // all the way round in a single value.
+  // First (2026-09-05): "world 3 should not use the simple trees but we
+  // should make similar ones as the other assets." What was here was
+  // fourteen flat `MeshBasicMaterial` discs plus three full-width flat
+  // panels, and it was wrong in two ways at once — the shapes were circles,
+  // and they were made of nothing while worlds 1 and 2's dressing is built
+  // from `craftMat`. It was also COVERING THE REAL ART: `grove_skyline_v2`
+  // and `grove_far_v2` are a hand-built felt treeline mounted at z −30 and
+  // −14, and a flat green band a metre behind the play plane sat in front of
+  // all of it. World 3 looked the weakest of the four worlds while carrying
+  // the best backdrop, hidden behind a curtain its own dressing had drawn.
   //
-  // Two changes, both about breaking the arc:
+  // Second (same session, on seeing the first fix): "those trees are not
+  // even close. we need 2d generated art from nano banana." Correct, and the
+  // reason is worth writing down: a canopy built from code primitives is a
+  // sphere with a colour, and Crafted World's whole charm is that you can
+  // SEE WHAT A THING IS MADE OF. No arrangement of `SphereGeometry` says
+  // "wool felt cut with scissors and pinned to balsa"; a photograph of that
+  // does, immediately. The 80/20 split in ART_TARGET §0.1 says this outright
+  // — the environment is 2D unless it moves in depth or articulates — and a
+  // background tree does neither.
   //
-  //   * a tree is a CLUSTER, not a ball — three or four overlapping lobes of
-  //     different radii, off-centre from each other, so the silhouette has
-  //     notches in it. Overlap is what turns circles into foliage.
-  //   * a tree has TWO values — a darker mass behind and a lighter crown up
-  //     and to the left, which is §3.1's "key from upper-left" applied to a
-  //     shape that had no shading in it at all.
+  // So: three pieces generated in the art lane against the house craft block
+  // (layered felt lobes, painted balsa, brass split pins, magenta backing),
+  // keyed with the shared hue-ratio key, and mounted through the same
+  // `cutout()` seam the root tunnel and stump clearing already use.
+  // ROOTED, AND THE BASE IS BURIED. Owner, on the first cut with real art:
+  // "the trunks are a bit much here. also they float mid air." Both were the
+  // same arithmetic mistake — `cutout()` takes a CENTRE, and these were
+  // handed a base y as though it were one, which hung every tree a metre
+  // above the ground line at y=4. Now the foot is computed from the height
+  // and set to 3.5: half a unit BELOW the ground, so the trunk goes into the
+  // earth the way a tree does instead of resting on it like a sticker.
   //
-  // And a trunk under every second one: a canopy floating with nothing
-  // holding it up is the other half of why these read as decals. The trunks
-  // are thin, dark and short, because they only have to be GLIMPSED between
-  // the near lane's cutouts to do their job.
-  const DARK = 0x22422f, LIT = 0x2f5941;
-  const tree = (x, y, r, flip) => {
-    disc(THREE, root, x, y, r, DARK, -1.56, 0.97);
-    disc(THREE, root, x + r * (flip ? 0.52 : -0.52), y - r * 0.34, r * 0.78, DARK, -1.56, 0.97);
-    disc(THREE, root, x + r * (flip ? -0.44 : 0.44), y - r * 0.46, r * 0.66, DARK, -1.56, 0.97);
-    disc(THREE, root, x - r * 0.3, y + r * 0.42, r * 0.62, LIT, -1.545, 0.97);
-    disc(THREE, root, x + r * 0.16, y + r * 0.58, r * 0.4, LIT, -1.545, 0.97);
-  };
-  const line = [[2, 12.4, 2.6], [9, 13.2, 3.0], [16, 12.0, 2.4], [24, 13.4, 2.9],
-                [32, 12.2, 2.5], [40, 13.6, 3.1], [48, 12.6, 2.7], [56, 13.2, 2.9],
-                [64, 12.1, 2.4], [72, 13.5, 3.0], [80, 12.4, 2.6], [88, 13.3, 2.8],
-                [96, 12.2, 2.5], [104, 13.0, 2.7]];
-  line.forEach(([x, y, r], i) => {
-    if (i % 2 === 0) panel(THREE, root, x + 0.2, y - r - 1.5, 0.5, 3.4, 0x2d2016, -1.58);
-    tree(x, y, r, i % 2 === 1);
-  });
+  // And the mix is mostly spruce. The oak and the birch are beautiful pieces
+  // but they are mostly TRUNK — a pale vertical bar the width of the player,
+  // repeated eight times across a room, competes with him for the eye. The
+  // spruce carries its own trunk behind its tiers, so it reads as a mass of
+  // foliage; two oaks and one birch across a whole level is seasoning.
+  const FOOT = 3.5;
+  const line = [
+    ['treeSpruce', 6, 8.4, false], ['treeOak', 25, 7.0, true],
+    ['treeSpruce', 34, 7.6, false], ['treeSpruce', 47, 9.0, true],
+    ['treeBirch', 59, 7.2, false], ['treeSpruce', 71, 7.8, true],
+    ['treeSpruce', 84, 8.4, false], ['treeOak', 97, 7.4, true],
+  ];
+  // z −2.6 puts them behind the near lane's own cutouts and well behind the
+  // playfield, so they are a treeline the level stands in front of rather
+  // than scenery the player can be confused about standing on. Slight
+  // opacity roll-off keeps them from competing with the play lane, the same
+  // job `LAYER_TINT` does for the painted lanes further back.
+  for (const [key, x, h, flip] of line) {
+    cutout(THREE, root, key, x, FOOT + h / 2, h, -2.6, 0.96, flip);
+  }
 }
 
 function timberFrame(THREE, root, x, base, h, w = 5.2, z = -0.82) {

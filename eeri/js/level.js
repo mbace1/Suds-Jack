@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=57';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=57';
+import { PAL, mix } from './palette.js?v=58';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=58';
 
-import { ROOMS, LAB } from './rooms.js?v=57';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=57';
+import { ROOMS, LAB } from './rooms.js?v=58';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=58';
 
 export { ROOMS, LAB };
 const EPS = 0.001;

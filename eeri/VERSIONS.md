@@ -1,5 +1,94 @@
 # EERI — versions
 
+## v15.55 — 2026-09-05 — the foreground lane grows objects, and World 3 stops covering its own backdrop
+
+**Two halves of one lane, both `ART_TARGET` rung 1c/4, both code-only.**
+
+### The foreground occluders
+
+Rung 1c asks for "two or three foreground occluders that CROSS THE CAMERA
+— cropped hard, dark, low detail; the cheapest depth cue in the medium",
+and rung 4 asks again, which is how far behind it was: the `fore` lane
+has shipped a painted strip since v3 and in four worlds' captured frames
+there was **nothing in front of the player at all**. A painted strip
+along the bottom is a floor; a shape you pass BEHIND is depth.
+
+Each world gets an anchor cropped by the frame's top-left and one piece
+that moves — groundworks a crane mast with a hook block on a swinging
+cable, pipeworks an overhead pipe run with a turning valve wheel, grove a
+canopy branch with a leaf that crosses the whole frame, nightshift a
+gantry with a work lamp. They join `foreMeshes`, so the fade that already
+answers "a foreground asset is covering the ladder" (owner, 2026-08-21)
+covers these too without knowing they are new.
+
+**Three bugs, all found by looking, none of which could error:**
+
+1. **Authored above the frame.** The camera sits at y≈6.2 with a 24°
+   vertical lens 31 back, so at `LAYER_Z.FORE` the frame ends at y≈12.3 —
+   and the first pieces were at 12.4. They loaded, rendered and cost draw
+   calls, and four screenshots showed two stray slivers.
+2. **Z-fighting with the painted lane.** The `fore` PNG mounts at exactly
+   `LAYER_Z.FORE`, so pieces at that same z came back as a pale hatched
+   interference pattern — which reads as a texture artefact, not a
+   foreground. They sit 0.7 nearer now.
+3. **Made of nothing, and black.** The first cut was `MeshBasicMaterial`
+   at 40–62% toward ink: a black rectangle in the sky. They are `craftMat`
+   balsa now, mixed 6–18% toward ink, and lit by the same rig as the
+   machines — a foreground in a hand-built set is the best-lit thing in
+   frame, not a silhouette.
+
+### World 3's trees are painted art now — owner direction, twice
+
+> *"world 3 should not use the simple trees but we should make similar
+> ones as the other assets"* — and then, on seeing the first fix:
+> *"those trees are not even close. we need 2d generated art from nano
+> banana."*
+
+`js/world34-dressing.js` drew World 3's treeline as **fourteen flat
+`MeshBasicMaterial` discs** plus three full-width flat panels at z −1.7
+to −1.55. Two things were wrong and only one was the shape:
+
+- **They were made of nothing.** Worlds 1 and 2's dressing is built from
+  `craftMat` — the same painted balsa, kraft card and wool felt as the
+  play lane and the machines. This file was the last place in the game
+  still painting flat fills.
+- **They were covering the real art.** `grove_skyline_v2` and
+  `grove_far_v2` are a hand-built felt treeline mounted at z −30 and −14.
+  A flat green band a metre behind the play plane sat in front of all of
+  it. **World 3 looked the weakest of the four worlds while carrying the
+  best backdrop, hidden behind a curtain its own dressing had drawn.**
+
+The first fix rebuilt the trees in `craftMat` — real materials, but still
+`SphereGeometry` canopies, and the owner was right that it was not close.
+**The lesson, and it is the general one:** no arrangement of code
+primitives says *wool felt cut with scissors and pinned to balsa*. A
+sphere with a colour on it is a sphere with a colour on it. `ART_TARGET`
+§0.1's 80/20 split says this outright — the environment is 2D unless it
+moves in depth or articulates — and a background tree does neither.
+
+So three pieces were generated in the art lane against the house craft
+block (layered felt lobes in three greens, painted balsa trunk with a
+chipped edge, brass split pins, magenta backing), keyed with the shared
+hue-ratio key, and mounted through the same `cutout()` seam the root
+tunnel and stump clearing already use: `world3_tree_oak_v1`,
+`world3_tree_spruce_v1`, `world3_tree_birch_v1` (76–129 KB each).
+
+**Two corrections after the first placement, both from the owner looking
+at it:** *"the trunks are a bit much here. also they float mid air."*
+The floating was one arithmetic mistake — `cutout()` takes a CENTRE and
+was handed a base y as though it were one, hanging every tree a metre
+above the ground line. The foot is computed from the height now and set
+half a unit BELOW ground, so a trunk goes into the earth the way a tree
+does instead of resting on it like a sticker. And the mix is mostly
+spruce: the oak and birch are lovely pieces but they are mostly TRUNK,
+and a pale vertical bar the width of the player, repeated eight times
+across a room, competes with him for the eye.
+
+`node test/rooms.mjs` 246, `fx-smoke.mjs` 31, `dev-menu.mjs` 36,
+`smoke.cjs` 432, `playthrough.cjs` 25.
+
+`?v=57` → `?v=58` across the module graph.
+
 ## v15.54 — 2026-09-05 — the enemy cast is remade at HD, and then cut back to 6.8k
 
 Numbered **after** the camera pass landed (PHASING §0.1: a version is

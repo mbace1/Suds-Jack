@@ -108,9 +108,19 @@ export class Camera {
     // Capped at the length of a jump: a long fall (a pit, a teleport in a
     // test) is not a precision jump, and a camera that freezes for as long
     // as the ground is missing would hold the wrong framing for seconds.
+    // …and it holds the DRIFT, not a reframe. v15.55: freezing the dolly for
+    // any airborne frame also froze it through a SHOT CHANGE crossed in
+    // mid-air, and the smoke gate caught it in the way a still camera always
+    // gets caught — the check watches for the dolly to stop moving and reads
+    // "stopped" as "settled", so it sampled 31 where the room asks for 43.
+    // A frozen big reframe would also have to snap when the hold expired,
+    // which is worse than the small movement rung 2 is protecting against.
+    // So the hold covers corrections under two units and lets an authored
+    // shot land whatever the feet are doing.
     const airborne = mode === 'foot' && focus.grounded === false;
     this.airT = airborne ? (this.airT || 0) + dt : 0;
-    if (!(airborne && this.airT < 0.7)) this.f.z += (z - this.f.z) * Math.min(1, 1.6 * dt);
+    const hold = airborne && this.airT < 0.7 && Math.abs(z - this.f.z) < 2;
+    if (!hold) this.f.z += (z - this.f.z) * Math.min(1, 1.6 * dt);
     this.f.lead += (want.lead - this.f.lead) * Math.min(1, 2.2 * dt);
 
     // follow
