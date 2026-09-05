@@ -1,0 +1,15 @@
+import * as THREE from 'three';
+
+// SKLTR v149-v152 — arena transitions change the world's rendering grammar, not only color.
+// Gameplay geometry stays in the same physical place while its material language moves
+// wireframe -> concrete -> organic sheen -> machinery -> hostile emissive solid.
+let scene=null,state='wire',mix=1,fromBg=new THREE.Color(0x06060e),toBg=fromBg.clone(),fromFog=fromBg.clone(),toFog=fromBg.clone();
+const LOOK={wire:{bg:0x030810,fog:0x07131b,rough:.28,metal:.18,wire:true,em:0x000000},brutal:{bg:0x17130f,fog:0x2b251e,rough:.96,metal:.02,wire:false,em:0x000000},bio:{bg:0x0e0618,fog:0x21103a,rough:.36,metal:.22,wire:false,em:0x071d18},physical:{bg:0x0c1013,fog:0x30383e,rough:.56,metal:.62,wire:false,em:0x000000},kill:{bg:0x120203,fog:0x380507,rough:.42,metal:.28,wire:false,em:0x260202}};
+function key(n=''){if(n.includes('TORTOISE'))return'brutal';if(n.includes('WASP'))return'bio';if(n.includes('MACHINE'))return'physical';if(n.includes('KILL')||n.includes('LAST'))return'kill';return'wire'}
+const oldAdd=THREE.Scene.prototype.add;THREE.Scene.prototype.add=function(...o){const r=oldAdd.apply(this,o);if(this.isScene&&!scene){scene=this;fromBg.copy(this.background||fromBg);toBg.copy(fromBg);fromFog.copy(this.fog?.color||fromBg);toFog.copy(fromFog)}return r};
+function materials(k){const l=LOOK[k],root=scene?.getObjectByName('SKLTR_V60_WORLD');root?.traverse(o=>{if(!o.isMesh||!o.userData?.skltrHeroSolid||!o.material)return;const m=o.material;m.wireframe=!!l.wire;if('roughness'in m)m.roughness=l.rough;if('metalness'in m)m.metalness=l.metal;if(m.emissive)m.emissive.setHex(l.em);m.needsUpdate=true;});}
+const wipe=document.createElement('div');Object.assign(wipe.style,{position:'fixed',inset:'0',zIndex:'58',pointerEvents:'none',opacity:'0',background:'linear-gradient(90deg,transparent 0%,rgba(180,255,245,.18) 48%,rgba(255,255,255,.48) 50%,rgba(180,255,245,.18) 52%,transparent 100%)',transform:'translateX(-110%)',transition:'none'});document.body.appendChild(wipe);
+function shift(k){if(!scene||k===state)return;state=k;const l=LOOK[k];fromBg.copy(scene.background||fromBg);toBg.setHex(l.bg);fromFog.copy(scene.fog?.color||fromBg);toFog.setHex(l.fog);mix=0;materials(k);wipe.style.opacity='.85';wipe.style.transform='translateX(-110%)';requestAnimationFrame(()=>{wipe.style.transition='transform .72s cubic-bezier(.2,.8,.2,1),opacity .28s .55s';wipe.style.transform='translateX(110%)';wipe.style.opacity='0'});dispatchEvent(new CustomEvent('skltr-transform-leap',{detail:{state:k}}));}
+addEventListener('skltr-world-shift',e=>shift(e.detail?.to||state));addEventListener('skltr-arena',e=>shift(key(e.detail?.arena||'')));
+(function tick(){if(scene&&mix<1){mix=Math.min(1,mix+.025);const e=1-Math.pow(1-mix,3);scene.background?.lerpColors(fromBg,toBg,e);scene.fog?.color.lerpColors(fromFog,toFog,e);if(scene.fog){scene.fog.near=38-e*8;scene.fog.far=165-e*(state==='kill'?42:18);}}requestAnimationFrame(tick)})();
+window._skltrTransform152=()=>({state,mix:+mix.toFixed(2),look:{...LOOK[state]}});
