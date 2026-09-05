@@ -22,7 +22,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 6;
+const VERSION = 7;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -46,7 +46,24 @@ const cardName = id => nameOf(CARDS, id);
 const gl = $('#gl');
 arena = new Arena(gl, T());
 const params = new URLSearchParams(location.search);
-if (params.get('bg')) arena.setPhoto(params.get('bg'), { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+
+// The backdrop, in order of preference:
+//   1. ?bg=<url>            an explicit plate, for testing one without editing
+//   2. bg/plate.jpg         a photograph DROPPED INTO THE GAME FOLDER
+//   3. the painted park     always, if neither is there
+//
+// (2) is the whole point: the owner asked for a real photo behind the bridge,
+// and this makes adding one a matter of putting a file at `slaykallio/bg/plate.jpg`
+// with no code change at all. Nothing 404s loudly — `setPhoto` rejects and the
+// painting is already on screen, so a missing plate is simply the default.
+// Both paths go through the SAME tilt-shift, so a photograph gets the sharp
+// band on the deck like everything else.
+const PLATE = 'bg/plate.jpg';
+if (params.get('bg')) {
+  arena.setPhoto(params.get('bg'), { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+} else {
+  arena.setPhoto(PLATE, { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+}
 setMuted(store.get('mute', false));
 
 function resize() {

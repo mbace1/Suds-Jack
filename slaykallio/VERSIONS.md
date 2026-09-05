@@ -7,6 +7,38 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v7 — 2026-09-05
+**A photograph is a file you drop in**
+The owner asked for a real photo behind the bridge. The plumbing existed
+(`?bg=<url>`), but using it meant editing a URL into the page, so a photograph
+was never going to be the default by accident.
+
+- **`bg/plate.jpg` is now the backdrop if it exists.** No code change to add
+  one: drop the file in and it is picked up at boot, through the SAME
+  tilt-shift as the painting, so it gets the sharp band on the deck, the
+  vignette and the grade. `?bg=` still overrides it for testing a plate
+  without committing it.
+- **A missing plate is the default, not an error.** `setPhoto` rejects and the
+  painted park is already on screen.
+- The one honest cost: probing for an optional file 404s on a tree that has no
+  plate. That is named in `test/smoke.cjs` rather than hidden by contorting the
+  code to avoid asking — and the allowance is **narrow**, verified by pointing
+  the constant at a different missing path and watching the gate fail. The
+  console's URL-less echo of the same request is dropped as a strictly less
+  informative duplicate of the response listener, which still reports every
+  other 4xx with its URL.
+- `bg/README.md` says what makes a good plate (landscape, horizon above the
+  middle, nothing important centre-bottom, overcast light) and that whatever
+  goes there ships, so it needs to be redistributable.
+- Gates: 261 in bare node, 63 in a browser.
+
+**No photograph is included.** Every image host — Wikimedia Commons, Unsplash,
+Pixabay, `upload.wikimedia.org` — is refused by this sandbox's egress proxy, so
+one could not be fetched or licence-checked from here. The seam is ready and
+proven end to end with a synthetic stand-in plate (fetched 200, `arena.photo`
+true, rendered through the focus pass); the stand-in was then deleted, because
+a test fixture is not art.
+
 ## v6 — 2026-09-05
 **The run was flat, and that mattered more than the character spread**
 `test/balance.mjs` is new — a measuring tool, not a gate, beside `core.mjs` the

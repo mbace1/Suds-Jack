@@ -38,13 +38,27 @@ const check = (name, ok, extra = '') => {
   // ── landscape ──────────────────────────────────────────────────────────
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const page = await ctx.newPage();
+  // `bg/plate.jpg` is OPTIONAL BY DESIGN: drop a photograph there and it
+  // becomes the backdrop, leave it out and the painted park stays up. The
+  // probe therefore 404s on a tree that carries no plate, which is the
+  // intended state and not a fault — so it is named here rather than hidden
+  // by contorting the code to avoid asking. Every other error still fails.
+  const optional = u => /\/bg\/plate\.[a-z]+$/.test(u);
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  page.on('response', r => { if (r.status() >= 400) errors.push(`HTTP ${r.status()} ${r.url()}`); });
+  // The console's echo of a failed request carries no URL ("Failed to load
+  // resource: … 404"), so it cannot be told apart from the optional plate's
+  // probe. The response listener below sees the SAME event WITH the URL, so
+  // the echo is dropped as a strictly less informative duplicate rather than
+  // the whole class of console errors being ignored.
+  page.on('console', m => { if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) errors.push(m.text()); });
+  page.on('response', r => { if (r.status() >= 400 && !optional(r.url())) errors.push(`HTTP ${r.status()} ${r.url()}`); });
   await page.goto(base, { waitUntil: 'load' });
   await page.waitForFunction(() => !!window.__sk, null, { timeout: 8000 });
   check('the page boots with no errors', errors.length === 0, errors.join(' | '));
+  // the allowance above must be narrow — a different missing file still fails
+  check('and a missing file that is NOT the optional plate still counts',
+    optional('/slaykallio/bg/plate.jpg') && !optional('/slaykallio/js/data.js') && !optional('/slaykallio/bg/other.jpg'));
 
   // the menu
   check('the menu offers the whole roster', await page.locator('#roster .pick').count() === 4);
