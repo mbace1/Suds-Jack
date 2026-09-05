@@ -1,7 +1,7 @@
 // TRUCK mode — Clustertruck-style auto-scroll track on the Hyper Dagger body.
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=69';
-import { Skull } from './enemy.js?v=69';
+import { TUNING as T } from './tuning.js?v=71';
+import { Skull } from './enemy.js?v=71';
 
 const matOk = new THREE.MeshBasicMaterial({ color: 0x3a342c });
 const matWarn = new THREE.MeshBasicMaterial({ color: 0x6a4030 });
@@ -97,14 +97,29 @@ export class TruckTrack {
     return floor > -Infinity;
   }
 
-  update(dt, player, gameTime, enemies) {
+  update(dt, player, gameTime, enemies, walls = null) {
     const ahead = player.feet.z - 45;
     while (this.nextZ > ahead) {
       this.addPlatform(this.nextZ, this.walkX());
       let gap = T.truck.platformGap * (0.8 + Math.random() * 0.45);
-      if (gameTime > 20 && Math.random() < 0.12) gap *= 1.35;
+      if (gameTime > 20 && Math.random() < T.truck.courseChance) {
+        // THE COURSE (v40): a hole too wide to jump gets a wall along one
+        // side of it, from the slab you leave to the slab you land on — the
+        // way across is to run the wall. Which side alternates, so the
+        // body has to read it, and the wall stands just off the slab edge
+        // so a run along it is a run, not a scrape.
+        gap *= T.truck.courseGap;
+        if (walls) {
+          const side = (this._courseSide = -(this._courseSide || 1));
+          const x = this.lastX + side * (T.truck.width * 0.5 + 1.2);
+          const z = this.nextZ - gap / 2;
+          walls.add({ x, z, yaw: Math.PI / 2, len: gap + T.truck.platformDepth, h: T.truck.courseWallH, thick: 0.8, tag: 'course' });
+        }
+      }
       this.nextZ -= gap;
     }
+    // course walls fall away behind, like the slabs do
+    if (walls) walls.cull(w => w.tag === 'course' && w.z > player.feet.z + 24);
 
     for (let i = this.platforms.length - 1; i >= 0; i--) {
       const p = this.platforms[i];
