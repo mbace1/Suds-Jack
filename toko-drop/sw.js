@@ -17,7 +17,7 @@
 //  - Only OK responses are ever cached, and precache failures are non-fatal —
 //    a CDN edge 404 (the v118/v119 propagation lesson) must not get pinned
 //    into the offline cache or brick the install.
-const CACHE = 'toko-drop-?v=191';
+const CACHE = 'toko-drop-?v=192';
 const TOKEN = new URL(self.location.href).searchParams.get('v') ?? '0';
 
 // New game files must be added here as well as to bump-version.sh's file loop.
@@ -30,6 +30,7 @@ const PRECACHE = [
   './', './index.html',
   ...['main', 'input', 'bullet', 'player', 'enemy', 'arena', 'level', 'editor', 'audio', 'haptics', 'designer', 'lang', 'tuning', 'retro', 'specimen']
     .map(m => `./js/${m}.js?v=${TOKEN}`),
+  ...['first-light', 'three-rings'].map(id => `./levels/${id}.json?v=${TOKEN}`),   // v239: the bundled levels (level.js BUNDLED)
   `./vendor/three.module.min.js?v=${TOKEN}`,
   `./vendor/three.webgpu.min.js?v=${TOKEN}`,
   `./vendor/three.core.min.js?v=${TOKEN}`,

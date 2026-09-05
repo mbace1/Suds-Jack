@@ -1,18 +1,18 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=191';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=191';
-import { Player, PLAYER_RADIUS } from './player.js?v=191';
+import { InputManager } from './input.js?v=192';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=192';
+import { Player, PLAYER_RADIUS } from './player.js?v=192';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=191';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=191';
-import { audio } from './audio.js?v=191';
-import { haptics } from './haptics.js?v=191';
-import { initDesigner } from './designer.js?v=191';
-import { createSpecimen } from './specimen.js?v=191';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=191';
-import { TUNING } from './tuning.js?v=191';
-import { Arena, rectShape } from './arena.js?v=191';   // v236: the boundary has one home
-import { compile as compileLevel, ARENAS as LEVEL_ARENAS } from './level.js?v=191';   // v237: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=192';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=192';
+import { audio } from './audio.js?v=192';
+import { haptics } from './haptics.js?v=192';
+import { initDesigner } from './designer.js?v=192';
+import { createSpecimen } from './specimen.js?v=192';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=192';
+import { TUNING } from './tuning.js?v=192';
+import { Arena, rectShape } from './arena.js?v=192';   // v236: the boundary has one home
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=192';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -52,10 +52,13 @@ let arenaScale  = 1;
 // and every gate below that reads it is a place the ordinary game must not
 // notice a level was ever here (records, dailies, hints, wave-clear chaining).
 let customLevel   = null;
-// The editor's arena: an authored level may name its own rectangle. Set while
-// the editor session is alive (editing AND playing), cleared on leave.
+// The level's arena: { halfX, halfZ, shape } — an authored level may name one
+// of the game's rectangles or carry its own SDF shape (v239, the unified
+// format). Set while the editor session is alive (editing AND playing) and
+// for a ?level= run; cleared on leave.
 let arenaOverride = null;
 let editor        = null;   // the editor API once ?editor has loaded it
+let pendingLevel  = null;   // v239: a ?level=<id> file, armed for the next start
 const GRID_CELL = 1.286;                          // world units per grid cell (keeps cells square)
 const ROUND_DUR = 20; // seconds per wave
 
@@ -792,6 +795,11 @@ function applyArenaMode(landscape) {
   const p = arenaPreset(landscape);
   HALF_X = p.halfX * arenaScale; HALF_Z = p.halfZ * arenaScale;   // v162
   arena.setRect(HALF_X, HALF_Z);                                 // v236
+  // v239: a level's own region. HALF_X/HALF_Z stay its bounding box (the
+  // floor plane, the camera fit); containment, the spawn ring and every
+  // other boundary question go to the SDF. Not DRAWN yet — the floor still
+  // paints the box (LEVEL_EDITOR_DESIGN.md §2.3 / PR #447's v238 term).
+  if (arenaOverride && arenaOverride.shape) arena.setShape(arenaOverride.shape);
   CAM_LOOK.set(...p.camLook);
   if (arenaOverride || smashMode || tokotronMode || nexdeusMode || landscape) CAM_REST.copy(fitPresetCamera(p));
   else                        CAM_REST.set(...p.camRest);
@@ -1528,6 +1536,24 @@ const WEAPON_PODS = {
 const LV1_WEAPONS = ['S', 'B', 'L', 'R'];
 const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2'];
 const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22, score: 0x88ff88, item: 0xff88bb, key: 0xffd700, potion: 0x66d9ff };
+// v237/v239: the pickups an authored level may lay down — what the editor's
+// PICKUPS menu offers and what the level validator accepts. The cabinet-only
+// shaped ids (key/potion/item) and the enemy-only homing pods stay out.
+const LEVEL_PICKUPS = [
+  ...Object.keys(NON_WEAPON_COLORS).filter(id => !['key', 'potion', 'item'].includes(id))
+    .map(id => ({ id, color: NON_WEAPON_COLORS[id], label: id.toUpperCase() })),
+  ...Object.keys(WEAPON_PODS).filter(id => !id.startsWith('H'))
+    .map(id => ({ id, color: WEAPON_PODS[id].color, label: `POD ${id} · ${WEAPON_PODS[id].mode}` })),
+];
+const levelCtx = () => ({ typeNames: new Set(Object.keys(EnemyType)), pickupIds: new Set(LEVEL_PICKUPS.map(p => p.id)) });
+// A level that ships in levels/ (level.js BUNDLED). Tokened like every other
+// new path (v118/v119: the Pages edge caches a 404 for ten minutes).
+async function loadBundledLevel(id) {
+  const token = new URL(import.meta.url).searchParams.get('v') ?? '0';
+  const res = await fetch(`levels/${encodeURIComponent(id)}.json?v=${token}`);
+  if (!res.ok) throw new Error(`levels/${id}.json: HTTP ${res.status}`);
+  return parseLevel(await res.text(), levelCtx());
+}
 
 function randomWeaponPodId(lv2Allowed = false) {
   if (lv2Allowed && Math.random() < 0.28) return LV2_WEAPONS[Math.floor(Math.random() * LV2_WEAPONS.length)];
@@ -3252,6 +3278,7 @@ function setCabinetSel(v) {
   localStorage.setItem('tokoDropCabinet', cabinetSel ?? '');
 }
 function startRun() {
+  if (pendingLevel) { const lv = pendingLevel; pendingLevel = null; playLevel(lv, 0); return; }   // v239: ?level=
   if      (cabinetSel === 'tokotron') startTokotron();
   else if (cabinetSel === 'gaundrop') startGaundrop();
   else if (cabinetSel === 'binding')  startBinding();
@@ -5002,7 +5029,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v237' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v239' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -7669,10 +7696,10 @@ function playLevel(level, fromT = 0) {
   startGame();   // straight in — startRun() would route through a selected cabinet
 }
 function levelArena(level) {
-  const a = level?.arena;
-  if (a && typeof a === 'object' && a.halfX > 2 && a.halfZ > 2) return { halfX: a.halfX, halfZ: a.halfZ };
-  if (typeof a === 'string') return LEVEL_ARENAS[a] ?? null;
-  return null;
+  const shape = level ? levelArenaShape(level) : null;
+  if (!shape) return null;                       // "auto": the viewport's rectangle
+  const box = new Arena(shape);
+  return { halfX: box.halfX, halfZ: box.halfZ, shape };
 }
 function endLevelRun(outcome) {
   if (!customLevel) return;
@@ -7689,9 +7716,15 @@ function endLevelRun(outcome) {
   tutorialHints = null;
   overlay.style.display = 'none';
   overlay.style.pointerEvents = '';
-  gameState = 'editor';
-  editor?.onRunEnd(result);
+  lastLevelResult = result;
+  if (editor) { gameState = 'editor'; editor.onRunEnd(result); return; }
+  // v239: a ?level= run with no editor over it goes back to the title.
+  arenaOverride = null;
+  applyArenaMode(landscapeMode);
+  showTitle();
+  gameState = 'title';
 }
+let lastLevelResult = null;
 
 function triggerGameOver() {
   if (gauntlet) {                       // died inside a gauntlet: restore state
@@ -10158,16 +10191,20 @@ loop();
 // ── v237 LEVEL EDITOR: index.html?editor mounts it over this very game ─────
 // Lazy, and swallowed on failure — a dev tool must never be why the game does
 // not open. window.__ed is the editor's API, for the console and the gate.
-if (new URLSearchParams(location.search).has('editor')) {
-  import('./editor.js?v=191').then(m => {
+const _bootQuery = new URLSearchParams(location.search);
+// v239: ?level=<id> arms a bundled level for the next start (or opens it in
+// the editor when ?editor is there too). A file that fails to load is a
+// console warning and an ordinary title, never a black screen.
+const _bootLevel = _bootQuery.get('level')
+  ? loadBundledLevel(_bootQuery.get('level')).catch(err => { console.warn('level did not load:', err.message); return null; })
+  : Promise.resolve(null);
+if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
+if (_bootQuery.has('editor')) {
+  import('./editor.js?v=192').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
-      pickups: [
-        ...Object.keys(NON_WEAPON_COLORS).filter(id => !['key', 'potion', 'item'].includes(id))   // cabinet-only ids stay out
-          .map(id => ({ id, color: NON_WEAPON_COLORS[id], label: id.toUpperCase() })),
-        ...Object.keys(WEAPON_PODS).filter(id => !id.startsWith('H'))                           // homing is enemy-only (v88)
-          .map(id => ({ id, color: WEAPON_PODS[id].color, label: `POD ${id} · ${WEAPON_PODS[id].mode}` })),
-      ],
+      pickups: LEVEL_PICKUPS,
+      fetchLevel: loadBundledLevel,
       // Editing: this arena, no bodies, no title. Called again whenever the level's arena changes.
       enter: (level) => {
         arenaOverride = levelArena(level);
@@ -10188,12 +10225,12 @@ if (new URLSearchParams(location.search).has('editor')) {
       },
     });
     window.__ed = editor;
-    editor.open();
+    editor.open(await _bootLevel);
   }).catch(err => console.error('level editor failed to load', err));
 }
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=191').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=192').catch(() => {});
   });
 }
