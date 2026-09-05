@@ -84,14 +84,35 @@ const check = (name, ok, extra = '') => {
 
   // everybody is inside the frame, in both formats — the whole reason the
   // camera fits an action width instead of the bench
-  const inFrame = async () => page.evaluate(() => {
-    const w = innerWidth, h = innerHeight;
-    const all = [__sk.puppets().hero, ...__sk.puppets().foes];
-    return all.every(p => {
-      const a = __sk.arena.project(p.headWorld(), w, h), b = __sk.arena.project(p.home, w, h);
-      return a.x > 8 && a.x < w - 8 && a.y > 0 && b.y < h;
-    });
+  // A figure's WIDTH matters as much as its centre — the end of a three-wide
+  // row sat on the frame edge while a centre-point check passed — and so does
+  // its height: the boss stands a head taller than anyone else and his crown
+  // was cropped by the top of the frame with every gate green. So this
+  // measures the sprite's own bounds, and it walks EVERY encounter rather than
+  // trusting that the first one speaks for the sixth.
+  const cropped = async () => page.evaluate(() => {
+    const w = innerWidth, h = innerHeight, bad = [];
+    const all = [['hero', __sk.puppets().hero], ...__sk.puppets().foes.map((p, i) => [`foe${i}`, p])];
+    for (const [k, p] of all) {
+      const c = __sk.arena.project(p.home, w, h);
+      const edge = __sk.arena.project({ x: p.home.x + p.width / 2, y: p.home.y, z: p.home.z }, w, h);
+      const half = edge.x - c.x;
+      const top = __sk.arena.project(p.headWorld(), w, h).y;
+      if (c.x - half < 0 || c.x + half > w || top < 0 || c.y > h) bad.push(k);
+    }
+    return bad;
   });
+  const framed = [];
+  for (let enc = 0; enc < 6; enc++) {
+    await page.evaluate(i => __sk.debug.jumpTo(i), enc);
+    await page.waitForTimeout(60);
+    const bad = await cropped();
+    if (bad.length) framed.push(`enc ${enc}: ${bad}`);
+  }
+  check(`nobody is cropped by the landscape frame, in any encounter${framed.length ? ` — ${framed}` : ''}`, framed.length === 0);
+  await page.evaluate(() => __sk.debug.jumpTo(0));
+  await page.waitForTimeout(60);
+  const inFrame = async () => (await cropped()).length === 0;
   check('every puppet is inside the landscape frame', await inFrame());
   check('and the labels are pinned over them',
     await page.evaluate(() => [...document.querySelectorAll('.unit')].every(u => /translate/.test(u.style.transform))));
@@ -324,6 +345,28 @@ const check = (name, ok, extra = '') => {
     if (!cards.length) return false;
     return cards.every(c => { const r = c.getBoundingClientRect(); return r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 && r.width >= 44; });
   }));
+  const pFramed = [];
+  for (let enc = 0; enc < 6; enc++) {
+    await pp.evaluate(i => __sk.debug.jumpTo(i), enc);
+    await pp.waitForTimeout(60);
+    const bad = await pp.evaluate(() => {
+      const w = innerWidth, h = innerHeight, out = [];
+      const all = [['hero', __sk.puppets().hero], ...__sk.puppets().foes.map((p, i) => [`foe${i}`, p])];
+      for (const [k, p] of all) {
+        const c = __sk.arena.project(p.home, w, h);
+        const edge = __sk.arena.project({ x: p.home.x + p.width / 2, y: p.home.y, z: p.home.z }, w, h);
+        const half = edge.x - c.x;
+        const top = __sk.arena.project(p.headWorld(), w, h).y;
+        if (c.x - half < 0 || c.x + half > w || top < 0) out.push(k);
+      }
+      return out;
+    });
+    if (bad.length) pFramed.push(`enc ${enc}: ${bad}`);
+  }
+  check(`nobody is cropped by the portrait frame either${pFramed.length ? ` — ${pFramed}` : ''}`, pFramed.length === 0);
+  await pp.evaluate(() => __sk.debug.jumpTo(0));
+  await pp.waitForTimeout(60);
+
   check('the deck sits above the hand, not behind it', await pp.evaluate(() => {
     const seat = __sk.arena.deckRow() * innerHeight;
     const hand = document.querySelector('#hand').getBoundingClientRect().top;

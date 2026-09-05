@@ -286,7 +286,7 @@ export const ENEMIES = {
       { id: 'burrow', intent: 'block', block: 10 },
     ],
     kallio: { name: 'The King Rat', look: { body: '#7a6248', wing: '#544434', head: '#8a7050', beak: '#d0a080', shape: 'rat' } },
-    fantasy: { name: 'Imp Lord', look: { body: '#7a5060', wing: '#523646', head: '#8a5a6e', beak: '#e07070' } } },
+    fantasy: { name: 'Imp Lord', look: { body: '#7a5060', wing: '#523646', head: '#8a5a6e', beak: '#e07070', shape: 'rat' } } },
   bridge_king: { hp: 120, boss: true, pattern: 'cycle', scale: 1.15,
     moves: [
       { id: 'shove', intent: 'attack', dmg: 16 },

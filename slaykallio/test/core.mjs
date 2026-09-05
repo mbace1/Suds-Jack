@@ -62,6 +62,23 @@ check(`the pictures are not all the same drawing (${new Set(Object.values(CARDS)
 // The roster is Kallio bums, the enemies are rats, blobs and rival bums.
 check('every character is a bum on the bridge',
   Object.values(CHARACTERS).every(ch => /collector|busker|drinker|cart|bum/.test(ch.kallio.title) || ch.kallio.title.startsWith('the ')));
+// Every look declares its shape, and carries the colours that shape's painter
+// reads. A missing `shape` silently falls through to the person painter, which
+// then reads a `bottom` colour a rat does not have — found by rendering the
+// cast, invisible to a gate that only checked that names exist.
+const NEEDS = { person: ['skin', 'hair', 'top', 'bottom'], rat: ['body', 'head', 'wing', 'beak'], blob: ['body', 'head', 'beak'] };
+const lookGaps = [];
+for (const [id, e] of Object.entries(ENEMIES)) for (const t of themes) {
+  const l = e[t].look;
+  if (!l.shape) { lookGaps.push(`${id} (${t}) declares no shape`); continue; }
+  if (!NEEDS[l.shape]) { lookGaps.push(`${id} (${t}) shape "${l.shape}" has no painter`); continue; }
+  for (const k of NEEDS[l.shape]) if (!l[k]) lookGaps.push(`${id} (${t}) ${l.shape} is missing ${k}`);
+}
+for (const [id, c] of Object.entries(CHARACTERS)) for (const t of themes) {
+  for (const k of NEEDS.person) if (!c[t].look[k]) lookGaps.push(`${id} (${t}) is missing ${k}`);
+}
+check(`every look carries what its painter reads${lookGaps.length ? ` — ${lookGaps.slice(0, 3)}` : ''}`, lookGaps.length === 0);
+
 const shapes = new Set(Object.values(ENEMIES).map(e => e.kallio.look.shape ?? 'rat'));
 check(`the bestiary is rats, blobs and cutouts of other bums (${[...shapes]})`,
   shapes.has('rat') && shapes.has('blob') && shapes.has('person'));

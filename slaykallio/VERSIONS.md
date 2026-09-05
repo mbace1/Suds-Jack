@@ -7,6 +7,37 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v4 — 2026-09-04
+**Look at the whole cast, not just the first fight**
+Rendering every encounter for the first time — the blob, the rival bum, the
+King Rat and the Bridge King had shipped without anyone laying eyes on them —
+found four things no gate could see, and one it should have.
+
+- **A crash, not a blemish.** The fantasy `Imp Lord` look was missing its
+  `shape`, so it fell through to the person painter and read a `bottom` colour
+  a rat does not have. Encounter 5 in the fantasy skin threw on spawn. Fixed,
+  and now gated: every look must declare a shape, that shape must have a
+  painter, and the look must carry the colours that painter reads.
+- **The boss was cropped by the top of the frame.** The camera fits the action
+  WIDTH, which says nothing about height, and the Bridge King stands a head
+  taller than anyone else. `ensureHeadroom()` pulls back only for the fight
+  that needs it — the margin is 0.035, enough to stop a crown being cut and not
+  enough to zoom the other five encounters out.
+- **The end of a three-wide row sat on the frame edge.** The layout was
+  guessing the visible width from the action width, which is the width the
+  camera was ASKED to fit and not what you can see at the plane the figures
+  stand on. `arena.halfWidthAt(z)` answers it properly.
+- **A unit label could sit off the top of the screen** — on the boss, the one
+  fight where reading the intent matters most. Labels are clamped into the
+  frame; the puppet is what the camera makes room for.
+- **`__sk.debug.jumpTo(i)`** goes straight to an encounter. Nobody should have
+  to win five fights to see whether the sixth one reads, and the gate now uses
+  it to walk all six.
+- The framing check measures each sprite's own BOUNDS rather than its centre
+  point, and runs over every encounter in both orientations. That is what turns
+  all of the above from things somebody has to notice into things that fail.
+- Gates: 261 in bare node, 62 in a browser.
+
 ## v3 — 2026-09-04
 **The timber gets grain, and the understructure gets light**
 A look pass on v2's bridge, done the way the repo says to do them: render, look,

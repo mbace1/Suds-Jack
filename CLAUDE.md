@@ -375,11 +375,25 @@ the deck runs off both ends of the frame on purpose. Portrait fits a narrower
 width, is deliberately **flatter** (a phone frame is tall, so every degree of
 downward tilt spends screen on the water instead of on the fight), and gives the
 bottom to the hand, which becomes a five-column grid instead of a fan.
+**LOOK AT THE WHOLE CAST, not just the first fight.** Rendering every encounter
+for the first time — the blob, the rival bum, the King Rat and the Bridge King
+had all shipped without anyone laying eyes on them — found a **crash** (the
+fantasy `Imp Lord` look was missing its `shape`, so it fell through to the
+person painter and read a `bottom` colour a rat has not got), a **boss cropped
+by the top of the frame** (the camera fits the action WIDTH, which says nothing
+about height — `ensureHeadroom()` pulls back only for the fight that needs it),
+a **three-wide row on the frame edge** (the layout was guessing the visible
+width from the action width instead of asking the camera: `halfWidthAt(z)`),
+and a **unit label off the top of the screen** on the one fight where reading
+the intent matters most. All four were invisible to a green suite. The framing
+gate now measures each sprite's own BOUNDS rather than its centre point and
+walks **all six encounters in both orientations**, and `__sk.debug.jumpTo(i)`
+exists so nobody has to win five fights to look at the sixth.
 `window.__sk` is the seam the browser gate drives, and `setSpeed(0)` + `flush()`
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
-Gates: `node slaykallio/test/core.mjs` (260 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (60). Hub entry:
+Gates: `node slaykallio/test/core.mjs` (261 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (62). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.

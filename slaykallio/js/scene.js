@@ -311,6 +311,38 @@ export class Arena {
     this.fitFrame();
   }
 
+  // Guarantee the tallest figure on the board fits under the top of the frame.
+  // The camera fits the action WIDTH, which says nothing about height — and the
+  // boss stands a head taller than anyone else, so his crown was cropped by the
+  // frame edge while every gate stayed green. Pulling back a little for one
+  // encounter is the right trade: cropping the boss is worse than seeing him
+  // slightly smaller, and every other fight is untouched because nothing else
+  // is tall enough to trip it.
+  // The margin only has to stop a crown being CROPPED — it is not a band to
+  // reserve. At 0.13 it pulled every ordinary fight back too, which undoes
+  // "much closer to the characters" for the five encounters that never needed
+  // it; the unit labels are clamped into the frame separately.
+  ensureHeadroom(worldTop, margin = 0.035) {
+    for (let i = 0; i < 20; i++) {
+      const p = this._v.set(0, worldTop, 0).project(this.camera);
+      if ((1 - p.y) / 2 >= margin) break;
+      this.camera.position.z += 0.2;
+      this.camera.lookAt(0, this.lookY, 0);
+      this.camera.updateProjectionMatrix();
+    }
+    this.baseCam = this.camera.position.clone();
+    this.fitFrame();
+  }
+
+  // How wide the picture actually is at a given depth. The layout used to
+  // guess this from the action width, which is the width the camera was ASKED
+  // to fit and not the width you can see at the plane the puppets stand on —
+  // so the end of a three-wide row sat on the frame edge. Ask the camera.
+  halfWidthAt(z = 0) {
+    const vfov = THREE.MathUtils.degToRad(this.camera.fov);
+    return Math.tan(vfov / 2) * this.camera.aspect * (this.camera.position.z - z);
+  }
+
   // where the deck sits, as a fraction down the frame
   deckRow() {
     const p = this._v.set(0, 0.45, 0).project(this.camera);

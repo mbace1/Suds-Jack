@@ -22,7 +22,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 3;
+const VERSION = 4;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -172,14 +172,22 @@ function spawnFight() {
   const ch = CHARACTERS[state.character];
   hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1 });
   arena.add(hero);
-  const L = layout();
-  hero.setHome(L.heroX, 0, 0.1);
-  state.enemies.forEach((e, i) => {
+  const made = state.enemies.map(e => {
     const d = ENEMIES[e.id];
     const p = new Puppet({ look: d[theme].look, seed: 100 + e.uid, scale: d.scale, facing: -1 });
     arena.add(p);
-    p.setHome(L.foeX(i), 0, 0.05 - (i % 2) * 0.12);
     foes.set(e.uid, p);
+    return p;
+  });
+  // Make room for the tallest thing on the board BEFORE working out where
+  // anyone stands: the camera move changes how wide the picture is, so the
+  // row has to be laid out against the camera that will actually render it.
+  arena.ensureHeadroom(Math.max(hero.height, ...made.map(p => p.height)) * 1.06);
+  const L = layout();
+  hero.setHome(L.heroX, 0, 0.1);
+  state.enemies.forEach((e, i) => {
+    const p = foes.get(e.uid);
+    p.setHome(L.foeX(i), 0, 0.05 - (i % 2) * 0.12);
     if (!e.alive) { p.alive = false; p.fall = { angle: Math.PI / 2 - 0.02, vel: 0, axis: { x: 1, y: 0, z: 0 }, done: true }; }
   });
   buildLabels();
@@ -192,6 +200,9 @@ addEventListener('resize', relayout);
 
 // ── labels over the puppets ──────────────────────────────────────────────
 const STATUS_LABEL = { vulnerable: 'VULN', weak: 'WEAK', strength: 'STR', buzz: 'BUZZ', doubleNext: '×2 NEXT' };
+// how far down the screen a unit label may start: clear of the top HUD plate,
+// and the label's own box hangs 58px above its anchor (see .unit in the CSS)
+const TOP_GUTTER = 96;
 const labels = $('#labels');
 function labelOf(k) { return labels.querySelector(`.unit[data-k="${k}"]`); }
 
@@ -228,8 +239,15 @@ function placeLabels() {
     const u = labelOf(k); if (!u) return;
     const head = arena.project(p.headWorld(), w, h);
     const foot = arena.project(p.home, w, h);
-    u.style.transform = `translate(${head.x.toFixed(1)}px, ${head.y.toFixed(1)}px)`;
-    u.style.setProperty('--h', `${Math.max(40, foot.y - head.y).toFixed(0)}px`);
+    // Clamp into the frame. The boss stands a head taller than everyone else
+    // and the camera is close, so his label went off the TOP of the screen —
+    // on the one fight where reading the intent matters most. The label is
+    // pushed down rather than the camera pulled back, because pulling back
+    // for one encounter would undo "much closer to the characters".
+    const top = TOP_GUTTER, x = Math.max(78, Math.min(w - 78, head.x));
+    const y = Math.max(top, Math.min(h - 120, head.y));
+    u.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    u.style.setProperty('--h', `${Math.max(40, foot.y - y).toFixed(0)}px`);
   };
   put('hero', hero);
   for (const [uid, p] of foes) put(uid, p);
@@ -604,7 +622,7 @@ window.__sk = {
   theme: () => theme,
   puppets: () => ({ hero, foes: [...foes.values()] }),
   busy: () => busy,
-  start: (character = 'barista', seed = 1) => { params.set('seed', String(seed)); startRun(character); },
+  start: (character = 'drinker', seed = 1) => { params.set('seed', String(seed)); startRun(character); },
   setTheme,
   setSpeed: s => { speed = s; },
   select: onCardTap,
@@ -617,5 +635,8 @@ window.__sk = {
     heroHp: hp => { state.hero.hp = hp; syncAll(); },
     giveJoker: id => { state.jokers.push({ id, ...JOKERS[id] }); renderTop(); },
     hand: ids => { state.hand = ids.map((id, i) => ({ uid: 9000 + i, id, ...CARDS[id] })); state.hero.energy = 9; renderHand(); },
+    // straight to a fight, so a cast can be looked at without winning the five
+    // before it — the same reason turf's __turf can boot any encounter
+    jumpTo: i => { if (!engine.jumpTo(state, i)) return false; cursor = state.log.length; spawnFight(); syncAll(); return true; },
   },
 };

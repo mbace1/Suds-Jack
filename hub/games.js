@@ -378,7 +378,7 @@ export const GAMES = [
     },
     pad: 'native',
     status: 'active',
-    note: 'v3 — real grain in the timber, light under the deck, and a hand that no longer blends into the bridge.',
+    note: 'v4 — the whole cast rendered and fixed: the boss no longer cropped, the row fits the frame, and a fantasy enemy that used to crash on spawn.',
     title: 'Slay Kallio',
     tagline: 'Deckbuilding on a thick plank bridge: painted cardboard and tin-soldier bums who topple over in 3D, rats, mutating blobs, and friends who rewrite the sum on every card.',
     lineage: 'Slay the Spire 2 × Balatro',

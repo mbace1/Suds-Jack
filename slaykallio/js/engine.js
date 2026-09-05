@@ -441,6 +441,17 @@ export function chooseReward(state, index) {
 
 export const skipReward = state => chooseReward(state, -1);
 
+// Jump straight to an encounter, keeping the deck and friends you are holding.
+// For tuning and for looking at art: nobody should have to win five fights to
+// see whether the sixth one reads.
+export function jumpTo(state, index) {
+  if (index < 0 || index >= ENCOUNTERS.length) return false;
+  state.reward = null;
+  state.encounter = index - 1;
+  nextEncounter(state);
+  return true;
+}
+
 // ── text ─────────────────────────────────────────────────────────────────
 const STATUS_WORD = {
   vulnerable: 'Vulnerable', weak: 'Weak', strength: 'Strength', buzz: 'Buzz', doubleNext: 'Double',
