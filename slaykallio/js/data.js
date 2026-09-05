@@ -80,10 +80,10 @@ export const CARDS = {
 
   // ─ Roope, the bottle collector — Bottles: 0-cost tokens, and a counted hand
   bottle_glass: { type: 'attack', cost: 0, target: 'enemy', rarity: 'token', find: true, exhaust: true, pic: 'bottle',
-    effects: [{ type: 'damage', n: 3 }],
+    effects: [{ type: 'damage', n: 4 }],
     kallio: { name: 'Bottle: Glass' }, fantasy: { name: 'Trinket: Shard' } },
   bottle_can: { type: 'skill', cost: 0, target: 'self', rarity: 'token', find: true, exhaust: true, pic: 'can',
-    effects: [{ type: 'block', n: 3 }],
+    effects: [{ type: 'block', n: 4 }],
     kallio: { name: 'Bottle: Can' }, fantasy: { name: 'Trinket: Charm' } },
   bottle_deposit: { type: 'skill', cost: 0, target: 'self', rarity: 'token', find: true, exhaust: true, pic: 'coin',
     effects: [{ type: 'energy', n: 1 }],
@@ -95,7 +95,7 @@ export const CARDS = {
     effects: [{ type: 'damage', n: 5, scale: 'finds', per: 3 }],
     kallio: { name: 'Full Bag' }, fantasy: { name: 'Jury Rig' } },
   armful: { char: 'collector', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'bag',
-    effects: [{ type: 'block', n: 0, scale: 'hand', per: 2 }],
+    effects: [{ type: 'block', n: 0, scale: 'hand', per: 3 }],
     kallio: { name: 'Armful' }, fantasy: { name: 'Packed Satchel' } },
   shove_off: { char: 'collector', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'shove',
     effects: [{ type: 'damage', n: 6 }, { type: 'status', who: 'target', key: 'weak', n: 1 }],
@@ -183,7 +183,7 @@ export const CHARACTERS = {
       look: { skin: '#d0a284', hair: '#2a1a12', hairStyle: 'tangle', top: '#7a4a22', bottom: '#3a2c1c', shoes: '#4a2a20', hat: 'feather', prop: 'lute', accent: '#c8963a', base: 'card', grime: 0.5 } },
   },
   collector: {
-    hp: 66,
+    hp: 72,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'dig_the_bin', 'full_bag'],
     kallio: { name: 'Roope', title: 'the bottle collector', blurb: 'Works the bins ahead of everyone. Free Bottles into your hand, and cards that count what you are holding.',
       look: { skin: '#bc8e70', hair: '#8a8478', hairStyle: 'bald', top: '#5a6a4a', bottom: '#453c30', shoes: '#2a2018', hat: 'cap', prop: 'bag', accent: '#8aa03a', base: 'card', grime: 0.9 } },
@@ -299,16 +299,23 @@ export const ENEMIES = {
 };
 
 // ── the run ──────────────────────────────────────────────────────────────
+// The curve is MEASURED, not felt (see test/balance.mjs). The first cut of
+// this list was flat: every character arrived at the boss on 91-99% HP, so the
+// run was five free fights and one coin flip, and 100% of losses were the last
+// encounter. Cutting the post-fight heal did not fix that — it only made you
+// arrive poorer — because the middle fights could not threaten anyone in
+// absolute terms. Escorting the bigger enemies is what made the middle of the
+// run cost something.
 export const ENCOUNTERS = [
   { id: 'rats', enemies: ['rat', 'rat', 'rat'], reward: ['card', 'joker'],
     kallio: { name: 'Rats Under The Deck' }, fantasy: { name: 'A Nest Of Imps' } },
-  { id: 'bin', enemies: ['bin_rat', 'rat'], reward: ['card'],
+  { id: 'bin', enemies: ['bin_rat', 'rat', 'rat'], reward: ['card'],
     kallio: { name: 'The Bin Rat' }, fantasy: { name: 'The Dire Imp' } },
-  { id: 'blob', enemies: ['blob'], reward: ['card', 'joker'],
+  { id: 'blob', enemies: ['blob', 'rat'], reward: ['card', 'joker'],
     kallio: { name: 'Something In The Water' }, fantasy: { name: 'The Bog Ooze' } },
-  { id: 'rivals', enemies: ['rival', 'rat'], reward: ['card'],
+  { id: 'rivals', enemies: ['rival', 'bin_rat'], reward: ['card'],
     kallio: { name: 'Somebody Else’s Spot' }, fantasy: { name: 'Bandits On The Span' } },
-  { id: 'king_rat', enemies: ['boss_rat'], reward: ['card', 'joker'],
+  { id: 'king_rat', enemies: ['boss_rat', 'rat', 'rat'], reward: ['card', 'joker'],
     kallio: { name: 'The King Rat' }, fantasy: { name: 'The Imp Lord' } },
   { id: 'bridge', enemies: ['bridge_king'], reward: [],
     kallio: { name: 'Who Owns The Bridge' }, fantasy: { name: 'Who Holds The Span' } },
@@ -328,7 +335,7 @@ export const RULES = {
   draw: 5,
   handMax: 10,
   jokerMax: 5,
-  healAfterFight: 8,
+  healAfterFight: 6,
   vulnerable: 1.5,
   weak: 0.75,
 };

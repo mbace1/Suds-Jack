@@ -7,6 +7,42 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v6 — 2026-09-05
+**The run was flat, and that mattered more than the character spread**
+`test/balance.mjs` is new — a measuring tool, not a gate, beside `core.mjs` the
+way turf keeps `balance.mjs` beside `smoke.mjs`. Its first run found something
+worse than an unbalanced roster.
+
+- **Every character arrived at the boss on 91-99% HP, and 100% of losses were
+  the final encounter.** The run was five free fights and one coin flip. That
+  is a curve problem, not a card problem, and no amount of per-character tuning
+  would have shown it — the win-rate column looked merely uneven.
+- **Cutting the post-fight heal did not fix it.** Swept 8/4/2/0: win rates fell
+  (collector 35%→8%) and losses stayed at the boss (291 of 295 at heal 0). You
+  arrived poorer at the same coin flip. The middle fights could not threaten
+  anyone in absolute terms, so the heal was never the cause.
+- **Escorting the bigger enemies is what worked.** The bin rat, the King Rat and
+  the blob now bring company. HP on arriving at each fight went 100 / 99 / 96 /
+  93 / 83 / 77 — attrition is real, and the elite has started ending runs.
+- **Roope was stranded and is not any more** (15% → 26%): 66→72 HP, Bottles 3→4,
+  and Armful 2→3 block per card in hand, which was the single biggest lever
+  (+7 points on its own).
+- **The busker was NOT nerfed**, because nothing measurable justified it. Encore
+  4→3 per card changed *nothing* — not one win, not one loss — and Hat Out 5→4
+  moved 69%→66%, which is inside noise across 150 seeds.
+- Post-fight heal 8 → 6.
+
+**The tool still reports FLAT (98% of deaths are the boss) and that verdict is
+left standing.** Moving the threshold so it reads green would be exactly the
+mistake Kindling's band-brightness gate made twice — the page was right and the
+ruler was wrong. Some of the remaining flatness is correct (a boss should kill
+runs) and some is a bot artefact: a bot kills fast enough to skip the damage a
+real player takes. The next honest move on it is a playtest, not another sweep.
+
+Honest limits, recorded in the tool's own header: the bot always drafts the
+first reward, so **rare cards are close to invisible to it**, and a character
+whose mechanic rewards holding a hand is being judged by a bot that empties it.
+
 ## v5 — 2026-09-05
 **The concept pack, filtered — three sheets kept, six rejected**
 The owner supplied `Slay_Kallio_Sideview_Concept_Pack_v0.1` (nine sheets

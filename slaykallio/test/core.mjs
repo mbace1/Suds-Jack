@@ -226,7 +226,7 @@ playCard(s, 0);
 const finds = s.hand.filter(c => c.find);
 check('Dig The Bin conjures 2 Bottles', finds.length === 2);
 const handN = s.hand.length;
-check(`Armful gives 2 per card in hand (${handN * 2})`, preview(s, s.hand.findIndex(c => c.id === 'armful')).block === handN * 2);
+check(`Armful gives 3 per card in hand (${handN * 3})`, preview(s, s.hand.findIndex(c => c.id === 'armful')).block === handN * 3);
 let fi = s.hand.findIndex(c => c.find && c.type === 'attack');
 if (fi < 0) { s.hand.push({ uid: 5000, id: 'bottle_glass', ...CARDS.bottle_glass }); fi = s.hand.length - 1; }
 playCard(s, fi, 0);
