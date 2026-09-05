@@ -275,6 +275,16 @@ export const TUNING = {
     massSample: 10, massRadius: 0.22, massDark: 0.14,   // the swarm presses the ground darker where it's thick
     popCount: 6, popLife: 0.55, popRadius: 0.07, popBright: 0.85,  // a kill rings out and fades
     prizeCount: 5, prizeRadius: 0.05, prizeGlow: 0.32,  // pickups mark their own ground
+    // v240 LEVEL SHAPES (LEVEL_EDITOR_DESIGN.md §2.3): the floor draws the
+    // playable region when a level is running. The same trick as the point
+    // arrays above — a FIXED array of shape slots evaluated branch-free on
+    // both paths (an unused slot is neutral for the combine, never a skipped
+    // iteration). shapeSlots is also the format's cap on `arena.shapes`
+    // (js/level.js MAX_SHAPES must equal it; level-check.mjs asserts so).
+    shapeSlots: 4,
+    shapeEdge: 0.45,       // world units: the soft edge band either side of the boundary
+    shapeOutside: 0.22,    // how much of the floor colour survives outside the region
+    shapeEdgeGlow: 0.55,   // the boundary line's brightness (the border rail's colour)
   },
 
   // v224 RUSH MODE (owner direction, 2026-08-24; design in the Godot port's

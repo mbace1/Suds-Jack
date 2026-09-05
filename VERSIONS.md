@@ -7,418 +7,57 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v239 — 2026-09-05
-**One level format for two engines — the Godot port reads the editor's JSON** *(v238 is skipped on purpose: PR #447, an unmerged lineage, already used both v237 and v238 for its own level work, and a reused number is how two trees look like one)*
-- **There were two "format 1"s for a day.** v237 shipped this editor's format
-  (named arenas, pickups, three modes). PR #447 — another session, still open
-  against `gh-pages` — shipped a *different* format 1 the same day (shape
-  objects, strict unknown-key rejection, arcade only), and the Godot port's
-  loader (`toko-drop-godot` `scripts/level.gd`, Q-032) was written against
-  THAT one. A level file one build refuses is the exact failure a shared
-  format exists to prevent. **This release is the union, and both loaders now
-  accept every clause of it:** `arena` is a name (`auto/portrait/landscape/
-  room`) OR `{ combine?, shapes: [rect | circle …] }`; spawns are enemies
-  (`boss?`, `elite?`, multipliers) or `kind: "pickup"` (`id`, `life?`);
-  `rules.mode` is `arcade | melee | rush`. `js/level.js` is the reference;
-  the port mirrors it clause for clause
-- **Strictness came over from the other lineage, deliberately.** An unknown
-  key anywhere is an error, spawns must be authored in order, a body placed
-  outside the region is refused, a region with nowhere to stand is refused,
-  at most `MAX_SHAPES` (4) shapes — the floor's slot count on both builds.
-  v237's `{halfX, halfZ}` arena form is gone (nothing had written one); v237's
-  `mode: "guns"` is migrated to `"arcade"` on parse, so a level saved
-  yesterday still loads. **A build that lacks a thing refuses the level BY
-  NAME:** the port has no CLOSE COMBAT and no authored-Rush wiring yet, so it
-  refuses `melee` and `rush` with a message that says so, rather than
-  half-playing the file
-- **`toko-drop/levels/`** now exists on the deployed tree, which is where the
-  port's `tools/sync-levels.sh` has been reading from all along:
-  `first-light.json` (15 spawns, 45 s, the 19×11 room) and `three-rings.json`
-  (11 spawns in the common area of three circles) — PR #447's two files,
-  verbatim, because the port's own smoke pins their counts. `level.js
-  BUNDLED` names them; the editor's LOAD lists them beside the built-in
-  (renamed **SHOW AND TELL** so its id no longer collides); **`?level=<id>`
-  arms one for the next start** and `?editor&level=<id>` opens it. Tokened
-  fetch, precached in `sw.js` — a new path is a new path (v118)
-- **A shaped level PLAYS here now, even though it is not yet DRAWN.**
-  `levelArena()` builds the file's shape on `arena.js` (rect, circle, union,
-  intersect) and `applyArenaMode()` hands it to `arena.setShape()`, so
-  containment, the spawn ring, TORO's dash and every other boundary question
-  are answered by the real region; `HALF_X`/`HALF_Z` stay its bounding box
-  for the floor plane and camera. Drawing the region is §2.3 — PR #447's v238
-  carries a working term for both render paths and is the natural next thing
-  to bring across
-- **`scripts/level-smoke.sh`** (new — PR #447's gate, re-cut for this tree):
-  headless Chromium, the probe owns the clock (`performance.now` becomes a
-  counter and `loop()` is called synchronously — under headless Chromium
-  rAF fires once and chained timers stall at ~20 s, lessons that cut paid
-  for), every authored enemy AND pickup lands at the authored second and
-  place, the run ends CLEARED on the level clock. **It writes the
-  cross-build file** (`SPAWN <i> <TYPE> t= x= z=`) that the port's
-  `tools/level-parity.mjs` diffs against its own trace of the same JSON —
-  same level, two engines, same bodies at the same seconds in the same
-  places. `scripts/level-check.mjs` grows to 70 checks: every bundled file
-  loads, `BUNDLED` names exactly the files, and every refusal clause above
-  is exercised by name
-- Gates: `level-check.mjs` 70 · `arena-check.mjs` 8,396 · `level-smoke.sh`
-  ×2 · `editor-smoke.sh` · `smoke.sh` · `cabinets.sh` · `webgpu-smoke.sh`;
-  and on the port, its smoke plus `level-parity.mjs` for both bundled levels
-- **What PR #447 still holds that this tree does not:** the v238 floor term
-  (the shape drawn on GLSL and TSL) and `scripts/level-shot.sh` (the two-
-  renderer picture gate). Its loader, level files and level-check are now
-  superseded here. Merging it as-is would conflict on every file it touches;
-  the floor term should come across by hand, against this tree
-- Cache-bust `?v=191` → `?v=192`; HUD label → v239
-
----
-
-## v237 — 2026-09-03
-**THE LEVEL EDITOR — drop-downs on top, tap to place, a 0.1s timeline along the bottom** *(LEVEL_EDITOR_DESIGN.md, requirements 2 and 3; owner: "rectangular is ok too, the tool is what really makes it work")*
-- **`index.html?editor`** mounts the editor OVER the real game: the arena you
-  tap is the real floor under the real camera, the ghosts are drawn into the
-  real scene, and PLAY hands the level to the real spawn pump. Not a sibling
-  page — rebuild-on-real-code is the settled principle here (v216 rebuilt the
-  enemy lab for the same reason), and an editor that is not the game would lie
-  about where things land. OPTIONS → LEVEL EDITOR gets you there; a reload,
-  because the flag is read at boot
-- **`js/level.js`** is the format: pure (no three.js, no DOM), so it runs in
-  bare node. A level is `{ format, name, arena, duration, rules: { mode },
-  spawns: [{ t, type | kind:'pickup', px, pz, … }] }`. **`t` is seconds on a
-  0.1s grid and `type` is a NAME** — the numeric `EnemyType` values are
-  positional, and a saved level must survive the enum growing. `compile()`
-  emits exactly the entry shape main.js's pump reads, which is the whole trick:
-  the runtime contract was never designed for authoring, but `pendingSpawns`
-  already carried `delay` and an optional `px`/`pz`, so a level is that list
-  written by hand and nothing downstream can tell
-- **`js/editor.js`** is the tool. Top bar: `ENEMIES ▾` (the real roster, minus
-  the death-spawned minis; Rush mode narrows it to Rush's own pool), `PICKUPS ▾`
-  (hp / invincible / firerate / scoremult / score and the weapon pods — the
-  cabinet-only key/potion/item stay out), `RULES ▾` (mode guns/melee/rush,
-  arena auto/portrait/landscape/room, duration), `LEVEL ▾` (new / save / load /
-  rename / export / import / clear / leave). **Choose, then tap the arena** —
-  no dragging, because dragging fights page scroll on a phone. A tap near an
-  existing spawn selects it instead (nudge ±0.1s, MOVE ⤢ then tap, DELETE).
-  Bottom: a canvas timeline, 0.1s ticks, 1s labels, natively scrollable,
-  four zoom levels; enemies on the lower lane, pickups on the upper, a count
-  on stacked cells; **tap the strip to set the playhead**, and the playhead is
-  the editing context — a new spawn lands AT it, and the ghosts brighten for
-  what is due now, dim for what is past
-- **PLAY FROM HERE (▶ / Enter)** runs the level from the playhead through the
-  ordinary `startGame()`. **Spawns before the playhead are DROPPED, not fired
-  at once** — a pile of catch-up bodies on frame one would be a different
-  level. The run ends on the level's own clock (or on death), the bodies are
-  swept, and the result (cleared/dead · kills · score · time) sits in the
-  editor's status line. A level run **leaves no records**: no PB, no daily, no
-  leaderboard, no tutorial hints, no wave-clear chaining into wave 2 (that one
-  would have re-compiled the level as "wave 2" and looped forever — caught in
-  design, not in play). SMASH TV is held off for the run and put back after
-- **`rules.mode` picks the ruleset**: `guns` (the classic gun ecology), `melee`
-  (CLOSE COMBAT), `rush` (boost, shotgun, HP dots as lives; Rush's own level
-  clock is parked at 1e9 so the authored clock is the only one running). The
-  arena is a named rectangle or an explicit `{halfX, halfZ}` — `arenaPreset()`
-  now answers "which rectangle is the room" for `applyArenaMode` and the
-  orientation refit alike, so a level's own size survives a rotate
-- **Levels live in `localStorage` (`tokoDropLevels`)** with EXPORT / IMPORT as
-  JSON text for moving one between devices or into the repo. `serialize()` is
-  stable — one spawn per line, defaults omitted — so two exports of the same
-  level are the same bytes and a diff between two levels reads as spawns.
-  **`EXAMPLE_LEVEL` (FIRST LIGHT, 30s)** ships built in: a trickle, a pincer,
-  a pickup laid before the pressure, a boss with an escort — the first LOAD
-  has something in it and the gate has a fixture
-- **Two new gates.** `scripts/level-check.mjs` (40 checks, bare node) reads the
-  enemy names out of `enemy.js`'s SOURCE — the honest coupling: a level names
-  an enemy, and this asks the file that defines them — and proves validation,
-  the pump contract, the 0.1s grid, byte-identical round-trips and that
-  play-from-here drops exactly the earlier spawns and shifts the rest.
-  `scripts/editor-smoke.sh` (Playwright, touch-emulated phone) mounts the
-  editor, **taps the arena and asserts the spawn landed at the world point
-  under the tap**, taps right of it and asserts world-right, saves → new →
-  loads, exports → imports, then PLAYs from 0.5s and asserts the enemy stands
-  within a body-width of where it was placed, on time, the pickup appears, and
-  the run ends CLEARED on the level's clock with the result handed back
-- **Not in this release, on purpose:** non-rectangular arenas (owner: the tool
-  first — `arena.js` is ready when a shape is wanted), moving shapes (§2.4 is
-  still an open decision), enemy affixes/elites in the palette, per-spawn
-  speed editing in the UI (the format carries `speedMult`; only import sets
-  it), and translations — the editor is English, like the enemy tester
-- `input.js`'s `inUI` list gains `#tded`; `sw.js` and `bump-version.sh` name
-  `level.js` and `editor.js`
-- `level-check.mjs` + `arena-check.mjs` + `editor-smoke.sh` + `smoke.sh` +
-  `cabinets.sh` + `webgpu-smoke.sh` green
-- Cache-bust `?v=190` → `?v=191`; HUD label → v237
-
----
-
-## v236 — 2026-09-03
-**The arena is a shape now, not two numbers** *(P0 of `LEVEL_EDITOR_DESIGN.md` §7)*
-- **`js/arena.js`.** Until now "the arena" was `HALF_X` and `HALF_Z` — read in
-  88 places in `main.js`, and threaded into `player.update()` and
-  `enemy.update()` as a bare `(halfX, halfZ)` pair. That is exactly correct for
-  as long as every arena is a rectangle, and stops working the moment one is
-  not. The boundary lives in one pure module now: an SDF (`< 0` inside), with
-  `contains` / `clamp` / `ringPoint` / `insetPoint` / `rayEdge` / `randomPoint`
-  on top of it. No three.js, no DOM, no imports — so it runs in bare node
-- **The promise of this release is that NOTHING CHANGES**, and that is the
-  interesting part. `scripts/arena-check.mjs` (8,396 checks, bare node) compares
-  every method against the literal expression the call site used to inline, at
-  all six shipped arena sizes, and demands **exact** equality — `Object.is`, not
-  a tolerance. A tolerance is precisely what would hide the drift that
-  desynchronises a seeded wave schedule. Falsified before being trusted: a
-  wrong-axis clamp fails 1,032 checks, and adding `1e-12` to one ring
-  coordinate fails 1,536
-- **Being right and being identical are different goals, and P0 is the second
-  one.** So the rectangle's `clamp` reproduces `Math.max(-h, Math.min(h, v))`
-  as written, sign flip and all, for the degenerate `h < 0` case; and
-  `ringPoint` stays the old `cos·halfX·edge` formula, which on a box is an
-  inscribed **ellipse** and not the boundary. Those are what the spawn ring has
-  always been, and P0 is not the place to fix them
-- **Two determinism rules, written into the module header** because they are
-  invisible until they aren't: `randomPoint` draws from the rng **exactly
-  twice, x then z, for every shape** — rejection sampling is banned, since a
-  variable draw count would desynchronise every seeded schedule the first time
-  a level used a non-rectangular region; and nothing in the module reads
-  `Math.random()` or a clock (`update(t)` takes its time)
-- **Migrated: the sites that are genuinely about the BOUNDARY.** The spawn ring
-  and the siege trickle (`ringPoint`), the SMASH TV entry door (`insetPoint`),
-  the player clamp, CRYSTAL / PRISM / TORO clamps, PRISM's teleport target
-  (`randomPoint`), the escaped-decoration cull (`contains` with negative
-  slack), the civilian wander clamp, and — the one that needed a new primitive
-  — **TORO's dash telegraph**, which asks "how far until I hit a wall" and was
-  an inlined slab test. `rayEdge` is closed-form on a box and a sphere-trace
-  otherwise, so the telegraph will still be the real distance in a room with a
-  curved wall
-- **Deliberately NOT migrated, and named rather than left to be discovered:**
-  `HALF_X`/`HALF_Z` stay as the region's bounding box, because the floor plane,
-  the camera fit, `worldToUV` and ~50 set-dressing sites are asking how BIG the
-  room is, which is a fair question. `smashDoorPos`'s literal cardinal table
-  stays literal (`ringPoint` would answer `6.7e-16` instead of `0`). And the
-  cube **flop** reflection is per-axis, which an SDF has no notion of — P1
-  needs a gradient-reflect helper before that one can move
-- **Shapes P0 does not wire up but P1 will**, defined and unit-tested here so
-  P1 is a level file rather than a debugging session: `circleShape`, plus
-  `unionShape` (`min`) and `intersectShape` (`max`). The owner's worked example
-  — three overlapping circles and their common area — is
-  `intersectShape(c1, c2, c3)`, and the gate asserts it says *outside* where a
-  union would say inside. Nothing constructs one yet; the only live shape is
-  the rectangle
-- **The moving-shape question is still open and still the owner's**
-  (`LEVEL_EDITOR_DESIGN.md` §2.4: push / damage / death, and whether enemies
-  are contained too). `Arena.update(t)` is a no-op until it is answered
-- New module, so `sw.js`'s PRECACHE list and `bump-version.sh`'s file loop both
-  name `arena.js` — the two places a new file has to be added by hand
-- `smoke.sh`'s enemy harness calls `Enemy.update()` itself, so it **caught the
-  signature change on the first run** (`arena.clamp is not a function`) — it
-  builds its own `Arena` now, which means the shared gate exercises the new
-  path rather than a hand-rolled pair of numbers
-- `arena-check.mjs` + `smoke.sh` + `cabinets.sh` + `webgpu-smoke.sh` green, and
-  **a 30s seeded headless run compared frame-for-frame against a v235 checkout**
-  — same stubbed clock, same stubbed rAF, same seeded `Math.random`, sampled
-  every 60 frames: 30 samples, 3 waves, 139 enemy observations, 29,100 score,
-  identical in every field. The comparison was falsified too: subtracting
-  `1e-6` from one axis of the clamp diverges **all 30** samples, enemy
-  positions included
-- **The first version of that probe was VACUOUS and it is worth saying why.**
-  With no input the player stands still, dies at t=4.6s, and 24 of the 30
-  samples were frozen duplicates of the death frame — a run that looked 30s
-  long and tested 4.6s of it. The fix is a deterministic pilot: a swept stick
-  that drives the player into every wall, autofire so waves actually turn over,
-  and a long invincibility so the run survives to be compared. Stubbing
-  `renderer.render` in the throwaway copy cut the run from ~40 minutes to ~2,
-  since the subject is JS state and SwiftShader was the entire cost
-- `hub/versions.json`'s `tokodrop` was **fifteen releases stale** (221) and is
-  hand-edited to 236. **Found the hard way, and worth flagging: `gh-pages`'s
-  copy of `scripts/versions.mjs` predates the `--check` / `--repair` guard rail
-  that CLAUDE.md tells you to use** — it silently ignores the flag and
-  regenerates, which is the exact failure that guard exists to prevent. It moved
-  eight cabinets in one go, `dropcabal` **backwards** (3 → 2). Reverted whole
-  and only this game's own key touched. Porting `--check` onto the deployed
-  tree is a separate change; it is the site's tooling, not Toko Drop's
-- Cache-bust `?v=189` → `?v=190`; HUD label → v236
-
----
-
-## v235 — 2026-09-01
-**The ZONE boost scheme is removed — it was never reachable** *(follow-up to v234)*
-- v224 shipped **two** touch boost schemes on purpose: RIM (push the move
-  stick past 86% of its travel) and ZONE (a held pad in the lower-left
-  margin), with the stated intent that "which one survives a thumb is a play
-  question, not an argument." The question was never actually put: **no
-  selector was ever built.** `boostScheme` was written once, in the
-  constructor, to `'rim'`, and never assigned again anywhere in the tree —
-  so every `=== 'zone'` branch, `_zoneHeld`, and its `getBoostHeld()` check
-  have been dead from the day they landed. ZONE was never played, by anyone
-- v234 then handed that same lower-left margin to the **RUSH ability pad**,
-  so ZONE no longer even has a home to be revived into. Removed rather than
-  left sitting there looking like a live alternative — with a note saying
-  what a future attempt would need (its own region, and a way to pick it)
-- `getBoostHeld()` loses the always-false `_zoneHeld` check and the
-  now-pointless `boostScheme === 'rim'` test; the RIM rim-push is simply what
-  touch boost *is*
-- **Verified in a real touch context, because this is the shared touch
-  handler and the two surviving paths are easy to break silently**: a
-  rim-push drag on the move stick still registers boost (`getBoostHeld()`
-  true), and a tap in the lower-left margin still fires the equipped ability
-  (cooldown 0 → 16). Zero page errors
-- `press/PRESS.md` advertised "two selectable RUSH boost schemes" — never
-  true, since the selector didn't exist. Corrected, and the kit's Rush copy
-  brought up from v231 to what actually ships now (the four abilities and the
-  ladder screen)
-- `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=188` → `?v=189`; HUD label → v235
-
----
-
-## v234 — 2026-09-01
-**The RUSH LADDER, and the v232 abilities were firing themselves**
-- **THE LADDER PANEL.** The ladder was one line on the death screen: what you
-  just scored, and nothing about what a level *asks*. It's now a real screen
-  (title → `RUSH LADDER`, shown only while Rush is armed — the title is
-  already the busiest surface in the game). Every level is a tile carrying
-  its kind icon (● steady / ⁘ swarm / ▲ heavy), your best tier, and its star;
-  picking one opens that level's own card: duration, the **exact kill count
-  each of S/A/B/C wants**, the roster with the newcomer and the heat-venting
-  COOLER marked, the speed and spawn-budget pressure, and the two ★ goals
-  spelled out instead of abbreviated
-- **Per-level bests now persist** (`tokoDropRushBests`) — `rush.ladder` is one
-  run's stamps and dies with it. Tier only ever improves; a star once earned
-  stays earned
-- **No second copy of the maths.** The panel grades levels you haven't reached,
-  so it can't read live run state — the pure halves of the wave-scale and
-  budget formulas were *extracted* (`waveScaleFor`, `waveBudgetBase`,
-  `rushLevelDuration`, `rushParFor`) and the live paths now call them. One
-  formula, no chance of the panel quoting a number the director doesn't use.
-  It also omits the director's fire-interval scaling on purpose: Rush's four
-  bodies have no guns (v225), so that number would be dead on this screen
-- **The bug this pass found, and it's the bigger half.** v232 hung the
-  abilities on `onDash`, reasoning the dash button was unclaimed in Rush.
-  Half-true: `player.dash()` early-returns, but **`onDash` is fired BY the
-  boost input** — `Space` keyup on keyboard, the same face/bumper button on a
-  pad. So the ability discharged itself at the end of every boost, and the
-  player never picked the moment. A probe on the real build confirmed it:
-  hold Space, release, and OVERCHARGE was spent (`overchargeT` 0 → 3.95,
-  cooldown 0 → 15.95) with no deliberate input. A panic button that fires on
-  your first boost is not a panic button
-- **Fixed with a trigger of its own**: `input.onAbility` — **Q** on keyboard,
-  **X / LB** on a pad (deliberately none of 0/5/7, which are boost), and on
-  touch the lower-left pad, the margin the unreachable ZONE scheme had
-  reserved. Re-probed both ways: boosting and releasing no longer fires it,
-  Q does. The OPTIONS hint and `press/PRESS.md`'s controls table were both
-  describing the old broken binding and are corrected in all three languages
-- One thing left honest rather than "fixed": level 1 draws the *breather*
-  budget in the shipped director, because `waveKind(0)` is `'boss'`
-  (`0 % bossEvery === 0`). The panel reports that real number and only
-  suppresses the word "breather" there, where "lighter after an intense
-  level" would describe a level that doesn't exist
-- `smoke.sh` + `cabinets.sh` green; panel checked at desktop and 390px-wide
-  phone viewports
-- Cache-bust `?v=187` → `?v=188`; HUD label → v234
-
----
-
-## v233 — 2026-09-01
-**RUSH gets its own first-run tutorial, and a real bug behind it** *(Rush onboarding pass)*
-- `scheduleTutorialHints()` was unconditional — every first run, Rush
-  included, got the classic sequence: move, "aim & fire", **"SPACE / A —
-  DASH THROUGH BULLETS"**. Both wrong in Rush: dash is dead (boost replaces
-  it), and the sequence never mentioned the one rule the whole mode hangs
-  off — **firing cancels your boost shield**. A new Rush player's first
-  real lesson was a taught mechanic that doesn't exist, paired with silence
-  on the one that does
-- Worse, both sequences shared **one** `localStorage` "seen" flag — a player
-  who'd already cleared the classic hints (near-certain, since Rush isn't
-  the default) got **zero** hints on their first-ever Rush run, not even
-  the wrong ones
-- Rush now gets its own sequence, under its own flag
-  (`tokoDropHintsSeenRush`, independent of the classic one):
-  `HOLD SPACE/BUMPER — BOOST` (or the touch RIM phrasing) → `BOOST = SHIELD
-  + KILLS ON TOUCH` → `FIRING CANCELS YOUR SHIELD` → `HEAT IS SHARED —
-  OVERHEAT LOCKS YOUR BOOST` — same cadence and fade timing as the classic
-  sequence, GDD §2's non-interrupting rule unchanged (text only, no pauses)
-- Verified with a throwaway probe: a first Rush run gets the Rush sequence
-  keyed to its own flag; a classic run right after (independent state) gets
-  the classic sequence keyed to its own flag; a second Rush run after the
-  Rush flag is set gets no hints. `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=186` → `?v=187`; HUD label → v233
-
----
-
-## v232 — 2026-08-29
-**RUSH gets its four abilities** *(PR #311 / `PARITY_WITH_GODOT.md` §1b, owner direction 2026-08-28)*
-- The Godot port had four selectable RUSH abilities this build never had.
-  Owner's call: port them here — this build leads on gameplay, so this is
-  now the reference version, not a copy. One is picked in OPTIONS
-  (`RUSH ABILITY`, single-select cycle, default OFF) and fires on the dash
-  button, which boost leaves completely dead in Rush (`player.dash()`'s own
-  early return) — an unclaimed input, not a new bind
-  - **HEAT EXCHANGE** — dumps current heat as an AoE clear around the
-    player (radius grows with banked heat) and resets heat to 0
-  - **HYPER BOMB** — a big fixed-radius clear that costs no heat; the panic
-    button, paid for in a long cooldown instead
-  - **OVERCHARGE** — a timed window: boosting costs no heat and the chain
-    climbs ×2 per kill
-  - **QUANTUM SHIELD** — a timed window: the player is invulnerable
-    (`player.grantInvincibility()`) and any enemy bullet that gets close
-    enough to have hit is destroyed and answered with a real player-owned
-    bullet fired back along its reverse path — a separate collision loop
-    from the existing `!player.invincible` gate, since that gate would
-    otherwise skip the reflect entirely
-- All four AoE-clear kills are tagged `'env'`, the same tag gates/vents/
-  surges use, so panic-clearing doesn't trigger CLOSE COMBAT revenge back
-  at the player who just used the ability
-- Numbers (`TUNING.rush.abilities`) are new, not copied from the port — its
-  source wasn't available to derive exact values from — and unvalidated,
-  same standing as the v227 tier table
-- Verified with a throwaway probe against the real integration points: each
-  ability actually clears the enemies/heat/bullets it claims to (a 6-enemy
-  ring → 0 alive + heat reset for Heat Exchange, an 8-enemy ring → 0 alive
-  for Hyper Bomb, a real `boostKill()` call producing chain +2 not +1 under
-  Overcharge, an enemy bullet fired at the player becoming a player-owned
-  bullet under Quantum Shield) and the OPTIONS row cycles all five states
-  in the real DOM. `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=185` → `?v=186`; HUD label → v232
-
----
-
-## v231 — 2026-08-28
-**Press kit** *(roadmap-v2 Phase 5, "itch.io page: embed, copy, capture GIFs")*
-- New `toko-drop/press/PRESS.md`, following the same structure as
-  `hyperdagger/press/PRESS.md`: one-liner, itch.io short description
-  (~200 chars), long description, features, a controls table (keyboard,
-  gamepad, touch), tech notes for a devlog/HN-style audience, and a
-  screenshots/GIFs index
-- Four screenshots (title, a classic run, RUSH MODE, the NEX DEUS cabinet)
-  are real captures from the actual running game via a throwaway
-  Playwright probe — not mockups. `charge.gif` and `school.gif` are real
-  captures via `scripts/enemy-loop.mjs`, the tool this roadmap item names
-  explicitly for GIFs
-- Doc/asset-only: no gameplay code changed. Bumped anyway per this repo's
-  own discipline (every commit touching `toko-drop/` gets a version entry)
-- The itch.io page itself (account, embed, actually publishing) is a
-  manual step outside this repo — this ships everything that's automatable
-- Cache-bust `?v=184` → `?v=185`; HUD label → v231
-
----
-
-## v230 — 2026-08-28
-**QOL pass: haptics gets two more real moments** *(follow-up to v229)*
-- The shield pickup — the one hit it fully absorbs, no HP lost — fired
-  `audio.playerHit()` and a camera shake but no vibration, even though it's
-  arguably the single most important defensive save in the game. It now gets
-  its own distinct pattern (`haptics.shield()`, `[20,30,20]`, punchier and
-  shaped differently from a plain hit) so a save reads as a save
-- Flipping **HAPTICS** on in the pause menu now fires a one-off confirmation
-  buzz. On the ~90% of devices `navigator.vibrate` silently no-ops on (no
-  iOS Safari, no desktop), turning the toggle on used to be the only control
-  in the whole settings panel that gave zero feedback either way
-- Verified with a throwaway probe driving the real integration points: the
-  shield branch of `tryHitPlayer()` fires `[20,30,20]` and correctly
-  consumes the shield; the settings object's `setHaptics(true)` path fires
-  the confirmation buzz. `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=183` → `?v=184`; HUD label → v230
+## v240 — 2026-09-05
+**The floor draws a level's region, on both render paths** *(PR #447's v238 term, brought across by hand — LEVEL_EDITOR_DESIGN.md §2.3, P1's other half)*
+- **A shaped level is VISIBLE now.** v239 made a level's SDF the boundary
+  every body answers to, but the floor still painted the bounding box —
+  three circles' common area played as a lens you could not see. `FLOOR_FRAG`
+  and `makeFloorMat()` each gain the same term, node-for-node: world-space
+  signed distance from a FIXED array of shape slots (`TUNING.arena.shapeSlots`,
+  4), union as `min`, intersect as `max`, an unused slot as the combine's
+  neutral element — `mix`/`step` throughout, no branch, the v228 point-array
+  discipline. Inside is the floor as before; outside dims to `shapeOutside`;
+  the boundary glows the border rail's colour over a `shapeEdge`-wide band.
+  The rectangular border line hides when the region is not its own box
+- **Classic play is untouched.** The pass is OFF unless a level with a shape
+  is running (`uShapeMode.x`), and `applyArenaMode()` writes the rectangle
+  with it off — every existing floor pixel is the same expression it was
+- **This is the sanctioned double-write** (§2.3): shader art is written once
+  on TSL in principle, but the classic r167 path is the default renderer, so
+  the floor is the standing exception — the same math in GLSL and TSL, gated
+  by review. `scripts/level-shot.sh` (new — #447's picture gate, re-cut)
+  automates that review as far as it can: the level on the CLASSIC bundle and
+  on the WEBGPU bundle, started, shot, and diffed; fails above a mean
+  absolute difference of 6 counts. The pictures are the artefact — look at
+  them
+- `arena.js`'s `circleShape` exposes its centre and radius for the uniform
+  write; nothing else in it moved (8,396 checks still exact). `level-check`
+  asserts `MAX_SHAPES === shapeSlots`, so a level cannot load and paint the
+  wrong region. `step` is the one TSL primitive new to the floor graph;
+  `webgpu-smoke.sh` runs it
+- **PR #447 is closed with this.** Its loader, files and level-check were
+  superseded by v239; its floor term and picture gate are here now. The two
+  lineages are one tree again
+- Gates: `level-shot.sh three-rings` · `webgpu-smoke.sh` · `level-smoke.sh`
+  ×2 · `level-check.mjs` 71 · `arena-check.mjs` 8,396 · `editor-smoke.sh` ·
+  `smoke.sh` · `cabinets.sh`
+- Cache-bust `?v=192` → `?v=193`; HUD label → v240
 
 ---
 
 ## Archive
+
+**v230–v239 summary (2026-08-28 – 2026-09-05)**
+- v230: QOL — haptic pulse on a shield block, a test buzz when haptics are switched on
+- v231: itch.io press kit — `press/PRESS.md`, screenshots, the controls table
+- v232: RUSH abilities ported from the Godot port (heat exchange, hyper bomb, overcharge, quantum shield)
+- v233: RUSH onboarding — its own tutorial hints, seen once
+- v234: THE RUSH LADDER panel; the v232 abilities were firing themselves off the boost button — a dedicated ability bind
+- v235: The ZONE boost scheme removed — it was never reachable
+- v236: The arena is a shape, not two numbers — `js/arena.js` (SDF), 8,396 exact checks; P0 of the level editor
+- v237: THE LEVEL EDITOR — drop-downs on top, tap to place, a 0.1s timeline, play-from-here; `js/level.js`
+- v238: skipped on purpose — PR #447, an unmerged lineage, had used both v237 and v238
+- v239: One level format for two engines — the Godot port reads the editor's JSON; `toko-drop/levels/`; cross-build parity 46/46 · 34/34
 
 **v220–v229 summary (2026-07-31 – 2026-08-28)**
 - v220: Revenge speaks the species' language — aimed/fan/ring by dialect, corpse colors split from living colors, sludge trail poured as gel blobs
