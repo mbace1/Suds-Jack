@@ -1,17 +1,18 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=190';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=190';
-import { Player, PLAYER_RADIUS } from './player.js?v=190';
+import { InputManager } from './input.js?v=191';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=191';
+import { Player, PLAYER_RADIUS } from './player.js?v=191';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=190';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=190';
-import { audio } from './audio.js?v=190';
-import { haptics } from './haptics.js?v=190';
-import { initDesigner } from './designer.js?v=190';
-import { createSpecimen } from './specimen.js?v=190';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=190';
-import { TUNING } from './tuning.js?v=190';
-import { Arena, rectShape } from './arena.js?v=190';   // v236: the boundary has one home
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=191';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=191';
+import { audio } from './audio.js?v=191';
+import { haptics } from './haptics.js?v=191';
+import { initDesigner } from './designer.js?v=191';
+import { createSpecimen } from './specimen.js?v=191';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=191';
+import { TUNING } from './tuning.js?v=191';
+import { Arena, rectShape } from './arena.js?v=191';   // v236: the boundary has one home
+import { compile as compileLevel, ARENAS as LEVEL_ARENAS } from './level.js?v=191';   // v237: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -44,6 +45,17 @@ const _apt  = { x: 0, z: 0 };   // scratch for arena queries — never allocate 
 // Room-traversal (smash / binding) and fixed-single-screen (tokotron /
 // classic) modes keep arenaScale = 1.
 let arenaScale  = 1;
+// v237 LEVEL EDITOR (LEVEL_EDITOR_DESIGN.md). While an authored level is being
+// PLAYED this holds { level, fromT, kills, savedSmash }; spawnWave() fills
+// pendingSpawns from the level instead of getEnemySchedule(), the pump grows a
+// pickup branch, and the run ends on the level's own clock. Null otherwise —
+// and every gate below that reads it is a place the ordinary game must not
+// notice a level was ever here (records, dailies, hints, wave-clear chaining).
+let customLevel   = null;
+// The editor's arena: an authored level may name its own rectangle. Set while
+// the editor session is alive (editing AND playing), cleared on leave.
+let arenaOverride = null;
+let editor        = null;   // the editor API once ?editor has loaded it
 const GRID_CELL = 1.286;                          // world units per grid cell (keeps cells square)
 const ROUND_DUR = 20; // seconds per wave
 
@@ -768,13 +780,20 @@ function fitPresetCamera(p) {
 // Swap arena dimensions, camera framing, floor + border geometry, and grid
 // uniforms. SMASH TV mode overrides orientation entirely: one fixed room,
 // camera fitted to whichever way the screen is held.
+// v237: which rectangle the room is right now — an authored level's own size
+// wins over the mode/orientation presets, and is always camera-FITTED (it has
+// no hand-tuned framing of its own).
+function arenaPreset(landscape) {
+  if (arenaOverride) return { ...ARENA_PRESETS.landscape, halfX: arenaOverride.halfX, halfZ: arenaOverride.halfZ, label: 'LEVEL' };
+  return (smashMode || tokotronMode || nexdeusMode) ? ARENA_PRESETS.smash
+       : landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
+}
 function applyArenaMode(landscape) {
-  const p = (smashMode || tokotronMode || nexdeusMode) ? ARENA_PRESETS.smash
-          : landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
+  const p = arenaPreset(landscape);
   HALF_X = p.halfX * arenaScale; HALF_Z = p.halfZ * arenaScale;   // v162
   arena.setRect(HALF_X, HALF_Z);                                 // v236
   CAM_LOOK.set(...p.camLook);
-  if (smashMode || tokotronMode || nexdeusMode || landscape) CAM_REST.copy(fitPresetCamera(p));
+  if (arenaOverride || smashMode || tokotronMode || nexdeusMode || landscape) CAM_REST.copy(fitPresetCamera(p));
   else                        CAM_REST.set(...p.camRest);
   camera.position.copy(CAM_REST);
   camera.lookAt(CAM_LOOK);
@@ -3325,16 +3344,16 @@ applyPerfMode();
 // the arena live. A running game never flips (bounds swapping mid-fight would
 // teleport the battle); the next run picks up the new orientation instead.
 function syncAutoOrientation() {
-  if (gameState !== 'title') return;
+  if (gameState !== 'title' && gameState !== 'editor') return;   // v237: the editor refits too
   const want = innerWidth > innerHeight;
   if (want !== landscapeMode) {
     landscapeMode = want;
     applyArenaMode(want);
-    showTitle();  // re-render the title over the re-framed arena
-  } else if (smashMode || landscapeMode) {
+    if (gameState === 'title') showTitle();  // re-render the title over the re-framed arena
+  } else if (arenaOverride || smashMode || landscapeMode) {
     // Same orientation but the aspect may have changed (window resize, URL
     // bar) — refit the zoom. Camera-only, no geometry churn.
-    CAM_REST.copy(fitPresetCamera(smashMode ? ARENA_PRESETS.smash : ARENA_PRESETS.landscape));
+    CAM_REST.copy(fitPresetCamera(arenaPreset(landscapeMode)));
     camera.position.copy(CAM_REST);
     camera.lookAt(CAM_LOOK);
   }
@@ -3367,6 +3386,7 @@ function revengeColor(type) {
 const TYPE_KEY = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v, k]));
 
 function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are marked
+  if (customLevel) customLevel.kills++;   // v237: the editor's result line
   rush.kill();   // v227: every Rush kill counts toward the level's PAR (no-op outside Rush)
   recordPop(e.position.x, e.position.z);   // v228: the floor rings out where it happened
   // VOLATILE affix (v145): the fuse pays off — a slow 8-bullet ring from the
@@ -3645,7 +3665,7 @@ const rush = {
   // What every fresh crack at a level starts from — first entry into Rush,
   // and every level-up/level-down after it.
   _freshAttempt() { this.levelKills = 0; this.chainUnbroken = true; this.neverLocked = true; },
-  levelDuration() { return rushLevelDuration(this.level); },
+  levelDuration() { return customLevel ? 1e9 : rushLevelDuration(this.level); },   // v237: a level owns its clock
   // Highest tier letter whose PAR (rate × seconds) the kill count meets, or
   // null below C. Shared by the live HUD readout (seconds = elapsed) and the
   // level-up stamp (seconds = the full duration just survived).
@@ -4982,7 +5002,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v236' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v237' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5853,6 +5873,7 @@ const WAVE_BANNER = {
 let tutorialHints = null;   // active schedule [{ at, dur, text }], or null
 let _hintsSeenKey = 'tokoDropHintsSeen';   // which flag the active sequence marks on completion
 function scheduleTutorialHints() {
+  if (customLevel) { tutorialHints = null; return; }   // v237: no lessons inside an authored level
   const touch = navigator.maxTouchPoints > 0 && !input.usingGamepad;
   if (rushMode && !inCabinet()) {
     _hintsSeenKey = 'tokoDropHintsSeenRush';
@@ -6041,7 +6062,7 @@ function spawnWave() {
   // own pacing. (The per-species traits below apply everywhere: a FLIT is a
   // FLIT in the basement too.)
   fluidArch = null;
-  if (!inCabinet()) {
+  if (!inCabinet() && !customLevel) {
     fluidArch = FLUID_ARCHS[(wave + runSeed) % 3];
     // v198: wave 1 keeps the mode-intro banner (it's the DEFAULT experience
     // now — new players must see the mode name); archetype calls start wave 2.
@@ -6058,11 +6079,18 @@ function spawnWave() {
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
   const list = (tokotronMode || gaundropMode || loadoutMode || kaikkiMode || nexdeusMode ||
                 (smashMode && smashRoomKind === 'bonus') ||     // v178: pure loot, no fight
-                (bindingMode && (smashRoomKind !== 'boss' || bdRevisit))) ? [] : getEnemySchedule(wave);
+                (bindingMode && (smashRoomKind !== 'boss' || bdRevisit)) ||
+                customLevel) ? [] : getEnemySchedule(wave);   // v237: a level brings its own list
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
   pendingSpawns = [];
+  if (customLevel) {
+    // v237: the authored list, from the playhead on, in the pump's own shape.
+    // level.js compiles it; nothing downstream knows it was not the director.
+    pendingSpawns = compileLevel(customLevel.level, EnemyType, customLevel.fromT);
+    waveDuration  = Math.max(0.1, customLevel.level.duration - customLevel.fromT);
+  }
   // SMASH TV (v109): everything enters through 4 "doors" at the edge midpoints
   // (the spawn projection maps angle 0/π to the side walls, ±π/2 to top/bottom),
   // so waves pour in like arena-show contestants instead of surrounding evenly.
@@ -7119,6 +7147,11 @@ function spawnWave() {
   // with the spoken announcer off — you always get the "here comes the boss" beat.
   if (kind === 'boss') audio.bossHorn();
   audio.announce(kind === 'boss' ? 'boss' : 'wave', wave);
+  if (customLevel) {   // v237: the level's name is the banner
+    waveIntroT = waveIntroDur = 1.4;
+    waveIntroText  = customLevel.fromT > 0 ? `${customLevel.level.name} — FROM ${customLevel.fromT.toFixed(1)}s` : customLevel.level.name;
+    waveIntroColor = '#ffdd44';
+  }
 }
 
 // ── Upgrade cards ─────────────────────────────────────────────────────────────
@@ -7523,7 +7556,7 @@ function startGame() {
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
   BULLET_CONFIG.playerWeaponPierce = false;
-  if (dailyMode && !testMode && !inCabinet()) {   // test/cabinet runs are never dailies
+  if (dailyMode && !testMode && !inCabinet() && !customLevel) {   // test/cabinet/level runs are never dailies
     // Same seed for everyone today: hash the UTC date through the PRNG once
     // so consecutive days land far apart in seed space.
     _dailyRun = new Date().toISOString().slice(0, 10);
@@ -7541,7 +7574,7 @@ function startGame() {
   rush.on = false;
   player._boostSpeed = 0;
   player.setBoost(false);
-  if (rushMode && !inCabinet()) {
+  if (customLevel ? customLevel.level.rules.mode === 'rush' : (rushMode && !inCabinet())) {   // v237: a level picks its ruleset
     rush.reset();
     rush.ability = rushAbilitySel;   // v232: a loadout choice, applied fresh each run
     const R = TUNING.rush;
@@ -7560,7 +7593,7 @@ function startGame() {
                   : dailyMod === 'surge' ? 'SURGE DAY — THE FLOOR FIGHTS HARDER'
                   : 'RICH DAY — DOUBLE LOOT, BIGGER CROWDS';
   }
-  meleeRun = meleeOnlyMode && !inCabinet();   // v187: cabinets keep their guns
+  meleeRun = customLevel ? customLevel.level.rules.mode === 'melee' : (meleeOnlyMode && !inCabinet());   // v187: cabinets keep their guns; v237: a level says
   if (meleeRun) {
     milestoneT = 2.0;
     milestoneText = 'CLOSE COMBAT — NO GUNS, ONLY REVENGE';
@@ -7618,8 +7651,46 @@ function returnToTitle() {
   enemies = [];
   bullets.clear();
   overlay.style.pointerEvents = '';
+  if (customLevel) { endLevelRun('dead'); return; }   // v237: a level run goes home to the editor
   showTitle();
   gameState = 'title';
+}
+
+// ── v237 LEVEL EDITOR: playing an authored level ─────────────────────────────
+// The editor hands over a level and a playhead; the ordinary startGame() runs
+// it, with customLevel steering the handful of places that must differ. The
+// run ends on the level's clock (cleared) or on death; either way the bodies
+// are swept and the editor gets the result. SMASH TV is held off for the
+// duration — its room lattice and door spawns would fight an authored list.
+function playLevel(level, fromT = 0) {
+  customLevel = { level, fromT, kills: 0, savedSmash: smashMode };
+  smashMode = false;
+  arenaOverride = levelArena(level);
+  startGame();   // straight in — startRun() would route through a selected cabinet
+}
+function levelArena(level) {
+  const a = level?.arena;
+  if (a && typeof a === 'object' && a.halfX > 2 && a.halfZ > 2) return { halfX: a.halfX, halfZ: a.halfZ };
+  if (typeof a === 'string') return LEVEL_ARENAS[a] ?? null;
+  return null;
+}
+function endLevelRun(outcome) {
+  if (!customLevel) return;
+  const result = { outcome, score, kills: customLevel.kills, time: Math.round(waveTimer * 10) / 10 };
+  smashMode = customLevel.savedSmash;
+  customLevel = null;
+  pendingSpawns = [];
+  clearFX();
+  for (const e of enemies) e.removeFrom(scene);
+  enemies = [];
+  for (const p of powerups) p.remove(scene); powerups = [];
+  bullets.clear();
+  clearBossAuras();
+  tutorialHints = null;
+  overlay.style.display = 'none';
+  overlay.style.pointerEvents = '';
+  gameState = 'editor';
+  editor?.onRunEnd(result);
 }
 
 function triggerGameOver() {
@@ -7638,7 +7709,7 @@ function triggerGameOver() {
   else if (nexdeusMode)  cabBestSet('nexdeus', wave);
   gameState = 'gameover';
   saveHitLog();
-  _runBests = testMode ? {} : recordRun();   // test runs leave no records (v142)
+  _runBests = (testMode || customLevel) ? {} : recordRun();   // test runs leave no records (v142); level runs too (v237)
   hiScore = pb.bestScore;
   addShake(0.9);
   audio.playerDie();
@@ -7779,6 +7850,7 @@ input.onAbility = () => {
   if (gameState === 'playing' && rush.on) rush.activateAbility();
 };
 input.onPause = () => {
+  if (gameState === 'editor') return;   // v237: the editor has its own keys
   if (gameState === 'playing') { gameState = 'paused';  designer.show(); }
   else if (gameState === 'paused')  { gameState = 'playing'; designer.hide(); }
   else if (gameState === 'options') { gameState = 'title';   designer.hide(); }
@@ -7884,7 +7956,8 @@ function loop() {
 
   // Title / paused / options / run-history — just render the scene, no game logic
   if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' ||
-      gameState === 'runhistory' || gameState === 'rushladder' || gameState === 'options') {
+      gameState === 'runhistory' || gameState === 'rushladder' || gameState === 'options' ||
+      gameState === 'editor') {   // v237
     renderer.render(scene, camera);
     drawHUD();
     return;
@@ -7919,6 +7992,12 @@ function loop() {
     arena.ringPoint(s.angle, edge, _apt);
     const bx = s.px != null ? s.px : _apt.x;
     const bz = s.pz != null ? s.pz : _apt.z;
+    if (s.pickup) {   // v237: an authored pickup, laid where and when the level says
+      const pu = new Powerup(scene, bx, bz, s.pickup);
+      pu._life = s.life ?? 12;
+      powerups.push(pu);
+      continue;
+    }
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
@@ -9854,6 +9933,13 @@ function loop() {
     }
   }
 
+  // v237: an authored level ends on its own clock, cleared or not.
+  if (customLevel && gameState === 'playing' && waveTimer >= waveDuration) {
+    renderer.render(scene, camera);
+    endLevelRun('clear');
+    return;
+  }
+
   // Wave breather tick (v136): when it runs out, the next wave rolls in.
   if (waveGapT > 0 && gameState === 'playing') {
     waveGapT -= dt;
@@ -9867,7 +9953,7 @@ function loop() {
   // flight (_roomSwap / roomFadeT) — the old room's dead enemies linger until
   // spawnWave, so the clear could re-fire mid-fade, double-paying the bonus
   // and (in gauntlets) cascading through the whole room script instantly.
-  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode && !kaikkiMode &&
+  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode && !kaikkiMode && !customLevel &&
       (!nexdeusMode || nxSurges.length === 0) &&
       !_roomSwap && roomFadeT <= 0 &&
       enemies.length > 0 &&
@@ -10069,8 +10155,45 @@ loop();
 // ?v=-tokened module graph cache-first (immutable per release; the registration
 // URL's own token rotates each release, updating the worker). Silently absent
 // on unsupported/file: contexts — the game runs identically without it.
+// ── v237 LEVEL EDITOR: index.html?editor mounts it over this very game ─────
+// Lazy, and swallowed on failure — a dev tool must never be why the game does
+// not open. window.__ed is the editor's API, for the console and the gate.
+if (new URLSearchParams(location.search).has('editor')) {
+  import('./editor.js?v=191').then(m => {
+    editor = m.initEditor({
+      scene, camera, renderer, arena, EnemyType, CFG,
+      pickups: [
+        ...Object.keys(NON_WEAPON_COLORS).filter(id => !['key', 'potion', 'item'].includes(id))   // cabinet-only ids stay out
+          .map(id => ({ id, color: NON_WEAPON_COLORS[id], label: id.toUpperCase() })),
+        ...Object.keys(WEAPON_PODS).filter(id => !id.startsWith('H'))                           // homing is enemy-only (v88)
+          .map(id => ({ id, color: WEAPON_PODS[id].color, label: `POD ${id} · ${WEAPON_PODS[id].mode}` })),
+      ],
+      // Editing: this arena, no bodies, no title. Called again whenever the level's arena changes.
+      enter: (level) => {
+        arenaOverride = levelArena(level);
+        applyArenaMode(landscapeMode);
+        for (const e of enemies) e.removeFrom(scene); enemies = [];
+        for (const p of powerups) p.remove(scene); powerups = [];
+        bullets.clear(); clearFX();
+        overlay.style.display = 'none';
+        overlay.style.pointerEvents = '';
+        gameState = 'editor';
+      },
+      play: (level, fromT) => playLevel(level, fromT),
+      leave: () => {
+        arenaOverride = null;
+        applyArenaMode(landscapeMode);
+        showTitle();
+        gameState = 'title';
+      },
+    });
+    window.__ed = editor;
+    editor.open();
+  }).catch(err => console.error('level editor failed to load', err));
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=190').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=191').catch(() => {});
   });
 }

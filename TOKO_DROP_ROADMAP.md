@@ -121,11 +121,12 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 - [ ] Audio pass: layered mix, ducking under swarm density
 - [ ] Enemy silhouette & readability pass (art priority 4) — informed by feedback
 - [ ] Content drops: elite waves, arena variation, weapon modifiers
-      *(v236 laid the foundation for arena variation: `js/arena.js` makes the
-      playable region an SDF instead of two half-extents, so a non-rectangular
-      arena is now a shape declaration rather than an engine change. Scope and
-      phasing live in `toko-drop/LEVEL_EDITOR_DESIGN.md`; the next step, P1, is
-      drawing a custom shape on both renderers.)*
+      *(v236 made the playable region an SDF (`js/arena.js`); **v237 shipped the
+      LEVEL EDITOR** — `index.html?editor`, drop-downs on top, tap to place, a
+      0.1s timeline along the bottom, play-from-here, levels as JSON
+      (`js/level.js`). Authored levels are the content drops. Non-rectangular
+      arenas remain a shape declaration away; scope and phasing in
+      `toko-drop/LEVEL_EDITOR_DESIGN.md`.)*
 - [ ] Balance patches from daily-seed data
 
 ## Phase 7 — 1.0
