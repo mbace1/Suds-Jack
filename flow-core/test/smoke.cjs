@@ -59,7 +59,7 @@ s.listen(0,'127.0.0.1',async()=>{const base='http://127.0.0.1:'+s.address().port
  ok('catch commits an existing HSL service plan',await p.evaluate(()=>{const ch=window.__tm.challenge;return !!ch.activeTrip&&!ch.waitingForCatch&&Array.isArray(ch.activeTrip.legs)&&ch.activeTrip.legs.length>=1;}));
  ok('catching creates no player-drawn line',await p.evaluate(n=>window.__tm.flow.routes.drawn.length===n,before));
  ok('fixed services come from HSL tram + metro',await p.evaluate(()=>{const rs=window.__tm.flow.routes.list.filter(r=>r.fixed);return rs.some(r=>r.mode==='metro'&&(r.label==='M1'||r.label==='M2'))&&rs.some(r=>r.mode==='tram'&&['2','3','4','5','6','7','8H','8T','9','13'].includes(r.label))&&!rs.some(r=>['T','R','M'].includes(r.label));}));
- ok('gameplay HUD identifies HSL network rather than line budget',await p.evaluate(()=>document.getElementById('lines').textContent.includes('HSL')));
+ ok('gameplay HUD identifies live HSL network rather than line budget',await p.evaluate(()=>{const t=document.getElementById('lines').textContent;return (/HSL network|\bnear\b/.test(t))&&!/lines?\s*left|budget/i.test(t);}));
  ok('large visible version matches runtime',await p.evaluate(()=>document.querySelector('.versionHero')?.textContent.includes(`v${window.__tm.version}`)));
  ok('no horizontal phone overflow',await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));
  const small=await p.$$eval('button',bs=>bs.filter(x=>{const r=x.getBoundingClientRect();return r.width>0&&(r.width<44||r.height<44);}).map(x=>x.id||x.textContent.trim().slice(0,16)));ok('controls clear 44px',small.length===0,small.join(', '));
