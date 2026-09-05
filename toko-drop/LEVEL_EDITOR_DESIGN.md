@@ -447,3 +447,61 @@ level's clock and reports back).
 format carries them; import sets them — the palette wanted proving first);
 translations (a tool, like the enemy tester); shapes (§7 P1) and moving
 shapes (§7 P3, still gated on §2.4).
+
+---
+
+## 10. One format, two engines (v239, 2026-09-05)
+
+Owner ask: *"make the Godot side read the same level JSON."* It did not, and
+§4's sketch is why: two sessions each built "format 1" from it on the same
+day. v237 (this tree, the editor) wrote named arenas, pickups and three
+modes; PR #447 (unmerged) wrote shape objects, strict unknown-key rejection
+and arcade only — and the Godot port's loader (`toko-drop-godot` Q-032) was
+written against #447. A file the phone authored was a file the iPad refused,
+on its first key.
+
+**v239 is the union, and `js/level.js` is the reference.** The port's
+`scripts/level.gd` mirrors it clause for clause; the cross-build gate
+(`tools/level-parity.mjs` in the port, fed by this tree's new
+`scripts/level-smoke.sh`) passes on both bundled levels — same bodies, same
+seconds, same places, two engines.
+
+```jsonc
+{
+  "format": 1, "id": "first-light", "name": "FIRST LIGHT",
+  "arena": "auto" | "portrait" | "landscape" | "room"
+         | { "combine"?: "union"|"intersect", "shapes": [ {kind:"rect",hx,hz} | {kind:"circle",c:[x,z],r} ] },
+  "duration": 45.0,
+  "rules": { "mode": "arcade"|"melee"|"rush", "outside"?: "push" },
+  "spawns": [
+    { "t": 0.0, "type": "GLOBBO", "px": -6, "pz": -8, "speedMult"?: 1, "intervalMult"?: 1, "boss"?: true, "elite"?: true },
+    { "t": 7.5, "kind": "pickup", "id": "firerate", "px": 0, "pz": 0, "life"?: 12 }
+  ]
+}
+```
+
+**Rules worth writing down, because each one was a disagreement:**
+
+- **Strict.** An unknown key anywhere is an error; spawns are authored in
+  order; a body outside the region and a region with nowhere to stand are
+  refused; at most `MAX_SHAPES` (4) shapes. This came from #447 and it is
+  right: a translation layer that lets fields through is how Eeri's exporter
+  dropped two part types unnoticed.
+- **A build that lacks a thing refuses the level BY NAME.** The port has no
+  CLOSE COMBAT and no authored-Rush wiring, so it refuses `melee` and `rush`
+  with a message that says so. The file is never blamed for a build's gap.
+- **`toko-drop/levels/` is the seam.** The port syncs those files from the
+  deployed tree (`tools/sync-levels.sh`); a level exported from the phone's
+  editor plays on the iPad once it is committed there. There is no exporter.
+- **v238 was skipped** on this tree because #447 used it — the same reason
+  Eeri skipped v13. A reused number is how two trees look like one.
+
+**Still on #447 and nowhere else:** the v238 floor term that DRAWS a shaped
+region on both render paths (§2.3), and `level-shot.sh`. This tree PLAYS a
+shaped level (containment, the spawn ring and TORO's dash all answer to the
+SDF) but still paints the bounding box. That term should come across by
+hand, against this tree; the PR itself conflicts on every file it touches.
+
+**Open on the port:** an authored Rush level (which of Rush's cadence,
+roster and level clock an authored timeline overrides), and a menu row to
+play a synced level.
