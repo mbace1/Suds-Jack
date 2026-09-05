@@ -227,6 +227,11 @@ jobs:
       - name: the street importer, offline
         run: node toko-move/test/streets-import.mjs
 
+      # The shift log owns no DOM and no clock — it only watches — so a stub is
+      # enough to drive every branch of it.
+      - name: the shift log and its replay
+        run: node toko-move/test/shiftlog.mjs
+
       - name: version sync across hero, runtime, log and hub
         run: node toko-move/test/version-sync.mjs
 

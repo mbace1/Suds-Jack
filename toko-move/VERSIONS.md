@@ -1,5 +1,15 @@
 # Toko Move — versions
 
+## v2.26 — 2026-09-02
+
+**The shift shows itself back.** A run ended in four numbers — delivered, score, bonuses, late — which was survivable while nothing could go wrong and became the worst possible ending the moment v2.25 made a shift losable. Four numbers tell you that you failed and nothing about where. `js/shiftlog.js` is the design doc's own experiment #6, the one item on its list of eight that had never been built, and its strongest-directions list calls post-run replay "a core learning tool".
+
+**It records by WATCHING.** Nothing in `deliveries.js` or `mobility-v212.js` knows the file exists: it polls from the draw loop, notices what changed and writes it down — the same discipline as turf's `anim.js` reading `state.log` rather than being called by `combat.js`. So it cannot break the game it observes, and it can be deleted without touching a rule. `test/shiftlog.mjs` drives every branch of it in bare node against a stub, because it owns no DOM and no clock; five mutations (never closing a job, inverting lateness, allowing negative spare, dropping the noise threshold, and dropping HTML escaping) are each caught.
+
+**The one thing it computes rather than observes is the alternative**: at the moment you board, what the best plan from where you stand was worth against what you actually took, both from the same timetable the panel quoted at you. `at Länsiterminaali you boarded a ~1307t plan · a ~1018t one was on the board · 289t` — that is a sentence a player can learn from, and it appeared on the job that failed.
+
+That comparison could not fire at first and the reason is worth keeping: `mobility.catchChoice` executes a chosen plan as a **single physical leg**, and `selectedPlan` was that leg rather than the plan clicked. One leg is by construction no worse than a whole trip, so the check was structurally incapable of ever finding a better alternative. The ride keeps the plan the player actually pressed now.
+
 ## v2.25 — 2026-09-02
 
 **The game can be lost now, and the ride has a decision in it.** Both halves at once, because neither works alone: tension without input is a clock you watch, and input without stakes is busywork.
