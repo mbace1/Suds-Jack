@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=190';
-import { t } from './lang.js?v=190';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=190';
-import { Arena, rectShape } from './arena.js?v=190';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=191';
+import { t } from './lang.js?v=191';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=191';
+import { Arena, rectShape } from './arena.js?v=191';
 
 // v236: the tester's own little room. Enemy.update() takes an arena now.
 const TESTER_ARENA = new Arena(rectShape(11, 7));
@@ -644,6 +644,18 @@ export function initDesigner({ onResume, settings }) {
       });
       el.appendChild(btn);
       el.appendChild(note('watch any enemy up close, poke it, and tweak how it plays'));
+    }
+
+    // v237: the level editor lives at ?editor — the same game with authoring
+    // bars over it. A reload, because the flag is read at boot.
+    el.appendChild(sec('LEVEL EDITOR'));
+    {
+      const btn = document.createElement('button');
+      btn.className = 'dbtn dxbtn';
+      btn.textContent = 'OPEN LEVEL EDITOR →';
+      btn.addEventListener('click', () => { location.href = location.pathname + '?editor'; });
+      el.appendChild(btn);
+      el.appendChild(note('place enemies and pickups on a 0.1s timeline, then play it from any moment'));
     }
 
     el.appendChild(sec('PERFORMANCE'));

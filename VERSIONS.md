@@ -7,6 +7,83 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v237 — 2026-09-03
+**THE LEVEL EDITOR — drop-downs on top, tap to place, a 0.1s timeline along the bottom** *(LEVEL_EDITOR_DESIGN.md, requirements 2 and 3; owner: "rectangular is ok too, the tool is what really makes it work")*
+- **`index.html?editor`** mounts the editor OVER the real game: the arena you
+  tap is the real floor under the real camera, the ghosts are drawn into the
+  real scene, and PLAY hands the level to the real spawn pump. Not a sibling
+  page — rebuild-on-real-code is the settled principle here (v216 rebuilt the
+  enemy lab for the same reason), and an editor that is not the game would lie
+  about where things land. OPTIONS → LEVEL EDITOR gets you there; a reload,
+  because the flag is read at boot
+- **`js/level.js`** is the format: pure (no three.js, no DOM), so it runs in
+  bare node. A level is `{ format, name, arena, duration, rules: { mode },
+  spawns: [{ t, type | kind:'pickup', px, pz, … }] }`. **`t` is seconds on a
+  0.1s grid and `type` is a NAME** — the numeric `EnemyType` values are
+  positional, and a saved level must survive the enum growing. `compile()`
+  emits exactly the entry shape main.js's pump reads, which is the whole trick:
+  the runtime contract was never designed for authoring, but `pendingSpawns`
+  already carried `delay` and an optional `px`/`pz`, so a level is that list
+  written by hand and nothing downstream can tell
+- **`js/editor.js`** is the tool. Top bar: `ENEMIES ▾` (the real roster, minus
+  the death-spawned minis; Rush mode narrows it to Rush's own pool), `PICKUPS ▾`
+  (hp / invincible / firerate / scoremult / score and the weapon pods — the
+  cabinet-only key/potion/item stay out), `RULES ▾` (mode guns/melee/rush,
+  arena auto/portrait/landscape/room, duration), `LEVEL ▾` (new / save / load /
+  rename / export / import / clear / leave). **Choose, then tap the arena** —
+  no dragging, because dragging fights page scroll on a phone. A tap near an
+  existing spawn selects it instead (nudge ±0.1s, MOVE ⤢ then tap, DELETE).
+  Bottom: a canvas timeline, 0.1s ticks, 1s labels, natively scrollable,
+  four zoom levels; enemies on the lower lane, pickups on the upper, a count
+  on stacked cells; **tap the strip to set the playhead**, and the playhead is
+  the editing context — a new spawn lands AT it, and the ghosts brighten for
+  what is due now, dim for what is past
+- **PLAY FROM HERE (▶ / Enter)** runs the level from the playhead through the
+  ordinary `startGame()`. **Spawns before the playhead are DROPPED, not fired
+  at once** — a pile of catch-up bodies on frame one would be a different
+  level. The run ends on the level's own clock (or on death), the bodies are
+  swept, and the result (cleared/dead · kills · score · time) sits in the
+  editor's status line. A level run **leaves no records**: no PB, no daily, no
+  leaderboard, no tutorial hints, no wave-clear chaining into wave 2 (that one
+  would have re-compiled the level as "wave 2" and looped forever — caught in
+  design, not in play). SMASH TV is held off for the run and put back after
+- **`rules.mode` picks the ruleset**: `guns` (the classic gun ecology), `melee`
+  (CLOSE COMBAT), `rush` (boost, shotgun, HP dots as lives; Rush's own level
+  clock is parked at 1e9 so the authored clock is the only one running). The
+  arena is a named rectangle or an explicit `{halfX, halfZ}` — `arenaPreset()`
+  now answers "which rectangle is the room" for `applyArenaMode` and the
+  orientation refit alike, so a level's own size survives a rotate
+- **Levels live in `localStorage` (`tokoDropLevels`)** with EXPORT / IMPORT as
+  JSON text for moving one between devices or into the repo. `serialize()` is
+  stable — one spawn per line, defaults omitted — so two exports of the same
+  level are the same bytes and a diff between two levels reads as spawns.
+  **`EXAMPLE_LEVEL` (FIRST LIGHT, 30s)** ships built in: a trickle, a pincer,
+  a pickup laid before the pressure, a boss with an escort — the first LOAD
+  has something in it and the gate has a fixture
+- **Two new gates.** `scripts/level-check.mjs` (40 checks, bare node) reads the
+  enemy names out of `enemy.js`'s SOURCE — the honest coupling: a level names
+  an enemy, and this asks the file that defines them — and proves validation,
+  the pump contract, the 0.1s grid, byte-identical round-trips and that
+  play-from-here drops exactly the earlier spawns and shifts the rest.
+  `scripts/editor-smoke.sh` (Playwright, touch-emulated phone) mounts the
+  editor, **taps the arena and asserts the spawn landed at the world point
+  under the tap**, taps right of it and asserts world-right, saves → new →
+  loads, exports → imports, then PLAYs from 0.5s and asserts the enemy stands
+  within a body-width of where it was placed, on time, the pickup appears, and
+  the run ends CLEARED on the level's clock with the result handed back
+- **Not in this release, on purpose:** non-rectangular arenas (owner: the tool
+  first — `arena.js` is ready when a shape is wanted), moving shapes (§2.4 is
+  still an open decision), enemy affixes/elites in the palette, per-spawn
+  speed editing in the UI (the format carries `speedMult`; only import sets
+  it), and translations — the editor is English, like the enemy tester
+- `input.js`'s `inUI` list gains `#tded`; `sw.js` and `bump-version.sh` name
+  `level.js` and `editor.js`
+- `level-check.mjs` + `arena-check.mjs` + `editor-smoke.sh` + `smoke.sh` +
+  `cabinets.sh` + `webgpu-smoke.sh` green
+- Cache-bust `?v=190` → `?v=191`; HUD label → v237
+
+---
+
 ## v236 — 2026-09-03
 **The arena is a shape now, not two numbers** *(P0 of `LEVEL_EDITOR_DESIGN.md` §7)*
 - **`js/arena.js`.** Until now "the arena" was `HALF_X` and `HALF_Z` — read in

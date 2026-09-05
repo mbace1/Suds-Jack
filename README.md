@@ -1,4 +1,4 @@
-# Toko Drop — v236
+# Toko Drop — v237
 
 Twin-stick swarm-survival arena game built with Three.js and Web Audio.
 The default mode is the MOVEMENT game (v198): enemies never shoot — they
@@ -32,6 +32,16 @@ A connected gamepad defaults to landscape automatically, unless you've picked an
 **Roguelike** — choose an upgrade card after every wave cleared. Toggle on the title screen.
 
 Death returns you to the title screen so you can start a fresh run.
+
+## Level editor
+
+`index.html?editor` (or OPTIONS → LEVEL EDITOR) mounts an editor over the real
+game: drop-downs along the top (enemies, pickups, rules, level), tap the arena
+to place, and a scrollable 0.1s timeline along the bottom. ▶ plays the level
+from the playhead through the ordinary game — a placed spawn is a body standing
+where you tapped, when you said. Levels save locally and export as JSON
+(`js/level.js` is the format; `scripts/level-check.mjs` and
+`scripts/editor-smoke.sh` are its gates). Editor runs leave no records.
 
 Your **personal bests** (score, deepest wave, longest time) are saved locally and shown on the title screen — beat any of them and the death screen flags it with a ★ badge.
 
