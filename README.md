@@ -1,4 +1,4 @@
-# Toko Drop — v237
+# Toko Drop — v239
 
 Twin-stick swarm-survival arena game built with Three.js and Web Audio.
 The default mode is the MOVEMENT game (v198): enemies never shoot — they
@@ -42,6 +42,13 @@ from the playhead through the ordinary game — a placed spawn is a body standin
 where you tapped, when you said. Levels save locally and export as JSON
 (`js/level.js` is the format; `scripts/level-check.mjs` and
 `scripts/editor-smoke.sh` are its gates). Editor runs leave no records.
+
+The format is shared with the Godot port (`mbace1/toko-drop-godot`), which
+reads the very same files: the levels in `toko-drop/levels/` are the bundled
+ones (`?level=first-light` plays one directly; the editor's LOAD lists them),
+and a level exported from the editor plays on both builds once it is dropped
+in that directory. `scripts/level-smoke.sh` proves a bundled level plays here
+and writes the cross-build file the port's `tools/level-parity.mjs` diffs.
 
 Your **personal bests** (score, deepest wave, longest time) are saved locally and shown on the title screen — beat any of them and the death screen flags it with a ★ badge.
 

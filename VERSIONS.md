@@ -7,6 +7,71 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v239 — 2026-09-05
+**One level format for two engines — the Godot port reads the editor's JSON** *(v238 is skipped on purpose: PR #447, an unmerged lineage, already used both v237 and v238 for its own level work, and a reused number is how two trees look like one)*
+- **There were two "format 1"s for a day.** v237 shipped this editor's format
+  (named arenas, pickups, three modes). PR #447 — another session, still open
+  against `gh-pages` — shipped a *different* format 1 the same day (shape
+  objects, strict unknown-key rejection, arcade only), and the Godot port's
+  loader (`toko-drop-godot` `scripts/level.gd`, Q-032) was written against
+  THAT one. A level file one build refuses is the exact failure a shared
+  format exists to prevent. **This release is the union, and both loaders now
+  accept every clause of it:** `arena` is a name (`auto/portrait/landscape/
+  room`) OR `{ combine?, shapes: [rect | circle …] }`; spawns are enemies
+  (`boss?`, `elite?`, multipliers) or `kind: "pickup"` (`id`, `life?`);
+  `rules.mode` is `arcade | melee | rush`. `js/level.js` is the reference;
+  the port mirrors it clause for clause
+- **Strictness came over from the other lineage, deliberately.** An unknown
+  key anywhere is an error, spawns must be authored in order, a body placed
+  outside the region is refused, a region with nowhere to stand is refused,
+  at most `MAX_SHAPES` (4) shapes — the floor's slot count on both builds.
+  v237's `{halfX, halfZ}` arena form is gone (nothing had written one); v237's
+  `mode: "guns"` is migrated to `"arcade"` on parse, so a level saved
+  yesterday still loads. **A build that lacks a thing refuses the level BY
+  NAME:** the port has no CLOSE COMBAT and no authored-Rush wiring yet, so it
+  refuses `melee` and `rush` with a message that says so, rather than
+  half-playing the file
+- **`toko-drop/levels/`** now exists on the deployed tree, which is where the
+  port's `tools/sync-levels.sh` has been reading from all along:
+  `first-light.json` (15 spawns, 45 s, the 19×11 room) and `three-rings.json`
+  (11 spawns in the common area of three circles) — PR #447's two files,
+  verbatim, because the port's own smoke pins their counts. `level.js
+  BUNDLED` names them; the editor's LOAD lists them beside the built-in
+  (renamed **SHOW AND TELL** so its id no longer collides); **`?level=<id>`
+  arms one for the next start** and `?editor&level=<id>` opens it. Tokened
+  fetch, precached in `sw.js` — a new path is a new path (v118)
+- **A shaped level PLAYS here now, even though it is not yet DRAWN.**
+  `levelArena()` builds the file's shape on `arena.js` (rect, circle, union,
+  intersect) and `applyArenaMode()` hands it to `arena.setShape()`, so
+  containment, the spawn ring, TORO's dash and every other boundary question
+  are answered by the real region; `HALF_X`/`HALF_Z` stay its bounding box
+  for the floor plane and camera. Drawing the region is §2.3 — PR #447's v238
+  carries a working term for both render paths and is the natural next thing
+  to bring across
+- **`scripts/level-smoke.sh`** (new — PR #447's gate, re-cut for this tree):
+  headless Chromium, the probe owns the clock (`performance.now` becomes a
+  counter and `loop()` is called synchronously — under headless Chromium
+  rAF fires once and chained timers stall at ~20 s, lessons that cut paid
+  for), every authored enemy AND pickup lands at the authored second and
+  place, the run ends CLEARED on the level clock. **It writes the
+  cross-build file** (`SPAWN <i> <TYPE> t= x= z=`) that the port's
+  `tools/level-parity.mjs` diffs against its own trace of the same JSON —
+  same level, two engines, same bodies at the same seconds in the same
+  places. `scripts/level-check.mjs` grows to 70 checks: every bundled file
+  loads, `BUNDLED` names exactly the files, and every refusal clause above
+  is exercised by name
+- Gates: `level-check.mjs` 70 · `arena-check.mjs` 8,396 · `level-smoke.sh`
+  ×2 · `editor-smoke.sh` · `smoke.sh` · `cabinets.sh` · `webgpu-smoke.sh`;
+  and on the port, its smoke plus `level-parity.mjs` for both bundled levels
+- **What PR #447 still holds that this tree does not:** the v238 floor term
+  (the shape drawn on GLSL and TSL) and `scripts/level-shot.sh` (the two-
+  renderer picture gate). Its loader, level files and level-check are now
+  superseded here. Merging it as-is would conflict on every file it touches;
+  the floor term should come across by hand, against this tree
+- Cache-bust `?v=191` → `?v=192`; HUD label → v239
+
+---
+
 ## v237 — 2026-09-03
 **THE LEVEL EDITOR — drop-downs on top, tap to place, a 0.1s timeline along the bottom** *(LEVEL_EDITOR_DESIGN.md, requirements 2 and 3; owner: "rectangular is ok too, the tool is what really makes it work")*
 - **`index.html?editor`** mounts the editor OVER the real game: the arena you

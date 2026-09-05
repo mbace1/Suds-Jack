@@ -19,8 +19,8 @@
 // back through them. window.__ed is the same API, for the gate and the console.
 
 import * as THREE from 'three';
-import * as L from './level.js?v=191';
-import { TUNING } from './tuning.js?v=191';
+import * as L from './level.js?v=192';
+import { TUNING } from './tuning.js?v=192';
 
 const STORE_KEY = 'tokoDropLevels';
 const ZOOMS = [30, 60, 120, 240];          // px per second on the timeline
@@ -259,6 +259,18 @@ export function initEditor(hooks) {
       list.appendChild(row);
     };
     add('__example', `${L.EXAMPLE_LEVEL.name}  (built in)`, false);
+    // v239: the levels that ship in levels/ — the same files the Godot port
+    // syncs, so a level loaded from here plays on both builds.
+    for (const bid of L.BUNDLED) {
+      const row = document.createElement('div'); row.className = 'row';
+      const b = document.createElement('button'); b.textContent = `${bid}  (bundled)`; b.style.flex = '1';
+      b.onclick = async () => {
+        if (dirty && !confirm('Discard unsaved changes?')) return;
+        try { setLevel(await hooks.fetchLevel(bid)); closeModal(); }
+        catch (e) { showText('CANNOT LOAD', e.message); }
+      };
+      row.appendChild(b); list.appendChild(row);
+    }
     for (const id of ids) {
       let name = id; try { name = JSON.parse(s[id]).name || id; } catch (e) {}
       add(id, name, true);
@@ -534,6 +546,7 @@ export function initEditor(hooks) {
 
   const api = {
     open, close, onRunEnd, play, save, load, importText,
+    loadBundled: async id => { setLevel(await hooks.fetchLevel(id)); return true; },
     exportText: () => L.serialize(level),
     newLevel: name => setLevel(L.newLevel(name || 'UNTITLED')),
     level: () => level,
