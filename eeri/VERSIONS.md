@@ -1,5 +1,57 @@
 # EERI — versions
 
+## v15.56 — 2026-09-05 — dust at landings, and World 2's pipe becomes a pipe
+
+**`ART_TARGET` rung 4, the half v15.55 left open:** "dust at footfalls and
+landings; a settle on every heavy stop. None of it is gameplay and all of
+it is what makes a frame feel alive."
+
+`js/fx.js` has held the specs, the pool and its own 31-check gate since
+v15.30 — but nothing in the game had ever called it. The `dirt` burst now
+fires on landing, beside the sound that already marks the same moment,
+**scaled by the fall**: `player.landVy` is captured before the ground
+contact zeroes it, so a hop kicks a wisp and a drop kicks a cloud. A
+constant puff is the tell of an effect nobody watched.
+
+Measured, not eyeballed: 22 particles at a 22 u/s landing, and the pool
+is empty again 0.6 s later.
+
+**Only that one effect.** `pickup`, `brick`, `stomp` and `clear` stay in
+the pack until they have been looked at the same way — which is that
+file's own rule and worth keeping.
+
+### The canon contradiction this exposed, and it needs an owner's eye
+
+`test/dev-menu.mjs` asserts **"the shipping game imports nothing from the
+pack"**, and `js/fx.js`'s header says an effect "is ported into `main.js`
+as an explicit call only once the owner has looked at it and approved
+it." **Both cannot hold once an effect is approved**, and one was (owner
+direction, 2026-09-05, asking for rung 4 by name).
+
+The gate is NARROWED rather than dropped, on what looks like the honest
+reading of what it protects: `js/fx.js` is a **library** — plain data and
+plain maths, no DOM, no three.js import of its own, its own gate.
+`dev/dev-menu.js` and `js/audio-fx.js` are the **pack**. The game may use
+the library; it must still never import the pack, because the pack is a
+tool for looking at things and the game is not.
+
+**This is a gate edited so a change could pass, which is the thing this
+repo is most careful about.** It is one line to put back, and it is
+flagged in the PR rather than buried here.
+
+### World 2's foreground occluder
+
+v15.55 shipped four occluders and named the pipeworks one the weakest —
+a nine-unit grey slab, which at that size is a grey bar. A pipe is a
+cylinder and what says so is the highlight along its crown and the shadow
+along its belly; a flat quad has neither. Three bands now instead of one,
+flange rings standing proud of the bore, and a strap bracket to the leg.
+
+`node test/rooms.mjs` 246, `world34.mjs` pass, `fx-smoke.mjs` 31,
+`dev-menu.mjs` 36, `smoke.cjs` 432, `playthrough.cjs` 25.
+
+`?v=58` → `?v=59` across the module graph.
+
 ## v15.55 — 2026-09-05 — the foreground lane grows objects, and World 3 stops covering its own backdrop
 
 **Two halves of one lane, both `ART_TARGET` rung 1c/4, both code-only.**

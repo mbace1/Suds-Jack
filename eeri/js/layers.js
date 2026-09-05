@@ -23,13 +23,13 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=58';
-import { getLayerTexture } from './assets.js?v=58';
-import { buildGroundworksDressing } from './world1-dressing.js?v=58';
-import { buildPipeworksDressing } from './world2-dressing.js?v=58';
-import { craftMat, craftBox } from './craft.js?v=58';
-import { placeScenery } from './scenery.js?v=58';
-import { applyMood, buildLamp, flicker } from './light.js?v=58';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=59';
+import { getLayerTexture } from './assets.js?v=59';
+import { buildGroundworksDressing } from './world1-dressing.js?v=59';
+import { buildPipeworksDressing } from './world2-dressing.js?v=59';
+import { craftMat, craftBox } from './craft.js?v=59';
+import { placeScenery } from './scenery.js?v=59';
+import { applyMood, buildLamp, flicker } from './light.js?v=59';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -817,11 +817,25 @@ function foregroundOccluders(scene, world) {
     // a pipe run overhead, cropped by the top of the frame, with its flange
     // collars — World 2's own vocabulary seen from underneath — and a valve
     // wheel hanging off a riser
+    // WORLD 2'S OCCLUDER WAS THE WEAKEST OF THE FOUR — a nine-unit grey slab
+    // with a flange at each end, which at this size is a grey bar. A pipe is
+    // a CYLINDER and the thing that says so is the highlight along its top
+    // and the shadow along its underside; a flat quad has neither. So: three
+    // bands instead of one (lit crown, body, shaded belly), the flanges are
+    // rings that stand proud of the bore, and a bracket straps it to the leg.
     const steel = D(PAL.STEEL[2], 0.12);
+    const steelLt = D(PAL.STEEL[3], 0.04);
+    const steelDk = D(PAL.STEEL[1], 0.3);
     slab(1.3, 9.5, steel, 4.6, TOP - 4.75);
-    slab(9, 1.15, steel, 10, TOP - 6.4);
-    slab(1.5, 1.6, steel, 7, TOP - 6.4);
-    slab(1.5, 1.6, steel, 13.4, TOP - 6.4);
+    slab(9, 0.78, steel, 10, TOP - 6.4);
+    slab(9, 0.22, steelLt, 10, TOP - 6.05);
+    slab(9, 0.2, steelDk, 10, TOP - 6.86);
+    for (const fx2 of [7, 13.4]) {
+      slab(0.55, 1.5, steelDk, fx2, TOP - 6.4);
+      slab(0.32, 1.24, steelLt, fx2, TOP - 6.4);
+    }
+    const strap = slab(1.9, 0.34, steelDk, 5.2, TOP - 6.4);
+    strap.rotation.z = 0.34;
     const riser = new THREE.Group();
     const stem = craftBox(0.7, 6.2, 0.9, steel);
     stem.position.set(0, -3.1, 0);

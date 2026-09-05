@@ -9,34 +9,35 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=58';
-import { Input } from './input.js?v=58';
-import { Level, ROOMS, LAB } from './level.js?v=58';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=59';
+import { Input } from './input.js?v=59';
+import { Level, ROOMS, LAB } from './level.js?v=59';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
   buildSheetModel, Sheet,
-} from './pieces.js?v=58';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=58';
-import { Camera } from './camera.js?v=58';
-import { buildKidModel, Kid, Player } from './kid.js?v=58';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=58';
-import { buildCraneModel, Crane } from './crane.js?v=58';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=58';
-import { buildFlattenerModel } from './flattener.js?v=58';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=58';
-import { Hoist } from './hoist.js?v=58';
-import { Plank } from './plank.js?v=58';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=58';
-import { WreckingBall } from './hazards.js?v=58';
-import { AudioKit } from './audio.js?v=58';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=58';
-import { craftMat, craftBox, setRim } from './craft.js?v=58';
-import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=58';
-import { t as tr } from './lang.js?v=58';
-import { showIntro } from './intro.js?v=58';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=58';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=58';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=58';
+} from './pieces.js?v=59';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=59';
+import { Camera } from './camera.js?v=59';
+import { buildKidModel, Kid, Player } from './kid.js?v=59';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=59';
+import { buildCraneModel, Crane } from './crane.js?v=59';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=59';
+import { buildFlattenerModel } from './flattener.js?v=59';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=59';
+import { Hoist } from './hoist.js?v=59';
+import { Plank } from './plank.js?v=59';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=59';
+import { WreckingBall } from './hazards.js?v=59';
+import { AudioKit } from './audio.js?v=59';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=59';
+import { craftMat, craftBox, setRim } from './craft.js?v=59';
+import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=59';
+import { FXPool, attach as attachFX } from './fx.js?v=59';
+import { t as tr } from './lang.js?v=59';
+import { showIntro } from './intro.js?v=59';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=59';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=59';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=59';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -202,6 +203,27 @@ async function boot() {
   // rather than one per room: the kid is the only thing on screen that is
   // never rebuilt, so neither is his lamp. Off (opacity 0) in every daylight
   // world; the night shift turns it up. See light.js §3.
+  // ---- SECONDARY MOTION (ART_TARGET rung 4) -----------------------------
+  //
+  // "Dust at footfalls and landings; a settle on every heavy stop. None of it
+  // is gameplay and all of it is what makes a frame feel alive."
+  //
+  // `js/fx.js` has held the specs, the pool and its own gate since v15.x, and
+  // its header states the rule this import finally satisfies: **an effect is
+  // ported into `main.js` only once the owner has looked at it and approved
+  // it.** Owner direction 2026-09-05 asked for rung 4 by name, so the two the
+  // rung names are wired here — and ONLY those two. `pickup`, `brick` and
+  // `clear` stay in the pack until they have been looked at in the same way.
+  //
+  // The pack knows nothing about the player, the level or the machine: it is
+  // handed "something happened at (x, y)" and draws it. That is why this is
+  // four lines here rather than a system.
+  const fx = new FXPool({ cap: 220 });
+  const fxView = attachFX(fx, THREE, scene, {
+    EARTH1: PAL.EARTH[1], STEEL1: PAL.STEEL[1], STEEL2: PAL.STEEL[2],
+    MACHINE: PAL.MACHINE, CLOUD: PAL.CLOUD, GREEN: PAL.GREEN,
+  });
+
   const castLamp = buildLamp(THREE, { x: 0, y: 0, r: 5.4, colour: '#ffd9a0', i: 0, z: 1.1 });
   castLamp.visible = false;
   scene.add(castLamp);
@@ -982,7 +1004,12 @@ async function boot() {
       player.update(dt, input);
       if (exc) { if (exc.tamed) exc.update(dt, null); else exc.work(dt); }
       if (player.justJumped) audio.jump();
-      if (player.justLanded) audio.land();
+      if (player.justLanded) {
+        audio.land();
+        // scaled by the fall, so a hop kicks a wisp and a drop kicks a cloud
+        // — a constant puff is the tell of an effect that was not watched
+        if (!REDUCED) fx.burst('dirt', player.x, player.y - player.h / 2, Math.min(1.3, 0.35 + player.landVy / 14));
+      }
 
       // heavy and blind: stand under the working bucket and it puts you down
       if (exc && unmannedStrike() && player.struck(exc.x)) { audio.splat(); cam.punch(1.1); }
@@ -1412,6 +1439,11 @@ async function boot() {
     if (castLamp.visible) {
       castLamp.position.set(kid.group.position.x, kid.group.position.y + castLampY, 1.1);
     }
+
+    // the particles are decoration too, and they are stepped whatever the
+    // mode is: a machine settling while you are on foot beside it is exactly
+    // the beat rung 4 is asking for
+    if (!REDUCED) { fx.update(dt); fxView.sync(); }
 
     // the background machine is decoration — reduced motion stills it
     if (!REDUCED) bg.auto(dt);

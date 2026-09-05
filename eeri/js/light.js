@@ -27,7 +27,7 @@
 // option that would cost the Godot port a week. Rim-from-alpha is the
 // next step up and it comes after there are lights worth rimming.
 
-import { mix } from './palette.js?v=58';
+import { mix } from './palette.js?v=59';
 
 // ---- 1 · mood -----------------------------------------------------------
 // Per world: what the lanes are multiplied by, from the far end of the

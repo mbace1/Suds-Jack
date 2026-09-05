@@ -9,10 +9,10 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=58';
+import { PAL } from './palette.js?v=59';
 // The silhouette line lives in craft.js, not here: robots.js needs the same
 // one, and two copies of a silhouette rule is how two silhouettes start.
-import { outlineShell, rimLight } from './craft.js?v=58';
+import { outlineShell, rimLight } from './craft.js?v=59';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -479,9 +479,11 @@ export class Player {
   update(dt, input) {
     this.t += dt;
     this.justJumped = false; this.justLanded = false; this.justStomped = false;
+    this.landVy = 0;
     this.justBounced = false;
     this.mercyT = Math.max(0, this.mercyT - dt);
     const wasGrounded = this.grounded;
+    const preLandVy = this.vy;
     const ax = input.axis();
 
     // ---- THE CLIMB ------------------------------------------------------
@@ -623,7 +625,14 @@ export class Player {
       if (belt) this.x = this.level.moveX(this.box(), belt * BELT * dt).x;
     }
     this.groundedT = this.grounded ? COYOTE : this.groundedT - dt;
-    if (this.grounded && !wasGrounded) this.justLanded = true;
+    if (this.grounded && !wasGrounded) {
+      this.justLanded = true;
+      // HOW HARD, not just that it happened. The landing sound and the squash
+      // both already scale with the fall; the dust in main.js needs the same
+      // number and there was nowhere to read it from — `vy` is zeroed by the
+      // ground contact a few lines above this. Captured before it is lost.
+      this.landVy = Math.abs(preLandVy);
+    }
 
     // fell in the pit (its floor is dressing, not ground): back to the near side
     // …and the level says where he comes back, not a number left here by a

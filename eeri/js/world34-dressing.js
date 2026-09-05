@@ -16,8 +16,8 @@
 // this sidecar builds the same big silhouettes from clean planes and uses the
 // already-approved worklamp / barrier / cable-reel cutouts as accents.
 
-import { craftMat, craftBox } from './craft.js?v=58';
-import { PAL, mix } from './palette.js?v=58';
+import { craftMat, craftBox } from './craft.js?v=59';
+import { PAL, mix } from './palette.js?v=59';
 
 const ASSET = {
   forestTunnel: new URL('../assets/2d/world3_log_tunnel_lib_v1.webp', import.meta.url).href,
