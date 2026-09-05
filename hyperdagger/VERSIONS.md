@@ -2,6 +2,124 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v38 — 2026-08-22
+**Retro voxel heaven — the roster is your Meshy art: the mesh alive, cubes underneath**
+
+Owner's brief: a total voxel redo with smaller voxels, maximum visual
+payoff, "retro voxel heaven", keeping the established plan. The first bench
+sheet settled the whole direction in one picture: the string-art skull at ×1
+and at ×27 have the SAME silhouette. Subdividing a blob is not detail. The
+payoff had to come from the sculpt, and — the owner's own correction when an
+SDF skull draft went up: "there are already skulls that look like this" — the
+sculpts are theirs, from Nano Banana through Meshy. The engine's job is to
+make them voxels.
+
+**The hybrid — the owner's second correction, on seeing the lattice alone:
+"what about the 3d models? these voxel balls alone don't look that good."**
+So it is both, which is what v4.35 always described: the real Meshy mesh
+rides as the ALIVE-SKIN — Lambert-lit, textured, the sculpt as sculpted —
+and the lattice cut from that same mesh sits underneath. Skin and lattice
+come from ONE prepared root, so they coincide exactly. A wound past 22% of
+the lattice sheds the skin and the cube body underneath, holes and all,
+fights on; a death bursts into cubes; the jaw and every other part hide
+under the skin while it is up. `skin: false` gives cubes-only, and the skins
+ride the perf tier's hull switch, so a low tier spawns bare lattices.
+
+**The voxel route.** A manifest kind with `as: "voxel"` is turned upright (`tilt`, `yaw`), scaled to the HEIGHT of the
+string-art slot it replaces (so hitboxes and every gameplay number hold),
+rasterized at `pitch` (default: a third of the slot's pitch — the ×27 mini
+size the game already budgets), and registered so `modelFor(kind)` hands it
+to the enemy class. Chips, severed islands, gibs and the bone-yard all work
+unchanged, because to the rest of the engine it is just voxels. Fourteen
+kinds are registered: skull, dread, brute, spider, totem, watcher, husk,
+blinker, thorn, egg, revenant, leviathan, serpent, serpent head.
+
+**Colour is snapped, not sampled.** A Meshy bake carries texture detail far
+finer than the lattice, and a cell sampled on its own is one random speck of
+it — the first cut rendered as static. One pass of a 26-neighbour average
+over the surface cells keeps the features a skull is made of (a socket's dark
+spans many cells) and drops the ones it is not; then `palette: "bone"` runs
+luminance through an S-curve and BANDS it to five values on the sculpt's
+ivory, keeping a strong source red as crimson (the totem's mouths survive).
+`lift` pulls a dark bake up the curve (brute, dread). `eyes` — normalized
+[x,y,z] in the model's box, z=1 the front — burn HDR ember within `eyeR`
+cells, recessed inside the socket, the way the sculpt's are. `jaw` cuts the
+bottom fraction into a hinged jaw with the hinge on the def (`hinge`), so
+the skull keeps its bite: the string-art skull's hand-tuned pivot offsets
+drew the voxelized jaw over the head as stripes.
+
+**The cube look.** Three things retro voxel art has that a smoothed hull
+throws away, all switchable through `setVoxelStyle` and all free per cube:
+every face under ONE light (top 1.0, front .86, +x .74, −x .58, back .50,
+bottom .40 — a `faceShade` attribute on the one box geometry every sprite,
+gib and bone shares; the light sits high, forward and to one side, which is
+why a lit cube reads as a cube and not a hexagon); the baked AO snapped to
+six value bands (with the per-voxel grain dropped when banding — rounded
+flecks read as dirt: "a skull that looked unwashed"); and the lattice life
+at 0.45 of the v4.31 shimmer, so a small voxel stays a small voxel. **Cubes
+are the default look now**; LOOK SMOOTH still exists.
+
+**The ladder still applies.** The governor walks string-art models down
+×27 → ×8 → ×1; a voxelized asset has no subdivision to walk, so a T4 phone
+would have got 16,653 cells per skull every spawn. Each kind is also cut at
+double pitch as `def.lod`, and `modelFor()` hands that out when the ladder
+is at its floor. Measured off the game: 149,549 cells across one of each of
+the fourteen at fine pitch, 22,661 at the floor — the skull 16,653 → 2,323,
+the leviathan 25,631 → 3,728.
+
+**Traps, all found by rendering:** `pitch` already meant the lattice cell
+size, and the rotation key reused the word — `pitch: 0.75` sliced the brute
+into 0.75-unit cubes (the key is `tilt`). The brute export arrived nose-down;
+a yaw cannot fix that, and its sign was settled by rendering four tilts, not
+by reasoning (+0.75). Tilting changes the bounding-box height, so the
+upright brute is ~6.5k cells and the foreshortened one was 39k — the smaller
+number is the honest one. A dark bake lands in the bottom bands and loses
+its sockets (`lift`). The watcher lost its iris to the bone remap
+(`palette: "keep"` + one ember at the pupil). A skin cut alongside a lattice
+may only be worn by a body cut from the SAME mesh: an enemy that spawns
+before the assets finish loading holds the string-art sculpt, and a Meshy
+skin over that would shed into a different skull — it stays a bare sculpt and
+the next spawn gets the real pair. Cubes are also strictly heavier than a
+hull under the SPHERE projection, which renders six cube faces per capture:
+the gate's projection section had always left that option switched on when
+it finished, which cost nothing while enemies wore smoothed skins and
+stalled the suite outright once they wore full lattices — it restores the
+default now. Skins ride the perf tier's hull switch, so the checks that test
+a skin have to force the tier that HAS one — under a software renderer the
+governor settles low and sheds them, which is the design working, not a bug.
+Nor could the gate leave a run playing while it waited for fourteen sculpts
+to load: the stationary player dies, the loop stops, and nothing ever puts a
+skin on anything — it waits for the art, THEN starts the run.
+The GLB urls are tokened (`?v=N`), because
+the loader asks for them by that url and an untokened request cannot match a
+tokened cache entry. The GLBs are NOT precached, though: 5 MB of art that
+fails soft is the wrong thing to make somebody download before the worker is
+useful, and sw.js is network-first with a cache write on every success, so
+they land the first time you actually play. A cold offline visit gets the
+string-art sculpts, which is the fail-soft path working as designed. The
+offline gate found this honestly — it cut the cord mid-install and the first
+kind the loader asked for was still in flight. And the smoke gate hung:
+its hull section reached into "whatever dread just spawned", which now has no
+hull by design — `debug.hullProbe()` proves LOOK SMOOTH on a string-art body
+instead.
+
+**What it costs to boot, measured rather than guessed:** cutting all fourteen
+lattices is 1,446 ms of main-thread work in total (skull 210, leviathan 191,
+thorn 26) — the rest of the ~14 s to a fully-armed roster is fetching and
+parsing 5 MB of GLB. So the kinds are fetched ONE at a time, in the order the
+director introduces them (skull first, leviathan last), with a frame yielded
+between each: the menu is up immediately, the game is playable at once, and
+the roster upgrades from string art to sculpt as each asset lands. `?assets=0`
+skips the lot — the gate uses it on the pages that test the mode registry
+rather than the art, because four reloads of 5 MB was most of the suite's
+wall clock.
+
+**The bench.** `voxel-lab.html` lists every registered asset, and
+`__lab.revox(kind, overrides)` re-cuts one live from the loaded mesh — tilt,
+yaw, lift, eyes, jaw, pitch — so an export is turned by looking at it. Copy
+the printed cfg into `assets/manifest.json` when it reads right. Every art
+question in this release was answered from a picture off this bench.
+
 ## v37 — 2026-08-22
 **The Meshy art was in the repo and the loader was never called**
 
@@ -59,12 +177,14 @@ ships empty with the fourteen available exports listed in it, and turning one
 on is one line followed by a look at a render. Which is the method: a suite
 that certifies *works* cannot see *looks*.
 
-**Gate: 97 checks.** Four new. One watches for 404s across the whole run — a
-miss here is fail-soft by design, which is exactly why it needed its own
-watch: three GLB requests could fail on every boot with nothing failing. The
-others cover the seam rather than the art — the loader ran, everything
-declared loaded, the manifest parses, and the worker precaches exactly what
-the manifest names and nothing else. `debug.getMeshSkins()` reports what was
+**Gate: 108 checks** (was 92 at v36). One watches for 404s across the whole
+run — a miss here is fail-soft by design, which is exactly why it needed its
+own watch: three GLB requests could fail on every boot with nothing failing.
+The rest cover the seam and the hybrid rather than any particular art — the
+loader ran, everything declared loaded, the manifest parses, the worker
+precaches the manifest but deliberately not the art it names, every voxelized
+body wears the mesh it was cut from, no skin lands on a body that was not cut
+from it, and past 22% of the lattice the skin sheds and the cubes show. `debug.getMeshSkins()` reports what was
 declared against what loaded, because a system that fails soft needs a way to
 say it did nothing.
 

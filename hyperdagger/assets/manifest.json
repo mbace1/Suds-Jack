@@ -5,7 +5,129 @@
     "spider",
     "totem"
   ],
-  "models": {},
+  "models": {
+    "skull": {
+      "file": "skull.glb",
+      "as": "voxel",
+      "palette": "bone",
+      "jaw": 0.26,
+      "eyes": [
+        [
+          0.35,
+          0.6,
+          0.62
+        ],
+        [
+          0.65,
+          0.6,
+          0.62
+        ]
+      ],
+      "eyeR": 2.0
+    },
+    "skullDread": {
+      "file": "skulldread.glb",
+      "as": "voxel",
+      "palette": "bone",
+      "lift": 1.6,
+      "eyes": [
+        [
+          0.36,
+          0.62,
+          0.85
+        ],
+        [
+          0.64,
+          0.62,
+          0.85
+        ]
+      ],
+      "eyeR": 2.2
+    },
+    "brute": {
+      "file": "brute.glb",
+      "as": "voxel",
+      "palette": "bone",
+      "lift": 1.45,
+      "tilt": 0.75,
+      "eyes": [
+        [
+          0.36,
+          0.6,
+          0.8
+        ],
+        [
+          0.64,
+          0.6,
+          0.8
+        ]
+      ],
+      "eyeR": 2.2
+    },
+    "spider": {
+      "file": "spider.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "totem": {
+      "file": "totem.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "watcher": {
+      "file": "watcher.glb",
+      "as": "voxel",
+      "palette": "keep",
+      "eyes": [
+        [
+          0.5,
+          0.52,
+          0.92
+        ]
+      ],
+      "eyeR": 2.8
+    },
+    "husk": {
+      "file": "husk.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "blinker": {
+      "file": "blinker.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "thorn": {
+      "file": "thorn.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "egg": {
+      "file": "egg.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "revenant": {
+      "file": "revenant.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "leviathan": {
+      "file": "leviathan.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "serpent": {
+      "file": "serpent.glb",
+      "as": "voxel",
+      "palette": "bone"
+    },
+    "serpentHead": {
+      "file": "serpenthead.glb",
+      "as": "voxel",
+      "palette": "bone"
+    }
+  },
   "tuning": "Each kind may be a bare filename or {file, size, tint}. size is the largest dimension in world units; tint MULTIPLIES the baked albedo, so \"#c8c0b4\" pulls a Meshy skin toward bone without flattening its texture.",
   "off": "Nothing is registered by DEFAULT, deliberately. A registered kind replaces that enemy's hand-authored sculpt AND its smoothed alive-hull (the v4.31 and v4.32 work) wholesale, which is an art decision rather than a fix - the gate's hull section stops passing the moment skull is registered, which is the gate saying exactly that. Turn one on by naming it here, then LOOK at a render.",
   "available": [
@@ -23,5 +145,6 @@
     "thorn.glb",
     "totem.glb",
     "watcher.glb"
-  ]
+  ],
+  "voxel": "as: \"voxel\" is the retro route (v38): the export is scaled to its slot's height, rasterized at `pitch` (default a third of the slot pitch), snapped to the house palette (`palette`: bone | keep), given HDR eyes at `eyes` (normalized x,y,z; z=1 is the FRONT) within `eyeR` cells, and the bottom `jaw` fraction becomes the hinged jaw. Chips, islands, gibs and the bone-yard work unchanged. `tilt` (radians about x) and `yaw` (about y) turn an export that did not arrive facing +z upright; `lift` scales a dark bake's luminance before the bone curve."
 }
