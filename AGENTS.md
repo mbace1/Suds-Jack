@@ -144,3 +144,22 @@ value, predicted the exact wrong number a HUD would show, and pointed out that
 a test only avoided a bug by taking a shortcut. Concrete beats comprehensive.
 If a finding is a guess, say it is a guess — several people act on these
 directly.
+
+## 8. Project skills
+
+Operational skills live under `.claude/skills/*/SKILL.md`. Claude Code can load
+them as project skills; Codex and other agents should treat the relevant skill
+as additional task-specific instructions after this file and the project's
+canon.
+
+Current Suds skills:
+- `project-work-state` — resume safely, stay on one owner-selected lane, separate implemented/tested/merged/live status;
+- `game-playtest` — prove the real player-facing loop rather than a debug/model shortcut;
+- `hub-release` — release/version/Hub-route integrity and clean-main discipline;
+- `movement-regression` — authored geometry + deterministic and runtime traversal evidence;
+- `godot-game-dev` — canon-preserving Godot conversion/runtime workflow;
+- `visual-reference-fidelity` — measurable art/camera/animation comparison against the approved reference.
+
+Use the smallest relevant skill set. These do not override canon or this file;
+they operationalize recurring workflows that have previously failed in this
+repository.
