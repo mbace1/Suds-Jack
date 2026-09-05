@@ -13,7 +13,6 @@ const V = {
   runG:P(-9,13,4,54,17,54,-13,67,17,-5,-3,0,0), runH:P(24,24,-24,35,-30,58,32,47,18,-5,-1,0,0),
   jump:P(7,18,35,48,72,27,48,39,23,-9,-5,0,0), float:P(34,62,-10,42,44,63,-8,56,10,-5,-1,0,0),
   fall:P(16,33,-24,26,-18,44,-34,38,5,1,0,0,0), land:P(55,78,46,80,39,70,31,66,31,-7,11,1,0),
-  catch:P(28,39,10,27,174,8,169,10,15,-4,-3,0,0), swing:P(43,52,24,38,168,11,163,13,-12,6,3,0,0),
 };
 
 export const PRINCE_CLIPS = {
@@ -42,13 +41,13 @@ let profile = DEFAULT_CHARACTER;
 export function setCharacterProfile(next) {
   if (!CHARACTER_PROFILES.includes(next)) return profile;
   profile = next;
-  try { localStorage.setItem('flashPrinceCharacter', profile); } catch {}
+  try { globalThis.localStorage?.setItem('flashPrinceCharacter', profile); } catch {}
   return profile;
 }
 export function getCharacterProfile() { return profile; }
 
 try {
-  const saved = localStorage.getItem('flashPrinceCharacter');
+  const saved = globalThis.localStorage?.getItem('flashPrinceCharacter');
   if (CHARACTER_PROFILES.includes(saved)) profile = saved;
 } catch {}
 
@@ -58,7 +57,7 @@ Hero.prototype.pose = function characterSpecificPose() {
   return sample(clip, this.f, ['stand','standArmed','run','crouchIdle','crouchArmed','hang'].includes(this.state));
 };
 
-addEventListener('keydown', e => {
+if (typeof addEventListener === 'function') addEventListener('keydown', e => {
   if (e.code !== 'KeyC') return;
   setCharacterProfile(profile === 'prince' ? 'classic' : 'prince');
 });
