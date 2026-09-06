@@ -142,20 +142,32 @@ Two rules make it a system rather than a pile of cases:
   *Deal 12 damage* on its face. In a full-information game, quoting a number you
   do not then use is the unforgivable bug.
 
-## 6. The roster — four Kallio bums, each a different question
+## 6. The roster — six Kallio bums, each a different question
 
 Every character has a mechanic, not a stat block. The starting deck is 4 Swing,
 4 Cover Up and **two cards that teach the mechanic on the first turn**.
 
-| | who | the mechanic | the question it asks |
-|---|---|---|---|
-| **Late** | the park drinker | **Buzz** — strength that fades with the turn | can you spend it all in one turn? |
-| **Ilona** | the busker | cards scale with **how many you played before them** | what order do you play in? |
-| **Roope** | the bottle collector | **Bottles** — free 0-cost tokens, and cards that count your hand | do you spend the hand or hold it? |
-| **Vekku** | the cart pusher | block that **hits**, and block that **stays** | is defending an attack? |
+**A character is named by their CLASS** (owner, 2026-09-06), the way Slay the
+Spire names the Ironclad. Six Finnish first names used to stand here — the one
+thing the English rule exempted, on the grounds that a name is not a language —
+and "Vekku" told a new player nothing about what the deck does, which is the
+entire job of a character select. The person is still there; they are in the
+blurb, where they cost nothing to read past.
+
+| | the mechanic | the question it asks |
+|---|---|---|
+| **The Park Drinker** | **Buzz** — strength that fades with the turn | can you spend it all in one turn? |
+| **The Busker** | cards scale with **how many you played before them** | what order do you play in? |
+| **The Bottle Collector** | **Bottles** — free 0-cost tokens, and cards that count your hand | do you spend the hand or hold it? |
+| **The Cart Pusher** | block that **hits**, and block that **stays** | is defending an attack? |
+| **The Dog Walker** | **Fetch** — the dog goes in at the end of your turn | what is this turn worth later? |
+| **The Old Boxer** | **Thorns**, and cards that count the hits he took | is being hit a resource? |
 
 The fantasy skin renames every one of them and re-dresses the same figure — the
-sot, the bard, the tinker, the warden. It is a **lookup, not a second data set**:
+Sot, the Bard, the Tinker, the Warden, the Houndmaster, the Pit Fighter. Since
+v15 the NAME is the thing the skin swaps, which is what a class name buys you:
+there is no personal name that has to hold still across the two. It is a
+**lookup, not a second data set**:
 every card, character, friend, enemy and encounter carries a name in both
 themes and the gate fails if one is missing.
 
@@ -202,8 +214,8 @@ harder on a scaling card, +1 draw, one deeper on a self-status, a power costs
 one less. `describe` and `preview` read the moved numbers, so an upgraded
 card's face is right by construction.
 
-**Six characters** (Sanna the dog walker — Fetch, the dog goes in at the end
-of the turn; Kake the old boxer — Thorns, and cards that count the hits he
+**Six characters** (the Dog Walker — Fetch, the dog goes in at the end
+of the turn; the Old Boxer — Thorns, and cards that count the hits he
 took), ninety-five cards, twenty friends, seventeen enemies, twelve events.
 A card after every fight, a friend from the elites and the act openers, 6 HP
 back each time.

@@ -406,7 +406,7 @@ function renderAll() { if (!state || state.phase === 'menu') return; renderTop()
 
 function renderTop() {
   const h = state.hero, ch = CHARACTERS[state.character];
-  $('#who').textContent = `${ch[theme].name} · ${ch[theme].title}`;
+  $('#who').textContent = ch[theme].name;
   $('#hp').textContent = `${h.hp}/${h.maxHp}`;
   $('#hpbar i').style.width = `${h.hp / h.maxHp * 100}%`;
   $('#piles').textContent = `draw ${state.draw.length} · discard ${state.discard.length} · deck ${h.deck.length}`;
@@ -585,7 +585,7 @@ function renderMenu() {
     const b = el('button', 'pick'); b.dataset.char = id;
     b.classList.toggle('selected', i === menuSel.char);
     const cv = paintCutout(ch[theme].look, 11, T().mood?.figure); cv.className = 'portrait';
-    b.append(cv, el('b', '', ch[theme].name), el('i', '', ch[theme].title), el('span', '', ch[theme].blurb), el('small', '', `${ch.hp} HP`));
+    b.append(cv, el('b', '', ch[theme].name), el('span', '', ch[theme].blurb), el('small', '', `${ch.hp} HP`));
     b.addEventListener('click', () => { menuSel.char = i; renderMenu(); });
     r.append(b);
   });

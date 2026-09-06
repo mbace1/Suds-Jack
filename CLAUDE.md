@@ -337,11 +337,22 @@ breakdown riding on the log entry so the view pops the base, then each `+3`,
 then each `×2`. And **`preview()` and the real play call the same code**, so a
 card's face text is written from its effects at the current state — quoting a
 number you then do not use is the unforgivable bug in a full-information game.
-**Every character is a question, not a stat block** — Late the park drinker
-(Buzz, a strength that fades with the turn), Ilona the busker (cards scale on
-what you played before them), Roope the bottle collector (free Bottle tokens and
-a counted hand), Vekku the cart pusher (block that hits and block that stays) —
-and each starting deck carries two cards that teach the mechanic on turn one. **A
+**Every character is a question, not a stat block** — the Park Drinker (Buzz, a
+strength that fades with the turn), the Busker (cards scale on what you played
+before them), the Bottle Collector (free Bottle tokens and a counted hand), the
+Cart Pusher (block that hits and block that stays) — and each starting deck
+carries two cards that teach the mechanic on turn one. **A character is named by
+their CLASS** (owner, 2026-09-06: *"maybe just English class names"*), the way
+Slay the Spire names the Ironclad. Six Finnish first names used to stand there,
+the one thing the English rule exempted — a name is not a language — and it was
+the wrong exemption to take: a character select exists to say what the deck DOES
+before a run is committed to it, and "VEKKU" does not do that in any language.
+The class is the name in both skins now (the Park Drinker is the Sot over
+there), which also removes a seam the lookup had: the skin used to swap the
+epithet and hold the Finnish first name still. `title` is gone rather than kept
+as a second line saying it again — the blurb was already carrying the person —
+and the English gate reads `name` on characters now, so no field in the game can
+hold a Finnish word unremarked. **A
 friend bends arithmetic you already do and never adds a verb** — a verb is a
 card's job — and the one to copy is Morning Can, which **costs** a card for its
 energy, because a friend that only gives is a number rather than a decision.
@@ -518,8 +529,8 @@ act two most and wins least, because both bosses are damage checks. The bots
 found a real bug on one seed in nine hundred: a rest offering an upgrade with
 every card already upgraded had **no way out** (`skipPick`/`pickable` are the
 fix, and the panel now offers to walk on).
-Gates: `node slaykallio/test/core.mjs` (698 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (107). Hub entry:
+Gates: `node slaykallio/test/core.mjs` (700 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (108). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.

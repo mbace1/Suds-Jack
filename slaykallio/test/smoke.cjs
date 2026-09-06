@@ -88,13 +88,17 @@ const check = (name, ok, extra = '') => {
   await page.waitForTimeout(200);
   check('the switch renames the theme', /fantasy/i.test(await page.locator("#menu .theme").innerText()));
   const fantasyName = await page.locator('#roster .pick b').first().innerText();
-  const fantasyTitle = await page.locator('#roster .pick i').first().innerText();
   await page.locator('#menu .theme').click();
   await page.waitForTimeout(200);
-  check('and it renames the roster with it',
-    fantasyTitle !== await page.locator('#roster .pick i').first().innerText(), fantasyTitle);
-  check('but a character keeps their name across the skins',
-    fantasyName === await page.locator('#roster .pick b').first().innerText());
+  const kallioName = await page.locator('#roster .pick b').first().innerText();
+  check('and it renames the roster with it', fantasyName !== kallioName, `${fantasyName} / ${kallioName}`);
+  // v15: a character is named by their CLASS, so the name is now the thing the
+  // skin swaps — the Park Drinker is the Sot over there. There is no personal
+  // name left to hold still across the two.
+  check('and both skins name a class rather than a person',
+    /^the \w/i.test(kallioName) && /^the \w/i.test(fantasyName), `${kallioName} / ${fantasyName}`);
+  check('the roster card says what the deck does under the name',
+    (await page.locator('#roster .pick span').first().innerText()).length > 20);
 
   // ── a fight ────────────────────────────────────────────────────────────
   await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4, false); });

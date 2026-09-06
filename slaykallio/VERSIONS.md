@@ -7,6 +7,39 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v15 — 2026-09-06
+**A character is named by their class, not by a person**
+Owner: *"maybe just English class names"*. The roster was six Finnish first
+names — Late, Ilona, Roope, Vekku, Sanna, Kake — with the trade as a subtitle
+under each. That was the ONE exemption in the English rule the owner set on
+2026-09-04, granted on the reasonable grounds that a name is not a language.
+It was the wrong exemption to take: a character select's whole job is to tell
+you what the deck DOES before you commit a run to it, and "VEKKU" does not do
+that job in any language. Slay the Spire calls its four the Ironclad, the
+Silent, the Defect and the Watcher for exactly this reason.
+
+So the class IS the name now, in both skins — **The Park Drinker / The Sot**,
+**The Busker / The Bard**, **The Bottle Collector / The Tinker**, **The Cart
+Pusher / The Warden**, **The Dog Walker / The Houndmaster**, **The Old Boxer /
+The Pit Fighter** — and the `title` field is gone rather than being kept as a
+second line saying the same thing twice. The person did not go anywhere; the
+blurb was already carrying them, and it is the line that also says what the
+mechanic is.
+
+**One thing this quietly fixes.** The fantasy skin used to rename the title and
+hold the first name still, so the switch read "Late · the sot" — a Finnish name
+in front of a fantasy epithet, which is the seam showing. With the class as the
+name the skin swaps the whole thing, which is what a lookup was for.
+
+**And the gate gets stricter rather than looser.** The English check used to
+skip `name` on characters because personal names lived there; it reads the name
+now, so there is no field in the game a Finnish word can sit in unremarked. Two
+new structural checks pin the direction: every character names a class in both
+skins (`/^The \w/`, and none of the six retired first names may come back
+through it), and `title` must stay undefined with a real blurb behind it.
+
+Gates: core 700, smoke 107.
+
 ## v14 — 2026-09-05
 **Six bots that play differently, and what they found**
 `test/bots.mjs` — a measuring instrument, never a gate. Every balance number

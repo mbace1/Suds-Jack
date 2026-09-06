@@ -32,7 +32,7 @@ export const CARDS = {
   defend: { type: 'skill', cost: 1, target: 'self', rarity: 'basic', pic: 'cardboard', effects: [{ type: 'block', n: 5 }],
     kallio: { name: 'Cover Up' }, fantasy: { name: 'Defend' } },
 
-  // ─ Late, the park drinker — Buzz: strength that fades at the end of the turn
+  // ─ The Park Drinker — Buzz: strength that fades at the end of the turn
   first_sip: { char: 'drinker', type: 'skill', cost: 0, target: 'self', exhaust: true, rarity: 'common', pic: 'can',
     effects: [{ type: 'energy', n: 1 }, { type: 'status', who: 'self', key: 'buzz', n: 2 }],
     kallio: { name: 'First Sip' }, fantasy: { name: 'Quicksilver Draught' } },
@@ -58,7 +58,7 @@ export const CARDS = {
     effects: [{ type: 'status', who: 'self', key: 'buzzPerTurn', n: 2 }],
     kallio: { name: 'Never Sober' }, fantasy: { name: 'Endless Cup' } },
 
-  // ─ Ilona, the busker — cards grow with every card played before them
+  // ─ The Busker — cards grow with every card played before them
   first_chord: { char: 'busker', type: 'attack', cost: 0, target: 'enemy', rarity: 'common', pic: 'guitar',
     effects: [{ type: 'damage', n: 3, scale: 'played', per: 2 }],
     kallio: { name: 'First Chord' }, fantasy: { name: 'Opening Chord' } },
@@ -84,7 +84,7 @@ export const CARDS = {
     effects: [{ type: 'draw', n: 1 }],
     kallio: { name: 'Tune Up' }, fantasy: { name: 'Grace Note' } },
 
-  // ─ Roope, the bottle collector — Bottles: 0-cost tokens, and a counted hand
+  // ─ The Bottle Collector — Bottles: 0-cost tokens, and a counted hand
   bottle_glass: { type: 'attack', cost: 0, target: 'enemy', rarity: 'token', find: true, exhaust: true, pic: 'bottle',
     effects: [{ type: 'damage', n: 4 }],
     kallio: { name: 'Bottle: Glass' }, fantasy: { name: 'Trinket: Shard' } },
@@ -116,7 +116,7 @@ export const CARDS = {
     effects: [{ type: 'damage', n: 0, scale: 'hand', per: 3 }],
     kallio: { name: 'The Whole Haul' }, fantasy: { name: 'The Heap' } },
 
-  // ─ Vekku, the cart pusher — block that hits, and block that stays
+  // ─ The Cart Pusher — block that hits, and block that stays
   dig_in: { char: 'cart', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'cart',
     effects: [{ type: 'block', n: 8 }],
     kallio: { name: 'Dig In' }, fantasy: { name: 'Raise Shield' } },
@@ -162,7 +162,7 @@ export const CARDS = {
     effects: [{ type: 'status', who: 'self', key: 'strength', n: 2 }],
     kallio: { name: 'The Old Days' }, fantasy: { name: 'Battle Hymn' } },
 
-  // ─ Late, second wave
+  // ─ The Park Drinker, second wave
   hair_of_dog: { char: 'drinker', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'can',
     effects: [{ type: 'status', who: 'self', key: 'buzz', n: 3 }, { type: 'draw', n: 1 }],
     kallio: { name: 'Hair Of The Dog' }, fantasy: { name: 'Bitter Tonic' } },
@@ -179,7 +179,7 @@ export const CARDS = {
     effects: [{ type: 'damage', n: 26 }],
     kallio: { name: 'Blackout' }, fantasy: { name: 'Oblivion' } },
 
-  // ─ Ilona, second wave
+  // ─ The Busker, second wave
   chorus: { char: 'busker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'crowd',
     effects: [{ type: 'damage', n: 2, times: 2, scale: 'played', per: 1 }],
     kallio: { name: 'Chorus' }, fantasy: { name: 'Refrain Of Blades' } },
@@ -196,7 +196,7 @@ export const CARDS = {
     effects: [{ type: 'damage', n: 10, scale: 'played', per: 3 }],
     kallio: { name: 'Finale' }, fantasy: { name: 'Coda' } },
 
-  // ─ Roope, second wave
+  // ─ The Bottle Collector, second wave
   cash_in: { char: 'collector', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'coin',
     effects: [{ type: 'damage', n: 3, scale: 'hand', per: 2 }],
     kallio: { name: 'Cash In' }, fantasy: { name: 'Appraise' } },
@@ -213,7 +213,7 @@ export const CARDS = {
     effects: [{ type: 'damage', n: 8, scale: 'finds', per: 4 }],
     kallio: { name: 'Trolley Full' }, fantasy: { name: 'Loaded Satchel' } },
 
-  // ─ Vekku, second wave
+  // ─ The Cart Pusher, second wave
   brace: { char: 'cart', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'cart',
     effects: [{ type: 'block', n: 6 }, { type: 'status', who: 'self', key: 'thorns', n: 2 }],
     kallio: { name: 'Brace' }, fantasy: { name: 'Spiked Guard' } },
@@ -230,7 +230,7 @@ export const CARDS = {
     effects: [{ type: 'status', who: 'self', key: 'thornsPerTurn', n: 3 }],
     kallio: { name: 'Rust Bucket' }, fantasy: { name: 'Thorn Mail' } },
 
-  // ─ Sanna, the dog walker — Fetch: the dog attacks at the end of your turn
+  // ─ The Dog Walker — Fetch: the dog attacks at the end of your turn
   throw_stick: { char: 'walker', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'stick',
     effects: [{ type: 'status', who: 'self', key: 'fetch', n: 8 }],
     kallio: { name: 'Throw The Stick' }, fantasy: { name: 'Loose The Hound' } },
@@ -262,7 +262,7 @@ export const CARDS = {
     effects: [{ type: 'draw', n: 2 }, { type: 'status', who: 'self', key: 'fetch', n: 2 }],
     kallio: { name: 'Walkies' }, fantasy: { name: 'Patrol' } },
 
-  // ─ Kake, the old boxer — Counter: thorns, and cards that count the hits you took
+  // ─ The Old Boxer — Counter: thorns, and cards that count the hits you took
   guard_up: { char: 'boxer', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'glove',
     effects: [{ type: 'block', n: 5 }, { type: 'status', who: 'self', key: 'thorns', n: 2 }],
     kallio: { name: 'Guard Up' }, fantasy: { name: 'High Guard' } },
@@ -335,7 +335,13 @@ export const CARDS = {
     kallio: { name: 'Doubt' }, fantasy: { name: 'Doubt' } },
 };
 
-// ── the roster — four Kallio bums ────────────────────────────────────────
+// ── the roster — six Kallio bums ─────────────────────────────────────────
+// A character is named by their CLASS, not by a person (owner, 2026-09-06):
+// "The Bottle Collector", the way Slay the Spire names the Ironclad. The
+// Finnish first names that used to stand here (Late, Ilona, Roope, Vekku,
+// Sanna, Kake) were the one thing in the game the English rule exempted, and
+// a name told you nothing about what the deck DOES — which is the whole job
+// of a character select. The blurb carries the person now.
 // `look` drives puppet.js. Everything is worn: layered coats, tape, mismatched
 // boots. `base` picks what the cutout is stuck to — a tin soldier's oval or a
 // cardboard wedge with tape over the feet.
@@ -343,49 +349,49 @@ export const CHARACTERS = {
   drinker: {
     hp: 68,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'first_sip', 'one_two'],
-    kallio: { name: 'Late', title: 'the park drinker', blurb: 'Holds the north end of the bridge. The drink is a strength that lasts exactly one turn.',
+    kallio: { name: 'The Park Drinker', blurb: 'Holds the north end of the bridge. The drink is a strength that lasts exactly one turn.',
       look: { skin: '#c09070', hair: '#5a4632', hairStyle: 'lank', top: '#4a5236', under: '#22242a', bottom: '#2a3040', stripe: '#d8d4c4', shoes: '#26241f', shoeStyle: 'clog', hat: 'bucket', hatColor: '#d8b53a', smoke: true, prop: 'can', accent: '#d8b53a', base: 'tin', grime: 0.85 } },
-    fantasy: { name: 'Late', title: 'the sot', blurb: 'A draught that lends strength for a moment and no longer.',
+    fantasy: { name: 'The Sot', blurb: 'A draught that lends strength for a moment and no longer.',
       look: { skin: '#c89878', hair: '#4a3a2a', hairStyle: 'greasy', top: '#4a3050', bottom: '#2e2838', shoes: '#241c16', hat: 'hood', prop: 'flask', accent: '#7ac89a', base: 'tin', grime: 0.7 } },
   },
   busker: {
     hp: 72,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'first_chord', 'tune_up'],
-    kallio: { name: 'Ilona', title: 'the busker', blurb: 'Plays the underpass for change. Every card played this turn makes the next one land harder.',
+    kallio: { name: 'The Busker', blurb: 'Plays the underpass for change. Every card played this turn makes the next one land harder.',
       look: { skin: '#d0a284', hair: '#2a1a12', hairStyle: 'tangle', top: '#6a3628', bottom: '#3a3448', shoes: '#4a2a20', hat: 'beanie', prop: 'guitar', accent: '#c05a3a', base: 'card', grime: 0.6 } },
-    fantasy: { name: 'Ilona', title: 'the bard', blurb: 'Each verse played this turn makes the next one strike harder.',
+    fantasy: { name: 'The Bard', blurb: 'Each verse played this turn makes the next one strike harder.',
       look: { skin: '#d0a284', hair: '#2a1a12', hairStyle: 'tangle', top: '#7a4a22', bottom: '#3a2c1c', shoes: '#4a2a20', hat: 'feather', prop: 'lute', accent: '#c8963a', base: 'card', grime: 0.5 } },
   },
   collector: {
     hp: 76,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'dig_the_bin', 'full_bag'],
-    kallio: { name: 'Roope', title: 'the bottle collector', blurb: 'Works the bins ahead of everyone. Free Bottles into your hand, and cards that count what you are holding.',
+    kallio: { name: 'The Bottle Collector', blurb: 'Works the bins ahead of everyone. Free Bottles into your hand, and cards that count what you are holding.',
       look: { skin: '#bc8e70', hair: '#8a8478', hairStyle: 'bald', top: '#5a6a4a', bottom: '#453c30', shoes: '#2a2018', hat: 'cap', prop: 'bag', accent: '#8aa03a', base: 'card', grime: 0.9 } },
-    fantasy: { name: 'Roope', title: 'the tinker', blurb: 'Pockets full of trinkets, and a bag that never quite empties.',
+    fantasy: { name: 'The Tinker', blurb: 'Pockets full of trinkets, and a bag that never quite empties.',
       look: { skin: '#bc8e70', hair: '#8a8478', hairStyle: 'bald', top: '#40603a', bottom: '#35402c', shoes: '#2a2018', hat: 'cap', prop: 'bag', accent: '#a8c04a', base: 'card', grime: 0.8 } },
   },
   cart: {
     hp: 78,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'dig_in', 'ram_it'],
-    kallio: { name: 'Vekku', title: 'the cart pusher', blurb: 'Everything he owns is in the trolley. Block that hits back, and block that does not wash off.',
+    kallio: { name: 'The Cart Pusher', blurb: 'Everything he owns is in the trolley. Block that hits back, and block that does not wash off.',
       look: { skin: '#c09070', hair: '#6a6058', hairStyle: 'shaggy', top: '#3a4a5a', bottom: '#2e3440', shoes: '#1c1c20', hat: 'none', prop: 'cart', accent: '#5a90b0', base: 'tin', grime: 0.85 } },
-    fantasy: { name: 'Vekku', title: 'the warden', blurb: 'A shield that strikes, and a wall that stands from turn to turn.',
+    fantasy: { name: 'The Warden', blurb: 'A shield that strikes, and a wall that stands from turn to turn.',
       look: { skin: '#c09070', hair: '#6a6058', hairStyle: 'shaggy', top: '#6a6a72', bottom: '#40404a', shoes: '#1c1c20', hat: 'helm', prop: 'shield', accent: '#b0b8c8', base: 'tin', grime: 0.7 } },
   },
   walker: {
     hp: 70,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'throw_stick', 'heel'],
-    kallio: { name: 'Sanna', title: 'the dog walker', blurb: 'Walks every dog in Kallio and owns none of them. Feed the dog Fetch all turn; at the end of it, the dog goes in.',
+    kallio: { name: 'The Dog Walker', blurb: 'Walks every dog in Kallio and owns none of them. Feed the dog Fetch all turn; at the end of it, the dog goes in.',
       look: { skin: '#d8b090', hair: '#a8482a', hairStyle: 'tangle', top: '#7a5a3a', under: '#3a3a44', bottom: '#2c3a2c', shoes: '#3a2a20', hat: 'cap', hatColor: '#5a4a3a', prop: 'lead', accent: '#c87a3a', base: 'card', grime: 0.65 } },
-    fantasy: { name: 'Sanna', title: 'the houndmaster', blurb: 'The hound waits for the word. Everything you do this turn is a promise it keeps at the end of it.',
+    fantasy: { name: 'The Houndmaster', blurb: 'The hound waits for the word. Everything you do this turn is a promise it keeps at the end of it.',
       look: { skin: '#d8b090', hair: '#a8482a', hairStyle: 'tangle', top: '#5a3a2a', bottom: '#2a2a1c', shoes: '#3a2a20', hat: 'hood', prop: 'lead', accent: '#c8a03a', base: 'card', grime: 0.55 } },
   },
   boxer: {
     hp: 80,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'guard_up', 'jab'],
-    kallio: { name: 'Kake', title: 'the old boxer', blurb: 'Fought at the Kallio hall in another decade. Thorns punish what hits him, and his best punches count the hits he took.',
+    kallio: { name: 'The Old Boxer', blurb: 'Fought at the Kallio hall in another decade. Thorns punish what hits him, and his best punches count the hits he took.',
       look: { skin: '#b88868', hair: '#d0ccc0', hairStyle: 'bald', top: '#8a2a2a', under: '#e0d8c8', bottom: '#2a2a30', shoes: '#1c1c20', hat: 'none', prop: 'gloves', accent: '#c83a3a', base: 'tin', grime: 0.75 } },
-    fantasy: { name: 'Kake', title: 'the pit fighter', blurb: 'Every blow that lands on him is a blow he has already answered.',
+    fantasy: { name: 'The Pit Fighter', blurb: 'Every blow that lands on him is a blow he has already answered.',
       look: { skin: '#b88868', hair: '#d0ccc0', hairStyle: 'bald', top: '#5a2a2a', bottom: '#2a2420', shoes: '#1c1c20', hat: 'none', prop: 'gloves', accent: '#d8a03a', base: 'tin', grime: 0.7 } },
   },
 };

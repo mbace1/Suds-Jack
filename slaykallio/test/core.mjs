@@ -44,15 +44,17 @@ check('the curse says it is unplayable', /Unplayable/.test(describe(CARDS.soaked
 check('scaling cards say what they scale on', /per card played/.test(describe(CARDS.first_chord)) && /per block/.test(describe(CARDS.ram_it)));
 
 // ── the owner's direction, pinned ────────────────────────────────────────
-// Everything player-facing is in English (2026-09-04). Personal names are
-// exempt — a name is not a language — so this looks at the words AROUND them.
+// Everything player-facing is in English (2026-09-04). The one exemption used
+// to be personal names — a name is not a language — and as of v15 there are
+// none left to exempt: a character is named by their CLASS, so this reads the
+// character's name too.
 // (not `on` or `se`: both are English words, and the first cut of this regex
 // flagged "+1 energy on the first turn" as Finnish)
 const FINNISH = /[äöÄÖ]|\b(ja|ei|kun|tai|että|joka|mutta|sinä|minä)\b/;
 const englishGaps = [];
 for (const [id, c] of Object.entries(CARDS)) for (const t of themes) if (FINNISH.test(c[t].name)) englishGaps.push(`card ${id} (${t})`);
 for (const [id, ch] of Object.entries(CHARACTERS)) for (const t of themes) {
-  if (FINNISH.test(ch[t].title) || FINNISH.test(ch[t].blurb)) englishGaps.push(`character ${id} (${t})`);
+  if (FINNISH.test(ch[t].name) || FINNISH.test(ch[t].blurb)) englishGaps.push(`character ${id} (${t})`);
 }
 for (const [id, j] of Object.entries(JOKERS)) for (const t of themes) if (FINNISH.test(j[t].name) || FINNISH.test(j[t].text)) englishGaps.push(`friend ${id} (${t})`);
 for (const [id, e] of Object.entries(ENEMIES)) for (const t of themes) if (FINNISH.test(e[t].name)) englishGaps.push(`enemy ${id} (${t})`);
@@ -75,8 +77,17 @@ check(`the pictures are not all the same drawing (${new Set(Object.values(CARDS)
   new Set(Object.values(CARDS).map(c => c.pic)).size >= 15);
 
 // The roster is Kallio bums, the enemies are rats, blobs and rival bums.
-check('every character is a bum on the bridge',
-  Object.values(CHARACTERS).every(ch => /collector|busker|drinker|cart|bum/.test(ch.kallio.title) || ch.kallio.title.startsWith('the ')));
+// A character is named by their CLASS in BOTH skins (owner, 2026-09-06) — a
+// character select whose names are "Late" and "Vekku" tells you nothing about
+// what the deck does. `title` is gone, so this reads the name; and no former
+// first name may come back through it.
+const PEOPLE = /\b(Late|Ilona|Roope|Vekku|Sanna|Kake)\b/;
+check('every character is named by their class, in both skins',
+  Object.values(CHARACTERS).every(ch => themes.every(t => /^The \w/.test(ch[t].name) && !PEOPLE.test(ch[t].name))));
+check('and the class is a trade on the bridge, not a job title',
+  Object.values(CHARACTERS).every(ch => /Drinker|Busker|Collector|Pusher|Walker|Boxer/.test(ch.kallio.name)));
+check('the title line is gone — the blurb carries the person now',
+  Object.values(CHARACTERS).every(ch => themes.every(t => ch[t].title === undefined && ch[t].blurb.length > 20)));
 // Every look declares its shape, and carries the colours that shape's painter
 // reads. A missing `shape` silently falls through to the person painter, which
 // then reads a `bottom` colour a rat does not have — found by rendering the
