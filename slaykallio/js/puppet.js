@@ -293,6 +293,25 @@ function person(ctx, look, rnd) {
       blob(ctx, px + 42, py + 34, 12, 12, '#22242a', rnd, { width: 3 });
       for (let i = 0; i < 5; i++) blob(ctx, px - 14 + i * 16, py - 48 - (i % 2) * 10, 11, 9, ['#3d5c40', '#8a8f94', '#9a7548'][i % 3], rnd, { width: 3 });
       break;
+    case 'lead': {
+      // a dog's lead, taut, running off the bottom of the frame — the dog is
+      // out of shot and pulling, which says more about it than drawing it would
+      ctx.strokeStyle = '#8a3a2a'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(px + 4, py - 6); ctx.quadraticCurveTo(px + 40, py + 60, px + 90, py + 220); ctx.stroke();
+      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
+      blob(ctx, px + 4, py - 8, 10, 8, '#6a6a70', rnd, { width: 2.6 });                 // the loop in the hand
+      break;
+    }
+    case 'gloves': {
+      // both hands gloved, one up. The glove is the boxer's whole silhouette.
+      const g = acc;
+      blob(ctx, px + 6, py - 4, 24, 22, g, rnd, { width: 4, amp: 2.5 });
+      wob(ctx, [[px - 10, py + 8], [px + 20, py + 6], [px + 22, py + 22], [px - 8, py + 24]], shade(g, 0.8), rnd, { width: 3 });
+      for (let i = 0; i < 3; i++) { ctx.strokeStyle = '#e8e0d0'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(px - 2 + i * 6, py + 10); ctx.lineTo(px + i * 6, py + 20); ctx.stroke(); }
+      blob(ctx, cx - 62, 262, 22, 20, g, rnd, { width: 4, amp: 2.5 });                    // the back hand, up by the jaw
+      wob(ctx, [[cx - 78, 274], [cx - 48, 272], [cx - 46, 288], [cx - 76, 290]], shade(g, 0.8), rnd, { width: 3 });
+      break;
+    }
     case 'plank':
       wob(ctx, [[px - 44, py - 74], [px - 22, py - 92], [px + 44, py + 26], [px + 22, py + 42]], '#6a563e', rnd);
       for (let i = 0; i < 3; i++) wob(ctx, [[px - 36 + i * 8, py - 76 + i * 4], [px + 30 + i * 8, py + 30 + i * 4]], null, rnd, { width: 2, stroke: shade('#6a563e', 0.7) });
@@ -486,6 +505,106 @@ function slime(ctx, look, rnd) {
   }
 }
 
+// A pigeon, or with `look.big` a gull, or with `look.crown` the one that
+// rules them. Birds are the one Kallio animal nobody has ever been afraid of,
+// which is the point of putting four of them in a row: individually a joke,
+// together a wall of pecks. Plump, hunched, one eye showing, feet like wire.
+function bird(ctx, look, rnd) {
+  const cx = 128, foot = 470;
+  const S = look.big ? 1.35 : 1;
+  const body = look.body, dark = shade(look.body, 0.7), lit = shade(look.body, 1.25);
+  const bx = cx - 10 * S, by = foot - 62 * S;
+  // legs first, behind the body: thin, bent back, three toes
+  ctx.strokeStyle = look.beak; ctx.lineWidth = 5 * S; ctx.lineCap = 'round';
+  for (const lx of [bx - 14 * S, bx + 18 * S]) {
+    ctx.beginPath(); ctx.moveTo(lx, by + 30 * S); ctx.lineTo(lx + 4 * S, foot - 10 * S); ctx.lineTo(lx, foot); ctx.stroke();
+    for (const t of [-1, 0, 1]) { ctx.beginPath(); ctx.moveTo(lx, foot); ctx.lineTo(lx + t * 12 * S + 4 * S, foot + 2); ctx.stroke(); }
+  }
+  ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  for (const lx of [bx - 14 * S, bx + 18 * S]) { ctx.beginPath(); ctx.moveTo(lx, by + 30 * S); ctx.lineTo(lx + 4 * S, foot - 10 * S); ctx.lineTo(lx, foot); ctx.stroke(); }
+  // tail, a fan of stiff feathers pointing back and down
+  wob(ctx, [[bx - 60 * S, by + 10 * S], [bx - 104 * S, by + 34 * S], [bx - 96 * S, by + 48 * S], [bx - 56 * S, by + 34 * S]], dark, rnd, { amp: 3 });
+  for (let i = 0; i < 3; i++) wob(ctx, [[bx - 62 * S, by + 16 * S + i * 8 * S], [bx - 98 * S, by + 34 * S + i * 5 * S]], null, rnd, { width: 1.6, stroke: shade(look.body, 0.5) });
+  // the body: a plump hunched egg
+  wob(ctx, [[bx - 66 * S, by + 20 * S], [bx - 50 * S, by - 24 * S], [bx - 10 * S, by - 44 * S], [bx + 40 * S, by - 34 * S],
+    [bx + 66 * S, by + 4 * S], [bx + 50 * S, by + 40 * S], [bx, by + 52 * S], [bx - 46 * S, by + 42 * S]], body, rnd, { amp: 4 });
+  brush(ctx, bx - 40 * S, by - 30 * S, 90 * S, 60 * S, lit, rnd, 1.2);
+  // the folded wing, laid along the flank, with three long primaries
+  wob(ctx, [[bx - 54 * S, by], [bx - 20 * S, by - 30 * S], [bx + 34 * S, by - 22 * S], [bx + 20 * S, by + 18 * S], [bx - 40 * S, by + 30 * S]], look.wing, rnd, { amp: 3 });
+  for (let i = 0; i < 3; i++) wob(ctx, [[bx - 30 * S + i * 10 * S, by + 24 * S - i * 6 * S], [bx - 70 * S + i * 6 * S, by + 40 * S - i * 4 * S]], null, rnd, { width: 2, stroke: shade(look.wing, 0.6) });
+  // the neck sheen — the one iridescent patch a pigeon has, and what says pigeon
+  ctx.globalAlpha = 0.85; blob(ctx, bx + 30 * S, by - 22 * S, 16 * S, 20 * S, look.neck, rnd, { width: 0, stroke: null }); ctx.globalAlpha = 1;
+  // head: small, forward, a hard bead of an eye, a short beak
+  blob(ctx, bx + 52 * S, by - 44 * S, 20 * S, 18 * S, look.head, rnd, { amp: 2.4 });
+  wob(ctx, [[bx + 68 * S, by - 48 * S], [bx + 92 * S, by - 42 * S], [bx + 68 * S, by - 36 * S]], look.beak, rnd, { width: 2.6 });
+  blob(ctx, bx + 56 * S, by - 48 * S, 5 * S, 5 * S, '#e8e0c8', rnd, { width: 2 });
+  blob(ctx, bx + 57 * S, by - 48 * S, 2.6 * S, 2.6 * S, INK, rnd, { width: 0, stroke: null });
+  if (look.big) {                                                 // a gull's wingtips are black
+    wob(ctx, [[bx - 60 * S, by + 12 * S], [bx - 100 * S, by + 30 * S], [bx - 92 * S, by + 44 * S]], '#1c1a18', rnd, { width: 2 });
+  }
+  if (look.crown) {                                               // a bottle-top crown, on a gull
+    const cy = by - 62 * S, cxx = bx + 50 * S;
+    wob(ctx, [[cxx - 16, cy + 10], [cxx - 16, cy - 6], [cxx - 8, cy + 2], [cxx, cy - 10], [cxx + 8, cy + 2], [cxx + 16, cy - 6], [cxx + 16, cy + 10]], '#d8b43a', rnd, { width: 3, amp: 1.5 });
+  }
+}
+
+// THE BEAR. The granite statue in the plate behind the bridge, woken — the
+// thing that was in the photograph all along. The first cut read as a
+// tombstone with a hand on it: the head never left the hump, a "carved plane"
+// put a square in the middle of it, and the paws were posts. A bear is a
+// SILHOUETTE before it is a surface — one high hump, a neck that dips, a head
+// thrust forward and DOWN with a blunt muzzle, one round ear on top, and two
+// forelegs that end in paws — so that is drawn first, and the granite (cracks,
+// moss, two lit eyes) goes on top of a shape that already reads.
+function bear(ctx, look, rnd) {
+  const cx = 128, foot = 470;
+  const stone = look.body, dark = shade(stone, 0.66), lit = shade(stone, 1.22);
+  // the plinth it has not quite left
+  wob(ctx, [[cx - 118, foot], [cx - 110, foot - 22], [cx + 118, foot - 22], [cx + 124, foot]], dark, rnd, { amp: 1.5 });
+  // the far foreleg, behind the body
+  wob(ctx, [[cx + 34, foot - 22], [cx + 30, foot - 110], [cx + 66, foot - 116], [cx + 76, foot - 22]], dark, rnd, { amp: 3 });
+  // THE BODY: haunch low at the back, one high hump over the shoulder, then the
+  // neck DIPS before the head — that dip is what makes it an animal and not a rock
+  wob(ctx, [[cx - 100, foot - 22], [cx - 116, foot - 90], [cx - 104, foot - 170], [cx - 70, foot - 236],
+    [cx - 20, foot - 276], [cx + 30, foot - 282], [cx + 66, foot - 262], [cx + 84, foot - 236],   // the hump
+    [cx + 92, foot - 214],                                                                        // the neck dips
+    [cx + 96, foot - 150], [cx + 70, foot - 96], [cx + 40, foot - 22]], stone, rnd, { amp: 4 });
+  brush(ctx, cx - 80, foot - 250, 150, 150, lit, rnd, 1.3);
+  // the near foreleg: a column with a real paw at the bottom, toes forward
+  wob(ctx, [[cx - 30, foot - 22], [cx - 40, foot - 130], [cx + 6, foot - 136], [cx + 20, foot - 22]], shade(stone, 0.94), rnd, { amp: 3 });
+  wob(ctx, [[cx - 40, foot - 22], [cx - 42, foot - 44], [cx + 30, foot - 46], [cx + 40, foot - 22]], shade(stone, 0.88), rnd, { amp: 2 });
+  for (let i = 0; i < 4; i++) { ctx.strokeStyle = INK; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(cx - 30 + i * 18, foot - 30); ctx.lineTo(cx - 32 + i * 18, foot - 18); ctx.stroke(); }
+  // THE HEAD: thrust forward and down off the dip in the neck. A blunt wedge,
+  // wider at the skull, narrowing to a heavy muzzle that points at the deck.
+  wob(ctx, [[cx + 76, foot - 240], [cx + 104, foot - 256], [cx + 138, foot - 244], [cx + 160, foot - 206],
+    [cx + 168, foot - 172], [cx + 150, foot - 150], [cx + 116, foot - 154], [cx + 90, foot - 180]], look.head, rnd, { amp: 3 });
+  // the muzzle, a second lump below the eyes, and the nose worn dark by a century of hands
+  wob(ctx, [[cx + 128, foot - 192], [cx + 168, foot - 184], [cx + 172, foot - 158], [cx + 140, foot - 150]], shade(look.head, 0.86), rnd, { width: 3, amp: 2 });
+  blob(ctx, cx + 168, foot - 170, 9, 7, look.beak, rnd, { width: 2.4 });
+  ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(cx + 150, foot - 160); ctx.quadraticCurveTo(cx + 158, foot - 152, cx + 166, foot - 160); ctx.stroke();  // the mouth
+  // one round ear, set back on top of the skull
+  blob(ctx, cx + 100, foot - 258, 14, 13, look.head, rnd, { width: 3 });
+  blob(ctx, cx + 100, foot - 258, 6, 6, shade(look.head, 0.7), rnd, { width: 0, stroke: null });
+  // the eyes: two points of light in a stone face — the only colour on it
+  ctx.fillStyle = look.eye;
+  ctx.beginPath(); ctx.ellipse(cx + 122, foot - 218, 7, 4.5, -0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + 148, foot - 212, 5, 3.5, -0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.ellipse(cx + 130, foot - 216, 22, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+  // granite: a few long cracks, following the form rather than crossing it
+  ctx.strokeStyle = 'rgba(14,12,10,0.55)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    const x0 = cx - 90 + rnd() * 160, y0 = foot - 80 - rnd() * 170;
+    ctx.beginPath(); ctx.moveTo(x0, y0);
+    for (let k = 0; k < 3; k++) ctx.lineTo(x0 + (rnd() - 0.5) * 24 + k * 5, y0 + 12 + k * 16 + rnd() * 8);
+    ctx.stroke();
+  }
+  // moss in the seams on the shaded side, and a little on top of the hump
+  for (let i = 0; i < 6; i++) blob(ctx, cx - 104 + rnd() * 70, foot - 90 - rnd() * 130, 6 + rnd() * 11, 4 + rnd() * 6, look.moss, rnd, { width: 0, stroke: null });
+  ctx.globalAlpha = 0.5;
+  for (let i = 0; i < 4; i++) blob(ctx, cx - 20 + rnd() * 80, foot - 270 - rnd() * 12, 6 + rnd() * 8, 3 + rnd() * 3, look.moss, rnd, { width: 0, stroke: null });
+  ctx.globalAlpha = 1;
+}
+
 // ── the torch, painted in ──────────────────────────────────────────────────
 // A cutout is an UNLIT plane, so nothing the scene's lights do reaches it. Once
 // the hour went to evening that stopped being a detail and became the whole
@@ -540,6 +659,43 @@ function torchlight(c, mood) {
   return c;
 }
 
+// MUTATION. Past dusk the things on the bridge start to change, and it has
+// to be visible on the figure or it is a number in a tooltip. Eyes are the
+// one growth every silhouette can carry and every player reads at 40px: a
+// mutated figure grows extra eyes where there should be none, plus a few
+// boils, all placed on the figure's own opaque pixels so nothing floats.
+function mutate(c, rnd, level) {
+  const done = { eyes: 0, boils: 0 };
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const d = ctx.getImageData(0, 0, W, H).data;
+  const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < H && d[((y | 0) * W + (x | 0)) * 4 + 3] > 200;
+  const spot = () => {
+    for (let k = 0; k < 60; k++) {
+      const x = 30 + rnd() * (W - 60), y = 60 + rnd() * (H * 0.62);
+      // deep inside the figure, not on its edge: a 9px ring must all be solid
+      if ([[0, 0], [9, 0], [-9, 0], [0, 9], [0, -9], [6, 6], [-6, -6]].every(([dx, dy]) => solid(x + dx, y + dy))) return [x, y];
+    }
+    return null;
+  };
+  for (let i = 0; i < 2 * level; i++) {
+    const p = spot(); if (!p) break;
+    const r = 5 + rnd() * 6;
+    blob(ctx, p[0], p[1], r, r * 1.1, '#e6e2d2', rnd, { width: 2.6 });
+    blob(ctx, p[0] + r * 0.12, p[1], r * 0.42, r * 0.5, INK, rnd, { width: 0, stroke: null });
+    ctx.fillStyle = 'rgba(240,236,224,0.8)'; ctx.beginPath(); ctx.arc(p[0] - r * 0.3, p[1] - r * 0.35, Math.max(1.5, r * 0.16), 0, Math.PI * 2); ctx.fill();
+    done.eyes++;
+  }
+  for (let i = 0; i < 3 * level; i++) {
+    const p = spot(); if (!p) break;
+    ctx.globalAlpha = 0.7;
+    blob(ctx, p[0], p[1], 3 + rnd() * 4, 3 + rnd() * 3, level > 1 ? '#8a9a3a' : '#a8926a', rnd, { width: 1.6 });
+    ctx.globalAlpha = 1;
+    done.boils++;
+  }
+  c.mutations = done;                      // the painter says what it grew; a gate reads it
+}
+
 // The default hour. `main.js` hands the active skin's in when it builds a
 // puppet, so the fantasy evening lights its cast its own way.
 export const DUSK = { warm: '#ffab52', cold: '#101a24', rim: '#6f93ad', depth: '99' };
@@ -552,12 +708,15 @@ export function paintCutout(look, seed = 1, mood = DUSK) {
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   if (look.shape === 'rat') rat(ctx, look, rnd);
   else if (look.shape === 'blob') slime(ctx, look, rnd);
+  else if (look.shape === 'bird') bird(ctx, look, rnd);
+  else if (look.shape === 'bear') bear(ctx, look, rnd);
   else person(ctx, look, rnd);
   // ORDER MATTERS, and it cost a figure with chickenpox to find out: the rim
   // pass finds every edge in the alpha, and `nicks` punches HOLES in it, so
   // rimming first drew a glowing ring around each of forty nicks. Light the
   // clean silhouette, then take the bites out — which is also the true order,
   // since a cutout is painted first and carried around afterwards.
+  if (look.mutated) mutate(c, rnd, look.mutated);
   if (mood) torchlight(c, mood);
   nicks(ctx, rnd, 18 + Math.round((look.grime ?? 0.6) * 22));
   grime(ctx, rnd, look.grime ?? 0.7);

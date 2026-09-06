@@ -63,6 +63,99 @@ const line = (ctx, x0, y0, x1, y1, c, w = 2.4) => {
 // Each gets the canvas, the rng, and the card owner's accent so a character's
 // own cards carry their colour.
 const PICS = {
+  // ─ second wave (2026-09-05): the dog walker, the boxer, the bear, the events
+  dog(c, r, a) {
+    // a scruffy dog, side on, looking up at whoever holds the lead
+    wob(c, [[22, 44], [24, 30], [36, 24], [58, 26], [66, 34], [64, 46], [50, 50], [30, 50]], '#8a6a48', r);
+    wob(c, [[58, 30], [66, 18], [78, 20], [80, 30], [72, 36]], '#8a6a48', r);          // head
+    wob(c, [[62, 18], [60, 8], [68, 16]], shade('#8a6a48', 0.75), r, { width: 1.8 });   // ear
+    for (const x of [30, 40, 52, 60]) line(c, x, 48, x - 2, 56, '#6a4a30', 3);            // legs
+    wob(c, [[22, 36], [10, 26], [14, 34], [20, 40]], '#8a6a48', r, { width: 2 });          // tail, up
+    c.fillStyle = INK; c.fillRect(72, 24, 3, 3); blob(c, 80, 29, 3, 3, INK, r, { width: 0, stroke: null });
+    line(c, 78, 16, 90, 6, a, 2);                                                       // the lead
+  },
+  stick(c, r, a) {
+    wob(c, [[14, 50], [20, 44], [72, 12], [78, 16], [26, 50]], '#7a5a34', r, { amp: 1.6 });
+    line(c, 40, 32, 46, 22, shade('#7a5a34', 0.7), 2);
+    for (let i = 0; i < 4; i++) line(c, 60 + i * 5, 8 - i * 3, 66 + i * 5, 4 - i * 3, a, 1.6);   // motion
+    blob(c, 84, 8, 4, 4, a, r, { width: 1.4 });
+  },
+  glove(c, r, a) {
+    // a boxing glove, laces showing, a little battered
+    blob(c, 44, 34, 24, 22, a, r, { width: 3 });
+    wob(c, [[56, 44], [70, 40], [72, 52], [58, 54]], shade(a, 0.8), r);                   // the cuff
+    wob(c, [[26, 26], [36, 20], [40, 30], [30, 34]], shade(a, 1.15), r, { width: 2 });    // thumb
+    for (let i = 0; i < 3; i++) line(c, 60 + i * 4, 42, 62 + i * 4, 52, '#e8e0d0', 1.4);   // laces
+    c.fillStyle = 'rgba(0,0,0,0.2)'; c.beginPath(); c.ellipse(46, 40, 12, 8, 0, 0, Math.PI * 2); c.fill();
+  },
+  bell(c, r, a) {
+    wob(c, [[48, 8], [36, 16], [30, 40], [26, 48], [70, 48], [66, 40], [60, 16]], '#c8a03a', r);
+    line(c, 30, 40, 66, 40, shade('#c8a03a', 0.7), 2);
+    blob(c, 48, 52, 5, 5, '#8a6a20', r, { width: 2 });
+    for (let i = 0; i < 3; i++) { line(c, 76 + i * 4, 20 + i * 6, 84 + i * 4, 18 + i * 6, a, 1.6); line(c, 20 - i * 4, 20 + i * 6, 12 - i * 4, 18 + i * 6, a, 1.6); }
+  },
+  pigeon(c, r, a) {
+    blob(c, 46, 36, 22, 16, '#7a7c84', r);
+    blob(c, 66, 26, 9, 9, '#8c8e96', r, { width: 2.4 });
+    wob(c, [[30, 30], [52, 26], [58, 36], [36, 42]], '#5a5c66', r, { width: 2 });          // wing
+    blob(c, 58, 32, 6, 5, '#4a7a6a', r, { width: 0, stroke: null });                      // the neck sheen
+    wob(c, [[74, 26], [82, 28], [74, 30]], '#c8783a', r, { width: 1.6 });
+    c.fillStyle = INK; c.fillRect(68, 23, 2, 2);
+    for (const x of [40, 50]) { line(c, x, 50, x, 56, '#c8783a', 2); line(c, x - 3, 56, x + 3, 56, '#c8783a', 1.6); }
+    for (let i = 0; i < 6; i++) blob(c, 14 + r() * 20, 46 + r() * 10, 1.6, 1.6, a, r, { width: 0, stroke: null });  // crumbs
+  },
+  bear(c, r, a) {
+    // the Karhupuisto bear: a granite mass, head down, one ear
+    wob(c, [[14, 54], [18, 34], [30, 20], [50, 14], [68, 20], [80, 36], [82, 54]], '#6a6260', r, { amp: 2 });
+    wob(c, [[60, 26], [70, 18], [84, 24], [88, 38], [76, 42]], '#7a726e', r, { width: 2.4 });
+    blob(c, 66, 18, 4, 4, '#5a5250', r, { width: 1.6 });
+    c.fillStyle = a; c.fillRect(78, 30, 3, 3);                                          // the eye, lit
+    for (let i = 0; i < 4; i++) line(c, 24 + i * 12, 28 + r() * 10, 30 + i * 12, 44 + r() * 8, 'rgba(20,16,14,0.5)', 1.2);  // cracks
+    blob(c, 30, 24, 7, 4, '#3a4a2a', r, { width: 0, stroke: null });                       // moss
+    c.fillStyle = '#3a3634'; c.fillRect(10, 54, 76, 6);
+  },
+  key(c, r, a) {
+    blob(c, 26, 30, 12, 12, '#b8a878', r);
+    blob(c, 26, 30, 5, 5, '#3a3428', r, { width: 1.6 });
+    wob(c, [[36, 27], [80, 25], [80, 33], [36, 33]], '#b8a878', r, { width: 2 });
+    c.fillStyle = '#b8a878'; c.fillRect(66, 33, 5, 8); c.fillRect(76, 33, 4, 6);
+    line(c, 40, 22, 60, 22, a, 1.4);
+  },
+  tram(c, r, a) {
+    wob(c, [[10, 46], [14, 18], [82, 18], [86, 46]], '#3a6a4a', r, { amp: 1.4 });
+    for (let i = 0; i < 4; i++) wob(c, [[18 + i * 16, 24], [30 + i * 16, 24], [30 + i * 16, 36], [18 + i * 16, 36]], '#e8d8a0', r, { width: 1.6 });
+    c.fillStyle = a; c.fillRect(10, 40, 76, 3);
+    for (const x of [24, 70]) blob(c, x, 50, 5, 5, '#22242a', r, { width: 2 });
+    line(c, 48, 18, 48, 8, '#8a8f94', 2); line(c, 40, 8, 56, 8, '#8a8f94', 2);
+  },
+  steam(c, r, a) {
+    wob(c, [[16, 56], [16, 34], [80, 34], [80, 56]], '#6a4a30', r);
+    for (let i = 0; i < 6; i++) line(c, 22 + i * 10, 36, 22 + i * 10, 54, shade('#6a4a30', 0.7), 1.4);
+    for (let i = 0; i < 7; i++) { c.globalAlpha = 0.35; blob(c, 20 + r() * 56, 10 + r() * 20, 6 + r() * 8, 5 + r() * 6, '#e8e4d8', r, { width: 0, stroke: null }); }
+    c.globalAlpha = 1;
+    blob(c, 48, 44, 6, 4, a, r, { width: 1.4 });
+  },
+  mirror(c, r, a) {
+    wob(c, [[24, 8], [72, 8], [74, 56], [22, 56]], '#2a2c34', r, { amp: 1.4 });
+    wob(c, [[30, 14], [66, 14], [68, 50], [28, 50]], '#4a5060', r, { width: 1.6, amp: 1.2 });
+    // the crack, and a reflection that is not quite where it should be
+    wob(c, [[40, 14], [50, 30], [44, 34], [56, 50]], null, r, { width: 2, stroke: '#c8ccd8', amp: 1.4 });
+    c.globalAlpha = 0.5; blob(c, 52, 30, 6, 8, '#c09070', r, { width: 1.4 }); c.globalAlpha = 1;
+    c.fillStyle = a; c.fillRect(31, 15, 3, 34);
+  },
+  tar(c, r, a) {
+    blob(c, 46, 40, 30, 16, '#1a1816', r, { amp: 3 });
+    blob(c, 34, 30, 10, 8, '#2a2622', r, { width: 2 });
+    for (let i = 0; i < 5; i++) blob(c, 26 + r() * 40, 36 + r() * 8, 2 + r() * 3, 2 + r() * 3, '#3a3634', r, { width: 1.2 });
+    c.fillStyle = a; c.fillRect(40, 26, 3, 3);
+    for (let i = 0; i < 3; i++) line(c, 30 + i * 14, 54, 32 + i * 14, 60, '#1a1816', 3);
+  },
+  badge(c, r, a) {
+    blob(c, 48, 32, 18, 20, '#c8c8c8', r, { width: 3 });
+    blob(c, 48, 32, 12, 14, '#8a8f94', r, { width: 1.6 });
+    for (let i = 0; i < 5; i++) { const t = i / 5 * Math.PI * 2; line(c, 48 + Math.cos(t) * 6, 32 + Math.sin(t) * 6, 48 + Math.cos(t) * 10, 32 + Math.sin(t) * 10, '#e8e8e0', 1.4); }
+    c.fillStyle = a; c.fillRect(40, 48, 16, 3);
+  },
   fist(c, r, a) {
     wob(c, [[30, 46], [30, 26], [40, 18], [58, 18], [66, 26], [66, 44], [56, 50], [36, 50]], '#c08a68', r);
     for (const y of [26, 33, 40]) line(c, 44, y, 64, y, shade('#c08a68', 0.68), 2);

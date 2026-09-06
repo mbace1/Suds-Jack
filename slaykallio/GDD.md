@@ -172,10 +172,41 @@ decision. A friend that only gives is a number.
 
 ## 8. The run
 
-Six fights on a straight line — rats under the deck, the bin rat, something in
-the water, somebody else's spot, the King Rat (elite), and who owns the bridge
-(boss). A card after every fight, a friend after three of them, 8 HP back each
-time.
+**Owner, 2026-09-05: "aim for StS2 parity" — multiple characters, lots of
+cards, an Eldritch night theme: the run starts in daylight, and as evening
+comes things start mutating.** That supersedes what this section and §9 said
+before (a map "comes later"; no upgrades; one act). What shipped as v11:
+
+**Two acts, and a choice at every span.** The route is rolled from the seed up
+front (`engine.buildRoute`): at each of an act's six steps you are offered two
+or three spans — a fight, an elite, an event, a rest — and the act ends on its
+boss. The rules the gate holds: the first step is fights only; an elite is
+never offered before the third step and always by the fifth; a rest is always
+among the last step's options; no step offers the same span twice. The
+encounter pool is twenty-two, split by act (`ACTS` in `data.js`); act one is
+the canal bridge and ends on the Bridge King, act two is under the bear and
+ends on **the Bear** — the Karhupuisto statue from the plate, woken.
+
+**The hour.** `hourOf(state)` runs 0 → 1 across the whole route. The world is
+lit for it (three rigs per skin — day, evening, night — lerped by the arena)
+and the photograph behind the bridge follows it (day, dusk and night plates,
+one per stage per seed). Past dusk what spawns is **mutated**: level 1 through
+the evening (+15% HP, and the figure grows eyes), level 2 at night (+30% HP,
+1 Strength). A boss is never mutated — a boss *is* the night.
+
+**Events** are places with two or three things to do; every option's label
+states its price, because this is a full-information game. **Rests** heal 30%
+or upgrade a card. **Upgrades are one rule, not a second version of every
+card** (`engine.upgrade`): +3 damage or block (+1 per hit on a multi-hit), one
+harder on a scaling card, +1 draw, one deeper on a self-status, a power costs
+one less. `describe` and `preview` read the moved numbers, so an upgraded
+card's face is right by construction.
+
+**Six characters** (Sanna the dog walker — Fetch, the dog goes in at the end
+of the turn; Kake the old boxer — Thorns, and cards that count the hits he
+took), ninety-five cards, twenty friends, seventeen enemies, twelve events.
+A card after every fight, a friend from the elites and the act openers, 6 HP
+back each time.
 
 The bestiary is the owner's list: **rats** (small, quick, several at once),
 **mutating blobs** (drawn as something about to become something else: half-formed
@@ -196,12 +227,13 @@ so re-rendering the hand on every play does not repaint ten canvases. A gate
 fails on a card with no picture, on a picture `cardart.js` cannot draw, and on a
 set of pictures that has collapsed to fewer than fifteen distinct drawings.
 
-## 9. What is NOT in v1, and why
+## 9. What is still NOT in, and why
 
-- **A map, shops, campfires.** See above.
-- **Card upgrades.** Every card would need a second version, which doubles the
-  data before the first version is proven interesting.
-- **A second act.** Six fights is enough to tell whether a build comes together.
+- **A drawn map.** The fork is a choice of two or three spans, not a DAG you
+  can see ahead. The route data is already the whole map; drawing it is the
+  torn-paper art pass the owner's references point at (v12).
+- **Shops, potions, a third act, ascension.** No gold economy exists yet, and
+  each of those is a system, not a table.
 - **Sound beyond a synth kit.** No samples anywhere on this site.
 
 ## 10. The gates

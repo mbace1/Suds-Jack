@@ -193,6 +193,32 @@
     .card::after { content: ''; position: absolute; right: 14px; top: -6px; width: 34px; height: 12px; background: rgba(240, 225, 190, .75); transform: rotate(6deg); }
     .card.selected::after, .card:hover::after { background: rgba(240, 225, 190, .95); }
 
+    /* ── the run's other screens: the fork, an event, a rest, a pick ── */
+    .node {
+      background: radial-gradient(ellipse at 18% 6%, rgba(255,186,96,.15), transparent 52%), linear-gradient(160deg, #4a4034, #221d17);
+      color: var(--paper); border: 3px solid var(--ink); border-radius: 8px; padding: 12px 14px; min-width: 150px; max-width: 220px; min-height: 96px;
+      display: flex; flex-direction: column; gap: 4px; text-align: left; box-shadow: 3px 4px 0 rgba(0,0,0,.5); cursor: pointer;
+    }
+    .node.selected { box-shadow: 0 0 0 4px var(--accent), 3px 4px 0 rgba(0,0,0,.5); transform: translateY(-4px); }
+    .node b { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; opacity: .8; }
+    .node.elite b { color: #e0a45a; } .node.event b { color: #9ab0c8; } .node.rest b { color: #8faf6a; }
+    .node span { font-size: 15px; font-weight: 800; line-height: 1.15; }
+    .node small { font-family: system-ui, sans-serif; font-size: 11.5px; opacity: .75; }
+    #choices { display: flex; flex-direction: column; gap: 8px; width: min(560px, 90vw); }
+    #choices button {
+      background: linear-gradient(160deg, #4a4034, #221d17); color: var(--paper); border: 2px solid var(--ink); border-radius: 6px;
+      padding: 12px 14px; min-height: 48px; text-align: left; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; cursor: pointer;
+    }
+    #choices button.selected, #pick .row.selected { box-shadow: 0 0 0 3px var(--accent); }
+    #event .text { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 16px; line-height: 1.45; max-width: 560px; }
+    #rest .sub { font-size: 13px; opacity: .75; }
+    #pick .list { max-height: 60vh; overflow: auto; width: min(560px, 90vw); text-align: left; display: flex; flex-direction: column; gap: 4px; }
+    #pick .row { display: block; width: 100%; background: var(--panel); padding: 8px 10px; min-height: 44px; border-left: 4px solid var(--attack); border-radius: 4px; font-size: 13px; color: var(--paper); border-top: 0; border-right: 0; border-bottom: 0; text-align: left; cursor: pointer; }
+    #pick .row.skill { border-color: var(--skill); } #pick .row.power { border-color: var(--power); } #pick .row.curse { border-color: var(--curse); }
+    #pick .row b { display: block; text-transform: uppercase; letter-spacing: .04em; }
+    #pick .row span { font-family: system-ui, sans-serif; opacity: .85; }
+    .card .name .up, #deck .row .up, #pick .row .up { color: var(--accent); }
+
     /* ── panels ── */
     .panel {
       position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center;
@@ -309,6 +335,33 @@
     <button class="ghost" id="skip">skip</button>
   </div>
 
+  <div id="map" class="panel" hidden>
+    <h2>The bridge forks</h2>
+    <p class="where"></p>
+    <div id="nodes" class="row"></div>
+  </div>
+
+  <div id="event" class="panel" hidden>
+    <h2></h2>
+    <p class="text"></p>
+    <div id="choices"></div>
+  </div>
+
+  <div id="rest" class="panel" hidden>
+    <h2>A quiet span</h2>
+    <p>Nobody comes this far along. You could sleep, or you could think.</p>
+    <div class="row">
+      <button class="btn" id="restHeal">Sleep</button>
+      <button class="btn" id="restUp">Think it over</button>
+    </div>
+    <p class="sub"></p>
+  </div>
+
+  <div id="pick" class="panel" hidden>
+    <h2></h2>
+    <div class="list"></div>
+  </div>
+
   <div id="result" class="panel" hidden>
     <h2></h2>
     <p class="stats"></p>
@@ -332,7 +385,7 @@
   }
   </script>
   <script type="module" src="../hub/shell.js?v=34"></script>
-  <script type="module" src="js/main.js?v=10"></script>
+  <script type="module" src="js/main.js?v=11"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';

@@ -207,8 +207,8 @@ function applyGrade(ctx, w, h, q) {
 // the BENCH'S ROW, handed in by the arena: a miniature photo is only convincing
 // while the one sharp stripe lies on the thing you are looking at, and in
 // portrait the bench is nowhere near where it is in landscape.
-export function paintedPark(theme, seed, focus = 0.6) {
-  const tex = new THREE.CanvasTexture(tiltShift(paintPark(theme, seed), { focus, grade: theme.mood?.grade }));
+export function paintedPark(theme, seed, focus = 0.6, grade = theme.mood?.grade) {
+  const tex = new THREE.CanvasTexture(tiltShift(paintPark(theme, seed), { focus, grade }));
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }

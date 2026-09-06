@@ -7,6 +7,82 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v11 — 2026-09-05
+**Two acts, a choice at every span, events, rests, upgrades, six bums, the hour, and the Bear**
+Owner: *"aim for StS2 parity"*, then *"multiple characters, lots of cards
+(class specific and neutral), Eldritch night theme. start run during day, as
+evening comes, things start mutating"*, and a set of Kallio photographs: *"you
+can use these as backgrounds"*.
+
+**The run.** No longer six fights on a line. Two acts (`ACTS`), each six
+spans then a boss; at every span the route offers two or three — a fight, an
+elite, an event, a rest — rolled from the seed up front (`buildRoute`), so a
+seed is a whole map. The rules the gate holds over forty seeds: the first step
+is fights only, an elite is never offered before the third step and always by
+the fifth, a rest is always on the span before the boss, no step repeats a
+span, and every one of the twelve events is reachable. Beating an act boss
+heals half your max HP — measured: without it every character reached act two
+at ~40% and the Bridge King was 48% of all deaths; with it, 85%.
+
+**Events** (`EVENTS`, twelve, both skins): the bear in the park, the sauna,
+behind the Alepa, the man with the megaphone, the last tram, a dog with no
+collar, something under the surface (a 50/50 the label states), somebody you
+used to know, the kiosk, move along, the shop window, the gulls. Every option
+names its price on the label — full information. An option that touches a
+specific card (remove, upgrade) parks the rest in `state.pick` and waits.
+**Rests** heal 30% or upgrade a card. **Upgrades are one rule, not a second
+version of every card** (`upgrade()`): +3 damage or block, +1 a hit on a
+multi-hit, one harder on a scaling card, +1 draw, one deeper on a self-status,
+a power costs one less; `describe` and `preview` read the moved numbers so the
+face is right by construction. Upgraded cards wear a `+`.
+
+**Six characters.** Sanna the dog walker — **Fetch**: every card feeds the
+dog, and at the end of your turn it goes in at the weakest enemy; Kake the old
+boxer — **Thorns**, and cards that count the hits he took (`struck`). Ninety-
+five cards (five more per existing bum, ten each for the new two, nine
+neutrals, two curses), twenty friends (eight new, three of which cost
+something), seventeen enemies, twenty-two encounters. New statuses: Frail,
+Thorns, Fetch; new powers; new scales (Buzz, discard, struck, Fetch, missing
+HP).
+
+**The hour** (`hourOf`, 0 → 1 across the route). Three light rigs per skin —
+day, evening, night — and the arena lerps every number between them; the run
+opens under a sun with no torch and ends under a torch with no sun. **The
+plates follow the hour**: the owner's photographs of Kallio, sorted into day
+(Karhupuisto, Vaasanaukio), dusk (Sörnäinen, the church at sunset) and night
+(streets, a lit doorway, a bar), one per stage per seed. **Past dusk what
+spawns is mutated** — level 1 through the evening (+15% HP, and the figure
+grows eyes), level 2 at night (+30% HP, 1 Strength). Never a boss: a boss IS
+the night. The label carries ✶ per level.
+
+**The bestiary.** Pigeons (four in a row; a joke alone, a wall of pecks
+together), gulls, the Gull King, the tar blob, blob spawn, the dealer (curses),
+the preacher (buffs the whole row), the other one, the bouncer, the night
+shift, and **the Bear** — the Karhupuisto statue from the plate, woken, act
+two's boss, drawn by a new `bear` painter. Birds by a new `bird` painter.
+Twelve new card pictures.
+
+**Bugs the pass surfaced, all pre-existing:**
+- **Enemy debuffs on the hero never lasted.** Statuses ticked after the enemy
+  phase, so a Weak or a Frail an enemy had just applied was gone before your
+  next turn. Slay the Spire's own rule: a debuff applied during the enemy turn
+  skips its first tick (`hero.fresh`). Found by the gull's snatch, the first
+  enemy debuff a test ever checked.
+- **The camera never came forward again.** `ensureHeadroom` only ever pushed
+  back and only `resize()` reset it, so after the Bear every later fight was
+  shot from the boss's seat. Found by a lighting check that walked all
+  twenty-two encounters.
+- **The English gate flagged English.** `\bon\b` and `\bse\b` matched "+1
+  energy on the first turn". The ruler was wrong, not the text.
+- A debug `start` that drained the replay by hand left the body's `busy`
+  class on and the hand under `pointer-events: none` — every tap missed.
+
+Gates: `core.mjs` 693 (was 261), `smoke.cjs` 100 (was 76). Bot over
+80 seeds: every character reaches act two, wins 2–9 in 80, both bosses ~87%
+of deaths. Honest limit, recorded: the collector wins 2%; a bot that empties
+its hand cannot play a character built to hold one, so that number says more
+about the bot than the bum.
+
 ## v10 — 2026-09-05
 **Light the RANK, gutter the torch, and repaint the two worst drawings**
 Owner picked three of the art items off v9's list: legibility of the enemy row,

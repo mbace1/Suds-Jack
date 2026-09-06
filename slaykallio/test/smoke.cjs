@@ -77,7 +77,7 @@ const check = (name, ok, extra = '') => {
     pl.photo && Math.abs(pl.ar - pl.frame) < 0.03);
 
   // the menu
-  check('the menu offers the whole roster', await page.locator('#roster .pick').count() === 4);
+  check('the menu offers the whole roster of six', await page.locator('#roster .pick').count() === 6);
   check('every character shows a painted portrait',
     await page.evaluate(() => [...document.querySelectorAll('#roster .pick canvas')]
       .every(c => c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some(v => v > 0))));
@@ -97,10 +97,17 @@ const check = (name, ok, extra = '') => {
     fantasyName === await page.locator('#roster .pick b').first().innerText());
 
   // ── a fight ────────────────────────────────────────────────────────────
-  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4, false); });
   await page.waitForTimeout(300);
-  check('the run opens on the first encounter',
-    await page.evaluate(() => __sk.state().encounter) === 0);
+  check('the run opens on the map, with the hero alone on the bridge',
+    await page.evaluate(() => __sk.state().phase === 'map' && !document.querySelector('#map').hidden && __sk.puppets().hero && __sk.puppets().foes.length === 0));
+  check('the fork offers two or three spans as 44px targets', await page.evaluate(() => { const n = [...document.querySelectorAll('#nodes .node')]; return n.length >= 2 && n.length <= 3 && n.every(b => b.getBoundingClientRect().height >= 44); }));
+  check('and it is afternoon, on a daylight plate', /afternoon/.test(await page.locator('#map .where').innerText()) && await page.evaluate(() => /day|plate\.jpg/.test(__sk.plate() ?? '')));
+  // the rest of this section reads the rats' reward (a card AND a friend), so take that span
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'fight', id: 'rats' }, { kind: 'fight', id: 'bin' }]));
+  await page.evaluate(() => { __sk.takeNode(0); __sk.flush(); });
+  await page.waitForTimeout(200);
+  check('taking a span starts that fight', await page.evaluate(() => __sk.state().phase === 'fight' && __sk.puppets().foes.length > 0 && document.querySelector('#map').hidden));
   check('a puppet stands for the hero and one per enemy',
     await page.evaluate(() => { const p = __sk.puppets(); return !!p.hero && p.foes.length === __sk.state().enemies.length; }));
   check('every puppet is a painted cutout, not a blank plane',
@@ -133,7 +140,9 @@ const check = (name, ok, extra = '') => {
     return bad;
   });
   const framed = [];
-  for (let enc = 0; enc < 6; enc++) {
+  const encCount = await page.evaluate(() => __sk.debug.encounterCount());
+  check(`the pool holds more than the old six fights (${encCount})`, encCount >= 20);
+  for (let enc = 0; enc < encCount; enc++) {
     await page.evaluate(i => __sk.debug.jumpTo(i), enc);
     await page.waitForTimeout(60);
     const bad = await cropped();
@@ -198,6 +207,8 @@ const check = (name, ok, extra = '') => {
   // Darkest Dungeon's look is a LIGHTING SETUP before it is an art style — one
   // warm source close to the party and everything past its falloff going dark —
   // so what is gated is the setup, not a colour value somebody might tune.
+  await page.evaluate(() => { __sk.flush(); __sk.setHour(0.85); });   // late evening: the sun is out and the torch is the light
+  await page.waitForTimeout(300);
   check('the light falls off: there is a torch with a real distance, not a sun',
     await page.evaluate(() => __sk.arena.torch.isPointLight === true && __sk.arena.torch.distance > 0 && __sk.arena.torch.decay > 0));
   check('the far end of the deck is fogged out',
@@ -264,6 +275,49 @@ const check = (name, ok, extra = '') => {
     return seen.size === 1;
   }));
 
+  // The run starts in daylight and ends in the dark, and it has to show on the
+  // deck: the same fight is rendered at hour 0, 0.55 and 1, and the light must
+  // fall as the hour rises. Mutation has to show on the figure, too.
+  // Two bands: the picture behind the bridge (a wide band above the deck) and
+  // the deck itself. The deck band is the boards' shadowed front, which is the
+  // right place to read the torch's falloff and the wrong place to read the
+  // hour — by day it is still a shadow. The backdrop carries the hour.
+  const lumaBands = async () => page.evaluate(() => {
+    const cv = document.querySelector('#gl'); const w = cv.width, h = cv.height;
+    const g = document.createElement('canvas'); g.width = w; g.height = h;
+    __sk.arena.update(0); g.getContext('2d').drawImage(cv, 0, 0);
+    const mean = (y0, y1) => { const d = g.getContext('2d').getImageData(0, Math.round(h * y0), w, Math.max(4, Math.round(h * (y1 - y0)))).data; let t = 0, n = 0; for (let i = 0; i < d.length; i += 4) { t += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; n++; } return t / n; };
+    const row = __sk.arena.deckRow();
+    return { sky: mean(0.2, row - 0.02), deck: mean(row + 0.12, row + 0.26) };
+  });
+  const lumaAt = async t => { await page.evaluate(t => { __sk.flush(); __sk.setHour(t); }, t); await page.waitForTimeout(1600); return lumaBands(); };
+  const day = await lumaAt(0), dusk = await lumaAt(0.55), night = await lumaAt(1);
+  check(`the picture darkens as the hour falls: day ${day.sky.toFixed(0)} → dusk ${dusk.sky.toFixed(0)} → night ${night.sky.toFixed(0)}`, day.sky > dusk.sky && dusk.sky > night.sky * 2 && day.sky > 60 && night.sky < 30);
+  check(`and so does the deck (${day.deck.toFixed(0)} → ${night.deck.toFixed(0)})`, day.deck > night.deck);
+  check('and the photograph behind the bridge changes with it — a night plate at night', await page.evaluate(() => /night/.test(__sk.plate() ?? '')));
+  check('by day the sun is up and the torch is out; by night the reverse', await page.evaluate(() => { __sk.setHour(0); const d = { sun: __sk.arena.sun.intensity, torch: __sk.arena.torch.intensity }; __sk.setHour(1); const n = { sun: __sk.arena.sun.intensity, torch: __sk.arena.torch.intensity }; return d.sun > 1 && d.torch === 0 && n.sun === 0 && n.torch > 10; }));
+  await page.evaluate(() => __sk.setHour(0.55));
+  const mut = await page.evaluate(() => {
+    const ink = cv => { const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++; return n; };
+    // eye whites come through the torch wash at ~(200,195,185), so "light" is
+    // a floor on the darkest channel, not a near-white cut
+    const light = cv => { const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.min(d[i], d[i + 1], d[i + 2]) > 150 && d[i + 3] > 200) n++; return n; };
+    const plain = __sk.debug.look('rat', 0), m2 = __sk.debug.look('rat', 2);
+    const a = plain.getContext('2d').getImageData(0, 0, plain.width, plain.height).data, b2 = m2.getContext('2d').getImageData(0, 0, m2.width, m2.height).data;
+    let differ = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b2[i]) > 60 || Math.abs(a[i + 3] - b2[i + 3]) > 60) differ++;
+    return { ink: [ink(plain), ink(m2)], light: [light(plain), light(m2)], differ, grew: m2.mutations, plainGrew: plain.mutations };
+  });
+  // the painter reports what it grew (a pixel count cannot see an eye on the
+  // shadow side of a figure facing away from the torch), and the diff proves
+  // the picture actually changed by more than a nick's worth
+  check(`a mutated rat is not the same drawing as a rat — it has grown eyes (${mut.grew?.eyes ?? 0} eyes, ${mut.grew?.boils ?? 0} boils, ${mut.differ} px differ)`, !mut.plainGrew && (mut.grew?.eyes ?? 0) >= 3 && mut.differ > 400);
+  await page.evaluate(() => { const st = __sk.state(); st.act = 1; __sk.engine.buildRoute(st, 1); st.route.step = 6; __sk.debug.jumpTo(__sk.engine ? [...Array(__sk.debug.encounterCount()).keys()].find(i => __sk.debug.encounterName(i, 'kallio') === 'The Sermon') : 0); __sk.flush(); });
+  await page.waitForTimeout(150);
+  check('a night fight names its enemies as mutated on the label', await page.evaluate(() => [...document.querySelectorAll('.unit.enemy .name')].every(n => /✶/.test(n.textContent)) && __sk.state().enemies.every(e => e.mutated === 2)));
+  check('and the HUD says it is night', /night/.test(await page.locator('#where').innerText()));
+  await page.evaluate(() => { const st = __sk.state(); st.act = 0; __sk.engine.buildRoute(st, 0); st.route.step = 0; __sk.debug.jumpTo(0); __sk.flush(); });
+  await page.waitForTimeout(100);
+
   // The act card names the encounter. It printed the raw ID for the whole life
   // of the game — nobody noticed while the ids happened to read as words, until
   // the fantasy skin put KING_RAT across the screen.
@@ -271,7 +325,7 @@ const check = (name, ok, extra = '') => {
     const out = [];
     for (const t of ['kallio', 'fantasy']) {
       __sk.setTheme(t); __sk.setSpeed(0); __sk.start('drinker', 3);
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < __sk.debug.encounterCount(); i++) {
         __sk.debug.jumpTo(i); __sk.flush();
         out.push({ shown: document.querySelector('#banner').textContent, want: __sk.debug.encounterName(i, t) });
       }
@@ -280,10 +334,24 @@ const check = (name, ok, extra = '') => {
     return out;
   });
   const wrongTitle = titles.filter(t => t.shown !== t.want);
-  check(`every act card shows the encounter's NAME, not its id${wrongTitle.length ? ` — ${JSON.stringify(wrongTitle[0])}` : ''}`,
-    wrongTitle.length === 0 && titles.length === 12);
+  check(`every act card shows the encounter's NAME, not its id (${titles.length} cards)${wrongTitle.length ? ` — ${JSON.stringify(wrongTitle[0])}` : ''}`,
+    wrongTitle.length === 0 && titles.length >= 40);
   await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 3); });
   await page.waitForTimeout(200);
+
+  // ── the new painters paint ─────────────────────────────────────────────
+  const inked = await page.evaluate(() => {
+    const out = {};
+    for (const id of ['pigeon', 'gull', 'gull_king', 'the_bear', 'walker', 'boxer']) {
+      const cv = __sk.debug.look(id); const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+      let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++;
+      out[id] = n / (cv.width * cv.height);
+    }
+    return out;
+  });
+  check(`the bird painter paints (pigeon ${(inked.pigeon * 100).toFixed(0)}%, gull ${(inked.gull * 100).toFixed(0)}%)`, inked.pigeon > 0.06 && inked.gull > inked.pigeon);
+  check(`the bear is the biggest thing in the game (${(inked.the_bear * 100).toFixed(0)}% of its sheet)`, inked.the_bear > 0.3 && inked.the_bear > inked.gull_king);
+  check('the dog walker and the boxer paint as people', inked.walker > 0.1 && inked.boxer > 0.1);
 
   // ── the owner's staging, checked on the real scene ─────────────────────
   // "no back panels blocking the view": nothing in the bridge may stand above
@@ -355,6 +423,9 @@ const check = (name, ok, extra = '') => {
     await page.evaluate(() => document.querySelector('.unit.enemy.dead') !== null));
 
   // ── the reward, and the run moving on ──────────────────────────────────
+  // the rats pay a card AND a friend, which is what this section reads
+  await page.evaluate(() => { __sk.debug.jumpTo(0); __sk.flush(); });
+  await page.waitForTimeout(100);
   await page.evaluate(() => {
     __sk.setSpeed(0);
     const s = __sk.state();
@@ -380,12 +451,65 @@ const check = (name, ok, extra = '') => {
   if (st.phase === 'reward') { await page.locator('#options > *').first().click(); await page.waitForTimeout(300); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(200); }
   const st2 = await page.evaluate(() => ({ phase: __sk.state().phase, enc: __sk.state().encounter, jokers: __sk.state().jokers.length }));
   check('a friend joins the row', st2.jokers === 1);
-  check('and the run walks on to the next bridge', st2.phase === 'fight' && st2.enc === 1);
-  check('the new fight has its own puppets',
-    await page.evaluate(() => __sk.puppets().foes.length === __sk.state().enemies.length && __sk.puppets().foes.every(p => p.alive)));
+  check('and the run goes back to the fork', st2.phase === 'map' && await page.locator('#map').isVisible());
   check('the friend is on the board where you can read it', await page.locator('#jokers .joker:not(.empty)').count() === 1);
 
+  // ── the run's other screens: an event, a pick, a rest ─────────────────
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'event', id: 'the_statue' }, { kind: 'rest' }]));
+  await page.waitForTimeout(80);
+  check('the fork can lead somewhere that is not a fight', await page.locator('#nodes .node.event').count() === 1 && await page.locator('#nodes .node.rest').count() === 1);
+  await page.locator('#nodes .node.event').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('an event opens with its text and its choices', await page.evaluate(() => __sk.state().phase === 'event' && !document.querySelector('#event').hidden && document.querySelector('#event .text').textContent.length > 40 && document.querySelectorAll('#choices button').length === 3));
+  check('every choice is a 44px target that names its price', await page.evaluate(() => [...document.querySelectorAll('#choices button')].every(b => b.getBoundingClientRect().height >= 44) && /\(/.test(document.querySelectorAll('#choices button')[0].textContent)));
+  const hpE = await page.evaluate(() => ({ hp: __sk.state().hero.hp, max: __sk.state().hero.maxHp }));
+  await page.locator('#choices button').nth(0).click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  const hpE2 = await page.evaluate(() => ({ hp: __sk.state().hero.hp, max: __sk.state().hero.maxHp, phase: __sk.state().phase }));
+  check(`touching the bear did what the label said (+6 max, −8): ${hpE.max}→${hpE2.max}, ${hpE.hp}→${hpE2.hp}`, hpE2.max === hpE.max + 6 && hpE2.hp === Math.min(hpE.max + 6, hpE.hp + 6) - 8 && hpE2.phase === 'map');
+  check('and the HUD shows the new maximum', (await page.locator('#hp').innerText()).includes(`/${hpE2.max}`));
+  // a pick
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'event', id: 'police' }, { kind: 'rest' }]));
+  await page.locator('#nodes .node.event').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  await page.locator('#choices button').nth(1).click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  const deckN = await page.evaluate(() => __sk.state().hero.deck.length);
+  check('"drop something" asks which card, listing the whole deck as 44px rows', await page.evaluate(() => __sk.state().phase === 'pick' && !document.querySelector('#pick').hidden && document.querySelectorAll('#pick .row').length === __sk.state().hero.deck.length && [...document.querySelectorAll('#pick .row')].every(r => r.getBoundingClientRect().height >= 44)));
+  await page.locator('#pick .row').first().click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('and the deck is one card lighter, back at the fork', await page.evaluate(n => __sk.state().hero.deck.length === n - 1 && __sk.state().phase === 'map', deckN));
+  // a rest, and an upgrade that shows on the card
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'rest' }, { kind: 'fight', id: 'rats' }]));
+  await page.locator('#nodes .node.rest').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('a rest offers sleep or an upgrade, and says what sleep is worth', await page.evaluate(() => __sk.state().phase === 'rest' && !document.querySelector('#rest').hidden && /heal \d+/.test(document.querySelector('#rest .sub').textContent)));
+  await page.locator('#restUp').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('thinking it over lists only cards that can still be upgraded, each with its after', await page.evaluate(() => __sk.state().phase === 'pick' && [...document.querySelectorAll('#pick .row')].every(r => /→/.test(r.textContent))));
+  const swingRow = page.locator('#pick .row', { hasText: /Swing|Strike/ }).first();
+  await swingRow.click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('the picked card is upgraded and back at the fork', await page.evaluate(() => __sk.state().hero.deck.some(c => c.up && c.id === 'strike') && __sk.state().phase === 'map'));
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'fight', id: 'rats' }, { kind: 'fight', id: 'bin' }]));
+  await page.locator('#nodes .node').first().click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(150);
+  await page.evaluate(() => { const s = __sk.state(); const up = s.hero.deck.find(c => c.up); s.hand = [{ ...up, uid: 9100, effects: up.effects.map(f => ({ ...f })) }]; s.hero.energy = 3; });
+  await page.evaluate(() => __sk.select(-1));
+  await page.waitForTimeout(50);
+  await page.evaluate(() => { document.querySelector('#hand').innerHTML = ''; });
+  await page.evaluate(() => __sk.flush());
+  // The face quotes what the PIPELINE will land, not the card's bare number:
+  // the friend this run picked up doubles the first attack of a fight, so a
+  // Swing+ here says 18 — and that is the point of preview() and play sharing
+  // one function. The base is asserted separately.
+  const upFace = await page.evaluate(() => { __sk.debug.hand([]); const s = __sk.state(); const up = s.hero.deck.find(c => c.up); if (!up) return { why: 'no upgraded card in the deck', phase: s.phase }; s.hand = [{ ...up, uid: 9101, effects: up.effects.map(f => ({ ...f })) }]; s.hero.energy = 3; __sk.flush(); const card = document.querySelector('#hand .card'); const pv = __sk.engine.preview(s, 0); return { phase: s.phase, id: up.id, base: up.effects[0].n, quoted: pv.damage, plus: !!card?.querySelector('.name .up'), text: card?.querySelector('.text')?.textContent ?? null, friends: s.jokers.map(j => j.id) }; });
+  check(`an upgraded card wears a + and its face quotes the pipeline's number (base ${upFace.base}, face says ${upFace.quoted} with ${upFace.friends})`, upFace.plus === true && upFace.base === 9 && new RegExp(`Deal ${upFace.quoted} damage`).test(upFace.text ?? ''));
+  check('the HUD names the act and the span', /Act 1 · .+ · \d\/6/.test(await page.locator('#where').innerText()));
+
   // ── the theme switch, mid-run ──────────────────────────────────────────
+  await page.evaluate(() => { __sk.debug.jumpTo(0); __sk.flush(); });
+  await page.waitForTimeout(100);
   const beforeName = await page.locator('.unit.enemy .name').first().innerText();
   await page.evaluate(() => __sk.setTheme('fantasy'));
   await page.waitForTimeout(400);
@@ -468,7 +592,7 @@ const check = (name, ok, extra = '') => {
     return cards.every(c => { const r = c.getBoundingClientRect(); return r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 && r.width >= 44; });
   }));
   const pFramed = [];
-  for (let enc = 0; enc < 6; enc++) {
+  for (let enc = 0; enc < await pp.evaluate(() => __sk.debug.encounterCount()); enc++) {
     await pp.evaluate(i => __sk.debug.jumpTo(i), enc);
     await pp.waitForTimeout(60);
     const bad = await pp.evaluate(() => {

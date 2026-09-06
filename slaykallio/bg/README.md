@@ -11,6 +11,24 @@ It goes through exactly the same focus pass as the painting, so it is
 tilt-shifted with the sharp band on the deck and gets the vignette and grade
 with it.
 
+## The plates follow the hour
+
+The run starts in the afternoon and ends at night, and the photograph behind
+the bridge goes with it. `PLATES` in `js/main.js` holds three sets — `day`,
+`evening`, `night` — and each stage of the run draws one plate from its set by
+the run's seed, so a seed is a route and its weather. All of them are the
+owner's photographs of Kallio (2026-09-05):
+
+| stage | plates |
+|---|---|
+| day | `plate.jpg` (the Karhupuisto bear), `day-beds`, `day-bench`, `day-bear-lawn`, `day-beds-tram`, `day-square`, `day-square-painted` (Vaasanaukio) |
+| evening | `dusk-metro` (Sörnäinen), `dusk-church` (Kallio church at sunset — portrait, so it keeps its middle in both formats) |
+| night | `night-street`, `night-door`, `night-restaurant`, `night-bar`, `night-tram` |
+
+The night plates are small (some under 500px wide). They go through an 18px
+blur everywhere but the sharp band, and at night the grade crushes them, so it
+holds — but a sharper night plate would be welcome.
+
 ## What ships
 
 The Kallio bear — the granite bear in Karhupuisto, which is the park this game

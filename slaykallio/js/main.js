@@ -7,7 +7,7 @@
 // synced to the real state so nothing can drift. `window.__sk` is the seam
 // the smoke test drives, and it can set the replay delays to zero.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, THEMES, RULES } from './data.js';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js';
 import * as engine from './engine.js';
 import { Arena } from './scene.js';
 import { Puppet, paintCutout } from './puppet.js';
@@ -22,7 +22,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 7;
+const VERSION = 11;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -41,6 +41,7 @@ let padHint = false;
 const T = () => THEMES[theme];
 const nameOf = (table, id) => table[id]?.[theme]?.name ?? id;
 const cardName = id => nameOf(CARDS, id);
+const PANELS = ['#menu', '#reward', '#result', '#deck', '#map', '#event', '#rest', '#pick'];
 
 // ── boot ─────────────────────────────────────────────────────────────────
 const gl = $('#gl');
@@ -58,13 +59,35 @@ const params = new URLSearchParams(location.search);
 // painting is already on screen, so a missing plate is simply the default.
 // Both paths go through the SAME tilt-shift, so a photograph gets the sharp
 // band on the deck like everything else.
-const PLATE = 'bg/plate.jpg';
-resize();                                  // the plate is CUT to the frame, so give it the real one first
-if (params.get('bg')) {
-  arena.setPhoto(params.get('bg'), { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
-} else {
-  arena.setPhoto(PLATE, { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+// The plates, by the hour of the run (owner's photographs, 2026-09-05). The run
+// starts in the afternoon in Karhupuisto and ends at night on a Kallio street;
+// each stage draws one plate from its set, by the run's seed, so a seed is a
+// route AND its weather. `bg/plate.jpg` — the bear — stays the plate the menu
+// opens on. Every one goes through the same cut-to-frame and grade.
+const PLATES = {
+  day: ['bg/plate.jpg', 'bg/day-beds.jpg', 'bg/day-square-painted.jpg', 'bg/day-bench.jpg', 'bg/day-bear-lawn.jpg', 'bg/day-beds-tram.jpg', 'bg/day-square.jpg'],
+  evening: ['bg/dusk-metro.jpg', 'bg/dusk-church.jpg'],
+  night: ['bg/night-street.jpg', 'bg/night-door.jpg', 'bg/night-restaurant.jpg', 'bg/night-bar.jpg', 'bg/night-tram.jpg'],
+};
+const STAGES = ['day', 'evening', 'night'];
+let plateStage = null, plateUrl = null;
+function plateFor(stage) {
+  if (params.get('bg')) return params.get('bg');
+  const set = PLATES[stage];
+  const seed = state?.seed ?? 0;
+  return set[(seed + STAGES.indexOf(stage) * 7) % set.length];
 }
+function applyHour(h) {
+  arena.setHour(h);
+  const stage = STAGES[engine.nightfall(h)];
+  if (stage !== plateStage) {
+    plateStage = stage;
+    plateUrl = plateFor(stage);
+    arena.setPhoto(plateUrl, { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+  }
+}
+resize();                                  // the plate is CUT to the frame, so give it the real one first
+applyHour(0);
 setMuted(store.get('mute', false));
 
 function resize() {
@@ -149,6 +172,16 @@ function act(ev) {
     case 'fightWon': later(700, () => { banner('CLEAR'); sfx.win(); }); later(900, () => {}); break;
     case 'reward': later(0, () => openReward()); break;
     case 'encounter': later(200, () => spawnFight()); break;
+    case 'enemyHeal': later(0, () => { pop(ev.target, `+${ev.n}`, 'block'); setShown(ev.target, { hp: ev.hp }); }); later(200, () => {}); break;
+    // the run between fights
+    case 'map': later(0, () => openMapPanel()); break;
+    case 'node': later(0, () => { closePanels(); }); break;
+    case 'event': later(0, () => openEventPanel()); break;
+    case 'rest': later(0, () => openRestPanel()); break;
+    case 'pick': later(0, () => openPickPanel()); break;
+    case 'actWon': later(500, () => { banner('ACT CLEAR'); sfx.win(); }); later(900, () => {}); break;
+    case 'hour': later(0, () => { applyHour(ev.hour); renderTop(); }); break;
+    case 'maxHp': case 'maxEnergy': case 'upgrade': case 'removeCard': case 'rested': case 'eventChoice': case 'roll': later(0, () => renderTop()); break;
     case 'won': later(600, () => showResult(true)); break;
     case 'lost': later(200, () => { hero.die(); sfx.lose(); }); later(1600, () => showResult(false)); break;
     default: break;
@@ -157,8 +190,16 @@ function act(ev) {
 
 function afterReplay() {
   document.body.classList.remove('busy');
+  if (!state) return;
+  // whatever the run is waiting on, its screen must be up — the log's own
+  // event opened it, but a flush or a resize can land here with it hidden
   if (state.phase === 'reward' && $('#reward').hidden) openReward();
+  if (state.phase === 'map' && $('#map').hidden) openMapPanel();
+  if (state.phase === 'event' && $('#event').hidden) openEventPanel();
+  if (state.phase === 'rest' && $('#rest').hidden) openRestPanel();
+  if (state.phase === 'pick' && $('#pick').hidden) openPickPanel();
 }
+function closePanels() { for (const p of ['#map', '#event', '#rest', '#pick', '#reward']) $(p).hidden = true; }
 
 // ── displayed numbers ────────────────────────────────────────────────────
 function shownOf(k) { if (!shown.has(k)) shown.set(k, { hp: 0, block: 0 }); return shown.get(k); }
@@ -188,11 +229,11 @@ function spawnFight() {
   arena.clearPuppets();
   foes.clear();
   const ch = CHARACTERS[state.character];
-  hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1, mood: T().mood?.figure });
+  hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1, mood: arena.figureMood() });
   arena.add(hero);
   const made = state.enemies.map(e => {
     const d = ENEMIES[e.id];
-    const p = new Puppet({ look: d[theme].look, seed: 100 + e.uid, scale: d.scale, facing: -1, mood: T().mood?.figure });
+    const p = new Puppet({ look: { ...d[theme].look, mutated: e.mutated || 0 }, seed: 100 + e.uid, scale: d.scale, facing: -1, mood: arena.figureMood() });
     arena.add(p);
     foes.set(e.uid, p);
     return p;
@@ -218,11 +259,25 @@ function spawnFight() {
   banner(ENCOUNTERS[state.encounter][theme].name);
 }
 
+// Between fights the deck is empty but the hero is still standing on it — the
+// map, an event and a rest all happen with the bridge behind them.
+function spawnHeroAlone() {
+  arena.clearPuppets(); foes.clear();
+  const ch = CHARACTERS[state.character];
+  hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1, mood: arena.figureMood() });
+  arena.add(hero);
+  arena.ensureHeadroom(hero.height * 1.06);
+  hero.setHome(layout().heroX, 0, 0.1);
+  labels.innerHTML = '';
+  buildLabels();
+  syncAll();
+}
+
 function relayout() { if (!state || state.phase === 'menu') return; const L = layout(); hero?.setHome(L.heroX, 0, 0.1); state.enemies.forEach((e, i) => foes.get(e.uid)?.setHome(L.foeX(i), 0, 0.05 - (i % 2) * 0.12)); }
 addEventListener('resize', relayout);
 
 // ── labels over the puppets ──────────────────────────────────────────────
-const STATUS_LABEL = { vulnerable: 'VULN', weak: 'WEAK', strength: 'STR', buzz: 'BUZZ', doubleNext: '×2 NEXT' };
+const STATUS_LABEL = { vulnerable: 'VULN', weak: 'WEAK', strength: 'STR', buzz: 'BUZZ', doubleNext: '×2 NEXT', frail: 'FRAIL', thorns: 'THORNS', fetch: 'FETCH' };
 // how far down the screen a unit label may start: clear of the top HUD plate,
 // and the label's own box hangs 58px above its anchor (see .unit in the CSS)
 const TOP_GUTTER = 96;
@@ -240,8 +295,10 @@ function buildLabels() {
   };
   const ch = CHARACTERS[state.character];
   mk('hero', ch[theme].name, 'hero');
+  if (state.phase !== 'fight' && state.phase !== 'reward') return;
   state.enemies.forEach(e => {
-    const u = mk(e.uid, nameOf(ENEMIES, e.id), 'enemy');
+    const u = mk(e.uid, `${nameOf(ENEMIES, e.id)}${e.mutated ? ' ✶'.repeat(e.mutated) : ''}`, `enemy${e.mutated ? ' mutated' : ''}`);
+    if (e.mutated) u.title = e.mutated > 1 ? 'mutated by the night: more of it, and stronger' : 'mutating in the dusk: more of it';
     u.dataset.slot = e.slot;
     u.setAttribute('role', 'button');
     u.setAttribute('aria-label', `${nameOf(ENEMIES, e.id)}`);
@@ -293,7 +350,7 @@ function paintIntent(e) {
   const box = u.querySelector('.intent');
   if (!e.alive || !e.intent) { box.textContent = ''; box.className = 'intent'; return; }
   box.className = `intent ${e.intent.intent}`;
-  const glyph = { attack: '⚔', block: '⛨', buff: '▲', debuff: '☁', curse: '✖' }[e.intent.intent] ?? '?';
+  const glyph = { attack: '⚔', block: '⛨', buff: '▲', debuff: '☁', curse: '✖', heal: '✚' }[e.intent.intent] ?? '?';
   box.textContent = `${glyph} ${engine.describeIntent(e)}`;
   // the preview of the selected card, on every enemy it could hit
   const pv = u.querySelector('.preview');
@@ -311,7 +368,7 @@ function refreshStatus(k) {
   for (const [key, n] of Object.entries(unit.status)) if (n) box.append(el('span', `st ${key}`, `${STATUS_LABEL[key] ?? key} ${n}`));
   if (k === 'hero') for (const key of Object.keys(state.hero.powers)) box.append(el('span', 'st power', POWER_LABEL[key] ?? key));
 }
-const POWER_LABEL = { buzzPerTurn: 'BUZZ/TURN', findPerTurn: 'FIND/TURN', blockPerTurn: 'BLOCK/TURN', retainBlock: 'KEEP BLOCK', groove: 'GROOVE' };
+const POWER_LABEL = { buzzPerTurn: 'BUZZ/TURN', findPerTurn: 'FIND/TURN', blockPerTurn: 'BLOCK/TURN', retainBlock: 'KEEP BLOCK', groove: 'GROOVE', thornsPerTurn: 'THORNS/TURN', keepFetch: 'KEEP FETCH', drawPerTurn: 'DRAW+', strengthPerTurn: 'STR/TURN', energyPerTurn: 'ENERGY+' };
 
 // floating numbers and Balatro chips
 const fx = $('#fx');
@@ -338,7 +395,9 @@ function renderTop() {
   $('#hp').textContent = `${h.hp}/${h.maxHp}`;
   $('#hpbar i').style.width = `${h.hp / h.maxHp * 100}%`;
   $('#piles').textContent = `draw ${state.draw.length} · discard ${state.discard.length} · deck ${h.deck.length}`;
-  $('#where').textContent = `${state.encounter + 1}/${ENCOUNTERS.length} · ${ENCOUNTERS[state.encounter]?.[theme].name ?? ''}`;
+  const r = state.route, act = ACTS[state.act];
+  const here = state.phase === 'fight' || state.phase === 'reward' ? ENCOUNTERS[state.encounter]?.[theme].name : state.phase === 'event' ? EVENTS.find(e => e.id === state.event?.id)?.[theme].name : state.phase === 'rest' || state.phase === 'pick' ? 'a quiet span' : 'the fork';
+  $('#where').textContent = `Act ${state.act + 1} · ${act[theme].name} · ${Math.min(r?.step ?? 0, act.steps)}/${act.steps} · ${engine.HOUR_WORD(state.hour ?? 0)} · ${here ?? ''}`;
   const jr = $('#jokers'); jr.innerHTML = '';
   for (const j of state.jokers) {
     const b = el('div', 'joker'); b.append(el('b', '', nameOf(JOKERS, j.id)), el('span', '', j[theme].text));
@@ -385,10 +444,11 @@ function cardFace(c, text) {
   img.className = 'pic';
   art.append(img);
   frag.append(el('span', 'cost', c.cost === null || c.cost === undefined ? '✖' : c.cost),
-    el('span', 'name', cardName(c.id)), art, el('span', 'text', text), el('span', 'type', c.type));
+    nameSpan(c), art, el('span', 'text', text), el('span', 'type', c.type));
   return frag;
 }
 
+function nameSpan(c) { const n = el('span', 'name', cardName(c.id)); if (c.up) n.append(el('i', 'up', '+')); return n; }
 function flashCardPlayed(id) { const t = $('#played'); t.textContent = cardName(id); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); }
 
 // ── input ────────────────────────────────────────────────────────────────
@@ -448,6 +508,7 @@ addEventListener('keydown', ev => {
   const k = ev.key;
   if (!$('#menu').hidden) return menuKeys(ev);
   if (!$('#reward').hidden) return rewardKeys(ev);
+  for (const id of ['#map', '#event', '#rest', '#pick']) if (!$(id).hidden) return panelKeys(ev, id);
   if (!$('#result').hidden) { if (k === 'Enter' || k === ' ') toMenu(); return; }
   if (state?.phase !== 'fight') return;
   if (/^[1-9]$/.test(k)) { const i = Number(k) - 1; if (i < state.hand.length) onCardTap(i); }
@@ -476,6 +537,7 @@ watchPad({
     if (!padHint) { padHint = true; document.body.classList.add('pad'); }
     if (!$('#menu').hidden) return menuKeys({ key: dx > 0 ? 'ArrowRight' : dx < 0 ? 'ArrowLeft' : dy > 0 ? 'ArrowDown' : 'ArrowUp', preventDefault() {} });
     if (!$('#reward').hidden) return rewardKeys({ key: dx > 0 ? 'ArrowRight' : dx < 0 ? 'ArrowLeft' : 'x', preventDefault() {} });
+    for (const id of ['#map', '#event', '#rest', '#pick']) if (!$(id).hidden) return panelKeys({ key: (dx > 0 || dy > 0) ? 'ArrowRight' : 'ArrowLeft', preventDefault() {} }, id);
     if (state?.phase !== 'fight' || busy) return;
     if (dx) { if (!state.hand.length) return; sel = ((sel < 0 ? (dx > 0 ? -1 : 0) : sel) + dx + state.hand.length) % state.hand.length; renderHand(); for (const e of state.enemies) paintIntent(e); document.body.classList.toggle('targeting', state.hand[sel]?.target === 'enemy'); }
     if (dy) cycleTarget(dy);
@@ -483,6 +545,7 @@ watchPad({
   press(i) {
     if (!$('#menu').hidden) return menuKeys({ key: i === 0 ? 'Enter' : i === 3 ? 't' : 'x', preventDefault() {} });
     if (!$('#reward').hidden) return rewardKeys({ key: i === 0 ? 'Enter' : i === 1 ? 'Escape' : 'x', preventDefault() {} });
+    for (const id of ['#map', '#event', '#rest', '#pick']) if (!$(id).hidden) return panelKeys({ key: i === 0 ? 'Enter' : 'x', preventDefault() {} }, id);
     if (!$('#result').hidden) { if (i === 0) toMenu(); return; }
     if (state?.phase !== 'fight') return;
     if (i === 0 && sel >= 0) onCardTap(sel);
@@ -530,7 +593,7 @@ function setTheme(t) {
   theme = t; store.set('theme', t);
   arena.setTheme(T());
   renderMenu();
-  if (state && state.phase !== 'menu') { spawnFight(); renderAll(); }
+  if (state && state.phase !== 'menu') { if (state.phase === 'fight' || state.phase === 'reward') spawnFight(); else spawnHeroAlone(); renderAll(); }
 }
 
 function startRun(character) {
@@ -538,17 +601,19 @@ function startRun(character) {
   const seed = Number(params.get('seed')) || ((Date.now() ^ (Math.random() * 1e9)) >>> 0);
   state = engine.createRun({ seed, character, theme });
   cursor = 0; queue.length = 0; busy = false; sel = -1; target = 0;
+  plateStage = null;
   engine.startRun(state);
-  $('#menu').hidden = true; $('#result').hidden = true; $('#reward').hidden = true;
+  for (const p of PANELS) $(p).hidden = true;
   $('#hud').hidden = false;
-  spawnFight();
-  cursor = state.log.length;
-  syncAll();
+  spawnHeroAlone();
+  cursor = 0;
+  enqueueLog();
   sfx.turn();
 }
 
 function toMenu() {
-  $('#result').hidden = true; $('#hud').hidden = true; $('#reward').hidden = true; $('#deck').hidden = true;
+  for (const p of PANELS) $(p).hidden = true;
+  $('#hud').hidden = true;
   labels.innerHTML = '';
   arena.clearPuppets(); foes.clear(); hero = null;
   state = null;
@@ -600,13 +665,153 @@ function rewardKeys(ev) {
   else if (k === 'Escape') choose(-1);
 }
 
+// ── the fork, an event, a rest, a pick ───────────────────────────────────
+let panelSel = 0;
+const KIND_WORD = { fight: 'a fight', elite: 'an elite', event: 'somewhere', rest: 'a rest', boss: 'the boss' };
+function nodeName(n) {
+  if (n.kind === 'fight' || n.kind === 'elite') return ENCOUNTERS.find(e => e.id === n.id)?.[theme].name ?? n.id;
+  if (n.kind === 'event') return EVENTS.find(e => e.id === n.id)?.[theme].name ?? n.id;
+  return 'A quiet span';
+}
+function nodeHint(n) {
+  if (n.kind === 'fight' || n.kind === 'elite') {
+    const enc = ENCOUNTERS.find(e => e.id === n.id);
+    const counts = new Map(); for (const id of enc.enemies) counts.set(id, (counts.get(id) || 0) + 1);
+    return [...counts].map(([id, k]) => `${k > 1 ? `${k}× ` : ''}${nameOf(ENEMIES, id)}`).join(', ') + (enc.reward.includes('joker') ? ` · a ${T().jokerWord.replace(/s$/, '')} waits` : '');
+  }
+  if (n.kind === 'event') return 'Something other than a fight.';
+  return `Sleep for ${Math.round(RULES.restHeal * 100)}% of your HP, or upgrade a card.`;
+}
+function openMapPanel() {
+  if (!state || state.phase !== 'map') return;
+  closePanels();
+  if (!hero || foes.size) spawnHeroAlone();
+  const r = state.route, act = ACTS[state.act];
+  const panel = $('#map'); panel.hidden = false;
+  panel.querySelector('h2').textContent = r.step === 0 ? act[theme].name : 'The bridge forks';
+  panel.querySelector('.where').textContent = `Act ${state.act + 1} · ${engine.HOUR_WORD(state.hour ?? 0)} · span ${r.step + 1} of ${act.steps}, then ${ENCOUNTERS.find(e => e.id === act.boss)[theme].name}`;
+  const box = $('#nodes'); box.innerHTML = '';
+  panelSel = 0;
+  r.steps[r.step].forEach((n, i) => {
+    const b = el('button', `node ${n.kind}`);
+    b.append(el('b', '', KIND_WORD[n.kind]), el('span', '', nodeName(n)), el('small', '', nodeHint(n)));
+    b.classList.toggle('selected', i === panelSel);
+    b.addEventListener('click', () => takeNode(i));
+    box.append(b);
+  });
+  renderTop();
+}
+function takeNode(i) {
+  if (state.phase !== 'map') return;
+  sfx.pick();
+  const from = state.log.length; cursor = from;
+  if (!engine.chooseNode(state, i)) return;
+  $('#map').hidden = true;
+  enqueueLog();
+  renderTop();
+}
+function openEventPanel() {
+  if (!state || state.phase !== 'event') return;
+  closePanels();
+  const ev = EVENTS.find(e => e.id === state.event.id);
+  const panel = $('#event'); panel.hidden = false;
+  panel.querySelector('h2').textContent = ev[theme].name;
+  panel.querySelector('.text').textContent = ev[theme].text;
+  const box = $('#choices'); box.innerHTML = '';
+  panelSel = 0;
+  ev.options.forEach((o, i) => {
+    const b = el('button', '', o[theme].label);
+    b.classList.toggle('selected', i === panelSel);
+    b.addEventListener('click', () => takeChoice(i));
+    box.append(b);
+  });
+  renderTop();
+}
+function takeChoice(i) {
+  if (state.phase !== 'event') return;
+  sfx.pick();
+  cursor = state.log.length;
+  if (!engine.chooseEvent(state, i)) return;
+  $('#event').hidden = true;
+  enqueueLog();
+  renderTop();
+}
+function openRestPanel() {
+  if (!state || state.phase !== 'rest') return;
+  closePanels();
+  const panel = $('#rest'); panel.hidden = false;
+  const h = state.hero;
+  panel.querySelector('.sub').textContent = `Sleep: heal ${Math.floor(h.maxHp * RULES.restHeal)} (${h.hp}/${h.maxHp}). Think it over: upgrade one card for good.`;
+  panelSel = 0;
+  panel.querySelectorAll('.btn').forEach((b, i) => b.classList.toggle('selected', i === panelSel));
+  renderTop();
+}
+function takeRest(kind) {
+  if (state.phase !== 'rest') return;
+  sfx.pick();
+  cursor = state.log.length;
+  if (!engine.chooseRest(state, kind)) return;
+  $('#rest').hidden = true;
+  enqueueLog();
+  renderTop();
+}
+$('#restHeal').addEventListener('click', () => takeRest('heal'));
+$('#restUp').addEventListener('click', () => takeRest('upgrade'));
+function openPickPanel() {
+  if (!state || state.phase !== 'pick') return;
+  closePanels();
+  const panel = $('#pick'); panel.hidden = false;
+  const kind = state.pick.kind;
+  panel.querySelector('h2').textContent = kind === 'remove' ? 'Leave one behind' : 'Which card?';
+  const list = panel.querySelector('.list'); list.innerHTML = '';
+  panelSel = 0;
+  state.hero.deck.forEach((c, i) => {
+    if (kind === 'upgrade' && (c.up || c.type === 'curse')) return;
+    const row = el('button', `row ${c.type}`);
+    row.dataset.i = i;
+    const b = el('b', '', cardName(c.id)); if (c.up) b.append(el('i', 'up', '+'));
+    row.append(b, el('span', '', `${c.cost ?? '✖'} · ${engine.describe(c)}`));
+    if (kind === 'upgrade') {
+      const after = engine.upgrade({ ...c, effects: c.effects.map(f => ({ ...f })), up: false });
+      row.append(el('span', '', ` → ${after.cost ?? '✖'} · ${engine.describe(after)}`));
+    }
+    row.addEventListener('click', () => takePick(i));
+    list.append(row);
+  });
+  list.querySelectorAll('.row').forEach((r, i) => r.classList.toggle('selected', i === panelSel));
+  renderTop();
+}
+function takePick(i) {
+  if (state.phase !== 'pick') return;
+  sfx.pick();
+  cursor = state.log.length;
+  if (!engine.pickCard(state, i)) return;
+  $('#pick').hidden = true;
+  enqueueLog();
+  renderTop();
+}
+// one key handler for all four: arrows move, Enter takes, 1-9 takes directly
+function panelKeys(ev, id) {
+  const k = ev.key;
+  const panel = $(id);
+  const buttons = [...panel.querySelectorAll(id === '#pick' ? '.row' : id === '#rest' ? '.btn' : id === '#map' ? '.node' : '#choices button')];
+  if (!buttons.length) return;
+  if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowUp') {
+    panelSel = (panelSel + (k === 'ArrowRight' || k === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+    buttons.forEach((b, i) => b.classList.toggle('selected', i === panelSel));
+    buttons[panelSel].scrollIntoView?.({ block: 'nearest' });
+  } else if (k === 'Enter' || k === ' ') buttons[panelSel]?.click();
+  else if (/^[1-9]$/.test(k)) buttons[Number(k) - 1]?.click();
+}
+
 // ── result ───────────────────────────────────────────────────────────────
 function showResult(won) {
   $('#hud').hidden = true;
   const p = $('#result'); p.hidden = false;
   p.querySelector('h2').textContent = won ? 'THE BRIDGE IS YOURS' : 'FLAT ON THE PLANKS';
   const s = state.stats;
-  p.querySelector('.stats').textContent = `${won ? 'cleared' : `fell at fight ${state.encounter + 1}`} · ${s.cardsPlayed} cards · ${s.damageDealt} damage · biggest hit ${s.biggestHit} · ${state.jokers.length} ${T().jokerWord}`;
+  const fellAt = state.phase === 'lost' ? (ENCOUNTERS[state.encounter]?.[theme].name ?? 'the road') : '';
+  p.querySelector('.stats').textContent = `${won ? 'cleared both acts' : `fell in act ${state.act + 1} at ${fellAt}`} · ${s.fights} fights · ${s.events} events · ${s.cardsPlayed} cards · ${s.damageDealt} damage · biggest hit ${s.biggestHit} · ${state.jokers.length} ${T().jokerWord}`;
   const best = store.get('best', null);
   const score = { won, fights: s.fights, character: state.character, at: Date.now() };
   if (!best || (won && !best.won) || (won === !!best.won && s.fights > best.fights)) store.set('best', score);
@@ -620,10 +825,11 @@ function toggleDeck() {
   d.hidden = false;
   const list = d.querySelector('.list'); list.innerHTML = '';
   const counts = new Map();
-  for (const c of state.hero.deck) counts.set(c.id, (counts.get(c.id) || 0) + 1);
-  for (const [id, n] of [...counts].sort((a, b) => CARDS[a[0]].cost - CARDS[b[0]].cost)) {
-    const row = el('div', `row ${CARDS[id].type}`);
-    row.append(el('b', '', `${n}× ${cardName(id)}`), el('span', '', `${CARDS[id].cost ?? '✖'} · ${engine.describe(CARDS[id])}`));
+  for (const c of state.hero.deck) { const k = `${c.id}${c.up ? '+' : ''}`; const e = counts.get(k) || { c, n: 0 }; e.n++; counts.set(k, e); }
+  for (const { c, n } of [...counts.values()].sort((a, b) => (a.c.cost ?? 9) - (b.c.cost ?? 9))) {
+    const row = el('div', `row ${c.type}`);
+    const b = el('b', '', `${n}× ${cardName(c.id)}`); if (c.up) b.append(el('i', 'up', '+'));
+    row.append(b, el('span', '', `${c.cost ?? '✖'} · ${engine.describe(c)}`));
     list.append(row);
   }
 }
@@ -639,20 +845,34 @@ renderMenu();
 $('#ver').textContent = `v${VERSION}`;
 
 // ── the debug seam ───────────────────────────────────────────────────────
+// Drain the replay the way the frame loop would: run everything queued, then
+// the same end-of-replay housekeeping — the busy flag, the body class that
+// blocks the hand, and whichever run screen the phase is waiting on. A drain
+// that skipped the housekeeping left the hand under pointer-events: none.
+function flushNow() { while (queue.length) queue.shift().fn(); busy = false; syncAll(); afterReplay(); }
 window.__sk = {
   engine, arena, CARDS, JOKERS, ENEMIES,
   state: () => state,
   theme: () => theme,
   puppets: () => ({ hero, foes: [...foes.values()] }),
   busy: () => busy,
-  start: (character = 'drinker', seed = 1) => { params.set('seed', String(seed)); startRun(character); },
+  // Every caller of this seam means "put me in a fight", and the run now opens
+  // on the map — so it walks onto the first span unless told to stay.
+  start: (character = 'drinker', seed = 1, toFight = true) => {
+    params.set('seed', String(seed)); startRun(character);
+    flushNow();
+    if (toFight && state.phase === 'map') { takeNode(0); flushNow(); }
+  },
+  setHour: t => applyHour(t),
+  plate: () => plateUrl,
   setTheme,
   setSpeed: s => { speed = s; },
   select: onCardTap,
   tapEnemy: onEnemyTap,
   endTurn,
   choose,
-  flush: () => { while (queue.length) queue.shift().fn(); busy = false; syncAll(); afterReplay(); },
+  takeNode, takeChoice, takeRest, takePick,
+  flush: () => flushNow(),
   debug: {
     setHp: (slot, hp) => { const e = state.enemies[slot]; if (e) { e.hp = hp; syncAll(); } },
     heroHp: hp => { state.hero.hp = hp; syncAll(); },
@@ -664,6 +884,10 @@ window.__sk = {
     // what the act card OUGHT to say, read from the data rather than the screen
     encounterName: (i, t = theme) => ENCOUNTERS[i]?.[t]?.name,
     // a cutout painted at full size, for looking at the art rather than the scene
-    look: id => paintCutout(ENEMIES[id][theme].look, 3, T().mood?.figure),
+    look: (id, mutated = 0) => paintCutout({ ...(ENEMIES[id] ?? CHARACTERS[id])[theme].look, mutated }, 3, arena.figureMood()),
+    encounterCount: () => ENCOUNTERS.length,
+    events: () => EVENTS.map(e => e.id),
+    // force the next fork to offer exactly these spans, for driving one screen
+    forkTo: nodes => { state.route.steps[state.route.step] = nodes; openMapPanel(); },
   },
 };

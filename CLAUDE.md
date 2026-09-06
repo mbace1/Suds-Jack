@@ -291,7 +291,24 @@ Build tooling: none — same no-build rule as every other demo here.
 **Owner's brief, 2026-09-04: mostly Slay the Spire 2, with some Balatro jokers
 thrown in.** Read `slaykallio/GDD.md` before touching anything — this is the
 summary, that is the source. A deckbuilder fought on a **thick plank bridge**
-over a Kallio canal: four bums, six spans, a card or a friend after each.
+over a Kallio canal: six bums, **two acts of six chosen spans and a boss each**,
+events, rests, upgrades.
+**Parity direction (owner, 2026-09-05): "multiple characters, lots of cards
+(class specific and neutral), Eldritch night theme — start run during day, as
+evening comes, things start mutating."** So the route is rolled from the seed
+(`buildRoute`) and offers two or three spans a step; `hourOf(state)` runs 0 → 1
+across it; the arena lerps three light rigs (day/evening/night, `MOOD`, `DAY`,
+`NIGHT` in `data.js`); the plates follow the hour (`PLATES` in `main.js`, the
+owner's photographs, one per stage per seed); and past dusk what spawns is
+**mutated** (`nightfall`: +15% HP and grown eyes through the evening, +30% and
+1 Strength at night — never a boss, a boss IS the night). **Upgrades are one
+rule** (`engine.upgrade`), not a second copy of every card. **Beating an act
+boss heals half** — without it everyone reached act two at 40% and the middle
+of the run was a wall (`balance.mjs` reads per act now). Three pre-existing
+bugs this pass found: enemy debuffs on the hero ticked away before they did
+anything (fixed with StS's own just-applied rule, `hero.fresh`); the camera
+never came forward after a boss (`ensureHeadroom` now restores the seat); and
+the English gate's regex flagged the English word "on".
 **It is two experiments at once, and both are the owner's stated point**: a test
 of a unique look that has to work in **horizontal** (mobile sideways / Switch)
 AND **vertical** (a phone in one hand), and a practice run at the **deep logic
@@ -463,8 +480,8 @@ exists so nobody has to win five fights to look at the sixth.
 `window.__sk` is the seam the browser gate drives, and `setSpeed(0)` + `flush()`
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
-Gates: `node slaykallio/test/core.mjs` (261 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (76). Hub entry:
+Gates: `node slaykallio/test/core.mjs` (693 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (100). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.
