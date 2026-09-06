@@ -1,5 +1,36 @@
 # Toko Trip — release log
 
+## v7 — 2026-08-11
+
+The sea. It was a teal plane with a scrolling bump map; it is the biggest
+surface in view from the chair, and it had never had a pass of its own.
+
+- **It reflects the sky it sits under.** Six small cube faces are painted
+  from the SAME gradient the dome uses, plus the sun, and handed to the
+  water as an environment map; they are rebuilt a few times across a mood
+  blend and once more when it settles. A real cube camera would also catch
+  the clouds, but at the cost of a six-view render and a backend-specific
+  path, for a reflection nobody reads cloud shapes out of. The colour is
+  the point, and this gets the colour exactly.
+  Found and fixed: three.js samples an authored `CubeTexture` with X
+  mirrored, so the first cut put a second sun on the wrong side of the sea.
+- **It swells.** A low-frequency displacement map the GPU moves the mesh by,
+  and the whole plane rides a slow surf level — no vertex touched on the
+  CPU.
+- **Its surface has direction.** A baked normal map from two noise fields of
+  different scale summed — capillary ripple riding a longer chop, which is
+  what stops it reading as frosted glass — scrolled against the swell so
+  the ripple has cross-motion.
+- **The foam line moves.** The old foam sat where sand met still water and
+  breathed in place. This is a band of points laid across the run of the
+  tide, and each frame the ones near the water's *current* reach light up:
+  as the plane lifts the reach climbs the sand and the foam climbs with it,
+  then draws back and leaves the wet band behind. Alpha per point on the
+  CPU — a few thousand numbers a frame, no shader.
+
+All of it is maps and a cube drawn in code, so it renders the same on both
+backends, and nothing in it is post-processing.
+
 ## v6 — 2026-08-11
 
 The island can take imported models now.

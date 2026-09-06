@@ -66,8 +66,10 @@ const check = (label, ok) => {
     });
     return { meshes, points, lights, casters, tier: window.__tt.TIER };
   });
+  // point clouds: the foam line and the fireflies. The foam was two clouds
+  // until v7 folded them into one line that follows the water's reach.
   check(`the scene is populated (${scene.meshes} meshes, ${scene.points} clouds)`,
-    scene.meshes > 15 && scene.points >= 3);
+    scene.meshes > 15 && scene.points >= 2);
   check(`things cast shadows (${scene.casters})`, scene.casters > 3);
   check(`a quality tier was chosen (${scene.tier.name})`,
     scene.tier.fb > 0 && scene.tier.shadow >= 1024 && scene.tier.seg >= 100);

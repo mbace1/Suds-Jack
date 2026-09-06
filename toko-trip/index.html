@@ -748,12 +748,122 @@
     terrain.receiveShadow = true;
     island.add(terrain);
 
-    // ═══ WATER ═══ a flat plane at terrain y = 0; the surface detail is two
-    // counter-scrolling noise maps, not a shader — stereo-safe on a Quest.
+    // ═══ WATER ═══
+    // v2 was a flat plane with a scrolling bump map. This is the sea: it
+    // reflects the sky it sits under, it swells, its surface has direction,
+    // and its edge climbs the sand and falls back. None of it is a custom
+    // shader — it is a normal map, a displacement map and an environment
+    // cube, all drawn in code, so it renders the same on both backends.
+
+    // tiling noise for the surface maps: the lattice wraps at `P`, so a map
+    // drawn in [0,1) repeats without a seam
+    const tv = (x, y, P) => {
+      const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+      const w = i => ((i % P) + P) % P;
+      const a2 = hash(w(ix), w(iy)), b2 = hash(w(ix + 1), w(iy)), c2 = hash(w(ix), w(iy + 1)), d2 = hash(w(ix + 1), w(iy + 1));
+      return lerp(lerp(a2, b2, sx), lerp(c2, d2, sx), sy);
+    };
+    const tfbm = (u, v, P) => tv(u * P, v * P, P) * 0.5 + tv(u * P * 2, v * P * 2, P * 2) * 0.3 + tv(u * P * 4, v * P * 4, P * 4) * 0.2;
+
+    // the surface: TWO fields of different scale summed into one height, and
+    // its normals baked — so the water has capillary ripple riding on a
+    // longer chop, which is what stops it reading as frosted glass
+    function waterNormalTex(size = 256) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = size;
+      const g = cv.getContext('2d'), im = g.createImageData(size, size);
+      const H = (u, v) => tfbm(u, v, 5) * 0.65 + tfbm(u + 0.31, v + 0.17, 13) * 0.35;
+      const e = 1 / size;
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+        const u = x / size, v = y / size;
+        const dx = (H(u + e, v) - H(u - e, v)) * 22, dy = (H(u, v + e) - H(u, v - e)) * 22;
+        const nl = Math.hypot(dx, dy, 1);
+        const i = (y * size + x) * 4;
+        im.data[i] = (-dx / nl * 0.5 + 0.5) * 255;
+        im.data[i + 1] = (-dy / nl * 0.5 + 0.5) * 255;
+        im.data[i + 2] = (1 / nl) * 255;
+        im.data[i + 3] = 255;
+      }
+      g.putImageData(im, 0, 0);
+      const t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      return t;
+    }
+    // the swell: one slow, wide field the GPU displaces the mesh by, so the
+    // sea rises and falls without a single vertex touched on the CPU
+    function waterDispTex(size = 128) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = size;
+      const g = cv.getContext('2d'), im = g.createImageData(size, size);
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+        const v = tfbm(x / size, y / size, 3) * 255;
+        const i = (y * size + x) * 4;
+        im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255;
+      }
+      g.putImageData(im, 0, 0);
+      const t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      return t;
+    }
+    const waterNormal = waterNormalTex(), waterDisp = waterDispTex();
+    waterNormal.repeat.set(44, 44);
+    waterDisp.repeat.set(5, 5);
+
+    // The sky, as something the water can reflect. Six small faces painted
+    // from the SAME gradient the dome uses, plus the sun, rebuilt when the
+    // mood moves. A real cube camera would also catch the clouds, but it
+    // would cost a six-view render and a backend-specific code path for a
+    // reflection nobody will read cloud shapes out of; the colour is the
+    // point, and this gets the colour exactly.
+    const ENV_N = 32;
+    const envFaces = Array.from({ length: 6 }, () => {
+      const cv = document.createElement('canvas'); cv.width = cv.height = ENV_N; return cv;
+    });
+    const ENV_DIR = [
+      (u, v) => [1, -v, -u], (u, v) => [-1, -v, u],
+      (u, v) => [u, 1, v], (u, v) => [u, -1, -v],
+      (u, v) => [u, -v, 1], (u, v) => [-u, -v, -1],
+    ];
+    let envCube = null, envStamp = -1;
+    const _envC = new THREE.Color(), _envSea = new THREE.Color();
+    function rebuildEnv() {
+      _envSea.copy(cur.water).multiplyScalar(0.8);
+      const sd = cur.sunDir;
+      envFaces.forEach((cv, f) => {
+        const g = cv.getContext('2d'), im = g.createImageData(ENV_N, ENV_N);
+        for (let y = 0; y < ENV_N; y++) for (let x = 0; x < ENV_N; x++) {
+          const [dx0, dy0, dz0] = ENV_DIR[f]((x + 0.5) / ENV_N * 2 - 1, (y + 0.5) / ENV_N * 2 - 1);
+          // three.js samples a CubeTexture with X mirrored (its flipEnvMap
+          // convention for authored cubemaps), so the sun is painted mirrored
+          // too, or its reflection lands on the wrong side of the sea
+          const L = Math.hypot(dx0, dy0, dz0), dx = -dx0 / L, dy = dy0 / L, dz = dz0 / L;
+          if (dy >= 0) _envC.copy(cur.skyHoriz).lerp(cur.skyTop, Math.pow(dy, 0.55));
+          else _envC.copy(cur.skyHoriz).lerp(_envSea, Math.min(1, -dy * 18));
+          const d = dx * sd.x + dy * sd.y + dz * sd.z;
+          _envC.lerp(cur.sunCol, smooth(0.975, 0.9995, d));       // the sun and its glow
+          _envC.convertLinearToSRGB();
+          const i = (y * ENV_N + x) * 4;
+          im.data[i] = _envC.r * 255; im.data[i + 1] = _envC.g * 255; im.data[i + 2] = _envC.b * 255; im.data[i + 3] = 255;
+        }
+        g.putImageData(im, 0, 0);
+      });
+      // a fresh texture each time: the renderer caches its filtered copy per
+      // texture object, and an in-place update would keep reflecting the
+      // previous mood
+      const old = envCube;
+      envCube = new THREE.CubeTexture(envFaces.slice());
+      envCube.colorSpace = THREE.SRGBColorSpace;
+      envCube.needsUpdate = true;
+      waterMat.envMap = envCube; waterMat.needsUpdate = true;
+      sea.material.envMap = envCube; sea.material.needsUpdate = true;
+      if (old) old.dispose();
+    }
+
     const waterMat = new THREE.MeshStandardMaterial({
       color: col(P.teal), transparent: true, opacity: 0.82,
-      roughness: 0.18, metalness: 0, map: noiseTex(60, 225, 255),
-      bumpMap: noiseTex(80, 0, 255), bumpScale: 0.6,
+      roughness: 0.12, metalness: 0,
+      normalMap: waterNormal, normalScale: new THREE.Vector2(0.34, 0.34),
+      displacementMap: waterDisp, displacementScale: 0.11, displacementBias: -0.055,
+      envMapIntensity: 1.15,
     });
     // The shore fade is EXACT rather than screen-space. The usual way to fade
     // water at a beach is to read the depth buffer and compare — but this
@@ -772,10 +882,9 @@
         const x = pos.getX(i), z = pos.getZ(i);
         const depth = Math.max(0, -groundHeight(x, z));
         const k = smooth(0.0, 1.5, depth);         // 0 at the waterline
-        // a modulation around white, so the mood's own water colour still tints it
-        // Shallow must still read as WATER. Too transparent and the bay
-        // becomes wet sand with a film on it — the waterline disappears and
-        // with it the whole shape of the cove.
+        // a modulation around white, so the mood's own water colour still
+        // tints it. Shallow must still read as WATER: too transparent and
+        // the bay becomes wet sand with a film on it.
         col4[i * 4] = lerp(1.2, 0.55, k);
         col4[i * 4 + 1] = lerp(1.34, 0.8, k);
         col4[i * 4 + 2] = lerp(1.28, 0.9, k);
@@ -790,35 +899,60 @@
     // Out to the horizon behind it — as a RING, not a sheet. A full sheet
     // under the island is opaque, so light through the shallow water lands on
     // that instead of on the sand and the whole depth fade is invisible. It
-    // starts where the detailed mesh ends.
+    // starts where the detailed mesh ends. No displacement out here: a ring
+    // with one radial segment has nothing to displace.
     const sea = new THREE.Mesh(new THREE.RingGeometry(34, 220, 72, 1),
       new THREE.MeshStandardMaterial({
-        color: waterMat.color, roughness: 0.18, metalness: 0,
-        map: waterMat.map, bumpMap: waterMat.bumpMap, bumpScale: 0.6,
+        color: waterMat.color, roughness: 0.12, metalness: 0,
+        normalMap: waterNormal, normalScale: new THREE.Vector2(0.34, 0.34),
+        envMapIntensity: 1.15,
       }));
     sea.rotation.x = -Math.PI / 2;
     sea.position.y = -PAD_H - 0.02;
     scene.add(sea);
 
-    // foam: two point clouds hugging the shoreline, breathing with the surf
-    function foamCloud(n) {
-      const pts = [];
-      let guard = n * 60;
-      while (pts.length / 3 < n && guard-- > 0) {
+    // ── the foam line ──
+    // The old foam sat where the sand met still water and breathed in place.
+    // This one is a band of points laid across the whole run of the tide, and
+    // each frame the ones near the water's CURRENT reach light up: as the
+    // swell lifts the plane the reach climbs the sand and the foam climbs with
+    // it, then it draws back and leaves the wet band behind. Alpha per point,
+    // updated on the CPU — a few thousand numbers a frame, no shader.
+    const surfLevel = t => 0.045 * Math.sin(t * Math.PI * 2 * SURF_HZ) + 0.012 * Math.sin(t * 0.7 + 1.3);
+    const foam = (() => {
+      const n = TIER.foam, pts = [], hs = [];
+      let guard = n * 80;
+      while (hs.length < n && guard-- > 0) {
         const x = (rng() - 0.5) * ISLAND_R * 2.6, z = (rng() - 0.5) * ISLAND_R * 2.6;
         const h = groundHeight(x, z);
-        if (Math.abs(h) < 0.09) pts.push(x, h + 0.025, z);
+        if (h > -0.06 && h < 0.24) { pts.push(x, h + 0.02, z); hs.push(h); }
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
-      const cloud = new THREE.Points(g, new THREE.PointsMaterial({
-        color: col(P.cream), size: 0.055, transparent: true, opacity: 0.5,
+      const cols = new Float32Array(hs.length * 4);
+      const cc = col(P.cream);
+      for (let i = 0; i < hs.length; i++) { cols[i * 4] = cc.r; cols[i * 4 + 1] = cc.g; cols[i * 4 + 2] = cc.b; cols[i * 4 + 3] = 0; }
+      g.setAttribute('color', new THREE.BufferAttribute(cols, 4));
+      const o = new THREE.Points(g, new THREE.PointsMaterial({
+        size: 0.06, transparent: true, vertexColors: true,
         depthWrite: false, sizeAttenuation: true,
       }));
-      island.add(cloud);
-      return cloud;
+      o.renderOrder = 2;                              // over the water, always
+      o.userData.hs = hs;
+      island.add(o);
+      return o;
+    })();
+    function foamUpdate(t) {
+      const reach = surfLevel(t) + 0.045;             // where the water's edge is, in terrain height
+      const hs = foam.userData.hs, cols = foam.geometry.attributes.color;
+      const arr = cols.array;
+      for (let i = 0; i < hs.length; i++) {
+        const d = (hs[i] - reach) / 0.05;
+        // brightest at the edge, a fading wash just behind it
+        arr[i * 4 + 3] = Math.exp(-d * d) * 0.85 + (hs[i] < reach ? 0.12 * Math.max(0, 1 + (hs[i] - reach) / 0.12) : 0);
+      }
+      cols.needsUpdate = true;
     }
-    const foamA = foamCloud(Math.round(TIER.foam * 0.55)), foamB = foamCloud(Math.round(TIER.foam * 0.45));
 
     // ═══ THE NOOK — deck, chair, table, radio, book ═══
     const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
@@ -1561,6 +1695,7 @@
         cur.sunDir.copy(from.sunDir).lerp(target.sunDir, k).normalize();
       }
       paintSky(cur.skyTop, cur.skyHoriz, cur.water);
+      if (force) rebuildEnv();
       sun.color.copy(cur.sunCol); sun.intensity = cur.sunInt;
       sun.position.copy(cur.sunDir).multiplyScalar(60);
       hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGround); hemi.intensity = cur.hemiInt;
@@ -2094,7 +2229,10 @@
     function animate() {
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
 
-      if (blend < 1) { blend = Math.min(1, blend + dt / 2.5); applyMood(); shadowDirty(); }
+      if (blend < 1) {
+        blend = Math.min(1, blend + dt / 2.5); applyMood(); shadowDirty();
+        if (blend >= 1) rebuildEnv();                 // the settled sky, reflected exactly
+      }
 
       if (!renderer.xr.isPresenting) {
         // ── twin sticks, plus the keys for anyone who reaches for them ──
@@ -2137,15 +2275,17 @@
       }
 
       // idle motion — the half of the art budget that actually earns presence
-      for (const [cloud, ph] of [[foamA, 0], [foamB, Math.PI * 0.7]]) {
-        const k = Math.sin(t * Math.PI * 2 * SURF_HZ + ph) * 0.5 + 0.5;
-        cloud.material.opacity = 0.34 + 0.28 * k;
-        cloud.material.size = 0.045 + 0.02 * k;
-      }
-      water.position.y = -PAD_H + Math.sin(t * 0.4) * 0.015;
+      // the sea: the plane rides the swell, the two surface maps slide in
+      // different directions so the ripple has cross-motion, and the foam
+      // line follows the water's reach up the sand
+      water.position.y = -PAD_H + surfLevel(t);
       sea.position.y = water.position.y - 0.02;
-      waterMat.map.offset.set(t * 0.0035, t * 0.0022);
-      waterMat.bumpMap.offset.set(-t * 0.005, t * 0.0031);
+      waterNormal.offset.set(t * 0.011, -t * 0.006);
+      waterDisp.offset.set(-t * 0.004, t * 0.0055);
+      foamUpdate(t);
+      // the reflection is rebuilt a few times across a mood blend, not every
+      // frame: each rebuild is a fresh filtered cube on the GPU
+      if (blend < 1 && t - envStamp > 0.3) { envStamp = t; rebuildEnv(); }
       for (const c of crowns) {
         c.rotation.z = Math.sin(t * 0.6 + c.userData.phase) * 0.035;
         c.rotation.x = Math.cos(t * 0.47 + c.userData.phase) * 0.028;
