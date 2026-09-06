@@ -4,6 +4,31 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v6 — 2026-09-06
+Gamepad, and a measured frame budget.
+
+The pad is the scheme's natural home, because both axes v5 added are
+analog: the turbine spools, so part throttle is a real choice, and weight
+is a lean, not a button. Left stick steers and works the throttle, right
+stick pans and is your weight, RT/LT are throttle and brake for anyone
+who expects a racer to work that way, A drops in, Start pauses, Y swaps
+the chassis. It feeds the SAME control struct as keys and glass and is
+merged with them rather than exclusive, so a stick in one hand and a
+keyboard under the other still works; the touch overlay hides itself
+while a pad is driving.
+
+Then the frame was measured for the first time since v5 put two
+full-resolution passes on top of the composer. Two things came out of it.
+The depth prepass was re-rendering all 121 streamed tiles at full
+resolution when it only exists to occlude the ships, so it is now culled
+to the range of the farthest ship — 118 draw calls down to 44. And the
+props were 1420 separate meshes for 30k triangles, about 21 triangles a
+call, each drawn twice (shadow map, then world); everything but the
+floaters is static and shares a flat Lambert colour, so each tile's props
+now bake down to ONE merged mesh with the colour in a vertex attribute.
+Together: 929 draw calls to 384, for 15% more triangles (the merged mesh
+culls at tile granularity, which is what the terrain already did).
+
 ## v5 — 2026-07-27
 Controls rebuilt round a WEIGHT axis. Left stick steers and works the
 throttle; right stick pans the camera left/right and is your weight

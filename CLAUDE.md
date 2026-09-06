@@ -202,11 +202,53 @@ put a white box round every ship.
 **Controls.** Left stick steers and works the throttle; right stick pans the camera
 (x) and is your weight (y). Keyboard: W throttle, A/D steer, S brake, Space boost
 (lean back), Up arrow spoiler (lean forward), Left/Right arrows pan, **F swaps the
-chassis on the menu**, Esc pause. The HUD is a telemetry cluster: N1, TGT, lateral g,
+chassis on the menu**, Esc pause. **Gamepad (v6)** is the scheme's natural home,
+because both axes v5 added are analog — the turbine spools so part throttle is a real
+choice, and weight is a lean, not a button; keyboard flattens both to on and off.
+`input.pollGamepad()` runs once per frame from `animate()` and feeds the SAME control
+struct as keys and glass, **merged rather than exclusive**, so a stick in one hand and
+a keyboard under the other still works: left stick steer + throttle/brake, right stick
+pan + weight, RT/LT additionally throttle/brake, A drop in, Start pause, Y swap chassis
+(buttons edge-detected in the poll, as the keyboard path does). Deadzone 0.16 with the
+remainder rescaled, so half-stick really is part power. `drawSticks()` early-returns
+while a pad is driving, so the touch overlay does not sit on top of a controller. The HUD is a telemetry cluster: N1, TGT, lateral g,
 slip, hover gap, **sink** (cm the runners have settled), the weight axis, surface and
 chassis. Touch is twin sticks: left steers and works the
 throttle — there is no auto-throttle, managing spool is the point — right holds overdrive
 and trims the slide.
+
+**The frame budget (v6), measured.** At 1280x720, q=high, in a race: **384 draw calls
+and 65k triangles** across the three passes — 171 calls for the PS2 world (which
+includes the shadow map's second pass over it), 44 for the depth prepass, 160 for the
+HD layer. At `?q=low` it is 198 calls / 48k triangles, with no shadow pass. Two things
+came out of the first measurement and both are in the code now. The **depth prepass was
+re-rendering all 121 streamed tiles at full resolution** when it exists only to occlude
+the HD ships — a thing can only occlude what is behind it, so `renderFrame()` now hides
+every tile farther away than the farthest ship (118 calls down to 44); the projection
+must stay identical to the HD pass or the depth values are not comparable, which is why
+it culls by visibility rather than by moving the far plane. And the **props were 1420
+separate meshes for 30k triangles** — about 21 triangles a draw call, each drawn twice
+(shadow map, then world). Everything but the floaters is static and shares a flat
+Lambert colour, so `bakeProps()` merges each tile's props into ONE mesh with the colour
+moved to a vertex attribute; the floaters spin and bob so they stay real meshes.
+Culling granularity does not suffer — the merged mesh is exactly one tile, the unit the
+terrain mesh was already culled by — but it does cost ~15% more triangles, which is the
+trade. Two traps paid for here: **`toNonIndexed()` returns `this` when a geometry is
+already unindexed**, and DodecahedronGeometry and OctahedronGeometry both are, so the
+naive version transformed, stripped and then *disposed the kit's shared rock geometry*
+and every rock in the world went black; and giving the merged mesh `receiveShadow` puts
+it on both sides of the same 1024 hard map, and the self-shadow acne turns every prop
+black too (it is off, as the props always effectively were).
+
+**Measuring under SwiftShader, honestly.** Two things will lie to you. `renderer.info`
+**resets on every `render()` call**, so a three-pass frame reports only the last pass
+(54 calls, 2.5k triangles — off by a factor of 17); set `info.autoReset = false` and
+reset by hand. And SwiftShader **submits asynchronously**, so the CPU time inside a
+`render()` call is submission, not rasterisation, and the stall lands in whichever later
+call syncs — per-pass milliseconds are meaningless, and removing the HD pass made the
+PS2 pass appear three times slower. What is honest: the **frame interval**, and the draw
+call and triangle counts, which are exact and hardware-independent. Read deltas between
+variants, never absolutes.
 
 **A testing note that will otherwise cost an afternoon:** under SwiftShader at high
 quality the frame rate is low enough that `dt` clamping runs the simulation at roughly a
@@ -420,10 +462,10 @@ powder/         # Powder — hover SIM racer, open flatlands cut by a canyon, su
     palette.js  # the whole colour scheme + the two light directions
     terrain.js  # height(x,z), the rift and its BREACHES, streamed tile grid
     vehicle.js  # THE SIM: four sprung hover pads, turbine spool, slip-limited grip
-    props.js    # monoliths, arches, floating rock — where the surreal lives
+    props.js    # monoliths, arches, floating rock — and bakeProps, one mesh a tile
     route.js    # gates, alternating rift floor and flats, aligned to the breaches
     dust.js     # one pooled particle class, configured as plume / spindrift / sparks
-    input.js    # twin sticks: steer+throttle, and pan+WEIGHT / keyboard
+    input.js    # twin sticks: steer+throttle, and pan+WEIGHT / keyboard / gamepad
     audio.js    # WebAudio turbine stack driven by N1, wind, surface roar
     sky.js      # gradient dome, sun, the ringed body, distant mesa range
 paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new palette)

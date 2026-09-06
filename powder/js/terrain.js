@@ -21,8 +21,8 @@
 //                 it returns the deck when you are on it and the floor when
 //                 you are under it.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=5';
-import { populate, makePropKit } from './props.js?v=5';
+import { PAL } from './palette.js?v=6';
+import { populate, bakeProps, makePropKit } from './props.js?v=6';
 
 export const TILE = 100;
 const Q = 16;                    // 6.25 m resolution
@@ -260,6 +260,7 @@ class Tile {
     this.mesh = new THREE.Mesh(this.geo, terrain.mat);
     this.mesh.receiveShadow = true;
     this.props = new THREE.Group();
+    this.baked = null;
     this.i = this.j = null;
   }
 
@@ -306,6 +307,9 @@ class Tile {
     this.props.clear();
     this.props.userData = {};
     populate(t, this.props, i, j, TILE);
+    // and immediately collapse the static ones into a single mesh — see
+    // bakeProps. The tile owns the merged geometry, so it disposes it.
+    this.baked = bakeProps(this.props, t.kit);
     t.scene.add(this.props);
   }
 
@@ -314,6 +318,7 @@ class Tile {
     this.t.scene.remove(this.props);
     this.props.clear();
     this.props.userData = {};
+    if (this.baked) { this.baked.dispose(); this.baked = null; }
     this.i = this.j = null;
   }
 }
