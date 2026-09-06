@@ -1,18 +1,19 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=194';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=194';
-import { Player, PLAYER_RADIUS } from './player.js?v=194';
+import { InputManager } from './input.js?v=195';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=195';
+import { Player, PLAYER_RADIUS } from './player.js?v=195';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=194';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=194';
-import { audio } from './audio.js?v=194';
-import { haptics } from './haptics.js?v=194';
-import { initDesigner } from './designer.js?v=194';
-import { createSpecimen } from './specimen.js?v=194';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=194';
-import { TUNING } from './tuning.js?v=194';
-import { Arena, rectShape } from './arena.js?v=194';   // v236: the boundary has one home
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=194';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=195';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=195';
+import { audio } from './audio.js?v=195';
+import { haptics } from './haptics.js?v=195';
+import { initDesigner } from './designer.js?v=195';
+import { createSpecimen } from './specimen.js?v=195';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=195';
+import { TUNING } from './tuning.js?v=195';
+import { Arena, rectShape } from './arena.js?v=195';   // v236: the boundary has one home
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel,
+         gradeFor as levelGradeFor, cleared as levelCleared } from './level.js?v=195';   // v237/v239: authored levels; v242: grades
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -5118,7 +5119,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v241' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v242' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -6193,15 +6194,22 @@ function spawnWave() {
   const { speedMult, intervalMult } = getWaveScale(wave);
   // Binding fight rooms use the cabinet's own roster (v157) — only BOSS
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
+  // v242 CHALLENGES: a DIRECTED level has no authored list — it is the
+  // ordinary director pinned to one difficulty, rolled again every time the
+  // room is cleared, for as long as the level's clock runs. That is what a
+  // challenge is: a known pressure with a rule on it, not a hand-placed
+  // timeline. getEnemySchedule() reads `wave`, so the pin is set there.
+  const directed = customLevel && customLevel.level.director;
+  if (directed) wave = customLevel.level.director.difficulty;
   const list = (tokotronMode || gaundropMode || loadoutMode || kaikkiMode || nexdeusMode ||
                 (smashMode && smashRoomKind === 'bonus') ||     // v178: pure loot, no fight
                 (bindingMode && (smashRoomKind !== 'boss' || bdRevisit)) ||
-                customLevel) ? [] : getEnemySchedule(wave);   // v237: a level brings its own list
+                (customLevel && !directed)) ? [] : getEnemySchedule(wave);   // v237: a level brings its own list
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
   pendingSpawns = [];
-  if (customLevel) {
+  if (customLevel && !directed) {
     // v237: the authored list, from the playhead on, in the pump's own shape.
     // level.js compiles it; nothing downstream knows it was not the director.
     pendingSpawns = compileLevel(customLevel.level, EnemyType, customLevel.fromT);
@@ -7779,7 +7787,7 @@ function returnToTitle() {
 // are swept and the editor gets the result. SMASH TV is held off for the
 // duration — its room lattice and door spawns would fight an authored list.
 function playLevel(level, fromT = 0) {
-  customLevel = { level, fromT, kills: 0, savedSmash: smashMode };
+  customLevel = { level, fromT, kills: 0, savedSmash: smashMode, clock: 0 };   // v242: directed rooms keep their own clock
   smashMode = false;
   arenaOverride = levelArena(level);
   startGame();   // straight in — startRun() would route through a selected cabinet
@@ -7790,9 +7798,43 @@ function levelArena(level) {
   const box = new Arena(shape);
   return { halfX: box.halfX, halfZ: box.halfZ, shape };
 }
+// v242: per-level bests, by level id. Its own key — a challenge grade is not
+// a run record and must not compete with the leaderboard's top ten.
+const LEVEL_PB_KEY = 'tokoDropLevelBests';
+function loadLevelBests() {
+  try { const raw = JSON.parse(localStorage.getItem(LEVEL_PB_KEY)); return (raw && raw.v === 1) ? raw : { v: 1, byId: {} }; }
+  catch { return { v: 1, byId: {} }; }
+}
+let levelBests = loadLevelBests();
+// Returns the best AFTER this attempt, so the result card can say whether the
+// grade just shown is a new one.
+function recordLevelGrade(id, score, grade) {
+  const prev = levelBests.byId[id] || { score: 0, grade: '' };
+  const better = score > prev.score;
+  const now = better ? { score, grade } : prev;
+  if (better) {
+    levelBests.byId[id] = now;
+    try { localStorage.setItem(LEVEL_PB_KEY, JSON.stringify(levelBests)); } catch { /* storage may be unavailable */ }
+  }
+  return { ...now, improved: better };
+}
+// The editor and the gates ask through here rather than reaching for storage.
+function levelBestFor(id) { return levelBests.byId[id] || { score: 0, grade: '' }; }
+
 function endLevelRun(outcome) {
   if (!customLevel) return;
-  const result = { outcome, score, kills: customLevel.kills, time: Math.round(waveTimer * 10) / 10 };
+  // v242 CHALLENGES: a level with grade tiers is scored, and the best grade
+  // it has ever earned is remembered. Below C is no grade at all, which is
+  // the campaign's own unlock rule (design/CAMPAIGN_LEVELS.md: a player who
+  // is merely finishing keeps moving; grades above C are for who wants them).
+  const lv = customLevel.level;
+  const clock = lv.director ? customLevel.clock : waveTimer;
+  const result = { outcome, score, kills: customLevel.kills, time: Math.round(clock * 10) / 10 };
+  if (lv.grade) {
+    result.grade = levelGradeFor(lv, score);
+    result.cleared = levelCleared(lv, score);
+    result.best = recordLevelGrade(lv.id, score, result.grade);
+  }
   smashMode = customLevel.savedSmash;
   customLevel = null;
   pendingSpawns = [];
@@ -10066,8 +10108,18 @@ function loop() {
     }
   }
 
+  // v242: a DIRECTED room's clock is its own — spawnWave() zeroes waveTimer
+  // every time the room is re-rolled, so the level would never end on it.
+  if (customLevel && customLevel.level.director && gameState === 'playing') {
+    customLevel.clock += dt;
+    if (customLevel.clock >= customLevel.level.duration) {
+      renderer.render(scene, camera);
+      endLevelRun('clear');
+      return;
+    }
+  }
   // v237: an authored level ends on its own clock, cleared or not.
-  if (customLevel && gameState === 'playing' && waveTimer >= waveDuration) {
+  if (customLevel && !customLevel.level.director && gameState === 'playing' && waveTimer >= waveDuration) {
     renderer.render(scene, camera);
     endLevelRun('clear');
     return;
@@ -10086,6 +10138,20 @@ function loop() {
   // flight (_roomSwap / roomFadeT) — the old room's dead enemies linger until
   // spawnWave, so the clear could re-fire mid-fade, double-paying the bonus
   // and (in gauntlets) cascading through the whole room script instantly.
+  // v242 CHALLENGES: a DIRECTED room re-rolls when its floor is clear. The
+  // block below excludes customLevel — right for an AUTHORED level, whose
+  // timeline must not be interrupted by a new wave, and wrong for a
+  // challenge, which is pressure for a fixed clock. Without this it spawned
+  // one wave and stood empty for the rest of the level (caught by
+  // scripts/challenge-smoke.sh, which exists to ask exactly this).
+  if (customLevel && customLevel.level.director && gameState === 'playing' &&
+      waveGapT <= 0 && !exitPhase && enemies.length > 0 &&
+      enemies.every(e => !e.alive && !e._dying) && pendingSpawns.length === 0) {
+    score += wave * 500;              // the same clear bonus the classic path pays
+    waveClearFlashT = 0.4;
+    audio.waveClear();
+    waveGapT = 0.8;                   // a breath, then the room fills again
+  }
   if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode && !kaikkiMode && !customLevel &&
       (!nexdeusMode || nxSurges.length === 0) &&
       !_roomSwap && roomFadeT <= 0 &&
@@ -10300,7 +10366,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=194').then(async m => {
+  import('./editor.js?v=195').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10331,6 +10397,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=194').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=195').catch(() => {});
   });
 }

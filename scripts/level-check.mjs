@@ -48,7 +48,8 @@ ok('pickup ids parsed from source', pickupIds.has('hp') && pickupIds.has('S') &&
 // ── every bundled file loads, and BUNDLED names exactly the files ──────
 const dir = new URL('../toko-drop/levels/', import.meta.url);
 const files = readdirSync(dir).filter(f => f.endsWith('.json')).map(f => f.replace(/\.json$/, '')).sort();
-ok('level.js BUNDLED names exactly the files in levels/', JSON.stringify([...L.BUNDLED].sort()) === JSON.stringify(files), `${L.BUNDLED} vs ${files}`);
+ok('level.js BUNDLED + CAMPAIGN name exactly the files in levels/', JSON.stringify([...L.LEVEL_IDS].sort()) === JSON.stringify(files), `${L.LEVEL_IDS} vs ${files}`);
+ok('no id is in both BUNDLED and CAMPAIGN', L.BUNDLED.every(id => !L.CAMPAIGN.includes(id)));
 const bundled = {};
 for (const id of files) {
   let lv = null, err = '';

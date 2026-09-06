@@ -7,6 +7,59 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v242 — 2026-09-06
+**CHALLENGES — the campaign, un-shelved and built the right way round** *(owner ask, 2026-09-06: "make challenges")*
+- **Why it can exist now.** CHALLENGES was dropped on 2026-08-28 (`QUEUE.md`
+  Q-028) for one reason: it existed ONLY in the Godot port — designed on the
+  follower side, which is the exact shape the "JS leads on gameplay" rule
+  exists to prevent. `LEVEL_EDITOR_DESIGN.md` §6 said an editor plus a level
+  format *is* the delivery mechanism it needed, and that the two should be
+  decided together. The format is live (v237–v241), so the campaign can be
+  DATA that flows to both builds instead of code in one of them
+- **A challenge is a DIRECTED room.** The format gains `director: {difficulty}`
+  as the alternative to `spawns` — a level is authored or directed, never both
+  — plus `grade: {tiers}`, four ascending thresholds for C/B/A/S. That is all
+  a challenge is: the ordinary wave director pinned to one difficulty,
+  re-rolled whenever its floor clears, for the level's own clock, with a rule
+  on it. **Half the port's rules needed no new code at all**: SWARM is
+  `rules.mode: "melee"`, BOOST ONLY is `"rush"`, and CLOSE QUARTERS is
+  `arena: "room"` — all already in the format
+- **The first three levels, ported as data** from the port's
+  `scripts/challenges.gd` with its measured tiers intact: `ch-first-light`
+  (60s, difficulty 2), `ch-cold-start` (BOOST ONLY), `ch-the-vice` (CLOSE
+  QUARTERS, 90s). `level.js` `CAMPAIGN` is their order; `BUNDLED` stays the
+  EDITOR's list and does not include them, because a directed room has no
+  spawns to edit and opening one in the editor would be a blank timeline over
+  a level it cannot express
+- **`gradeFor`/`cleared` live in `level.js`** — one place decides a boundary,
+  so the game, the editor, the port and the gates cannot disagree. Below C is
+  no grade at all, which is the campaign's own unlock rule
+  (`design/CAMPAIGN_LEVELS.md`: "a player who is merely finishing keeps
+  moving"). Best score and grade per level id persist under their own key,
+  never competing with the leaderboard's top ten
+- **`scripts/challenge-smoke.sh` (13 checks) and the bug it caught on its
+  first run.** A directed room spawned ONE wave and then stood empty for 58
+  of its 60 seconds: the wave-clear block excludes `customLevel`, which is
+  right for an authored timeline and wrong for a challenge. Fixed, and the
+  gate now proves the room is RE-ROLLED (it counts refills, because a
+  directed room pins `wave` and counting changes to it would always say 1),
+  that bodies keep arriving past halfway, that the level ends within 2s of
+  its duration, and that the grade boundaries hold at 0 / C-1 / C / S.
+  113 bodies over 21 rooms on L1; 244 over 31 on L3
+- Gates: check-syntax · arena-check 8,396 · level-check **88** ·
+  level-move-check 7 · smoke · level-smoke (authored, unaffected) ·
+  editor-smoke 27 · challenge-smoke 13 × three levels
+- **Not in this release, named.** There is no campaign MENU yet: a challenge
+  is reached with `?level=ch-first-light`, and the unlock chain
+  (`CAMPAIGN` order, C-or-better, the ability unlocks the port's table
+  carries) is data with nothing reading it. Seven of the ten levels are not
+  ported, because ARTILLERY, GRAVEYARD and FOCUS need director flags the
+  browser build does not have yet. **And the tiers are the PORT'S measured
+  numbers, not this build's**: an immortal bot scored 607,600 against an S
+  of 20,600 here, which says the two builds score differently and that these
+  thresholds are inherited, not validated
+- Cache-bust `?v=194` → `?v=195`; HUD label → v242
+
 ## v241 — 2026-09-06
 **The region MOVES** *(P3 of `LEVEL_EDITOR_DESIGN.md` §7 — the last of the owner's three requirements)*
 - **The owner's own worked example now runs.** §1's first requirement was
