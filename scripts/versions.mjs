@@ -84,6 +84,27 @@ for (const g of [...GAMES, ...EXTRA]) {
 }
 
 const dest = path.join(ROOT, 'hub', 'versions.json');
+// ── the guard ──
+// The deployed site keeps its own versions.json BY HAND, in its own shape:
+// string versions with a numeric sort key ("v": "2.26", "n": 2026, "from":
+// "hand"). Running this generator over that file rewrote Toko Move 2.26 to
+// 2, Eeri 15.56 to 15, and dropped tokodropgodot's row entirely — the drift
+// class the deploy notes warn about, done once and not to be done again. If
+// the file already there is hand-shaped, refuse. A deploy adds ONE row to it
+// by hand, in its shape, and touches nothing else. --force overrides, and
+// should never be needed on a site tree.
+if (existsSync(dest) && !process.argv.includes('--force')) {
+  let prior = null;
+  try { prior = JSON.parse(readFileSync(dest, 'utf8')); } catch (e) { /* unreadable: overwrite */ }
+  const handShaped = prior && Object.values(prior).some(r =>
+    r && (r.from === 'hand' || typeof r.v === 'string' || 'n' in r));
+  if (handShaped) {
+    console.error(`\nREFUSING to overwrite ${dest}: it is hand-maintained (string versions, an "n" sort key, or a "from": "hand" row).`);
+    console.error('Add your project\'s row to it by hand, in its shape — e.g. { "v": "8", "n": 8000, "from": "VERSIONS.md" } — and touch nothing else.');
+    console.error('This generator is for the source tree. --force overrides, and should never be needed on a site tree.');
+    process.exit(2);
+  }
+}
 writeFileSync(dest, JSON.stringify(out, null, 2) + '\n');
 
 const shown = Object.entries(out).map(([id, r]) => `${id} v${r.v} (${r.from})`);

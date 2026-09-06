@@ -389,4 +389,8 @@ if (stale.length) {
     `\nread the diff before you commit it — this only proves the bytes differ,` +
     `\nnot that theirs is the version you want.`);
 }
-console.log('\nnext: node scripts/versions.mjs ' + site);
+// Do NOT point people at the generator for the site: the site's versions.json
+// is hand-maintained in its own shape and the generator will refuse it (and
+// once, before it refused, rewrote every other game's row). One row, by hand.
+console.log('\nnext: add ONE row for your project to ' + path.join(site, 'hub/versions.json') +
+  ' by hand, in its shape — { "v": "N", "n": N000, "from": "VERSIONS.md" } — and touch nothing else.');
