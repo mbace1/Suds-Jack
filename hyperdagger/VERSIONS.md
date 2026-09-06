@@ -2,6 +2,118 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v41 — 2026-09-06
+**Seasons: the arena's art is declared, like a mode — and season 1 is built**
+
+Owner's direction, recorded in `SEASONS.md`: season 1 is the current look
+(the Meshy skulls, the black void, one red horizon) plus **growing and
+moving platforms** and **dark rock pillars that are hard to see**, with a
+**needler** (fast nails) and a **shotgun** (a wider blast of the same
+nails) in the hand; season 2 is an aquamarine Inca skullscape with goo
+waves under a whiter sky. `js/seasons.js` is the registry, the way
+`modes.js` is: a season declares the sky, the fog, the motes, the ground,
+how the monuments are lit, the floor tint, its rock, its slabs and its
+weapon profile, and `main.js` asks `S()` instead of branching. SEASON sits
+beside MODE on the menu, `?season=<id>` deep-links one, and the sky changes
+under you when you cycle it so you see what you picked. Modes and seasons
+multiply — PURE in EMBER is the DD spine on black rock.
+
+**SEASON 0 — VOID** is the control: the arena exactly as it was, daggers,
+nothing standing. Every legacy section of the gate is pinned there, so the
+DD spine is still measured unchanged; it is the A in every A/B.
+
+**SEASON 1 — EMBER.** Five shale piles through `walls.js` and four slabs
+through the new `js/platforms.js`. A slab rises out of the floor over
+1.4 s, stands 14–24 s drifting a slow orbit, sinks and re-seeds elsewhere —
+never under your feet, never on the rock. A standing slab is a floor
+(`player.floorY`, the track's own value), its sides are walls that report
+`wallContact`, and a body on one is **carried**: the slab's motion this
+frame is added to the feet, or a moving floor reads as ice. Rock and slabs
+also **stop a nail** — `walls.blocks` / `platforms.blocks` are slab tests
+the dagger loop asks before the enemies, so a fast projectile cannot tunnel
+through a pile. Both draw from the run's rng, so a DAILY arena is the same
+for everyone.
+
+**The needler** is a weapon PROFILE, `T.weapons.needler`, laid over
+`T.weapon` by `wpn(key)` at the fire sites: the same tap/hold grammar, the
+projectile re-shaped into a nail (`DaggerPool.setShape` — a quarter of the
+dagger's girth, near twice its length, hot brass), the stream at 1.35× the
+tier's rate and 72 u/s in a tighter cone, the shotgun a wider blast (0.27
+rad against 0.18) of the same nails at 104 u/s, the tick a fifth higher.
+The DD economy — burst DPS under stream DPS — only gets safer with the
+rate, and the gate asserts it.
+
+**Then the owner looked, and it moved four things.** The slabs are **low,
+mostly** — the height draw is squared, so most sit at knee height and a top
+under 0.45 is stepped onto rather than walked into. Slabs and piles are
+**shale** (`js/shale.js`: stacked beds of uneven thickness, each nudged and
+turned off the one below, crooked tiles on a slab's top, one vertex-coloured
+unlit geometry apiece) — the first cut wore the floor's own plates and read
+as more floor. There are **fewer objects and they are darker and shorter**:
+five piles at 3–7 high instead of eight at 6–13, four slabs instead of five,
+six monuments instead of eight. And **lighting and vfx** smooth the rest:
+the fog is the season's and leans to the horizon's ember (16→64) so distance
+melts into the glow instead of into a hole, the motes are embers, and a
+matte ground ring stands outside the disc — because *3D assets shouldn't all
+float*, and a piece on the void does.
+
+**The monuments were the real find.** The owner's Meshy pieces were made for
+this season and "looked quite weird" in every wide shot: the gate a black
+arch with pink rims, a black blob with red veins filling the sky behind it.
+Hiding pieces one at a time named two causes. The asset rig's white light is
+aimed at enemies inside the disc and never reaches a piece at z −40, so only
+the crimson fills caught their edges — multiplying a piece's colour by four
+changed nothing, because nothing was lighting it. And the blob was the
+*mountain*, whose bake is near-black by nature, standing 34 high at −64. A
+season now owns the backdrop's look (`backdrop: {visible, emissive}` →
+`Backdrop.setLook`, the bake fed back through `emissiveMap` at 0.45 so the
+stone carries its own light and the fills become the rims they were meant to
+be), and the mountain stands at −88 and 30 high. VOID hides the backdrop
+entirely: the reference has none.
+
+**SEASON 2 — INCA is palette only**, and says so on the menu. A whiter sky
+kept under the bloom threshold, a saturated blue horizon, an aquamarine
+floor at a higher glow so the tint shows through the plates, four LARGE
+slabs that grow slower and stand longer, no rock, no monuments.
+`built: false` and a `todo` list name the goo waves, the soft-edged slabs,
+the Inca backdrop and a readability pass for bone against white — all still
+words.
+
+**Two numbers came off renders rather than reasoning.** The first star field
+was a snowstorm against the reference's handful, so the threshold passes a
+quarter of the cells it did. And **linear 0.05 is a mid grey on screen** —
+sRGB lifts the darks — which is why the shale is written at 0.010–0.022 and
+why a tint on a near-black floor plate did nothing until the floor glow
+became the season's too.
+
+**Gate: 137 checks** (was 121). Per season: it boots into itself, the sky, fog,
+ground and monuments wear the declared look, the hand holds the declared
+weapon; ember: five piles none of them tall, four slabs most of them
+knee-high, a slab that drifts, IS the floor, carries a body and stops one at
+its side, and a nail fired into rock dying while one fired at the sky flies
+on; inca: large slabs, no rock, and an honest `built: false`. The control is
+asserted to still be the old arena.
+
+**And the gate found something that was never a leak.** With the seasons
+section in, "spawn/kill cycles do not leak geometry" went red: geometries and
+the enemy array climbed by exactly one per spawn. Nothing was leaking. Dead
+enemies leave the array inside `updateCombat`, which only runs while a run is
+PLAYING — the suite had ended its run in an earlier section, so the prune
+never ran and a growing array read as an unbounded leak. In isolation the same
+cycle is flat at twelve geometries. The check now records the state it entered
+on and starts a fresh run if that run is over, which is the difference between
+a leak detector and a state detector. Same day, the v39 backdrop check was
+failing for the opposite reason — it hardcoded "at least eight pieces" and the
+owner's cut took the manifest to six, so it now asks the manifest how many it
+should find.
+
+**Lost and rebuilt.** The first cut of all this was written, reviewed
+against renders and corrected — and never committed before the container was
+reclaimed, so it went. Nothing but time was lost (the branch was at v40 on
+the remote), and the rule it cost is the obvious one: **commit the moment a
+piece stands up**, not when the release is tidy. This entry's code was
+pushed before its gate was written.
+
 ## v40 — 2026-09-05
 **The first experiment on the bench: the wall run**
 

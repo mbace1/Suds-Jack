@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { toLambert, voxelizeMesh } from './meshassets.js?v=71';
-import { MODELS, registerVoxelModel } from './voxel.js?v=71';
+import { toLambert, voxelizeMesh } from './meshassets.js?v=72';
+import { MODELS, registerVoxelModel } from './voxel.js?v=72';
 
 // assets/ is the documented drop-in home (see assets/README.md). An earlier
 // cut of this file invented a second one, `models/enemies/`, which existed in

@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=71';
+import { TUNING as T } from './tuning.js?v=72';
 
 /**
  * THE MODE REGISTRY — this game is a laboratory, not one experience.

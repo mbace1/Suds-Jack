@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=71';
+import { TUNING as T } from './tuning.js?v=72';
 
 const _v = new THREE.Vector3();
 const _t = new THREE.Vector3();
@@ -31,6 +31,19 @@ export class DaggerPool {
     this.mesh.count = 0;
     scene.add(this.mesh);
     for (let i = 0; i < cap; i++) this.pool.push(new THREE.Object3D());
+    this.shape = null;
+  }
+
+  /** v41: a season's weapon profile re-shapes the projectile. `shape` is
+   *  {r, len} for the cone, `color` an HDR triple; null puts the dagger back. */
+  setShape(shape = null, color = null) {
+    const geo = new THREE.ConeGeometry(shape?.r ?? 0.045, shape?.len ?? 0.22, 4);
+    geo.rotateX(Math.PI / 2);
+    this.mesh.geometry.dispose();
+    this.mesh.geometry = geo;
+    if (color) this.mesh.material.color.setRGB(color[0], color[1], color[2]);
+    else this.mesh.material.color.setRGB(3.2, 0.38, 0.07);
+    this.shape = shape ? { ...shape } : null;
   }
 
   _commit() {
