@@ -13,13 +13,13 @@ import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.27';
+const BUILD_VERSION='2.28';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
 let flow,challenge,renderer,transit,city,water,ground,source,transitView=false,done=false,last=0,msgs=[];
 let box,roads,camera;
-const say=s=>{msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};
+const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
 function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet};}
 
@@ -51,6 +51,21 @@ function boot(seed=7){
   renderer=new FlowRenderer($('map'),MAP_THEME);
   challenge.start();publish();paintHud();paintSheet();
 }
+
+// WHICH SCALE A PHONE OPENS AT. Measured, not preferred: CITY fits the whole
+// board by HEIGHT, and board.js then grows the box sideways to fill the canvas
+// (growing rather than cropping, so no stop is ever hidden). On a desktop the
+// map element carries the board's own portrait aspect and the growth is tiny.
+// On a phone `width:100%` and `max-height` force the element landscape, the
+// grown half has no ground, no water and no streets in it — the data ends where
+// the extract does — and 48% of the map is black. The badges that survive pile
+// into an unreadable heap in the middle.
+//
+// ROUTE's 4 km viewport is a CROP of the board rather than a fit to it, so it
+// is full of map at any element shape, and it is the scale the game is played
+// at anyway. CITY stays one tap away on the rail; this only picks the opening.
+function openingScale(){if(!camera)return;if(innerWidth>=900)return;
+  camera.snapTo('route');camera.zoom=camera.targetZoom;}
 
 function paintTransitPanel(){
   if(!transit)return;
@@ -388,7 +403,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
 
 async function init(){
   $('play').disabled=true;$('play').textContent='LOADING HELSINKI…';
-  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
+  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
 }
 
 // Tapping the board. The whole verb set is READ the network and time it, and

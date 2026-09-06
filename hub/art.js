@@ -1335,6 +1335,138 @@ export const ART = {
     for (let i = 0; i < 5; i++) { g.p(0, i, W, 1, 'rgba(0,0,0,0.10)'); g.p(0, H - 1 - i, W, 1, 'rgba(0,0,0,0.10)'); }
   },
 
+  // Toko Move: the cover. A courier sprinting for a tram that is already
+  // arriving — which is the whole game, since you drive nothing and catch
+  // everything. Atari sky (flat bars, hard seams, one colour per band),
+  // Master System everything else: flat fill inside a hard black line, so
+  // the shape has to live in the silhouette.
+  //
+  // Three planes, each doing a job. The Cathedral is small and off-centre
+  // because it says HELSINKI and then gets out of the way. The tram is drawn
+  // ON the rails, front and flank both sized off the track at their own
+  // depth — a box beside its own track reads as a sticker. The courier is
+  // cropped by the near edge (cropping is what makes a figure foreground)
+  // and rim-lit in two colours from the tram's side, because a black figure
+  // on a dark street is a hole rather than a person.
+  //
+  // He is built as CAPSULES DRAWN IN PASSES — every limb in ink, then in the
+  // rim colours, then in fill — not element by element. Outlining each piece
+  // as you go draws the outlines across the finished figure, which is how the
+  // first cut turned into a scribble of dark lines.
+  tramstop(g, a) {
+    const HZ = 42, INK = '#070a0e';
+    const hot = mix(a, '#ffffff', 0.7);
+    const VX = 124, VY = 45;                        // where the rails go
+    const railX = (x0, y) => x0 + (VX - x0) * (H - y) / (H - VY);
+
+    // ── sky: fourteen flat bars, hard seams, night giving way at the bottom
+    const SKY = ['#0d1420', '#111a2a', '#152135', '#1a2840', '#213149', '#293a51',
+      '#32435a', '#3d4c62', '#4a556a', '#5a5d70', '#6d6472', '#816c70', '#96756a', '#ab7d62'];
+    SKY.forEach((c, i) => g.p(0, i * HZ / SKY.length, W, Math.ceil(HZ / SKY.length) + 1, c));
+    g.p(0, HZ - 5, W, 3, '#bd8a5c'); g.p(0, HZ - 2, W, 2, '#cf9a63');
+    g.disc(14, HZ - 1, 8, '#dcab6f'); g.disc(14, HZ, 5, '#f0c78d');       // the low sun
+
+    for (let i = 0; i < 9; i++) { const x = (i * 41) % W; g.line(x, 3 + (i * 13) % 24, x - 3, 11 + (i * 13) % 24, 'rgba(150,175,195,0.12)'); }
+
+    // ── the block: flats along the horizon, darker than the sky they cut ──
+    g.p(-2, 28, 16, 14, '#141b26'); g.p(12, 33, 10, 9, '#19212e');
+    g.p(74, 32, 12, 10, '#141b26'); g.p(100, 24, 30, 18, '#141b26'); g.p(94, 34, 8, 8, '#19212e');
+    for (const [x, y] of [[1, 32], [7, 37], [16, 37], [77, 35], [106, 28], [113, 34], [121, 29], [124, 36]]) g.p(x, y, 2, 3, '#f0b95a');
+
+    // ── the Cathedral on its hill: body, drum, dome, cross. Nothing else —
+    // the four little corner domes turned it into a fir tree at this size.
+    const cx = 60;
+    g.p(cx - 12, 39, 24, 3, '#333b46');                                    // the stair
+    g.p(cx - 9, 28, 18, 14, INK); g.p(cx - 8, 29, 16, 13, '#cfd4d6');
+    for (let x = cx - 6; x <= cx + 5; x += 3) g.p(x, 33, 1, 9, '#8d9396');  // columns
+    for (let i = 0; i < 3; i++) g.p(cx - 7 + i, 26 + i, 15 - i * 2, 1, '#cfd4d6');
+    g.p(cx - 6, 21, 12, 6, INK); g.p(cx - 5, 22, 10, 5, '#c6cccf');        // the drum
+    g.disc(cx, 17, 6, INK); g.disc(cx, 17, 5, '#3e8a6d');                  // the dome
+    g.p(cx - 2, 10, 5, 4, INK); g.p(cx - 1, 11, 3, 3, '#3e8a6d');          // the lantern
+    g.p(cx, 6, 1, 5, '#dfe3e5'); g.p(cx - 1, 7, 3, 1, '#dfe3e5');          // the cross
+
+    // ── the street ──
+    for (let y = HZ; y < H; y++) g.p(0, y, W, 1, mix('#242b36', '#11151c', (y - HZ) / (H - HZ)));
+    g.p(0, HZ + 4, W, 2, '#2a323e'); g.p(0, HZ + 14, W, 2, '#222933');
+
+    // the rails, in real perspective — everything else is placed off these
+    for (let i = 1; i < 8; i++) {
+      const y = VY + (H - VY) * (i / 8) ** 1.8;
+      g.line(railX(40, y) - 1, y, railX(84, y) + 2, y, '#333c4a');
+    }
+    for (const x0 of [40, 84]) for (const o of [0, 1])
+      for (let y = VY; y < H; y++) g.p(railX(x0, y) + o, y, 1, 1, mix('#404a58', '#767f8c', (y - VY) / (H - VY)));
+
+    // ── the tram, standing on that track and coming toward you ──────────
+    const FY1 = 58, FY0 = FY1 - 30;
+    const L = Math.round(railX(40, FY1)) - 2, R = Math.round(railX(84, FY1)) + 2;
+    // the flank, receding to the same vanishing point the rails do
+    const BX = R + 15, BT = FY0 + 8, BB = FY1 - 7;
+    for (let x = R; x <= BX; x++) {
+      const t = (x - R) / (BX - R), top = FY0 + (BT - FY0) * t, bot = FY1 + (BB - FY1) * t;
+      g.p(x, top - 1, 1, bot - top + 2, INK);
+      g.p(x, top, 1, bot - top, '#14563a');
+      g.p(x, top, 1, 2, '#1c6a44');
+      if (t > 0.08 && t < 0.8) g.p(x, top + 5, 1, (bot - top) * 0.34, '#0f2c33');
+    }
+    // the front face
+    g.p(L - 1, FY0 - 1, R - L + 2, FY1 - FY0 + 3, INK);
+    g.p(L, FY0, R - L, FY1 - FY0, '#1e7a4a');
+    g.p(L, FY0, R - L, 3, '#2c9a5c');
+    g.p(L + 2, FY0 + 4, R - L - 4, 5, '#101a14');                          // the destination blind
+    g.p(L + 4, FY0 + 5, 3, 3, '#e8c15a'); g.p(L + 9, FY0 + 5, R - L - 14, 3, '#e8c15a');
+    g.p(L + 1, FY0 + 11, R - L - 2, 11, INK);
+    g.p(L + 2, FY0 + 12, R - L - 4, 9, '#123640');                         // windscreen
+    g.p(L + 3, FY0 + 13, 8, 3, '#5493a4');
+    g.p(L, FY1 - 10, R - L, 2, '#cfe0cf');                                 // the pale stripe
+    g.disc(L + 4, FY1 - 5, 2, '#fff6d8'); g.disc(R - 5, FY1 - 5, 2, '#fff6d8');
+    g.p(L, FY1 - 2, R - L, 2, '#0b0f14');
+    for (let i = 0; i < 4; i++) g.p(L + i, FY1 + i, R - L - i * 2, 1, mix('#141a22', '#1e242e', i / 4));
+
+    // headlight wash on the wet road, spreading toward you
+    for (let y = FY1; y < H; y++) {
+      const k = (y - FY1) / (H - FY1), w = 16 + k * 62;
+      g.p(L + 8 - w * 0.86, y, w, 1, `rgba(226,196,132,${(0.13 * (1 - k)).toFixed(3)})`);
+    }
+    g.p(L + 4, FY1, 2, 8, 'rgba(255,246,216,0.20)'); g.p(R - 5, FY1, 2, 6, 'rgba(255,246,216,0.20)');
+
+    // somebody already at the stop — small, and between you and it
+    g.p(L - 10, FY1 - 13, 5, 12, INK); g.p(L - 9, FY1 - 12, 3, 11, '#161e2a');
+    g.disc(L - 8, FY1 - 15, 3, INK); g.disc(L - 8, FY1 - 15, 2, '#161e2a'); g.p(L - 7, FY1 - 12, 1, 8, mix(a, INK, 0.45));
+
+    // a puddle, holding the tram upside down — it fills the empty foreground
+    // and it is the only place the green appears twice
+    for (let i = 0; i < 6; i++) g.p(76 + i * 2, 62 + i, 30 - i * 3, 1, mix('#1e6040', '#1b222c', (i / 6) ** 0.7));
+
+    // ── the courier, cropped by the near edge, arm up for the tram ──────
+    // Four attempts at an articulated figure — running, capsules, per-limb
+    // outlines, a 1px rim — all read as a lump or a scribble. What works at
+    // this size is what `backlot` already does two cabinets along: a dark
+    // rectangle, a dark disc, and ONE FAT band of the accent down the lit
+    // side. A 1px rim is invisible at 128 wide; a 4px one is a person. The
+    // light is on his right because that is where the tram's headlights are,
+    // and the only articulation he gets is the arm going up for it.
+    const DK = '#0a0e15';
+    g.p(9, 50, 10, 14, INK); g.p(10, 51, 9, 12, '#121a26'); g.p(10, 51, 9, 2, '#233144');  // the bag
+    // the arm clears the head on its way up. Sharing an x with the head's
+    // lit crescent and the torso's lit band welded all three into one long
+    // teal stripe with no person inside it.
+    for (let o = -1; o < 6; o++) g.line(26 + o, 50, 32 + o, 37, o < 0 || o > 4 ? INK : DK);
+    for (let o = 3; o < 5; o++) g.line(26 + o, 50, 32 + o, 37, a);
+    g.p(32, 32, 7, 6, INK); g.p(33, 33, 5, 4, DK); g.p(36, 33, 2, 4, a);                   // the hand
+    g.p(15, 42, 14, 32, INK); g.p(16, 43, 12, 31, DK);                                     // the torso
+    g.p(25, 47, 3, 25, a); g.p(27, 47, 1, 18, mix(a, hot, 0.5));                           // lit down his right side
+    g.p(20, 64, 3, 10, INK);                                                               // the gap between his legs
+    // the head: the lit side is a WHOLE disc clipped by a dark one, not a
+    // small disc floating inside it — inset, it read as a bowl. And it sits
+    // clear of both the cap and the shoulders, which is what the cut before
+    // this got wrong: a 6px sliver of head between them is not a head.
+    g.disc(22, 36, 6, INK);
+    g.disc(23.2, 34.8, 5, hot); g.disc(22.5, 35.5, 5, a); g.disc(20.6, 36.8, 5, DK);
+    g.p(16, 25, 13, 7, INK); g.p(17, 26, 11, 5, '#18212e'); g.p(25, 26, 3, 5, a);          // the cap
+    g.p(28, 29, 5, 3, INK); g.p(28, 29, 5, 2, DK);                                         // its brim
+  },
+
   // TURF: the backlot at dusk. A standoff, not an icon — an operator cropped
   // by the near edge of the frame (rim-lit in the accent, since a dark
   // silhouette against a dark scene disappears), a rival held at the far

@@ -1,5 +1,52 @@
 # Toko Move — versions
 
+## v2.28 — 2026-09-06
+
+**The phone pass, and it found the worst bug this lane has shipped.** Nobody had
+opened the game at 390px. The title card had had a paragraph appended to it on
+every release since v2.19 — nine of them, each describing what had just
+changed — and on an iPhone 13 the card was taller than the screen, on a `.veil`
+with no `overflow`. **START SHIFT was below the fold, on a surface that could not
+be scrolled.** The button was present, visible, enabled and 44px; every gate was
+green; the game could not be started with a thumb.
+
+The fix is in two halves and only the second one lasts. The copy is cut to what
+you DO — you drive nothing, you take a job and catch something already moving —
+because a title screen is not a changelog and the changelog is this file. And
+the card is now a flex column with `max-height: 100dvh - 32px`, its text in a
+`.cardBody` that scrolls while the button does not, so **a card that grows again
+eats its own paragraphs instead of its button**. The veil scrolls too, as a
+floor under both.
+
+**A phone opens at ROUTE, not CITY.** CITY fits the whole board by height, and
+`board.js` then grows the box sideways to fill the canvas — growing rather than
+cropping, deliberately, so no stop is ever hidden. On a desktop the map element
+carries the board's own portrait aspect and that growth is nothing. On a phone
+`width:100%` plus `max-height` force the element landscape, and the grown half
+has no ground, no water and no streets in it, because the data ends where the
+extract does: **48% of the map was black**, and the badges that survived piled
+into a heap in the middle. ROUTE's 4 km viewport is a crop of the board rather
+than a fit to it, so it is full of map at any element shape — measured, the
+board covers 43% of the canvas width at CITY and 91% at ROUTE — and it is the
+scale the game is played at anyway. CITY stays one tap away on the rail.
+
+The map gives 8vh back to the job sheet (`44dvh`), because a board about
+comparing three plans was showing one of them. And `say()` drops a line that
+repeats the one above it — the feed was printing DISPATCH twice, which is a
+double call, not news.
+
+`test/phone.cjs`: 11 checks at 390x664 on a real touch context, six mutations
+each caught, including the shipped bug reproduced exactly (restore the long copy
+and remove the cap and START SHIFT reports `y 1130..1174 of 664`). Its
+reachability check knows the difference between a control **off screen inside a
+scroller** — a scroll away, which is what the third job offer legitimately is —
+and one off screen with nothing to scroll, which is the bug.
+
+Frame rate at 390x664, off the game's own loop: 48 / 31 / 55 fps at
+CITY / ROUTE / STOP. ROUTE is the expensive one — it draws the streets, the
+corridors, every badge and every trail at once — and it is now the opening
+scale, so that number is the one to watch.
+
 ## v2.27 — 2026-09-06
 
 **Every tram drags a wake.** The idea came from a canvas demo the owner sent: two paths, a dot running along each, and a background painted `rgba(5,10,15,0.3)` instead of cleared so the dots smear. Half of it was already here and done properly — `LiveNetwork` interpolates real traced HSL geometry at real speeds, where the demo's four hand-typed points make a long route and a short one take the same time. The **trail** was the part worth taking: direction was only readable from a badge, and a badge does not say whether a tram is coming toward you or leaving.
@@ -16,6 +63,33 @@ One trap the gate found in itself: the stub context was assembled with `Object.a
 
 
 **Deployed, and the deploy found a bug five releases old.** Every hand-deploy this lane has made since v2.22 shipped `../hub/shell.js?v=17` onto a site whose other twenty-two cabinets ask for `?v=35` — the exact trap `CLAUDE.md` records for hand-deploys ("this cabinet shipped pinned to v17 while fourteen others were on v34"), and another lane had already had to repair it once. A cabinet pinned to an old shell serves an old HOME button out of cache forever while the rest of the floor gets the new one. `test/cabinet-route.cjs` now asserts the token agrees with whatever the rest of the floor asks for — agreement, not a number, because this checkout and the deploy tree are legitimately on different ones.
+
+**The cabinet finally shows the game.** Its marquee was still `daymap` — a
+transit diagram drawn for the superseded Mini Metro lane, a game that no longer
+exists — and the marquee is the only thing a player judges before pressing
+Play. `tramstop` replaces it, built to the floor's own rule that a marquee is a
+COVER and not an icon: Helsinki at 07:00, the Cathedral small and off-centre
+because it says where you are and then gets out of the way, a green tram
+arriving, and the courier cropped by the near edge with his arm up for it.
+
+Eleven renders, and the notes are worth keeping because every one of them was
+the same class of mistake — **a thing drawn without asking what is behind it**.
+The tram was a box beside its own track (front and flank are now sized off the
+rails at their own depth). The courier was filled at `#1b2430` on a street that
+is `#171c24` where he stands, so a flat fill inside a hard black line read as a
+hole with a rim round it. His head, torso and raised arm were all lit along the
+same x and welded into one teal stripe with no person inside it. And four goes
+at an articulated running figure all read as an animal lunging: at 128x72 a
+person is a rectangle, a disc and ONE gesture, with the light as a FAT band and
+not a 1px rim — which is what `backlot` two cabinets along had been doing all
+along.
+
+`daymap` is deleted with it. The gate grew the check that would have caught a
+rename: `drawMarquee` falls back to `gel` for a key it does not know, which is
+correct at runtime and completely silent, so "every marquee is painted" passes
+while a cabinet shows another game's drawing. Only the forward direction is
+asserted — the live catalogue carries cabinets this tree has not got, and their
+art functions are not orphans.
 ## v2.26 — 2026-09-02
 
 **The shift shows itself back.** A run ended in four numbers — delivered, score, bonuses, late — which was survivable while nothing could go wrong and became the worst possible ending the moment v2.25 made a shift losable. Four numbers tell you that you failed and nothing about where. `js/shiftlog.js` is the design doc's own experiment #6, the one item on its list of eight that had never been built, and its strongest-directions list calls post-run replay "a core learning tool".
