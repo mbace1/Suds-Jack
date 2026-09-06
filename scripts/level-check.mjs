@@ -132,7 +132,13 @@ ok('fmtT prints one decimal', L.fmtT(0.1 + 0.2) === '0.3' && L.fmtT(12) === '12.
   ok('accepts a one-rect shape arena', v({ arena: { shapes: [{ kind: 'rect', hx: 9, hz: 9 }] } }).length === 0);
   ok('rejects several shapes without a combine', has(v({ arena: { shapes: [{ kind: 'rect', hx: 9, hz: 9 }, { kind: 'circle', c: [0, 0], r: 5 }] } }), /need a combine/));
   ok('rejects too many shapes', has(v({ arena: { combine: 'union', shapes: Array(5).fill({ kind: 'circle', c: [0, 0], r: 5 }) } }), /at most 4 shapes/));
-  ok('rejects a moving shape', has(v({ arena: { shapes: [{ kind: 'circle', c: [0, 0], r: 5, move: {} }] } }), /"move" is not in format/));
+  // v241 (P3): a circle MAY move now, so the gate moved with it — what must
+  // still be refused is a mover the engine cannot honour, by name.
+  ok('accepts an orbiting circle', v({ arena: { shapes: [{ kind: 'circle', c: [0, 0], r: 5, move: { kind: 'orbit', radius: 2, period: 8 } }] } }).length === 0);
+  ok('rejects an unknown mover', has(v({ arena: { shapes: [{ kind: 'circle', c: [0, 0], r: 5, move: { kind: 'wander', radius: 2, period: 8 } }] } }), /kind must be "orbit"/));
+  ok('rejects an unknown move key', has(v({ arena: { shapes: [{ kind: 'circle', c: [0, 0], r: 5, move: { kind: 'orbit', radius: 2, period: 8, speed: 3 } }] } }), /unknown key "speed"/));
+  ok('rejects an orbit with no period', has(v({ arena: { shapes: [{ kind: 'circle', c: [0, 0], r: 5, move: { kind: 'orbit', radius: 2 } }] } }), /positive period/));
+  ok('rejects a moving RECTANGLE', has(v({ arena: { shapes: [{ kind: 'rect', hx: 9, hz: 9, move: { kind: 'orbit', radius: 2, period: 8 } }] } }), /only a circle can "move"/));
   ok('rejects a bad shape kind', has(v({ arena: { shapes: [{ kind: 'hex', r: 5 }] } }), /unknown kind/));
   ok('rejects a body outside the region', has(v({ arena: { shapes: [{ kind: 'circle', c: [0, 0], r: 5 }] }, spawns: [{ t: 0, type: 'GLOBBO', px: 8, pz: 0 }] }), /outside the arena/));
   ok('rejects a region with nowhere to stand', has(v({ arena: { combine: 'intersect', shapes: [{ kind: 'circle', c: [-20, 0], r: 5 }, { kind: 'circle', c: [20, 0], r: 5 }] } }), /nowhere to stand/));

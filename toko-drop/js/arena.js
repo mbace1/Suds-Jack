@@ -76,13 +76,44 @@ export function rectShape(halfX, halfZ) {
 }
 
 // Not wired to anything yet. Defined here so P1 is a level file, not a module.
-export function circleShape(cx, cz, r) {
-  return {
+// v241 (P3): `move` makes the centre travel. The only mover is ORBIT — the
+// one LEVEL_EDITOR_DESIGN.md §4 names — { kind: 'orbit', radius, period,
+// phase? }; anything else is refused by name in level.js rather than
+// silently standing still.
+//
+// Two things here are load-bearing:
+//
+//  · `sdf` and `aabb` read `s.cx` / `s.cz`, NOT the constructor's arguments.
+//    They used to close over the parameters, which is correct forever for a
+//    static circle and silently wrong the moment one moves: update() would
+//    change the fields and the field would keep answering from the old
+//    centre. The 8,396 static checks in scripts/arena-check.mjs still pass
+//    because for a shape that never moves the two read the same number.
+//
+//  · `aabb` is the SWEPT box — it grows by the orbit radius and does not
+//    change with t. HALF_X/HALF_Z drive the floor plane's geometry, the
+//    border, the grid frequencies and the camera fit; a box that breathed
+//    every frame would rebuild that geometry every frame and pump the
+//    camera. The REGION moves; the room it is drawn in does not.
+export function circleShape(cx, cz, r, move = null) {
+  const reach = move ? move.radius : 0;
+  const s = {
     kind: KIND.CIRCLE,
     cx, cz, r,   // v240: read by the floor's shape uniforms (main.js syncShapeUniforms)
-    sdf(x, z) { return Math.hypot(x - cx, z - cz) - r; },
-    aabb() { return { halfX: Math.abs(cx) + r, halfZ: Math.abs(cz) + r }; },
+    baseX: cx, baseZ: cz,   // v241: the AUTHORED centre; the mover offsets from it
+    move,
+    sdf(x, z) { return Math.hypot(x - s.cx, z - s.cz) - s.r; },
+    aabb() { return { halfX: Math.abs(s.baseX) + r + reach, halfZ: Math.abs(s.baseZ) + r + reach }; },
   };
+  if (move) {
+    // Pure: the angle comes from the t it is handed, never from a clock.
+    s.update = (t) => {
+      const a = Math.PI * 2 * (t / move.period + (move.phase || 0));
+      s.cx = s.baseX + Math.cos(a) * move.radius;
+      s.cz = s.baseZ + Math.sin(a) * move.radius;
+    };
+  }
+  return s;
 }
 
 // The owner's worked example — "three overlapping circles create a moving
@@ -108,6 +139,10 @@ function _combine(kind, parts) {
       for (const p of parts) { const b = p.aabb(); hx = Math.max(hx, b.halfX); hz = Math.max(hz, b.halfZ); }
       return { halfX: hx, halfZ: hz };
     },
+    // v241 (P3): a combine moves when its parts do. Without this, Arena.update()
+    // reached a union/intersect, found no update() on it, and every part stood
+    // still — which is exactly the shape the owner's worked example is made of.
+    update(t) { for (const p of parts) if (p.update) p.update(t); },
   };
 }
 

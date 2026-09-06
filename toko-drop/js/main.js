@@ -1,18 +1,18 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=193';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=193';
-import { Player, PLAYER_RADIUS } from './player.js?v=193';
+import { InputManager } from './input.js?v=194';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=194';
+import { Player, PLAYER_RADIUS } from './player.js?v=194';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=193';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=193';
-import { audio } from './audio.js?v=193';
-import { haptics } from './haptics.js?v=193';
-import { initDesigner } from './designer.js?v=193';
-import { createSpecimen } from './specimen.js?v=193';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=193';
-import { TUNING } from './tuning.js?v=193';
-import { Arena, rectShape } from './arena.js?v=193';   // v236: the boundary has one home
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=193';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=194';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=194';
+import { audio } from './audio.js?v=194';
+import { haptics } from './haptics.js?v=194';
+import { initDesigner } from './designer.js?v=194';
+import { createSpecimen } from './specimen.js?v=194';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=194';
+import { TUNING } from './tuning.js?v=194';
+import { Arena, rectShape } from './arena.js?v=194';   // v236: the boundary has one home
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=194';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -57,6 +57,10 @@ let customLevel   = null;
 // format). Set while the editor session is alive (editing AND playing) and
 // for a ?level= run; cleared on leave.
 let arenaOverride = null;
+// v241 (P3): true while the level's region MOVES. Set with the override, so
+// the frame loop asks a boolean rather than walking the shape every frame.
+let arenaMoving = false;
+const shapeMoves = (sh) => !!sh && (!!sh.update || (sh.parts || []).some(p => p.update));
 let editor        = null;   // the editor API once ?editor has loaded it
 let pendingLevel  = null;   // v239: a ?level=<id> file, armed for the next start
 const GRID_CELL = 1.286;                          // world units per grid cell (keeps cells square)
@@ -858,6 +862,7 @@ function applyArenaMode(landscape) {
   // other boundary question go to the SDF. Not DRAWN yet — the floor still
   // paints the box (LEVEL_EDITOR_DESIGN.md §2.3 / PR #447's v238 term).
   if (arenaOverride && arenaOverride.shape) arena.setShape(arenaOverride.shape);
+  arenaMoving = shapeMoves(arena.shape);   // v241 (P3)
   CAM_LOOK.set(...p.camLook);
   if (arenaOverride || smashMode || tokotronMode || nexdeusMode || landscape) CAM_REST.copy(fitPresetCamera(p));
   else                        CAM_REST.set(...p.camRest);
@@ -5113,7 +5118,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v240' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v241' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -8101,6 +8106,17 @@ function loop() {
   // Trickle spawn pending enemies
   waveTimer += dt;
   runTimer  += dt;
+  // v241 (P3): the region advances on the LEVEL'S OWN CLOCK — waveTimer, the
+  // same number the spawn pump compares against — so what you see at t is
+  // what the authored timeline and scripts/level-move-check.mjs mean by t.
+  // It happens BEFORE the bodies below move, so the shape everything is
+  // clamped into (owner's rule: it contains EVERYTHING, player and swarm) is
+  // this frame's region and not last frame's. The floor is re-handed the
+  // circles in the same breath; four vec4 writes, no allocation.
+  if (arenaMoving) {
+    arena.update(waveTimer);
+    syncShapeUniforms(arena.shape, true);
+  }
   while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
     const s = pendingSpawns.shift();
     // SMASH TV: spawn right at the doorway mouth so enemies visibly step THROUGH
@@ -10284,7 +10300,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=193').then(async m => {
+  import('./editor.js?v=194').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10315,6 +10331,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=193').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=194').catch(() => {});
   });
 }

@@ -44,7 +44,7 @@
 // (scripts/level-check.mjs). Enemy names are resolved against an EnemyType
 // map the caller passes in, because enemy.js imports three and cannot load here.
 
-import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=193';
+import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=194';
 
 export const FORMAT = 1;
 export const STEP = 0.1;
@@ -62,12 +62,13 @@ export const ARENAS = {
 };
 // Levels that ship in toko-drop/levels/ — the editor's LOAD lists them and
 // ?level=<id> plays one. The port syncs these same files (tools/sync-levels.sh).
-export const BUNDLED = ['first-light', 'three-rings'];
+export const BUNDLED = ['first-light', 'moving-rings', 'three-rings'];
 
 const TOP_KEYS    = new Set(['format', 'id', 'name', 'arena', 'duration', 'spawns', 'rules']);
 const ARENA_KEYS  = new Set(['combine', 'shapes']);
 const RECT_KEYS   = new Set(['kind', 'hx', 'hz']);
-const CIRCLE_KEYS = new Set(['kind', 'c', 'r']);
+const CIRCLE_KEYS = new Set(['kind', 'c', 'r', 'move']);   // v241 (P3): a circle may move
+const MOVE_KEYS   = new Set(['kind', 'radius', 'period', 'phase']);
 const ENEMY_KEYS  = new Set(['t', 'type', 'px', 'pz', 'speedMult', 'intervalMult', 'boss', 'elite']);
 const PICKUP_KEYS = new Set(['t', 'kind', 'id', 'px', 'pz', 'life']);
 const RULE_KEYS   = new Set(['mode', 'outside']);
@@ -137,7 +138,20 @@ export function validate(level, { typeNames, pickupIds }) {
           if (!(Array.isArray(s.c) && s.c.length === 2 && isNum(s.c[0]) && isNum(s.c[1]))) errs.push(`${w}: circle needs c: [x, z]`);
           if (!(isNum(s.r) && s.r > 0)) errs.push(`${w}: circle needs a positive r`);
         } else errs.push(`${w}: unknown kind ${JSON.stringify(s.kind)} (format ${FORMAT} knows rect, circle)`);
-        if ('move' in s) errs.push(`${w}: "move" is not in format ${FORMAT} (moving shapes are P3)`);
+        // v241 (P3): a shape may MOVE. Only circles, and only the mover
+        // §4 names — an unknown mover is refused by name, never ignored.
+        if ('move' in s) {
+          const m = s.move;
+          if (s.kind !== 'circle') errs.push(`${w}: only a circle can "move"`);
+          else if (!m || typeof m !== 'object') errs.push(`${w}: "move" must be an object`);
+          else {
+            for (const k of Object.keys(m)) if (!MOVE_KEYS.has(k)) errs.push(`${w}.move: unknown key "${k}"`);
+            if (m.kind !== 'orbit') errs.push(`${w}.move: kind must be "orbit" (format ${FORMAT} knows one mover)`);
+            if (!isNum(m.radius) || m.radius <= 0) errs.push(`${w}.move: orbit needs a positive radius`);
+            if (!isNum(m.period) || m.period <= 0) errs.push(`${w}.move: orbit needs a positive period in seconds`);
+            if (m.phase !== undefined && !isNum(m.phase)) errs.push(`${w}.move: phase must be a number (turns, 0..1)`);
+          }
+        }
       });
     }
   } else errs.push('arena: must be a named arena or { shapes: [...] }');
@@ -185,7 +199,7 @@ export function validate(level, { typeNames, pickupIds }) {
 // ── The region ────────────────────────────────────────────────────────────
 export function shapeFromSpec(spec) {
   if (spec.kind === 'rect') return rectShape(spec.hx, spec.hz);
-  return circleShape(spec.c[0], spec.c[1], spec.r);
+  return circleShape(spec.c[0], spec.c[1], spec.r, spec.move || null);   // v241 (P3)
 }
 // The level's playable region as an arena.js shape, or null for "auto"
 // (the game's viewport-driven rectangle). `defaults` names the rectangles.

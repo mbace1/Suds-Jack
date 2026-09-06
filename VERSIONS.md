@@ -7,6 +7,57 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v241 — 2026-09-06
+**The region MOVES** *(P3 of `LEVEL_EDITOR_DESIGN.md` §7 — the last of the owner's three requirements)*
+- **The owner's own worked example now runs.** §1's first requirement was
+  "multiple arena shapes, including actively changing ones — three
+  overlapping circles whose common area moves". The shapes and the common
+  area landed in v236–v240; this is the part that moves.
+  `levels/moving-rings.json`: three r=9 circles, each orbiting radius 2.5
+  on a 14s period at a third of a turn apart, so the intersection travels
+  and turns while it breathes. Photographed at 0.2s / 3.6s / 7.0s / 10.4s —
+  one full orbit, the region visibly elsewhere in each
+- **§2.4's two rules, both settled by the owner and both honoured here.**
+  A body left outside is PUSHED along the gradient (2026-09-04) — that is
+  `arena.clamp()`, which every body already goes through, so the rule cost
+  no new code. **The shape contains EVERYTHING, player and swarm alike**
+  (2026-09-05): `arena.update(waveTimer)` runs on the level's own clock,
+  in the frame loop, BEFORE the bodies move — so the region they are
+  clamped into is this frame's, not last frame's
+- **`js/arena.js`: `move` on a circle**, the one mover §4 names —
+  `{ kind: 'orbit', radius, period, phase? }`. Two things in it are
+  load-bearing and commented as such: `sdf`/`aabb` now read the shape's
+  own fields rather than closing over the constructor's arguments (the
+  closure is correct forever for a static circle and silently wrong the
+  moment one moves), and **`aabb` is the SWEPT box** — it grows by the
+  orbit radius and does not change with `t`, because `HALF_X`/`HALF_Z`
+  drive the floor geometry, the border, the grid frequencies and the
+  camera fit. The region moves; the room it is drawn in does not.
+  `_combine` gained an `update` too — without it `Arena.update()` reached
+  a union/intersect, found no `update`, and every part stood still, which
+  is exactly the shape the worked example is made of
+- **`scripts/level-move-check.mjs` — P3's gate**, and it is arithmetic
+  rather than a look: a moving intersection can close to nothing for one
+  second in the middle of a level, which no screenshot at t=0 can catch
+  and no author can see without scrubbing every frame. Over every 0.1s of
+  every moving level it proves the region is never empty, always has
+  somewhere to stand (never fewer than 8 spots — a player being pushed
+  needs room to be pushed INTO), that the bounding box never changes, that
+  the region is a pure function of `t`, and that every authored spawn is
+  inside the region **at the second it arrives**. Falsified before being
+  trusted: widening the orbits to 7.5 fails it with "fewest 0 spots, at
+  t=5.0s" and names the spawn it strands
+- Gates: check-syntax · arena-check **8,396** (the `sdf`/`aabb` refactor
+  changed nothing static) · level-check **78** · level-move-check **7** ·
+  smoke · level-smoke (moving-rings 12/12 spawns) · editor-smoke **27** ·
+  level-shot (classic vs TSL, mean abs diff 3.97 on a threshold of 6)
+- Not in this release, named: the Godot port does not move its region yet
+  (it reads the same file, so `move` will be refused there until it does —
+  its own item); the editor cannot yet AUTHOR a mover, so a moving level
+  is hand-written JSON for now; and `LEVEL_EDITOR_DESIGN.md` §2.4 on
+  `main` should record the two owner decisions this release acts on
+- Cache-bust `?v=193` → `?v=194`; HUD label → v241
+
 ## v240 — 2026-09-05
 **The floor draws a level's region, on both render paths** *(PR #447's v238 term, brought across by hand — LEVEL_EDITOR_DESIGN.md §2.3, P1's other half)*
 - **A shaped level is VISIBLE now.** v239 made a level's SDF the boundary
