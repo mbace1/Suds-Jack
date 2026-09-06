@@ -86,6 +86,48 @@
      gradient on #stage would paint BEHIND this child rather than over it,
      and it takes the same --cam transform as the canvas so a pan moves the
      yard and the grid together instead of sliding one across the other. */
+  /* The zoom control. It sits IN the stage, over the board's own corner,
+     because zoom is a property of the board and a control for it in the
+     bottom bar would be one more thing competing with the actions. Bottom
+     right: the left side is where a thumb rests to pan, and the top is
+     where the HUD text runs. Same 44px floor as every other control here. */
+  /* Off-screen markers. Pinned to the STAGE, never to the board: the board
+     is translated by the compositor on a pan and a marker that travelled
+     with it would point at nothing. Small, edge-hugging, faction-coloured —
+     enough to say "two rivals that way", not enough to compete with the
+     board it is describing. */
+  #offscreen { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+  #offscreen .pip {
+    position: absolute; transform: translate(-50%, -50%);
+    display: flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 4px;
+    border-radius: 9px; border: 1px solid currentColor;
+    background: rgba(7,8,11,0.82);
+    font: 700 10px/1 'Courier New', ui-monospace, Menlo, monospace;
+  }
+  #offscreen .pip.danger { box-shadow: 0 0 0 2px rgba(201,102,63,0.35); }
+  #zoombar {
+    position: absolute; right: 6px; bottom: 6px; z-index: 3;
+    display: flex; align-items: center; gap: 2px;
+    background: rgba(7,8,11,0.78); border: 1px solid #262a32;
+    border-radius: 8px; padding: 2px;
+  }
+  #zoombar button {
+    min-width: 44px; min-height: 44px;
+    background: none; border: 0; color: #d6d9de;
+    font: 700 20px/1 'Courier New', ui-monospace, Menlo, monospace;
+    cursor: pointer; border-radius: 6px;
+  }
+  #zoombar button:hover:not(:disabled) { background: rgba(111,168,201,0.16); }
+  #zoombar button:disabled { opacity: 0.35; cursor: default; }
+  /* FIT is the counterweight to zooming in: this game promises you can see
+     every rival's plan, and a zoom deep enough to read a face is deep enough
+     to hide half the board. One tap puts the whole thing back on screen. */
+  #zoombar #zoomFit {
+    min-width: 48px; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    color: #a5abb5;
+  }
+  #zoombar #zoomFit.on { color: #6fa8c9; }
   #plate {
     position: absolute; left: 0; top: 0; width: 0; height: 0;
     background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
@@ -213,6 +255,12 @@
   <div id="stage">
     <div id="plate"></div>
     <canvas id="board" width="10" height="10"></canvas>
+    <div id="offscreen" aria-hidden="true"></div>
+    <div id="zoombar">
+      <button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button>
+      <button id="zoomFit" type="button" aria-label="Fit the whole board on screen">FIT</button>
+      <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+    </div>
   </div>
 
   <div id="bottombar">
@@ -266,7 +314,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=31"></script>
+  <script type="module" src="js/main.js?v=33"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

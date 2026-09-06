@@ -544,6 +544,28 @@ board's bounding diamond is ALWAYS 2:1 (a tile is 32×16, so the box is `(cols+r
 left alone moves **nothing** (all seven rates identical; the new columns are empty asphalt
 nobody enters), and +2 with every x stretched across the wider board **destroys the set**
 (three encounters to 0%, three to 98-100%). Lateral distance is as load-bearing as approach.
+**The zoom is the PLAYER'S, and zooming in owes them what it hides** (v34, owner: *"should
+be zoomed in more. readability and comprehension in general is hard"*). v25's `MIN_TILE_W`
+made the fit a floor rather than a ceiling; v34 puts a persisted multiplier on top of it
+(default **1.35**, 0.7–2.6, via pinch / wheel / `+`-`-`-`0` / a control on the board's corner),
+because how big a tile must be depends on the screen, the arm holding it and the eyes reading
+it — none of which the code can measure. The counterweight is **FIT** (one tap, whole board)
+plus **edge pips** for every living unit outside the viewport, faction-coloured, counting what
+is stacked behind them and ringed when one is telegraphing. The pips are **DOM on the stage,
+never paint on the canvas**: a pan translates the canvas through the compositor without
+repainting, so a marker drawn into the board slides away with the thing it points at.
+**`incomingThreats` (combat.js) is what is about to happen, as a number** — every telegraphed
+attack run through `forecastAttack` (the one place odds live) **from the tile the rival will
+actually shoot from**, totalled per target and drawn over that operator's head as `-4` or
+**LETHAL**. Lethal is measured on the TOTAL, not the worst single hit: two rivals each taking
+half your health is the case that kills you and the one a per-attack marker hides; the gate
+asserts the badge quotes exactly what `resolveAttack` will roll. Selecting an operator
+**focuses** the telegraph — threats aimed at them at full weight, the rest at a quarter —
+which changes weight only and so cannot cost information. And move range is **outlined, not
+washed**: a 0.48-alpha fill per tile was the loudest thing on screen and was covering the very
+cover a player moves toward, so it is now a faint interior plus a hard edge where the region
+stops. Two HUD lines say the rest in words — `can hit:` (ranked off `state.forecasts`, the
+same map the board badges read, so they cannot disagree) and `incoming:` (who it is from).
 **Everything on the board is sized against the TILE, not against its plate** (v33). `SPRITE_H`
 46 → 32 → **29** across two owner looks ("way too big", then "10% too big"): a body is one
 tile wide, and layout headroom and the tap hit-box both follow that one constant. Props were
