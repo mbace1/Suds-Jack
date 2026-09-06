@@ -1,5 +1,27 @@
 # Toko Trip — release log
 
+## v8 — 2026-08-11
+
+The palms. They were the weakest geometry left, and they are silhouetted
+against the sky in every mood, so v7's sky made them show more, not less.
+
+- **A frond is a spine with leaflets now.** Seven flat planes became nine
+  live fronds, each a rachis that rises and then droops with fifteen pairs
+  of narrow blades along it, angled forward and down — so the outline is a
+  feathered sweep rather than a paddle. Pitch varies round the crown: some
+  stand, some lie out flat. Every blade is two triangles with one hard
+  normal, which is what makes them read as leaves rather than as cloth.
+- **Dead fronds.** Three, shorter and brown, hanging under the crown — the
+  single most recognisable thing about a coconut palm, and the thing every
+  low-poly palm leaves out.
+- **The nuts** in a cluster at the growing point, five of them, two tones.
+- The crown's shade proxy grew to match: the fronds reach ~2.3 m, and a
+  bake that shaded a 1.35 m disc under a 2.3 m crown would have been lying
+  again.
+
+About 3,000 triangles a crown, ~44,000 in the whole scene — well inside a
+headset's budget, and nothing else in the frame changed cost.
+
 ## v7 — 2026-08-11
 
 The sea. It was a teal plane with a scrolling bump map; it is the biggest

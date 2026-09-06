@@ -641,7 +641,7 @@
         const p = s[`seg${i}`];
         if (p) proxySphere(p[0], p[1] - 0.3, p[2], 0.17);
       }
-      proxySphere(s.crown[0], s.crown[1] + 0.1, s.crown[2], 1.35);   // the fronds
+      proxySphere(s.crown[0], s.crown[1] - 0.15, s.crown[2], 1.9);   // the fronds — they reach ~2.3 m
     }
     for (const r of rockSpots) proxySphere(r.x, groundHeight(r.x, r.z) + r.s * 0.3, r.z, r.s * 1.05);
     for (const l of lanternSpots) {
@@ -1196,30 +1196,96 @@
         pz += Math.sin(ang) * segH * Math.cos(leanDir);
         py += Math.cos(ang) * segH;
       }
-      // crown: 7 bent fronds + 3 coconuts, merged, swaying as one
+      // ── the crown ──
+      // v1–v6 fronds were seven flat planes. Against the sky — which is where
+      // a palm lives, in every mood — a flat plane reads as a flat plane. A
+      // real frond is a spine with LEAFLETS: a rachis that rises and then
+      // droops, and pairs of narrow blades along it, angled forward and down
+      // so the outline is a feathered sweep rather than a paddle. Nine live
+      // fronds at varying pitch, a couple of dead ones hanging brown below
+      // (the single most recognisable thing about a coconut palm), and the
+      // nuts in a cluster at the base.
       const crownGeos = [];
-      for (let f = 0; f < 7; f++) {
-        const frond = new THREE.PlaneGeometry(0.34, 1.95, 1, 6);
-        const fp = frond.attributes.position;
-        for (let i = 0; i < fp.count; i++) {
-          const t = (fp.getY(i) + 0.975) / 1.95;           // 0 base → 1 tip
-          fp.setX(i, fp.getX(i) * (1 - t * 0.75));          // taper
-          fp.setZ(i, -(t * t) * 0.85);                      // droop
+      const cDead = col('#8a6b45'), cRachis = col('#6f7a3f');
+      function frondGeo(L, up, droop, base, tip, dead) {
+        const P = [], N = [], C = [];
+        const spine = t => [0, up * t - droop * t * t, L * t];
+        const push = (v, n, c) => { P.push(...v); N.push(...n); C.push(c.r, c.g, c.b); };
+        const quad = (p0, p1, p2, p3, c0, c1) => {
+          // two triangles, one face normal — flat leaflets, hard edges
+          const ux = p1[0] - p0[0], uy = p1[1] - p0[1], uz = p1[2] - p0[2];
+          const vx = p3[0] - p0[0], vy = p3[1] - p0[1], vz = p3[2] - p0[2];
+          let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+          const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+          const n = [nx, ny, nz];
+          push(p0, n, c0); push(p1, n, c0); push(p2, n, c1);
+          push(p0, n, c0); push(p2, n, c1); push(p3, n, c1);
+        };
+        // the rachis: a thin ribbon along the curve
+        const S = 12;
+        for (let i = 0; i < S; i++) {
+          const t0 = i / S, t1 = (i + 1) / S, w0 = 0.028 * (1 - t0 * 0.7), w1 = 0.028 * (1 - t1 * 0.7);
+          const a0 = spine(t0), a1 = spine(t1);
+          quad([a0[0] - w0, a0[1], a0[2]], [a0[0] + w0, a0[1], a0[2]],
+            [a1[0] + w1, a1[1], a1[2]], [a1[0] - w1, a1[1], a1[2]], cRachis, cRachis);
         }
-        const shade = 0.95 + 0.3 * hash(f, 3);
-        paint(frond, (x, y) => {
-          const t = (y + 0.975) / 1.95;
-          return _c.copy(cLeafD).lerp(cLeafL, t * 0.8).multiplyScalar(shade);
-        });
-        frond.rotateX(-Math.PI / 2 + 0.45);
-        frond.rotateY(f / 7 * Math.PI * 2 + rng() * 0.3);
-        frond.translate(0, 0.05, 0);
-        crownGeos.push(frond);
+        // the leaflets, in pairs
+        const n = 15;
+        for (let i = 0; i < n; i++) {
+          const t = 0.1 + 0.88 * i / (n - 1);
+          const a = spine(t), a2 = spine(Math.min(1, t + 0.02));
+          // spine tangent, for the forward lean of each leaflet
+          let tx = a2[0] - a[0], ty = a2[1] - a[1], tz = a2[2] - a[2];
+          const tl = Math.hypot(tx, ty, tz) || 1; tx /= tl; ty /= tl; tz /= tl;
+          const len = 0.1 + 0.5 * (0.35 + 0.65 * Math.sin(Math.PI * Math.pow(t, 0.85)));
+          const jit = 0.85 + 0.3 * hash(i, 41);
+          for (const side of [-1, 1]) {
+            // out to the side, leaning toward the tip, dropping as it goes
+            const dx = side * 0.78, dy = -0.42 - t * 0.25, dz = 0.42;
+            const dl = Math.hypot(dx, dy, dz);
+            const ex = dx / dl, ey = dy / dl, ez = dz / dl;
+            const l = len * jit;
+            const wb = 0.05, wt = 0.012;
+            // width runs along the spine tangent, so the blade lies flat-ish
+            const p0 = [a[0] - tx * wb, a[1] - ty * wb, a[2] - tz * wb];
+            const p1 = [a[0] + tx * wb, a[1] + ty * wb, a[2] + tz * wb];
+            const p2 = [a[0] + ex * l + tx * wt, a[1] + ey * l + ty * wt, a[2] + ez * l + tz * wt];
+            const p3 = [a[0] + ex * l - tx * wt, a[1] + ey * l - ty * wt, a[2] + ez * l - tz * wt];
+            const c0 = _c.copy(base).lerp(tip, t * 0.8).multiplyScalar(0.9 + 0.2 * hash(i, 7 + side)).clone();
+            const c1 = _c2.copy(c0).multiplyScalar(dead ? 0.85 : 1.12).clone();
+            quad(p0, p1, p2, p3, c0, c1);
+          }
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P), 3));
+        g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(N), 3));
+        g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(C), 3));
+        g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(P.length / 3 * 2), 2));
+        return g;
       }
-      for (let c = 0; c < 3; c++) {
-        const coco = paint(new THREE.SphereGeometry(0.085, 6, 5), col('#7a5c40'));
-        const a = c * 2.1 + rng();
-        coco.translate(Math.cos(a) * 0.14, -0.08, Math.sin(a) * 0.14);
+      const live = 9;
+      for (let f = 0; f < live; f++) {
+        // pitch varies round the crown: some fronds stand, some lie out flat
+        const k = hash(f, 19 + spot.x | 0);
+        const L = 2.0 + k * 0.5, up = 0.55 + k * 0.85, droop = 1.15 + (1 - k) * 0.55;
+        const g = frondGeo(L, up, droop, cLeafD, cLeafL, false);
+        g.rotateY(f / live * Math.PI * 2 + rng() * 0.35);
+        g.translate(0, 0.06, 0);
+        crownGeos.push(g);
+      }
+      for (let f = 0; f < 3; f++) {
+        // the dead ones: shorter, hanging, brown
+        const g = frondGeo(1.4, -0.35, 0.75, cDead, cDead, true);
+        g.rotateY(f * 2.2 + rng() * 0.6);
+        g.translate(0, -0.05, 0);
+        crownGeos.push(g);
+      }
+      // the growing point and the nuts
+      crownGeos.push(paint(new THREE.SphereGeometry(0.17, 7, 6), col('#5c4a34')).translate(0, 0.02, 0));
+      for (let c = 0; c < 5; c++) {
+        const coco = paint(new THREE.SphereGeometry(0.09, 6, 5), col(c % 2 ? '#7a5c40' : '#8f7a4a'));
+        const a = c * 1.3 + rng() * 0.5;
+        coco.translate(Math.cos(a) * 0.16, -0.14 - (c % 2) * 0.06, Math.sin(a) * 0.16);
         crownGeos.push(coco);
       }
       const crown = new THREE.Mesh(BGU.mergeGeometries(crownGeos.map(g => g.toNonIndexed())), foliage);
