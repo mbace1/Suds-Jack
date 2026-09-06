@@ -376,6 +376,27 @@ id**. `nameOf(table, id)` wants a lookup keyed by id and was handed the
 encounter object plus its own id, so it fell through to the id every time and
 the `||` fallback could never fire; nobody noticed while the ids read as words,
 until the fantasy skin put **KING_RAT** across the screen.
+**Falloff is the look; an unreadable enemy is a bug.** DD lights the RANK, not
+the room, so there are two warm sources: the torch beside the party (at x −3.6,
+which is the only place consistent with the rim painted into every cutout — at
+−1.4 it stood to the hero's *right* while his warm edge was on his left) and a
+dimmer **rank light that follows the enemy row**. And because a cutout is an
+unlit plane no scene light can touch, `Arena.lightAt(x)` hands each one a light
+LEVEL it multiplies into `mat.color`, **floored** by `figureFloor`: past the
+floor a figure stops getting darker and only stops getting warmer. The hit flash
+rides on that level rather than replacing it, or a flash would reset a figure
+standing in the dark to full brightness and leave it there. The torch **gutters**
+(three incommensurate sines, one slow enough to take the others down with it) and
+holds still under `prefers-reduced-motion` — a steady light is a dimmer.
+**Render the cast at full size, not just the scene.** Four faults were invisible
+in a fight and obvious on a contact sheet: every figure had **glowing
+chickenpox**, because the rim pass finds every edge in the alpha and `nicks()`
+punches HOLES in it — light the clean silhouette, THEN take the bites out; the
+rat's fur read as a **boar**, because evenly spaced triangles are a comb whatever
+their heights are and the *gaps* are what make it fur; the rat's **ear read as
+its eye**, a ringed disc mid-skull pulling every glance while the real eye was a
+5px square; and the blob had **two literal rectangles**, a `fillRect` pupil and a
+bar mouth — a square is the one shape that reads as UI rather than as an animal.
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -443,7 +464,7 @@ exists so nobody has to win five fights to look at the sixth.
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
 Gates: `node slaykallio/test/core.mjs` (261 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (72). Hub entry:
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (76). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.

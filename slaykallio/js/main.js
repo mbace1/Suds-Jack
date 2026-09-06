@@ -663,5 +663,7 @@ window.__sk = {
     jumpTo: i => { if (!engine.jumpTo(state, i)) return false; cursor = state.log.length; spawnFight(); syncAll(); return true; },
     // what the act card OUGHT to say, read from the data rather than the screen
     encounterName: (i, t = theme) => ENCOUNTERS[i]?.[t]?.name,
+    // a cutout painted at full size, for looking at the art rather than the scene
+    look: id => paintCutout(ENEMIES[id][theme].look, 3, T().mood?.figure),
   },
 };

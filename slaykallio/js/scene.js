@@ -131,7 +131,14 @@ export class Arena {
     // it are the same value and the silhouette stops existing.
     this.rim = new THREE.DirectionalLight('#6f93ad', 0.75);
     this.rim.position.set(3, -5, -4);
-    this.scene.add(this.torch, this.fill, this.rim);
+    // A second, dimmer warm source that FOLLOWS THE ENEMY ROW. The falloff is
+    // the whole look, but the figure it was hiding was usually the one whose
+    // intent you most needed to read; DD lights the rank, not the room.
+    this.rank = new THREE.PointLight('#e09a52', 5.5, 13, 1.5);
+    this.rank.position.set(2.4, 1.1, 2.2);
+    this.scene.add(this.torch, this.fill, this.rim, this.rank);
+    this.flickT = Math.random() * 40;
+    this.steady = matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
     this.setTheme(theme);
   }
@@ -146,6 +153,8 @@ export class Arena {
     this.torch.position.set(...m.torchAt);
     this.fill.color.set(m.sky); this.fill.groundColor.set(m.ground); this.fill.intensity = m.fillI;
     this.rim.color.set(m.rim); this.rim.intensity = m.rimI;
+    this.rank.color.set(m.rank ?? m.torch); this.rank.intensity = m.rankI ?? 0;
+    this.rank.distance = m.rankFar ?? 12; this.rank.decay = m.rankDecay ?? 1.5;
     // Fog takes the ends of the bridge, which is what the torch's falloff
     // cannot do on its own — a plank at the frame edge is no further from the
     // light than one just off centre, but it IS further away.
@@ -445,7 +454,42 @@ export class Arena {
 
   kick(n = 1) { this.shake = Math.min(1, this.shake + n * 0.5); }
 
+  // How lit a spot on the deck is, as a multiplier for an UNLIT cutout — the
+  // scene's lights cannot touch a MeshBasic plane, so the arena has to answer
+  // this itself. Floored, because the falloff is a look and an unreadable enemy
+  // is a bug: past the floor a figure stops getting darker and only stops
+  // getting warmer.
+  lightAt(x) {
+    const m = this.theme?.mood;
+    const floor = m?.figureFloor ?? 0.5;
+    const d = Math.min(Math.abs(x - this.torch.position.x), Math.abs(x - this.rank.position.x) * 1.15);
+    return floor + (1 - floor) / (1 + (d / 3.2) ** 2);
+  }
+
   update(dt) {
+    // The torch gutters. Three incommensurate sines never repeat, and the slow
+    // one occasionally takes the others down with it, which is what reads as a
+    // flame rather than as a dimmer being wiggled.
+    const m = this.theme?.mood;
+    const amt = this.steady ? 0 : (m?.flicker ?? 0);
+    if (amt) {
+      this.flickT += dt;
+      const t = this.flickT;
+      const n = Math.sin(t * 11.3) * 0.5 + Math.sin(t * 23.7) * 0.29 + Math.sin(t * 4.1) * 0.21;
+      const gutter = Math.max(0, Math.sin(t * 0.7) - 0.86) * 6;   // a rare deeper dip
+      this.flick = 1 + n * amt - gutter * amt;
+      this.torch.intensity = (m.torchI ?? 3) * this.flick;
+      this.rank.intensity = (m.rankI ?? 0) * (1 + n * amt * 0.4);
+    } else this.flick = 1;
+
+    // hand every cutout its light level, so the rank is legible and the ends
+    // of the deck still fall away
+    for (const p of this.puppets) p.lightK = this.lightAt(p.home.x) * (0.94 + 0.06 * (this.flick ?? 1));
+    // and put the rank light on the row that is actually there
+    const foes = this.puppets.filter(p => p.facing === -1 && p.alive);
+    if (foes.length) {
+      this.rank.position.x = foes.reduce((a, p) => a + p.home.x, 0) / foes.length;
+    }
     for (const p of this.puppets) p.update(dt);
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt * 2.4);

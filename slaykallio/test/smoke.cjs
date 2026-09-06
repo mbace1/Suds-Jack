@@ -235,6 +235,35 @@ const check = (name, ok, extra = '') => {
   check(`the deck is lit from the torch side and falls away (${lit.near.toFixed(0)} → ${lit.far.toFixed(0)})`,
     lit.near > lit.far * 1.3 && lit.near > 8);
 
+  // The falloff is the look, but a figure nobody can see is a missing telegraph,
+  // not atmosphere — so every cutout has a floor under it. DD lights the RANK.
+  const levels = await page.evaluate(() => ({
+    floor: __sk.arena.theme.mood.figureFloor,
+    foes: __sk.puppets().foes.map(p => ({ x: +p.home.x.toFixed(2), k: +p.lightK.toFixed(3) })),
+    rankFollows: Math.abs(__sk.arena.rank.position.x -
+      __sk.puppets().foes.reduce((a, p) => a + p.home.x, 0) / __sk.puppets().foes.length) < 0.01,
+  }));
+  const dim = levels.foes.filter(f => f.k < levels.floor);
+  check(`no figure is darker than the legibility floor${dim.length ? ` — ${JSON.stringify(dim)}` : ''}`,
+    levels.foes.length > 1 && dim.length === 0);
+  check('the rank light follows the row that is actually there', levels.rankFollows);
+
+  // The torch gutters. A steady light is a dimmer; the unreliability is the point.
+  const flick = await page.evaluate(async () => {
+    const seen = new Set();
+    for (let i = 0; i < 30; i++) { __sk.arena.update(0.05); seen.add(__sk.arena.torch.intensity.toFixed(4)); }
+    return seen.size;
+  });
+  check(`the torch flickers rather than sitting at one value (${flick} levels over 30 frames)`, flick > 10);
+  check('and holds still for prefers-reduced-motion', await page.evaluate(async () => {
+    const a = __sk.arena, was = a.steady;
+    a.steady = true;
+    const seen = new Set();
+    for (let i = 0; i < 20; i++) { a.update(0.05); seen.add(a.torch.intensity.toFixed(4)); }
+    a.steady = was;
+    return seen.size === 1;
+  }));
+
   // The act card names the encounter. It printed the raw ID for the whole life
   // of the game — nobody noticed while the ids happened to read as words, until
   // the fantasy skin put KING_RAT across the screen.

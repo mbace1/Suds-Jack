@@ -252,16 +252,16 @@ export const ENEMIES = {
       { id: 'bite', intent: 'attack', dmg: 4 },
       { id: 'skitter', intent: 'block', block: 5 },
     ],
-    kallio: { name: 'Rat', look: { body: '#5a4a3e', wing: '#443830', head: '#6a5648', beak: '#c08878', shape: 'rat' } },
-    fantasy: { name: 'Imp', look: { body: '#5a3a4a', wing: '#3a2434', head: '#6a4458', beak: '#c85a5a', shape: 'rat' } } },
+    kallio: { name: 'Rat', look: { body: '#6d5c4c', wing: '#4e4238', head: '#7f6b58', beak: '#c69a86', shape: 'rat' } },
+    fantasy: { name: 'Imp', look: { body: '#6d4a5c', wing: '#452b3e', head: '#7d5468', beak: '#d06e6e', shape: 'rat' } } },
   bin_rat: { hp: 28, pattern: 'cycle', scale: 0.72,
     moves: [
       { id: 'lunge', intent: 'attack', dmg: 9 },
       { id: 'gnaw', intent: 'debuff', dmg: 5, status: { key: 'weak', n: 1 } },
       { id: 'screech', intent: 'debuff', status: { key: 'vulnerable', n: 1 } },
     ],
-    kallio: { name: 'Bin Rat', look: { body: '#6a5a48', wing: '#4a3e32', head: '#7a6650', beak: '#c89078', shape: 'rat' } },
-    fantasy: { name: 'Dire Imp', look: { body: '#6a4a58', wing: '#48303c', head: '#7a5468', beak: '#d06a6a', shape: 'rat' } } },
+    kallio: { name: 'Bin Rat', look: { body: '#7b6a54', wing: '#564838', head: '#8d785e', beak: '#cf9c82', shape: 'rat' } },
+    fantasy: { name: 'Dire Imp', look: { body: '#7c5a68', wing: '#553a48', head: '#8c6478', beak: '#d87c7c', shape: 'rat' } } },
   blob: { hp: 40, pattern: 'cycle', scale: 0.95,
     moves: [
       { id: 'mutate', intent: 'buff', block: 8, status: { key: 'strength', n: 2 } },
@@ -337,7 +337,13 @@ export const ENCOUNTERS = [
 // work of making a frame feel enclosed.
 const MOOD = {
   kallio: {
-    torch: '#ffb765', torchI: 13, torchAt: [-1.4, 1.15, 2.6], torchFar: 19, torchDecay: 1.35,
+    torch: '#ffb765', torchI: 15, torchAt: [-3.6, 1.2, 2.6], torchFar: 21, torchDecay: 1.35,
+    // A second, dimmer warm source over the ENEMY ROW. Falloff is the look, but
+    // a rat nobody can see is not atmosphere, it is a missing telegraph — DD
+    // lights the RANK, not the room.
+    rank: '#e09a52', rankI: 5.5, rankFar: 13, rankDecay: 1.5,
+    figureFloor: 0.52,        // no cutout is ever darker than this, whatever the falloff
+    flicker: 0.16,            // the torch is not steady; dread is unreliable light
     sky: '#33465a', ground: '#0c1010', fillI: 0.62,   // the last of the daylight
     rim: '#6f93ad', rimI: 0.75,                       // a cold edge off the canal
     fog: '#0b0f11', fogNear: 9, fogFar: 30,
@@ -348,7 +354,10 @@ const MOOD = {
     figure: { warm: '#ffab52', cold: '#101a24', rim: '#6f93ad', depth: '99' },
   },
   fantasy: {
-    torch: '#ffc87a', torchI: 12, torchAt: [-1.4, 1.15, 2.6], torchFar: 18, torchDecay: 1.4,
+    torch: '#ffc87a', torchI: 14, torchAt: [-3.6, 1.2, 2.6], torchFar: 20, torchDecay: 1.4,
+    rank: '#c98ae0', rankI: 5, rankFar: 12, rankDecay: 1.55,
+    figureFloor: 0.5,
+    flicker: 0.2,
     sky: '#2e2a48', ground: '#0a090e', fillI: 0.55,
     rim: '#7d6fb0', rimI: 0.8,
     fog: '#08070c', fogNear: 8, fogFar: 28,

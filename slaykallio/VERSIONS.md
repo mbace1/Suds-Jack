@@ -7,6 +7,68 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v10 — 2026-09-05
+**Light the RANK, gutter the torch, and repaint the two worst drawings**
+Owner picked three of the art items off v9's list: legibility of the enemy row,
+a flickering torch, and the enemies themselves.
+
+**The rank.** v9's falloff was doing exactly what it was told and hiding the
+figure whose intent you most needed to read. Two parts, because a cutout is an
+unlit `MeshBasicMaterial` plane and a scene light cannot touch it: a second,
+dimmer warm `PointLight` that **follows the enemy row** (its x is the mean of
+the living foes, recomputed each frame) lights the deck and the bases, and
+`Arena.lightAt(x)` hands every cutout a light LEVEL that the puppet multiplies
+into `mat.color`. It is **floored** (`figureFloor`): past the floor a figure
+stops getting darker and only stops getting warmer, so the falloff stays a look
+and stops being a missing telegraph. The hit flash now rides on that level
+rather than replacing it — otherwise a flash reset a figure standing in the dark
+to full brightness and left it there.
+
+**The gutter.** Three incommensurate sines, with a slow one that occasionally
+takes the others down with it; a steady light is a dimmer, and the
+unreliability is most of what reads as dread. Off under
+`prefers-reduced-motion`, and both halves are gated.
+
+**And the torch moved to x −3.6, beside the party** — DD's actual staging, and
+the only position consistent with the rim painted into every cutout. At −1.4 it
+stood to the hero's RIGHT while his warm edge was painted on his left.
+
+**The two worst drawings.** The rat was a body and two ears while every bum had
+a hat, hair, a prop and a silhouette; the blob was a flat green lump. A cutout
+has no shading to be wrong in, so everything has to be a shape or a mark:
+
+- **Rat** — a hunched back (the arch is where the shape has to happen), matted
+  fur breaking the outline, ribs through a thin flank, a bald kinked tail, a
+  chewed ear, a milky eye, claws, one broken tooth.
+- **Blob** — this is where *Eldritch Kallio* actually lands. The mass sags to
+  one side under its own weight, a pseudopod reaches where the body is not
+  going, four eyes at three sizes with one clouded over, and **the canal's
+  rubbish suspended inside it**: a trolley wheel, bottle caps, a ring-pull,
+  something that used to have a bone in it.
+
+**Four faults found by rendering the cast at full size, none visible in the
+scene** — the method the repo's own rule prescribes, and the reason it exists:
+
+1. **Every figure had glowing chickenpox.** v9's rim pass finds every edge in
+   the alpha, and `nicks()` punches HOLES in that alpha, so it drew a warm ring
+   around each of forty nicks. Light the clean silhouette, THEN take the bites
+   out — which is also the true order, since a cutout is painted first and
+   carried around afterwards.
+2. **The rat's fur read as a boar.** Evenly spaced triangles are a comb whatever
+   their heights are; the gaps are what make it fur, so the walk now skips.
+3. **The rat's ear read as its eye** — a big ringed disc in the middle of the
+   skull pulled every glance, while the actual eye was a 5px square nobody
+   could see. Ears are flaps set back on the skull now; the eye is a bead with
+   a milky cast and a glint.
+4. **Two literal rectangles.** The blob's pupils were `fillRect` and its mouth
+   was a black bar — a square is the one shape that reads as UI rather than as
+   an animal, and the bar read as a letterbox cut in the card.
+
+Gates: four more (76 total) — no figure darker than the floor, the rank light
+following the row that is actually there, the torch taking more than ten
+distinct values over thirty frames, and holding at exactly one under reduced
+motion.
+
 ## v9 — 2026-09-05
 **Eldritch Kallio: the hour moved to evening, and the look to Darkest Dungeon**
 Owner: *"let's go Eldritch Kallio and looking a bit more like Darkest Dungeon.
