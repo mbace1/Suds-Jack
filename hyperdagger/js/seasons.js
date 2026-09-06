@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=72';
+import { TUNING as T } from './tuning.js?v=73';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.

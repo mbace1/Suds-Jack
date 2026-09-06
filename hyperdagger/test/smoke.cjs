@@ -23,22 +23,71 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
 
 s.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + s.address().port;
-  const b = await chromium.launch({
+  const errs = [];
+  const misses = [];
+  const launch = () => chromium.launch({
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
     env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LIB || process.env.LD_LIBRARY_PATH },
     args: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
       ? ['--no-sandbox', '--single-process', '--no-zygote', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--in-process-gpu']
       : ['--use-gl=swiftshader', '--disable-dev-shm-usage'],
   });
-  const p = await b.newPage({ viewport: { width: 1100, height: 720 } });
-  const errs = [];
-  const misses = [];
-  p.on('pageerror', e => errs.push('pageerror: ' + e.message));
-  p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+  let b = await launch();
+  // The suite runs at 820x540, not 1100x720. Same 1.53 aspect (every frame
+  // check is a ratio, not a pixel), 45% fewer pixels for SwiftShader to
+  // carry — and the renderer's climb is what the container's memory cgroup
+  // kills at nine gigabytes. Measured: it reached 8.8 GB before the first
+  // recycle at the old size.
+  const VIEW = { width: 820, height: 540 };
+  let p = await b.newPage({ viewport: VIEW });
+  const watch = () => {
+    p.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+    p.on('response', r => { if (r.status() === 404) misses.push(r.url()); });
+    // A DEAD TAB MUST FAIL LOUDLY. Under SwiftShader the renderer runs out of
+    // memory partway through a long suite; node then sits on an evaluate that
+    // will never resolve and the run hangs for twenty minutes looking like a
+    // slow machine. These two end it in seconds instead.
+    p.on('crash', () => { console.log('  !! the page CRASHED — the renderer is gone'); process.exit(2); });
+    // ...but NOT while we are closing it on purpose: this handler fires on a
+    // clean shutdown too, and exiting from it killed two complete runs one
+    // line before their summary — they had passed everything.
+    b.on('disconnected', () => { if (!swapping && !done) { console.log('  !! the browser DISCONNECTED'); process.exit(2); } });
+  };
+  // ...and a long suite gets a FRESH one at the art boundary. Everything up to
+  // there runs ?assets=0; everything after loads 5 MB of sculpts and pays for
+  // the accumulated renderer heap of forty sections. Two browsers, half the
+  // peak, and the crash that has been ending runs late stops happening.
+  let swapping = false, done = false;
+  const freshBrowser = async () => {
+    swapping = true;
+    await b.close().catch(() => {});
+    b = await launch();
+    p = await b.newPage({ viewport: VIEW });
+    swapping = false;
+    watch();
+  };
+  /**
+   * A fresh browser AND the page state the suite runs on. Under SwiftShader
+   * the renderer climbs about a gigabyte every ten checks — measured — and
+   * the container's memory cgroup kills it at nine, which is what had been
+   * ending runs at a different check every time. Nothing leaks in the game
+   * (geometry, textures and the JS heap are all flat across spawn/kill
+   * cycles); it is the cost of software-rendering this scene for half an
+   * hour. So the suite recycles: each phase starts from ~170 MB.
+   */
+  const recycle = async () => {
+    await freshBrowser();
+    await p.goto(base + '/hyperdagger/?assets=0&season=void', { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+    await p.evaluate(() => { window.__hd.debug.setSeason('void'); window.__hd.debug.startGame(); });
+    await p.evaluate(() => new Promise(r => { let c = 0; const f = () => (++c >= 4 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }));
+  };
   // A 404 is fail-soft here (every asset path has a fallback) and that is
   // exactly why it needs its own watch: three enemy GLBs were requested on
   // every single boot for art that is in no branch, and nothing failed.
-  p.on('response', r => { if (r.status() === 404) misses.push(r.url()); });
+  watch();
 
   // ---- boot --------------------------------------------------------------
   // assets=0 for the bulk of the suite. Everything from here to the v38
@@ -62,7 +111,10 @@ s.listen(0, '127.0.0.1', async () => {
   // navigates to its own pages.
   await p.evaluate(() => window.__hd.debug.setSeason('void'));
   await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
-  await p.mouse.click(550, 360);
+  // low on the page, BELOW the menu panel: dead centre is a button now that
+  // v41 put SEASON beside MODE, and clicking a button is not "a click starts
+  // the run"
+  await p.mouse.click(410, 508);
   await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
   ok('a click starts the run', true);
 
@@ -206,6 +258,8 @@ s.listen(0, '127.0.0.1', async () => {
     Math.abs(gemRules31.xFiring - gemRules31.x0) < 0.001 &&
     gemRules31.xIdle < gemRules31.xFiring && gemRules31.blastVx > 0 && gemRules31.life === 10,
     JSON.stringify(gemRules31));
+
+  await recycle(); // phase 2 — the gunfeel and movement work is the expensive part
 
   // ---- v29 90s-FPS movement: diagonal, momentum, hop, dagger jump -------
   const move29 = await p.evaluate(async () => {
@@ -420,6 +474,8 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('assist slows only near a centred target', aim.clearRaw === 1 && aim.centredRaw < 0.7 && aim.offAxis === 1, JSON.stringify(aim));
   ok('assist + ramp stay inert without a pad', aim.assist === 1 && aim.ramp === 0, JSON.stringify(aim));
+
+  await recycle(); // phase 3
 
   // ---- v4.26 REAP: the bone-yard is a resource you spend -----------------
   const reap = await p.evaluate(async () => {
@@ -724,7 +780,7 @@ s.listen(0, '127.0.0.1', async () => {
   ok('debug.die() reaches the death screen', death.state === 'dead');
   await p.waitForTimeout(1200); // death screen ignores input for 700ms
   // click clear of the death screen's own buttons (they stopPropagation)
-  await p.mouse.click(880, 620);
+  await p.mouse.click(660, 470);
   const restarted = await p.waitForFunction(
     () => window.__hd.debug.getState().state === 'playing', null, { timeout: 4000 }).then(() => true, () => false);
   ok('one click restarts within 2s', restarted);
@@ -739,6 +795,8 @@ s.listen(0, '127.0.0.1', async () => {
     null, { timeout: 8000 }).then(() => true, () => false);
   ok('the full shell returns off-run and retreats again on restart',
     !death.activeFrame && retreated);
+
+  await recycle(); // phase 4
 
   // ---- v36 the mode lab: every registered experiment boots ---------------
   // This section exists because TRUCK was LOST. v33's notes promise a three-
@@ -928,10 +986,25 @@ s.listen(0, '127.0.0.1', async () => {
   ok('ember: dark rock stands in the arena — five piles, none of them tall',
     pillars.length >= 4 && pillars.length <= 5 && pillars.every(w => w.h >= 3 && w.h <= 7),
     JSON.stringify(pillars.map(w => w.h)));
-  ok('ember: the slabs are LOW mostly — most at knee height, none over the cap',
+  // "Low mostly" is a property of the DRAW, and four live slabs cannot show
+  // it — a seed where three of four land high is ordinary, and this check
+  // failed on one. Sample the generator instead: the height draw is squared,
+  // so the median must sit in the bottom quarter of the declared range.
+  const heights = await p.evaluate(() => {
+    const P = window.__hd.debug.platformsObj(), hs = [];
+    for (let i = 0; i < 80; i++) {
+      const q = P._make();
+      hs.push(q.h);
+      P.group.remove(q.mesh); q.mesh.geometry.dispose(); // built only to be measured
+    }
+    hs.sort((a, b) => a - b);
+    return { median: hs[40], min: hs[0], max: hs[79], n: hs.length };
+  });
+  ok('ember: the slabs are LOW mostly — the squared draw puts the median low',
     em.plats.count === 4 && em.plats.slabs.every(s => s.h <= 1.6)
-    && em.plats.slabs.filter(s => s.h < 0.9).length >= 2,
-    JSON.stringify(em.plats.slabs.map(s => s.h)));
+    && heights.min >= 0.4 && heights.max <= 1.6
+    && heights.median < 0.4 + (1.6 - 0.4) * 0.45,
+    JSON.stringify({ live: em.plats.slabs.map(s => s.h), sampled: heights }));
   ok('ember: the hand holds the needler — faster nails, a wider blast',
     em.gun.weapon === 'needler' && em.gun.rate > 1 && em.gun.streamSpeed > 48
     && em.gun.shotgunSpread > 0.18 && em.gun.shape && em.gun.shape.len > 0.3,
@@ -1004,6 +1077,72 @@ s.listen(0, '127.0.0.1', async () => {
   ok('ember: rock stops a nail, open air does not',
     nails.intoSky > 0 && nails.intoRock < nails.intoSky, JSON.stringify(nails));
 
+  // v42: the arena is COVER — rock stops an enemy orb, holds a body out of
+  // itself, and a slab is something a gem can land on.
+  const cover = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    const w = d.getWalls().walls.find(x => x.tag === 'pillar');
+    const len = Math.hypot(w.x, w.z), k = (len + 6) / len;
+    const from = { x: w.x * k, z: w.z * k };
+    const dx = w.x - from.x, dz = w.z - from.z, dl = Math.hypot(dx, dz);
+    const V = (x, y, z) => ({ x, y, z, clone() { return V(this.x, this.y, this.z); } });
+    // a body cannot stand inside a pile
+    d.spawnSkull();
+    const e = hd.enemies[hd.enemies.length - 1]; e.hp = 9999;
+    e.pos.set(w.x, 1.2, w.z);
+    await frames(3);
+    const pushedOut = Math.hypot(e.pos.x - w.x, e.pos.z - w.z);
+    e.alive = false;
+    // a gem lands ON a slab. Driven synchronously with the magnet off and the
+    // player far away — it reaches the whole arena while the hand is idle.
+    const P = d.platformsObj(), sl = P.list[0];
+    sl.h = 1.6; sl.phase = 'live'; sl.k = 1; sl.t = 0; P._pose(sl);
+    const st = d.getPlatforms().slabs[0];
+    const floorAt = (x, z) => P.topAt(x, z, 0), far = { x: 999, y: 1, z: 999 };
+    hd.gems.reset();
+    hd.gems.spawn({ x: st.x, y: 3, z: st.z });
+    const g = hd.gems.active[hd.gems.active.length - 1]; g.vel.x = 0; g.vel.z = 0;
+    for (let i = 0; i < 150; i++) hd.gems.update(1 / 60, far, false, floorAt);
+    const onSlab = g.m.position.y;
+    hd.gems.spawn({ x: st.x + st.w / 2 + 5, y: 3, z: st.z });
+    const g2 = hd.gems.active[hd.gems.active.length - 1]; g2.vel.x = 0; g2.vel.z = 0;
+    for (let i = 0; i < 150; i++) hd.gems.update(1 / 60, far, false, floorAt);
+    const onFloor = g2.m.position.y;
+    hd.gems.reset();
+    // THE ORB, LAST, because the control removes the rock: the same shot from
+    // the same point, once with the pile there and once without. Comparing two
+    // DIFFERENT shots made the control frame-rate dependent — an orb fired
+    // outward reached the cull radius on a slow frame and read as blocked.
+    // Stepped by DISTANCE, never by a frame count: a frame here is anywhere
+    // between 16 ms and a second, so "40 frames" was long enough for the orb
+    // to reach its 7 s life cap and the control read as blocked.
+    const shot = async () => {
+      hd.orbs.reset();
+      hd.orbs.fire({ x: from.x, y: 1.4, z: from.z }, V(dx / dl * 9, 0, dz / dl * 9));
+      for (let i = 0; i < 120 && hd.orbs.active.length; i++) {
+        const q = hd.orbs.active[0].m.position;
+        if (Math.hypot(q.x - from.x, q.z - from.z) > 9) break; // past the pile, still flying
+        await frames(1);
+      }
+      const n = hd.orbs.active.length;
+      hd.orbs.reset();
+      return n;
+    };
+    const intoRock = await shot();
+    d.clearPillars();
+    const withoutRock = await shot();
+    return { intoRock, withoutRock, pushedOut: +pushedOut.toFixed(2), slabTop: st.top,
+      onSlab: +onSlab.toFixed(2), onFloor: +onFloor.toFixed(2) };
+  });
+  ok('ember: rock is cover — the same orb dies on a pile and lives without it',
+    cover.intoRock === 0 && cover.withoutRock > 0, JSON.stringify(cover));
+  ok('ember: a body cannot stand inside rock — it is pushed clear',
+    cover.pushedOut > 0.5, JSON.stringify(cover));
+  ok('ember: a gem lands ON a slab, not through it',
+    cover.onSlab > cover.slabTop && cover.onFloor < 0.8, JSON.stringify(cover));
+
   const inca = await seasonRead('inca');
   ok('inca: season 2 carries its palette and declares itself UNBUILT',
     inca.sn.current === 'inca' && inca.sn.built === false && inca.sn.todo.length >= 3
@@ -1019,7 +1158,9 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
 
   // ---- v38 the voxel route: the roster is the owner's Meshy art, as cubes --
-  // back onto a page that actually loads the art (the mode loop ran assets=0)
+  // back onto a page that actually loads the art (the mode loop ran assets=0),
+  // in a FRESH browser — see freshBrowser above
+  await freshBrowser();
   await p.goto(base + '/hyperdagger/', { waitUntil: 'load' });
   await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
   await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
@@ -1179,6 +1320,7 @@ s.listen(0, '127.0.0.1', async () => {
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));
 
+  done = true;
   await b.close();
   s.close();
   console.log(`\n${pass} passed, ${fail} failed`);

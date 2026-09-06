@@ -5,26 +5,26 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=72';
-import { Player } from './player.js?v=72';
-import { DaggerPool } from './daggers.js?v=72';
-import { GemPool } from './gems.js?v=72';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=72';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=72';
-import { OrbPool } from './bullets.js?v=72';
-import { AudioKit } from './audio.js?v=72';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=72';
-import { TUNING as T } from './tuning.js?v=72';
-import { HyperEnvironment } from './environment.js?v=72';
-import { Backdrop } from './backdrop.js?v=72';
-import { Walls } from './walls.js?v=72';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=72';
-import { TruckTrack } from './truck.js?v=72';
-import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=72';
-import { Platforms } from './platforms.js?v=72';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=72';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=72';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=72';
+import { InputManager } from './input.js?v=73';
+import { Player } from './player.js?v=73';
+import { DaggerPool } from './daggers.js?v=73';
+import { GemPool } from './gems.js?v=73';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=73';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=73';
+import { OrbPool } from './bullets.js?v=73';
+import { AudioKit } from './audio.js?v=73';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=73';
+import { TUNING as T } from './tuning.js?v=73';
+import { HyperEnvironment } from './environment.js?v=73';
+import { Backdrop } from './backdrop.js?v=73';
+import { Walls } from './walls.js?v=73';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=73';
+import { TruckTrack } from './truck.js?v=73';
+import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=73';
+import { Platforms } from './platforms.js?v=73';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=73';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=73';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=73';
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -2685,7 +2685,8 @@ function updateCombat(dt) {
   // gems: magnet + collect
   _p0.copy(player.feet);
   _p0.y += 1.1;
-  const got = gems.update(dt, _p0, !weaponActive);
+  const got = gems.update(dt, _p0, !weaponActive,
+    platforms.count ? (x, z) => platforms.topAt(x, z, 0) : null);
   if (got) onGemsCollected(got);
 
   // enemy → player
@@ -2858,8 +2859,17 @@ function step(dt) {
     }
   }
   director(dt);
+  const solidArena = walls.walls.length || platforms.count;
   for (const e of enemies) {
     e.update(dt, camera.position, gems);
+    // v42: a body cannot stand inside rock. `e.pos` IS the group position, so
+    // the push lands this frame. Anything higher than the piece it is over is
+    // left alone — flying past the top of a pile is not a collision.
+    if (solidArena && e.alive && e.type !== 'thorn') {
+      const r = Math.max(0.4, (e.radius ?? 0.8) * 0.7);
+      if (walls.walls.length) walls.pushOut(e.pos, r, e.footOffset ?? 0.6);
+      if (platforms.count) platforms.pushOut(e.pos, r, e.footOffset ?? 0.6);
+    }
     if (e.type === 'watcher') {
       if (e.warnReq) { e.warnReq = false; audio.warn(); }
       if (e.volley) {
@@ -2927,6 +2937,20 @@ function step(dt) {
   updateFlyby(dt);
   updateThorns(dt);
   orbs.update(dt, ARENA_R + 6);
+  // v42: rock is COVER. An orb that flies into a pile or a standing slab dies
+  // there — the season's whole claim on the fight is that there is now
+  // somewhere to put between you and a volley. Segment tests (an orb keeps
+  // its previous position) so a fast one cannot pass through a thin pile.
+  if (walls.walls.length || platforms.count) {
+    for (let i = orbs.active.length - 1; i >= 0; i--) {
+      const o = orbs.active[i];
+      if ((walls.walls.length && walls.blocks(o.prev, o.m.position))
+        || (platforms.count && platforms.blocks(o.prev, o.m.position))) {
+        spawnSpark(o.m.position, false);
+        orbs.recycle(i);
+      }
+    }
+  }
   updateCombat(dt);
   debris.update(dt);
   // style meter bleeds when you stop scoring — faster at higher ranks so the
@@ -3232,6 +3256,7 @@ window.__hd = {
     setSeason(id) { season = seasonById(id).id; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
     getPlatforms() { return platforms.getState(); },
     platformsObj() { return platforms; }, // the gate forces one slab tall and grown
+    clearPillars() { walls.cull(w => w.tag === 'pillar'); return walls.walls.length; }, // the cover check's control: the same shot with the rock gone
     /** The body's wall state — what the wall-run gate and the harness read. */
     getWallRun() {
       return { enabled: !!player.wallRunEnabled, running: !!player.wallRunning, t: +player.wallRunT.toFixed(2),

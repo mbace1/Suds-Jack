@@ -2,6 +2,76 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v42 — 2026-09-06
+**The arena becomes cover**
+
+v41 put rock and slabs in the arena and they were art with a collision box:
+they stopped your body and your nails and nothing else. Enemy orbs flew
+through a pile, skulls drifted through one as if it were not there, and a gem
+dropped over a slab sank through it. Three changes make the season change how
+a run is PLAYED rather than only how it looks.
+
+**Rock stops an enemy orb.** An orb now keeps its previous position, and the
+loop segment-tests it against the piles and the standing slabs — a hit dies
+there with a spark. That is the whole claim: there is somewhere to put
+between you and a watcher's volley, and a pile you can barely see is a pile
+you have to remember. Segment, not point, because an orb crossing 9 u/s is
+faster than a pile is thick.
+
+**Rock is solid to bodies.** `Walls.pushOut` and `Platforms.pushOut` shove any
+enemy standing inside a piece out along the shortest axis, so the swarm has to
+come round rather than through. `e.pos` IS the group's position, so the push
+lands the same frame; anything higher than the piece it is over is left alone,
+which is what flying past the top of a pile means.
+
+**A gem lands on a slab.** `gems.update` takes a `floorAt(x, z)` and
+`Platforms.topAt` answers it, so a gem dropped over a platform rests on it at
+the same hover height instead of sinking through into the rock.
+
+Measured, not assumed: an orb fired at a pile is gone and one fired into open
+air from the same spot is still flying; a skull placed at a pile's centre is
+1.1 units clear of it three frames later; a gem dropped on a 1.6-high slab
+settles at 2.03 while one on the floor beside it settles at 0.42.
+
+**Gate: 140 checks** (was 137) — the three above, in EMBER, where the rock is.
+Two traps the probe found first: the gem magnet reaches the whole arena while
+the hand is idle, so a resting test has to drive `gems.update` itself with
+attraction off; and a spawned gem SCATTERS, so it must be dropped rather than
+thrown or it lands beside the slab it was meant to land on.
+
+**And the suite itself needed four fixes to become trustworthy**, all of them
+the test lying rather than the code failing.
+
+*A dead tab now fails loudly.* Under SwiftShader the renderer is OOM-killed
+partway through a long run; node then waits on an `evaluate` that will never
+resolve, and the suite hangs for twenty minutes looking like a slow machine.
+A `crash` and a `disconnected` handler end it in seconds — but the
+disconnect handler also fires on the CLEAN shutdown, and exiting from it
+killed two complete runs one line before their summary. It is guarded now.
+
+*The suite recycles its browser.* Measured with a sampler beside the run: the
+renderer climbs about a gigabyte every ten checks and the container's memory
+cgroup kills it at nine — which is what had been ending runs at a different
+check each time. Nothing leaks in the game: geometry, textures and the JS
+heap are flat across spawn/kill cycles, tier flips are flat across sixty of
+them, and **the v40 tree traces identically**, so this is the cost of
+software-rendering this scene for half an hour, not a regression. Four phases,
+each starting from ~170 MB, hold the peak at 2.6 GB.
+
+*Two checks were frame-rate dependent.* The orb control fired a second orb
+into open air and counted survivors after a fixed number of frames — but a
+frame here is anywhere between 16 ms and a second, and on a slow one the
+control orb reached its 7 s life cap and read as blocked. It is now the SAME
+shot fired twice, once with the rock there and once with it culled, stepped
+by DISTANCE travelled. And "the slabs are low mostly" judged four live slabs,
+where a seed putting three of them high is ordinary; it samples the height
+generator eighty times and asserts the median sits in the bottom quarter of
+the range, which is what the squared draw actually claims.
+
+*The start click moved.* v41 put SEASON beside MODE on the menu, so the
+viewport's dead centre is a button now, and "a click starts the run" was
+clicking one. It clicks below the panel.
+
 ## v41 — 2026-09-06
 **Seasons: the arena's art is declared, like a mode — and season 1 is built**
 

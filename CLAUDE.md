@@ -381,7 +381,11 @@ CARRIED, and the height draw is SQUARED so most are knee-high); and the
 the fire sites, nails re-shaped by `DaggerPool.setShape`, stream ×1.35 at
 72 u/s, shotgun a wider blast of the same nails. Rock and slabs are solid to
 projectiles (`walls.blocks` / `platforms.blocks`, slab tests asked before the
-enemy loop). INCA is season 2's palette only and says so (`built: false`,
+enemy loop) and, since v42, they are **cover**: an enemy orb dies on them
+(orbs keep a `prev` for the segment test), `pushOut` shoves any enemy body out
+of a piece so the swarm comes round rather than through, and `topAt` gives
+`gems.update` a `floorAt` so a gem lands on a slab instead of sinking into
+it. INCA is season 2's palette only and says so (`built: false`,
 `todo`). Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
