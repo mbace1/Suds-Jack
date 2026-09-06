@@ -67,7 +67,7 @@ export class AudioKit {
     const now = this.ctx.currentTime;
     if (now - this._lastFire < 0.075) return;
     this._lastFire = now;
-    this._noise(0.05, 'bandpass', 1600 + Math.random() * 600, 2, 0.08);
+    this._noise(0.05, 'bandpass', (1600 + Math.random() * 600) * (this.fireTone || 1), 2, 0.08);
   }
 
   /** DD tap-burst: a fistful of daggers at once — wide noise splash over a

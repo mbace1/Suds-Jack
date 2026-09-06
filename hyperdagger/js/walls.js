@@ -25,14 +25,24 @@ export class Walls {
   }
 
   /** One slab: centre (x, z), yaw radians, len along its own x, height h, thickness. */
-  add({ x, z, yaw = 0, len = 12, h = 5, thick = 1, tag = null }) {
+  add({ x, z, yaw = 0, len = 12, h = 5, thick = 1, tag = null, material = null, geometry = null }) {
+    if (geometry) {
+      // v41: a prebuilt look (shale.js) whose origin is its BASE centre. The
+      // collision box is still (len, h, thick) — the look jitters inside it.
+      const m = new THREE.Mesh(geometry, material || this.mat);
+      m.position.set(x, 0, z);
+      m.rotation.y = yaw;
+      this.group.add(m);
+      this.walls.push({ x, z, yaw, len, h, thick, mesh: m, tag, cos: Math.cos(yaw), sin: Math.sin(yaw) });
+      return;
+    }
     const geo = new THREE.BoxGeometry(len, h, thick);
     // the floor shader tiles its map uRepeat times across the 52-unit disc;
     // scale each face's uv so a wall's plates are the same size underfoot
     const uv = geo.getAttribute('uv');
     const per = 52 / 10; // world units per tile at uRepeat 10
     for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (len / per), uv.getY(i) * (h / per));
-    const mesh = new THREE.Mesh(geo, this.mat);
+    const mesh = new THREE.Mesh(geo, material || this.mat);
     mesh.position.set(x, h / 2, z);
     mesh.rotation.y = yaw;
     this.group.add(mesh);
@@ -98,5 +108,25 @@ export class Walls {
     return player.wallContact;
   }
 
-  getState() { return { count: this.walls.length, walls: this.walls.map(w => ({ x: +w.x.toFixed(1), z: +w.z.toFixed(1), yaw: +w.yaw.toFixed(2), len: w.len, h: w.h })) }; }
+  /** Does the segment p0→p1 enter any wall? Rock stops a nail; the test is
+   *  a slab test in the wall's own frame so a fast projectile cannot tunnel. */
+  blocks(p0, p1) {
+    for (const w of this.walls) {
+      const u0 = (p0.x - w.x) * w.cos - (p0.z - w.z) * w.sin, v0 = (p0.x - w.x) * w.sin + (p0.z - w.z) * w.cos;
+      const u1 = (p1.x - w.x) * w.cos - (p1.z - w.z) * w.sin, v1 = (p1.x - w.x) * w.sin + (p1.z - w.z) * w.cos;
+      let tmin = 0, tmax = 1, out = false;
+      for (const [o, d, lo, hi] of [[u0, u1 - u0, -w.len / 2, w.len / 2], [p0.y, p1.y - p0.y, 0, w.h], [v0, v1 - v0, -w.thick / 2, w.thick / 2]]) {
+        if (Math.abs(d) < 1e-9) { if (o < lo || o > hi) { out = true; break; } continue; }
+        let t0 = (lo - o) / d, t1 = (hi - o) / d;
+        if (t0 > t1) { const s = t0; t0 = t1; t1 = s; }
+        if (t0 > tmin) tmin = t0;
+        if (t1 < tmax) tmax = t1;
+        if (tmin > tmax) { out = true; break; }
+      }
+      if (!out) return w;
+    }
+    return null;
+  }
+
+  getState() { return { count: this.walls.length, walls: this.walls.map(w => ({ x: +w.x.toFixed(1), z: +w.z.toFixed(1), yaw: +w.yaw.toFixed(2), len: w.len, h: w.h, tag: w.tag })) }; }
 }

@@ -127,6 +127,29 @@ export const TUNING = {
     homingDamage: 10,
   },
 
+  /**
+   * WEAPON PROFILES (v41) — a season names one; main.js reads `wpn(key)`,
+   * which is the profile's value if it has one and T.weapon's otherwise.
+   * `dagger` IS T.weapon. `needler` is season 1's: the same tap/hold
+   * grammar, but the projectile is a NAIL — thinner, longer, faster, a
+   * tighter stream — and the shotgun is a WIDER blast of the same nails.
+   * `rate` multiplies tiers[lv].stream, so the DD economy (burst DPS below
+   * stream DPS) only gets safer; the gate asserts it per profile.
+   */
+  weapons: {
+    dagger: {},
+    needler: {
+      rate: 1.35,
+      streamSpeed: 72,
+      shotgunSpeed: 104,
+      spread: 0.028,
+      shotgunSpread: 0.27,
+      shape: { r: 0.024, len: 0.40 },   // the nail: a quarter of the dagger's girth, near twice its length
+      color: [3.0, 1.15, 0.38],         // hot brass, still a bloom-tripping HDR value
+      fireTone: 1.5,                    // audio: the stream tick sits higher
+    },
+  },
+
   gems: {
     gravity: -22,
     magnetR: 55,       // u — the whole arena, but only while the hand is idle

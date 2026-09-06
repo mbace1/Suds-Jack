@@ -100,6 +100,7 @@ export class Backdrop {
           });
           this.group.add(root);
           this.pieces.push({ cfg, root });
+          if (this.look) this._applyLook(root);
           out.pieces++;
         } catch (e) { console.warn('[backdrop]', cfg.file, e?.message ?? e); }
       }
@@ -108,8 +109,36 @@ export class Backdrop {
     return this.ready;
   }
 
+  /**
+   * v41 — how the pieces are LIT is the SEASON's to say. The asset rig
+   * (white hemi + key, crimson fills) was aimed at enemies in the disc; a
+   * piece standing at z −40 catches only the fills from where you stand and
+   * rendered as a black shape with pink rims — which is how the owner's
+   * environment art came to "look quite weird" in every wide shot.
+   * `emissive` feeds the bake back through emissiveMap at a low intensity,
+   * so the stone carries its own light and the fills become the rims they
+   * were meant to be. `visible: false` is the v26 arena — the reference has
+   * no backdrop at all. Applies to pieces already placed and to later ones.
+   */
+  setLook({ visible = true, emissive = 0 } = {}) {
+    this.look = { visible, emissive };
+    this.group.visible = visible;
+    for (const { root } of this.pieces) this._applyLook(root);
+  }
+
+  _applyLook(root) {
+    const k = this.look?.emissive ?? 0;
+    root.traverse(o => {
+      if (!o.isMesh || !o.material.emissive) return;
+      const m = o.material;
+      if (k > 0) { m.emissiveMap = m.map; m.emissive.setRGB(1, 1, 1); m.emissiveIntensity = k; }
+      else { m.emissiveMap = null; m.emissive.setRGB(0, 0, 0); m.emissiveIntensity = 1; }
+      m.needsUpdate = true;
+    });
+  }
+
   getState() {
-    return { pieces: this.pieces.map(p => ({ file: p.cfg.file, at: p.cfg.at, height: p.cfg.height })), floor: !!this.floorTex };
+    return { pieces: this.pieces.map(p => ({ file: p.cfg.file, at: p.cfg.at, height: p.cfg.height })), floor: !!this.floorTex, look: this.look ?? null };
   }
 
   dispose() {

@@ -20,11 +20,19 @@ import { Backdrop } from './backdrop.js?v=71';
 import { Walls } from './walls.js?v=71';
 import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=71';
 import { TruckTrack } from './truck.js?v=71';
+import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=71';
+import { Platforms } from './platforms.js?v=71';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=71';
 import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=71';
 import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=71';
 
 const ARENA_R = 26;
-const FIRE_SPREAD = T.weapon.spread;
+// v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
+// profile's value where it has one and the dagger's otherwise. applySeason
+// swaps it; the fire sites ask wpn() and never T.weapon directly for
+// anything a profile may own (speeds, spreads, the stream rate multiplier).
+let WP = {};
+const wpn = k => WP[k] ?? T.weapon[k];
 const SKULL_CAP = 64;
 const TOTEM_CAP = 6;
 const SERPENT_CAP = 2;
@@ -481,6 +489,7 @@ const floorMat = new THREE.ShaderMaterial({
     uRed: { value: 0 },
     uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
     uRepeat: { value: 10.0 }, // tiles across the disc; a backdrop floor texture sets its own
+    uTint: { value: new THREE.Color(1, 1, 1) }, // v41: the season's floor colour
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -492,9 +501,10 @@ const floorMat = new THREE.ShaderMaterial({
     uniform float uRed;
     uniform vec3 uAccent;
     uniform float uRepeat;
+    uniform vec3 uTint;
     varying vec2 vUv;
     void main() {
-      vec3 col = texture2D(map, vUv * uRepeat).rgb;
+      vec3 col = texture2D(map, vUv * uRepeat).rgb * uTint;
       col *= uGlow + uPulse * 0.28;
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
@@ -516,6 +526,11 @@ const skyMat = new THREE.ShaderMaterial({
     uTime: { value: 0 },
     uEmber: { value: 0 },
     uEmberCol: { value: new THREE.Color(0.30, 0.02, 0.02) }, // horizon glow (STYLE re-aims it)
+    // v41: a season declares the rest of the sky — its base colour, how
+    // tightly the band hugs the horizon, and a faint star field
+    uVoid: { value: new THREE.Color(0.0015, 0.0015, 0.0015) },
+    uBand: { value: 4.8 },
+    uStars: { value: 0 },
   },
   vertexShader: /* glsl */`
     varying vec3 vPos;
@@ -528,12 +543,24 @@ const skyMat = new THREE.ShaderMaterial({
     uniform float uTime;
     uniform float uEmber;
     uniform vec3 uEmberCol;
+    uniform vec3 uVoid;
+    uniform float uBand;
+    uniform float uStars;
+    float hash3(vec3 p) { p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
     void main() {
       vec3 d = normalize(vPos);
       float h = d.y;
-      vec3 col = vec3(0.0015);
-      float horiz = pow(max(0.0, 1.0 - abs(h) * 4.8), 4.0);
+      vec3 col = uVoid;
+      float horiz = pow(max(0.0, 1.0 - abs(h) * uBand), 4.0);
       col += uEmberCol * horiz * (0.52 + uEmber * 0.32);
+      if (uStars > 0.0 && h > 0.02) {
+        // a sparse fixed star field — dim, under the bloom threshold, so it
+        // is atmosphere and never competes with an eye or a gem
+        vec3 g = floor(d * 160.0);
+        float s = hash3(g);
+        float star = step(0.9965, s) * (0.45 + 0.55 * hash3(g + 1.7));
+        col += vec3(star * uStars * smoothstep(0.02, 0.25, h));
+      }
       gl_FragColor = vec4(col, 1.0);
     }`,
 });
@@ -561,6 +588,18 @@ const dust = (() => {
   return p;
 })();
 
+// v41: a matte ground OUTSIDE the disc, under the monuments — a piece
+// standing on the void floats; on this it stands (owner: "3d assets
+// shouldn't all float"). A season names its colour or leaves it off; the
+// track never shows it, since its whole premise is nothing under you.
+const ground = new THREE.Mesh(
+  new THREE.RingGeometry(ARENA_R + 0.3, 190, 72).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0x000000 }),
+);
+ground.position.y = -0.08;
+ground.visible = false;
+scene.add(ground);
+
 // One horizon line only. The fight owns the rest of the frame.
 const environment = new HyperEnvironment(scene, ARENA_R);
 // …unless the manifest names a backdrop: the owner's Meshy pieces, placed
@@ -579,6 +618,11 @@ backdrop.load('assets/manifest.json').then(r => {
 const wallMat = floorMat.clone();
 wallMat.uniforms.uGlow.value = 2.1;
 const walls = new Walls(scene, wallMat);
+// v41 (owner: "shale rock that's dark" / "tile work that's crooked") — the
+// rock and the slabs are layered shale built by shale.js, one vertex-coloured
+// unlit material for all of it
+const shaleMat = shaleMaterial();
+const platforms = new Platforms(scene, shaleMat);
 
 // ---------------------------------------------------------------- actors
 const input = new InputManager();
@@ -914,6 +958,73 @@ const _urlMode = new URLSearchParams(location.search).get('mode');
 let mode = modeById(_urlMode || localStorage.getItem(MODE_KEY) || 'pure').id;
 /** The active mode's declaration — ask this, never `mode === '...'`. */
 function M() { return modeById(mode); }
+
+// ------------------------------------------------------------ seasons (v41)
+// A season is the arena's ART and the hand's weapon, declared in seasons.js
+// the way a mode is declared in modes.js. ?season=inca deep-links one.
+const SEASON_KEY = 'hyperDaggerSeason';
+const _urlSeason = new URLSearchParams(location.search).get('season');
+let season = seasonById(_urlSeason || localStorage.getItem(SEASON_KEY) || 'ember').id;
+/** The active season's declaration — ask this, never `season === '...'`. */
+function S() { return seasonById(season); }
+
+/** Put the season on the sky, the fog, the motes, the floor, the monuments
+ *  and the hand. Called at boot, when the menu cycles it, and by
+ *  debug.setSeason. The ROCK and the SLABS are built per run by
+ *  buildSeasonArena, off the run's own rng. */
+function applySeason() {
+  const sn = S();
+  skyMat.uniforms.uVoid.value.setRGB(...sn.sky.void);
+  skyMat.uniforms.uBand.value = sn.sky.band;
+  skyMat.uniforms.uStars.value = sn.sky.stars;
+  styleTint(skyMat.uniforms.uEmberCol.value.setRGB(...sn.sky.horizon));
+  floorMat.uniforms.uTint.value.setRGB(...sn.floor.tint);
+  wallMat.uniforms.uTint.value.setRGB(...sn.floor.tint);
+  floorMat.uniforms.uGlow.value = sn.floor.glow;
+  wallMat.uniforms.uGlow.value = sn.floor.glow * 2.33; // the v40 ratio: a wall is a step brighter than the floor
+  backdrop.setLook(sn.backdrop ?? { visible: true, emissive: 0 });
+  if (sn.fog) { scene.fog.color.setRGB(...sn.fog.color); scene.fog.near = sn.fog.near; scene.fog.far = sn.fog.far; }
+  if (sn.dust) { dust.material.color.setRGB(...sn.dust.color); dust.material.size = sn.dust.size; dust.material.opacity = sn.dust.opacity; }
+  ground.userData.on = !!sn.ground;
+  if (sn.ground) ground.material.color.setRGB(...sn.ground);
+  ground.visible = !!ground.userData.on && M().arena !== 'track';
+  WP = T.weapons?.[sn.weapon] ?? {};
+  daggers.setShape(WP.shape ?? null, WP.color ?? null);
+  audio.fireTone = WP.fireTone ?? 1;
+}
+
+/** The rock and the slabs, seeded from the run's rng so a DAILY arena is
+ *  the same for everyone. Not on the track — it has its own floor. */
+function buildSeasonArena() {
+  platforms.clear();
+  walls.cull(w => w.tag === 'pillar');
+  ground.visible = !!ground.userData.on && M().arena !== 'track';
+  if (M().arena === 'track') return;
+  const sn = S();
+  if (sn.pillars) {
+    const c = sn.pillars, placed = [];
+    for (let i = 0; i < c.count; i++) {
+      for (let tries = 0; tries < 30; tries++) {
+        const a = rng.next() * Math.PI * 2, r = c.rMin + rng.next() * (c.rMax - c.rMin);
+        const x = Math.cos(a) * r, z = Math.sin(a) * r;
+        if (placed.some(q => Math.hypot(x - q.x, z - q.z) < c.minGap)) continue;
+        if (walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < 3.5)) continue; // off the court's own walls
+        const len = c.wMin + rng.next() * (c.wMax - c.wMin);
+        const thick = c.wMin + rng.next() * (c.wMax - c.wMin);
+        const h = c.hMin + rng.next() * (c.hMax - c.hMin);
+        walls.add({ x, z, yaw: rng.next() * Math.PI, len, h, thick, tag: 'pillar', material: shaleMat,
+          geometry: shaleGeometry({ w: len, h, d: thick, draw: rng.next, color: c.color, glow: c.glow, ...(c.shale ?? {}) }) });
+        placed.push({ x, z });
+        break;
+      }
+    }
+  }
+  if (sn.platforms) {
+    platforms.build(sn.platforms, rng.next,
+      (x, z, half) => walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < half + Math.max(w.len, w.thick) * 0.5 + 0.6),
+      player);
+  }
+}
 let hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
 const HYPER_START = T.hyper.start;
 const HYPER_CAP = T.hyper.cap;
@@ -1040,6 +1151,7 @@ function showMenu() {
      <p class="keys">${controls} &middot; <b>ESC</b> options<br>
      gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; <b>left tap = jump</b> &middot; <b>right tap = burst</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
+     <button id="seasonBtn" class="opt">SEASON: ${S().name} &mdash; ${S().blurb}</button>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
     : 'FREE &mdash; pure random'}</button>
@@ -1050,6 +1162,13 @@ function showMenu() {
     mode = nextModeId(mode); // walks the registry: a listed mode is reachable
     localStorage.setItem(MODE_KEY, mode);
     hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+    showMenu();
+  });
+  document.getElementById('seasonBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    season = nextSeasonId(season); // walks the registry, like the mode button
+    localStorage.setItem(SEASON_KEY, season);
+    applySeason(); // the menu sky changes under you, so you see what you picked
     showMenu();
   });
   document.getElementById('runKindBtn').addEventListener('pointerdown', e => {
@@ -1309,6 +1428,7 @@ function resetRun() {
   shadows.visible = !onTrack;
   if (onTrack) truck.reset(player); else truck.clear();
   if (M().arena === 'court') walls.court(16, 12, 5); else walls.clear();
+  buildSeasonArena(); // the season's rock and slabs, after the court's walls
 }
 
 function goFullscreen() {
@@ -1350,6 +1470,7 @@ function endRun() {
   resetRun();
   truck.clear();
   walls.clear();
+  platforms.clear();
   floor.visible = true;
   shadows.visible = true;
   state = 'menu';
@@ -1497,7 +1618,7 @@ function applyOpts() {
   styleTint(orbs.mat.color.setRGB(...(opts.contrast ? [3.4, 0.5, 0.5] : [2.6, 0.2, 0.2])));
   styleTint(gems.mesh.material.color.setRGB(2.4, 0.15, 0.15));
   styleTint(floorMat.uniforms.uAccent.value.setRGB(2.2, 0.25, 0.25));
-  styleTint(skyMat.uniforms.uEmberCol.value.setRGB(0.30, 0.02, 0.02));
+  styleTint(skyMat.uniforms.uEmberCol.value.setRGB(...S().sky.horizon));
   styleTint(edgePass.uniforms.uTint.value.setRGB(1.6, 0.35, 0.35));
   styleTint(threatPass.uniforms.uTint.value.setRGB(2.5, 0.18, 0.18));
   styleTint(spherePass.uniforms.uTint.value.setRGB(2.7, 0.12, 0.12));
@@ -2363,8 +2484,8 @@ function fireShotgun(w) {
   weaponActive = true;
   camera.getWorldDirection(_fwd2);
   for (let i = 0; i < T.weapon.shotgunCount[weaponLv]; i++) {
-    fireDagger(T.weapon.shotgunSpread,
-      T.weapon.shotgunSpeed * (0.93 + Math.random() * 0.14), w.homing);
+    fireDagger(wpn('shotgunSpread'),
+      wpn('shotgunSpeed') * (0.93 + Math.random() * 0.14), w.homing);
   }
   gems.blast(camera.position);
   shotCd = T.weapon.shotgunCd;
@@ -2429,9 +2550,9 @@ function updateCombat(dt) {
     weaponActive = true;
     fireTimer -= dt;
     while (fireTimer <= 0) {
-      fireTimer += 1 / w.stream;
-      fireDagger(FIRE_SPREAD,
-        T.weapon.streamSpeed * (0.86 + Math.random() * 0.28), w.homing);
+      fireTimer += 1 / (w.stream * (WP.rate ?? 1));
+      fireDagger(wpn('spread'),
+        wpn('streamSpeed') * (0.86 + Math.random() * 0.28), w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
       hand.flash(0.3);
       audio.fire();
@@ -2457,7 +2578,7 @@ function updateCombat(dt) {
     homingFireTimer -= dt;
     while (homingFireTimer <= 0 && homingAmmo > 0) {
       homingFireTimer += 1 / T.weapon.homingStream;
-      fireDagger(FIRE_SPREAD, T.weapon.streamSpeed, true, T.weapon.homingDamage);
+      fireDagger(wpn('spread'), wpn('streamSpeed'), true, T.weapon.homingDamage);
       homingAmmo--;
       recoil = Math.min(0.04, recoil + 0.008);
       hand.flash(0.45);
@@ -2472,6 +2593,14 @@ function updateCombat(dt) {
   // dagger → enemy (segment vs sphere so fast daggers can't tunnel)
   for (let i = daggers.active.length - 1; i >= 0; i--) {
     const d = daggers.active[i];
+    // v41: rock stops a nail — pillars, court walls and standing slabs are
+    // solid to projectiles; a needle through a pillar reads as a bug
+    if ((walls.walls.length && walls.blocks(d.prev, d.m.position))
+      || (platforms.count && platforms.blocks(d.prev, d.m.position))) {
+      spawnSpark(d.m.position, false);
+      daggers.recycle(i);
+      continue;
+    }
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
       if (!e.alive) continue;
@@ -2687,8 +2816,10 @@ function step(dt) {
   // A track has to say what the floor is BEFORE the body integrates gravity,
   // or the player never reads as grounded and never gets a jump back.
   if (M().arena === 'track') truck.preUpdate(dt, player);
+  else if (platforms.count) platforms.preUpdate(dt, player, 0); // the season's slabs: a floor, and a carry
   player.update(dt);
   if (walls.walls.length) walls.resolve(player);
+  if (platforms.count) platforms.resolve(player); // their sides are walls too
   if (player.justDashed) {
     player.justDashed = false;
     audio.dash();
@@ -3084,6 +3215,21 @@ window.__hd = {
     setTimeScale(k) { timeScale = Math.max(0.02, Math.min(1, +k || 1)); },
     /** The live feel numbers — the gate edits them in place (and puts them back). */
     tuning() { return T; },
+    getSeasons() {
+      const sn = S();
+      return {
+        ids: SEASONS.map(x => x.id), current: season, name: sn.name, built: sn.built, todo: sn.todo ?? [],
+        weapon: sn.weapon, pillars: !!sn.pillars, platforms: sn.platforms?.count ?? 0,
+        sky: { void: skyMat.uniforms.uVoid.value.toArray(), band: skyMat.uniforms.uBand.value, stars: skyMat.uniforms.uStars.value, horizon: skyMat.uniforms.uEmberCol.value.toArray() },
+        floorTint: floorMat.uniforms.uTint.value.toArray(),
+        backdrop: backdrop.getState().look,
+        fog: { color: scene.fog.color.toArray(), near: scene.fog.near, far: scene.fog.far },
+        ground: ground.visible,
+      };
+    },
+    setSeason(id) { season = seasonById(id).id; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
+    getPlatforms() { return platforms.getState(); },
+    platformsObj() { return platforms; }, // the gate forces one slab tall and grown
     /** The body's wall state — what the wall-run gate and the harness read. */
     getWallRun() {
       return { enabled: !!player.wallRunEnabled, running: !!player.wallRunning, t: +player.wallRunT.toFixed(2),
@@ -3121,6 +3267,8 @@ window.__hd = {
       return {
         shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2),
         homing: homingAmmo, homingHeldT: +homingHeldT.toFixed(2), lv: weaponLv,
+        weapon: S().weapon, rate: WP.rate ?? 1, streamSpeed: wpn('streamSpeed'), shotgunSpeed: wpn('shotgunSpeed'),
+        spread: wpn('spread'), shotgunSpread: wpn('shotgunSpread'), shape: daggers.shape,
       };
     },
     getMovement() {
@@ -3304,3 +3452,6 @@ window.__hd = {
     },
   },
 };
+
+// v41: the season is on the sky before the first frame is drawn
+applySeason();
