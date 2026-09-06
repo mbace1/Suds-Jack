@@ -363,7 +363,65 @@ function slime(ctx, look, rnd) {
 }
 
 // Paint one cutout. Returns the canvas — the alpha IS the cutout's outline.
-export function paintCutout(look, seed = 1) {
+// ── the torch, painted in ──────────────────────────────────────────────────
+// A cutout is an UNLIT plane, so nothing the scene's lights do reaches it. Once
+// the hour went to evening that stopped being a detail and became the whole
+// problem: the world went dark and the figures stayed in daylight, standing in
+// front of the night rather than in it.
+//
+// Painting the light in is the Darkest Dungeon answer anyway — its figures are
+// not lit by an engine either, they are DRAWN lit. Three passes, in the order a
+// painter would work:
+//
+//   1. the shadow side, a cold wash gathering toward the far edge
+//   2. the torch side, a warm wash on the near edge
+//   3. a RIM on each side — a bright warm edge where the torch catches the
+//      silhouette, a cold one opposite. The rim is the load-bearing pass: a
+//      dark figure against a dark backdrop has no outline until something
+//      draws one, and DD's whole cast is legible for exactly this reason.
+function edgeBand(src, dx, colour, width = 3) {
+  const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+  const x = c.getContext('2d');
+  x.drawImage(src, 0, 0);
+  x.globalCompositeOperation = 'destination-out';
+  x.drawImage(src, dx * width, 0);              // subtract a shifted copy: one edge survives
+  x.globalCompositeOperation = 'source-in';
+  x.fillStyle = colour; x.fillRect(0, 0, c.width, c.height);
+  return c;
+}
+
+function torchlight(c, mood) {
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  // 1 + 2: the wash across the figure. `source-atop` keeps the silhouette, so
+  // the nicked edges and the gaps between limbs stay gaps.
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-atop';
+  const g = ctx.createLinearGradient(0, 0, W, 0);
+  g.addColorStop(0, `${mood.warm}55`);
+  g.addColorStop(0.35, 'rgba(0,0,0,0)');
+  g.addColorStop(1, `${mood.cold}${mood.depth}`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // and a floor-up darkening: the torch is above the deck, so boots are darker
+  // than a face. Without it a figure reads as a sticker at one value.
+  const v = ctx.createLinearGradient(0, H * 0.45, 0, H);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, `${mood.cold}66`);
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  // 3: the rims, added rather than painted, so they read as light and not paint
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.85; ctx.drawImage(edgeBand(c, 1, mood.warm, 3), 0, 0);
+  ctx.globalAlpha = 0.5; ctx.drawImage(edgeBand(c, -1, mood.rim, 2), 0, 0);
+  ctx.restore();
+  return c;
+}
+
+// The default hour. `main.js` hands the active skin's in when it builds a
+// puppet, so the fantasy evening lights its cast its own way.
+export const DUSK = { warm: '#ffab52', cold: '#101a24', rim: '#6f93ad', depth: '99' };
+
+export function paintCutout(look, seed = 1, mood = DUSK) {
   const c = document.createElement('canvas');
   c.width = TW; c.height = TH;
   const ctx = c.getContext('2d');
@@ -374,7 +432,7 @@ export function paintCutout(look, seed = 1) {
   else person(ctx, look, rnd);
   nicks(ctx, rnd, 18 + Math.round((look.grime ?? 0.6) * 22));
   grime(ctx, rnd, look.grime ?? 0.7);
-  return c;
+  return mood ? torchlight(c, mood) : c;
 }
 
 // the kraft-cardboard back of the same cutout: the shape, in brown, with flutes
@@ -425,7 +483,7 @@ const TIN_DARK = new THREE.MeshLambertMaterial({ color: '#6a6d74' });
 
 // ── the object ───────────────────────────────────────────────────────────
 export class Puppet {
-  constructor({ look, seed = 1, scale = 1, facing = 1 }) {
+  constructor({ look, seed = 1, scale = 1, facing = 1, mood = DUSK }) {
     this.group = new THREE.Group();
     this.scale = scale;
     this.facing = facing;
@@ -436,7 +494,7 @@ export class Puppet {
     this.lunge = 0;             // slide toward the other side, for an attack
     this.home = new THREE.Vector3();
 
-    const front = paintCutout(look, seed);
+    const front = paintCutout(look, seed, mood);
     const tex = new THREE.CanvasTexture(front);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 4;

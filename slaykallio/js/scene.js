@@ -116,33 +116,57 @@ export class Arena {
     this.focus = 0.6;
     this._v = new THREE.Vector3();
 
-    // A late, low sun from behind the camera's left, a cold sky fill and a dim
-    // bounce off the water. Gritty means the light has a direction and the
-    // shadow side is genuinely dark.
-    const hemi = new THREE.HemisphereLight('#a8bac6', '#3a4034', 1.05);
-    const sun = new THREE.DirectionalLight('#ffd9a8', 1.45);
-    sun.position.set(-5, 4.5, 6);
-    // A bounce off the water, aimed UP into the understructure. Without it the
-    // beams, braces and piles are one black mass and the bridge stops reading
-    // as built — which is the whole reason the board is a bridge.
-    const bounce = new THREE.DirectionalLight('#7e939c', 0.85);
-    bounce.position.set(3, -6, 4);
-    this.scene.add(hemi, sun, bounce);
+    // THE TORCH. Darkest Dungeon's look is a lighting setup before it is an art
+    // style: one warm source close to the party, everything past its falloff
+    // going to black, and a cold edge separating a figure from the dark. So the
+    // rig is a POINT light with a real distance — a directional cannot fall
+    // off, and falloff is the whole effect: it is what makes the ends of the
+    // deck disappear and the middle of the bridge the only place there is.
+    this.torch = new THREE.PointLight('#ffab52', 3.4, 15, 1.6);
+    // The last of the daylight: dim, cold, and from the sky rather than a
+    // direction, so nothing outside the torch reads as lit — only as not black.
+    this.fill = new THREE.HemisphereLight('#2b3b4a', '#0a0c0a', 0.5);
+    // A cold rim off the canal, from behind and below. This is the one light
+    // that must survive the darkening: without it a figure and the dark behind
+    // it are the same value and the silhouette stops existing.
+    this.rim = new THREE.DirectionalLight('#6f93ad', 0.75);
+    this.rim.position.set(3, -5, -4);
+    this.scene.add(this.torch, this.fill, this.rim);
 
     this.setTheme(theme);
   }
 
+  // The hour, as data. Each skin carries its own rig, so the fantasy evening is
+  // a different evening rather than the same one in a different hat.
+  applyMood(theme) {
+    const m = theme.mood;
+    if (!m) return;
+    this.torch.color.set(m.torch); this.torch.intensity = m.torchI; this.torch.distance = m.torchFar;
+    this.torch.decay = m.torchDecay ?? 1.4;
+    this.torch.position.set(...m.torchAt);
+    this.fill.color.set(m.sky); this.fill.groundColor.set(m.ground); this.fill.intensity = m.fillI;
+    this.rim.color.set(m.rim); this.rim.intensity = m.rimI;
+    // Fog takes the ends of the bridge, which is what the torch's falloff
+    // cannot do on its own — a plank at the frame edge is no further from the
+    // light than one just off centre, but it IS further away.
+    this.scene.fog = new THREE.Fog(m.fog, m.fogNear, m.fogFar);
+    this.renderer.setClearColor(m.fog, 1);
+  }
+
   setTheme(theme) {
     this.theme = theme;
+    this.applyMood(theme);
     if (this.bg) this.scene.remove(this.bg);
     if (this.fg) this.scene.remove(this.fg);
     this.photo = false;
-    this.bgMat = new THREE.MeshBasicMaterial({ map: paintedPark(theme, 3, this.focus) });
+    // The backdrop is already graded and vignetted; fogging a picture would
+    // flatten it to one colour and undo the grade.
+    this.bgMat = new THREE.MeshBasicMaterial({ map: paintedPark(theme, 3, this.focus), fog: false });
     this.bg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.bgMat);
     this.bg.position.z = BG_Z;
     this.scene.add(this.bg);
     this.fg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshBasicMaterial({ map: paintForeground(theme), transparent: true, depthWrite: false }));
+      new THREE.MeshBasicMaterial({ map: paintForeground(theme), transparent: true, depthWrite: false, fog: false }));
     this.fg.position.z = FG_Z;
     this.scene.add(this.fg);
     if (this.bridge) this.scene.remove(this.bridge);
@@ -179,7 +203,7 @@ export class Arena {
         this._recut = false;
         const { url, opts } = this.plate;
         const aspect = this.camera.aspect, focus = this.focus;
-        const tex = await fromImage(url, { ...opts, focus, aspect });
+        const tex = await fromImage(url, { ...opts, focus, aspect, grade: this.theme.mood?.grade });
         if (this.plate.url !== url) { this._recut = true; continue; }  // a later plate won
         this.bgMat.map = tex; this.bgMat.needsUpdate = true;
         this.photo = true;

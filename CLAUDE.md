@@ -342,6 +342,40 @@ same and none of them quite flat), and **the camera is close and nearly level**
 (action width 4.6, tilted down about ten degrees — dead level hides the boards
 entirely and makes the understructure the whole lower half of the frame, any
 higher turns the bridge into a floor plan).
+**The hour is EVENING and the look is Darkest Dungeon** (owner, 2026-09-05:
+*"let's go Eldritch Kallio ... evening is darker etc"*, then *"art make over"*).
+DD's look is a **lighting setup before it is an art style**: one warm source
+close to the party, everything past its falloff going to black, one cold edge
+separating a figure from the dark. So the hour is DATA — `MOOD` in `data.js`,
+one rig per skin — and every surface reads it instead of being tinted by hand.
+A **`PointLight` with a real distance and decay**, never a directional: a
+directional cannot fall off and the falloff IS the effect, the thing that makes
+the ends of the deck disappear and the middle of the bridge the only place there
+is. **Fog takes what falloff cannot** (a plank at the frame edge is no further
+from the torch than one just off centre, but it IS further from the camera) —
+and the backdrop and near band are set `fog: false`, because fogging an already
+graded picture flattens it to one colour. The backdrop gets a **film grade in a
+colourist's terms** rather than a CSS filter stack: exposure, a **lifted** black
+rather than a crushed one, saturation out, shadows tinted cold and highlights
+toward the torch, grain, and a vignette doing most of the work of making a frame
+feel enclosed — the lifted black and the split tint are exactly the two things
+that sell evening and exactly the two with no filter primitive.
+**The torch is PAINTED INTO the puppets**, because a cutout is an unlit
+`MeshBasicMaterial` plane and nothing the scene's lights do reaches it: the hour
+changed and the figures stayed in daylight, standing in front of the night
+rather than in it. Three passes — a cold wash gathering to the far edge, a warm
+one on the near, then a **rim on each side**, which is the load-bearing one
+since a dark figure against a dark backdrop has no outline until something draws
+one. **And the UI is the bigger half of any such change**: cards are the
+brightest thing on screen by area, so five lit rectangles over a night scene
+read as holes cut in it — dark leather stock with bone text, dark card-art
+panels, and the same substitution on the roster picks and friend cards, one
+cream gradient that turned out to be the loudest thing in the game.
+The makeover surfaced a real bug: **the act card printed the encounter's raw
+id**. `nameOf(table, id)` wants a lookup keyed by id and was handed the
+encounter object plus its own id, so it fell through to the id every time and
+the `||` fallback could never fire; nobody noticed while the ids read as words,
+until the fantasy skin put **KING_RAT** across the screen.
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -409,7 +443,7 @@ exists so nobody has to win five fights to look at the sixth.
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
 Gates: `node slaykallio/test/core.mjs` (261 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (67). Hub entry:
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (72). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.

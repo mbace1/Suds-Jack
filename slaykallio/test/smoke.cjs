@@ -193,6 +193,69 @@ const check = (name, ok, extra = '') => {
     check(`the telegraphed ${promised.dmg} is what actually lands`, before - after >= promised.dmg);
   }
 
+  // ── the hour ───────────────────────────────────────────────────────────
+  // Owner, 2026-09-05: "let's go Eldritch Kallio ... evening is darker etc".
+  // Darkest Dungeon's look is a LIGHTING SETUP before it is an art style — one
+  // warm source close to the party and everything past its falloff going dark —
+  // so what is gated is the setup, not a colour value somebody might tune.
+  check('the light falls off: there is a torch with a real distance, not a sun',
+    await page.evaluate(() => __sk.arena.torch.isPointLight === true && __sk.arena.torch.distance > 0 && __sk.arena.torch.decay > 0));
+  check('the far end of the deck is fogged out',
+    await page.evaluate(() => !!__sk.arena.scene.fog && __sk.arena.scene.fog.far > __sk.arena.scene.fog.near));
+  check('the backdrop is NOT fogged — it is a graded picture, and fog would flatten it',
+    await page.evaluate(() => __sk.arena.bgMat.fog === false));
+  // and the frame really is lit from one side. A screenshot is the only thing
+  // that can answer this: every value above can be right while the render is flat.
+  const lit = await page.evaluate(async () => {
+    const cv = document.querySelector('#gl');
+    const w = cv.width, h = cv.height;
+    const g = document.createElement('canvas'); g.width = w; g.height = h;
+    // A WebGL drawing buffer is cleared once it has been composited, so it must
+    // be rendered and read in the SAME task or every pixel comes back black —
+    // which is a very convincing way to pass a "the scene is dark" check.
+    __sk.arena.update(0);
+    g.getContext('2d').drawImage(cv, 0, 0);
+    // Sample the deck as a BAND, not a row. One row is a lottery: the first
+    // attempt landed in the shadow at the deck's leading edge and read the far
+    // side as brighter, on a frame whose falloff is 4:1 fifty pixels lower.
+    const top = Math.round(h * Math.min(0.9, __sk.arena.deckRow() + 0.12));
+    const rows = Math.max(8, Math.round(h * 0.14));
+    const band = g.getContext('2d').getImageData(0, top, w, Math.min(rows, h - top)).data;
+    const hgt = band.length / 4 / w;
+    const mean = (a, b) => {                                     // luma over a slice
+      let t = 0, n = 0;
+      for (let y = 0; y < hgt; y++) for (let x = Math.round(w * a); x < Math.round(w * b); x++) {
+        const i = (y * w + x) * 4;
+        t += 0.299 * band[i] + 0.587 * band[i + 1] + 0.114 * band[i + 2]; n++;
+      }
+      return t / n;
+    };
+    return { near: mean(0.08, 0.34), far: mean(0.68, 0.94) };
+  });
+  check(`the deck is lit from the torch side and falls away (${lit.near.toFixed(0)} → ${lit.far.toFixed(0)})`,
+    lit.near > lit.far * 1.3 && lit.near > 8);
+
+  // The act card names the encounter. It printed the raw ID for the whole life
+  // of the game — nobody noticed while the ids happened to read as words, until
+  // the fantasy skin put KING_RAT across the screen.
+  const titles = await page.evaluate(() => {
+    const out = [];
+    for (const t of ['kallio', 'fantasy']) {
+      __sk.setTheme(t); __sk.setSpeed(0); __sk.start('drinker', 3);
+      for (let i = 0; i < 6; i++) {
+        __sk.debug.jumpTo(i); __sk.flush();
+        out.push({ shown: document.querySelector('#banner').textContent, want: __sk.debug.encounterName(i, t) });
+      }
+    }
+    __sk.setTheme('kallio');
+    return out;
+  });
+  const wrongTitle = titles.filter(t => t.shown !== t.want);
+  check(`every act card shows the encounter's NAME, not its id${wrongTitle.length ? ` — ${JSON.stringify(wrongTitle[0])}` : ''}`,
+    wrongTitle.length === 0 && titles.length === 12);
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 3); });
+  await page.waitForTimeout(200);
+
   // ── the owner's staging, checked on the real scene ─────────────────────
   // "no back panels blocking the view": nothing in the bridge may stand above
   // the deck between the camera and where the puppets are. The two handrail

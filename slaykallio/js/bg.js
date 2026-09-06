@@ -139,7 +139,7 @@ function mixHex(a, b, t) {
 // because that is what a miniature-photo filter does and what makes a real
 // park look like a model of one. Falls back to the sharp picture where the
 // canvas has no `filter`.
-export function tiltShift(src, { focus = 0.6, band = 0.12, maxBlur = 18 } = {}) {
+export function tiltShift(src, { focus = 0.6, band = 0.12, maxBlur = 18, grade = null } = {}) {
   const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
   const ctx = c.getContext('2d');
   const hasFilter = 'filter' in ctx;
@@ -163,11 +163,44 @@ export function tiltShift(src, { focus = 0.6, band = 0.12, maxBlur = 18 } = {}) 
     ctx.drawImage(src, 0, 0); ctx.restore();
   }
   ctx.filter = 'none';
-  // vignette, the second half of the miniature look
-  const g = ctx.createRadialGradient(c.width / 2, c.height / 2, c.height * 0.34, c.width / 2, c.height / 2, c.height * 0.95);
-  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(12,10,8,0.5)');
+  if (grade) applyGrade(ctx, c.width, c.height, grade);
+  // Vignette — the second half of the miniature look, and the first half of
+  // the Darkest Dungeon one. It is what makes a frame feel ENCLOSED, so the
+  // evening grade leans on it far harder than the daylight one did.
+  const vig = grade ? grade.vignette ?? 0.5 : 0.5;
+  const g = ctx.createRadialGradient(c.width / 2, c.height / 2, c.height * (grade ? 0.16 : 0.34), c.width / 2, c.height / 2, c.height * 0.95);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(0.55, `rgba(6,7,8,${(vig * 0.28).toFixed(3)})`);
+  g.addColorStop(1, `rgba(4,5,6,${vig.toFixed(3)})`);
   ctx.fillStyle = g; ctx.fillRect(0, 0, c.width, c.height);
   return c;
+}
+
+// A film grade, in the terms a colourist would name — not a CSS filter stack,
+// because the two things that make evening read (a black that is LIFTED rather
+// than crushed, and shadows and highlights pulled toward different hues) have
+// no filter primitive. One pass, at cut time, over the whole plate.
+function applyGrade(ctx, w, h, q) {
+  const img = ctx.getImageData(0, 0, w, h), d = img.data;
+  const hex = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const sh = hex(q.shadow), hi = hex(q.high);
+  const { exposure = 1, gamma = 1, sat = 1, lift = 0, shadowAmt = 0, highAmt = 0, grain = 0 } = q;
+  for (let i = 0; i < d.length; i += 4) {
+    let r = d[i] / 255, g2 = d[i + 1] / 255, b = d[i + 2] / 255;
+    const l = 0.299 * r + 0.587 * g2 + 0.114 * b;
+    r = l + (r - l) * sat; g2 = l + (g2 - l) * sat; b = l + (b - l) * sat;
+    r = lift + (1 - lift) * Math.pow(Math.max(0, r * exposure), gamma);
+    g2 = lift + (1 - lift) * Math.pow(Math.max(0, g2 * exposure), gamma);
+    b = lift + (1 - lift) * Math.pow(Math.max(0, b * exposure), gamma);
+    const t = 0.299 * r + 0.587 * g2 + 0.114 * b;         // where this pixel sits
+    const ks = (1 - t) * shadowAmt, kh = t * highAmt;      // cold down low, torch up high
+    r = r * (1 - ks) + (sh[0] / 255) * ks; r = r * (1 - kh) + (hi[0] / 255) * kh;
+    g2 = g2 * (1 - ks) + (sh[1] / 255) * ks; g2 = g2 * (1 - kh) + (hi[1] / 255) * kh;
+    b = b * (1 - ks) + (sh[2] / 255) * ks; b = b * (1 - kh) + (hi[2] / 255) * kh;
+    const n = grain ? (Math.random() - 0.5) * grain : 0;
+    d[i] = r * 255 + n; d[i + 1] = g2 * 255 + n; d[i + 2] = b * 255 + n;
+  }
+  ctx.putImageData(img, 0, 0);
 }
 
 // `focus` is where the sharp band sits, as a fraction down the frame. It is
@@ -175,7 +208,7 @@ export function tiltShift(src, { focus = 0.6, band = 0.12, maxBlur = 18 } = {}) 
 // while the one sharp stripe lies on the thing you are looking at, and in
 // portrait the bench is nowhere near where it is in landscape.
 export function paintedPark(theme, seed, focus = 0.6) {
-  const tex = new THREE.CanvasTexture(tiltShift(paintPark(theme, seed), { focus }));
+  const tex = new THREE.CanvasTexture(tiltShift(paintPark(theme, seed), { focus, grade: theme.mood?.grade }));
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
@@ -206,7 +239,7 @@ function loadImage(url) {
   return p;
 }
 
-export async function fromImage(url, { stereo = null, eye = 'left', focus = 0.6, aspect = 16 / 9 } = {}) {
+export async function fromImage(url, { stereo = null, eye = 'left', focus = 0.6, aspect = 16 / 9, grade = null } = {}) {
   const img = await loadImage(url);
   const sw = stereo === 'sbs' ? img.width / 2 : img.width;
   const sx0 = stereo === 'sbs' && eye === 'right' ? img.width / 2 : 0;
@@ -217,7 +250,7 @@ export async function fromImage(url, { stereo = null, eye = 'left', focus = 0.6,
   c.width = Math.max(2, Math.min(2048, Math.round(cw)));
   c.height = Math.max(2, Math.round(c.width / aspect));
   c.getContext('2d').drawImage(img, sx, sy, cw, ch, 0, 0, c.width, c.height);
-  const tex = new THREE.CanvasTexture(tiltShift(c, { focus }));
+  const tex = new THREE.CanvasTexture(tiltShift(c, { focus, grade }));
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }

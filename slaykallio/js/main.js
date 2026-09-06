@@ -188,11 +188,11 @@ function spawnFight() {
   arena.clearPuppets();
   foes.clear();
   const ch = CHARACTERS[state.character];
-  hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1 });
+  hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1, mood: T().mood?.figure });
   arena.add(hero);
   const made = state.enemies.map(e => {
     const d = ENEMIES[e.id];
-    const p = new Puppet({ look: d[theme].look, seed: 100 + e.uid, scale: d.scale, facing: -1 });
+    const p = new Puppet({ look: d[theme].look, seed: 100 + e.uid, scale: d.scale, facing: -1, mood: T().mood?.figure });
     arena.add(p);
     foes.set(e.uid, p);
     return p;
@@ -210,7 +210,12 @@ function spawnFight() {
   });
   buildLabels();
   syncAll();
-  banner(nameOf(ENCOUNTERS[state.encounter], ENCOUNTERS[state.encounter].id) || ENCOUNTERS[state.encounter][theme].name);
+  // The act card. `nameOf(table, id)` wants a lookup KEYED by id (CARDS,
+  // ENEMIES); handing it the encounter object and the encounter's own id makes
+  // `enc['rats']` undefined every time, so it fell through to the raw id and the
+  // fallback after `||` could never fire. Nobody noticed while the ids happened
+  // to read as words — until the fantasy skin put KING_RAT across the screen.
+  banner(ENCOUNTERS[state.encounter][theme].name);
 }
 
 function relayout() { if (!state || state.phase === 'menu') return; const L = layout(); hero?.setHome(L.heroX, 0, 0.1); state.enemies.forEach((e, i) => foes.get(e.uid)?.setHome(L.foeX(i), 0, 0.05 - (i % 2) * 0.12)); }
@@ -501,7 +506,7 @@ function renderMenu() {
     const ch = CHARACTERS[id];
     const b = el('button', 'pick'); b.dataset.char = id;
     b.classList.toggle('selected', i === menuSel.char);
-    const cv = paintCutout(ch[theme].look, 11); cv.className = 'portrait';
+    const cv = paintCutout(ch[theme].look, 11, T().mood?.figure); cv.className = 'portrait';
     b.append(cv, el('b', '', ch[theme].name), el('i', '', ch[theme].title), el('span', '', ch[theme].blurb), el('small', '', `${ch.hp} HP`));
     b.addEventListener('click', () => { menuSel.char = i; renderMenu(); });
     r.append(b);
@@ -656,5 +661,7 @@ window.__sk = {
     // straight to a fight, so a cast can be looked at without winning the five
     // before it — the same reason turf's __turf can boot any encounter
     jumpTo: i => { if (!engine.jumpTo(state, i)) return false; cursor = state.log.length; spawnFight(); syncAll(); return true; },
+    // what the act card OUGHT to say, read from the data rather than the screen
+    encounterName: (i, t = theme) => ENCOUNTERS[i]?.[t]?.name,
   },
 };

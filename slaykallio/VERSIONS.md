@@ -7,6 +7,65 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v9 — 2026-09-05
+**Eldritch Kallio: the hour moved to evening, and the look to Darkest Dungeon**
+Owner: *"let's go Eldritch Kallio and looking a bit more like Darkest Dungeon.
+evening is darker etc"*, then *"art make over"*.
+
+**Darkest Dungeon's look is a LIGHTING SETUP before it is an art style** — one
+warm source close to the party, everything past its falloff going to black, and
+a cold edge separating a figure from the dark behind it. So the hour is data
+(`MOOD` in `data.js`, one rig per skin) and every surface reads it rather than
+each being tinted by hand:
+
+- **A torch, not a sun.** A `PointLight` with a real `distance` and `decay`,
+  because a directional cannot fall off and the falloff IS the effect: it is
+  what makes the ends of the deck disappear and the middle of the bridge the
+  only place there is. Fog takes what the falloff cannot — a plank at the frame
+  edge is no further from the light than one just off centre, but it IS further
+  from the camera.
+- **A film grade on the backdrop**, in a colourist's terms rather than a CSS
+  filter stack: exposure, a black that is LIFTED rather than crushed, saturation
+  pulled out, shadows tinted cold and highlights toward the torch, grain, and a
+  vignette doing most of the work of making a frame feel enclosed. The two
+  things that actually sell evening — the lifted black and the split tint — have
+  no filter primitive, which is why it is a pixel pass.
+- **The torch is PAINTED INTO the puppets.** A cutout is an unlit plane, so
+  nothing the scene's lights do reaches it; the moment the world went to evening
+  the figures stayed in daylight and stood in front of the night instead of in
+  it. Three passes in the order a painter would work — a cold wash gathering to
+  the far edge, a warm one on the near, then a **rim** on each side. The rim is
+  the load-bearing one: a dark figure against a dark backdrop has no outline
+  until something draws one, and DD's whole cast is legible for exactly that.
+
+**And the UI had to follow, which was the bigger half of the work.** Cards are
+the brightest thing on screen by area; five lit rectangles over a night scene
+read as holes cut in it. Dark leather stock with bone text (DD's own move),
+dark card-art panels with the same corner falloff the frame has, and the same
+substitution on the roster picks and the friend cards — one cream gradient that
+turned out to be the loudest thing in the game once the hand was darkened.
+
+**A real bug the makeover surfaced**: the act card printed the encounter's raw
+**id**. `nameOf(table, id)` wants a lookup keyed by id (CARDS, ENEMIES), and was
+handed the encounter object plus its own id — so `enc['rats']` was undefined
+every time and it fell through to the id, which also meant the fallback after
+`||` could never fire. Nobody noticed for the game's whole life because the ids
+happened to read as words; the fantasy skin put **KING_RAT** across the screen.
+All twelve act cards now name the encounter, and none overflows in either
+format (the longest wraps to two lines on a phone).
+
+Gates: five checks (72 total) — the torch has a real distance and decay, the far
+end is fogged, the backdrop is NOT fogged (fogging a graded picture flattens it),
+every act card shows a name, and the render is genuinely **lit from one side**.
+That last one is measured off the pixels, because every value above can be right
+while the frame is flat; verified non-vacuous by flattening the rig, which reads
+11 against 10 and fails. Two traps paid for inside it: a WebGL drawing buffer is
+cleared once composited, so it must be rendered and read in the same task or
+every pixel comes back black — a very convincing way to pass a darkness check —
+and one sampled ROW is a lottery, the first attempt landing in the shadow at the
+deck's leading edge and calling the far side brighter on a frame whose falloff
+is 4:1 fifty pixels lower.
+
 ## v8 — 2026-09-05
 **The owner's photograph, and the plate is CUT to the frame rather than stretched onto it**
 The plate is the Kallio bear — Karhupuisto's own granite bear, supplied by the

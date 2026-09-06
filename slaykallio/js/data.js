@@ -323,11 +323,52 @@ export const ENCOUNTERS = [
 
 // The park, in the two skins. Grittier than a postcard: the greens are
 // weathered, the light is late and low, and nothing is saturated.
+// ── the hour, and the grade ───────────────────────────────────────────────
+// Owner, 2026-09-05: *"let's go Eldritch Kallio and looking a bit more like
+// Darkest Dungeon. evening is darker etc"*.
+//
+// Darkest Dungeon's look is not a filter, it is a LIGHTING SETUP: one warm
+// source close to the party, everything past its falloff going to black, and
+// a cold edge separating a figure from the dark behind it. So the hour is data
+// — a light rig and a film grade per skin — and every surface reads it. The
+// grade is the same numbers a colourist would name: exposure, a lifted black
+// that is never truly black, saturation pulled out, shadows tinted cold,
+// highlights tinted toward the torch, and a vignette that does most of the
+// work of making a frame feel enclosed.
+const MOOD = {
+  kallio: {
+    torch: '#ffb765', torchI: 13, torchAt: [-1.4, 1.15, 2.6], torchFar: 19, torchDecay: 1.35,
+    sky: '#33465a', ground: '#0c1010', fillI: 0.62,   // the last of the daylight
+    rim: '#6f93ad', rimI: 0.75,                       // a cold edge off the canal
+    fog: '#0b0f11', fogNear: 9, fogFar: 30,
+    grade: { exposure: 0.66, gamma: 1.16, sat: 0.5, lift: 0.035,
+      shadow: '#16232e', shadowAmt: 0.5, high: '#e0a45a', highAmt: 0.26,
+      vignette: 0.74, grain: 14 },
+    // the same torch, painted into the cutouts — see puppet.js
+    figure: { warm: '#ffab52', cold: '#101a24', rim: '#6f93ad', depth: '99' },
+  },
+  fantasy: {
+    torch: '#ffc87a', torchI: 12, torchAt: [-1.4, 1.15, 2.6], torchFar: 18, torchDecay: 1.4,
+    sky: '#2e2a48', ground: '#0a090e', fillI: 0.55,
+    rim: '#7d6fb0', rimI: 0.8,
+    fog: '#08070c', fogNear: 8, fogFar: 28,
+    grade: { exposure: 0.6, gamma: 1.2, sat: 0.42, lift: 0.03,
+      shadow: '#1b1830', shadowAmt: 0.56, high: '#d8a06a', highAmt: 0.24,
+      vignette: 0.78, grain: 16 },
+    figure: { warm: '#ffc06a', cold: '#141026', rim: '#7d6fb0', depth: 'a0' },
+  },
+};
+
+// Evening values. Nothing here is a daylight colour with the brightness taken
+// off: a canopy at dusk loses its yellow before it loses its green, and sodium
+// light on a far bank is the one warm thing left in the frame.
 export const THEMES = {
   kallio: { name: 'Kallio', jokerWord: 'friends', findWord: 'Bottle', energyWord: 'energy',
-    park: { sky: ['#6f7f88', '#cbb9a0'], canopy: ['#2b3a26', '#3f5230', '#5d7038'], grass: '#4e5a34', path: '#8a7f6a', stone: '#6a6660', bench: '#8a7053', iron: '#2a2724', water: '#3a4448' } },
+    mood: MOOD.kallio,
+    park: { sky: ['#1e2730', '#7a5334'], canopy: ['#131b16', '#1e2b1d', '#2e3d23'], grass: '#232a19', path: '#3c362c', stone: '#2f2d2a', bench: '#463a2e', iron: '#141311', water: '#111819' } },
   fantasy: { name: 'Fantasy', jokerWord: 'familiars', findWord: 'Trinket', energyWord: 'mana',
-    park: { sky: ['#4a5070', '#b89878'], canopy: ['#22321f', '#33482c', '#4a6034'], grass: '#3f5030', path: '#7a705e', stone: '#5e5a56', bench: '#76603f', iron: '#26231f', water: '#2e3a44' } },
+    mood: MOOD.fantasy,
+    park: { sky: ['#171a2a', '#5e3a46'], canopy: ['#0f150f', '#182219', '#26301d'], grass: '#1b2317', path: '#332e27', stone: '#282629', bench: '#3a3028', iron: '#121014', water: '#0d1317' } },
 };
 
 export const RULES = {

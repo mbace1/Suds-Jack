@@ -274,13 +274,19 @@ export function paintCardPic(pic, accent = '#c8a03a', seed = 1) {
   c.width = W; c.height = H;
   const ctx = c.getContext('2d');
   const rnd = rngFrom(seed * 2654435761 + pic.length * 7919);
-  // the ground of the panel: a flat dirty wash, lighter at the top
+  // The ground of the panel: a dirty wash, and a DARK one. A card is held up
+  // in the same torchlight as everything else — a daylight panel on a dark
+  // card reads as a hole cut in it.
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#8f8674'); bg.addColorStop(1, '#5d5648');
+  bg.addColorStop(0, '#5a5346'); bg.addColorStop(1, '#332e26');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   (PICS[pic] ?? PICS.fist)(ctx, rnd, accent);
   finish(ctx, rnd);
+  // the same corner falloff the frame has, so a picture sits IN the card
+  const v = ctx.createRadialGradient(W * 0.42, H * 0.36, H * 0.22, W * 0.5, H * 0.5, H * 0.95);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(8,7,6,0.62)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
   cache.set(key, c);
   return c;
 }
