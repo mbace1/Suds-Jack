@@ -1,5 +1,46 @@
 # Toko Trip — release log
 
+## v10 — 2026-09-06
+
+The sound of the place. There was a surf bed before, and it was a
+*soundtrack*: two filtered noise layers wired straight to the speakers,
+identical wherever you stood. In a headset that is the thing that gives the
+illusion away fastest — long before any geometry does — because a place you
+can walk around in has to sound different depending on where in it you are.
+
+- **The surf comes from the waterline.** Six emitters, each bisected onto the
+  exact ring where `groundHeight` crosses sea level, so they follow the cove
+  if the cove is ever reshaped again. Walking down the beach walks INTO the
+  sound and the nook is the quiet end of it. They start at six different
+  offsets in the one shared loop, because six copies in phase is mono with
+  extra steps.
+- **The wash breathes with the tide you can see** — the same `surfLevel(t)`
+  that lifts the water plane and walks the foam line up the sand. The wave
+  you watch climb is the wave you hear.
+- **The wind comes from the crowns that are moving.** Three palms, each with
+  a band-passed gust following the SAME sway term the crown is drawn with,
+  so the tree you hear is the tree you can see doing it.
+- **A gull, now and then**, out over the cove and never behind you in the
+  grass — two to three cries, a different bird's pitch each time.
+- **The mood mixes the air.** Dusk goes quiet and dark and the gulls go home
+  (70–150 s apart); midday brightens the wash and puts them back up (16–44).
+  Eased, not switched.
+- **A SOUND row on the slate**, which is the point of the routing: nothing
+  reaches `ctx.destination` on its own any more, so one switch silences all
+  of it — the radio included — and anything added later inherits that.
+
+One trap worth the note: three's `setMasterVolume` ramps with
+`setTargetAtTime`, and on a **suspended** AudioContext `currentTime` never
+advances, so the ramp never arrives and "off" is a promise rather than a
+mute. The value is set outright instead; a click on a deliberate mute is
+the cheaper of the two.
+
+Gate: 50 checks. The new ones assert the thing that actually matters — that
+the sound comes from SOMEWHERE: every surf emitter within 12 cm of sea
+level, no two stacked, the wash measurably breathing over five seconds of
+tide, each mood mixing the air differently, and SOUND off reading zero at
+the listener rather than merely at the surf.
+
 ## v9 — 2026-09-06
 
 The fitting room. Everything up to here was tuned blind — no headset has

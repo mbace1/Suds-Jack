@@ -179,8 +179,9 @@ const check = (label, ok) => {
   // mesh, four rows read off a UV, and a menu read off a UV is one bad
   // divisor away from every tap moving the wrong setting.
   const comfort0 = await page.evaluate(() => window.__tt.debug.comfort());
-  check(`comfort starts on its defaults (${comfort0.speed} · ${comfort0.turn} · edges ${comfort0.vig})`,
-    comfort0.speed === 'easy' && comfort0.turn === 'snap 30' && comfort0.vig === 1);
+  check(`comfort starts on its defaults (${comfort0.speed} · ${comfort0.turn} · edges ${comfort0.vig} · sound ${comfort0.sound})`,
+    comfort0.speed === 'easy' && comfort0.turn === 'snap 30'
+    && comfort0.vig === 1 && comfort0.sound === 1);
   check('the slate is a ray target',
     await page.evaluate(() => window.__tt.debug.rayTargets.includes(window.__tt.debug.slate)));
   const vig = await page.evaluate(() => window.__tt.debug.vignette());
@@ -204,7 +205,7 @@ const check = (label, ok) => {
     const d = window.__tt.debug, seen = [];
     d.slateAct(0);
     const perfOn = d.perf().on;
-    for (const row of [1, 1, 1, 2, 3]) { d.slateAct(row); seen.push(d.comfort()); }
+    for (const row of [1, 1, 1, 2, 3, 4]) { d.slateAct(row); seen.push(d.comfort()); }
     return { perfOn, seen };
   });
   check('the top row turns the readout on from inside the headset', rows.perfOn === true);
@@ -212,9 +213,54 @@ const check = (label, ok) => {
     rows.seen[0].speed === 'brisk' && rows.seen[1].speed === 'gentle' && rows.seen[2].speed === 'easy');
   check(`TURN cycles (${rows.seen[3].turn})`, rows.seen[3].turn === 'snap 45');
   check(`EDGES toggles (${rows.seen[4].vig})`, rows.seen[4].vig === 0);
+  check(`SOUND toggles (${rows.seen[5].sound})`, rows.seen[5].sound === 0);
   // and one row must not move another: the UV divisor is the whole menu
   check('and one row moves one dial',
-    rows.seen[4].speed === 'easy' && rows.seen[4].turn === 'snap 45');
+    rows.seen[5].speed === 'easy' && rows.seen[5].turn === 'snap 45' && rows.seen[5].vig === 0);
+  check('and SOUND really silences everything, not just the surf',
+    await page.evaluate(() => window.__tt.debug.air().master) === 0);
+  await page.evaluate(() => window.__tt.debug.setComfort('sound', 1));
+  check('and turning it back on restores it',
+    await page.evaluate(() => window.__tt.debug.air().master) === 1);
+
+  // ── the soundscape ──
+  // The point of it is that it comes from SOMEWHERE. A bed panned to the
+  // middle of your head is a soundtrack; the surf has to be at the water,
+  // so that walking down the beach walks into it.
+  const air = await page.evaluate(() => window.__tt.debug.air());
+  check(`the sound started with the island (${air.surf.length} surf emitters, ${air.wind.length} in the crowns)`,
+    air.started === true && air.surf.length >= 4 && air.wind.length >= 1);
+  const offshore = air.surf.filter(v => Math.abs(v.ground) > 0.12);
+  check(`and every surf emitter sits on the waterline${offshore.length ? ` — ${offshore.map(v => v.ground)}` : ''}`,
+    offshore.length === 0);
+  check(`and they are spread round the island, not stacked (${air.surf.map(v => v.at[0]).join(' ')})`,
+    new Set(air.surf.map(v => v.at.join(','))).size === air.surf.length);
+  // the wash must breathe with the tide that is drawn, not on its own clock
+  const breath = await page.evaluate(async () => {
+    const d = window.__tt.debug, out = [];
+    for (let i = 0; i < 24; i++) {
+      out.push(d.air().surf[0].gain);
+      await new Promise(r => setTimeout(r, 220));
+    }
+    return out;
+  });
+  check(`the wash breathes with the visible tide (${Math.min(...breath).toFixed(3)}…${Math.max(...breath).toFixed(3)})`,
+    Math.max(...breath) - Math.min(...breath) > 0.02);
+  // the mood mixes the air: dusk goes quiet and dark, midday brightens it
+  const airByMood = await page.evaluate(() => {
+    const out = [];
+    for (let i = 0; i < window.__tt.MOODS.length; i++) {
+      window.__tt.setMood(i, true);
+      out.push(window.__tt.debug.air().cut);
+    }
+    window.__tt.setMood(0, true);
+    return out;
+  });
+  check(`and each mood mixes it differently (cut ${airByMood.join(' ')})`,
+    new Set(airByMood).size === airByMood.length);
+  check('a gull can cry without throwing', await page.evaluate(() => {
+    try { window.__tt.debug.gullCry(); return true; } catch (e) { return false; }
+  }));
 
   // ── the way home ──
   check('there is a sign, and it is a ray target',
@@ -251,8 +297,8 @@ const check = (label, ok) => {
   await page.waitForFunction(() => window.__tt && window.__tt.debug, null, { timeout: 120000 })
     .catch(() => {});
   const kept = await page.evaluate(() => window.__tt.debug.comfort());
-  check(`and remembers what you set (${kept.speed} · ${kept.turn} · edges ${kept.vig})`,
-    kept.speed === 'easy' && kept.turn === 'snap 45' && kept.vig === 0);
+  check(`and remembers what you set (${kept.speed} · ${kept.turn} · edges ${kept.vig} · sound ${kept.sound})`,
+    kept.speed === 'easy' && kept.turn === 'snap 45' && kept.vig === 0 && kept.sound === 1);
 
   check(`zero page errors${errors.length ? ` — ${errors.slice(0, 2)}` : ''}`, errors.length === 0);
 
