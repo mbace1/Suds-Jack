@@ -1,11 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="54" viewBox="0 0 192 54">
   <defs>
-    <image id="ember" href="ember-portrait.png" width="24" height="27" preserveAspectRatio="xMidYMid meet"/>
+    <image id="ember" href="ember-portrait.png" x="-12" y="-27" width="24" height="27" preserveAspectRatio="xMidYMid meet"/>
+    <clipPath id="c0"><rect x="0" y="0" width="24" height="27"/></clipPath><clipPath id="c1"><rect x="24" y="0" width="24" height="27"/></clipPath><clipPath id="c2"><rect x="48" y="0" width="24" height="27"/></clipPath><clipPath id="c3"><rect x="72" y="0" width="24" height="27"/></clipPath>
+    <clipPath id="c4"><rect x="96" y="0" width="24" height="27"/></clipPath><clipPath id="c5"><rect x="120" y="0" width="24" height="27"/></clipPath><clipPath id="c6"><rect x="144" y="0" width="24" height="27"/></clipPath><clipPath id="c7"><rect x="168" y="0" width="24" height="27"/></clipPath>
+    <clipPath id="c8"><rect x="0" y="27" width="24" height="27"/></clipPath><clipPath id="c9"><rect x="24" y="27" width="24" height="27"/></clipPath><clipPath id="c10"><rect x="48" y="27" width="24" height="27"/></clipPath><clipPath id="c11"><rect x="72" y="27" width="24" height="27"/></clipPath>
+    <clipPath id="c12"><rect x="96" y="27" width="24" height="27"/></clipPath><clipPath id="c13"><rect x="120" y="27" width="24" height="27"/></clipPath><clipPath id="c14"><rect x="144" y="27" width="24" height="27"/></clipPath><clipPath id="c15"><rect x="168" y="27" width="24" height="27"/></clipPath>
   </defs>
-  <g>
-    <use href="#ember" x="0" y="0"/><use href="#ember" x="24" y="0"/><use href="#ember" x="48" y="0"/><use href="#ember" x="72" y="0"/>
-    <use href="#ember" x="96" y="0"/><use href="#ember" x="120" y="0"/><use href="#ember" x="144" y="0"/><use href="#ember" x="168" y="0"/>
-    <use href="#ember" x="0" y="27"/><use href="#ember" x="24" y="27"/><use href="#ember" x="48" y="27"/><use href="#ember" x="72" y="27"/>
-    <use href="#ember" x="96" y="27"/><use href="#ember" x="120" y="27"/><use href="#ember" x="144" y="27"/><use href="#ember" x="168" y="27"/>
-  </g>
+  <g clip-path="url(#c0)" transform="translate(12 27) scale(.96 1.02)"><use href="#ember"/></g>
+  <g clip-path="url(#c1)" transform="translate(36 27) rotate(-2) translate(0 -1)"><use href="#ember"/></g>
+  <g clip-path="url(#c2)" transform="translate(60 27) rotate(-3) translate(0 -2) scale(1.02)"><use href="#ember"/></g>
+  <g clip-path="url(#c3)" transform="translate(84 27) rotate(-1) translate(0 -1)"><use href="#ember"/></g>
+  <g clip-path="url(#c4)" transform="translate(108 27) scale(.98 1.03)"><use href="#ember"/></g>
+  <g clip-path="url(#c5)" transform="translate(132 27) rotate(2) translate(0 -1)"><use href="#ember"/></g>
+  <g clip-path="url(#c6)" transform="translate(156 27) rotate(3) translate(0 -2) scale(1.02)"><use href="#ember"/></g>
+  <g clip-path="url(#c7)" transform="translate(180 27) rotate(1) translate(0 -1)"><use href="#ember"/></g>
+  <g clip-path="url(#c8)" transform="translate(12 54) scale(1.04 .96)"><use href="#ember"/></g>
+  <g clip-path="url(#c9)" transform="translate(36 54) rotate(-4) translate(-1 -1) scale(1.03)"><use href="#ember"/></g>
+  <g clip-path="url(#c10)" transform="translate(60 54) rotate(4) translate(1 -2) scale(1.03)"><use href="#ember"/></g>
+  <g clip-path="url(#c11)" transform="translate(84 54) scale(.94 1.04)"><use href="#ember"/></g>
+  <g clip-path="url(#c12)" transform="translate(108 54) translate(0 1) scale(1.05 .93)"><use href="#ember"/></g>
+  <g clip-path="url(#c13)" transform="translate(132 54) rotate(-1) translate(0 2) scale(.98 .9)"><use href="#ember"/></g>
+  <g clip-path="url(#c14)" transform="translate(156 54) rotate(1) translate(0 2) scale(.98 .9)"><use href="#ember"/></g>
+  <g clip-path="url(#c15)" transform="translate(180 54) translate(0 1) scale(1.04 .94)"><use href="#ember"/></g>
 </svg>

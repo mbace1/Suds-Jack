@@ -1,4 +1,4 @@
 Kindling v16
-canonical source: mbace1/Kindling@d2e65912353be53e5adef5fc68f5cb7e4b64031d
+canonical source: mbace1/Kindling@965d908018fba0801becb729ca181a40c0a39102
 static hub build: npm run build:hub
-visual pass: camp depth + four upgraded Journey regions
+pass: camp/world art + combat feel + companion animation + progression presentation
