@@ -13,6 +13,14 @@
 //                  is the snowboarder's lean: back to float over the deep
 //                  stuff, forward to make the front edge bite.
 //
+// GAMEPAD is the scheme's natural home, because both of the axes this build
+// added are analog: the turbine has spool lag so part throttle is a real
+// choice, and weight is a lean, not a button. Keyboard flattens both to on
+// and off. The pad feeds the SAME control struct — nothing downstream knows
+// which device is driving. Left stick steer + throttle/brake, right stick pan
+// + weight, and RT/LT additionally as throttle/brake for anyone who expects a
+// racer to work that way; whichever input asks for more throttle wins.
+//
 // Desktop: A/D steer, W throttle, S brake, Space / Shift boost (lean back),
 //          arrow up = spoiler (lean forward), arrows left/right = pan camera,
 //          F = swap chassis on the menu, Esc pause.
@@ -28,6 +36,9 @@ export class InputManager {
     this.onStart = null;
     this.onPause = null;
     this.onSwap = null;
+    this.gamepad = false;
+    this._pad = { steer: 0, throttle: 0, brake: false, pan: 0, lean: 0 };
+    this._padPrev = { start: false, pause: false, swap: false };
     this._init();
   }
 
@@ -82,6 +93,49 @@ export class InputManager {
     }
   }
 
+  /**
+   * Poll the first connected pad once per frame. Buttons are edge-detected
+   * here so the callbacks fire once, the same way the keyboard path does.
+   * Standard mapping: 0 A, 3 Y, 6 LT, 7 RT, 8 Back, 9 Start.
+   */
+  pollGamepad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : null;
+    let gp = null;
+    if (pads) for (const q of pads) if (q && q.connected) { gp = q; break; }
+    if (!gp) {
+      this.gamepad = false;
+      this._pad.steer = this._pad.throttle = this._pad.pan = this._pad.lean = 0;
+      this._pad.brake = false;
+      this._padPrev.start = this._padPrev.pause = this._padPrev.swap = false;
+      return;
+    }
+    this.gamepad = true;
+    const DZ = 0.16;
+    const ax = i => {
+      const v = gp.axes[i] || 0;
+      return Math.abs(v) < DZ ? 0 : (v - Math.sign(v) * DZ) / (1 - DZ);
+    };
+    const val = i => (gp.buttons[i] ? gp.buttons[i].value : 0);
+    const hit = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+
+    const ly = ax(1);
+    this._pad.steer = ax(0);
+    // stick forward is -y, and RT is the racing convention: take whichever
+    // is asking for more power
+    this._pad.throttle = Math.max(Math.max(0, -ly), val(7));
+    this._pad.brake = Math.max(Math.max(0, ly), val(6)) > 0.35;
+    this._pad.pan = ax(2);
+    // stick BACK (+y) is lean back — boost and nose up, matching the touch
+    // stick and the way you would shift your weight on a board
+    this._pad.lean = ax(3);
+
+    const start = hit(0), pause = hit(9), swap = hit(3);
+    if (start && !this._padPrev.start) this.onStart?.();
+    if (pause && !this._padPrev.pause) this.onPause?.();
+    if (swap && !this._padPrev.swap) this.onSwap?.();
+    this._padPrev.start = start; this._padPrev.pause = pause; this._padPrev.swap = swap;
+  }
+
   _def(s, out) {
     if (s.id === -1) { out.x = 0; out.y = 0; out.on = false; return out; }
     let dx = s.x - s.x0, dy = s.y - s.y0;
@@ -115,6 +169,16 @@ export class InputManager {
         // screen-down is +y: pulling the stick back is lean > 0
         lean = Math.abs(R.y) > 0.18 ? clamp(R.y * 1.25, -1, 1) : 0;
       }
+    }
+    // the pad last, and merged rather than exclusive, so a stick in one hand
+    // and a keyboard under the other still works
+    if (this.gamepad) {
+      const P = this._pad;
+      if (P.steer) steer = clamp(steer + P.steer, -1, 1);
+      throttle = Math.max(throttle, P.throttle);
+      brake = brake || P.brake;
+      if (P.pan) pan = clamp(pan + P.pan, -1, 1);
+      if (P.lean) lean = clamp(lean + P.lean, -1, 1);
     }
     if (Math.abs(steer) < 0.09) steer = 0;
     out.steer = steer; out.throttle = throttle; out.brake = brake;

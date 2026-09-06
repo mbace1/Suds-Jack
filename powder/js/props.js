@@ -8,7 +8,8 @@
 // The bridge is placed by the one tile that contains the canyon centreline at
 // that crossing, so it is built exactly once.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=5';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { PAL } from './palette.js?v=6';
 
 export function makePropKit() {
   const lam = (c) => new THREE.MeshLambertMaterial({ color: c });
@@ -28,6 +29,8 @@ export function makePropKit() {
       floater: lam(PAL.floater), scrub: lam(PAL.scrub),
       bridge: lam(PAL.bridge), bridgeLit: lam(PAL.bridgeLit),
       glow: new THREE.MeshBasicMaterial({ color: PAL.glow }),
+      // props are merged per tile, so their colour lives in a vertex attribute
+      baked: new THREE.MeshLambertMaterial({ vertexColors: true }),
     },
   };
 }
@@ -188,4 +191,61 @@ export function populate(terrain, group, i, j, TILE) {
     m.position.set(x, terrain.height(x, z) + r * 0.6, z);
     group.add(m);
   }
+}
+
+/**
+ * Bake a tile's props down to ONE mesh.
+ *
+ * Measured before this existed: 1420 prop meshes across the 121 streamed
+ * tiles for 30k triangles — about 21 triangles per draw call, and every one
+ * of them drawn TWICE, once into the shadow map and once into the world pass.
+ * The frame was call-bound, not geometry-bound, which is the one kind of cost
+ * that hurts a real GPU as much as it hurts the software rasteriser here.
+ *
+ * Everything except the floaters is static once placed, and they all share a
+ * handful of geometries and a flat Lambert colour, so the colour can move to
+ * a vertex attribute and the lot merges. The floaters spin and bob, so they
+ * stay real meshes. Culling granularity does not suffer: the merged mesh is
+ * exactly one tile, the same unit the terrain mesh is already culled by.
+ *
+ * The set has to be unindexed before it merges — the boxes and cones are
+ * indexed while DodecahedronGeometry and OctahedronGeometry are not, and
+ * mergeGeometries refuses a mixed set. Note which call does that: see below.
+ */
+export function bakeProps(group, kit) {
+  const floaters = new Set(group.userData.floaters || []);
+  const parts = [];
+  const keep = [];
+  group.updateMatrixWorld(true);
+  group.traverse(o => {
+    if (!o.isMesh) return;
+    if (floaters.has(o)) { keep.push(o); return; }
+    // toNonIndexed() returns THIS when a geometry is already unindexed, and
+    // DodecahedronGeometry and OctahedronGeometry both are — so the naive
+    // version transformed, stripped and then DISPOSED the kit's shared rock
+    // geometry, and every rock in the world went black.
+    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    g.applyMatrix4(o.matrixWorld);
+    for (const a of Object.keys(g.attributes)) if (a !== 'position' && a !== 'normal') g.deleteAttribute(a);
+    const c = o.material.color;
+    const n = g.attributes.position.count, col = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    parts.push(g);
+  });
+  group.clear();
+  for (const m of keep) group.add(m);
+  if (!parts.length) return null;
+  const merged = mergeGeometries(parts);
+  for (const g of parts) g.dispose();
+  merged.computeBoundingSphere();
+  const mesh = new THREE.Mesh(merged, kit.mat.baked);
+  mesh.castShadow = true;
+  // NOT receiveShadow. The bridge deck alone used to receive, and switching
+  // that on for the merged mesh means the props both cast into and sample the
+  // same 1024 hard map — the self-shadow acne turned every rock and spire
+  // black. Matching the old behaviour is worth more than the deck's shadow.
+  mesh.receiveShadow = false;
+  group.add(mesh);
+  return merged;
 }

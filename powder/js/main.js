@@ -28,14 +28,14 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=5';
-import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=5';
-import { Vehicle } from './vehicle.js?v=5';
-import { DustPool, ScarField } from './dust.js?v=5';
-import { Route, RADIUS } from './route.js?v=5';
-import { InputManager, STICK_R } from './input.js?v=5';
-import { AudioKit } from './audio.js?v=5';
-import { makeSky } from './sky.js?v=5';
+import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=6';
+import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=6';
+import { Vehicle } from './vehicle.js?v=6';
+import { DustPool, ScarField } from './dust.js?v=6';
+import { Route, RADIUS } from './route.js?v=6';
+import { InputManager, STICK_R } from './input.js?v=6';
+import { AudioKit } from './audio.js?v=6';
+import { makeSky } from './sky.js?v=6';
 
 // Fog has to reach nearly the edge of the streamed world, not half way
 // into it, or the flats read as a 300 m milk bowl instead of a plain.
@@ -591,7 +591,7 @@ function drawStick(s, label, hx, hy) {
 
 function drawSticks() {
   uiCtx.clearRect(0, 0, ui.width, ui.height);
-  if (!input.touchSeen) return;
+  if (!input.touchSeen || input.gamepad) return;
   const s = input.sticks();
   drawStick(s.left, 'STEER / THR', ui.width * 0.17, ui.height * 0.74);
   drawStick(s.right, 'O/D', ui.width * 0.83, ui.height * 0.74);
@@ -605,9 +605,30 @@ function drawSticks() {
  * 0.62x and the HD layer needs a depth buffer that matches it. Then the HD
  * layer — ships, flames, sparks, spindrift — over the top, crisp.
  */
+const _hidden = [];
 function renderFrame() {
   camera.layers.mask = MASK_PS2;
   composer.render();
+
+  // The prepass exists ONLY to occlude the HD ships, and a thing can only
+  // occlude what is behind it — so nothing farther away than the farthest
+  // ship can matter. Culling the prepass to that range drops most of the
+  // streamed world out of it; measured, it was re-rendering all 121 tiles at
+  // full resolution every frame for no visible effect. The projection must
+  // stay identical to the HD pass or the depth values are not comparable,
+  // which is why this culls by visibility rather than by moving the far plane.
+  let range = 150;
+  for (let i = 0; i < field.length; i++) {
+    range = Math.max(range, camera.position.distanceTo(field[i].pos) + 40);
+  }
+  _hidden.length = 0;
+  for (const t of terrain.tiles.values()) {
+    const bs = t.mesh.geometry.boundingSphere;
+    if (!bs) continue;
+    if (camera.position.distanceTo(bs.center) - bs.radius > range) {
+      t.mesh.visible = false; t.props.visible = false; _hidden.push(t);
+    }
+  }
 
   renderer.autoClear = false;
   renderer.clearDepth();
@@ -615,6 +636,9 @@ function renderFrame() {
   scene.overrideMaterial = depthOnly;
   renderer.render(scene, camera);
   scene.overrideMaterial = null;
+  for (let i = 0; i < _hidden.length; i++) {
+    _hidden[i].mesh.visible = true; _hidden[i].props.visible = true;
+  }
 
   camera.layers.mask = MASK_HD;
   renderer.render(scene, camera);
@@ -630,6 +654,7 @@ function animate() {
   const now = performance.now();
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  input.pollGamepad();          // feeds the same control struct as keys/touch
   if (state.mode === 'race') step(dt);
   else if (state.mode !== 'paused') idle(dt);
   grade.uniforms.uTime.value = state.t;
@@ -695,7 +720,8 @@ function showMenu() {
     ' <b style="color:#ffb066">FORWARD</b> TO PRESS IT DOWN.' +
     '<br>LEFT AND RIGHT PAN THE CAMERA.</small>' +
     '<br><small style="opacity:.65">W THROTTLE &nbsp; A / D STEER &nbsp; S BRAKE &nbsp; SPACE BOOST' +
-    '<br>&uarr; SPOILER &nbsp; &larr; &rarr; PAN &nbsp; F CHASSIS</small>' +
+    '<br>&uarr; SPOILER &nbsp; &larr; &rarr; PAN &nbsp; F CHASSIS' +
+    '<br>GAMEPAD: STICKS AS ABOVE &nbsp;·&nbsp; RT / LT &nbsp;·&nbsp; A START &nbsp;·&nbsp; Y CHASSIS</small>' +
     '<br><small style="opacity:.65">ENTER / TAP TO DROP IN</small>';
   hud.msg.style.display = '';
 }

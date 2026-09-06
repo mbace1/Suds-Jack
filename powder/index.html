@@ -46,21 +46,27 @@
     #nav #compass { font-size: 17px; font-weight: bold; letter-spacing: 2px; }
     #race .val { font-size: 30px; }
 
+    /* The panel has to fit the viewport it is given — a laptop in a browser
+       window is often under 620px tall, and the menu grew a gamepad line.
+       Everything in here is sized in vh with a px clamp, so it shrinks rather
+       than running off the bottom. */
     #msg {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
       z-index: 12; text-align: center; pointer-events: none;
-      font-size: 20px; line-height: 1.85; font-weight: bold;
-      background: rgba(29,23,38,.66); padding: 26px 40px;
+      font-size: clamp(13px, 2.4vh, 20px); line-height: 1.7; font-weight: bold;
+      background: rgba(29,23,38,.66); padding: clamp(12px, 3vh, 26px) 40px;
       border: 1px solid rgba(240,230,210,.3); border-radius: 4px;
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px); max-height: 94vh;
     }
-    #msg b { font-size: 36px; letter-spacing: 6px; }
+    #msg b { font-size: clamp(22px, 4.3vh, 36px); letter-spacing: 6px; }
     /* the wordmark: white glyphs on transparency, so it takes the panel's tint */
     #msg .logo {
-      display: block; width: min(64vw, 620px); margin: 2px auto 10px;
+      display: block; width: min(64vw, 620px); max-height: 17vh;
+      object-fit: contain; margin: 2px auto clamp(4px, 1.4vh, 10px);
       filter: drop-shadow(0 4px 18px rgba(20,10,30,.7));
     }
-    #msg small { font-size: 12px; letter-spacing: 1px; line-height: 2.3; font-weight: normal; }
+    #msg small { font-size: clamp(10px, 1.7vh, 12px); letter-spacing: 1px;
+      line-height: 2.05; font-weight: normal; }
     #toast {
       position: fixed; bottom: 21%; left: 50%; transform: translateX(-50%);
       z-index: 11; font-size: 20px; font-weight: bold; letter-spacing: 4px;
@@ -130,6 +136,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=5"></script>
+  <script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>
