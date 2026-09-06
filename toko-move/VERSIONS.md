@@ -14,6 +14,8 @@ It samples on the TICK, not the frame — a 120 Hz screen must not remember more
 
 One trap the gate found in itself: the stub context was assembled with `Object.assign`, which copies an accessor's **value** rather than the accessor — so the composite-operation setter vanished and the check that the wake is drawn additively could never have passed.
 
+
+**Deployed, and the deploy found a bug five releases old.** Every hand-deploy this lane has made since v2.22 shipped `../hub/shell.js?v=17` onto a site whose other twenty-two cabinets ask for `?v=35` — the exact trap `CLAUDE.md` records for hand-deploys ("this cabinet shipped pinned to v17 while fourteen others were on v34"), and another lane had already had to repair it once. A cabinet pinned to an old shell serves an old HOME button out of cache forever while the rest of the floor gets the new one. `test/cabinet-route.cjs` now asserts the token agrees with whatever the rest of the floor asks for — agreement, not a number, because this checkout and the deploy tree are legitimately on different ones.
 ## v2.26 — 2026-09-02
 
 **The shift shows itself back.** A run ended in four numbers — delivered, score, bonuses, late — which was survivable while nothing could go wrong and became the worst possible ending the moment v2.25 made a shift losable. Four numbers tell you that you failed and nothing about where. `js/shiftlog.js` is the design doc's own experiment #6, the one item on its list of eight that had never been built, and its strongest-directions list calls post-run replay "a core learning tool".
