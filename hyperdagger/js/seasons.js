@@ -89,7 +89,7 @@ export const SEASONS = [
       hMin: 3, hMax: 7,         // shorter (owner)
       wMin: 1.1, wMax: 2.4,     // footprint side, each axis drawn separately
       color: [0.010, 0.009, 0.011], // darker (owner) — LINEAR, well under the grid
-      glow: [0.055, 0.009, 0.007],  // the foot of each pile catches the horizon
+      glow: [0.030, 0.005, 0.004],  // the foot of each pile catches the horizon — barely
       minGap: 4.5,              // between piles, so there is always a way through
       shale: { tile: 0, layer: 0.34, jitter: 0.16, turn: 0.09 },
     },

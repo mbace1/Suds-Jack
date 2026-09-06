@@ -5,26 +5,26 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=71';
-import { Player } from './player.js?v=71';
-import { DaggerPool } from './daggers.js?v=71';
-import { GemPool } from './gems.js?v=71';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=71';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=71';
-import { OrbPool } from './bullets.js?v=71';
-import { AudioKit } from './audio.js?v=71';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=71';
-import { TUNING as T } from './tuning.js?v=71';
-import { HyperEnvironment } from './environment.js?v=71';
-import { Backdrop } from './backdrop.js?v=71';
-import { Walls } from './walls.js?v=71';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=71';
-import { TruckTrack } from './truck.js?v=71';
-import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=71';
-import { Platforms } from './platforms.js?v=71';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=71';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=71';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=71';
+import { InputManager } from './input.js?v=72';
+import { Player } from './player.js?v=72';
+import { DaggerPool } from './daggers.js?v=72';
+import { GemPool } from './gems.js?v=72';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=72';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=72';
+import { OrbPool } from './bullets.js?v=72';
+import { AudioKit } from './audio.js?v=72';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=72';
+import { TUNING as T } from './tuning.js?v=72';
+import { HyperEnvironment } from './environment.js?v=72';
+import { Backdrop } from './backdrop.js?v=72';
+import { Walls } from './walls.js?v=72';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=72';
+import { TruckTrack } from './truck.js?v=72';
+import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=72';
+import { Platforms } from './platforms.js?v=72';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=72';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=72';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=72';
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -558,7 +558,9 @@ const skyMat = new THREE.ShaderMaterial({
         // is atmosphere and never competes with an eye or a gem
         vec3 g = floor(d * 160.0);
         float s = hash3(g);
-        float star = step(0.9965, s) * (0.45 + 0.55 * hash3(g + 1.7));
+        // sparse: the first cut was a snowstorm against the reference's
+        // handful, so the threshold is a quarter of the cells it was
+        float star = step(0.99915, s) * (0.45 + 0.55 * hash3(g + 1.7));
         col += vec3(star * uStars * smoothstep(0.02, 0.25, h));
       }
       gl_FragColor = vec4(col, 1.0);

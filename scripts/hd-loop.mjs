@@ -85,6 +85,14 @@ const SCENARIOS = {
     tick: 'window._LOOP.wallTick()',
     every: 1,
   },
+  ember: {
+    title: 'SEASON 1 — EMBER: dark shale you can barely see, slabs that rise, a needler',
+    mode: 'hyper',
+    season: 'ember',
+    setup: 'window._LOOP.rock()',
+    tick: 'window._LOOP.turn(0.045)',
+    every: 1,
+  },
   court: {
     title: 'MOVE — the court: four walls, the body stops and slides along',
     mode: 'move',
@@ -160,6 +168,18 @@ window._LOOP = {
     return null;
   },
   run(x, z) { player.velocity.set(x * 9, 0, z * 9); return null; },
+  // season 1 from inside the disc: every slab already grown (a capture frame
+  // is a second and a half of game time — growth would eat the whole loop),
+  // two held skulls for scale, the needler streaming every fourth frame
+  rock() {
+    this.reset();
+    for (const p of platforms.list) { p.phase = 'live'; p.k = 1; p.t = 0; }
+    player.feet.set(0, 0, 6); player.yaw = 0; player.pitch = 0.03; player._sync();
+    window.__hd.debug.spawnSkull(); const a = enemies[enemies.length - 1]; a.hp = 99999; this.place(a, 9); a._holdAt.x = -3;
+    window.__hd.debug.spawnSkull(); const b = enemies[enemies.length - 1]; b.hp = 99999; this.place(b, 16); b._holdAt.x = 5; b._holdAt.y = 3.2;
+    return null;
+  },
+  turn(k) { player.yaw += k; player._sync(); if (((this._f = (this._f || 0) + 1) % 4) === 1) for (let i = 0; i < 6; i++) fireDagger(wpn('spread'), wpn('streamSpeed'), false); return null; },
   hudOff() { for (const id of ['hud', 'style', 'timer']) { const el = document.getElementById(id); if (el) el.style.opacity = '0'; } return null; },
   caption(text) {
     let d = document.getElementById('_loopcap');
@@ -228,7 +248,7 @@ for (const name of names) {
   const scn = SCENARIOS[name];
   const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT } });
   const errs = []; page.on('pageerror', e => errs.push(e.message));
-  await page.goto(`http://127.0.0.1:${PORT}/hyperdagger/?mode=${scn.mode || 'hyper'}`, { waitUntil: 'load' });
+  await page.goto(`http://127.0.0.1:${PORT}/hyperdagger/?mode=${scn.mode || 'hyper'}&season=${scn.season || 'void'}`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 60000 });
   await page.evaluate(() => { localStorage.setItem('hyperDaggerSeenTips', '1'); const o = JSON.parse(localStorage.getItem('hyperDaggerOpts') || '{}'); o.perf = 'high'; localStorage.setItem('hyperDaggerOpts', JSON.stringify(o)); });
   await page.reload({ waitUntil: 'load' });

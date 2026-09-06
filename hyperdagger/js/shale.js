@@ -82,7 +82,7 @@ export function shaleGeometry(o) {
     const v = 0.75 + draw() * 0.5; // per-bed value variance — shale is banded
     let c = [rock[0] * v, rock[1] * v, rock[2] * v];
     if (o.glow) { // the foot of the stack catches the horizon: warm low, cold high
-      const g = Math.max(0, 1 - y0 / Math.max(1, o.h)) * 0.55;
+      const g = Math.max(0, 1 - y0 / Math.max(1, o.h)) * 0.35;
       c = [c[0] + (o.glow[0] - c[0]) * g, c[1] + (o.glow[1] - c[1]) * g, c[2] + (o.glow[2] - c[2]) * g];
     }
     pushBox(acc, o.w * shrink - 2 * jitter, t * 0.94, o.d * shrink - 2 * jitter,

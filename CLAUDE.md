@@ -363,7 +363,37 @@ at 2.1× glow, or they are black on black. **The perf governor discarded every
 frame over 250 ms as a tab-hidden gap**, so a device slower than 4 fps was
 invisible to it — a coarse-pointer page at 750 ms/frame held tier 0 with 856k
 instances and reported 60 fps; four slow frames in a row count now
-(`perfTuning.gapRun`). `scripts/hd-loop.mjs` is the
+(`perfTuning.gapRun`). **Since v41 the arena's ART is a
+registry too: `js/seasons.js`** (owner's brief in `hyperdagger/SEASONS.md`).
+A season declares sky, fog, motes, ground, backdrop look, floor tint, rock,
+slabs and the weapon profile, and `main.js` asks `S()` the way it asks `M()`;
+SEASON sits beside MODE on the menu and `?season=` deep-links one. VOID is the
+control (the old bare disc with daggers — the gate pins it with
+`debug.setSeason('void')` so every legacy section still measures the DD spine).
+EMBER is season 1: five dark shale piles and four LOW shale slabs with crooked
+tile tops, both built by `js/shale.js` (stacked beds of uneven thickness,
+nudged and turned, one vertex-coloured unlit geometry each) — the piles through
+`walls.js` with a `geometry` override, the slabs in `platforms.js`, which grow
+out of the floor, drift, sink and re-seed off the player and off the rock (a
+slab is `player.floorY`, its sides report `wallContact`, a body on one is
+CARRIED, and the height draw is SQUARED so most are knee-high); and the
+**needler**: `T.weapons.needler` overlaid on `T.weapon` through `wpn(key)` at
+the fire sites, nails re-shaped by `DaggerPool.setShape`, stream ×1.35 at
+72 u/s, shotgun a wider blast of the same nails. Rock and slabs are solid to
+projectiles (`walls.blocks` / `platforms.blocks`, slab tests asked before the
+enemy loop). INCA is season 2's palette only and says so (`built: false`,
+`todo`). Four things renders settled, not reasoning: the star field was a
+snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
+grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
+near black, so floor glow is per season; and the owner's monuments "looked
+weird" because the asset rig's white light never reaches a piece at z −40
+(black shapes, pink rims) while the near-black mountain stood 34 high at −64 —
+a season now owns `backdrop: {visible, emissive}` (`Backdrop.setLook` feeds the
+bake through `emissiveMap`), the mountain is a horizon at −88, and the manifest
+carries six pieces instead of eight. The season also owns the fog (ember-leaning,
+so distance melts into the glow), the motes (embers) and a matte ground ring
+outside the disc, because a monument on the void floats.
+`scripts/hd-loop.mjs` is the
 motion harness (the toko-drop one, ported): it stages a copy of the site
 subset the game needs, appends a harness to main.js, and records GIF loops
 from the real code — `--stills` for inspection frames, `hold()` because a

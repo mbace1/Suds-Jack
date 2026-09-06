@@ -25,6 +25,17 @@ The gate walks `MODES` rather than naming modes. That is not tidiness: TRUCK
 was declared in the v33 notes, was never imported by `main.js`, and existed
 only on paper for three releases while every gate passed.
 
+## The seasons — `js/seasons.js` (v41)
+
+The other registry. A mode is the body and the pressure; a **season is the
+art and the hand** — sky, fog, motes, ground, backdrop, rock, slabs, weapon
+profile — declared the same way and multiplied against the modes.
+`SEASONS.md` holds the owner's brief for both seasons and what each has
+built. VOID is the control (the bare disc, daggers, no monuments), EMBER is
+season 1 (dark shale piles and low shale slabs with crooked tile tops, the
+monuments lit by their own bake, the needler), INCA is season 2's palette
+with its goo still on the list. `?season=<id>` deep-links one.
+
 ## The movement vocabulary
 
 `jumps` · `dash` · `reap` · `glide` · `airDash` · `wallRun`
@@ -56,6 +67,8 @@ and re-materialed as the alive-skin; a kind absent is never requested).
 ## The floor is a value
 
 `player.floorY` is the surface under the feet: `0` on the disc, written per
-frame by the track, `-Infinity` where there is no platform. That is how "the
+frame by the track, `-Infinity` where there is no platform, and since v41
+the top of whichever season slab is under you (`platforms.js` — which also
+adds the slab's own motion to the feet, so a moving floor carries you). That is how "the
 floor left" is an ordinary fall rather than a special case — and it is what a
 future arena writes to put geometry under the player.

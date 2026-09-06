@@ -56,6 +56,11 @@ s.listen(0, '127.0.0.1', async () => {
   }));
 
   // ---- start a run (skip the one-time tips card) -------------------------
+  // v41: every section below this line is the pre-season game, so it runs in
+  // the CONTROL season — VOID is the bare disc with daggers, which is what
+  // these checks were written against. The seasons section at the end
+  // navigates to its own pages.
+  await p.evaluate(() => window.__hd.debug.setSeason('void'));
   await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
   await p.mouse.click(550, 360);
   await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
@@ -666,6 +671,13 @@ s.listen(0, '127.0.0.1', async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     hd.debug.setTime(0); // generated pressure would measure the director, not leaks
+    // Dead enemies leave the array from updateCombat, which only runs while
+    // the run is PLAYING — so a run that ended in an earlier section makes
+    // this read as an unbounded leak when nothing is leaking. Report the
+    // state, and start a fresh run if this one is over.
+    const stateAtEntry = hd.debug.getState().state;
+    if (stateAtEntry !== 'playing') hd.debug.startGame();
+    hd.debug.setInvulnerable?.(true); // a dread spawned in your face must not end it mid-cycle
     for (const e of hd.enemies) e.alive = false;
     await frames(4);
     hd.debug.setOpt('perf', 'low'); // cheap frames — we count objects, not pixels
@@ -683,7 +695,9 @@ s.listen(0, '127.0.0.1', async () => {
     for (let i = 0; i < 4; i++) await cycle();
     const b = hd.debug.getHealth();
     hd.debug.setOpt('perf', 'auto');
-    return { a: { g: a.geometries, t: a.textures, sc: a.sceneChildren, en: a.enemies }, b: { g: b.geometries, t: b.textures, sc: b.sceneChildren, en: b.enemies } };
+    hd.debug.setInvulnerable?.(false);
+    return { stateAtEntry, state: hd.debug.getState().state,
+      a: { g: a.geometries, t: a.textures, sc: a.sceneChildren, en: a.enemies }, b: { g: b.geometries, t: b.textures, sc: b.sceneChildren, en: b.enemies } };
   });
   ok('spawn/kill cycles do not leak geometry', health.b.g - health.a.g <= 2 && health.b.t === health.a.t, JSON.stringify(health));
   ok('the scene graph returns to baseline', health.b.sc <= health.a.sc + 2 && health.b.en === health.a.en, JSON.stringify(health));
@@ -875,6 +889,135 @@ s.listen(0, '127.0.0.1', async () => {
   ok('END RUN leaves a run for the mode menu', backAtMenu.state === 'menu', backAtMenu.state);
   ok('and the mode toggle is there when you land', backAtMenu.canSwitch);
 
+  // ---- v41 SEASONS: the arena's art is declared, like a mode --------------
+  // Each season boots its own page (?season=), because a season is read at
+  // boot the way a mode is. assets=0 throughout: this is about the arena the
+  // code builds, not about the Meshy skins.
+  const seasonReg = await p.evaluate(() => window.__hd.debug.getSeasons());
+  ok('the season registry is a list, and the page knows which one it is on',
+    Array.isArray(seasonReg.ids) && seasonReg.ids.length >= 3 && seasonReg.ids.includes('ember'),
+    JSON.stringify(seasonReg.ids));
+
+  const seasonRead = async (id, mode = 'hyper') => {
+    await p.goto(base + `/hyperdagger/?assets=0&season=${id}&mode=${mode}`, { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+    return p.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
+      await frames(6);
+      const sn = d.getSeasons();
+      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms() };
+    });
+  };
+
+  const ctrl = await seasonRead('void');
+  ok('void: the control is the bare disc with daggers',
+    ctrl.walls.count === 0 && ctrl.plats.count === 0
+    && ctrl.gun.weapon === 'dagger' && ctrl.gun.streamSpeed === 48 && ctrl.gun.shape === null,
+    JSON.stringify({ walls: ctrl.walls.count, plats: ctrl.plats.count, gun: ctrl.gun.weapon }));
+  ok('void: no ground under the monuments, and the pre-season fog',
+    ctrl.sn.ground === false && ctrl.sn.fog.far === 72 && ctrl.sn.backdrop.visible === false,
+    JSON.stringify({ ground: ctrl.sn.ground, fog: ctrl.sn.fog, bd: ctrl.sn.backdrop }));
+
+  const em = await seasonRead('ember');
+  const pillars = em.walls.walls.filter(w => w.tag === 'pillar');
+  ok('ember: it boots into its own season and says so',
+    em.sn.current === 'ember' && em.sn.built === true, JSON.stringify(em.sn.current));
+  ok('ember: dark rock stands in the arena — five piles, none of them tall',
+    pillars.length >= 4 && pillars.length <= 5 && pillars.every(w => w.h >= 3 && w.h <= 7),
+    JSON.stringify(pillars.map(w => w.h)));
+  ok('ember: the slabs are LOW mostly — most at knee height, none over the cap',
+    em.plats.count === 4 && em.plats.slabs.every(s => s.h <= 1.6)
+    && em.plats.slabs.filter(s => s.h < 0.9).length >= 2,
+    JSON.stringify(em.plats.slabs.map(s => s.h)));
+  ok('ember: the hand holds the needler — faster nails, a wider blast',
+    em.gun.weapon === 'needler' && em.gun.rate > 1 && em.gun.streamSpeed > 48
+    && em.gun.shotgunSpread > 0.18 && em.gun.shape && em.gun.shape.len > 0.3,
+    JSON.stringify(em.gun));
+  ok('ember: the fog leans to the ember and a ground stands under the monuments',
+    em.sn.fog.color[0] > em.sn.fog.color[2] * 3 && em.sn.fog.far < 72
+    && em.sn.ground === true && em.sn.backdrop.visible === true && em.sn.backdrop.emissive > 0,
+    JSON.stringify({ fog: em.sn.fog, ground: em.sn.ground, bd: em.sn.backdrop }));
+  ok('ember: the sky carries a star field the control has not',
+    em.sn.sky.stars > 0 && ctrl.sn.sky.stars === 0, JSON.stringify(em.sn.sky.stars));
+
+  // the slabs MOVE, are a floor, and CARRY the body standing on one
+  const slab = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    // Slabs are LOW mostly and a top under 0.45 is stepped onto rather than
+    // walked into, so the one under test is forced tall and grown.
+    const P = d.platformsObj(), sl = P.list[0];
+    sl.h = 2.0; sl.phase = 'live'; sl.k = 1; sl.t = 0; P._pose(sl);
+    await frames(2);
+    const a = d.getPlatforms().slabs[0];
+    await frames(40);
+    const b = d.getPlatforms().slabs[0];
+    const moved = Math.hypot(b.x - a.x, b.z - a.z);
+    // stand on it
+    pl.feet.set(b.x, b.top, b.z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    await frames(2);
+    const floorOn = pl.floorY;
+    const x0 = pl.feet.x, z0 = pl.feet.z;
+    await frames(30);
+    const carried = Math.hypot(pl.feet.x - x0, pl.feet.z - z0);
+    // and its SIDE is a wall: walk into it from the floor
+    const c = d.getPlatforms().slabs[0];
+    pl.feet.set(c.x + c.w / 2 + 2.5, 0, c.z); pl.vy = 0; pl._sync();
+    await frames(2);
+    for (let i = 0; i < 24; i++) { pl.velocity.set(-9, 0, 0); await frames(1); }
+    const stoppedAt = pl.feet.x - c.x;
+    return { moved: +moved.toFixed(3), floorOn: +floorOn.toFixed(2), top: +b.top.toFixed(2), carried: +carried.toFixed(3), stoppedAt: +stoppedAt.toFixed(2), halfW: c.w / 2 };
+  });
+  ok('ember: a slab drifts while it stands', slab.moved > 0.02, JSON.stringify(slab));
+  ok('ember: a standing slab IS the floor', Math.abs(slab.floorOn - slab.top) < 0.01 && slab.top > 1.5, JSON.stringify(slab));
+  ok('ember: a body standing on one is carried by it', slab.carried > 0.02, JSON.stringify(slab));
+  ok('ember: a slab side is a wall you cannot walk through',
+    slab.stoppedAt > slab.halfW, JSON.stringify(slab));
+
+  // rock stops a nail: one fired into a pillar dies, one fired at the sky does not
+  const nails = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    const w = d.getWalls().walls.find(x => x.tag === 'pillar');
+    // stand off the pillar and look straight at it
+    const len = Math.hypot(w.x, w.z), k = (len - 6) / len;
+    pl.feet.set(w.x * k, 0, w.z * k); pl.vy = 0; pl.velocity.set(0, 0, 0);
+    pl.yaw = -Math.atan2(w.x - pl.feet.x, -(w.z - pl.feet.z)); pl.pitch = 0.12; pl._sync();
+    hd.daggers.reset();
+    await frames(1);
+    hd.player.input.mouseDown = true; await frames(14); hd.player.input.mouseDown = false;
+    await frames(10);
+    const intoRock = hd.daggers.active.length;
+    // now at the sky, from the same spot
+    hd.daggers.reset(); pl.pitch = 0.9; pl._sync();
+    await frames(1);
+    hd.player.input.mouseDown = true; await frames(14); hd.player.input.mouseDown = false;
+    await frames(2);
+    const intoSky = hd.daggers.active.length;
+    hd.daggers.reset();
+    return { intoRock, intoSky };
+  });
+  ok('ember: rock stops a nail, open air does not',
+    nails.intoSky > 0 && nails.intoRock < nails.intoSky, JSON.stringify(nails));
+
+  const inca = await seasonRead('inca');
+  ok('inca: season 2 carries its palette and declares itself UNBUILT',
+    inca.sn.current === 'inca' && inca.sn.built === false && inca.sn.todo.length >= 3
+    && inca.sn.sky.void[2] > 0.3 && inca.sn.floorTint[1] > inca.sn.floorTint[0],
+    JSON.stringify({ built: inca.sn.built, todo: inca.sn.todo.length, sky: inca.sn.sky.void }));
+  ok('inca: its slabs are the LARGE ones the brief asks for, and no rock',
+    inca.plats.count === 4 && inca.plats.slabs.every(s => s.w >= 5) && inca.walls.count === 0,
+    JSON.stringify(inca.plats.slabs.map(s => s.w)));
+
+  // back to the control for whatever follows
+  await p.goto(base + '/hyperdagger/?assets=0&season=void', { waitUntil: 'load' });
+  await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+  await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+
   // ---- v38 the voxel route: the roster is the owner's Meshy art, as cubes --
   // back onto a page that actually loads the art (the mode loop ran assets=0)
   await p.goto(base + '/hyperdagger/', { waitUntil: 'load' });
@@ -891,9 +1034,18 @@ s.listen(0, '127.0.0.1', async () => {
     window.__hd.debug.setInvulnerable?.(true);
   });
   // ---- v39 the backdrop: the owner's environment pieces, through the seam --
-  await p.waitForFunction(() => window.__hd.debug.getBackdrop().pieces.length >= 8 && window.__hd.debug.getBackdrop().floor, null, { timeout: 120000 }).catch(() => {});
+  // How MANY pieces there are is the manifest's business, not this file's:
+  // v41 cut the set from eight to six ("less objects", owner) and a hardcoded
+  // >= 8 failed a correct tree. Ask the manifest and compare.
+  const wantPieces = await p.evaluate(async () => {
+    const r = await fetch('assets/manifest.json');
+    return r.ok ? ((await r.json()).env?.pieces ?? []).length : 0;
+  });
+  await p.waitForFunction(n => window.__hd.debug.getBackdrop().pieces.length >= n && window.__hd.debug.getBackdrop().floor, wantPieces, { timeout: 120000 }).catch(() => {});
   const back = await p.evaluate(() => ({ ...window.__hd.debug.getBackdrop(), env: window.__hd.debug.getEnvironment() }));
-  ok('every backdrop piece the manifest names is placed', back.pieces.length >= 8, JSON.stringify(back.pieces.map(x => x.file)));
+  ok('every backdrop piece the manifest names is placed',
+    wantPieces > 0 && back.pieces.length === wantPieces,
+    JSON.stringify({ want: wantPieces, got: back.pieces.map(x => x.file) }));
   ok('every backdrop piece sits outside the play disc', back.pieces.every(x => Math.hypot(x.at[0], x.at[1]) > 26), JSON.stringify(back.pieces.map(x => x.at)));
   ok('the floor wears the manifest texture', back.floor === true);
   ok('the v26 horizon line is still the environment underneath', back.env.horizon === 1 && back.env.groupChildren === 1, JSON.stringify(back.env));
