@@ -13,7 +13,8 @@ import { t, getLang, setLang, langs } from './lang.js?v=195';
 import { TUNING } from './tuning.js?v=195';
 import { Arena, rectShape } from './arena.js?v=195';   // v236: the boundary has one home
 import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel,
-         gradeFor as levelGradeFor, cleared as levelCleared } from './level.js?v=195';   // v237/v239: authored levels; v242: grades
+         gradeFor as levelGradeFor, cleared as levelCleared,
+         CAMPAIGN as CAMPAIGN_IDS, GRADES as LEVEL_GRADES } from './level.js?v=195';   // v237/v239: authored levels; v242: grades
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -5190,6 +5191,7 @@ function showTitle() {
       : ``) +
     `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">${t('tapStart')}</div>` +
     `<div id="rogue-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
+    `<div id="campaign-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.31s ease both"></div>` +
     `<div id="settings-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.32s ease both"></div>` +
     `<div class="t-help" style="font-size:9.5px;opacity:0.32;margin:14px auto 0;line-height:1.6;text-align:center;` +
     `max-width:230px;animation:tokoFadeUp 0.5s 0.4s ease both">` +
@@ -5229,6 +5231,28 @@ function showTitle() {
 
   // (The old ORIENTATION toggle is gone — v110: the arena always follows the
   // screen, so there's nothing to choose and no way to save a mismatch.)
+
+  // v242 CHALLENGES: the campaign, one tap from the title. The chip carries
+  // the progress so the screen is worth opening; the picker is showCampaign().
+  {
+    primeCampaignNames();
+    const cslot = document.getElementById('campaign-slot');
+    if (cslot) {
+      const pr = campaignProgress();
+      const cbtn = document.createElement('div');
+      cbtn.dataset.ui = '1';
+      cbtn.textContent = `CHALLENGES  ${pr.cleared}/${pr.total}`;
+      cbtn.style.cssText =
+        'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+        'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
+        `border:2px solid ${pr.cleared ? '#ffaa44' : '#445'};` +
+        `color:${pr.cleared ? '#ffcc77' : '#99a'};`;
+      cbtn.addEventListener('pointerdown', e => { e.stopPropagation(); showCampaign(); });
+      cbtn.addEventListener('touchend', e => e.stopPropagation());
+      cslot.appendChild(cbtn);
+    }
+  }
 
   // Roguelike toggle — a clickable chip inside the (pointer-events:none) overlay.
   const slot = document.getElementById('rogue-toggle-slot');
@@ -7821,6 +7845,108 @@ function recordLevelGrade(id, score, grade) {
 // The editor and the gates ask through here rather than reaching for storage.
 function levelBestFor(id) { return levelBests.byId[id] || { score: 0, grade: '' }; }
 
+// v242 CHALLENGES: the campaign is level.js's CAMPAIGN order plus one rule —
+// a level opens when the one before it was CLEARED, which is C or better
+// (design/CAMPAIGN_LEVELS.md: "a player who is merely finishing keeps
+// moving; grades above C are for the player who wants them"). The first is
+// always open. Nothing here knows what a level IS — that is the file.
+function campaignUnlocked(i) {
+  if (i <= 0) return true;
+  return levelBestFor(CAMPAIGN_IDS[i - 1]).grade !== '';
+}
+// How far the campaign has been opened, for the title chip's own line.
+function campaignProgress() {
+  let open = 0, cleared = 0;
+  CAMPAIGN_IDS.forEach((id, i) => {
+    if (campaignUnlocked(i)) open++;
+    if (levelBestFor(id).grade !== '') cleared++;
+  });
+  return { open, cleared, total: CAMPAIGN_IDS.length };
+}
+
+// The picker. Same shape as showRunHistory(): a document.body sibling of
+// #overlay with its own gameState, so the title's tap-to-start handler cannot
+// fire through it and start a run underneath the panel.
+function showCampaign() {
+  gameState = 'campaign';
+  const panel = document.createElement('div');
+  panel.id = 'campaign-panel';
+  panel.style.cssText =
+    'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;' +
+    'align-items:center;justify-content:center;background:rgba(0,0,0,0.82);z-index:65;' +
+    'font-family:monospace,sans-serif;color:#fff;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:20px;font-weight:bold;margin-bottom:4px;letter-spacing:2px;text-shadow:0 0 16px #ffaa44;';
+  title.textContent = 'CHALLENGES';
+  panel.appendChild(title);
+  const sub = document.createElement('div');
+  const pr = campaignProgress();
+  sub.style.cssText = 'font-size:11px;opacity:0.5;margin-bottom:16px;letter-spacing:1px';
+  sub.textContent = `${pr.cleared} of ${pr.total} cleared · clear at C to open the next`;
+  panel.appendChild(sub);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto;padding:2px 4px;';
+  panel.appendChild(list);
+
+  CAMPAIGN_IDS.forEach((id, i) => {
+    const open = campaignUnlocked(i);
+    const best = levelBestFor(id);
+    const row = document.createElement('div');
+    row.dataset.ui = '1';
+    if (open) row.dataset.pick = id;
+    row.style.cssText =
+      'pointer-events:auto;user-select:none;min-width:min(80vw,320px);' +
+      'display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;' +
+      'background:rgba(0,0,0,0.4);transition:all 0.12s;' +
+      `border:2px solid ${open ? (best.grade ? '#ffaa44' : '#556') : '#333'};` +
+      `color:${open ? '#dde' : '#666'};cursor:${open ? 'pointer' : 'default'};`;
+    const name = document.createElement('div');
+    name.style.cssText = 'flex:1;font-size:14px;font-weight:bold;letter-spacing:1px;';
+    // The NAME comes from the file, not from a table here — one source.
+    name.textContent = `${i + 1}. ${(campaignNames[id] || id).toUpperCase()}`;
+    const mark = document.createElement('div');
+    mark.style.cssText = 'font-size:16px;font-weight:bold;min-width:22px;text-align:right;' +
+      (best.grade ? 'color:#ffdd44;text-shadow:0 0 12px #ffaa22;' : 'color:#556;');
+    mark.textContent = open ? (best.grade || '–') : '🔒';
+    row.appendChild(name);
+    row.appendChild(mark);
+    if (open) {
+      const go = e => {
+        e.stopPropagation();
+        panel.remove();
+        loadBundledLevel(id).then(lv => { if (lv) playLevel(lv, 0); else { gameState = 'title'; } })
+          .catch(() => { gameState = 'title'; });
+      };
+      row.addEventListener('pointerdown', go);
+      row.addEventListener('touchend', e => e.stopPropagation());
+    }
+    list.appendChild(row);
+  });
+
+  const close = document.createElement('div');
+  close.dataset.ui = '1';
+  close.style.cssText =
+    'pointer-events:auto;cursor:pointer;user-select:none;margin-top:18px;' +
+    'font-size:13px;font-weight:bold;padding:9px 22px;border-radius:8px;' +
+    'background:rgba(0,0,0,0.4);border:2px solid #445;color:#99a;';
+  close.textContent = t('close') || 'CLOSE';
+  close.addEventListener('pointerdown', e => { e.stopPropagation(); panel.remove(); gameState = 'title'; });
+  close.addEventListener('touchend', e => e.stopPropagation());
+  panel.appendChild(close);
+  document.body.appendChild(panel);
+}
+// Names come from the files themselves, filled as they are fetched, so this
+// screen never carries a second copy of a level's name to drift.
+const campaignNames = {};
+function primeCampaignNames() {
+  for (const id of CAMPAIGN_IDS) {
+    if (campaignNames[id]) continue;
+    loadBundledLevel(id).then(lv => { if (lv) campaignNames[id] = lv.name; }).catch(() => {});
+  }
+}
+
 function endLevelRun(outcome) {
   if (!customLevel) return;
   // v242 CHALLENGES: a level with grade tiers is scored, and the best grade
@@ -7888,7 +8014,7 @@ function triggerGameOver() {
 // d-pad or left stick, A activates, B backs out. Focus is drawn as a gold
 // outline. The layer self-gates on menu states and only reacts to a real pad,
 // so mouse/touch behavior is untouched.
-const NAV_STATES = new Set(['title', 'gameover', 'paused', 'options', 'runhistory', 'rushladder', 'upgrade']);
+const NAV_STATES = new Set(['title', 'gameover', 'paused', 'options', 'runhistory', 'rushladder', 'upgrade', 'campaign']);   // v242
 const NAV_SEL = '[data-ui], .fb-chip, .fb-btn, .dit, #dsgn button, #dsgn input[type=range]';
 let navEl = null, _navPrevOutline = '', _navPrevOffset = '';
 let _navDirHeld = false, _navRepeatT = 0, _navPrevA = false, _navPrevB = false;
@@ -7955,6 +8081,11 @@ function navBack() {
   else if (gameState === 'rushladder') {   // v234: same close contract
     document.getElementById('rl-close')
       ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false }));
+    navClear();
+  }
+  else if (gameState === 'campaign') {   // v242: same again
+    document.getElementById('campaign-panel')?.remove();
+    gameState = 'title';
     navClear();
   }
   else if (gameState === 'gameover') returnToTitle();
@@ -8121,6 +8252,7 @@ function loop() {
   // Title / paused / options / run-history — just render the scene, no game logic
   if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' ||
       gameState === 'runhistory' || gameState === 'rushladder' || gameState === 'options' ||
+      gameState === 'campaign' ||   // v242: the challenge picker
       gameState === 'editor') {   // v237
     renderer.render(scene, camera);
     drawHUD();

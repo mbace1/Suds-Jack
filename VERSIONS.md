@@ -49,10 +49,23 @@
 - Gates: check-syntax · arena-check 8,396 · level-check **88** ·
   level-move-check 7 · smoke · level-smoke (authored, unaffected) ·
   editor-smoke 27 · challenge-smoke 13 × three levels
-- **Not in this release, named.** There is no campaign MENU yet: a challenge
-  is reached with `?level=ch-first-light`, and the unlock chain
-  (`CAMPAIGN` order, C-or-better, the ability unlocks the port's table
-  carries) is data with nothing reading it. Seven of the ten levels are not
+- **The campaign screen, and the unlock chain.** A CHALLENGES chip on the
+  title (carrying `cleared/total`) opens a picker: each level with its best
+  grade, locked ones with a padlock and no tap target. `campaignUnlocked(i)`
+  is the whole rule — the first is always open, and each later one opens
+  when the one before was cleared at C. Level NAMES come from the files as
+  they are fetched, so the screen never holds a second copy of a name to
+  drift. The picker is a `document.body` sibling with its own `gameState`,
+  the same contract `showRunHistory()` uses, so the title's tap-to-start
+  cannot fire through it and begin a run underneath the panel
+- **The gate proves the chain with a REAL run** (20 checks now): before
+  anything is played the first is open and the rest are locked and the
+  picker offers exactly one; then the level is played and graded; then the
+  second is open and the picker offers two. An earlier cut faked the clear
+  with a lever on the probe — that lever is gone, because the run itself is
+  the better witness. It also clears `localStorage` on boot: a campaign is
+  PROGRESS, so yesterday's bests must not decide today's lock state
+- **Not in this release, named.** Seven of the ten levels are not
   ported, because ARTILLERY, GRAVEYARD and FOCUS need director flags the
   browser build does not have yet. **And the tiers are the PORT'S measured
   numbers, not this build's**: an immortal bot scored 607,600 against an S

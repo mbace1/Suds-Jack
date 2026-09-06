@@ -49,6 +49,16 @@ s += r'''
 if (location.hash === '#chprobe') {
   window._C = {
     ready: () => !!pendingLevel,
+    // v242: the campaign screen and its unlock chain, from the probe's side.
+    campaign: () => ({
+      ids: CAMPAIGN_IDS,
+      unlocked: CAMPAIGN_IDS.map((_, i) => campaignUnlocked(i)),
+      progress: campaignProgress(),
+    }),
+    open: () => { showCampaign(); const n = document.querySelectorAll('#campaign-panel [data-pick]').length;
+                  const locked = document.querySelectorAll('#campaign-panel [data-ui]').length - n - 1;
+                  document.getElementById('campaign-panel').remove(); gameState = 'title';
+                  return { pickable: n, locked }; },
     run: () => {
       const L = pendingLevel;
       startRun();
@@ -115,9 +125,19 @@ let checks = 0, fails = 0;
 const ok = (name, cond, extra = '') => { checks++; if (cond) console.log('  ✓ ' + name); else { fails++; console.log('  ✘ ' + name + ' ' + extra); } };
 const fail = async (msg) => { console.log('✗ CHALLENGE SMOKE FAIL: ' + msg); if (errs.length) console.log('  errors: ' + errs.slice(0,3).join(' | ')); await b.close(); process.exit(1); };
 
+// A campaign is PROGRESS, so the gate must start from nothing every time or
+// yesterday's bests would decide today's lock state.
+await p.addInitScript(() => { try { localStorage.clear(); } catch (e) {} });
 await p.goto('http://127.0.0.1:' + process.env.PORT + '/testbed/index.html?level=' + process.env.LEVEL + '#chprobe', { waitUntil: 'domcontentloaded' });
 try { await p.waitForFunction('window._C && window._C.ready()', null, { timeout: 90000 }); }
 catch (e) { await fail('the challenge never loaded (?level= did not arm pendingLevel)'); }
+// ── v242: the campaign, BEFORE anything has been played ────────────────────
+const c0 = await p.evaluate(() => window._C.campaign());
+ok('the campaign has levels in order', Array.isArray(c0.ids) && c0.ids.length >= 3, JSON.stringify(c0.ids));
+ok('the first is open and the rest are locked', c0.unlocked[0] === true && c0.unlocked.slice(1).every(u => u === false), JSON.stringify(c0.unlocked));
+const o0 = await p.evaluate(() => window._C.open());
+ok('the picker offers only the open one', o0.pickable === 1, JSON.stringify(o0));
+
 const r = await p.evaluate(() => window._C.run());
 
 ok('it is a DIRECTED room (no authored timeline)', Number.isInteger(r.difficulty), JSON.stringify(r.difficulty));
@@ -132,6 +152,14 @@ ok('the run was graded', r.result && typeof r.result.grade === 'string', JSON.st
 ok('the grade boundaries are level.js\'s and hold', JSON.stringify(r.gradeAt) === JSON.stringify(['', '', 'C', 'S']), JSON.stringify(r.gradeAt));
 ok('cleared agrees with the grade', r.result && r.result.cleared === (r.result.grade !== ''));
 ok('the best is remembered', r.best && r.best.score >= 0 && typeof r.best.grade === 'string', JSON.stringify(r.best));
+// ── v242: and AFTER it — the run just played is what unlocks the next ──────
+const c1 = await p.evaluate(() => window._C.campaign());
+ok('playing and clearing the first opens the second', c1.unlocked[0] && c1.unlocked[1], JSON.stringify(c1.unlocked));
+ok('but no further than that', c1.unlocked.length < 3 || !c1.unlocked[2], JSON.stringify(c1.unlocked));
+ok('progress counts the clear', c1.progress.cleared === 1 && c1.progress.total === c0.ids.length, JSON.stringify(c1.progress));
+const o1 = await p.evaluate(() => window._C.open());
+ok('and the picker now offers two', o1.pickable === 2, JSON.stringify(o1));
+
 ok('no page errors', errs.length === 0, errs.slice(0,2).join(' | '));
 
 console.log('  · ' + r.bodies + ' bodies over ' + r.rooms + ' rooms, ended ' + (r.result && r.result.time) + 's, score ' + (r.result && r.result.score) + ' → grade ' + JSON.stringify(r.result && r.result.grade));
