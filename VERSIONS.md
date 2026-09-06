@@ -51,11 +51,35 @@
 - Gates: check-syntax · arena-check 8,396 · level-check **109** ·
   level-move-check 7 · smoke · level-smoke · editor-smoke 27 ·
   challenge-smoke across four campaign levels
+- **DYING IN A LEVEL ENDS THE LEVEL, and it did not.** The guard that turns a
+  death into a level result lived only in `returnToTitle()` — which runs when
+  a human DISMISSES the death screen. So a challenge death fell through the
+  classic path first: it wrote a record into the top-ten leaderboard (a
+  challenge is not a run, and v242 gave it its own key precisely so it would
+  not compete there), showed the arcade's death card, and produced its grade
+  only if the player pressed Start. `triggerGameOver()` now ends a level run
+  at the source. **Found by a bot, not by reading**: three of four levels came
+  back with no result from `scripts/measure-tiers.mjs` because the bot died in
+  them — and `challenge-smoke.sh` had never caught it because its bot is
+  immortal, so it had never died in a challenge at all. A gate that cannot
+  lose cannot see a losing path
+- **`scripts/measure-tiers.mjs` — UNFINISHED, and it says so.** It plays a
+  level with a mortal kiting bot and reports the score. One run per page
+  works; runs 2+ still come back empty for a reason not yet found, so
+  `--runs > 1` EXITS rather than printing percentiles of one sample, and a run
+  with no result is reported as a failure instead of a zero. It must never be
+  the thing that puts a fake number into a level file
 - **Still not validated, and it matters most:** the tiers are the PORT's
-  measured numbers. A bot scored 3.4 million on NO SECOND CHANCE against an
-  S of 16,450. The two builds score differently by orders of magnitude, so
-  every grade in the campaign is currently decorative. Measuring them for
-  THIS build is the next real job
+  measured numbers. First honest readings with a MORTAL bot, one run each:
+  FIRST LIGHT 295,325 · CROSSFIRE 26,800 · NO SECOND CHANCE 513,025 ·
+  THE NARROWS 47,125 — against S thresholds of 20,600 / 25,250 / 16,450 /
+  64,350. A machine beats S on three of the four, so the ladder is SOFT
+  rather than wrong by orders of magnitude: the earlier "3.4 million" reading
+  came from a probe that made the bot immortal and was an artefact of the
+  gate, not a fact about the tiers. CROSSFIRE is the interesting one — the
+  ARTILLERY room is the only level the bot cannot run away with, which is the
+  twist doing its job. Real tiers still need the harness finished or a human
+  pass
 - Cache-bust `?v=195` → `?v=196`; HUD label → v243
 
 ## v242 — 2026-09-06

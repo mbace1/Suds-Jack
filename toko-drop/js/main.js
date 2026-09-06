@@ -8020,6 +8020,16 @@ function endLevelRun(outcome) {
 let lastLevelResult = null;
 
 function triggerGameOver() {
+  // v243: DYING IN A LEVEL ENDS THE LEVEL, here, not two screens later. The
+  // guard for this used to live only in returnToTitle(), which runs when a
+  // human DISMISSES the death screen — so a challenge death fell through the
+  // classic path first: it wrote a run into the top-ten leaderboard (a
+  // challenge is not a run and v242 gave it its own key precisely so it would
+  // not compete), showed the arcade's death card, and produced its grade only
+  // if the player pressed Start. A bot that dies got no result at all, which
+  // is how this was found — scripts/measure-tiers.mjs, where three of four
+  // levels came back empty because the bot died in them.
+  if (customLevel) { endLevelRun('dead'); return; }
   if (gauntlet) {                       // died inside a gauntlet: restore state
     smashMode = _gSavedSmash;
     gauntlet = null;
