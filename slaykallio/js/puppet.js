@@ -696,6 +696,61 @@ function mutate(c, rnd, level) {
   c.mutations = done;                      // the painter says what it grew; a gate reads it
 }
 
+// ── the paper it is made of ────────────────────────────────────────────────
+// Owner's references (2026-09-05): a cardboard diorama, a newsprint collage, a
+// torn-paper relief. The cutouts were PAINTED cardboard and read as painted —
+// the material was named in the fills but never shown. Two marks show it, and
+// they are the two a collage always has:
+//
+// FIBRE. A torn edge is pale, because the core of the board is lighter than
+// its printed face. So the silhouette gets an intermittent light rim — and so
+// does every nick, since a nick is where the card was torn. (v10 learned the
+// opposite lesson about a WARM ADDITIVE rim: that read as forty glowing spots.
+// This one is desaturated, under `source-atop`, and ragged rather than a
+// clean outline, which is the difference between torn paper and chickenpox.)
+function fibre(c, rnd, tone = '#c8bca4', alpha = 0.46) {
+  const ctx = c.getContext('2d');
+  const band = document.createElement('canvas'); band.width = TW; band.height = TH;
+  const b = band.getContext('2d');
+  b.drawImage(c, 0, 0);
+  // erode: eight shifted copies subtracted leaves only the outermost ring —
+  // of the silhouette AND of every hole punched in it
+  b.globalCompositeOperation = 'destination-out';
+  for (const [dx, dy] of [[2, 0], [-2, 0], [0, 2], [0, -2], [1.5, 1.5], [-1.5, 1.5], [1.5, -1.5], [-1.5, -1.5]]) b.drawImage(c, dx, dy);
+  b.globalCompositeOperation = 'source-in';
+  // A torn edge CATCHES LIGHT — it is not a constant ring. At one alpha all
+  // the way round it read as a white sticker outline, which is the opposite of
+  // the reference: the core shows where the light reaches it and disappears on
+  // the shadow side. The torch is on the left, so the fibre is.
+  const g = b.createLinearGradient(0, 0, TW, TH * 0.4);
+  g.addColorStop(0, tone); g.addColorStop(0.55, `${tone}88`); g.addColorStop(1, `${tone}22`);
+  b.fillStyle = g; b.fillRect(0, 0, TW, TH);
+  // ragged, not an outline: a torn edge shows its core in patches
+  b.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 340; i++) { b.beginPath(); b.arc(rnd() * TW, rnd() * TH, 1 + rnd() * 3.5, 0, Math.PI * 2); b.fill(); }
+  ctx.save(); ctx.globalAlpha = alpha; ctx.drawImage(band, 0, 0); ctx.restore();
+}
+
+// NEWSPRINT. Rows of dashes too small to read, which is what print is at this
+// size — the collage's other signal, and what stops a flat fill being flat.
+function newsprint(ctx, rnd, k = 1) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-atop';
+  // Dark ink on a light fill, light ink on a dark one — a single dark dash was
+  // invisible on the figures that are mostly black, which is most of them at
+  // night. Two passes, offset, so every fill has print in it somewhere.
+  for (const [ink, a, off] of [['#14100c', 0.13, 0], ['#e8dfc8', 0.07, 3]]) {
+    ctx.globalAlpha = a * k;
+    ctx.fillStyle = ink;
+    for (let y = 56 + off; y < TH; y += 7 + Math.floor(rnd() * 5)) {
+      if (rnd() < 0.34) continue;                  // a column ends, or a picture sits there
+      let x = rnd() * 34;
+      while (x < TW) { const w = 3 + rnd() * 10; ctx.fillRect(x, y, w, 1.4); x += w + 2 + rnd() * 5; }
+    }
+  }
+  ctx.restore();
+}
+
 // The default hour. `main.js` hands the active skin's in when it builds a
 // puppet, so the fantasy evening lights its cast its own way.
 export const DUSK = { warm: '#ffab52', cold: '#101a24', rim: '#6f93ad', depth: '99' };
@@ -717,8 +772,12 @@ export function paintCutout(look, seed = 1, mood = DUSK) {
   // clean silhouette, then take the bites out — which is also the true order,
   // since a cutout is painted first and carried around afterwards.
   if (look.mutated) mutate(c, rnd, look.mutated);
+  newsprint(ctx, rnd);
   if (mood) torchlight(c, mood);
   nicks(ctx, rnd, 18 + Math.round((look.grime ?? 0.6) * 22));
+  // the fibre comes AFTER the nicks, so a torn hole shows its core too — that
+  // is the whole reason a nick reads as torn rather than as a dot of nothing
+  fibre(c, rnd);
   grime(ctx, rnd, look.grime ?? 0.7);
   return c;
 }

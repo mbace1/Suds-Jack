@@ -419,6 +419,18 @@ their heights are and the *gaps* are what make it fur; the rat's **ear read as
 its eye**, a ringed disc mid-skull pulling every glance while the real eye was a
 5px square; and the blob had **two literal rectangles**, a `fillRect` pupil and a
 bar mouth — a square is the one shape that reads as UI rather than as an animal.
+**The figures are MADE of paper, not painted like it** (`fibre`, `newsprint` in
+`js/puppet.js`, from the owner's collage references): a torn edge is pale
+because the board's core is lighter than its face, so the silhouette — and
+every nick, a nick being where it tore — carries an intermittent light rim,
+**lit from one side** (at a constant alpha it reads as a white sticker
+outline). Newsprint goes in as rows of dashes too small to read, in **two
+inks**, because a dark dash is invisible on the figures that are mostly black.
+A daylight plate then exposed a week-old bug the dark had hidden: unit labels
+were drawn over the HUD plate, because the gutter reserved the anchor and not
+the label's own box. It is measured off the plate's rect now — and note that
+`offsetParent` is **always null on a `position: fixed` element**, which broke
+the first fix silently.
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -486,7 +498,7 @@ exists so nobody has to win five fights to look at the sixth.
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
 Gates: `node slaykallio/test/core.mjs` (693 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (105). Hub entry:
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (106). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.

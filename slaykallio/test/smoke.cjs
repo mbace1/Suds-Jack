@@ -295,6 +295,18 @@ const check = (name, ok, extra = '') => {
     return seen.size === 1;
   }));
 
+  // No unit label may be drawn over the HUD plate: the hero's name and HP were
+  // painted a second time on top of the run panel's own, which a daylight plate
+  // made obvious and a dark one hid.
+  const clash = await page.evaluate(() => {
+    const hud = document.querySelector('#top').getBoundingClientRect();
+    return [...document.querySelectorAll('#labels .unit')].filter(u => {
+      const r = u.getBoundingClientRect();
+      return r.width && r.top < hud.bottom && r.bottom > hud.top && r.left < hud.right && r.right > hud.left;
+    }).map(u => u.querySelector('.name').textContent);
+  });
+  check(`no unit label is drawn over the HUD plate${clash.length ? ` — ${clash}` : ''}`, clash.length === 0);
+
   // The run starts in daylight and ends in the dark, and it has to show on the
   // deck: the same fight is rendered at hour 0, 0.55 and 1, and the light must
   // fall as the hour rises. Mutation has to show on the figure, too.

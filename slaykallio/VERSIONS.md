@@ -7,6 +7,43 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v13 — 2026-09-05
+**The cutouts are made of paper now, not painted like it**
+The rest of the owner's reference set (a cardboard diorama, a newsprint
+collage, a torn-paper relief): the figures were *painted* cardboard and read as
+painted — the material was named in the fills and never shown. Two marks show
+it, and they are the two a collage always has.
+
+**FIBRE.** A torn edge is pale, because the core of the board is lighter than
+its printed face. The silhouette gets an intermittent light rim, and so does
+every nick — a nick is where the card was torn, so it shows its core too, which
+is what finally makes a nick read as damage rather than as a dot of nothing.
+v10 learned the opposite lesson about a WARM ADDITIVE rim (forty glowing spots,
+"chickenpox"); this one is desaturated, `source-atop`, and ragged rather than a
+clean outline. **And it is lit from one side**: at one alpha all the way round
+it read as a white sticker outline — the core shows where the light reaches it
+and disappears on the shadow side, so the band is filled through a gradient
+from the torch.
+
+**NEWSPRINT.** Rows of dashes too small to read, which is what print is at this
+size. In **two inks**: a dark dash is invisible on the figures that are mostly
+black, which is most of them at night, so a lighter pass is offset three pixels
+under it and every fill has print in it somewhere. The card stock takes the same
+two marks in CSS — a horizontal print rule in the background stack, and one
+inset highlight along the near edge for the torn core.
+
+**A real bug, found by a DAYLIGHT plate.** The hero's name and HP were being
+painted a second time on top of the run panel's own: the label gutter reserved
+the anchor point but not the label's own box, which hangs 58px above it. Every
+render of this game for a week has been at dusk or at night, where the
+collision sat in the dark and nobody saw it. The gutter is measured off the
+plate's rect now, so it follows the portrait layout for free — and the first fix
+was wrong in a way worth recording: it guarded on `offsetParent`, which is
+**always null for a `position: fixed` element**, so it read the plate's height
+as zero and collapsed the gutter right back to the broken value. Gated.
+
+Gates: core 693, smoke 106.
+
 ## v12 — 2026-09-05
 **The route is a torn-paper map**
 From the owner's references (a city map of Kallio in torn dark paper, with

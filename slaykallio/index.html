@@ -155,11 +155,15 @@
       background:
         radial-gradient(ellipse at 14% 8%, rgba(255,186,96,.20), transparent 46%),
         radial-gradient(ellipse at 88% 96%, rgba(0,0,0,.45), transparent 54%),
+        /* newsprint: rows of print too small to read, the same mark the cutouts carry */
+        repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 1px, transparent 1px 6px),
         repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 2px, transparent 2px 7px),
         linear-gradient(160deg, var(--kraft), var(--kraft2));
       color: var(--paper); border: 2.5px solid var(--ink); border-radius: 4px;
       text-align: left; padding: 7px 8px 20px; display: flex; flex-direction: column; gap: 3px;
-      box-shadow: 2px 4px 0 rgba(0,0,0,.7), inset 0 0 0 2px rgba(255,196,110,.1), inset 0 -26px 22px -18px rgba(0,0,0,.55);
+      /* the last inset is the torn core catching the light on the near edge — the
+         cutouts' `fibre` pass, in the one place CSS can say it */
+      box-shadow: 2px 4px 0 rgba(0,0,0,.7), inset 0 0 0 2px rgba(255,196,110,.1), inset 0 -26px 22px -18px rgba(0,0,0,.55), inset 2px 2px 0 rgba(216,204,176,.22);
       transform: translateY(calc(var(--lift, 0px))) rotate(calc((var(--i) - (var(--n) - 1) / 2) * 2deg));
       transition: transform .15s, box-shadow .15s; transform-origin: 50% 120%;
       clip-path: polygon(0 2%, 2% 0, 98% 1%, 100% 3%, 99% 97%, 97% 100%, 2% 99%, 0 97%);
@@ -397,7 +401,7 @@
   }
   </script>
   <script type="module" src="../hub/shell.js?v=34"></script>
-  <script type="module" src="js/main.js?v=12"></script>
+  <script type="module" src="js/main.js?v=13"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';

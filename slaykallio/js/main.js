@@ -23,7 +23,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 12;
+const VERSION = 13;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -279,9 +279,14 @@ addEventListener('resize', relayout);
 
 // ── labels over the puppets ──────────────────────────────────────────────
 const STATUS_LABEL = { vulnerable: 'VULN', weak: 'WEAK', strength: 'STR', buzz: 'BUZZ', doubleNext: '×2 NEXT', frail: 'FRAIL', thorns: 'THORNS', fetch: 'FETCH' };
-// how far down the screen a unit label may start: clear of the top HUD plate,
-// and the label's own box hangs 58px above its anchor (see .unit in the CSS)
-const TOP_GUTTER = 96;
+// How far down the screen a unit label's ANCHOR may sit. The label's own box
+// hangs 58px above that anchor (`margin-top` on .unit), so a gutter of 96 let
+// the box reach y=38 — inside the HUD plate, where the hero's name and HP were
+// drawn a second time on top of the run panel's own. Found by looking at a
+// DAYLIGHT plate: at night the collision was there and invisible. The gutter
+// is measured off the plate at render time, so it follows the portrait layout
+// (which starts the HUD 50px lower) without a second number.
+const LABEL_RISE = 58;
 const labels = $('#labels');
 function labelOf(k) { return labels.querySelector(`.unit[data-k="${k}"]`); }
 
@@ -313,6 +318,15 @@ function buildLabels() {
 }
 
 const _v = { x: 0, y: 0, z: 0 };
+// the lowest edge of the HUD plate, plus the height the label rises above its
+// own anchor — asked of the layout rather than guessed at, once a frame
+function labelTop() {
+  // Ask the rect, not `offsetParent`: #top is position:fixed, and a fixed
+  // element's offsetParent is ALWAYS null — a guard written on it read the
+  // plate's height as zero and collapsed the gutter to the old broken value.
+  const r = $('#top')?.getBoundingClientRect();
+  return Math.max(24, (r?.height ? r.bottom : 0) + 8) + LABEL_RISE;
+}
 function placeLabels() {
   if (!state || !hero) return;
   const w = innerWidth, h = innerHeight;
@@ -325,7 +339,7 @@ function placeLabels() {
     // on the one fight where reading the intent matters most. The label is
     // pushed down rather than the camera pulled back, because pulling back
     // for one encounter would undo "much closer to the characters".
-    const top = TOP_GUTTER, x = Math.max(78, Math.min(w - 78, head.x));
+    const top = labelTop(), x = Math.max(78, Math.min(w - 78, head.x));
     const y = Math.max(top, Math.min(h - 120, head.y));
     u.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     u.style.setProperty('--h', `${Math.max(40, foot.y - y).toFixed(0)}px`);
