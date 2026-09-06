@@ -78,7 +78,7 @@ export const GAMES = [
     path: 'toko-move/',
     inRepo: true,
     accent: '#2f9fb8',
-    art: 'daymap',
+    art: 'tramstop',
   },
   {
     id: 'tokodrop',

@@ -266,6 +266,19 @@ function check(name, cond) {
   });
   check(`every marquee is painted${blank.length ? ` — ${blank}` : ''}`, blank.length === 0);
 
+  // ...and it is the marquee that cabinet ASKED for. `drawMarquee` falls back
+  // to `gel` for a key it does not know, which is right at runtime and silent:
+  // a renamed drawing paints a different game's blob and every check above
+  // still passes. Only one direction is asserted — the site's catalogue
+  // carries cabinets this tree does not (Toko Trip's `cove`), so an art
+  // function with no entry here is not evidence of anything.
+  const orphans = await page.evaluate(async () => {
+    const art = await import('/hub/art.js');
+    const keys = new Set(Object.keys(art.ART));
+    return (window.__hub.games || []).filter(g => g.art && !keys.has(g.art)).map(g => `${g.id}:${g.art}`);
+  });
+  check(`every cabinet's marquee key is a real drawing${orphans.length ? ` — ${orphans}` : ''}`, orphans.length === 0);
+
   // ── feedback: the empty note ──
   await page.locator(CAB).first().locator('.btn.ghost').click();
   check('the panel opens on the game it was asked from',

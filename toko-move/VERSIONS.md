@@ -16,6 +16,33 @@ One trap the gate found in itself: the stub context was assembled with `Object.a
 
 
 **Deployed, and the deploy found a bug five releases old.** Every hand-deploy this lane has made since v2.22 shipped `../hub/shell.js?v=17` onto a site whose other twenty-two cabinets ask for `?v=35` — the exact trap `CLAUDE.md` records for hand-deploys ("this cabinet shipped pinned to v17 while fourteen others were on v34"), and another lane had already had to repair it once. A cabinet pinned to an old shell serves an old HOME button out of cache forever while the rest of the floor gets the new one. `test/cabinet-route.cjs` now asserts the token agrees with whatever the rest of the floor asks for — agreement, not a number, because this checkout and the deploy tree are legitimately on different ones.
+
+**The cabinet finally shows the game.** Its marquee was still `daymap` — a
+transit diagram drawn for the superseded Mini Metro lane, a game that no longer
+exists — and the marquee is the only thing a player judges before pressing
+Play. `tramstop` replaces it, built to the floor's own rule that a marquee is a
+COVER and not an icon: Helsinki at 07:00, the Cathedral small and off-centre
+because it says where you are and then gets out of the way, a green tram
+arriving, and the courier cropped by the near edge with his arm up for it.
+
+Eleven renders, and the notes are worth keeping because every one of them was
+the same class of mistake — **a thing drawn without asking what is behind it**.
+The tram was a box beside its own track (front and flank are now sized off the
+rails at their own depth). The courier was filled at `#1b2430` on a street that
+is `#171c24` where he stands, so a flat fill inside a hard black line read as a
+hole with a rim round it. His head, torso and raised arm were all lit along the
+same x and welded into one teal stripe with no person inside it. And four goes
+at an articulated running figure all read as an animal lunging: at 128x72 a
+person is a rectangle, a disc and ONE gesture, with the light as a FAT band and
+not a 1px rim — which is what `backlot` two cabinets along had been doing all
+along.
+
+`daymap` is deleted with it. The gate grew the check that would have caught a
+rename: `drawMarquee` falls back to `gel` for a key it does not know, which is
+correct at runtime and completely silent, so "every marquee is painted" passes
+while a cabinet shows another game's drawing. Only the forward direction is
+asserted — the live catalogue carries cabinets this tree has not got, and their
+art functions are not orphans.
 ## v2.26 — 2026-09-02
 
 **The shift shows itself back.** A run ended in four numbers — delivered, score, bonuses, late — which was survivable while nothing could go wrong and became the worst possible ending the moment v2.25 made a shift losable. Four numbers tell you that you failed and nothing about where. `js/shiftlog.js` is the design doc's own experiment #6, the one item on its list of eight that had never been built, and its strongest-directions list calls post-run replay "a core learning tool".
