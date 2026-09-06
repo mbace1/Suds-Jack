@@ -497,8 +497,29 @@ exists so nobody has to win five fights to look at the sixth.
 `window.__sk` is the seam the browser gate drives, and `setSpeed(0)` + `flush()`
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
-Gates: `node slaykallio/test/core.mjs` (693 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (106). Hub entry:
+**Six bots that play differently** (`test/bots.mjs`, a measuring instrument and
+never a gate) — every balance number this game had came from ONE bot that plays
+the highest-value card it can afford, which empties its hand, while Roope's whole
+mechanic is holding one; so "the collector wins 2%" could mean the character is
+weak OR that the instrument cannot hold him, and one bot can never say which.
+Each is a policy over **six decisions** — card, map, event, rest, pick, draft —
+and `greedy` is **the control**: the engine's own `botStep` imported rather than
+copied, so its column reproduces v11's recorded rates by construction (TURF's
+discipline; a control that reproduces the known numbers is what makes the other
+columns mean anything). **The finding is that `synergist` beats `greedy` by 17
+points on Ilona and 19 on Vekku** — playing your powers on turn one and the
+card that counts what came before it LAST is worth more than any tuning here,
+and the greedy bot answers that backwards every turn because it sorts by face
+value, so every balance number before this was measuring a bot that did not know
+what order to play in. The **negative** result carries as much: `hoarder` did NOT
+rescue the collector (3% against 2%), so Roope is weak at his own best line
+rather than mis-measured. And **surviving is not winning** — `defensive` reaches
+act two most and wins least, because both bosses are damage checks. The bots
+found a real bug on one seed in nine hundred: a rest offering an upgrade with
+every card already upgraded had **no way out** (`skipPick`/`pickable` are the
+fix, and the panel now offers to walk on).
+Gates: `node slaykallio/test/core.mjs` (698 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (107). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.
