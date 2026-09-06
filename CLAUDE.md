@@ -808,6 +808,66 @@ reference; the old UE5 notes no longer describe this repository.
   Actions run—not merely the commit status—concludes `success`. A failed or
   superseded deployment can otherwise look exactly like a broken site.
 
+### Toko Trip (`toko-trip/`) — the VR zen island
+A **WebXR** island you sit on: a real chair in your room becomes a deck chair in a
+cove, and there is nothing to score. Quest 3 and Vision Pro are the targets, a flat
+browser is the fallback, and there is **no build step** — three.js r180 is vendored
+into `toko-trip/vendor/` because jsDelivr is unreachable from the agent sandbox and a
+CDN is a dependency an offline headset does not have. `WebGPURenderer` with a
+`FORCE_WEBGL` escape hatch; **WebXR still renders through WebGL2 on every headset
+today**, so node materials buy forward-compatibility, not speed.
+**The one rule the whole file is built on: `groundHeight(x, z)` is a pure function and
+everything asks it.** The terrain mesh, every scatter pass, the teleport clamp, the
+walk clamp, the water depth fade, the foam line and the surf emitters all read it, so
+the cove reshapes from two constants (`INLET_A`/`INLET_B`) and nothing downstream
+knows. `beachness(x, z)` is its companion — the one place that decides where sand is,
+which is how the cove became **a wide cantaloupe slice with no grass on it** in one
+edit. **`gy(x,z)` converts terrain y → world y**: the island group drops by `PAD_H` so
+the pad under the chair lands on the real floor.
+**No post-processing, ever.** A headset is fill-bound (~3.7K per eye on AVP), and the
+ladder that actually buys fidelity is static sun shadows (`shadowMap.autoUpdate = false`,
+rebuilt only while a mood blends) → a `TIER` object (framebuffer scale, shadow size,
+instance density, mesh density; Quest keeps the palette, the lighting, the AO and the
+motion and loses supersampling) → **a baked hemisphere-sampled AO lightmap** (sphere and
+AABB proxies binned into 4 m cells, shipped as vertex colours *and* a 256² `aoMap`) →
+the water. Every texture is drawn in code: noise, the water's normal and displacement
+maps, the cloud sprite, the book pages, the sign's CRT, the slate's face. The water's
+reflection is a **hand-authored `CubeTexture`** painted from the same gradient the dome
+uses — three.js samples an authored cubemap **with X mirrored**, which put a second sun
+on the wrong side of the sea until `dx` was negated.
+**Controls are on-screen twin sticks** (owner's direction) plus keys, and in XR the left
+stick glides while the right **snaps**. The **slate leaning against the chair is the only
+menu**: five rows read off the ray hit's UV — the frame readout, glide speed, turn style,
+the comfort vignette and sound — because a dial you must take the headset off to move is
+a dial that gets guessed at. The **vignette is a mesh on the camera, not a post pass**,
+sized each frame off the projection matrix actually in use (two eyes are not the same
+shape as each other, and a quad sized to a guess fell entirely outside the frustum while
+reporting itself fully on). Settings persist under `tokoTrip.comfort`.
+**The sound is the presence budget.** Everything is positional: six surf emitters
+bisected onto the ring where `groundHeight` crosses sea level (so walking down the beach
+walks *into* the sound), wind from the three crowns that are visibly swaying — the same
+sway term they are drawn with — and a gull out over the cove. The wash **breathes with
+the tide you can see**, off the same `surfLevel(t)` that lifts the water and walks the
+foam line up the sand, and the mood mixes all of it. **Nothing reaches `ctx.destination`**,
+so one row on the slate silences everything including the radio (the radio plays
+public-domain 78s, each row in `TRACKS` carrying its own provenance, credited on a plaque
+in world; `MODELS` is the same discipline for imported glTF).
+`chair-lab.html` is the AR calibration tool, deliberately on `WebGLRenderer` for
+hit-test/anchor support, writing `tokoTrip.chairPoseFallback`. **The chair convention is
+one line and has bitten twice**: `chairYaw` is the direction the SITTER FACES, the model
+is built with its backrest at local `+z`, so the nook rotates by `chairYaw + π` — and
+`nook()` maps local→world through a rotation by **minus** that, so a mesh set to
+`NOOK_YAW` faces the *opposite* way from what the layout implies. Getting it wrong sat
+you with your back to the cove, and later turned the slate into a plank. The gate asserts
+it **behaviourally** — a few steps in front of the seat there must be water.
+`node toko-trip/test/smoke.cjs` = 50 checks, every one driven off `window.__tt` state and
+never the wall clock, because a sandbox with no GPU renders this at 20 fps. It cannot
+drive XR and does not pretend to. Same `gh-pages` deploy caveat as paperboy; a hand copy
+must re-pin the `../hub/shell.js?v=N` tag to the site's current token, and
+`hub/versions.json` gets its one row edited by hand — **never** by running
+`scripts/versions.mjs` against the deployed tree, which is now refused outright.
+
+
 ## Repository Structure
 
 ```
@@ -853,6 +913,14 @@ toko/           # Toko Midori Games — the brand (face, lockups, sting, signatu
     board.js    # wires toko/index.html out of the shipping modules
   test/
     brand.cjs   # Playwright gate: geometry, two-colour ink, SVG, sting, signed games
+toko-trip/      # Toko Trip — the VR zen island: a real chair, a cove, nothing to score
+  index.html    #   the whole thing, one file; chair-lab.html calibrates the real chair
+  VERSIONS.md
+  vendor/       # three.js r180, local — not the CDN
+  audio/        # public-domain 78s + README recording provenance per file
+  models/       # glTF drop-in + the same provenance discipline
+  test/
+    smoke.cjs   # 50 checks off window.__tt state, never the clock
 toko-drop/
   index.html
   js/
