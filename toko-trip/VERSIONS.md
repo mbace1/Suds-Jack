@@ -1,5 +1,122 @@
 # Toko Trip — release log
 
+## v8 — 2026-08-11
+
+The palms. They were the weakest geometry left, and they are silhouetted
+against the sky in every mood, so v7's sky made them show more, not less.
+
+- **A frond is a spine with leaflets now.** Seven flat planes became nine
+  live fronds, each a rachis that rises and then droops with fifteen pairs
+  of narrow blades along it, angled forward and down — so the outline is a
+  feathered sweep rather than a paddle. Pitch varies round the crown: some
+  stand, some lie out flat. Every blade is two triangles with one hard
+  normal, which is what makes them read as leaves rather than as cloth.
+- **Dead fronds.** Three, shorter and brown, hanging under the crown — the
+  single most recognisable thing about a coconut palm, and the thing every
+  low-poly palm leaves out.
+- **The nuts** in a cluster at the growing point, five of them, two tones.
+- The crown's shade proxy grew to match: the fronds reach ~2.3 m, and a
+  bake that shaded a 1.35 m disc under a 2.3 m crown would have been lying
+  again.
+
+About 3,000 triangles a crown, ~44,000 in the whole scene — well inside a
+headset's budget, and nothing else in the frame changed cost.
+
+## v7 — 2026-08-11
+
+The sea. It was a teal plane with a scrolling bump map; it is the biggest
+surface in view from the chair, and it had never had a pass of its own.
+
+- **It reflects the sky it sits under.** Six small cube faces are painted
+  from the SAME gradient the dome uses, plus the sun, and handed to the
+  water as an environment map; they are rebuilt a few times across a mood
+  blend and once more when it settles. A real cube camera would also catch
+  the clouds, but at the cost of a six-view render and a backend-specific
+  path, for a reflection nobody reads cloud shapes out of. The colour is
+  the point, and this gets the colour exactly.
+  Found and fixed: three.js samples an authored `CubeTexture` with X
+  mirrored, so the first cut put a second sun on the wrong side of the sea.
+- **It swells.** A low-frequency displacement map the GPU moves the mesh by,
+  and the whole plane rides a slow surf level — no vertex touched on the
+  CPU.
+- **Its surface has direction.** A baked normal map from two noise fields of
+  different scale summed — capillary ripple riding a longer chop, which is
+  what stops it reading as frosted glass — scrolled against the swell so
+  the ripple has cross-motion.
+- **The foam line moves.** The old foam sat where sand met still water and
+  breathed in place. This is a band of points laid across the run of the
+  tide, and each frame the ones near the water's *current* reach light up:
+  as the plane lifts the reach climbs the sand and the foam climbs with it,
+  then draws back and leaves the wet band behind. Alpha per point on the
+  CPU — a few thousand numbers a frame, no shader.
+
+All of it is maps and a cube drawn in code, so it renders the same on both
+backends, and nothing in it is post-processing.
+
+## v6 — 2026-08-11
+
+The island can take imported models now.
+
+- **A glTF importer**, with `GLTFLoader` vendored beside the rest of three.
+  Drop a `.glb` into `models/` and add a row to `MODELS`: the loader drops it
+  onto `groundHeight()` from its own measured base, so it cannot float or
+  sink, and `at: [x, z]` is metres from the chair in the island's own
+  coordinates — the same ones the terrain and the beach mask speak.
+  `flat: true` re-materials it into the satin family, which is what stops a
+  downloaded PBR asset reading like a photograph glued onto a poster.
+- **Every row carries its provenance** — author, source, licence — the same
+  discipline the records already follow, because provenance is the expensive
+  thing to reconstruct later and 3D assets are where it is easiest to get
+  wrong. See `models/README.md`.
+- **A missing or broken model is never the reason the island fails to open.**
+  Each load is independent; failure is logged and skipped, and costs you that
+  prop and nothing else.
+
+Verified end to end with a throwaway model, which loaded, scaled, sat on the
+sand, and cast a real shadow into the baked lighting. It was not committed —
+`models/` ships with a README and nothing else.
+
+## v5 — 2026-08-11
+
+A jetty — somewhere for the eye to walk.
+
+- **The jetty.** Planks across, two beams under, five pairs of posts into the
+  bed, running 8.4 m from the sand out over the water. It is built the way the
+  nook's deck is built — a box per board, tone jitter per board, ends baked
+  darker — because that is what makes timber read as timber rather than as one
+  striped slab. Two things ride the walk out, and both are the tide's: the
+  boards get damper and darker the further they are from dry sand, and each
+  post carries the waterline on it, soaked below and a pale rime of dried salt
+  just above, the same tell v4 gave the sand.
+- **Where it is, is the whole design.** On the cove's spine it would run dead
+  down the middle of the bay and halve the open water from the chair, which is
+  the one view this island is built around. So it goes to one side — and which
+  side is not a taste question. The lantern sits 1.65 m off the spine and the
+  sign home sits 2.5 m off it the other way; between them a deck fouls one or
+  the other at every offset from −2.8 to +2.8, and outside them the palms close
+  in. −3.0 m is the only lane with clearance on both sides that still ends in
+  water deep enough to need posts.
+  Found by measuring, after the first cut put the deck **through** that lantern
+  — 9 cm from its post — because the clearance check asked the palms and
+  nothing else.
+- **It is in the bake.** Five `proxyBox`es rather than one, because `proxyBox`
+  is axis-aligned and this deck lies at 23° to the axes, so a single box either
+  misses the ends or shades water the planks are nowhere near. Most of the
+  shade it throws lands on the **seabed** — v3 gave the bay a bottom, and a
+  jetty floating over its own clean sand would give that away.
+- **Nothing in it is a measured coordinate.** Where the planks meet the sand is
+  *found*, by bisecting the terrain for deck height, because this file's rule
+  is that moving `INLET_A`/`INLET_B` reshapes the bay and everything re-places
+  itself off the same function. A hardcoded start would have been the one thing
+  in the cove that did not move with it. The bisection window is deliberately
+  wide: the shore's distance along the spine changes with the offset, and a
+  narrow one clamps to its own bound and starts the deck in mid-air.
+
+Not done, and worth knowing: the teleport clamp reads `groundHeight`, so you
+cannot stand ON the jetty — you stand under it, in the water, exactly as you do
+beside the driftwood log. Walking the planks needs the teleport to know about
+the deck, which is a bigger change than adding a prop.
+
 ## v4 — 2026-08-10
 
 A graphics and details pass, aimed at what a seated person actually looks at.
