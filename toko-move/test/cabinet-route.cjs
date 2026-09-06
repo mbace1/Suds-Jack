@@ -72,6 +72,35 @@ server.listen(0, '127.0.0.1', async () => {
   const built = fs.readFileSync(path.join(ROOT, 'toko-move/js/core-v212.js'), 'utf8').match(/BUILD_VERSION\s*=\s*'([^']+)'/)?.[1];
   ok(`the cabinet's version matches the build (${shown} vs ${built})`, shown === built);
 
+  // ---- the way HOME, which a hand-deploy renumbers and nobody notices ---
+  // `hub/shell.js` is the site's own module: the HOME button and the hold on
+  // Start. Every cabinet asks for it with a `?v=` token, and the site-wide
+  // deploy script rewrites all of them together. A hand-deploy does not, so
+  // this lane shipped `?v=17` onto a site running `?v=35` five releases
+  // running (v2.22..v2.26) and another lane had to repair it. The token is
+  // the whole bug: a cabinet pinned to an old shell serves an old HOME button
+  // out of cache forever while every other cabinet gets the new one.
+  //
+  // The invariant is agreement, not a number — this checkout and the deploy
+  // worktree are legitimately on different tokens. So: whatever the rest of
+  // the floor asks for, ask for that.
+  const shellTok = f => (fs.readFileSync(f, 'utf8').match(/hub\/shell\.js\?v=(\d+)/) || [])[1];
+  const mine = shellTok(path.join(ROOT, 'toko-move/index.html'));
+  const others = {};
+  for (const d of fs.readdirSync(ROOT, { withFileTypes: true })) {
+    if (!d.isDirectory() || d.name === 'toko-move') continue;
+    const f = path.join(ROOT, d.name, 'index.html');
+    if (!fs.existsSync(f)) continue;
+    const v = shellTok(f);
+    if (v) others[v] = (others[v] || 0) + 1;
+  }
+  const ranked = Object.entries(others).sort((a, b) => b[1] - a[1]);
+  const [modal, count] = ranked[0] || [];
+  ok('the cabinet asks for the shared HOME shell at all', !!mine, 'no ../hub/shell.js in index.html');
+  ok('and hub/shell.js is really in this tree', fs.existsSync(path.join(ROOT, 'hub/shell.js')));
+  if (modal) ok(`its shell token matches the rest of the floor (?v=${mine} vs ?v=${modal} on ${count} cabinets)`,
+    mine === modal, ranked.map(([v, n]) => `v${v}\u00d7${n}`).join(' '));
+
   // ---- THE ROUTE: press Play and land in the game -----------------------
   const play = page.locator('#cab-tokomove a', { hasText: 'PLAY' }).first();
   const has = await play.count();
