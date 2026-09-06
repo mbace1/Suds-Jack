@@ -1,5 +1,19 @@
 # Toko Move — versions
 
+## v2.27 — 2026-09-06
+
+**Every tram drags a wake.** The idea came from a canvas demo the owner sent: two paths, a dot running along each, and a background painted `rgba(5,10,15,0.3)` instead of cleared so the dots smear. Half of it was already here and done properly — `LiveNetwork` interpolates real traced HSL geometry at real speeds, where the demo's four hand-typed points make a long route and a short one take the same time. The **trail** was the part worth taking: direction was only readable from a badge, and a badge does not say whether a tram is coming toward you or leaving.
+
+**The demo's technique cannot be used on this board, and that decided the design.** An alpha-overdraw trail fades everything on the canvas, and this map's ground — water, streets, districts, landmarks — is a cached bitmap blitted fresh every frame. Fading it would smear the map into mud; not fading it would erase the trail on the next blit. So nothing accumulates in pixels: each vehicle keeps ~17 recent positions in **lat/lon** and the tail is re-projected every frame like everything else. That is not a workaround. A pixel buffer would be wrong the instant you panned and stale in a different way the instant you zoomed.
+
+**It is drawn additively**, because the first cut was invisible: a wake in a line's own colour, laid along that same line, is nothing. The demo's trail read against black; here it has to read against the route it runs on, so it has to be *brighter* than that route rather than merely present. `lighter` also means two trams meeting on a shared corridor brighten each other, which is true and useful. The tail fades on a squared curve and tapers from 4.5 px at the head to 1.1 px, so the fat bright end is unambiguously where the tram is going.
+
+It samples on the TICK, not the frame — a 120 Hz screen must not remember more of the city than a 30 Hz one — and it obeys the camera's near-rule, so a tram you are not being shown does not leave a wake either. A vehicle that stops being drawn is forgotten, or a filtered fleet leaves ghosts for as long as the tab is open.
+
+`test/trails.mjs`: 17 checks in bare node against a stub context, seven mutations each caught. 60/58/60 fps at the three scales, unchanged.
+
+One trap the gate found in itself: the stub context was assembled with `Object.assign`, which copies an accessor's **value** rather than the accessor — so the composite-operation setter vanished and the check that the wake is drawn additively could never have passed.
+
 ## v2.26 — 2026-09-02
 
 **The shift shows itself back.** A run ended in four numbers — delivered, score, bonuses, late — which was survivable while nothing could go wrong and became the worst possible ending the moment v2.25 made a shift losable. Four numbers tell you that you failed and nothing about where. `js/shiftlog.js` is the design doc's own experiment #6, the one item on its list of eight that had never been built, and its strongest-directions list calls post-run replay "a core learning tool".
