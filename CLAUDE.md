@@ -486,7 +486,7 @@ exists so nobody has to win five fights to look at the sixth.
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
 Gates: `node slaykallio/test/core.mjs` (693 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (100). Hub entry:
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (105). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.
