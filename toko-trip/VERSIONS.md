@@ -1,5 +1,101 @@
 # Toko Trip — release log
 
+## v10 — 2026-09-06
+
+The sound of the place. There was a surf bed before, and it was a
+*soundtrack*: two filtered noise layers wired straight to the speakers,
+identical wherever you stood. In a headset that is the thing that gives the
+illusion away fastest — long before any geometry does — because a place you
+can walk around in has to sound different depending on where in it you are.
+
+- **The surf comes from the waterline.** Six emitters, each bisected onto the
+  exact ring where `groundHeight` crosses sea level, so they follow the cove
+  if the cove is ever reshaped again. Walking down the beach walks INTO the
+  sound and the nook is the quiet end of it. They start at six different
+  offsets in the one shared loop, because six copies in phase is mono with
+  extra steps.
+- **The wash breathes with the tide you can see** — the same `surfLevel(t)`
+  that lifts the water plane and walks the foam line up the sand. The wave
+  you watch climb is the wave you hear.
+- **The wind comes from the crowns that are moving.** Three palms, each with
+  a band-passed gust following the SAME sway term the crown is drawn with,
+  so the tree you hear is the tree you can see doing it.
+- **A gull, now and then**, out over the cove and never behind you in the
+  grass — two to three cries, a different bird's pitch each time.
+- **The mood mixes the air.** Dusk goes quiet and dark and the gulls go home
+  (70–150 s apart); midday brightens the wash and puts them back up (16–44).
+  Eased, not switched.
+- **A SOUND row on the slate**, which is the point of the routing: nothing
+  reaches `ctx.destination` on its own any more, so one switch silences all
+  of it — the radio included — and anything added later inherits that.
+
+One trap worth the note: three's `setMasterVolume` ramps with
+`setTargetAtTime`, and on a **suspended** AudioContext `currentTime` never
+advances, so the ramp never arrives and "off" is a promise rather than a
+mute. The value is set outright instead; a click on a deliberate mute is
+the cheaper of the two.
+
+Gate: 50 checks. The new ones assert the thing that actually matters — that
+the sound comes from SOMEWHERE: every surf emitter within 12 cm of sea
+level, no two stacked, the wash measurably breathing over five seconds of
+tide, each mood mixing the air differently, and SOUND off reading zero at
+the listener rather than merely at the surf.
+
+## v9 — 2026-09-06
+
+The fitting room. Everything up to here was tuned blind — no headset has
+been near this island — and the settings that decide whether it is pleasant
+are exactly the ones a screenshot cannot answer: how fast the sand goes
+past, how you turn, and whether the frame holds up. So this release is not
+another thing to look at. It is the means of answering those three
+questions in one session instead of three.
+
+- **The slate.** A board leaning against the chair, and the only menu on the
+  island: four rows, tapped to cycle. GLIDE (gentle / easy / brisk), TURN
+  (snap 30 / snap 45 / smooth), EDGES, and a top row that turns the frame
+  cost on. It is a real object standing in the sand rather than a panel
+  hanging in the air, because a rectangle floating in front of your face is
+  the one thing a room built to be sat in cannot have. The whole menu is ONE
+  mesh — the row is read off the hit's UV — so adding a row is a line of
+  painting, not another object to place.
+- **The dials are read where the movement happens**, not copied: one
+  `moveSpeed()` that the headset sticks and the flat keys both ask, and the
+  turn step comes out of the same table the slate prints. A setting that
+  only half the code reads is a setting that lies.
+- **A comfort vignette**, and it is a MESH on the camera, not a post pass —
+  no-post is what keeps both backends and both eyes cheap, and this is one
+  textured quad, the cheapest thing in the frame. It closes in while you
+  glide, and a snap turn kicks it so the cut has an edge to happen behind.
+  Weaker on a flat screen, where there is no vestibular conflict to soften
+  and the same darkening is just a dimmer picture.
+- **The frame cost**: average and worst frame over half a second, draw calls
+  and triangles, the backend actually in use and the tier chosen. Off by
+  default — a number in the corner of a zen island is a number you start
+  playing instead of a place you sit in — and turnable on from inside,
+  which is the only way it is any use while you are wearing the thing.
+- Settings persist under `tokoTrip.comfort`, so a session spent tuning is
+  not repeated next visit.
+
+Three found building it, all the same shape — *a thing can report itself
+working and be doing nothing*:
+
+- The vignette quad was sized to a guess and fell **entirely outside** the
+  flat camera's frustum: fully opaque, correctly faded in and out, visible
+  in no pixel. It is measured off the projection matrix in use now, which
+  is also the only way to serve two eyes that are not the same shape as
+  each other.
+- The draw count was **always exactly zero**, which is a very convincing
+  wrong answer. three zeroes `renderer.info` at the top of every animation
+  frame, so the counters are only true *after* the render.
+- The slate faced the wrong way — `nook()` maps local to world through a
+  rotation by MINUS the nook yaw, so a mesh set to `NOOK_YAW` ends up
+  facing the opposite way from everything the nook layout implies. The same
+  handedness trap that once sat the chair with its back to the cove.
+
+Gate: 41 checks. The new ones assert the menu can be *moved* rather than
+merely drawn — each row cycles its own dial and no other, the divisor being
+the whole menu — and that what you set survives a reload.
+
 ## v8 — 2026-08-11
 
 The palms. They were the weakest geometry left, and they are silhouetted
