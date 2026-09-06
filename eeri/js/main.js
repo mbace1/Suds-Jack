@@ -948,6 +948,7 @@ async function boot() {
   let god = false;          // dev: an unexpiring mercy timer, see debug.invincible
   let padded = false;       // a real controller is in hand — see the loop
   const cam = new Camera(camera, site.def);
+  cam.reduced = REDUCED;   // the drift is decoration, like everything else
   cam.cut(player.x, player.y + 3);
   const clock = new THREE.Clock();
 

@@ -1,5 +1,239 @@
 # EERI — versions
 
+## v15.64 — 2026-09-06 — the platform edges stop flickering, and the body moves like Wonder
+
+**Numbered 15.64 at MERGE, not 15.60 as authored** (PHASING §0.1: "a version
+is claimed at MERGE, not at authoring"). Three releases landed while this
+branch was open — the scenery seam, the port's look, and the clip-stance
+measurement — so the number it was written under was gone by the time it
+was merged. Renumbered rather than left to collide, which is how this
+project lost a week twice.
+
+### The flicker, found by measurement rather than by staring
+
+**Owner: the sides of a platform, where it meets the walking part, flicker
+— all of them.** Two things had to be fixed before the bug could even be
+SEEN, and the first is a bug of its own:
+
+- **`prefers-reduced-motion` never stilled the camera's drift.** Every
+  other decorative motion in the game is gated by it — the background
+  machine, the diorama's events, the particles, the chevrons — and the
+  camera kept moving a hair every frame. That is an accessibility gap,
+  and it also means every pixel in the picture changes every frame, so
+  "hold still and diff the frames" could not be written. Gated now.
+- **The camera had not finished easing to the player.** The probe waits
+  for it to settle before sampling.
+
+With the frame genuinely still, ten screenshots diffed showed the
+instability exactly where the owner said: the ends of every run of
+ground. A raycast into one of those pixels returned **two surfaces at the
+identical distance**:
+
+    cut edge   box depth 1.7  →  front face at z 0.85
+    grass fringe                    a plane at z 0.85
+
+Coplanar, so which one draws is floating-point noise and changes frame to
+frame. It was on every platform end because every run of ground ends with
+that edge. The dark inner line at 1.72 was doing the same against the
+earth's torn edge at 0.86.
+
+**The play lane's front faces are a ladder now**, and nothing shares a
+plane: earth run 0.80 · cut edge 0.82 · its shadow line 0.83 · fringe
+0.85 · torn edge 0.86 · painted shadow 0.88. Re-measured with the same
+probe: the platform-end instability is gone. A faint hairline remains
+along the grass and is NOT a depth fight — probed, the surfaces there are
+0.03 apart — most likely the fringe's own alpha edge. Left, and written
+down.
+
+### The body, first pass toward Wonder
+
+**Owner: "aim movement features closer to Mario Wonder, fluid but not as
+fast action."** Wonder is slower along the ground than this was, and the
+difference is not only the number: speed is EASED INTO rather than
+switched on, the apex is long, the fall is quicker than the rise, and a
+late input is forgiven.
+
+| | was | now |
+|---|---|---|
+| top speed | 6.2 | 5.8 |
+| ground acceleration | 42 | 30 |
+| air control | 20 | 24 |
+| friction | 34 | 26 |
+| gravity | 30 | 26 |
+| fall multiplier | 1.35 | 1.5 |
+| coyote / buffer | 0.09 / 0.12 | 0.12 / 0.15 |
+
+**THE REACH IS HELD BY ARITHMETIC, NOT BY HOPE.** Twelve rooms are
+authored against 4.85 tiles of jump — Level 4's trench is 7 tiles
+precisely so it cannot be jumped, which is what the plank is for — so the
+new numbers were solved rather than tried: rise 12.0/26 = 0.462 s, height
+144/52 = 2.77, fall √(5.54/39) = 0.377 s, reach 5.8 × 0.839 = **4.87
+tiles**. Inside a twentieth of a tile of the old one.
+
+**And the height stays under three.** The dig bank is three tiles and
+World 1's whole lock is that the kid cannot jump it. At 2.77 he still
+cannot. A floatier jump that cleared it would have deleted the puzzle
+without touching a line of puzzle code.
+
+This is a FEEL change and the numbers only prove it is safe, not that it
+is right. It wants playing on the phone and another pass.
+
+`node test/rooms.mjs` 246, `playthrough.cjs` 25.
+## v15.63 — 2026-09-06 — the kid's height, measured properly with Blender (and a number this log got wrong twice)
+
+**No behaviour changed. A tool, a table, and a correction.**
+
+This log said the kid grew **15%** when he stopped running, then **8%**
+after v15.57's runtime fix. **Both numbers were noise.** They came from a
+SINGLE FRAME, and a run cycle's head height swings about 6% within the
+stride, so one frame can say almost anything. Averaged over forty frames
+in each state, on the shipped build: **0.8%**. The fix has been working
+better than its own release note claimed.
+
+**Blender, first real use** (`art-src/tools/clipstance.py`, kept). It
+measures every clip's standing height on a rig, and the table is the
+finding — head height above the root, mean per cycle, against `run`:
+
+    climboff +70.6%   stomp +28.6%   climb +22.1%   climbon +18.0%
+    idle     +16.2%   talk +13.3%    lookaround +9.9%   confused +8.7%
+    idle2     +6.4%   hurt +5.7%     teeter +4.9%   jump +4.6%
+    walk      +1.3%   run  0.0%      sit −18.0%
+
+**`walk` and `run` agree to a tenth of a percent** — they ship together,
+free, with a Meshy rig, from one author. Everything bought separately
+disagrees, and `idle` is 16% of it. That is not a bug in the game; it is
+what a library of clips from different hands is.
+
+**Two source fixes were tried and both are dead ends**, written down so
+the afternoon is not spent again:
+
+- **Bend the knees** to crouch `idle` into `run`'s stance. Measured, it
+  does the wrong thing: with the hips keyed, bending the knees lifts the
+  FEET (0.049 → 0.065 at 12°) and leaves the head exactly where it was.
+  Matching by geometry would take a ~58° squat — a different pose, not
+  the same one lower.
+- **Swap in `idle2`**, which stands only 6.4% taller. Measured in game it
+  was WORSE — 6.0% against the shipped 0.8% — because it moves the very
+  reference `holdHeight` learns from. Reverted.
+
+So the runtime normalisation stays, and now says so in its own comment
+with the numbers behind it.
+
+**The general lesson, and it is the one worth keeping:** this project's
+rule is already "measure, do not eyeball" — but a measurement of a moving
+thing has to sample the movement. One frame of a cycle is an anecdote.
+
+`node test/rooms.mjs` 246.
+## v15.62 — 2026-09-06 — the port catches up on LOOK, and Blender joins the toolchain
+
+**Godot-side. No browser-build behaviour changed.**
+
+v15.61 made the port's CONTENT honest; this is its LOOK. Three things the
+browser build gained this week, ported rather than reinvented:
+
+- **The camera's push-in.** Every authored shot in every room is a
+  pull-back and the default sat at 34, so the port had no push-in either
+  and rung 2's "three distinct compositions" was as untrue there as it
+  was here. Default is 31.
+- **The airborne hold**, with the correction the browser build's own gate
+  forced: it covers moves under two units and lasts 0.7 s, because
+  freezing a big reframe crossed in mid-air makes it snap when the hold
+  expires — worse than the small move rung 2 protects against.
+- **Reduced motion stills the camera drift**, which was the one
+  decoration never gated in either build.
+
+**The portrait floor (`MIN_W`) is deliberately NOT ported.** It can never
+fire above 16:9 and this build is the landscape one; a number that can
+never fire is a number that goes stale unnoticed.
+
+**`scripts/cast_light.gd`** ports `js/light.js` §3 and `craft.js`'s
+`rimLight`: a fresnel term added to the character's own material as
+EMISSION — a light ON the silhouette rather than a repaint of it, and it
+touches only the character. A real light would fall on the painted
+backdrop, which already has its shading drawn in, which is the mistake
+`dressing34.gd`'s own header warns about. The per-world rim colour and
+the night shift's follow lamp come from the same tables the browser build
+carries.
+
+Godot: test_boot 27, test_pieces 35, test_ride 23, test_kid 19,
+test_playthrough 25 — all green.
+
+### Blender is in the toolchain now (owner, 2026-09-06)
+
+4.5.13 LTS, headless and scriptable — `blender -b --python-expr` verified.
+Recorded in `PHASING.md`'s tool-reality table, and it changes the routing
+rule there, so it is worth stating plainly:
+
+**Meshy is for a NEW object; Blender is for a WRONG one.** Credits are
+real money and a regeneration is a different object rather than a repair
+— v15.54 spent 75 of them discovering the enemies were janky, and what
+actually shipped was a decimation pass, not the 30k meshes. Blender does
+that locally and for nothing, and does what neither generator can: move a
+pivot, re-centre an origin, **edit a clip's crouch so a character stops
+changing height between states** (v15.57 patched exactly that at runtime
+and could now fix it at source), slice a model into named nodes, and bake
+a genuinely seamless tile — which v15.59 had to work around with
+`MirroredRepeatWrapping` because Nano Banana cannot be asked for one
+reliably.
+
+## v15.61 — 2026-09-06 — the scenery seam: placed art flows to Godot
+
+**Godot-side. No browser-build behaviour changed.**
+
+`CLAUDE.md`'s rule is **content is authored once and flows; code is not
+shared.** Levels flow, strings flow, glyphs flow, audio flows, the art
+manifest flows. **Scenery never did** — and by this week that bill had
+come due twice at once:
+
+- everything the art lane made — World 3's felt treeline, the lamps,
+  World 1 and 2's dressing vocabulary, every piece the rebuilt editor can
+  place — was **invisible to the port**;
+- and `godot/scripts/dressing34.gd`, a HAND-PORT of the old
+  `js/world34-dressing.js`, was still drawing **the fourteen flat green
+  discs the browser build deleted in v15.55**. Two implementations of one
+  content set, drifting apart, which is the single failure mode the rule
+  exists to prevent.
+
+**`godot/tools/export-scenery.mjs`** emits one `data/scenery.json` by
+importing the real modules — rows through the browser build's own
+`withDefaults`, the `ART` catalogue, and `LAYER_Z` — so it cannot drift.
+**There is no allow-list**, deliberately: `export-levels.mjs` carries one
+and it cost a release, with `sheet` and `planks` reaching the port as
+`null` and no error until two separate files learned their names
+(SESSION_HANDOFF §3.1). A row is written whole; a row can gain a field
+without either side being edited.
+
+**`godot/scripts/scenery_data.gd`** reads it and mounts the keyed cutouts
+on the lane each row names. `dressing.gd` calls it for every world, and
+`_world3_backdrop` is now empty with the story in its place.
+
+### Two silent gaps the new gate caught immediately
+
+The boot gate asserts a row becomes a MESH, not that a file parses — and
+it said **"mounted 0 of 8"** twice before it said ok.
+
+1. **The images had never crossed.** `sync-data.mjs` walks the manifest,
+   and `js/artprops.js` loads its catalogue by direct URL — it must,
+   because `js/assets.js` imports `three` and anything reachable from
+   `rooms.js` that imports three breaks the level editor's page. So the
+   trees were carried as data and their pictures were not. `sync-data`
+   now READS the catalogue rather than listing it, so a piece added
+   tomorrow crosses without the file being edited.
+2. **The feet.** A row's `y` is where a piece STANDS, not its centre —
+   the arithmetic the browser build shipped wrong once (v15.57, every
+   tree hanging a metre above the ground). The mount does it, and the
+   gate measures the lowest foot rather than trusting it.
+
+**Verified by picture** as well as by number: `tools/shot.gd` on
+`eeri-3-1` shows the felt spruce standing in the port, rooted, at the
+lane depth its row names.
+
+Godot: `sync-data --check` OK (71 live files), `export-scenery --check`
+OK (41 rows, 4 worlds), `export-levels --check` OK (12 levels);
+**test_boot 27** (was 21), test_pieces 35, test_gizmos 19, test_progress
+18, test_playthrough 25. Browser: rooms 246, fx-smoke 31, dev-menu 36 —
+untouched, as expected.
+
 ## v15.59 — 2026-09-06 — the earth is a cut through a stack of card
 
 **Owner: *"the land mass with layers of color and some rocks is the

@@ -92,9 +92,22 @@ re-check before a batch.
 | Character animation | **Meshy** clip library | 600+ clips, biped-centric. Pick from the library; do not commission bespoke motion. |
 | Squash, wobble, stomp-flatten, beacon spin | **Code** | Always code. Scale/rotate nodes at runtime. A Meshy clip for a squash is a wrong turn. |
 | Repaint / restyle an existing model | **Meshy** retexture | Use before remodelling. Palette-strip discipline still applies at integration. |
+| Fix, decimate, re-pivot, slice or bake an existing model | **Blender** (4.5 LTS, headless) | **New 2026-09-06.** Free, local, scriptable — `blender -b --python-expr` works. Changes the routing below: a janky mesh is now REPAIRED before it is regenerated. |
+| Seamless tiling textures | **Blender** bake, or Nano Banana + mirrored wrap | Nano Banana cannot be asked for a true seamless tile reliably (v15.59 shipped `MirroredRepeatWrapping` to work around it). A baked tile has no seam by construction. |
 
 **The routing rule: legs → Meshy rig · wheels/tracks → sliced nodes ·
 deformation → code.**
+
+**And the new first question, 2026-09-06: CAN BLENDER FIX IT?** Credits are
+real money and a regeneration is a different object — v15.54 spent 75 of them
+learning that the enemies were janky at 2,000 triangles, and the fix that
+actually shipped was a decimation pass, not the 30k meshes. Blender does that
+locally and for nothing, and it can do the things neither Nano Banana nor
+Meshy can: move a pivot, re-centre an origin, edit a clip's crouch so a
+character stops changing height between states (v15.57 patched that at
+runtime), slice a model into named nodes, and bake a genuinely seamless
+tile. **Reach for Meshy when a NEW object is needed; reach for Blender when
+an existing one is wrong.**
 
 ## 2. The enemy roster, re-cast against the tools
 

@@ -298,8 +298,30 @@ class ClipDriver {
     this.holdHeight(this.current, dt);
   }
 
-  /** Hold his standing height steady across idle/walk/run. See the note in
-   *  the constructor for why this is a scale on the root and not a bone. */
+  /**
+   * Hold his standing height steady across idle/walk/run. See the note in the
+   * constructor for why this is a scale on the root and not a bone.
+   *
+   * MEASURED PROPERLY IT LEAVES 0.8%, and the correction to that number is
+   * worth more than the number. This was reported as 15%, then 8% after the
+   * fix — both from a SINGLE FRAME, and a run cycle's head height swings
+   * about 6% within the stride, so one frame can say almost anything.
+   * Averaged over forty frames in each state it is 0.8%.
+   *
+   * Blender (`art-src/tools/clipstance.py`, and it is kept for the next rig)
+   * then showed what is underneath: every clip was posed by a different hand
+   * and their standing heights disagree — `idle` stands 16.2% taller than
+   * `run`, `climboff` 70% — while `walk` and `run` agree to a tenth of a
+   * percent, because those two ship together with the rig from one author.
+   *
+   * TWO SOURCE FIXES WERE TRIED AND BOTH ARE DEAD ENDS, recorded so nobody
+   * spends the afternoon again: bending the knees to crouch `idle` lifts the
+   * FEET (0.049 → 0.065 at 12°) and leaves the head where it was — matching
+   * by geometry needs a ~58° squat, a different pose rather than the same one
+   * lower; and swapping in `idle2`, which stands only 6.4% taller, measured
+   * WORSE in game (6.0%) because it moves the reference this very correction
+   * learns from. The runtime normalisation is the answer.
+   */
   holdHeight(state, dt) {
     if (!this.head || !this.root) return;
     const ground = state === 'idle' || state === 'walk' || state === 'run';
@@ -479,13 +501,39 @@ export class Kid {
 
 // ---- the platforming body (Mario grammar: snappy, committed) -------------
 
-const RUN = 6.2, ACC = 42, ACC_AIR = 20, FRIC = 34;
-const GRAV = 30, FALL_X = 1.35, JUMP_V = 12.6;
+// v15.60, owner direction: "aim movement features closer to Mario Wonder,
+// fluid but not as fast action." Wonder's body is slower along the ground
+// than this one was, but it is not sluggish — the difference is that speed
+// is EASED INTO rather than switched on, the apex of a jump is long, the
+// fall is quicker than the rise, and the game forgives a late input.
+//
+// THE ONE NUMBER THAT MAY NOT MOVE is the reach: 4.85 tiles of jump. Levels
+// are authored against it (Level 4's trench is 7 tiles precisely so it CANNOT
+// be jumped, which is what the plank is for), so a change that quietly
+// lengthened or shortened it would re-tune twelve rooms by accident. It is
+// held by arithmetic rather than by hope:
+//
+//   rise   t = JUMP_V / GRAV                 = 12.0 / 26   = 0.462 s
+//   height h = JUMP_V^2 / (2 * GRAV)         = 144 / 52    = 2.77 tiles
+//   fall   t = sqrt(2h / (GRAV * FALL_X))    = sqrt(5.54/39) = 0.377 s
+//   reach    = RUN * (0.462 + 0.377)         = 5.8 * 0.839 = 4.87 tiles
+//
+// — the same 4.85 the rooms were built to, inside a twentieth of a tile.
+//
+// AND THE HEIGHT MUST STAY UNDER THREE. The dig bank is three tiles and the
+// whole of World 1's lock is that the kid cannot jump it; at 2.77 he still
+// cannot, with room to spare. A floatier jump that cleared it would delete
+// the puzzle without touching a line of puzzle code.
+const RUN = 5.8, ACC = 30, ACC_AIR = 24, FRIC = 26;
+const GRAV = 26, FALL_X = 1.5, JUMP_V = 12.0;
 // A stomp bounces you 80% of a jump: enough to feel like a reward and to
 // chain along a row of them, never enough to reach somewhere a jump cannot,
 // so no level's reach budget is quietly broken by an enemy standing there.
 const BOUNCE_V = JUMP_V * 0.8;
-const COYOTE = 0.09, BUFFER = 0.12;
+// More forgiving, because the player is six: a step off an edge and a press
+// a moment early both still count. Wonder is generous here and it is the
+// cheapest kindness in a platformer.
+const COYOTE = 0.12, BUFFER = 0.15;
 // THE CLIMB (DESIGN §2). Slower than the run, both ways, so a ladder reads
 // as a decision rather than a lift.
 const CLIMB_V = 3.6;

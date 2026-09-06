@@ -580,9 +580,22 @@ export class Level {
           // lighter value than the face (the cut is fresh, the face is
           // weathered), and a dark line on the inside where the corrugation
           // turns into shadow. Two tones is the minimum for thickness to read.
+          // THE DEPTHS ARE A LADDER, NOT A GUESS (v15.60). Owner: the sides
+          // of a platform where it meets the walking part flicker, all of
+          // them. Measured with the camera held still and the frame diffed:
+          // a raycast into a flickering pixel returned TWO surfaces at the
+          // identical distance — this cut edge at depth 1.7, whose front
+          // face lands on z 0.85, and the grass fringe, a plane at exactly
+          // z 0.85. Coplanar, so which one wins is down to floating-point
+          // noise and changes frame to frame. The dark inner line at 1.72
+          // was doing the same thing against the earth's torn edge at 0.86.
+          //
+          // The play lane's front faces now step: earth run 0.80, cut edge
+          // 0.82, its shadow line 0.83, fringe 0.85, torn edge 0.86, painted
+          // shadow 0.88. Nothing shares a plane with anything.
           const cutEdge = (x, inward) => {
-            box(0.38, 1, 1.7, inward > 0 ? mat.cut : mat.cutR, x, cy + 0.5, 0);
-            box(0.06, 1, 1.72, mat.cutDk, x + inward * 0.19, cy + 0.5, 0);
+            box(0.38, 1, 1.64, inward > 0 ? mat.cut : mat.cutR, x, cy + 0.5, 0);
+            box(0.06, 1, 1.66, mat.cutDk, x + inward * 0.19, cy + 0.5, 0);
           };
           if (c > 0 && this.map[r][c - 1] === ' ' && cy >= 1) cutEdge(c + 0.19, 1);
           if (e < W - 1 && this.map[r][e + 1] === ' ' && cy >= 1) {

@@ -45,6 +45,7 @@ export class Camera {
     this.shots = [];
     this.t = 0;
     this.punchT = 0; this.punchAmt = 0;
+    this.reduced = false;   // set by main.js from prefers-reduced-motion
     this.setSite(def);
   }
 
@@ -93,11 +94,18 @@ export class Camera {
 
     // the drift: slow, small, and on both axes so it never reads as a
     // wobble on one of them
-    z += Math.sin(this.t * 0.23) * 0.5;
+    // …and STILLED under prefers-reduced-motion, which it never was. Every
+    // other decorative motion in the game is gated — the background machine,
+    // the diorama's events, the particles, the chevrons — and the camera's
+    // own drift was the one that kept going. It is an accessibility gap, and
+    // it is also why a "hold still and look for flicker" test could not be
+    // written: with the camera moving a hair every frame, every pixel in the
+    // picture changes every frame and a real render fight cannot be seen.
+    if (!this.reduced) z += Math.sin(this.t * 0.23) * 0.5;
     // …and the portrait floor on the dolly (MIN_W above), applied after
     // every other opinion so a punch cannot dip under it either
     z = Math.max(z, MIN_W / (2 * Math.tan((fov * Math.PI) / 360) * aspect));
-    yOff += Math.sin(this.t * 0.17 + 1.3) * 0.22;
+    if (!this.reduced) yOff += Math.sin(this.t * 0.17 + 1.3) * 0.22;
 
     // ease the framing itself, so crossing into a shot is a move, not a cut.
     // NEVER DURING A JUMP (ART_TARGET rung 2: "Tropical Freeze is
