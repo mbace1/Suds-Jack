@@ -32,7 +32,7 @@ const FOLLOW_MS = 260;
 // order a move.
 const DRAG_SLOP = 10;
 
-export function createCamera({ stage, canvas, getLayout, getScale }) {
+export function createCamera({ stage, canvas, getLayout, getScale, onZoom, onView }) {
   let tx = 0, ty = 0;              // current pan, in CSS pixels
   let dragging = false, panned = false;
   let startX = 0, startY = 0, baseX = 0, baseY = 0;
@@ -66,6 +66,12 @@ export function createCamera({ stage, canvas, getLayout, getScale }) {
     stage.style.setProperty('--cam', `translate(${Math.round(tx)}px, ${Math.round(ty)}px)`);
     const plate = stage.querySelector('#plate');
     if (plate) plate.style.transition = t;
+    // A pan repaints nothing — the canvas is translated by the compositor —
+    // so anything pinned to the VIEWPORT rather than to the board has to be
+    // told. That is the off-screen markers: they live on the stage, not on
+    // the canvas, precisely so they do not slide away with the board they
+    // are pointing at.
+    if (onView) onView();
   }
 
   // Put a board point in the middle of the viewport, as near as the clamp
@@ -110,6 +116,56 @@ export function createCamera({ stage, canvas, getLayout, getScale }) {
     return t ? { x: t.clientX, y: t.clientY } : { x: evt.clientX, y: evt.clientY };
   }
 
+  // ── pinch and wheel ────────────────────────────────────────────────
+  // Zoom is not the camera's to hold — it belongs to the FIT (main.js's
+  // fitCanvas), because a bigger tile changes the canvas's CSS size, not
+  // its transform. What the camera owns is the GESTURE, since it already
+  // has the stage's pointers in the capture phase and has to know when a
+  // second finger cancels the pan it thought was starting.
+  const pointers = new Map();
+  let pinchBase = 0;
+  function pinchDistance() {
+    const [a, b] = [...pointers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+  function onPointerDownZoom(evt) {
+    if (evt.pointerType === 'mouse') return;
+    pointers.set(evt.pointerId, { x: evt.clientX, y: evt.clientY });
+    if (pointers.size === 2) {
+      pinchBase = pinchDistance();
+      dragging = false;      // a second finger means this was never a pan
+      panned = true;         // and it must not land as a tap either
+    }
+  }
+  function onPointerMoveZoom(evt) {
+    if (!pointers.has(evt.pointerId)) return;
+    pointers.set(evt.pointerId, { x: evt.clientX, y: evt.clientY });
+    if (pointers.size !== 2 || !pinchBase || !onZoom) return;
+    const d = pinchDistance();
+    // Applied in steps rather than continuously: fitCanvas re-lays out the
+    // canvas on every change, so a raw per-move ratio would relayout on
+    // every frame of the gesture for a difference nobody can see.
+    if (Math.abs(d / pinchBase - 1) < 0.08) return;
+    evt.preventDefault();
+    onZoom(d / pinchBase);
+    pinchBase = d;
+  }
+  function onPointerUpZoom(evt) {
+    pointers.delete(evt.pointerId);
+    if (pointers.size < 2) pinchBase = 0;
+  }
+  function onWheel(evt) {
+    if (!onZoom) return;
+    evt.preventDefault();
+    onZoom(evt.deltaY < 0 ? 1.12 : 1 / 1.12);
+  }
+
+  stage.addEventListener('pointerdown', onPointerDownZoom, true);
+  stage.addEventListener('pointermove', onPointerMoveZoom, { capture: true, passive: false });
+  stage.addEventListener('pointerup', onPointerUpZoom, true);
+  stage.addEventListener('pointercancel', onPointerUpZoom, true);
+  stage.addEventListener('wheel', onWheel, { passive: false });
+
   stage.addEventListener('pointerdown', onDown, true);
   stage.addEventListener('pointermove', onMove, true);
   stage.addEventListener('pointerup', onUp, true);
@@ -118,15 +174,38 @@ export function createCamera({ stage, canvas, getLayout, getScale }) {
   stage.addEventListener('touchmove', onMove, { capture: true, passive: false });
   stage.addEventListener('touchend', onUp, true);
 
+  // WHAT IS ACTUALLY ON SCREEN, in board coordinates. Once the board is
+  // allowed to be bigger than the stage (v25's zoom floor, and the player's
+  // own zoom from v34) "is that rival visible" stops being answerable from
+  // the state alone, and a game whose promise is that you can see every
+  // enemy's plan owes the player a way to know what it is not showing them.
+  // Derived from the stage's own box and the current pan, so it is right
+  // during a drag as well as after one.
+  function viewRect() {
+    const l = getLayout(), s = getScale();
+    if (!l || !s) return null;
+    // The canvas is centred in the stage and then translated by (tx, ty);
+    // its own top-left in board space is therefore the inverse of both.
+    const halfW = stage.clientWidth / 2, halfH = stage.clientHeight / 2;
+    const cx = l.width / 2 - tx / s, cy = l.height / 2 - ty / s;
+    return { x0: cx - halfW / s, y0: cy - halfH / s, x1: cx + halfW / s, y1: cy + halfH / s };
+  }
+
   return {
     centerOn,
     recenter,
+    viewRect,
     // True when the gesture that just ended was a pan. input.js asks this
     // and skips its tap handling — a drag must never also order a move.
     consumedDrag: () => panned,
     clearDrag: () => { panned = false; },
     canPan: () => { const l = limits(); return !!(l.x || l.y); },
     destroy() {
+      stage.removeEventListener('pointerdown', onPointerDownZoom, true);
+      stage.removeEventListener('pointermove', onPointerMoveZoom, true);
+      stage.removeEventListener('pointerup', onPointerUpZoom, true);
+      stage.removeEventListener('pointercancel', onPointerUpZoom, true);
+      stage.removeEventListener('wheel', onWheel);
       stage.removeEventListener('pointerdown', onDown, true);
       stage.removeEventListener('pointermove', onMove, true);
       stage.removeEventListener('pointerup', onUp, true);

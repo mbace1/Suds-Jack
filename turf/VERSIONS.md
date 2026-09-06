@@ -8,6 +8,67 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v34 — 2026-09-05
+**Owner: "should be zoomed in more. readability and comprehension in general
+is hard."** Asked which of those bit hardest, they named two: *what is about
+to happen*, and *what I can do right now*.
+
+**The zoom is the player's now.** v25 made the fit a FLOOR rather than a
+ceiling (`MIN_TILE_W`) so a phone could overflow the stage instead of
+delivering a 32px tile as a 32px tile; that was the right shape and the wrong
+amount, and picking a better single number is guesswork — how big a tile has
+to be depends on the screen, the distance it is held at, and the eyes reading
+it, none of which this code can measure. A persisted multiplier now sits on
+top of whatever the fit chose (**default 1.35**, range 0.7–2.6), driven by
+pinch, wheel, `+`/`-`/`0`, and a control on the board's own corner. It rides
+`localStorage`, because a zoom you have to set again every encounter is a
+setting you stop using.
+
+**And FIT, because zooming in is not free.** A zoom deep enough to read a face
+is deep enough to push half the board off screen, and this game's contract is
+that every rival's plan is visible before it happens. So: one tap puts the
+whole board back, and anything living that falls outside the viewport gets an
+edge **pip** in its faction colour carrying how many are stacked behind it and
+a ring when one of them is telegraphing an attack. The pips are DOM on the
+stage, never paint on the canvas — a pan translates the canvas via the
+compositor without repainting, so a marker drawn into the board would slide
+away with the very thing it points at.
+
+**What is about to happen, as a number.** `incomingThreats` in combat.js runs
+every telegraphed attack through **`forecastAttack`** — the one place odds are
+worked out — from the tile the rival will actually shoot FROM, and totals it
+per target. The board draws that total over the operator's head: `-4`, or
+**LETHAL**. Lethal is measured against the TOTAL, not the worst single hit:
+two rivals each taking half your health off is the case that kills you and
+exactly the one a per-attack marker hides. `test/smoke.mjs` asserts the badge
+quotes the same chance and damage `resolveAttack` will roll against, because
+in a full-information game a warning that does not match the roll is worse
+than no warning.
+
+**And FOCUS.** With five rivals telegraphing at once the board carried five
+paths, five rings and five glyphs, all one colour at one weight — every frame
+correct and the whole unreadable. Selecting an operator now brings forward the
+threats aimed at THEM and drops the rest back to a quarter weight. Nothing is
+hidden and nothing is added; only the weight changes, which is the one edit
+that cannot cost information.
+
+**Outline the region, do not paint every tile in it.** Move range was a
+0.48-alpha wash on each of twenty tiles, each with its own 2px border — the
+loudest thing on screen, and it was covering the *cover*: the props a player
+moves toward were being obscured by the overlay saying they could move there.
+Now a faint fill inside and a hard edge drawn only where the region STOPS.
+Same information, a fifth of the ink.
+
+**What I can do right now, in words.** Two lines under the selected operator:
+`can hit:` ranks every reachable target best-first off `state.forecasts` (the
+same map the board badges are drawn from, so the two cannot disagree), calling
+a kill a kill rather than leaving a number to compare against a health bar
+somewhere else on screen; and `incoming:` names who it is coming from, which
+is the half a badge cannot hold and the half that says whether moving helps.
+
+Modules: `combat` v20 (`incomingThreats`), `render` v24, `camera` v3
+(pinch/wheel gesture, `viewRect`), `palette` v12, `input` v19, `main` v33.
+
 ## v33 — 2026-09-03
 **Owner, on the v32 screenshot: "characters are way too big now. also there
 should be new props available. use them sparingly."** Two separate faults

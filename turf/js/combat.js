@@ -355,6 +355,46 @@ export function guardAt(state, unit) {
   return best / 100;
 }
 
+// WHAT IS ABOUT TO HAPPEN TO YOU, as a number rather than a diagram.
+//
+// Owner, 2026-09-05: "readability and comprehension in general is hard",
+// and asked for "what is about to happen" first. The telegraph has drawn
+// WHERE since v25 — a path, a destination, a ring round the target — but a
+// ring does not say whether the hit coming your way is a scratch or the end
+// of that operator, and working it out meant reading the rival's weapon off
+// a glyph and doing the arithmetic yourself.
+//
+// This runs each telegraphed attack through forecastAttack — THE one place
+// odds are worked out, from the tile the rival will actually shoot from —
+// and totals it per target. Same function resolveAttack rolls against, so
+// the warning cannot promise a hit the enemy phase then does not attempt.
+export function incomingThreats(state) {
+  const out = new Map();
+  if (!state.telegraph) return out;
+  for (const [uid, intent] of state.telegraph) {
+    if (!intent || intent.type !== 'attack' || !intent.targetUid) continue;
+    const attacker = state.units.find(u => u.uid === uid);
+    const target = state.units.find(u => u.uid === intent.targetUid);
+    if (!attacker || !target || attacker.hp <= 0 || target.hp <= 0 || !attacker.weapon) continue;
+    const from = intent.moveTo || attacker;
+    const f = forecastAttack(state, attacker, target, attacker.weapon, {}, from);
+    const damage = f.damage * (f.shots || 1);
+    let e = out.get(target.uid);
+    if (!e) { e = { total: 0, worst: 0, sources: [] }; out.set(target.uid, e); }
+    e.total += damage;
+    e.worst = Math.max(e.worst, damage);
+    e.sources.push({ uid, name: attacker.name, chance: f.chance, damage });
+  }
+  // Lethal is measured against the total, not the worst single hit: two
+  // rivals each taking half your health off is the case a player most needs
+  // warning about, and it is exactly the one a per-attack marker hides.
+  for (const [uid, e] of out) {
+    const target = state.units.find(u => u.uid === uid);
+    e.lethal = !!target && e.total >= target.hp;
+  }
+  return out;
+}
+
 export function forecastAttack(state, attacker, target, weapon, opts = {}, from = attacker) {
   let chance = opts.accuracy != null ? opts.accuracy : weapon.hitChance;
   if (opts.accuracyMod) chance += opts.accuracyMod;
