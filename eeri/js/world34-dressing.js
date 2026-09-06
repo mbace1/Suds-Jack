@@ -16,8 +16,14 @@
 // this sidecar builds the same big silhouettes from clean planes and uses the
 // already-approved worklamp / barrier / cable-reel cutouts as accents.
 
-import { craftMat, craftBox } from './craft.js?v=59';
-import { PAL, mix } from './palette.js?v=59';
+// NO STATIC IMPORTS, and this is load-bearing. `dev/inspector.js` pulls
+// `rooms.js` into the TOP page of dev.html to list the levels, and that
+// page has no import map — so anything reachable from rooms.js that says
+// `import ... from 'three'` breaks the editor with "failed to resolve module
+// specifier three". v15.55 added `craft.js` here for a tree that was
+// replaced by painted art the same day, and the import stayed: the editor's
+// level list broke on every phone for one deploy. THREE arrives as a
+// parameter, the way this file has always taken it, for exactly this reason.
 
 const ASSET = {
   forestTunnel: new URL('../assets/2d/world3_log_tunnel_lib_v1.webp', import.meta.url).href,
@@ -119,61 +125,24 @@ function warmWindow(THREE, root, x, y, w, h, z = -0.70, glow = false) {
 // -------------------------------------------------------------------------
 
 function world3Backdrop(THREE, root) {
-  // THE TREES ARE PAINTED ART NOW, and this is owner direction, twice.
+  // EMPTY ON PURPOSE, and the history is worth keeping because it is three
+  // corrections in one day.
   //
-  // First (2026-09-05): "world 3 should not use the simple trees but we
-  // should make similar ones as the other assets." What was here was
-  // fourteen flat `MeshBasicMaterial` discs plus three full-width flat
-  // panels, and it was wrong in two ways at once — the shapes were circles,
-  // and they were made of nothing while worlds 1 and 2's dressing is built
-  // from `craftMat`. It was also COVERING THE REAL ART: `grove_skyline_v2`
-  // and `grove_far_v2` are a hand-built felt treeline mounted at z −30 and
-  // −14, and a flat green band a metre behind the play plane sat in front of
-  // all of it. World 3 looked the weakest of the four worlds while carrying
-  // the best backdrop, hidden behind a curtain its own dressing had drawn.
+  //  1. It drew fourteen flat `MeshBasicMaterial` discs as a treeline, at a
+  //     z a metre behind the play plane — which COVERED `grove_skyline_v2`
+  //     and `grove_far_v2`, the hand-built felt treeline at −30 and −14.
+  //     World 3 looked the weakest of the four worlds while carrying the
+  //     best backdrop, behind a curtain its own dressing had drawn.
+  //  2. Rebuilt in `craftMat`, the shapes were still `SphereGeometry`, and
+  //     the owner was right that it was not close: no arrangement of code
+  //     primitives says *wool felt cut with scissors and pinned to balsa*.
+  //  3. Replaced with generated, keyed art — and then the art itself moved
+  //     OUT of this file into `SCENERY.grove` rows (v15.57), because a
+  //     hard-coded call is a thing the level editor can never offer you.
   //
-  // Second (same session, on seeing the first fix): "those trees are not
-  // even close. we need 2d generated art from nano banana." Correct, and the
-  // reason is worth writing down: a canopy built from code primitives is a
-  // sphere with a colour, and Crafted World's whole charm is that you can
-  // SEE WHAT A THING IS MADE OF. No arrangement of `SphereGeometry` says
-  // "wool felt cut with scissors and pinned to balsa"; a photograph of that
-  // does, immediately. The 80/20 split in ART_TARGET §0.1 says this outright
-  // — the environment is 2D unless it moves in depth or articulates — and a
-  // background tree does neither.
-  //
-  // So: three pieces generated in the art lane against the house craft block
-  // (layered felt lobes, painted balsa, brass split pins, magenta backing),
-  // keyed with the shared hue-ratio key, and mounted through the same
-  // `cutout()` seam the root tunnel and stump clearing already use.
-  // ROOTED, AND THE BASE IS BURIED. Owner, on the first cut with real art:
-  // "the trunks are a bit much here. also they float mid air." Both were the
-  // same arithmetic mistake — `cutout()` takes a CENTRE, and these were
-  // handed a base y as though it were one, which hung every tree a metre
-  // above the ground line at y=4. Now the foot is computed from the height
-  // and set to 3.5: half a unit BELOW the ground, so the trunk goes into the
-  // earth the way a tree does instead of resting on it like a sticker.
-  //
-  // And the mix is mostly spruce. The oak and the birch are beautiful pieces
-  // but they are mostly TRUNK — a pale vertical bar the width of the player,
-  // repeated eight times across a room, competes with him for the eye. The
-  // spruce carries its own trunk behind its tiers, so it reads as a mass of
-  // foliage; two oaks and one birch across a whole level is seasoning.
-  const FOOT = 3.5;
-  const line = [
-    ['treeSpruce', 6, 8.4, false], ['treeOak', 25, 7.0, true],
-    ['treeSpruce', 34, 7.6, false], ['treeSpruce', 47, 9.0, true],
-    ['treeBirch', 59, 7.2, false], ['treeSpruce', 71, 7.8, true],
-    ['treeSpruce', 84, 8.4, false], ['treeOak', 97, 7.4, true],
-  ];
-  // z −2.6 puts them behind the near lane's own cutouts and well behind the
-  // playfield, so they are a treeline the level stands in front of rather
-  // than scenery the player can be confused about standing on. Slight
-  // opacity roll-off keeps them from competing with the play lane, the same
-  // job `LAYER_TINT` does for the painted lanes further back.
-  for (const [key, x, h, flip] of line) {
-    cutout(THREE, root, key, x, FOOT + h / 2, h, -2.6, 0.96, flip);
-  }
+  // The trees are rows now. `layers.js` places them for every world through
+  // `placeScenery`, so this function has nothing left to do; it stays as the
+  // hook worlds 3 and 4 call, and as this note.
 }
 
 function timberFrame(THREE, root, x, base, h, w = 5.2, z = -0.82) {

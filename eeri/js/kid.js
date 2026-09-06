@@ -9,10 +9,10 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=59';
+import { PAL } from './palette.js?v=60';
 // The silhouette line lives in craft.js, not here: robots.js needs the same
 // one, and two copies of a silhouette rule is how two silhouettes start.
-import { outlineShell, rimLight } from './craft.js?v=59';
+import { outlineShell, rimLight } from './craft.js?v=60';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -167,6 +167,45 @@ const SKIN_RIDE_YAW = Math.PI / 2;
 class ClipDriver {
   constructor(group, asset) {
     this.mixer = new THREE.AnimationMixer(asset.root);
+    // HE IS KEPT ONE HEIGHT ACROSS THE GROUND STATES, and this is the fix
+    // for the oldest complaint on the rig — owner, 2026-09-05: "the main
+    // character idle grow is still there, meaning when you stop running the
+    // character gets like 15% bigger."
+    //
+    // It is NOT a scale bug, which is why looking for one never found it:
+    // measured, `group.scale` is exactly 1 in both states. What changes is
+    // the POSE. Each clip came from the library with its own posture — the
+    // run crouches, the idle stands upright — so his head sits 0.835 above
+    // his origin running and 0.96 idle. His feet are planted, so the whole
+    // difference goes UP, and 15% of his height appearing on top of him
+    // when he stops is exactly what a player sees. (Owner said 15%.
+    // Measured: 15%.)
+    //
+    // Levelling the HIPS was the first attempt and it barely moved the
+    // number, which is the useful half of the finding: the crouch is in the
+    // knees and the spine, and the hips were already within 0.03 of each
+    // other. So the correction has to be made where the difference actually
+    // shows, at the silhouette.
+    //
+    // The root sits at his FEET, so a scale on it moves the top of his head
+    // and leaves his soles on the floor. Each frame the head's height above
+    // the root is measured and the root scaled to hold it at the reference —
+    // his upright standing height, captured from the first idle frame, so
+    // the number is the rig's own and not one written here.
+    //
+    // Three things keep it honest. It applies to the GROUND states only:
+    // a jump tucks and a climb reaches, and those are supposed to change his
+    // shape. It is CLAMPED to +20/-15%, so a clip nobody has seen yet cannot
+    // stretch him. And it EASES rather than snapping, because a correction
+    // that arrives in one frame is itself a pop.
+    this.head = null;
+    asset.root.traverse((o) => {
+      if (!this.head && o.isBone && /head$/i.test(o.name)) this.head = o;
+    });
+    this.root = asset.root;
+    this.refHead = 0;        // set from the first idle frame
+    this.fix = 1;
+    this.baseScale = asset.root.scale.x || 1;
     this.actions = {};
     for (const [name, clip] of Object.entries(asset.clips)) {
       const a = this.mixer.clipAction(clip);
@@ -213,6 +252,7 @@ class ClipDriver {
       const dt0 = Math.min(0.1, Math.max(0, t - this.last));
       this.last = t;
       this.mixer.update(dt0);
+      this.holdHeight(this.current, dt0);
       return;
     }
     // THE STUCK POSE (owner, 2026-08-21: "animations can get stuck while
@@ -255,8 +295,43 @@ class ClipDriver {
     const dt = Math.min(0.1, Math.max(0, t - this.last));
     this.last = t;
     this.mixer.update(dt);
+    this.holdHeight(this.current, dt);
+  }
+
+  /** Hold his standing height steady across idle/walk/run. See the note in
+   *  the constructor for why this is a scale on the root and not a bone. */
+  holdHeight(state, dt) {
+    if (!this.head || !this.root) return;
+    const ground = state === 'idle' || state === 'walk' || state === 'run';
+    let want = 1;
+    if (ground) {
+      this.root.updateWorldMatrix(true, false);
+      this.head.updateWorldMatrix(true, false);
+      // MEASURE IT UNSCALED, or the correction feeds on itself. The world
+      // height already contains whatever scale this function set last frame
+      // AND the seam's own `height` fit (`baseScale`, often ~1.7), so
+      // comparing a world height against a stored world height compounds:
+      // the first cut did exactly that and pinned him at the +12% clamp in
+      // every state, which is the same bug it was written to fix, upside
+      // down.
+      const scale = this.root.scale.y || 1;
+      const hUn = (_v.setFromMatrixPosition(this.head.matrixWorld).y
+        - _r.setFromMatrixPosition(this.root.matrixWorld).y) / scale;
+      // the reference is his OWN upright height, learned the first time the
+      // idle plays rather than hard-coded — a re-rig at a different scale
+      // would otherwise need this file edited to match
+      if (!this.refHead && state === 'idle' && hUn > 0) this.refHead = hUn;
+      if (this.refHead && hUn > 0.001) {
+        want = Math.min(1.2, Math.max(0.85, this.refHead / hUn));
+      }
+    }
+    this.fix += (want - this.fix) * Math.min(1, 9 * (dt || 0.016));
+    this.root.scale.setScalar(this.fix * this.baseScale);
   }
 }
+
+const _v = new THREE.Vector3();
+const _r = new THREE.Vector3();
 
 export class Kid {
   constructor(asset) {
@@ -266,6 +341,9 @@ export class Kid {
 
     if (asset.skinned) {
       this.clips = new ClipDriver(this.group, asset);
+      // the seam rescales a rig to the manifest's `height`, so the driver's
+      // own correction multiplies that rather than replacing it
+      this.clips.baseScale = asset.root.scale.x || 1;
       asset.root.rotation.y = SKIN_YAW;
     }
     // remember rest offsets so a GLB with its own base positions poses right

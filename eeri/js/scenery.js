@@ -1,3 +1,5 @@
+import { ART } from './artprops.js?v=60';
+
 // EERI — SCENERY AS DATA, which is the thing standing between this game and
 // an editor.
 //
@@ -37,6 +39,14 @@
 // One entry per prop type: the fields it takes beyond x/y, each with a
 // sensible default and a step for a slider. `label` is what a person is
 // shown; the key is what the builder is called.
+// EVERY PROP DECLARES ITS LANE (v15.57). The editor's rail is seven rows —
+// GAMEPLAY and the six painted lanes — and until now nothing told it which
+// row a prop belonged on, so every lane offered the same short list and the
+// painted lanes offered nothing at all. `layer` is that missing field.
+//
+// `play` is the lane the game is played on. A prop with no `layer` is
+// treated as `play`, which is where all of World 1 and World 2's dressing
+// vocabulary already lived.
 export const PROPS = {
   pipeStack:    { label: 'pipe stack',    fields: { s: { def: 0.8, min: 0.4, max: 1.6, step: 0.02 } } },
   buriedPipe:   { label: 'buried pipe',   fields: { s: { def: 1.0, min: 0.5, max: 2.0, step: 0.05 },
@@ -66,6 +76,11 @@ export const PROPS = {
   // no new art, and — the point — it has an (x, y) an editor can drag.
   // `z` is which lane it sits BETWEEN: occlusion is the layer order, so a
   // lamp at -8 is behind the near lane and one at -1 is in front of it.
+  // …and the keyed art, generated from `artprops.js`'s catalogue below so a
+  // new cutout is ONE entry in ONE file rather than an entry here and a
+  // hard-coded call in a dressing module. `h` and `flip` are the only two
+  // things a cutout needs; everything else about it is the image.
+
   lamp: {
     label: 'work lamp',
     fields: {
@@ -151,6 +166,30 @@ export const SCENERY = {
   // cool, high and wide: they are daylight coming through a hole, not
   // fixtures. One warm one at the clearing where the work is.
   grove: [
+    // THE TREELINE, moved here from `world34-dressing.js` (v15.57). It was
+    // eight hard-coded `cutout()` calls at hard-coded x's, which is exactly
+    // why the editor could not offer a tree: there was no row to drag and
+    // nowhere to write one back to.
+    //
+    // It went into a SECOND `grove:` key first, at the top of this object,
+    // and vanished — a duplicate key in an object literal silently wins and
+    // the lamps below overwrote all eight rows. No error, no warning, an
+    // empty forest. They live in the world's one block now.
+    //
+    // Mostly spruce on purpose: the oak and the birch are lovely pieces but
+    // they are mostly TRUNK, and a pale vertical bar the width of the player
+    // repeated across a room competes with him for the eye. `y: 3.5` puts
+    // the foot half a unit BELOW the ground line, so a trunk goes into the
+    // earth rather than resting on it like a sticker.
+    { prop: 'treeSpruce', x: 6,  y: 3.5, h: 8.4 },
+    { prop: 'treeOak',    x: 25, y: 3.5, h: 7.0, flip: 1 },
+    { prop: 'treeSpruce', x: 34, y: 3.5, h: 7.6 },
+    { prop: 'treeSpruce', x: 47, y: 3.5, h: 9.0, flip: 1 },
+    { prop: 'treeBirch',  x: 59, y: 3.5, h: 7.2 },
+    { prop: 'treeSpruce', x: 71, y: 3.5, h: 7.8, flip: 1 },
+    { prop: 'treeSpruce', x: 84, y: 3.5, h: 8.4 },
+    { prop: 'treeOak',    x: 97, y: 3.5, h: 7.4, flip: 1 },
+
     { prop: 'lamp', x: 18.0, y: 13.5, r: 13, i: 0.55, z: -22, colour: '#cfe6c8' },
     { prop: 'lamp', x: 52.0, y: 14.0, r: 15, i: 0.5, z: -22, colour: '#cfe6c8' },
     { prop: 'lamp', x: 84.0, y: 12.0, r: 11, i: 0.6, z: -14, colour: '#ffe6b4' },
@@ -175,6 +214,29 @@ export const SCENERY = {
 // Fill a row out to its declared defaults, so a builder never reads
 // undefined off a row somebody wrote by hand (or an editor wrote in a
 // hurry).
+// The art catalogue joins PROPS on load. Kept as a merge rather than typed
+// out twice: `ART` is the list of files that exist, and a file that exists
+// but is not offered by the editor is the state this release exists to end.
+for (const [name, a] of Object.entries(ART)) {
+  PROPS[name] = {
+    label: a.label,
+    layer: a.layer,
+    art: name,
+    fields: {
+      h:    { def: a.h, min: 0.3, max: 22, step: 0.05 },
+      flip: { def: 0, min: 0, max: 1, step: 1 },
+    },
+  };
+}
+
+/** Which lane a prop belongs on. `play` is the default and the playfield. */
+export function layerOf(prop) { return PROPS[prop]?.layer || 'play'; }
+
+/** The prop names offered on one lane, for the editor's palette. */
+export function propsForLayer(layer) {
+  return Object.keys(PROPS).filter((k) => layerOf(k) === layer);
+}
+
 export function withDefaults(row) {
   const spec = PROPS[row.prop];
   if (!spec) throw new Error(`scenery: unknown prop "${row.prop}"`);

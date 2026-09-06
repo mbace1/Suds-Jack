@@ -1,5 +1,183 @@
 # EERI — versions
 
+## v15.59 — 2026-09-06 — the earth is a cut through a stack of card
+
+**Owner: *"the land mass with layers of color and some rocks is the
+weakest part of each scenario."*** Correct, and three separate things
+were wrong with it, each found by measuring.
+
+**1. The detail maps were nearly white.** `packed`, `gritty`, `strata`,
+`topsoil` measured a mean of ~250 with almost no spread; a map like that
+changes nothing at any scale. Replaced with four generated craft
+cross-sections — torn kraft layers, pressed-paper pebbles, fibre roots,
+compression seams — normalised to a mean of ~185 at 1.5× the spread.
+
+**2. They were sampled at 20% of their height.** `craftBox` scales UVs
+by world size with ONE factor for both axes. A raycast into the earth
+reported a V range of 0.2: a band is a unit tall, so every horizontal
+feature in the art was thrown away before it was drawn — the render
+measured a per-row spread of 6 against a texture carrying 84.
+`DENSITY_V` gives the earth sections their own vertical density; the
+on-screen spread doubled at once.
+
+**3. The band boundaries were a pixel staircase.** A generated, keyed
+torn-card edge (`earth_edge_v1`) now runs along every boundary. The
+first cut tiled it at its own aspect — fifty-five identical tears — and
+the boundaries read as courses of brick, ART_PIPELINE's own named trap;
+now ~11 units per repeat, a different count and offset per boundary,
+and MIRRORED so the art's unmatched ends never show a join. The
+`tongues` that used to make a boundary wander are gone from every edged
+boundary: with the edge on top, a tongue that rose higher than the edge
+covers poked out as a hard-cornered box in the wrong band's colour —
+the owner's green ring.
+
+**The owner's red arrow, tested as asked:** the 0.22 shadow band under
+the grass lip read as a flat shelf. It is now a thin painted TOP FACE —
+the topsoil section squashed and lifted toward the sky tone, the ground
+plane receding a hand's width behind the lip — over a hairline shadow.
+Made to be judged by a picture; if it reads as a shelf still, it is two
+lines to revert.
+
+**Grass:** alternate runs mirrored and each run's repeat count wanders
+by one, so no two runs of the fringe are the same picture.
+
+`node test/rooms.mjs` 246, `world34.mjs` pass, `fx-smoke.mjs` 31,
+`dev-menu.mjs` 36. **The browser gates were killed by the OS for low
+memory three times on this tree** and must be run before merge.
+
+No token bump: no shipped module's import graph moved.
+## v15.58 — 2026-09-05 — the level editor gets every layer of art, and snapping
+
+**Owner, on being shown the editor: *"the level editor has none of the
+features we discussed"* and *"I wanted a level editor with all layers of
+art available. snap to place placement etc"*.** Both true, and the cause
+was not in the editor.
+
+**The editor could only ever offer what the GAME could build from a row.**
+`dev/inspector.js` kept its own hard-coded fourteen-entry map of what
+belonged on which lane — it knew about two of the six painted lanes, so
+four offered nothing, and it knew about no keyed art at all. Underneath
+that, the art itself was the problem: World 3's trees, the log tunnel,
+the stump clearing, World 4's work lamp and cable reel were hard-coded
+calls inside `world34-dressing.js` at hard-coded x's. **A tool cannot
+offer you a thing the game can only build by running one specific line of
+one specific function.**
+
+So the fix is mostly in the game, not the tool:
+
+- **`js/artprops.js` (new)** — one catalogue of every keyed cutout in the
+  game, and one builder that mounts any of them on any lane. THREE
+  arrives as a parameter, because anything reachable from `rooms.js` that
+  imports `'three'` breaks the editor's level list (v15.57's bug).
+- **`js/scenery.js`** — every prop now declares its `layer`, and the art
+  catalogue merges into the same `PROPS` table. One home for all art
+  placement, which is the owner's choice of the three offered.
+- **`js/layers.js`** — mounts art rows for EVERY world through the same
+  `placeScenery` call the lamps already went through, so a tree and a work
+  lamp are the same kind of thing to everything downstream.
+- **World 3's treeline moved out of code into `SCENERY.grove` rows**,
+  which is the seam proving itself.
+
+**A duplicate key ate the first attempt.** The tree rows went into a
+second `grove:` key at the top of `SCENERY` — and a duplicate key in an
+object literal silently wins, so the lamps below overwrote all eight
+rows. No error, no warning, an empty forest, and a screenshot was the
+only thing that could show it.
+
+### What the editor does now
+
+- **Every lane offers every piece of art.** A cutout has no opinion about
+  depth — the row carries the lane — so restricting a tree to the lane it
+  happens to default to was an invention of the editor. A spruce on `far`
+  is a distant tree; the same spruce on `near` is one you walk behind.
+- **A `dressing` rail row for the play lane**, which most of the game's
+  art stands on and which had no row at all.
+- **SNAP ½**, toggleable. Half a tile rather than a whole one: scenery is
+  not collision, and a prop that can only sit on a tile corner cannot be
+  tucked under a ledge, which is most of what dressing a room is.
+- **EXPORT** — the world's whole row list as JSON, downloaded as a file
+  and copied to the clipboard, ready to paste into `js/scenery.js`.
+
+### The second gate edit of the day, and it is narrower than it looks
+
+`test/dev-menu.mjs` asserted the inspector "does not claim to save
+anything yet" — right when it had nowhere to write to. It has somewhere
+now (owner chose "one data file for all art, editor exports JSON"), so
+the rule is narrowed to what it was really protecting: a DOWNLOAD is
+allowed, `localStorage` and `fetch` are still forbidden, because either
+would let placements live somewhere the repo cannot see. That is the
+difference between an export and a save.
+
+`node test/rooms.mjs` 246, `world34.mjs` pass, `fx-smoke.mjs` 31,
+`dev-menu.mjs` 36.
+
+**The browser gates could not be trusted on this machine today.**
+`smoke.cjs` failed 5–6 checks in the walk-to-the-flag chain and crashed
+on a Playwright click timeout — and a control run on **clean `main`**,
+which is deployed and passed 432/0 this morning, failed the same check
+and crashed the same way. Environmental, established by control rather
+than assumed. **`smoke.cjs` and `playthrough.cjs` must be re-run before
+this merges.**
+
+`?v=60` — unchanged; no shipped module's import graph moved.
+
+## v15.57 — 2026-09-05 — the kid stops growing when he stops, the editor works on a phone again, and the crane leaves the portrait frame
+
+**Three fixes, all from the owner playing the phone build.**
+
+### "when you stop running the character gets like 15% bigger"
+
+Measured before anything was touched: `group.scale` is exactly 1 in both
+states, so it was never a scale bug, which is why looking for one never
+found it. What changes is the POSE. Each clip came from the library with
+its own posture — the run crouches, the idle stands upright — so his head
+sits **0.835** above his origin running and **0.96** idle. His feet are
+planted, so the whole difference goes up, and 15% of his height appearing
+on top of him when he stops is exactly what a player sees. Owner said
+15%. Measured: 15%.
+
+Levelling the hips was the first attempt and barely moved the number —
+the useful half of the finding: the hips were already within 0.03, the
+crouch is in the knees and the spine. So the correction is made where the
+difference shows, at the silhouette: the root sits at his feet, and each
+frame the head's height above it is measured (UNSCALED — the first cut
+compared world heights, compounded with itself and pinned him at the
+clamp) and the root scaled to hold it at his own upright height, learned
+from the first idle frame rather than written down. Ground states only —
+a jump tucks and a climb reaches on purpose — clamped +20/−15%, eased.
+**Residual after the fix: 8%**, from 15%. The clean fix is an idle clip
+that stands the way the run does (3 credits); this is the free one.
+
+### The editor was broken on the phone, by this morning's tree pass
+
+`dev/inspector.js` pulls `rooms.js` into the TOP page of `dev.html` to
+list the levels, and that page has no import map. v15.55 gave
+`world34-dressing.js` a static `import … from './craft.js'` for a tree
+that was replaced by painted art the same day — and the import stayed.
+`craft.js` imports `'three'`, so every phone opening the editor got
+"failed to resolve module specifier three" for one deploy. The import is
+gone; THREE arrives as a parameter, the way that file has always taken
+it, and the file now says why in its header.
+
+For the record, since it was asked: the editor is reached from
+**`dev.html`, then START, then the pause menu, then the DEV TOOLS row**
+that only that page adds. On a phone in portrait it is a top bar (level
+‹ › · PICK · PLACE · WALK · UNDO · COPY) and a bottom sheet whose rail —
+★ GAMEPLAY and the six painted lanes — runs as a strip along its top.
+
+### The crane over the middle of the phone
+
+The portrait floor on the dolly (v15.53) pulls the camera back and the
+frame's top edge rises with it, from y 12.3 to about 16.4 — so the whole
+groundworks crane, anchored at 17 to be cropped in landscape, sat in full
+view over the middle of the picture on the phone. The anchor moves up
+with the frame in portrait; only the hanging pieces reach in either way.
+
+`node test/rooms.mjs` 246, `world34.mjs` pass, `fx-smoke.mjs` 31,
+`dev-menu.mjs` 36, `smoke.cjs` 432, `playthrough.cjs` 25.
+
+`?v=59` → `?v=60` across the module graph.
+
 ## v15.56 — 2026-09-05 — dust at landings, and World 2's pipe becomes a pipe
 
 **`ART_TARGET` rung 4, the half v15.55 left open:** "dust at footfalls and

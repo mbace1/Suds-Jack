@@ -31,8 +31,8 @@
 // Adding a material is a manifest entry plus a name here. Nothing else.
 
 import * as THREE from 'three';
-import { getTexture } from './assets.js?v=59';
-import { PAL } from './palette.js?v=59';
+import { getTexture } from './assets.js?v=60';
+import { PAL } from './palette.js?v=60';
 
 // world units per texture repeat, per material — a felt nap is fine and a
 // card flute is coarse, so they do not share a scale
@@ -46,9 +46,45 @@ import { PAL } from './palette.js?v=59';
 // are four tints of one stamp is not four bands.
 const DENSITY = {
   card: 1 / 5, felt: 1 / 1.6, balsa: 1 / 2.4, flute: 1 / 2.6,
-  topsoil: 1 / 1.7, strata: 1 / 3.4, flutecoarse: 1 / 5.5,
-  packed: 1 / 2.2, gritty: 1 / 2.8,
+  // v15.59: the four EARTH sections repeat about half as often as they did.
+  // The old maps were near-white noise — measured, a mean of about 250 with
+  // almost no spread — so their scale did not matter because nothing was
+  // visible at any scale. The replacements are photographed craft
+  // cross-sections with real tone in them, and at the old density their
+  // features came out about a third of a tile across, which reads as fabric
+  // rather than as ground. One repeat every four to six units puts a stone
+  // at about the size a stone should be beside a 1.5-tile kid.
+  topsoil: 1 / 4.2, strata: 1 / 6.0, flutecoarse: 1 / 5.5,
+  packed: 1 / 5.5, gritty: 1 / 4.8,
 };
+
+// THE EARTH SECTIONS MIRROR RATHER THAN REPEAT. A photographed section has
+// features in it — that is the whole point of replacing the noise — and a
+// featured texture laid edge to edge shows its seam as a hard vertical line
+// every few units, which across a 136-unit earth band is a picket fence.
+// Mirrored wrapping folds every other copy, so the seam becomes a reflection:
+// on strata and stones, which have no handedness, it is invisible. One flag,
+// against a re-generation that would have to be seamless AND featured, which
+// is close to a contradiction in terms.
+const MIRRORED = new Set(['topsoil', 'strata', 'packed', 'gritty']);
+
+// …AND THEY NEED THEIR OWN VERTICAL DENSITY, which is the measurement that
+// explained why the first attempt at this changed nothing on screen.
+//
+// `craftBox` scales UVs by WORLD SIZE, one factor for both axes — right for a
+// noise map, wrong for a photographed section. Raycast into the earth and the
+// box under the cursor reports a V range of **0.2**: an earth band is about a
+// unit tall, so at one repeat per six units it samples a fifth of the image
+// and stretches that fifth across the whole band. Every horizontal thing in
+// the art — the strata, the stones sitting on a boundary, the fibre — was
+// being thrown away before it could be drawn, and the render measured a
+// per-row spread of 6 against a texture carrying 84.
+//
+// So the earth sections get a separate, much higher V density: about one
+// image height per two units, so a band shows half a section and the deep
+// band shows all of it. The horizontal density stays low, because ACROSS is
+// where a repeat would be noticed.
+const DENSITY_V = { topsoil: 1 / 2.0, strata: 1 / 2.2, packed: 1 / 2.6, gritty: 1 / 2.2 };
 
 // A DETAIL MAP MUST TILE, WHICH MEANS IT MUST BE FEATURELESS. `packed` and
 // `gritty` shipped once and had to be pulled: generated with the house craft
@@ -71,6 +107,10 @@ function want(mat, name) {
   fetched.add(name);
   getTexture(name).then((tex) => {
     if (!tex) return;                       // no file: flat colour, no drama
+    if (MIRRORED.has(name)) {
+      tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
+      tex.needsUpdate = true;
+    }
     for (const m of waiting.get(name) || []) { m.map = tex; m.needsUpdate = true; }
   });
 }
@@ -84,6 +124,7 @@ export function craftMat(color, material = null, opts = {}) {
   const m = new THREE.MeshLambertMaterial({ color, ...opts });
   if (material) {
     m.__craft = DENSITY[material] ?? 1 / 5;
+    m.__craftV = DENSITY_V[material] ?? m.__craft;
     want(m, material);
   }
   return m;
@@ -98,9 +139,9 @@ export function craftMat(color, material = null, opts = {}) {
 export function craftBox(w, h, d, m) {
   const geo = new THREE.BoxGeometry(w, h, d);
   if (m?.__craft) {
-    const uv = geo.attributes.uv, k = m.__craft;
+    const uv = geo.attributes.uv, k = m.__craft, kv = m.__craftV ?? k;
     for (let i = 0; i < uv.count; i++) {
-      uv.setXY(i, uv.getX(i) * w * k, uv.getY(i) * h * k);
+      uv.setXY(i, uv.getX(i) * w * k, uv.getY(i) * h * kv);
     }
     uv.needsUpdate = true;
   }
@@ -111,6 +152,7 @@ export function craftBox(w, h, d, m) {
 export function craft(m, material) {
   if (!m || !material) return m;
   m.__craft = DENSITY[material] ?? 1 / 5;
+  m.__craftV = DENSITY_V[material] ?? m.__craft;
   want(m, material);
   return m;
 }
@@ -150,8 +192,8 @@ export function cutMat(name, opts = {}) {
  * which is the one cutout that is allowed to repeat, because a torn line is
  * only read locally.
  */
-export function cutQuad(w, h, name, { repeatX = 0, ...opts } = {}) {
-  const key = `${name}|${repeatX}|${JSON.stringify(opts)}`;
+export function cutQuad(w, h, name, { repeatX = 0, mirror = false, ...opts } = {}) {
+  const key = `${name}|${repeatX}|${mirror ? 'm' : 'r'}|${JSON.stringify(opts)}`;
   if (!cutCache.has(key)) {
     const m = cutMat(name, opts);
     if (repeatX) {
@@ -161,7 +203,12 @@ export function cutQuad(w, h, name, { repeatX = 0, ...opts } = {}) {
       getTexture(name).then((tex) => {
         if (!tex) return;
         const t = tex.clone(); t.needsUpdate = true;
-        t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping;
+        // `mirror` folds every other repeat (v15.59): a tiled edge whose
+        // left and right ends do not match shows a hard vertical join at
+        // every repeat, and a torn edge's ends never match. Reflected, the
+        // join is invisible on anything without handedness.
+        t.wrapS = mirror ? THREE.MirroredRepeatWrapping : THREE.RepeatWrapping;
+        t.wrapT = THREE.ClampToEdgeWrapping;
         t.repeat.set(repeatX, 1);
         m.map = t; m.needsUpdate = true;
       });

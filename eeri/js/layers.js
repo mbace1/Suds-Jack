@@ -23,13 +23,14 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=59';
-import { getLayerTexture } from './assets.js?v=59';
-import { buildGroundworksDressing } from './world1-dressing.js?v=59';
-import { buildPipeworksDressing } from './world2-dressing.js?v=59';
-import { craftMat, craftBox } from './craft.js?v=59';
-import { placeScenery } from './scenery.js?v=59';
-import { applyMood, buildLamp, flicker } from './light.js?v=59';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=60';
+import { getLayerTexture } from './assets.js?v=60';
+import { buildGroundworksDressing } from './world1-dressing.js?v=60';
+import { buildPipeworksDressing } from './world2-dressing.js?v=60';
+import { craftMat, craftBox } from './craft.js?v=60';
+import { placeScenery } from './scenery.js?v=60';
+import { buildArtBuilders, disposeArt } from './artprops.js?v=60';
+import { applyMood, buildLamp, flicker } from './light.js?v=60';
 
 // CANVAS PIXELS PER WORLD UNIT — no longer one number (v15.23).
 //
@@ -776,7 +777,16 @@ function foregroundOccluders(scene, world) {
   // frame's top edge (~12.3) — so a foreground piece is always CROPPED by
   // the frame and never floats with sky above it. That is what "cropped
   // hard" means and it is why these read as near rather than as distant.
-  const TOP = 17;
+  //
+  // …AND HIGHER STILL ON A PHONE HELD UPRIGHT. The portrait floor on the
+  // dolly (camera.js, MIN_W) pulls the camera back to show ten units
+  // across, and a taller frame comes with it: the top edge sits near y 16.4
+  // in portrait against 12.3 in landscape. Anchored at 17 the whole crane
+  // was in frame on the phone — a big yellow L over the middle of the
+  // picture, which is the opposite of "cropped hard". The anchor moves up
+  // with the frame, so only the hanging pieces reach in either way.
+  const PORTRAIT = typeof innerWidth === 'number' && innerHeight > innerWidth;
+  const TOP = PORTRAIT ? 21.5 : 17;
   const slab = (w, h, m, x, y) => {
     const q = craftBox(w, h, 1.2, m);
     q.position.set(x, y, FORE_OCC_Z);
@@ -930,6 +940,22 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
   // is the whole point: a light now has an (x, y) an editor can drag.
   applyMood(world, mounted);
   const lamps = [];
+  const artMade = [];
+  // ART ROWS, FOR EVERY WORLD (v15.57). The keyed cutouts used to be
+  // hard-coded calls inside `world34-dressing.js`, which is why only worlds
+  // 3 and 4 had any and why the editor could not offer them: a tool can only
+  // place what the game can build from a row. `artprops.js` supplies one
+  // builder per catalogue entry and they are handed to the SAME
+  // `placeScenery` call the lamps already went through, so a piece of art
+  // and a work lamp are the same kind of thing to everything downstream —
+  // the editor, the row tagging, and the Godot spec.
+  //
+  // `LAYER_Z` is passed rather than copied: a lane's depth is this file's
+  // fact and a second copy of it is a second thing to keep in step. `play`
+  // sits a little behind the playfield, where a dressing cutout belongs —
+  // in front of the near lane, behind anything the player can touch.
+  const zFor = (lane) => (lane === 'play' ? -0.85 : LAYER_Z[String(lane).toUpperCase()] ?? -0.85);
+  const artBuilders = buildArtBuilders(THREE, scene, zFor, import.meta.url);
   placeScenery(world, {
     lamp: (p) => {
       const m = buildLamp(THREE, p);
@@ -938,7 +964,12 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
       lamps.push(m);
       return m;
     },
-  }, (made, row) => { if (made) made.userData.sceneryRow = row; });
+    ...artBuilders,
+  }, (made, row) => {
+    if (!made) return;
+    made.userData.sceneryRow = row;
+    if (made.name?.startsWith('art:')) artMade.push(made);
+  });
 
   return {
     world,
@@ -948,6 +979,12 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
     // names its rows. Read by the dev-page editor for live placement;
     // nothing in the shipping game ever looks at this.
     dressingBuilders: dressing?.builders || null,
+    // …and the art builders, on the same terms and for the same reason: the
+    // editor can only offer what it can BUILD, and until v15.57 the keyed
+    // cutouts had no builder reachable from outside this file. Every world
+    // has them, so unlike `dressingBuilders` this is never null.
+    artBuilders,
+    artMade,
     // THE FOREGROUND GETS OUT OF THE WAY (owner, 2026-08-21: "some foreground
     // assets block view of ladders"). The fore lane is a full-width painted
     // strip and a climb is the one move that puts the player behind it for
@@ -1017,6 +1054,8 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
       lamps.length = 0;
       dressing?.dispose?.();
       events.dispose?.();
+      disposeArt(scene, artMade);
+      artMade.length = 0;
       if (fore) {
         scene.remove(fore.group);
         fore.group.traverse((o) => {

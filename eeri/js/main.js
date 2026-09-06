@@ -9,35 +9,35 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=59';
-import { Input } from './input.js?v=59';
-import { Level, ROOMS, LAB } from './level.js?v=59';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=60';
+import { Input } from './input.js?v=60';
+import { Level, ROOMS, LAB } from './level.js?v=60';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
   buildSheetModel, Sheet,
-} from './pieces.js?v=59';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=59';
-import { Camera } from './camera.js?v=59';
-import { buildKidModel, Kid, Player } from './kid.js?v=59';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=59';
-import { buildCraneModel, Crane } from './crane.js?v=59';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=59';
-import { buildFlattenerModel } from './flattener.js?v=59';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=59';
-import { Hoist } from './hoist.js?v=59';
-import { Plank } from './plank.js?v=59';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=59';
-import { WreckingBall } from './hazards.js?v=59';
-import { AudioKit } from './audio.js?v=59';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=59';
-import { craftMat, craftBox, setRim } from './craft.js?v=59';
-import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=59';
-import { FXPool, attach as attachFX } from './fx.js?v=59';
-import { t as tr } from './lang.js?v=59';
-import { showIntro } from './intro.js?v=59';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=59';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=59';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=59';
+} from './pieces.js?v=60';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=60';
+import { Camera } from './camera.js?v=60';
+import { buildKidModel, Kid, Player } from './kid.js?v=60';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=60';
+import { buildCraneModel, Crane } from './crane.js?v=60';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=60';
+import { buildFlattenerModel } from './flattener.js?v=60';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=60';
+import { Hoist } from './hoist.js?v=60';
+import { Plank } from './plank.js?v=60';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=60';
+import { WreckingBall } from './hazards.js?v=60';
+import { AudioKit } from './audio.js?v=60';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=60';
+import { craftMat, craftBox, setRim } from './craft.js?v=60';
+import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=60';
+import { FXPool, attach as attachFX } from './fx.js?v=60';
+import { t as tr } from './lang.js?v=60';
+import { showIntro } from './intro.js?v=60';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=60';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=60';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=60';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -850,6 +850,9 @@ async function boot() {
       // is read by the shipping game.
       lamps: () => diorama.lamps,
       dressingBuilders: () => diorama.dressingBuilders,
+      // the keyed art, for the editor's per-lane palettes (v15.57)
+      artBuilders: () => diorama.artBuilders,
+      artMade: () => diorama.artMade,
       // Four more, for the SAME reason and the SAME rule: the editor's
       // GAMEPLAY layer needs somewhere to place a robot or a vent, the room
       // group they have to be parented to for teardown to find them, and

@@ -628,14 +628,19 @@
       "_note": "the CUT EDGE of corrugated card \u2014 stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
     },
     "topsoil": {
-      "file": "2d/topsoil_detail_v2.png",
+      "file": "2d/topsoil_detail_v3.webp",
       "status": "live",
       "_note": "v2: contrast-stretched by art-src/tools/punch-maps.mjs. A detail map MULTIPLIES the palette colour, and multiplication scales variance by the surface's own brightness \u2014 the earth sits near luminance 55, so the v1 maps at std/mean 0.09-0.12 delivered about 5 levels of variation to the screen and the earth read as a flat tint. Measured on one frame: sky and mid at std 21, earth at 8.6. The earth sections now sit at 0.21-0.25."
     },
     "strata": {
-      "file": "2d/mid_detail_v2.png",
+      "file": "2d/strata_detail_v3.webp",
       "status": "live",
       "_note": "the middle strata \u2014 coarse layered card section, high-passed"
+    },
+    "earth_edge": {
+      "file": "2d/earth_edge_v1.webp",
+      "status": "live",
+      "_note": "the torn edge of a stack of kraft card, keyed to alpha and tiled along every boundary between earth bands. v15.59: the bands were meeting at a ruled horizontal line broken into a pixel staircase by the tongues, which is the one machine-perfect thing left in the lane and the reason the ground read as 'layers of colour'. A torn card edge is what a cut through a stack of card actually looks like."
     },
     "fringe": {
       "file": "2d/fringe_edge_v1.png",
@@ -683,12 +688,12 @@
       "_note": "the same stacked fluting as `flute`, declared again for a COARSER density. Two deep bands wearing one material at one scale are one band"
     },
     "packed": {
-      "file": "2d/packed_detail_v2.png",
+      "file": "2d/packed_detail_v3.webp",
       "status": "live",
       "_note": "the deep bands \u2014 dense compressed kraft layers. Regenerated from a MATERIAL-only prompt (base nano banana); the first cut inherited the craft block and came back with fixings in it"
     },
     "gritty": {
-      "file": "2d/gritty_detail_v2.png",
+      "file": "2d/gritty_detail_v3.webp",
       "status": "live",
       "_note": "grit and torn paper pellets in the fluting (nano banana Pro \u2014 base put repeating white blobs in it)"
     }

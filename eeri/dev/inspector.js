@@ -220,8 +220,18 @@ const MINE = '__insp';
 // GAMEPLAY first because it is the layer everything else frames, then the
 // six painted lanes in depth order — nearest to the eye first, matching
 // how a person reads "what's in front of what" faster than back-to-front.
+import { PROPS, propsForLayer, SCENERY } from '../js/scenery.js?v=60';
+import { ART } from '../js/artprops.js?v=60';
+
 const RAIL = [
   { key: 'gameplay', label: 'GAMEPLAY', n: '★' },
+  // THE PLAY LANE IS A LANE (v15.57). Most of the game's art stands here —
+  // World 1 and World 2's whole dressing vocabulary, the log tunnel, the
+  // stump clearing, the work lamp, every buried feature — and the rail had
+  // no row for it, so none of it was reachable from the editor at all. It
+  // sits under GAMEPLAY because that is where it is in the world: dressing
+  // in front of the near lane and behind anything the player can touch.
+  { key: 'play', label: 'dressing', n: 0 },
   { key: 'fore', label: 'foreground', n: 6 },
   { key: 'near', label: 'near', n: 5 },
   { key: 'mid', label: 'mid', n: 4 },
@@ -236,13 +246,20 @@ const RAIL = [
 // computed lookup. `lamp` has a real per-row `z` and is offered on every
 // art layer; everything else is offered on the one lane it visually reads
 // as belonging to.
-const PROP_LAYER = {
-  pipeStack: 'near', buriedPipe: 'near', serviceWall: 'mid', pipeMouth: 'near',
-  standpipe: 'near', pumpPlatform: 'near', walkway: 'mid', valve: 'near',
-  // world 1's own vocabulary (world1-dressing.js)
-  hazardBarrier: 'near', materialYard: 'near', scaffoldBay: 'mid',
-  gableFrame: 'mid', billboard: 'near', crateCluster: 'near',
-};
+// THE PALETTE IS THE GAME'S OWN CATALOGUE (v15.57), not a copy kept here.
+//
+// This used to be a hard-coded fourteen-entry map, and it is the whole
+// reason the owner's answer to the editor was "it has none of the features
+// we discussed": the rail offered six painted lanes and this list knew about
+// two of them, so four lanes were empty and no keyed art — no tree, no log
+// tunnel, no work lamp — appeared anywhere at all. A second copy of a fact
+// is a thing that goes stale, and this one had.
+//
+// `js/scenery.js` now declares a `layer` on every prop and merges
+// `artprops.js`'s catalogue into the same table, so asking it what belongs
+// on a lane is one call and can never disagree with what the game builds.
+// It is import-safe from this page: neither module imports `three`, which
+// is the constraint `dev.html` puts on anything reachable from here.
 
 // GAMEPLAY reference taxonomy — parts.js's own kinds, grouped the way a
 // level actually reads them. Labels only: see the header for why placement
@@ -287,6 +304,8 @@ export class Inspector {
     this.drag = null;
     this.host = null;
     this.layer = 'gameplay';
+    this.snap = true;          // owner ask; toggled from the top bar
+    this.placed = [];          // rows made this session, for EXPORT
     this.pendingProp = null;        // prop key selected in the palette, for PLACE mode
     this.undoStack = [];
     this.levels = null;             // lazily imported: [{i, label, name}]
@@ -329,6 +348,8 @@ export class Inspector {
           <button type="button" data-a="place" aria-pressed="false" disabled>PLACE</button>
           <button type="button" data-a="walk" aria-pressed="false">WALK</button>
           <button type="button" data-a="undo" disabled>UNDO</button>
+          <button type="button" data-a="snap" aria-pressed="true">SNAP ½</button>
+          <button type="button" data-a="export">EXPORT</button>
           <button type="button" data-a="copy">COPY</button>
           <button type="button" data-a="collapse" aria-pressed="false" title="hide the panel, keep the mode">▾</button>
           <button type="button" data-a="close">×</button>
@@ -372,6 +393,13 @@ export class Inspector {
       if (a === 'walk') this.setMode('walk');
       if (a === 'place') this.setMode('place');
       if (a === 'undo') this.undo();
+      if (a === 'snap') {
+        this.snap = !this.snap;
+        const b = this.el.querySelector('[data-a="snap"]');
+        b.setAttribute('aria-pressed', String(this.snap));
+        b.textContent = this.snap ? 'SNAP ½' : 'SNAP off';
+      }
+      if (a === 'export') this.exportRows();
       if (a === 'copy') this.copy();
       if (a === 'collapse') this.toggleCollapse();
       if (a === 'copyRow') this.copy();
@@ -423,8 +451,8 @@ export class Inspector {
       // both — as this file's first cut did, copying the shape of an
       // older draft of `rooms.mjs` — double-counted worlds 3-4 into an
       // 18-level list and broke every level-index lookup after level 6.
-      const { labelOf } = await import('../js/levelid.js?v=59');
-      const { ROOMS } = await import('../js/rooms.js?v=59');
+      const { labelOf } = await import('../js/levelid.js?v=60');
+      const { ROOMS } = await import('../js/rooms.js?v=60');
       this.levels = ROOMS.map((r, i) => ({ i, label: labelOf(i, ROOMS.length), name: r.name }));
     } catch { this.levels = []; }
     if (!this.el.hidden) this.syncLevel();
@@ -639,11 +667,22 @@ export class Inspector {
       return;
     }
     const A = this.api();
-    const types = Object.keys(PROP_LAYER).filter((k) => PROP_LAYER[k] === key);
-    types.push('lamp');   // every art layer takes a lamp
+    // EVERY LANE OFFERS EVERY PIECE OF ART, which is the owner's ask read
+    // literally: "a level editor with all layers of art available". A keyed
+    // cutout has no opinion about depth — the row carries the lane and
+    // `artprops.js` mounts it there — so restricting a tree to the lane it
+    // happens to default to was an invention of this file, not a fact about
+    // the game. A spruce on the far lane is a distant tree; the same spruce
+    // on the near lane is the one you walk behind.
+    //
+    // The lane's OWN vocabulary comes first, then the shared art, then the
+    // lamp, so the list still reads as "what this lane is for" at the top.
+    const own = propsForLayer(key).filter((k) => !ART[k]);
+    const types = [...own, ...Object.keys(ART), 'lamp'];
     const live = this.liveTypes(A);
     for (const t of types) {
-      const p = el('div', 'p', `<span>${t}</span><span class="t">${live.has(t) ? 'place' : 'reference'}</span>`);
+      const label = PROPS[t]?.label || t;
+      const p = el('div', 'p', `<span>${label}</span><span class="t">${live.has(t) ? 'place' : 'reference'}</span>`);
       p.dataset.prop = t;
       p.dataset.ref = live.has(t) ? '0' : '1';
       p.setAttribute('aria-pressed', 'false');
@@ -664,8 +703,22 @@ export class Inspector {
     const s = new Set(['lamp']);
     const builders = A?.debug?.dressingBuilders?.();
     if (builders) for (const k of Object.keys(builders)) s.add(k);
+    // every keyed cutout places live in EVERY world — `layers.js` builds them
+    // from the same catalogue for all four, so unlike the dressing
+    // vocabulary there is no world where these are reference only
+    for (const k of Object.keys(ART)) s.add(k);
     return s;
   }
+
+  // ---- SNAP (owner ask: "snap to place placement") -----------------------
+  //
+  // Half a tile in x and y. The collision grid is whole tiles, but scenery is
+  // not collision: a prop that can only sit on a tile corner cannot be nudged
+  // behind a wall's edge or tucked under a ledge, which is most of what
+  // dressing a room IS. Half a tile lines pieces up with each other and with
+  // the grid, and still reaches between its lines. Toggled, because the last
+  // 10% of a composition is always off-grid.
+  snapVal(v) { return this.snap ? Math.round(v / 0.5) * 0.5 : +v.toFixed(2); }
 
   pickPalette(prop, node) {
     this.pendingProp = prop;
@@ -760,11 +813,18 @@ export class Inspector {
       this.placeLive(A, p).catch((err) => console.error('[eeri] placeLive failed:', err));
       return;
     }
-    const row = { prop: this.pendingProp, x: +p.x.toFixed(2), y: +Math.max(0, p.y).toFixed(2) };
+    const row = {
+      prop: this.pendingProp,
+      x: this.snapVal(p.x),
+      y: this.snapVal(Math.max(0, p.y)),
+    };
+    // the lane you placed it on travels with the row — that is what makes
+    // "all layers available" true rather than decorative
+    if (this.layer !== 'gameplay' && ART[this.pendingProp]) row.layer = this.layer;
     if (this.pendingProp === 'lamp') row.z = z;
     let made = null;
     if (this.pendingProp === 'lamp') {
-      import('../js/light.js?v=59').then(({ buildLamp }) => {
+      import('../js/light.js?v=60').then(({ buildLamp }) => {
         made = buildLamp(A.THREE, row);
         made.userData.sceneryRow = { world: A.debug.world(), index: -1, ...row };
         A.scene.add(made);
@@ -773,7 +833,9 @@ export class Inspector {
       });
       return;
     }
-    const builders = A.debug.dressingBuilders?.();
+    // the art builders are every world's; the dressing builders are the
+    // world's own vocabulary and may be absent (worlds 3 and 4 have none yet)
+    const builders = { ...(A.debug.artBuilders?.() || {}), ...(A.debug.dressingBuilders?.() || {}) };
     const build = builders?.[this.pendingProp];
     if (!build) return;
     made = build(row) || null;
@@ -785,6 +847,7 @@ export class Inspector {
       made = root?.children[root.children.length - 1] || null;
     }
     if (made) { made.userData.sceneryRow = { world: A.debug.world(), index: -1, ...row }; }
+    this.placed.push({ world: A.debug.world(), row });
     this.afterPlace(made, row);
   }
 
@@ -1011,6 +1074,42 @@ export class Inspector {
     if (live) { live.x = local.x; live.y = local.y; if ('baseY' in live) live.baseY = local.y; }
     if (this.box) this.box.box.setFromObject(o);
     this.q('out').textContent = this.q('out').textContent;
+  }
+
+  // ---- EXPORT (owner ask: placements have to go somewhere) --------------
+  //
+  // The world's whole row list, as JSON, ready to paste into
+  // `js/scenery.js`. Existing rows come from the game's own `SCENERY` so the
+  // export is the FULL picture rather than a diff — a half-list pasted over
+  // a full one is how a room loses its lamps — and the rows placed this
+  // session are appended in the order they were made.
+  //
+  // Downloaded as a file rather than only copied, because this is used on a
+  // phone: a clipboard on iOS does not survive the trip into a mail app
+  // reliably, and a file does.
+  exportRows() {
+    const A = this.api(); if (!A) return;
+    const world = A.debug.world();
+    const NL = String.fromCharCode(10);   // built, not typed: this file has
+                                          // been broken once by an escape
+    const rows = [...(SCENERY[world] || []),
+      ...this.placed.filter((r) => r.world === world).map((r) => r.row)];
+    const body = rows.map((r) => '    ' + JSON.stringify(r)
+      .replace(/"([a-zA-Z]+)":/g, '$1: ')
+      .replace(/,(?=[^ ])/g, ', ')).join(',' + NL);
+    const txt = '  ' + world + ': [' + NL + body + ',' + NL + '  ],' + NL;
+    this.q('out').textContent = txt;
+    const doc = this.host.ownerDocument;
+    doc.defaultView.navigator.clipboard?.writeText(txt).catch(() => {});
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const a = doc.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'eeri-scenery-' + world + '.txt';
+    doc.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    const b = this.el.querySelector('[data-a="export"]');
+    const was = b.textContent; b.textContent = rows.length + ' ROWS';
+    setTimeout(() => { b.textContent = was; }, 1400);
   }
 
   copy() {
