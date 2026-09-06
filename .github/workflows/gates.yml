@@ -232,6 +232,11 @@ jobs:
       - name: the shift log and its replay
         run: node toko-move/test/shiftlog.mjs
 
+      # Nothing accumulates in pixels, so the wake is a list of lat/lon points
+      # a bare-node stub can inspect.
+      - name: vehicle trails
+        run: node toko-move/test/trails.mjs
+
       - name: version sync across hero, runtime, log and hub
         run: node toko-move/test/version-sync.mjs
 
