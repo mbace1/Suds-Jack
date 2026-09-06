@@ -173,6 +173,49 @@ const check = (label, ok) => {
   check(`the radio walks every track then its own bed then off (${cycle.map(c => c.track).join(' ')})`,
     cycle[cycle.length - 1].on === false && cycle[cycle.length - 1].plaque === false);
 
+  // ── comfort, and the slate that sets it ──
+  // These are the dials that can only be judged with the headset on, so the
+  // thing worth gating is that they can be MOVED with the headset on: one
+  // mesh, four rows read off a UV, and a menu read off a UV is one bad
+  // divisor away from every tap moving the wrong setting.
+  const comfort0 = await page.evaluate(() => window.__tt.debug.comfort());
+  check(`comfort starts on its defaults (${comfort0.speed} · ${comfort0.turn} · edges ${comfort0.vig})`,
+    comfort0.speed === 'easy' && comfort0.turn === 'snap 30' && comfort0.vig === 1);
+  check('the slate is a ray target',
+    await page.evaluate(() => window.__tt.debug.rayTargets.includes(window.__tt.debug.slate)));
+  const vig = await page.evaluate(() => window.__tt.debug.vignette());
+  check(`the vignette is open while you stand still (${vig.opacity})`, vig.on === false);
+  // it must hang off the HEAD: a vignette parented to the world is a black
+  // ring you walk out of, which is worse than not having one
+  check('and it is a mesh on the camera, not a post pass', await page.evaluate(() => {
+    let found = false;
+    window.__tt.camera.traverse(o => { if (o.isMesh && o.renderOrder === 999) found = true; });
+    return found;
+  }));
+
+  await page.waitForFunction(() => window.__tt.debug.perf().fps > 0, null, { timeout: 60000 })
+    .catch(() => {});
+  const perf = await page.evaluate(() => window.__tt.debug.perf());
+  check(`the frame cost is measurable (${perf.fps} fps · ${perf.ms} ms · ${perf.calls} draws · ${perf.backend})`,
+    perf.fps > 0 && perf.calls > 0 && perf.tris > 0);
+  check('and it is off until it is asked for', perf.on === false);
+
+  const rows = await page.evaluate(() => {
+    const d = window.__tt.debug, seen = [];
+    d.slateAct(0);
+    const perfOn = d.perf().on;
+    for (const row of [1, 1, 1, 2, 3]) { d.slateAct(row); seen.push(d.comfort()); }
+    return { perfOn, seen };
+  });
+  check('the top row turns the readout on from inside the headset', rows.perfOn === true);
+  check(`GLIDE cycles and wraps (${rows.seen.slice(0, 3).map(c => c.speed).join(' ')})`,
+    rows.seen[0].speed === 'brisk' && rows.seen[1].speed === 'gentle' && rows.seen[2].speed === 'easy');
+  check(`TURN cycles (${rows.seen[3].turn})`, rows.seen[3].turn === 'snap 45');
+  check(`EDGES toggles (${rows.seen[4].vig})`, rows.seen[4].vig === 0);
+  // and one row must not move another: the UV divisor is the whole menu
+  check('and one row moves one dial',
+    rows.seen[4].speed === 'easy' && rows.seen[4].turn === 'snap 45');
+
   // ── the way home ──
   check('there is a sign, and it is a ray target',
     await page.evaluate(() => !!window.__tt.debug.sign
@@ -203,6 +246,13 @@ const check = (label, ok) => {
   const home = await page.goto(`${base}/toko-trip/`, { waitUntil: 'domcontentloaded' })
     .then(() => page.waitForSelector('.arcade-home', { timeout: 20000 }).then(() => true, () => false));
   check('the island carries the arcade home button', home);
+  // the settings were tuned once, in a headset, and must still be there the
+  // next visit — otherwise every session starts by tuning them again
+  await page.waitForFunction(() => window.__tt && window.__tt.debug, null, { timeout: 120000 })
+    .catch(() => {});
+  const kept = await page.evaluate(() => window.__tt.debug.comfort());
+  check(`and remembers what you set (${kept.speed} · ${kept.turn} · edges ${kept.vig})`,
+    kept.speed === 'easy' && kept.turn === 'snap 45' && kept.vig === 0);
 
   check(`zero page errors${errors.length ? ` — ${errors.slice(0, 2)}` : ''}`, errors.length === 0);
 

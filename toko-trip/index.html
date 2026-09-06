@@ -36,6 +36,7 @@
   <div id="hints">
     left stick&nbsp; walk · right stick&nbsp; look · tap a thing&nbsp; use it<br>
     the totem changes the mood · the sign goes home · in VR, point + trigger<br>
+    the slate by the chair sets how you move<br>
     <a href="chair-lab.html">chair-lab</a>&nbsp; pins your real chair
   </div>
   <canvas id="ui"></canvas>
@@ -142,6 +143,44 @@
     const TIER = /OculusBrowser|Quest/i.test(navigator.userAgent)
       ? { name: 'quest', fb: 1.0, shadow: 1024, density: 1, foam: 2000, seg: 168 }
       : { name: 'high', fb: 1.2, shadow: 2048, density: 2.2, foam: 3200, seg: 208 };
+
+    // ── comfort: the three dials a headset session actually needs ─────────
+    // These are not graphics options. They are the settings that can only be
+    // judged with the thing on your head — how fast the sand slides past, how
+    // you turn, and whether the edges close in while you do — so they are set
+    // from INSIDE, on the slate leaning against the chair. A dial you have to
+    // take the headset off to move is a dial that gets guessed at instead,
+    // and a guess costs a whole session to test.
+    const SPEEDS = [['gentle', 1.15], ['easy', 1.9], ['brisk', 2.8]];
+    // Smooth yaw is the most reliable way to make somebody queasy in a chair,
+    // so the snaps come first and smooth is the opt-in at the end.
+    const TURNS = [['snap 30', Math.PI / 6], ['snap 45', Math.PI / 4], ['smooth', 0]];
+    const comfort = { speed: 1, turn: 0, vig: 1 };
+    try {
+      const saved = JSON.parse(localStorage.getItem('tokoTrip.comfort') || 'null');
+      if (saved) for (const k of ['speed', 'turn', 'vig']) {
+        if (Number.isInteger(saved[k])) comfort[k] = saved[k];
+      }
+    } catch (e) { /* no storage — the defaults, every visit */ }
+    const clampComfort = () => {
+      comfort.speed = Math.min(SPEEDS.length - 1, Math.max(0, comfort.speed));
+      comfort.turn = Math.min(TURNS.length - 1, Math.max(0, comfort.turn));
+      comfort.vig = comfort.vig ? 1 : 0;
+    };
+    clampComfort();
+    const moveSpeed = () => SPEEDS[comfort.speed][1];
+    function setComfort(key, v) {
+      const wrap = key === 'speed' ? SPEEDS.length : key === 'turn' ? TURNS.length : 2;
+      comfort[key] = ((v % wrap) + wrap) % wrap;
+      try { localStorage.setItem('tokoTrip.comfort', JSON.stringify(comfort)); } catch (e) {}
+      paintSlate();
+    }
+    // ?perf puts the frame cost on the slate and in the corner. OFF by
+    // default, because a number in the corner of a zen island is a number you
+    // start playing instead of a place you sit in — and it can be turned on
+    // from inside, by tapping the slate's top row, which is the only way it
+    // is any use while you are wearing the thing.
+    let perfOn = new URLSearchParams(location.search).has('perf');
 
     // ── terrain: one source of truth ──
     const ISLAND_R = 18, PAD_H = 0.92, PAD_INNER = 1.6, PAD_OUTER = 3.4;
@@ -381,6 +420,73 @@
     scene.add(camera);
     const listener = new THREE.AudioListener();
     camera.add(listener);
+
+    // ── the comfort vignette ─────────────────────────────────────────────
+    // The edges close in while you glide or turn, which is the one comfort
+    // trick that reliably helps and costs nothing. It is a MESH hung a metre
+    // in front of the head, NOT a post-processing pass: no-post is what keeps
+    // both backends and both eyes cheap, and this is one textured quad — the
+    // cheapest thing in the frame. Children of `camera` follow the head in XR
+    // because three drives that camera from the headset pose each frame.
+    const vignette = (() => {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 128;
+      const g = cv.getContext('2d');
+      // clear well past the middle, black in the corners: the ramp has to
+      // finish at the CORNER radius (64·√2), not the edge, or the corners are
+      // the only part that darkens and it reads as four smudges
+      const rad = g.createRadialGradient(64, 64, 30, 64, 64, 78);
+      rad.addColorStop(0, 'rgba(0,0,0,0)');
+      rad.addColorStop(0.45, 'rgba(0,0,0,0.30)');
+      rad.addColorStop(1, 'rgba(0,0,0,1)');
+      g.fillStyle = rad; g.fillRect(0, 0, 128, 128);
+      const tx = new THREE.CanvasTexture(cv);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(5, 5),
+        new THREE.MeshBasicMaterial({
+          map: tx, transparent: true, opacity: 0,
+          depthTest: false, depthWrite: false, toneMapped: false,
+        }));
+      m.position.z = -1;          // a comfortable focal distance, not on the nose
+      m.renderOrder = 999;
+      m.frustumCulled = false;
+      m.visible = false;
+      camera.add(m);
+      return m;
+    })();
+    // The quad has to FIT the frustum it is hanging in, and there is no one
+    // frustum: a 70° flat camera and a headset eye are different shapes, and
+    // the two eyes are not the same shape as each other. So it is measured
+    // off the projection matrix in use — half-extents at one metre — rather
+    // than sized to a guess. Sized to a guess it fell entirely outside the
+    // flat camera's view and darkened nothing at all, while reporting itself
+    // fully on.
+    function vigFit() {
+      const xc = renderer.xr.isPresenting ? renderer.xr.getCamera() : null;
+      const cams = (xc && xc.cameras && xc.cameras.length) ? xc.cameras : [camera];
+      let hw = 0, hh = 0;
+      for (const c of cams) {
+        const e = c.projectionMatrix.elements;
+        if (!e[0] || !e[5]) continue;
+        hw = Math.max(hw, (1 + Math.abs(e[8])) / e[0]);
+        hh = Math.max(hh, (1 + Math.abs(e[9])) / e[5]);
+      }
+      // geometry is 5 x 5 at one metre; 1.08 covers the eye offset in XR
+      vignette.scale.set(hw * 2 * 1.08 / 5, hh * 2 * 1.08 / 5, 1);
+    }
+    let vigAmt = 0, vigKick = 0;
+    function vigUpdate(dt, moving) {
+      vigKick = Math.max(0, vigKick - dt);
+      const want = comfort.vig && (moving || vigKick > 0) ? 1 : 0;
+      // in fast, out slow: an edge that snaps back reads as a flicker
+      vigAmt += (want - vigAmt) * Math.min(1, dt * (want ? 9 : 3.5));
+      // Weaker on a flat screen: there is no vestibular conflict to soften
+      // there, so the same darkening that helps in a headset is just a dimmer
+      // picture. It stays visible on the desktop so you can see what the
+      // setting does before you put the thing on.
+      vignette.material.opacity = vigAmt * (renderer.xr.isPresenting ? 0.8 : 0.45);
+      vignette.visible = vigAmt > 0.01;
+      if (vignette.visible) vigFit();
+    }
 
     const island = new THREE.Group();
     island.position.y = -PAD_H;
@@ -1173,6 +1279,109 @@
       radio.rotation.y = NOOK_YAW + 0.5;
       scene.add(radio);
     }
+
+    // ═══ THE SLATE ═══ a board leaning against the chair, and the only menu
+    // on the island. Four rows, tapped to cycle: the top one turns the frame
+    // cost on, the other three are the comfort dials. It is a real object
+    // standing in the sand rather than a panel floating in front of your
+    // face, because a rectangle hanging in the air is the one thing a room
+    // built to be sat in cannot have. Rows are read off the hit's UV, so the
+    // whole menu is ONE mesh and adding a row is a line of painting.
+    const SLATE_ROWS = 4;
+    const slate = new THREE.Group();
+    const slateFace = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.34, 0.26),
+      new THREE.MeshBasicMaterial({ transparent: true, toneMapped: false }));
+    {
+      const backing = new THREE.Mesh(paint(box(0.38, 0.3, 0.02), col(P.driftwood)), satin);
+      backing.castShadow = true;
+      slateFace.position.z = 0.013;
+      slate.add(backing, slateFace);
+      const [sx, sz] = nook(-0.5, -0.12);
+      slate.position.set(sx, gy(sx, sz) + 0.17, sz);
+      // nook() maps local→world through a rotation by MINUS the nook yaw, so a
+      // mesh set to NOOK_YAW ends up facing the other way from everything the
+      // nook layout implies. The face has to look back at the seat or the only
+      // menu on the island reads as a plank.
+      slate.rotation.y = NOOK_YAW + Math.PI + 0.35;   // turned toward the seat
+      slate.rotateX(-0.26);                           // leaning back on the chair
+      scene.add(slate);
+    }
+    // which row a ray landed on: uv.y is 1 at the top of the face
+    const slateRow = hit => (hit && hit.object === slateFace && hit.uv)
+      ? Math.min(SLATE_ROWS - 1, Math.max(0, Math.floor((1 - hit.uv.y) * SLATE_ROWS)))
+      : -1;
+    function slateAct(row) {
+      if (row < 0) return;
+      if (row === 0) { perfOn = !perfOn; paintPerfEl(); paintSlate(); }
+      else if (row === 1) setComfort('speed', comfort.speed + 1);
+      else if (row === 2) setComfort('turn', comfort.turn + 1);
+      else setComfort('vig', comfort.vig + 1);
+      chime(659.25, 784);
+    }
+    // ── what the slate says ──
+    // Repainted when a dial moves, and twice a second while the frame cost is
+    // showing. A fresh 384x288 canvas at 2 Hz is nothing; painting it every
+    // frame would make the readout the most expensive thing it measures.
+    const perfSample = { fps: 0, ms: 0, worst: 0, calls: 0, tris: 0 };
+    const backendName = () => (renderer.backend?.isWebGPUBackend ? 'WebGPU'
+      : renderer.backend?.isWebGLBackend ? 'WebGL2' : 'GL');
+    function paintSlate() {
+      const cv = document.createElement('canvas');
+      cv.width = 384; cv.height = 288;
+      const g = cv.getContext('2d');
+      g.fillStyle = 'rgba(16,20,24,0.92)';
+      g.beginPath(); g.roundRect(0, 0, 384, 288, 12); g.fill();
+      const rowH = 288 / SLATE_ROWS;
+      const rows = [
+        perfOn
+          ? [`${perfSample.fps} fps`, `${perfSample.ms} ms · ${perfSample.calls} draws`]
+          : ['COMFORT', 'tap a row'],
+        ['GLIDE', SPEEDS[comfort.speed][0]],
+        ['TURN', TURNS[comfort.turn][0]],
+        ['EDGES', comfort.vig ? 'closing in' : 'open'],
+      ];
+      rows.forEach(([label, value], i) => {
+        const y = i * rowH;
+        if (i) {
+          g.strokeStyle = 'rgba(242,233,216,0.14)';
+          g.beginPath(); g.moveTo(16, y); g.lineTo(368, y); g.stroke();
+        }
+        g.textAlign = 'left';
+        g.fillStyle = i === 0 ? '#f2e9d8' : 'rgba(242,233,216,0.62)';
+        g.font = `${i === 0 ? 'bold ' : ''}25px ui-monospace, Menlo, Consolas, monospace`;
+        g.fillText(label, 20, y + rowH * 0.62);
+        g.textAlign = 'right';
+        g.fillStyle = i === 0 ? 'rgba(242,233,216,0.5)' : '#3aa8a0';
+        let px = 24;
+        do {
+          g.font = `${px}px ui-monospace, Menlo, Consolas, monospace`;
+          px -= 1;
+        } while (px > 11 && g.measureText(value).width > 200);
+        g.fillText(value, 364, y + rowH * 0.62);
+      });
+      const tx = new THREE.CanvasTexture(cv);
+      tx.colorSpace = THREE.SRGBColorSpace;
+      slateFace.material.map?.dispose();
+      slateFace.material.map = tx;
+      slateFace.material.needsUpdate = true;
+    }
+    // and the same numbers in the corner of a flat screen, for a laptop pass
+    const perfEl = document.createElement('div');
+    perfEl.id = 'perf';
+    perfEl.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:6;'
+      + 'font:12px ui-monospace,Menlo,Consolas,monospace;color:#3aa8a0;'
+      + 'background:rgba(16,20,24,0.72);padding:6px 9px;border-radius:6px;'
+      + 'pointer-events:none;white-space:pre;display:none';
+    document.body.appendChild(perfEl);
+    function paintPerfEl() {
+      perfEl.style.display = perfOn ? 'block' : 'none';
+      if (!perfOn) return;
+      perfEl.textContent = `${perfSample.fps} fps  ${perfSample.ms} ms (worst ${perfSample.worst})\n`
+        + `${perfSample.calls} draws  ${(perfSample.tris / 1000).toFixed(1)}k tris\n`
+        + `${backendName()} · ${TIER.name}`;
+    }
+    paintSlate();
 
     // ═══ PALMS — leaning segmented trunks, drooping fronds, coconuts ═══
     const crowns = [];   // swayed per frame
@@ -2002,7 +2211,7 @@
       marker.visible = false;
       scene.add(marker);
     }
-    const rayTargets = [terrain, totem, radio, chairHit, book, sign];
+    const rayTargets = [terrain, totem, radio, chairHit, book, sign, slate];
     const controllers = [];
     for (let i = 0; i < 2; i++) {
       const c = renderer.xr.getController(i);
@@ -2027,7 +2236,7 @@
     function xrSticks(dt) {
       snapCool = Math.max(0, snapCool - dt);
       const session = renderer.xr.getSession?.();
-      if (!session || !baseRef) return;
+      if (!session || !baseRef) return false;
       let mx = 0, my = 0, turn = 0;
       for (const src of session.inputSources) {
         const ax = src.gamepad?.axes;
@@ -2038,15 +2247,21 @@
         if (src.handedness === 'right') turn += sx;
         else { mx += sx; my += sy; }
       }
-      if (turn && snapCool <= 0) { xrYaw -= Math.sign(turn) * Math.PI / 6; snapCool = 0.32; }
+      const step = TURNS[comfort.turn][1];
+      if (turn) {
+        // smooth is opt-in on the slate; the snaps are the default, and a
+        // snap kicks the vignette so the cut has an edge to happen behind
+        if (step === 0) xrYaw -= turn * 1.5 * dt;
+        else if (snapCool <= 0) { xrYaw -= Math.sign(turn) * step; snapCool = 0.32; vigKick = 0.18; }
+      }
       if (mx || my) {
         // move relative to where the head is actually looking
         renderer.xr.getCamera().getWorldDirection(_xrFwd);
         _xrFwd.y = 0;
-        if (_xrFwd.lengthSq() < 1e-4) return;
+        if (_xrFwd.lengthSq() < 1e-4) return true;
         _xrFwd.normalize();
         const rx = _xrFwd.z, rz = -_xrFwd.x;              // right = forward × up
-        const v = 1.9 * dt;
+        const v = moveSpeed() * dt;
         const nx = xrPos.x + (_xrFwd.x * -my + rx * mx) * v;
         const nz = xrPos.z + (_xrFwd.z * -my + rz * mx) * v;
         if (groundHeight(nx, nz) > -0.05 && Math.hypot(nx, nz) < ISLAND_R * 1.05) {
@@ -2054,6 +2269,7 @@
         }
       }
       applyXrOffset();
+      return !!(mx || my || (turn && step === 0));
     }
     // the offset reference space every locomotion path writes through
     let xrYaw = 0;
@@ -2081,6 +2297,7 @@
         if (o === book) return 'book';
         if (o === sign) return 'sign';
         if (o === chairHit) return 'chair';
+        if (o === slate) return 'slate';
         if (o === terrain) return 'ground';
       }
       return null;
@@ -2092,6 +2309,7 @@
       if (kind === 'radio') return radioToggle();
       if (kind === 'book') return bookAct();
       if (kind === 'sign') return goHome();
+      if (kind === 'slate') return slateAct(slateRow(hit));
       if (kind === 'chair') {
         // A LONG pinch on the chair recalibrates the seat from where your
         // head is right now — the whole calibration path on Vision Pro,
@@ -2292,6 +2510,7 @@
     const clock = new THREE.Clock();
     const neonFlick = { until: 0, dim: 1 };
     const _plaqueV = new THREE.Vector3();
+    let perfT = 0, perfN = 0, perfMs = 0, perfWorst = 0, perfCalls = 0, perfTris = 0;
     function animate() {
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
 
@@ -2309,7 +2528,10 @@
         const f = -my + (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
         const s2 = mx + (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
         if (f || s2) {
-          const v = 2.6 * dt;
+          // the same dial the headset reads, a little quicker: a screen has
+          // no inner ear to upset, but the two must not disagree about which
+          // setting "brisk" is
+          const v = moveSpeed() * 1.35 * dt;
           const nx = eye.x + (-Math.sin(yaw) * f + Math.cos(yaw) * s2) * v;
           const nz = eye.z + (-Math.cos(yaw) * f - Math.sin(yaw) * s2) * v;
           // walking asks the same function the teleport does, so the sea
@@ -2323,8 +2545,9 @@
         camera.rotation.set(0, 0, 0);
         camera.rotateY(yaw);
         camera.rotateX(pitch);
+        vigUpdate(dt, !!(f || s2) || Math.abs(lx2) > 0.2);
       } else {
-        xrSticks(dt);
+        vigUpdate(dt, xrSticks(dt));
         sitUpdate(dt);
         // controller rays + the teleport marker
         marker.visible = false;
@@ -2416,6 +2639,28 @@
 
       drawSticks();
       renderer.render(scene, camera);
+
+      // ── the frame cost ──
+      // Sampled AFTER the render, because three zeroes info at the top of
+      // every animation frame — read it above the render and the draw count
+      // is always exactly zero, which is a very convincing wrong answer.
+      // Averaged over half a second with the worst frame of that window kept
+      // beside it: the average says whether it runs, the worst says whether
+      // it hitches, and only one of those is felt.
+      perfN++; perfT += dt;
+      perfMs += dt * 1000;
+      perfWorst = Math.max(perfWorst, dt * 1000);
+      const ri = renderer.info?.render;
+      if (ri) { perfCalls = ri.drawCalls || ri.calls || 0; perfTris = ri.triangles || 0; }
+      if (perfT >= 0.5) {
+        perfSample.fps = Math.round(perfN / perfT);
+        perfSample.ms = +(perfMs / perfN).toFixed(1);
+        perfSample.worst = +perfWorst.toFixed(1);
+        perfSample.calls = perfCalls;
+        perfSample.tris = perfTris;
+        perfT = 0; perfN = 0; perfMs = 0; perfWorst = 0;
+        if (perfOn) { paintSlate(); paintPerfEl(); }
+      }
     }
 
     importModels();
@@ -2441,6 +2686,12 @@
         book: () => ({ open: bookOpen, page: bookPage, pages: PAGES.length }),
         seated: () => seated,
         canTeleport: (x, z) => groundHeight(x, z) >= -0.05 && Math.hypot(x, z) <= ISLAND_R * 1.05,
+        // comfort, the slate that sets it, and the frame cost it reports
+        slate, slateFace, slateAct, slateRow, SPEEDS, TURNS, moveSpeed,
+        comfort: () => ({ ...comfort, speed: SPEEDS[comfort.speed][0], turn: TURNS[comfort.turn][0] }),
+        setComfort,
+        vignette: () => ({ on: vignette.visible, opacity: +vignette.material.opacity.toFixed(3) }),
+        perf: () => ({ ...perfSample, on: perfOn, backend: backendName(), tier: TIER.name }),
       },
     };
   </script>

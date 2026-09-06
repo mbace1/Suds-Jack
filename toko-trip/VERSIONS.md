@@ -1,5 +1,60 @@
 # Toko Trip — release log
 
+## v9 — 2026-09-06
+
+The fitting room. Everything up to here was tuned blind — no headset has
+been near this island — and the settings that decide whether it is pleasant
+are exactly the ones a screenshot cannot answer: how fast the sand goes
+past, how you turn, and whether the frame holds up. So this release is not
+another thing to look at. It is the means of answering those three
+questions in one session instead of three.
+
+- **The slate.** A board leaning against the chair, and the only menu on the
+  island: four rows, tapped to cycle. GLIDE (gentle / easy / brisk), TURN
+  (snap 30 / snap 45 / smooth), EDGES, and a top row that turns the frame
+  cost on. It is a real object standing in the sand rather than a panel
+  hanging in the air, because a rectangle floating in front of your face is
+  the one thing a room built to be sat in cannot have. The whole menu is ONE
+  mesh — the row is read off the hit's UV — so adding a row is a line of
+  painting, not another object to place.
+- **The dials are read where the movement happens**, not copied: one
+  `moveSpeed()` that the headset sticks and the flat keys both ask, and the
+  turn step comes out of the same table the slate prints. A setting that
+  only half the code reads is a setting that lies.
+- **A comfort vignette**, and it is a MESH on the camera, not a post pass —
+  no-post is what keeps both backends and both eyes cheap, and this is one
+  textured quad, the cheapest thing in the frame. It closes in while you
+  glide, and a snap turn kicks it so the cut has an edge to happen behind.
+  Weaker on a flat screen, where there is no vestibular conflict to soften
+  and the same darkening is just a dimmer picture.
+- **The frame cost**: average and worst frame over half a second, draw calls
+  and triangles, the backend actually in use and the tier chosen. Off by
+  default — a number in the corner of a zen island is a number you start
+  playing instead of a place you sit in — and turnable on from inside,
+  which is the only way it is any use while you are wearing the thing.
+- Settings persist under `tokoTrip.comfort`, so a session spent tuning is
+  not repeated next visit.
+
+Three found building it, all the same shape — *a thing can report itself
+working and be doing nothing*:
+
+- The vignette quad was sized to a guess and fell **entirely outside** the
+  flat camera's frustum: fully opaque, correctly faded in and out, visible
+  in no pixel. It is measured off the projection matrix in use now, which
+  is also the only way to serve two eyes that are not the same shape as
+  each other.
+- The draw count was **always exactly zero**, which is a very convincing
+  wrong answer. three zeroes `renderer.info` at the top of every animation
+  frame, so the counters are only true *after* the render.
+- The slate faced the wrong way — `nook()` maps local to world through a
+  rotation by MINUS the nook yaw, so a mesh set to `NOOK_YAW` ends up
+  facing the opposite way from everything the nook layout implies. The same
+  handedness trap that once sat the chair with its back to the cove.
+
+Gate: 41 checks. The new ones assert the menu can be *moved* rather than
+merely drawn — each row cycles its own dial and no other, the divisor being
+the whole menu — and that what you set survives a reload.
+
 ## v8 — 2026-08-11
 
 The palms. They were the weakest geometry left, and they are silhouetted
