@@ -735,6 +735,29 @@ function runEffects(state, effects, from) {
   openMap(state);
 }
 
+// Nothing left to pick. A rest that offers an upgrade when every card is
+// already upgraded had no way out at all: the panel listed nothing and the
+// phase never ended. This carries on with whatever the event had parked behind
+// the pick, rather than dropping it — which is what the engine's own bot used
+// to do, silently losing the second half of a two-part event.
+export function skipPick(state) {
+  if (state.phase !== 'pick' || !state.pick) return false;
+  const { then } = state.pick;
+  state.pick = null;
+  state.log.push({ t: 'skipPick' });
+  runEffects(state, then, 'pick');
+  return true;
+}
+
+// what `pick` could legally take right now — the panel lists exactly this, and
+// an empty list is what `skipPick` exists for
+export function pickable(state) {
+  if (state.phase !== 'pick' || !state.pick) return [];
+  const kind = state.pick.kind;
+  return state.hero.deck.map((c, i) => ({ c, i }))
+    .filter(({ c }) => kind === 'remove' ? c.type !== 'curse' || state.hero.deck.length > 1 : !c.up && c.type !== 'curse');
+}
+
 export function pickCard(state, deckIndex) {
   if (state.phase !== 'pick' || !state.pick) return false;
   const c = state.hero.deck[deckIndex];
@@ -910,7 +933,7 @@ export function botStep(state) {
         ? d.findIndex(c => c.type === 'curse') >= 0 ? d.findIndex(c => c.type === 'curse') : d.findIndex(c => c.rarity === 'basic')
         : d.findIndex(c => !c.up && c.rarity !== 'basic' && c.type !== 'curse');
       if (i < 0) i = d.findIndex(c => state.pick.kind === 'remove' ? c.type !== 'curse' : !c.up && c.type !== 'curse');
-      if (i < 0 || !pickCard(state, Math.max(0, i))) { state.pick = null; openMap(state); }
+      if (i < 0 || !pickCard(state, Math.max(0, i))) skipPick(state);
       break;
     }
     default: break;

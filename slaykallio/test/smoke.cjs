@@ -518,6 +518,28 @@ const check = (name, ok, extra = '') => {
   check('a rest offers sleep or an upgrade, and says what sleep is worth', await page.evaluate(() => __sk.state().phase === 'rest' && !document.querySelector('#rest').hidden && /heal \d+/.test(document.querySelector('#rest .sub').textContent)));
   await page.locator('#restUp').click();
   await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  // an all-upgraded deck must still be able to leave the rest
+  const wayOut = await page.evaluate(() => {
+    const s = __sk.state();
+    // `upgrade()` moves the numbers inside each effect, so putting `up` back is
+    // not putting the card back — the deck is deep-copied and restored whole,
+    // or every later check reads a card this probe silently made stronger.
+    const saved = s.hero.deck.map(c => ({ ...c, effects: c.effects.map(f => ({ ...f })) }));
+    s.hero.deck.forEach(c => __sk.engine.upgrade(c));
+    __sk.debug.redraw();
+    const rows = [...document.querySelectorAll('#pick .row')];
+    const only = rows.length === 1 && /Walk on/.test(rows[0].textContent);
+    if (only) rows[0].click();
+    const out = { only, phase: __sk.state().phase };
+    s.hero.deck.length = 0; s.hero.deck.push(...saved);
+    return out;
+  });
+  check('with every card upgraded the pick offers a way out, and taking it walks on', wayOut.only && wayOut.phase === 'map');
+  await page.evaluate(() => { __sk.debug.forkTo([{ kind: 'rest' }, { kind: 'fight', id: 'rats' }]); });
+  await page.locator('#nodes .node.rest').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  await page.locator('#restUp').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
   check('thinking it over lists only cards that can still be upgraded, each with its after', await page.evaluate(() => __sk.state().phase === 'pick' && [...document.querySelectorAll('#pick .row')].every(r => /→/.test(r.textContent))));
   const swingRow = page.locator('#pick .row', { hasText: /Swing|Strike/ }).first();
   await swingRow.click();

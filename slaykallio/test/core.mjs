@@ -5,7 +5,7 @@
 
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
 import { readFileSync } from 'node:fs';
-import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD } from '../js/engine.js';
+import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
 
@@ -465,6 +465,30 @@ pickCard(s, si);
 check('and the picked Swing is a Swing+', s.hero.deck[si].up === true && s.hero.deck[si].effects[0].n === 9 && s.phase === 'map');
 check('an upgraded card cannot be picked again', (() => { s.route.steps[1] = [{ kind: 'rest' }]; chooseNode(s, 0); chooseRest(s, 'upgrade'); return pickCard(s, si) === false; })());
 check('rests are counted', s.stats.rests === 2);
+// Nothing left to pick is a REAL state, and it had no way out: the panel
+// listed nothing and the phase never ended. Found by a bot on one seed in 900.
+s = startRun(createRun({ seed: 5, character: 'cart' }));
+s.hero.deck.forEach(c => upgrade(c));
+s.route.steps[0] = [{ kind: 'rest' }];
+chooseNode(s, 0); chooseRest(s, 'upgrade');
+check('with every card upgraded, a rest offers nothing to pick', s.phase === 'pick' && pickable(s).length === 0);
+check('and skipPick is the way out', skipPick(s) === true && s.phase === 'map');
+// and it carries the rest of the event with it, rather than dropping it
+s = startRun(createRun({ seed: 5, character: 'cart' }));
+s.hero.deck.forEach(c => upgrade(c));
+s.route.steps[0] = [{ kind: 'event', id: 'gulls_event' }];
+chooseNode(s, 0);
+const hpG = s.hero.hp;
+chooseEvent(s, 1);                                    // lose 6 HP, then upgrade a card
+check('a two-part event stops at the pick', s.phase === 'pick' && s.hero.hp === hpG - 6);
+skipPick(s);
+check('and skipping the pick still finishes the event', s.phase === 'map' && s.log.some(l => l.t === 'skipPick'));
+check('pickable lists exactly what a remove may take', (() => {
+  const st = startRun(createRun({ seed: 5, character: 'cart' }));
+  st.route.steps[0] = [{ kind: 'event', id: 'the_statue' }];
+  chooseNode(st, 0); chooseEvent(st, 1);
+  return st.phase === 'pick' && pickable(st).length === st.hero.deck.length;
+})());
 
 // ── events ───────────────────────────────────────────────────────────────
 const atEvent = (id, seed = 5, character = 'drinker') => {

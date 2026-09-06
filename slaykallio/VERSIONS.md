@@ -7,6 +7,63 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v14 — 2026-09-05
+**Six bots that play differently, and what they found**
+`test/bots.mjs` — a measuring instrument, never a gate. Every balance number
+this game had came from ONE bot, which plays the highest-value card it can
+afford and takes the first reward. That bot empties its hand; Roope's whole
+mechanic is holding one. So "the collector wins 2%" could have meant the
+character was weak OR that the instrument could not hold it, and one bot can
+never tell you which.
+
+Six can. Each is a policy over **six decisions**, not just card play — how it
+drafts and where it walks matter as much as what it plays: `card`, `map`,
+`event`, `rest`, `pick`, `draft`.
+
+- **greedy** — THE CONTROL: the engine's own `botStep`, imported rather than
+  copied, so its column reproduces v11's recorded rates by construction. At
+  150 seeds it does (7/13/2/12/5/14 against the logged 7.5/11/2.5/10/6/11).
+  A control that reproduces the known numbers is what makes the other five
+  columns mean anything — the discipline TURF's balance work landed on.
+- **aggressive** — damage above all, takes elites, upgrades at rests.
+- **defensive** — blocks to the INCOMING number and no further, avoids elites.
+- **hoarder** — plays hand-counting cards while the hand is full, then holds.
+- **synergist** — powers first, cheap cards next, the card that counts what you
+  played before it LAST; drafts toward the character's mechanic.
+- **random** — the floor every other column is read against.
+
+**THE FINDING, and it is a big one: `synergist` beats `greedy` by 17 points on
+Ilona and 19 on Vekku.** Playing your powers on turn one, and the scaling card
+last, is worth more than any tuning in this game — and the greedy bot answers
+that question backwards every single turn, because it sorts by face value.
+Every balance number before this one was measuring a bot that did not know
+what order to play in.
+
+**The negative result matters too.** `hoarder` did NOT rescue the collector
+(3% against greedy's 2%; `synergist` got it to 7%). The hypothesis that Roope
+was merely being mis-measured is wrong: holding the hand is not what he needs.
+He is the weakest character at his own best line, and that is now a finding
+rather than a suspicion.
+
+**And a shape nobody had seen: surviving is not winning.** `defensive` reaches
+act two far more than anyone (69–100% against greedy's 42–81%) and wins least
+of the five. Both bosses are damage checks, not survival checks — 77% of
+defensive's deaths are the Bear.
+
+**A real bug the bots found, on one seed in nine hundred.** A rest that offers
+an upgrade when every card is already upgraded had NO WAY OUT: the panel listed
+nothing, the phase never ended, and the engine's own bot escaped by dropping
+the parked half of any two-part event. `skipPick()` and `pickable()` are the
+fix; the panel now offers "every card is already as good as it gets, walk on",
+and a two-part event still finishes. Five checks in core, one in smoke.
+
+One trap paid for inside that gate: `upgrade()` moves the numbers **inside**
+each effect, so a probe that upgrades the deck and puts `up` back has not put
+the deck back — it silently hands every later check a stronger card. The deck
+is deep-copied and restored whole.
+
+Gates: core 698, smoke 107.
+
 ## v13 — 2026-09-05
 **The cutouts are made of paper now, not painted like it**
 The rest of the owner's reference set (a cardboard diorama, a newsprint

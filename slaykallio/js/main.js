@@ -23,7 +23,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 13;
+const VERSION = 14;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -807,6 +807,15 @@ function openPickPanel() {
   panel.querySelector('h2').textContent = kind === 'remove' ? 'Leave one behind' : 'Which card?';
   const list = panel.querySelector('.list'); list.innerHTML = '';
   panelSel = 0;
+  // Nothing left to pick is a real state — every card upgraded — and it used to
+  // show an empty list with no way out of the phase.
+  if (!engine.pickable(state).length) {
+    const b = el('button', 'row', kind === 'upgrade' ? 'Every card is already as good as it gets. Walk on.' : 'Nothing to leave behind. Walk on.');
+    b.addEventListener('click', () => { sfx.pick(); cursor = state.log.length; engine.skipPick(state); $('#pick').hidden = true; enqueueLog(); renderTop(); });
+    b.classList.add('selected');
+    list.append(b);
+    return;
+  }
   state.hero.deck.forEach((c, i) => {
     if (kind === 'upgrade' && (c.up || c.type === 'curse')) return;
     const row = el('button', `row ${c.type}`);
