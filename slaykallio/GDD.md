@@ -163,6 +163,17 @@ blurb, where they cost nothing to read past.
 | **The Dog Walker** | **Fetch** — the dog goes in at the end of your turn | what is this turn worth later? |
 | **The Old Boxer** | **Thorns**, and cards that count the hits he took | is being hit a resource? |
 
+**How even is it, and how do we know?** `test/bots.mjs` plays each character
+with seven policies, one of which (`native`) is written for that character's own
+mechanic, and the best line of each is the number to read — a character is only
+as strong as the best way anyone has found to play it. Measured at 150 seeds
+after v16: **14 / 29 / 30 / 35 / 24 / 16** in the table's order. The band is the
+design target, not the height: nothing should be four times harder than anything
+else, and the Park Drinker at 14 is the standing exception with a structural
+reason. Block that stays and cards that count what came before them both GROW
+across a fight; **buzz does not compound**, so he cannot build into a boss the
+way the others can. Numbers will not fix that, and three of them were tried.
+
 The fantasy skin renames every one of them and re-dresses the same figure — the
 Sot, the Bard, the Tinker, the Warden, the Houndmaster, the Pit Fighter. Since
 v15 the NAME is the thing the skin swaps, which is what a class name buys you:

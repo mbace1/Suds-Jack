@@ -34,7 +34,7 @@ export const CARDS = {
 
   // ─ The Park Drinker — Buzz: strength that fades at the end of the turn
   first_sip: { char: 'drinker', type: 'skill', cost: 0, target: 'self', exhaust: true, rarity: 'common', pic: 'can',
-    effects: [{ type: 'energy', n: 1 }, { type: 'status', who: 'self', key: 'buzz', n: 2 }],
+    effects: [{ type: 'energy', n: 1 }, { type: 'status', who: 'self', key: 'buzz', n: 3 }],
     kallio: { name: 'First Sip' }, fantasy: { name: 'Quicksilver Draught' } },
   one_two: { char: 'drinker', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'twofist',
     effects: [{ type: 'damage', n: 4, times: 2 }],
@@ -55,7 +55,7 @@ export const CARDS = {
     effects: [{ type: 'status', who: 'self', key: 'doubleNext', n: 1 }],
     kallio: { name: 'Seeing Double' }, fantasy: { name: 'Catalyst' } },
   never_sober: { char: 'drinker', type: 'power', cost: 2, target: 'self', rarity: 'rare', pic: 'sunburst',
-    effects: [{ type: 'status', who: 'self', key: 'buzzPerTurn', n: 2 }],
+    effects: [{ type: 'status', who: 'self', key: 'buzzPerTurn', n: 3 }],
     kallio: { name: 'Never Sober' }, fantasy: { name: 'Endless Cup' } },
 
   // ─ The Busker — cards grow with every card played before them
@@ -94,7 +94,11 @@ export const CARDS = {
   bottle_deposit: { type: 'skill', cost: 0, target: 'self', rarity: 'token', find: true, exhaust: true, pic: 'coin',
     effects: [{ type: 'energy', n: 1 }],
     kallio: { name: 'Bottle: Deposit' }, fantasy: { name: 'Trinket: Spark' } },
-  dig_the_bin: { char: 'collector', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'bin',
+  // FREE, and that one number is the whole character (v16). At 1 energy the
+  // collector spent a third of the turn setting up and then could not afford
+  // to cash what he had dug — measured, the bots go 3%/6%/7% to 13%/29%/16%
+  // on this change alone, and no other collector number moves anything.
+  dig_the_bin: { char: 'collector', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'bin',
     effects: [{ type: 'addCard', id: 'find', n: 2 }],
     kallio: { name: 'Dig The Bin' }, fantasy: { name: 'Rummage' } },
   full_bag: { char: 'collector', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'bag',
@@ -347,7 +351,9 @@ export const CARDS = {
 // cardboard wedge with tape over the feet.
 export const CHARACTERS = {
   drinker: {
-    hp: 68,
+    // 72, not 68 (v16). He was the FRAILEST character in the game and also the
+    // weakest at his own best line, which is two disadvantages for one price.
+    hp: 72,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'first_sip', 'one_two'],
     kallio: { name: 'The Park Drinker', blurb: 'Holds the north end of the bridge. The drink is a strength that lasts exactly one turn.',
       look: { skin: '#c09070', hair: '#5a4632', hairStyle: 'lank', top: '#4a5236', under: '#22242a', bottom: '#2a3040', stripe: '#d8d4c4', shoes: '#26241f', shoeStyle: 'clog', hat: 'bucket', hatColor: '#d8b53a', smoke: true, prop: 'can', accent: '#d8b53a', base: 'tin', grime: 0.85 } },

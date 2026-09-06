@@ -529,6 +529,27 @@ act two most and wins least, because both bosses are damage checks. The bots
 found a real bug on one seed in nine hundred: a rest offering an upgrade with
 every card already upgraded had **no way out** (`skipPick`/`pickable` are the
 fix, and the panel now offers to walk on).
+**`native` is the seventh bot and one card policy per character** — it shares
+`synergist`'s drafting and walk exactly, so any gap between those two columns is
+the mechanic and nothing else. It moved the Dog Walker 5% → 24% (nobody had ever
+played her) and, with four policies now agreeing, let the two genuinely weak
+characters be named. **The Bottle Collector was ONE NUMBER**: `dig_the_bin` cost
+1, a third of a turn's energy spent on setup by a character whose line is dig
+then cash, so he dug and could not afford to cash; at 0 the bots go 3/6/7% →
+13/29/16% and nothing else moves him (deepening the counters reads as noise).
+**The Park Drinker was diffuse** — no single number moved him at 200 seeds;
+72 HP (he was the frailest AND the weakest, two disadvantages for one price),
+First Sip 3 Buzz and Never Sober 3 a turn together take him 8% → 14%, and he is
+**still last for a structural reason: buzz does not compound**, so he cannot
+build into a boss the way block-that-stays can. Left open rather than papered
+over. The **HP ledger** answers what the deaths list cannot — an ordinary fight
+costs 8.9 HP, an elite 16, a boss 41.5 — and its first cut was wrong in a way
+worth keeping: it subtracted end from start, but the post-fight heal lands in
+the same step that closes the fight, so it reported 5.4 against a 6 HP heal and
+would have had someone cut the heal. **Sum the drops; a heal is not a fight
+being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
+and a two-point HP change failed all twelve at once — none of them is about the
+Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
 Gates: `node slaykallio/test/core.mjs` (700 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (108). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept

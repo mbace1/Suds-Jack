@@ -187,9 +187,9 @@ check('and the same number lands', before - s.enemies[0].hp === 9);
 
 s = rig('drinker', ['first_sip', 'strike']);
 playCard(s, 0);
-check('First Sip pays for itself and then some', s.hero.energy === 11 && s.hero.status.buzz === 2);
+check('First Sip pays for itself and then some', s.hero.energy === 11 && s.hero.status.buzz === 3);
 check('First Sip exhausts', s.exhaust.some(c => c.id === 'first_sip'));
-check('Buzz raises the next Swing to 8', preview(s, 0, 0).damage === 8);
+check('Buzz raises the next Swing to 9', preview(s, 0, 0).damage === 9);
 endTurn(s);
 check('and fades at the end of the turn', !s.hero.status.buzz);
 
@@ -310,7 +310,7 @@ s = rig('drinker', ['never_sober']);
 playCard(s, 0);
 s.enemies.forEach(e => { e.intent = { id: 'flutter', intent: 'block', block: 5 }; });
 endTurn(s);
-check('Never Sober brings 2 Buzz every turn', s.hero.status.buzz === 2);
+check('Never Sober brings 3 Buzz every turn', s.hero.status.buzz === 3);
 
 // ── enemies ──────────────────────────────────────────────────────────────
 s = startRun(createRun({ seed: 11, character: 'cart' }));
@@ -449,7 +449,7 @@ check('Cover Up+ is 8', up('defend').effects[0].n === 8);
 check('One-Two+ is 5 ×2 (a multi-hit gets +1 a hit)', up('one_two').effects[0].n === 5 && up('one_two').effects[0].times === 2);
 check('Armful+ scales one harder (3 → 4 per card)', up('armful').effects[0].per === 4 && up('armful').effects[0].n === 0);
 check('Tune Up+ draws 2', up('tune_up').effects[0].n === 2);
-check('Never Sober+ costs 1 and brings 3 Buzz', up('never_sober').cost === 1 && up('never_sober').effects[0].n === 3);
+check('Never Sober+ costs 1 and brings 4 Buzz', up('never_sober').cost === 1 && up('never_sober').effects[0].n === 4);
 check('Throw The Stick+ is 11 Fetch', up('throw_stick').effects[0].n === 11);
 check('upgrading twice does nothing', upgrade(up('strike')).effects[0].n === 9);
 s = rig('drinker', []);
@@ -502,6 +502,11 @@ check('pickable lists exactly what a remove may take', (() => {
 })());
 
 // ── events ───────────────────────────────────────────────────────────────
+// Every number below is derived from the character's own max HP, never
+// written out. Twelve of these checks were literals ("hp === 68") and a
+// two-point change to the drinker in v16 failed all twelve at once — none of
+// them is about the drinker's HP, they are about what the EVENT does.
+const HP0 = CHARACTERS.drinker.hp;
 const atEvent = (id, seed = 5, character = 'drinker') => {
   const st = startRun(createRun({ seed, character }));
   st.route.steps[0] = [{ kind: 'event', id }];
@@ -511,7 +516,7 @@ const atEvent = (id, seed = 5, character = 'drinker') => {
 s = atEvent('the_statue');
 check('an event span opens the event', s.phase === 'event' && s.event.id === 'the_statue' && s.event.options.length === 3);
 chooseEvent(s, 0);
-check('touching the bear: +6 max HP, then −8 HP', s.hero.maxHp === 74 && s.hero.hp === 66 && s.phase === 'map');
+check('touching the bear: +6 max HP, then −8 HP', s.hero.maxHp === HP0 + 6 && s.hero.hp === HP0 - 2 && s.phase === 'map');
 s = atEvent('the_statue');
 chooseEvent(s, 1);
 check('leaving something behind asks for a card to remove', s.phase === 'pick' && s.pick.kind === 'remove');
@@ -519,26 +524,26 @@ const dn = s.hero.deck.length;
 pickCard(s, 0);
 check('and the deck is one lighter', s.hero.deck.length === dn - 1 && s.phase === 'map');
 s = atEvent('the_statue'); chooseEvent(s, 2);
-check('walking on costs nothing and goes back to the map', s.phase === 'map' && s.hero.hp === 68);
+check('walking on costs nothing and goes back to the map', s.phase === 'map' && s.hero.hp === HP0);
 s = atEvent('night_tram'); chooseEvent(s, 0);
-check('the last tram: heal 15 (capped) and a Hangover in the deck', s.hero.deck.some(c => c.id === 'hangover') && s.hero.hp === 68);
+check('the last tram: heal 15 (capped) and a Hangover in the deck', s.hero.deck.some(c => c.id === 'hangover') && s.hero.hp === HP0);
 s = atEvent('night_tram'); chooseEvent(s, 1);
-check('staying awake: 4 energy, 60 max HP', s.hero.maxEnergy === 4 && s.hero.maxHp === 60 && s.hero.hp === 60);
+check('staying awake: 4 energy, 8 max HP gone', s.hero.maxEnergy === 4 && s.hero.maxHp === HP0 - 8 && s.hero.hp === HP0 - 8);
 s = atEvent('kiosk'); chooseEvent(s, 0);
-check('the kiosk takes 7 HP and opens a card reward', s.hero.hp === 61 && s.phase === 'reward' && s.reward.kind === 'card');
+check('the kiosk takes 7 HP and opens a card reward', s.hero.hp === HP0 - 7 && s.phase === 'reward' && s.reward.kind === 'card');
 chooseReward(s, 0);
 check('and the reward leads back to the map, not to a fight', s.phase === 'map');
 s = atEvent('sauna'); chooseEvent(s, 0);
-check('the sauna heals nothing at full health — but does not hurt either', s.hero.hp === 68 && s.phase === 'map');
+check('the sauna heals nothing at full health — but does not hurt either', s.hero.hp === HP0 && s.phase === 'map');
 s = atEvent('sauna'); s.hero.hp = 20; chooseEvent(s, 0);
-check(`and 60% of max from 20 is ${20 + Math.floor(68 * 0.6)}`, s.hero.hp === 20 + Math.floor(68 * 0.6));
+check(`and 60% of max from 20 is ${20 + Math.floor(HP0 * 0.6)}`, s.hero.hp === 20 + Math.floor(HP0 * 0.6));
 s = atEvent('dumpster'); chooseEvent(s, 1);
-check('digging in the bin costs 7 and gains a friend', s.hero.hp === 61 && s.jokers.length === 1);
+check('digging in the bin costs 7 and gains a friend', s.hero.hp === HP0 - 7 && s.jokers.length === 1);
 s = atEvent('the_canal'); chooseEvent(s, 0);
 const roll1 = s.log.find(l => l.t === 'roll').good;
 const s4 = atEvent('the_canal'); chooseEvent(s4, 0);
 check('a roll is logged and the same seed rolls the same way', s4.log.find(l => l.t === 'roll').good === roll1);
-check('and the outcome matches the label', roll1 ? s.jokers.length === 1 : (s.hero.hp === 56 && s.hero.deck.some(c => c.id === 'soaked')));
+check('and the outcome matches the label', roll1 ? s.jokers.length === 1 : (s.hero.hp === HP0 - 12 && s.hero.deck.some(c => c.id === 'soaked')));
 check('events are counted', s.stats.events === 1);
 s = atEvent('the_statue'); s.hero.hp = 2; chooseEvent(s, 0);
 check('an event can kill you, and the run knows it (2 + 6 − 8)', s.phase === 'lost');
@@ -560,7 +565,7 @@ check('Spare Key: an attack gives 1 block', s.hero.block === 1);
 s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'mouthguard'); chooseNode(s, 0);
 check('Mouthguard: 2 Thorns from the first turn', s.hero.status.thorns === 2);
 s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'bad_debt'); chooseNode(s, 0);
-check('Bad Debt: 4 energy and 3 HP down at the start of the fight', s.hero.energy === 4 && s.hero.hp === 65);
+check('Bad Debt: 4 energy and 3 HP down at the start of the fight', s.hero.energy === 4 && s.hero.hp === HP0 - 3);
 s = withJoker(rig('drinker', []), 'stray_dog');
 s.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; });
 const sd = [...s.enemies].sort((a, b) => a.hp - b.hp)[0], sdHp = sd.hp;
@@ -570,7 +575,7 @@ s = startRun(createRun({ seed: 5, character: 'drinker' }));
 s.route.steps[0] = [{ kind: 'event', id: 'dumpster' }]; chooseNode(s, 0);
 s.rng = { next: () => 0, int: () => 0, pick: a => a[0], shuffle: a => { const i = a.indexOf('heavy_coat'); if (i > 0) [a[0], a[i]] = [a[i], a[0]]; return a; } };
 chooseEvent(s, 1);
-check('Heavy Coat: +8 max HP the moment it is picked up', s.jokers[0]?.id === 'heavy_coat' && s.hero.maxHp === 76 && s.hero.hp === 61 + 8);
+check('Heavy Coat: +8 max HP the moment it is picked up', s.jokers[0]?.id === 'heavy_coat' && s.hero.maxHp === HP0 + 8 && s.hero.hp === HP0 - 7 + 8);
 
 // ── new enemies ──────────────────────────────────────────────────────────
 s = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(s, ENC('preacher'));

@@ -7,6 +7,72 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v16 — 2026-09-06
+**A bot that knows the character, and the rebalance it justified**
+v14 asked six bots to play six characters and found that the greedy control
+was measuring the bot. This is the follow-through, and it starts by admitting
+that five of those six bots were still general policies: not one of them is
+built to spend a strength that expires, to count a hand of free tokens before
+emptying it, or to feed a dog all turn. So a 7% column could still mean the
+instrument was short.
+
+**`native` is one card policy per character**, and it shares `synergist`'s
+drafting and its walk exactly — the two columns differ ONLY in how the hand is
+played, so any gap between them is about the mechanic and nothing else. The
+Park Drinker gets the drink down first and dumps every attack in the same turn
+(buzz not spent is thrown away). The Bottle Collector cashes the counters while
+the hand is full and THEN empties out — which is where `hoarder` went wrong, by
+sitting on cards that were no longer worth holding. The Cart Pusher covers up
+first and swings the block-counter last. The Dog Walker feeds fetch early
+because the dog is paid at the end of the turn. The Old Boxer blocks only what
+would actually kill him: being hit is his resource.
+
+It changes the reading completely. **The Dog Walker went 5% → 24%** — nobody
+had ever played her. And it lets the two genuinely weak characters be named,
+because now four different policies say the same thing about them.
+
+**THE COLLECTOR WAS ONE NUMBER.** `dig_the_bin` cost 1. That is a third of a
+turn's energy spent purely on SETUP, on a character whose whole line is dig,
+then cash — so he dug and then could not afford the cards that count what he
+dug. At cost 0 the bots go 3%/6%/7% → **13%/29%/16%**, and this is the
+measurement that matters: nothing else moved him at all. Deepening the counters
+(per 3 → per 2) reads within noise of the control; so does deepening the
+hand-counters. One cost, the entire character.
+
+**THE DRINKER WAS DIFFUSE**, and is the honest half of this entry. No single
+number moved him at 200 seeds; three together (72 HP not 68 — he was the
+frailest character in the game AND the weakest at his own line, which is two
+disadvantages for one price; First Sip 3 Buzz; Never Sober 3 a turn) take his
+best line 8% → 14%. **He is still last, and the reason is structural rather
+than numeric: buzz does not compound.** Block that stays and cards that count
+what came before them both grow across a fight; a strength that expires at the
+end of the turn is flat forever, so the Drinker cannot build into a boss the
+way the Cart Pusher can. That is a design question, not a dial, and it is left
+open rather than papered over with a fourth buff.
+
+Best lines now **14 / 29 / 30 / 35 / 24 / 16** against v14's 8 / 29 / 8 / 35 /
+24 / 16.
+
+**AND A MEASUREMENT BUG, in the instrument added in this very version.** The new
+HP ledger asks what an ordinary fight actually costs, since the deaths list can
+only say where a run ENDS. Its first cut subtracted HP at the end of a fight
+from HP at the start — but the post-fight heal lands in the same step that
+closes the fight, so it was reporting the cost NET of the heal: 5.4 HP against
+a 6 HP heal, which reads as a run with no attrition at all and would have had
+me cutting the heal. It sums the DROPS now. An ordinary fight costs **8.9**, an
+elite 16, a boss 41.5, and about a third of all the HP a good line loses goes
+to ordinary fights. A heal is not a fight being cheaper.
+
+Two smaller things fell out of it. `bots.mjs` runs its report only when it IS
+the command, so the instrument can be imported and pointed at one question — a
+sweep over a single tuning number — instead of printing a matrix nobody asked
+for. And twelve event checks in `core.mjs` were written as literals (`hp ===
+68`), so moving the Drinker's HP by two points failed all twelve at once; not
+one of them is about his HP, they are about what the EVENT does, so they read
+`CHARACTERS.drinker.hp` now.
+
+Gates: core 700, smoke 108.
+
 ## v15 — 2026-09-06
 **A character is named by their class, not by a person**
 Owner: *"maybe just English class names"*. The roster was six Finnish first
