@@ -301,7 +301,12 @@ across it; the arena lerps three light rigs (day/evening/night, `MOOD`, `DAY`,
 `NIGHT` in `data.js`); the plates follow the hour (`PLATES` in `main.js`, the
 owner's photographs, one per stage per seed); and past dusk what spawns is
 **mutated** (`nightfall`: +15% HP and grown eyes through the evening, +30% and
-1 Strength at night — never a boss, a boss IS the night). **Upgrades are one
+1 Strength at night — never a boss, a boss IS the night). **The fork is a torn-paper
+map** (`js/map.js`, from the owner's Piritori reference): every span of the
+act pinned to a torn sheet, the walked route a strip of tape, real 48px
+buttons laid over the current step's pins; `pos(step, option)` is the one
+place the orientation lives, so portrait runs bottom-to-top with upright
+text; the paper is tinted by the hour. **Upgrades are one
 rule** (`engine.upgrade`), not a second copy of every card. **Beating an act
 boss heals half** — without it everyone reached act two at 40% and the middle
 of the run was a wall (`balance.mjs` reads per act now). Three pre-existing

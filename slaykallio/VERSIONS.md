@@ -7,6 +7,41 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v12 — 2026-09-05
+**The route is a torn-paper map**
+From the owner's references (a city map of Kallio in torn dark paper, with
+pins and a tape line): the fork is no longer a row of buttons. `js/map.js`
+draws the whole act — every span of every step as a paper disc pinned to a
+torn sheet, the walked route as a strip of tape, dashed threads from where
+you stand to what you can take next, the boss's paw at the end of the trunk.
+You can see the route ahead, which is what a map is for; the route data
+already knew it (`buildRoute` rolls the act up front), this only draws it.
+
+**The one rule that keeps both formats honest is `pos(step, option)`**: it is
+the only place the orientation lives. Landscape runs the route left to
+right, portrait bottom to top, and the text stays upright in both because
+nothing is rotated — only the positions swap axes. Three options across a
+phone's width collide below their pins, so the middle one takes the shelf
+above. **The paper follows the hour**: kraft in the afternoon, near-black at
+night, the same numbers that tint the light.
+
+**The drawing is the picture; the buttons are the targets.** A real 48px
+button is laid over each pin of the current step, so a thumb, an arrow key
+and a pad all land on the same thing, and the focus ring is a ring on the
+map. Hovering or focusing a pin names it in a caption under the sheet.
+
+Two staging faults the portrait render found: the panel title sat on the
+HUD's DECK button (portrait panels now start below the plate), and my own
+shot harness advanced the engine under the view and photographed a stale
+map for a turn — the panel now re-applies the hour when it opens, and
+`__sk.debug.redraw()` exists so a harness can move the state and ask the view
+to catch up.
+
+Gates: five checks (105 total) — the sheet is painted, every span of
+the act is a pin, the buttons sit on the current step's pins, the paper is
+kraft by day and dark by night, and the portrait map keeps its pins inside
+the sheet with its title clear of the HUD.
+
 ## v11 — 2026-09-05
 **Two acts, a choice at every span, events, rests, upgrades, six bums, the hour, and the Bear**
 Owner: *"aim for StS2 parity"*, then *"multiple characters, lots of cards

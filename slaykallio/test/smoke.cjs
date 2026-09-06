@@ -103,6 +103,26 @@ const check = (name, ok, extra = '') => {
     await page.evaluate(() => __sk.state().phase === 'map' && !document.querySelector('#map').hidden && __sk.puppets().hero && __sk.puppets().foes.length === 0));
   check('the fork offers two or three spans as 44px targets', await page.evaluate(() => { const n = [...document.querySelectorAll('#nodes .node')]; return n.length >= 2 && n.length <= 3 && n.every(b => b.getBoundingClientRect().height >= 44); }));
   check('and it is afternoon, on a daylight plate', /afternoon/.test(await page.locator('#map .where').innerText()) && await page.evaluate(() => /day|plate\.jpg/.test(__sk.plate() ?? '')));
+  // the fork is drawn as a torn-paper map: every span of the act is a pin on
+  // it, the whole route visible ahead, and the buttons sit ON the pins you can take
+  const sheet = await page.evaluate(() => {
+    const cv = document.querySelector('#mapcv'); const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    let ink = 0, lum = 0; for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 20) ink++; lum += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) * (d[i + 3] / 255); }
+    const pins = __sk.debug.mapPins(), r = __sk.state().route;
+    const box = document.querySelector('#nodes').getBoundingClientRect();
+    const onPin = [...document.querySelectorAll('#nodes .node')].every(b => { const q = b.getBoundingClientRect(); const cx = q.left + q.width / 2 - box.left, cy = q.top + q.height / 2 - box.top; return pins.some(p => p.current && Math.hypot(p.x - cx, p.y - cy) < 6); });
+    return { painted: ink / (cv.width * cv.height), pins: pins.length, spans: r.steps.flat().length, onPin, lum: lum / ink };
+  });
+  check(`the map is painted (${(sheet.painted * 100).toFixed(0)}% of the sheet)`, sheet.painted > 0.85);
+  check(`every span of the act is a pin on it (${sheet.pins} pins for ${sheet.spans} spans) — the route is visible ahead`, sheet.pins === sheet.spans && sheet.pins >= 12);
+  check('the buttons sit on the pins of the current step', sheet.onPin);
+  const dayLum = sheet.lum;
+  await page.evaluate(() => { __sk.state().hour = 1; __sk.debug.redraw(); });   // the panel draws from the STATE's hour
+  await page.waitForTimeout(200);
+  const nightLum = await page.evaluate(() => { const cv = document.querySelector('#mapcv'); const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let ink = 0, lum = 0; for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 20) ink++; lum += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) * (d[i + 3] / 255); } return lum / ink; });
+  check(`the paper is kraft by day and dark by night (${dayLum.toFixed(0)} → ${nightLum.toFixed(0)})`, dayLum > nightLum * 1.8);
+  await page.evaluate(() => { __sk.state().hour = 0; __sk.debug.redraw(); });
+  await page.waitForTimeout(200);
   // the rest of this section reads the rats' reward (a card AND a friend), so take that span
   await page.evaluate(() => __sk.debug.forkTo([{ kind: 'fight', id: 'rats' }, { kind: 'fight', id: 'bin' }]));
   await page.evaluate(() => { __sk.takeNode(0); __sk.flush(); });
@@ -586,6 +606,16 @@ const check = (name, ok, extra = '') => {
       return a.x > 4 && a.x < w - 4 && a.y > 0 && a.y < h;
     });
   }));
+  await pp.evaluate(() => { __sk.setSpeed(0); __sk.start('collector', 6, false); });
+  await pp.waitForTimeout(300);
+  check('the portrait map keeps its pins inside the sheet and its title clear of the HUD', await pp.evaluate(() => {
+    const sheet = document.querySelector('#map .sheet').getBoundingClientRect();
+    const pinsIn = [...document.querySelectorAll('#nodes .node')].every(b => { const q = b.getBoundingClientRect(); return q.left >= sheet.left - 2 && q.right <= sheet.right + 2 && q.top >= sheet.top - 2 && q.bottom <= sheet.bottom + 2; });
+    const h2 = document.querySelector('#map h2').getBoundingClientRect(), hud = document.querySelector('#top')?.getBoundingClientRect();
+    return pinsIn && (!hud || h2.top >= hud.bottom - 1);
+  }));
+  await pp.evaluate(() => { __sk.takeNode(0); __sk.flush(); });
+  await pp.waitForTimeout(200);
   check('the hand is on screen and reachable by a thumb', await pp.evaluate(() => {
     const cards = [...document.querySelectorAll('#hand .card')];
     if (!cards.length) return false;

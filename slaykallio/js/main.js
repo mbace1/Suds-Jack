@@ -12,6 +12,7 @@ import * as engine from './engine.js';
 import { Arena } from './scene.js';
 import { Puppet, paintCutout } from './puppet.js';
 import { paintCardPic } from './cardart.js';
+import { drawMap } from './map.js';
 import { sfx, unlock, setMuted, isMuted } from './audio.js';
 import { watchPad } from '../../hub/pad.js';
 
@@ -22,7 +23,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 11;
+const VERSION = 12;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -685,22 +686,49 @@ function nodeHint(n) {
 function openMapPanel() {
   if (!state || state.phase !== 'map') return;
   closePanels();
+  applyHour(state.hour ?? 0);              // idempotent; covers any path that opens the map without replaying the log
   if (!hero || foes.size) spawnHeroAlone();
   const r = state.route, act = ACTS[state.act];
   const panel = $('#map'); panel.hidden = false;
   panel.querySelector('h2').textContent = r.step === 0 ? act[theme].name : 'The bridge forks';
   panel.querySelector('.where').textContent = `Act ${state.act + 1} · ${engine.HOUR_WORD(state.hour ?? 0)} · span ${r.step + 1} of ${act.steps}, then ${ENCOUNTERS.find(e => e.id === act.boss)[theme].name}`;
-  const box = $('#nodes'); box.innerHTML = '';
   panelSel = 0;
+  drawMapPanel();
+  renderTop();
+}
+// The sheet is drawn from the route; a button is laid over each pin of the
+// current step so a thumb, a key and a pad all land on the same thing.
+let mapPins = [];
+function drawMapPanel() {
+  if (!state || state.phase !== 'map' || $('#map').hidden) return;
+  const r = state.route, act = ACTS[state.act];
+  const cv = $('#mapcv');
+  const drawn = drawMap(cv, {
+    route: r, act, hour: state.hour ?? 0, portrait: arena.portrait, seed: state.seed,
+    nameOf: nodeName, bossName: ENCOUNTERS.find(e => e.id === act.boss)[theme].name,
+  });
+  mapPins = drawn.pins;
+  const box = $('#nodes'); box.innerHTML = '';
   r.steps[r.step].forEach((n, i) => {
+    const p = drawn.pins.find(q => q.i === r.step && q.j === i);
     const b = el('button', `node ${n.kind}`);
+    b.style.left = `${p.x}px`; b.style.top = `${p.y}px`;
+    b.setAttribute('aria-label', `${KIND_WORD[n.kind]}: ${nodeName(n)}. ${nodeHint(n)}`);
     b.append(el('b', '', KIND_WORD[n.kind]), el('span', '', nodeName(n)), el('small', '', nodeHint(n)));
     b.classList.toggle('selected', i === panelSel);
     b.addEventListener('click', () => takeNode(i));
+    b.addEventListener('pointerenter', () => captionNode(i));
+    b.addEventListener('focus', () => captionNode(i));
     box.append(b);
   });
-  renderTop();
+  captionNode(panelSel);
 }
+function captionNode(i) {
+  const n = state?.route?.steps[state.route.step]?.[i]; if (!n) return;
+  const c = $('#map .caption'); c.innerHTML = '';
+  c.append(el('b', '', KIND_WORD[n.kind]), document.createTextNode(`${nodeName(n)} — ${nodeHint(n)}`));
+}
+addEventListener('resize', () => drawMapPanel());
 function takeNode(i) {
   if (state.phase !== 'map') return;
   sfx.pick();
@@ -800,6 +828,7 @@ function panelKeys(ev, id) {
     panelSel = (panelSel + (k === 'ArrowRight' || k === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
     buttons.forEach((b, i) => b.classList.toggle('selected', i === panelSel));
     buttons[panelSel].scrollIntoView?.({ block: 'nearest' });
+    if (id === '#map') captionNode(panelSel);
   } else if (k === 'Enter' || k === ' ') buttons[panelSel]?.click();
   else if (/^[1-9]$/.test(k)) buttons[Number(k) - 1]?.click();
 }
@@ -889,5 +918,9 @@ window.__sk = {
     events: () => EVENTS.map(e => e.id),
     // force the next fork to offer exactly these spans, for driving one screen
     forkTo: nodes => { state.route.steps[state.route.step] = nodes; openMapPanel(); },
+    mapPins: () => mapPins,
+    // re-open whatever screen the phase wants, from the current state — for a
+    // harness that has moved the engine underneath the view
+    redraw: () => { cursor = state.log.length; closePanels(); afterReplay(); },
   },
 };
