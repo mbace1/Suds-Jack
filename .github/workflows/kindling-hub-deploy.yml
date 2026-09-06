@@ -1,30 +1,50 @@
-name: Build Kindling hub deployment
-# v9 deployment trigger — canonical Kindling source + final-path smoke
+name: Deploy Kindling to hub
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - agent/kindling-hub-live
+    inputs:
+      kindling_ref:
+        description: Kindling branch, tag, or commit SHA
+        required: true
+        default: main
+      release_label:
+        description: Hub release label
+        required: true
+        default: v16
+      release_number:
+        description: Numeric hub version
+        required: true
+        default: "16000"
+      notes:
+        description: Short release note
+        required: false
+        default: canonical Kindling release
 
 permissions:
   contents: write
 
+concurrency:
+  group: kindling-hub-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy-kindling:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/kindling-hub-live
+          ref: main
           fetch-depth: 0
 
-      - name: Fetch canonical Kindling source
+      - name: Fetch requested Kindling source
         run: |
           rm -rf .kindling-source
-          git clone --depth 1 https://github.com/mbace1/Kindling.git .kindling-source
+          git clone https://github.com/mbace1/Kindling.git .kindling-source
           cd .kindling-source
-          test "$(git rev-parse HEAD)" = "77e2b41409a0ac0da69d66c4065e7d8912954a73"
+          git fetch origin "${{ inputs.kindling_ref }}"
+          git checkout --detach FETCH_HEAD
+          echo "KINDLING_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v4
         with:
@@ -32,73 +52,74 @@ jobs:
           cache: npm
           cache-dependency-path: .kindling-source/package-lock.json
 
-      - name: Build canonical static hub copy
+      - name: Run Kindling release gate and build
         working-directory: .kindling-source
         run: |
           npm install --ignore-scripts --no-audit --no-fund
+          npm run release:static
           npm run build:hub
           test -f dist/client/index.html
-          grep -q "const CACHE = 'kindling-hub-" dist/client/sw.js
+          test -f dist/client/art/ember-idle-runtime.svg
+          grep -q 'ember-portrait.png' dist/client/art/ember-idle-runtime.svg
 
-      - name: Replace playable Kindling runtime
+      - name: Stage cabinet
         run: |
-          rm -rf kindling/assets kindling/art kindling/__grok
-          rm -f kindling/index.html kindling/favicon.svg kindling/og.jpg kindling/x-banner.jpg kindling/hub-shell.js kindling/sw.js
-          cp -a .kindling-source/dist/client/. kindling/
-
-          # Bind to the site's current shared arcade shell cache token.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("kindling/hub-shell.js")
-          s = p.read_text()
-          s = s.replace("import('../hub/shell.js')", "import('../hub/shell.js?v=17')")
-          p.write_text(s)
-          PY
-
-          printf 'v9\n' > kindling/.hub-release
-          cat > kindling/DEPLOYED_VERSION.txt <<'EOF'
-          Kindling v9
-          canonical source: mbace1/Kindling@77e2b41409a0ac0da69d66c4065e7d8912954a73
+          rm -rf .deploy-kindling .deploy-smoke
+          mkdir -p .deploy-kindling
+          cp -a .kindling-source/dist/client/. .deploy-kindling/
+          printf '%s\n' "${{ inputs.release_label }}" > .deploy-kindling/.hub-release
+          cat > .deploy-kindling/DEPLOYED_VERSION.txt <<EOF
+          Kindling ${{ inputs.release_label }}
+          canonical source: mbace1/Kindling@${KINDLING_SHA}
           static hub build: npm run build:hub
+          notes: ${{ inputs.notes }}
           EOF
 
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          p = Path("hub/versions.json")
-          data = json.loads(p.read_text())
-          data["kindling"] = {"v":"9","n":9000,"from":"canonical Kindling v9"}
-          p.write_text(json.dumps(data, indent=2) + "\n")
-          PY
-
-          grep -q "shell.js?v=17" kindling/hub-shell.js
-          grep -q "const CACHE = 'kindling-hub-" kindling/sw.js
-
-      - name: Smoke the exact files that will be committed
+      - name: Smoke exact final-path cabinet
         run: |
-          rm -rf .hub-smoke
-          mkdir -p .hub-smoke/Suds-Jack/kindling
-          cp -a kindling/. .hub-smoke/Suds-Jack/kindling/
-          mkdir -p .hub-smoke/Suds-Jack/hub
-          cp hub/shell.js hub/pad.js hub/games.js hub/padkeys.js hub/playlog-auto.js hub/playlog.js .hub-smoke/Suds-Jack/hub/
-          python3 -m http.server 8081 -d .hub-smoke >/tmp/kindling-hub.log 2>&1 &
+          mkdir -p .deploy-smoke/Suds-Jack/kindling .deploy-smoke/Suds-Jack/hub
+          cp -a .deploy-kindling/. .deploy-smoke/Suds-Jack/kindling/
+          cp hub/shell.js hub/pad.js hub/games.js hub/padkeys.js .deploy-smoke/Suds-Jack/hub/
+          python3 -m http.server 8081 -d .deploy-smoke >/tmp/kindling-hub.log 2>&1 &
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8081/Suds-Jack/kindling/ >/dev/null; then break; fi
             sleep 1
           done
           cd .kindling-source
           npx playwright install chromium
-          node scripts/betterment-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/ artifacts/hub-deploy-mobile.png --allow-static-hydration
+          node scripts/full-play-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/
+          node scripts/betterment-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/ artifacts/hub-release-mobile.png --allow-static-hydration
 
-      - name: Commit generated deployment
+      - name: Publish to gh-pages
         run: |
-          rm -rf .kindling-source .hub-smoke
+          rm -rf .kindling-source .deploy-smoke
+          mv .deploy-kindling /tmp/kindling-release
+          git fetch origin gh-pages
+          git checkout -B gh-pages origin/gh-pages
+          rm -rf kindling/assets kindling/art kindling/__grok
+          rm -f kindling/index.html kindling/favicon.svg kindling/og.jpg kindling/x-banner.jpg kindling/hub-shell.js kindling/sw.js kindling/VERSIONS.md kindling/.hub-release kindling/DEPLOYED_VERSION.txt
+          cp -a /tmp/kindling-release/. kindling/
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path('hub/versions.json')
+          data = json.loads(p.read_text())
+          label = os.environ['RELEASE_LABEL']
+          number = int(os.environ['RELEASE_NUMBER'])
+          notes = os.environ['RELEASE_NOTES']
+          data['kindling'] = {'v': label.removeprefix('v'), 'n': number, 'from': notes}
+          p.write_text(json.dumps(data, indent=2) + '\n')
+          PY
           git config user.name "Kindling Hub Deploy"
           git config user.email "actions@users.noreply.github.com"
           git add kindling hub/versions.json
           if git diff --cached --quiet; then
-            echo "No deployment changes"
-            exit 0
+            echo "Requested Kindling build already deployed"
+          else
+            git commit -m "Deploy Kindling ${{ inputs.release_label }} ($KINDLING_SHA)"
+            git push origin gh-pages
           fi
-          git commit -m "Kindling v9 hub — canonical static build 77e2b41"
-          git push origin HEAD:agent/kindling-hub-live
+        env:
+          RELEASE_LABEL: ${{ inputs.release_label }}
+          RELEASE_NUMBER: ${{ inputs.release_number }}
+          RELEASE_NOTES: ${{ inputs.notes }}
