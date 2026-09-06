@@ -44,7 +44,7 @@
 // (scripts/level-check.mjs). Enemy names are resolved against an EnemyType
 // map the caller passes in, because enemy.js imports three and cannot load here.
 
-import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=195';
+import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=196';
 
 export const FORMAT = 1;
 export const STEP = 0.1;
@@ -70,7 +70,7 @@ export const BUNDLED = ['first-light', 'moving-rings', 'three-rings'];
 // next at C or better (design/CAMPAIGN_LEVELS.md — "a player who is merely
 // finishing keeps moving"). ?level=<id> plays either list; the port syncs
 // both, from the same files.
-export const CAMPAIGN = ['ch-first-light', 'ch-cold-start', 'ch-the-vice'];
+export const CAMPAIGN = ['ch-first-light', 'ch-cold-start', 'ch-the-vice', 'ch-crossfire', 'ch-the-tide', 'ch-conductor', 'ch-afterlife', 'ch-the-narrows', 'ch-no-second-chance', 'ch-bare-hands'];
 export const LEVEL_IDS = [...BUNDLED, ...CAMPAIGN].sort();
 
 const TOP_KEYS    = new Set(['format', 'id', 'name', 'arena', 'duration', 'spawns', 'rules', 'director', 'grade']);
@@ -87,7 +87,18 @@ const CIRCLE_KEYS = new Set(['kind', 'c', 'r', 'move']);   // v241 (P3): a circl
 const MOVE_KEYS   = new Set(['kind', 'radius', 'period', 'phase']);
 const ENEMY_KEYS  = new Set(['t', 'type', 'px', 'pz', 'speedMult', 'intervalMult', 'boss', 'elite']);
 const PICKUP_KEYS = new Set(['t', 'kind', 'id', 'px', 'pz', 'life']);
-const RULE_KEYS   = new Set(['mode', 'outside']);
+const RULE_KEYS   = new Set(['mode', 'outside', 'twist']);
+// v243 CHALLENGES: the rules the campaign needs that a mode or an arena does
+// not already give. The other four of the port's eight are already
+// expressible and are NOT twists: SWARM is mode "melee", BOOST ONLY is mode
+// "rush", CLOSE QUARTERS is a smaller arena, and a plain fight is no twist
+// at all.
+//   onelife    — one hit ends it
+//   artillery  — the gun club only, and the cap comes off
+//   focus      — the support species arrive early: break off or drown
+//   graveyard  — corpses answer harder (revenge is CLOSE COMBAT's mechanic
+//                upstream, so this one requires mode "melee" and says so)
+export const TWISTS = ['onelife', 'artillery', 'focus', 'graveyard'];
 const ID_RE = /^[a-z0-9][a-z0-9-]*$/;
 
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
@@ -178,6 +189,13 @@ export function validate(level, { typeNames, pickupIds }) {
     unknownKeys(R, RULE_KEYS, 'rules', errs);
     if (!MODES.includes(R.mode)) errs.push(`rules: mode must be one of ${MODES.join(', ')}`);
     if (R.outside !== undefined && !OUTSIDE.includes(R.outside)) errs.push(`rules: outside must be one of ${OUTSIDE.join(', ')}`);
+    if (R.twist !== undefined) {
+      if (!TWISTS.includes(R.twist)) errs.push(`rules: twist must be one of ${TWISTS.join(', ')}`);
+      // Named rather than silently ignored: revenge only fires in melee, so a
+      // GRAVEYARD level that forgot its mode would play as an ordinary room.
+      else if (R.twist === 'graveyard' && R.mode !== 'melee')
+        errs.push('rules: twist "graveyard" needs mode "melee" — revenge is CLOSE COMBAT\'s mechanic');
+    }
   }
 
   // v242: a DIRECTED level has no spawn list — the director fills the room.

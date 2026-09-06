@@ -7,6 +7,57 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v243 — 2026-09-06
+**All ten CHALLENGES, and the four rules the format could not already say**
+- **The campaign is complete as DATA.** v242 shipped three levels because
+  seven needed rules this build did not have. It has them now, so all ten of
+  `challenges.gd`'s levels are files in `levels/` with their measured tiers:
+  FIRST LIGHT · COLD START · THE VICE · CROSSFIRE · THE TIDE · CONDUCTOR ·
+  AFTERLIFE · THE NARROWS · NO SECOND CHANCE · BARE HANDS
+- **Four twists, and only four**, because half the port's eight rules were
+  already expressible and adding a twist for them would have been a second
+  way to say the same thing: SWARM is `mode: "melee"`, BOOST ONLY is
+  `mode: "rush"`, CLOSE QUARTERS is `arena: "room"`, and a plain fight is no
+  twist at all. What was genuinely missing:
+  - **`onelife`** — one hit ends it. Set after the ruleset has chosen `maxHp`
+    (Rush hands out lives), so it wins.
+  - **`artillery`** — everything that cannot shoot leaves the draft and the
+    shooter cap comes off, so the room IS the firing lines. Its signature is
+    visible in the gate: **18 bodies where a normal room spawns over 100**,
+    because the budget buys artillery instead of fodder.
+  - **`focus`** — WARDEN, SIREN and SHEPHERD arrive in the first seconds
+    instead of deep in the wave. Added AHEAD of the budget, not out of it:
+    the room's pressure is unchanged and its PRIORITY is the twist.
+  - **`graveyard`** — every corpse answers twice as loudly. Revenge is slow
+    and grazeable by design, so doubling the COUNT thickens the puzzle
+    without making it unreadable, and the bullet cap still holds the ceiling.
+- **`graveyard` REQUIRES `mode: "melee"`, and the validator says so by name.**
+  Revenge only fires in CLOSE COMBAT upstream — it is that mode's mechanic.
+  A GRAVEYARD level that forgot its mode would have played as an ordinary
+  room and looked like a tuning problem, so it is refused with the reason
+  instead. That is the browser build's rule winning over the port's, which
+  is the order this repo works in
+- **One trap paid for in the wiring.** With the melee pool emptied by
+  ARTILLERY, `drawPool` falls back to `available` — which would have quietly
+  refilled the room with exactly the bodies the twist removed. The fill loop
+  now skips for that twist
+- **The gate measures the twist rather than asserting it** (19–22 checks per
+  level): ARTILLERY by shooter share (>0.9), ONE LIFE by the run's starting
+  hp, FOCUS by support bodies arriving, and a plain room by NOT being mostly
+  shooters. Two failures on the first pass were the GATE's own fault and are
+  worth recording: it read `maxHp` after the probe had made the bot immortal,
+  and it asserted the unlock chain while playing level four — clearing level
+  four does not open level two. Both fixed in the gate; the game was right
+- Gates: check-syntax · arena-check 8,396 · level-check **109** ·
+  level-move-check 7 · smoke · level-smoke · editor-smoke 27 ·
+  challenge-smoke across four campaign levels
+- **Still not validated, and it matters most:** the tiers are the PORT's
+  measured numbers. A bot scored 3.4 million on NO SECOND CHANCE against an
+  S of 16,450. The two builds score differently by orders of magnitude, so
+  every grade in the campaign is currently decorative. Measuring them for
+  THIS build is the next real job
+- Cache-bust `?v=195` → `?v=196`; HUD label → v243
+
 ## v242 — 2026-09-06
 **CHALLENGES — the campaign, un-shelved and built the right way round** *(owner ask, 2026-09-06: "make challenges")*
 - **Why it can exist now.** CHALLENGES was dropped on 2026-08-28 (`QUEUE.md`

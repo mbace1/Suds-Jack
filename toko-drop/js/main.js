@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=195';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=195';
-import { Player, PLAYER_RADIUS } from './player.js?v=195';
+import { InputManager } from './input.js?v=196';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=196';
+import { Player, PLAYER_RADIUS } from './player.js?v=196';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=195';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=195';
-import { audio } from './audio.js?v=195';
-import { haptics } from './haptics.js?v=195';
-import { initDesigner } from './designer.js?v=195';
-import { createSpecimen } from './specimen.js?v=195';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=195';
-import { TUNING } from './tuning.js?v=195';
-import { Arena, rectShape } from './arena.js?v=195';   // v236: the boundary has one home
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=196';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=196';
+import { audio } from './audio.js?v=196';
+import { haptics } from './haptics.js?v=196';
+import { initDesigner } from './designer.js?v=196';
+import { createSpecimen } from './specimen.js?v=196';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=196';
+import { TUNING } from './tuning.js?v=196';
+import { Arena, rectShape } from './arena.js?v=196';   // v236: the boundary has one home
 import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel,
          gradeFor as levelGradeFor, cleared as levelCleared,
-         CAMPAIGN as CAMPAIGN_IDS, GRADES as LEVEL_GRADES } from './level.js?v=195';   // v237/v239: authored levels; v242: grades
+         CAMPAIGN as CAMPAIGN_IDS, GRADES as LEVEL_GRADES } from './level.js?v=196';   // v237/v239: authored levels; v242: grades
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -133,6 +133,11 @@ function waveKind(w) {
 // Spawn delays are tight so the arena fills fast (supports instant wave-end + dense pressure).
 // Enemy pool: [type, minWave, budget-cost]. Unlocked types grow with wave number.
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
+// v243 CHALLENGES: the level's twist, or null. A challenge is a room with a
+// RULE on it, and these are the four the port's campaign needs that a mode or
+// an arena cannot already express (js/level.js TWISTS).
+function levelTwist() { return (customLevel && customLevel.level.rules && customLevel.level.rules.twist) || null; }
+
 function getEnemySchedule(wave) {
   // v224 RUSH: composition follows the RUSH level, not the wave count — which
   // is what makes levelling DOWN after a lost life actually mean something.
@@ -189,8 +194,13 @@ function getEnemySchedule(wave) {
   const SHOOTERS  = new Set(W.shooters.map(n => EnemyType[n]));
   // v187 CLOSE COMBAT: nobody fires — the gun club joins the melee pool as
   // chasers (muzzled + sped up at spawn); DRAPER sits out (it IS a gun).
-  const draft     = meleeRun ? available.filter(([ty]) => ty !== DRAPER) : available;
-  const meleePool = draft.filter(([ty]) => meleeRun || !SHOOTERS.has(ty));
+  // v243 ARTILLERY: the gun club only. Everything that cannot shoot leaves the
+  // draft, so the room is nothing but firing lines and the answer is movement.
+  const twist     = levelTwist();
+  const artillery = twist === 'artillery';
+  const draft0    = meleeRun ? available.filter(([ty]) => ty !== DRAPER) : available;
+  const draft     = artillery ? draft0.filter(([ty]) => SHOOTERS.has(ty)) : draft0;
+  const meleePool = artillery ? [] : draft.filter(([ty]) => meleeRun || !SHOOTERS.has(ty));
   const shootPool = meleeRun ? [] : draft.filter(([ty]) => SHOOTERS.has(ty));
 
   // Mob variants: swarm waves favour bodies; SMASH TV leans toward door-rush
@@ -215,6 +225,16 @@ function getEnemySchedule(wave) {
   // Boss wave: guaranteed boss up front. OMEGA (v71) is boss-exclusive — it
   // never appears in POOL, so every boss wave gets a purpose-built enemy
   // instead of an existing regular type just scaled up.
+  // v243 FOCUS: the support species (they never attack you — they make
+  // everything else worse) arrive at the top of the room instead of deep in
+  // the wave, so the lesson is "break off and kill the support" from the
+  // first seconds. They are added ahead of the budget rather than out of it:
+  // the room's pressure is unchanged, its PRIORITY is the twist.
+  if (twist === 'focus') {
+    const support = ['WARDEN', 'SIREN', 'SHEPHERD'].map(n => EnemyType[n]).filter(v => v !== undefined);
+    support.forEach((ty, i) => list.push({ type: ty, t: 1.5 + i * 2.0, shooter: false }));
+  }
+
   if (isBoss) {
     // v187 CLOSE COMBAT boss: the crystals are guns — TORO the wheel is not.
     if (meleeRun) {
@@ -260,7 +280,11 @@ function getEnemySchedule(wave) {
     let shooterCap = Math.min(SP.capBase + Math.floor(wave / SP.capPerWaves), SP.capMax);
     if (isSwarm) shooterCap = SP.swarmCap;
     if (isBoss)  shooterCap = Math.min(shooterCap, SP.bossCap);
-    const shooterBudget = Math.floor(budget * SP.budgetShare);
+    // v243 ARTILLERY: the cap exists so shooters stay a tactical problem
+    // rather than the noise. In this room they ARE the room, so it comes off
+    // and the whole budget is theirs.
+    if (artillery) shooterCap = cap;
+    const shooterBudget = Math.floor(budget * (artillery ? 1 : SP.budgetShare));
     let sSpent = 0, k = 0, st = SP.first;
     while (shootPool.length && k < shooterCap && sSpent < shooterBudget) {
       const [type, , cost] = shootPool[Math.floor(rng() * shootPool.length)];
@@ -273,7 +297,10 @@ function getEnemySchedule(wave) {
     spent += sSpent;
   }
 
-  while (spent < budget && list.length < cap) {
+  // v243: with the melee pool emptied by ARTILLERY, drawPool falls back to
+  // `available` — which would quietly refill the room with the very bodies
+  // the twist removed. The shooter loop above has already spent the budget.
+  while (!artillery && spent < budget && list.length < cap) {
     const [type, , cost0] = drawPool[Math.floor(rng() * drawPool.length)];
     // v187: a drafted shooter without its gun is just legs — priced like it
     const cost = meleeRun && SHOOTERS.has(type) ? Math.max(1, cost0 - V.meleeShooterDiscount) : cost0;
@@ -3531,6 +3558,11 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   // identity (SPLITTA/REDD_CUBE/PURP_CUBE spawn their own children).
   if (meleeRun && src !== 'env' && gameState === 'playing' && bullets.active.length < 240) {
     const R = TUNING.revenge;
+    // v243 GRAVEYARD: every corpse answers twice as loudly. Revenge is slow
+    // and grazeable by design (TUNING.revenge.speedMult), so doubling the
+    // COUNT thickens the puzzle without making it unreadable — and the
+    // bullet cap above still holds the ceiling.
+    const revMult = levelTwist() === 'graveyard' ? 2 : 1;
     const col = revengeColor(e.type);
     const dialect = e._isBoss ? 'RING' : (R.byType[TYPE_KEY[e.type]] || R.fallback);
     if (dialect === 'AIMED' || dialect === 'FAN') {
@@ -3539,13 +3571,14 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
       const bz = player.mesh.position.z - e.position.z;
       const bl = Math.hypot(bx, bz);
       const baseA = bl > 1e-3 ? Math.atan2(bz, bx) : Math.random() * Math.PI * 2;
-      for (let j = 0; j < D.count; j++) {
-        const a = baseA + (j - (D.count - 1) / 2) * D.spread;
+      const dCount = D.count * revMult;
+      for (let j = 0; j < dCount; j++) {
+        const a = baseA + (j - (dCount - 1) / 2) * D.spread;
         bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
           false, col, false, e.type, false, 6, R.speedMult);
       }
     } else {
-      const nRev = e._isBoss ? R.ring.boss : e.radius > R.ring.bigRadius ? R.ring.big : R.ring.small;
+      const nRev = (e._isBoss ? R.ring.boss : e.radius > R.ring.bigRadius ? R.ring.big : R.ring.small) * revMult;
       const a0 = Math.random() * Math.PI * 2;
       for (let j = 0; j < nRev; j++) {
         const a = a0 + (j / nRev) * Math.PI * 2;
@@ -5120,7 +5153,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v242' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v243' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -7735,6 +7768,9 @@ function startGame() {
     input.rushOn = false;
   }
   if (dailyMod === 'glass') { player.maxHp = 1; player.hp = 1; }   // v179: GLASS
+  // v243 ONE LIFE: the campaign's own version of the same idea. Set after the
+  // ruleset above has chosen maxHp (Rush hands out lives), so it wins.
+  if (customLevel && customLevel.level.rules.twist === 'onelife') { player.maxHp = 1; player.hp = 1; }
   if (dailyMod) {
     milestoneT = 2.0;
     milestoneText = dailyMod === 'glass' ? 'GLASS DAY — 1 HP, KILLS PAY DOUBLE'
@@ -10498,7 +10534,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=195').then(async m => {
+  import('./editor.js?v=196').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10529,6 +10565,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=195').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=196').catch(() => {});
   });
 }

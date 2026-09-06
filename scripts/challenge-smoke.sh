@@ -64,12 +64,19 @@ if (location.hash === '#chprobe') {
       startRun();
       renderer.render = () => {};
       drawHUD = () => {};
+      // The run's OWN starting hp, read before the bot is made immortal below
+      // — otherwise ONE LIFE measures the probe's override, not the twist.
+      const hpAtStart = player.maxHp;
       const realNow = performance.now.bind(performance);
       let fakeNow = realNow();
       performance.now = () => fakeNow;
       const arrivals = [];        // { t } per body first seen, on the LEVEL clock
       const limit = Math.ceil((L.duration + 8) / 0.05);
       let steps = 0, rooms = 0, wasEmpty = true;
+      // A body that can fire is a shooter; TUNING names them.
+      const SHOOT = new Set(TUNING.waves.shooters.map(n => EnemyType[n]));
+      const SUPPORT = new Set(['WARDEN','SIREN','SHEPHERD'].map(n => EnemyType[n]));
+      let seenShooters = 0, seenMelee = 0, seenSupport = 0;
       for (; steps < limit && gameState === 'playing'; steps++) {
         fakeNow += 50;
         player.maxHp = 999; player.hp = 999; player._mercyT = 9e9;   // nobody is holding the stick
@@ -85,6 +92,8 @@ if (location.hash === '#chprobe') {
           if (e._probed) continue;
           e._probed = true;
           arrivals.push(+clock.toFixed(2));
+          if (SHOOT.has(e.type)) seenShooters++; else seenMelee++;
+          if (SUPPORT.has(e.type)) seenSupport++;
         }
         // Clear the floor now and then so the room must re-roll to keep the
         // pressure up — which is the behaviour under test.
@@ -95,6 +104,10 @@ if (location.hash === '#chprobe') {
         id: L.id, duration: L.duration, difficulty: L.director && L.director.difficulty,
         tiers: L.grade && L.grade.tiers, state: gameState, steps,
         bodies: arrivals.length, firstAt: arrivals[0], lastAt: last, rooms,
+        // v243: what the TWIST did, measured rather than asserted.
+        twist: (L.rules && L.rules.twist) || null, maxHp: hpAtStart,
+        shooterShare: seenShooters + seenMelee ? seenShooters / (seenShooters + seenMelee) : -1,
+        support: seenSupport,
         result: lastLevelResult,
         // The same score must always earn the same grade, and the boundary is
         // level.js's, not a second copy here.
@@ -137,6 +150,7 @@ ok('the campaign has levels in order', Array.isArray(c0.ids) && c0.ids.length >=
 ok('the first is open and the rest are locked', c0.unlocked[0] === true && c0.unlocked.slice(1).every(u => u === false), JSON.stringify(c0.unlocked));
 const o0 = await p.evaluate(() => window._C.open());
 ok('the picker offers only the open one', o0.pickable === 1, JSON.stringify(o0));
+ok('the level under test is in the campaign', c0.ids.includes(process.env.LEVEL), process.env.LEVEL);
 
 const r = await p.evaluate(() => window._C.run());
 
@@ -153,12 +167,31 @@ ok('the grade boundaries are level.js\'s and hold', JSON.stringify(r.gradeAt) ==
 ok('cleared agrees with the grade', r.result && r.result.cleared === (r.result.grade !== ''));
 ok('the best is remembered', r.best && r.best.score >= 0 && typeof r.best.grade === 'string', JSON.stringify(r.best));
 // ── v242: and AFTER it — the run just played is what unlocks the next ──────
+// Only the FIRST level can be asked this: clearing level four does not open
+// level two, and asserting otherwise would be the gate misreading itself.
 const c1 = await p.evaluate(() => window._C.campaign());
-ok('playing and clearing the first opens the second', c1.unlocked[0] && c1.unlocked[1], JSON.stringify(c1.unlocked));
-ok('but no further than that', c1.unlocked.length < 3 || !c1.unlocked[2], JSON.stringify(c1.unlocked));
-ok('progress counts the clear', c1.progress.cleared === 1 && c1.progress.total === c0.ids.length, JSON.stringify(c1.progress));
-const o1 = await p.evaluate(() => window._C.open());
-ok('and the picker now offers two', o1.pickable === 2, JSON.stringify(o1));
+if (process.env.LEVEL === c0.ids[0]) {
+  ok('playing and clearing the first opens the second', c1.unlocked[0] && c1.unlocked[1], JSON.stringify(c1.unlocked));
+  ok('but no further than that', c1.unlocked.length < 3 || !c1.unlocked[2], JSON.stringify(c1.unlocked));
+  ok('progress counts the clear', c1.progress.cleared === 1 && c1.progress.total === c0.ids.length, JSON.stringify(c1.progress));
+  const o1 = await p.evaluate(() => window._C.open());
+  ok('and the picker now offers two', o1.pickable === 2, JSON.stringify(o1));
+} else {
+  ok('a cleared level is remembered wherever it sits in the order', c1.progress.cleared === 1, JSON.stringify(c1.progress));
+}
+
+// ── v243: the twist did something, and it is the right something ───────────
+if (r.twist === 'artillery') {
+  ok('ARTILLERY: the room is the gun club', r.shooterShare > 0.9, 'shooter share=' + r.shooterShare.toFixed(2));
+} else if (r.twist === 'onelife') {
+  ok('ONE LIFE: one hit ends it', r.maxHp === 1, 'maxHp=' + r.maxHp);
+} else if (r.twist === 'focus') {
+  ok('FOCUS: the support species arrive', r.support > 0, 'support=' + r.support);
+} else if (r.twist) {
+  ok('the twist is carried into the run', typeof r.twist === 'string', r.twist);
+} else {
+  ok('a plain room has no twist and most bodies are not shooters', r.shooterShare < 0.8, 'shooter share=' + r.shooterShare.toFixed(2));
+}
 
 ok('no page errors', errs.length === 0, errs.slice(0,2).join(' | '));
 
