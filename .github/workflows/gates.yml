@@ -248,6 +248,12 @@ jobs:
       - name: the hub cabinet route into gameplay
         run: NODE_PATH=$(npm root -g) node toko-move/test/cabinet-route.cjs
 
+      # A PHONE, because v2.27 shipped a title screen whose START SHIFT button
+      # was below the fold on an iPhone 13, on a veil with no overflow. Present,
+      # visible, enabled, 44px, every gate green, and unreachable with a thumb.
+      - name: the game on a phone
+        run: NODE_PATH=$(npm root -g) node toko-move/test/phone.cjs
+
   hub:
     name: the arcade floor
     runs-on: ubuntu-latest
