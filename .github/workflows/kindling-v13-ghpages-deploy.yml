@@ -22,7 +22,7 @@ jobs:
           rm -rf .kindling-source
           git clone --depth 1 https://github.com/mbace1/Kindling.git .kindling-source
           cd .kindling-source
-          test "$(git rev-parse HEAD)" = "d2e65912353be53e5adef5fc68f5cb7e4b64031d"
+          test "$(git rev-parse HEAD)" = "965d908018fba0801becb729ca181a40c0a39102"
 
       - uses: actions/setup-node@v4
         with:
@@ -42,6 +42,7 @@ jobs:
           test -f dist/client/art/bell-keep-clean.svg
           test -f dist/client/art/ashwood-clean.svg
           grep -q 'ember-portrait.png' dist/client/art/ember-idle-runtime.svg
+          grep -q 'clipPath' dist/client/art/ember-idle-runtime.svg
 
       - name: Stage v16 cabinet
         run: |
@@ -51,9 +52,9 @@ jobs:
           printf 'v16\n' > .deploy-kindling/.hub-release
           cat > .deploy-kindling/DEPLOYED_VERSION.txt <<'EOF'
           Kindling v16
-          canonical source: mbace1/Kindling@d2e65912353be53e5adef5fc68f5cb7e4b64031d
+          canonical source: mbace1/Kindling@965d908018fba0801becb729ca181a40c0a39102
           static hub build: npm run build:hub
-          visual pass: camp depth + four upgraded Journey regions
+          pass: camp/world art + combat feel + companion animation + progression presentation
           EOF
 
       - name: Smoke exact final-path cabinet
@@ -85,7 +86,7 @@ jobs:
           from pathlib import Path
           p = Path('hub/versions.json')
           data = json.loads(p.read_text())
-          data['kindling'] = {'v':'16','n':16000,'from':'v16 visual pass + v15 systems'}
+          data['kindling'] = {'v':'16','n':16000,'from':'v16 quality pass + v15 systems'}
           p.write_text(json.dumps(data, indent=2) + '\n')
           PY
           git config user.name "Kindling Hub Deploy"
@@ -94,6 +95,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Kindling v16 already deployed"
           else
-            git commit -m "Deploy Kindling v16 visual pass"
+            git commit -m "Deploy Kindling v16 quality pass"
             git push origin gh-pages
           fi
