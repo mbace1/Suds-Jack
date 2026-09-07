@@ -1,5 +1,48 @@
 # Toko Move — versions
 
+## v2.29 — 2026-09-07
+
+**The same bug as v2.28, one screen further in: the only thing you can tap was
+below the fold, and this time it was a RACE.** Reported from an iPad in
+portrait, with a recording — 143 seconds, `deliveries 0/6` the whole way, the
+clock running 07:06 to 08:28, the courier never leaving Lasipalatsi. *"Can't
+move from first position."*
+
+He could not. Every panel in `#sheet` is created by a different module, each
+doing `sheet.append()` the first time it renders — `jobBoard`, `routeChoices`,
+`hubTactics`, `carryBoard` — so the ORDER of the sheet was whichever module
+happened to mount first. It is not stable: measured over three identical runs at
+820x1180, the paint order came out `jobBoard, routeChoices, hubTactics` twice
+and `jobBoard, hubTactics, routeChoices` once. On the run where HUB OPTIONS won,
+**zero** CATCH buttons were on screen. On an iPhone at 390x844 it lost every
+time — three runs, three zeroes.
+
+And the panel that DOES win the race is the one you cannot use. HUB OPTIONS is
+read-only by design — it says so on its own face, *"Availability, not
+recommendation"* — and its lines are `<span>`s. So the visible half of the
+screen is a list of trams marked **AT HUB** that do nothing when tapped, while
+`WAIT AT HUB`, the panel with the actual buttons on it, is somewhere below the
+bottom edge. The recording shows the consequence four times over: `MISSED 10B`,
+`MISSED 4H`, `MISSED 4`, `MISSED 10B` — the game reporting trams missed that
+were sitting at the stop, because nothing the player could reach would board
+them.
+
+**The order is declared in CSS now, so it cannot depend on timing.** `#sheet` is
+a flex column and every panel carries an explicit `order`: what you ACT on
+first (`rideStatus`, `routeChoices`), then what you READ (`jobBoard`,
+`hubTactics`, `carryBoard`). Measured after, nine runs across three viewports:
+the paint order is identical every time, and all three CATCH buttons are inside
+the sheet on iPad portrait and landscape where before it was one, two or none.
+
+Two things deliberately NOT changed, both recorded so the next session does not
+mistake them for the bug. **A CATCH is disabled unless a vehicle is at the stop
+travelling the way this leg goes** — `HANDOVER.md` rule 3, *"direction matters:
+a vehicle going the wrong way is not a valid catch"* — so a disabled button
+under a chip reading AT HUB is the design working, not failing. The two panels
+answer different questions and only one of them is about your journey. But they
+say it with the same three words, which is the readability question this entry
+hands on rather than settles.
+
 ## v2.28 — 2026-09-06
 
 **The phone pass, and it found the worst bug this lane has shipped.** Nobody had
