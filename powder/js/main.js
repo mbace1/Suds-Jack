@@ -545,8 +545,16 @@ function placeCamera(dt, snap) {
   // the craft is ~11 m long, so 13 m of chase put the camera inside its own
   // engines; this sits it in the lower third with the horizon in shot
   const back = 26 + p.speed * 0.080;
-  if (snap) state.camYaw = p.yaw;
-  else state.camYaw += angleDelta(state.camYaw, p.yaw) * Math.min(1, 5.5 * dt);
+  // In a slide the camera splits the difference between where the nose
+  // points and where the sled is actually travelling. Locked to the nose,
+  // a 15 m/s slide swung the whole world round while the sled sat still in
+  // the frame — it read as the camera losing it, not the driver. Half way
+  // to the travel heading, the sled slides ACROSS the frame: the snowboard.
+  const vF = p.vel.x * Math.sin(p.yaw) - p.vel.z * Math.cos(p.yaw);
+  const travel = p.speed > 6 ? clamp(Math.atan2(p.slip, Math.max(2, vF)), -0.7, 0.7) : 0;
+  const wantYaw = p.yaw + travel * 0.5;
+  if (snap) state.camYaw = wantYaw;
+  else state.camYaw += angleDelta(state.camYaw, wantYaw) * Math.min(1, 5.5 * dt);
   // the right stick pans the rig round the sled — look into the corner, or
   // back down the mountain at what you just came through
   const wantPan = (ctl.pan || 0) * 1.15;
