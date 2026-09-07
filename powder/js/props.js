@@ -9,7 +9,7 @@
 // that crossing, so it is built exactly once.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PAL } from './palette.js?v=8';
+import { PAL } from './palette.js?v=9';
 
 export function makePropKit() {
   const lam = (c) => new THREE.MeshLambertMaterial({ color: c });
@@ -32,6 +32,9 @@ export function makePropKit() {
       // props are merged per tile, so their colour lives in a vertex attribute
       baked: new THREE.MeshLambertMaterial({ vertexColors: true }),
     },
+    // landmarks from the Blender pipeline: [{ name, geo, radius }], filled in
+    // by main.js once models.js has loaded them. Empty means none.
+    landmarks: [],
   };
 }
 
@@ -106,6 +109,21 @@ export function populate(terrain, group, i, j, TILE) {
       m.rotation.y = ang + (rnd() - 0.5) * 0.3;
       m.rotation.z = (rnd() - 0.5) * 0.06;
       place(m, x, z, hh / 2 - 1.5);
+    }
+  }
+
+  // ---- a landmark from the pipeline, when any are registered -------------
+  // The random draw happens ONLY when landmarks exist, so a world without
+  // them lays out exactly as it did before they were possible.
+  const L = k.landmarks;
+  if (L && L.length && !overRift && rnd() < 0.06) {
+    const x = x0 + rnd() * TILE, z = z0 + rnd() * TILE;
+    if (!terrain.roadAt(z, _r).on) {
+      const l = L[Math.floor(rnd() * L.length) % L.length];
+      const m = new THREE.Mesh(l.geo, k.mat.baked);
+      m.rotation.y = rnd() * Math.PI * 2;
+      place(m, x, z, 0);
+      (group.userData.rocks = group.userData.rocks || []).push({ x, z, r: l.radius });
     }
   }
 
@@ -226,11 +244,15 @@ export function bakeProps(group, kit) {
     // geometry, and every rock in the world went black.
     const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
     g.applyMatrix4(o.matrixWorld);
-    for (const a of Object.keys(g.attributes)) if (a !== 'position' && a !== 'normal') g.deleteAttribute(a);
-    const c = o.material.color;
-    const n = g.attributes.position.count, col = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    for (const a of Object.keys(g.attributes)) if (!['position', 'normal', 'color'].includes(a)) g.deleteAttribute(a);
+    // a landmark arrives with its vertex colours already authored; a kit
+    // prop gets its material's flat colour painted on
+    if (!g.attributes.color) {
+      const c = o.material.color;
+      const n = g.attributes.position.count, col = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    }
     parts.push(g);
   });
   group.clear();

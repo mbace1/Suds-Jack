@@ -1,0 +1,12 @@
+{
+  "_": "The kit, exported. Load with ?models=reference to exercise the pipeline door end to end.",
+  "ships": {
+    "nose": "ship-nose.glb",
+    "aft": "ship-aft.glb"
+  },
+  "landmarks": [
+    "land-arch-01.glb",
+    "land-monoliths-01.glb"
+  ],
+  "numerals": null
+}

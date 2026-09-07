@@ -33,17 +33,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=8';
-import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=8';
-import { Vehicle } from './vehicle.js?v=8';
-import { DustPool, ScarField } from './dust.js?v=8';
-import { Route, RADIUS } from './route.js?v=8';
-import { InputManager, STICK_R } from './input.js?v=8';
-import { AudioKit } from './audio.js?v=8';
-import { makeSky } from './sky.js?v=8';
-import { makeEnvMap } from './craft.js?v=8';
-import { HeatHaze } from './haze.js?v=8';
-import { makeFlare } from './flare.js?v=8';
+import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=9';
+import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=9';
+import { Vehicle } from './vehicle.js?v=9';
+import { DustPool, ScarField } from './dust.js?v=9';
+import { Route, RADIUS } from './route.js?v=9';
+import { InputManager, STICK_R } from './input.js?v=9';
+import { AudioKit } from './audio.js?v=9';
+import { makeSky } from './sky.js?v=9';
+import { makeEnvMap } from './craft.js?v=9';
+import { HeatHaze } from './haze.js?v=9';
+import { makeFlare } from './flare.js?v=9';
+import { preloadModels, models } from './models.js?v=9';
 
 // Fog has to reach nearly the edge of the streamed world, not half way
 // into it, or the flats read as a 300 m milk bowl instead of a plain.
@@ -827,7 +828,10 @@ function showMenu() {
     '<br>LEFT AND RIGHT PAN THE CAMERA.</small>' +
     '<br><small style="opacity:.65">W / &uarr; THROTTLE &nbsp; A D / &larr; &rarr; STEER &nbsp; S / &darr; BRAKE' +
     '<br>SPACE BOOST &nbsp; SHIFT SPOILER &nbsp; Q E PAN &nbsp; F CHASSIS' +
-    '<br>GAMEPAD: STICKS AS ABOVE &nbsp;·&nbsp; RT / LT &nbsp;·&nbsp; A START &nbsp;·&nbsp; Y CHASSIS</small>' +
+    '<br>GAMEPAD: STICKS AS ABOVE &nbsp;·&nbsp; RT / LT &nbsp;·&nbsp; A START &nbsp;·&nbsp; Y CHASSIS' +
+    // which shop each chassis came out of, so an export that loaded says so
+    `<br>SHIPS &nbsp;·&nbsp; NOSE ${models.ships.nose ? 'BLENDER' : 'KIT'} &nbsp;·&nbsp; AFT ${models.ships.aft ? 'BLENDER' : 'KIT'}` +
+    (models.landmarks.length ? ` &nbsp;·&nbsp; ${models.landmarks.length} LANDMARK${models.landmarks.length > 1 ? 'S' : ''}` : '') + '</small>' +
     '<br><small style="opacity:.65">ENTER / TAP TO DROP IN</small>';
   hud.msg.style.display = '';
 }
@@ -835,10 +839,20 @@ showMenu();
 hud.cluster.style.display = 'none';
 terrain.update(0, -400);
 animate();
+// the Blender pipeline's door: whatever models/manifest.json lists. Vehicles
+// built before this resolves are kit ships; the menu re-renders so the
+// line naming the shop is right by the time anyone reads it.
+// ?models=reference loads models/reference/ (the kit's own exports) so the
+// whole door can be exercised with no Blender in the loop
+const modelsDir = new URLSearchParams(location.search).get('models');
+preloadModels(modelsDir ? `models/${modelsDir}/` : 'models/').then(() => {
+  terrain.kit.landmarks = models.landmarks;
+  if (state.mode !== 'race' && state.mode !== 'paused') showMenu();
+});
 
 window.__pw = {
   THREE, scene, camera, renderer, composer, terrain, route, state, dust, scars,
-  audio, sky, input, drift, sparks, haze, flare, quality: QUALITY,
+  audio, sky, input, drift, sparks, haze, flare, models, quality: QUALITY,
   get chassis() { return CHASSIS; },
   get player() { return player; },
   get field() { return field; },

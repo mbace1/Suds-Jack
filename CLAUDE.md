@@ -931,6 +931,42 @@ metres out resolves to a 900 px sprite and fills the frame with white.
 shadows, bloom and antialiasing are exactly what a weak machine cannot afford and exactly
 what this look is made of.
 
+**The keyboard (v9).** A key is a switch, and full lock the instant it closes is a slide at
+any real speed — the sticks and the pad are analog, the keyboard was not, and it was the
+keyboard the "nightmare" report came from. `input.js` **ramps the digital steer** (0.22 s
+to full lock, 0.09 s back) so a tap is a quarter turn and a hold a committed one; the
+vehicle **shrinks the lock with speed** (`speedLock`: all of it below 20 m/s, 55% at 45)
+because the sustainable yaw rate falls as 1/v; the spool is 0.75 s (idle to half thrust
+0.8 s, not 1.4); the camera in a slide looks **half way to the travel heading** so the
+sled slides across the frame instead of the world swinging round it; `brakeDrag` 7.
+`keys.mjs` drives real key events: one second of A at 140 km/h is 17° of heading with
+7.8 m/s of slide, where it was a spin. Under SwiftShader the sim runs ~75% real time at
+`q=low`, so its spool number reads 1.25 s for a 0.8 s constant — read deltas.
+
+**The Blender pipeline (v9).** `powder/pipeline/README.md` is the contract and
+`js/models.js` **enforces** it at load: envelope (which way the ship faces is read off
+the bounding box — long axis X means built sideways, long axis Y means exported
+standing up), triangle budgets, material names (`HULL ACCENT CHROME GUNMETAL GLASS
+INTAKE DECAL FAN`, `LAND` for landmarks), the `nozzle_L/R` empties, optional `fan_L/R`.
+A file that fails is reported and **not registered**, so that chassis stays on the kit —
+exports can be early and often. `craft.js` swaps materials **by name** and supplies
+chrome/accent/numeral/flames, keeping only the HULL's own textures and the FAN's; the
+result has the same `userData` contract as the kit so `vehicle.pose()` cannot tell them
+apart. Landmarks merge to one vertex-coloured geometry and go through `bakeProps`
+unchanged (the bake now keeps an authored `color` attribute; a kit prop still gets its
+material colour painted on) and are placed by `populate` at 6% of tiles — the random
+draw happens only when landmarks exist, so a world without them lays out exactly as
+before. `models/manifest.json` (ids `nose`/`aft`) is empty in production; **`?models=
+reference`** loads `models/reference/`, which is the kit exported by `refexport.mjs`
+through three's GLTFExporter with the 0.74 scale and the fans' radii baked into the
+geometry (the contract wants object scale 1) — the round trip in `roundtrip.mjs` is the
+test of the door with no Blender in the loop. `pipeline/powder_blender.py` builds the
+template scene (metres, nose along Blender +Y, pad markers, envelope box, empties, fan
+discs, stub materials), validates against the same numbers, and exports with the right
+flags; it compiles but has not been run in Blender here. The README's "PS2 question"
+records the owner's note that the world look may be reframed — the assets are authored
+to the plates, not to the dither, so nothing in the pipeline moves if it is.
+
 **Making it drivable (v8), and what was actually wrong.** The owner reported the
 controls as a nightmare; measured through the real key path, three separate faults.
 **There was no self-aligning moment anywhere in the model** — no directional stability
@@ -1970,12 +2006,15 @@ powder/         # Powder — hover SIM racer, open flatlands cut by a canyon, su
   index.html    # telemetry cluster HUD
   ref/          # the reference plates the craft design is held against
   art/          # six of them, downscaled, for the menu and results
+  pipeline/     # README.md = the Blender contract; powder_blender.py = setup/validate/export
+  models/       # manifest.json (empty in prod) + reference/ = the kit exported as .glb
   js/
     main.js     # scene, shadow/bloom/grade stack, race loop, camera rig, HUD
     palette.js  # the whole colour scheme + the two light directions
     terrain.js  # height(x,z), the rift and its BREACHES, streamed tile grid
     vehicle.js  # THE SIM: four sprung hover pads, turbine spool, slip-limited grip
-    craft.js    # THE MODEL SHOP: PMREM chrome, engine bay, merged per material
+    craft.js    # THE MODEL SHOP: PMREM chrome, engine bay, merged per material — kit OR .glb
+    models.js   # the pipeline's door: loads, VALIDATES and registers .glb ships/landmarks
     haze.js     # heat-haze refraction: copies the frame, bends it behind the exhaust
     flare.js    # the sun's lens flare (three's addon, canvas textures)
     props.js    # monoliths, arches, floating rock — and bakeProps, one mesh a tile
