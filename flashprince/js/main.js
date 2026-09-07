@@ -121,8 +121,12 @@ class Stage {
     this.combatHint = 0;
     this.missionComplete = false;
     const requestedScene = location.hash.slice(1);
-    const requestedRoom = requestedScene
-      ? ROOMS.findIndex(room => room.scene === requestedScene) : 0;
+    // The cabinet has linked to #flooded-city since that biome shipped. Keep
+    // the public name stable even though the room's internal scene name is
+    // floodedHub; otherwise Play from the Hub silently starts in the jungle.
+    const sceneName = requestedScene === 'flooded-city' ? 'floodedHub' : requestedScene;
+    const requestedRoom = sceneName
+      ? ROOMS.findIndex(room => room.scene === sceneName) : 0;
     this.enterRoom(Math.max(0, requestedRoom));
     this.hero.go('wake');
     this.mode = 'select';
