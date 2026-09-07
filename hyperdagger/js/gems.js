@@ -3,7 +3,7 @@ import * as THREE from 'three';
 const _d = new THREE.Vector3();
 const _zero = new THREE.Matrix4().makeScale(0, 0, 0);
 
-import { TUNING as T } from './tuning.js?v=72';
+import { TUNING as T } from './tuning.js?v=73';
 
 const GRAVITY = T.gems.gravity;
 const MAGNET_R = T.gems.magnetR;
@@ -63,7 +63,10 @@ export class GemPool {
   }
 
   /** Returns how many gems the player collected this frame. */
-  update(dt, playerPos, attract = true) {
+  /** `floorAt(x, z)` (v42) is the height a gem lands on where it falls — the
+   *  top of a season slab, or 0 on the bare disc. Without it a gem dropped
+   *  over a platform sinks through it and hovers inside the rock. */
+  update(dt, playerPos, attract = true, floorAt = null) {
     let collected = 0;
     for (let i = this.active.length - 1; i >= 0; i--) {
       const g = this.active[i];
@@ -86,13 +89,14 @@ export class GemPool {
       } else {
         g.vel.y += GRAVITY * dt;
         g.m.position.addScaledVector(g.vel, dt);
-        if (g.m.position.y < 0.5) {
-          g.m.position.y = 0.5;
+        const rest = 0.5 + (floorAt ? floorAt(g.m.position.x, g.m.position.z) : 0);
+        if (g.m.position.y < rest) {
+          g.m.position.y = rest;
           g.vel.y *= -0.35;
           g.vel.x *= 0.7; g.vel.z *= 0.7;
           if (Math.abs(g.vel.y) < 0.8) g.vel.set(0, 0, 0); // settled → hover
         }
-        if (g.vel.lengthSq() < 0.01) g.m.position.y = 0.5 + Math.sin(g.bobT) * 0.1;
+        if (g.vel.lengthSq() < 0.01) g.m.position.y = rest + Math.sin(g.bobT) * 0.1;
       }
       // blink out over the last 3 seconds
       g.blinkOff = !(g.life > 3 || (g.life * 6 | 0) % 2 === 0);

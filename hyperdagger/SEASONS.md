@@ -99,10 +99,15 @@ the threshold now passes a quarter of the cells it did.
 **Seeded.** The rock and the slabs draw from the run's own rng, so a DAILY
 arena is the same for everyone that day.
 
-**Known gaps, on purpose.** Gems fall through a slab to the floor. Enemy orbs
-pass through rock (the body cannot). Thorns still erupt at floor level under
-a body standing on a slab, which makes the slab a way to dodge them — reads
-as intended for now, worth watching.
+**The arena is cover (v42).** Rock and slabs stop an enemy orb, hold an enemy
+body out of themselves so the swarm comes round rather than through, and a
+gem lands on a slab instead of sinking into it. That is what makes the season
+a change to how a run is played and not only to how it looks.
+
+**Known gaps, on purpose.** Thorns still erupt at floor level under a body
+standing on a slab, which makes the slab a way to dodge them — reads as
+intended for now, worth watching. Nothing casts a shadow onto a slab, so a
+body standing on one has no contact cue but its own height.
 
 ## SEASON 2 — INCA (palette only)
 

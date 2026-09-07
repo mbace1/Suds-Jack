@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { shaleGeometry } from './shale.js?v=72';
+import { shaleGeometry } from './shale.js?v=73';
 
 /**
  * PLATFORMS — slabs that GROW out of the floor, DRIFT, and SINK back.
@@ -174,6 +174,36 @@ export class Platforms {
       player._sync?.();
     }
     return contact;
+  }
+
+  /** The top of the highest slab covering (x, z), or `base`. A gem rests on
+   *  a slab instead of sinking through it to the floor. */
+  topAt(x, z, base = 0) {
+    let top = base;
+    for (const p of this.list) {
+      if (p.k < 0.05) continue;
+      if (Math.abs(x - p.x) > p.w * 0.5 || Math.abs(z - p.z) > p.depth * 0.5) continue;
+      if (p.top > top) top = p.top;
+    }
+    return top;
+  }
+
+  /** Push a point out of any slab it is inside (see Walls.pushOut). A body
+   *  standing on top is above it and is left alone. */
+  pushOut(pos, radius = 0.6, foot = 0) {
+    let hit = null;
+    for (const p of this.list) {
+      if (p.k < 0.05) continue;
+      if (pos.y - foot >= p.top - 0.05) continue;
+      const hx = p.w * 0.5 + radius, hz = p.depth * 0.5 + radius;
+      const dx = pos.x - p.x, dz = pos.z - p.z;
+      if (Math.abs(dx) >= hx || Math.abs(dz) >= hz) continue;
+      const pxo = hx - Math.abs(dx), pzo = hz - Math.abs(dz);
+      if (pxo <= pzo) pos.x += (Math.sign(dx) || 1) * pxo;
+      else pos.z += (Math.sign(dz) || 1) * pzo;
+      hit = p;
+    }
+    return hit;
   }
 
   /** Does the segment p0→p1 pass through a standing slab? (nails stop on it) */

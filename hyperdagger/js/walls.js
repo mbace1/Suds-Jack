@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { shadedBox } from './voxel.js?v=72';
+import { shadedBox } from './voxel.js?v=73';
 
 /**
  * WALLS — the first geometry this arena has ever had that is not a floor.
@@ -106,6 +106,32 @@ export class Walls {
     }
     if (player.wallContact) player._sync?.();
     return player.wallContact;
+  }
+
+  /**
+   * v42: push a point out of any wall it is inside, horizontally, and return
+   * the wall it was pushed from. This is what makes rock an OBSTACLE for the
+   * swarm rather than scenery it drifts through: `main.js` runs it over every
+   * enemy, so a skull has to come round a pile instead of through it.
+   * A body above the wall's top is left alone — that is what flying over is.
+   */
+  pushOut(pos, radius = 0.6, foot = 0) {
+    let hit = null;
+    for (const w of this.walls) {
+      if (pos.y - foot > w.h) continue;
+      const dx = pos.x - w.x, dz = pos.z - w.z;
+      const u = dx * w.cos - dz * w.sin, v = dx * w.sin + dz * w.cos;
+      const hu = w.len / 2 + radius, hv = w.thick / 2 + radius;
+      if (Math.abs(u) >= hu || Math.abs(v) >= hv) continue;
+      const pu = hu - Math.abs(u), pv = hv - Math.abs(v);
+      let nu = 0, nv = 0;
+      if (pv <= pu) nv = Math.sign(v) || 1; else nu = Math.sign(u) || 1;
+      const push = Math.min(pu, pv);
+      pos.x += (nu * w.cos + nv * w.sin) * push;
+      pos.z += (-nu * w.sin + nv * w.cos) * push;
+      hit = w;
+    }
+    return hit;
   }
 
   /** Does the segment p0→p1 enter any wall? Rock stops a nail; the test is
