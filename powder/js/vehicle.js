@@ -64,8 +64,9 @@
 // Integrated at a fixed 120 Hz on an accumulator, because a spring this stiff
 // is not stable on a variable frame time.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=6';
-import { SURF, SALT } from './terrain.js?v=6';
+import { PAL } from './palette.js?v=7';
+import { SURF, SALT } from './terrain.js?v=7';
+import { buildCraft, disposeCraft } from './craft.js?v=7';
 
 const G = 9.81;
 const HZ = 120, DTF = 1 / HZ;
@@ -153,7 +154,8 @@ export class Vehicle {
     this._lastThrust = 0;
     this.aiT = 0; this.aiOff = 0;
 
-    this.mesh = buildCraft(this.accent, this.number, this.drive);
+    this.throttle = 0;                  // commanded, for the flame's rich/lean read
+    this.mesh = buildCraft(opts.env || null, this.accent, this.number, this.drive);
     terrain.scene.add(this.mesh);
     this._n = new THREE.Vector3();
     this._q = new THREE.Quaternion();
@@ -172,7 +174,7 @@ export class Vehicle {
   update(dt, ctl) {
     this._acc = Math.min(this._acc + dt, 0.25);   // never spiral after a stall
     while (this._acc >= DTF) { this.stepFixed(DTF, ctl); this._acc -= DTF; }
-    this.pose();
+    this.pose(dt);
   }
 
   // --------------------------------------------------------------- dynamics
@@ -189,6 +191,7 @@ export class Vehicle {
 
     // ---- turbine ---------------------------------------------------------
     let throttle = clamp(ctl.throttle, 0, 1);
+    this.throttle = throttle;
     this._od = !!ctl.overdrive && !this.tripped && this.heat < 1;
     if (this.tripped) throttle = Math.min(throttle, 0.55);
     const tau = throttle > this.n1 ? SPEC.spoolUp : SPEC.spoolDown;
@@ -443,22 +446,37 @@ export class Vehicle {
   }
 
   // ---------------------------------------------------------------- visuals
-  pose() {
+  pose(dt = 0.016) {
     this.mesh.position.copy(this.pos);
     this._e.set(this.pitch, this.yaw, -this.roll, 'YXZ');
     this.mesh.quaternion.setFromEuler(this._e);
     const th = this.n1 * (this._od ? 2.4 : 1);
+    // RICH when the throttle is ahead of the spool — the turbine is being
+    // fed more than it can burn, the flame goes orange and short — LEAN once
+    // N1 has caught up: paler, longer, the diamonds streaming. Lifting off
+    // starves it and the sheath collapses to the core.
+    const rich = Math.max(0, Math.min(1, (this.throttle - this.n1) * 3.5));
     const flick = 0.85 + Math.random() * 0.3;
-    for (const f of this.mesh.userData.flares) {
+    const U = this.mesh.userData;
+    for (const f of U.flares) {
       const u = f.userData;
-      f.scale.set(1, 1, (0.2 + th * 1.4) * flick);
+      f.scale.set(1 + rich * 0.25, 1 + rich * 0.25, (0.2 + th * 1.4) * (1 - rich * 0.3) * flick);
       u.core.material.opacity = 0.5 + th * 0.4;
-      u.sheath.material.opacity = 0.2 + th * 0.35;
+      u.core.material.color.setRGB(2.2 - rich * 0.6, 2.1 - rich * 0.9, 1.9 - rich * 1.2 + (this._od ? 0.6 : 0));
+      u.sheath.material.opacity = 0.2 + th * 0.35 + rich * 0.25;
+      u.sheath.material.color.setRGB(1.6 + rich * 0.3, 0.9 - rich * 0.35, 0.45 - rich * 0.25);
       u.glow.material.opacity = 0.15 + th * 0.35;
       u.glow.scale.setScalar(1.4 + th * 1.6);
+      // shock diamonds stream out of the bell at the turbine's rate
+      u.diamonds.offset.y -= (0.4 + this.n1 * 3.2) * dt;
     }
-    this.mesh.userData.hull.material.color.setHex(this.hitT > 0.35 ? 0xffffff : PAL.hull);
+    for (const fan of U.fans) fan.rotation.z += (2 + this.n1 * 38) * dt;
+    U.hull.material.color.setHex(this.hitT > 0.35 ? 0xffffff : PAL.hull);
+    this.mesh.updateMatrixWorld();
   }
+
+  /** World position of nozzle i, for the exhaust haze. */
+  nozzle(i, out) { return out.copy(this.mesh.userData.nozzles[i]).applyMatrix4(this.mesh.matrixWorld); }
 
   /** Steer toward a world point. Shared by the AI and the autopilot harness. */
   seek(tx, tz, ctl) {
@@ -486,197 +504,5 @@ export class Vehicle {
     return ctl;
   }
 
-  dispose() { this.terrain.scene.remove(this.mesh); }
-}
-
-// ------------------------------------------------------------- the model
-// Same racer the reference plates describe — long cream fuselage, one
-// weathered accent band, chrome cans slung aft, black intakes, needle probe —
-// but smooth-shaded and denser now that this build is not pretending to be a
-// PlayStation.
-const _geo = {};
-const geo = (k, make) => _geo[k] || (_geo[k] = make());
-
-function numberTexture(num, accent) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const g = c.getContext('2d');
-  g.fillStyle = '#' + new THREE.Color(PAL.hull).getHexString();
-  g.beginPath(); g.arc(64, 64, 54, 0, Math.PI * 2); g.fill();
-  g.strokeStyle = '#' + new THREE.Color(accent).getHexString();
-  g.lineWidth = 6;
-  g.beginPath(); g.arc(64, 64, 54, 0, Math.PI * 2); g.stroke();
-  g.fillStyle = '#1d1726';
-  g.font = 'bold 88px monospace';
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText(String(num), 64, 70);
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 4;
-  return t;
-}
-
-/** Panel lines and rivets, painted once: the HD detail the PS2 world lacks. */
-function panelTexture(accentHex) {
-  const c = document.createElement('canvas');
-  c.width = 256; c.height = 128;
-  const g = c.getContext('2d');
-  g.fillStyle = '#' + new THREE.Color(PAL.hull).getHexString();
-  g.fillRect(0, 0, 256, 128);
-  g.strokeStyle = 'rgba(60,40,50,0.28)'; g.lineWidth = 1;
-  for (let x = 18; x < 256; x += 36) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 6, 128); g.stroke(); }
-  for (let y = 22; y < 128; y += 44) { g.beginPath(); g.moveTo(0, y); g.lineTo(256, y + 3); g.stroke(); }
-  g.fillStyle = 'rgba(40,30,40,0.35)';
-  for (let x = 8; x < 256; x += 12) for (let y = 6; y < 128; y += 22) g.fillRect(x, y, 1.5, 1.5);
-  // weathering: chipped edges in the accent, the plates' worn livery
-  g.fillStyle = 'rgba(' + [accentHex >> 16 & 255, accentHex >> 8 & 255, accentHex & 255].join(',') + ',0.22)';
-  for (let i = 0; i < 14; i++) g.fillRect(Math.random() * 256, Math.random() * 128, 4 + Math.random() * 14, 1 + Math.random() * 3);
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
-  return t;
-}
-
-function glowTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d');
-  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grd.addColorStop(0, 'rgba(255,255,255,1)');
-  grd.addColorStop(0.3, 'rgba(255,220,180,0.5)');
-  grd.addColorStop(1, 'rgba(255,180,120,0)');
-  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
-  const t = new THREE.CanvasTexture(c);
-  t.generateMipmaps = false; t.minFilter = THREE.LinearFilter;
-  return t;
-}
-
-/** A rocket flame: white core, coloured sheath, soft glow. Scaled by N1. */
-function makeFlame() {
-  const g = new THREE.Group();
-  const core = new THREE.Mesh(geo('flameCore', () => { const b = new THREE.ConeGeometry(0.16, 2.0, 10); b.rotateX(Math.PI / 2); return b; }),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.1, 1.9), transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
-  const sheath = new THREE.Mesh(geo('flameSheath', () => { const b = new THREE.ConeGeometry(0.34, 3.0, 10); b.rotateX(Math.PI / 2); return b; }),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 0.9, 0.45), transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
-  // A SpriteMaterial with no map draws a SOLID QUAD — every ship came out
-  // wearing a white box. The glow needs an actual radial falloff.
-  const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: geo('glowTex', glowTexture), color: new THREE.Color(1.4, 0.8, 0.5),
-    transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending }));
-  glow.scale.setScalar(2.2);
-  core.position.z = 1.0; sheath.position.z = 1.5;
-  g.add(core, sheath, glow);
-  g.userData = { core, sheath, glow };
-  return g;
-}
-
-function buildCraft(accent, number, drive = 'front') {
-  const g = new THREE.Group();
-  // The ships are the HD layer, drawn full-resolution over the PS2 world:
-  // Phong with a real specular, panel lines and rivets on the hull, a glass
-  // canopy with a highlight. The contrast with the dithered world is the point.
-  const hullMat = new THREE.MeshPhongMaterial({ map: panelTexture(accent), color: 0xffffff, specular: 0x554433, shininess: 28 });
-  const accMat = new THREE.MeshPhongMaterial({ color: accent, specular: 0x332233, shininess: 22 });
-  const chrome = new THREE.MeshPhongMaterial({ color: PAL.chrome, specular: 0xffffff, shininess: 140, emissive: PAL.chromeHi, emissiveIntensity: 0.10 });
-  const glass = new THREE.MeshPhongMaterial({ color: PAL.glass, specular: 0xffffff, shininess: 200, emissive: 0x4a5a8a, emissiveIntensity: 0.3, transparent: true, opacity: 0.92 });
-
-  const body = new THREE.Mesh(geo('body', () => {
-    const b = new THREE.CylinderGeometry(0.92, 0.72, 6.2, 20);
-    b.rotateX(-Math.PI / 2); return b;
-  }), hullMat);
-  body.position.z = 0.5; body.scale.set(1.15, 0.8, 1);
-  g.add(body);
-
-  const nose = new THREE.Mesh(geo('nose', () => {
-    const b = new THREE.ConeGeometry(0.92, 4.2, 20);
-    b.rotateX(-Math.PI / 2); return b;
-  }), hullMat);
-  nose.position.z = -4.6; nose.scale.set(1.15, 0.8, 1);
-  g.add(nose);
-
-  const band = new THREE.Mesh(geo('band', () => {
-    const b = new THREE.CylinderGeometry(0.9, 0.86, 1.7, 20);
-    b.rotateX(-Math.PI / 2); return b;
-  }), accMat);
-  band.position.z = -0.5; band.scale.set(1.15, 0.8, 1);
-  g.add(band);
-
-  const plate = new THREE.Mesh(geo('plate', () => {
-    const b = new THREE.CylinderGeometry(1.7, 0.9, 3.6, 3);
-    b.rotateX(-Math.PI / 2); return b;
-  }), hullMat);
-  plate.scale.set(1, 0.11, 1.8); plate.position.set(0, -0.5, -0.9);
-  plate.rotation.z = Math.PI;
-  g.add(plate);
-
-  const canopy = new THREE.Mesh(geo('canopy', () => new THREE.SphereGeometry(0.52, 18, 10)), glass);
-  canopy.scale.set(0.95, 0.68, 1.9); canopy.position.set(0, 0.46, -2.5);
-  g.add(canopy);
-
-  const probe = new THREE.Mesh(geo('probe', () => {
-    const b = new THREE.CylinderGeometry(0.06, 0.03, 2.4, 6);
-    b.rotateX(-Math.PI / 2); return b;
-  }), chrome);
-  probe.position.z = -7.8;
-  g.add(probe);
-
-  const fin = new THREE.Mesh(geo('fin', () => new THREE.BoxGeometry(0.12, 0.9, 1.2)), hullMat);
-  fin.position.set(0, 0.76, 3.0); fin.rotation.x = -0.34; g.add(fin);
-  const finCap = new THREE.Mesh(geo('finCap', () => new THREE.BoxGeometry(0.14, 0.24, 1.2)), accMat);
-  finCap.position.set(0, 1.15, 2.88); finCap.rotation.x = -0.34; g.add(finCap);
-
-  // Where the rockets are IS the chassis. Front: cans beside the nose, short,
-  // exhaust trailing back along the flanks. Rear: cans slung aft, the plates'
-  // silhouette. The physics applies the thrust at the same axle.
-  const front = drive === 'front';
-  const nz = front ? -3.6 : 2.2;                   // nacelle centre z
-  const nx = front ? 1.15 : 1.3, ny = front ? -0.05 : -0.24;
-  const flares = [];
-  for (const side of [-1, 1]) {
-    const nac = new THREE.Mesh(geo(front ? 'nacF' : 'nac', () => {
-      const b = new THREE.CylinderGeometry(front ? 0.36 : 0.42, front ? 0.34 : 0.38, front ? 2.6 : 3.2, 18);
-      b.rotateX(-Math.PI / 2); return b;
-    }), chrome);
-    nac.position.set(side * nx, ny, nz);
-    g.add(nac);
-
-    const collar = new THREE.Mesh(geo('collar', () => {
-      const b = new THREE.CylinderGeometry(0.5, 0.45, 0.34, 18);
-      b.rotateX(-Math.PI / 2); return b;
-    }), chrome);
-    collar.position.set(side * nx, ny, nz - (front ? 1.2 : 1.48));
-    g.add(collar);
-
-    const mouth = new THREE.Mesh(geo('mouth', () => {
-      const b = new THREE.CircleGeometry(0.36, 18);
-      b.rotateY(Math.PI); return b;
-    }), new THREE.MeshBasicMaterial({ color: PAL.intake }));
-    mouth.position.set(side * nx, ny, nz - (front ? 1.38 : 1.65));
-    g.add(mouth);
-
-    const strut = new THREE.Mesh(geo('strut', () => new THREE.BoxGeometry(1.1, 0.16, 0.7)), chrome);
-    strut.position.set(side * (nx - 0.55), ny + 0.04, nz - 0.2);
-    g.add(strut);
-
-    const flame = makeFlame();
-    flame.position.set(side * nx, ny, nz + (front ? 1.3 : 1.6));
-    g.add(flame);
-    flares.push(flame);
-  }
-
-  const tex = numberTexture(number, accent);
-  for (const side of [-1, 1]) {
-    const decal = new THREE.Mesh(geo('decal', () => new THREE.PlaneGeometry(1.1, 1.1)),
-      new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
-    decal.position.set(side * 0.98, 0.06, -0.5);
-    decal.rotation.y = side * Math.PI / 2;
-    g.add(decal);
-  }
-
-  g.traverse(o => {
-    if (o.isMesh || o.isSprite) { o.castShadow = !!o.isMesh; o.receiveShadow = false; o.layers.set(1); }
-  });
-  g.layers.set(1);           // the HD layer: drawn full-res over the PS2 world
-  g.scale.setScalar(0.74);   // ~11 m long overall
-  g.userData.flares = flares;
-  g.userData.hull = body;
-  return g;
+  dispose() { this.terrain.scene.remove(this.mesh); disposeCraft(this.mesh); }
 }

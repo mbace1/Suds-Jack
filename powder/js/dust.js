@@ -7,7 +7,7 @@
 // a lit quad has to match the shading of the ground it lies on and never
 // quite does.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=6';
+import { PAL } from './palette.js?v=7';
 
 const SCAR_MAX = 700;
 const SCAR_LIFE = 9;
