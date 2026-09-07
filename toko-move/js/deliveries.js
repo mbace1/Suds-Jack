@@ -10,7 +10,10 @@
 // How much of a trip you may waste before it is late. 1.35 leaves room for one
 // bad catch on a typical job and none for two.
 export const DEADLINE_GRACE=1.35;
-export const DELIVERY_TARGET=6;
+// Measured, not chosen: the median door-to-door plan costs 856 ticks at the
+// v2.29 clock and the shift is 3000, so three jobs fit with room to make a
+// mistake in. It was 6 against a shift that only ever held 5.
+export const DELIVERY_TARGET=3;
 export const CARGO={documents:{icon:'DOC',rule:'Flexible routing',modes:null},'hot food':{icon:'HOT',rule:'Freshness falls fast',modes:null,freshness:.60},parts:{icon:'PRT',rule:'No special restriction',modes:null},fragile:{icon:'FRG',rule:'Tram only — avoid transfers',modes:['tram'],fragile:true},equipment:{icon:'HVY',rule:'Transit only; no walking shortcut',modes:['tram','metro'],heavy:true},express:{icon:'EXP',rule:'Priority courier — metro or tram',modes:['metro','tram'],express:true},'fresh food':{icon:'FRESH',rule:'Freshness bonus for speed',modes:null,freshness:.70},'market goods':{icon:'MRKT',rule:'Tram network only',modes:['tram'],heavy:true}};
 export const JOBS=[
  {stops:['lasipalatsi','rautatientori'],label:'Press proofs to Central',cargo:'documents',limit:125,value:100},

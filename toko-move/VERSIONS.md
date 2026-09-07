@@ -1,5 +1,66 @@
 # Toko Move — versions
 
+## v2.29 — 2026-09-06
+
+Two findings from the owner's first real playtest, and both were worse than
+they sounded.
+
+**"don't know how to move from one spot to another" — and it was literal.**
+Taking a job did not change the screen. **Five** modules wrote into `#sheet` on
+their own timers — `paintSheet`, the dispatch board, the catch panel, the hub
+tactics panel, the recovery controls — and not one of them owned CLEARING it,
+so accepting a job left the dispatch list exactly where it was, three `TAKE JOB`
+cards deep, and appended the buttons that actually board a tram *below* it, off
+the bottom of a phone, under a list that looked untouched. The only
+acknowledgement anywhere was a feed line that `#feed`'s own `max-height` cut off
+mid-sentence. There was nothing wrong with the boarding code; the next action
+was simply behind a stale one.
+
+`#sheet` now has five **slots** in a fixed order and each writer owns exactly
+one. The order is what you can act on first: **what you can board**, then what
+you are carrying, then what else this stop offers, then anything still on the
+dispatch list. Boarding leads because the HUD one row above already names the
+job and its deadline — measured on a phone, putting the job header first left
+the first CATCH button ending at y=577 of 664. The panel says **YOU ARE AT X ·
+BOARD ONE OF THESE** and, on the first job only, one line of what lit and grey
+mean. The job header is three lines instead of five, having repeated the HUD.
+
+**"tram speeds are too fast" — and no single number could have fixed it.**
+Speed was a fixed DURATION per mode: fifty minutes end to end for any tram, on a
+network whose lines run from about 3 km to about 17 km. So the long ones covered
+five times the ground of the short ones in the same time. Measured across all
+102 vehicles, apparent speed ran from a crawl to a median of **299 km/h** with a
+90th percentile of **494** — trams visibly overtaking other trams on the same
+map. Half the fleet was already slow; turning one dial down would have made
+those slower still and left the fast ones fast.
+
+A vehicle now has a **speed** and its pass time follows from its own line's
+length, which is the way round reality works: `MODE_KMH` is 16 for a tram and 30
+for the metro, real average service speeds with stops in them. What the player
+sees is then only the compression, and that is the shift's `hours`: three hours
+in five minutes was 36x. **1.25 hours is 15x** — every tram at **240 km/h** and
+the metro at 450, at or below the slower half of what shipped, with the 494
+tail gone. A tram crosses the 4 km ROUTE viewport in about a minute.
+
+It is paid for in deliveries, because a slower fleet makes every ride longer in
+ticks by the same factor. Measured over 56 random door-to-door plans, the median
+job costs **856 ticks** against a 3000-tick shift, so `DELIVERY_TARGET` is
+**three**. The same measurement caught the shipped build being wrong on its own
+terms: five median jobs fitted and the target asked for **six**, so a shift could
+not be finished at ordinary difficulty by anyone, and no gate had ever asked.
+
+If it should be slower still, the honest next lever is a **longer shift** rather
+than a smaller compression: `ticksPerDay` 4500 buys the same slowdown again and
+keeps the deliveries, at the cost of the owner's five-minute session.
+
+`test/pace.mjs`: 12 checks in bare node — one apparent speed for every tram
+whatever its line is long, at or below what shipped, the metro still faster than
+a tram, a minute to cross the ROUTE viewport, and a target the shift can hold.
+Five mutations each caught. `test/phone.cjs` grows seven: taking a job changes
+the screen, the dispatch list goes, the panel says what it is for in those
+words, its first button is WHOLLY on screen without scrolling, and the slots are
+in order. Three mutations each caught.
+
 ## v2.28 — 2026-09-06
 
 **The phone pass, and it found the worst bug this lane has shipped.** Nobody had

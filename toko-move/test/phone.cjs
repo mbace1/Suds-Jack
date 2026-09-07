@@ -105,6 +105,43 @@ server.listen(0, '127.0.0.1', async () => {
   });
   ok(`more than one job is on screen at once (${offers.visible} of ${offers.total})`, offers.total < 2 || offers.visible >= 2);
 
+  // ── TAKING A JOB HAS TO CHANGE THE SCREEN ────────────────────────────
+  // The owner's report was "don't know how to move from one spot to another".
+  // It was literal: five modules wrote into #sheet on their own timers and none
+  // owned clearing it, so accepting a job left the dispatch list exactly where
+  // it was, with its three TAKE JOB cards, and appended the buttons that board
+  // a tram BELOW it — off the bottom of a phone, under a list that looked
+  // untouched. Nothing on screen said anything had happened.
+  const before = await page.evaluate(() => document.getElementById('sheet').innerText.slice(0, 200));
+  await page.locator('#sheet .jobOffer, #sheet button').first().click({ force: true });
+  await page.waitForTimeout(1400);
+  const took = await page.evaluate(() => {
+    const sheet = document.getElementById('sheet'), ids = [...sheet.children].map(c => c.id);
+    const rc = document.getElementById('routeChoices'), r = rc?.getBoundingClientRect();
+    return { active: !!window.__tm.challenge.active, order: ids,
+      text: sheet.innerText.slice(0, 200),
+      dispatchStillListed: /DISPATCH · \d+\/\d+ COMPLETE/.test(sheet.innerText),
+      catchPanel: rc?.innerText.slice(0, 90) || '',
+      catchTop: r ? Math.round(r.top) : null, catchButtons: rc?.querySelectorAll('.catchChoice').length || 0,
+      firstButtonBottom: (() => { const b = rc?.querySelector('.catchChoice')?.getBoundingClientRect(); return b ? Math.round(b.bottom) : null; })() };
+  });
+  ok('taking a job actually takes it', took.active);
+  ok('and the screen is not what it was', took.text !== before, took.text.slice(0, 60));
+  ok('the dispatch list you already chose from is gone', !took.dispatchStillListed, took.text.slice(0, 80));
+  ok('the panel that boards a tram says so in those words',
+    /BOARD ONE OF THESE/.test(took.catchPanel), took.catchPanel);
+  ok(`with something on it to press (${took.catchButtons})`, took.catchButtons > 0);
+  // Not merely "on screen": the first thing you can press has to be WHOLLY on
+  // screen without scrolling, or the game has still not told you how to move.
+  ok(`and its first button is fully visible (ends at ${took.firstButtonBottom} of ${vp.h})`,
+    took.firstButtonBottom !== null && took.firstButtonBottom <= vp.h,
+    `panel top ${took.catchTop} · ${took.order.join(' > ')}`);
+  // the slot order is the order you need them in
+  const io = (a, b) => took.order.indexOf(a) < took.order.indexOf(b);
+  ok('the sheet is ordered: what you can board, then what you carry, then the rest',
+    took.order.includes('jobHead') && io('routeChoices', 'jobHead') && io('jobHead', 'jobBoard'),
+    took.order.join(' > '));
+
   // ── the feed must not say the same thing twice ────────────────────────
   const feed = await page.evaluate(() => [...document.querySelectorAll('#feed div')].map(d => d.textContent));
   ok('the feed does not repeat itself back to back', feed.every((t, i) => i === 0 || t !== feed[i - 1]), feed.join(' | '));

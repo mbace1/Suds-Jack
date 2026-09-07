@@ -251,6 +251,13 @@ jobs:
       # A PHONE, because v2.27 shipped a title screen whose START SHIFT button
       # was below the fold on an iPhone 13, on a veil with no overflow. Present,
       # visible, enabled, 44px, every gate green, and unreachable with a thumb.
+      # Speed was a fixed DURATION per mode, so a 17 km tram line covered five
+      # times the ground of a 3 km one in the same time and the fleet's apparent
+      # speed ran from a crawl to 494 km/h. And the shift asked for six
+      # deliveries when only five ever fitted in it.
+      - name: the pace of the board, and a shift you can finish
+        run: node toko-move/test/pace.mjs
+
       - name: the game on a phone
         run: NODE_PATH=$(npm root -g) node toko-move/test/phone.cjs
 
