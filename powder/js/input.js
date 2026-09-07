@@ -21,9 +21,14 @@
 // + weight, and RT/LT additionally as throttle/brake for anyone who expects a
 // racer to work that way; whichever input asks for more throttle wins.
 //
-// Desktop: A/D steer, W throttle, S brake, Space / Shift boost (lean back),
-//          arrow up = spoiler (lean forward), arrows left/right = pan camera,
-//          F = swap chassis on the menu, Esc pause.
+// Desktop: the arrow cluster MIRRORS WASD, which is what everyone expects.
+//   W / Up      throttle          A / Left   steer left
+//   S / Down    brake             D / Right  steer right
+//   Space       boost, nose up    Shift      spoiler, nose down
+//   Q / E       pan the camera    F swap chassis (menu)   Esc pause
+// It used to split the arrow cluster three ways — up/down were the WEIGHT
+// axis while left/right panned the camera, and neither did what an arrow key
+// does in any other game. Nothing is doubled up now: one job per key.
 export const STICK_R = 58;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 
@@ -148,14 +153,14 @@ export class InputManager {
   read(out) {
     const k = this.keys;
     let steer = 0, pan = 0, lean = 0;
-    if (k.KeyA) steer -= 1;
-    if (k.KeyD) steer += 1;
-    if (k.ArrowLeft) pan -= 1;
-    if (k.ArrowRight) pan += 1;
-    let throttle = k.KeyW ? 1 : 0;
-    let brake = !!k.KeyS;
-    if (k.Space || k.ShiftLeft || k.ShiftRight || k.ArrowDown) lean = 1;   // back: boost, nose up
-    if (k.ArrowUp) lean = -1;                                             // forward: spoiler
+    if (k.KeyA || k.ArrowLeft) steer -= 1;
+    if (k.KeyD || k.ArrowRight) steer += 1;
+    if (k.KeyQ) pan -= 1;
+    if (k.KeyE) pan += 1;
+    let throttle = (k.KeyW || k.ArrowUp) ? 1 : 0;
+    let brake = !!(k.KeyS || k.ArrowDown);
+    if (k.Space) lean = 1;                                  // back: boost, nose up
+    if (k.ShiftLeft || k.ShiftRight) lean = -1;             // forward: spoiler
 
     const L = this._def(this._left, _L), R = this._def(this._right, _R);
     if (L.on || R.on) {
@@ -163,7 +168,11 @@ export class InputManager {
       if (L.on) {
         throttle = clamp(-L.y * 1.35, 0, 1);
         brake = L.y > 0.45;
-      } else throttle = Math.max(throttle, 0.75);
+      }
+      // and NO hidden auto-throttle when only the right stick is down. It
+      // used to force 0.75 here, so reaching over to pan the camera opened
+      // the taps on its own — against this file's own contract three lines
+      // up, and unexplainable from the driver's seat.
       if (R.on) {
         pan = clamp(R.x * 1.2, -1, 1);
         // screen-down is +y: pulling the stick back is lean > 0

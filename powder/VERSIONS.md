@@ -4,6 +4,45 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v8 — 2026-09-07
+The controls, on the owner's report that they were a nightmare and did not
+work. They were right, and it was three separate faults.
+
+THE SLED HAD NO DIRECTIONAL STABILITY. There was no self-aligning moment
+anywhere in the model, so nothing ever brought a slide back. Measured, full
+lock from a cruise ran away to 1.41 rad/s with 18.6 m/s of slide and stayed
+there; releasing the stick did nothing. A long body with a slip angle wants
+to line back up with where it is actually going, and that restoring moment
+is why a real vehicle does not spin the moment the rear steps out. It is in
+now, tanh-saturated so it stabilises without ever out-arguing the driver.
+Release from a full-lock slide recovers to nearly straight in two seconds,
+and opposite lock pulls 21 m/s of slide down to 10 in just over one.
+
+THE RUDDER WAS BOTH TOO SLOW AND, WHERE IT MATTERED, TOO WEAK. Steering had
+a 0.73 s time constant: the heading moved 1.8 degrees in the first quarter
+second of full lock, which is a quarter second of the game ignoring you.
+Worse, the axle forces are themselves a yaw damper worth more than the
+explicit one, so while the runners had grip the sled was far lazier than the
+arithmetic said, and it only woke up once it was already sliding. Lazy while
+planted and eager while sliding is exactly backwards. The rudder is five
+times bigger now and FADES WITH SLIP, because it is the runners biting and
+not an air vane: small inputs get an answer, and you cannot steer yourself
+into a spin. The lock ladder at 90 km/h now runs 0.13 / 0.40 / 0.54 rad/s
+with 0.7 / 4.8 / 9.5 m/s of slide, and at 140 km/h everything slides —
+so corner speed is a real decision again.
+
+THE KEY MAP WAS INCOHERENT. The arrow cluster was split three ways: up and
+down were the weight axis while left and right panned the camera, and
+neither did what an arrow key does in any other game. Arrows now mirror
+WASD. Space is boost, Shift is the spoiler, Q and E pan. One job per key.
+
+Two more things found while measuring. On touch, holding only the RIGHT
+stick silently forced 75% throttle — so reaching over to pan the camera
+opened the taps by itself, against this build's own no-auto-throttle rule.
+And the SLIP readout now carries the grip state in its colour, because
+without it there is no way to tell turning from sliding until the scenery
+tells you.
+
 ## v7 — 2026-09-07
 Layers over the 3D, on the owner's direction — and the HD layer made
 honest first. Until now the canvas itself was 0.62x, so "HD" only meant

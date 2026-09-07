@@ -33,17 +33,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=7';
-import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=7';
-import { Vehicle } from './vehicle.js?v=7';
-import { DustPool, ScarField } from './dust.js?v=7';
-import { Route, RADIUS } from './route.js?v=7';
-import { InputManager, STICK_R } from './input.js?v=7';
-import { AudioKit } from './audio.js?v=7';
-import { makeSky } from './sky.js?v=7';
-import { makeEnvMap } from './craft.js?v=7';
-import { HeatHaze } from './haze.js?v=7';
-import { makeFlare } from './flare.js?v=7';
+import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=8';
+import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=8';
+import { Vehicle } from './vehicle.js?v=8';
+import { DustPool, ScarField } from './dust.js?v=8';
+import { Route, RADIUS } from './route.js?v=8';
+import { InputManager, STICK_R } from './input.js?v=8';
+import { AudioKit } from './audio.js?v=8';
+import { makeSky } from './sky.js?v=8';
+import { makeEnvMap } from './craft.js?v=8';
+import { HeatHaze } from './haze.js?v=8';
+import { makeFlare } from './flare.js?v=8';
 
 // Fog has to reach nearly the edge of the streamed world, not half way
 // into it, or the flats read as a 300 m milk bowl instead of a plain.
@@ -607,7 +607,12 @@ function updateHud(dt) {
   hud.kph.textContent = Math.round(p.kph);
   hud.n1.textContent = (p.n1 * 100).toFixed(0);
   hud.gLat.textContent = p.gLat.toFixed(2);
+  // SLIP carries the grip state in its colour: `bite` is how much of the
+  // rudder the runners can still deliver, so amber is the sled asking for
+  // less lock and red is a committed slide. Without it the driver has no way
+  // to tell "turning" from "sliding" until the scenery says so.
   hud.slip.textContent = Math.abs(p.slip).toFixed(1);
+  hud.slip.style.color = p.bite < 0.45 ? '#ff8a5c' : (p.bite < 0.72 ? '#ffb066' : '');
   hud.gap.textContent = clamp(p.gap, 0, 99).toFixed(1);
   hud.sink.textContent = (p.sink * 100).toFixed(0);
   hud.surf.textContent = !p.grounded ? 'AIRBORNE' : (p.onDeck ? 'BRIDGE' : SURF[p.surf].name);
@@ -812,8 +817,8 @@ function showMenu() {
     '<br>RIGHT STICK IS YOUR WEIGHT — <b style="color:#8fe8d8">BACK</b> TO BOOST AND LIFT THE NOSE,' +
     ' <b style="color:#ffb066">FORWARD</b> TO PRESS IT DOWN.' +
     '<br>LEFT AND RIGHT PAN THE CAMERA.</small>' +
-    '<br><small style="opacity:.65">W THROTTLE &nbsp; A / D STEER &nbsp; S BRAKE &nbsp; SPACE BOOST' +
-    '<br>&uarr; SPOILER &nbsp; &larr; &rarr; PAN &nbsp; F CHASSIS' +
+    '<br><small style="opacity:.65">W / &uarr; THROTTLE &nbsp; A D / &larr; &rarr; STEER &nbsp; S / &darr; BRAKE' +
+    '<br>SPACE BOOST &nbsp; SHIFT SPOILER &nbsp; Q E PAN &nbsp; F CHASSIS' +
     '<br>GAMEPAD: STICKS AS ABOVE &nbsp;·&nbsp; RT / LT &nbsp;·&nbsp; A START &nbsp;·&nbsp; Y CHASSIS</small>' +
     '<br><small style="opacity:.65">ENTER / TAP TO DROP IN</small>';
   hud.msg.style.display = '';

@@ -23,7 +23,7 @@
 //              scale, so they stay live meshes.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PAL, SUN_DIR } from './palette.js?v=7';
+import { PAL, SUN_DIR } from './palette.js?v=8';
 
 const _geo = {};
 const geo = (k, make) => _geo[k] || (_geo[k] = make());

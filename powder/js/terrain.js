@@ -21,8 +21,8 @@
 //                 it returns the deck when you are on it and the floor when
 //                 you are under it.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=7';
-import { populate, bakeProps, makePropKit } from './props.js?v=7';
+import { PAL } from './palette.js?v=8';
+import { populate, bakeProps, makePropKit } from './props.js?v=8';
 
 export const TILE = 100;
 const Q = 16;                    // 6.25 m resolution
@@ -33,7 +33,7 @@ export const SALT = 0, DUNE = 1, GRAVEL = 2, ROCK = 3, ROAD = 4;
 export const SURF = [
   //  mu    grip;  drag  body drag x;  sink  m a loaded runner settles;  shear  s the bite lags
   { name: 'SALT PAN',   mu: 1.25, drag: 0.92, sink: 0.05, shear: 0.02 },
-  { name: 'DEEP SAND',  mu: 0.95, drag: 1.45, sink: 0.55, shear: 0.22 },
+  { name: 'DEEP SAND',  mu: 0.95, drag: 1.45, sink: 0.55, shear: 0.12 },
   { name: 'GRAVEL',     mu: 0.55, drag: 1.55, sink: 0.12, shear: 0.06 },
   { name: 'ROCK',       mu: 1.00, drag: 2.10, sink: 0.00, shear: 0.01 },
   { name: 'CROSSING',   mu: 1.35, drag: 0.85, sink: 0.00, shear: 0.01 },
