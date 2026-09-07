@@ -385,8 +385,15 @@ enemy loop) and, since v42, they are **cover**: an enemy orb dies on them
 (orbs keep a `prev` for the segment test), `pushOut` shoves any enemy body out
 of a piece so the swarm comes round rather than through, and `topAt` gives
 `gems.update` a `floorAt` so a gem lands on a slab instead of sinking into
-it. INCA is season 2's palette only and says so (`built: false`,
-`todo`). Four things renders settled, not reasoning: the star field was a
+it. INCA is season 2, and since v43 its **goo wave** is built (`js/goo.js`):
+a travelling height field over the disc cut into cubes — a crest with a long
+back and a short steep face, leaning into its own travel, snapped to the cell
+grid in y so it steps like voxels, one InstancedMesh with ~250 of 1600 cells
+drawn. It is a moving FLOOR that CARRIES the body along its direction (the
+higher of slab-or-crest wins) and does no damage on purpose until the owner
+decides what it should cost; its floor glow is 3.4, so the read is an
+aquamarine grid on dark water. The rest of season 2 (gel edges on the large
+slabs, the Inca backdrop, bone against a white sky) is still `todo`. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
 near black, so floor glow is per season; and the owner's monuments "looked

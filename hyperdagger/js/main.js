@@ -5,26 +5,27 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=73';
-import { Player } from './player.js?v=73';
-import { DaggerPool } from './daggers.js?v=73';
-import { GemPool } from './gems.js?v=73';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=73';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=73';
-import { OrbPool } from './bullets.js?v=73';
-import { AudioKit } from './audio.js?v=73';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=73';
-import { TUNING as T } from './tuning.js?v=73';
-import { HyperEnvironment } from './environment.js?v=73';
-import { Backdrop } from './backdrop.js?v=73';
-import { Walls } from './walls.js?v=73';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=73';
-import { TruckTrack } from './truck.js?v=73';
-import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=73';
-import { Platforms } from './platforms.js?v=73';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=73';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=73';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=73';
+import { InputManager } from './input.js?v=74';
+import { Player } from './player.js?v=74';
+import { DaggerPool } from './daggers.js?v=74';
+import { GemPool } from './gems.js?v=74';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=74';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=74';
+import { OrbPool } from './bullets.js?v=74';
+import { AudioKit } from './audio.js?v=74';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=74';
+import { TUNING as T } from './tuning.js?v=74';
+import { HyperEnvironment } from './environment.js?v=74';
+import { Backdrop } from './backdrop.js?v=74';
+import { Walls } from './walls.js?v=74';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=74';
+import { TruckTrack } from './truck.js?v=74';
+import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=74';
+import { Platforms } from './platforms.js?v=74';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=74';
+import { GooWave } from './goo.js?v=74';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=74';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=74';
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -625,6 +626,8 @@ const walls = new Walls(scene, wallMat);
 // unlit material for all of it
 const shaleMat = shaleMaterial();
 const platforms = new Platforms(scene, shaleMat);
+// season 2's breaking wave — empty unless the season declares one
+const goo = new GooWave(scene, ARENA_R);
 
 // ---------------------------------------------------------------- actors
 const input = new InputManager();
@@ -999,6 +1002,7 @@ function applySeason() {
  *  the same for everyone. Not on the track — it has its own floor. */
 function buildSeasonArena() {
   platforms.clear();
+  goo.clear();
   walls.cull(w => w.tag === 'pillar');
   ground.visible = !!ground.userData.on && M().arena !== 'track';
   if (M().arena === 'track') return;
@@ -1021,6 +1025,7 @@ function buildSeasonArena() {
       }
     }
   }
+  if (sn.goo) goo.build(sn.goo, rng.next); // seeded: a DAILY sea breaks the same way
   if (sn.platforms) {
     platforms.build(sn.platforms, rng.next,
       (x, z, half) => walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < half + Math.max(w.len, w.thick) * 0.5 + 0.6),
@@ -1473,6 +1478,7 @@ function endRun() {
   truck.clear();
   walls.clear();
   platforms.clear();
+  goo.clear();
   floor.visible = true;
   shadows.visible = true;
   state = 'menu';
@@ -2820,6 +2826,12 @@ function step(dt) {
   // or the player never reads as grounded and never gets a jump back.
   if (M().arena === 'track') truck.preUpdate(dt, player);
   else if (platforms.count) platforms.preUpdate(dt, player, 0); // the season's slabs: a floor, and a carry
+  // the wave is a floor too, and the HIGHER of slab-or-crest is what you
+  // stand on — a crest rolling past a slab must not drop you through it
+  if (goo.cfg && M().arena !== 'track') {
+    goo.update(dt);
+    player.floorY = goo.carry(dt, player, player.floorY ?? 0);
+  }
   player.update(dt);
   if (walls.walls.length) walls.resolve(player);
   if (platforms.count) platforms.resolve(player); // their sides are walls too
@@ -3255,6 +3267,8 @@ window.__hd = {
     },
     setSeason(id) { season = seasonById(id).id; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
     getPlatforms() { return platforms.getState(); },
+    getGoo() { return goo.getState(); },
+    gooObj() { return goo; }, // the gate reads heightAt directly
     platformsObj() { return platforms; }, // the gate forces one slab tall and grown
     clearPillars() { walls.cull(w => w.tag === 'pillar'); return walls.walls.length; }, // the cover check's control: the same shot with the rock gone
     /** The body's wall state — what the wall-run gate and the harness read. */

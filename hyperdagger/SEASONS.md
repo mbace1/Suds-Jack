@@ -109,26 +109,44 @@ standing on a slab, which makes the slab a way to dodge them — reads as
 intended for now, worth watching. Nothing casts a shadow onto a slab, so a
 body standing on one has no contact cue but its own height.
 
-## SEASON 2 — INCA (palette only)
+## SEASON 2 — INCA (the wave is built, v43)
 
 What is in: a whiter sky kept under the bloom threshold, a saturated blue
-horizon band, an aquamarine floor tint at a higher glow so the tint shows
-through the plates, four LARGE slabs (5–8 a side) that grow slower and stand
-longer, aquamarine shale under them, the needler, no rock, no monuments —
-season 1's are season 1's.
+horizon band, an aquamarine floor (the texture is near-black with bright grid
+lines, so the tint only shows where the glow lifts it — the read is an
+aquamarine GRID on dark water, not a teal floor), four LARGE slabs (5–8 a
+side) that grow slower and stand longer, aquamarine shale under them, the
+needler, no rock, no monuments — season 1's are season 1's.
 
-What is not, and what the next session builds, in order:
+- **The goo wave** (`js/goo.js`). A travelling height field over the disc,
+  cut into voxels: a crest sweeps across, rises along a long back, leans into
+  its own travel as it steepens, and drops down a short steep face — a
+  breaking wave is asymmetric, and a sine is not one. A ripple runs along the
+  crest so it reads as a sea rather than an extruded curve. Everything is one
+  InstancedMesh and only the cells near the crest are drawn (about 250 of
+  1600), and the cubes SNAP to the cell grid in y as well as x and z, because
+  goo made of voxels only reads as voxels if it steps.
+- **What it is to play:** a moving floor. `heightAt` answers the crest height
+  anywhere, the loop hands it to the player the way the slabs do, and a body
+  standing on it is **carried along the wave's direction** — you ride it. The
+  higher of slab-or-crest wins, so a wave rolling past a slab cannot drop you
+  through it.
+- **It does no damage,** deliberately. Whether the trough should hurt is a
+  design call nobody has made, and a hazard that kills before anyone decided
+  it should is worse than one that does not exist yet.
+- **Seeded** like the rest of the arena: a DAILY sea breaks the same way for
+  everyone.
 
-1. **Goo voxel waves breaking across the arena** — a moving front of cube
-   voxels (the Toko Drop gel look is the reference for *goo*) that sweeps the
-   disc; a hazard or a platform or both is the owner's call.
-2. **Soft edges on the large voxel platforms** — the slabs stop wearing shale
+What is not, and what comes next:
+
+1. **Soft edges on the large voxel platforms** — the slabs stop wearing shale
    beds and get a gel surface (a shader, not geometry).
-3. **The Inca skull backdrop** through the manifest `env` seam (`backdrop.js`),
+2. **The Inca skull backdrop** through the manifest `env` seam (`backdrop.js`),
    with its own `backdrop.emissive` for the white sky.
-4. **Readability under a white sky** — bone enemies against a light
+3. **Readability under a white sky** — bone enemies against a light
    background lose their silhouette; the skins are Lambert-lit and the
    string-art bodies are unlit, so expect a pass on both.
+4. **Decide what the wave costs you.** It carries; it does not kill.
 
 The bench for all of it is MOVE in INCA: nothing is trying to kill you, so
 the only thing under test is the look.

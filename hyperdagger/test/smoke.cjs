@@ -966,7 +966,7 @@ s.listen(0, '127.0.0.1', async () => {
       d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
       await frames(6);
       const sn = d.getSeasons();
-      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms() };
+      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms(), goo: d.getGoo() };
     });
   };
 
@@ -1118,9 +1118,12 @@ s.listen(0, '127.0.0.1', async () => {
     // Stepped by DISTANCE, never by a frame count: a frame here is anywhere
     // between 16 ms and a second, so "40 frames" was long enough for the orb
     // to reach its 7 s life cap and the control read as blocked.
+    // Fired ABOVE the slabs (they cap at 1.6): a slab happening to sit on the
+    // path is luck, and this check is about the PILE. The control below then
+    // clears both, so the only difference between the two shots is the rock.
     const shot = async () => {
       hd.orbs.reset();
-      hd.orbs.fire({ x: from.x, y: 1.4, z: from.z }, V(dx / dl * 9, 0, dz / dl * 9));
+      hd.orbs.fire({ x: from.x, y: 2.2, z: from.z }, V(dx / dl * 9, 0, dz / dl * 9));
       for (let i = 0; i < 120 && hd.orbs.active.length; i++) {
         const q = hd.orbs.active[0].m.position;
         if (Math.hypot(q.x - from.x, q.z - from.z) > 9) break; // past the pile, still flying
@@ -1132,6 +1135,7 @@ s.listen(0, '127.0.0.1', async () => {
     };
     const intoRock = await shot();
     d.clearPillars();
+    d.platformsObj().clear(); // nothing left in the arena at all
     const withoutRock = await shot();
     return { intoRock, withoutRock, pushedOut: +pushedOut.toFixed(2), slabTop: st.top,
       onSlab: +onSlab.toFixed(2), onFloor: +onFloor.toFixed(2) };
@@ -1151,6 +1155,68 @@ s.listen(0, '127.0.0.1', async () => {
   ok('inca: its slabs are the LARGE ones the brief asks for, and no rock',
     inca.plats.count === 4 && inca.plats.slabs.every(s => s.w >= 5) && inca.walls.count === 0,
     JSON.stringify(inca.plats.slabs.map(s => s.w)));
+
+  // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
+  // waiting frames: heightAt is a pure function of (x, z, t), so the tests
+  // are exact instead of hostage to a software renderer's frame time.
+  const wave = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const g = d.gooObj(), cfg = g.cfg;
+    await frames(2);
+    const startT = g.t; // build seeds a phase, so a run opens mid-sea
+    // Put a crest on the MIDDLE of the arena before asking anything. The sea
+    // has a lull between waves and the start phase is random, so a check that
+    // assumes water at t≈0 is a check that fails one run in five.
+    let peak = 0, at = 0;
+    for (let i = 0; i < 900; i++) { g.t = i * 0.02; const h = g.heightAt(0, 0); if (h > peak) { peak = h; at = g.t; } }
+    g.t = at;
+    await frames(2);
+    const state = d.getGoo();
+    // IT TRAVELS, at the speed it declares. Comparing heights at t and t+2
+    // does NOT work: the ripple along the crest animates on its own clock, so
+    // the same water is a different height a second later. What travels is
+    // the crest's POSITION — and the ripple varies across the wave, never
+    // along it, so the peak along a line through the middle is clean.
+    const t0 = g.t, dt = 2;
+    const peakAlong = () => {
+      let best = -1, where = 0;
+      for (let i = -60; i <= 60; i += 0.25) {
+        const h = g.heightAt(g.dirX * i, g.dirZ * i);
+        if (h > best) { best = h; where = i; }
+      }
+      return { best, where };
+    };
+    g.t = t0; const p0 = peakAlong();
+    g.t = t0 + dt; const p1 = peakAlong();
+    const moved = p1.where - p0.where;
+    const travels = p0.best > 0.3 && Math.abs(moved - cfg.speed * dt) < 0.6;
+    const shift = { moved: +moved.toFixed(2), want: cfg.speed * dt };
+    // IT IS A FLOOR, AND IT CARRIES: stand on the crest we just placed
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    g.t = at;
+    pl.feet.set(0, peak, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    await frames(2);
+    const floorY = pl.floorY;
+    const x0 = pl.feet.x, z0 = pl.feet.z;
+    await frames(8);
+    const carried = Math.hypot(pl.feet.x - x0, pl.feet.z - z0);
+    return { state, startT: +startT.toFixed(2), travels, shift, peak: +peak.toFixed(2),
+      floorY: +floorY.toFixed(2), carried: +carried.toFixed(2), amp: cfg.amp };
+  });
+  ok('inca: a wave of voxels crosses the arena, and a run opens mid-sea',
+    wave.state.on && wave.state.cells > 500 && wave.state.drawn > 40 && wave.startT > 0,
+    JSON.stringify(wave));
+  ok('inca: the wave TRAVELS — the crest moves at the speed it declares',
+    wave.travels, JSON.stringify(wave));
+  ok('inca: the crest rises to the height the season declares',
+    wave.peak > wave.amp * 0.7 && wave.peak <= wave.amp * 1.35, JSON.stringify(wave));
+  ok('inca: standing on the crest, the wave IS the floor and it carries you',
+    wave.floorY > 1 && wave.carried > 0.1, JSON.stringify(wave));
+
+  ok('ember and void have no wave — the sea is season 2\'s',
+    ctrl.goo.on === false && em.goo.on === false,
+    JSON.stringify({ void: ctrl.goo.on, ember: em.goo.on, inca: inca.goo.on }));
 
   // back to the control for whatever follows
   await p.goto(base + '/hyperdagger/?assets=0&season=void', { waitUntil: 'load' });

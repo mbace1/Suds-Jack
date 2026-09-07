@@ -2,6 +2,65 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v43 — 2026-09-07
+**Season 2's goo wave: a swell of voxels that breaks across the arena**
+
+Owner's brief for season 2 named *waves of goo voxels breaking across the
+arena*, and this is that, on the bench it was meant for (MOVE in INCA).
+`js/goo.js` is a travelling height field over the disc cut into cubes: a
+crest sweeps across, rises along a long back, **leans into its own travel**
+as it steepens, and falls down a short steep face — a breaking wave is
+asymmetric, and a sine is not one. A ripple runs along the crest so it is a
+sea rather than an extruded curve. One InstancedMesh, ~250 of 1600 cells
+drawn at any moment, and the cubes **snap to the cell grid in y** as well as
+x and z: goo made of voxels only reads as voxels if it steps, and a smooth
+column of cubes is just a smooth surface with seams — the look this game
+already rejected once.
+
+**It is a moving FLOOR.** `heightAt` answers the crest height anywhere,
+`carry` hands it to the player the way the slabs do, and a body standing on
+it is pushed along the wave's own direction — you ride it. The higher of
+slab-or-crest wins, so a wave rolling past a platform cannot drop you
+through it. It does **no damage**, deliberately: whether the trough should
+hurt is a design call nobody has made, and a hazard that kills before anyone
+decided it should is worse than one that does not exist. It is seeded, so a
+DAILY sea breaks the same way for everyone.
+
+**INCA's floor finally reads.** The tint was there since v41 and the floor
+was still black: the floor texture is near-black with bright grid lines, so
+a tint only shows where the GLOW lifts it. At 3.4 the read is an aquamarine
+grid on dark water, which is the right answer anyway — a bright floor would
+cost the enemies their silhouettes under a white sky.
+
+**Gate: 145 checks** (was 140), and writing them found three things.
+
+Every wave check drives the wave's own clock rather than waiting frames —
+`heightAt` is a pure function of (x, z, t) — and each one starts by walking
+the clock until a crest covers the middle of the arena. That is not tidiness:
+the sea has a lull between waves and the start phase is random, so a check
+that assumes water at t≈0 fails one run in five, which is exactly what it did.
+
+**"It travels" cannot be tested by comparing heights.** The first version
+sampled the profile at t and again at t+2 shifted by speed×2, and it was
+wrong about the model: the ripple along the crest animates on its own clock,
+so the same water is a different height a second later. What travels is the
+crest's POSITION, and the ripple varies ACROSS the wave and never along it —
+so the peak along a line through the middle moves cleanly at exactly the
+declared speed. It also has to avoid straddling the period boundary, or the
+crest appears to move backwards by a whole span.
+
+**And the wave started off-stage.** The crest forms beyond one rim, so a run
+opened with several seconds of flat water before anything happened. Build now
+seeds a random phase: the first thing you see is a sea already moving.
+
+Two traps that were the test's, not the code's: `setSeason` re-lights the
+arena but does not rebuild it, so asking one page whether ANOTHER season has
+a wave would have lied — the no-wave check reads the season pages themselves;
+and v42's cover control started failing because its orb flew at slab height,
+where a slab happening to sit on the path is luck. It fires above them now,
+and the control clears the rock AND the slabs, so the only difference between
+the two shots is the thing under test.
+
 ## v42 — 2026-09-06
 **The arena becomes cover**
 

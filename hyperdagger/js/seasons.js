@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=73';
+import { TUNING as T } from './tuning.js?v=74';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -41,6 +41,7 @@ import { TUNING as T } from './tuning.js?v=73';
  *  @property {number[]|null} ground  a matte plane outside the disc, so a monument stands on something
  *  @property {Object|null} pillars   dark rock standing in the arena (walls.js + shale.js)
  *  @property {Object|null} platforms growing, moving slabs (platforms.js + shale.js)
+ *  @property {Object|null} goo       the breaking wave of voxels (goo.js)
  *  @property {'dagger'|'needler'} weapon  the profile in T.weapons
  *  @property {boolean} built
  *  @property {string[]} [todo]
@@ -62,6 +63,7 @@ export const SEASONS = [
     ground: null,
     pillars: null,
     platforms: null,
+    goo: null,
     weapon: 'dagger',
     built: true,
   },
@@ -106,6 +108,7 @@ export const SEASONS = [
       driftW: 0.18,             // rad/s
       avoidPlayer: 4.5,         // u — never grows under your feet
     },
+    goo: null,                  // season 2's, not season 1's
     weapon: 'needler',
     built: true,
   },
@@ -114,7 +117,9 @@ export const SEASONS = [
     name: 'SEASON 2 — INCA',
     blurb: 'aquamarine skullscape under a white sky — palette only, the goo is not built',
     sky: { void: [0.44, 0.49, 0.54], horizon: [0.02, 0.28, 0.95], band: 2.2, stars: 0 },
-    floor: { tint: [0.30, 0.95, 0.82], glow: 1.7 },
+    // the floor's texture is near-black with bright grid lines, so a tint
+    // only shows where the glow lifts it: an aquamarine GRID on dark water
+    floor: { tint: [0.30, 0.95, 0.82], glow: 3.4 },
     backdrop: { visible: false, emissive: 0 }, // season 1's monuments are season 1's; the Inca skullscape is on the list
     fog: { color: [0.40, 0.46, 0.52], near: 20, far: 90 },
     dust: { color: [0.60, 0.92, 0.85], size: 0.06, opacity: 0.2 },
@@ -132,13 +137,28 @@ export const SEASONS = [
       drift: 0.6, driftW: 0.12,
       avoidPlayer: 5.5,
     },
+    // THE WAVE (v43). A crest sweeps the disc, rises, leans into its travel
+    // and breaks; stand on it and it carries you. See js/goo.js.
+    goo: {
+      cell: 1.15,               // voxel size — the wave is made of THIS game's cubes
+      amp: 2.6,                 // crest height above the floor
+      width: 9,                 // how long the back of the swell is
+      gap: 14,                  // clear water between one wave and the next
+      speed: 7.5,               // u/s along its own direction
+      lean: 0.5,                // how far the crest leans forward as it steepens
+      ripple: 0.22, rippleK: 0.19, // a swell along the crest: a sea, not an extrusion
+      push: 5.0,                // u/s a body standing on it is carried
+      opacity: 0.93,
+      deep: [0.06, 0.42, 0.44], // in the body
+      lip: [0.55, 1.9, 1.6],    // at the break — HDR, so the lip blooms
+    },
     weapon: 'needler',
     built: false,
     todo: [
-      'goo voxel waves breaking across the arena',
       'soft edges on the large voxel platforms (goo shader, not shale beds)',
       'the Inca skull backdrop through the manifest env seam',
       'bone enemies against a white sky — readability pass',
+      'decide whether the trough should hurt — the wave carries, it does not kill',
     ],
   },
 ];
