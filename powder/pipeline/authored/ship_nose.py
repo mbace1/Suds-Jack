@@ -22,7 +22,8 @@ from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(HERE))
-from _lib import Part, hull_uvs, section_ring, fresh_scene, empty_at, report   # noqa: E402
+from _lib import (Part, hull_uvs, section_ring, ring_xy, fresh_scene, empty_at,   # noqa: E402
+                  report, hull_texture, paint_hull)
 from powder_blender import MATERIALS, STUB_COLOUR, PADS                        # noqa: E402
 
 # ---- the layout, metres, Blender frame (nose +Y, up +Z) --------------------
@@ -52,8 +53,9 @@ def wing_thick(x, y):
     return WING_T * (1 - 0.7 * max(tip, fwd)) + 0.02
 
 
-def build():
+def build(tex_path):
     col, mats = fresh_scene('SHIP', MATERIALS, STUB_COLOUR)
+    paint_hull(mats['HULL'], hull_texture(tex_path))
     hull = Part('hull', mats['HULL'])
     accent = Part('accent', mats['ACCENT'])
     chrome = Part('chrome', mats['CHROME'])
@@ -88,10 +90,13 @@ def build():
         gun.box((s * 0.78, 3.30, 0.02), (0.6, 0.45, 0.14))
         gun.box((s * 0.82, 2.10, -0.02), (0.6, 0.50, 0.16))
         gun.box((s * 0.45, 1.20, 0.38), (0.5, 0.6, 0.36))                       # pump block on the shoulder
-        top = NACZ + NACR + 0.05
-        chrome.tube([(s * 0.45, 1.50, 0.50), (s * 0.80, 2.00, 0.62), (s * NACX, 2.60, top)], 0.075)
-        chrome.tube([(s * 0.50, 1.10, 0.30), (s * 0.85, 1.90, 0.20), (s * (NACX - NACR - 0.05), 2.90, NACZ + 0.15)], 0.070)
-        chrome.tube([(s * 0.30, 1.30, 0.50), (s * 0.70, 2.70, 0.66), (s * NACX, 3.30, top)], 0.065)
+        # Plumbing that HUGS: over the pump block, onto the can, then along it.
+        # The first cut ran straight lines through the air and one read as a
+        # rail; a pipe with nothing under it is a pipe nobody would fit.
+        top, inner = NACZ + NACR + 0.06, s * (NACX - NACR - 0.07)
+        chrome.tube([(s * 0.45, 1.25, 0.54), (s * 0.85, 1.75, 0.64), (s * NACX, 2.30, top), (s * NACX, 3.40, top)], 0.075)
+        chrome.tube([(s * 0.50, 1.05, 0.32), (inner, 1.90, NACZ + 0.28), (inner, 3.30, NACZ + 0.28)], 0.070)
+        chrome.tube([(s * 0.25, 1.30, 0.56), (s * 0.25, 2.40, 0.48), (s * 0.25, 3.30, 0.37)], 0.060)
 
     # ---- the runners, on all four pads: the cans ride right over them -----
     for s in (-1, 1):
@@ -103,6 +108,7 @@ def build():
 
     # ---- the canopy, behind the rockets -------------------------------------
     glass.ellipsoid((0, 0.20, 0.50), (0.42, 0.95, 0.34))
+    gun.loft([ring_xy(0, 0.20, 0.56, 0.44, 0.97), ring_xy(0, 0.20, 0.63, 0.43, 0.95)])   # the canopy frame
 
     # ---- the roundels on the wing tops, read from the chase camera ----------
     for s in (-1, 1):
@@ -117,8 +123,10 @@ def build():
 
 
 def main():
-    objs = build()
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+    tex = (argv[0].replace('.glb', '-hull.png') if argv
+           else os.path.join(bpy.app.tempdir, 'ship-nose-hull.png'))
+    objs = build(tex)
     report('ship-nose', objs, PADS)
     if argv:
         bpy.ops.wm.save_as_mainfile(filepath=argv[0].replace('.glb', '.blend'))

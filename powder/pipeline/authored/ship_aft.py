@@ -29,7 +29,8 @@ from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(HERE))
-from _lib import Part, hull_uvs, section_ring, fresh_scene, empty_at, report   # noqa: E402
+from _lib import (Part, hull_uvs, section_ring, ring_xy, fresh_scene, empty_at,   # noqa: E402
+                  report, hull_texture, paint_hull)
 from powder_blender import MATERIALS, STUB_COLOUR, PADS                        # noqa: E402
 
 # ---- the layout, metres, Blender frame (nose +Y, up +Z) --------------------
@@ -57,8 +58,9 @@ def wing_z(x, y):
     return WING_T * (1 - 0.7 * max(tip, fwd)) + 0.02
 
 
-def build():
+def build(tex_path):
     col, mats = fresh_scene('SHIP', MATERIALS, STUB_COLOUR)
+    paint_hull(mats['HULL'], hull_texture(tex_path))
     hull = Part('hull', mats['HULL'])
     accent = Part('accent', mats['ACCENT'])
     chrome = Part('chrome', mats['CHROME'])
@@ -120,6 +122,7 @@ def build():
 
     # ---- the canopy ---------------------------------------------------------
     glass.ellipsoid((0, 1.35, 0.50), (0.42, 0.95, 0.34))
+    gun.loft([ring_xy(0, 1.35, 0.56, 0.44, 0.97), ring_xy(0, 1.35, 0.63, 0.43, 0.95)])   # the canopy frame
 
     # ---- the roundels: wing tops, read from the chase camera ---------------
     # u runs +X and v runs +Y (toward the nose): seen from behind and above,
@@ -135,8 +138,10 @@ def build():
 
 
 def main():
-    objs = build()
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+    tex = (argv[0].replace('.glb', '-hull.png') if argv
+           else os.path.join(bpy.app.tempdir, 'ship-aft-hull.png'))
+    objs = build(tex)
     report('ship-aft', objs, PADS)
     if argv:
         bpy.ops.wm.save_as_mainfile(filepath=argv[0].replace('.glb', '.blend'))

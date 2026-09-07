@@ -7,6 +7,7 @@ axis. Face orientation is set explicitly, never left to a recalc — an open
 can has no inside for a heuristic to find.
 """
 import bpy, bmesh, math
+import numpy as np
 from mathutils import Vector
 
 
@@ -203,6 +204,81 @@ def fresh_scene(collection, materials, stub_colour):
             bsdf.inputs['Base Color'].default_value = (*c, 1.0)
         mats[n] = m
     return col, mats
+
+
+def ring_xy(cx, cy, z, rx, ry, n=24):
+    """An ellipse lying flat — the canopy frame."""
+    return [(cx + rx * math.cos(2 * math.pi * i / n), cy + ry * math.sin(2 * math.pi * i / n), z)
+            for i in range(n)]
+
+
+def hull_texture(path, seed=1, size=1024):
+    """The HULL base colour, painted here: cream, panel lines, rivets, and the
+    plates' CHIPPED EDGES, which are the livery. pipeline/README.md §1 asks
+    for 1024 x 1024 sRGB PNG; this is that, generated so the ships share one
+    hand and it can be re-cut with the palette. A painter should replace it;
+    the UVs it lands on are a box projection normalised to the hull's bounds
+    (hull_uvs), so anything painted in 0..1 lands somewhere sensible and the
+    rust rings the extremities, where paint actually chips. Values are sRGB,
+    written straight into a byte image and saved."""
+    rng = np.random.default_rng(seed)
+    H = W = size
+    cream = np.array([0.925, 0.890, 0.820])
+    rust = np.array([0.541, 0.361, 0.337])      # #8a5c56
+    dark = np.array([0.290, 0.200, 0.251])      # #4a3340
+    line = np.array([0.720, 0.680, 0.610])
+    # a soft mottle so the paint is not one flat value
+    mottle = np.kron(rng.normal(0, 0.010, (H // 16, W // 16)), np.ones((16, 16)))
+    rgb = np.broadcast_to(cream, (H, W, 3)).copy() + mottle[..., None]
+    # panel lines on an irregular grid, rivets along them
+    def edges(n, L):
+        e = np.linspace(0, L, n + 1)[1:-1] + rng.uniform(-L / (n * 4), L / (n * 4), n - 1)
+        return e.astype(int)
+    mask = np.zeros((H, W), bool)
+    for x in edges(7, W):
+        mask[:, x:x + 2] = True
+        for y in range(9, H, 26):
+            mask[y:y + 3, x - 5:x - 2] = True
+    for y in edges(11, H):
+        mask[y:y + 2, :] = True
+        for x in range(13, W, 26):
+            mask[y - 5:y - 2, x:x + 3] = True
+    rgb[mask] = line * (1 + mottle[mask, None] * 3)
+    # the chips: irregular, rimmed, and drawn to the edges of the map
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    wobble = np.kron(rng.normal(0, 0.18, (H // 8, W // 8)), np.ones((8, 8))).astype(np.float32)
+    for _ in range(90):
+        cx, cy = rng.uniform(0, W), rng.uniform(0, H)
+        if rng.random() < 0.7:                      # most chips live near an edge
+            if rng.random() < 0.5:
+                cx = rng.choice([rng.uniform(0, W * 0.12), rng.uniform(W * 0.88, W)])
+            else:
+                cy = rng.choice([rng.uniform(0, H * 0.12), rng.uniform(H * 0.88, H)])
+        rx, ry = rng.uniform(5, 30), rng.uniform(4, 18)
+        d = ((xx - cx) / rx) ** 2 + ((yy - cy) / ry) ** 2 + wobble
+        rgb[d < 1.45] = dark
+        rgb[d < 1.0] = rust * rng.uniform(0.85, 1.12)
+    px = np.empty((H, W, 4), np.float32)
+    px[..., :3] = np.clip(rgb, 0, 1)
+    px[..., 3] = 1.0
+    img = bpy.data.images.new('hull-cream', W, H, alpha=True)
+    img.pixels.foreach_set(px.ravel())
+    img.filepath_raw = path
+    img.file_format = 'PNG'
+    img.save()
+    img.pack()
+    return img
+
+
+def paint_hull(mat, img):
+    """Put the painted base colour on the HULL's Principled BSDF, which is
+    what the glTF exporter reads as baseColorTexture."""
+    nt = mat.node_tree
+    bsdf = nt.nodes.get('Principled BSDF')
+    tex = nt.nodes.new('ShaderNodeTexImage')
+    tex.image = img
+    tex.location = (-400, 300)
+    nt.links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
 
 
 def empty_at(col, name, loc):

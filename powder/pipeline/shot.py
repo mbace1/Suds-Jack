@@ -102,7 +102,11 @@ def main():
     # none - its look is applied by the game by material NAME - so show the
     # stub material colours instead, which at least proves the names arrived.
     painted = any(o.data.color_attributes for o in meshes)
-    sh.color_type = 'VERTEX' if painted else 'MATERIAL'
+    # TEXTURE, not MATERIAL: MATERIAL paints the flat viewport colour and
+    # silently ignores the HULL's packed image, which is the one thing a ship
+    # shot needs to prove arrived. TEXTURE falls back to the material colour
+    # wherever there is no image, so chrome and gunmetal still read.
+    sh.color_type = 'VERTEX' if painted else 'TEXTURE'
     sh.show_shadows = True
     sh.show_cavity = True
     sc.render.film_transparent = False
