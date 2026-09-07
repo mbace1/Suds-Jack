@@ -939,9 +939,17 @@ vehicle **shrinks the lock with speed** (`speedLock`: all of it below 20 m/s, 55
 because the sustainable yaw rate falls as 1/v; the spool is 0.75 s (idle to half thrust
 0.8 s, not 1.4); the camera in a slide looks **half way to the travel heading** so the
 sled slides across the frame instead of the world swinging round it; `brakeDrag` 7.
-`keys.mjs` drives real key events: one second of A at 140 km/h is 17° of heading with
-7.8 m/s of slide, where it was a spin. Under SwiftShader the sim runs ~75% real time at
-`q=low`, so its spool number reads 1.25 s for a 0.8 s constant — read deltas.
+`powder/test/keys.mjs` drives real key events: one second of A at 140 km/h is 17° of
+heading with 7.8 m/s of slide, where it was a spin. Under SwiftShader the sim runs ~75%
+real time at `q=low`, so its spool number reads 1.25 s for a 0.8 s constant — read deltas.
+**The harnesses live in `powder/test/`** and share `_browser.mjs`, which serves the repo
+on a free port, launches Chromium on SwiftShader, and routes the importmap's jsDelivr
+URLs to a local three only when one resolves (so a sandbox with no network runs them
+exactly as CI does): `NODE_PATH=$(npm root -g) node powder/test/keys.mjs`. `drive2` and
+`corner` are the lock ladders, `pad` and `touch` the two other input paths (stubbed pad,
+real CDP touch), `hazecheck` the with/without pixel diff, `perf2` the per-pass counts,
+`refexport` regenerates `models/reference/`, `roundtrip` loads it back. None is a gate
+yet: they print numbers for a person to read.
 
 **The Blender pipeline (v9).** `powder/pipeline/README.md` is the contract and
 `js/models.js` **enforces** it at load: envelope (which way the ship faces is read off

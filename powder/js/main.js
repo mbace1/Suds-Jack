@@ -75,7 +75,9 @@ let CHASSIS = localStorage.getItem(CKEY) === 'rear' ? 'rear' : 'front';
 // other console). ~640 px across on a laptop, which is about right.
 const PS2_SCALE = 0.62;
 const canvas = document.getElementById('game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+// antialiasing is one of the things `quality` is for (CLAUDE.md), and with a
+// full-res canvas the HD ships are what it smooths
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: QUALITY === 'high' });
 renderer.setPixelRatio(1);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -796,7 +798,9 @@ input.onStart = () => {
   } else if (state.mode !== 'race') startRace();
 };
 input.onSwap = () => {
-  if (state.mode === 'race') return;      // the sled you are on is the sled you race
+  // the sled you are on is the sled you race — paused included, or the
+  // pause overlay became a menu offering a chassis the run would not honour
+  if (state.mode === 'race' || state.mode === 'paused') return;
   CHASSIS = CHASSIS === 'front' ? 'rear' : 'front';
   localStorage.setItem(CKEY, CHASSIS);
   showMenu();

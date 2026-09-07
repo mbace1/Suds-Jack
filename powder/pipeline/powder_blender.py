@@ -150,8 +150,15 @@ def setup(kind='nose'):
 
 
 # ---------------------------------------------------------------- validate
+def _evaluated(obj):
+    """The mesh as the exporter will see it: modifiers applied. A live bevel
+    or array can double a triangle count the source mesh never shows."""
+    dg = bpy.context.evaluated_depsgraph_get()
+    return obj.evaluated_get(dg)
+
+
 def _tris(obj):
-    me = obj.data
+    me = _evaluated(obj).data
     me.calc_loop_triangles()
     return len(me.loop_triangles)
 
@@ -184,8 +191,9 @@ def validate(kind=None):
             if n not in allowed:
                 problems.append("%s: material '%s' is not in the contract (%s)" % (o.name, n, ', '.join(allowed)))
         tris += _tris(o)
-        for v in o.bound_box:
-            w = o.matrix_world @ Vector(v)
+        ev = _evaluated(o)
+        for v in ev.bound_box:
+            w = ev.matrix_world @ Vector(v)
             lo = Vector(map(min, lo, w)); hi = Vector(map(max, hi, w))
         if land and not o.data.color_attributes:
             warnings.append('%s: no Colour Attribute — it will bake as the material colour, flat' % o.name)
