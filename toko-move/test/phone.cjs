@@ -129,8 +129,16 @@ server.listen(0, '127.0.0.1', async () => {
   ok('and the screen is not what it was', took.text !== before, took.text.slice(0, 60));
   ok('the dispatch list you already chose from is gone', !took.dispatchStillListed, took.text.slice(0, 80));
   ok('the panel that boards a tram says so in those words',
-    /BOARD ONE OF THESE/.test(took.catchPanel), took.catchPanel);
+    /BOARD ONE OF \d/.test(took.catchPanel), took.catchPanel);
   ok(`with something on it to press (${took.catchButtons})`, took.catchButtons > 0);
+  // Every option has to say which of the two things it is. The verb used to
+  // have a line of its own; compacting the button to fit three of them on a
+  // phone is allowed to move it, and not allowed to lose it.
+  const verbs = await page.evaluate(() => [...document.querySelectorAll('#routeChoices .catchChoice')]
+    .map(b => ({ verb: b.querySelector('.catchVerb')?.textContent?.trim() || '', off: b.disabled })));
+  ok(`every option says CATCH or WAIT (${verbs.map(v => v.verb).join(',')})`,
+    verbs.length > 0 && verbs.every(v => v.verb === 'CATCH' || v.verb === 'WAIT'));
+  ok('and one you cannot take says WAIT', verbs.filter(v => v.off).every(v => v.verb === 'WAIT'));
   // Not merely "on screen": the first thing you can press has to be WHOLLY on
   // screen without scrolling, or the game has still not told you how to move.
   ok(`and its first button is fully visible (ends at ${took.firstButtonBottom} of ${vp.h})`,
@@ -177,6 +185,29 @@ server.listen(0, '127.0.0.1', async () => {
   ok(`a panel nobody gave an order to lands last (${orders.probeOrder} >= ${orders.worst})`,
     orders.flex === 'column' && orders.probeOrder >= orders.worst);
 
+  // ── HOW MANY PLANS YOU CAN COMPARE AT ONCE ───────────────────────────
+  // The game's core verb is comparing plans, so the count of catch buttons you
+  // can see without scrolling is a design number, not a nicety. Measured, and
+  // the budget is tight: at 390x664 — Playwright's iPhone 13, which is Safari
+  // with its chrome bars showing, the worst case — the HUD is 130, the board
+  // 246 and the sheet 270, and three 69px buttons plus a heading need 228+.
+  // Two whole and the third peeking is the honest fit there. On a real phone
+  // (390x844) and on an iPad all three fit, and that is asserted separately
+  // below so shrinking the board to chase the worst case is not mistaken for
+  // an improvement.
+  const seen = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#routeChoices .catchChoice')];
+    const whole = b.filter(x => { const r = x.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }).length;
+    const any = b.filter(x => { const r = x.getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; }).length;
+    return { whole, any, total: b.length };
+  });
+  ok(`two plans are wholly on screen at 390x664 (${seen.whole} whole of ${seen.total})`, seen.whole >= 2);
+  // If they cannot all be shown, the panel has to SAY how many there are, or a
+  // player at this viewport has no way to know a third plan exists.
+  const heading = await page.evaluate(() => document.querySelector('#routeChoices b')?.textContent || '');
+  ok(`the panel says how many plans it holds — "${heading.slice(-22)}"`,
+    seen.whole >= seen.total || new RegExp(`BOARD ONE OF ${seen.total}\\b`).test(heading), heading);
+
   // ── THE READ-ONLY PANEL MUST NOT LOOK LIKE THE ONE WITH THE BUTTONS ──
   // The recording said MISSED four times about trams standing at the stop. This
   // panel is why: read-only by design, spans not buttons, and it said AT HUB in
@@ -217,6 +248,21 @@ server.listen(0, '127.0.0.1', async () => {
   // ── the feed must not say the same thing twice ────────────────────────
   const feed = await page.evaluate(() => [...document.querySelectorAll('#feed div')].map(d => d.textContent));
   ok('the feed does not repeat itself back to back', feed.every((t, i) => i === 0 || t !== feed[i - 1]), feed.join(' | '));
+
+  // ── AND ON A PHONE WITHOUT THE BROWSER BARS ──────────────────────────
+  for (const [label, w, h] of [['a real iPhone', 390, 844], ['an iPad in portrait', 820, 1180]]) {
+    const c2 = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    const p2 = await c2.newPage();
+    await p2.goto(`${base}/toko-move/`, { waitUntil: 'load' });
+    await p2.waitForFunction(() => window.__tm?.camera, null, { timeout: 30000 });
+    await p2.tap('#play'); await p2.waitForTimeout(1500);
+    await p2.waitForFunction(() => { const x = document.querySelector('#jobBoard .jobOffer:not([disabled])'); if (!x) return false; x.click(); return true; }, null, { timeout: 20000 }).catch(() => {});
+    await p2.waitForTimeout(1300);
+    const n = await p2.evaluate(() => [...document.querySelectorAll('#routeChoices .catchChoice')]
+      .filter(x => { const r = x.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }).length);
+    ok(`every plan is on screen at once on ${label} (${w}x${h}): ${n}`, n >= 3);
+    await c2.close();
+  }
 
   ok('no console or page errors on a phone', errs.length === 0, errs.slice(0, 3).join(' | '));
 
