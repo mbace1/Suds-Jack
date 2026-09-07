@@ -20,7 +20,7 @@
     },
     {
       "id": "tokodrop.stop.001",
-      "project": "toko-drop",
+      "project": "tokodrop",
       "build": "*",
       "status": "open",
       "trigger": "session-ended-early",
@@ -37,7 +37,7 @@
     },
     {
       "id": "tokomove.missed.001",
-      "project": "toko-move",
+      "project": "tokomove",
       "build": "*",
       "status": "open",
       "trigger": "missed-boarding-twice",
