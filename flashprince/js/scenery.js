@@ -16,7 +16,7 @@
 //   in the middle without ever being shown a door.
 
 import { C } from './palette.js?v=52';
-import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=67';
+import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=68';
 
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 const clamp = v => Math.max(0, Math.min(1, v));
@@ -45,6 +45,9 @@ export function paintBack(scr, room, index) {
   if (room.scene === 'facilityCrown') { paintFacilityCrown(scr); return; }
   if (room.scene === 'cultivationCanal') { paintBioTransit(scr); return; }
   if (room.scene === 'wardenArchive') { paintBioFacility(scr); return; }
+  if (room.scene === 'liftShaft') { paintLiftShaft(scr); return; }
+  if (room.scene === 'electricSpillway') { paintElectricSpillway(scr); return; }
+  if (room.scene === 'signalSpire') { paintSignalSpire(scr); return; }
   const t = room.t, w = weights(t), r = rand(index * 2654435 + 17);
 
   // Sky as flat bands with hard seams. A 2600 changed colour once a scanline
@@ -544,6 +547,64 @@ function paintFacilityCrown(scr) {
   for (let x = 7; x < W; x += 21) scr.rect(x, 164, 13, 2, C.DARK);
 }
 
+function paintLiftShaft(scr) {
+  scr.rect(0, 0, W, H, C.VOID);
+  scr.rect(9, 7, W - 18, H - 7, C.FAR);
+  // One tall, readable machine rather than another horizontal chamber.
+  for (const x of [42, 126, 194, 278]) {
+    scr.rect(x, 0, 9, H, C.NEAR);
+    scr.rect(x + 2, 0, 2, H, C.EDGE);
+    for (let y = 12; y < H; y += 24) scr.rect(x - 4, y, 17, 4, C.SOLID);
+  }
+  scr.rect(132, 0, 4, H, C.DARK);
+  scr.rect(184, 0, 4, H, C.DARK);
+  for (let y = 8; y < H; y += 16) {
+    scr.rect(136, y, 48, 2, C.SOLID);
+    scr.rect(142 + ((y >> 4) & 1) * 28, y, 7, 2, C.LUX);
+  }
+  scr.rect(0, 91, W, 4, C.DARK);
+  scr.rect(0, 95, W, 2, C.EDGE);
+}
+
+function paintElectricSpillway(scr) {
+  scr.rect(0, 0, W, 45, C.SKY_HI);
+  scr.rect(0, 45, W, 59, C.SKY_LO);
+  scr.rect(0, 104, W, H - 104, C.FAR);
+  // Flood-control arches and conduits recede behind the two traversable paths.
+  for (const x of [18, 94, 170, 246]) {
+    scr.rect(x, 52, 48, 110, C.NEAR);
+    scr.disc(x + 24, 78, 19, C.DARK);
+    scr.rect(x + 5, 78, 38, 84, C.DARK);
+    scr.rect(x + 8, 82, 32, 80, C.FAR);
+    scr.rect(x + 3, 52, 42, 3, C.EDGE);
+  }
+  for (const y of [32, 43, 151]) {
+    scr.rect(0, y, W, 3, C.SOLID);
+    for (let x = 8; x < W; x += 27) scr.rect(x, y - 2, 8, 7, C.DARK);
+  }
+}
+
+function paintSignalSpire(scr) {
+  scr.rect(0, 0, W, 40, C.SKY_HI);
+  scr.rect(0, 40, W, 55, C.SKY_LO);
+  scr.rect(0, 95, W, H - 95, C.FAR);
+  // The flooded city opens up again, now seen from the transmitter crown.
+  for (let i = 0; i < 11; i++) {
+    const x = i * 34 - 15, top = 64 + (i * 23) % 46;
+    scr.poly([x, 165, x + 3, top + 6, x + 13, top, x + 30, top + 8, x + 34, 165], i & 1 ? C.MID : C.NEAR);
+    if (i % 3) scr.rect(x + 11, top + 17, 4, 2, C.LUX);
+  }
+  const x = 163;
+  scr.rect(x - 7, 26, 14, 135, C.SOLID);
+  scr.rect(x - 2, 17, 4, 144, C.EDGE);
+  for (let y = 39; y < 145; y += 18) {
+    scr.limb(x, y, x - 31, y + 17, 3, 1, C.NEAR);
+    scr.limb(x, y, x + 31, y + 17, 3, 1, C.NEAR);
+  }
+  scr.disc(x, 18, 9, C.DARK);
+  scr.disc(x, 18, 4, C.LUX2);
+}
+
 // Marks cut into the wall. Called by the tile painter rather than the backdrop
 // one, because the wall is painted after the backdrop and would bury them.
 //
@@ -675,6 +736,32 @@ function arch(scr, x, y, w, h, ci) {
 
 // ── what moves, and what is in front of him ────────────────────────
 export function drawAir(scr, room, clock) {
+  if (room.scene === 'liftShaft') {
+    const y = 10 + (clock * 0.32) % 168;
+    scr.rect(133, y, 3, 12, C.LUX2);
+    scr.rect(184, 178 - y, 3, 12, C.LUX);
+    for (let i = 0; i < 8; i++) scr.rect(145 + (i * 37) % 31, (clock * 0.2 + i * 29) % H, 1, 3, C.EDGE);
+    return;
+  }
+  if (room.scene === 'electricSpillway') {
+    if ((clock % 170) < 100) {
+      for (let i = 0; i < 7; i++) {
+        const x = 18 + ((i * 47 + (clock >> 2) * 9) % (W - 36));
+        scr.poly([x - 7, 164, x - 2, 158 - (i % 3) * 3, x + 2, 165, x + 8, 159], C.LUX2);
+      }
+    }
+    return;
+  }
+  if (room.scene === 'signalSpire') {
+    const ring = 11 + ((clock >> 4) % 4) * 6;
+    scr.disc(163, 18, ring, C.LUX, 0.12);
+    for (let i = 0; i < 4; i++) {
+      const x = ((clock * (0.07 + i * 0.018) + i * 97) % (W + 24)) - 12;
+      scr.rect(x, 28 + i * 13, 9, 2, C.DARK);
+      scr.rect(x + 6, 27 + i * 13, 2, 1, C.LUX);
+    }
+    return;
+  }
   if (room.scene === 'facilityGate') {
     for (let i = 0; i < 24; i++) {
       const x = (i * 59 + clock * (1.7 + (i % 2) * 0.25)) % (W + 28) - 14;
@@ -854,12 +941,20 @@ export function drawAir(scr, room, clock) {
 // land animation becomes a shallow-water wade without inventing replacement
 // body frames. Swimming stays out until a matching authored reference exists.
 export function drawFloodWater(scr, room, clock, hero) {
-  if (!['floodedHub', 'facilityGate'].includes(room.scene)) return;
+  if (!['floodedHub', 'facilityGate', 'cultivationCanal', 'electricSpillway'].includes(room.scene)) return;
   const y = room.waterY ?? 166;
-  scr.veil([0, y, W, y, W, H, 0, H], C.NEAR, 0.34);
+  const charged = room.electricWater && (clock % 170) < 100;
+  scr.veil([0, y, W, y, W, H, 0, H], charged ? C.LUX : C.NEAR, charged ? 0.28 : 0.34);
   for (let i = 0; i < 8; i++) {
     const x = (i * 53 + clock * (0.18 + (i % 2) * 0.05)) % (W + 24) - 12;
     scr.rect(x, y + 2 + (i % 3) * 6, 12 + (i % 4) * 3, 1, i % 3 ? C.MID : C.LUX);
+  }
+  if (room.electricWater) {
+    for (let i = 0; i < 6; i++) {
+      const x = 9 + ((i * 61 + (clock >> 2) * 7) % (W - 18));
+      if (charged) scr.poly([x - 6, y + 2, x - 2, y - 3, x + 2, y + 2, x + 7, y - 2], C.LUX2);
+      else scr.rect(x - 4, y + 2, 9, 1, C.DARK);
+    }
   }
   // Broken vertical reflections belong to specific lights above: the living
   // iris, the signal bank and the moving maintenance carriage. The gaps and

@@ -185,4 +185,25 @@ const tick = (hero, n) => { for (let i = 0; i < n; i++) hero.update(world, input
   assert.equal(transit.boxSolid(transit.platforms[0].x + 2, 160, 4, 2), true);
 }
 
-console.log('movement checks ok — exact landings, animated pickups, armed traversal, step, mantle, climb-down, jump, shield, ferry');
+// A tiny grounded fraction is normalised to the exact support plane before it
+// can contaminate a low climb or mantle target on the next input frame.
+{
+  const tiled = new World();
+  tiled.grid = Array.from({ length: 12 }, (_, ty) => Array(20).fill(ty === 6 ? '#' : ' '));
+  const hero = new Hero(40, 95.4);
+  hero.go('stand');
+  hero.update(tiled, input, game);
+  assert.equal(hero.y, 96);
+}
+
+// Moving platforms expose the same catchable lip as authored tile ledges.
+{
+  const transit = new World();
+  transit.load(ROOMS.findIndex(room => room.scene === 'bioTransit'));
+  const platform = transit.platforms[0];
+  platform.x = 100; platform.y = 160;
+  const ledge = transit.ledgeAhead(96, 186, 1);
+  assert.deepEqual(ledge, { x: 95, y: 160, face: 1 });
+}
+
+console.log('movement checks ok — exact landings, animated pickups, armed traversal, climb, jump, shield and moving platforms');

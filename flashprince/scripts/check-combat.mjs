@@ -66,7 +66,8 @@ const hero = {
   world.load(sanctum);
   assert.equal(world.room.requiresHybrid, true);
   assert.equal(world.spawns.filter(spawn => spawn.kind === 'H').length, 1);
-  assert.ok(ROOMS.some(room => room.scene === 'facilityCrown' && room.missionEnd));
+  assert.ok(ROOMS.some(room => room.scene === 'facilityCrown' && room.checkpoint));
+  assert.ok(ROOMS.some(room => room.scene === 'signalSpire' && room.missionEnd));
 
   const keeper = new HybridKeeper(216, 176);
   const signalling = { ...hero, x: 150, face: 1, shielding: true };

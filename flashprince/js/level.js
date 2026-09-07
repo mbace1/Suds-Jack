@@ -8,9 +8,9 @@
 // the silhouette is not a ruler. Same shapes, biome by biome; only the sixteen
 // colours underneath them change.
 
-import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=67';
+import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js?v=68';
 import { C } from './palette.js?v=52';
-import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=67';
+import { glyphs, weights, drape, leaves, halo } from './scenery.js?v=68';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -36,7 +36,12 @@ export class World {
     this.spawn = null; this.door = null;
     this.pickups = []; this.spawns = [];
     this.spikes = []; this.chompers = []; this.loose = new Map();
-    this.platforms = (this.room.platforms ?? []).map(p => ({ ...p, x: p.from, px: p.from }));
+    this.platforms = (this.room.platforms ?? []).map(p => {
+      const vertical = p.axis === 'y';
+      const x = vertical ? p.x : p.from;
+      const y = vertical ? p.from : p.y;
+      return { ...p, x, px: x, y, py: y };
+    });
     this.gates = []; this.plates = []; this.fields = []; this.lights = [];
     this.gateT = 0; this.clock = 0;
     this.entryFace = entryFace;
@@ -45,15 +50,16 @@ export class World {
       for (let tx = 0; tx < RW; tx++) {
         const ch = this.grid[ty][tx];
         const x = tx * TILE + TILE / 2, y = ty * TILE;
+        const key = `${ty}:${tx}:${ch}`;
         if (ch === 'S') { this.spawn = { x, y: y + TILE }; this.grid[ty][tx] = ' '; }
         else if (ch === 'D') { this.door = { x, y: y + TILE, tx, ty }; this.grid[ty][tx] = ' '; }
-        else if (ch === 'G') { this.pickups.push({ kind: 'gun', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
-        else if (ch === 'h') { this.pickups.push({ kind: 'cell', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
-        else if (ch === 'V') { this.pickups.push({ kind: 'tape', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
-        else if (ch === 'L') { this.pickups.push({ kind: 'loot', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
-        else if (ch === 'K') { this.pickups.push({ kind: 'socket', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
-        else if (ch === 'B') { this.pickups.push({ kind: 'sword', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
-        else if ('bgdsgHw'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'G') { this.pickups.push({ kind: 'gun', key, x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'h') { this.pickups.push({ kind: 'cell', key, x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'V') { this.pickups.push({ kind: 'tape', key, x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'L') { this.pickups.push({ kind: 'loot', key, x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'K') { this.pickups.push({ kind: 'socket', key, x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'B') { this.pickups.push({ kind: 'sword', key, x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if ('bgdsgHw'.includes(ch)) { this.spawns.push({ kind: ch, key, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
         else if (ch === 'T') { this.lights.push({ x, y: y + 8 }); this.grid[ty][tx] = '-'; }
         else if (ch === '^') this.spikes.push({ tx, ty });
         else if (ch === 'C') { this.chompers.push({ tx, ty, phase: (tx * 47) % CHOMP_CYCLE, reach: this.shaft(tx, ty) }); this.grid[ty][tx] = ' '; }
@@ -120,6 +126,15 @@ export class World {
   // the side he is coming from. Everything about how these games move is built
   // on finding one of these in the air and stopping dead.
   ledgeAhead(x, y, face) {
+    // Moving platforms have real lips too. This lets a missed ferry become a
+    // recoverable hang instead of a visual edge the collision system denies.
+    const handY = y - 26;
+    for (const p of this.platforms) {
+      if (Math.abs(p.y - handY) > 10) continue;
+      const edge = face > 0 ? p.x : p.x + p.w;
+      if (Math.abs(x - edge) > 14) continue;
+      return { x: edge + (face > 0 ? -5 : 5), y: p.y, face };
+    }
     const tx = Math.floor((x + face * 7) / TILE);
     const target = y - 26;                          // where his hands are
     for (let ty = Math.floor((target - 11) / TILE); ty <= Math.floor((target + 11) / TILE); ty++) {
@@ -180,13 +195,17 @@ export class World {
   update(hero) {
     this.clock++;
     for (const p of this.platforms) {
-      p.px = p.x;
+      p.px = p.x; p.py = p.y;
       const phase = ((this.clock + (p.offset ?? 0)) % p.period) / p.period;
       const travel = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
       const ease = travel * travel * (3 - 2 * travel);
-      p.x = p.from + (p.to - p.from) * ease;
-      if (hero && Math.abs(hero.y - p.y) < 1.5
-          && hero.x >= p.px - 5 && hero.x <= p.px + p.w + 5) hero.x += p.x - p.px;
+      if (p.axis === 'y') p.y = p.from + (p.to - p.from) * ease;
+      else p.x = p.from + (p.to - p.from) * ease;
+      if (hero && Math.abs(hero.y - p.py) < 1.5
+          && hero.x >= p.px - 5 && hero.x <= p.px + p.w + 5) {
+        hero.x += p.x - p.px;
+        hero.y += p.y - p.py;
+      }
     }
     if (this.gateT > 0) this.gateT--;
 
@@ -228,6 +247,10 @@ export class World {
 
   // what, if anything, in this box is currently lethal
   lethal(x, y, w, h) {
+    if (this.room.electricWater && this.fieldOn()) {
+      const waterY = this.room.waterY ?? ROOM_H;
+      if (y + h > waterY - 2) return 'water';
+    }
     const up = this.spikeUp();
     if (up > 0.55) {
       for (const s of this.spikes) {

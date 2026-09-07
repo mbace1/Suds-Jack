@@ -17,14 +17,15 @@
 
 import { Screen, W, H } from './screen.js?v=64';
 import { paletteAt, C } from './palette.js?v=52';
-import { Hero } from './hero.js?v=59';
-import { World, ROOMS, ROOM_H } from './level.js?v=67';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=67';
+import { Hero } from './hero.js?v=68';
+import { World, ROOMS, ROOM_H } from './level.js?v=68';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=68';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
 import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=66';
 import { HybridKeeper } from './hybrid.js?v=66';
 import { GlassGrazer, SurveyDrone, RushWarden } from './ecology.js?v=67';
+import { ROUTE_SAVE, decodeRouteSave, encodeRouteSave } from './route-save.js?v=68';
 import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
@@ -119,14 +120,37 @@ class Stage {
     this.bioSeed = 0;
     this.hybridHint = 0;
     this.combatHint = 0;
+    this.routeHint = 0;
     this.missionComplete = false;
+    this.tapes = 0;
+    this.parts = 0;
+    this.facilityPower = 0;
+    this.powerHint = 0;
+    this.lootFlash = 0;
+    this.lootTitle = '';
+    this.impacts = [];
+    this.checkpointRoom = 0;
+    this.defeated = new Set();
+    this.collected = new Set();
+    this.wildlifeChoice = null;
+    this.loadProgress();
     const requestedScene = location.hash.slice(1);
     // The cabinet has linked to #flooded-city since that biome shipped. Keep
     // the public name stable even though the room's internal scene name is
     // floodedHub; otherwise Play from the Hub silently starts in the jungle.
     const sceneName = requestedScene === 'flooded-city' ? 'floodedHub' : requestedScene;
-    const requestedRoom = sceneName
+    let requestedRoom = sceneName
       ? ROOMS.findIndex(room => room.scene === sceneName) : 0;
+    // The cabinet's chapter entry resumes the furthest safe room. Named scene
+    // links remain exact so they still work as QA entrances.
+    if (requestedScene === 'flooded-city') {
+      const chapterStart = ROOMS.findIndex(room => room.scene === 'floodedHub');
+      this.checkpointRoom = Math.max(this.checkpointRoom, chapterStart);
+      requestedRoom = this.checkpointRoom;
+      this.saveProgress();
+    } else if (!requestedScene && this.checkpointRoom >= 14) {
+      requestedRoom = this.checkpointRoom;
+    }
     this.enterRoom(Math.max(0, requestedRoom));
     this.hero.go('wake');
     this.mode = 'select';
@@ -137,13 +161,33 @@ class Stage {
     this.hint = 420;              // the control line fades out of the way
     this.flash = 0;
     this.tracer = null;
-    this.tapes = 0;
-    this.parts = 0;
-    this.facilityPower = 0;
-    this.powerHint = 0;
-    this.lootFlash = 0;
-    this.lootTitle = '';
-    this.impacts = [];
+  }
+
+  loadProgress() {
+    try {
+      const s = decodeRouteSave(localStorage.getItem(ROUTE_SAVE), ROOMS.length);
+      if (!s) return;
+      Object.assign(this, s);
+      this.defeated = new Set(s.defeated);
+      this.collected = new Set(s.collected);
+    } catch { /* private/embedded storage can be unavailable */ }
+  }
+
+  saveProgress() {
+    try {
+      localStorage.setItem(ROUTE_SAVE, encodeRouteSave(this));
+    } catch { /* progress remains valid for this play session */ }
+  }
+
+  resetRoute() {
+    this.checkpointRoom = 0; this.facilityPower = 0; this.hybridOutcome = null;
+    this.bioSeed = 0; this.tapes = 0; this.parts = 0; this.missionComplete = false;
+    this.wildlifeChoice = null; this.defeated.clear(); this.collected.clear();
+    try { localStorage.removeItem(ROUTE_SAVE); } catch {}
+    const flooded = location.hash.slice(1) === 'flooded-city';
+    if (flooded) this.checkpointRoom = ROOMS.findIndex(r => r.scene === 'floodedHub');
+    this.enterRoom(this.checkpointRoom);
+    this.saveProgress();
   }
 
   // ── the editor ─────────────────────────────────────────────────────
@@ -186,24 +230,29 @@ class Stage {
     const w = this.world;
     this.scr.setPalette(paletteAt(w.room.t));
     droneTune(w.room.t);
-    this.foes = w.spawns.filter(s => s.kind === 's')
-      .map(s => new Swordsman(s.x, s.y, -1, [10, W - 10]));
-    this.sentries = w.spawns.filter(s => s.kind === 'g')
-      .map(s => new Sentry(s.x, s.y, -1));
-    this.hybrids = w.spawns.filter(s => s.kind === 'H')
-      .map(s => new HybridKeeper(s.x, s.y, this.hybridOutcome));
-    this.grazers = w.spawns.filter(s => s.kind === 'b')
-      .map((s, k) => new GlassGrazer(s.x, s.y, k & 1 ? -1 : 1));
-    this.drones = w.spawns.filter(s => s.kind === 'd')
-      .map(s => new SurveyDrone(s.x, s.y, -1));
-    this.wardens = w.spawns.filter(s => s.kind === 'w')
-      .map(s => new RushWarden(s.x, s.y, -1));
+    const live = w.spawns.filter(s => !this.defeated.has(`${w.index}:${s.key}`));
+    const bind = (s, enemy) => {
+      enemy.spawnKey = `${w.index}:${s.key}`; enemy.spawnKind = s.kind; return enemy;
+    };
+    this.foes = live.filter(s => s.kind === 's')
+      .map(s => bind(s, new Swordsman(s.x, s.y, -1, [10, W - 10])));
+    this.sentries = live.filter(s => s.kind === 'g')
+      .map(s => bind(s, new Sentry(s.x, s.y, -1)));
+    this.hybrids = live.filter(s => s.kind === 'H')
+      .map(s => bind(s, new HybridKeeper(s.x, s.y, this.hybridOutcome)));
+    this.grazers = live.filter(s => s.kind === 'b')
+      .map((s, k) => bind(s, new GlassGrazer(s.x, s.y, k & 1 ? -1 : 1)));
+    this.drones = live.filter(s => s.kind === 'd')
+      .map(s => bind(s, new SurveyDrone(s.x, s.y, -1)));
+    this.wardens = live.filter(s => s.kind === 'w')
+      .map(s => bind(s, new RushWarden(s.x, s.y, -1)));
     this.bolts = [];
     this.unbuilt = w.spawns.filter(s => !['s', 'g', 'H', 'b', 'd', 'w'].includes(s.kind)).length;
     this.post = null;
     if (this.facilityPower > 0) {
       for (const p of w.pickups) if (p.kind === 'socket') p.taken = true;
     }
+    for (const p of w.pickups) if (this.collected.has(`${w.index}:${p.key}`)) p.taken = true;
     const h = this.hero;
     if (from === 'left') { h.x = 6; h.face = 1; }
     else if (from === 'right') { h.x = W - 6; h.face = -1; }
@@ -212,11 +261,17 @@ class Stage {
     h.vx = 0; h.vy = 0;
     if (from) h.go(h.rest());
     this.snd.wasFoe = null;
+    if (w.room.checkpoint && from && w.index > this.checkpointRoom) {
+      this.checkpointRoom = w.index;
+      this.lootTitle = 'CHECKPOINT · ROUTE REMEMBERED'; this.lootFlash = 170;
+      this.saveProgress();
+    }
     if (w.room.missionEnd && from && !this.missionComplete) {
       this.missionComplete = true;
-      this.lootTitle = this.hybridOutcome === 'allied'
-        ? 'SEED COVENANT COMPLETE' : 'GARDEN PASSAGE COMPLETE';
+      this.lootTitle = this.hybridOutcome === 'allied' && this.wildlifeChoice === 'spared'
+        ? 'GARDEN COVENANT COMPLETE' : 'CITY SIGNAL RESTORED';
       this.lootFlash = 300;
+      this.saveProgress();
     }
   }
 
@@ -264,6 +319,9 @@ class Stage {
       if (inp.gunPress) {
         this.scr.setScaleMode(this.scr.scaleMode === 'integer4' ? 'fit' : 'integer4');
       }
+      if (inp.hitPress || inp.modePress) {
+        this.resetRoute();
+      }
       if (inp.jumpPress || inp.firePress) {
         this.hero.character = ['conrad', 'classic', 'legacy'][this.characterChoice];
         const spawn = this.world.spawn ?? { x: 48, y: this.groundUnder(48, FLOOR) };
@@ -307,6 +365,7 @@ class Stage {
     if (this.powerHint > 0) this.powerHint--;
     if (this.hybridHint > 0) this.hybridHint--;
     if (this.combatHint > 0) this.combatHint--;
+    if (this.routeHint > 0) this.routeHint--;
     if (this.bioSeed && !h.shielding) h.shield = Math.min(100, h.shield + 0.08);
     for (const p of this.impacts) {
       p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.t--;
@@ -321,7 +380,14 @@ class Stage {
         h.x = W - 5; h.vx = 0; h.go('bump'); this.powerHint = 150;
       } else if (this.world.room.requiresHybrid && !this.hybridOutcome) {
         h.x = W - 5; h.vx = 0; h.go('bump'); this.hybridHint = 180;
-      } else { this.enterRoom(this.world.index + 1, 'left'); return; }
+      } else if (this.world.room.requiresClear && this.hostilesAlive()) {
+        h.x = W - 5; h.vx = 0; h.go('bump'); this.routeHint = 180;
+      } else {
+        if (this.world.room.scene === 'cultivationCanal' && !this.wildlifeChoice) {
+          this.wildlifeChoice = 'spared'; this.saveProgress();
+        }
+        this.enterRoom(this.world.index + 1, 'left'); return;
+      }
     }
     h.x = Math.max(2, Math.min(W - 2, h.x));
     if (h.y > ROOM_H + 10) this.kill();
@@ -431,6 +497,7 @@ class Stage {
           && bolt.y >= e.y - 36 && bolt.y <= e.y);
         if (hit) {
           hit.struck(h.x, true);
+          if (hit.dead) this.rememberDefeat(hit);
           if (this.hybrids.includes(hit) && hit.resolved) this.resolveHybrid('slain');
           this.spark(bolt.x, bolt.y, Math.sign(bolt.vx));
           this.bolts.splice(i, 1);
@@ -452,7 +519,10 @@ class Stage {
       const e = h.swordTip();
       if (this.post && this.reached(h.x, e.x, this.post.x)) { this.post.hit(this.post.x, h.face); this.snd.woodHit(); }
       for (const foe of this.foes) {
-        if (!foe.dead && this.reached(h.x, e.x, foe.x) && foe.struck(h.x) === 'parried') h.go('clang');
+        if (!foe.dead && this.reached(h.x, e.x, foe.x)) {
+          if (foe.struck(h.x) === 'parried') h.go('clang');
+          if (foe.dead) this.rememberDefeat(foe);
+        }
       }
     }
     this.snd.frame(h, this.foes.find(f => !f.dead) ?? this.foes[0]);
@@ -467,6 +537,9 @@ class Stage {
       if (Math.abs(p.x - h.x) > 9 || Math.abs(p.y - h.y) > 20) continue;
       if (p.kind === 'gun') { p.taken = true; h.hasGun = true; }
       else if (p.kind === 'sword') { p.taken = true; h.hasSword = true; }
+      if (p.taken && p.key) {
+        this.collected.add(`${this.world.index}:${p.key}`); this.saveProgress();
+      }
     }
   }
 
@@ -484,6 +557,7 @@ class Stage {
     const p = this.floorPickupUnder(h);
     if (!p) return;
     p.taken = true;
+    if (p.key) this.collected.add(`${this.world.index}:${p.key}`);
     if (p.kind === 'cell') h.health = Math.min(3, h.health + 1);
     else if (p.kind === 'tape') {
       this.tapes++; this.lootTitle = this.world.room.tapeTitle ?? 'ARCHIVE TAPE'; this.lootFlash = 210;
@@ -499,6 +573,7 @@ class Stage {
       this.parts--; this.facilityPower = 1; h.shield = 100;
       this.lootTitle = 'TRANSIT HEART ONLINE'; this.lootFlash = 180; this.powerHint = 0;
     }
+    this.saveProgress();
   }
 
   // A blade sweeps a SPAN, from the man to the point — being at the tip is not
@@ -531,6 +606,7 @@ class Stage {
         this.snd.woodHit();
         return;
       }
+      if (ahead.enemy.dead) this.rememberDefeat(ahead.enemy);
       if (this.hybrids.includes(ahead.enemy) && ahead.enemy.resolved) this.resolveHybrid('slain');
     }
     else this.post.hit(ahead.x, h.face);
@@ -546,7 +622,23 @@ class Stage {
   dropFrom(enemy, kind, title) {
     if (!enemy.dropQueued) return;
     enemy.dropQueued = false;
-    this.world.pickups.push({ kind, title, x: enemy.x, y: enemy.y - 6, taken: false });
+    this.rememberDefeat(enemy);
+    this.world.pickups.push({ kind, title, key: `drop:${enemy.spawnKey}`,
+      x: enemy.x, y: enemy.y - 6, taken: false });
+  }
+
+  hostilesAlive() {
+    return this.foes.some(e => !e.dead) || this.sentries.some(e => !e.dead)
+      || this.hybrids.some(e => !e.dead && e.hostile)
+      || this.grazers.some(e => !e.dead && e.hostile)
+      || this.drones.some(e => !e.dead) || this.wardens.some(e => !e.dead);
+  }
+
+  rememberDefeat(enemy) {
+    if (!enemy?.dead || !enemy.spawnKey || this.defeated.has(enemy.spawnKey)) return;
+    this.defeated.add(enemy.spawnKey);
+    if (enemy.spawnKind === 'b') this.wildlifeChoice = 'hunted';
+    this.saveProgress();
   }
 
   resolveHybrid(outcome) {
@@ -559,12 +651,14 @@ class Stage {
     this.lootTitle = outcome === 'allied'
       ? 'SEED COVENANT · SHIELD REGEN UP' : 'SEED TAKEN · GARDEN HOSTILE';
     this.lootFlash = 240;
+    this.saveProgress();
   }
 
   // the hero asks the game for these; on a floor with nothing on it they are
   // all no-ops
   kill() {
-    const spawn = this.world.spawn ?? { x: 48, y: FLOOR };
+    this.enterRoom(this.checkpointRoom);
+    const spawn = this.world.spawn ?? { x: 48, y: this.groundUnder(48, FLOOR) };
     this.hero.reset(spawn.x, spawn.y);
     this.hero.health = 3;
     this.hero.go('wake');
@@ -605,8 +699,9 @@ class Stage {
     const x = [58, 160, 262][this.characterChoice];
     scr.rect(x - 29, FLOOR + 8, 58, 2, C.LUX);
     const scale = this.scr.scaleMode === 'integer4' ? 'MODERN 4X' : 'CLASSIC FIT';
-    this.centre(scr, `E / GUN  DISPLAY: ${scale}`, H - 20, C.EDGE, 6);
-    this.centre(scr, '◀ ▶  CHOOSE       JUMP / FIRE  START', H - 10, C.DARK, 6);
+    this.centre(scr, `E / GUN  DISPLAY: ${scale}`, H - 26, C.EDGE, 6);
+    this.centre(scr, 'G / REEL  RESET SAVED ROUTE', H - 17, C.DARK, 6);
+    this.centre(scr, '◀ ▶  CHOOSE       JUMP / FIRE  START', H - 8, C.DARK, 6);
   }
 
   // Flat bands and a hard horizon — the least backdrop that still gives him a
@@ -639,6 +734,14 @@ class Stage {
         scr.poly([W - 7, y, W - 2, y + 5, W - 7, y + 10], y % 3 ? C.LUX : C.EDGE);
       }
       scr.rect(W - 2, 42, 2, 134, C.LUX2);
+    }
+    if (w.room.requiresClear && this.hostilesAlive()) {
+      // Security shutters are visible before the edge collision says no.
+      scr.rect(W - 8, 48, 8, 128, C.DARK);
+      for (let y = 50; y < 175; y += 10) {
+        scr.rect(W - 7, y, 6, 5, (y + this.clock) % 3 ? C.SOLID : C.ALERT);
+        scr.rect(W - 6, y + 1, 4, 1, C.EDGE);
+      }
     }
     if (w.door) halo(scr, w.door.x, w.door.y - 16, 22 + Math.sin(this.clock * 0.06) * 3);
 
@@ -822,6 +925,9 @@ class Stage {
     } else if (this.combatHint > 0) {
       scr.rect(54, 48, 212, 16, C.DARK);
       this.centre(scr, 'FRONT PLATE LOCKED · SHIELD THE RUSH', 53, C.LUX, 6);
+    } else if (this.routeHint > 0) {
+      scr.rect(67, 48, 186, 16, C.DARK);
+      this.centre(scr, 'SECURITY SHUTTER · CLEAR THE ROOM', 53, C.LUX, 6);
     }
   }
 

@@ -1,5 +1,17 @@
 # Flash Prince — versions
 
+## v68 — 2026-09-08
+
+**The post-crown rooms are now a complete traversal route.** The wildlife
+canal leads into a security-locked archive, a vertical service lift, an
+electrified spillway with safe upper ferries and a final city transmitter.
+Moving-platform edges can be caught, fractional grounded positions normalise
+before low climbs, and vertical lifts carry the player without animation
+jitter. Two checkpoints now remember route progress, collected items, the
+hybrid and wildlife choices, facility power and defeated enemies across deaths
+and browser reloads; the character menu can reset the saved route. No player
+frame, animation timing, run data or character palette changed.
+
 ## v67 — 2026-09-07
 
 **The facility now has an ecology, not a row of reskinned guards.** Glass

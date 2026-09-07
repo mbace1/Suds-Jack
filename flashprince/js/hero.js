@@ -432,7 +432,23 @@ export class Hero {
 
   // walking off the edge of the world, and the floor coming up to meet him
   stickToFloor(world) {
-    if (this.grounded(world)) { this.fallFrom = this.y; return; }
+    if (world.landingY) {
+      const near = world.landingY(this.x, this.y, 2);
+      if (near >= this.y && near - this.y <= 2) {
+        this.y = near; this.fallFrom = this.y; return;
+      }
+    }
+    if (this.grounded(world)) {
+      // Slow platforms and the last fractional pixel of a scripted move can
+      // leave the feet microscopically off the supporting plane. Normalise
+      // only within a two-pixel tolerance; this cannot pull a falling body.
+      if (world.landingY) {
+        const exact = world.landingY(this.x, this.y - 2, 5);
+        if (Math.abs(exact - this.y) <= 2) this.y = exact;
+      }
+      this.fallFrom = this.y;
+      return;
+    }
     if (this.state === 'run' || this.state === 'skid' || this.state === 'roll') {
       this.vx = (this.state === 'run' ? 1.5 : 0.8) * this.face;
       this.vy = 0;
