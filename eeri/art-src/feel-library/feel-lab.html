@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Eeri Feel Lab</title>
+  <link rel="stylesheet" href="./feel-lab.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <div>
+        <p class="eyebrow">EERI • SOURCE LAB</p>
+        <h1>Feel Lab</h1>
+        <p class="lede">Tap a cue to hear the procedural SFX, see the matching VFX, and inspect the first 300 ms.</p>
+      </div>
+      <div class="controls" aria-label="Lab controls">
+        <label>Volume <input id="volume" type="range" min="0" max="1" step="0.01" value="0.72"></label>
+        <label><input id="audioOn" type="checkbox" checked> Audio</label>
+        <label><input id="vfxOn" type="checkbox" checked> VFX</label>
+        <label><input id="reduced" type="checkbox"> Reduced motion</label>
+      </div>
+    </header>
+
+    <section class="stage-card">
+      <canvas id="stage" width="960" height="400" aria-label="VFX preview"></canvas>
+      <div class="stage-copy">
+        <strong id="cueName">pickup</strong>
+        <span id="cueMeta">tap a cue below</span>
+      </div>
+    </section>
+
+    <section class="timeline-card" aria-label="Cue timing">
+      <div class="timeline-head">
+        <strong>Timing</strong>
+        <span>contact = 0 ms</span>
+      </div>
+      <div id="timeline" class="timeline"></div>
+    </section>
+
+    <section id="groups" class="groups"></section>
+
+    <footer>
+      Source-only audition page. Nothing here is imported by the shipping game.
+    </footer>
+  </main>
+  <script type="module" src="./feel-lab.js"></script>
+</body>
+</html>

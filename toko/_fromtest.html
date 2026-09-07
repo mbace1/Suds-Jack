@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8">
+<base href="../">
+<title>toko — arrival fixture</title>
+<!-- A FIXTURE, not a page. toko/test/brand.cjs walks into this from a
+     cabinet, so the counter sees a real referrer and has to work out which
+     game you just left.
+
+     The <base href="../"> is not decoration: the arcade's short URL
+     /AnotherHUB/ is the same page one level down with exactly this tag, and
+     the catalogue's relative paths only resolve to the real cabinets through
+     it. cameFrom() reads document.baseURI for that reason, and this fixture
+     is what proves it — resolving against location instead would look for
+     /toko/hyperdagger/ and quietly find nothing.
+
+     __hub is stubbed the way hub.js publishes it: the counter reads the live
+     catalogue off that object and knows about no game in particular. -->
+<header>fixture</header>
+<script type="module">
+  globalThis.__hub = {
+    games: [
+      { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/', lineage: 'Devil Daggers' },
+      { id: 'flashprince', title: 'Flash Prince', path: 'flashprince/' },
+    ],
+    feedback: { archive: () => [], send: async n => (globalThis.__sent = n, 'sent') },
+  };
+  const { mountChat } = await import('./toko/js/chat.js');
+  globalThis.__hub.chat = mountChat(document.querySelector('header'));
+</script>

@@ -1,0 +1,29 @@
+{
+  "_comment": "GDD §10's open question, answered: 'Grid traversal rules: obstacles, cover, elevation, hazards (drug-den fires? broken glass? Nordic-specific set dressing with mechanical teeth).' These are the teeth. A hazard NEVER blocks movement — that is what cover is for. It makes a tile a price, so the board asks a question instead of drawing a wall. They are also what finally makes the pipe's knockback a weapon rather than a repositioning tool: shoving a body two tiles is worth little, shoving it into a stairwell is a kill. Everything here applies to BOTH factions — an asymmetric hazard would be a trap the player learns to ignore, and the symmetry is what lets a player set one up deliberately. Data-driven per GDD §3: the engine reads ids out of this file and knows nothing about fire as a concept.",
+  "hazards": [
+    {
+      "id": "fire",
+      "name": "Den fire",
+      "onEnter": 2,
+      "lingers": 2,
+      "lethal": false,
+      "_note": "Costs on the way in AND again at the end of your turn if you are still standing in it — so walking through is a toll, stopping in it is a mistake. The only hazard that punishes you for ending a turn somewhere, which is what makes it push units around the board rather than just around one tile."
+    },
+    {
+      "id": "glass",
+      "name": "Broken glass",
+      "onEnter": 1,
+      "lingers": 0,
+      "lethal": false,
+      "_note": "A toll on a shortcut, nothing more. Cheap enough that taking it to reach a better firing position is often right — which is the decision it exists to create."
+    },
+    {
+      "id": "stairwell",
+      "name": "Open stairwell",
+      "onEnter": 0,
+      "lingers": 0,
+      "lethal": true,
+      "_note": "ITB's water. Nothing walks in willingly — the AI treats it as impassable and the player has no reason to step in — so its whole purpose is to be something to PUSH things into. Kills whatever ends up on it regardless of HP, which is what makes a knockback weapon worth carrying against an enemy you could never out-damage."
+    }
+  ]
+}

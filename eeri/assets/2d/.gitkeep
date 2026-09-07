@@ -1,0 +1,14 @@
+Drop layer PNGs here. Sizes and world rects: ../README.md
+
+  groundworks_skyline_v1.png   4096 x 900
+  groundworks_far_v1.png       4096 x 600
+  groundworks_mid_v1.png       3660 x 420
+  groundworks_near_v1.png      3360 x 240
+  groundworks_fore_v1.png      3360 x 180
+
+PNG with alpha, flat-colour cutout shapes, shading painted in (key light
+upper-left), depth tint toward the sky BAKED IN (skyline 0.58 · far 0.38 ·
+mid 0.20 · near 0.07 · fore 0).
+
+Then flip that entry's "status" to "live" in ../manifest.json and bump
+the manifest "v".

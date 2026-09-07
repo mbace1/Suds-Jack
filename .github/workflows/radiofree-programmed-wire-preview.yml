@@ -1,0 +1,43 @@
+name: Radio Free Helsinki — programmed wire preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Bulletin count
+        required: false
+        default: '7'
+      date:
+        description: Optional YYYY-MM-DD override
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test programming desk
+        run: node radiofree/test/programming.cjs
+
+      - name: Draft programmed wire
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RFH_MODEL: ${{ vars.RFH_MODEL }}
+          RFH_FEEDS: ${{ vars.RFH_FEEDS }}
+          INPUT_COUNT: ${{ inputs.count }}
+          INPUT_DATE: ${{ inputs.date }}
+        shell: bash
+        run: |
+          args=(--dry-run --count "${INPUT_COUNT:-7}")
+          if [[ -n "$INPUT_DATE" ]]; then args+=(--date "$INPUT_DATE"); fi
+          node radiofree/tools/generate-programmed-wire.mjs "${args[@]}"

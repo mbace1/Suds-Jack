@@ -1,0 +1,19 @@
+import { Player } from './player.js?v=12';
+
+// SKLTR v84 — teach the actual movement-offense rule without magnetism or auto-lunge.
+const css=document.createElement('style');css.textContent=`#skltr-contact-cue{position:fixed;left:50%;bottom:14%;transform:translateX(-50%);z-index:90;pointer-events:none;font:900 12px/1 monospace;letter-spacing:3px;color:#9bfff0;text-shadow:0 0 12px #50ffdc;opacity:0;transition:opacity .1s}#skltr-contact-cue.hot{opacity:.95}#skltr-melee-confirm{position:fixed;left:50%;top:54%;transform:translate(-50%,-50%);z-index:95;pointer-events:none;font:900 15px/1 monospace;letter-spacing:5px;color:#fff;text-shadow:0 0 8px #9bfff0,0 0 20px #9bfff0;opacity:0}#skltr-melee-confirm.go{animation:skltr84Hit .28s ease-out}@keyframes skltr84Hit{0%{opacity:1;transform:translate(-50%,-50%) scale(1.35)}100%{opacity:0;transform:translate(-50%,-62%) scale(.9)}}`;
+document.head.appendChild(css);
+const cue=document.createElement('div');cue.id='skltr-contact-cue';cue.textContent='ALMOST TOUCH · DASH THROUGH';document.body.appendChild(cue);
+const hit=document.createElement('div');hit.id='skltr-melee-confirm';hit.textContent='CONTACT';document.body.appendChild(hit);
+addEventListener('skltr-melee-kill',()=>{hit.classList.remove('go');void hit.offsetWidth;hit.classList.add('go')});
+let lastFlow=-1;
+const oldUpdate=Player.prototype.update;
+Player.prototype.update=function(dt,input,aim,enemies,...rest){
+  const out=oldUpdate.call(this,dt,input,aim,enemies,...rest);
+  let near=false;
+  for(const e of enemies||[]){if(!e?.alive||e.boss||e.type!=='chaser')continue;if(Math.hypot(e.x-this.x,e.z-this.z)<4.2){near=true;break}}
+  cue.classList.toggle('hot',near);
+  const flow=this.flowStacks||0,el=document.getElementById('flow-state');
+  if(el&&flow!==lastFlow){el.classList.remove('v46-1','v46-2','v46-3');if(flow>0)el.classList.add(`v46-${Math.min(3,flow)}`);lastFlow=flow}
+  return out;
+};

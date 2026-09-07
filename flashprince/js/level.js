@@ -1,0 +1,356 @@
+// The world: a grid you cannot see, and the polygons drawn over it.
+//
+// Collision is tiles, because tiles are what a commitment-based move set needs
+// — a jump has to clear a KNOWN distance or the whole contract breaks. But
+// nothing on screen is drawn per tile. The grid is turned into masses: one flat
+// fill for the rock, one lit band along every surface you could stand on, one
+// dark band under every overhang, and a seeded row of lumps along the top so
+// the silhouette is not a ruler. Same shapes, biome by biome; only the sixteen
+// colours underneath them change.
+
+import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js';
+import { C } from './palette.js';
+import { glyphs } from './scenery.js';
+
+const SOLIDS = '#~^';
+const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+
+// how the traps breathe. Shared per room so a screen has one rhythm to read.
+const SPIKE_CYCLE = 190, SPIKE_UP = 78, SPIKE_MOVE = 12;
+const CHOMP_CYCLE = 150, CHOMP_FALL = 9, CHOMP_HOLD = 18, CHOMP_RISE = 34;
+const FIELD_CYCLE = 170, FIELD_ON = 100;
+const LOOSE_HOLD = 26;
+const GATE_OPEN = 230;
+
+export class World {
+  constructor() { this.load(0); }
+
+  load(i, entryFace = 1) {
+    this.index = Math.max(0, Math.min(ROOMS.length - 1, i));
+    this.room = ROOMS[this.index];
+    this.grid = this.room.map.map(r => r.split(''));
+    this.spawn = null; this.door = null;
+    this.pickups = []; this.spawns = [];
+    this.spikes = []; this.chompers = []; this.loose = new Map();
+    this.gates = []; this.plates = []; this.fields = []; this.lights = [];
+    this.gateT = 0; this.clock = 0;
+    this.entryFace = entryFace;
+
+    for (let ty = 0; ty < RH; ty++) {
+      for (let tx = 0; tx < RW; tx++) {
+        const ch = this.grid[ty][tx];
+        const x = tx * TILE + TILE / 2, y = ty * TILE;
+        if (ch === 'S') { this.spawn = { x, y: y + TILE }; this.grid[ty][tx] = ' '; }
+        else if (ch === 'D') { this.door = { x, y: y + TILE, tx, ty }; this.grid[ty][tx] = ' '; }
+        else if (ch === 'G') { this.pickups.push({ kind: 'gun', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'h') { this.pickups.push({ kind: 'cell', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if ('bgd'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'T') { this.lights.push({ x, y: y + 8 }); this.grid[ty][tx] = '-'; }
+        else if (ch === '^') this.spikes.push({ tx, ty });
+        else if (ch === 'C') { this.chompers.push({ tx, ty, phase: (tx * 47) % CHOMP_CYCLE, reach: this.shaft(tx, ty) }); this.grid[ty][tx] = ' '; }
+        else if (ch === '~') this.loose.set(`${tx},${ty}`, { tx, ty, t: -1 });
+        else if (ch === '|') this.gates.push({ tx, ty });
+        else if (ch === 'p') this.plates.push({ tx, ty, down: false });
+        else if (ch === 'f') this.fields.push({ tx, ty });
+      }
+    }
+    this.seed = 1000 + this.index * 7919;
+  }
+
+  // how far a ceiling slab can fall before it hits something
+  shaft(tx, ty) {
+    for (let y = ty + 1; y < RH; y++) if (SOLIDS.includes(this.grid[y][tx])) return y * TILE;
+    return ROOM_H;
+  }
+
+  tile(tx, ty) {
+    if (tx < 0 || tx >= RW || ty < 0 || ty >= RH) return ' ';
+    return this.grid[ty][tx];
+  }
+
+  solidTile(tx, ty) {
+    const ch = this.tile(tx, ty);
+    if (ch === '|') return this.gateT <= 0;
+    if (ch === '~') { const l = this.loose.get(`${tx},${ty}`); return !l || l.t < LOOSE_HOLD; }
+    if (ch === 'p') return true;
+    return SOLIDS.includes(ch);
+  }
+
+  boxSolid(x, y, w, h) {
+    const x0 = Math.floor(x / TILE), x1 = Math.floor((x + w - 1) / TILE);
+    const y0 = Math.floor(y / TILE), y1 = Math.floor((y + h - 1) / TILE);
+    for (let ty = y0; ty <= y1; ty++) {
+      for (let tx = x0; tx <= x1; tx++) if (this.solidTile(tx, ty)) return true;
+    }
+    return false;
+  }
+
+  // ── ledges ─────────────────────────────────────────────────────────
+  // A lip is the top corner of a solid tile with sky above it and nothing on
+  // the side he is coming from. Everything about how these games move is built
+  // on finding one of these in the air and stopping dead.
+  ledgeAhead(x, y, face) {
+    const tx = Math.floor((x + face * 7) / TILE);
+    const target = y - 26;                          // where his hands are
+    for (let ty = Math.floor((target - 11) / TILE); ty <= Math.floor((target + 11) / TILE); ty++) {
+      if (!this.solidTile(tx, ty) || this.solidTile(tx, ty - 1)) continue;
+      if (this.solidTile(tx - face, ty)) continue;  // it is a wall face, not a corner
+      const lipY = ty * TILE;
+      if (Math.abs(lipY - target) > 10) continue;
+      const hx = tx * TILE + (face > 0 ? -5 : TILE + 5);
+      if (this.boxSolid(hx - 4, lipY + 3, 8, 22)) continue;
+      return { x: hx, y: lipY, face };
+    }
+    return null;
+  }
+
+  // the lip he has just walked off the end of, which he catches on the way past
+  ledgeBehind(x, y, face) {
+    const tx = Math.floor((x - face * 7) / TILE);
+    const ty = Math.floor((y + 2) / TILE);
+    if (!this.solidTile(tx, ty) || this.solidTile(tx, ty - 1)) return null;
+    const lipY = ty * TILE;
+    if (Math.abs(lipY - y) > 6) return null;
+    const edge = face > 0 ? (tx + 1) * TILE : tx * TILE;
+    const hx = edge + face * 5;
+    if (this.boxSolid(hx - 4, lipY + 3, 8, 22)) return null;
+    return { x: hx, y: lipY, face: -face };
+  }
+
+  // ── traps ──────────────────────────────────────────────────────────
+  update(hero) {
+    this.clock++;
+    if (this.gateT > 0) this.gateT--;
+
+    for (const p of this.plates) {
+      const on = hero && Math.abs(hero.x - (p.tx * TILE + 8)) < 12 && Math.abs(hero.y - p.ty * TILE) < 4;
+      p.down = on;
+      if (on) this.gateT = GATE_OPEN;
+    }
+
+    for (const [, l] of this.loose) {
+      if (l.t < 0) {
+        const on = hero && Math.abs(hero.x - (l.tx * TILE + 8)) < 12 && hero.y === l.ty * TILE;
+        if (on) l.t = 0;
+      } else if (l.t < LOOSE_HOLD + 40) l.t++;
+    }
+  }
+
+  spikeUp() {
+    const p = this.clock % SPIKE_CYCLE;
+    if (p < SPIKE_MOVE) return p / SPIKE_MOVE;
+    if (p < SPIKE_UP) return 1;
+    if (p < SPIKE_UP + SPIKE_MOVE) return 1 - (p - SPIKE_UP) / SPIKE_MOVE;
+    return 0;
+  }
+
+  fieldOn() { return (this.clock % FIELD_CYCLE) < FIELD_ON; }
+
+  chompY(c) {
+    const p = (this.clock + c.phase) % CHOMP_CYCLE;
+    const top = c.ty * TILE;
+    const span = c.reach - top - TILE;
+    if (p < CHOMP_FALL) return top + span * (p / CHOMP_FALL) ** 0.6;
+    if (p < CHOMP_FALL + CHOMP_HOLD) return top + span;
+    if (p < CHOMP_FALL + CHOMP_HOLD + CHOMP_RISE) {
+      return top + span * (1 - (p - CHOMP_FALL - CHOMP_HOLD) / CHOMP_RISE);
+    }
+    return top;
+  }
+
+  // what, if anything, in this box is currently lethal
+  lethal(x, y, w, h) {
+    const up = this.spikeUp();
+    if (up > 0.55) {
+      for (const s of this.spikes) {
+        const sx = s.tx * TILE, sy = s.ty * TILE;
+        if (x < sx + TILE && x + w > sx && y < sy + 6 && y + h > sy - 11 * up) return 'spike';
+      }
+    }
+    if (this.fieldOn()) {
+      for (const f of this.fields) {
+        const fx = f.tx * TILE, fy = f.ty * TILE;
+        if (x < fx + TILE && x + w > fx && y < fy + TILE && y + h > fy) return 'field';
+      }
+    }
+    for (const c of this.chompers) {
+      const cy = this.chompY(c), cx = c.tx * TILE;
+      if (cy <= c.ty * TILE + 1) continue;
+      if (x < cx + TILE && x + w > cx && y < cy + TILE && y + h > cy) return 'slab';
+    }
+    return null;
+  }
+
+  // ── drawing ────────────────────────────────────────────────────────
+  // Static rock is painted once per room; only the traps move.
+  drawTiles(scr) {
+    scr.cached(`tiles:${this.index}`, () => this.paintTiles(scr));
+  }
+
+  paintTiles(scr) {
+    const r = rand(this.seed);
+    const empty = (tx, ty) => !SOLIDS.includes(this.tile(tx, ty)) && this.tile(tx, ty) !== '|' && this.tile(tx, ty) !== 'p';
+
+    // the wall behind him — not sky, not floor. Courses of block, faint.
+    for (let ty = 0; ty < RH; ty++) {
+      for (let tx = 0; tx < RW; tx++) {
+        if (this.tile(tx, ty) !== '-') continue;
+        scr.rect(tx * TILE, ty * TILE, TILE, TILE, C.NEAR);
+      }
+    }
+    for (let ty = 0; ty < RH; ty++) {
+      for (let tx = 0; tx < RW; tx++) {
+        if (this.tile(tx, ty) !== '-') continue;
+        const x = tx * TILE, y = ty * TILE;
+        if (this.tile(tx, ty - 1) === '-') scr.rect(x, y, TILE, 1, C.DARK);
+        if (ty % 2 === 0) scr.rect(x + (ty % 4 ? 0 : 8), y, 1, TILE, C.DARK);
+        if (this.tile(tx, ty - 1) !== '-') scr.rect(x, y, TILE, 2, C.DARK);
+      }
+    }
+    glyphs(scr, this.room, this.index);
+
+    // the mass
+    const mass = [];
+    for (let ty = 0; ty < RH; ty++) {
+      for (let tx = 0; tx < RW; tx++) {
+        const ch = this.tile(tx, ty);
+        if (!SOLIDS.includes(ch) && ch !== 'p') continue;
+        scr.rect(tx * TILE, ty * TILE, TILE, TILE, C.SOLID);
+        mass.push([tx, ty]);
+      }
+    }
+
+    // every exposed surface: a lit band, then lumps sitting on it so the top of
+    // the world is a line somebody chipped rather than a line somebody ruled
+    for (const [tx, ty] of mass) {
+      const x = tx * TILE, y = ty * TILE;
+      if (empty(tx, ty - 1)) {
+        scr.rect(x, y, TILE, 2, C.EDGE);
+        const n = 1 + ((r() * 3) | 0);
+        for (let i = 0; i < n; i++) {
+          const w = 2 + r() * 4, h = 1 + r() * 2, ox = r() * (TILE - w);
+          scr.poly([x + ox, y, x + ox + w, y, x + ox + w - 1, y - h, x + ox + 1, y - h], C.EDGE);
+        }
+      }
+      if (empty(tx, ty + 1)) {
+        scr.rect(x, y + TILE - 3, TILE, 3, C.DARK);
+        if (r() < 0.5) scr.poly([x + 3, y + TILE, x + 11, y + TILE, x + 8, y + TILE + 3], C.DARK);
+      }
+      if (empty(tx - 1, ty)) scr.rect(x, y, 2, TILE, C.DARK);
+      if (empty(tx + 1, ty)) scr.rect(x + TILE - 2, y, 2, TILE, C.DARK);
+      // a couple of faces catching the light, flat, no gradient
+      if (r() < 0.22) scr.rect(x + 2 + r() * 6, y + 4 + r() * 8, 3 + r() * 5, 2, C.DARK);
+    }
+  }
+
+  drawTraps(scr) {
+    const up = this.spikeUp();
+    for (const s of this.spikes) {
+      const x = s.tx * TILE, y = s.ty * TILE;
+      const hgt = 11 * up;
+      if (hgt > 0.5) {
+        for (let i = 0; i < 4; i++) {
+          const px = x + 1 + i * 4;
+          scr.poly([px, y + 1, px + 3, y + 1, px + 1.5, y - hgt], C.EDGE);
+        }
+      }
+      scr.rect(x, y, TILE, 2, C.DARK);
+      for (let i = 0; i < 4; i++) scr.rect(x + 1 + i * 4, y, 3, 1, C.VOID);
+    }
+
+    for (const f of this.fields) {
+      const x = f.tx * TILE, y = f.ty * TILE;
+      const cap = this.tile(f.tx, f.ty - 1) !== 'f';
+      const foot = this.tile(f.tx, f.ty + 1) !== 'f';
+      if (cap) scr.rect(x, y - 2, TILE, 3, C.SOLID);
+      if (foot) scr.rect(x, y + TILE - 1, TILE, 3, C.SOLID);
+      if (!this.fieldOn()) {
+        if (cap) scr.rect(x + 6, y - 1, 4, 1, C.DARK);
+        continue;
+      }
+      // a barrier has to look like a barrier, not a wire: it fills its tile
+      const w = TILE - 4 + Math.sin(this.clock * 0.4) * 1.2;
+      scr.rect(x + (TILE - w) / 2, y, w, TILE, C.LUX);
+      scr.rect(x + 3, y, TILE - 6, TILE, C.LUX2);
+      scr.rect(x + 6, y + (this.clock * 4) % TILE, 4, 2, C.EDGE);
+    }
+
+    for (const g of this.gates) {
+      const x = g.tx * TILE, y = g.ty * TILE;
+      const open = this.gateT > 0;
+      const drop = open ? TILE - 3 : 0;
+      scr.rect(x, y, TILE, 3, C.DARK);
+      if (drop < TILE - 3.5) {
+        scr.rect(x + 1, y + drop, TILE - 2, TILE - drop, C.SOLID);
+        for (let i = 0; i < 3; i++) scr.rect(x + 2 + i * 5, y + drop, 2, TILE - drop, C.DARK);
+        scr.rect(x + 1, y + TILE - 2, TILE - 2, 2, C.EDGE);
+      }
+    }
+
+    for (const p of this.plates) {
+      const x = p.tx * TILE, y = p.ty * TILE + (p.down ? 2 : 0);
+      scr.rect(x + 1, y, TILE - 2, 3, p.down ? C.LUX : C.EDGE);
+      scr.rect(x + 1, y + 3, TILE - 2, 1, C.DARK);
+    }
+
+    for (const [, l] of this.loose) {
+      if (l.t >= LOOSE_HOLD) continue;
+      const x = l.tx * TILE, y = l.ty * TILE;
+      const sh = l.t >= 0 ? Math.sin(l.t * 1.7) * 1.4 : 0;
+      scr.rect(x + sh, y, TILE, TILE, C.SOLID);
+      scr.rect(x + sh, y, TILE, 2, C.EDGE);
+      // it has to read as cracked rather than as already gone: hairlines and a
+      // shadow gap at each end, not two black wedges
+      scr.rect(x + sh, y, 1, TILE, C.DARK);
+      scr.rect(x + TILE - 1 + sh, y, 1, TILE, C.DARK);
+      scr.poly([x + 4 + sh, y + 2, x + 5 + sh, y + 2, x + 6 + sh, y + TILE, x + 5 + sh, y + TILE], C.DARK);
+      scr.poly([x + 11 + sh, y + 2, x + 12 + sh, y + 2, x + 10 + sh, y + TILE, x + 9 + sh, y + TILE], C.DARK);
+      scr.rect(x + 2 + sh, y + TILE - 2, TILE - 4, 2, C.DARK);
+    }
+    // and the ones that let go, falling
+    for (const [, l] of this.loose) {
+      if (l.t < LOOSE_HOLD) continue;
+      const k = l.t - LOOSE_HOLD;
+      if (k > 40) continue;
+      const x = l.tx * TILE, y = l.ty * TILE + k * k * 0.34;
+      scr.poly([x + 1, y, x + TILE - 1, y + 2, x + TILE - 3, y + TILE, x + 2, y + TILE - 2], C.SOLID);
+    }
+
+    for (const c of this.chompers) {
+      const y = this.chompY(c), x = c.tx * TILE;
+      // two rails, not a shaft — a filled column read as a doorway and drew the
+      // eye to the wrong half of the screen
+      scr.rect(x + 1, c.ty * TILE - 3, 2, y - c.ty * TILE + 4, C.DARK);
+      scr.rect(x + TILE - 3, c.ty * TILE - 3, 2, y - c.ty * TILE + 4, C.DARK);
+      scr.rect(x - 1, c.ty * TILE - 4, TILE + 2, 5, C.DARK);
+      scr.rect(x, y, TILE, TILE, C.SOLID);
+      scr.rect(x, y, TILE, 3, C.DARK);
+      for (let i = 0; i < 4; i++) scr.poly([x + i * 4, y + TILE - 4, x + i * 4 + 4, y + TILE - 4, x + i * 4 + 2, y + TILE + 2], C.EDGE);
+    }
+
+    if (this.door) {
+      const x = this.door.tx * TILE, y = this.door.ty * TILE;
+      scr.rect(x - 3, y - TILE - 2, TILE + 6, TILE * 2 + 2, C.DARK);
+      const g = 2 + Math.sin(this.clock * 0.08) * 1.2;
+      scr.rect(x - 1, y - TILE, TILE + 2, TILE * 2, C.LUX);
+      scr.rect(x + 1 + g / 2, y - TILE + 2, TILE - 2 - g, TILE * 2 - 4, C.LUX2);
+    }
+
+    for (const p of this.pickups) {
+      if (p.taken) continue;
+      const bob = Math.sin(this.clock * 0.09 + p.x) * 1.6;
+      if (p.kind === 'gun') {
+        scr.poly([p.x - 6, p.y + bob, p.x + 6, p.y + bob - 1, p.x + 6, p.y + bob + 2, p.x - 6, p.y + bob + 3], C.HAIR);
+        scr.poly([p.x - 4, p.y + bob + 3, p.x - 1, p.y + bob + 3, p.x - 2, p.y + bob + 7, p.x - 5, p.y + bob + 7], C.HAIR);
+        scr.rect(p.x - 7, p.y + bob - 3, 15, 1, C.LUX);
+      } else {
+        scr.rect(p.x - 4, p.y + bob - 5, 8, 11, C.EDGE);
+        scr.rect(p.x - 3, p.y + bob - 4, 6, 9, C.ALERT);
+        scr.rect(p.x - 2, p.y + bob - 1, 4, 2, C.EDGE);
+        scr.rect(p.x - 1, p.y + bob - 3, 2, 6, C.EDGE);
+      }
+    }
+  }
+}
+
+export { RW, RH, TILE, ROOM_W, ROOM_H, ROOMS };

@@ -1,0 +1,16 @@
+Drop GLB files here. Names and node contracts: ../README.md
+
+  eeri_v1.glb        hipL hipR body armL armR head
+  excavator_v1.glb   house boom stick bucket seat step wheels beacon
+  bank_v1.glb        state0 state1 state2
+  girder_v1.glb      state0 state1 state2 grip
+  wall_v1.glb        state0 state1 state2
+
+Then flip that entry's "status" to "live" in ../manifest.json and bump
+the manifest "v". Nothing else changes.
+
+Note for generated models (Meshy and friends): a text-to-3D result is
+normally ONE smooth-shaded mesh with PBR textures and no useful node
+names. It will load, fail the contract, and the game will keep its
+placeholder. Split it into the named parts, put each pivot on the real
+hinge, flatten the normals and drop the PBR maps before exporting.

@@ -1,0 +1,125 @@
+name: Deploy Kindling to hub
+
+on:
+  workflow_dispatch:
+    inputs:
+      kindling_ref:
+        description: Kindling branch, tag, or commit SHA
+        required: true
+        default: main
+      release_label:
+        description: Hub release label
+        required: true
+        default: v16
+      release_number:
+        description: Numeric hub version
+        required: true
+        default: "16000"
+      notes:
+        description: Short release note
+        required: false
+        default: canonical Kindling release
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kindling-hub-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-kindling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch requested Kindling source
+        run: |
+          rm -rf .kindling-source
+          git clone https://github.com/mbace1/Kindling.git .kindling-source
+          cd .kindling-source
+          git fetch origin "${{ inputs.kindling_ref }}"
+          git checkout --detach FETCH_HEAD
+          echo "KINDLING_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: .kindling-source/package-lock.json
+
+      - name: Run Kindling release gate and build
+        working-directory: .kindling-source
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run release:static
+          npm run build:hub
+          test -f dist/client/index.html
+          test -f dist/client/art/ember-idle-runtime.svg
+          grep -q 'ember-portrait.png' dist/client/art/ember-idle-runtime.svg
+
+      - name: Stage cabinet
+        run: |
+          rm -rf .deploy-kindling .deploy-smoke
+          mkdir -p .deploy-kindling
+          cp -a .kindling-source/dist/client/. .deploy-kindling/
+          printf '%s\n' "${{ inputs.release_label }}" > .deploy-kindling/.hub-release
+          cat > .deploy-kindling/DEPLOYED_VERSION.txt <<EOF
+          Kindling ${{ inputs.release_label }}
+          canonical source: mbace1/Kindling@${KINDLING_SHA}
+          static hub build: npm run build:hub
+          notes: ${{ inputs.notes }}
+          EOF
+
+      - name: Smoke exact final-path cabinet
+        run: |
+          mkdir -p .deploy-smoke/Suds-Jack/kindling .deploy-smoke/Suds-Jack/hub
+          cp -a .deploy-kindling/. .deploy-smoke/Suds-Jack/kindling/
+          cp hub/shell.js hub/pad.js hub/games.js hub/padkeys.js .deploy-smoke/Suds-Jack/hub/
+          python3 -m http.server 8081 -d .deploy-smoke >/tmp/kindling-hub.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8081/Suds-Jack/kindling/ >/dev/null; then break; fi
+            sleep 1
+          done
+          cd .kindling-source
+          npx playwright install chromium
+          node scripts/full-play-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/
+          node scripts/betterment-browser-smoke.mjs http://127.0.0.1:8081/Suds-Jack/kindling/ artifacts/hub-release-mobile.png --allow-static-hydration
+
+      - name: Publish to gh-pages
+        run: |
+          rm -rf .kindling-source .deploy-smoke
+          mv .deploy-kindling /tmp/kindling-release
+          git fetch origin gh-pages
+          git checkout -B gh-pages origin/gh-pages
+          rm -rf kindling/assets kindling/art kindling/__grok
+          rm -f kindling/index.html kindling/favicon.svg kindling/og.jpg kindling/x-banner.jpg kindling/hub-shell.js kindling/sw.js kindling/VERSIONS.md kindling/.hub-release kindling/DEPLOYED_VERSION.txt
+          cp -a /tmp/kindling-release/. kindling/
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path('hub/versions.json')
+          data = json.loads(p.read_text())
+          label = os.environ['RELEASE_LABEL']
+          number = int(os.environ['RELEASE_NUMBER'])
+          notes = os.environ['RELEASE_NOTES']
+          data['kindling'] = {'v': label.removeprefix('v'), 'n': number, 'from': notes}
+          p.write_text(json.dumps(data, indent=2) + '\n')
+          PY
+          git config user.name "Kindling Hub Deploy"
+          git config user.email "actions@users.noreply.github.com"
+          git add kindling hub/versions.json
+          if git diff --cached --quiet; then
+            echo "Requested Kindling build already deployed"
+          else
+            git commit -m "Deploy Kindling ${{ inputs.release_label }} ($KINDLING_SHA)"
+            git push origin gh-pages
+          fi
+        env:
+          RELEASE_LABEL: ${{ inputs.release_label }}
+          RELEASE_NUMBER: ${{ inputs.release_number }}
+          RELEASE_NOTES: ${{ inputs.notes }}

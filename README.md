@@ -8,6 +8,107 @@ Live preview: https://mbace1.github.io/Suds-Jack/
 
 ---
 
+## The arcade — `index.html` + `hub/`
+
+One page that carries **every playable thing in the workshop**, each cabinet
+with a **Play** button and a **Feedback** button. No build step, no framework,
+no image assets: each game's marquee is a 128×72 pixel canvas drawn in code
+(`hub/art.js`) and tinted from that game's own palette — and seen through the
+same curved, scanlined glass the Game of Life terminal uses, baked once at load
+rather than run every frame. The page itself is that terminal: monospace, `>`
+carets, `[ PLAY ]` brackets, and a status line with a three-colour screen
+accent that tints the chrome while each cabinet keeps its own colour.
+
+Adding a game is **two edits**: an entry in `hub/games.js` and a draw function
+in `hub/art.js`. Nothing else in the hub knows any game exists. Each entry
+carries a **`status`** — `active` games get the top of the page, `archived`
+ones sit under their own heading, dimmed but still playable. One word moves a
+game between the two.
+
+An entry can also carry **`live: false`** — the cabinet is listed but there
+is nothing to open yet, so Play renders as a dead `[ NOT UP ]` with a note
+saying why instead of pointing at a 404. Feedback still works on it.
+
+Also served at the short URL **https://mbace1.github.io/Suds-Jack/AnotherHUB**
+— the same page with a `<base>` pointing at the site root.
+
+**Feedback** (`hub/feedback.js`) is the same panel everywhere — 1–5 diamonds
+plus optional words, tagged with which cabinet it came from. It reuses the
+transport the games already ship (see `scripts/feedback-sheet.gs` on
+`gh-pages`): a Google Apps Script `SHEET_ENDPOINT` if one is pasted in
+(unlimited, but `no-cors`, so the answer cannot be read — that path reports
+*sent-blind*, never *sent*), otherwise the Formspree form already in use by
+`toko-drop`. Every note is written to `localStorage` first whatever happens;
+an undeliverable one goes to an outbox and is retried on the next visit, one
+at a time. Pressing Send having said nothing records nothing.
+
+```sh
+node test/hub-smoke.cjs      # 141 checks (needs playwright + its Chromium)
+```
+
+> **Catalogue entries carry `inRepo`.** During branch reconciliation, the
+> production-only games were copied into the source tree at their existing
+> paths. The field remains useful for partial checkouts and future experiments,
+> but a complete checkout now contains every currently deployed cabinet.
+
+> **Deployed.** Live at https://mbace1.github.io/Suds-Jack/ — the arcade is
+> the site root as of 2026-07-26. The root used to be the Suds Jack game
+> itself; that game lives at `sudz/`, which was already the **newer** of the
+> two builds (the root copy predated the mobile touch controls), so it was
+> left alone and the stale root assets were removed. `paperboy/` and the
+> `goo-*.html` sketches had never been on `gh-pages` and were carried over
+> with the hub, or four of its links would have 404'd. `gh-pages` remains the
+> live branch until generated deployment is introduced; do not edit it as part
+> of source reconciliation.
+
+---
+
+## `toko/` — Toko Midori Games™, the brand
+
+The identity of the workshop. Open **`toko/index.html`** for the brand board:
+every mark running live, the lockups, the sticker sheet, a glitch lab, the
+sting, and SVG downloads.
+
+Everything is **drawn in code from one geometry table** — there is no image
+asset in this folder, and the SVG logo files are generated from the same arcs
+the canvas strokes, so the file you hand a printer and the thing on screen
+cannot drift apart. No build step, no dependencies: copy `toko/` next to a game
+and it works.
+
+- **The face** — four fat round-capped arcs and two stems. The mouth is two
+  nested arcs opening up; each eye is one arc opening down with a stem dropped
+  from the inside of its crown, and that stem is what cuts the two slots that
+  make an eye an eye. Minimum size 44px, below which the slots close.
+- **Two colours** — black `RGB(0,0,0)` and magenta `RGB(240,2,127)` / `#F0027F`.
+  Both process primaries, so it prints anywhere with nothing to match. White is
+  the paper, not a colour. The nine-colour sticker sheet is a print run, not a
+  palette.
+- **The lockup** — face, gap, three lines, ™. The logotype stands the same
+  height as the face; that relationship *is* the lockup.
+- **The counter** — a slim bar for the top of the arcade that opens into a
+  conversation with Toko in the old Sierra idiom: portrait, typewriter text, a
+  numbered list of things you can say (`mountChat()`). A hand-written dialogue
+  tree in `toko/js/dialogue.js`, not a language model — no network call, ever.
+- **The signature** — one import (`sign()`) puts the badge in a game's corner,
+  under the HUD, taking no input. `toko-drop`, `paperboy`, `dropcabal` and
+  `hyperdagger` are signed; `gameoflife` deliberately is not — it is the room
+  where Toko takes the mask off.
+
+Created by **美鳥十湖** — *Toko Midori*, The Game Creator.
+
+Two caveats worth knowing: the face geometry is measured off the master artwork
+rather than lifted from the original vector file, and **the logotype typeface is
+the owner's licence and is not in this repo** — register it as the family
+`Toko Grotesk` and every lockup picks it up. The board says so out loud until
+you do.
+
+Rules and construction notes: **`toko/BRAND.md`**. Gate:
+`node toko/test/brand.cjs` (Playwright).
+
+> **GO MAKE YOUR OWN.**
+
+---
+
 ## Demos
 
 ### `goo-snowman.html`
@@ -39,6 +140,48 @@ so the scheme re-tints in one place.
 - 10 starting papers; grab blue **paper bundles** on the road to refill (+5, cap 25)
 - "Day" milestones every 130 m ramp bike speed + hazard density and award a bonus; hi-score in localStorage
 - Screen-shake trauma + spark bursts on deliveries, smashes, pickups and crashes
+
+### `flashprince/`
+**Flash Prince.** A cinematic platformer in the **Another World** idiom, crossed with
+**Flashback** and the original **Prince of Persia**. Canvas 2D, no build step, no image
+assets — and not a sprite in it: every frame, background and character alike, is a list
+of **filled polygons** rasterised into a 320×192 buffer and then **quantised to sixteen
+colours**, which takes the antialiasing back out and leaves the hard flat edges the
+originals had. The character is a **rotoscoped skeleton** — a pose is thirteen joint
+angles, a frame is those angles turned into eleven polygons, an animation is a short list
+of poses with times against them.
+
+**Controls:** ← → walk (**hold to run**) · ↑ jump, pull up, stand · ↓ crouch / let go ·
+E draw or holster the pistol · X fire · ESC pause
+**Mobile:** an on-screen cross bottom-left, JUMP / FIRE / GUN bottom-right. **Gamepad:**
+left stick or d-pad, A jump, X/RT fire, Y draw.
+
+#### The rule
+**Every move you start, you finish.** A step is 22 frames long and carries 12 pixels
+whether you like it or not; a turn is 18; a mantle is 40; and until a move reaches the
+frame it declares open, the stick is not connected to anything. Nothing accelerates
+freely anywhere. Tap a direction for one careful step, hold it and the step runs on into
+a run — Flashback's rule, and the only reason a ledge edge is survivable.
+
+- **The ledge.** Walk off an edge and he *catches* it rather than falls. Hold toward a lip
+  in the air and he grabs it; ↑ mantles him over, slowly. A standing jump rises 27px and
+  his hands reach 26 above his feet, so he can catch a lip 53px up — a storey is 48, which
+  is why a storey is climbable, and every platform in the game is measured off that number
+- **Falls** cost what they cost in Prince of Persia: one storey free, two hurt, three kill
+- **The duel.** A sentry takes 68 frames from seeing you to firing — spot 26, draw 26, aim
+  16 — and so do you; drawing the pistol costs 21 of them. **Crouch and his shot goes over
+  your head. Roll and you go under it.** Two actors locked into animations, each betting
+  that theirs finishes first, which is Flashback's gunfights and Prince of Persia's sword
+  fights both
+- **Fourteen screens** with a hard cut between them (no scrolling, no camera — a screen is
+  a composition you learn, die on, and never see again): jungle → dig → tomb → reactor →
+  palace → overgrown. The **sixteen-colour palette walks continuously across the whole
+  run**, so the greens drain out of the rock over four screens while the sandstone comes up
+  underneath and nothing ever announces a change of biome
+- Traps: spike beds on a cycle, ceiling slabs, tiles that will not hold you, a plate-and-
+  gate on a timer you have to beat, pulsing force fields
+- A beast that coils and leaps, sentries with rifles, drones that lob slow orbs; three
+  health cells; a run clock, and a best time in `localStorage`
 
 ### `dropcabal/`
 **Drop Cabal.** A **Cabal (1988 arcade) homage** built on Three.js r167 — the blob and
@@ -94,44 +237,39 @@ exceed 1.0) give selective glow without washing out the bone.
 - **Gamepad:** plug in a controller — left stick moves, right stick looks, RT/RB fire, A jumps (×2), B/LT dashes — feeding the same input paths as mouse/keyboard/touch
 
 ### `toko-drop/`
-Twin-stick bullet-hell arena shooter built on Three.js r167.
+**Toko Drop v221.** A Three.js twin-stick swarm-survival arena game. The default
+MOVEMENT mode removes enemy shooting: enemies dodge bullet lanes, school like
+fish, split into minnows and turn deaths into revenge rings. The classic
+bullet-hell arsenal remains available from OPTIONS.
 
-**Controls:** WASD + hold LMB to aim/fire · SPACE to dash · ESC pause · E toggle eyes  
-**Mobile:** left/right virtual sticks
+**Controls:** WASD + hold LMB to aim/fire · SPACE dash · ESC pause · E eye style
 
-#### Enemies (13 types)
-| Type | Behaviour |
-|------|-----------|
-| GLOBBO | Direct chaser |
-| SPITTOR | Keeps range, telegraphed ring burst |
-| FANNER | Strafes, fan spread |
-| WEEVA | Spiral fire, slow drift |
-| SPLITTA | Splits into GLOBBOs on death |
-| YELA_CUBE | Cardinal mover, leaves slime trail |
-| ORANGE_CUBE | Move–aim–shoot burst pattern |
-| SLUDGE_CUBE | Slow, drops poison zones, ribbon trail |
-| REDD_CUBE | Splits into REDD_MINIs |
-| PURP_CUBE | Splits into PURP_MINIs (homing) |
-| TORO | Rev → telegraph → dash charge |
-| BAMBU | Stationary, grows segments, lobs fat bullets |
-| PYRA | Spinning ring, destroyable hole nodes |
+**Touch:** left stick move · right stick aim/fire · release right stick dash
 
-#### Features
-- 7-wave progression with speed/interval scaling
-- Screen-shake trauma system
-- Kirby-style eyes on player that track aim direction
-- Player dash with ghost trail + mercy i-frames
-- Gates (laser posts): dash through to deactivate → drops a powerup
-- Powerup types: invincibility (3 s), fire-rate boost (5 s, ×2.5 rate)
-- Death FX: chunk physics, puddle decals, sludge ribbons, poison zones
-- Score + streak multiplier, hi-score in localStorage
-- **Gel material pass:** all enemies + player use `MeshPhysicalMaterial` with transmission, clearcoat, and IOR — blobs read as translucent goo, cubes as candy-glass; vertex shader surface ripple on blob types via `onBeforeCompile`; IBL via `RoomEnvironment` + `PMREMGenerator`
+**Gamepad:** left stick move · right stick aim/fire · A/bumper/trigger dash · Start pause
+
+The title screen supports portrait and landscape arenas plus two run formats:
+Arcade waves back-to-back, or Roguelike upgrade choices after each wave. Local
+personal bests track score, wave and survival time.
+
+#### Current systems
+
+- Thirteen enemy families with elite, twin, group and boss variants
+- Swarm, spike, boss and breather wave pacing, peaking around wave 10
+- Cargo-moth convoys, destructible gates and drifting powerup drops
+- Ten roguelike upgrades spanning health, movement, weapons and defence
+- Gel materials, wobble, hit response, debris, puddles and revenge-ring deaths
+- Run hit telemetry and opt-in death-screen feedback stored locally
+- `js/tuning.js` as the enemy feel source of truth; `enemy-lab.html` as the
+  visual reference; `GDD.md`, `TOKO_DROP_ROADMAP.md` and `VERSIONS.md` for
+  design, planning and release history
 
 ---
 
 ## Changelog
 
 ### 2026-07
+- **`flashprince/` — Flash Prince v1:** new cinematic platformer, **Another World × Flashback × Prince of Persia**. Canvas 2D, no build step, no assets. **Polygon renderer** (`screen.js`): everything is filled polygons at 320×192, then a pass snaps every pixel to the nearest of the room's sixteen colours through a lazily-filled RGB555 table — hard edges, a genuinely 16-colour framebuffer, and palette changes per screen the way the original did them. **Rotoscoped skeletal animation** (`figure.js`): a pose is thirteen joint angles, a frame is eleven polygons, a clip is poses with hold times, so a run can sit on its contact pose for three frames and blur through the pass in one. **Committed movement** (`hero.js`): every grounded move is a scripted length carrying a scripted distance, jumps are ballistic off a scripted gather, and input is only read in the window a move declares open. Ledge grabs (walk off an edge and he catches it), slow mantles, PoP's fall ladder (one storey free, two hurt, three kill), a crouch/roll that goes under gunfire, and a draw-time pistol duel against sentries running the same clock. **Fourteen hand-authored screens** with hard cuts, the 16-colour palette walking continuously from jungle to tomb to reactor to palace to overgrown so the biome changes without a transition anywhere. Spikes, ceiling slabs, crumbling tiles, plate-and-gate timers, force fields; beast, sentry and drone. Keyboard, gamepad and an on-screen pad; the arcade shell for the way home
 - **hyperdagger v3.6 — style meter + gamepad:** a Returnal/DMC-flavoured rank system (`STYLE_TIERS` D→SSS, cap 150) rewards chaining — kills add by type, a dash *through* an orb adds +4 (credited once per orb via `o.phased`), gem pickups top it up; `step()` bleeds the meter at `6 + styleVal·0.05`/s so the top tiers stay fleeting. The tier shows as a HUD badge + `×mult` + fill bar (`#style`), folds into the music-intensity signal (0.35 weight), and its run peak is a new death-recap line; only S-and-above rank-ups toast so lower crossings never clobber an enemy-debut announcement. **Gamepad support:** `input.pollGamepad()` runs each frame and feeds the existing `getMove`/`getLookRate`/`firing` getters (left stick move, right stick look-rate, RT/RB fire, A = jump ×2, B/LT = dash, deadzoned + edge-detected) so a controller needs no other plumbing
 - **hyperdagger v3.5 — adaptive music layer:** an all-synth A1 minor-pentatonic arpeggio on a lookahead scheduler (16th notes queued ~0.15 s ahead so it never stutters, resyncs after a pause instead of bursting) plays over the drone. Voices layer in with a run-intensity signal (live-threat count + run progress): bass always, arp above ~0.25, hi-hat tick above ~0.5, a lead counter-melody above ~0.75 — so the soundtrack thickens as the swarm builds and thins when you clear it. New MUSIC on/off toggle in the pause menu (`opts.music`, persisted, reconciles live)
 - **hyperdagger v3.4 — milestone announcements:** every enemy debut now gets an authored first-encounter moment — a 2.2 s named toast (THE WATCHERS / THE BRUTES / THORNS BENEATH / THE THIEVES / THE BLINKERS / THE SERPENT / THE PALE SERPENT / CROWNED SKULLS / THE SPLITTERS) plus a low two-note dread stinger and a trauma pulse; THE LEVIATHAN RISES re-announces on every boss respawn. One-per-run keyed in `announced{}`; new `debug.setTime()` warp for testing the schedule

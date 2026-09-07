@@ -1,0 +1,326 @@
+{
+  "generated": {
+    "piritori/night-map": {
+      "file": "2d/piritori-night-map.a15b7f79.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "a15b7f79"
+    },
+    "piritori/arena-harbour": {
+      "file": "2d/piritori-arena-harbour.03c24c72.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "03c24c72"
+    },
+    "piritori/arena-court": {
+      "file": "2d/piritori-arena-court.0d2918de.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "0d2918de"
+    },
+    "piritori/arena-park": {
+      "file": "2d/piritori-arena-park.d4cf91e8.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "d4cf91e8"
+    },
+    "piritori/arena-yard": {
+      "file": "2d/piritori-arena-yard.edcf098a.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "edcf098a"
+    },
+    "piritori/body-base": {
+      "file": "2d/piritori-body-base.67e2b777.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "67e2b777"
+    },
+    "piritori/fig-them-stand": {
+      "file": "2d/piritori-fig-them-stand.021b1551.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "021b1551"
+    },
+    "piritori/weapons-plate": {
+      "file": "2d/piritori-weapons-plate.d9ab7aeb.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "d9ab7aeb"
+    },
+    "piritori/pin-glyphs": {
+      "file": "2d/piritori-pin-glyphs.025800a3.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "piritori",
+      "hash": "025800a3"
+    },
+    "piritori/key-art": {
+      "file": "2d/piritori-key-art.9f6d30bf.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "9f6d30bf"
+    },
+    "piritori/interior-toko": {
+      "file": "2d/piritori-interior-toko.552c6ff7.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "piritori",
+      "hash": "552c6ff7"
+    },
+    "lab/orc": {
+      "file": "2d/lab-orc.c019895c.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "lab",
+      "hash": "c019895c"
+    },
+    "tokotrip/jetty": {
+      "file": "2d/tokotrip-jetty.caa95d4c.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "toko-trip",
+      "hash": "caa95d4c"
+    },
+    "tokotrip/palm": {
+      "file": "2d/tokotrip-palm.a3ee9e4e.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "toko-trip",
+      "hash": "a3ee9e4e"
+    },
+    "neonronin/samurai-cover": {
+      "file": "2d/neonronin-samurai-cover.216c70d9.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "neon-ronin",
+      "hash": "216c70d9"
+    },
+    "neonronin/samurai-turnaround": {
+      "file": "2d/neonronin-samurai-turnaround.ac92a74e.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "neon-ronin",
+      "hash": "ac92a74e"
+    },
+    "turf/blade-plate": {
+      "file": "2d/turf-blade-plate.dae414e4.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "dae414e4"
+    },
+    "turf/niner-plate": {
+      "file": "2d/turf-niner-plate.57d823f0.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "57d823f0"
+    },
+    "turf/wrench-plate": {
+      "file": "2d/turf-wrench-plate.92948f36.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "92948f36"
+    },
+    "turf/grunt-blunt-plate": {
+      "file": "2d/turf-grunt-blunt-plate.5205c508.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "5205c508"
+    },
+    "turf/grunt-handgun-plate": {
+      "file": "2d/turf-grunt-handgun-plate.3e2f7e5a.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "3e2f7e5a"
+    },
+    "turf/grunt-shotgun-plate": {
+      "file": "2d/turf-grunt-shotgun-plate.26a8f5e7.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "26a8f5e7"
+    },
+    "turf/cast-gunner-move": {
+      "file": "2d/turf-cast-gunner-move.ca4e5b49.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "ca4e5b49"
+    },
+    "turf/cast-gunner-attack-windup": {
+      "file": "2d/turf-cast-gunner-attack-windup.75b25388.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "75b25388"
+    },
+    "turf/cast-gunner-attack-release": {
+      "file": "2d/turf-cast-gunner-attack-release.9da1f36b.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "9da1f36b"
+    },
+    "turf/cast-gunner-hit": {
+      "file": "2d/turf-cast-gunner-hit.9ad2f543.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "9ad2f543"
+    },
+    "turf/cast-gunner-death-fall": {
+      "file": "2d/turf-cast-gunner-death-fall.bdf59ee2.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "bdf59ee2"
+    },
+    "turf/cast-gunner-death-down": {
+      "file": "2d/turf-cast-gunner-death-down.cbf0103c.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "cbf0103c"
+    },
+    "turf/cast-leopard-move": {
+      "file": "2d/turf-cast-leopard-move.77e06976.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "77e06976"
+    },
+    "turf/cast-leopard-attack-windup": {
+      "file": "2d/turf-cast-leopard-attack-windup.bbc8c610.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "bbc8c610"
+    },
+    "turf/cast-leopard-attack-release": {
+      "file": "2d/turf-cast-leopard-attack-release.127e270a.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "127e270a"
+    },
+    "turf/cast-leopard-hit": {
+      "file": "2d/turf-cast-leopard-hit.3224bf95.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "3224bf95"
+    },
+    "turf/cast-leopard-death-fall": {
+      "file": "2d/turf-cast-leopard-death-fall.1fee2e49.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "1fee2e49"
+    },
+    "turf/cast-leopard-death-down": {
+      "file": "2d/turf-cast-leopard-death-down.c15b3b7e.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "c15b3b7e"
+    },
+    "turf/cast-gunner-move-back": {
+      "file": "2d/turf-cast-gunner-move-back.ced7ec77.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "ced7ec77"
+    },
+    "turf/cast-gunner-attack-windup-back": {
+      "file": "2d/turf-cast-gunner-attack-windup-back.f0042868.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "f0042868"
+    },
+    "turf/cast-gunner-attack-release-back": {
+      "file": "2d/turf-cast-gunner-attack-release-back.09c30a38.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "09c30a38"
+    },
+    "turf/cast-gunner-hit-back": {
+      "file": "2d/turf-cast-gunner-hit-back.33e09107.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "33e09107"
+    },
+    "turf/cast-gunner-death-fall-back": {
+      "file": "2d/turf-cast-gunner-death-fall-back.39b7e36d.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "39b7e36d"
+    },
+    "turf/cast-gunner-death-down-back": {
+      "file": "2d/turf-cast-gunner-death-down-back.431c5767.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "431c5767"
+    },
+    "turf/cast-leopard-move-back": {
+      "file": "2d/turf-cast-leopard-move-back.f873b072.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "f873b072"
+    },
+    "turf/cast-leopard-attack-windup-back": {
+      "file": "2d/turf-cast-leopard-attack-windup-back.5f5e81cd.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "5f5e81cd"
+    },
+    "turf/cast-leopard-attack-release-back": {
+      "file": "2d/turf-cast-leopard-attack-release-back.962b9a4f.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "962b9a4f"
+    },
+    "turf/cast-leopard-hit-back": {
+      "file": "2d/turf-cast-leopard-hit-back.e0970559.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "e0970559"
+    },
+    "turf/cast-leopard-death-fall-back": {
+      "file": "2d/turf-cast-leopard-death-fall-back.0c3b8ea6.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "0c3b8ea6"
+    },
+    "turf/cast-leopard-death-down-back": {
+      "file": "2d/turf-cast-leopard-death-down-back.86601966.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "turf",
+      "hash": "86601966"
+    }
+  }
+}

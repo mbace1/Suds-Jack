@@ -1,0 +1,37 @@
+name: toko-live
+
+on:
+  push:
+    paths:
+      - 'toko-live/**'
+      - 'toko/js/**'
+      - 'hub/**'
+      - '.github/workflows/toko-live.yml'
+  pull_request:
+    paths:
+      - 'toko-live/**'
+      - 'toko/js/**'
+      - 'hub/**'
+      - '.github/workflows/toko-live.yml'
+
+concurrency:
+  group: toko-live-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runtime:
+    name: toko-live browser runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: real Toko Live entry and chat loop
+        run: node toko-live/test/runtime.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules

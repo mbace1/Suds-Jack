@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "turf-motion-ledger.schema.json",
+  "title": "TURF Motion State Ledger",
+  "type": "object",
+  "required": ["frame_id","phase","support_leg","swing_leg","support_foot_state","swing_foot_state","pelvis_height","pelvis_lateral_bias","pelvis_fore_aft_bias","torso_pitch","shoulder_counter_rotation","support_knee_flex","swing_knee_flex","swing_foot_clearance","origin_x","origin_y","paired_opposite_frame","previous_frame","next_frame"],
+  "properties": {
+    "frame_id": {"type": ["integer","string"]},
+    "phase": {"type": "string", "minLength": 1},
+    "support_leg": {"enum": ["left","right","both","none"]},
+    "swing_leg": {"enum": ["left","right","both","none"]},
+    "support_foot_state": {"type": "string", "minLength": 1},
+    "swing_foot_state": {"type": "string", "minLength": 1},
+    "pelvis_height": {"enum": ["low","mid","high"]},
+    "pelvis_lateral_bias": {"enum": ["left","center","right"]},
+    "pelvis_fore_aft_bias": {"enum": ["back","center","forward"]},
+    "torso_pitch": {"enum": ["back","upright","forward"]},
+    "shoulder_counter_rotation": {"enum": ["left","neutral","right"]},
+    "support_knee_flex": {"enum": ["low","medium","high"]},
+    "swing_knee_flex": {"enum": ["low","medium","high"]},
+    "swing_foot_clearance": {"enum": ["low","medium","high"]},
+    "apron_lag_direction": {"type": ["string","null"]},
+    "origin_x": {"type": "number"},
+    "origin_y": {"type": "number"},
+    "paired_opposite_frame": {"type": ["integer","string","null"]},
+    "previous_frame": {"type": ["integer","string","null"]},
+    "next_frame": {"type": ["integer","string","null"]}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"support_leg": {"enum": ["left","right"]}, "swing_leg": {"enum": ["left","right"]}}, "required": ["support_leg","swing_leg"]},
+      "then": {"not": {"properties": {"support_leg": {"const": "left"}, "swing_leg": {"const": "left"}}, "required": ["support_leg","swing_leg"]}}
+    },
+    {
+      "if": {"properties": {"support_leg": {"const": "right"}}, "required": ["support_leg"]},
+      "then": {"not": {"properties": {"swing_leg": {"const": "right"}}, "required": ["swing_leg"]}}
+    }
+  ],
+  "additionalProperties": false
+}

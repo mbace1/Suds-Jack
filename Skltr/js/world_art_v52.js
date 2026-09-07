@@ -1,0 +1,28 @@
+import * as THREE from 'three';
+
+// SKLTR v52 — authored world-state art pass.
+// Arena identity is spatial: silhouette, horizon, architecture and motion change with the run.
+const ROOT='SKLTR_V52_WORLD';
+const STATES={
+ wire:{fog:0x000000,fogNear:28,fogFar:125,ground:0x020205,solid:0x05070b,edge:0x8fefff,emissive:0x081c28,sky:0x000000},
+ brutal:{fog:0xc9bfa9,fogNear:34,fogFar:115,ground:0xb7ad99,solid:0x6e675c,edge:0x211d18,emissive:0x120d08,sky:0xd7c9aa},
+ bio:{fog:0x07031a,fogNear:30,fogFar:108,ground:0x0a0618,solid:0x17102b,edge:0x73ffe5,emissive:0x20104a,sky:0x030013},
+ physical:{fog:0x2b3035,fogNear:42,fogFar:150,ground:0x31363a,solid:0x565b60,edge:0xe7e3d8,emissive:0x101418,sky:0x23262a},
+ kill:{fog:0x120000,fogNear:24,fogFar:100,ground:0x080000,solid:0x210505,edge:0xffc5b8,emissive:0x4a0505,sky:0x080000}
+};
+let scene=null,root=null,current='';
+function stateFor(name=''){if(name.includes('TORTOISE'))return'brutal';if(name.includes('WASP'))return'bio';if(name.includes('MACHINE'))return'physical';if(name.includes('KILL')||name.includes('LAST'))return'kill';return'wire'}
+function mat(s){return new THREE.MeshStandardMaterial({color:s.solid,emissive:s.emissive,roughness:.76,metalness:.18})}
+function edges(g,s,op=.62){return new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:s.edge,transparent:true,opacity:op}))}
+function box(group,s,x,y,z,w,h,d,wire=true){const g=new THREE.BoxGeometry(w,h,d),m=new THREE.Mesh(g,mat(s));m.position.set(x,y+h/2,z);group.add(m);if(wire){const e=edges(g,s);e.position.copy(m.position);group.add(e)}return m}
+function ring(group,s,r,y,rot=0){const g=new THREE.TorusGeometry(r,.12,5,40),m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:s.edge,transparent:true,opacity:.58}));m.position.y=y;m.rotation.x=Math.PI/2;m.rotation.z=rot;group.add(m);return m}
+function buildWire(g,s){for(let i=0;i<9;i++){const a=i/9*Math.PI*2,r=48+(i%3)*9;box(g,s,Math.cos(a)*r,-2,Math.sin(a)*r,1.2,18+(i%4)*8,1.2)}for(let r=22;r<70;r+=14)ring(g,s,r,.08,r*.03)}
+function buildBrutal(g,s){box(g,s,-34,0,-5,10,13,55);box(g,s,34,0,5,10,19,55);box(g,s,0,0,42,48,9,8);box(g,s,-10,0,-42,22,6,8);box(g,s,17,0,-42,12,15,8);for(let z=-28;z<=28;z+=14){box(g,s,-22,0,z,7,3+(z+28)/14,7);box(g,s,22,0,z,7,8-(z+28)/18,7)}}
+function buildBio(g,s){for(let i=0;i<14;i++){const a=i/14*Math.PI*2,r=43+(i%4)*5,h=10+(i%5)*4;const p=box(g,s,Math.cos(a)*r,0,Math.sin(a)*r,2.2,h,2.2,false);p.rotation.z=Math.sin(a)*.28;ring(g,s,7+(i%3)*2,h*.55,a)}for(let i=0;i<5;i++){const r=15+i*8;ring(g,s,r,.25,i*.4)}}
+function buildPhysical(g,s){box(g,s,-38,0,0,8,12,68);box(g,s,38,0,0,8,18,68);box(g,s,0,0,-40,54,6,8);box(g,s,0,0,40,62,10,8);for(let i=0;i<7;i++){box(g,s,-24+i*8,0,24-(i%2)*48,5,2+i*.8,8);}}
+function buildKill(g,s){for(let i=0;i<12;i++){const a=i/12*Math.PI*2,r=46;box(g,s,Math.cos(a)*r,0,Math.sin(a)*r,5,8+(i%3)*7,5);ring(g,s,18+i*2,.12,i*.23)}box(g,s,0,-1,0,18,.8,18)}
+function apply(key){if(!scene||key===current)return;current=key;const s=STATES[key];if(root)scene.remove(root);root=new THREE.Group();root.name=ROOT;scene.add(root);scene.background=new THREE.Color(s.sky);scene.fog=new THREE.Fog(s.fog,s.fogNear,s.fogFar);const floor=new THREE.Mesh(new THREE.CircleGeometry(78,64),new THREE.MeshStandardMaterial({color:s.ground,roughness:.9,metalness:.06}));floor.rotation.x=-Math.PI/2;floor.position.y=-.035;root.add(floor);({wire:buildWire,brutal:buildBrutal,bio:buildBio,physical:buildPhysical,kill:buildKill}[key])(root,s);root.scale.set(.92,.03,.92);root.userData.targetScale=1;window.dispatchEvent(new CustomEvent('skltr-world-art',{detail:{state:key}}))}
+function animate(){if(root){root.scale.y+=(root.userData.targetScale-root.scale.y)*.075;root.rotation.y+=current==='bio'?.00065:current==='wire'?.00018:0}requestAnimationFrame(animate)}
+const oldAdd=THREE.Scene.prototype.add;THREE.Scene.prototype.add=function(...o){const r=oldAdd.apply(this,o);if(this.isScene&&!scene){scene=this;queueMicrotask(()=>apply('wire'))}return r};
+addEventListener('skltr-arena',e=>apply(stateFor(e.detail?.arena||'')));
+animate();

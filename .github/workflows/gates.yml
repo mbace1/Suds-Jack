@@ -1,0 +1,349 @@
+# Run the projects' own gates on every push and pull request.
+#
+# Why this exists: until now the repository had no CI whatever, so a pull
+# request page could look entirely healthy while the game was unplayable — the
+# only verification was whoever remembered to run the gates locally. Codex
+# reviews the code, but nothing was running it.
+#
+# Scoping: each project gets its own job, gated on paths, so a change to one
+# lane never fails on another lane's unrelated breakage. Only the lanes that
+# are known green are wired up; add a block per project as each is verified,
+# rather than turning everything on at once and teaching people to ignore red.
+
+name: gates
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# a new push supersedes the run in flight for the same ref
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  piritori:
+    name: flow-core · piritori
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The bare-node gates need nothing at all — no browser, no GPU, no
+      # audio device — which is exactly why they are the ones worth running
+      # first: they fail in seconds when they fail.
+      - name: the neutral core's contract
+        run: node flow-core/test/contract.mjs
+
+      - name: the Era I public map
+        run: node piritori/map/validate-map.mjs
+
+      - name: the authored seven-day slice and registered art
+        run: node piritori/content/validate-slice.mjs
+
+      - name: the v3 shell contract
+        run: node piritori/test/v3-contract.mjs
+
+      - name: the v3 campaign state
+        run: node piritori/test/v3-state.mjs
+
+      - name: the v3 formation battle
+        run: node piritori/test/v3-battle.mjs
+
+      - name: the rank fights
+        run: node piritori/test/fight.mjs
+
+      - name: the market — named goods, deals, and what is in the bag
+        run: node piritori/test/market.mjs
+
+      # The asset pipeline's own gate: the manifest is well formed, every
+      # spec hashes, and an output at an old hash reads as drift. Needs no
+      # key and calls nothing — generation is never run in CI.
+      - name: the graphics pipeline's contract
+        run: node test/assets-smoke.cjs
+
+      # The browser gate needs Chromium. `--with-deps` pulls the system
+      # libraries the headless browser needs on a bare runner.
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: the shared flow engine's daylight entry point
+        run: node flow-core/test/smoke.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
+      - name: the Piritori v3 opening and five modes, in a real browser
+        run: node piritori/test/v3-playthrough.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
+  piritori-godot:
+    name: piritori · the Godot port
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Godot ships a single self-contained binary and the headless flag needs
+      # no display, GPU or audio device — so the whole port is testable on a
+      # bare runner. Pinned to the exact version the port was built against;
+      # GDScript's parser is strict enough that a minor bump can break a build
+      # that was green.
+      - name: install godot 4.7.2
+        run: |
+          curl -sSL -o godot.zip             https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.7.2-stable_linux.x86_64 /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+          godot --version
+
+      # The canon seams come first: they are the reason data/ is git-ignored,
+      # and a stale copy would make every later gate lie.
+      - name: sync canon into the project
+        working-directory: piritori/godot
+        run: |
+          node tools/sync-data.mjs
+          node tools/build-map-geometry.mjs
+
+      - name: the canon seams have not drifted
+        working-directory: piritori/godot
+        run: |
+          node tools/sync-data.mjs --check
+          node tools/build-map-geometry.mjs --check
+
+      # Fails on a missing translation, on a fi/ja string identical to its
+      # English source, on mismatched format specifiers, and on a stale key.
+      - name: en / fi / ja are complete
+        working-directory: piritori/godot
+        run: node tools/check-locale.mjs
+
+      # One import pass builds .godot/ and compiles every script. A parse error
+      # surfaces here rather than as a mystery inside a test scene.
+      #
+      # Every scene below ends in get_tree().quit(0) or quit(1), and that was
+      # verified rather than assumed — AGENTS.md §4: "a gate that cannot fail is
+      # a Gate-level finding."
+      - name: import the project
+        working-directory: piritori/godot
+        run: godot --headless --path . --import
+
+      - name: the Era I data spine
+        working-directory: piritori/godot
+        run: godot --headless --path . res://tests/test_spine.tscn
+
+      # The web export has no operating system to ask for a Japanese face, so
+      # the glyphs ship with the game. This asserts the committed subset still
+      # covers every string in the locale CSVs and every symbol drawn from code
+      # - it downloads nothing, it only reads the fonts already in the tree.
+      - name: the bundled font subset covers every string
+        working-directory: piritori/godot
+        run: |
+          python3 -m pip install --quiet fonttools
+          python3 tools/build-font-subset.py --check
+
+      - name: en / fi / ja resolve at runtime, with CJK glyphs
+        working-directory: piritori/godot
+        run: godot --headless --path . res://tests/test_locale.tscn
+
+      # Drives real Button nodes found by the words they display, never the
+      # model directly — AGENTS.md §4.
+      - name: the shell, driven through its own interface
+        working-directory: piritori/godot
+        run: godot --headless --path . res://tests/test_shell.tscn
+
+      - name: the formation battle, built from canon
+        working-directory: piritori/godot
+        run: godot --headless --path . res://tests/test_battle.tscn
+
+      - name: the battle screen's locked composition
+        working-directory: piritori/godot
+        run: godot --headless --path . res://tests/test_battle_ui.tscn
+
+      # The eeri lesson: the prover proves geometry, the playthrough proves the
+      # thing is finishable. Walks all fourteen blocks to an authored ending.
+      - name: the seven-day slice plays to an ending
+        working-directory: piritori/godot
+        run: godot --headless --path . res://tests/test_playthrough.tscn
+
+  toko-move:
+    name: toko-move
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # All five are bare-node and finish in seconds. The one that earns its
+      # keep most is route-choice: main shipped a missing brace in
+      # route-choice.js that killed the whole ES module graph — the page was
+      # dead on arrival and nothing red said so, because these gates only ran
+      # when someone remembered to. A branch that moves the runtime to new
+      # modules must re-point these gates at them, or they stop exercising
+      # the code that actually ships (that is how the brace survived).
+      - name: the committed full HSL pack
+        run: node toko-move/test/full-hsl-pack.mjs
+
+      - name: the real-Helsinki delivery board
+        run: node toko-move/test/real-helsinki.mjs
+
+      # The city layer is data, and this holds it to that: the generalised
+      # builder must reproduce Helsinki's graph exactly, and a second
+      # definition must build a different working board.
+      - name: a city is a definition, not a rewrite
+        run: node toko-move/test/city-build.mjs
+
+      - name: route choices parse and behave
+        run: node toko-move/test/route-choice.mjs
+
+      - name: every HSL source layer preserved
+        run: node toko-move/test/transit-layers.mjs
+
+      - name: the board's own geometry — box, line ink, night palette
+        run: node toko-move/test/board.mjs
+
+      - name: the camera — three scales, the 2 km circle, zoom about a point
+        run: node toko-move/test/camera.mjs
+
+      # The ground packs carry their own licences and their own extents. This
+      # holds both, and holds the fact that the street pack does NOT reach the
+      # whole board — so the day it does, this gate is what says so.
+      - name: real water, streets, districts and landmarks
+        run: node toko-move/test/ground.mjs
+
+      # The street importer runs with no network, which is the difficulty: the
+      # Overpass response is synthesised from the committed extract and put
+      # through the real parser.
+      - name: the street importer, offline
+        run: node toko-move/test/streets-import.mjs
+
+      # The shift log owns no DOM and no clock — it only watches — so a stub is
+      # enough to drive every branch of it.
+      - name: the shift log and its replay
+        run: node toko-move/test/shiftlog.mjs
+
+      # Nothing accumulates in pixels, so the wake is a list of lat/lon points
+      # a bare-node stub can inspect.
+      - name: vehicle trails
+        run: node toko-move/test/trails.mjs
+
+      # Speed was a fixed DURATION per mode, so a 17 km tram line covered five
+      # times the ground of a 3 km one in the same time and the fleet's apparent
+      # speed ran from a crawl to 494 km/h. And the shift asked for six
+      # deliveries when only five ever fitted in it.
+      - name: the pace of the board, and a shift you can finish
+        run: node toko-move/test/pace.mjs
+
+      - name: version sync across hero, runtime, log and hub
+        run: node toko-move/test/version-sync.mjs
+
+      # THE ROUTE A PLAYER TAKES, not the URL a developer types. Every deploy
+      # this lane made verified the game at its own address and the cabinet's
+      # presence in the catalogue; neither is the route. The cabinet spent two
+      # releases buried at #20 describing the superseded lane, and no gate could
+      # see it. `suds-hub-release` requires this check; this is it, runnable.
+      # THE BROWSER THE TWO GATES BELOW NEED. Without it `require('playwright')`
+      # throws MODULE_NOT_FOUND before a single check runs — which is exactly
+      # what happened: the cabinet-route gate failed in zero seconds on every
+      # push from the day it was added, and because a failed step ends the job,
+      # the phone and pace gates after it were never even attempted. A red job
+      # nobody reads is the same as no gate at all.
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: the hub cabinet route into gameplay
+        run: NODE_PATH=$(npm root -g) node toko-move/test/cabinet-route.cjs
+
+      # A PHONE, because v2.27 shipped a title screen whose START SHIFT button
+      # was below the fold on an iPhone 13, on a veil with no overflow. Present,
+      # visible, enabled, 44px, every gate green, and unreachable with a thumb.
+      - name: the game on a phone
+        run: NODE_PATH=$(npm root -g) node toko-move/test/phone.cjs
+
+  hub:
+    name: the arcade floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # This one needs a browser, so it is its own job rather than a step tacked
+      # onto a bare-node lane. It is here because it was RED on main for an
+      # unknown stretch and nothing said so — six checks failing, and because it
+      # aborted at the first timeout, nine more behind them were never reached.
+      # A 185-check gate that nobody runs is a gate that certifies nothing.
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: every cabinet, the feedback path, and the short URL
+        run: node test/hub-smoke.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
+  turf:
+    name: turf
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Same shape as the piritori/flow-core bare-node gates above: no
+      # browser, no GPU, no audio device — grid.js/ai.js/combat.js touch
+      # nothing but plain objects, so the whole engine (data integrity, move
+      # range, LOS/cover, turn economy, knockback, the frozen enemy-phase
+      # telegraph, and a full bot-vs-bot playthrough) is provable here.
+      - name: the grid-tactics engine's core loop
+        run: node turf/test/smoke.mjs
+
+      # Pure data + a pure function, no engine dependency — the crew-name
+      # generator (js/names.js) checked on its own.
+      - name: the crew-name generator
+        run: node turf/test/names.mjs
+
+      # Separate from smoke.mjs on purpose: smoke asserts a playthrough
+      # TERMINATES, and it read "lose in 6 rounds" as green for five releases
+      # while the game was won 0 times in 300 runs. Terminating is not the
+      # same question as winnable.
+      - name: winnable, and not free
+        run: node turf/test/balance.mjs
+
+      # No browser. Every image measurement in spritekit used to run inside a
+      # headless Chromium; it runs on Skia in-process now (@napi-rs/canvas),
+      # which is 13.5x faster over the full chain and removes a ~300MB CI
+      # download. Capture-only deps stay out of the repo and are exposed with
+      # NODE_PATH, the same rule CLAUDE.md sets for gifenc and enemy-loop.
+      - name: image backend for the sprite checks
+        run: npm i -g @napi-rs/canvas gifenc
+
+      # ABSOLUTE per-frame checks, over the WHOLE committed sprite tree rather
+      # than the frames a PR happens to touch. Every other gate in spritekit is
+      # relative — phase.cjs and reach.cjs compare frames to each other,
+      # drift.cjs measures spread across a clip — and they share one blind
+      # spot: two frames broken the same way agree perfectly. 63 of 133 shipped
+      # frames were cropped by the cell edge, across sets nobody was editing,
+      # and not one relative gate ever noticed.
+      - name: every committed sprite frame
+        run: |
+          NODE_PATH=$(npm root -g) node turf/tools/spritekit/verify.cjs \
+            $(find turf/art-src/sprites/cast -mindepth 2 -type d \
+              \( -name front -o -name rear -o -name front12 -o -name rear12 \) | sort)

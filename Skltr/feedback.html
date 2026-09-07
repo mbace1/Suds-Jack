@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKLTR — Feedback Dashboard</title>
+<style>
+  :root {
+    --bg: #000000; --ink: #ffffff; --ink-dim: #8a8a95; --grid: #2c2c2e;
+    --good: #0ca30c; --bad: #d03b3b; --series-1: #3987e5; --series-2: #199e70;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--ink); }
+  body { font-family: 'Courier New', monospace; padding: 24px 16px 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: clamp(28px, 8vw, 40px); letter-spacing: 8px; color: #9bfff0; text-align: center; }
+  .sub { text-align: center; opacity: .7; font-size: 13px; letter-spacing: 3px; margin: 6px 0 4px; }
+  .scope-note { text-align: center; font-size: 11px; opacity: .5; max-width: 480px; margin: 0 auto 32px; line-height: 1.5; }
+  h2 { font-size: 12px; letter-spacing: 2px; opacity: .6; margin: 36px 0 14px; }
+  #empty { text-align: center; opacity: .5; margin-top: 60px; font-size: 14px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+  .bar-label { flex: 0 0 190px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 14px; background: rgba(255,255,255,.06); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; min-width: 2px; }
+  .bar-count { flex: 0 0 26px; text-align: right; opacity: .7; }
+  .charts-row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .chart-col { flex: 1 1 260px; min-width: 0; }
+  .chart-label { font-size: 11px; opacity: .55; margin-bottom: 6px; }
+  svg.trend { width: 100%; height: 120px; display: block; overflow: visible; }
+  .trend-line { fill: none; stroke-width: 2; }
+  .trend-dot { fill: var(--bg); stroke-width: 2; }
+  .trend-axis { stroke: var(--grid); stroke-width: 1; }
+  .trend-tick { fill: var(--ink-dim); font-size: 9px; font-family: 'Courier New', monospace; }
+  #comments { max-height: 320px; overflow-y: auto; border: 1px solid var(--grid); border-radius: 6px; padding: 4px 0; }
+  .comment-row { padding: 8px 12px; border-bottom: 1px solid var(--grid); font-size: 12px; line-height: 1.5; }
+  .comment-row:last-child { border-bottom: none; }
+  .comment-meta { opacity: .5; font-size: 10px; margin-bottom: 3px; }
+  .comment-text { opacity: .9; }
+  #no-comments { text-align: center; opacity: .4; padding: 20px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SKLTR</h1>
+  <div class="sub">FEEDBACK DASHBOARD</div>
+  <div class="scope-note">Reads <code>localStorage</code> from this browser only — no server, no cross-device
+    aggregation. This shows feedback recorded in whichever browser opens this page.</div>
+  <div id="empty" style="display:none">No feedback recorded in this browser yet.</div>
+  <div id="content">
+    <h2>WHAT PLAYERS LIKED</h2>
+    <div id="bars-pos"></div>
+    <h2>WHAT WENT WRONG</h2>
+    <div id="bars-neg"></div>
+    <h2>RUNS OVER TIME <span style="opacity:.5">(oldest → newest)</span></h2>
+    <div class="charts-row">
+      <div class="chart-col"><div class="chart-label">SURVIVAL TIME (s)</div><svg class="trend" id="chart-time"></svg></div>
+      <div class="chart-col"><div class="chart-label">KILLS</div><svg class="trend" id="chart-kills"></svg></div>
+    </div>
+    <h2>COMMENTS</h2>
+    <div id="comments"></div>
+  </div>
+</div>
+<script>
+// Reason-id dictionaries, matching main.js's buildPositiveReasons()/buildFeedbackReasons()
+// exactly (tally by id — stable regardless of the player's UI language).
+const POS = [
+  ['like:feel', 'Dash / dodge feel'], ['like:dodge', 'Bullet-hell dodging'], ['like:aim', 'Free-look aiming'],
+  ['like:vibe', 'Visuals / vibe'], ['like:vert', 'Verticality / traversal'],
+];
+const NEG = [
+  ['too_fast', 'Enemies / bullets too fast'], ['unfair', 'Felt unfair / cheap'], ['unclear', "Couldn't read the threat"],
+  ['bullets', 'Too many bullets onscreen'], ['dash', 'Dash was on cooldown'], ['swarm', 'Got swarmed all at once'],
+];
+
+const list = JSON.parse(localStorage.getItem('skltrFeedback') || '[]');   // newest-first, as saved by saveFeedback()
+
+if (!list.length) {
+  document.getElementById('empty').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+} else {
+  const tally = (ids) => { const m = {}; for (const id of ids) m[id] = 0; return m; };
+  const posTally = tally(POS.map(p => p[0])), negTally = tally(NEG.map(n => n[0]));
+  for (const f of list) {
+    for (const id of f.likedIds || []) if (id in posTally) posTally[id]++;
+    for (const id of f.reasonIds || []) if (id in negTally) negTally[id]++;
+  }
+
+  function renderBars(containerId, dict, tallyMap, color) {
+    const container = document.getElementById(containerId);
+    const max = Math.max(1, ...Object.values(tallyMap));
+    for (const [id, label] of dict) {
+      const n = tallyMap[id];
+      const row = document.createElement('div'); row.className = 'bar-row';
+      row.innerHTML = `<div class="bar-label">${label}</div>` +
+        `<div class="bar-track"><div class="bar-fill" style="width:${(n / max * 100).toFixed(1)}%;background:${color}"></div></div>` +
+        `<div class="bar-count">${n}</div>`;
+      container.appendChild(row);
+    }
+  }
+  renderBars('bars-pos', POS, posTally, 'var(--good)');
+  renderBars('bars-neg', NEG, negTally, 'var(--bad)');
+
+  // trend charts: oldest → newest (list is stored newest-first)
+  function renderTrend(svgId, values, color) {
+    const svg = document.getElementById(svgId);
+    const W = svg.clientWidth || 300, H = 120, PAD = 18;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    if (values.length < 2) {
+      svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" class="trend-tick" opacity=".5">need 2+ runs to plot a trend</text>`;
+      return;
+    }
+    const max = Math.max(1, ...values), min = 0;
+    const x = i => PAD + (i / (values.length - 1)) * (W - PAD * 2);
+    const y = v => H - PAD - ((v - min) / (max - min || 1)) * (H - PAD * 2);
+    const pts = values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+    let dots = '';
+    values.forEach((v, i) => { dots += `<circle class="trend-dot" cx="${x(i)}" cy="${y(v)}" r="3" stroke="${color}"><title>run ${i + 1}: ${v}</title></circle>`; });
+    svg.innerHTML =
+      `<line class="trend-axis" x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}"/>` +
+      `<polyline class="trend-line" points="${pts}" stroke="${color}"/>` + dots +
+      `<text class="trend-tick" x="${PAD}" y="${H - 4}">${max}</text>` +
+      `<text class="trend-tick" x="${W - PAD}" y="${H - 4}" text-anchor="end">now</text>`;
+  }
+  const chrono = list.slice().reverse();
+  renderTrend('chart-time', chrono.map(f => f.time || 0), 'var(--series-1)');
+  renderTrend('chart-kills', chrono.map(f => f.kills || 0), 'var(--series-2)');
+
+  // comments — newest first, matching stored order
+  const commentsEl = document.getElementById('comments');
+  const withComments = list.filter(f => f.comment);
+  if (!withComments.length) {
+    commentsEl.innerHTML = '<div id="no-comments">No free-text comments recorded.</div>';
+  } else {
+    for (const f of withComments) {
+      const row = document.createElement('div'); row.className = 'comment-row';
+      const d = f.date ? new Date(f.date).toLocaleString() : '';
+      row.innerHTML = `<div class="comment-meta">${d} · ${f.time ?? 0}s · ${f.kills ?? 0} kills</div>` +
+        `<div class="comment-text">${String(f.comment).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</div>`;
+      commentsEl.appendChild(row);
+    }
+  }
+}
+</script>
+</body>
+</html>

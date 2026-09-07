@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900">
+  <defs>
+    <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency=".024" numOctaves="3" seed="13" result="n"/><feColorMatrix in="n" type="saturate" values="0" result="g"/><feBlend in="SourceGraphic" in2="g" mode="multiply"/></filter>
+    <pattern id="haz" width="120" height="70" patternUnits="userSpaceOnUse" patternTransform="skewX(-28)">
+      <rect width="60" height="70" fill="#efac1f"/>
+      <rect x="60" width="60" height="70" fill="#262421"/>
+    </pattern>
+  </defs>
+  <!-- Flat side-on prop. Bottom edge meets level ground line; no feet/floor plane. -->
+  <g filter="url(#paper)">
+    <g fill="#ebe8df" stroke="#cbc4b8" stroke-width="6">
+      <rect x="120" y="120" width="72" height="660"/>
+      <rect x="708" y="120" width="72" height="660"/>
+      <rect x="155" y="180" width="590" height="52"/>
+      <rect x="155" y="650" width="590" height="52"/>
+    </g>
+    <rect x="155" y="350" width="590" height="150" rx="4" fill="url(#haz)" stroke="#c99a23" stroke-width="7"/>
+    <g fill="#e7d1a8" opacity=".92">
+      <rect x="112" y="265" width="88" height="115" transform="rotate(-2 156 322)"/>
+      <rect x="700" y="525" width="88" height="115" transform="rotate(2 744 582)"/>
+      <rect x="140" y="337" width="74" height="180" transform="rotate(1 177 427)"/>
+      <rect x="686" y="337" width="74" height="180" transform="rotate(-1 723 427)"/>
+    </g>
+    <g fill="#bea05b" stroke="#876e3e" stroke-width="5">
+      <circle cx="156" cy="164" r="15"/><circle cx="744" cy="164" r="15"/>
+      <circle cx="156" cy="420" r="14"/><circle cx="744" cy="420" r="14"/>
+      <circle cx="156" cy="720" r="14"/><circle cx="744" cy="720" r="14"/>
+    </g>
+  </g>
+</svg>

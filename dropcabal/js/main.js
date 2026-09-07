@@ -6,13 +6,13 @@
 // everything is unlit MeshBasicMaterial, NoToneMapping.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=2';
-import { AudioKit } from './audio.js?v=2';
-import { InputManager, STICK_R } from './input.js?v=2';
-import { DebrisPool, BoomPool } from './fx.js?v=2';
-import { TracerPool, OrbPool, GrenadePool } from './shots.js?v=2';
-import { Enemy, EType, ECFG } from './enemy.js?v=2';
-import { Player, PLAYER_Z, PLAYER_X_MAX } from './player.js?v=2';
+import { PAL } from './palette.js?v=3';
+import { AudioKit } from './audio.js?v=3';
+import { InputManager, STICK_R } from './input.js?v=3';
+import { DebrisPool, BoomPool } from './fx.js?v=3';
+import { TracerPool, OrbPool, GrenadePool } from './shots.js?v=3';
+import { Enemy, EType, ECFG } from './enemy.js?v=3';
+import { Player, PLAYER_Z, PLAYER_X_MAX } from './player.js?v=3';
 
 // ---------------------------------------------------------------- constants
 const PIXEL_H = 220;          // internal render height (Cabal-era chunk)
@@ -279,9 +279,10 @@ function toast(text) {
   toastT = 1.8;
 }
 
-function showMsg(html) {
+function showMsg(html, panel = false) {
   el.msg.innerHTML = html;
   el.msg.style.display = html ? 'block' : 'none';
+  el.msg.classList.toggle('panel', !!html && panel);
 }
 
 function addScore(n) {
@@ -304,6 +305,69 @@ el.nadeBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   input.pressGrenade();
 });
+
+// ---------------------------------------------------------------- options + pause menu
+// Start (tapped) opens this; held, it belongs to the arcade shell's way home.
+const AIM_SPEEDS = [700, 1100, 1600];
+const AIM_NAMES = ['SLOW', 'NORMAL', 'FAST'];
+const MENU = ['RESUME', 'AIM SPEED', 'SCANLINES'];
+const opts = { aim: 1, scan: true };
+let menuAt = 0;
+
+try { Object.assign(opts, JSON.parse(localStorage.getItem('dropCabalOpts') || '{}')); } catch { /* first run */ }
+
+function saveOpts() {
+  localStorage.setItem('dropCabalOpts', JSON.stringify(opts));
+}
+
+function applyOpts() {
+  const scan = document.getElementById('scan');
+  if (scan) scan.style.display = opts.scan ? 'block' : 'none';
+}
+
+function showPauseMenu() {
+  const rows = MENU.map((label, i) => {
+    const val = i === 1 ? `&lsaquo; ${AIM_NAMES[opts.aim]} &rsaquo;`
+              : i === 2 ? `&lsaquo; ${opts.scan ? 'ON' : 'OFF'} &rsaquo;`
+              : '';
+    return `<div style="opacity:${i === menuAt ? 1 : 0.55}">` +
+           `${i === menuAt ? '&gt;' : '&nbsp;'} ${label}${val ? ' &nbsp; ' + val : ''}</div>`;
+  }).join('');
+  showMsg(`<div>PAUSED</div><div class="rows">${rows}</div>` +
+    '<div class="hint">&uarr;&darr; move &middot; &larr;&rarr; change &middot; A / ENTER select<br>' +
+    'ESC or START resumes &middot; hold START for the hub</div>', true);
+}
+
+function setPaused(v) {
+  paused = v;
+  if (paused) {
+    menuAt = 0;
+    // A fires and B rolls during play, and both also mean something to a menu —
+    // drop what they queued or the menu answers itself on the frame it opens
+    input.consumeMenu();
+    showPauseMenu();
+  } else {
+    showMsg('');
+    input.clearEdges();   // don't let the button that resumed also roll or lob
+  }
+}
+
+function menuStep() {
+  const m = input.consumeMenu();
+  if (m.back) { setPaused(false); return; }
+  if (m.dy) menuAt = (menuAt + m.dy + MENU.length) % MENU.length;
+  if (m.dx || (m.ok && menuAt > 0)) {
+    const step = m.dx || 1;
+    if (menuAt === 1) opts.aim = Math.max(0, Math.min(AIM_SPEEDS.length - 1, opts.aim + step));
+    if (menuAt === 2) opts.scan = !opts.scan;
+    saveOpts();
+    applyOpts();
+  } else if (m.ok && menuAt === 0) {
+    setPaused(false);
+    return;
+  }
+  if (m.dx || m.dy || m.ok) showPauseMenu();
+}
 
 // ---------------------------------------------------------------- flow
 function clearActors() {
@@ -377,8 +441,9 @@ function showTitle() {
     'DROP CABAL<br><small>toko drop gels &times; cabal</small><br><br>' +
     '<small>MOUSE aim &middot; HOLD LMB fire &middot; A/D run<br>' +
     'SPACE roll &middot; G / RMB grenade &middot; ESC pause<br>' +
-    'touch: dual sticks &mdash; left runs (tap = roll) &middot; right aims + fires<br><br>' +
-    'CLICK / TAP TO START</small>',
+    'touch: dual sticks &mdash; left runs (tap = roll) &middot; right aims + fires<br>' +
+    'pad: sticks run + aim &middot; R2/R1/A fire &middot; B roll &middot; X bomb &middot; START menu<br><br>' +
+    'CLICK / TAP / PRESS TO START</small>',
   );
 }
 
@@ -704,15 +769,18 @@ function updatePlay(dt) {
   }
 }
 
-// ---------------------------------------------------------------- touch sticks
-const AIM_PX = 1100;          // crosshair speed at full right-stick deflection (px/s)
+// ---------------------------------------------------------------- stick aiming
+// Both the right touch stick and a pad's right stick are RATE controllers: how far
+// they are pushed sets how fast the crosshair travels, so the aim never jumps and
+// (on a phone) your thumb is never sitting on the thing you are shooting at.
 const _rate = { x: 0, y: 0 };
 
-function applyTouchAim(dt) {
+function applyAimRate(dt) {
   input.aimRate(_rate);
   if (_rate.x === 0 && _rate.y === 0) return;
-  input.aim.x = Math.max(0, Math.min(window.innerWidth, input.aim.x + _rate.x * AIM_PX * dt));
-  input.aim.y = Math.max(0, Math.min(window.innerHeight, input.aim.y + _rate.y * AIM_PX * dt));
+  const px = AIM_SPEEDS[opts.aim];
+  input.aim.x = Math.max(0, Math.min(window.innerWidth, input.aim.x + _rate.x * px * dt));
+  input.aim.y = Math.max(0, Math.min(window.innerHeight, input.aim.y + _rate.y * px * dt));
 }
 
 function drawStick(side, label, hintX, hintY) {
@@ -757,14 +825,13 @@ const camLook = new THREE.Vector3();
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, clock.getDelta());
-  applyTouchAim(dt);
+  input.pollGamepad();          // the Gamepad API is polled; nothing arrives on its own
+  applyAimRate(dt);
 
-  if (input.consumePause() && (state === 'play' || paused)) {
-    paused = !paused;
-    showMsg(paused ? 'PAUSED<br><small>ESC TO RESUME</small>' : '');
-  }
+  if (input.consumePause() && (state === 'play' || paused)) setPaused(!paused);
+  if (paused) menuStep();
 
-  el.nadeBtn.style.display = input.touchSeen ? 'block' : 'none';
+  el.nadeBtn.style.display = input.touchSeen && !input.padSeen ? 'block' : 'none';
 
   if (!paused) {
     if (state === 'title' || state === 'over') {
@@ -814,6 +881,7 @@ function animate() {
 
 showTitle();
 updateHud();
+applyOpts();
 animate();
 
 // ---------------------------------------------------------------- debug handle
@@ -826,6 +894,9 @@ window.__dc = {
     state: () => state,
     score: () => score,
     aim: () => ({ x: input.aim.x, y: input.aim.y }),
+    paused: () => paused,
+    opts: () => ({ ...opts, menuAt }),
+    padSeen: () => input.padSeen,
     setStage: (n) => { stage = n; startStage(); },
     addNades: (n) => { nades = Math.min(9, nades + n); updateHud(); },
     killAll: () => { while (enemies.length && state === 'play') killEnemy(enemies[0], true); },

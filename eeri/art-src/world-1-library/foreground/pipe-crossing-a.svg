@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 520">
+  <defs>
+    <filter id="paint"><feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="2" seed="9" result="n"/><feColorMatrix in="n" type="saturate" values="0" result="g"/><feBlend in="SourceGraphic" in2="g" mode="soft-light"/></filter>
+    <pattern id="flute" width="18" height="12" patternUnits="userSpaceOnUse"><path d="M0 8Q4.5 2 9 8T18 8" fill="none" stroke="#6f6257" stroke-width="2"/></pattern>
+  </defs>
+  <!-- Foreground high crossing. Designed to crop off left/right/top. No floor. -->
+  <g transform="translate(-30 35)">
+    <rect x="0" y="105" width="1460" height="98" rx="49" fill="#394a51" stroke="#202c31" stroke-width="8" filter="url(#paint)"/>
+    <rect x="0" y="200" width="1460" height="74" rx="37" fill="#5b6a6e" stroke="#2b373b" stroke-width="7" filter="url(#paint)"/>
+    <g fill="#d8c49d" opacity=".94">
+      <rect x="160" y="82" width="55" height="220" transform="rotate(3 188 192)"/>
+      <rect x="610" y="84" width="55" height="220" transform="rotate(-2 638 194)"/>
+      <rect x="1080" y="82" width="55" height="220" transform="rotate(2 1108 192)"/>
+    </g>
+    <g fill="#b99b64" stroke="#7d663e" stroke-width="4">
+      <circle cx="188" cy="132" r="11"/><circle cx="188" cy="247" r="11"/>
+      <circle cx="638" cy="132" r="11"/><circle cx="638" cy="247" r="11"/>
+      <circle cx="1108" cy="132" r="11"/><circle cx="1108" cy="247" r="11"/>
+    </g>
+    <!-- exposed corrugated support tab -->
+    <rect x="720" y="274" width="150" height="38" fill="url(#flute)" opacity=".95"/>
+    <rect x="735" y="294" width="120" height="76" fill="#e6e3db" stroke="#c9c3b8" stroke-width="5" filter="url(#paint)"/>
+  </g>
+</svg>

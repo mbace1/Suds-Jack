@@ -1,0 +1,73 @@
+// EERI — the single colour source (ART_BRIEF §3.3). Every cutout layer and
+// every model colour is built from these values; no asset invents a colour.
+
+export const PAL = {
+  SKY:      '#4aa8e8',
+  SKY_PALE: '#c2e2f4',
+  CLOUD:    '#f4faff',
+
+  // 3–4 tone ramps, dark → light. Bands, not gradients.
+  EARTH: ['#6e4c32', '#8a6242', '#a87c52', '#c49a66'],
+  STEEL: ['#4a5a6a', '#5f7080', '#7a8a9a', '#9aaab8'],
+
+  GREEN:    '#3cc85a',   // the "grass lip" role — safe standable edges
+  GREEN_DK: '#2a9a44',
+
+  // WATER (world 2). Two roles, and the pair is load-bearing: DESIGN's
+  // world 2 makes telling SHALLOW from DEEP the level's real difficulty, so
+  // they must read apart at a glance and at 32 px. Shallow is lighter and
+  // greener (you can see the bed through it), deep is darker and bluer.
+  // It is a CUT SHEET of blue-green craft material, not a shader and not a
+  // transparency — flat matte, hard hand-cut edge, like every other surface
+  // here (ART_BRIEF §3.2).
+  WATER:    '#4fb8b0',   // shallow — a floor you wade through
+  WATER_DK: '#2a7f9e',   // deep — a floor that is not there
+
+  MACHINE:    '#ffb01f', // the cast's family colour (safety yellow-orange)
+  MACHINE_DK: '#d88c12',
+
+  HAZARD: '#e8402a',
+  INK:    '#1a1410',
+  DARK:   '#26221c',     // tyres, undercarriage, near-black trim
+
+  // Eeri the kid
+  SKIN:  '#f2c9a0',
+  VEST:  '#ff7a1a',
+  SHIRT: '#4a7ac8',
+  PANTS: '#3a4a5c',
+  BOOT:  '#ffb01f',   // machine yellow: the kid's wellies, his tie to the cast
+
+  // Eeri the kid, from the owner's own photograph (2026-08-13): olive
+  // dinosaur cap with soft spikes, navy dino tee. VEST/SHIRT stay above —
+  // the hard-hat kid is gone but layers.js still paints its cones with VEST.
+  CAP:      '#8a8a52',
+  CAP_DK:   '#6e6e3e',
+  SPIKE:    '#5f9e4a',
+  SPIKE_DK: '#4a7d3a',
+  TEE:      '#2e3a5c',
+  DINO:     '#5fbf5a',
+  PANTS:    '#3a4a5c',
+  BOOT_DK:  '#d88c12',
+};
+
+// One depth model (ART_BRIEF §3.2): gameplay at z = 0, layers at fixed
+// per-world depths — constants, not per-asset improvisation.
+export const LAYER_Z = {
+  SKY: -48, SKYLINE: -30, FAR: -14, MID: -6, NEAR: -2, PLAY: 0, FORE: 2.2,
+};
+
+// How far each layer's painting is pushed toward the sky (painted air).
+export const LAYER_TINT = {
+  SKYLINE: 0.58, FAR: 0.38, MID: 0.20, NEAR: 0.07, FORE: 0,
+};
+
+// '#rrggbb' × '#rrggbb' → mixed '#rrggbb'. Used to bake depth tint into
+// layer paintings and background-cast repaints.
+export function mix(a, b, t) {
+  const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16);
+  const c = (sh) => {
+    const x = (A >> sh) & 255, y = (B >> sh) & 255;
+    return Math.round(x + (y - x) * t);
+  };
+  return '#' + ((c(16) << 16) | (c(8) << 8) | c(0)).toString(16).padStart(6, '0');
+}

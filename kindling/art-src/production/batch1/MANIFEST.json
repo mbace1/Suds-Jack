@@ -1,0 +1,42 @@
+{
+  "native_pixel_art": true,
+  "alpha": "binary alpha only (0/255); no baked shadows, labels, frames or captions",
+  "A": {
+    "canvas": "320x180",
+    "layers": [
+      "sky_distance",
+      "ruin",
+      "near_ground",
+      "foreground"
+    ],
+    "fire_baked_in": false
+  },
+  "B": {
+    "cell": "40x40",
+    "canvas": "400x160",
+    "adult_height_px": 26,
+    "layout": "idle8 walk6 run6 cast8 poses4 ages5"
+  },
+  "D": {
+    "cell": "40x40",
+    "canvas": "400x160",
+    "adult_heights_px": {
+      "Mossling": 26,
+      "Ashling": 20,
+      "Moss Knight": 38
+    }
+  },
+  "E": {
+    "canvas": "512x256",
+    "object_cells": "16x16",
+    "bonfire_cells": "48x48",
+    "bonfire_states": 5
+  },
+  "F": {
+    "canvas": "512x256",
+    "cell": "32x32",
+    "dark_columns": "0-7",
+    "parchment_columns": "8-15",
+    "baked_text": false
+  }
+}

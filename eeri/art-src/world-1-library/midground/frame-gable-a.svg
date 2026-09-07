@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900">
+  <defs>
+    <filter id="paper" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="7" result="n"/>
+      <feColorMatrix in="n" type="saturate" values="0" result="g"/>
+      <feBlend in="SourceGraphic" in2="g" mode="multiply"/>
+    </filter>
+    <filter id="wood" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.05" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" values="0.45 0 0 0 0.5  0 0.32 0 0 0.38  0 0 0.18 0 0.16  0 0 0 0.32 0" result="grain"/>
+      <feBlend in="SourceGraphic" in2="grain" mode="soft-light"/>
+    </filter>
+    <pattern id="flute" width="20" height="12" patternUnits="userSpaceOnUse">
+      <path d="M0 8 Q5 2 10 8 T20 8" fill="none" stroke="#9d8468" stroke-width="2" opacity=".75"/>
+    </pattern>
+  </defs>
+
+  <!-- Flat source asset: transparent canvas, no floor plane, no clouds. -->
+  <g stroke-linejoin="round">
+    <!-- pale distant infill shapes -->
+    <g fill="#b9d5e6" opacity=".54" filter="url(#paper)">
+      <path d="M150 760V590h125V475h130v285z"/>
+      <path d="M440 760V540h115V410h165v350z"/>
+      <path d="M785 760V610h105V470h140v290z"/>
+      <path d="M1040 760V535h115V430h120v330z"/>
+    </g>
+
+    <!-- white painted card frame -->
+    <g fill="#ece9df" stroke="#cfc8bc" stroke-width="5" filter="url(#paper)">
+      <rect x="120" y="275" width="62" height="500" rx="3"/>
+      <rect x="390" y="275" width="62" height="500" rx="3"/>
+      <rect x="670" y="275" width="62" height="500" rx="3"/>
+      <rect x="950" y="275" width="62" height="500" rx="3"/>
+      <rect x="1215" y="275" width="62" height="500" rx="3"/>
+      <rect x="115" y="290" width="1168" height="46" rx="2"/>
+      <rect x="115" y="500" width="1168" height="38" rx="2"/>
+      <rect x="115" y="735" width="1168" height="40" rx="2"/>
+    </g>
+
+    <!-- exposed corrugated card edges -->
+    <g fill="url(#flute)" opacity=".95">
+      <rect x="115" y="334" width="1168" height="18"/>
+      <rect x="115" y="538" width="1168" height="16"/>
+    </g>
+
+    <!-- balsa roof truss -->
+    <g fill="#d9bd83" stroke="#b99b64" stroke-width="5" filter="url(#wood)">
+      <path d="M130 286 L700 82 L1260 286 L1238 326 L700 134 L154 326 Z"/>
+      <rect x="675" y="105" width="48" height="188" transform="rotate(-1 699 199)"/>
+      <rect x="690" y="105" width="48" height="188" transform="rotate(12 714 199)"/>
+    </g>
+
+    <!-- masking-tape repairs -->
+    <g fill="#e6d2a8" opacity=".88" filter="url(#paper)">
+      <rect x="116" y="422" width="66" height="92" transform="rotate(-2 149 468)"/>
+      <rect x="668" y="420" width="68" height="98" transform="rotate(2 702 469)"/>
+      <rect x="1212" y="420" width="67" height="92" transform="rotate(-1 1245 466)"/>
+      <rect x="366" y="285" width="92" height="55" transform="rotate(-3 412 312)"/>
+      <rect x="932" y="285" width="93" height="55" transform="rotate(2 978 312)"/>
+    </g>
+
+    <!-- friendly brass fastener motif -->
+    <g fill="#bea05b" stroke="#8d743f" stroke-width="4">
+      <circle cx="151" cy="308" r="13"/><circle cx="421" cy="308" r="13"/>
+      <circle cx="701" cy="308" r="13"/><circle cx="981" cy="308" r="13"/>
+      <circle cx="1246" cy="308" r="13"/><circle cx="700" cy="112" r="14"/>
+      <circle cx="151" cy="520" r="11"/><circle cx="421" cy="520" r="11"/>
+      <circle cx="701" cy="520" r="11"/><circle cx="981" cy="520" r="11"/><circle cx="1246" cy="520" r="11"/>
+    </g>
+  </g>
+</svg>

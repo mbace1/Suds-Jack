@@ -1,0 +1,15 @@
+{
+  "files": {
+    "A1_night_camp_sky_distance_320x180.png": {"size":[320,180],"binary_alpha":true,"alpha_values":[255],"sha256":"e842aa3610b34107528afb3f2a6d47cfd5e4b3f4cc26424748fa4cd566ea2593","half_2x_nearest_identical":true},
+    "A2_night_camp_ruin_320x180.png": {"size":[320,180],"binary_alpha":true,"alpha_values":[0,255],"sha256":"e47c2938d9f18f4ad90f344d7fa9d65137a80029e42363c3bb362afd3968ee08","half_2x_nearest_identical":true},
+    "A3_night_camp_near_ground_320x180.png": {"size":[320,180],"binary_alpha":true,"alpha_values":[0,255],"sha256":"40770076538b067d98d040f1a28182b0c49e0fb98afde5ea2943795031efd2d9","half_2x_nearest_identical":true},
+    "A4_night_camp_foreground_320x180.png": {"size":[320,180],"binary_alpha":true,"alpha_values":[0,255],"sha256":"714012cbe50e22becfb7ce6f00c9e5651ba314b524e538d2567b965d0d436a8a","half_2x_nearest_identical":true},
+    "B_ember_spritesheet_40x40grid_400x160.png": {"size":[400,160],"binary_alpha":true,"alpha_values":[0,255],"sha256":"71f5858720fcb9c625d7156b7c37261edd40ae2c095c6930dfa8c65bcc6a442d"},
+    "D1_mossling_spritesheet_40x40grid_400x160.png": {"size":[400,160],"binary_alpha":true,"alpha_values":[0,255],"sha256":"99dadaddcfdd2698be99c5acafb6b84eb34248b60075bf3ea0cdb6fb5ee42325"},
+    "D2_ashling_spritesheet_40x40grid_400x160.png": {"size":[400,160],"binary_alpha":true,"alpha_values":[0,255],"sha256":"3902e5a50088306aaca7753129419bfb62d2c432dbcd95d57f54917e9ab4ee52"},
+    "D3_moss_knight_spritesheet_40x40grid_400x160.png": {"size":[400,160],"binary_alpha":true,"alpha_values":[0,255],"sha256":"be0348519b50506ae4561bc509869c581e8e83ed1c2a26d6570853735c43499e"},
+    "E_object_atlas_16x16cells_512x256_plus_bonfire_states_48x48.png": {"size":[512,256],"binary_alpha":true,"alpha_values":[0,255],"sha256":"25fb33611193679f76c12bc2ab75e0b3a2f092d9cc99f5a4fa79bf6e1c1b84f8"},
+    "F_ui_kit_9slice_dark_parchment_32x32grid_512x256.png": {"size":[512,256],"binary_alpha":true,"alpha_values":[0,255],"sha256":"0e5959bb21fae6ad3a141017c16aa17a6eb3203930125d42d8ff14581a2d8e8d"}
+  },
+  "checks": {"all_binary_alpha":true,"all_dimensions_exact":true,"A_half_2x_nearest_all_identical":true}
+}

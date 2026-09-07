@@ -1,0 +1,591 @@
+# TOKO MIDORI GAMES™
+
+**The identity of the workshop.** The face, the two colours, the lockups, the
+sticker sheet, the sting, and the one-line signature a game imports to be signed
+by it.
+
+Everything is **drawn in code from one geometry table**. There is not one image
+asset in this folder — the SVG logo files are *generated* from the same arcs the
+canvas strokes, so the file you hand a printer and the thing on screen cannot
+drift apart. No build step, no dependencies, no CDN. Open
+[`index.html`](index.html) to see all of it running.
+
+> **Two things in here are reconstructions, not originals, and you should know
+> which:**
+> 1. **The face geometry** in `js/face.js` was measured off the master artwork.
+>    It is accurate to about a pixel at logo size, but if the original vector
+>    file exists, its numbers belong in `GEO` — replace them and everything
+>    downstream updates.
+> 2. **The logotype typeface** is the owner's licence and is *not* redistributed
+>    here. See §4.
+
+---
+
+## 1. Who is signing this
+
+Toko Midori is the masked artist behind the look of every cabinet in this
+workshop. The mask is not a gimmick — it is the terms. You do not get a face, a
+founder story or a personal brand to buy into. You get the work, and the work is
+free, in a browser, with no account.
+
+Toko is not against the machine. Toko is holding one — these games are built
+with AI, out loud, on purpose, and nobody is pretending otherwise. What Toko is
+against is the machine becoming the *audience*: a world where everything is
+generated and nothing is **made**, where people scroll output instead of cutting
+their own.
+
+**Use the tools. Take the source. GO MAKE YOUR OWN.**
+
+| | |
+|---|---|
+| Company | **Toko Midori Games**™ |
+| Creator | **美鳥十湖** — *Toko Midori*, The Game Creator |
+| Cry | `GO MAKE YOUR OWN` |
+| Terms | `NO PUBLISHER · NO LAUNCHER · NO ACCOUNT` |
+
+All of it lives in `VOICE` in [`js/palette.js`](js/palette.js), next to the
+colours, because it is as fixed as the colours are.
+
+---
+
+## 2. The face
+
+Round-capped strokes, one weight throughout, no fills and no corners.
+
+- **The mouth** is two arcs opening up, nested and concentric. Both stop
+  *short* of a semicircle, so the tips stand up straight instead of hooking
+  outward — that is what keeps a clear band of air between the mouth and the
+  eyes above it.
+- **Each eye** is a semicircle **crown** with two straight parallel **legs**
+  dropped from its ends.
+
+### The eye has two states, and the logo is the closed one
+
+| | | |
+|---|---|---|
+| **Closed** | `open: 0` | An upside-down U with **nothing between the legs**. The anime happy eye — smiling with the eyes shut. **This is the logo**, the default, and what every resting mark wears. |
+| **Open** | `open: 1` | The same U with a **pupil** line down the middle. He is looking at you. |
+
+Closed is the resting face. Open is an event: `glance()` in `util.js` lifts the
+lids every eleven seconds or so, holds a moment, and shuts them again. In the
+counter he opens them for as long as he is answering you, because that is the
+one moment he is actually looking at somebody.
+
+> **Four wrong answers got to this, and all of them were the same mistake:**
+> leaving something in the middle of a face that is meant to be smiling with
+> its eyes closed. A small arc nested inside (a dot floating in the arch). A
+> stem hanging permanently from the crown (the eye read as an "m"). One arc
+> swept 240° doing crown and legs together (it curls under and closes into a
+> ring — an eyeball stuck on the face). That arc stopped at 200° (no ring, but
+> the legs never come down and it is a shallow dome floating above the mouth).
+>
+> The crown and the legs are separate strokes because a single arc can be a
+> ring or a dome but never an arch. The legs are parallel because everything
+> else in this face is flat-sided. And the middle is empty because he is
+> smiling.
+
+**The stroke weight is the most sensitive number in the brand.** Too heavy and
+the eye's slots close up and the arch renders as a blob with hairline cracks in
+it. In the master artwork a leg, a slot and a stem are roughly equal widths,
+which puts the stroke at about a fifth of the mouth's outer radius. It is
+`GEO.stroke` and it is not a taste question.
+
+**The eyes are exactly as wide as the smile.** In the master artwork the outer
+edge of the left eye, the outer edge of the right eye and the two tips of the
+mouth all sit on the same two vertical lines — `GEO.eye.dx + eye.r` equals
+`GEO.mouth.outer.r`, caps included. The face was shipped once with the eyes
+3.7 units proud of the mouth on each side and it read as a wobble rather than a
+decision. `test/brand.cjs` asserts the two edges to within half a unit.
+
+### The carriers
+
+| | |
+|---|---|
+| **The mark** | the bare face. Primary; anything printed |
+| **Reversed** | paper on black. The screen default |
+| **The badge** | the face on a disc. Stickers, pins, the favicon, the in-game signature |
+| **The icon** | full bleed on a rounded square. App icons, cartridge labels |
+
+**Minimum size: 44px.** Below that the slots start to close and the eyes go
+solid. `sign()` clamps to it rather than letting a caller ship mud.
+
+**Clear space:** one eye-radius on every side. The face already hangs low in its
+own design box — align to `bounds()`, never to the box.
+
+---
+
+## 2b. The one, and the clusters
+
+Beyond the mark there is the **character**: the face reversed out of a bust — a
+rounded head on a short, wide stand. `drawHead` / `svgHead`.
+
+> **Toko Midori is the one, the person.**
+> **But also Toko Midori is clusters.**
+
+The same head, packed with small heads — Toko, the members, the ex-members, the
+members who have not arrived yet, and the players. One person and a crowd, drawn
+with the same stamp. `drawCluster`.
+
+Two rules come out of that, and they are the reason the cluster exists at all:
+
+- **The crowd never wins the silhouette.** It is what the person is *made of*,
+  so the big face is drawn over it at a heavier weight and must still read at a
+  glance. If you cannot see the face, the cell is too coarse.
+- **The stand is short and wide.** Drawn narrow it reads as a lightbulb; drawn
+  like this it reads as shoulders, and the silhouette stays a person.
+
+---
+
+## 3. Two colours
+
+```
+RGB (0, 0, 0)       CMYK (0, 0, 0, 100)     #000000
+RGB (240, 2, 127)   CMYK (0, 100, 0, 0)     #F0027F
+```
+
+Both are process primaries — 100% K and 100% M. That is the whole idea: it
+prints anywhere, on any press, at no cost, with nothing to match. **White is the
+paper, not a colour.** No tints, no shades, no gradients, no drop shadows.
+
+Magenta is **4.0:1 on black**. It is a *mark* colour and a large-display colour.
+**It is never body copy.** Body copy is white, or `--toko-smoke` (7.4:1) when it
+needs to sit back.
+
+### The carriers
+
+The face also runs in a rotating set of nine flats — the mark in a colour on
+white, and reversed out of a full-bleed colour tile. That is how the icons and
+the stickers work: **one face, many carriers.**
+
+This does not make them brand colours. Black and magenta are the identity;
+these are what the mark is *carried on*, **one flat at a time**, never mixed and
+never two inside a single mark. A carrier is a whole surface or it is nothing.
+
+Several of those pairings — white on yellow especially — are nowhere near a text
+contrast ratio. They carry the **mark** and never type. `STICKER` and `SHEET` in
+`palette.js`.
+
+---
+
+## 4. The logotype
+
+A **condensed squarish grotesque**: flat-sided bowls, square counters, tight
+tracking, a clipped corner on the *G*, splayed *M*. Set in three lines that
+stack almost solid, flush left, with the ™ at the foot of *Games*. A one-line
+setting exists for anywhere too short to stack.
+
+**The logotype is DRAWN, not set** — [`js/wordmark.js`](js/wordmark.js). It only
+ever says three words, so those three words are outlines: no font file to
+licence, to load, or to fail to load, which is the same rule the face already
+keeps. The letterforms are drawn *after* the owner's face, by eye. They are
+close, and they are ours.
+
+Twelve glyphs exist, and only twelve — the letters `Toko Midori Games` needs.
+That is deliberate. An alphabet would be a typeface, and a typeface is not ours
+to redraw; a logotype is a drawing of three particular words.
+
+Each glyph is a set of **solids** unioned together and a set of **holes**
+punched out afterwards. The first cut filled them with `evenodd`, and wherever
+two solids overlapped — a *d*'s stem crossing its bowl, an *s*'s bars meeting
+its spines — the overlap cancelled and cut a white notch through the letter.
+
+Leading is **1.06 × cap height**. The drawn glyphs fill 0…cap exactly, so the
+size *is* the cap height; the 0.92 that suits a font (whose em box is taller
+than its caps) laps the three lines over each other.
+
+If the original vector artwork surfaces, its outlines belong in `GLYPHS`.
+
+### The lockup
+
+Face, gap, three lines, ™. **The logotype stands the same height as the face.**
+That relationship *is* the lockup; nothing else about it is adjustable.
+
+---
+
+## 5. The glitch
+
+[`js/glitch.js`](js/glitch.js): `tear`, `split`, `dropout`, `shuffle`,
+`scanlines`, `carrier`, `noise`, plus `hit(ctx, w, h, intensity)` and
+`pulse(t)`.
+
+1. **Seeded.** A glitch you cannot reproduce is a bug wearing a costume.
+2. **An event, not a state.** Below ~0.25 the mark reads clean. A logo that is
+   permanently broken reads as a *rendering fault*, and nobody trusts a
+   rendering fault.
+3. **Off by default.** The resting animation of a Toko mark is a **blink** —
+   the eyes squash shut for a beat every few seconds. That is the whole thing.
+   The glitch is for stings, transitions and title cards; `sign()` takes
+   `glitch: true` and does not assume it.
+
+---
+
+## 5b. The counter
+
+A slim bar that sits at the top of the arcade and opens into a conversation with
+Toko in the old Sierra idiom — a portrait, text that types itself out, and a
+numbered list of things you are allowed to say. Police Quest at the front desk.
+
+```html
+<script type="module">
+  import { mountChat } from './toko/js/chat.js';
+  mountChat(document.querySelector('header'));   // inserted after it
+</script>
+```
+
+**It is a hand-written dialogue tree, not a language model.** There is no network
+call here and there never will be: the kit is offline-first and zero-dependency,
+and a workshop whose whole position is *go make your own* should not answer you
+with rented autocomplete. Toko says what Toko wrote — in
+[`js/dialogue.js`](js/dialogue.js), which is the file to edit. Asking some things
+unlocks others, so the conversation grows as you dig.
+
+What it does beyond talking:
+
+- **You can type at him.** A `>` line under the menu takes a sentence and
+  matches it against a keyword table — still no language model, just word
+  overlap, and when it misses it *says so* rather than confidently answering
+  the wrong question. Typing reaches **locked** topics, which is the reward
+  for using your own words instead of the list. `GO MAKE YOUR OWN` is heard
+  wherever it appears in the sentence.
+- **You can leave him a note, and it leaves the browser.** The counter reuses
+  the **arcade's own transport** (`window.__hub.feedback`) rather than
+  shipping a second one — same endpoint, same local archive, same outbox
+  retried on the next visit. Two rules are load-bearing and both are in the
+  gate: **saying nothing records nothing**, and he never claims a delivery
+  that did not happen — an opaque no-cors POST is `sent-blind` and gets its
+  own line, a queued one says it is queued, and dropped on a page with no hub
+  he says it is written down on your machine and nothing more. He mentions a
+  note **once** on your next visit; twice would be a receipt.
+- **He talks about the games he did NOT make.** `WHAT DO YOU PLAY?` racks up
+  `FAVOURITES` — Rygar, Sin and Punishment 2, Chrono Trigger, Nex Machina,
+  The Binding of Isaac, Mario Bros., plus the two Suds Jack's own concept line
+  names. This is where the mantra stops being an opinion and turns into
+  receipts: every rule §5b shouts came off one of these. Three lines each, and
+  **no Play link** — there is nowhere on this floor to send you for somebody
+  else's game, and a button that went somewhere would be a shop move.
+- **He talks about one cabinet at a time.** `askGames` is the his-question
+  mechanic with the **live catalogue** as the options, so a cabinet added
+  tomorrow is on the rack tonight. His line per game lives in `GAME_NOTES`;
+  one with nothing written yet falls back to the catalogue's own tagline
+  rather than going missing. Naming a game at the parser gets it directly.
+- **A note can be *about* something.** Standing in front of one cabinet is the
+  moment a player actually has something to say about it, so his line about a
+  game is followed by *tell him about this one* — and a note taken there files
+  under **that game's id**, the same `game` field every other feedback surface
+  in the workshop already uses, plus the topic he was on when you wrote it. A
+  note that says "this is broken" is worth nothing without that.
+- **You can read your own notes back.** Feedback you cannot see again is a
+  suggestion box with a lock on it, so `WHAT HAVE I TOLD YOU?` prints the
+  archive off your machine — the same one the hub keeps.
+- **And he tells you what changed.** `DID ANY OF IT MATTER?` reads out
+  `CHANGED` in `dialogue.js` — a **hand-kept** log of what actually got fixed.
+  Nothing generates it, because the whole point is that a person read the
+  notes and did something; add an entry when you ship the fix. It never says
+  *you asked for this*, because most entries nobody asked for and a counter
+  that flatters you is back to being a shop. It does check whether you left a
+  note about that same cabinet and say so **once** — that claim is true and
+  checkable, which is the only kind worth making.
+- **He reads what the cabinets left on your machine.** `HAVE YOU SEEN ME
+  PLAY?` reads the games' own `localStorage` hi-scores, shows them, and sends
+  them nowhere. He says as much while doing it — a workshop that claims not
+  to profile you should be able to explain exactly what it just looked at,
+  and the claim is only worth making because the code is that short.
+- **He picks a cabinet.** `WHAT SHOULD I PLAY?` reads the arcade's own
+  catalogue (`window.__hub`) and answers with one game and a real link — the
+  same one all day, which is the line he says while giving it. Dropped on a
+  page with no catalogue he says he cannot see the floor, rather than throwing.
+- **He asks YOU something.** One topic (`asks:`) runs the other way: the menu
+  becomes your mouth for a turn, and what you answer can open branches. Same
+  nine slots, same number keys — only the direction changes, and the menu is
+  handed straight back. A conversation stuck in answer mode is a dead end with
+  a caret in it, so the gate checks for the hand-back.
+- **He gives you a sticker.** `gift:` hands over the badge as a real download —
+  built on the spot from `svgBadge()`, which is the same arcs the canvas
+  strokes. There is no file behind it because there is no image asset anywhere
+  in this brand; it is a data URI he draws while you are asking.
+- **He says things unprompted.** Sit at the counter without picking anything
+  and after 24 seconds he offers a line. Three a visit, then he lets it be
+  quiet — a Sierra front desk was never silent, but a counter that keeps
+  talking at you is a shop.
+- **He knows the hour.** Between midnight and five he opens differently and one
+  topic exists that does not exist at two in the afternoon. It reads the
+  reader's own clock; nothing is sent anywhere.
+- **He remembers you came back.** Three things persist and nothing else: how
+  many times you have opened the counter, the last thing you asked (he opens
+  with it next time), and whether you wanted the tick. No identity, no profile,
+  no account — the workshop is built on not having one, and all three fit in a
+  sentence you could read aloud.
+- **The back of the shop.** One topic has `needs:` rather than an unlock, so it
+  appears only once you have actually dug. The reward for exhausting a tree
+  should be more tree.
+- **The portrait tears** while he answers the topics that are *about* the seam
+  — the machine, the slop, the hypocrisy question. A glitch is an **event**
+  (§5), so it decays over its own window instead of sitting there as texture.
+- **`#toko` opens it**, so a link can point at the conversation rather than
+  the page it sits on. It only ever opens; the hash is never written back,
+  because the arcade's own address stays the plain one.
+- **A typing tick**, off until you ask for it, remembered after you do. The
+  AudioContext is built lazily on that first gesture, because one created
+  before a gesture just sits suspended and logs a warning for its trouble.
+
+**Three languages.** The arcade is fi/en/ja and so is the counter. **English is
+the source** — it lives inline in `dialogue.js` — and `dialogue.fi.js` /
+`dialogue.ja.js` are pure string packs that override it by topic id. A key a
+pack has not translated falls through to English rather than blanking, the same
+rule `hub/i18n.js` follows and for the same reason: a missing line should read
+wrong, not read empty.
+
+Toko's register does not survive a literal translation. English is clipped and
+shouted in caps; Finnish takes the caps but not the article-dropping, so the
+flatness comes from short declaratives and dropped pronouns. **Japanese has no
+caps at all** — it comes from plain form (だ・である, never です・ます), no
+softeners, and lines kept to about *twenty* characters because the glyphs are
+full-width and a line translated at English length wraps mid-word.
+
+The counter follows the PAGE: `__hub.lang()` on the arcade, then `<html lang>`,
+then English. It **does not re-type the transcript** — a conversation you
+already had happened in the language you had it in, and rewriting somebody's own
+past questions under them reads like a machine correcting them. The menu, the
+greeting and everything from here on follow; what is above the fold stays.
+
+**The parser works in all three, by two different methods.** English and
+Finnish tokenise on whitespace and match word-for-word, with a **per-language
+stop list** — the English one does nothing for a Finnish sentence, and without
+ON/EI/JA/SE in it two ordinary function words were enough to score a match and
+hand back a confident wrong answer. The tokeniser is `\p{L}` and not `[A-Z]`,
+because the uppercased text has no Ä in it: `TIEDÄ` used to become `TIED`, every
+Finnish key with an umlaut was unmatchable, and the fragments left over collided
+with unrelated topics. A key with a **space** in it can never match either — the
+gate fails on both.
+
+**Naming a cabinet takes more than one common word.** A cabinet beats a topic
+in the parser, so that "TELL ME ABOUT HYPER DAGGER" gets the cabinet — but a
+single title word used to be enough, and `WHAT MAKES A GOOD GAME?` was answered
+with *The Game of Life*. What counts as "too common" is asked of the corpus
+rather than hand-listed: **a word Toko already uses in a question of his own
+needs a second word to agree.** GAME does; POWDER and SKLTR do not.
+
+Japanese does not space its words, so that pack sets `substring: true` and the
+parser asks a different question: not *is this key one of your words* but *does
+this key appear in what you typed*. The keys become **stems** (「作」 catches
+作る・作った・作りたい), a hit scores its own **length** so a long agreement beats a
+short one, and the floor rises to match. A blunt matcher will answer anything,
+so the gate checks that it still **says no** to a sentence about the weather.
+
+> Both packs are **drafts written by the machine**, and the file headers say so.
+> Finnish wants a read-aloud pass on the mantra — those lines are meant to be
+> shoutable across a room. Japanese has not been checked by a native speaker at
+> all; the jokes are the likely casualties, and the blunt 「お前」 running through
+> it is a choice somebody should sign off on.
+
+Rules it holds:
+
+- **1–9 picks, ENTER skips the typing, ESC leaves.** Keyboard-first, like the
+  games under it. Nothing traps you and no animation has to be watched to the
+  end. **A field owns its own keys**: the number shortcuts are dead while you
+  are writing, or typing "3 CRASHES ON LOAD" picks topic three and throws the
+  sentence away. Esc steps out of the field first, then out of the counter.
+- **It must not push the games below the fold.** It sits *above* the cabinets,
+  so the topic menu runs two columns where there is room; stacked, seven topics
+  at the 44px tap floor made a panel nearly 600px tall.
+- **Nine slots, and one of them is the way out.** The keys are 1–9, so the menu
+  shows nine. The tree outgrew that and goodbye fell off the bottom, which
+  turns a counter you can walk away from into one you cannot; `end` topics now
+  get a reserved slot. For the same reason, whatever the last answer *opened*
+  sorts to the top — a branch pushed off the bottom of the list that opened it
+  is a branch nobody finds.
+- **Nothing in it may depend on the wall clock to pass.** The hour changes what
+  he says, so the gate skips his typing rather than waiting it out — a fixed
+  wait passed all day and failed after midnight, when the late greeting is
+  longer. For the same reason the late greeting is two lines: at 34ms a
+  character a third puts four seconds between opening the counter and being
+  allowed to speak, and that is a wait, not a mood.
+- **The typing is time-driven, not a chain of timeouts.** A `setTimeout` per
+  character pays the timer's minimum resolution every time, and an
+  18ms-per-character line measured out at nearly 70 — the greeting took 2.6
+  seconds to say eleven words. Every character gets a due time up front and one
+  rAF walks the schedule.
+- **Reduced motion prints the line whole.** No typing, no blink, no growth
+  animation.
+- **It has to survive a 390px screen.** The panel is capped and clips, so its
+  grid rows are `minmax(0, 1fr)` and the menu scrolls inside them — an `auto`
+  row sizes to its content and overflows the cap instead, which hid the bottom
+  four topics *and* the way out on a phone while looking perfect on a laptop.
+  The gate opens the counter at phone size for exactly this.
+- **He knows which cabinet you just left.** The badge in a game's corner links
+  here, so the referrer usually names the game — the closed bar asks *how was
+  hyper dagger?* before you open him at all, he opens on that cabinet instead
+  of a generic hello, and the note that follows files under it. It reads
+  `document.baseURI`, not `location`, because `/AnotherHUB/` is the same page
+  one level down behind a `<base href="../">`. No referrer (a bookmark, a typed
+  address, `file://`) is simply the ordinary greeting: it is a nicety, never a
+  mechanism, and it must never be the reason the counter fails to open.
+- **It states its version.** `V5` in the footer, read from `VERSION` in
+  `dialogue.js` rather than fetched, so it is still right with the signal off.
+  `toko/VERSIONS.md` is the log; `scripts/versions.mjs` reads it into
+  `hub/versions.json` the same way it does for every cabinet — the brand is not
+  a cabinet, so it is named in that script's short `EXTRA` list. The gate fails
+  if the number in the code and the number in the log disagree.
+- **No back-ticks in the stylesheet.** It is a template literal, and one
+  back-tick in a CSS comment ends the string mid-rule and takes the whole
+  module down with it.
+
+---
+
+## 5c. The tempo
+
+**Toko is always listening to Comfortably Numb.** That is the house note, and it
+is a rule with numbers in it rather than a mood board: heavy-lidded, floating, a
+long way from eager — and with a solo in it, so the calm is never the same thing
+as flat.
+
+It lives in `blink()` and `drift()` in [`js/util.js`](js/util.js), and every
+resting mark in the kit keeps the same time.
+
+- **The blink closes, DWELLS shut, and opens slower than it closed.** That
+  asymmetry is the whole thing. A symmetrical blink reads awake; a fast one
+  reads nervous. Roughly 0.17s down, 0.12s held shut, 0.36s back up, every
+  7.5s — and **every fourth is a long one**, where the eyes stay shut a beat
+  past comfortable.
+- **Nothing is ever perfectly still, and nothing is ever quick.** `drift()` is
+  a nine-second breath under the mouth; the amplitude is under 1%, which is the
+  point.
+- **The counter types at 34ms a character**, with a long beat between lines and
+  a longer one before the first — Toko has to come back from wherever he was
+  before he answers you.
+- **The mouth talks slowly.** At 22 rad/s it chattered like a puppet; it runs
+  at 11.
+
+Two things this rule does **not** cover. `pulse()` — the glitch cadence — stays
+square and harsh, because the glitch is the machine and not Toko. And the
+sting's *timeline* stays brisk: it is an event, and an event you cannot skip is
+an ad. Only the blink inside it slowed down.
+
+`test/brand.cjs` measures the curve — that it fully closes, that it dwells, and
+that opening takes over 1.5× the time closing does. Untested, a "just a touch
+snappier" walks it back one commit at a time until Toko is blinking like a
+cursor.
+
+---
+
+## 6. Signing a page
+
+```html
+<script type="module">
+  import { sign } from '../toko/js/signature.js';
+  sign({ corner: 'bottom-left', counter: true });
+</script>
+```
+
+The badge goes in a corner at `z-index: 4` — **under** the game's HUD, over the
+game canvas — honours the safe-area insets, and paints one still frame for
+anyone who has asked for reduced motion.
+
+**`counter: true` is what every signed game uses.** It points the badge at
+`../#toko`, so the signature is not just a stamp: it is the way to say
+something about the game you are standing in, from inside it. The counter reads
+the referrer on the way in and opens on that cabinet, and the note you leave
+files under it. Two taps from "that boss is unfair" to having said so.
+
+Two things it does that look like fussiness and are not:
+
+- **It is a link only where there is a cursor.** Bottom-left is where half
+  these games put the left stick, and a 44px anchor sitting on it would eat the
+  touch that starts a run. On a coarse pointer the badge stays a picture, and
+  the HOME button `hub/shell.js` puts in the opposite corner is the way out.
+  `(pointer: fine)` is the test.
+- **It navigates on `pointerup` and `touchend`, never `click`** — the trap
+  `hub/shell.js` already paid for. These games `preventDefault` every touch
+  outside their own UI, and a cancelled `touchstart` takes the synthesised
+  click with it (and the pointer stream, so `pointercancel` arrives and
+  `pointerup` never does). The `href` stays, so middle-click and
+  open-in-new-tab keep working.
+
+Signed on `main`: `toko-drop/`, `paperboy/`, `dropcabal/`, `hyperdagger/`,
+`flashprince/`.
+
+Other entry points:
+
+```js
+import { playSting, playStingOnce } from '../toko/js/sting.js';
+import { startMasthead }            from '../toko/js/masthead.js';
+import { paintSignature }           from '../toko/js/signature.js';   // your own canvas
+import { drawLockup, drawSheet }    from '../toko/js/lockup.js';
+import { svgFace, svgBadge, faviconHref } from '../toko/js/face.js';
+```
+
+`playStingOnce(key)` is what the arcade uses: **once per browser, when the first
+game is launched**, never merely on arrival. The mark belongs in front of a
+game, not in front of its menu. It is imported dynamically and swallowed on
+failure, so a nicety can never be the reason a Play button does nothing; the
+game opens when the sting finishes or immediately if the import fails.
+
+`startMasthead(el)` — `stop()` it wherever the page re-renders, or the loop
+leaks against a detached canvas (a bug the Game of Life hub has already paid for
+once).
+
+### `gameoflife/` is deliberately unsigned
+
+It is the one room where Toko takes the mask off — a zen app whose entire job is
+to be quiet and send you outdoors, and a magenta badge in its corner would undo
+the thing it exists to do. There is a hard technical reason too: its service
+worker precaches an exact file list scoped to `/gameoflife/`, and
+`test/offline.cjs` asserts **zero** network requests during a whole experience,
+so a cross-directory import would break the offline promise either way.
+
+---
+
+## 7. Rules
+
+**Do**
+
+- Draw the face from `GEO`. Every number there was measured; there is no
+  "roughly".
+- Align to `bounds()` — the ink — not to the design box.
+- Keep the two colours, and let the paper be the paper.
+- Let it blink. That is the animation.
+- Say when the typeface is substituted.
+
+**Don't**
+
+- Don't re-weight the stroke. It closes the eyes.
+- Don't move the eyes apart. They line up with the mouth's tips.
+- Don't outline, gradient, bevel, shadow, or rotate the face.
+- Don't set body copy in magenta.
+- Don't take the sticker colours into anything on a screen.
+- Don't stretch the lockup — the logotype is the face's height, always.
+- Don't put the mark below 44px, and don't put it on a photograph.
+
+---
+
+## 8. The files
+
+```
+toko/
+  BRAND.md        this
+  VERSIONS.md     the release log — one number for mark, sting, badge, counter
+  index.html      the brand board — every mark live, with SVG downloads
+  toko.css        the palette as custom properties + the CSS-only glitch
+  js/
+    palette.js    the two colours, the sticker sheet, the type spec, the words
+    face.js       THE MARK — one geometry table, canvas and SVG out of it
+    lockup.js     the logotype, the lockups, the sticker sheet, the credit line
+    surface.js    a device-pixel-ratio canvas with a reduced-motion-safe loop
+    glitch.js     tear / split / dropout / shuffle / scanlines / carrier / hit
+    util.js       seeded RNG + the resting pulse
+    sting.js      the three-second sting (skippable from frame one)
+    chat.js       the counter — the conversation panel, self-contained
+    dialogue.js   what Toko says — topics, his question, the greetings,
+                  the asides. Edit THIS to change the conversation
+    signature.js  sign() — the drop-in corner badge
+    masthead.js   the animated lockup for the arcade hub
+    board.js      wires the board out of the shipping modules
+  test/
+    brand.cjs     the gate: geometry, SVG, sting, every signed game
+  _tokentest.html   fixtures, not pages: the first proves the ?v= token
+  _fromtest.html    reaches the packs, the second walks in from a cabinet
+```
+
+> **Deploy:** the live site serves from the **`gh-pages`** branch, not `main`.
+> `toko/` and the signed game `index.html` files both have to be copied there to
+> go live at `/Suds-Jack/toko/`.
