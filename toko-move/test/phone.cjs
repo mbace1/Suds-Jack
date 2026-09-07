@@ -142,6 +142,78 @@ server.listen(0, '127.0.0.1', async () => {
     took.order.includes('jobHead') && io('routeChoices', 'jobHead') && io('jobHead', 'jobBoard'),
     took.order.join(' > '));
 
+  // ── THE ORDER MUST NOT DEPEND ON WHICH MODULE MOUNTED FIRST ──────────
+  // PR #473 measured what this gate now asserts: the sheet's order was
+  // whichever module happened to append first, and it came out differently on
+  // identical runs — on the run where the read-only HUB panel won, ZERO catch
+  // buttons were on screen. Two layers hold it now, DOM order and CSS `order`,
+  // and both are checked, because either one alone is a single point of
+  // failure: a module that appends directly escapes the first, and a panel
+  // nobody declared an order for escapes the second.
+  const orders = await page.evaluate(() => {
+    const sheet = document.getElementById('sheet');
+    const kids = [...sheet.children].filter(c => c.id);
+    const dom = kids.map(c => c.id);
+    const css = [...kids].sort((a, b) => (+getComputedStyle(a).order || 0) - (+getComputedStyle(b).order || 0)).map(c => c.id);
+    // a panel nobody declared must land LAST, not first
+    const probe = document.createElement('section'); probe.id = 'unclaimedPanel';
+    sheet.append(probe);
+    const probeOrder = +getComputedStyle(probe).order || 0;
+    const worst = Math.max(...kids.map(c => +getComputedStyle(c).order || 0));
+    probe.remove();
+    return { dom, css, probeOrder, worst, flex: getComputedStyle(sheet).flexDirection };
+  });
+  // Every panel that writes into the sheet must be a DECLARED slot. Reading the
+  // rendered page cannot tell a declared one from one that came out first by
+  // accident, and that accident is what PR #473 found: rideStatus appended
+  // straight to #sheet, was on no list, and survived only because the named
+  // slots get moved to the end around it.
+  const declared = await page.evaluate(() => window.__tm.sheetSlot?.() || []);
+  for (const id of ['rideStatus', 'recoveryControls', 'routeChoices', 'jobHead', 'hubTactics', 'jobBoard'])
+    ok(`${id} is a declared slot, not first by accident`, declared.includes(id), declared.join(','));
+
+  ok('the sheet paints in DOM order and CSS order alike',
+    orders.dom.join('>') === orders.css.join('>'), `${orders.dom.join('>')} vs ${orders.css.join('>')}`);
+  ok(`a panel nobody gave an order to lands last (${orders.probeOrder} >= ${orders.worst})`,
+    orders.flex === 'column' && orders.probeOrder >= orders.worst);
+
+  // ── THE READ-ONLY PANEL MUST NOT LOOK LIKE THE ONE WITH THE BUTTONS ──
+  // The recording said MISSED four times about trams standing at the stop. This
+  // panel is why: read-only by design, spans not buttons, and it said AT HUB in
+  // the same words the boarding panel uses.
+  const hub = await page.evaluate(() => {
+    const el = document.getElementById('hubTactics');
+    return { text: (el?.innerText || '').replace(/\s+/g, ' '), buttons: el?.querySelectorAll('button,[role=button]').length ?? 0 };
+  });
+  ok('the read-only panel says it is read-only', /not tappable|board from/i.test(hub.text), hub.text.slice(0, 90));
+  ok('and it really has nothing to press', hub.buttons === 0, `${hub.buttons} buttons`);
+  ok('so it cannot be mistaken for the boarding panel',
+    !/BOARD ONE OF THESE/.test(hub.text) && !/^HUB OPTIONS/.test(hub.text.trim()), hub.text.slice(0, 60));
+
+  // ── AND ONCE YOU ARE ON A TRAM ───────────────────────────────────────
+  // rideStatus — "ON TRAM 6 → Arabia" — appended straight to #sheet and was on
+  // no list. It came out first, by accident, only because the named slots get
+  // moved to the end around it.
+  const rode = await page.waitForFunction(() => {
+    const b = document.querySelector('#routeChoices .catchChoice:not([disabled])');
+    if (!b) return false; b.click(); return true;
+  }, null, { timeout: 90000 }).then(() => true).catch(() => false);
+  if (rode) {
+    await page.waitForTimeout(1200);
+    const riding = await page.evaluate(() => {
+      const sheet = document.getElementById('sheet'), rs = document.getElementById('rideStatus');
+      const r = rs?.getBoundingClientRect();
+      return { kind: window.__tm.mobility?.status?.()?.kind,
+        first: [...sheet.children].filter(c => c.id && c.innerHTML)[0]?.id,
+        top: r ? Math.round(r.top) : null, bottom: r ? Math.round(r.bottom) : null };
+    });
+    if (riding.kind === 'riding') {
+      ok('the panel saying which tram you are on leads the sheet', riding.first === 'rideStatus', riding.first);
+      ok(`and it is on screen (${riding.top}..${riding.bottom} of ${vp.h})`,
+        riding.top !== null && riding.top < vp.h);
+    } else ok('boarding reached a riding state', false, riding.kind);
+  } else ok('a CATCH lit inside 90s so the ride could be checked', false);
+
   // ── the feed must not say the same thing twice ────────────────────────
   const feed = await page.evaluate(() => [...document.querySelectorAll('#feed div')].map(d => d.textContent));
   ok('the feed does not repeat itself back to back', feed.every((t, i) => i === 0 || t !== feed[i - 1]), feed.join(' | '));
