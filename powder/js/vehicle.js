@@ -64,9 +64,9 @@
 // Integrated at a fixed 120 Hz on an accumulator, because a spring this stiff
 // is not stable on a variable frame time.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=7';
-import { SURF, SALT } from './terrain.js?v=7';
-import { buildCraft, disposeCraft } from './craft.js?v=7';
+import { PAL } from './palette.js?v=8';
+import { SURF, SALT } from './terrain.js?v=8';
+import { buildCraft, disposeCraft } from './craft.js?v=8';
 
 const G = 9.81;
 const HZ = 120, DTF = 1 / HZ;
@@ -82,8 +82,45 @@ export const SPEC = {
   drag: 2.18,                // N per (m/s)^2, x the surface multiplier
   slipK: 6000,               // lateral N per m/s of slip, before the mu limit
   steerLock: 0.30,           // rad the front is steered at full lock
-  steer: 9000,               // extra yaw N.m at full lock (rudder), on top of the pull
-  yawDamp: 12000,
+  // Rudder and yaw damping are a PAIR, and they set two DIFFERENT things: the
+  // steady yaw rate under full lock is steer/yawDamp, and the time to reach it
+  // is Izz/yawDamp. The old 9000/12000 gave 0.75 rad/s after a 0.73 s time
+  // constant — measured, the heading moved 1.8 degrees in the first quarter
+  // second of full lock, which is a quarter second of the game ignoring you.
+  //
+  // But steer/yawDamp is NOT the whole story, and assuming it was cost a tuning
+  // pass. The axle forces are themselves a yaw damper: yawing swings the axles
+  // sideways through the ground, and the lateral forces that answer oppose the
+  // yaw. Measured, that is ~54 kN.m per rad/s — MORE than yawDamp — so while
+  // the runners have grip the sled is far lazier than steer/yawDamp predicts
+  // (half lock at 90 km/h gave 0.11 rad/s when the arithmetic said 0.24), and
+  // it only wakes up once it is already sliding and that damping has gone.
+  // Lazy while planted and eager while sliding is exactly backwards.
+  //
+  // So the rudder is big AND it FADES WITH SLIP (`bite`): it is the runners
+  // biting, not an air vane, and once they are sliding they cannot point the
+  // sled any more. Big-while-gripping gives an answer to small inputs;
+  // fading-while-sliding is what stops the driver steering into a spin.
+  steer: 45000,              // extra yaw N.m at full lock (rudder), on top of the pull
+  steerFade: 0.75,           // how much of it slip takes away
+  steerFadeSlip: 7,          // m/s of slip over which it fades
+  yawDamp: 35000,
+  // THE WEATHERVANE — directional stability, and the single thing this model
+  // was missing. A long body with a slip angle wants to line back up with
+  // where it is actually going; that restoring moment is why a real vehicle
+  // does not spin the instant the rear steps out. Without it the yaw moment
+  // from the front axle just kept growing once the rear saturated: measured,
+  // full lock from a cruise ran away to 1.41 rad/s with 18.6 m/s of slide and
+  // never came back. It is tanh-saturated, so it arrives hard at small slip
+  // (stability) but caps (you can still hold a slide on full lock).
+  // Measured at 520 with no speed cap: at 40 m/s the restoring moment reached
+  // 20.8 kN.m against a 22 kN.m rudder, so half lock produced 7 m/s of slide
+  // and almost no yaw — the sled washed wide without ever changing heading,
+  // which is the worst thing a car can do. Capping the speed term means it
+  // stabilises without ever out-arguing the driver.
+  weather: 320,              // N.m per m/s of forward speed, at saturated slip
+  weatherSpeed: 25,          // m/s the speed term stops growing at
+  weatherSlip: 6,            // m/s of slip at which it is ~76% saturated
   // How much of the front's grip the thrust eats. Measured: at 0.55 the
   // front had NO lateral force under full power (thrust is ~1.2 g here, the
   // axle carries ~6 kN) and the sled could only push. A hot rod pushes; it
@@ -103,7 +140,10 @@ export const SPEC = {
   // much bigger rudder to match turn-in, and a bigger traction circle so
   // that power mid-corner is what steps the tail out. Both numbers exist to
   // make the two sleds different in CHARACTER at similar pace.
-  rearSteer: 1.9, rearCircle: 0.28,
+  // rearSteer was 1.9 against a 9000 rudder. Against 45000 that made the aft
+  // sled three times twitchier than the nose sled at quarter lock, which is
+  // not "a different character", it is a different game. Re-measured at 1.15.
+  rearSteer: 1.15, rearCircle: 0.28,
   spoolUp: 1.3, spoolDown: 0.8,
   brakeDrag: 5.2,
 };
@@ -150,6 +190,7 @@ export class Vehicle {
     this._g = { h: 0, surf: 0, deck: false };
     this.onDeck = false;
     this.sink = 0;                      // mean runner sink, m — read by the HUD
+    this.bite = 1;                      // rudder authority left, 1 planted, 0 sliding
     this._FLf = 0; this._FLr = 0;       // relaxed axle forces (the sand's lag)
     this._lastThrust = 0;
     this.aiT = 0; this.aiOff = 0;
@@ -290,7 +331,12 @@ export class Vehicle {
     const airborne = !this.grounded;
     let thrust = SPEC.thrust * this.n1 * this.n1 * this.power;
     if (this._od) thrust += SPEC.odThrust * this.n1;
-    if (airborne) thrust *= 0.25;                 // nothing to push against
+    // A rocket does not need the ground — but airborne ALSO gets a third off
+    // the drag, and at 0.60 the two together made air time a speed exploit:
+    // the autopilot fell into the rift and accelerated to 260 km/h against a
+    // 140 cruise. 0.40 keeps a jump from killing the engine without paying you
+    // to be off the ground.
+    if (airborne) thrust *= 0.40;
     if (this.hitT > 0) thrust *= 0.3;
 
     // The rockets are on the FRONT and they point where the front is
@@ -422,9 +468,27 @@ export class Vehicle {
     if (this.pos.y < floor) { this.pos.y = floor; if (v.y < 0) v.y = -v.y * 0.2; }
 
     // ---- steering and attitude ------------------------------------------
-    const steerGain = this.grounded ? 1 : 0.30;
-    const auth = clamp(Math.abs(vF) / 26, 0, 1);
-    Mz += steerIn * SPEC.steer * (frontDrive ? 1 : SPEC.rearSteer) * auth * steerGain;
+    // These are ROCKET sleds: the nozzles work whether or not a runner is
+    // touching, so losing a crest should not also lose the steering. On the
+    // dune field the craft is airborne ~17% of the time at speed, and at the
+    // old 0.30 that read as the controls cutting out at random.
+    const steerGain = this.grounded ? 1 : 0.55;
+    // full rudder by 10 m/s, and a quarter of it at a standstill so the sled
+    // can be pointed while parked. The old ramp did not saturate until 26 m/s.
+    const auth = clamp(Math.abs(vF) / 10, 0.25, 1);
+    // the runners can only point the sled while they are still biting
+    const bite = 1 - SPEC.steerFade * Math.tanh(Math.abs(this.slip) / SPEC.steerFadeSlip);
+    this.bite = bite;
+    Mz += steerIn * SPEC.steer * (frontDrive ? 1 : SPEC.rearSteer) * auth * steerGain * bite;
+    // The weathervane. Sign: `slip` is the velocity component along the RIGHT
+    // vector, and yaw is right-positive, so sliding right (slip > 0) needs a
+    // POSITIVE moment to bring the nose round to meet the direction of travel.
+    // Getting this backwards does not read as a sign error — it reads as the
+    // sled crabbing sideways down the flats on its own, which is how the last
+    // one was caught.
+    Mz += Math.tanh(this.slip / SPEC.weatherSlip)
+        * Math.min(Math.abs(vF), SPEC.weatherSpeed) * SPEC.weather
+        * (this.grounded ? 1 : 0.35);
     Mz -= this.yawRate * SPEC.yawDamp * (this.grounded ? 1 : 0.5);
     this.yawRate += Mz / SPEC.Izz * dt;
     this.yaw += this.yawRate * dt;

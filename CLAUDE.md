@@ -166,6 +166,42 @@ metres out resolves to a 900 px sprite and fills the frame with white.
 shadows, bloom and antialiasing are exactly what a weak machine cannot afford and exactly
 what this look is made of.
 
+**Making it drivable (v8), and what was actually wrong.** The owner reported the
+controls as a nightmare; measured through the real key path, three separate faults.
+**There was no self-aligning moment anywhere in the model** — no directional stability
+at all — so once the rear stepped out nothing brought it back: full lock from a cruise
+ran away to 1.41 rad/s with 18.6 m/s of slide and stayed there, and releasing the stick
+did nothing. `SPEC.weather` is that restoring moment, tanh-saturated on slip and with
+its speed term **capped** (`weatherSpeed`): uncapped at 520 it reached 20.8 kN·m at
+40 m/s against a 22 kN·m rudder, and half lock then produced a wide slide with almost
+no yaw — the sled washing wide without ever changing heading, which is the worst thing
+a vehicle can do. Sign: `slip` is velocity along the RIGHT vector and yaw is
+right-positive, so sliding right needs a POSITIVE moment; backwards, it reads as the
+sled crabbing sideways on its own, which is how the last one was caught.
+**Steering had a 0.73 s time constant** (`Izz/yawDamp`) — 1.8 degrees of heading in the
+first quarter second of full lock. And `steer/yawDamp` is **not** the steady rate:
+the axle forces are themselves a yaw damper worth ~54 kN·m per rad/s, *more* than
+`yawDamp`, so while the runners grip the sled is much lazier than the arithmetic
+predicts and only wakes up once it is sliding and that damping has gone — lazy while
+planted, eager while sliding, exactly backwards. So the rudder is 45000 and **fades
+with slip** (`bite` = `1 - steerFade*tanh(|slip|/steerFadeSlip)`): it is the runners
+biting, not an air vane. Big-while-gripping answers small inputs; fading-while-sliding
+is what stops the driver steering into a spin, and it is what makes a rudder that big
+safe. The ladder at 90 km/h is 0.13/0.40/0.54 rad/s at quarter/half/full lock for
+0.7/4.8/9.5 m/s of slide, and at 140 km/h every lock slides — corner speed is a
+decision again. `rearSteer` had to come from 1.9 to **1.15**: it was calibrated against
+the old 9000 rudder and against 45000 it made the aft sled three times twitchier than
+the nose sled. Airborne, the rockets keep **0.40** of their thrust (they do not need
+the ground) and the rudder **0.55** — at 0.60/0.25 respectively, air time became a
+speed exploit (the autopilot fell into the rift and hit 260 km/h against a 140 cruise)
+or a random loss of control on a dune field where the craft is airborne ~17% of the
+time. Deep sand's `shear` went 0.22 → 0.12: the bite should arrive late, not a third of
+a second late, on top of every other lag. The HUD's **SLIP turns amber then red off
+`bite`**, because otherwise there is no way to tell turning from sliding until the
+scenery tells you. Harness note: `drive2.mjs` / `corner.mjs` teleport onto the rift's
+flat salt floor before every phase — the open-field version kept drifting into a mesa
+and reporting the crash as a handling number.
+
 **Two chassis and the weight axis (v5).** `Vehicle` takes `drive: 'front' | 'rear'` and
 applies thrust at that axle, which is the whole difference. **NOSE** rockets point where
 the front is *steered*, so power adds a yaw moment and pulls you through the corner, and
@@ -234,9 +270,12 @@ plates, named for what they show: `sun-one`, `aft-five`, `intake-green`, `nose-g
 `#msg .plate` rule sizes them in vh and hides them under 520 px of height.
 
 **Controls.** Left stick steers and works the throttle; right stick pans the camera
-(x) and is your weight (y). Keyboard: W throttle, A/D steer, S brake, Space boost
-(lean back), Up arrow spoiler (lean forward), Left/Right arrows pan, **F swaps the
-chassis on the menu**, Esc pause. **Gamepad (v6)** is the scheme's natural home,
+(x) and is your weight (y). Keyboard (v8): the arrow cluster **mirrors WASD** — W/Up
+throttle, S/Down brake, A/Left and D/Right steer — **Space** boost (lean back),
+**Shift** spoiler (lean forward), **Q/E** pan, F swaps the chassis on the menu, Esc
+pause. It used to split the arrows three ways (up/down were the weight axis, left/right
+panned the camera) and nothing did what an arrow key does in any other game.
+**Gamepad (v6)** is the scheme's natural home,
 because both axes v5 added are analog — the turbine spools so part throttle is a real
 choice, and weight is a lean, not a button; keyboard flattens both to on and off.
 `input.pollGamepad()` runs once per frame from `animate()` and feeds the SAME control

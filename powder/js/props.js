@@ -9,7 +9,7 @@
 // that crossing, so it is built exactly once.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PAL } from './palette.js?v=7';
+import { PAL } from './palette.js?v=8';
 
 export function makePropKit() {
   const lam = (c) => new THREE.MeshLambertMaterial({ color: c });
