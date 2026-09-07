@@ -17,13 +17,13 @@ export const QUESTIONS=[
     why:'Vision pressure: understand which fantasy is currently pulling players hardest.'
   },
   {
-    id:'tokodrop.stop.001', project:'toko-drop', builds:['*'], trigger:'session-ended-early',
+    id:'tokodrop.stop.001', project:'tokodrop', builds:['*'], trigger:'session-ended-early',
     prompt:'What made you stop that run?',
     answers:[['done','I was done'],['bored','It got repetitive'],['confused','It became confusing'],['retry','I wanted to retry differently']],
     why:'Separate healthy run-ending from boredom/readability/retry intent.'
   },
   {
-    id:'tokomove.missed.001', project:'toko-move', builds:['*'], trigger:'missed-boarding-twice',
+    id:'tokomove.missed.001', project:'tokomove', builds:['*'], trigger:'missed-boarding-twice',
     prompt:'You missed that tram twice. What was unclear?',
     answers:[['timing','The timing'],['route','The route'],['button','What to press'],['mistimed','Nothing — I mistimed it']],
     why:'Readability check after repeated boarding misses.'
