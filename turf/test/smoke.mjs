@@ -27,6 +27,7 @@ import { magOf, needsReload, roundsLeft } from '../js/ammo.js';
 import { SPRITE_H, TILE_W, FULL_PROPS, PARTIAL_PROPS, PROP_H, RARE_PROPS } from '../js/render.js';
 import { incomingThreats } from '../js/combat.js';
 import { PLATES } from '../js/plates.js';
+import { postureFor } from '../js/anim.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -1312,6 +1313,76 @@ check('the incoming warning matches what the enemy phase will actually roll', ()
         `${enc.id}: ${uid} is a rival and should not carry an incoming warning`);
     }
   }
+});
+
+
+// ── posture: motion without frames (v35) ──────────────────────────
+// Owner, 2026-09-06: a standing cutout that is MOVED to animate, with the
+// art frame changing only for an already-approved pose. The motion is a
+// transform now, which means it is arithmetic and can be asserted — the
+// first time anything in this game's animation has been testable in bare
+// node at all, because the previous answer to "how does a unit move" was a
+// filename.
+check('a walk leaves the ground and comes back to it', () => {
+  const tw = { fgx: 0, fgy: -3, startedAt: 0, dur: 300 };
+  assert.equal(postureFor(null, tw, 0).hop, 0, 'a stride starts on the floor');
+  const peak = postureFor(null, tw, 75).hop;
+  assert.ok(peak > 2, `the stride barely leaves the ground (${peak})`);
+  assert.ok(postureFor(null, tw, 150).hop < 0.5, 'the middle of a two-tile walk is a footfall');
+  // The lean settles rather than snapping, and points the way the mirror does.
+  assert.ok(postureFor(null, tw, 40).lean > 0, 'the body leans into travel');
+  assert.ok(postureFor({ clip: 'move', i: 0, startedAt: 0, mirror: true }, tw, 40).lean < 0,
+    'a mirrored unit leans the other way');
+});
+
+check('a swing throws the body out and brings it back', () => {
+  const a = { clip: 'attack', i: 1, startedAt: 0, mirror: false };
+  const out = postureFor(a, null, 91).lunge;
+  assert.ok(out > 2, `the release does not commit (${out})`);
+  assert.ok(postureFor(a, null, 259).lunge < 0.3, 'the release never returns to stance');
+  // A hit goes the OTHER way, or being shot reads as attacking.
+  const hit = postureFor({ clip: 'hit', i: 0, startedAt: 0, mirror: false }, null, 10).lunge;
+  assert.ok(hit < 0, `a hit throws the body forward (${hit})`);
+});
+
+check('death topples onto the floor and stays there', () => {
+  const fall = { clip: 'death', i: 0, startedAt: 0, mirror: false };
+  assert.equal(postureFor(fall, null, 0).pitch, 0, 'a body starts upright');
+  assert.ok(postureFor(fall, null, 240).pitch > 0.6, 'the fall does not get going');
+  const down = postureFor({ clip: 'death', i: 1, startedAt: 0, mirror: false }, null, 99999);
+  // death-down is the resting pose and holds forever — a corpse that stood
+  // back up is the bug this asserts against.
+  assert.ok(down.pitch > 1, 'the corpse gets back up');
+  // NOT flat. A card taken to 90 degrees foreshortens to nothing and reads as
+  // a smear rather than as a body on the ground; the standee stops short and
+  // shows its top edge instead.
+  assert.ok(down.pitch < Math.PI / 2 - 0.15,
+    `a downed card at ${down.pitch.toFixed(2)}rad is edge-on and unreadable`);
+});
+
+check('a standee is never square to the camera', () => {
+  // Yaw zero is a card seen dead-on, which is exactly what a flat drawing
+  // pinned to the screen looks like. Every resting pose carries some turn,
+  // so the cut edge is always doing a little work.
+  const rest = postureFor(null, null, 1234);
+  assert.ok(Math.abs(rest.yaw) > 0.2, `a resting standee is square on (${rest.yaw})`);
+  assert.equal(rest.hop, 0, 'postureFor itself is pure — the breath is added per unit by the animator');
+  assert.equal(rest.pitch, 0);
+  // And a mirrored unit turns the other way, or half the board faces the
+  // same direction regardless of where it is going.
+  const left = postureFor({ clip: 'move', i: 0, startedAt: 0, mirror: true },
+    { fgx: 0, fgy: -1, startedAt: 0, dur: 200 }, 10);
+  assert.ok(left.yaw < 0, 'a unit facing left still turns its card to the right');
+});
+
+check('setting off swings the card through the turn', () => {
+  // The standee's signature move: a card does not mirror-flip, it swings
+  // round its own vertical axis and goes briefly edge-on.
+  const tw = { fgx: 0, fgy: -3, startedAt: 0, dur: 300 };
+  const rest = Math.abs(postureFor(null, null, 0).yaw);
+  const mid = Math.abs(postureFor(null, tw, 68).yaw);
+  assert.ok(mid > rest + 0.5, `the turn barely happens (${rest.toFixed(2)} -> ${mid.toFixed(2)})`);
+  assert.ok(Math.abs(postureFor(null, tw, 299).yaw) - rest < 0.05, 'the card never settles back');
 });
 
 check('no two things spawn on one tile, and nothing spawns on full cover', () => {

@@ -25,6 +25,14 @@ export const PAL = {
   // real phone playtest of v8 found it nearly invisible at the board's
   // actual on-device size — a wash this faint reads as "slightly different
   // floor tile," not "you can move here."
+  // The cut edge of a standee (standee.js), and it is the whole tell. A dark
+  // edge reads as the sprite's own shadow and the figure stays a drawing;
+  // what says CARD is the pale core you only see because the board has been
+  // cut through — the same thing slaykallio's cutouts get from their
+  // exposed flute. Two tones: the extrusion in shade, and one lit sliver at
+  // the cut itself.
+  CARD_EDGE: '#6b6153',
+  CARD_EDGE_LIT: '#cdc0a4',
   MOVE_HI: 'rgba(111,184,217,0.48)',
   // The interior of the reachable region. A fifth of MOVE_HI's weight,
   // because the region is now read from its OUTLINE (render.js's

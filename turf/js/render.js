@@ -3,10 +3,11 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=12';
+import { PAL } from './palette.js?v=14';
 import { key } from './grid.js?v=4';
 import { magOf, roundsLeft } from './ammo.js?v=2';
 import { incomingArrivals, incomingThreats } from './combat.js?v=20';
+import { drawStandee, footprint, THICKNESS } from './standee.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // The real on-board sprite height (drawUnitSprite) — taller than the old
@@ -453,8 +454,28 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   const { x, y } = off ? toScreen(layout, unit.x + off.gx, unit.y + off.gy) : { x: tileX, y: tileY };
   const feetY = y - 2;
 
+  // THE POSTURE. anim.js says how this body is moving; here it becomes a
+  // transform about the FEET, which is the pivot every one of these motions
+  // actually has — a figure leans from the ground, hops off it, and falls
+  // over about it. Owner, 2026-09-06: motion in the physical object, few
+  // frames. See anim.js's postureFor header for why the art contract
+  // changed with it.
+  const post = anim && anim.postureFor ? anim.postureFor(unit) : null;
+
   if (isSelected) g.diamond(tileX, tileY, TILE_W - 2, TILE_H - 1, null, PAL.SELECT_EDGE, 2);
-  g.diamond(x, y, TILE_W * 0.4, TILE_H * 0.35, 'rgba(0,0,0,0.35)', null); // shadow travels with the body
+  // The shadow is the CARD'S FOOTPRINT, not a fixed blob: a standee on its
+  // feet throws a sliver the width of the card, and one lying on the floor
+  // throws its whole length. That is most of what sells the thing as an
+  // object standing on a surface rather than a picture pasted over one — and
+  // it is why the topple lands instead of just fading out.
+  const air = post ? Math.min(1, post.hop / 4) : 0;
+  if (post) {
+    const fp = footprint(TILE_W * 0.5, SPRITE_H, post.yaw, post.pitch, post.hop);
+    g.diamond(x, y, Math.max(4, fp.w), Math.max(2.5, fp.h),
+      `rgba(0,0,0,${0.42 - air * 0.16})`, null);
+  } else {
+    g.diamond(x, y, TILE_W * 0.4, TILE_H * 0.35, 'rgba(0,0,0,0.35)', null);
+  }
   // A real character sprite carries its OWN colours (a jacket, not a faction
   // paint job), so the cold-operator/warm-rival read the old flat silhouette
   // gave for free is gone once the sprite draws over it — replaced with a
@@ -477,9 +498,27 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   // and for the twelve characters whose sprite is a single static plate.
   const refEntry = frame && frame.refSrc ? getImageEntry(frame.refSrc) : null;
   const refH = refEntry && refEntry.loaded ? refEntry.inkBottom - refEntry.inkTop + 1 : null;
-  const topY = entry && entry.loaded
-    ? drawUnitSprite(g, entry, x, feetY, frame && frame.mirror, refH)
-    : drawUnitFallback(g, unit, x, feetY);
+  // THE BODY IS A CARD. standee.js draws the plate as an extruded paper
+  // standee under its own two angles — yaw about its vertical axis (showing
+  // the cut edge), pitch about its feet (falling into the scene). The old
+  // path is kept for the one render call before an image decodes and for
+  // anything with no posture at all.
+  let topY;
+  if (post && entry && entry.loaded) {
+    const contentH = entry.inkBottom - entry.inkTop + 1;
+    topY = drawStandee(g.ctx, entry, {
+      x: x + (post.lunge || 0), feetY,
+      scale: SPRITE_H / (refH || contentH),
+      mirror: frame && frame.mirror,
+      yaw: post.yaw, pitch: post.pitch, lean: post.lean,
+      hop: post.hop, squash: post.squash,
+      edge: PAL.CARD_EDGE, edgeLit: PAL.CARD_EDGE_LIT,
+    });
+  } else {
+    topY = entry && entry.loaded
+      ? drawUnitSprite(g, entry, x, feetY, frame && frame.mirror, refH)
+      : drawUnitFallback(g, unit, x, feetY);
+  }
 
   // Hit flash. Drawing the SAME image again in 'lighter' brightens exactly
   // the sprite's own pixels and leaves the transparent surround untouched —
@@ -489,10 +528,23 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   // twelve characters that are still a single static plate.
   const flash = anim ? anim.flashFor(unit) : 0;
   if (flash > 0 && entry && entry.loaded) {
+    const contentH = entry.inkBottom - entry.inkTop + 1;
     g.ctx.save();
     g.ctx.globalCompositeOperation = 'lighter';
     g.ctx.globalAlpha = flash * 0.7;
-    drawUnitSprite(g, entry, x, feetY, frame && frame.mirror);
+    // The SAME card, or the flash is a second upright copy of the sprite
+    // lighting up beside a turned one.
+    if (post) {
+      drawStandee(g.ctx, entry, {
+        x: x + (post.lunge || 0), feetY, scale: SPRITE_H / (refH || contentH),
+        mirror: frame && frame.mirror,
+        yaw: post.yaw, pitch: post.pitch, lean: post.lean,
+        hop: post.hop, squash: post.squash,
+        edge: 'rgba(0,0,0,0)', edgeLit: 'rgba(0,0,0,0)',
+      });
+    } else {
+      drawUnitSprite(g, entry, x, feetY, frame && frame.mirror);
+    }
     g.ctx.restore();
   }
 

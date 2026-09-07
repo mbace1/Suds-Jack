@@ -8,6 +8,69 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v35 (branch) — 2026-09-06
+**Owner: "can the TURF asset pipeline just make a standing cardboard
+character, that is then just moved to animate?" — then, on the first cut:
+"we are trying to make actual Paper Mario looking puppets, those would give
+this a bit more dimension rather than moving sprites."**
+
+The first cut leaned and squashed the plate in the picture plane, which is a
+moving sprite wearing a costume. This is the second: `js/standee.js` draws a
+character as a **card standing in the world** with three properties a sprite
+has not got.
+
+**THICKNESS.** The plate is extruded along the turn, so the card shows its cut
+edge. The edge is drawn from the plate's own silhouette (cached per image,
+filled flat) and — this is the whole tell — it is **pale**, not dark: a dark
+edge reads as the sprite's own shadow and the figure stays a drawing, while a
+pale one reads as the paper core you can only see because the board has been
+cut through. It is exaggerated about tenfold (3.0 board px on a 29px figure),
+for the same reason the art already exaggerates its own outline: a true 3mm
+standee is a twentieth of a pixel here.
+
+**YAW.** The card turns about its own vertical axis, and this is exact rather
+than faked because the board's camera is **orthographic** — a 2:1 iso
+projection has no vanishing point, so a yawed flat card foreshortens to
+`cos(yaw)` horizontally and not at all vertically. One horizontal scale. No
+perspective warp, no column slicing, no pre-rendered turn frames. A standee
+also never rests square to the camera (`REST_YAW` 0.42), because a card seen
+dead-on is indistinguishable from a drawing pinned to the screen.
+
+**PITCH.** It falls over about its feet, to 70° rather than 90° — a card taken
+all the way flat foreshortens to nothing and reads as a smear, and stopping
+short leaves a body that is still legibly a body with its top edge showing.
+
+**And the turn is the signature move.** A card does not mirror-flip; setting
+off sweeps the yaw through 1.3 rad and back, so the standee swings round and
+goes briefly edge-on, which is what Paper Mario does whenever a character
+changes which way it is looking.
+
+The shadow is the card's **footprint** now rather than a fixed blob: a standee
+on its feet throws a sliver the width of the card, one lying down throws its
+whole length. That is most of what sells the thing as an object on a surface.
+
+**What it costs in art: nothing.** Twelve of the fourteen operators have a
+single static plate and no prospect of a second one here (no `GEMINI_API_KEY`,
+no `MESHY_API_KEY`, and the PixelLab MCP server will not connect from this
+environment). All fourteen now turn, hop, lunge, recoil and topple.
+
+Gates: `test/smoke.mjs` 142 checks — five of them new and asserting the motion
+directly, which is the first time anything in this game's animation has been
+testable in bare node at all, because the previous answer to "how does a unit
+move" was a filename.
+
+**NOT YET RECONCILED with `CUTOUT_BRIEF.md`.** That brief (another lane,
+`origin/claude/slay-kallio-project-3lv3l9`) specifies the same idea as a pure
+picture-plane transform — `{dx, dy, rot, sx, sy, skew}` in `js/cutout.js` —
+which is the version this release's second cut replaced, and it has no
+thickness and no yaw. Its bounds table, its three renderer traps (do not
+mirror twice; UI must not inherit the transform; the hit flash must share it)
+and its gate list are all right and are all honoured here. The two need
+merging deliberately, not by whoever pushes last.
+
+Modules: `standee` v2 (new), `anim` v8, `render` v27, `palette` v14,
+`main` v38.
+
 ## v34 — 2026-09-05
 **Owner: "should be zoomed in more. readability and comprehension in general
 is hard."** Asked which of those bit hardest, they named two: *what is about

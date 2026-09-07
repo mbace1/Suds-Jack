@@ -1,16 +1,16 @@
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=12';
+import { PAL } from './palette.js?v=14';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
   skillOffer, learnSkill, incomingArrivals, pendingArrivals, incomingThreats,
   awardXp, xpToNext, applyTrinkets,
 } from './combat.js?v=20';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=24';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=27';
 import { createCamera, MIN_TILE_W } from './camera.js?v=3';
 import { createInputHandler } from './input.js?v=19';
-import { createAnimator } from './anim.js?v=5';
+import { createAnimator } from './anim.js?v=8';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
 import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2';
@@ -959,6 +959,12 @@ controls.cancel.addEventListener('pointerup', e => { e.preventDefault(); input &
 window.__turf = {
   state: () => state,
   layout: () => layout,
+  // A way to make the animator DRAW. `anim` itself is already exposed below;
+  // what was missing is a repaint, and v35 is why it is worth having: the
+  // motion is a TRANSFORM now (anim.js's postureFor), so a pose can be held
+  // and photographed instead of caught mid-clip by a screenshot that happened
+  // to land on the right millisecond.
+  repaint: () => { if (state && layout) render(canvas, state, layout, anim); },
   boot,
   select: uid => input && input.selectByUid(uid),
   move: (uid, x, y) => { const r = moveUnit(state, uid, x, y); onChange(); return r; },
