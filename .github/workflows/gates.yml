@@ -237,6 +237,13 @@ jobs:
       - name: vehicle trails
         run: node toko-move/test/trails.mjs
 
+      # Speed was a fixed DURATION per mode, so a 17 km tram line covered five
+      # times the ground of a 3 km one in the same time and the fleet's apparent
+      # speed ran from a crawl to 494 km/h. And the shift asked for six
+      # deliveries when only five ever fitted in it.
+      - name: the pace of the board, and a shift you can finish
+        run: node toko-move/test/pace.mjs
+
       - name: version sync across hero, runtime, log and hub
         run: node toko-move/test/version-sync.mjs
 
@@ -245,19 +252,23 @@ jobs:
       # presence in the catalogue; neither is the route. The cabinet spent two
       # releases buried at #20 describing the superseded lane, and no gate could
       # see it. `suds-hub-release` requires this check; this is it, runnable.
+      # THE BROWSER THE TWO GATES BELOW NEED. Without it `require('playwright')`
+      # throws MODULE_NOT_FOUND before a single check runs — which is exactly
+      # what happened: the cabinet-route gate failed in zero seconds on every
+      # push from the day it was added, and because a failed step ends the job,
+      # the phone and pace gates after it were never even attempted. A red job
+      # nobody reads is the same as no gate at all.
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
       - name: the hub cabinet route into gameplay
         run: NODE_PATH=$(npm root -g) node toko-move/test/cabinet-route.cjs
 
       # A PHONE, because v2.27 shipped a title screen whose START SHIFT button
       # was below the fold on an iPhone 13, on a veil with no overflow. Present,
       # visible, enabled, 44px, every gate green, and unreachable with a thumb.
-      # Speed was a fixed DURATION per mode, so a 17 km tram line covered five
-      # times the ground of a 3 km one in the same time and the fleet's apparent
-      # speed ran from a crawl to 494 km/h. And the shift asked for six
-      # deliveries when only five ever fitted in it.
-      - name: the pace of the board, and a shift you can finish
-        run: node toko-move/test/pace.mjs
-
       - name: the game on a phone
         run: NODE_PATH=$(npm root -g) node toko-move/test/phone.cjs
 
