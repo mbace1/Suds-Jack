@@ -131,6 +131,30 @@ to each can), a **turbine face** in each mouth, an open bell at each
 exhaust with dark rings on the can. Model the plumbing as real tubes at
 0.06–0.09 m radius; thinner does not read at race distance.
 
+### The authored ships: `pipeline/authored/ship_nose.py`, `ship_aft.py`
+
+Both chassis exist as scripts, the same way the derrick does (see §2) - not
+because a ship should not be a .blend, but because a first ship built from
+the contract's own numbers is the fastest way to find out where the contract
+is wrong, and a script can be re-run against a changed contract in seconds.
+`_lib.py` is the shared primitive set (loft, cylinder, box, plate, tube,
+ellipsoid, a UV'd quad) and both ships are ~150 lines on top of it.
+
+- **NOSE** (owner, 2026-09-07: *"two large chrome engines in the front, like a
+  rocket sled"*): cans of radius 0.60 flanking the nose at x ±1.10, mouths
+  forward at y +4.1, bells exhausting aft at y +1.2 - so the nozzle empties
+  are AHEAD of the origin, which the physics expects for front drive - the
+  canopy behind the rockets, a tail fin, a delta.
+- **AFT**, to the plate `art/aft-five.jpg`: dart nose, delta, canopy forward,
+  the rear half an open bay of plumbing with the cans slung beside it.
+
+Both ride on two RUNNERS at x ±1.6 the length of the pads, hung from pylons
+under the wing and struts elsewhere. The plates hover over nothing; the
+physics has four pads and wants metal over each.
+
+`models/blender/manifest.json` registers them: **`?models=blender`** races
+them. The production manifest stays empty until they have been looked at.
+
 ---
 
 ## 2. Landmarks
