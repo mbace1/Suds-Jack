@@ -149,9 +149,53 @@ shaded, vertex-coloured, one material**.
 | Collision | the sled treats each landmark as a boulder of radius 0.42 × its footprint; hollow arches will not be enterable — make the legs ≥ 3 m apart on a separate file if the drive-through matters |
 | Placement | deterministic per tile from the world seed, 6% of tiles, off the rift floor and the roads |
 
-Ideas from the brief, any six: a half-buried wrecked sled, a derrick, a
-broken bridge span, a big natural arch, a crashed ringed probe, a row of
-leaning slabs, a sand-filled hangar.
+Ideas from the brief, any six: a half-buried wrecked sled, ~~a derrick~~
+(**done** - `pipeline/authored/land_derrick.py`, 720 tris, 22 m), a broken
+bridge span, a big natural arch, a crashed ringed probe, a row of leaning
+slabs, a sand-filled hangar.
+
+### A landmark may be a SCRIPT rather than a .blend
+
+Under the rules above a landmark is flat geometry, one material and a vertex
+colour - no sculpt, no UVs, no textures. That is a thing a script can state
+exactly, so `pipeline/authored/` holds one Python file per landmark, each
+runnable on its own:
+
+```sh
+blender -b -P pipeline/authored/land_derrick.py -- ../models/land-derrick-01.glb
+```
+
+A script is reproducible, reviewable in a diff, and cheap to re-cut when the
+palette or the triangle budget moves; a .blend is none of those. This is
+**not** a rule against .blend files - anything wanting a modeller's hand (the
+ships, the hull paint) still wants one, and the output here opens in Blender
+like any other file if you would rather carry on by hand.
+
+The derrick is the worked example, and it carries the lesson: everything in
+it is a bar, so it has exactly ONE primitive, `beam(p0, p1, w, colour)`.
+The first cut used axis-aligned boxes with a spin about Z, which cannot
+express a diagonal at all - a box rotated about Z stays level - so the
+bracing came out as horizontal bars poking sideways through the legs and the
+leg segments stepped instead of tapering. **The validator passed all of it.**
+
+### Looking at it: `pipeline/shot.py`
+
+```sh
+blender -b -P pipeline/shot.py -- ../models/land-derrick-01.glb derrick.png
+```
+
+It renders **the exported .glb**, not the scene that made it, so the picture
+has been through the exporter, Draco and the importer - the same road the
+game's loader travels. Workbench in VERTEX colour mode, so it shows the
+`COLOR_0` buffer itself rather than whatever material the importer built;
+`Standard` view transform, because a filmic curve darkens the very values
+the picture exists to check; a ground plane at z = 0, because "the feet sit
+on the ground" is the contract's hardest claim and floating by a metre is
+invisible with nothing to float above; and a 1.8 m box for scale, because
+the one thing a landmark must get right is how big it reads.
+
+A validator certifies that a file is **legal**. It cannot see whether the
+thing is a derrick. Finish a landmark with a picture.
 
 ---
 
@@ -175,7 +219,26 @@ The six plates in `art/` are already used on the menu and results.
 4. File > Export > glTF 2.0: **glb**, Include > Selected Objects (select the
    ship's collection), Transform > +Y Up (default), Data > Mesh > Apply
    Modifiers, Compression on, level 7, Material > Export, Images > Automatic.
-   Or run `powder_blender.py`'s `export_ship()` which sets all of that.
+   Or run `powder_blender.py`'s `export()` which sets all of that.
+
+   **Vertex colour is the one flag worth checking by hand**, and the export
+   panel's obvious setting is the wrong one. Measured on Blender 4.5.13 and
+   5.2.1, on a landmark whose material does not reference the attribute:
+
+   | Data > Mesh > Vertex Colors | result |
+   |---|---|
+   | `Material` + "all vertex colors" | `COLOR_0` **and** `COLOR_1` - the same buffer twice |
+   | `Material` alone | **no colour at all** - the landmark ships flat, silently |
+   | `Active` alone, attribute not active | **no colour at all** |
+   | `Active` alone, attribute marked active | `COLOR_0`, once - **this one** |
+
+   `Material` means "the colour the material actually reads", and a landmark's
+   material is a plain BSDF that never references `Col`. So mark `Col` as the
+   active colour attribute and export `Active`. `powder_blender.py` does both
+   for you and prints what it dropped. Related: the keyword was `export_colors`
+   in Blender 3.6 and is `export_vertex_color` from 4.x, and an unknown keyword
+   is a hard `TypeError` rather than a warning - which is why the exporter asks
+   the operator what it supports instead of naming flags it hopes exist.
 5. Drop the file in `powder/models/`, add it to `manifest.json`, reload with
    `?q=high` and read the console: `[models] ship 'nose' ← ship-nose.glb:
    5400 tris, 3.2 x 1.9 x 11.0 m` means it is in. The menu's SHIPS line says

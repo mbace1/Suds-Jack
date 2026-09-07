@@ -33,6 +33,7 @@ except ImportError:  # imported outside Blender (tests, linting)
 # ---------------------------------------------------------------- contract
 MATERIALS = ['HULL', 'ACCENT', 'CHROME', 'GUNMETAL', 'GLASS', 'INTAKE', 'DECAL', 'FAN']
 LAND_MATERIAL = 'LAND'
+COLOUR_ATTR = 'Col'      # the contract's Colour Attribute name (pipeline/README.md)
 SHIP = {
     'length': (8.5, 12.5),   # Blender Y extent, probe included
     'width':  (2.2, 4.4),    # X
@@ -225,6 +226,25 @@ def validate(kind=None):
 
 
 # ------------------------------------------------------------------ export
+def _mark_colour_active(col):
+    """Make the contract's `Col` the ACTIVE colour attribute on every mesh.
+
+    A Colour Attribute can exist and still not be the active one — Blender
+    leaves `active_color` unset on a mesh built by script — and the exporter's
+    ACTIVE mode then writes nothing. Setting it here rather than asking every
+    author to remember it keeps the contract to "name it Col".
+    """
+    for o in col.objects:
+        if o.type != 'MESH' or not o.data.color_attributes:
+            continue
+        names = [a.name for a in o.data.color_attributes]
+        want = COLOUR_ATTR if COLOUR_ATTR in names else names[0]
+        if want != COLOUR_ATTR:
+            print('[powder] note: %s paints with %r, not %r' % (o.name, want, COLOUR_ATTR))
+        o.data.color_attributes.active_color_name = want
+        o.data.color_attributes.default_color_name = want
+
+
 def export(path):
     problems, _ = validate()
     if problems:
@@ -239,10 +259,42 @@ def export(path):
         filepath=path, export_format='GLB', use_selection=True,
         export_yup=True, export_apply=True,
         export_materials='EXPORT', export_image_format='AUTO',
-        export_colors=True, export_normals=True, export_texcoords=True,
+        export_normals=True, export_texcoords=True,
         export_animations=False, export_skins=False, export_morph=False,
         export_extras=False, export_cameras=False, export_lights=False,
     )
+    # The exporter's keywords are NOT stable across Blender versions, and an
+    # unknown one is a hard TypeError rather than a warning. `export_colors`
+    # (3.6) became `export_vertex_color` in 4.x; passing the old name fails on
+    # 4.5 AND 5.2 — and because it sat in the base kwargs, the Draco fallback
+    # below re-raised the same error instead of catching anything. So: ask the
+    # operator what it actually accepts, and say out loud what was dropped.
+    # A landmark is nothing BUT its vertex colour, so this flag is the asset.
+    props = set(bpy.ops.export_scene.gltf.get_rna_type().properties.keys())
+    if 'export_vertex_color' in props:
+        # MEASURED on 4.5.13 and 5.2.1, do not "simplify" this to one flag:
+        #   MATERIAL + all=True   -> COLOR_0 AND COLOR_1, the same buffer twice
+        #   MATERIAL + all=False  -> NO COLOUR AT ALL
+        #   ACTIVE   + all=False  -> COLOR_0, once
+        # MATERIAL means "colour the material actually reads", and a landmark's
+        # material is a plain BSDF that never references the attribute — so the
+        # obvious-looking setting exports a SILENTLY FLAT landmark. The colour
+        # is the whole asset here, so we mark it active and ask for the active
+        # one. `_mark_colour_active` also fails loudly rather than baking flat.
+        kw['export_vertex_color'] = 'ACTIVE'
+        if 'export_all_vertex_colors' in props:
+            kw['export_all_vertex_colors'] = False
+        _mark_colour_active(col)
+    elif 'export_colors' in props:
+        kw['export_colors'] = True
+    else:
+        print('[powder] WARNING: this Blender has no vertex-colour export flag; '
+              'a landmark will bake flat')
+    dropped = sorted(k for k in kw if k not in props)
+    for k in dropped:
+        kw.pop(k)
+    if dropped:
+        print('[powder] note: this Blender ignores ' + ', '.join(dropped))
     # Draco: present in every Blender that ships the glTF add-on; the flag
     # names have been stable since 2.9
     try:
