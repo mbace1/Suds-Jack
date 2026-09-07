@@ -4,6 +4,41 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v7 — 2026-09-07
+Layers over the 3D, on the owner's direction — and the HD layer made
+honest first. Until now the canvas itself was 0.62x, so "HD" only meant
+"not dithered"; the docs said full-resolution and the code did not. The
+PS2 world now renders into its own 0.62x buffer and is blitted up soft
+into a full-resolution canvas, and the ships, flames and sparks are drawn
+over it at the window's real size.
+
+Over that sit two new screen-space layers. HEAT HAZE: after the HD pass
+the finished frame is copied into a texture and refracting sprites at the
+nozzles — and a mirage band along the horizon, hotter on the salt — bend
+it, so the exhaust and the hot ground displace what is behind them rather
+than drawing anything of their own. And the sun's LENS FLARE, the one
+thing every reference plate has: a blown halo and ghost rings marching
+through the frame centre, occluded by the canyon walls.
+
+The ships went through the MODEL SHOP. Chrome is real chrome now — metal
+at roughness 0.1 reflecting a two-tone world (violet sky over white sand,
+a hard horizon bar, one hot sun) filtered once through PMREM, which is
+exactly what the plates' nacelles show. Each can carries a spinning
+turbine face in its mouth, a nozzle bell with the flame inside it, dark
+bands, plumbing back to the hull and a pump block. Everything static is
+merged per material, so a ship is 14 draw calls with all that detail
+(it was 23 without it).
+
+The rockets answer the turbine. The flame runs RICH while the throttle is
+ahead of the spool — orange, short, fat — and LEAN once N1 has caught up,
+with shock diamonds streaming out of the bell at the turbine's rate; the
+fans spin with N1; the exhaust haze goes as N1²; and revving on the spot
+on sand throws ROCKET WASH behind the cans — behind the nose on the front
+sled, behind the tail on the aft one.
+
+The six concept plates are in `art/`: the chassis you are about to race
+is shown on the menu (nose-green / aft-five) and the results frame one.
+
 ## v6 — 2026-09-06
 Gamepad, and a measured frame budget.
 

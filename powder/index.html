@@ -54,19 +54,29 @@
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
       z-index: 12; text-align: center; pointer-events: none;
       font-size: clamp(13px, 2.4vh, 20px); line-height: 1.7; font-weight: bold;
-      background: rgba(29,23,38,.66); padding: clamp(12px, 3vh, 26px) 40px;
+      background: rgba(29,23,38,.66); padding: clamp(10px, 2.4vh, 24px) 36px; width: min(88vw, 720px);
       border: 1px solid rgba(240,230,210,.3); border-radius: 4px;
       backdrop-filter: blur(6px); max-height: 94vh;
     }
     #msg b { font-size: clamp(22px, 4.3vh, 36px); letter-spacing: 6px; }
     /* the wordmark: white glyphs on transparency, so it takes the panel's tint */
     #msg .logo {
-      display: block; width: min(64vw, 620px); max-height: 17vh;
+      display: block; width: min(64vw, 620px); max-height: 14vh;
       object-fit: contain; margin: 2px auto clamp(4px, 1.4vh, 10px);
       filter: drop-shadow(0 4px 18px rgba(20,10,30,.7));
     }
     #msg small { font-size: clamp(10px, 1.7vh, 12px); letter-spacing: 1px;
-      line-height: 2.05; font-weight: normal; }
+      line-height: 1.95; font-weight: normal; }
+    /* the concept plates: the chassis card on the menu, the frame on the
+       results. Sized in vh like the rest, and dropped on a short viewport
+       rather than pushing the controls off the bottom. */
+    #msg .plate {
+      display: block; width: min(64vw, 620px); height: clamp(70px, 16vh, 170px);
+      object-fit: cover; object-position: center 42%; margin: 0 auto 6px;
+      border: 1px solid rgba(240,230,210,.28); border-radius: 3px;
+      filter: saturate(.92) contrast(1.04);
+    }
+    @media (max-height: 520px) { #msg .plate { display: none; } }
     #toast {
       position: fixed; bottom: 21%; left: 50%; transform: translateX(-50%);
       z-index: 11; font-size: 20px; font-weight: bold; letter-spacing: 4px;
@@ -136,6 +146,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=6"></script>
+  <script type="module" src="js/main.js?v=7"></script>
 </body>
 </html>

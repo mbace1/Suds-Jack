@@ -5,7 +5,7 @@
 //
 // The rule that keeps being relearned: horizon and fog must be the SAME value.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=6';
+import { PAL } from './palette.js?v=7';
 
 function gradientTexture() {
   const c = document.createElement('canvas');

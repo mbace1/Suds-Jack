@@ -187,17 +187,51 @@ front load digs the runners in and ploughs, which is why leaning forward through
 ground is slow. Carving *into* the roll earns extra grip (`edge`), so committing to a
 turn is rewarded.
 
-**Two render layers (v5).** The world is PS2; the ships are not. Layers are
-`0` opaque world, `1` HD, `2` the world's transparencies (plume, scars), `3` sky.
-`renderFrame()` is three passes: the composer over layers 0/2/3 at 0.62x (posterised,
-dithered, upscaled soft); then a **full-resolution depth-only prepass of layer 0**,
-because the composer's depth is at 0.62x and the HD layer needs a depth buffer that
-matches it; then layer 1 over the top. The lights must `layers.enable(1)` or the ships
-are unlit and cast no shadow. On the HD layer: Phong hulls with painted panel-line and
-rivet maps, layered rocket flames (white core, coloured sheath, textured glow), spark
-showers off rock and off every wall strike, and a fine spindrift curtain off the loaded
-outside runner. **A `SpriteMaterial` with no map draws a solid quad** — the first version
-put a white box round every ship.
+**The render stack (v5, made honest in v7).** The world is PS2; the ships are not.
+Layers are `0` opaque world, `1` HD, `2` the world's transparencies (plume, scars), `3`
+sky. **The canvas is full-resolution; only the composer is 0.62x** — until v7 the canvas
+itself was 0.62x (`renderer.setSize` at the PS2 scale), so the "HD" layer was HD in
+name only, and this file said full-res while the code did not. `renderFrame()` is five
+passes: the composer over layers 0/2/3 into its own 0.62x buffer (posterised, dithered;
+`composer.renderToScreen = false`); a **blit** of that buffer up onto the canvas with a
+raw `ShaderMaterial` — the OutputPass has already tone-mapped and encoded it, so the
+blit must not touch the colour again (a `MeshBasic` quad would encode it twice), and the
+bilinear stretch IS the soft upscale; a **full-resolution depth-only prepass of layer
+0**, because the HD layer needs a depth buffer that matches it; layer 1 over the top;
+then the **heat haze** (`js/haze.js`), which `copyFramebufferToTexture`s the finished
+frame and draws refracting sprites at the nozzles plus a mirage band along the horizon,
+each fragment sampling the copy at a noise offset from its own screen position — light
+bending, not a texture. The haze scene must be on **layer 1** (the camera is still
+masked to HD when it runs; on layer 0 it was silently culled and moved zero pixels — the
+with/without pixel diff in `hazecheck.mjs` is how that was caught), must depth-test
+against the frame's depth so haze stays behind a hull, and must not write depth. It is
+the one pass `q=low` skips. The sun's **lens flare** (`js/flare.js`, three's addon with
+canvas textures) sits on layer 1 too. The lights must `layers.enable(1)` or the ships are
+unlit and cast no shadow. **A `SpriteMaterial` with no map draws a solid quad** — the
+first version put a white box round every ship.
+
+**The model shop (v7, `js/craft.js`).** `buildCraft(env, accent, number, drive)` builds a
+ship as a kit and merges everything static per material — hull (Phong, panel/rivet map),
+accent, chrome, gunmetal, decals — so a ship is **14 draw calls** with the fans (live,
+spun by N1) and the six flame parts (scaled by N1) as the only separate meshes; it was 23
+with far less detail. **Chrome is `MeshStandard` at metalness 1 / roughness 0.1 with a
+PMREM env map** from a two-tone scene (violet sky over white sand, a hard horizon line,
+an over-white sun) built once by `makeEnvMap(renderer)` — that two-tone-with-a-bright-bar
+is what the plates' nacelles actually show, and Phong "chrome" never had it. Each can:
+turbine face in the mouth, open nozzle bell with the flame inside, two dark rings, three
+tube-geometry pipes to a pump block. The flame is a cone with a **scrolling shock-diamond
+map** on the core and a **length-fade `alphaMap`** on core and sheath — separate maps
+because the diamonds scroll and the fade must not (`ConeGeometry` puts v=1 at the apex).
+`vehicle.pose(dt)` runs it: RICH (orange, short, fat) while `throttle > n1`, LEAN once
+the spool has caught up, diamonds streaming at the turbine's rate. `vehicle.nozzle(i,
+out)` gives the world exhaust position for `emitHaze` / `emitWash` in `main.js`.
+`disposeCraft()` frees the merged geometries and per-ship materials.
+
+**The concept plates** live in `powder/art/` (960 px JPEG copies of six of the `ref/`
+plates, named for what they show: `sun-one`, `aft-five`, `intake-green`, `nose-green`,
+`roundel`, `delta`). The menu shows the chassis you are about to race (`nose-green` /
+`aft-five`); the results frame `delta` (time out) or `intake-green` (hull failure). The
+`#msg .plate` rule sizes them in vh and hides them under 520 px of height.
 
 **Controls.** Left stick steers and works the throttle; right stick pans the camera
 (x) and is your weight (y). Keyboard: W throttle, A/D steer, S brake, Space boost
@@ -217,10 +251,15 @@ chassis. Touch is twin sticks: left steers and works the
 throttle — there is no auto-throttle, managing spool is the point — right holds overdrive
 and trims the slide.
 
-**The frame budget (v6), measured.** At 1280x720, q=high, in a race: **384 draw calls
-and 65k triangles** across the three passes — 171 calls for the PS2 world (which
-includes the shadow map's second pass over it), 44 for the depth prepass, 160 for the
-HD layer. At `?q=low` it is 198 calls / 48k triangles, with no shadow pass. Two things
+**The frame budget, measured.** At 1280x720, q=high, in a race: **v7 is 284 draw calls
+and 79k triangles** across the five passes (v6 was 384 / 65k) — 171 calls for the PS2
+world (which includes the shadow map's second pass over it), 1 for the blit, ~44 for the
+depth prepass, ~70 for the five merged ships and their effects, 3 for haze and flare.
+At `?q=low` it is 185 calls / 53k triangles, with no shadow pass and no haze. The v7
+ship merge is what paid for the engine-bay detail and the honest full-res HD pass:
+under SwiftShader the frame interval did not move (254 ms against v6's 258) even though
+the HD and prepass fragments went up 2.6x. `perf2.mjs` attributes by render-call order,
+so since v7 its "depth prepass" row is the blit and the prepass is folded into "HD". Two things
 came out of the first measurement and both are in the code now. The **depth prepass was
 re-rendering all 121 streamed tiles at full resolution** when it exists only to occlude
 the HD ships — a thing can only occlude what is behind it, so `renderFrame()` now hides
@@ -457,11 +496,15 @@ toko-drop/
 powder/         # Powder — hover SIM racer, open flatlands cut by a canyon, surreal
   index.html    # telemetry cluster HUD
   ref/          # the reference plates the craft design is held against
+  art/          # six of them, downscaled, for the menu and results
   js/
     main.js     # scene, shadow/bloom/grade stack, race loop, camera rig, HUD
     palette.js  # the whole colour scheme + the two light directions
     terrain.js  # height(x,z), the rift and its BREACHES, streamed tile grid
     vehicle.js  # THE SIM: four sprung hover pads, turbine spool, slip-limited grip
+    craft.js    # THE MODEL SHOP: PMREM chrome, engine bay, merged per material
+    haze.js     # heat-haze refraction: copies the frame, bends it behind the exhaust
+    flare.js    # the sun's lens flare (three's addon, canvas textures)
     props.js    # monoliths, arches, floating rock — and bakeProps, one mesh a tile
     route.js    # gates, alternating rift floor and flats, aligned to the breaches
     dust.js     # one pooled particle class, configured as plume / spindrift / sparks

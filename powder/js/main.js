@@ -8,14 +8,19 @@
 //                function streamed as tiles, and you go where you like.
 //   SURREAL      a violet sky going lilac at the horizon with a ringed body on
 //                it, long raking shadows, rock that floats, a sun that blooms.
-//   TWO LAYERS   v5. The WORLD is PS2: rendered at 0.62x into the composer,
-//                posterised and dithered, then upscaled soft. The SHIPS and
-//                their effects are HD: drawn full-resolution over the top,
-//                Phong with real speculars, panel lines, layered flames,
-//                sparks. The contrast is the point — a sci-fi formula car on
-//                a PlayStation 2 mountain. Compositing is three passes: the
-//                PS2 world; a full-res DEPTH-ONLY prepass of the opaque world
-//                so the HD layer is occluded correctly; then the HD layer.
+//   LAYERS       v5, made honest in v7. The WORLD is PS2: rendered at 0.62x
+//                into the composer, posterised and dithered, then BLITTED up
+//                soft into a full-resolution canvas. The SHIPS and their
+//                effects are HD: drawn at full resolution over the top —
+//                chrome that reflects the sky, panel lines, layered flames,
+//                sparks. (Until v7 the canvas itself was 0.62x, so "HD" was
+//                only "not dithered"; the docs said full-res and the code
+//                did not.) Over THAT sit two screen-space layers: the heat
+//                HAZE, which copies the finished frame and bends it behind
+//                the exhaust and along the horizon, and the sun's lens
+//                FLARE. Five passes: PS2 world; blit; full-res DEPTH-ONLY
+//                prepass of the opaque world so the HD layer is occluded;
+//                the HD layer; the haze.
 //   PS2          second pass, on the owner's direction. Not 1996 any more but
 //                not 2024 either: rendered at ~0.62x and upscaled SOFT (the
 //                console's blur, not the PS1's hard pixels), Lambert lighting,
@@ -28,14 +33,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=6';
-import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=6';
-import { Vehicle } from './vehicle.js?v=6';
-import { DustPool, ScarField } from './dust.js?v=6';
-import { Route, RADIUS } from './route.js?v=6';
-import { InputManager, STICK_R } from './input.js?v=6';
-import { AudioKit } from './audio.js?v=6';
-import { makeSky } from './sky.js?v=6';
+import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=7';
+import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=7';
+import { Vehicle } from './vehicle.js?v=7';
+import { DustPool, ScarField } from './dust.js?v=7';
+import { Route, RADIUS } from './route.js?v=7';
+import { InputManager, STICK_R } from './input.js?v=7';
+import { AudioKit } from './audio.js?v=7';
+import { makeSky } from './sky.js?v=7';
+import { makeEnvMap } from './craft.js?v=7';
+import { HeatHaze } from './haze.js?v=7';
+import { makeFlare } from './flare.js?v=7';
 
 // Fog has to reach nearly the edge of the streamed world, not half way
 // into it, or the flats read as a 300 m milk bowl instead of a plain.
@@ -187,6 +195,29 @@ if (QUALITY === 'high') {
 const grade = new ShaderPass(GradeShader);
 composer.addPass(grade);
 composer.addPass(new OutputPass());
+// The composer renders into its own 0.62x buffer and the result is BLITTED
+// to the full-res canvas with a raw shader: the OutputPass has already tone
+// mapped and encoded it, so the blit must not touch the colour again (a
+// MeshBasic quad would encode it twice and wash the world out). The
+// bilinear stretch IS the PS2's soft upscale.
+composer.renderToScreen = false;
+const blitMat = new THREE.ShaderMaterial({
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ gl_FragColor = texture2D(tDiffuse, vUv); }`,
+  depthTest: false, depthWrite: false,
+});
+const blitScene = new THREE.Scene();
+const blitQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), blitMat);
+blitQuad.frustumCulled = false;
+blitScene.add(blitQuad);
+const blitCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+// the screen-space layers over the HD ships
+const haze = new HeatHaze();
+const flare = makeFlare(scene, sky.toSun);
+// chrome needs a world to reflect — built once, shared by every ship
+const ENV = makeEnvMap(renderer);
 
 // Depth-only: the HD ships have to be occluded by terrain they are behind,
 // and the PS2 composer's depth is at 0.62x. One full-res opaque prepass gives
@@ -200,9 +231,10 @@ function resize() {
   const w = Math.round(innerWidth * PS2_SCALE), h = Math.round(innerHeight * PS2_SCALE);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(w, h, false);           // false: CSS keeps it full-window
-  composer.setSize(w, h);
+  renderer.setSize(innerWidth, innerHeight, false);   // the canvas is full-res
+  composer.setSize(w, h);                             // the PS2 world is not
   grade.uniforms.uRes.value.set(w, h);
+  haze.resize(innerWidth, innerHeight);
   ui.width = innerWidth; ui.height = innerHeight;
 }
 addEventListener('resize', resize);
@@ -237,14 +269,14 @@ function startRace() {
   // gate is deep in the canyon and the breach between here and there is the
   // opening move of a run
   const sx = terrain.canyonX(0) + 95;
-  player = new Vehicle(terrain, { isPlayer: true, accent: PAL.accents[0], number: 1, x: sx, z: 0, drive: CHASSIS });
+  player = new Vehicle(terrain, { isPlayer: true, accent: PAL.accents[0], number: 1, x: sx, z: 0, drive: CHASSIS, env: ENV });
   field.push(player);
   for (let i = 0; i < RIVALS; i++) {
     const v = new Vehicle(terrain, {
       accent: PAL.accents[(i + 1) % PAL.accents.length],
       number: [7, 5, 3, 9][i],
       x: sx + (i - 1.5) * 13, z: 8 + (i % 2) * 9,
-      drive: i % 2 ? 'rear' : 'front',
+      drive: i % 2 ? 'rear' : 'front', env: ENV,
     });
     v.basePower = 0.90 + i * 0.028;
     v.power = v.basePower;
@@ -267,7 +299,8 @@ function gameOver(reason) {
   const sc = Math.floor(state.score);
   if (sc > state.best) { state.best = sc; localStorage.setItem('powderBest', String(sc)); }
   hud.msg.innerHTML =
-    `<b>${reason}</b><br><small>${state.gates} GATES &nbsp;·&nbsp; ` +
+    `<img class="plate" src="art/${reason === 'TIME OUT' ? 'delta' : 'intake-green'}.jpg" alt="">` +
+    `<br><b>${reason}</b><br><small>${state.gates} GATES &nbsp;·&nbsp; ` +
     `${state.rift.toFixed(0)} s IN THE RIFT &nbsp;·&nbsp; ${ordinal(state.rank)} OF ${field.length}` +
     `<br>SCORE ${sc} &nbsp;·&nbsp; BEST ${state.best}</small>` +
     `<br><small style="opacity:.65">ENTER / TAP TO RUN AGAIN</small>`;
@@ -304,10 +337,11 @@ function step(dt) {
   }
 
   feedback();
-  for (const v of field) { emitDust(v, dt); layScar(v, dt); }
+  for (const v of field) { emitDust(v, dt); emitWash(v, dt); emitHaze(v, dt); layScar(v, dt); }
   dust.update(dt);
   drift.update(dt);
   sparks.update(dt);
+  haze.update(dt);
   scars.update(dt);
   terrain.update(player.pos.x, player.pos.z);
   route.update();
@@ -435,6 +469,52 @@ function burst(v, n) {
   }
 }
 
+/**
+ * ROCKET WASH: what the turbine does to the ground under the nozzles, which
+ * is the part of "engine rpm" you can see. The plume off the skirts needs
+ * speed; this needs only N1, so revving on the spot on sand throws a cloud
+ * behind the cans — behind the NOSE on the front sled, behind the tail on
+ * the aft one — and a spooling-up sled leaves in its own dust.
+ */
+const _n = new THREE.Vector3(), _hv = new THREE.Vector3();
+function emitWash(v, dt) {
+  if (!v.grounded) { v._acc5 = 0; return; }
+  const S = SURF[v.surf];
+  const yield_ = (v.surf === SALT || v.surf === ROAD) ? 0.12 : (S.drag - 0.6) + v.sink * 1.5;
+  const th = v.n1 * v.n1 * (v.overdrive ? 1.7 : 1);
+  // strongest when the sled is slow: at speed the plume already owns it
+  const rate = th * 70 * yield_ * clamp(1.3 - v.speed / 40, 0.35, 1);
+  v._acc5 = (v._acc5 || 0) + rate * dt;
+  if (v._acc5 < 1) return;
+  basis(v);
+  while (v._acc5 >= 1) {
+    v._acc5 -= 1;
+    v.nozzle(Math.random() < 0.5 ? 0 : 1, _p);
+    _p.addScaledVector(_fwd, -1.5 - Math.random() * 2);
+    _p.y = terrain.height(_p.x, _p.z) + 0.4;
+    dust.emit(_p, _fwd, _right, (Math.random() - 0.5) * 6, 0.35 + th * 0.5);
+  }
+}
+
+/** The exhaust: hot air out of each bell, refracting whatever is behind it. */
+function emitHaze(v, dt) {
+  const th = v.n1 * v.n1 * (v.overdrive ? 1.6 : 1);
+  const d2 = camera.position.distanceToSquared(v.pos);
+  if (d2 > 220 * 220) { v._acc6 = 0; return; }        // sub-pixel from there on
+  v._acc6 = (v._acc6 || 0) + (18 + th * 100) * dt;
+  if (v._acc6 < 1) return;
+  basis(v);
+  while (v._acc6 >= 1) {
+    v._acc6 -= 1;
+    v.nozzle(Math.random() < 0.5 ? 0 : 1, _n);
+    _n.addScaledVector(_fwd, -0.4 - Math.random() * 1.2);
+    // it leaves with the exhaust and is left behind by the sled
+    _hv.copy(v.vel).multiplyScalar(0.55).addScaledVector(_fwd, -(4 + th * 14));
+    _hv.y += 0.5;
+    haze.emit(_n, _hv, 2.2 + th * 2.6, 0.4 + th * 0.55);
+  }
+}
+
 function layScar(v, dt) {
   if (v._scar === undefined) v._scar = 0;
   if (!v.grounded) return;
@@ -506,6 +586,7 @@ function placeCamera(dt, snap) {
   key.target.position.copy(p.pos);
   key.position.set(p.pos.x - SUN_DIR[0] * 220, p.pos.y - SUN_DIR[1] * 220, p.pos.z - SUN_DIR[2] * 220);
   sky.update(camera);
+  flare.update(camera);
 }
 
 // --------------------------------------------------------------------- HUD
@@ -609,6 +690,10 @@ const _hidden = [];
 function renderFrame() {
   camera.layers.mask = MASK_PS2;
   composer.render();
+  // the PS2 world up onto the full-res canvas
+  renderer.setRenderTarget(null);
+  blitMat.uniforms.tDiffuse.value = composer.readBuffer.texture;
+  renderer.render(blitScene, blitCam);
 
   // The prepass exists ONLY to occlude the HD ships, and a thing can only
   // occlude what is behind it — so nothing farther away than the farthest
@@ -642,6 +727,10 @@ function renderFrame() {
 
   camera.layers.mask = MASK_HD;
   renderer.render(scene, camera);
+  // and the air over all of it: copies the frame, bends it behind the
+  // exhaust and along the horizon. Stronger on the salt, where it is hottest.
+  // (a full-res frame copy every frame: the one thing here q=low skips)
+  if (QUALITY === 'high') haze.render(renderer, camera, player && player.surf === SALT ? 1.4 : 1);
   renderer.autoClear = true;
   camera.layers.mask = MASK_PS2 | MASK_HD;
 }
@@ -681,6 +770,8 @@ function idle(dt) {
   key.target.position.set(x, 0, z);
   key.position.set(x - SUN_DIR[0] * 220, -SUN_DIR[1] * 220, z - SUN_DIR[2] * 220);
   sky.update(camera);
+  flare.update(camera);
+  haze.update(dt);
 }
 
 // -------------------------------------------------------------------- boot
@@ -711,10 +802,12 @@ input.onPause = () => {
 function showMenu() {
   hud.msg.innerHTML =
     '<img class="logo" src="logo.png" alt="POWDER">' +
+    // the concept plate for the chassis you are about to race
+    `<img class="plate" src="art/${CHASSIS === 'front' ? 'nose-green' : 'aft-five'}.jpg" alt="">` +
     '<br><small>' + (CHASSIS === 'front'
       ? 'NOSE ROCKETS &nbsp;·&nbsp; power pulls you through the corner; lift off and the tail comes round.'
       : 'AFT ROCKETS &nbsp;·&nbsp; sharper turn-in, but power mid-corner steps the tail out.') +
-    ' &nbsp; <b style="color:#8fe8d8">F</b> TO SWAP</small>' +
+    '<br><b style="color:#8fe8d8;font-size:1.4em">F</b> TO SWAP</small>' +
     '<br><small>LEFT STICK STEERS AND WORKS THE THROTTLE.' +
     '<br>RIGHT STICK IS YOUR WEIGHT — <b style="color:#8fe8d8">BACK</b> TO BOOST AND LIFT THE NOSE,' +
     ' <b style="color:#ffb066">FORWARD</b> TO PRESS IT DOWN.' +
@@ -732,7 +825,7 @@ animate();
 
 window.__pw = {
   THREE, scene, camera, renderer, composer, terrain, route, state, dust, scars,
-  audio, sky, input, drift, sparks, quality: QUALITY,
+  audio, sky, input, drift, sparks, haze, flare, quality: QUALITY,
   get chassis() { return CHASSIS; },
   get player() { return player; },
   get field() { return field; },
