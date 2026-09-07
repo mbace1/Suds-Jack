@@ -20,11 +20,54 @@ const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=M
 // createFlow for its own day: 3000 ticks at the shared 10 ticks a second, which
 // is 07:00-10:00 of game time. A tram's 50-minute pass is then ~83 seconds of
 // wall time — visible motion, not a blur.
-export const SHIFT = { ticksPerDay: 3000, startHour: 7, hours: 3 };
-export const END_TO_END_MINUTES = { TRAM: 50, SUBWAY: 45 };
-export function speedFor(mode, ticksPerDay = SHIFT.ticksPerDay, shiftHours = SHIFT.hours) {
+// HOW FAST A VEHICLE IS, and why every line used to move at a different pace.
+//
+// Speed was one DURATION for every line: 50 minutes end to end for a tram,
+// whatever that tram's line actually was. Helsinki's tram lines run from about
+// 3 km to about 17 km, so the long ones covered five times the ground in the
+// same time as the short ones. Measured across all 102 vehicles, the apparent
+// speed on screen ran from a crawl to a median of 299 km/h with a 90th
+// percentile of 494 — trams visibly rocketing past other trams on the same
+// map. That variance is what "tram speeds are too fast" was looking at, and no
+// single number could have fixed it, because half the fleet was already slow.
+//
+// So a vehicle now has a SPEED and its end-to-end time follows from how long
+// its own line is, which is the way round reality works. The values are real
+// average service speeds with stops included.
+export const MODE_KMH = { TRAM: 16, SUBWAY: 30 };
+
+// WHAT THE PLAYER SEES is then only the compression: how much game time the
+// five-minute shift covers. Three hours was 36x. 1.25 hours is 15x, which puts
+// every tram at 240 km/h on screen and the metro at 450 — at or below the
+// SLOWEST-looking half of what shipped, with the 494 km/h tail gone entirely.
+// A tram now takes about a minute to cross the 4 km ROUTE viewport: long
+// enough to see it coming, decide, and board.
+//
+// It is paid for in deliveries, because a slower fleet makes every ride longer
+// in ticks by the same factor. Measured over 56 random door-to-door plans, the
+// median job costs 856 ticks against a 3000-tick shift, so DELIVERY_TARGET is
+// three. The same measurement caught the shipped setting being wrong on its
+// own terms: 5 median jobs fitted and the target asked for SIX, so nobody
+// could finish a shift at ordinary difficulty.
+//
+// If it should be slower still, the honest next lever is a LONGER SHIFT rather
+// than a smaller number here — ticksPerDay 4500 buys the same slowdown again
+// and keeps the deliveries, at the cost of the owner's five-minute session.
+export const SHIFT = { ticksPerDay: 3000, startHour: 7, hours: 1.25 };
+
+const RAD = Math.PI / 180;
+export function pathKm(path) {
+  let m = 0;
+  for (let i = 1; i < (path?.length || 0); i++) {
+    const [a1, o1] = path[i - 1], [a2, o2] = path[i];
+    m += Math.hypot((a2 - a1) * 111320, (o2 - o1) * 111320 * Math.cos((a1 + a2) * 0.5 * RAD));
+  }
+  return m / 1000;
+}
+export function speedForLayer(layer, ticksPerDay = SHIFT.ticksPerDay, shiftHours = SHIFT.hours) {
+  const km = pathKm(layer?.path), kmh = MODE_KMH[layer?.mode] ?? MODE_KMH.TRAM;
   const minutesPerTick = (shiftHours * 60) / ticksPerDay;
-  const ticks = (END_TO_END_MINUTES[mode] ?? 50) / minutesPerTick;
+  const ticks = Math.max(1, (km / kmh) * 60 / minutesPerTick);
   return 1 / ticks;                           // one full pass per `ticks` ticks
 }
 export class LiveNetwork{
@@ -34,7 +77,7 @@ export class LiveNetwork{
   // the next same-direction vehicle reached 1453 ticks on a line whose even
   // headway is 556. Evenly spaced, the worst wait on a line is one headway and
   // the average is half of one — which is what a timetable is.
-  const base=(hash(layer.id)%10000)/10000;for(let i=0;i<count;i++)this.vehicles.push({id:`${layer.id}:${i}`,layer,phase:(base+i*(2/count))%2,speed:speedFor(layer.mode,ticksPerDay)});}}
+  const base=(hash(layer.id)%10000)/10000;for(let i=0;i<count;i++)this.vehicles.push({id:`${layer.id}:${i}`,layer,phase:(base+i*(2/count))%2,speed:speedForLayer(layer,ticksPerDay)});}}
  position(v,tick){const path=v.layer.path||[];if(path.length<2)return null;const cycle=(v.phase+tick*v.speed)%2,q=cycle<=1?cycle:2-cycle,at=q*(path.length-1),i=Math.min(path.length-2,Math.floor(at)),f=at-i,a=path[i],b=path[i+1];return{lat:a[0]+(b[0]-a[0])*f,lon:a[1]+(b[1]-a[1])*f,pathIndex:at,direction:cycle<=1?1:-1};}
  vehicle(id){return this.vehicles.find(v=>v.id===id)||null;}
  select(id){this.selectedVehicleId=this.vehicle(id)?.id||null;return this.vehicle(this.selectedVehicleId);}
