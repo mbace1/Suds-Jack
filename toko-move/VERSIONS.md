@@ -1,5 +1,53 @@
 # Toko Move — versions
 
+## v2.30 — 2026-09-07
+
+**Reviewing another lane's PR #473, which diagnosed v2.28's sheet bug from the
+owner's own recording.** It was superseded — v2.29 had already fixed the same
+thing from the other end and shipped — and it could not merge (two conflicts, and
+it claimed a version number main had already used). But its diagnosis was better
+than mine in one way and it found two things I had missed, so what it caught is
+here rather than closed with it.
+
+**It proved the order was a RACE, not merely wrong.** I had reasoned my way to
+the root cause; #473 measured it — same build, three runs at 820x1180, two
+different paint orders, and on the run where the read-only HUB panel won, **zero**
+CATCH buttons were on screen. On an iPhone it lost every time. Re-measured
+against v2.29 across six runs at both viewports, the order is now identical every
+time and the catch count is 3/3 on iPad and 2/3 on iPhone, against its own
+after-figures of 3/3 and 1/3.
+
+**`rideStatus` was a SIXTH writer and I had listed five.** The panel that says
+which tram you are on appends straight to `#sheet` and was on no list. It came out
+first anyway — correct **by accident**, because `sheetSlot` moves the named slots
+to the end around whatever else is there — and the next module to append directly
+would have landed on top of the buttons in exactly the same way. It is a declared
+slot now, and while riding the two things you can DO (get off early, replan) lead.
+
+**#473's CSS `order` is taken as a second layer, with its own flaw fixed.**
+`order` defaults to 0 and its declarations started at 1, so a panel nobody had
+thought of would jump to the TOP, ahead of the buttons — the mirror image of the
+bug it was fixing. Here `#sheet>*` is `order:9` and the six named panels are 1-6,
+so an undeclared panel lands last. Two layers, because either alone is a single
+point of failure: a module that appends directly escapes the DOM ordering, and a
+panel with no rule escapes the CSS.
+
+**And the reason the recording says MISSED four times about trams that were
+standing at the stop.** HUB OPTIONS is read-only by design — spans, not buttons,
+"Availability, not recommendation" — and it said **AT HUB** in the same three
+words the boarding panel uses. #473 named this and deliberately left it. It now
+reads **ALSO CALLING HERE**, says *"Everything at this stop, whether or not it is
+any use to you. Nothing here is tappable — board from the panel above."*
+
+Nothing about the CATCH rule changed: a catch stays disabled unless a vehicle is
+at the stop travelling the way this leg goes, which is the design working.
+
+`test/phone.cjs` grows to 31 checks. Six mutations, each caught — and two of them
+were MISSED on the first attempt, which is the finding worth keeping: a gate that
+only reads the rendered page cannot tell a declared slot from one that came out
+first by accident. `sheetSlot()` with no argument now reports the list, so the
+gate can ask the code rather than the pixels.
+
 ## v2.29 — 2026-09-06
 
 Two findings from the owner's first real playtest, and both were worse than

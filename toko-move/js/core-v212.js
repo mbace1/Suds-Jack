@@ -13,7 +13,7 @@ import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.29';
+const BUILD_VERSION='2.30';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -381,10 +381,18 @@ function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challen
 // says which job you are on and when it is due — measured on a phone, the job
 // header pushed the first CATCH button to y=577 of 664. Then the header, then
 // what else this stop offers, then anything still on the dispatch list. There
-// were five writers into #sheet, not three: hub-tactics and recovery append
-// too, and hub-tactics was landing above everything.
-const SHEET_SLOTS=['routeChoices','jobHead','hubTactics','recoveryControls','jobBoard'];
-function sheetSlot(id){const sheet=$('sheet');if(!sheet)return null;
+// were SIX writers into #sheet, not three. hub-tactics and recovery append
+// too, and hub-tactics was landing above everything — and `rideStatus`, the
+// panel that says which tram you are on, was appending straight to the sheet
+// and was not on this list at all. It happened to come out first, because
+// sheetSlot moves the six named ones to the end and leaves anything else where
+// it is; correct by accident is not correct, and the next module to append
+// directly would have landed on top of the panel you act on. PR #473 found it.
+//
+// While riding, the two things you can DO are get off early and change plan, so
+// those lead; standing at a stop, boarding leads.
+const SHEET_SLOTS=['rideStatus','recoveryControls','routeChoices','jobHead','hubTactics','jobBoard'];
+function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=$('sheet');if(!sheet)return null;
   for(const s of SHEET_SLOTS){let el=document.getElementById(s);
     if(!el){el=document.createElement('section');el.id=s;sheet.append(el);}
     else if(el.parentElement!==sheet)sheet.append(el);}
