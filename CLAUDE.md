@@ -1070,6 +1070,12 @@ plates, named for what they show: `sun-one`, `aft-five`, `intake-green`, `nose-g
 `aft-five`); the results frame `delta` (time out) or `intake-green` (hull failure). The
 `#msg .plate` rule sizes them in vh and hides them under 520 px of height.
 
+**Control priority (owner, 2026-09-07): on-screen twin-stick TOUCH is the main control
+scheme, the gamepad second, the keyboard third.** Every controls pass measures touch
+first — the v8/v9 passes went keyboard-first because that was where the report came
+from, and the touch path had only the hidden auto-throttle fixed until `touch.mjs`
+(real CDP touch events) existed.
+
 **Controls.** Left stick steers and works the throttle; right stick pans the camera
 (x) and is your weight (y). Keyboard (v8): the arrow cluster **mirrors WASD** — W/Up
 throttle, S/Down brake, A/Left and D/Right steer — **Space** boost (lean back),
