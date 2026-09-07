@@ -1,5 +1,40 @@
 # Toko Move — versions
 
+## v2.31 — 2026-09-07
+
+**Where a phone actually spends its pixels, measured rather than guessed.** v2.30
+left one plan of three off the bottom on a phone, and the game's core verb is
+comparing plans. So the budget at 390x664 was measured instead of nudged: the
+HUD was **152px** (23% of the screen, wrapped to two rows), the board 292, the
+feed 39, and the sheet **181** — while three catch buttons were **95px each**,
+285px of options in a panel with 181 to put them in.
+
+Four things came off the fat, none of them information: the HUD drops `next
+X → Y` (the job panel's own first line, one row below it) and the near-count
+(diagnostic) on narrow screens, which unwraps it to **130**; the feed keeps one
+line instead of two; the catch button puts its verb and its arrival on ONE line
+instead of two of its four, and its chips lose 2px of padding, taking it **95 →
+69**; and a transfer's cost reads `+499t changing` rather than repeating the
+interchange name that is already on the chip above it.
+
+**Result: all three plans are on screen at once on a real iPhone (390x844) and
+on an iPad.** At 390x664 — Playwright's iPhone 13, which is Safari with its
+chrome bars showing, the worst case — two are whole and the third is past the
+edge, and the panel now **counts itself**: `BOARD ONE OF 3`, so a viewport that
+cannot show a plan still tells you it is there.
+
+**One attempt at the worst case was reverted by its own gate.** Taking the board
+to 37dvh bought the third button and broke something better: the canvas became
+wider than it is tall, and at ROUTE the board covered **77%** of it instead of
+91% — the empty-map problem v2.28 fixed, re-introduced to buy a button at a
+viewport that cannot hold one anyway. The board keeps its 44dvh.
+
+`test/phone.cjs` is 37 checks: the plan count at three viewports, the panel's
+self-count when it cannot show them all, and that every option still says CATCH
+or WAIT — that last one added because a mutation removing the verb was MISSED
+first time round. Compacting a button to fit three of them is allowed to move
+the verb and not allowed to lose it. Five mutations, all caught.
+
 ## v2.30 — 2026-09-07
 
 **Reviewing another lane's PR #473, which diagnosed v2.28's sheet bug from the
