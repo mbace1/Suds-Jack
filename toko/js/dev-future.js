@@ -3,8 +3,8 @@ import { findProject } from './project-knowledge.js';
 
 const clean=s=>String(s||'').trim();
 export function parseQueue(md=''){
-  const items=[];const re=/^###\s+(Q-\d+)\s+—\s+(.+?)\n([\s\S]*?)(?=^###\s+Q-\d+\s+—|\z)/gm;let m;
-  while((m=re.exec(md))){const body=m[3];const status=(body.match(/^- status:\s*\*?\*?([^\n*]+(?:\*\*[^\n]*)?)/m)||[])[1]||'Unknown';const repo=(body.match(/^- repo:\s*([^\n]+)/m)||[])[1]||'unknown';items.push({id:m[1],title:clean(m[2]),status:clean(status.replace(/\*\*/g,'')),repo:clean(repo),body:clean(body)})}
+  const starts=[...String(md).matchAll(/^###\s+(Q-\d+)\s+—\s+(.+)$/gm)];const items=[];
+  starts.forEach((m,i)=>{const body=String(md).slice((m.index||0)+m[0].length,starts[i+1]?.index??String(md).length);const status=(body.match(/^- status:\s*([^\n]+)/m)||[])[1]||'Unknown';const repo=(body.match(/^- repo:\s*([^\n]+)/m)||[])[1]||'unknown';items.push({id:m[1],title:clean(m[2]),status:clean(status.replace(/\*\*/g,'')),repo:clean(repo),body:clean(body)})});
   return items;
 }
 export async function loadQueue(url='../QUEUE.md'){
