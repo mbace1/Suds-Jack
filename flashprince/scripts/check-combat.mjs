@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { Sentry, advanceBolt } from '../js/sentry.js';
 import { World, ROOMS } from '../js/level.js';
 import { HybridKeeper, HYBRID_COMMUNE_FRAMES } from '../js/hybrid.js';
+import { GlassGrazer, SurveyDrone, RushWarden } from '../js/ecology.js';
 
 const hero = {
   x: 48, y: 176, face: 1, h: 30,
@@ -18,6 +19,43 @@ const hero = {
   assert.equal(world.pickups.filter(pickup => pickup.kind === 'loot').length, 1);
   assert.equal(world.pickups.filter(pickup => pickup.kind === 'tape').length, 1);
   assert.equal(world.pickups.filter(pickup => pickup.kind === 'socket').length, 1);
+}
+
+// Cultivated wildlife is a choice: passing close only startles it; shooting
+// turns it into a clearly telegraphed attacker and eventually yields a seed.
+{
+  const grazer = new GlassGrazer(140, 176);
+  grazer.update({ ...hero, x: 120 });
+  assert.equal(grazer.hostile, false);
+  assert.equal(grazer.state, 'startle');
+  grazer.struck(80);
+  for (let i = 0; i < 80 && !grazer.hitQueued; i++) grazer.update(hero);
+  assert.equal(grazer.hostile, true);
+  assert.equal(grazer.hitQueued, true);
+}
+
+// Survey fire skims the floor: standing and crouching are hit, while a proper
+// jump clears it. The same directional shield can still catch or reflect it.
+{
+  const drone = new SurveyDrone(220, 176, -1);
+  const bolt = drone.bolt();
+  bolt.x = 55; bolt.px = 55; bolt.vx = -8;
+  assert.equal(advanceBolt(bolt, hero), 'hit');
+  const airborne = { ...hero, y: 145 };
+  const second = { ...drone.bolt(), x: 55, px: 55, vx: -8 };
+  assert.equal(advanceBolt(second, airborne), null);
+}
+
+// A warden ignores front-facing pistol fire. Its rush exposes the core after a
+// shield impact; reflected energy also punches through the plate.
+{
+  const warden = new RushWarden(220, 176, -1);
+  assert.equal(warden.struck(100), 'armored');
+  warden.openCore();
+  assert.equal(warden.exposed, true);
+  assert.equal(warden.struck(100), 'hit');
+  warden.go('guard');
+  assert.equal(warden.struck(100, true), 'hit');
 }
 
 // The facility mission ends in a real choice. A sustained shield signal makes
@@ -87,4 +125,4 @@ const hero = {
   assert.equal(advanceBolt(bolt, timed), 'reflect');
 }
 
-console.log('combat checks ok — sentry, shield, reflection, facility loot and hybrid choice');
+console.log('combat checks ok — sentry, shield, hybrid choice and three ecology roles');

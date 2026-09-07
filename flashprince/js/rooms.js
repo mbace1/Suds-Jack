@@ -28,6 +28,8 @@
 //   b  something that lives here          g  a sentry with a rifle
 //   s  a swordsman                        d  a drone
 //   H  a cultivation keeper: answer its signal or fight it
+//   b  a peaceful glass grazer              d  a low-firing survey drone
+//   w  an armoured rush warden
 //   T  a light
 //
 // `scene` is the one thing a screen has that no other screen has. The biome
@@ -390,6 +392,42 @@ export const ROOMS = [
       '####################',
     ],
   },
+  { // 20 — beyond the crown, cultivated wildlife has escaped its old pens
+    t: 6.00, beat: 'cultivationCanal', scene: 'cultivationCanal', waterY: 176,
+    tapeTitle: 'FIELD GUIDE / GLASS GRAZER',
+    map: [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '        ####        ',
+      '        ####        ',
+      '                    ',
+      '  b        V     b  ',
+      '####################',
+    ],
+  },
+  { // 21 — floor-skimming fire and an armoured rush guard the machine archive
+    t: 6.00, beat: 'wardenArchive', scene: 'wardenArchive',
+    tapeTitle: 'SECURITY VHS / RESPONSE TEST', lootTitle: 'WARDEN MEMORY CORE',
+    map: [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '             #######',
+      '      ####   #######',
+      '      ####          ',
+      '  d       w      L  ',
+      '####################',
+    ],
+  },
 ];
 
 // The one line of text in each act. Another World has no words in it at all;
@@ -408,4 +446,6 @@ export const BEATS = {
   bioTransit: 'SOMETHING BEAUTIFUL WAS WAITING BELOW',
   hybridSanctum: 'IT ANSWERED THE SHAPE OF HIS SHIELD',
   facilityCrown: 'THE GARDEN REMEMBERED HIS CHOICE',
+  cultivationCanal: 'NOT EVERYTHING HERE WANTED A FIGHT',
+  wardenArchive: 'THE OLD MACHINES ONLY KNEW FORCE',
 };

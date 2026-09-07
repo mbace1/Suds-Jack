@@ -18,12 +18,13 @@
 import { Screen, W, H } from './screen.js?v=64';
 import { paletteAt, C } from './palette.js?v=52';
 import { Hero } from './hero.js?v=59';
-import { World, ROOMS, ROOM_H } from './level.js?v=66';
-import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=66';
+import { World, ROOMS, ROOM_H } from './level.js?v=67';
+import { paintBack, drawAir, drawFore, drawFloodWater, halo } from './scenery.js?v=67';
 import { Post } from './bench.js';
 import { Swordsman } from './foe.js?v=51';
 import { Sentry, advanceBolt, drawBolt } from './sentry.js?v=66';
 import { HybridKeeper } from './hybrid.js?v=66';
+import { GlassGrazer, SurveyDrone, RushWarden } from './ecology.js?v=67';
 import { Input } from './input.js?v=54';
 import { Sound } from './sound.js';
 import { Editor, BRUSHES } from './editor.js';
@@ -108,12 +109,16 @@ class Stage {
     this.foes = [];
     this.sentries = [];
     this.hybrids = [];
+    this.grazers = [];
+    this.drones = [];
+    this.wardens = [];
     this.bolts = [];
     this.snd = new Sound();
     this.ed = new Editor(this.scr);
     this.hybridOutcome = null;
     this.bioSeed = 0;
     this.hybridHint = 0;
+    this.combatHint = 0;
     this.missionComplete = false;
     const requestedScene = location.hash.slice(1);
     const requestedRoom = requestedScene
@@ -183,8 +188,14 @@ class Stage {
       .map(s => new Sentry(s.x, s.y, -1));
     this.hybrids = w.spawns.filter(s => s.kind === 'H')
       .map(s => new HybridKeeper(s.x, s.y, this.hybridOutcome));
+    this.grazers = w.spawns.filter(s => s.kind === 'b')
+      .map((s, k) => new GlassGrazer(s.x, s.y, k & 1 ? -1 : 1));
+    this.drones = w.spawns.filter(s => s.kind === 'd')
+      .map(s => new SurveyDrone(s.x, s.y, -1));
+    this.wardens = w.spawns.filter(s => s.kind === 'w')
+      .map(s => new RushWarden(s.x, s.y, -1));
     this.bolts = [];
-    this.unbuilt = w.spawns.filter(s => !['s', 'g', 'H'].includes(s.kind)).length;
+    this.unbuilt = w.spawns.filter(s => !['s', 'g', 'H', 'b', 'd', 'w'].includes(s.kind)).length;
     this.post = null;
     if (this.facilityPower > 0) {
       for (const p of w.pickups) if (p.kind === 'socket') p.taken = true;
@@ -291,6 +302,7 @@ class Stage {
     if (this.lootFlash > 0) this.lootFlash--;
     if (this.powerHint > 0) this.powerHint--;
     if (this.hybridHint > 0) this.hybridHint--;
+    if (this.combatHint > 0) this.combatHint--;
     if (this.bioSeed && !h.shielding) h.shield = Math.min(100, h.shield + 0.08);
     for (const p of this.impacts) {
       p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.t--;
@@ -360,6 +372,41 @@ class Stage {
         this.bolts.push(hybrid.spore());
       }
     }
+    for (const grazer of this.grazers) {
+      grazer.update(h);
+      if (grazer.hitQueued) {
+        grazer.hitQueued = false;
+        if (Math.abs(grazer.x - h.x) < 30) {
+          const front = (grazer.x - h.x) * h.face > 0;
+          if (h.shielding && front) {
+            h.shield = Math.max(0, h.shield - 12); h.shieldFlash = 7;
+            grazer.go('recover'); this.snd.woodHit();
+          } else h.strike(1, grazer.x, this);
+        }
+      }
+      this.dropFrom(grazer, 'seed', 'GRAZER LIGHT SEED');
+    }
+    for (const drone of this.drones) {
+      drone.update(h);
+      if (drone.shotQueued) {
+        drone.shotQueued = false; this.bolts.push(drone.bolt()); this.snd.shot();
+      }
+      this.dropFrom(drone, 'salvage', 'SURVEY OPTIC');
+    }
+    for (const warden of this.wardens) {
+      warden.update(h);
+      if (warden.hitQueued) {
+        warden.hitQueued = false;
+        if (Math.abs(warden.x - h.x) < 34) {
+          const front = (warden.x - h.x) * h.face > 0;
+          if (h.shielding && front) {
+            h.shield = Math.max(0, h.shield - 28); h.shieldFlash = 10;
+            warden.openCore(); this.combatHint = 100; this.snd.woodHit();
+          } else h.strike(1, warden.x, this, 'shock');
+        }
+      }
+      this.dropFrom(warden, 'salvage', 'WARDEN MEMORY CORE');
+    }
     for (let i = this.bolts.length - 1; i >= 0; i--) {
       const bolt = this.bolts[i];
       const result = advanceBolt(bolt, h);
@@ -374,11 +421,12 @@ class Stage {
         continue;
       }
       if (!result && bolt.friendly) {
-        const targets = [...this.sentries, ...this.foes, ...this.hybrids].filter(e => !e.dead);
+        const targets = [...this.sentries, ...this.foes, ...this.hybrids,
+          ...this.grazers, ...this.drones, ...this.wardens].filter(e => !e.dead);
         const hit = targets.find(e => this.reached(bolt.px, bolt.x, e.x, 7)
           && bolt.y >= e.y - 36 && bolt.y <= e.y);
         if (hit) {
-          hit.struck(h.x);
+          hit.struck(h.x, true);
           if (this.hybrids.includes(hit) && hit.resolved) this.resolveHybrid('slain');
           this.spark(bolt.x, bolt.y, Math.sign(bolt.vx));
           this.bolts.splice(i, 1);
@@ -419,7 +467,7 @@ class Stage {
   }
 
   floorPickupUnder(h) {
-    return this.world.pickups.find(p => !p.taken && ['cell', 'tape', 'loot', 'socket'].includes(p.kind)
+    return this.world.pickups.find(p => !p.taken && ['cell', 'tape', 'loot', 'socket', 'seed', 'salvage'].includes(p.kind)
       && (p.kind !== 'socket' || this.parts > 0)
       && Math.abs(p.x - h.x) <= 9 && Math.abs(p.y - h.y) <= 20);
   }
@@ -437,6 +485,12 @@ class Stage {
       this.tapes++; this.lootTitle = this.world.room.tapeTitle ?? 'ARCHIVE TAPE'; this.lootFlash = 210;
     } else if (p.kind === 'loot') {
       this.parts++; this.lootTitle = this.world.room.lootTitle ?? 'RETRO MACHINE PART'; this.lootFlash = 150;
+    } else if (p.kind === 'salvage') {
+      this.parts++; h.shield = Math.min(100, h.shield + 35);
+      this.lootTitle = p.title ?? 'RETRO MACHINE SALVAGE'; this.lootFlash = 170;
+    } else if (p.kind === 'seed') {
+      this.bioSeed = 1; h.shield = 100;
+      this.lootTitle = p.title ?? 'LIVING LIGHT SEED'; this.lootFlash = 170;
     } else {
       this.parts--; this.facilityPower = 1; h.shield = 100;
       this.lootTitle = 'TRANSIT HEART ONLINE'; this.lootFlash = 180; this.powerHint = 0;
@@ -455,6 +509,9 @@ class Stage {
     for (const foe of this.foes) if (!foe.dead) targets.push({ x: foe.x, enemy: foe });
     for (const sentry of this.sentries) if (!sentry.dead) targets.push({ x: sentry.x, enemy: sentry });
     for (const hybrid of this.hybrids) if (!hybrid.dead) targets.push({ x: hybrid.x, enemy: hybrid });
+    for (const grazer of this.grazers) if (!grazer.dead) targets.push({ x: grazer.x, enemy: grazer });
+    for (const drone of this.drones) if (!drone.dead) targets.push({ x: drone.x, enemy: drone });
+    for (const warden of this.wardens) if (!warden.dead) targets.push({ x: warden.x, enemy: warden });
     if (this.post) targets.push({ x: this.post.x, foe: null });
     const ahead = targets
       .filter(t => (t.x - h.x) * h.face > 0 && Math.abs(t.x - h.x) < 200)
@@ -463,7 +520,13 @@ class Stage {
     this.tracer = { x1: m.x, y: m.y, x2: ahead?.x ?? m.x + h.face * 190, t: 4 };
     if (!ahead) return;
     if (ahead.enemy) {
-      ahead.enemy.struck(h.x);
+      const result = ahead.enemy.struck(h.x);
+      if (result === 'armored') {
+        this.combatHint = 150;
+        this.spark(ahead.x - h.face * 10, m.y, -h.face);
+        this.snd.woodHit();
+        return;
+      }
       if (this.hybrids.includes(ahead.enemy) && ahead.enemy.resolved) this.resolveHybrid('slain');
     }
     else this.post.hit(ahead.x, h.face);
@@ -474,6 +537,12 @@ class Stage {
     for (let k = 0; k < 5; k++) {
       this.impacts.push({ x, y, vx: dir * (0.35 + k * 0.12), vy: -0.8 + k * 0.3, t: 8 + k });
     }
+  }
+
+  dropFrom(enemy, kind, title) {
+    if (!enemy.dropQueued) return;
+    enemy.dropQueued = false;
+    this.world.pickups.push({ kind, title, x: enemy.x, y: enemy.y - 6, taken: false });
   }
 
   resolveHybrid(outcome) {
@@ -573,6 +642,9 @@ class Stage {
     for (const foe of this.foes) foe.draw(scr);
     for (const sentry of this.sentries) sentry.draw(scr);
     for (const hybrid of this.hybrids) hybrid.draw(scr);
+    for (const grazer of this.grazers) grazer.draw(scr);
+    for (const drone of this.drones) drone.draw(scr);
+    for (const warden of this.wardens) warden.draw(scr);
     for (const bolt of this.bolts) drawBolt(scr, bolt);
     for (const p of this.impacts) scr.rect(p.x, p.y, p.t > 8 ? 2 : 1, 1, p.t & 1 ? C.LUX2 : C.LUX);
 
@@ -697,13 +769,18 @@ class Stage {
     const live = this.foes.find(f => !f.dead);
     const machine = this.sentries.find(s => !s.dead);
     const hybrid = this.hybrids.find(s => !s.dead);
+    const grazer = this.grazers.find(s => !s.dead && s.hostile);
+    const drone = this.drones.find(s => !s.dead);
+    const warden = this.wardens.find(s => !s.dead);
     if (live) row(live.health, 2, 12, C.EDGE);
     else if (machine) row(machine.health, 2, 12, C.ALERT);
     else if (hybrid && hybrid.hostile) row(hybrid.health, 3, 12, C.ALERT);
     else if (hybrid && !hybrid.allied) {
       const n = Math.ceil(hybrid.bondRatio * 5);
       for (let i = 0; i < 5; i++) scr.rect(W - 8 - i * 5, 12, 3, 2, i < n ? C.LUX2 : C.DARK);
-    }
+    } else if (warden) row(warden.health, 3, 12, warden.exposed ? C.LUX2 : C.ALERT);
+    else if (drone) row(drone.health, 2, 12, C.LUX2);
+    else if (grazer) row(grazer.health, 2, 12, C.EDGE);
   }
 
   chrome(scr) {
@@ -738,6 +815,9 @@ class Stage {
     if (this.hybridHint > 0) {
       scr.rect(62, 48, 196, 16, C.DARK);
       this.centre(scr, 'E GUN · HOLD SHIELD TO ANSWER · OR FIRE', 53, C.LUX, 6);
+    } else if (this.combatHint > 0) {
+      scr.rect(54, 48, 212, 16, C.DARK);
+      this.centre(scr, 'FRONT PLATE LOCKED · SHIELD THE RUSH', 53, C.LUX, 6);
     }
   }
 

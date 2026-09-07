@@ -16,7 +16,7 @@
 //   in the middle without ever being shown a door.
 
 import { C } from './palette.js?v=52';
-import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=66';
+import { RW, RH, TILE, ROOM_W as W, ROOM_H as H } from './rooms.js?v=67';
 
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 const clamp = v => Math.max(0, Math.min(1, v));
@@ -43,6 +43,8 @@ export function paintBack(scr, room, index) {
   if (room.scene === 'bioTransit') { paintBioTransit(scr); return; }
   if (room.scene === 'hybridSanctum') { paintHybridSanctum(scr); return; }
   if (room.scene === 'facilityCrown') { paintFacilityCrown(scr); return; }
+  if (room.scene === 'cultivationCanal') { paintBioTransit(scr); return; }
+  if (room.scene === 'wardenArchive') { paintBioFacility(scr); return; }
   const t = room.t, w = weights(t), r = rand(index * 2654435 + 17);
 
   // Sky as flat bands with hard seams. A 2600 changed colour once a scanline

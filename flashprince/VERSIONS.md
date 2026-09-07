@@ -1,5 +1,17 @@
 # Flash Prince — versions
 
+## v67 — 2026-09-07
+
+**The facility now has an ecology, not a row of reskinned guards.** Glass
+grazers flee unless the player chooses to shoot first, then answer with a
+telegraphed leap. Survey drones fire along the floor, making a jump, shield
+block or reflection distinct responses. Armoured rush wardens reject frontal
+pistol fire until their charge meets the shield and exposes the core; reflected
+energy also breaches them. Fallen machines leave useful retro salvage and
+grazers leave living seeds, both collected with the authored pickup action.
+Two new playable screens continue beyond the facility crown. No player frame,
+animation, movement value, character palette or locked run changed.
+
 ## v66 — 2026-09-02
 
 **The bio-facility now ends in a meaningful hybrid encounter.** The released
