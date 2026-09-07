@@ -267,9 +267,19 @@ gradients.
 ellipse). A gentle 2-step toon ramp on the 3D is on the table if flat
 unlit reads too dead against the layered depth — decide in gate 1, then
 lock. Cutout layers are self-lit paintings; their shading is drawn in,
-agreeing with the key direction. No bloom, no chromatic aberration, no
-post stack; `NoToneMapping` or ACES — whichever the gate-1 shot proves,
-then locked.
+agreeing with the key direction. No chromatic aberration and no post
+stack — **and the tone-mapping question is now CLOSED: `NoToneMapping`,
+locked** (v15.65). ACES was tried and looks better on the night shift,
+where an unmapped warm lamp clips flat white as soon as two lights
+overlap; it was rejected on cost, measured — with ACES on, `smoke.cjs`
+failed the same timed walk twice, and with it off, nothing else changed,
+433/0. The target is a phone and the effect is a nicety.
+
+**Bloom is admitted in one narrow form** (owner, 2026-09-06): a wider,
+dimmer additive quad parented to a lamp — the technique the lamps already
+are, one more draw call, no composer and no new file. A vignette is
+admitted too, and is drawn in CSS over the canvas rather than in the
+renderer, so it costs no GPU work in the game's own pipeline.
 
 ### 3.5 Motion rules
 

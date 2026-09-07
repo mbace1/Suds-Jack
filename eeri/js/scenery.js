@@ -1,4 +1,4 @@
-import { ART } from './artprops.js?v=60';
+import { ART } from './artprops.js?v=61';
 
 // EERI — SCENERY AS DATA, which is the thing standing between this game and
 // an editor.
@@ -200,6 +200,25 @@ export const SCENERY = {
   // picture. One per beat, so the level reads as a chain of lit places with
   // dark between them rather than an evenly grey room.
   nightshift: [
+    // THE DEPOT, as art rather than as grey planes (2026-09-07).
+    // `world34-dressing.js` drew this world's warehouse from about fifteen
+    // flat panels — a 78-unit grey wall, grey bays, a grey office — and its
+    // own header admitted they were stand-ins "until the exact large source
+    // PNGs are alpha-prepped". These are those pieces, generated against the
+    // house craft block and keyed: corrugated card, balsa frames, split
+    // pins, and the only warm light in the picture coming out of their own
+    // windows.
+    //
+    // Sparse on purpose, the lesson World 3's treeline paid for: four strong
+    // identifiers across a room read as a place, and a wall tiled end to end
+    // reads as wallpaper. `y` is where a piece STANDS.
+    { prop: 'dockBay', x: 14, y: 4.0, h: 6.4 },
+    { prop: 'cargo',   x: 27, y: 4.0, h: 4.2 },
+    { prop: 'office',  x: 41, y: 4.0, h: 8.0 },
+    { prop: 'dockBay', x: 62, y: 4.0, h: 6.4, flip: 1 },
+    { prop: 'cargo',   x: 74, y: 4.0, h: 3.6 },
+    { prop: 'dockBay', x: 88, y: 4.0, h: 6.0 },
+
     { prop: 'lamp', x: 8.0, y: 8.5, r: 7.5, i: 1.15, z: -1.0, colour: '#ffd08a', flicker: 0.05 },
     { prop: 'lamp', x: 31.0, y: 7.5, r: 8.5, i: 1.0, z: -1.0, colour: '#ffd08a' },
     { prop: 'lamp', x: 46.0, y: 9.0, r: 9.5, i: 1.2, z: -1.4, colour: '#fff0c8' },

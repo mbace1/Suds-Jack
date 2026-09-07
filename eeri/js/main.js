@@ -9,35 +9,35 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=60';
-import { Input } from './input.js?v=60';
-import { Level, ROOMS, LAB } from './level.js?v=60';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=61';
+import { Input } from './input.js?v=61';
+import { Level, ROOMS, LAB } from './level.js?v=61';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
   buildSheetModel, Sheet,
-} from './pieces.js?v=60';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=60';
-import { Camera } from './camera.js?v=60';
-import { buildKidModel, Kid, Player } from './kid.js?v=60';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=60';
-import { buildCraneModel, Crane } from './crane.js?v=60';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=60';
-import { buildFlattenerModel } from './flattener.js?v=60';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=60';
-import { Hoist } from './hoist.js?v=60';
-import { Plank } from './plank.js?v=60';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=60';
-import { WreckingBall } from './hazards.js?v=60';
-import { AudioKit } from './audio.js?v=60';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=60';
-import { craftMat, craftBox, setRim } from './craft.js?v=60';
-import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=60';
-import { FXPool, attach as attachFX } from './fx.js?v=60';
-import { t as tr } from './lang.js?v=60';
-import { showIntro } from './intro.js?v=60';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=60';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=60';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=60';
+} from './pieces.js?v=61';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=61';
+import { Camera } from './camera.js?v=61';
+import { buildKidModel, Kid, Player } from './kid.js?v=61';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=61';
+import { buildCraneModel, Crane } from './crane.js?v=61';
+import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=61';
+import { buildFlattenerModel } from './flattener.js?v=61';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=61';
+import { Hoist } from './hoist.js?v=61';
+import { Plank } from './plank.js?v=61';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=61';
+import { WreckingBall } from './hazards.js?v=61';
+import { AudioKit } from './audio.js?v=61';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=61';
+import { craftMat, craftBox, setRim } from './craft.js?v=61';
+import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=61';
+import { FXPool, attach as attachFX } from './fx.js?v=61';
+import { t as tr } from './lang.js?v=61';
+import { showIntro } from './intro.js?v=61';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=61';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=61';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=61';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -65,8 +65,31 @@ async function boot() {
   if (!skipIntro) await loadManifest();
   const introDone = skipIntro ? Promise.resolve() : showIntro();
 
-  // renderer: clean edges, no post stack (ART_BRIEF §3.4)
+  // renderer: clean edges, and still no post stack (ART_BRIEF §3.4).
+  //
+  // §3.4 LEFT ONE QUESTION OPEN — "`NoToneMapping` or ACES — whichever the
+  // gate-1 shot proves, then locked" — and it was never answered; the default
+  // has been NoToneMapping by omission for sixty-odd releases. v15.65 answers
+  // it, and the answer is NoToneMapping, LOCKED, on a measurement rather than
+  // a preference.
+  //
+  // ACES was tried first and it looks better: with no tone mapping a warm
+  // lamp over the cold depot clips flat white the moment two lights overlap,
+  // and ACES rolls that shoulder off so a bright thing gets brighter instead
+  // of getting bigger and whiter. But it is a per-pixel pass over the whole
+  // frame every frame, and it COSTS: with ACES on, `smoke.cjs` failed the
+  // same timed walk twice in a row (site 2 → 3); with it off, and nothing
+  // else changed, 433/0. That is the sandbox's software renderer rather than
+  // a phone, but the direction of the finding is the one that matters —
+  // this game's target is a phone, the effect is a nicety, and it is the
+  // most expensive thing in this release by a distance.
+  //
+  // The two cheap halves shipped instead: a CSS vignette (no WebGL work at
+  // all) and a halo child on bright lamps (one more additive quad, the
+  // technique the lamps already use). Between them they do most of what was
+  // wanted, for a cost the gate cannot even see.
   const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.toneMapping = THREE.NoToneMapping;
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   document.getElementById('game').appendChild(renderer.domElement);
 
@@ -107,6 +130,9 @@ async function boot() {
     document.documentElement.style.setProperty('--stage-h', h + 'px');
     document.documentElement.style.setProperty('--stage-w', w + 'px');
     document.documentElement.style.setProperty('--stage-top', el.style.top);
+    // …and the left edge, for the vignette layer in index.html: it has to
+    // letterbox with the picture rather than darken the bare surround.
+    document.documentElement.style.setProperty('--stage-left', el.style.left);
     return { w, h };
   }
   const stage0 = fitStage();

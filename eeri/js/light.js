@@ -27,7 +27,7 @@
 // option that would cost the Godot port a week. Rim-from-alpha is the
 // next step up and it comes after there are lights worth rimming.
 
-import { mix } from './palette.js?v=60';
+import { mix } from './palette.js?v=61';
 
 // ---- 1 · mood -----------------------------------------------------------
 // Per world: what the lanes are multiplied by, from the far end of the
@@ -128,6 +128,25 @@ function lampTexture(THREE) {
 // A lamp is a quad, so it is one draw call and it cannot cast anything —
 // which is the honest limit and also why it is affordable at six lamps a
 // level on a phone.
+// THE HALO — bloom without a post stack (v15.65).
+//
+// ART_BRIEF §3.4 says "no bloom, no post stack", and the owner approved
+// revisiting it. This is the smallest honest reading of that permission: a
+// real bloom means vendoring EffectComposer and running two more full-screen
+// passes a frame on a phone, for an effect that on this art is only ever
+// wanted around the LAMPS. A lamp here is already an additive quad, so a
+// wider, dimmer copy of one behind it IS the bloom — same technique, one
+// more draw call, nothing new shipped and nothing new to go wrong.
+//
+// It is only fitted to lamps bright enough to earn it, and it is what makes
+// the night shift's work lamps read as glare rather than as stickers.
+// AND IT IS CAPPED IN WORLD UNITS, which the first cut was not. A scale
+// alone gave the night shift's big lamps (r 7.5–9.5) halos 38 to 46 units
+// across against a frame that sees about 23 — one lamp washed twice the
+// screen and the picture read as fogged. A glare is LOCAL to its lamp; the
+// cap is what keeps it that way whatever radius a room asks for.
+const HALO_SCALE = 1.6, HALO_ALPHA = 0.18, HALO_MAX = 15;
+
 export function buildLamp(THREE, { x, y, r = 6, colour = '#ffd9a0', i = 1, z = -1.2 }) {
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(r * 2, r * 2),
@@ -144,6 +163,27 @@ export function buildLamp(THREE, { x, y, r = 6, colour = '#ffd9a0', i = 1, z = -
   mesh.name = 'lamp';
   mesh.position.set(x, y, z);
   mesh.renderOrder = 1;
+  // the halo rides as a CHILD, so every existing thing that moves, dims,
+  // flickers or disposes a lamp carries it along without knowing it exists
+  if (i >= 0.35) {
+    const hw = Math.min(r * 2 * HALO_SCALE, HALO_MAX);
+    const halo = new THREE.Mesh(
+      new THREE.PlaneGeometry(hw, hw),
+      new THREE.MeshBasicMaterial({
+        map: lampTexture(THREE),
+        color: colour,
+        transparent: true,
+        opacity: Math.min(1, i) * HALO_ALPHA,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    );
+    halo.name = 'halo';
+    halo.position.z = -0.01;      // a hair behind its own lamp
+    halo.renderOrder = 0;
+    mesh.add(halo);
+  }
   return mesh;
 }
 

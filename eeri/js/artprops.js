@@ -49,6 +49,19 @@ export const ART = {
   logTunnel:    { file: '2d/world3_log_tunnel_lib_v1.webp',    label: 'log tunnel',    layer: 'play', h: 8.2 },
   stumpClearing:{ file: '2d/world3_stump_clearing_lib_v1.webp', label: 'stump clearing', layer: 'play', h: 7.5 },
 
+  // World 4 — the NIGHT DEPOT, generated 2026-09-07. `world34-dressing.js`
+  // built this world's warehouse out of about fifteen flat panels — a
+  // 78-unit grey wall, grey bays, grey office — and said so in its own
+  // header: "until the exact large source PNGs are alpha-prepped, this
+  // sidecar builds the same big silhouettes from clean planes". Those planes
+  // were the most visible placeholder left in the game, and the same class
+  // of stand-in World 3's disc canopy was. These replace them: corrugated
+  // card cladding, painted balsa frames, split pins, and the only warm light
+  // in the picture spilling from their own windows.
+  dockBay:  { file: '2d/world4_dock_bay_v1.webp', label: 'dock bay',  layer: 'play', h: 6.4 },
+  office:   { file: '2d/world4_office_v1.webp',   label: 'site office', layer: 'play', h: 8.0 },
+  cargo:    { file: '2d/world4_cargo_v1.webp',    label: 'cargo stack', layer: 'play', h: 4.2 },
+
   // World 4 — the depot's own vocabulary.
   worklamp:     { file: '2d/world4_worklamp_lib_v1.webp',     label: 'work lamp',    layer: 'play', h: 3.4 },
   cableReel:    { file: '2d/world4_cable_reel_lib_v1.webp',   label: 'cable reel',   layer: 'play', h: 2.2 },

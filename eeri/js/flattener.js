@@ -24,8 +24,8 @@
 // instead, one joint up the chain and one known angle away.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=60';
-import { craftMat } from './craft.js?v=60';
+import { PAL, mix } from './palette.js?v=61';
+import { craftMat } from './craft.js?v=61';
 
 export function buildFlattenerModel(tint = 0) {
   const T = (c) => (tint > 0 ? mix(c, PAL.SKY_PALE, tint) : c);

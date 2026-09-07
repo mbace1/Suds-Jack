@@ -1,5 +1,116 @@
 # EERI — versions
 
+## v15.66 — 2026-09-07 — World 4's depot stops being grey planes
+
+**The most visible placeholder left in the game, and its own file had been
+saying so all along.** `js/world34-dressing.js`'s header: *"until the exact
+large source PNGs are alpha-prepped in the art lane, this sidecar builds
+the same big silhouettes from clean planes."* In practice that was about
+fifteen flat panels — **a 78-unit grey wall**, grey bays, a grey office —
+and it is the same class of stand-in World 3's disc canopy was, sitting in
+front of the painted depot backdrop.
+
+Three pieces generated against the house craft block and keyed:
+`world4_dock_bay_v1` (a roller shutter half raised, warm light spilling
+across the threshold, a hazard board, a lit window), `world4_office_v1`
+(a cabin on stilts with a yellow service ladder) and `world4_cargo_v1`
+(banded crates and a pallet of sacks). Corrugated card, painted balsa,
+split pins — and at night the only warm light in the picture comes out of
+their own windows.
+
+**They arrive as `SCENERY.nightshift` ROWS, not as code**, which is now
+simply how art arrives: the level editor can place them, and **the Godot
+port inherited all six rows and three new images without a single
+exporter edit** — `export-scenery.mjs` carries whole rows and `sync-data`
+reads the catalogue, so both of the allow-lists that used to swallow new
+content are gone. That is the seam paying for itself a week after it was
+built.
+
+Sparse on purpose — four identifiers across a room read as a place, a
+wall tiled end to end reads as wallpaper (World 3's treeline paid for
+that lesson).
+
+**And a tone rule learned by getting it wrong twice.** The night shift's
+foreground gantry was pale, because v15.55 lightened the daylight
+occluders after they read as black UI blocks against a bright sky — right
+there, and copied here without thinking. At night the sky is the darkest
+thing in frame, so a pale beam over a dark depot is the same mistake
+upside down: it read as a grey L pasted on the picture. **The rule is not
+"light" or "dark": the nearest thing is the FURTHEST from its own backdrop
+in tone.**
+
+`node test/rooms.mjs` 246, `world34.mjs` pass, `fx-smoke.mjs` 31,
+`dev-menu.mjs` 36, `smoke.cjs` 433, `playthrough.cjs` 25. Godot:
+`export-scenery` 47 rows / 18 art pieces, `sync-data` 64 files,
+`test_boot` 27.
+
+## v15.65 — 2026-09-07 — a vignette, a halo, and §3.4's open question closed by measurement
+
+**Owner approved revisiting `ART_BRIEF` §3.4 — "no bloom, no chromatic
+aberration, no post stack" — for a light post pass.** What shipped is the
+smallest honest reading of that permission, and one of the three parts was
+rejected on evidence.
+
+**The vignette is CSS.** A real post stack means vendoring
+`EffectComposer` and shipping new files, which CLAUDE.md §2 forbids
+without asking, and a second full-screen pass every frame on a phone for
+what is — at this strength — a gradient. One compositor-only layer over
+the canvas does the same job for no WebGL work at all. It is
+pointer-transparent, so it can never eat a touch (the trap
+`dev/inspector.js` already paid for), and it is sized from `main.js`'s own
+stage variables so it letterboxes with the picture instead of darkening
+the bare surround.
+
+**The bloom is a halo child on the lamps.** A lamp here is already an
+additive quad, so a wider, dimmer copy behind it IS the bloom — the same
+technique, one more draw call, nothing new shipped. It rides as a CHILD,
+so everything that already moves, dims, flickers or disposes a lamp
+carries it without knowing it exists. **Capped in world units**, which
+the first cut was not: a scale alone gave the night shift's big lamps
+halos 38–46 units across against a frame that sees 23, and one lamp
+washed twice the screen.
+
+### ACES was tried, measured, and rejected — so §3.4 is now CLOSED
+
+§3.4 left one question open: "`NoToneMapping` or ACES — whichever the
+gate-1 shot proves, then locked." It was never answered; the default has
+been NoToneMapping by omission for sixty-odd releases.
+
+ACES **looks better**, and specifically on the night shift: unmapped, a
+warm lamp over the cold depot clips flat white the moment two lights
+overlap, which is why the work lamps read as paper discs. ACES rolls that
+shoulder off.
+
+**It costs too much.** With ACES on, `smoke.cjs` failed the same timed
+walk (site 2 → 3) **twice in a row**; with it off and nothing else
+changed, **433/0**. That is the sandbox's software renderer rather than a
+phone, but the direction is what matters: this game's target is a phone,
+the effect is a nicety, and it was the most expensive thing in the
+release by a distance. **`NoToneMapping`, locked**, and `ART_BRIEF` §3.4
+now says so with the measurement attached.
+
+**A gate learned its own lesson twice.** `test/dev-menu.mjs` failed on the
+vignette's COMMENT, which cites `dev/inspector.js` as the place a
+full-viewport overlay ate touches — the identical flaw that file had
+already fixed once for `main.js`, where its own note says matching any
+mention "is the opposite of what the rule is for: the comment is how the
+next reader learns the pack is peripheral." Both checks now match real
+`src=`, `href=` and `import` references rather than prose.
+
+**Also fixed:** the night shift's foreground gantry was near-white
+(`STEEL[3]` at 0.06) and read as a grey slab pasted over the depot; it is
+0.34 now.
+
+**Noticed, not fixed:** World 4's dressing still builds its warehouse
+silhouettes from plain grey planes — `world34-dressing.js` says so in its
+own header, pending art. It is the same class of stand-in World 3's disc
+canopy was, and it is the most visible placeholder left.
+
+`node test/rooms.mjs` 246, `world34.mjs` pass, `fx-smoke.mjs` 31,
+`dev-menu.mjs` 36, `smoke.cjs` 433, `playthrough.cjs` 25.
+
+`?v=60` → `?v=61` across the module graph.
+
 ## v15.64 — 2026-09-06 — the platform edges stop flickering, and the body moves like Wonder
 
 **Numbered 15.64 at MERGE, not 15.60 as authored** (PHASING §0.1: "a version

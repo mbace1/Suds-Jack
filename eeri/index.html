@@ -14,6 +14,33 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #14100c; }
   #game { position: fixed; inset: 0; }
   #game canvas { position: absolute; display: block; }
+  /* THE VIGNETTE, AND IT IS CSS ON PURPOSE (v15.65).
+     A real post stack means vendoring EffectComposer and shipping new files,
+     which CLAUDE.md §2 forbids without asking, and it means a second
+     full-screen pass on a phone GPU every frame for what is, at this
+     strength, a gradient. This is the same picture for nothing: one
+     compositor-only layer, no WebGL work, no new dependency, and it cannot
+     touch the frame rate of the game beneath it.
+     It sits over the CANVAS and under the HUD, and it is pointer-transparent
+     so it can never eat a touch — the trap dev/inspector.js already paid for
+     with a full-viewport panel. Sized and positioned by main.js's own stage
+     variables, so it letterboxes exactly with the picture instead of
+     darkening the surround. */
+  #vig {
+    position: fixed; pointer-events: none; z-index: 4;
+    left: var(--stage-left, 0px); top: var(--stage-top, 0px);
+    width: var(--stage-w, 100vw); height: var(--stage-h, 100vh);
+    /* SMOOTH ENOUGH TO BE INVISIBLE AS A SHAPE. The first cut ran clear to
+       55% and then darkened over the last 45%, and on the night shift —
+       where the sky is nearly one flat tone — that transition read as a
+       visible dome arc across the picture. A vignette you can see the edge
+       of is a shape on the screen, not a framing. Five stops from 20% out,
+       each a small step, so there is no boundary to find. */
+    background: radial-gradient(ellipse 92% 88% at 50% 48%,
+      rgba(20,16,12,0) 20%, rgba(20,16,12,0.03) 45%, rgba(20,16,12,0.09) 65%,
+      rgba(20,16,12,0.18) 82%, rgba(20,16,12,0.30) 100%);
+  }
+  @media (prefers-reduced-motion: reduce) { /* static anyway; kept for parity */ }
 
   #boot {
     position: fixed; inset: 0; display: grid; place-items: center;
@@ -527,6 +554,7 @@
 </head>
 <body>
 <div id="game"></div>
+<div id="vig"></div>
 <div id="hud">EERI<br><span id="site"></span><br><span id="bolts">⬡ 0</span> <span id="gold">✦ 0</span></div>
 <div id="hint"></div>
 <!-- Faces and accessible names are filled in by js/glyphs.js and js/lang.js
@@ -549,7 +577,7 @@
 <div id="veil" aria-hidden="true"></div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=31"></script>
-<script type="module" src="./js/main.js?v=60"></script>
+<script type="module" src="./js/main.js?v=61"></script>
 <script type="module">
   // bottom-right: the HOME button owns top-left and the HUD owns top-right.
   // Under a thumb that corner also holds the jump button (#tJ, 62px at

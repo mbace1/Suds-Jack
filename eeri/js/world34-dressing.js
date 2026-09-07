@@ -219,31 +219,19 @@ function nightBase(THREE, root) {
   for (const x of [18, 48, 78]) disc(THREE, root, x, 7.0, 6.0, 0xffbd48, -1.48, 0.055);
 }
 
-function loadingDock(THREE, root, { x0 = 7, width = 78, blue = false, bays = 2 } = {}) {
-  const wall = blue ? 0x214e78 : 0x777d83;
-  const trim = blue ? 0x173b5c : 0x666d73;
-  panel(THREE, root, x0 + width / 2, 9.0, width, 10.8, wall, -1.22);
-  panel(THREE, root, x0 + width / 2, 14.25, width, 0.42, 0x9aaab8, -1.02);
-  panel(THREE, root, x0 + width / 2, 4.1, width, 0.8, trim, -0.92);
-
-  const bayXs = bays === 3 ? [x0 + 15, x0 + 37, x0 + 59] : [x0 + 18, x0 + 43];
-  for (const x of bayXs) {
-    panel(THREE, root, x, 7.0, 12.0, 5.8, 0x30363d, -0.96);
-    stripe(THREE, root, x, 10.05, 10.8, -0.76);
-    warmWindow(THREE, root, x - 2.0, 6.0, 1.6, 0.7, -0.69);
-    warmWindow(THREE, root, x + 2.0, 6.0, 1.6, 0.7, -0.69);
-  }
-
-  // Raised office + yellow service ladder: the most useful readable feature
-  // from the owner-supplied grey loading-dock sheet.
-  const ox = x0 + width - 7;
-  panel(THREE, root, ox, 10.8, 13.0, 8.7, blue ? 0x365b77 : 0x85888a, -0.90);
-  warmWindow(THREE, root, ox - 2.5, 12.3, 4.3, 2.2, -0.67, true);
-  panel(THREE, root, ox + 3.0, 12.0, 2.8, 4.0, 0x214e78, -0.66);
-  panel(THREE, root, ox, 8.0, 13.0, 0.28, 0xe3a51b, -0.63);
-  for (let y = 4.8; y < 9.3; y += 0.76) panel(THREE, root, ox + 5.4, y, 2.0, 0.16, 0xe3a51b, -0.61);
-  panel(THREE, root, ox + 4.45, 7.0, 0.16, 5.5, 0xe3a51b, -0.61);
-  panel(THREE, root, ox + 6.35, 7.0, 0.16, 5.5, 0xe3a51b, -0.61);
+function loadingDock(_THREE, _root, _opts = {}) {
+  // GONE, AND REPLACED BY ART (2026-09-07). This built the depot from about
+  // fifteen flat panels — a 78-unit grey wall, grey bays, a grey office —
+  // and this file's own header always called them stand-ins: "until the
+  // exact large source PNGs are alpha-prepped in the art lane, this sidecar
+  // builds the same big silhouettes from clean planes".
+  //
+  // The art exists now (`world4_dock_bay_v1`, `world4_office_v1`,
+  // `world4_cargo_v1`), and it arrives the way World 3's treeline does —
+  // as `SCENERY.nightshift` rows through `js/artprops.js`, so the level
+  // editor can place it and the Godot port inherits it. Drawing it a second
+  // time here would put the grey wall back in front of the pieces that
+  // replaced it, which is exactly what World 3's disc canopy did.
 }
 
 function dockSlab(THREE, root, x, y, w, z = -0.60) {
