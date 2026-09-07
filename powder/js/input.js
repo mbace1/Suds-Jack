@@ -43,6 +43,8 @@ export class InputManager {
     this.onSwap = null;
     this.gamepad = false;
     this._pad = { steer: 0, throttle: 0, brake: false, pan: 0, lean: 0 };
+    this._kSteer = 0;             // the keyboard's steer, ramped (see read)
+    this._kT = performance.now();
     this._padPrev = { start: false, pause: false, swap: false };
     this._init();
   }
@@ -153,8 +155,21 @@ export class InputManager {
   read(out) {
     const k = this.keys;
     let steer = 0, pan = 0, lean = 0;
-    if (k.KeyA || k.ArrowLeft) steer -= 1;
-    if (k.KeyD || k.ArrowRight) steer += 1;
+    // A key is a switch, and full lock the instant it closes is a slide at
+    // any real speed — the sticks and the pad are analog, the keyboard was
+    // not, and it was the keyboard the controls were reported on. So the
+    // digital steer RAMPS: 0.22 s to full lock, 0.09 s back, which makes a
+    // tap a quarter turn and a hold a committed one, the way every arcade
+    // racer has treated a keyboard since there were keyboards.
+    let want = 0;
+    if (k.KeyA || k.ArrowLeft) want -= 1;
+    if (k.KeyD || k.ArrowRight) want += 1;
+    const now = performance.now(), dt = Math.min(0.1, (now - this._kT) / 1000);
+    this._kT = now;
+    const rate = want && Math.sign(want) === Math.sign(this._kSteer) || (want && !this._kSteer) ? dt / 0.22 : dt / 0.09;
+    this._kSteer = this._kSteer < want ? Math.min(want, this._kSteer + rate)
+                 : Math.max(want, this._kSteer - rate);
+    steer = this._kSteer;
     if (k.KeyQ) pan -= 1;
     if (k.KeyE) pan += 1;
     let throttle = (k.KeyW || k.ArrowUp) ? 1 : 0;

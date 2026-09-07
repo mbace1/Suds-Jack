@@ -4,6 +4,39 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v9 — 2026-09-07
+The keyboard, and the door for Blender.
+
+CONTROLS, second pass, on the report that they were still a nightmare. A key
+is a switch, and full lock the instant it closes is a slide at any real
+speed; the sticks and the pad are analog and the keyboard was not, and it
+was the keyboard the report came from. Digital steer now ramps — 0.22 s to
+full lock, 0.09 s back — so a tap is a quarter turn and a hold is a
+committed one. The lock the driver can ask for shrinks with speed (all of
+it below 72 km/h, 55% at 160), since the sustainable yaw rate falls as
+1/v and asking for more is a slide whatever the rudder does. The turbine
+spools in 0.75 s instead of 1.3, so idle to half thrust is 0.8 s, not 1.4.
+In a slide the camera looks half way to where the sled is GOING, so the
+sled slides across the frame instead of the world swinging round it. The
+brake means something now. Measured through real key events: one second
+of A at 140 km/h is 17 degrees of heading with 7.8 m/s of slide, where it
+was a spin.
+
+THE BLENDER PIPELINE. `pipeline/README.md` is the contract — units, frame,
+envelope, material names, the empties, the budgets, the 2D pieces — and
+`js/models.js` enforces it: a .glb that breaks it is reported in the
+console and not used, and that chassis stays on the kit. So exports can be
+early and often; a bad one never breaks the build. `pipeline/powder_blender.py`
+builds the template scene, validates against the same numbers, and exports
+with the right flags. `models/reference/` holds the kit itself exported in
+exactly the expected form, to import into Blender before modelling; load
+the game with `?models=reference` and the whole door is exercised with no
+Blender in the loop — both ships load, validate, dress in the game's
+chrome and race at 14 draw calls, and two landmarks bake into the tiles.
+Landmarks are vertex-coloured set pieces the tile bake takes as-is; ships
+keep their painted hull texture and get everything else from the game.
+`art/numerals.png`, when it exists, replaces the drawn roundel numerals.
+
 ## v8 — 2026-09-07
 The controls, on the owner's report that they were a nightmare and did not
 work. They were right, and it was three separate faults.

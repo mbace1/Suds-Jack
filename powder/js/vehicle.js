@@ -64,9 +64,9 @@
 // Integrated at a fixed 120 Hz on an accumulator, because a spring this stiff
 // is not stable on a variable frame time.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=8';
-import { SURF, SALT } from './terrain.js?v=8';
-import { buildCraft, disposeCraft } from './craft.js?v=8';
+import { PAL } from './palette.js?v=9';
+import { SURF, SALT } from './terrain.js?v=9';
+import { buildCraft, disposeCraft } from './craft.js?v=9';
 
 const G = 9.81;
 const HZ = 120, DTF = 1 / HZ;
@@ -82,6 +82,11 @@ export const SPEC = {
   drag: 2.18,                // N per (m/s)^2, x the surface multiplier
   slipK: 6000,               // lateral N per m/s of slip, before the mu limit
   steerLock: 0.30,           // rad the front is steered at full lock
+  // Full lock at 140 km/h is a slide whatever the rudder does, because the
+  // sustainable yaw rate falls as 1/v. So the lock the driver can ask for
+  // shrinks with speed — the same thing every racer does, and a physical
+  // truth about steering racks under load. 1.0 below 20 m/s, 0.55 at 45.
+  speedLock: 0.45, speedLockFrom: 20, speedLockOver: 25,
   // Rudder and yaw damping are a PAIR, and they set two DIFFERENT things: the
   // steady yaw rate under full lock is steer/yawDamp, and the time to reach it
   // is Izz/yawDamp. The old 9000/12000 gave 0.75 rad/s after a 0.73 s time
@@ -144,8 +149,11 @@ export const SPEC = {
   // sled three times twitchier than the nose sled at quarter lock, which is
   // not "a different character", it is a different game. Re-measured at 1.15.
   rearSteer: 1.15, rearCircle: 0.28,
-  spoolUp: 1.3, spoolDown: 0.8,
-  brakeDrag: 5.2,
+  // Thrust goes as N1 squared, so a 1.3 s spool was 1.4 s from idle to HALF
+  // thrust: press the throttle and the game does nothing for a second and a
+  // half. 0.75 keeps the lag you can hear and cuts that to 0.8 s.
+  spoolUp: 0.75, spoolDown: 0.6,
+  brakeDrag: 7.0,               // measured at 5.2: 140 to 107 km/h in the first second, and a hover sled with no runners to dig in needs the brake to mean something
 };
 
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -343,7 +351,8 @@ export class Vehicle {
     // steered. So thrust has a lateral component at the nose, and a yaw
     // moment with it: the pull through the corner that makes a front-drive
     // car drive the way it does.
-    const steerIn = clamp(ctl.steer, -1, 1);
+    const lockScale = 1 - SPEC.speedLock * clamp((speed - SPEC.speedLockFrom) / SPEC.speedLockOver, 0, 1);
+    const steerIn = clamp(ctl.steer, -1, 1) * lockScale;
     const frontDrive = this.drive === 'front';
     // front rockets point where the front is steered; rear rockets point
     // along the body and cannot pull the nose anywhere

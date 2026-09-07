@@ -23,7 +23,8 @@
 //              scale, so they stay live meshes.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PAL, SUN_DIR } from './palette.js?v=8';
+import { PAL, SUN_DIR } from './palette.js?v=9';
+import { models, numeralTexture, SHIP } from './models.js?v=9';
 
 const _geo = {};
 const geo = (k, make) => _geo[k] || (_geo[k] = make());
@@ -69,6 +70,8 @@ export function makeEnvMap(renderer) {
 
 // ---------------------------------------------------------------- textures
 function numberTexture(num, accent) {
+  const sheet = numeralTexture(num);           // art/numerals.png, if present
+  if (sheet) return sheet;
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const g = c.getContext('2d');
@@ -194,17 +197,20 @@ function fanTexture() {
 // --------------------------------------------------------------- materials
 const _accMats = {};
 function materials(env, accent) {
+  // Named for the pipeline contract (see pipeline/README.md): a Blender ship
+  // wears these same names, and craftFromModel swaps by them.
   const M = geo('mats', () => ({
-    chrome: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.10, envMap: env, envMapIntensity: 1.15 }),
-    gun:    new THREE.MeshStandardMaterial({ color: 0x3a3a44, metalness: 0.9, roughness: 0.42, envMap: env, envMapIntensity: 0.7 }),
-    glass:  new THREE.MeshPhongMaterial({ color: PAL.glass, specular: 0xffffff, shininess: 200, emissive: 0x4a5a8a, emissiveIntensity: 0.3, transparent: true, opacity: 0.92 }),
-    fan:    new THREE.MeshBasicMaterial({ map: fanTexture() }),
+    chrome: Object.assign(new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.10, envMap: env, envMapIntensity: 1.15 }), { name: 'CHROME' }),
+    gun:    Object.assign(new THREE.MeshStandardMaterial({ color: 0x3a3a44, metalness: 0.9, roughness: 0.42, envMap: env, envMapIntensity: 0.7 }), { name: 'GUNMETAL' }),
+    glass:  Object.assign(new THREE.MeshPhongMaterial({ color: PAL.glass, specular: 0xffffff, shininess: 200, emissive: 0x4a5a8a, emissiveIntensity: 0.3, transparent: true, opacity: 0.92 }), { name: 'GLASS' }),
+    intake: Object.assign(new THREE.MeshBasicMaterial({ color: PAL.intake }), { name: 'INTAKE' }),
+    fan:    Object.assign(new THREE.MeshBasicMaterial({ map: fanTexture() }), { name: 'FAN' }),
     glowTex: glowTexture(),
     diamondTex: diamondTexture(),
     fadeTex: fadeTexture(),
   }));
   const acc = _accMats[accent] || (_accMats[accent] =
-    new THREE.MeshPhongMaterial({ color: accent, specular: 0x332233, shininess: 22 }));
+    Object.assign(new THREE.MeshPhongMaterial({ color: accent, specular: 0x332233, shininess: 22 }), { name: 'ACCENT' }));
   return { M, acc };
 }
 
@@ -270,9 +276,14 @@ function makeFlame(M) {
  *   mats[]    materials this ship owns, for dispose()
  */
 export function buildCraft(env, accent, number, drive = 'front') {
+  // a ship from the Blender pipeline, if one is registered for this chassis
+  const model = models.ships[drive === 'front' ? 'nose' : 'aft'];
+  if (model) return craftFromModel(model, env, accent, number, drive);
+
   const { M, acc } = materials(env, accent);
   const g = new THREE.Group();
   const hullMat = new THREE.MeshPhongMaterial({ map: panelTexture(accent), color: 0xffffff, specular: 0x554433, shininess: 28 });
+  hullMat.name = 'HULL';
   const geos = [], mats = [hullMat];
 
   const add = (geometry, mat, cast = true) => {
@@ -332,6 +343,10 @@ export function buildCraft(env, accent, number, drive = 'front') {
       { g: geo('pump', () => new THREE.BoxGeometry(0.40, 0.32, 0.6)), pos: [side * 0.88, 0.14, nz + 0.15] },
     );
     nozzles.push(new THREE.Vector3(sx, ny, bellZ + 0.2));
+    // the empties the pipeline contract names, so an export of the kit IS a
+    // reference file (pipeline/README.md)
+    const e = new THREE.Object3D(); e.name = side < 0 ? 'nozzle_L' : 'nozzle_R';
+    e.position.set(sx, ny, bellZ + 0.2); g.add(e);
   }
   add(merge(chromeParts), M.chrome);
   add(merge(gunParts), M.gun);
@@ -342,10 +357,11 @@ export function buildCraft(env, accent, number, drive = 'front') {
     const fan = new THREE.Mesh(geo('fanDisc', () => { const b = new THREE.CircleGeometry(1, 18); b.rotateY(Math.PI); return b; }), M.fan);
     fan.scale.setScalar(nr);
     fan.position.set(side * nx, ny, mouthZ);
-    fan.castShadow = false;
+    fan.castShadow = false; fan.name = side < 0 ? 'fan_L' : 'fan_R';
     g.add(fan); fans.push(fan);
 
     const flame = makeFlame(M);
+    flame.name = 'flame';
     flame.position.set(side * nx, ny, bellZ - 0.1);
     g.add(flame); flares.push(flame);
     mats.push(flame.userData.core.material, flame.userData.sheath.material, flame.userData.glow.material);
@@ -353,20 +369,77 @@ export function buildCraft(env, accent, number, drive = 'front') {
 
   // ---- canopy, and the roundels ------------------------------------------
   const canopy = add(geo('canopy', () => new THREE.SphereGeometry(0.52, 18, 10)), M.glass, false);
+  canopy.name = 'canopy';
   canopy.scale.set(0.95, 0.68, 1.9); canopy.position.set(0, 0.46, -2.5);
   geos.pop();                                        // the canopy is a kit geometry, not this ship's
 
   const numMat = new THREE.MeshBasicMaterial({ map: numberTexture(number, accent), transparent: true });
+  numMat.name = 'DECAL';
   mats.push(numMat);
   add(merge([
     { g: geo('decal', () => new THREE.PlaneGeometry(1.1, 1.1)), pos: [-0.98, 0.06, -0.5], rot: [0, -Math.PI / 2, 0] },
     { g: geo('decal'), pos: [0.98, 0.06, -0.5], rot: [0, Math.PI / 2, 0] },
   ]), numMat, false);
 
+  hull.name = 'hull';
   g.traverse(o => { if (o.isMesh || o.isSprite) o.layers.set(1); });
   g.layers.set(1);           // the HD layer: drawn full-res over the PS2 world
   g.scale.setScalar(0.74);   // ~11 m long overall
   g.userData = { flares, fans, hull, nozzles, geos, mats };
+  return g;
+}
+
+/**
+ * A ship from a loaded .glb, dressed in the game's materials. The model
+ * supplies geometry, the HULL's own painted texture (and normal map, if
+ * any), the FAN's texture if it has one, and the two nozzle empties; the
+ * game supplies chrome that reflects THIS sky, the accent colour, the
+ * numeral, the flames and the haze. Same userData contract as the kit, so
+ * vehicle.pose() cannot tell them apart. Geometry is shared with the
+ * registry and must not be disposed per ship, hence geos: [].
+ */
+export function craftFromModel(m, env, accent, number, drive) {
+  const { M, acc } = materials(env, accent);
+  const g = m.scene.clone(true);
+  const hullMat = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x554433, shininess: 28 });
+  hullMat.name = 'HULL';
+  const numMat = new THREE.MeshBasicMaterial({ map: numberTexture(number, accent), transparent: true });
+  numMat.name = 'DECAL';
+  const mats = [hullMat, numMat];
+  let hull = null;
+  g.traverse(o => {
+    if (!o.isMesh) return;
+    const src = o.material, name = src && src.name;
+    switch (name) {
+      case 'HULL':
+        hullMat.map = src.map || panelTexture(accent);
+        if (src.normalMap) hullMat.normalMap = src.normalMap;
+        o.material = hullMat; hull = hull || o; break;
+      case 'ACCENT':   o.material = acc; break;
+      case 'CHROME':   o.material = M.chrome; break;
+      case 'GUNMETAL': o.material = M.gun; break;
+      case 'GLASS':    o.material = M.glass; break;
+      case 'INTAKE':   o.material = M.intake; break;
+      case 'DECAL':    o.material = numMat; break;
+      case 'FAN':      if (!src.map) o.material = M.fan; break;
+      default: break;                            // left as authored
+    }
+    o.castShadow = name !== 'GLASS' && name !== 'DECAL';
+    o.receiveShadow = false;
+  });
+  g.updateMatrixWorld(true);
+  const fans = SHIP.fans.map(n => g.getObjectByName(n)).filter(Boolean);
+  const nozzles = SHIP.empties.map(n => g.getObjectByName(n).getWorldPosition(new THREE.Vector3()));
+  const flares = nozzles.map(p => {
+    const f = makeFlame(M); f.name = 'flame';
+    f.position.copy(p).z -= 0.3;                 // the flame starts inside the bell
+    g.add(f);
+    mats.push(f.userData.core.material, f.userData.sheath.material, f.userData.glow.material);
+    return f;
+  });
+  g.traverse(o => { if (o.isMesh || o.isSprite) o.layers.set(1); });
+  g.layers.set(1);
+  g.userData = { flares, fans, hull: hull || { material: hullMat }, nozzles, geos: [], mats, model: m.file };
   return g;
 }
 
