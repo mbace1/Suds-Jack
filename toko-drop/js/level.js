@@ -44,7 +44,7 @@
 // (scripts/level-check.mjs). Enemy names are resolved against an EnemyType
 // map the caller passes in, because enemy.js imports three and cannot load here.
 
-import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=193';
+import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=196';
 
 export const FORMAT = 1;
 export const STEP = 0.1;
@@ -62,15 +62,43 @@ export const ARENAS = {
 };
 // Levels that ship in toko-drop/levels/ — the editor's LOAD lists them and
 // ?level=<id> plays one. The port syncs these same files (tools/sync-levels.sh).
-export const BUNDLED = ['first-light', 'three-rings'];
+export const BUNDLED = ['first-light', 'moving-rings', 'three-rings'];
+// v242 CHALLENGES: the campaign, in order — its own list, NOT part of
+// BUNDLED. BUNDLED is what the editor offers to LOAD, and a challenge is a
+// DIRECTED room with no spawns to edit: opening one in the editor would be a
+// blank timeline over a level the editor cannot express. Each unlocks the
+// next at C or better (design/CAMPAIGN_LEVELS.md — "a player who is merely
+// finishing keeps moving"). ?level=<id> plays either list; the port syncs
+// both, from the same files.
+export const CAMPAIGN = ['ch-first-light', 'ch-cold-start', 'ch-the-vice', 'ch-crossfire', 'ch-the-tide', 'ch-conductor', 'ch-afterlife', 'ch-the-narrows', 'ch-no-second-chance', 'ch-bare-hands'];
+export const LEVEL_IDS = [...BUNDLED, ...CAMPAIGN].sort();
 
-const TOP_KEYS    = new Set(['format', 'id', 'name', 'arena', 'duration', 'spawns', 'rules']);
+const TOP_KEYS    = new Set(['format', 'id', 'name', 'arena', 'duration', 'spawns', 'rules', 'director', 'grade']);
+// v242 CHALLENGES: a level is authored (`spawns`) or DIRECTED (`director`) —
+// never both. A directed room is the ordinary wave director pinned to one
+// difficulty for the level's clock, which is what a challenge is: not a
+// hand-placed timeline but a known pressure with a rule on it.
+const DIRECTOR_KEYS = new Set(['difficulty']);
+const GRADE_KEYS    = new Set(['tiers']);
+export const GRADES = ['C', 'B', 'A', 'S'];   // ascending, and `tiers` matches
 const ARENA_KEYS  = new Set(['combine', 'shapes']);
 const RECT_KEYS   = new Set(['kind', 'hx', 'hz']);
-const CIRCLE_KEYS = new Set(['kind', 'c', 'r']);
+const CIRCLE_KEYS = new Set(['kind', 'c', 'r', 'move']);   // v241 (P3): a circle may move
+const MOVE_KEYS   = new Set(['kind', 'radius', 'period', 'phase']);
 const ENEMY_KEYS  = new Set(['t', 'type', 'px', 'pz', 'speedMult', 'intervalMult', 'boss', 'elite']);
 const PICKUP_KEYS = new Set(['t', 'kind', 'id', 'px', 'pz', 'life']);
-const RULE_KEYS   = new Set(['mode', 'outside']);
+const RULE_KEYS   = new Set(['mode', 'outside', 'twist']);
+// v243 CHALLENGES: the rules the campaign needs that a mode or an arena does
+// not already give. The other four of the port's eight are already
+// expressible and are NOT twists: SWARM is mode "melee", BOOST ONLY is mode
+// "rush", CLOSE QUARTERS is a smaller arena, and a plain fight is no twist
+// at all.
+//   onelife    — one hit ends it
+//   artillery  — the gun club only, and the cap comes off
+//   focus      — the support species arrive early: break off or drown
+//   graveyard  — corpses answer harder (revenge is CLOSE COMBAT's mechanic
+//                upstream, so this one requires mode "melee" and says so)
+export const TWISTS = ['onelife', 'artillery', 'focus', 'graveyard'];
 const ID_RE = /^[a-z0-9][a-z0-9-]*$/;
 
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
@@ -137,7 +165,20 @@ export function validate(level, { typeNames, pickupIds }) {
           if (!(Array.isArray(s.c) && s.c.length === 2 && isNum(s.c[0]) && isNum(s.c[1]))) errs.push(`${w}: circle needs c: [x, z]`);
           if (!(isNum(s.r) && s.r > 0)) errs.push(`${w}: circle needs a positive r`);
         } else errs.push(`${w}: unknown kind ${JSON.stringify(s.kind)} (format ${FORMAT} knows rect, circle)`);
-        if ('move' in s) errs.push(`${w}: "move" is not in format ${FORMAT} (moving shapes are P3)`);
+        // v241 (P3): a shape may MOVE. Only circles, and only the mover
+        // §4 names — an unknown mover is refused by name, never ignored.
+        if ('move' in s) {
+          const m = s.move;
+          if (s.kind !== 'circle') errs.push(`${w}: only a circle can "move"`);
+          else if (!m || typeof m !== 'object') errs.push(`${w}: "move" must be an object`);
+          else {
+            for (const k of Object.keys(m)) if (!MOVE_KEYS.has(k)) errs.push(`${w}.move: unknown key "${k}"`);
+            if (m.kind !== 'orbit') errs.push(`${w}.move: kind must be "orbit" (format ${FORMAT} knows one mover)`);
+            if (!isNum(m.radius) || m.radius <= 0) errs.push(`${w}.move: orbit needs a positive radius`);
+            if (!isNum(m.period) || m.period <= 0) errs.push(`${w}.move: orbit needs a positive period in seconds`);
+            if (m.phase !== undefined && !isNum(m.phase)) errs.push(`${w}.move: phase must be a number (turns, 0..1)`);
+          }
+        }
       });
     }
   } else errs.push('arena: must be a named arena or { shapes: [...] }');
@@ -148,7 +189,41 @@ export function validate(level, { typeNames, pickupIds }) {
     unknownKeys(R, RULE_KEYS, 'rules', errs);
     if (!MODES.includes(R.mode)) errs.push(`rules: mode must be one of ${MODES.join(', ')}`);
     if (R.outside !== undefined && !OUTSIDE.includes(R.outside)) errs.push(`rules: outside must be one of ${OUTSIDE.join(', ')}`);
+    if (R.twist !== undefined) {
+      if (!TWISTS.includes(R.twist)) errs.push(`rules: twist must be one of ${TWISTS.join(', ')}`);
+      // Named rather than silently ignored: revenge only fires in melee, so a
+      // GRAVEYARD level that forgot its mode would play as an ordinary room.
+      else if (R.twist === 'graveyard' && R.mode !== 'melee')
+        errs.push('rules: twist "graveyard" needs mode "melee" — revenge is CLOSE COMBAT\'s mechanic');
+    }
   }
+
+  // v242: a DIRECTED level has no spawn list — the director fills the room.
+  const D = level.director;
+  if (D !== undefined) {
+    if (typeof D !== 'object' || D === null) errs.push('director: must be an object');
+    else {
+      unknownKeys(D, DIRECTOR_KEYS, 'director', errs);
+      if (!isNum(D.difficulty) || D.difficulty < 1 || D.difficulty > 40 || D.difficulty !== Math.floor(D.difficulty))
+        errs.push('director: difficulty must be a whole number of waves, 1..40');
+    }
+    if (level.spawns !== undefined && level.spawns.length)
+      errs.push('director: a level is authored OR directed, never both (it has spawns too)');
+  }
+  // v242: the grade thresholds a challenge is scored against — C, B, A, S.
+  const G = level.grade;
+  if (G !== undefined) {
+    if (typeof G !== 'object' || G === null) errs.push('grade: must be an object');
+    else {
+      unknownKeys(G, GRADE_KEYS, 'grade', errs);
+      const t = G.tiers;
+      if (!Array.isArray(t) || t.length !== GRADES.length || !t.every(isNum))
+        errs.push(`grade: tiers must be ${GRADES.length} numbers (${GRADES.join(' ')})`);
+      else if (!t.every((v, i) => i === 0 ? v > 0 : v > t[i - 1]))
+        errs.push('grade: tiers must ascend, and start above zero');
+    }
+  }
+  if (D !== undefined) return errs;   // a directed room has nothing more to say
 
   const S = level.spawns;
   if (!Array.isArray(S)) { errs.push('spawns: must be an array'); return errs; }
@@ -178,14 +253,27 @@ export function validate(level, { typeNames, pickupIds }) {
       for (const k of ['boss', 'elite']) if (s[k] !== undefined && s[k] !== true) errs.push(`${w}: ${k} is true or absent`);
     }
   });
-  if (S.length === 0) errs.push('spawns: a level with nothing in it is not a level');
+  if (S.length === 0) errs.push('spawns: a level with nothing in it is not a level (a DIRECTED room says `director` instead)');
   return errs;
 }
 
 // ── The region ────────────────────────────────────────────────────────────
+// v242: the grade a score earns on this level, or '' below C. One function so
+// the game, the editor and the gates never disagree about a boundary.
+export function gradeFor(level, score) {
+  const t = level.grade && level.grade.tiers;
+  if (!Array.isArray(t)) return '';
+  let g = '';
+  for (let i = 0; i < t.length; i++) if (score >= t[i]) g = GRADES[i];
+  return g;
+}
+// Cleared = C or better. The campaign unlocks on this, not on a full clear:
+// a player who is merely finishing keeps moving (design/CAMPAIGN_LEVELS.md).
+export function cleared(level, score) { return gradeFor(level, score) !== ''; }
+
 export function shapeFromSpec(spec) {
   if (spec.kind === 'rect') return rectShape(spec.hx, spec.hz);
-  return circleShape(spec.c[0], spec.c[1], spec.r);
+  return circleShape(spec.c[0], spec.c[1], spec.r, spec.move || null);   // v241 (P3)
 }
 // The level's playable region as an arena.js shape, or null for "auto"
 // (the game's viewport-driven rectangle). `defaults` names the rectangles.
@@ -209,6 +297,7 @@ export function arenaShape(level, arenas = ARENAS) {
 // inside the region. Returned as errors like the rest.
 export function checkGeometry(level) {
   const errs = [];
+  if (level.director) return errs;   // v242: nothing hand-placed to check
   const shape = arenaShape(level);
   if (!shape) return errs;                 // "auto": the rectangle is whatever the device says
   const probe = new Arena(shape);
@@ -283,8 +372,13 @@ export function serialize(level) {
   const head = {
     format: level.format, id: level.id, name: level.name,
     arena: level.arena ?? 'auto', duration: level.duration, rules: level.rules,
+    // v242: a challenge is its director and its grade — drop either and the
+    // file round-trips into a level with nothing in it. The export gate is
+    // what caught this.
+    ...(level.director ? { director: level.director } : {}),
+    ...(level.grade ? { grade: level.grade } : {}),
   };
-  const lines = [...level.spawns].sort((a, b) => a.t - b.t).map(s => {
+  const lines = [...(level.spawns || [])].sort((a, b) => a.t - b.t).map(s => {   // v242: a directed room has none
     const o = s.kind === 'pickup'
       ? { t: +fmtT(s.t), kind: 'pickup', id: s.id, px: s.px, pz: s.pz, ...(s.life != null ? { life: s.life } : {}) }
       : { t: +fmtT(s.t), type: s.type, px: s.px, pz: s.pz,

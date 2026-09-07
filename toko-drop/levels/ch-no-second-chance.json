@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "id": "ch-no-second-chance",
+  "name": "NO SECOND CHANCE",
+  "arena": "auto",
+  "duration": 60.0,
+  "rules": {
+    "mode": "arcade",
+    "twist": "onelife"
+  },
+  "director": {
+    "difficulty": 6
+  },
+  "grade": {
+    "tiers": [
+      32000,
+      57200,
+      89200,
+      131600
+    ]
+  }
+}

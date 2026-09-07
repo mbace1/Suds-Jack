@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "id": "ch-first-light",
+  "name": "FIRST LIGHT",
+  "arena": "auto",
+  "duration": 60.0,
+  "rules": {
+    "mode": "arcade"
+  },
+  "director": {
+    "difficulty": 2
+  },
+  "grade": {
+    "tiers": [
+      40000,
+      72000,
+      111600,
+      164800
+    ]
+  }
+}

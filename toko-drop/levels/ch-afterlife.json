@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "id": "ch-afterlife",
+  "name": "AFTERLIFE",
+  "arena": "auto",
+  "duration": 90.0,
+  "rules": {
+    "mode": "melee",
+    "twist": "graveyard"
+  },
+  "director": {
+    "difficulty": 5
+  },
+  "grade": {
+    "tiers": [
+      44400,
+      80000,
+      124400,
+      183600
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "id": "ch-crossfire",
+  "name": "CROSSFIRE",
+  "arena": "auto",
+  "duration": 60.0,
+  "rules": {
+    "mode": "arcade",
+    "twist": "artillery"
+  },
+  "director": {
+    "difficulty": 4
+  },
+  "grade": {
+    "tiers": [
+      48800,
+      88000,
+      136800,
+      202000
+    ]
+  }
+}

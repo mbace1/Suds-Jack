@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "id": "ch-the-vice",
+  "name": "THE VICE",
+  "arena": "room",
+  "duration": 90.0,
+  "rules": {
+    "mode": "arcade"
+  },
+  "director": {
+    "difficulty": 3
+  },
+  "grade": {
+    "tiers": [
+      74400,
+      134000,
+      208400,
+      307600
+    ]
+  }
+}

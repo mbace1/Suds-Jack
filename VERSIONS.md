@@ -7,6 +7,226 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v243 — 2026-09-06
+**All ten CHALLENGES, and the four rules the format could not already say**
+- **The campaign is complete as DATA.** v242 shipped three levels because
+  seven needed rules this build did not have. It has them now, so all ten of
+  `challenges.gd`'s levels are files in `levels/` with their measured tiers:
+  FIRST LIGHT · COLD START · THE VICE · CROSSFIRE · THE TIDE · CONDUCTOR ·
+  AFTERLIFE · THE NARROWS · NO SECOND CHANCE · BARE HANDS
+- **Four twists, and only four**, because half the port's eight rules were
+  already expressible and adding a twist for them would have been a second
+  way to say the same thing: SWARM is `mode: "melee"`, BOOST ONLY is
+  `mode: "rush"`, CLOSE QUARTERS is `arena: "room"`, and a plain fight is no
+  twist at all. What was genuinely missing:
+  - **`onelife`** — one hit ends it. Set after the ruleset has chosen `maxHp`
+    (Rush hands out lives), so it wins.
+  - **`artillery`** — everything that cannot shoot leaves the draft and the
+    shooter cap comes off, so the room IS the firing lines. Its signature is
+    visible in the gate: **18 bodies where a normal room spawns over 100**,
+    because the budget buys artillery instead of fodder.
+  - **`focus`** — WARDEN, SIREN and SHEPHERD arrive in the first seconds
+    instead of deep in the wave. Added AHEAD of the budget, not out of it:
+    the room's pressure is unchanged and its PRIORITY is the twist.
+  - **`graveyard`** — every corpse answers twice as loudly. Revenge is slow
+    and grazeable by design, so doubling the COUNT thickens the puzzle
+    without making it unreadable, and the bullet cap still holds the ceiling.
+- **`graveyard` REQUIRES `mode: "melee"`, and the validator says so by name.**
+  Revenge only fires in CLOSE COMBAT upstream — it is that mode's mechanic.
+  A GRAVEYARD level that forgot its mode would have played as an ordinary
+  room and looked like a tuning problem, so it is refused with the reason
+  instead. That is the browser build's rule winning over the port's, which
+  is the order this repo works in
+- **One trap paid for in the wiring.** With the melee pool emptied by
+  ARTILLERY, `drawPool` falls back to `available` — which would have quietly
+  refilled the room with exactly the bodies the twist removed. The fill loop
+  now skips for that twist
+- **The gate measures the twist rather than asserting it** (19–22 checks per
+  level): ARTILLERY by shooter share (>0.9), ONE LIFE by the run's starting
+  hp, FOCUS by support bodies arriving, and a plain room by NOT being mostly
+  shooters. Two failures on the first pass were the GATE's own fault and are
+  worth recording: it read `maxHp` after the probe had made the bot immortal,
+  and it asserted the unlock chain while playing level four — clearing level
+  four does not open level two. Both fixed in the gate; the game was right
+- Gates: check-syntax · arena-check 8,396 · level-check **109** ·
+  level-move-check 7 · smoke · level-smoke · editor-smoke 27 ·
+  challenge-smoke across four campaign levels
+- **DYING IN A LEVEL ENDS THE LEVEL, and it did not.** The guard that turns a
+  death into a level result lived only in `returnToTitle()` — which runs when
+  a human DISMISSES the death screen. So a challenge death fell through the
+  classic path first: it wrote a record into the top-ten leaderboard (a
+  challenge is not a run, and v242 gave it its own key precisely so it would
+  not compete there), showed the arcade's death card, and produced its grade
+  only if the player pressed Start. `triggerGameOver()` now ends a level run
+  at the source. **Found by a bot, not by reading**: three of four levels came
+  back with no result from `scripts/measure-tiers.mjs` because the bot died in
+  them — and `challenge-smoke.sh` had never caught it because its bot is
+  immortal, so it had never died in a challenge at all. A gate that cannot
+  lose cannot see a losing path
+- **`scripts/measure-tiers.mjs` — UNFINISHED, and it says so.** It plays a
+  level with a mortal kiting bot and reports the score. One run per page
+  works; runs 2+ still come back empty for a reason not yet found, so
+  `--runs > 1` EXITS rather than printing percentiles of one sample, and a run
+  with no result is reported as a failure instead of a zero. It must never be
+  the thing that puts a fake number into a level file
+- **THE TIERS ARE IN THIS BUILD'S UNITS NOW, from recorded play.** Two iPad
+  recordings (portrait, same player, same device) settled what a bot could
+  not: the browser build and the Godot port score on completely different
+  scales. Same session, the port: wave 3, 17 s, **1,075 pts**, best ever
+  **9,600**. The browser build: wave 6, 1 m 8 s, **55,325 pts**, Rush wave 8,
+  44 s, **29,300**, best ever **8,823,425**. So the campaign's inherited
+  ladder — FIRST LIGHT C 5,000 → S 20,600 — was the PORT's ladder in the
+  PORT's units, and on this build an ordinary run beats S nearly threefold
+  before the twist has even bitten
+- **The method keeps the owner's judgement and changes only the units.** All
+  ten of the port's levels share ONE ladder shape (B = 1.8×C, A = 2.8×C,
+  S = 4.14×C) and differ only in C, so a single scale factor preserves every
+  relative decision in `challenges.gd`. The anchor is the recorded run:
+  55,325 in 68 s is 814 pts/s, a 60-second equivalent of **48,816**, so C for
+  the 60-second opener is set at **40,000** — about 82% of demonstrated
+  output, which is what "a player who is merely finishing keeps moving" asks
+  for. That makes the factor exactly **8×**, applied to all ten
+- **Two levels the ladder probably has backwards, named rather than
+  quietly adjusted.** Graded against the mortal-bot runs already on record:
+  FIRST LIGHT 295,325 → S and NO SECOND CHANCE 513,025 → S, but CROSSFIRE
+  26,800 and THE NARROWS 47,125 do not reach C. CROSSFIRE is the
+  explanation: ARTILLERY in THIS build spawns **18 bodies where an ordinary
+  room spawns over 100**, so it scores far less than the port's version of
+  the same rule, and its C sitting ABOVE the opener's is backwards here. The
+  port's RELATIVE judgement does not fully transfer, but correcting it from
+  bot runs would be inventing — these two are the first to re-measure
+- **What this is not:** two runs, one session, one player, one device. It
+  fixes an order-of-magnitude error, not the shape of the curve
+- **Still to validate:** the tiers are the PORT's
+  measured numbers. First honest readings with a MORTAL bot, one run each:
+  FIRST LIGHT 295,325 · CROSSFIRE 26,800 · NO SECOND CHANCE 513,025 ·
+  THE NARROWS 47,125 — against S thresholds of 20,600 / 25,250 / 16,450 /
+  64,350. A machine beats S on three of the four, so the ladder is SOFT
+  rather than wrong by orders of magnitude: the earlier "3.4 million" reading
+  came from a probe that made the bot immortal and was an artefact of the
+  gate, not a fact about the tiers. CROSSFIRE is the interesting one — the
+  ARTILLERY room is the only level the bot cannot run away with, which is the
+  twist doing its job. Real tiers still need the harness finished or a human
+  pass
+- Cache-bust `?v=195` → `?v=196`; HUD label → v243
+
+## v242 — 2026-09-06
+**CHALLENGES — the campaign, un-shelved and built the right way round** *(owner ask, 2026-09-06: "make challenges")*
+- **Why it can exist now.** CHALLENGES was dropped on 2026-08-28 (`QUEUE.md`
+  Q-028) for one reason: it existed ONLY in the Godot port — designed on the
+  follower side, which is the exact shape the "JS leads on gameplay" rule
+  exists to prevent. `LEVEL_EDITOR_DESIGN.md` §6 said an editor plus a level
+  format *is* the delivery mechanism it needed, and that the two should be
+  decided together. The format is live (v237–v241), so the campaign can be
+  DATA that flows to both builds instead of code in one of them
+- **A challenge is a DIRECTED room.** The format gains `director: {difficulty}`
+  as the alternative to `spawns` — a level is authored or directed, never both
+  — plus `grade: {tiers}`, four ascending thresholds for C/B/A/S. That is all
+  a challenge is: the ordinary wave director pinned to one difficulty,
+  re-rolled whenever its floor clears, for the level's own clock, with a rule
+  on it. **Half the port's rules needed no new code at all**: SWARM is
+  `rules.mode: "melee"`, BOOST ONLY is `"rush"`, and CLOSE QUARTERS is
+  `arena: "room"` — all already in the format
+- **The first three levels, ported as data** from the port's
+  `scripts/challenges.gd` with its measured tiers intact: `ch-first-light`
+  (60s, difficulty 2), `ch-cold-start` (BOOST ONLY), `ch-the-vice` (CLOSE
+  QUARTERS, 90s). `level.js` `CAMPAIGN` is their order; `BUNDLED` stays the
+  EDITOR's list and does not include them, because a directed room has no
+  spawns to edit and opening one in the editor would be a blank timeline over
+  a level it cannot express
+- **`gradeFor`/`cleared` live in `level.js`** — one place decides a boundary,
+  so the game, the editor, the port and the gates cannot disagree. Below C is
+  no grade at all, which is the campaign's own unlock rule
+  (`design/CAMPAIGN_LEVELS.md`: "a player who is merely finishing keeps
+  moving"). Best score and grade per level id persist under their own key,
+  never competing with the leaderboard's top ten
+- **`scripts/challenge-smoke.sh` (13 checks) and the bug it caught on its
+  first run.** A directed room spawned ONE wave and then stood empty for 58
+  of its 60 seconds: the wave-clear block excludes `customLevel`, which is
+  right for an authored timeline and wrong for a challenge. Fixed, and the
+  gate now proves the room is RE-ROLLED (it counts refills, because a
+  directed room pins `wave` and counting changes to it would always say 1),
+  that bodies keep arriving past halfway, that the level ends within 2s of
+  its duration, and that the grade boundaries hold at 0 / C-1 / C / S.
+  113 bodies over 21 rooms on L1; 244 over 31 on L3
+- Gates: check-syntax · arena-check 8,396 · level-check **88** ·
+  level-move-check 7 · smoke · level-smoke (authored, unaffected) ·
+  editor-smoke 27 · challenge-smoke 13 × three levels
+- **The campaign screen, and the unlock chain.** A CHALLENGES chip on the
+  title (carrying `cleared/total`) opens a picker: each level with its best
+  grade, locked ones with a padlock and no tap target. `campaignUnlocked(i)`
+  is the whole rule — the first is always open, and each later one opens
+  when the one before was cleared at C. Level NAMES come from the files as
+  they are fetched, so the screen never holds a second copy of a name to
+  drift. The picker is a `document.body` sibling with its own `gameState`,
+  the same contract `showRunHistory()` uses, so the title's tap-to-start
+  cannot fire through it and begin a run underneath the panel
+- **The gate proves the chain with a REAL run** (20 checks now): before
+  anything is played the first is open and the rest are locked and the
+  picker offers exactly one; then the level is played and graded; then the
+  second is open and the picker offers two. An earlier cut faked the clear
+  with a lever on the probe — that lever is gone, because the run itself is
+  the better witness. It also clears `localStorage` on boot: a campaign is
+  PROGRESS, so yesterday's bests must not decide today's lock state
+- **Not in this release, named.** Seven of the ten levels are not
+  ported, because ARTILLERY, GRAVEYARD and FOCUS need director flags the
+  browser build does not have yet. **And the tiers are the PORT'S measured
+  numbers, not this build's**: an immortal bot scored 607,600 against an S
+  of 20,600 here, which says the two builds score differently and that these
+  thresholds are inherited, not validated
+- Cache-bust `?v=194` → `?v=195`; HUD label → v242
+
+## v241 — 2026-09-06
+**The region MOVES** *(P3 of `LEVEL_EDITOR_DESIGN.md` §7 — the last of the owner's three requirements)*
+- **The owner's own worked example now runs.** §1's first requirement was
+  "multiple arena shapes, including actively changing ones — three
+  overlapping circles whose common area moves". The shapes and the common
+  area landed in v236–v240; this is the part that moves.
+  `levels/moving-rings.json`: three r=9 circles, each orbiting radius 2.5
+  on a 14s period at a third of a turn apart, so the intersection travels
+  and turns while it breathes. Photographed at 0.2s / 3.6s / 7.0s / 10.4s —
+  one full orbit, the region visibly elsewhere in each
+- **§2.4's two rules, both settled by the owner and both honoured here.**
+  A body left outside is PUSHED along the gradient (2026-09-04) — that is
+  `arena.clamp()`, which every body already goes through, so the rule cost
+  no new code. **The shape contains EVERYTHING, player and swarm alike**
+  (2026-09-05): `arena.update(waveTimer)` runs on the level's own clock,
+  in the frame loop, BEFORE the bodies move — so the region they are
+  clamped into is this frame's, not last frame's
+- **`js/arena.js`: `move` on a circle**, the one mover §4 names —
+  `{ kind: 'orbit', radius, period, phase? }`. Two things in it are
+  load-bearing and commented as such: `sdf`/`aabb` now read the shape's
+  own fields rather than closing over the constructor's arguments (the
+  closure is correct forever for a static circle and silently wrong the
+  moment one moves), and **`aabb` is the SWEPT box** — it grows by the
+  orbit radius and does not change with `t`, because `HALF_X`/`HALF_Z`
+  drive the floor geometry, the border, the grid frequencies and the
+  camera fit. The region moves; the room it is drawn in does not.
+  `_combine` gained an `update` too — without it `Arena.update()` reached
+  a union/intersect, found no `update`, and every part stood still, which
+  is exactly the shape the worked example is made of
+- **`scripts/level-move-check.mjs` — P3's gate**, and it is arithmetic
+  rather than a look: a moving intersection can close to nothing for one
+  second in the middle of a level, which no screenshot at t=0 can catch
+  and no author can see without scrubbing every frame. Over every 0.1s of
+  every moving level it proves the region is never empty, always has
+  somewhere to stand (never fewer than 8 spots — a player being pushed
+  needs room to be pushed INTO), that the bounding box never changes, that
+  the region is a pure function of `t`, and that every authored spawn is
+  inside the region **at the second it arrives**. Falsified before being
+  trusted: widening the orbits to 7.5 fails it with "fewest 0 spots, at
+  t=5.0s" and names the spawn it strands
+- Gates: check-syntax · arena-check **8,396** (the `sdf`/`aabb` refactor
+  changed nothing static) · level-check **78** · level-move-check **7** ·
+  smoke · level-smoke (moving-rings 12/12 spawns) · editor-smoke **27** ·
+  level-shot (classic vs TSL, mean abs diff 3.97 on a threshold of 6)
+- Not in this release, named: the Godot port does not move its region yet
+  (it reads the same file, so `move` will be refused there until it does —
+  its own item); the editor cannot yet AUTHOR a mover, so a moving level
+  is hand-written JSON for now; and `LEVEL_EDITOR_DESIGN.md` §2.4 on
+  `main` should record the two owner decisions this release acts on
+- Cache-bust `?v=193` → `?v=194`; HUD label → v241
+
 ## v240 — 2026-09-05
 **The floor draws a level's region, on both render paths** *(PR #447's v238 term, brought across by hand — LEVEL_EDITOR_DESIGN.md §2.3, P1's other half)*
 - **A shaped level is VISIBLE now.** v239 made a level's SDF the boundary
