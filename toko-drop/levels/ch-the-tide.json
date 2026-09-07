@@ -1,3 +1,21 @@
-{ "format": 1, "id": "ch-the-tide", "name": "THE TIDE", "arena": "auto", "duration": 90.0,
-  "rules": { "mode": "melee" },
-  "director": { "difficulty": 4 }, "grade": { "tiers": [5500, 9850, 15350, 22650] } }
+{
+  "format": 1,
+  "id": "ch-the-tide",
+  "name": "THE TIDE",
+  "arena": "auto",
+  "duration": 90.0,
+  "rules": {
+    "mode": "melee"
+  },
+  "director": {
+    "difficulty": 4
+  },
+  "grade": {
+    "tiers": [
+      44000,
+      78800,
+      122800,
+      181200
+    ]
+  }
+}

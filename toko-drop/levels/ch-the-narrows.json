@@ -1,3 +1,21 @@
-{ "format": 1, "id": "ch-the-narrows", "name": "THE NARROWS", "arena": "room", "duration": 90.0,
-  "rules": { "mode": "arcade" },
-  "director": { "difficulty": 7 }, "grade": { "tiers": [15550, 28000, 43600, 64350] } }
+{
+  "format": 1,
+  "id": "ch-the-narrows",
+  "name": "THE NARROWS",
+  "arena": "room",
+  "duration": 90.0,
+  "rules": {
+    "mode": "arcade"
+  },
+  "director": {
+    "difficulty": 7
+  },
+  "grade": {
+    "tiers": [
+      124400,
+      224000,
+      348800,
+      514800
+    ]
+  }
+}

@@ -69,7 +69,35 @@
   `--runs > 1` EXITS rather than printing percentiles of one sample, and a run
   with no result is reported as a failure instead of a zero. It must never be
   the thing that puts a fake number into a level file
-- **Still not validated, and it matters most:** the tiers are the PORT's
+- **THE TIERS ARE IN THIS BUILD'S UNITS NOW, from recorded play.** Two iPad
+  recordings (portrait, same player, same device) settled what a bot could
+  not: the browser build and the Godot port score on completely different
+  scales. Same session, the port: wave 3, 17 s, **1,075 pts**, best ever
+  **9,600**. The browser build: wave 6, 1 m 8 s, **55,325 pts**, Rush wave 8,
+  44 s, **29,300**, best ever **8,823,425**. So the campaign's inherited
+  ladder — FIRST LIGHT C 5,000 → S 20,600 — was the PORT's ladder in the
+  PORT's units, and on this build an ordinary run beats S nearly threefold
+  before the twist has even bitten
+- **The method keeps the owner's judgement and changes only the units.** All
+  ten of the port's levels share ONE ladder shape (B = 1.8×C, A = 2.8×C,
+  S = 4.14×C) and differ only in C, so a single scale factor preserves every
+  relative decision in `challenges.gd`. The anchor is the recorded run:
+  55,325 in 68 s is 814 pts/s, a 60-second equivalent of **48,816**, so C for
+  the 60-second opener is set at **40,000** — about 82% of demonstrated
+  output, which is what "a player who is merely finishing keeps moving" asks
+  for. That makes the factor exactly **8×**, applied to all ten
+- **Two levels the ladder probably has backwards, named rather than
+  quietly adjusted.** Graded against the mortal-bot runs already on record:
+  FIRST LIGHT 295,325 → S and NO SECOND CHANCE 513,025 → S, but CROSSFIRE
+  26,800 and THE NARROWS 47,125 do not reach C. CROSSFIRE is the
+  explanation: ARTILLERY in THIS build spawns **18 bodies where an ordinary
+  room spawns over 100**, so it scores far less than the port's version of
+  the same rule, and its C sitting ABOVE the opener's is backwards here. The
+  port's RELATIVE judgement does not fully transfer, but correcting it from
+  bot runs would be inventing — these two are the first to re-measure
+- **What this is not:** two runs, one session, one player, one device. It
+  fixes an order-of-magnitude error, not the shape of the curve
+- **Still to validate:** the tiers are the PORT's
   measured numbers. First honest readings with a MORTAL bot, one run each:
   FIRST LIGHT 295,325 · CROSSFIRE 26,800 · NO SECOND CHANCE 513,025 ·
   THE NARROWS 47,125 — against S thresholds of 20,600 / 25,250 / 16,450 /

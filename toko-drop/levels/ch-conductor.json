@@ -1,3 +1,22 @@
-{ "format": 1, "id": "ch-conductor", "name": "CONDUCTOR", "arena": "auto", "duration": 90.0,
-  "rules": { "mode": "arcade", "twist": "focus" },
-  "director": { "difficulty": 5 }, "grade": { "tiers": [7400, 13300, 20700, 30550] } }
+{
+  "format": 1,
+  "id": "ch-conductor",
+  "name": "CONDUCTOR",
+  "arena": "auto",
+  "duration": 90.0,
+  "rules": {
+    "mode": "arcade",
+    "twist": "focus"
+  },
+  "director": {
+    "difficulty": 5
+  },
+  "grade": {
+    "tiers": [
+      59200,
+      106400,
+      165600,
+      244400
+    ]
+  }
+}

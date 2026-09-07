@@ -1,3 +1,21 @@
-{ "format": 1, "id": "ch-bare-hands", "name": "BARE HANDS", "arena": "auto", "duration": 120.0,
-  "rules": { "mode": "rush" },
-  "director": { "difficulty": 8 }, "grade": { "tiers": [8650, 15550, 24150, 35650] } }
+{
+  "format": 1,
+  "id": "ch-bare-hands",
+  "name": "BARE HANDS",
+  "arena": "auto",
+  "duration": 120.0,
+  "rules": {
+    "mode": "rush"
+  },
+  "director": {
+    "difficulty": 8
+  },
+  "grade": {
+    "tiers": [
+      69200,
+      124400,
+      193200,
+      285200
+    ]
+  }
+}

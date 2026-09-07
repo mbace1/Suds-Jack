@@ -4,7 +4,18 @@
   "name": "COLD START",
   "arena": "auto",
   "duration": 60.0,
-  "rules": { "mode": "rush" },
-  "director": { "difficulty": 2 },
-  "grade": { "tiers": [4250, 7650, 11850, 17500] }
+  "rules": {
+    "mode": "rush"
+  },
+  "director": {
+    "difficulty": 2
+  },
+  "grade": {
+    "tiers": [
+      34000,
+      61200,
+      94800,
+      140000
+    ]
+  }
 }
