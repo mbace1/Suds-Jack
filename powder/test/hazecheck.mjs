@@ -1,5 +1,5 @@
 // Is the haze actually bending pixels? Two frames of the same paused pose,
-import { open } from './_browser.mjs';
+import { open, OUT } from './_browser.mjs';
 const { page: p, root, close } = await open({ q: 'high' });
 await p.evaluate(() => { window.__pw.debug.chassis('rear'); window.__pw.debug.start(); });
 await p.evaluate(() => { const g = window.__pw;
@@ -22,10 +22,10 @@ await p.evaluate(() => {
 });
 console.log('live haze sprites:', await p.evaluate(() => window.__count()));
 await p.waitForTimeout(300);
-const A = (await p.screenshot({ path: 'haze-on.png' })).toString('base64');
+const A = (await p.screenshot({ path: OUT + '/' + 'haze-on.png' })).toString('base64');
 await p.evaluate(() => { const g = window.__pw; g.haze.scene.visible = false; });
 await p.waitForTimeout(300);
-const B = (await p.screenshot({ path: 'haze-off.png' })).toString('base64');
+const B = (await p.screenshot({ path: OUT + '/' + 'haze-off.png' })).toString('base64');
 const diff = await p.evaluate(async ([a, b]) => {
   const load = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + s; });
   const [ia, ib] = await Promise.all([load(a), load(b)]);

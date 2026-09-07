@@ -1,5 +1,5 @@
 // The pipeline door, end to end: the reference exports loaded back through
-import { open } from './_browser.mjs';
+import { open, OUT } from './_browser.mjs';
 const { page: p, root, close } = await open({ q: 'high', query: 'models=reference' });
 console.log('menu says:', await p.evaluate(() => (document.getElementById('msg').textContent.match(/SHIPS[^\n]*/) || [''])[0].replace(/\s+/g, ' ')));
 await p.evaluate(() => window.__pw.debug.start());
@@ -20,5 +20,5 @@ await p.evaluate(() => { const g = window.__pw, T = g.THREE, v = g.player;
   g.camera.lookAt(v.pos.x, v.pos.y + 0.2, v.pos.z); g.camera.fov = 45; g.camera.updateProjectionMatrix();
   g.sky.update(g.camera); g.flare.update(g.camera); });
 await p.waitForTimeout(400);
-await p.screenshot({ path: 'roundtrip-ship.png' });
+await p.screenshot({ path: OUT + '/' + 'roundtrip-ship.png' });
 await close();
