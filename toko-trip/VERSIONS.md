@@ -1,5 +1,41 @@
 # Toko Trip — release log
 
+## v11 — 2026-09-06
+
+The sand. It is the biggest surface in view from the chair and it had rich
+colour — height bands, a tide line, a salt rime, baked AO — and then one
+flat roughness and no relief whatsoever, which is why it read as painted
+paper rather than ground. Two maps, neither of which costs a frame.
+
+- **Ripples.** Wind ripples are DIRECTIONAL: long crests across the wind
+  that wander slowly along their length. Round noise gives porridge; a wave
+  whose phase is pushed about by a low-frequency field gives sand. Troughs
+  are sharpened and peaks flattened, the way blown grains actually pile.
+  Every term wraps on the unit square — a whole number of crests, tiling
+  fbm for the wander — so the tile has no seam. ~10 cm ripples, and from a
+  deck chair the beach is a **grazing-angle** surface, which is exactly
+  where a normal map earns its place and a colour map does not.
+- **The sheen.** Wet sand is smoother than dry, and under a low sun that is
+  the most recognisable thing a beach does: a band of gloss at the water's
+  edge that moves when you move. That map is not tiled — it is the island —
+  and it is built on the AO bake's own grid, with the same indexing and the
+  same 56 m extent, so it inherits whatever mapping the lightmap already
+  lands with instead of inventing a second one to keep in sync. It reads
+  `groundHeight`, so the gloss follows the cove if the cove is reshaped
+  again. It is never mirror-flat: a perfectly smooth beach is a swimming
+  pool.
+
+Tuned by looking, three times, which is the only way this kind of thing
+goes: the first cut was **corrugated iron** — `normalScale` 0.6 on a 9x
+derivative under a low sun, and the beach came out ploughed. 0.22 was still
+furrows. It landed at **0.09**, which is a fifth of where it started, and
+the lesson is the usual one for relief under a raking light: the amplitude
+that looks right in the map is several times too much on the ground.
+
+Gate: 53 checks. The new ones assert relief that tiles, a roughness map,
+and — the part that could silently be backwards — that the gloss is on the
+WATER side of the chair rather than merely present somewhere.
+
 ## v10 — 2026-09-06
 
 The sound of the place. There was a surf bed before, and it was a

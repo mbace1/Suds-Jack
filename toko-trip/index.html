@@ -912,6 +912,89 @@
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       return t;
     }
+
+    // ═══ THE SAND ═══
+    // The beach is the biggest surface in view from the chair and it had no
+    // surface: rich colour bands, a tide line, a salt rime — and then one
+    // flat roughness and no relief at all, which is why it read as painted
+    // paper. Two maps, neither of which costs a frame.
+    //
+    // It lives down here rather than beside the terrain because it wants the
+    // water's tiling-noise helpers, and one copy of a noise function beats
+    // two that drift.
+
+    // ── ripples ──
+    // Wind ripples are DIRECTIONAL: long crests across the wind, wandering
+    // slowly along their length. Round noise gives porridge; a wave whose
+    // phase is pushed about by a low-frequency field gives sand. Troughs are
+    // sharpened and peaks flattened, the way blown grains actually pile. And
+    // from a deck chair the beach is a grazing-angle surface, which is
+    // exactly where a normal map earns its place and a colour map does not.
+    function sandNormalTex(size = 256) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = size;
+      const g = cv.getContext('2d'), im = g.createImageData(size, size);
+      // every term wraps on the unit square, so the tile has no seam: the
+      // crest count is a whole number of cycles and the wander is tiling fbm
+      const H = (u, v) => {
+        const wander = tfbm(u, v, 3) - 0.5;
+        const crest = Math.sin((v * 18 + wander * 1.5) * Math.PI * 2);
+        const shaped = crest > 0 ? Math.pow(crest, 0.7) : -Math.pow(-crest, 1.7);
+        return shaped * 0.5 + (tfbm(u, v, 11) - 0.5) * 0.45;
+      };
+      const e = 1 / size;
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+        const u = x / size, v = y / size;
+        const dx = (H(u + e, v) - H(u - e, v)) * 3.5, dy = (H(u, v + e) - H(u, v - e)) * 3.5;
+        const nl = Math.hypot(dx, dy, 1);
+        const i = (y * size + x) * 4;
+        im.data[i] = (-dx / nl * 0.5 + 0.5) * 255;
+        im.data[i + 1] = (-dy / nl * 0.5 + 0.5) * 255;
+        im.data[i + 2] = (1 / nl) * 255;
+        im.data[i + 3] = 255;
+      }
+      g.putImageData(im, 0, 0);
+      const t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(30, 30);           // one tile ~1.9 m, so a ripple is ~10 cm
+      return t;
+    }
+
+    // ── the sheen ──
+    // Wet sand is smoother than dry, and under a low sun that is the single
+    // most recognisable thing a beach does: a band of gloss along the water's
+    // edge that moves when you move. This map is NOT tiled — it is the
+    // island — and it is built on the AO bake's own grid, with the same
+    // indexing and the same 56 m extent, so it inherits whatever mapping the
+    // lightmap already lands with instead of inventing a second one to keep
+    // in sync. It reads groundHeight, so the gloss follows the cove if the
+    // cove is ever reshaped again.
+    function sandRoughTex() {
+      const step = (AO_HALF * 2) / AO_N;
+      const data = new Uint8Array(AO_N * AO_N * 4);
+      for (let j = 0; j < AO_N; j++) for (let i = 0; i < AO_N; i++) {
+        const wx = (i + 0.5) * step - AO_HALF, wz = (j + 0.5) * step - AO_HALF;
+        const h = groundHeight(wx, wz);
+        const wet = smooth(0.5, -0.2, h);                 // 0 dry … 1 wet
+        // never mirror-flat: a perfectly smooth beach is a swimming pool
+        const r = lerp(1, 0.4, wet) * (0.94 + 0.12 * fbm(wx * 0.9, wz * 0.9));
+        const v = Math.max(0, Math.min(255, Math.round(r * 255)));
+        const k = (j * AO_N + i) * 4;
+        data[k] = data[k + 1] = data[k + 2] = v;
+        data[k + 3] = 255;
+      }
+      const t = new THREE.DataTexture(data, AO_N, AO_N);
+      t.needsUpdate = true;
+      t.minFilter = THREE.LinearMipmapLinearFilter;
+      t.magFilter = THREE.LinearFilter;
+      t.generateMipmaps = true;
+      return t;
+    }
+    const sandRough = sandRoughTex();
+    terrain.material.normalMap = sandNormalTex();
+    terrain.material.normalScale.set(0.09, 0.09);
+    terrain.material.roughnessMap = sandRough;
+    terrain.material.roughness = 1;        // the map carries it; this scales it
+    terrain.material.needsUpdate = true;
     const waterNormal = waterNormalTex(), waterDisp = waterDispTex();
     waterNormal.repeat.set(44, 44);
     waterDisp.repeat.set(5, 5);
@@ -2847,6 +2930,23 @@
         setComfort,
         vignette: () => ({ on: vignette.visible, opacity: +vignette.material.opacity.toFixed(3) }),
         perf: () => ({ ...perfSample, on: perfOn, backend: backendName(), tier: TIER.name }),
+        // the sand: relief that tiles, and gloss that follows the water
+        sand: () => {
+          const m = terrain.material, d = sandRough.image.data, step = (AO_HALF * 2) / AO_N;
+          const at = (x, z) => {
+            const i = Math.min(AO_N - 1, Math.max(0, Math.round((x + AO_HALF) / step - 0.5)));
+            const j = Math.min(AO_N - 1, Math.max(0, Math.round((z + AO_HALF) / step - 0.5)));
+            return d[(j * AO_N + i) * 4] / 255;
+          };
+          const fx = Math.sin(chairYaw), fz = Math.cos(chairYaw);
+          return {
+            normal: !!m.normalMap, scale: m.normalScale.x,
+            tile: m.normalMap ? m.normalMap.repeat.x : 0,
+            rough: !!m.roughnessMap,
+            wet: +at(fx * 5, fz * 5).toFixed(3),        // out toward the water
+            dry: +at(-fx * 5, -fz * 5).toFixed(3),      // back up the beach
+          };
+        },
         // the soundscape: where it comes from, and whether it is really off
         audioStart, gullCry, waterEdge,
         air: () => ({

@@ -262,6 +262,19 @@ const check = (label, ok) => {
     try { window.__tt.debug.gullCry(); return true; } catch (e) { return false; }
   }));
 
+  // ── the sand ──
+  // The beach is the biggest surface in view from the chair, and the two
+  // things it was missing are the two things you only see at a grazing
+  // angle: relief, and a change of gloss where the water has been.
+  const sand = await page.evaluate(() => window.__tt.debug.sand());
+  check(`the sand has relief that tiles (scale ${sand.scale}, ${sand.tile}x over 56 m)`,
+    sand.normal === true && sand.tile >= 20 && sand.scale > 0 && sand.scale < 0.4);
+  check('and a roughness map', sand.rough === true);
+  // wet sand is smoother than dry — that is the sheen band, and it has to be
+  // on the WATER side of the chair, not merely present somewhere
+  check(`and the gloss is at the water, not up the beach (wet ${sand.wet} < dry ${sand.dry})`,
+    sand.wet < sand.dry - 0.2);
+
   // ── the way home ──
   check('there is a sign, and it is a ray target',
     await page.evaluate(() => !!window.__tt.debug.sign
