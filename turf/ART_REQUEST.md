@@ -966,3 +966,115 @@ HEIGHT, so a plate whose ground runs to the very edge of the frame gives the
 grid nothing to sit inside; the two plates that work both have a yard visibly
 larger than the fight in it. A floor between **1.9:1 and 2.4:1** sits closest
 to the board's own 2:1 and wastes the least.
+
+---
+
+## 12. The cutout: move the OBJECT, not the frames (owner direction, 2026-09-07)
+
+> *"can the Turf asset pipeline just make a standing cardboard character, that
+> is then just moved to animate, while only the art frame changes when it's an
+> already approved concept like 'attack with knife'... similar to Paper Mario,
+> with movement more on the physical object and much less frames of
+> animations."*
+
+Same family as Slay Kallio's puppets, Eeri's cutout diorama and Piritori's
+torn paper: the figure is a **flat standing thing** and the animation is what
+happens to that thing, not a flipbook drawn inside it.
+
+### 12.1 Why this is not merely cheaper — it is the only thing that ships
+
+Counted on the tree as it stands: **30 character plates, 2 characters with a
+pose set** (`gunner`, `leopard` — §8's 28-frame pilot). And:
+
+```
+$ node scripts/assets.mjs doctor
+nano banana (2D)  ✗ no API key in the environment
+meshy (3D)        ✗ no API key in the environment
+2D not ready — 19 images outstanding
+```
+
+So 28 of 30 characters have exactly one plate, cannot get a second one here,
+and today move by sliding between tiles and flashing red. §6's budget — 7
+poses × 2 facings, **12 generations per character** — is 336 generations to
+cover the roster. The cutout layer costs **zero art** and lands on all thirty
+at once.
+
+### 12.2 What motion carries, and what it retires
+
+| verb | today | as a moved object | frames retired |
+|---|---|---|---|
+| idle | one held pose | held pose (see 12.5 — a breath costs a permanent rAF) | — |
+| move | linear tile tween | **hop per tile**: rise, lean into travel, land on a squash | move ×2 |
+| attack, melee | 2 generated frames | anticipation lean back → **lunge** ⅓ tile along the axis → recover | — (keep release) |
+| attack, ranged | 2 generated frames | **recoil kick** backwards + shake; the tracer already sells the shot | windup ×2 |
+| hit | knockback + flash | knockback + **skew**, so the board flexes | hit ×2 |
+| death | 2 generated frames | **topple** about the feet | death ×4 |
+
+**The topple is the strongest single case**, and it is already solved in this
+repo: `slaykallio/js/puppet.js` tips a cutout in 3D about its feet on an axis
+between the camera's x and the depth axis — because a flat cutout rotating
+*in* the picture plane reads as a sprite spinning, and tipping *into* the
+scene reads as a thing that was standing there. Four of §8's 28 pilot frames
+become free.
+
+### 12.3 The concept frame stays — one correction to the ask
+
+A pose plate **cannot be shared between characters** the way a prop can: the
+whole body is in the picture, so "attack with knife" is an approved *prompt*
+(§8's `turfCastPose` block — reference image attached, only the pose changes),
+never an approved *file*. That is still the saving the direction is after,
+because with motion doing idle, move and death, the only pose worth
+generating at all is **attack-release**, and arguably **hit**:
+
+**1–2 generations per character, not 12.** Thirty characters, ~40 generations
+rather than 336, and the roster is animated before any of them arrive.
+
+### 12.4 Style B — what a second roster costs
+
+The engine already reads ids out of `data/*.json` and knows nothing about a
+knife or a jacket (GDD §3), so a second roster is a second data file plus a
+menu toggle, persisted the way every other switch in this repo is. Two
+constraints are not negotiable, because the board's geometry is derived from
+them:
+
+- **A body is one tile wide, and everything on the board is sized against the
+  TILE, not against its plate** (v33). `SPRITE_H` is 29 because a person is
+  one tile; layout headroom and the tap hit-box both follow that one constant.
+- **A plate is scaled off its own INK, not its frame.** The cells are padded
+  differently (a prop's ink ran from 44% to 96% of its frame), and a pose is
+  scaled against the character's **idle** ink height so a crouch stays shorter
+  than a stand. A style B plate must therefore be delivered keyed, with its
+  ink measured — not centred by eye in a padded canvas.
+
+### 12.5 What a plate must deliver to be MOVEABLE
+
+This is the new part of the request, and it is a small list:
+
+1. **A neutral stand, weight centred over the feet.** Everything else is done
+   by moving this, so a plate already leaning or mid-stride cannot be leaned
+   or made to stride.
+2. **Feet flat and together-ish, at the bottom of the ink.** The feet are the
+   anchor for every rotation, squash and topple. A figure drawn mid-step
+   topples about one heel and looks hinged.
+3. **Arms clear of the silhouette.** A lunge shears the plate; limbs tucked
+   inside the body outline read as the body deforming rather than swinging.
+4. **No motion FX baked in** — no trails, no dust, no blood. §2.2's first
+   failure mode: baked FX defeat the magenta key. It is also the difference
+   between a plate that can play five verbs and one that can play one.
+5. **It must read at 29 px.** Same bar as every plate here.
+6. **Nothing about the figure may imply a facing beyond left/right.** Two
+   drawn facings cover the board's four directions by mirroring
+   (`anim.js`'s `facingFor`); a plate that only works seen from the front
+   breaks the back-facing half of the board.
+
+### 12.6 The honest limit
+
+Motion cannot make a swing *read as a knife* at 29 px. It reads as
+commitment and direction — which on this board is what the player needs,
+because the forecast badge, the damage floater and the telegraph already say
+what the weapon did. And it does not touch the non-cardinal facing question
+(§8): `facingFor` still reduces to mirror/back.
+
+**And an art change ends in a screenshot, never in a green suite.** The
+cutout layer has a bare-node gate for its arithmetic, but "does a lunge read
+as a lunge" is not a thing a passing test has ever known.

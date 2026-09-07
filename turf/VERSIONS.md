@@ -8,6 +8,38 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## (spec only, no code) — 2026-09-07
+**The cutout direction: move the OBJECT, not the frames**
+Owner: *"can the Turf asset pipeline just make a standing cardboard character,
+that is then just moved to animate, while only the art frame changes when it's
+an already approved concept like 'attack with knife'... similar to Paper Mario"*,
+plus a second roster under a swappable "style B".
+
+No game files moved, so this takes no version number and no `?v=` bump. What
+landed is `ART_REQUEST.md` §12 (the request, and what a plate must deliver to
+be MOVEABLE) and `CUTOUT_BRIEF.md` (the implementation contract, written to be
+handed to another agent whole).
+
+The counting that decides it: **30 character plates, 2 characters with a pose
+set**, and `scripts/assets.mjs doctor` reports no `GEMINI_API_KEY` and no
+`MESHY_API_KEY` — so 28 of 30 characters cannot get a second frame here at all,
+and today they slide between tiles and flash red. §6's budget is 12 generations
+per character; covering the roster that way is 336. A transform layer costs
+zero art and lands on all thirty at once. With motion carrying idle, move and
+death, the only pose still worth generating is attack-release — **1–2
+generations per character rather than 12.**
+
+One correction to the direction, recorded because it is the part that does not
+work as asked: a pose plate cannot be shared between characters the way a prop
+can, because the whole body is in the picture. "Attack with knife" is an
+approved PROMPT (§8's `turfCastPose` block, reference image attached), never an
+approved file.
+
+The topple is the strongest single case and is already solved in this repo —
+`slaykallio/js/puppet.js` tips a cutout about its feet on an axis between the
+camera's x and the depth axis, because a flat cutout rotating *in* the picture
+plane reads as a sprite spinning. It retires four of the pilot's 28 frames.
+
 ## v33 — 2026-09-03
 **Owner, on the v32 screenshot: "characters are way too big now. also there
 should be new props available. use them sparingly."** Two separate faults
