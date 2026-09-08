@@ -1149,8 +1149,8 @@ s.listen(0, '127.0.0.1', async () => {
     cover.onSlab > cover.slabTop && cover.onFloor < 0.8, JSON.stringify(cover));
 
   const inca = await seasonRead('inca');
-  ok('inca: season 2 carries its palette and declares itself UNBUILT',
-    inca.sn.current === 'inca' && inca.sn.built === false && inca.sn.todo.length >= 3
+  ok('inca: season 2 is BUILT (v44) and still names what is open',
+    inca.sn.current === 'inca' && inca.sn.built === true && inca.sn.todo.length >= 2
     && inca.sn.sky.void[2] > 0.3 && inca.sn.floorTint[1] > inca.sn.floorTint[0],
     JSON.stringify({ built: inca.sn.built, todo: inca.sn.todo.length, sky: inca.sn.sky.void }));
   ok('inca: its slabs are the LARGE ones the brief asks for, and no rock',
