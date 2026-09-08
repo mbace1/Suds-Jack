@@ -413,6 +413,52 @@ export const ART = {
     g.p(60, 44, 3, 5, '#e8dfc6');                // fin
   },
 
+  // Flowsnow: a cover, not an icon. A sky in flat Atari bars, snow dunes as
+  // hard lit/shadow faces, an arch (lighter than the sky behind it) framing
+  // the far field, and the traveller cropped by the bottom edge, mid-carve,
+  // the spray in the cabinet's own accent and the scarf the one red thing.
+  flowsnow(g, a) {
+    // the sky: one colour per scanline band, dusk-blue to peach
+    const sky = ['#2c3160', '#3a4478', '#55628f', '#7d7ea0', '#a98fa2', '#d2a094', '#eeb48e', '#f6c59b'];
+    sky.forEach((c, i) => g.p(0, i * 4, W, 4, c));
+    g.disc(98, 27, 6, '#fff0d8');                          // the low sun
+    g.disc(98, 27, 9, mix('#fff0d8', '#f6c59b', 0.75));
+    g.disc(98, 27, 6, '#fff4e2');
+    // far dunes: a ridge line, lit face left, shadow face right
+    const ridge = x => 33 + Math.round(Math.sin(x * 0.045) * 3 + Math.sin(x * 0.11 + 1) * 1.5);
+    for (let x = 0; x < W; x++) {
+      const y = ridge(x);
+      const lit = Math.cos(x * 0.045) > 0;
+      g.p(x, y, 1, H - y, lit ? '#f1dccf' : '#a8a6cf');
+    }
+    // the near swell: a second, lower crest, warmer and sharper
+    const crest = x => 47 + Math.round(Math.sin(x * 0.03 + 2.2) * 5);
+    for (let x = 0; x < W; x++) {
+      const y = crest(x);
+      const lit = Math.cos(x * 0.03 + 2.2) > -0.2;
+      g.p(x, y, 1, H - y, lit ? '#f8e8dc' : '#b3b0d6');
+      g.p(x, y, 1, 1, lit ? '#fff7ee' : '#c9c4e2');       // the crest line
+    }
+    // a standing arch on the left, darker than the snow and lighter than the sky
+    g.p(10, 14, 4, 30, '#6b678a'); g.p(26, 12, 4, 32, '#6b678a'); g.p(8, 10, 24, 4, '#7a7698');
+    g.p(12, 16, 1, 27, '#8c88a8'); g.p(28, 14, 1, 29, '#8c88a8');
+    // the track: a cool line coming up out of the frame to the board
+    for (let y = H - 1; y > 54; y--) g.p(70 + Math.round((H - y) * 0.55), y, 3, 1, '#b9b6dc');
+    // the spray, in the accent: a fan thrown off the edge, biggest nearest
+    for (let i = 0; i < 9; i++) {
+      const t = i / 9;
+      g.disc(84 + i * 4, 58 - i * 3.2 + Math.sin(i) * 1.5, Math.max(1, 4 - i * 0.35), i % 3 === 2 ? '#fff6ee' : mix(a, '#fff6ee', t * 0.6));
+    }
+    // the traveller, cropped by the bottom edge: the board, the robe, the hood, the scarf
+    g.p(60, 63, 22, 2, '#2b2531'); g.p(58, 62, 3, 2, '#2b2531'); g.p(81, 61, 3, 2, '#2b2531');
+    g.p(66, 46, 9, 17, '#8a2c2a'); g.p(64, 55, 13, 8, '#8a2c2a'); g.p(65, 62, 11, 1, '#5c1c1e');
+    g.p(67, 40, 7, 7, '#6c2022'); g.p(69, 43, 3, 2, '#14101a');
+    g.p(75, 47, 4, 3, '#8a2c2a'); g.p(78, 45, 3, 3, '#8a2c2a');  // the arm out, for balance
+    // the scarf, streaming back and up to the left
+    const scarf = [[64, 44], [59, 42], [54, 41], [49, 41], [44, 42], [40, 44]];
+    scarf.forEach(([x, y], i) => g.p(x, y, 5, 2, i % 3 === 2 ? '#b9532f' : '#f2e0c2'));
+  },
+
   // SKLTR: green bones in the dark
   bones(g, a) {
     g.p(0, 0, W, H, '#04070a');

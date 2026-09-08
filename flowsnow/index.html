@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Flowsnow</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #2b3455; overflow: hidden; touch-action: none; height: 100%; }
+    #game { display: block; width: 100vw; height: 100vh; touch-action: none; }
+    .ui {
+      font-family: Georgia, 'Times New Roman', 'Noto Serif', serif;
+      color: #fbefe4; user-select: none; -webkit-user-select: none;
+      text-shadow: 0 1px 2px rgba(30, 24, 60, 0.45), 0 0 18px rgba(255, 200, 170, 0.25);
+    }
+    #hud {
+      position: fixed; top: 14px; left: 0; right: 0; z-index: 10; pointer-events: none;
+      display: flex; justify-content: center; align-items: flex-start; gap: 46px;
+      padding: 0 70px;
+    }
+    #hud[hidden] { display: none; }
+    #hud .cell { text-align: center; min-width: 84px; }
+    #hud .big { font-size: 30px; line-height: 1; font-weight: normal; letter-spacing: 1px; }
+    #hud .lbl { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.8; margin-top: 4px; }
+    #flow { width: 140px; height: 3px; margin: 12px auto 0; background: rgba(251, 239, 228, 0.25); border-radius: 2px; overflow: hidden; }
+    #flowFill { height: 100%; width: 0; background: linear-gradient(90deg, #ffd9b0, #fff6ea); box-shadow: 0 0 10px #ffe0c0; transition: width 0.12s linear; }
+    #toast {
+      position: fixed; top: 24%; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none;
+      font-size: 26px; letter-spacing: 4px; opacity: 0; transition: opacity 0.35s ease;
+    }
+    .panel {
+      position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center; padding: 24px;
+      background: radial-gradient(ellipse at 50% 60%, rgba(40, 32, 70, 0.0) 30%, rgba(30, 24, 60, 0.45) 100%);
+    }
+    .panel[hidden] { display: none; }
+    .panel { pointer-events: none; }
+    .panel button { pointer-events: auto; }
+    .panel .lines, .panel .best, #done .stats { text-shadow: 0 1px 3px rgba(30, 24, 60, 0.8), 0 0 12px rgba(30, 24, 60, 0.5); }
+    .panel .lines { background: rgba(38, 30, 66, 0.28); border-radius: 14px; padding: 6px 18px; }
+    .panel h1 { font-size: clamp(44px, 9vw, 92px); font-weight: normal; letter-spacing: 0.22em; text-indent: 0.22em; line-height: 1; }
+    .panel .sub { font-size: clamp(15px, 2.6vw, 21px); letter-spacing: 0.35em; text-indent: 0.35em; margin-top: 10px; opacity: 0.92; }
+    .panel .press { margin-top: 44px; font-size: 16px; letter-spacing: 0.3em; text-indent: 0.3em; animation: breathe 2.6s ease-in-out infinite; }
+    .panel .lines { margin-top: 20px; font-size: 12px; letter-spacing: 0.08em; line-height: 2; opacity: 0.78; max-width: 560px; }
+    .panel .best { margin-top: 14px; font-size: 13px; letter-spacing: 0.25em; opacity: 0.85; min-height: 1.4em; }
+    #done .score { font-size: clamp(50px, 10vw, 100px); line-height: 1; margin-top: 8px; }
+    #done .stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px; margin-top: 22px; font-size: 13px; letter-spacing: 0.12em; }
+    #done .stats div { display: flex; flex-direction: column; gap: 3px; min-width: 80px; }
+    #done .stats span { opacity: 0.7; font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; }
+    #done .stats b { font-weight: normal; font-size: 17px; }
+    button.ui {
+      margin-top: 36px; min-height: 48px; min-width: 200px; padding: 10px 28px;
+      background: rgba(251, 239, 228, 0.12); border: 1px solid rgba(251, 239, 228, 0.7); border-radius: 30px;
+      font-size: 16px; letter-spacing: 0.3em; text-indent: 0.3em; cursor: pointer;
+    }
+    button.ui:hover, button.ui:focus-visible { background: rgba(251, 239, 228, 0.28); outline: none; }
+    #mute {
+      position: fixed; right: 14px; bottom: 40px; z-index: 12; min-height: 44px; min-width: 44px; padding: 8px 14px;
+      background: transparent; border: none; font-size: 12px; letter-spacing: 0.2em; opacity: 0.75; cursor: pointer;
+    }
+    #ver { position: fixed; right: 16px; bottom: 12px; z-index: 12; font-size: 11px; letter-spacing: 0.2em; opacity: 0.6; pointer-events: none; }
+    @keyframes breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .panel .press { animation: none; } }
+    @media (max-width: 560px) {
+      #hud { gap: 22px; padding: 0 56px; }
+      #hud .big { font-size: 24px; }
+      #flow { width: 96px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="ui">
+    <div class="cell">
+      <div class="big"><span id="speed">0</span></div>
+      <div class="lbl" id="speedLabel">km/h</div>
+    </div>
+    <div class="cell">
+      <div class="big"><span id="dist">0</span></div>
+      <div class="lbl" id="distLabel">m</div>
+      <div id="flow"><div id="flowFill"></div></div>
+      <div class="lbl" id="flowLabel">flow</div>
+    </div>
+  </div>
+  <div id="toast" class="ui"></div>
+
+  <div id="title" class="panel ui">
+    <h1>FLOWSNOW</h1>
+    <div class="sub" id="tagline">ride the light down</div>
+    <div class="press" id="press">press to ride</div>
+    <div class="lines"><div id="controls"></div><div id="padline"></div></div>
+    <div class="best" id="best"></div>
+  </div>
+
+  <div id="done" class="panel ui" hidden>
+    <div class="sub" id="doneTitle">the light goes</div>
+    <div class="score" id="doneScore">0</div>
+    <div class="lbl" id="doneScoreLabel" style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;opacity:.8">flow</div>
+    <div class="stats" id="doneStats"></div>
+    <button class="ui" id="again">ride again</button>
+  </div>
+
+  <button id="mute" class="ui" type="button">sound on</button>
+  <div id="ver" class="ui">v1</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=3';
+    sign({ corner: 'bottom-left', counter: true });
+  </script>
+  <!-- the arcade shell: a home button and a controller way back -->
+  <script type="module" src="../hub/shell.js?v=17"></script>
+</body>
+</html>
