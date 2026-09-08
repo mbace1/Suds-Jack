@@ -2,6 +2,64 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v44 — 2026-09-08
+**Season 2 gets its tech art: gel, caustics, a hazed sun, the break, and a skullscape**
+
+Owner's brief: *go really crazy on the season 2 art style — think tech art*.
+Everything native in this game is unlit, a flat fill with a per-face tone,
+and goo cannot be that: goo is the thing light goes INTO. So `js/gel.js` is
+the one material in the game that pretends to be lit, and it pretends the
+cheap way — no lights, no normal maps, four terms added onto the flat colour
+in world space through `onBeforeCompile` on a `MeshBasicMaterial`:
+a **fresnel rim** that brightens where the surface turns away (a soft edge
+without rounding any geometry), a **caustic** of three sine fields drifting
+through world space so light moves *through* the body rather than sitting on
+it, one fixed-sun **specular** so a wet surface reads wet, and a vertex
+**wobble** — every piece breathes along its normal and its top leans with
+time, seeded by its own position, so a field of cubes is jelly and not a
+wall. The wave (instance colours) and the mounds (vertex colours) are two
+materials on ONE uniform set, so they share a clock and a lip.
+
+**The break.** The lip of the wave sheds loose cubes ahead of itself through
+the game's own debris pool (`goo.spray`): a wave that only rises and falls is
+a hill that moves; one that sheds is surf. The wave also opens mid-sea now —
+a random phase at build, since the crest forms off one rim and a run used to
+begin with seconds of flat water.
+
+**Soft edges on the large platforms** (the brief's words): INCA's slabs stop
+wearing shale beds and become **mounds** of goo cubes — columns on a grid, the
+height a rounded dome (1 − r⁴)^0.6 so the silhouette is soft while every piece
+is still a cube — in the gel material.
+
+**The skullscape.** There is no Meshy art for an *aquamarine Inca skullscape*,
+so `js/inca.js` builds it from what the game owns: the string-art skull every
+run has been fighting since v1 at **×22**, half-buried just past the rim and
+turned to face the arena, tinted a dark aquamarine so it is a silhouette
+against the white sky with its ember eyes still burning; and stepped
+**terraces** further out — a ziggurat skyline through the fog. Nothing there
+collides. Seeded, like the rest of the arena.
+
+**And the rest of the frame:** the floor shader carries the same caustic
+(`uCaustic`), the sky shader a **haze** and a pale **sun** (`uHaze`, `uSun`,
+`uSunDir` — the sun also lights the gel's specular), all of it zero outside
+INCA, which the gate asserts on VOID.
+
+**Two renders that settled what reasoning did not.** The first cut bloomed to
+white: the body colour already ramped to an HDR lip, and the rim and the
+caustic were added in that lip too — lip + lip + lip. It has an energy budget
+now (rim ×0.4, caustic ×0.3, specular ×0.6, the lip under 1.0 and a separate
+`rim` colour for the shader), and it was *still* pale, because a body that
+starts at 0.4 has nowhere to go but white once light is added to it. The
+bodies now start DARK — deep 0.012/0.09/0.11, lip 0.09/0.46/0.46 — and the
+shader is what makes them bright; the read is dark aquamarine goo with light
+crawling in it and edges that glow, which was the brief. The skull learned
+the same lesson from the other side: a pale skull in a pale fog was a cloud.
+
+**Gate: 149 checks** (was 145): the tech-art terms are on and the gel clock
+runs in INCA; the break sprays; the skullscape stands with every piece beyond
+the disc; and VOID carries none of it. `hd-shell.mjs` found `gel.js` and
+`inca.js` on its own, which is what it is for.
+
 ## v43 — 2026-09-07
 **Season 2's goo wave: a swell of voxels that breaks across the arena**
 

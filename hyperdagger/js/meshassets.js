@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { bakeShading } from './voxel.js?v=74';
+import { bakeShading } from './voxel.js?v=75';
 
 /**
  * ARENA MESH ASSETS — the Meshy pipeline's landing pad for ENVIRONMENT.

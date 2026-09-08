@@ -392,8 +392,22 @@ grid in y so it steps like voxels, one InstancedMesh with ~250 of 1600 cells
 drawn. It is a moving FLOOR that CARRIES the body along its direction (the
 higher of slab-or-crest wins) and does no damage on purpose until the owner
 decides what it should cost; its floor glow is 3.4, so the read is an
-aquamarine grid on dark water. The rest of season 2 (gel edges on the large
-slabs, the Inca backdrop, bone against a white sky) is still `todo`. Four things renders settled, not reasoning: the star field was a
+aquamarine grid on dark water. **v44 is season 2's tech art** (owner: "go
+really crazy… think tech art"): `js/gel.js` is the ONE material in the game
+that pretends to be lit — fresnel rim, three-sine-field caustic, one-sun
+specular and a vertex wobble added onto a `MeshBasicMaterial` through
+`onBeforeCompile`, world space, no lights; the wave (instance colours) and
+the slab **mounds** (`gelMoundGeometry`, a dome of cube columns — the
+brief's soft edges) are two materials on one uniform set. The wave's lip
+**sprays** loose cubes through the debris pool (the break), the floor
+shader carries the caustic and the sky a haze and a sun (`uHaze`/`uSun`/
+`uSunDir`), all zero outside INCA; `js/inca.js` is the **skullscape** — the
+string-art skull at ×22 half-buried past the rim, dark aquamarine against
+the white sky, and stepped terraces in the fog. The lesson that took three
+renders: **gel bodies start DARK** (deep 0.012/0.09/0.11) because the shader
+ADDS light, and a body that starts pale ends white; a pale skull in a pale
+fog was a cloud. Still `todo`: bone enemies against the white sky, and
+whether the wave's trough should hurt. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
 near black, so floor glow is per season; and the owner's monuments "looked

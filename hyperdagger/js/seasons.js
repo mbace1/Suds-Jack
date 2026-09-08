@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=74';
+import { TUNING as T } from './tuning.js?v=75';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -42,6 +42,8 @@ import { TUNING as T } from './tuning.js?v=74';
  *  @property {Object|null} pillars   dark rock standing in the arena (walls.js + shale.js)
  *  @property {Object|null} platforms growing, moving slabs (platforms.js + shale.js)
  *  @property {Object|null} goo       the breaking wave of voxels (goo.js)
+ *  @property {Object|null} inca      the skullscape: giant skulls and terraces on the horizon (inca.js)
+ *  sky.haze / sky.sun / sky.sunDir and floor.caustic are the tech-art terms (v44); zero is off
  *  @property {'dagger'|'needler'} weapon  the profile in T.weapons
  *  @property {boolean} built
  *  @property {string[]} [todo]
@@ -64,6 +66,7 @@ export const SEASONS = [
     pillars: null,
     platforms: null,
     goo: null,
+    inca: null,
     weapon: 'dagger',
     built: true,
   },
@@ -109,17 +112,22 @@ export const SEASONS = [
       avoidPlayer: 4.5,         // u — never grows under your feet
     },
     goo: null,                  // season 2's, not season 1's
+    inca: null,
     weapon: 'needler',
     built: true,
   },
   {
     id: 'inca',
     name: 'SEASON 2 — INCA',
-    blurb: 'aquamarine skullscape under a white sky — palette only, the goo is not built',
-    sky: { void: [0.44, 0.49, 0.54], horizon: [0.02, 0.28, 0.95], band: 2.2, stars: 0 },
+    blurb: 'aquamarine skullscape under a white sky — goo, gel and a wave that carries you',
+    // v44 TECH ART: a hazed white sky with a pale sun; caustics crawling the
+    // floor; gel on the wave and the slabs; a skullscape on the horizon.
+    sky: { void: [0.44, 0.49, 0.54], horizon: [0.02, 0.28, 0.95], band: 2.2, stars: 0,
+      haze: 0.16, sun: 0.9, sunDir: [0.35, 0.5, -0.78] },
     // the floor's texture is near-black with bright grid lines, so a tint
-    // only shows where the glow lifts it: an aquamarine GRID on dark water
-    floor: { tint: [0.30, 0.95, 0.82], glow: 3.4 },
+    // only shows where the glow lifts it: an aquamarine GRID on dark water —
+    // and the caustic is light moving on that water
+    floor: { tint: [0.30, 0.95, 0.82], glow: 3.4, caustic: 0.55 },
     backdrop: { visible: false, emissive: 0 }, // season 1's monuments are season 1's; the Inca skullscape is on the list
     fog: { color: [0.40, 0.46, 0.52], near: 20, far: 90 },
     dust: { color: [0.60, 0.92, 0.85], size: 0.06, opacity: 0.2 },
@@ -129,9 +137,11 @@ export const SEASONS = [
       count: 4,
       rMin: 5, rMax: 18,
       wMin: 5.0, wMax: 8.0,     // LARGE — the brief says large voxel platforms
-      hMin: 0.6, hMax: 1.8,
-      shale: { layer: 0.3, jitter: 0.05, turn: 0.02, tile: 1.2, tileLift: 0.02, tileTilt: 0.02,
-        color: [0.10, 0.30, 0.27], tileColor: [0.14, 0.42, 0.38] },
+      hMin: 0.9, hMax: 2.2,
+      look: 'gel',              // a MOUND of goo cubes with soft edges, in the gel material
+      // DARK bodies: the gel shader adds its rim and its inner light on top,
+      // and a body that starts pale ends white (the first two cuts did)
+      gel: { cell: 1.0, deep: [0.012, 0.09, 0.11], lip: [0.07, 0.36, 0.38] },
       grow: 2.0, sink: 1.6,
       lifeMin: 18, lifeMax: 30,
       drift: 0.6, driftW: 0.12,
@@ -140,25 +150,37 @@ export const SEASONS = [
     // THE WAVE (v43). A crest sweeps the disc, rises, leans into its travel
     // and breaks; stand on it and it carries you. See js/goo.js.
     goo: {
-      cell: 1.15,               // voxel size — the wave is made of THIS game's cubes
-      amp: 2.6,                 // crest height above the floor
+      cell: 1.0,                // voxel size — the wave is made of THIS game's cubes
+      amp: 3.2,                 // crest height above the floor: three rows, a ridge and not a slab
       width: 9,                 // how long the back of the swell is
       gap: 14,                  // clear water between one wave and the next
       speed: 7.5,               // u/s along its own direction
       lean: 0.5,                // how far the crest leans forward as it steepens
       ripple: 0.22, rippleK: 0.19, // a swell along the crest: a sea, not an extrusion
       push: 5.0,                // u/s a body standing on it is carried
-      opacity: 0.93,
-      deep: [0.06, 0.42, 0.44], // in the body
-      lip: [0.55, 1.9, 1.6],    // at the break — HDR, so the lip blooms
+      deep: [0.012, 0.09, 0.11], // in the body — dark water
+      lip: [0.09, 0.46, 0.46],   // at the break — well under the bloom threshold: the gel's RIM is what blooms, and only at edges
+      rim: [0.35, 0.95, 0.85],  // what the gel shader adds at edges and inside: NOT HDR
+      // gel.js terms: rim glow, light inside, a wet highlight, jelly wobble
+      fresnel: 0.9, caustic: 0.45, spec: 0.7, wobble: 0.05,
+      // the break: cubes shed off the lip ahead of the crest
+      sprayFrom: 0.8, sprayChance: 0.06, sprayMax: 6,
+    },
+    // the horizon: the game's own skull at monument size, half-buried, and a
+    // stepped city behind it — through the fog, pale
+    inca: {
+      // the skull is the game's own string-art skull at ×22 — forty units of
+      // bone, half-buried just past the rim, a DARK aquamarine silhouette
+      // against the white sky (a pale skull in a pale fog was a cloud)
+      skulls: { count: 4, rMin: 3, rMax: 9, scale: 22, sinkMin: 0.3, sinkMax: 0.5, tint: [0.24, 0.66, 0.60] },
+      terraces: { count: 7, rMin: 24, rMax: 46, wMin: 14, wMax: 26, hMin: 9, hMax: 20, steps: 6, color: [0.20, 0.36, 0.37] },
     },
     weapon: 'needler',
-    built: false,
+    built: true,
     todo: [
-      'soft edges on the large voxel platforms (goo shader, not shale beds)',
-      'the Inca skull backdrop through the manifest env seam',
       'bone enemies against a white sky — readability pass',
       'decide whether the trough should hurt — the wave carries, it does not kill',
+      'the Inca backdrop from real art, if any arrives — the skullscape is the game\'s own skull for now',
     ],
   },
 ];

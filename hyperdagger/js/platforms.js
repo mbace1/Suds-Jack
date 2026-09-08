@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { shaleGeometry } from './shale.js?v=74';
+import { shaleGeometry } from './shale.js?v=75';
+import { gelMoundGeometry } from './gel.js?v=75';
 
 /**
  * PLATFORMS — slabs that GROW out of the floor, DRIFT, and SINK back.
@@ -27,6 +28,7 @@ export class Platforms {
     this.draw = Math.random;
     this.avoid = null;   // (x, z, half) => bool — true where a slab may not stand
     this.player = null;
+    this.gelMat = null;  // v44: a season's gel material, for `look: 'gel'` slabs
   }
 
   get count() { return this.list.length; }
@@ -55,9 +57,14 @@ export class Platforms {
     // LOW, mostly: the draw is SQUARED, so most slabs sit near hMin and only
     // a few reach hMax (owner: "platforms should be lower mostly")
     const t = d(); const h = c.hMin + t * t * (c.hMax - c.hMin);
-    // dark shale in beds, crooked tiles on top — see shale.js
-    const geo = shaleGeometry({ w, h, d: depth, draw: d, ...(c.shale ?? {}) });
-    const mesh = new THREE.Mesh(geo, this.mat);
+    // dark shale in beds, crooked tiles on top (shale.js) — or, for season 2,
+    // a MOUND of goo cubes with a rounded silhouette (gel.js), the brief's
+    // "soft edges on large voxel platforms"
+    const gel = c.look === 'gel' && this.gelMat;
+    const geo = gel
+      ? gelMoundGeometry({ w, h, d: depth, draw: d, ...(c.gel ?? {}) })
+      : shaleGeometry({ w, h, d: depth, draw: d, ...(c.shale ?? {}) });
+    const mesh = new THREE.Mesh(geo, gel ? this.gelMat : this.mat);
     this.group.add(mesh);
     const p = { w, depth, h, mesh, phase: 'grow', t: 0, k: 0, life: 0,
       cx: 0, cz: 0, x: 0, z: 0, px: 0, pz: 0, ang: 0, top: 0, dir: d() < 0.5 ? -1 : 1 };

@@ -966,7 +966,8 @@ s.listen(0, '127.0.0.1', async () => {
       d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
       await frames(6);
       const sn = d.getSeasons();
-      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms(), goo: d.getGoo() };
+      sn.tech = d.getTechArt();
+      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms(), goo: d.getGoo(), inca: d.getInca() };
     });
   };
 
@@ -1213,6 +1214,35 @@ s.listen(0, '127.0.0.1', async () => {
     wave.peak > wave.amp * 0.7 && wave.peak <= wave.amp * 1.35, JSON.stringify(wave));
   ok('inca: standing on the crest, the wave IS the floor and it carries you',
     wave.floorY > 1 && wave.carried > 0.1, JSON.stringify(wave));
+
+  // v44 TECH ART: every term is the season's, and zero outside it
+  const tech = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const t0 = d.getTechArt();
+    await frames(6);
+    const t1 = d.getTechArt();
+    // spray: put a crest mid-arena (its lip is where cubes shed) and count
+    const g = d.gooObj();
+    let peak = 0, at = 0;
+    for (let i = 0; i < 900; i++) { g.t = i * 0.02; const h = g.heightAt(0, 0); if (h > peak) { peak = h; at = g.t; } }
+    g.t = at - 0.3;
+    let spray = 0;
+    for (let i = 0; i < 24; i++) { await frames(1); spray += d.getGoo().sprayed; }
+    return { t0, t1, spray, inca: d.getInca(), plats: d.getPlatforms().slabs.map(x => x.h) };
+  });
+  ok('inca: the floor has caustics, the sky has haze and a sun, and the gel clock runs',
+    tech.t0.caustic > 0 && tech.t0.haze > 0 && tech.t0.sun > 0 && tech.t1.gelTime > tech.t0.gelTime,
+    JSON.stringify({ t0: tech.t0, t1: tech.t1 }));
+  ok('inca: the lip SHEDS — cubes spray off the break',
+    tech.spray > 0, JSON.stringify({ spray: tech.spray }));
+  ok('inca: a skullscape stands on the horizon — giant skulls sunk in the ground, terraces behind',
+    tech.inca.on && tech.inca.skulls.length >= 4 && tech.inca.terraces.length >= 5
+    && tech.inca.skulls.every(k => Math.hypot(...k.at) > 26) && tech.inca.terraces.every(t => Math.hypot(...t.at) > 26),
+    JSON.stringify(tech.inca));
+  ok('void: none of the tech-art terms leak into the control',
+    ctrl.sn.tech && ctrl.sn.tech.caustic === 0 && ctrl.sn.tech.haze === 0 && ctrl.sn.tech.sun === 0 && ctrl.inca.on === false,
+    JSON.stringify({ tech: ctrl.sn.tech, inca: ctrl.inca }));
 
   ok('ember and void have no wave — the sea is season 2\'s',
     ctrl.goo.on === false && em.goo.on === false,

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { shadedBox, applyFaceShade } from './voxel.js?v=74';
+import { shadedBox } from './voxel.js?v=75';
+import { gelMaterial } from './gel.js?v=75';
 
 /**
  * THE GOO WAVE — season 2's swell, made of the same cubes everything else in
@@ -39,6 +40,9 @@ export class GooWave {
     this.dirX = 0; this.dirZ = 1;
     this.cells = [];   // {x, z} grid centres inside the disc
     this.count = 0;    // instances drawn this frame
+    this.spray = null; // (x, y, z, dirX, dirZ) => void — the caller's debris pool
+    this.sprayed = 0;  // this frame
+    this.draw = Math.random;
   }
 
   /** Build the grid and the instance pool for a season's `goo` block. */
@@ -62,9 +66,11 @@ export class GooWave {
         this.cells.push({ x, z });
       }
     }
+    this.draw = draw;
     const geo = shadedBox(cell * 0.92);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: cfg.opacity ?? 1 });
-    applyFaceShade(mat); // the cube ladder: goo is still made of this game's cubes
+    // v44: GEL. Not the cube ladder — goo is the thing light goes into, so
+    // this is the one material in the game that pretends to be lit (gel.js)
+    const mat = cfg.material ?? gelMaterial({ lip: cfg.lip, wobble: cfg.wobble, caustic: cfg.caustic, fresnel: cfg.fresnel, spec: cfg.spec });
     this.mesh = new THREE.InstancedMesh(geo, mat, this.cells.length);
     this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(this.cells.length * 3), 3);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -115,9 +121,17 @@ export class GooWave {
     this.t += dt;
     const c = this.cfg, cell = c.cell;
     let n = 0;
+    this.sprayed = 0;
     for (const g of this.cells) {
       const h = this.heightAt(g.x, g.z);
       if (h < cell * 0.35) continue;                 // below the surface: not drawn
+      // THE BREAK: the lip throws loose cubes ahead of itself. A wave that
+      // only rises and falls is a hill that moves; one that sheds is surf.
+      if (this.spray && h > c.amp * (c.sprayFrom ?? 0.8) && this.sprayed < (c.sprayMax ?? 6)
+        && this._s(g.x, g.z) > 0 && this.draw() < (c.sprayChance ?? 0.05)) {
+        this.spray(g.x, h + cell * 0.3, g.z, this.dirX, this.dirZ);
+        this.sprayed++;
+      }
       // Cubes SNAP to the cell grid in y as well: goo made of voxels reads as
       // voxels only if it steps. A smooth column of cubes is a smooth surface
       // with seams, which is the look this game already rejected once.
@@ -170,7 +184,7 @@ export class GooWave {
     if (this.mesh) {
       this.scene.remove(this.mesh);
       this.mesh.geometry.dispose();
-      this.mesh.material.dispose();
+      if (!this.cfg?.material) this.mesh.material.dispose(); // a shared material is the caller's
       this.mesh = null;
     }
     this.cells.length = 0;
@@ -186,6 +200,7 @@ export class GooWave {
       t: +this.t.toFixed(2),
       dir: [+this.dirX.toFixed(2), +this.dirZ.toFixed(2)],
       period: +(this.period ?? 0).toFixed(2),
+      sprayed: this.sprayed,
       peak: this.cfg ? this.cfg.amp : 0,
     };
   }
