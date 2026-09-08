@@ -10,14 +10,25 @@
 // bug v10 found the other way round: a cutout is an unlit plane and the torch
 // has to be painted INTO it.
 //
-// THE HONEST CAVEAT, recorded because this project already ruled on it once.
-// The concept-pack filter in `art-src/concepts/README.md` rejected six sheets
-// on two rules, and one of them was **no weapons**: "nearly every figure in
-// the pack carries a knife, which is TURF's grammar and not a game whose verbs
-// are a swing, a bottle and a shopping trolley." Most of these plates carry a
-// knife too. The casting below leans on the weapon-light end of the set —
-// barfly's bottle, milo's can, the two tank-top idles — but this is a toggle
-// so the picture can settle it, not a rule being quietly reversed.
+// THE WEAPONS RULE, and how it is actually applied here (v19).
+// `art-src/concepts/README.md` rejected six concept sheets partly on **no
+// weapons**: "nearly every figure in the pack carries a knife, which is TURF's
+// grammar and not a game whose verbs are a swing, a bottle and a shopping
+// trolley." Every one of these 32 plates carries something, so that rule taken
+// literally would reject the whole set and there would be nothing to cast.
+//
+// So the line is drawn where it actually matters, and looking at the plates at
+// full size is what drew it: **a knife is not the problem, a FIREARM is.** A
+// street knife on a bum reading the far end of a Helsinki bridge is plausible;
+// a man drinking in a park with a pistol in his hand is a different game, in a
+// different country. v18 shipped with the Old Boxer holding a sidearm and the
+// Dealer holding two, which is the tell that "lean weapon-light" was too soft
+// a filter to be one.
+//
+// `FIREARMS` below is the rejected list — hand-kept, like the concept pack's
+// verdicts, because no pixel test can see a gun — and `core.mjs` fails if the
+// cast ever intersects it. Bottles, cans, pipes, bats and bandaged fists are
+// in; nothing that shoots is.
 //
 // A plate ships from `figures/`, NOT from `art-src/`: a Slay Kallio deploy is
 // a copy of the folder minus `test/` and `art-src/`, so runtime art in
@@ -29,22 +40,26 @@ const DIR = 'figures/';
 // id → plate. Only person-shaped figures are cast: the rats, blobs, birds and
 // the bear have no equivalent in a roster of street operators and keep their
 // drawn cutout, which is why this is a lookup rather than a blanket switch.
+// Plates that put a GUN in the figure's hand. Rejected outright — see above.
+export const FIREARMS = ['denny', 'deuce', 'grunt-handgun', 'grunt-shotgun',
+  'grunt-tanner', 'grunt-track', 'niner', 'gunner'];
+
 export const CAST = {
   // the roster
-  drinker:   'grunt-barfly',   // holds a bottle — the one plate that IS the mechanic
+  drinker:   'grunt-barfly',   // a BOTTLE, and it is the one plate that IS the mechanic
   busker:    'grunt-spike',    // green mohawk; a busker in the underpass
   collector: 'grunt-milo',     // hood up, a can in hand, working the bins
-  cart:      'sledge',         // the mass in the set: heavy, bald, planted
+  cart:      'sledge',         // the mass in the set, and a scavenged sledgehammer
   walker:    'leopard',        // the highest-fidelity woman in the set
-  boxer:     'gunner',         // bald, tattooed, tank top — he is already the old boxer
+  boxer:     'grunt-ragged',   // BANDAGED FISTS AND NO WEAPON — he is the old boxer
   // the bums on the other side
   rival:       'grunt-hollow',
   rival_b:     'grunt-runt',
-  dealer:      'denny',        // flat cap, gold chain
+  dealer:      'grunt-smoke',  // cigarette, bottle, ragged coat — was denny, who held two pistols
   preacher:    'grunt-beard',
-  bouncer:     'knuckle',      // shirtless and scarred: the elite reads as one
-  night_shift: 'grunt-tanner',
-  bridge_king: 'grunt-ragged', // dreadlocks, bandaged hands — a king of a bridge
+  bouncer:     'grunt-duffy',  // heavy, bearded, a length of pipe
+  night_shift: 'cleaver',      // apron and a face mask: he IS a night shift
+  bridge_king: 'knuckle',      // shirtless, scarred, a flail — a boss reads as one
 };
 
 export const castFiles = () => [...new Set(Object.values(CAST))].map(n => DIR + n + '.png');

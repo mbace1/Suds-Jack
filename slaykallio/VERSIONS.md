@@ -7,6 +7,45 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v19 — 2026-09-07
+**Nobody on this bridge is holding a gun**
+v18 shipped the TURF cast and named the weapons question as open. Looking at
+all thirty-two plates at full size answers it, and the answer is not the one
+v18 assumed.
+
+**"No weapons" cannot be applied literally here.** Every plate in the set
+carries something — a knife, a bat, a pipe, a bottle, a flail. The concept
+pack's rule taken at face value rejects the entire set and leaves nothing to
+cast. So the line goes where it actually matters: **a knife is not the problem,
+a FIREARM is.** A street knife on a bum reading the far end of a Helsinki
+bridge is plausible. A man drinking in a park with a pistol in his hand is a
+different game, in a different country.
+
+**Eight of the thirty-two are armed with guns**, and v18 had cast two of them:
+the Old Boxer was holding a pistol and the Dealer two. That is what "lean
+weapon-light" is worth as a filter — it is a preference, not a rule, and it
+loses to whatever else the plate is good at. `FIREARMS` in `plates.js` is the
+rejected list now, hand-kept the way the concept pack keeps a verdict per sheet
+(no pixel test can see a gun), and `core.mjs` fails if the cast ever intersects
+it.
+
+**Five recasts, and three of them are better castings on their own terms**,
+which is the sign the constraint was doing work rather than costing something:
+
+| | was | is | why |
+|---|---|---|---|
+| The Old Boxer | `gunner` (pistol) | **`grunt-ragged`** | bandaged fists and no weapon at all — he simply IS an old boxer |
+| The Dealer | `denny` (two pistols) | **`grunt-smoke`** | cigarette, bottle, ragged coat |
+| Night Shift | `grunt-tanner` (pistol) | **`cleaver`** | an apron and a face mask: he is a night shift |
+| The Bridge King | `grunt-ragged` | **`knuckle`** | shirtless, scarred, a flail — a boss reads as one |
+| The Bouncer | `knuckle` | **`grunt-duffy`** | heavy, bearded, a length of pipe |
+
+The six left alone were already clean: barfly's bottle for the Park Drinker,
+milo's can for the Bottle Collector, sledge's scavenged hammer for the Cart
+Pusher, and knives on the three bums across the planks.
+
+Gates: core 719, smoke 125.
+
 ## v18 — 2026-09-07
 **TURF's cast, standing on this bridge**
 Owner: *"I would like the turf art used on those figures."* `turf/art-src/sprites/`

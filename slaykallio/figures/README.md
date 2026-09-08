@@ -33,12 +33,26 @@ cast ever starts pointing at `art-src/`.
 Copy the PNG in and change the one line in `CAST` (`js/plates.js`). Nothing
 else knows a figure's art by name.
 
-## The open question
+## The weapons rule: NO FIREARMS
 
-`art-src/concepts/README.md` rejected six concept sheets on two filters, and
-one of them was **no weapons**: *"nearly every figure in the pack carries a
-knife, which is TURF's grammar and not a game whose verbs are a swing, a bottle
-and a shopping trolley."* Most of these plates carry one too. The casting leans
-on the weapon-light end of the set — `grunt-barfly` holds a **bottle**, which
-is the Park Drinker's whole mechanic, and `grunt-milo` a can — but the Old
-Boxer is still holding a pistol. That is why this is a toggle.
+`art-src/concepts/README.md` rejected six concept sheets partly on **no
+weapons**: *"nearly every figure in the pack carries a knife, which is TURF's
+grammar and not a game whose verbs are a swing, a bottle and a shopping
+trolley."*
+
+Taken literally that rejects the whole set — every one of the 32 plates carries
+something. So the line is drawn where it matters: **a knife is not the problem,
+a gun is.** A street knife on a bum reading the far end of a bridge is
+plausible; a man drinking in a park with a pistol in his hand is a different
+game in a different country.
+
+`FIREARMS` in `js/plates.js` is the rejected list, hand-kept because no pixel
+test can see a gun, and `test/core.mjs` fails if the cast ever intersects it:
+
+    denny · deuce · grunt-handgun · grunt-shotgun · grunt-tanner ·
+    grunt-track · niner · gunner
+
+v18 shipped with two of those cast (the Old Boxer and the Dealer). v19 recast
+them, and three of the five recasts turned out to be better castings anyway —
+`grunt-ragged`'s bandaged fists ARE the Old Boxer, and `cleaver`'s apron and
+face mask ARE the Night Shift.

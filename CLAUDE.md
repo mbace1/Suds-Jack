@@ -486,13 +486,21 @@ non-person is cast AND that every person is, since a half-plated row is worse
 than none. Plates are sized **off their INK, never their file** (each is padded
 differently; TURF's `render.js` pays for the same lesson on props) and ship from
 **`figures/`, not `art-src/`** — a Slay Kallio deploy is the folder minus
-`test/` and `art-src/`, so runtime art there would 404. **The open question is
-weapons**: `art-src/concepts/README.md` rejected six concept sheets partly on
-*no weapons* — "TURF's grammar, not a game whose verbs are a swing, a bottle
-and a shopping trolley" — and most of these plates carry a knife, so the
-casting leans weapon-light (barfly's bottle for the Park Drinker is the one
-plate that IS the mechanic) but the Old Boxer still holds a pistol. A toggle,
-so the picture settles it.
+`test/` and `art-src/`, so runtime art there would 404. **The weapons rule is
+NO FIREARMS** (v19): `art-src/concepts/README.md` rejected six concept sheets
+partly on *no weapons* — "TURF's grammar, not a game whose verbs are a swing, a
+bottle and a shopping trolley" — but taken literally that rejects the whole set,
+since every one of the 32 plates carries something. So the line goes where it
+matters: **a knife on a bum is plausible, a pistol is a different game in a
+different country.** v18 shipped with the Old Boxer holding a sidearm and the
+Dealer two, which is what "lean weapon-light" is worth as a filter — a
+preference, not a rule. `FIREARMS` in `plates.js` is the rejected list,
+hand-kept the way the concept pack keeps a verdict per sheet (no pixel test can
+see a gun), and the gate fails if the cast intersects it. Three of the five
+recasts are better castings on their own terms, which is the sign the
+constraint was doing work: `grunt-ragged`'s **bandaged fists** are the Old
+Boxer, `cleaver`'s apron and face mask are the Night Shift, and `knuckle` is a
+Bridge King.
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -601,7 +609,7 @@ would have had someone cut the heal. **Sum the drops; a heal is not a fight
 being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
 and a two-point HP change failed all twelve at once — none of them is about the
 Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
-Gates: `node slaykallio/test/core.mjs` (717 checks) and
+Gates: `node slaykallio/test/core.mjs` (719 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (125). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent

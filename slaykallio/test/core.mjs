@@ -6,7 +6,7 @@
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { poseAt, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
-import { CAST, castFiles, plateFor } from '../js/plates.js';
+import { CAST, FIREARMS, castFiles, plateFor } from '../js/plates.js';
 import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
@@ -752,6 +752,16 @@ check(`every cast plate is really in the tree${missing.length ? ` — ${missing}
 check('the plates ship from figures/, which a deploy carries — not from art-src/',
   castFiles().every(f => f.startsWith('figures/')));
 check('a figure with no plate returns null rather than a broken path', plateFor('rat') === null && plateFor('nobody') === null);
+// NO FIREARMS (v19). Every one of these 32 plates carries something, so the
+// concept pack's "no weapons" rule taken literally would leave nothing to
+// cast; the line is drawn where it matters instead. A knife on a bum reading
+// the far end of a bridge is plausible. A man drinking in a park with a pistol
+// in his hand is a different game in a different country — and v18 shipped
+// with the Old Boxer holding one, which is what "lean weapon-light" is worth
+// as a filter. The list is hand-kept because no pixel test can see a gun.
+const armed = Object.entries(CAST).filter(([, p]) => FIREARMS.includes(p));
+check(`nobody on this bridge is holding a gun${armed.length ? ` — ${armed.map(a => a.join(': '))}` : ''}`, armed.length === 0);
+check('and the rejected list is real rather than empty', FIREARMS.length >= 6);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
