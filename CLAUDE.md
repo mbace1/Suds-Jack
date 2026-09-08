@@ -501,6 +501,28 @@ recasts are better castings on their own terms, which is the sign the
 constraint was doing work: `grunt-ragged`'s **bandaged fists** are the Old
 Boxer, `cleaver`'s apron and face mask are the Night Shift, and `knuckle` is a
 Bridge King.
+**Three passes were putting WHITE DOTS on every figure** (v20, owner: *"white
+dots on both"*), and rendering the cast at full size named all three: `grime`
+drew 55% of 1500 specks near-white and, unlike the dark half, **did not scale
+them by the figure's own grime**, so a black coat got full snow; `nicks`
+punched holes **anywhere on the canvas**, which was survivable only because on
+a die-cut figure most of them missed; and `fibre` at 0.46 is a sticker rim on
+pixel art, whose outline carries far more high-contrast edge than a painted
+one. **A nick is damage at an EDGE** now — placed where the silhouette actually
+ends — and the count had to fall with it (18+22 → 9+9), which is the part to
+remember: making the placement smarter RAISED the effective density, because
+the misses had been doing the thinning.
+**The card can be CUT rather than die-cut** (`cut: silhouette / card`, owner:
+*"circular cut card board instead of fitting to the exact dimensions of the
+art"*). Die-cutting to the figure makes every edge of the drawing an edge of
+the CARD, which is what forced the fibre pass to trace the whole figure; cut it
+as a board — straight sides, round top, flat foot, sized to the drawing's own
+**measured** ink (a board on fixed bounds stands a rat inside a poster) — and
+the torn edge is the board's edge, with the art inside left alone. **It suits
+the plates and hurts the drawn figures**: the painted cutouts were built to be
+read as silhouettes, and a pale field behind one takes that away, while a TURF
+plate carries its own internal detail and never depended on its outline. That
+asymmetry is why cut and art are independent toggles rather than one "style".
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -610,7 +632,7 @@ being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
 and a two-point HP change failed all twelve at once — none of them is about the
 Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
 Gates: `node slaykallio/test/core.mjs` (719 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (125). Hub entry:
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (129). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.

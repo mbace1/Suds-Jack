@@ -545,6 +545,33 @@ const check = (name, ok, extra = '') => {
   check('and the choice is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.art') === '"turf"'));
   await page.evaluate(() => __sk.debug.setArt('drawn'));
   check('and switching back restores the drawn figures', /drawn/.test(await page.locator('#art').innerText()));
+
+  // ── how the card is CUT (v20) ──────────────────────────────────────────
+  check('the menu carries a cut toggle, and it starts die-cut to the figure',
+    (await page.locator('#cut').innerText()).includes('silhouette'));
+  const cut = await page.evaluate(async () => {
+    const area = () => {
+      const c = __sk.debug.look('boxer');
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let ink = 0, pale = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 24) { ink++; if (d[i] > 150 && d[i + 1] > 145 && d[i + 2] > 140) pale++; }
+      return { ink, pale };
+    };
+    const die = area();
+    __sk.debug.setCut('card');
+    await new Promise(r => setTimeout(r, 200));
+    const card = area();
+    return { die, card };
+  });
+  check(`a card cut prints the figure on a board (${cut.die.ink} → ${cut.card.ink} ink px)`,
+    cut.card.ink > cut.die.ink * 1.6);
+  // The dots the owner saw were grime's near-white specks (55% of 1500, and
+  // not scaled by the figure's grime) plus nicks punched through the middle of
+  // the silhouette. Both are gone; this is the ruler that says so.
+  check(`and almost none of the figure is near-white speckle (${(cut.die.pale / cut.die.ink * 100).toFixed(1)}%)`,
+    cut.die.pale / cut.die.ink < 0.08, `${cut.die.pale}/${cut.die.ink}`);
+  check('the choice of cut is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.cut') === '"card"'));
+  await page.evaluate(() => __sk.debug.setCut('silhouette'));
   await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
   await page.waitForTimeout(200);
 

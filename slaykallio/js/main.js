@@ -10,7 +10,7 @@
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js';
 import * as engine from './engine.js';
 import { Arena } from './scene.js';
-import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt } from './puppet.js';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js';
 import { preloadPlates, plateFor as figurePlateFor, CAST } from './plates.js';
 import { paintCardPic } from './cardart.js';
 import { drawMap } from './map.js';
@@ -103,6 +103,7 @@ setFigureMotion(store.get('figures', 'paper'));
 // starts on 'drawn' and the roster repaints itself once the plates land, so a
 // slow decode never shows a blank card.
 setFigureArt(store.get('art', 'drawn'));
+setFigureCut(store.get('cut', 'silhouette'));
 preloadPlates().then(() => { if (!state || state.phase === 'menu') renderMenu(); });
 
 function resize() {
@@ -606,6 +607,7 @@ function renderMenu() {
   $('#mute').textContent = isMuted() ? 'sound off' : 'sound on';
   $('#figs').textContent = `figures: ${figureMotion()}`;
   $('#art').textContent = `art: ${figureArt()}`;
+  $('#cut').textContent = `cut: ${figureCut()}`;
   const best = store.get('best', null);
   $('#best').textContent = best ? `best: ${best.won ? 'cleared the run' : `fight ${best.fights + 1}`} as ${CHARACTERS[best.character]?.[theme].name ?? best.character}` : '';
 }
@@ -624,6 +626,13 @@ $('#mute').addEventListener('click', () => { setMuted(!isMuted()); store.set('mu
 // construction, so unlike the motion toggle this one cannot just flip a flag.
 // Same respawn path a theme switch takes, for the same reason.
 $('#art').addEventListener('click', () => { setArt(figureArt() === 'turf' ? 'drawn' : 'turf'); });
+// The cut is baked into the texture like the art is, so it respawns too.
+$('#cut').addEventListener('click', () => { setCut(figureCut() === 'card' ? 'silhouette' : 'card'); });
+function setCut(k) {
+  setFigureCut(k); store.set('cut', figureCut());
+  renderMenu();
+  if (state && state.phase !== 'menu') { if (state.phase === 'fight' || state.phase === 'reward') spawnFight(); else spawnHeroAlone(); renderAll(); }
+}
 function setArt(a) {
   setFigureArt(a); store.set('art', figureArt());
   renderMenu();
@@ -983,6 +992,8 @@ window.__sk = {
     art: () => figureArt(),
     cast: () => ({ ...CAST }),
     setArt: a => { setArt(a); return figureArt(); },
+    cut: () => figureCut(),
+    setCut: k => { setCut(k); return figureCut(); },
     plated: id => !!figurePlateFor(id),
     // renderMenu() too, or the seam and the button diverge: the gate flipped
     // the switch through here and then failed on the label, which is the seam

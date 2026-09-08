@@ -7,6 +7,58 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v20 — 2026-09-07
+**The white dots, and a card that is CUT rather than die-cut**
+Owner: *"white dots on both. also we can test alternative that uses circular
+cut card board instead of fitting to the exact dimensions of the art."*
+Rendering the cast at full size found three separate causes, and all three
+were mine.
+
+**1. `grime()` was snowing on everybody.** The speck pass drew 55% of fifteen
+hundred specks in `rgba(255,250,235,…)` at up to 0.12 alpha — and unlike the
+dark half it was **not scaled by the figure's `grime`**, so a black coat got
+the full fall whatever the look asked for. Paper tooth is a warm dimness IN the
+board, not light landing on the figure: fewer of them, dimmer, warmer, scaled
+like everything else.
+
+**2. `nicks()` punched holes anywhere on the canvas.** That was survivable
+while every card was die-cut to its figure — most nicks landed on transparent
+space and quietly did nothing. It is not survivable on a board, where every
+point is opaque and all forty become holes through the middle. A nick is
+**damage at an EDGE**: a card gets knocked on its rim, nothing punches a clean
+hole in the middle of one. It is placed where the silhouette actually ends now
+— opaque here, transparent a few pixels away — which also fixes the die-cut
+figures, where a nick mid-torso read as a bullet hole.
+**And the count had to come down with it**, which is the part worth
+remembering: making the placement smarter *raised* the effective density,
+because the misses had been doing the thinning. 18+22 became 9+9.
+
+**3. `fibre()` at 0.46 is a sticker rim on pixel art.** It traces the
+DRAWING's outline when the card is die-cut, and a TURF plate's outline is a
+high-contrast pixel edge with far more of it than a painted figure has. 0.32.
+
+**THE CARD CUT.** `cut: silhouette / card`, and it is not only a look. Die-cutting
+to the figure makes every edge of the drawing an edge of the CARD, which is
+what forced the torn-fibre pass to trace the whole figure in the first place.
+Cut it as a board — straight sides, a round top, a flat foot, sized to the
+drawing's own ink with a margin — and the torn edge is the BOARD's edge: one
+clean outline, and the art inside it is left alone. It is what a paper standee
+actually is.
+
+The board is measured, not fixed: a board on fixed bounds stands a rat inside a
+poster. The ink is scanned on a 4px grid — once per figure, and the board has a
+16px margin, so quarter resolution is exact enough and sixteen times cheaper.
+
+**And the honest half: the card cut suits the plates and HURTS the drawn
+figures.** The painted cutouts were built to be read as silhouettes — flat
+fills inside a heavy ink line — and putting a pale field behind one takes the
+silhouette away, which was most of what it had. On a TURF plate, which carries
+its own internal detail and never depended on its outline, the board is a gain.
+That is an argument for the two toggles being independent rather than one
+"style" switch, and it is why this ships as a toggle rather than a decision.
+
+Gates: core 719, smoke 129.
+
 ## v19 — 2026-09-07
 **Nobody on this bridge is holding a gun**
 v18 shipped the TURF cast and named the weapons question as open. Looking at

@@ -86,9 +86,14 @@ function brush(ctx, x, y, w, h, color, rnd, k = 1) {
 function grime(ctx, rnd, k = 0.8) {
   ctx.save();
   ctx.globalCompositeOperation = 'source-atop';
-  // specks and paper tooth
+  // Specks and paper tooth. The pale half used to be `255,250,235` at up to
+  // 0.12 alpha on 55% of fifteen hundred specks, and NOT scaled by k — so a
+  // black coat got full snow whatever its grime was set to, and the figures
+  // read as speckled with white dots (owner, 2026-09-07). Tooth is a warm
+  // dimness in the board, not light landing on the figure: fewer of them,
+  // dimmer, warmer, and scaled like everything else here.
   for (let i = 0; i < 1500; i++) {
-    ctx.fillStyle = rnd() > 0.45 ? `rgba(255,250,235,${0.05 + rnd() * 0.07})` : `rgba(0,0,0,${0.05 + rnd() * 0.1 * k})`;
+    ctx.fillStyle = rnd() > 0.72 ? `rgba(206,196,172,${(0.02 + rnd() * 0.035) * k})` : `rgba(0,0,0,${0.05 + rnd() * 0.1 * k})`;
     ctx.fillRect(rnd() * TW, rnd() * TH, 1 + rnd() * 2, 1 + rnd() * 2);
   }
   // streaks running DOWN the figure: rain, spills, whatever it has been through
@@ -99,10 +104,13 @@ function grime(ctx, rnd, k = 0.8) {
     ctx.fillRect(x, y, 1 + rnd() * 3, 20 + rnd() * 90);
   }
   // a couple of stains
-  ctx.globalAlpha = 0.15 * k;
-  for (let i = 0; i < 5; i++) {
+  // Three, not five, and half the alpha: these were tuned against a
+  // figure-shaped area, and on a whole board they read as blobs floating on
+  // it rather than as something spilled on it.
+  ctx.globalAlpha = 0.08 * k;
+  for (let i = 0; i < 3; i++) {
     ctx.fillStyle = '#2a1e10';
-    ctx.beginPath(); ctx.ellipse(40 + rnd() * (TW - 80), 160 + rnd() * 300, 12 + rnd() * 30, 8 + rnd() * 22, rnd() * 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(40 + rnd() * (TW - 80), 160 + rnd() * 300, 12 + rnd() * 26, 8 + rnd() * 18, rnd() * 3, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
   // one warm light from the left, and a genuinely dark shadow side
@@ -115,13 +123,31 @@ function grime(ctx, rnd, k = 0.8) {
 }
 
 // nick the outline: a cutout that has been carried around is not cut clean
+// A NICK IS DAMAGE AT AN EDGE. This used to punch ellipses anywhere on the
+// canvas, which was survivable while the card was die-cut to the figure —
+// most of them landed on transparent space and did nothing. On a BOARD every
+// point is opaque, so all forty became holes through the middle of it and the
+// standee read as woodworm (owner, 2026-09-07). A card gets knocked on its
+// rim and its corners; nothing punches a clean hole in the middle of one.
+// So a nick is placed where the silhouette actually ENDS: opaque here,
+// transparent a few pixels away. It quietly improves the die-cut figures too,
+// where a nick in the centre of a torso read as a bullet hole.
 function nicks(ctx, rnd, n = 26) {
+  const d = ctx.getImageData(0, 0, TW, TH).data;
+  const at = (x, y) => (x < 0 || y < 0 || x >= TW || y >= TH) ? 0 : d[((y | 0) * TW + (x | 0)) * 4 + 3];
+  const onEdge = (x, y, r) => at(x, y) > 40 &&
+    (at(x + r, y) < 30 || at(x - r, y) < 30 || at(x, y + r) < 30 || at(x, y - r) < 30);
   ctx.save();
   ctx.globalCompositeOperation = 'destination-out';
   for (let i = 0; i < n; i++) {
-    const x = rnd() * TW, y = 90 + rnd() * (TH - 120);
+    let x = 0, y = 0, r = 0, found = false;
+    for (let t = 0; t < 60 && !found; t++) {
+      x = rnd() * TW; y = 90 + rnd() * (TH - 120); r = 2 + rnd() * 6;
+      found = onEdge(x, y, r + 3);
+    }
+    if (!found) continue;                       // nothing to bite here
     ctx.beginPath();
-    ctx.ellipse(x, y, 2 + rnd() * 6, 2 + rnd() * 5, rnd() * 3, 0, Math.PI * 2);
+    ctx.ellipse(x, y, r, 2 + rnd() * 5, rnd() * 3, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
@@ -710,7 +736,12 @@ function mutate(c, rnd, level) {
 // opposite lesson about a WARM ADDITIVE rim: that read as forty glowing spots.
 // This one is desaturated, under `source-atop`, and ragged rather than a
 // clean outline, which is the difference between torn paper and chickenpox.)
-function fibre(c, rnd, tone = '#c8bca4', alpha = 0.46) {
+// 0.32, not 0.46: on a die-cut figure the fibre traces the DRAWING's outline,
+// and a plate's outline is a high-contrast pixel edge with far more of it than
+// a painted one has. At the old strength it read as a white sticker rim rather
+// than as the board's core showing through a cut. On a 'card' cut it traces
+// the board instead, where it is doing its real job.
+function fibre(c, rnd, tone = '#c8bca4', alpha = 0.32) {
   const ctx = c.getContext('2d');
   const band = document.createElement('canvas'); band.width = TW; band.height = TH;
   const b = band.getContext('2d');
@@ -769,12 +800,20 @@ export function paintCutout(look, seed = 1, mood = DUSK) {
   // or a figure with no plate (every rat, blob, bird and the bear), falls
   // through to the painter — so the switch can never leave a blank plane.
   const plate = ART === 'turf' && look.id ? plateReady(look.id) : null;
-  if (plate) drawPlate(ctx, plate, { tw: TW, th: TH, foot: 470, tall: 356 });
-  else if (look.shape === 'rat') rat(ctx, look, rnd);
-  else if (look.shape === 'blob') slime(ctx, look, rnd);
-  else if (look.shape === 'bird') bird(ctx, look, rnd);
-  else if (look.shape === 'bear') bear(ctx, look, rnd);
-  else person(ctx, look, rnd);
+  // In 'card' the drawing goes onto its own layer first, so its ink can be
+  // measured and a board cut to fit it. In 'silhouette' it goes straight down,
+  // which is the path this game shipped and one canvas cheaper.
+  const fig = CUT === 'card' ? document.createElement('canvas') : c;
+  if (fig !== c) { fig.width = TW; fig.height = TH; }
+  const fx = fig === c ? ctx : fig.getContext('2d');
+  fx.lineJoin = 'round'; fx.lineCap = 'round';
+  if (plate) drawPlate(fx, plate, { tw: TW, th: TH, foot: 470, tall: 356 });
+  else if (look.shape === 'rat') rat(fx, look, rnd);
+  else if (look.shape === 'blob') slime(fx, look, rnd);
+  else if (look.shape === 'bird') bird(fx, look, rnd);
+  else if (look.shape === 'bear') bear(fx, look, rnd);
+  else person(fx, look, rnd);
+  if (fig !== c) { boardShape(ctx, inkBounds(fig), rnd); ctx.drawImage(fig, 0, 0); }
   // ORDER MATTERS, and it cost a figure with chickenpox to find out: the rim
   // pass finds every edge in the alpha, and `nicks` punches HOLES in it, so
   // rimming first drew a glowing ring around each of forty nicks. Light the
@@ -783,7 +822,12 @@ export function paintCutout(look, seed = 1, mood = DUSK) {
   if (look.mutated) mutate(c, rnd, look.mutated);
   newsprint(ctx, rnd);
   if (mood) torchlight(c, mood);
-  nicks(ctx, rnd, 18 + Math.round((look.grime ?? 0.6) * 22));
+  // Fewer than it looks like it should be, and that is a consequence of the
+  // placement getting smarter rather than a taste change: nicks used to be
+  // thrown anywhere and MOST OF THEM MISSED, landing on transparent space. Now
+  // that every one of them finds an edge, the same count reads as perforation
+  // — a dotted border round a standee. The number had to come down with it.
+  nicks(ctx, rnd, 9 + Math.round((look.grime ?? 0.6) * 9));
   // the fibre comes AFTER the nicks, so a torn hole shows its core too — that
   // is the whole reason a nick reads as torn rather than as a dot of nothing
   fibre(c, rnd);
@@ -867,6 +911,84 @@ export function freezeFigures(v) { FROZEN = !!v; }
 let ART = 'drawn';
 export function setFigureArt(a) { ART = a === 'turf' ? 'turf' : 'drawn'; }
 export function figureArt() { return ART; }
+
+// ── how the card is CUT ──────────────────────────────────────────────────
+// Owner, 2026-09-07: *"we can test alternative that uses circular cut card
+// board instead of fitting to the exact dimensions of the art."*
+//   'silhouette' — die-cut around the figure, which is what this game shipped.
+//   'card'       — the art PRINTED on a shaped board: straight sides, a
+//                  round top, a flat foot. What a paper standee actually is.
+//
+// It is not only a look. Die-cutting to the silhouette makes every edge of the
+// drawing an edge of the CARD, so the torn-fibre pass has to trace the whole
+// figure — which is where the white fringe came from on the plates, since
+// pixel art has an enormous amount of alpha edge. Cut it as a board and the
+// torn edge is the BOARD's edge: one clean outline, and the art inside it is
+// left alone.
+let CUT = 'silhouette';
+export function setFigureCut(c) { CUT = c === 'card' ? 'card' : 'silhouette'; }
+export function figureCut() { return CUT; }
+
+// Where the drawing actually reaches, so a board can be cut to it: a board on
+// fixed bounds stands a rat inside a poster. Sampled on a 4px grid — this runs
+// once per figure and the board has a 16px margin, so a quarter-resolution
+// scan is exact enough and sixteen times cheaper.
+function inkBounds(cv) {
+  const d = cv.getContext('2d').getImageData(0, 0, TW, TH).data;
+  let top = TH, bottom = -1, left = TW, right = -1;
+  for (let y = 0; y < TH; y += 4) {
+    for (let x = 0; x < TW; x += 4) {
+      if (d[(y * TW + x) * 4 + 3] > 20) {
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (x < left) left = x;
+        if (x > right) right = x;
+      }
+    }
+  }
+  return bottom < 0 ? { top: 110, bottom: 470, left: 60, right: 196 } : { top, bottom, left, right };
+}
+
+// The board the figure is printed on. An arch — straight sides, a round top,
+// a flat foot — sized to the drawing's own ink with a margin, because a board
+// cut to a fixed rectangle stands a rat inside a poster.
+function boardShape(ctx, ink, rnd) {
+  const pad = 16;
+  const x0 = Math.max(4, ink.left - pad), x1 = Math.min(TW - 4, ink.right + pad);
+  const y1 = Math.min(TH - 8, ink.bottom + 10);
+  const w = x1 - x0, r = w / 2;
+  const y0 = Math.max(6, ink.top - pad);
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x0, y1);
+  ctx.lineTo(x0, y0 + r);
+  ctx.arc(x0 + r, y0 + r, r, Math.PI, 0);        // the round top
+  ctx.lineTo(x1, y1);
+  ctx.closePath();
+  // kraft board, printed side: paler than the back, and never flat
+  const g = ctx.createLinearGradient(x0, y0, x1, y1);
+  g.addColorStop(0, '#8a7d64'); g.addColorStop(0.5, '#7b6f5a'); g.addColorStop(1, '#665c4b');
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.clip();
+  // a wash of unevenness so the board is stock rather than a swatch
+  for (let i = 0; i < 90; i++) {
+    ctx.fillStyle = rnd() > 0.5 ? 'rgba(0,0,0,0.035)' : 'rgba(255,248,232,0.045)';
+    ctx.fillRect(x0 + rnd() * w, y0 + rnd() * (y1 - y0), 6 + rnd() * 40, 3 + rnd() * 18);
+  }
+  ctx.restore();
+  // the cut edge: a darker line, drawn wobbly because scissors are
+  ctx.save();
+  ctx.strokeStyle = 'rgba(60,48,32,0.55)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x0, y1);
+  ctx.lineTo(x0, y0 + r);
+  ctx.arc(x0 + r, y0 + r, r, Math.PI, 0);
+  ctx.lineTo(x1, y1);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
 
 export class Puppet {
   constructor({ look, seed = 1, scale = 1, facing = 1, mood = DUSK }) {
