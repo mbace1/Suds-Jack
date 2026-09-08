@@ -1245,7 +1245,8 @@ s.listen(0, '127.0.0.1', async () => {
     const sl = P.list.slice().sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0];
     const rest = sl.top;
     pl.feet.set(sl.x, rest, sl.z); pl.vy = -14; pl._sync();
-    P.preUpdate(1 / 60, pl, 0); pl.vy = 0;
+    // the kick lands after this frame's spring step, so the squash shows on the NEXT step
+    P.preUpdate(1 / 60, pl, 0); pl.vy = 0; P.preUpdate(1 / 60, pl, 0);
     const first = sl.sq, feetOnTop = Math.abs(pl.feet.y - sl.top) < 0.01;
     let low = first;
     for (let i = 0; i < 300; i++) { P.preUpdate(1 / 60, pl, 0); low = Math.min(low, sl.sq); }

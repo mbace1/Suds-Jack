@@ -171,7 +171,7 @@ export const SEASONS = [
       // gel.js terms: rim glow, light inside, a wet highlight, jelly wobble
       fresnel: 0.9, caustic: 0.45, spec: 0.7, wobble: 0.05, sss: 0.5,
       // v46 impact rings: a nail or a body striking the sea spreads a ring
-      rippleHit: { amp: 1.4, speed: 6.5, width: 1.3, fade: 2.2, reach: 7, life: 1.6, max: 12 },
+      rippleHit: { amp: 1.4, speed: 6.5, width: 1.3, fade: 1.6, reach: 7, life: 1.6, max: 12 },
       // the break: cubes shed off the lip ahead of the crest
       sprayFrom: 0.8, sprayChance: 0.06, sprayMax: 6,
     },

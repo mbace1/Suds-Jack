@@ -24,7 +24,7 @@ import { gelMaterial } from './gel.js?v=77';
  * should is worse than one that does not exist. See SEASONS.md.
  */
 // the impact ring, unless the season says otherwise (`goo.rippleHit`)
-const RIPPLE = { amp: 1.4, speed: 6.5, width: 1.3, fade: 2.2, reach: 7, life: 1.6, max: 12 };
+const RIPPLE = { amp: 1.4, speed: 6.5, width: 1.3, fade: 1.6, reach: 7, life: 1.6, max: 12 };
 
 const _c = new THREE.Color();
 const _m = new THREE.Matrix4();
@@ -131,7 +131,7 @@ export class GooWave {
       const g = (d - ring) / r.width;
       // a crest that spreads and fades, pulsing as it goes — never a trough,
       // because a trough on flat water is nothing to draw
-      h += q.p * r.amp * Math.exp(-g * g) * Math.exp(-q.age * r.fade) * (0.6 + 0.4 * Math.cos(q.age * 9.0));
+      h += q.p * r.amp * Math.exp(-g * g) * Math.exp(-q.age * r.fade) * (0.75 + 0.25 * Math.cos(q.age * 9.0));
     }
     return h;
   }
