@@ -1,18 +1,18 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=193';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=193';
-import { Player, PLAYER_RADIUS } from './player.js?v=193';
+import { InputManager } from './input.js?v=194';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=194';
+import { Player, PLAYER_RADIUS } from './player.js?v=194';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=193';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=193';
-import { audio } from './audio.js?v=193';
-import { haptics } from './haptics.js?v=193';
-import { initDesigner } from './designer.js?v=193';
-import { createSpecimen } from './specimen.js?v=193';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=193';
-import { TUNING } from './tuning.js?v=193';
-import { Arena, rectShape } from './arena.js?v=193';   // v236: the boundary has one home
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=193';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=194';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=194';
+import { audio } from './audio.js?v=194';
+import { haptics } from './haptics.js?v=194';
+import { initDesigner } from './designer.js?v=194';
+import { createSpecimen } from './specimen.js?v=194';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=194';
+import { TUNING } from './tuning.js?v=194';
+import { Arena, rectShape } from './arena.js?v=194';   // v236: the boundary has one home
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=194';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -5113,7 +5113,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v240' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v241' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -10284,7 +10284,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=193').then(async m => {
+  import('./editor.js?v=194').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10315,6 +10315,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=193').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=194').catch(() => {});
   });
 }

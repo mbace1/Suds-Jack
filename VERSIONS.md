@@ -7,6 +7,30 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v241 — 2026-09-06
+**BOOST LANE — a Rush level, and the shared format carries its ruleset to the port** *(the browser half of the port's Q-040)*
+- **`levels/boost-lane.json`** — 56 spawns over 40 s, `rules.mode: "rush"`.
+  Authored to teach the verb rather than to be hard: two lanes to learn that
+  boost kills on contact, a wall to cut through, pressure from both ends with
+  room to vent, a crowd where a chain is finally worth building, and one heavy
+  with escorts you must not stop for. `BUNDLED` names it, `sw.js` precaches it,
+  and `?level=boost-lane` plays it
+- **The port now plays it too.** Its Q-040 accepts `mode: "rush"` — the
+  decision being that **an authored timeline replaces the DIRECTOR and nothing
+  else**: every Rush verb stays, but Rush's own difficulty clock is parked so
+  the file's duration is the only clock. This build already did exactly that
+  (`rush.levelDuration()` returns 1e9 while a level runs, v237); the two
+  builds now park the same clock in the same place for the same reason
+- **Not yet proven end to end, and worth saying so:** the cross-build parity
+  gate has run on the two ARCADE levels, not on a Rush one — that needs this
+  file deployed first, so the port can sync it. Until then "both engines play
+  Rush levels identically" is a claim, not a measurement
+- `level-check.mjs` 74 — every bundled file loads, and `BUNDLED` still names
+  exactly the files in `levels/`
+- Cache-bust `?v=193` → `?v=194`; HUD label → v241
+
+---
+
 ## v240 — 2026-09-05
 **The floor draws a level's region, on both render paths** *(PR #447's v238 term, brought across by hand — LEVEL_EDITOR_DESIGN.md §2.3, P1's other half)*
 - **A shaped level is VISIBLE now.** v239 made a level's SDF the boundary
