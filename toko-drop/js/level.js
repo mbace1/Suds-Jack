@@ -44,7 +44,7 @@
 // (scripts/level-check.mjs). Enemy names are resolved against an EnemyType
 // map the caller passes in, because enemy.js imports three and cannot load here.
 
-import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=194';
+import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=195';
 
 export const FORMAT = 1;
 export const STEP = 0.1;
@@ -62,7 +62,7 @@ export const ARENAS = {
 };
 // Levels that ship in toko-drop/levels/ — the editor's LOAD lists them and
 // ?level=<id> plays one. The port syncs these same files (tools/sync-levels.sh).
-export const BUNDLED = ['first-light', 'three-rings'];
+export const BUNDLED = ['first-light', 'three-rings', 'boost-lane'];
 
 const TOP_KEYS    = new Set(['format', 'id', 'name', 'arena', 'duration', 'spawns', 'rules']);
 const ARENA_KEYS  = new Set(['combine', 'shapes']);
