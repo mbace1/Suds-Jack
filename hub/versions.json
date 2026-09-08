@@ -60,9 +60,9 @@
     "from": "VERSIONS.md"
   },
   "kindling": {
-    "v": "16",
-    "n": 16000,
-    "from": "v16 quality pass + v15 systems"
+    "v": "19",
+    "n": 19000,
+    "from": "v19 two-turn charge wind-up (+ v17/v18 combat depth)"
   },
   "radiofree": {
     "v": "37",

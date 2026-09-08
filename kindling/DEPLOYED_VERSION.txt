@@ -1,4 +1,4 @@
-Kindling v16
-canonical source: mbace1/Kindling@965d908018fba0801becb729ca181a40c0a39102
+Kindling v19
+canonical source: mbace1/Kindling@fc6d27ff1f81cb4ddc533eebcf822c5bc1cb5255
 static hub build: npm run build:hub
-pass: camp/world art + combat feel + companion animation + progression presentation
+notes: v19 two-turn charge wind-up (+ v17/v18 combat depth)

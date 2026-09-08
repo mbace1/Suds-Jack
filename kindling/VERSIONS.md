@@ -6,6 +6,28 @@
      it reads each project's VERSIONS.md and nothing else. Keeping the log with
      the SOURCE is what stops the number and the build disagreeing. -->
 
+## v19 — 2026-09-08
+**Charge is a real two-turn wind-up**
+- charge telegraphs on one exchange (soft poke window, no heavy yet), then lands or is interrupted on the next
+- Strike still cuts the release short; Stone Patience still punishes the interrupt — never touches wellness
+- Journey intent copy labels Winding vs Charging so the duel reads across turns
+- PRODUCT_PLAN Phase 1–2 “blocked on R1” framing refreshed to match shipped Sep combat/combine work
+
+## v18 — 2026-09-08
+**Encounters feel like a short duel, not only labeled RPS**
+- Nerve commitment: Skill spends Nerve, Guard restores it, spent Skill still lands thin — never touches wellness
+- region archetypes add charge telegraphs and feints that reward reading (Strike interrupts wind-ups and catches feints)
+- Bond/stage unlocks companion skills that meaningfully change the exchange (Hearth Focus, Spore Breath, Cinder Step, Toll Guard, …)
+- victory and defeat leave a soft road echo and journal line for Journey — no scolding, no care progress loss
+- `combat-balance.mjs` growth table realigned to runtime `companion-combat.ts`
+
+## v17 — 2026-09-08
+**Fights read clearer, and combining becomes a fingertip beat**
+- combat now names each Strike / Guard / Skill, telegraphs the enemy move, and explains the counter in the same breath
+- Bond-hardened companions enter the path with their grown Vitality and live stats, so combat growth actually changes the fight
+- two tender-or-older companions combine by reaching fingertip to fingertip; fusion energy settles as an egg and neither parent is consumed
+- Keep, Pack and Lineage copy treat combat and combine as one firelit game; warmth still only gathers
+
 ## v13 — 2026-09-02
 **The road finally has its own visual identity**
 - Drowned Courtyard, Bell Keep and Ashwood now use dedicated character-free environment plates instead of cropped shared art
