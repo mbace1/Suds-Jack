@@ -7,6 +7,45 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v242 — 2026-09-08
+**HOTFIX: the floor went WHITE on phones — a half-float overflow in v240's shape term** *(owner screenshot, Android Chrome, base mode: white floor, HUD and score fine, 61 FPS)*
+- **What you saw:** the game running perfectly and the whole floor rendered
+  white, in every mode. The HUD, score and FPS counter are a 2D canvas and
+  were fine; only the WebGL floor was gone. That is a **NaN in the floor
+  fragment shader** — a NaN pixel renders white on that GPU
+- **Where it came from — mine, v240.** The shape term's "far away" sentinel
+  was `mix(1e5, -1e5, uShapeMode.y)`. On a desktop GPU that is 100000. On a
+  phone, fragment floats are commonly **mediump — a 16-bit half whose largest
+  finite value is 65504** — so 1e5 is Inf, `mix()` computes `0 × (−Inf) = NaN`,
+  and `mix(col, NaN, 0.0)` is NaN as well. **The pass being OFF did not save
+  it**: `0 × NaN` is still NaN, so every floor pixel went white whether a
+  level was running or not. Proven numerically in half-float arithmetic
+  (`mix(1e5, −1e5, 0) → NaN`; `mix(1e4, −1e4, 0) → 10000`)
+- **The fix is one number:** the sentinel is `1e4` on both render paths. The
+  arena is about 40 units across; 10 000 is as far away as the maths ever
+  needs, and it fits a half float with room to spare
+- **Why six gates missed it:** every one of them runs on SwiftShader, which is
+  32-bit float everywhere — it cannot overflow a half. A gate that cannot see
+  the failure passed green. **`scripts/shader-lint.mjs`** (new, bare node)
+  refuses the *class*: any float literal in the two floor shaders outside
+  ±65504 fails, and the GLSL and TSL sentinels must agree. Falsified before
+  being trusted — with 1e5 put back it fails on both regions
+- **Honest limit:** this sandbox has no phone GPU, so the fix is by
+  construction, not by reproduction on the device that showed it. The
+  arithmetic is not in doubt; the screenshot is the measurement
+- **The Godot port's `floor_grid.gdshader` carries the same `1e5`** (it took
+  the term from the same source, Q-037). Godot's Compatibility tier on iPad is
+  GLES3 — fixed there separately
+- **Rush was never the culprit.** The owner's first report ("Rush froze, lost
+  graphics") was this bug seen in Rush; the second screenshot shows it in base
+  mode. Same floor, same NaN
+- Gates: `shader-lint.mjs` 3 · `level-shot.sh three-rings` (the shape pass
+  still draws) · `webgpu-smoke.sh` · `smoke.sh` · `cabinets.sh` ·
+  `level-smoke.sh` ×2 · `editor-smoke.sh`
+- Cache-bust `?v=193` → `?v=194`; HUD label → v242
+
+---
+
 ## v240 — 2026-09-05
 **The floor draws a level's region, on both render paths** *(PR #447's v238 term, brought across by hand — LEVEL_EDITOR_DESIGN.md §2.3, P1's other half)*
 - **A shaped level is VISIBLE now.** v239 made a level's SDF the boundary
