@@ -416,8 +416,16 @@ gold eyes, no red. `VoxelSprite` asks the palette BEFORE taking `base`, so
 hull, STYLE, chips, gibs and the bone-yard follow; the Meshy **skin** wears
 the same banding in its own shader (`mosaicSkin`, patched in
 `cloneMeshEnemy`), because the alive body IS the skin and the first render
-was a pink skull over a green lattice. Still `todo`: the new sculpts, and
-whether the wave's trough should hurt. Four things renders settled, not reasoning: the star field was a
+was a pink skull over a green lattice. **v46 is Toko Drop's gel physics
+ported** (owner: "look at Toko Drop for gel and goo physics"): `GelSpring`
+in `gel.js` is its `_sq`/`_sqV` squash spring (0.24 / 0.86, landSquish
+0.32) in fixed 60 Hz substeps, on every gel mound — land and it squashes
+with volume kept, leave and it recoils, a nail makes it flinch, and the
+carry HOLDS the feet to the top while it moves or the dip reads as a fall
+and spends a jump; `GooWave.hit` is its hit ripple on the sea — a ring
+from a nail crossing the surface or a body landing, never a trough; and
+`uSSS` is its satin subsurface term on the gel fragment. Still `todo`: the
+new sculpts, and whether the wave's trough should hurt. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
 near black, so floor glow is per season; and the owner's monuments "looked

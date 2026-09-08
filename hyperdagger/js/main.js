@@ -5,30 +5,30 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=76';
-import { Player } from './player.js?v=76';
-import { DaggerPool } from './daggers.js?v=76';
-import { GemPool } from './gems.js?v=76';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=76';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=76';
-import { OrbPool } from './bullets.js?v=76';
-import { AudioKit } from './audio.js?v=76';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=76';
-import { TUNING as T } from './tuning.js?v=76';
-import { HyperEnvironment } from './environment.js?v=76';
-import { Backdrop } from './backdrop.js?v=76';
-import { Walls } from './walls.js?v=76';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=76';
-import { TruckTrack } from './truck.js?v=76';
-import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=76';
-import { Platforms } from './platforms.js?v=76';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=76';
-import { GooWave } from './goo.js?v=76';
-import { gelMaterial } from './gel.js?v=76';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=76';
-import { Skullscape } from './inca.js?v=76';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=76';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=76';
+import { InputManager } from './input.js?v=77';
+import { Player } from './player.js?v=77';
+import { DaggerPool } from './daggers.js?v=77';
+import { GemPool } from './gems.js?v=77';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=77';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=77';
+import { OrbPool } from './bullets.js?v=77';
+import { AudioKit } from './audio.js?v=77';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=77';
+import { TUNING as T } from './tuning.js?v=77';
+import { HyperEnvironment } from './environment.js?v=77';
+import { Backdrop } from './backdrop.js?v=77';
+import { Walls } from './walls.js?v=77';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=77';
+import { TruckTrack } from './truck.js?v=77';
+import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=77';
+import { Platforms } from './platforms.js?v=77';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=77';
+import { GooWave } from './goo.js?v=77';
+import { gelMaterial } from './gel.js?v=77';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=77';
+import { Skullscape } from './inca.js?v=77';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=77';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=77';
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -1052,7 +1052,7 @@ function applySeason() {
   const g = gelMat.userData.gel, gc = sn.goo;
   g.uLip.value.setRGB(...(gc?.rim ?? gc?.lip ?? [0.35, 0.95, 0.85]));
   g.uWobble.value = gc?.wobble ?? 0.05; g.uCaustic.value = gc?.caustic ?? 0.6;
-  g.uFresnel.value = gc?.fresnel ?? 0.9; g.uSpec.value = gc?.spec ?? 0.7;
+  g.uFresnel.value = gc?.fresnel ?? 0.9; g.uSpec.value = gc?.spec ?? 0.7; g.uSSS.value = gc?.sss ?? 0.5;
   if (sn.sky.sunDir) g.uSun.value.set(...sn.sky.sunDir).normalize();
   ground.userData.on = !!sn.ground;
   if (sn.ground) ground.material.color.setRGB(...sn.ground);
@@ -2670,11 +2670,26 @@ function updateCombat(dt) {
     const d = daggers.active[i];
     // v41: rock stops a nail — pillars, court walls and standing slabs are
     // solid to projectiles; a needle through a pillar reads as a bug
-    if ((walls.walls.length && walls.blocks(d.prev, d.m.position))
-      || (platforms.count && platforms.blocks(d.prev, d.m.position))) {
+    if (walls.walls.length && walls.blocks(d.prev, d.m.position)) {
       spawnSpark(d.m.position, false);
       daggers.recycle(i);
       continue;
+    }
+    if (platforms.count) {
+      const slab = platforms.blocks(d.prev, d.m.position);
+      if (slab) {
+        platforms.flinch(slab); // v46: a gel mound flinches at a nail (a shale slab does not)
+        spawnSpark(d.m.position, false);
+        daggers.recycle(i);
+        continue;
+      }
+    }
+    // v46: a nail crossing the sea's surface splashes — a ring and a few
+    // cubes — and flies on; the wave is water, not cover (owner's call pending)
+    if (goo.cfg && d.prev.y > 0.05 && d.m.position.y <= goo.heightAt(d.m.position.x, d.m.position.z) + 0.05
+      && Math.hypot(d.m.position.x, d.m.position.z) < ARENA_R) {
+      goo.hit(d.m.position.x, d.m.position.z, 0.5);
+      goo.spray(d.m.position.x, d.m.position.y + 0.3, d.m.position.z, (Math.random() - 0.5), (Math.random() - 0.5));
     }
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
@@ -2899,7 +2914,14 @@ function step(dt) {
     goo.update(dt);
     player.floorY = goo.carry(dt, player, player.floorY ?? 0);
   }
+  const _vyBefore = player.vy;
   player.update(dt);
+  // v46: the body landing on the sea (or the flat water) splashes it — a
+  // ring spreading from the feet, harder from higher
+  if (goo.cfg && _vyBefore < -5 && player.vy >= -0.01 && player.feet.y <= player.floorY + 0.02
+    && player.platform == null && Math.hypot(player.feet.x, player.feet.z) < ARENA_R) {
+    goo.hit(player.feet.x, player.feet.z, Math.min(1.2, -_vyBefore / 16));
+  }
   if (walls.walls.length) walls.resolve(player);
   if (platforms.count) platforms.resolve(player); // their sides are walls too
   if (player.justDashed) {
@@ -3337,6 +3359,7 @@ window.__hd = {
     setSeason(id) { season = seasonById(id).id; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
     getPlatforms() { return platforms.getState(); },
     getGoo() { return goo.getState(); },
+    gooHit(x, z, p) { goo.hit(x, z, p); },
     getInca() { return skullscape.getState(); },
     // the mean colour of the first standing enemy's lattice — is the roster wearing the season?
     rosterSample() {

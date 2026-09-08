@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { shadedBox } from './voxel.js?v=76';
-import { gelMaterial } from './gel.js?v=76';
+import { shadedBox } from './voxel.js?v=77';
+import { gelMaterial } from './gel.js?v=77';
 
 /**
  * THE GOO WAVE — season 2's swell, made of the same cubes everything else in
@@ -23,6 +23,9 @@ import { gelMaterial } from './gel.js?v=76';
  * nobody has made, and a hazard that kills you before anyone has decided it
  * should is worse than one that does not exist. See SEASONS.md.
  */
+// the impact ring, unless the season says otherwise (`goo.rippleHit`)
+const RIPPLE = { amp: 1.4, speed: 6.5, width: 1.3, fade: 2.2, reach: 7, life: 1.6, max: 12 };
+
 const _c = new THREE.Color();
 const _m = new THREE.Matrix4();
 const _p = new THREE.Vector3();
@@ -42,6 +45,7 @@ export class GooWave {
     this.count = 0;    // instances drawn this frame
     this.spray = null; // (x, y, z, dirX, dirZ) => void — the caller's debris pool
     this.sprayed = 0;  // this frame
+    this.ripples = []; // v46: {x, z, p, age} — rings spreading from an impact
     this.draw = Math.random;
   }
 
@@ -98,16 +102,46 @@ export class GooWave {
   heightAt(x, z) {
     const c = this.cfg;
     if (!c) return 0;
+    let h = 0;
     const s = this._s(x, z);
     const w = c.width;
-    if (s < -w || s > w * 0.55) return 0;
-    // back of the wave: a long smooth rise. Face: a short steep fall.
-    const k = s <= 0 ? 1 - (-s / w) : 1 - (s / (w * 0.55));
-    const eased = k * k * (3 - 2 * k);
-    // a ripple along the crest, so it is a sea and not an extruded curve
-    const across = x * -this.dirZ + z * this.dirX;
-    const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * c.ripple;
-    return Math.max(0, c.amp * eased * ripple);
+    if (s >= -w && s <= w * 0.55) {
+      // back of the wave: a long smooth rise. Face: a short steep fall.
+      const k = s <= 0 ? 1 - (-s / w) : 1 - (s / (w * 0.55));
+      const eased = k * k * (3 - 2 * k);
+      // a ripple along the crest, so it is a sea and not an extruded curve
+      const across = x * -this.dirZ + z * this.dirX;
+      const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * c.ripple;
+      h = c.amp * eased * ripple;
+    }
+    // v46 IMPACT RINGS (Toko Drop's hit ripple, on a sea): each hit is a ring
+    // that spreads from the point and fades — on the crest it deforms the
+    // wave, on flat water it is the splash itself, a ring of cubes
+    if (this.ripples.length) h += this.rippleAt(x, z);
+    return Math.max(0, h);
+  }
+
+  rippleAt(x, z) {
+    const r = this.cfg.rippleHit ?? RIPPLE;
+    let h = 0;
+    for (const q of this.ripples) {
+      const d = Math.hypot(x - q.x, z - q.z);
+      if (d > r.reach) continue;
+      const ring = q.age * r.speed;
+      const g = (d - ring) / r.width;
+      // a crest that spreads and fades, pulsing as it goes — never a trough,
+      // because a trough on flat water is nothing to draw
+      h += q.p * r.amp * Math.exp(-g * g) * Math.exp(-q.age * r.fade) * (0.6 + 0.4 * Math.cos(q.age * 9.0));
+    }
+    return h;
+  }
+
+  /** v46: something struck the sea at (x, z) with `p` of a full blow */
+  hit(x, z, p = 1) {
+    if (!this.cfg) return;
+    const r = this.cfg.rippleHit ?? RIPPLE;
+    if (this.ripples.length >= r.max) this.ripples.shift();
+    this.ripples.push({ x, z, p: Math.min(1.5, p), age: 0 });
   }
 
   /**
@@ -120,6 +154,11 @@ export class GooWave {
     if (!this.cfg || !this.mesh) return;
     this.t += dt;
     const c = this.cfg, cell = c.cell;
+    if (this.ripples.length) {
+      const life = (c.rippleHit ?? RIPPLE).life;
+      for (const q of this.ripples) q.age += dt;
+      this.ripples = this.ripples.filter(q => q.age < life);
+    }
     let n = 0;
     this.sprayed = 0;
     for (const g of this.cells) {
@@ -188,6 +227,7 @@ export class GooWave {
       this.mesh = null;
     }
     this.cells.length = 0;
+    this.ripples.length = 0;
     this.cfg = null;
     this.count = 0;
   }
@@ -201,6 +241,7 @@ export class GooWave {
       dir: [+this.dirX.toFixed(2), +this.dirZ.toFixed(2)],
       period: +(this.period ?? 0).toFixed(2),
       sprayed: this.sprayed,
+      ripples: this.ripples.length,
       peak: this.cfg ? this.cfg.amp : 0,
     };
   }

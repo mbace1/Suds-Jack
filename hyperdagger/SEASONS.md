@@ -155,6 +155,15 @@ style, think tech art*.
   grow slower and stand longer, built as **mounds** of goo cubes — columns on
   a grid, the height a rounded dome (1 − r⁴)^0.6 — in the gel material. Every
   piece is still a cube; the silhouette is soft.
+- **Gel and goo physics** (v46, from Toko Drop's `enemy.js`). A mound
+  **gives way**: a squash spring (spring 0.24, damp 0.86, `landSquish`
+  0.32) on its height — land on it and it squashes, volume kept, leave it
+  and it springs back, a nail makes it flinch; your feet stay on it while
+  it moves so the body rides the recoil. The sea **splashes**: a nail
+  crossing the surface or a body landing on the water spreads a ring that
+  widens and fades — the splash itself on flat water. And the gel **bleeds
+  light**: the satin subsurface term, the sun behind a body lighting it
+  from within.
 - **The skullscape** (`js/inca.js`). No Meshy art exists for it, so it is the
   game's own string-art skull at ×22, half-buried just past the rim, turned to
   face the arena, tinted dark aquamarine so it is a silhouette against the

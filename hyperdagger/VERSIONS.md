@@ -2,6 +2,45 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v46 — 2026-09-08
+**Gel and goo physics, from Toko Drop: the mound gives way, the sea splashes**
+
+Owner: *maybe also look at Toko Drop for gel and goo physics*. Toko Drop's
+gel has three things season 2's did not, and all three are in `enemy.js`
+there: a **squash spring** on the body (`_sq`/`_sqV` — spring 0.24, damp
+0.86, a `landSquish` of 0.32 on landing), a **hit ripple** that spreads from
+the impact point and decays, and a **subsurface term** in the fragment —
+back-light bleeding through the gel plus a wrap so the shadow side is never
+dead. Ported, each onto the thing in this arena it belongs to:
+
+- **The mound gives way** (`GelSpring` in `gel.js`, on every `look: 'gel'`
+  slab). Land on it and it squashes — harder from higher, volume kept, so x
+  and z swell by 1/√y and it reads as a body giving way rather than
+  shrinking — leave it upward and it springs back past rest, a nail in it
+  makes it flinch (`platforms.flinch`; `blocks` now returns the slab). While
+  it is giving way under you **your feet stay on it**: a floor that dips out
+  from under a body reads as a fall and would spend a jump, so the carry
+  holds the feet to the top and the body rides the recoil. Toko Drop's
+  numbers are per 60 Hz frame; the spring integrates in fixed 60 Hz
+  substeps so a slow renderer gets the same motion, only later. Shale slabs
+  are rock and have no spring.
+- **The sea splashes** (`GooWave.hit`). A nail crossing the surface, or the
+  body landing on the water, spreads a **ring** from the point — on the
+  crest it deforms the wave, on flat water it IS the splash, a ring of cubes
+  that widens and fades. Never a trough, because a trough on flat water is
+  nothing to draw. A nail also throws a few cubes and flies on: the wave is
+  water, not cover — what it costs is still the owner's call.
+- **The gel bleeds light** (`uSSS`). Toko Drop's satin term on the gel
+  fragment: the sun behind a body lights it from within, the side away from
+  the sun still carries the colour, and a tight white fresnel sits at the
+  very edge — all inside the v44 energy budget.
+
+**Gate: 154 checks** (was 151): a strike on flat water raises a ring that
+spreads and fades to nothing; a body landing on a gel mound squashes it and
+it springs back to rest with the feet still on top; a shale slab has no
+spring. Both are driven directly — the ring by ageing it, the spring by
+stepping `preUpdate` at 60 Hz — so neither is hostage to frame time.
+
 ## v45 — 2026-09-08
 **Season 2's roster wears the season: a turquoise mosaic, banded, gold-eyed**
 

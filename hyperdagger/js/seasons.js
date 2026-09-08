@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=76';
+import { TUNING as T } from './tuning.js?v=77';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -149,6 +149,10 @@ export const SEASONS = [
       lifeMin: 18, lifeMax: 30,
       drift: 0.6, driftW: 0.12,
       avoidPlayer: 5.5,
+      // v46 the mound GIVES WAY (gel.js GelSpring, Toko Drop's squash):
+      // land on it and it squashes, leave it and it springs back
+      spring: { spring: 0.24, damp: 0.86, min: 0.55, max: 1.35 },
+      landSquish: 0.32,
     },
     // THE WAVE (v43). A crest sweeps the disc, rises, leans into its travel
     // and breaks; stand on it and it carries you. See js/goo.js.
@@ -165,7 +169,9 @@ export const SEASONS = [
       lip: [0.09, 0.46, 0.46],   // at the break — well under the bloom threshold: the gel's RIM is what blooms, and only at edges
       rim: [0.35, 0.95, 0.85],  // what the gel shader adds at edges and inside: NOT HDR
       // gel.js terms: rim glow, light inside, a wet highlight, jelly wobble
-      fresnel: 0.9, caustic: 0.45, spec: 0.7, wobble: 0.05,
+      fresnel: 0.9, caustic: 0.45, spec: 0.7, wobble: 0.05, sss: 0.5,
+      // v46 impact rings: a nail or a body striking the sea spreads a ring
+      rippleHit: { amp: 1.4, speed: 6.5, width: 1.3, fade: 2.2, reach: 7, life: 1.6, max: 12 },
       // the break: cubes shed off the lip ahead of the crest
       sprayFrom: 0.8, sprayChance: 0.06, sprayMax: 6,
     },

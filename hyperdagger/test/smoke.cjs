@@ -1224,6 +1224,42 @@ s.listen(0, '127.0.0.1', async () => {
     wave.travels, JSON.stringify(wave));
   ok('inca: the crest rises to the height the season declares',
     wave.peak > wave.amp * 0.7 && wave.peak <= wave.amp * 1.35, JSON.stringify(wave));
+  // v46 GEL AND GOO PHYSICS (from Toko Drop): the impact ring and the squash
+  // spring, both driven directly — the ring by ageing it, the spring by
+  // stepping the platforms' own preUpdate at 60 Hz — so neither is hostage
+  // to a software renderer's frame time.
+  const phys = await p.evaluate(() => {
+    const hd = window.__hd, d = hd.debug, g = d.gooObj(), P = d.platformsObj(), pl = hd.player;
+    // a lull: walk the clock until the middle is flat water
+    for (let i = 0; i < 4000; i++) { if (g.heightAt(0, 0) === 0 && g.heightAt(2, 0) === 0 && g.heightAt(0, 2) === 0) break; g.t += 0.05; }
+    g.ripples.length = 0;
+    const flat = g.heightAt(0.3, 0);
+    g.hit(0, 0, 1);
+    const struck = g.heightAt(0.3, 0);
+    let spread = 0;
+    for (let i = 0; i < 40; i++) { g.ripples.forEach(q => q.age += 0.05); spread = Math.max(spread, g.heightAt(2.0, 0)); }
+    g.ripples.forEach(q => q.age += 2); g.update(0);
+    const after = { ripples: g.ripples.length, h: g.heightAt(0.3, 0) };
+    // the spring: stand every mound up, drop the body onto the nearest
+    for (const sl of P.list) { sl.phase = 'live'; sl.k = 1; sl.t = 0; sl.spring?.reset(); sl.sq = 1; sl.wasOn = false; P._pose(sl); }
+    const sl = P.list.slice().sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0];
+    const rest = sl.top;
+    pl.feet.set(sl.x, rest, sl.z); pl.vy = -14; pl._sync();
+    P.preUpdate(1 / 60, pl, 0); pl.vy = 0;
+    const first = sl.sq, feetOnTop = Math.abs(pl.feet.y - sl.top) < 0.01;
+    let low = first;
+    for (let i = 0; i < 300; i++) { P.preUpdate(1 / 60, pl, 0); low = Math.min(low, sl.sq); }
+    return { flat, struck, spread, after, gel: !!sl.spring, rest, first, low, settled: sl.sq, top: sl.top, feetOnTop };
+  });
+  ok('inca: a strike on flat water raises a ring that spreads, then fades to nothing',
+    phys.flat === 0 && phys.struck > 0.5 && phys.spread > 0.2 && phys.after.ripples === 0 && phys.after.h === 0,
+    JSON.stringify({ struck: phys.struck, spread: phys.spread, after: phys.after }));
+  ok('inca: a body landing on a gel mound squashes it, and it springs back to rest',
+    phys.gel && phys.first < 0.85 && phys.low < 0.75 && Math.abs(phys.settled - 1) < 0.02 && phys.feetOnTop,
+    JSON.stringify({ first: phys.first, low: phys.low, settled: phys.settled, feetOnTop: phys.feetOnTop }));
+  ok('ember: a shale slab is rock — it has no spring',
+    em.plats.slabs.length > 0 && em.plats.slabs.every(s => s.gel === false && s.sq === 1),
+    JSON.stringify(em.plats.slabs.map(s => [s.gel, s.sq])));
   ok('inca: standing on the crest, the wave IS the floor and it carries you',
     wave.floorY > 1 && wave.carried > 0.1, JSON.stringify(wave));
 

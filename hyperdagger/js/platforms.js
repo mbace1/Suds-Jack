@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { shaleGeometry } from './shale.js?v=76';
-import { gelMoundGeometry } from './gel.js?v=76';
+import { shaleGeometry } from './shale.js?v=77';
+import { gelMoundGeometry, GelSpring } from './gel.js?v=77';
 
 /**
  * PLATFORMS — slabs that GROW out of the floor, DRIFT, and SINK back.
@@ -66,7 +66,10 @@ export class Platforms {
       : shaleGeometry({ w, h, d: depth, draw: d, ...(c.shale ?? {}) });
     const mesh = new THREE.Mesh(geo, gel ? this.gelMat : this.mat);
     this.group.add(mesh);
-    const p = { w, depth, h, mesh, phase: 'grow', t: 0, k: 0, life: 0,
+    // v46: a gel mound GIVES WAY — a squash spring (gel.js, from Toko Drop)
+    // on its height; a shale slab is rock and has none
+    const spring = gel ? new GelSpring(c.spring ?? {}) : null;
+    const p = { w, depth, h, mesh, phase: 'grow', t: 0, k: 0, life: 0, spring, sq: 1, wasOn: false,
       cx: 0, cz: 0, x: 0, z: 0, px: 0, pz: 0, ang: 0, top: 0, dir: d() < 0.5 ? -1 : 1 };
     this._place(p);
     return p;
@@ -93,6 +96,7 @@ export class Platforms {
     p.ang = d() * Math.PI * 2;
     p.life = c.lifeMin + d() * (c.lifeMax - c.lifeMin);
     p.t = 0; p.k = 0; p.phase = 'grow';
+    p.spring?.reset(); p.sq = 1; p.wasOn = false;
     this._pose(p);
     p.px = p.x; p.pz = p.z;
   }
@@ -102,8 +106,9 @@ export class Platforms {
     p.x = p.cx + Math.cos(p.ang) * c.drift;
     p.z = p.cz + Math.sin(p.ang) * c.drift;
     const k = Math.max(0.02, p.k);
-    p.top = p.h * k;
-    p.mesh.scale.y = k;                 // shale's origin is its BASE: it grows up out of the floor
+    p.top = p.h * k * p.sq;
+    p.mesh.scale.y = k * p.sq;          // shale's origin is its BASE: it grows up out of the floor
+    if (p.spring) { const s = p.spring.side; p.mesh.scale.x = s; p.mesh.scale.z = s; } // volume kept
     p.mesh.position.set(p.x, 0, p.z);
     p.mesh.visible = p.k > 0.01;
   }
@@ -130,6 +135,7 @@ export class Platforms {
         p.k = 1 - ease(Math.min(1, p.t / c.sink));
         if (p.t >= c.sink) { this._place(p); continue; }
       }
+      if (p.spring) p.sq = p.spring.step(dt);
       this._pose(p);
     }
     // what is under the feet
@@ -148,6 +154,18 @@ export class Platforms {
     if (on && f.y <= on.top + 0.05 && player.vy <= 0) {
       f.x += on.x - on.px;
       f.z += on.z - on.pz;
+    }
+    // v46 GEL: landing on a mound squashes it (harder from higher), leaving it
+    // upward lets it stretch back, and while it is giving way under you your
+    // feet stay ON it — a floor that dips out from under a body would read as
+    // a fall and spend a jump
+    for (const p of this.list) {
+      if (!p.spring) continue;
+      const here = on === p;
+      if (here && !p.wasOn && player.vy < -2) p.spring.kick(-(this.cfg.landSquish ?? 0.32) * Math.min(1, -player.vy / 14));
+      else if (!here && p.wasOn && player.vy > 1) p.spring.kick(0.12);
+      if (here && p.sq < 0.995 && player.vy <= 0 && f.y - p.top < 0.7) f.y = p.top;
+      p.wasOn = here;
     }
     player.platform = on;
   }
@@ -213,14 +231,18 @@ export class Platforms {
     return hit;
   }
 
-  /** Does the segment p0→p1 pass through a standing slab? (nails stop on it) */
+  /** Does the segment p0→p1 pass through a standing slab? (nails stop on it)
+   *  Returns the slab, so a caller can make it flinch. */
   blocks(p0, p1) {
     for (const p of this.list) {
       if (p.k < 0.05) continue;
-      if (segmentHitsBox(p0, p1, p.x - p.w / 2, p.x + p.w / 2, 0, p.top, p.z - p.depth / 2, p.z + p.depth / 2)) return true;
+      if (segmentHitsBox(p0, p1, p.x - p.w / 2, p.x + p.w / 2, 0, p.top, p.z - p.depth / 2, p.z + p.depth / 2)) return p;
     }
-    return false;
+    return null;
   }
+
+  /** v46: a nail in the gel — the mound flinches */
+  flinch(p, dv = -0.08) { p?.spring?.kick(dv); }
 
   clear() {
     for (const p of this.list) { this.group.remove(p.mesh); p.mesh.geometry.dispose(); }
@@ -231,7 +253,7 @@ export class Platforms {
   getState() {
     return {
       count: this.list.length,
-      slabs: this.list.map(p => ({ x: +p.x.toFixed(2), z: +p.z.toFixed(2), top: +p.top.toFixed(2), h: +p.h.toFixed(2), w: +p.w.toFixed(2), d: +p.depth.toFixed(2), phase: p.phase, k: +p.k.toFixed(2) })),
+      slabs: this.list.map(p => ({ x: +p.x.toFixed(2), z: +p.z.toFixed(2), top: +p.top.toFixed(2), h: +p.h.toFixed(2), w: +p.w.toFixed(2), d: +p.depth.toFixed(2), phase: p.phase, k: +p.k.toFixed(2), sq: +p.sq.toFixed(3), gel: !!p.spring })),
     };
   }
 }

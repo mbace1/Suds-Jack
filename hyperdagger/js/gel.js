@@ -17,7 +17,10 @@ import * as THREE from 'three';
  *   SPECULAR  — one fixed sun, a tight highlight, so a wet surface reads wet;
  *   WOBBLE    — in the vertex shader: every piece breathes along its normal
  *               and its top leans with time, seeded by its own position, so
- *               a field of cubes is a field of jelly and not a wall.
+ *               a field of cubes is a field of jelly and not a wall;
+ *   SSS       — (v46, from Toko Drop's satin gel) light bleeding THROUGH the
+ *               body from behind, plus a wrap term so the shadow side is
+ *               never dead, and a tight white fresnel at the very edge.
  *
  * The rim and caustic terms are added in the LIP colour, which is HDR, so the
  * edges of goo trip the bloom the way an eye or a gem does. That is the whole
@@ -35,6 +38,7 @@ export function gelMaterial(o = {}) {
     uCaustic: { value: o.caustic ?? 0.6 },
     uFresnel: { value: o.fresnel ?? 0.9 },
     uSpec: { value: o.spec ?? 0.7 },
+    uSSS: { value: o.sss ?? 0.5 },
   };
   mat.userData.gel = u;
   mat.onBeforeCompile = shader => {
@@ -65,7 +69,7 @@ vGelN = normalize(mat3(modelMatrix) * normal);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
 uniform float uTime; uniform vec3 uLip; uniform vec3 uSun;
-uniform float uCaustic; uniform float uFresnel; uniform float uSpec;
+uniform float uCaustic; uniform float uFresnel; uniform float uSpec; uniform float uSSS;
 varying vec3 vGelN; varying vec3 vGelW;`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 {
@@ -86,10 +90,55 @@ varying vec3 vGelN; varying vec3 vGelW;`)
   col += uLip * (fres * uFresnel * 0.4 + ca * uCaustic * 0.3);
   float sp = pow(max(dot(reflect(-V, N), uSun), 0.0), 28.0);
   col += vec3(1.0, 1.0, 0.94) * sp * uSpec * 0.6;
+  // v46 — Toko Drop's satin term: back-light bleeding through the gel (the
+  // sun behind the body lights it from within) and a wrap so the side away
+  // from the sun still carries the colour; a tight white rim at the edge
+  float ndv = max(dot(N, V), 0.0);
+  vec3 Hs = normalize(uSun + N * 0.45);
+  float sss = pow(clamp(dot(V, -Hs), 0.0, 1.0), 2.2) * uSSS;
+  float wrap = clamp(dot(N, uSun) * 0.5 + 0.5, 0.0, 1.0);
+  col += uLip * (sss * 0.35 + wrap * 0.10 * uSSS);
+  col += vec3(1.0) * pow(1.0 - ndv, 6.0) * uFresnel * 0.25;
   diffuseColor.rgb = col;
 }`);
   };
   return mat;
+}
+
+// ---------------------------------------------------------------- the spring
+
+/**
+ * GEL SPRING — Toko Drop's squash (enemy.js `_sq`/`_sqV`), ported: a
+ * second-order spring on a body's vertical scale. Land on it and it squashes
+ * (`landSquish` 0.32), leave it and it stretches, hit it and it flinches;
+ * it always comes back to 1. Volume is kept — x and z go by 1/√y — so the
+ * squash reads as a body giving way and not a body shrinking. Toko Drop's
+ * numbers are per 60 Hz frame; this integrates in fixed 60 Hz substeps so
+ * a slow renderer gets the same motion, only later.
+ */
+export class GelSpring {
+  constructor(o = {}) {
+    this.spring = o.spring ?? 0.24;
+    this.damp = o.damp ?? 0.86;
+    this.min = o.min ?? 0.55;
+    this.max = o.max ?? 1.55;
+    this.sq = 1;
+    this.v = 0;
+    this.acc = 0;
+  }
+  /** an impulse: negative squashes, positive stretches */
+  kick(dv) { this.v += dv; }
+  step(dt) {
+    this.acc += Math.min(dt, 0.1);
+    while (this.acc >= 1 / 60) {
+      this.acc -= 1 / 60;
+      this.v = (this.v - (this.sq - 1) * this.spring) * this.damp;
+      this.sq = Math.max(this.min, Math.min(this.max, this.sq + this.v));
+    }
+    return this.sq;
+  }
+  get side() { return 1 / Math.sqrt(Math.max(this.sq, 0.1)); }
+  reset() { this.sq = 1; this.v = 0; this.acc = 0; }
 }
 
 // ---------------------------------------------------------------- builders
