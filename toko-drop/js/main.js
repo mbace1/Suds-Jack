@@ -1,18 +1,18 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=193';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=193';
-import { Player, PLAYER_RADIUS } from './player.js?v=193';
+import { InputManager } from './input.js?v=194';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=194';
+import { Player, PLAYER_RADIUS } from './player.js?v=194';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=193';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=193';
-import { audio } from './audio.js?v=193';
-import { haptics } from './haptics.js?v=193';
-import { initDesigner } from './designer.js?v=193';
-import { createSpecimen } from './specimen.js?v=193';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=193';
-import { TUNING } from './tuning.js?v=193';
-import { Arena, rectShape } from './arena.js?v=193';   // v236: the boundary has one home
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=193';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=194';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=194';
+import { audio } from './audio.js?v=194';
+import { haptics } from './haptics.js?v=194';
+import { initDesigner } from './designer.js?v=194';
+import { createSpecimen } from './specimen.js?v=194';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=194';
+import { TUNING } from './tuning.js?v=194';
+import { Arena, rectShape } from './arena.js?v=194';   // v236: the boundary has one home
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=194';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -533,7 +533,12 @@ const FLOOR_FRAG = `
     // the loops above (mix/step on uniform values), so the TSL port below is
     // node-for-node. Outside dims, the boundary glows the border's colour.
     vec2 wp = vec2((vUv.x - 0.5) * uHalf.x * 2.0, (0.5 - vUv.y) * uHalf.y * 2.0);
-    float neutral = mix(1e5, -1e5, uShapeMode.y);
+    // v242: the "far away" sentinel MUST fit a half float. v240 used 1e5,
+    // which is past mediump's 65504 — on a phone GPU that is Inf, mix()
+    // computes 0 * (-Inf) = NaN, and mix(col, NaN, 0.0) is NaN too, so the
+    // pass being OFF did not save it: every floor pixel went white. The
+    // arena is ~40 units across; 1e4 is as far away as the maths needs.
+    float neutral = mix(1e4, -1e4, uShapeMode.y);
     float sd = neutral;
     for (int i = 0; i < ${SHAPE_N}; i++) {
       vec4 s = uShape[i];
@@ -692,7 +697,7 @@ function makeFloorMat() {
   // the one primitive new to this function; webgpu-smoke.sh runs it.
   const H = floorUniforms.uHalf, M = floorUniforms.uShapeMode, LK = floorUniforms.uShapeLook;
   const wp = vec2(uv().x.sub(0.5).mul(H.x).mul(2.0), float(0.5).sub(uv().y).mul(H.y).mul(2.0));
-  const neutral = mix(float(1e5), float(-1e5), M.y);
+  const neutral = mix(float(1e4), float(-1e4), M.y);   // v242: half-float safe (see FLOOR_FRAG)
   let sd = neutral;
   for (const node of floorUniforms.uShape) {
     const dRect = wp.x.abs().sub(node.y).max(wp.y.abs().sub(node.z));
@@ -5113,7 +5118,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v240' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v242' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -10284,7 +10289,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=193').then(async m => {
+  import('./editor.js?v=194').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10315,6 +10320,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=193').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=194').catch(() => {});
   });
 }
