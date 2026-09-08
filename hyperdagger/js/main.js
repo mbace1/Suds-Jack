@@ -5,29 +5,30 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=75';
-import { Player } from './player.js?v=75';
-import { DaggerPool } from './daggers.js?v=75';
-import { GemPool } from './gems.js?v=75';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=75';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=75';
-import { OrbPool } from './bullets.js?v=75';
-import { AudioKit } from './audio.js?v=75';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=75';
-import { TUNING as T } from './tuning.js?v=75';
-import { HyperEnvironment } from './environment.js?v=75';
-import { Backdrop } from './backdrop.js?v=75';
-import { Walls } from './walls.js?v=75';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=75';
-import { TruckTrack } from './truck.js?v=75';
-import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=75';
-import { Platforms } from './platforms.js?v=75';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=75';
-import { GooWave } from './goo.js?v=75';
-import { gelMaterial } from './gel.js?v=75';
-import { Skullscape } from './inca.js?v=75';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=75';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=75';
+import { InputManager } from './input.js?v=76';
+import { Player } from './player.js?v=76';
+import { DaggerPool } from './daggers.js?v=76';
+import { GemPool } from './gems.js?v=76';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=76';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=76';
+import { OrbPool } from './bullets.js?v=76';
+import { AudioKit } from './audio.js?v=76';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=76';
+import { TUNING as T } from './tuning.js?v=76';
+import { HyperEnvironment } from './environment.js?v=76';
+import { Backdrop } from './backdrop.js?v=76';
+import { Walls } from './walls.js?v=76';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=76';
+import { TruckTrack } from './truck.js?v=76';
+import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=76';
+import { Platforms } from './platforms.js?v=76';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=76';
+import { GooWave } from './goo.js?v=76';
+import { gelMaterial } from './gel.js?v=76';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=76';
+import { Skullscape } from './inca.js?v=76';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=76';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=76';
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -1043,6 +1044,11 @@ function applySeason() {
   skyMat.uniforms.uHaze.value = sn.sky.haze ?? 0;
   skyMat.uniforms.uSun.value = sn.sky.sun ?? 0;
   if (sn.sky.sunDir) skyMat.uniforms.uSunDir.value.set(...sn.sky.sunDir).normalize();
+  // v45: the season's colour for every body built from here on (roster.js);
+  // the bodies already standing keep theirs — a season is applied on the
+  // menu, and the skullscape is rebuilt with the arena
+  setRosterPalette(sn.roster ? mosaicPalette(sn.roster) : null);
+  setRosterSkin(sn.roster ? mosaicSkin(sn.roster) : null);
   const g = gelMat.userData.gel, gc = sn.goo;
   g.uLip.value.setRGB(...(gc?.rim ?? gc?.lip ?? [0.35, 0.95, 0.85]));
   g.uWobble.value = gc?.wobble ?? 0.05; g.uCaustic.value = gc?.caustic ?? 0.6;
@@ -3332,6 +3338,15 @@ window.__hd = {
     getPlatforms() { return platforms.getState(); },
     getGoo() { return goo.getState(); },
     getInca() { return skullscape.getState(); },
+    // the mean colour of the first standing enemy's lattice — is the roster wearing the season?
+    rosterSample() {
+      const e = enemies.find(x => x.alive && x.sprite?.voxels?.length);
+      if (!e) return null;
+      let r = 0, g = 0, b = 0, n = 0, hdr = 0;
+      for (const v of e.sprite.voxels) { if (v.color.r > 1.05 || v.color.g > 1.05) { hdr++; continue; } r += v.color.r; g += v.color.g; b += v.color.b; n++; }
+      let skin = null; e.meshRoot?.traverse(o => { if (o.isMesh && skin === null) skin = !!o.material.userData.mosaic; });
+      return { type: e.type, skin, n, hdr, mean: [+(r / n).toFixed(3), +(g / n).toFixed(3), +(b / n).toFixed(3)], palette: S().roster?.palette ?? null };
+    },
     getTechArt() { return { caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray() }; },
     gooObj() { return goo; }, // the gate reads heightAt directly
     platformsObj() { return platforms; }, // the gate forces one slab tall and grown

@@ -1,6 +1,11 @@
 import * as THREE from 'three';
-import { toLambert, voxelizeMesh } from './meshassets.js?v=75';
-import { MODELS, registerVoxelModel } from './voxel.js?v=75';
+import { toLambert, voxelizeMesh } from './meshassets.js?v=76';
+import { MODELS, registerVoxelModel, modelFor } from './voxel.js?v=76';
+
+// v45: a season's recolour of the alive-skin (roster.js `mosaicSkin`), set
+// beside the lattice palette so the skin and the cubes under it agree
+let rosterSkin = null;
+export function setRosterSkin(fn) { rosterSkin = fn || null; }
 
 // assets/ is the documented drop-in home (see assets/README.md). An earlier
 // cut of this file invented a second one, `models/enemies/`, which existed in
@@ -368,10 +373,13 @@ export function cloneMeshEnemy(kind, bodyVoxelized = false) {
   if (!t) return null;
   if (t.userData.voxelTwin && !bodyVoxelized) return null;
   const c = t.clone(true);
+  if (rosterSkin) c.updateMatrixWorld(true); // the mesh's scale inside the template, for the cell size
+  const pitch = rosterSkin ? (modelFor(kind)?.voxelSize ?? 0.05) : 0;
   c.traverse(o => {
     if (o.isMesh && o.material) {
       o.material = o.material.clone();
       o.userData.baseColor = o.material.color.clone();
+      if (rosterSkin) rosterSkin(o.material, pitch / Math.max(1e-6, o.matrixWorld.getMaxScaleOnAxis()));
     }
     o.layers?.enable(2);
   });

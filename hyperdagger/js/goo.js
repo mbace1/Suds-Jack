@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { shadedBox } from './voxel.js?v=75';
-import { gelMaterial } from './gel.js?v=75';
+import { shadedBox } from './voxel.js?v=76';
+import { gelMaterial } from './gel.js?v=76';
 
 /**
  * THE GOO WAVE — season 2's swell, made of the same cubes everything else in

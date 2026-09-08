@@ -454,6 +454,13 @@ export function getStyleHue() { return styleHue; }
 const _tint = new THREE.Color();
 const _tint2 = new THREE.Color(); // litter re-tint scratch (keeps _tint free for styleTint itself)
 /** Re-hue `c` in place if it reads as an accent color; returns `c`. */
+// v45 ROSTER PALETTE — a season's recolour of every body (roster.js). Asked
+// per voxel as a sprite is built, BEFORE `base` is taken, so everything that
+// re-derives from base (STYLE, the hull, gibs) follows without knowing.
+let rosterPalette = null;
+export function setRosterPalette(fn) { rosterPalette = fn || null; }
+export function getRosterPalette() { return rosterPalette; }
+
 export function styleTint(c) {
   if (styleHue === null) return c;
   if (!(c.r > c.g * 2 && c.r > c.b * 2)) return c;
@@ -663,6 +670,7 @@ export class VoxelSprite {
     mesh.frustumCulled = false;
     this.voxels.forEach((v, i) => {
       v.alive = true;
+      if (rosterPalette) rosterPalette(v.color, v, this.size); // the season's colour, if it has one
       v.base = v.color.clone(); // pre-style color — applyStyle() re-derives from it
       styleTint(v.color);
       mesh.setMatrixAt(i, _m.makeTranslation(v.x, v.y, v.z));

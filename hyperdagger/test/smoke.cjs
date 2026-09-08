@@ -967,7 +967,10 @@ s.listen(0, '127.0.0.1', async () => {
       await frames(6);
       const sn = d.getSeasons();
       sn.tech = d.getTechArt();
-      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms(), goo: d.getGoo(), inca: d.getInca() };
+      // v45: one body, built under this season, for the roster palette check
+      d.spawnSplitter(); await frames(2);
+      const roster = d.rosterSample();
+      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms(), goo: d.getGoo(), inca: d.getInca(), roster };
     });
   };
 
@@ -1153,6 +1156,15 @@ s.listen(0, '127.0.0.1', async () => {
     inca.sn.current === 'inca' && inca.sn.built === true && inca.sn.todo.length >= 2
     && inca.sn.sky.void[2] > 0.3 && inca.sn.floorTint[1] > inca.sn.floorTint[0],
     JSON.stringify({ built: inca.sn.built, todo: inca.sn.todo.length, sky: inca.sn.sky.void }));
+  // v45 THE ROSTER. Owner: enemies will be aquamarine, green, yellows, Aztec.
+  // A body built under INCA wears the mosaic — green leads red by a wide
+  // margin and its eyes are still lights; the same body under VOID is bone.
+  ok('inca: a body built here wears the mosaic — green leads, the eyes still burn',
+    inca.roster && inca.roster.palette === 'mosaic' && inca.roster.mean[1] > inca.roster.mean[0] * 2 && inca.roster.hdr > 0,
+    JSON.stringify(inca.roster));
+  ok('void: the same body is bone',
+    ctrl.roster && ctrl.roster.palette === null && ctrl.roster.mean[0] >= ctrl.roster.mean[1] && ctrl.roster.mean[0] > 0.2,
+    JSON.stringify(ctrl.roster));
   ok('inca: its slabs are the LARGE ones the brief asks for, and no rock',
     inca.plats.count === 4 && inca.plats.slabs.every(s => s.w >= 5) && inca.walls.count === 0,
     JSON.stringify(inca.plats.slabs.map(s => s.w)));

@@ -36,6 +36,11 @@ And on looking at the first build:
 > **less objects** in general. And the shale piles should be **darker and
 > shorter**.
 
+And on seeing season 2 built (2026-09-08):
+
+> **Enemies will be new** — aquamarine, green, yellows — but also slightly
+> **Aztec** themed.
+
 ## SEASON 0 — VOID (the control)
 
 The arena exactly as it was before seasons: the bare disc, the red horizon,
@@ -155,14 +160,22 @@ style, think tech art*.
   face the arena, tinted dark aquamarine so it is a silhouette against the
   white sky with its ember eyes burning; and stepped **terraces** further out,
   a ziggurat skyline through the fog. Nothing there collides.
+- **The roster** (`js/roster.js`, v45). The owner's new sculpts will come
+  through the manifest when they are made; the colour is the season's now,
+  for whatever body is in the slot. A **turquoise mosaic**: the bake's value
+  kept, the hue handed out by band of lattice rows — turquoise / jade /
+  turquoise / gold — with the seams stepped on alternate columns, a
+  per-tessera jitter, gold eyes, no red anywhere. The Meshy skin wears the
+  same banding in its own shader, so the skin and the cubes under it agree.
+  A dark jade body with gold in it is also the answer to bone against a
+  white sky.
 - **Seeded** like the rest of the arena: a DAILY sea breaks the same way for
   everyone, under the same skulls.
 
 Still open:
 
-1. **Readability under a white sky** — bone enemies against a light
-   background lose their silhouette; the skins are Lambert-lit and the
-   string-art bodies are unlit, so expect a pass on both.
+1. **The new season 2 sculpts** — aquamarine / green / yellow, Aztec — the
+   recolour holds the slot until they arrive through the manifest.
 2. **Decide what the wave costs you.** It carries; it does not kill.
 3. **The Inca backdrop from real art**, if any arrives — through the manifest
    `env` seam (`backdrop.js`) with its own `backdrop.emissive` for the white

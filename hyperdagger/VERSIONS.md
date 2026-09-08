@@ -2,6 +2,44 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v45 — 2026-09-08
+**Season 2's roster wears the season: a turquoise mosaic, banded, gold-eyed**
+
+Owner's direction on seeing v44: *enemies will be new — aquamarine, green,
+yellows, but also slightly Aztec themed*. The sculpts that will carry that
+are the owner's to make and arrive through the manifest seam the way the
+current roster did. What the game can own NOW is the colour — and it can own
+it for whatever body is in the slot, string-art or Meshy, today's skull or
+next month's — so a season may declare `roster`, and every body built under
+it is recoloured as it is built.
+
+The reference for the Aztec read is the **turquoise mosaic**: the skull masks
+tiled in turquoise, jade and gold tesserae. A voxel lattice IS that already —
+the voxels are the tesserae. `js/roster.js` keeps the bake's VALUE (sockets
+stay dark, crowns stay light, so every chip and gib still reads as the body it
+came off) and hands out the HUE by horizontal band of lattice rows —
+turquoise / jade / turquoise / gold — with the seam between bands jogging one
+row on alternate columns, which is the Aztec step motif in its cheapest form.
+A per-tessera value jitter breaks the fill into tiles. The eyes burn **gold**
+instead of ember, and a red mark in a source goes yellow: the season has no
+red in it.
+
+**The skin had to learn it too.** The alive body is the Meshy skin, a
+Lambert mesh worn over the lattice until the first real wound, so a recolour
+that stopped at the voxels showed bone until the first chip — the first
+render was a pink skull over a green lattice. `mosaicSkin` patches the skin's
+material with the same banding in the mesh's own space (the lattice pitch
+divided by the template's scale), so shedding the skin changes nothing but
+the edges. `VoxelSprite` asks the palette BEFORE it takes `base`, which is
+why LOOK SMOOTH's hull, the STYLE tint, chips, islands, gibs and the bone-yard
+all follow without knowing. VOID and EMBER declare `roster: null` and stay
+bone; the skullscape's monument skulls wear the mosaic too, which is what an
+Aztec skull monument is.
+
+**Gate: 151 checks** (was 149): a body built under INCA has green leading red
+by better than two to one with its eyes still lights, and the same body under
+VOID is bone. `hd-shell.mjs` found `roster.js` on its own.
+
 ## v44 — 2026-09-08
 **Season 2 gets its tech art: gel, caustics, a hazed sun, the break, and a skullscape**
 

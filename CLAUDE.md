@@ -406,7 +406,17 @@ string-art skull at ×22 half-buried past the rim, dark aquamarine against
 the white sky, and stepped terraces in the fog. The lesson that took three
 renders: **gel bodies start DARK** (deep 0.012/0.09/0.11) because the shader
 ADDS light, and a body that starts pale ends white; a pale skull in a pale
-fog was a cloud. Still `todo`: bone enemies against the white sky, and
+fog was a cloud. **v45 is season 2's roster** (owner: "enemies will be new —
+aquamarine, green, yellows, but also slightly Aztec themed"; the sculpts are
+the owner's and arrive through the manifest, the COLOUR is the season's now):
+a season may declare `roster`, and `js/roster.js` recolours every body built
+under it as a **turquoise mosaic** — the bake's value kept, the hue by band
+of lattice rows (turquoise / jade / turquoise / gold) with stepped seams,
+gold eyes, no red. `VoxelSprite` asks the palette BEFORE taking `base`, so
+hull, STYLE, chips, gibs and the bone-yard follow; the Meshy **skin** wears
+the same banding in its own shader (`mosaicSkin`, patched in
+`cloneMeshEnemy`), because the alive body IS the skin and the first render
+was a pink skull over a green lattice. Still `todo`: the new sculpts, and
 whether the wave's trough should hurt. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is

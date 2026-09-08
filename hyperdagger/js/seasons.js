@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=75';
+import { TUNING as T } from './tuning.js?v=76';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -43,6 +43,7 @@ import { TUNING as T } from './tuning.js?v=75';
  *  @property {Object|null} platforms growing, moving slabs (platforms.js + shale.js)
  *  @property {Object|null} goo       the breaking wave of voxels (goo.js)
  *  @property {Object|null} inca      the skullscape: giant skulls and terraces on the horizon (inca.js)
+ *  @property {Object|null} roster    a recolour of every enemy body (roster.js) — null keeps the house bone
  *  sky.haze / sky.sun / sky.sunDir and floor.caustic are the tech-art terms (v44); zero is off
  *  @property {'dagger'|'needler'} weapon  the profile in T.weapons
  *  @property {boolean} built
@@ -67,6 +68,7 @@ export const SEASONS = [
     platforms: null,
     goo: null,
     inca: null,
+    roster: null,
     weapon: 'dagger',
     built: true,
   },
@@ -113,6 +115,7 @@ export const SEASONS = [
     },
     goo: null,                  // season 2's, not season 1's
     inca: null,
+    roster: null,
     weapon: 'needler',
     built: true,
   },
@@ -172,13 +175,27 @@ export const SEASONS = [
       // the skull is the game's own string-art skull at ×22 — forty units of
       // bone, half-buried just past the rim, a DARK aquamarine silhouette
       // against the white sky (a pale skull in a pale fog was a cloud)
-      skulls: { count: 4, rMin: 3, rMax: 9, scale: 22, sinkMin: 0.3, sinkMax: 0.5, tint: [0.24, 0.66, 0.60] },
+      skulls: { count: 4, rMin: 3, rMax: 9, scale: 22, sinkMin: 0.3, sinkMax: 0.5, tint: [0.62, 0.72, 0.70] }, // the mosaic colours it (roster); the tint only holds it back from the sky
       terraces: { count: 7, rMin: 24, rMax: 46, wMin: 14, wMax: 26, hMin: 9, hMax: 20, steps: 6, color: [0.20, 0.36, 0.37] },
+    },
+    // THE ROSTER (v45). Owner: *enemies will be new — aquamarine, green,
+    // yellows, but also slightly Aztec themed*. The new sculpts arrive through
+    // the manifest when they are made; the colour is the game's now, for
+    // whatever body is in the slot: a turquoise-mosaic recolour banded by
+    // lattice row (turquoise / jade / turquoise / gold), the seams stepped,
+    // the eyes burning gold. See roster.js.
+    roster: {
+      palette: 'mosaic',
+      rows: 3,
+      bands: [[0.10, 0.66, 0.60], [0.08, 0.50, 0.22], [0.10, 0.66, 0.60], [0.92, 0.72, 0.12]],
+      hdr: [3.6, 2.2, 0.25],   // the eyes: gold, not ember
+      mark: [0.95, 0.80, 0.18], // a red in the source goes yellow — the season has no red
+      jitter: 0.12,
     },
     weapon: 'needler',
     built: true,
     todo: [
-      'bone enemies against a white sky — readability pass',
+      'the new season 2 sculpts (aquamarine / green / yellow, Aztec) — the recolour holds the slot until they arrive',
       'decide whether the trough should hurt — the wave carries, it does not kill',
       'the Inca backdrop from real art, if any arrives — the skullscape is the game\'s own skull for now',
     ],

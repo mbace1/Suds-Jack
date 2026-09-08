@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { shaleGeometry } from './shale.js?v=75';
-import { gelMoundGeometry } from './gel.js?v=75';
+import { shaleGeometry } from './shale.js?v=76';
+import { gelMoundGeometry } from './gel.js?v=76';
 
 /**
  * PLATFORMS — slabs that GROW out of the floor, DRIFT, and SINK back.
