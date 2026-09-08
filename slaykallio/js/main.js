@@ -10,7 +10,8 @@
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js';
 import * as engine from './engine.js';
 import { Arena } from './scene.js';
-import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures } from './puppet.js';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt } from './puppet.js';
+import { preloadPlates, plateFor as figurePlateFor, CAST } from './plates.js';
 import { paintCardPic } from './cardart.js';
 import { drawMap } from './map.js';
 import { sfx, unlock, setMuted, isMuted } from './audio.js';
@@ -96,6 +97,13 @@ setMuted(store.get('mute', false));
 // shipped through v16. A toggle rather than a replacement, because the only
 // way to know whether motion carries a verb is to watch the same fight twice.
 setFigureMotion(store.get('figures', 'paper'));
+// The owner's TURF character plates, worn by the person-shaped figures
+// (2026-09-07). Preloaded rather than fetched per puppet: a plate arriving
+// mid-fight would repaint one figure and leave the row mismatched. The menu
+// starts on 'drawn' and the roster repaints itself once the plates land, so a
+// slow decode never shows a blank card.
+setFigureArt(store.get('art', 'drawn'));
+preloadPlates().then(() => { if (!state || state.phase === 'menu') renderMenu(); });
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -236,11 +244,11 @@ function spawnFight() {
   arena.clearPuppets();
   foes.clear();
   const ch = CHARACTERS[state.character];
-  hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1, mood: arena.figureMood() });
+  hero = new Puppet({ look: { ...ch[theme].look, id: state.character }, seed: 11, scale: 1, facing: 1, mood: arena.figureMood() });
   arena.add(hero);
   const made = state.enemies.map(e => {
     const d = ENEMIES[e.id];
-    const p = new Puppet({ look: { ...d[theme].look, mutated: e.mutated || 0 }, seed: 100 + e.uid, scale: d.scale, facing: -1, mood: arena.figureMood() });
+    const p = new Puppet({ look: { ...d[theme].look, id: e.id, mutated: e.mutated || 0 }, seed: 100 + e.uid, scale: d.scale, facing: -1, mood: arena.figureMood() });
     arena.add(p);
     foes.set(e.uid, p);
     return p;
@@ -271,7 +279,7 @@ function spawnFight() {
 function spawnHeroAlone() {
   arena.clearPuppets(); foes.clear();
   const ch = CHARACTERS[state.character];
-  hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1, mood: arena.figureMood() });
+  hero = new Puppet({ look: { ...ch[theme].look, id: state.character }, seed: 11, scale: 1, facing: 1, mood: arena.figureMood() });
   arena.add(hero);
   arena.ensureHeadroom(hero.height * 1.06);
   hero.setHome(layout().heroX, 0, 0.1);
@@ -590,13 +598,14 @@ function renderMenu() {
     const ch = CHARACTERS[id];
     const b = el('button', 'pick'); b.dataset.char = id;
     b.classList.toggle('selected', i === menuSel.char);
-    const cv = paintCutout(ch[theme].look, 11, T().mood?.figure); cv.className = 'portrait';
+    const cv = paintCutout({ ...ch[theme].look, id }, 11, T().mood?.figure); cv.className = 'portrait';
     b.append(cv, el('b', '', ch[theme].name), el('span', '', ch[theme].blurb), el('small', '', `${ch.hp} HP`));
     b.addEventListener('click', () => { menuSel.char = i; renderMenu(); });
     r.append(b);
   });
   $('#mute').textContent = isMuted() ? 'sound off' : 'sound on';
   $('#figs').textContent = `figures: ${figureMotion()}`;
+  $('#art').textContent = `art: ${figureArt()}`;
   const best = store.get('best', null);
   $('#best').textContent = best ? `best: ${best.won ? 'cleared the run' : `fight ${best.fights + 1}`} as ${CHARACTERS[best.character]?.[theme].name ?? best.character}` : '';
 }
@@ -611,6 +620,15 @@ $('#start').addEventListener('click', () => startRun(chars[menuSel.char]));
 $('#mute').addEventListener('click', () => { setMuted(!isMuted()); store.set('mute', isMuted()); renderMenu(); });
 // Live: one module-level setting in puppet.js, so the enemies already standing
 // on the bridge obey it too and the two looks can be compared mid-fight.
+// The art switch has to REPAINT: a puppet bakes its cutout into a texture at
+// construction, so unlike the motion toggle this one cannot just flip a flag.
+// Same respawn path a theme switch takes, for the same reason.
+$('#art').addEventListener('click', () => { setArt(figureArt() === 'turf' ? 'drawn' : 'turf'); });
+function setArt(a) {
+  setFigureArt(a); store.set('art', figureArt());
+  renderMenu();
+  if (state && state.phase !== 'menu') { if (state.phase === 'fight' || state.phase === 'reward') spawnFight(); else spawnHeroAlone(); renderAll(); }
+}
 $('#figs').addEventListener('click', () => {
   setFigureMotion(figureMotion() === 'paper' ? 'still' : 'paper');
   store.set('figures', figureMotion());
@@ -950,7 +968,7 @@ window.__sk = {
     // what the act card OUGHT to say, read from the data rather than the screen
     encounterName: (i, t = theme) => ENCOUNTERS[i]?.[t]?.name,
     // a cutout painted at full size, for looking at the art rather than the scene
-    look: (id, mutated = 0) => paintCutout({ ...(ENEMIES[id] ?? CHARACTERS[id])[theme].look, mutated }, 3, arena.figureMood()),
+    look: (id, mutated = 0) => paintCutout({ ...(ENEMIES[id] ?? CHARACTERS[id])[theme].look, id, mutated }, 3, arena.figureMood()),
     encounterCount: () => ENCOUNTERS.length,
     events: () => EVENTS.map(e => e.id),
     // force the next fork to offer exactly these spans, for driving one screen
@@ -962,6 +980,10 @@ window.__sk = {
     // reports the flex matrix a figure is actually wearing, which is the one
     // honest way for a gate to say "it moved".
     figures: () => figureMotion(),
+    art: () => figureArt(),
+    cast: () => ({ ...CAST }),
+    setArt: a => { setArt(a); return figureArt(); },
+    plated: id => !!figurePlateFor(id),
     // renderMenu() too, or the seam and the button diverge: the gate flipped
     // the switch through here and then failed on the label, which is the seam
     // telling the truth about a real gap rather than a test being awkward.

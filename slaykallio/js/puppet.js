@@ -19,6 +19,7 @@
 
 import * as THREE from 'three';
 import { poseAt, clipLength, REST } from './motion.js';
+import { plateReady, drawPlate } from './plates.js';
 
 const TW = 256, TH = 512;        // texture size; the figure fills ~70% of the height
 export const PUPPET_H = 1.5;     // world height of a scale-1 figure
@@ -762,7 +763,14 @@ export function paintCutout(look, seed = 1, mood = DUSK) {
   const ctx = c.getContext('2d');
   const rnd = rngFrom(seed * 7919 + 17);
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  if (look.shape === 'rat') rat(ctx, look, rnd);
+  // A TURF plate replaces the PAINT and not the process: everything below
+  // still runs over it, because those passes are what make a figure belong to
+  // this bridge rather than to TURF's board. A plate that has not decoded yet,
+  // or a figure with no plate (every rat, blob, bird and the bear), falls
+  // through to the painter — so the switch can never leave a blank plane.
+  const plate = ART === 'turf' && look.id ? plateReady(look.id) : null;
+  if (plate) drawPlate(ctx, plate, { tw: TW, th: TH, foot: 470, tall: 356 });
+  else if (look.shape === 'rat') rat(ctx, look, rnd);
   else if (look.shape === 'blob') slime(ctx, look, rnd);
   else if (look.shape === 'bird') bird(ctx, look, rnd);
   else if (look.shape === 'bear') bear(ctx, look, rnd);
@@ -850,6 +858,15 @@ export function figureMotion() { return MOTION; }
 // than off time.
 let FROZEN = false;
 export function freezeFigures(v) { FROZEN = !!v; }
+
+// ── which art the figures wear ───────────────────────────────────────────
+// 'drawn' — the code-painted cutout this game shipped with.
+// 'turf'  — the owner's TURF character plates, for the person-shaped figures
+//           that have one. The rats, blobs, birds and the bear stay drawn
+//           either way: a roster of street operators has no rat in it.
+let ART = 'drawn';
+export function setFigureArt(a) { ART = a === 'turf' ? 'turf' : 'drawn'; }
+export function figureArt() { return ART; }
 
 export class Puppet {
   constructor({ look, seed = 1, scale = 1, facing = 1, mood = DUSK }) {

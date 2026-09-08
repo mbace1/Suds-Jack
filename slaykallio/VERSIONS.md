@@ -7,6 +7,51 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v18 — 2026-09-07
+**TURF's cast, standing on this bridge**
+Owner: *"I would like the turf art used on those figures."* `turf/art-src/sprites/`
+holds **32 real character plates** the owner already has and this game paints
+its figures in code, so `art: drawn / turf` in the menu swaps one for the other.
+
+**The plate replaces the PAINT, not the process.** `paintCutout` still runs
+newsprint, torchlight, nicks, fibre and grime over the top, because those
+passes are what make a figure belong to this bridge rather than to TURF's
+board. A plate dropped in raw would stand in TURF's own lighting in front of a
+Kallio evening — which is v10's lesson taken the other way round: a cutout is
+an unlit plane, so the torch has to be painted INTO it. The gate measures the
+warm pixels to prove the pass actually ran.
+
+**Thirteen of the twenty-three figures are cast**, and the other ten are the
+point of the lookup rather than an omission: a roster of street operators has
+no rat, no blob, no pigeon and no bear in it, so those keep the drawn cutout
+and a mixed row is the normal state. The gate asserts both halves — nothing
+non-person is cast, and every person IS, because a half-plated row is worse
+than none.
+
+**Sized off the INK, never the file.** Every plate is padded differently, so
+fitting one to its frame stands a short figure in the air and a tall one
+through the planks. TURF's own `render.js` pays for this exact lesson on its
+props; here the bounds are scanned once at load and the figure is placed on the
+same baseline the painted ones stand on, which is what lets drawn and plated
+figures share a row without one of them floating.
+
+**They ship from `figures/`, not `art-src/`.** A Slay Kallio deploy is a copy of
+the folder minus `test/` and `art-src/`, so runtime art under art-src/ would
+arrive as a 404. TURF has the same note from the opposite direction. Gated.
+
+**THE CAVEAT, and it is the owner's call rather than mine.** This project ruled
+on this once already: `art-src/concepts/README.md` rejected six concept sheets
+on two filters, and one was **no weapons** — *"nearly every figure in the pack
+carries a knife, which is TURF's grammar and not a game whose verbs are a
+swing, a bottle and a shopping trolley."* Most of these plates carry one too.
+The casting leans on the weapon-light end (barfly's bottle for the Park
+Drinker — the one plate that IS the mechanic; milo's can for the Bottle
+Collector; the two tank-top idles) but the Old Boxer is still holding a pistol
+and the Dealer two. It is a toggle so the picture can settle it, not a rule
+quietly reversed.
+
+Gates: core 717, smoke 125. And a screenshot of both, side by side.
+
 ## v17 — 2026-09-07
 **Paper Mario: the figures are card, so move the card**
 Owner, after the same direction was written up for TURF (`turf/ART_REQUEST.md`

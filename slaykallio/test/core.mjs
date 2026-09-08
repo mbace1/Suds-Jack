@@ -4,8 +4,9 @@
 // changes here changed in the rules, not in the clock.
 
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { poseAt, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
+import { CAST, castFiles, plateFor } from '../js/plates.js';
 import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
@@ -728,6 +729,29 @@ check('and lands on a squash rather than snapping upright', poseAt('hop', 0.46, 
 const b1 = poseAt('breath', 0.0), b2 = poseAt('breath', 0.7);
 check('the breath is a held pose that never stops and always moves', isHeld('breath') && Math.abs(b1.sy - b2.sy) > 1e-4);
 
+
+// ── the TURF plates (v18) ────────────────────────────────────────────────
+// `plates.js` is importable here because its DOM lives inside functions: the
+// cast list and the paths are data, and data is what a bare-node gate can ask
+// about. What it cannot ask is whether a street operator reads as a Kallio bum
+// — that is the screenshot, and the weapons question with it.
+const personIds = [...Object.keys(CHARACTERS),
+  ...Object.entries(ENEMIES).filter(([, e]) => !e.kallio.look.shape || e.kallio.look.shape === 'person').map(([id]) => id)];
+const notPerson = Object.keys(CAST).filter(id => !personIds.includes(id));
+check(`only person-shaped figures are cast${notPerson.length ? ` — ${notPerson}` : ''}`, notPerson.length === 0);
+check('and every one of them is cast — a half-plated row is worse than none',
+  personIds.every(id => CAST[id]), `${personIds.filter(id => !CAST[id])}`);
+// A rat has no equivalent in a roster of street operators, and the fallback is
+// what keeps the switch from ever showing a blank plane.
+check('no rat, blob, bird or bear is cast: they keep the drawn cutout',
+  Object.entries(ENEMIES).every(([id, e]) => !['rat', 'blob', 'bird', 'bear'].includes(e.kallio.look.shape) || !plateFor(id)));
+const missing = castFiles().filter(f => !existsSync(new URL('../' + f, import.meta.url)));
+check(`every cast plate is really in the tree${missing.length ? ` — ${missing}` : ''} (${castFiles().length} files)`, missing.length === 0);
+// It SHIPS from figures/, not art-src/: a Slay Kallio deploy is the folder
+// minus test/ and art-src/, so runtime art under art-src/ arrives as a 404.
+check('the plates ship from figures/, which a deploy carries — not from art-src/',
+  castFiles().every(f => f.startsWith('figures/')));
+check('a figure with no plate returns null rather than a broken path', plateFor('rat') === null && plateFor('nobody') === null);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

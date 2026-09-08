@@ -470,6 +470,29 @@ the first strip caught the lunge once and the breath five times —
 `__sk.debug.scrub(clip, t)` holds a clip at an exact moment and `unfreeze()`
 gives the figures back, both gated because a hook that can freeze every figure
 for good is the kind that gets left on.
+**TURF's cast can wear this bridge** (v18, owner: *"I would like the turf art
+used on those figures"*). `js/plates.js` casts 13 of the 23 figures from the
+owner's 32 TURF character plates behind an `art: drawn / turf` menu toggle, and
+the rule that makes it work is that **the plate replaces the PAINT, not the
+process** — `paintCutout` still runs newsprint, torchlight, nicks, fibre and
+grime over it, because those passes are what make a figure belong to this
+bridge rather than to TURF's board (a raw plate stands in TURF's lighting in
+front of a Kallio evening, which is v10's unlit-plane lesson from the other
+direction; the gate counts warm pixels to prove the pass ran). The other ten
+figures are the point of a lookup rather than an omission: **a roster of street
+operators has no rat, blob, pigeon or bear in it**, so those keep the drawn
+cutout and a mixed row is the normal state — the gate asserts nothing
+non-person is cast AND that every person is, since a half-plated row is worse
+than none. Plates are sized **off their INK, never their file** (each is padded
+differently; TURF's `render.js` pays for the same lesson on props) and ship from
+**`figures/`, not `art-src/`** — a Slay Kallio deploy is the folder minus
+`test/` and `art-src/`, so runtime art there would 404. **The open question is
+weapons**: `art-src/concepts/README.md` rejected six concept sheets partly on
+*no weapons* — "TURF's grammar, not a game whose verbs are a swing, a bottle
+and a shopping trolley" — and most of these plates carry a knife, so the
+casting leans weapon-light (barfly's bottle for the Park Drinker is the one
+plate that IS the mechanic) but the Old Boxer still holds a pistol. A toggle,
+so the picture settles it.
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -578,8 +601,8 @@ would have had someone cut the heal. **Sum the drops; a heal is not a fight
 being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
 and a two-point HP change failed all twelve at once — none of them is about the
 Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
-Gates: `node slaykallio/test/core.mjs` (711 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (118). Hub entry:
+Gates: `node slaykallio/test/core.mjs` (717 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (125). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.
