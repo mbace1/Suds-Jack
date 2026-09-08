@@ -2,6 +2,200 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v46 — 2026-09-08
+**Gel and goo physics, from Toko Drop: the mound gives way, the sea splashes**
+
+Owner: *maybe also look at Toko Drop for gel and goo physics*. Toko Drop's
+gel has three things season 2's did not, and all three are in `enemy.js`
+there: a **squash spring** on the body (`_sq`/`_sqV` — spring 0.24, damp
+0.86, a `landSquish` of 0.32 on landing), a **hit ripple** that spreads from
+the impact point and decays, and a **subsurface term** in the fragment —
+back-light bleeding through the gel plus a wrap so the shadow side is never
+dead. Ported, each onto the thing in this arena it belongs to:
+
+- **The mound gives way** (`GelSpring` in `gel.js`, on every `look: 'gel'`
+  slab). Land on it and it squashes — harder from higher, volume kept, so x
+  and z swell by 1/√y and it reads as a body giving way rather than
+  shrinking — leave it upward and it springs back past rest, a nail in it
+  makes it flinch (`platforms.flinch`; `blocks` now returns the slab). While
+  it is giving way under you **your feet stay on it**: a floor that dips out
+  from under a body reads as a fall and would spend a jump, so the carry
+  holds the feet to the top and the body rides the recoil. Toko Drop's
+  numbers are per 60 Hz frame; the spring integrates in fixed 60 Hz
+  substeps so a slow renderer gets the same motion, only later. Shale slabs
+  are rock and have no spring.
+- **The sea splashes** (`GooWave.hit`). A nail crossing the surface, or the
+  body landing on the water, spreads a **ring** from the point — on the
+  crest it deforms the wave, on flat water it IS the splash, a ring of cubes
+  that widens and fades. Never a trough, because a trough on flat water is
+  nothing to draw. A nail also throws a few cubes and flies on: the wave is
+  water, not cover — what it costs is still the owner's call.
+- **The gel bleeds light** (`uSSS`). Toko Drop's satin term on the gel
+  fragment: the sun behind a body lights it from within, the side away from
+  the sun still carries the colour, and a tight white fresnel sits at the
+  very edge — all inside the v44 energy budget.
+
+**Gate: 154 checks** (was 151): a strike on flat water raises a ring that
+spreads and fades to nothing; a body landing on a gel mound squashes it and
+it springs back to rest with the feet still on top; a shale slab has no
+spring. Both are driven directly — the ring by ageing it, the spring by
+stepping `preUpdate` at 60 Hz — so neither is hostage to frame time.
+
+## v45 — 2026-09-08
+**Season 2's roster wears the season: a turquoise mosaic, banded, gold-eyed**
+
+Owner's direction on seeing v44: *enemies will be new — aquamarine, green,
+yellows, but also slightly Aztec themed*. The sculpts that will carry that
+are the owner's to make and arrive through the manifest seam the way the
+current roster did. What the game can own NOW is the colour — and it can own
+it for whatever body is in the slot, string-art or Meshy, today's skull or
+next month's — so a season may declare `roster`, and every body built under
+it is recoloured as it is built.
+
+The reference for the Aztec read is the **turquoise mosaic**: the skull masks
+tiled in turquoise, jade and gold tesserae. A voxel lattice IS that already —
+the voxels are the tesserae. `js/roster.js` keeps the bake's VALUE (sockets
+stay dark, crowns stay light, so every chip and gib still reads as the body it
+came off) and hands out the HUE by horizontal band of lattice rows —
+turquoise / jade / turquoise / gold — with the seam between bands jogging one
+row on alternate columns, which is the Aztec step motif in its cheapest form.
+A per-tessera value jitter breaks the fill into tiles. The eyes burn **gold**
+instead of ember, and a red mark in a source goes yellow: the season has no
+red in it.
+
+**The skin had to learn it too.** The alive body is the Meshy skin, a
+Lambert mesh worn over the lattice until the first real wound, so a recolour
+that stopped at the voxels showed bone until the first chip — the first
+render was a pink skull over a green lattice. `mosaicSkin` patches the skin's
+material with the same banding in the mesh's own space (the lattice pitch
+divided by the template's scale), so shedding the skin changes nothing but
+the edges. `VoxelSprite` asks the palette BEFORE it takes `base`, which is
+why LOOK SMOOTH's hull, the STYLE tint, chips, islands, gibs and the bone-yard
+all follow without knowing. VOID and EMBER declare `roster: null` and stay
+bone; the skullscape's monument skulls wear the mosaic too, which is what an
+Aztec skull monument is.
+
+**Gate: 151 checks** (was 149): a body built under INCA has green leading red
+by better than two to one with its eyes still lights, and the same body under
+VOID is bone. `hd-shell.mjs` found `roster.js` on its own.
+
+## v44 — 2026-09-08
+**Season 2 gets its tech art: gel, caustics, a hazed sun, the break, and a skullscape**
+
+Owner's brief: *go really crazy on the season 2 art style — think tech art*.
+Everything native in this game is unlit, a flat fill with a per-face tone,
+and goo cannot be that: goo is the thing light goes INTO. So `js/gel.js` is
+the one material in the game that pretends to be lit, and it pretends the
+cheap way — no lights, no normal maps, four terms added onto the flat colour
+in world space through `onBeforeCompile` on a `MeshBasicMaterial`:
+a **fresnel rim** that brightens where the surface turns away (a soft edge
+without rounding any geometry), a **caustic** of three sine fields drifting
+through world space so light moves *through* the body rather than sitting on
+it, one fixed-sun **specular** so a wet surface reads wet, and a vertex
+**wobble** — every piece breathes along its normal and its top leans with
+time, seeded by its own position, so a field of cubes is jelly and not a
+wall. The wave (instance colours) and the mounds (vertex colours) are two
+materials on ONE uniform set, so they share a clock and a lip.
+
+**The break.** The lip of the wave sheds loose cubes ahead of itself through
+the game's own debris pool (`goo.spray`): a wave that only rises and falls is
+a hill that moves; one that sheds is surf. The wave also opens mid-sea now —
+a random phase at build, since the crest forms off one rim and a run used to
+begin with seconds of flat water.
+
+**Soft edges on the large platforms** (the brief's words): INCA's slabs stop
+wearing shale beds and become **mounds** of goo cubes — columns on a grid, the
+height a rounded dome (1 − r⁴)^0.6 so the silhouette is soft while every piece
+is still a cube — in the gel material.
+
+**The skullscape.** There is no Meshy art for an *aquamarine Inca skullscape*,
+so `js/inca.js` builds it from what the game owns: the string-art skull every
+run has been fighting since v1 at **×22**, half-buried just past the rim and
+turned to face the arena, tinted a dark aquamarine so it is a silhouette
+against the white sky with its ember eyes still burning; and stepped
+**terraces** further out — a ziggurat skyline through the fog. Nothing there
+collides. Seeded, like the rest of the arena.
+
+**And the rest of the frame:** the floor shader carries the same caustic
+(`uCaustic`), the sky shader a **haze** and a pale **sun** (`uHaze`, `uSun`,
+`uSunDir` — the sun also lights the gel's specular), all of it zero outside
+INCA, which the gate asserts on VOID.
+
+**Two renders that settled what reasoning did not.** The first cut bloomed to
+white: the body colour already ramped to an HDR lip, and the rim and the
+caustic were added in that lip too — lip + lip + lip. It has an energy budget
+now (rim ×0.4, caustic ×0.3, specular ×0.6, the lip under 1.0 and a separate
+`rim` colour for the shader), and it was *still* pale, because a body that
+starts at 0.4 has nowhere to go but white once light is added to it. The
+bodies now start DARK — deep 0.012/0.09/0.11, lip 0.09/0.46/0.46 — and the
+shader is what makes them bright; the read is dark aquamarine goo with light
+crawling in it and edges that glow, which was the brief. The skull learned
+the same lesson from the other side: a pale skull in a pale fog was a cloud.
+
+**Gate: 149 checks** (was 145): the tech-art terms are on and the gel clock
+runs in INCA; the break sprays; the skullscape stands with every piece beyond
+the disc; and VOID carries none of it. `hd-shell.mjs` found `gel.js` and
+`inca.js` on its own, which is what it is for.
+
+## v43 — 2026-09-07
+**Season 2's goo wave: a swell of voxels that breaks across the arena**
+
+Owner's brief for season 2 named *waves of goo voxels breaking across the
+arena*, and this is that, on the bench it was meant for (MOVE in INCA).
+`js/goo.js` is a travelling height field over the disc cut into cubes: a
+crest sweeps across, rises along a long back, **leans into its own travel**
+as it steepens, and falls down a short steep face — a breaking wave is
+asymmetric, and a sine is not one. A ripple runs along the crest so it is a
+sea rather than an extruded curve. One InstancedMesh, ~250 of 1600 cells
+drawn at any moment, and the cubes **snap to the cell grid in y** as well as
+x and z: goo made of voxels only reads as voxels if it steps, and a smooth
+column of cubes is just a smooth surface with seams — the look this game
+already rejected once.
+
+**It is a moving FLOOR.** `heightAt` answers the crest height anywhere,
+`carry` hands it to the player the way the slabs do, and a body standing on
+it is pushed along the wave's own direction — you ride it. The higher of
+slab-or-crest wins, so a wave rolling past a platform cannot drop you
+through it. It does **no damage**, deliberately: whether the trough should
+hurt is a design call nobody has made, and a hazard that kills before anyone
+decided it should is worse than one that does not exist. It is seeded, so a
+DAILY sea breaks the same way for everyone.
+
+**INCA's floor finally reads.** The tint was there since v41 and the floor
+was still black: the floor texture is near-black with bright grid lines, so
+a tint only shows where the GLOW lifts it. At 3.4 the read is an aquamarine
+grid on dark water, which is the right answer anyway — a bright floor would
+cost the enemies their silhouettes under a white sky.
+
+**Gate: 145 checks** (was 140), and writing them found three things.
+
+Every wave check drives the wave's own clock rather than waiting frames —
+`heightAt` is a pure function of (x, z, t) — and each one starts by walking
+the clock until a crest covers the middle of the arena. That is not tidiness:
+the sea has a lull between waves and the start phase is random, so a check
+that assumes water at t≈0 fails one run in five, which is exactly what it did.
+
+**"It travels" cannot be tested by comparing heights.** The first version
+sampled the profile at t and again at t+2 shifted by speed×2, and it was
+wrong about the model: the ripple along the crest animates on its own clock,
+so the same water is a different height a second later. What travels is the
+crest's POSITION, and the ripple varies ACROSS the wave and never along it —
+so the peak along a line through the middle moves cleanly at exactly the
+declared speed. It also has to avoid straddling the period boundary, or the
+crest appears to move backwards by a whole span.
+
+**And the wave started off-stage.** The crest forms beyond one rim, so a run
+opened with several seconds of flat water before anything happened. Build now
+seeds a random phase: the first thing you see is a sea already moving.
+
+Two traps that were the test's, not the code's: `setSeason` re-lights the
+arena but does not rebuild it, so asking one page whether ANOTHER season has
+a wave would have lied — the no-wave check reads the season pages themselves;
+and v42's cover control started failing because its orb flew at slab height,
+where a slab happening to sit on the path is luck. It fires above them now,
+and the control clears the rock AND the slabs, so the only difference between
+the two shots is the thing under test.
+
 ## v42 — 2026-09-06
 **The arena becomes cover**
 

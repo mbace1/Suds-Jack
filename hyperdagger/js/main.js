@@ -5,26 +5,30 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=73';
-import { Player } from './player.js?v=73';
-import { DaggerPool } from './daggers.js?v=73';
-import { GemPool } from './gems.js?v=73';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle } from './voxel.js?v=73';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=73';
-import { OrbPool } from './bullets.js?v=73';
-import { AudioKit } from './audio.js?v=73';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=73';
-import { TUNING as T } from './tuning.js?v=73';
-import { HyperEnvironment } from './environment.js?v=73';
-import { Backdrop } from './backdrop.js?v=73';
-import { Walls } from './walls.js?v=73';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=73';
-import { TruckTrack } from './truck.js?v=73';
-import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=73';
-import { Platforms } from './platforms.js?v=73';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=73';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=73';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn } from './mesh-enemies.js?v=73';
+import { InputManager } from './input.js?v=77';
+import { Player } from './player.js?v=77';
+import { DaggerPool } from './daggers.js?v=77';
+import { GemPool } from './gems.js?v=77';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=77';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=77';
+import { OrbPool } from './bullets.js?v=77';
+import { AudioKit } from './audio.js?v=77';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=77';
+import { TUNING as T } from './tuning.js?v=77';
+import { HyperEnvironment } from './environment.js?v=77';
+import { Backdrop } from './backdrop.js?v=77';
+import { Walls } from './walls.js?v=77';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=77';
+import { TruckTrack } from './truck.js?v=77';
+import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=77';
+import { Platforms } from './platforms.js?v=77';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=77';
+import { GooWave } from './goo.js?v=77';
+import { gelMaterial } from './gel.js?v=77';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=77';
+import { Skullscape } from './inca.js?v=77';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=77';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=77';
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -490,6 +494,8 @@ const floorMat = new THREE.ShaderMaterial({
     uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
     uRepeat: { value: 10.0 }, // tiles across the disc; a backdrop floor texture sets its own
     uTint: { value: new THREE.Color(1, 1, 1) }, // v41: the season's floor colour
+    uTime: { value: 0 },
+    uCaustic: { value: 0 }, // v44: light moving on water — INCA only
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -502,10 +508,21 @@ const floorMat = new THREE.ShaderMaterial({
     uniform vec3 uAccent;
     uniform float uRepeat;
     uniform vec3 uTint;
+    uniform float uTime;
+    uniform float uCaustic;
     varying vec2 vUv;
     void main() {
       vec3 col = texture2D(map, vUv * uRepeat).rgb * uTint;
       col *= uGlow + uPulse * 0.28;
+      if (uCaustic > 0.0) {
+        // two sine fields sliding over each other, cubed: the bright threads
+        // light draws on the bottom of a pool
+        vec2 p = vUv * uRepeat;
+        float a = sin(p.x * 2.1 + uTime * 0.9) * sin(p.y * 1.7 - uTime * 0.7);
+        float b = sin((p.x + p.y) * 1.3 + uTime * 0.5) * sin((p.x - p.y) * 1.9 - uTime * 0.6);
+        float ca = pow(max(0.0, a * 0.55 + b * 0.45), 3.0);
+        col += uTint * ca * uCaustic;
+      }
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -531,6 +548,10 @@ const skyMat = new THREE.ShaderMaterial({
     uVoid: { value: new THREE.Color(0.0015, 0.0015, 0.0015) },
     uBand: { value: 4.8 },
     uStars: { value: 0 },
+    // v44: a hazed sky with a sun — INCA's; zero elsewhere
+    uHaze: { value: 0 },
+    uSun: { value: 0 },
+    uSunDir: { value: new THREE.Vector3(0.35, 0.5, -0.78).normalize() },
   },
   vertexShader: /* glsl */`
     varying vec3 vPos;
@@ -546,6 +567,9 @@ const skyMat = new THREE.ShaderMaterial({
     uniform vec3 uVoid;
     uniform float uBand;
     uniform float uStars;
+    uniform float uHaze;
+    uniform float uSun;
+    uniform vec3 uSunDir;
     float hash3(vec3 p) { p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
     void main() {
       vec3 d = normalize(vPos);
@@ -553,6 +577,16 @@ const skyMat = new THREE.ShaderMaterial({
       vec3 col = uVoid;
       float horiz = pow(max(0.0, 1.0 - abs(h) * uBand), 4.0);
       col += uEmberCol * horiz * (0.52 + uEmber * 0.32);
+      if (uHaze > 0.0) {
+        // slow white haze in a band above the horizon, drifting
+        float hz = smoothstep(0.0, 0.35, h) * (1.0 - smoothstep(0.35, 0.8, h));
+        float n = sin(d.x * 3.0 + uTime * 0.05) * sin(d.z * 2.0 - uTime * 0.04) * 0.5 + 0.5;
+        col += vec3(uHaze) * hz * (0.35 + 0.65 * n);
+      }
+      if (uSun > 0.0) {
+        float sd = max(dot(d, uSunDir), 0.0);
+        col += vec3(1.0, 0.98, 0.9) * (pow(sd, 400.0) * 1.2 + pow(sd, 12.0) * 0.25) * uSun;
+      }
       if (uStars > 0.0 && h > 0.02) {
         // a sparse fixed star field — dim, under the bloom threshold, so it
         // is atmosphere and never competes with an eye or a gem
@@ -625,6 +659,24 @@ const walls = new Walls(scene, wallMat);
 // unlit material for all of it
 const shaleMat = shaleMaterial();
 const platforms = new Platforms(scene, shaleMat);
+// season 2's breaking wave — empty unless the season declares one
+const goo = new GooWave(scene, ARENA_R);
+// v44: ONE gel material for the wave and the gel slabs, so one uTime drives
+// every wobble and caustic; its terms are re-aimed per season in applySeason
+const gelMat = gelMaterial();
+// the mounds are merged geometry with a colour ATTRIBUTE, the wave is an
+// InstancedMesh with instance colours — two materials, one uniform set
+const gelMatV = gelMaterial({ vertexColors: true, shared: gelMat.userData.gel });
+platforms.gelMat = gelMatV;
+// and the skullscape on the horizon
+const skullscape = new Skullscape(scene, ARENA_R);
+const _sprayC = new THREE.Color();
+goo.spray = (x, y, z, dx, dz) => {
+  _sprayC.setRGB(...(S().goo?.rim ?? S().goo?.lip ?? [0.35, 0.95, 0.85]));
+  _sv.set(x, y, z);
+  _seg.set(dx * (3 + Math.random() * 3) + (Math.random() - 0.5) * 2, 4 + Math.random() * 4, dz * (3 + Math.random() * 3) + (Math.random() - 0.5) * 2);
+  debris.spawn(_sv, _sprayC, _seg, (S().goo?.cell ?? 1) * 0.42, 0.9 + Math.random() * 0.5);
+};
 
 // ---------------------------------------------------------------- actors
 const input = new InputManager();
@@ -987,6 +1039,21 @@ function applySeason() {
   backdrop.setLook(sn.backdrop ?? { visible: true, emissive: 0 });
   if (sn.fog) { scene.fog.color.setRGB(...sn.fog.color); scene.fog.near = sn.fog.near; scene.fog.far = sn.fog.far; }
   if (sn.dust) { dust.material.color.setRGB(...sn.dust.color); dust.material.size = sn.dust.size; dust.material.opacity = sn.dust.opacity; }
+  // v44 tech-art terms — every one of them zero outside INCA
+  floorMat.uniforms.uCaustic.value = sn.floor.caustic ?? 0;
+  skyMat.uniforms.uHaze.value = sn.sky.haze ?? 0;
+  skyMat.uniforms.uSun.value = sn.sky.sun ?? 0;
+  if (sn.sky.sunDir) skyMat.uniforms.uSunDir.value.set(...sn.sky.sunDir).normalize();
+  // v45: the season's colour for every body built from here on (roster.js);
+  // the bodies already standing keep theirs — a season is applied on the
+  // menu, and the skullscape is rebuilt with the arena
+  setRosterPalette(sn.roster ? mosaicPalette(sn.roster) : null);
+  setRosterSkin(sn.roster ? mosaicSkin(sn.roster) : null);
+  const g = gelMat.userData.gel, gc = sn.goo;
+  g.uLip.value.setRGB(...(gc?.rim ?? gc?.lip ?? [0.35, 0.95, 0.85]));
+  g.uWobble.value = gc?.wobble ?? 0.05; g.uCaustic.value = gc?.caustic ?? 0.6;
+  g.uFresnel.value = gc?.fresnel ?? 0.9; g.uSpec.value = gc?.spec ?? 0.7; g.uSSS.value = gc?.sss ?? 0.5;
+  if (sn.sky.sunDir) g.uSun.value.set(...sn.sky.sunDir).normalize();
   ground.userData.on = !!sn.ground;
   if (sn.ground) ground.material.color.setRGB(...sn.ground);
   ground.visible = !!ground.userData.on && M().arena !== 'track';
@@ -999,6 +1066,8 @@ function applySeason() {
  *  the same for everyone. Not on the track — it has its own floor. */
 function buildSeasonArena() {
   platforms.clear();
+  goo.clear();
+  skullscape.clear();
   walls.cull(w => w.tag === 'pillar');
   ground.visible = !!ground.userData.on && M().arena !== 'track';
   if (M().arena === 'track') return;
@@ -1021,6 +1090,8 @@ function buildSeasonArena() {
       }
     }
   }
+  if (sn.goo) goo.build({ ...sn.goo, material: gelMat }, rng.next); // seeded: a DAILY sea breaks the same way
+  skullscape.build(sn.inca ?? null, rng.next);
   if (sn.platforms) {
     platforms.build(sn.platforms, rng.next,
       (x, z, half) => walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < half + Math.max(w.len, w.thick) * 0.5 + 0.6),
@@ -1473,6 +1544,8 @@ function endRun() {
   truck.clear();
   walls.clear();
   platforms.clear();
+  goo.clear();
+  skullscape.clear();
   floor.visible = true;
   shadows.visible = true;
   state = 'menu';
@@ -2597,11 +2670,26 @@ function updateCombat(dt) {
     const d = daggers.active[i];
     // v41: rock stops a nail — pillars, court walls and standing slabs are
     // solid to projectiles; a needle through a pillar reads as a bug
-    if ((walls.walls.length && walls.blocks(d.prev, d.m.position))
-      || (platforms.count && platforms.blocks(d.prev, d.m.position))) {
+    if (walls.walls.length && walls.blocks(d.prev, d.m.position)) {
       spawnSpark(d.m.position, false);
       daggers.recycle(i);
       continue;
+    }
+    if (platforms.count) {
+      const slab = platforms.blocks(d.prev, d.m.position);
+      if (slab) {
+        platforms.flinch(slab); // v46: a gel mound flinches at a nail (a shale slab does not)
+        spawnSpark(d.m.position, false);
+        daggers.recycle(i);
+        continue;
+      }
+    }
+    // v46: a nail crossing the sea's surface splashes — a ring and a few
+    // cubes — and flies on; the wave is water, not cover (owner's call pending)
+    if (goo.cfg && d.prev.y > 0.05 && d.m.position.y <= goo.heightAt(d.m.position.x, d.m.position.z) + 0.05
+      && Math.hypot(d.m.position.x, d.m.position.z) < ARENA_R) {
+      goo.hit(d.m.position.x, d.m.position.z, 0.5);
+      goo.spray(d.m.position.x, d.m.position.y + 0.3, d.m.position.z, (Math.random() - 0.5), (Math.random() - 0.5));
     }
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
@@ -2820,7 +2908,20 @@ function step(dt) {
   // or the player never reads as grounded and never gets a jump back.
   if (M().arena === 'track') truck.preUpdate(dt, player);
   else if (platforms.count) platforms.preUpdate(dt, player, 0); // the season's slabs: a floor, and a carry
+  // the wave is a floor too, and the HIGHER of slab-or-crest is what you
+  // stand on — a crest rolling past a slab must not drop you through it
+  if (goo.cfg && M().arena !== 'track') {
+    goo.update(dt);
+    player.floorY = goo.carry(dt, player, player.floorY ?? 0);
+  }
+  const _vyBefore = player.vy;
   player.update(dt);
+  // v46: the body landing on the sea (or the flat water) splashes it — a
+  // ring spreading from the feet, harder from higher
+  if (goo.cfg && _vyBefore < -5 && player.vy >= -0.01 && player.feet.y <= player.floorY + 0.02
+    && player.platform == null && Math.hypot(player.feet.x, player.feet.z) < ARENA_R) {
+    goo.hit(player.feet.x, player.feet.z, Math.min(1.2, -_vyBefore / 16));
+  }
   if (walls.walls.length) walls.resolve(player);
   if (platforms.count) platforms.resolve(player); // their sides are walls too
   if (player.justDashed) {
@@ -3139,6 +3240,8 @@ function animate() {
   }
   // sky bands accelerate with the music (warped clock keeps phase continuous)
   skyMat.uniforms.uTime.value += dt * (1 + musicI * 1.8);
+  floorMat.uniforms.uTime.value += dt;
+  gelMat.userData.gel.uTime.value += dt;
   dust.rotation.y += dt * 0.012;
   if (state === 'playing' && !paused) {
     // heavy-kill hit-stop: a beat at 12% speed so the impact registers
@@ -3255,6 +3358,20 @@ window.__hd = {
     },
     setSeason(id) { season = seasonById(id).id; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
     getPlatforms() { return platforms.getState(); },
+    getGoo() { return goo.getState(); },
+    gooHit(x, z, p) { goo.hit(x, z, p); },
+    getInca() { return skullscape.getState(); },
+    // the mean colour of the first standing enemy's lattice — is the roster wearing the season?
+    rosterSample() {
+      const e = enemies.find(x => x.alive && x.sprite?.voxels?.length);
+      if (!e) return null;
+      let r = 0, g = 0, b = 0, n = 0, hdr = 0;
+      for (const v of e.sprite.voxels) { if (v.color.r > 1.05 || v.color.g > 1.05) { hdr++; continue; } r += v.color.r; g += v.color.g; b += v.color.b; n++; }
+      let skin = null; e.meshRoot?.traverse(o => { if (o.isMesh && skin === null) skin = !!o.material.userData.mosaic; });
+      return { type: e.type, skin, n, hdr, mean: [+(r / n).toFixed(3), +(g / n).toFixed(3), +(b / n).toFixed(3)], palette: S().roster?.palette ?? null };
+    },
+    getTechArt() { return { caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray() }; },
+    gooObj() { return goo; }, // the gate reads heightAt directly
     platformsObj() { return platforms; }, // the gate forces one slab tall and grown
     clearPillars() { walls.cull(w => w.tag === 'pillar'); return walls.walls.length; }, // the cover check's control: the same shot with the rock gone
     /** The body's wall state — what the wall-run gate and the harness read. */
