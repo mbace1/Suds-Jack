@@ -442,6 +442,34 @@ were drawn over the HUD plate, because the gutter reserved the anchor and not
 the label's own box. It is measured off the plate's rect now — and note that
 `offsetParent` is **always null on a `position: fixed` element**, which broke
 the first fix silently.
+**The figures are CARD, so the animation moves the card** (v17, owner:
+*"can you test the Paper Mario type figures here now? as a toggle in the
+menu?"*, after the same direction was written up for TURF in
+`turf/ART_REQUEST.md` §12). `js/motion.js` is the vocabulary and it is **pure**
+— no three.js, no DOM, no clock — so `core.mjs` asserts it in bare node.
+Offsets are in the figure's **own height** (one number reads the same on a rat
+and on the Bridge King) and every rotation and squash is anchored at the
+**feet**, because a cutout stands on a base and about the centre a rotation
+reads as a sprite being spun. An attack is 0.20s leaning AWAY, 0.11s
+committing, 0.30s recovering — **the anticipation is what makes a lunge read as
+a lunge** rather than a slide, and the commit is under half a step so it never
+reads as the figure having MOVED. Being hit **bends the card**: the shear is
+the point, and since three.js has no shear field a `flex` group composes its
+own matrix. That group sits **between the base and the body** — putting the
+squash on the whole group made the figure's stand breathe with it, which reads
+as the camera bobbing. The breath is phase-offset per figure (a row of six
+breathing in unison is the tell) and, unlike the TURF brief's recommendation,
+it is **on**: turf's `anim.js` stops its rAF when nothing is animating so a
+breath there never stops, while this scene renders every frame regardless. It
+is a **toggle, not a replacement** (`figures: paper` / `still`, persisted under
+`slayKallio.figures`), and the switch is one module-level setting so it reaches
+the enemies already on the bridge — comparing the same fight twice is the only
+way to know whether motion carries a verb. **A contact sheet needs its own
+clock**: a frame grab is ~1s under SwiftShader and the whole attack is 0.61s, so
+the first strip caught the lunge once and the breath five times —
+`__sk.debug.scrub(clip, t)` holds a clip at an exact moment and `unfreeze()`
+gives the figures back, both gated because a hook that can freeze every figure
+for good is the kind that gets left on.
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -550,8 +578,8 @@ would have had someone cut the heal. **Sum the drops; a heal is not a fight
 being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
 and a two-point HP change failed all twelve at once — none of them is about the
 Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
-Gates: `node slaykallio/test/core.mjs` (700 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (108). Hub entry:
+Gates: `node slaykallio/test/core.mjs` (711 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (118). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.

@@ -10,7 +10,7 @@
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js';
 import * as engine from './engine.js';
 import { Arena } from './scene.js';
-import { Puppet, paintCutout } from './puppet.js';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures } from './puppet.js';
 import { paintCardPic } from './cardart.js';
 import { drawMap } from './map.js';
 import { sfx, unlock, setMuted, isMuted } from './audio.js';
@@ -90,6 +90,12 @@ function applyHour(h) {
 resize();                                  // the plate is CUT to the frame, so give it the real one first
 applyHour(0);
 setMuted(store.get('mute', false));
+// The figures are made of card, so they can be MOVED rather than redrawn
+// (owner, 2026-09-07). 'paper' is Paper Mario — anticipation, a lunge that
+// squashes, a card that bends when hit, a breath at rest; 'still' is what
+// shipped through v16. A toggle rather than a replacement, because the only
+// way to know whether motion carries a verb is to watch the same fight twice.
+setFigureMotion(store.get('figures', 'paper'));
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -590,6 +596,7 @@ function renderMenu() {
     r.append(b);
   });
   $('#mute').textContent = isMuted() ? 'sound off' : 'sound on';
+  $('#figs').textContent = `figures: ${figureMotion()}`;
   const best = store.get('best', null);
   $('#best').textContent = best ? `best: ${best.won ? 'cleared the run' : `fight ${best.fights + 1}`} as ${CHARACTERS[best.character]?.[theme].name ?? best.character}` : '';
 }
@@ -602,6 +609,13 @@ function menuKeys(ev) {
 $('#menu .theme').addEventListener('click', () => setTheme(theme === 'kallio' ? 'fantasy' : 'kallio'));
 $('#start').addEventListener('click', () => startRun(chars[menuSel.char]));
 $('#mute').addEventListener('click', () => { setMuted(!isMuted()); store.set('mute', isMuted()); renderMenu(); });
+// Live: one module-level setting in puppet.js, so the enemies already standing
+// on the bridge obey it too and the two looks can be compared mid-fight.
+$('#figs').addEventListener('click', () => {
+  setFigureMotion(figureMotion() === 'paper' ? 'still' : 'paper');
+  store.set('figures', figureMotion());
+  renderMenu();
+});
 
 function setTheme(t) {
   if (!THEMES[t]) return;
@@ -942,6 +956,38 @@ window.__sk = {
     // force the next fork to offer exactly these spans, for driving one screen
     forkTo: nodes => { state.route.steps[state.route.step] = nodes; openMapPanel(); },
     mapPins: () => mapPins,
+    // The paper-motion seam. `figures` reads the toggle; `playClip` fires a
+    // verb on one figure without needing the fight to produce it — nobody
+    // should have to be hit to see what being hit looks like; and `poseOf`
+    // reports the flex matrix a figure is actually wearing, which is the one
+    // honest way for a gate to say "it moved".
+    figures: () => figureMotion(),
+    // renderMenu() too, or the seam and the button diverge: the gate flipped
+    // the switch through here and then failed on the label, which is the seam
+    // telling the truth about a real gap rather than a test being awkward.
+    setFigures: m => { setFigureMotion(m); store.set('figures', figureMotion()); renderMenu(); return figureMotion(); },
+    playClip: (name, who = 'hero') => {
+      const p = unitOf(who);
+      if (!p) return false;
+      p.play(name, p.facing);
+      return true;
+    },
+    // Hold a clip at an exact moment so a contact sheet shows the real poses
+    // rather than whatever the wall clock happened to be on.
+    scrub: (name, t, who = 'hero') => {
+      const p = unitOf(who);
+      if (!p) return false;
+      freezeFigures(true);
+      p.clip = { name, t, dir: p.facing };
+      return true;
+    },
+    unfreeze: () => { freezeFigures(false); },
+    poseOf: (who = 'hero') => {
+      const p = unitOf(who);
+      if (!p) return null;
+      const e = p.flex.matrix.elements;                 // column-major out of three.js
+      return { sx: e[0], sy: e[5], shear: e[4], lean: e[1], x: p.group.position.x, y: p.group.position.y };
+    },
     // re-open whatever screen the phase wants, from the current state — for a
     // harness that has moved the engine underneath the view
     redraw: () => { cursor = state.log.length; closePanels(); afterReplay(); },

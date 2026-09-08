@@ -35,6 +35,17 @@ mixing them is the point: a row of these should look **collected** rather than
 manufactured. The cutout is flat. The base is not, and the tape is what tells
 you so.
 
+**Because a figure is card, the ANIMATION MOVES THE CARD** (v17, and the same
+direction is written up for TURF in `turf/ART_REQUEST.md` §12). Paper Mario's
+vocabulary, not a flipbook: anticipation, a lunge that squashes, a card that
+bends when it is hit, a breath at rest. `js/motion.js` holds it, in the
+figure's own height, anchored at the feet — a cutout stands on a base, and a
+rotation about its centre reads as a sprite being spun rather than a thing
+tipping over. **The anticipation is the load-bearing part**: an attack leans
+AWAY for 0.20s and commits in 0.11, and without the lean it is a slide. It is a
+**toggle** (`figures: paper` / `still`), because the only way to know whether
+motion carries a verb is to watch the same fight twice.
+
 **Gritty is in the drawing, not in a filter.** The ink line is drawn twice at
 different weights, so it varies the way a loaded brush does. Paint is
 **scumbled** — short broken strokes of a lighter tint of the fill — and never

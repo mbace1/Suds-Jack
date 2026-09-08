@@ -7,6 +7,70 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v17 — 2026-09-07
+**Paper Mario: the figures are card, so move the card**
+Owner, after the same direction was written up for TURF (`turf/ART_REQUEST.md`
+§12): *"can you test the Paper Mario type figures here now? as a toggle in the
+menu?"* — and this is the right place to test it, because the figures here are
+already flat cutouts standing on bases and already topple in 3D when they die.
+**Nothing had to be drawn.**
+
+`js/motion.js` is the vocabulary, and it is PURE — no three.js, no DOM, no
+clock — so `test/core.mjs` asserts the arithmetic in bare node the way it does
+the rules. Everything is in the figure's **own height**, so one number reads
+the same on a rat and on the Bridge King, and every rotation and squash is
+anchored at the **feet**: a cutout stands on a base, and about the centre a
+rotation reads as a sprite being spun rather than a thing tipping.
+
+- **attack** — 0.20s leaning AWAY, 0.11s committing, 0.30s recovering. The
+  anticipation is what makes a lunge read as a lunge instead of a slide, and
+  it is longer than the strike by design. The commit is under half a step, so
+  it never reads as the figure having MOVED — this game says where everyone
+  stands.
+- **hurt** — knocked back, and **the card bends**. The shear is the whole
+  point: a rigid figure sliding backwards is a token being moved; a bending
+  one is a thing being hit. Three.js has no shear field, so the flex composes
+  its own matrix.
+- **hop** — not used by a fight on a bridge where nobody walks, but it is the
+  verb the TURF brief is really about, so it exists and the debug seam can
+  play it.
+- **breath** — held, tiny, and phase-offset per figure so a row of six does
+  not breathe in unison, which is the tell.
+
+**One difference from the TURF brief, and it reverses a recommendation.**
+Over there the idle breath is off by default, because `anim.js` stops its rAF
+the moment nothing is animating and a breath never stops. Here the scene
+renders every frame regardless — it is three.js with a torch that gutters — so
+the breath is free, and it is on.
+
+**Where it goes in the object.** A new `flex` group sits BETWEEN the base and
+the body. Putting the squash on the whole group made the figure's *stand*
+breathe with it, which reads as the camera bobbing; a tin oval does not
+squash. The group's origin is already the feet, because the plane geometry is
+translated up by half its height at build time.
+
+**It is a toggle, not a replacement** (`figures: paper` / `figures: still`,
+persisted under `slayKallio.figures`), and the switch is one module-level
+setting in `puppet.js` rather than a field walked over every figure — so it
+reaches the enemies already standing on the bridge and the two looks can be
+compared mid-fight. That is the only way to know whether motion actually
+carries a verb.
+
+**A contact sheet needs its own clock.** The first strip taken of this was a
+picture of the wall: a frame grab is about a second under SwiftShader and the
+whole attack is 0.61s, so it caught the lunge once and the breath five times.
+`__sk.debug.scrub(clip, t)` holds a clip at an exact moment — the same rule
+every gate in this project already follows, driven off state rather than off
+time — and `unfreeze()` gives the figures back. Both are gated, because a debug
+hook that can freeze every figure for good is exactly the kind that gets left
+on.
+
+Gates: core 711, smoke 118. And a screenshot, because a gate can say the card
+deforms and cannot say whether a lunge reads as a lunge. Looking at it: the
+anticipation is doing the work — the lean away is what makes the commit read —
+and the honest reservation is that at this camera the commit is closer to a
+lean than a lunge. Worth trying 0.35-0.40 before it starts looking like a move.
+
 ## v16 — 2026-09-06
 **A bot that knows the character, and the rebalance it justified**
 v14 asked six bots to play six characters and found that the greedy control

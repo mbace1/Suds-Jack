@@ -18,6 +18,7 @@
 // comes up with it.
 
 import * as THREE from 'three';
+import { poseAt, clipLength, REST } from './motion.js';
 
 const TW = 256, TH = 512;        // texture size; the figure fills ~70% of the height
 export const PUPPET_H = 1.5;     // world height of a scale-1 figure
@@ -829,6 +830,27 @@ const TIN = new THREE.MeshLambertMaterial({ color: '#7a7d84' });
 const TIN_DARK = new THREE.MeshLambertMaterial({ color: '#6a6d74' });
 
 // ── the object ───────────────────────────────────────────────────────────
+// ── the paper motion switch ──────────────────────────────────────────────
+// One module-level setting rather than a field walked over every figure: they
+// all obey the same toggle, and a live switch has to reach the enemies already
+// standing on the bridge as well as the next ones.
+//   'paper' — Paper Mario: anticipation, a lunge that squashes, a card that
+//             bends when it is hit, and a breath at rest.
+//   'still' — what this game shipped through v16: a slide and a small wobble.
+let MOTION = 'paper';
+export function setFigureMotion(m) { MOTION = m === 'still' ? 'still' : 'paper'; }
+export function figureMotion() { return MOTION; }
+
+// FROZEN holds every clip at whatever `t` it was scrubbed to, so a contact
+// sheet can be taken of the real poses. Without it a screenshot is a picture
+// of the wall clock: a frame grab takes about a second under SwiftShader and
+// the whole attack is 0.61s, so the first shot lands on the lunge and every
+// one after it on the breath. Nothing in the game sets this — only the debug
+// seam does, the same way every other test here is driven off state rather
+// than off time.
+let FROZEN = false;
+export function freezeFigures(v) { FROZEN = !!v; }
+
 export class Puppet {
   constructor({ look, seed = 1, scale = 1, facing = 1, mood = DUSK }) {
     this.group = new THREE.Group();
@@ -864,6 +886,20 @@ export class Puppet {
     // faces +x by default: mirror the sheet for a left-facing enemy
     body.scale.x = facing;
     this.body = body;
+    // THE FLEX. A shear has no Object3D field — three.js gives you position,
+    // quaternion and scale, and a sheared matrix is none of those — so the
+    // card bends through a group that composes its own matrix. It sits
+    // BETWEEN the base and the body on purpose: a tin oval does not squash,
+    // and putting the scale on the whole group made the figure's stand
+    // breathe with it, which reads as the camera bobbing.
+    this.flex = new THREE.Group();
+    this.flex.matrixAutoUpdate = false;
+    this.flex.add(body);
+    // Its origin is the group's origin, which is the FEET: the plane geometry
+    // is translated up by h/2 at build time, so every rotation and every
+    // squash here is already anchored where the figure touches the plank.
+    this.clip = null;                 // { name, t, dir }
+    this.phase = (seed % 97) / 97;    // so a row of six does not breathe in unison
 
     // The base. `tin` is a toy soldier's stamped oval — a flat disc with a
     // raised lip, squashed along the depth axis; `card` is a cardboard wedge
@@ -878,7 +914,7 @@ export class Puppet {
       lip.rotation.x = Math.PI / 2; lip.position.y = 0.05 * scale; lip.scale.y = 0.55;
       const tab = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.34, 0.03 * scale, 0.05 * scale), TIN_DARK);
       tab.position.set(0, 0.062 * scale, 0);
-      this.group.add(body, disc, lip, tab);
+      this.group.add(this.flex, disc, lip, tab);
     } else {
       const wedge = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.05 * scale, bd), BOARD);
       wedge.position.y = 0.025 * scale;
@@ -888,7 +924,7 @@ export class Puppet {
         new THREE.MeshBasicMaterial({ map: tapeTexture(), transparent: true, depthWrite: false }));
       tape.position.set(0, 0.06 * scale, 0.03 * scale);
       tape.rotation.x = -0.9; tape.rotation.z = 0.15;
-      this.group.add(body, wedge, slot, tape);
+      this.group.add(this.flex, wedge, slot, tape);
     }
 
     // a soft shadow on the bench, which the fall leaves behind
@@ -903,8 +939,20 @@ export class Puppet {
 
   setHome(x, y, z) { this.home.set(x, y, z); this.group.position.copy(this.home); this.shadow.position.set(x, y + 0.004, z); }
 
-  hit() { this.wobbleVel += 9 * (Math.random() > 0.5 ? 1 : -1); this.flash = 1; }
-  attack() { this.lunge = 1; }
+  // A verb is a thing that happens to the OBJECT. `dir` is world-signed: an
+  // attack goes the way the figure faces, a blow arrives from the other side.
+  play(name, dir) { this.clip = { name, t: 0, dir }; }
+
+  hit() {
+    this.flash = 1;
+    if (MOTION === 'paper') this.play('hurt', -this.facing);
+    else this.wobbleVel += 9 * (Math.random() > 0.5 ? 1 : -1);
+  }
+  attack() {
+    if (MOTION === 'paper') this.play('attack', this.facing);
+    else this.lunge = 1;
+  }
+  hop() { if (MOTION === 'paper') this.play('hop', this.facing); }
 
   die() {
     if (!this.alive) return;
@@ -932,10 +980,38 @@ export class Puppet {
     const k = this.lightK * (1 + this.flash * 1.6);
     this.mat.color.setRGB(k, k, k);
 
-    // attack lunge: out toward the enemy and back
-    if (this.lunge > 0) this.lunge = Math.max(0, this.lunge - dt * 2.8);
-    const l = Math.sin(this.lunge * Math.PI) * 0.35 * this.facing;
-    g.position.set(this.home.x + l, this.home.y, this.home.z + Math.sin(this.lunge * Math.PI) * 0.12);
+    // ── the pose ───────────────────────────────────────────────────────
+    // In 'paper' the figure is moved as an object: a clip while one is
+    // playing, the breath the rest of the time. In 'still' it is v16's slide
+    // and nothing else, which is what the toggle exists to be compared with.
+    let pose = REST;
+    if (MOTION === 'paper' && this.alive) {
+      if (this.clip) {
+        if (!FROZEN) this.clip.t += dt;
+        if (this.clip.t > clipLength(this.clip.name)) this.clip = null;
+        else pose = poseAt(this.clip.name, this.clip.t, { dir: this.clip.dir });
+      }
+      if (!this.clip) pose = poseAt('breath', (this.tAlive = (this.tAlive ?? this.phase * 2.8) + (FROZEN ? 0 : dt)), {});
+    } else {
+      // attack lunge: out toward the enemy and back
+      if (this.lunge > 0) this.lunge = Math.max(0, this.lunge - dt * 2.8);
+      const l = Math.sin(this.lunge * Math.PI) * 0.35 * this.facing;
+      pose = { ...REST, dx: l / this.height, dz: Math.sin(this.lunge * Math.PI) * 0.12 / this.height };
+    }
+    // Offsets are in the figure's OWN height, so one number reads the same on
+    // a rat and on the Bridge King.
+    const H = this.height;
+    g.position.set(this.home.x + pose.dx * H, this.home.y + pose.dy * H, this.home.z + pose.dz * H);
+    // R(rot) · Shear(skew) · Scale(sx, sy), written straight into the matrix
+    // because a shear is not a field. Matrix4.set takes ROW-major arguments.
+    const c = Math.cos(pose.rot), sn = Math.sin(pose.rot);
+    this.flex.matrix.set(
+      c * pose.sx, c * pose.skew * pose.sy - sn * pose.sy, 0, 0,
+      sn * pose.sx, sn * pose.skew * pose.sy + c * pose.sy, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1,
+    );
+    this.flex.matrixWorldNeedsUpdate = true;
 
     if (this.fall && !this.fall.done) {
       const f = this.fall;

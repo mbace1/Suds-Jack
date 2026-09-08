@@ -436,6 +436,75 @@ const check = (name, ok, extra = '') => {
       return kinds.size >= 1;
     }));
 
+  // ── the paper motion, and its toggle (v17) ─────────────────────────────
+  // The figures are card, so they can be MOVED rather than redrawn. A gate
+  // can say the card actually deforms and that the switch reaches the figures
+  // already on the bridge; it cannot say whether a lunge reads as a lunge.
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
+  await page.waitForTimeout(250);
+  check('the menu carries a figures toggle, and it starts on paper',
+    (await page.locator('#figs').innerText()).includes('paper'));
+  // At rest the figure breathes: sample the flex matrix over real frames.
+  const breath = await page.evaluate(async () => {
+    const out = [];
+    for (let i = 0; i < 40; i++) { out.push(__sk.debug.poseOf('hero').sy); await new Promise(r => requestAnimationFrame(r)); }
+    return out;
+  });
+  check(`a figure at rest breathes rather than standing frozen (${(Math.max(...breath) - Math.min(...breath)).toExponential(1)})`,
+    Math.max(...breath) - Math.min(...breath) > 1e-4, `${Math.min(...breath)}..${Math.max(...breath)}`);
+  // A verb moves the object: fire one and watch the card lean, shear and go.
+  const lunge = await page.evaluate(async () => {
+    __sk.debug.playClip('attack', 'hero');
+    const out = [];
+    for (let i = 0; i < 45; i++) { out.push(__sk.debug.poseOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    return out;
+  });
+  check(`an attack commits the whole figure forward (${Math.max(...lunge.map(p => p.x)).toFixed(2)})`,
+    Math.max(...lunge.map(p => p.x)) - Math.min(...lunge.map(p => p.x)) > 0.15);
+  check('and it leans and squashes rather than sliding rigid',
+    Math.max(...lunge.map(p => Math.abs(p.lean))) > 0.02 && Math.min(...lunge.map(p => p.sy)) < 0.98);
+  const hurt = await page.evaluate(async () => {
+    __sk.debug.playClip('hurt', 'hero');
+    const out = [];
+    for (let i = 0; i < 30; i++) { out.push(__sk.debug.poseOf('hero').shear); await new Promise(r => requestAnimationFrame(r)); }
+    return out;
+  });
+  check(`being hit BENDS the card — the shear is the whole point (${Math.max(...hurt.map(Math.abs)).toFixed(2)})`,
+    Math.max(...hurt.map(Math.abs)) > 0.05);
+  // The switch is live and reaches figures already standing on the bridge.
+  const still = await page.evaluate(async () => {
+    __sk.debug.setFigures('still');
+    // One frame for the switch to land: the matrix on screen is still the last
+    // paper pose until update() runs again, and sampling that frame measured
+    // the TRANSITION rather than the resting state (0.009 of span, all of it
+    // in sample zero).
+    await new Promise(r => requestAnimationFrame(r));
+    const out = [];
+    for (let i = 0; i < 30; i++) { out.push(__sk.debug.poseOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    return { label: document.querySelector('#figs')?.textContent, span: Math.max(...out.map(p => p.sy)) - Math.min(...out.map(p => p.sy)) };
+  });
+  check('switching to still stops the motion on figures already on the bridge', still.span < 1e-6, `${still.span}`);
+  check('and the toggle says so', /still/.test(await page.locator('#figs').innerText()));
+  check('the choice is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.figures') === '"still"'));
+  await page.evaluate(() => __sk.debug.setFigures('paper'));
+  // The contact-sheet seam: scrub holds a clip at an exact moment so a
+  // screenshot shows the real pose rather than the wall clock (a frame grab
+  // takes ~1s here and the whole attack is 0.61s). Gated because a debug hook
+  // that can freeze every figure for good is exactly the kind that gets left on.
+  const scrub = await page.evaluate(async () => {
+    __sk.debug.scrub('attack', 0.31, 'hero');
+    await new Promise(r => requestAnimationFrame(r));
+    const held = __sk.debug.poseOf('hero');
+    await new Promise(r => requestAnimationFrame(r));
+    const held2 = __sk.debug.poseOf('hero');
+    __sk.debug.unfreeze();
+    const out = [];
+    for (let i = 0; i < 20; i++) { out.push(__sk.debug.poseOf('hero').sy); await new Promise(r => requestAnimationFrame(r)); }
+    return { same: Math.abs(held.x - held2.x) < 1e-9 && Math.abs(held.sy - held2.sy) < 1e-9, moves: Math.max(...out) - Math.min(...out) };
+  });
+  check('a scrubbed clip holds still, so a contact sheet shows the real pose', scrub.same);
+  check('and unfreezing gives the figures back', scrub.moves > 1e-4, `${scrub.moves}`);
+
   // ── a puppet falls over in 3D ──────────────────────────────────────────
   await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
   await page.waitForTimeout(200);

@@ -5,6 +5,7 @@
 
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
 import { readFileSync } from 'node:fs';
+import { poseAt, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
 import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
@@ -678,6 +679,55 @@ playCard(s, 0, 0);
 let sawJoker = false;
 while (s.phase === 'reward') { if (s.reward.kind === 'joker') sawJoker = true; chooseReward(s, 0); }
 check(`a full row of ${RULES.jokerMax} takes no more`, !sawJoker && s.jokers.length === RULES.jokerMax);
+
+
+// ── the paper motion (v17) ───────────────────────────────────────────────
+// `js/motion.js` is pure for exactly this reason: a verb that throws a figure
+// off its own base is arithmetic, and arithmetic can be checked in bare node.
+// What a gate CANNOT say is whether a lunge reads as a lunge — that is a
+// screenshot, and this repo has shipped a green suite over wrong art twice.
+check(`the motion vocabulary has every verb the fight produces (${CLIP_NAMES.join(', ')})`,
+  ['breath', 'attack', 'hurt', 'hop'].every(n => CLIP_NAMES.includes(n)));
+check('every clip starts at REST — a verb that begins displaced pops',
+  CLIP_NAMES.every(n => isHeld(n) || Object.keys(REST).every(k => Math.abs(poseAt(n, 0, { dir: 1 })[k] - REST[k]) < 1e-9)));
+check('and every finite clip comes home — otherwise a figure hit twice drifts off its base for the rest of the run',
+  CLIP_NAMES.every(n => landsAtRest(n)));
+check('past the end a clip is REST, not frozen mid-lunge',
+  Object.keys(REST).every(k => Math.abs(poseAt('attack', 99, { dir: 1 })[k] - REST[k]) < 1e-9));
+const outOfBounds = [];
+for (const n of CLIP_NAMES) {
+  const span = isHeld(n) ? 3 : clipLength(n);
+  for (let i = 0; i <= 120; i++) {
+    for (const dir of [1, -1]) {
+      const p = poseAt(n, span * i / 120, { dir });
+      if (Math.abs(p.dx) > LIMITS.dx || Math.abs(p.dy) > LIMITS.dy || Math.abs(p.dz) > LIMITS.dz
+        || Math.abs(p.rot) > LIMITS.rot || Math.abs(p.skew) > LIMITS.skew
+        || p.sx < LIMITS.scale[0] || p.sx > LIMITS.scale[1] || p.sy < LIMITS.scale[0] || p.sy > LIMITS.scale[1]) outOfBounds.push(n);
+    }
+  }
+}
+check(`no clip leaves the figure's own envelope${outOfBounds.length ? ` — ${[...new Set(outOfBounds)]}` : ''}`, outOfBounds.length === 0);
+// The direction is the whole reason a lunge is not a wobble: the same clip
+// played the other way must be its mirror, and nothing may be direction-blind
+// in the axes that carry the verb.
+const fwd = poseAt('attack', 0.28, { dir: 1 }), back = poseAt('attack', 0.28, { dir: -1 });
+check(`an attack commits the way the figure faces (${fwd.dx.toFixed(2)} vs ${back.dx.toFixed(2)})`,
+  fwd.dx > 0.1 && Math.abs(fwd.dx + back.dx) < 1e-9 && Math.abs(fwd.rot + back.rot) < 1e-9);
+// Anticipation is what makes a lunge read as a lunge instead of a slide: the
+// figure is still leaning AWAY at 0.20s and fully committed by 0.31, so the
+// strike takes 0.11s against a 0.20s wind-up.
+check('and the strike is faster than the wind-up — anticipation is what makes it read',
+  poseAt('attack', 0.20, { dir: 1 }).dx < 0 && poseAt('attack', 0.31, { dir: 1 }).dx > 0.29);
+const hurt = poseAt('hurt', 0.06, { dir: -1 });
+check(`being hit bends the card, it does not just slide it (shear ${hurt.skew.toFixed(2)})`,
+  Math.abs(hurt.skew) > 0.1 && hurt.sy < 1);
+const air = poseAt('hop', 0.27, { dir: 1 });
+check(`a hop leaves the plank (${air.dy.toFixed(2)} of its own height up)`, air.dy > 0.15);
+check('and lands on a squash rather than snapping upright', poseAt('hop', 0.46, { dir: 1 }).sy < 0.99);
+// The breath is held: it must never end, and must actually move.
+const b1 = poseAt('breath', 0.0), b2 = poseAt('breath', 0.7);
+check('the breath is a held pose that never stops and always moves', isHeld('breath') && Math.abs(b1.sy - b2.sy) > 1e-4);
+
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
