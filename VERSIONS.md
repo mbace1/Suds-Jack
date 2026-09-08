@@ -7,6 +7,31 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v243 — 2026-09-08
+**BOOST LANE — a Rush level, and the first Rush-level parity measurement against the port** *(re-cut from the unmerged v241 on top of the v242 hotfix; v241 is skipped for the same reason v238 was)*
+- **`levels/boost-lane.json`** — 56 spawns over 40 s, `rules.mode: "rush"`.
+  Authored to teach the verb rather than to be hard: two lanes to learn that
+  boost kills on contact, a wall to cut through, pressure from both ends with
+  room to vent, a crowd where a chain is finally worth building, and one heavy
+  with escorts you must not stop for. `BUNDLED` names it, `sw.js` precaches it,
+  `?level=boost-lane` plays it and the editor's LOAD lists it
+- **The port plays it too** (its Q-040): **an authored timeline replaces the
+  DIRECTOR and nothing else** — every Rush verb stays, Rush's own difficulty
+  clock is parked, the file's duration is the only clock. This build has done
+  exactly that since v237 (`rush.levelDuration()` → 1e9 inside a level), so
+  the two builds now park the same clock in the same place for the same reason
+- **Measured this time, not claimed.** The cross-build parity gate had only
+  ever run on the two ARCADE levels. With this file on the deployed tree the
+  port can sync it, and `level-parity.mjs boost-lane` is in the gate list
+  below — the first proof that a RUSH level is the same level in both engines
+- `level-check.mjs` 74 · `level-smoke.sh boost-lane` (a Rush run, headless,
+  every spawn where and when the file says) · `shader-lint` · `smoke` ·
+  `cabinets` · `webgpu-smoke` · `editor-smoke`; port `level-parity.mjs
+  boost-lane` — numbers in the PR
+- Cache-bust `?v=194` → `?v=195`; HUD label → v243
+
+---
+
 ## v242 — 2026-09-08
 **HOTFIX: the floor went WHITE on phones — a half-float overflow in v240's shape term** *(owner screenshot, Android Chrome, base mode: white floor, HUD and score fine, 61 FPS)*
 - **What you saw:** the game running perfectly and the whole floor rendered
