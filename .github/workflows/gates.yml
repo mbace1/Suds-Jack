@@ -71,7 +71,7 @@ jobs:
       - name: install chromium
         run: |
           npm install --no-save playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
 
       - name: the shared flow engine's daylight entry point
         run: node flow-core/test/smoke.cjs
@@ -261,7 +261,7 @@ jobs:
       - name: install chromium
         run: |
           npm install --no-save playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
 
       - name: the hub cabinet route into gameplay
         run: NODE_PATH=$(npm root -g) node toko-move/test/cabinet-route.cjs
@@ -290,7 +290,7 @@ jobs:
       - name: install chromium
         run: |
           npm install --no-save playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
 
       - name: every cabinet, the feedback path, and the short URL
         run: node test/hub-smoke.cjs
@@ -308,7 +308,7 @@ jobs:
       - name: install chromium
         run: |
           npm install --no-save playwright@1.62.1
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: validate art and play through the Hub
         run: |
           python3 concrete/art-source/validate.py
