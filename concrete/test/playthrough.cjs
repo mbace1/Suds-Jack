@@ -113,7 +113,7 @@ const server = http.createServer((req, res) => {
     const takeoffHeading = Number(await page.locator("#world").getAttribute("data-heading"));
     await page.keyboard.down("d");
     await page.waitForFunction(
-      (start) => Number(document.querySelector("#world").dataset.heading) < start - 1,
+      (start) => Number(document.querySelector("#world").dataset.heading) < start - 1.2,
       takeoffHeading,
       { timeout: 10000 },
     );
@@ -129,7 +129,9 @@ const server = http.createServer((req, res) => {
       { timeout: 15000 },
     );
     assert.match(await page.locator("#trick-name").innerText(), /BAIL/);
-    await page.waitForTimeout(1250);
+    await page.waitForFunction(() => document.querySelector("#speed").textContent === "0", null, {
+      timeout: 15000,
+    });
     assert.equal(await page.locator("#speed").innerText(), "0");
     console.log("PASS sideways landing causes bail and automatic recovery");
     await page.locator("#help").click();
