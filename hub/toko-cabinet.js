@@ -1,5 +1,5 @@
-import { GAMES } from './games.js?v=70';
-import { ART } from './art.js?v=21';
+import { GAMES } from './games.js?v=71';
+import { ART } from './art.js?v=22';
 if (!GAMES.some(g => g.id === 'tokolive')) GAMES.unshift({id:'tokolive',status:'active',note:'v44 — single-answer routing + mobile conversation polish',title:'Toko Live',tagline:'Talk to Toko face to face. The approved Toko face is the only Toko image used.',lineage:'Sierra conversation × virtual character × local small-brain',tags:['conversation','canvas','local-ai'],controls:'type and press Enter · tap suggested topics · Esc / HOME returns',path:'toko-live/',inRepo:true,accent:'#f0027f',art:'tokolive'});
 ART.tokolive ||= (g,a)=>{
   g.p(0,0,128,72,'#f0027f');
