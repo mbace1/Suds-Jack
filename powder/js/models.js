@@ -18,6 +18,8 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 /** Material names the game assigns meaning to. Anything else is left as authored. */
 export const MATERIALS = ['HULL', 'ACCENT', 'CHROME', 'GUNMETAL', 'GLASS', 'INTAKE', 'DECAL', 'FAN', 'LAND'];
+/** The eight a SHIP may use; LAND is the landmarks' alone. */
+export const SHIP_MATERIALS = MATERIALS.filter(n => n !== 'LAND');
 
 /** The ship envelope, metres, in the game's frame (nose toward -z). */
 export const SHIP = {
@@ -86,8 +88,8 @@ export function validateShip(root, file) {
   }
   const tris = triangles(root);
   if (tris > SHIP.tris) problems.push(`${file}: ${tris} triangles, budget is ${SHIP.tris}`);
-  const unknown = materialNames(root).filter(n => !MATERIALS.includes(n));
-  if (unknown.length) problems.push(`${file}: materials not in the contract: ${unknown.join(', ')} (allowed: ${MATERIALS.join(', ')})`);
+  const unknown = materialNames(root).filter(n => !SHIP_MATERIALS.includes(n));
+  if (unknown.length) problems.push(`${file}: materials not in the ship contract: ${unknown.join(', ')} (allowed: ${SHIP_MATERIALS.join(', ')})`);
   for (const e of SHIP.empties) if (!root.getObjectByName(e)) problems.push(`${file}: empty '${e}' is missing — the flames and the exhaust haze anchor there`);
   for (const f of SHIP.fans) if (!root.getObjectByName(f)) note(`${file}: no '${f}' object; the turbine face will not spin`, true);
   // the nose has to be toward -z: the nozzles sit behind the centre of mass
@@ -134,10 +136,17 @@ function bakeLandmark(root, file) {
     geo.computeBoundingSphere();
     const size = new THREE.Vector3(); geo.computeBoundingBox(); geo.boundingBox.getSize(size);
     const tris = geo.attributes.position.count / 3;
+    // the contract is the contract: a landmark outside it is NOT registered,
+    // the same as a ship — an oversized or dense one would be stamped across
+    // every streamed tile that draws it
     const longest = Math.max(size.x, size.y, size.z);
+    const problems = [];
     if (longest < LANDMARK.size[0] || longest > LANDMARK.size[1])
-      note(`${file}: landmark is ${longest.toFixed(1)} m across; expected ${LANDMARK.size.join('-')}`, true);
-    if (tris > LANDMARK.tris) note(`${file}: ${tris} triangles, landmark budget is ${LANDMARK.tris}`, true);
+      problems.push(`${file}: landmark is ${longest.toFixed(1)} m across; expected ${LANDMARK.size.join('-')}`);
+    if (tris > LANDMARK.tris) problems.push(`${file}: ${tris} triangles, landmark budget is ${LANDMARK.tris}`);
+    const bad = materialNames(root).filter(n => n !== 'LAND');
+    if (bad.length) problems.push(`${file}: landmark materials must be LAND, found ${bad.join(', ')}`);
+    if (problems.length) { for (const p of problems) note(p, true); note(`${file}: NOT registered`, true); geo.dispose(); return null; }
     // the sled collides with a landmark as a boulder of this footprint
     const radius = Math.max(size.x, size.z) * 0.42;
     return { name: file.replace(/\.glb$/, ''), geo, radius, size };
