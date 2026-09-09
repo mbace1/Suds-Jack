@@ -1,18 +1,35 @@
 // Input — twin sticks on glass, keyboard on desktop, both collapsing into the
-// one control struct the craft reads. Stick state is exposed via sticks() so
-// the HUD overlay can draw them, same as dropcabal and hyperdagger.
+// one control struct the vehicle reads. Stick state is exposed via sticks() so
+// the overlay can draw them, the same idiom the other cabinets here use.
 //
-// LEFT  stick  x = carve, the whole game
-//              y = weight: push forward to tuck, pull back to scrub speed off
-// RIGHT stick  y = push forward to hold the afterburner
-//              x = counter-steer trim at half authority — enough to hold a
-//                  slide straight with the left stick still loaded up, and
-//                  the spin axis once you are off the ground
+// LEFT  stick  x = steer
+//              y = throttle up / brake down. There is no auto-throttle: this
+//                  build has a turbine with spool lag, and managing it is the
+//                  point, so the stick has to be able to ask for part power.
+// RIGHT stick  x = camera pan, left/right round the sled
+//              y = WEIGHT. Pull back and you boost and the nose lifts, like a
+//                  hot rod on the launch. Push forward and the nose is pressed
+//                  down — a front spoiler — without scrubbing any speed. This
+//                  is the snowboarder's lean: back to float over the deep
+//                  stuff, forward to make the front edge bite.
 //
-// Desktop: A/D or ←/→ carve, W/↑ tuck, S/↓ scrub, Space/Shift burn,
-//          Enter start, Esc pause.
-export const STICK_R = 56;
-
+// GAMEPAD is the scheme's natural home, because both of the axes this build
+// added are analog: the turbine has spool lag so part throttle is a real
+// choice, and weight is a lean, not a button. Keyboard flattens both to on
+// and off. The pad feeds the SAME control struct — nothing downstream knows
+// which device is driving. Left stick steer + throttle/brake, right stick pan
+// + weight, and RT/LT additionally as throttle/brake for anyone who expects a
+// racer to work that way; whichever input asks for more throttle wins.
+//
+// Desktop: the arrow cluster MIRRORS WASD, which is what everyone expects.
+//   W / Up      throttle          A / Left   steer left
+//   S / Down    brake             D / Right  steer right
+//   Space       boost, nose up    Shift      spoiler, nose down
+//   Q / E       pan the camera    F swap chassis (menu)   Esc pause
+// It used to split the arrow cluster three ways — up/down were the WEIGHT
+// axis while left/right panned the camera, and neither did what an arrow key
+// does in any other game. Nothing is doubled up now: one job per key.
+export const STICK_R = 58;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 
 export class InputManager {
@@ -23,6 +40,12 @@ export class InputManager {
     this._right = { id: -1, x0: 0, y0: 0, x: 0, y: 0 };
     this.onStart = null;
     this.onPause = null;
+    this.onSwap = null;
+    this.gamepad = false;
+    this._pad = { steer: 0, throttle: 0, brake: false, pan: 0, lean: 0 };
+    this._kSteer = 0;             // the keyboard's steer, ramped (see read)
+    this._kT = performance.now();
+    this._padPrev = { start: false, pause: false, swap: false };
     this._init();
   }
 
@@ -31,8 +54,9 @@ export class InputManager {
   _init() {
     addEventListener('keydown', e => {
       if (!this.keys[e.code]) {
-        if (e.code === 'Enter' || e.code === 'Space') this.onStart?.();
+        if (e.code === 'Enter') this.onStart?.();
         if (e.code === 'Escape') this.onPause?.();
+        if (e.code === 'KeyF') this.onSwap?.();
       }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
       this.keys[e.code] = true;
@@ -48,71 +72,143 @@ export class InputManager {
 
   _start(e) {
     this.touchSeen = true;
-    this.onStart?.();
     for (const t of e.changedTouches) {
       if (t.target && t.target.tagName === 'BUTTON') continue;
-      // floating origin per half: the stick appears wherever the thumb lands
-      const stick = t.clientX < innerWidth * 0.5 ? this._left : this._right;
-      if (stick.id !== -1) continue;
-      stick.id = t.identifier;
-      stick.x0 = stick.x = t.clientX;
-      stick.y0 = stick.y = t.clientY;
+      this.onStart?.();
+      const s = t.clientX < innerWidth * 0.5 ? this._left : this._right;
+      if (s.id !== -1) continue;
+      s.id = t.identifier;
+      s.x0 = s.x = t.clientX; s.y0 = s.y = t.clientY;
     }
   }
 
   _move(e) {
     for (const t of e.changedTouches) {
-      for (const stick of [this._left, this._right]) {
-        if (stick.id !== t.identifier) continue;
-        stick.x = t.clientX;
-        stick.y = t.clientY;
+      for (const s of [this._left, this._right]) {
+        if (s.id !== t.identifier) continue;
+        s.x = t.clientX; s.y = t.clientY;
       }
     }
   }
 
   _end(e) {
     for (const t of e.changedTouches) {
-      for (const stick of [this._left, this._right]) {
-        if (stick.id !== t.identifier) { continue; }
-        stick.id = -1;
-        stick.x = stick.x0; stick.y = stick.y0;
+      for (const s of [this._left, this._right]) {
+        if (s.id !== t.identifier) continue;
+        s.id = -1; s.x = s.x0; s.y = s.y0;
       }
     }
   }
 
-  /** Stick deflection, each axis in [-1, 1], screen-up negative. */
-  _def(stick, out) {
-    if (stick.id === -1) { out.x = 0; out.y = 0; out.on = false; return out; }
-    let dx = stick.x - stick.x0, dy = stick.y - stick.y0;
+  /**
+   * Poll the first connected pad once per frame. Buttons are edge-detected
+   * here so the callbacks fire once, the same way the keyboard path does.
+   * Standard mapping: 0 A, 3 Y, 6 LT, 7 RT, 8 Back, 9 Start.
+   */
+  pollGamepad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : null;
+    let gp = null;
+    if (pads) for (const q of pads) if (q && q.connected) { gp = q; break; }
+    if (!gp) {
+      this.gamepad = false;
+      this._pad.steer = this._pad.throttle = this._pad.pan = this._pad.lean = 0;
+      this._pad.brake = false;
+      this._padPrev.start = this._padPrev.pause = this._padPrev.swap = false;
+      return;
+    }
+    this.gamepad = true;
+    const DZ = 0.16;
+    const ax = i => {
+      const v = gp.axes[i] || 0;
+      return Math.abs(v) < DZ ? 0 : (v - Math.sign(v) * DZ) / (1 - DZ);
+    };
+    const val = i => (gp.buttons[i] ? gp.buttons[i].value : 0);
+    const hit = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+
+    const ly = ax(1);
+    this._pad.steer = ax(0);
+    // stick forward is -y, and RT is the racing convention: take whichever
+    // is asking for more power
+    this._pad.throttle = Math.max(Math.max(0, -ly), val(7));
+    this._pad.brake = Math.max(Math.max(0, ly), val(6)) > 0.35;
+    this._pad.pan = ax(2);
+    // stick BACK (+y) is lean back — boost and nose up, matching the touch
+    // stick and the way you would shift your weight on a board
+    this._pad.lean = ax(3);
+
+    const start = hit(0), pause = hit(9), swap = hit(3);
+    if (start && !this._padPrev.start) this.onStart?.();
+    if (pause && !this._padPrev.pause) this.onPause?.();
+    if (swap && !this._padPrev.swap) this.onSwap?.();
+    this._padPrev.start = start; this._padPrev.pause = pause; this._padPrev.swap = swap;
+  }
+
+  _def(s, out) {
+    if (s.id === -1) { out.x = 0; out.y = 0; out.on = false; return out; }
+    let dx = s.x - s.x0, dy = s.y - s.y0;
     const len = Math.hypot(dx, dy);
     if (len > STICK_R) { dx *= STICK_R / len; dy *= STICK_R / len; }
-    out.x = dx / STICK_R;
-    out.y = dy / STICK_R;
-    out.on = true;
+    out.x = dx / STICK_R; out.y = dy / STICK_R; out.on = true;
     return out;
   }
 
-  /** Collapse every input path into the one control struct the craft wants. */
-  read() {
+  read(out) {
     const k = this.keys;
-    let steer = 0;
-    if (k.KeyA || k.ArrowLeft) steer -= 1;
-    if (k.KeyD || k.ArrowRight) steer += 1;
-    let tuck = !!(k.KeyW || k.ArrowUp);
+    let steer = 0, pan = 0, lean = 0;
+    // A key is a switch, and full lock the instant it closes is a slide at
+    // any real speed — the sticks and the pad are analog, the keyboard was
+    // not, and it was the keyboard the controls were reported on. So the
+    // digital steer RAMPS: 0.22 s to full lock, 0.09 s back, which makes a
+    // tap a quarter turn and a hold a committed one, the way every arcade
+    // racer has treated a keyboard since there were keyboards.
+    let want = 0;
+    if (k.KeyA || k.ArrowLeft) want -= 1;
+    if (k.KeyD || k.ArrowRight) want += 1;
+    const now = performance.now(), dt = Math.min(0.1, (now - this._kT) / 1000);
+    this._kT = now;
+    const rate = want && Math.sign(want) === Math.sign(this._kSteer) || (want && !this._kSteer) ? dt / 0.22 : dt / 0.09;
+    this._kSteer = this._kSteer < want ? Math.min(want, this._kSteer + rate)
+                 : Math.max(want, this._kSteer - rate);
+    steer = this._kSteer;
+    if (k.KeyQ) pan -= 1;
+    if (k.KeyE) pan += 1;
+    let throttle = (k.KeyW || k.ArrowUp) ? 1 : 0;
     let brake = !!(k.KeyS || k.ArrowDown);
-    let boost = !!(k.Space || k.ShiftLeft || k.ShiftRight);
+    if (k.Space) lean = 1;                                  // back: boost, nose up
+    if (k.ShiftLeft || k.ShiftRight) lean = -1;             // forward: spoiler
 
     const L = this._def(this._left, _L), R = this._def(this._right, _R);
     if (L.on || R.on) {
-      steer = clamp(steer + L.x + R.x * 0.5, -1, 1);
-      // Tucking is the resting state on touch — the hill supplies the speed,
-      // so the stick is there to take it away, not to ask for it.
-      if (L.on) { tuck = L.y <= 0.1; brake = L.y > 0.45; }
-      else tuck = true;
-      if (R.y < -0.4) boost = true;
+      steer = clamp(steer + L.x, -1, 1);
+      if (L.on) {
+        throttle = clamp(-L.y * 1.35, 0, 1);
+        brake = L.y > 0.45;
+      }
+      // and NO hidden auto-throttle when only the right stick is down. It
+      // used to force 0.75 here, so reaching over to pan the camera opened
+      // the taps on its own — against this file's own contract three lines
+      // up, and unexplainable from the driver's seat.
+      if (R.on) {
+        pan = clamp(R.x * 1.2, -1, 1);
+        // screen-down is +y: pulling the stick back is lean > 0
+        lean = Math.abs(R.y) > 0.18 ? clamp(R.y * 1.25, -1, 1) : 0;
+      }
     }
-    if (Math.abs(steer) < 0.10) steer = 0;
-    return { steer, tuck, brake, boost };
+    // the pad last, and merged rather than exclusive, so a stick in one hand
+    // and a keyboard under the other still works
+    if (this.gamepad) {
+      const P = this._pad;
+      if (P.steer) steer = clamp(steer + P.steer, -1, 1);
+      throttle = Math.max(throttle, P.throttle);
+      brake = brake || P.brake;
+      if (P.pan) pan = clamp(pan + P.pan, -1, 1);
+      if (P.lean) lean = clamp(lean + P.lean, -1, 1);
+    }
+    if (Math.abs(steer) < 0.09) steer = 0;
+    out.steer = steer; out.throttle = throttle; out.brake = brake;
+    out.lean = lean; out.pan = pan;
+    out.overdrive = lean > 0.45;
+    return out;
   }
 }
 

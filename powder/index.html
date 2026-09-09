@@ -6,76 +6,132 @@
   <title>Powder</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { background: #1a1815; overflow: hidden; touch-action: none; height: 100%; }
+    html, body { background: #1a1226; overflow: hidden; touch-action: none; height: 100%; }
     body { cursor: crosshair; }
-    /* low-res canvas stretched over the viewport with hard pixel edges */
-    #game {
-      display: block; width: 100vw; height: 100vh;
-      image-rendering: pixelated; image-rendering: crisp-edges;
-    }
-    /* twin sticks are drawn here at full resolution, over the chunky render */
+    #game { display: block; width: 100vw; height: 100vh; }
     #ui { position: fixed; inset: 0; pointer-events: none; z-index: 4; }
-    /* the faintest scanline, as if this were coming off a composite lead */
-    #scan {
-      position: fixed; inset: 0; pointer-events: none; z-index: 5;
-      background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.13) 0 1px, transparent 1px 3px);
-      mix-blend-mode: multiply;
-    }
+
     .ui {
-      font-family: 'Courier New', monospace; color: #e8dfc6;
-      text-shadow: 2px 2px 0 #241f1c; user-select: none; letter-spacing: 1px;
+      font-family: 'Courier New', monospace; color: #f0e6d2;
+      text-shadow: 0 2px 6px rgba(20,10,30,.85); user-select: none; letter-spacing: 1px;
     }
-    #hud {
-      position: fixed; top: 10px; left: 0; right: 0; z-index: 10;
-      display: flex; align-items: flex-start; justify-content: space-between;
-      padding: 0 18px; pointer-events: none; font-size: 14px; font-weight: bold;
+
+    /* telemetry cluster — instruments, not a scoreboard */
+    #cluster { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+    .panel {
+      position: absolute;
+      background: linear-gradient(180deg, rgba(29,23,38,.62), rgba(29,23,38,.34));
+      border: 1px solid rgba(240,230,210,.22);
+      border-radius: 3px; padding: 9px 13px;
+      backdrop-filter: blur(3px);
     }
-    #hud .cell { min-width: 96px; }
-    #hud .r { text-align: right; }
-    #hud .big { font-size: 30px; line-height: 1; }
-    #hud .lbl { font-size: 10px; opacity: 0.75; letter-spacing: 2px; }
-    #charge {
-      width: 168px; height: 11px; margin-top: 5px;
-      border: 2px solid #e8dfc6; background: rgba(36,31,28,0.55);
-    }
-    #chargeFill { height: 100%; width: 0%; background: #6b3550; }
-    #mid { text-align: center; }
+    .lbl { font-size: 9px; letter-spacing: 2.5px; opacity: .62; }
+    .val { font-size: 27px; font-weight: bold; line-height: 1.05; }
+    .val small { font-size: 11px; opacity: .6; letter-spacing: 1px; }
+    .row { display: flex; gap: 16px; }
+    .bar { height: 7px; background: rgba(240,230,210,.14); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+    .bar > i { display: block; height: 100%; width: 0%; background: #8fe8d8; transition: width .06s linear; }
+    /* the weight axis: two bars growing out from a centre line */
+    .lean { height: 15px; background: rgba(240,230,210,.14); position: relative; margin-top: 2px; }
+    .lean > i { position: absolute; bottom: 0; left: 0; right: 0; height: 0%; background: #8fe8d8; transition: height .06s linear; }
+    .lean.dn { margin-top: 1px; }
+    .lean.dn > i { bottom: auto; top: 0; background: #ffb066; }
+
+    #speedo { left: 18px; bottom: 18px; min-width: 168px; }
+    #speedo .val { font-size: 44px; }
+    #eng { left: 18px; bottom: 132px; min-width: 168px; }
+    #dyn { right: 18px; bottom: 18px; min-width: 244px; text-align: right; }
+    #race { right: 18px; top: 18px; min-width: 158px; text-align: right; }
+    #nav { left: 50%; top: 16px; transform: translateX(-50%); text-align: center; min-width: 250px; }
+    #nav #compass { font-size: 17px; font-weight: bold; letter-spacing: 2px; }
+    #race .val { font-size: 30px; }
+
+    /* The panel has to fit the viewport it is given — a laptop in a browser
+       window is often under 620px tall, and the menu grew a gamepad line.
+       Everything in here is sized in vh with a px clamp, so it shrinks rather
+       than running off the bottom. */
     #msg {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      z-index: 10; text-align: center; pointer-events: none;
-      font-size: 22px; line-height: 1.8; font-weight: bold;
-      background: rgba(36,31,28,0.55); padding: 22px 34px; border: 2px solid #e8dfc6;
+      z-index: 12; text-align: center; pointer-events: none;
+      font-size: clamp(13px, 2.4vh, 20px); line-height: 1.7; font-weight: bold;
+      background: rgba(29,23,38,.66); padding: clamp(10px, 2.4vh, 24px) 36px; width: min(88vw, 720px);
+      border: 1px solid rgba(240,230,210,.3); border-radius: 4px;
+      backdrop-filter: blur(6px); max-height: 94vh;
     }
-    #msg b { font-size: 34px; letter-spacing: 4px; }
-    #msg small { font-size: 12px; letter-spacing: 1px; line-height: 2.2; }
+    #msg b { font-size: clamp(22px, 4.3vh, 36px); letter-spacing: 6px; }
+    /* the wordmark: white glyphs on transparency, so it takes the panel's tint */
+    #msg .logo {
+      display: block; width: min(64vw, 620px); max-height: 14vh;
+      object-fit: contain; margin: 2px auto clamp(4px, 1.4vh, 10px);
+      filter: drop-shadow(0 4px 18px rgba(20,10,30,.7));
+    }
+    #msg small { font-size: clamp(10px, 1.7vh, 12px); letter-spacing: 1px;
+      line-height: 1.95; font-weight: normal; }
+    /* the concept plates: the chassis card on the menu, the frame on the
+       results. Sized in vh like the rest, and dropped on a short viewport
+       rather than pushing the controls off the bottom. */
+    #msg .plate {
+      display: block; width: min(64vw, 620px); height: clamp(70px, 16vh, 170px);
+      object-fit: cover; object-position: center 42%; margin: 0 auto 6px;
+      border: 1px solid rgba(240,230,210,.28); border-radius: 3px;
+      filter: saturate(.92) contrast(1.04);
+    }
+    @media (max-height: 520px) { #msg .plate { display: none; } }
     #toast {
-      position: fixed; bottom: 16%; left: 50%; transform: translateX(-50%);
-      z-index: 10; font-size: 19px; font-weight: bold; letter-spacing: 3px;
-      pointer-events: none; display: none; color: #f3eee2;
+      position: fixed; bottom: 21%; left: 50%; transform: translateX(-50%);
+      z-index: 11; font-size: 20px; font-weight: bold; letter-spacing: 4px;
+      pointer-events: none; display: none; color: #8fe8d8;
     }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
   <canvas id="ui"></canvas>
-  <div id="scan"></div>
 
-  <div id="hud" class="ui">
-    <div class="cell">
-      <div class="big"><span id="speed">0</span></div>
-      <div class="lbl">KM/H</div>
-      <div id="charge"><div id="chargeFill"></div></div>
-      <div class="lbl">BURN</div>
+  <div id="cluster" class="ui">
+    <div class="panel" id="speedo">
+      <div class="lbl">GROUND SPEED</div>
+      <div class="val"><span id="kph">0</span> <small>KM/H</small></div>
+      <div class="lbl" style="margin-top:6px">HULL</div>
+      <div class="bar"><i id="dmg" style="background:#ff8a5c"></i></div>
     </div>
-    <div id="mid" class="cell">
-      <div class="big"><span id="time">45.0</span></div>
-      <div class="lbl">SECONDS</div>
+
+    <div class="panel" id="eng">
+      <div class="lbl">TURBINE N1</div>
+      <div class="val"><span id="n1">0</span> <small>%</small></div>
+      <div class="bar"><i id="n1bar"></i></div>
+      <div class="lbl" style="margin-top:7px">TGT</div>
+      <div class="bar"><i id="heat"></i></div>
     </div>
-    <div class="cell r">
-      <div class="big"><span id="pos">1/6</span></div>
-      <div class="lbl">POSITION</div>
-      <div style="margin-top:6px"><span id="dist">0</span> M</div>
-      <div class="lbl" id="surf">PACKED</div>
+
+    <div class="panel" id="dyn">
+      <div class="row" style="justify-content:flex-end">
+        <div><div class="lbl">LAT G</div><div class="val" style="font-size:20px"><span id="glat">0.00</span></div></div>
+        <div><div class="lbl">SLIP</div><div class="val" style="font-size:20px"><span id="slip">0.0</span></div></div>
+        <div><div class="lbl">GAP</div><div class="val" style="font-size:20px"><span id="gap">2.6</span></div></div>
+        <div><div class="lbl">SINK cm</div><div class="val" style="font-size:20px"><span id="sink">0</span></div></div>
+        <div style="width:26px;flex:0 0 26px">
+          <div class="lbl">WGT</div>
+          <div class="lean"><i id="leanUp"></i></div>
+          <div class="lean dn"><i id="leanDn"></i></div>
+        </div>
+      </div>
+      <div class="lbl" style="margin-top:5px"><span id="surf">SALT PAN</span> · <span id="chassis">NOSE</span></div>
+    </div>
+
+    <div class="panel" id="race">
+      <div class="lbl">CLOCK</div>
+      <div class="val"><span id="time">60.0</span></div>
+      <div class="row" style="justify-content:flex-end;margin-top:5px">
+        <div><div class="lbl">GATES</div><div class="val" style="font-size:18px"><span id="gate">0</span></div></div>
+        <div><div class="lbl">RIFT s</div><div class="val" style="font-size:18px"><span id="rift">0</span></div></div>
+        <div><div class="lbl">POS</div><div class="val" style="font-size:18px"><span id="pos">1/5</span></div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="nav">
+      <div class="lbl">NEXT GATE</div>
+      <div id="compass">RIFT  0m  AHEAD</div>
     </div>
   </div>
 
@@ -90,8 +146,7 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=2"></script>
-  <!-- the arcade shell: a home button and a controller way back -->
+  <script type="module" src="js/main.js?v=9"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
 </body>
 </html>

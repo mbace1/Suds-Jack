@@ -157,8 +157,8 @@ const GENERIC = {
 
 const SPECIFIC = {
   en: {
-    'powder:balance': ['Burn runs out too fast', 'Diving off the line is not worth it'],
-    'powder:controls': ['Carving feels heavy', 'The scrub barely slows me'],
+    'powder:balance': ['The gate is too far from the breach', 'Overdrive overheats too fast'],
+    'powder:controls': ['It slides when I only wanted to turn', 'The right stick does two things at once'],
     'tinyhawk:controls': ['Cannot tell when the stick is loaded', 'The camera loses me mid-trick'],
     'tinyhawk:idea': ['Give me a goal to chase', 'I want a line to follow'],
     'tiny2d:controls': ['Hard to tell where the lip is', 'The trick flick never comes out'],
@@ -183,8 +183,8 @@ const SPECIFIC = {
     'radiofree:look': ['The decode is hard to follow', 'The voice needs…'],
   },
   fi: {
-    'powder:balance': ['Palo loppuu liian nopeasti', 'Ladulta poikkeaminen ei kannata'],
-    'powder:controls': ['Kaarto tuntuu raskaalta', 'Jarrutus ei juuri hidasta'],
+    'powder:balance': ['Portti on liian kaukana aukosta', 'Tehostus ylikuumenee liian nopeasti'],
+    'powder:controls': ['Se liukuu kun halusin vain kääntyä', 'Oikea tatti tekee kahta asiaa yhtä aikaa'],
     'tinyhawk:controls': ['En huomaa milloin tatti on ladattu', 'Kamera hukkaa minut tempun aikana'],
     'tinyhawk:idea': ['Anna jokin tavoite', 'Haluaisin linjan jota seurata'],
     'tiny2d:controls': ['Vaikea hahmottaa missä harja on', 'Temppunapsautus ei lähde koskaan'],
@@ -209,8 +209,8 @@ const SPECIFIC = {
     'radiofree:look': ['Purkua on vaikea seurata', 'Ääni kaipaa…'],
   },
   ja: {
-    'powder:balance': ['バーンが早く切れすぎる', '踏み跡を外す価値がない'],
-    'powder:controls': ['カービングが重い', 'スクラブがほとんど効かない'],
+    'powder:balance': ['ゲートが裂け目から遠すぎる', 'ブーストがすぐ過熱する'],
+    'powder:controls': ['曲がりたいだけなのに滑る', '右スティックが二役で混乱する'],
     'tinyhawk:controls': ['スティックが溜まったのが分からない', 'トリック中にカメラが見失う'],
     'tinyhawk:idea': ['追いかける目標がほしい', 'たどるラインがほしい'],
     'tiny2d:controls': ['頂がどこか分かりにくい', 'トリックの弾きが出ない'],
