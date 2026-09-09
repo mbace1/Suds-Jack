@@ -53,19 +53,27 @@ const server = http.createServer((req, res) => {
     console.log("ART", await page.locator("#world").evaluate((e) => ({ ...e.dataset })));
     await page.locator("#start").click();
     await page.keyboard.down("w");
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() => Number(document.querySelector("#speed").textContent) >= 15, null, {
+      timeout: 15000,
+    });
     await page.keyboard.press("Space");
     await page.waitForTimeout(120);
     await page.keyboard.press("j");
-    await page.waitForTimeout(900);
     await page.keyboard.up("w");
+    await page.waitForFunction(
+      () => Number(document.querySelector("#score").textContent.replaceAll(",", "")) > 0,
+      null,
+      { timeout: 15000 },
+    );
     const score = await page.locator("#score").innerText();
     assert(Number(score.replaceAll(",", "")) > 0, "aerial combo banks via keyboard");
     await page.keyboard.press("r");
     await page.waitForTimeout(200);
     assert.equal(await page.locator("#speed").innerText(), "0");
     await page.keyboard.down("w");
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() => Number(document.querySelector("#speed").textContent) >= 15, null, {
+      timeout: 15000,
+    });
     await page.keyboard.down("d");
     await page.waitForTimeout(120);
     await page.keyboard.up("d");
@@ -122,7 +130,11 @@ const server = http.createServer((req, res) => {
     await mobile.locator('[data-key=" "]').tap();
     await mobile.waitForTimeout(150);
     await mobile.locator('[data-key="j"]').tap();
-    await mobile.waitForTimeout(900);
+    await mobile.waitForFunction(
+      () => Number(document.querySelector("#score").textContent.replaceAll(",", "")) > 0,
+      null,
+      { timeout: 15000 },
+    );
     assert(
       Number((await mobile.locator("#score").innerText()).replaceAll(",", "")) > 0,
       "touch combo banks",
