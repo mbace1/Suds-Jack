@@ -497,21 +497,24 @@ non-person is cast AND that every person is, since a half-plated row is worse
 than none. Plates are sized **off their INK, never their file** (each is padded
 differently; TURF's `render.js` pays for the same lesson on props) and ship from
 **`figures/`, not `art-src/`** — a Slay Kallio deploy is the folder minus
-`test/` and `art-src/`, so runtime art there would 404. **The weapons rule is
-NO FIREARMS** (v19): `art-src/concepts/README.md` rejected six concept sheets
-partly on *no weapons* — "TURF's grammar, not a game whose verbs are a swing, a
-bottle and a shopping trolley" — but taken literally that rejects the whole set,
-since every one of the 32 plates carries something. So the line goes where it
-matters: **a knife on a bum is plausible, a pistol is a different game in a
-different country.** v18 shipped with the Old Boxer holding a sidearm and the
-Dealer two, which is what "lean weapon-light" is worth as a filter — a
-preference, not a rule. `FIREARMS` in `plates.js` is the rejected list,
-hand-kept the way the concept pack keeps a verdict per sheet (no pixel test can
-see a gun), and the gate fails if the cast intersects it. Three of the five
-recasts are better castings on their own terms, which is the sign the
-constraint was doing work: `grunt-ragged`'s **bandaged fists** are the Old
-Boxer, `cleaver`'s apron and face mask are the Night Shift, and `knuckle` is a
-Bridge King.
+`test/` and `art-src/`, so runtime art there would 404. **On weapons: v19 refused eight
+plates for carrying a gun and the owner REVERSED it** (2026-09-09: *"of course
+they can have firearms"*). The reasoning was mine, not theirs — a knife on a bum
+is plausible, a man drinking in a park with a pistol is a different game in a
+different country — and `art-src/concepts/README.md`'s *no weapons* filter
+cannot be applied literally anyway, since every one of the 32 plates carries
+something. The ban is **gone rather than left passing vacuously**; `FIREARMS`
+became `WITH_GUNS`, a **note** (a real fact about the set, established by a pass
+over all thirty-two at full size, and the thing you want while casting), and the
+gate now only checks the note still names plates that exist. **The cast was NOT
+reverted with the rule**, which is the deliberate half: three of v19's five
+recasts are better on their own terms and that reasoning outlives the permission
+— `grunt-ragged`'s **bandaged fists** ARE the Old Boxer, `cleaver`'s apron and
+face mask ARE the Night Shift, `knuckle` is a Bridge King — and the owner had
+just approved that exact cast as the default one version earlier, so reversing
+it here would undo their decision in the name of their permission. What the
+permission buys is the **spare pool, 11 → 19**; all nineteen are people, so they
+do nothing for the ten drawn figures and what they buy is more human enemies.
 **Three passes were putting WHITE DOTS on every figure** (v20, owner: *"white
 dots on both"*), and rendering the cast at full size named all three: `grime`
 drew 55% of 1500 specks near-white and, unlike the dark half, **did not scale
@@ -642,7 +645,7 @@ would have had someone cut the heal. **Sum the drops; a heal is not a fight
 being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
 and a two-point HP change failed all twelve at once — none of them is about the
 Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
-Gates: `node slaykallio/test/core.mjs` (719 checks) and
+Gates: `node slaykallio/test/core.mjs` (718 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (129). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent

@@ -10,25 +10,25 @@
 // bug v10 found the other way round: a cutout is an unlit plane and the torch
 // has to be painted INTO it.
 //
-// THE WEAPONS RULE, and how it is actually applied here (v19).
+// THE WEAPONS RULE, and the owner reversing half of it (v22).
 // `art-src/concepts/README.md` rejected six concept sheets partly on **no
-// weapons**: "nearly every figure in the pack carries a knife, which is TURF's
-// grammar and not a game whose verbs are a swing, a bottle and a shopping
-// trolley." Every one of these 32 plates carries something, so that rule taken
-// literally would reject the whole set and there would be nothing to cast.
+// weapons**. Every one of these 32 plates carries something, so that rule taken
+// literally rejects the whole set; v19 drew the line at firearms instead, on
+// the reasoning that a knife on a bum is plausible and a man drinking in a park
+// with a pistol is a different game in a different country.
 //
-// So the line is drawn where it actually matters, and looking at the plates at
-// full size is what drew it: **a knife is not the problem, a FIREARM is.** A
-// street knife on a bum reading the far end of a Helsinki bridge is plausible;
-// a man drinking in a park with a pistol in his hand is a different game, in a
-// different country. v18 shipped with the Old Boxer holding a sidearm and the
-// Dealer holding two, which is the tell that "lean weapon-light" was too soft
-// a filter to be one.
+// **Owner, 2026-09-09: *"of course they can have firearms."*** So that is not a
+// rule, and the eight plates v19 refused are castable. `WITH_GUNS` stays as a
+// NOTE rather than a ban — it is a real fact about the set, it cost a pass over
+// all thirty-two at full size to establish, and it is the thing a person wants
+// to know while casting. Nothing enforces it.
 //
-// `FIREARMS` below is the rejected list — hand-kept, like the concept pack's
-// verdicts, because no pixel test can see a gun — and `core.mjs` fails if the
-// cast ever intersects it. Bottles, cans, pipes, bats and bandaged fists are
-// in; nothing that shoots is.
+// The cast below was NOT reverted with the rule. Three of v19's five recasts
+// are better castings on their own terms and the reasoning survives the
+// permission: `grunt-ragged`'s bandaged fists ARE the Old Boxer, `cleaver`'s
+// apron and face mask ARE the Night Shift, and `knuckle` is a Bridge King.
+// A constraint that improved the work does not get undone because it was
+// lifted — and the owner had just approved this cast as the game's default.
 //
 // A plate ships from `figures/`, NOT from `art-src/`: a Slay Kallio deploy is
 // a copy of the folder minus `test/` and `art-src/`, so runtime art in
@@ -40,8 +40,9 @@ const DIR = 'figures/';
 // id → plate. Only person-shaped figures are cast: the rats, blobs, birds and
 // the bear have no equivalent in a roster of street operators and keep their
 // drawn cutout, which is why this is a lookup rather than a blanket switch.
-// Plates that put a GUN in the figure's hand. Rejected outright — see above.
-export const FIREARMS = ['denny', 'deuce', 'grunt-handgun', 'grunt-shotgun',
+// Plates that put a gun in the figure's hand. A NOTE for whoever casts next,
+// not a filter — see above. All eight are available.
+export const WITH_GUNS = ['denny', 'deuce', 'grunt-handgun', 'grunt-shotgun',
   'grunt-tanner', 'grunt-track', 'niner', 'gunner'];
 
 export const CAST = {
@@ -55,7 +56,7 @@ export const CAST = {
   // the bums on the other side
   rival:       'grunt-hollow',
   rival_b:     'grunt-runt',
-  dealer:      'grunt-smoke',  // cigarette, bottle, ragged coat — was denny, who held two pistols
+  dealer:      'grunt-smoke',  // cigarette, bottle, ragged coat
   preacher:    'grunt-beard',
   bouncer:     'grunt-duffy',  // heavy, bearded, a length of pipe
   night_shift: 'cleaver',      // apron and a face mask: he IS a night shift

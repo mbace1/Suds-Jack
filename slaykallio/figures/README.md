@@ -33,7 +33,7 @@ cast ever starts pointing at `art-src/`.
 Copy the PNG in and change the one line in `CAST` (`js/plates.js`). Nothing
 else knows a figure's art by name.
 
-## The weapons rule: NO FIREARMS
+## The weapons rule, and the owner lifting it
 
 `art-src/concepts/README.md` rejected six concept sheets partly on **no
 weapons**: *"nearly every figure in the pack carries a knife, which is TURF's
@@ -46,13 +46,25 @@ a gun is.** A street knife on a bum reading the far end of a bridge is
 plausible; a man drinking in a park with a pistol in his hand is a different
 game in a different country.
 
-`FIREARMS` in `js/plates.js` is the rejected list, hand-kept because no pixel
-test can see a gun, and `test/core.mjs` fails if the cast ever intersects it:
+v19 drew the line at firearms on that reasoning and refused eight plates.
+**Owner, 2026-09-09: *"of course they can have firearms."*** So it is not a
+rule. `WITH_GUNS` in `js/plates.js` stays as a **note** — a real fact about the
+set that cost a pass over all thirty-two at full size, and the thing you want
+to know while casting — and nothing enforces it:
 
     denny · deuce · grunt-handgun · grunt-shotgun · grunt-tanner ·
     grunt-track · niner · gunner
 
-v18 shipped with two of those cast (the Old Boxer and the Dealer). v19 recast
-them, and three of the five recasts turned out to be better castings anyway —
-`grunt-ragged`'s bandaged fists ARE the Old Boxer, and `cleaver`'s apron and
-face mask ARE the Night Shift.
+**The cast was not reverted with the rule.** Three of v19's five recasts are
+better castings on their own terms and that reasoning outlives the permission:
+`grunt-ragged`'s bandaged fists ARE the Old Boxer, `cleaver`'s apron and face
+mask ARE the Night Shift, `knuckle` is a Bridge King. A constraint that
+improved the work does not get undone because it was lifted.
+
+## What is still spare
+
+Nineteen of the thirty-two are uncast — the eleven that were always free plus
+the eight above. All nineteen are PEOPLE, so they do not help the ten drawn
+figures (rats, blobs, pigeons, a gull, a bear); what they buy is more human
+enemies. `vex` and `leopard` are the only two women in the set and `leopard` is
+the Dog Walker, so a second woman means `vex` or nothing.

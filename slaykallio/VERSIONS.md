@@ -7,6 +7,38 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v22 — 2026-09-09
+**They can have firearms**
+Owner: *"of course they can have firearms."* v19 refused eight of the thirty-two
+plates for carrying a gun, on the reasoning that a knife on a bum reading the
+far end of a Helsinki bridge is plausible while a man drinking in a park with a
+pistol is a different game in a different country. That was mine, not the
+owner's, and it is reversed.
+
+The ban is **gone rather than left passing vacuously** — a gate that enforces
+nothing is noise. `FIREARMS` is now `WITH_GUNS`, kept as a **note**: it is a
+real fact about the set, it cost a pass over all thirty-two at full size to
+establish by eye, and it is the thing a person wants to know while casting. What
+`core.mjs` checks now is that the note still names plates that exist, which is
+the only way a list like this rots.
+
+**The cast was NOT reverted with the rule, and that is the deliberate half.**
+Three of v19's five recasts are better castings on their own terms and the
+reasoning survives the permission: `grunt-ragged`'s bandaged fists ARE the Old
+Boxer, `cleaver`'s apron and face mask ARE the Night Shift, `knuckle` is a
+Bridge King. A constraint that improved the work does not get undone because it
+was lifted — and the owner had just approved this exact cast as the game's
+default one version earlier. Reversing it here would be undoing their decision
+in the name of their permission.
+
+**What it actually buys is the spare pool: 11 → 19.** All nineteen are people,
+so they do nothing for the ten drawn figures (rats, blobs, pigeons, a gull, a
+bear) — what they buy is more human enemies, which is a `data.js` change plus a
+line each in `CAST` and carries a balance consequence, since every encounter was
+measured against the current seventeen.
+
+Gates: core 718, smoke 129.
+
 ## v21 — 2026-09-09
 **TURF's cast is the default look**
 Owner, on the four-way contact sheet: *"the first characters, style and all
