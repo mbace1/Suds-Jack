@@ -505,29 +505,12 @@ const check = (name, ok, extra = '') => {
   check('a scrubbed clip holds still, so a contact sheet shows the real pose', scrub.same);
   check('and unfreezing gives the figures back', scrub.moves > 1e-4, `${scrub.moves}`);
 
-  // ── TURF's cast on this bridge (v18) ───────────────────────────────────
-  check('the menu carries an art toggle, and it starts on the drawn figures',
-    (await page.locator('#art').innerText()).includes('drawn'));
-  const artSwap = await page.evaluate(async () => {
-    const shot = () => {
-      const c = __sk.debug.look('boxer');
-      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-      let ink = 0, sum = 0;
-      for (let i = 3; i < d.length; i += 4) if (d[i] > 24) { ink++; sum += d[i - 3] + d[i - 2] + d[i - 1]; }
-      return { ink, tone: sum / Math.max(1, ink) };
-    };
-    const drawn = shot();
-    __sk.debug.setArt('turf');
-    await new Promise(r => setTimeout(r, 200));
-    const turf = shot();
-    return { drawn, turf, plated: __sk.debug.plated('boxer'), ratPlated: __sk.debug.plated('rat') };
-  });
-  check(`switching to turf repaints the figure with a real plate (${artSwap.drawn.ink} → ${artSwap.turf.ink} ink px)`,
-    Math.abs(artSwap.turf.ink - artSwap.drawn.ink) > 400);
-  check('a person is cast and a rat is not — the rats keep the drawn cutout',
-    artSwap.plated && !artSwap.ratPlated);
+  // ── TURF's cast on this bridge (v18, the DEFAULT since v21) ───────────
+  check('the menu carries an art toggle, and it starts on the TURF plates',
+    (await page.locator('#art').innerText()).includes('turf'));
   // The plate replaces the PAINT, not the process: a raw plate would stand in
-  // TURF's own lighting in front of a Kallio evening.
+  // TURF's own lighting in front of a Kallio evening. Measured while the
+  // plates are up, which since v21 is simply the boot state.
   const plateLit = await page.evaluate(() => {
     const c = __sk.debug.look('boxer');
     const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -535,16 +518,34 @@ const check = (name, ok, extra = '') => {
     for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 24 && d[i] > d[i + 2] + 12) warm++;
     return warm;
   });
-  check(`and the torch is painted into it rather than left in TURF's light (${plateLit} warm px)`, plateLit > 200);
+  check(`the torch is painted into a plate rather than leaving it in TURF's light (${plateLit} warm px)`, plateLit > 200);
+  const artSwap = await page.evaluate(async () => {
+    const ink = () => {
+      const c = __sk.debug.look('boxer');
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 24) n++;
+      return n;
+    };
+    const turf = ink();
+    __sk.debug.setArt('drawn');
+    await new Promise(r => setTimeout(r, 200));
+    const drawn = ink();
+    return { turf, drawn, plated: __sk.debug.plated('boxer'), ratPlated: __sk.debug.plated('rat') };
+  });
+  check(`the drawn cutouts are still one tap away (${artSwap.turf} → ${artSwap.drawn} ink px)`,
+    Math.abs(artSwap.turf - artSwap.drawn) > 400);
+  check('a person is cast and a rat is not — the rats keep the drawn cutout either way',
+    artSwap.plated && !artSwap.ratPlated);
+  check('and the choice is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.art') === '"drawn"'));
+  await page.evaluate(() => __sk.debug.setArt('turf'));
+  check('and switching back restores the plates', /turf/.test(await page.locator('#art').innerText()));
   const turfFight = await page.evaluate(async () => {
     __sk.start('boxer', 4);
     await new Promise(r => setTimeout(r, 250));
     return __sk.debug.poseOf('hero') != null;
   });
   check('a whole fight spawns on the plates without falling over', turfFight);
-  check('and the choice is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.art') === '"turf"'));
-  await page.evaluate(() => __sk.debug.setArt('drawn'));
-  check('and switching back restores the drawn figures', /drawn/.test(await page.locator('#art').innerText()));
 
   // ── how the card is CUT (v20) ──────────────────────────────────────────
   check('the menu carries a cut toggle, and it starts die-cut to the figure',

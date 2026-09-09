@@ -102,9 +102,19 @@ setFigureMotion(store.get('figures', 'paper'));
 // mid-fight would repaint one figure and leave the row mismatched. The menu
 // starts on 'drawn' and the roster repaints itself once the plates land, so a
 // slow decode never shows a blank card.
-setFigureArt(store.get('art', 'drawn'));
+setFigureArt(store.get('art', 'turf'));
 setFigureCut(store.get('cut', 'silhouette'));
-preloadPlates().then(() => { if (!state || state.phase === 'menu') renderMenu(); });
+// The plates are the default now, so the preload is on the critical path for
+// how the game LOOKS on arrival rather than for a toggle nobody has touched.
+// A figure whose plate has not decoded falls back to the drawn cutout and
+// bakes that into its texture, so anything built before this resolves has to
+// be built again — the menu roster, and a fight if one is somehow already
+// running (a deep link, or a fast hand on a slow connection).
+preloadPlates().then(() => {
+  if (!state || state.phase === 'menu') return renderMenu();
+  if (state.phase === 'fight' || state.phase === 'reward') spawnFight(); else spawnHeroAlone();
+  renderAll();
+});
 
 function resize() {
   const w = innerWidth, h = innerHeight;

@@ -908,7 +908,12 @@ export function freezeFigures(v) { FROZEN = !!v; }
 // 'turf'  — the owner's TURF character plates, for the person-shaped figures
 //           that have one. The rats, blobs, birds and the bear stay drawn
 //           either way: a roster of street operators has no rat in it.
-let ART = 'drawn';
+// TURF's plates are the DEFAULT from v21 (owner, on the four-way contact sheet:
+// *"the first characters, style and all work. let's make that the default"* —
+// the first of the four being the plates, die-cut). 'drawn' is still one tap
+// away and is still what every figure with no plate wears, so the mixed row is
+// now the ordinary look of this game rather than a fallback.
+let ART = 'turf';
 export function setFigureArt(a) { ART = a === 'turf' ? 'turf' : 'drawn'; }
 export function figureArt() { return ART; }
 

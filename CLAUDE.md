@@ -470,9 +470,20 @@ the first strip caught the lunge once and the breath five times —
 `__sk.debug.scrub(clip, t)` holds a clip at an exact moment and `unfreeze()`
 gives the figures back, both gated because a hook that can freeze every figure
 for good is the kind that gets left on.
-**TURF's cast can wear this bridge** (v18, owner: *"I would like the turf art
-used on those figures"*). `js/plates.js` casts 13 of the 23 figures from the
-owner's 32 TURF character plates behind an `art: drawn / turf` menu toggle, and
+**TURF's cast IS the look** (v18, owner: *"I would like the turf art used on
+those figures"*; **the default since v21**, owner on the four-way contact sheet:
+*"the first characters, style and all work. let's make that the default"* — the
+first of the four being the plates, **die-cut**). `js/plates.js` casts 13 of the
+23 figures from the owner's 32 TURF character plates; `art: drawn / turf` is
+still a menu toggle and the drawn cutouts are one tap away, but the game boots
+on the plates, so **the mixed row is the ordinary look now** rather than a
+fallback — thirteen plated people, ten drawn rats, blobs, birds and a bear, and
+it reads because they are different KINDS of thing. That promotion has one real
+engineering consequence: **the preload is on the critical path**, because a
+figure whose plate has not decoded falls back to the drawn cutout and BAKES it
+into a `CanvasTexture` made once at construction, so everything built before the
+preload resolves has to be built again (the roster, and a fight if one is
+already running). And
 the rule that makes it work is that **the plate replaces the PAINT, not the
 process** — `paintCutout` still runs newsprint, torchlight, nicks, fibre and
 grime over it, because those passes are what make a figure belong to this

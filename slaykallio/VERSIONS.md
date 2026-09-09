@@ -7,6 +7,34 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v21 — 2026-09-09
+**TURF's cast is the default look**
+Owner, on the four-way contact sheet: *"the first characters, style and all
+work. let's make that the default."* The first of the four was the plates,
+**die-cut** — so `art: turf` and `cut: silhouette` are what the game boots on.
+The drawn cutouts are one tap away and are still what every figure with no
+plate wears, which means **the mixed row is the ordinary look of this game
+now** rather than a fallback: thirteen plated people, ten drawn rats, blobs,
+birds and a bear. That reads because they are different KINDS of thing, not
+because one is better art.
+
+**The preload moved onto the critical path**, and that is the whole engineering
+content of this version. A figure whose plate has not decoded falls back to the
+drawn cutout and **bakes that into its texture** — it is a `CanvasTexture` made
+once at construction, not a material that repaints itself — so while the plates
+were an opt-in toggle a slow decode cost nothing, and now it decides how the
+game looks on arrival. Anything built before the preload resolves has to be
+built again: the menu roster, and a fight if one is somehow already running (a
+deep link, or a fast hand on a slow connection). The respawn path is the one
+the art toggle already used.
+
+The gate flipped with it rather than being left asserting the old boot state —
+it starts on the plates, proves the drawn cutouts are still one tap away, and
+still measures the torch pass on a plate, which is now simply a measurement of
+the default rather than of a switch somebody might throw.
+
+Gates: core 719, smoke 129.
+
 ## v20 — 2026-09-07
 **The white dots, and a card that is CUT rather than die-cut**
 Owner: *"white dots on both. also we can test alternative that uses circular
