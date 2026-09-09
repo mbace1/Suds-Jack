@@ -103,13 +103,31 @@ const server = http.createServer((req, res) => {
     await page.waitForTimeout(700);
     await page.keyboard.press("r");
     await page.keyboard.down("w");
-    await page.waitForTimeout(1250);
+    await page.waitForFunction(() => Number(document.querySelector("#speed").textContent) >= 32, null, {
+      timeout: 15000,
+    });
     await page.keyboard.press("Space");
+    await page.waitForFunction(() => document.querySelector("#world").dataset.air === "true", null, {
+      timeout: 5000,
+    });
+    const takeoffHeading = Number(await page.locator("#world").getAttribute("data-heading"));
     await page.keyboard.down("d");
-    await page.waitForTimeout(580);
+    await page.waitForFunction(
+      (start) => Number(document.querySelector("#world").dataset.heading) < start - 1,
+      takeoffHeading,
+      { timeout: 10000 },
+    );
     await page.keyboard.up("d");
     await page.keyboard.up("w");
-    await page.waitForTimeout(380);
+    await page.waitForFunction(() => document.querySelector("#world").dataset.air === "false", null, {
+      timeout: 10000,
+    });
+    console.log("LANDING", await page.locator("#world").evaluate((e) => ({ ...e.dataset })));
+    await page.waitForFunction(
+      () => document.querySelector("#trick-name").textContent.includes("BAIL"),
+      null,
+      { timeout: 15000 },
+    );
     assert.match(await page.locator("#trick-name").innerText(), /BAIL/);
     await page.waitForTimeout(1250);
     assert.equal(await page.locator("#speed").innerText(), "0");

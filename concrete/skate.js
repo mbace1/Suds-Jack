@@ -246,7 +246,7 @@ export function createGame(host, update) {
     const effects=createEffects(scene,art.mobile);
     function burst(n,spark=false){effects.burst(rider.position.clone().add(new T.Vector3(0,.12,0)),n,spark)}
     const keys = {}, pressed = {};
-    let lookX = 0, lookY = 0, analogX = 0, analogY = 0, active = false, paused = false, score = 0, best = 0, time = 120, speed = 0, angle = 0, vy = 0, combo = 0, mult = 1, trick = '', trickTimer = 0, air = false, airAngle = 0, flip = 0, grab = 0, grinding = -1, grindLock = 0, camOrbit = 0, camPitch = 0, device = 'KEYBOARD', last = performance.now(), raf = 0, hudTick = 0, bail = 0;
+    let lookX = 0, lookY = 0, analogX = 0, analogY = 0, active = false, paused = false, score = 0, best = 0, time = 120, speed = 0, angle = 0, vy = 0, combo = 0, mult = 1, trick = '', trickTimer = 0, air = false, airAngle = 0, flip = 0, grab = 0, grinding = -1, grindLock = 0, camOrbit = 0, camPitch = 0, device = 'KEYBOARD', last = performance.now(), raf = 0, hudTick = 0, bail = 0, landingTurn = 0;
     try {
         best = Number(localStorage.getItem('concrete-best') || 0);
     }
@@ -470,6 +470,7 @@ export function createGame(host, update) {
                             air = false;
                             vy = 0;
                             const turn = Math.abs(Math.sin(angle - airAngle));
+                            landingTurn = turn;
                             if (turn > 0.85 && speed > 8) {
                                 combo = 0;
                                 mult = 1;
@@ -551,6 +552,9 @@ export function createGame(host, update) {
         host.dataset.riderX = rider.position.x.toFixed(3);
         host.dataset.riderZ = rider.position.z.toFixed(3);
         host.dataset.heading = angle.toFixed(4);
+        host.dataset.air = air ? 'true' : 'false';
+        host.dataset.bail = bail.toFixed(3);
+        host.dataset.landingTurn = landingTurn.toFixed(3);
         hudTick += dt;
         if (hudTick > 0.09) {
             hudTick = 0;
