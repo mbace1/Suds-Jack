@@ -168,21 +168,6 @@ const server = http.createServer((req, res) => {
       "touch combo banks",
     );
     assert.equal(await mobile.locator("#world").getAttribute("data-art"), "ready");
-    const frames = await mobile.evaluate(
-      () =>
-        new Promise((resolve) => {
-          const a = [];
-          let last = performance.now();
-          function frame(t) {
-            a.push(t - last);
-            last = t;
-            if (a.length < 120) requestAnimationFrame(frame);
-            else resolve(a.sort((x, y) => x - y));
-          }
-          requestAnimationFrame(frame);
-        }),
-    );
-    console.log("MOBILE frame median/p95", frames[60], frames[114]);
     console.log("MOBILE ART", await mobile.locator("#world").evaluate((e) => ({ ...e.dataset })));
     console.log("PASS mobile title -> touch ollie/flip -> bank, both sticks visible");
     const fallback = await browser.newPage({ viewport: { width: 1280, height: 800 } });
