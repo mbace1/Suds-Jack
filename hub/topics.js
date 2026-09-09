@@ -67,6 +67,7 @@ export const KINDS = kinds('en');
 // order above, so a new game gets a sensible menu the day it is listed and a
 // better one the day someone thinks about it.
 const LEADS = {
+  concrete: ['controls', 'look'],
   powder: ['balance', 'controls'],        // "the field still needs balancing"
   tinyhawk: ['controls', 'idea'],         // "goals and the node map are not [in]"
   tiny2d: ['controls', 'balance'],        // one button, so the feel is the game

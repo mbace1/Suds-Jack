@@ -1,7 +1,7 @@
 // Register Toko Live without editing the large catalogue/art registries.
 // Imported before hub.js so the existing renderer sees the new cabinet.
-import { GAMES } from './games.js?v=44';
-import { ART } from './art.js?v=16';
+import { GAMES } from './games.js?v=46';
+import { ART } from './art.js?v=18';
 
 if (!GAMES.some(g => g.id === 'tokolive')) {
   GAMES.unshift({

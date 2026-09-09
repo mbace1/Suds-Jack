@@ -297,6 +297,25 @@ jobs:
         env:
           NODE_PATH: ${{ github.workspace }}/node_modules
 
+  concrete:
+    name: concrete skating slice
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: validate art and play through the Hub
+        run: |
+          python3 concrete/art-source/validate.py
+          node concrete/test/playthrough.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
   turf:
     name: turf
     runs-on: ubuntu-latest

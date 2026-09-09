@@ -28,6 +28,17 @@
 
 export const GAMES = [
   {
+    id: 'concrete', title: 'CONCRETE', status: 'active', path: 'concrete/',
+    inRepo: true, pad: 'native', accent: '#dafa45', art: 'warehouse',
+    score: { key: 'concrete-best', fmt: 'points' },
+    tagline: 'Two minutes in an empty warehouse. Find a line, hit the rail, and land the combo.',
+    lineage: 'Tony Hawk / warehouse score attack', tags: ['skate', 'three.js', 'gamepad'],
+    controls: 'WASD move · Space ollie · J/K tricks · L grind · dual touch sticks / controller',
+    note: 'v2 — Blender skater and warehouse, twelve animation clips, textured surfaces and grind sparks',
+    fi: { tagline: 'Kaksi minuuttia tyhjässä varastossa. Löydä linja, grindaile ja laske temppusarja.', controls: 'WASD liiku · Väli hyppää · J/K temput · L grind · kosketus / ohjain', note: 'v2 — Blender-hahmo ja varasto, animaatiot, materiaalit ja grindikipinät' },
+    ja: { tagline: '空の倉庫で2分間。ラインを見つけ、レールを滑り、コンボを決めよう。', controls: 'WASD 移動 · Space オーリー · J/K トリック · L グラインド · タッチ／パッド', note: 'v2 — Blender製スケーターと倉庫、アニメーション、質感と火花' },
+  },
+  {
     id: 'sudsjack',
     score: { key: 'sudsJack.horizon.best', fmt: 'points' },
     fi: {
