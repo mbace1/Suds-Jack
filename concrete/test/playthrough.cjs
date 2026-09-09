@@ -75,12 +75,20 @@ const server = http.createServer((req, res) => {
       timeout: 15000,
     });
     await page.keyboard.down("d");
-    await page.waitForTimeout(120);
+    await page.waitForFunction(() => Number(document.querySelector("#world").dataset.heading) < 3, null, {
+      timeout: 10000,
+    });
     await page.keyboard.up("d");
-    await page.waitForTimeout(900);
+    await page.waitForFunction(() => Number(document.querySelector("#world").dataset.riderZ) < 7, null, {
+      timeout: 15000,
+    });
     await page.keyboard.down("l");
     await page.keyboard.press("Space");
-    await page.waitForTimeout(350);
+    await page.waitForFunction(
+      () => document.querySelector("#trick-name").textContent.includes("50–50 grind"),
+      null,
+      { timeout: 10000 },
+    );
     assert.match(await page.locator("#trick-name").innerText(), /50–50 grind/);
     console.log("PASS rail snap through movement and ollie/grind inputs");
     await page.keyboard.up("l");

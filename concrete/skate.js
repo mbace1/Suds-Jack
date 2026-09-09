@@ -545,7 +545,12 @@ export function createGame(host, update) {
         }
         for (const k in pressed)
             delete pressed[k];
-        renderer.render(scene, camera);host.dataset.drawCalls=String(renderer.info.render.calls);host.dataset.triangles=String(renderer.info.render.triangles);
+        renderer.render(scene, camera);
+        host.dataset.drawCalls = String(renderer.info.render.calls);
+        host.dataset.triangles = String(renderer.info.render.triangles);
+        host.dataset.riderX = rider.position.x.toFixed(3);
+        host.dataset.riderZ = rider.position.z.toFixed(3);
+        host.dataset.heading = angle.toFixed(4);
         hudTick += dt;
         if (hudTick > 0.09) {
             hudTick = 0;
