@@ -774,6 +774,84 @@ Nordic block, per the marquee-as-cover rule the rest of the arcade follows) — 
 GDD's grim tone rather than the house's usual arcade brightness.
 Build tooling: none — same no-build rule as every other demo here.
 
+### Flowsnow (`flowsnow/`) — the snowboarding game, ACTIVE
+**Owner's brief, 2026-09-09: "a simplistic snowboarding game where Journey gliding
+or Sword of the Sea art style, mix with the realistic snowboarding of Shredders and
+snow particle physics simulations."** Taken as three separate instructions, because
+they pull in different directions and each one owns a different file: the ART is
+Journey, the HANDS are Shredders, and the SNOW is a simulation rather than a texture.
+One run, 2,400 m down a meandering gully, dawn-gold at the top and dusk at the bottom.
+**Three modules are PURE** — no DOM, no three.js, no clock — which is what lets
+`test/core.mjs` assert real numbers in bare node the way slaykallio's engine and
+turf's grid do. `main.js` is the only file that touches the page or the wall clock.
+**The board model is the game** (`js/physics.js`). The board has a HEADING and the
+rider has a VELOCITY, and **the two are allowed to disagree**; the edge is what pulls
+one after the other. Lean sets the edge, the edge turns the board along its sidecut,
+grip drags the velocity round after it as far as it can hold — ask for more and the
+velocity lags, and that lag (the slip angle) is the single quantity that scrubs speed,
+throws spray and drains flow. Nothing else models "sliding". **Air is not a button**:
+the ground falling away faster than gravity can follow IS the take-off, so a kicker
+throws you without asking, and Space only adds a pop on top. Landing across the line
+at speed is a fall; landing backwards is not — that is a board pointing the other way,
+and it rides **switch**.
+**Flow is the score.** A clean carve at speed earns it, air holds it, a landing pays
+out on it, a scrub or a fall spends it. Best under `flowsnow.best`; nothing leaves the
+browser, which is why the cabinet has a `score` entry and no leaderboard.
+**The snow is a simulation** (`js/particles.js`) — a 5,000-flake pool in typed arrays
+with gravity, drag, wind and a collision **against the terrain function**, so a flake
+that reaches the snow fades on its surface and never under it (a gate asserts exactly
+that). Spray comes off the working edge in proportion to speed, edge and skid; a
+landing throws a cloud sized by its impact.
+**The mountain is a function** (`js/terrain.js`) — every height and normal from
+`height(x, z)`, so the renderer, the rider, the snow and the collision cannot disagree
+about where the ground is. A ring of tiles follows the rider and rebuilds only the new
+ones, nearest first, because the ground under you must never be the last to arrive.
+**The snow is lit by hand, not by a light** (`js/snowmat.js`). A Lambert surface cannot
+do what a snowfield does, so the shader wraps the terminator (the shadow side stays
+luminous), adds a broad sheen toward the sun and a scatter of glints that wink as the
+camera passes them. **Fog resolves to the SKY IN THAT DIRECTION, not to one colour** —
+fogging to a single tone left a visible band where the far snow met the sky, so
+`skyAt()` is shared by the dome and the fog and the horizon simply dissolves.
+**Traps, and they are the part worth reading:**
+- **The velocity was pulled toward the board's NOSE**, which meant riding switch tried
+  to drag the whole board round and the rider stalled to walking pace on open snow.
+  The edge resists *lateral* motion only, so the pull target is **whichever end of the
+  board is nearer** — that one line is what makes switch a stance rather than a bug.
+- **A hard `Math.min` cap on the gully wall** gave it a flat top with a crisp edge, and
+  a crisp edge against the sky draws every mesh triangle as a sawtooth on the horizon.
+  It saturates through `tanh` now. The same pass halved the wind-ripple amplitude,
+  because fine noise on a launch lip is the difference between a kicker and a rattle.
+- **A kicker event keyed on vertical speed never fired.** A terrain launch is not a
+  jump: the test is the speed you were carrying (`> 8`), not the `vy` it produced.
+- **The browser gate read state in a different `page.evaluate` from the step that
+  produced it**, and the live rAF loop kept running in between — so a check saw a
+  rider several seconds past the moment under test. Step and read in ONE call.
+`window.__fs` is the seam the browser gate drives (`debug.step(seconds, input)` advances
+the game off the wall clock, since a sandbox with no GPU renders this at a handful of
+frames a second — the same discipline `sudsjack/` and `slaykallio/` use).
+Gates: `node flowsnow/test/core.mjs` (42 checks) and
+`NODE_PATH=$(npm root -g) node flowsnow/test/smoke.cjs` (33), plus the cabinet in
+`node test/hub-smoke.cjs`. Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
+in `hub/art.js` (Atari sky bars, dune faces in hard lit/shadow, an arch **lighter than
+the sky** per the marquee-as-cover rule, the traveller cropped by the bottom edge
+mid-carve), accent `#f4a27a`, `pad: 'native'`, and its own lead kinds in `hub/topics.js`.
+fi / en / ja, signed, `../hub/shell.js` for the way home.
+**Deployed to `gh-pages` 2026-09-09 (v1, commit `820be2eb`), by hand — `deploy-hub.mjs`
+is not the tool for a game folder.** The catalogue files are the trap, exactly as
+slaykallio's section says: `games.js`, `art.js` and `topics.js` are **THEIRS**, the live
+copies carry cabinets this branch has never had, so the entry, the marquee and the lead
+kinds are **spliced into** the site's copies rather than overwriting them, and
+`versions.json` gets ONE row by hand. Those three modules' bytes moved, so **a bump has
+to climb**: every importer was renumbered (`games.js` 70→71, `art.js` 21→22,
+`topics.js` 5→6 in `hub/hub.js`, `hub/shell.js`, `hub/toko-cabinet.js` and `sw.js`) and
+the worker rolled v59→v60, or a returning browser holds the old `hub.js` and asks for
+the old catalogue by name. The deployed copy also takes the SITE's shell token (`v35`),
+not this branch's.
+**Never verified live from a session.** The agent proxy refuses `github.io`, so the
+Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
+run from the title into gameplay still want a human's eyes on the real URL.
+Build tooling: none — same no-build rule as every other demo here.
+
 ### Paper Route — Dawn Run (`paperboy/`)
 A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to
 the original Paperboy art** — orthographic 3/4 camera, bright sunny-day palette (sky-blue
@@ -1656,6 +1734,22 @@ slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
   test/
     core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
     smoke.cjs   # a browser: puppets, the topple, the staging rules, both formats
+flowsnow/       # Flowsnow — snowboarding: Journey's look, Shredders' hands, simulated snow
+  VERSIONS.md
+  vendor/       # three.js r167, local — not the CDN
+  js/
+    terrain.js  # THE MOUNTAIN AS A FUNCTION: height/normal, the gully, kickers, monoliths
+    physics.js  # THE BOARD: heading vs velocity, the edge that pulls one after the other
+    particles.js# THE SNOW: a 5,000-flake pool that collides with the terrain function
+    snowmat.js  # the look: wrapped terminator, sheen, glints, and fog INTO the sky
+    figure.js   # the robed traveller, and a scarf on a verlet chain
+    world.js    # the tile ring that follows the rider, the track, the contact shadow
+    palette.js  # the hour: every colour on screen asks hour(p) as the run descends
+    main.js     # boot, the loop, the camera, the HUD — the only file that touches the DOM
+    input.js audio.js lang.js
+  test/
+    core.mjs    # bare node: the terrain, the board model, the snow — 42 checks
+    smoke.cjs   # a browser, driven off game state through __fs rather than the clock
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate
