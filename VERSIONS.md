@@ -7,6 +7,42 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v244 — 2026-09-09
+**The white-out explains itself, and the game survives losing the GPU** *(no fix yet — v242's half-float overflow was real and was NOT this)*
+- **Still not reproduced, and that is the point of this release.** An owner
+  screenshot showed v243 on Android at 60 FPS with a correct HUD and the whole
+  scene white — *"works for a bit and then it doesn't"*. Everything available
+  here is clean: six gates, a 60 s Rush run, a forced WebGL context loss, a
+  v239→v240 service-worker upgrade, and static reads of every term that could
+  blow out. **SwiftShader is not a phone GPU**, and guessing again would just
+  spend another release. So the game says what it sees
+- **WHITE-OUT WATCH.** Once a second during play the classic path reads **one
+  pixel** back from the frame it just drew, at a spot the floor always covers.
+  The floor cannot be near-white — its base is `(0.079, 0.079, 0.169)` and the
+  brightest term adds 0.85 — so three channels over 240 means the RENDER is
+  wrong, not the art. The state that could explain it is captured and drawn
+  **on the screen**: renderer path, perf/pixel mode, pixel ratio, shape-pass
+  flag, arena size, background, fog, sun intensity and shadow, floor
+  visibility and material type, retro pass, context-lost, elapsed time. **A
+  screenshot of the fault now carries its own diagnosis.** `?diag` shows the
+  same line continuously. One pixel a second is free, it is skipped on the
+  WebGPU path (no synchronous readback) and it stops after the first catch
+- **There was no WebGL context-loss handler anywhere in this game**, which is
+  a real gap regardless of the white-out: a phone takes the GPU back routinely
+  (backgrounding, memory pressure, a driver reset), and without
+  `preventDefault()` on `webglcontextlost` the context is **never** restored —
+  the canvas stays dead until a reload, which is exactly *"couldn't get the
+  game to start after"*. Both handlers are wired now
+- **v242 is not withdrawn.** `mix(1e5, -1e5, …)` genuinely overflows a
+  mediump half and genuinely produces a NaN floor; `FLOOR_FRAG` declares
+  `precision highp float`, so it was not the classic path's bug. The fix and
+  `shader-lint.mjs` stay — the TSL path has no such declaration
+- Gates: `shader-lint` · `smoke` · `cabinets` · `webgpu-smoke` · `level-smoke`
+  ×3 · `level-check` 74 · `editor-smoke` 27
+- Cache-bust `?v=195` → `?v=196`; HUD label → v244
+
+---
+
 ## v243 — 2026-09-08
 **BOOST LANE — a Rush level, and the first Rush-level parity measurement against the port** *(re-cut from the unmerged v241 on top of the v242 hotfix; v241 is skipped for the same reason v238 was)*
 - **`levels/boost-lane.json`** — 56 spawns over 40 s, `rules.mode: "rush"`.

@@ -1,18 +1,18 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=195';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=195';
-import { Player, PLAYER_RADIUS } from './player.js?v=195';
+import { InputManager } from './input.js?v=196';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=196';
+import { Player, PLAYER_RADIUS } from './player.js?v=196';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=195';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=195';
-import { audio } from './audio.js?v=195';
-import { haptics } from './haptics.js?v=195';
-import { initDesigner } from './designer.js?v=195';
-import { createSpecimen } from './specimen.js?v=195';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=195';
-import { TUNING } from './tuning.js?v=195';
-import { Arena, rectShape } from './arena.js?v=195';   // v236: the boundary has one home
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=195';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=196';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=196';
+import { audio } from './audio.js?v=196';
+import { haptics } from './haptics.js?v=196';
+import { initDesigner } from './designer.js?v=196';
+import { createSpecimen } from './specimen.js?v=196';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=196';
+import { TUNING } from './tuning.js?v=196';
+import { Arena, rectShape } from './arena.js?v=196';   // v236: the boundary has one home
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=196';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -364,6 +364,81 @@ if (IS_GPU) await renderer.init();   // backend (webgpu or webgl2 fallback) sett
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setSize(innerWidth, innerHeight);
+
+// ── v244 WHITE-OUT WATCH ────────────────────────────────────────────────────
+// An owner screenshot (Android, twice) showed the game at 60 FPS with a
+// correct HUD and the WHOLE SCENE WHITE — "works for a bit and then it
+// doesn't". Nothing here reproduces it: six gates plus a Rush run, a forced
+// context loss and a v239→v240 service-worker upgrade are all clean on
+// SwiftShader, which is not a phone GPU. v242 fixed a real half-float
+// overflow that could have caused it and did not.
+//
+// So the game says what it sees. Every second of play it reads ONE pixel
+// back from the frame it just drew, at a spot the floor always covers. The
+// floor is never near-white — base is (0.079, 0.079, 0.169) and the brightest
+// term adds 0.85 — so three channels above 240 means the render is wrong,
+// not the art. When that happens the state that could explain it is captured
+// and drawn ON the screen, so a screenshot of the fault carries its own
+// diagnosis. `?diag` shows the same line continuously.
+//
+// One pixel per second is free; the readback is skipped entirely on the
+// WebGPU path (no synchronous readPixels) and after the first catch.
+const DIAG = new URLSearchParams(location.search).has('diag');
+let _whiteOut = null;      // the captured explanation, once
+let _diagT = 0;
+let _ctxLost = false;
+// There was NO context-loss handler anywhere in this game. A phone takes the
+// GPU away routinely (backgrounding, memory pressure, a driver reset); with
+// no handler the canvas stays dead and only a reload brings it back, which
+// is exactly "couldn't get the game to start after".
+renderer.domElement.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();          // required, or the context is never restored
+  _ctxLost = true;
+  console.warn('WEBGL CONTEXT LOST — the GPU took it back; waiting for restore');
+}, false);
+renderer.domElement.addEventListener('webglcontextrestored', () => {
+  _ctxLost = false;
+  console.warn('WEBGL CONTEXT RESTORED');
+}, false);
+
+function diagLine() {
+  const gl = renderer.getContext?.();
+  return [
+    'v244', IS_GPU ? 'gpu' : 'gl',
+    'perf=' + (perfMode ? 1 : 0), 'pixel=' + (pixelMode ? 1 : 0),
+    'dpr=' + renderer.getPixelRatio().toFixed(2),
+    'shape=' + floorUniforms.uShapeMode.value.x,
+    'half=' + HALF_X.toFixed(0) + 'x' + HALF_Z.toFixed(0),
+    'bg=' + scene.background.getHexString(),
+    'fog=' + (scene.fog ? scene.fog.color.getHexString() + '/' + scene.fog.near.toFixed(0) : 'off'),
+    'sun=' + sun.intensity.toFixed(2), 'shadow=' + (sun.castShadow ? 1 : 0),
+    'floorVis=' + (floor.visible ? 1 : 0), 'mat=' + floor.material.type,
+    'retro=' + (retro._profile ? 'on' : 'off'),
+    'ctxLost=' + ((gl && gl.isContextLost && gl.isContextLost()) ? 1 : (_ctxLost ? 1 : 0)),
+    't=' + runTimer.toFixed(0),
+  ].join(' ');
+}
+
+// Reads one pixel of the frame just drawn. Classic path only.
+const _px = new Uint8Array(4);
+function checkWhiteOut(dt) {
+  if (IS_GPU || _whiteOut) return;
+  _diagT -= dt;
+  if (_diagT > 0) return;
+  _diagT = 1.0;
+  const gl = renderer.getContext?.();
+  if (!gl || (gl.isContextLost && gl.isContextLost())) return;
+  try {
+    // Just below centre: the floor fills this in every mode and orientation.
+    const x = Math.floor(gl.drawingBufferWidth * 0.5);
+    const y = Math.floor(gl.drawingBufferHeight * 0.42);
+    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, _px);
+  } catch (_) { return; }
+  if (_px[0] > 240 && _px[1] > 240 && _px[2] > 240) {
+    _whiteOut = 'WHITE-OUT @ ' + diagLine();
+    console.error(_whiteOut);
+  }
+}
 
 // ── Scene ───────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -5118,7 +5193,31 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v243' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  // v244: the fault explains itself. Drawn small, wrapped, above the version
+  // label, so a screenshot of a white screen carries the reason with it.
+  if (_whiteOut || DIAG) {
+    const line = _whiteOut || diagLine();
+    ctx.save();
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'left';
+    const words = line.split(' ');
+    const rows = []; let cur = '';
+    for (const w of words) {
+      if (ctx.measureText(cur + ' ' + w).width > uiCanvas.width - 24) { rows.push(cur); cur = w; }
+      else cur = cur ? cur + ' ' + w : w;
+    }
+    if (cur) rows.push(cur);
+    const h = rows.length * 11 + 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.78)';
+    ctx.fillRect(8, uiCanvas.height - 26 - h, uiCanvas.width - 16, h);
+    ctx.fillStyle = _whiteOut ? '#ff8899' : '#88ddff';
+    rows.forEach((r, i) => ctx.fillText(r, 14, uiCanvas.height - 26 - h + 13 + i * 11));
+    ctx.restore();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('v244' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -8075,6 +8174,7 @@ function loop() {
   input.pollGamepad();
   updateMenuNav(dt);   // gamepad menu focus (v134) — self-gates on menu states
   updateShake(dt);
+  checkWhiteOut(dt);   // v244: one pixel a second, until it catches something
 
   // Title / paused / options / run-history — just render the scene, no game logic
   if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' ||
@@ -10289,7 +10389,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=195').then(async m => {
+  import('./editor.js?v=196').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10320,6 +10420,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=195').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=196').catch(() => {});
   });
 }
