@@ -892,6 +892,19 @@ to climb**: every importer was renumbered (`games.js` 70→71, `art.js` 21→22,
 the worker rolled v59→v60, or a returning browser holds the old `hub.js` and asks for
 the old catalogue by name. The deployed copy also takes the SITE's shell token (`v35`),
 not this branch's.
+**v2 deployed 2026-09-10 (commit `597a822a`)**, the same shape one rung narrower: only
+`games.js` moved this time (`art.js` and `topics.js` did not change, so their tokens
+stayed put), its token climbed 73→74 across the same four importers and the worker rolled
+v62→v63. Two things that deploy taught. **Splice in BINARY**: the site's `games.js` ends
+`\r\n`, and a python text-mode read-and-write silently normalised it, putting a byte
+outside the entry into the diff — a deploy that is supposed to be one cabinet has to be
+one cabinet all the way down. And **run the gate against the SITE tree and baseline it**:
+`test/hub-smoke.cjs` on the spliced site read six failures, and the identical six come off
+an untouched `gh-pages` checkout, because the gate is written for a tree that holds every
+project's source and the site is a curated tree that does not. Six against six is the
+finding; six on its own would have looked like a broken deploy. `gh-pages` also moved
+twice while that deploy was being built, so **re-fetch immediately before the push** and
+replay the one commit onto the new head — the other lane touched only `concrete/`.
 **Never verified live from a session.** The agent proxy refuses `github.io`, so the
 Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
 run from the title into gameplay still want a human's eyes on the real URL.
