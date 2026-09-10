@@ -1,5 +1,15 @@
 # Slay Kallio — handoff
 
+## v33 background continuation
+
+Owner requested reuse of TURF backgrounds. The courtyard, schoolyard and dockyard now supply the day/evening/night plates, copied into Slay's own bg folder. Their existing grade is preserved and blur reduced. Original photographs remain selectable with ?scenery=photos. Desktop/touch player flows passed with the courtyard loaded and rendered screenshots checked. This extends draft #499; not live on the hub. Creature redraws, new poses and Blender stage work remain subsequent steps.
+
+## Current graphics work — v32 local prototype
+
+Goal: readable combat before broader asset production. Implemented: separated label lanes, opaque label backing, a 14px selected-card rules panel, encounter title outside the labels, and energy clear of the Toko signature. Keeps the existing TURF art and rules. Core checks passed (761), desktop/touch player flows passed; 139 scene checks passed. Not merged or live. Next: one polished fight with new creature art, poses and Blender stage assets after the readability pass is reviewed.
+
+Live v31 retest: a targeted Swing spent one energy and reduced the Scaffolder from 30 to 24 HP; deck close and end-turn controls worked. A cached plain URL still returned v7 in one browser context; adding ?release=31 returned the six-character v31 game. Resolve cache-safe hub navigation before the next publication. Physical-phone feedback remains pending.
+
 ## Release integration — 2026-09-10
 
 v31 integrates the current v30 development snapshot `252db205f6319ef3f67b6d044521fa34cab5f769` for main and hub publication. This supersedes the older v7 hub implementation. All current runtime figures and photographs are included. Local validation passed: 761 core checks, 139 browser checks, and desktop/touch player flows. Publishing is tracked by the v31 release PRs; older live-version statements below describe the pre-integration state. The graphics overhaul is a subsequent work item.

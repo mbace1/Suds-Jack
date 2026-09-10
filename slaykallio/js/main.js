@@ -9,7 +9,7 @@
 
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js?v=31';
 import * as engine from './engine.js?v=31';
-import { Arena } from './scene.js?v=31';
+import { Arena } from './scene.js?v=32';
 import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=31';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=31';
 import { paintCardPic } from './cardart.js?v=31';
@@ -25,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 31;
+const VERSION = 33;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -67,10 +67,15 @@ const params = new URLSearchParams(location.search);
 // each stage draws one plate from its set, by the run's seed, so a seed is a
 // route AND its weather. `bg/plate.jpg` — the bear — stays the plate the menu
 // opens on. Every one goes through the same cut-to-frame and grade.
-const PLATES = {
+const PHOTO_PLATES = {
   day: ['bg/plate.jpg', 'bg/day-beds.jpg', 'bg/day-square-painted.jpg', 'bg/day-bench.jpg', 'bg/day-bear-lawn.jpg', 'bg/day-beds-tram.jpg', 'bg/day-square.jpg'],
   evening: ['bg/dusk-metro.jpg', 'bg/dusk-church.jpg'],
   night: ['bg/night-street.jpg', 'bg/night-door.jpg', 'bg/night-restaurant.jpg', 'bg/night-bar.jpg', 'bg/night-tram.jpg'],
+};
+// Owner requested reuse of TURF backgrounds (2026-09-10). Original photos
+// remain available for comparison with ?scenery=photos or an explicit ?bg=.
+const PLATES = params.get('scenery') === 'photos' ? PHOTO_PLATES : {
+  day: ['bg/turf-courtyard.jpg'], evening: ['bg/turf-schoolyard.jpg'], night: ['bg/turf-dockyard.jpg'],
 };
 const STAGES = ['day', 'evening', 'night'];
 let plateStage = null, plateUrl = null;
@@ -86,7 +91,8 @@ function applyHour(h) {
   if (stage !== plateStage) {
     plateStage = stage;
     plateUrl = plateFor(stage);
-    arena.setPhoto(plateUrl, { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+    document.body.dataset.backdrop = plateUrl;
+    arena.setPhoto(plateUrl, { stereo: params.get('stereo'), eye: params.get('eye') || 'left', pregraded: plateUrl.startsWith('bg/turf-'), maxBlur: plateUrl.startsWith('bg/turf-') ? 3 : 18 }).catch(() => {});
   }
 }
 resize();                                  // the plate is CUT to the frame, so give it the real one first
@@ -390,6 +396,19 @@ function placeLabels() {
   };
   put('hero', hero);
   for (const [uid, p] of foes) put(uid, p);
+  // Keep label lanes distinct; all still lead down to the figure's feet.
+  const units = [...labels.querySelectorAll('.unit:not(.dead)')];
+  const width = Math.min(w < 600 ? 108 : 150, (w - 24) / Math.max(1, units.length) - 6);
+  const packed = units.map(u => {
+    u.style.width = width + 'px'; u.style.marginLeft = -width / 2 + 'px';
+    const match = u.style.transform.match(/translate\(([\d.-]+)px, ([\d.-]+)px\)/);
+    return {u, x:Number(match?.[1] || w/2), y:Number(match?.[2] || labelTop())};
+  }).sort((a,b)=>a.x-b.x);
+  const gap = width + 6;
+  for(let i=0;i<packed.length;i++) packed[i].x = Math.max(width/2+8, packed[i].x, i ? packed[i-1].x+gap : 0);
+  if(packed.length) packed.at(-1).x = Math.min(w-width/2-8, packed.at(-1).x);
+  for(let i=packed.length-2;i>=0;i--) packed[i].x=Math.min(packed[i].x, packed[i+1].x-gap);
+  for(const p of packed) p.u.style.transform = 'translate('+p.x.toFixed(1)+'px, '+p.y.toFixed(1)+'px)';
 }
 
 function paintUnit(k) {
@@ -473,6 +492,11 @@ function renderEnergy() {
 
 function renderHand() {
   const hand = $('#hand'); hand.innerHTML = '';
+  const inspect = $('#card-inspect'); inspect.replaceChildren(); inspect.hidden = true;
+  if (state?.phase === 'fight' && state.hand[sel]) {
+    const c = state.hand[sel]; inspect.hidden = false;
+    inspect.append(el('strong', '', cardName(c.id)), el('p', '', engine.describe(c, state, sel, target)), el('small', '', c.target === 'enemy' ? 'Choose an enemy to play · select again to confirm' : 'Select again to play'));
+  }
   if (!state || state.phase !== 'fight') return;
   const n = state.hand.length;
   state.hand.forEach((c, i) => {
