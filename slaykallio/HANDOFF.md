@@ -24,16 +24,21 @@ Vanilla ES modules, **no build step**, three.js from a local `vendor/` copy.
 
 | | |
 |---|---|
-| branch | **v29**, 27 commits ahead of `main` |
-| **deployed** (`gh-pages`, `/Suds-Jack/slaykallio/`) | **v6** — twenty-three versions behind |
-| a deploy | **built, verified, and NOT landed** — see §7 |
+| branch | **v30** |
+| **deployed** (`gh-pages`, `/Suds-Jack/slaykallio/`) | **v7** — and it is a DIFFERENT LINEAGE, see below |
+| the reconciliation | PRs **#497** (→`main`) and **#498** (→`gh-pages`) publish this tree as **v31** |
 
-**The live cabinet is not this game.** It has never carried `figures/` or
-`bg/`, so on the site every person falls back to the code-drawn cutout and the
-painted park stands in for all fourteen photographs. If you open the live URL to
-form an opinion of the art, **you are looking at v6 with two whole asset
-folders missing**, and at cards drawn before v29 put them in the figures' own
-register. Run it locally instead.
+**The live cabinet is not this game, and it is not even this LINEAGE.**
+`git merge-base` between this branch and `gh-pages` returns *nothing*. The
+deployed v7 has no `plates.js`, no `figures/`, no `bg/` and no art toggle —
+nothing on that tree mentions a plate — while `input.js` and v7's card
+targeting exist only there. Version numbers collide the way Eeri's did, so
+`hub/versions.json` looked healthy throughout.
+
+**It is being reconciled properly** (2026-09-10): #497/#498 take this tree as
+the game and fold v7's `input.js` into its `main.js` rather than overwriting
+either side. If you open the live URL before that lands, **you are looking at
+another lineage**, not at an older version of this one. Run it locally instead.
 
 ---
 
