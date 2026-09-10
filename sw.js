@@ -1,5 +1,5 @@
 // The arcade, offline.
-const VERSION = 'v64';
+const VERSION = 'v65';
 const CACHE = `suds-hub-${VERSION}`;
 
 const SHELL = [

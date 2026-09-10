@@ -14,6 +14,7 @@ import { Puppet, paintCutout } from './puppet.js';
 import { paintCardPic } from './cardart.js';
 import { sfx, unlock, setMuted, isMuted } from './audio.js';
 import { watchPad } from '../../hub/pad.js';
+import { bindActivation } from './input.js?v=1';
 
 const $ = s => document.querySelector(s);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
@@ -22,7 +23,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 6;
+const VERSION = 7;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -224,10 +225,10 @@ function buildLabels() {
     u.setAttribute('aria-label', `${nameOf(ENEMIES, e.id)}`);
     u.tabIndex = 0;
     if (!e.alive) u.classList.add('dead');
-    const go = ev => { ev.preventDefault(); onEnemyTap(e.slot); };
-    u.addEventListener('pointerup', go);
-    u.addEventListener('touchend', go);
-    u.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') go(ev); });
+    bindActivation(u, () => onEnemyTap(e.slot));
+    u.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); onEnemyTap(e.slot); }
+    });
   });
 }
 
@@ -244,7 +245,10 @@ function placeLabels() {
     // on the one fight where reading the intent matters most. The label is
     // pushed down rather than the camera pulled back, because pulling back
     // for one encounter would undo "much closer to the characters".
-    const top = TOP_GUTTER, x = Math.max(78, Math.min(w - 78, head.x));
+    const labelWidth = k === 'hero' ? (h > w ? 108 : 150) : Math.min(h > w ? 108 : 150, w * .45 / Math.max(1, state.enemies.length));
+    u.style.width = `${labelWidth}px`;
+    u.style.marginLeft = `${-labelWidth / 2}px`;
+    const top = TOP_GUTTER, x = Math.max(labelWidth / 2 + 4, Math.min(w - labelWidth / 2 - 4, head.x));
     const y = Math.max(top, Math.min(h - 120, head.y));
     u.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     u.style.setProperty('--h', `${Math.max(40, foot.y - y).toFixed(0)}px`);
@@ -344,10 +348,56 @@ function renderHand() {
     b.classList.toggle('unplayable', !playable);
     b.classList.toggle('selected', i === sel);
     b.setAttribute('aria-pressed', i === sel);
-    b.addEventListener('click', ev => { ev.preventDefault(); onCardTap(i); });
+    bindActivation(b, () => onCardTap(i));
     hand.append(b);
   });
   $('#end').disabled = false;
+  renderCardFocus();
+}
+
+// The hand keeps its five-card silhouette. Selection gives small-screen
+// players the same readable description and explicit choice as a large screen.
+function renderCardFocus() {
+  const panel = $('#cardfocus'), c = state?.hand[sel];
+  panel.hidden = !c || busy || state.phase !== 'fight';
+  panel.replaceChildren();
+  if (panel.hidden) return;
+  const title = el('div', 'focus-title');
+  title.append(el('b', '', cardName(c.id)), el('span', '', c.cost == null ? 'Unplayable' : `${c.cost} energy`));
+  const cancel = el('button', 'focus-cancel', 'Cancel');
+  bindActivation(cancel, clearSelection);
+  title.append(cancel);
+  panel.append(title, el('p', 'focus-description', engine.describe(c, state, sel, target)));
+  const actions = el('div', 'focus-actions');
+  if (!engine.canPlay(state, sel)) {
+    panel.append(el('p', 'focus-reason', c.type === 'curse' || c.cost == null ? 'This card cannot be played.' : `Need ${c.cost} energy · ${state.hero.energy} remaining.`));
+  } else if (c.target === 'enemy') {
+    for (const e of state.enemies.filter(e => e.alive)) {
+      const preview = engine.preview(state, sel, e.slot);
+      const b = el('button', '', `${nameOf(ENEMIES, e.id)} ${e.slot + 1}`);
+      if (preview.damage) b.append(el('small', '', `${preview.damage}${preview.hits > 1 ? ` × ${preview.hits}` : ''} damage`));
+      else b.append(el('small', '', 'Apply card'));
+      b.dataset.target = e.slot;
+      bindActivation(b, () => onEnemyTap(e.slot));
+      actions.append(b);
+    }
+  } else {
+    const b = el('button', '', c.target === 'all' ? 'Play on all enemies' : 'Play card');
+    bindActivation(b, () => { if (fightInputReady()) play(sel, target); });
+    actions.append(b);
+  }
+  panel.append(actions);
+}
+
+function clearSelection() {
+  sel = -1;
+  document.body.classList.remove('targeting');
+  renderHand();
+  for (const e of state.enemies) paintIntent(e);
+}
+
+function fightInputReady() {
+  return !busy && state?.phase === 'fight' && $('#deck').hidden && $('#menu').hidden && $('#reward').hidden && $('#result').hidden;
 }
 
 // One card face, built once and used by the hand and by the reward panel —
@@ -370,11 +420,11 @@ function flashCardPlayed(id) { const t = $('#played'); t.textContent = cardName(
 
 // ── input ────────────────────────────────────────────────────────────────
 function onCardTap(i) {
-  if (busy || state.phase !== 'fight') return;
+  if (!fightInputReady()) return;
   unlock();
   const c = state.hand[i];
   if (!c) return;
-  if (!engine.canPlay(state, i)) { sel = -1; renderHand(); return; }
+  if (!engine.canPlay(state, i)) { sel = i; renderHand(); document.body.classList.remove('targeting'); return; }
   if (sel === i) {
     // a second tap plays a card that needs no target, or one with a single target
     const alive = state.enemies.filter(e => e.alive);
@@ -388,7 +438,7 @@ function onCardTap(i) {
 }
 
 function onEnemyTap(slot) {
-  if (busy || state.phase !== 'fight') return;
+  if (!fightInputReady()) return;
   const e = state.enemies[slot];
   if (!e?.alive) return;
   target = slot;
@@ -409,24 +459,32 @@ function play(i, slot) {
 }
 
 function endTurn() {
-  if (busy || state.phase !== 'fight') return;
+  if (!fightInputReady()) return;
   unlock();
   sel = -1; document.body.classList.remove('targeting');
   engine.endTurn(state);
   enqueueLog();
   renderHand();
 }
-$('#end').addEventListener('click', endTurn);
+bindActivation($('#end'), endTurn);
 
 // keys: 1-9 select or play a card, ←→ move the selection, ↑↓ pick the target,
 // Enter plays, Esc deselects, E ends the turn
 addEventListener('keydown', ev => {
   if (ev.repeat) return;
   const k = ev.key;
+  // Native buttons own Enter/Space. Letting those keys bubble also played
+  // a card or started a run underneath the focused control.
+  if ((k === 'Enter' || k === ' ') && ev.target.closest?.('button,[role="button"]')) return;
+  if (!$('#deck').hidden) {
+    if (k === 'Escape' || k.toLowerCase() === 'd') { ev.preventDefault(); toggleDeck(); }
+    return;
+  }
   if (!$('#menu').hidden) return menuKeys(ev);
   if (!$('#reward').hidden) return rewardKeys(ev);
   if (!$('#result').hidden) { if (k === 'Enter' || k === ' ') toMenu(); return; }
-  if (state?.phase !== 'fight') return;
+  if (!fightInputReady()) return;
+  if (/^[1-9]$/.test(k) || ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Enter', ' ', 'Escape'].includes(k)) ev.preventDefault();
   if (/^[1-9]$/.test(k)) { const i = Number(k) - 1; if (i < state.hand.length) onCardTap(i); }
   else if (k === 'ArrowRight' || k === 'ArrowLeft') { if (!state.hand.length) return; sel = ((sel < 0 ? 0 : sel) + (k === 'ArrowRight' ? 1 : -1) + state.hand.length) % state.hand.length; renderHand(); for (const e of state.enemies) paintIntent(e); document.body.classList.toggle('targeting', state.hand[sel]?.target === 'enemy'); }
   else if (k === 'ArrowUp' || k === 'ArrowDown') { cycleTarget(k === 'ArrowDown' ? 1 : -1); }
@@ -450,6 +508,7 @@ function cycleTarget(d) {
 watchPad({
   dir(dx, dy) {
     if (!dx && !dy) return;
+    if (!$('#deck').hidden) return;
     if (!padHint) { padHint = true; document.body.classList.add('pad'); }
     if (!$('#menu').hidden) return menuKeys({ key: dx > 0 ? 'ArrowRight' : dx < 0 ? 'ArrowLeft' : dy > 0 ? 'ArrowDown' : 'ArrowUp', preventDefault() {} });
     if (!$('#reward').hidden) return rewardKeys({ key: dx > 0 ? 'ArrowRight' : dx < 0 ? 'ArrowLeft' : 'x', preventDefault() {} });
@@ -458,6 +517,7 @@ watchPad({
     if (dy) cycleTarget(dy);
   },
   press(i) {
+    if (!$('#deck').hidden) { if (i === 1) toggleDeck(); return; }
     if (!$('#menu').hidden) return menuKeys({ key: i === 0 ? 'Enter' : i === 3 ? 't' : 'x', preventDefault() {} });
     if (!$('#reward').hidden) return rewardKeys({ key: i === 0 ? 'Enter' : i === 1 ? 'Escape' : 'x', preventDefault() {} });
     if (!$('#result').hidden) { if (i === 0) toMenu(); return; }
@@ -485,7 +545,7 @@ function renderMenu() {
     b.classList.toggle('selected', i === menuSel.char);
     const cv = paintCutout(ch[theme].look, 11); cv.className = 'portrait';
     b.append(cv, el('b', '', ch[theme].name), el('i', '', ch[theme].title), el('span', '', ch[theme].blurb), el('small', '', `${ch.hp} HP`));
-    b.addEventListener('click', () => { menuSel.char = i; renderMenu(); });
+    bindActivation(b, () => { menuSel.char = i; renderMenu(); });
     r.append(b);
   });
   $('#mute').textContent = isMuted() ? 'sound off' : 'sound on';
@@ -498,9 +558,9 @@ function menuKeys(ev) {
   else if (k === 'Enter' || k === ' ') startRun(chars[menuSel.char]);
   else if (k === 't' || k === 'T' || k === 'ArrowUp' || k === 'ArrowDown') setTheme(theme === 'kallio' ? 'fantasy' : 'kallio');
 }
-$('#menu .theme').addEventListener('click', () => setTheme(theme === 'kallio' ? 'fantasy' : 'kallio'));
-$('#start').addEventListener('click', () => startRun(chars[menuSel.char]));
-$('#mute').addEventListener('click', () => { setMuted(!isMuted()); store.set('mute', isMuted()); renderMenu(); });
+bindActivation($('#menu .theme'), () => setTheme(theme === 'kallio' ? 'fantasy' : 'kallio'));
+bindActivation($('#start'), () => startRun(chars[menuSel.char]));
+bindActivation($('#mute'), () => { setMuted(!isMuted()); store.set('mute', isMuted()); renderMenu(); });
 
 function setTheme(t) {
   if (!THEMES[t]) return;
@@ -525,6 +585,9 @@ function startRun(character) {
 }
 
 function toMenu() {
+  queue.length = 0; busy = false; cursor = 0; sel = -1;
+  document.body.classList.remove('busy', 'targeting');
+  $('#cardfocus').hidden = true;
   $('#result').hidden = true; $('#hud').hidden = true; $('#reward').hidden = true; $('#deck').hidden = true;
   labels.innerHTML = '';
   arena.clearPuppets(); foes.clear(); hero = null;
@@ -532,8 +595,8 @@ function toMenu() {
   $('#menu').hidden = false;
   renderMenu();
 }
-$('#quit').addEventListener('click', toMenu);
-$('#again').addEventListener('click', toMenu);
+bindActivation($('#quit'), toMenu);
+bindActivation($('#again'), toMenu);
 
 // ── rewards ──────────────────────────────────────────────────────────────
 let rewardSel = 0;
@@ -556,7 +619,7 @@ function openReward() {
     }
     b.dataset.i = i;
     b.classList.toggle('selected', i === rewardSel);
-    b.addEventListener('click', () => choose(i));
+    bindActivation(b, () => choose(i));
     box.append(b);
   });
 }
@@ -569,7 +632,7 @@ function choose(i) {
   enqueueLog();
   renderTop();
 }
-$('#skip').addEventListener('click', () => choose(-1));
+bindActivation($('#skip'), () => choose(-1));
 function rewardKeys(ev) {
   const k = ev.key, n = state.reward?.options.length ?? 0;
   if (k === 'ArrowRight' || k === 'ArrowLeft') { rewardSel = (rewardSel + (k === 'ArrowRight' ? 1 : -1) + n) % n; $('#options').querySelectorAll('button').forEach((b, i) => b.classList.toggle('selected', i === rewardSel)); }
@@ -604,9 +667,9 @@ function toggleDeck() {
     list.append(row);
   }
 }
-$('#deckbtn').addEventListener('click', toggleDeck);
-$('#deck .close').addEventListener('click', toggleDeck);
-$('#menubtn').addEventListener('click', () => { if (confirm('Leave this run?')) toMenu(); });
+bindActivation($('#deckbtn'), toggleDeck);
+bindActivation($('#deck .close'), toggleDeck);
+bindActivation($('#menubtn'), () => { if (confirm('Leave this run?')) toMenu(); });
 
 // ── first gesture unlocks audio ──────────────────────────────────────────
 addEventListener('pointerdown', unlock, { once: true });
