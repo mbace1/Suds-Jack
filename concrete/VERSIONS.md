@@ -1,5 +1,12 @@
 # CONCRETE
 
+## v3 — 2026-09-10
+
+Fix the first-tap debounce so Drop In responds immediately on the fast mobile
+procedural renderer. Browser coverage now verifies mobile without GLB requests,
+keyboard/touch combos and grinding, plus desktop Blender clips and grab contact.
+Main module v4; game art and physics unchanged.
+
 ## v2 — 2026-09-09
 
 Blender art edition. Original rigged human skater and concave skateboard; modeled warehouse, quarter pipes, funbox, rails, pallets, crates, cable reels, cones, ventilation and lighting fixtures. Twelve in-place animation clips with visual-only foot and grab-hand IK. Six original material families, editable decals and a pooled effects atlas.
