@@ -1,5 +1,32 @@
 # Toko Live versions
 
+## v46 — 2026-09-10
+
+**The menu had two owners, and the fight took the page.** With v45's brain
+modules finally on the site, `/toko-live/` locked up about two seconds after
+load: no 404, no page error, nothing in the console — the character never
+appeared, and even a screenshot timed out, because the renderer's main thread
+was saturated. `conversation-plus.js` watched `.tc-menu` with a
+`MutationObserver` and re-rendered its starter list whenever anything else
+wrote into it; `chat.js` renders that same element. Two owners writing one
+node is a ping-pong at microtask speed. Instrumented, it never stopped:
+render five suggestion buttons, watch four of somebody else's replace them,
+render five again.
+
+The repair is two rules, and they hold for any layer that decorates somebody
+else's element — **coalesce to a frame and never react to your own writes**
+(`requestAnimationFrame` + `takeRecords()`), and **give up**: after six rounds
+inside a second and a half the observer disconnects and says so in the
+console. A decoration may lose the menu. It may not take the page.
+
+Verified in a browser against this tree: `toko-stage` 91,912 lit pixels, the
+approved face 98,816, the portrait 11,528 — where before the fix
+`page.evaluate(() => 1 + 1)` timed out.
+
+The page's own label moves with the bytes, so `V45` on screen becomes `V46`
+and the log is level with it again. (`feedback-loop-v45.js` keeps its name —
+that is a filename, not a version.)
+
 ## v44 — 2026-09-05
 
 - Added a single-answer authority layer for high-confidence project status, decision, next-step and opinion questions.

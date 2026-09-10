@@ -10,7 +10,7 @@ const slot=document.querySelector('#chat-slot'),chat=mountChat(slot,{where:'in',
 // shell is static HTML, so the page looked alive and drew nothing at all.
 // A layer that adds intelligence must never be able to remove the character.
 for (const m of ['mind.js?v=10', 'project-conversation.js?v=2', 'brain-conversation.js?v=1',
-                 'conversation-plus.js?v=10', 'chat-layout-fix.js?v=1']) {
+                 'conversation-plus.js?v=11', 'chat-layout-fix.js?v=1']) {
   try { await import('../toko/js/' + m); }
   catch (err) { console.warn('[toko-live] layer unavailable:', m, err && err.message); }
 }
