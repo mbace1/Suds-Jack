@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {FlickIt} from '../flick.js';
+const f = new FlickIt();
+assert.equal(f.sample(0,.8,.05,false),null);
+assert.equal(f.primed,true);
+assert.equal(f.sample(0,-.8,.05,false).pop,true);
+assert.equal(f.release(false),null);
+f.reset(); f.sample(0,.8,.05,false);
+assert.equal(f.sample(-.8,-.8,.05,false).dir,'left');
+f.reset(); f.sample(0,.8,.05,false); f.reset();
+assert.equal(f.release(false),null);
+console.log('PASS shared flick load, pop, diagonal, duplicate and reset contracts');

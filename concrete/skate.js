@@ -1,3 +1,4 @@
+import {FlickIt} from './flick.js?v=1';
 import {createEffects} from './effects.js?v=2';
 import {loadArt} from './art.js?v=4';
 import * as T from './vendor/three.module.min.js?v=185';
@@ -316,6 +317,8 @@ export function createGame(host, update) {
         for (const k in keys)
             keys[k] = false;
         analogX = analogY = lookX = lookY = 0;
+        clearFlick();
+        for (const k in pressed) delete pressed[k];
     };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
@@ -369,11 +372,22 @@ export function createGame(host, update) {
         }
     }
     const padPrev = [];
+    const touchFlick = new FlickIt(), padFlick = new FlickIt();
+    let scheme = 'buttons', popPower = 1;
+    function gesture(act) {
+        if (!act || !active || paused) return;
+        if (act.pop) { pressed[' '] = true; popPower = act.power; }
+        if (act.dir === 'left' || act.dir === 'right') pressed.j = true;
+        else if (!act.pop && act.dir === 'up') pressed.k = true;
+    }
+    function clearFlick() { touchFlick.reset(); padFlick.reset(); popPower = 1; }
+
     function frame(now) {
         const dt = Math.min((now - last) / 1000, 0.033);
         last = now;
         raf = requestAnimationFrame(frame);
         let steer = analogX, throttle = -analogY;
+        if (scheme === 'flick') camOrbit *= Math.exp(-dt * 4);
         const pad = Array.from(navigator.getGamepads?.() || []).find((p) => p?.connected);
         camOrbit -= lookX * dt * 2;
         camPitch = T.MathUtils.clamp(camPitch + lookY * dt * 3, -1, 4);
@@ -383,8 +397,11 @@ export function createGame(host, update) {
                 steer = pad.axes[0];
             if (Math.abs(pad.axes[1]) > 0.12)
                 throttle = -pad.axes[1];
-            camOrbit -= (pad.axes[2] || 0) * dt * 2;
-            camPitch = T.MathUtils.clamp(camPitch + (pad.axes[3] || 0) * dt * 3, -1, 4);
+            if (scheme === 'flick' && active && !paused) gesture(padFlick.sample(pad.axes[2] || 0, pad.axes[3] || 0, dt, air));
+            else if (scheme !== 'flick') {
+                camOrbit -= (pad.axes[2] || 0) * dt * 2;
+                camPitch = T.MathUtils.clamp(camPitch + (pad.axes[3] || 0) * dt * 3, -1, 4);
+            }
             [' ', 'k', 'j', 'l'].forEach((k, i) => {
                 const v = pad.buttons[i]?.pressed || false;
                 if (v && !padPrev[i])
@@ -459,7 +476,7 @@ export function createGame(host, update) {
                         rider.position.y = g;
                         if (jump) {
                             air = true;
-                            vy = 7.5;
+                            vy = 5 + 2.5 * popPower;
                             airAngle = angle;
                             combo += 100;
                             trick = 'Ollie';
@@ -543,7 +560,7 @@ export function createGame(host, update) {
         rider.rotation.y = angle;
         if(!paused)art.update(dt,{air,vy,bail,grab,flip,grinding,speed,steer,throttle});
         body.rotation.z = bail > 0 ? 1.2 : steer * -0.09;
-        body.position.y = air ? -0.12 : Math.sin(now * 0.009) * 0.015;
+        body.position.y = air ? -0.12 : (touchFlick.primed || padFlick.primed) ? -0.18 : Math.sin(now * 0.009) * 0.015;
         arm1.rotation.z = air ? -1.2 : -0.5;
         arm2.rotation.z = grab > 0 ? 0.1 : air ? 1.2 : 0.6;
         if (flip > 0) {
@@ -585,6 +602,9 @@ export function createGame(host, update) {
         host.dataset.riderX = rider.position.x.toFixed(3);
         host.dataset.riderZ = rider.position.z.toFixed(3);
         host.dataset.heading = angle.toFixed(4);
+        host.dataset.scheme = scheme;
+        host.dataset.loaded = String(touchFlick.primed || padFlick.primed);
+        popPower = 1;
         host.dataset.air = air ? 'true' : 'false';
         host.dataset.bail = bail.toFixed(3);
         host.dataset.landingTurn = landingTurn.toFixed(3);
@@ -614,6 +634,7 @@ export function createGame(host, update) {
     return {
         ready:art.ready,
         start() {
+            blur();
             reset();
             score = 0;
             time = 120;
@@ -626,6 +647,9 @@ export function createGame(host, update) {
             blur();
         },
         key,
+        scheme(value) { scheme = value === 'flick' ? 'flick' : 'buttons'; blur(); camOrbit = camPitch = 0; },
+        board(x, y, dt) { if (active && !paused && scheme === 'flick') gesture(touchFlick.sample(x, y, dt, air)); },
+        releaseBoard(cancel = false) { if (!cancel) gesture(touchFlick.release(air)); touchFlick.reset(); },
         look(x, y) {
             lookX = x;
             lookY = y;

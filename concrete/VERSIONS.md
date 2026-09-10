@@ -1,5 +1,12 @@
 # CONCRETE
 
+## v4 — Optional board flick controls
+
+- Preserve default button controls; add a saved optional Tiny Hawk flick scheme for touch and controller.
+- Down-load, flick/release ollies, diagonal kickflips and airborne up-grabs use the existing skating physics.
+- Automatic chase camera in flick mode; cancellation and pause clear loaded gestures.
+- This prototype keeps the existing grind button and does not yet port shuvits, heelflips or manuals.
+
 ## v3 — 2026-09-10
 
 Fix the first-tap debounce so Drop In responds immediately on the fast mobile

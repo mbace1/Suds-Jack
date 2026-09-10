@@ -50,7 +50,7 @@ const server = http.createServer((req, res) => {
     await page.locator('a.play[href="concrete/"]').click();
     await page.waitForURL("**/concrete/");
     await page.locator("#start:not([disabled])").waitFor();
-    assert.match(await page.locator(".build").first().innerText(), /v3/);
+    assert.match(await page.locator(".build").first().innerText(), /v4/);
     assert.equal(await page.locator("#world").getAttribute("data-art"), "ready");
     assert.equal(await page.locator("#world").getAttribute("data-quality"), "mobile");
     assert.equal(await page.locator("#world").getAttribute("data-clips"), null);
@@ -145,7 +145,7 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.locator("#time").innerText(), before, "pause freezes timer");
     await page.locator("#resume").click();
     console.log(
-      "PASS Hub -> v3 title -> drop in -> ollie + kickflip -> bank " +
+      "PASS Hub -> v4 title -> drop in -> ollie + kickflip -> bank " +
         score +
         " -> reset -> pause/resume",
     );
@@ -181,6 +181,45 @@ const server = http.createServer((req, res) => {
     console.log("PASS mobile title -> touch ollie/flip -> bank, both sticks visible");
     assert.deepEqual(mobileGlbs, [], "no delayed mobile GLB insertion");
     assert.deepEqual(errors, []);
+    await mobile.locator('#help').tap();
+    await mobile.locator('#scheme').tap();
+    await mobile.locator('#resume').tap();
+    await mobile.keyboard.press('r');
+    assert.equal(await mobile.locator('#scheme').getAttribute('aria-pressed'),'true');
+    const cdp=await mobile.context().newCDPSession(mobile);
+    const box=await mobile.locator('#look-stick').boundingBox();
+    const point={x:box.x+box.width/2,y:box.y+box.height*.88};
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+    await mobile.waitForFunction(()=>document.querySelector('#world').dataset.loaded==='true');
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+    await mobile.waitForTimeout(150);
+    assert.equal(await mobile.locator('#world').getAttribute('data-air'),'false','cancel must not ollie');
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+    await mobile.waitForFunction(()=>document.querySelector('#world').dataset.loaded==='true');
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await mobile.waitForFunction(()=>document.querySelector('#world').dataset.air==='true');
+    await mobile.waitForFunction(()=>document.querySelector('#world').dataset.air==='false');
+    await mobile.screenshot({path:'concrete/test/flick-phone.png'});
+    await mobile.locator('#help').tap();
+    await mobile.locator('#scheme').tap();
+    await mobile.locator('#resume').tap();
+    assert.equal(await mobile.locator('#scheme').getAttribute('aria-pressed'),'false');
+    console.log('PASS optional flick touch load/cancel/release/landing and return to button controls');
+    await mobile.waitForTimeout(350); // allow the menu's duplicate-touch debounce to expire
+    await mobile.locator('#help').tap();
+    await mobile.locator('#scheme').tap();
+    await mobile.locator('#resume').tap();
+    await mobile.keyboard.press('r');
+    // Emulate the hardware boundary; gameplay still consumes the real pad poll.
+    await mobile.evaluate(()=>{
+      window.testPad={connected:true,axes:[0,0,0,.8],buttons:Array.from({length:16},()=>({pressed:false,value:0}))};
+      Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>[window.testPad]});
+    });
+    await mobile.waitForFunction(()=>document.querySelector('#world').dataset.loaded==='true');
+    await mobile.evaluate(()=>{window.testPad.axes[3]=0;});
+    await mobile.waitForFunction(()=>document.querySelector('#world').dataset.air==='true');
+    await mobile.waitForFunction(()=>document.querySelector('#world').dataset.air==='false');
+    console.log('PASS controller poll loads and releases a flick ollie');
     await mobile.close();
     // Desktop still promises all twelve Blender clips and real grab contact.
     const desktop = await browser.newPage({ viewport: { width: 800, height: 600 } });
