@@ -1,12 +1,34 @@
 // A picture on every card.
 //
 // Owner, 2026-09-04: "have basic pictures on each card". So each card carries a
-// small painted panel above its text — a thing, not an icon. They are drawn on
-// a 96×62 canvas in the same register as the puppets: flat fills, a heavy ink
-// line that wobbles, one warm light from the left, and a wash of grime over
-// the lot. Nothing is symmetrical and nothing is centred perfectly, because a
-// card that looks stamped out reads as UI rather than as an object somebody
-// painted.
+// small painted panel above its text — a thing, not an icon. Nothing is
+// symmetrical and nothing is centred perfectly, because a card that looks
+// stamped out reads as UI rather than as an object somebody painted.
+//
+// OWNER, 2026-09-10: "make the turf assets the primary look." The figures had
+// been TURF plates since v21 and the cards had not moved, so the frame carried
+// two art languages at once — and the cards are the brightest thing on it by
+// area. Rendering one of each at full size named the gap in four measurable
+// parts: the cards filled every shape with ONE flat tone where a TURF prop
+// carries three or four tonal bands off a real light; the cards had no
+// MATERIAL at all (a TURF barrel is rust streaks running down it, chipped
+// paint, dents and panel seams — wear is most of what makes it read as a
+// thing); the card ink line was a soft wobble against TURF's hard one; and a
+// card shape was a flat-on silhouette where a prop is a three-quarter volume.
+//
+// Three of the four are properties of the SHARED HAND rather than of any
+// picture, which is the whole reason this was worth doing: `wob` and `blob`
+// draw all forty-two, so banding, wear and the harder line land on every
+// one of them at once and no picture was redrawn to get them. The fourth —
+// volume — is per-picture geometry and is not claimed here.
+//
+// NOT DONE, and deliberately: five card subjects (bin, lamp, cart, cardboard,
+// stack) have a real TURF prop plate sitting in `turf/art-src/props/street/`.
+// Dropping those five in would have made five cards photographic and
+// thirty-seven drawn, which is the mixed-row problem WITHOUT the thing that
+// makes the mixed row work on the bridge — there a plate and a drawn rat are
+// different KINDS of thing, and a plated bin next to a drawn fist is the same
+// kind rendered two ways. The technique travels; the plates would not.
 //
 // A picture is cheap to draw and there are at most ten on screen, so each is
 // painted once and cached by `${pic}|${accent}` — a hand being re-rendered on
@@ -15,6 +37,11 @@
 const W = 96, H = 62;
 const INK = '#17120e';
 const cache = new Map();
+
+// The light TURF's props are lit by: high and to the left, so a band runs down
+// and to the right. One direction for every picture, or the panel reads as a
+// sticker sheet rather than as a shelf of objects.
+const LIGHT = { x: -0.55, y: -0.83 };
 
 function rngFrom(seed) {
   let s = seed >>> 0 || 1;
@@ -28,11 +55,98 @@ function shade(hex, k) {
   return `rgb(${ch(0)},${ch(1)},${ch(2)})`;
 }
 
-// the shared hand: a wobbly filled polygon
-function wob(ctx, pts, fill, rnd, { stroke = INK, width = 2.4, amp = 1.2, close = true } = {}) {
+// BANDING. A TURF surface is three or four tonal steps, not a fill and a
+// shadow: the object is filled at its base tone, then the away-from-light half
+// is laid in twice at falling brightness and the lit edge gets one catch. It is
+// done by CLIPPING to the shape already drawn rather than by computing offset
+// polygons — the shape is wobbly and every picture builds it differently, so a
+// second derived path would drift away from the first.
+//
+// The shape arrives as a Path2D and NOT as the context's current path, which is
+// the whole reason this reads at all: laying a band down needs `beginPath`, and
+// `beginPath` throws the current path away — so the first cut clipped `wear` to
+// the last BAND rather than to the object, and then stroked that band's
+// half-plane in ink. Every card had two black diagonals ruled across it and the
+// shapes themselves were being grimed through a window the size of the panel.
+function bands(ctx, path, fill, rnd, k = 1, box = null) {
+  if (!fill || fill[0] !== '#') return;
+  // AGAINST THE SHAPE'S OWN BOUNDS, never the panel's. The first cut measured
+  // the half-planes from the middle of the 96×62 card, so on a small object the
+  // whole thing fell on one side of the boundary and the band stopped modelling
+  // it and just darkened it — the bottle went muddy and the dog lost its form —
+  // while a shape spanning the panel got a visible diagonal across the corner.
+  // A band has to be a fraction of the THING, which is what makes the same code
+  // read on a fist and on a tram.
+  const cx = box ? (box.x0 + box.x1) / 2 : W / 2;
+  const cy = box ? (box.y0 + box.y1) / 2 : H / 2;
+  const R = box ? Math.max(6, Math.hypot(box.x1 - box.x0, box.y1 - box.y0)) : W;
+  ctx.save();
+  ctx.clip(path);
+  // two darker bands, each a half-plane pushed further from the light
+  for (const [step, dark] of [[0.22, 0.74], [0.52, 0.55]]) {
+    const ox = -LIGHT.x * R * step, oy = -LIGHT.y * R * step;
+    ctx.fillStyle = shade(fill, dark + (1 - k) * (1 - dark));
+    ctx.beginPath();
+    ctx.moveTo(cx + ox + LIGHT.y * R, cy + oy - LIGHT.x * R);
+    ctx.lineTo(cx + ox - LIGHT.y * R, cy + oy + LIGHT.x * R);
+    ctx.lineTo(cx + ox - LIGHT.y * R - LIGHT.x * R * 2, cy + oy + LIGHT.x * R - LIGHT.y * R * 2);
+    ctx.lineTo(cx + ox + LIGHT.y * R - LIGHT.x * R * 2, cy + oy - LIGHT.x * R - LIGHT.y * R * 2);
+    ctx.closePath(); ctx.fill();
+  }
+  // one catch on the lit edge — the highlight is a THIN band, never a gradient
+  ctx.globalAlpha = 0.5 * k;
+  ctx.fillStyle = shade(fill, 1.24);
+  const hx = LIGHT.x * R * 0.46, hy = LIGHT.y * R * 0.46;
   ctx.beginPath();
+  ctx.moveTo(cx + hx + LIGHT.y * R, cy + hy - LIGHT.x * R);
+  ctx.lineTo(cx + hx - LIGHT.y * R, cy + hy + LIGHT.x * R);
+  ctx.lineTo(cx + hx - LIGHT.y * R + LIGHT.x * R * 2, cy + hy + LIGHT.x * R + LIGHT.y * R * 2);
+  ctx.lineTo(cx + hx + LIGHT.y * R + LIGHT.x * R * 2, cy + hy - LIGHT.x * R + LIGHT.y * R * 2);
+  ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// WEAR. Rust and grime run DOWN — a streak that runs any other way reads as a
+// scratch, and a TURF barrel is mostly streaks. Chips are taken at the top edge
+// where a thing gets knocked, and the speckle is sparse enough to be texture
+// rather than noise. Clipped to the shape, like the bands.
+function wear(ctx, path, fill, rnd, k = 1, box = null) {
+  if (!fill || fill[0] !== '#' || k <= 0) return;
+  const x0 = box ? box.x0 : 0, y0 = box ? box.y0 : 0;
+  const bw = (box ? box.x1 - box.x0 : W), bh = (box ? box.y1 - box.y0 : H);
+  ctx.save();
+  ctx.clip(path);
+  // Streaks scale with the object too: a fixed 16px run is a whole fist and a
+  // scratch on a tram.
+  const n = Math.round(7 * k);
+  for (let i = 0; i < n; i++) {                              // streaks, running DOWN
+    const x = x0 + rnd() * bw, y = y0 + rnd() * bh * 0.7;
+    const len = bh * (0.12 + rnd() * 0.4) * k, w = 0.7 + rnd() * 1.2;
+    ctx.globalAlpha = 0.10 + rnd() * 0.16;
+    ctx.fillStyle = rnd() > 0.62 ? '#6a4a2a' : shade(fill, 0.6);
+    ctx.fillRect(x, y, w, len);
+  }
+  for (let i = 0; i < Math.round(9 * k); i++) {              // speckle and chips
+    const x = x0 + rnd() * bw, y = y0 + rnd() * bh;
+    ctx.globalAlpha = 0.10 + rnd() * 0.2;
+    ctx.fillStyle = rnd() > 0.5 ? shade(fill, 0.52) : shade(fill, 1.3);
+    ctx.fillRect(x, y, 1 + rnd() * 2, 1 + rnd() * 1.6);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// the shared hand: a wobbly filled polygon, banded and worn
+// `amp` 1.2 → 0.75: TURF's ink line is HARD. The wobble stays, because a card
+// that looks stamped out reads as UI, but it stopped being the loudest thing
+// about the drawing.
+function wob(ctx, pts, fill, rnd, { stroke = INK, width = 2.4, amp = 0.75, close = true, band = 1, grime = 1 } = {}) {
+  const path = new Path2D();
   const n = pts.length;
   const last = close ? n : n - 1;
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+  const seen = (x, y) => { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; };
   for (let i = 0; i < last; i++) {
     const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % n];
     const segs = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 9));
@@ -40,12 +154,21 @@ function wob(ctx, pts, fill, rnd, { stroke = INK, width = 2.4, amp = 1.2, close 
       const t = k / segs;
       const x = x0 + (x1 - x0) * t + (rnd() - 0.5) * amp;
       const y = y0 + (y1 - y0) * t + (rnd() - 0.5) * amp;
-      if (i === 0 && k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      seen(x, y);
+      if (i === 0 && k === 0) path.moveTo(x, y); else path.lineTo(x, y);
     }
   }
-  if (close) ctx.closePath();
-  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(); }
+  if (close) path.closePath();
+  if (fill) {
+    ctx.fillStyle = fill; ctx.fill(path);
+    // Both passes clip to exactly what was filled, and the object survives them
+    // laying paths of their own — no second polygon to drift, and no way for a
+    // band to become the thing that gets stroked.
+    const box = { x0: bx0, y0: by0, x1: bx1, y1: by1 };
+    if (band > 0) bands(ctx, path, fill, rnd, band, box);
+    if (grime > 0) wear(ctx, path, fill, rnd, grime, box);
+  }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(path); }
 }
 
 function blob(ctx, cx, cy, rx, ry, fill, rnd, opts) {

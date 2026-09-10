@@ -433,6 +433,63 @@ const check = (name, ok, extra = '') => {
       for (let i = 0; i < d.length; i += 4 * 37) seen.add(`${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`);
       return seen.size > 6;      // a real drawing, not a flat rectangle
     })) && await page.locator('#hand .card .pic').count() === await page.locator('#hand .card').count());
+  // ── the cards in TURF's register (v29) ────────────────────────────────
+  // Two faults this pass fixed, both invisible to every check above: a filled
+  // shape carried ONE flat tone where a TURF prop carries three or four off a
+  // real light, and `bands` laying its half-planes down destroyed the current
+  // path — so the ink stroke that followed ruled a band's boundary corner to
+  // corner across every panel.
+  //
+  // BOTH RULERS ARE CALIBRATED AGAINST THE BROKEN CODE, not guessed, because
+  // the first cut of each measured the wrong thing and passed either way: a
+  // darkness threshold on the corners was reading the panel's own vignette
+  // (42 of 42 pictures "bled", clean or not), and counting distinct tones in
+  // the glass was reading `wear`'s speckle (8 either way). The numbers below
+  // are what the three variants actually produce.
+  const cardTone = await page.evaluate(async () => {
+    const ca = await import('/slaykallio/js/cardart.js');
+    const lum = d => i => 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    // BANDING: split the bottle's own glass along the light axis and compare
+    // MEANS — a mean cancels the speckle, so what is left is the tonal step.
+    const bt = ca.paintCardPic('bottle', '#c8a03a', 3);
+    const bd = bt.getContext('2d').getImageData(0, 0, bt.width, bt.height).data;
+    const L = lum(bd), glass = [];
+    for (let y = 0; y < bt.height; y++) for (let x = 0; x < bt.width; x++) {
+      const i = (y * bt.width + x) * 4;
+      if (bd[i + 1] > bd[i] + 10 && bd[i + 1] > bd[i + 2] + 10) glass.push({ t: -0.55 * x - 0.83 * y, v: L(i) });
+    }
+    glass.sort((a, b) => a.t - b.t);
+    const q = Math.max(1, Math.floor(glass.length * 0.28));
+    const mean = a => a.reduce((t, o) => t + o.v, 0) / a.length;
+    const step = Math.round(mean(glass.slice(-q)) - mean(glass.slice(0, q)));
+    // INK: a corner of a smooth gradient has low local contrast; a stroke ruled
+    // through it is a hard dark run against the patch's own median.
+    const bled = [];
+    for (const pic of ca.PIC_KEYS) {
+      const c = ca.paintCardPic(pic, '#c8a03a', 3);
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      const Lc = lum(d);
+      let worst = 0;
+      for (const [ox, oy] of [[0, 0], [c.width - 10, 0], [0, c.height - 10], [c.width - 10, c.height - 10]]) {
+        const v = [];
+        for (let y = oy; y < oy + 10; y++) for (let x = ox; x < ox + 10; x++) v.push(Lc((y * c.width + x) * 4));
+        const med = [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
+        worst = Math.max(worst, v.filter(t => t < med - 9).length);
+      }
+      if (worst > 6) bled.push(`${pic}:${worst}`);
+    }
+    return { step, bled, n: ca.PIC_KEYS.length };
+  });
+  // 23 with the bands in, 10 with them out — the 10 is `finish`'s own gradient,
+  // which runs along the same axis and can never be zero.
+  check(`a filled shape is modelled off the light rather than flat — the bottle glass steps ${cardTone.step} (bands out: 10)`,
+    cardTone.step >= 16);
+  // 1 clean against 30 with the stroke leaking. `stick` is the honest one: it
+  // really does throw its motion marks into a corner. It is a count and not a
+  // per-picture bar because the fault lives in the shared hand — when it goes
+  // wrong it goes wrong on all forty-two at once.
+  check(`no picture rules its ink across the panel — ${cardTone.bled.length} of ${cardTone.n}${cardTone.bled.length ? ` (${cardTone.bled.slice(0, 4)})` : ''}`,
+    cardTone.bled.length <= 3);
   check('a tin base and a cardboard base are both on the board somewhere',
     await page.evaluate(() => {
       const kinds = new Set();

@@ -1,7 +1,7 @@
 # Slay Kallio — handoff
 
 **For someone arriving cold.** Written 2026-09-10 against `claude/slay-kallio-project-3lv3l9`
-at v26. `GDD.md` is the design authority and the root `CLAUDE.md` is the long
+at v29. `GDD.md` is the design authority and the root `CLAUDE.md` is the long
 history; this is the short version plus **the state the project is actually in
 right now**, which neither of those tells you.
 
@@ -24,15 +24,16 @@ Vanilla ES modules, **no build step**, three.js from a local `vendor/` copy.
 
 | | |
 |---|---|
-| branch | **v26**, 24 commits ahead of `main` |
-| **deployed** (`gh-pages`, `/Suds-Jack/slaykallio/`) | **v6** — twenty versions behind |
-| a v26 deploy | **built, verified, and NOT landed** — see §7 |
+| branch | **v29**, 27 commits ahead of `main` |
+| **deployed** (`gh-pages`, `/Suds-Jack/slaykallio/`) | **v6** — twenty-three versions behind |
+| a deploy | **built, verified, and NOT landed** — see §7 |
 
 **The live cabinet is not this game.** It has never carried `figures/` or
 `bg/`, so on the site every person falls back to the code-drawn cutout and the
 painted park stands in for all fourteen photographs. If you open the live URL to
 form an opinion of the art, **you are looking at v6 with two whole asset
-folders missing.** Run it locally instead.
+folders missing**, and at cards drawn before v29 put them in the figures' own
+register. Run it locally instead.
 
 ---
 
@@ -62,7 +63,7 @@ Useful URL parameters: `?seed=N` (the run is deterministic from it),
 
 ```bash
 node slaykallio/test/core.mjs                             # 758 checks, bare node, ~seconds
-NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs   # 135 checks, Playwright, ~3 min
+NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs   # 137 checks, Playwright, ~3 min
 node slaykallio/test/balance.mjs                          # is the run WINNABLE — not a gate
 node slaykallio/test/bots.mjs [seeds]                     # the measuring instrument — not a gate
 node slaykallio/test/bots.mjs --noise                     # re-derive the noise floor

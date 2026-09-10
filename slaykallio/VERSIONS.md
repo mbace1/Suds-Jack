@@ -7,6 +7,70 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v29 — 2026-09-10
+**The cards move into TURF's register — and the bug that was ruling ink across
+every one of them**
+
+Owner: *"please make the turf assets the primary look."* The figures had been
+TURF plates since v21 and the cards had not moved, so the frame carried two art
+languages at once — and the cards are the brightest thing on it by area, which
+is v10's lesson about the UI being the bigger half of any look change.
+
+**Rendering one figure and one card at full size named the gap in four
+measurable parts.** The cards filled every shape with ONE flat tone where a
+TURF prop carries three or four off a real light; they had no MATERIAL at all
+(a TURF barrel is rust streaks running down it, chipped paint, dents and panel
+seams, and wear is most of what makes it read as a thing); the card ink line
+was a soft wobble against TURF's hard one; and a card shape is a flat-on
+silhouette where a prop is a three-quarter volume.
+
+**Three of the four are properties of the SHARED HAND, which is why this was
+worth doing.** `wob` and `blob` draw all forty-two pictures, so `bands()`,
+`wear()` and `amp` 1.2 → 0.75 land on every one of them at once and not a
+single picture was redrawn. The fourth — volume — is per-picture geometry and
+is not claimed.
+
+**NOT done, deliberately.** Five card subjects (bin, lamp, cart, cardboard,
+stack) have a real TURF prop plate sitting in `turf/art-src/props/street/`.
+Dropping those five in would have made five cards photographic and thirty-seven
+drawn — the mixed-row problem WITHOUT the thing that makes the mixed row work
+on the bridge, where a plate and a drawn rat are different KINDS of thing. A
+plated bin next to a drawn fist is the same kind rendered two ways. The
+technique travels; the plates would not.
+
+**The real bug, and it took two renders to see.** `bands()` calls
+`beginPath()` to lay each half-plane down, and `beginPath()` throws the current
+path away. So `wear()` then clipped to the last BAND rather than to the object,
+and `wob`'s closing `ctx.stroke()` stroked that band's half-plane in ink: every
+card had two black diagonals ruled corner to corner, and the shapes were being
+grimed through a window the size of the panel. The fix is a `Path2D` carried
+explicitly rather than the context's current path — banding, wear and the
+stroke now all name the shape they mean.
+
+A first cut of the banding had the same family of fault one level up: it
+measured its half-planes from the middle of the 96×62 card, so a small object
+fell entirely on one side of the boundary and got *darkened* instead of
+modelled (the bottle went muddy, the dog lost its form). `wob` accumulates its
+own wobbled points' bounds now and bands against those, which is what makes one
+piece of code read on a fist and on a tram.
+
+**BOTH GATES ARE CALIBRATED AGAINST THE BROKEN CODE, and the first cut of each
+was wrong** — Kindling's *the page was right and the ruler was wrong*, twice in
+one hour. A darkness threshold on the corners was reading the panel's own
+vignette and flagged 42 of 42 pictures clean or broken; counting distinct tones
+in the glass was reading `wear`'s speckle and read 8 either way. What ships:
+the bottle's glass split along the light axis and compared by MEAN (a mean
+cancels speckle) reads **23 with the bands in and 10 with them out** — the 10
+is `finish`'s own gradient, which runs along the same axis and can never be
+zero — and corner patches measured against their own median flag **1 picture
+clean against 30 leaking**. The 1 is `stick`, which honestly does throw its
+motion marks into a corner; it is gated as a COUNT and not a per-picture bar
+because the fault lives in the shared hand and takes all forty-two at once.
+
+- `js/cardart.js` — `LIGHT`, `bands()`, `wear()`, `Path2D` in `wob`, `amp` 0.75
+- `test/smoke.cjs` — the two calibrated gates
+- `index.html` — `main.js?v=27`
+
 ## v28 — 2026-09-10
 **The Park Drinker compounds — a third of the buzz carries, and it is measured**
 

@@ -560,6 +560,45 @@ same register, cached per picture and accent so re-rendering the hand does not
 repaint ten canvases. A card with only words on it is a spreadsheet row. The
 gate fails on a card with no picture, a picture the module cannot draw, or a set
 that has collapsed to fewer than fifteen distinct drawings.
+**And the cards are in the FIGURES' register now** (v29, owner: *"please make
+the turf assets the primary look"*). The figures had been TURF plates since v21
+and the cards had not moved, so the frame carried two art languages at once —
+and the cards are the brightest thing on it by area, which is v10's lesson
+about the UI being the bigger half of any look change. Rendering one of each at
+full size named the gap in four measurable parts: the cards filled every shape
+with ONE flat tone where a TURF prop carries three or four off a real light;
+they had no MATERIAL (a TURF barrel is rust streaks running DOWN it, chips,
+dents and panel seams, and wear is most of what makes it read as a thing); the
+ink line was a soft wobble against TURF's hard one; and a card shape is a
+flat-on silhouette where a prop is a three-quarter volume. **Three of the four
+are properties of the SHARED HAND**, which is the whole reason it was worth
+doing — `wob` and `blob` draw all forty-two pictures, so banding, wear and
+`amp` 1.2 → 0.75 landed on every one at once and no picture was redrawn; the
+fourth, volume, is per-picture geometry and is not claimed. The five card
+subjects that have a real TURF prop plate (bin, lamp, cart, cardboard, stack)
+were deliberately NOT dropped in: that is the mixed-row problem without the
+thing that makes the mixed row work on the bridge, where a plate and a drawn
+rat are different KINDS of thing — **a plated bin next to a drawn fist is the
+same kind rendered two ways.** The technique travels; the plates would not.
+**The bug under it took two renders to see**: `bands()` calls `beginPath()` to
+lay each half-plane down and `beginPath()` THROWS THE CURRENT PATH AWAY, so
+`wear()` clipped to the last band rather than to the object and `wob`'s closing
+stroke inked that band's half-plane — every card had two black diagonals ruled
+corner to corner. A `Path2D` carried explicitly is the fix. A first cut of the
+banding had the same fault one level up: half-planes measured from the middle
+of the 96×62 card, so a small object fell entirely on one side of the boundary
+and was *darkened* rather than modelled — a band has to be a fraction of the
+THING, which is what makes one piece of code read on a fist and on a tram.
+**Both gates are calibrated against the broken code and the first cut of each
+was wrong** (Kindling's *the page was right and the ruler was wrong*, twice in
+one hour): a darkness threshold on the corners was reading the panel's own
+vignette and flagged 42 of 42 clean or broken, and counting distinct tones in
+the glass was reading the speckle and read 8 either way. What ships is the
+bottle's glass split along the light axis and compared by **mean** — a mean
+cancels speckle — reading 23 with the bands in against 10 with them out, and
+corner patches measured against their own median flagging 1 picture clean
+against 30 leaking. It is gated as a COUNT, not a per-picture bar, because the
+fault lives in the shared hand and takes all forty-two at once.
 **The backdrop is photographic and the sharp band FOLLOWS THE DECK** (`js/bg.js`,
 `js/scene.js`): a repaint whenever the deck's row on screen moves — a miniature
 photograph is only convincing while the one sharp stripe lies on what you are
