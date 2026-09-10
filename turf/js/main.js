@@ -1,3 +1,4 @@
+import { fieldGuide, bindActivation } from './field-guide.js?v=1';
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
@@ -697,6 +698,7 @@ function autoStep() {
 const AUTO_MS = 420;
 
 function updateHud() {
+  $('fieldGuide').textContent = fieldGuide(state);
   updateOffscreen();
   topbar.turn.textContent = state.turn === 'player' ? 'Your Turn' : 'Enemy Turn';
   topbar.turn.className = state.turn === 'enemy' ? 'enemy' : '';
@@ -716,7 +718,7 @@ function updateHud() {
     const frac = Math.max(0, u.hp / u.maxHp);
     const portrait = u.portrait ? `<img class="portrait" src="${u.portrait}" alt="">` : '';
     btn.innerHTML = `${portrait}<span class="info"><span class="nm">${u.name} · Lv${u.level}</span><span class="hpTrack"><span class="hpFill" style="width:${frac * 100}%;background:${frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD}"></span></span></span>`;
-    btn.addEventListener('pointerup', e => { e.preventDefault(); input.selectByUid(u.uid); });
+    bindActivation(btn, () => input.selectByUid(u.uid));
     squadEl.appendChild(btn);
   }
 
@@ -928,7 +930,7 @@ function showResult(result, xpEvents = []) {
   renderLevelUps();
 }
 
-titleStart.addEventListener('pointerup', e => {
+bindActivation(titleStart, e => {
   e.preventDefault();
   if (titleStart.disabled) return;
   audio.unlock(); // a browser only allows a context to start from a gesture
@@ -936,7 +938,7 @@ titleStart.addEventListener('pointerup', e => {
   titleEl.hidden = true;
   boot(Date.now());
 });
-resultAgain.addEventListener('pointerup', e => {
+bindActivation(resultAgain, e => {
   e.preventDefault();
   if (resultAgain.disabled) return;
   // Winning a non-final encounter advances the sequence; a final win or any
@@ -948,10 +950,10 @@ resultAgain.addEventListener('pointerup', e => {
   if (!advancing) crewProgress = {};
   boot(Date.now());
 });
-controls.endTurn.addEventListener('pointerup', e => { e.preventDefault(); input && input.endTurn(); });
+bindActivation(controls.endTurn, e => { e.preventDefault(); input && input.endTurn(); });
 // false: a mouse/touch player tapping Cancel never asked for the keyboard/
 // pad reticle to appear — see the comment on cancelSelection in input.js.
-controls.cancel.addEventListener('pointerup', e => { e.preventDefault(); input && input.cancelSelection(false); });
+bindActivation(controls.cancel, e => { e.preventDefault(); input && input.cancelSelection(false); });
 
 // Console/test hook, same shape as every other game's (__hd, __dc, __sj):
 // state for inspection, the commands a click ultimately calls, and boot()

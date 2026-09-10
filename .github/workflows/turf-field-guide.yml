@@ -1,0 +1,18 @@
+name: TURF field guide
+on:
+  pull_request:
+    paths: ['turf/**', '.github/workflows/turf-field-guide.yml']
+jobs:
+  turf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node turf/test/smoke.mjs && node turf/test/balance.mjs
+      - run: npm install --no-save --package-lock=false playwright
+      - run: npx playwright install chromium
+      - run: |
+          python3 -m http.server 8767 --bind 127.0.0.1 &
+          node turf/test/field-guide.cjs
