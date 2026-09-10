@@ -5,14 +5,18 @@ export function loadArt({scene,rider,deck,body,environment,renderer,host}){
  const mobile=new URLSearchParams(location.search).get('quality')==='mobile'||(new URLSearchParams(location.search).get('quality')!=='desktop'&&(matchMedia('(pointer:coarse)').matches||innerWidth<700));
  const quality=mobile?'mobile':'desktop',loader=new GLTFLoader();let hipRest=null,mixer=null,clips={},current='',model=null,disposed=false,wasAir=false,landing=0;
  host.dataset.art='loading';host.dataset.quality=quality;
- if(mobile){renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));scene.traverse(o=>{if(o.isDirectionalLight&&o.shadow)o.shadow.mapSize.set(1024,1024)})}
+ if(mobile){renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));renderer.shadowMap.enabled=false;renderer.toneMappingExposure=.9}
  const footRest={};const resources=[];const extraTextures=[];
  const textureLoader=new T.TextureLoader();
  function texture(name){const t=textureLoader.load(new URL('textures/'+name,base).href);extraTextures.push(t);return t}
  const fabricNormal=texture('fabric-normal'+(mobile?'-mobile':'')+'.png?v=2');const fabricRough=texture('fabric-rough'+(mobile?'-mobile':'')+'.png?v=2');
 
  const ready=fetch(new URL('manifest.json?v=2',base)).then(r=>{if(!r.ok)throw Error('Art manifest unavailable');return r.json()}).then(async manifest=>{
-  await Promise.all(['warehouse','skater','board'].map(async name=>{
+  // Some mobile GPUs render the batched warehouse GLB as a screen-sized white
+  // surface. Keep the complete procedural warehouse on coarse/small screens;
+  // the Blender skater, board, animation and effects assets still load there.
+  const models=mobile?['skater','board']:['warehouse','skater','board'];
+  await Promise.all(models.map(async name=>{
    const gltf=await loader.loadAsync(new URL(manifest.models[name][quality],base).href);if(disposed){gltf.scene.traverse(disposeObject);return}
    resources.push(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material.map)o.material.map.anisotropy=mobile?2:4;if(o.material.name.startsWith('Jacket')){o.material.normalMap=fabricNormal;o.material.normalScale.set(.18,.18);o.material.roughnessMap=fabricRough;o.material.needsUpdate=true}}});
    if(name==='warehouse'){scene.add(gltf.scene);environment.visible=false;const decal=texture('decals.png?v=2');decal.colorSpace=T.SRGBColorSpace;const sign=new T.Mesh(new T.PlaneGeometry(9,4.5),new T.MeshBasicMaterial({map:decal,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));sign.position.set(-28.75,4,3);sign.rotation.y=Math.PI/2;gltf.scene.add(sign)}
@@ -34,3 +38,4 @@ export function loadArt({scene,rider,deck,body,environment,renderer,host}){
  }
  return {ready,update,mobile,dispose(){disposed=true;mixer?.stopAllAction();for(const t of extraTextures)t.dispose();for(const r of resources){r.removeFromParent();r.traverse(disposeObject)}}};
 }
+
