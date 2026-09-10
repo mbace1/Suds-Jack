@@ -1118,7 +1118,7 @@ rect, which clips it to the silhouette instead of a glowing box.
 RUNTIME path (`units.json` points `sprite`/`portrait` there), which is why a deploy must
 carry it; CLAUDE.md's "a deploy omits `art-src/`" rule is written for eeri, where art-src is
 source. `art-src/reference/` (20MB) is source material and stays behind.
-**The owner's OWN 26 are cut** (v34, `tools/sheet-cut.mjs` →
+**The owner's OWN 26 are cut** (v35, `tools/sheet-cut.mjs` →
 `art-src/sprites/cast/roster/`). The thirty `*-plate.png` files are new
 characters generated in the sheets' TECHNIQUE — `turfGrim` says in as many words
 to copy the technique and never the reference's specific character — so "we have

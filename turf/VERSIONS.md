@@ -40,8 +40,19 @@ The topple is the strongest single case and is already solved in this repo —
 camera's x and the depth axis, because a flat cutout rotating *in* the picture
 plane reads as a sprite spinning. It retires four of the pilot's 28 frames.
 
-## v34 — 2026-09-10
+## v35 — 2026-09-10
 **The owner's own 26 characters, cut out of the sheets at last**
+
+> **Numbered 35, not 34, and the near-miss is worth recording.** This entry was
+> written as v34 because v33 was the top of the log *on this branch*. It is not
+> the top of the log on `gh-pages`: a **different v34** (2026-09-05, the zoom
+> pass) shipped from another lane and never came back here, and the collision
+> only surfaced while hand-deploying something else and reading the site's own
+> `VERSIONS.md`. Eeri's rule generalises — **never write a version heading
+> without reading the other lineage's log first**, and "the other lineage"
+> includes the deployed tree, because a release can exist there and nowhere
+> else. This branch is still missing that v34; bringing it back is its own job
+> and not this one's.
 
 No game code changed. `art-src/sprites/cast/roster/` is new and holds
 twenty-six 192×288 transparent plates — **every character on both casting
