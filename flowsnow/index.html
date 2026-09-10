@@ -22,8 +22,9 @@
     #hud .cell { text-align: center; min-width: 84px; }
     #hud .big { font-size: 30px; line-height: 1; font-weight: normal; letter-spacing: 1px; }
     #hud .lbl { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.8; margin-top: 4px; }
-    #flow { width: 140px; height: 3px; margin: 12px auto 0; background: rgba(251, 239, 228, 0.25); border-radius: 2px; overflow: hidden; }
+    #flow, #float { width: 140px; height: 3px; margin: 12px auto 0; background: rgba(251, 239, 228, 0.25); border-radius: 2px; overflow: hidden; }
     #flowFill { height: 100%; width: 0; background: linear-gradient(90deg, #ffd9b0, #fff6ea); box-shadow: 0 0 10px #ffe0c0; transition: width 0.12s linear; }
+    #floatFill { height: 100%; width: 0; background: linear-gradient(90deg, #a9c6f0, #f2f8ff); box-shadow: 0 0 10px #cfe2ff; transition: width 0.12s linear; }
     #toast {
       position: fixed; top: 24%; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none;
       font-size: 26px; letter-spacing: 4px; opacity: 0; transition: opacity 0.35s ease;
@@ -64,7 +65,7 @@
     @media (max-width: 560px) {
       #hud { gap: 22px; padding: 0 56px; }
       #hud .big { font-size: 24px; }
-      #flow { width: 96px; }
+      #flow, #float { width: 96px; }
     }
   </style>
 </head>
@@ -81,6 +82,12 @@
       <div class="lbl" id="distLabel">m</div>
       <div id="flow"><div id="flowFill"></div></div>
       <div class="lbl" id="flowLabel">flow</div>
+    </div>
+    <div class="cell">
+      <div class="big"><span id="depth">0.0</span></div>
+      <div class="lbl" id="depthLabel">snow</div>
+      <div id="float"><div id="floatFill"></div></div>
+      <div class="lbl" id="floatLabel">float</div>
     </div>
   </div>
   <div id="toast" class="ui"></div>
@@ -111,7 +118,7 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module" src="js/main.js?v=2"></script>
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';
     sign({ corner: 'bottom-left', counter: true });

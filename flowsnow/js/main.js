@@ -69,21 +69,28 @@ const audio = new Audio();
 let mode = 'title';
 let s = createRider(terrain, terrain.lineX(0), 0);
 let time = 0, acc = 0, last = performance.now();
-let sprayAcc = 0, hazeAcc = 0, flakeAcc = 0, hudAt = 0, flowMark = 0;
+let sprayAcc = 0, hazeAcc = 0, tailAcc = 0, flakeAcc = 0, hudAt = 0, flowMark = 0;
 let debugInput = null, noPopUntil = 0;
 let best = (() => { try { return Number(localStorage.getItem(BEST_KEY)) || 0; } catch { return 0; } })();
 
 const P = new THREE.Vector3(), D = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
 const head = new THREE.Vector3(0, 0, -1), camPos = new THREE.Vector3(), look = new THREE.Vector3(), tmp = new THREE.Vector3();
 
+// Snow is thrown FROM the snow. The board rides below the surface in powder,
+// so every emitter has to spawn at the surface rather than at the rider — fired
+// from the buried board they start inside the mountain, and the sim only lifts
+// a particle out once it is already falling.
+const surfaceY = (x, z, lift = 0.05) => terrain.height(x, z) + lift;
+
 const events = {
   pop() { audio.pop(); },
-  kicker() { figure.edgePoint(s, P, D); sim.burst(24, s.x, s.y + 0.1, s.z, 0, 0.7, 0.4, 2.5, 0.8, 1.1, 0.8, 1); },
+  kicker() { sim.burst(24, s.x, surfaceY(s.x, s.z, 0.1), s.z, 0, 0.7, 0.4, 2.5, 0.8, 1.1, 0.8, 1); },
   land(impact, air, spins, grab) {
     audio.land(impact, air, spins);
     const n = Math.round(30 + impact * 7);
-    sim.burst(n, s.x, s.y + 0.05, s.z, 0, 1, 0, 2.5 + impact * 0.45, 1.0, 1.5, 1.1, 1);
-    sim.burst(Math.round(n * 0.6), s.x, s.y + 0.1, s.z, 0, 0.8, 0, 3 + impact * 0.5, 0.9, 0.9, 0.5, 0);
+    const ly = surfaceY(s.x, s.z);
+    sim.burst(n, s.x, ly, s.z, 0, 1, 0, 2.5 + impact * 0.45, 1.0, 1.5, 1.1, 1);
+    sim.burst(Math.round(n * 0.6), s.x, ly + 0.05, s.z, 0, 0.8, 0, 3 + impact * 0.5, 0.9, 0.9, 0.5, 0);
     if (air > 0.25) {
       const parts = [];
       if (spins >= 180) parts.push(`${spins}`);
@@ -92,9 +99,14 @@ const events = {
       toast(parts.join(' · '), 1100);
     }
   },
+  dive(sink) {
+    audio.tumble();
+    sim.burst(190, s.x, surfaceY(s.x, s.z, 0.2), s.z, 0, 1, 0, 4.2, 1.3, 2.0, 1.5, 1);
+    toast(L('dive'), 1200);
+  },
   tumble(impact) {
     audio.tumble();
-    sim.burst(140, s.x, s.y + 0.2, s.z, 0, 1, 0, 3.5, 1.2, 1.8, 1.4, 1);
+    sim.burst(140, s.x, surfaceY(s.x, s.z, 0.2), s.z, 0, 1, 0, 3.5, 1.2, 1.8, 1.4, 1);
     toast(L('fall'), 900);
   },
   done() { finish(); },
@@ -114,7 +126,7 @@ function applyHour(p) {
 }
 
 // ---- HUD ----
-const hud = { dist: $('dist'), flow: $('flowFill'), speed: $('speed'), toast: $('toast'), title: $('title'), done: $('done'), best: $('best') };
+const hud = { dist: $('dist'), flow: $('flowFill'), float: $('floatFill'), depth: $('depth'), speed: $('speed'), toast: $('toast'), title: $('title'), done: $('done'), best: $('best') };
 let toastTimer = 0;
 function toast(text, ms = 1000) {
   hud.toast.textContent = text; hud.toast.style.opacity = '1';
@@ -126,6 +138,8 @@ function updateHud(now) {
   hud.dist.textContent = `${Math.round(s.dist)}`;
   hud.flow.style.width = `${Math.round(s.flow * 100)}%`;
   hud.speed.textContent = `${Math.round(s.speed * 3.6)}`;
+  hud.depth.textContent = s.depth.toFixed(1);
+  hud.float.style.width = `${Math.round(s.plane * 100)}%`;
 }
 function setupText() {
   $('tagline').textContent = L('tagline');
@@ -134,6 +148,8 @@ function setupText() {
   $('padline').textContent = L('pad');
   $('press').textContent = L('press');
   $('flowLabel').textContent = L('flow');
+  $('floatLabel').textContent = L('float');
+  $('depthLabel').textContent = L('snow');
   $('speedLabel').textContent = L('speed');
   $('distLabel').textContent = L('dist');
   $('doneTitle').textContent = L('done');
@@ -167,7 +183,8 @@ function finish() {
   $('doneScoreLabel').textContent = isBest ? `${L('score')} · ${L('newBest')}` : L('score');
   $('doneStats').innerHTML = [
     [L('time'), `${s.time.toFixed(1)} s`], [L('top'), `${Math.round(s.speedMax * 3.6)} km/h`],
-    [L('air'), `${s.airBest.toFixed(1)} s`], [L('spin'), `${s.spinBest}°`], [L('falls'), `${s.tumbles}`],
+    [L('air'), `${s.airBest.toFixed(1)} s`], [L('spin'), `${s.spinBest}°`],
+    [L('deepest'), `${s.deepBest.toFixed(1)} m`], [L('falls'), `${s.tumbles}`],
   ].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
   hud.best.textContent = `${L('best')} ${Math.round(best).toLocaleString()}`;
   hud.done.hidden = false;
@@ -180,12 +197,29 @@ addEventListener('keydown', e => { if (e.code === 'KeyM') { audio.start(); audio
 // ---- one physics step, and what it throws ----
 function physicsStep(inp, dt) {
   stepRider(s, inp, dt, terrain, events);
-  // spray off the working edge
+  // spray off the working edge. The board rides BELOW the surface in powder,
+  // so the plume has to leave the snow rather than the buried edge — emitted at
+  // the board it fired from inside the mountain and was never seen.
   sprayAcc += s.spray * 1300 * dt;
   let n = Math.floor(sprayAcc); sprayAcc -= n;
   if (n > 0) {
     figure.edgePoint(s, P, D);
+    P.y = surfaceY(P.x, P.z);
     sim.burst(n, P.x, P.y, P.z, D.x, D.y, D.z, 1.8 + s.speed * 0.45, 0.6, 1.0, 0.16, 0);
+  }
+  // the rooster tail: a buried board at speed throws a wall of it up behind
+  if (s.grounded && s.sink > 0.12) {
+    tailAcc += s.sink * Math.min(1, s.speed / 14) * 340 * dt;
+    n = Math.floor(tailAcc); tailAcc -= n;
+    if (n > 0) {
+      tmp.set(0, 0.1, 0.55).applyQuaternion(figure.root.quaternion).add(figure.root.position);
+      tmp.y = surfaceY(tmp.x, tmp.z, 0.06);
+      // thrown UP far more than back: the camera sits behind the rider, so a
+      // tail aimed straight astern is a tail aimed at the lens, and at speed it
+      // filled the frame and hid the run
+      D.set(0, 0.96, 0.28).applyQuaternion(figure.root.quaternion).normalize();
+      sim.burst(n, tmp.x, tmp.y, tmp.z, D.x, D.y, D.z, 1.7 + s.speed * 0.26, 0.7, 1.05, 0.34, 1);
+    }
   }
   // a low haze off the tail at speed
   if (s.grounded) {
@@ -193,6 +227,7 @@ function physicsStep(inp, dt) {
     n = Math.floor(hazeAcc); hazeAcc -= n;
     if (n > 0) {
       tmp.set(0, 0.05, 0.75).applyQuaternion(figure.root.quaternion).add(figure.root.position);
+      tmp.y = surfaceY(tmp.x, tmp.z, 0.04);
       D.set(0, 0.5, 0.85).applyQuaternion(figure.root.quaternion).normalize();
       sim.burst(n, tmp.x, tmp.y, tmp.z, D.x, D.y, D.z, 1.2 + s.speed * 0.12, 0.6, 1.5, 1.0, 1);
     }

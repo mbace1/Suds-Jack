@@ -131,9 +131,14 @@ export class Trail {
     this.last = [s.x, s.z];
     const r = this._r.set(1, 0, 0).applyQuaternion(rootQuat);
     const on = s.grounded ? 1 : 0;
-    const lx = s.x - r.x * TRAIL_HALF, lz = s.z - r.z * TRAIL_HALF;
-    const rx = s.x + r.x * TRAIL_HALF, rz = s.z + r.z * TRAIL_HALF;
-    this.samples.push({ lx, ly: terrain.height(lx, lz) + 0.05, lz, rx, ry: terrain.height(rx, rz) + 0.05, rz, on });
+    // a board buried in powder leaves a TRENCH, not a line: it widens with the
+    // sink and sits below the surface it displaced
+    const half = TRAIL_HALF * (1 + (s.sink ?? 0) * 2.4);
+    const drop = Math.min((s.sink ?? 0) * 0.5, 0.35);
+    const lx = s.x - r.x * half, lz = s.z - r.z * half;
+    const rx = s.x + r.x * half, rz = s.z + r.z * half;
+    this.samples.push({ lx, ly: terrain.height(lx, lz) + 0.05 - drop, lz,
+      rx, ry: terrain.height(rx, rz) + 0.05 - drop, rz, on });
     if (this.samples.length > TRAIL_N) this.samples.shift();
     this._write();
   }
@@ -166,8 +171,9 @@ export class Shadow {
     const n = terrain.normal(s.x, s.z);
     this.mesh.position.set(s.x, h + 0.03, s.z);
     this.mesh.quaternion.setFromUnitVectors(this._up, this._n.set(n[0], n[1], n[2]));
+    // a board down inside the pack casts nothing — the snow is over it
     const above = Math.max(0, s.y - h);
-    const k = Math.max(0, 1 - above / 5);
+    const k = Math.max(0, 1 - above / 5) * Math.max(0, 1 - (s.sink ?? 0) * 1.2);
     this.mat.uniforms.uAlpha.value = k;
     const sc = 1 + above * 0.15;
     this.mesh.scale.set(sc, 1, sc);

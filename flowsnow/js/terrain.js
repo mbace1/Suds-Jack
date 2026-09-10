@@ -71,7 +71,9 @@ function kickers(x, z) {
   return h;
 }
 
-export function height(x, z) {
+// THE GROUND — the firm floor under the snowpack. Nothing rides on this; it is
+// what the snow lies on and what you bottom out against.
+export function base(x, z) {
   const lx = lineX(z);
   const off = x - lx;
   // the gully: flat-ish floor, walls that climb as a soft quadratic
@@ -86,6 +88,31 @@ export function height(x, z) {
   const breathe = 0.5 + 0.5 * Math.sin(z * 0.0021 + 2.0);
   const roll = Math.sin(z * 0.062 + Math.sin(x * 0.01) * 1.5) * 1.6 * breathe;
   return z * GRADE + wall + swell + skin + roll + kickers(x, z);
+}
+
+// THE SNOWPACK — how deep the loose snow lies over that floor, and the whole
+// reason the game has a second dimension to it. Wind loads the gully and
+// scours the walls, a packed line is beaten down the middle where everyone
+// rides, and slow drifts make the depth worth reading rather than memorising.
+// A kicker is a stamped, firm lip: you cannot build a take-off out of powder.
+export const DEEP = 2.7;              // metres in the deepest loaded pockets
+export const PACKED_HALF = 9;         // half width of the beaten line
+
+export function depth(x, z) {
+  const off = Math.abs(x - lineX(z));
+  const bowl = Math.exp(-(off * off) / (2 * 58 * 58));      // the gully collects
+  const packed = Math.exp(-(off * off) / (2 * PACKED_HALF * PACKED_HALF));
+  const drift = 0.55 + 0.45 * fbm(x * 0.0075 + 11.3, z * 0.0075 - 4.1, 2);
+  let d = DEEP * bowl * drift * (1 - 0.82 * packed);
+  const lip = kickers(x, z);
+  if (lip > 0.05) d *= Math.max(0.12, 1 - lip * 0.8);       // take-offs are firm
+  return d < 0 ? 0 : d;
+}
+
+// THE SURFACE — what you see, what the snow settles on, and what the rider
+// sinks INTO. Everything that draws or collides wants this one.
+export function height(x, z) {
+  return base(x, z) + depth(x, z);
 }
 
 const EPS = 0.35;
@@ -117,5 +144,5 @@ export function monolithsIn(ix, iz) {
   return out;
 }
 
-export const terrain = { height, normal, lineX, kickerAt, monolithsIn, TILE, GRADE };
+export const terrain = { height, base, depth, normal, lineX, kickerAt, monolithsIn, TILE, GRADE, DEEP };
 export default terrain;
