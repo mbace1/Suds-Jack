@@ -673,6 +673,24 @@ the band got wider, not tighter. Three changes landed in one version (two fights
 per act pool, four enemies, five reacting) against one measurement, so there is
 no causal story to give and none is invented — it needs a tuning pass with the
 changes separated, and VERSIONS.md v23 records that it has not had one.
+**THE NOISE FLOOR IS 13 POINTS PER CHARACTER, AND IT WAS NEVER MEASURED UNTIL
+v24.** Four independent blocks of 150 seeds against IDENTICAL code swing a
+single character's win rate by up to **13 points** while the MEAN across the
+six swings **2**. `bots.mjs` carried "a few points at 150 seeds is noise" as a
+GUESS from v14, and `report()`'s findings bar was 8 points — *inside* the
+floor, so it was admitting noise as a finding by construction. The bar is
+`> NOISE.perCharacter` now, anything between 6 and the floor prints as
+explicitly not a finding, `node test/bots.mjs --noise` re-derives the floor on
+demand, and the footer names the measured number scaled to the sample actually
+run. **Read the mean; a per-character cell at 150 seeds is worth about ±6.**
+What it takes back: **v23's "the band widened" is withdrawn** (separated, the
+new fights are +2 points, the boss enrage +1, everything together +3 — a 2×2
+that reads almost flat), and **v16's Park Drinker buff was overstated** — sold
+on "8% → 14%", it re-measures at 600 seeds as greedy **+0**, synergist **+4**,
+native **+6**; the +6 reproduced on a 4× sample so it is probably real, but the
+evidence supports "a few points on his best line and nothing on the naive one",
+not the headline. v16's Collector (+23 on synergist) and v14's synergist
+finding (17 and 19) both clear the floor and stand.
 Gates: `node slaykallio/test/core.mjs` (736 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept

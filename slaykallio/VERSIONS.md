@@ -7,6 +7,72 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v24 — 2026-09-10
+**The noise floor, measured — and it takes several earlier claims back**
+v23 shipped with an honest admission: three changes had landed against one
+measurement and the numbers moved in both directions with no causal story.
+This is the follow-through, and it found something worse and more useful than
+a tuning problem.
+
+**First, the three changes separated.** Two of them are one change — the four
+new enemies are only reachable through the two new fights — so what is
+genuinely separable is a 2×2, and every cell reads almost the same:
+
+| pool | enrage | mean |
+|---|---|---|
+| v22 | off | 22% |
+| v22 | on | 24% |
+| v23 | off | 25% |
+| v23 | on | **26%** |
+
+**The new fights alone: +2 points. The boss enrage alone: +1. Everything
+together: +3.** So v23's "the band widened, the numbers moved in both
+directions" was reading a per-character wobble as an effect.
+
+**Then the ruler itself**, which is the real finding. Four independent blocks
+of 150 seeds against **identical code**:
+
+```
+block        drinker    busker collector      cart    walker     boxer  mean
+1-150            15%       43%       19%       43%       19%       16%    26%
+151-300          26%       36%       21%       38%       32%       17%    28%
+301-450          24%       34%       25%       43%       25%       19%    28%
+451-600          17%       39%       22%       41%       28%       16%    27%
+swing           11pt       9pt       6pt       5pt      13pt       3pt   2pt
+```
+
+**A single character's rate swings up to 13 points for no reason at all,
+while the mean across the six swings 2.** `bots.mjs` has carried the line "a
+few points at 150 seeds is noise" in its header since v14 — a guess, never
+measured, and far too generous. The mean is the only statistic this instrument
+can carry; a per-character cell at 150 seeds is worth about ±6.
+
+**What that takes back.** The findings bar in `report()` was 8 points, which is
+*inside* the floor — it was admitting noise as a finding by construction. It is
+`> NOISE.perCharacter` now, and anything between 6 and the floor prints as
+explicitly NOT a finding rather than being silently dropped.
+
+- **v23's band claim: withdrawn.** Noise.
+- **v16's Park Drinker buff: overstated.** It was sold on "8% → 14%", a
+  six-point per-character move. Re-measured at **600 seeds**: greedy **+0**,
+  synergist **+4**, native **+6**. The +6 reproduced on an independent sample
+  four times the size, so it is probably real — but "a few points on his best
+  line and nothing at all on the naive one" is what the evidence supports, not
+  the headline it got. He is still last, which was the part that was right.
+- **v16's Bottle Collector: survives.** Its headline was the synergist column,
+  +23, which clears the floor comfortably.
+- **v14's `synergist` beats `greedy` by 17 and 19: survives**, but by four and
+  six points over the floor rather than by a mile, and it should always have
+  been stated with the floor beside it.
+
+**`node test/bots.mjs --noise` re-derives the floor on demand**, so nobody has
+to take my word for it, and the report's footer now names the measured number
+scaled to whatever sample was actually run instead of saying "a few points".
+
+No game file changed — this is the instrument and the record. No `?v=` bump.
+
+Gates: core 736, smoke 130.
+
 ## v23 — 2026-09-10
 **Enemies that react, and four numbers that moved for reasons I cannot name**
 The spare plates were the obvious next step and the wrong one on their own.

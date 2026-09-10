@@ -31,6 +31,15 @@
 //   - A bot cannot see two turns ahead. Nothing here plans a build; `synergist`
 //     drafts toward one, which is not the same thing.
 //   - A spread of a few points at 150 seeds is noise. Do not tune on it.
+//     THAT WAS A GUESS UNTIL v24, AND IT WAS TOO GENEROUS. Measured — four
+//     independent blocks of 150 seeds against IDENTICAL code — a single
+//     character's rate swings up to **13 points** for no reason at all, while
+//     the MEAN across the six swings 2. So the mean is the statistic this
+//     instrument can carry and a per-character cell at 150 seeds is worth
+//     about ±6. Several claims in VERSIONS.md were read off swings smaller
+//     than that; `node test/bots.mjs --noise` is here so nobody has to take
+//     my word for the floor, and `report()` marks any per-character finding
+//     that does not clear it.
 
 import { pathToFileURL } from 'node:url';
 import { CARDS, CHARACTERS, ENCOUNTERS, ACTS, EVENTS, RULES } from '../js/data.js';
@@ -388,7 +397,10 @@ export function report(SEEDS = Number(process.argv[2]) || 150) {
     const top = ranked[0], g = wins.greedy[ch];
     const lift = Math.round((wins[top][ch] - g) * 100);
     console.log(`  ${ch.padEnd(10)} best: ${top.padEnd(11)} ${pct(wins[top][ch])}   greedy ${pct(g)}   ${lift > 0 ? `+${lift} points` : 'greedy is the best line'}`);
-    if (lift >= 8 && top !== 'greedy') findings.push(`${ch} plays ${lift} points better as ${top} than as greedy`);
+    // 8 points used to be the bar and the floor is 13, so the old bar admitted
+  // noise as a finding. A per-character claim has to clear the floor.
+  if (lift > NOISE.perCharacter && top !== 'greedy') findings.push(`${ch} plays ${lift} points better as ${top} than as greedy`);
+  else if (lift >= 6 && top !== 'greedy') console.log(`${' '.repeat(13)}(+${lift} for ${top}, INSIDE the ±${NOISE.perCharacter}pt noise floor — not a finding)`);
   }
 
   // ── what an ordinary fight actually costs ────────────────────────────────
@@ -422,7 +434,46 @@ export function report(SEEDS = Number(process.argv[2]) || 150) {
   if (!findings.length) console.log(`  No character gains 8+ points from a different line: greedy is a fair instrument for all six.`);
   const spread = chars.map(c => Math.max(...names.filter(b => b !== 'random').map(b => wins[b][c])));
   console.log(`  worst character at its best line: ${pct(Math.min(...spread))} — ${chars[spread.indexOf(Math.min(...spread))]}`);
-  console.log(`\n  (a measuring tool; it never fails a build. A few points at ${SEEDS} seeds is noise.)\n`);
+  // Name the MEASURED floor, scaled for the sample actually run — "a few
+  // points is noise" was a guess that sat in this footer for ten versions
+  // while findings were read off six-point swings.
+  const noiseAt = Math.round(NOISE.perCharacter * Math.sqrt(150 / SEEDS));
+  console.log(`\n  (a measuring tool; it never fails a build. At ${SEEDS} seeds a per-character`);
+  console.log(`   cell is worth about ±${Math.ceil(noiseAt / 2)} — measured, \`--noise\` — so only the MEAN is`);
+  console.log(`   solid. Nothing under ${noiseAt} points on one character is a finding.)\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) report();
+// ── the noise floor ──────────────────────────────────────────────────────
+// Same code, same bot, same everything — only a different block of seeds.
+// Whatever moves here moved for no reason, and nothing smaller than it can be
+// read as a finding. This is the ruler; the matrix above is the measurement.
+export function noiseFloor(SEEDS = 150, BLOCKS = 4) {
+  const cols = chars.map(() => []), means = [];
+  console.log(`\n── NOISE FLOOR: ${BLOCKS} blocks of ${SEEDS} seeds, IDENTICAL code ──\n`);
+  console.log(`  ${'block'.padEnd(10)}${chars.map(c => c.slice(0, 9).padStart(10)).join('')}${'  mean'}`);
+  for (let b = 0; b < BLOCKS; b++) {
+    const row = chars.map((ch, i) => {
+      let w = 0;
+      for (let s = b * SEEDS + 1; s <= (b + 1) * SEEDS; s++) if (run(s, ch, BOTS.native).phase === 'won') w++;
+      cols[i].push(w / SEEDS);
+      return w / SEEDS;
+    });
+    const m = row.reduce((a, x) => a + x, 0) / row.length; means.push(m);
+    console.log(`  ${`${b * SEEDS + 1}-${(b + 1) * SEEDS}`.padEnd(10)}${row.map(v => pct(v).padStart(10)).join('')}  ${pct(m)}`);
+  }
+  const span = a => Math.round((Math.max(...a) - Math.min(...a)) * 100);
+  console.log(`\n  ${'swing'.padEnd(10)}${cols.map(c => `${span(c)}pt`.padStart(10)).join('')}  ${span(means)}pt`);
+  const worst = Math.max(...cols.map(span));
+  console.log(`\n  A per-character cell is worth about ±${Math.ceil(worst / 2)}; the worst swing on identical code was ${worst} points.`);
+  console.log(`  The MEAN across the six moved ${span(means)}. That is the number this instrument can carry.\n`);
+  return { worst, mean: span(means) };
+}
+
+// Measured on this cast at 150 seeds (v24). Read it, do not re-derive it every
+// run: the floor is a property of the sample size, not of the day.
+export const NOISE = { perCharacter: 13, mean: 2 };
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (process.argv.includes('--noise')) noiseFloor(Number(process.argv[2]) || 150);
+  else report();
+}
