@@ -173,7 +173,7 @@ export function createGame(host, update) {
     rampGeo.setAttribute('position', new T.Float32BufferAttribute(rp, 3));
     rampGeo.setIndex([0, 2, 1, 1, 2, 3, 2, 4, 3, 3, 4, 5, 4, 6, 5, 5, 6, 7]);
     rampGeo.computeVertexNormals();
-    const ramp = new T.Mesh(rampGeo, new T.MeshStandardMaterial({ color: '#8c745a', side: T.DoubleSide }));
+    const ramp = new T.Mesh(rampGeo, mobileCompat ? new T.MeshBasicMaterial({ color: '#8c745a', side: T.DoubleSide }) : new T.MeshStandardMaterial({ color: '#8c745a', side: T.DoubleSide }));
     ramp.receiveShadow = true;
     environment.add(ramp);
     for (const x of [-4.55, 4.55])
@@ -200,6 +200,21 @@ export function createGame(host, update) {
         for (let z = -20; z < 20; z += 3)
             box(0.45, 0.02, 1, x, 0.025, z, mat('#b8ab62'));
     }
+    // Dense, GPU-safe warehouse dressing for the mobile compatibility tier.
+    for (const z of [-30, -22, 18, 26]) {
+        box(5.5, 0.18, 1.2, -20, 0.09, z, mat('#c8a25d'));
+        box(0.18, 2.8, 0.18, -22.4, 1.4, z, steel);
+        box(0.18, 2.8, 0.18, -17.6, 1.4, z, steel);
+        box(5.1, 0.12, 1, -20, 1.35, z, mat('#64737a'));
+        box(5.1, 0.12, 1, -20, 2.7, z, mat('#64737a'));
+    }
+    for (let i = 0; i < 7; i++) {
+        box(1.2, 2.4, 0.7, 20 + (i % 2) * 1.3, 1.2, -2 + i * 1.15, i % 2 ? mat('#465c68') : mat('#b4503f'));
+        box(0.75, 0.05, 0.04, 20 + (i % 2) * 1.3, 1.35, -1.64 + i * 1.15, trim);
+    }
+    for (let i = 0; i < 6; i++) box(1.4, 0.28 + i * 0.22, 3.8, -2.5 + i * 1.4, (0.28 + i * 0.22) / 2, 22, concrete);
+    box(9, 0.16, 1.1, 1, 1.45, 22, trim);
+    box(9, 1.3, 0.12, 1, 0.65, 22.5, mat('#3f4f55'));
     // Animated articulated skater.
     const rider = new T.Group();
     scene.add(rider);
@@ -256,7 +271,7 @@ export function createGame(host, update) {
     const effects=createEffects(scene,art.mobile);
     function burst(n,spark=false){effects.burst(rider.position.clone().add(new T.Vector3(0,.12,0)),n,spark)}
     const keys = {}, pressed = {};
-    let lookX = 0, lookY = 0, analogX = 0, analogY = 0, active = false, paused = false, score = 0, best = 0, time = 120, speed = 0, angle = 0, vy = 0, combo = 0, mult = 1, trick = '', trickTimer = 0, air = false, airAngle = 0, flip = 0, grab = 0, grinding = -1, grindLock = 0, camOrbit = 0, camPitch = 0, device = 'KEYBOARD', last = performance.now(), raf = 0, hudTick = 0, bail = 0, landingTurn = 0;
+    let lookX = 0, lookY = 0, analogX = 0, analogY = 0, active = false, paused = false, score = 0, best = 0, time = 120, speed = 0, angle = 0, vy = 0, combo = 0, mult = 1, trick = '', trickTimer = 0, air = false, airAngle = 0, flip = 0, grab = 0, grinding = -1, grindLock = 0, grindBuffer = 0, camOrbit = 0, camPitch = 0, device = 'KEYBOARD', last = performance.now(), raf = 0, hudTick = 0, bail = 0, landingTurn = 0;
     try {
         best = Number(localStorage.getItem('concrete-best') || 0);
     }
@@ -288,6 +303,7 @@ export function createGame(host, update) {
         if (v && !keys[k])
             pressed[k] = true;
         keys[k] = v;
+        if (v && k === 'l') grindBuffer = 1.25;
     }
     const down = (e) => {
         if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key))
@@ -381,6 +397,7 @@ export function createGame(host, update) {
                 reset();
         }
         if (active && !paused && time > 0) {
+            grindBuffer = Math.max(0, grindBuffer - dt);
             time = Math.max(0, time - dt);
             if (time === 0) {
                 bank();
@@ -420,7 +437,6 @@ export function createGame(host, update) {
                     if (Math.random() < 0.8)
                         burst(2, true);
                     if (jump ||
-                        !keys.l ||
                         Math.abs(rider.position.z - rail.z) > rail.len / 2) {
                         grinding = -1;
                         air = true;
@@ -433,6 +449,12 @@ export function createGame(host, update) {
                     rider.position.x += Math.sin(angle) * speed * dt;
                     rider.position.z += Math.cos(angle) * speed * dt;
                     const g = ground(rider.position.x, rider.position.z);
+                    if (!air && grindBuffer > 0 && speed > 1.5 && rails.some(r => Math.abs(rider.position.x-r.x)<1.4 && Math.abs(rider.position.z-r.z)<r.len/2+.8)) {
+                        air = true;
+                        vy = Math.max(vy, 3.2);
+                        rider.position.y += .12;
+                        airAngle = angle;
+                    }
                     if (!air) {
                         rider.position.y = g;
                         if (jump) {
@@ -462,15 +484,16 @@ export function createGame(host, update) {
                     if (air) {
                         vy -= 18 * dt;
                         rider.position.y += vy * dt;
-                        if (keys.l && grindLock === 0) {
-                            const r = rails.findIndex((r) => Math.abs(rider.position.x - r.x) < 0.8 &&
+                        if (grindBuffer > 0 && grindLock === 0) {
+                            const r = rails.findIndex((r) => Math.abs(rider.position.x - r.x) < 1.4 &&
                                 Math.abs(rider.position.z - r.z) < r.len / 2 &&
-                                Math.abs(rider.position.y - r.y) < 0.65);
+                                Math.abs(rider.position.y - r.y) < 1.35);
                             if (r >= 0) {
                                 grinding = r;
                                 air = false;
                                 angle = Math.cos(angle) < 0 ? Math.PI : 0;
                                 addTrick('50–50 grind', 250);
+                                grindBuffer = 0;
                                 flip = 0;
                                 grab = 0;
                             }
