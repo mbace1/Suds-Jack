@@ -106,7 +106,7 @@ const check = (name, ok, extra = '') => {
   check('the run opens on the map, with the hero alone on the bridge',
     await page.evaluate(() => __sk.state().phase === 'map' && !document.querySelector('#map').hidden && __sk.puppets().hero && __sk.puppets().foes.length === 0));
   check('the fork offers two or three spans as 44px targets', await page.evaluate(() => { const n = [...document.querySelectorAll('#nodes .node')]; return n.length >= 2 && n.length <= 3 && n.every(b => b.getBoundingClientRect().height >= 44); }));
-  check('and it is afternoon, on a daylight plate', /afternoon/.test(await page.locator('#map .where').innerText()) && await page.evaluate(() => /day|plate\.jpg/.test(__sk.plate() ?? '')));
+  check('and it is afternoon, on the TURF courtyard plate', /afternoon/.test(await page.locator('#map .where').innerText()) && await page.evaluate(() => __sk.plate() === 'bg/turf-courtyard.jpg'));
   // the fork is drawn as a torn-paper map: every span of the act is a pin on
   // it, the whole route visible ahead, and the buttons sit ON the pins you can take
   const sheet = await page.evaluate(() => {
@@ -334,9 +334,11 @@ const check = (name, ok, extra = '') => {
   });
   const lumaAt = async t => { await page.evaluate(t => { __sk.flush(); __sk.setHour(t); }, t); await page.waitForTimeout(1600); return lumaBands(); };
   const day = await lumaAt(0), dusk = await lumaAt(0.55), night = await lumaAt(1);
-  check(`the picture darkens as the hour falls: day ${day.sky.toFixed(0)} → dusk ${dusk.sky.toFixed(0)} → night ${night.sky.toFixed(0)}`, day.sky > dusk.sky && dusk.sky > night.sky * 2 && day.sky > 60 && night.sky < 30);
+  // The reused TURF scenes are pregraded urban night art, not bright park photos.
+  // Keep a measured visibility floor and require all three brightness stages.
+  check(`the picture darkens as the hour falls: day ${day.sky.toFixed(0)} → dusk ${dusk.sky.toFixed(0)} → night ${night.sky.toFixed(0)}`, day.sky > dusk.sky && dusk.sky > night.sky * 2 && day.sky > 20 && night.sky > 2 && night.sky < 30);
   check(`and so does the deck (${day.deck.toFixed(0)} → ${night.deck.toFixed(0)})`, day.deck > night.deck);
-  check('and the photograph behind the bridge changes with it — a night plate at night', await page.evaluate(() => /night/.test(__sk.plate() ?? '')));
+  check('and the dockyard plate is loaded at night', await page.evaluate(() => __sk.plate() === 'bg/turf-dockyard.jpg' && __sk.arena.photo));
   check('by day the sun is up and the torch is out; by night the reverse', await page.evaluate(() => { __sk.setHour(0); const d = { sun: __sk.arena.sun.intensity, torch: __sk.arena.torch.intensity }; __sk.setHour(1); const n = { sun: __sk.arena.sun.intensity, torch: __sk.arena.torch.intensity }; return d.sun > 1 && d.torch === 0 && n.sun === 0 && n.torch > 10; }));
   await page.evaluate(() => __sk.setHour(0.55));
   const mut = await page.evaluate(() => {
@@ -981,4 +983,3 @@ const check = (name, ok, extra = '') => {
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })();
-

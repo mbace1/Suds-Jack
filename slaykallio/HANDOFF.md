@@ -1,5 +1,9 @@
 # Slay Kallio — handoff
 
+## v33 background continuation
+
+Owner requested reuse of TURF backgrounds. The courtyard, schoolyard and dockyard now supply the day/evening/night plates, copied into Slay's own bg folder. Their existing grade is preserved and blur reduced. Original photographs remain selectable with ?scenery=photos. Desktop/touch player flows passed with the courtyard loaded and rendered screenshots checked. This extends draft #499; not live on the hub. Creature redraws, new poses and Blender stage work remain subsequent steps.
+
 ## Current graphics work — v32 local prototype
 
 Goal: readable combat before broader asset production. Implemented: separated label lanes, opaque label backing, a 14px selected-card rules panel, encounter title outside the labels, and energy clear of the Toko signature. Keeps the existing TURF art and rules. Core checks passed (761), desktop/touch player flows passed; 139 scene checks passed. Not merged or live. Next: one polished fight with new creature art, poses and Blender stage assets after the readability pass is reviewed.

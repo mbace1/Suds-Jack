@@ -7,6 +7,11 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v33 — 2026-09-10
+**TURF scenery joins the shared cast**
+
+Reuse the existing courtyard, schoolyard and dockyard assets for day/evening/night. Copy runtime images into Slay so publication is self-contained. Preserve the original photographs with ?scenery=photos. Use gentler focus blur and skip double grading on the already-graded TURF images.
+
 ## v32 — 2026-09-10
 **First graphics pass: readable combat**
 

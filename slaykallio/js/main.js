@@ -9,7 +9,7 @@
 
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js?v=31';
 import * as engine from './engine.js?v=31';
-import { Arena } from './scene.js?v=31';
+import { Arena } from './scene.js?v=32';
 import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=31';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=31';
 import { paintCardPic } from './cardart.js?v=31';
@@ -25,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 32;
+const VERSION = 33;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -67,10 +67,15 @@ const params = new URLSearchParams(location.search);
 // each stage draws one plate from its set, by the run's seed, so a seed is a
 // route AND its weather. `bg/plate.jpg` — the bear — stays the plate the menu
 // opens on. Every one goes through the same cut-to-frame and grade.
-const PLATES = {
+const PHOTO_PLATES = {
   day: ['bg/plate.jpg', 'bg/day-beds.jpg', 'bg/day-square-painted.jpg', 'bg/day-bench.jpg', 'bg/day-bear-lawn.jpg', 'bg/day-beds-tram.jpg', 'bg/day-square.jpg'],
   evening: ['bg/dusk-metro.jpg', 'bg/dusk-church.jpg'],
   night: ['bg/night-street.jpg', 'bg/night-door.jpg', 'bg/night-restaurant.jpg', 'bg/night-bar.jpg', 'bg/night-tram.jpg'],
+};
+// Owner requested reuse of TURF backgrounds (2026-09-10). Original photos
+// remain available for comparison with ?scenery=photos or an explicit ?bg=.
+const PLATES = params.get('scenery') === 'photos' ? PHOTO_PLATES : {
+  day: ['bg/turf-courtyard.jpg'], evening: ['bg/turf-schoolyard.jpg'], night: ['bg/turf-dockyard.jpg'],
 };
 const STAGES = ['day', 'evening', 'night'];
 let plateStage = null, plateUrl = null;
@@ -86,7 +91,8 @@ function applyHour(h) {
   if (stage !== plateStage) {
     plateStage = stage;
     plateUrl = plateFor(stage);
-    arena.setPhoto(plateUrl, { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+    document.body.dataset.backdrop = plateUrl;
+    arena.setPhoto(plateUrl, { stereo: params.get('stereo'), eye: params.get('eye') || 'left', pregraded: plateUrl.startsWith('bg/turf-'), maxBlur: plateUrl.startsWith('bg/turf-') ? 3 : 18 }).catch(() => {});
   }
 }
 resize();                                  // the plate is CUT to the frame, so give it the real one first

@@ -239,7 +239,7 @@ function loadImage(url) {
   return p;
 }
 
-export async function fromImage(url, { stereo = null, eye = 'left', focus = 0.6, aspect = 16 / 9, grade = null } = {}) {
+export async function fromImage(url, { stereo = null, eye = 'left', focus = 0.6, aspect = 16 / 9, grade = null, maxBlur = 18 } = {}) {
   const img = await loadImage(url);
   const sw = stereo === 'sbs' ? img.width / 2 : img.width;
   const sx0 = stereo === 'sbs' && eye === 'right' ? img.width / 2 : 0;
@@ -250,7 +250,7 @@ export async function fromImage(url, { stereo = null, eye = 'left', focus = 0.6,
   c.width = Math.max(2, Math.min(2048, Math.round(cw)));
   c.height = Math.max(2, Math.round(c.width / aspect));
   c.getContext('2d').drawImage(img, sx, sy, cw, ch, 0, 0, c.width, c.height);
-  const tex = new THREE.CanvasTexture(tiltShift(c, { focus, grade }));
+  const tex = new THREE.CanvasTexture(tiltShift(c, { focus, grade, maxBlur }));
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
