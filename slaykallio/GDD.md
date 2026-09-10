@@ -1,5 +1,10 @@
 # Slay Kallio — design doc
 
+> **Arriving cold? Read `HANDOFF.md` first.** This file is the design
+> authority — what the game is meant to be. `HANDOFF.md` is what it currently
+> IS: the state of the branch, how to run it, which numbers to distrust, and
+> what is weak.
+
 *Mostly Slay the Spire 2, with some Balatro jokers thrown in.* Owner's brief,
 2026-09-04. This file is the design authority; `VERSIONS.md` is what shipped.
 

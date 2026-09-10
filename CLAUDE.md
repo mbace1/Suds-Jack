@@ -288,6 +288,11 @@ clock**, because a sandbox with no GPU renders this at a handful of frames a sec
 Build tooling: none — same no-build rule as every other demo here.
 
 ### Slay Kallio (`slaykallio/`) — the deckbuilder, ACTIVE
+**An agent arriving cold should read `slaykallio/HANDOFF.md` first** — the state
+of the project rather than its history: how to run it, every gate and what each
+is for, the `__sk` seam, which measurements to distrust and why, the prepared
+deploy, and an honest list of what is weak. This section is the record; that is
+the orientation.
 **Owner's brief, 2026-09-04: mostly Slay the Spire 2, with some Balatro jokers
 thrown in.** Read `slaykallio/GDD.md` before touching anything — this is the
 summary, that is the source. A deckbuilder fought on a **thick plank bridge**
