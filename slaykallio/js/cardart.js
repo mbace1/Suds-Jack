@@ -1,12 +1,34 @@
 // A picture on every card.
 //
 // Owner, 2026-09-04: "have basic pictures on each card". So each card carries a
-// small painted panel above its text — a thing, not an icon. They are drawn on
-// a 96×62 canvas in the same register as the puppets: flat fills, a heavy ink
-// line that wobbles, one warm light from the left, and a wash of grime over
-// the lot. Nothing is symmetrical and nothing is centred perfectly, because a
-// card that looks stamped out reads as UI rather than as an object somebody
-// painted.
+// small painted panel above its text — a thing, not an icon. Nothing is
+// symmetrical and nothing is centred perfectly, because a card that looks
+// stamped out reads as UI rather than as an object somebody painted.
+//
+// OWNER, 2026-09-10: "make the turf assets the primary look." The figures had
+// been TURF plates since v21 and the cards had not moved, so the frame carried
+// two art languages at once — and the cards are the brightest thing on it by
+// area. Rendering one of each at full size named the gap in four measurable
+// parts: the cards filled every shape with ONE flat tone where a TURF prop
+// carries three or four tonal bands off a real light; the cards had no
+// MATERIAL at all (a TURF barrel is rust streaks running down it, chipped
+// paint, dents and panel seams — wear is most of what makes it read as a
+// thing); the card ink line was a soft wobble against TURF's hard one; and a
+// card shape was a flat-on silhouette where a prop is a three-quarter volume.
+//
+// Three of the four are properties of the SHARED HAND rather than of any
+// picture, which is the whole reason this was worth doing: `wob` and `blob`
+// draw all forty-two, so banding, wear and the harder line land on every
+// one of them at once and no picture was redrawn to get them. The fourth —
+// volume — is per-picture geometry and is not claimed here.
+//
+// NOT DONE, and deliberately: five card subjects (bin, lamp, cart, cardboard,
+// stack) have a real TURF prop plate sitting in `turf/art-src/props/street/`.
+// Dropping those five in would have made five cards photographic and
+// thirty-seven drawn, which is the mixed-row problem WITHOUT the thing that
+// makes the mixed row work on the bridge — there a plate and a drawn rat are
+// different KINDS of thing, and a plated bin next to a drawn fist is the same
+// kind rendered two ways. The technique travels; the plates would not.
 //
 // A picture is cheap to draw and there are at most ten on screen, so each is
 // painted once and cached by `${pic}|${accent}` — a hand being re-rendered on
@@ -15,6 +37,11 @@
 const W = 96, H = 62;
 const INK = '#17120e';
 const cache = new Map();
+
+// The light TURF's props are lit by: high and to the left, so a band runs down
+// and to the right. One direction for every picture, or the panel reads as a
+// sticker sheet rather than as a shelf of objects.
+const LIGHT = { x: -0.55, y: -0.83 };
 
 function rngFrom(seed) {
   let s = seed >>> 0 || 1;
@@ -28,11 +55,98 @@ function shade(hex, k) {
   return `rgb(${ch(0)},${ch(1)},${ch(2)})`;
 }
 
-// the shared hand: a wobbly filled polygon
-function wob(ctx, pts, fill, rnd, { stroke = INK, width = 2.4, amp = 1.2, close = true } = {}) {
+// BANDING. A TURF surface is three or four tonal steps, not a fill and a
+// shadow: the object is filled at its base tone, then the away-from-light half
+// is laid in twice at falling brightness and the lit edge gets one catch. It is
+// done by CLIPPING to the shape already drawn rather than by computing offset
+// polygons — the shape is wobbly and every picture builds it differently, so a
+// second derived path would drift away from the first.
+//
+// The shape arrives as a Path2D and NOT as the context's current path, which is
+// the whole reason this reads at all: laying a band down needs `beginPath`, and
+// `beginPath` throws the current path away — so the first cut clipped `wear` to
+// the last BAND rather than to the object, and then stroked that band's
+// half-plane in ink. Every card had two black diagonals ruled across it and the
+// shapes themselves were being grimed through a window the size of the panel.
+function bands(ctx, path, fill, rnd, k = 1, box = null) {
+  if (!fill || fill[0] !== '#') return;
+  // AGAINST THE SHAPE'S OWN BOUNDS, never the panel's. The first cut measured
+  // the half-planes from the middle of the 96×62 card, so on a small object the
+  // whole thing fell on one side of the boundary and the band stopped modelling
+  // it and just darkened it — the bottle went muddy and the dog lost its form —
+  // while a shape spanning the panel got a visible diagonal across the corner.
+  // A band has to be a fraction of the THING, which is what makes the same code
+  // read on a fist and on a tram.
+  const cx = box ? (box.x0 + box.x1) / 2 : W / 2;
+  const cy = box ? (box.y0 + box.y1) / 2 : H / 2;
+  const R = box ? Math.max(6, Math.hypot(box.x1 - box.x0, box.y1 - box.y0)) : W;
+  ctx.save();
+  ctx.clip(path);
+  // two darker bands, each a half-plane pushed further from the light
+  for (const [step, dark] of [[0.22, 0.74], [0.52, 0.55]]) {
+    const ox = -LIGHT.x * R * step, oy = -LIGHT.y * R * step;
+    ctx.fillStyle = shade(fill, dark + (1 - k) * (1 - dark));
+    ctx.beginPath();
+    ctx.moveTo(cx + ox + LIGHT.y * R, cy + oy - LIGHT.x * R);
+    ctx.lineTo(cx + ox - LIGHT.y * R, cy + oy + LIGHT.x * R);
+    ctx.lineTo(cx + ox - LIGHT.y * R - LIGHT.x * R * 2, cy + oy + LIGHT.x * R - LIGHT.y * R * 2);
+    ctx.lineTo(cx + ox + LIGHT.y * R - LIGHT.x * R * 2, cy + oy - LIGHT.x * R - LIGHT.y * R * 2);
+    ctx.closePath(); ctx.fill();
+  }
+  // one catch on the lit edge — the highlight is a THIN band, never a gradient
+  ctx.globalAlpha = 0.5 * k;
+  ctx.fillStyle = shade(fill, 1.24);
+  const hx = LIGHT.x * R * 0.46, hy = LIGHT.y * R * 0.46;
   ctx.beginPath();
+  ctx.moveTo(cx + hx + LIGHT.y * R, cy + hy - LIGHT.x * R);
+  ctx.lineTo(cx + hx - LIGHT.y * R, cy + hy + LIGHT.x * R);
+  ctx.lineTo(cx + hx - LIGHT.y * R + LIGHT.x * R * 2, cy + hy + LIGHT.x * R + LIGHT.y * R * 2);
+  ctx.lineTo(cx + hx + LIGHT.y * R + LIGHT.x * R * 2, cy + hy - LIGHT.x * R + LIGHT.y * R * 2);
+  ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// WEAR. Rust and grime run DOWN — a streak that runs any other way reads as a
+// scratch, and a TURF barrel is mostly streaks. Chips are taken at the top edge
+// where a thing gets knocked, and the speckle is sparse enough to be texture
+// rather than noise. Clipped to the shape, like the bands.
+function wear(ctx, path, fill, rnd, k = 1, box = null) {
+  if (!fill || fill[0] !== '#' || k <= 0) return;
+  const x0 = box ? box.x0 : 0, y0 = box ? box.y0 : 0;
+  const bw = (box ? box.x1 - box.x0 : W), bh = (box ? box.y1 - box.y0 : H);
+  ctx.save();
+  ctx.clip(path);
+  // Streaks scale with the object too: a fixed 16px run is a whole fist and a
+  // scratch on a tram.
+  const n = Math.round(7 * k);
+  for (let i = 0; i < n; i++) {                              // streaks, running DOWN
+    const x = x0 + rnd() * bw, y = y0 + rnd() * bh * 0.7;
+    const len = bh * (0.12 + rnd() * 0.4) * k, w = 0.7 + rnd() * 1.2;
+    ctx.globalAlpha = 0.10 + rnd() * 0.16;
+    ctx.fillStyle = rnd() > 0.62 ? '#6a4a2a' : shade(fill, 0.6);
+    ctx.fillRect(x, y, w, len);
+  }
+  for (let i = 0; i < Math.round(9 * k); i++) {              // speckle and chips
+    const x = x0 + rnd() * bw, y = y0 + rnd() * bh;
+    ctx.globalAlpha = 0.10 + rnd() * 0.2;
+    ctx.fillStyle = rnd() > 0.5 ? shade(fill, 0.52) : shade(fill, 1.3);
+    ctx.fillRect(x, y, 1 + rnd() * 2, 1 + rnd() * 1.6);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// the shared hand: a wobbly filled polygon, banded and worn
+// `amp` 1.2 → 0.75: TURF's ink line is HARD. The wobble stays, because a card
+// that looks stamped out reads as UI, but it stopped being the loudest thing
+// about the drawing.
+function wob(ctx, pts, fill, rnd, { stroke = INK, width = 2.4, amp = 0.75, close = true, band = 1, grime = 1 } = {}) {
+  const path = new Path2D();
   const n = pts.length;
   const last = close ? n : n - 1;
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+  const seen = (x, y) => { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; };
   for (let i = 0; i < last; i++) {
     const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % n];
     const segs = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 9));
@@ -40,12 +154,21 @@ function wob(ctx, pts, fill, rnd, { stroke = INK, width = 2.4, amp = 1.2, close 
       const t = k / segs;
       const x = x0 + (x1 - x0) * t + (rnd() - 0.5) * amp;
       const y = y0 + (y1 - y0) * t + (rnd() - 0.5) * amp;
-      if (i === 0 && k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      seen(x, y);
+      if (i === 0 && k === 0) path.moveTo(x, y); else path.lineTo(x, y);
     }
   }
-  if (close) ctx.closePath();
-  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(); }
+  if (close) path.closePath();
+  if (fill) {
+    ctx.fillStyle = fill; ctx.fill(path);
+    // Both passes clip to exactly what was filled, and the object survives them
+    // laying paths of their own — no second polygon to drift, and no way for a
+    // band to become the thing that gets stroked.
+    const box = { x0: bx0, y0: by0, x1: bx1, y1: by1 };
+    if (band > 0) bands(ctx, path, fill, rnd, band, box);
+    if (grime > 0) wear(ctx, path, fill, rnd, grime, box);
+  }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(path); }
 }
 
 function blob(ctx, cx, cy, rx, ry, fill, rnd, opts) {
@@ -63,6 +186,99 @@ const line = (ctx, x0, y0, x1, y1, c, w = 2.4) => {
 // Each gets the canvas, the rng, and the card owner's accent so a character's
 // own cards carry their colour.
 const PICS = {
+  // ─ second wave (2026-09-05): the dog walker, the boxer, the bear, the events
+  dog(c, r, a) {
+    // a scruffy dog, side on, looking up at whoever holds the lead
+    wob(c, [[22, 44], [24, 30], [36, 24], [58, 26], [66, 34], [64, 46], [50, 50], [30, 50]], '#8a6a48', r);
+    wob(c, [[58, 30], [66, 18], [78, 20], [80, 30], [72, 36]], '#8a6a48', r);          // head
+    wob(c, [[62, 18], [60, 8], [68, 16]], shade('#8a6a48', 0.75), r, { width: 1.8 });   // ear
+    for (const x of [30, 40, 52, 60]) line(c, x, 48, x - 2, 56, '#6a4a30', 3);            // legs
+    wob(c, [[22, 36], [10, 26], [14, 34], [20, 40]], '#8a6a48', r, { width: 2 });          // tail, up
+    c.fillStyle = INK; c.fillRect(72, 24, 3, 3); blob(c, 80, 29, 3, 3, INK, r, { width: 0, stroke: null });
+    line(c, 78, 16, 90, 6, a, 2);                                                       // the lead
+  },
+  stick(c, r, a) {
+    wob(c, [[14, 50], [20, 44], [72, 12], [78, 16], [26, 50]], '#7a5a34', r, { amp: 1.6 });
+    line(c, 40, 32, 46, 22, shade('#7a5a34', 0.7), 2);
+    for (let i = 0; i < 4; i++) line(c, 60 + i * 5, 8 - i * 3, 66 + i * 5, 4 - i * 3, a, 1.6);   // motion
+    blob(c, 84, 8, 4, 4, a, r, { width: 1.4 });
+  },
+  glove(c, r, a) {
+    // a boxing glove, laces showing, a little battered
+    blob(c, 44, 34, 24, 22, a, r, { width: 3 });
+    wob(c, [[56, 44], [70, 40], [72, 52], [58, 54]], shade(a, 0.8), r);                   // the cuff
+    wob(c, [[26, 26], [36, 20], [40, 30], [30, 34]], shade(a, 1.15), r, { width: 2 });    // thumb
+    for (let i = 0; i < 3; i++) line(c, 60 + i * 4, 42, 62 + i * 4, 52, '#e8e0d0', 1.4);   // laces
+    c.fillStyle = 'rgba(0,0,0,0.2)'; c.beginPath(); c.ellipse(46, 40, 12, 8, 0, 0, Math.PI * 2); c.fill();
+  },
+  bell(c, r, a) {
+    wob(c, [[48, 8], [36, 16], [30, 40], [26, 48], [70, 48], [66, 40], [60, 16]], '#c8a03a', r);
+    line(c, 30, 40, 66, 40, shade('#c8a03a', 0.7), 2);
+    blob(c, 48, 52, 5, 5, '#8a6a20', r, { width: 2 });
+    for (let i = 0; i < 3; i++) { line(c, 76 + i * 4, 20 + i * 6, 84 + i * 4, 18 + i * 6, a, 1.6); line(c, 20 - i * 4, 20 + i * 6, 12 - i * 4, 18 + i * 6, a, 1.6); }
+  },
+  pigeon(c, r, a) {
+    blob(c, 46, 36, 22, 16, '#7a7c84', r);
+    blob(c, 66, 26, 9, 9, '#8c8e96', r, { width: 2.4 });
+    wob(c, [[30, 30], [52, 26], [58, 36], [36, 42]], '#5a5c66', r, { width: 2 });          // wing
+    blob(c, 58, 32, 6, 5, '#4a7a6a', r, { width: 0, stroke: null });                      // the neck sheen
+    wob(c, [[74, 26], [82, 28], [74, 30]], '#c8783a', r, { width: 1.6 });
+    c.fillStyle = INK; c.fillRect(68, 23, 2, 2);
+    for (const x of [40, 50]) { line(c, x, 50, x, 56, '#c8783a', 2); line(c, x - 3, 56, x + 3, 56, '#c8783a', 1.6); }
+    for (let i = 0; i < 6; i++) blob(c, 14 + r() * 20, 46 + r() * 10, 1.6, 1.6, a, r, { width: 0, stroke: null });  // crumbs
+  },
+  bear(c, r, a) {
+    // the Karhupuisto bear: a granite mass, head down, one ear
+    wob(c, [[14, 54], [18, 34], [30, 20], [50, 14], [68, 20], [80, 36], [82, 54]], '#6a6260', r, { amp: 2 });
+    wob(c, [[60, 26], [70, 18], [84, 24], [88, 38], [76, 42]], '#7a726e', r, { width: 2.4 });
+    blob(c, 66, 18, 4, 4, '#5a5250', r, { width: 1.6 });
+    c.fillStyle = a; c.fillRect(78, 30, 3, 3);                                          // the eye, lit
+    for (let i = 0; i < 4; i++) line(c, 24 + i * 12, 28 + r() * 10, 30 + i * 12, 44 + r() * 8, 'rgba(20,16,14,0.5)', 1.2);  // cracks
+    blob(c, 30, 24, 7, 4, '#3a4a2a', r, { width: 0, stroke: null });                       // moss
+    c.fillStyle = '#3a3634'; c.fillRect(10, 54, 76, 6);
+  },
+  key(c, r, a) {
+    blob(c, 26, 30, 12, 12, '#b8a878', r);
+    blob(c, 26, 30, 5, 5, '#3a3428', r, { width: 1.6 });
+    wob(c, [[36, 27], [80, 25], [80, 33], [36, 33]], '#b8a878', r, { width: 2 });
+    c.fillStyle = '#b8a878'; c.fillRect(66, 33, 5, 8); c.fillRect(76, 33, 4, 6);
+    line(c, 40, 22, 60, 22, a, 1.4);
+  },
+  tram(c, r, a) {
+    wob(c, [[10, 46], [14, 18], [82, 18], [86, 46]], '#3a6a4a', r, { amp: 1.4 });
+    for (let i = 0; i < 4; i++) wob(c, [[18 + i * 16, 24], [30 + i * 16, 24], [30 + i * 16, 36], [18 + i * 16, 36]], '#e8d8a0', r, { width: 1.6 });
+    c.fillStyle = a; c.fillRect(10, 40, 76, 3);
+    for (const x of [24, 70]) blob(c, x, 50, 5, 5, '#22242a', r, { width: 2 });
+    line(c, 48, 18, 48, 8, '#8a8f94', 2); line(c, 40, 8, 56, 8, '#8a8f94', 2);
+  },
+  steam(c, r, a) {
+    wob(c, [[16, 56], [16, 34], [80, 34], [80, 56]], '#6a4a30', r);
+    for (let i = 0; i < 6; i++) line(c, 22 + i * 10, 36, 22 + i * 10, 54, shade('#6a4a30', 0.7), 1.4);
+    for (let i = 0; i < 7; i++) { c.globalAlpha = 0.35; blob(c, 20 + r() * 56, 10 + r() * 20, 6 + r() * 8, 5 + r() * 6, '#e8e4d8', r, { width: 0, stroke: null }); }
+    c.globalAlpha = 1;
+    blob(c, 48, 44, 6, 4, a, r, { width: 1.4 });
+  },
+  mirror(c, r, a) {
+    wob(c, [[24, 8], [72, 8], [74, 56], [22, 56]], '#2a2c34', r, { amp: 1.4 });
+    wob(c, [[30, 14], [66, 14], [68, 50], [28, 50]], '#4a5060', r, { width: 1.6, amp: 1.2 });
+    // the crack, and a reflection that is not quite where it should be
+    wob(c, [[40, 14], [50, 30], [44, 34], [56, 50]], null, r, { width: 2, stroke: '#c8ccd8', amp: 1.4 });
+    c.globalAlpha = 0.5; blob(c, 52, 30, 6, 8, '#c09070', r, { width: 1.4 }); c.globalAlpha = 1;
+    c.fillStyle = a; c.fillRect(31, 15, 3, 34);
+  },
+  tar(c, r, a) {
+    blob(c, 46, 40, 30, 16, '#1a1816', r, { amp: 3 });
+    blob(c, 34, 30, 10, 8, '#2a2622', r, { width: 2 });
+    for (let i = 0; i < 5; i++) blob(c, 26 + r() * 40, 36 + r() * 8, 2 + r() * 3, 2 + r() * 3, '#3a3634', r, { width: 1.2 });
+    c.fillStyle = a; c.fillRect(40, 26, 3, 3);
+    for (let i = 0; i < 3; i++) line(c, 30 + i * 14, 54, 32 + i * 14, 60, '#1a1816', 3);
+  },
+  badge(c, r, a) {
+    blob(c, 48, 32, 18, 20, '#c8c8c8', r, { width: 3 });
+    blob(c, 48, 32, 12, 14, '#8a8f94', r, { width: 1.6 });
+    for (let i = 0; i < 5; i++) { const t = i / 5 * Math.PI * 2; line(c, 48 + Math.cos(t) * 6, 32 + Math.sin(t) * 6, 48 + Math.cos(t) * 10, 32 + Math.sin(t) * 10, '#e8e8e0', 1.4); }
+    c.fillStyle = a; c.fillRect(40, 48, 16, 3);
+  },
   fist(c, r, a) {
     wob(c, [[30, 46], [30, 26], [40, 18], [58, 18], [66, 26], [66, 44], [56, 50], [36, 50]], '#c08a68', r);
     for (const y of [26, 33, 40]) line(c, 44, y, 64, y, shade('#c08a68', 0.68), 2);
@@ -274,15 +490,22 @@ export function paintCardPic(pic, accent = '#c8a03a', seed = 1) {
   c.width = W; c.height = H;
   const ctx = c.getContext('2d');
   const rnd = rngFrom(seed * 2654435761 + pic.length * 7919);
-  // the ground of the panel: a flat dirty wash, lighter at the top
+  // The ground of the panel: a dirty wash, and a DARK one. A card is held up
+  // in the same torchlight as everything else — a daylight panel on a dark
+  // card reads as a hole cut in it.
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#8f8674'); bg.addColorStop(1, '#5d5648');
+  bg.addColorStop(0, '#5a5346'); bg.addColorStop(1, '#332e26');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   (PICS[pic] ?? PICS.fist)(ctx, rnd, accent);
   finish(ctx, rnd);
+  // the same corner falloff the frame has, so a picture sits IN the card
+  const v = ctx.createRadialGradient(W * 0.42, H * 0.36, H * 0.22, W * 0.5, H * 0.5, H * 0.95);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(8,7,6,0.62)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
   cache.set(key, c);
   return c;
 }
 
 export const PIC_KEYS = Object.keys(PICS);
+

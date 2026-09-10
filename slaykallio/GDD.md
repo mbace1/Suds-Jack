@@ -1,13 +1,18 @@
 # Slay Kallio — design doc
 
+> **Arriving cold? Read `HANDOFF.md` first.** This file is the design
+> authority — what the game is meant to be. `HANDOFF.md` is what it currently
+> IS: the state of the branch, how to run it, which numbers to distrust, and
+> what is weak.
+
 *Mostly Slay the Spire 2, with some Balatro jokers thrown in.* Owner's brief,
 2026-09-04. This file is the design authority; `VERSIONS.md` is what shipped.
 
 ## 1. What it is
 
 A single-player deckbuilder fought on a **thick plank bridge** over a Kallio
-canal. You pick one of four bums, walk six spans, and either take the last one
-or end up flat on the boards. Every fight is cards: play them from a hand of
+canal. You pick one of six bums, walk two acts of six spans each, and either
+take the last one or end up flat on the boards. Every fight is cards: play them from a hand of
 five against three energy, watch what the other side has already told you it is
 about to do, and get your arithmetic bigger than theirs.
 
@@ -34,6 +39,17 @@ cardboard wedge with a strip of tape over the feet. `look.base` picks which, and
 mixing them is the point: a row of these should look **collected** rather than
 manufactured. The cutout is flat. The base is not, and the tape is what tells
 you so.
+
+**Because a figure is card, the ANIMATION MOVES THE CARD** (v17, and the same
+direction is written up for TURF in `turf/ART_REQUEST.md` §12). Paper Mario's
+vocabulary, not a flipbook: anticipation, a lunge that squashes, a card that
+bends when it is hit, a breath at rest. `js/motion.js` holds it, in the
+figure's own height, anchored at the feet — a cutout stands on a base, and a
+rotation about its centre reads as a sprite being spun rather than a thing
+tipping over. **The anticipation is the load-bearing part**: an attack leans
+AWAY for 0.20s and commits in 0.11, and without the lean it is a slide. It is a
+**toggle** (`figures: paper` / `still`), because the only way to know whether
+motion carries a verb is to watch the same fight twice.
 
 **Gritty is in the drawing, not in a filter.** The ink line is drawn twice at
 different weights, so it varies the way a loaded brush does. Paint is
@@ -118,7 +134,7 @@ the same function that resolves it.
 
 Statuses are the small vocabulary everything else leans on: **Vulnerable** (×1.5
 taken), **Weak** (×0.75 dealt), **Strength** (permanent +), **Buzz** (a strength
-that fades at the end of the turn).
+of which two-thirds fades at the end of the turn — see §6 and `RULES.buzzCarry`).
 
 ## 5. The damage pipeline — where the synergy lives
 
@@ -142,26 +158,58 @@ Two rules make it a system rather than a pile of cases:
   *Deal 12 damage* on its face. In a full-information game, quoting a number you
   do not then use is the unforgivable bug.
 
-## 6. The roster — four Kallio bums, each a different question
+## 6. The roster — six Kallio bums, each a different question
 
 Every character has a mechanic, not a stat block. The starting deck is 4 Swing,
 4 Cover Up and **two cards that teach the mechanic on the first turn**.
 
-| | who | the mechanic | the question it asks |
-|---|---|---|---|
-| **Late** | the park drinker | **Buzz** — strength that fades with the turn | can you spend it all in one turn? |
-| **Ilona** | the busker | cards scale with **how many you played before them** | what order do you play in? |
-| **Roope** | the bottle collector | **Bottles** — free 0-cost tokens, and cards that count your hand | do you spend the hand or hold it? |
-| **Vekku** | the cart pusher | block that **hits**, and block that **stays** | is defending an attack? |
+**A character is named by their CLASS** (owner, 2026-09-06), the way Slay the
+Spire names the Ironclad. Six Finnish first names used to stand here — the one
+thing the English rule exempted, on the grounds that a name is not a language —
+and "Vekku" told a new player nothing about what the deck does, which is the
+entire job of a character select. The person is still there; they are in the
+blurb, where they cost nothing to read past.
+
+| | the mechanic | the question it asks |
+|---|---|---|
+| **The Park Drinker** | **Buzz** — strength that mostly fades with the turn; a third carries (v28) | can you spend most of it now and still build? |
+| **The Busker** | cards scale with **how many you played before them** | what order do you play in? |
+| **The Bottle Collector** | **Bottles** — free 0-cost tokens, and cards that count your hand | do you spend the hand or hold it? |
+| **The Cart Pusher** | block that **hits**, and block that **stays** | is defending an attack? |
+| **The Dog Walker** | **Fetch** — the dog goes in at the end of your turn | what is this turn worth later? |
+| **The Old Boxer** | **Thorns**, and cards that count the hits he took | is being hit a resource? |
+
+**How even is it, and how do we know?** `test/bots.mjs` plays each character
+with seven policies, one of which (`native`) is written for that character's own
+mechanic, and the best line of each is the number to read — a character is only
+as strong as the best way anyone has found to play it. Measured at 150 seeds
+after v16: **14 / 29 / 30 / 35 / 24 / 16** in the table's order. The band is the
+design target, not the height: nothing should be four times harder than anything
+else, and the Park Drinker at 14 was the standing exception with a structural
+reason. Block that stays and cards that count what came before them both GROW
+across a fight; buzz used to reset every turn, so he could not build into a boss
+the way the others can. Three *sizes* of buzz were tried and none was the fix,
+because the problem was the reset, not the size. **v28: a third of the buzz
+carries** (`RULES.buzzCarry`), which gives it a fixed point rather than a reset —
+Never Sober settles at 4, not at 3 and not at infinity. Measured against an
+exact control (the other five characters' columns are byte-identical, since no
+card but his makes buzz): his best line goes **21% → 32%** whole-run and
+30% → 39% from the door of act two, the naive lines move inside the noise
+floor, and the band on the best line is 32/35/23/41/27/18. The exception is
+closed; the Boxer at 18 is the new last, and he is last for the ordinary
+reason of being a little weak rather than for a structural one.
 
 The fantasy skin renames every one of them and re-dresses the same figure — the
-sot, the bard, the tinker, the warden. It is a **lookup, not a second data set**:
+Sot, the Bard, the Tinker, the Warden, the Houndmaster, the Pit Fighter. Since
+v15 the NAME is the thing the skin swaps, which is what a class name buys you:
+there is no personal name that has to hold still across the two. It is a
+**lookup, not a second data set**:
 every card, character, friend, enemy and encounter carries a name in both
 themes and the gate fails if one is missing.
 
 ## 7. Friends (the Balatro half)
 
-Twelve of them, capped at five. A friend **bends arithmetic you already do** —
+Twenty of them, capped at five. A friend **bends arithmetic you already do** —
 it never adds a verb, because a verb is a card's job. Third Time (×2 on every
 third attack), Bucket Drummer (+1 per card played before it), First Light (×1.5
 on the first attack), Sharp Eye (Vulnerable becomes ×1.75), Empty Hands (end
@@ -172,19 +220,53 @@ decision. A friend that only gives is a number.
 
 ## 8. The run
 
-Six fights on a straight line — rats under the deck, the bin rat, something in
-the water, somebody else's spot, the King Rat (elite), and who owns the bridge
-(boss). A card after every fight, a friend after three of them, 8 HP back each
-time.
+**Owner, 2026-09-05: "aim for StS2 parity" — multiple characters, lots of
+cards, an Eldritch night theme: the run starts in daylight, and as evening
+comes things start mutating.** That supersedes what this section and §9 said
+before (a map "comes later"; no upgrades; one act). What shipped as v11:
+
+**Two acts, and a choice at every span.** The route is rolled from the seed up
+front (`engine.buildRoute`): at each of an act's six steps you are offered two
+or three spans — a fight, an elite, an event, a rest — and the act ends on its
+boss. The rules the gate holds: the first step is fights only; an elite is
+never offered before the third step and always by the fifth; a rest is always
+among the last step's options; no step offers the same span twice. The
+encounter pool is thirty-two, split by act (`ACTS` in `data.js`); act one is
+the canal bridge and ends on the Bridge King, act two is under the bear and
+ends on **the Bear** — the Karhupuisto statue from the plate, woken.
+
+**The hour.** `hourOf(state)` runs 0 → 1 across the whole route. The world is
+lit for it (three rigs per skin — day, evening, night — lerped by the arena)
+and the photograph behind the bridge follows it (day, dusk and night plates,
+one per stage per seed). Past dusk what spawns is **mutated**: level 1 through
+the evening (+15% HP, and the figure grows eyes), level 2 at night (+30% HP,
+1 Strength). A boss is never mutated — a boss *is* the night.
+
+**Events** are places with two or three things to do; every option's label
+states its price, because this is a full-information game. **Rests** heal 30%
+or upgrade a card. **Upgrades are one rule, not a second version of every
+card** (`engine.upgrade`): +3 damage or block (+1 per hit on a multi-hit), one
+harder on a scaling card, +1 draw, one deeper on a self-status, a power costs
+one less. `describe` and `preview` read the moved numbers, so an upgraded
+card's face is right by construction.
+
+**Six characters** (the Dog Walker — Fetch, the dog goes in at the end
+of the turn; the Old Boxer — Thorns, and cards that count the hits he
+took), ninety-five cards, twenty friends, twenty-seven enemies (seventeen of
+them people), thirty-two encounters, twelve events.
+A card after every fight, a friend from the elites and the act openers, 6 HP
+back each time.
 
 The bestiary is the owner's list: **rats** (small, quick, several at once),
 **mutating blobs** (drawn as something about to become something else: half-formed
 limbs and two eyes that do not match), and **rival bum cutouts** the same size as
 you.
 
-**A map comes later, and on purpose.** A branching run map in front of the same
-six fights is a menu, not more game — the same finding TURF's parity doc records.
-The order to add things is: more enemy behaviour → more encounters → then a map.
+**The map came after the fights, on purpose, and that order held.** A branching
+run map in front of the same six fights is a menu, not more game — the same
+finding TURF's parity doc records — so the order was: more enemy behaviour →
+more encounters → then a map. All three shipped (v23, v26, v12's torn-paper
+sheet), and the fork is drawn now rather than a list of buttons.
 
 ## 8a. A picture on every card
 
@@ -196,12 +278,14 @@ so re-rendering the hand on every play does not repaint ten canvases. A gate
 fails on a card with no picture, on a picture `cardart.js` cannot draw, and on a
 set of pictures that has collapsed to fewer than fifteen distinct drawings.
 
-## 9. What is NOT in v1, and why
+## 9. What is still NOT in, and why
 
-- **A map, shops, campfires.** See above.
-- **Card upgrades.** Every card would need a second version, which doubles the
-  data before the first version is proven interesting.
-- **A second act.** Six fights is enough to tell whether a build comes together.
+- **A DAG you can see ahead.** v12 draws the act as a torn-paper sheet with
+  every span pinned on it, but the fork is still a choice of two or three at
+  the step you are standing on, not a Slay-the-Spire lattice you route through
+  from the start. That is a design question, not a missing art pass.
+- **Shops, potions, a third act, ascension.** No gold economy exists yet, and
+  each of those is a system, not a table.
 - **Sound beyond a synth kit.** No samples anywhere on this site.
 
 ## 10. The gates
