@@ -5,10 +5,13 @@
 # only verification was whoever remembered to run the gates locally. Codex
 # reviews the code, but nothing was running it.
 #
-# Scoping: each project gets its own job, gated on paths, so a change to one
-# lane never fails on another lane's unrelated breakage. Only the lanes that
-# are known green are wired up; add a block per project as each is verified,
-# rather than turning everything on at once and teaching people to ignore red.
+# Scoping: each project gets its own job, and a `changes` job below works out
+# which lanes a push or a pull request actually touched — see the long note on
+# it. This paragraph made that claim for a long time while the file contained no
+# filtering of any kind, which is the worst of both: a comment people trust and
+# a behaviour that contradicts it. Only the lanes that are known green are wired
+# up; add a block per project as each is verified, rather than turning
+# everything on at once and teaching people to ignore red.
 
 name: gates
 
@@ -23,8 +26,94 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── WHICH LANES DID THIS ACTUALLY TOUCH ────────────────────────────────
+  # The header at the top of this file has claimed path scoping since it was
+  # written, and did not do it: there was not one `paths:` key in 375 lines, so
+  # every push and every pull request ran all six lanes. Combined with
+  # AGENTS.md's rule that a red `gates` job blocks a merge, that let every lane
+  # halt every other one — a Kindling deploy dying on a red Piritori job, a Slay
+  # Kallio art PR dying on Concrete. Three sibling workflows here
+  # (flashprince-pr.yml, toko-live.yml, toko-move-hsl-refresh.yml) already scope
+  # correctly; this file was the outlier, not the pioneer.
+  #
+  # `on: paths` is per WORKFLOW and this workflow is six lanes, so the filter has
+  # to be per JOB: this one works out what changed, and each lane below runs only
+  # `if` its own paths are in it. A lane that does not apply comes out SKIPPED,
+  # which GitHub counts as SUCCESS for a required check — which is what makes
+  # branch protection possible later without a required job that never arrives
+  # and blocks the merge forever. Six separate workflow files cannot do that.
+  #
+  # Hand-rolled with `git diff` rather than a third-party filter action, the same
+  # rule the rest of this repo follows about dependencies. It FAILS OPEN: if the
+  # diff cannot be worked out — a new branch, a force-push, a shallow fetch —
+  # every lane runs, so the worst case is exactly the behaviour this replaces.
+  changes:
+    name: what changed
+    runs-on: ubuntu-latest
+    outputs:
+      piritori: ${{ steps.lanes.outputs.piritori }}
+      toko_move: ${{ steps.lanes.outputs.toko_move }}
+      hub: ${{ steps.lanes.outputs.hub }}
+      concrete: ${{ steps.lanes.outputs.concrete }}
+      turf: ${{ steps.lanes.outputs.turf }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # the diff needs history, not just the tip
+
+      - id: lanes
+        run: |
+          set -u
+          ALL=no
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE='${{ github.event.pull_request.base.sha }}'
+          else
+            BASE='${{ github.event.before }}'
+          fi
+
+          # Anything unusable here means RUN EVERYTHING rather than run nothing:
+          # a first push to a branch reports an all-zero `before`, and a
+          # force-push reports a commit this clone no longer has.
+          if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            ALL=yes
+          else
+            MB=$(git merge-base "$BASE" HEAD 2>/dev/null || echo "")
+            if [ -z "$MB" ]; then ALL=yes; else FILES=$(git diff --name-only "$MB" HEAD); fi
+          fi
+
+          if [ "$ALL" = yes ]; then
+            echo "no usable diff — running every lane"
+          else
+            echo "changed files:"; printf '%s\n' "$FILES" | sed 's/^/  /'
+          fi
+
+          # Editing this file re-runs everything, because the thing that decides
+          # what runs cannot be trusted to decide whether it changed.
+          SELF='^\.github/workflows/gates\.yml$'
+
+          lane () {
+            if [ "$ALL" = yes ] || printf '%s\n' "$FILES" | grep -Eq "$2|$SELF"; then
+              echo "$1=true" >> "$GITHUB_OUTPUT"; echo "RUN   $1"
+            else
+              echo "$1=false" >> "$GITHUB_OUTPUT"; echo "skip  $1"
+            fi
+          }
+
+          # piritori's gate also runs the repo-root graphics-pipeline contract,
+          # so that file is part of its lane rather than the hub's.
+          lane piritori  '^(piritori|flow-core)/|^test/assets-smoke\.cjs$'
+          lane toko_move '^toko-move/'
+          lane concrete  '^concrete/'
+          lane turf      '^turf/'
+          # The hub gate proves every cabinet's LINK resolves and every game
+          # carries the home button, so a game's own entry page is in its lane —
+          # but the rest of a game's folder is not, which is the whole point.
+          lane hub       '^(hub|test|AnotherHUB|toko|scripts)/|^(index\.html|sw\.js)$|^[^/]+/index\.html$'
+
   piritori:
     name: flow-core · piritori
+    needs: changes
+    if: needs.changes.outputs.piritori == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,6 +174,8 @@ jobs:
 
   piritori-godot:
     name: piritori · the Godot port
+    needs: changes
+    if: needs.changes.outputs.piritori == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -176,6 +267,8 @@ jobs:
 
   toko-move:
     name: toko-move
+    needs: changes
+    if: needs.changes.outputs.toko_move == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -281,6 +374,8 @@ jobs:
 
   hub:
     name: the arcade floor
+    needs: changes
+    if: needs.changes.outputs.hub == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -306,6 +401,8 @@ jobs:
 
   concrete:
     name: concrete skating slice
+    needs: changes
+    if: needs.changes.outputs.concrete == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -325,6 +422,8 @@ jobs:
 
   turf:
     name: turf
+    needs: changes
+    if: needs.changes.outputs.turf == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
