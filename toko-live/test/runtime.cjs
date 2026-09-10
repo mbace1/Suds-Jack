@@ -45,7 +45,7 @@ async function ask(page, text, expectProject){
   await page.goto(`${base}/Suds-Jack/toko-live/`,{waitUntil:'networkidle'});
   await page.waitForSelector('.toko-chat .tc-say-row input',{timeout:5000});
 
-  check('visible build marker is v44',(await page.title()).includes('v44')&&(await page.locator('#state-label').textContent()||'').includes('V44'));
+  check('visible build marker is v45',(await page.title()).includes('v45')&&(await page.locator('#state-label').textContent()||'').includes('V45'));
   check('no page exceptions',pageErrors.length===0,pageErrors.join(' | '));
   check('no local 404s',local404.length===0,local404.join(' | '));
 
