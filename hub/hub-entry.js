@@ -1,2 +1,2 @@
-import './hub.js?v=43';
+import './hub.js?v=45';
 import './toko-cabinet-dom.js?v=1';
