@@ -4,13 +4,15 @@ on:
   push:
     paths:
       - 'toko-live/**'
-      - 'toko/js/**'
+      - 'toko/**'
+      - 'QUEUE.md'
       - 'hub/**'
       - '.github/workflows/toko-live.yml'
   pull_request:
     paths:
       - 'toko-live/**'
-      - 'toko/js/**'
+      - 'toko/**'
+      - 'QUEUE.md'
       - 'hub/**'
       - '.github/workflows/toko-live.yml'
 
@@ -27,6 +29,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Player Pulse contract
+        run: node toko/test/player-pulse-contract.mjs
       - name: install chromium
         run: |
           npm install --no-save playwright@1.56.1

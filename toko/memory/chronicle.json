@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "generatedAtCommit": "8b7184ca5b6d382285ee1c8eab4f7d17a696670d",
+  "generatedAt": "2026-09-07T20:18:01Z",
+  "events": [
+    {"id":"tokomove-v231","date":"2026-09-07T20:18:01Z","project":"tokomove","type":"release","status":"shipped","version":"2.31","sha":"8b7184ca5b6d382285ee1c8eab4f7d17a696670d","summary":"Measured the phone layout so all three route plans are represented on screen; preserved route-map readability instead of shrinking the board blindly.","source":"git"},
+    {"id":"tokomove-v230","date":"2026-09-07T13:29:11Z","project":"tokomove","type":"fix","status":"shipped","version":"2.30","sha":"9a4854e4c34ef7a0eab14f29f1c1c0758b76861c","summary":"Made job-sheet ordering deterministic, declared all sheet writers and clarified read-only vehicles as ALSO CALLING HERE.","source":"git"},
+    {"id":"tokomove-ci-browser","date":"2026-09-07T10:42:19Z","project":"tokomove","type":"tooling","status":"shipped","sha":"38ca5e3bef4738cea0f0a986d84877a616d083bd","summary":"Installed a browser in CI so Toko Move browser gates actually run instead of failing before the first assertion.","source":"git"},
+    {"id":"tokomove-v229","date":"2026-09-07T08:05:57Z","project":"tokomove","type":"release","status":"shipped","version":"2.29","sha":"906db91e5d4dc21af290dfa4b9e1a7b05778fd2d","summary":"Fixed hidden boarding actions, replaced fixed-duration vehicle motion with measured speeds and recalibrated the delivery target from actual route cost.","source":"git"},
+    {"id":"tokomove-v228","date":"2026-09-06T20:17:34Z","project":"tokomove","type":"release","status":"shipped","version":"2.28","sha":"63096b539f75c87b486767a9fbfedd14c61bd541","summary":"Phone pass: START SHIFT stays reachable, phones open on ROUTE and the job sheet gets more room for plan comparison.","source":"git"},
+    {"id":"tokomove-cover","date":"2026-09-06T20:04:50Z","project":"tokomove","type":"art","status":"shipped","sha":"2859308acbe78c14c1427512e3ba9b1424372be0","summary":"Replaced the obsolete Mini Metro-like cabinet image with the tramstop cover that represents the current courier game.","source":"git"},
+    {"id":"turf-v34","date":"2026-09-06T19:54:45Z","project":"turf","type":"release","status":"shipped","version":"34","sha":"26ff7b23540f5a56a9ff48bcb669c08d8267d58d","summary":"Added player-controlled zoom, offscreen threat pips, aggregate incoming damage and clearer action readability.","source":"git"},
+    {"id":"toko-live-v44-ci","date":"2026-09-06T09:11:11Z","project":"toko","type":"tooling","status":"shipped","sha":"4626f385749b0005d1d213ecb37466becfbe99f7","summary":"Toko Live browser runtime became a CI gate.","source":"git"},
+    {"id":"toko-live-v44-runtime","date":"2026-09-06T09:11:02Z","project":"toko","type":"release","status":"shipped","version":"44","sha":"665ef3d880dd61f2c2a617d5eb0cbd464342308a","summary":"Added the browser runtime gate for the Toko Live v44 conversation surface.","source":"git"},
+    {"id":"tokomove-superseded-mini-metro","date":"2026-08-29T00:00:00Z","project":"tokomove","type":"direction","status":"superseded","summary":"The line-drawing Mini Metro homage direction was superseded by the Central Helsinki courier game using the existing HSL network.","source":"toko-move/OWNER_OVERRIDE_V2.md"},
+    {"id":"tokodrop-q028","date":"2026-08-28T00:00:00Z","project":"tokodrop","type":"queue","status":"dropped","queueId":"Q-028","summary":"CHALLENGES stage-select variant mode was deliberately dropped and remains preserved only as history.","source":"QUEUE.md"}
+  ]
+}

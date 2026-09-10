@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "questions": [
+    {
+      "id": "powder.vision.001",
+      "project": "powder",
+      "build": "*",
+      "status": "open",
+      "trigger": "post-session",
+      "prompt": "Powder is starting to find its identity. What should I push hardest?",
+      "answers": [
+        {"id": "racing", "label": "Racing + speed"},
+        {"id": "exploration", "label": "Exploration + discovery"},
+        {"id": "expression", "label": "Tricks + expression"},
+        {"id": "strange", "label": "Make it stranger"}
+      ],
+      "why": "Vision pressure: understand which fantasy currently pulls players hardest.",
+      "destination": "powder design notes / future queue",
+      "targetResponses": 25
+    },
+    {
+      "id": "tokodrop.stop.001",
+      "project": "tokodrop",
+      "build": "*",
+      "status": "open",
+      "trigger": "session-ended-early",
+      "prompt": "What made you stop that run?",
+      "answers": [
+        {"id": "done", "label": "I was done"},
+        {"id": "bored", "label": "It got repetitive"},
+        {"id": "confused", "label": "It became confusing"},
+        {"id": "retry", "label": "I wanted to retry differently"}
+      ],
+      "why": "Separate healthy run-ending from boredom, confusion and retry intent.",
+      "destination": "toko-drop design notes / QUEUE.md",
+      "targetResponses": 25
+    },
+    {
+      "id": "tokomove.missed.001",
+      "project": "tokomove",
+      "build": "*",
+      "status": "open",
+      "trigger": "missed-boarding-twice",
+      "prompt": "You missed that tram twice. What was unclear?",
+      "answers": [
+        {"id": "timing", "label": "The timing"},
+        {"id": "route", "label": "The route"},
+        {"id": "button", "label": "What to press"},
+        {"id": "mistimed", "label": "Nothing — I mistimed it"}
+      ],
+      "why": "Readability check after repeated boarding misses.",
+      "destination": "toko-move/movesuggestions.md or moveupdates.md after review",
+      "targetResponses": 25
+    },
+    {
+      "id": "generic.return.001",
+      "project": "*",
+      "build": "*",
+      "status": "open",
+      "trigger": "return-after-update",
+      "prompt": "This build changed since you were here. Better?",
+      "answers": [
+        {"id": "better", "label": "Yes"},
+        {"id": "worse", "label": "No"},
+        {"id": "mixed", "label": "Different strengths"},
+        {"id": "unsure", "label": "Too early to tell"}
+      ],
+      "why": "Lightweight post-update sentiment without pretending it is a quality score.",
+      "destination": "project player pulse summary",
+      "targetResponses": 25
+    }
+  ]
+}

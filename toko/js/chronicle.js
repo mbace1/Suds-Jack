@@ -1,0 +1,12 @@
+// Toko Chronicle — one provenance-backed history for conversation and timeline.
+let cache=null;
+const clean=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const words=s=>new Set(clean(s).split(/\s+/).filter(Boolean));
+const score=(q,e)=>{const Q=words(q),E=words(`${e.project} ${e.type} ${e.status} ${e.version||''} ${e.queueId||''} ${e.summary}`);let n=0;for(const w of Q)if(E.has(w))n++;if(clean(q).includes(clean(e.project)))n+=3;if(/history|timeline|evolution/.test(q))n+=1;if(/shipped|landed/.test(q)&&e.status==='shipped')n+=2;if(/dropped|superseded/.test(q)&&['dropped','superseded'].includes(e.status))n+=2;return n};
+export async function loadChronicle(url='../memory/chronicle.json'){if(cache)return cache;const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error(`Chronicle ${r.status}`);const data=await r.json();if(data.schema!==1||!Array.isArray(data.events))throw new Error('Chronicle schema');cache=data;return data}
+export async function events({project=null,status=null,type=null,limit=50}={}){const c=await loadChronicle();return c.events.filter(e=>(!project||e.project===project)&&(!status||e.status===status)&&(!type||e.type===type)).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,limit)}
+export async function searchChronicle(query,{limit=6}={}){const c=await loadChronicle();return c.events.map(e=>({...e,_score:score(query,e)})).filter(e=>e._score>0).sort((a,b)=>b._score-a._score||String(b.date).localeCompare(String(a.date))).slice(0,limit)}
+export async function historyLines(raw=''){const hits=await searchChronicle(raw,{limit:8});if(!hits.length)return['I DO NOT HAVE A CHRONICLE ENTRY FOR THAT YET.'];const project=hits[0].project;const same=hits.filter(x=>x.project===project);return [`${project.toUpperCase()} — CHRONICLE`,...same.map(e=>`${e.date.slice(0,10)} · ${String(e.status).toUpperCase()}${e.version?` v${e.version}`:''} · ${e.summary}${e.sha?` [${e.sha.slice(0,8)}]`:''}`),'SOURCE: TOKO CHRONICLE · FACTUAL ENTRIES KEEP THEIR PROVENANCE.']}
+export async function recentLines(limit=6){const rows=await events({limit});return ['RECENT CHRONICLE',...rows.map(e=>`${e.date.slice(0,10)} · ${e.project.toUpperCase()} · ${e.summary}`)]}
+export async function projectArc(project){const rows=await events({project,limit:200});return rows.slice().reverse()}
+const api={loadChronicle,events,searchChronicle,historyLines,recentLines,projectArc};globalThis.TokoChronicle=api;export default api;
