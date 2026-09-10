@@ -2,8 +2,8 @@
 // The body is rigid. Animation comes from separate wheel, suspension and light
 // layers so the scene can move without redrawing a whole vehicle every frame.
 
-import { PAL } from './palette.js?v=37';
-import { mix, shade } from './screen.js?v=37';
+import { PAL } from './palette.js?v=62';
+import { mix, shade } from './screen.js?v=62';
 
 export const TRAM_W = 60;
 export const TRAM_H = 36;

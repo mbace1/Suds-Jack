@@ -1,6 +1,6 @@
 // Radio Free Helsinki — tiny procedural ambience layer.
 // No audio assets: scene families are synthesized from low-cost loops and one-shots.
-import * as audio from './audio.js?v=61';
+import * as audio from './audio.js?v=62';
 let ctx=null,master=null,bed=null;
 const state={family:'city',intensity:.5};
 const clamp=v=>Math.max(0,Math.min(1,v));

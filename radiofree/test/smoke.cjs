@@ -75,13 +75,20 @@ async function launch() {
 }
 
 // ── the checks that never open a browser ─────────────────────────────────
-function staticChecks() {
+let wireFiles = [];
+async function staticChecks() {
   console.log('\nshell');
   const sw = fs.readFileSync(path.join(RF, 'sw.js'), 'utf8');
   const html = fs.readFileSync(path.join(RF, 'index.html'), 'utf8');
 
-  const v = (sw.match(/const V = `\?v=(\d+)`/) || [])[1];
-  const ver = (sw.match(/const VERSION = 'v(\d+)'/) || [])[1];
+  // WHITESPACE-TOLERANT ON PURPOSE. sw.js was reformatted to
+  // `const VERSION='v61';` and these two patterns stopped matching, so the five
+  // shell checks below graded against `undefined` and reported red for a reason
+  // that had nothing to do with the shell. A gate that cannot read its own
+  // subject is worse than no gate: it produces a failure everyone learns to
+  // scroll past.
+  const v = (sw.match(/const V\s*=\s*[`'"]\?v=(\d+)[`'"]/) || [])[1];
+  const ver = (sw.match(/const VERSION\s*=\s*['"`]v(\d+)['"`]/) || [])[1];
   ok('sw.js VERSION and V agree', v && ver && v === ver, `VERSION=v${ver} V=?v=${v}`);
 
   // Only radiofree's own tokens; ../hub and ../toko keep their own versions.
@@ -93,7 +100,7 @@ function staticChecks() {
     .map(f => f.replace(/\.js$/, ''));
   // the LIST THAT MAPS TO ./js/ — sw.js also spreads a list of ../toko
   // modules, and matching the first spread grades this against the wrong one
-  const jsSpread = sw.match(/\.\.\.\[([^\]]+)\]\s*\n?\s*\.map\([^)]*`\.\/js\//);
+  const jsSpread = sw.match(/\.\.\.\[([^\]]+)\]\s*\n?\s*\.map\([^)]*`\.?\/?js\//);
   const listed = (jsSpread || [, ''])[1]
     .split(',').map(s => s.trim().replace(/'/g, '')).filter(Boolean);
   const missing = modules.filter(m => !listed.includes(m));
@@ -123,13 +130,45 @@ function staticChecks() {
   // cache-first, `wire/index.json` is a list of broadcasts frozen on the day the
   // app was installed — the job would run, the file would land, and no installed
   // copy would ever learn an episode existed.
-  const isWire = (sw.match(/const isWire = \(u\) => ([\s\S]*?);\n/) || [, ''])[1];
+  // same whitespace trap as VERSION above: `const isWire=u=>...` all on one line
+  const isWire = (sw.match(/isWire\s*=\s*\(?u\)?\s*=>\s*([\s\S]*?);/) || [, ''])[1];
   ok('the worker treats every wire/ file as content, not shell',
      /wire\.json/.test(isWire) && /\/wire\//.test(isWire), isWire.replace(/\s+/g, ' '));
   ok('the precache names no dated episode',
      !/wire\/\d{4}-\d{2}-\d{2}\.json/.test(sw),
      'a named episode list is a list of yesterdays once the job runs daily');
   ok('install caches whatever the index points at', /precacheNewest/.test(sw));
+
+  // EVERY EPISODE ON DISK HAS TO BE AIRABLE. The daily job validates what it
+  // generates, but nothing validated an episode a person committed by hand —
+  // and that is exactly how `2026-09-01` shipped: seven bulletins carrying no
+  // `{{...|...}}` in any language, rejected by `loadWire`, silently skipped, and
+  // the station served a twelve-day-old morning to everybody who opened it. The
+  // app degrading gracefully is what made it invisible. So every episode in
+  // `wire/` is graded here, and the NEWEST is called out on its own, because
+  // that is the one a reader actually gets.
+  const { validateWire } = await import('file://' + path.join(RF, 'js', 'wire.js'));
+  const { PANEL_KEYS, BROLL_KEYS } = await import('file://' + path.join(RF, 'js', 'visuals.js'));
+  const { SECTOR_COLOR } = await import('file://' + path.join(RF, 'js', 'palette.js'));
+  const index = JSON.parse(fs.readFileSync(path.join(RF, 'wire', 'index.json'), 'utf8'));
+  const eps = (index.episodes || []).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+  ok('the index lists at least one morning', eps.length > 0, JSON.stringify(eps));
+  wireFiles = eps.map(d => ['wire/' + d + '.json', path.join(RF, 'wire', d + '.json')]);
+  wireFiles.push(['wire.json', path.join(RF, 'wire.json')]);
+  const unairable = [];
+  for (const [label, file] of wireFiles) {
+    if (!fs.existsSync(file)) { unairable.push(`${label}: missing`); continue; }
+    let parsed;
+    try { parsed = JSON.parse(fs.readFileSync(file, 'utf8')); }
+    catch (e) { unairable.push(`${label}: ${e.message}`); continue; }
+    const v = validateWire(parsed, { panelKeys: PANEL_KEYS, brollKeys: BROLL_KEYS,
+                                     sectorIds: Object.keys(SECTOR_COLOR) });
+    if (!v.ok) unairable.push(`${label}: ${v.errors.length} problems — ${v.errors[0]}`);
+  }
+  ok('every episode on disk would actually air', unairable.length === 0,
+     unairable.join('\n         '));
+  ok('the NEWEST episode is the one that airs',
+     !unairable.some(u => u.startsWith('wire/' + eps[0])), eps[0]);
 
   // The deployed site is a curated root with no `.github` in it, and the gate
   // runs there too (against gh-pages, before a deploy is believed). Absent
@@ -250,7 +289,7 @@ async function rotationChecks() {
 
 async function main() {
   console.log('Radio Free Helsinki — gate');
-  staticChecks();
+  await staticChecks();
   await rotationChecks();
   await generatorChecks();
 
@@ -313,6 +352,58 @@ async function main() {
   ok('the archive picker is on screen with a choice to make',
      await go(() => { const a = document.getElementById('archive');
                       return !!a && !a.hidden && a.querySelectorAll('option').length >= 2; }));
+
+  // ── the pictures are actually lit ────────────────────────────────
+  // THE CHECK THAT WOULD HAVE CAUGHT IT. `sceneweather.js` painted an opaque
+  // near-black rectangle over the whole frame at dusk — `shade()` multiplies, it
+  // is not an alpha — and every one of the thirteen ambient scenes rendered at a
+  // mean luminance of 1.1/255 against 13-19 with the pass working. Nothing else
+  // in the suite could see it: the DOM was correct, the canvas was the right
+  // size, the console was clean, and the feed was a black rectangle. It only
+  // fires at dusk/night/dawn off the Helsinki clock, so it also passed anyone
+  // who happened to look at midday. Art needs a ruler, and this is the cheapest
+  // honest one: a picture nobody can see is a picture that is not there.
+  console.log('\nthe pictures are lit');
+  const lum = await go(async () => {
+    const { PixelScreen } = await import('./js/screen.js');
+    const { drawAmbient, AMBIENT_KEYS } = await import('./js/ambient.js');
+    const out = {};
+    // Every scene, at four points around the clock, because the grade this
+    // exists to police is the one that only runs after dark.
+    const HOURS = [3, 9, 15, 21];
+    for (const key of AMBIENT_KEYS) {
+      let worst = 999;
+      for (const h of HOURS) {
+        const when = new Date(Date.UTC(2026, 0, 15, h, 0, 0));
+        const scr = new PixelScreen(null, 128, 152);
+        drawAmbient(key, scr, 3.1, 0, null, 1, when);
+        const cv = document.createElement('canvas');
+        cv.width = scr.canvas.width; cv.height = scr.canvas.height;
+        const cx = cv.getContext('2d');
+        cx.drawImage(scr.canvas, 0, 0);
+        const d = cx.getImageData(0, 0, cv.width, cv.height).data;
+        let sum = 0, n = 0, max = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          const L = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+          sum += L; n++; if (L > max) max = L;
+        }
+        worst = Math.min(worst, Math.round(max));
+        out[key] = Math.min(out[key] === undefined ? 999 : out[key], +(sum / n).toFixed(1));
+      }
+      out[key] = { mean: out[key], max: worst };
+    }
+    return out;
+  });
+  // A FLOOR, NOT A TARGET, and the numbers are set to catch the failure rather
+  // than to enforce a brightness. Measured on the real set: blacked out, every
+  // scene reads mean 1.1 / max 29; working, they run mean 13-19 with the two
+  // dimmest — `rooftops` and `merihaka`, both of which are meant to be a dark
+  // roofline at night and were checked by eye — at max 83-88. So the bar sits
+  // between the two with room on both sides. Raising it further would be this
+  // gate having an opinion about art, which is not its job.
+  const dark = Object.entries(lum).filter(([, m]) => m.mean < 5 || m.max < 60);
+  ok('every ambient scene has a picture in it at every hour', dark.length === 0,
+     dark.map(([k, m]) => `${k} mean ${m.mean} max ${m.max}`).join('; '));
 
   console.log('\nthe cut package');
   ok('a post opens on its own footage',

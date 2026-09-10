@@ -2,10 +2,10 @@
 // Based on the real Eliel Saarinen station frontage: broad granite mass,
 // dominant arched entry, clock tower, Kaivokatu tram corridor and crossing.
 
-import { PAL } from './palette.js?v=37';
-import { mix, shade } from './screen.js?v=37';
-import { drawTram } from './tram.js?v=38';
-import { drawWalker } from './broadcastfx.js?v=54';
+import { PAL } from './palette.js?v=62';
+import { mix, shade } from './screen.js?v=62';
+import { drawTram } from './tram.js?v=62';
+import { drawWalker } from './broadcastfx.js?v=62';
 
 const W = 128, H = 152;
 const lo = d => mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d);

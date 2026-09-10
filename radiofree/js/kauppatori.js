@@ -1,7 +1,7 @@
 // Radio Free Helsinki — Kauppatori / Esplanadi harbour edge.
 // Open market-square geometry, waterfront, low classical facades and terminal silhouettes.
-import { PAL } from './palette.js?v=37';
-import { mix, shade } from './screen.js?v=37';
+import { PAL } from './palette.js?v=62';
+import { mix, shade } from './screen.js?v=62';
 const W=128,H=152; const ink=d=>mix(PAL.GREEN_DIM,PAL.AMBER_DIM,d), hot=d=>mix(PAL.GREEN_HOT,PAL.AMBER_HOT,d);
 export function drawKauppatori(scr,t,d=0){
   scr.bands(0,0,W,63,[mix('#081119','#181107',d),mix('#12222b','#2b1d0b',d)]);

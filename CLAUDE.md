@@ -1355,6 +1355,48 @@ Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy 
 bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for the
 roadmap of future experiences.
 
+### Radio Free Helsinki (`radiofree/`) — the daily pirate news feed
+A vertical bulletin feed: one story per screen, a cut package of city footage /
+Toko at the desk / the story graphic, and a **DECODE** button that strikes the
+broadcast wording and prints what it meant. Trilingual fi/en/ja, offline-first,
+no build step. `EDITORIAL.md` is the voice and safety authority, `PROGRAMMING.md`
+controls the daily mix, `AGENTS-INBOX.md` is the running log.
+**The wire is DATA** (`wire/<date>.json`, newest first in `wire/index.json`) and
+`js/wire.js` is the one validator the CLI, the daily job and the browser all run.
+`loadWire` deliberately degrades — an episode that fails validation is skipped and
+the next one down plays — and **that is exactly how this feed went twelve days
+stale in silence**: `2026-09-01` shipped with no `{{spun|plain}}` markup, was
+rejected on the day it was published, and nothing on screen said which morning
+you were actually reading. Two rules came out of it: the gate validates **every**
+episode on disk (the daily job only ever validated what it generated, so a
+hand-committed episode bypassed the check entirely), and the masthead says
+`NOT TODAY'S BROADCAST` whenever a fallback happened.
+**`shade()` MULTIPLIES; it is not an alpha.** `shade('#020509', 0.16)` is
+`#000001`, and painted through the opaque `px()` it erases what was under it.
+`sceneweather.js` was written against the other reading and filled the whole
+frame — all thirteen ambient scenes measured **mean 1.1/255, max 29** against
+13-19 / 159-195 with the pass working, and because it only fires on
+night/dusk/dawn off the Helsinki clock it looked fine to anyone testing at
+midday. Use **`scr.wash(x,y,w,h,colour,alpha)`** for anything that sits OVER a
+scene. The gate now renders every scene at four hours and fails below mean 5 /
+max 60 — a floor set between the blackout and the two dimmest legitimate scenes,
+not a brightness target.
+**Layout belongs in `index.html`, never in an injected stylesheet.** `package.js`
+used to inject thirty `!important` rules that clamped the headline, deleted the
+second paragraph of every bulletin, and hid the DECODE button, the tally and the
+**fiction footer** — the line that makes this feed safe to broadcast — while
+separately hard-disabling DECODE behind a setter that threw the value away. If
+the copy does not fit, fix the layout; do not hide the copy.
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
+— 66 checks. It reads `sw.js` with whitespace-tolerant regexes, because that file
+was reformatted once and five shell checks silently graded against `undefined`
+for as long as nobody looked. A gate that cannot parse its own subject produces a
+failure everyone learns to scroll past.
+**The daily job** (`.github/workflows/radiofree-wire.yml`, 05:10 UTC) needs the
+repo secret **`ANTHROPIC_API_KEY`**, which is not set: every scheduled run so far
+has failed at `Require model secret` in under a minute. Until the owner adds it,
+no morning is generated at all.
+
 ### Kindling (`kindling/`) — built in ANOTHER REPO; this folder is the cabinet
 **A betterment game in Finch's shape, made small enough to be honest.** You tick off the
 small real things you actually did, they become **kindling**, the kindling keeps a fire,

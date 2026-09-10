@@ -1,7 +1,7 @@
 // Radio Free Helsinki — Merihaka concrete waterfront.
 // Sparse brutalist towers, raised pedestrian deck, water edge and Hakaniemi-side infrastructure.
-import { PAL } from './palette.js?v=37';
-import { mix, shade } from './screen.js?v=37';
+import { PAL } from './palette.js?v=62';
+import { mix, shade } from './screen.js?v=62';
 const W=128,H=152; const ink=d=>mix(PAL.GREEN_DIM,PAL.AMBER_DIM,d);
 export function drawMerihaka(scr,t,d=0){
   scr.bands(0,0,W,66,[mix('#071019','#171006',d),mix('#10212b','#291c0a',d)]);
