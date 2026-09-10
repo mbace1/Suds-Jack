@@ -1255,8 +1255,12 @@ s.listen(0, '127.0.0.1', async () => {
   ok('inca: a strike on flat water raises a ring that spreads, then fades to nothing',
     phys.flat === 0 && phys.struck > 0.5 && phys.spread > 0.2 && phys.after.ripples === 0 && phys.after.h === 0,
     JSON.stringify({ struck: phys.struck, spread: phys.spread, after: phys.after }));
+  // v47 moved this one: the gel SHEAR-THICKENS now, so it meets a landing
+  // stiffer and no longer gives a quarter of its height away. It must still
+  // visibly squash and still come back to exactly rest; how far it goes is
+  // the thickening check's business, not this one's.
   ok('inca: a body landing on a gel mound squashes it, and it springs back to rest',
-    phys.gel && phys.first < 0.85 && phys.low < 0.75 && Math.abs(phys.settled - 1) < 0.02 && phys.feetOnTop,
+    phys.gel && phys.first < 0.9 && phys.low < 0.85 && Math.abs(phys.settled - 1) < 0.02 && phys.feetOnTop,
     JSON.stringify({ first: phys.first, low: phys.low, settled: phys.settled, feetOnTop: phys.feetOnTop }));
   // v47 ROUNDED + NON-NEWTONIAN. The owner asked for "more rounded corners
   // and non-Newtonian liquids", and both are testable: a rounded box has more
