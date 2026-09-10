@@ -6,6 +6,14 @@
      it reads each project's VERSIONS.md and nothing else. Keeping the log with
      the SOURCE is what stops the number and the build disagreeing. -->
 
+## v23 — 2026-09-10
+**Living lineage — family on the road**
+- egg hatch names a child with parent links and visible inherited ash traits (combat + Journey flavor); child becomes the active companion
+- Keep Lineage is a firelit family tree (living pack, warming egg, Kindled names) — not a flat grayscale dump
+- optional Walk with elder: when an elder is in the pack, Journey rests warm and ambushes soften (never wellness)
+- combine fingertip + parents remain; egg warmth only gathers; Kindle still keeps the name without scolding
+- PRODUCT_PLAN: epic B done; A (world beyond Gate) next
+
 ## v22 — 2026-09-10
 **Named keepers — multi-phase rival duels on every road**
 - one telegraphed keeper per major region (Birch Ruins, Drowned Courtyard, Bell Keep, Ashwood, Old Gate)

@@ -1,4 +1,4 @@
-Kindling v22
-canonical source: mbace1/Kindling@de9a6032f258b158de096bd307755d790ff88c1d
+Kindling v23
+canonical source: mbace1/Kindling@1f499b30e7944a0b83444ffc6ef03c18689817c8
 static hub build: npm run build:hub
-notes: v22 named keepers / multi-phase rival duels (epic C)
+notes: living lineage family tree, hatch inheritance, walk with elder
