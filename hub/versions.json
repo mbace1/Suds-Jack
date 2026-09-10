@@ -1,7 +1,17 @@
 {
+  "concrete": {
+    "v": "2",
+    "n": 2000,
+    "from": "VERSIONS.md"
+  },
   "sudsjack": {
     "v": "5",
     "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "tokomove": {
+    "v": "2.32",
+    "n": 2032,
     "from": "VERSIONS.md"
   },
   "tokodrop": {
@@ -34,9 +44,14 @@
     "n": 156000,
     "from": "cache token"
   },
+  "neonronin": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
   "flashprince": {
-    "v": "3",
-    "n": 3000,
+    "v": "7",
+    "n": 7000,
     "from": "VERSIONS.md"
   },
   "eeri": {
@@ -50,8 +65,8 @@
     "from": "VERSIONS.md"
   },
   "turf": {
-    "v": "32",
-    "n": 32000,
+    "v": "34",
+    "n": 34000,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
@@ -69,11 +84,6 @@
     "n": 37000,
     "from": "cache token"
   },
-  "tokomove": {
-    "v": "2.32",
-    "n": 2032,
-    "from": "VERSIONS.md"
-  },
   "tinyhawk": {
     "v": "6",
     "n": 6000,
@@ -82,6 +92,11 @@
   "tiny2d": {
     "v": "3",
     "n": 3000,
+    "from": "VERSIONS.md"
+  },
+  "eyetest": {
+    "v": "1",
+    "n": 1000,
     "from": "VERSIONS.md"
   },
   "brand": {
@@ -94,9 +109,9 @@
     "n": 5000,
     "from": "VERSIONS.md"
   },
-  "concrete": {
-    "v": "2",
-    "n": 2000,
+  "tokolive": {
+    "v": "18",
+    "n": 18000,
     "from": "VERSIONS.md"
   }
 }

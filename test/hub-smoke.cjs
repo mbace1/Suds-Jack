@@ -782,6 +782,82 @@ function check(name, cond) {
       const [maj, min] = String(v.v).split('.');
       return v.n === Number(maj) * 1000 + Math.min(999, Number(min ?? 0));
     }));
+
+  // ── THE CABINET CONTRACT ───────────────────────────────────────────────
+  // Everything above proves the floor RENDERS. These three prove it is not
+  // quietly wrong, and each one is here because it was found broken on `main`
+  // by hand rather than by this gate — which had grown very good at catching a
+  // page that fails to load and blind to a page that loads a lie.
+  {
+    // 1. ONE SHELL, one token. `hub/shell.js` is shared by every cabinet and
+    //    scripts/deploy-hub.mjs renumbers it across all of them together, so
+    //    two different numbers means one page is pinned to a stale home button
+    //    and will keep serving it out of cache. `powder/` sat on ?v=17 while
+    //    twenty-three others were on ?v=37.
+    const shells = new Map();
+    for (const g of games.filter(g => g.inRepo && g.live !== false)) {
+      const html = path.join(ROOT, g.path, 'index.html');
+      if (!fs.existsSync(html)) continue;
+      const m = fs.readFileSync(html, 'utf8').match(/hub\/shell\.js\?v=(\d+)/);
+      if (m) shells.set(g.id, m[1]);
+    }
+    const tokens = [...new Set(shells.values())];
+    const odd = tokens.length < 2 ? [] : (() => {
+      const top = tokens.map(t => [t, [...shells.values()].filter(v => v === t).length])
+        .sort((a, b) => b[1] - a[1])[0][0];
+      return [...shells].filter(([, v]) => v !== top).map(([id, v]) => `${id}@v${v}`);
+    })();
+    check(`every cabinet asks for the same hub/shell.js (${tokens.join(', ')})${odd.length ? ` — stale: ${odd}` : ''}`,
+      odd.length === 0);
+
+    // 2. THE NUMBER ON THE CABINET IS THE NUMBER IN THE LOG. versions.json is
+    //    generated, so it goes stale silently the moment a game ships without
+    //    the generator being run — the floor then advertises a release that is
+    //    not the one behind the Play button. Found at flashprince (3 vs 7) and
+    //    turf (32 vs 34). Same parse as scripts/versions.mjs's topOf().
+    const behind = [];
+    for (const g of games.filter(g => g.inRepo)) {
+      const log = path.join(ROOT, g.path, 'VERSIONS.md');
+      if (!fs.existsSync(log)) continue;
+      const m = fs.readFileSync(log, 'utf8').match(/^##\s*v(\d+)(?:\.(\d+))?/m);
+      if (!m) continue;
+      const label = m[2] === undefined ? m[1] : `${m[1]}.${m[2]}`;
+      const shown = versions[g.id]?.v;
+      if (shown !== undefined && String(shown) !== label) behind.push(`${g.id}: json v${shown}, log v${label}`);
+    }
+    check(`versions.json agrees with every log${behind.length ? ` — ${behind.join('; ')}` : ''}`,
+      behind.length === 0);
+
+    // 3. NO ORPHANED HUB MODULE. `hub/toko-cabinet.js` sat unreferenced next to
+    //    the `toko-cabinet-dom.js` that actually ships — two implementations of
+    //    one feature, and the dead one still imported games.js and art.js at
+    //    their own ?v= tokens, which is the module-instance split CLAUDE.md
+    //    warns about waiting for somebody to wire it up.
+    const reach = new Set();
+    const follow = f => {
+      if (reach.has(f) || !fs.existsSync(path.join(ROOT, f))) return;
+      reach.add(f);
+      const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+      for (const re of [/from\s*'([^']+)'/g, /import\(\s*'([^']+)'/g, /^\s*import\s+'([^']+)'/gm,
+        /(?:src|href)="([^"]+)"/g]) {
+        for (const m of src.matchAll(re)) {
+          const bare = m[1].split('?')[0];
+          if (!/\.(js|css)$/.test(bare) || /^(https?:|data:|\/\/)/.test(bare)) continue;
+          follow(path.posix.normalize(path.posix.join(path.posix.dirname(f), bare)));
+        }
+      }
+    };
+    // From the hub page AND from every cabinet's page: `shell.js` and
+    // `padkeys.js` live in hub/ but are reached only from a GAME's index.html,
+    // so a walk that starts at the arcade alone calls the home button orphaned.
+    follow('index.html');
+    for (const g of games.filter(g => g.inRepo)) follow(`${g.path}index.html`);
+    const orphans = fs.readdirSync(path.join(ROOT, 'hub'))
+      .filter(f => /\.(js|css)$/.test(f) && !reach.has(`hub/${f}`));
+    check(`every module in hub/ is reachable from the page${orphans.length ? ` — orphaned: ${orphans}` : ''}`,
+      orphans.length === 0);
+  }
+
   await page.reload({ waitUntil: 'networkidle' });
   // not every cabinet has a number — the first one is a game that lives only
   // on the deployed site — so wait for any of them to fill, not for the first
@@ -908,6 +984,19 @@ function check(name, cond) {
 
   // ── the way back, on every game page ──
   const shelled = games.filter(g => g.inRepo && g.live !== false);
+  // The two single-page checks below are about hub/shell.js, which is the SAME
+  // file on every cabinet — so the page they use should be the lightest one,
+  // not whichever game happens to sort first in the catalogue. It was
+  // `shelled[0]`, which is Concrete, the heaviest boot on the floor: the hold
+  // test intermittently read the gamepad before the page had settled and the
+  // run also picked up a stray "Failed to fetch", so a game nobody was editing
+  // could turn the arcade's gate red. Smallest entry page, decided by bytes so
+  // it stays true as the floor changes.
+  const light = [...shelled].sort((a, b) => {
+    const size = g => { try { return fs.statSync(path.join(ROOT, g.path, 'index.html')).size; }
+                        catch { return Infinity; } };
+    return size(a) - size(b);
+  })[0] ?? shelled[0];
   const missing = [], badHref = [], small = [];
   for (const g of shelled) {
     await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
@@ -941,7 +1030,7 @@ function check(name, cond) {
     viewport: { width: 420, height: 780 }, hasTouch: true, isMobile: true,
   });
   const tp = await touch.newPage();
-  await tp.goto(`${base}/${shelled[0].path}`, { waitUntil: 'domcontentloaded' });
+  await tp.goto(`${base}/${light.path}`, { waitUntil: 'domcontentloaded' });
   await tp.evaluate(() => {
     // Stand in for the game, faithfully: toko-drop swallows every touch that is
     // not in its own UI, in the CAPTURE phase and non-passive. That detail
@@ -1016,7 +1105,7 @@ function check(name, cond) {
   }
 
   // holding Start on a game page walks back to the arcade
-  await page.goto(`${base}/${shelled[0].path}`, { waitUntil: 'networkidle' });
+  await page.goto(`${base}/${light.path}`, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
     window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 })), axes: [0, 0, 0, 0], connected: true, id: 'stub' };
     navigator.getGamepads = () => [window.__pad];
