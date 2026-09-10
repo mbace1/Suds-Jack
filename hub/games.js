@@ -175,17 +175,20 @@ export const GAMES = [
     id: 'dropcabal',
     score: { key: 'dropCabalHi', fmt: 'points' },
     fi: {
+      note: 'jätetty v3:een — pelattava, mutta ei toistaiseksi jatkossa',
       tagline: 'Syvyyssuuntaan kerrostuva galleriaräiskintä — lähellä olevat geelit syövät laukaukset, jotka tähtäsit kauas.',
       lineage: 'Cabal (1988)',
       controls: 'A D juokse · hiiri tähtää + ykkönen · Väli kierähdys · G kranaatti',
     },
     ja: {
+      note: 'v3 で手を止めた — 遊べるが、当面は再開しない',
       tagline: '奥行きが層になるギャラリーシューター — 手前のゼリーが、奥へ撃った弾を食べてしまう。',
       lineage: 'Cabal (1988)',
       controls: 'A D 走る · マウスで照準 + 左クリック · スペース ローリング · G 手榴弾',
     },
     pad: 'native',   // reads the sticks itself: a crosshair needs an axis, not a keystroke
-    status: 'active',
+    status: 'archived',
+    note: 'set down after v3 — playable, and not being picked back up for now',
     title: 'Drop Cabal',
     tagline: 'A gallery shooter with layered depth — near gels eat the shots you aimed at far ones.',
     lineage: 'Cabal (1988)',
@@ -278,11 +281,13 @@ export const GAMES = [
   {
     id: 'neonronin',
     fi: {
+      note: 'jätetty sivuun — pelattava, ja kansikuva on peliä pidemmällä',
       tagline: 'Ketjuta miekkasarjoja neonhorisontin halki. Taistelu hoituu itsestään; liike on sinun.',
       lineage: 'character action',
       controls: 'WASD + hiiri · ykkönen ketjuttaa · napauta tattia = hyppy ×2',
     },
     ja: {
+      note: '手を止めた — 遊べるが、ゲームよりカバーアートのほうが進んでいる',
       tagline: 'ネオンの街並みで剣のコンボをつなぐ。斬るのは自動、動くのは自分。',
       lineage: 'キャラクターアクション',
       controls: 'WASD + マウス · 左クリックでコンボ · スティックを弾くと二段ジャンプ',
@@ -290,7 +295,8 @@ export const GAMES = [
     // isDown('KeyA'/'KeyD'/'KeyW'/'KeyS') for movement, Space to dash, KeyE for
     // the command; the camera stays on the mouse
     pad: { keys: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', b0: 'Space', b2: 'KeyE' } },
-    status: 'active',
+    status: 'archived',
+    note: 'set down — playable, and the cover is further along than the game',
     title: 'Neon Ronin',
     tagline: 'Chain sword combos through a neon skyline. The fighting is automatic; the movement is yours.',
     lineage: 'character action',
