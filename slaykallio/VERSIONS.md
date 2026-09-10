@@ -7,6 +7,11 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v32 — 2026-09-10
+**First graphics pass: readable combat**
+
+Separate crowded label lanes, increase label contrast, show selected-card rules at readable size and move energy clear of the shared badge. Keep all TURF art and combat behavior. Locally staged graphics work; not yet published.
+
 ## v31 — 2026-09-10
 **Publish the current six-character game to the hub**
 

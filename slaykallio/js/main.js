@@ -25,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 31;
+const VERSION = 32;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -390,6 +390,19 @@ function placeLabels() {
   };
   put('hero', hero);
   for (const [uid, p] of foes) put(uid, p);
+  // Keep label lanes distinct; all still lead down to the figure's feet.
+  const units = [...labels.querySelectorAll('.unit:not(.dead)')];
+  const width = Math.min(w < 600 ? 108 : 150, (w - 24) / Math.max(1, units.length) - 6);
+  const packed = units.map(u => {
+    u.style.width = width + 'px'; u.style.marginLeft = -width / 2 + 'px';
+    const match = u.style.transform.match(/translate\(([\d.-]+)px, ([\d.-]+)px\)/);
+    return {u, x:Number(match?.[1] || w/2), y:Number(match?.[2] || labelTop())};
+  }).sort((a,b)=>a.x-b.x);
+  const gap = width + 6;
+  for(let i=0;i<packed.length;i++) packed[i].x = Math.max(width/2+8, packed[i].x, i ? packed[i-1].x+gap : 0);
+  if(packed.length) packed.at(-1).x = Math.min(w-width/2-8, packed.at(-1).x);
+  for(let i=packed.length-2;i>=0;i--) packed[i].x=Math.min(packed[i].x, packed[i+1].x-gap);
+  for(const p of packed) p.u.style.transform = 'translate('+p.x.toFixed(1)+'px, '+p.y.toFixed(1)+'px)';
 }
 
 function paintUnit(k) {
@@ -473,6 +486,11 @@ function renderEnergy() {
 
 function renderHand() {
   const hand = $('#hand'); hand.innerHTML = '';
+  const inspect = $('#card-inspect'); inspect.replaceChildren(); inspect.hidden = true;
+  if (state?.phase === 'fight' && state.hand[sel]) {
+    const c = state.hand[sel]; inspect.hidden = false;
+    inspect.append(el('strong', '', cardName(c.id)), el('p', '', engine.describe(c, state, sel, target)), el('small', '', c.target === 'enemy' ? 'Choose an enemy to play · select again to confirm' : 'Select again to play'));
+  }
   if (!state || state.phase !== 'fight') return;
   const n = state.hand.length;
   state.hand.forEach((c, i) => {
