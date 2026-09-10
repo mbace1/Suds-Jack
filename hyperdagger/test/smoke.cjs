@@ -1258,6 +1258,46 @@ s.listen(0, '127.0.0.1', async () => {
   ok('inca: a body landing on a gel mound squashes it, and it springs back to rest',
     phys.gel && phys.first < 0.85 && phys.low < 0.75 && Math.abs(phys.settled - 1) < 0.02 && phys.feetOnTop,
     JSON.stringify({ first: phys.first, low: phys.low, settled: phys.settled, feetOnTop: phys.feetOnTop }));
+  // v47 ROUNDED + NON-NEWTONIAN. The owner asked for "more rounded corners
+  // and non-Newtonian liquids", and both are testable: a rounded box has more
+  // than a cube's 24 vertices, and a shear-thickening fluid is one that is
+  // STIFFER when struck fast and one you SINK INTO when you stand still.
+  const nn = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, g = d.gooObj(), P = d.platformsObj(), pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    for (const sl of P.list) { sl.phase = 'live'; sl.k = 1; sl.t = 0; sl.life = 999; sl.spring?.reset(); sl.sq = 1; sl.give = 0; sl.wasOn = false; P._pose(sl); }
+    // the sea, seizing: some of it is worked hard, most of it is not
+    let seize = { peakStress: 0, hotFrac: 1, meanStress: 1, drawn: 0, waveVerts: 0, rounded: false };
+    for (let i = 0; i < 30; i++) {
+      await frames(1); const s = d.getGel();
+      if (s.drawn && s.peakStress > seize.peakStress) seize = s;
+    }
+    // the verb: stand still and go under, run and be held. Driven by stepping
+    // preUpdate directly, so a slow renderer cannot change the answer.
+    const sl = P.list.slice().sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0];
+    const rest = sl.top;
+    pl.feet.set(sl.x, rest, sl.z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    for (let i = 0; i < 200; i++) { pl.velocity.set(0, 0, 0); pl.vy = 0; pl.feet.y = sl.top; P.preUpdate(1 / 60, pl, 0); }
+    const sunk = { give: sl.give, top: sl.top };
+    for (let i = 0; i < 200; i++) { pl.velocity.set(9, 0, 0); pl.vy = 0; pl.feet.y = sl.top; P.preUpdate(1 / 60, pl, 0); }
+    const held = { give: sl.give, top: sl.top };
+    // the fluid itself: the SAME blow into a thickening gel and a Newtonian one
+    const { GelSpring } = await import('./js/gel.js?v=78');
+    const run = o => { const s = new GelSpring(o); s.kick(-0.5); let lo = 1; for (let i = 0; i < 240; i++) { s.step(1 / 60); lo = Math.min(lo, s.sq); } return +lo.toFixed(3); };
+    return { seize, rest: +rest.toFixed(2), sunk, held, thick: run({ thicken: 3.2, rate: 0.09 }), newton: run({ thicken: 0 }) };
+  });
+  ok('inca: every gel piece is a ROUNDED box, not a cube',
+    nn.seize.rounded && nn.seize.waveVerts > 24,
+    JSON.stringify({ verts: nn.seize.waveVerts }));
+  ok('inca: the sea SEIZES where it breaks and stays liquid where it does not',
+    nn.seize.peakStress > 0.35 && nn.seize.hotFrac > 0 && nn.seize.hotFrac < 0.6 && nn.seize.meanStress < 0.5,
+    JSON.stringify(nn.seize));
+  ok('inca: stand still on the goo and you SINK; run and it holds you up',
+    nn.sunk.give > 0.8 && nn.sunk.top < nn.rest * 0.6 && nn.held.give < 0.05 && Math.abs(nn.held.top - nn.rest) < 0.02,
+    JSON.stringify({ rest: nn.rest, sunk: nn.sunk, held: nn.held }));
+  ok('inca: the same blow squashes a THICKENING gel less than a Newtonian one',
+    nn.thick > nn.newton + 0.05 && nn.newton > 0.4,
+    JSON.stringify({ thickened: nn.thick, newtonian: nn.newton }));
   ok('ember: a shale slab is rock — it has no spring',
     em.plats.slabs.length > 0 && em.plats.slabs.every(s => s.gel === false && s.sq === 1),
     JSON.stringify(em.plats.slabs.map(s => [s.gel, s.sq])));
@@ -1290,7 +1330,8 @@ s.listen(0, '127.0.0.1', async () => {
     && tech.inca.skulls.every(k => Math.hypot(...k.at) > 26) && tech.inca.terraces.every(t => Math.hypot(...t.at) > 26),
     JSON.stringify(tech.inca));
   ok('void: none of the tech-art terms leak into the control',
-    ctrl.sn.tech && ctrl.sn.tech.caustic === 0 && ctrl.sn.tech.haze === 0 && ctrl.sn.tech.sun === 0 && ctrl.inca.on === false,
+    ctrl.sn.tech && ctrl.sn.tech.caustic === 0 && ctrl.sn.tech.haze === 0 && ctrl.sn.tech.sun === 0 && ctrl.inca.on === false
+    && ctrl.sn.tech.seize === 0,
     JSON.stringify({ tech: ctrl.sn.tech, inca: ctrl.inca }));
 
   ok('ember and void have no wave — the sea is season 2\'s',

@@ -424,8 +424,24 @@ with volume kept, leave and it recoils, a nail makes it flinch, and the
 carry HOLDS the feet to the top while it moves or the dip reads as a fall
 and spends a jump; `GooWave.hit` is its hit ripple on the sea — a ring
 from a nail crossing the surface or a body landing, never a trough; and
-`uSSS` is its satin subsurface term on the gel fragment. Still `todo`: the
-new sculpts, and whether the wave's trough should hurt. Four things renders settled, not reasoning: the star field was a
+`uSSS` is its satin subsurface term on the gel fragment. **v47 is rounded
+and non-Newtonian** (owner: "more rounded corners and non-Newtonian
+liquids"): `gelBox` bevels a subdivided cube by pushing each vertex out of an
+inner core, every gel piece wears it and OVERLAPS its cell (1.05) so a mound
+is one body with creases rather than a tray of eggs — and that halved the
+fresnel (0.9 → 0.45), because a rounded cube curves away everywhere a flat
+one did not, which is a geometry change presenting as a lighting bug. The
+goo shear-THICKENS: `GelSpring` raises its stiffness with the strain rate
+(the same blow reaches 0.68 where a Newtonian gel reaches 0.55), and a body
+**standing still sinks through the goo while a running body is held** — the
+season's first real verb, on both the mounds (`give`) and the sea
+(`GooWave.sink`, the carry fading as you go under). The tell is a pale matte
+solid phase carried per cube as an instanced attribute; **that measure was
+rewritten once** because reading it as a frame difference measures the
+RENDERER (a crest's leading edge is one cube wide at 60fps and thirty at 5,
+so the sea went white on a slow machine) — it is the profile's own slope
+times its travel speed, `6k(1−k)`, and frame rate cannot touch it. Still
+`todo`: the new sculpts, and whether the wave's trough should hurt. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
 near black, so floor glow is per season; and the owner's monuments "looked

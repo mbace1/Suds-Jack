@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { shaleGeometry } from './shale.js?v=77';
-import { gelMoundGeometry, GelSpring } from './gel.js?v=77';
+import { shaleGeometry } from './shale.js?v=78';
+import { gelMoundGeometry, GelSpring } from './gel.js?v=78';
 
 /**
  * PLATFORMS — slabs that GROW out of the floor, DRIFT, and SINK back.
@@ -16,6 +16,10 @@ import { gelMoundGeometry, GelSpring } from './gel.js?v=77';
  *
  * Only the disc and court arenas have these; the track keeps its own slabs.
  */
+// v47: the same shear-thickening numbers the sea uses, for a season that
+// does not name its own
+const NON_NEWTONIAN = { flowBelow: 3.2, fall: 1.3, rise: 0.5, depth: 0.75 };
+
 export class Platforms {
   constructor(scene, material) {
     this.scene = scene;
@@ -69,7 +73,7 @@ export class Platforms {
     // v46: a gel mound GIVES WAY — a squash spring (gel.js, from Toko Drop)
     // on its height; a shale slab is rock and has none
     const spring = gel ? new GelSpring(c.spring ?? {}) : null;
-    const p = { w, depth, h, mesh, phase: 'grow', t: 0, k: 0, life: 0, spring, sq: 1, wasOn: false,
+    const p = { w, depth, h, mesh, phase: 'grow', t: 0, k: 0, life: 0, spring, sq: 1, wasOn: false, give: 0,
       cx: 0, cz: 0, x: 0, z: 0, px: 0, pz: 0, ang: 0, top: 0, dir: d() < 0.5 ? -1 : 1 };
     this._place(p);
     return p;
@@ -96,7 +100,7 @@ export class Platforms {
     p.ang = d() * Math.PI * 2;
     p.life = c.lifeMin + d() * (c.lifeMax - c.lifeMin);
     p.t = 0; p.k = 0; p.phase = 'grow';
-    p.spring?.reset(); p.sq = 1; p.wasOn = false;
+    p.spring?.reset(); p.sq = 1; p.wasOn = false; p.give = 0;
     this._pose(p);
     p.px = p.x; p.pz = p.z;
   }
@@ -106,7 +110,11 @@ export class Platforms {
     p.x = p.cx + Math.cos(p.ang) * c.drift;
     p.z = p.cz + Math.sin(p.ang) * c.drift;
     const k = Math.max(0.02, p.k);
-    p.top = p.h * k * p.sq;
+    // v47: `give` is the standing body sinking INTO the goo — the top drops
+    // under the feet, but the body itself does not shrink: goo parts, it
+    // does not compress. So it is taken off the top and not off the scale.
+    const nn = this.cfg?.nonNewtonian ?? NON_NEWTONIAN;
+    p.top = Math.max(0, p.h * k * p.sq - (p.give ?? 0) * nn.depth * p.h * k);
     p.mesh.scale.y = k * p.sq;          // shale's origin is its BASE: it grows up out of the floor
     if (p.spring) { const s = p.spring.side; p.mesh.scale.x = s; p.mesh.scale.z = s; } // volume kept
     p.mesh.position.set(p.x, 0, p.z);
@@ -136,6 +144,7 @@ export class Platforms {
         if (p.t >= c.sink) { this._place(p); continue; }
       }
       if (p.spring) p.sq = p.spring.step(dt);
+      else p.give = 0;                  // shale is rock: nothing sinks into it
       this._pose(p);
     }
     // what is under the feet
@@ -164,7 +173,18 @@ export class Platforms {
       const here = on === p;
       if (here && !p.wasOn && player.vy < -2) p.spring.kick(-(this.cfg.landSquish ?? 0.32) * Math.min(1, -player.vy / 14));
       else if (!here && p.wasOn && player.vy > 1) p.spring.kick(0.12);
-      if (here && p.sq < 0.995 && player.vy <= 0 && f.y - p.top < 0.7) f.y = p.top;
+      // v47 NON-NEWTONIAN: a mound holds a body that is MOVING and yields to
+      // one that is standing still. Stand on the goo and you go under; run
+      // across it and it is a floor. (Enemies and gems are unaffected — they
+      // read `topAt`, which is the surface, not what a standing body does to it.)
+      const nn = this.cfg.nonNewtonian ?? NON_NEWTONIAN;
+      if (here && f.y <= p.top + 0.06 && player.vy <= 0
+        && Math.hypot(player.velocity.x, player.velocity.z) < nn.flowBelow) {
+        p.give = Math.min(1, (p.give ?? 0) + dt / nn.fall);
+      } else {
+        p.give = Math.max(0, (p.give ?? 0) - dt / nn.rise);
+      }
+      if (here && (p.sq < 0.995 || p.give > 0) && player.vy <= 0 && f.y - p.top < 0.7) f.y = p.top;
       p.wasOn = here;
     }
     player.platform = on;
@@ -253,7 +273,7 @@ export class Platforms {
   getState() {
     return {
       count: this.list.length,
-      slabs: this.list.map(p => ({ x: +p.x.toFixed(2), z: +p.z.toFixed(2), top: +p.top.toFixed(2), h: +p.h.toFixed(2), w: +p.w.toFixed(2), d: +p.depth.toFixed(2), phase: p.phase, k: +p.k.toFixed(2), sq: +p.sq.toFixed(3), gel: !!p.spring })),
+      slabs: this.list.map(p => ({ x: +p.x.toFixed(2), z: +p.z.toFixed(2), top: +p.top.toFixed(2), h: +p.h.toFixed(2), w: +p.w.toFixed(2), d: +p.depth.toFixed(2), phase: p.phase, k: +p.k.toFixed(2), sq: +p.sq.toFixed(3), give: +(p.give ?? 0).toFixed(3), stress: +(p.spring?.stress ?? 0).toFixed(3), gel: !!p.spring })),
     };
   }
 }

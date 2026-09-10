@@ -5,30 +5,30 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=77';
-import { Player } from './player.js?v=77';
-import { DaggerPool } from './daggers.js?v=77';
-import { GemPool } from './gems.js?v=77';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=77';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=77';
-import { OrbPool } from './bullets.js?v=77';
-import { AudioKit } from './audio.js?v=77';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=77';
-import { TUNING as T } from './tuning.js?v=77';
-import { HyperEnvironment } from './environment.js?v=77';
-import { Backdrop } from './backdrop.js?v=77';
-import { Walls } from './walls.js?v=77';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=77';
-import { TruckTrack } from './truck.js?v=77';
-import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=77';
-import { Platforms } from './platforms.js?v=77';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=77';
-import { GooWave } from './goo.js?v=77';
-import { gelMaterial } from './gel.js?v=77';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=77';
-import { Skullscape } from './inca.js?v=77';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=77';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=77';
+import { InputManager } from './input.js?v=78';
+import { Player } from './player.js?v=78';
+import { DaggerPool } from './daggers.js?v=78';
+import { GemPool } from './gems.js?v=78';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=78';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=78';
+import { OrbPool } from './bullets.js?v=78';
+import { AudioKit } from './audio.js?v=78';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=78';
+import { TUNING as T } from './tuning.js?v=78';
+import { HyperEnvironment } from './environment.js?v=78';
+import { Backdrop } from './backdrop.js?v=78';
+import { Walls } from './walls.js?v=78';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=78';
+import { TruckTrack } from './truck.js?v=78';
+import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=78';
+import { Platforms } from './platforms.js?v=78';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=78';
+import { GooWave } from './goo.js?v=78';
+import { gelMaterial } from './gel.js?v=78';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=78';
+import { Skullscape } from './inca.js?v=78';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=78';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=78';
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -1053,6 +1053,7 @@ function applySeason() {
   g.uLip.value.setRGB(...(gc?.rim ?? gc?.lip ?? [0.35, 0.95, 0.85]));
   g.uWobble.value = gc?.wobble ?? 0.05; g.uCaustic.value = gc?.caustic ?? 0.6;
   g.uFresnel.value = gc?.fresnel ?? 0.9; g.uSpec.value = gc?.spec ?? 0.7; g.uSSS.value = gc?.sss ?? 0.5;
+  g.uSeize.value.setRGB(...(gc?.seize ?? [0.80, 0.94, 0.92])); g.uSeizeK.value = gc?.seizeK ?? 0;
   if (sn.sky.sunDir) g.uSun.value.set(...sn.sky.sunDir).normalize();
   ground.userData.on = !!sn.ground;
   if (sn.ground) ground.material.color.setRGB(...sn.ground);
@@ -3370,7 +3371,18 @@ window.__hd = {
       let skin = null; e.meshRoot?.traverse(o => { if (o.isMesh && skin === null) skin = !!o.material.userData.mosaic; });
       return { type: e.type, skin, n, hdr, mean: [+(r / n).toFixed(3), +(g / n).toFixed(3), +(b / n).toFixed(3)], palette: S().roster?.palette ?? null };
     },
-    getTechArt() { return { caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray() }; },
+    getTechArt() { return { caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray(), seize: gelMat.userData.gel.uSeizeK.value }; },
+    // v47: is the gel actually rounded, and is any of the sea seized right now?
+    getGel() {
+      const wv = goo.mesh ? goo.mesh.geometry.getAttribute('position').count : 0;
+      let peak = 0, hot = 0, sum = 0;
+      if (goo.stress) for (let i = 0; i < goo.count; i++) { const v = goo.stress.getX(i); peak = Math.max(peak, v); sum += v; if (v > 0.5) hot++; }
+      const sl = platforms.list.find(p => p.spring);
+      return { waveVerts: wv, rounded: wv > 24, peakStress: +peak.toFixed(3),
+        hotFrac: goo.count ? +(hot / goo.count).toFixed(3) : 0, meanStress: goo.count ? +(sum / goo.count).toFixed(3) : 0,
+        drawn: goo.count, sink: +goo.sink.toFixed(3),
+        moundGive: +(sl?.give ?? 0).toFixed(3), moundStress: +(sl?.spring?.stress ?? 0).toFixed(3) };
+    },
     gooObj() { return goo; }, // the gate reads heightAt directly
     platformsObj() { return platforms; }, // the gate forces one slab tall and grown
     clearPillars() { walls.cull(w => w.tag === 'pillar'); return walls.walls.length; }, // the cover check's control: the same shot with the rock gone

@@ -36,6 +36,10 @@ And on looking at the first build:
 > **less objects** in general. And the shale piles should be **darker and
 > shorter**.
 
+And on seeing season 2 move (2026-09-10):
+
+> **More rounded corners**, and **non-Newtonian liquids**.
+
 And on seeing season 2 built (2026-09-08):
 
 > **Enemies will be new** — aquamarine, green, yellows — but also slightly
@@ -155,6 +159,17 @@ style, think tech art*.
   grow slower and stand longer, built as **mounds** of goo cubes — columns on
   a grid, the height a rounded dome (1 − r⁴)^0.6 — in the gel material. Every
   piece is still a cube; the silhouette is soft.
+- **Rounded, and non-Newtonian** (v47). Every gel piece is a **rounded box**
+  (`gelBox`), overlapping its cell so a mound is one body with soft creases
+  rather than a tray of eggs — and rounding cost the fresnel rim half its
+  strength, because a rounded cube curves away from you everywhere a flat one
+  did not. The goo is **shear-thickening**: struck fast it is nearly a solid
+  (`GelSpring` raises its own stiffness with the strain rate), and a body
+  **standing still on it sinks through** while a body **running across it is
+  held**. That is the season's verb — the wave was a ride, and riding it is
+  now something you do. Worked hard, the goo goes pale and matte; left alone
+  it is dark and wet, and the sea carries that per cube so the breaking face
+  is solid while the swell behind it is liquid.
 - **Gel and goo physics** (v46, from Toko Drop's `enemy.js`). A mound
   **gives way**: a squash spring (spring 0.24, damp 0.86, `landSquish`
   0.32) on its height — land on it and it squashes, volume kept, leave it

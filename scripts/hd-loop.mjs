@@ -93,6 +93,31 @@ const SCENARIOS = {
     tick: 'window._LOOP.turn(0.045)',
     every: 1,
   },
+  // season 2 — three loops, one per system, all from inside the disc
+  inca: {
+    title: 'SEASON 2 — INCA: the mosaic roster under the skullscape, the sea moving',
+    mode: 'hyper',
+    season: 'inca',
+    setup: 'window._LOOP.inca()',
+    tick: 'window._LOOP.turn(0.03)',
+    every: 1,
+  },
+  wave: {
+    title: 'SEASON 2 — the wave: a crest comes at you, leans, breaks, carries',
+    mode: 'move',
+    season: 'inca',
+    setup: 'window._LOOP.wave()',
+    tick: 'window._LOOP.waveTick()',
+    every: 1,
+  },
+  gel: {
+    title: 'SEASON 2 — gel physics: a mound flinches at nails and gives way; the water splashes',
+    mode: 'move',
+    season: 'inca',
+    setup: 'window._LOOP.gel()',
+    tick: 'window._LOOP.gelTick()',
+    every: 1,
+  },
   court: {
     title: 'MOVE — the court: four walls, the body stops and slides along',
     mode: 'move',
@@ -177,6 +202,52 @@ window._LOOP = {
     player.feet.set(0, 0, 6); player.yaw = 0; player.pitch = 0.03; player._sync();
     window.__hd.debug.spawnSkull(); const a = enemies[enemies.length - 1]; a.hp = 99999; this.place(a, 9); a._holdAt.x = -3;
     window.__hd.debug.spawnSkull(); const b = enemies[enemies.length - 1]; b.hp = 99999; this.place(b, 16); b._holdAt.x = 5; b._holdAt.y = 3.2;
+    return null;
+  },
+  // ── season 2 ──
+  // the roster under the skullscape: two held mosaic skulls, the needler
+  // streaming, the sea doing whatever it is doing behind them
+  inca() {
+    this.reset();
+    for (const p of platforms.list) { p.phase = 'live'; p.k = 1; p.t = 0; }
+    player.feet.set(0, 0, 4); player.yaw = 0; player.pitch = 0.04; player._sync();
+    window.__hd.debug.spawnSkull(); const a = enemies[enemies.length - 1]; a.hp = 99999; this.place(a, 7); a._holdAt.x = -2.5;
+    window.__hd.debug.spawnSkull(); const b = enemies[enemies.length - 1]; b.hp = 99999; this.place(b, 13); b._holdAt.x = 4; b._holdAt.y = 3.4;
+    return null;
+  },
+  // the wave, from the middle looking INTO its travel so a crest comes at the
+  // camera; slowed so the break spans frames instead of happening between two
+  wave() {
+    this.reset();
+    for (const p of platforms.list) { p.phase = 'sink'; p.k = 0; p.t = 99; }
+    // face AGAINST the travel (forward is (-sin yaw, -cos yaw)), and put the
+    // crest twenty units out on that side, so it comes at the camera
+    const g = goo; player.feet.set(0, 0, 0); player.yaw = -Math.atan2(-g.dirX, g.dirZ); player.pitch = 0.0; player._sync();
+    g.t = (ARENA_R + g.cfg.width - 20) / g.cfg.speed;
+    this.slow(0.35);
+    return null;
+  },
+  waveTick() { player.velocity.set(0, 0, 0); return null; },
+  // gel: seven units from a mound, streaming nails into it (it flinches) with
+  // a landing-sized kick every ten frames (it gives way); nails into the water
+  // between, so the rings show
+  gel() {
+    this.reset();
+    for (const p of platforms.list) { p.phase = 'live'; p.k = 1; p.t = 0; p.life = 999; platforms._pose(p); }
+    const sl = platforms.list.slice().sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0];
+    const dist = Math.hypot(sl.x, sl.z), k = (dist - 7) / dist;
+    player.feet.set(sl.x * k, 0, sl.z * k); player.yaw = -Math.atan2(sl.x - player.feet.x, -(sl.z - player.feet.z)); player.pitch = -0.08; player._sync();
+    this._gel = sl; this._f = 0; this.slow(0.5);
+    return null;
+  },
+  gelTick() {
+    this._f = (this._f || 0) + 1;
+    const sl = this._gel;
+    if (this._f % 10 === 3 && sl?.spring) sl.spring.kick(-0.35);
+    // nails: at the mound most frames, and every fourth frame down into the water
+    const down = this._f % 4 === 0;
+    player.pitch = down ? -0.42 : -0.08; player._sync();
+    for (let i = 0; i < 4; i++) fireDagger(wpn('spread'), wpn('streamSpeed'), false);
     return null;
   },
   turn(k) { player.yaw += k; player._sync(); if (((this._f = (this._f || 0) + 1) % 4) === 1) for (let i = 0; i < 6; i++) fireDagger(wpn('spread'), wpn('streamSpeed'), false); return null; },
