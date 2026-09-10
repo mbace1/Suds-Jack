@@ -1,4 +1,4 @@
-Kindling v23
-canonical source: mbace1/Kindling@1f499b30e7944a0b83444ffc6ef03c18689817c8
+Kindling v24
+canonical source: mbace1/Kindling@4e1c064ec035f0b723fa4f460b191908f21c99d1
 static hub build: npm run build:hub
-notes: living lineage family tree, hatch inheritance, walk with elder
+notes: World beyond Old Gate — Pale Reach + Hollow Spire

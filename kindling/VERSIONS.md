@@ -6,6 +6,14 @@
      it reads each project's VERSIONS.md and nothing else. Keeping the log with
      the SOURCE is what stops the number and the build disagreeing. -->
 
+## v24 — 2026-09-10
+**World beyond the Old Gate**
+- opening the Gate unlocks Pale Reach immediately; Hollow Spire waits past that road
+- both beyond-gate regions ship Journey cards, region memory, encounter archetypes, and named rival keepers (Silver Fenward · Unlit Spireward)
+- clear travel beat: Approach Gate → ProgressionCelebration into Pale Reach → Walk the new world (interim plates)
+- PRODUCT_PLAN: epic A shipped; C→B→A complete
+- CANONICAL invariants unchanged (no wellness on loss; Kindle never clears world progress)
+
 ## v23 — 2026-09-10
 **Living lineage — family on the road**
 - egg hatch names a child with parent links and visible inherited ash traits (combat + Journey flavor); child becomes the active companion
