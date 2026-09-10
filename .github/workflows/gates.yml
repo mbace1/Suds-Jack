@@ -323,6 +323,44 @@ jobs:
         env:
           NODE_PATH: ${{ github.workspace }}/node_modules
 
+  flowsnow:
+    name: flowsnow
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # terrain.js, physics.js and particles.js are pure — no DOM, no three.js,
+      # no clock — so the mountain, the board model, the snowpack and the cache
+      # tokens are all provable with no browser at all.
+      - name: the mountain, the board and the snow
+        run: node flowsnow/test/core.mjs
+
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install chromium
+
+      # Two browser gates, and the split is the point. smoke.cjs proves the
+      # INTERFACE — a tap starts a ride, the HUD reads the state, the recap is
+      # honest. It proved the ENDING by putting the rider at z = -2395, so
+      # nothing rode the 2,400 m in between; playthrough.cjs rides all of it and
+      # caught a crash at 163 m the first time it ran (a landing with an impact
+      # of exactly 0 fed an exponential gain ramp a zero, which is a RangeError
+      # rather than a silence, thrown out of the physics step).
+      - name: the interface
+        run: node flowsnow/test/smoke.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
+      - name: the whole mountain, ridden
+        run: node flowsnow/test/playthrough.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
   turf:
     name: turf
     runs-on: ubuntu-latest
