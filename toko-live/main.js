@@ -2,7 +2,18 @@ import { mountChat } from '../toko/js/chat.js?v=20';
 import { drawFace } from '../toko/js/face.js';
 import { TOKO } from '../toko/js/palette.js';
 const slot=document.querySelector('#chat-slot'),chat=mountChat(slot,{where:'in',openOnLoad:true});window.__tokoLiveChat=chat;
-await import('../toko/js/mind.js?v=10');await import('../toko/js/project-conversation.js?v=2');await import('../toko/js/brain-conversation.js?v=1');await import('../toko/js/conversation-plus.js?v=10');await import('../toko/js/chat-layout-fix.js?v=1');
+// The brain, loaded one layer at a time and ALLOWED TO BE ABSENT.
+// This was a chain of bare `await import`s, and that is how the whole page
+// died in production: the deploy carried toko-live/ but not three of the
+// toko/js modules named here, the first await threw, and every line below it —
+// the canvas, the stage, the state machine, the character — never ran. The
+// shell is static HTML, so the page looked alive and drew nothing at all.
+// A layer that adds intelligence must never be able to remove the character.
+for (const m of ['mind.js?v=10', 'project-conversation.js?v=2', 'brain-conversation.js?v=1',
+                 'conversation-plus.js?v=10', 'chat-layout-fix.js?v=1']) {
+  try { await import('../toko/js/' + m); }
+  catch (err) { console.warn('[toko-live] layer unavailable:', m, err && err.message); }
+}
 const canvas=document.querySelector('#toko-stage'),ctx=canvas.getContext('2d'),stage=document.querySelector('.stage'),label=document.querySelector('#state-label'),thought=document.querySelector('#thought');
 let performanceState='listening',until=0,semanticMode='local',mx=0,my=0,gaze=0,focus=null,cards=[],rects=[],hover=-1,answerStart=0,focusIndex=-1,compareIndex=-1,lastTap=0,lastTapIndex=-1,crossPair=null,crossSlots=[0,0];
 const P=[
