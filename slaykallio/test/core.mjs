@@ -358,7 +358,13 @@ check('running out of HP loses the run', s.phase === 'lost');
 s = startRun(createRun({ seed: 4, character: 'cart' }));
 jumpTo(s, ENC('bridge'));
 check('act one ends on the Bridge King', s.phase === 'fight' && s.enemies[0].id === 'bridge_king' && s.enemies[0].hp === 104 && s.act === 0);
-s.enemies[0].intent = { ...ENEMIES.bridge_king.moves[2], shown: 8 };
+// By ID, never by index into `moves`. v23 made the rotation walk only the
+// UNCONDITIONAL moves, so adding one conditional move to the front of a list
+// silently shifts every index behind it — the same brittleness the twelve
+// `hp === 68` literals had, found the same way: four checks failing at once
+// for one reason that is not what any of them is about.
+const kingMove = id => ENEMIES.bridge_king.moves.find(m => m.id === id);
+s.enemies[0].intent = { ...kingMove('one_two'), shown: 8 };
 s.hand = [];
 const hb = s.hero.hp;
 endTurn(s);
@@ -762,6 +768,82 @@ check('a figure with no plate returns null rather than a broken path', plateFor(
 const ghosts = WITH_GUNS.filter(n => !existsSync(new URL(`../../turf/art-src/sprites/${n}-plate.png`, import.meta.url))
   && !existsSync(new URL(`../../turf/art-src/sprites/cast/${n}-idle.png`, import.meta.url)));
 check(`the gun list still names real plates${ghosts.length ? ` — ${ghosts}` : ''} (${WITH_GUNS.length} of 32)`, ghosts.length === 0);
+
+// ── enemies that REACT (v23) ─────────────────────────────────────────────
+// `when` is the difference between a bestiary and a rotation. These assert the
+// condition FIRES and — the half that is easy to forget — that it does not
+// fire when it should not, since a conditional move left in the ordinary loop
+// is the obvious bug.
+const withWhen = Object.entries(ENEMIES).filter(([, e]) => e.moves.some(m => m.when));
+check(`enemies react to the fight, not just to a clock (${withWhen.length} of ${Object.keys(ENEMIES).length})`, withWhen.length >= 5);
+check('every condition used is one the engine knows',
+  Object.values(ENEMIES).every(e => e.moves.every(m => !m.when || ['first', 'hurt', 'alone', 'walled'].includes(m.when))));
+check('and all four are actually used — a condition with no user is dead code',
+  ['first', 'hurt', 'alone', 'walled'].every(w => Object.values(ENEMIES).some(e => e.moves.some(m => m.when === w))));
+// Every reacting enemy still has a rotation underneath: strip the conditional
+// moves and what is left has to be a fight on its own.
+check('a reacting enemy still has an ordinary loop under it',
+  withWhen.every(([, e]) => e.moves.filter(m => !m.when).length >= 2));
+
+const react = (enc, tweak = () => {}) => {
+  const st = startRun(createRun({ seed: 6, character: 'cart' }));
+  jumpTo(st, ENC(enc));
+  tweak(st);
+  st.enemies.forEach(e => { e.intent = null; });
+  // re-plan against the state the tweak just made
+  endTurn(st);
+  return st;
+};
+// `first` — an opener. A rotation starts anywhere, so this is the one thing it
+// could never do.
+let r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('lookout'));
+const look = r.enemies.find(e => e.id === 'lookout');
+check('the Lookout whistles on turn one, whatever the rotation rolled', look.intent.id === 'whistle', `${look.intent.id}`);
+check('and it buffs the whole row rather than itself', look.intent.who === 'all');
+endTurn(r);
+check('and does not whistle again on turn two', r.enemies.find(e => e.id === 'lookout')?.intent.id !== 'whistle');
+
+// `alone` — kill ORDER becomes a decision.
+r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('scrappers'));
+const scr = r.enemies.filter(e => e.id === 'scrapper');
+check('two Scrappers, and neither is enraged while it has company',
+  scr.length === 2 && r.enemies.filter(e => e.alive).length === 3 && scr.every(e => e.intent.id !== 'nothing_left'));
+r.enemies.forEach(e => { if (e !== scr[0]) { e.alive = false; e.hp = 0; } });
+scr[0].intent = null; endTurn(r);
+check('left alone, the Scrapper enrages', scr[0].intent.id === 'nothing_left', `${scr[0].intent.id}`);
+
+// `walled` — block was a strictly safe play before this.
+r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('hardcase'));
+const hard = r.enemies.find(e => e.id === 'hard_case');
+check('the Hard Case ignores you while you are not turtling', hard.intent.id !== 'shoulder');
+// Assert what ACTED, from the log. After `endTurn` an enemy's `intent` is the
+// one planned for the turn AFTER — reading it there is reading one turn late,
+// which is what made three of these look broken while the engine was right.
+const acted = (st, from) => st.log.slice(from).filter(l => l.t === 'enemyAct').map(l => l.move);
+let mark = r.log.length;
+r.hero.block = 14; hard.intent = null; endTurn(r);
+check('but answers a wall of block with frail', acted(r, mark).includes('shoulder'), `${acted(r, mark)}`);
+
+// `hurt` + `once` — the Jaw Worm's bellow: a single second wind.
+r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('thief'));
+const thief = r.enemies.find(e => e.id === 'bottle_thief');
+check('the Bottle Thief does not drink while she is fresh', thief.intent.id !== 'last_drop');
+mark = r.log.length;
+thief.hp = 8; thief.intent = null; endTurn(r);
+check('hurt, she takes the last drop', acted(r, mark).includes('last_drop'), `${acted(r, mark)}`);
+check(`and it healed her (${thief.hp} HP)`, thief.hp > 8);
+mark = r.log.length;
+thief.hp = 6; thief.intent = null; endTurn(r);
+check('ONCE — there is no second bottle', !acted(r, mark).includes('last_drop'), `${acted(r, mark)}`);
+
+// The boss: half gone is a different fight.
+r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('bridge'));
+const king = r.enemies[0];
+check('the Bridge King opens on his ordinary rotation', king.intent.id !== 'enough');
+mark = r.log.length;
+king.hp = 40; king.intent = null; endTurn(r);
+check('at half he has had enough', acted(r, mark).includes('enough'), `${acted(r, mark)}`);
+check('and it is worth three strength', king.status.strength >= 3, `${king.status.strength}`);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

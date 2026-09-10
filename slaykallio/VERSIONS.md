@@ -7,6 +7,65 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v23 — 2026-09-10
+**Enemies that react, and four numbers that moved for reasons I cannot name**
+The spare plates were the obvious next step and the wrong one on their own.
+Every one of the seventeen enemies this game shipped with was a **fixed loop
+with a random start** — the move LISTS differ, so a dealer curses where a
+preacher buffs, but the SHAPE is identical and nothing on this bridge ever
+reacted to anything. Casting eleven more plates onto that would have been
+TURF's *"eighteen portraits of one enemy"* in a subtler form, which is a lesson
+this repo has already paid for once.
+
+**`when` is the whole feature**, and it is one function. A move may carry a
+condition; on its turn an enemy takes the first move whose condition holds,
+otherwise the next in its rotation. Four conditions, one user each, because a
+condition with no user is dead code and the gate says so:
+
+| | | |
+|---|---|---|
+| `first` | **The Lookout** whistles, +1 strength to the whole row | an OPENER — the one thing a rotation can never do, since a rotation starts anywhere |
+| `alone` | **The Scrapper** enrages, +2 strength | kill ORDER becomes a decision: clear its friends and the one left is worse |
+| `walled` | **The Hard Case** answers a wall with frail | block was strictly safe before this; frail taxes it rather than ignoring it |
+| `hurt` + `once` | **The Bottle Thief** takes the last drop, heals 9 | the Jaw Worm's bellow — burst beats chip, learned by watching it happen exactly once |
+
+And the classic on the act-one boss: **the Bridge King has had enough at half**,
++3 strength, once — which turns the back half of that fight into a different
+fight and is the reason the feature was worth an engine change at all.
+
+**Three real bugs, and two of them were mine from ten minutes earlier.**
+*Intents were planned BEFORE the fight state was reset* — so the opener read
+`state.turn` off the PREVIOUS fight's counter. That was always fragile (the
+telegraph's damage number reads the hero's statuses, which are being cleared in
+those same lines) and completely invisible while every move was unconditional.
+*`walled` could never once have fired*: an intent is planned at the END of the
+enemy phase, for the turn after, by which point the block it is reacting to has
+been spent absorbing the very attacks that just landed. It reads what the row
+walked INTO now. And *`enemyPhase` crashed on a null intent* — impossible
+before v23, and now a state the engine itself produces, since it clears the
+intent before re-planning.
+
+**A brittleness worth the same note the HP literals got.** The rotation walks
+only the UNCONDITIONAL moves, so putting one conditional move at the front of
+the Bridge King's list silently shifted every index behind it — and four checks
+failed at once for a reason none of them was about. `moves[2]` is now
+`moves.find(m => m.id === 'one_two')`. Same shape as v16's `hp === 68`: when a
+cluster of unrelated checks breaks together, the index is the suspect.
+
+**THE MEASUREMENT, and the honest half.** Best lines went
+**15 / 43 / 25 / 43 / 19 / 16** against v22's 14 / 29 / 30 / 35 / 24 / 16. The
+mean barely moved (25 → 27) but the numbers underneath it all did, in **both
+directions** — the Busker and the Cart Pusher up fourteen and eight, the Dog
+Walker and the Bottle Collector down five each — and the band is WIDER than
+before rather than tighter. I do not have a causal story for that and am not
+going to invent one: two fights joined each act's pool of eight, four enemies
+joined a bestiary of seventeen, and five enemies started reacting, all in one
+version, which is three changes and one measurement. **It needs a tuning pass
+with the changes separated**, and this entry is the record that it has not had
+one, not a claim that the numbers are where they should be.
+
+Gates: core 736, smoke 130.
+
 ## v22 — 2026-09-09
 **They can have firearms**
 Owner: *"of course they can have firearms."* v19 refused eight of the thirty-two

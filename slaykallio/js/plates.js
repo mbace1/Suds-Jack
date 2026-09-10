@@ -61,6 +61,11 @@ export const CAST = {
   bouncer:     'grunt-duffy',  // heavy, bearded, a length of pipe
   night_shift: 'cleaver',      // apron and a face mask: he IS a night shift
   bridge_king: 'knuckle',      // shirtless, scarred, a flail — a boss reads as one
+  // the ones that REACT (v23), cast from the spare pool
+  lookout:      'rook',        // hands empty, watching
+  scrapper:     'grunt-chain',
+  hard_case:    'grunt-curt',
+  bottle_thief: 'vex',         // the set's only other woman, and she has the bag
 };
 
 export const castFiles = () => [...new Set(Object.values(CAST))].map(n => DIR + n + '.png');

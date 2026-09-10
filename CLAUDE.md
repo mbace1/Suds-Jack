@@ -645,8 +645,36 @@ would have had someone cut the heal. **Sum the drops; a heal is not a fight
 being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
 and a two-point HP change failed all twelve at once — none of them is about the
 Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
-Gates: `node slaykallio/test/core.mjs` (718 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (129). Hub entry:
+**Enemies REACT now** (v23). Every one of the seventeen this game shipped with
+was a fixed loop with a random start — the move lists differ, so a dealer curses
+where a preacher buffs, but the SHAPE was identical and nothing on the bridge
+reacted to anything, which is TURF's *"eighteen portraits of one enemy"* in a
+subtler form. **`when` on a move is the whole feature**: the enemy takes the
+first move whose condition holds, else the next in its rotation, and the
+rotation walks only the UNCONDITIONAL moves. Four conditions, one user each
+because a condition with no user is dead code — `first` (the Lookout's opener,
+the one thing a rotation can never do since a rotation starts anywhere), `alone`
+(the Scrapper enrages, so kill ORDER is a decision), `walled` (the Hard Case
+answers a wall with frail — block was strictly safe before this), `hurt`+`once`
+(the Bottle Thief's one second wind, and the Bridge King having had enough at
+half). **Three bugs came out of it**: intents were planned BEFORE the fight
+state was reset, so an opener read the previous fight's turn counter; **`walled`
+could never once have fired**, because an intent is planned at the end of the
+enemy phase for the turn after, by which point the block it reacts to has been
+spent absorbing the attacks that just landed (it reads what the row walked
+INTO); and `enemyPhase` crashed on a null intent, impossible before v23 and now
+a state the engine itself produces. And one brittleness with the same shape as
+v16's `hp === 68` literals: putting a conditional move at the FRONT of a list
+shifts every index behind it, so four unrelated checks failed at once —
+`moves[2]` is `moves.find(m => m.id === …)` now. **The measurement is the honest
+half**: best lines went 14/29/30/35/24/16 → **15/43/25/43/19/16**, the mean
+barely moving (25→27) while everything under it moved in BOTH directions and
+the band got wider, not tighter. Three changes landed in one version (two fights
+per act pool, four enemies, five reacting) against one measurement, so there is
+no causal story to give and none is invented — it needs a tuning pass with the
+changes separated, and VERSIONS.md v23 records that it has not had one.
+Gates: `node slaykallio/test/core.mjs` (736 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.

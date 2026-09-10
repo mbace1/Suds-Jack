@@ -224,13 +224,17 @@ function startEncounter(state, encId, kind = 'fight') {
     if (mut >= 2) e.status.strength = 1;
     return e;
   });
-  for (const e of state.enemies) planIntent(state, e);
   state.draw = state.rng.shuffle(state.hero.deck.map(c => ({ ...c, effects: c.effects.map(f => ({ ...f })) })));
   state.hand = []; state.discard = []; state.exhaust = [];
   state.turn = 0;
   state.attacksThisFight = 0;
   state.struck = 0;
   state.phase = 'fight';
+  // AFTER the reset, not before it. This used to run first, so an intent was
+  // planned against the PREVIOUS fight's turn counter and the hero's not-yet
+  // cleared statuses — which never showed while every move was unconditional,
+  // and made the first reacting enemy read its opener off a stale number.
+  for (const e of state.enemies) planIntent(state, e);
   state.log.push({ t: 'encounter', index, id: enc.id, kind, hour: state.hour, mutated: lvl });
   for (const j of state.jokers) {
     const f = j.effect;
@@ -551,10 +555,45 @@ function loseHp(state, n, src) {
 }
 
 // ── enemies ──────────────────────────────────────────────────────────────
+// A move may carry `when`, and that is the whole difference between a bestiary
+// and a rotation. Every one of the seventeen enemies this game shipped with
+// was a fixed loop with a random start — the move LISTS differed, so a dealer
+// curses where a preacher buffs, but the SHAPE was identical and nothing on
+// the bridge ever reacted to anything. That is TURF's "eighteen portraits of
+// one enemy" in a subtler form. Slay the Spire's own answer is a conditional
+// intent (the Jaw Worm bellows when it is hurt, the Guardian shifts mode), and
+// it costs one function rather than any new art.
+const WHEN = {
+  first:  (state) => state.turn === 0,                                     // planned before turn one: an opener
+  hurt:   (state, e) => e.hp * 2 <= e.maxHp,                               // half gone
+  alone:  (state) => state.enemies.filter(x => x.alive).length === 1,      // last one standing
+  // Read off what the hero HAD when the row got to act, not off `block` now.
+  // An intent is planned at the END of the enemy phase, for the turn after —
+  // by which point the block it is reacting to has been spent absorbing the
+  // very attacks that just landed. Asking `hero.block` there is asking after
+  // the fact, and the condition could never once have fired.
+  walled: (state) => (state.wall ?? state.hero.block) >= 10,                // you turtled
+};
+
 function planIntent(state, e) {
   const d = ENEMIES[e.id];
-  const m = d.pattern === 'random' ? state.rng.pick(d.moves) : d.moves[e.moveIndex % d.moves.length];
-  e.intent = { ...m };
+  // A condition wins over the rotation, first match in declaration order — so
+  // the order a designer writes them in is the priority, which is the one
+  // thing about this that has to be obvious from the data.
+  for (let i = 0; i < d.moves.length; i++) {
+    const m = d.moves[i];
+    if (!m.when || (m.once && e.spent?.includes(i))) continue;
+    if (WHEN[m.when]?.(state, e)) { e.intent = { ...m, at: i }; break; }
+  }
+  if (!e.intent || e.intent.at === undefined) {
+    // The rotation walks only the UNCONDITIONAL moves. Leaving a conditional
+    // one in the loop would fire it with its condition unmet, which is the
+    // obvious bug and the reason `loop` is derived rather than being `moves`.
+    const loop = d.moves.filter(x => !x.when);
+    const m = d.pattern === 'random' ? state.rng.pick(loop) : loop[e.moveIndex % loop.length];
+    e.intent = { ...m };
+  }
+  const m = e.intent;
   if (m.intent === 'attack' || m.dmg) e.intent.shown = enemyDamage(state, e, m.dmg);
 }
 
@@ -569,9 +608,16 @@ export function enemyDamage(state, e, dmg) {
 function enemyPhase(state) {
   const h = state.hero;
   state.enemyActing = true;
+  state.wall = h.block;                    // what the row is walking into
+
   for (const e of state.enemies) {
     if (!e.alive || state.phase !== 'fight') continue;
     e.block = 0;
+    // An enemy with no intent gets one rather than crashing. Before v23 this
+    // could not happen; now the engine itself clears the intent before
+    // re-planning, so "no intent" is a state that exists, and a null here
+    // reached `m.id` and took the whole fight down.
+    if (!e.intent) planIntent(state, e);
     const m = e.intent;
     state.log.push({ t: 'enemyAct', enemy: e.uid, move: m.id, intent: m.intent });
     if (m.intent === 'attack' || m.dmg) {
@@ -587,8 +633,14 @@ function enemyPhase(state) {
     }
     if (m.status2) addStatus(state, h, m.status2.key, m.status2.n, m.id);
     if (m.addCard) { const c = card(m.addCard); state.discard.push(c); state.log.push({ t: 'curse', card: c.id, uid: c.uid, src: e.uid }); }
-    e.moveIndex++;
-    if (e.alive) planIntent(state, e);
+    // A conditional move does not consume a place in the rotation, or taking
+    // one would silently skip the loop move it stood in for. And `once` is
+    // spent when the move ACTS rather than when it is planned: the intent is
+    // shown a turn ahead and re-planned in this same loop, so marking it here
+    // is what stops it being chosen again on the way out.
+    if (m.at !== undefined && m.once) (e.spent ??= []).push(m.at);
+    if (m.at === undefined) e.moveIndex++;
+    if (e.alive) { e.intent = null; planIntent(state, e); }
   }
   state.enemyActing = false;
   // the hero's vulnerable/weak were applied for the coming turn; intents are

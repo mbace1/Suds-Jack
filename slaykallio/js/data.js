@@ -515,6 +515,11 @@ export const ENEMIES = {
     fantasy: { name: 'Imp Lord', look: { body: '#7a5060', wing: '#523646', head: '#8a5a6e', beak: '#e07070', shape: 'rat' } } },
   bridge_king: { hp: 104, boss: true, pattern: 'cycle', scale: 1.15,
     moves: [
+      // The classic, and the reason `when` was worth an engine feature at all:
+      // a boss that changes when it is hurt turns the second half of the fight
+      // into a different fight. Once, so it is a turn of the fight rather than
+      // a spiral.
+      { id: 'enough', when: 'hurt', once: true, intent: 'buff', status: { key: 'strength', n: 3 } },
       { id: 'shove', intent: 'attack', dmg: 16 },
       { id: 'plant', intent: 'buff', block: 12, status: { key: 'strength', n: 1 } },
       { id: 'one_two', intent: 'attack', dmg: 8, times: 2 },
@@ -562,6 +567,54 @@ export const ENEMIES = {
     ],
     kallio: { name: 'The Dealer', look: { skin: '#d0a898', hair: '#1a1814', hairStyle: 'slick', top: '#1c1c22', under: '#c8c0b0', bottom: '#1c1c22', shoes: '#0e0e10', hat: 'cap', hatColor: '#1c1c22', prop: 'bag', accent: '#c8a03a', base: 'card', grime: 0.5, shape: 'person' } },
     fantasy: { name: 'The Alchemist', look: { skin: '#c8b8a8', hair: '#3a2a4a', hairStyle: 'slick', top: '#2a1c3a', bottom: '#1c1428', shoes: '#0e0e10', hat: 'hood', prop: 'flask', accent: '#8ac83a', base: 'card', grime: 0.5, shape: 'person' } } },
+  // ── the ones that REACT (v23) ────────────────────────────────────────
+  // Four enemies built around `when`, one per condition, because a feature
+  // with one user is a special case. Each asks a different question of the
+  // player, and none of them can be answered by playing the same turn again.
+  lookout: { hp: 26, pattern: 'cycle', scale: 0.94,
+    moves: [
+      // `first` is an OPENER: it punishes a slow start, which is the one thing
+      // a fixed rotation can never do, since a rotation starts anywhere.
+      { id: 'whistle', when: 'first', intent: 'buff', status: { key: 'strength', n: 1 }, who: 'all' },
+      { id: 'shout', intent: 'attack', dmg: 6 },
+      { id: 'point', intent: 'debuff', status: { key: 'vulnerable', n: 1 } },
+    ],
+    kallio: { name: 'The Lookout', look: { skin: '#c8a084', hair: '#4a3a2a', hairStyle: 'shaggy', top: '#3a4a3a', bottom: '#2c3038', shoes: '#241c16', hat: 'cap', hatColor: '#2a3a2a', prop: 'none', accent: '#8aa03a', base: 'card', grime: 0.7, shape: 'person' } },
+    fantasy: { name: 'The Watchman', look: { skin: '#c8a084', hair: '#4a3a2a', hairStyle: 'shaggy', top: '#3a3a4a', bottom: '#2c2c38', shoes: '#241c16', hat: 'hood', prop: 'none', accent: '#7a8ac8', base: 'card', grime: 0.6, shape: 'person' } } },
+  scrapper: { hp: 30, pattern: 'cycle', scale: 0.98,
+    moves: [
+      // `alone` turns kill ORDER into a decision: clear its friends first and
+      // the one left is worse than it was. Slay the Spire's whole reason for
+      // asking who you hit.
+      { id: 'nothing_left', when: 'alone', intent: 'buff', status: { key: 'strength', n: 2 } },
+      { id: 'swing', intent: 'attack', dmg: 8 },
+      { id: 'brace', intent: 'block', block: 6 },
+    ],
+    kallio: { name: 'The Scrapper', look: { skin: '#bc8e70', hair: '#2a2420', hairStyle: 'lank', top: '#5a2a2a', bottom: '#33313a', shoes: '#1c1c20', hat: 'none', prop: 'none', accent: '#c85a3a', base: 'tin', grime: 0.8, shape: 'person' } },
+    fantasy: { name: 'The Brawler', look: { skin: '#bc8e70', hair: '#2a2420', hairStyle: 'lank', top: '#4a2a3a', bottom: '#2e2838', shoes: '#1c1c20', hat: 'none', prop: 'none', accent: '#c83a6a', base: 'tin', grime: 0.7, shape: 'person' } } },
+  hard_case: { hp: 34, pattern: 'cycle', scale: 1,
+    moves: [
+      // `walled` answers TURTLING, which nothing on this bridge did: block was
+      // a strictly safe play, so a patient hand never had to spend a turn on
+      // anything else. Frail is the honest counter — it taxes the block rather
+      // than ignoring it, so covering up is still a choice and no longer free.
+      { id: 'shoulder', when: 'walled', intent: 'debuff', dmg: 5, status: { key: 'frail', n: 2 } },
+      { id: 'jab', intent: 'attack', dmg: 7 },
+      { id: 'wind_up', intent: 'buff', status: { key: 'strength', n: 1 } },
+    ],
+    kallio: { name: 'The Hard Case', look: { skin: '#c09070', hair: '#8a8478', hairStyle: 'bald', top: '#2a3a4a', bottom: '#2a2a30', shoes: '#1c1c20', hat: 'none', prop: 'none', accent: '#5a90b0', base: 'tin', grime: 0.75, shape: 'person' } },
+    fantasy: { name: 'The Bruiser', look: { skin: '#c09070', hair: '#8a8478', hairStyle: 'bald', top: '#3a3a4a', bottom: '#2a2a30', shoes: '#1c1c20', hat: 'none', prop: 'none', accent: '#8a90b0', base: 'tin', grime: 0.7, shape: 'person' } } },
+  bottle_thief: { hp: 24, pattern: 'cycle', scale: 0.9,
+    moves: [
+      // `hurt` + `once` is the Jaw Worm's bellow: a single second wind, so
+      // burst is worth more than chip against her and the player learns that
+      // by watching it happen exactly one time.
+      { id: 'last_drop', when: 'hurt', once: true, intent: 'heal', heal: 9 },
+      { id: 'snatch', intent: 'attack', dmg: 5, times: 2 },
+      { id: 'duck', intent: 'block', block: 5 },
+    ],
+    kallio: { name: 'The Bottle Thief', look: { skin: '#d8b090', hair: '#c8a03a', hairStyle: 'tangle', top: '#4a3a4a', bottom: '#2c2c34', shoes: '#3a2a20', hat: 'none', prop: 'bag', accent: '#c8a03a', base: 'card', grime: 0.6, shape: 'person' } },
+    fantasy: { name: 'The Cutpurse', look: { skin: '#d8b090', hair: '#c8a03a', hairStyle: 'tangle', top: '#3a2a4a', bottom: '#2c2438', shoes: '#3a2a20', hat: 'hood', prop: 'bag', accent: '#a87ac8', base: 'card', grime: 0.5, shape: 'person' } } },
   preacher: { hp: 32, pattern: 'cycle', scale: 0.96,
     moves: [
       { id: 'sermon', intent: 'buff', status: { key: 'strength', n: 1 }, who: 'all' },
@@ -646,6 +699,10 @@ export const ENCOUNTERS = [
     kallio: { name: 'The Pigeons Want Your Bread' }, fantasy: { name: 'An Unkindness' } },
   { id: 'tar', enemies: ['tar_blob', 'blob_spawn'], reward: ['card'],
     kallio: { name: 'What Came Up The Drain' }, fantasy: { name: 'The Pitch Pit' } },
+  { id: 'lookout', enemies: ['lookout', 'rival', 'rat'], reward: ['card'],
+    kallio: { name: 'Somebody Whistled' }, fantasy: { name: 'The Watch Is Called' } },
+  { id: 'hardcase', enemies: ['hard_case', 'bin_rat'], reward: ['card', 'joker'],
+    kallio: { name: 'He Does Not Move' }, fantasy: { name: 'The Immovable' } },
   { id: 'dealer', enemies: ['dealer', 'rat'], reward: ['card'],
     kallio: { name: 'A Friend Of A Friend' }, fantasy: { name: 'The Alchemist’s Errand' } },
   { id: 'preacher', enemies: ['preacher', 'rat', 'rat'], reward: ['card'],
@@ -665,6 +722,10 @@ export const ENCOUNTERS = [
     kallio: { name: 'The Night Shift' }, fantasy: { name: 'The Watch' } },
   { id: 'swarm', enemies: ['blob', 'blob_spawn', 'blob_spawn'], reward: ['card', 'joker'],
     kallio: { name: 'It Has Been Busy' }, fantasy: { name: 'The Brood' } },
+  { id: 'scrappers', enemies: ['scrapper', 'scrapper', 'rival_b'], reward: ['card'],
+    kallio: { name: 'The Last One Standing' }, fantasy: { name: 'The Last Blade' } },
+  { id: 'thief', enemies: ['bottle_thief', 'gull'], reward: ['card', 'joker'],
+    kallio: { name: 'She Took The Bag' }, fantasy: { name: 'The Cutpurse' } },
   { id: 'dealers', enemies: ['dealer', 'dealer'], reward: ['card'],
     kallio: { name: 'Two For One' }, fantasy: { name: 'Twin Alchemists' } },
   { id: 'sermon', enemies: ['preacher', 'bin_rat', 'bin_rat'], reward: ['card'],
@@ -685,11 +746,11 @@ export const ENCOUNTERS = [
 // before the boss; the route always offers a rest on the last of them.
 export const ACTS = [
   { id: 'canal', steps: 6, boss: 'bridge',
-    fights: ['rats', 'bin', 'blob', 'rivals', 'pigeons', 'tar', 'dealer', 'preacher'],
+    fights: ['rats', 'bin', 'blob', 'rivals', 'pigeons', 'tar', 'dealer', 'preacher', 'lookout', 'hardcase'],
     elites: ['king_rat', 'bouncer'],
     kallio: { name: 'The Canal Bridge' }, fantasy: { name: 'The Old Span' } },
   { id: 'bear', steps: 6, boss: 'bear',
-    fights: ['gulls', 'twins', 'night', 'swarm', 'dealers', 'sermon', 'pitch', 'flock'],
+    fights: ['gulls', 'twins', 'night', 'swarm', 'dealers', 'sermon', 'pitch', 'flock', 'scrappers', 'thief'],
     elites: ['gull_king', 'rat_court'],
     kallio: { name: 'Under The Bear' }, fantasy: { name: 'The Stone Watch' } },
 ];
