@@ -6,6 +6,14 @@
      it reads each project's VERSIONS.md and nothing else. Keeping the log with
      the SOURCE is what stops the number and the build disagreeing. -->
 
+## v20 — 2026-09-10
+**Egg afterglow, road memory, camp that matters on the path**
+- combine settle shows parents remaining; Keep/Pack share an egg warmth panel so accumulation is obvious (warmth only gathers; missed days never cool)
+- Bond stage and combine afterglow celebrate through ProgressionCelebration alongside the existing game-feel bloom
+- region echoes persist per road after fights (dismissible banner still clears); Journey cards surface the last echo
+- built camp pieces appear as "Camp on the road" so Waymarker / Lens / Moss Bed / Story Stone / Ember Bowl read as consequential on Walk
+- cheap combat coach: clearer Winding → Charging line; defeat still never touches wellness
+
 ## v19 — 2026-09-08
 **Charge is a real two-turn wind-up**
 - charge telegraphs on one exchange (soft poke window, no heavy yet), then lands or is interrupted on the next

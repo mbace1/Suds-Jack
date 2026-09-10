@@ -1,4 +1,4 @@
-Kindling v19
-canonical source: mbace1/Kindling@fc6d27ff1f81cb4ddc533eebcf822c5bc1cb5255
+Kindling v20
+canonical source: mbace1/Kindling@d4fccd7b685b3cba6671d76b77403a051628bc0f
 static hub build: npm run build:hub
-notes: v19 two-turn charge wind-up (+ v17/v18 combat depth)
+notes: v20 egg afterglow, region echoes, camp on the road
