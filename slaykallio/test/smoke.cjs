@@ -603,6 +603,28 @@ const check = (name, ok, extra = '') => {
   check('and the choice is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.art') === '"drawn"'));
   await page.evaluate(() => __sk.debug.setArt('turf'));
   check('and switching back restores the plates', /turf/.test(await page.locator('#art').innerText()));
+  // The house look can be CHANGED (v30). Every style toggle writes to
+  // localStorage, and the owner toggles them WHILE COMPARING — so a value
+  // picked while looking at four options used to beat the default forever
+  // after, which is a comparison overruling a decision. A stored style from
+  // before the current answer is dropped; one set since it is obeyed.
+  const staleSet = await page.evaluate(() => {
+    localStorage.setItem('slayKallio.art', '"drawn"');     // chosen against an older house answer
+    localStorage.setItem('slayKallio.lookRev', '1');
+    return localStorage.getItem('slayKallio.art');
+  });
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => window.__sk?.debug);
+  check('a style chosen against an OLDER house answer is dropped, not obeyed',
+    /turf/i.test(await page.locator('#art').innerText())
+    && await page.evaluate(() => localStorage.getItem('slayKallio.art') === null) && staleSet === '"drawn"');
+  // and a choice made since still sticks — the reset is not a preference wipe
+  await page.evaluate(() => __sk.debug.setArt('drawn'));
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => window.__sk?.debug);
+  check('but a choice made SINCE it still holds across a reload',
+    /drawn/i.test(await page.locator('#art').innerText()));
+  await page.evaluate(() => __sk.debug.setArt('turf'));
   const turfFight = await page.evaluate(async () => {
     __sk.start('boxer', 4);
     await new Promise(r => setTimeout(r, 250));

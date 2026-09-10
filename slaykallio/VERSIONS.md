@@ -7,6 +7,33 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v30 — 2026-09-10
+**The house look can be CHANGED — a comparison was overruling a decision**
+
+Owner: *"we had characters from turf in Slay earlier, they were meant to be a
+visual style from the options. I want those back as the main style."*
+
+The plates HAVE been the main style since v21 — `store.get('art', 'turf')`.
+The fault is that the style toggles exist so the same fight can be watched
+twice, which means the owner **toggles them while comparing**, and every toggle
+writes to `localStorage`. So a value picked while looking at four options beat
+the default **for good**: v21 moved the house answer to the plates and any
+browser that had already flipped to `drawn` never saw it. A preference is only
+a preference against the default it was set AGAINST.
+
+`LOOK_REV` is bumped whenever the house answer moves; a stored style older than
+it is dropped rather than obeyed. It touches `art`, `cut` and `figures` only —
+the theme, the seed and the run are preferences nobody set while comparing.
+Gated both ways, because a reset that ate every choice would be worse than the
+bug: a style set against an older answer is dropped, one set since still holds
+across a reload.
+
+**AND THAT IS NOT WHY THE LIVE CABINET HAS NO TURF CHARACTERS.** See below —
+the deployed game is a different lineage and has never had a plate in it.
+
+- `js/main.js` — `LOOK_REV`, and the reset before the three style reads
+- `test/smoke.cjs` — both halves of it (139 checks)
+
 ## v29 — 2026-09-10
 **The cards move into TURF's register — and the bug that was ruling ink across
 every one of them**

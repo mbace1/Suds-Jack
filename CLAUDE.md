@@ -880,6 +880,30 @@ cabinets that day) and widens a deploy that is supposed to be limited to one
 game. Last trap: hand-deploying skips the token renumbering, so check the
 `../hub/shell.js?v=` the rest of the site asks for — this cabinet shipped pinned
 to `v17` while fourteen others were on `v34`.
+**THERE ARE TWO SLAY KALLIO LINEAGES AND `git merge-base` RETURNS NOTHING**
+(found 2026-09-10). This is Eeri's disease in a second project, and it is why
+the owner asked for *"the turf characters back as the main style"*: **the
+deployed game has never had a plate in it.** The live cabinet is `gh-pages`
+v7 (PR #496, "card targeting") and carries no `plates.js`, no `figures/`, no
+`bg/` and no art toggle — nothing on that tree so much as mentions a plate. The
+plate system, the route map and the Paper Mario motion exist ONLY in
+`claude/slay-kallio-project-3lv3l9`; `input.js` and v7's card targeting exist
+only on the site. Version numbers collide exactly as Eeri's did (their v7
+against this branch's v30) so `hub/versions.json` looks fine. **A wholesale
+deploy of either tree DELETES the other's work** — the live one loses the whole
+TURF cast, this one loses card targeting — so this is a reconciliation, not a
+copy, and it needs the owner to say which lineage is the game before anybody
+writes to `gh-pages`. Eeri's recipe applies: merge by KIND against the content
+ancestor each `VERSIONS.md` names, never `--allow-unrelated-histories`.
+**A style toggle is a comparison, not a decision** (v30). The style switches
+exist so the same fight can be watched twice, which means the owner flips them
+WHILE COMPARING — and every flip writes to `localStorage`. So a value picked
+while looking at four options beat the default for good: v21 made the plates
+the house answer and any browser already on `drawn` never saw it. `LOOK_REV` in
+`main.js` is bumped when the house answer moves and a stored `art`/`cut`/
+`figures` older than it is dropped rather than obeyed — gated both ways, since
+a reset that ate every choice would be worse than the bug. The theme, the seed
+and the run are untouched: nobody sets those while comparing.
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`

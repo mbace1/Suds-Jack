@@ -96,6 +96,24 @@ setMuted(store.get('mute', false));
 // squashes, a card that bends when hit, a breath at rest; 'still' is what
 // shipped through v16. A toggle rather than a replacement, because the only
 // way to know whether motion carries a verb is to watch the same fight twice.
+// THE HOUSE LOOK CAN BE CHANGED (v30, owner: *"we had characters from turf in
+// Slay earlier, they were meant to be a visual style from the options. I want
+// those back as the main style"*). The style toggles exist so the same fight
+// can be watched twice, which means the owner TOGGLES THEM WHILE COMPARING —
+// and every toggle writes to localStorage. So a value chosen while looking at
+// four options beat the default forever after: v21 moved the house style to
+// the plates and every browser that had already flipped to `drawn` kept it,
+// which is a decision being overruled by a comparison. A preference is only a
+// preference against the default it was set AGAINST. `LOOK_REV` is bumped
+// whenever the house answer moves, and a stored style older than it is
+// dropped rather than obeyed. Everything else the game remembers — the theme,
+// the seed, the run — is untouched: this is only for the look.
+const LOOK_REV = 2;                       // 2 = plates, die-cut, paper motion
+const LOOK_KEYS = ['art', 'cut', 'figures'];
+if (store.get('lookRev', 0) < LOOK_REV) {
+  for (const k of LOOK_KEYS) { try { localStorage.removeItem('slayKallio.' + k); } catch { /* private mode */ } }
+  store.set('lookRev', LOOK_REV);
+}
 setFigureMotion(store.get('figures', 'paper'));
 // The owner's TURF character plates, worn by the person-shaped figures
 // (2026-09-07). Preloaded rather than fetched per puppet: a plate arriving
