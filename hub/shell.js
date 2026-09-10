@@ -14,7 +14,7 @@
 // short enough that you do not have to wonder whether it is working.
 
 import { watchPad } from './pad.js?v=9';
-import { GAMES } from './games.js?v=72';
+import { GAMES } from './games.js?v=73';
 import { attachPad, holdKey } from './padkeys.js?v=9';
 
 const HOLD_MS = 750;
@@ -198,3 +198,4 @@ if (entry?.touch?.key) {
 // let a game know the shell is there, in case it wants to hide it during a
 // cutscene or move it out of the way of its own HUD
 window.__arcadeShell = { home, HOME, game: entry?.id ?? null, pad: padCfg ?? null, bridged, touchBtn };
+

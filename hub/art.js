@@ -31,6 +31,15 @@ const mix = (c1, c2, t) => {
 };
 
 export const ART = {
+  warehouse(g,a){
+    g.bands(['#17242d','#263d49','#50626a','#7a7c72']);
+    for(const x of [8,36,92,120]){g.p(x,0,3,55,'#91a9ad');g.line(x,0,64,30,'#6d858f')}
+    for(const x of [14,42,78,106])g.p(x,7,12,13,'#c1dde0');
+    g.line(0,65,126,45,'#e2d6b1');g.line(0,67,126,47,a);g.line(20,62,20,72,'#26313a');g.line(109,49,109,65,'#26313a');
+    g.disc(67,27,5,'#dab08a');g.p(61,31,11,15,'#e0e8dc');g.line(62,43,53,54,'#202c3b');g.line(69,44,75,50,'#202c3b');g.line(54,54,76,51,a);g.line(62,34,51,38,'#e0e8dc');g.line(71,33,82,29,'#e0e8dc');
+    for(const [x,y] of [[74,56],[80,57],[84,53],[79,61]])g.line(72,53,x,y,'#ffe78c');
+  },
+
   // Suds Jack: the well, in vectors, seen straight down
   tube(g, a) {
     g.p(0, 0, W, H, '#05060c');
