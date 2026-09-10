@@ -298,6 +298,29 @@
     .portrait #options .card { width: 124px; height: 196px; }
 
     @media (prefers-reduced-motion: reduce) { .pop, #banner.show, #played.show { animation-duration: .01s; } .targeting .unit.enemy .hitbox { animation: none; } }
+  
+    /* v32: readable combat labels and selected-card rules. */
+    .unit .name, .unit .intent, .unit .hp { background: rgba(20,17,13,.84); }
+    .unit .name { padding: 3px 4px; border-radius: 5px 5px 0 0; }
+    .unit .hp { border-radius: 0 0 5px 5px; }
+    #energy { left: max(66px, calc(env(safe-area-inset-left) + 66px)); }
+    #card-inspect { position:fixed; left:16px; bottom:112px; width:260px; padding:12px 14px; border:1px solid #c9ae78; border-radius:8px; background:#211c16; color:#f5ead4; z-index:6; pointer-events:none; box-shadow:0 5px 18px #0008; }
+    #card-inspect strong { display:block; font-size:17px; margin-bottom:5px; }
+    #card-inspect p { font:14px/1.4 system-ui,sans-serif; margin:0; }
+    #card-inspect small { display:block; margin-top:6px; color:#e6c986; font-size:12px; }
+    #banner { top:8px; font-size:22px; letter-spacing:.12em; }
+    .portrait #banner { top:8px; font-size:17px; left:88px; width:calc(100% - 96px); }
+    .portrait #top { right:8px; }
+    .portrait #herobox { min-width:0; flex:1; }
+    .portrait #right { margin-left:0; }
+    .portrait #jokers:not(:has(.joker:not(.empty))) { display:none; }
+    .portrait .unit .name { font-size:11px; letter-spacing:0; }
+    .portrait .unit .intent { font-size:13px; }
+    .portrait .unit.enemy .hitbox { left:0; right:0; min-width:44px; }
+    .portrait .unit .bar { margin-left:4px; margin-right:4px; }
+    .portrait #card-inspect { left:8px; right:8px; bottom:278px; width:auto; padding:10px 12px; }
+    .portrait #card-inspect strong { font-size:16px; }
+    @media (max-height:600px) and (orientation:landscape) { #card-inspect { bottom:94px; width:210px; } }
   </style>
 </head>
 <body>
@@ -322,7 +345,7 @@
         <button id="menubtn" aria-label="Menu">≡</button>
       </div>
     </div>
-    <div id="hand" role="list"></div>
+    <div id="hand" role="list"></div><aside id="card-inspect" aria-live="polite" hidden></aside>
     <div id="energy" aria-live="polite"><b>3</b><small>/3 energy</small></div>
     <button id="end">End turn</button>
   </div>
@@ -403,7 +426,7 @@
   }
   </script>
   <script type="module" src="../hub/shell.js?v=37"></script>
-  <script type="module" src="js/main.js?v=29"></script>
+  <script type="module" src="js/main.js?v=31"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';
@@ -411,4 +434,3 @@
   </script>
 </body>
 </html>
-

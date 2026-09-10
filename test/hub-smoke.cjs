@@ -214,7 +214,7 @@ function check(name, cond) {
   // every Play button points at its catalogue path, in the order rendered
   const hrefs = await page.locator(`${CAB} .btn.play`).evaluateAll(ns => ns.map(n => n.getAttribute('href')));
   check('Play opens the game it is under',
-    hrefs.join() === games.filter(g => g.live !== false).map(g => g.path).join());
+    hrefs.join() === games.filter(g => g.live !== false).map(g => g.id === 'slaykallio' ? `${g.path}?release=33` : g.path).join());
 
   // not every button has to work yet — but a button that cannot work must say
   // so rather than pointing at a 404
@@ -749,7 +749,7 @@ function check(name, cond) {
     shortHrefs.every(h => !h.includes('/AnotherHUB/')));
   const deadShort = [];
   for (const g of local) {
-    const r = await page.request.get(shortHrefs.find(h => h.endsWith(g.path)) ?? `${base}/${g.path}`);
+    const r = await page.request.get(shortHrefs.find(h => new URL(h).pathname.endsWith(g.path)) ?? `${base}/${g.path}`);
     if (!r.ok()) deadShort.push(g.id);
   }
   check(`every link resolves from the short URL too${deadShort.length ? ` — ${deadShort}` : ''}`,

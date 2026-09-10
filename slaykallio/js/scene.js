@@ -21,7 +21,7 @@
 // rusted, and nothing in the set is bright except what the game paints on top.
 
 import * as THREE from 'three';
-import { paintedPark, paintForeground, fromImage } from './bg.js?v=31';
+import { paintedPark, paintForeground, fromImage } from './bg.js?v=32';
 
 // how far behind the deck the painting hangs, and how far in front of it the
 // out-of-focus foreground sits
@@ -252,7 +252,7 @@ export class Arena {
         this._recut = false;
         const { url, opts } = this.plate;
         const aspect = this.camera.aspect, focus = this.focus;
-        const tex = await fromImage(url, { ...opts, focus, aspect, grade: (this.mood ?? this.theme.mood)?.grade });
+        const tex = await fromImage(url, { ...opts, focus, aspect, grade: opts.pregraded ? null : (this.mood ?? this.theme.mood)?.grade });
         if (this.plate.url !== url) { this._recut = true; continue; }  // a later plate won
         this.bgMat.map = tex; this.bgMat.needsUpdate = true;
         this.photo = true;

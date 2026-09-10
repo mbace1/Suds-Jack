@@ -19,9 +19,12 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   const idle=()=>p.waitForFunction(()=>!!window.__sk&&!__sk.busy(),null,{timeout:30000});
   await p.goto(base+'/');
   await tap(p.getByRole('link',{name:'Play Slay Kallio',exact:true}));
+  await p.waitForURL('**/slaykallio/?release=33');
+  assert.equal(new URL(p.url()).searchParams.get('release'),'33','hub launches the current release URL');
+  await p.waitForFunction(()=>document.querySelector('#ver')?.textContent==='v33');
   await p.goto(base+'/slaykallio/?seed=4');
   await p.waitForFunction(()=>!!window.__sk);
-  assert.equal(await p.locator('#ver').innerText(),'v31');
+  assert.equal(await p.locator('#ver').innerText(),'v33');
   assert.equal(await p.locator('#roster .pick').count(),6);
   await p.waitForFunction(()=>!document.querySelector('#start').disabled);
   assert.equal(await p.evaluate(()=>__sk.debug.art()),'turf');
@@ -32,6 +35,12 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   await tap(p.locator('#nodes button').first());await idle();
   assert.equal(await p.evaluate(()=>__sk.state().phase),'fight');
   await p.waitForFunction(()=>__sk.arena.photo===true);
+  assert.equal(await p.locator('body').getAttribute('data-backdrop'),'bg/turf-courtyard.jpg');
+  assert.ok(await p.evaluate(()=>{
+    const rs=[...document.querySelectorAll('.unit:not(.dead)')].map(e=>e.getBoundingClientRect()).sort((a,b)=>a.left-b.left);
+    return rs.every((r,i)=>r.left>=0&&r.right<=innerWidth&&(!i||r.left>=rs[i-1].right));
+  }),'labels have distinct horizontal lanes');
+  if(mobile) assert.ok(await p.locator('#top').evaluate(e=>e.getBoundingClientRect().height<170),'phone HUD stays compact');
   await p.screenshot({path:path.join(__dirname,mobile?'release-fight-phone.png':'release-fight-desktop.png')});
   // Set only the pacing for the rest of the run, never its actions or state.
   await p.evaluate(()=>__sk.setSpeed(0));
@@ -40,6 +49,9 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   const before=await p.evaluate(()=>__sk.state().stats.cardsPlayed);
   await tap(p.locator(`#hand .card[data-i="${first}"]`));
   assert.equal(await p.evaluate(()=>__sk.state().stats.cardsPlayed),before,'one tap only selects');
+  assert.equal(await p.locator('#card-inspect').isVisible(),true);
+  assert.ok(await p.locator('#card-inspect p').evaluate(e=>parseFloat(getComputedStyle(e).fontSize)>=14));
+  await p.screenshot({path:path.join(__dirname,mobile?'inspect-phone.png':'inspect-desktop.png')});
   await tap(p.locator('.unit.enemy:not(.dead) .hitbox').last());await idle();
   assert.equal(await p.evaluate(()=>__sk.state().stats.cardsPlayed),before+1,'one target action plays exactly one card');
   await tap(p.locator('#deckbtn'));
