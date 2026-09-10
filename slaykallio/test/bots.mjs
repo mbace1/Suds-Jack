@@ -1,5 +1,7 @@
 // Slay Kallio — six ways to play it, measured against each other.
-//   node slaykallio/test/bots.mjs [seeds]
+//   node slaykallio/test/bots.mjs [seeds]          the whole run
+//   node slaykallio/test/bots.mjs --act2 [seeds]   act two alone, from the door (v27)
+//   node slaykallio/test/bots.mjs --noise          re-derive the whole-run noise floor
 //
 // This is a MEASURING INSTRUMENT, not a gate. It never fails a build.
 //
@@ -44,7 +46,7 @@
 import { pathToFileURL } from 'node:url';
 import { CARDS, CHARACTERS, ENCOUNTERS, ACTS, EVENTS, RULES } from '../js/data.js';
 import { createRun, startRun, playCard, endTurn, canPlay, preview, chooseNode, chooseEvent,
-  chooseRest, pickCard, chooseReward, botStep, skipPick, pickable } from '../js/engine.js';
+  chooseRest, pickCard, chooseReward, botStep, skipPick, pickable, makeRng } from '../js/engine.js';
 
 const chars = Object.keys(CHARACTERS);
 
@@ -335,9 +337,15 @@ const ELITES = new Set(ACTS.flatMap(a => a.elites));
 const kindOf = id => BOSSES.has(id) ? 'boss' : ELITES.has(id) ? 'elite' : 'fight';
 
 export function run(seed, character, bot, ledger) {
-  const s = startRun(createRun({ seed, character }));
+  return drive(startRun(createRun({ seed, character })), bot, ledger);
+}
+
+// Drive a state to the end — or to the first moment `stopAt(s)` holds, which
+// is how the act-two harness below catches a run at the door of act two.
+export function drive(s, bot, ledger, stopAt = null) {
   let n = 0, cur = null, lastHp = s.hero.hp;
   while (!['won', 'lost', 'menu'].includes(s.phase) && n++ < 900) {
+    if (stopAt && stopAt(s)) return s;
     // opening a fight: remember what kind of thing it is
     if (s.phase === 'fight' && !cur) { const id = ENCOUNTERS[s.encounter]?.id ?? '?'; cur = { k: kindOf(id), lost: 0 }; }
     const before = `${s.phase}${s.route?.step}${s.turn}${s.hand.length}${s.hero.energy}`;
@@ -449,6 +457,125 @@ export function report(SEEDS = Number(process.argv[2]) || 150) {
   console.log(`   solid. Nothing under ${noiseAt} points on one character is a finding.)\n`);
 }
 
+// ── THE ACT-TWO HARNESS (v27) ────────────────────────────────────────────
+//
+// v26 proved the matrix above cannot see act two: three new act-two fights
+// reproduced the CONTROL exactly, because 30-45% of runs get there and those
+// that do draw six spans from a thirteen-fight pool. So everything placed in
+// act two — the Bear, the Gull King, every v26 addition, both new conditions —
+// had a number that was really a number about act one.
+//
+// The fix is to start there. Phase A runs one bot from the start and
+// SNAPSHOTS every run at the door of act two (phase 'map', act 1, step 0):
+// deck, friends, HP, the route it rolled, and the rng's exact internal state,
+// which mulberry32 exposes as one integer so a resumed run is bit-identical to
+// one that never stopped. Phase B resumes every snapshot under every bot.
+//
+// The population comes from ONE bot on purpose. If each bot bred its own
+// arrivals, an act-two column would mix "how strong you arrive" with "how well
+// you play act two" and nothing could be read off it; a shared population
+// makes the column about act two alone. `native` breeds it because it is the
+// best line per character, so the arrivals are the strongest this game
+// produces — which means the act-two rates below are CEILINGS, not means.
+//
+// Two honest limits: the sample is the arrival count, not the seed count, so a
+// character who rarely reaches act two is measured on fewer states (printed);
+// and the noise floor here is its own number, re-derived below from two
+// disjoint populations rather than borrowed from the whole-run floor.
+const AT_ACT_TWO = s => s.act === 1 && s.phase === 'map' && s.route?.step === 0;
+
+export function snapshot(s) {
+  const { rng, ...rest } = s;
+  return { ...structuredClone(rest), rngSeed: rng.seed };
+}
+export function restore(snap) {
+  const { rngSeed, ...rest } = structuredClone(snap);
+  return { ...rest, rng: makeRng(rngSeed) };
+}
+
+// every seed in [from, to] that reaches act two under `bot`, as snapshots
+export function arrivals(character, bot, from, to) {
+  const out = [];
+  for (let seed = from; seed <= to; seed++) {
+    const s = drive(startRun(createRun({ seed, character })), bot, null, AT_ACT_TWO);
+    if (AT_ACT_TWO(s)) out.push(snapshot(s));
+  }
+  return out;
+}
+
+export function act2Report(POP = Number(process.argv[3]) || 600, popBot = 'native') {
+  const names = Object.keys(BOTS);
+  const pct = v => String(Math.round(v * 100)).padStart(3) + '%';
+  console.log(`\n── ACT TWO, from the door: ${POP} seeds bred by \`${popBot}\`, every arrival resumed under every bot ──\n`);
+
+  // Phase A — the population, and what it looks like on arrival
+  const pop = {};
+  console.log(`  ${'character'.padEnd(10)} arrivals   arrival HP   deck   friends`);
+  for (const ch of chars) {
+    pop[ch] = arrivals(ch, BOTS[popBot], 1, POP);
+    const n = pop[ch].length || 1;
+    const hp = pop[ch].reduce((a, p) => a + p.hero.hp / p.hero.maxHp, 0) / n;
+    const deck = pop[ch].reduce((a, p) => a + p.hero.deck.length, 0) / n;
+    const jk = pop[ch].reduce((a, p) => a + p.jokers.length, 0) / n;
+    console.log(`  ${ch.padEnd(10)} ${String(pop[ch].length).padStart(4)} ${pct(pop[ch].length / POP)}   ${pct(hp)}       ${deck.toFixed(1)}   ${jk.toFixed(1)}`);
+  }
+
+  // Phase B — resume each arrival under each bot
+  const wins = {}, deaths = {}, hpBy = {}, seen = {};
+  for (const b of names) {
+    wins[b] = {}; deaths[b] = {}; hpBy[b] = { fight: 0, elite: 0, boss: 0 }; seen[b] = { fight: 0, elite: 0, boss: 0 };
+    for (const ch of chars) {
+      let w = 0;
+      for (const snap of pop[ch]) {
+        const s = drive(restore(snap), BOTS[b], (k, lost) => { hpBy[b][k] += Math.max(0, lost); seen[b][k]++; });
+        if (s.phase === 'won') w++;
+        else if (s.phase === 'lost') { const id = ENCOUNTERS[s.encounter]?.id ?? '?'; deaths[b][id] = (deaths[b][id] || 0) + 1; }
+      }
+      wins[b][ch] = pop[ch].length ? w / pop[ch].length : NaN;
+    }
+  }
+
+  console.log(`\n── WIN RATE FROM THE DOOR OF ACT TWO ──\n`);
+  console.log(`  ${'bot'.padEnd(11)}${chars.map(c => c.padStart(10)).join('')}  mean`);
+  for (const b of names) {
+    const row = chars.map(c => wins[b][c]);
+    const ok = row.filter(v => !isNaN(v));
+    const mean = ok.reduce((a, v) => a + v, 0) / (ok.length || 1);
+    console.log(`  ${b.padEnd(11)}${row.map(v => (isNaN(v) ? '—' : pct(v)).padStart(10)).join('')}  ${pct(mean)}`);
+  }
+
+  console.log(`\n── HP LOST PER ENCOUNTER IN ACT TWO, by kind ──\n`);
+  console.log(`  ${'bot'.padEnd(11)}    fight     elite      boss`);
+  for (const b of names) {
+    const per = k => (seen[b][k] ? (hpBy[b][k] / seen[b][k]).toFixed(1) : '—').padStart(9);
+    console.log(`  ${b.padEnd(11)}${['fight', 'elite', 'boss'].map(per).join('')}`);
+  }
+
+  console.log(`\n── where act two ends ──\n`);
+  for (const b of names) {
+    const tot = Object.values(deaths[b]).reduce((a, x) => a + x, 0) || 1;
+    const top = Object.entries(deaths[b]).sort((a, x) => x[1] - a[1]).slice(0, 4)
+      .map(([id, n]) => `${ENCOUNTERS.find(e => e.id === id)?.kallio.name ?? id} ${Math.round(n / tot * 100)}%`);
+    console.log(`  ${b.padEnd(11)} ${top.join(' · ')}`);
+  }
+
+  // The floor, for THIS instrument: the same bot resumed over two DISJOINT
+  // halves of each population. Whatever moves here moved for no reason.
+  const swing = chars.map(ch => {
+    const cut = Math.floor(pop[ch].length / 2);
+    const rate = set => set.length ? set.filter(sn => drive(restore(sn), BOTS[popBot]).phase === 'won').length / set.length : NaN;
+    return Math.abs(rate(pop[ch].slice(0, cut)) - rate(pop[ch].slice(cut)));
+  }).filter(v => !isNaN(v));
+  const floor = Math.round(Math.max(...swing) * 100);
+  const half = Math.round(chars.reduce((a, c) => a + pop[c].length, 0) / chars.length / 2);
+  console.log(`\n  (a measuring tool; it never fails a build. Every rate above is a CEILING — the`);
+  console.log(`   arrivals are \`${popBot}\`'s, the strongest this game breeds. Split each population`);
+  console.log(`   in two and resume under the same bot: the worst per-character swing is ${floor}`);
+  console.log(`   points at ~${half} arrivals a half. Read the MEAN; nothing under that on one`);
+  console.log(`   character is a finding.)\n`);
+  return { pop, wins, hpBy, seen, deaths, floor };
+}
+
 // ── the noise floor ──────────────────────────────────────────────────────
 // Same code, same bot, same everything — only a different block of seeds.
 // Whatever moves here moved for no reason, and nothing smaller than it can be
@@ -481,5 +608,6 @@ export const NOISE = { perCharacter: 13, mean: 2 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (process.argv.includes('--noise')) noiseFloor(Number(process.argv[2]) || 150);
+  else if (process.argv.includes('--act2')) act2Report();
   else report();
 }

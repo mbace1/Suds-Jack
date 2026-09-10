@@ -7,6 +7,70 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v27 — 2026-09-10
+**The act-two harness — and act two turns out to have no middle**
+
+v26 ended on an admission: three new act-two fights reproduced the *control*
+exactly, so the instrument could not see act two and everything placed there
+was unmeasured. This is the instrument that can.
+
+**`node test/bots.mjs --act2 [seeds]`.** Phase A runs one bot from the start
+and **snapshots every run at the door of act two** — deck, friends, HP, the
+route it rolled, and the rng's exact internal state, which mulberry32 exposes
+as one integer so a resumed run is bit-identical to one that never stopped
+(asserted: 256 of 256 arrivals resumed to the same phase, HP, encounter and log
+length as the straight run). Phase B resumes every snapshot under every bot.
+The population comes from **one** bot on purpose — `native`, the best line — so
+an act-two column is about act two alone and not about how strong you arrived;
+the price is that every rate is a **ceiling**, since the arrivals are the
+strongest this game breeds. The floor is re-derived for this instrument rather
+than borrowed: split each population in two and resume under the same bot, and
+the worst per-character swing is **8 points** at ~236 arrivals a half.
+
+**What it found, at 600 seeds:**
+
+```
+  win rate FROM THE DOOR   drinker busker collector cart walker boxer   mean
+  greedy                      20%    25%      30%   32%    21%   20%    25%
+  synergist                   19%    40%      31%   42%    16%   22%    28%
+  native                      30%    40%      27%   66%    30%   22%    36%
+```
+
+**Act two is a Bear check and almost nothing else.** For every bot that is not
+`random`, "The Bear Wakes" is **78–95% of all act-two deaths**. The ordinary
+fights cost 11–13 HP and kill nearly nobody; the elites barely register; the
+Bear costs **42–65 HP** against arrivals at ~87% of max. Everything v23 and v26
+put into act two — the Scrappers, the Bottle Thief, the Bat, the Butcher's
+Boy, the Debt Collector, both new conditions — is *there* (they turn up in the
+deaths list at 1–5%) and is not what decides a run. The run is decided by one
+fight, and the best line arriving in the best state loses it two times in
+three.
+
+**The Cart Pusher wins act two at 66% from the door; nobody else is above
+40%.** Block-that-stays is the one mechanic in the game that *accumulates
+across a fight*, and against a boss that is a damage-and-attrition check that
+is exactly the property that matters. That is the structural reading v16 gave
+of the Park Drinker's weakness — "buzz does not compound" — confirmed from the
+other side: the character whose mechanic compounds hardest is the one who
+beats the Bear.
+
+**The Drinker from the door is mid-pack (30% on native), not last.** His
+whole-run weakness is *two* things: he reaches act two least often but one
+(70% against 88% for the Busker and Walker) *and* he converts it at the mean.
+The Boxer is the one who is genuinely worst in act two (22%) — a note for
+later, not this version.
+
+**A control by construction.** The harness is deterministic from the seed, so
+any future change that cannot touch a character's cards must reproduce that
+character's column *exactly*, not merely within noise. v28 uses that: a rule
+that only the Drinker's cards can trigger has five columns that must not move
+by a single arrival.
+
+`run()` is now `drive(startRun(createRun(...)))`, and `drive` takes an
+optional `stopAt` predicate; `snapshot` / `restore` / `arrivals` are exported
+so a sweep can be pointed at act two without printing a matrix nobody asked
+for.
+
 ## v26 — 2026-09-10
 **Six people off the spare plates, two new conditions, and one clean number**
 

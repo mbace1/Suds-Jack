@@ -827,6 +827,29 @@ check('and each leads a fight of its own in one of the two act pools',
 check('the Debt Collector is the second figure that can act — he has the pose set',
   posesFor('debt').length === 7);
 
+// ── the act-two harness (v27) ────────────────────────────────────────────
+// `bots.mjs --act2` snapshots a run at the door of act two and resumes it
+// later under another bot. The whole instrument rests on one claim: a resumed
+// run is bit-identical to one that never stopped. That is asserted here rather
+// than trusted, because the rng is a closure and a snapshot that dropped its
+// internal state would still RUN — it would just be measuring a different game.
+{
+  const { BOTS, run, drive, snapshot, restore } = await import('./bots.mjs');
+  const AT_DOOR = st => st.act === 1 && st.phase === 'map' && st.route?.step === 0;
+  let arrived = 0, same = 0;
+  for (let seed = 1; seed <= 40 && arrived < 8; seed++) {
+    const straight = run(seed, 'cart', BOTS.native);
+    const stopped = drive(startRun(createRun({ seed, character: 'cart' })), BOTS.native, null, AT_DOOR);
+    if (!AT_DOOR(stopped)) continue;
+    arrived++;
+    const resumed = drive(restore(snapshot(stopped)), BOTS.native);
+    const key = st => `${st.phase}:${st.hero.hp}:${st.encounter}:${st.log.length}`;
+    if (key(straight) === key(resumed)) same++;
+  }
+  check(`a run resumed from its act-two snapshot ends exactly as the straight run (${same}/${arrived})`, arrived > 0 && same === arrived);
+  check('a snapshot carries the rng as a number, not a closure', typeof snapshot(startRun(createRun({ seed: 3 }))).rngSeed === 'number');
+}
+
 // ── the frame axis (v25) ─────────────────────────────────────────────────
 // v17 moved the card and left the drawing alone. The other half of Paper Mario
 // is a small number of drawn frames swapping under the moving object, and the

@@ -135,11 +135,14 @@ to **13 points**, while the mean across the six swings **2**.
   plays powers first and the card that counts what came before it last. Every
   balance number taken before v14 was measuring a bot that did not know what
   order to play in.
-- **Act two is nearly invisible to this instrument.** 30–45% of runs reach it,
-  and those that do draw six spans from a thirteen-fight pool. v26 proved this:
-  three new act-two fights reproduce the *control* exactly. Anything aimed at
-  act two is **unmeasured**, which is a different claim from harmless, and it
-  needs its own harness before it can be called balanced.
+- **The whole-run matrix cannot see act two** (30–45% of runs reach it, and
+  those draw six spans from thirteen). **`--act2` can**: it snapshots every
+  arrival at the door and resumes it under every bot, floor 8 points. Its
+  first reading is the most important number in this folder: **act two is a
+  Bear check and almost nothing else** — 78–95% of act-two deaths are the
+  Bear, ordinary fights kill nearly nobody, and the best line arriving in the
+  best state still loses to him two times in three. The Cart Pusher (66%) is
+  the only character who compounds hard enough to beat him.
 
 Two characters are honestly weak and it is written down rather than papered
 over: the **Park Drinker** is last for a structural reason (buzz does not

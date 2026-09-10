@@ -783,7 +783,30 @@ or a purple pair of trousers gets eaten from the inside. What it unlocks: a
 pose set for any of the 26 is now **12 generations against a local reference
 crop** rather than a re-derivation of the recipe — and that step is the first
 one here that needs an API key, which this environment does not have.
-Gates: `node slaykallio/test/core.mjs` (758 checks) and
+**THE ACT-TWO HARNESS, AND ACT TWO HAS NO MIDDLE** (v27, `node test/bots.mjs
+--act2`). v26 proved the whole-run matrix cannot see act two; this starts there.
+Phase A snapshots every `native` run **at the door of act two** — deck, friends,
+HP, route, and the rng's exact internal state, which mulberry32 exposes as one
+integer so a resumed run is bit-identical to one that never stopped (`core.mjs`
+asserts it; a snapshot that dropped the rng would still RUN, it would just be
+measuring a different game). Phase B resumes every snapshot under every bot. One
+bot breeds the population on purpose, so a column is about act two and not
+about arrival strength — which makes every rate a **ceiling**. The floor is
+re-derived for this instrument: **8 points per character** at ~236 arrivals a
+half. **What it found: act two is a Bear check and almost nothing else.** For
+every non-random bot "The Bear Wakes" is **78–95% of all act-two deaths**; the
+ordinary fights cost 11–13 HP and kill nearly nobody; the Bear costs **42–65 HP**
+against arrivals at ~87% of max. Every enemy v23 and v26 put into act two is
+*present* in the deaths list at 1–5% and is not what decides a run. **The Cart
+Pusher wins act two at 66% from the door; nobody else clears 40%** —
+block-that-stays is the one mechanic that accumulates across a fight, which is
+v16's "buzz does not compound" confirmed from the other side. The Drinker from
+the door is mid-pack (30%), not last: his weakness is *two* things, arriving
+least often but one (70%) AND converting at the mean. The Boxer is the one
+genuinely worst in act two (22%). **The harness is deterministic from the seed,
+so a change that cannot touch a character's cards must reproduce that column
+EXACTLY** — a control by construction, and v28 leans on it.
+Gates: `node slaykallio/test/core.mjs` (760 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
