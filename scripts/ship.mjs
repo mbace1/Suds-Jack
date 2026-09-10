@@ -61,10 +61,28 @@ function rootLogOwns(root) {          // is the root VERSIONS.md this game's log
   const f = path.join(root, 'VERSIONS.md'); if (!existsSync(f)) return false;
   const h1 = readFileSync(f, 'utf8').match(/^#\s*(.+?)\s*(?:—|-|$)/m); if (!h1) return false;
   let titles = [norm(game)];
-  try { const g = readFileSync(path.join(root, 'hub', 'games.js'), 'utf8'); const m = g.match(new RegExp(`id:\\s*'${game}'[\\s\\S]*?title:\\s*'([^']+)'`)); if (m) titles.push(norm(m[1])); } catch {}
+  const t = catalogueEntry(root).title; if (t) titles.push(norm(t));
   return titles.includes(norm(h1[1]));
 }
 const versionOf = root => rootLogOwns(root) ? topOf(path.join(root, 'VERSIONS.md')) : topOf(path.join(root, game, 'VERSIONS.md'));
+// the catalogue keys a game by ID, and the id is not always the folder
+// (toko-drop/ is `tokodrop`). Entries nest objects, so split games.js at
+// each `id:` and read the fields of the entry whose path is this folder.
+function catalogueEntry(root) {
+  try {
+    const g = readFileSync(path.join(root, 'hub', 'games.js'), 'utf8');
+    const ids = [...g.matchAll(/\bid:\s*'([^']+)'/g)];
+    for (let i = 0; i < ids.length; i++) {
+      const chunk = g.slice(ids[i].index, ids[i + 1]?.index ?? g.length);
+      if (new RegExp(`\\bpath:\\s*'${game}/'`).test(chunk)) {
+        const t = chunk.match(/\btitle:\s*'([^']+)'/);
+        return { id: ids[i][1], title: t ? t[1] : null };
+      }
+    }
+  } catch {}
+  return { id: game, title: null };
+}
+const catalogueId = root => catalogueEntry(root).id;
 
 // ── files ─────────────────────────────────────────────────────────────────
 function walk(dir, rel = '') { const out = []; if (!existsSync(dir)) return out; for (const e of readdirSync(dir, { withFileTypes: true })) { if (EXCLUDE.has(e.name)) continue; const r = path.join(rel, e.name); if (e.isDirectory()) out.push(...walk(path.join(dir, e.name), r)); else out.push(r); } return out; }
@@ -114,9 +132,10 @@ if (restored) say(`kept the site's cross-directory tokens (${restored} reference
   const p = path.join(WT, 'hub', 'versions.json');
   if (!existsSync(p)) die('hub/versions.json is not on the site');
   const j = JSON.parse(readFileSync(p, 'utf8'));
-  j[game] = { v: srcV.v, n: srcV.n, from: 'VERSIONS.md' };
+  const id = catalogueId(WT);
+  j[id] = { v: srcV.v, n: srcV.n, from: 'VERSIONS.md' };
   writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
-  say(`hub/versions.json: ${game} → v${srcV.v}`);
+  say(`hub/versions.json: ${id} → v${srcV.v}`);
 }
 
 // ── 5. it boots: no page errors, no 404s, a whole precache ────────────────
@@ -155,7 +174,7 @@ if (opt('check')) { say(`running --check: ${opt('check')}`); try { execSync(opt(
 const logFile = rootLogOwns(WT) ? path.join(WT, 'VERSIONS.md') : path.join(WT, game, 'VERSIONS.md');
 const log = readFileSync(logFile, 'utf8');
 const head = log.match(/^##\s*v[\d.]+[^\n]*\n\*\*([^*]+)\*\*/m);
-const title = (() => { try { const m = readFileSync(path.join(WT, 'hub', 'games.js'), 'utf8').match(new RegExp(`id:\\s*'${game}'[\\s\\S]*?title:\\s*'([^']+)'`)); return m ? m[1] : game; } catch { return game; } })();
+const title = catalogueEntry(WT).title ?? game;
 const body = (log.split(/^##\s*v/m)[1] || '').split('\n').filter(l => /^\s*-\s/.test(l)).slice(0, 14).join('\n');
 const msg = `${title} v${srcV.v} on the site — ${head ? head[1].trim() : 'release'}\n\n${body}\n\nShipped by scripts/ship.mjs: ${game}/ and its hub/versions.json line only; the site's cross-directory tokens kept; staged tree booted clean.${opt('trailer') ? '\n\n' + opt('trailer') : ''}\n`;
 // porcelain lines are "XY path"; the leading X may be a space, so never trim
