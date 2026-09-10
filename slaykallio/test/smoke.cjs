@@ -33,7 +33,7 @@ const check = (name, ok, extra = '') => {
 (async () => {
   await new Promise(r => server.listen(0, r));
   const base = `http://localhost:${server.address().port}/slaykallio/`;
-  const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: process.env.BROWSER_PATH || undefined, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
 
   // ── landscape ──────────────────────────────────────────────────────────
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });

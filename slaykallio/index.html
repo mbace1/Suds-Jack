@@ -58,7 +58,7 @@
     .unit .st.vulnerable { color: #ffb0a0; } .unit .st.weak { color: #d0b0ff; } .unit .st.strength, .unit .st.buzz { color: #ffd070; } .unit .st.power { color: #a0e0ff; }
     .unit .preview { position: absolute; left: 50%; top: 62px; transform: translateX(-50%); background: var(--attack); color: #fff; font-weight: 800; font-size: 18px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 2px 0 #000; }
     /* the tap target: from the label down to the feet */
-    .unit.enemy .hitbox { position: absolute; left: 25px; right: 25px; top: 0; height: calc(var(--h, 120px) + 60px); pointer-events: auto; cursor: pointer; border-radius: 12px; }
+    .unit.enemy .hitbox { position: absolute; left: 0; right: 0; top: 0; min-width: 44px; height: calc(var(--h, 120px) + 60px); pointer-events: auto; cursor: pointer; border-radius: 12px; }
     .targeting .unit.enemy:not(.dead) .hitbox { outline: 3px dashed rgba(255, 200, 100, .8); outline-offset: -3px; animation: pulse 1s infinite; }
     .unit.aimed:not(.dead) .hitbox { outline: 3px solid rgba(255, 230, 150, .9); }
     .unit.acting .name { color: #ffd08a; }
@@ -188,6 +188,27 @@
     .card::after { content: ''; position: absolute; right: 14px; top: -6px; width: 34px; height: 12px; background: rgba(240, 225, 190, .75); transform: rotate(6deg); }
     .card.selected::after, .card:hover::after { background: rgba(240, 225, 190, .95); }
 
+    /* Readable selected-card text and separate targets above the hand. */
+    #cardfocus {
+      position: fixed; bottom: 12px; left: 104px;
+      width: 220px; padding: 10px 12px;
+      background: #211e19; color: #f3ead9; border: 1px solid #a38b64;
+      border-radius: 8px; box-shadow: 0 6px 20px #0008; z-index: 4;
+      font: 14px/1.35 system-ui, sans-serif;
+    }
+    .focus-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+    .focus-title b { font-size: 16px; }
+    .focus-title span { color: #f5d48a; white-space: nowrap; }
+    #cardfocus button { min-height: 44px; padding: 6px 10px; border: 1px solid #b6a080; border-radius: 5px; background: #e5d4af; color: #211b15; font-weight: 700; }
+    #cardfocus .focus-cancel { margin-left: auto; background: transparent; color: #f3ead9; }
+    .focus-description { margin: 5px 0 10px; }
+    .focus-actions { display: flex; flex-direction: column; gap: 6px; }
+    .focus-actions button { flex: 1; min-width: 0; }
+    .focus-actions small { display: block; font-size: 12px; font-weight: 500; }
+    .focus-reason { color: #ffd291; }
+    /* Sign the title screen; a corner badge covers energy or a target in play. */
+    body:has(#hud:not([hidden])) .toko-signature { display: none !important; }
+
     /* ── panels ── */
     .panel {
       position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center;
@@ -253,6 +274,19 @@
     .portrait .unit { font-size: 12px; width: 108px; margin-left: -54px; }
     .portrait .unit .intent { font-size: 15px; }
     .portrait #options .card { width: 124px; height: 196px; }
+    .portrait #cardfocus { top: max(165px, calc(env(safe-area-inset-top) + 157px)); bottom: auto; left: 8px; right: 8px; width: auto; transform: none; }
+    .portrait .focus-actions { flex-direction: row; }
+    .portrait .unit.enemy .name { font-size: 11px; }
+    .portrait .unit.enemy .intent { font-size: 13px; }
+    .portrait .unit.enemy .bar { margin-left: 3px; margin-right: 3px; }
+    .portrait .unit.enemy .hp { font-size: 11px; }
+    @media (max-height: 500px) and (orientation: landscape) {
+      #cardfocus { bottom: 12px; left: 8px; width: 210px; transform: none; font-size: 12px; }
+      .focus-title { flex-wrap: wrap; gap: 3px 8px; }
+      .focus-title b { font-size: 14px; }
+      .focus-actions { flex-direction: row; flex-wrap: wrap; }
+      #energy { bottom: 220px; }
+    }
 
     @media (prefers-reduced-motion: reduce) { .pop, #banner.show, #played.show { animation-duration: .01s; } .targeting .unit.enemy .hitbox { animation: none; } }
   </style>
@@ -280,6 +314,7 @@
       </div>
     </div>
     <div id="hand" role="list"></div>
+    <section id="cardfocus" aria-label="Selected card" hidden></section>
     <div id="energy" aria-live="polite"><b>3</b><small>/3 energy</small></div>
     <button id="end">End turn</button>
   </div>
@@ -326,7 +361,7 @@
   }
   </script>
   <script type="module" src="../hub/shell.js?v=37"></script>
-  <script type="module" src="js/main.js?v=6"></script>
+  <script type="module" src="js/main.js?v=7"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';
