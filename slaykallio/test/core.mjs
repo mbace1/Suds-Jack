@@ -193,7 +193,8 @@ check('First Sip pays for itself and then some', s.hero.energy === 11 && s.hero.
 check('First Sip exhausts', s.exhaust.some(c => c.id === 'first_sip'));
 check('Buzz raises the next Swing to 9', preview(s, 0, 0).damage === 9);
 endTurn(s);
-check('and fades at the end of the turn', !s.hero.status.buzz);
+// v28: a third carries. 3 → 1, not 3 → 0 — the one number that lets him build.
+check('and two-thirds of it fades at the end of the turn (3 → 1)', s.hero.status.buzz === 1);
 
 s = rig('drinker', ['see_double', 'strike', 'strike']);
 playCard(s, 0);
@@ -313,6 +314,11 @@ playCard(s, 0);
 s.enemies.forEach(e => { e.intent = { id: 'flutter', intent: 'block', block: 5 }; });
 endTurn(s);
 check('Never Sober brings 3 Buzz every turn', s.hero.status.buzz === 3);
+// The carry gives buzz a FIXED POINT rather than unbounded growth: +3 a turn
+// with a third kept settles at 4 (3 → 1 kept → 4 → 1 kept → 4). Asserting the
+// plateau is what says the rule compounds without running away.
+for (let i = 0; i < 4; i++) { s.enemies.forEach(e => { e.intent = { id: 'flutter', intent: 'block', block: 5 }; }); endTurn(s); }
+check(`and with the carry it settles at a plateau, not a runaway (${s.hero.status.buzz})`, s.hero.status.buzz === 4);
 
 // ── enemies ──────────────────────────────────────────────────────────────
 s = startRun(createRun({ seed: 11, character: 'cart' }));

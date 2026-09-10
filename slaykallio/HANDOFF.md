@@ -144,11 +144,13 @@ to **13 points**, while the mean across the six swings **2**.
   best state still loses to him two times in three. The Cart Pusher (66%) is
   the only character who compounds hard enough to beat him.
 
-Two characters are honestly weak and it is written down rather than papered
-over: the **Park Drinker** is last for a structural reason (buzz does not
-compound, so he cannot build into a boss), and `balance.mjs` will tell you the
-**Dog Walker** is "STRANDED" at 5% — that is the greedy bot, which cannot play
-her; `native` has her at 27%.
+One character is honestly weak and it is written down rather than papered
+over: the **Old Boxer** is last on the best line (18%) for the ordinary reason
+of being a little weak. The **Park Drinker** *was* last for a structural
+reason — buzz reset every turn — until v28 let a third of it carry; he is
+fourth now (32%), measured against an exact control. And `balance.mjs` will
+tell you the **Dog Walker** is "STRANDED" at 5% — that is the greedy bot, which
+cannot play her; `native` has her at 27%.
 
 ---
 
@@ -237,8 +239,8 @@ drawn frame per beat and it shows.
   mixed row now has three kinds of thing in it, and the Dog Walker is visibly
   the best-animated person in the game.
 - **Act two is unmeasured** (§6), including both of v26's new conditions.
-- **The Park Drinker does not compound** — a structural problem, not a tuning
-  one.
+- **The Old Boxer is last** (18% on the best line) and nobody has looked at
+  why; the Drinker's structural problem is closed as of v28.
 - **Nobody has playtested this as a human.** Every number here came from bots.
   The GDD's own exit criterion is a feel question and no instrument in this
   folder can answer it.

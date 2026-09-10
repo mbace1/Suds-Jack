@@ -11,8 +11,8 @@
 ## 1. What it is
 
 A single-player deckbuilder fought on a **thick plank bridge** over a Kallio
-canal. You pick one of four bums, walk six spans, and either take the last one
-or end up flat on the boards. Every fight is cards: play them from a hand of
+canal. You pick one of six bums, walk two acts of six spans each, and either
+take the last one or end up flat on the boards. Every fight is cards: play them from a hand of
 five against three energy, watch what the other side has already told you it is
 about to do, and get your arithmetic bigger than theirs.
 
@@ -134,7 +134,7 @@ the same function that resolves it.
 
 Statuses are the small vocabulary everything else leans on: **Vulnerable** (×1.5
 taken), **Weak** (×0.75 dealt), **Strength** (permanent +), **Buzz** (a strength
-that fades at the end of the turn).
+of which two-thirds fades at the end of the turn — see §6 and `RULES.buzzCarry`).
 
 ## 5. The damage pipeline — where the synergy lives
 
@@ -172,7 +172,7 @@ blurb, where they cost nothing to read past.
 
 | | the mechanic | the question it asks |
 |---|---|---|
-| **The Park Drinker** | **Buzz** — strength that fades with the turn | can you spend it all in one turn? |
+| **The Park Drinker** | **Buzz** — strength that mostly fades with the turn; a third carries (v28) | can you spend most of it now and still build? |
 | **The Busker** | cards scale with **how many you played before them** | what order do you play in? |
 | **The Bottle Collector** | **Bottles** — free 0-cost tokens, and cards that count your hand | do you spend the hand or hold it? |
 | **The Cart Pusher** | block that **hits**, and block that **stays** | is defending an attack? |
@@ -185,10 +185,19 @@ mechanic, and the best line of each is the number to read — a character is onl
 as strong as the best way anyone has found to play it. Measured at 150 seeds
 after v16: **14 / 29 / 30 / 35 / 24 / 16** in the table's order. The band is the
 design target, not the height: nothing should be four times harder than anything
-else, and the Park Drinker at 14 is the standing exception with a structural
+else, and the Park Drinker at 14 was the standing exception with a structural
 reason. Block that stays and cards that count what came before them both GROW
-across a fight; **buzz does not compound**, so he cannot build into a boss the
-way the others can. Numbers will not fix that, and three of them were tried.
+across a fight; buzz used to reset every turn, so he could not build into a boss
+the way the others can. Three *sizes* of buzz were tried and none was the fix,
+because the problem was the reset, not the size. **v28: a third of the buzz
+carries** (`RULES.buzzCarry`), which gives it a fixed point rather than a reset —
+Never Sober settles at 4, not at 3 and not at infinity. Measured against an
+exact control (the other five characters' columns are byte-identical, since no
+card but his makes buzz): his best line goes **21% → 32%** whole-run and
+30% → 39% from the door of act two, the naive lines move inside the noise
+floor, and the band on the best line is 32/35/23/41/27/18. The exception is
+closed; the Boxer at 18 is the new last, and he is last for the ordinary
+reason of being a little weak rather than for a structural one.
 
 The fantasy skin renames every one of them and re-dresses the same figure — the
 Sot, the Bard, the Tinker, the Warden, the Houndmaster, the Pit Fighter. Since
@@ -200,7 +209,7 @@ themes and the gate fails if one is missing.
 
 ## 7. Friends (the Balatro half)
 
-Twelve of them, capped at five. A friend **bends arithmetic you already do** —
+Twenty of them, capped at five. A friend **bends arithmetic you already do** —
 it never adds a verb, because a verb is a card's job. Third Time (×2 on every
 third attack), Bucket Drummer (+1 per card played before it), First Light (×1.5
 on the first attack), Sharp Eye (Vulnerable becomes ×1.75), Empty Hands (end
@@ -222,7 +231,7 @@ or three spans — a fight, an elite, an event, a rest — and the act ends on i
 boss. The rules the gate holds: the first step is fights only; an elite is
 never offered before the third step and always by the fifth; a rest is always
 among the last step's options; no step offers the same span twice. The
-encounter pool is twenty-two, split by act (`ACTS` in `data.js`); act one is
+encounter pool is thirty-two, split by act (`ACTS` in `data.js`); act one is
 the canal bridge and ends on the Bridge King, act two is under the bear and
 ends on **the Bear** — the Karhupuisto statue from the plate, woken.
 
@@ -243,7 +252,8 @@ card's face is right by construction.
 
 **Six characters** (the Dog Walker — Fetch, the dog goes in at the end
 of the turn; the Old Boxer — Thorns, and cards that count the hits he
-took), ninety-five cards, twenty friends, seventeen enemies, twelve events.
+took), ninety-five cards, twenty friends, twenty-seven enemies (seventeen of
+them people), thirty-two encounters, twelve events.
 A card after every fight, a friend from the elites and the act openers, 6 HP
 back each time.
 
@@ -252,9 +262,11 @@ The bestiary is the owner's list: **rats** (small, quick, several at once),
 limbs and two eyes that do not match), and **rival bum cutouts** the same size as
 you.
 
-**A map comes later, and on purpose.** A branching run map in front of the same
-six fights is a menu, not more game — the same finding TURF's parity doc records.
-The order to add things is: more enemy behaviour → more encounters → then a map.
+**The map came after the fights, on purpose, and that order held.** A branching
+run map in front of the same six fights is a menu, not more game — the same
+finding TURF's parity doc records — so the order was: more enemy behaviour →
+more encounters → then a map. All three shipped (v23, v26, v12's torn-paper
+sheet), and the fork is drawn now rather than a list of buttons.
 
 ## 8a. A picture on every card
 
@@ -268,9 +280,10 @@ set of pictures that has collapsed to fewer than fifteen distinct drawings.
 
 ## 9. What is still NOT in, and why
 
-- **A drawn map.** The fork is a choice of two or three spans, not a DAG you
-  can see ahead. The route data is already the whole map; drawing it is the
-  torn-paper art pass the owner's references point at (v12).
+- **A DAG you can see ahead.** v12 draws the act as a torn-paper sheet with
+  every span pinned on it, but the fork is still a choice of two or three at
+  the step you are standing on, not a Slay-the-Spire lattice you route through
+  from the start. That is a design question, not a missing art pass.
 - **Shops, potions, a third act, ascension.** No gold economy exists yet, and
   each of those is a system, not a table.
 - **Sound beyond a synth kit.** No samples anywhere on this site.

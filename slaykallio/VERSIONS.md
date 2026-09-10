@@ -7,6 +7,66 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v28 — 2026-09-10
+**The Park Drinker compounds — a third of the buzz carries, and it is measured**
+
+v16 named the structural problem and declined to paper over it: every other
+character's mechanic *grows* across a fight and the Drinker's resets every
+turn, so he cannot build into a boss. Three numbers were tried and none of them
+was the number, because the problem was not a number. v27 then confirmed it
+from the other side — act two is a Bear check, and the character whose
+mechanic accumulates hardest (block that stays, 66%) is the one who beats him.
+
+**The change is one rule.** `RULES.buzzCarry = 1/3`: at the end of the turn a
+third of the buzz stays (floored) instead of all of it going. It gives buzz a
+**fixed point** rather than unbounded growth — Never Sober's +3 a turn settles
+at 4, not at infinity (3 → 1 kept → 4 → 1 kept → 4; gated) — so it compounds
+without running away, and the drink still mostly wears off, which is the
+character. The status line, the roster blurbs in both skins and the GDD's
+roster table say so.
+
+**Measured three ways against a v27 control, and the control is exact.** Buzz
+appears on no card but the Drinker's, so the harness — deterministic from the
+seed — must reproduce the other five characters' columns *to the arrival*, and
+it does: whole-run, act-two arrivals and act-two-from-the-door are
+byte-identical for the Busker, Collector, Cart Pusher, Dog Walker and Boxer
+across carry 0, ⅓ and ½. Anything that moved, moved because of the rule.
+
+```
+  carry            0      ⅓      ½        (native line, 600 seeds / 400 whole-run)
+  reaches act two  70%    79%    84%      (+9 / +14 — floor ~6 at 600)
+  wins from door   30%    39%    45%      (+9 / +15 — floor 8)
+  wins whole run   21%    32%     —       (+11 — floor 8)
+```
+
+- **Best line, whole run: 21% → 32%.** Last of six → fourth, above the Boxer
+  (18), the Collector (23) and the Dog Walker (27). The band on the best line
+  goes 21/35/23/41/27/18 → **32/35/23/41/27/18**; the mean 27 → 29, which is
+  at the mean floor's edge and read as "the band narrowed" rather than "the
+  game got easier".
+- **Both halves of the run move.** He arrives at act two more often (70 → 79)
+  *and* converts it more often (30 → 39) — it is the same mechanism in both
+  places, a buzz total that can be higher than one turn's worth.
+- **The naive lines barely move** (greedy 8 → 14, synergist 13 → 18: +6 and
+  +5, inside the floor). Same shape as v16's finding and the intended one: the
+  rule rewards knowing how to play him, it does not lift a player who plays
+  the highest number.
+
+**Why ⅓ and not ½.** Half moves him to 45% from the door — second only to the
+Cart Pusher and above the Busker — and turns "the drink mostly wears off" into
+"half of it stays", which is a different character. A third keeps two-thirds of
+the fade, lands him in the middle of the band, and is the smaller change that
+clears the floor. Bigger was available and was not the point.
+
+**Withdrawn:** GDD §6's "Numbers will not fix that, and three of them were
+tried." The numbers that were tried were his HP, his opening buzz and his
+per-turn buzz — all of them sizes of a thing that reset. The carry is not a
+size; it is the thing that stops the reset. The sentence was right about what
+it measured and wrong about what it concluded.
+
+Gates: `core.mjs` 761 (2 changed: the fade check reads 3 → 1; a plateau
+check added), `smoke.cjs` 135.
+
 ## v27 — 2026-09-10
 **The act-two harness — and act two turns out to have no middle**
 

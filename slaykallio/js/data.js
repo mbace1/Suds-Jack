@@ -32,7 +32,7 @@ export const CARDS = {
   defend: { type: 'skill', cost: 1, target: 'self', rarity: 'basic', pic: 'cardboard', effects: [{ type: 'block', n: 5 }],
     kallio: { name: 'Cover Up' }, fantasy: { name: 'Defend' } },
 
-  // ─ The Park Drinker — Buzz: strength that fades at the end of the turn
+  // ─ The Park Drinker — Buzz: strength that MOSTLY fades at the end of the turn (a third carries, v28)
   first_sip: { char: 'drinker', type: 'skill', cost: 0, target: 'self', exhaust: true, rarity: 'common', pic: 'can',
     effects: [{ type: 'energy', n: 1 }, { type: 'status', who: 'self', key: 'buzz', n: 3 }],
     kallio: { name: 'First Sip' }, fantasy: { name: 'Quicksilver Draught' } },
@@ -355,9 +355,9 @@ export const CHARACTERS = {
     // weakest at his own best line, which is two disadvantages for one price.
     hp: 72,
     deck: ['strike', 'strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'first_sip', 'one_two'],
-    kallio: { name: 'The Park Drinker', blurb: 'Holds the north end of the bridge. The drink is a strength that lasts exactly one turn.',
+    kallio: { name: 'The Park Drinker', blurb: 'Holds the north end of the bridge. The drink is a strength that mostly wears off by the next turn — mostly.',
       look: { skin: '#c09070', hair: '#5a4632', hairStyle: 'lank', top: '#4a5236', under: '#22242a', bottom: '#2a3040', stripe: '#d8d4c4', shoes: '#26241f', shoeStyle: 'clog', hat: 'bucket', hatColor: '#d8b53a', smoke: true, prop: 'can', accent: '#d8b53a', base: 'tin', grime: 0.85 } },
-    fantasy: { name: 'The Sot', blurb: 'A draught that lends strength for a moment and no longer.',
+    fantasy: { name: 'The Sot', blurb: 'A draught that lends strength for a moment, and a little of it lingers.',
       look: { skin: '#c89878', hair: '#4a3a2a', hairStyle: 'greasy', top: '#4a3050', bottom: '#2e2838', shoes: '#241c16', hat: 'hood', prop: 'flask', accent: '#7ac89a', base: 'tin', grime: 0.7 } },
   },
   busker: {
@@ -1063,4 +1063,5 @@ export const RULES = {
   vulnerable: 1.5,
   weak: 0.75,
   frail: 0.75,             // block gained ×0.75
+  buzzCarry: 1 / 3,        // share of Buzz that survives the end of turn (v28 — measured; see engine.js endTurn)
 };

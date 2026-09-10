@@ -325,7 +325,15 @@ export function endTurn(state) {
   if (state.phase !== 'fight') return state;
   // hand goes to the discard; buzz fades
   while (state.hand.length) state.discard.push(state.hand.pop());
-  delete h.status.buzz;
+  // v28: a share of the buzz can CARRY. At `RULES.buzzCarry` 0 — the shipped
+  // rule — it fades entirely, which is what made the Park Drinker last for a
+  // structural reason: every other character's mechanic builds across a fight
+  // and his resets every turn, so he cannot grow into a boss. A carried
+  // fraction gives buzz a fixed point (Never Sober's +3 a turn settles at
+  // 3 / (1 - carry)) rather than unbounded growth, so it compounds without
+  // running away. Measured, not felt: see VERSIONS.md v28 and `--act2`.
+  const carried = Math.floor((h.status.buzz || 0) * (RULES.buzzCarry || 0));
+  if (carried > 0) h.status.buzz = carried; else delete h.status.buzz;
   delete h.status.doubleNext;
   state.log.push({ t: 'endTurn' });
   enemyPhase(state);
@@ -917,7 +925,7 @@ export function describe(c, state = null, i = null, targetIndex = null) {
 
 export const STATUS_HELP = {
   vulnerable: 'takes ×1.5 damage', weak: 'deals ×0.75 damage', frail: 'gains ×0.75 block', strength: 'permanent +damage',
-  buzz: '+damage until the end of the turn', thorns: 'deals this back to whatever strikes it', fetch: 'the dog deals this at the end of your turn',
+  buzz: '+damage; two-thirds of it fades at the end of the turn', thorns: 'deals this back to whatever strikes it', fetch: 'the dog deals this at the end of your turn',
 };
 
 export function describeIntent(e) {

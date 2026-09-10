@@ -806,7 +806,23 @@ least often but one (70%) AND converting at the mean. The Boxer is the one
 genuinely worst in act two (22%). **The harness is deterministic from the seed,
 so a change that cannot touch a character's cards must reproduce that column
 EXACTLY** — a control by construction, and v28 leans on it.
-Gates: `node slaykallio/test/core.mjs` (760 checks) and
+**THE PARK DRINKER COMPOUNDS** (v28). v16's structural diagnosis — *buzz does
+not compound* — was right, and v27 confirmed it from the other side (the
+character whose mechanic accumulates hardest beats the Bear). The fix is one
+rule, not a number: `RULES.buzzCarry = 1/3`, a third of the buzz survives the
+end of turn, which gives it a **fixed point** rather than a reset (Never Sober's
++3 settles at 4; gated) so it compounds without running away and the drink still
+mostly wears off. **Measured against an EXACT control**: buzz is on no card but
+his, so the deterministic harness must reproduce the other five characters'
+columns to the arrival — and does, byte-identical across carry 0/⅓/½. His best
+line goes **21% → 32% whole-run** (last → fourth) and **30% → 39% from the door
+of act two**, both clearing the 8-point floor; the naive lines move +5/+6,
+inside it — the rule rewards knowing how to play him. **⅓ not ½**: half lands
+him second only to the Cart Pusher and turns "mostly wears off" into "half
+stays", which is a different character. Withdrawn: GDD §6's *"Numbers will not
+fix that"* — the numbers tried were sizes of a thing that reset; the carry is
+what stops the reset.
+Gates: `node slaykallio/test/core.mjs` (761 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
