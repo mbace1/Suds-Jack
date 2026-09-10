@@ -88,6 +88,14 @@ export const TUNING = {
   //   flock   — boids cohesion/alignment, and ONLY with other flockers
   //   current — how hard the wave archetype (stream/ring/pincer) pushes it
   //   weave   — its own serpentine approach: personality without a school
+  // v245 CROWD — the swarm's spacing (js/crowd.js). contact = ra + rb + pad;
+  // comfort is a multiple of contact; push is the FOLLOWING DISTANCE — u/s
+  // the body behind is held off the body ahead at contact, fading to 0 at
+  // comfort (a pursuer settles where it balances its own speed, so push must
+  // beat the fastest chaser or it never bites); slide is u/s the body behind
+  // flows round the body ahead.
+  crowd: { pad: 0.6, comfort: 1.5, push: 4.0, slide: 5.0, passes: 2 },   // pad was 0.25 for 244 versions; it is the number that un-piled the swarm
+
   movement: {
     roles: {
       SCHOOL : { dodge: 0.9, flock: 1.0,  current: 1.0,  weave: 0    },  // the fish

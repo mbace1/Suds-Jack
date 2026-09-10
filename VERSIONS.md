@@ -7,6 +7,53 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v245 — 2026-09-10
+**The swarm arrives as a fan, not a pile** *(owner: "fix the swarm clumping")*
+- **Found by looking, not by a gate.** Motion loops decoded to frames showed
+  nine FLITs ending as ONE body's width of overlapping gel on the player —
+  which one was charging and which was circling was unreadable at exactly
+  the range where it matters. The engine's crowd solver only ever answered
+  overlap after the fact, and every frame the pursuit closed the gap it had
+  just opened
+- **`js/crowd.js`** takes the solver out of `main.js` (the inline pass is
+  gone; `resolveCrowd()` is called where it stood) and adds two terms over
+  the unchanged hard RESOLVE: a **following distance** — the body BEHIND,
+  when it is actually closing on the target, is held off the body ahead at
+  up to `push` u/s fading to nothing at `comfort` × contact — and a
+  **slide**, the body behind flowing round the body ahead along the pair's
+  tangent toward the target's side, which turns a queue from one door into
+  a fan round the player. Holders, turrets and circling bosses are never
+  held back (they are not tailgating anyone); a boss never yields
+- **The number that moved the picture was `pad`, 0.25 → 0.6.** A swarm that
+  bites ENDS packed on you whatever the approach looked like; whether that
+  pack reads as bodies or as one mass is the air between them. Two cuts of
+  clever forces changed the pile's size by nothing measurable (a ring of
+  side-by-side bodies only pushes along the ring, never out of it); the
+  contact distance changed it by a third. Nine still reach the player; four
+  can bite at once instead of five
+- **Gate: `scripts/crowd-check.mjs`** (bare node, 12 checks): the hard
+  resolve is byte-for-byte the inline solver it replaced; nine bodies from
+  one door end with no overlaps, the nearest one on the target, ≥240° round
+  it, nearest-neighbour spacing ≥1.25× and the pack ≥1.2× what the old
+  solver left; a holder streamed past by a school is shoved under HALF as
+  far as before (the school is held off it and slides round — shelter,
+  not a new shove);
+  anchored bodies never move; flopping cubes' tumble origins follow every
+  nudge; and 30 fps gives the same fan as 60 (within 25°) — the numbers came
+  from a sweep at both rates
+- `TUNING.crowd` holds pad / comfort / push / slide / passes; `sw.js`
+  precaches `crowd.js` (no tokened imports of its own, so not in the bump
+  loop)
+- Also this session: `scripts/enemy-loop.mjs` was recording frozen corpses
+  into every clip — `reset()` emptied the enemy list without removing the
+  bodies from the scene; fixed on the `claude/devil-daggers-hyper-demon-4vmk67`
+  branch (`removeFrom(scene)`), byte-identical to the copy here, carried over
+- Gates: `check-syntax` · `crowd-check` 12 · `arena-check` 8396 ·
+  `level-check` 74 · `smoke`
+- Cache-bust `?v=196` → `?v=197`; HUD label → v245
+
+---
+
 ## v244 — 2026-09-09
 **The white-out explains itself, and the game survives losing the GPU** *(no fix yet — v242's half-float overflow was real and was NOT this)*
 - **Still not reproduced, and that is the point of this release.** An owner

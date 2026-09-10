@@ -1,18 +1,19 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=196';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=196';
-import { Player, PLAYER_RADIUS } from './player.js?v=196';
+import { InputManager } from './input.js?v=197';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=197';
+import { Player, PLAYER_RADIUS } from './player.js?v=197';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=196';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=196';
-import { audio } from './audio.js?v=196';
-import { haptics } from './haptics.js?v=196';
-import { initDesigner } from './designer.js?v=196';
-import { createSpecimen } from './specimen.js?v=196';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=196';
-import { TUNING } from './tuning.js?v=196';
-import { Arena, rectShape } from './arena.js?v=196';   // v236: the boundary has one home
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=196';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=197';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=197';
+import { audio } from './audio.js?v=197';
+import { haptics } from './haptics.js?v=197';
+import { initDesigner } from './designer.js?v=197';
+import { createSpecimen } from './specimen.js?v=197';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=197';
+import { TUNING } from './tuning.js?v=197';
+import { Arena, rectShape } from './arena.js?v=197';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=197';    // v245: the swarm's spacing — resolve, comfort, slide
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=197';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -5217,7 +5218,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v244' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v245' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9248,37 +9249,10 @@ function loop() {
     if (e._pingT > 0) e._pingT -= dt;
   }
 
-  // Separation: push overlapping enemies apart so they never fully stack.
-  // Two passes per frame smooth out chain-reaction bunching without noticeable jitter.
-  for (let _pass = 0; _pass < 2; _pass++) {
-    for (let _i = 0; _i < enemies.length; _i++) {
-      const _a = enemies[_i];
-      if (!_a.alive) continue;
-      for (let _j = _i + 1; _j < enemies.length; _j++) {
-        const _b = enemies[_j];
-        if (!_b.alive) continue;
-        const _dx = _a.position.x - _b.position.x;
-        const _dz = _a.position.z - _b.position.z;
-        const _d  = Math.hypot(_dx, _dz);
-        const _min = _a.radius + _b.radius + 0.25;
-        if (_d < _min && _d > 0.001 &&
-            _a._affix !== 'anchored' && _b._affix !== 'anchored') {
-          const _over = (_min - _d) * 0.5;
-          const _nx = _dx / _d, _nz = _dz / _d;
-          _a.position.x += _nx * _over; _a.position.z += _nz * _over;
-          _b.position.x -= _nx * _over; _b.position.z -= _nz * _over;
-          // Keep flopping-cube animation in sync with the nudged position
-          if (_a._flopActive) { _a._flopX0 += _nx * _over; _a._flopZ0 += _nz * _over; }
-          if (_b._flopActive) { _b._flopX0 -= _nx * _over; _b._flopZ0 -= _nz * _over; }
-          // Clamp both to arena
-          _a.position.x = Math.max(-HALF_X + _a.radius, Math.min(HALF_X - _a.radius, _a.position.x));
-          _a.position.z = Math.max(-HALF_Z + _a.radius, Math.min(HALF_Z - _a.radius, _a.position.z));
-          _b.position.x = Math.max(-HALF_X + _b.radius, Math.min(HALF_X - _b.radius, _b.position.x));
-          _b.position.z = Math.max(-HALF_Z + _b.radius, Math.min(HALF_Z - _b.radius, _b.position.z));
-        }
-      }
-    }
-  }
+  // Crowd (v245, js/crowd.js): the old overlap RESOLVE unchanged, plus a
+  // COMFORT push before contact and a SLIDE round the body ahead — so nine
+  // pursuers arrive as a fan, not a pile. Numbers in TUNING.crowd.
+  resolveCrowd(enemies, dt, HALF_X, HALF_Z, player.position, TUNING.crowd);
 
   bullets.update(dt, Math.max(HALF_X, HALF_Z), enemies, player.position);
 
@@ -10389,7 +10363,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=196').then(async m => {
+  import('./editor.js?v=197').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10420,6 +10394,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=196').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=197').catch(() => {});
   });
 }
