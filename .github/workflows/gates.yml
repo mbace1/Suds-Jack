@@ -272,6 +272,13 @@ jobs:
       - name: the game on a phone
         run: NODE_PATH=$(npm root -g) node toko-move/test/phone.cjs
 
+      # MISSED used to be computed by the read-only panel, from every service
+      # calling at the stop, with no direction — 23 accusations in 100 seconds
+      # about trams the game had never offered, while the one line it did offer
+      # was never named.
+      - name: what MISSED is allowed to accuse you of
+        run: NODE_PATH=$(npm root -g) node toko-move/test/misses.cjs
+
   hub:
     name: the arcade floor
     runs-on: ubuntu-latest

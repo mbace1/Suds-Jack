@@ -82,5 +82,46 @@ function refreshArrivals(tm){const box=document.getElementById('routeChoices'),c
     btn.style.cursor=a.ready?'pointer':'default';}}
 
 function render(tm,force=false){const sheet=document.getElementById('sheet'),ch=tm.challenge;if(!sheet||!ch?.active||!tm.city)return;const st=tm.mobility?.status?.(),key=structuralKey(tm);let box=tm.sheetSlot?.('routeChoices')||document.getElementById('routeChoices');if(!force&&box?.dataset.key===key)return;if(!box){box=document.createElement('section');box.id='routeChoices';sheet.append(box);}box.style.cssText='margin-top:10px;padding-top:9px;border-top:1px dashed #c5cec8';box.dataset.key=key;const mobile=mobilityHtml(tm);if(st?.kind==='getoff'||st?.kind==='walking'||st?.kind==='riding'){box.innerHTML=mobile;wireMobility(tm,box);return;}const choices=routeChoices(tm.city,ch.currentFrom(),ch.currentTo(),3),from=nodeName(tm.city,ch.currentFrom()),to=nodeName(tm.city,ch.currentTo());if(!choices.length){box.innerHTML=`<b style="font-size:11px">WAIT AT HUB</b><p style="font-size:11px;color:#69777a;margin-top:4px">No fixed HSL chain connects ${esc(from)} → ${esc(to)}.</p>${mobile}`;wireMobility(tm,box);return;}box.innerHTML=`<b style="font-size:11px">YOU ARE AT ${esc(from)} · BOARD ONE OF ${choices.length}</b><p style="font-size:10px;color:#69777a;margin:3px 0">${ch.index?'':'Lit says CATCH — tap it. Grey is not here yet. '}Going to ${esc(to)}.</p>`+choices.map((c,i)=>{const a=arrivalState(tm,c);const est=planEstimate(tm,c,a.ready?0:(a.eta??null));return `<button class="catchChoice" data-choice="${i}" data-total="${est?.total??''}" data-wait2="${est?.wait2??''}" ${a.ready?'':'disabled'} style="display:block;width:100%;min-height:52px;text-align:left;margin-top:6px;padding:7px 8px;background:${a.ready?'#eef5ef':'#f1f0eb'};opacity:${a.ready?1:.65};border:1px solid #c5cec8;border-radius:7px;font:inherit;cursor:${a.ready?'pointer':'default'}"><b class="catchVerb" style="font-size:11px">${a.ready?'CATCH':'WAIT'}</b> <span class="catchHead" style="font-size:10px;color:#69777a">${a.label} · ${c.transfers?`VIA ${esc(nodeName(tm.city,c.transfer))}`:'DIRECT'}</span><div>${c.legs.map(l=>chip(tm,l)).join('')}</div><span class="catchCost" style="display:block;font-size:10px;color:#69777a;font-weight:700">${esc(costLine(tm,c,a))}</span></button>`;}).join('')+mobile;box._choices=choices;box.querySelectorAll('.catchChoice').forEach(btn=>btn.onclick=()=>{const choice=choices[Number(btn.dataset.choice)],a=arrivalState(tm,choice);if(!a.ready){render(tm,true);return;}const res=ch.catchChoice(choice,a.vehicle);if(res?.error){box.insertAdjacentHTML('beforeend',`<p style="font-size:11px;color:#b34a36">${esc(res.error)}</p>`);}else render(tm,true);});wireMobility(tm,box);}
-function mount(){if(typeof window==='undefined')return;let last='';setInterval(()=>{const tm=window.__tm;if(!tm?.challenge)return;if(!document.body.classList.contains('transit-view'))tm.transit?.showAll?.();const k=structuralKey(tm);if(k!==last||!document.getElementById('routeChoices')){last=k;render(tm);}else refreshArrivals(tm);},250);}
+// A MISS IS ONLY A MISS IF IT WAS A CATCH YOU COULD HAVE PRESSED.
+//
+// hub-tactics used to work this out for itself, and it asked a different
+// question: its arrival() scanned EVERY service calling at the stop and took no
+// direction, so it flagged a miss whenever any tram on any line was at the hub
+// and left. A CATCH lights only for a vehicle going the way your leg goes.
+// Measured on the live build — an iPad, a job taken, standing still at
+// Lasipalatsi for 100 seconds — that produced 23 MISSED banners across 8 lines
+// (4T, 10H, 4H, H, 1H, 10B, 10, 1T) while the only line the game ever offered
+// for that job was 1. The overlap was NONE: every accusation was about a tram
+// the player had never been offered, and the one they could actually board was
+// never mentioned. The owner's recording shows four of these, and they were
+// read as evidence the buttons were unreachable; that was a real bug and it is
+// fixed, but this one is why the game felt like it was keeping score against
+// you.
+//
+// So the miss is detected HERE, where readiness is already computed with a
+// direction, and it means what the word says: a catch that was lit, and is not
+// any more, and you did not board it.
+const MISS_TICKS = 8;
+let _ready = new Map(), _readyJob = '';
+function trackMisses(tm, choices) {
+  const ch = tm.challenge, st = tm.mobility?.status?.();
+  if (!ch?.active || !choices) return;
+  const job = `${ch.index}:${ch.leg}`;
+  if (job !== _readyJob) { _ready = new Map(); _readyJob = job; }
+  // Only while you are standing at the stop. Boarding makes a lit catch stop
+  // being lit, and calling that a miss would blame you for succeeding.
+  const waiting = st?.kind === 'waiting';
+  const now = tm.flow.clock.tick, misses = (tm.catchMisses ||= []);
+  for (const c of choices) {
+    const leg = c?.legs?.[0]; if (!leg) continue;
+    const key = `${leg.line.label}:${leg.from}>${leg.to}`;
+    const ready = arrivalState(tm, c).ready, was = _ready.get(key);
+    if (was === true && !ready && waiting) misses.push({ tick: now, line: leg.line.label });
+    _ready.set(key, ready);
+  }
+  while (misses.length && now - misses[0].tick > MISS_TICKS) misses.shift();
+}
+
+function mount(){if(typeof window==='undefined')return;let last='';setInterval(()=>{const tm=window.__tm;if(!tm?.challenge)return;if(!document.body.classList.contains('transit-view'))tm.transit?.showAll?.();const k=structuralKey(tm);if(k!==last||!document.getElementById('routeChoices')){last=k;render(tm);}else refreshArrivals(tm);
+  trackMisses(tm,document.getElementById('routeChoices')?._choices);},250);}
 mount();
