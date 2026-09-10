@@ -55,3 +55,4 @@ export const sfx = {
   lose: () => [330, 294, 247, 196].forEach((f, i) => tone({ f, type: 'sawtooth', t: 0.3, g: 0.18, at: i * 0.16 })),
   pick: () => { tone({ f: 784, type: 'triangle', t: 0.08, g: 0.16 }); tone({ f: 1175, type: 'triangle', t: 0.12, g: 0.14, at: 0.06 }); },
 };
+

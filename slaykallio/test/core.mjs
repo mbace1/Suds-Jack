@@ -3,9 +3,13 @@
 // Everything is driven off game state from a fixed seed, so a number that
 // changes here changed in the rules, not in the clock.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, THEMES, RULES } from '../js/data.js';
-import { readFileSync } from 'node:fs';
-import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, computeDamage } from '../js/engine.js';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
+import { readFileSync, existsSync } from 'node:fs';
+import { poseAt, frameAt, FRAME_NAMES, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
+import { CAST, WITH_GUNS, POSES, WITH_POSES, castFiles, plateFor, posesFor } from '../js/plates.js';
+import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN } from '../js/engine.js';
+
+const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
 
 let pass = 0, fail = 0;
 const check = (name, ok, extra = '') => {
@@ -15,7 +19,7 @@ const check = (name, ok, extra = '') => {
 
 // ── data integrity ───────────────────────────────────────────────────────
 const themes = Object.keys(THEMES);
-for (const [table, name] of [[CARDS, 'card'], [CHARACTERS, 'character'], [JOKERS, 'joker'], [ENEMIES, 'enemy'], [ENCOUNTERS, 'encounter']]) {
+for (const [table, name] of [[CARDS, 'card'], [CHARACTERS, 'character'], [JOKERS, 'joker'], [ENEMIES, 'enemy'], [ENCOUNTERS, 'encounter'], [ACTS, 'act'], [EVENTS, 'event']]) {
   const entries = Array.isArray(table) ? table.map(e => [e.id, e]) : Object.entries(table);
   const bad = entries.filter(([, e]) => !themes.every(t => e[t]?.name));
   check(`every ${name} is named in both themes`, bad.length === 0, bad.map(b => b[0]).join(','));
@@ -29,24 +33,39 @@ for (const [id, ch] of Object.entries(CHARACTERS)) {
   check(`${id}: both looks carry every colour`, themes.every(t => ['skin', 'hair', 'top', 'bottom'].every(k => ch[t].look[k])));
 }
 check('every encounter names real enemies', ENCOUNTERS.every(e => e.enemies.every(id => ENEMIES[id])));
-check('the run ends on a boss', ENEMIES[ENCOUNTERS.at(-1).enemies[0]].boss === true);
-check('an elite stands before it', ENCOUNTERS.slice(0, -1).some(e => e.enemies.some(id => ENEMIES[id].elite)));
+check(`two acts, each ending on a boss (${ACTS.map(a => a.boss)})`, ACTS.length === 2 && ACTS.every(a => ENEMIES[ENCOUNTERS[ENC(a.boss)].enemies[0]].boss === true));
+check('every act has elites, and they are elites', ACTS.every(a => a.elites.length >= 2 && a.elites.every(id => ENCOUNTERS[ENC(id)].enemies.some(x => ENEMIES[x].elite))));
+check('every act draws on at least eight fights of its own', ACTS.every(a => a.fights.length >= 8 && a.fights.every(id => ENC(id) >= 0)));
+check(`there are a dozen events (${EVENTS.length})`, EVENTS.length >= 12);
+check('every event option has a label in both skins and only known effects',
+  EVENTS.every(ev => ev.options.length >= 2 && ev.options.every(o => themes.every(t => o[t]?.label) && o.effects.every(f => ['heal', 'maxHp', 'hp', 'card', 'curse', 'joker', 'remove', 'upgrade', 'maxEnergy', 'roll', 'reward'].includes(f.type)))));
+check('every event text tells you the price on the label (full information)',
+  EVENTS.every(ev => ev.options.every(o => o.effects.length === 0 || /\(/.test(o.kallio.label))));
 check('every card describes itself', Object.values(CARDS).every(c => describe(c).length > 0));
 check('the curse says it is unplayable', /Unplayable/.test(describe(CARDS.soaked)));
 check('scaling cards say what they scale on', /per card played/.test(describe(CARDS.first_chord)) && /per block/.test(describe(CARDS.ram_it)));
 
 // ── the owner's direction, pinned ────────────────────────────────────────
-// Everything player-facing is in English (2026-09-04). Personal names are
-// exempt — a name is not a language — so this looks at the words AROUND them.
-const FINNISH = /[äöÄÖ]|\b(ja|on|ei|se|kun|tai|että|joka)\b/;
+// Everything player-facing is in English (2026-09-04). The one exemption used
+// to be personal names — a name is not a language — and as of v15 there are
+// none left to exempt: a character is named by their CLASS, so this reads the
+// character's name too.
+// (not `on` or `se`: both are English words, and the first cut of this regex
+// flagged "+1 energy on the first turn" as Finnish)
+const FINNISH = /[äöÄÖ]|\b(ja|ei|kun|tai|että|joka|mutta|sinä|minä)\b/;
 const englishGaps = [];
 for (const [id, c] of Object.entries(CARDS)) for (const t of themes) if (FINNISH.test(c[t].name)) englishGaps.push(`card ${id} (${t})`);
 for (const [id, ch] of Object.entries(CHARACTERS)) for (const t of themes) {
-  if (FINNISH.test(ch[t].title) || FINNISH.test(ch[t].blurb)) englishGaps.push(`character ${id} (${t})`);
+  if (FINNISH.test(ch[t].name) || FINNISH.test(ch[t].blurb)) englishGaps.push(`character ${id} (${t})`);
 }
 for (const [id, j] of Object.entries(JOKERS)) for (const t of themes) if (FINNISH.test(j[t].name) || FINNISH.test(j[t].text)) englishGaps.push(`friend ${id} (${t})`);
 for (const [id, e] of Object.entries(ENEMIES)) for (const t of themes) if (FINNISH.test(e[t].name)) englishGaps.push(`enemy ${id} (${t})`);
 for (const enc of ENCOUNTERS) for (const t of themes) if (FINNISH.test(enc[t].name)) englishGaps.push(`encounter ${enc.id} (${t})`);
+for (const a of ACTS) for (const t of themes) if (FINNISH.test(a[t].name)) englishGaps.push(`act ${a.id} (${t})`);
+for (const ev of EVENTS) for (const t of themes) {
+  if (FINNISH.test(ev[t].name) || FINNISH.test(ev[t].text)) englishGaps.push(`event ${ev.id} (${t})`);
+  for (const o of ev.options) if (FINNISH.test(o[t].label)) englishGaps.push(`event ${ev.id} option (${t})`);
+}
 check(`every word the player reads is English${englishGaps.length ? ` — ${englishGaps.slice(0, 4)}` : ''}`, englishGaps.length === 0);
 
 // Every card carries a picture, and it is one cardart.js can actually draw.
@@ -60,13 +79,22 @@ check(`the pictures are not all the same drawing (${new Set(Object.values(CARDS)
   new Set(Object.values(CARDS).map(c => c.pic)).size >= 15);
 
 // The roster is Kallio bums, the enemies are rats, blobs and rival bums.
-check('every character is a bum on the bridge',
-  Object.values(CHARACTERS).every(ch => /collector|busker|drinker|cart|bum/.test(ch.kallio.title) || ch.kallio.title.startsWith('the ')));
+// A character is named by their CLASS in BOTH skins (owner, 2026-09-06) — a
+// character select whose names are "Late" and "Vekku" tells you nothing about
+// what the deck does. `title` is gone, so this reads the name; and no former
+// first name may come back through it.
+const PEOPLE = /\b(Late|Ilona|Roope|Vekku|Sanna|Kake)\b/;
+check('every character is named by their class, in both skins',
+  Object.values(CHARACTERS).every(ch => themes.every(t => /^The \w/.test(ch[t].name) && !PEOPLE.test(ch[t].name))));
+check('and the class is a trade on the bridge, not a job title',
+  Object.values(CHARACTERS).every(ch => /Drinker|Busker|Collector|Pusher|Walker|Boxer/.test(ch.kallio.name)));
+check('the title line is gone — the blurb carries the person now',
+  Object.values(CHARACTERS).every(ch => themes.every(t => ch[t].title === undefined && ch[t].blurb.length > 20)));
 // Every look declares its shape, and carries the colours that shape's painter
 // reads. A missing `shape` silently falls through to the person painter, which
 // then reads a `bottom` colour a rat does not have — found by rendering the
 // cast, invisible to a gate that only checked that names exist.
-const NEEDS = { person: ['skin', 'hair', 'top', 'bottom'], rat: ['body', 'head', 'wing', 'beak'], blob: ['body', 'head', 'beak'] };
+const NEEDS = { person: ['skin', 'hair', 'top', 'bottom'], rat: ['body', 'head', 'wing', 'beak'], blob: ['body', 'head', 'beak'], bird: ['body', 'head', 'wing', 'beak', 'neck'], bear: ['body', 'head', 'wing', 'beak', 'moss', 'eye'] };
 const lookGaps = [];
 for (const [id, e] of Object.entries(ENEMIES)) for (const t of themes) {
   const l = e[t].look;
@@ -80,8 +108,10 @@ for (const [id, c] of Object.entries(CHARACTERS)) for (const t of themes) {
 check(`every look carries what its painter reads${lookGaps.length ? ` — ${lookGaps.slice(0, 3)}` : ''}`, lookGaps.length === 0);
 
 const shapes = new Set(Object.values(ENEMIES).map(e => e.kallio.look.shape ?? 'rat'));
-check(`the bestiary is rats, blobs and cutouts of other bums (${[...shapes]})`,
-  shapes.has('rat') && shapes.has('blob') && shapes.has('person'));
+check(`the bestiary is rats, blobs, birds, cutouts of other bums — and the bear (${[...shapes]})`,
+  shapes.has('rat') && shapes.has('blob') && shapes.has('person') && shapes.has('bird') && shapes.has('bear'));
+check('the pigeons and the gull fly the bird painter; the bear is the plate come alive',
+  ENEMIES.pigeon.kallio.look.shape === 'bird' && ENEMIES.gull.kallio.look.big === true && ENEMIES.the_bear.kallio.look.shape === 'bear');
 // Figures stand on tin OR cardboard, and both are actually used somewhere.
 const bases = new Set([...Object.values(CHARACTERS).map(c => c.kallio.look.base),
   ...Object.values(ENEMIES).map(e => e.kallio.look.base).filter(Boolean)]);
@@ -92,23 +122,51 @@ check('every figure is worn — each carries a grime value',
 
 // ── a first turn ─────────────────────────────────────────────────────────
 let s = startRun(createRun({ seed: 7, character: 'drinker' }));
-check('the run opens on the first encounter', s.phase === 'fight' && s.encounter === 0);
-check('three rats under the deck', s.enemies.length === 3 && s.enemies.every(e => e.id === 'rat'));
+check('the run opens on the map', s.phase === 'map' && s.act === 0 && s.route.step === 0);
+check('the first step offers only fights, from act one', s.route.steps[0].every(o => o.kind === 'fight' && ACTS[0].fights.includes(o.id)));
+check('choosing a span starts that fight', chooseNode(s, 0) && s.phase === 'fight' && ENCOUNTERS[s.encounter].id === s.route.done[0].id);
 check('every enemy shows an intent', s.enemies.every(e => e.intent && describeIntent(e)));
 check(`a hand of ${RULES.draw} and ${RULES.energy} energy`, s.hand.length === RULES.draw && s.hero.energy === RULES.energy);
 check('deck + hand + draw account for every card', s.hand.length + s.draw.length === 10);
 
 // determinism
-const s2 = startRun(createRun({ seed: 7, character: 'drinker' }));
-check('the same seed deals the same hand', s.hand.map(c => c.id).join() === s2.hand.map(c => c.id).join());
-const s3 = startRun(createRun({ seed: 8, character: 'drinker' }));
-check('a different seed differs somewhere', s.hand.map(c => c.id).join() !== s3.hand.map(c => c.id).join() || s.enemies[0].moveIndex !== s3.enemies[0].moveIndex);
+const s2 = startRun(createRun({ seed: 7, character: 'drinker' })); chooseNode(s2, 0);
+check('the same seed rolls the same route and deals the same hand', JSON.stringify(s.route.steps) === JSON.stringify(s2.route.steps) && s.hand.map(c => c.id).join() === s2.hand.map(c => c.id).join());
+const s3 = startRun(createRun({ seed: 8, character: 'drinker' })); chooseNode(s3, 0);
+check('a different seed differs somewhere', JSON.stringify(s.route.steps) !== JSON.stringify(s3.route.steps) || s.hand.map(c => c.id).join() !== s3.hand.map(c => c.id).join());
+
+// ── the route's shape, over many seeds ───────────────────────────────────
+const shape = { firstStep: true, restLast: true, eliteEarly: false, eliteByFour: true, dupes: false, width: true, eventsSeen: new Set() };
+for (let seed = 1; seed <= 40; seed++) {
+  const st = createRun({ seed, character: 'busker' });
+  for (const a of [0, 1]) {
+    const r = buildRoute(st, a);
+    if (!r.steps[0].every(o => o.kind === 'fight')) shape.firstStep = false;
+    if (!r.steps.at(-1).some(o => o.kind === 'rest')) shape.restLast = false;
+    r.steps.forEach((step, i) => {
+      if (step.some(o => o.kind === 'elite') && i < 2) shape.eliteEarly = true;
+      const keys = step.map(o => `${o.kind}:${o.id ?? ''}`);
+      if (new Set(keys).size !== keys.length) shape.dupes = true;
+      if (step.length < 2 || step.length > 3) shape.width = false;
+      for (const o of step) if (o.kind === 'event') shape.eventsSeen.add(o.id);
+    });
+    if (!r.steps.slice(0, 5).some(step => step.some(o => o.kind === 'elite'))) shape.eliteByFour = false;
+  }
+}
+check('the first step is always fights only', shape.firstStep);
+check('a rest is always offered on the span before the boss', shape.restLast);
+check('an elite is never offered before the third step', !shape.eliteEarly);
+check('and always offered by the fifth', shape.eliteByFour);
+check('no step offers the same span twice', !shape.dupes);
+check('every step offers two or three spans', shape.width);
+check(`every event is reachable (${shape.eventsSeen.size}/${EVENTS.length})`, shape.eventsSeen.size === EVENTS.length);
 
 // ── the damage pipeline ──────────────────────────────────────────────────
 // Build a hand by hand so the arithmetic is exact.
 function rig(character = 'drinker', hand = [], seed = 3) {
   const st = startRun(createRun({ seed, character }));
-  st.hand = hand.map((id, i) => ({ uid: 1000 + i, id, ...CARDS[id] }));
+  chooseNode(st, 0);
+  st.hand = hand.map((id, i) => ({ uid: 1000 + i, id, ...CARDS[id], effects: CARDS[id].effects.map(f => ({ ...f })) }));
   st.hero.energy = 10;
   return st;
 }
@@ -131,11 +189,12 @@ check('and the same number lands', before - s.enemies[0].hp === 9);
 
 s = rig('drinker', ['first_sip', 'strike']);
 playCard(s, 0);
-check('First Sip pays for itself and then some', s.hero.energy === 11 && s.hero.status.buzz === 2);
+check('First Sip pays for itself and then some', s.hero.energy === 11 && s.hero.status.buzz === 3);
 check('First Sip exhausts', s.exhaust.some(c => c.id === 'first_sip'));
-check('Buzz raises the next Swing to 8', preview(s, 0, 0).damage === 8);
+check('Buzz raises the next Swing to 9', preview(s, 0, 0).damage === 9);
 endTurn(s);
-check('and fades at the end of the turn', !s.hero.status.buzz);
+// v28: a third carries. 3 → 1, not 3 → 0 — the one number that lets him build.
+check('and two-thirds of it fades at the end of the turn (3 → 1)', s.hero.status.buzz === 1);
 
 s = rig('drinker', ['see_double', 'strike', 'strike']);
 playCard(s, 0);
@@ -150,9 +209,9 @@ check('Ram It hits for the block held', preview(s, 0, 0).damage === 8);
 s = rig('cart', ['defend']);
 playCard(s, 0);
 s.enemies.forEach(e => { e.intent = { id: 'peck', intent: 'attack', dmg: 4, shown: 4 }; });
-const hp0 = s.hero.hp;
+const hp0 = s.hero.hp, peckers = s.enemies.filter(e => e.alive).length;
 endTurn(s);
-check('block absorbs three pecks of 4 with 5 block (7 through)', hp0 - s.hero.hp === 7, `${hp0 - s.hero.hp}`);
+check(`block absorbs ${peckers} pecks of 4 with 5 block (${peckers * 4 - 5} through)`, hp0 - s.hero.hp === peckers * 4 - 5, `${hp0 - s.hero.hp}`);
 check('block is gone next turn', s.hero.block === 0);
 
 // weak on the hero, vulnerable on the hero
@@ -162,9 +221,9 @@ check('Weak takes a Swing to 4', preview(s, 0, 0).damage === 4);
 s = rig('drinker', []);
 s.hero.status.vulnerable = 1;
 s.enemies.forEach(e => { e.intent = { id: 'peck', intent: 'attack', dmg: 4, shown: 4 }; });
-const h1 = s.hero.hp;
+const h1 = s.hero.hp, peckers2 = s.enemies.filter(e => e.alive).length;
 endTurn(s);
-check('Vulnerable hero takes 6 per peck', h1 - s.hero.hp === 18, `${h1 - s.hero.hp}`);
+check(`Vulnerable hero takes 6 per peck (${peckers2} pecks)`, h1 - s.hero.hp === peckers2 * 6, `${h1 - s.hero.hp}`);
 
 // ── jokers ───────────────────────────────────────────────────────────────
 const withJoker = (st, id) => { st.jokers.push({ id, ...JOKERS[id] }); return st; };
@@ -201,11 +260,11 @@ s = withJoker(rig('drinker', ['defend']), 'dry_socks');
 playCard(s, 0);
 check('Dry Socks adds 2 block to a skill', s.hero.block === 7);
 
-s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'morning_can');
+s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'morning_can'); chooseNode(s, 0);
 endTurn(s);
 check('Morning Can: 4 energy, 4 cards', s.hero.energy === 4 && s.hand.length === 4, `${s.hero.energy}/${s.hand.length}`);
 
-s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'the_plank');
+s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'the_plank'); chooseNode(s, 0);
 endTurn(s);
 check('Loose Plank: 3 block at the start of the turn', s.hero.block === 3);
 
@@ -217,7 +276,7 @@ check('Empty Hands pays when the hand is emptied', s.log.some(l => l.t === 'bloc
 
 s = createRun({ seed: 5, character: 'collector' });
 withJoker(s, 'good_bin');
-startRun(s);
+startRun(s); chooseNode(s, 0);
 check('A Good Bin opens the fight with 2 Bottles in hand', s.hand.filter(c => c.find).length === 2 && s.hand.length === 7);
 
 // ── characters ───────────────────────────────────────────────────────────
@@ -254,11 +313,16 @@ s = rig('drinker', ['never_sober']);
 playCard(s, 0);
 s.enemies.forEach(e => { e.intent = { id: 'flutter', intent: 'block', block: 5 }; });
 endTurn(s);
-check('Never Sober brings 2 Buzz every turn', s.hero.status.buzz === 2);
+check('Never Sober brings 3 Buzz every turn', s.hero.status.buzz === 3);
+// The carry gives buzz a FIXED POINT rather than unbounded growth: +3 a turn
+// with a third kept settles at 4 (3 → 1 kept → 4 → 1 kept → 4). Asserting the
+// plateau is what says the rule compounds without running away.
+for (let i = 0; i < 4; i++) { s.enemies.forEach(e => { e.intent = { id: 'flutter', intent: 'block', block: 5 }; }); endTurn(s); }
+check(`and with the carry it settles at a plateau, not a runaway (${s.hero.status.buzz})`, s.hero.status.buzz === 4);
 
 // ── enemies ──────────────────────────────────────────────────────────────
 s = startRun(createRun({ seed: 11, character: 'cart' }));
-s.encounter = 3; // jump to the inspector next
+jumpTo(s, ENC('rivals'));
 s.enemies.forEach(e => { e.hp = 0; e.alive = false; });
 s.hand = [{ uid: 1, id: 'strike', ...CARDS.strike }]; s.hero.energy = 3;
 s.enemies[0].alive = true; s.enemies[0].hp = 1;
@@ -269,8 +333,10 @@ check('and never a basic, token or curse', s.reward.options.every(id => !['basic
 const deckN = s.hero.deck.length;
 chooseReward(s, 0);
 check('taking a card grows the deck', s.hero.deck.length === deckN + 1);
-check('the run moves on to the King Rat', s.phase === 'fight' && s.enemies[0].id === 'boss_rat');
+check('and the run goes back to the map', s.phase === 'map' && s.route.act === 0);
 check('the fight heals a little on the way', s.log.some(l => l.t === 'heal') || s.hero.hp === s.hero.maxHp);
+jumpTo(s, ENC('king_rat'));
+check('jumping to the King Rat puts him on the deck', s.phase === 'fight' && s.enemies[0].id === 'boss_rat');
 const insp = s.enemies[0];
 insp.intent = { ...ENEMIES.boss_rat.moves[0] };
 s.hand = [];
@@ -279,16 +345,16 @@ check('the King Rat drags a Soaked into the discard', s.discard.some(c => c.id =
 s.hand = [{ uid: 9, id: 'soaked', ...CARDS.soaked }];
 check('a Soaked cannot be played', canPlay(s, 0) === false);
 
-s = startRun(createRun({ seed: 2, character: 'drinker' }));
+s = startRun(createRun({ seed: 2, character: 'drinker' })); chooseNode(s, 0);
 s.enemies[0].status.strength = 2;
 s.enemies[0].intent = { id: 'peck', intent: 'attack', dmg: 4, shown: 4 };
-s.hand = []; s.enemies[1].alive = false; s.enemies[2].alive = false;
+s.hand = []; s.enemies.slice(1).forEach(e => { e.alive = false; });
 const hh = s.hero.hp;
 endTurn(s);
 check('enemy strength adds to its hit (6)', hh - s.hero.hp === 6);
 check('the intent shown next turn is a real number', s.enemies[0].intent.intent !== 'attack' || s.enemies[0].intent.shown >= 4);
 
-s = startRun(createRun({ seed: 2, character: 'drinker' }));
+s = startRun(createRun({ seed: 2, character: 'drinker' })); chooseNode(s, 0);
 s.hero.hp = 3; s.hand = [];
 s.enemies.forEach(e => { e.intent = { id: 'peck', intent: 'attack', dmg: 4, shown: 4 }; });
 endTurn(s);
@@ -296,38 +362,329 @@ check('running out of HP loses the run', s.phase === 'lost');
 
 // ── the bouncer ──────────────────────────────────────────────────────────
 s = startRun(createRun({ seed: 4, character: 'cart' }));
-s.encounter = ENCOUNTERS.length - 2;
-s.enemies.forEach(e => { e.alive = false; e.hp = 0; });
-s.enemies[0].alive = true; s.enemies[0].hp = 1;
-s.hand = [{ uid: 1, id: 'strike', ...CARDS.strike }]; s.hero.energy = 3;
-playCard(s, 0, 0);
-while (s.phase === 'reward') chooseReward(s, 0);
-check('the last fight is the Bridge King', s.phase === 'fight' && s.enemies[0].id === 'bridge_king' && s.enemies[0].hp === 120);
-s.enemies[0].intent = { ...ENEMIES.bridge_king.moves[2], shown: 8 };
+jumpTo(s, ENC('bridge'));
+check('act one ends on the Bridge King', s.phase === 'fight' && s.enemies[0].id === 'bridge_king' && s.enemies[0].hp === 104 && s.act === 0);
+// By ID, never by index into `moves`. v23 made the rotation walk only the
+// UNCONDITIONAL moves, so adding one conditional move to the front of a list
+// silently shifts every index behind it — the same brittleness the twelve
+// `hp === 68` literals had, found the same way: four checks failing at once
+// for one reason that is not what any of them is about.
+const kingMove = id => ENEMIES.bridge_king.moves.find(m => m.id === id);
+s.enemies[0].intent = { ...kingMove('one_two'), shown: 8 };
 s.hand = [];
 const hb = s.hero.hp;
 endTurn(s);
 check('one-two lands twice', hb - s.hero.hp === 16);
 s.enemies[0].hp = 1; s.hand = [{ uid: 1, id: 'strike', ...CARDS.strike }]; s.hero.energy = 3;
 playCard(s, 0, 0);
-check('beating him wins the run', s.phase === 'won');
+while (s.phase === 'reward') chooseReward(s, 0);
+check('beating him opens ACT TWO, not the end', s.phase === 'map' && s.act === 1 && s.route.act === 1 && s.route.step === 0 && s.log.some(l => l.t === 'actWon'));
+check(`and dusk falls: you catch your breath for ${Math.floor(78 * RULES.healBetweenActs)} HP between the acts`, s.log.some(l => l.t === 'heal' && l.n > 0) && s.hero.hp >= Math.min(78, hb - 16 + Math.floor(78 * RULES.healBetweenActs) - 1));
+check('act two draws from its own pool', s.route.steps[0].every(o => ACTS[1].fights.includes(o.id)));
+jumpTo(s, ENC('bear'));
+check('the bear is the last thing on the bridge', s.phase === 'fight' && s.enemies[0].id === 'the_bear' && s.enemies[0].hp === 140);
+s.enemies[0].intent = { ...ENEMIES.the_bear.moves[0] };
+s.hand = []; endTurn(s);
+check('granite: 20 block and 3 thorns', s.enemies[0].block === 20 && s.enemies[0].status.thorns === 3);
+s.hand = [{ uid: 1, id: 'strike', ...CARDS.strike }]; s.hero.energy = 3; s.enemies[0].block = 0;
+const hpT = s.hero.hp;
+playCard(s, 0, 0);
+check('striking a thorned bear costs 3', hpT - s.hero.hp === 3);
+s.enemies[0].hp = 1; s.hand = [{ uid: 1, id: 'strike', ...CARDS.strike }]; s.hero.energy = 3; s.enemies[0].block = 0;
+playCard(s, 0, 0);
+check('beating the bear wins the run', s.phase === 'won');
 
-// ── a whole run, four times ──────────────────────────────────────────────
+// ── the new mechanics, exactly ───────────────────────────────────────────
+// frail
+s = rig('cart', ['defend']);
+s.hero.status.frail = 1;
+check('Frail takes Cover Up to 3 (×0.75, floored)', preview(s, 0).block === 3);
+playCard(s, 0);
+check('and the same 3 lands', s.hero.block === 3);
+s.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 3 }; });
+endTurn(s);
+check('Frail ticks off at the end of the round', !s.hero.status.frail);
+
+// thorns on the hero
+s = rig('boxer', ['guard_up']);
+playCard(s, 0);
+check('Guard Up: 5 block and 2 Thorns', s.hero.block === 5 && s.hero.status.thorns === 2);
+s.enemies.slice(1).forEach(e => { e.alive = false; });
+s.enemies[0].intent = { id: 'peck', intent: 'attack', dmg: 4, shown: 4 };
+const th0 = s.enemies[0].hp;
+endTurn(s);
+check('a 4-point peck into 2 Thorns costs the pecker 2', th0 - s.enemies[0].hp === 2);
+check('and the hero counts the hit (struck = 1)', s.struck === 1);
+// counter punch reads that count
+s.hand = [{ uid: 2, id: 'counter_punch', ...CARDS.counter_punch, effects: CARDS.counter_punch.effects.map(f => ({ ...f })) }]; s.hero.energy = 3;
+check('Counter Punch after one hit: 3 + 2 = 5', preview(s, 0, 0).damage === 5);
+s.struck = 3;
+check('and after three: 3 + 6 = 9', preview(s, 0, 0).damage === 9);
+check('Counter Punch says what it counts', /per hit you took this fight/.test(describe(CARDS.counter_punch)));
+
+// fetch — the dog goes in at the end of the turn
+s = rig('walker', ['throw_stick']);
+playCard(s, 0);
+check('Throw The Stick: 8 Fetch', s.hero.status.fetch === 8);
+s.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; });
+const weakest = [...s.enemies].sort((a, b) => a.hp - b.hp)[0];
+const wf = weakest.hp;
+endTurn(s);
+check('the dog hits the weakest enemy for 8 at the end of the turn', wf - weakest.hp === 8 && s.log.some(l => l.t === 'damage' && l.src === 'fetch' && l.amount === 8));
+check('and the Fetch is spent', !s.hero.status.fetch);
+s = rig('walker', ['two_dogs', 'throw_stick']);
+playCard(s, 0); playCard(s, 0);
+s.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; });
+endTurn(s);
+check('Two Dogs keeps the Fetch across the turn', s.hero.status.fetch === 8);
+s = rig('walker', ['throw_stick', 'off_the_lead']);
+playCard(s, 0);
+check('Off The Lead scales on Fetch: 4 + 8 = 12', preview(s, 0, 0).damage === 12);
+
+// buzz scaling
+s = rig('drinker', ['hair_of_dog', 'last_call']);
+playCard(s, 0);
+check('Hair Of The Dog: 3 Buzz and a card', s.hero.status.buzz === 3);
+check('Last Call: 6 + 2×3 Buzz + 3 Buzz = 15', preview(s, 0, 0).damage === 15, `${preview(s, 0, 0).damage}`);
+
+// self-cost cards
+s = rig('drinker', ['head_butt']);
+const hhb = s.hero.hp;
+playCard(s, 0, 0);
+check('Head Butt costs 2 HP and says so', hhb - s.hero.hp === 2 && /Lose 2 HP/.test(describe(CARDS.head_butt)));
+s = rig('boxer', ['glass_chin']);
+playCard(s, 0, 0);
+check('Glass Chin leaves you Vulnerable', s.hero.status.vulnerable === 1);
+
+// ── upgrades: one rule, every card ───────────────────────────────────────
+const up = id => upgrade({ id, ...CARDS[id], effects: CARDS[id].effects.map(f => ({ ...f })) });
+check('Swing+ is 9', up('strike').effects[0].n === 9 && up('strike').up === true);
+check('Cover Up+ is 8', up('defend').effects[0].n === 8);
+check('One-Two+ is 5 ×2 (a multi-hit gets +1 a hit)', up('one_two').effects[0].n === 5 && up('one_two').effects[0].times === 2);
+check('Armful+ scales one harder (3 → 4 per card)', up('armful').effects[0].per === 4 && up('armful').effects[0].n === 0);
+check('Tune Up+ draws 2', up('tune_up').effects[0].n === 2);
+check('Never Sober+ costs 1 and brings 4 Buzz', up('never_sober').cost === 1 && up('never_sober').effects[0].n === 4);
+check('Throw The Stick+ is 11 Fetch', up('throw_stick').effects[0].n === 11);
+check('upgrading twice does nothing', upgrade(up('strike')).effects[0].n === 9);
+s = rig('drinker', []);
+s.hand = [up('strike')]; s.hero.energy = 3;
+check('an upgraded card says 9 on its face and the preview agrees', /Deal 9 damage/.test(describe(s.hand[0], s, 0, 0)) && preview(s, 0, 0).damage === 9);
+const upBefore = s.enemies[0].hp;
+playCard(s, 0, 0);
+check('and 9 lands', upBefore - s.enemies[0].hp === 9);
+
+// ── rests ────────────────────────────────────────────────────────────────
+s = startRun(createRun({ seed: 5, character: 'cart' }));
+s.route.steps[0] = [{ kind: 'rest' }, { kind: 'fight', id: 'rats' }];
+s.hero.hp = 40;
+chooseNode(s, 0);
+check('a rest span opens the rest', s.phase === 'rest');
+chooseRest(s, 'heal');
+check(`sleeping heals 30% of max HP (${Math.floor(78 * RULES.restHeal)})`, s.hero.hp === 40 + Math.floor(78 * RULES.restHeal) && s.phase === 'map');
+s = startRun(createRun({ seed: 5, character: 'cart' }));
+s.route.steps[0] = [{ kind: 'rest' }];
+chooseNode(s, 0); chooseRest(s, 'upgrade');
+check('thinking it over asks for a card', s.phase === 'pick' && s.pick.kind === 'upgrade');
+const si = s.hero.deck.findIndex(c => c.id === 'strike');
+pickCard(s, si);
+check('and the picked Swing is a Swing+', s.hero.deck[si].up === true && s.hero.deck[si].effects[0].n === 9 && s.phase === 'map');
+check('an upgraded card cannot be picked again', (() => { s.route.steps[1] = [{ kind: 'rest' }]; chooseNode(s, 0); chooseRest(s, 'upgrade'); return pickCard(s, si) === false; })());
+check('rests are counted', s.stats.rests === 2);
+// Nothing left to pick is a REAL state, and it had no way out: the panel
+// listed nothing and the phase never ended. Found by a bot on one seed in 900.
+s = startRun(createRun({ seed: 5, character: 'cart' }));
+s.hero.deck.forEach(c => upgrade(c));
+s.route.steps[0] = [{ kind: 'rest' }];
+chooseNode(s, 0); chooseRest(s, 'upgrade');
+check('with every card upgraded, a rest offers nothing to pick', s.phase === 'pick' && pickable(s).length === 0);
+check('and skipPick is the way out', skipPick(s) === true && s.phase === 'map');
+// and it carries the rest of the event with it, rather than dropping it
+s = startRun(createRun({ seed: 5, character: 'cart' }));
+s.hero.deck.forEach(c => upgrade(c));
+s.route.steps[0] = [{ kind: 'event', id: 'gulls_event' }];
+chooseNode(s, 0);
+const hpG = s.hero.hp;
+chooseEvent(s, 1);                                    // lose 6 HP, then upgrade a card
+check('a two-part event stops at the pick', s.phase === 'pick' && s.hero.hp === hpG - 6);
+skipPick(s);
+check('and skipping the pick still finishes the event', s.phase === 'map' && s.log.some(l => l.t === 'skipPick'));
+check('pickable lists exactly what a remove may take', (() => {
+  const st = startRun(createRun({ seed: 5, character: 'cart' }));
+  st.route.steps[0] = [{ kind: 'event', id: 'the_statue' }];
+  chooseNode(st, 0); chooseEvent(st, 1);
+  return st.phase === 'pick' && pickable(st).length === st.hero.deck.length;
+})());
+
+// ── events ───────────────────────────────────────────────────────────────
+// Every number below is derived from the character's own max HP, never
+// written out. Twelve of these checks were literals ("hp === 68") and a
+// two-point change to the drinker in v16 failed all twelve at once — none of
+// them is about the drinker's HP, they are about what the EVENT does.
+const HP0 = CHARACTERS.drinker.hp;
+const atEvent = (id, seed = 5, character = 'drinker') => {
+  const st = startRun(createRun({ seed, character }));
+  st.route.steps[0] = [{ kind: 'event', id }];
+  chooseNode(st, 0);
+  return st;
+};
+s = atEvent('the_statue');
+check('an event span opens the event', s.phase === 'event' && s.event.id === 'the_statue' && s.event.options.length === 3);
+chooseEvent(s, 0);
+check('touching the bear: +6 max HP, then −8 HP', s.hero.maxHp === HP0 + 6 && s.hero.hp === HP0 - 2 && s.phase === 'map');
+s = atEvent('the_statue');
+chooseEvent(s, 1);
+check('leaving something behind asks for a card to remove', s.phase === 'pick' && s.pick.kind === 'remove');
+const dn = s.hero.deck.length;
+pickCard(s, 0);
+check('and the deck is one lighter', s.hero.deck.length === dn - 1 && s.phase === 'map');
+s = atEvent('the_statue'); chooseEvent(s, 2);
+check('walking on costs nothing and goes back to the map', s.phase === 'map' && s.hero.hp === HP0);
+s = atEvent('night_tram'); chooseEvent(s, 0);
+check('the last tram: heal 15 (capped) and a Hangover in the deck', s.hero.deck.some(c => c.id === 'hangover') && s.hero.hp === HP0);
+s = atEvent('night_tram'); chooseEvent(s, 1);
+check('staying awake: 4 energy, 8 max HP gone', s.hero.maxEnergy === 4 && s.hero.maxHp === HP0 - 8 && s.hero.hp === HP0 - 8);
+s = atEvent('kiosk'); chooseEvent(s, 0);
+check('the kiosk takes 7 HP and opens a card reward', s.hero.hp === HP0 - 7 && s.phase === 'reward' && s.reward.kind === 'card');
+chooseReward(s, 0);
+check('and the reward leads back to the map, not to a fight', s.phase === 'map');
+s = atEvent('sauna'); chooseEvent(s, 0);
+check('the sauna heals nothing at full health — but does not hurt either', s.hero.hp === HP0 && s.phase === 'map');
+s = atEvent('sauna'); s.hero.hp = 20; chooseEvent(s, 0);
+check(`and 60% of max from 20 is ${20 + Math.floor(HP0 * 0.6)}`, s.hero.hp === 20 + Math.floor(HP0 * 0.6));
+s = atEvent('dumpster'); chooseEvent(s, 1);
+// Read the DROP out of the log rather than the end state. The friend is rolled
+// from the run's rng, and some of them grant max HP — which grants the HP with
+// it — so `hp === HP0 - 7` was really asserting which friend the seed happened
+// to roll. v26 changed the route pool, the roll moved, and a check about a bin
+// failed because of a coat. Same shape as v16's HP ledger: a gain is not a
+// cost being smaller.
+const dug = s.log.find(l => l.t === 'hp' && l.n < 0) ?? s.log.find(l => l.t === 'damage');
+check('digging in the bin costs 7 and gains a friend',
+  s.jokers.length === 1 && s.hero.hp <= HP0 - 7 + (s.jokers[0].effect?.type === 'maxHp' ? s.jokers[0].effect.n : 0),
+  `hp ${s.hero.hp} of ${HP0}, friend ${s.jokers[0]?.id}, drop ${JSON.stringify(dug)}`);
+s = atEvent('the_canal'); chooseEvent(s, 0);
+const roll1 = s.log.find(l => l.t === 'roll').good;
+const s4 = atEvent('the_canal'); chooseEvent(s4, 0);
+check('a roll is logged and the same seed rolls the same way', s4.log.find(l => l.t === 'roll').good === roll1);
+check('and the outcome matches the label', roll1 ? s.jokers.length === 1 : (s.hero.hp === HP0 - 12 && s.hero.deck.some(c => c.id === 'soaked')));
+check('events are counted', s.stats.events === 1);
+s = atEvent('the_statue'); s.hero.hp = 2; chooseEvent(s, 0);
+check('an event can kill you, and the run knows it (2 + 6 − 8)', s.phase === 'lost');
+
+// ── new friends ──────────────────────────────────────────────────────────
+s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'lucky_lighter'); chooseNode(s, 0);
+check('Lucky Lighter: 4 energy on turn one', s.hero.energy === 4);
+endTurn(s);
+check('and 3 on turn two', s.hero.energy === 3);
+s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'tram_ticket'); chooseNode(s, 0);
+check('Tram Ticket: 7 cards on turn one', s.hand.length === 7);
+s = withJoker(rig('drinker', ['strike', 'strike']), 'cracked_mirror');
+check('Cracked Mirror: the first attack of the fight ×2 (12)', preview(s, 0, 0).damage === 12);
+playCard(s, 0, 0);
+check('and not the second', preview(s, 0, 0).damage === 6);
+s = withJoker(rig('drinker', ['strike']), 'spare_key');
+playCard(s, 0, 0);
+check('Spare Key: an attack gives 1 block', s.hero.block === 1);
+s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'mouthguard'); chooseNode(s, 0);
+check('Mouthguard: 2 Thorns from the first turn', s.hero.status.thorns === 2);
+s = withJoker(startRun(createRun({ seed: 5, character: 'drinker' })), 'bad_debt'); chooseNode(s, 0);
+check('Bad Debt: 4 energy and 3 HP down at the start of the fight', s.hero.energy === 4 && s.hero.hp === HP0 - 3);
+s = withJoker(rig('drinker', []), 'stray_dog');
+s.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; });
+const sd = [...s.enemies].sort((a, b) => a.hp - b.hp)[0], sdHp = sd.hp;
+endTurn(s);
+check('Stray Dog bites the weakest for 3 at the end of the turn', sdHp - sd.hp === 3);
+s = startRun(createRun({ seed: 5, character: 'drinker' }));
+s.route.steps[0] = [{ kind: 'event', id: 'dumpster' }]; chooseNode(s, 0);
+s.rng = { next: () => 0, int: () => 0, pick: a => a[0], shuffle: a => { const i = a.indexOf('heavy_coat'); if (i > 0) [a[0], a[i]] = [a[i], a[0]]; return a; } };
+chooseEvent(s, 1);
+check('Heavy Coat: +8 max HP the moment it is picked up', s.jokers[0]?.id === 'heavy_coat' && s.hero.maxHp === HP0 + 8 && s.hero.hp === HP0 - 7 + 8);
+
+// ── new enemies ──────────────────────────────────────────────────────────
+s = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(s, ENC('preacher'));
+const pr = s.enemies.find(e => e.id === 'preacher');
+pr.intent = { ...ENEMIES.preacher.moves[0] };
+s.enemies.filter(e => e !== pr).forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; });
+s.hand = []; endTurn(s);
+check('the sermon gives every rat +1 Strength, and the preacher too', s.enemies.every(e => e.status.strength === 1));
+check('and the telegraph said so', /\+1 strength all/.test(describeIntent({ intent: { ...ENEMIES.preacher.moves[0] } })));
+s = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(s, ENC('gull_king'));
+const gk = s.enemies[0]; gk.hp = 40; gk.intent = { ...ENEMIES.gull_king.moves[2] };
+s.hand = []; endTurn(s);
+check('the Gull King feasts: +12 HP', gk.hp === 52 && s.log.some(l => l.t === 'enemyHeal' && l.n === 12));
+check('and says so', /heals 12/.test(describeIntent({ intent: { ...ENEMIES.gull_king.moves[2] } })));
+s = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(s, ENC('night'));
+const ns = s.enemies.find(e => e.id === 'night_shift'); ns.intent = { ...ENEMIES.night_shift.moves[1], shown: 6 };
+s.enemies.filter(e => e !== ns).forEach(e => { e.alive = false; });
+s.hand = []; const nh = s.hero.hp; endTurn(s);
+check('lockdown: 6 damage AND 10 block in one move', nh - s.hero.hp === 6 && ns.block === 10);
+check('the telegraph carries both halves', describeIntent({ intent: { ...ENEMIES.night_shift.moves[1], shown: 6 } }) === '6 · block 10');
+s = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(s, ENC('dealer'));
+const dl = s.enemies.find(e => e.id === 'dealer'); dl.intent = { ...ENEMIES.dealer.moves[2] };
+s.enemies.filter(e => e !== dl).forEach(e => { e.alive = false; });
+s.hand = []; endTurn(s);
+check('a bad batch is a Hangover in the discard', s.discard.some(c => c.id === 'hangover'));
+s = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(s, ENC('tar'));
+const tb = s.enemies.find(e => e.id === 'tar_blob'); tb.intent = { ...ENEMIES.tar_blob.moves[0] };
+s.enemies.filter(e => e !== tb).forEach(e => { e.alive = false; });
+s.hand = []; endTurn(s);
+check('tar hardens: 6 block and 2 thorns on the blob', tb.block === 6 && tb.status.thorns === 2);
+s = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(s, ENC('gulls'));
+const gl = s.enemies.find(e => e.id === 'gull'); gl.intent = { ...ENEMIES.gull.moves[0], shown: 5 };
+s.enemies.filter(e => e !== gl).forEach(e => { e.alive = false; });
+s.hand = []; endTurn(s);
+check('a gull snatch leaves you Frail', s.hero.status.frail === 1);
+// the finding: a debuff an enemy applies must still be there on your next turn
+s.hand = [{ uid: 3, id: 'defend', ...CARDS.defend, effects: CARDS.defend.effects.map(f => ({ ...f })) }]; s.hero.energy = 3;
+check('and it is still there when you play your next card (Cover Up gives 3)', preview(s, 0).block === 3);
+gl.intent = { ...ENEMIES.gull.moves[1], shown: 9 };          // a dive, not another snatch
+endTurn(s);
+check('and gone after that turn ends', !s.hero.status.frail);
+check('four pigeons stand in a row', ENCOUNTERS[ENC('pigeons')].enemies.length === 4);
+
+// ── the hour: the run starts by day, and as evening comes things mutate ──
+s = startRun(createRun({ seed: 5, character: 'boxer' }));
+check('the run opens in daylight (hour 0, afternoon)', s.hour === 0 && HOUR_WORD(s.hour) === 'afternoon' && s.log.some(l => l.t === 'hour' && l.hour === 0));
+chooseNode(s, 0);
+check('and the first fight is not mutated', s.enemies.every(e => e.mutated === 0 && e.hp === ENEMIES[e.id].hp && !e.status.strength));
+{
+  const hs = [];
+  const st = startRun(createRun({ seed: 5, character: 'boxer' }));
+  while (!['won', 'lost'].includes(st.phase)) { if (!hs.length || st.hour !== hs.at(-1)) hs.push(st.hour); botStep(st); }
+  check('the hour only ever moves forward', hs.every((h, i) => i === 0 || h >= hs[i - 1]));
+  check('dusk falls at the end of act one', hourOf({ act: 0, route: { step: ACTS[0].steps + 1 } }) >= 0.5 && hourOf({ act: 0, route: { step: ACTS[0].steps - 1 } }) < 0.5);
+  check('night falls inside act two', nightfall(hourOf({ act: 1, route: { step: 0 } })) === 1 && nightfall(hourOf({ act: 1, route: { step: ACTS[1].steps } })) === 2);
+}
+s = startRun(createRun({ seed: 5, character: 'boxer' })); jumpTo(s, ENC('gulls'));
+check(`an act-two fight spawns mutated: gull ${Math.round(26 * RULES.mutation[1])} HP, marked ✶`, s.enemies.every(e => e.mutated === 1) && s.enemies.find(e => e.id === 'gull').hp === Math.round(26 * RULES.mutation[1]) && !s.enemies.some(e => e.status.strength));
+check('and the encounter log says what hour it was', s.log.findLast(l => l.t === 'encounter').mutated === 1 && s.log.findLast(l => l.t === 'encounter').hour >= 0.5);
+s = startRun(createRun({ seed: 5, character: 'boxer' })); s.act = 1; buildRoute(s, 1); s.route.step = ACTS[1].steps; jumpTo(s, ENC('sermon'));
+check(`by night a fight spawns at level 2: ×${RULES.mutation[2]} HP and 1 Strength each`, nightfall(s.hour) === 2 && s.enemies.every(e => e.mutated === 2 && e.status.strength === 1 && e.hp === Math.round(ENEMIES[e.id].hp * RULES.mutation[2])));
+check('and the telegraph carries the extra strength', s.enemies.filter(e => e.intent?.intent === 'attack').every(e => e.intent.shown === e.intent.dmg + 1));
+s = startRun(createRun({ seed: 5, character: 'boxer' })); jumpTo(s, ENC('bear'));
+check('the Bear is never mutated — a boss IS the night', s.hour === 1 && s.enemies[0].mutated === 0 && s.enemies[0].hp === 140 && HOUR_WORD(s.hour) === 'night');
+s = startRun(createRun({ seed: 5, character: 'boxer' })); jumpTo(s, ENC('bridge'));
+check('nor is the Bridge King, at dusk', s.enemies[0].mutated === 0 && s.enemies[0].hp === 104 && nightfall(s.hour) === 1);
+
+// ── a whole run, six times ───────────────────────────────────────────────
 const results = {};
 for (const ch of Object.keys(CHARACTERS)) {
-  let wins = 0, deepest = 0;
-  for (let seed = 1; seed <= 40; seed++) {
+  let wins = 0, act2 = 0, sawEvent = 0, sawRest = 0;
+  for (let seed = 1; seed <= 80; seed++) {
     const st = botRun(startRun(createRun({ seed, character: ch })));
     check(`${ch} seed ${seed} ends`, st.phase === 'won' || st.phase === 'lost');
     if (st.phase === 'won') wins++;
-    deepest = Math.max(deepest, st.encounter);
+    if (st.act >= 1) act2++;
+    if (st.stats.events) sawEvent++;
+    if (st.stats.rests) sawRest++;
   }
-  results[ch] = { wins, deepest };
+  results[ch] = { wins, act2, sawEvent, sawRest };
 }
-console.log('bot win rates over 40 seeds:', results);
-check('every character can reach the boss with a dumb bot', Object.values(results).every(r => r.deepest >= ENCOUNTERS.length - 1));
-check('and no character wins every time', Object.values(results).every(r => r.wins < 40));
+console.log('bot over 80 seeds:', results);
+check('every character reaches act two with a dumb bot', Object.values(results).every(r => r.act2 > 0));
+check('and no character wins every time', Object.values(results).every(r => r.wins < 80));
 check('and no character never wins', Object.values(results).every(r => r.wins > 0));
+check('the bot visits events and rests along the way', Object.values(results).every(r => r.sawEvent > 0 && r.sawRest > 0));
 
 // the log never references a card the hand does not know
 s = botRun(startRun(createRun({ seed: 9, character: 'collector' })));
@@ -335,7 +692,7 @@ check('the log is a list of typed events', s.log.every(l => typeof l.t === 'stri
 check('damage events carry a breakdown', s.log.filter(l => l.t === 'damage' && l.breakdown).length > 0);
 
 // jokers cap
-s = startRun(createRun({ seed: 1, character: 'drinker' }));
+s = startRun(createRun({ seed: 1, character: 'drinker' })); chooseNode(s, 0);
 for (const id of Object.keys(JOKERS).slice(0, RULES.jokerMax)) s.jokers.push({ id, ...JOKERS[id] });
 s.enemies.forEach(e => { e.alive = false; e.hp = 0; });
 s.enemies[0].alive = true; s.enemies[0].hp = 1;
@@ -344,6 +701,279 @@ playCard(s, 0, 0);
 let sawJoker = false;
 while (s.phase === 'reward') { if (s.reward.kind === 'joker') sawJoker = true; chooseReward(s, 0); }
 check(`a full row of ${RULES.jokerMax} takes no more`, !sawJoker && s.jokers.length === RULES.jokerMax);
+
+
+// ── the paper motion (v17) ───────────────────────────────────────────────
+// `js/motion.js` is pure for exactly this reason: a verb that throws a figure
+// off its own base is arithmetic, and arithmetic can be checked in bare node.
+// What a gate CANNOT say is whether a lunge reads as a lunge — that is a
+// screenshot, and this repo has shipped a green suite over wrong art twice.
+check(`the motion vocabulary has every verb the fight produces (${CLIP_NAMES.join(', ')})`,
+  ['breath', 'attack', 'hurt', 'hop'].every(n => CLIP_NAMES.includes(n)));
+check('every clip starts at REST — a verb that begins displaced pops',
+  CLIP_NAMES.every(n => isHeld(n) || Object.keys(REST).every(k => Math.abs(poseAt(n, 0, { dir: 1 })[k] - REST[k]) < 1e-9)));
+check('and every finite clip comes home — otherwise a figure hit twice drifts off its base for the rest of the run',
+  CLIP_NAMES.every(n => landsAtRest(n)));
+check('past the end a clip is REST, not frozen mid-lunge',
+  Object.keys(REST).every(k => Math.abs(poseAt('attack', 99, { dir: 1 })[k] - REST[k]) < 1e-9));
+const outOfBounds = [];
+for (const n of CLIP_NAMES) {
+  const span = isHeld(n) ? 3 : clipLength(n);
+  for (let i = 0; i <= 120; i++) {
+    for (const dir of [1, -1]) {
+      const p = poseAt(n, span * i / 120, { dir });
+      if (Math.abs(p.dx) > LIMITS.dx || Math.abs(p.dy) > LIMITS.dy || Math.abs(p.dz) > LIMITS.dz
+        || Math.abs(p.rot) > LIMITS.rot || Math.abs(p.skew) > LIMITS.skew
+        || p.sx < LIMITS.scale[0] || p.sx > LIMITS.scale[1] || p.sy < LIMITS.scale[0] || p.sy > LIMITS.scale[1]) outOfBounds.push(n);
+    }
+  }
+}
+check(`no clip leaves the figure's own envelope${outOfBounds.length ? ` — ${[...new Set(outOfBounds)]}` : ''}`, outOfBounds.length === 0);
+// The direction is the whole reason a lunge is not a wobble: the same clip
+// played the other way must be its mirror, and nothing may be direction-blind
+// in the axes that carry the verb.
+const fwd = poseAt('attack', 0.28, { dir: 1 }), back = poseAt('attack', 0.28, { dir: -1 });
+check(`an attack commits the way the figure faces (${fwd.dx.toFixed(2)} vs ${back.dx.toFixed(2)})`,
+  fwd.dx > 0.1 && Math.abs(fwd.dx + back.dx) < 1e-9 && Math.abs(fwd.rot + back.rot) < 1e-9);
+// Anticipation is what makes a lunge read as a lunge instead of a slide: the
+// figure is still leaning AWAY at 0.20s and fully committed by 0.31, so the
+// strike takes 0.11s against a 0.20s wind-up.
+check('and the strike is faster than the wind-up — anticipation is what makes it read',
+  poseAt('attack', 0.20, { dir: 1 }).dx < 0 && poseAt('attack', 0.31, { dir: 1 }).dx > 0.29);
+const hurt = poseAt('hurt', 0.06, { dir: -1 });
+check(`being hit bends the card, it does not just slide it (shear ${hurt.skew.toFixed(2)})`,
+  Math.abs(hurt.skew) > 0.1 && hurt.sy < 1);
+const air = poseAt('hop', 0.27, { dir: 1 });
+check(`a hop leaves the plank (${air.dy.toFixed(2)} of its own height up)`, air.dy > 0.15);
+check('and lands on a squash rather than snapping upright', poseAt('hop', 0.46, { dir: 1 }).sy < 0.99);
+// The breath is held: it must never end, and must actually move.
+const b1 = poseAt('breath', 0.0), b2 = poseAt('breath', 0.7);
+check('the breath is a held pose that never stops and always moves', isHeld('breath') && Math.abs(b1.sy - b2.sy) > 1e-4);
+
+
+// ── the TURF plates (v18) ────────────────────────────────────────────────
+// `plates.js` is importable here because its DOM lives inside functions: the
+// cast list and the paths are data, and data is what a bare-node gate can ask
+// about. What it cannot ask is whether a street operator reads as a Kallio bum
+// — that is the screenshot, and the weapons question with it.
+const personIds = [...Object.keys(CHARACTERS),
+  ...Object.entries(ENEMIES).filter(([, e]) => !e.kallio.look.shape || e.kallio.look.shape === 'person').map(([id]) => id)];
+const notPerson = Object.keys(CAST).filter(id => !personIds.includes(id));
+check(`only person-shaped figures are cast${notPerson.length ? ` — ${notPerson}` : ''}`, notPerson.length === 0);
+check('and every one of them is cast — a half-plated row is worse than none',
+  personIds.every(id => CAST[id]), `${personIds.filter(id => !CAST[id])}`);
+// A rat has no equivalent in a roster of street operators, and the fallback is
+// what keeps the switch from ever showing a blank plane.
+check('no rat, blob, bird or bear is cast: they keep the drawn cutout',
+  Object.entries(ENEMIES).every(([id, e]) => !['rat', 'blob', 'bird', 'bear'].includes(e.kallio.look.shape) || !plateFor(id)));
+const missing = castFiles().filter(f => !existsSync(new URL('../' + f, import.meta.url)));
+check(`every cast plate is really in the tree${missing.length ? ` — ${missing}` : ''} (${castFiles().length} files)`, missing.length === 0);
+// It SHIPS from figures/, not art-src/: a Slay Kallio deploy is the folder
+// minus test/ and art-src/, so runtime art under art-src/ arrives as a 404.
+check('the plates ship from figures/, which a deploy carries — not from art-src/',
+  castFiles().every(f => f.startsWith('figures/')));
+check('a figure with no plate returns null rather than a broken path', plateFor('rat') === null && plateFor('nobody') === null);
+// v19 refused eight plates for carrying firearms; the owner reversed that on
+// 2026-09-09 (*"of course they can have firearms"*), so there is nothing left
+// here to enforce and the gate that enforced it is gone rather than left
+// passing vacuously. `WITH_GUNS` survives as a NOTE — a real fact about the
+// set that cost a pass over all thirty-two at full size, and the thing a
+// person wants while casting — so what is checked is that it still names
+// plates that exist, which is the only way a note like this rots.
+const ghosts = WITH_GUNS.filter(n => !existsSync(new URL(`../../turf/art-src/sprites/${n}-plate.png`, import.meta.url))
+  && !existsSync(new URL(`../../turf/art-src/sprites/cast/${n}-idle.png`, import.meta.url)));
+check(`the gun list still names real plates${ghosts.length ? ` — ${ghosts}` : ''} (${WITH_GUNS.length} of 32)`, ghosts.length === 0);
+
+// ── the ones cast from the spare plates (v26) ────────────────────────────
+// Two new conditions, one user each — the rule v23 set, which is that a
+// condition with no user is dead code. `crowded` is `alone`'s mirror; the
+// interesting half is that both directions of thinning the row now cost you
+// something. `bleeding` is the first that reads YOU rather than the row.
+const fight3 = (ids, hp) => {
+  const st = startRun(createRun({ seed: 3, character: 'drinker' }));
+  st.route.steps[0] = [{ kind: 'fight', id: ids }];
+  chooseNode(st, 0);
+  if (hp) st.hero.hp = hp;
+  return st;
+};
+// `crowded` counts three alive INCLUDING itself, so the Bat's own fight has
+// the bodies and stripping them takes the bonus away.
+let cs = fight3('bat');
+check('the Bat comes with company — three on the bridge', cs.enemies.filter(e => e.alive).length === 3);
+const batIntent = st => st.enemies.find(e => e.id === 'bat')?.intent?.id;
+check(`held by two friends, the Bat calls the shot — ${batIntent(cs)}`, batIntent(cs) === 'hold_him');
+// Thin the row and it stops: the same enemy, a different fight.
+cs = fight3('bat');
+for (const e of cs.enemies) if (e.id !== 'bat') { e.alive = false; e.hp = 0; }
+for (const e of cs.enemies) if (e.alive) { e.intent = null; }
+endTurn(cs);
+check('on his own he goes back to swinging at you', batIntent(cs) !== 'hold_him');
+// `bleeding` reads the hero. The Butcher's Boy is the first enemy in the game
+// whose threat depends on the state of your RUN rather than of the row.
+let bs = fight3('sable');
+const sableIntent = st => st.enemies.find(e => e.id === 'sable')?.intent?.id;
+check(`at full health he only circles — ${sableIntent(bs)}`, sableIntent(bs) !== 'finish_it');
+bs.hero.hp = Math.floor(bs.hero.maxHp / 2);
+for (const e of bs.enemies) e.intent = null;
+endTurn(bs);
+check(`under half he goes for it — ${sableIntent(bs)}`, sableIntent(bs) === 'finish_it');
+check('and it is the biggest number he has',
+  ENEMIES.sable.moves.find(m => m.id === 'finish_it').dmg > Math.max(...ENEMIES.sable.moves.filter(m => m.id !== 'finish_it').map(m => m.dmg ?? 0)));
+// Six new people, and each is cast for a picture rather than for a hole in a
+// stat table — which a gate cannot see. What it CAN see is that each one is a
+// real plate, is person-shaped, and is not a second copy of a rotation the
+// game already had.
+const CAST_V26 = ['debt', 'bat', 'sable', 'hardhat', 'fence', 'crowbar'];
+check(`six people cast from the spare pool (${CAST_V26.join(', ')})`,
+  CAST_V26.every(id => ENEMIES[id] && plateFor(id)));
+check('every one of them is a person, not a rat wearing a coat',
+  CAST_V26.every(id => (ENEMIES[id].kallio.look.shape ?? 'person') === 'person'));
+check('and each leads a fight of its own in one of the two act pools',
+  CAST_V26.every(id => ACTS.some(a => a.fights.includes(id))));
+check('the Debt Collector is the second figure that can act — he has the pose set',
+  posesFor('debt').length === 7);
+
+// ── the act-two harness (v27) ────────────────────────────────────────────
+// `bots.mjs --act2` snapshots a run at the door of act two and resumes it
+// later under another bot. The whole instrument rests on one claim: a resumed
+// run is bit-identical to one that never stopped. That is asserted here rather
+// than trusted, because the rng is a closure and a snapshot that dropped its
+// internal state would still RUN — it would just be measuring a different game.
+{
+  const { BOTS, run, drive, snapshot, restore } = await import('./bots.mjs');
+  const AT_DOOR = st => st.act === 1 && st.phase === 'map' && st.route?.step === 0;
+  let arrived = 0, same = 0;
+  for (let seed = 1; seed <= 40 && arrived < 8; seed++) {
+    const straight = run(seed, 'cart', BOTS.native);
+    const stopped = drive(startRun(createRun({ seed, character: 'cart' })), BOTS.native, null, AT_DOOR);
+    if (!AT_DOOR(stopped)) continue;
+    arrived++;
+    const resumed = drive(restore(snapshot(stopped)), BOTS.native);
+    const key = st => `${st.phase}:${st.hero.hp}:${st.encounter}:${st.log.length}`;
+    if (key(straight) === key(resumed)) same++;
+  }
+  check(`a run resumed from its act-two snapshot ends exactly as the straight run (${same}/${arrived})`, arrived > 0 && same === arrived);
+  check('a snapshot carries the rng as a number, not a closure', typeof snapshot(startRun(createRun({ seed: 3 }))).rngSeed === 'number');
+}
+
+// ── the frame axis (v25) ─────────────────────────────────────────────────
+// v17 moved the card and left the drawing alone. The other half of Paper Mario
+// is a small number of drawn frames swapping under the moving object, and the
+// art for it was already in the repo — TURF's own seven-pose cast set, read by
+// nothing. These assert the two halves cannot drift: a frame is picked off the
+// SAME stage list as the transform, so it can never be one beat out of step.
+check(`the frame set is the poses the fight produces (${FRAME_NAMES.join(', ')})`,
+  ['idle', 'attack-windup', 'attack-release', 'hit', 'move'].every(n => FRAME_NAMES.includes(n)));
+check('every frame a clip names is a frame the pose set actually has',
+  FRAME_NAMES.every(n => POSES.includes(n)));
+// The one that matters: the drawing changes ON the beat, not near it. The
+// attack's stages are 0.20 / 0.11 / 0.30, so the windup owns everything before
+// 0.20 and the release owns everything after it.
+check('the attack winds up, then commits — and the swap is on the stage edge',
+  frameAt('attack', 0) === 'attack-windup' && frameAt('attack', 0.199) === 'attack-windup'
+  && frameAt('attack', 0.201) === 'attack-release');
+check('the recovery HOLDS the release rather than snapping back to idle',
+  frameAt('attack', 0.30) === 'attack-release' && frameAt('attack', 0.60) === 'attack-release');
+check('and past the end of any clip the figure is standing still again',
+  CLIP_NAMES.every(n => isHeld(n) || frameAt(n, clipLength(n) + 0.001) === 'idle'));
+check('being hit shows the hit frame for the whole clip', frameAt('hurt', 0) === 'hit' && frameAt('hurt', 0.3) === 'hit');
+check('a clip nobody drew frames for reads as idle rather than as undefined',
+  frameAt('nosuchclip', 0.1) === 'idle');
+// The files. A posed character has no bare <name>.png — the seven frames are
+// one set with one naming rule, so nothing has to remember the special case.
+check(`${WITH_POSES.size} character(s) carry a pose set, and it is the full table`,
+  WITH_POSES.size > 0 && [...WITH_POSES].every(() => POSES.length === 7));
+const posedIds = Object.entries(CAST).filter(([, n]) => WITH_POSES.has(n)).map(([id]) => id);
+check(`a posed figure reports all seven frames (${posedIds.join(', ')})`,
+  posedIds.length > 0 && posedIds.every(id => posesFor(id).length === 7));
+check('an unposed figure reports exactly one, so it bakes exactly one texture',
+  Object.keys(CAST).filter(id => !posedIds.includes(id)).every(id => posesFor(id).length === 1));
+check('and every frame of every posed figure is a real file in figures/',
+  posedIds.every(id => POSES.every(p => existsSync(new URL('../' + plateFor(id, p), import.meta.url)))),
+  `${posedIds.flatMap(id => POSES.filter(p => !existsSync(new URL('../' + plateFor(id, p), import.meta.url))).map(p => id + ':' + p))}`);
+check('asking a posed figure for no pose gives its standing frame',
+  posedIds.every(id => plateFor(id) === plateFor(id, 'idle')));
+
+// ── enemies that REACT (v23) ─────────────────────────────────────────────
+// `when` is the difference between a bestiary and a rotation. These assert the
+// condition FIRES and — the half that is easy to forget — that it does not
+// fire when it should not, since a conditional move left in the ordinary loop
+// is the obvious bug.
+const withWhen = Object.entries(ENEMIES).filter(([, e]) => e.moves.some(m => m.when));
+check(`enemies react to the fight, not just to a clock (${withWhen.length} of ${Object.keys(ENEMIES).length})`, withWhen.length >= 5);
+// The list is read off the ENGINE, not typed out here. A literal copy failed
+// the moment v26 added two conditions — the same brittleness as v16's
+// `hp === 68` and v23's `moves[2]`, and the third time is enough.
+const CONDITIONS = Object.keys(WHEN);
+check(`every condition used is one the engine knows (${CONDITIONS.join(', ')})`,
+  Object.values(ENEMIES).every(e => e.moves.every(m => !m.when || CONDITIONS.includes(m.when))));
+check(`and all ${CONDITIONS.length} are actually used — a condition with no user is dead code`,
+  CONDITIONS.every(w => Object.values(ENEMIES).some(e => e.moves.some(m => m.when === w))),
+  `${CONDITIONS.filter(w => !Object.values(ENEMIES).some(e => e.moves.some(m => m.when === w)))}`);
+// Every reacting enemy still has a rotation underneath: strip the conditional
+// moves and what is left has to be a fight on its own.
+check('a reacting enemy still has an ordinary loop under it',
+  withWhen.every(([, e]) => e.moves.filter(m => !m.when).length >= 2));
+
+const react = (enc, tweak = () => {}) => {
+  const st = startRun(createRun({ seed: 6, character: 'cart' }));
+  jumpTo(st, ENC(enc));
+  tweak(st);
+  st.enemies.forEach(e => { e.intent = null; });
+  // re-plan against the state the tweak just made
+  endTurn(st);
+  return st;
+};
+// `first` — an opener. A rotation starts anywhere, so this is the one thing it
+// could never do.
+let r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('lookout'));
+const look = r.enemies.find(e => e.id === 'lookout');
+check('the Lookout whistles on turn one, whatever the rotation rolled', look.intent.id === 'whistle', `${look.intent.id}`);
+check('and it buffs the whole row rather than itself', look.intent.who === 'all');
+endTurn(r);
+check('and does not whistle again on turn two', r.enemies.find(e => e.id === 'lookout')?.intent.id !== 'whistle');
+
+// `alone` — kill ORDER becomes a decision.
+r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('scrappers'));
+const scr = r.enemies.filter(e => e.id === 'scrapper');
+check('two Scrappers, and neither is enraged while it has company',
+  scr.length === 2 && r.enemies.filter(e => e.alive).length === 3 && scr.every(e => e.intent.id !== 'nothing_left'));
+r.enemies.forEach(e => { if (e !== scr[0]) { e.alive = false; e.hp = 0; } });
+scr[0].intent = null; endTurn(r);
+check('left alone, the Scrapper enrages', scr[0].intent.id === 'nothing_left', `${scr[0].intent.id}`);
+
+// `walled` — block was a strictly safe play before this.
+r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('hardcase'));
+const hard = r.enemies.find(e => e.id === 'hard_case');
+check('the Hard Case ignores you while you are not turtling', hard.intent.id !== 'shoulder');
+// Assert what ACTED, from the log. After `endTurn` an enemy's `intent` is the
+// one planned for the turn AFTER — reading it there is reading one turn late,
+// which is what made three of these look broken while the engine was right.
+const acted = (st, from) => st.log.slice(from).filter(l => l.t === 'enemyAct').map(l => l.move);
+let mark = r.log.length;
+r.hero.block = 14; hard.intent = null; endTurn(r);
+check('but answers a wall of block with frail', acted(r, mark).includes('shoulder'), `${acted(r, mark)}`);
+
+// `hurt` + `once` — the Jaw Worm's bellow: a single second wind.
+r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('thief'));
+const thief = r.enemies.find(e => e.id === 'bottle_thief');
+check('the Bottle Thief does not drink while she is fresh', thief.intent.id !== 'last_drop');
+mark = r.log.length;
+thief.hp = 8; thief.intent = null; endTurn(r);
+check('hurt, she takes the last drop', acted(r, mark).includes('last_drop'), `${acted(r, mark)}`);
+check(`and it healed her (${thief.hp} HP)`, thief.hp > 8);
+mark = r.log.length;
+thief.hp = 6; thief.intent = null; endTurn(r);
+check('ONCE — there is no second bottle', !acted(r, mark).includes('last_drop'), `${acted(r, mark)}`);
+
+// The boss: half gone is a different fight.
+r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('bridge'));
+const king = r.enemies[0];
+check('the Bridge King opens on his ordinary rotation', king.intent.id !== 'enough');
+mark = r.log.length;
+king.hp = 40; king.intent = null; endTurn(r);
+check('at half he has had enough', acted(r, mark).includes('enough'), `${acted(r, mark)}`);
+check('and it is worth three strength', king.status.strength >= 3, `${king.status.strength}`);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
