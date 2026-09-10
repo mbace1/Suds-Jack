@@ -12,10 +12,10 @@ export function loadArt({scene,rider,deck,body,environment,renderer,host}){
  const fabricNormal=texture('fabric-normal'+(mobile?'-mobile':'')+'.png?v=2');const fabricRough=texture('fabric-rough'+(mobile?'-mobile':'')+'.png?v=2');
 
  const ready=fetch(new URL('manifest.json?v=2',base)).then(r=>{if(!r.ok)throw Error('Art manifest unavailable');return r.json()}).then(async manifest=>{
-  // Some mobile GPUs render the batched warehouse GLB as a screen-sized white
-  // surface. Keep the complete procedural warehouse on coarse/small screens;
-  // the Blender skater, board, animation and effects assets still load there.
-  const models=mobile?['skater','board']:['warehouse','skater','board'];
+  // Some mobile GPUs fail only after a GLB is inserted, turning the complete
+  // framebuffer white. The procedural warehouse, skater and board are the
+  // compatibility tier; desktop retains every Blender model and animation.
+  const models=mobile?[]:['warehouse','skater','board'];
   await Promise.all(models.map(async name=>{
    const gltf=await loader.loadAsync(new URL(manifest.models[name][quality],base).href);if(disposed){gltf.scene.traverse(disposeObject);return}
    resources.push(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material.map)o.material.map.anisotropy=mobile?2:4;if(o.material.name.startsWith('Jacket')){o.material.normalMap=fabricNormal;o.material.normalScale.set(.18,.18);o.material.roughnessMap=fabricRough;o.material.needsUpdate=true}}});
