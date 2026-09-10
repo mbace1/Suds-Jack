@@ -7,7 +7,7 @@ import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, R
 import { readFileSync, existsSync } from 'node:fs';
 import { poseAt, frameAt, FRAME_NAMES, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
 import { CAST, WITH_GUNS, POSES, WITH_POSES, castFiles, plateFor, posesFor } from '../js/plates.js';
-import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable } from '../js/engine.js';
+import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
 
@@ -546,7 +546,16 @@ check('the sauna heals nothing at full health — but does not hurt either', s.h
 s = atEvent('sauna'); s.hero.hp = 20; chooseEvent(s, 0);
 check(`and 60% of max from 20 is ${20 + Math.floor(HP0 * 0.6)}`, s.hero.hp === 20 + Math.floor(HP0 * 0.6));
 s = atEvent('dumpster'); chooseEvent(s, 1);
-check('digging in the bin costs 7 and gains a friend', s.hero.hp === HP0 - 7 && s.jokers.length === 1);
+// Read the DROP out of the log rather than the end state. The friend is rolled
+// from the run's rng, and some of them grant max HP — which grants the HP with
+// it — so `hp === HP0 - 7` was really asserting which friend the seed happened
+// to roll. v26 changed the route pool, the roll moved, and a check about a bin
+// failed because of a coat. Same shape as v16's HP ledger: a gain is not a
+// cost being smaller.
+const dug = s.log.find(l => l.t === 'hp' && l.n < 0) ?? s.log.find(l => l.t === 'damage');
+check('digging in the bin costs 7 and gains a friend',
+  s.jokers.length === 1 && s.hero.hp <= HP0 - 7 + (s.jokers[0].effect?.type === 'maxHp' ? s.jokers[0].effect.n : 0),
+  `hp ${s.hero.hp} of ${HP0}, friend ${s.jokers[0]?.id}, drop ${JSON.stringify(dug)}`);
 s = atEvent('the_canal'); chooseEvent(s, 0);
 const roll1 = s.log.find(l => l.t === 'roll').good;
 const s4 = atEvent('the_canal'); chooseEvent(s4, 0);
@@ -769,6 +778,55 @@ const ghosts = WITH_GUNS.filter(n => !existsSync(new URL(`../../turf/art-src/spr
   && !existsSync(new URL(`../../turf/art-src/sprites/cast/${n}-idle.png`, import.meta.url)));
 check(`the gun list still names real plates${ghosts.length ? ` — ${ghosts}` : ''} (${WITH_GUNS.length} of 32)`, ghosts.length === 0);
 
+// ── the ones cast from the spare plates (v26) ────────────────────────────
+// Two new conditions, one user each — the rule v23 set, which is that a
+// condition with no user is dead code. `crowded` is `alone`'s mirror; the
+// interesting half is that both directions of thinning the row now cost you
+// something. `bleeding` is the first that reads YOU rather than the row.
+const fight3 = (ids, hp) => {
+  const st = startRun(createRun({ seed: 3, character: 'drinker' }));
+  st.route.steps[0] = [{ kind: 'fight', id: ids }];
+  chooseNode(st, 0);
+  if (hp) st.hero.hp = hp;
+  return st;
+};
+// `crowded` counts three alive INCLUDING itself, so the Bat's own fight has
+// the bodies and stripping them takes the bonus away.
+let cs = fight3('bat');
+check('the Bat comes with company — three on the bridge', cs.enemies.filter(e => e.alive).length === 3);
+const batIntent = st => st.enemies.find(e => e.id === 'bat')?.intent?.id;
+check(`held by two friends, the Bat calls the shot — ${batIntent(cs)}`, batIntent(cs) === 'hold_him');
+// Thin the row and it stops: the same enemy, a different fight.
+cs = fight3('bat');
+for (const e of cs.enemies) if (e.id !== 'bat') { e.alive = false; e.hp = 0; }
+for (const e of cs.enemies) if (e.alive) { e.intent = null; }
+endTurn(cs);
+check('on his own he goes back to swinging at you', batIntent(cs) !== 'hold_him');
+// `bleeding` reads the hero. The Butcher's Boy is the first enemy in the game
+// whose threat depends on the state of your RUN rather than of the row.
+let bs = fight3('sable');
+const sableIntent = st => st.enemies.find(e => e.id === 'sable')?.intent?.id;
+check(`at full health he only circles — ${sableIntent(bs)}`, sableIntent(bs) !== 'finish_it');
+bs.hero.hp = Math.floor(bs.hero.maxHp / 2);
+for (const e of bs.enemies) e.intent = null;
+endTurn(bs);
+check(`under half he goes for it — ${sableIntent(bs)}`, sableIntent(bs) === 'finish_it');
+check('and it is the biggest number he has',
+  ENEMIES.sable.moves.find(m => m.id === 'finish_it').dmg > Math.max(...ENEMIES.sable.moves.filter(m => m.id !== 'finish_it').map(m => m.dmg ?? 0)));
+// Six new people, and each is cast for a picture rather than for a hole in a
+// stat table — which a gate cannot see. What it CAN see is that each one is a
+// real plate, is person-shaped, and is not a second copy of a rotation the
+// game already had.
+const CAST_V26 = ['debt', 'bat', 'sable', 'hardhat', 'fence', 'crowbar'];
+check(`six people cast from the spare pool (${CAST_V26.join(', ')})`,
+  CAST_V26.every(id => ENEMIES[id] && plateFor(id)));
+check('every one of them is a person, not a rat wearing a coat',
+  CAST_V26.every(id => (ENEMIES[id].kallio.look.shape ?? 'person') === 'person'));
+check('and each leads a fight of its own in one of the two act pools',
+  CAST_V26.every(id => ACTS.some(a => a.fights.includes(id))));
+check('the Debt Collector is the second figure that can act — he has the pose set',
+  posesFor('debt').length === 7);
+
 // ── the frame axis (v25) ─────────────────────────────────────────────────
 // v17 moved the card and left the drawing alone. The other half of Paper Mario
 // is a small number of drawn frames swapping under the moving object, and the
@@ -814,10 +872,15 @@ check('asking a posed figure for no pose gives its standing frame',
 // is the obvious bug.
 const withWhen = Object.entries(ENEMIES).filter(([, e]) => e.moves.some(m => m.when));
 check(`enemies react to the fight, not just to a clock (${withWhen.length} of ${Object.keys(ENEMIES).length})`, withWhen.length >= 5);
-check('every condition used is one the engine knows',
-  Object.values(ENEMIES).every(e => e.moves.every(m => !m.when || ['first', 'hurt', 'alone', 'walled'].includes(m.when))));
-check('and all four are actually used — a condition with no user is dead code',
-  ['first', 'hurt', 'alone', 'walled'].every(w => Object.values(ENEMIES).some(e => e.moves.some(m => m.when === w))));
+// The list is read off the ENGINE, not typed out here. A literal copy failed
+// the moment v26 added two conditions — the same brittleness as v16's
+// `hp === 68` and v23's `moves[2]`, and the third time is enough.
+const CONDITIONS = Object.keys(WHEN);
+check(`every condition used is one the engine knows (${CONDITIONS.join(', ')})`,
+  Object.values(ENEMIES).every(e => e.moves.every(m => !m.when || CONDITIONS.includes(m.when))));
+check(`and all ${CONDITIONS.length} are actually used — a condition with no user is dead code`,
+  CONDITIONS.every(w => Object.values(ENEMIES).some(e => e.moves.some(m => m.when === w))),
+  `${CONDITIONS.filter(w => !Object.values(ENEMIES).some(e => e.moves.some(m => m.when === w)))}`);
 // Every reacting enemy still has a rotation underneath: strip the conditional
 // moves and what is left has to be a fight on its own.
 check('a reacting enemy still has an ordinary loop under it',

@@ -45,13 +45,13 @@
     "from": "VERSIONS.md"
   },
   "slaykallio": {
-    "v": "24",
-    "n": 24000,
+    "v": "26",
+    "n": 26000,
     "from": "VERSIONS.md"
   },
   "turf": {
-    "v": "32",
-    "n": 32000,
+    "v": "34",
+    "n": 34000,
     "from": "VERSIONS.md"
   },
   "gameoflife": {

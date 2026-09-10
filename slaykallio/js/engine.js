@@ -563,7 +563,7 @@ function loseHp(state, n, src) {
 // one enemy" in a subtler form. Slay the Spire's own answer is a conditional
 // intent (the Jaw Worm bellows when it is hurt, the Guardian shifts mode), and
 // it costs one function rather than any new art.
-const WHEN = {
+export const WHEN = {
   first:  (state) => state.turn === 0,                                     // planned before turn one: an opener
   hurt:   (state, e) => e.hp * 2 <= e.maxHp,                               // half gone
   alone:  (state) => state.enemies.filter(x => x.alive).length === 1,      // last one standing
@@ -573,6 +573,16 @@ const WHEN = {
   // very attacks that just landed. Asking `hero.block` there is asking after
   // the fact, and the condition could never once have fired.
   walled: (state) => (state.wall ?? state.hero.block) >= 10,                // you turtled
+  // v26. `alone`'s mirror, and it makes clearing the small ones cut both ways:
+  // kill the mob and the one carrying the bat stops getting the bonus, kill the
+  // bat and the mob keeps coming. Counted BEFORE the row acts, like every
+  // other condition here, so the telegraph and the swing agree.
+  crowded: (state) => state.enemies.filter(x => x.alive).length >= 3,       // it has friends
+  // The first condition that reads YOU rather than the row. `walled` reads the
+  // hero too, but it reads a choice you made this turn; this reads the state
+  // of the run, which is what makes a finisher a finisher — an execute has to
+  // be visible a turn early or it is just a big number that arrived.
+  bleeding: (state) => state.hero.hp * 2 <= state.hero.maxHp,               // you are half gone
 };
 
 function planIntent(state, e) {

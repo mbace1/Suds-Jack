@@ -7,6 +7,102 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v26 — 2026-09-10
+**Six people off the spare plates, two new conditions, and one clean number**
+
+Fourteen of TURF's thirty plates were sitting in a folder while sixteen stood
+on the bridge. Six of them are cast now, each for what the **picture** actually
+shows rather than for a hole in a stat table — a bat already up over a
+shoulder, blood on a pair of white-hooded trousers, a yellow hard hat, a
+crowbar held in both hands, dreadlocks and a gold chain, and a bald tattooed
+man with a pistol. That last one is `gunner`, **the other character with a full
+seven-pose set**, so the Debt Collector is the second figure on this bridge
+that can wind up, commit and fall, and he is written as a slow heavy on purpose
+— a figure worth watching should be on screen for more than two turns.
+
+**Two new conditions, one user each** — v23's rule, which is that a condition
+with no user is dead code.
+
+- **`crowded`** is `alone`'s mirror, and the point is that thinning the row now
+  cuts both ways: with bodies to hold you the Bat calls the shot for the whole
+  row, and killing the small ones is what shuts it off. Kill the Bat instead
+  and the mob keeps coming.
+- **`bleeding`** is the first condition that reads **you** rather than the row.
+  `walled` reads the hero too, but it reads one turn's choice; this reads the
+  state of the run. The Butcher's Boy circles while you are healthy and swings
+  his biggest number the moment you drop under half — telegraphed a turn early,
+  because an execute that is not visible in advance is only a big number that
+  arrived.
+
+**And the measurement is the version's real content.** 400 seeds a cell, with a
+v25 checkout as the control column.
+
+**Every bot's mean win rate is flat** — 12/8/8/7/21/28 against 12/8/11/6/21/27
+— and the one cell that moves, `defensive` +3, reproduces in two blocks but has
+no mechanism behind it, so it is named and left rather than explained.
+
+**What did move is what an ordinary fight COSTS, by the same amount for every
+bot:** 12.1 → 13.3 greedy, 11.8 → 13.0 aggressive, 10.4 → 11.3 defensive,
+13.3 → 14.6 hoarder, 10.4 → 11.3 synergist, 10.6 → 11.6 native. **+1.0 ± 0.2 HP
+per fight, six bots, one direction** — while the elite and boss costs do not
+move at all (48.8 → 48.5, 58.3 → 58.3, 40.0 → 39.8, 38.0 → 37.6). The share of
+a run's HP lost to ordinary fights goes 46% → 50% on greedy and 37% → 40% on
+native, which is the direction v11 said the middle of the run needed and had
+never actually got.
+
+**The separation, and it is completely clean.** Three changes could not be
+told apart in v23 and one measurement had to carry them; here the six fights
+were split by act and run as two more 400-seed blocks:
+
+```
+                        fight cost, per bot
+  v25 control     12.1  11.8  10.4  13.3  10.4  10.6
+  act-one three   13.3  13.1  11.2  14.6  11.4  11.6   <- reproduces v26
+  act-two three   12.1  11.9  10.5  13.4  10.2  10.5   <- reproduces the CONTROL
+  v26 (all six)   13.3  13.0  11.3  14.6  11.3  11.6
+```
+
+**The whole effect is the act-one three. The act-two three are invisible.**
+Not flat — *invisible*: 30–45% of runs reach act two at all, and those that do
+draw six spans from a thirteen-fight pool, so three additions there are barely
+sampled. That is a fact about this instrument that nobody had written down, and
+it means **`bat`, `sable` and both new conditions are UNMEASURED**, which is a
+different claim from "measured and harmless". Anything aimed at act two needs
+its own harness before it can be called balanced.
+
+**One cost worth naming.** Reaching act two fell 6–12 points on every character
+while the win rate did not move — so the runs that used to die at the Bear now
+die earlier, at the same rate. Whether an earlier death at the same frequency
+is better pacing is a taste question and not a measurement; if it is not wanted,
+the lever is which act a fight sits in, and the a1/a2 blocks above already are
+that experiment.
+
+**The findings bar now scales with the sample.** v24 measured the floor at 13
+points at 150 seeds and then held every later run to that number whatever it
+was run at — so a 400-seed block, where the real floor is about 8, was throwing
+away findings it had already paid for. Noise falls as 1/√n and the bar falls
+with it, or the extra runs buy nothing.
+
+**Two brittle checks fixed, both the same family as `hp === 68` and
+`moves[2]`.** The list of conditions was typed out in `core.mjs` and broke the
+moment the engine grew two — it reads `WHEN`'s own keys now. And a check on
+digging in a bin asserted `hp === HP0 - 7`, which was really asserting *which
+friend the seed rolled*: some friends grant max HP, which grants the HP with
+it, so a changed route pool moved the roll and a check about a bin failed
+because of a coat.
+
+**And a third ruler that moved with the thing it was measuring.** The deck's
+falloff check samples the planks near the torch against the planks far from it
+— but the **rank light follows the enemy row**, so a wider row puts warm light
+further from the torch and flattens the very ratio being measured. Left on
+whatever fight the run had wandered into, it read 11 → 9 on a scene with
+nothing wrong with it the moment the act pools changed. It is pinned to
+encounter 0 now: three rats, and the same three rats in every version. Same
+family as Kindling's band-brightness gate — *the page was right and the ruler
+was wrong.*
+
+Gates: `core.mjs` 758 (10 new), `smoke.cjs` 135.
+
 ## v25 — 2026-09-10
 **The frame axis — Paper Mario's other half, and the art was already here**
 

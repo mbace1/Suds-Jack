@@ -231,7 +231,13 @@ const check = (name, ok, extra = '') => {
   // Darkest Dungeon's look is a LIGHTING SETUP before it is an art style — one
   // warm source close to the party and everything past its falloff going dark —
   // so what is gated is the setup, not a colour value somebody might tune.
-  await page.evaluate(() => { __sk.flush(); __sk.setHour(0.85); });   // late evening: the sun is out and the torch is the light
+  // PIN THE FIGHT. The falloff is measured off the deck, and the rank light
+  // FOLLOWS the enemy row — so a wider row puts warm light further from the
+  // torch and flattens the very ratio this is measuring. Left to whatever
+  // fight the run had wandered into, the ruler moved when v26 changed the act
+  // pools and read 11 → 9 on a scene nothing was wrong with. Encounter 0 is
+  // three rats and is the same three rats in every version.
+  await page.evaluate(() => { __sk.debug.jumpTo(0); __sk.flush(); __sk.setHour(0.85); });   // late evening: the sun is out and the torch is the light
   await page.waitForTimeout(300);
   check('the light falls off: there is a torch with a real distance, not a sun',
     await page.evaluate(() => __sk.arena.torch.isPointLight === true && __sk.arena.torch.distance > 0 && __sk.arena.torch.decay > 0));

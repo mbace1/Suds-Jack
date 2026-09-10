@@ -691,7 +691,94 @@ native **+6**; the +6 reproduced on a 4× sample so it is probably real, but the
 evidence supports "a few points on his best line and nothing on the naive one",
 not the headline. v16's Collector (+23 on synergist) and v14's synergist
 finding (17 and 19) both clear the floor and stand.
-Gates: `node slaykallio/test/core.mjs` (736 checks) and
+**PAPER MARIO'S OTHER HALF, AND THE ART WAS ALREADY IN THE REPO** (v25). v17
+moved the card and left the drawing alone, which is half of what it promised:
+Paper Mario moves the OBJECT *and* swaps a small number of drawn frames under
+it. Asked whether all of TURF's characters were in, the honest answer needed an
+enumeration rather than a memory — and the enumeration found
+`turf/art-src/sprites/cast/`, seven unopened subdirectories holding a **seven-pose
+set per character** (idle, move, attack-windup, attack-release, hit, death-fall,
+death-down, two facings) generated to `ART_REQUEST.md` §6's own frame table and
+read by **nothing**. `leopard` — the Dog Walker since v18 — is one of the two
+carried through the whole table. **`frameAt(name, t)` walks the SAME stage
+durations `poseAt` walks**, so a drawing cannot end up one beat out of step with
+the transform: the attack's stages are 0.20/0.11/0.30 and the swap to the
+release frame is the same instant as the commit because it is the same number
+read twice. The **recovery HOLDS the release** — the arm is extended and the
+body is settling under it, so popping back to idle on frame one reads as a
+second, faster attack. Textures are **baked at construction, never on the beat**
+(`paintCutout` runs newsprint, torchlight, nicks, fibre and grime; that is far
+too much work to do inside an attack), `posesFor` returns `['idle']` for
+everything else so the ordinary figure pays what it always paid, and a frame
+that failed to decode resolves to idle rather than to a blank plane. **Front
+only, and that is geometry rather than economy**: everybody faces across this
+bridge and `body.scale.x = facing` already mirrors the enemy row, so a rear
+frame would never be drawn. Death is the exception that is not on a clip — the
+topple is physics, so `death-fall` goes over and `death-down` lands.
+**SIX PEOPLE OFF THE SPARE PLATES, AND ONE VERY CLEAN NUMBER** (v26). Six of
+the fourteen uncast plates are on the bridge, each cast for what the PICTURE
+shows rather than for a hole in a stat table — `gunner` is the Debt Collector
+and is **the second figure that can act**, since he is the other character with
+a full pose set. Two new conditions, one user each: **`crowded`** is `alone`'s
+mirror, so thinning the row cuts both ways; **`bleeding`** is the first that
+reads YOU rather than the row — `walled` reads the hero, but it reads one
+turn's choice, and this reads the state of the run. **The measurement is the
+version's real content.** 400 seeds a cell against a v25 control: every bot's
+mean win rate is flat, and what moved is **what an ordinary fight COSTS — +1.0
+± 0.2 HP, six bots, one direction** — while the elite and boss costs do not
+move at all. The share of a run's HP lost to ordinary fights goes 46% → 50% on
+greedy, which is the direction v11 asked for and had never got. **And the
+separation is complete**: split by act and run as two more blocks, the act-one
+three reproduce v26 exactly and the act-two three reproduce the CONTROL exactly.
+**The act-two additions are not flat, they are INVISIBLE** — 30-45% of runs
+reach act two and those that do draw six spans from a thirteen-fight pool, so
+three additions there are barely sampled. That is a fact about the instrument
+nobody had written down, and it means `bat`, `sable` and both new conditions
+are **unmeasured**, which is a different claim from harmless: anything aimed at
+act two needs its own harness first. One cost named rather than hidden —
+reaching act two fell 6-12 points while the win rate did not, so the runs that
+used to die at the Bear now die earlier at the same rate, and whether that is
+better pacing is taste, not measurement. **The findings bar now scales with the
+sample**: v24 measured 13 points at 150 seeds and then held every later run to
+that number, so a 400-seed block (real floor ~8) was throwing away findings it
+had paid for. Two more brittle checks of the `hp === 68` family fell out — the
+condition list was typed into `core.mjs` and now reads `WHEN`'s own keys, and a
+check on digging in a bin was really asserting WHICH FRIEND the seed rolled,
+since a friend that grants max HP grants the HP with it. And a third ruler moved
+with the thing it measured: the deck-falloff check samples planks near the torch
+against planks far from it, but **the rank light FOLLOWS the enemy row**, so a
+wider row flattens the very ratio being measured — left on whatever fight the run
+had wandered into it failed on a scene with nothing wrong with it. Pinned to
+encounter 0 now, which is three rats in every version. Kindling's band-brightness
+lesson again: *the page was right and the ruler was wrong.*
+**THE OWNER'S OWN 26 ARE CUT AT LAST** (v27, `turf/tools/sheet-cut.mjs` →
+`turf/art-src/sprites/cast/roster/`). The thirty `*-plate.png` files are **new
+characters generated in the sheets' technique** — `turfGrim` says in as many
+words to copy the technique and never the reference's specific character — so
+the owner's OWN roster existed in this repo as two magenta PNGs and nothing
+else: 20 on `casting-sheet-full.png` and 6 on `casting-sheet-3.png`
+(`-detail-1` is a byte-identical duplicate of the latter and `-detail-2` a zoom
+crop of the former). Nothing is generated; Idle is the one pose that never
+needs a model, and `cast/README.md` already said so. Three things the tool gets
+right that a nominal grid does not: **cells are found by PROJECTION** (the
+sheets "bleed slightly past their nominal boundary" and a nominal crop put a
+sliver of a neighbour into `gunner-idle` twice), each figure's own top is
+tightened out of its row band (a band is as tall as its tallest member, so a
+short character cut to it stands in the air), and **a prop can BRIDGE two
+cells** — the sledgehammer reaches into its own back view and merged two
+figures into one 300px run, silently shifting every name after it, so an
+over-wide run is split at its thinnest interior column. **The key is two-stage
+and that is the whole difference between a cut-out and a sticker**: the sheets
+are antialiased AGAINST magenta, so the pixel ring where a figure meets the
+background is its colour BLENDED with the key — nowhere near the key, kept by
+any distance threshold, and the result is every character wearing a magenta
+rim. Stage two recognises contamination rather than proximity (magenta has no
+green, so it reads as R and B both well above G) and tests **edge pixels only**,
+or a purple pair of trousers gets eaten from the inside. What it unlocks: a
+pose set for any of the 26 is now **12 generations against a local reference
+crop** rather than a re-derivation of the recipe — and that step is the first
+one here that needs an API key, which this environment does not have.
+Gates: `node slaykallio/test/core.mjs` (758 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
@@ -1031,6 +1118,27 @@ rect, which clips it to the silhouette instead of a glowing box.
 RUNTIME path (`units.json` points `sprite`/`portrait` there), which is why a deploy must
 carry it; CLAUDE.md's "a deploy omits `art-src/`" rule is written for eeri, where art-src is
 source. `art-src/reference/` (20MB) is source material and stays behind.
+**The owner's OWN 26 are cut** (v34, `tools/sheet-cut.mjs` →
+`art-src/sprites/cast/roster/`). The thirty `*-plate.png` files are new
+characters generated in the sheets' TECHNIQUE — `turfGrim` says in as many words
+to copy the technique and never the reference's specific character — so "we have
+32 characters" was true and "we have the owner's roster" was not: his own 26 (20
+on `casting-sheet-full.png`, 6 on `casting-sheet-3.png`; `-detail-1` is a
+byte-identical duplicate of the latter and `-detail-2` a zoom crop of the former)
+lived here as two magenta PNGs. Nothing is generated — Idle is the one pose that
+never needs a model. Cells are found by **projection**, not a nominal grid (the
+sheets bleed past their nominal boundaries, which is how a sliver of a neighbour
+got into `gunner-idle` twice), each figure's top is tightened out of its row band,
+and an over-wide run is **split** because a prop can bridge two cells — the
+sledgehammer reaches into its own back view and merged two figures, shifting every
+name after it. **The key is two-stage**: the sheets are antialiased AGAINST
+magenta, so the edge ring is the figure's colour BLENDED with the key — nowhere
+near it, kept by any distance threshold, and the result is a magenta rim on
+everyone. Stage two recognises contamination rather than proximity (magenta has no
+green, so it reads as R and B both well above G) on **edge pixels only**, or a
+purple pair of trousers gets eaten from the inside. A pose set for any of the 26
+is now 12 generations against a local crop rather than a re-derivation of the
+recipe.
 **`turf/tools/spritecheck.py` is the mechanical source of truth for sprite QA** (PR #419's
 Sprite Factory owns the state/UI). Thresholds are calibrated against the real 28-frame cast
 set, not guessed: anything legitimately different tops out at 0.841 IoU, so `DUP_IOU` is

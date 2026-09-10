@@ -660,6 +660,71 @@ export const ENEMIES = {
   // The Karhupuisto bear — the granite statue in the plate behind the bridge,
   // woken. Eldritch Kallio's second boss is the thing that was in the
   // photograph all along.
+  // ── the ones cast from the spare plates (v26) ──────────────────────────
+  // Sixteen of TURF's thirty plates were on this bridge and fourteen were in
+  // a folder. These six are cast for what the PICTURE actually shows — a bat
+  // over a shoulder, blood on a pair of trousers, a hard hat, a crowbar held
+  // in both hands — rather than for a hole in a stat table, which is the same
+  // rule the roster was cast under and the reason the row reads as collected
+  // people rather than as a difficulty curve wearing coats.
+  debt: { hp: 46, pattern: 'cycle', scale: 1.06,
+    moves: [
+      { id: 'the_number', intent: 'buff', status: { key: 'strength', n: 2 } },
+      { id: 'collect', intent: 'attack', dmg: 11 },
+      { id: 'interest', intent: 'attack', dmg: 5, times: 2 },
+    ],
+    // `gunner` is the second TURF character carried through the whole seven-pose
+    // table, so he is the only figure besides the Dog Walker who can wind up,
+    // commit and fall — cast as a slow heavy on purpose, because a figure worth
+    // watching should be on screen for more than two turns.
+    kallio: { name: 'The Debt Collector', look: { skin: '#c8a084', hair: '#2a2420', hairStyle: 'bald', top: '#d8d4c8', bottom: '#3a4250', shoes: '#3a2c20', hat: 'none', prop: 'none', accent: '#c8a03a', base: 'tin', grime: 0.6, shape: 'person' } },
+    fantasy: { name: 'The Tithe-Taker', look: { skin: '#c8a084', hair: '#2a2420', hairStyle: 'bald', top: '#c8c4bc', bottom: '#38344a', shoes: '#3a2c20', hat: 'none', prop: 'none', accent: '#a08ac8', base: 'tin', grime: 0.5, shape: 'person' } } },
+  bat: { hp: 32, pattern: 'cycle', scale: 0.96,
+    moves: [
+      // `crowded` is `alone`'s mirror and it is the whole point of this one:
+      // with bodies to hold you he swings for the ROW's benefit, and thinning
+      // the row is what shuts it off. It reads three alive counting himself.
+      { id: 'hold_him', when: 'crowded', intent: 'debuff', status: { key: 'vulnerable', n: 2 } },
+      { id: 'swing', intent: 'attack', dmg: 9 },
+      { id: 'wind_up', intent: 'buff', status: { key: 'strength', n: 1 } },
+    ],
+    kallio: { name: 'The Bat', look: { skin: '#c09070', hair: '#3a2e24', hairStyle: 'shaggy', top: '#3a3a5a', bottom: '#2e2c34', shoes: '#c8c4bc', hat: 'cap', hatColor: '#2a2a3a', prop: 'plank', accent: '#8a5a3a', base: 'card', grime: 0.7, shape: 'person' } },
+    fantasy: { name: 'The Cudgel', look: { skin: '#c09070', hair: '#3a2e24', hairStyle: 'shaggy', top: '#3a2c4a', bottom: '#2a2830', shoes: '#b8b4ac', hat: 'hood', prop: 'plank', accent: '#a06ac8', base: 'card', grime: 0.6, shape: 'person' } } },
+  sable: { hp: 28, pattern: 'cycle', scale: 0.94,
+    moves: [
+      // The first enemy whose threat depends on YOUR state. `walled` reads the
+      // hero too, but it reads one turn's choice; this reads the run. An
+      // execute has to be visible a turn early or it is only a big number that
+      // turned up — which is what the intent line is for.
+      { id: 'finish_it', when: 'bleeding', intent: 'attack', dmg: 16 },
+      { id: 'chip', intent: 'attack', dmg: 5 },
+      { id: 'circle', intent: 'debuff', status: { key: 'weak', n: 2 } },
+    ],
+    kallio: { name: 'The Butcher’s Boy', look: { skin: '#c8a888', hair: '#2a2420', hairStyle: 'lank', top: '#d0cec4', bottom: '#7a2a2a', shoes: '#d8d4cc', hat: 'hood', prop: 'none', accent: '#c83a3a', base: 'card', grime: 0.85, shape: 'person' } },
+    fantasy: { name: 'The Red Hood', look: { skin: '#c8a888', hair: '#2a2420', hairStyle: 'lank', top: '#c8c4c0', bottom: '#6a2038', shoes: '#c8c4bc', hat: 'hood', prop: 'none', accent: '#c83a6a', base: 'card', grime: 0.8, shape: 'person' } } },
+  hardhat: { hp: 30, pattern: 'cycle', scale: 1,
+    moves: [
+      { id: 'kit_on', intent: 'buff', block: 8, status: { key: 'thorns', n: 3 } },
+      { id: 'shove', intent: 'attack', dmg: 7 },
+      { id: 'rivet', intent: 'attack', dmg: 4, times: 2 },
+    ],
+    kallio: { name: 'The Scaffolder', look: { skin: '#c8a884', hair: '#b8a068', hairStyle: 'shaggy', top: '#3a4030', bottom: '#33313a', shoes: '#2a2420', hat: 'cap', hatColor: '#e0b820', prop: 'none', accent: '#e0b820', base: 'card', grime: 0.75, shape: 'person' } },
+    fantasy: { name: 'The Rivetter', look: { skin: '#c8a884', hair: '#b8a068', hairStyle: 'shaggy', top: '#38343c', bottom: '#2e2c38', shoes: '#2a2420', hat: 'cap', hatColor: '#c8a03a', prop: 'none', accent: '#c8a03a', base: 'card', grime: 0.7, shape: 'person' } } },
+  fence: { hp: 26, pattern: 'cycle', scale: 0.98,
+    moves: [
+      { id: 'sold_on', intent: 'curse', addCard: 'soaked' },
+      { id: 'skim', intent: 'attack', dmg: 6 },
+      { id: 'appraise', intent: 'debuff', status: { key: 'frail', n: 2 } },
+    ],
+    kallio: { name: 'The Fence', look: { skin: '#a87a56', hair: '#241c14', hairStyle: 'lank', top: '#b05a28', bottom: '#4a4236', shoes: '#3a2c20', hat: 'none', prop: 'none', accent: '#e0a83a', base: 'tin', grime: 0.6, shape: 'person' } },
+    fantasy: { name: 'The Pawnbroker', look: { skin: '#a87a56', hair: '#241c14', hairStyle: 'lank', top: '#8a4a68', bottom: '#3a3444', shoes: '#3a2c20', hat: 'none', prop: 'none', accent: '#e0c85a', base: 'tin', grime: 0.5, shape: 'person' } } },
+  crowbar: { hp: 22, pattern: 'cycle', scale: 0.86,
+    moves: [
+      { id: 'pry', intent: 'attack', dmg: 3, times: 3 },
+      { id: 'duck', intent: 'block', block: 8 },
+    ],
+    kallio: { name: 'The Crowbar', look: { skin: '#c09878', hair: '#4a3c2c', hairStyle: 'shaggy', top: '#3a4658', bottom: '#33313a', shoes: '#d8d4cc', hat: 'none', prop: 'plank', accent: '#6a9ac8', base: 'card', grime: 0.7, shape: 'person' } },
+    fantasy: { name: 'The Prybar', look: { skin: '#c09878', hair: '#4a3c2c', hairStyle: 'shaggy', top: '#34405a', bottom: '#2e2c38', shoes: '#c8c4bc', hat: 'none', prop: 'plank', accent: '#6a8ac8', base: 'card', grime: 0.6, shape: 'person' } } },
   the_bear: { hp: 140, boss: true, pattern: 'cycle', scale: 1.32,
     moves: [
       { id: 'granite', intent: 'buff', block: 20, status: { key: 'thorns', n: 3 } },
@@ -740,17 +805,33 @@ export const ENCOUNTERS = [
     kallio: { name: 'The Rat Court' }, fantasy: { name: 'The Imp Court' } },
   { id: 'bear', enemies: ['the_bear'], reward: [],
     kallio: { name: 'The Bear Wakes' }, fantasy: { name: 'The Stone Bear Wakes' } },
+  // ─ cast from the spare plates (v26). Three to each act, and each one leads
+  //   with the enemy whose picture it is named after.
+  { id: 'crowbar', enemies: ['crowbar', 'crowbar', 'rat'], reward: ['card'],
+    kallio: { name: 'Two Of Them Prying' }, fantasy: { name: 'The Prybar Pair' } },
+  { id: 'hardhat', enemies: ['hardhat', 'bin_rat'], reward: ['card', 'joker'],
+    kallio: { name: 'Off The Scaffold' }, fantasy: { name: 'The Rivetter' } },
+  { id: 'fence', enemies: ['fence', 'rival'], reward: ['card'],
+    kallio: { name: 'He Buys Anything' }, fantasy: { name: 'The Pawnbroker’s Table' } },
+  { id: 'bat', enemies: ['bat', 'rival_b', 'rat'], reward: ['card'],
+    kallio: { name: 'Somebody Holds You' }, fantasy: { name: 'Held For The Cudgel' } },
+  { id: 'sable', enemies: ['sable', 'gull'], reward: ['card', 'joker'],
+    kallio: { name: 'He Waits For The Limp' }, fantasy: { name: 'The Red Hood Waits' } },
+  { id: 'debt', enemies: ['debt', 'crowbar'], reward: ['card', 'joker'],
+    kallio: { name: 'Somebody Sent Him' }, fantasy: { name: 'The Tithe Is Due' } },
 ];
 
 // Each act draws its spans from these. `steps` is how many spans you choose
 // before the boss; the route always offers a rest on the last of them.
 export const ACTS = [
   { id: 'canal', steps: 6, boss: 'bridge',
-    fights: ['rats', 'bin', 'blob', 'rivals', 'pigeons', 'tar', 'dealer', 'preacher', 'lookout', 'hardcase'],
+    fights: ['rats', 'bin', 'blob', 'rivals', 'pigeons', 'tar', 'dealer', 'preacher', 'lookout', 'hardcase',
+      'crowbar', 'hardhat', 'fence'],
     elites: ['king_rat', 'bouncer'],
     kallio: { name: 'The Canal Bridge' }, fantasy: { name: 'The Old Span' } },
   { id: 'bear', steps: 6, boss: 'bear',
-    fights: ['gulls', 'twins', 'night', 'swarm', 'dealers', 'sermon', 'pitch', 'flock', 'scrappers', 'thief'],
+    fights: ['gulls', 'twins', 'night', 'swarm', 'dealers', 'sermon', 'pitch', 'flock', 'scrappers', 'thief',
+      'bat', 'sable', 'debt'],
     elites: ['gull_king', 'rat_court'],
     kallio: { name: 'Under The Bear' }, fantasy: { name: 'The Stone Watch' } },
 ];

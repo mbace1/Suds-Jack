@@ -50,7 +50,7 @@ const DIR = 'figures/';
 // across the bridge and `body.scale.x = facing` mirrors the enemy row, so a
 // rear frame would never be drawn. Seven files a character instead of fourteen.
 export const POSES = ['idle', 'move', 'attack-windup', 'attack-release', 'hit', 'death-fall', 'death-down'];
-export const WITH_POSES = new Set(['leopard']);
+export const WITH_POSES = new Set(['leopard', 'gunner']);
 
 // id → plate. Only person-shaped figures are cast: the rats, blobs, birds and
 // the bear have no equivalent in a roster of street operators and keep their
@@ -81,6 +81,13 @@ export const CAST = {
   scrapper:     'grunt-chain',
   hard_case:    'grunt-curt',
   bottle_thief: 'vex',         // the set's only other woman, and she has the bag
+  // the ones cast from the spare pool (v26), each for what the PICTURE shows
+  debt:    'gunner',           // the OTHER character with a full pose set — so he can act
+  bat:     'grunt-blunt',      // a baseball bat already up over the shoulder
+  sable:   'grunt-sable',      // white hood, and the blood is on his trousers
+  hardhat: 'grunt-alfie',      // a yellow hard hat — he came off a site
+  fence:   'otter',            // dreadlocks, orange jacket, gold: he buys anything
+  crowbar: 'wrench',           // the smallest in the set, holding a bar in both hands
 };
 
 // A posed character has no bare `<name>.png` — its standing frame is

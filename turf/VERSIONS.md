@@ -40,6 +40,61 @@ The topple is the strongest single case and is already solved in this repo —
 camera's x and the depth axis, because a flat cutout rotating *in* the picture
 plane reads as a sprite spinning. It retires four of the pilot's 28 frames.
 
+## v34 — 2026-09-10
+**The owner's own 26 characters, cut out of the sheets at last**
+
+No game code changed. `art-src/sprites/cast/roster/` is new and holds
+twenty-six 192×288 transparent plates — **every character on both casting
+sheets**, front-facing, cut from the owner's own pixels with no model in the
+loop.
+
+**Why it had never been done.** The thirty `*-plate.png` files are *new*
+characters generated in the sheets' technique — `turfGrim` says in as many
+words to copy the technique and never the reference's specific character — so
+"we have 32 characters" was true and "we have the owner's roster" was not. His
+own twenty-six lived here as two magenta PNGs. Two of them (`gunner`,
+`leopard`) had been cropped by hand and carried through a whole pose table; the
+other twenty-four had never been cut out at all. `cast/README.md` already said
+Idle needs no generation — *"the highest-fidelity Idle this pipeline can
+produce, and a free one"* — so this is that, for all of them, in one pass.
+
+**`tools/sheet-cut.mjs`**, and three things it gets right that a nominal grid
+does not:
+
+- **Cells are found by PROJECTION.** `cast/README.md` records that the sheets'
+  rows and columns "bleed slightly past their nominal boundary", and that a
+  nominal crop put a sliver of a neighbouring character into `gunner-idle`
+  twice. Asking where the ink stops cannot make that mistake.
+- **Each figure's own top is tightened out of its row band.** A band is as tall
+  as its tallest member, so a short character cut to the band stands in the air.
+- **A PROP CAN BRIDGE TWO CELLS.** `sledge` holds his hammer across his body
+  and the handle reaches into his own back view, merging two figures into one
+  300px run and silently shifting every name after it in that row. Any run much
+  wider than the row's own median is split at its thinnest interior column,
+  which is where the two bodies very nearly stop touching.
+
+**The key is two-stage, and that is the whole difference between a cut-out and
+a sticker.** The sheets are antialiased **against magenta**, so the pixel ring
+where a figure meets the background is the figure's colour *blended with the
+key* — nowhere near the key, kept by any distance threshold, and every
+character comes out wearing a magenta rim. Stage two recognises contamination
+rather than proximity (magenta has no green in it, so it reads as R and B both
+well above G) and tests **edge pixels only** — otherwise `mohawk-green`'s
+purple trousers get eaten out of the middle of him. Two passes, ~2px of
+erosion. Residual: single specks on thin shapes fully enclosed by antialiasing
+(a blade held clear of the body, a bandaged hand), two figures of twenty-six.
+Left rather than chased, because the fix is a stronger colour test and a
+stronger colour test starts eating purple.
+
+**Fronts by default, `--all` for both.** The board here is isometric and does
+need both facings; a game that mirrors its row in code does not, and that is
+who asked for this.
+
+**What it unlocks.** A pose set for any of the twenty-six is now **12
+generations against a local reference crop** — the budget `cast/README.md`
+measured — rather than a re-derivation of the recipe. Nothing here needed an
+API key. That step does, and this environment has none.
+
 ## v33 — 2026-09-03
 **Owner, on the v32 screenshot: "characters are way too big now. also there
 should be new props available. use them sparingly."** Two separate faults

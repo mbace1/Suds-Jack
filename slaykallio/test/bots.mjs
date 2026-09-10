@@ -391,6 +391,12 @@ export function report(SEEDS = Number(process.argv[2]) || 150) {
   for (const b of names) console.log(`  ${b.padEnd(11)}${chars.map(c => pct(act2[b][c]).padStart(10)).join('')}`);
 
   console.log(`\n── the best line for each character ──\n`);
+  // The floor SCALES with the sample. v24 measured 13 points at 150 seeds and
+  // then compared every run against that number whatever it was run at, so a
+  // 400-seed block — where the real floor is about 8 — was being held to a
+  // 150-seed bar and threw away findings it had paid for. Noise falls as
+  // 1/sqrt(n); the bar has to fall with it or the extra runs buy nothing.
+  const bar = Math.round(NOISE.perCharacter * Math.sqrt(150 / SEEDS));
   const findings = [];
   for (const ch of chars) {
     const ranked = names.filter(b => b !== 'random').sort((a, b) => wins[b][ch] - wins[a][ch]);
@@ -399,8 +405,8 @@ export function report(SEEDS = Number(process.argv[2]) || 150) {
     console.log(`  ${ch.padEnd(10)} best: ${top.padEnd(11)} ${pct(wins[top][ch])}   greedy ${pct(g)}   ${lift > 0 ? `+${lift} points` : 'greedy is the best line'}`);
     // 8 points used to be the bar and the floor is 13, so the old bar admitted
   // noise as a finding. A per-character claim has to clear the floor.
-  if (lift > NOISE.perCharacter && top !== 'greedy') findings.push(`${ch} plays ${lift} points better as ${top} than as greedy`);
-  else if (lift >= 6 && top !== 'greedy') console.log(`${' '.repeat(13)}(+${lift} for ${top}, INSIDE the ±${NOISE.perCharacter}pt noise floor — not a finding)`);
+  if (lift > bar && top !== 'greedy') findings.push(`${ch} plays ${lift} points better as ${top} than as greedy`);
+  else if (lift >= Math.round(bar / 2) && top !== 'greedy') console.log(`${' '.repeat(13)}(+${lift} for ${top}, INSIDE the ±${bar}pt floor at ${SEEDS} seeds — not a finding)`);
   }
 
   // ── what an ordinary fight actually costs ────────────────────────────────
@@ -431,13 +437,13 @@ export function report(SEEDS = Number(process.argv[2]) || 150) {
     ? `  THE FIGHT ASKS SOMETHING: the best line averages ${pct(ceil)} against random's ${pct(floor)}.`
     : `  FLAT: the best line (${pct(ceil)}) is barely above random (${pct(floor)}). The fights are not asking a question.`);
   for (const f of findings) console.log(`  FINDING: ${f} — the greedy column was measuring the bot, not the bum.`);
-  if (!findings.length) console.log(`  No character gains 8+ points from a different line: greedy is a fair instrument for all six.`);
+  if (!findings.length) console.log(`  No character clears the ${bar}-point floor on a different line: greedy is a fair instrument for all six.`);
   const spread = chars.map(c => Math.max(...names.filter(b => b !== 'random').map(b => wins[b][c])));
   console.log(`  worst character at its best line: ${pct(Math.min(...spread))} — ${chars[spread.indexOf(Math.min(...spread))]}`);
   // Name the MEASURED floor, scaled for the sample actually run — "a few
   // points is noise" was a guess that sat in this footer for ten versions
   // while findings were read off six-point swings.
-  const noiseAt = Math.round(NOISE.perCharacter * Math.sqrt(150 / SEEDS));
+  const noiseAt = bar;
   console.log(`\n  (a measuring tool; it never fails a build. At ${SEEDS} seeds a per-character`);
   console.log(`   cell is worth about ±${Math.ceil(noiseAt / 2)} — measured, \`--noise\` — so only the MEAN is`);
   console.log(`   solid. Nothing under ${noiseAt} points on one character is a finding.)\n`);
