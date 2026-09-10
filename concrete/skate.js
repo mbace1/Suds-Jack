@@ -2,6 +2,9 @@ import {createEffects} from './effects.js?v=2';
 import {loadArt} from './art.js?v=3';
 import * as T from './vendor/three.module.min.js?v=185';
 export function createGame(host, update) {
+    const mobileCompat = new URLSearchParams(location.search).get('quality') === 'mobile' ||
+        (new URLSearchParams(location.search).get('quality') !== 'desktop' &&
+            (matchMedia('(pointer:coarse)').matches || innerWidth < 700));
     const scene = new T.Scene();
     scene.background = new T.Color('#26333d');
     scene.fog = new T.FogExp2('#26333d', 0.014);
@@ -16,6 +19,11 @@ export function createGame(host, update) {
     renderer.shadowMap.type = T.PCFShadowMap;
     renderer.toneMapping = T.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
+    if (mobileCompat) {
+        renderer.shadowMap.enabled = false;
+        renderer.toneMapping = T.NoToneMapping;
+        renderer.outputColorSpace = T.SRGBColorSpace;
+    }
     host.appendChild(renderer.domElement);
     scene.add(new T.HemisphereLight(0xb6d8ff, 0x363129, 2));
     const sun = new T.DirectionalLight(0xffd39a, 4.5);
@@ -32,8 +40,10 @@ export function createGame(host, update) {
     });
     sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.08;
     scene.add(sun);
-    const mat = (color, roughness = 0.7, metalness = 0) => new T.MeshStandardMaterial({ color, roughness, metalness });
-    const steel = mat('#26343a', 0.4, 0.75), wood = mat('#8b6f50'), black = mat('#161d22'), concrete = mat('#7d8588'), trim = mat('#d7dba0', 0.4, 0.6), glow = new T.MeshStandardMaterial({
+    const mat = (color, roughness = 0.7, metalness = 0) => mobileCompat
+        ? new T.MeshBasicMaterial({ color })
+        : new T.MeshStandardMaterial({ color, roughness, metalness });
+    const steel = mat('#26343a', 0.4, 0.75), wood = mat('#8b6f50'), black = mat('#161d22'), concrete = mat('#596468'), trim = mat('#d7dba0', 0.4, 0.6), glow = mobileCompat ? new T.MeshBasicMaterial({ color: '#bfe83d' }) : new T.MeshStandardMaterial({
         color: '#dcfa73',
         emissive: '#bded38',
         emissiveIntensity: 1.7,
@@ -79,7 +89,7 @@ export function createGame(host, update) {
         }
     }
     // High windows and suspended warehouse lights.
-    const windowMat = new T.MeshStandardMaterial({
+    const windowMat = mobileCompat ? new T.MeshBasicMaterial({ color: '#7aa8b8' }) : new T.MeshStandardMaterial({
         color: '#bde8f8',
         emissive: '#b7ddfa',
         emissiveIntensity: 0.8,
