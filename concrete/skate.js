@@ -1,5 +1,5 @@
 import {createEffects} from './effects.js?v=2';
-import {loadArt} from './art.js?v=2';
+import {loadArt} from './art.js?v=3';
 import * as T from './vendor/three.module.min.js?v=185';
 export function createGame(host, update) {
     const scene = new T.Scene();
@@ -622,3 +622,4 @@ export function createGame(host, update) {
         },
     };
 }
+
