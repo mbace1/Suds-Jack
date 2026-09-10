@@ -1,4 +1,4 @@
-Kindling v20
-canonical source: mbace1/Kindling@d4fccd7b685b3cba6671d76b77403a051628bc0f
+Kindling v21
+canonical source: mbace1/Kindling@8afd92b22e8a443d7881e074fb28ccb6384e817f
 static hub build: npm run build:hub
-notes: v20 egg afterglow, region echoes, camp on the road
+notes: v21 deeper region memory, Old Gate next-world beat

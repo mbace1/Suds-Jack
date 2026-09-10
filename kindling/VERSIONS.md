@@ -6,6 +6,13 @@
      it reads each project's VERSIONS.md and nothing else. Keeping the log with
      the SOURCE is what stops the number and the build disagreeing. -->
 
+## v21 — 2026-09-10
+**Deeper road memory, Old Gate opens a next world**
+- per-region history keeps short durable beats (finds, rests, shortcuts, fight outcomes) on Journey cards and Walk — soft place-memory, never a streak counter
+- missed care never erases or cools region memory (accumulates only; Kindle still does not touch world progress)
+- Old Gate is a real approach beat after all four roads are known: interim copy + UI + gate logic; dedicated plate not required to ship
+- opened gate celebrates through ProgressionCelebration — the world is the reward
+
 ## v20 — 2026-09-10
 **Egg afterglow, road memory, camp that matters on the path**
 - combine settle shows parents remaining; Keep/Pack share an egg warmth panel so accumulation is obvious (warmth only gathers; missed days never cool)
