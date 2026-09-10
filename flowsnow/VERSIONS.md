@@ -7,6 +7,37 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v2 — 2026-09-10
+**The snowpack gets a depth, and the board rides IN it**
+- Owner direction: *more powder and sinking-into-snow type gameplay.* The
+  mountain now has two surfaces. `base(x, z)` is the firm floor, `depth(x, z)`
+  is the loose snow lying over it, and `height()` — what you see, what the snow
+  settles on and what the rider sinks into — is the sum. Wind loads the gully,
+  scours the walls back to bare, and a packed line is beaten down the middle;
+  slow drifts make the depth worth reading. A kicker is stamped firm, because
+  you cannot build a take-off out of powder.
+- **`sink` is the whole model.** At rest the board settles to the floor of the
+  pack. Speed PLANES it back out; trim decides where the nose points while it
+  does. Plowing costs speed in proportion to how buried you are AND how fast
+  you are going, so the resistance falls away as you slow: a bog is somewhere
+  you crawl out of, never a trap.
+- **One key, two meanings, and the medium decides.** A tail pushed into deep
+  snow cannot bite, so the brake's pivot, scrub and grip cost all fade with the
+  DEPTH of the pack and what is left is pure trim. `↓` scrubs on the packed
+  line and floats the nose in powder. `↑` tuck is faster on hardpack and buries
+  you in powder.
+- **Over the front** is the powder way to fall: buried, nose-heavy and quick
+  digs the nose in after `DIVE_TIME`, and getting the weight back is the answer.
+- Deep snow is slower (about 13 m/s against 20 on the line) and scores several
+  times more, so leaving the fast line is the decision the run is made of.
+  Riding it well — fast, deep and planing — is what the score is keyed to.
+- A buried board throws a rooster tail and leaves a TRENCH rather than a line,
+  and casts no shadow. Deep snow cushions a landing that would put you down on
+  hardpack. The HUD gains SNOW M and a FLOAT bar; the recap gains deepest snow.
+- `js/main.js?v=2`. `test/core.mjs`: 68 checks, 26 of them new on the pack, the
+  float, the plow, the trim inversion, the dive and the cushion.
+  `test/smoke.cjs`: 41, including a ridden comparison of deep against packed.
+
 ## v1 — 2026-09-07
 **First descent**
 - A simplistic snowboarding game: one 2,400 m run down a meandering gully,

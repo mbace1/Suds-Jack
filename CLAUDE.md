@@ -806,6 +806,22 @@ landing throws a cloud sized by its impact.
 `height(x, z)`, so the renderer, the rider, the snow and the collision cannot disagree
 about where the ground is. A ring of tiles follows the rider and rebuilds only the new
 ones, nearest first, because the ground under you must never be the last to arrive.
+**There are TWO surfaces** (v2, owner: *more powder and sinking-into-snow type
+gameplay*): `base(x, z)` is the firm floor, `depth(x, z)` is the loose snow lying over
+it, and `height()` is the sum — what you see, what the flakes settle on, and what the
+rider sinks INTO. Wind loads the gully, scours the walls back to bare and leaves a
+beaten line down the middle; a kicker is stamped firm, because you cannot build a
+take-off out of powder.
+**`sink` is the powder model, and everything follows from that one number.** At rest
+the board settles to the floor of the pack; speed PLANES it back out; trim says where
+the nose points while it does. Plowing costs sink × speed, so the resistance falls away
+as you slow — **a bog is somewhere you crawl out of, never a trap**. Deep snow runs at
+about 13 m/s against 20 on the packed line and scores several times more, so leaving
+the fast line is the decision the run is made of. **One key means two things and the
+medium decides**: a tail pushed into deep snow cannot bite, so the brake's pivot, scrub
+and grip cost all fade with the depth of the pack and what is left is pure trim — `↓`
+scrubs on hardpack and floats the nose in powder, `↑` tuck is faster on hardpack and
+buries you in powder. Buried, nose-heavy and quick goes **over the front**.
 **The snow is lit by hand, not by a light** (`js/snowmat.js`). A Lambert surface cannot
 do what a snowfield does, so the shader wraps the terminator (the shadow side stays
 luminous), adds a broad sheen toward the sun and a scatter of glints that wink as the
@@ -826,11 +842,40 @@ fogging to a single tone left a visible band where the far snow met the sky, so
 - **The browser gate read state in a different `page.evaluate` from the step that
   produced it**, and the live rAF loop kept running in between — so a check saw a
   rider several seconds past the moment under test. Step and read in ONE call.
+- **A LINEAR lift curve leaves a hump the rider cannot climb.** Plowing costs
+  sink × speed and sink falls roughly linearly with speed, so the product peaks in
+  the middle of the range: the rider stalled at walking pace and could never reach
+  a plane, which made powder a wall rather than a medium. The lift is a SQUARE
+  ROOT, which flattens the plow and lets a drop-in accelerate all the way through.
+- **Keying the brake fade to the current SINK made the float fight itself.** Planing
+  lifts you out, which handed the tail its edge back, which scrubbed, which slowed
+  you, which sank you again; weight-back bogged to walking pace. Whether an edge can
+  bite is a property of the snow you are in, so it is keyed to `depth`, not to sink.
+- **Scoring keyed to sink paid you for sinking**, which is the opposite of the skill.
+  It is keyed to depth × speed × planing: deep snow *ridden well*.
+- **Taking off from a sunk position landed on the same frame.** The jump began below
+  the surface, the landing test fired immediately, and a pop in powder was a stutter
+  — 250 take-offs in one run and no air. Leaving the ground means the board comes OUT
+  of its trench: zero the sink and start from the surface.
+- **Every particle emitter fired from inside the mountain.** The board rides below the
+  surface, so a plume spawned at the rider started underground, and the sim only lifts
+  a flake out once it is already falling. One `surfaceY()` helper, used by all of them.
+- **Two tests were measuring the terrain rather than the model.** An unsteered board
+  traverses and climbs the gully wall, so "a bog is not a trap" was really measuring a
+  side-hill; and a held lean carves across a depth field that varies in space, so two
+  step sizes end in different snow and the medium, not the integrator, explains the
+  gap. Both had to be re-posed — steered, and down the packed line.
+- **And the gate could not see that the plume filled the frame.** `deep snow throws a
+  wall of it` passed green while the rooster tail hid the rider, the trench and the
+  mountain: the camera sits behind you, so a tail thrown astern is a tail thrown at
+  the lens. Thrown up rather than back, and a third of the count. This is the house
+  rule earned again — **a gate that certifies *works* cannot see *looks***, so an art
+  change ends in a screenshot.
 `window.__fs` is the seam the browser gate drives (`debug.step(seconds, input)` advances
 the game off the wall clock, since a sandbox with no GPU renders this at a handful of
 frames a second — the same discipline `sudsjack/` and `slaykallio/` use).
-Gates: `node flowsnow/test/core.mjs` (42 checks) and
-`NODE_PATH=$(npm root -g) node flowsnow/test/smoke.cjs` (33), plus the cabinet in
+Gates: `node flowsnow/test/core.mjs` (68 checks) and
+`NODE_PATH=$(npm root -g) node flowsnow/test/smoke.cjs` (41), plus the cabinet in
 `node test/hub-smoke.cjs`. Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
 in `hub/art.js` (Atari sky bars, dune faces in hard lit/shadow, an arch **lighter than
 the sky** per the marquee-as-cover rule, the traveller cropped by the bottom edge
@@ -1738,8 +1783,8 @@ flowsnow/       # Flowsnow — snowboarding: Journey's look, Shredders' hands, s
   VERSIONS.md
   vendor/       # three.js r167, local — not the CDN
   js/
-    terrain.js  # THE MOUNTAIN AS A FUNCTION: height/normal, the gully, kickers, monoliths
-    physics.js  # THE BOARD: heading vs velocity, the edge that pulls one after the other
+    terrain.js  # TWO SURFACES: base + depth = height; the gully, kickers, monoliths
+    physics.js  # THE BOARD: heading vs velocity, and the sink it rides at in the pack
     particles.js# THE SNOW: a 5,000-flake pool that collides with the terrain function
     snowmat.js  # the look: wrapped terminator, sheen, glints, and fog INTO the sky
     figure.js   # the robed traveller, and a scarf on a verlet chain

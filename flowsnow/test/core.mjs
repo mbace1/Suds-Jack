@@ -1,6 +1,6 @@
 // Flowsnow core gate — bare node, no browser.
 //   node flowsnow/test/core.mjs
-import { terrain, height, normal, lineX, kickerAt, monolithsIn, TILE } from '../js/terrain.js';
+import { terrain, height, base, depth, normal, lineX, kickerAt, monolithsIn, TILE, DEEP } from '../js/terrain.js';
 import { createRider, stepRider, RUN_LENGTH, G } from '../js/physics.js';
 import { SnowSim } from '../js/particles.js';
 
@@ -13,6 +13,22 @@ const run = (s, input, seconds, ev, dt = 1 / 60) => {
   for (let t = 0; t < seconds; t += dt) stepRider(s, input, dt, terrain, ev);
   return s;
 };
+// Ride holding a fixed offset from the wandering line, so a run stays in the
+// snow it was meant to test. A fixed lean drifts across the whole depth field,
+// which is why the plain `run` cannot compare packed against deep.
+const ride = (off, input = {}, seconds = 20, ev = {}, dt = 1 / 120) => {
+  const s = createRider(terrain, lineX(0) + off, 0);
+  s.vz = -2;
+  for (let t = 0; t < seconds; t += dt) {
+    const want = Math.atan2(lineX(s.z - 35) + off - s.x, 35);
+    let d = want - s.yaw;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    stepRider(s, { ...input, lean: Math.max(-1, Math.min(1, d * 2.5)) }, dt, terrain, ev);
+  }
+  return s;
+};
+const PACKED = 0, POWDER = 42;
 
 // ── the mountain ──
 ok('height is deterministic', height(12.5, -340.25) === height(12.5, -340.25));
@@ -57,9 +73,8 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   const s2 = createRider(terrain, lineX(0), 0);
   run(s2, { lean: 0 }, 25);
   ok('terminal speed is capped by drag (under 100 km/h)', s2.speedMax < 28, s2.speedMax);
-  const tucked = createRider(terrain, lineX(0), 0);
-  run(tucked, { lean: 0, tuck: 1 }, 25);
-  ok('a tuck is faster', tucked.speedMax > s2.speedMax + 1, `${tucked.speedMax} vs ${s2.speedMax}`);
+  const flat = ride(PACKED, {}, 30), tucked = ride(PACKED, { tuck: 1 }, 30);
+  ok('a tuck is faster on the packed line', tucked.speed > flat.speed + 0.4, `${tucked.speed} vs ${flat.speed}`);
 }
 {
   const s = createRider(terrain, lineX(0), 0);
@@ -76,13 +91,18 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   ok('a clean carve earns flow', s.flow > 0.15 && s.score > 0, s.flow);
 }
 {
-  // brake scrubs speed
-  const a = createRider(terrain, lineX(0), 0); run(a, { lean: 0 }, 5);
-  const b = createRider(terrain, lineX(0), 0); run(b, { lean: 0 }, 5);
-  run(a, { lean: 0 }, 2); run(b, { lean: 0, brake: 1 }, 2);
-  ok('the brake scrubs speed', b.speed < a.speed - 4, `${b.speed} vs ${a.speed}`);
+  // the brake bites on the packed line
+  const a = ride(PACKED, {}, 24), b = ride(PACKED, { brake: 1 }, 24);
+  ok('the brake scrubs speed on the packed line', b.speed < a.speed - 4, `${b.speed} vs ${a.speed}`);
   ok('and throws spray', b.spray > 0.3, b.spray);
-  ok('and costs flow rather than earning it', b.flow <= a.flow);
+  // Measured as a CHANGE under the brake, not as one run against another: two
+  // runs end in different snow, and the one that scrubs covers less ground, so
+  // comparing their final flow compares where they stopped, not what they did.
+  const c = ride(PACKED, {}, 12);
+  c.flow = 0.8;
+  const before = c.flow;
+  for (let t = 0; t < 2; t += 1 / 120) stepRider(c, { lean: 0, brake: 1 }, 1 / 120, terrain, {});
+  ok('and scrubbing spends flow', c.flow < before - 0.2, `${before} -> ${c.flow.toFixed(2)}`);
 }
 {
   // a pop leaves the ground and comes back
@@ -164,11 +184,137 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   ok('steps after done are inert', (stepRider(s, { lean: 1 }, 1 / 60, terrain), s.dist >= RUN_LENGTH && s.done));
 }
 {
-  // frame rate independence: 30 vs 120 fps land within a few metres
-  const a = createRider(terrain, lineX(0), 0); run(a, { lean: 0.5 }, 8, {}, 1 / 30);
-  const b = createRider(terrain, lineX(0), 0); run(b, { lean: 0.5 }, 8, {}, 1 / 120);
-  ok('the model is roughly frame-rate independent', Math.hypot(a.x - b.x, a.z - b.z) < 25 && Math.abs(a.speed - b.speed) < 3,
-    `${Math.hypot(a.x - b.x, a.z - b.z)} ${a.speed} ${b.speed}`);
+  // Frame-rate independence, measured down the packed line. A held lean was the
+  // old test and is no longer a fair one: it carves across a depth field that
+  // varies in space, so two step sizes end up in different snow and the medium,
+  // not the integrator, explains the gap.
+  const a = ride(PACKED, {}, 10, {}, 1 / 30), b = ride(PACKED, {}, 10, {}, 1 / 120);
+  ok('the model is roughly frame-rate independent',
+    Math.hypot(a.x - b.x, a.z - b.z) < 12 && Math.abs(a.speed - b.speed) < 2,
+    `${Math.hypot(a.x - b.x, a.z - b.z).toFixed(1)}m ${a.speed.toFixed(1)} ${b.speed.toFixed(1)}`);
+}
+
+// ── the snowpack ──
+{
+  const lx = lineX(-800);
+  ok('a packed line runs down the middle', depth(lx, -800) < 0.35, depth(lx, -800));
+  ok('and deep snow lies off it', depth(lx + 40, -800) > 0.6, depth(lx + 40, -800));
+  ok('the wind scours the walls back to bare', depth(lx + 130, -800) < 0.4, depth(lx + 130, -800));
+  let mx = 0, deepEnough = 0, n = 0;
+  for (let i = 0; i < 3000; i++) {
+    const z = -i * 0.8, x = lineX(z) + ((i * 37) % 150) - 75, d = depth(x, z);
+    mx = Math.max(mx, d); if (d > 1) deepEnough++; n++;
+  }
+  ok('the deepest pockets are properly deep', mx > 1.6 && mx <= DEEP, mx);
+  ok('and a good share of the field is worth riding', deepEnough / n > 0.2, deepEnough / n);
+  const K = (() => { for (let k = 3; ; k++) { const K = kickerAt(k); if (K) return K; } })();
+  ok('a take-off is stamped firm — you cannot build a lip out of powder',
+    depth(K.x, K.z) < 0.3, depth(K.x, K.z));
+  ok('the surface is the ground plus its snow', Math.abs(height(12, -400) - (base(12, -400) + depth(12, -400))) < 1e-9);
+  let worst = 0;
+  for (let i = 0; i < 1500; i++) {
+    const x = (i % 60) * 4 - 120, z = -i * 1.1;
+    worst = Math.max(worst, Math.abs(depth(x, z) - depth(x + 0.05, z)));
+  }
+  ok('and the pack is continuous, like the ground under it', worst < 0.05, worst);
+}
+
+// ── sinking in, and getting back on top ──
+{
+  const s = createRider(terrain, lineX(0) + POWDER, 0);
+  const d0 = depth(s.x, s.z);
+  run(s, { lean: 0 }, 2.5, {}, 1 / 120);
+  ok('at a standstill the board settles to the floor of the pack',
+    d0 > 0.5 && s.sink > d0 * 0.6, `${s.sink} of ${d0}`);
+
+  const fast = ride(POWDER, {}, 30);
+  ok('at speed it planes back up out of the snow', fast.plane > 0.75 && fast.sink < fast.depth * 0.5,
+    `sink ${fast.sink.toFixed(2)} of ${fast.depth.toFixed(2)}, plane ${fast.plane.toFixed(2)}`);
+  ok('and it is genuinely riding deep snow, not the packed line', fast.depth > 0.7, fast.depth);
+}
+
+// ── powder costs speed, and pays for it ──
+{
+  const packed = ride(PACKED, {}, 30), deep = ride(POWDER, {}, 30);
+  ok('deep snow is slower than the packed line', deep.speed < packed.speed - 4,
+    `${deep.speed.toFixed(1)} vs ${packed.speed.toFixed(1)}`);
+  ok('but it is still ridden, not a wall', deep.speed > 8, deep.speed);
+  ok('and riding it is what scores', deep.score > packed.score * 3 + 50,
+    `${Math.round(deep.score)} vs ${Math.round(packed.score)}`);
+}
+
+// ── a bog is somewhere you crawl out of, never a trap ──
+{
+  // Pointed down the fall line, from a dead stop, buried to the floor of the
+  // pack. Steering is part of the premise: an unsteered board on a banked wall
+  // traverses and climbs it, and then it is the side-hill stopping you rather
+  // than the snow.
+  const s = createRider(terrain, lineX(0) + POWDER, 0);
+  s.vx = s.vy = s.vz = 0;
+  run(s, { lean: 0 }, 2, {}, 1 / 120);        // settle in, still stopped
+  const bogged = s.speed;
+  ok('a rider dropped into deep snow starts buried', s.sink > 0.5 && bogged < 6, `${s.sink.toFixed(2)} ${bogged.toFixed(2)}`);
+  for (let t = 0; t < 18; t += 1 / 120) {
+    const want = Math.atan2(lineX(s.z - 35) + POWDER - s.x, 35);
+    let d = want - s.yaw;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    stepRider(s, { lean: Math.max(-1, Math.min(1, d * 2.5)) }, 1 / 120, terrain, {});
+  }
+  ok('and digs itself back out onto the plane', s.speed > 10 && s.plane > 0.7,
+    `${bogged.toFixed(2)} -> ${s.speed.toFixed(2)} m/s, plane ${s.plane.toFixed(2)}`);
+}
+
+// ── trim: the same key means float in powder and edge on hardpack ──
+{
+  const neutral = ride(POWDER, {}, 30), back = ride(POWDER, { brake: 1 }, 30);
+  ok('weighting the tail floats you in powder rather than scrubbing',
+    back.speed > neutral.speed - 1.5 && back.sink < neutral.sink,
+    `speed ${back.speed.toFixed(1)} vs ${neutral.speed.toFixed(1)}, sink ${back.sink.toFixed(2)} vs ${neutral.sink.toFixed(2)}`);
+  ok('and it is the better line, so it scores more', back.score > neutral.score,
+    `${Math.round(back.score)} vs ${Math.round(neutral.score)}`);
+  const packedBrake = ride(PACKED, { brake: 1 }, 24), packedFlat = ride(PACKED, {}, 24);
+  ok('while the same key still bites on the packed line', packedBrake.speed < packedFlat.speed - 4);
+}
+
+// ── over the front ──
+{
+  let dives = 0;
+  const nose = ride(POWDER, { tuck: 1 }, 45, { dive: () => dives++ });
+  ok('nose-heavy in deep snow eventually goes over the front', dives > 0 && nose.dives === dives, dives);
+  ok('and a tuck buries the board rather than freeing it', nose.plane < 0.75, nose.plane);
+  let backDives = 0;
+  ride(POWDER, { brake: 1 }, 45, { dive: () => backDives++ });
+  ok('getting the weight back is the answer to it', backDives === 0, backDives);
+}
+
+// ── powder catches you ──
+{
+  // the same crossed-up landing, dropped into deep snow and onto the packed line
+  const drop = (off) => {
+    const s = createRider(terrain, lineX(0) + off, 0);
+    run(s, { lean: 0 }, 5, {}, 1 / 120);
+    s.vy += 7; s.grounded = false; s.air = 0; s.spin = 0;
+    s.yaw += Math.PI / 2;
+    let fell = 0, n = 0;
+    while (!s.grounded && n++ < 600) stepRider(s, { lean: 0 }, 1 / 120, terrain, { tumble: () => fell++ });
+    return { fell, d: depth(s.x, s.z) };
+  };
+  const hard = drop(PACKED), soft = drop(POWDER);
+  ok('a crossed-up landing on the packed line puts you down', hard.fell === 1, JSON.stringify(hard));
+  ok('and deep snow catches the same one', soft.fell === 0 && soft.d > 0.6, JSON.stringify(soft));
+}
+
+// ── the board comes out of its trench to jump ──
+{
+  const s = ride(POWDER, {}, 12);
+  const buried = s.sink;
+  stepRider(s, { lean: 0, jump: true }, 1 / 120, terrain, {});
+  ok('a pop lifts the board clear of the snow it was riding in',
+    !s.grounded && s.sink === 0 && buried > 0.05, `${buried} -> ${s.sink}`);
+  let n = 0;
+  while (!s.grounded && n++ < 600) stepRider(s, { lean: 0 }, 1 / 120, terrain, {});
+  ok('and it is a real jump, not a one-frame stutter', s.airBest > 0.2, s.airBest);
 }
 
 // ── the snow ──

@@ -75,6 +75,43 @@ s.listen(0, '127.0.0.1', async () => {
   }));
   ok('the HUD is up while riding', await p.locator('#hud').isVisible());
 
+  // ---- powder ----
+  // Placed out in the deep field (setup only) and then RIDDEN there through the
+  // real input path, holding the fall line. An unsteered board traverses and
+  // climbs the gully wall, so a straight-line drop-in measures the side-hill
+  // rather than the snow.
+  const hold = `(off, secs) => {
+    const t = __fs.terrain, st = __fs.state;
+    st.x = t.lineX(st.z) + off; st.y = t.height(st.x, st.z); st.sink = 0;
+    st.vx = 0; st.vy = 0; st.vz = -12; st.yaw = 0; st.tumble = 0;
+    for (let i = 0; i < secs * 10; i++) {
+      const want = Math.atan2(t.lineX(st.z - 35) + off - st.x, 35);
+      let d = want - st.yaw;
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      __fs.debug.step(0.1, { lean: Math.max(-1, Math.min(1, d * 2.5)) });
+    }
+    __fs.debug.hud();
+    return { depth: st.depth, sink: st.sink, plane: st.plane, speed: st.speed,
+      buried: t.height(st.x, st.z) - st.y, spray: st.spray,
+      hudSnow: parseFloat(document.getElementById('depth').textContent),
+      hudFloat: parseFloat(document.getElementById('floatFill').style.width) };
+  }`;
+  const pow = await p.evaluate(`(${hold})(42, 10)`);
+  ok('off the packed line the snow is deep', pow.depth > 0.7, pow.depth);
+  ok('and the board rides down inside it', pow.buried > 0.08, pow.buried);
+  ok('while still planing rather than wallowing', pow.plane > 0.6 && pow.speed > 8, JSON.stringify(pow));
+  ok('the HUD reports the snow under the board', Math.abs(pow.hudSnow - pow.depth) < 0.06, `${pow.hudSnow} vs ${pow.depth}`);
+  ok('and how much float is under it', pow.hudFloat > 40, pow.hudFloat);
+  ok('deep snow throws a wall of it', pow.spray > 0.6, pow.spray);
+  await p.screenshot({ path: path.join(SHOTS, 'powder.png') });
+
+  const flat = await p.evaluate(`(${hold})(0, 10)`);
+  ok('the packed line is shallow and fast', flat.depth < pow.depth - 0.3 && flat.speed > pow.speed,
+    JSON.stringify(flat));
+  ok('and throws far less snow than the deep stuff', flat.spray < pow.spray, `${flat.spray} vs ${pow.spray}`);
+  await p.screenshot({ path: path.join(SHOTS, 'packed.png') });
+
   // a pop, and a landing
   const before = await p.evaluate(() => __fs.state.airBest);
   ok('Space pops the rider off the snow', await p.evaluate(() => { __fs.debug.step(1 / 120, { lean: 0, jump: true }); return !__fs.state.grounded; }));
