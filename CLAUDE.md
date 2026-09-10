@@ -125,7 +125,22 @@ number before anyone starts logging for it and switches to the release number th
 they do. The cabinets fetch that file, so shipping one game does not mean redeploying the
 arcade. **Run it at deploy time** — against the deployed tree, which is the only place
 every project exists.
-**Deploying is `node scripts/deploy-hub.mjs <siteRoot> [--dry]`, never a hand-copy.**
+**Shipping ONE GAME is `node scripts/ship.mjs <game> [--from <repo-root>] [--push]`**
+(2026-09-10). It is the hand dance every game deploy had been — fetch gh-pages into a
+worktree, copy `<game>/` over the site's copy minus `test/` and `art-src/`, put back the
+cross-directory tokens the site owns (`../hub/shell.js?v=N`, the `../toko/` badge), move
+that game's one line in `hub/versions.json` (and the root `VERSIONS.md`/`README.md` for
+Toko Drop, whose log lives there), boot the staged tree headless (zero page errors, zero
+404s, every precache entry a real file), commit with a message drawn from the game's own
+VERSIONS entry, rebase on whatever landed meanwhile, push, and say where the Pages run
+is — with the refusals a hand forgets: the site's copy AHEAD of the source (it moved on
+its own — bring it back first), no new VERSIONS entry (no number, no release), files the
+site has that the source does not (named; `--prune` to delete), a tree that failed to
+boot. `--dry` stages and prints the commit message without committing. `--from` is the
+repo root the game is read from; for Toko Drop point it at a worktree of gh-pages, its
+canonical tree — shipping from a stale branch copy is how second lineages start, and the
+version guard is what catches it. It touches nothing but `<game>/` and that one line.
+**Deploying the HUB itself is `node scripts/deploy-hub.mjs <siteRoot> [--dry]`, never a hand-copy.**
 Three bugs in one session were the same bug: a number in one file disagreeing with a
 number in another (a precache list a token behind the page — an arcade that loads online
 and is blank on a plane; an `index.html` two features back, so the language switch had no
