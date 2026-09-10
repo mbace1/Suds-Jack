@@ -1188,8 +1188,9 @@ function check(name, cond) {
     // signed game carries a badge with that role, so looking for one found the
     // signature in the corner of the game just navigated to and called it the
     // sting still being on screen.
+    // This assertion checks navigation; destination CDN loading is independent.
     await bp.keyboard.press('Escape');
-    await bp.waitForURL('**/dropcabal/', { timeout: 4000 });
+    await bp.waitForURL('**/dropcabal/', { timeout: 4000, waitUntil: 'commit' });
     check('the mark is skippable and still takes you to the game',
       bp.url().endsWith('/dropcabal/'));
 
@@ -1197,7 +1198,7 @@ function check(name, cond) {
     await bp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
     await bp.waitForFunction(() => window.__hub);
     await bp.click('#cab-tokodrop a.play');
-    await bp.waitForURL('**/toko-drop/', { timeout: 4000 });
+    await bp.waitForURL('**/toko-drop/', { timeout: 4000, waitUntil: 'commit' });
     check('the next game start is a plain link, no mark',
       (await bp.$$('.toko-sting')).length === 0);
     await bp.close();

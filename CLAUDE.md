@@ -968,62 +968,324 @@ cap 9). Stage quota gauge Cabal-style; clearing pops all stragglers. No build st
 open `dropcabal/index.html` (three.js via jsDelivr importmap). Same `gh-pages` deploy
 caveat as paperboy.
 
-### Flash Prince (`flashprince/`)
-A **cinematic platformer** — *Another World* × *Flashback* × the original *Prince of
-Persia* — in canvas 2D with no build step and no image assets. The owner's direction was
-to follow **Another World's art and animation formula as closely as possible**, and that
-is a technical instruction, not a mood board: AW has no sprites in it at all. Every frame,
-background and character alike, is a list of **filled polygons** rasterised into a 320×192
-buffer. So `js/screen.js` draws polygons and then takes the antialiasing back out —
-a final pass snaps every pixel to the nearest of the room's **sixteen** colours through a
-lazily-filled RGB555 lookup (an entry costs sixteen distance tests once and a typed-array
-read forever after). Edges go hard, the grey halo along a frond disappears, and the
-framebuffer is genuinely 16-colour rather than merely painted with sixteen colours.
-`palette.js` holds the sixteen as fixed **roles** (VOID / SKY / FAR / MID / NEAR / EDGE /
-SOLID / DARK / LUX / LUX2 + four locked hero slots), so nothing that draws knows which
-biome it is in — a frond and a colonnade both fill with MID, they are just different
-colours by the time you reach them. `paletteAt(t)` walks that set continuously along the
-whole run, which is how "the jungle blends into Egypt" is done: **the palette fades, the
-shapes overlap, and no screen ever announces a change**. `scenery.js` gives every element
-type a WIDE window of `t` it exists in — fronds are still hanging in the first tomb, the
-first columns are already standing in the last jungle.
-**Animation is a rotoscope, not a sheet.** `figure.js`: a pose is **thirteen joint angles**
-(`[hipN,kneeN, hipF,kneeF, shN,elN, shF,elF, lean, head, py, px, rot]`, degrees from
-straight down, positive swinging *forward* so the same numbers work facing either way), a
-frame is those angles turned into eleven polygons, a clip is `[[pose, holdFrames], …]`.
-That is what lets a run hold its contact pose for three frames and blur through the pass
-in one — rotoscope timing, which a constant-rate sprite loop cannot do. The far limbs draw
-a shade down; that one cheat is the only depth a flat figure gets and it is why the run
-reads as a run.
-**The design rule is commitment.** `hero.js` — a step is 22 frames and carries 12px, a
-turn is 18, a mantle is 40, and until a move reaches the frame it declares `open` the
-stick is not connected to anything. Nothing accelerates freely. Tap a direction for one
-step, hold and the step runs on into a run (Flashback's rule). Grounded moves are
-scripted displacement; jumps are ballistic off a scripted gather. **Every distance in the
-level is measured off two numbers**: a standing jump rises 27px and his hands reach 26
-above his feet, so he catches a lip 53px up — a storey is 3 tiles = 48 — and a running
-jump carries 3.7 tiles, so a 3-tile gap goes and a 4-tile gap does not. Falls are PoP's
-ladder: one storey free, two hurt, three kill. Walking off an edge **catches** it
-(`ledgeBehind`); holding toward a lip in the air catches it (`ledgeAhead`).
-**The duel** is the same clock on both sides: a sentry is 68 frames from seeing you to
-firing (spot 26 → draw 26 → aim 16), drawing the pistol costs you 21, **crouching puts
-his shot over your head and rolling puts you under it**. Take the wind-up away and it is
-a reflex test; leave it in and it is a reading test.
-**Fourteen screens**, `rooms.js`, 20×12 tiles of ASCII each, laid side by side with a
-**hard cut** — no scrolling, no camera, because a screen you learn and die on is a
-composition you remember. Jungle → dig → tomb → reactor → palace → overgrown. Traps:
-spike cycles, ceiling slabs, tiles that will not hold, a plate-and-gate on a timer,
-pulsing force fields. `scr.cached(key, fn)` paints the static half of a room once and
-blits it after that (same discipline as `gameoflife/`); the palette changing throws the
-cache, which is correct because it happens once a screen.
-Two traps for anyone editing it: **`tryX`/`tryY` must move floor(|d|) whole pixels then
-the remainder** — an off-by-one loop there silently scaled the run from 1.62px/frame to
-2.62 and turned a three-tile gap into a five-tile one; and **the wall tiles are painted
-after the backdrop**, so anything meant to sit on a wall (the glyphs) has to be drawn from
-`level.js`, not `scenery.js`, or it gets buried. `window.__fp` exposes `{game, hero(),
-world(), debug: {room, give, state, pure}}`. **Signed** by Toko Midori (bottom-left, so it
-clears the health marks top-right and the way home top-left) and named in `SIGNED` in
-`toko/test/brand.cjs`. Same `gh-pages` deploy caveat as paperboy.
+### Powder (`powder/`)
+**Rebuilt from scratch on the owner's direction, 2026-07 — "simulator like details,
+surreal 3d graphics, a bit more of flatlands with canyons".** The previous build (a
+PS1-styled arcade descent down a snow/sand ribbon) is gone. What survived it: the
+reference-plate craft design in `powder/ref/`, the dust plume, the multiply-blended
+ground scars, and the camera rig. Read this section before retuning anything — most of
+the numbers in it were reached by measurement and the reasons are recorded here.
+
+A hover racer on an open flatland cut by a canyon. Three.js r167, no build step.
+
+**The simulation** (`js/vehicle.js`). There is no lerp toward a target pose anywhere. The
+craft is a rigid body on **four sprung hover pads**, integrated at a fixed **120 Hz** on
+an accumulator, because a spring this stiff is not stable on a variable frame time. Each
+pad springs against the ground height under it and damps its own vertical velocity, and
+the moments those four forces make about the centre of mass ARE the pitch and roll — so
+cresting a dune pitches the nose and a hard turn rolls onto the outside pads. **Weight
+transfer is not modelled separately; it is just where the load went.** The turbine has
+**spool lag** (throttle commands N1, N1 chases it over about a second, thrust goes as N1
+squared), so you cannot stab the throttle out of a mistake. Lateral force is linear in
+slip speed up to a friction limit set by the surface mu and the load *currently* on the
+pads, so the breakaway is real and comes sooner when the craft is light over a crest.
+**Walls are not special-cased**: any ground steeper than ~34 degrees that you are closing
+on returns an impulse along its normal, so canyon walls, mesa sides and boulder flanks
+all behave without knowing about each other.
+**Front drive (v4).** The sleds are rocket-propelled at the FRONT and handle like a
+front-wheel-drive hot rod, and none of it is scripted: thrust acts along the *steered*
+nose (so under power the nose is pulled through the corner — the yaw moment is
+`+hl * thrust * sin(delta)` in this right-positive yaw convention), grip is per axle from
+the loads the pads are already carrying, the driven front's traction circle loses what
+the thrust is using (`circle`), and lifting off transfers load forward, unloads the rear,
+and the tail comes round. **`circle` was measured, not guessed**: at 0.55 the front had
+*no* lateral force under full power — thrust is ~1.2 g here against a ~6 kN axle — and
+the sled could only push; 0.18 takes ~15% off the front at full throttle, which is a hot
+rod's push rather than a lost nose. The sand **sinks**: each runner settles toward the
+surface's `sink` under load (time constants 0.30 s in, 0.55 s out) and the lateral bite
+is filtered by the surface's `shear` — 0.22 s on deep sand — which is the ground shifting
+under you mid-carve. The pads push along the surface **normal**, not straight up; on the
+flat that changes nothing, on the mountain it is what pulls you down the grade.
+
+**Four sign errors were paid for here and not one of them looked like a sign error.**
+Getting the pad pitch moment backwards does not read as a wrong sign, it reads as the
+craft being fired 150 m into the air, because it is a positive feedback loop that
+saturates the attitude in half a second (more load at the back pitches the nose DOWN:
+`tau_x = -z*F`). The pad-height roll term had the same fault. The self-aligning moment
+was signed so the nose was pushed AWAY from the direction of travel, and the craft
+crabbed sideways down the flats at 60 km/h with the driver doing nothing — `yaw`
+increases to the right while a rotation about +y turns the nose left, so the torque picks
+up a minus on the way into this convention. And `yaw = Math.PI` faces +z, not -z, so the
+whole field spawned backwards. All four are commented at the site.
+
+**The world** (`js/terrain.js`). Open, not a ribbon: `height(x, z)` is a pure function,
+and the tile meshes, the hover pads, the props and the dust all read it, so they cannot
+disagree. Streamed as an 11x11 grid of 100 m tiles around the craft. The whole field is a
+**mellow mountain** (`GRADE` 4.5% down the route) of white sand with mesas standing on it;
+the rift is a meandering 70-130 m canyon with a salt floor — the fastest surface in the
+game. **Roads cross it** every 940 m (`ROAD_CYCLE`, phase −150), each carried over the
+rift on a **bridge deck** you can ride or run under. A heightfield cannot hold a bridge,
+so the deck is NOT in `height()`: `groundUnder(x, z, y)` is the two-layer query the
+runners use — the deck when you are at or above it, the floor otherwise — and the piers
+are registered as boulders so they collide.
+**The breaches are the load-bearing idea.** The walls are ~60 degrees and unclimbable, so
+without shallow sections the canyon is a trap you enter and never leave; the breaches are
+the on-ramps and they set the rhythm of a run. Their width was **measured, not guessed**:
+with the first window only ~90 m either side of centre, every approach met deep wall and
+stopped dead, because every real approach is a diagonal. About 40% of each cycle is
+drivable now, and that is what turns the canyon from scenery into a route.
+`js/route.js` lays gates alternately on the deepest rift floor and beside a breach out on
+the flats, at **half the terrain's breach cycle** — decoupling those two numbers puts a
+gate on a canyon floor with no reachable entrance for 400 m. The HUD points at the
+**breach** rather than the gate whenever you and the gate are on opposite sides of the rim
+— *either* way — because without that the display is telling you to drive at something
+you cannot reach. The first version only covered the way in, and the autopilot wedged
+itself against the far wall trying to climb out to a flats gate.
+
+**The look** (`js/sky.js`, `js/props.js`, and the grade pass in `main.js`). Violet zenith
+through purple into a lilac horizon over white-grey sand (v4: "more whites and greys in
+the sand, more purples in the sky"); a low raking key so everything standing up throws its length
+across the flats; a cold fill from behind that nothing in a desert would have; rock that
+hangs in the air and turns; arches with nothing holding them up; slabs too regular to be
+geology. Post is bloom (strong, threshold 0.72, and the sun disc is drawn **over-white** —
+`MeshBasic` does not clamp — so it is the one thing in the sky that blooms), vignette,
+mild chromatic aberration, a heat shimmer that only bites near the bottom of the frame,
+and (v4, "more PS2-like") a **posterise to 36 levels with a 4x4 Bayer dither**. The PS2 is
+in the renderer too: the framebuffer is **0.62x the window, upscaled soft** by the browser
+(no `image-rendering: pixelated` — that is the other console), materials are Lambert, the
+shadow map is 1024 and hard (`PCFShadowMap`). **The ringed body must sit AHEAD (-z)** — parked
+behind the player it is the best thing in the sky and nobody ever sees it.
+Four rules that keep being relearned, now written into the files: **`horizon` and `fog`
+must be the same value** or the ground stops at a hard seam; **anything large and dark
+near the horizon reads as a wall across the frame**, so the distant range sits within a
+hair of the haze; the hemisphere fill must be **generous** because the key is low, or
+every face turned from the sun crushes to black and the monoliths become holes; and
+particle size needs a **clamp**, because a puff that has grown for two seconds twenty
+metres out resolves to a 900 px sprite and fills the frame with white.
+
+**Quality** is a real persisted setting (`powderQuality`, `?q=low|high`), not a test hook:
+shadows, bloom and antialiasing are exactly what a weak machine cannot afford and exactly
+what this look is made of.
+
+**The keyboard (v9).** A key is a switch, and full lock the instant it closes is a slide at
+any real speed — the sticks and the pad are analog, the keyboard was not, and it was the
+keyboard the "nightmare" report came from. `input.js` **ramps the digital steer** (0.22 s
+to full lock, 0.09 s back) so a tap is a quarter turn and a hold a committed one; the
+vehicle **shrinks the lock with speed** (`speedLock`: all of it below 20 m/s, 55% at 45)
+because the sustainable yaw rate falls as 1/v; the spool is 0.75 s (idle to half thrust
+0.8 s, not 1.4); the camera in a slide looks **half way to the travel heading** so the
+sled slides across the frame instead of the world swinging round it; `brakeDrag` 7.
+`powder/test/keys.mjs` drives real key events: one second of A at 140 km/h is 17° of
+heading with 7.8 m/s of slide, where it was a spin. Under SwiftShader the sim runs ~75%
+real time at `q=low`, so its spool number reads 1.25 s for a 0.8 s constant — read deltas.
+**The harnesses live in `powder/test/`** and share `_browser.mjs`, which serves the repo
+on a free port, launches Chromium on SwiftShader, and routes the importmap's jsDelivr
+URLs to a local three only when one resolves (so a sandbox with no network runs them
+exactly as CI does): `NODE_PATH=$(npm root -g) node powder/test/keys.mjs`. `drive2` and
+`corner` are the lock ladders, `pad` and `touch` the two other input paths (stubbed pad,
+real CDP touch), `hazecheck` the with/without pixel diff, `perf2` the per-pass counts,
+`refexport` regenerates `models/reference/`, `roundtrip` loads it back. None is a gate
+yet: they print numbers for a person to read.
+
+**The Blender pipeline (v9).** `powder/pipeline/README.md` is the contract and
+`js/models.js` **enforces** it at load: envelope (which way the ship faces is read off
+the bounding box — long axis X means built sideways, long axis Y means exported
+standing up), triangle budgets, material names (`HULL ACCENT CHROME GUNMETAL GLASS
+INTAKE DECAL FAN`, `LAND` for landmarks), the `nozzle_L/R` empties, optional `fan_L/R`.
+A file that fails is reported and **not registered**, so that chassis stays on the kit —
+exports can be early and often. `craft.js` swaps materials **by name** and supplies
+chrome/accent/numeral/flames, keeping only the HULL's own textures and the FAN's; the
+result has the same `userData` contract as the kit so `vehicle.pose()` cannot tell them
+apart. Landmarks merge to one vertex-coloured geometry and go through `bakeProps`
+unchanged (the bake now keeps an authored `color` attribute; a kit prop still gets its
+material colour painted on) and are placed by `populate` at 6% of tiles — the random
+draw happens only when landmarks exist, so a world without them lays out exactly as
+before. `models/manifest.json` (ids `nose`/`aft`) is empty in production; **`?models=
+reference`** loads `models/reference/`, which is the kit exported by `refexport.mjs`
+through three's GLTFExporter with the 0.74 scale and the fans' radii baked into the
+geometry (the contract wants object scale 1) — the round trip in `roundtrip.mjs` is the
+test of the door with no Blender in the loop. `pipeline/powder_blender.py` builds the
+template scene (metres, nose along Blender +Y, pad markers, envelope box, empties, fan
+discs, stub materials), validates against the same numbers, and exports with the right
+flags; it compiles but has not been run in Blender here. The README's "PS2 question"
+records the owner's note that the world look may be reframed — the assets are authored
+to the plates, not to the dither, so nothing in the pipeline moves if it is.
+
+**Making it drivable (v8), and what was actually wrong.** The owner reported the
+controls as a nightmare; measured through the real key path, three separate faults.
+**There was no self-aligning moment anywhere in the model** — no directional stability
+at all — so once the rear stepped out nothing brought it back: full lock from a cruise
+ran away to 1.41 rad/s with 18.6 m/s of slide and stayed there, and releasing the stick
+did nothing. `SPEC.weather` is that restoring moment, tanh-saturated on slip and with
+its speed term **capped** (`weatherSpeed`): uncapped at 520 it reached 20.8 kN·m at
+40 m/s against a 22 kN·m rudder, and half lock then produced a wide slide with almost
+no yaw — the sled washing wide without ever changing heading, which is the worst thing
+a vehicle can do. Sign: `slip` is velocity along the RIGHT vector and yaw is
+right-positive, so sliding right needs a POSITIVE moment; backwards, it reads as the
+sled crabbing sideways on its own, which is how the last one was caught.
+**Steering had a 0.73 s time constant** (`Izz/yawDamp`) — 1.8 degrees of heading in the
+first quarter second of full lock. And `steer/yawDamp` is **not** the steady rate:
+the axle forces are themselves a yaw damper worth ~54 kN·m per rad/s, *more* than
+`yawDamp`, so while the runners grip the sled is much lazier than the arithmetic
+predicts and only wakes up once it is sliding and that damping has gone — lazy while
+planted, eager while sliding, exactly backwards. So the rudder is 45000 and **fades
+with slip** (`bite` = `1 - steerFade*tanh(|slip|/steerFadeSlip)`): it is the runners
+biting, not an air vane. Big-while-gripping answers small inputs; fading-while-sliding
+is what stops the driver steering into a spin, and it is what makes a rudder that big
+safe. The ladder at 90 km/h is 0.13/0.40/0.54 rad/s at quarter/half/full lock for
+0.7/4.8/9.5 m/s of slide, and at 140 km/h every lock slides — corner speed is a
+decision again. `rearSteer` had to come from 1.9 to **1.15**: it was calibrated against
+the old 9000 rudder and against 45000 it made the aft sled three times twitchier than
+the nose sled. Airborne, the rockets keep **0.40** of their thrust (they do not need
+the ground) and the rudder **0.55** — at 0.60/0.25 respectively, air time became a
+speed exploit (the autopilot fell into the rift and hit 260 km/h against a 140 cruise)
+or a random loss of control on a dune field where the craft is airborne ~17% of the
+time. Deep sand's `shear` went 0.22 → 0.12: the bite should arrive late, not a third of
+a second late, on top of every other lag. The HUD's **SLIP turns amber then red off
+`bite`**, because otherwise there is no way to tell turning from sliding until the
+scenery tells you. Harness note: `drive2.mjs` / `corner.mjs` teleport onto the rift's
+flat salt floor before every phase — the open-field version kept drifting into a mesa
+and reporting the crash as a handling number.
+
+**Two chassis and the weight axis (v5).** `Vehicle` takes `drive: 'front' | 'rear'` and
+applies thrust at that axle, which is the whole difference. **NOSE** rockets point where
+the front is *steered*, so power adds a yaw moment and pulls you through the corner, and
+the front's traction circle loses what the thrust is using. **AFT** rockets point along
+the body and add no yaw at all — measured, that left the aft sled turning less than half
+as hard as the nose sled (0.22 rad/s against 0.51), so it carries a much bigger rudder
+(`rearSteer`) and a bigger traction circle (`rearCircle`) instead: comparable turn-in,
+but power mid-corner is what steps the tail out. They now measure 0.65 rad/s at 2.7 m/s
+slip (nose) against 0.89 at 6.3 (aft) — the same pace, a different character.
+The right stick's vertical axis is **weight**, not a button. Back boosts *and* lifts the
+nose: the boost line acts below the centre of mass, so the front runners unload and the
+sled planes over the deep stuff. **`liftLever` was measured**: at 1.35 the boost unloaded
+the front axle by 52% (6712 N → 3202 N) and the sled would not turn while lit, so
+anything that boosted drove into the first wall — a hot rod lifts its nose, it does not
+lose the ability to steer, and 0.75 halves the unload and keeps the drama. Forward is a
+**front spoiler**: nose-down force going as the square of airspeed, applied at the front
+axle, so it adds front load and bite and costs *no* speed — but on deep sand the extra
+front load digs the runners in and ploughs, which is why leaning forward through soft
+ground is slow. Carving *into* the roll earns extra grip (`edge`), so committing to a
+turn is rewarded.
+
+**The render stack (v5, made honest in v7).** The world is PS2; the ships are not.
+Layers are `0` opaque world, `1` HD, `2` the world's transparencies (plume, scars), `3`
+sky. **The canvas is full-resolution; only the composer is 0.62x** — until v7 the canvas
+itself was 0.62x (`renderer.setSize` at the PS2 scale), so the "HD" layer was HD in
+name only, and this file said full-res while the code did not. `renderFrame()` is five
+passes: the composer over layers 0/2/3 into its own 0.62x buffer (posterised, dithered;
+`composer.renderToScreen = false`); a **blit** of that buffer up onto the canvas with a
+raw `ShaderMaterial` — the OutputPass has already tone-mapped and encoded it, so the
+blit must not touch the colour again (a `MeshBasic` quad would encode it twice), and the
+bilinear stretch IS the soft upscale; a **full-resolution depth-only prepass of layer
+0**, because the HD layer needs a depth buffer that matches it; layer 1 over the top;
+then the **heat haze** (`js/haze.js`), which `copyFramebufferToTexture`s the finished
+frame and draws refracting sprites at the nozzles plus a mirage band along the horizon,
+each fragment sampling the copy at a noise offset from its own screen position — light
+bending, not a texture. The haze scene must be on **layer 1** (the camera is still
+masked to HD when it runs; on layer 0 it was silently culled and moved zero pixels — the
+with/without pixel diff in `hazecheck.mjs` is how that was caught), must depth-test
+against the frame's depth so haze stays behind a hull, and must not write depth. It is
+the one pass `q=low` skips. The sun's **lens flare** (`js/flare.js`, three's addon with
+canvas textures) sits on layer 1 too. The lights must `layers.enable(1)` or the ships are
+unlit and cast no shadow. **A `SpriteMaterial` with no map draws a solid quad** — the
+first version put a white box round every ship.
+
+**The model shop (v7, `js/craft.js`).** `buildCraft(env, accent, number, drive)` builds a
+ship as a kit and merges everything static per material — hull (Phong, panel/rivet map),
+accent, chrome, gunmetal, decals — so a ship is **14 draw calls** with the fans (live,
+spun by N1) and the six flame parts (scaled by N1) as the only separate meshes; it was 23
+with far less detail. **Chrome is `MeshStandard` at metalness 1 / roughness 0.1 with a
+PMREM env map** from a two-tone scene (violet sky over white sand, a hard horizon line,
+an over-white sun) built once by `makeEnvMap(renderer)` — that two-tone-with-a-bright-bar
+is what the plates' nacelles actually show, and Phong "chrome" never had it. Each can:
+turbine face in the mouth, open nozzle bell with the flame inside, two dark rings, three
+tube-geometry pipes to a pump block. The flame is a cone with a **scrolling shock-diamond
+map** on the core and a **length-fade `alphaMap`** on core and sheath — separate maps
+because the diamonds scroll and the fade must not (`ConeGeometry` puts v=1 at the apex).
+`vehicle.pose(dt)` runs it: RICH (orange, short, fat) while `throttle > n1`, LEAN once
+the spool has caught up, diamonds streaming at the turbine's rate. `vehicle.nozzle(i,
+out)` gives the world exhaust position for `emitHaze` / `emitWash` in `main.js`.
+`disposeCraft()` frees the merged geometries and per-ship materials.
+
+**The concept plates** live in `powder/art/` (960 px JPEG copies of six of the `ref/`
+plates, named for what they show: `sun-one`, `aft-five`, `intake-green`, `nose-green`,
+`roundel`, `delta`). The menu shows the chassis you are about to race (`nose-green` /
+`aft-five`); the results frame `delta` (time out) or `intake-green` (hull failure). The
+`#msg .plate` rule sizes them in vh and hides them under 520 px of height.
+
+**Control priority (owner, 2026-09-07): on-screen twin-stick TOUCH is the main control
+scheme, the gamepad second, the keyboard third.** Every controls pass measures touch
+first — the v8/v9 passes went keyboard-first because that was where the report came
+from, and the touch path had only the hidden auto-throttle fixed until `touch.mjs`
+(real CDP touch events) existed.
+
+**Controls.** Left stick steers and works the throttle; right stick pans the camera
+(x) and is your weight (y). Keyboard (v8): the arrow cluster **mirrors WASD** — W/Up
+throttle, S/Down brake, A/Left and D/Right steer — **Space** boost (lean back),
+**Shift** spoiler (lean forward), **Q/E** pan, F swaps the chassis on the menu, Esc
+pause. It used to split the arrows three ways (up/down were the weight axis, left/right
+panned the camera) and nothing did what an arrow key does in any other game.
+**Gamepad (v6)** is the scheme's natural home,
+because both axes v5 added are analog — the turbine spools so part throttle is a real
+choice, and weight is a lean, not a button; keyboard flattens both to on and off.
+`input.pollGamepad()` runs once per frame from `animate()` and feeds the SAME control
+struct as keys and glass, **merged rather than exclusive**, so a stick in one hand and
+a keyboard under the other still works: left stick steer + throttle/brake, right stick
+pan + weight, RT/LT additionally throttle/brake, A drop in, Start pause, Y swap chassis
+(buttons edge-detected in the poll, as the keyboard path does). Deadzone 0.16 with the
+remainder rescaled, so half-stick really is part power. `drawSticks()` early-returns
+while a pad is driving, so the touch overlay does not sit on top of a controller. The HUD is a telemetry cluster: N1, TGT, lateral g,
+slip, hover gap, **sink** (cm the runners have settled), the weight axis, surface and
+chassis. Touch is twin sticks: left steers and works the
+throttle — there is no auto-throttle, managing spool is the point — right holds overdrive
+and trims the slide.
+
+**The frame budget, measured.** At 1280x720, q=high, in a race: **v7 is 284 draw calls
+and 79k triangles** across the five passes (v6 was 384 / 65k) — 171 calls for the PS2
+world (which includes the shadow map's second pass over it), 1 for the blit, ~44 for the
+depth prepass, ~70 for the five merged ships and their effects, 3 for haze and flare.
+At `?q=low` it is 185 calls / 53k triangles, with no shadow pass and no haze. The v7
+ship merge is what paid for the engine-bay detail and the honest full-res HD pass:
+under SwiftShader the frame interval did not move (254 ms against v6's 258) even though
+the HD and prepass fragments went up 2.6x. `perf2.mjs` attributes by render-call order,
+so since v7 its "depth prepass" row is the blit and the prepass is folded into "HD". Two things
+came out of the first measurement and both are in the code now. The **depth prepass was
+re-rendering all 121 streamed tiles at full resolution** when it exists only to occlude
+the HD ships — a thing can only occlude what is behind it, so `renderFrame()` now hides
+every tile farther away than the farthest ship (118 calls down to 44); the projection
+must stay identical to the HD pass or the depth values are not comparable, which is why
+it culls by visibility rather than by moving the far plane. And the **props were 1420
+separate meshes for 30k triangles** — about 21 triangles a draw call, each drawn twice
+(shadow map, then world). Everything but the floaters is static and shares a flat
+Lambert colour, so `bakeProps()` merges each tile's props into ONE mesh with the colour
+moved to a vertex attribute; the floaters spin and bob so they stay real meshes.
+Culling granularity does not suffer — the merged mesh is exactly one tile, the unit the
+terrain mesh was already culled by — but it does cost ~15% more triangles, which is the
+trade. Two traps paid for here: **`toNonIndexed()` returns `this` when a geometry is
+already unindexed**, and DodecahedronGeometry and OctahedronGeometry both are, so the
+naive version transformed, stripped and then *disposed the kit's shared rock geometry*
+and every rock in the world went black; and giving the merged mesh `receiveShadow` puts
+it on both sides of the same 1024 hard map, and the self-shadow acne turns every prop
+black too (it is off, as the props always effectively were).
+
+**Measuring under SwiftShader, honestly.** Two things will lie to you. `renderer.info`
+**resets on every `render()` call**, so a three-pass frame reports only the last pass
+(54 calls, 2.5k triangles — off by a factor of 17); set `info.autoReset = false` and
+reset by hand. And SwiftShader **submits asynchronously**, so the CPU time inside a
+`render()` call is submission, not rasterisation, and the stall lands in whichever later
+call syncs — per-pass milliseconds are meaningless, and removing the HD pass made the
+PS2 pass appear three times slower. What is honest: the **frame interval**, and the draw
+call and triangle counts, which are exact and hardware-independent. Read deltas between
+variants, never absolutes.
+
+**A testing note that will otherwise cost an afternoon:** under SwiftShader at high
+quality the frame rate is low enough that `dt` clamping runs the simulation at roughly a
+quarter of real time. A craft that looks stuck at 8 km/h in a headless capture is usually
+fine — re-measure at `?q=low` before believing it. `window.__pw` exposes `{THREE, scene,
+camera, renderer, composer, terrain, route, state, dust, scars, audio, sky, input,
+player, field, debug:{start, over, setQuality, tp, gate}}`, and overriding `input.read`
+is how the autopilot harness drives the real control path.
 
 ### The Game of Life (`gameoflife/`)
 **Mini games and interactive stories that always revert to going back to nature.**
@@ -1906,6 +2168,27 @@ toko-drop/
     player.js   # Player movement, dash mechanic, firing
     enemy.js    # Enemy class — 4 bullet-hell patterns, each with distinct color
     bullet.js   # Object-pooled bullets (300 cap, shared pool for all bullets)
+powder/         # Powder — hover SIM racer, open flatlands cut by a canyon, surreal
+  index.html    # telemetry cluster HUD
+  ref/          # the reference plates the craft design is held against
+  art/          # six of them, downscaled, for the menu and results
+  pipeline/     # README.md = the Blender contract; powder_blender.py = setup/validate/export
+  models/       # manifest.json (empty in prod) + reference/ = the kit exported as .glb
+  js/
+    main.js     # scene, shadow/bloom/grade stack, race loop, camera rig, HUD
+    palette.js  # the whole colour scheme + the two light directions
+    terrain.js  # height(x,z), the rift and its BREACHES, streamed tile grid
+    vehicle.js  # THE SIM: four sprung hover pads, turbine spool, slip-limited grip
+    craft.js    # THE MODEL SHOP: PMREM chrome, engine bay, merged per material — kit OR .glb
+    models.js   # the pipeline's door: loads, VALIDATES and registers .glb ships/landmarks
+    haze.js     # heat-haze refraction: copies the frame, bends it behind the exhaust
+    flare.js    # the sun's lens flare (three's addon, canvas textures)
+    props.js    # monoliths, arches, floating rock — and bakeProps, one mesh a tile
+    route.js    # gates, alternating rift floor and flats, aligned to the breaches
+    dust.js     # one pooled particle class, configured as plume / spindrift / sparks
+    input.js    # twin sticks: steer+throttle, and pan+WEIGHT / keyboard / gamepad
+    audio.js    # WebAudio turbine stack driven by N1, wind, surface roar
+    sky.js      # gradient dome, sun, the ringed body, distant mesa range
 paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new palette)
   index.html
   js/

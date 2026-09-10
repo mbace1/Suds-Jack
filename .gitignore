@@ -13,3 +13,6 @@ package.json
 # across a whole frame set), which leaves a __pycache__ behind.
 __pycache__/
 *.pyc
+
+# Powder harness screenshots
+powder/test/out/

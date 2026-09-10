@@ -1,0 +1,13 @@
+{
+  "_": "The kit, exported, plus land-derrick-01, which came out of Blender through pipeline/authored/land_derrick.py and powder_blender.py rather than out of three's exporter - so this set now exercises BOTH doors. Load with ?models=reference.",
+  "ships": {
+    "nose": "ship-nose.glb",
+    "aft": "ship-aft.glb"
+  },
+  "landmarks": [
+    "land-arch-01.glb",
+    "land-monoliths-01.glb",
+    "land-derrick-01.glb"
+  ],
+  "numerals": null
+}

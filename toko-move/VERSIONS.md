@@ -1,5 +1,51 @@
 # Toko Move — versions
 
+## v2.32 — 2026-09-10
+
+**`MISSED` was accusing the player of missing trams the game had never offered
+them.** The owner could not get the recording onto a machine that can push, so
+the claim in PR #473 — that its four `MISSED` lines were evidence the catch
+buttons were unreachable — could not be checked against the video. It could be
+checked against the CODE, and it turns out to be a second fault that survived
+v2.30.
+
+`hub-tactics` worked its own misses out, and it asked a different question from
+the panel with the buttons on it: its `arrival()` scanned **every service
+calling at the stop** and took **no direction**, flagging a miss whenever any
+tram on any line was at the hub and left. A CATCH lights only for a vehicle
+travelling the way your leg goes.
+
+Measured on the live build, reproducing the recorded situation — an iPad in
+portrait, a job taken, standing still at Lasipalatsi for 100 seconds:
+**23 `MISSED` banners across 8 lines** (4T, 10H, 4H, H, 1H, 10B, 10, 1T), while
+the only line the game ever offered for that job was **1**. The overlap was
+**none**. Every accusation was about a tram the player had never been offered,
+and the one they could actually board was never mentioned. Same run after the
+fix: **one** miss, on line 1, which had been lit.
+
+**A miss is now what the word says**: a catch that was lit, is not any more, and
+you did not board it. It is detected in `route-choice.js`, where readiness is
+already computed **with a direction**, and published on `tm.catchMisses`;
+`hub-tactics` reads that instead of counting for itself. Boarding is explicitly
+not a miss — taking a lit catch makes it stop being lit, and calling that a
+failure would blame the player for succeeding.
+
+`test/misses.cjs`, and the first version of it was worthless: it watched
+`tm.catchMisses` rather than the banner on screen, so a mutation putting the old
+computation back in `hub-tactics` changed nothing it could see, and its boarding
+check sampled once at the end when the list self-trims after 8 ticks — at ×4
+that is 200 ms of wall time, long gone. **All three mutations walked straight
+past it.** It reads the BANNER now, watches the whole of a boarding, and waits
+for a catch to light rather than shrugging when none has.
+
+Two measurement faults were found and fixed inside the gate itself, and both
+were the ruler rather than the game: a 200 ms sampler at ×4 sees one frame in
+eight and missed catches lighting and going dark between samples (rAF now); and
+the banner is throttled, so the tick it becomes VISIBLE lags the miss by up to
+two polls — measured, lit until 272, dark at 274, banner seen at 291. It prints
+its own age, so the gate uses that. Before both, the same build passed and
+failed the same check on consecutive runs.
+
 ## v2.31 — 2026-09-07
 
 **Where a phone actually spends its pixels, measured rather than guessed.** v2.30
