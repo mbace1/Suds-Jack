@@ -1,4 +1,4 @@
-Kindling v21
-canonical source: mbace1/Kindling@8afd92b22e8a443d7881e074fb28ccb6384e817f
+Kindling v22
+canonical source: mbace1/Kindling@de9a6032f258b158de096bd307755d790ff88c1d
 static hub build: npm run build:hub
-notes: v21 deeper region memory, Old Gate next-world beat
+notes: v22 named keepers / multi-phase rival duels (epic C)

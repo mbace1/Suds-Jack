@@ -6,6 +6,14 @@
      it reads each project's VERSIONS.md and nothing else. Keeping the log with
      the SOURCE is what stops the number and the build disagreeing. -->
 
+## v22 — 2026-09-10
+**Named keepers — multi-phase rival duels on every road**
+- one telegraphed keeper per major region (Birch Ruins, Drowned Courtyard, Bell Keep, Ashwood, Old Gate)
+- multi-phase duels reuse Nerve + charge/feint + Bond skills; unique pressure skill check softens later phases
+- defeat still means walk home — never touches wellness/care; no scolding copy
+- Journey/Walk surfaces rival status (looming / challenged / bested) beside region memory
+- PRODUCT_PLAN notes next epics: B living lineage, then A world beyond Gate
+
 ## v21 — 2026-09-10
 **Deeper road memory, Old Gate opens a next world**
 - per-region history keeps short durable beats (finds, rests, shortcuts, fight outcomes) on Journey cards and Walk — soft place-memory, never a streak counter
