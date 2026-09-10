@@ -865,18 +865,56 @@ fogging to a single tone left a visible band where the far snow met the sky, so
   side-hill; and a held lean carves across a depth field that varies in space, so two
   step sizes end in different snow and the medium, not the integrator, explains the
   gap. Both had to be re-posed — steered, and down the packed line.
+- **An exponential ramp to zero is a RangeError, not a silence.** `impact` is
+  `max(0, -vn)`, so a grazing re-contact — most landings on rolling ground —
+  lands with an impact of exactly 0; `audio.land` scaled its thud by that and
+  `_tone` ramps *exponentially* to the gain it is handed. It threw out of
+  `physicsStep` and cost that frame its render. A tone nobody can hear is not
+  played at all.
+- **Every module was imported BARE, so a fix would not have shipped.**
+  `index.html` busts `main.js`, and `main.js` asked for `./audio.js` with no
+  token — a returning browser keeps every module except the entry. All eleven
+  carry one from v3, and `core.mjs` asserts both halves: every local import is
+  tokened, and ONE module is never asked for under two tokens (`palette.js` has
+  three importers, `snowmat.js` two).
 - **And the gate could not see that the plume filled the frame.** `deep snow throws a
   wall of it` passed green while the rooster tail hid the rider, the trench and the
   mountain: the camera sits behind you, so a tail thrown astern is a tail thrown at
   the lens. Thrown up rather than back, and a third of the count. This is the house
   rule earned again — **a gate that certifies *works* cannot see *looks***, so an art
   change ends in a screenshot.
+**What a LOOK at the whole run found, and it is the owner's call** (2026-09-10).
+Nobody had seen the middle or the bottom; a capture every 300 m says the snow
+reads as a **flat gradient** for most of the descent, and the reason is not the
+ground. Measured: relief is even along the whole run (5.51 mean over the first
+700 m against 5.86 over the last), and the surface has proper fractal grain —
+0.21 m over a board length, doubling per scale step to 5.8 m over a swell. The
+hour is not it either: the same ground at p 0.06, 0.40 and 0.80 renders almost
+identically. It is the **shading**. `wrap = ndl * 0.55 + 0.45` compresses the
+Lambert range so a board-length undulation (a 6° facet, with the sun at 20-31°)
+moves the pixel by about **2% luminance** — invisible after tone mapping. The
+wrapped terminator is canon and it is what makes snow read as snow; it is also
+what spends the grain. Journey's dunes read because they have a hard lit/shadow
+face. Reconciling those two is a look decision, not a bug, so it is recorded
+rather than changed: the options are a firmer wrap, or a second unwrapped
+detail term that shades slope independently of the sun. The one frame where the
+game already looks right is ~1900 m, where a low sun rakes a ridge with an arch
+on it — worth looking at before deciding.
 `window.__fs` is the seam the browser gate drives (`debug.step(seconds, input)` advances
 the game off the wall clock, since a sandbox with no GPU renders this at a handful of
 frames a second — the same discipline `sudsjack/` and `slaykallio/` use).
-Gates: `node flowsnow/test/core.mjs` (68 checks) and
-`NODE_PATH=$(npm root -g) node flowsnow/test/smoke.cjs` (41), plus the cabinet in
-`node test/hub-smoke.cjs`. Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
+Gates: `node flowsnow/test/core.mjs` (72 checks),
+`NODE_PATH=$(npm root -g) node flowsnow/test/smoke.cjs` (41) and
+`NODE_PATH=$(npm root -g) node flowsnow/test/playthrough.cjs` (9), plus the
+cabinet in `node test/hub-smoke.cjs`. **`smoke.cjs` proves the INTERFACE and
+`playthrough.cjs` proves the MOUNTAIN** — the same split eeri has, and for the
+same reason. smoke.cjs tested the ending by putting the rider at `z = -2395`
+and stepping three seconds, so nothing ever rode the 2,400 m in between; the
+playthrough rides all of it and found a crash at 163 m on its first run. Its
+pilot is **P plus D**, and the D is not a refinement: undamped it overshoots,
+pins the edge, and the edge scrubs nearly everything, so the run reads 0.06 m/s
+mid-descent and the terrain looks like a bog it is not. **A tireless bot that
+rides badly measures its own riding.** Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
 in `hub/art.js` (Atari sky bars, dune faces in hard lit/shadow, an arch **lighter than
 the sky** per the marquee-as-cover rule, the traveller cropped by the bottom edge
 mid-carve), accent `#f4a27a`, `pad: 'native'`, and its own lead kinds in `hub/topics.js`.
@@ -2068,8 +2106,9 @@ flowsnow/       # Flowsnow — snowboarding: Journey's look, Shredders' hands, s
     main.js     # boot, the loop, the camera, the HUD — the only file that touches the DOM
     input.js audio.js lang.js
   test/
-    core.mjs    # bare node: the terrain, the board model, the snow — 42 checks
-    smoke.cjs   # a browser, driven off game state through __fs rather than the clock
+    core.mjs    # bare node: the terrain, the board model, the snow, the tokens
+    smoke.cjs   # a browser: the INTERFACE — a tap starts a ride, the HUD, the recap
+    playthrough.cjs # a browser: the MOUNTAIN — all 2,400 m of it, ridden and timed
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate

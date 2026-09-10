@@ -337,5 +337,42 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   ok('wind carries the flakes', sim.pos[0] > x0 + 0.5, sim.pos[0] - x0);
 }
 
+
+// ---- the cache tokens, because a fix nobody re-downloads is not shipped ----
+// The sub-modules were imported BARE until v3: index.html busts main.js and
+// main.js asked for `./audio.js`, so a returning browser kept the old copy of
+// every other module in the game. A crash fix in audio.js would simply not
+// have arrived. The other half of the rule is that ONE module gets ONE token:
+// palette.js has three importers and snowmat.js two, and two different tokens
+// for one module is two instances of it with their state split.
+{
+  const dir = new URL('../js/', import.meta.url);
+  const files = (await import('node:fs')).readdirSync(dir).filter(f => f.endsWith('.js'));
+  const seen = new Map();
+  let bare = [];
+  for (const f of files) {
+    const src = (await import('node:fs')).readFileSync(new URL(f, dir), 'utf8');
+    for (const m of src.matchAll(/from '\.\/([a-z]+\.js)(\?v=(\d+))?'/g)) {
+      if (!m[2]) { bare.push(`${f} -> ${m[1]}`); continue; }
+      const prev = seen.get(m[1]);
+      if (prev === undefined) seen.set(m[1], m[3]);
+      else if (prev !== m[3]) bare.push(`${m[1]} asked for as v${prev} and v${m[3]}`);
+    }
+  }
+  ok('every local import carries a cache token', bare.length === 0, bare.join(', '));
+  ok('and one module is never asked for under two tokens', bare.length === 0, bare.join(', '));
+  // The title screen prints `v${VERSION}` to the player. It sat at 1 through
+  // v2 AND v3 while the cabinet advertised the real number — the arcade and the
+  // game disagreeing about what you are playing.
+  const mainSrc = (await import('node:fs')).readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  const log = (await import('node:fs')).readFileSync(new URL('../VERSIONS.md', import.meta.url), 'utf8');
+  const declared = Number(mainSrc.match(/export const VERSION = (\d+)/)?.[1]);
+  const logged = Number(log.match(/^## v(\d+)/m)?.[1]);
+  ok('the version the game shows is the version that shipped', declared === logged,
+    `main.js says v${declared}, VERSIONS.md says v${logged}`);
+  const html = (await import('node:fs')).readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  ok('the page asks for a tokened entry module', /src="js\/main\.js\?v=\d+"/.test(html));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -3,18 +3,18 @@
 // snow in particles.js, both pure; this file is the only one that touches the
 // DOM or the clock.
 import * as THREE from 'three';
-import { terrain } from './terrain.js';
-import { createRider, stepRider, RUN_LENGTH } from './physics.js';
-import { SnowSim } from './particles.js';
-import { hour } from './palette.js';
-import { makeUniforms, skyMaterial, snowPointsMaterial } from './snowmat.js';
-import { Figure } from './figure.js';
-import { Field, Trail, Shadow } from './world.js';
-import { Input } from './input.js';
-import { Audio } from './audio.js';
-import { pickLang, t } from './lang.js';
+import { terrain } from './terrain.js?v=1';
+import { createRider, stepRider, RUN_LENGTH } from './physics.js?v=1';
+import { SnowSim } from './particles.js?v=1';
+import { hour } from './palette.js?v=1';
+import { makeUniforms, skyMaterial, snowPointsMaterial } from './snowmat.js?v=1';
+import { Figure } from './figure.js?v=1';
+import { Field, Trail, Shadow } from './world.js?v=1';
+import { Input } from './input.js?v=1';
+import { Audio } from './audio.js?v=1';
+import { pickLang, t } from './lang.js?v=1';
 
-export const VERSION = 1;
+export const VERSION = 3;
 const BEST_KEY = 'flowsnow.best';
 const STEP = 1 / 120;
 const MAX_SNOW = 5000;
