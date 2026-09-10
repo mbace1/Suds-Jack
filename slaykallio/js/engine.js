@@ -11,8 +11,19 @@
 // and the breakdown rides on the log entry so the view can pop each "+3" and
 // "×2" the way Balatro does. What is quoted is what is rolled: describe() and
 // preview() run the same pipeline the play does.
+//
+// THE RUN (2026-09-05, owner: "aim for StS2 parity"). Two acts. At every step
+// the route offers two or three spans — a fight, an elite, an event, a rest —
+// and you choose one; the act ends on its boss. The whole route is rolled from
+// the seed up front (`buildRoute`), so the same seed is the same map, and a
+// future map screen can draw it without the rules changing.
+//
+// Phases: menu | map | fight | reward | event | rest | pick | won | lost.
+// `pick` is the one shared sub-phase: an event option or a rest that touches a
+// specific card (remove it, upgrade it) parks what is left to do in
+// `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, RULES } from './data.js';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES } from './data.js?v=31';
 
 // ── rng ──────────────────────────────────────────────────────────────────
 export function makeRng(seed) {
@@ -33,12 +44,40 @@ export function makeRng(seed) {
 
 // every 0-cost token the tinker's cards can conjure, taken from the data
 const TOKENS = Object.entries(CARDS).filter(([, c]) => c.find).map(([id]) => id);
+const ENC_INDEX = Object.fromEntries(ENCOUNTERS.map((e, i) => [e.id, i]));
+const POWERS = ['buzzPerTurn', 'findPerTurn', 'blockPerTurn', 'retainBlock', 'groove',
+  'thornsPerTurn', 'keepFetch', 'drawPerTurn', 'strengthPerTurn', 'energyPerTurn'];
 
 let uidCounter = 0;
-const card = id => ({ uid: ++uidCounter, id, ...CARDS[id] });
+const card = id => ({ uid: ++uidCounter, id, ...CARDS[id], effects: CARDS[id].effects.map(f => ({ ...f })) });
+
+// ── upgrades ─────────────────────────────────────────────────────────────
+// One rule, not a second version of every card: numbers move, the card stays
+// the same card. Damage and block +3 (a multi-hit gets +1 per hit), a scaling
+// card scales one harder, draw and conjure +1, a status one deeper, a power
+// costs one less. `describe` and `preview` read the moved numbers, so an
+// upgraded card's face is right by construction.
+export function upgrade(c) {
+  if (c.up) return c;
+  for (const f of c.effects) {
+    switch (f.type) {
+      case 'damage': if (f.n > 0 || !f.scale) f.n += f.times > 1 ? 1 : 3; else f.per += 1; break;
+      case 'block': if (f.n > 0 || !f.scale) f.n += 3; else f.per += 1; break;
+      case 'draw': case 'addCard': f.n += 1; break;
+      case 'status': if (!['doubleNext', 'retainBlock', 'groove', 'keepFetch'].includes(f.key) && f.who === 'self') f.n += f.key === 'fetch' ? 3 : 1; break;
+      case 'heal': f.n += 3; break;
+      case 'energy': f.n += 1; break;
+      case 'loseHp': f.n = Math.max(0, f.n - 1); break;
+      default: break;
+    }
+  }
+  if (c.type === 'power' && c.cost > 0) c.cost -= 1;
+  c.up = true;
+  return c;
+}
 
 // ── run ──────────────────────────────────────────────────────────────────
-export function createRun({ seed = 1, character = 'barista', theme = 'kallio' } = {}) {
+export function createRun({ seed = 1, character = 'drinker', theme = 'kallio' } = {}) {
   const def = CHARACTERS[character];
   if (!def) throw new Error(`no character ${character}`);
   const state = {
@@ -52,46 +91,158 @@ export function createRun({ seed = 1, character = 'barista', theme = 'kallio' } 
     draw: [], hand: [], discard: [], exhaust: [],
     jokers: [],
     enemies: [],
-    encounter: -1,
+    act: 0,
+    hour: undefined,         // 0 day … 1 night, from route progress (hourOf)
+    route: null,             // { act, step, steps: [[node…]…], done: [node…] }
+    encounter: -1,           // index into ENCOUNTERS of the current/last fight
+    event: null,             // { id, options }
+    pick: null,              // { kind: 'remove'|'upgrade', then: [effects], from }
     turn: 0,
-    phase: 'menu',           // menu | fight | reward | won | lost
-    reward: null,            // { kind: 'card'|'joker', options: [...] , queue: [...] }
-    playedThisTurn: [],      // cards played this turn, in order
+    phase: 'menu',
+    reward: null,            // { kind: 'card'|'joker', options: [...], queue: [...] }
+    rewardThen: 'fight',     // where a drained reward queue leads: 'fight' → after the fight, 'map' → straight back to the map
+    playedThisTurn: [],
     attacksThisTurn: 0,
+    attacksThisFight: 0,
     findsThisTurn: 0,
+    struck: 0,               // enemy hits taken this fight — the boxer counts them
     log: [],
-    stats: { damageDealt: 0, cardsPlayed: 0, biggestHit: 0, fights: 0 },
+    stats: { damageDealt: 0, cardsPlayed: 0, biggestHit: 0, fights: 0, events: 0, rests: 0 },
   };
   return state;
 }
 
 export function startRun(state) {
-  state.phase = 'fight';
-  nextEncounter(state);
+  state.act = 0;
+  buildRoute(state, 0);
+  openMap(state);
   return state;
 }
 
-function nextEncounter(state) {
-  state.encounter++;
-  const enc = ENCOUNTERS[state.encounter];
-  if (!enc) { state.phase = 'won'; state.log.push({ t: 'won' }); return; }
+// ── the route ────────────────────────────────────────────────────────────
+// Rolled up front from the seed. The shape rules, all of which the gate
+// checks: the first step is fights only (you learn the deck before you choose
+// anything); an elite is never offered before step 2 and always by step 4; a
+// rest is always among the last step's options, so the boss is never reached
+// without the choice of resting first; and no step offers the same span twice.
+export function buildRoute(state, actIndex) {
+  const act = ACTS[actIndex];
+  const rng = state.rng;
+  const fights = rng.shuffle([...act.fights]);
+  const events = rng.shuffle(EVENTS.map(e => e.id));
+  let fi = 0, ei = 0;
+  const nextFight = () => { const id = fights[fi % fights.length]; fi++; return { kind: 'fight', id }; };
+  const nextEvent = () => { const id = events[ei % events.length]; ei++; return { kind: 'event', id }; };
+  const steps = [];
+  let eliteOffered = false, restOffered = false;
+  for (let s = 0; s < act.steps; s++) {
+    const opts = [];
+    const last = s === act.steps - 1;
+    if (s === 0) { opts.push(nextFight(), nextFight()); }
+    else {
+      if (last) opts.push({ kind: 'rest' });
+      else if ((s === 2 || s === 3) && !restOffered && (s === 3 || rng.next() < 0.6)) { opts.push({ kind: 'rest' }); restOffered = true; }
+      if (s >= 2 && !last && (s === 4 && !eliteOffered || rng.next() < 0.35)) {
+        opts.push({ kind: 'elite', id: rng.pick(act.elites) }); eliteOffered = true;
+      }
+      if (rng.next() < 0.55 || last) opts.push(nextEvent());
+      while (opts.length < 2) opts.push(nextFight());
+      if (opts.length < 3 && rng.next() < 0.5) opts.push(nextFight());
+    }
+    // no duplicate span in one step
+    const seen = new Set();
+    const unique = opts.filter(o => { const k = `${o.kind}:${o.id ?? ''}`; if (seen.has(k)) return false; seen.add(k); return true; });
+    while (unique.length < 2) unique.push(nextFight());
+    steps.push(rng.shuffle(unique));
+  }
+  state.route = { act: actIndex, step: 0, steps, done: [] };
+  return state.route;
+}
+
+// The hour of the run, 0 at the first span and 1 at the last boss. The world
+// starts in daylight and ends in the dark, and past dusk what spawns has begun
+// to change: level 0 by day, 1 through the evening, 2 at night.
+export function hourOf(state) {
+  const steps = ACTS.reduce((a, x) => a + x.steps + 1, 0);
+  const walked = ACTS.slice(0, state.act).reduce((a, x) => a + x.steps + 1, 0) + Math.min(state.route?.step ?? 0, ACTS[state.act].steps + 1);
+  return Math.min(1, walked / (steps - 1));
+}
+export const nightfall = hour => hour < 0.5 ? 0 : hour < 0.8 ? 1 : 2;
+export const HOUR_WORD = hour => hour < 0.2 ? 'afternoon' : hour < 0.45 ? 'late afternoon' : hour < 0.6 ? 'dusk' : hour < 0.8 ? 'evening' : 'night';
+function markHour(state) {
+  const h = hourOf(state);
+  if (state.hour !== h) { state.hour = h; state.log.push({ t: 'hour', hour: h, word: HOUR_WORD(h) }); }
+}
+
+function openMap(state) {
+  const r = state.route;
+  state.event = null; state.pick = null; state.reward = null;
+  markHour(state);
+  if (r.step >= r.steps.length) {
+    // the act's boss stands at the end of the route
+    startEncounter(state, ACTS[r.act].boss, 'boss');
+    return;
+  }
+  state.phase = 'map';
+  state.log.push({ t: 'map', act: r.act, step: r.step, options: r.steps[r.step] });
+}
+
+export function chooseNode(state, i) {
+  if (state.phase !== 'map') return false;
+  const r = state.route;
+  const node = r.steps[r.step]?.[i];
+  if (!node) return false;
+  r.done.push(node);
+  r.step++;
+  state.log.push({ t: 'node', act: r.act, step: r.step - 1, node });
+  if (node.kind === 'fight' || node.kind === 'elite') startEncounter(state, node.id, node.kind);
+  else if (node.kind === 'event') openEvent(state, node.id);
+  else if (node.kind === 'rest') { state.phase = 'rest'; state.log.push({ t: 'rest' }); }
+  return true;
+}
+
+// ── a fight ──────────────────────────────────────────────────────────────
+function startEncounter(state, encId, kind = 'fight') {
+  const index = ENC_INDEX[encId];
+  const enc = ENCOUNTERS[index];
+  if (!enc) throw new Error(`no encounter ${encId}`);
+  state.encounter = index;
+  if (kind === 'boss') { state.route.step = ACTS[state.act].steps + 1; }
+  markHour(state);
+  const lvl = nightfall(state.hour ?? 0);
   const h = state.hero;
-  h.block = 0; h.status = {}; h.powers = {};
+  h.block = 0; h.status = {}; h.powers = {}; h.fresh = {};
   state.enemies = enc.enemies.map((id, i) => {
     const d = ENEMIES[id];
-    return { uid: ++uidCounter, id, slot: i, hp: d.hp, maxHp: d.hp, block: 0, status: {},
+    // MUTATION. Past dusk an ordinary enemy is no longer quite the thing it
+    // was by day: more of it, and at night, stronger. A boss is never
+    // mutated — a boss IS the night.
+    const mut = d.boss ? 0 : lvl;
+    const hp = Math.round(d.hp * RULES.mutation[mut]);
+    const e = { uid: ++uidCounter, id, slot: i, hp, maxHp: hp, block: 0, status: {}, mutated: mut,
       moveIndex: d.pattern === 'cycle' ? state.rng.int(d.moves.length) : 0, intent: null, alive: true };
+    if (mut >= 2) e.status.strength = 1;
+    return e;
   });
-  for (const e of state.enemies) planIntent(state, e);
-  state.draw = state.rng.shuffle(state.hero.deck.map(c => ({ ...c })));
+  state.draw = state.rng.shuffle(state.hero.deck.map(c => ({ ...c, effects: c.effects.map(f => ({ ...f })) })));
   state.hand = []; state.discard = []; state.exhaust = [];
   state.turn = 0;
+  state.attacksThisFight = 0;
+  state.struck = 0;
   state.phase = 'fight';
-  state.log.push({ t: 'encounter', index: state.encounter, id: enc.id });
+  // AFTER the reset, not before it. This used to run first, so an intent was
+  // planned against the PREVIOUS fight's turn counter and the hero's not-yet
+  // cleared statuses — which never showed while every move was unconditional,
+  // and made the first reacting enemy read its opener off a stale number.
+  for (const e of state.enemies) planIntent(state, e);
+  state.log.push({ t: 'encounter', index, id: enc.id, kind, hour: state.hour, mutated: lvl });
   for (const j of state.jokers) {
-    if (j.effect.type === 'startFinds') for (let i = 0; i < j.effect.n; i++) addCardToHand(state, 'find', j.id);
+    const f = j.effect;
+    if (f.type === 'startFinds') for (let i = 0; i < f.n; i++) addCardToHand(state, 'find', j.id);
+    if (f.type === 'thornsStart') addStatus(state, h, 'thorns', f.n, j.id);
+    if (f.type === 'energyForHp') loseHp(state, f.hp, j.id);
   }
-  startTurn(state);
+  if (state.phase === 'fight') startTurn(state);
 }
 
 // ── turns ────────────────────────────────────────────────────────────────
@@ -106,10 +257,17 @@ function startTurn(state) {
   for (const j of state.jokers) {
     const f = j.effect;
     if (f.type === 'energyDraw') { energy += f.energy; draw += f.draw; }
+    if (f.type === 'energyForHp') energy += f.energy;
     if (f.type === 'blockPerTurn') gainBlock(state, h, f.n, j.id);
+    if (f.type === 'firstTurnEnergy' && state.turn === 1) energy += f.n;
+    if (f.type === 'firstTurnDraw' && state.turn === 1) draw += f.n;
   }
+  if (h.powers.energyPerTurn) energy += h.powers.energyPerTurn;
+  if (h.powers.drawPerTurn) draw += h.powers.drawPerTurn;
   if (h.powers.blockPerTurn) gainBlock(state, h, h.powers.blockPerTurn, 'timetable');
   if (h.powers.buzzPerTurn) addStatus(state, h, 'buzz', h.powers.buzzPerTurn, 'closing_time');
+  if (h.powers.thornsPerTurn) addStatus(state, h, 'thorns', h.powers.thornsPerTurn, 'thornsPerTurn');
+  if (h.powers.strengthPerTurn) addStatus(state, h, 'strength', h.powers.strengthPerTurn, 'strengthPerTurn');
   if (h.powers.findPerTurn) for (let i = 0; i < h.powers.findPerTurn; i++) addCardToHand(state, 'find', 'recycling');
   h.energy = energy;
   h.groovePaid = false;
@@ -149,14 +307,43 @@ export function endTurn(state) {
   for (const j of state.jokers) {
     if (j.effect.type === 'emptyHandBlock' && state.hand.filter(c => c.type !== 'curse').length === 0) gainBlock(state, h, j.effect.n, j.id);
   }
+  // THE DOG GOES IN. Everything the walker did this turn was a promise; the
+  // end of the turn is when it is kept — at the weakest enemy, and then the
+  // Fetch is spent unless a power keeps the dog out.
+  if (h.status.fetch) {
+    const weakest = state.enemies.filter(e => e.alive).sort((a, b) => a.hp - b.hp)[0];
+    if (weakest) dealDamage(state, weakest, h.status.fetch, { src: 'fetch' });
+    if (!h.powers.keepFetch) delete h.status.fetch;
+  }
+  for (const j of state.jokers) {
+    if (j.effect.type === 'endTurnDamage') {
+      const weakest = state.enemies.filter(e => e.alive).sort((a, b) => a.hp - b.hp)[0];
+      if (weakest) dealDamage(state, weakest, j.effect.n, { src: j.id });
+    }
+  }
+  checkFightOver(state);
+  if (state.phase !== 'fight') return state;
   // hand goes to the discard; buzz fades
   while (state.hand.length) state.discard.push(state.hand.pop());
-  delete h.status.buzz;
+  // v28: a share of the buzz can CARRY. At `RULES.buzzCarry` 0 — the shipped
+  // rule — it fades entirely, which is what made the Park Drinker last for a
+  // structural reason: every other character's mechanic builds across a fight
+  // and his resets every turn, so he cannot grow into a boss. A carried
+  // fraction gives buzz a fixed point (Never Sober's +3 a turn settles at
+  // 3 / (1 - carry)) rather than unbounded growth, so it compounds without
+  // running away. Measured, not felt: see VERSIONS.md v28 and `--act2`.
+  const carried = Math.floor((h.status.buzz || 0) * (RULES.buzzCarry || 0));
+  if (carried > 0) h.status.buzz = carried; else delete h.status.buzz;
   delete h.status.doubleNext;
   state.log.push({ t: 'endTurn' });
   enemyPhase(state);
   if (state.phase !== 'fight') return state;
-  // statuses tick down at the end of the round on both sides
+  // Statuses tick down at the end of the round on both sides — except one an
+  // enemy applied to the hero THIS round, which skips its first tick (Slay
+  // the Spire's own `justApplied`). Without that, a Weak or a Frail an enemy
+  // had just landed was gone before the next turn began, and no enemy debuff
+  // on the hero had ever actually done anything. Found by the gull's snatch,
+  // the first debuff a test checked from the enemy's side.
   tickStatuses(h);
   for (const e of state.enemies) if (e.alive) tickStatuses(e);
   startTurn(state);
@@ -164,7 +351,11 @@ export function endTurn(state) {
 }
 
 function tickStatuses(u) {
-  for (const k of ['vulnerable', 'weak']) if (u.status[k]) { u.status[k]--; if (u.status[k] <= 0) delete u.status[k]; }
+  for (const k of ['vulnerable', 'weak', 'frail']) {
+    if (!u.status[k]) continue;
+    if (u.fresh?.[k]) { delete u.fresh[k]; continue; }      // applied this round: it lasts the next one
+    u.status[k]--; if (u.status[k] <= 0) delete u.status[k];
+  }
 }
 
 // ── the player's card ────────────────────────────────────────────────────
@@ -187,12 +378,15 @@ export function playCard(state, i, targetIndex = null) {
   }
   h.energy -= c.cost;
   state.hand.splice(i, 1);
-  state.log.push({ t: 'play', card: c.id, uid: c.uid, target: target?.uid ?? null });
+  state.log.push({ t: 'play', card: c.id, uid: c.uid, target: target?.uid ?? null, up: !!c.up });
   state.stats.cardsPlayed++;
 
   const targets = c.target === 'all' ? state.enemies.filter(e => e.alive) : target ? [target] : [];
   for (const fx of c.effects) applyEffect(state, c, fx, target, targets);
-  if (c.type === 'attack') state.attacksThisTurn++;
+  if (c.type === 'attack') {
+    state.attacksThisTurn++; state.attacksThisFight++;
+    for (const j of state.jokers) if (j.effect.type === 'blockOnAttack') gainBlock(state, h, j.effect.n, j.id);
+  }
   if (c.find) state.findsThisTurn++;
   for (const j of state.jokers) {
     if (j.effect.type === 'skillBlock' && c.type === 'skill') gainBlock(state, h, j.effect.n, j.id);
@@ -225,7 +419,7 @@ function applyEffect(state, c, fx, target, targets) {
     case 'status': {
       const who = fx.who === 'self' ? [h] : fx.who === 'all' ? state.enemies.filter(e => e.alive) : targets;
       for (const u of who) {
-        if (['buzzPerTurn', 'findPerTurn', 'blockPerTurn', 'retainBlock', 'groove'].includes(fx.key)) {
+        if (POWERS.includes(fx.key)) {
           h.powers[fx.key] = (h.powers[fx.key] || 0) + fx.n;
           state.log.push({ t: 'power', key: fx.key, n: h.powers[fx.key] });
         } else addStatus(state, u, fx.key, fx.n, c.id);
@@ -236,23 +430,32 @@ function applyEffect(state, c, fx, target, targets) {
     case 'energy': h.energy += fx.n; state.log.push({ t: 'energy', n: fx.n, src: c.id }); break;
     case 'addCard': for (let k = 0; k < fx.n; k++) addCardToHand(state, fx.id, c.id); break;
     case 'heal': heal(state, fx.n); break;
+    case 'loseHp': loseHp(state, fx.n, c.id); break;
     default: throw new Error(`unknown effect ${fx.type}`);
   }
 }
 
 function scaleOf(state, fx) {
+  const h = state.hero;
   switch (fx.scale) {
     case 'played': return state.playedThisTurn.length * (fx.per || 1);
-    case 'block': return state.hero.block * (fx.per || 1);
+    case 'block': return h.block * (fx.per || 1);
     case 'hand': return state.hand.length * (fx.per || 1);
     case 'finds': return state.findsThisTurn * (fx.per || 1);
     case 'jokers': return state.jokers.length * (fx.per || 1);
+    case 'buzz': return (h.status.buzz || 0) * (fx.per || 1);
+    case 'discard': return state.discard.length * (fx.per || 1);
+    case 'struck': return state.struck * (fx.per || 1);
+    case 'fetch': return (h.status.fetch || 0) * (fx.per || 1);
+    case 'missing': return Math.floor((h.maxHp - h.hp) * (fx.per || 1));
     default: return 0;
   }
 }
 
 function blockAmount(state, c, fx) {
-  return Math.max(0, fx.n + scaleOf(state, fx));
+  let v = Math.max(0, fx.n + scaleOf(state, fx));
+  if (state.hero.status.frail) v = Math.floor(v * RULES.frail);
+  return v;
 }
 
 // The one place damage is worked out. `preview` calls it without side effects.
@@ -274,6 +477,7 @@ export function computeDamage(state, c, fx, target) {
       case 'attackAddPerJoker': adds.push({ src: j.id, n: state.jokers.length * f.per }); break;
       case 'nthAttackMult': if (attackNo % f.n === 0) mults.push({ src: j.id, x: f.mult }); break;
       case 'firstAttackMult': if (attackNo === 1) mults.push({ src: j.id, x: f.mult }); break;
+      case 'firstAttackFightMult': if (state.attacksThisFight === 0) mults.push({ src: j.id, x: f.mult }); break;
       case 'vulnMult': vulnMult = f.mult; break;
     }
   }
@@ -310,14 +514,24 @@ function dealDamage(state, target, amount, extra = {}) {
     target.block -= blocked; left -= blocked;
   }
   target.hp = Math.max(0, target.hp - left);
-  state.log.push({ t: 'damage', target: target.uid, amount, blocked, hp: target.hp, ...extra });
+  state.log.push({ t: 'damage', target: target === state.hero ? 'hero' : target.uid, amount, blocked, hp: target.hp, ...extra });
   if (target !== state.hero) {
     state.stats.damageDealt += left;
     state.stats.biggestHit = Math.max(state.stats.biggestHit, amount);
     if (target.hp <= 0 && target.alive) { target.alive = false; target.intent = null; state.log.push({ t: 'die', target: target.uid, id: target.id }); }
-  } else if (target.hp <= 0) {
-    state.phase = 'lost';
-    state.log.push({ t: 'lost' });
+    // Thorns on an enemy: a card that struck it costs the hero the thorns.
+    // Not the dog and not a friend — thorns answer a BLOW, and never each other.
+    if (target.status.thorns && extra.breakdown && !extra.thorns) dealDamage(state, state.hero, target.status.thorns, { src: 'thorns', thorns: true, from: target.uid });
+  } else {
+    if (extra.from !== undefined && !extra.thorns) {
+      state.struck++;
+      const attacker = state.enemies.find(e => e.uid === extra.from);
+      if (state.hero.status.thorns && attacker?.alive) dealDamage(state, attacker, state.hero.status.thorns, { src: 'thorns', thorns: true });
+    }
+    if (target.hp <= 0 && state.phase !== 'lost') {
+      state.phase = 'lost';
+      state.log.push({ t: 'lost' });
+    }
   }
 }
 
@@ -329,6 +543,7 @@ function gainBlock(state, u, n, src) {
 
 function addStatus(state, u, key, n, src) {
   u.status[key] = (u.status[key] || 0) + n;
+  if (u === state.hero && state.enemyActing && ['vulnerable', 'weak', 'frail'].includes(key)) (u.fresh ??= {})[key] = true;
   state.log.push({ t: 'status', target: u === state.hero ? 'hero' : u.uid, key, n, total: u.status[key], src });
 }
 
@@ -339,12 +554,65 @@ function heal(state, n) {
   if (h.hp !== before) state.log.push({ t: 'heal', n: h.hp - before, hp: h.hp });
 }
 
+function loseHp(state, n, src) {
+  const h = state.hero;
+  if (n <= 0) return;
+  h.hp = Math.max(0, h.hp - n);
+  state.log.push({ t: 'damage', target: 'hero', amount: n, blocked: 0, hp: h.hp, src, self: true });
+  if (h.hp <= 0 && state.phase !== 'lost') { state.phase = 'lost'; state.log.push({ t: 'lost' }); }
+}
+
 // ── enemies ──────────────────────────────────────────────────────────────
+// A move may carry `when`, and that is the whole difference between a bestiary
+// and a rotation. Every one of the seventeen enemies this game shipped with
+// was a fixed loop with a random start — the move LISTS differed, so a dealer
+// curses where a preacher buffs, but the SHAPE was identical and nothing on
+// the bridge ever reacted to anything. That is TURF's "eighteen portraits of
+// one enemy" in a subtler form. Slay the Spire's own answer is a conditional
+// intent (the Jaw Worm bellows when it is hurt, the Guardian shifts mode), and
+// it costs one function rather than any new art.
+export const WHEN = {
+  first:  (state) => state.turn === 0,                                     // planned before turn one: an opener
+  hurt:   (state, e) => e.hp * 2 <= e.maxHp,                               // half gone
+  alone:  (state) => state.enemies.filter(x => x.alive).length === 1,      // last one standing
+  // Read off what the hero HAD when the row got to act, not off `block` now.
+  // An intent is planned at the END of the enemy phase, for the turn after —
+  // by which point the block it is reacting to has been spent absorbing the
+  // very attacks that just landed. Asking `hero.block` there is asking after
+  // the fact, and the condition could never once have fired.
+  walled: (state) => (state.wall ?? state.hero.block) >= 10,                // you turtled
+  // v26. `alone`'s mirror, and it makes clearing the small ones cut both ways:
+  // kill the mob and the one carrying the bat stops getting the bonus, kill the
+  // bat and the mob keeps coming. Counted BEFORE the row acts, like every
+  // other condition here, so the telegraph and the swing agree.
+  crowded: (state) => state.enemies.filter(x => x.alive).length >= 3,       // it has friends
+  // The first condition that reads YOU rather than the row. `walled` reads the
+  // hero too, but it reads a choice you made this turn; this reads the state
+  // of the run, which is what makes a finisher a finisher — an execute has to
+  // be visible a turn early or it is just a big number that arrived.
+  bleeding: (state) => state.hero.hp * 2 <= state.hero.maxHp,               // you are half gone
+};
+
 function planIntent(state, e) {
   const d = ENEMIES[e.id];
-  const m = d.pattern === 'random' ? state.rng.pick(d.moves) : d.moves[e.moveIndex % d.moves.length];
-  e.intent = { ...m };
-  if (m.intent === 'attack') e.intent.shown = enemyDamage(state, e, m.dmg);
+  // A condition wins over the rotation, first match in declaration order — so
+  // the order a designer writes them in is the priority, which is the one
+  // thing about this that has to be obvious from the data.
+  for (let i = 0; i < d.moves.length; i++) {
+    const m = d.moves[i];
+    if (!m.when || (m.once && e.spent?.includes(i))) continue;
+    if (WHEN[m.when]?.(state, e)) { e.intent = { ...m, at: i }; break; }
+  }
+  if (!e.intent || e.intent.at === undefined) {
+    // The rotation walks only the UNCONDITIONAL moves. Leaving a conditional
+    // one in the loop would fire it with its condition unmet, which is the
+    // obvious bug and the reason `loop` is derived rather than being `moves`.
+    const loop = d.moves.filter(x => !x.when);
+    const m = d.pattern === 'random' ? state.rng.pick(loop) : loop[e.moveIndex % loop.length];
+    e.intent = { ...m };
+  }
+  const m = e.intent;
+  if (m.intent === 'attack' || m.dmg) e.intent.shown = enemyDamage(state, e, m.dmg);
 }
 
 // the number on the telegraph is the number that lands
@@ -357,28 +625,45 @@ export function enemyDamage(state, e, dmg) {
 
 function enemyPhase(state) {
   const h = state.hero;
+  state.enemyActing = true;
+  state.wall = h.block;                    // what the row is walking into
+
   for (const e of state.enemies) {
     if (!e.alive || state.phase !== 'fight') continue;
     e.block = 0;
+    // An enemy with no intent gets one rather than crashing. Before v23 this
+    // could not happen; now the engine itself clears the intent before
+    // re-planning, so "no intent" is a state that exists, and a null here
+    // reached `m.id` and took the whole fight down.
+    if (!e.intent) planIntent(state, e);
     const m = e.intent;
     state.log.push({ t: 'enemyAct', enemy: e.uid, move: m.id, intent: m.intent });
     if (m.intent === 'attack' || m.dmg) {
       const times = m.times || 1;
-      for (let k = 0; k < times && state.phase === 'fight'; k++) dealDamage(state, h, enemyDamage(state, e, m.dmg), { src: m.id, from: e.uid });
+      for (let k = 0; k < times && state.phase === 'fight' && e.alive; k++) dealDamage(state, h, enemyDamage(state, e, m.dmg), { src: m.id, from: e.uid });
     }
     if (m.block) gainBlock(state, e, m.block, m.id);
+    if (m.heal) { const before = e.hp; e.hp = Math.min(e.maxHp, e.hp + m.heal); if (e.hp !== before) state.log.push({ t: 'enemyHeal', target: e.uid, n: e.hp - before, hp: e.hp }); }
     if (m.status) {
-      const self = m.status.key === 'strength';
-      addStatus(state, self ? e : h, m.status.key, m.status.n, m.id);
+      const selfKeys = ['strength', 'thorns'];
+      if (m.who === 'all') for (const o of state.enemies) { if (o.alive) addStatus(state, o, m.status.key, m.status.n, m.id); }
+      else addStatus(state, selfKeys.includes(m.status.key) ? e : h, m.status.key, m.status.n, m.id);
     }
     if (m.status2) addStatus(state, h, m.status2.key, m.status2.n, m.id);
     if (m.addCard) { const c = card(m.addCard); state.discard.push(c); state.log.push({ t: 'curse', card: c.id, uid: c.uid, src: e.uid }); }
-    e.moveIndex++;
-    planIntent(state, e);
+    // A conditional move does not consume a place in the rotation, or taking
+    // one would silently skip the loop move it stood in for. And `once` is
+    // spent when the move ACTS rather than when it is planned: the intent is
+    // shown a turn ahead and re-planned in this same loop, so marking it here
+    // is what stops it being chosen again on the way out.
+    if (m.at !== undefined && m.once) (e.spent ??= []).push(m.at);
+    if (m.at === undefined) e.moveIndex++;
+    if (e.alive) { e.intent = null; planIntent(state, e); }
   }
+  state.enemyActing = false;
   // the hero's vulnerable/weak were applied for the coming turn; intents are
   // re-shown against the hero's current statuses
-  for (const e of state.enemies) if (e.alive && e.intent?.intent === 'attack') e.intent.shown = enemyDamage(state, e, e.intent.dmg);
+  for (const e of state.enemies) if (e.alive && e.intent && (e.intent.intent === 'attack' || e.intent.dmg)) e.intent.shown = enemyDamage(state, e, e.intent.dmg);
 }
 
 function checkFightOver(state) {
@@ -390,13 +675,31 @@ function checkFightOver(state) {
     const enc = ENCOUNTERS[state.encounter];
     const queue = [...enc.reward];
     if (state.jokers.length >= RULES.jokerMax) queue.splice(queue.indexOf('joker'), queue.includes('joker') ? 1 : 0);
+    state.rewardThen = 'fight';
     openReward(state, queue);
   }
 }
 
+// after the last reward of a fight: the next act, the end, or back to the map
+function afterFight(state) {
+  const enc = ENCOUNTERS[state.encounter];
+  const act = ACTS[state.act];
+  if (enc && enc.id === act.boss) {
+    state.log.push({ t: 'actWon', act: state.act });
+    if (state.act + 1 >= ACTS.length) { state.phase = 'won'; state.log.push({ t: 'won' }); return; }
+    // Dusk falls between the acts, and you catch your breath. Measured: without
+    // this every character reached act two at ~40% HP and the Bridge King was
+    // 48% of all deaths — the middle of the run was a wall, not a curve.
+    heal(state, Math.floor(state.hero.maxHp * RULES.healBetweenActs));
+    state.act++;
+    buildRoute(state, state.act);
+  }
+  openMap(state);
+}
+
 // ── rewards ──────────────────────────────────────────────────────────────
 function openReward(state, queue) {
-  if (!queue.length) { state.reward = null; nextEncounter(state); return; }
+  if (!queue.length) { state.reward = null; if (state.rewardThen === 'map') openMap(state); else afterFight(state); return; }
   const kind = queue.shift();
   const options = kind === 'card' ? rollCards(state, 3) : rollJokers(state, 3);
   if (!options.length) { openReward(state, queue); return; }
@@ -427,13 +730,20 @@ function rollJokers(state, n) {
   return state.rng.shuffle(pool).slice(0, n);
 }
 
+function gainJoker(state, id) {
+  const j = { id, ...JOKERS[id] };
+  state.jokers.push(j);
+  state.log.push({ t: 'gainJoker', joker: id });
+  if (j.effect.type === 'maxHp') { state.hero.maxHp += j.effect.n; state.hero.hp += j.effect.n; state.log.push({ t: 'maxHp', n: j.effect.n, maxHp: state.hero.maxHp, hp: state.hero.hp }); }
+}
+
 export function chooseReward(state, index) {
   if (state.phase !== 'reward' || !state.reward) return false;
   const { kind, options, queue } = state.reward;
   const id = options[index];
   if (id !== undefined) {
     if (kind === 'card') { state.hero.deck.push(card(id)); state.log.push({ t: 'gainCard', card: id }); }
-    else { state.jokers.push({ id, ...JOKERS[id] }); state.log.push({ t: 'gainJoker', joker: id }); }
+    else gainJoker(state, id);
   } else state.log.push({ t: 'skipReward', kind });
   openReward(state, queue);
   return true;
@@ -441,20 +751,123 @@ export function chooseReward(state, index) {
 
 export const skipReward = state => chooseReward(state, -1);
 
+// ── events ───────────────────────────────────────────────────────────────
+function openEvent(state, id) {
+  const ev = EVENTS.find(e => e.id === id);
+  if (!ev) throw new Error(`no event ${id}`);
+  state.phase = 'event';
+  state.event = { id, options: ev.options.map((_, i) => i) };
+  state.stats.events++;
+  state.log.push({ t: 'event', id });
+}
+
+export function chooseEvent(state, i) {
+  if (state.phase !== 'event' || !state.event) return false;
+  const ev = EVENTS.find(e => e.id === state.event.id);
+  const opt = ev.options[i];
+  if (!opt) return false;
+  state.log.push({ t: 'eventChoice', id: ev.id, option: i });
+  runEffects(state, [...opt.effects], 'event');
+  return true;
+}
+
+// Event and rest effects, in order. An effect that needs a card picked parks
+// the rest in `state.pick.then` and stops; `pickCard` resumes it. A `reward`
+// opens the ordinary reward and sends it back to the map when it drains.
+function runEffects(state, effects, from) {
+  const h = state.hero;
+  while (effects.length) {
+    const f = effects.shift();
+    switch (f.type) {
+      case 'heal': heal(state, f.pct ? Math.floor(h.maxHp * f.pct) : f.n); break;
+      case 'maxHp': h.maxHp = Math.max(1, h.maxHp + f.n); h.hp = Math.max(1, Math.min(h.maxHp, h.hp + Math.max(0, f.n))); state.log.push({ t: 'maxHp', n: f.n, maxHp: h.maxHp, hp: h.hp }); break;
+      case 'hp': loseHp(state, f.n, from); if (state.phase === 'lost') return; break;
+      case 'card': h.deck.push(card(f.id)); state.log.push({ t: 'gainCard', card: f.id }); break;
+      case 'curse': h.deck.push(card(f.id)); state.log.push({ t: 'gainCard', card: f.id, curse: true }); break;
+      case 'joker': { const opts = rollJokers(state, 1); if (opts.length) gainJoker(state, opts[0]); break; }
+      case 'maxEnergy': h.maxEnergy += f.n; state.log.push({ t: 'maxEnergy', n: f.n, maxEnergy: h.maxEnergy }); break;
+      case 'roll': { const good = state.rng.next() < f.p; state.log.push({ t: 'roll', good }); effects.unshift(...(good ? f.good : f.bad)); break; }
+      case 'remove': case 'upgrade': {
+        state.pick = { kind: f.type, then: effects, from };
+        state.phase = 'pick';
+        state.log.push({ t: 'pick', kind: f.type });
+        return;
+      }
+      case 'reward': {
+        state.rewardThen = 'map';
+        openReward(state, [f.kind]);
+        if (state.phase === 'reward') return;      // the map follows when it drains
+        break;
+      }
+      default: throw new Error(`unknown event effect ${f.type}`);
+    }
+  }
+  openMap(state);
+}
+
+// Nothing left to pick. A rest that offers an upgrade when every card is
+// already upgraded had no way out at all: the panel listed nothing and the
+// phase never ended. This carries on with whatever the event had parked behind
+// the pick, rather than dropping it — which is what the engine's own bot used
+// to do, silently losing the second half of a two-part event.
+export function skipPick(state) {
+  if (state.phase !== 'pick' || !state.pick) return false;
+  const { then } = state.pick;
+  state.pick = null;
+  state.log.push({ t: 'skipPick' });
+  runEffects(state, then, 'pick');
+  return true;
+}
+
+// what `pick` could legally take right now — the panel lists exactly this, and
+// an empty list is what `skipPick` exists for
+export function pickable(state) {
+  if (state.phase !== 'pick' || !state.pick) return [];
+  const kind = state.pick.kind;
+  return state.hero.deck.map((c, i) => ({ c, i }))
+    .filter(({ c }) => kind === 'remove' ? c.type !== 'curse' || state.hero.deck.length > 1 : !c.up && c.type !== 'curse');
+}
+
+export function pickCard(state, deckIndex) {
+  if (state.phase !== 'pick' || !state.pick) return false;
+  const c = state.hero.deck[deckIndex];
+  if (!c) return false;
+  const { kind, then } = state.pick;
+  if (kind === 'remove') { state.hero.deck.splice(deckIndex, 1); state.log.push({ t: 'removeCard', card: c.id, uid: c.uid }); }
+  else if (kind === 'upgrade') { if (c.up) return false; upgrade(c); state.log.push({ t: 'upgrade', card: c.id, uid: c.uid }); }
+  state.pick = null;
+  runEffects(state, then, 'pick');
+  return true;
+}
+
+// ── a rest ───────────────────────────────────────────────────────────────
+export function chooseRest(state, kind) {
+  if (state.phase !== 'rest') return false;
+  state.stats.rests++;
+  if (kind === 'heal') { heal(state, Math.floor(state.hero.maxHp * RULES.restHeal)); state.log.push({ t: 'rested', kind }); openMap(state); return true; }
+  if (kind === 'upgrade') { state.log.push({ t: 'rested', kind }); runEffects(state, [{ type: 'upgrade' }], 'rest'); return true; }
+  return false;
+}
+
 // Jump straight to an encounter, keeping the deck and friends you are holding.
 // For tuning and for looking at art: nobody should have to win five fights to
-// see whether the sixth one reads.
+// see whether the sixth one reads. The act follows the encounter, so beating
+// a boss from here still ends the act.
 export function jumpTo(state, index) {
-  if (index < 0 || index >= ENCOUNTERS.length) return false;
-  state.reward = null;
-  state.encounter = index - 1;
-  nextEncounter(state);
+  const enc = ENCOUNTERS[index];
+  if (!enc) return false;
+  state.reward = null; state.event = null; state.pick = null;
+  const act = ACTS.findIndex(a => a.boss === enc.id || a.fights.includes(enc.id) || a.elites.includes(enc.id));
+  if (act >= 0 && act !== state.act) { state.act = act; buildRoute(state, act); }
+  if (!state.route) buildRoute(state, state.act);
+  startEncounter(state, enc.id, enc.enemies.some(id => ENEMIES[id].boss) ? 'boss' : enc.enemies.some(id => ENEMIES[id].elite) ? 'elite' : 'fight');
   return true;
 }
 
 // ── text ─────────────────────────────────────────────────────────────────
 const STATUS_WORD = {
   vulnerable: 'Vulnerable', weak: 'Weak', strength: 'Strength', buzz: 'Buzz', doubleNext: 'Double',
+  frail: 'Frail', thorns: 'Thorns', fetch: 'Fetch',
 };
 const POWER_TEXT = {
   buzzPerTurn: n => `At the start of your turn, gain ${n} Buzz.`,
@@ -462,8 +875,14 @@ const POWER_TEXT = {
   blockPerTurn: n => `At the start of your turn, gain ${n} block.`,
   retainBlock: () => 'Block is not lost at the start of your turn.',
   groove: () => 'The 3rd card you play each turn refunds 1 energy.',
+  thornsPerTurn: n => `At the start of your turn, gain ${n} Thorns.`,
+  keepFetch: () => 'Fetch is not spent at the end of your turn.',
+  drawPerTurn: n => `Draw ${n} more card${n > 1 ? 's' : ''} each turn.`,
+  strengthPerTurn: n => `At the start of your turn, gain ${n} Strength.`,
+  energyPerTurn: n => `Gain ${n} more energy each turn.`,
 };
-const SCALE_TEXT = { played: 'card played this turn', block: 'block you have', hand: 'card in your hand', finds: 'Bottle played this turn', jokers: 'friend' };
+const SCALE_TEXT = { played: 'card played this turn', block: 'block you have', hand: 'card in your hand', finds: 'Bottle played this turn', jokers: 'friend',
+  buzz: 'Buzz', discard: 'card in your discard', struck: 'hit you took this fight', fetch: 'Fetch', missing: 'missing HP' };
 
 // Card text is written from the effects, with live numbers when a state and
 // hand index are given: a Crema-doubled Strike says 12 on its face.
@@ -490,26 +909,34 @@ export function describe(c, state = null, i = null, targetIndex = null) {
       case 'status':
         if (POWER_TEXT[fx.key]) parts.push(POWER_TEXT[fx.key](fx.n));
         else if (fx.key === 'doubleNext') parts.push('Your next attack this turn deals double.');
+        else if (fx.key === 'fetch') parts.push(`Gain ${fx.n} Fetch.`);
         else parts.push(`${fx.who === 'self' ? 'Gain' : 'Apply'} ${fx.n} ${STATUS_WORD[fx.key]}${fx.who === 'all' ? ' to all' : ''}.`);
         break;
       case 'draw': parts.push(`Draw ${fx.n}.`); break;
       case 'energy': parts.push(`Gain ${fx.n} energy.`); break;
       case 'addCard': parts.push(`Conjure ${fx.n} Bottle${fx.n > 1 ? 's' : ''} into your hand.`); break;
       case 'heal': parts.push(`Heal ${fx.n}.`); break;
+      case 'loseHp': parts.push(`Lose ${fx.n} HP.`); break;
     }
   }
   if (c.exhaust) parts.push('Exhaust.');
   return parts.join(' ');
 }
 
+export const STATUS_HELP = {
+  vulnerable: 'takes ×1.5 damage', weak: 'deals ×0.75 damage', frail: 'gains ×0.75 block', strength: 'permanent +damage',
+  buzz: '+damage; two-thirds of it fades at the end of the turn', thorns: 'deals this back to whatever strikes it', fetch: 'the dog deals this at the end of your turn',
+};
+
 export function describeIntent(e) {
   const m = e.intent;
   if (!m) return '';
   switch (m.intent) {
-    case 'attack': return `${m.shown}${m.times ? ` ×${m.times}` : ''}`;
+    case 'attack': return `${m.shown}${m.times ? ` ×${m.times}` : ''}${m.block ? ` · block ${m.block}` : ''}`;
     case 'block': return `block ${m.block}`;
-    case 'buff': return `+${m.status?.n ?? ''} str${m.block ? ` · block ${m.block}` : ''}`;
-    case 'debuff': return `${m.dmg ? `${m.dmg} · ` : ''}${STATUS_WORD[m.status.key].toLowerCase()} ${m.status.n}${m.status2 ? ` · ${STATUS_WORD[m.status2.key].toLowerCase()} ${m.status2.n}` : ''}`;
+    case 'buff': return `+${m.status?.n ?? ''} ${STATUS_WORD[m.status?.key]?.toLowerCase() ?? 'str'}${m.who === 'all' ? ' all' : ''}${m.block ? ` · block ${m.block}` : ''}`;
+    case 'debuff': return `${m.dmg ? `${m.shown ?? m.dmg} · ` : ''}${STATUS_WORD[m.status.key].toLowerCase()} ${m.status.n}${m.status2 ? ` · ${STATUS_WORD[m.status2.key].toLowerCase()} ${m.status2.n}` : ''}`;
+    case 'heal': return `heals ${m.heal}${m.status ? ` · +${m.status.n} ${STATUS_WORD[m.status.key].toLowerCase()}` : ''}`;
     case 'curse': return 'adds a curse';
     default: return m.intent;
   }
@@ -526,7 +953,9 @@ export function botTurn(state) {
     for (let i = 0; i < state.hand.length; i++) {
       if (!canPlay(state, i)) continue;
       const p = preview(state, i);
-      const score = p.damage * p.hits + p.block * 0.8 + (state.hand[i].type === 'power' ? 6 : 0) + 1;
+      const c = state.hand[i];
+      const fetch = c.effects.filter(f => f.type === 'status' && f.key === 'fetch').reduce((a, f) => a + f.n, 0);
+      const score = p.damage * p.hits + p.block * 0.8 + fetch * 0.9 + (c.type === 'power' ? 6 : 0) + 1;
       if (score > bestScore) { bestScore = score; best = i; }
     }
     if (best < 0) break;
@@ -536,11 +965,54 @@ export function botTurn(state) {
   if (state.phase === 'fight') endTurn(state);
 }
 
-export function botRun(state, maxTurns = 400) {
-  let n = 0;
-  while ((state.phase === 'fight' || state.phase === 'reward') && n++ < maxTurns) {
-    if (state.phase === 'reward') chooseReward(state, 0);
-    else botTurn(state);
+// One decision in whatever phase the run is in. The map choice is the only
+// place it is allowed a little sense — rest when hurt, avoid an elite when
+// hurt — because a bot that walks into every elite at 20% HP measures nothing
+// but its own stupidity.
+export function botStep(state) {
+  const h = state.hero;
+  switch (state.phase) {
+    case 'fight': botTurn(state); break;
+    case 'reward': chooseReward(state, 0); break;
+    case 'map': {
+      const opts = state.route.steps[state.route.step] ?? [];
+      const hurt = h.hp / h.maxHp < 0.55;
+      const lastStep = state.route.step === state.route.steps.length - 1;
+      let i = opts.findIndex(o => o.kind === 'rest');
+      // the span before the boss always offers a rest, and only a fool walks past it
+      if (i < 0 || (!hurt && !lastStep)) {
+        const fight = opts.findIndex(o => o.kind === 'fight');
+        const elite = opts.findIndex(o => o.kind === 'elite');
+        const event = opts.findIndex(o => o.kind === 'event');
+        i = (!hurt && h.hp / h.maxHp > 0.8 && elite >= 0) ? elite : fight >= 0 ? fight : event >= 0 ? event : Math.max(0, i);
+      }
+      chooseNode(state, i);
+      break;
+    }
+    case 'event': {
+      const ev = EVENTS.find(e => e.id === state.event.id);
+      const cost = o => o.effects.reduce((a, f) => a + (f.type === 'hp' ? f.n : f.type === 'roll' ? f.bad.reduce((b, g) => b + (g.type === 'hp' ? g.n : 0), 0) : 0), 0);
+      let i = ev.options.findIndex(o => cost(o) < h.hp - 8);
+      chooseEvent(state, i < 0 ? ev.options.length - 1 : i);
+      break;
+    }
+    case 'rest': chooseRest(state, h.hp / h.maxHp < 0.75 ? 'heal' : 'upgrade'); break;
+    case 'pick': {
+      const d = h.deck;
+      let i = state.pick.kind === 'remove'
+        ? d.findIndex(c => c.type === 'curse') >= 0 ? d.findIndex(c => c.type === 'curse') : d.findIndex(c => c.rarity === 'basic')
+        : d.findIndex(c => !c.up && c.rarity !== 'basic' && c.type !== 'curse');
+      if (i < 0) i = d.findIndex(c => state.pick.kind === 'remove' ? c.type !== 'curse' : !c.up && c.type !== 'curse');
+      if (i < 0 || !pickCard(state, Math.max(0, i))) skipPick(state);
+      break;
+    }
+    default: break;
   }
+}
+
+export function botRun(state, maxSteps = 900) {
+  let n = 0;
+  while (!['won', 'lost', 'menu'].includes(state.phase) && n++ < maxSteps) botStep(state);
   return state;
 }
+

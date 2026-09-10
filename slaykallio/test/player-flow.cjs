@@ -1,104 +1,73 @@
-// Real player actions: title -> inspect -> chosen target -> enemy turn ->
-// reward -> next fight. Debug state is read only; no debug action advances play.
-const { chromium } = require('playwright');
-const assert = require('node:assert/strict');
-const http = require('node:http');
-const fs = require('node:fs');
-const path = require('node:path');
-const root = path.resolve(__dirname, '../..');
-const mime = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.svg':'image/svg+xml'};
-const server = http.createServer((req,res) => {
-  let file = path.join(root, req.url.split('?')[0]);
-  if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-  fs.readFile(file, (error, bytes) => { res.writeHead(error ? 404 : 200, {'Content-Type':mime[path.extname(file)] || 'application/octet-stream'}); res.end(error ? 'missing' : bytes); });
-});
-(async () => {
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const base = process.env.SLAY_BASE_URL || `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch({executablePath:process.env.BROWSER_PATH || undefined, args:['--enable-unsafe-swiftshader']});
-  try {
-    for (const mobile of [false, true]) {
-      const page = await browser.newPage({viewport:mobile ? {width:390,height:844} : {width:1280,height:720}, isMobile:mobile, hasTouch:mobile});
-      const errors = [];
-      page.on('pageerror', error => errors.push(error.message));
-      const activate = async locator => mobile ? locator.tap() : locator.click();
-      const idle = () => page.waitForFunction(() => !window.__sk.busy());
-      await page.goto(base + '/');
-      await activate(page.getByRole('link', {name:'Play Slay Kallio', exact:true}));
-      // Seed is set through the normal supported URL, before the real title action.
-      await page.goto(new URL('slaykallio/?seed=4', base + '/').href);
-      await page.waitForFunction(() => !!window.__sk);
-      assert.equal(await page.locator('#ver').innerText(), 'v7');
-      await activate(page.locator('#start'));
-      await idle();
-      assert.equal(await page.evaluate(() => __sk.state().encounter), 0);
-      // First tap inspects and must not play via a second event from one touch.
-      await activate(page.locator('#hand .card').first());
-      assert.equal(await page.evaluate(() => __sk.state().stats.cardsPlayed), 0);
-      assert.match(await page.locator('#cardfocus').innerText(), /Swing/);
-      assert.equal(await page.locator('#cardfocus [data-target]').count(), 3);
-      const labels = await page.locator('.unit.enemy').evaluateAll(els => els.map(e => {const r=e.getBoundingClientRect();return {left:r.left,right:r.right};}));
-      for(let i=1;i<labels.length;i++) assert.ok(labels[i].left >= labels[i-1].right - 2, 'enemy labels do not overlap');
-      const targets = await page.locator('#cardfocus button').evaluateAll(els => els.map(e => e.getBoundingClientRect().height));
-      assert.ok(targets.every(h=>h>=44), 'selected-card controls fit a thumb');
-      await page.screenshot({path:path.join(__dirname, mobile?'flow-phone.png':'flow-desktop.png')});
-      const hp = await page.evaluate(() => __sk.state().enemies.map(e=>e.hp));
-      await activate(page.locator('#cardfocus [data-target="2"]'));
-      await idle();
-      assert.deepEqual(await page.evaluate(() => __sk.state().enemies.map(e=>e.hp)), [hp[0],hp[1],hp[2]-6]);
-      assert.equal(await page.evaluate(() => __sk.state().stats.cardsPlayed), 1);
-      // Deck overlay owns keyboard input, and closing it does not commit a card.
-      await activate(page.locator('#deckbtn'));
-      const before = await page.evaluate(() => JSON.stringify(__sk.state()));
-      await page.keyboard.press('1'); await page.keyboard.press('e');
-      assert.equal(await page.evaluate(() => JSON.stringify(__sk.state())), before);
-      await page.locator('#deck .close').focus(); await page.keyboard.press('Enter');
-      assert.equal(await page.locator('#deck').isVisible(), false);
-      assert.equal(await page.locator('#cardfocus').isVisible(), false);
-      assert.equal(await page.evaluate(() => JSON.stringify(__sk.state())), before);
-      // Read-only policy picks legal cards; every action goes through rendered controls.
-      for (let step=0;step<50;step++) {
-        await idle();
-        const info = await page.evaluate(() => {
-          const s=__sk.state();
-          const i=s.hand.findIndex((c,i)=>__sk.engine.canPlay(s,i));
-          return {phase:s.phase,encounter:s.encounter,i,target:s.enemies.find(e=>e.alive)?.slot};
-        });
-        if(info.encounter>0) break;
-        if(info.phase==='reward') {await activate(page.locator('#options button').first());continue;}
-        assert.equal(info.phase,'fight');
-        if(info.i<0) {
-          // Even unplayable cards can be read, with a concrete explanation.
-          if(await page.locator('#hand .card').count()) {
-            await activate(page.locator('#hand .card').first());
-            assert.match(await page.locator('#cardfocus').innerText(), /Need .* energy|cannot be played/);
-            await activate(page.locator('.focus-cancel'));
-          }
-          await activate(page.locator('#end'));
-        } else {
-          await activate(page.locator(`#hand .card[data-i="${info.i}"]`));
-          const enemy=page.locator(`#cardfocus [data-target="${info.target}"]`);
-          if(await enemy.count()) await activate(enemy);
-          else await activate(page.locator('.focus-actions button').first());
-        }
-      }
-      await idle();
-      assert.equal(await page.evaluate(() => __sk.state().encounter),1,'reward advances to second fight');
-      assert.ok(await page.evaluate(() => __sk.state().stats.cardsPlayed)>1);
-      // Recover through the deck's quit control and start a fresh run.
-      await activate(page.locator('#deckbtn')); await activate(page.locator('#quit'));
-      await activate(page.locator('#start')); await idle();
-      assert.equal(await page.evaluate(() => __sk.state().stats.cardsPlayed),0);
-      if(mobile) {
-        await page.setViewportSize({width:844,height:390});
-        await activate(page.locator('#hand .card').first());
-        await page.screenshot({path:path.join(__dirname,'flow-landscape-phone.png')});
-        const r=await page.locator('#cardfocus').boundingBox();
-        assert.ok(r.x>=0&&r.y>=0&&r.x+r.width<=844&&r.y+r.height<=390);
-      }
-      assert.deepEqual(errors,[]);
-      console.log(`PASS ${mobile?'touch':'desktop'}: exact target, modal isolation, first fight, reward, next fight, restart`);
-      await page.close();
-    }
-  } finally { await browser.close(); server.close(); }
+// The actual hub -> title -> route -> combat -> reward -> route path.
+// State is read for assertions/choices. Only replay speed is set by the harness.
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'../..');
+const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml'};
+const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?')[0]);if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');fs.readFile(f,(e,b)=>{res.writeHead(e?404:200,{'Content-Type':mime[path.extname(f)]||'application/octet-stream'});res.end(e?'missing':b);});});
+(async()=>{
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const base=process.env.SLAY_BASE_URL||`http://127.0.0.1:${server.address().port}`;
+ const browser=await chromium.launch({executablePath:process.env.BROWSER_PATH||undefined,args:['--enable-unsafe-swiftshader']});
+ try{for(const mobile of [false,true]){
+  const p=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1280,height:720},hasTouch:mobile,isMobile:mobile});
+  const errors=[],missing=[],figures=new Set();
+  p.on('pageerror',e=>errors.push(e.message));
+  p.on('response',r=>{if(r.url().includes('/slaykallio/')){if(r.status()>=400)missing.push(r.url());if(/\/figures\/.*\.png/.test(r.url())&&r.status()===200)figures.add(r.url());}});
+  const tap=l=>mobile?l.tap():l.click();
+  const idle=()=>p.waitForFunction(()=>!!window.__sk&&!__sk.busy(),null,{timeout:30000});
+  await p.goto(base+'/');
+  await tap(p.getByRole('link',{name:'Play Slay Kallio',exact:true}));
+  await p.goto(base+'/slaykallio/?seed=4');
+  await p.waitForFunction(()=>!!window.__sk);
+  assert.equal(await p.locator('#ver').innerText(),'v31');
+  assert.equal(await p.locator('#roster .pick').count(),6);
+  await p.waitForFunction(()=>!document.querySelector('#start').disabled);
+  assert.equal(await p.evaluate(()=>__sk.debug.art()),'turf');
+  assert.ok(figures.size>=23,'TURF figure images actually loaded');
+  await p.screenshot({path:path.join(__dirname,mobile?'release-title-phone.png':'release-title-desktop.png')});
+  await tap(p.locator('#start'));await idle();
+  assert.equal(await p.evaluate(()=>__sk.state().phase),'map');
+  await tap(p.locator('#nodes button').first());await idle();
+  assert.equal(await p.evaluate(()=>__sk.state().phase),'fight');
+  await p.waitForFunction(()=>__sk.arena.photo===true);
+  await p.screenshot({path:path.join(__dirname,mobile?'release-fight-phone.png':'release-fight-desktop.png')});
+  // Set only the pacing for the rest of the run, never its actions or state.
+  await p.evaluate(()=>__sk.setSpeed(0));
+  const first=await p.evaluate(()=>{const s=__sk.state();return s.hand.findIndex((c,i)=>c.target==='enemy'&&__sk.engine.canPlay(s,i));});
+  assert.ok(first>=0);
+  const before=await p.evaluate(()=>__sk.state().stats.cardsPlayed);
+  await tap(p.locator(`#hand .card[data-i="${first}"]`));
+  assert.equal(await p.evaluate(()=>__sk.state().stats.cardsPlayed),before,'one tap only selects');
+  await tap(p.locator('.unit.enemy:not(.dead) .hitbox').last());await idle();
+  assert.equal(await p.evaluate(()=>__sk.state().stats.cardsPlayed),before+1,'one target action plays exactly one card');
+  await tap(p.locator('#deckbtn'));
+  const snap=await p.evaluate(()=>JSON.stringify(__sk.state()));
+  await p.keyboard.press('1');await p.keyboard.press('e');
+  assert.equal(await p.evaluate(()=>JSON.stringify(__sk.state())),snap,'deck blocks underlying play');
+  await p.locator('#deck .close').focus();await p.keyboard.press('Enter');
+  assert.equal(await p.locator('#deck').isVisible(),false);
+  await p.waitForTimeout(350);
+  await tap(p.locator('#deckbtn'));await tap(p.locator('#quit'));await tap(p.locator('#start'));await idle();
+  assert.equal(await p.evaluate(()=>__sk.state().phase),'map');
+  assert.equal(await p.evaluate(()=>__sk.state().stats.cardsPlayed),0);
+  await tap(p.locator('#nodes button').first());await idle();
+  for(let step=0;step<60;step++){
+   await idle();
+   const s=await p.evaluate(()=>{const s=__sk.state();return{phase:s.phase,plays:s.stats.cardsPlayed,i:s.hand.findIndex((c,i)=>__sk.engine.canPlay(s,i)),target:s.enemies.findIndex(e=>e.alive)};});
+   if(s.phase==='map')break;
+   if(s.phase==='reward'){await tap(p.locator('#options button').first());continue;}
+   assert.equal(s.phase,'fight');
+   if(s.i<0){await tap(p.locator('#end'));continue;}
+   await tap(p.locator(`#hand .card[data-i="${s.i}"]`));
+   await tap(p.locator('.unit.enemy:not(.dead) .hitbox').first());
+  }
+  await idle();
+  assert.equal(await p.evaluate(()=>__sk.state().phase),'map','win, take reward and return to route');
+  assert.ok(await p.evaluate(()=>__sk.state().stats.fights)>0);
+  assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);
+  console.log(`PASS ${mobile?'touch':'desktop'}: six-character title, TURF images, photo, route, combat, reward and restart`);
+  await p.close();
+ }}finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

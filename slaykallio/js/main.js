@@ -7,14 +7,16 @@
 // synced to the real state so nothing can drift. `window.__sk` is the seam
 // the smoke test drives, and it can set the replay delays to zero.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, THEMES, RULES } from './data.js';
-import * as engine from './engine.js';
-import { Arena } from './scene.js';
-import { Puppet, paintCutout } from './puppet.js';
-import { paintCardPic } from './cardart.js';
-import { sfx, unlock, setMuted, isMuted } from './audio.js';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js?v=31';
+import * as engine from './engine.js?v=31';
+import { Arena } from './scene.js?v=31';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=31';
+import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=31';
+import { paintCardPic } from './cardart.js?v=31';
+import { drawMap } from './map.js?v=31';
+import { sfx, unlock, setMuted, isMuted } from './audio.js?v=31';
 import { watchPad } from '../../hub/pad.js';
-import { bindActivation } from './input.js?v=1';
+import { bindActivation } from './input.js?v=31';
 
 const $ = s => document.querySelector(s);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
@@ -23,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 7;
+const VERSION = 31;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -42,13 +44,96 @@ let padHint = false;
 const T = () => THEMES[theme];
 const nameOf = (table, id) => table[id]?.[theme]?.name ?? id;
 const cardName = id => nameOf(CARDS, id);
+const PANELS = ['#menu', '#reward', '#result', '#deck', '#map', '#event', '#rest', '#pick'];
 
 // ── boot ─────────────────────────────────────────────────────────────────
 const gl = $('#gl');
 arena = new Arena(gl, T());
 const params = new URLSearchParams(location.search);
-if (params.get('bg')) arena.setPhoto(params.get('bg'), { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+
+// The backdrop, in order of preference:
+//   1. ?bg=<url>            an explicit plate, for testing one without editing
+//   2. bg/plate.jpg         a photograph DROPPED INTO THE GAME FOLDER
+//   3. the painted park     always, if neither is there
+//
+// (2) is the whole point: the owner asked for a real photo behind the bridge,
+// and this makes adding one a matter of putting a file at `slaykallio/bg/plate.jpg`
+// with no code change at all. Nothing 404s loudly — `setPhoto` rejects and the
+// painting is already on screen, so a missing plate is simply the default.
+// Both paths go through the SAME tilt-shift, so a photograph gets the sharp
+// band on the deck like everything else.
+// The plates, by the hour of the run (owner's photographs, 2026-09-05). The run
+// starts in the afternoon in Karhupuisto and ends at night on a Kallio street;
+// each stage draws one plate from its set, by the run's seed, so a seed is a
+// route AND its weather. `bg/plate.jpg` — the bear — stays the plate the menu
+// opens on. Every one goes through the same cut-to-frame and grade.
+const PLATES = {
+  day: ['bg/plate.jpg', 'bg/day-beds.jpg', 'bg/day-square-painted.jpg', 'bg/day-bench.jpg', 'bg/day-bear-lawn.jpg', 'bg/day-beds-tram.jpg', 'bg/day-square.jpg'],
+  evening: ['bg/dusk-metro.jpg', 'bg/dusk-church.jpg'],
+  night: ['bg/night-street.jpg', 'bg/night-door.jpg', 'bg/night-restaurant.jpg', 'bg/night-bar.jpg', 'bg/night-tram.jpg'],
+};
+const STAGES = ['day', 'evening', 'night'];
+let plateStage = null, plateUrl = null;
+function plateFor(stage) {
+  if (params.get('bg')) return params.get('bg');
+  const set = PLATES[stage];
+  const seed = state?.seed ?? 0;
+  return set[(seed + STAGES.indexOf(stage) * 7) % set.length];
+}
+function applyHour(h) {
+  arena.setHour(h);
+  const stage = STAGES[engine.nightfall(h)];
+  if (stage !== plateStage) {
+    plateStage = stage;
+    plateUrl = plateFor(stage);
+    arena.setPhoto(plateUrl, { stereo: params.get('stereo'), eye: params.get('eye') || 'left' }).catch(() => {});
+  }
+}
+resize();                                  // the plate is CUT to the frame, so give it the real one first
+applyHour(0);
 setMuted(store.get('mute', false));
+// The figures are made of card, so they can be MOVED rather than redrawn
+// (owner, 2026-09-07). 'paper' is Paper Mario — anticipation, a lunge that
+// squashes, a card that bends when hit, a breath at rest; 'still' is what
+// shipped through v16. A toggle rather than a replacement, because the only
+// way to know whether motion carries a verb is to watch the same fight twice.
+// THE HOUSE LOOK CAN BE CHANGED (v30, owner: *"we had characters from turf in
+// Slay earlier, they were meant to be a visual style from the options. I want
+// those back as the main style"*). The style toggles exist so the same fight
+// can be watched twice, which means the owner TOGGLES THEM WHILE COMPARING —
+// and every toggle writes to localStorage. So a value chosen while looking at
+// four options beat the default forever after: v21 moved the house style to
+// the plates and every browser that had already flipped to `drawn` kept it,
+// which is a decision being overruled by a comparison. A preference is only a
+// preference against the default it was set AGAINST. `LOOK_REV` is bumped
+// whenever the house answer moves, and a stored style older than it is
+// dropped rather than obeyed. Everything else the game remembers — the theme,
+// the seed, the run — is untouched: this is only for the look.
+const LOOK_REV = 2;                       // 2 = plates, die-cut, paper motion
+const LOOK_KEYS = ['art', 'cut', 'figures'];
+if (store.get('lookRev', 0) < LOOK_REV) {
+  for (const k of LOOK_KEYS) { try { localStorage.removeItem('slayKallio.' + k); } catch { /* private mode */ } }
+  store.set('lookRev', LOOK_REV);
+}
+setFigureMotion(store.get('figures', 'paper'));
+// The owner's TURF character plates, worn by the person-shaped figures
+// (2026-09-07). Preloaded rather than fetched per puppet: a plate arriving
+// mid-fight would repaint one figure and leave the row mismatched. The menu
+// starts on 'drawn' and the roster repaints itself once the plates land, so a
+// slow decode never shows a blank card.
+setFigureArt(store.get('art', 'turf'));
+setFigureCut(store.get('cut', 'silhouette'));
+// The plates are the default now, so the preload is on the critical path for
+// how the game LOOKS on arrival rather than for a toggle nobody has touched.
+// A figure whose plate has not decoded falls back to the drawn cutout and
+// bakes that into its texture, so anything built before this resolves has to
+// be built again — the menu roster, and a fight if one is somehow already
+// running (a deep link, or a fast hand on a slow connection).
+preloadPlates().then(() => {
+  if (!state || state.phase === 'menu') return renderMenu();
+  if (state.phase === 'fight' || state.phase === 'reward') spawnFight(); else spawnHeroAlone();
+  renderAll();
+});
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -132,6 +217,16 @@ function act(ev) {
     case 'fightWon': later(700, () => { banner('CLEAR'); sfx.win(); }); later(900, () => {}); break;
     case 'reward': later(0, () => openReward()); break;
     case 'encounter': later(200, () => spawnFight()); break;
+    case 'enemyHeal': later(0, () => { pop(ev.target, `+${ev.n}`, 'block'); setShown(ev.target, { hp: ev.hp }); }); later(200, () => {}); break;
+    // the run between fights
+    case 'map': later(0, () => openMapPanel()); break;
+    case 'node': later(0, () => { closePanels(); }); break;
+    case 'event': later(0, () => openEventPanel()); break;
+    case 'rest': later(0, () => openRestPanel()); break;
+    case 'pick': later(0, () => openPickPanel()); break;
+    case 'actWon': later(500, () => { banner('ACT CLEAR'); sfx.win(); }); later(900, () => {}); break;
+    case 'hour': later(0, () => { applyHour(ev.hour); renderTop(); }); break;
+    case 'maxHp': case 'maxEnergy': case 'upgrade': case 'removeCard': case 'rested': case 'eventChoice': case 'roll': later(0, () => renderTop()); break;
     case 'won': later(600, () => showResult(true)); break;
     case 'lost': later(200, () => { hero.die(); sfx.lose(); }); later(1600, () => showResult(false)); break;
     default: break;
@@ -140,8 +235,16 @@ function act(ev) {
 
 function afterReplay() {
   document.body.classList.remove('busy');
+  if (!state) return;
+  // whatever the run is waiting on, its screen must be up — the log's own
+  // event opened it, but a flush or a resize can land here with it hidden
   if (state.phase === 'reward' && $('#reward').hidden) openReward();
+  if (state.phase === 'map' && $('#map').hidden) openMapPanel();
+  if (state.phase === 'event' && $('#event').hidden) openEventPanel();
+  if (state.phase === 'rest' && $('#rest').hidden) openRestPanel();
+  if (state.phase === 'pick' && $('#pick').hidden) openPickPanel();
 }
+function closePanels() { for (const p of ['#map', '#event', '#rest', '#pick', '#reward']) $(p).hidden = true; }
 
 // ── displayed numbers ────────────────────────────────────────────────────
 function shownOf(k) { if (!shown.has(k)) shown.set(k, { hp: 0, block: 0 }); return shown.get(k); }
@@ -171,11 +274,11 @@ function spawnFight() {
   arena.clearPuppets();
   foes.clear();
   const ch = CHARACTERS[state.character];
-  hero = new Puppet({ look: ch[theme].look, seed: 11, scale: 1, facing: 1 });
+  hero = new Puppet({ look: { ...ch[theme].look, id: state.character }, seed: 11, scale: 1, facing: 1, mood: arena.figureMood() });
   arena.add(hero);
   const made = state.enemies.map(e => {
     const d = ENEMIES[e.id];
-    const p = new Puppet({ look: d[theme].look, seed: 100 + e.uid, scale: d.scale, facing: -1 });
+    const p = new Puppet({ look: { ...d[theme].look, id: e.id, mutated: e.mutated || 0 }, seed: 100 + e.uid, scale: d.scale, facing: -1, mood: arena.figureMood() });
     arena.add(p);
     foes.set(e.uid, p);
     return p;
@@ -193,17 +296,41 @@ function spawnFight() {
   });
   buildLabels();
   syncAll();
-  banner(nameOf(ENCOUNTERS[state.encounter], ENCOUNTERS[state.encounter].id) || ENCOUNTERS[state.encounter][theme].name);
+  // The act card. `nameOf(table, id)` wants a lookup KEYED by id (CARDS,
+  // ENEMIES); handing it the encounter object and the encounter's own id makes
+  // `enc['rats']` undefined every time, so it fell through to the raw id and the
+  // fallback after `||` could never fire. Nobody noticed while the ids happened
+  // to read as words — until the fantasy skin put KING_RAT across the screen.
+  banner(ENCOUNTERS[state.encounter][theme].name);
+}
+
+// Between fights the deck is empty but the hero is still standing on it — the
+// map, an event and a rest all happen with the bridge behind them.
+function spawnHeroAlone() {
+  arena.clearPuppets(); foes.clear();
+  const ch = CHARACTERS[state.character];
+  hero = new Puppet({ look: { ...ch[theme].look, id: state.character }, seed: 11, scale: 1, facing: 1, mood: arena.figureMood() });
+  arena.add(hero);
+  arena.ensureHeadroom(hero.height * 1.06);
+  hero.setHome(layout().heroX, 0, 0.1);
+  labels.innerHTML = '';
+  buildLabels();
+  syncAll();
 }
 
 function relayout() { if (!state || state.phase === 'menu') return; const L = layout(); hero?.setHome(L.heroX, 0, 0.1); state.enemies.forEach((e, i) => foes.get(e.uid)?.setHome(L.foeX(i), 0, 0.05 - (i % 2) * 0.12)); }
 addEventListener('resize', relayout);
 
 // ── labels over the puppets ──────────────────────────────────────────────
-const STATUS_LABEL = { vulnerable: 'VULN', weak: 'WEAK', strength: 'STR', buzz: 'BUZZ', doubleNext: '×2 NEXT' };
-// how far down the screen a unit label may start: clear of the top HUD plate,
-// and the label's own box hangs 58px above its anchor (see .unit in the CSS)
-const TOP_GUTTER = 96;
+const STATUS_LABEL = { vulnerable: 'VULN', weak: 'WEAK', strength: 'STR', buzz: 'BUZZ', doubleNext: '×2 NEXT', frail: 'FRAIL', thorns: 'THORNS', fetch: 'FETCH' };
+// How far down the screen a unit label's ANCHOR may sit. The label's own box
+// hangs 58px above that anchor (`margin-top` on .unit), so a gutter of 96 let
+// the box reach y=38 — inside the HUD plate, where the hero's name and HP were
+// drawn a second time on top of the run panel's own. Found by looking at a
+// DAYLIGHT plate: at night the collision was there and invisible. The gutter
+// is measured off the plate at render time, so it follows the portrait layout
+// (which starts the HUD 50px lower) without a second number.
+const LABEL_RISE = 58;
 const labels = $('#labels');
 function labelOf(k) { return labels.querySelector(`.unit[data-k="${k}"]`); }
 
@@ -218,21 +345,32 @@ function buildLabels() {
   };
   const ch = CHARACTERS[state.character];
   mk('hero', ch[theme].name, 'hero');
+  if (state.phase !== 'fight' && state.phase !== 'reward') return;
   state.enemies.forEach(e => {
-    const u = mk(e.uid, nameOf(ENEMIES, e.id), 'enemy');
+    const u = mk(e.uid, `${nameOf(ENEMIES, e.id)}${e.mutated ? ' ✶'.repeat(e.mutated) : ''}`, `enemy${e.mutated ? ' mutated' : ''}`);
+    if (e.mutated) u.title = e.mutated > 1 ? 'mutated by the night: more of it, and stronger' : 'mutating in the dusk: more of it';
     u.dataset.slot = e.slot;
     u.setAttribute('role', 'button');
     u.setAttribute('aria-label', `${nameOf(ENEMIES, e.id)}`);
     u.tabIndex = 0;
     if (!e.alive) u.classList.add('dead');
-    bindActivation(u, () => onEnemyTap(e.slot));
-    u.addEventListener('keydown', ev => {
-      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); onEnemyTap(e.slot); }
-    });
+    const go = ev => { ev.preventDefault(); onEnemyTap(e.slot); };
+    u.addEventListener('pointerup', go);
+    u.addEventListener('touchend', go);
+    u.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') go(ev); });
   });
 }
 
 const _v = { x: 0, y: 0, z: 0 };
+// the lowest edge of the HUD plate, plus the height the label rises above its
+// own anchor — asked of the layout rather than guessed at, once a frame
+function labelTop() {
+  // Ask the rect, not `offsetParent`: #top is position:fixed, and a fixed
+  // element's offsetParent is ALWAYS null — a guard written on it read the
+  // plate's height as zero and collapsed the gutter to the old broken value.
+  const r = $('#top')?.getBoundingClientRect();
+  return Math.max(24, (r?.height ? r.bottom : 0) + 8) + LABEL_RISE;
+}
 function placeLabels() {
   if (!state || !hero) return;
   const w = innerWidth, h = innerHeight;
@@ -245,10 +383,7 @@ function placeLabels() {
     // on the one fight where reading the intent matters most. The label is
     // pushed down rather than the camera pulled back, because pulling back
     // for one encounter would undo "much closer to the characters".
-    const labelWidth = k === 'hero' ? (h > w ? 108 : 150) : Math.min(h > w ? 108 : 150, w * .45 / Math.max(1, state.enemies.length));
-    u.style.width = `${labelWidth}px`;
-    u.style.marginLeft = `${-labelWidth / 2}px`;
-    const top = TOP_GUTTER, x = Math.max(labelWidth / 2 + 4, Math.min(w - labelWidth / 2 - 4, head.x));
+    const top = labelTop(), x = Math.max(78, Math.min(w - 78, head.x));
     const y = Math.max(top, Math.min(h - 120, head.y));
     u.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     u.style.setProperty('--h', `${Math.max(40, foot.y - y).toFixed(0)}px`);
@@ -274,7 +409,7 @@ function paintIntent(e) {
   const box = u.querySelector('.intent');
   if (!e.alive || !e.intent) { box.textContent = ''; box.className = 'intent'; return; }
   box.className = `intent ${e.intent.intent}`;
-  const glyph = { attack: '⚔', block: '⛨', buff: '▲', debuff: '☁', curse: '✖' }[e.intent.intent] ?? '?';
+  const glyph = { attack: '⚔', block: '⛨', buff: '▲', debuff: '☁', curse: '✖', heal: '✚' }[e.intent.intent] ?? '?';
   box.textContent = `${glyph} ${engine.describeIntent(e)}`;
   // the preview of the selected card, on every enemy it could hit
   const pv = u.querySelector('.preview');
@@ -292,7 +427,7 @@ function refreshStatus(k) {
   for (const [key, n] of Object.entries(unit.status)) if (n) box.append(el('span', `st ${key}`, `${STATUS_LABEL[key] ?? key} ${n}`));
   if (k === 'hero') for (const key of Object.keys(state.hero.powers)) box.append(el('span', 'st power', POWER_LABEL[key] ?? key));
 }
-const POWER_LABEL = { buzzPerTurn: 'BUZZ/TURN', findPerTurn: 'FIND/TURN', blockPerTurn: 'BLOCK/TURN', retainBlock: 'KEEP BLOCK', groove: 'GROOVE' };
+const POWER_LABEL = { buzzPerTurn: 'BUZZ/TURN', findPerTurn: 'FIND/TURN', blockPerTurn: 'BLOCK/TURN', retainBlock: 'KEEP BLOCK', groove: 'GROOVE', thornsPerTurn: 'THORNS/TURN', keepFetch: 'KEEP FETCH', drawPerTurn: 'DRAW+', strengthPerTurn: 'STR/TURN', energyPerTurn: 'ENERGY+' };
 
 // floating numbers and Balatro chips
 const fx = $('#fx');
@@ -315,11 +450,13 @@ function renderAll() { if (!state || state.phase === 'menu') return; renderTop()
 
 function renderTop() {
   const h = state.hero, ch = CHARACTERS[state.character];
-  $('#who').textContent = `${ch[theme].name} · ${ch[theme].title}`;
+  $('#who').textContent = ch[theme].name;
   $('#hp').textContent = `${h.hp}/${h.maxHp}`;
   $('#hpbar i').style.width = `${h.hp / h.maxHp * 100}%`;
   $('#piles').textContent = `draw ${state.draw.length} · discard ${state.discard.length} · deck ${h.deck.length}`;
-  $('#where').textContent = `${state.encounter + 1}/${ENCOUNTERS.length} · ${ENCOUNTERS[state.encounter]?.[theme].name ?? ''}`;
+  const r = state.route, act = ACTS[state.act];
+  const here = state.phase === 'fight' || state.phase === 'reward' ? ENCOUNTERS[state.encounter]?.[theme].name : state.phase === 'event' ? EVENTS.find(e => e.id === state.event?.id)?.[theme].name : state.phase === 'rest' || state.phase === 'pick' ? 'a quiet span' : 'the fork';
+  $('#where').textContent = `Act ${state.act + 1} · ${act[theme].name} · ${Math.min(r?.step ?? 0, act.steps)}/${act.steps} · ${engine.HOUR_WORD(state.hour ?? 0)} · ${here ?? ''}`;
   const jr = $('#jokers'); jr.innerHTML = '';
   for (const j of state.jokers) {
     const b = el('div', 'joker'); b.append(el('b', '', nameOf(JOKERS, j.id)), el('span', '', j[theme].text));
@@ -348,56 +485,10 @@ function renderHand() {
     b.classList.toggle('unplayable', !playable);
     b.classList.toggle('selected', i === sel);
     b.setAttribute('aria-pressed', i === sel);
-    bindActivation(b, () => onCardTap(i));
+    bindActivation(b, ev => { ev.preventDefault(); onCardTap(i); });
     hand.append(b);
   });
   $('#end').disabled = false;
-  renderCardFocus();
-}
-
-// The hand keeps its five-card silhouette. Selection gives small-screen
-// players the same readable description and explicit choice as a large screen.
-function renderCardFocus() {
-  const panel = $('#cardfocus'), c = state?.hand[sel];
-  panel.hidden = !c || busy || state.phase !== 'fight';
-  panel.replaceChildren();
-  if (panel.hidden) return;
-  const title = el('div', 'focus-title');
-  title.append(el('b', '', cardName(c.id)), el('span', '', c.cost == null ? 'Unplayable' : `${c.cost} energy`));
-  const cancel = el('button', 'focus-cancel', 'Cancel');
-  bindActivation(cancel, clearSelection);
-  title.append(cancel);
-  panel.append(title, el('p', 'focus-description', engine.describe(c, state, sel, target)));
-  const actions = el('div', 'focus-actions');
-  if (!engine.canPlay(state, sel)) {
-    panel.append(el('p', 'focus-reason', c.type === 'curse' || c.cost == null ? 'This card cannot be played.' : `Need ${c.cost} energy · ${state.hero.energy} remaining.`));
-  } else if (c.target === 'enemy') {
-    for (const e of state.enemies.filter(e => e.alive)) {
-      const preview = engine.preview(state, sel, e.slot);
-      const b = el('button', '', `${nameOf(ENEMIES, e.id)} ${e.slot + 1}`);
-      if (preview.damage) b.append(el('small', '', `${preview.damage}${preview.hits > 1 ? ` × ${preview.hits}` : ''} damage`));
-      else b.append(el('small', '', 'Apply card'));
-      b.dataset.target = e.slot;
-      bindActivation(b, () => onEnemyTap(e.slot));
-      actions.append(b);
-    }
-  } else {
-    const b = el('button', '', c.target === 'all' ? 'Play on all enemies' : 'Play card');
-    bindActivation(b, () => { if (fightInputReady()) play(sel, target); });
-    actions.append(b);
-  }
-  panel.append(actions);
-}
-
-function clearSelection() {
-  sel = -1;
-  document.body.classList.remove('targeting');
-  renderHand();
-  for (const e of state.enemies) paintIntent(e);
-}
-
-function fightInputReady() {
-  return !busy && state?.phase === 'fight' && $('#deck').hidden && $('#menu').hidden && $('#reward').hidden && $('#result').hidden;
 }
 
 // One card face, built once and used by the hand and by the reward panel —
@@ -412,19 +503,20 @@ function cardFace(c, text) {
   img.className = 'pic';
   art.append(img);
   frag.append(el('span', 'cost', c.cost === null || c.cost === undefined ? '✖' : c.cost),
-    el('span', 'name', cardName(c.id)), art, el('span', 'text', text), el('span', 'type', c.type));
+    nameSpan(c), art, el('span', 'text', text), el('span', 'type', c.type));
   return frag;
 }
 
+function nameSpan(c) { const n = el('span', 'name', cardName(c.id)); if (c.up) n.append(el('i', 'up', '+')); return n; }
 function flashCardPlayed(id) { const t = $('#played'); t.textContent = cardName(id); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); }
 
 // ── input ────────────────────────────────────────────────────────────────
 function onCardTap(i) {
-  if (!fightInputReady()) return;
+  if (busy || state?.phase !== 'fight' || !$('#deck').hidden) return;
   unlock();
   const c = state.hand[i];
   if (!c) return;
-  if (!engine.canPlay(state, i)) { sel = i; renderHand(); document.body.classList.remove('targeting'); return; }
+  if (!engine.canPlay(state, i)) { sel = -1; renderHand(); return; }
   if (sel === i) {
     // a second tap plays a card that needs no target, or one with a single target
     const alive = state.enemies.filter(e => e.alive);
@@ -438,7 +530,7 @@ function onCardTap(i) {
 }
 
 function onEnemyTap(slot) {
-  if (!fightInputReady()) return;
+  if (busy || state?.phase !== 'fight' || !$('#deck').hidden) return;
   const e = state.enemies[slot];
   if (!e?.alive) return;
   target = slot;
@@ -459,7 +551,7 @@ function play(i, slot) {
 }
 
 function endTurn() {
-  if (!fightInputReady()) return;
+  if (busy || state?.phase !== 'fight' || !$('#deck').hidden) return;
   unlock();
   sel = -1; document.body.classList.remove('targeting');
   engine.endTurn(state);
@@ -473,8 +565,6 @@ bindActivation($('#end'), endTurn);
 addEventListener('keydown', ev => {
   if (ev.repeat) return;
   const k = ev.key;
-  // Native buttons own Enter/Space. Letting those keys bubble also played
-  // a card or started a run underneath the focused control.
   if ((k === 'Enter' || k === ' ') && ev.target.closest?.('button,[role="button"]')) return;
   if (!$('#deck').hidden) {
     if (k === 'Escape' || k.toLowerCase() === 'd') { ev.preventDefault(); toggleDeck(); }
@@ -482,9 +572,9 @@ addEventListener('keydown', ev => {
   }
   if (!$('#menu').hidden) return menuKeys(ev);
   if (!$('#reward').hidden) return rewardKeys(ev);
+  for (const id of ['#map', '#event', '#rest', '#pick']) if (!$(id).hidden) return panelKeys(ev, id);
   if (!$('#result').hidden) { if (k === 'Enter' || k === ' ') toMenu(); return; }
-  if (!fightInputReady()) return;
-  if (/^[1-9]$/.test(k) || ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Enter', ' ', 'Escape'].includes(k)) ev.preventDefault();
+  if (state?.phase !== 'fight') return;
   if (/^[1-9]$/.test(k)) { const i = Number(k) - 1; if (i < state.hand.length) onCardTap(i); }
   else if (k === 'ArrowRight' || k === 'ArrowLeft') { if (!state.hand.length) return; sel = ((sel < 0 ? 0 : sel) + (k === 'ArrowRight' ? 1 : -1) + state.hand.length) % state.hand.length; renderHand(); for (const e of state.enemies) paintIntent(e); document.body.classList.toggle('targeting', state.hand[sel]?.target === 'enemy'); }
   else if (k === 'ArrowUp' || k === 'ArrowDown') { cycleTarget(k === 'ArrowDown' ? 1 : -1); }
@@ -512,6 +602,7 @@ watchPad({
     if (!padHint) { padHint = true; document.body.classList.add('pad'); }
     if (!$('#menu').hidden) return menuKeys({ key: dx > 0 ? 'ArrowRight' : dx < 0 ? 'ArrowLeft' : dy > 0 ? 'ArrowDown' : 'ArrowUp', preventDefault() {} });
     if (!$('#reward').hidden) return rewardKeys({ key: dx > 0 ? 'ArrowRight' : dx < 0 ? 'ArrowLeft' : 'x', preventDefault() {} });
+    for (const id of ['#map', '#event', '#rest', '#pick']) if (!$(id).hidden) return panelKeys({ key: (dx > 0 || dy > 0) ? 'ArrowRight' : 'ArrowLeft', preventDefault() {} }, id);
     if (state?.phase !== 'fight' || busy) return;
     if (dx) { if (!state.hand.length) return; sel = ((sel < 0 ? (dx > 0 ? -1 : 0) : sel) + dx + state.hand.length) % state.hand.length; renderHand(); for (const e of state.enemies) paintIntent(e); document.body.classList.toggle('targeting', state.hand[sel]?.target === 'enemy'); }
     if (dy) cycleTarget(dy);
@@ -520,6 +611,7 @@ watchPad({
     if (!$('#deck').hidden) { if (i === 1) toggleDeck(); return; }
     if (!$('#menu').hidden) return menuKeys({ key: i === 0 ? 'Enter' : i === 3 ? 't' : 'x', preventDefault() {} });
     if (!$('#reward').hidden) return rewardKeys({ key: i === 0 ? 'Enter' : i === 1 ? 'Escape' : 'x', preventDefault() {} });
+    for (const id of ['#map', '#event', '#rest', '#pick']) if (!$(id).hidden) return panelKeys({ key: i === 0 ? 'Enter' : 'x', preventDefault() {} }, id);
     if (!$('#result').hidden) { if (i === 0) toMenu(); return; }
     if (state?.phase !== 'fight') return;
     if (i === 0 && sel >= 0) onCardTap(sel);
@@ -543,12 +635,15 @@ function renderMenu() {
     const ch = CHARACTERS[id];
     const b = el('button', 'pick'); b.dataset.char = id;
     b.classList.toggle('selected', i === menuSel.char);
-    const cv = paintCutout(ch[theme].look, 11); cv.className = 'portrait';
-    b.append(cv, el('b', '', ch[theme].name), el('i', '', ch[theme].title), el('span', '', ch[theme].blurb), el('small', '', `${ch.hp} HP`));
+    const cv = paintCutout({ ...ch[theme].look, id }, 11, T().mood?.figure); cv.className = 'portrait';
+    b.append(cv, el('b', '', ch[theme].name), el('span', '', ch[theme].blurb), el('small', '', `${ch.hp} HP`));
     bindActivation(b, () => { menuSel.char = i; renderMenu(); });
     r.append(b);
   });
   $('#mute').textContent = isMuted() ? 'sound off' : 'sound on';
+  $('#figs').textContent = `figures: ${figureMotion()}`;
+  $('#art').textContent = `art: ${figureArt()}`;
+  $('#cut').textContent = `cut: ${figureCut()}`;
   const best = store.get('best', null);
   $('#best').textContent = best ? `best: ${best.won ? 'cleared the run' : `fight ${best.fights + 1}`} as ${CHARACTERS[best.character]?.[theme].name ?? best.character}` : '';
 }
@@ -561,13 +656,36 @@ function menuKeys(ev) {
 bindActivation($('#menu .theme'), () => setTheme(theme === 'kallio' ? 'fantasy' : 'kallio'));
 bindActivation($('#start'), () => startRun(chars[menuSel.char]));
 bindActivation($('#mute'), () => { setMuted(!isMuted()); store.set('mute', isMuted()); renderMenu(); });
+// Live: one module-level setting in puppet.js, so the enemies already standing
+// on the bridge obey it too and the two looks can be compared mid-fight.
+// The art switch has to REPAINT: a puppet bakes its cutout into a texture at
+// construction, so unlike the motion toggle this one cannot just flip a flag.
+// Same respawn path a theme switch takes, for the same reason.
+bindActivation($('#art'), () => { setArt(figureArt() === 'turf' ? 'drawn' : 'turf'); });
+// The cut is baked into the texture like the art is, so it respawns too.
+bindActivation($('#cut'), () => { setCut(figureCut() === 'card' ? 'silhouette' : 'card'); });
+function setCut(k) {
+  setFigureCut(k); store.set('cut', figureCut());
+  renderMenu();
+  if (state && state.phase !== 'menu') { if (state.phase === 'fight' || state.phase === 'reward') spawnFight(); else spawnHeroAlone(); renderAll(); }
+}
+function setArt(a) {
+  setFigureArt(a); store.set('art', figureArt());
+  renderMenu();
+  if (state && state.phase !== 'menu') { if (state.phase === 'fight' || state.phase === 'reward') spawnFight(); else spawnHeroAlone(); renderAll(); }
+}
+bindActivation($('#figs'), () => {
+  setFigureMotion(figureMotion() === 'paper' ? 'still' : 'paper');
+  store.set('figures', figureMotion());
+  renderMenu();
+});
 
 function setTheme(t) {
   if (!THEMES[t]) return;
   theme = t; store.set('theme', t);
   arena.setTheme(T());
   renderMenu();
-  if (state && state.phase !== 'menu') { spawnFight(); renderAll(); }
+  if (state && state.phase !== 'menu') { if (state.phase === 'fight' || state.phase === 'reward') spawnFight(); else spawnHeroAlone(); renderAll(); }
 }
 
 function startRun(character) {
@@ -575,20 +693,21 @@ function startRun(character) {
   const seed = Number(params.get('seed')) || ((Date.now() ^ (Math.random() * 1e9)) >>> 0);
   state = engine.createRun({ seed, character, theme });
   cursor = 0; queue.length = 0; busy = false; sel = -1; target = 0;
+  plateStage = null;
   engine.startRun(state);
-  $('#menu').hidden = true; $('#result').hidden = true; $('#reward').hidden = true;
+  for (const p of PANELS) $(p).hidden = true;
   $('#hud').hidden = false;
-  spawnFight();
-  cursor = state.log.length;
-  syncAll();
+  spawnHeroAlone();
+  cursor = 0;
+  enqueueLog();
   sfx.turn();
 }
 
 function toMenu() {
   queue.length = 0; busy = false; cursor = 0; sel = -1;
   document.body.classList.remove('busy', 'targeting');
-  $('#cardfocus').hidden = true;
-  $('#result').hidden = true; $('#hud').hidden = true; $('#reward').hidden = true; $('#deck').hidden = true;
+  for (const p of PANELS) $(p).hidden = true;
+  $('#hud').hidden = true;
   labels.innerHTML = '';
   arena.clearPuppets(); foes.clear(); hero = null;
   state = null;
@@ -640,13 +759,190 @@ function rewardKeys(ev) {
   else if (k === 'Escape') choose(-1);
 }
 
+// ── the fork, an event, a rest, a pick ───────────────────────────────────
+let panelSel = 0;
+const KIND_WORD = { fight: 'a fight', elite: 'an elite', event: 'somewhere', rest: 'a rest', boss: 'the boss' };
+function nodeName(n) {
+  if (n.kind === 'fight' || n.kind === 'elite') return ENCOUNTERS.find(e => e.id === n.id)?.[theme].name ?? n.id;
+  if (n.kind === 'event') return EVENTS.find(e => e.id === n.id)?.[theme].name ?? n.id;
+  return 'A quiet span';
+}
+function nodeHint(n) {
+  if (n.kind === 'fight' || n.kind === 'elite') {
+    const enc = ENCOUNTERS.find(e => e.id === n.id);
+    const counts = new Map(); for (const id of enc.enemies) counts.set(id, (counts.get(id) || 0) + 1);
+    return [...counts].map(([id, k]) => `${k > 1 ? `${k}× ` : ''}${nameOf(ENEMIES, id)}`).join(', ') + (enc.reward.includes('joker') ? ` · a ${T().jokerWord.replace(/s$/, '')} waits` : '');
+  }
+  if (n.kind === 'event') return 'Something other than a fight.';
+  return `Sleep for ${Math.round(RULES.restHeal * 100)}% of your HP, or upgrade a card.`;
+}
+function openMapPanel() {
+  if (!state || state.phase !== 'map') return;
+  closePanels();
+  applyHour(state.hour ?? 0);              // idempotent; covers any path that opens the map without replaying the log
+  if (!hero || foes.size) spawnHeroAlone();
+  const r = state.route, act = ACTS[state.act];
+  const panel = $('#map'); panel.hidden = false;
+  panel.querySelector('h2').textContent = r.step === 0 ? act[theme].name : 'The bridge forks';
+  panel.querySelector('.where').textContent = `Act ${state.act + 1} · ${engine.HOUR_WORD(state.hour ?? 0)} · span ${r.step + 1} of ${act.steps}, then ${ENCOUNTERS.find(e => e.id === act.boss)[theme].name}`;
+  panelSel = 0;
+  drawMapPanel();
+  renderTop();
+}
+// The sheet is drawn from the route; a button is laid over each pin of the
+// current step so a thumb, a key and a pad all land on the same thing.
+let mapPins = [];
+function drawMapPanel() {
+  if (!state || state.phase !== 'map' || $('#map').hidden) return;
+  const r = state.route, act = ACTS[state.act];
+  const cv = $('#mapcv');
+  const drawn = drawMap(cv, {
+    route: r, act, hour: state.hour ?? 0, portrait: arena.portrait, seed: state.seed,
+    nameOf: nodeName, bossName: ENCOUNTERS.find(e => e.id === act.boss)[theme].name,
+  });
+  mapPins = drawn.pins;
+  const box = $('#nodes'); box.innerHTML = '';
+  r.steps[r.step].forEach((n, i) => {
+    const p = drawn.pins.find(q => q.i === r.step && q.j === i);
+    const b = el('button', `node ${n.kind}`);
+    b.style.left = `${p.x}px`; b.style.top = `${p.y}px`;
+    b.setAttribute('aria-label', `${KIND_WORD[n.kind]}: ${nodeName(n)}. ${nodeHint(n)}`);
+    b.append(el('b', '', KIND_WORD[n.kind]), el('span', '', nodeName(n)), el('small', '', nodeHint(n)));
+    b.classList.toggle('selected', i === panelSel);
+    bindActivation(b, () => takeNode(i));
+    b.addEventListener('pointerenter', () => captionNode(i));
+    b.addEventListener('focus', () => captionNode(i));
+    box.append(b);
+  });
+  captionNode(panelSel);
+}
+function captionNode(i) {
+  const n = state?.route?.steps[state.route.step]?.[i]; if (!n) return;
+  const c = $('#map .caption'); c.innerHTML = '';
+  c.append(el('b', '', KIND_WORD[n.kind]), document.createTextNode(`${nodeName(n)} — ${nodeHint(n)}`));
+}
+addEventListener('resize', () => drawMapPanel());
+function takeNode(i) {
+  if (state.phase !== 'map') return;
+  sfx.pick();
+  const from = state.log.length; cursor = from;
+  if (!engine.chooseNode(state, i)) return;
+  $('#map').hidden = true;
+  enqueueLog();
+  renderTop();
+}
+function openEventPanel() {
+  if (!state || state.phase !== 'event') return;
+  closePanels();
+  const ev = EVENTS.find(e => e.id === state.event.id);
+  const panel = $('#event'); panel.hidden = false;
+  panel.querySelector('h2').textContent = ev[theme].name;
+  panel.querySelector('.text').textContent = ev[theme].text;
+  const box = $('#choices'); box.innerHTML = '';
+  panelSel = 0;
+  ev.options.forEach((o, i) => {
+    const b = el('button', '', o[theme].label);
+    b.classList.toggle('selected', i === panelSel);
+    bindActivation(b, () => takeChoice(i));
+    box.append(b);
+  });
+  renderTop();
+}
+function takeChoice(i) {
+  if (state.phase !== 'event') return;
+  sfx.pick();
+  cursor = state.log.length;
+  if (!engine.chooseEvent(state, i)) return;
+  $('#event').hidden = true;
+  enqueueLog();
+  renderTop();
+}
+function openRestPanel() {
+  if (!state || state.phase !== 'rest') return;
+  closePanels();
+  const panel = $('#rest'); panel.hidden = false;
+  const h = state.hero;
+  panel.querySelector('.sub').textContent = `Sleep: heal ${Math.floor(h.maxHp * RULES.restHeal)} (${h.hp}/${h.maxHp}). Think it over: upgrade one card for good.`;
+  panelSel = 0;
+  panel.querySelectorAll('.btn').forEach((b, i) => b.classList.toggle('selected', i === panelSel));
+  renderTop();
+}
+function takeRest(kind) {
+  if (state.phase !== 'rest') return;
+  sfx.pick();
+  cursor = state.log.length;
+  if (!engine.chooseRest(state, kind)) return;
+  $('#rest').hidden = true;
+  enqueueLog();
+  renderTop();
+}
+bindActivation($('#restHeal'), () => takeRest('heal'));
+bindActivation($('#restUp'), () => takeRest('upgrade'));
+function openPickPanel() {
+  if (!state || state.phase !== 'pick') return;
+  closePanels();
+  const panel = $('#pick'); panel.hidden = false;
+  const kind = state.pick.kind;
+  panel.querySelector('h2').textContent = kind === 'remove' ? 'Leave one behind' : 'Which card?';
+  const list = panel.querySelector('.list'); list.innerHTML = '';
+  panelSel = 0;
+  // Nothing left to pick is a real state — every card upgraded — and it used to
+  // show an empty list with no way out of the phase.
+  if (!engine.pickable(state).length) {
+    const b = el('button', 'row', kind === 'upgrade' ? 'Every card is already as good as it gets. Walk on.' : 'Nothing to leave behind. Walk on.');
+    bindActivation(b, () => { sfx.pick(); cursor = state.log.length; engine.skipPick(state); $('#pick').hidden = true; enqueueLog(); renderTop(); });
+    b.classList.add('selected');
+    list.append(b);
+    return;
+  }
+  state.hero.deck.forEach((c, i) => {
+    if (kind === 'upgrade' && (c.up || c.type === 'curse')) return;
+    const row = el('button', `row ${c.type}`);
+    row.dataset.i = i;
+    const b = el('b', '', cardName(c.id)); if (c.up) b.append(el('i', 'up', '+'));
+    row.append(b, el('span', '', `${c.cost ?? '✖'} · ${engine.describe(c)}`));
+    if (kind === 'upgrade') {
+      const after = engine.upgrade({ ...c, effects: c.effects.map(f => ({ ...f })), up: false });
+      row.append(el('span', '', ` → ${after.cost ?? '✖'} · ${engine.describe(after)}`));
+    }
+    bindActivation(row, () => takePick(i));
+    list.append(row);
+  });
+  list.querySelectorAll('.row').forEach((r, i) => r.classList.toggle('selected', i === panelSel));
+  renderTop();
+}
+function takePick(i) {
+  if (state.phase !== 'pick') return;
+  sfx.pick();
+  cursor = state.log.length;
+  if (!engine.pickCard(state, i)) return;
+  $('#pick').hidden = true;
+  enqueueLog();
+  renderTop();
+}
+// one key handler for all four: arrows move, Enter takes, 1-9 takes directly
+function panelKeys(ev, id) {
+  const k = ev.key;
+  const panel = $(id);
+  const buttons = [...panel.querySelectorAll(id === '#pick' ? '.row' : id === '#rest' ? '.btn' : id === '#map' ? '.node' : '#choices button')];
+  if (!buttons.length) return;
+  if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowUp') {
+    panelSel = (panelSel + (k === 'ArrowRight' || k === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+    buttons.forEach((b, i) => b.classList.toggle('selected', i === panelSel));
+    buttons[panelSel].scrollIntoView?.({ block: 'nearest' });
+    if (id === '#map') captionNode(panelSel);
+  } else if (k === 'Enter' || k === ' ') buttons[panelSel]?.click();
+  else if (/^[1-9]$/.test(k)) buttons[Number(k) - 1]?.click();
+}
+
 // ── result ───────────────────────────────────────────────────────────────
 function showResult(won) {
   $('#hud').hidden = true;
   const p = $('#result'); p.hidden = false;
   p.querySelector('h2').textContent = won ? 'THE BRIDGE IS YOURS' : 'FLAT ON THE PLANKS';
   const s = state.stats;
-  p.querySelector('.stats').textContent = `${won ? 'cleared' : `fell at fight ${state.encounter + 1}`} · ${s.cardsPlayed} cards · ${s.damageDealt} damage · biggest hit ${s.biggestHit} · ${state.jokers.length} ${T().jokerWord}`;
+  const fellAt = state.phase === 'lost' ? (ENCOUNTERS[state.encounter]?.[theme].name ?? 'the road') : '';
+  p.querySelector('.stats').textContent = `${won ? 'cleared both acts' : `fell in act ${state.act + 1} at ${fellAt}`} · ${s.fights} fights · ${s.events} events · ${s.cardsPlayed} cards · ${s.damageDealt} damage · biggest hit ${s.biggestHit} · ${state.jokers.length} ${T().jokerWord}`;
   const best = store.get('best', null);
   const score = { won, fights: s.fights, character: state.character, at: Date.now() };
   if (!best || (won && !best.won) || (won === !!best.won && s.fights > best.fights)) store.set('best', score);
@@ -660,10 +956,11 @@ function toggleDeck() {
   d.hidden = false;
   const list = d.querySelector('.list'); list.innerHTML = '';
   const counts = new Map();
-  for (const c of state.hero.deck) counts.set(c.id, (counts.get(c.id) || 0) + 1);
-  for (const [id, n] of [...counts].sort((a, b) => CARDS[a[0]].cost - CARDS[b[0]].cost)) {
-    const row = el('div', `row ${CARDS[id].type}`);
-    row.append(el('b', '', `${n}× ${cardName(id)}`), el('span', '', `${CARDS[id].cost ?? '✖'} · ${engine.describe(CARDS[id])}`));
+  for (const c of state.hero.deck) { const k = `${c.id}${c.up ? '+' : ''}`; const e = counts.get(k) || { c, n: 0 }; e.n++; counts.set(k, e); }
+  for (const { c, n } of [...counts.values()].sort((a, b) => (a.c.cost ?? 9) - (b.c.cost ?? 9))) {
+    const row = el('div', `row ${c.type}`);
+    const b = el('b', '', `${n}× ${cardName(c.id)}`); if (c.up) b.append(el('i', 'up', '+'));
+    row.append(b, el('span', '', `${c.cost ?? '✖'} · ${engine.describe(c)}`));
     list.append(row);
   }
 }
@@ -679,20 +976,34 @@ renderMenu();
 $('#ver').textContent = `v${VERSION}`;
 
 // ── the debug seam ───────────────────────────────────────────────────────
+// Drain the replay the way the frame loop would: run everything queued, then
+// the same end-of-replay housekeeping — the busy flag, the body class that
+// blocks the hand, and whichever run screen the phase is waiting on. A drain
+// that skipped the housekeeping left the hand under pointer-events: none.
+function flushNow() { while (queue.length) queue.shift().fn(); busy = false; syncAll(); afterReplay(); }
 window.__sk = {
   engine, arena, CARDS, JOKERS, ENEMIES,
   state: () => state,
   theme: () => theme,
   puppets: () => ({ hero, foes: [...foes.values()] }),
   busy: () => busy,
-  start: (character = 'drinker', seed = 1) => { params.set('seed', String(seed)); startRun(character); },
+  // Every caller of this seam means "put me in a fight", and the run now opens
+  // on the map — so it walks onto the first span unless told to stay.
+  start: (character = 'drinker', seed = 1, toFight = true) => {
+    params.set('seed', String(seed)); startRun(character);
+    flushNow();
+    if (toFight && state.phase === 'map') { takeNode(0); flushNow(); }
+  },
+  setHour: t => applyHour(t),
+  plate: () => plateUrl,
   setTheme,
   setSpeed: s => { speed = s; },
   select: onCardTap,
   tapEnemy: onEnemyTap,
   endTurn,
   choose,
-  flush: () => { while (queue.length) queue.shift().fn(); busy = false; syncAll(); afterReplay(); },
+  takeNode, takeChoice, takeRest, takePick,
+  flush: () => flushNow(),
   debug: {
     setHp: (slot, hp) => { const e = state.enemies[slot]; if (e) { e.hp = hp; syncAll(); } },
     heroHp: hp => { state.hero.hp = hp; syncAll(); },
@@ -701,5 +1012,61 @@ window.__sk = {
     // straight to a fight, so a cast can be looked at without winning the five
     // before it — the same reason turf's __turf can boot any encounter
     jumpTo: i => { if (!engine.jumpTo(state, i)) return false; cursor = state.log.length; spawnFight(); syncAll(); return true; },
+    // what the act card OUGHT to say, read from the data rather than the screen
+    encounterName: (i, t = theme) => ENCOUNTERS[i]?.[t]?.name,
+    // a cutout painted at full size, for looking at the art rather than the scene
+    look: (id, mutated = 0) => paintCutout({ ...(ENEMIES[id] ?? CHARACTERS[id])[theme].look, id, mutated }, 3, arena.figureMood()),
+    encounterCount: () => ENCOUNTERS.length,
+    events: () => EVENTS.map(e => e.id),
+    // force the next fork to offer exactly these spans, for driving one screen
+    forkTo: nodes => { state.route.steps[state.route.step] = nodes; openMapPanel(); },
+    mapPins: () => mapPins,
+    // The paper-motion seam. `figures` reads the toggle; `playClip` fires a
+    // verb on one figure without needing the fight to produce it — nobody
+    // should have to be hit to see what being hit looks like; and `poseOf`
+    // reports the flex matrix a figure is actually wearing, which is the one
+    // honest way for a gate to say "it moved".
+    figures: () => figureMotion(),
+    art: () => figureArt(),
+    cast: () => ({ ...CAST }),
+    setArt: a => { setArt(a); return figureArt(); },
+    cut: () => figureCut(),
+    setCut: k => { setCut(k); return figureCut(); },
+    plated: id => !!figurePlateFor(id),
+    // The frame axis (v25): which drawings a figure has, and which one it is
+    // wearing right now. A gate that only asked "did the matrix change" could
+    // not tell a moved card from a card that also swapped its drawing.
+    poses: id => figurePoses(id),
+    frameOf: (who = 'hero') => unitOf(who)?.frame ?? null,
+    // renderMenu() too, or the seam and the button diverge: the gate flipped
+    // the switch through here and then failed on the label, which is the seam
+    // telling the truth about a real gap rather than a test being awkward.
+    setFigures: m => { setFigureMotion(m); store.set('figures', figureMotion()); renderMenu(); return figureMotion(); },
+    playClip: (name, who = 'hero') => {
+      const p = unitOf(who);
+      if (!p) return false;
+      p.play(name, p.facing);
+      return true;
+    },
+    // Hold a clip at an exact moment so a contact sheet shows the real poses
+    // rather than whatever the wall clock happened to be on.
+    scrub: (name, t, who = 'hero') => {
+      const p = unitOf(who);
+      if (!p) return false;
+      freezeFigures(true);
+      p.clip = { name, t, dir: p.facing };
+      return true;
+    },
+    unfreeze: () => { freezeFigures(false); },
+    poseOf: (who = 'hero') => {
+      const p = unitOf(who);
+      if (!p) return null;
+      const e = p.flex.matrix.elements;                 // column-major out of three.js
+      return { sx: e[0], sy: e[5], shear: e[4], lean: e[1], x: p.group.position.x, y: p.group.position.y };
+    },
+    // re-open whatever screen the phase wants, from the current state — for a
+    // harness that has moved the engine underneath the view
+    redraw: () => { cursor = state.log.length; closePanels(); afterReplay(); },
   },
 };
+
