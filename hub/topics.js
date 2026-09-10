@@ -111,6 +111,17 @@ const LEADS = {
   tokomove: ['look', 'idea'],             // the day read is the product: does it
                                           // read as the same city, kindly            // it is writing and voice: what it
                                           // should say next, and how it reads
+  // The look IS the experiment here and the hands are Shredders', so those are
+  // the two it wants asked — in that order.
+  flowsnow: ['look', 'controls'],
+  // A zen island with nothing to win cannot be asked whether it is balanced.
+  // What it can be asked is whether it FEELS like somewhere to sit, and whether
+  // reaching for a book or a record in VR actually works.
+  tokotrip: ['look', 'controls'],
+  // The port exists to answer one question and says so on its own cabinet:
+  // does a game about routes and formations play with two sticks. So it leads
+  // with the hands, and then with what a real engine let it look like.
+  'piritori-godot': ['controls', 'look'],
   hub: ['idea', 'bug'],
 };
 
