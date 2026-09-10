@@ -7,6 +7,24 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v7 — 2026-09-10
+**Read the card, choose the target, keep control of the turn**
+- Selecting a card opens a readable description with energy cost, Cancel and
+  explicit numbered enemy targets. Damage comes from the engine's preview;
+  cards that cannot be played remain readable and explain why.
+- Enemy labels fit their allotted space in portrait; the old fixed clamp was
+  squeezing the rightmost labels together. The battle no longer shows a brand
+  badge over the energy counter or selected-card controls.
+- Buttons handle pointer, touch and native keyboard activation without playing
+  twice from one gesture. The deck overlay owns keyboard/controller input, and
+  returning to the menu clears pending replay work before a fresh run.
+- New player-flow coverage enters through the hub/title, hits the chosen third
+  enemy, checks modal isolation, wins the first fight, takes rewards, enters the
+  second fight and restarts, on desktop and touch. Existing scene and core gates
+  remain in place; a dedicated CI workflow runs all three.
+- The combat balance and existing character art are unchanged. Shared TURF art
+  consolidation remains in the separate reference-asset PR #484.
+
 ## v6 — 2026-09-05
 **The run was flat, and that mattered more than the character spread**
 `test/balance.mjs` is new — a measuring tool, not a gate, beside `core.mjs` the

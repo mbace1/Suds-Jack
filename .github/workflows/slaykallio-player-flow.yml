@@ -1,0 +1,25 @@
+name: Slay Kallio player flow
+on:
+  pull_request:
+    paths:
+      - 'slaykallio/**'
+      - '.github/workflows/slaykallio-player-flow.yml'
+jobs:
+  slaykallio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Rules and complete deterministic runs
+        run: node slaykallio/test/core.mjs
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install chromium
+      - name: Scene and two-orientation regression
+        run: node slaykallio/test/smoke.cjs
+      - name: Real desktop and touch player flow
+        run: node slaykallio/test/player-flow.cjs
