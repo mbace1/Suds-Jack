@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { shadedBox } from './voxel.js?v=77';
-import { gelMaterial } from './gel.js?v=77';
+import { gelMaterial, gelBox } from './gel.js?v=78';
 
 /**
  * THE GOO WAVE — season 2's swell, made of the same cubes everything else in
@@ -16,6 +15,12 @@ import { gelMaterial } from './gel.js?v=77';
  * here uses), and only the cells near the crest are drawn — the count is set
  * per frame, so a 46x46 grid costs a few hundred instances, not two thousand.
  *
+ * AND IT IS NON-NEWTONIAN (v47). Goo that is worked hard seizes; goo left
+ * alone flows. So the sea holds a body that is MOVING and swallows one that
+ * is standing still — stop on a crest and you go under it, keep running and
+ * it is a floor. That is the whole verb, and it is the first thing the wave
+ * has ever asked of the player.
+ *
  * WHAT IT IS TO PLAY: a moving FLOOR. `heightAt` answers what the crest is
  * under any point, `preUpdate` hands that to the player the way `platforms`
  * does, and a body standing on it is carried along the wave's direction — you
@@ -25,6 +30,9 @@ import { gelMaterial } from './gel.js?v=77';
  */
 // the impact ring, unless the season says otherwise (`goo.rippleHit`)
 const RIPPLE = { amp: 1.4, speed: 6.5, width: 1.3, fade: 1.6, reach: 7, life: 1.6, max: 12 };
+// v47 shear thickening, on the body standing in it: how slow counts as still,
+// how long going under takes, how long climbing back out takes, how deep it goes
+const NON_NEWTONIAN = { flowBelow: 3.2, fall: 1.1, rise: 0.45, depth: 0.85 };
 
 const _c = new THREE.Color();
 const _m = new THREE.Matrix4();
@@ -46,6 +54,7 @@ export class GooWave {
     this.spray = null; // (x, y, z, dirX, dirZ) => void — the caller's debris pool
     this.sprayed = 0;  // this frame
     this.ripples = []; // v46: {x, z, p, age} — rings spreading from an impact
+    this.sink = 0;     // v47: how far the standing body has gone under, 0..1
     this.draw = Math.random;
   }
 
@@ -71,12 +80,21 @@ export class GooWave {
       }
     }
     this.draw = draw;
-    const geo = shadedBox(cell * 0.92);
+    // v47: rounded — every cube of the sea is a soft body
+    // rounded, and OVERLAPPING (>1 cell): the sea has to be one surface with
+    // creases, not a raft of pebbles with the floor showing between them
+    const g0 = cell * (cfg.fill ?? 1.05);
+    const geo = gelBox(g0, g0 * (cfg.round ?? 0.2), 4);
     // v44: GEL. Not the cube ladder — goo is the thing light goes into, so
     // this is the one material in the game that pretends to be lit (gel.js)
     const mat = cfg.material ?? gelMaterial({ lip: cfg.lip, wobble: cfg.wobble, caustic: cfg.caustic, fresnel: cfg.fresnel, spec: cfg.spec });
     this.mesh = new THREE.InstancedMesh(geo, mat, this.cells.length);
     this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(this.cells.length * 3), 3);
+    // v47: per-cube STRESS — how fast this piece of the surface is moving.
+    // The breaking face and the impact rings are where the goo seizes, and
+    // the shader pales those out. Nothing else in the game has this.
+    this.stress = new THREE.InstancedBufferAttribute(new Float32Array(this.cells.length), 1);
+    this.mesh.geometry.setAttribute('aStress', this.stress);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.frustumCulled = false;
     this.mesh.count = 0;
@@ -136,6 +154,48 @@ export class GooWave {
     return h;
   }
 
+  /**
+   * How fast the SURFACE is moving at (x, z), in units per second — which is
+   * the shear, and therefore how seized the goo is there.
+   *
+   * This is computed from the wave's own shape rather than by differencing
+   * two frames, and that is not tidiness: a frame difference is a measure of
+   * the RENDERER. At sixty frames a second the leading edge of the crest is
+   * one cube wide and at five it is thirty, so the first cut painted the
+   * whole sea solid white on a slow machine and a thin line on a fast one.
+   * The profile is pure in t, so its slope is knowable: a travelling shape's
+   * surface speed is its slope times its travel speed, and the steep FACE is
+   * where a breaking wave shears — the flat crest and the long back barely
+   * move at all. Impact rings carry their own, faster, term.
+   */
+  surfaceRate(x, z) {
+    const c = this.cfg;
+    if (!c) return 0;
+    let rate = 0;
+    const s = this._s(x, z), w = c.width;
+    if (s >= -w && s <= w * 0.55) {
+      const back = s <= 0;
+      const k = back ? 1 + s / w : 1 - s / (w * 0.55);
+      const dk = back ? 1 / w : -1 / (w * 0.55);
+      const across = x * -this.dirZ + z * this.dirX;
+      const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * c.ripple;
+      // eased = k²(3−2k), so d(eased)/dk = 6k(1−k): zero at the crest, most
+      // of the way down the flank
+      rate = Math.abs(c.amp * ripple * 6 * k * (1 - k) * dk) * c.speed;
+    }
+    if (this.ripples.length) {
+      const r = c.rippleHit ?? RIPPLE;
+      for (const q of this.ripples) {
+        const d = Math.hypot(x - q.x, z - q.z);
+        if (d > r.reach) continue;
+        const g = (d - q.age * r.speed) / r.width;
+        const h = q.p * r.amp * Math.exp(-g * g) * Math.exp(-q.age * r.fade);
+        rate += Math.abs(2 * g * h * r.speed / r.width);
+      }
+    }
+    return rate;
+  }
+
   /** v46: something struck the sea at (x, z) with `p` of a full blow */
   hit(x, z, p = 1) {
     if (!this.cfg) return;
@@ -161,9 +221,14 @@ export class GooWave {
     }
     let n = 0;
     this.sprayed = 0;
+    const sref = c.shearRef ?? 12;
     for (const g of this.cells) {
       const h = this.heightAt(g.x, g.z);
       if (h < cell * 0.35) continue;                 // below the surface: not drawn
+      // NON-NEWTONIAN: the stress in a piece of goo is how fast it is being
+      // worked, not how far it has moved — the steep face of the break and
+      // the front of an impact ring, and nothing else
+      const shear = Math.min(1, this.surfaceRate(g.x, g.z) / sref);
       // THE BREAK: the lip throws loose cubes ahead of itself. A wave that
       // only rises and falls is a hill that moves; one that sheds is surf.
       if (this.spray && h > c.amp * (c.sprayFrom ?? 0.8) && this.sprayed < (c.sprayMax ?? 6)
@@ -190,12 +255,14 @@ export class GooWave {
         c.deep[2] + (c.lip[2] - c.deep[2]) * lip,
       );
       this.mesh.setColorAt(n, _c);
+      this.stress.setX(n, shear);
       n++;
     }
     this.mesh.count = n;
     this.count = n;
     this.mesh.instanceMatrix.needsUpdate = true;
     if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    this.stress.needsUpdate = true;
   }
 
   /**
@@ -206,15 +273,26 @@ export class GooWave {
   carry(dt, player, floor) {
     if (!this.cfg) return floor;
     const c = this.cfg, f = player.feet;
-    const h = this.heightAt(f.x, f.z);
-    if (h <= 0) return floor;
+    const nn = c.nonNewtonian ?? NON_NEWTONIAN;
+    const h0 = this.heightAt(f.x, f.z);
+    if (h0 <= 0) { this.sink = Math.max(0, this.sink - dt / nn.rise); return floor; }
     // only a crest at or below the feet holds you up — you are pushed by the
     // face of the wave, never teleported to its top
-    if (h > f.y + 0.5) return floor;
+    if (h0 > f.y + 0.5) { this.sink = Math.max(0, this.sink - dt / nn.rise); return floor; }
+    // NON-NEWTONIAN: a body moving across the goo is held by it; a body
+    // standing still is not. Stop on the sea and you go under — which is why
+    // riding a wave is a thing you DO rather than a thing that happens.
+    const on = f.y <= h0 + 0.06 && player.vy <= 0;
+    const speed = Math.hypot(player.velocity.x, player.velocity.z);
+    if (on && speed < nn.flowBelow) this.sink = Math.min(1, this.sink + dt / nn.fall);
+    else this.sink = Math.max(0, this.sink - dt / nn.rise);
+    const h = h0 * (1 - this.sink * nn.depth);
     if (h <= floor) return floor;
-    if (f.y <= h + 0.05 && player.vy <= 0) {
-      f.x += this.dirX * c.push * dt;
-      f.z += this.dirZ * c.push * dt;
+    if (on) {
+      // the carry fades as you sink: half under, the sea has half a grip
+      const grip = 1 - this.sink * 0.85;
+      f.x += this.dirX * c.push * grip * dt;
+      f.z += this.dirZ * c.push * grip * dt;
     }
     return h;
   }
@@ -242,6 +320,7 @@ export class GooWave {
       period: +(this.period ?? 0).toFixed(2),
       sprayed: this.sprayed,
       ripples: this.ripples.length,
+      sink: +this.sink.toFixed(3),
       peak: this.cfg ? this.cfg.amp : 0,
     };
   }

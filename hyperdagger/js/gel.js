@@ -20,7 +20,18 @@ import * as THREE from 'three';
  *               a field of cubes is a field of jelly and not a wall;
  *   SSS       — (v46, from Toko Drop's satin gel) light bleeding THROUGH the
  *               body from behind, plus a wrap term so the shadow side is
- *               never dead, and a tight white fresnel at the very edge.
+ *               never dead, and a tight white fresnel at the very edge;
+ *   STRESS    — (v47) how hard the piece is being worked right now. Goo here
+ *               is NON-NEWTONIAN, so stress is not decoration: a shear-
+ *               thickening fluid goes PALE AND MATTE as it seizes and dark
+ *               and wet as it relaxes, and that is the tell for a surface
+ *               that is solid under a running body and liquid under a
+ *               standing one.
+ *
+ * And every piece is a ROUNDED box (v47, owner: "more rounded corners"):
+ * `gelBox` bevels a subdivided cube by pushing each vertex out from the
+ * inner core, so a lattice of them reads as a stack of soft bodies while
+ * staying, exactly, a lattice of cubes.
  *
  * The rim and caustic terms are added in the LIP colour, which is HDR, so the
  * edges of goo trip the bloom the way an eye or a gem does. That is the whole
@@ -39,6 +50,9 @@ export function gelMaterial(o = {}) {
     uFresnel: { value: o.fresnel ?? 0.9 },
     uSpec: { value: o.spec ?? 0.7 },
     uSSS: { value: o.sss ?? 0.5 },
+    // the solid phase: what a seized piece looks like
+    uSeize: { value: new THREE.Color().setRGB(...(o.seize ?? [0.80, 0.94, 0.92])) },
+    uSeizeK: { value: o.seizeK ?? 1.0 },
   };
   mat.userData.gel = u;
   mat.onBeforeCompile = shader => {
@@ -46,7 +60,10 @@ export function gelMaterial(o = {}) {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>
 uniform float uTime; uniform float uWobble;
-varying vec3 vGelN; varying vec3 vGelW;`)
+varying vec3 vGelN; varying vec3 vGelW; varying float vGelS;
+#ifdef USE_INSTANCING
+  attribute float aStress;
+#endif`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 #ifdef USE_INSTANCING
   vec3 gelSeed = vec3(instanceMatrix[3]);
@@ -60,6 +77,15 @@ transformed += normal * gelBr;
 float gelUp = max(transformed.y, 0.0);
 transformed.x += sin(uTime * 2.3 + gelPh * 1.7) * uWobble * 0.8 * gelUp;
 transformed.z += cos(uTime * 2.9 + gelPh * 1.3) * uWobble * 0.8 * gelUp;
+// STRESS. A wave cell carries its own (an instanced attribute the sea
+// writes per cube); a mound has one number for the whole body, and its
+// volume-keeping side scale IS that number — 1 exactly at rest, and it
+// carries none of the grow/sink terms that also move scale.y.
+#ifdef USE_INSTANCING
+  vGelS = clamp(aStress, 0.0, 1.0);
+#else
+  vGelS = clamp(abs(1.0 - length(modelMatrix[0].xyz)) * 2.6, 0.0, 1.0);
+#endif
 vGelN = normalize(mat3(modelMatrix) * normal);
 #ifdef USE_INSTANCING
   vGelW = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
@@ -70,7 +96,8 @@ vGelN = normalize(mat3(modelMatrix) * normal);
       .replace('#include <common>', `#include <common>
 uniform float uTime; uniform vec3 uLip; uniform vec3 uSun;
 uniform float uCaustic; uniform float uFresnel; uniform float uSpec; uniform float uSSS;
-varying vec3 vGelN; varying vec3 vGelW;`)
+uniform vec3 uSeize; uniform float uSeizeK;
+varying vec3 vGelN; varying vec3 vGelW; varying float vGelS;`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 {
   vec3 N = normalize(vGelN);
@@ -99,10 +126,52 @@ varying vec3 vGelN; varying vec3 vGelW;`)
   float wrap = clamp(dot(N, uSun) * 0.5 + 0.5, 0.0, 1.0);
   col += uLip * (sss * 0.35 + wrap * 0.10 * uSSS);
   col += vec3(1.0) * pow(1.0 - ndv, 6.0) * uFresnel * 0.25;
+  // NON-NEWTONIAN. Worked hard, the goo seizes: it goes pale and MATTE (the
+  // wet highlight is the first thing a shear-thickened fluid loses) and a
+  // dry speckle comes up in it. Left alone it is dark and wet again.
+  // SQUARED, because a sea that is always seizing is just a white sea: the
+  // curve keeps the ordinary swell dark and lets the breaking face and the
+  // rings around an impact be the only places the goo goes solid.
+  float st = vGelS * vGelS * uSeizeK;
+  if (st > 0.001) {
+    float sp2 = fract(sin(dot(floor(vGelW * 3.7), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+    col = mix(col, uSeize * (0.72 + 0.28 * sp2), st * 0.55);
+    col -= vec3(1.0, 1.0, 0.94) * sp * uSpec * 0.6 * st;   // the gloss goes first
+  }
   diffuseColor.rgb = col;
 }`);
   };
   return mat;
+}
+
+// ---------------------------------------------------------------- rounded
+
+/**
+ * A ROUNDED box (owner, v47: "more rounded corners"). Take a subdivided cube,
+ * clamp every vertex into the inner core box (each half-extent shrunk by the
+ * radius), and push it back out to `r` along the direction it left — which is
+ * the exact rounded-box surface, and hands you the normal for free as the same
+ * direction. `seg` sets how much of a curve the bevel actually has: 3 is a
+ * chamfer, 5 is a bead of jelly. Every gel piece in the game is one of these,
+ * so goo is a lattice of soft bodies that is still, exactly, a lattice.
+ */
+export function gelBox(size, radius = size * 0.2, seg = 4) {
+  const h = size * 0.5, r = Math.min(radius, h * 0.98), c = h - r;
+  const g = new THREE.BoxGeometry(size, size, size, seg, seg, seg);
+  const pos = g.getAttribute('position');
+  const nrm = g.getAttribute('normal');
+  const v = new THREE.Vector3(), core = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    core.set(Math.max(-c, Math.min(c, v.x)), Math.max(-c, Math.min(c, v.y)), Math.max(-c, Math.min(c, v.z)));
+    v.sub(core);
+    const len = v.length() || 1;
+    v.multiplyScalar(r / len);
+    nrm.setXYZ(i, v.x / r, v.y / r, v.z / r);
+    pos.setXYZ(i, core.x + v.x, core.y + v.y, core.z + v.z);
+  }
+  pos.needsUpdate = true; nrm.needsUpdate = true;
+  return g;
 }
 
 // ---------------------------------------------------------------- the spring
@@ -122,9 +191,17 @@ export class GelSpring {
     this.damp = o.damp ?? 0.86;
     this.min = o.min ?? 0.55;
     this.max = o.max ?? 1.55;
+    // v47 NON-NEWTONIAN. A shear-thickening fluid's stiffness is a function of
+    // how fast it is being deformed, not of how far: hit it hard and it is
+    // nearly a solid, lean on it slowly and it flows. `thicken` is how much
+    // stiffer it gets at `rate` of strain per frame, and the damping rises
+    // with it because a seized fluid does not ring — it thuds.
+    this.thicken = o.thicken ?? 3.2;
+    this.rate = o.rate ?? 0.09;
     this.sq = 1;
     this.v = 0;
     this.acc = 0;
+    this.stress = 0;   // 0..1 — what the shader pales out
   }
   /** an impulse: negative squashes, positive stretches */
   kick(dv) { this.v += dv; }
@@ -132,13 +209,18 @@ export class GelSpring {
     this.acc += Math.min(dt, 0.1);
     while (this.acc >= 1 / 60) {
       this.acc -= 1 / 60;
-      this.v = (this.v - (this.sq - 1) * this.spring) * this.damp;
+      // the strain RATE decides the stiffness this substep
+      const shear = Math.min(1, Math.abs(this.v) / this.rate);
+      const k = this.spring * (1 + this.thicken * shear);
+      const d = this.damp - (1 - this.damp) * shear * 1.6;
+      this.v = (this.v - (this.sq - 1) * k) * Math.max(0.35, d);
       this.sq = Math.max(this.min, Math.min(this.max, this.sq + this.v));
+      this.stress = Math.max(shear, this.stress * 0.94);
     }
     return this.sq;
   }
   get side() { return 1 / Math.sqrt(Math.max(this.sq, 0.1)); }
-  reset() { this.sq = 1; this.v = 0; this.acc = 0; }
+  reset() { this.sq = 1; this.v = 0; this.acc = 0; this.stress = 0; }
 }
 
 // ---------------------------------------------------------------- builders
@@ -151,8 +233,8 @@ const _s = new THREE.Vector3(1, 1, 1);
 
 /** One box into the accumulators — position, NORMAL and colour. shale.js
  *  drops normals because nothing there is lit; gel needs them. */
-function pushBox(acc, w, h, d, x, y, z, rgb, ry = 0) {
-  const g = new THREE.BoxGeometry(w, h, d);
+function pushBox(acc, w, h, d, x, y, z, rgb, ry = 0, round = 0) {
+  const g = round > 0 ? gelBox(1, round, 4).scale(w, h, d) : new THREE.BoxGeometry(w, h, d);
   _e.set(0, ry, 0); _q.setFromEuler(_e); _p.set(x, y, z);
   _m.compose(_p, _q, _s);
   g.applyMatrix4(_m);
@@ -190,6 +272,11 @@ export function gelMoundGeometry(o) {
   const draw = o.draw ?? Math.random;
   const cell = o.cell ?? 1.0;
   const deep = o.deep ?? [0.012, 0.09, 0.11], lip = o.lip ?? [0.07, 0.36, 0.38];
+  const round = o.round ?? 0.2;   // v47: every cube in a mound is a rounded one
+  // ...and they OVERLAP. Rounded cubes at 0.96 of the cell are a tray of eggs;
+  // at 1.05 the bevels intersect and the mound is ONE body with soft creases
+  // in it, which is the brief's "soft edges" and not a bag of marbles.
+  const fill = o.fill ?? 1.05;
   const acc = { pos: [], nrm: [], col: [], idx: [], count: 0 };
   const nx = Math.max(2, Math.round(o.w / cell)), nz = Math.max(2, Math.round(o.d / cell));
   const cw = o.w / nx, cd = o.d / nz;
@@ -206,7 +293,7 @@ export function gelMoundGeometry(o) {
       const k = (iy + 1) / rows;
       const v = 0.85 + draw() * 0.3;
       const c = [deep[0] + (lip[0] - deep[0]) * k, deep[1] + (lip[1] - deep[1]) * k, deep[2] + (lip[2] - deep[2]) * k].map(q => q * v);
-      pushBox(acc, cw * 0.96, cell * 0.96, cd * 0.96, x, cell * (iy + 0.5), z, c);
+      pushBox(acc, cw * fill, cell * fill, cd * fill, x, cell * (iy + 0.5), z, c, 0, round);
     }
   }
   return finish(acc);

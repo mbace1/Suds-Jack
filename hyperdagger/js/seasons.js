@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=77';
+import { TUNING as T } from './tuning.js?v=78';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -144,20 +144,27 @@ export const SEASONS = [
       look: 'gel',              // a MOUND of goo cubes with soft edges, in the gel material
       // DARK bodies: the gel shader adds its rim and its inner light on top,
       // and a body that starts pale ends white (the first two cuts did)
-      gel: { cell: 1.0, deep: [0.012, 0.09, 0.11], lip: [0.07, 0.36, 0.38] },
+      gel: { cell: 1.0, deep: [0.012, 0.09, 0.11], lip: [0.07, 0.36, 0.38], round: 0.2, fill: 1.05 },
       grow: 2.0, sink: 1.6,
       lifeMin: 18, lifeMax: 30,
       drift: 0.6, driftW: 0.12,
       avoidPlayer: 5.5,
       // v46 the mound GIVES WAY (gel.js GelSpring, Toko Drop's squash):
       // land on it and it squashes, leave it and it springs back
-      spring: { spring: 0.24, damp: 0.86, min: 0.55, max: 1.35 },
+      // v47 NON-NEWTONIAN: `thicken` is how much stiffer the goo gets at
+      // `rate` of strain per frame — hit it fast and it is nearly a solid
+      spring: { spring: 0.24, damp: 0.86, min: 0.55, max: 1.35, thicken: 3.2, rate: 0.09 },
       landSquish: 0.32,
+      // ...and the body standing on it goes under: how slow counts as still,
+      // how long sinking takes, how long climbing out takes, how deep
+      nonNewtonian: { flowBelow: 3.2, fall: 1.3, rise: 0.5, depth: 0.75 },
     },
     // THE WAVE (v43). A crest sweeps the disc, rises, leans into its travel
     // and breaks; stand on it and it carries you. See js/goo.js.
     goo: {
       cell: 1.0,                // voxel size — the wave is made of THIS game's cubes
+      round: 0.2,               // v47: and every one of them is a ROUNDED cube
+      fill: 1.05,               // ...overlapping, so the sea is one skin and not pebbles
       amp: 3.2,                 // crest height above the floor: three rows, a ridge and not a slab
       width: 9,                 // how long the back of the swell is
       gap: 14,                  // clear water between one wave and the next
@@ -169,7 +176,18 @@ export const SEASONS = [
       lip: [0.09, 0.46, 0.46],   // at the break — well under the bloom threshold: the gel's RIM is what blooms, and only at edges
       rim: [0.35, 0.95, 0.85],  // what the gel shader adds at edges and inside: NOT HDR
       // gel.js terms: rim glow, light inside, a wet highlight, jelly wobble
-      fresnel: 0.9, caustic: 0.45, spec: 0.7, wobble: 0.05, sss: 0.5,
+      // v47: the rim is HALF what it was, because rounding the cubes changed
+      // what it costs. A flat-faced box shows a fresnel rim only at its
+      // silhouette; a rounded one curves away everywhere, so the same number
+      // that lit an edge now lights the whole piece and the sea went white.
+      fresnel: 0.45, caustic: 0.45, spec: 0.7, wobble: 0.05, sss: 0.35,
+      // v47 the SOLID PHASE: what a seized piece of goo looks like — pale,
+      // matte, speckled. `shearRef` is how fast the surface has to be moving
+      // (units per second) to count as fully seized — measured off the wave's
+      // own slope, so it does not change with the frame rate.
+      seize: [0.80, 0.94, 0.92], seizeK: 0.8, shearRef: 12,
+      // and what the sea does to a body standing still on it
+      nonNewtonian: { flowBelow: 3.2, fall: 1.1, rise: 0.45, depth: 0.85 },
       // v46 impact rings: a nail or a body striking the sea spreads a ring
       rippleHit: { amp: 1.4, speed: 6.5, width: 1.3, fade: 1.6, reach: 7, life: 1.6, max: 12 },
       // the break: cubes shed off the lip ahead of the crest

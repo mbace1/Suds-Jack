@@ -2,6 +2,65 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v47 — 2026-09-10
+**Rounded corners, and goo that is non-Newtonian**
+
+Owner, on seeing season 2 move: *more rounded corners and non-Newtonian
+liquids*. Both are now real, and the second one is a verb rather than a look.
+
+**Every gel piece is a rounded box.** `gelBox` takes a subdivided cube,
+clamps each vertex into an inner core and pushes it back out to the bevel
+radius — which is the exact rounded-box surface and hands you the normal for
+free. The mound's cubes and the sea's cubes both wear it, and they now
+**overlap** their cell (1.05) instead of shrinking inside it: rounded cubes at
+0.96 are a tray of eggs, and at 1.05 the bevels intersect and the mound is one
+body with soft creases in it. That is the brief's "soft edges" and not a bag
+of marbles.
+
+**And it cost the rim half its strength.** A flat-faced box shows a fresnel
+rim only where its silhouette turns away; a rounded one curves away
+everywhere, so the number that lit an edge in v44 lit the whole piece and the
+sea went white. Fresnel 0.9 → 0.45, SSS 0.5 → 0.35. Nothing was wrong with the
+old number — the geometry under it changed.
+
+**Non-Newtonian: the fluid.** A shear-thickening liquid's stiffness is a
+function of how FAST it is deformed, not how far. `GelSpring` now raises its
+own spring constant with the strain rate (and its damping with it, because a
+seized fluid does not ring, it thuds), so the same blow that squashes a
+Newtonian gel to 0.55 only reaches 0.68 in this one. Hit it hard and it is
+nearly a solid.
+
+**Non-Newtonian: the verb.** Stand still on a gel mound, or on the wave, and
+the goo lets you through — you sink, and on the sea the carry fades as you go
+under. Keep moving and it holds you up like a floor. That is oobleck's one
+famous property and it is the first thing season 2 has ever asked of the
+player: the wave was a ride, and now riding it is something you DO. Enemies
+and gems are untouched (they read `topAt`, which is the surface, not what a
+standing body does to it), and shale is rock — nothing sinks into it.
+
+**Non-Newtonian: the tell.** Worked hard, the goo goes PALE AND MATTE (the wet
+highlight is the first thing a shear-thickened fluid loses) with a dry speckle
+in it; left alone it is dark and wet. The sea carries this per cube as an
+instanced attribute, so the breaking face and the rings around an impact are
+solid while the swell behind them stays liquid.
+
+**And that measure had to be rewritten once.** The first cut read stress as
+the difference between this frame's surface and last frame's — which measures
+the RENDERER. At sixty frames a second the leading edge of a crest is one cube
+wide, at five it is thirty, so the whole sea was solid white on a slow machine
+and a thin line on a fast one. The profile is pure in `t`, so its slope is
+knowable: a travelling shape's surface speed is its slope times its travel
+speed, `6k(1−k)` says the flat crest barely moves and the flank moves most,
+and impact rings carry their own faster term. Frame rate cannot touch it.
+
+**Gate: 158 checks** (was 154): a gel piece has more than a cube's 24
+vertices; the sea seizes somewhere and stays liquid mostly (a peak over 0.35,
+under 60% of cubes hot, the mean under 0.5 — a sea that is always seizing is
+just a white sea); standing still sinks the body to under 60% of the mound's
+height while running holds it at full height; the same blow squashes the
+thickening gel measurably less than the Newtonian one; and VOID carries no
+seize at all.
+
 ## v46 — 2026-09-08
 **Gel and goo physics, from Toko Drop: the mound gives way, the sea splashes**
 
