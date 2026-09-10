@@ -61,10 +61,53 @@ better castings on their own terms and that reasoning outlives the permission:
 mask ARE the Night Shift, `knuckle` is a Bridge King. A constraint that
 improved the work does not get undone because it was lifted.
 
-## What is still spare
+## Pose sets (v25)
 
-Nineteen of the thirty-two are uncast — the eleven that were always free plus
-the eight above. All nineteen are PEOPLE, so they do not help the ten drawn
-figures (rats, blobs, pigeons, a gull, a bear); what they buy is more human
-enemies. `vex` and `leopard` are the only two women in the set and `leopard` is
-the Dog Walker, so a second woman means `vex` or nothing.
+Two of the thirty-two are not plates at all. **`gunner` and `leopard` were
+carried through TURF's whole seven-pose table** — idle, move, attack-windup,
+attack-release, hit, death-fall, death-down — in both facings, and that art sat
+in `turf/art-src/sprites/cast/` for a fortnight with nothing reading it while
+this game moved a single still card around.
+
+A posed character ships as **seven files named `<name>-<pose>.png`** and has no
+bare `<name>.png`: its standing frame is `<name>-idle.png`, so the set is one
+naming rule and nothing has to remember which file is the special one.
+`WITH_POSES` in `js/plates.js` is the list; `motion.js`'s `frameAt` picks which
+frame is showing, off the same stage durations the transform uses.
+
+**Front only.** TURF needs two facings because its board is isometric and a
+unit can walk away from the camera. Here everybody faces across the bridge and
+`body.scale.x = facing` already mirrors the enemy row, so a rear frame would
+never be drawn — seven files a character instead of fourteen.
+
+Adding a pose set to another character is a copy of its seven fronts plus its
+name in `WITH_POSES`. Generating one for a character that has none is 12 API
+calls and is documented in `turf/art-src/sprites/cast/README.md`.
+
+## What is still spare, counted properly
+
+An earlier version of this file said nineteen, which was wrong twice over. The
+real enumeration:
+
+- **30 `*-plate.png`** in `turf/art-src/sprites/`, plus **`gunner`** and
+  **`leopard`** in `cast/` with pose sets — **32 characters**.
+- **22 are cast here** (16 plates at v18–v23, `leopard`, and five more plus
+  `gunner` at v26).
+- **10 spare**: `blade`, `denny`, `deuce`, `grunt-handgun`, `grunt-shotgun`,
+  `grunt-tanner`, `grunt-track`, `niner`, `reed`, and nothing else.
+
+All ten are PEOPLE, so they do not help the ten drawn figures (rats, blobs,
+pigeons, a gull, a bear); what they buy is more human enemies. `vex` and
+`leopard` are the only two women in the set and both are now cast — the Bottle
+Thief and the Dog Walker — so **a third woman needs new art, not a recast.**
+
+## And these 32 are not the owner's 26
+
+Worth saying plainly, because the names invite the confusion. The `*-plate.png`
+files are **new characters generated in the casting sheet's technique** — the
+`turfGrim` style block says in as many words to copy the technique and never
+the reference's specific character. The owner's own roster is a different set:
+**26 people across `turf/references/casting-sheet-full.png` (20) and
+`casting-sheet-3.png` (6)**, front and back, and only `gunner` and `leopard`
+have ever been cut out of them into transparent sprites. Everyone else on those
+sheets exists here as a magenta-keyed reference PNG and nothing more.

@@ -547,6 +547,42 @@ const check = (name, ok, extra = '') => {
   });
   check('a whole fight spawns on the plates without falling over', turfFight);
 
+  // ── the frame axis (v25) ──────────────────────────────────────────────
+  // v17 moved the card and left the drawing alone. TURF's cast set carries a
+  // drawn frame per fight beat and nothing had ever read it. The Dog Walker is
+  // the figure that has one, so she is the fight this block runs — and the
+  // check that matters is that the DRAWING changes, not merely the matrix,
+  // because v17 already proved the matrix moves.
+  const posed = await page.evaluate(async () => {
+    __sk.setSpeed(0); __sk.start('walker', 4);
+    await new Promise(r => setTimeout(r, 300));
+    const seen = [__sk.debug.frameOf('hero')];
+    __sk.debug.playClip('attack', 'hero');
+    for (let i = 0; i < 45; i++) { seen.push(__sk.debug.frameOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    __sk.debug.playClip('hurt', 'hero');
+    for (let i = 0; i < 30; i++) { seen.push(__sk.debug.frameOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    return { seen: [...new Set(seen)], poses: __sk.debug.poses('walker').length, unposed: __sk.debug.poses('boxer').length };
+  });
+  check(`the Dog Walker carries a drawn frame per beat (${posed.poses}) and the Old Boxer one (${posed.unposed})`,
+    posed.poses === 7 && posed.unposed === 1);
+  check(`an attack SWAPS THE DRAWING, not just the matrix (${posed.seen.join(' → ')})`,
+    posed.seen.includes('attack-windup') && posed.seen.includes('attack-release'));
+  check('and being hit shows the hit frame', posed.seen.includes('hit'));
+  check('and it comes home to the standing frame', posed.seen.includes('idle')
+    && (await page.evaluate(() => __sk.debug.frameOf('hero'))) === 'idle');
+  // A figure with one drawing must take the same code path and do nothing:
+  // `showFrame` resolves an absent pose to idle so no caller has to ask.
+  const unposedFrame = await page.evaluate(async () => {
+    __sk.start('boxer', 4);
+    await new Promise(r => setTimeout(r, 250));
+    __sk.debug.playClip('attack', 'hero');
+    const out = [];
+    for (let i = 0; i < 30; i++) { out.push(__sk.debug.frameOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    return [...new Set(out)];
+  });
+  check(`a figure with one drawing stays on it through a whole verb (${unposedFrame.join(', ')})`,
+    unposedFrame.length === 1 && unposedFrame[0] === 'idle');
+
   // ── how the card is CUT (v20) ──────────────────────────────────────────
   check('the menu carries a cut toggle, and it starts die-cut to the figure',
     (await page.locator('#cut').innerText()).includes('silhouette'));

@@ -18,8 +18,8 @@
 // comes up with it.
 
 import * as THREE from 'three';
-import { poseAt, clipLength, REST } from './motion.js';
-import { plateReady, drawPlate } from './plates.js';
+import { poseAt, frameAt, clipLength, REST } from './motion.js';
+import { plateReady, drawPlate, posesFor } from './plates.js';
 
 const TW = 256, TH = 512;        // texture size; the figure fills ~70% of the height
 export const PUPPET_H = 1.5;     // world height of a scale-1 figure
@@ -788,7 +788,7 @@ function newsprint(ctx, rnd, k = 1) {
 // puppet, so the fantasy evening lights its cast its own way.
 export const DUSK = { warm: '#ffab52', cold: '#101a24', rim: '#6f93ad', depth: '99' };
 
-export function paintCutout(look, seed = 1, mood = DUSK) {
+export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   const c = document.createElement('canvas');
   c.width = TW; c.height = TH;
   const ctx = c.getContext('2d');
@@ -799,7 +799,7 @@ export function paintCutout(look, seed = 1, mood = DUSK) {
   // this bridge rather than to TURF's board. A plate that has not decoded yet,
   // or a figure with no plate (every rat, blob, bird and the bear), falls
   // through to the painter — so the switch can never leave a blank plane.
-  const plate = ART === 'turf' && look.id ? plateReady(look.id) : null;
+  const plate = ART === 'turf' && look.id ? plateReady(look.id, pose) : null;
   // In 'card' the drawing goes onto its own layer first, so its ink can be
   // measured and a board cut to fit it. In 'silhouette' it goes straight down,
   // which is the path this game shipped and one canvas cheaper.
@@ -1008,12 +1008,28 @@ export class Puppet {
     this.lightK = 1;            // set by the arena each frame from the torch
     this.home = new THREE.Vector3();
 
-    const front = paintCutout(look, seed, mood);
-    const tex = new THREE.CanvasTexture(front);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 4;
-    const backTex = new THREE.CanvasTexture(paintBack(front));
-    backTex.colorSpace = THREE.SRGBColorSpace;
+    // THE FRAME SET. A figure with drawn poses bakes one texture pair per
+    // frame HERE rather than on the beat it is needed: `paintCutout` runs
+    // newsprint, torchlight, nicks and fibre, which is far too much work to do
+    // inside an attack — the swap has to be a pointer move. `posesFor` returns
+    // ['idle'] for everything without pose art, so the ordinary figure pays
+    // exactly what it paid before. `ART === 'drawn'` also collapses to one,
+    // since the painter has no second drawing to give.
+    const names = ART === 'turf' ? posesFor(look.id) : ['idle'];
+    this.frames = {};
+    for (const n of names) {
+      const cv = paintCutout(look, seed, mood, n);
+      const t = new THREE.CanvasTexture(cv);
+      t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+      const b = new THREE.CanvasTexture(paintBack(cv));
+      b.colorSpace = THREE.SRGBColorSpace;
+      this.frames[n] = { front: t, back: b };
+    }
+    this.posed = names.length > 1;
+    this.frame = 'idle';
+    const front = this.frames.idle.front.image;
+    const tex = this.frames.idle.front;
+    const backTex = this.frames.idle.back;
 
     const h = PUPPET_H * scale, w = h * TW / TH;
     const geo = new THREE.PlaneGeometry(w, h);
@@ -1024,6 +1040,7 @@ export class Puppet {
     const back = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: backTex, transparent: true, alphaTest: 0.35, side: THREE.BackSide }));
     // a hair of thickness: the back drawn a shade behind reads as card
     const edge = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: backTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide }));
+    this.backMats = [back.material, edge.material];
     edge.position.z = -0.012;
     const body = new THREE.Group();
     body.add(face, back, edge);
@@ -1087,6 +1104,18 @@ export class Puppet {
   // attack goes the way the figure faces, a blow arrives from the other side.
   play(name, dir) { this.clip = { name, t: 0, dir }; }
 
+  // Swap the drawing. A frame this figure has not got resolves to its idle, so
+  // a caller never has to ask whether a pose exists — and a figure with one
+  // drawing takes this call all day and does nothing, which is what lets
+  // `update` run the same three lines for every puppet on the bridge.
+  showFrame(name) {
+    const f = this.frames[name] ?? this.frames.idle;
+    if (this.frame === (this.frames[name] ? name : 'idle')) return;
+    this.frame = this.frames[name] ? name : 'idle';
+    this.mat.map = f.front;
+    for (const m of this.backMats) m.map = f.back;
+  }
+
   hit() {
     this.flash = 1;
     if (MOTION === 'paper') this.play('hurt', -this.facing);
@@ -1136,6 +1165,11 @@ export class Puppet {
         else pose = poseAt(this.clip.name, this.clip.t, { dir: this.clip.dir });
       }
       if (!this.clip) pose = poseAt('breath', (this.tAlive = (this.tAlive ?? this.phase * 2.8) + (FROZEN ? 0 : dt)), {});
+      // The drawing follows the same stage list as the transform, so the
+      // extended arm and the lunge land on the same frame rather than a beat
+      // apart — which is the whole reason `frameAt` walks `poseAt`'s own
+      // durations instead of carrying a second set of numbers.
+      if (this.posed) this.showFrame(this.clip ? frameAt(this.clip.name, this.clip.t) : 'idle');
     } else {
       // attack lunge: out toward the enemy and back
       if (this.lunge > 0) this.lunge = Math.max(0, this.lunge - dt * 2.8);
@@ -1159,6 +1193,11 @@ export class Puppet {
 
     if (this.fall && !this.fall.done) {
       const f = this.fall;
+      // Falling, then fallen. `death-down` is the only frame in the set drawn
+      // lying horizontal, and it is the one the topple is carrying to ground —
+      // swapping at the first floor contact means the card that settles is a
+      // body on the planks and not a standing figure lying on its side.
+      if (this.posed) this.showFrame(f.bounces > 0 || f.rest > 0 ? 'death-down' : 'death-fall');
       // torque grows with the lean; a hard stop at the floor with a small bounce
       f.vel += Math.sin(f.angle) * 14 * dt + 2.5 * dt;
       f.angle += f.vel * dt;

@@ -7,6 +7,67 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v25 — 2026-09-10
+**The frame axis — Paper Mario's other half, and the art was already here**
+
+v17 built the motion layer and shipped half of what it promised. Paper Mario
+moves the OBJECT *and* swaps a small number of drawn frames under it; v17 did
+the first and left the drawing alone, so a figure lunging forward was the same
+picture at a different angle. The second half needed art nobody thought this
+game had.
+
+**It did have it.** Asked whether all of TURF's characters were in, the honest
+answer required an enumeration rather than a memory, and the enumeration found
+`turf/art-src/sprites/cast/` — seven previously-unopened subdirectories holding
+a **seven-pose set per character** (idle, move, attack-windup, attack-release,
+hit, death-fall, death-down, in two facings), generated to `ART_REQUEST.md`
+§6's own frame table and read by absolutely nothing. `leopard` — this game's
+Dog Walker since v18 — is one of the two carried through the whole table.
+
+**One list, two consumers.** `frameAt(name, t)` in `motion.js` walks the SAME
+stage durations `poseAt` walks, so a drawing cannot end up one beat out of step
+with the transform: the attack's stages are 0.20 / 0.11 / 0.30 and the swap to
+`attack-release` is the same instant as the commit, because it is the same
+number read twice. The gate asserts the edge at 0.199 and 0.201.
+
+**The recovery HOLDS the release.** The arm is extended at the end of the
+commit and the 0.30s recovery is the body settling under it; popping the
+drawing back to idle on the first frame of the recovery reads as a second,
+faster attack. So the frame list is `windup / release / release`, not
+`windup / release / idle`.
+
+**Textures are baked at construction, never on the beat.** `paintCutout` runs
+newsprint, torchlight, nicks, fibre and grime — far too much work to do inside
+an attack — so a posed figure bakes its seven pairs up front and `showFrame` is
+a pointer move. `posesFor` returns `['idle']` for everything else, which is
+every rat, blob, bird and bear and every plate that has only ever been drawn
+standing still, so the ordinary figure pays exactly what it paid before. A
+missing frame resolves to idle rather than to nothing: a failed decode costs a
+swap, never a blank plane.
+
+**Front only, and that is geometry rather than economy.** TURF needs two
+facings because its board is isometric and a unit can walk away from the
+camera. Here everybody faces across the bridge and `body.scale.x = facing`
+already mirrors the enemy row, so a rear frame would never be drawn — seven
+files a character instead of fourteen.
+
+**`still` stays still, drawings included.** The toggle exists to be compared
+against, and a comparison where one side swaps drawings is not v16's look.
+
+Death is the exception that is not on the clip list: the topple is 3D physics,
+so the frame follows the fall — `death-fall` while it is going over and
+`death-down` from the first floor contact, which is the one frame in the set
+drawn horizontal.
+
+**What this does NOT fix, and it is the honest half.** Exactly one figure on
+the bridge has frames. `gunner` is the other character with the full set and is
+not cast; the other five in `cast/` have walk cycles and little else; the
+thirty plates are all standing still. The mixed row that v21 made the ordinary
+look now has a third kind of thing in it — a figure that acts — and until more
+of them do, the Dog Walker is visibly the best-animated person in the game.
+
+Gates: `core.mjs` 748 (14 new), `smoke.cjs` 135 (5 new).
+
 ## v24 — 2026-09-10
 **The noise floor, measured — and it takes several earlier claims back**
 v23 shipped with an honest admission: three changes had landed against one

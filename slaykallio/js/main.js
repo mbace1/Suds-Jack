@@ -11,7 +11,7 @@ import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, R
 import * as engine from './engine.js';
 import { Arena } from './scene.js';
 import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js';
-import { preloadPlates, plateFor as figurePlateFor, CAST } from './plates.js';
+import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js';
 import { paintCardPic } from './cardart.js';
 import { drawMap } from './map.js';
 import { sfx, unlock, setMuted, isMuted } from './audio.js';
@@ -1005,6 +1005,11 @@ window.__sk = {
     cut: () => figureCut(),
     setCut: k => { setCut(k); return figureCut(); },
     plated: id => !!figurePlateFor(id),
+    // The frame axis (v25): which drawings a figure has, and which one it is
+    // wearing right now. A gate that only asked "did the matrix change" could
+    // not tell a moved card from a card that also swapped its drawing.
+    poses: id => figurePoses(id),
+    frameOf: (who = 'hero') => unitOf(who)?.frame ?? null,
     // renderMenu() too, or the seam and the button diverge: the gate flipped
     // the switch through here and then failed on the label, which is the seam
     // telling the truth about a real gap rather than a test being awkward.

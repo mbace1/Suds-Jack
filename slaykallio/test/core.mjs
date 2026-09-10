@@ -5,8 +5,8 @@
 
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
 import { readFileSync, existsSync } from 'node:fs';
-import { poseAt, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
-import { CAST, WITH_GUNS, castFiles, plateFor } from '../js/plates.js';
+import { poseAt, frameAt, FRAME_NAMES, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
+import { CAST, WITH_GUNS, POSES, WITH_POSES, castFiles, plateFor, posesFor } from '../js/plates.js';
 import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
@@ -768,6 +768,44 @@ check('a figure with no plate returns null rather than a broken path', plateFor(
 const ghosts = WITH_GUNS.filter(n => !existsSync(new URL(`../../turf/art-src/sprites/${n}-plate.png`, import.meta.url))
   && !existsSync(new URL(`../../turf/art-src/sprites/cast/${n}-idle.png`, import.meta.url)));
 check(`the gun list still names real plates${ghosts.length ? ` — ${ghosts}` : ''} (${WITH_GUNS.length} of 32)`, ghosts.length === 0);
+
+// ── the frame axis (v25) ─────────────────────────────────────────────────
+// v17 moved the card and left the drawing alone. The other half of Paper Mario
+// is a small number of drawn frames swapping under the moving object, and the
+// art for it was already in the repo — TURF's own seven-pose cast set, read by
+// nothing. These assert the two halves cannot drift: a frame is picked off the
+// SAME stage list as the transform, so it can never be one beat out of step.
+check(`the frame set is the poses the fight produces (${FRAME_NAMES.join(', ')})`,
+  ['idle', 'attack-windup', 'attack-release', 'hit', 'move'].every(n => FRAME_NAMES.includes(n)));
+check('every frame a clip names is a frame the pose set actually has',
+  FRAME_NAMES.every(n => POSES.includes(n)));
+// The one that matters: the drawing changes ON the beat, not near it. The
+// attack's stages are 0.20 / 0.11 / 0.30, so the windup owns everything before
+// 0.20 and the release owns everything after it.
+check('the attack winds up, then commits — and the swap is on the stage edge',
+  frameAt('attack', 0) === 'attack-windup' && frameAt('attack', 0.199) === 'attack-windup'
+  && frameAt('attack', 0.201) === 'attack-release');
+check('the recovery HOLDS the release rather than snapping back to idle',
+  frameAt('attack', 0.30) === 'attack-release' && frameAt('attack', 0.60) === 'attack-release');
+check('and past the end of any clip the figure is standing still again',
+  CLIP_NAMES.every(n => isHeld(n) || frameAt(n, clipLength(n) + 0.001) === 'idle'));
+check('being hit shows the hit frame for the whole clip', frameAt('hurt', 0) === 'hit' && frameAt('hurt', 0.3) === 'hit');
+check('a clip nobody drew frames for reads as idle rather than as undefined',
+  frameAt('nosuchclip', 0.1) === 'idle');
+// The files. A posed character has no bare <name>.png — the seven frames are
+// one set with one naming rule, so nothing has to remember the special case.
+check(`${WITH_POSES.size} character(s) carry a pose set, and it is the full table`,
+  WITH_POSES.size > 0 && [...WITH_POSES].every(() => POSES.length === 7));
+const posedIds = Object.entries(CAST).filter(([, n]) => WITH_POSES.has(n)).map(([id]) => id);
+check(`a posed figure reports all seven frames (${posedIds.join(', ')})`,
+  posedIds.length > 0 && posedIds.every(id => posesFor(id).length === 7));
+check('an unposed figure reports exactly one, so it bakes exactly one texture',
+  Object.keys(CAST).filter(id => !posedIds.includes(id)).every(id => posesFor(id).length === 1));
+check('and every frame of every posed figure is a real file in figures/',
+  posedIds.every(id => POSES.every(p => existsSync(new URL('../' + plateFor(id, p), import.meta.url)))),
+  `${posedIds.flatMap(id => POSES.filter(p => !existsSync(new URL('../' + plateFor(id, p), import.meta.url))).map(p => id + ':' + p))}`);
+check('asking a posed figure for no pose gives its standing frame',
+  posedIds.every(id => plateFor(id) === plateFor(id, 'idle')));
 
 // ── enemies that REACT (v23) ─────────────────────────────────────────────
 // `when` is the difference between a bestiary and a rotation. These assert the

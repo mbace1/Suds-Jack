@@ -37,6 +37,21 @@
 
 const DIR = 'figures/';
 
+// ── POSE SETS (v25) ──────────────────────────────────────────────────────
+// Two of TURF's characters are not plates at all: `gunner` and `leopard` were
+// carried through the whole of `ART_REQUEST.md` §6's frame table — idle, move,
+// attack-windup, attack-release, hit, death-fall, death-down — in both facings,
+// and that art had been sitting in `turf/art-src/sprites/cast/` unread while
+// this game moved a single still card around. `motion.js` names a frame per
+// clip stage; this says which figures HAVE frames.
+//
+// FRONT ONLY, deliberately. TURF needs two facings because its board is
+// isometric and a unit can walk away from the camera. Here everybody faces
+// across the bridge and `body.scale.x = facing` mirrors the enemy row, so a
+// rear frame would never be drawn. Seven files a character instead of fourteen.
+export const POSES = ['idle', 'move', 'attack-windup', 'attack-release', 'hit', 'death-fall', 'death-down'];
+export const WITH_POSES = new Set(['leopard']);
+
 // id → plate. Only person-shaped figures are cast: the rats, blobs, birds and
 // the bear have no equivalent in a roster of street operators and keep their
 // drawn cutout, which is why this is a lookup rather than a blanket switch.
@@ -68,8 +83,21 @@ export const CAST = {
   bottle_thief: 'vex',         // the set's only other woman, and she has the bag
 };
 
-export const castFiles = () => [...new Set(Object.values(CAST))].map(n => DIR + n + '.png');
-export const plateFor = id => CAST[id] ? DIR + CAST[id] + '.png' : null;
+// A posed character has no bare `<name>.png` — its standing frame is
+// `<name>-idle.png`, so the seven files are one set with one naming rule and
+// nothing has to remember which of them is the special one.
+const fileFor = (name, pose) => DIR + name + (WITH_POSES.has(name) ? '-' + (pose ?? 'idle') : '') + '.png';
+
+export const castFiles = () => [...new Set(Object.values(CAST))]
+  .flatMap(n => WITH_POSES.has(n) ? POSES.map(p => fileFor(n, p)) : [fileFor(n)]);
+
+export function plateFor(id, pose) {
+  const n = CAST[id];
+  return n ? fileFor(n, pose) : null;
+}
+
+// Which frames this figure actually has, so a Puppet bakes those and no more.
+export const posesFor = id => WITH_POSES.has(CAST[id]) ? POSES : ['idle'];
 
 // ── loading ──────────────────────────────────────────────────────────────
 // Decoded once and kept, with the INK BOUNDS scanned alongside: every plate is
@@ -108,7 +136,13 @@ export function preloadPlates() {
   })));
 }
 
-export const plateReady = id => { const s = plateFor(id); return s ? loaded.get(s) ?? null : null; };
+// A pose that failed to decode falls back to the figure's idle rather than to
+// nothing: a missing frame should cost a swap, never leave a blank plane.
+export function plateReady(id, pose) {
+  const s = plateFor(id, pose);
+  if (!s) return null;
+  return loaded.get(s) ?? (pose ? loaded.get(plateFor(id)) ?? null : null);
+}
 
 // Draw a plate into the cutout's own canvas, feet on the same baseline the
 // painted figures stand on and filling the same share of the height — so a

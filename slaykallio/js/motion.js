@@ -124,3 +124,46 @@ export function landsAtRest(name, eps = 1e-6) {
     && Math.abs(p.rot) < eps && Math.abs(p.skew) < eps
     && Math.abs(p.sx - 1) < eps && Math.abs(p.sy - 1) < eps;
 }
+
+// ── THE FRAME AXIS (v25) ─────────────────────────────────────────────────
+//
+// v17 moved the card and left the drawing alone, which is only half of what
+// Paper Mario does: the object moves AND a small number of drawn frames swap
+// under it. The other half turned out to be sitting in the repo already —
+// `turf/art-src/sprites/cast/` carries a seven-pose set per character (idle,
+// move, attack-windup, attack-release, hit, death-fall, death-down, in two
+// facings), generated to `ART_REQUEST.md` §6's own frame table, and nothing
+// had ever read it. So a clip names a FRAME per stage, on exactly the stage
+// boundaries the transform already uses — the swap and the lunge land on the
+// same instant because they are the same list.
+//
+// Why the recovery holds `attack-release` rather than returning to idle: the
+// arm is extended at the end of the commit and the 0.30s recovery is the body
+// settling under it. Popping the drawing back to idle on frame one of the
+// recovery reads as a second, faster attack.
+//
+// A figure with no frame set ignores all of this and keeps its one drawing —
+// which is every rat, blob, bird and bear, and every plate that has only ever
+// been generated standing still.
+const FRAMES = {
+  breath: ['idle'],
+  attack: ['attack-windup', 'attack-release', 'attack-release'],
+  hurt:   ['hit', 'hit'],
+  hop:    ['move', 'move', 'move'],
+};
+
+export const FRAME_NAMES = [...new Set(Object.values(FRAMES).flat())];
+
+// Which drawing this clip is showing at `t`. Walks the SAME durations as
+// `poseAt`, so a frame can never be one stage out of step with the transform.
+export function frameAt(name, t) {
+  const clip = CLIPS[name], f = FRAMES[name];
+  if (!clip || !f) return 'idle';
+  let left = Math.max(0, t);
+  for (let i = 0; i < clip.length; i++) {
+    const dur = clip[i][0];
+    if (!Number.isFinite(dur) || left < dur || dur === 0) return f[i] ?? 'idle';
+    left -= dur;
+  }
+  return 'idle';
+}
