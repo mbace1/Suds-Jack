@@ -19,6 +19,8 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   const idle=()=>p.waitForFunction(()=>!!window.__sk&&!__sk.busy(),null,{timeout:30000});
   await p.goto(base+'/');
   await tap(p.getByRole('link',{name:'Play Slay Kallio',exact:true}));
+  assert.equal(new URL(p.url()).searchParams.get('release'),'33','hub launches the current release URL');
+  await p.waitForFunction(()=>document.querySelector('#ver')?.textContent==='v33');
   await p.goto(base+'/slaykallio/?seed=4');
   await p.waitForFunction(()=>!!window.__sk);
   assert.equal(await p.locator('#ver').innerText(),'v33');
