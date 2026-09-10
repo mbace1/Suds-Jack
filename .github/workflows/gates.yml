@@ -372,6 +372,12 @@ jobs:
       - name: what MISSED is allowed to accuse you of
         run: NODE_PATH=$(npm root -g) node toko-move/test/misses.cjs
 
+      # The board painted one badge per vehicle at its exact position in vehicle
+      # order with no collision handling at all: 34 overlapping pairs at city
+      # scale on a phone, a stack nine deep, a quarter of all badge area buried.
+      - name: no two line badges may overlap
+        run: NODE_PATH=$(npm root -g) node toko-move/test/badges.cjs
+
   hub:
     name: the arcade floor
     needs: changes

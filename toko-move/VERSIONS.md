@@ -1,5 +1,53 @@
 # Toko Move — versions
 
+## v2.33 — 2026-09-10
+
+**The line badges never dodged each other.** `LiveNetwork.draw()` painted one
+badge per vehicle at its exact projected position, in vehicle order, with no
+collision handling of any kind — while `drawStopLabels()` was carefully avoiding
+those same badges, so stop names dodged trams and trams piled on trams.
+Measured, at deviceScaleFactor 2:
+
+| | badges | overlapping pairs | worst stack | badge area buried | fully hidden |
+|---|---|---|---|---|---|
+| phone, CITY | 27 | 34 | 9 | 25.3% | 1 |
+| phone, ROUTE | 62 | 49 | 6 | 24.1% | 2 |
+| phone, STOP | 18 | 5 | 3 | 16.5% | 1 |
+| tablet, CITY | 27 | 22 | 7 | 19.2% | 1 |
+| tablet, ROUTE | 62 | 31 | 4 | 19.8% | 1 |
+
+The heap around Kamppi is in every screenshot sent to the owner since v2.28.
+
+**The fix is DEGRADATION, not movement.** A badge is not a label beside a
+vehicle, it *is* the vehicle — so nudging one out of a crowd moves the tram, and
+at city scale a fourteen-pixel nudge is several hundred metres of lie about where
+the service is. Instead the highest-ranked vehicle in a crowd keeps its labelled
+badge and everything under it falls back to a dot at its true position. Nothing
+is dropped and nothing moves; what is given up is the label, which was
+unreadable in that heap anyway.
+
+**Rank comes from the caller, because the board cannot know which tram matters.**
+`draw()` takes a `priority` function and `main` supplies one from the lines that
+are any use to you right now — the one you are riding, the one your selected plan
+says to take, and the ones the boarding panel is offering. Without it the
+declutter would be arbitrary about which service it silenced, and the silenced
+one is often yours. A selected vehicle outranks everything.
+
+Ties break on vehicle **id**, never on position. A positional tiebreak is the
+obvious way to write it and it makes two crossing trams swap which of them is
+readable, frame after frame, for as long as they are close.
+
+After: **zero** overlapping badges at every scale on both viewports, with 12 of
+27 vehicles labelled at phone CITY and 32 of 66 at phone ROUTE.
+
+`test/badges.cjs` (20 checks) is the gate: no two labelled badges overlap at
+three scales on two viewports; badges + dots account for every vehicle shown;
+`main` really passes a rank function; the declutter is actually engaging, so the
+no-overlap checks are not vacuous; a line silenced unranked gets a readable badge
+back when ranked; and every vehicle that yielded its label yielded it to one that
+outranks it by rank-then-id. Six mutations, six caught — including the positional
+tiebreak, which the two obvious "is it stable" checks could not see.
+
 ## v2.32 — 2026-09-10
 
 **`MISSED` was accusing the player of missing trams the game had never offered
