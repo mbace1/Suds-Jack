@@ -100,7 +100,15 @@ const CAP_Y = %CAP_Y%;
 window._LOOP = {
   boot() { startGame(); },
   reset() {
-    for (const e of enemies) { e.alive = false; e._dying = false; }
+    // The array is not the scene. Clearing \`enemies\` stops the game UPDATING a
+    // body; it does not take the body out of the world — nothing else ever
+    // will, because the reap path runs off the list we just emptied. Every
+    // scenario therefore used to ORPHAN its cast: startGame()'s opening wave
+    // leaked into the first clip, and the nine FLITs of \`school\` stood frozen
+    // around the subject of every clip after it. Loops recorded to judge motion
+    // were being judged with a ring of corpses in them. removeFrom() is the
+    // game's own removal, the one main.js uses on wave reset and game over.
+    for (const e of enemies) { e.alive = false; e._dying = false; e.removeFrom(scene); }
     enemies = []; pendingSpawns = []; bullets.clear();
     meleeRun = false;   // v220: the revenge scenario flips it on; never leak
     player.mesh.position.set(0, PLAYER_RADIUS, HALF_Z - 3);
