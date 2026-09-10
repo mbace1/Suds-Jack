@@ -6,15 +6,18 @@
   <title>Slay Kallio</title>
   <style>
     :root {
-      --ink: #1b1410;
-      --kraft: #b3a894;
-      --kraft2: #8d8371;
-      --paper: #e8dfcb;
-      --accent: #c8a03a;
-      --attack: #9e3b25;
-      --skill: #2e6274;
-      --power: #a8761c;
-      --curse: #4a3a58;
+      --ink: #0d0a08;
+      /* Dark stock, bone text. A deckbuilder's cards are the brightest thing on
+         screen by area, so leaving them in daylight while the world went to
+         evening left five lit rectangles floating over a night scene. */
+      --kraft: #4a4034;
+      --kraft2: #2b251d;
+      --paper: #ded2b6;
+      --accent: #c8973a;
+      --attack: #8e3320;
+      --skill: #27596b;
+      --power: #96671a;
+      --curse: #3f3050;
       --panel: rgba(18, 15, 12, 0.9);
       --ui: 'Avenir Next Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
     }
@@ -33,7 +36,7 @@
     [hidden] { display: none !important; }
 
     /* ── labels over the puppets ── */
-    #labels { position: fixed; inset: 0; pointer-events: none; }
+    #labels { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
     .unit {
       position: absolute; left: 0; top: 0;
       width: 150px; margin-left: -75px; margin-top: -58px;
@@ -58,7 +61,7 @@
     .unit .st.vulnerable { color: #ffb0a0; } .unit .st.weak { color: #d0b0ff; } .unit .st.strength, .unit .st.buzz { color: #ffd070; } .unit .st.power { color: #a0e0ff; }
     .unit .preview { position: absolute; left: 50%; top: 62px; transform: translateX(-50%); background: var(--attack); color: #fff; font-weight: 800; font-size: 18px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 2px 0 #000; }
     /* the tap target: from the label down to the feet */
-    .unit.enemy .hitbox { position: absolute; left: 0; right: 0; top: 0; min-width: 44px; height: calc(var(--h, 120px) + 60px); pointer-events: auto; cursor: pointer; border-radius: 12px; }
+    .unit.enemy .hitbox { position: absolute; left: 25px; right: 25px; top: 0; height: calc(var(--h, 120px) + 60px); pointer-events: auto; cursor: pointer; border-radius: 12px; }
     .targeting .unit.enemy:not(.dead) .hitbox { outline: 3px dashed rgba(255, 200, 100, .8); outline-offset: -3px; animation: pulse 1s infinite; }
     .unit.aimed:not(.dead) .hitbox { outline: 3px solid rgba(255, 230, 150, .9); }
     .unit.acting .name { color: #ffd08a; }
@@ -90,7 +93,8 @@
       position: fixed; left: 0; right: 0; text-align: center; pointer-events: none; opacity: 0;
       font-weight: 900; letter-spacing: .3em; text-transform: uppercase; text-shadow: 0 2px 0 #000, 0 0 18px rgba(0,0,0,.6);
     }
-    #banner { top: 14%; font-size: clamp(22px, 5vw, 44px); }
+    #banner { top: 14%; font-size: clamp(20px, 4.4vw, 42px); padding: 0 16px; }
+    .portrait #banner { letter-spacing: .16em; font-size: clamp(16px, 5.4vw, 28px); }
     #played { top: 22%; font-size: 18px; letter-spacing: .2em; color: #ffe0a0; }
     #banner.show { animation: banner 2.2s ease-out forwards; }
     #played.show { animation: banner 1s ease-out forwards; }
@@ -112,7 +116,7 @@
     #piles, #where { opacity: .8; font-size: 12px; }
     #jokers { display: flex; gap: 6px; flex: 1; min-width: 0; flex-wrap: wrap; }
     .joker {
-      background: linear-gradient(160deg, #f5e6c8, #d9b98a); color: var(--ink); border: 2px solid var(--ink); border-radius: 6px;
+      background: linear-gradient(160deg, #4a4034, #221d17); color: var(--paper); border: 2px solid var(--ink); border-radius: 6px;
       padding: 4px 8px; min-width: 112px; max-width: 170px; font-size: 11px; line-height: 1.15; box-shadow: 2px 3px 0 rgba(0,0,0,.45);
       transform: rotate(-1deg);
     }
@@ -149,29 +153,34 @@
     .card {
       position: relative; width: 124px; height: 196px; flex: 0 0 auto; margin: 0 -9px;
       background:
-        radial-gradient(ellipse at 18% 12%, rgba(255,246,220,.22), transparent 44%),
-        radial-gradient(ellipse at 84% 92%, rgba(0,0,0,.26), transparent 50%),
-        repeating-linear-gradient(90deg, rgba(0,0,0,.045) 0 2px, transparent 2px 7px),
+        radial-gradient(ellipse at 14% 8%, rgba(255,186,96,.20), transparent 46%),
+        radial-gradient(ellipse at 88% 96%, rgba(0,0,0,.45), transparent 54%),
+        /* newsprint: rows of print too small to read, the same mark the cutouts carry */
+        repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 2px, transparent 2px 7px),
         linear-gradient(160deg, var(--kraft), var(--kraft2));
-      color: var(--ink); border: 2.5px solid var(--ink); border-radius: 4px;
+      color: var(--paper); border: 2.5px solid var(--ink); border-radius: 4px;
       text-align: left; padding: 7px 8px 20px; display: flex; flex-direction: column; gap: 3px;
-      box-shadow: 2px 4px 0 rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,246,220,.12);
+      /* the last inset is the torn core catching the light on the near edge — the
+         cutouts' `fibre` pass, in the one place CSS can say it */
+      box-shadow: 2px 4px 0 rgba(0,0,0,.7), inset 0 0 0 2px rgba(255,196,110,.1), inset 0 -26px 22px -18px rgba(0,0,0,.55), inset 2px 2px 0 rgba(216,204,176,.22);
       transform: translateY(calc(var(--lift, 0px))) rotate(calc((var(--i) - (var(--n) - 1) / 2) * 2deg));
       transition: transform .15s, box-shadow .15s; transform-origin: 50% 120%;
       clip-path: polygon(0 2%, 2% 0, 98% 1%, 100% 3%, 99% 97%, 97% 100%, 2% 99%, 0 97%);
     }
     /* the picture panel: a painted thing, set into the card with a dark reveal */
     .card .art {
-      display: block; margin: 1px 0 2px; border: 1.5px solid rgba(23,18,14,.85);
-      box-shadow: inset 0 0 6px rgba(0,0,0,.5); line-height: 0; background: #4a4438;
+      display: block; margin: 1px 0 2px; border: 1.5px solid rgba(10,8,6,.9);
+      box-shadow: inset 0 0 6px rgba(0,0,0,.7); line-height: 0; background: #241f18;
     }
     .card .pic { display: block; width: 100%; height: auto; }
     .card:hover, .card:focus-visible { --lift: -22px; z-index: 2; outline: none; }
     .card.selected { --lift: -40px; z-index: 3; box-shadow: 0 0 0 3px var(--accent), 4px 8px 0 rgba(0,0,0,.5); }
-    .card.unplayable { filter: grayscale(.6) brightness(.85); }
+    .card.unplayable { filter: grayscale(.7) brightness(.62); }
     .card .cost {
       position: absolute; top: -8px; left: -8px; width: 30px; height: 30px; border-radius: 50%;
       background: radial-gradient(circle at 35% 30%, #ffe89a, #d29a1a 70%); border: 2.5px solid var(--ink);
+      color: var(--ink);   /* the stock went dark and the text went bone; the orb did not */
       display: grid; place-content: center; font-weight: 900; font-size: 16px;
     }
     .card .name { font-weight: 800; text-transform: uppercase; font-size: 11.5px; letter-spacing: .03em; line-height: 1.05; margin-left: 18px; min-height: 24px; }
@@ -183,36 +192,49 @@
     .card.skill .type { background: var(--skill); }
     .card.power .type { background: var(--power); }
     .card.curse .type { background: var(--curse); }
-    .card.curse { background: linear-gradient(160deg, #6a5a70, #4a3a50); color: #eee; }
-    .card.find { background: linear-gradient(160deg, #e8dcc0, #c8b890); }
+    .card.curse { background: linear-gradient(160deg, #3a2e46, #221a2c); color: #d8cce8; }
+    .card.find { background: linear-gradient(160deg, #6b6047, #453d2c); }
     .card::after { content: ''; position: absolute; right: 14px; top: -6px; width: 34px; height: 12px; background: rgba(240, 225, 190, .75); transform: rotate(6deg); }
     .card.selected::after, .card:hover::after { background: rgba(240, 225, 190, .95); }
 
-    /* Readable selected-card text and separate targets above the hand. */
-    #cardfocus {
-      position: fixed; bottom: 12px; left: 104px;
-      width: 220px; padding: 10px 12px;
-      background: #211e19; color: #f3ead9; border: 1px solid #a38b64;
-      border-radius: 8px; box-shadow: 0 6px 20px #0008; z-index: 4;
-      font: 14px/1.35 system-ui, sans-serif;
+    /* ── the run's other screens: the fork, an event, a rest, a pick ── */
+    /* the map: a torn-paper sheet drawn on a canvas, with a real button laid
+       over every pin that can be chosen — the drawing is the picture, the
+       buttons are the 44px targets and the focus order */
+    #map .sheet { position: relative; width: min(92vw, 880px); height: min(56vh, 400px); }
+    .portrait #map .sheet { width: min(92vw, 520px); height: min(50vh, 500px); }
+    #mapcv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
+    #nodes { position: absolute; inset: 0; }
+    .node {
+      position: absolute; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%;
+      background: transparent; border: 0; padding: 0; cursor: pointer; color: transparent; font-size: 0;
     }
-    .focus-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-    .focus-title b { font-size: 16px; }
-    .focus-title span { color: #f5d48a; white-space: nowrap; }
-    #cardfocus button { min-height: 44px; padding: 6px 10px; border: 1px solid #b6a080; border-radius: 5px; background: #e5d4af; color: #211b15; font-weight: 700; }
-    #cardfocus .focus-cancel { margin-left: auto; background: transparent; color: #f3ead9; }
-    .focus-description { margin: 5px 0 10px; }
-    .focus-actions { display: flex; flex-direction: column; gap: 6px; }
-    .focus-actions button { flex: 1; min-width: 0; }
-    .focus-actions small { display: block; font-size: 12px; font-weight: 500; }
-    .focus-reason { color: #ffd291; }
-    /* Sign the title screen; a corner badge covers energy or a target in play. */
-    body:has(#hud:not([hidden])) .toko-signature { display: none !important; }
+    .node:focus-visible, .node.selected { outline: 0; box-shadow: 0 0 0 3px var(--accent), 0 0 0 6px rgba(0,0,0,.45); }
+    .node b, .node span, .node small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    #map .caption { font-size: 14px; min-height: 2.6em; max-width: 560px; }
+    /* a phone's HUD plate sits over the top 150px; a centred panel collided with it */
+    .portrait .panel { align-content: start; padding-top: 212px; }
+    .portrait #map h2 { font-size: 22px; }
+    #map .caption b { color: var(--accent); letter-spacing: .1em; text-transform: uppercase; font-size: 11px; display: block; }
+    #choices { display: flex; flex-direction: column; gap: 8px; width: min(560px, 90vw); }
+    #choices button {
+      background: linear-gradient(160deg, #4a4034, #221d17); color: var(--paper); border: 2px solid var(--ink); border-radius: 6px;
+      padding: 12px 14px; min-height: 48px; text-align: left; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; cursor: pointer;
+    }
+    #choices button.selected, #pick .row.selected { box-shadow: 0 0 0 3px var(--accent); }
+    #event .text { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 16px; line-height: 1.45; max-width: 560px; }
+    #rest .sub { font-size: 13px; opacity: .75; }
+    #pick .list { max-height: 60vh; overflow: auto; width: min(560px, 90vw); text-align: left; display: flex; flex-direction: column; gap: 4px; }
+    #pick .row { display: block; width: 100%; background: var(--panel); padding: 8px 10px; min-height: 44px; border-left: 4px solid var(--attack); border-radius: 4px; font-size: 13px; color: var(--paper); border-top: 0; border-right: 0; border-bottom: 0; text-align: left; cursor: pointer; }
+    #pick .row.skill { border-color: var(--skill); } #pick .row.power { border-color: var(--power); } #pick .row.curse { border-color: var(--curse); }
+    #pick .row b { display: block; text-transform: uppercase; letter-spacing: .04em; }
+    #pick .row span { font-family: system-ui, sans-serif; opacity: .85; }
+    .card .name .up, #deck .row .up, #pick .row .up { color: var(--accent); }
 
     /* ── panels ── */
     .panel {
       position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center;
-      background: rgba(14, 10, 6, .72); padding: 24px; overflow: auto; z-index: 10;
+      background: rgba(14, 10, 6, .72); padding: 24px; overflow: auto; z-index: 10;   /* above #labels (3) and #fx */
     }
     .panel h1 { font-size: clamp(38px, 10vw, 84px); letter-spacing: .12em; text-transform: uppercase; line-height: .9; text-shadow: 0 4px 0 #000; }
     .panel h1 span { display: block; font-size: .42em; letter-spacing: .5em; color: var(--accent); }
@@ -227,14 +249,14 @@
     .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
     #roster { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; max-width: 900px; width: 100%; }
     .pick {
-      background: linear-gradient(160deg, #f5e6c8, #d9b98a); color: var(--ink); border: 3px solid var(--ink); border-radius: 8px; padding: 8px;
+      background: radial-gradient(ellipse at 18% 6%, rgba(255,186,96,.15), transparent 52%), linear-gradient(160deg, #4a4034, #221d17);
+      color: var(--paper); border: 3px solid var(--ink); border-radius: 8px; padding: 8px;
       display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; box-shadow: 3px 4px 0 rgba(0,0,0,.5);
       min-height: 200px;
     }
     .pick.selected { box-shadow: 0 0 0 4px var(--accent), 3px 4px 0 rgba(0,0,0,.5); transform: translateY(-4px); }
     .pick .portrait { width: 72px; height: 144px; image-rendering: auto; }
     .pick b { font-size: 16px; text-transform: uppercase; letter-spacing: .06em; }
-    .pick i { font-size: 12px; opacity: .8; }
     .pick span { font-family: system-ui, sans-serif; font-size: 11.5px; line-height: 1.25; }
     .pick small { font-weight: 800; }
     #options { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
@@ -274,19 +296,6 @@
     .portrait .unit { font-size: 12px; width: 108px; margin-left: -54px; }
     .portrait .unit .intent { font-size: 15px; }
     .portrait #options .card { width: 124px; height: 196px; }
-    .portrait #cardfocus { top: max(165px, calc(env(safe-area-inset-top) + 157px)); bottom: auto; left: 8px; right: 8px; width: auto; transform: none; }
-    .portrait .focus-actions { flex-direction: row; }
-    .portrait .unit.enemy .name { font-size: 11px; }
-    .portrait .unit.enemy .intent { font-size: 13px; }
-    .portrait .unit.enemy .bar { margin-left: 3px; margin-right: 3px; }
-    .portrait .unit.enemy .hp { font-size: 11px; }
-    @media (max-height: 500px) and (orientation: landscape) {
-      #cardfocus { bottom: 12px; left: 8px; width: 210px; transform: none; font-size: 12px; }
-      .focus-title { flex-wrap: wrap; gap: 3px 8px; }
-      .focus-title b { font-size: 14px; }
-      .focus-actions { flex-direction: row; flex-wrap: wrap; }
-      #energy { bottom: 220px; }
-    }
 
     @media (prefers-reduced-motion: reduce) { .pop, #banner.show, #played.show { animation-duration: .01s; } .targeting .unit.enemy .hitbox { animation: none; } }
   </style>
@@ -314,7 +323,6 @@
       </div>
     </div>
     <div id="hand" role="list"></div>
-    <section id="cardfocus" aria-label="Selected card" hidden></section>
     <div id="energy" aria-live="polite"><b>3</b><small>/3 energy</small></div>
     <button id="end">End turn</button>
   </div>
@@ -325,6 +333,9 @@
     <div class="row">
       <button class="ghost theme">theme: <b>Kallio</b></button>
       <button class="ghost" id="mute">sound on</button>
+      <button class="ghost" id="figs">figures: paper</button>
+      <button class="ghost" id="art">art: turf</button>
+      <button class="ghost" id="cut">cut: silhouette</button>
     </div>
     <div id="roster"></div>
     <button class="btn" id="start">Take the bridge</button>
@@ -336,6 +347,37 @@
     <h2>Take a card</h2>
     <div id="options"></div>
     <button class="ghost" id="skip">skip</button>
+  </div>
+
+  <div id="map" class="panel" hidden>
+    <h2>The bridge forks</h2>
+    <p class="where"></p>
+    <div class="sheet">
+      <canvas id="mapcv" aria-hidden="true"></canvas>
+      <div id="nodes"></div>
+    </div>
+    <p class="caption"></p>
+  </div>
+
+  <div id="event" class="panel" hidden>
+    <h2></h2>
+    <p class="text"></p>
+    <div id="choices"></div>
+  </div>
+
+  <div id="rest" class="panel" hidden>
+    <h2>A quiet span</h2>
+    <p>Nobody comes this far along. You could sleep, or you could think.</p>
+    <div class="row">
+      <button class="btn" id="restHeal">Sleep</button>
+      <button class="btn" id="restUp">Think it over</button>
+    </div>
+    <p class="sub"></p>
+  </div>
+
+  <div id="pick" class="panel" hidden>
+    <h2></h2>
+    <div class="list"></div>
   </div>
 
   <div id="result" class="panel" hidden>
@@ -361,7 +403,7 @@
   }
   </script>
   <script type="module" src="../hub/shell.js?v=35"></script>
-  <script type="module" src="js/main.js?v=7"></script>
+  <script type="module" src="js/main.js?v=29"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';
@@ -369,3 +411,4 @@
   </script>
 </body>
 </html>
+

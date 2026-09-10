@@ -21,7 +21,7 @@
 // rusted, and nothing in the set is bright except what the game paints on top.
 
 import * as THREE from 'three';
-import { paintedPark, paintForeground, fromImage } from './bg.js';
+import { paintedPark, paintForeground, fromImage } from './bg.js?v=31';
 
 // how far behind the deck the painting hangs, and how far in front of it the
 // out-of-focus foreground sits
@@ -116,47 +116,149 @@ export class Arena {
     this.focus = 0.6;
     this._v = new THREE.Vector3();
 
-    // A late, low sun from behind the camera's left, a cold sky fill and a dim
-    // bounce off the water. Gritty means the light has a direction and the
-    // shadow side is genuinely dark.
-    const hemi = new THREE.HemisphereLight('#a8bac6', '#3a4034', 1.05);
-    const sun = new THREE.DirectionalLight('#ffd9a8', 1.45);
-    sun.position.set(-5, 4.5, 6);
-    // A bounce off the water, aimed UP into the understructure. Without it the
-    // beams, braces and piles are one black mass and the bridge stops reading
-    // as built — which is the whole reason the board is a bridge.
-    const bounce = new THREE.DirectionalLight('#7e939c', 0.85);
-    bounce.position.set(3, -6, 4);
-    this.scene.add(hemi, sun, bounce);
+    // THE TORCH. Darkest Dungeon's look is a lighting setup before it is an art
+    // style: one warm source close to the party, everything past its falloff
+    // going to black, and a cold edge separating a figure from the dark. So the
+    // rig is a POINT light with a real distance — a directional cannot fall
+    // off, and falloff is the whole effect: it is what makes the ends of the
+    // deck disappear and the middle of the bridge the only place there is.
+    this.torch = new THREE.PointLight('#ffab52', 3.4, 15, 1.6);
+    // The last of the daylight: dim, cold, and from the sky rather than a
+    // direction, so nothing outside the torch reads as lit — only as not black.
+    this.fill = new THREE.HemisphereLight('#2b3b4a', '#0a0c0a', 0.5);
+    // A cold rim off the canal, from behind and below. This is the one light
+    // that must survive the darkening: without it a figure and the dark behind
+    // it are the same value and the silhouette stops existing.
+    this.rim = new THREE.DirectionalLight('#6f93ad', 0.75);
+    this.rim.position.set(3, -5, -4);
+    // A second, dimmer warm source that FOLLOWS THE ENEMY ROW. The falloff is
+    // the whole look, but the figure it was hiding was usually the one whose
+    // intent you most needed to read; DD lights the rank, not the room.
+    this.rank = new THREE.PointLight('#e09a52', 5.5, 13, 1.5);
+    this.rank.position.set(2.4, 1.1, 2.2);
+    // The SUN, for the start of the run. A directional, because daylight has
+    // no falloff — which is exactly why the evening cannot be made of it.
+    this.sun = new THREE.DirectionalLight('#ffe8c0', 0);
+    this.sun.position.set(-5, 6, 6);
+    this.scene.add(this.torch, this.fill, this.rim, this.rank, this.sun);
+    this.flickT = Math.random() * 40;
+    this.steady = matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
     this.setTheme(theme);
   }
 
+  // The hour, as data. Each skin carries THREE rigs — day, evening, night —
+  // and the run walks from the first to the last: it starts in daylight and
+  // as evening comes things start mutating (owner, 2026-09-05). `setHour(t)`
+  // lerps every number in the rig, so 0.3 is a real late afternoon and not a
+  // switch between two looks. The grade travels with it, and the plate is
+  // recut when the hour has moved enough to be worth a blur pass.
+  applyMood(theme) { this.setHour(this.hour ?? 0); }
+
+  moodAt(t) {
+    const ms = this.theme.moods ?? { day: this.theme.mood, evening: this.theme.mood, night: this.theme.mood };
+    const [a, b, u] = t < 0.5 ? [ms.day, ms.evening, t / 0.5] : [ms.evening, ms.night, (t - 0.5) / 0.5];
+    const num = (x, y) => x + (y - x) * u;
+    const col = (x, y) => '#' + new THREE.Color(x).lerp(new THREE.Color(y), u).getHexString();
+    const arr = (x, y) => x.map((v, i) => num(v, y[i]));
+    const m = {};
+    for (const k of Object.keys(b)) {
+      const x = a[k], y = b[k];
+      if (typeof y === 'number') m[k] = num(x, y);
+      else if (typeof y === 'string' && y[0] === '#') m[k] = col(x, y);
+      else if (Array.isArray(y)) m[k] = arr(x, y);
+      else if (y && typeof y === 'object') { m[k] = {}; for (const kk of Object.keys(y)) m[k][kk] = typeof y[kk] === 'number' ? num(x[kk], y[kk]) : typeof y[kk] === 'string' && y[kk][0] === '#' ? col(x[kk], y[kk]) : (u < 0.5 ? x[kk] : y[kk]); }
+      else m[k] = u < 0.5 ? x : y;
+    }
+    return m;
+  }
+
+  setHour(t) {
+    this.hour = Math.max(0, Math.min(1, t));
+    const m = this.moodAt(this.hour);
+    this.mood = m;
+    this.torch.color.set(m.torch); this.torch.intensity = m.torchI; this.torch.distance = m.torchFar;
+    this.torch.decay = m.torchDecay ?? 1.4;
+    this.torch.position.set(...m.torchAt);
+    this.sun.color.set(m.sun ?? '#ffffff'); this.sun.intensity = m.sunI ?? 0;
+    this.fill.color.set(m.sky); this.fill.groundColor.set(m.ground); this.fill.intensity = m.fillI;
+    this.rim.color.set(m.rim); this.rim.intensity = m.rimI;
+    this.rank.color.set(m.rank ?? m.torch); this.rank.intensity = m.rankI ?? 0;
+    this.rank.distance = m.rankFar ?? 12; this.rank.decay = m.rankDecay ?? 1.5;
+    // Fog takes the ends of the bridge, which is what the torch's falloff
+    // cannot do on its own — a plank at the frame edge is no further from the
+    // light than one just off centre, but it IS further away.
+    this.scene.fog = new THREE.Fog(m.fog, m.fogNear, m.fogFar);
+    this.renderer.setClearColor(m.fog, 1);
+    // the picture behind follows the hour, in steps big enough to be worth a blur pass
+    if (this.bgMat && Math.abs((this._gradedAt ?? -1) - this.hour) > 0.08) {
+      this._gradedAt = this.hour;
+      if (this.plate) { this._cut = null; this.cutPlate(); }
+      else { this.bgMat.map = paintedPark(this.theme, 3, this.focus, m.grade); this.bgMat.needsUpdate = true; }
+    }
+  }
+
+  // the figure light for whatever hour it is — a cutout is painted once, so a
+  // fight spawned at dusk is lit for dusk
+  figureMood() { return this.mood?.figure ?? this.theme.mood?.figure; }
+
   setTheme(theme) {
     this.theme = theme;
+    this.applyMood(theme);
     if (this.bg) this.scene.remove(this.bg);
     if (this.fg) this.scene.remove(this.fg);
     this.photo = false;
-    this.bgMat = new THREE.MeshBasicMaterial({ map: paintedPark(theme, 3, this.focus) });
+    // The backdrop is already graded and vignetted; fogging a picture would
+    // flatten it to one colour and undo the grade.
+    this.bgMat = new THREE.MeshBasicMaterial({ map: paintedPark(theme, 3, this.focus, (this.mood ?? theme.moods?.day ?? theme.mood)?.grade), fog: false });
     this.bg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.bgMat);
     this.bg.position.z = BG_Z;
     this.scene.add(this.bg);
     this.fg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshBasicMaterial({ map: paintForeground(theme), transparent: true, depthWrite: false }));
+      new THREE.MeshBasicMaterial({ map: paintForeground(theme), transparent: true, depthWrite: false, fog: false }));
     this.fg.position.z = FG_Z;
     this.scene.add(this.fg);
     if (this.bridge) this.scene.remove(this.bridge);
     this.buildBridge(theme);
     this.fitFrame();
+    // setTheme builds a fresh background material, so a plate installed before
+    // the switch would quietly become the painting again. Put it back.
+    if (this.plate) { this._cut = null; this.cutPlate(); }
   }
 
   // A photograph behind the bridge — the owner's "can even use a real photo".
   // It goes through the SAME focus pass as the painting, so a plate is
   // tilt-shifted to the deck's row like everything else.
-  async setPhoto(url, opts) {
-    const tex = await fromImage(url, { focus: this.focus, ...opts });
-    this.bgMat.map = tex; this.bgMat.needsUpdate = true;
-    this.photo = true;                     // a plate is not repainted on resize
+  async setPhoto(url, opts = {}) {
+    this.plate = { url, opts };
+    await this.cutPlate();
+  }
+
+  // A plate is CUT to the frame, not stretched onto it, so it has to be recut
+  // whenever the frame changes shape — and a phone turned sideways changes it
+  // completely. Recut on the deck row too, for the same reason the painting is
+  // repainted on it: the sharp band has to stay on the thing you are looking at.
+  // A cut in flight FOLDS the next request into itself rather than dropping it.
+  // Boot asks for one at the camera's placeholder square aspect and the first
+  // resize asks for the real one a tick later, so a guard that simply returned
+  // left the plate cut to a shape the frame never has — square, and stretched
+  // onto a 16:9 plane, which is the exact fault the cut exists to remove.
+  async cutPlate() {
+    if (!this.plate) return;
+    if (this._cutting) { this._recut = true; return; }
+    this._cutting = true;
+    try {
+      do {
+        this._recut = false;
+        const { url, opts } = this.plate;
+        const aspect = this.camera.aspect, focus = this.focus;
+        const tex = await fromImage(url, { ...opts, focus, aspect, grade: (this.mood ?? this.theme.mood)?.grade });
+        if (this.plate.url !== url) { this._recut = true; continue; }  // a later plate won
+        this.bgMat.map = tex; this.bgMat.needsUpdate = true;
+        this.photo = true;
+        this._cut = { focus, aspect };
+      } while (this._recut);
+    } finally { this._cutting = false; }
   }
 
   buildBridge(theme) {
@@ -304,6 +406,7 @@ export class Arena {
     const lookY = this.portrait ? 0.46 : 0.28;
     cam.position.set(0, this.portrait ? 1.25 : 1.6, dist);
     cam.lookAt(0, lookY, 0);
+    this.seat = cam.position.clone();
     cam.updateProjectionMatrix();
     this.baseCam = cam.position.clone();
     this.lookY = lookY;
@@ -323,6 +426,11 @@ export class Arena {
   // "much closer to the characters" for the five encounters that never needed
   // it; the unit labels are clamped into the frame separately.
   ensureHeadroom(worldTop, margin = 0.035) {
+    // Start from the SEAT, not from wherever the last fight left the camera.
+    // This only ever pushed back and only resize() ever reset it, so after the
+    // boss every later fight was shot from the boss's distance — found when a
+    // lighting check that walked all twenty-two encounters came out dark.
+    if (this.seat) { this.camera.position.copy(this.seat); this.camera.lookAt(0, this.lookY, 0); this.camera.updateProjectionMatrix(); }
     for (let i = 0; i < 20; i++) {
       const p = this._v.set(0, worldTop, 0).project(this.camera);
       if ((1 - p.y) / 2 >= margin) break;
@@ -373,9 +481,13 @@ export class Arena {
     // Repainting is a blur pass over one canvas, so it happens only when the
     // row has actually moved — a resize drag must not repaint on every pixel.
     const row = this.deckRow();
-    if (!this.photo && Math.abs(row - this.focus) > 0.04) {
-      this.focus = Math.max(0.2, Math.min(0.85, row));
-      this.bgMat.map = paintedPark(this.theme, 3, this.focus);
+    const moved = Math.abs(row - this.focus) > 0.04;
+    if (moved) this.focus = Math.max(0.2, Math.min(0.85, row));
+    if (this.plate) {
+      const reshaped = !this._cut || Math.abs(this._cut.aspect - cam.aspect) > 0.01;
+      if (moved || reshaped) this.cutPlate();
+    } else if (moved) {
+      this.bgMat.map = paintedPark(this.theme, 3, this.focus, (this.mood ?? this.theme.mood)?.grade);
       this.bgMat.needsUpdate = true;
     }
   }
@@ -388,7 +500,43 @@ export class Arena {
 
   kick(n = 1) { this.shake = Math.min(1, this.shake + n * 0.5); }
 
+  // How lit a spot on the deck is, as a multiplier for an UNLIT cutout — the
+  // scene's lights cannot touch a MeshBasic plane, so the arena has to answer
+  // this itself. Floored, because the falloff is a look and an unreadable enemy
+  // is a bug: past the floor a figure stops getting darker and only stops
+  // getting warmer.
+  lightAt(x) {
+    const m = this.mood ?? this.theme?.mood;
+    const floor = m?.figureFloor ?? 0.5;
+    if ((m?.sunI ?? 0) > 0.6) return 1;                      // daylight: nothing falls off
+    const d = Math.min(Math.abs(x - this.torch.position.x), Math.abs(x - this.rank.position.x) * 1.15);
+    return floor + (1 - floor) / (1 + (d / 3.2) ** 2);
+  }
+
   update(dt) {
+    // The torch gutters. Three incommensurate sines never repeat, and the slow
+    // one occasionally takes the others down with it, which is what reads as a
+    // flame rather than as a dimmer being wiggled.
+    const m = this.mood ?? this.theme?.mood;
+    const amt = this.steady ? 0 : (m?.flicker ?? 0);
+    if (amt) {
+      this.flickT += dt;
+      const t = this.flickT;
+      const n = Math.sin(t * 11.3) * 0.5 + Math.sin(t * 23.7) * 0.29 + Math.sin(t * 4.1) * 0.21;
+      const gutter = Math.max(0, Math.sin(t * 0.7) - 0.86) * 6;   // a rare deeper dip
+      this.flick = 1 + n * amt - gutter * amt;
+      this.torch.intensity = (m.torchI ?? 3) * this.flick;
+      this.rank.intensity = (m.rankI ?? 0) * (1 + n * amt * 0.4);
+    } else this.flick = 1;
+
+    // hand every cutout its light level, so the rank is legible and the ends
+    // of the deck still fall away
+    for (const p of this.puppets) p.lightK = this.lightAt(p.home.x) * (0.94 + 0.06 * (this.flick ?? 1));
+    // and put the rank light on the row that is actually there
+    const foes = this.puppets.filter(p => p.facing === -1 && p.alive);
+    if (foes.length) {
+      this.rank.position.x = foes.reduce((a, p) => a + p.home.x, 0) / foes.length;
+    }
     for (const p of this.puppets) p.update(dt);
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt * 2.4);
@@ -399,3 +547,4 @@ export class Arena {
     this.renderer.render(this.scene, this.camera);
   }
 }
+
