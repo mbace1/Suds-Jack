@@ -128,5 +128,10 @@
     "v": "0.2",
     "n": 2,
     "from": "VERSIONS.md"
+  },
+  "piritori": {
+    "v": "4.47",
+    "n": 4047,
+    "from": "VERSIONS.md"
   }
 }

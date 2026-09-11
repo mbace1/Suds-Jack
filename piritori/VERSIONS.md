@@ -1,3 +1,7 @@
+## v4.47 — 2026-09-11
+
+The Hub cabinet opens the current JS campaign in mbace1/piritori-eden. Act I adds Jaska, Slomo and Arvo scene models, optional visits and corrected chapter income. The source repository owns gameplay and deployment; this directory is the Hub entry bridge.
+
 # Piritori → Eden — versions
 
 ## v3.1 source pack — 2026-08-21
