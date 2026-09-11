@@ -67,6 +67,12 @@ export const KINDS = kinds('en');
 // order above, so a new game gets a sensible menu the day it is listed and a
 // better one the day someone thinks about it.
 const LEADS = {
+  // Option C is a hub TEST, not a game: it is asked how it handles and how it
+  // performs before anything else, because those are the two things a shell
+  // experiment exists to answer. It has no cabinet on this branch — LEADS is
+  // keyed by id, so an entry for a game only the site lists costs nothing and
+  // stops a deploy having to choose between two people's work.
+  optionc: ['controls', 'perf', 'look'],
   concrete: ['controls', 'look'],
   powder: ['balance', 'controls'],        // "the field still needs balancing"
   tinyhawk: ['controls', 'idea'],         // "goals and the node map are not [in]"
@@ -171,6 +177,8 @@ const SPECIFIC = {
   en: {
     'powder:balance': ['The gate is too far from the breach', 'Overdrive overheats too fast'],
     'powder:controls': ['It slides when I only wanted to turn', 'The right stick does two things at once'],
+    'flowsnow:balance': ['Burn runs out too fast', 'Diving off the line is not worth it'],
+    'flowsnow:controls': ['Carving feels heavy', 'The scrub barely slows me'],
     'tinyhawk:controls': ['Cannot tell when the stick is loaded', 'The camera loses me mid-trick'],
     'tinyhawk:idea': ['Give me a goal to chase', 'I want a line to follow'],
     'tiny2d:controls': ['Hard to tell where the lip is', 'The trick flick never comes out'],
@@ -197,6 +205,8 @@ const SPECIFIC = {
   fi: {
     'powder:balance': ['Portti on liian kaukana aukosta', 'Tehostus ylikuumenee liian nopeasti'],
     'powder:controls': ['Se liukuu kun halusin vain kääntyä', 'Oikea tatti tekee kahta asiaa yhtä aikaa'],
+    'flowsnow:balance': ['Palo loppuu liian nopeasti', 'Ladulta poikkeaminen ei kannata'],
+    'flowsnow:controls': ['Kaarto tuntuu raskaalta', 'Jarrutus ei juuri hidasta'],
     'tinyhawk:controls': ['En huomaa milloin tatti on ladattu', 'Kamera hukkaa minut tempun aikana'],
     'tinyhawk:idea': ['Anna jokin tavoite', 'Haluaisin linjan jota seurata'],
     'tiny2d:controls': ['Vaikea hahmottaa missä harja on', 'Temppunapsautus ei lähde koskaan'],
@@ -223,6 +233,8 @@ const SPECIFIC = {
   ja: {
     'powder:balance': ['ゲートが裂け目から遠すぎる', 'ブーストがすぐ過熱する'],
     'powder:controls': ['曲がりたいだけなのに滑る', '右スティックが二役で混乱する'],
+    'flowsnow:balance': ['バーンが早く切れすぎる', '踏み跡を外す価値がない'],
+    'flowsnow:controls': ['カービングが重い', 'スクラブがほとんど効かない'],
     'tinyhawk:controls': ['スティックが溜まったのが分からない', 'トリック中にカメラが見失う'],
     'tinyhawk:idea': ['追いかける目標がほしい', 'たどるラインがほしい'],
     'tiny2d:controls': ['頂がどこか分かりにくい', 'トリックの弾きが出ない'],
