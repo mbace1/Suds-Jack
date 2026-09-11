@@ -3,12 +3,12 @@
 // and Helsinki ambience breathe longer, immediate repeats are blocked, and
 // DECODE gets an uninterrupted analysis hold before normal cutting resumes.
 
-import { PixelScreen, shade, mix } from './screen.js?v=37';
-import { PAL, SECTOR_COLOR } from './palette.js?v=37';
-import { Toko } from './toko.js?v=37';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=37';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=41';
-import { preferredScenes } from './editorialmap.js?v=43';
+import { PixelScreen, shade, mix } from './screen.js?v=62';
+import { PAL, SECTOR_COLOR } from './palette.js?v=62';
+import { Toko } from './toko.js?v=62';
+import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=62';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=62';
+import { preferredScenes } from './editorialmap.js?v=62';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };

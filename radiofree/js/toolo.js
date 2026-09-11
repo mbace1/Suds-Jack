@@ -1,8 +1,8 @@
 // Radio Free Helsinki — Töölö tram street.
 // Quieter stone blocks, trees, tram rails and park-edge rhythm.
-import { PAL } from './palette.js?v=37';
-import { mix, shade } from './screen.js?v=37';
-import { drawTram } from './tram.js?v=38';
+import { PAL } from './palette.js?v=62';
+import { mix, shade } from './screen.js?v=62';
+import { drawTram } from './tram.js?v=62';
 const W=128,H=152; const ink=d=>mix(PAL.GREEN_DIM,PAL.AMBER_DIM,d);
 export function drawToolo(scr,t,d=0){
   scr.bands(0,0,W,60,[mix('#081119','#181107',d),mix('#11212a','#2a1d0b',d)]);

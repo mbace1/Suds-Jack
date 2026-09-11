@@ -17,6 +17,7 @@ const STR = {
   en: {
     'gate.blurb': 'Pirate wire out of the capital, read by Toko, who has never been asked to be impartial.',
     'gate.fiction': 'The events are real. The names are not. Neither are the techniques — those are real too.',
+    'wire.stale': 'NOT TODAY\u2019S BROADCAST \u2014 the newest morning could not be played',
     'gate.btn': '▶ Tune in',
 
     'off.tag': 'TRANSMISSION ENDS',
@@ -55,6 +56,7 @@ const STR = {
   fi: {
     'gate.blurb': 'Piraattilähetys pääkaupungista, lukijana Toko, jolta ei ole koskaan pyydetty puolueettomuutta.',
     'gate.fiction': 'Tapahtumat ovat todellisia. Nimet eivät. Keinot ovat.',
+    'wire.stale': 'EI TÄMÄN PÄIVÄN LÄHETYS \u2014 uusinta aamua ei saatu soimaan',
     'gate.btn': '▶ Viritä',
 
     'off.tag': 'LÄHETYS PÄÄTTYY',
@@ -93,6 +95,7 @@ const STR = {
   ja: {
     'gate.blurb': '首都から流れる海賊電波。読み手はトコ。中立でいてくれと頼まれたことは一度もない。',
     'gate.fiction': '出来事は実際のもの。名前は架空。手法は、実在する。',
+    'wire.stale': '本日の放送ではありません \u2014 最新の朝を再生できませんでした',
     'gate.btn': '▶ 受信する',
 
     'off.tag': '放送終了',

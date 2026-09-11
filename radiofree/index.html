@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=37">
+<link rel="manifest" href="manifest.webmanifest?v=62">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -84,6 +84,20 @@
   .archive-sel:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
   .dial { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+  /* A STALE WIRE HAS TO SAY SO. It sits in the masthead rather than over a post
+     because it is a fact about the station, not about the bulletin you happen
+     to be reading — and amber, because amber in this app means "what you are
+     being told is not the whole of it". */
+  .wire-status {
+    position: absolute; left: 0; right: 0; top: 100%;
+    margin: 0; padding: 2px 10px 3px;
+    font-family: var(--mono); font-size: 9px; letter-spacing: .12em;
+    color: var(--amber); background: rgba(255,180,58,.10);
+    border-top: 1px solid rgba(255,180,58,.35);
+    text-align: center; text-transform: uppercase;
+  }
+  .wire-status[hidden] { display: none; }
+
   /* with an archive present the dial no longer needs the auto margin */
   .archive:not([hidden]) ~ .dial { margin-left: 8px; }
   /* one station: the dial is a readout, so the jump buttons are gone */
@@ -410,20 +424,20 @@
     background: linear-gradient(to top,
       rgba(3,10,8,.94) 0%, rgba(3,10,8,.86) 45%, rgba(3,10,8,0) 100%);
     padding-top: 46px;
-    max-height: 62%;
+    max-height: 72%;
+    overflow-y: auto; overscroll-behavior: contain;
   }
+  /* NOTHING HERE IS CLAMPED. A headline cut off at two lines with an ellipsis
+     is a headline the station did not finish saying, and the second paragraph
+     of a bulletin is the one EDITORIAL.md builds the whole reframe around —
+     `bury the cost, keep it`. Both were clamped, and package.js then injected a
+     stylesheet that removed the second paragraph outright. The caption scrolls
+     instead: the copy is allowed to be as long as it is. */
   .post-caption .head {
     font-size: 19px; line-height: 1.2; margin-bottom: 6px;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-    overflow: hidden;
   }
-  /* max two lines of smaller text — until DECODE, which needs the room */
-  .post:not(.is-decoded) .bulletin {
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-    overflow: hidden; font-size: 13px;
-  }
-  .post:not(.is-decoded) .bulletin-line + .bulletin-line { margin-top: 0; }
-  .post:not(.is-decoded) .fiction { display: none; }
+  .post:not(.is-decoded) .bulletin { font-size: 13px; }
+  .post:not(.is-decoded) .bulletin-line + .bulletin-line { margin-top: 7px; }
   /* DECODE needs the room, and once the caption is 78% tall the scrim's
      transparent top lands in the middle of the picture — over a lit window,
      or over Toko's magenta, the amber plain readings fall miles under AA.
@@ -438,12 +452,18 @@
     padding-top: 22px;
   }
 
-  /* the rail has to sit above the lower third, and clear of it */
-  .rail { z-index: 3; bottom: auto; top: 58%; }
+  /* THE RAIL HAS TO CLEAR THE COPY, and 58% only cleared a headline clamped to
+     two lines. Unclamped, a three-line headline runs straight under the DECODE
+     button — which is both unreadable and a tap target sitting on text. It goes
+     to the top of the picture instead, where nothing else is. */
+  .rail { z-index: 3; bottom: auto; top: 13%; }
   .post-caption { z-index: 2; }
-  /* the signature badge lives bottom-left, so keep the copy out of its corner */
-  /* the copy used to be indented past the signature badge in the corner;
-     raising it off the bottom clears the badge on its own */
+  /* THE SIGNATURE BADGE lives bottom-left at 44px, and it was measured sitting
+     on top of the copy on every post in the feed. Raising the caption off the
+     bottom is not enough on a tall phone, so the fiction footer — the lowest
+     line, and the one the badge actually covered — is indented past it. */
+  .post .fiction { padding-left: 52px; }
+  .vertical .post .fiction, .clean .post .fiction { padding-left: 0; }
   .swipe-hint { display: none; }
 </style>
 </head>
@@ -473,22 +493,23 @@
     <button class="icon-btn" id="lang" aria-label="Language">EN</button>
     <button class="icon-btn" id="sound" aria-pressed="true" aria-label="Sound on or off">♪</button>
    </div>
+   <p class="wire-status" id="wireStatus" role="status" hidden></p>
   </header>
 
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=37"></script>
-<script type="module" src="../hub/shell.js?v=35"></script>
+<script type="module" src="js/main.js?v=62"></script>
+<script type="module" src="../hub/shell.js?v=62"></script>
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=37').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=62').catch(() => {}));
   }
 </script>
 
   <script type="module">
-    import { sign } from '../toko/js/signature.js?v=2';
+    import { sign } from '../toko/js/signature.js?v=62';
     sign({ corner: 'bottom-left' });
   </script>
 </body>

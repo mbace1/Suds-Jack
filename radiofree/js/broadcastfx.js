@@ -1,8 +1,8 @@
 // Radio Free Helsinki — reusable broadcast-direction overlays.
 // Tiny fixed-grid interventions: human foreground life and transmission cuts.
 
-import { PAL } from './palette.js?v=37';
-import { mix, shade } from './screen.js?v=37';
+import { PAL } from './palette.js?v=62';
+import { mix, shade } from './screen.js?v=62';
 
 const W = 128, H = 152;
 
@@ -18,8 +18,10 @@ const WALK = [
   { bob:1, hip:-1,armF: 0, armB: 0, handF: 0, handB: 0, kneeF:-1, kneeB: 0, footF:-1, footB: 0 },
 ];
 
-export function drawWalker(scr, x, y, phase, d, scale = 1, facing = 1, alpha = .94) {
-  const c = shade(mix('#071015', '#211508', d), alpha);
+// `dim` is a BRIGHTNESS FACTOR for the silhouette, not an opacity — a walker
+// is an occluder and is meant to be solid. `shade()` multiplies; see screen.js.
+export function drawWalker(scr, x, y, phase, d, scale = 1, facing = 1, dim = .94) {
+  const c = shade(mix('#071015', '#211508', d), dim);
   const f = WALK[((phase % WALK.length) + WALK.length) % WALK.length];
   const dir = facing >= 0 ? 1 : -1;
   const yy = y + f.bob * scale;

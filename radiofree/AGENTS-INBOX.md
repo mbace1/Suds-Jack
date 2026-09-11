@@ -280,3 +280,71 @@ same memory wall from further off.
 
 **Still open:** the `wafer` panel for `ram-discipline` — yours. It is much more
 visible now that the graphics actually air.
+
+---
+
+## Claude (2026-09-10) — the station was dark, and five things were hiding it
+
+Asked to check progress. The feed was serving `2026-08-29` to everybody, twelve
+days after it was written, with a black rectangle where the picture goes. None
+of it announced itself. Fixed, `v61 -> v62`, gate `49/62 -> 66/66`.
+
+**1. `sceneweather.js` painted the whole frame black after dark.** `shade()`
+MULTIPLIES a colour and returns opaque hex; the module was written believing the
+second argument was an opacity, so `night()` filled 128x152 with
+`shade('#020509', .16)` = `#000001`. Measured, all thirteen ambient scenes came
+out at mean luminance **1.1/255, max 29** against **13-19 / 159-195** with the
+pass working — two orders of magnitude, uniform across the set, which is what
+pointed at one shared cause rather than thirteen mistakes. It only fires on
+night/dusk/dawn off the Helsinki clock, so anyone who looked at midday in summer
+saw nothing wrong. `PixelScreen.wash()` now exists for translucency and every
+layer in that module uses it; `shade()` carries a comment saying what it is.
+
+**2. The newest episode had never aired.** `2026-09-01` failed the app's own
+validator — seven bulletins with no `{{...|...}}` in any language — so
+`loadWire` skipped it and played the one below. Correct behaviour, invisible
+result: `WIRE_INFO.errors` carried the reason and nothing on screen said so.
+Markup written for all seven in all three languages (deflations of wording that
+was already there, no new facts), and where a bulletin already had two sentences
+it is now the two paragraphs `EDITORIAL.md` asks for. **The gate now validates
+every episode in `wire/`** — the daily job validated what it generated, but
+nothing validated an episode a person committed by hand, which is how this one
+shipped. The masthead also says `NOT TODAY'S BROADCAST` when a fallback happens.
+
+**3. `package.js` was hiding the app's own features.** It injected a stylesheet
+at runtime — thirty-odd `!important` rules — that clamped the headline to two
+lines, set `.bulletin-line + .bulletin-line { display: none }` (deleting the
+second paragraph of every bulletin), and hid `.decode-btn`, `.tally` and
+**`.fiction`**. It also hard-disabled DECODE (`get decoded(){return false}`)
+while still shipping the button, which made `graphic.js` dead code and the
+sign-off tally a count of something that could not happen. All of it is gone;
+layout lives in `index.html`, DECODE cuts home to the graphic and holds, and the
+graphic is back in the ordinary beat cycle.
+
+**4. The gate could not read its own subject.** `sw.js` was reformatted to
+`const VERSION='v61';` and three regexes wanted the spaced form, so five shell
+checks graded against `undefined` and had been red — and scrolled past — for as
+long as that. Whitespace-tolerant now. With them working again they immediately
+found a real bug: **`broadcast-audio` was missing from the precache list**, so
+the offline promise had a hole in it.
+
+**5. Nine scheduled runs of the daily job have failed, all at
+`Require model secret`.** `ANTHROPIC_API_KEY` is still not a repo secret. **That
+one is the owner's and nothing here can fix it** — until it is set, no morning
+is generated at all, and the two guards above only stop a bad wire from airing
+silently; they cannot make a new one.
+
+**A new check, with a negative control.** `every ambient scene has a picture in
+it at every hour` renders all thirteen at 03/09/15/21 Helsinki and fails below
+mean 5 / max 60 — a floor set between the blackout (1.1 / 29) and the two
+dimmest legitimate scenes, `rooftops` and `merihaka` (13.3 / 83), both checked
+by eye. Verified failing by reinstating the bug. `every episode on disk would
+actually air` was verified the same way.
+
+**What is still open.** The `2026-08-29` episode is one paragraph per bulletin
+at a median of 18 words, against `EDITORIAL.md`'s two paragraphs (`2026-07-31`
+was 2 and 67). That is a desk question, not a code one — I did not rewrite
+someone else's copy to hit a word count. `PROGRAMMING.md` allows one `ODD WIRE`
+per transmission and that episode carries six in a row; nothing enforces the
+mix. And the ambient scenes are 128x152 in a post that is roughly 1:2, so the
+picture letterboxes — the plates are 144x276 for exactly that reason.

@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=37';
-import { Post, Reader } from './codec.js?v=37';
-import { Package } from './package.js?v=37';
+import { PAL, SECTOR_COLOR } from './palette.js?v=62';
+import { Post, Reader } from './codec.js?v=62';
+import { Package } from './package.js?v=62';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=37';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=37';
-import * as audio from './audio.js?v=37';
-import { PixelScreen } from './screen.js?v=37';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=37';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=62';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=62';
+import * as audio from './audio.js?v=62';
+import { PixelScreen } from './screen.js?v=62';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=62';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -93,6 +93,7 @@ function useLang(code) {
   paintGateLang();
   if (!booted) return;
   paintMastLang();
+  paintWireStatus();
   rebuildFeed();
 }
 
@@ -179,11 +180,30 @@ function buildArchive() {
   host.appendChild(sel);
 }
 
+// THE STATION SAYING IT IS STALE. `loadWire` degrades gracefully — an episode
+// that fails validation is skipped and the next one down plays — which is right,
+// and which is also how this feed spent twelve days serving a morning nobody had
+// asked for. The newest episode failed the validator on the day it was published
+// and the app said nothing at all: `WIRE_INFO.errors` carried
+// `episode 2026-09-01 unavailable; playing 2026-08-29` and no reader could ever
+// see it. A fallback that is invisible is indistinguishable from working.
+function paintWireStatus() {
+  const host = document.getElementById('wireStatus');
+  if (!host) return;
+  const stale = !!(WIRE_INFO.errors && WIRE_INFO.errors.length)
+    || (EPISODES.length && EPISODE && EPISODE !== EPISODES[0]);
+  host.hidden = CLEAN || !stale;
+  if (host.hidden) return;
+  host.textContent = t('wire.stale');
+  host.title = (WIRE_INFO.errors || []).join('\n');
+}
+
 function boot() {
   booted = true;
   paintSound();
   paintMastLang();
   buildArchive();
+  paintWireStatus();
   $('lang').onclick = () => useLang(nextLang());
   // TYPEWRITER OFF. The copy is set, not typed, and the per-character blips
   // are silenced with it — owner's call, the bulletins read better as text
