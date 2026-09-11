@@ -19,7 +19,7 @@
 // caching their files from out here would be two answers to the same question.
 // A narrower scope wins the page, so those keep controlling themselves.
 
-const VERSION = 'v70';
+const VERSION = 'v71';
 const CACHE = `suds-hub-${VERSION}`;
 
 const SHELL = [
