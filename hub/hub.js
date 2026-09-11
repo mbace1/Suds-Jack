@@ -11,7 +11,7 @@ const launchPath = game => game.id === 'slaykallio' ? `${game.path}?release=33` 
 import { GAMES, SKETCHES } from './games.js?v=47';
 import { drawMarquee } from './art.js?v=19';
 import * as feedback from './feedback.js?v=13';
-import * as topics from './topics.js?v=3';
+import * as topics from './topics.js?v=4';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';
 import { watchPad, padPresent } from './pad.js?v=9';
 import * as room from './arcade.js?v=5';

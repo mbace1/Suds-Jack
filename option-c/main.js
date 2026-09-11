@@ -1,7 +1,9 @@
 import * as T from './vendor/three.module.min.js';
 import {Reflector} from './vendor/Reflector.js';
+import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {create,unit,reachable,move,attack,forecast,intent,endTurn,nextRound,covers,N} from './core.js';
 const $=id=>document.getElementById(id),canvas=$('scene');
+$('home').href=new URL('../#optionc',location.href).href;
 let state=create(),busy=false,angle=.48,zoom=1,clock=0;
 const world=new T.Scene();world.background=new T.Color('#09121b');
 const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -13,7 +15,8 @@ world.add(new T.AmbientLight(0xb1c2cc,.35));
 const moon=new T.DirectionalLight(0xb6d5f0,2.6);moon.position.set(-6,12,6);moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);Object.assign(moon.shadow.camera,{left:-9,right:9,top:9,bottom:-9,near:.1,far:35});moon.shadow.bias=-.0002;moon.shadow.normalBias=.025;world.add(moon);
 const rim=new T.DirectionalLight(0x8bb9c9,.8);rim.position.set(8,6,-9);world.add(rim);
 const pitch=1.12,coord=v=>(v-4)*pitch;
-function mat(color,roughness=.65,metalness=0){return new T.MeshStandardMaterial({color,roughness,metalness});}
+const materialCache=new Map();
+function mat(color,roughness=.65,metalness=0){const key=`${color}/${roughness}/${metalness}`;if(!materialCache.has(key))materialCache.set(key,new T.MeshStandardMaterial({color,roughness,metalness}));return materialCache.get(key);}
 const materials={dark:mat('#172027'),steel:mat('#3b454b',.35,.7),rust:mat('#623b2d',.6,.5),trim:mat('#7c8b8e'),black:mat('#080e13'),amber:new T.MeshBasicMaterial({color:0xffc66b}),teal:mat('#287c7d',.54),orange:mat('#a95628',.65)};
 function box(w,h,d,x,y,z,m,parent=world){const geometry=new T.BoxGeometry(w,h,d);if(m.map){const p=geometry.attributes.position,n=geometry.attributes.normal,uv=geometry.attributes.uv;for(let i=0;i<p.count;i++){const nx=Math.abs(n.getX(i)),ny=Math.abs(n.getY(i));uv.setXY(i,(nx>.5?p.getZ(i):p.getX(i))*.55,(ny>.5?p.getZ(i):p.getY(i))*.55);}uv.needsUpdate=true;}const mesh=new T.Mesh(geometry,m);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
 function cyl(r,h,x,y,z,m,parent=world){const mesh=new T.Mesh(new T.CylinderGeometry(r,r,h,20),m);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
@@ -39,7 +42,7 @@ async function build(){
  // Keep concrete's microstructure without multiplying the already-dark scan twice.
  wallmat.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\n diffuseColor.rgb *= 1.8;');};
  box(10.4,.65,10.4,0,-.36,0,wallmat);
- for(let z=0;z<N;z++)for(let x=0;x<N;x++){const m=surface.clone();m.color.multiplyScalar(.82+((x*17+z*13)%9)/35);const tile=box(pitch-.018,.055,pitch-.018,coord(x),-.028,coord(z),m);tile.userData={tile:true,x,z};tiles.push(tile);}
+ for(let z=0;z<N;z++)for(let x=0;x<N;x++){const tile=box(pitch-.018,.055,pitch-.018,coord(x),-.028,coord(z),surface);tile.userData={tile:true,x,z};tiles.push(tile);}
  for(let i=0;i<9;i++){box(pitch-.014,1.65,.18,coord(i),.825,-5.12,wallmat);box(pitch-.014,.10,.27,coord(i),1.68,-5.12,wallmat);}
  box(.18,1.65,1.9,-5.12,.825,-4.25,wallmat);
  // Back wall shutter, electrical cabinet, drainpipes and wall-mounted lamps.
@@ -69,6 +72,11 @@ async function build(){
  const mirror=new Reflector(new T.PlaneGeometry(10.07,10.07),{textureWidth:512,textureHeight:512,multisample:0,shader:wetShader});mirror.rotation.x=-Math.PI/2;mirror.position.y=.007;mirror.material.transparent=true;mirror.material.depthWrite=false;world.add(mirror);
  const reflect=mirror.onBeforeRender;let reflectionAt=0;mirror.onBeforeRender=function(...args){if(performance.now()-reflectionAt<50)return;reflectionAt=performance.now();reflect.apply(this,args);};
  for(let i=0;i<15;i++)vegetation(-4.8+i*.67,-4.76+(i%3)*.11);
+ // Submit stationary geometry by shared material. The original hundreds of
+ // tiny grass and wall meshes made software rendering stall enemy turns.
+ world.updateMatrixWorld(true);const batches=new Map();
+ world.traverse(o=>{if(o.isMesh&&o!==mirror&&!Array.isArray(o.material)){const key=o.material;const list=batches.get(key)||[];list.push(o);batches.set(key,list);}});
+ for(const [material,meshes] of batches){if(meshes.length<2)continue;const copies=meshes.map(o=>o.geometry.clone().applyMatrix4(o.matrixWorld));const geometry=mergeGeometries(copies,false);for(const g of copies)g.dispose();if(!geometry)continue;const merged=new T.Mesh(geometry,material);merged.castShadow=meshes.some(o=>o.castShadow);merged.receiveShadow=meshes.some(o=>o.receiveShadow);for(const o of meshes){o.removeFromParent();o.geometry.dispose();}world.add(merged);}
  const data=await fetch('./assets/training-figure.json').then(r=>r.json());
  for(const u of state.units){const group=new T.Group();world.add(group);const parts={};
   for(const p of data){const geom=new T.BufferGeometry();geom.setAttribute('position',new T.Float32BufferAttribute(p.vertices,3));geom.setAttribute('normal',new T.Float32BufferAttribute(p.normals,3));

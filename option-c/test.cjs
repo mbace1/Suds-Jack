@@ -3,7 +3,7 @@ fs.mkdirSync('option-c/.dream-loop',{recursive:true});
 (async()=>{const core=await import('./core.js');
  const s=core.create();assert.equal(core.move(s,'e1',1,1),null);assert.equal(core.attack(s,'scout','anchor'),null);assert.equal(core.move(s,'scout',3,5),null);
  assert(core.move(s,'scout',2,5));assert.equal(core.move(s,'scout',2,4),null);assert(core.endTurn(s));assert.equal(core.endTurn(s),false);core.nextRound(s);assert.equal(s.round,2);assert(!core.unit(s,'scout').moved);
- const b=await chromium.launch({headless:true,...(process.env.BROWSER_PATH?{executablePath:process.env.BROWSER_PATH}:process.platform==='win32'?{executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{})});
+ const b=await chromium.launch({headless:true,...(process.env.C_SOFTWARE?{args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}:{}),...(process.env.BROWSER_PATH?{executablePath:process.env.BROWSER_PATH}:process.platform==='win32'?{executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{})});
  try {for(const touch of [false,true]){
   const p=await b.newPage({viewport:touch?{width:390,height:844}:{width:1600,height:1000},hasTouch:touch,isMobile:touch});const errors=[];p.on('pageerror',e=>errors.push(e.message));
   const click=async sel=>{const el=p.locator(sel).first();await el[touch?'tap':'click']();};
