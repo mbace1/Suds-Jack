@@ -607,35 +607,26 @@ export const GAMES = [
       tagline: 'Kerronnallinen strategiapeli: näe koko vuoden 2003 Kallio, aloita Piritorilta, tee ensimmäinen voitto ja rakenna väen, tiedon ja reittien verkosto.',
       lineage: 'Dope Wars × Mini Metro × East of Eden',
       controls: 'valitse paikka kartalta · tee valintoja · hoida kirjanpitoa · taistele muodostelmissa',
-      note: 'Godot-versio — viisi pelitilaa, seitsemän päivää, muodostelmataistelut · fi/en/ja',
+      note: 'Act I v4.47 — Kallio 2003, hahmokohtaukset ja vierailut · fi/en/ja',
     },
     ja: {
       tagline: '2003年のカッリオ全域を見渡し、ピリトリの最初の取引から人・情報・路線のネットワークを築く物語ストラテジー。',
       lineage: 'ドープウォーズ × ミニメトロ × エデンの東',
       controls: '地図で場所を選ぶ · 選択する · 帳簿を管理する · 陣形戦を指揮する',
-      note: 'Godot版 — 5つのモード、7日間、陣形戦 · fi/en/ja',
+      note: 'Act I v4.47 — 2003年カッリオ、人物シーンと訪問 · fi/en/ja',
     },
     status: 'active',
-    note: 'the build the game is written in — five modes, one saved seven-day campaign, and an Eden that stays a mystery',
+    note: 'Act I v4.47 — Kallio 2003, character scenes, optional visits and a saved campaign',
     title: 'Piritori → Eden',
     tagline: 'A narrative strategy game across the full 2003 Kallio board: begin at Piritori, make the first margin, then build a network of people, information and routes.',
     lineage: 'Dope Wars × Mini Metro × East of Eden',
     tags: ['strategy', 'economy', 'narrative'],
     controls: 'choose a map location · make narrative choices · manage the ledger · command formation battles',
-    // TWO CABINETS, ONE GAME, and that is deliberate rather than untidy.
-    //
-    // Owner ruling 2026-08-25 (piritori-eden PORTING.md): the JS build is where
-    // behaviour is defined and the Godot build is the PORT, kept for landscape
-    // and a controller. Both are real builds and both are deployed, so both get
-    // a cabinet. Before this the port had the only cabinet and the build the
-    // game is written in was reachable by typing its address — which is the
-    // wrong way round the moment JS became primary.
-    //
-    // 1.4MB, and it is not in this repo — it is built from `web/` in
-    // mbace1/piritori-eden — so `inRepo: false` keeps the smoke gate from
-    // trying to fetch it out of this tree.
-    path: 'piritori/',
+    // Canonical campaign is published by piritori-eden; this bridge keeps a local launch URL.
+    path: 'piritori/act1.html',
+    // The bridge is local; the actual game and its return link deploy from piritori-eden.
     inRepo: false,
+    deployedOnly: true,
     external: 'mbace1/piritori-eden',
     accent: '#e8c24a',
     art: 'nightmap',

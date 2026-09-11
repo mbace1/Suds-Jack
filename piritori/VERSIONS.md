@@ -10,6 +10,10 @@
 > (`PORTING.md` §2): the block names what the Godot side must re-port, so it
 > never has to read a diff to find out.
 
+## v4.47 — Act I campaign launch
+
+The Hub now opens the canonical piritori-eden/web build through act1.html: character scenes, optional visits and chapter income. Gameplay and port notes are maintained in the source repository.
+
 ## v4.29 — 2026-08-31
 
 **The grid tiles themselves were still the wrong shape after v4.28** —
