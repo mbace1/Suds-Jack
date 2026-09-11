@@ -76,7 +76,7 @@ async function build(){
  // tiny grass and wall meshes made software rendering stall enemy turns.
  world.updateMatrixWorld(true);const batches=new Map();
  world.traverse(o=>{if(o.isMesh&&o!==mirror&&!Array.isArray(o.material)){const key=o.material;const list=batches.get(key)||[];list.push(o);batches.set(key,list);}});
- for(const [material,meshes] of batches){if(meshes.length<2)continue;const copies=meshes.map(o=>o.geometry.clone().applyMatrix4(o.matrixWorld));const geometry=mergeGeometries(copies,false);for(const g of copies)g.dispose();if(!geometry)continue;const merged=new T.Mesh(geometry,material);merged.castShadow=meshes.some(o=>o.castShadow);merged.receiveShadow=meshes.some(o=>o.receiveShadow);for(const o of meshes){o.removeFromParent();o.geometry.dispose();}world.add(merged);}
+ for(const [material,meshes] of batches){if(meshes.length<2)continue;const copies=meshes.map(o=>(o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone()).applyMatrix4(o.matrixWorld));const geometry=mergeGeometries(copies,false);for(const g of copies)g.dispose();if(!geometry)continue;const merged=new T.Mesh(geometry,material);merged.castShadow=meshes.some(o=>o.castShadow);merged.receiveShadow=meshes.some(o=>o.receiveShadow);for(const o of meshes){o.removeFromParent();o.geometry.dispose();}world.add(merged);}
  const data=await fetch('./assets/training-figure.json').then(r=>r.json());
  for(const u of state.units){const group=new T.Group();world.add(group);const parts={};
   for(const p of data){const geom=new T.BufferGeometry();geom.setAttribute('position',new T.Float32BufferAttribute(p.vertices,3));geom.setAttribute('normal',new T.Float32BufferAttribute(p.normals,3));
