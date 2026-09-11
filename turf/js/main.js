@@ -1,4 +1,4 @@
-import { fieldGuide, bindActivation } from './field-guide.js?v=1';
+import { fieldGuide, bindActivation } from './field-guide.js?v=2';
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
@@ -10,7 +10,7 @@ import {
 } from './combat.js?v=20';
 import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=24';
 import { createCamera, MIN_TILE_W } from './camera.js?v=3';
-import { createInputHandler } from './input.js?v=19';
+import { createInputHandler } from './input.js?v=20';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
@@ -18,6 +18,7 @@ import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2
 import { autoTurn } from './autoplay.js?v=6';
 import { PLATES } from './plates.js?v=1';
 import { audio } from './audio.js?v=1';
+import { watchPad } from '../../hub/pad.js?v=9';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage'), plate = $('plate');
@@ -473,13 +474,13 @@ function applyMute() {
   controls.mute.setAttribute('aria-pressed', String(!m));
 }
 try { audio.setMuted(localStorage.getItem(MUTE_KEY) === '1'); } catch { /* private mode */ }
-controls.mute.addEventListener('click', () => {
+bindActivation(controls.mute, () => {
   audio.setMuted(!audio.isMuted());
   try { localStorage.setItem(MUTE_KEY, audio.isMuted() ? '1' : '0'); } catch { /* private mode */ }
   applyMute();
 });
 applyMute();
-controls.auto.addEventListener('click', () => setAuto(!autoOn));
+bindActivation(controls.auto, () => setAuto(!autoOn));
 
 function attackText(state, attackerName, evt) {
   const target = getUnit(state, evt.targetUid);
@@ -619,7 +620,8 @@ function renderAbilities() {
     btn.disabled = full || sel.actedAction;
     btn.title = full ? 'Already loaded' : 'Reload — costs your action, never your move';
     btn.innerHTML = `<span>Reload</span><span class="cost">${roundsLeft(sel)}/${mag}</span>`;
-    btn.addEventListener('pointerup', e => { e.preventDefault(); input.reloadSelected(); });
+    btn.dataset.control = 'reload';
+    bindActivation(btn, () => input.reloadSelected());
     abilitiesEl.appendChild(btn);
   }
   for (const ab of abilitiesFor(sel, DATA.abilities)) {
@@ -640,8 +642,8 @@ function renderAbilities() {
     btn.title = ok ? `${line} — ${ab.blurb}` : `${ab.name} — ${whyNot(sel, ab)}`;
     if (!weaponSuits(sel, ab)) btn.classList.add('inert');
     btn.innerHTML = `<span class="nm">${ab.name}<em>${line}</em></span><span class="cost">${ab.cost}</span>`;
-    btn.addEventListener('pointerup', e => {
-      e.preventDefault();
+    btn.dataset.control = `ability-${ab.id}`;
+    bindActivation(btn, () => {
       input.armAbility(ab.id);
     });
     abilitiesEl.appendChild(btn);
@@ -698,7 +700,8 @@ function autoStep() {
 const AUTO_MS = 420;
 
 function updateHud() {
-  $('fieldGuide').textContent = fieldGuide(state);
+  const focused = document.activeElement?.dataset?.control;
+  $('fieldGuide').textContent = fieldGuide(state, DATA.abilities);
   updateOffscreen();
   topbar.turn.textContent = state.turn === 'player' ? 'Your Turn' : 'Enemy Turn';
   topbar.turn.className = state.turn === 'enemy' ? 'enemy' : '';
@@ -714,6 +717,7 @@ function updateHud() {
   for (const u of state.units.filter(u => u.faction === 'player')) {
     const btn = document.createElement('button');
     btn.className = 'unitBtn' + (u.hp <= 0 ? ' dead' : '') + (state.selected === u.uid ? ' selected' : '') + (u.hp > 0 && !canUnitAct(u) ? ' done' : '');
+    btn.dataset.control = `unit-${u.uid}`;
     btn.disabled = u.hp <= 0 || state.turn !== 'player';
     const frac = Math.max(0, u.hp / u.maxHp);
     const portrait = u.portrait ? `<img class="portrait" src="${u.portrait}" alt="">` : '';
@@ -723,6 +727,7 @@ function updateHud() {
   }
 
   renderAbilities();
+  renderTargets();
 
   const sel = state.selected ? getUnit(state, state.selected) : null;
   if (sel) {
@@ -746,6 +751,34 @@ function updateHud() {
   } else {
     selPortraitEl.hidden = true;
     selTextEl.textContent = state.turn === 'player' ? 'Select an operator.' : '';
+  }
+  if (focused) {
+    const replacement = document.querySelector(`[data-control="${CSS.escape(focused)}"]`);
+    if (replacement && !replacement.disabled) replacement.focus({ preventScroll: true });
+  }
+}
+
+// These use the same decision path as a board tap, including the firing-position
+// choice. Large controls make overlapping sprites optional on a phone.
+function renderTargets() {
+  const row = $('targets'); row.replaceChildren();
+  const sel = state.selected && getUnit(state, state.selected);
+  if (!sel || state.turn !== 'player' || state.result || sel.actedAction) return;
+  const ability = DATA.abilities.find(a => a.id === state.armedAbility);
+  const self = ability && ['self', 'adjacent-all'].includes(ability.shape);
+  const ids = ability
+    ? self ? (state.abilityTiles?.length ? [sel.uid] : []) : (state.abilityTiles || []).map(t => t.uid).filter(Boolean)
+    : (state.attackTiles || []);
+  for (const uid of [...new Set(ids)]) {
+    const target = getUnit(state, uid); if (!target || target.hp <= 0) continue;
+    const btn = document.createElement('button');
+    btn.className = 'targetBtn'; btn.dataset.control = `target-${uid}`;
+    const forecast = state.forecasts?.get(uid);
+    const verb = state.aimUid === uid ? 'Confirm suggested shot' : ability ? ability.name : 'Attack';
+    btn.textContent = self ? `Use ${ability.name}` : `${verb}: ${target.name}`;
+    if (!ability && forecast) btn.textContent += ` · ${Math.round(forecast.chance * 100)}% · ${forecast.damage} dmg`;
+    bindActivation(btn, () => input.targetByUid(uid));
+    row.appendChild(btn);
   }
 }
 
@@ -877,9 +910,11 @@ function renderLevelUps() {
       const btn = document.createElement('button');
       btn.className = 'offerBtn' + (weaponSuits(u, ab) ? '' : ' inert');
       btn.innerHTML = `<b>${ab.name}</b><em>${line} · costs ${ab.cost}</em><span>${ab.blurb}</span>`;
-      btn.addEventListener('pointerup', e => {
-        e.preventDefault();
-        if (learnSkill(state, u.uid, id, DATA.abilities).ok) { saveProgress(state); renderLevelUps(); }
+      bindActivation(btn, e => {
+        if (learnSkill(state, u.uid, id, DATA.abilities).ok) {
+          saveProgress(state); renderLevelUps();
+          if (e.type === 'click') (levelUpsEl.querySelector('button') || resultAgain).focus();
+        }
       });
       row.appendChild(btn);
     }
@@ -955,6 +990,27 @@ bindActivation(controls.endTurn, e => { e.preventDefault(); input && input.endTu
 // pad reticle to appear — see the comment on cancelSelection in input.js.
 bindActivation(controls.cancel, e => { e.preventDefault(); input && input.cancelSelection(false); });
 
+// The board reader starts after boot. Menus need their own path so a pad-only
+// player can start, choose a skill, continue and retry without reaching for a mouse.
+function menuButtons() {
+  const menu = !titleEl.hidden ? titleEl : !resultEl.hidden ? resultEl : null;
+  return menu ? [...menu.querySelectorAll('button:not(:disabled)')] : [];
+}
+watchPad({
+  dir(dx, dy) {
+    if (!dx && !dy) return;
+    const buttons = menuButtons(); if (!buttons.length) return;
+    const i = buttons.indexOf(document.activeElement);
+    buttons[(i + (dx || dy) + buttons.length) % buttons.length].focus();
+  },
+  press(i) {
+    if (i !== 0) return;
+    const buttons = menuButtons(); if (!buttons.length) return;
+    const button = buttons.includes(document.activeElement) ? document.activeElement : buttons[0];
+    button.click(); // native activation enters the same deduplicated handler
+  },
+});
+
 // Console/test hook, same shape as every other game's (__hd, __dc, __sj):
 // state for inspection, the commands a click ultimately calls, and boot()
 // to start a fresh encounter without going through the title screen.
@@ -1005,9 +1061,9 @@ loadData().then(data => {
 // The buttons are the discoverable path — a pinch is invisible and a wheel
 // does not exist on a phone — and they carry the current percentage so the
 // setting is legible rather than a pair of unlabelled arrows.
-if (zoomIn) zoomIn.addEventListener('click', () => setZoom(userZoom * 1.2, true));
-if (zoomFit) zoomFit.addEventListener('click', () => setZoom(fitZoom(), true));
-if (zoomOut) zoomOut.addEventListener('click', () => setZoom(userZoom / 1.2, true));
+if (zoomIn) bindActivation(zoomIn, () => setZoom(userZoom * 1.2, true));
+if (zoomFit) bindActivation(zoomFit, () => setZoom(fitZoom(), true));
+if (zoomOut) bindActivation(zoomOut, () => setZoom(userZoom / 1.2, true));
 window.addEventListener('keydown', e => {
   if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   if (e.key === '+' || e.key === '=') { setZoom(userZoom * 1.2, true); e.preventDefault(); }
