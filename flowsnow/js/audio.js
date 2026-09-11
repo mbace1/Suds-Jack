@@ -60,6 +60,12 @@ export class Audio {
   }
   _tone(freq, dur, gain = 0.25, type = 'sine') {
     if (!this.ctx) return;
+    // The envelope RAMPS EXPONENTIALLY to `gain`, and an exponential ramp to
+    // zero is a RangeError, not a silence. A landing's thud is scaled by its
+    // impact and a grazing re-contact has an impact of exactly 0 — which is
+    // most landings on rolling ground — so this threw out of the physics step
+    // and cost the frame its render. A tone nobody can hear is not played.
+    if (!(gain > 0.0002)) return;
     const c = this.ctx, t = c.currentTime;
     const o = c.createOscillator(); o.type = type; o.frequency.value = freq;
     const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
