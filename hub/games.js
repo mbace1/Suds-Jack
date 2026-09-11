@@ -28,6 +28,17 @@
 
 export const GAMES = [
   {
+    id: 'optionc', title: 'OPTION C · 3D TEST', status: 'active',
+    path: 'option-c/', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
+    tagline: 'Two operators. Four opponents. A fresh 3D tactics trial.',
+    lineage: 'Piritori battle exploration · Dream Loop',
+    tags: ['3D', 'tactics', 'test'],
+    controls: 'tap/click to select, move and attack · drag to rotate · +/− zoom',
+    note: 'C.02 — separate prototype. Pixel 10 Pro and iPad M2 testing; campaign integration pending.',
+    fi: {tagline:'Kaksi taistelijaa. Neljä vastustajaa. Uusi 3D-taktiikkakokeilu.', controls:'napauta tai klikkaa: valitse, liiku ja hyökkää · vedä: käännä kameraa · +/−: zoomaa', note:'C.02 — erillinen prototyyppi. Testilaitteet: Pixel 10 Pro ja iPad M2. Kampanjaliitos myöhemmin.'},
+    ja: {tagline:'味方2人、敵4人。新しい3D戦術テスト。', controls:'タップ・クリックで選択、移動、攻撃 · ドラッグで回転 · +/−でズーム', note:'C.02 — 独立した試作。Pixel 10 ProとiPad M2でテスト予定。キャンペーン連携は後日。'},
+  },
+  {
     id: 'concrete', title: 'CONCRETE', status: 'active', path: 'concrete/',
     inRepo: true, pad: 'native', accent: '#dafa45', art: 'warehouse',
     score: { key: 'concrete-best', fmt: 'points' },
