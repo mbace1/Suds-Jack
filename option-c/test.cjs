@@ -20,7 +20,7 @@ fs.mkdirSync('option-c/.dream-loop',{recursive:true});
     s=await p.evaluate(()=>__c.snapshot());const actor=core.unit(s,id),targets=s.units.filter(v=>v.team&&v.hp>0).map(v=>({v,f:core.forecast(actor,v)})).filter(v=>v.f).sort((a,b)=>(b.f.damage>=b.v.hp)-(a.f.damage>=a.v.hp)||b.f.damage-a.f.damage);
     if(targets.length){await click(`[data-target="${targets[0].v.id}"]`);await p.waitForFunction(()=>!document.querySelector('#end').disabled||__c.snapshot().result);}
    }
-   const s=await p.evaluate(()=>__c.snapshot());if(s.result)break;await click('#end');await p.waitForFunction(()=>__c.snapshot().turn==='player'||__c.snapshot().result,{},{timeout:20000});
+   const s=await p.evaluate(()=>__c.snapshot());if(s.result)break;console.log('Enemy phase',touch?'touch':'mouse',s.round,await p.evaluate(()=>__c.metrics()));await click('#end');await p.waitForFunction(()=>__c.snapshot().turn==='player'||__c.snapshot().result,{},{timeout:20000}).catch(async e=>{console.error('Enemy timeout',await p.evaluate(()=>({state:__c.snapshot(),metrics:__c.metrics(),visibility:document.visibilityState,hint:document.querySelector('#hint').textContent})),errors);throw e;});
   }
   const final=await p.evaluate(()=>__c.snapshot());assert.equal(final.result,'victory');assert(final.log.some(e=>e.type==='move'));assert(final.log.some(e=>e.type==='attack'));await p.screenshot({path:`option-c/.dream-loop/victory-${touch?'touch':'mouse'}.png`});
   await click('#restart');assert.equal((await p.evaluate(()=>__c.snapshot())).round,1);
