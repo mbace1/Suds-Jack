@@ -9,7 +9,7 @@ import {
 	TriangleStripDrawMode,
 	TrianglesDrawMode,
 	Vector3,
-} from './three.module.min.js';
+} from './three.module.min.js?v=185';
 
 /**
  * @module BufferGeometryUtils
@@ -1499,3 +1499,4 @@ export {
 	mergeGroups,
 	toCreasedNormals
 };
+
