@@ -105,7 +105,13 @@ const rootLog = rootLogOwner();
 const out = {};
 const missing = [];
 for (const g of [...GAMES, ...EXTRA]) {
-  const dir = path.join(ROOT, g.path);
+  // A catalogue `path` is a URL, not a directory: Flash Prince's is
+  // `flashprince/#flooded-city`, because the cabinet deep-links into the game.
+  // Joining that onto ROOT asks for a folder named `#flooded-city`, which is
+  // never there — so the cabinet was reported as unsourceable on every run
+  // while its log sat in plain sight one level up, and the number in
+  // versions.json (v68, correct) was flagged as drift nobody could fix.
+  const dir = path.join(ROOT, g.path.split(/[#?]/)[0]);
   if (!existsSync(dir) || !statSync(dir).isDirectory()) { missing.push(`${g.id} (not here)`); continue; }
   const owned = rootLog && rootLog.id === g.id && rootLog.v
     ? { v: rootLog.v.v, n: rootLog.v.n, from: 'VERSIONS.md' } : null;
@@ -148,7 +154,14 @@ if (process.argv.includes('--check')) {
       bad.push(`${id}: versions.json v${w.v}, its log says v${r.v}  (${dir})`);
     }
   }
+  // `inRepo: false` says the cabinet's source lives in another repository —
+  // toko-drop-godot and piritori-godot are both built elsewhere and their
+  // numbers are written here by hand. A tree that cannot source one of those
+  // is not drifting, it is doing exactly what the flag says, and reporting it
+  // every run trains people to read past the list.
+  const elsewhere = new Set(GAMES.filter(g => g.inRepo === false).map(g => g.id));
   for (const [id, w] of Object.entries(was)) {
+    if (!out[id] && elsewhere.has(id)) continue;
     if (!out[id]) bad.push(`${id}: in versions.json (v${w.v}) but the tree cannot source it`);
     else if (w.from === 'VERSIONS.md' && out[id].from !== 'VERSIONS.md') {
       bad.push(`${id}: versions.json claims a log this tree does not have`);

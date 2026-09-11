@@ -120,8 +120,13 @@
     "from": "VERSIONS.md"
   },
   "tokolive": {
-    "v": "18",
-    "n": 18000,
+    "v": "19",
+    "n": 19000,
+    "from": "VERSIONS.md"
+  },
+  "piritori": {
+    "v": "3.1",
+    "n": 3001,
     "from": "VERSIONS.md"
   }
 }

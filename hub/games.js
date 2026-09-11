@@ -201,6 +201,7 @@ export const GAMES = [
   },
   {
     id: 'powder',
+    score: { key: 'powderBest', fmt: 'points' },
     fi: {
       tagline: 'Rakettikelkka avoimella tasangolla, jonka halkaisee kanjoni. Turbiini kiihtyy viiveellä, hiekka vajoaa ja siirtyy allasi, ja liukumasta pääsee pois vastaohjauksella.',
       lineage: 'Wipeout × MotorStorm × lumilautailu',
@@ -223,7 +224,7 @@ export const GAMES = [
     controls: 'left stick steers and throttles · right stick is weight and camera · WASD / arrows · Space boost · Shift spoiler · gamepad',
     path: 'powder/',
     inRepo: true,
-    accent: '#d7a35c',
+    accent: '#c8a0e8',
     art: 'powder',
   },
   {
@@ -314,23 +315,23 @@ export const GAMES = [
       tagline: 'Jokainen liike viedään loppuun. Riipu, kiipeä ja vedä ase esiin ennen kuin hän ehtii.',
       lineage: 'Another World × Flashback × Prince of Persia',
       controls: '← → kävele (pidä = juoksu) · ↑ hyppy ja kiipeäminen · ↓ kyykky · E ase · X ammu',
-      note: 'neljätoista ruutua viidakosta hautakammioon ja takaisin — monikielisyys ja äänet vielä kesken',
+      note: 'v68 — kokonainen reitti: turvahuone, pystysuora hissi, sähköinen tulva, lautat ja tallentuvat tarkistuspisteet',
     },
     ja: {
       tagline: '始めた動きは必ず終わる。ぶら下がり、よじ登り、相手より先に銃を抜く。',
       lineage: 'Another World × Flashback × Prince of Persia',
       controls: '← → 歩く（長押しで走る）· ↑ ジャンプ／よじ登り · ↓ しゃがむ · E 銃 · X 撃つ',
-      note: 'ジャングルから墓所へ、そしてまた戻る十四画面 — 多言語と音はまだこれから',
+      note: 'v68 — 警備室、垂直リフト、帯電した洪水、渡し台、進行を保存するチェックポイント',
     },
     pad: 'native',
     status: 'active',
-    note: 'fourteen screens from the jungle to the tomb and back — new, and still being tuned',
+    note: 'v68 — a complete post-crown route with a vertical lift, electric spillway, alternate ferries and persistent checkpoints',
     title: 'Flash Prince',
     tagline: 'Every move you start, you finish. Hang, climb, and draw before he does.',
     lineage: 'Another World × Flashback × Prince of Persia',
     tags: ['cinematic', 'polygon', 'canvas'],
-    controls: '← → walk (hold to run) · ↑ jump & climb · ↓ crouch · E pistol · X fire',
-    path: 'flashprince/',
+    controls: '← → walk/run · ↑ jump/climb · E pistol · X fire · Shift shield',
+    path: 'flashprince/#flooded-city',
     inRepo: true,
     accent: '#c8ee5a',
     art: 'ledge',
@@ -550,22 +551,22 @@ export const GAMES = [
       note: 'Godot版 — 5つのモード、7日間、陣形戦 · fi/en/ja',
     },
     status: 'active',
-    note: 'Godot build — five modes, one saved seven-day campaign, and an Eden that stays a mystery',
+    note: 'the build the game is written in — five modes, one saved seven-day campaign, and an Eden that stays a mystery',
     title: 'Piritori → Eden',
     tagline: 'A narrative strategy game across the full 2003 Kallio board: begin at Piritori, make the first margin, then build a network of people, information and routes.',
     lineage: 'Dope Wars × Mini Metro × East of Eden',
     tags: ['strategy', 'economy', 'narrative'],
     controls: 'choose a map location · make narrative choices · manage the ledger · command formation battles',
-    // The Godot port replaced the JS prototype here. It is a WebAssembly build
-    // and lives only on the deployed site — `inRepo: false` because main does
-    // not carry the 63MB artefact, so the smoke gate must not try to fetch it.
-    // `deployedOnly: true` tells the gate's own "every visible cabinet is in
-    // the source tree" check that this is a deliberate, standing exception
-    // rather than an accidentally-imported production-only link — the thing
-    // that check exists to catch.
-    path: 'piritori-godot/',
-    inRepo: false,
-    deployedOnly: true,
+    // This is the JS build, and it is the cabinet's own folder. It pointed at
+    // `piritori-godot/` for a while — which is the OTHER cabinet's folder, so
+    // two entries addressed one directory and this one was marked
+    // `inRepo: false` even though main carries piritori/ in full. The gate
+    // stopped checking a 128MB game that was sitting right there. The Godot
+    // build has its own entry below; a port does not inherit the original's
+    // address. Source: github.com/mbace1/piritori-eden
+    path: 'piritori/',
+    inRepo: true,
+    external: 'mbace1/piritori-eden',
     accent: '#e8c24a',
     art: 'nightmap',
   },

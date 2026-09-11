@@ -396,16 +396,32 @@ function check(name, cond) {
   // this caught feedback.js at ?v=7 in sw.js while the page had already moved
   // to ?v=9, which is a hub that loads online and is blank on a plane. There is
   // no build step to generate it, so it is checked instead.
+  //
+  // It asks the WALKER, not a second pattern of its own. The first version of
+  // this check matched `hub/*.js` out of index.html and hub.js — which is the
+  // hand-kept list with extra steps all over again: the counter at the top of
+  // the page is twelve modules under toko/ and not one of them was looked at,
+  // and hub-entry.js's dynamic imports were invisible to it. So it green-lit a
+  // worker pinned at `hub/hub.js?v=46` while the page asked for `?v=81`,
+  // because withShell's LF-only regex had never matched a CRLF sw.js and no
+  // deploy had ever written the list it printed. Comparing the walk against
+  // what is actually in the file is the only form of this check that can see
+  // a generator that silently does nothing.
   const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-  const pageSrc = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const hubSrc = fs.readFileSync(path.join(ROOT, 'hub', 'hub.js'), 'utf8');
-  const needed = new Set([
-    ...(pageSrc.match(/hub\/[a-z0-9]+\.(?:js|css)\?v=\d+/g) ?? []),
-    ...[...hubSrc.matchAll(/from '\.\/([a-z0-9]+\.js\?v=\d+)'/g)].map(m => `hub/${m[1]}`),
-  ]);
-  const absent = [...needed].filter(u => !swSrc.includes(u));
-  check(`the offline shell names every module the page asks for (${needed.size})${absent.length ? ` — missing ${absent}` : ''}`,
-    absent.length === 0);
+  const { shellOf } = await import('../scripts/sw-shell.mjs');
+  const walked = shellOf(ROOT, f => {
+    try { return fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch { return null; }
+  });
+  // `\r?$` — sw.js has MIXED endings, so a bare `$` reads some lines and not
+  // others, and a check that silently sees two thirds of a list is worse than
+  // one that sees none.
+  const listed = [...swSrc.matchAll(/^ {2}'\.\/([^'\r]*)',\r?$/gm)].map(m => m[1])
+    .filter(u => u !== '' && u !== 'index.html');
+  const absent = walked.filter(u => !listed.includes(u));
+  const extra = listed.filter(u => !walked.includes(u));
+  check(`the offline shell IS the page's module graph (${walked.length})`
+    + `${absent.length ? ` — missing ${absent}` : ''}${extra.length ? ` — stale ${extra}` : ''}`,
+    absent.length === 0 && extra.length === 0);
 
   // The live floor deliberately removed search/tag chrome and the randomizer;
   // their stale tests previously timed out after the production baseline was
