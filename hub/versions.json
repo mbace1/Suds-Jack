@@ -80,8 +80,8 @@
     "from": "VERSIONS.md"
   },
   "tiny2d": {
-    "v": "3",
-    "n": 3000,
+    "v": "4",
+    "n": 4000,
     "from": "VERSIONS.md"
   },
   "brand": {
@@ -127,6 +127,26 @@
   "optionc": {
     "v": "0.2",
     "n": 2,
+    "from": "VERSIONS.md"
+  },
+  "neonronin": {
+    "v": "2",
+    "n": 2000,
+    "from": "VERSIONS.md"
+  },
+  "eerigodot": {
+    "v": "40",
+    "n": 40000,
+    "from": "cache token"
+  },
+  "eyetest": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
+  "tokolive": {
+    "v": "46",
+    "n": 46000,
     "from": "VERSIONS.md"
   }
 }

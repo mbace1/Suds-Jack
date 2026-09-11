@@ -92,13 +92,26 @@ function fromToken(dir) {
 // and breaks like one, so it gets a number the same way. It is named here
 // rather than found by scanning, because "a directory with a VERSIONS.md in
 // it" would sweep up anything anybody ever left lying around.
-const EXTRA = [{ id: 'toko', path: 'toko/' }];
+const EXTRA = [
+  { id: 'toko', path: 'toko/' },
+  // Toko Live is the room's HOST, injected onto the floor by
+  // hub/toko-cabinet-dom.js rather than named in the catalogue — so it is
+  // not in GAMES and would never be numbered, which is how its release
+  // number came to live as a hand-typed DOM string.
+  { id: 'tokolive', path: 'toko-live/' },
+];
 
 const rootLog = rootLogOwner();
 const out = {};
 const missing = [];
 for (const g of [...GAMES, ...EXTRA]) {
-  const dir = path.join(ROOT, g.path);
+  // A catalogue `path` is a URL, not a directory: Flash Prince's is
+  // `flashprince/#flooded-city`, because the cabinet deep-links into the game.
+  // Joining that onto ROOT asks for a folder named `#flooded-city`, which is
+  // never there — so the cabinet was reported as unsourceable on every run
+  // while its log sat in plain sight one level up, and the number in
+  // versions.json (v68, correct) was flagged as drift nobody could fix.
+  const dir = path.join(ROOT, g.path.split(/[#?]/)[0]);
   if (!existsSync(dir) || !statSync(dir).isDirectory()) { missing.push(`${g.id} (not here)`); continue; }
   const owned = rootLog && rootLog.id === g.id && rootLog.v
     ? { v: rootLog.v.v, n: rootLog.v.n, from: 'VERSIONS.md' } : null;
@@ -108,6 +121,89 @@ for (const g of [...GAMES, ...EXTRA]) {
 }
 
 const dest = path.join(ROOT, 'hub', 'versions.json');
+
+// --check reports instead of writing, and this is not a nicety. On the DEPLOYED
+// tree a regeneration is destructive: gh-pages does not carry every project's
+// log, so the run reads a token or nothing and quietly moves cabinets — eight
+// of them on the last attempt, most of them BACKWARDS. Four separate deploys
+// have now hand-edited around that and written "worth someone's attention" in
+// the commit message. So a deploy runs --check, which says what disagrees and
+// changes nothing, and only a tree that owns every log runs the writer.
+if (process.argv.includes('--check')) {
+  const was = existsSync(dest) ? JSON.parse(readFileSync(dest, 'utf8')) : {};
+  const bad = [];
+  for (const [id, r] of Object.entries(out)) {
+    const w = was[id];
+    if (!w) { bad.push(`${id}: absent from versions.json, tree says v${r.v}`); continue; }
+    // A number differing is only news when the tree can SOURCE it. Where the
+    // tree has no log, versions.json is the better authority — that is the
+    // deployed case, and overwriting it is the bug this flag exists to stop.
+    if (r.from === 'VERSIONS.md' && String(w.v) !== String(r.v)) {
+      // WHICH WAY it disagrees is the whole diagnosis, and it decides the fix.
+      //
+      // The log AHEAD of versions.json means the log is right: a release
+      // shipped and nobody moved the number. Safe to take.
+      //
+      // The log BEHIND means the opposite — the code shipped and its log did
+      // not travel with it, so the log is a stale copy and taking it would
+      // move the cabinet BACKWARDS. The arcade tags what moved by diffing
+      // these numbers against the ones you last saw, so a number going
+      // backwards is worse than one standing still. That is the direction a
+      // plain regeneration took eight cabinets in, and why this flag exists.
+      const dir = r.n > w.n ? 'log is AHEAD — take it' : 'log is BEHIND — it did not travel with the deploy, do NOT take it';
+      bad.push(`${id}: versions.json v${w.v}, its log says v${r.v}  (${dir})`);
+    }
+  }
+  // `inRepo: false` says the cabinet's source lives in another repository —
+  // toko-drop-godot and piritori-godot are both built elsewhere and their
+  // numbers are written here by hand. A tree that cannot source one of those
+  // is not drifting, it is doing exactly what the flag says, and reporting it
+  // every run trains people to read past the list.
+  const elsewhere = new Set(GAMES.filter(g => g.inRepo === false).map(g => g.id));
+  for (const [id, w] of Object.entries(was)) {
+    if (!out[id] && elsewhere.has(id)) continue;
+    if (!out[id]) bad.push(`${id}: in versions.json (v${w.v}) but the tree cannot source it`);
+    else if (w.from === 'VERSIONS.md' && out[id].from !== 'VERSIONS.md') {
+      bad.push(`${id}: versions.json claims a log this tree does not have`);
+    }
+  }
+  // --repair takes the safe half: a log AHEAD of the file, and a cabinet the
+  // file never knew about. It never moves a number backwards and never
+  // invents a source, so the half that needs a person is left for a person —
+  // which is the difference between this and the regeneration that has been
+  // reverted four times.
+  if (bad.length && process.argv.includes('--repair')) {
+    const fixed = [];
+    for (const [id, r] of Object.entries(out)) {
+      const w = was[id];
+      if (!w) { was[id] = r; fixed.push(`${id}: added at v${r.v}`); continue; }
+      if (r.from === 'VERSIONS.md' && r.n > w.n) {
+        fixed.push(`${id}: v${w.v} -> v${r.v}`);
+        was[id] = r;
+      }
+    }
+    if (fixed.length) {
+      writeFileSync(dest, JSON.stringify(was, null, 2) + '\n');
+      console.log(`${path.relative(process.cwd(), dest)}: repaired ${fixed.length}`);
+      for (const f of fixed) console.log('  ' + f);
+    }
+    const left = bad.filter(b => /BEHIND|does not have/.test(b));
+    if (left.length) {
+      console.log('  left alone, these need a person:');
+      for (const l of left) console.log('    ' + l);
+    }
+    process.exit(0);
+  }
+
+  if (bad.length) {
+    console.error(`${path.relative(process.cwd(), dest)} disagrees with the tree:`);
+    for (const b of bad) console.error('  ' + b);
+    process.exit(1);
+  }
+  console.log(`${path.relative(process.cwd(), dest)}: agrees with the tree (${Object.keys(out).length} projects)`);
+  process.exit(0);
+}
+
 writeFileSync(dest, JSON.stringify(out, null, 2) + '\n');
 
 const shown = Object.entries(out).map(([id, r]) => `${id} v${r.v} (${r.from})`);

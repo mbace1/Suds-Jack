@@ -67,9 +67,13 @@ export const KINDS = kinds('en');
 // order above, so a new game gets a sensible menu the day it is listed and a
 // better one the day someone thinks about it.
 const LEADS = {
+  // Option C is a hub TEST, not a game: it is asked how it handles and how it
+  // performs before anything else, because those are the two things a shell
+  // experiment exists to answer. It has no cabinet on this branch — LEADS is
+  // keyed by id, so an entry for a game only the site lists costs nothing and
+  // stops a deploy having to choose between two people's work.
   optionc: ['controls', 'perf', 'look'],
   concrete: ['controls', 'look'],
-  flowsnow: ['look', 'controls'],         // the look is the experiment, the hands are Shredders
   powder: ['balance', 'controls'],        // "the field still needs balancing"
   tinyhawk: ['controls', 'idea'],         // "goals and the node map are not [in]"
   tiny2d: ['controls', 'balance'],        // one button, so the feel is the game
@@ -83,12 +87,22 @@ const LEADS = {
   // exactly one of those. A worksite platformer for a six-year-old is asked about
   // its handling first; a VR room you sit in is asked how it FEELS to be in.
   eeri: ['controls', 'balance'],
+  // The Godot rebuilds' whole reason to exist is what they look like — real
+  // light instead of a flat browser build, gel light actually passes
+  // through — so that is the question they lead with, not the parent
+  // game's own.
+  eerigodot: ['look', 'controls'],
+  tokodropgodot: ['look', 'balance'],
   tokotrip: ['look', 'more'],
   kindling: ['look', 'idea'],             // a mobile UX layer just landed on it
                                           // and the art target is changing under
                                           // it: how it reads, and what it should
                                           // notice next
   skltr: ['balance', 'controls'],
+  // A deckbuilder is asked about its numbers first — whether a run climbs and
+  // whether a friend is worth a slot — and then what should be IN it, because
+  // a card and a friend are the units this game grows in.
+  slaykallio: ['balance', 'idea'],
   neonronin: ['controls', 'look'],
   eyetest: ['idea', 'bug'],
   paperboy: ['more', 'idea'],             // set down — "put it back" is the note
@@ -103,6 +117,17 @@ const LEADS = {
   tokomove: ['look', 'idea'],             // the day read is the product: does it
                                           // read as the same city, kindly            // it is writing and voice: what it
                                           // should say next, and how it reads
+  // The look IS the experiment here and the hands are Shredders', so those are
+  // the two it wants asked — in that order.
+  flowsnow: ['look', 'controls'],
+  // A zen island with nothing to win cannot be asked whether it is balanced.
+  // What it can be asked is whether it FEELS like somewhere to sit, and whether
+  // reaching for a book or a record in VR actually works.
+  tokotrip: ['look', 'controls'],
+  // The port exists to answer one question and says so on its own cabinet:
+  // does a game about routes and formations play with two sticks. So it leads
+  // with the hands, and then with what a real engine let it look like.
+  'piritori-godot': ['controls', 'look'],
   hub: ['idea', 'bug'],
 };
 
@@ -150,8 +175,10 @@ const GENERIC = {
 
 const SPECIFIC = {
   en: {
-    'powder:balance': ['Burn runs out too fast', 'Diving off the line is not worth it'],
-    'powder:controls': ['Carving feels heavy', 'The scrub barely slows me'],
+    'powder:balance': ['The gate is too far from the breach', 'Overdrive overheats too fast'],
+    'powder:controls': ['It slides when I only wanted to turn', 'The right stick does two things at once'],
+    'flowsnow:balance': ['Burn runs out too fast', 'Diving off the line is not worth it'],
+    'flowsnow:controls': ['Carving feels heavy', 'The scrub barely slows me'],
     'tinyhawk:controls': ['Cannot tell when the stick is loaded', 'The camera loses me mid-trick'],
     'tinyhawk:idea': ['Give me a goal to chase', 'I want a line to follow'],
     'tiny2d:controls': ['Hard to tell where the lip is', 'The trick flick never comes out'],
@@ -164,6 +191,9 @@ const SPECIFIC = {
     'gameoflife:more': ['I actually went outside', 'The quiet is the point'],
     'kindling:look': ['The room is hard to read', 'Too many numbers on it now'],
     'kindling:idea': ['A small thing it should notice', 'Something it could bring home'],
+    'slaykallio:balance': ['A friend that trivialises the run', 'The bench I keep dying on'],
+    'slaykallio:idea': ['A card for…', 'A friend that would…', 'A Kallio face still missing'],
+    'slaykallio:look': ['The puppets are hard to read', 'The bridge pulls focus from the fight', 'Not gritty enough'],
     'sudsjack:idea': ['Keep the tube, lose the…', 'The rebuild should keep…'],
     'paperboy:more': ['Put this one back on the site'],
     'hub:idea': ['Sort the cabinets by…', 'Show me what changed since last time'],
@@ -173,8 +203,10 @@ const SPECIFIC = {
     'radiofree:look': ['The decode is hard to follow', 'The voice needs…'],
   },
   fi: {
-    'powder:balance': ['Palo loppuu liian nopeasti', 'Ladulta poikkeaminen ei kannata'],
-    'powder:controls': ['Kaarto tuntuu raskaalta', 'Jarrutus ei juuri hidasta'],
+    'powder:balance': ['Portti on liian kaukana aukosta', 'Tehostus ylikuumenee liian nopeasti'],
+    'powder:controls': ['Se liukuu kun halusin vain kääntyä', 'Oikea tatti tekee kahta asiaa yhtä aikaa'],
+    'flowsnow:balance': ['Palo loppuu liian nopeasti', 'Ladulta poikkeaminen ei kannata'],
+    'flowsnow:controls': ['Kaarto tuntuu raskaalta', 'Jarrutus ei juuri hidasta'],
     'tinyhawk:controls': ['En huomaa milloin tatti on ladattu', 'Kamera hukkaa minut tempun aikana'],
     'tinyhawk:idea': ['Anna jokin tavoite', 'Haluaisin linjan jota seurata'],
     'tiny2d:controls': ['Vaikea hahmottaa missä harja on', 'Temppunapsautus ei lähde koskaan'],
@@ -187,6 +219,9 @@ const SPECIFIC = {
     'gameoflife:more': ['Menin oikeasti ulos', 'Hiljaisuus on koko juju'],
     'kindling:look': ['Huonetta on vaikea lukea', 'Numeroita on nyt liikaa'],
     'kindling:idea': ['Pieni asia jonka sen pitäisi huomata', 'Jotain mitä se voisi tuoda kotiin'],
+    'slaykallio:balance': ['A friend that trivialises the run', 'The bench I keep dying on'],
+    'slaykallio:idea': ['A card for…', 'A friend that would…', 'A Kallio face still missing'],
+    'slaykallio:look': ['The puppets are hard to read', 'The bridge pulls focus from the fight', 'Not gritty enough'],
     'sudsjack:idea': ['Pidä putki, jätä pois…', 'Uusintaversion pitäisi säilyttää…'],
     'paperboy:more': ['Palauta tämä sivustolle'],
     'hub:idea': ['Järjestä kaapit…-mukaan', 'Näytä mikä on muuttunut viime käynnin jälkeen'],
@@ -196,8 +231,10 @@ const SPECIFIC = {
     'radiofree:look': ['Purkua on vaikea seurata', 'Ääni kaipaa…'],
   },
   ja: {
-    'powder:balance': ['バーンが早く切れすぎる', '踏み跡を外す価値がない'],
-    'powder:controls': ['カービングが重い', 'スクラブがほとんど効かない'],
+    'powder:balance': ['ゲートが裂け目から遠すぎる', 'ブーストがすぐ過熱する'],
+    'powder:controls': ['曲がりたいだけなのに滑る', '右スティックが二役で混乱する'],
+    'flowsnow:balance': ['バーンが早く切れすぎる', '踏み跡を外す価値がない'],
+    'flowsnow:controls': ['カービングが重い', 'スクラブがほとんど効かない'],
     'tinyhawk:controls': ['スティックが溜まったのが分からない', 'トリック中にカメラが見失う'],
     'tinyhawk:idea': ['追いかける目標がほしい', 'たどるラインがほしい'],
     'tiny2d:controls': ['頂がどこか分かりにくい', 'トリックの弾きが出ない'],
@@ -210,6 +247,9 @@ const SPECIFIC = {
     'gameoflife:more': ['ほんとうに外に出ました', '静かさこそが本体'],
     'kindling:look': ['部屋が読みにくい', '数字が増えすぎた'],
     'kindling:idea': ['気づいてほしい小さなこと', '持って帰ってきてほしいもの'],
+    'slaykallio:balance': ['A friend that trivialises the run', 'The bench I keep dying on'],
+    'slaykallio:idea': ['A card for…', 'A friend that would…', 'A Kallio face still missing'],
+    'slaykallio:look': ['The puppets are hard to read', 'The bridge pulls focus from the fight', 'Not gritty enough'],
     'sudsjack:idea': ['筒は残して、…はやめて', '作り直しでも残してほしいのは…'],
     'paperboy:more': ['これをサイトに戻してほしい'],
     'hub:idea': ['キャビネットを…順に並べて', '前回から何が変わったか見せて'],

@@ -18,7 +18,7 @@ import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2
 import { autoTurn } from './autoplay.js?v=6';
 import { PLATES } from './plates.js?v=1';
 import { audio } from './audio.js?v=1';
-import { watchPad } from '../../hub/pad.js?v=9';
+import { watchPad } from '../../hub/pad.js?v=10';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage'), plate = $('plate');

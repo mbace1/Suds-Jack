@@ -10,6 +10,11 @@
 //   0 A/cross   1 B/circle   2 X/square   3 Y/triangle
 //   8 Back/View 9 Start/Menu 12-15 d-pad up/down/left/right
 
+// Importing playlog-auto is intentionally side-effectful. This module is already
+// part of the common game shell, so it is the one catalogue-wide seam where we
+// can record coarse local visit/session evidence without editing every game.
+import './playlog-auto.js';
+
 const DEAD = 0.45;          // sticks are noisy; only a deliberate push counts
 const REPEAT_FIRST = 420;   // ms before a held direction starts repeating
 const REPEAT_NEXT = 130;
