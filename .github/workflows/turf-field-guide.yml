@@ -16,3 +16,5 @@ jobs:
       - run: |
           python3 -m http.server 8767 --bind 127.0.0.1 &
           node turf/test/field-guide.cjs
+          node turf/test/playable.cjs
+          node turf/test/pad-menu.cjs
