@@ -943,6 +943,21 @@ project's source and the site is a curated tree that does not. Six against six i
 finding; six on its own would have looked like a broken deploy. `gh-pages` also moved
 twice while that deploy was being built, so **re-fetch immediately before the push** and
 replay the one commit onto the new head — the other lane touched only `concrete/`.
+**v3 deployed 2026-09-11 (commit `e233a67d`)**, and it added one step worth keeping:
+**walk the arcade route on the spliced tree before pushing**, not just the game. The
+gates boot `flowsnow/` directly; a player comes off the floor, so a throwaway probe took
+the cabinet's own Play link, checked the title printed the shipped number, tapped into
+gameplay and measured the way home — which is the release contract's step 5 and the one
+thing a green game gate cannot stand in for. It also caught that `__fs` exposes the
+version as `version`, not `VERSION`. Same shape as v2 otherwise: `games.js` 75→76 across
+the same four importers — `hub/toko-cabinet.js` was **stranded at 74**, which is the
+split-state bug the rule exists to prevent, so the climb brought it level — and the
+worker rolled v68→v69. The baseline discipline paid again: nine hub-gate failures on the
+spliced site, and the run against an untouched `gh-pages` checkout is **byte-identical
+apart from the worktree path**, so the delta is zero. (Nine now rather than v2's six —
+the site has taken ten other lanes' deploys since, and the gate's own abort at
+`holding Start starts filling the home button` is one of them. The number is not the
+finding; the delta is.)
 **Never verified live from a session.** The agent proxy refuses `github.io`, so the
 Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
 run from the title into gameplay still want a human's eyes on the real URL.
