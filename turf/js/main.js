@@ -775,7 +775,7 @@ function renderTargets() {
     btn.className = 'targetBtn'; btn.dataset.control = `target-${uid}`;
     const forecast = state.forecasts?.get(uid);
     const verb = state.aimUid === uid ? 'Confirm suggested shot' : ability ? ability.name : 'Attack';
-    btn.textContent = self ? `Use ${ability.name}` : `${verb}: ${target.name}`;
+    btn.textContent = self ? `Use ${ability.name}` : `${verb}: ${target.name} · tile ${target.x + 1},${target.y + 1}`;
     if (!ability && forecast) btn.textContent += ` · ${Math.round(forecast.chance * 100)}% · ${forecast.damage} dmg`;
     bindActivation(btn, () => input.targetByUid(uid));
     row.appendChild(btn);
