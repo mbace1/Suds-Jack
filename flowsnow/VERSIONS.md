@@ -7,6 +7,47 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v3 — 2026-09-10
+**A crash on an ordinary landing, and the gate that rides the mountain**
+- **A landing with no impact threw.** `impact` is `max(0, -vn)`, so a grazing
+  re-contact — which is most landings on rolling ground — lands with an impact
+  of exactly 0. `audio.land` scales its thud by that, and `_tone` RAMPS
+  EXPONENTIALLY to the gain it is given; an exponential ramp to zero is a
+  RangeError, not a silence. It threw out of `physicsStep`, so the frame it
+  happened on never rendered. A tone nobody can hear is now simply not played.
+- **`test/playthrough.cjs` is new, and it is why the bug was found.**
+  `smoke.cjs` proves the interface and proves the ENDING by putting the rider at
+  `z = -2395` and stepping three seconds; nothing rode the 2,400 m in between,
+  which is where the mountain is. The new gate rides all of it and asserts the
+  descent finishes, never bogs down, keeps a downhill pace, and crosses both
+  mediums. It caught the crash at 163 m on its first run. Verified falsifiable:
+  with the guard removed it FAILS and names the metre, rather than dying — a
+  throw inside the ride is caught and reported, not allowed out of the evaluate.
+- **The gate's pilot needed a D term, and that is a finding about gates rather
+  than about snow.** Undamped, the bot overshoots the line, pins the edge, and
+  the edge scrubs nearly everything: the run reads 340-476 s and 0.06 m/s
+  mid-descent, which looks exactly like a bog in the terrain. It is not one —
+  measured in bare node, a rider at REST in deep snow reaches 1 m/s in 0.4 s and
+  18 m/s in a minute, so v2's *"a bog is somewhere you crawl out of, never a
+  trap"* holds. Damped, the same mountain rides in 158 s and never drops below
+  12 m/s. A tireless bot that rides badly measures its own riding.
+- **Every module was imported BARE, so this fix would not have shipped.**
+  `index.html` busts `main.js` and `main.js` asked for `./audio.js` with no
+  token — a returning browser keeps every module but the entry. All eleven now
+  carry one, and `core.mjs` asserts both halves of the rule: every local import
+  is tokened, and ONE module is never asked for under two tokens (`palette.js`
+  has three importers, `snowmat.js` two, and two tokens for one module is two
+  instances of it with the state split). `js/main.js?v=3`.
+- Gates: `core.mjs` 72, `smoke.cjs` 41, `playthrough.cjs` 9. The title screen also
+  printed `v1` through v2 AND v3 while the cabinet advertised the real number;
+  it reads the shipped version now and a check fails if code and log disagree.
+- Honest limits: the playthrough's pilot only carves — best air 0.03 s and zero
+  falls across the descent — so the kickers, the pop and the tumble paths are
+  exercised by `smoke.cjs` and not by the ride. And a LOOK at the whole run
+  found something no gate can see, recorded in CLAUDE.md rather than changed
+  here: the snow reads as a flat gradient because the wrapped terminator spends
+  the surface grain. That is a look decision and it is the owner's.
+
 ## v2 — 2026-09-10
 **The snowpack gets a depth, and the board rides IN it**
 - Owner direction: *more powder and sinking-into-snow type gameplay.* The
