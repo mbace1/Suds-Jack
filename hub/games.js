@@ -569,7 +569,9 @@ export const GAMES = [
     controls: 'choose a map location · make narrative choices · manage the ledger · command formation battles',
     // Canonical campaign is published by piritori-eden; this bridge keeps a local launch URL.
     path: 'piritori/act1.html',
-    inRepo: true,
+    // The bridge is local; the actual game and its return link deploy from piritori-eden.
+    inRepo: false,
+    deployedOnly: true,
     external: 'mbace1/piritori-eden',
     accent: '#e8c24a',
     art: 'nightmap',
