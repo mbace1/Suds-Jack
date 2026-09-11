@@ -1,18 +1,18 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=36';
+import './core-v212.js?v=37';
 import './route-choice.js?v=13';
 import {LiveNetwork} from './live-network.js?v=8';
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=3';
 import {MobilityController} from './mobility-v212.js?v=3';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
-import {mountJobBoard,reachableSoon,planCost} from './job-board-v212.js?v=6';
+import {mountJobBoard,reachableSoon,planCost} from './job-board-v212.js?v=7';
 import {planEstimate} from './timetable.js?v=1';
 import {ShiftLog} from './shiftlog.js?v=2';
 import {Trails} from './trails.js?v=2';
 import {mountHubTactics} from './hub-tactics-v212.js?v=4';
 import {mountSkillMoments} from './moments-v212.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=2';
-const BUILD_VERSION='2.33';
+const BUILD_VERSION='2.34';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;tm.liveNetwork=new LiveNetwork(tm.transit,{vehiclesPerLine:3,ticksPerDay:tm.flow.clock.ticksPerDay});tm.challenge.reachable=o=>reachableSoon(tm,o);tm.challenge.estimate=o=>planCost(tm,o);tm.planCostFrom=(from,to)=>planCost(tm,{stops:[from,to],cargo:tm.challenge.active?.cargo});tm.planEstimateOf=plan=>planEstimate(tm,plan);tm.shiftLog=new ShiftLog(tm);tm.trails=new Trails();tm.challenge.refreshOffers();tm.transferHubs=TRANSFER_HUBS;tm.walkStreets=WALK_STREETS;tm.walksFrom=walksFrom;tm.mobility=new MobilityController(tm);tm.interceptionOptions=()=>interceptionOptions(tm);tm.bestInterception=()=>bestInterception(tm);mountJobBoard(tm);mountHubTactics(tm);mountSkillMoments(tm);mountRecovery(tm);const canvas=document.getElementById('map'),ctx=canvas?.getContext('2d');if(!canvas||!ctx)return;const project=(lat,lon)=>tm.project(lat,lon);const nodePoint=id=>{const n=tm.city.resolved?.[id];return n?project(n.lat,n.lon):null;};const drawTransitLayer=()=>{if(document.body.classList.contains('transit-view')||!tm.transit)return;tm.transit.draw(ctx,canvas.width,canvas.height,{fit:project,alpha:.96,lineWidth:2.5*(tm.renderer?.dpr||window.devicePixelRatio||1)});};// Which lines are any use to you RIGHT NOW: the one you are on, the one your plan
 // says to take, and the ones the board is offering. Those keep a readable badge in a
 // crowd; everything else yields to a dot. Without this the declutter would be

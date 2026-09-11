@@ -101,6 +101,9 @@ function check(name, cond) {
   // from the jsDelivr CDN — which a sandboxed or offline runner cannot reach.
   // Anything served from this test's own origin still counts.
   const errors = [];
+  let navigating = 0;
+  const realGoto = page.goto.bind(page);
+  page.goto = async (...args) => { navigating++; try { return await realGoto(...args); } finally { navigating--; } };
   const mine = url => !url || url.startsWith(base);
   // A cabinet marked `inRepo: false` is carried by the gh-pages site and not by
   // this branch, so a miss on its path is the catalogue being honest, not a
@@ -112,16 +115,31 @@ function check(name, cond) {
   const expected = (text, url) =>
     /collect-broken/.test(text + url) || notCarriedHere(url) ||
     (!mine(url) && /Failed to load resource/i.test(text));
+  // An error is only actionable if you know WHICH PAGE was open when it
+  // arrived. This gate walks two dozen cabinets and reports at the very end,
+  // so an unstamped message ("TypeError: Failed to fetch") named neither the
+  // game nor the moment and cost a session to place.
+  const note = text => {
+    // A page still loading when the gate walks on has its requests ABORTED, and
+    // an abort arrives as "Failed to fetch" from whatever was mid-flight — for
+    // a long time that was toko-move's boot fetch of the HSL pack, reported at
+    // the very end of a run against a page the gate had left minutes earlier.
+    // It is not a fault a player can ever see: nobody navigates away from a
+    // game a tenth of a second after opening it. Only abort-shaped messages
+    // are dropped, and only while a navigation this gate started is in flight.
+    if (navigating && /Failed to fetch|Failed to load resource|ERR_ABORTED/i.test(text)) return;
+    errors.push(`${text}  [on ${page.url().replace(base, '') || '/'}]`);
+  };
   page.on('console', m => {
-    if (m.type() === 'error' && !expected(m.text(), m.location().url)) errors.push(m.text());
+    if (m.type() === 'error' && !expected(m.text(), m.location().url)) note(m.text());
   });
-  page.on('pageerror', e => errors.push(String(e)));
+  page.on('pageerror', e => note(String(e)));
   // A bare "404 (Not Found)" from the console names nothing, and a gate that
   // reports an unactionable failure costs more than it saves. Record the URL
   // alongside it so the next person knows which file is missing.
   page.on('response', r => {
     if (r.status() >= 400 && !expected('Failed to load resource', r.url())) {
-      errors.push(`HTTP ${r.status()} ${r.url()}`);
+      note(`HTTP ${r.status()} ${r.url()}`);
     }
   });
 
@@ -1106,6 +1124,12 @@ function check(name, cond) {
 
   // holding Start on a game page walks back to the arcade
   await page.goto(`${base}/${light.path}`, { waitUntil: 'networkidle' });
+  // networkidle does not mean the shell module has RUN. Stub the pad before the
+  // button exists and the first poll reads null, getComputedStyle throws, the
+  // wait rejects on its own exception and the run reports both "the fill never
+  // started" and a page error — one late module, two red checks, neither of
+  // them about the thing being tested.
+  await page.locator('.arcade-home .fill').waitFor({ state: 'attached', timeout: 6000 });
   await page.evaluate(() => {
     window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 })), axes: [0, 0, 0, 0], connected: true, id: 'stub' };
     navigator.getGamepads = () => [window.__pad];
@@ -1115,8 +1139,12 @@ function check(name, cond) {
   // gamepad poll on a heavy page (three.js still settling) and reported 0 —
   // the assertion is that holding Start fills the button, not that it fills
   // inside a quarter of a second.
+  // Null-safe on purpose: the hold ENDS in a navigation to the arcade, where
+  // this element does not exist, so a predicate that dereferences it races its
+  // own success and throws into the page.
   const filled = await page.waitForFunction(
-    () => parseFloat(getComputedStyle(document.querySelector('.arcade-home .fill')).width) > 0,
+    () => { const el = document.querySelector('.arcade-home .fill');
+            return !!el && parseFloat(getComputedStyle(el).width) > 0; },
     null, { timeout: 3000 }).then(() => true).catch(() => false);
   check('holding Start starts filling the home button', filled);
   await page.waitForFunction(() => location.pathname === '/' || location.pathname.endsWith('/index.html'), null, { timeout: 4000 });

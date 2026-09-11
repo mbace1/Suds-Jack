@@ -284,6 +284,15 @@ jobs:
       # when someone remembered to. A branch that moves the runtime to new
       # modules must re-point these gates at them, or they stop exercising
       # the code that actually ships (that is how the brace survived).
+      # The cache-token gate measures this tree against the DEPLOYED one, so it
+      # needs gh-pages present. It fails rather than skips when the ref is
+      # missing — a cache gate that goes quiet when it cannot see is decoration.
+      - name: fetch the deployed tree for the token gate
+        run: git fetch origin gh-pages --depth=1
+
+      - name: one token per module, moved when and only when its bytes move
+        run: node toko-move/test/tokens.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
