@@ -1,0 +1,21 @@
+name: Option C playable trial
+on:
+  push:
+    paths: ['option-c/**', '.github/workflows/option-c.yml']
+  pull_request:
+    paths: ['option-c/**', '.github/workflows/option-c.yml']
+jobs:
+  playable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - name: Real mouse and touch victory, defeat and restart
+        run: |
+          python3 -m http.server 8766 --bind 127.0.0.1 >/tmp/option-c-server.log 2>&1 &
+          node option-c/test.cjs
