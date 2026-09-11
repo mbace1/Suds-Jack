@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=197';
+import { TUNING } from './tuning.js?v=198';
 const _apt = { x: 0, z: 0 };   // v236: scratch for arena queries — no per-frame alloc
-import { nesSnap, NEON } from './retro.js?v=197';
+import { nesSnap, NEON } from './retro.js?v=198';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -188,13 +188,33 @@ export function applySatinValues() {
     m.ior                = M.ior;
     m.gooU.uSSS.value    = M.sss;
     if (m.gooU.uThick) m.gooU.uThick.value = M.thickness;   // v218 (WEBGPU dome)
+    if (m.gooU.uRim) m.gooU.uRim.value = contrastRim(m.userData.baseLum);   // v246
   }
+}
+
+// v246 CONTRAST FLOOR — how much rim a body of this luminance needs: none at
+// or above minLum, full at black. Linear luminance of the CFG colour.
+export function lumOf(c) { return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; }
+export function contrastRim(lum) {
+  const C = TUNING.material.contrast;
+  if (!C || !C.rim) return 0;
+  return Math.max(0, Math.min(1, (C.minLum - lum) / C.minLum)) * C.rim;
+}
+/** the value lift: scale a colour up so its luminance reaches minLum × lift (hue kept) */
+export function contrastLift(col) {
+  const C = TUNING.material.contrast;
+  if (!C || !C.lift) return col;
+  const L = lumOf(col), want = C.minLum * C.lift;
+  if (L >= want || L <= 0) return col;
+  return col.multiplyScalar(Math.min(want / L, 6));
 }
 
 export function makeSatinMat(color, fam, radius) {
   const M = TUNING.material, famOv = M.families[fam] || {};
   const mode = CABINET_STYLE.mode;
   const col = new THREE.Color(color);
+  const baseLum = lumOf(col);          // v246: the body's own value, before any lift
+  contrastLift(col);                   // v246: the value floor (off unless TUNING says so)
   // v194: plain materials ignore positionNode/emissiveNode, so the WEBGPU
   // build constructs the node classes; classic keeps the exact old classes.
   const LambertMat  = IS_GPU ? THREE.MeshLambertNodeMaterial  : THREE.MeshLambertMaterial;
@@ -266,9 +286,15 @@ export function makeSatinMat(color, fam, radius) {
     // v218: base gel thickness as a uniform so the depth-varying thicknessNode
     // (WEBGPU build) stays live under the pause-menu sliders. Classic ignores it.
     uThick:  U(M.thickness),
+    // v246 CONTRAST FLOOR: a fresnel rim in the body's own hue lifted toward
+    // white, strength by how far under the readable floor this body sits
+    uRim:      U(contrastRim(baseLum)),
+    uRimPow:   U(M.contrast?.rimPow ?? 3.0),
+    uRimColor: U(col.clone().lerp(new THREE.Color(0xffffff), M.contrast?.rimWhite ?? 0.55)),
   };
   mat.gooU = u;     // FX uniform access for enemy.js (physical mats have no .uniforms)
   mat.gooFam = fam; // family for applySatinValues overrides
+  mat.userData.baseLum = baseLum;
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader
@@ -296,7 +322,8 @@ export function makeSatinMat(color, fam, radius) {
     if (mat.isMeshLambertMaterial) return;   // flat cabinets: wobble only, no SSS
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        uniform float uSSS; uniform vec3 uSSSColor, uLightDir;`)
+        uniform float uSSS; uniform vec3 uSSSColor, uLightDir;
+        uniform float uRim, uRimPow; uniform vec3 uRimColor;`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         {
           // Soft translucency glow (enemy-lab satinGoo): back-light bleed +
@@ -307,6 +334,10 @@ export function makeSatinMat(color, fam, radius) {
           float sss = pow(clamp(dot(V, -H), 0.0, 1.0), 2.2) * uSSS;
           float wrap = clamp(dot(normalize(normal), L) * 0.5 + 0.5, 0.0, 1.0);
           totalEmissiveRadiance += uSSSColor * (sss + wrap * 0.18 * uSSS);
+          // v246 CONTRAST FLOOR: the silhouette edge of a body darker than the
+          // floor lights in its own hue — the middle keeps its identity
+          float rimF = pow(1.0 - clamp(dot(normalize(normal), V), 0.0, 1.0), uRimPow);
+          totalEmissiveRadiance += uRimColor * rimF * uRim;
         }`);
   };
   if (IS_GPU) applyGooNodes(mat, u, flat);
@@ -362,8 +393,11 @@ function applyGooNodes(mat, u, flat) {
   // v218: the dying gel lights from WITHIN — an interior surge plus a
   // fresnel rim flare, both riding uTear so they cost nothing in life.
   const fres = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(3.0);
+  // v246 CONTRAST FLOOR rim — the same term as the classic path
+  const rimF = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(u.uRimPow);
   mat.emissiveNode = materialEmissive.add(u.uSSSColor.mul(
-    sss.add(wrap.mul(0.18).mul(u.uSSS)).add(u.uTear.mul(fres.mul(1.1).add(0.7)))));
+    sss.add(wrap.mul(0.18).mul(u.uSSS)).add(u.uTear.mul(fres.mul(1.1).add(0.7)))))
+    .add(u.uRimColor.mul(rimF).mul(u.uRim));
   // v218: dome refraction — transmission thickness varies with height, thick
   // at the belly and thin at the crown, so the gel bends light like a dome
   // instead of a uniform shell. positionLocal.y spans 0..~1.7 (unit dome,

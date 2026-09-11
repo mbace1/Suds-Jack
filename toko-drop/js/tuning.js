@@ -15,6 +15,14 @@ export const TUNING = {
       clay  : { sss:0.15, roughness:0.38, clearcoat:0.15, sheen:0.60, transmission:0.00 },
       neon  : { sss:1.35, roughness:0.12, clearcoat:0.80, sheen:0.30, transmission:0.20 },
     },
+    // v246 CONTRAST FLOOR (roadmap-v2 art priority 4, silhouette & readability).
+    // The floor's base is 0.085 linear luminance; THUG (0.050), WRAITH (0.059),
+    // WEEVA (0.085) and FLIT (0.087) sit AT or BELOW it and read as holes. Two
+    // treatments, both keyed to how far under `minLum` a body's own colour
+    // is (a bright body gets nothing): a fresnel RIM in the body's own hue
+    // lifted toward white, so the silhouette edge lights and the middle keeps
+    // its identity; and a value LIFT of the base colour up to minLum (0 = off).
+    contrast: { minLum: 0.16, rim: 2.2, rimPow: 2.0, rimWhite: 0.55, lift: 0.6 },
     families: {
       blob: {},                                        // uses active values as-is
       cube: { roughness: 0.10, transmission: 0.25 },   // firmer candy-glass

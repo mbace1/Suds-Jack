@@ -7,6 +7,33 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v246 — 2026-09-11
+**A contrast floor: no body darker than the ground it stands on** *(roadmap-v2 art priority 4, silhouette & readability — the first pass of it)*
+- **Found by looking.** The LOOK pass named the dark enemy as the
+  lowest-contrast thing on screen. Ranking every CFG colour by linear
+  luminance against the floor's base (0.085) put four bodies AT or BELOW it
+  — THUG 0.050, WRAITH 0.059, WEEVA 0.085, FLIT 0.087 — and FLIT is also the
+  smallest body in the game (radius 0.3). A hole, not a body
+- **`TUNING.material.contrast`** — `minLum` 0.16 is the readable floor. Two
+  treatments, both keyed to how far UNDER it a body's own colour sits, so a
+  bright body gets nothing: a fresnel **RIM** in the body's own hue lifted
+  toward white (`rim` 2.2, `rimPow` 2 — wide, not a hairline; at 20 px on
+  screen a hairline is nothing), and a value **LIFT** of the base colour
+  toward minLum (`lift` 0.6 — a full lift turned WRAITH into a muddy mauve
+  that had stopped being WRAITH; the rim keeps the middle dark and lights
+  the edge, which is what a silhouette is)
+- Rendered five ways in a staged lab (control, rim ×2, lift, both) and
+  judged at 2× before choosing; then confirmed in the FLIT loops, where a
+  dark dot is now a small lit body. Both render paths carry the same term
+  (classic GLSL in `makeSatinMat`, the TSL emissive graph in
+  `applyGooNodes`); `applySatinValues` keeps `uRim` live under the
+  pause-menu sliders; `mat.userData.baseLum` remembers the pre-lift value
+- Gates: `check-syntax` · `crowd-check` 12 · `arena-check` 8396 ·
+  `level-check` 74 · `smoke` · `webgpu-smoke`
+- Cache-bust `?v=197` → `?v=198`; HUD label → v246
+
+---
+
 ## v245 — 2026-09-10
 **The swarm arrives as a fan, not a pile** *(owner: "fix the swarm clumping")*
 - **Found by looking, not by a gate.** Motion loops decoded to frames showed
