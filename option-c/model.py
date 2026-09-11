@@ -52,5 +52,6 @@ for p in parts:
     p['vertices']=[round(v,5) for v in p['vertices']]
     p['normals']=[round(v,4) for v in p['normals']]
 with open(os.path.join(out,'assets','training-figure.json'),'w') as f:json.dump(parts,f,separators=(',',':'))
+os.makedirs(os.path.join(out,'.dream-loop'),exist_ok=True)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out,'.dream-loop','training-figure.blend'))
 print('Exported training figure',len(parts),'parts')

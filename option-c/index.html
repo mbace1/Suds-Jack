@@ -10,7 +10,8 @@
 <header><div><small>DREAM LOOP / TACTICS LAB</small><h1>OPTION C</h1></div><div class="right"><small id="round">ROUND 01</small><div id="turn">YOUR TURN</div></div></header>
 <a id="home" class="arcade-home" href="../#optionc">← HUB</a><div id="tools"><button id="rotate" aria-label="Rotate camera">↻</button><button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button></div>
 <div id="status">Clear the yard.<br>One move and one attack per operator.<br>Orange arrows show enemy plans.</div>
-<footer><div id="crew"></div><div id="commands"><div id="targets"></div><p id="hint">Select a unit. Move. Take a shot.</p></div><button id="end">END TURN</button></footer>
+<footer><div id="crew"></div><div id="commands"><details id="movePicker"><summary>MOVE TO…</summary><div id="moves"></div></details><div id="targets"></div><p id="hint">Select a unit. Move. Take a shot.</p></div><button id="end">END TURN</button></footer>
 <div id="result" hidden><article><small>TRAINING COMPLETE</small><h2 id="resultTitle"></h2><p id="resultText"></p><button id="restart">PLAY AGAIN</button></article></div>
 <div id="loading">BUILDING THE YARD…</div><div id="perf"></div>
+<style>#home{z-index:6}#commands{position:relative}#movePicker{margin-bottom:6px}#movePicker[hidden]{display:none}#movePicker summary{min-height:44px;padding:13px;background:#112b2ce8;border:1px solid #71bfa8;color:#dbf6eb;font-size:12px;cursor:pointer;list-style:none}#moves{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:5px;max-height:170px;overflow:auto;background:#0c1721;padding:6px}#moves button{min-height:44px;color:#dbf6eb;background:#15332c;border:1px solid #507c70;font-size:12px;padding:6px}</style>
 <script type="module" src="./main.js?v=2"></script></html>

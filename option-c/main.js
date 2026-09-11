@@ -1,10 +1,10 @@
-import * as T from './vendor/three.module.min.js';
-import {Reflector} from './vendor/Reflector.js';
-import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {create,unit,reachable,move,attack,forecast,intent,endTurn,nextRound,covers,N} from './core.js';
+import * as T from './vendor/three.module.min.js?v=185';
+import {Reflector} from './vendor/Reflector.js?v=1';
+import {mergeGeometries} from './vendor/BufferGeometryUtils.js?v=185';
+import {create,unit,reachable,move,attack,forecast,intent,endTurn,nextRound,covers,N} from './core.js?v=1';
 const $=id=>document.getElementById(id),canvas=$('scene');
 $('home').href=new URL('../#optionc',location.href).href;
-let state=create(),busy=false,angle=.48,zoom=1,clock=0;
+let state=create(),busy=false,angle=.48,zoom=1,clock=0,wetReflector=null,lowEffects=false,slowSamples=0;
 const world=new T.Scene();world.background=new T.Color('#09121b');
 const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
@@ -29,7 +29,7 @@ window.addEventListener('resize',cameraFit);cameraFit();
 function canvasLabel(text,w=256,h=128){const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.fillStyle='#c1b99c';ctx.font='bold 74px Arial';ctx.textAlign='center';ctx.fillText(text,w/2,95);const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;return new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:.4});}
 function vegetation(x,z){const g=new T.Group();g.position.set(x,0,z);world.add(g);for(let i=0;i<7;i++){const a=i*2.4,height=.11+(i%3)*.065;const stem=box(.018,height,.018,Math.sin(a)*.1,height/2,Math.cos(a)*.1,mat(i%2?'#494a27':'#666047'),g);stem.rotation.z=Math.sin(a)*.4;for(let j=1;j<3;j++){const leaf=box(.085,.009,.03,Math.sin(a)*.1+((j%2)-.5)*.08,height*j/3,Math.cos(a)*.1,mat('#716e35'),g);leaf.rotation.z=.5;}}}
 async function build(){
- const tex=await new T.TextureLoader().loadAsync('./assets/concrete.webp');tex.colorSpace=T.SRGBColorSpace;tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+ const tex=await new T.TextureLoader().loadAsync('./assets/concrete.webp?v=1');tex.colorSpace=T.SRGBColorSpace;tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
  const surface=new T.MeshStandardMaterial({color:0xc4d0d9,map:tex,bumpMap:tex,bumpScale:.025,roughnessMap:tex,roughness:.9,metalness:.08});
  // Convolved area-light environment supplies broad wet highlights; the planar
  // pass above it still reflects the actual moving figures and lamp geometry.
@@ -70,6 +70,7 @@ async function build(){
  const wetShader={uniforms:T.UniformsUtils.clone(Reflector.ReflectorShader.uniforms),vertexShader:Reflector.ReflectorShader.vertexShader.replace('varying vec4 vUv;','varying vec4 vUv; varying vec2 vSurface;').replace('vUv = textureMatrix','vSurface = uv; vUv = textureMatrix'),fragmentShader:`uniform sampler2D tDiffuse;uniform sampler2D surfaceMap;varying vec4 vUv;varying vec2 vSurface;void main(){float n=texture2D(surfaceMap,vSurface*5.0).r;vec4 uv=vUv;uv.xy+=vec2(n-.35)*.009*uv.w;vec3 reflection=texture2DProj(tDiffuse,uv).rgb;float wetness=smoothstep(.15,.42,n);gl_FragColor=vec4(reflection,.12+wetness*.25);#include <tonemapping_fragment>\n#include <colorspace_fragment>}`.replace(';#include',';\n#include')};
  wetShader.uniforms.surfaceMap={value:tex};
  const mirror=new Reflector(new T.PlaneGeometry(10.07,10.07),{textureWidth:512,textureHeight:512,multisample:0,shader:wetShader});mirror.rotation.x=-Math.PI/2;mirror.position.y=.007;mirror.material.transparent=true;mirror.material.depthWrite=false;world.add(mirror);
+ wetReflector=mirror;
  const reflect=mirror.onBeforeRender;let reflectionAt=0;mirror.onBeforeRender=function(...args){if(performance.now()-reflectionAt<50)return;reflectionAt=performance.now();reflect.apply(this,args);};
  for(let i=0;i<15;i++)vegetation(-4.8+i*.67,-4.76+(i%3)*.11);
  // Submit stationary geometry by shared material. The original hundreds of
@@ -77,7 +78,7 @@ async function build(){
  world.updateMatrixWorld(true);const batches=new Map();
  world.traverse(o=>{if(o.isMesh&&o!==mirror&&!Array.isArray(o.material)){const key=o.material;const list=batches.get(key)||[];list.push(o);batches.set(key,list);}});
  for(const [material,meshes] of batches){if(meshes.length<2)continue;const copies=meshes.map(o=>(o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone()).applyMatrix4(o.matrixWorld));const geometry=mergeGeometries(copies,false);for(const g of copies)g.dispose();if(!geometry)continue;const merged=new T.Mesh(geometry,material);merged.castShadow=meshes.some(o=>o.castShadow);merged.receiveShadow=meshes.some(o=>o.receiveShadow);for(const o of meshes){o.removeFromParent();o.geometry.dispose();}world.add(merged);}
- const data=await fetch('./assets/training-figure.json').then(r=>r.json());
+ const data=await fetch('./assets/training-figure.json?v=1').then(r=>r.json());
  for(const u of state.units){const group=new T.Group();world.add(group);const parts={};
   for(const p of data){const geom=new T.BufferGeometry();geom.setAttribute('position',new T.Float32BufferAttribute(p.vertices,3));geom.setAttribute('normal',new T.Float32BufferAttribute(p.normals,3));
    const material=/jacket|Arm|Forearm|pack|collar/.test(p.name)?(u.team?materials.orange:materials.teal):/head|Hand/.test(p.name)?mat('#77513b'):/helmet/.test(p.name)?mat(u.team?'#9e5b34':'#49797b',.4,.2):/visor/.test(p.name)?materials.black:materials.dark;
@@ -88,16 +89,18 @@ async function build(){
  $('loading').hidden=true;refresh();previous=performance.now();animate();
 }
 function clear(group){for(const m of [...group.children]){group.remove(m);m.geometry?.dispose();m.material?.dispose();}}
-function tileOutline(x,z,color,fill=false){const px=coord(x),pz=coord(z),r=.53;const outline=line([new T.Vector3(px-r,.02,pz-r),new T.Vector3(px+r,.02,pz-r),new T.Vector3(px+r,.02,pz+r),new T.Vector3(px-r,.02,pz+r),new T.Vector3(px-r,.02,pz-r)],color,.65);highlights.add(outline);if(fill){const m=new T.Mesh(new T.PlaneGeometry(1.04,1.04),new T.MeshBasicMaterial({color,transparent:true,opacity:.08,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(px,.012,pz);highlights.add(m);}}
+function tileOutline(x,z,color,fill=false){const px=coord(x),pz=coord(z),r=.53;const outline=line([new T.Vector3(px-r,.02,pz-r),new T.Vector3(px+r,.02,pz-r),new T.Vector3(px+r,.02,pz+r),new T.Vector3(px-r,.02,pz+r),new T.Vector3(px-r,.02,pz-r )],color,.95);highlights.add(outline);if(fill){const m=new T.Mesh(new T.PlaneGeometry(1.04,1.04),new T.MeshBasicMaterial({color,transparent:true,opacity:.22,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(px,.012,pz);highlights.add(m);}}
 const badges=new Map();
 for(const u of state.units){const el=document.createElement('div');el.className='actor-label';el.dataset.team=u.team;document.body.append(el);badges.set(u.id,el);}
 function refresh(){
  for(const u of state.units){const el=badges.get(u.id),selected=unit(state,state.selected),f=selected?forecast(selected,u):null;el.hidden=u.hp<=0;el.textContent=`${u.name} · ${u.hp}/${u.max}${u.team&&f&&!selected.acted?' · −'+f.damage:''}`;el.classList.toggle('targetable',!!(u.team&&f&&!selected.acted&&!busy));}
  clear(highlights);clear(arrows);const selected=unit(state,state.selected);
  if(selected?.hp>0){const ring=new T.Mesh(new T.RingGeometry(.32,.36,48),new T.MeshBasicMaterial({color:0xa3ffcf,side:T.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(coord(selected.x),.025,coord(selected.z));highlights.add(ring);
-  if(!busy&&!selected.moved&&!state.result)for(const p of reachable(state,selected))tileOutline(p.x,p.z,0x99e7c7,true);
+  if(!busy&&!selected.moved&&!state.result)for(const p of reachable(state,selected))tileOutline(p.x,p.z,0x65ebbd,true);
  }
  if(!busy&&!state.result)for(const enemy of state.units.filter(u=>u.team&&u.hp>0)){const plan=intent(state,enemy);if(!plan)continue;const target=unit(state,plan.target),start=new T.Vector3(coord(enemy.x),.06,coord(enemy.z)),end=new T.Vector3(coord(target.x),.06,coord(target.z)),direction=end.clone().sub(start);const len=Math.min(direction.length()-.3,1.6);direction.normalize();if(len>0){const a=new T.ArrowHelper(direction,start,len,0xef9b4b,.22,.14);arrows.add(a);}}
+ $('movePicker').open=false;$('movePicker').hidden=busy||!!state.result||!selected||selected.hp<=0||selected.moved;$('moves').replaceChildren();
+ if(!$('movePicker').hidden)for(const p of reachable(state,selected)){const b=document.createElement('button');b.dataset.move=`${p.x},${p.z}`;b.textContent=`${String.fromCharCode(65+p.x)}${p.z+1} · ${p.cost} steps`;b.setAttribute('aria-label',`Move ${selected.name} to ${String.fromCharCode(65+p.x)}${p.z+1}, ${p.cost} steps`);activate(b,()=>walk(p.x,p.z));$('moves').append(b);}
  const focus=document.activeElement?.dataset.id; $('crew').replaceChildren();
  for(const u of state.units.filter(v=>!v.team)){const btn=document.createElement('button');btn.className='unit';btn.dataset.id=u.id;btn.setAttribute('aria-pressed',String(u.id===state.selected));btn.disabled=busy||u.hp<=0||!!state.result;
   btn.innerHTML=`<strong>${u.name.toUpperCase()}</strong><p>HP ${u.hp} / ${u.max}</p><div class="track"><div class="fill" style="width:${u.hp/u.max*100}%"></div></div><span>${u.hp<=0?'DOWN':`MOVE ${u.moved?'USED':u.speed} · ACT ${u.acted?'USED':'1'}`}</span>`;
@@ -111,7 +114,10 @@ function refresh(){
 function activate(el,fn){let last=-1000;for(const type of ['pointerup','touchend','click'])el.addEventListener(type,e=>{if(el.disabled||e.type==='click'&&e.detail!==0)return;e.preventDefault();if(performance.now()-last<280)return;last=performance.now();fn();});}
 function select(id){if(busy||state.result)return;state.selected=id;refresh();$('hint').textContent=`${unit(state,id).name}: tap a mint tile to move, or choose an attack.`;}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function showMove(event){if(!event)return;const a=actors.get(event.id);const route=line([a.group.position.clone().setY(.07),...event.path.map(p=>new T.Vector3(coord(p.x),.07,coord(p.z)))],0xb9ffdb);world.add(route);for(const step of event.path){const from=a.group.position.clone(),to=new T.Vector3(coord(step.x),0,coord(step.z));a.group.rotation.y=Math.atan2(to.x-from.x,to.z-from.z);const start=performance.now();await new Promise(resolve=>{function stepFrame(now){const t=Math.min(1,(now-start)/150);a.group.position.lerpVectors(from,to,t);a.group.position.y=Math.sin(t*Math.PI)*.035;a.parts.leftLeg.rotation.x=Math.sin(t*Math.PI*2)*.35;a.parts.rightLeg.rotation.x=-Math.sin(t*Math.PI*2)*.35;if(t<1)requestAnimationFrame(stepFrame);else resolve();}requestAnimationFrame(stepFrame);});}a.parts.leftLeg.rotation.x=a.parts.rightLeg.rotation.x=0;world.remove(route);route.geometry.dispose();route.material.dispose();}
+async function showMove(event){if(!event)return;const a=actors.get(event.id),points=[a.group.position.clone(),...event.path.map(p=>new T.Vector3(coord(p.x),0,coord(p.z)))];
+ const route=line(points.map(p=>p.clone().setY(.07)),0xb9ffdb);world.add(route);const count=points.length-1,start=performance.now();
+ await new Promise(resolve=>{function stepFrame(now){const progress=Math.min(count,Math.max(0,(now-start)/150)),i=Math.min(count-1,Math.floor(progress)),t=progress-i;const from=points[i],to=points[i+1];a.group.position.lerpVectors(from,to,t);a.group.position.y=Math.sin(t*Math.PI)*.035;a.group.rotation.y=Math.atan2(to.x-from.x,to.z-from.z);a.parts.leftLeg.rotation.x=Math.sin(progress*Math.PI*2)*.35;a.parts.rightLeg.rotation.x=-a.parts.leftLeg.rotation.x;if(progress<count)requestAnimationFrame(stepFrame);else resolve();}requestAnimationFrame(stepFrame);});
+ a.group.position.copy(points[count]);a.parts.leftLeg.rotation.x=a.parts.rightLeg.rotation.x=0;world.remove(route);route.geometry.dispose();route.material.dispose();}
 async function showShot(e){if(!e)return;const a=actors.get(e.id),b=actors.get(e.target),from=a.group.position.clone().add(new T.Vector3(0,.58,0)),to=b.group.position.clone().add(new T.Vector3(0,.52,0));a.group.rotation.y=Math.atan2(to.x-from.x,to.z-from.z);
  const tracer=line([from,to],0xffda9c);if(!e.melee)world.add(tracer);a.group.position.add(new T.Vector3(0,0,0));b.flash=.3;
  for(let i=0;i<9;i++){const dot=new T.Mesh(new T.SphereGeometry(.018,4,3),new T.MeshBasicMaterial({color:i%2?0xffc47e:0xccd1c8}));dot.position.copy(to);world.add(dot);particles.push({mesh:dot,v:new T.Vector3(Math.sin(i*7)*1.4,.8+i*.06,Math.cos(i*7)*1.4),life:.32});}
@@ -132,12 +138,12 @@ function boardTap(x,y){if(busy||state.result)return;pointer.set(x/innerWidth*2-1
  const at=new T.Vector3();if(ray.ray.intersectPlane(plane,at))walk(Math.round(at.x/pitch+4),Math.round(at.z/pitch+4));}
 window.addEventListener('keydown',e=>{if(e.target.closest('button'))return;if(e.key==='1')select('scout');if(e.key==='2')select('anchor');if(e.key==='Enter'){e.preventDefault();enemyTurn();}});
 let previous=performance.now(),frames=0,elapsed=0,fps=0;
-function animate(now=performance.now()){requestAnimationFrame(animate);const realDt=(now-previous)/1000,dt=Math.min(.05,realDt);previous=now;clock+=dt;frames++;elapsed+=realDt;if(elapsed>=1){fps=Math.round(frames/elapsed);$('perf').textContent=`C.02 · ${fps} FPS · ${renderer.info.render.calls} draws`;frames=0;elapsed=0;}
+function animate(now=performance.now()){requestAnimationFrame(animate);const realDt=(now-previous)/1000,dt=Math.min(.05,realDt);previous=now;clock+=dt;frames++;elapsed+=realDt;if(elapsed>=1){fps=Math.round(frames/elapsed);slowSamples=fps<24?slowSamples+1:0;if(!lowEffects&&slowSamples>=2){lowEffects=true;renderer.setPixelRatio(Math.min(devicePixelRatio,.8));renderer.shadowMap.enabled=false;if(wetReflector)wetReflector.visible=false;world.traverse(o=>{if(o.material)for(const m of (Array.isArray(o.material)?o.material:[o.material]))m.needsUpdate=true;});}$('perf').textContent=`C.02 · ${fps} FPS · ${renderer.info.render.calls} draws${lowEffects?' · LOW FX':''}`;frames=0;elapsed=0;}
  for(const u of state.units){const a=actors.get(u.id);if(!a)continue;if(u.hp>0){a.parts.jacket.scale.y=1+Math.sin(clock*2+u.x)*.008;a.flash=Math.max(0,a.flash-dt);a.parts.jacket.rotation.z=Math.sin(a.flash*45)*a.flash*.6;}}
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.v.y-=dt*4;p.mesh.position.addScaledVector(p.v,dt);if(p.life<=0){world.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  for(const u of state.units){const a=actors.get(u.id);if(!a||u.hp<=0)continue;const p=a.group.position.clone().add(new T.Vector3(0,1.15,0)).project(camera);badges.get(u.id).style.transform=`translate(-50%,-100%) translate(${(p.x+1)*innerWidth/2}px,${(1-p.y)*innerHeight/2}px)`;}
  renderer.render(world,camera);
 }
-window.__c={snapshot:()=>structuredClone(state),metrics:()=>({fps,draws:renderer.info.render.calls,geometries:renderer.info.memory.geometries}),screen:(x,z)=>{const v=new T.Vector3(coord(x),.03,coord(z)).project(camera);return {x:(v.x+1)*innerWidth/2,y:(1-v.y)*innerHeight/2};}};
+window.__c={snapshot:()=>structuredClone(state),metrics:()=>({fps,draws:renderer.info.render.calls,geometries:renderer.info.memory.geometries,lowEffects})};
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('loading').hidden=false;$('loading').textContent='Graphics interrupted. Reload to restore the yard.';});
 build().catch(e=>{$('loading').hidden=false;$('loading').textContent='Unable to load the yard: '+e.message;console.error(e);});
