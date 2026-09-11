@@ -89,14 +89,14 @@ async function build(){
  $('loading').hidden=true;refresh();previous=performance.now();animate();
 }
 function clear(group){for(const m of [...group.children]){group.remove(m);m.geometry?.dispose();m.material?.dispose();}}
-function tileOutline(x,z,color,fill=false){const px=coord(x),pz=coord(z),r=.53;const outline=line([new T.Vector3(px-r,.02,pz-r),new T.Vector3(px+r,.02,pz-r),new T.Vector3(px+r,.02,pz+r),new T.Vector3(px-r,.02,pz+r),new T.Vector3(px-r,.02,pz-r)],color,.65);highlights.add(outline);if(fill){const m=new T.Mesh(new T.PlaneGeometry(1.04,1.04),new T.MeshBasicMaterial({color,transparent:true,opacity:.08,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(px,.012,pz);highlights.add(m);}}
+function tileOutline(x,z,color,fill=false){const px=coord(x),pz=coord(z),r=.53;const outline=line([new T.Vector3(px-r,.02,pz-r),new T.Vector3(px+r,.02,pz-r),new T.Vector3(px+r,.02,pz+r),new T.Vector3(px-r,.02,pz+r),new T.Vector3(px-r,.02,pz-r )],color,.95);highlights.add(outline);if(fill){const m=new T.Mesh(new T.PlaneGeometry(1.04,1.04),new T.MeshBasicMaterial({color,transparent:true,opacity:.22,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(px,.012,pz);highlights.add(m);}}
 const badges=new Map();
 for(const u of state.units){const el=document.createElement('div');el.className='actor-label';el.dataset.team=u.team;document.body.append(el);badges.set(u.id,el);}
 function refresh(){
  for(const u of state.units){const el=badges.get(u.id),selected=unit(state,state.selected),f=selected?forecast(selected,u):null;el.hidden=u.hp<=0;el.textContent=`${u.name} · ${u.hp}/${u.max}${u.team&&f&&!selected.acted?' · −'+f.damage:''}`;el.classList.toggle('targetable',!!(u.team&&f&&!selected.acted&&!busy));}
  clear(highlights);clear(arrows);const selected=unit(state,state.selected);
  if(selected?.hp>0){const ring=new T.Mesh(new T.RingGeometry(.32,.36,48),new T.MeshBasicMaterial({color:0xa3ffcf,side:T.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(coord(selected.x),.025,coord(selected.z));highlights.add(ring);
-  if(!busy&&!selected.moved&&!state.result)for(const p of reachable(state,selected))tileOutline(p.x,p.z,0x99e7c7,true);
+  if(!busy&&!selected.moved&&!state.result)for(const p of reachable(state,selected))tileOutline(p.x,p.z,0x65ebbd,true);
  }
  if(!busy&&!state.result)for(const enemy of state.units.filter(u=>u.team&&u.hp>0)){const plan=intent(state,enemy);if(!plan)continue;const target=unit(state,plan.target),start=new T.Vector3(coord(enemy.x),.06,coord(enemy.z)),end=new T.Vector3(coord(target.x),.06,coord(target.z)),direction=end.clone().sub(start);const len=Math.min(direction.length()-.3,1.6);direction.normalize();if(len>0){const a=new T.ArrowHelper(direction,start,len,0xef9b4b,.22,.14);arrows.add(a);}}
  $('movePicker').open=false;$('movePicker').hidden=busy||!!state.result||!selected||selected.hp<=0||selected.moved;$('moves').replaceChildren();

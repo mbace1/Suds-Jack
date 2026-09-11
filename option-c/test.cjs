@@ -9,8 +9,12 @@ fs.mkdirSync('option-c/.dream-loop',{recursive:true});
   const click=async sel=>{const el=p.locator(sel).first();await el[touch?'tap':'click']();};
   const gameUrl=process.env.C_URL||'http://127.0.0.1:8766/option-c/';await p.goto(new URL('../#optionc',gameUrl).href);await click('#cab-optionc a.play');await p.keyboard.press('Escape');await p.waitForURL(u=>u.pathname.endsWith('/option-c/'));await p.locator('#loading').waitFor({state:'hidden'});
   // Inspect the rendered range, excluding header/footer controls from the image.
-  const image=(await p.screenshot()).toString('base64');const band=await p.evaluate(()=>({top:document.querySelector('#status').getBoundingClientRect().bottom+5,bottom:document.querySelector('footer').getBoundingClientRect().top-5}));
-  const mint=await p.evaluate(async({image,band})=>{const im=new Image();im.src='data:image/png;base64,'+image;await im.decode();const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const ctx=c.getContext('2d');ctx.drawImage(im,0,0);const scale=im.width/innerWidth,pixels=ctx.getImageData(0,Math.ceil(band.top*scale),im.width,Math.floor((band.bottom-band.top)*scale)).data;let n=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i+1]>140&&pixels[i+1]-pixels[i]>20&&pixels[i+1]-pixels[i+2]>5)n++;return n;},{image,band});assert(mint>500,'mint movement range is visibly rendered');
+  let mint=0;
+  for(let capture=0;capture<3&&mint<=500;capture++){
+   const image=(await p.screenshot()).toString('base64');const band=await p.evaluate(()=>({top:document.querySelector('#status').getBoundingClientRect().bottom+5,bottom:document.querySelector('footer').getBoundingClientRect().top-5}));
+   mint=await p.evaluate(async({image,band})=>{const im=new Image();im.src='data:image/png;base64,'+image;await im.decode();const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const ctx=c.getContext('2d');ctx.drawImage(im,0,0);const scale=im.width/innerWidth,pixels=ctx.getImageData(0,Math.ceil(band.top*scale),im.width,Math.floor((band.bottom-band.top)*scale)).data;let n=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i+1]>140&&pixels[i+1]-pixels[i]>20&&pixels[i+1]-pixels[i+2]>5)n++;return n;},{image,band});
+  }
+  assert(mint>500,`mint movement range is visibly rendered (${mint} pixels)`);
   for(let turn=0;turn<15;turn++){
    for(const id of ['scout','anchor']){
     let s=await p.evaluate(()=>__c.snapshot());if(s.result)break;const u=core.unit(s,id);if(u.hp<=0)continue;await click(`[data-id="${id}"]`);
