@@ -170,13 +170,17 @@ async function staticChecks() {
   ok('the NEWEST episode is the one that airs',
      !unairable.some(u => u.startsWith('wire/' + eps[0])), eps[0]);
 
-  // The deployed site is a curated root with no `.github` in it, and the gate
-  // runs there too (against gh-pages, before a deploy is believed). Absent
-  // entirely = a site checkout, so there is nothing to grade; present but
-  // missing the job = somebody deleted the job.
+  // The gate runs on BOTH trees — the source repo and a gh-pages checkout before
+  // a deploy is believed — so it has to know which one it is standing in, and
+  // `.github` exists is not the answer: the deployed site carries one stray
+  // workflow left behind by somebody else's deploy, which made this block grade
+  // the site for a job the site is not supposed to have and fail every deploy.
+  // The root `test/` tree is the honest marker — the source repo has it and
+  // gh-pages deliberately ships no test dirs at its root. On the source tree a
+  // missing job still fails, which is the case worth catching.
+  const authoring = fs.existsSync(path.join(ROOT, 'test', 'hub-smoke.cjs'));
   const wf = path.join(ROOT, '.github', 'workflows', 'radiofree-wire.yml');
-  if (fs.existsSync(path.join(ROOT, '.github'))
-      && ok('the daily job exists', fs.existsSync(wf))) {
+  if (authoring && ok('the daily job exists', fs.existsSync(wf))) {
     const y = fs.readFileSync(wf, 'utf8');
     ok('it runs the generator and then the app\'s own validator',
        y.includes('tools/generate-wire.mjs') && y.includes('tools/validate-wire.mjs'));
