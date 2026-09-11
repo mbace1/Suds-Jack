@@ -596,21 +596,18 @@ export const GAMES = [
       tagline: 'Yksi nappi. Paina rinteeseen, päästä irti harjalla ja laskeudu seuraavaa pitkin — älä siihen.',
       lineage: 'Tiny Wings, rullalaudalla',
       controls: 'pidä pohjassa · päästä harjalla · napsauta ylös temppuun',
-      note: 'arkistoitu — sisarpeli Tiny Hawkille, joka luovutettiin CONCRETElle',
     },
     ja: {
       tagline: 'ボタンひとつ。斜面に押しつけ、頂で放し、次の斜面に沿って降りる — ぶつけるのではなく。',
       lineage: 'Tiny Wings、スケートボードで',
       controls: 'どこでも長押し · 頂で離す · 上に弾いてトリック',
-      note: 'アーカイブ済み — CONCRETE へ引き継がれた Tiny Hawk の姉妹作',
     },
     // its own keys, not a synthetic tap: PRESS_KEYS is held to press into the
     // hill and released at the lip, and TRICK_KEYS flicks
     pad: { keys: { down: 'KeyS', up: 'KeyW', b0: 'Space', b3: 'KeyW' } },
     // one button IS the game, and under a thumb nothing says the screen is it
     touch: { label: 'Hold', sub: 'let go at the lip', key: 'Space' },
-    status: 'archived',
-    note: 'archived — sibling to Tiny Hawk, which handed the skating lane to CONCRETE',
+    status: 'active',
     title: 'Tiny 2D',
     tagline: 'One button. Press into the hill, let go at the lip, and land along the next one — not into it.',
     lineage: 'Tiny Wings, on a skateboard',

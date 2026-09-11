@@ -1,10 +1,15 @@
 # Hand-off to CONCRETE — from Tiny Hawk and Tiny 2D
 
-Tiny Hawk (`../tinyhawk/`, v6) and Tiny 2D (`../tiny2d/`, v3) are **archived**. CONCRETE is
-the skating lane now. This is what those two learned that is worth money here — written
-against CONCRETE's actual code as of `c9e8563`, not as a general essay.
+Tiny Hawk (`../tinyhawk/`, v6) is **archived** — CONCRETE is the skating lane now. Tiny 2D
+(`../tiny2d/`, v3) is **not**: it is a one-button Tiny Wings momentum game that happens to
+share Tiny Hawk's ballistic physics, it is still active on the floor, and nothing here asks
+you to take anything away from it. It appears in this doc only as the ancestor of the
+physics core.
 
-Both games stay in the repo and stay playable, the way `sudsjack/` does. Nothing here is a
+This is what those two learned that is worth money here — written against CONCRETE's actual
+code as of `c9e8563`, not as a general essay.
+
+Tiny Hawk stays in the repo and stays playable, the way `sudsjack/` does. Nothing here is a
 to-do list; it is a menu with the reasoning attached, ranked by what it would buy you.
 
 ---

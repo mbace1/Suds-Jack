@@ -287,10 +287,14 @@ game over, the way home and the signature — all driven off **game state, not t
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
 Build tooling: none — same no-build rule as every other demo here.
 
-### Tiny Hawk (`tinyhawk/`) + Tiny 2D (`tiny2d/`) — ARCHIVED, handed to CONCRETE
-**Archived 2026-09-10. The skating lane is `concrete/`.** Both stay in the repo and stay
-playable the way `sudsjack/` does; both cabinets moved to `status: 'archived'`. Nobody
-resumes either without the owner asking in their own words.
+### Tiny Hawk (`tinyhawk/`) — ARCHIVED, handed to CONCRETE
+**Archived 2026-09-10. The skating lane is `concrete/`.** It stays in the repo and stays
+playable the way `sudsjack/` does; its cabinet moved to `status: 'archived'`. Nobody
+resumes it without the owner asking in their own words.
+**`tiny2d/` is NOT archived** (owner, 2026-09-11: *"Tiny 2d was never asked to be archived
+as it's separate"*). It shares Tiny Hawk's ballistic physics and was spun out of the same
+session, but it is a one-button Tiny Wings momentum game, not a skating game, and CONCRETE
+does not supersede it — it stays `active` on the floor and is worked on in its own right.
 **The hand-off is `concrete/HANDOFF_TINYHAWK.md`** — read that, not this, before rebuilding
 anything skating-shaped. It is written against CONCRETE's actual code and ranks what is
 worth taking: **manuals** (the biggest gap — CONCRETE's chain can only stay open in the air
@@ -300,9 +304,9 @@ equilibrium** (a rail is currently free score for its whole length), banking onl
 **fakie**), and the Special meter. It also says what NOT to take — the heightfield park, the
 fat-bird protagonist, the near-black Skate Story look, and The Part's roguelike meta.
 Tiny Hawk reached **v6** (Skate-style flick-it controls, grinds, manuals, a landing-gated
-combo chain, a 13-row roguelike with a five-film economy, and a fat-bird protagonist);
-Tiny 2D reached **v3** (one-button Tiny Wings momentum, the ancestor of Tiny Hawk's
-ballistic physics). Four traps in that doc are general and cost real days: **`preventDefault`
+combo chain, a 13-row roguelike with a five-film economy, and a fat-bird protagonist).
+Tiny 2D is at **v3** (one-button Tiny Wings momentum, the ancestor of Tiny Hawk's
+ballistic physics) and carries on. Four traps in that doc are general and cost real days: **`preventDefault`
 on `touchend`/`touchmove` kills every DOM button** (the tap never becomes a click — a game
 that boots fine and cannot be started under a thumb); an airborne gesture needs **arming,
 and the re-arm must run while the cooldown is still counting** or the return stroke leaves
