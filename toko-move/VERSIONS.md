@@ -1,5 +1,104 @@
 # Toko Move — versions
 
+## v2.34 — 2026-09-11
+
+**The cache tokens were wrong, and nothing was looking at them.** Two faults,
+one of them shipped an hour earlier in v2.33:
+
+`core-v212.js` was rewritten in v2.33 — its `BUILD_VERSION` moved and, more to
+the point, its import of `live-network.js` moved from `?v=7` to `?v=8` — and it
+kept `?v=36`. A returning player holding a cached `core-v212.js?v=36` would have
+gone on importing `live-network.js?v=7` for as long as that cache held: the
+badge fix sat on the server, the token said nothing had changed, and the board
+kept its pile-up. It is now `?v=37`.
+
+`deliveries.js` was being imported under **two** tokens at once — `?v=11` by
+`core-v212.js` and `?v=10` by `job-board-v212.js` — which is the exact failure
+the one-token-per-module rule is named for: the browser instantiates the module
+twice and its state splits in half. It has been that way since v2.29 moved
+`DELIVERY_TARGET` from 6 to 3 and bumped only core's copy, so a returning player
+had an engine wanting three deliveries and a job board reading six.
+
+**`test/tokens.mjs` is the gate, and it measures against the DEPLOYED tree**,
+because a token means "this is not the file you already have" and the file you
+already have is what it has to be compared against. It walks the import graph
+from `index.html` rather than globbing `js/*.js` — the folder still carries
+`main.js`, `main-v210.js` and `main-v211.js`, superseded entry points nothing
+loads, whose stale tokens are dead files rather than a cache fault. It asserts
+one token per module across the live graph, and that no module's bytes changed
+while its token stood still. CI fetches `gh-pages` for it; with no ref to read
+it **fails** rather than skipping.
+
+The reverse case is reported and **not** enforced, and finding that out is worth
+writing down: "bytes identical, token moved" is what a CORRECTION looks like.
+v2.33 shipped core's new bytes under its old token, so the deployed copy already
+matches this tree and the 36 → 37 that fixes it reads, from bytes alone, exactly
+like a gratuitous bump. Nothing in the two trees can tell them apart. The cost of
+a wrong bump is one refetch; the cost of a missed one is a player stuck on the
+old build until their cache turns over.
+
+Also in this release, in `test/hub-smoke.cjs` rather than the game: the arcade
+gate was failing about one run in four, two different ways, and both were the
+ruler rather than the floor. The hold-Start test dereferenced
+`.arcade-home .fill` in its wait predicate — null before the shell module ran
+and null again after the hold navigated home, so the wait rejected on its own
+exception and reported both "the fill never started" and a page error. And a
+page still loading when the gate walks on has its requests aborted, which
+arrives as "Failed to fetch" from whatever was mid-flight — usually toko-move's
+own boot fetch, reported at the end of a run against a page left minutes
+earlier. Abort-shaped messages are now dropped only while a navigation the gate
+itself started is in flight, and every error is stamped with the page that was
+open when it arrived, because an unstamped message named neither the game nor
+the moment.
+
+## v2.33 — 2026-09-10
+
+**The line badges never dodged each other.** `LiveNetwork.draw()` painted one
+badge per vehicle at its exact projected position, in vehicle order, with no
+collision handling of any kind — while `drawStopLabels()` was carefully avoiding
+those same badges, so stop names dodged trams and trams piled on trams.
+Measured, at deviceScaleFactor 2:
+
+| | badges | overlapping pairs | worst stack | badge area buried | fully hidden |
+|---|---|---|---|---|---|
+| phone, CITY | 27 | 34 | 9 | 25.3% | 1 |
+| phone, ROUTE | 62 | 49 | 6 | 24.1% | 2 |
+| phone, STOP | 18 | 5 | 3 | 16.5% | 1 |
+| tablet, CITY | 27 | 22 | 7 | 19.2% | 1 |
+| tablet, ROUTE | 62 | 31 | 4 | 19.8% | 1 |
+
+The heap around Kamppi is in every screenshot sent to the owner since v2.28.
+
+**The fix is DEGRADATION, not movement.** A badge is not a label beside a
+vehicle, it *is* the vehicle — so nudging one out of a crowd moves the tram, and
+at city scale a fourteen-pixel nudge is several hundred metres of lie about where
+the service is. Instead the highest-ranked vehicle in a crowd keeps its labelled
+badge and everything under it falls back to a dot at its true position. Nothing
+is dropped and nothing moves; what is given up is the label, which was
+unreadable in that heap anyway.
+
+**Rank comes from the caller, because the board cannot know which tram matters.**
+`draw()` takes a `priority` function and `main` supplies one from the lines that
+are any use to you right now — the one you are riding, the one your selected plan
+says to take, and the ones the boarding panel is offering. Without it the
+declutter would be arbitrary about which service it silenced, and the silenced
+one is often yours. A selected vehicle outranks everything.
+
+Ties break on vehicle **id**, never on position. A positional tiebreak is the
+obvious way to write it and it makes two crossing trams swap which of them is
+readable, frame after frame, for as long as they are close.
+
+After: **zero** overlapping badges at every scale on both viewports, with 12 of
+27 vehicles labelled at phone CITY and 32 of 66 at phone ROUTE.
+
+`test/badges.cjs` (20 checks) is the gate: no two labelled badges overlap at
+three scales on two viewports; badges + dots account for every vehicle shown;
+`main` really passes a rank function; the declutter is actually engaging, so the
+no-overlap checks are not vacuous; a line silenced unranked gets a readable badge
+back when ranked; and every vehicle that yielded its label yielded it to one that
+outranks it by rank-then-id. Six mutations, six caught — including the positional
+tiebreak, which the two obvious "is it stable" checks could not see.
+
 ## v2.32 — 2026-09-10
 
 **`MISSED` was accusing the player of missing trams the game had never offered

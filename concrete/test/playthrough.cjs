@@ -36,9 +36,12 @@ const server = http.createServer((req, res) => {
   });
   try {
     // The CI runner has no GPU. Use the committed mobile art tier for the full
-    // real-input playthrough; validate.py still checks both desktop GLBs.
+    // real-input playthrough. Mobile deliberately uses procedural art; desktop
+    // GLB animation coverage runs separately below.
     const page = await browser.newPage({ viewport: { width: 680, height: 800 } });
     const errors = [];
+    const mobileGlbs = [];
+    page.on("request", r => { if (/\\.glb(?:\\?|$)/.test(r.url())) mobileGlbs.push(r.url()); });
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("response", (r) => {
       if (r.status() >= 400) console.log("HTTP", r.status(), r.url());
@@ -47,9 +50,11 @@ const server = http.createServer((req, res) => {
     await page.locator('a.play[href="concrete/"]').click();
     await page.waitForURL("**/concrete/");
     await page.locator("#start:not([disabled])").waitFor();
-    assert.match(await page.locator(".build").first().innerText(), /v2/);
+    assert.match(await page.locator(".build").first().innerText(), /v3/);
     assert.equal(await page.locator("#world").getAttribute("data-art"), "ready");
-    assert.equal((await page.locator("#world").getAttribute("data-clips")).split(",").length, 12);
+    assert.equal(await page.locator("#world").getAttribute("data-quality"), "mobile");
+    assert.equal(await page.locator("#world").getAttribute("data-clips"), null);
+    assert.deepEqual(mobileGlbs, [], "mobile must not request GLBs");
     console.log("ART", await page.locator("#world").evaluate((e) => ({ ...e.dataset })));
     await page.locator("#start").click();
     await page.keyboard.down("w");
@@ -98,8 +103,8 @@ const server = http.createServer((req, res) => {
     await page.waitForTimeout(180);
     await page.keyboard.press("k");
     await page.waitForTimeout(150);
-    assert(Number(await page.locator("#world").getAttribute("data-grab-error")) < 0.06);
-    console.log("PASS grab hand reaches board within 6cm");
+    assert.match(await page.locator("#trick-name").innerText(), /Indy grab/);
+    console.log("PASS procedural grab registers through keyboard");
     await page.waitForTimeout(700);
     await page.keyboard.press("r");
     await page.keyboard.down("w");
@@ -140,19 +145,23 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.locator("#time").innerText(), before, "pause freezes timer");
     await page.locator("#resume").click();
     console.log(
-      "PASS Hub -> v2 title -> drop in -> ollie + kickflip -> bank " +
+      "PASS Hub -> v3 title -> drop in -> ollie + kickflip -> bank " +
         score +
         " -> reset -> pause/resume",
     );
     assert.deepEqual(errors, []);
+    await page.close();
     const mobile = await browser.newPage({
       viewport: { width: 390, height: 844 },
       isMobile: true,
       hasTouch: true,
     });
+    mobile.on("request", r => { if (/\.glb(?:\?|$)/.test(r.url())) mobileGlbs.push(r.url()); });
+    mobile.on("pageerror", e => errors.push(e.message));
     await mobile.goto(base + "/concrete/");
     await mobile.locator("#start:not([disabled])").waitFor();
     await mobile.locator("#start").tap();
+    await mobile.locator('#intro').waitFor({state:'hidden'});
     assert(await mobile.locator("#move-stick").isVisible());
     assert(await mobile.locator("#look-stick").isVisible());
     await mobile.locator('[data-key=" "]').tap();
@@ -170,6 +179,27 @@ const server = http.createServer((req, res) => {
     assert.equal(await mobile.locator("#world").getAttribute("data-art"), "ready");
     console.log("MOBILE ART", await mobile.locator("#world").evaluate((e) => ({ ...e.dataset })));
     console.log("PASS mobile title -> touch ollie/flip -> bank, both sticks visible");
+    assert.deepEqual(mobileGlbs, [], "no delayed mobile GLB insertion");
+    assert.deepEqual(errors, []);
+    await mobile.close();
+    // Desktop still promises all twelve Blender clips and real grab contact.
+    const desktop = await browser.newPage({ viewport: { width: 800, height: 600 } });
+    desktop.setDefaultTimeout(90000);
+    await desktop.goto(base + "/concrete/?quality=desktop");
+    await desktop.locator("#start:not([disabled])").waitFor();
+    assert.equal(await desktop.locator("#world").getAttribute("data-art"), "ready");
+    const clips = (await desktop.locator("#world").getAttribute("data-clips") || "").split(",");
+    for (const clip of ["idle","push","coast","crouch","ollie","air","land","kickflip","grab","grind","bail","recover"]) assert(clips.includes(clip), clip);
+    await desktop.locator("#start").click();
+    await desktop.keyboard.press("Space");
+    await desktop.waitForFunction(() => document.querySelector("#world").dataset.air === "true");
+    await desktop.keyboard.press("k");
+    await desktop.waitForFunction(() => {
+      const error = document.querySelector("#world").dataset.grabError;
+      return error !== undefined && Number.isFinite(Number(error)) && Number(error) < .06;
+    });
+    console.log("PASS desktop twelve clips and grab contact within 6cm");
+    await desktop.close();
     const fallback = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await fallback.route("**/*.glb?*", (route) => route.abort());
     await fallback.goto(base + "/concrete/");

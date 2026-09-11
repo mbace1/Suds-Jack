@@ -31,6 +31,13 @@ const mix = (c1, c2, t) => {
 };
 
 export const ART = {
+  tacticsyard(g,a){
+    g.bands(['#09121b','#183542','#24282a']);
+    for(let i=0;i<9;i++){g.line(8+i*7,38-i*2,57+i*7,64-i*2,'#536763');g.line(8+i*6,38+i*3,64+i*6,22+i*3,'#536763');}
+    for(const [x,y] of [[37,36],[76,41]]){g.p(x,y,22,8,'#817f75');g.line(x,y,x+22,y,'#c7aa79');}
+    for(const [x,y,c] of [[37,52,a],[56,57,a],[87,29,'#c87539'],[66,25,'#c87539']]){g.disc(x,y-8,2,'#c7aa79');g.p(x-2,y-6,5,7,c);g.line(x-1,y,x-3,y+5,'#101619');g.line(x+2,y,x+4,y+5,'#101619');}
+    g.p(13,19,2,16,'#817f75');g.disc(14,18,3,'#d09535');
+  },
   warehouse(g,a){
     g.bands(['#17242d','#263d49','#50626a','#7a7c72']);
     for(const x of [8,36,92,120]){g.p(x,0,3,55,'#91a9ad');g.line(x,0,64,30,'#6d858f')}
@@ -419,52 +426,6 @@ export const ART = {
     g.p(67, 48, 2, 4, '#14141a');                // black intake mouths
     g.p(67, 55, 2, 4, '#14141a');
     g.p(60, 44, 3, 5, '#e8dfc6');                // fin
-  },
-
-  // Flowsnow: a cover, not an icon. A sky in flat Atari bars, snow dunes as
-  // hard lit/shadow faces, an arch (lighter than the sky behind it) framing
-  // the far field, and the traveller cropped by the bottom edge, mid-carve,
-  // the spray in the cabinet's own accent and the scarf the one red thing.
-  flowsnow(g, a) {
-    // the sky: one colour per scanline band, dusk-blue to peach
-    const sky = ['#2c3160', '#3a4478', '#55628f', '#7d7ea0', '#a98fa2', '#d2a094', '#eeb48e', '#f6c59b'];
-    sky.forEach((c, i) => g.p(0, i * 4, W, 4, c));
-    g.disc(98, 27, 6, '#fff0d8');                          // the low sun
-    g.disc(98, 27, 9, mix('#fff0d8', '#f6c59b', 0.75));
-    g.disc(98, 27, 6, '#fff4e2');
-    // far dunes: a ridge line, lit face left, shadow face right
-    const ridge = x => 33 + Math.round(Math.sin(x * 0.045) * 3 + Math.sin(x * 0.11 + 1) * 1.5);
-    for (let x = 0; x < W; x++) {
-      const y = ridge(x);
-      const lit = Math.cos(x * 0.045) > 0;
-      g.p(x, y, 1, H - y, lit ? '#f1dccf' : '#a8a6cf');
-    }
-    // the near swell: a second, lower crest, warmer and sharper
-    const crest = x => 47 + Math.round(Math.sin(x * 0.03 + 2.2) * 5);
-    for (let x = 0; x < W; x++) {
-      const y = crest(x);
-      const lit = Math.cos(x * 0.03 + 2.2) > -0.2;
-      g.p(x, y, 1, H - y, lit ? '#f8e8dc' : '#b3b0d6');
-      g.p(x, y, 1, 1, lit ? '#fff7ee' : '#c9c4e2');       // the crest line
-    }
-    // a standing arch on the left, darker than the snow and lighter than the sky
-    g.p(10, 14, 4, 30, '#6b678a'); g.p(26, 12, 4, 32, '#6b678a'); g.p(8, 10, 24, 4, '#7a7698');
-    g.p(12, 16, 1, 27, '#8c88a8'); g.p(28, 14, 1, 29, '#8c88a8');
-    // the track: a cool line coming up out of the frame to the board
-    for (let y = H - 1; y > 54; y--) g.p(70 + Math.round((H - y) * 0.55), y, 3, 1, '#b9b6dc');
-    // the spray, in the accent: a fan thrown off the edge, biggest nearest
-    for (let i = 0; i < 9; i++) {
-      const t = i / 9;
-      g.disc(84 + i * 4, 58 - i * 3.2 + Math.sin(i) * 1.5, Math.max(1, 4 - i * 0.35), i % 3 === 2 ? '#fff6ee' : mix(a, '#fff6ee', t * 0.6));
-    }
-    // the traveller, cropped by the bottom edge: the board, the robe, the hood, the scarf
-    g.p(60, 63, 22, 2, '#2b2531'); g.p(58, 62, 3, 2, '#2b2531'); g.p(81, 61, 3, 2, '#2b2531');
-    g.p(66, 46, 9, 17, '#8a2c2a'); g.p(64, 55, 13, 8, '#8a2c2a'); g.p(65, 62, 11, 1, '#5c1c1e');
-    g.p(67, 40, 7, 7, '#6c2022'); g.p(69, 43, 3, 2, '#14101a');
-    g.p(75, 47, 4, 3, '#8a2c2a'); g.p(78, 45, 3, 3, '#8a2c2a');  // the arm out, for balance
-    // the scarf, streaming back and up to the left
-    const scarf = [[64, 44], [59, 42], [54, 41], [49, 41], [44, 42], [40, 44]];
-    scarf.forEach(([x, y], i) => g.p(x, y, 5, 2, i % 3 === 2 ? '#b9532f' : '#f2e0c2'));
   },
 
   // SKLTR: green bones in the dark
@@ -1435,6 +1396,197 @@ export const ART = {
     g.disc(45, H - 24, 4, a);
   },
 
+  // Hyper Dagger: a swarm coming out of the dark, and the only light in the
+  // world is the one you are making.
+  //
+  // Devil Daggers rather than HYPERDEMON (owner's call, and Bone Dust sits on
+  // the same side). The two look nothing alike and the difference is one
+  // decision: where the light is. HYPERDEMON burns the whole sky behind the
+  // swarm, so a skull reads as a SILHOUETTE punched out of a blaze. Devil
+  // Daggers has no sky at all — pitch black, no horizon, no grid you can see —
+  // and the only thing lighting anything is your own dagger stream coming up
+  // from the bottom of the frame. So the light is UNDER the swarm, jaws are the
+  // brightest thing on the picture, and every crown falls away into the void.
+  // An earlier pass had the burning sky and it was the wrong game on the front.
+  //
+  // Still the Atari idiom: a 2600 changed colour once per scanline, so the
+  // light on a face is a stack of flat steps with hard seams (TONE), never a
+  // ramp — which suits the game's own rule of black and bone with dark red the
+  // only colour allowed in. Depth is the ONLY other tool: further back is
+  // smaller, and dimmer by a fixed number of steps down the same ladder, until
+  // the last of them is barely out of the black.
+  // Toko Trip: the nook at golden hour, looking down its own inlet. The chair
+  // is the subject and it is EMPTY — the invitation is the game. Palm cropped
+  // by the right frame (cropping is what makes a foreground), rimmed in two
+  // colours so it is never a black cutout; the sky is flat bars with hard
+  // seams, 2600-style; the cave's magenta is one distant wink, not a theme.
+  cove(g, a) {
+    const SKY = ['#4a3a6a', '#6a4a72', '#96527a', '#c4647a', '#e0806a', '#e8a05c'];
+    const HOR = 30;
+    SKY.forEach((c, i) => g.p(0, i * 5, W, 5, c));
+
+    // the sun, low over the sea, with one hard halo band — no gradients
+    g.disc(58, 24, 7, '#f8d8a0');
+    g.disc(58, 24, 5, '#ffeecb');
+
+    // the sea: the game's own teal walking toward the horizon light
+    for (let y = HOR; y < 54; y++) {
+      const t = (y - HOR) / 24;
+      g.p(0, y, W, 1, mix(mix(a, '#1d5a56', t * 0.75), '#e8a05c', Math.max(0, 0.3 - t)));
+    }
+    // sun glitter: a broken column, brightest at the horizon
+    for (let y = HOR; y < 50; y += 2) {
+      const w2 = Math.max(1, 7 - (y - HOR) * 0.28);
+      if ((y >> 1) % 3 !== 0) g.p(58 - w2 / 2 + ((y * 7) % 3) - 1, y, w2, 1, mix('#ffe2a8', a, (y - HOR) / 30));
+    }
+    // the cave, far up the coast: one magenta arch, lit, tiny
+    g.p(10, 26, 8, 4, '#241a20');
+    g.line(11, 29, 13, 26, '#ff4fd8'); g.line(13, 26, 15, 26, '#ff4fd8'); g.line(15, 26, 17, 29, '#ff4fd8');
+    g.p(12, 31, 5, 1, mix('#ff4fd8', a, 0.6));
+
+    // the beach, sunset-warmed, and the inlet cutting into it toward the nook
+    for (let y = 54; y < H; y++) {
+      const t = (y - 54) / (H - 54);
+      g.p(0, y, W, 1, mix('#d8b988', '#e9dcb0', t));
+    }
+    for (let y = 42; y < 66; y++) {
+      // the channel: sea colour reaching down-left, widening seaward
+      const t = (y - 42) / 24;
+      const cx = 74 - t * 26, w2 = 30 - t * 21;
+      if (y >= 54) {
+        g.p(cx - w2 / 2 - 2, y, w2 + 4, 1, '#b99c72');          // wet rim
+        g.p(cx - w2 / 2, y, w2, 1, mix(a, '#1d5a56', 0.25 + t * 0.3));
+        if (y % 3 === 0) g.p(cx - w2 / 2, y, 2, 1, '#f2e9d8');   // foam flecks
+      }
+    }
+
+    // the deck and the empty chair, bottom-left, cropped by the frame
+    for (let y = 62; y < H; y += 3) g.p(0, y, 34, 2, y % 2 ? '#8a705a' : '#967a62');
+    g.p(0, 60, 34, 2, '#6a5544');
+    g.p(8, 42, 3, 22, '#4a3a30');                                 // chair back leg
+    g.p(8, 40, 14, 4, '#5a4638');                                 // seat
+    g.p(9, 41, 12, 2, mix(a, '#1d5a56', 0.2));                    // the cushion
+    g.p(6, 24, 4, 18, '#4a3a30');                                 // backrest
+    g.p(10, 24, 1, 18, '#e8a05c');                                // sunset rim
+    g.p(6, 23, 5, 1, '#f0b060');
+    // the lantern beside it, already on
+    g.p(26, 34, 2, 26, '#3a2e26');
+    g.disc(27, 32, 3, '#ffbf7a');
+    g.disc(27, 32, 1, '#ffeecb');
+
+    // the palm, in from the right frame, lit side toward the sun
+    const trunk = [[126, 71], [120, 56], [113, 42], [107, 29], [103, 17], [101, 6]];
+    for (let i = 0; i < trunk.length - 1; i++) {
+      const [x0, y0] = trunk[i], [x1, y1] = trunk[i + 1];
+      for (let d = -2; d <= 2; d++) g.line(x0 + d, y0, x1 + d, y1, d < 1 ? '#4a3a2c' : '#7a5c40');
+      g.line(x0 + 3, y0, x1 + 3, y1, '#c98a52');                  // sun rim
+    }
+    for (const [dx, dy, c] of [[-26, 2, '#1d2a18'], [-18, -8, '#243420'], [-6, -12, '#2c4026'],
+      [8, -10, '#243420'], [18, -2, '#1d2a18'], [-12, 6, '#182414']]) {
+      g.line(101, 6, 101 + dx, 6 + dy, c);
+      g.line(101, 7, 101 + dx, 7 + dy, mix(c, '#e8a05c', 0.35));  // each frond lit above
+    }
+    g.disc(101, 8, 2, '#4a3a2c');
+  },
+  // Flowsnow: a cover, not an icon. A sky in flat Atari bars, snow dunes as
+  // hard lit/shadow faces, an arch (lighter than the sky behind it) framing
+  // the far field, and the traveller cropped by the bottom edge, mid-carve,
+  // the spray in the cabinet's own accent and the scarf the one red thing.
+  flowsnow(g, a) {
+    // the sky: one colour per scanline band, dusk-blue to peach
+    const sky = ['#2c3160', '#3a4478', '#55628f', '#7d7ea0', '#a98fa2', '#d2a094', '#eeb48e', '#f6c59b'];
+    sky.forEach((c, i) => g.p(0, i * 4, W, 4, c));
+    g.disc(98, 27, 6, '#fff0d8');                          // the low sun
+    g.disc(98, 27, 9, mix('#fff0d8', '#f6c59b', 0.75));
+    g.disc(98, 27, 6, '#fff4e2');
+    // far dunes: a ridge line, lit face left, shadow face right
+    const ridge = x => 33 + Math.round(Math.sin(x * 0.045) * 3 + Math.sin(x * 0.11 + 1) * 1.5);
+    for (let x = 0; x < W; x++) {
+      const y = ridge(x);
+      const lit = Math.cos(x * 0.045) > 0;
+      g.p(x, y, 1, H - y, lit ? '#f1dccf' : '#a8a6cf');
+    }
+    // the near swell: a second, lower crest, warmer and sharper
+    const crest = x => 47 + Math.round(Math.sin(x * 0.03 + 2.2) * 5);
+    for (let x = 0; x < W; x++) {
+      const y = crest(x);
+      const lit = Math.cos(x * 0.03 + 2.2) > -0.2;
+      g.p(x, y, 1, H - y, lit ? '#f8e8dc' : '#b3b0d6');
+      g.p(x, y, 1, 1, lit ? '#fff7ee' : '#c9c4e2');       // the crest line
+    }
+    // a standing arch on the left, darker than the snow and lighter than the sky
+    g.p(10, 14, 4, 30, '#6b678a'); g.p(26, 12, 4, 32, '#6b678a'); g.p(8, 10, 24, 4, '#7a7698');
+    g.p(12, 16, 1, 27, '#8c88a8'); g.p(28, 14, 1, 29, '#8c88a8');
+    // the track: a cool line coming up out of the frame to the board
+    for (let y = H - 1; y > 54; y--) g.p(70 + Math.round((H - y) * 0.55), y, 3, 1, '#b9b6dc');
+    // the spray, in the accent: a fan thrown off the edge, biggest nearest
+    for (let i = 0; i < 9; i++) {
+      const t = i / 9;
+      g.disc(84 + i * 4, 58 - i * 3.2 + Math.sin(i) * 1.5, Math.max(1, 4 - i * 0.35), i % 3 === 2 ? '#fff6ee' : mix(a, '#fff6ee', t * 0.6));
+    }
+    // the traveller, cropped by the bottom edge: the board, the robe, the hood, the scarf
+    g.p(60, 63, 22, 2, '#2b2531'); g.p(58, 62, 3, 2, '#2b2531'); g.p(81, 61, 3, 2, '#2b2531');
+    g.p(66, 46, 9, 17, '#8a2c2a'); g.p(64, 55, 13, 8, '#8a2c2a'); g.p(65, 62, 11, 1, '#5c1c1e');
+    g.p(67, 40, 7, 7, '#6c2022'); g.p(69, 43, 3, 2, '#14101a');
+    g.p(75, 47, 4, 3, '#8a2c2a'); g.p(78, 45, 3, 3, '#8a2c2a');  // the arm out, for balance
+    // the scarf, streaming back and up to the left
+    const scarf = [[64, 44], [59, 42], [54, 41], [49, 41], [44, 42], [40, 44]];
+    scarf.forEach(([x, y], i) => g.p(x, y, 5, 2, i % 3 === 2 ? '#b9532f' : '#f2e0c2'));
+  },
+  // ── the flow twins ─────────────────────────────────────────────────────
+  // One city drawn twice — Piritori by night, Toko Move by day — so the two
+  // cabinets say on the shelf what the code says underneath: same geometry,
+  // opposite weather. The diagram is the subject AND the framing device: fat
+  // route lines crop at the frame (foreground), stops sit lighter than the
+  // paper behind them, and the one thing happening differs per cover.
+  padmap(g, a) {
+    // the room, not the map: dark, and lit only by the screen
+    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#0a0c10', '#05070a', y / H));
+    // the glow the tube throws on the wall, FIRST and symmetric — drawn as
+    // rings growing outward from the set so it never steps off one corner.
+    // The first cut walked the rectangle's origin and left a grey wedge in the
+    // top-left that read as a rendering fault rather than light.
+    for (let i = 10; i > 0; i--) {
+      const t = i / 10;
+      g.p(12 - i * 2, 6 - i * 1.6, 104 + i * 4, 50 + i * 3.2, mix('#0a0c10', '#131a24', 1 - t));
+    }
+    // the set, standing on the floor — a fat bezel with the picture inside it,
+    // and it is LIGHTER than the wall so the frame reads as a frame rather
+    // than an outline floating in the void
+    g.p(12, 6, 104, 50, '#2a2f38');
+    g.p(14, 8, 100, 46, '#131820');
+    // the SAME Kallio geometry as the pair above, squeezed into the picture
+    const M = (x, y) => [16 + x * 0.75, 10 + y * 0.58];
+    const fat = (pts, c) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [ax, ay] = M(...pts[i]), [bx, by] = M(...pts[i + 1]);
+        for (let o = 0; o < 2; o++) g.line(ax, ay + o, bx, by + o, c);
+      }
+    };
+    fat([[18, 4], [18, 30], [52, 64], [88, 64]], '#146a70');
+    fat([[4, 66], [46, 66], [96, 16], [124, 16]], '#e2dccd');
+    fat([[70, 4], [96, 30]], '#2c5a3a');
+    for (const [x, y] of [[18, 30], [46, 66], [124, 16]]) {
+      const [cx, cy] = M(x, y); g.disc(cx, cy, 2, '#8c8778'); g.disc(cx, cy, 1, '#0b0e13');
+    }
+    const [px, py] = M(96, 16);
+    g.disc(px, py, 3, '#e2dccd'); g.disc(px, py, 1, '#0b0e13');
+    for (let i = 0; i < 14; i++) {
+      const t = i / 14 * Math.PI * 2;
+      g.p(px + Math.cos(t) * 7 * 1.3, py + Math.sin(t) * 7, 1, 1, '#ff7a1a');
+    }
+    // scanlines, so the picture is a PICTURE and not a second map
+    for (let y = 9; y < 54; y += 3) g.p(14, y, 100, 1, '#0d1219');
+    // the pad, cropped by the bottom edge — cropping is what makes it read as
+    // foreground rather than a diagram of a controller
+    g.p(38, 60, 52, 12, '#1e242c');
+    g.p(34, 62, 60, 8, '#1e242c');
+    g.disc(48, 65, 4, '#11161d'); g.disc(48, 65, 2, a);
+    g.disc(80, 65, 4, '#11161d'); g.disc(80, 65, 2, a);
+    // the d-pad, four ticks, and the two face buttons in the accent
+    g.p(38, 64, 6, 2, '#3a424d'); g.p(40, 62, 2, 6, '#3a424d');
+    g.p(88, 62, 2, 2, '#e2dccd'); g.p(92, 65, 2, 2, '#e2dccd');
+  },
 };
 
 // ── the glass ──────────────────────────────────────────────────────

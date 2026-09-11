@@ -1,5 +1,5 @@
 // Toko Move v2.12.2 — concurrent courier jobs expose live tradeoffs without naming a correct answer.
-import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=10';
+import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=11';
 import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=1';
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));
 const nodeName=(tm,id)=>tm.city?.nodes?.find(n=>n.id===id)?.name||id;

@@ -33,21 +33,51 @@ const check = (name, ok, extra = '') => {
 (async () => {
   await new Promise(r => server.listen(0, r));
   const base = `http://localhost:${server.address().port}/slaykallio/`;
-  const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: process.env.BROWSER_PATH || undefined, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
 
   // ── landscape ──────────────────────────────────────────────────────────
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const page = await ctx.newPage();
+  // `bg/plate.jpg` is OPTIONAL BY DESIGN: drop a photograph there and it
+  // becomes the backdrop, leave it out and the painted park stays up. The
+  // probe therefore 404s on a tree that carries no plate, which is the
+  // intended state and not a fault — so it is named here rather than hidden
+  // by contorting the code to avoid asking. Every other error still fails.
+  const optional = u => /\/bg\/plate\.[a-z]+$/.test(u);
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  page.on('response', r => { if (r.status() >= 400) errors.push(`HTTP ${r.status()} ${r.url()}`); });
+  // The console's echo of a failed request carries no URL ("Failed to load
+  // resource: … 404"), so it cannot be told apart from the optional plate's
+  // probe. The response listener below sees the SAME event WITH the URL, so
+  // the echo is dropped as a strictly less informative duplicate rather than
+  // the whole class of console errors being ignored.
+  page.on('console', m => { if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) errors.push(m.text()); });
+  page.on('response', r => { if (r.status() >= 400 && !optional(r.url())) errors.push(`HTTP ${r.status()} ${r.url()}`); });
   await page.goto(base, { waitUntil: 'load' });
   await page.waitForFunction(() => !!window.__sk, null, { timeout: 8000 });
   check('the page boots with no errors', errors.length === 0, errors.join(' | '));
+  // the allowance above must be narrow — a different missing file still fails
+  check('and a missing file that is NOT the optional plate still counts',
+    optional('/slaykallio/bg/plate.jpg') && !optional('/slaykallio/js/data.js') && !optional('/slaykallio/bg/other.jpg'));
+
+  // ── the plate ──────────────────────────────────────────────────────────
+  // A plate ships, so tolerating its absence is no longer the whole story: it
+  // has to actually be in use, and CUT to the frame rather than stretched onto
+  // it. The stretch is the fault worth a gate — a painted canopy of dabs has no
+  // proportions to get wrong, so it survived being squashed into a portrait
+  // plane and hid the bug; a photograph of a bear came out a vertical smear.
+  await page.waitForTimeout(900);
+  const plate = () => page.evaluate(() => {
+    const im = __sk.arena.bgMat.map?.image;
+    return { photo: __sk.arena.photo === true, ar: im ? im.width / im.height : 0, frame: __sk.arena.camera.aspect };
+  });
+  let pl = await plate();
+  check('the shipped plate is the backdrop', pl.photo);
+  check(`the plate is cut to the landscape frame, not stretched onto it (${pl.ar.toFixed(2)} vs ${pl.frame.toFixed(2)})`,
+    pl.photo && Math.abs(pl.ar - pl.frame) < 0.03);
 
   // the menu
-  check('the menu offers the whole roster', await page.locator('#roster .pick').count() === 4);
+  check('the menu offers the whole roster of six', await page.locator('#roster .pick').count() === 6);
   check('every character shows a painted portrait',
     await page.evaluate(() => [...document.querySelectorAll('#roster .pick canvas')]
       .every(c => c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some(v => v > 0))));
@@ -58,19 +88,50 @@ const check = (name, ok, extra = '') => {
   await page.waitForTimeout(200);
   check('the switch renames the theme', /fantasy/i.test(await page.locator("#menu .theme").innerText()));
   const fantasyName = await page.locator('#roster .pick b').first().innerText();
-  const fantasyTitle = await page.locator('#roster .pick i').first().innerText();
   await page.locator('#menu .theme').click();
   await page.waitForTimeout(200);
-  check('and it renames the roster with it',
-    fantasyTitle !== await page.locator('#roster .pick i').first().innerText(), fantasyTitle);
-  check('but a character keeps their name across the skins',
-    fantasyName === await page.locator('#roster .pick b').first().innerText());
+  const kallioName = await page.locator('#roster .pick b').first().innerText();
+  check('and it renames the roster with it', fantasyName !== kallioName, `${fantasyName} / ${kallioName}`);
+  // v15: a character is named by their CLASS, so the name is now the thing the
+  // skin swaps — the Park Drinker is the Sot over there. There is no personal
+  // name left to hold still across the two.
+  check('and both skins name a class rather than a person',
+    /^the \w/i.test(kallioName) && /^the \w/i.test(fantasyName), `${kallioName} / ${fantasyName}`);
+  check('the roster card says what the deck does under the name',
+    (await page.locator('#roster .pick span').first().innerText()).length > 20);
 
   // ── a fight ────────────────────────────────────────────────────────────
-  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4, false); });
   await page.waitForTimeout(300);
-  check('the run opens on the first encounter',
-    await page.evaluate(() => __sk.state().encounter) === 0);
+  check('the run opens on the map, with the hero alone on the bridge',
+    await page.evaluate(() => __sk.state().phase === 'map' && !document.querySelector('#map').hidden && __sk.puppets().hero && __sk.puppets().foes.length === 0));
+  check('the fork offers two or three spans as 44px targets', await page.evaluate(() => { const n = [...document.querySelectorAll('#nodes .node')]; return n.length >= 2 && n.length <= 3 && n.every(b => b.getBoundingClientRect().height >= 44); }));
+  check('and it is afternoon, on the TURF courtyard plate', /afternoon/.test(await page.locator('#map .where').innerText()) && await page.evaluate(() => __sk.plate() === 'bg/turf-courtyard.jpg'));
+  // the fork is drawn as a torn-paper map: every span of the act is a pin on
+  // it, the whole route visible ahead, and the buttons sit ON the pins you can take
+  const sheet = await page.evaluate(() => {
+    const cv = document.querySelector('#mapcv'); const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    let ink = 0, lum = 0; for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 20) ink++; lum += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) * (d[i + 3] / 255); }
+    const pins = __sk.debug.mapPins(), r = __sk.state().route;
+    const box = document.querySelector('#nodes').getBoundingClientRect();
+    const onPin = [...document.querySelectorAll('#nodes .node')].every(b => { const q = b.getBoundingClientRect(); const cx = q.left + q.width / 2 - box.left, cy = q.top + q.height / 2 - box.top; return pins.some(p => p.current && Math.hypot(p.x - cx, p.y - cy) < 6); });
+    return { painted: ink / (cv.width * cv.height), pins: pins.length, spans: r.steps.flat().length, onPin, lum: lum / ink };
+  });
+  check(`the map is painted (${(sheet.painted * 100).toFixed(0)}% of the sheet)`, sheet.painted > 0.85);
+  check(`every span of the act is a pin on it (${sheet.pins} pins for ${sheet.spans} spans) — the route is visible ahead`, sheet.pins === sheet.spans && sheet.pins >= 12);
+  check('the buttons sit on the pins of the current step', sheet.onPin);
+  const dayLum = sheet.lum;
+  await page.evaluate(() => { __sk.state().hour = 1; __sk.debug.redraw(); });   // the panel draws from the STATE's hour
+  await page.waitForTimeout(200);
+  const nightLum = await page.evaluate(() => { const cv = document.querySelector('#mapcv'); const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let ink = 0, lum = 0; for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 20) ink++; lum += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) * (d[i + 3] / 255); } return lum / ink; });
+  check(`the paper is kraft by day and dark by night (${dayLum.toFixed(0)} → ${nightLum.toFixed(0)})`, dayLum > nightLum * 1.8);
+  await page.evaluate(() => { __sk.state().hour = 0; __sk.debug.redraw(); });
+  await page.waitForTimeout(200);
+  // the rest of this section reads the rats' reward (a card AND a friend), so take that span
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'fight', id: 'rats' }, { kind: 'fight', id: 'bin' }]));
+  await page.evaluate(() => { __sk.takeNode(0); __sk.flush(); });
+  await page.waitForTimeout(200);
+  check('taking a span starts that fight', await page.evaluate(() => __sk.state().phase === 'fight' && __sk.puppets().foes.length > 0 && document.querySelector('#map').hidden));
   check('a puppet stands for the hero and one per enemy',
     await page.evaluate(() => { const p = __sk.puppets(); return !!p.hero && p.foes.length === __sk.state().enemies.length; }));
   check('every puppet is a painted cutout, not a blank plane',
@@ -103,7 +164,9 @@ const check = (name, ok, extra = '') => {
     return bad;
   });
   const framed = [];
-  for (let enc = 0; enc < 6; enc++) {
+  const encCount = await page.evaluate(() => __sk.debug.encounterCount());
+  check(`the pool holds more than the old six fights (${encCount})`, encCount >= 20);
+  for (let enc = 0; enc < encCount; enc++) {
     await page.evaluate(i => __sk.debug.jumpTo(i), enc);
     await page.waitForTimeout(60);
     const bad = await cropped();
@@ -163,6 +226,177 @@ const check = (name, ok, extra = '') => {
     check(`the telegraphed ${promised.dmg} is what actually lands`, before - after >= promised.dmg);
   }
 
+  // ── the hour ───────────────────────────────────────────────────────────
+  // Owner, 2026-09-05: "let's go Eldritch Kallio ... evening is darker etc".
+  // Darkest Dungeon's look is a LIGHTING SETUP before it is an art style — one
+  // warm source close to the party and everything past its falloff going dark —
+  // so what is gated is the setup, not a colour value somebody might tune.
+  // PIN THE FIGHT. The falloff is measured off the deck, and the rank light
+  // FOLLOWS the enemy row — so a wider row puts warm light further from the
+  // torch and flattens the very ratio this is measuring. Left to whatever
+  // fight the run had wandered into, the ruler moved when v26 changed the act
+  // pools and read 11 → 9 on a scene nothing was wrong with. Encounter 0 is
+  // three rats and is the same three rats in every version.
+  await page.evaluate(() => { __sk.debug.jumpTo(0); __sk.flush(); __sk.setHour(0.85); });   // late evening: the sun is out and the torch is the light
+  await page.waitForTimeout(300);
+  check('the light falls off: there is a torch with a real distance, not a sun',
+    await page.evaluate(() => __sk.arena.torch.isPointLight === true && __sk.arena.torch.distance > 0 && __sk.arena.torch.decay > 0));
+  check('the far end of the deck is fogged out',
+    await page.evaluate(() => !!__sk.arena.scene.fog && __sk.arena.scene.fog.far > __sk.arena.scene.fog.near));
+  check('the backdrop is NOT fogged — it is a graded picture, and fog would flatten it',
+    await page.evaluate(() => __sk.arena.bgMat.fog === false));
+  // and the frame really is lit from one side. A screenshot is the only thing
+  // that can answer this: every value above can be right while the render is flat.
+  const lit = await page.evaluate(async () => {
+    const cv = document.querySelector('#gl');
+    const w = cv.width, h = cv.height;
+    const g = document.createElement('canvas'); g.width = w; g.height = h;
+    // A WebGL drawing buffer is cleared once it has been composited, so it must
+    // be rendered and read in the SAME task or every pixel comes back black —
+    // which is a very convincing way to pass a "the scene is dark" check.
+    __sk.arena.update(0);
+    g.getContext('2d').drawImage(cv, 0, 0);
+    // Sample the deck as a BAND, not a row. One row is a lottery: the first
+    // attempt landed in the shadow at the deck's leading edge and read the far
+    // side as brighter, on a frame whose falloff is 4:1 fifty pixels lower.
+    const top = Math.round(h * Math.min(0.9, __sk.arena.deckRow() + 0.12));
+    const rows = Math.max(8, Math.round(h * 0.14));
+    const band = g.getContext('2d').getImageData(0, top, w, Math.min(rows, h - top)).data;
+    const hgt = band.length / 4 / w;
+    const mean = (a, b) => {                                     // luma over a slice
+      let t = 0, n = 0;
+      for (let y = 0; y < hgt; y++) for (let x = Math.round(w * a); x < Math.round(w * b); x++) {
+        const i = (y * w + x) * 4;
+        t += 0.299 * band[i] + 0.587 * band[i + 1] + 0.114 * band[i + 2]; n++;
+      }
+      return t / n;
+    };
+    return { near: mean(0.08, 0.34), far: mean(0.68, 0.94) };
+  });
+  check(`the deck is lit from the torch side and falls away (${lit.near.toFixed(0)} → ${lit.far.toFixed(0)})`,
+    lit.near > lit.far * 1.3 && lit.near > 8);
+
+  // The falloff is the look, but a figure nobody can see is a missing telegraph,
+  // not atmosphere — so every cutout has a floor under it. DD lights the RANK.
+  const levels = await page.evaluate(() => ({
+    floor: __sk.arena.theme.mood.figureFloor,
+    foes: __sk.puppets().foes.map(p => ({ x: +p.home.x.toFixed(2), k: +p.lightK.toFixed(3) })),
+    rankFollows: Math.abs(__sk.arena.rank.position.x -
+      __sk.puppets().foes.reduce((a, p) => a + p.home.x, 0) / __sk.puppets().foes.length) < 0.01,
+  }));
+  const dim = levels.foes.filter(f => f.k < levels.floor);
+  check(`no figure is darker than the legibility floor${dim.length ? ` — ${JSON.stringify(dim)}` : ''}`,
+    levels.foes.length > 1 && dim.length === 0);
+  check('the rank light follows the row that is actually there', levels.rankFollows);
+
+  // The torch gutters. A steady light is a dimmer; the unreliability is the point.
+  const flick = await page.evaluate(async () => {
+    const seen = new Set();
+    for (let i = 0; i < 30; i++) { __sk.arena.update(0.05); seen.add(__sk.arena.torch.intensity.toFixed(4)); }
+    return seen.size;
+  });
+  check(`the torch flickers rather than sitting at one value (${flick} levels over 30 frames)`, flick > 10);
+  check('and holds still for prefers-reduced-motion', await page.evaluate(async () => {
+    const a = __sk.arena, was = a.steady;
+    a.steady = true;
+    const seen = new Set();
+    for (let i = 0; i < 20; i++) { a.update(0.05); seen.add(a.torch.intensity.toFixed(4)); }
+    a.steady = was;
+    return seen.size === 1;
+  }));
+
+  // No unit label may be drawn over the HUD plate: the hero's name and HP were
+  // painted a second time on top of the run panel's own, which a daylight plate
+  // made obvious and a dark one hid.
+  const clash = await page.evaluate(() => {
+    const hud = document.querySelector('#top').getBoundingClientRect();
+    return [...document.querySelectorAll('#labels .unit')].filter(u => {
+      const r = u.getBoundingClientRect();
+      return r.width && r.top < hud.bottom && r.bottom > hud.top && r.left < hud.right && r.right > hud.left;
+    }).map(u => u.querySelector('.name').textContent);
+  });
+  check(`no unit label is drawn over the HUD plate${clash.length ? ` — ${clash}` : ''}`, clash.length === 0);
+
+  // The run starts in daylight and ends in the dark, and it has to show on the
+  // deck: the same fight is rendered at hour 0, 0.55 and 1, and the light must
+  // fall as the hour rises. Mutation has to show on the figure, too.
+  // Two bands: the picture behind the bridge (a wide band above the deck) and
+  // the deck itself. The deck band is the boards' shadowed front, which is the
+  // right place to read the torch's falloff and the wrong place to read the
+  // hour — by day it is still a shadow. The backdrop carries the hour.
+  const lumaBands = async () => page.evaluate(() => {
+    const cv = document.querySelector('#gl'); const w = cv.width, h = cv.height;
+    const g = document.createElement('canvas'); g.width = w; g.height = h;
+    __sk.arena.update(0); g.getContext('2d').drawImage(cv, 0, 0);
+    const mean = (y0, y1) => { const d = g.getContext('2d').getImageData(0, Math.round(h * y0), w, Math.max(4, Math.round(h * (y1 - y0)))).data; let t = 0, n = 0; for (let i = 0; i < d.length; i += 4) { t += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; n++; } return t / n; };
+    const row = __sk.arena.deckRow();
+    return { sky: mean(0.2, row - 0.02), deck: mean(row + 0.12, row + 0.26) };
+  });
+  const lumaAt = async t => { await page.evaluate(t => { __sk.flush(); __sk.setHour(t); }, t); await page.waitForTimeout(1600); return lumaBands(); };
+  const day = await lumaAt(0), dusk = await lumaAt(0.55), night = await lumaAt(1);
+  // The reused TURF scenes are pregraded urban night art, not bright park photos.
+  // Keep a measured visibility floor and require all three brightness stages.
+  check(`the picture darkens as the hour falls: day ${day.sky.toFixed(0)} → dusk ${dusk.sky.toFixed(0)} → night ${night.sky.toFixed(0)}`, day.sky > dusk.sky && dusk.sky > night.sky * 2 && day.sky > 20 && night.sky > 2 && night.sky < 30);
+  check(`and so does the deck (${day.deck.toFixed(0)} → ${night.deck.toFixed(0)})`, day.deck > night.deck);
+  check('and the dockyard plate is loaded at night', await page.evaluate(() => __sk.plate() === 'bg/turf-dockyard.jpg' && __sk.arena.photo));
+  check('by day the sun is up and the torch is out; by night the reverse', await page.evaluate(() => { __sk.setHour(0); const d = { sun: __sk.arena.sun.intensity, torch: __sk.arena.torch.intensity }; __sk.setHour(1); const n = { sun: __sk.arena.sun.intensity, torch: __sk.arena.torch.intensity }; return d.sun > 1 && d.torch === 0 && n.sun === 0 && n.torch > 10; }));
+  await page.evaluate(() => __sk.setHour(0.55));
+  const mut = await page.evaluate(() => {
+    const ink = cv => { const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++; return n; };
+    // eye whites come through the torch wash at ~(200,195,185), so "light" is
+    // a floor on the darkest channel, not a near-white cut
+    const light = cv => { const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.min(d[i], d[i + 1], d[i + 2]) > 150 && d[i + 3] > 200) n++; return n; };
+    const plain = __sk.debug.look('rat', 0), m2 = __sk.debug.look('rat', 2);
+    const a = plain.getContext('2d').getImageData(0, 0, plain.width, plain.height).data, b2 = m2.getContext('2d').getImageData(0, 0, m2.width, m2.height).data;
+    let differ = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b2[i]) > 60 || Math.abs(a[i + 3] - b2[i + 3]) > 60) differ++;
+    return { ink: [ink(plain), ink(m2)], light: [light(plain), light(m2)], differ, grew: m2.mutations, plainGrew: plain.mutations };
+  });
+  // the painter reports what it grew (a pixel count cannot see an eye on the
+  // shadow side of a figure facing away from the torch), and the diff proves
+  // the picture actually changed by more than a nick's worth
+  check(`a mutated rat is not the same drawing as a rat — it has grown eyes (${mut.grew?.eyes ?? 0} eyes, ${mut.grew?.boils ?? 0} boils, ${mut.differ} px differ)`, !mut.plainGrew && (mut.grew?.eyes ?? 0) >= 3 && mut.differ > 400);
+  await page.evaluate(() => { const st = __sk.state(); st.act = 1; __sk.engine.buildRoute(st, 1); st.route.step = 6; __sk.debug.jumpTo(__sk.engine ? [...Array(__sk.debug.encounterCount()).keys()].find(i => __sk.debug.encounterName(i, 'kallio') === 'The Sermon') : 0); __sk.flush(); });
+  await page.waitForTimeout(150);
+  check('a night fight names its enemies as mutated on the label', await page.evaluate(() => [...document.querySelectorAll('.unit.enemy .name')].every(n => /✶/.test(n.textContent)) && __sk.state().enemies.every(e => e.mutated === 2)));
+  check('and the HUD says it is night', /night/.test(await page.locator('#where').innerText()));
+  await page.evaluate(() => { const st = __sk.state(); st.act = 0; __sk.engine.buildRoute(st, 0); st.route.step = 0; __sk.debug.jumpTo(0); __sk.flush(); });
+  await page.waitForTimeout(100);
+
+  // The act card names the encounter. It printed the raw ID for the whole life
+  // of the game — nobody noticed while the ids happened to read as words, until
+  // the fantasy skin put KING_RAT across the screen.
+  const titles = await page.evaluate(() => {
+    const out = [];
+    for (const t of ['kallio', 'fantasy']) {
+      __sk.setTheme(t); __sk.setSpeed(0); __sk.start('drinker', 3);
+      for (let i = 0; i < __sk.debug.encounterCount(); i++) {
+        __sk.debug.jumpTo(i); __sk.flush();
+        out.push({ shown: document.querySelector('#banner').textContent, want: __sk.debug.encounterName(i, t) });
+      }
+    }
+    __sk.setTheme('kallio');
+    return out;
+  });
+  const wrongTitle = titles.filter(t => t.shown !== t.want);
+  check(`every act card shows the encounter's NAME, not its id (${titles.length} cards)${wrongTitle.length ? ` — ${JSON.stringify(wrongTitle[0])}` : ''}`,
+    wrongTitle.length === 0 && titles.length >= 40);
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 3); });
+  await page.waitForTimeout(200);
+
+  // ── the new painters paint ─────────────────────────────────────────────
+  const inked = await page.evaluate(() => {
+    const out = {};
+    for (const id of ['pigeon', 'gull', 'gull_king', 'the_bear', 'walker', 'boxer']) {
+      const cv = __sk.debug.look(id); const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+      let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++;
+      out[id] = n / (cv.width * cv.height);
+    }
+    return out;
+  });
+  check(`the bird painter paints (pigeon ${(inked.pigeon * 100).toFixed(0)}%, gull ${(inked.gull * 100).toFixed(0)}%)`, inked.pigeon > 0.06 && inked.gull > inked.pigeon);
+  check(`the bear is the biggest thing in the game (${(inked.the_bear * 100).toFixed(0)}% of its sheet)`, inked.the_bear > 0.3 && inked.the_bear > inked.gull_king);
+  check('the dog walker and the boxer paint as people', inked.walker > 0.1 && inked.boxer > 0.1);
+
   // ── the owner's staging, checked on the real scene ─────────────────────
   // "no back panels blocking the view": nothing in the bridge may stand above
   // the deck between the camera and where the puppets are. The two handrail
@@ -201,6 +435,63 @@ const check = (name, ok, extra = '') => {
       for (let i = 0; i < d.length; i += 4 * 37) seen.add(`${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`);
       return seen.size > 6;      // a real drawing, not a flat rectangle
     })) && await page.locator('#hand .card .pic').count() === await page.locator('#hand .card').count());
+  // ── the cards in TURF's register (v29) ────────────────────────────────
+  // Two faults this pass fixed, both invisible to every check above: a filled
+  // shape carried ONE flat tone where a TURF prop carries three or four off a
+  // real light, and `bands` laying its half-planes down destroyed the current
+  // path — so the ink stroke that followed ruled a band's boundary corner to
+  // corner across every panel.
+  //
+  // BOTH RULERS ARE CALIBRATED AGAINST THE BROKEN CODE, not guessed, because
+  // the first cut of each measured the wrong thing and passed either way: a
+  // darkness threshold on the corners was reading the panel's own vignette
+  // (42 of 42 pictures "bled", clean or not), and counting distinct tones in
+  // the glass was reading `wear`'s speckle (8 either way). The numbers below
+  // are what the three variants actually produce.
+  const cardTone = await page.evaluate(async () => {
+    const ca = await import('/slaykallio/js/cardart.js');
+    const lum = d => i => 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    // BANDING: split the bottle's own glass along the light axis and compare
+    // MEANS — a mean cancels the speckle, so what is left is the tonal step.
+    const bt = ca.paintCardPic('bottle', '#c8a03a', 3);
+    const bd = bt.getContext('2d').getImageData(0, 0, bt.width, bt.height).data;
+    const L = lum(bd), glass = [];
+    for (let y = 0; y < bt.height; y++) for (let x = 0; x < bt.width; x++) {
+      const i = (y * bt.width + x) * 4;
+      if (bd[i + 1] > bd[i] + 10 && bd[i + 1] > bd[i + 2] + 10) glass.push({ t: -0.55 * x - 0.83 * y, v: L(i) });
+    }
+    glass.sort((a, b) => a.t - b.t);
+    const q = Math.max(1, Math.floor(glass.length * 0.28));
+    const mean = a => a.reduce((t, o) => t + o.v, 0) / a.length;
+    const step = Math.round(mean(glass.slice(-q)) - mean(glass.slice(0, q)));
+    // INK: a corner of a smooth gradient has low local contrast; a stroke ruled
+    // through it is a hard dark run against the patch's own median.
+    const bled = [];
+    for (const pic of ca.PIC_KEYS) {
+      const c = ca.paintCardPic(pic, '#c8a03a', 3);
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      const Lc = lum(d);
+      let worst = 0;
+      for (const [ox, oy] of [[0, 0], [c.width - 10, 0], [0, c.height - 10], [c.width - 10, c.height - 10]]) {
+        const v = [];
+        for (let y = oy; y < oy + 10; y++) for (let x = ox; x < ox + 10; x++) v.push(Lc((y * c.width + x) * 4));
+        const med = [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
+        worst = Math.max(worst, v.filter(t => t < med - 9).length);
+      }
+      if (worst > 6) bled.push(`${pic}:${worst}`);
+    }
+    return { step, bled, n: ca.PIC_KEYS.length };
+  });
+  // 23 with the bands in, 10 with them out — the 10 is `finish`'s own gradient,
+  // which runs along the same axis and can never be zero.
+  check(`a filled shape is modelled off the light rather than flat — the bottle glass steps ${cardTone.step} (bands out: 10)`,
+    cardTone.step >= 16);
+  // 1 clean against 30 with the stroke leaking. `stick` is the honest one: it
+  // really does throw its motion marks into a corner. It is a count and not a
+  // per-picture bar because the fault lives in the shared hand — when it goes
+  // wrong it goes wrong on all forty-two at once.
+  check(`no picture rules its ink across the panel — ${cardTone.bled.length} of ${cardTone.n}${cardTone.bled.length ? ` (${cardTone.bled.slice(0, 4)})` : ''}`,
+    cardTone.bled.length <= 3);
   check('a tin base and a cardboard base are both on the board somewhere',
     await page.evaluate(() => {
       const kinds = new Set();
@@ -209,6 +500,204 @@ const check = (name, ok, extra = '') => {
       }
       return kinds.size >= 1;
     }));
+
+  // ── the paper motion, and its toggle (v17) ─────────────────────────────
+  // The figures are card, so they can be MOVED rather than redrawn. A gate
+  // can say the card actually deforms and that the switch reaches the figures
+  // already on the bridge; it cannot say whether a lunge reads as a lunge.
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
+  await page.waitForTimeout(250);
+  check('the menu carries a figures toggle, and it starts on paper',
+    (await page.locator('#figs').innerText()).includes('paper'));
+  // At rest the figure breathes: sample the flex matrix over real frames.
+  const breath = await page.evaluate(async () => {
+    const out = [];
+    for (let i = 0; i < 40; i++) { out.push(__sk.debug.poseOf('hero').sy); await new Promise(r => requestAnimationFrame(r)); }
+    return out;
+  });
+  check(`a figure at rest breathes rather than standing frozen (${(Math.max(...breath) - Math.min(...breath)).toExponential(1)})`,
+    Math.max(...breath) - Math.min(...breath) > 1e-4, `${Math.min(...breath)}..${Math.max(...breath)}`);
+  // A verb moves the object: fire one and watch the card lean, shear and go.
+  const lunge = await page.evaluate(async () => {
+    __sk.debug.playClip('attack', 'hero');
+    const out = [];
+    for (let i = 0; i < 45; i++) { out.push(__sk.debug.poseOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    return out;
+  });
+  check(`an attack commits the whole figure forward (${Math.max(...lunge.map(p => p.x)).toFixed(2)})`,
+    Math.max(...lunge.map(p => p.x)) - Math.min(...lunge.map(p => p.x)) > 0.15);
+  check('and it leans and squashes rather than sliding rigid',
+    Math.max(...lunge.map(p => Math.abs(p.lean))) > 0.02 && Math.min(...lunge.map(p => p.sy)) < 0.98);
+  const hurt = await page.evaluate(async () => {
+    __sk.debug.playClip('hurt', 'hero');
+    const out = [];
+    for (let i = 0; i < 30; i++) { out.push(__sk.debug.poseOf('hero').shear); await new Promise(r => requestAnimationFrame(r)); }
+    return out;
+  });
+  check(`being hit BENDS the card — the shear is the whole point (${Math.max(...hurt.map(Math.abs)).toFixed(2)})`,
+    Math.max(...hurt.map(Math.abs)) > 0.05);
+  // The switch is live and reaches figures already standing on the bridge.
+  const still = await page.evaluate(async () => {
+    __sk.debug.setFigures('still');
+    // One frame for the switch to land: the matrix on screen is still the last
+    // paper pose until update() runs again, and sampling that frame measured
+    // the TRANSITION rather than the resting state (0.009 of span, all of it
+    // in sample zero).
+    await new Promise(r => requestAnimationFrame(r));
+    const out = [];
+    for (let i = 0; i < 30; i++) { out.push(__sk.debug.poseOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    return { label: document.querySelector('#figs')?.textContent, span: Math.max(...out.map(p => p.sy)) - Math.min(...out.map(p => p.sy)) };
+  });
+  check('switching to still stops the motion on figures already on the bridge', still.span < 1e-6, `${still.span}`);
+  check('and the toggle says so', /still/.test(await page.locator('#figs').innerText()));
+  check('the choice is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.figures') === '"still"'));
+  await page.evaluate(() => __sk.debug.setFigures('paper'));
+  // The contact-sheet seam: scrub holds a clip at an exact moment so a
+  // screenshot shows the real pose rather than the wall clock (a frame grab
+  // takes ~1s here and the whole attack is 0.61s). Gated because a debug hook
+  // that can freeze every figure for good is exactly the kind that gets left on.
+  const scrub = await page.evaluate(async () => {
+    __sk.debug.scrub('attack', 0.31, 'hero');
+    await new Promise(r => requestAnimationFrame(r));
+    const held = __sk.debug.poseOf('hero');
+    await new Promise(r => requestAnimationFrame(r));
+    const held2 = __sk.debug.poseOf('hero');
+    __sk.debug.unfreeze();
+    const out = [];
+    for (let i = 0; i < 20; i++) { out.push(__sk.debug.poseOf('hero').sy); await new Promise(r => requestAnimationFrame(r)); }
+    return { same: Math.abs(held.x - held2.x) < 1e-9 && Math.abs(held.sy - held2.sy) < 1e-9, moves: Math.max(...out) - Math.min(...out) };
+  });
+  check('a scrubbed clip holds still, so a contact sheet shows the real pose', scrub.same);
+  check('and unfreezing gives the figures back', scrub.moves > 1e-4, `${scrub.moves}`);
+
+  // ── TURF's cast on this bridge (v18, the DEFAULT since v21) ───────────
+  check('the menu carries an art toggle, and it starts on the TURF plates',
+    (await page.locator('#art').innerText()).includes('turf'));
+  // The plate replaces the PAINT, not the process: a raw plate would stand in
+  // TURF's own lighting in front of a Kallio evening. Measured while the
+  // plates are up, which since v21 is simply the boot state.
+  const plateLit = await page.evaluate(() => {
+    const c = __sk.debug.look('boxer');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let warm = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 24 && d[i] > d[i + 2] + 12) warm++;
+    return warm;
+  });
+  check(`the torch is painted into a plate rather than leaving it in TURF's light (${plateLit} warm px)`, plateLit > 200);
+  const artSwap = await page.evaluate(async () => {
+    const ink = () => {
+      const c = __sk.debug.look('boxer');
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 24) n++;
+      return n;
+    };
+    const turf = ink();
+    __sk.debug.setArt('drawn');
+    await new Promise(r => setTimeout(r, 200));
+    const drawn = ink();
+    return { turf, drawn, plated: __sk.debug.plated('boxer'), ratPlated: __sk.debug.plated('rat') };
+  });
+  check(`the drawn cutouts are still one tap away (${artSwap.turf} → ${artSwap.drawn} ink px)`,
+    Math.abs(artSwap.turf - artSwap.drawn) > 400);
+  check('a person is cast and a rat is not — the rats keep the drawn cutout either way',
+    artSwap.plated && !artSwap.ratPlated);
+  check('and the choice is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.art') === '"drawn"'));
+  await page.evaluate(() => __sk.debug.setArt('turf'));
+  check('and switching back restores the plates', /turf/.test(await page.locator('#art').innerText()));
+  // The house look can be CHANGED (v30). Every style toggle writes to
+  // localStorage, and the owner toggles them WHILE COMPARING — so a value
+  // picked while looking at four options used to beat the default forever
+  // after, which is a comparison overruling a decision. A stored style from
+  // before the current answer is dropped; one set since it is obeyed.
+  const staleSet = await page.evaluate(() => {
+    localStorage.setItem('slayKallio.art', '"drawn"');     // chosen against an older house answer
+    localStorage.setItem('slayKallio.lookRev', '1');
+    return localStorage.getItem('slayKallio.art');
+  });
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => window.__sk?.debug);
+  check('a style chosen against an OLDER house answer is dropped, not obeyed',
+    /turf/i.test(await page.locator('#art').innerText())
+    && await page.evaluate(() => localStorage.getItem('slayKallio.art') === null) && staleSet === '"drawn"');
+  // and a choice made since still sticks — the reset is not a preference wipe
+  await page.evaluate(() => __sk.debug.setArt('drawn'));
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => window.__sk?.debug);
+  check('but a choice made SINCE it still holds across a reload',
+    /drawn/i.test(await page.locator('#art').innerText()));
+  await page.evaluate(() => __sk.debug.setArt('turf'));
+  const turfFight = await page.evaluate(async () => {
+    __sk.start('boxer', 4);
+    await new Promise(r => setTimeout(r, 250));
+    return __sk.debug.poseOf('hero') != null;
+  });
+  check('a whole fight spawns on the plates without falling over', turfFight);
+
+  // ── the frame axis (v25) ──────────────────────────────────────────────
+  // v17 moved the card and left the drawing alone. TURF's cast set carries a
+  // drawn frame per fight beat and nothing had ever read it. The Dog Walker is
+  // the figure that has one, so she is the fight this block runs — and the
+  // check that matters is that the DRAWING changes, not merely the matrix,
+  // because v17 already proved the matrix moves.
+  const posed = await page.evaluate(async () => {
+    __sk.setSpeed(0); __sk.start('walker', 4);
+    await new Promise(r => setTimeout(r, 300));
+    const seen = [__sk.debug.frameOf('hero')];
+    __sk.debug.playClip('attack', 'hero');
+    for (let i = 0; i < 45; i++) { seen.push(__sk.debug.frameOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    __sk.debug.playClip('hurt', 'hero');
+    for (let i = 0; i < 30; i++) { seen.push(__sk.debug.frameOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    return { seen: [...new Set(seen)], poses: __sk.debug.poses('walker').length, unposed: __sk.debug.poses('boxer').length };
+  });
+  check(`the Dog Walker carries a drawn frame per beat (${posed.poses}) and the Old Boxer one (${posed.unposed})`,
+    posed.poses === 7 && posed.unposed === 1);
+  check(`an attack SWAPS THE DRAWING, not just the matrix (${posed.seen.join(' → ')})`,
+    posed.seen.includes('attack-windup') && posed.seen.includes('attack-release'));
+  check('and being hit shows the hit frame', posed.seen.includes('hit'));
+  check('and it comes home to the standing frame', posed.seen.includes('idle')
+    && (await page.evaluate(() => __sk.debug.frameOf('hero'))) === 'idle');
+  // A figure with one drawing must take the same code path and do nothing:
+  // `showFrame` resolves an absent pose to idle so no caller has to ask.
+  const unposedFrame = await page.evaluate(async () => {
+    __sk.start('boxer', 4);
+    await new Promise(r => setTimeout(r, 250));
+    __sk.debug.playClip('attack', 'hero');
+    const out = [];
+    for (let i = 0; i < 30; i++) { out.push(__sk.debug.frameOf('hero')); await new Promise(r => requestAnimationFrame(r)); }
+    return [...new Set(out)];
+  });
+  check(`a figure with one drawing stays on it through a whole verb (${unposedFrame.join(', ')})`,
+    unposedFrame.length === 1 && unposedFrame[0] === 'idle');
+
+  // ── how the card is CUT (v20) ──────────────────────────────────────────
+  check('the menu carries a cut toggle, and it starts die-cut to the figure',
+    (await page.locator('#cut').innerText()).includes('silhouette'));
+  const cut = await page.evaluate(async () => {
+    const area = () => {
+      const c = __sk.debug.look('boxer');
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let ink = 0, pale = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 24) { ink++; if (d[i] > 150 && d[i + 1] > 145 && d[i + 2] > 140) pale++; }
+      return { ink, pale };
+    };
+    const die = area();
+    __sk.debug.setCut('card');
+    await new Promise(r => setTimeout(r, 200));
+    const card = area();
+    return { die, card };
+  });
+  check(`a card cut prints the figure on a board (${cut.die.ink} → ${cut.card.ink} ink px)`,
+    cut.card.ink > cut.die.ink * 1.6);
+  // The dots the owner saw were grime's near-white specks (55% of 1500, and
+  // not scaled by the figure's grime) plus nicks punched through the middle of
+  // the silhouette. Both are gone; this is the ruler that says so.
+  check(`and almost none of the figure is near-white speckle (${(cut.die.pale / cut.die.ink * 100).toFixed(1)}%)`,
+    cut.die.pale / cut.die.ink < 0.08, `${cut.die.pale}/${cut.die.ink}`);
+  check('the choice of cut is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.cut') === '"card"'));
+  await page.evaluate(() => __sk.debug.setCut('silhouette'));
+  await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
+  await page.waitForTimeout(200);
 
   // ── a puppet falls over in 3D ──────────────────────────────────────────
   await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
@@ -233,6 +722,9 @@ const check = (name, ok, extra = '') => {
     await page.evaluate(() => document.querySelector('.unit.enemy.dead') !== null));
 
   // ── the reward, and the run moving on ──────────────────────────────────
+  // the rats pay a card AND a friend, which is what this section reads
+  await page.evaluate(() => { __sk.debug.jumpTo(0); __sk.flush(); });
+  await page.waitForTimeout(100);
   await page.evaluate(() => {
     __sk.setSpeed(0);
     const s = __sk.state();
@@ -258,12 +750,87 @@ const check = (name, ok, extra = '') => {
   if (st.phase === 'reward') { await page.locator('#options > *').first().click(); await page.waitForTimeout(300); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(200); }
   const st2 = await page.evaluate(() => ({ phase: __sk.state().phase, enc: __sk.state().encounter, jokers: __sk.state().jokers.length }));
   check('a friend joins the row', st2.jokers === 1);
-  check('and the run walks on to the next bridge', st2.phase === 'fight' && st2.enc === 1);
-  check('the new fight has its own puppets',
-    await page.evaluate(() => __sk.puppets().foes.length === __sk.state().enemies.length && __sk.puppets().foes.every(p => p.alive)));
+  check('and the run goes back to the fork', st2.phase === 'map' && await page.locator('#map').isVisible());
   check('the friend is on the board where you can read it', await page.locator('#jokers .joker:not(.empty)').count() === 1);
 
+  // ── the run's other screens: an event, a pick, a rest ─────────────────
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'event', id: 'the_statue' }, { kind: 'rest' }]));
+  await page.waitForTimeout(80);
+  check('the fork can lead somewhere that is not a fight', await page.locator('#nodes .node.event').count() === 1 && await page.locator('#nodes .node.rest').count() === 1);
+  await page.locator('#nodes .node.event').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('an event opens with its text and its choices', await page.evaluate(() => __sk.state().phase === 'event' && !document.querySelector('#event').hidden && document.querySelector('#event .text').textContent.length > 40 && document.querySelectorAll('#choices button').length === 3));
+  check('every choice is a 44px target that names its price', await page.evaluate(() => [...document.querySelectorAll('#choices button')].every(b => b.getBoundingClientRect().height >= 44) && /\(/.test(document.querySelectorAll('#choices button')[0].textContent)));
+  const hpE = await page.evaluate(() => ({ hp: __sk.state().hero.hp, max: __sk.state().hero.maxHp }));
+  await page.locator('#choices button').nth(0).click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  const hpE2 = await page.evaluate(() => ({ hp: __sk.state().hero.hp, max: __sk.state().hero.maxHp, phase: __sk.state().phase }));
+  check(`touching the bear did what the label said (+6 max, −8): ${hpE.max}→${hpE2.max}, ${hpE.hp}→${hpE2.hp}`, hpE2.max === hpE.max + 6 && hpE2.hp === Math.min(hpE.max + 6, hpE.hp + 6) - 8 && hpE2.phase === 'map');
+  check('and the HUD shows the new maximum', (await page.locator('#hp').innerText()).includes(`/${hpE2.max}`));
+  // a pick
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'event', id: 'police' }, { kind: 'rest' }]));
+  await page.locator('#nodes .node.event').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  await page.locator('#choices button').nth(1).click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  const deckN = await page.evaluate(() => __sk.state().hero.deck.length);
+  check('"drop something" asks which card, listing the whole deck as 44px rows', await page.evaluate(() => __sk.state().phase === 'pick' && !document.querySelector('#pick').hidden && document.querySelectorAll('#pick .row').length === __sk.state().hero.deck.length && [...document.querySelectorAll('#pick .row')].every(r => r.getBoundingClientRect().height >= 44)));
+  await page.locator('#pick .row').first().click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('and the deck is one card lighter, back at the fork', await page.evaluate(n => __sk.state().hero.deck.length === n - 1 && __sk.state().phase === 'map', deckN));
+  // a rest, and an upgrade that shows on the card
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'rest' }, { kind: 'fight', id: 'rats' }]));
+  await page.locator('#nodes .node.rest').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('a rest offers sleep or an upgrade, and says what sleep is worth', await page.evaluate(() => __sk.state().phase === 'rest' && !document.querySelector('#rest').hidden && /heal \d+/.test(document.querySelector('#rest .sub').textContent)));
+  await page.locator('#restUp').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  // an all-upgraded deck must still be able to leave the rest
+  const wayOut = await page.evaluate(() => {
+    const s = __sk.state();
+    // `upgrade()` moves the numbers inside each effect, so putting `up` back is
+    // not putting the card back — the deck is deep-copied and restored whole,
+    // or every later check reads a card this probe silently made stronger.
+    const saved = s.hero.deck.map(c => ({ ...c, effects: c.effects.map(f => ({ ...f })) }));
+    s.hero.deck.forEach(c => __sk.engine.upgrade(c));
+    __sk.debug.redraw();
+    const rows = [...document.querySelectorAll('#pick .row')];
+    const only = rows.length === 1 && /Walk on/.test(rows[0].textContent);
+    if (only) rows[0].click();
+    const out = { only, phase: __sk.state().phase };
+    s.hero.deck.length = 0; s.hero.deck.push(...saved);
+    return out;
+  });
+  check('with every card upgraded the pick offers a way out, and taking it walks on', wayOut.only && wayOut.phase === 'map');
+  await page.evaluate(() => { __sk.debug.forkTo([{ kind: 'rest' }, { kind: 'fight', id: 'rats' }]); });
+  await page.locator('#nodes .node.rest').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  await page.locator('#restUp').click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('thinking it over lists only cards that can still be upgraded, each with its after', await page.evaluate(() => __sk.state().phase === 'pick' && [...document.querySelectorAll('#pick .row')].every(r => /→/.test(r.textContent))));
+  const swingRow = page.locator('#pick .row', { hasText: /Swing|Strike/ }).first();
+  await swingRow.click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+  check('the picked card is upgraded and back at the fork', await page.evaluate(() => __sk.state().hero.deck.some(c => c.up && c.id === 'strike') && __sk.state().phase === 'map'));
+  await page.evaluate(() => __sk.debug.forkTo([{ kind: 'fight', id: 'rats' }, { kind: 'fight', id: 'bin' }]));
+  await page.locator('#nodes .node').first().click();
+  await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(150);
+  await page.evaluate(() => { const s = __sk.state(); const up = s.hero.deck.find(c => c.up); s.hand = [{ ...up, uid: 9100, effects: up.effects.map(f => ({ ...f })) }]; s.hero.energy = 3; });
+  await page.evaluate(() => __sk.select(-1));
+  await page.waitForTimeout(50);
+  await page.evaluate(() => { document.querySelector('#hand').innerHTML = ''; });
+  await page.evaluate(() => __sk.flush());
+  // The face quotes what the PIPELINE will land, not the card's bare number:
+  // the friend this run picked up doubles the first attack of a fight, so a
+  // Swing+ here says 18 — and that is the point of preview() and play sharing
+  // one function. The base is asserted separately.
+  const upFace = await page.evaluate(() => { __sk.debug.hand([]); const s = __sk.state(); const up = s.hero.deck.find(c => c.up); if (!up) return { why: 'no upgraded card in the deck', phase: s.phase }; s.hand = [{ ...up, uid: 9101, effects: up.effects.map(f => ({ ...f })) }]; s.hero.energy = 3; __sk.flush(); const card = document.querySelector('#hand .card'); const pv = __sk.engine.preview(s, 0); return { phase: s.phase, id: up.id, base: up.effects[0].n, quoted: pv.damage, plus: !!card?.querySelector('.name .up'), text: card?.querySelector('.text')?.textContent ?? null, friends: s.jokers.map(j => j.id) }; });
+  check(`an upgraded card wears a + and its face quotes the pipeline's number (base ${upFace.base}, face says ${upFace.quoted} with ${upFace.friends})`, upFace.plus === true && upFace.base === 9 && new RegExp(`Deal ${upFace.quoted} damage`).test(upFace.text ?? ''));
+  check('the HUD names the act and the span', /Act 1 · .+ · \d\/6/.test(await page.locator('#where').innerText()));
+
   // ── the theme switch, mid-run ──────────────────────────────────────────
+  await page.evaluate(() => { __sk.debug.jumpTo(0); __sk.flush(); });
+  await page.waitForTimeout(100);
   const beforeName = await page.locator('.unit.enemy .name').first().innerText();
   await page.evaluate(() => __sk.setTheme('fantasy'));
   await page.waitForTimeout(400);
@@ -340,13 +907,23 @@ const check = (name, ok, extra = '') => {
       return a.x > 4 && a.x < w - 4 && a.y > 0 && a.y < h;
     });
   }));
+  await pp.evaluate(() => { __sk.setSpeed(0); __sk.start('collector', 6, false); });
+  await pp.waitForTimeout(300);
+  check('the portrait map keeps its pins inside the sheet and its title clear of the HUD', await pp.evaluate(() => {
+    const sheet = document.querySelector('#map .sheet').getBoundingClientRect();
+    const pinsIn = [...document.querySelectorAll('#nodes .node')].every(b => { const q = b.getBoundingClientRect(); return q.left >= sheet.left - 2 && q.right <= sheet.right + 2 && q.top >= sheet.top - 2 && q.bottom <= sheet.bottom + 2; });
+    const h2 = document.querySelector('#map h2').getBoundingClientRect(), hud = document.querySelector('#top')?.getBoundingClientRect();
+    return pinsIn && (!hud || h2.top >= hud.bottom - 1);
+  }));
+  await pp.evaluate(() => { __sk.takeNode(0); __sk.flush(); });
+  await pp.waitForTimeout(200);
   check('the hand is on screen and reachable by a thumb', await pp.evaluate(() => {
     const cards = [...document.querySelectorAll('#hand .card')];
     if (!cards.length) return false;
     return cards.every(c => { const r = c.getBoundingClientRect(); return r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 && r.width >= 44; });
   }));
   const pFramed = [];
-  for (let enc = 0; enc < 6; enc++) {
+  for (let enc = 0; enc < await pp.evaluate(() => __sk.debug.encounterCount()); enc++) {
     await pp.evaluate(i => __sk.debug.jumpTo(i), enc);
     await pp.waitForTimeout(60);
     const bad = await pp.evaluate(() => {
@@ -373,6 +950,15 @@ const check = (name, ok, extra = '') => {
     return seat < hand - 40;
   }));
   check('the sharp band of the backdrop follows the deck', await pp.evaluate(() => Math.abs(__sk.arena.focus - __sk.arena.deckRow()) < 0.12));
+  // the plate is re-cut when the frame changes shape — a phone turned sideways
+  // changes it completely, and one cut cannot serve both
+  const pPlate = await pp.evaluate(() => {
+    const im = __sk.arena.bgMat.map?.image;
+    return { photo: __sk.arena.photo === true, ar: im ? im.width / im.height : 0, frame: __sk.arena.camera.aspect };
+  });
+  check('the plate is up in portrait too', pPlate.photo);
+  check(`and re-cut to the portrait frame (${pPlate.ar.toFixed(2)} vs ${pPlate.frame.toFixed(2)})`,
+    pPlate.photo && Math.abs(pPlate.ar - pPlate.frame) < 0.05);
   check('no sideways overflow on a phone',
     await pp.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   // a tap plays a card, with no mouse anywhere

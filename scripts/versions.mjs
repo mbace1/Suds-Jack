@@ -92,7 +92,14 @@ function fromToken(dir) {
 // and breaks like one, so it gets a number the same way. It is named here
 // rather than found by scanning, because "a directory with a VERSIONS.md in
 // it" would sweep up anything anybody ever left lying around.
-const EXTRA = [{ id: 'toko', path: 'toko/' }];
+const EXTRA = [
+  { id: 'toko', path: 'toko/' },
+  // Toko Live is the room's HOST, injected onto the floor by
+  // hub/toko-cabinet-dom.js rather than named in the catalogue — so it is
+  // not in GAMES and would never be numbered, which is how its release
+  // number came to live as a hand-typed DOM string.
+  { id: 'tokolive', path: 'toko-live/' },
+];
 
 const rootLog = rootLogOwner();
 const out = {};

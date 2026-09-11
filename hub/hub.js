@@ -1,3 +1,5 @@
+// Explicit release URL avoids reusing an older cached Slay HTML document.
+const launchPath = game => game.id === 'slaykallio' ? `${game.path}?release=33` : game.path;
 // The arcade — every playable thing in the repo on one page, each with a way
 // in (Play) and a way back (Feedback).
 //
@@ -6,10 +8,10 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=46';
-import { drawMarquee } from './art.js?v=18';
+import { GAMES, SKETCHES } from './games.js?v=47';
+import { drawMarquee } from './art.js?v=19';
 import * as feedback from './feedback.js?v=13';
-import * as topics from './topics.js?v=3';
+import * as topics from './topics.js?v=4';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';
 import { watchPad, padPresent } from './pad.js?v=9';
 import * as room from './arcade.js?v=5';
@@ -40,7 +42,7 @@ function cabinet(game) {
   if (!playable) card.classList.add('dark');
   const frame = el(playable ? 'a' : 'div', 'marquee');
   if (playable) {
-    frame.href = game.path;
+    frame.href = launchPath(game);
     frame.setAttribute('aria-label', t('play.aria', { x: game.title }));
     frame.tabIndex = -1;                 // the Play button below is the real target
   }
@@ -96,7 +98,7 @@ function cabinet(game) {
   let go;
   if (playable) {
     go = el('a', 'btn play', `[ ${t('play')} ]`);
-    go.href = game.path;
+    go.href = launchPath(game);
     // pressing Play is the only honest signal the hub has that you tried it —
     // it cannot know whether you liked it, and does not ask
     go.addEventListener('click', e => {
@@ -111,7 +113,7 @@ function cabinet(game) {
       // does nothing.
       if (introSeen() || e.metaKey || e.ctrlKey || e.shiftKey) return;
       e.preventDefault();
-      const gone = () => { location.href = game.path; };
+      const gone = () => { location.href = launchPath(game); };
       import('../toko/js/sting.js')
         .then(m => m.playStingOnce('tokoSting')?.done ?? null)
         .then(gone, gone);

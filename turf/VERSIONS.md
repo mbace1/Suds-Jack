@@ -8,6 +8,31 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v36 — 2026-09-11
+Playable-control pass: explicit 44px attack/ability target buttons use the same
+decision path as board taps, including choosing a firing position. Reload,
+abilities, skill choices and utility controls accept touch fallback and native
+keyboard activation. Focused buttons no longer have Enter/Space intercepted by
+the board, and crew/ability focus survives HUD refreshes. Controller A can start,
+choose a skill, continue and retry from overlays; stick/d-pad navigates choices.
+
+Armed-ability guidance describes the actual targeting mode. Extended operator
+details are collapsible and the control panel is capped to preserve board space.
+Combat rules, encounter data and character art remain unchanged.
+
+Modules: main v35, input v20, field-guide v2. Visible build v36.
+
+## v35 — 2026-09-10
+Short opening briefing and a contextual field guide on the real encounter board.
+Prompts follow selection, movement, firing-position choice, spent actions, enemy
+turns and results. Start, retry, crew selection, cancel and End Turn accept touch,
+pointer and keyboard activation without double firing.
+
+Validation: 137 core checks, seven-encounter balance sweep, and browser checks
+on desktop and emulated touch through start, selection, real board movement,
+cancel and enemy-turn resolution. Character art and combat rules are unchanged.
+Modules: main v34; field-guide v1. Visible build: v35.
+
 ## v34 — 2026-09-05
 **Owner: "should be zoomed in more. readability and comprehension in general
 is hard."** Asked which of those bit hardest, they named two: *what is about

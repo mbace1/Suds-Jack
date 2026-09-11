@@ -27,7 +27,12 @@ const el = (tag, cls, txt) => {
 };
 
 cssVars();
-$('#favicon').href = faviconHref();
+// The board's own tab icon, drawn from the same arcs as everything else.
+// Optional on purpose: this line used to be a bare assignment, the head lost
+// its <link> in a rewrite, and board.js died on it — taking the glitch lab,
+// the sting buttons and every section below with it. A tab icon may not cost
+// the page.
+const _fav = $('#favicon'); if (_fav) _fav.href = faviconHref();
 
 // the note about the letterforms stays up permanently now — they are drawn,
 // and that is worth saying rather than hiding

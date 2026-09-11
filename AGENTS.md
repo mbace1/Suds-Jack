@@ -68,7 +68,16 @@ unilateral fix.**
 - **`main` is the development baseline.** Feature work and review happen there.
 - **`gh-pages` is the live GitHub Pages branch.** Prefer shipping by merging reviewed work that is then published to Pages — not by inventing gameplay on `gh-pages` alone.
 - Until Pages is fully generated from `main`, treat direct `gh-pages` edits as **deploy surgery**: keep them small, say why in the PR, and reconcile back to `main` promptly (see issue #192).
-- **`gates` must stay green on `main`.** A red `flow-core · piritori` / arcade / toko-move job is a Gate-level merge blocker.
+- **`gates` must stay green on `main`.** A red job is a Gate-level merge blocker.
+  **Every red blocks — there is no such thing as an unrelated one to wave past**,
+  and that rule is safe now because `gates.yml` finally does the path scoping its
+  header had claimed since it was written. It had no `paths:` key at all, so all
+  six lanes ran on every push and this line made each of them able to block every
+  other: a Kindling deploy died on a red Piritori job, a Slay Kallio art PR died
+  on Concrete. Jobs are gated per lane now, so a red job on your change **is your
+  lane** by construction. Do not soften this into "unrelated reds are fine" —
+  that asks every agent to judge which reds count, which is exactly how a real
+  one gets waved through.
 
 ## 3. Rules that are load-bearing, not preferences
 

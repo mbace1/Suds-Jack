@@ -1,5 +1,29 @@
 # Toko Assistant — patch notes
 
+## 2026-09-10 — two modules that took a page down with them
+
+- **`conversation-plus.js` no longer fights for `.tc-menu`.** It watched that
+  element with a `MutationObserver` and re-rendered its starter list whenever
+  anything else wrote into it — but `chat.js` renders the same element. Two
+  owners writing one node is a ping-pong at microtask speed. On
+  `/toko-live/` it saturated the renderer's main thread about two seconds
+  after load: no error, no 404, the character simply never drawn, and even a
+  screenshot timing out. It now coalesces to a frame, never reacts to its own
+  writes (`takeRecords()`), and **disconnects after six rounds inside a second
+  and a half**, saying so in the console. A decoration may lose the menu; it
+  may not take the page.
+- **`board.js` no longer dies on a missing tab icon.** Its opening line was a
+  bare `$('#favicon').href = …`; the brand board's `<head>` lost that `<link>`
+  in a rewrite, so the assignment threw and every section built after it — the
+  glitch lab, the sting buttons, the carriers — silently never mounted. The
+  `<link>` is back and the assignment is guarded. `test/brand.cjs` had been
+  red at *motion* with `#lab canvas` null, six hundred lines from the cause;
+  it now runs 128 checks further.
+- Neither is a brand release: the mark, the carriers, the sting, the signature
+  and the counter are unchanged, so `VERSIONS.md` and the counter's `V5` stay
+  where they are. Tokens moved with the bytes — `board.js?v=3`,
+  `conversation-plus.js?v=11`.
+
 ## 2026-08-28 — project knowledge pass 1
 
 - Added `project-knowledge.js`, a dedicated internal-project knowledge layer separate from general game-history knowledge.

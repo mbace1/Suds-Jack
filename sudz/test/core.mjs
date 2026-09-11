@@ -149,7 +149,13 @@ assert.match(index, /game\.js\?v=53/);
 assert.match(index, /style\.css\?v=1/);
 assert.match(index, /id="build"[^>]*>BUILD v5<\/div>/);
 assert.match(styles, /#build\s*\{/);
-assert.match(index, /hub\/shell\.js\?v=17/);
+// The shell is here, but its ?v= is NOT this gate's to assert. That token is
+// a cache-buster owned by scripts/deploy-hub.mjs, which renumbers it across
+// every cabinet whenever hub/shell.js changes — so pinning the digits made
+// this gate go red for the deploy tooling doing its job, and it had been red
+// on main at v17 while the rest of the floor moved to v37. Assert the thing
+// that is actually Suds Jack's contract: the way home is on the page.
+assert.match(index, /hub\/shell\.js\?v=\d+/);
 assert.match(index, /id="wave"/);
 
 console.log('Suds Jack core gate: 26 checks passed');
