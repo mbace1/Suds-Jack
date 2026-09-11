@@ -19,7 +19,7 @@
 // caching their files from out here would be two answers to the same question.
 // A narrower scope wins the page, so those keep controlling themselves.
 
-const VERSION = 'v71';
+const VERSION = 'v72';
 const CACHE = `suds-hub-${VERSION}`;
 
 const SHELL = [
@@ -57,7 +57,7 @@ self.addEventListener('install', e => {
   // one missing file must not fail the whole install and leave the arcade with
   // no worker at all — cache what is there and say so
   e.waitUntil(caches.open(CACHE)
-    .then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => null))))
+    .then(c => Promise.all(SHELL.map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => null))))
     .then(() => self.skipWaiting()));
 });
 
