@@ -607,24 +607,24 @@ export const GAMES = [
       tagline: 'Kerronnallinen strategiapeli: näe koko vuoden 2003 Kallio, aloita Piritorilta, tee ensimmäinen voitto ja rakenna väen, tiedon ja reittien verkosto.',
       lineage: 'Dope Wars × Mini Metro × East of Eden',
       controls: 'valitse paikka kartalta · tee valintoja · hoida kirjanpitoa · taistele muodostelmissa',
-      note: 'Act I v4.48 — Kallio 2003, hahmokohtaukset, vierailut ja väliaikainen F01/F02-liiketesti · fi/en/ja',
+      note: 'Act I v4.47 — Kallio 2003, hahmokohtaukset ja vierailut · fi/en/ja',
     },
     ja: {
       tagline: '2003年のカッリオ全域を見渡し、ピリトリの最初の取引から人・情報・路線のネットワークを築く物語ストラテジー。',
       lineage: 'ドープウォーズ × ミニメトロ × エデンの東',
       controls: '地図で場所を選ぶ · 選択する · 帳簿を管理する · 陣形戦を指揮する',
-      note: 'Act I v4.48 — 2003年カッリオ、人物シーン、訪問、暫定F01/F02移動テスト · fi/en/ja',
+      note: 'Act I v4.47 — 2003年カッリオ、人物シーンと訪問 · fi/en/ja',
     },
     status: 'active',
-    note: 'Act I v4.48 — Kallio 2003, a saved campaign and the provisional F01/F02 locomotion test',
+    note: 'Act I v4.47 — Kallio 2003, character scenes, optional visits and a saved campaign',
     title: 'Piritori → Eden',
     tagline: 'A narrative strategy game across the full 2003 Kallio board: begin at Piritori, make the first margin, then build a network of people, information and routes.',
     lineage: 'Dope Wars × Mini Metro × East of Eden',
     tags: ['strategy', 'economy', 'narrative'],
     controls: 'choose a map location · make narrative choices · manage the ledger · command formation battles',
-    // The cabinet is copied from piritori-eden's tested browser build.
-    path: 'piritori/?v=448',
-    // Source authority remains piritori-eden even though this hub hosts its playable copy.
+    // Canonical campaign is published by piritori-eden; this bridge keeps a local launch URL.
+    path: 'piritori/act1.html',
+    // The bridge is local; the actual game and its return link deploy from piritori-eden.
     inRepo: false,
     deployedOnly: true,
     external: 'mbace1/piritori-eden',
