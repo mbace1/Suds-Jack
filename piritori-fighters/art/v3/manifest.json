@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "id": "piritori-runtime-art-v3",
+  "status": "vertical-slice-prototype",
+  "active_style": "cut-cardstock-hand-ink-v03",
+  "source_root": "../../art-library",
+  "art_bible": "../../ART_BIBLE.md",
+  "runtime_contract": {
+    "opaque_scenes": "WebP, lazy-loaded per location",
+    "transparent_units": "WebP with verified alpha",
+    "scalable_layers": "SVG",
+    "text_and_controls": "DOM/SVG UI unless a flattened prototype is explicitly declared",
+    "final_art_claim": false
+  },
+  "assets": [
+    {
+      "id": "cast3d-f01-heavy-bruiser-v05",
+      "kind": "mesh-3d",
+      "file": "https://raw.githubusercontent.com/mbace1/piritori-eden/a64a921cc3754b3c6c04b97a708949fc3df4ffdd/art-library/characters/concepts-3d/pilots/blender-v05/f01-repaired-v05.glb",
+      "source": "characters/concepts-3d/pilots/blender-v05/f01-repaired-v05.glb",
+      "source_version": "v05",
+      "approval_status": "semi-approved",
+      "production_status": "playable-test-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "fighter-test",
+      "character_id": "F01",
+      "rig_version": "v5",
+      "format": "glb",
+      "triangle_count": 19412,
+      "bone_count": 56,
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "animation_count": 3,
+      "clip_names": [
+        "alert-idle",
+        "casual-walk",
+        "hand-open-fist-grip"
+      ],
+      "sha256": "f05403888a137111738dd69c300c6bcd24d09a8a81f44205de3b43b52195e8bc",
+      "bytes": 8209288,
+      "baked_text": false,
+      "baked_ui": false,
+      "note": "Repaired Blender candidate used by the isolated 2v2 fight module. Finger joints and grip attachments included. Combat gestures are runtime prototype poses, not approved imported combat clips; owner and physical-device acceptance remain pending."
+    },
+    {
+      "id": "cast3d-f02-wiry-skirmisher-v05",
+      "kind": "mesh-3d",
+      "file": "https://raw.githubusercontent.com/mbace1/piritori-eden/a64a921cc3754b3c6c04b97a708949fc3df4ffdd/art-library/characters/concepts-3d/pilots/blender-v05/f02-repaired-v05.glb",
+      "source": "characters/concepts-3d/pilots/blender-v05/f02-repaired-v05.glb",
+      "source_version": "v05",
+      "approval_status": "semi-approved",
+      "production_status": "playable-test-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "fighter-test",
+      "character_id": "F02",
+      "rig_version": "v5",
+      "format": "glb",
+      "triangle_count": 17254,
+      "bone_count": 56,
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "animation_count": 3,
+      "clip_names": [
+        "alert-idle",
+        "casual-walk",
+        "hand-open-fist-grip"
+      ],
+      "sha256": "6eec1b8fdc7bfe8ef2c0230ba04953911bf02be5be6771d20002f0e18ba50fcc",
+      "bytes": 8123900,
+      "baked_text": false,
+      "baked_ui": false,
+      "note": "Repaired Blender candidate used by the isolated 2v2 fight module. Finger joints and grip attachments included. Combat gestures are runtime prototype poses, not approved imported combat clips; owner and physical-device acceptance remain pending."
+    }
+  ]
+}
