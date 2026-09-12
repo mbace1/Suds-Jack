@@ -28,15 +28,15 @@
 
 export const GAMES = [
   {
-    id: 'optionc', title: 'OPTION C · 3D TEST', status: 'active',
-    path: 'option-c/', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
-    tagline: 'Two operators. Four opponents. A fresh 3D tactics trial.',
-    lineage: 'Piritori battle exploration · Dream Loop',
-    tags: ['3D', 'tactics', 'test'],
-    controls: 'tap/click to select, move and attack · drag to rotate · +/− zoom',
-    note: 'C.02 — separate prototype. Pixel 10 Pro and iPad M2 testing; campaign integration pending.',
-    fi: {tagline:'Kaksi taistelijaa. Neljä vastustajaa. Uusi 3D-taktiikkakokeilu.', controls:'napauta tai klikkaa: valitse, liiku ja hyökkää · vedä: käännä kameraa · +/−: zoomaa', note:'C.02 — erillinen prototyyppi. Testilaitteet: Pixel 10 Pro ja iPad M2. Kampanjaliitos myöhemmin.'},
-    ja: {tagline:'味方2人、敵4人。新しい3D戦術テスト。', controls:'タップ・クリックで選択、移動、攻撃 · ドラッグで回転 · +/−でズーム', note:'C.02 — 独立した試作。Pixel 10 ProとiPad M2でテスト予定。キャンペーン連携は後日。'},
+    id: 'optionc', title: 'PIRITORI · BEAR PATH', status: 'active',
+    path: 'piritori-fighters/web/bear-path/?release=7', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
+    tagline: 'A park handover. Talk your way through—or hold the path.',
+    lineage: 'Kallio 2003 · Piritori encounter prototype',
+    tags: ['3D', 'tactics', 'story'],
+    controls: 'LOOK / TALK / USE / LEAVE · tap to move and fight · drag to orbit · FIT for overview',
+    note: 'C.07 — inspect, negotiate, fight and revisit the outcome. Local scene progress; campaign integration and final rigs pending.',
+    fi: {tagline:'Luovutus Karhupuistossa. Puhu tie auki tai pidä puolesi.', controls:'LOOK / TALK / USE / LEAVE · napauta: liiku ja taistele · vedä: käännä kameraa · FIT: yleiskuva', note:'C.07 — tutki, neuvottele, taistele ja palaa tapahtumapaikalle. Erillinen tallennus; kampanjaliitos ja hahmojen viimeistely kesken.'},
+    ja: {tagline:'公園での受け渡し。話し合うか、道を守るか。', controls:'LOOK / TALK / USE / LEAVE · タップで移動・戦闘 · ドラッグで回転 · FITで全景', note:'C.07 — 調査、交渉、戦闘、その後の再訪。独立した進行セーブ。キャンペーン連携とキャラクターの仕上げは開発中。'},
   },
   {
     id: 'concrete', title: 'CONCRETE', status: 'active', path: 'concrete/',
