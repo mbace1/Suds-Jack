@@ -9,7 +9,8 @@
  * resolved through the SAME `assetUrl()` every other screen uses — no second
  * path table to drift from the first).
  *
- * NOT attempted here: idle/attack/behit/dead animation clips (cast3d/clips/*),
+ * Fight clips: GLB pack for muscle (SHARED_CLIP_COMPATIBLE); procedural
+ * fight-motion for other roles until rests match. Still not attempted:
  * the ART_BIBLE presenter posterize treatment, or camera framing tuned past a
  * first honest look. This proves the pipeline — load, place, light, render —
  * which is the part that had to exist before any of that is worth doing.
@@ -20,15 +21,11 @@
  * actual walkable surface (the open middle of the yard, not "30% up the
  * bounding box" — a diorama's height is mostly tree and lamp-post) and
  * derives the board's own cell size from the measured footprint
- * (`_fit_board()`). None of that is ported here: this build's board is
- * already a fixed size (`grid.js`), units are already positioned by it
- * regardless of what arena sits under them, so this only needs the arena to
- * LOOK right, not to drive placement. The same fixed 5.4 scale is kept for
- * visual parity, and the ground height uses the model's bounding-box
- * minimum Y rather than a sampled walkable surface — simpler, and a
- * legitimate first look at an arena with no trees or lamp-posts to be
- * fooled by, but a real simplification, not a hidden port of the real
- * algorithm.
+ * (`_fit_board()`). `fitBoardToArena()` now ports the CELL derivation once
+ * the arena mesh reports half-extents (live `CELL_M` binding — the earlier
+ * attempts assigned a fitted value nothing re-read). Ground height still uses
+ * bounding-box min Y rather than Godot's sampled walkable surface; that half
+ * remains a known simplification.
  *
  * `app.js` calls `mountBattleStage3D()` after every battle-mode render and
  * `disposeBattleStage3D()` is called first thing inside it. It has to be:
@@ -40,9 +37,10 @@
  */
 import * as THREE from 'three';
 import { GLTFLoader } from '../../vendor/jsm/loaders/GLTFLoader.js';
+import { buildFightClip } from './fight-motion.js?v=1';
 import { assetUrl } from './content.js?v=1';
 import { LANES, totalRows } from './grid.js?v=1';
-import { CELL_M, boardSpan, worldFor, buildStageCamera } from './stage-camera.js?v=1';
+import { CELL_M, boardSpan, worldFor, buildStageCamera, fitBoardToArena, resetBoardMetric, positionBattleDOM } from './stage-camera.js?v=4';
 
 /** COMBAT.md / PHASING.md 1.06: the six generic crew roles all have their
  *  own registered body. Matches Godot's `UNIT_BY_ROLE` naming exactly
@@ -188,37 +186,37 @@ function styleUnitMaterial(model, { seed, rimTint, rimGain }) {
  *  per unit is the correct, simple answer at this battle's scale (at most
  *  six bodies); revisit with `SkeletonUtils.clone()` if load time matters
  *  once there is animation to also share. */
+function resetSkeletonBind(model) {
+  // Meshy bodies ship with a baked `clip0` that is NOT a fight pose. Drop any
+  // leftover animation state and snap bones to the skin bind before we author
+  // our own stance — otherwise fight-motion deltas compose onto a torn rest.
+  model.traverse(n => {
+    if (n.isSkinnedMesh && n.skeleton) n.skeleton.pose();
+  });
+}
+
 function loadUnitModel(data, assetId) {
   const url = assetUrl(data, assetId);
   return new Promise((resolve, reject) => {
     if (!url) { reject(new Error(`render3d: no registered asset for '${assetId}'`)); return; }
-    loader.load(url, gltf => { neutralizeMetalness(gltf.scene); resolve(gltf.scene); }, undefined, reject);
+    loader.load(url, gltf => {
+      neutralizeMetalness(gltf.scene);
+      // Discard embedded clips — we never play them (SHARED_CLIP_* empty;
+      // procedural stance only). Leaving them on the scene invites accidental
+      // mixers and confuse rest capture in fight-motion.
+      gltf.animations.length = 0;
+      resetSkeletonBind(gltf.scene);
+      resolve(gltf.scene);
+    }, undefined, reject);
   });
 }
 
 // ── animation ───────────────────────────────────────────────────────────────
 //
-// THE FOUR FIGHT CLIPS, LIFTED ONTO WHOEVER IS WEARING THE BODY. Exactly what
-// `battle_stage_3d.gd`'s `CLIPS` table does: the clips ship as four separate
-// one-animation GLBs (that is how Meshy delivers them), all four cut from the
-// MUSCLE's rig, and every fighter borrows them. That is a deliberate design
-// choice, not a shortcut — Meshy rigs come out near-identical, so buying four
-// clips per role would be paying repeatedly for the same motion.
-//
-// It is now checked rather than assumed: `port/rig-vectors.mjs` asserts every
-// rigged cast body carries the SAME 24 joints as the clip source (measured
-// 2026-09-02: 13 of 14 do, exactly). The fourteenth, `parka-man`, has no
-// skeleton at all and cannot animate — it is in the live `hired` variant pool,
-// so roughly one hired crew member in four gets a still body. Named in
-// QUEUE.md; `applyClips()` below degrades to a static figure for it rather
-// than throwing, which is what it already did before animation existed.
-// The ids are the manifest's own flattened FRAME ids
-// (`<group-id>:<pose>`, built by content.js's flattenArt) — the clips ship as
-// one `animation-set-3d` group with four frames, not four separate assets.
-// Resolved through the same assetUrl() every other screen uses, so there is
-// still no second path table to drift. Note `behit` is the manifest's pose
-// name; `hit` is Godot's key for the same clip, kept here so poseFor()'s
-// vocabulary matches battle_stage_3d.gd's _pose_for() exactly.
+// STATUS 2026-09-07: SHARED_CLIP_* empty; stance frozen; clip0 stripped.
+// Plate mode (arenas parked): transparent clear, NO ACES (it turns alpha
+// opaque black), ShadowMaterial ground only, no fog. Opaque slab was
+// painting out the CSS plate after remount/action.
 const CLIP_SOURCES = {
   idle: 'cast3d-muscle-clips-v01:idle',
   attack: 'cast3d-muscle-clips-v01:attack',
@@ -226,10 +224,11 @@ const CLIP_SOURCES = {
   dead: 'cast3d-muscle-clips-v01:dead',
 };
 
-/** Loaded once and shared across every unit in the battle. Godot's own version
- *  notes why: four clips fetched per unit per refresh would reload the same
- *  files six times a round. AnimationClips are immutable data — unlike the
- *  SkinnedMesh above, they are safe to share. */
+/** Bodies safe to bind CLIP_SOURCES onto — keep in sync with
+ *  `port/rig-vectors.mjs` SHARED_CLIP_COMPATIBLE / Godot `_animate` gate. */
+const SHARED_CLIP_ROLES = new Set(); // empty: Eeri muscle overwrite restored 2026-09-06
+const SHARED_CLIP_ASSETS = new Set();
+
 let clipCache = null;
 
 function loadFightClips(data) {
@@ -241,10 +240,14 @@ function loadFightClips(data) {
       loader.load(url,
         gltf => resolve([key, gltf.animations?.[0] ?? null]),
         undefined,
-        () => resolve([key, null]));   // a missing clip is a static pose, not a crash
+        () => resolve([key, null]));
     });
   })).then(pairs => Object.fromEntries(pairs));
   return clipCache;
+}
+
+function usesSharedGlbClips(assetId, role) {
+  return SHARED_CLIP_ASSETS.has(assetId) || SHARED_CLIP_ROLES.has(role);
 }
 
 /** Which clip a fighter should be playing — mirrors `battle_stage_3d.gd`'s
@@ -255,21 +258,33 @@ function loadFightClips(data) {
 function poseFor(unit, battle) {
   if (!unit.alive) return 'dead';
   if (unit.nerve === 0) return 'hit';
-  const acting = unit.id === battle.selectedId && !battle.acted?.includes(unit.id);
-  return acting ? 'attack' : 'idle';
+  // 2026-09-07: do NOT put the selected unit on looping `attack` — that made
+  // one fighter thrash while the rest idled, and read as twisted hips on
+  // mismatched rests. Still fight-ready stance for everyone alive.
+  return 'idle';
 }
 
-/** Binds the shared clips to this figure's own skeleton and starts one.
- *  Returns the mixer so the render loop can advance it, or null for a body
- *  with no skeleton to bind to. */
-function applyClips(model, clips, pose) {
-  const clip = clips[pose] ?? clips.idle;
+/** Shared GLB clip on a compatible body, else procedural fight-motion on the
+ *  body's own rest. Returns the mixer, or null when neither path can bind. */
+function applyClips(model, pose, seed = 0, sharedClips = null, useShared = false) {
+  let clip = null;
+  if (useShared && sharedClips) clip = sharedClips[pose] ?? sharedClips.idle;
+  if (!clip) clip = buildFightClip(model, pose);
   if (!clip) return null;
   const mixer = new THREE.AnimationMixer(model);
   const action = mixer.clipAction(clip);
-  // A downed fighter holds its last frame instead of looping back upright.
-  if (pose === 'dead') { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
+  // Still stance until Meshy migrate: apply one frame and pause. Looping idle
+  // / attack read as a mess (owner 2026-09-07). Dead still clamps at the end.
   action.play();
+  if (pose === 'dead') {
+    action.setLoop(THREE.LoopOnce, 1);
+    action.clampWhenFinished = true;
+    mixer.update(clip.duration);
+  } else {
+    action.time = 0;
+    mixer.update(0);
+    action.paused = true;
+  }
   return mixer;
 }
 
@@ -279,14 +294,45 @@ function applyClips(model, clips, pose) {
  *  the board to it the way Godot's `_fit_board()` does. */
 const STAGE_SCALE = 5.4;
 
+/** And the matching HALF of that pair, which this build never had.
+ *
+ *  `battle_stage_3d.gd` scales the arena by 5.4 AND every fighter by 0.60
+ *  (`n.scale = Vector3(0.60, 0.60, 0.60)`). Only the first was ported, so
+ *  bodies rendered at their native GLB size — about 1.7x too big for the
+ *  ground they stand on. Reported directly on sight, 2026-09-02: "that level
+ *  is way too small compared to the characters".
+ *
+ *  It reads as the ARENA being wrong, which is why it survived: the arena is
+ *  the thing that changed recently and the thing with a scale constant next
+ *  to it. The bodies were the untouched half. Both numbers are Godot's and
+ *  neither is re-tuned here — they are one pair, and picking a third value
+ *  for one of them is how the two builds stop being one game. */
+const UNIT_SCALE = 0.60;
+
 /** A battle's `sceneAssetId` is only an arena when the SAME id is
  *  registered as a `mesh-3d` asset (`battle-kattilahalli-3v3` and
  *  `battle-hermanni-training` both already author it that way — the real
  *  manifest id directly, not a 2D scene-art id). Battles with real 2D
  *  scene art (karhupuisto, courtyard) have no such entry and keep
  *  rendering flat, exactly as before this function existed. */
+/** Godot `STAGE_BY_SCENE` + `STAGE_FALLBACK` — a 2D plate id still gets a
+ *  real diorama when one exists, and everything else falls back to Kallio
+ *  backyard rather than a floating board on a dark void. */
+/** Owner 2026-09-06: current stage3d dioramas are parked — awful look and
+ *  they bury fighters (Hermanni porch/roof). Keep the maps for a later art
+ *  pass; fights use the 2D scene plate + cast3d on the ground slab. */
+const STAGE_BY_SCENE = {};
+const STAGE_FALLBACK = null;
+const USE_STAGE3D_ARENAS = false;
+
 function stageAssetId(data, battle) {
-  return data.art.get(battle.sceneAssetId)?.kind === 'mesh-3d' ? battle.sceneAssetId : null;
+  if (!USE_STAGE3D_ARENAS) return null;
+  const raw = battle.sceneAssetId;
+  if (data.art.get(raw)?.kind === 'mesh-3d') return raw;
+  const mapped = STAGE_BY_SCENE[raw];
+  if (mapped && data.art.get(mapped)?.kind === 'mesh-3d') return mapped;
+  if (STAGE_FALLBACK && data.art.get(STAGE_FALLBACK)?.kind === 'mesh-3d') return STAGE_FALLBACK;
+  return null;
 }
 
 /** Loads the arena, scales it, and settles it onto the board's own origin:
@@ -357,6 +403,75 @@ export function disposeBattleStage3D() {
 /** Mounts a fresh Three.js scene into `container` for this battle's current
  *  live formation. Safe to call on every render — it tears down whatever it
  *  mounted last time first. */
+/** Live mood knobs for art review — ambient/key/rim intensities + optional
+ *  hex colours + exposure. Used by `debug.setBattleLights` / mood captures.
+ *  Defaults: readable night lift over `_build_night()` (ambient 1.75, key 3.4,
+ *  rim 1.45, exposure 1.15) — same cold-ambient / warm-key mood, less silhouette. */
+export function setBattleLights({
+  ambient,
+  key,
+  rim,
+  ambientColor,
+  keyColor,
+  rimColor,
+  exposure,
+  fogDensity,
+} = {}) {
+  if (!current) return false;
+  if (ambient != null && current.ambient) current.ambient.intensity = ambient;
+  if (key != null && current.key) current.key.intensity = key;
+  if (rim != null && current.rim) current.rim.intensity = rim;
+  if (ambientColor != null && current.ambient) current.ambient.color.set(ambientColor);
+  if (keyColor != null && current.key) current.key.color.set(keyColor);
+  if (rimColor != null && current.rim) current.rim.color.set(rimColor);
+  if (exposure != null && current.renderer) current.renderer.toneMappingExposure = exposure;
+  if (fogDensity != null && current.scene?.fog) current.scene.fog.density = fogDensity;
+  return true;
+}
+
+
+/** Cover props as low ochre crates on the 3D board (QUEUE Phase A).
+ *  2D already paints `.formation-cell.cover`, but with cast3d up the bodies
+ *  hide and the cell grid is easy to miss — the player hears "behind the
+ *  bicycle rack" with no rack in the picture. No Meshy: a readable marker. */
+function coverMarkerMesh(propId = '') {
+  const id = String(propId || '');
+  const tall = /wall|stair|housing|porttikongi|graffiti/i.test(id);
+  const wide = /rack|bench|pallet|plinth|ramp/i.test(id);
+  const geo = new THREE.BoxGeometry(
+    CELL_M * (wide ? 0.72 : 0.48),
+    CELL_M * (tall ? 0.55 : 0.28),
+    CELL_M * (wide ? 0.38 : 0.48),
+  );
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xb08a3c,
+    roughness: 0.88,
+    metalness: 0,
+    emissive: 0x3a2a10,
+    emissiveIntensity: 0.15,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.position.y = (CELL_M * (tall ? 0.55 : 0.28)) * 0.5;
+  mesh.name = `cover:${id || 'prop'}`;
+  return mesh;
+}
+
+function addCoverMarkers(scene, battle) {
+  if (!battle?.cover?.size) return;
+  const root = new THREE.Group();
+  root.name = 'cover-markers';
+  for (const [cell, prop] of battle.cover.entries()) {
+    const { x, z } = worldFor(cell);
+    const mesh = coverMarkerMesh(prop.propId);
+    mesh.position.x = x;
+    mesh.position.z = z;
+    root.add(mesh);
+  }
+  scene.add(root);
+}
+
 export function mountBattleStage3D(container, battle, data) {
   disposeBattleStage3D();
   if (!container || !battle) return;
@@ -369,6 +484,9 @@ export function mountBattleStage3D(container, battle, data) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // Without this, alpha:true still clears opaque black and paints out the
+  // CSS scene plate after the first frame (owner: "background disappears").
+  renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   // `battle_stage_3d.gd`'s own comment: "the shadow is what does the
   // work: a stylised figure and a photoreal yard stop arguing the moment
@@ -380,19 +498,30 @@ export function mountBattleStage3D(container, battle, data) {
   // equivalent to three.js's ACES fit, both there to keep the warm lamp's
   // highlight from blowing out against the cold night the rest of the
   // scene sits in.
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  // ACESFilmic + alpha:true paints transparent pixels opaque black after the
+  // first tonemap pass (owner: plate vanishes on/after action). Arenas-on
+  // keeps ACES; plate mode stays linear so the CSS scene shows through.
+  if (USE_STAGE3D_ARENAS) {
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+  } else {
+    renderer.toneMapping = THREE.NoToneMapping;
+    renderer.toneMappingExposure = 1.0;
+  }
   renderer.domElement.className = 'stage3d-canvas';
   container.appendChild(renderer.domElement);
-  current = { renderer, canvas: renderer.domElement, raf: 0 };
+  // Cold ambient lifted for plate+cast readability; hue kept from `_build_night()`.
+  const ambient = new THREE.AmbientLight(0x6a8aaa, 1.75);
+  current = { renderer, canvas: renderer.domElement, raf: 0, scene: null, ambient, key: null, rim: null, camera: null };
 
   const scene = new THREE.Scene();
-  // `_build_night()`'s own values: background/ambient are a single named
-  // palette there (`Environment`), not scattered magic hex — carried over
-  // literally rather than re-picked, so the two builds read as the same
-  // night rather than merely similar ones.
-  scene.background = new THREE.Color(0x0b0e13);
-  scene.fog = new THREE.FogExp2(0x12161d, 0.05);
+  // When stage3d arenas are parked, do not paint an opaque WebGL clear —
+  // CSS `.scene-image` must show through the alpha canvas. Arenas-on keeps
+  // `_build_night()`'s `#0b0e13` void. Fog stays, but density is kept near
+  // Godot's 0.02 so it does not grey-out the plate or the cast.
+  scene.background = USE_STAGE3D_ARENAS ? new THREE.Color(0x0b0e13) : null;
+  // Fog greys the plate-through-canvas look; only with real arenas.
+  scene.fog = USE_STAGE3D_ARENAS ? new THREE.FogExp2(0x12161d, 0.018) : null;
   // Orthographic, matching `battle_stage_3d.gd`'s `_build_camera()`: a
   // perspective camera makes the board's far edge read smaller than its
   // near edge, which is exactly what `STAGE_SPEC.md` §2.4 rules out ("true
@@ -403,13 +532,14 @@ export function mountBattleStage3D(container, battle, data) {
   const aspect = width / height;
   const camera = buildStageCamera(aspect);
 
-  scene.add(new THREE.AmbientLight(0x3c5570, 0.55));
+  scene.add(ambient);
+  current.scene = scene;
   // "Cold ambient, one warm practical, and shadows" — `_build_night()`'s
   // own summary of the pattern. The key stands in for that one practical
   // light (Godot uses a warm OmniLight lamp, `#ffcf8f`); the directional
   // form is kept rather than porting an omni/point light, since nothing
   // here currently varies per-arena lamp placement.
-  const key = new THREE.DirectionalLight(0xffcf8f, 1.3);
+  const key = new THREE.DirectionalLight(0xffcf8f, 3.4);
   key.position.set(3, 6, 4);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
@@ -425,21 +555,28 @@ export function mountBattleStage3D(container, battle, data) {
   key.shadow.camera.near = 0.1;
   key.shadow.camera.far = 40;
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0x8fb4ff, 0.4);
+  const rim = new THREE.DirectionalLight(0x8fb4ff, 1.45);
   rim.position.set(-3, 4, -3);
   scene.add(rim);
+  current.key = key;
+  current.rim = rim;
+  current.camera = camera;
 
-  // A flat ground plane is the fallback for a battle with no registered
-  // arena mesh (karhupuisto, courtyard) — kept in the scene unconditionally
-  // and only removed once a real arena actually finishes loading, so a
-  // slow or failed arena fetch never leaves units floating over nothing.
+  // Arenas-on: opaque fallback slab until the diorama loads.
+  // Plate mode: ShadowMaterial only — an opaque slab was painting out the
+  // CSS `.scene-image` through the transparent canvas (owner: background
+  // disappears after action). Cast still gets contact shadows.
+  const groundMat = USE_STAGE3D_ARENAS
+    ? new THREE.MeshStandardMaterial({ color: 0x1b222c, roughness: 0.95 })
+    : new THREE.ShadowMaterial({ opacity: 0.32 });
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(LANES * CELL_M + 1.5, totalRows() * CELL_M + 1.5),
-    new THREE.MeshStandardMaterial({ color: 0x1b222c, roughness: 0.95 }),
+    groundMat,
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
+  addCoverMarkers(scene, battle);
 
   // Additive, not a replacement: renderBattle() in app.js still draws every
   // unit's flat legs/torso/head sprite underneath this canvas, so a battle
@@ -455,22 +592,28 @@ export function mountBattleStage3D(container, battle, data) {
   // a battle with no registered arena (karhupuisto, courtyard) never gets
   // that class and keeps its real 2D backdrop forever, unchanged.
   const stage = container.closest('.battle-stage');
-  stage?.classList.remove('stage3d-ready', 'stage3d-arena');
+  stage?.classList.remove('stage3d-ready', 'stage3d-arena', 'stage3d-pending');
 
   const units = [...battle.players, ...battle.enemies, ...(battle.police ?? [])].filter(unit => unit.alive);
   const mixers = [];
+  resetBoardMetric();
+  const placed = []; // { model, unit } — repositioned after a successful fit
+
   const clipsReady = loadFightClips(data);
   const unitLoads = units.map(unit => {
     const fallback = unit.side === 'player' ? PLAYER_FALLBACK : ENEMY_FALLBACK;
     const assetId = ROLE_MODEL[unit.role] ?? fallback;
     return Promise.all([loadUnitModel(data, assetId), clipsReady])
-      .then(([model, clips]) => {
+      .then(([model, sharedClips]) => {
         // The mount that requested this load may already have been torn
         // down by a later render before the network resolved.
         if (myGeneration !== generation) return;
-        const mixer = applyClips(model, clips, poseFor(unit, battle));
+        const mixer = applyClips(
+          model, poseFor(unit, battle), seedFromId(unit.id),
+          sharedClips, usesSharedGlbClips(assetId, unit.role));
         if (mixer) mixers.push(mixer);
         const { x, z } = worldFor(unit.cell);
+        model.scale.setScalar(UNIT_SCALE);
         model.position.set(x, 0, z);
         model.rotation.y = unit.side === 'player' ? Math.PI * 0.5 : -Math.PI * 0.5;
         styleUnitMaterial(model, {
@@ -480,10 +623,12 @@ export function mountBattleStage3D(container, battle, data) {
           // rest of the field — the nearest thing this build has to
           // Godot's `is_active()` dim (that distinguishes downed-but-shown
           // fighters, which this build simply never renders at all).
-          rimGain: unit.id === battle.selectedId ? 0.85 : 0.5,
+          // Stronger team Fresnel so cast is not silhouette-only on the plate.
+          rimGain: unit.id === battle.selectedId ? 1.15 : 0.75,
         });
         enableShadows(model);
         scene.add(model);
+        placed.push({ model, unit });
       })
       .catch(err => { console.error(`render3d: '${unit.id}' (${assetId})`, err); throw err; });
   });
@@ -491,15 +636,55 @@ export function mountBattleStage3D(container, battle, data) {
     .then(loaded => {
       if (!loaded || myGeneration !== generation) return;
       scene.remove(ground);
+      // Fit FIRST so ground fill / camera / unit slots use the arena's own
+      // footprint. The two earlier ports assigned a fitted value that nothing
+      // re-read (CELL_M stayed 0.85); live binding + rebuild below is the fix.
+      const lanes = LANES;
+      const rows = totalRows();
+      const fitted = fitBoardToArena(loaded.halfX, loaded.halfZ, lanes, rows);
+      console.info(`render3d: fitBoardToArena CELL_M=${fitted.toFixed(3)} (half ${loaded.halfX.toFixed(2)}×${loaded.halfZ.toFixed(2)})`);
+      // Rebuild the orthographic camera against the new board span.
+      const size = boardSpan() * 1.1;
+      camera.left = (-size * aspect) / 2;
+      camera.right = (size * aspect) / 2;
+      camera.top = size / 2;
+      camera.bottom = -size / 2;
+      const camBack = boardSpan() * 1.6;
+      camera.position.set(-camBack, camBack * 0.62, -camBack);
+      camera.lookAt(0, 0.9, 0);
+      camera.updateProjectionMatrix();
+      camera.updateMatrixWorld(true);
       scene.add(groundFillMesh(loaded.halfX, loaded.halfZ));
       enableShadows(loaded.model);
       scene.add(loaded.model);
       if (myGeneration === generation) stage?.classList.add('stage3d-arena');
     })
     .catch(err => { console.error(`render3d: arena '${battle.sceneAssetId}'`, err); });
+
+  // Re-bind unitLoads to record models for post-fit reposition.
+  // (unitLoads already created above — patch by wrapping placement)
+
   Promise.all([...unitLoads, stageLoad])
-    .then(() => { if (myGeneration === generation) stage?.classList.add('stage3d-ready'); })
-    .catch(() => {}); // logged per-unit above; 2D sprites stay the fallback
+    .then(() => {
+      if (myGeneration !== generation) return;
+      // Units were placed with the pre-fit CELL_M; slide them onto the fitted grid.
+      for (const entry of placed) {
+        const { x, z } = worldFor(entry.unit.cell);
+        entry.model.position.set(x, 0, z);
+      }
+      const oldCover = scene.getObjectByName('cover-markers');
+      if (oldCover) scene.remove(oldCover);
+      addCoverMarkers(scene, battle);
+      positionBattleDOM(container, battle);
+      stage?.classList.remove('stage3d-pending');
+      // Only hide 2D dolls when at least one real mesh is on the board.
+      // Ready-with-zero-bodies left an empty stage (owner: "no characters").
+      if (placed.length > 0) stage?.classList.add('stage3d-ready');
+      else stage?.classList.remove('stage3d-ready');
+    })
+    .catch(() => {
+      stage?.classList.remove('stage3d-pending', 'stage3d-ready');
+    });
 
   // Real elapsed time, not a fixed step: AnimationMixer.update() takes a
   // DELTA, and feeding it a constant would run every clip at whatever rate

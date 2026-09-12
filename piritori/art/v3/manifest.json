@@ -1202,7 +1202,7 @@
       "format": "glb",
       "baked_text": false,
       "baked_ui": false,
-      "sha256": "b09620f3a598015339620977bd0a8cef918df7c36bb177570e243893a8b715b5",
+      "sha256": "c31ff141a4c3a71d231c3208566bfa959ff5d371bbfd18627563cda5940013ce",
       "note": "A Kallio back yard as one diorama mesh: open ground with a brick outbuilding, chain-link and gate, a leaning lamp, pallets, a skip and bare birches. Generated as a single centred object because that is what image-to-3D is good at — a scene asked for as a scene comes back as soup. Its walkable surface is NOT at y=0; the base has real thickness and the ground must be measured from the AABB."
     },
     {
@@ -1232,7 +1232,7 @@
           "pose": "behit",
           "file": "cast3d/clips/muscle-behit-v01.glb",
           "source": "meshy action library",
-          "meshy_action": "BeHit_FlyUp",
+          "meshy_action": "BeHit",
           "note": "taking one"
         },
         {
@@ -1243,7 +1243,113 @@
           "note": "going down and staying down"
         }
       ],
-      "note": "Fight clips for the rigged muscle, from Meshy's canned action library: idle 4.03s, attack 2.83s, hit 1.53s, dead 3.00s, all 24 bones. TEXTURES ARE STRIPPED — Meshy returns each clip as a complete character carrying its own copy of the same 6.5MB PNG, so four clips were 28MB of which 26MB was one texture repeated. The base character supplies it; art-src/tools/strip_glb_texture.py removes the rest. 7.2MB each becomes 0.7MB."
+      "note": "Fight clips for the rigged muscle (pre-cd64cd2 sizes). RESTORED 2026-09-06 with the Piritori muscle body after Eeri contamination. Still not matching muscle rest closely enough for shared playback — see port/rig-vectors.mjs."
+    },
+    {
+      "id": "cast3d-f01-heavy-bruiser-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/f01-heavy-bruiser-v01.glb",
+      "source": "characters/concepts-3d/pilots/f01-heavy-bruiser-tpose-v01.jpg",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "playable-test-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "fighter-test",
+      "character_id": "F01",
+      "rig_version": "v1",
+      "format": "glb",
+      "triangle_count": 15512,
+      "bone_count": 24,
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "animation_count": 0,
+      "helper_geometry_removed": true,
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "c4c4501ec551961bf16c3e073d475cbf73c66c30c6c4ac433263ae4bd66df27d",
+      "bytes": 7778396,
+      "note": "Provisional runtime-test derivative of the approved-source F01 heavy bruiser. Blender 5.2 export removes Meshy's unskinned helper Icosphere and embedded base clip while preserving the 15,512-triangle skinned model, 24-bone v1 rig and 2K texture. The source material duplicates its albedo as full-strength emission, which the test runtime neutralizes. Current shoulder-to-wrist length is about 0.638 m per side and remains open for a later body/rig proportion pass. Not a final asset; finger/grip, combat-state, final optimization and owner device acceptance remain open."
+    },
+    {
+      "id": "cast3d-f01-heavy-bruiser-clips-v01",
+      "kind": "animation-3d",
+      "file": "cast3d/clips/f01-heavy-bruiser-clips-v01.glb",
+      "source": "F01 Meshy Alert and Casual Walk outputs recorded in MESHY_PILOT_RESULTS.md",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "playable-test-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "character_id": "F01",
+      "rig_version": "v1",
+      "compatible_model_id": "cast3d-f01-heavy-bruiser-v01",
+      "clip_names": [
+        "alert-idle",
+        "casual-walk"
+      ],
+      "mesh_count": 0,
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "4a06f56fe3e21b86d3d90dd42a283244ef1ef73dca9f54194fdb3e6cb3b804d4",
+      "bytes": 231696,
+      "note": "Meshless v1 clip pack for F01 only. Contains exactly alert-idle and casual-walk on F01's own 24-bone rest; it is not a shared-retarget claim and supplies no attack, hit, death, finger or grip motion."
+    },
+    {
+      "id": "cast3d-f02-wiry-skirmisher-v01",
+      "kind": "mesh-3d",
+      "file": "cast3d/f02-wiry-skirmisher-v01.glb",
+      "source": "characters/concepts-3d/pilots/f02-wiry-skirmisher-tpose-v01.jpg",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "playable-test-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "role": "fighter-test",
+      "character_id": "F02",
+      "rig_version": "v1",
+      "format": "glb",
+      "triangle_count": 15503,
+      "bone_count": 24,
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "animation_count": 0,
+      "helper_geometry_removed": true,
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "7b4684d2f3ae07ab79231cbe91a1ebea0861925edfd57b286bd8a7312462a356",
+      "bytes": 7717672,
+      "note": "Provisional runtime-test derivative of the approved-source F02 wiry skirmisher. Blender 5.2 export removes Meshy's unskinned helper Icosphere and embedded base clip while preserving the 15,503-triangle skinned model, 24-bone v1 rig and 2K texture. The source material duplicates its albedo as full-strength emission, which the test runtime neutralizes. Current shoulder-to-wrist length is about 0.436-0.443 m per side and remains open for a later body/rig proportion pass. Not a final asset; finger/grip, combat-state, final optimization and owner device acceptance remain open."
+    },
+    {
+      "id": "cast3d-f02-wiry-skirmisher-clips-v01",
+      "kind": "animation-3d",
+      "file": "cast3d/clips/f02-wiry-skirmisher-clips-v01.glb",
+      "source": "F02 Meshy Alert and Casual Walk outputs recorded in MESHY_PILOT_RESULTS.md",
+      "source_version": "v01",
+      "approval_status": "semi-approved",
+      "production_status": "playable-test-only",
+      "layer": "unit-3d",
+      "era": "2003",
+      "character_id": "F02",
+      "rig_version": "v1",
+      "compatible_model_id": "cast3d-f02-wiry-skirmisher-v01",
+      "clip_names": [
+        "alert-idle",
+        "casual-walk"
+      ],
+      "mesh_count": 0,
+      "format": "glb",
+      "baked_text": false,
+      "baked_ui": false,
+      "sha256": "cd64299fb5750dffff9a3c7fe30cd9d313a1b78a4c04e990c8d6a7beccfb91c4",
+      "bytes": 231772,
+      "note": "Meshless v1 clip pack for F02 only. Contains exactly alert-idle and casual-walk on F02's own 24-bone rest; it is not a shared-retarget claim and supplies no attack, hit, death, finger or grip motion."
     },
     {
       "id": "cast3d-driver-v01",
@@ -1311,7 +1417,8 @@
       "baked_text": false,
       "baked_ui": false,
       "sha256": "d38fdfb8bfdb441a1463024541fda0e1f39e68e6df5a0fe4a20d70f6df8efa17",
-      "note": "A wide slab on long legs: black bomber, heavy boots. Rigged, 24 bones, carrying the walk clip. Chosen on SILHOUETTE: on a 3D board a role has to be identifiable from its shape rather than a label, so the six are a slab, a round one, a long coat, a thin vertical, a hood and a medium build. Texture downscaled 2048 to 512 by art-src/tools/strip_glb_texture.py — 6-8MB each becomes ~1.6MB, and a figure a hundred pixels tall cannot show 2048. 2026-08-24: remeshed to ~12.4k from the 2M account master (Meshy remesh endpoint), re-rigged, retextured to 1024. Same Meshy skeleton, so the shared fight clips retarget unchanged. Walk/run clips staged unregistered in art-library/cast3d/."
+      "note": "A wide slab on long legs: black bomber, heavy boots. Rigged, 24 bones. RESTORED 2026-09-06 after cd64cd2 overwrote this file with an untextured 22-joint/Head1 body the owner identified as Eeri (not Piritori). Shared fight clips remain off until a real Meshy migrate.",
+      "bytes": 1227724
     },
     {
       "id": "cast3d-runner-v01",
@@ -1395,7 +1502,7 @@
       "format": "glb",
       "baked_text": false,
       "baked_ui": false,
-      "sha256": "2f1441a4095e4af6c624f7d101b408b5bb1cf33501a3d731e22f1226425c7f85",
+      "sha256": "2edef6ffe56acc09fb02efb915f6cd502a8f09d1e3a4703ff57253b19e137ea2",
       "note": "Concrete skate park: graffitied ramps and a bowl, weeds through the cracks, a road along one edge. 15882 triangles, one material. CANON NOTE (updated 2026-08-28): owner ruling placed this as a real, repeatable no-stakes training battle (era1-slice-v1.json battle-hermanni-training) at a new `training`-sliceState anchor (hermanni_skatepark, map/kallio-era1-2003-v1.json) — no longer merely reachable through ?stage=. The real district is still outside the locked Era I production boundary (MAP.md 4.1); the anchor's wgs84 is nudged to sit just inside it and marked `representative-inside-production-boundary`, the same compromise already used for the Suvilahti gasworks anchor. Base colour was 2048 and the ORM map 4096; both to 1024 by art-src/tools/strip_glb_texture.py, 16.4MB to 2.8MB."
     },
     {
@@ -1516,7 +1623,7 @@
       "format": "glb",
       "baked_text": false,
       "baked_ui": false,
-      "sha256": "43ea179438bed67699403aba616f939f002001ff90acca8b385d6d4379859391",
+      "sha256": "e5e26dc097ba39683bd8d7eaad2ca80f7c68e2565bed310642993e2c6993c53d",
       "note": "Kattilahalli, the boiler hall at Suvilahti. 23272 triangles. IN BOUNDS, unlike the skate park: Suvilahti sits at Sornainen, and the map already carries a `sornainen_harbour` anchor whose roles are docks, industrial and expansion. Its sliceState is 'teaser', so placing a battle here is a content decision but not a boundary change. The hall has open sides and no floor beyond its own footprint, which is why BattleStage3D lays a concrete slab under every arena - see _build_ground_fill(). KNOWN: some textures are mirrored across opposite sides. Owner's read is that colour and lighting hide it; not attempted here. Textures were 2048 and 4096, both to 1024: 17.8MB to 3.2MB."
     },
     {
@@ -1548,9 +1655,8 @@
       "format": "glb",
       "baked_text": false,
       "baked_ui": false,
-      "role": "hired",
       "source": "Meshy image-to-3d task 01a028df, rigged 2026-08-23",
-      "note": "Heavy middle-aged man, cream work parka with orange shoulders, blue cargo trousers, orange boots. Found unused on the account and rigged for 5 credits. RECAST: he briefly stood in for Toko Slomo and was freed the moment Toko got his own model. He is now one of the `hired` bodies in battle_stage_3d.UNIT_VARIANTS — an ordinary heavy man in work clothes, which is what `hired` means. He is NOT a speaker and NOT in presenter_3d.PLACEHOLDER_SPEAKERS; this note claimed both for a while after the code had moved on, which is how a stale note misreports the cast. 18761 triangles, 24 bones. Texture 2048 to 1024, matching the polycount-is-the-lever finding in ART_BIBLE 9.7 rather than the older 512 target: 7.1MB to 0.77MB.",
+      "note": "Heavy middle-aged man, cream work parka with orange shoulders, blue cargo trousers, orange boots. Found unused on the account. RECAST: he briefly stood in for Toko Slomo and was freed the moment Toko got his own model. He was one of the `hired` bodies in battle_stage_3d.UNIT_VARIANTS until 2026-09-02 — an ordinary heavy man in work clothes, which is what `hired` means — and is in NO pool now. He is NOT a speaker and NOT in presenter_3d.PLACEHOLDER_SPEAKERS; this note claimed both for a while after the code had moved on, which is how a stale note misreports the cast. 18761 triangles and ZERO bones, measured 2026-09-02 straight out of the GLB's JSON chunk: 0 skins, 0 joints, 0 animations, 1 node, against hired-v01's 1/24/1/26. This note read `rigged for 5 credits` and `24 bones` from the day it was written and BOTH WERE FALSE — being specific is what made them convincing, and a number nobody measured is how an unusable asset stayed in a live pool for ten days. Texture 2048 to 1024, matching the polycount-is-the-lever finding in ART_BIBLE 9.7 rather than the older 512 target: 7.1MB to 0.77MB. RETIRED FROM THE HIRED POOL 2026-09-02: this GLB has no skin and no skeleton, so it cannot play the shared fight clips (port/rig-vectors.mjs measures every rig; 13 of 14 match, this is the one that does not). With animation now wired in both builds it would have stood motionless in a fight. `role` is cleared rather than the asset unregistered -- he is a real, usable body for ambient or non-combat use, and re-rigging him is about 5 credits if a fighter is ever wanted.",
       "sha256": "f6849b66f35b55ebf54170f7b0807d05f097ed9c63d58811423331d3df3a0725"
     },
     {

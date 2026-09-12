@@ -21,15 +21,44 @@
  */
 import * as THREE from 'three';
 import { LANES, totalRows, laneCentre, parseSlotKey, slotKey } from './grid.js?v=1';
+import { applyNameplateNudges } from './nameplates.js?v=1';
 
-/** `worldFor()`'s per-cell spacing, matching `battle_stage_3d.gd`'s own
- *  `CELL` (via `_fit_board()`) closely enough for visual parity — see
- *  `render3d.js`'s header on why this build's board is fixed-size rather
- *  than arena-fitted the way Godot's is. */
-export const CELL_M = 0.85;
+/** `worldFor()`'s per-cell spacing. Starts at Godot's pre-fit default and is
+ *  rewritten by `fitBoardToArena()` once a real stage mesh reports its
+ *  half-extents — the same formula as `battle_stage_3d.gd`'s `_fit_board()`.
+ *  `export let` (not const): importers keep a live binding, so the earlier
+ *  "fitted value came back as the default" failure mode — assigning a local
+ *  copy that nothing else read — cannot happen again. */
+export let CELL_M = 0.85;
+
+/** Godot `BOARD_COVERAGE` — playable board spans this fraction of the
+ *  arena's shorter horizontal half-extent. */
+export const BOARD_COVERAGE = 0.72;
+
+/** Port of `_fit_board()`. Call AFTER the arena is scaled and centred, with
+ *  the mesh's post-scale half-extents. Returns the new CELL_M. */
+export function fitBoardToArena(halfX, halfZ, lanes, rows) {
+  const span = Math.min(halfX, halfZ) * 2 * BOARD_COVERAGE;
+  const across = Math.max(lanes, rows);
+  CELL_M = Math.max(span / across, 0.15);
+  return CELL_M;
+}
+
+/** Reset between mounts so a fitted fight does not leak into the next. */
+export function resetBoardMetric() {
+  CELL_M = 0.85;
+}
 
 export function boardSpan() { return Math.max(LANES, totalRows()) * CELL_M; }
-export function frustumSize() { return boardSpan() * 1.1; }
+
+/** Ortho height. Portrait keeps the roomy `1.1×` board pad; landscape
+ *  tightens so the grid fills the stage (owner 2026-09-06: closer view).
+ *  Pass the live container aspect — same input `buildStageCamera` already
+ *  takes — so DOM projection and WebGL stay locked. */
+export function frustumSize(aspect = 1) {
+  const pad = aspect >= 1.25 ? 0.78 : 1.1;
+  return boardSpan() * pad;
+}
 
 /** Lane/depth -> world (x, z), fractional values allowed on purpose —
  *  `positionBattleDOM()`'s cell corners sit at `lane ± 0.5` and need the
@@ -54,13 +83,15 @@ export function worldFor(cell) {
  *  point (see `projectFraction`'s own note on why Y does not have this
  *  problem). */
 export function buildStageCamera(aspect) {
-  const size = frustumSize();
+  const size = frustumSize(aspect);
   const camera = new THREE.OrthographicCamera(
     (-size * aspect) / 2, (size * aspect) / 2,
     size / 2, -size / 2,
     0.1, 100,
   );
-  const camBack = boardSpan() * 1.6;
+  // Slightly nearer camera in landscape so fighters read larger without
+  // changing the isometric angles.
+  const camBack = boardSpan() * (aspect >= 1.25 ? 1.35 : 1.6);
   camera.position.set(-camBack, camBack * 0.62, -camBack);
   camera.lookAt(0, 0.9, 0);
   camera.updateMatrixWorld(true);
@@ -69,10 +100,10 @@ export function buildStageCamera(aspect) {
 
 /** World (x, y, z) -> `{ xPct, yPct }`, 0..100 fractions of the stage
  *  container, matching whatever a real WebGL render through the SAME
- *  camera would put there. Note the frustum's *height* (`frustumSize()`)
- *  never depends on `aspect` — only its width does (`buildStageCamera`'s
- *  left/right) — so `yPct` is stable across container sizes and only
- *  `xPct` genuinely needs the caller's live aspect to be exactly right;
+ *  camera would put there. Frustum height pads tighter in landscape (`frustumSize(aspect)`); width
+ *  still scales with `aspect`. Pass the live container aspect so `xPct`/
+ *  `yPct` match the WebGL camera — a stale aspect drifts both axes when
+ *  the landscape pad is active;
  *  a caller with no live measurement yet (see `app.js`'s static
  *  `cellPosition()`) still gets a reasonable `xPct` from a typical
  *  aspect, corrected the moment `positionBattleDOM()` can measure the
@@ -173,4 +204,8 @@ export function positionBattleDOM(container, battle) {
     const { x, z } = worldFor(unit.cell);
     Object.assign(el.style, project(x, z));
   }
+  // Tokens sit on cell centres; labels all hang at the same CSS offset, so
+  // a 2v2 centre-lane pair (or any tight depth stack) lands on top of
+  // itself. Resolve in screen space after the projection — see nameplates.js.
+  applyNameplateNudges(stage, units);
 }

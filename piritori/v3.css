@@ -302,15 +302,58 @@ button { -webkit-tap-highlight-color: transparent; }
   min-height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+  /* `start`, not the grid default `stretch`: the map panel is now sized by the
+     square board inside it (see .map-stage), so stretching it to the sidebar's
+     height just wraps the map in a tall empty frame. */
+  align-items: start;
   gap: 12px;
   padding: 12px;
 }
-.map-panel { min-height: 560px; overflow: hidden; background: #0e1c29; }
-.city-map { display: block; width: 100%; height: 100%; min-height: 560px; touch-action: manipulation; }
-.map-water { fill: #0c2637; }
-.map-land { fill: #262b31; stroke: #7d684f; stroke-width: 6; }
-.map-district { fill: #30343a; stroke: #1b2128; stroke-width: 4; }
-.map-park { fill: #4f593e; stroke: #8b915e; stroke-width: 3; }
+/* No min-height. The panel is sized by the square board inside it now; a
+   560px floor here is half of what pushed the southern half of Kallio off
+   the bottom of the screen, and on a 412px-wide phone it wrapped a 362px
+   map in 200px of empty frame. */
+.map-panel { overflow: hidden; background: #0e1c29; }
+/* THE MAP STAGE. The relief canvas and the interactive SVG are two layers of
+   ONE picture and must occupy the exact same box, or the streets sit beside
+   their own anchors — a misalignment that reads as "the data is wrong" rather
+   than "the box is". Both are absolutely positioned inside this one element,
+   so they are the same box by construction rather than by two rules agreeing.
+
+   IT IS SQUARE, and that is load-bearing twice over.
+
+   1. It matches the SVG's `viewBox="0 0 1000 1000"`, which makes the default
+      `xMidYMid meet` a no-op and the canvas projection exact.
+   2. It CLIPS. Real map data does not stop at the board's declared extent —
+      build-map-geometry.mjs says so explicitly, "land simply continues past
+      it and is clipped, the way a city map continues past its own edge" — and
+      Godot has `_draw_edge_mask()` for precisely this. A square stage is that
+      mask for free: an SVG viewport clips its own overflow, and a canvas
+      cannot draw outside its bitmap.
+
+   The width clamp is the fix for a real fault the relief exposed rather than
+   caused. Measured 2026-09-02: the map panel grew to 943px tall inside a
+   768px landscape viewport, and 1776px on the phone — the southern half of
+   Kallio, Hakaniemi and Siltasaari included, was simply off-screen and always
+   had been. `min-height: 560px` was holding the floor up while nothing at all
+   held the ceiling down. Now the board is sized to FIT, which is what a map
+   you navigate by has to do. */
+.map-stage {
+  position: relative;
+  width: min(100%, calc(100dvh - 15rem));
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+  border-radius: inherit;
+}
+.city-relief, .city-map {
+  position: absolute; inset: 0;
+  display: block; width: 100%; height: 100%;
+  border-radius: inherit;
+}
+.city-relief { pointer-events: none; }
+.city-map { touch-action: manipulation; z-index: 1; }
+/* .map-water / .map-land / .map-district / .map-park are gone with the seven
+   invented shapes they styled — see mapBackground() in app.js. */
 /* The real HSL tram/metro network (TRANSIT_LAYERS.md §3 L2, §9.3's Era I
    "printed" treatment — flat colour, hard keyline, no glow, since this
    build has no live layer for a glow to distinguish from). Replaces the
@@ -510,8 +553,8 @@ button { -webkit-tap-highlight-color: transparent; }
 /* Battle */
 .battle-layout { min-height: 100%; display: grid; grid-template-rows: minmax(440px, 1fr) auto; }
 .battle-stage { position: relative; min-height: 440px; overflow: hidden; background: #141921; border-bottom: 2px solid #80684b; }
-.battle-stage > .scene-image { position: absolute; inset: 0; filter: brightness(.66) saturate(.72) contrast(1.08); }
-.battle-stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(6,11,15,.38), transparent 25% 75%, rgba(6,11,15,.38)), linear-gradient(transparent 55%, rgba(4,8,12,.45)); }
+.battle-stage > .scene-image { position: absolute; inset: 0; filter: brightness(1.12) saturate(.9) contrast(1.04); }
+.battle-stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(6,11,15,.10), transparent 20% 80%, rgba(6,11,15,.10)), linear-gradient(transparent 68%, rgba(4,8,12,.14)); }
 /* First 3D-parity slice (DESIGN_AUTHORITY.md addendum 2026-08-28): the real
    cast3d/stage3d meshes, rendered live, sitting over the flat 2D scene it is
    replacing rather than deleting it — if a model fails to load the 2D plate
@@ -543,6 +586,16 @@ button { -webkit-tap-highlight-color: transparent; }
   border-left: 5px solid var(--mustard);
   font: 12px/1.4 var(--mono);
 }
+
+.battle-entry-forecast {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 10px;
+  z-index: 4;
+  max-width: min(520px, calc(100% - 28px));
+  pointer-events: none;
+}
 .row-label { position: absolute; z-index: 4; color: rgba(242,231,206,.63); font: 700 9px var(--mono); letter-spacing: .09em; }
 .formation-cell {
   position: absolute;
@@ -573,6 +626,18 @@ button { -webkit-tap-highlight-color: transparent; }
 .unit-token:disabled { cursor: default; }
 .unit-token.selected .unit-body { filter: drop-shadow(0 0 6px var(--cyan)); }
 .unit-token.intent .unit-body { filter: drop-shadow(0 0 7px var(--danger)); }
+/* COMBAT.md §9.13 web parity with Godot sync tiles: chain = allies would
+   free-fire; solo = reachable but no chain; ready = this ally would sync. */
+.unit-token.sync-chain .unit-body { filter: drop-shadow(0 0 8px var(--cyan)); }
+.unit-token.sync-solo .unit-body { filter: drop-shadow(0 0 7px var(--danger)); }
+.unit-token.sync-ready .unit-body { filter: drop-shadow(0 0 6px #7dffa3); }
+.unit-token.sync-chain .unit-label { border-color: var(--cyan); }
+.unit-token.sync-solo .unit-label { border-color: var(--danger); }
+.sync-forecast {
+  margin: 0 0 10px;
+  line-height: 1.45;
+  color: var(--muted, #9aa3ad);
+}
 /* COMBAT.md §9.5: a third side, never a valid attack target — visually
    distinct from both crews rather than reading as one more enemy. */
 .unit-token.police .unit-body { filter: drop-shadow(0 0 6px var(--police)) drop-shadow(3px 5px 2px rgba(0,0,0,.6)); }
@@ -585,8 +650,9 @@ button { -webkit-tap-highlight-color: transparent; }
 .unit-token.down .unit-body { transform: rotate(78deg) translate(15%, 8%); opacity: .72; }
 .unit-label {
   position: absolute;
-  left: 50%;
-  bottom: -22px;
+  left: calc(50% + var(--label-nudge-x, 0px));
+  --label-rest-bottom: -22px;
+  bottom: calc(var(--label-rest-bottom) - var(--label-nudge-y, 0px));
   min-width: 92px;
   transform: translateX(-50%);
   padding: 4px 6px;
@@ -742,19 +808,41 @@ button { -webkit-tap-highlight-color: transparent; }
     gap: 6px;
     padding: 7px 8px;
   }
-  .brand-lockup h1 { font-size: clamp(24px, 7.5vw, 34px); }
+  /* THE WORDMARK MUST BE ALLOWED TO WRAP HERE. The base rule sets
+     `white-space: nowrap`, which is right on a wide screen and is what put
+     "PIRITORI -> EDEN" straight through the "DAY 1" card on a real phone,
+     rendering the wordmark as "EDE". A grid column with `min-width: 0` can
+     shrink, but nowrap text inside it simply overflows and paints over its
+     neighbour rather than being clipped, so nothing about the layout says
+     anything is wrong.
+
+     This went unseen because web/tools/capture.mjs's "phone" was 1079 CSS px
+     — wider than this very breakpoint — so the tool that exists to catch this
+     had never rendered the layout. Both are fixed together. */
+  .brand-lockup h1 { font-size: clamp(22px, 6.4vw, 30px); white-space: normal; }
   .time-card { min-width: 0; padding: 7px 9px; }
   .time-card span { font-size: 12px; }
-  .resource-strip { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(4, 1fr); gap: 3px; padding-right: 94px; }
-  .resource-strip div { padding: 5px 7px; }
+  /* THE FOURTH RESOURCE CARD USED TO BE INVISIBLE. `.top-actions` was taken
+     out of flow and pinned bottom-right, and the strip reserved room for it
+     with `padding-right: 94px` — a guessed constant. Measured on a real 411px
+     phone the buttons are 148px wide, so INTEL (x 230-295) sat completely
+     underneath them and had never been readable on a phone.
+
+     A hand-guessed gap that has to match a sibling's rendered width is the
+     bug, not the number. Both now occupy real grid cells in row 2, so the
+     reservation is whatever the buttons actually measure and stays correct if
+     one is ever added or removed. */
+  .resource-strip { grid-column: 1; grid-row: 2; grid-template-columns: repeat(4, 1fr); gap: 3px; padding-right: 0; }
+  .resource-strip div { padding: 5px 5px; }
+  .resource-strip dt { font-size: 10px; }
   .resource-strip dd { font-size: 13px; margin-top: 2px; }
-  .top-actions { position: absolute; right: 8px; bottom: 8px; }
+  .top-actions { position: static; grid-column: 2; grid-row: 2; align-self: stretch; }
   .mode-nav { gap: 2px; padding: 4px 4px calc(5px + var(--safe-bottom)); }
   .mode-nav button { flex-direction: column; gap: 2px; padding: 4px 2px; font-size: 8px; letter-spacing: .03em; }
   .nav-icon { font-size: 17px; }
   .route-layout, .encounter-layout, .ledger-layout, .news-layout { min-height: auto; display: block; padding: 7px; }
-  .map-panel { min-height: 620px; height: calc(100dvh - 192px); }
-  .city-map { min-height: 620px; }
+  /* The stage sizes itself now — see .map-stage. A min-height here is what
+     pushed the board off the bottom of the screen in the first place. */
   .map-side { margin-top: 7px; }
   .map-side > section { padding: 13px; }
   .scene-card { min-height: auto; }
@@ -778,10 +866,21 @@ button { -webkit-tap-highlight-color: transparent; }
   .battle-layout { display: block; }
   .battle-stage { min-height: 0; height: min(52dvh, 500px); }
   .battle-stage > .scene-image { width: 142%; max-width: none; left: -21%; object-fit: cover; }
-  .battle-objective { max-width: calc(100% - 26px); font-size: 10px; }
+  /* Portrait: stop the board getting smothered by the same objective thrice
+     (top card + entry-forecast strip + console Round-1 log). Compact the
+     top card; hide the bottom strip — log still carries the full forecast. */
+  .battle-objective {
+    max-width: min(62%, calc(100% - 26px));
+    font-size: 9px;
+    line-height: 1.25;
+    padding: 6px 8px;
+    max-height: 4.6em;
+    overflow: hidden;
+  }
+  .battle-entry-forecast { display: none; }
   .formation-cell { width: 48px; min-height: 44px; }
   .unit-token { width: clamp(59px, 18vw, 88px); height: clamp(94px, 29vw, 140px); }
-  .unit-label { min-width: 70px; max-width: 94px; white-space: normal; font-size: 7px; bottom: -17px; }
+  .unit-label { min-width: 70px; max-width: 94px; white-space: normal; font-size: 7px; --label-rest-bottom: -17px; }
   .battle-console { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; }
   .active-unit, .battle-log { padding: 8px; }
   .battle-log { min-height: 96px; max-height: 116px; }
@@ -797,7 +896,10 @@ button { -webkit-tap-highlight-color: transparent; }
 
 @media (max-width: 430px) {
   .crew-grid { grid-template-columns: 1fr; }
-  .resource-strip { padding-right: 90px; }
+  /* The `padding-right: 90px` that used to be here is gone with its twin at
+     the 780px breakpoint: it reserved a hand-guessed gap for `.top-actions`,
+     which really measures 148px, and it is why INTEL was invisible on a phone.
+     `.top-actions` holds a real grid cell now, so nothing needs reserving. */
   .brand-lockup .eyebrow { max-width: 170px; }
   .map-node-label { font-size: 15px; }
   .map-node-label.small { font-size: 12px; }
@@ -806,6 +908,21 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition: none !important; }
   .weather-layer.front { transform: none; }
+}
+
+
+/* Landscape fight: give the stage most of the column and let the ortho
+   zoom (stage-camera frustum pad) fill it — owner wanted a closer grid. */
+@media (min-width: 981px) and (min-aspect-ratio: 5/4) {
+  .battle-layout {
+    grid-template-rows: minmax(560px, 1.55fr) auto;
+  }
+  .battle-stage {
+    min-height: 560px;
+  }
+  .battle-console {
+    padding-top: 8px;
+  }
 }
 
 /* ── the pause menu, and THINGS TO TEST ───────────────────────────────────
@@ -930,3 +1047,17 @@ button { -webkit-tap-highlight-color: transparent; }
 /* .game-shell is grid-template-rows: auto minmax(0,1fr) auto — a display:none
    row drops out of grid flow entirely, so .mode-root's 1fr row reclaims the
    space with nothing left to zero out. Checked in the browser, not assumed. */
+
+.cover-standing {
+  margin: 0.25rem 0 0.5rem;
+  color: var(--good, #6a9a5a);
+  font-size: 0.85rem;
+}
+.cover-forecast {
+  margin-top: 0.5rem;
+  color: var(--mustard, #c4a035);
+}
+.fence-unbuyable {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+}

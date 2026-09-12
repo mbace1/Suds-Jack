@@ -80,6 +80,14 @@ export function createState(content) {
     // same list as `retiredCrew`: a veteran who got out is a different
     // fact about a different night than somebody carried off a yard.
     arrestedCrew: [],
+    // Growth loop (GameState.gd Phase D / COMBAT.md §9.11–§9.12): perks,
+    // skills, unspent points, aptitude sets, and who a veteran already
+    // trained. Persisted so a level-up is not lost on reload.
+    crewPerks: {},
+    crewSkills: {},
+    crewPerkPoints: {},
+    crewAptitudes: {},
+    trainedCrew: [],
     // Chapters (`GameState.gd`'s run structure, GDD): a chapter is a run
     // within the larger campaign, and the authored slice is one chapter's
     // worth, not a whole era's — `CHAPTER_DAYS` below is Godot's own
@@ -129,6 +137,11 @@ export function restoreState(raw, content) {
     crewStatus: { ...fresh.crewStatus, ...(raw.crewStatus ?? {}) },
     hiredCrew: { ...fresh.hiredCrew, ...(raw.hiredCrew ?? {}) },
     crewFights: { ...fresh.crewFights, ...(raw.crewFights ?? {}) },
+    crewPerks: { ...fresh.crewPerks, ...(raw.crewPerks ?? {}) },
+    crewSkills: { ...fresh.crewSkills, ...(raw.crewSkills ?? {}) },
+    crewPerkPoints: { ...fresh.crewPerkPoints, ...(raw.crewPerkPoints ?? {}) },
+    crewAptitudes: { ...fresh.crewAptitudes, ...(raw.crewAptitudes ?? {}) },
+    trainedCrew: Array.isArray(raw.trainedCrew) ? [...raw.trainedCrew] : [],
   };
 }
 
@@ -222,18 +235,191 @@ function retireCrew(state, data, id) {
  *  loop does not special-case a crew member the police already took this
  *  same fight (`state.crewStatus[id].status === 'missing'`) — they still
  *  age, and can still be pushed into `retiredCrew` on top of already being
- *  gone. Kept exactly that way rather than added a check Godot doesn't have. */
+ *  gone. Kept exactly that way rather than added a check Godot doesn't have.
+ *
+ *  Growth is bought with the same currency the ceiling spends: crossing a
+ *  level boundary here calls `grantLevel` (GameState.gd `age_crew`). */
 export function ageCrew(state, data, deployedIds) {
   const left = [];
   for (const id of deployedIds) {
     if (isNamed(state, data, id) || state.retiredCrew.includes(id)) continue;
+    const beforeLevel = levelOf(state, id);
     state.crewFights[id] = fightsOf(state, id) + 1;
+    if (levelOf(state, id) > beforeLevel) grantLevel(state, id);
     if (fightsOf(state, id) >= CAREER_FIGHTS) {
       retireCrew(state, data, id);
       left.push(id);
     }
   }
   return left;
+}
+
+// ── growth (GameState.gd Phase D / COMBAT.md §9.11–§9.12) ─────────────────
+// PLAYTEST GATE figures, not canon (DESIGN_LOCKS §13) — match Godot exactly.
+export const FIGHTS_PER_LEVEL = 3;
+export const GLORY_PERK_POINTS = 2;
+export const SKILL_OFFER_SIZE = 3;
+
+export function levelOf(state, crewId) {
+  return Math.floor(fightsOf(state, crewId) / FIGHTS_PER_LEVEL) + 1;
+}
+
+export function perksOf(state, crewId) {
+  return state.crewPerks[crewId] ?? {};
+}
+
+export function perkValue(state, crewId, perk) {
+  return Number(perksOf(state, crewId)[perk] ?? 0) | 0;
+}
+
+export function unspentPerkPoints(state, crewId) {
+  return Number(state.crewPerkPoints[crewId] ?? 0) | 0;
+}
+
+export function skillsOf(state, crewId) {
+  return state.crewSkills[crewId] ?? [];
+}
+
+/** Award a level's worth: one perk point. Felt now, spent later (UX_SPEC §19). */
+export function grantLevel(state, crewId) {
+  state.crewPerkPoints[crewId] = unspentPerkPoints(state, crewId) + 1;
+}
+
+/** Glory: near-death survival or a double kill (§9.11). */
+export function grantGlory(state, crewId) {
+  state.crewPerkPoints[crewId] = unspentPerkPoints(state, crewId) + GLORY_PERK_POINTS;
+  addUnique(state.flags, `memory:glory:${crewId}`);
+}
+
+/** Spend one point on a content-defined perk axis. Refuses unknowns. */
+export function spendPerk(state, data, crewId, perk) {
+  if (unspentPerkPoints(state, crewId) <= 0) return false;
+  const perks = data.content?.perks ?? [];
+  if (!perks.includes(perk)) return false;
+  const bag = { ...(state.crewPerks[crewId] ?? {}) };
+  bag[perk] = (Number(bag[perk] ?? 0) | 0) + 1;
+  state.crewPerks[crewId] = bag;
+  state.crewPerkPoints[crewId] = unspentPerkPoints(state, crewId) - 1;
+  return true;
+}
+
+/** Stable 32-bit hash for skill-offer seeding — not Godot-bit-identical
+ *  (PORTING.md §4); same (crew, seed, level) always yields the same offer. */
+function growthHash(text) {
+  let h = 2166136261 >>> 0;
+  const s = String(text);
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function offerRng(crewId, seed, level) {
+  let state = (growthHash(crewId) + (Number(seed) | 0) * 13 + level * 101) >>> 0;
+  return {
+    range(maxInclusive) {
+      // xorshift32 — enough for a stable shuffle, not a crypto claim.
+      state ^= state << 13; state >>>= 0;
+      state ^= state >>> 17; state >>>= 0;
+      state ^= state << 5; state >>>= 0;
+      const span = maxInclusive + 1;
+      return span <= 0 ? 0 : (state >>> 0) % span;
+    },
+  };
+}
+
+/** What this person could learn next — aptitude pools × tier ≤ level,
+ *  size SKILL_OFFER_SIZE, deterministic from crew + campaign seed + level. */
+export function skillOffer(state, data, crewId) {
+  const level = levelOf(state, crewId);
+  const known = new Set(skillsOf(state, crewId));
+  const eligible = [];
+  for (const a of aptitudesOf(state, data, crewId)) {
+    for (const sk of data.content?.skills ?? []) {
+      if (String(sk.aptitude ?? '') !== String(a)) continue;
+      if ((Number(sk.tier ?? 1) | 0) > level) continue;
+      if (known.has(String(sk.id ?? ''))) continue;
+      eligible.push(sk);
+    }
+  }
+  if (eligible.length <= SKILL_OFFER_SIZE) return eligible.slice();
+  const rng = offerRng(crewId, state.seed, level);
+  const pool = eligible.slice();
+  const out = [];
+  for (let i = 0; i < SKILL_OFFER_SIZE; i += 1) {
+    const at = rng.range(pool.length - 1);
+    out.push(pool.splice(at, 1)[0]);
+  }
+  return out;
+}
+
+export function skillPoolSize(state, data, crewId) {
+  let n = 0;
+  for (const a of aptitudesOf(state, data, crewId)) {
+    for (const sk of data.content?.skills ?? []) {
+      if (String(sk.aptitude ?? '') === String(a)) n += 1;
+    }
+  }
+  return n;
+}
+
+/** Learning costs the level's point — skill OR perk, not both. */
+export function spendPerkPointOnSkill(state, crewId) {
+  if (unspentPerkPoints(state, crewId) <= 0) return;
+  state.crewPerkPoints[crewId] = unspentPerkPoints(state, crewId) - 1;
+}
+
+export function learnSkill(state, data, crewId, skillId) {
+  const have = [...skillsOf(state, crewId)];
+  if (have.includes(skillId)) return false;
+  let found = false;
+  for (const sk of data.content?.skills ?? []) {
+    if (String(sk.id ?? '') !== skillId) continue;
+    if (!hasAptitude(state, data, crewId, String(sk.aptitude ?? ''))) return false;
+    if ((Number(sk.tier ?? 1) | 0) > levelOf(state, crewId)) return false;
+    found = true;
+    break;
+  }
+  if (!found) return false;
+  have.push(skillId);
+  state.crewSkills[crewId] = have;
+  return true;
+}
+
+export function aptitudesOf(state, data, crewId) {
+  if (Object.prototype.hasOwnProperty.call(state.crewAptitudes, crewId)) {
+    return state.crewAptitudes[crewId] ?? [];
+  }
+  const rec = crewRecord(state, data, crewId);
+  if (!rec) return [];
+  const role = String(rec.role ?? '');
+  return role ? [role] : [];
+}
+
+export function setAptitudes(state, crewId, ids) {
+  state.crewAptitudes[crewId] = [...ids];
+}
+
+export function hasAptitude(state, data, crewId, aptitudeId) {
+  return aptitudesOf(state, data, crewId).includes(aptitudeId);
+}
+
+export function primaryAptitude(state, data, crewId) {
+  const a = aptitudesOf(state, data, crewId);
+  return a.length > 0 ? String(a[0]) : '';
+}
+
+/** A retired veteran starts a rookie ahead (§7.4). +2 fights, does NOT call
+ *  grantLevel — match Godot even though that skips the perk points those
+ *  levels would have granted. */
+export function train(state, data, crewId) {
+  if (!state.retiredCrew.length || state.trainedCrew.includes(crewId) || isNamed(state, data, crewId)) {
+    return false;
+  }
+  state.trainedCrew.push(crewId);
+  state.crewFights[crewId] = fightsOf(state, crewId) + 2;
+  return true;
 }
 
 // ── equipment (GameState.gd's equipment/Condition, COMBAT.md §8) ───────────
@@ -245,10 +431,8 @@ export function ageCrew(state, data, deployedIds) {
 // off `member.initial_equipment` (the crew record's own authored kit), the
 // same way `battle_builder.gd`'s `_crew_to_unit()` reads `initial_equipment`
 // rather than `GameState.equipment` — the owned/looted stash is a fencing
-// economy, not a loadout screen. Godot has no equipment PURCHASE function
-// anywhere either, despite `acquisition: 'market'` existing in content, so
-// none is built here — `isPurchasable()` stays read-only informational, the
-// same way `_add_spoils_lines()` only uses it for a "cannot be bought" tag.
+// economy, not a loadout screen. Buying market gear is `buyEquipment()` —
+// Piritori only, `isPurchasable` at the point of sale (COMBAT.md §8).
 export const CONDITION = { NEW: 0, USED: 1, FAULTY: 2, BROKEN: 3 };
 const CONDITION_WORD = ['New', 'Used', 'Faulty', 'Broken'];
 const CONDITION_RESALE = { 0: 1.0, 1: 0.7, 2: 0.4, 3: 0.15 };
@@ -328,6 +512,36 @@ export function sellLoot(state, data, equipmentId) {
   recordChapterIncome(state, paid);
   addLog(state, `Fenced ${cap(equipmentId)} for €${paid}.`);
   return paid;
+}
+
+
+/** Same corner as the fence — Piritori only. */
+export function canShopHere(state) {
+  return canFenceHere(state);
+}
+
+/** What the shop asks. Content sets `buy_eur` on market items (~2.5–3×
+ *  resale). Fallback max(resale*3, resale+10) is provisional only
+ *  (DESIGN_LOCKS.md §13). */
+export function buyOf(data, equipmentId) {
+  const e = data.equipment.get(equipmentId);
+  if (!e) return 0;
+  if (e.buy_eur != null) return e.buy_eur;
+  const resale = e.resale_eur ?? 0;
+  return Math.max(resale * 3, resale + 10);
+}
+
+/** Buy market gear at Piritori. Refuses taken-only, wrong place, short cash.
+ *  Returns { ok, paid } — paid is 0 on refusal. */
+export function buyEquipment(state, data, equipmentId) {
+  if (!canShopHere(state)) return { ok: false, paid: 0 };
+  if (!isPurchasable(data, equipmentId)) return { ok: false, paid: 0 };
+  const price = buyOf(data, equipmentId);
+  if (price <= 0 || state.cash < price) return { ok: false, paid: 0 };
+  state.cash -= price;
+  addEquipment(state, equipmentId, CONDITION.NEW);
+  addLog(state, `Bought ${cap(equipmentId)} for €${price}.`);
+  return { ok: true, paid: price };
 }
 
 /** What is lying on the ground when a battle ends, for one side —
@@ -523,6 +737,11 @@ export function hireFromPool(state, data, candidateId) {
     critical: false,
   };
   addUnique(state.recruited, candidateId);
+  // What they can do, not what they are called (COMBAT.md §9.12) — Godot
+  // `hire()` copies `record.aptitudes` onto crew_aptitudes when present.
+  if (Array.isArray(candidate.aptitudes) && candidate.aptitudes.length) {
+    setAptitudes(state, candidateId, candidate.aptitudes);
+  }
   addLog(state, `Day ${day}: ${candidate.name} hired on for €${fee} — ${candidate.role}, €${candidate.wage_eur}/night after.`);
   return true;
 }
@@ -794,6 +1013,7 @@ export function transactOffer(state, offer, side = offer.side) {
   if ((state.stock.piri ?? 0) < 1) return { ok: false, message: 'No stock to sell.' };
   state.stock.piri -= 1;
   state.cash += price;
+  recordChapterIncome(state, price);
   addLog(state, `Ledger: sold one abstract pack at ${offer.anchor_id} for €${price}.`);
   return { ok: true, message: `One pack moved for €${price}.` };
 }
@@ -815,10 +1035,12 @@ export function sendOnRoute(state, data) {
   const offer = data.content.market_offers.find(item => item.anchor_id === destination
     && item.side === 'sell' && state.revealedOffers.includes(item.id));
   if (!offer) return { ok: false, message: 'No known buyer at the destination.' };
+  const receipt = offerPrice(offer);
   state.stock.piri -= 1;
-  state.cash += offerPrice(offer);
+  state.cash += receipt;
+  recordChapterIncome(state, receipt);
   route.hidden += 1;
   if (route.ordinary < 2) state.pressure[destination] = clamp((state.pressure[destination] ?? 0) + 1, 0, 3);
   addLog(state, `One hidden load shares ${route.ordinary} ordinary journeys and settles at ${destination}.`);
-  return { ok: true, message: `The route settles one pack for €${offerPrice(offer)}.` };
+  return { ok: true, message: `The route settles one pack for €${receipt}.` };
 }

@@ -5,6 +5,9 @@ import {
   parseCell, defaultPlayerSlot, slotKey, parseSlotKey, describeSlot,
 } from './grid.js?v=1';
 import { weaponsFrom, itemsFrom, UNARMED, ROW_FRONT } from './equipment.js?v=1';
+import {
+  perkValue, skillsOf, hasAptitude,
+} from './state.js?v=5';
 
 const ROLE_PARTS = {
   runner: ['torso-runner-v03', 'legs-runner-v03'],
@@ -29,23 +32,36 @@ function describeCell(cell) {
   return describeSlot(lane, depth);
 }
 
+/** Perk deltas applied once when the fight is built — FightManager
+ *  `_apply_perks_to`. Deliberately small per point across a ten-fight career. */
+const PERK_CONDITION_PER_POINT = 1; // toughness → hp/maxHp on this build
+const PERK_NERVE_PER_POINT = 1;
+const PERK_HARM_PER_POINT = 1; // strength → hit amount (FightManager)
+// speed → tempo is Godot-only here: this web battle has no tempo track.
+
 function makePlayer(member, state, index, count) {
   const [torso, legs] = ROLE_PARTS[member.role] ?? ROLE_PARTS.local;
   // BattleBuilder._default_player_slot(): front rank first, each row read
   // from the centre outward; two fighters hold the centre lane in depth.
   const slot = defaultPlayerSlot(index, count);
   const status = state.crewStatus[member.id];
+  const tough = perkValue(state, member.id, 'toughness') * PERK_CONDITION_PER_POINT;
+  const steady = perkValue(state, member.id, 'nerve') * PERK_NERVE_PER_POINT;
+  const muscle = perkValue(state, member.id, 'strength') * PERK_HARM_PER_POINT;
+  const baseHp = 3;
+  const baseNerve = 3;
   return {
     id: member.id,
     name: member.name,
     side: 'player',
     role: member.role,
     cell: slotKey(slot.lane, slot.depth),
-    hp: 3,
-    maxHp: 3,
+    hp: baseHp + tough,
+    maxHp: baseHp + tough,
     guard: member.role === 'muscle' ? 2 : 1,
-    nerve: 3,
-    maxNerve: 3,
+    nerve: baseNerve + steady,
+    harmBonus: muscle,
+    maxNerve: baseNerve + steady,
     alive: status?.status !== 'missing',
     head: member.portrait_asset_id,
     torso,
@@ -82,6 +98,9 @@ function makeEnemy(opponent, index, openingNerve = 0) {
     legs,
     equipment: opponent.equipment,
     intent: opponent.intent,
+    // MST desync (COMBAT.md §9.13): immune to further SYNC hits after the
+    // first sync hit each round. Primary attack still lands.
+    tough: Boolean(opponent.tough),
   };
 }
 
@@ -122,6 +141,36 @@ const BATTLE_MISSION = {
   'battle-kattilahalli-3v3': 'mission-courtyard-receipts',
 };
 
+
+/** Battle-entry forecast (§18.1 / Phase A leftover).
+ *  Encounters already show `choice.forecast` before you pick; fights had
+ *  objective + withdrawal + casualty telegraph as separate fields and never
+ *  assembled them into one read before you were on the board. Compose from
+ *  authored fields — no invented stakes. An optional `definition.forecast`
+ *  overrides the compose when content wants a hand-written line. */
+export function battleEntryForecast(definition) {
+  if (!definition) return '';
+  const authored = String(definition.forecast || '').trim();
+  if (authored) return authored;
+  const parts = [];
+  const fmt = String(definition.format || '').trim();
+  if (fmt) parts.push(fmt);
+  const obj = String(definition.objective || '').trim();
+  if (obj) parts.push(obj);
+  const withdraw = String(definition.withdrawal?.known_cost || '').trim();
+  if (withdraw) parts.push(`Withdraw: ${withdraw}`);
+  const ct = definition.casualty_table || {};
+  const tel = String(ct.telegraph || '').trim();
+  if (tel) parts.push(tel);
+  const death = String(ct.death || '').trim();
+  if (death && death !== 'not-eligible-in-this-battle') {
+    parts.push(`Death risk: ${death}`);
+  } else if (death === 'not-eligible-in-this-battle') {
+    parts.push('Death not eligible in this fight.');
+  }
+  return parts.join(' ');
+}
+
 export function createBattleState(definition, crew, state, data) {
   const required = definition.player_deployed;
   if (crew.length < required) throw new Error(`${definition.id} requires ${required} deployed crew`);
@@ -137,6 +186,8 @@ export function createBattleState(definition, crew, state, data) {
     format: definition.format,
     sceneAssetId: definition.scene_asset_id,
     objective: definition.objective,
+    // One read before the first commitment — same job as encounter forecasts.
+    entryForecast: battleEntryForecast(definition),
     round: 1,
     phase: 'player',
     selectedId: players[0]?.id ?? null,
@@ -155,11 +206,14 @@ export function createBattleState(definition, crew, state, data) {
     // the shape `useItem()` reads.
     items: itemsFrom(data ? [...data.equipment.values()] : []),
     cover: buildCover(definition),
+    // Growth hooks (perks/skills/aptitudes) need campaign state during resolve.
+    growth: state && data ? { state, data } : null,
+    marks: {},
     withdrawal: definition.withdrawal,
     negotiation: definition.negotiation,
     status: 'active',
     result: null,
-    log: [`Round 1. ${definition.objective}`],
+    log: [`Round 1. ${battleEntryForecast(definition) || definition.objective}`],
     // Heat and police (COMBAT.md §9.5) — see the block below `enemyPhase()`.
     // `police` is a THIRD side, not battle.players/battle.enemies grown by
     // one: fight_manager.gd's own Fighter.Side.THIRD_PARTY, occupying the
@@ -174,6 +228,8 @@ export function createBattleState(definition, crew, state, data) {
     policeResolved: false,
     policeTaken: [],
     policeSaved: [],
+    // Tough-target desync tracker — cleared each round with acted[].
+    syncHitsThisRound: new Set(),
   };
 }
 
@@ -236,6 +292,147 @@ function weaponFor(battle, unit) {
  * nothing here reads `attacker.role`, which is what makes this the same
  * test for every fighter regardless of which side authored them.
  */
+
+// ── Anchor cover + Spotter MARK + Wits read (FightManager §9.11) ───────────
+const ANCHOR_COVER_WIDE_SKILL = 'take-it';
+const ANCHOR_COVER_HARD_SKILL = 'wall';
+const MARK_WHOLE_FIGHT = 1 << 30;
+const MARK_ROUNDS_BASE = 1;
+const MARK_ROUNDS_CALL_IT = 3;
+
+/** Cells this living Anchor is covering — one cell behind, three with take-it.
+ *  Godot formula: behind = depth + (player ? 1 : -1). Matched exactly. */
+export function anchorCoverCells(battle, state, data, unit) {
+  if (!unit?.alive || !state || !data) return [];
+  if (!hasAptitude(state, data, unit.id, 'anchor')) return [];
+  const { lane, depth } = parseSlotKey(unit.cell);
+  const behind = depth + (unit.side === 'player' ? 1 : -1);
+  if (behind < 0 || behind >= totalRows()) return [];
+  const out = [{ lane, depth: behind }];
+  if (skillsOf(state, unit.id).includes(ANCHOR_COVER_WIDE_SKILL)) {
+    for (const dx of [-1, 1]) {
+      const L = lane + dx;
+      if (L >= 0 && L < LANES) out.push({ lane: L, depth: behind });
+    }
+  }
+  return out;
+}
+
+export function anchorCoverAt(battle, state, data, lane, depth, side) {
+  if (!battle || !state || !data) return null;
+  const roster = side === 'player' ? battle.players : battle.enemies;
+  for (const f of roster) {
+    if (f.side !== side || !f.alive) continue;
+    for (const c of anchorCoverCells(battle, state, data, f)) {
+      if (c.lane === lane && c.depth === depth) {
+        const hard = skillsOf(state, f.id).includes(ANCHOR_COVER_HARD_SKILL);
+        return {
+          propId: f.id,
+          softBlock: !hard,
+          hardBlock: hard,
+          isCover: true,
+          byPerson: true,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/** Cover at a cell — person-as-cover first, then arena props (FightManager._cover_at). */
+export function coverAt(battle, state, data, lane, depth, side) {
+  const byPerson = anchorCoverAt(battle, state, data, lane, depth, side);
+  if (byPerson) return byPerson;
+  if (!battle?.cover) return null;
+  const prop = battle.cover.get(slotKey(lane, depth));
+  if (!prop) return null;
+  return {
+    propId: prop.propId || '',
+    softBlock: Boolean(prop.softBlock),
+    hardBlock: Boolean(prop.hardBlock),
+    isCover: true,
+  };
+}
+
+/** Cover under a unit's own cell — same question as FightManager.cover_under.
+ *  Prop name is the place ("bicycle rack"), not a rule ("soft cover"). When
+ *  `battle.growth` is set (state+data from createBattleState), Anchor skills
+ *  also count. */
+export function coverUnder(battle, unit) {
+  if (!unit?.cell) return null;
+  const { lane, depth } = parseSlotKey(unit.cell);
+  const growth = battle?.growth;
+  if (growth) {
+    return coverAt(battle, growth.state, growth.data, lane, depth, unit.side);
+  }
+  if (!battle?.cover) return null;
+  const prop = battle.cover.get(unit.cell);
+  if (!prop) return null;
+  return {
+    propId: prop.propId || '',
+    softBlock: Boolean(prop.softBlock),
+    hardBlock: Boolean(prop.hardBlock),
+  };
+}
+
+/** Spotter MARK duration — aptitude alone is a glance; skills make it stick. */
+export function markDuration(state, spotterId) {
+  const skills = skillsOf(state, spotterId);
+  if (skills.includes('watch-the-hands')) return MARK_WHOLE_FIGHT;
+  if (skills.includes('call-it')) return MARK_ROUNDS_CALL_IT;
+  return MARK_ROUNDS_BASE;
+}
+
+/** Best crew read bonus from wits + spotter/watcher presence (FightManager._crew_read_bonus).
+ *  Integer steps on the Read ladder; floor never below zero before penalties. */
+export function crewReadBonus(battle, state, data) {
+  if (!battle || !state || !data) return 0;
+  let best = 0;
+  for (const f of battle.players) {
+    if (!f.alive) continue;
+    let bonus = Math.floor(perkValue(state, f.id, 'wits') / 2);
+    if (hasAptitude(state, data, f.id, 'spotter') || hasAptitude(state, data, f.id, 'watcher')) {
+      bonus += 1;
+    }
+    // Shaken readers contribute less — web has no SHAKEN status yet; skip.
+    best = Math.max(best, bonus);
+  }
+  return Math.max(best, 0);
+}
+
+/** Does an attack on this target have to get through something first?
+ *  Mirrors FightManager.attack_would_be_stopped — only meaningful when the
+ *  target is already reachable (e.g. piercing past soft cover on their cell). */
+export function attackWouldBeStopped(battle, attacker, target) {
+  if (!attacker || !target) return '';
+  const cover = coverUnder(battle, target);
+  if (!cover) return '';
+  if (cover.hardBlock) return 'hard';
+  const weapon = weaponFor(battle, attacker);
+  if (cover.softBlock && !(weapon.piercing ?? false)) return 'soft';
+  return 'pierced';
+}
+
+function propWords(cover) {
+  const id = String(cover?.propId || '').trim();
+  if (!id) return 'cover';
+  return id.replaceAll('-', ' ');
+}
+
+export function coverStandingLine(battle, unit) {
+  const cover = coverUnder(battle, unit);
+  if (!cover) return '';
+  return `behind the ${propWords(cover)}`;
+}
+
+export function coverAttackLine(battle, attacker, target) {
+  const verdict = attackWouldBeStopped(battle, attacker, target);
+  if (verdict === 'hard') return 'Blocked — nothing gets through that.';
+  if (verdict === 'soft') return 'Something is in the way. The swing will be caught.';
+  if (verdict === 'pierced') return 'This weapon goes through it.';
+  return '';
+}
+
 export function attackTargets(battle, attacker) {
   const targets = [];
   if (!attacker?.alive) return targets;
@@ -259,10 +456,14 @@ export function attackTargets(battle, attacker) {
   const toward = isPlayer ? 1 : -1;
   const occupied = occupiedGrid(battle);
 
+  const oppSide = isPlayer ? 'enemy' : 'player';
+  const growth = battle.growth;
   for (let lane = laneMin; lane <= laneMax; lane += 1) {
     let d = fromDepth + toward;
     while (d >= 0 && d < totalRows()) {
-      const cover = battle.cover.get(slotKey(lane, d));
+      const cover = growth
+        ? coverAt(battle, growth.state, growth.data, lane, d, oppSide)
+        : battle.cover.get(slotKey(lane, d));
       if (cover?.hardBlock) break;
       if (cover?.softBlock && !piercing) break;
       const other = occupied.get(slotKey(lane, d));
@@ -290,6 +491,10 @@ function attackableInBattle(battle, attacker, target) {
  * sync with the first.
  */
 export function syncAlliesFor(battle, attacker, target) {
+  // Honest forecast for MST desync: if a tough target already took a sync
+  // hit this round, nobody else would fire — list empty. Before that, list
+  // every ally who can reach; resolution stops after the first sync lands.
+  if (target?.tough && battle.syncHitsThisRound?.has(target.id)) return [];
   const side = attacker.side === 'player' ? battle.players : battle.enemies;
   return side.filter(unit => unit.alive && unit.id !== attacker.id
     && attackableInBattle(battle, unit, target));
@@ -307,7 +512,14 @@ function triggerSyncFire(battle, attacker, target) {
     // this same chain may already have downed the target, and nobody fires a
     // bonus round into a body already on the ground.
     if (!target.alive) return;
-    battle.log.unshift(`${ally.name} syncs fire: ${hit(target)}`);
+    // Desync mid-chain: tough already marked from an earlier primary this
+    // round — stop. Same chain before any sync: first fires, then mark+stop.
+    if (target.tough && battle.syncHitsThisRound?.has(target.id)) return;
+    battle.log.unshift(`${ally.name} syncs fire: ${hit(target, 1 + (ally.harmBonus ?? 0))}`);
+    if (target.tough) {
+      battle.syncHitsThisRound.add(target.id);
+      return;
+    }
   }
 }
 
@@ -342,7 +554,7 @@ export function playerAttack(battle, targetId) {
     target.guard = Math.max(0, target.guard - 1);
     battle.log.unshift(`${attacker.name} marks ${target.name}'s lane. Guard and nerve drop.`);
   } else {
-    battle.log.unshift(`${attacker.name}: ${hit(target)}`);
+    battle.log.unshift(`${attacker.name}: ${hit(target, 1 + (attacker.harmBonus ?? 0))}`);
     triggerSyncFire(battle, attacker, target);
   }
   markActed(battle, attacker);
@@ -634,6 +846,7 @@ function enemyPhase(battle) {
   battle.round += 1;
   battle.phase = 'player';
   battle.acted = [];
+  battle.syncHitsThisRound = new Set();
   battle.players.filter(item => item.alive).forEach(item => { item.guard = Math.min(item.guard + 1, 2); });
   battle.selectedId = battle.players.find(item => item.alive)?.id ?? null;
   battle.log.unshift(`Round ${battle.round}. Enemy intent is pinned before the next commitment.`);

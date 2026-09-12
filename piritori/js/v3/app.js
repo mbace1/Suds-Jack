@@ -1,13 +1,20 @@
+import { availableVisits, openVisit, activeVisit, chooseVisit, leaveVisit } from './visits.js?v=1';
+import { mountSceneSpeaker, disposeSceneSpeaker } from './scene-speaker.js?v=1';
+import { renderChapterPeople } from './chapter-narrative.js?v=1';
 import { loadGameData, shortestPath, assetUrl } from './content.js?v=1';
+import { mountMapRelief } from './map-relief.js?v=1';
 import {
   SAVE_KEY, createState, loadState, saveState, currentSchedule, currentEncounter,
   formatBlock, choiceStatus, chooseEncounter, advanceSchedule, deployedCrew,
   transactOffer, applyEffects, commitRoute, sendOnRoute,
   crewRecord, hiringPoolFor, hireFromPool,
   isNamed, careerLeft, careerIsVisible, ageCrew,
-  droppedKit, takeLoot, loseKitOf, canFenceHere, sellLoot, resaleAt, conditionWord,
+  levelOf, unspentPerkPoints, perkValue, skillsOf, skillOffer, spendPerk,
+  learnSkill, spendPerkPointOnSkill, train,
+  droppedKit, takeLoot, loseKitOf, canFenceHere, sellLoot, resaleAt, conditionWord, isPurchasable,
+  canShopHere, buyOf, buyEquipment,
   arrestCrew, chapterProgress, chapterGoalMet, chapterEndingAvailable, attemptChapterEnding,
-} from './state.js?v=1';
+} from './state.js?v=5';
 import { createPauseMenu } from './pause.js?v=1';
 import { board, exposureHere, markSeen, addFootprint, INFO } from './board.js?v=1';
 import {
@@ -15,12 +22,13 @@ import {
   validMoveCells, moveUnit, endPlayerPhase, autoCommand, withdrawBattle,
   negotiateBattle, resultEffects, injuredPlayers, selectStance,
   policeAwaitingPosture, choosePolicePosture, takenByPolice, savedFromPolice, POLICE_POSTURE,
-} from './battle.js?v=1';
+  attackTargets, syncAlliesFor, coverStandingLine, coverAttackLine,
+} from './battle.js?v=8';
 import { LANES, ROWS, totalRows, depthOf, parseSlotKey, slotKey, describeSlot } from './grid.js?v=1';
-import { boot as bootChrome } from './chrome.js?v=1';
+import { boot as bootChrome } from './chrome.js?v=2';
 import { STANCE, STANCES } from './stance.js?v=1';
-import { mountBattleStage3D, disposeBattleStage3D } from './render3d.js?v=1';
-import { positionBattleDOM } from './stage-camera.js?v=1';
+import { mountBattleStage3D, disposeBattleStage3D, setBattleLights } from './render3d.js?v=9';
+import { positionBattleDOM } from './stage-camera.js?v=4';
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -46,6 +54,20 @@ const UI = {
     police_here: 'POLICE ARE HERE', police_one_down: 'of the crew is on the ground.',
     police_many_down: 'of the crew are on the ground.',
     police_back_off: 'BACK OFF — LEAVE THEM', police_help: 'GO BACK FOR THEM',
+    in_cover: 'Behind the %s',
+    cover_blocks: 'Blocked — nothing gets through that.',
+    cover_intercepts: 'Something is in the way. The swing will be caught.',
+    cover_pierced: 'This weapon goes through it.',
+    'crew.level_n': 'Level %d',
+    'crew.pick_skill': 'Something new:',
+    'crew.pick_perk': 'Or put %d point into:',
+    'crew.train': 'Train with a veteran',
+    'crew.trained': 'Already trained',
+    'perk.strength': 'Strength',
+    'perk.speed': 'Speed',
+    'perk.wits': 'Wits',
+    'perk.nerve': 'Nerve',
+    'perk.toughness': 'Toughness',
   },
   fi: {
     route: 'REITTI', encounter: 'KOHTAAMINEN', ledger: 'KIRJANPITO', battle: 'TAISTELU', news: 'UUTISET',
@@ -59,6 +81,32 @@ const UI = {
     police_here: 'POLIISI ON PAIKALLA', police_one_down: 'jäsen makaa maassa.',
     police_many_down: 'jäsentä makaa maassa.',
     police_back_off: 'PERÄÄNNY — JÄTÄ HEIDÄT', police_help: 'MENE HEIDÄN LUOKSEEN',
+    in_cover: '%s takana',
+    cover_blocks: 'Estetty — mikään ei mene läpi.',
+    cover_intercepts: 'Jotain on tiellä. Isku jää kiinni.',
+    cover_pierced: 'Tämä ase menee siitä läpi.',
+    'crew.level_n': 'Taso %d',
+    'crew.pick_skill': 'Jotain uutta:',
+    'crew.pick_perk': 'Tai laita %d piste:',
+    'crew.train': 'Harjoittele veteraanin kanssa',
+    'crew.trained': 'Jo harjoiteltu',
+    'perk.strength': 'Voima',
+    'perk.speed': 'Nopeus',
+    'perk.wits': 'Äly',
+    'perk.nerve': 'Hermo',
+    'perk.toughness': 'Sitkeys',
+  },
+  ja: {
+    'crew.level_n': 'レベル%d',
+    'crew.pick_skill': '新しく覚える:',
+    'crew.pick_perk': 'または%dポイントを:',
+    'crew.train': 'ベテランに訓練してもらう',
+    'crew.trained': '訓練済み',
+    'perk.strength': '力',
+    'perk.speed': '速さ',
+    'perk.wits': '知恵',
+    'perk.nerve': '胆力',
+    'perk.toughness': '頑丈さ',
   },
 };
 
@@ -69,7 +117,11 @@ let routeDraft = [];
 let observation = '';
 let toastTimer;
 
-function tr(key) { return UI[state?.locale ?? 'en'][key] ?? UI.en[key] ?? key; }
+function tr(key, ...args) {
+  let s = UI[state?.locale ?? 'en'][key] ?? UI.ja?.[key] ?? UI.en[key] ?? key;
+  for (const a of args) s = String(s).replace('%d', String(a));
+  return s;
+}
 function persist() { saveState(state); }
 function logToast(message) {
   const toast = $('toast');
@@ -108,17 +160,26 @@ function render() {
   const views = {
     route: renderRoute,
     encounter: renderEncounter,
+    visit: renderEncounter,
     ledger: renderLedger,
     battle: renderBattle,
     news: renderNews,
   };
+  disposeSceneSpeaker();
   root.innerHTML = (views[state.mode] ?? renderRoute)();
+  const speakerHost = root.querySelector('[data-speaker]');
+  if (speakerHost) mountSceneSpeaker(speakerHost, assetUrl(data, speakerHost.dataset.asset), speakerHost.dataset.speaker);
 
   // DESIGN_AUTHORITY.md addendum 2026-08-28: real 3D, not just registered
   // meshes, is one of the parity gaps this build owes Godot. Mounted here
   // rather than inside renderBattle() because it needs the REAL <canvas>'s
   // container already attached to the document (WebGL context creation
   // reads its size), which is only true after innerHTML has landed.
+  // Same rule as the 3D stage below: a canvas must be attached and laid out
+  // before it can be measured, so this runs after innerHTML, not inside
+  // renderRoute()'s string.
+  if (state.mode === 'route') mountMapRelief($('cityRelief'));
+
   if (state.mode === 'battle' && state.battle) {
     mountBattleStage3D($('stage3dMount'), state.battle, data);
     // Both calls measure the SAME just-attached container; running this
@@ -138,18 +199,26 @@ function mapPath(path) {
   }).join(' ');
 }
 
+/**
+ * The relief used to be SEVEN INVENTED SHAPES: a twenty-point landmass blob,
+ * five "districts" and a park, none of which corresponded to anything in
+ * Helsinki. They are gone, replaced by the real OSM land, water, streets and
+ * railway that `map-relief.js` draws onto a canvas UNDER this SVG — the last
+ * parity gap `PORTING.md` §1.06 measured against the Godot build.
+ *
+ * Removed rather than kept underneath, deliberately. Reported directly about
+ * the Godot map, 2026-08-26: "the grey lines that are there from the squares
+ * that you re-colored" — two road networks, or an invented coastline under a
+ * real one, disagreeing in one picture is exactly the tell that gets noticed.
+ * `city_map.gd` dropped its own hand-drawn roads for the same reason.
+ *
+ * Nothing replaces the districts. They were decoration standing in for
+ * geography this build did not have; it has the geography now.
+ */
 function mapBackground() {
-  return `
-    <path class="map-water" d="M0 0H1000V1000H0Z"/>
-    <path class="map-land" d="M58 36L844 39 918 127 872 260 966 350 1000 517 924 674 811 729 758 958 83 954 28 809 77 676 35 511 91 371 36 222Z"/>
-    <path class="map-district" d="M112 79L388 76 445 315 338 496 89 448Z"/>
-    <path class="map-district" d="M402 67L773 62 855 242 719 356 449 319Z"/>
-    <path class="map-district" d="M87 462L339 506 421 742 309 910 69 825Z"/>
-    <path class="map-district" d="M358 496L729 356 842 566 753 823 424 742Z"/>
-    <path class="map-district" d="M760 336L932 366 951 585 839 632 751 556Z"/>
-    <path class="map-park" d="M415 482L540 464 571 575 440 598Z"/>
-  `;
+  return '';
 }
+
 
 /** flat [x0,y0,x1,y1,...] board points -> an SVG path `d`. */
 function flatPointsToPath(points) {
@@ -318,6 +387,8 @@ function renderRoute() {
   return `
     <div class="route-layout">
       <section class="paper-panel map-panel" aria-label="Era I Kallio operations map">
+        <div class="map-stage">
+        <canvas class="city-relief" id="cityRelief" aria-hidden="true"></canvas>
         <svg class="city-map" viewBox="0 0 1000 1000" role="img" aria-labelledby="mapTitle mapDesc">
           <title id="mapTitle">Kallio operations map, north up</title>
           <desc id="mapDesc">Twelve accurate public anchors compressed into one relief map. The next encounter is at ${esc(data.anchors.get(slot.anchor_id)?.label)}.</desc>
@@ -326,6 +397,7 @@ function renderRoute() {
           <g aria-hidden="true">${routeSvg}${ordinaryFlowSvg()}${hiddenPips}</g>
           ${data.map.anchors.map(anchor => anchorSvg(anchor, anchor.id === slot.anchor_id, anchor.id === selected.id)).join('')}
         </svg>
+        </div>
       </section>
       <aside class="map-side">
         ${progressionCard(slot)}
@@ -335,6 +407,7 @@ function renderRoute() {
           <p>${esc(anchorDescription(selected))}</p>
           <div class="route-steps">${(selected.roles ?? []).map(role => `<span class="tag">${esc(cap(role))}</span>`).join('')}</div>
           <div class="node-actions">
+            ${availableVisits(state, data).map(v => `<button class="paper-button" data-action="open-visit" data-visit="${esc(v.id)}">VISIT · ${esc(v.participants.includes('jaska') ? 'Jaska' : 'Slomo')}</button>`).join('')}
             ${selected.id === slot.anchor_id ? `<button class="paper-button primary" data-action="open-encounter">${tr('enter')} · ${esc(nextEncounter?.id.replace('enc-', '').replaceAll('-', ' '))}</button>` : ''}
             ${selected.sliceState === 'training'
               ? `<button class="paper-button primary" data-action="start-training">${tr('start_training')}</button>`
@@ -403,21 +476,24 @@ function ambientLayers(encounter) {
 function renderEncounter() {
   if (state.endingId) return renderCampaignEnd();
   const slot = currentSchedule(state, data.content);
-  const encounter = currentEncounter(state, data);
+  const encounter = (state.mode === 'visit' ? activeVisit(state, data) : currentEncounter(state, data));
   if (!slot || !encounter) return renderCampaignEnd();
   const site = data.sites.get(encounter.site_id);
   const anchorId = encounter.anchor_override_id ?? site?.anchorId ?? slot.anchor_id;
   const anchor = data.anchors.get(anchorId);
   const art = encounter.scene_asset_id ? assetUrl(data, encounter.scene_asset_id) : '';
-  const isToko = encounter.scene_asset_id === 'scene-toko-noodles-prototype-v02';
+  const isToko = encounter.participants?.includes('toko');
+  const isJaska = encounter.participants?.includes('jaska');
   const resolved = state.choices[encounter.id];
   const choice = encounter.choices.find(item => item.id === resolved);
   const pendingBattle = state.battle?.status === 'active';
   return `
     <div class="encounter-layout">
       <section class="paper-panel scene-card">
-        <div class="scene-viewport ${isToko ? 'toko' : ''}">
+        <div class="scene-viewport ${isToko ? 'speaker-stage' : ''}">
           ${art ? `<img class="scene-image" src="${esc(art)}" alt="${esc(site?.label ?? anchor?.label)}">` : genericScene(encounter.site_id)}
+          ${isToko ? `<div class="scene-speaker toko-speaker" data-speaker="toko" data-asset="cast3d-toko-v01" aria-label="Toko Slomo behind the counter"></div><img class="counter-foreground" src="${esc(art)}" alt="" aria-hidden="true">` : ''}
+          ${isJaska ? '<i class="jaska-contact" aria-hidden="true"></i><div class="scene-speaker jaska-standing" data-speaker="jaska" data-asset="cast3d-jaska-v01" aria-label="Jaska"></div>' : ''}
           ${ambientLayers(encounter)}
           <i class="scene-vignette"></i>
           <div class="scene-caption">
@@ -435,11 +511,13 @@ function renderEncounter() {
         </div>
         <p class="observation" aria-live="polite">${esc(observation)}</p>
         ${resolved ? renderEncounterOutcome(choice, pendingBattle) : renderChoices(encounter)}
+        ${state.mode === 'visit' && !resolved ? '<button class="paper-button" data-action="leave-visit">LEAVE WITHOUT CHOOSING</button>' : ''}
       </section>
     </div>`;
 }
 
 function encounterTitle(encounter) {
+  if (encounter.title) return encounter.title;
   const titles = {
     'enc-first-purchase': 'THE FIRST BAG',
     'enc-jaska-receipt': 'DEAD MONEY',
@@ -471,6 +549,7 @@ function renderChoices(encounter) {
 }
 
 function renderEncounterOutcome(choice, pendingBattle) {
+  if (state.mode === 'visit') return `<div class="outcome-card"><h3>${esc(choice?.label)}</h3><p>${esc(choice?.forecast)}</p><button class="paper-button primary" data-action="leave-visit">RETURN TO MAP</button></div>`;
   const messages = state.lastOutcome?.length ? state.lastOutcome : ['The choice is now part of the city’s memory.'];
   return `<div class="outcome-card">
     <h3>${esc(choice?.label ?? 'CHOICE RECORDED')}</h3>
@@ -596,6 +675,7 @@ function renderLedger() {
           <p class="consequence-strip">The slice trades one abstract good. No dosage, preparation, concealment or consumption detail is simulated.</p>
         </section>
         ${renderChapter()}
+        ${renderChapterPeople(state, data.content)}
         ${renderBoard()}
         <section class="paper-panel">
           <p class="section-label">CREW / FRONT THREE DEPLOY AUTOMATICALLY</p>
@@ -611,6 +691,11 @@ function renderLedger() {
           ${canFenceHere(state)
             ? '<p class="consequence-strip">Fencing pays best on the best condition, worst on broken. Loot converts down into money — never the other way.</p>'
             : '<p class="consequence-strip">Nothing fences from here. Piritori is the only corner buying.</p>'}
+        </section>
+        <section class="paper-panel">
+          <p class="section-label">SHOP / MARKET GEAR</p>
+          <h2 class="section-title">WHAT CAN BE BOUGHT</h2>
+          ${renderShop()}
         </section>
         <section class="paper-panel">
           <p class="section-label">OBLIGATIONS</p>
@@ -629,9 +714,53 @@ function renderLedger() {
     </div>`;
 }
 
+function skillLabel(skillId) {
+  const sk = (data.content.skills ?? []).find(s => s.id === skillId);
+  return sk?.label ?? skillId;
+}
+
+/** Growth spend lines — silent when nothing pending (UX_SPEC §19 / Godot _add_level_lines). */
+function renderGrowth(member) {
+  if (!state.recruited.includes(member.id) && !state.temporaryCrew.includes(member.id)) return '';
+  if (state.retiredCrew.includes(member.id) || state.arrestedCrew.includes(member.id)) return '';
+  const points = unspentPerkPoints(state, member.id);
+  const offer = skillOffer(state, data, member.id);
+  const known = skillsOf(state, member.id);
+  const canTrain = state.retiredCrew.length > 0
+    && !state.trainedCrew.includes(member.id)
+    && !isNamed(state, data, member.id)
+    && state.recruited.includes(member.id);
+  if (points <= 0 && offer.length === 0 && known.length === 0 && !canTrain) {
+    // Still show level once they have fights behind them.
+    if (levelOf(state, member.id) <= 1 && !state.crewFights[member.id]) return '';
+  }
+  const perkIds = data.content.perks ?? [];
+  let html = `<p class="dim">${esc(tr('crew.level_n', levelOf(state, member.id)))}</p>`;
+  if (offer.length && points > 0) {
+    html += `<p class="dim">${esc(tr('crew.pick_skill'))}</p>`;
+    html += offer.map(sk => `<button class="paper-button" data-action="learn-skill" data-crew="${esc(member.id)}" data-skill="${esc(sk.id)}">${esc(sk.label)} — ${esc(sk.note ?? '')}</button>`).join('');
+  }
+  if (points > 0) {
+    html += `<p class="dim">${esc(tr('crew.pick_perk', points))}</p>`;
+    html += `<div class="route-steps">${perkIds.map(pid => {
+      const n = perkValue(state, member.id, pid);
+      return `<button class="paper-button" data-action="spend-perk" data-crew="${esc(member.id)}" data-perk="${esc(pid)}">${esc(tr(`perk.${pid}`))} ${n}</button>`;
+    }).join('')}</div>`;
+  }
+  if (known.length) {
+    html += `<p class="dim">${esc(known.map(skillLabel).join(', '))}</p>`;
+  }
+  if (canTrain) {
+    html += `<button class="paper-button cyan" data-action="train-crew" data-crew="${esc(member.id)}">${esc(tr('crew.train'))}</button>`;
+  } else if (state.trainedCrew.includes(member.id)) {
+    html += `<span class="tag">${esc(tr('crew.trained'))}</span>`;
+  }
+  return html;
+}
+
 function renderCrewCard(member) {
   const hired = state.recruited.includes(member.id) || state.temporaryCrew.includes(member.id);
-  const status = state.crewStatus[member.id];
+  const status = state.crewStatus[member.id] ?? { condition: 0, maxCondition: 0, status: 'available' };
   // Authored crew carry a one-line `strength`; a generated hire
   // (`people/hiring.mjs`) has no such field and leans on its first
   // rolled trait instead — both read as one line of flavour under the role.
@@ -644,14 +773,15 @@ function renderCrewCard(member) {
     </div>
     <div>
       <h3>${esc(member.name)}${member.nick ? ` <span class="dim">"${esc(member.nick)}"</span>` : ''}</h3>
-      <p>${esc(cap(member.role))} · ${hired ? esc(status.status.toUpperCase())
+      <p>${esc(cap(member.role))} · ${hired ? esc(String(status.status ?? 'available').toUpperCase())
         : state.arrestedCrew.includes(member.id) ? 'ARRESTED'
         : state.retiredCrew.includes(member.id) ? 'RETIRED'
         : 'NOT RECRUITED'}</p>
       <p>${esc(flavor)}</p>
-      <div class="status-dots" aria-label="${status.condition} condition">${Array.from({ length: Math.min(8, status.maxCondition) }, (_, index) => `<i class="${index < status.condition ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="status-dots" aria-label="${status.condition} condition">${Array.from({ length: Math.min(8, status.maxCondition || 0) }, (_, index) => `<i class="${index < status.condition ? 'on' : ''}"></i>`).join('')}</div>
       ${hired && careerIsVisible(state, data, member.id)
         ? `<span class="tag warning">${careerLeft(state, data, member.id)} FIGHT${careerLeft(state, data, member.id) === 1 ? '' : 'S'} LEFT</span>` : ''}
+      ${renderGrowth(member)}
     </div>
   </article>`;
 }
@@ -688,16 +818,40 @@ function renderHireCandidate(candidate) {
   </article>`;
 }
 
+
+function renderShop() {
+  if (!canShopHere(state)) {
+    return '<p class="consequence-strip">Not here. Market gear is bought at Piritori.</p>';
+  }
+  const market = [...data.equipment.values()].filter(e => isPurchasable(data, e.id) && buyOf(data, e.id) > 0);
+  if (market.length === 0) {
+    return '<p class="consequence-strip">Nothing on offer right now.</p>';
+  }
+  return `<div class="equipment-list">${market.map(equipment => {
+    const price = buyOf(data, equipment.id);
+    const affordable = state.cash >= price;
+    const artId = equipment.asset_id;
+    return `<div class="equipment-chip">
+      ${artId ? `<img src="${assetUrl(data, artId)}" alt="">` : '<span aria-hidden="true">◇</span>'}
+      <span>${esc(cap(equipment.id))}<br><span class="dim">${esc(equipment.hold ?? equipment.kind ?? '')}</span></span>
+      <button class="paper-button" data-action="buy-equipment" data-equipment="${esc(equipment.id)}" ${affordable ? '' : 'disabled'}>BUY · ${money(price)}</button>
+    </div>`;
+  }).join('')}</div>
+  <p class="consequence-strip">Taken-only gear never appears here. Money buys volume; loot buys capability.</p>`;
+}
+
 function renderEquipment(item, index) {
   const equipment = data.equipment.get(item.id);
   const artId = equipment?.asset_id;
   const canFence = canFenceHere(state);
+  const takenOnly = Boolean(equipment) && !isPurchasable(data, item.id);
   return `<div class="equipment-chip">
     ${artId ? `<img src="${assetUrl(data, artId)}" alt="">` : '<span aria-hidden="true">◇</span>'}
-    <span>${esc(cap(item.id))}<br><span class="dim">${esc(conditionWord(item.cond))}${equipment?.hold ? ` · ${esc(equipment.hold)}` : ''}</span></span>
+    <span>${esc(cap(item.id))}<br><span class="dim">${esc(conditionWord(item.cond))}${equipment?.hold ? ` · ${esc(equipment.hold)}` : ''}${takenOnly ? ' · taken only' : ''}</span></span>
     ${canFence
       ? `<button class="paper-button" data-action="sell-loot" data-equipment="${esc(item.id)}">FENCE · ${money(resaleAt(state, data, index))}</button>`
       : ''}
+    ${canFence && takenOnly ? '<p class="dim fence-unbuyable">You will not be able to buy another one. Not at any price.</p>' : ''}
   </div>`;
 }
 
@@ -743,17 +897,67 @@ function renderFormationCells(battle) {
   return cells.join('');
 }
 
-function renderUnit(unit, battle) {
+/** Attack-mode board read (COMBAT.md §9.13 / Godot purple-tile parity):
+ *  which enemies the selected fighter can actually reach, and which of those
+ *  would pull free sync fire. Built once per render so every token agrees. */
+function attackPreview(battle) {
+  const attacker = selectedUnit(battle);
+  if (battle.action !== 'attack' || !attacker?.alive) {
+    return { reachableIds: new Set(), syncTargetIds: new Set(), syncAllyIds: new Set() };
+  }
+  const reachable = attackTargets(battle, attacker);
+  const syncTargetIds = new Set();
+  const syncAllyIds = new Set();
+  for (const target of reachable) {
+    const allies = syncAlliesFor(battle, attacker, target);
+    if (allies.length) {
+      syncTargetIds.add(target.id);
+      for (const ally of allies) syncAllyIds.add(ally.id);
+    }
+  }
+  return {
+    reachableIds: new Set(reachable.map(u => u.id)),
+    syncTargetIds,
+    syncAllyIds,
+  };
+}
+
+function renderUnit(unit, battle, preview = null) {
   const pos = cellPosition(unit.cell);
   const selected = unit.id === battle.selectedId && unit.side === 'player';
+  const prev = preview ?? attackPreview(battle);
   // Police (COMBAT.md §9.5) are a third side: on the board, never anybody's
   // enemy yet — see attackTargets() in battle.js — so they are never a
   // valid attack target regardless of the current action.
-  const targetable = unit.side === 'enemy' && battle.action === 'attack';
-  const disabled = unit.side === 'player' ? battle.acted.includes(unit.id) || battle.phase !== 'player' : !targetable;
-  return `<button type="button" class="unit-token ${unit.side === 'enemy' ? 'enemy' : ''} ${unit.side === 'police' ? 'police' : ''} ${selected ? 'selected' : ''} ${targetable ? 'intent' : ''} ${unit.alive ? '' : 'down'}"
+  const targetable = unit.side === 'enemy' && prev.reachableIds.has(unit.id);
+  const syncChain = targetable && prev.syncTargetIds.has(unit.id);
+  const syncSolo = targetable && !syncChain;
+  const syncReady = unit.side === 'player' && prev.syncAllyIds.has(unit.id);
+  const classes = [
+    'unit-token',
+    unit.side === 'enemy' ? 'enemy' : '',
+    unit.side === 'police' ? 'police' : '',
+    selected ? 'selected' : '',
+    // Keep `.intent` for any reachable enemy (existing CSS); add sync tint.
+    targetable ? 'intent' : '',
+    syncChain ? 'sync-chain' : '',
+    syncSolo ? 'sync-solo' : '',
+    syncReady ? 'sync-ready' : '',
+    unit.alive ? '' : 'down',
+  ].filter(Boolean).join(' ');
+  const disabled = unit.side === 'player'
+    ? battle.acted.includes(unit.id) || battle.phase !== 'player'
+    : !targetable;
+  const syncHint = syncChain
+    ? ', sync chain'
+    : syncSolo
+      ? ', solo shot'
+      : syncReady
+        ? ', would sync'
+        : '';
+  return `<button type="button" class="${classes}"
     style="left:${pos.x}%;top:${pos.y}%" data-action="${unit.side === 'player' ? 'select-unit' : 'target-unit'}" data-unit="${esc(unit.id)}"
-    aria-label="${esc(unit.name)}, ${unit.role}, condition ${unit.hp}, guard ${unit.guard}" ${disabled ? 'disabled' : ''}>
+    aria-label="${esc(unit.name)}, ${unit.role}, condition ${unit.hp}, guard ${unit.guard}${syncHint}" ${disabled ? 'disabled' : ''}>
     <span class="unit-body">
       <img class="legs" src="${assetUrl(data, unit.legs)}" alt="">
       <img class="torso" src="${assetUrl(data, unit.torso)}" alt="">
@@ -761,6 +965,37 @@ function renderUnit(unit, battle) {
     </span>
     <span class="unit-label">${esc(unit.name.split(' ')[0])}<br><b>${unit.hp}♥ · ${unit.guard}◇ · ${unit.nerve}!</b></span>
   </button>`;
+}
+
+function renderSyncForecast(battle, preview) {
+  if (battle.action !== 'attack' || !preview.reachableIds.size) return '';
+  const attacker = selectedUnit(battle);
+  const lines = [];
+  const coverLines = [];
+  for (const enemy of battle.enemies) {
+    if (!preview.reachableIds.has(enemy.id)) continue;
+    const allies = syncAlliesFor(battle, attacker, enemy);
+    if (allies.length) {
+      lines.push(`${enemy.name.split(' ')[0]} — sync with ${allies.map(a => a.name.split(' ')[0]).join(', ')}`);
+    } else {
+      lines.push(`${enemy.name.split(' ')[0]} — solo`);
+    }
+    const verdict = coverAttackLine(battle, attacker, enemy);
+    if (verdict) {
+      let key = 'cover_intercepts';
+      if (verdict.startsWith('Blocked')) key = 'cover_blocks';
+      else if (verdict.startsWith('This weapon')) key = 'cover_pierced';
+      coverLines.push(`${enemy.name.split(' ')[0]} — ${tr(key)}`);
+    }
+  }
+  const parts = [];
+  if (lines.length) {
+    parts.push(`<p class="sync-forecast section-label">SYNC READ<br>${lines.map(esc).join('<br>')}</p>`);
+  }
+  if (coverLines.length) {
+    parts.push(`<p class="cover-forecast section-label">COVER READ<br>${coverLines.map(esc).join('<br>')}</p>`);
+  }
+  return parts.join('');
 }
 
 /**
@@ -778,10 +1013,24 @@ function renderPoliceChoice(battle) {
       <h2 class="section-title">${tr('police_here')}</h2>
       <p>${down} ${down === 1 ? tr('police_one_down') : tr('police_many_down')}</p>
       <div class="node-actions">
+            ${availableVisits(state, data).map(v => `<button class="paper-button" data-action="open-visit" data-visit="${esc(v.id)}">VISIT · ${esc(v.participants.includes('jaska') ? 'Jaska' : 'Slomo')}</button>`).join('')}
         <button class="paper-button danger" data-action="police-posture" data-posture="${POLICE_POSTURE.BACK_OFF}">${tr('police_back_off')}</button>
         <button class="paper-button primary" data-action="police-posture" data-posture="${POLICE_POSTURE.HELP_FRIENDS}">${tr('police_help')}</button>
       </div>
     </div>`;
+}
+
+/** Owner 2026-09-06: stage3d dioramas parked. Battles that authored a
+ *  mesh-3d as `scene_asset_id` (Hermanni training, Kattilahalli) have no
+ *  usable <img> — map them to the nearest Era I 2D plate until real plates
+ *  or better dioramas exist. */
+const PARKED_ARENA_PLATE = {
+  'stage3d-hermanni-skatepark-v01': 'scene-harju-pitch-v01',
+  'stage3d-suvilahti-kattilahalli-v01': 'scene-kallio-service-yard-v01',
+  'stage3d-kallio-backyard-v01': 'scene-kallio-backyard-v01',
+};
+function plateForBattleScene(id) {
+  return PARKED_ARENA_PLATE[id] || id;
 }
 
 function renderBattle() {
@@ -796,8 +1045,10 @@ function renderBattle() {
     </section>`;
   }
   const unit = selectedUnit(battle);
-  const scene = assetUrl(data, battle.sceneAssetId);
+  const scene = assetUrl(data, plateForBattleScene(battle.sceneAssetId));
   const negotiationReady = battle.round >= 2 || battle.enemies.filter(item => item.alive).reduce((sum, item) => sum + item.nerve, 0) <= 4;
+  const preview = attackPreview(battle);
+  const boardUnits = battle.players.concat(battle.enemies, battle.police ?? []);
   return `
     <div class="battle-layout">
       <section class="battle-stage" aria-label="${esc(battle.format)} isometric formation battle">
@@ -805,18 +1056,28 @@ function renderBattle() {
         <img class="weather-layer front" src="${assetUrl(data, 'weather-rain-fine-v01')}" alt="">
         <div class="stage3d-mount" id="stage3dMount" aria-hidden="true"></div>
         <p class="battle-objective"><b>${tr('objective')} · ${esc(battle.format)}</b><br>${esc(battle.objective)}</p>
+        ${battle.entryForecast ? `<div class="consequence-strip battle-entry-forecast" role="note">${esc(battle.entryForecast)}</div>` : ''}
         ${rowLabel('BACK', depthOf(ROWS - 1, true))}
         ${rowLabel('FRONT', depthOf(0, true))}
         ${rowLabel('FRONT', depthOf(0, false))}
         ${rowLabel('BACK', depthOf(ROWS - 1, false))}
         ${renderFormationCells(battle)}
-        ${battle.players.concat(battle.enemies, battle.police ?? []).map(item => renderUnit(item, battle)).join('')}
+        ${boardUnits.map(item => renderUnit(item, battle, preview)).join('')}
       </section>
       <section class="battle-console">
         <div class="paper-panel active-unit">
           <p class="section-label">ROUND ${battle.round} · ${esc(battle.phase.toUpperCase())}</p>
           <h3>${esc(unit?.name ?? 'NO ACTIVE UNIT')}</h3>
           <p>${esc(unit ? `${cap(unit.role)} · ${cap(unit.equipment)}` : 'Choose a standing crew member.')}</p>
+          ${(() => {
+            if (!unit) return '';
+            const line = coverStandingLine(battle, unit);
+            if (!line) return '';
+            const prop = line.replace(/^behind the /i, '');
+            const templ = tr('in_cover');
+            const shown = templ.includes('%s') ? templ.replace('%s', prop) : line;
+            return `<p class="cover-standing">${esc(shown)}</p>`;
+          })()}
           ${unit ? `
             <div class="track-row"><span>CONDITION</span><span class="track danger">${Array.from({ length: unit.maxHp }, (_, i) => `<i class="${i < unit.hp ? 'on' : ''}"></i>`).join('')}</span></div>
             <div class="track-row"><span>GUARD</span><span class="track">${Array.from({ length: 3 }, (_, i) => `<i class="${i < unit.guard ? 'on' : ''}"></i>`).join('')}</span></div>
@@ -830,6 +1091,7 @@ function renderBattle() {
         <div class="paper-panel battle-log" aria-live="polite">${battle.log.slice(0, 7).map(item => `<p>${esc(item)}</p>`).join('')}</div>
         ${battle.status === 'active' ? (policeAwaitingPosture(battle) ? renderPoliceChoice(battle) : `
           <div class="paper-panel battle-actions">
+            ${renderSyncForecast(battle, preview)}
             <button class="paper-button ${battle.action === 'attack' ? 'cyan' : ''}" data-action="battle-action" data-battle-action="attack" ${unit ? '' : 'disabled'}>${tr('attack')}</button>
             <button class="paper-button ${battle.action === 'move' ? 'cyan' : ''}" data-action="battle-action" data-battle-action="move" ${unit ? '' : 'disabled'}>${tr('move')}</button>
             <button class="paper-button" data-action="brace" ${unit ? '' : 'disabled'}>${tr('brace')}</button>
@@ -861,7 +1123,7 @@ function renderNews() {
       <section class="tv-shell" aria-label="Television bulletin presented by fictional newscaster Arvo Linde">
         <div class="tv-screen">
           <div class="studio"></div>
-          <div class="arvo" aria-hidden="true"><i class="body"></i><i class="shirt"></i><i class="tie"></i><i class="head"></i><i class="hair"></i><i class="face-line"></i></div>
+          <div class="scene-speaker arvo-speaker" data-speaker="arvo" data-asset="presenter-arvo-linde-v05" aria-label="Arvo Linde"></div><div class="arvo arvo-fallback" aria-hidden="true"><i class="body"></i><i class="shirt"></i><i class="tie"></i><i class="head"></i><i class="hair"></i><i class="face-line"></i></div>
           <div class="news-lower-third">ARVO LINDE · HELSINKI · DOCUMENTED FACT / FICTIONAL SERVICE</div>
         </div>
         <div class="tv-knobs" aria-hidden="true"><i></i><i></i></div>
@@ -992,7 +1254,11 @@ function handleRootClick(event) {
   const target = event.target.closest('[data-action]');
   if (!target || target.disabled) return;
   const action = target.dataset.action;
-  if (action === 'select-anchor') {
+  if (action === 'open-visit') {
+    if (openVisit(state, data, target.dataset.visit)) { observation = ''; persist(); render(); }
+  } else if (action === 'leave-visit') {
+    leaveVisit(state); persist(); render();
+  } else if (action === 'select-anchor') {
     const id = target.dataset.anchor;
     state.selectedAnchor = id;
     // Standing somewhere is how you learn its price (board.js). Without this
@@ -1024,14 +1290,14 @@ function handleRootClick(event) {
   } else if (action === 'send-route') {
     const result = sendOnRoute(state, data); logToast(result.message); persist(); render();
   } else if (action === 'inspect') {
-    const encounter = currentEncounter(state, data);
+    const encounter = (state.mode === 'visit' ? activeVisit(state, data) : currentEncounter(state, data));
     const item = encounter.inspectables[Number(target.dataset.index)];
     observation = inspectionCopy(item);
     render();
   } else if (action === 'choose') {
-    const encounter = currentEncounter(state, data);
+    const encounter = (state.mode === 'visit' ? activeVisit(state, data) : currentEncounter(state, data));
     const choice = encounter.choices.find(item => item.id === target.dataset.choice);
-    const result = chooseEncounter(state, encounter, choice, data);
+    const result = state.mode === 'visit' ? chooseVisit(state, data, target.dataset.choice) : chooseEncounter(state, encounter, choice, data);
     if (!result.ok) logToast(result.reason);
     else if (result.startBattle) startBattle(result.startBattle);
     persist(); render();
@@ -1054,6 +1320,10 @@ function handleRootClick(event) {
     const paid = sellLoot(state, data, target.dataset.equipment);
     logToast(paid > 0 ? `Fenced for ${money(paid)}.` : 'Nothing there to fence.');
     persist(); render();
+  } else if (action === 'buy-equipment') {
+    const result = buyEquipment(state, data, target.dataset.equipment);
+    logToast(result.ok ? `Bought for ${money(result.paid)}.` : 'Cannot buy — wrong place, taken-only, or short on cash.');
+    persist(); render();
   } else if (action === 'attempt-chapter-ending') {
     const reason = attemptChapterEnding(state, data);
     if (reason) logToast({ 'not-available': 'Not ready yet.', 'cannot-afford': 'Not enough cash for the stake.', 'wrong-place': 'Wrong place for this.' }[reason] ?? reason);
@@ -1061,6 +1331,24 @@ function handleRootClick(event) {
   } else if (action === 'hire-from-pool') {
     const ok = hireFromPool(state, data, target.dataset.candidate);
     logToast(ok ? 'Hired on.' : 'Cannot hire — not enough cash, or already on the roster.');
+    persist(); render();
+  } else if (action === 'spend-perk') {
+    const ok = spendPerk(state, data, target.dataset.crew, target.dataset.perk);
+    logToast(ok ? 'Point spent.' : 'Cannot spend that point.');
+    persist(); render();
+  } else if (action === 'learn-skill') {
+    const crewId = target.dataset.crew;
+    const skillId = target.dataset.skill;
+    if (learnSkill(state, data, crewId, skillId)) {
+      spendPerkPointOnSkill(state, crewId);
+      logToast(`Learned ${skillLabel(skillId)}.`);
+    } else {
+      logToast('Cannot learn that.');
+    }
+    persist(); render();
+  } else if (action === 'train-crew') {
+    const ok = train(state, data, target.dataset.crew);
+    logToast(ok ? 'A veteran starts them ahead.' : 'Cannot train — no veteran, already trained, or named.');
     persist(); render();
   } else if (action === 'select-unit') {
     selectUnit(state.battle, target.dataset.unit); persist(); render();
@@ -1225,7 +1513,7 @@ async function boot() {
 
     const pause = createPauseMenu({
       root: $('pause'),
-      version: 'v4.1',
+      version: 'v4.48',
       jump: jumpTo,
     });
     $('pauseButton').addEventListener('click', () => pause.toggle());
@@ -1279,6 +1567,7 @@ async function boot() {
       debug: {
         setState(next) { state = next; persist(); render(); },
         startBattle(id) { startBattle(id); persist(); render(); },
+        setBattleLights,
         openEncounter,
         render,
         jumpTo,

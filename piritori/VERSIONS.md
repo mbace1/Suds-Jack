@@ -10,9 +10,275 @@
 > (`PORTING.md` §2): the block names what the Godot side must re-port, so it
 > never has to read a diff to find out.
 
-## v4.47 — Act I campaign launch
+## v4.48 — 2026-09-11
 
-The Hub now opens the canonical piritori-eden/web build through act1.html: character scenes, optional visits and chapter income. Gameplay and port notes are maintained in the source repository.
+**Provisional F01/F02 locomotion test.**
+
+- Adds the two owner-approved-source fighter candidates as runtime test derivatives after removing Meshy's helper Icosphere.
+- A dedicated touch-first screen stages both fighters together and plays each fighter's own Alert idle and Casual Walk clips through the production Three.js GLTFLoader.
+- The runtime neutralises Meshy's duplicated full-strength emissive atlas so skin and clothing display their accepted base colours instead of washing out white.
+- The screen labels the candidates provisional and names the unavailable attack, damage, finger/grip and final-polish work instead of implying those states exist.
+- Current arm proportions remain part of the provisional pilot meshes and are explicitly left for the later body/rig correction pass.
+- The test is linked from the cold-start splash and can also be opened directly on the hub.
+
+### Port
+
+The test page is browser-only. The registered GLBs must still pass Godot's real importer during the shared asset sync, but no Godot scene or gameplay behavior is added in this provisional test release.
+
+## v4.47 — 2026-09-11
+
+**Act I people, places and optional return conversations.**
+
+- Jaska stands in Scene Club, Slomo behind his noodle counter, and Arvo inside the television using the registered models. Restrained breathing/glances respect reduced motion; scene resources are released on navigation.
+- Two optional return visits become available at their locations after the introductions. Choices record a memory once, survive reload, and do not advance a story block or grant repeatable rewards.
+- People and Places tracks authored Chapter 1 appearances. Jaska's two scheduled visits now agree with his existing Mäkelänsilta site.
+- Successful market sales and delivery receipts count toward the chapter goal. The shipment still requires its location, stake and explicit action.
+- Choice headings use dark ink against their actual cream face. Rebuilt the Japanese font subsets for the current interface strings.
+
+### Port
+
+Port the optional visit availability/open/choice/return flow and People and Places panel to Godot using the shared content and existing choices/memory state. Browser scene composition and the choice-heading ink correction require a Godot visual comparison; its existing presenter is retained. Font coverage and chapter receipt accounting are shared/fixed in this release. Later chapters and chapter transitions are not included.
+
+## v4.46 — 2026-09-07
+
+**Plate mode: stop blacking out the fight board.**
+
+- No ACES tone-mapping when arenas are parked (ACES + alpha made the clear opaque black).
+- Opaque ground slab → `ShadowMaterial` only in plate mode.
+- Fog off in plate mode.
+
+### Port
+Web presentation.
+
+## v4.45 — 2026-09-07
+
+**Fight board: keep plate + 2D until cast is real.**
+
+- `setClearColor(0, 0)` so the WebGL canvas does not paint out the scene plate.
+- Drop `stage3d-pending` (it hid dolls before meshes landed → empty board).
+- `stage3d-ready` only when `placed.length > 0`.
+
+### Port
+Web presentation.
+
+## v4.44 — 2026-09-07
+
+**Fight cast: no 2D flash, frozen stance.**
+
+- Hide 2D unit sprites as soon as 3D mounts (`stage3d-pending`).
+- Strip baked Meshy `clip0` and reset bind pose on load.
+- Freeze procedural fight stance (no looping idle/attack) until Meshy migrate.
+- Selected unit no longer plays looping attack.
+
+### Port
+Web presentation. Godot shared clips already off post-Eeri restore.
+
+## v4.43 — 2026-09-07
+
+**Fight readability — plate through canvas, brighter night, portrait objective.**
+
+- **Plate:** when `USE_STAGE3D_ARENAS` is false, `scene.background = null`
+  (renderer alpha kept) so CSS `.scene-image` shows through the WebGL canvas.
+  Fog density cut toward Godot's night fog so it does not grey-out plate/cast.
+- **Lights:** `mountBattleStage3D` night defaults lifted (ambient 1.75, key 3.4,
+  rim 1.45, exposure 1.15); team Fresnel `rimGain` raised so cast is not
+  silhouette-only. Cold-ambient / warm-key mood kept. `setBattleLights`
+  default comment updated.
+- **Portrait:** `.battle-objective` compacted on narrow viewports; hide
+  `.battle-entry-forecast` on the board (console Round-1 log still has the
+  full forecast) so the same objective is not stacked three times.
+- Cache: `render3d.js?v=6`, `v3.css?v=3`, `app.js?v=6`. Arenas stay parked;
+  no Meshy / shared clips.
+
+### Port
+Web-only presentation. Godot already composites cast over plate with parked
+arenas; no Godot lighting/export change required for this unit. Hub inherits
+later.
+
+## v4.42 — 2026-09-07
+
+**Phase D growth-loop on web — levels, perks, skills, train (catch-up).**
+
+- **State:** `crewPerks` / `crewSkills` / `crewPerkPoints` / `crewAptitudes` /
+  `trainedCrew` persist through fresh/load/save. `levelOf`, `grantLevel`,
+  `grantGlory`, `spendPerk`, `skillOffer`, `learnSkill`,
+  `spendPerkPointOnSkill`, `aptitudesOf`, `train`. `ageCrew` grants a level
+  on every 3-fight boundary. `train()` bumps +2 fights and does **not** call
+  `grantLevel` (Godot-exact, even though odd). Hires roll aptitudes
+  (`people/hiring.mjs`) and `hireFromPool` stores them.
+- **UI:** Ledger crew cards show level, unspent points, perk spend buttons,
+  skill offer (pick one → learn + spend point), train when a veteran exists.
+  Locale en/fi/ja mirrored from `godot/locale/ui.csv`.
+- **Battle:** toughness → hp/maxHp; wits → `crewReadBonus`; Anchor
+  `take-it` / `wall` via `anchorCoverCells` / `coverAt`; Spotter
+  `markDuration` (`call-it` / `watch-the-hands`). No invented skill effects.
+- **Gates:** `web/test/v3-state.mjs` growth section; `v3-battle.mjs` combat
+  hooks. Cache: `app.js?v=5`, `state.js?v=3`, `battle.js?v=6`.
+
+### Port
+Godot already; web catch-up. Hub inherits later.
+
+## v4.41 — 2026-09-06
+
+**Restore Piritori muscle after Eeri overwrite.**
+
+- Owner identified the untextured 22-joint/`Head1` `muscle-v01` + fight clips
+  from `cd64cd2` as **Eeri** assets.
+- Restored pre-overwrite Piritori `muscle-v01` (24-joint textured bomber) and
+  the prior four `clips/muscle-*-v01.glb`.
+- Shared clip playback off again (Godot `_animate` no-op; web
+  `SHARED_CLIP_*` empty). `MESHY_CAST_MIGRATE.md` corrected.
+
+### Port
+Mirrored in this version (assets + both players). Hub inherits later.
+
+## v4.40 — 2026-09-06
+
+**Phase B — desync + taken-only tier + equipment shop.**
+
+- **Desync (COMBAT.md §9.13 / MST):** `tough` on Fighter and opposition content; after the first SYNC hit on a tough target each round, further sync allies are skipped. Forecast via `_sync_allies_for` / `syncAlliesFor` goes empty once desynced. Primary attack still lands. Muscles + training anchor marked tough.
+- **Taken-only tier:** `tire-iron` (pipe-v03 art) and `lifted-handgun` (handgun-v03 art); equipped on opposition across battles.
+- **Equipment shop:** Piritori only (`can_shop_here` / `canShopHere`). `buy_eur` on market gear (~2.5–3× resale, DESIGN_LOCKS §13 provisional). `GameState.buy_equipment` / web `buyEquipment`; Godot `_add_shop()` next to fence; web ledger shop panel.
+
+### Port
+Mirrored in this version (web + Godot). Hub inherits later.
+
+## v4.32 — 2026-09-06
+
+**Fight nameplates (QUEUE item 3).**
+
+- **Web:** `web/js/v3/nameplates.js` resolves screen-space overlaps after
+  `positionBattleDOM()`. 2v2 centre-lane stacks split vertically; adjacent-lane
+  3v3 splits sideways. Gate: `web/test/v3-nameplates.mjs`. Godot has no
+  on-board nameplates.
+- Arena diorama park is a separate change (owner override / PR #40) — not
+  this version.
+
+### Port
+Web-only presentation. Hub inherits later.
+
+## v4.39 — 2026-09-06
+
+**Cover decision copy on web + fence unbuyable tag.**
+
+- Web: standing "behind the …" on the active unit; COVER READ in attack mode.
+- Web fence chip notes taken-only gear. QUEUE: struck stale "nothing sells loot".
+
+### Port
+Web catch-up to Godot. Hub inherits later.
+
+## v4.38 — 2026-09-06
+
+**Battle-entry forecast (Phase A leftover — list cleared).**
+
+- Compose a cost read from authored battle fields (format, objective,
+  withdrawal `known_cost`, casualty telegraph, death eligibility). Optional
+  `forecast` on the battle overrides.
+- Web: `entryForecast` on battle state, consequence strip on the board,
+  opening log. Godot: intent-panel header via `BattleBuilder.entry_forecast`.
+
+### Port
+Mirrored in this version (web + Godot). Hub inherits later.
+
+## v4.37 — 2026-09-06
+
+**Intel explanation on telegraph fog (Phase A leftover).**
+
+- When any opposition telegraph is aim-unclear, the intent panel footnotes
+  how to raise the read: bring a watcher (`intent-reading`) / spotter, or
+  MARK if one is already deployed.
+- Locale: `battle.intel_hint_bring` / `battle.intel_hint_raise` (en/fi/ja).
+
+### Port
+Godot presentation. Web has no live intent strip yet — port with that panel.
+
+## v4.36 — 2026-09-06
+
+**Telegraph harm numbers (Phase A leftover).**
+
+- `IntentRecord` carries `harm_min`/`harm_max` from the held weapon.
+- Godot `_telegraph_line` appends `harm N-M` (+ lethal) so colour is never
+  the only carrier. Gate extended in `test_battle.gd`.
+
+### Port
+Godot presentation. Web has no live intent strip yet — port with that panel.
+
+## v4.35 — 2026-09-06
+
+**Cover markers on the 3D board (Phase A leftover).**
+
+- Soft cover was named in copy and drawn on the 2D board; cast3d fights
+  showed empty cells. Web `render3d.js` and Godot `battle_stage_3d.gd` now
+  place ochre geometric markers on `battle.cover` / `cover_props()` cells
+  (taller / wider by prop id). Marker only — no Meshy.
+- Cache: `render3d.js?v=4`.
+
+### Port
+Mirrored in this version (web + Godot). Hub inherits later.
+
+## v4.34 — 2026-09-06
+
+**Art verdict: cast3d on 2D plates.** QUEUE item 4. Stage3d dioramas stay
+parked; fight path is plates + cast + night lights. Motion debt remains
+Meshy clip re-export; arena fill-out after that.
+
+### Port
+Docs/QUEUE. Behaviour already matches `#42` park flag.
+
+## v4.33 — 2026-09-06
+
+**Battle light mood knobs + park note.**
+
+- `setBattleLights` on web (`debug.setBattleLights`) for ambient/key/rim /
+  colours / exposure / fog — art-review mood passes without rebuilding.
+- Stage3d arenas remain parked (`USE_STAGE3D_ARENAS`); see QUEUE.
+
+### Port
+Web presentation. Godot already has `_build_night()` energies; mood API is
+web-first for JS landscape reviews.
+
+## v4.31 — 2026-09-05
+
+**Fight framing: arena-fitted board on web + still Godot bodies.**
+
+- Web ports Godot `_fit_board()` via live `CELL_M` (`fitBoardToArena`); camera
+  and unit slots rebuild after the arena mesh reports half-extents.
+- **2026-09-06:** shared fight clips re-exported vs muscle rest; Godot plays them on `muscle-v01` only; other roles pending re-rig (`port/rig-vectors.mjs`).
+- **2026-09-06:** web plays shared GLB fight clips on muscle only; other roles keep fight-motion; Meshy one-off re-rigs do not unlock shared rests (~110° measured).
+- Web stage id map matches Godot fallback (Kallio backyard when a fight's
+  plate has no diorama).
+- Godot turns off broken shared fight clips until Meshy re-export (web already
+  on `fight-motion.js`). Hub inherits later.
+
+### Port
+Godot clip stub is in `_animate`; web fit is the behaviour definition for
+framing. Hub/Suds-Jack picks this up in a later inherit pass.
+
+## v4.30 — 2026-09-05
+
+**Fight-screen legibility pass (QUEUE: 96% black).** Measured on main at a
+411px Pixel viewport: fighter:ground contrast was **1.32:1** because the
+night plate was darkened twice in CSS and the fighters sat under a dim cold
+ambient. This is not a 3D-vs-2D problem — the same stack would crush sprites.
+
+- **`web/v3.css`:** `.battle-stage > .scene-image` filter `brightness(.66)` →
+  `1.12` (and softer saturate/contrast); `::after` side/bottom veils reduced
+  so they grade the night instead of blacking it out.
+- **`web/js/v3/render3d.js`:** ambient / key / rim energies lifted
+  (`AmbientLight` 1.45, key 2.8, rim 1.15).
+- **`godot/scenes/battle_stage_3d.gd` `_build_night()`:** ambient, moon and
+  lamp energies raised in lockstep so the Godot stage does not stay darker
+  than the web port.
+- **Gate re-measured** on phone WebGL (SwiftShader) after waiting for
+  `.stage3d-ready`: fighter:ground ≈ **3.0:1**, panel `<28` ≈ **85%** (was
+  1.32:1 / 96%). `web/tools/capture.mjs` now uses SwiftShader + waits for 3D
+  so headless shots stop lying about the 2D fallback. Framing / nameplates
+  still next. Hub JS inherits this fight advance later.
+
+### Port
+Already applied in Godot `_build_night()` in this same version. Re-measure
+with `web/tools/capture.mjs` (and Godot `tools/capture_battle.tscn`) before
+calling the QUEUE gate closed — target fighter:ground **>= 3:1**.
 
 ## v4.29 — 2026-08-31
 
