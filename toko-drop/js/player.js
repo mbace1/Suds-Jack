@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=198';
-import { TUNING } from './tuning.js?v=198';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=199';
+import { TUNING } from './tuning.js?v=199';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;

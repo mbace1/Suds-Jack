@@ -7,6 +7,45 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v247 — 2026-09-12
+**The camera frames the fight, not the floor** *(the last open finding of the LOOK pass)*
+- **What was wrong.** The classic arena is fitted to the screen edge to
+  edge and the fight is a small patch in the middle of a large dark floor —
+  on a phone, four cubes and the player were a fifth of the height of the
+  screen with black round them. A fixed-screen arena shooter keeps the
+  whole arena in view so a spawn on the rim is never a surprise, and that
+  rule is KEPT: the rim is part of the frame whenever a spawn is pending
+- **`js/framing.js`** (pure, no three.js): the things that matter are the
+  player, the live bodies and the enemy bullets; the camera dollies in along
+  its own view ray until that set (plus `margin`) fills the frame, never
+  closer than `dollyMax` of the rest distance, never further than rest. The
+  look point slides toward the set's centre in proportion to how far in the
+  camera has come, so at full-out the view IS the fixed one it always was —
+  nothing drifts on the title, and the player alone frames nothing. Coming
+  OUT (a spawn is arriving) eases at 5/s; coming IN at 2/s: out is urgent,
+  in is a mood. Shake rides on top as before
+- **Where it is OFF, on purpose:** REDUCE MOTION, every cabinet, SMASH TV,
+  authored levels (`arenaOverride`) and scrolling arenas (`arenaScale > 1`),
+  which keep the cameras they were designed around. `TUNING.camera.framing`
+  is the kill switch
+- Judged on a 480×800 portrait viewport, framing on against off at 3, 8 and
+  14 s of a real run, and in the FLIT school loop: the fight fills the
+  screen and every body is twice the size, with the arena's far edge still
+  in view. Rest 36.1 → 26.6 by the fourteenth second
+- **Gate: `scripts/framing-check.mjs`** (bare node, 19 checks, both
+  aspects): corners on every rim → the fixed view; a tight fight → the dolly
+  floor and no further, every point inside the frustum margins; a fight in
+  a corner is looked at and stays in frame; a pending spawn → the full
+  arena; the player alone → rest; disabled → rest; the ease is monotone and
+  coming out reaches 90% of rest inside half a second; deterministic
+- `sw.js` precaches `framing.js`
+- Gates: `check-syntax` · `framing-check` 19 · `crowd-check` 12 ·
+  `arena-check` 8396 · `level-check` 74 · `smoke` · `webgpu-smoke` ·
+  `cabinets`
+- Cache-bust `?v=198` → `?v=199`; HUD label → v247
+
+---
+
 ## v246 — 2026-09-11
 **A contrast floor: no body darker than the ground it stands on** *(roadmap-v2 art priority 4, silhouette & readability — the first pass of it)*
 - **Found by looking.** The LOOK pass named the dark enemy as the

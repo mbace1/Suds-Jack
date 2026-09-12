@@ -96,6 +96,14 @@ export const TUNING = {
   //   flock   — boids cohesion/alignment, and ONLY with other flockers
   //   current — how hard the wave archetype (stream/ring/pincer) pushes it
   //   weave   — its own serpentine approach: personality without a school
+  // v247 CAMERA — the camera frames the FIGHT, not the floor (js/framing.js).
+  // dollyMax is how far in it may come as a fraction of the rest distance;
+  // margin is the air kept round the things that matter; ease is the lerp
+  // rate coming in and easeOut the rate coming back out (a spawn is arriving
+  // on the rim — that is urgent). A pending spawn holds the full arena. Off under
+  // REDUCE MOTION, in cabinets, in authored levels and in scrolling arenas.
+  camera: { framing: true, dollyMax: 0.35, margin: 3.0, ease: 2.0, easeOut: 5.0 },   // out is urgent, in is a mood
+
   // v245 CROWD — the swarm's spacing (js/crowd.js). contact = ra + rb + pad;
   // comfort is a multiple of contact; push is the FOLLOWING DISTANCE — u/s
   // the body behind is held off the body ahead at contact, fading to 0 at

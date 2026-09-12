@@ -1,19 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=198';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=198';
-import { Player, PLAYER_RADIUS } from './player.js?v=198';
+import { InputManager } from './input.js?v=199';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=199';
+import { Player, PLAYER_RADIUS } from './player.js?v=199';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=198';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=198';
-import { audio } from './audio.js?v=198';
-import { haptics } from './haptics.js?v=198';
-import { initDesigner } from './designer.js?v=198';
-import { createSpecimen } from './specimen.js?v=198';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=198';
-import { TUNING } from './tuning.js?v=198';
-import { Arena, rectShape } from './arena.js?v=198';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=198';    // v245: the swarm's spacing — resolve, comfort, slide
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=198';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=199';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=199';
+import { audio } from './audio.js?v=199';
+import { haptics } from './haptics.js?v=199';
+import { initDesigner } from './designer.js?v=199';
+import { createSpecimen } from './specimen.js?v=199';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=199';
+import { TUNING } from './tuning.js?v=199';
+import { Arena, rectShape } from './arena.js?v=199';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=199';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=199';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=199';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -465,7 +466,49 @@ function addShake(trauma) {
 // window never leaves the (arenaScale×) world. Zero when arenaScale is 1.
 const _camOff  = new THREE.Vector3();
 const _camLook = new THREE.Vector3();
+// v247 FRAMING (js/framing.js): in the classic fixed-screen arena the camera
+// dollies in along its own view ray until the player, the live bodies and
+// the enemy bullets fill the frame — and comes straight back out the moment
+// a spawn is pending on the rim, so nothing arrives off screen. Live state is
+// {dist, look}; `_frameRest` is the preset ray it dollies along.
+const _frame = { dist: 0, look: { x: 0, z: 0 } };
+const _framePts = [];
+let _frameOn = false;
+function framingAllowed() {
+  const C = TUNING.camera;
+  return !!(C && C.framing) && arenaScale === 1 && !reduceMotion && !inCabinet() && !arenaOverride && !smashMode;
+}
+function updateFraming(dt) {
+  const B = camBasis(CAM_REST, CAM_LOOK);
+  if (!_frameOn) { _frame.dist = B.restDist; _frame.look.x = CAM_LOOK.x; _frame.look.z = CAM_LOOK.z; }
+  _framePts.length = 0;
+  _framePts.push({ x: player.position.x, z: player.position.z });
+  for (const e of enemies) if (e.alive) _framePts.push({ x: e.position.x, z: e.position.z });
+  for (const b of bullets.active) if (!b.isPlayer) _framePts.push({ x: b.mesh.position.x, z: b.mesh.position.z });
+  const R = { restLook: { x: CAM_LOOK.x, z: CAM_LOOK.z }, B, aspect: innerWidth / Math.max(1, innerHeight), tanHalf: Math.tan(Math.PI / 6) };
+  const cfg = { ...FRAMING_DEFAULTS, ...TUNING.camera };
+  const target = frameTarget(_framePts, pendingSpawns.length > 0, R, cfg);
+  easeToward(_frame, target, dt, cfg.ease, cfg.easeOut);
+  _frameOn = true;
+  return B;
+}
 function updateShake(dt) {
+  if (arenaScale === 1 && framingAllowed()) {
+    // the framed camera: rest ray, live distance and look, then the shake on top
+    const B = updateFraming(dt);
+    _camLook.set(_frame.look.x, 0, _frame.look.z);
+    camera.position.set(_camLook.x + B.dir.x * _frame.dist, B.dir.y * _frame.dist, _camLook.z + B.dir.z * _frame.dist);
+    if (shakeTrauma > 0) {
+      shakeTrauma = Math.max(0, shakeTrauma - dt * 2.8);
+      const mag = shakeTrauma * shakeTrauma, t = performance.now() / 1000;
+      camera.position.x += Math.sin(t * 41) * mag * 1.8;
+      camera.position.y += Math.sin(t * 37) * mag * 1.2;
+      camera.position.z += Math.sin(t * 43) * mag * 1.2;
+    }
+    camera.lookAt(_camLook);
+    return;
+  }
+  _frameOn = false;   // the next framed frame starts from rest, not from wherever it was
   if (arenaScale > 1) {
     const p = (smashMode || tokotronMode || nexdeusMode) ? ARENA_PRESETS.smash
             : landscapeMode ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
@@ -5218,7 +5261,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v246' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v247' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -10363,7 +10406,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=198').then(async m => {
+  import('./editor.js?v=199').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10394,6 +10437,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=198').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=199').catch(() => {});
   });
 }
