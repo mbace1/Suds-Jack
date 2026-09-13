@@ -1,6 +1,6 @@
 # C.13 — Night Shift crew pilot
 
-Source: 09e13affd8600ff7a790b9d486edfaed531c435f.
+Source: 89f1842dd05877cac254a7963b5845f2ae70750f.
 
 Art Bible console, crew ledger, actual-figure portraits, practical night light, directed framing and dashed intent paths. Persistent C.12 rules and saves retained. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
