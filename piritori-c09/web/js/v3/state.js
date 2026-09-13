@@ -1044,4 +1044,3 @@ export function sendOnRoute(state, data) {
   addLog(state, `One hidden load shares ${route.ordinary} ordinary journeys and settles at ${destination}.`);
   return { ok: true, message: `The route settles one pack for €${receipt}.` };
 }
-
