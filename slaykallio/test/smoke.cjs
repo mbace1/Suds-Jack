@@ -711,6 +711,8 @@ const check = (name, ok, extra = '') => {
   // the silhouette. Both are gone; this is the ruler that says so.
   check(`and almost none of the figure is near-white speckle (${(cut.die.pale / cut.die.ink * 100).toFixed(1)}%)`,
     cut.die.pale / cut.die.ink < 0.08, `${cut.die.pale}/${cut.die.ink}`);
+  check('the choice of cut is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.cut') === '"silhouette"'));
+  await page.evaluate(() => __sk.debug.setCut('card'));
   // NOTHING PRINTS BELOW THE FLAT FOOT. The border pass erases its card mask
   // under the cut line, and the figure used to be drawn over it unclipped — so
   // anything hanging lower floated below its own board with no kraft behind it
@@ -719,7 +721,6 @@ const check = (name, ok, extra = '') => {
   // down there either way.
   {
     const below = await page.evaluate(() => {
-      __sk.debug.setCut('card');
       const rows = id => {
         const c = __sk.debug.look(id);
         const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -736,8 +737,6 @@ const check = (name, ok, extra = '') => {
       below.boxer.last <= FOOT && below.boxer.last > FOOT - 60);
   }
 
-  check('the choice of cut is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.cut') === '"silhouette"'));
-  await page.evaluate(() => __sk.debug.setCut('card'));
   await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
   await page.waitForTimeout(200);
 
