@@ -1,5 +1,75 @@
 # Toko Move — versions
 
+## v2.35 — 2026-09-13
+
+**The shift could not be won, and now it can — measured, not felt.** Nothing in
+this project had ever finished a shift: the gates certified that a job could be
+taken and a tram caught, and the one person who tried by hand (v2.34, twice)
+got 0/3 both times. `test/shifts.cjs` drives the real game — the real
+timetable, the real challenge, the real mobility controller — through the same
+commands the buttons call, stepping the clock with `flow.runTicks` rather than
+the wall clock, so a shift runs in under a second and two hundred in minutes.
+The fleet and the offers are deterministic (hashes, not rolls), so the sample
+is over PLAYERS, not seeds: four named policies plus random-but-sane bots that
+choose among what the panel would show.
+
+**At v2.34, random-but-sane bots won 19% of shifts. The cause was the fleet.**
+Three vehicles per line, whatever the line's length, makes the headway the
+length divided by three: tram 15 every 61 game-minutes, the metro every 49,
+trams 1/7/9 every 25-29 — against a real morning of 7.5 for a trunk tram and 4
+for the metro. The 500-tick stand at Arabia for the next 6 was not bad luck, it
+was the timetable. `LiveNetwork` now provisions each line to a TARGET headway
+(`HEADWAY_MIN`, vehicles = cycle ÷ headway, never fewer than two): 102 vehicles
+became 310, the median headway went from 692 ticks to 296, and the same bots
+went 19% → 35% at 10/5 → **52% at 7.5/4**, which is HSL's morning peak, which is
+when the shift is.
+
+**The second cause was dispatch.** Loop 47 listed first whichever job had a
+tram within reach, and on job one that was Lasipalatsi → Arabia at ~1500
+ticks — half the day for one delivery. A bot taking the first-listed job
+finished 1/3; a bot taking the cheapest finished 3/3 at tick 2201. Offers are
+now SIZED TO THE SHIFT: priced door to door by the same estimator the deadline
+uses, anything that cannot land before the day ends is dropped, and the three
+kept are a spread — cheapest, middle, dearest that fits. With both fixes the
+random bots win **63.5% of 200 shifts** and the cheapest-job player finishes at
+tick 858; median first delivery moved from tick 1191 to 509. `--gate` runs 40
+and holds 40% and a cheapest-job win; it is in CI.
+
+**Found on the way, and fixed: RUN THE DAY AGAIN was a dead second shift.** It
+booted a fresh flow and challenge in place while main-v212's mobility
+controller, fleet, trails and log all kept the old ones — measured,
+`tm.mobility.ch !== tm.challenge` after the button, so a job taken on the second
+shift was invisible to the controller and no CATCH could ever light. It reloads.
+
+**UI, from the screenshots.** The lit CATCH is FIRST — three 130px cards had
+put it second or third, under two greyed WAITs, half below the fold on a phone;
+options are one row each now (verb, service, where it goes, cost) and all three
+fit beside the map. The HUD lost its 46px dead band beside the HUB button: the
+clock and controls sit to the right of it, the status line under. The feed
+truncated mid-word ("Transit only; no") and now ellipsises one line on a phone.
+The read-only ALSO CALLING HERE panel is folded into a `<details>` (MISSED stays
+outside it, visible). The duplicate "ON TRAM 1H" card above the ride card is
+gone, and the ride card is a STRIP — passed stops filled, where you are ringed,
+the destination flagged, a countdown off the same closed form the catch panel
+uses — instead of "Vehicle hsl:1H:2 · current Kamppi · next Kluuvi".
+
+**Art.** The courier is a FIGURE and is on the board whenever you are: a flat
+fill inside a hard line — head, coat, bag, two legs that swap on a five-tick
+gait — standing at the stop while you wait, walking while you walk. It used to
+be a navy dot marked W, and only while walking, so for most of the shift you
+were nowhere on the map at all. Every badge has a NOSE on its leading edge from
+the path tangent, because a CATCH lights only for a vehicle heading your way
+and a rectangle could not say which way that was. Dots paint UNDER badges now
+(a dot at the same spot as the badge it yielded to was punching a hole in the
+label). The job's destination carries a pennant on a pole with the stop's name
+in the cargo's colour, instead of a second ring in a second colour. And one
+warm wash over the ground, strongest at 07:00 and gone by 08:15, so the five
+minutes have a direction you can feel — soft-light, so the line ink is
+untouched.
+
+Gates: `shifts.cjs --gate` (3, new, in CI), phone.cjs 37, misses.cjs 8,
+badges.cjs 20, cabinet-route 19, tokens.mjs, and every bare-node gate green.
+
 ## v2.34 — 2026-09-11
 
 **The cache tokens were wrong, and nothing was looking at them.** Two faults,

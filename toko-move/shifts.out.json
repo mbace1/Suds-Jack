@@ -1,0 +1,5202 @@
+[
+ {
+  "label": "first job · soonest tram",
+  "policy": {
+   "name": "first job · soonest tram",
+   "job": "first",
+   "plan": "soonest",
+   "seed": 1
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 858,
+  "score": 474,
+  "late": 0,
+  "waitTicks": 108,
+  "rideTicks": 743,
+  "catches": 3,
+  "transfers": 0,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1H wait 0",
+   "2: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>katajanokka equipment limit 656",
+   "140: PLAN 4T wait 32",
+   "151: CATCH 4T",
+   "503: OFF katajanokka deliver",
+   "504: JOB katajanokka>senaatintori equipment limit 404",
+   "505: PLAN 4H wait 115",
+   "566: PLAN 4H wait 54",
+   "599: CATCH 4H",
+   "857: OFF senaatintori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    3,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    152,
+    "riding"
+   ],
+   [
+    503,
+    "getoff"
+   ],
+   [
+    504,
+    "riding"
+   ],
+   [
+    505,
+    "waiting"
+   ],
+   [
+    600,
+    "riding"
+   ],
+   [
+    857,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "first job · best total",
+  "policy": {
+   "name": "first job · best total",
+   "job": "first",
+   "plan": "total",
+   "seed": 1
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 858,
+  "score": 474,
+  "late": 0,
+  "waitTicks": 113,
+  "rideTicks": 738,
+  "catches": 3,
+  "transfers": 0,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1H wait 0",
+   "2: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>katajanokka equipment limit 656",
+   "140: PLAN 4T wait 32",
+   "151: CATCH 4T",
+   "503: OFF katajanokka deliver",
+   "504: JOB katajanokka>senaatintori equipment limit 404",
+   "505: PLAN 4 wait 120",
+   "566: PLAN 4 wait 59",
+   "604: CATCH 4",
+   "857: OFF senaatintori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    3,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    152,
+    "riding"
+   ],
+   [
+    503,
+    "getoff"
+   ],
+   [
+    504,
+    "riding"
+   ],
+   [
+    505,
+    "waiting"
+   ],
+   [
+    605,
+    "riding"
+   ],
+   [
+    857,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "cheapest job · soonest tram",
+  "policy": {
+   "name": "cheapest job · soonest tram",
+   "job": "cheapest",
+   "plan": "soonest",
+   "seed": 1
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 858,
+  "score": 474,
+  "late": 0,
+  "waitTicks": 108,
+  "rideTicks": 743,
+  "catches": 3,
+  "transfers": 0,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1H wait 0",
+   "2: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>katajanokka equipment limit 656",
+   "140: PLAN 4T wait 32",
+   "151: CATCH 4T",
+   "503: OFF katajanokka deliver",
+   "504: JOB katajanokka>senaatintori equipment limit 404",
+   "505: PLAN 4H wait 115",
+   "566: PLAN 4H wait 54",
+   "599: CATCH 4H",
+   "857: OFF senaatintori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    3,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    152,
+    "riding"
+   ],
+   [
+    503,
+    "getoff"
+   ],
+   [
+    504,
+    "riding"
+   ],
+   [
+    505,
+    "waiting"
+   ],
+   [
+    600,
+    "riding"
+   ],
+   [
+    857,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "cheapest job · best total",
+  "policy": {
+   "name": "cheapest job · best total",
+   "job": "cheapest",
+   "plan": "total",
+   "seed": 1
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 858,
+  "score": 474,
+  "late": 0,
+  "waitTicks": 113,
+  "rideTicks": 738,
+  "catches": 3,
+  "transfers": 0,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1H wait 0",
+   "2: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>katajanokka equipment limit 656",
+   "140: PLAN 4T wait 32",
+   "151: CATCH 4T",
+   "503: OFF katajanokka deliver",
+   "504: JOB katajanokka>senaatintori equipment limit 404",
+   "505: PLAN 4 wait 120",
+   "566: PLAN 4 wait 59",
+   "604: CATCH 4",
+   "857: OFF senaatintori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    3,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    152,
+    "riding"
+   ],
+   [
+    503,
+    "getoff"
+   ],
+   [
+    504,
+    "riding"
+   ],
+   [
+    505,
+    "waiting"
+   ],
+   [
+    605,
+    "riding"
+   ],
+   [
+    857,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 1",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 1
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2386,
+  "score": 328,
+  "late": 2,
+  "waitTicks": 605,
+  "rideTicks": 1773,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1T wait 148",
+   "63: PLAN 1T wait 87",
+   "124: PLAN 1H wait 176",
+   "185: PLAN 1T wait 263",
+   "246: PLAN 1H wait 54",
+   "279: CATCH 1H",
+   "434: OFF ooppera deliver",
+   "435: JOB ooppera>katajanokka equipment limit 624",
+   "436: PLAN 4 wait 192",
+   "497: PLAN 4H wait 92",
+   "558: PLAN 4T wait 199",
+   "619: PLAN 4 wait 0",
+   "619: CATCH 4",
+   "1093: OFF katajanokka deliver",
+   "1094: JOB katajanokka>pasila parts limit 1520",
+   "1095: PLAN 4>7H wait 123",
+   "1156: PLAN 4>7 wait 62",
+   "1197: CATCH 4",
+   "1451: OFF senaatintori transfer",
+   "1452: PLAN 2 wait 61",
+   "1491: CATCH 2",
+   "2385: OFF pasila deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    280,
+    "riding"
+   ],
+   [
+    434,
+    "getoff"
+   ],
+   [
+    435,
+    "riding"
+   ],
+   [
+    436,
+    "waiting"
+   ],
+   [
+    620,
+    "riding"
+   ],
+   [
+    1093,
+    "getoff"
+   ],
+   [
+    1094,
+    "riding"
+   ],
+   [
+    1095,
+    "waiting"
+   ],
+   [
+    1198,
+    "riding"
+   ],
+   [
+    1451,
+    "getoff"
+   ],
+   [
+    1452,
+    "waiting"
+   ],
+   [
+    1492,
+    "riding"
+   ],
+   [
+    2385,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 2",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 2
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2737,
+  "score": 470,
+  "late": 1,
+  "waitTicks": 174,
+  "rideTicks": 2552,
+  "catches": 6,
+  "transfers": 3,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>meilahti fragile limit 789",
+   "3: PLAN 4T wait 106",
+   "64: PLAN 4 wait 29",
+   "71: CATCH 4",
+   "461: OFF meilahti deliver",
+   "462: JOB meilahti>kalasatama fresh food limit 1352",
+   "463: PLAN 7>13 wait 35",
+   "477: CATCH 7",
+   "810: OFF pasila transfer",
+   "811: PLAN 7>M1 wait 0",
+   "811: CATCH 7",
+   "1194: OFF sornainen transfer",
+   "1195: PLAN M1 wait 124",
+   "1256: PLAN 7>13 wait 0",
+   "1256: CATCH 7",
+   "1629: OFF pasila transfer",
+   "1630: PLAN 13H wait 24",
+   "1655: CATCH 13H",
+   "2179: OFF kalasatama deliver",
+   "2180: JOB kalasatama>pasila express limit 899",
+   "2181: PLAN 13 wait 0",
+   "2181: CATCH 13",
+   "2736: OFF pasila deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    72,
+    "riding"
+   ],
+   [
+    461,
+    "getoff"
+   ],
+   [
+    462,
+    "riding"
+   ],
+   [
+    463,
+    "waiting"
+   ],
+   [
+    478,
+    "riding"
+   ],
+   [
+    810,
+    "getoff"
+   ],
+   [
+    811,
+    "waiting"
+   ],
+   [
+    812,
+    "riding"
+   ],
+   [
+    1194,
+    "getoff"
+   ],
+   [
+    1195,
+    "waiting"
+   ],
+   [
+    1257,
+    "riding"
+   ],
+   [
+    1629,
+    "getoff"
+   ],
+   [
+    1630,
+    "waiting"
+   ],
+   [
+    1656,
+    "riding"
+   ],
+   [
+    2179,
+    "getoff"
+   ],
+   [
+    2180,
+    "riding"
+   ],
+   [
+    2181,
+    "waiting"
+   ],
+   [
+    2182,
+    "riding"
+   ],
+   [
+    2736,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 3",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 3
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 342,
+  "late": 0,
+  "waitTicks": 841,
+  "rideTicks": 2151,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "riding",
+  "activeJob": "lasipalatsi>senaatintori",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>8 wait 244",
+   "63: PLAN 1>6H wait 183",
+   "124: PLAN 1>8 wait 122",
+   "185: PLAN 1>6 wait 61",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6 wait 201",
+   "920: PLAN 6 wait 140",
+   "981: PLAN 8 wait 174",
+   "1042: PLAN 8 wait 113",
+   "1103: PLAN 8 wait 52",
+   "1133: CATCH 8",
+   "1596: OFF arabia deliver",
+   "1597: JOB arabia>lasipalatsi parts limit 1757",
+   "1598: PLAN 6>1H wait 215",
+   "1659: PLAN 6>1 wait 154",
+   "1720: PLAN 6>1 wait 93",
+   "1781: PLAN 6>1T wait 32",
+   "1814: CATCH 6",
+   "2246: OFF sornainen transfer",
+   "2247: PLAN 1T wait 27",
+   "2252: CATCH 1T",
+   "2852: OFF lasipalatsi deliver",
+   "2853: JOB lasipalatsi>senaatintori express limit 340",
+   "2854: PLAN 4 wait 267",
+   "2915: PLAN 4H wait 80",
+   "2973: CATCH 4H"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1134,
+    "riding"
+   ],
+   [
+    1596,
+    "getoff"
+   ],
+   [
+    1597,
+    "riding"
+   ],
+   [
+    1598,
+    "waiting"
+   ],
+   [
+    1815,
+    "riding"
+   ],
+   [
+    2246,
+    "getoff"
+   ],
+   [
+    2247,
+    "waiting"
+   ],
+   [
+    2253,
+    "riding"
+   ],
+   [
+    2852,
+    "getoff"
+   ],
+   [
+    2853,
+    "riding"
+   ],
+   [
+    2854,
+    "waiting"
+   ],
+   [
+    2974,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 4",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 4
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2732,
+  "score": 537,
+  "late": 1,
+  "waitTicks": 654,
+  "rideTicks": 2069,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1 wait 243",
+   "64: PLAN 1 wait 182",
+   "125: PLAN 1 wait 121",
+   "186: PLAN 1H wait 114",
+   "247: PLAN 1 wait 0",
+   "247: CATCH 1",
+   "406: OFF ooppera deliver",
+   "407: JOB ooppera>arabia fragile limit 1330",
+   "408: PLAN 8 wait 115",
+   "469: PLAN 8T wait 59",
+   "506: CATCH 8T",
+   "1293: OFF arabia deliver",
+   "1294: JOB arabia>olympiaterminaali express limit 2103",
+   "1295: PLAN 6>3 wait 207",
+   "1356: PLAN 6>3 wait 146",
+   "1417: PLAN 6>3 wait 85",
+   "1478: PLAN 6>3 wait 24",
+   "1502: CATCH 6",
+   "2322: OFF rautatientori transfer",
+   "2323: PLAN 2 wait 122",
+   "2384: PLAN 2 wait 61",
+   "2424: CATCH 2",
+   "2731: OFF olympiaterminaali deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    248,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "riding"
+   ],
+   [
+    408,
+    "waiting"
+   ],
+   [
+    507,
+    "riding"
+   ],
+   [
+    1293,
+    "getoff"
+   ],
+   [
+    1294,
+    "riding"
+   ],
+   [
+    1295,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    2322,
+    "getoff"
+   ],
+   [
+    2323,
+    "waiting"
+   ],
+   [
+    2425,
+    "riding"
+   ],
+   [
+    2731,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 5",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 5
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2973,
+  "score": 351,
+  "late": 1,
+  "waitTicks": 1026,
+  "rideTicks": 1938,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>6H wait 244",
+   "63: PLAN 1>6H wait 183",
+   "124: PLAN 1>6 wait 122",
+   "185: PLAN 1>6H wait 61",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6 wait 201",
+   "920: PLAN 6 wait 140",
+   "981: PLAN 8 wait 174",
+   "1042: PLAN 8 wait 113",
+   "1103: PLAN 6H wait 203",
+   "1164: PLAN 6H wait 142",
+   "1225: PLAN 6H wait 81",
+   "1285: CATCH 6H",
+   "1712: OFF arabia deliver",
+   "1713: JOB arabia>ooppera hot food limit 1442",
+   "1714: PLAN 6>1 wait 99",
+   "1775: PLAN 6>1 wait 38",
+   "1814: CATCH 6",
+   "2246: OFF sornainen transfer",
+   "2247: PLAN 1 wait 210",
+   "2308: PLAN 1H wait 0",
+   "2308: CATCH 1H",
+   "2674: OFF ooppera deliver",
+   "2675: JOB ooppera>toolontori fresh food limit 278",
+   "2676: PLAN 2 wait 207",
+   "2737: PLAN 8H wait 163",
+   "2798: PLAN 8H wait 102",
+   "2859: PLAN 8H wait 41",
+   "2888: CATCH 8H",
+   "2972: OFF toolontori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1286,
+    "riding"
+   ],
+   [
+    1712,
+    "getoff"
+   ],
+   [
+    1713,
+    "riding"
+   ],
+   [
+    1714,
+    "waiting"
+   ],
+   [
+    1815,
+    "riding"
+   ],
+   [
+    2246,
+    "getoff"
+   ],
+   [
+    2247,
+    "waiting"
+   ],
+   [
+    2309,
+    "riding"
+   ],
+   [
+    2674,
+    "getoff"
+   ],
+   [
+    2675,
+    "riding"
+   ],
+   [
+    2676,
+    "waiting"
+   ],
+   [
+    2889,
+    "riding"
+   ],
+   [
+    2972,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 6",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 6
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 382,
+  "late": 0,
+  "waitTicks": 764,
+  "rideTicks": 2227,
+  "catches": 6,
+  "transfers": 3,
+  "lastKind": "riding",
+  "activeJob": "lasipalatsi>hietalahti",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>6H wait 244",
+   "63: PLAN 1>8 wait 183",
+   "124: PLAN 1>8 wait 122",
+   "185: PLAN 1>8 wait 61",
+   "224: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 8 wait 116",
+   "468: PLAN 8T wait 60",
+   "506: CATCH 8T",
+   "1293: OFF arabia deliver",
+   "1294: JOB arabia>lasipalatsi parts limit 1765",
+   "1295: PLAN 6>1T wait 207",
+   "1356: PLAN 6>1H wait 146",
+   "1417: PLAN 6>1H wait 85",
+   "1478: PLAN 6>1T wait 24",
+   "1502: CATCH 6",
+   "1934: OFF sornainen transfer",
+   "1935: PLAN 1 wait 225",
+   "1996: PLAN 1T wait 0",
+   "1996: CATCH 1T",
+   "2554: OFF lasipalatsi deliver",
+   "2555: JOB lasipalatsi>hietalahti parts limit 508",
+   "2556: PLAN 1>1H wait 68",
+   "2603: CATCH 1",
+   "2785: OFF ooppera transfer",
+   "2786: PLAN 1H wait 196",
+   "2847: PLAN 1H wait 135",
+   "2908: PLAN 1>1H wait 0",
+   "2908: CATCH 1"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    507,
+    "riding"
+   ],
+   [
+    1293,
+    "getoff"
+   ],
+   [
+    1294,
+    "riding"
+   ],
+   [
+    1295,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    1934,
+    "getoff"
+   ],
+   [
+    1935,
+    "waiting"
+   ],
+   [
+    1997,
+    "riding"
+   ],
+   [
+    2554,
+    "getoff"
+   ],
+   [
+    2555,
+    "riding"
+   ],
+   [
+    2556,
+    "waiting"
+   ],
+   [
+    2604,
+    "riding"
+   ],
+   [
+    2785,
+    "getoff"
+   ],
+   [
+    2786,
+    "waiting"
+   ],
+   [
+    2909,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 7",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 7
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 430,
+  "late": 0,
+  "waitTicks": 573,
+  "rideTicks": 2418,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "riding",
+  "activeJob": "olympiaterminaali>kamppi",
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>6H wait 243",
+   "64: PLAN 1>6H wait 182",
+   "125: PLAN 1>6H wait 121",
+   "186: PLAN 1>6H wait 60",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6 wait 201",
+   "920: PLAN 6H wait 90",
+   "981: PLAN 6 wait 79",
+   "1039: CATCH 6",
+   "1493: OFF arabia deliver",
+   "1494: JOB arabia>olympiaterminaali fragile limit 1833",
+   "1495: PLAN 6>3 wait 7",
+   "1502: CATCH 6",
+   "2322: OFF rautatientori transfer",
+   "2323: PLAN 2H wait 179",
+   "2384: PLAN 3 wait 112",
+   "2445: PLAN 3 wait 51",
+   "2474: CATCH 3",
+   "2903: OFF olympiaterminaali deliver",
+   "2904: JOB olympiaterminaali>kamppi equipment limit 848",
+   "2905: PLAN 3>2 wait 8",
+   "2914: CATCH 3"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1040,
+    "riding"
+   ],
+   [
+    1493,
+    "getoff"
+   ],
+   [
+    1494,
+    "riding"
+   ],
+   [
+    1495,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    2322,
+    "getoff"
+   ],
+   [
+    2323,
+    "waiting"
+   ],
+   [
+    2475,
+    "riding"
+   ],
+   [
+    2903,
+    "getoff"
+   ],
+   [
+    2904,
+    "riding"
+   ],
+   [
+    2905,
+    "waiting"
+   ],
+   [
+    2915,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 8",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 8
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2239,
+  "score": 552,
+  "late": 0,
+  "waitTicks": 421,
+  "rideTicks": 1808,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>meilahti fragile limit 789",
+   "3: PLAN 4 wait 90",
+   "64: PLAN 1>4 wait 182",
+   "125: PLAN 4 wait 264",
+   "186: PLAN 1>4 wait 60",
+   "224: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 2>7 wait 198",
+   "468: PLAN 4 wait 41",
+   "487: CATCH 4",
+   "758: OFF meilahti deliver",
+   "759: JOB meilahti>kalasatama fresh food limit 1384",
+   "760: PLAN 7>M1 wait 50",
+   "789: CATCH 7",
+   "1506: OFF sornainen transfer",
+   "1507: PLAN M1 wait 136",
+   "1568: PLAN M2 wait 0",
+   "1568: CATCH M2",
+   "1664: OFF kalasatama deliver",
+   "1665: JOB kalasatama>pasila express limit 802",
+   "1666: PLAN 13H wait 47",
+   "1691: CATCH 13H",
+   "2238: OFF pasila deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    488,
+    "riding"
+   ],
+   [
+    758,
+    "getoff"
+   ],
+   [
+    759,
+    "riding"
+   ],
+   [
+    760,
+    "waiting"
+   ],
+   [
+    790,
+    "riding"
+   ],
+   [
+    1506,
+    "getoff"
+   ],
+   [
+    1507,
+    "waiting"
+   ],
+   [
+    1569,
+    "riding"
+   ],
+   [
+    1664,
+    "getoff"
+   ],
+   [
+    1665,
+    "riding"
+   ],
+   [
+    1666,
+    "waiting"
+   ],
+   [
+    1692,
+    "riding"
+   ],
+   [
+    2238,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 9",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 9
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 1149,
+  "score": 368,
+  "late": 0,
+  "waitTicks": 257,
+  "rideTicks": 883,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1H wait 0",
+   "3: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>hakaniemi parts limit 917",
+   "140: PLAN 1>6 wait 0",
+   "140: CATCH 1",
+   "561: OFF sornainen transfer",
+   "562: PLAN 6 wait 135",
+   "623: PLAN 6 wait 74",
+   "675: CATCH 6",
+   "899: OFF hakaniemi deliver",
+   "900: JOB hakaniemi>sornainen express limit 266",
+   "901: PLAN 6 wait 260",
+   "962: PLAN M1 wait 101",
+   "1023: PLAN M1 wait 40",
+   "1041: CATCH M1",
+   "1148: OFF sornainen deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    4,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    141,
+    "riding"
+   ],
+   [
+    561,
+    "getoff"
+   ],
+   [
+    562,
+    "waiting"
+   ],
+   [
+    676,
+    "riding"
+   ],
+   [
+    899,
+    "getoff"
+   ],
+   [
+    900,
+    "riding"
+   ],
+   [
+    901,
+    "waiting"
+   ],
+   [
+    1042,
+    "riding"
+   ],
+   [
+    1148,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 10",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 10
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 324,
+  "late": 0,
+  "waitTicks": 656,
+  "rideTicks": 2334,
+  "catches": 6,
+  "transfers": 3,
+  "lastKind": "riding",
+  "activeJob": "hakaniemi>messukeskus",
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>6H wait 243",
+   "64: PLAN 1>8 wait 182",
+   "125: PLAN 1>6 wait 121",
+   "186: PLAN 1>6 wait 60",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6 wait 201",
+   "920: PLAN 8 wait 235",
+   "981: PLAN 8 wait 174",
+   "1042: PLAN 6 wait 0",
+   "1042: CATCH 6",
+   "1493: OFF arabia deliver",
+   "1494: JOB arabia>hakaniemi market goods limit 987",
+   "1495: PLAN 6>7H wait 7",
+   "1502: CATCH 6",
+   "1934: OFF sornainen transfer",
+   "1935: PLAN 6 wait 0",
+   "1935: CATCH 6",
+   "2145: OFF hakaniemi deliver",
+   "2146: JOB hakaniemi>messukeskus hot food limit 953",
+   "2147: PLAN 7>2 wait 197",
+   "2208: PLAN 7>2 wait 136",
+   "2269: PLAN 7>2 wait 75",
+   "2323: CATCH 7",
+   "2877: OFF pasila transfer",
+   "2878: PLAN 2 wait 84",
+   "2939: PLAN 2 wait 23",
+   "2941: CATCH 2"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1043,
+    "riding"
+   ],
+   [
+    1493,
+    "getoff"
+   ],
+   [
+    1494,
+    "riding"
+   ],
+   [
+    1495,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    1934,
+    "getoff"
+   ],
+   [
+    1935,
+    "waiting"
+   ],
+   [
+    1936,
+    "riding"
+   ],
+   [
+    2145,
+    "getoff"
+   ],
+   [
+    2146,
+    "riding"
+   ],
+   [
+    2147,
+    "waiting"
+   ],
+   [
+    2324,
+    "riding"
+   ],
+   [
+    2877,
+    "getoff"
+   ],
+   [
+    2878,
+    "waiting"
+   ],
+   [
+    2942,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 11",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 11
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 377,
+  "late": 0,
+  "waitTicks": 978,
+  "rideTicks": 2013,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "riding",
+  "activeJob": "senaatintori>ooppera",
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>8 wait 243",
+   "64: PLAN 1>6H wait 182",
+   "125: PLAN 1>6H wait 121",
+   "186: PLAN 1>6H wait 60",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 8 wait 296",
+   "920: PLAN 6 wait 140",
+   "981: PLAN 8 wait 174",
+   "1042: PLAN 8 wait 113",
+   "1103: PLAN 6H wait 203",
+   "1164: PLAN 6H wait 142",
+   "1225: PLAN 6 wait 147",
+   "1286: PLAN 8 wait 194",
+   "1347: PLAN 6 wait 25",
+   "1350: CATCH 6",
+   "1804: OFF arabia deliver",
+   "1805: JOB arabia>senaatintori equipment limit 1522",
+   "1806: PLAN 6>7 wait 7",
+   "1814: CATCH 6",
+   "2456: OFF hakaniemi transfer",
+   "2457: PLAN 3>2 wait 127",
+   "2518: PLAN 7 wait 91",
+   "2579: PLAN 7H wait 120",
+   "2640: PLAN 7 wait 281",
+   "2701: PLAN 7H wait 0",
+   "2701: CATCH 7H",
+   "2918: OFF senaatintori deliver",
+   "2919: JOB senaatintori>ooppera fragile limit 461",
+   "2920: PLAN 4T wait 31",
+   "2929: CATCH 4T"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1351,
+    "riding"
+   ],
+   [
+    1804,
+    "getoff"
+   ],
+   [
+    1805,
+    "riding"
+   ],
+   [
+    1806,
+    "waiting"
+   ],
+   [
+    1815,
+    "riding"
+   ],
+   [
+    2456,
+    "getoff"
+   ],
+   [
+    2457,
+    "waiting"
+   ],
+   [
+    2702,
+    "riding"
+   ],
+   [
+    2918,
+    "getoff"
+   ],
+   [
+    2919,
+    "riding"
+   ],
+   [
+    2920,
+    "waiting"
+   ],
+   [
+    2930,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 12",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 12
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 470,
+  "late": 0,
+  "waitTicks": 923,
+  "rideTicks": 2069,
+  "catches": 4,
+  "transfers": 2,
+  "lastKind": "waiting",
+  "activeJob": "olympiaterminaali>kamppi",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>6 wait 244",
+   "63: PLAN 1>6H wait 183",
+   "124: PLAN 1>6 wait 122",
+   "185: PLAN 1>8 wait 61",
+   "224: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 8 wait 116",
+   "468: PLAN 1>6 wait 248",
+   "529: PLAN 8T wait 0",
+   "529: CATCH 8T",
+   "1293: OFF arabia deliver",
+   "1294: JOB arabia>olympiaterminaali fragile limit 2103",
+   "1295: PLAN 6>3 wait 207",
+   "1356: PLAN 6>3 wait 146",
+   "1417: PLAN 6>3 wait 85",
+   "1478: PLAN 6>3 wait 24",
+   "1502: CATCH 6",
+   "2322: OFF rautatientori transfer",
+   "2323: PLAN 2H wait 179",
+   "2384: PLAN 2 wait 61",
+   "2424: CATCH 2",
+   "2731: OFF olympiaterminaali deliver",
+   "2732: JOB olympiaterminaali>kamppi equipment limit 679",
+   "2733: PLAN 3>2 wait 180",
+   "2794: PLAN 2 wait 231",
+   "2855: PLAN 2 wait 170",
+   "2916: PLAN 2H wait 177",
+   "2977: PLAN 3>2 wait 220"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    530,
+    "riding"
+   ],
+   [
+    1293,
+    "getoff"
+   ],
+   [
+    1294,
+    "riding"
+   ],
+   [
+    1295,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    2322,
+    "getoff"
+   ],
+   [
+    2323,
+    "waiting"
+   ],
+   [
+    2425,
+    "riding"
+   ],
+   [
+    2731,
+    "getoff"
+   ],
+   [
+    2732,
+    "riding"
+   ],
+   [
+    2733,
+    "waiting"
+   ]
+  ]
+ },
+ {
+  "label": "random 13",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 13
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2652,
+  "score": 264,
+  "late": 2,
+  "waitTicks": 1098,
+  "rideTicks": 1543,
+  "catches": 7,
+  "transfers": 4,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>meilahti fragile limit 789",
+   "2: PLAN 1>4 wait 244",
+   "63: PLAN 1>4 wait 183",
+   "124: PLAN 1>4 wait 122",
+   "185: PLAN 4T wait 217",
+   "246: PLAN 1>4 wait 0",
+   "246: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 2>7 wait 198",
+   "468: PLAN 4T wait 37",
+   "484: CATCH 4T",
+   "801: OFF meilahti deliver",
+   "802: JOB meilahti>kamppi hot food limit 1446",
+   "803: PLAN 4T>2 wait 233",
+   "864: PLAN 4>2H wait 96",
+   "925: PLAN 4>2H wait 35",
+   "939: CATCH 4",
+   "1209: OFF ooppera transfer",
+   "1210: PLAN 2H wait 267",
+   "1271: PLAN 2>2H wait 190",
+   "1332: PLAN 2>2H wait 129",
+   "1393: PLAN 2H wait 84",
+   "1454: PLAN 2>2H wait 0",
+   "1454: CATCH 2",
+   "1535: OFF toolontori transfer",
+   "1536: PLAN 8H>5 wait 41",
+   "1556: CATCH 8H",
+   "1843: OFF ruoholahti transfer",
+   "1844: PLAN M1 wait 109",
+   "1905: PLAN M1 wait 48",
+   "1932: CATCH M1",
+   "2039: OFF kamppi deliver",
+   "2040: JOB kamppi>hakaniemi express limit 347",
+   "2041: PLAN M2 wait 115",
+   "2102: PLAN 9 wait 243",
+   "2163: PLAN 9 wait 182",
+   "2224: PLAN M2 wait 92",
+   "2285: PLAN 9 wait 60",
+   "2323: CATCH 9",
+   "2651: OFF hakaniemi deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    247,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    485,
+    "riding"
+   ],
+   [
+    801,
+    "getoff"
+   ],
+   [
+    802,
+    "riding"
+   ],
+   [
+    803,
+    "waiting"
+   ],
+   [
+    940,
+    "riding"
+   ],
+   [
+    1209,
+    "getoff"
+   ],
+   [
+    1210,
+    "waiting"
+   ],
+   [
+    1455,
+    "riding"
+   ],
+   [
+    1535,
+    "getoff"
+   ],
+   [
+    1536,
+    "waiting"
+   ],
+   [
+    1557,
+    "riding"
+   ],
+   [
+    1843,
+    "getoff"
+   ],
+   [
+    1844,
+    "waiting"
+   ],
+   [
+    1933,
+    "riding"
+   ],
+   [
+    2039,
+    "getoff"
+   ],
+   [
+    2040,
+    "riding"
+   ],
+   [
+    2041,
+    "waiting"
+   ],
+   [
+    2324,
+    "riding"
+   ],
+   [
+    2651,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 14",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 14
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 348,
+  "late": 0,
+  "waitTicks": 710,
+  "rideTicks": 2279,
+  "catches": 7,
+  "transfers": 4,
+  "lastKind": "riding",
+  "activeJob": "kauppatori>lasipalatsi",
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>8 wait 243",
+   "64: PLAN 1>6H wait 182",
+   "125: PLAN 1>8 wait 121",
+   "186: PLAN 1>8 wait 60",
+   "224: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 8 wait 116",
+   "468: PLAN 8 wait 55",
+   "501: CATCH 8",
+   "1271: OFF arabia deliver",
+   "1272: JOB arabia>kauppatori fresh food limit 1671",
+   "1273: PLAN 8>H wait 7",
+   "1281: CATCH 8",
+   "2029: OFF ooppera transfer",
+   "2030: PLAN 1>H wait 0",
+   "2030: CATCH 1",
+   "2178: OFF lasipalatsi transfer",
+   "2179: PLAN 4>2H wait 52",
+   "2209: CATCH 4",
+   "2332: OFF senaatintori transfer",
+   "2333: PLAN H wait 241",
+   "2394: PLAN H wait 180",
+   "2455: PLAN 2H wait 137",
+   "2516: PLAN H wait 58",
+   "2552: CATCH H",
+   "2659: OFF kauppatori deliver",
+   "2660: JOB kauppatori>lasipalatsi fragile limit 636",
+   "2661: PLAN H wait 153",
+   "2722: PLAN 2>4H wait 130",
+   "2783: PLAN H wait 31",
+   "2792: CATCH H"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    502,
+    "riding"
+   ],
+   [
+    1271,
+    "getoff"
+   ],
+   [
+    1272,
+    "riding"
+   ],
+   [
+    1273,
+    "waiting"
+   ],
+   [
+    1282,
+    "riding"
+   ],
+   [
+    2029,
+    "getoff"
+   ],
+   [
+    2030,
+    "waiting"
+   ],
+   [
+    2031,
+    "riding"
+   ],
+   [
+    2178,
+    "getoff"
+   ],
+   [
+    2179,
+    "waiting"
+   ],
+   [
+    2210,
+    "riding"
+   ],
+   [
+    2332,
+    "getoff"
+   ],
+   [
+    2333,
+    "waiting"
+   ],
+   [
+    2553,
+    "riding"
+   ],
+   [
+    2659,
+    "getoff"
+   ],
+   [
+    2660,
+    "riding"
+   ],
+   [
+    2661,
+    "waiting"
+   ],
+   [
+    2793,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 15",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 15
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 1851,
+  "score": 397,
+  "late": 1,
+  "waitTicks": 273,
+  "rideTicks": 1568,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>meilahti fragile limit 789",
+   "3: PLAN 4T wait 106",
+   "64: PLAN 4T wait 45",
+   "88: CATCH 4T",
+   "509: OFF meilahti deliver",
+   "510: JOB meilahti>ooppera documents limit 695",
+   "511: PLAN 7>2 wait 0",
+   "511: CATCH 7",
+   "810: OFF pasila transfer",
+   "811: PLAN 7>1 wait 0",
+   "811: CATCH 7",
+   "1194: OFF sornainen transfer",
+   "1195: PLAN 1H wait 222",
+   "1256: PLAN 1H wait 161",
+   "1317: PLAN 1 wait 248",
+   "1378: PLAN 1T wait 0",
+   "1378: CATCH 1T",
+   "1794: OFF ooppera deliver",
+   "1795: JOB ooppera>toolontori fresh food limit 257",
+   "1796: PLAN 8H wait 0",
+   "1796: CATCH 8H",
+   "1850: OFF toolontori deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    89,
+    "riding"
+   ],
+   [
+    509,
+    "getoff"
+   ],
+   [
+    510,
+    "riding"
+   ],
+   [
+    511,
+    "waiting"
+   ],
+   [
+    512,
+    "riding"
+   ],
+   [
+    810,
+    "getoff"
+   ],
+   [
+    811,
+    "waiting"
+   ],
+   [
+    812,
+    "riding"
+   ],
+   [
+    1194,
+    "getoff"
+   ],
+   [
+    1195,
+    "waiting"
+   ],
+   [
+    1379,
+    "riding"
+   ],
+   [
+    1794,
+    "getoff"
+   ],
+   [
+    1795,
+    "riding"
+   ],
+   [
+    1796,
+    "waiting"
+   ],
+   [
+    1797,
+    "riding"
+   ],
+   [
+    1850,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 16",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 16
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 1564,
+  "score": 443,
+  "late": 0,
+  "waitTicks": 199,
+  "rideTicks": 1358,
+  "catches": 3,
+  "transfers": 0,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1H wait 0",
+   "2: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>lansiterminaali fresh food limit 1276",
+   "140: PLAN 8H wait 234",
+   "201: PLAN 1T wait 116",
+   "262: PLAN 1T wait 55",
+   "295: CATCH 1T",
+   "1048: OFF lansiterminaali deliver",
+   "1049: JOB lansiterminaali>rautatientori fresh food limit 857",
+   "1050: PLAN 7H wait 41",
+   "1091: CATCH 7H",
+   "1563: OFF rautatientori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    3,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    296,
+    "riding"
+   ],
+   [
+    1048,
+    "getoff"
+   ],
+   [
+    1049,
+    "riding"
+   ],
+   [
+    1050,
+    "waiting"
+   ],
+   [
+    1092,
+    "riding"
+   ],
+   [
+    1563,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 17",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 17
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2874,
+  "score": 445,
+  "late": 1,
+  "waitTicks": 755,
+  "rideTicks": 2110,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1T wait 148",
+   "63: PLAN 1 wait 183",
+   "124: PLAN 1H wait 176",
+   "185: PLAN 1 wait 61",
+   "224: CATCH 1",
+   "406: OFF ooppera deliver",
+   "407: JOB ooppera>arabia fragile limit 1330",
+   "408: PLAN 8 wait 115",
+   "469: PLAN 8T wait 59",
+   "506: CATCH 8T",
+   "1293: OFF arabia deliver",
+   "1294: JOB arabia>katajanokka fresh food limit 1862",
+   "1295: PLAN 6>5T wait 207",
+   "1356: PLAN 6>5 wait 146",
+   "1417: PLAN 6>5T wait 85",
+   "1478: PLAN 6>5 wait 24",
+   "1502: CATCH 6",
+   "2322: OFF rautatientori transfer",
+   "2323: PLAN 5T wait 229",
+   "2384: PLAN 2>4 wait 61",
+   "2424: CATCH 2",
+   "2536: OFF senaatintori transfer",
+   "2537: PLAN 4 wait 104",
+   "2598: PLAN 4H wait 219",
+   "2659: PLAN 4 wait 0",
+   "2659: CATCH 4",
+   "2873: OFF katajanokka deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "riding"
+   ],
+   [
+    408,
+    "waiting"
+   ],
+   [
+    507,
+    "riding"
+   ],
+   [
+    1293,
+    "getoff"
+   ],
+   [
+    1294,
+    "riding"
+   ],
+   [
+    1295,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    2322,
+    "getoff"
+   ],
+   [
+    2323,
+    "waiting"
+   ],
+   [
+    2425,
+    "riding"
+   ],
+   [
+    2536,
+    "getoff"
+   ],
+   [
+    2537,
+    "waiting"
+   ],
+   [
+    2660,
+    "riding"
+   ],
+   [
+    2873,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 18",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 18
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 260,
+  "late": 0,
+  "waitTicks": 703,
+  "rideTicks": 2286,
+  "catches": 8,
+  "transfers": 5,
+  "lastKind": "riding",
+  "activeJob": "hakaniemi>meilahti",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1T wait 148",
+   "63: PLAN 1H wait 237",
+   "124: PLAN 1T wait 26",
+   "128: CATCH 1T",
+   "301: OFF ooppera deliver",
+   "302: JOB ooppera>hakaniemi parts limit 1022",
+   "303: PLAN 1>7H wait 116",
+   "364: PLAN 1>7H wait 55",
+   "397: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN M1 wait 77",
+   "914: CATCH M1",
+   "1021: OFF hakaniemi deliver",
+   "1022: JOB hakaniemi>meilahti equipment limit 1415",
+   "1023: PLAN 7H>7 wait 277",
+   "1084: PLAN 6>7 wait 77",
+   "1140: CATCH 6",
+   "1363: OFF sornainen transfer",
+   "1364: PLAN 1>4T wait 201",
+   "1425: PLAN 7 wait 141",
+   "1486: PLAN 1>4 wait 79",
+   "1544: CATCH 1",
+   "2004: OFF ooppera transfer",
+   "2005: PLAN 2>7 wait 23",
+   "2006: CATCH 2",
+   "2385: OFF pasila transfer",
+   "2386: PLAN 2>4T wait 132",
+   "2447: PLAN 7 wait 127",
+   "2508: PLAN 2>4 wait 0",
+   "2508: CATCH 2",
+   "2875: OFF ooppera transfer",
+   "2876: PLAN 2>7 wait 0",
+   "2876: CATCH 2"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    129,
+    "riding"
+   ],
+   [
+    301,
+    "getoff"
+   ],
+   [
+    302,
+    "riding"
+   ],
+   [
+    303,
+    "waiting"
+   ],
+   [
+    398,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    915,
+    "riding"
+   ],
+   [
+    1021,
+    "getoff"
+   ],
+   [
+    1022,
+    "riding"
+   ],
+   [
+    1023,
+    "waiting"
+   ],
+   [
+    1141,
+    "riding"
+   ],
+   [
+    1363,
+    "getoff"
+   ],
+   [
+    1364,
+    "waiting"
+   ],
+   [
+    1545,
+    "riding"
+   ],
+   [
+    2004,
+    "getoff"
+   ],
+   [
+    2005,
+    "waiting"
+   ],
+   [
+    2007,
+    "riding"
+   ],
+   [
+    2385,
+    "getoff"
+   ],
+   [
+    2386,
+    "waiting"
+   ],
+   [
+    2509,
+    "riding"
+   ],
+   [
+    2875,
+    "getoff"
+   ],
+   [
+    2876,
+    "waiting"
+   ],
+   [
+    2877,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 19",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 19
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 1725,
+  "score": 412,
+  "late": 1,
+  "waitTicks": 537,
+  "rideTicks": 1179,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>meilahti fragile limit 789",
+   "3: PLAN 4T wait 106",
+   "64: PLAN 4T wait 45",
+   "88: CATCH 4T",
+   "509: OFF meilahti deliver",
+   "510: JOB meilahti>sornainen express limit 1095",
+   "511: PLAN 4>1 wait 152",
+   "572: PLAN 7 wait 238",
+   "633: PLAN 4>1H wait 30",
+   "642: CATCH 4",
+   "913: OFF ooppera transfer",
+   "914: PLAN 1H wait 124",
+   "975: PLAN 1H wait 63",
+   "1017: CATCH 1H",
+   "1406: OFF sornainen deliver",
+   "1407: JOB sornainen>kalasatama fresh food limit 277",
+   "1408: PLAN 7>13 wait 158",
+   "1469: PLAN 7>13 wait 97",
+   "1530: PLAN M1 wait 113",
+   "1591: PLAN M1 wait 52",
+   "1622: CATCH M1",
+   "1724: OFF kalasatama deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    89,
+    "riding"
+   ],
+   [
+    509,
+    "getoff"
+   ],
+   [
+    510,
+    "riding"
+   ],
+   [
+    511,
+    "waiting"
+   ],
+   [
+    643,
+    "riding"
+   ],
+   [
+    913,
+    "getoff"
+   ],
+   [
+    914,
+    "waiting"
+   ],
+   [
+    1018,
+    "riding"
+   ],
+   [
+    1406,
+    "getoff"
+   ],
+   [
+    1407,
+    "riding"
+   ],
+   [
+    1408,
+    "waiting"
+   ],
+   [
+    1623,
+    "riding"
+   ],
+   [
+    1724,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 20",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 20
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2206,
+  "score": 383,
+  "late": 1,
+  "waitTicks": 560,
+  "rideTicks": 1636,
+  "catches": 6,
+  "transfers": 3,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>meilahti fragile limit 789",
+   "2: PLAN 4 wait 91",
+   "63: PLAN 4 wait 30",
+   "71: CATCH 4",
+   "461: OFF meilahti deliver",
+   "462: JOB meilahti>kamppi hot food limit 1026",
+   "463: PLAN 4>2 wait 200",
+   "524: PLAN 4>2H wait 139",
+   "585: PLAN 4>2 wait 78",
+   "642: CATCH 4",
+   "913: OFF ooppera transfer",
+   "914: PLAN 2>2H wait 262",
+   "975: PLAN 2>2H wait 201",
+   "1036: PLAN 2H wait 115",
+   "1097: PLAN 2 wait 79",
+   "1155: CATCH 2",
+   "1483: OFF kamppi deliver",
+   "1484: JOB kamppi>hietalahti parts limit 716",
+   "1485: PLAN 2>6 wait 0",
+   "1485: CATCH 2",
+   "1583: OFF rautatientori transfer",
+   "1584: PLAN 7>1H wait 106",
+   "1645: PLAN 3>6 wait 0",
+   "1645: CATCH 3",
+   "1815: OFF hakaniemi transfer",
+   "1816: PLAN 6 wait 26",
+   "1820: CATCH 6",
+   "2205: OFF hietalahti deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    72,
+    "riding"
+   ],
+   [
+    461,
+    "getoff"
+   ],
+   [
+    462,
+    "riding"
+   ],
+   [
+    463,
+    "waiting"
+   ],
+   [
+    643,
+    "riding"
+   ],
+   [
+    913,
+    "getoff"
+   ],
+   [
+    914,
+    "waiting"
+   ],
+   [
+    1156,
+    "riding"
+   ],
+   [
+    1483,
+    "getoff"
+   ],
+   [
+    1484,
+    "riding"
+   ],
+   [
+    1485,
+    "waiting"
+   ],
+   [
+    1486,
+    "riding"
+   ],
+   [
+    1583,
+    "getoff"
+   ],
+   [
+    1584,
+    "waiting"
+   ],
+   [
+    1646,
+    "riding"
+   ],
+   [
+    1815,
+    "getoff"
+   ],
+   [
+    1816,
+    "waiting"
+   ],
+   [
+    1821,
+    "riding"
+   ],
+   [
+    2205,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 21",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 21
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 382,
+  "late": 0,
+  "waitTicks": 809,
+  "rideTicks": 2182,
+  "catches": 6,
+  "transfers": 3,
+  "lastKind": "riding",
+  "activeJob": "lasipalatsi>hietalahti",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>6H wait 244",
+   "63: PLAN 1>8 wait 183",
+   "124: PLAN 1>8 wait 122",
+   "185: PLAN 1>8 wait 61",
+   "224: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 8T wait 121",
+   "468: PLAN 8T wait 60",
+   "506: CATCH 8T",
+   "1293: OFF arabia deliver",
+   "1294: JOB arabia>lasipalatsi parts limit 1765",
+   "1295: PLAN 6>1H wait 207",
+   "1356: PLAN 6>1 wait 146",
+   "1417: PLAN 6>1H wait 85",
+   "1478: PLAN 6>1H wait 24",
+   "1502: CATCH 6",
+   "1934: OFF sornainen transfer",
+   "1935: PLAN 1H wait 75",
+   "1996: PLAN 1H wait 14",
+   "2010: CATCH 1H",
+   "2523: OFF lasipalatsi deliver",
+   "2524: JOB lasipalatsi>hietalahti parts limit 508",
+   "2525: PLAN 1>1H wait 99",
+   "2586: PLAN 1>1H wait 38",
+   "2603: CATCH 1",
+   "2785: OFF ooppera transfer",
+   "2786: PLAN 1T wait 213",
+   "2847: PLAN 1H wait 135",
+   "2908: PLAN 1>1H wait 0",
+   "2908: CATCH 1"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    507,
+    "riding"
+   ],
+   [
+    1293,
+    "getoff"
+   ],
+   [
+    1294,
+    "riding"
+   ],
+   [
+    1295,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    1934,
+    "getoff"
+   ],
+   [
+    1935,
+    "waiting"
+   ],
+   [
+    2011,
+    "riding"
+   ],
+   [
+    2523,
+    "getoff"
+   ],
+   [
+    2524,
+    "riding"
+   ],
+   [
+    2525,
+    "waiting"
+   ],
+   [
+    2604,
+    "riding"
+   ],
+   [
+    2785,
+    "getoff"
+   ],
+   [
+    2786,
+    "waiting"
+   ],
+   [
+    2909,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 22",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 22
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 342,
+  "late": 0,
+  "waitTicks": 808,
+  "rideTicks": 2184,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "riding",
+  "activeJob": "lasipalatsi>hietalahti",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>8 wait 244",
+   "63: PLAN 1>8 wait 183",
+   "124: PLAN 1>6H wait 122",
+   "185: PLAN 1>6H wait 61",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 8 wait 296",
+   "920: PLAN 6H wait 90",
+   "981: PLAN 8 wait 174",
+   "1042: PLAN 8 wait 113",
+   "1103: PLAN 6H wait 203",
+   "1164: PLAN 6H wait 142",
+   "1225: PLAN 6 wait 147",
+   "1286: PLAN 6 wait 86",
+   "1347: PLAN 6 wait 25",
+   "1350: CATCH 6",
+   "1804: OFF arabia deliver",
+   "1805: JOB arabia>lasipalatsi parts limit 1536",
+   "1806: PLAN 6>1T wait 7",
+   "1814: CATCH 6",
+   "2246: OFF sornainen transfer",
+   "2247: PLAN 1H wait 59",
+   "2307: CATCH 1H",
+   "2819: OFF lasipalatsi deliver",
+   "2820: JOB lasipalatsi>hietalahti parts limit 508",
+   "2821: PLAN 1T wait 44",
+   "2843: CATCH 1T"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1351,
+    "riding"
+   ],
+   [
+    1804,
+    "getoff"
+   ],
+   [
+    1805,
+    "riding"
+   ],
+   [
+    1806,
+    "waiting"
+   ],
+   [
+    1815,
+    "riding"
+   ],
+   [
+    2246,
+    "getoff"
+   ],
+   [
+    2247,
+    "waiting"
+   ],
+   [
+    2308,
+    "riding"
+   ],
+   [
+    2819,
+    "getoff"
+   ],
+   [
+    2820,
+    "riding"
+   ],
+   [
+    2821,
+    "waiting"
+   ],
+   [
+    2844,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 23",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 23
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 1603,
+  "score": 466,
+  "late": 0,
+  "waitTicks": 480,
+  "rideTicks": 1114,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1H wait 0",
+   "3: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>katajanokka equipment limit 656",
+   "140: PLAN 4T wait 32",
+   "151: CATCH 4T",
+   "503: OFF katajanokka deliver",
+   "504: JOB katajanokka>hietalahti market goods limit 1249",
+   "505: PLAN 4H>1H wait 115",
+   "566: PLAN 4>1H wait 59",
+   "604: CATCH 4",
+   "971: OFF lasipalatsi transfer",
+   "972: PLAN 1T wait 105",
+   "1033: PLAN 1>1H wait 105",
+   "1094: PLAN 1H wait 254",
+   "1155: PLAN 1H wait 193",
+   "1216: PLAN 1>1H wait 219",
+   "1277: PLAN 1>1H wait 158",
+   "1338: PLAN 1H wait 0",
+   "1338: CATCH 1H",
+   "1602: OFF hietalahti deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    4,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    152,
+    "riding"
+   ],
+   [
+    503,
+    "getoff"
+   ],
+   [
+    504,
+    "riding"
+   ],
+   [
+    505,
+    "waiting"
+   ],
+   [
+    605,
+    "riding"
+   ],
+   [
+    971,
+    "getoff"
+   ],
+   [
+    972,
+    "waiting"
+   ],
+   [
+    1339,
+    "riding"
+   ],
+   [
+    1602,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 24",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 24
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 324,
+  "late": 0,
+  "waitTicks": 670,
+  "rideTicks": 2322,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "riding",
+  "activeJob": "hakaniemi>messukeskus",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>6H wait 244",
+   "63: PLAN 1>6 wait 183",
+   "124: PLAN 1>8 wait 122",
+   "185: PLAN 1>6 wait 61",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6H wait 151",
+   "920: PLAN 6H wait 90",
+   "981: PLAN 8 wait 174",
+   "1042: PLAN 6 wait 0",
+   "1042: CATCH 6",
+   "1493: OFF arabia deliver",
+   "1494: JOB arabia>hakaniemi market goods limit 987",
+   "1495: PLAN 6 wait 7",
+   "1502: CATCH 6",
+   "2145: OFF hakaniemi deliver",
+   "2146: JOB hakaniemi>messukeskus hot food limit 953",
+   "2147: PLAN 9>2 wait 221",
+   "2208: PLAN 7H>2 wait 0",
+   "2208: CATCH 7H",
+   "2748: OFF pasila transfer",
+   "2749: PLAN 2 wait 213",
+   "2810: PLAN 2 wait 152",
+   "2871: PLAN 9>2 wait 224",
+   "2932: PLAN 2 wait 30",
+   "2941: CATCH 2"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1043,
+    "riding"
+   ],
+   [
+    1493,
+    "getoff"
+   ],
+   [
+    1494,
+    "riding"
+   ],
+   [
+    1495,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    2145,
+    "getoff"
+   ],
+   [
+    2146,
+    "riding"
+   ],
+   [
+    2147,
+    "waiting"
+   ],
+   [
+    2209,
+    "riding"
+   ],
+   [
+    2748,
+    "getoff"
+   ],
+   [
+    2749,
+    "waiting"
+   ],
+   [
+    2942,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 25",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 25
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2942,
+  "score": 477,
+  "late": 0,
+  "waitTicks": 545,
+  "rideTicks": 2388,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>6 wait 244",
+   "63: PLAN 1>6H wait 183",
+   "124: PLAN 1>6 wait 122",
+   "185: PLAN 1>6H wait 61",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6 wait 201",
+   "920: PLAN 6H wait 90",
+   "981: PLAN 6 wait 79",
+   "1039: CATCH 6",
+   "1493: OFF arabia deliver",
+   "1494: JOB arabia>lasipalatsi parts limit 1555",
+   "1495: PLAN 6>1H wait 7",
+   "1502: CATCH 6",
+   "1934: OFF sornainen transfer",
+   "1935: PLAN 1T wait 41",
+   "1954: CATCH 1T",
+   "2554: OFF lasipalatsi deliver",
+   "2555: JOB lasipalatsi>kauppatori fresh food limit 616",
+   "2556: PLAN H wait 134",
+   "2617: PLAN H wait 73",
+   "2668: CATCH H",
+   "2941: OFF kauppatori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1040,
+    "riding"
+   ],
+   [
+    1493,
+    "getoff"
+   ],
+   [
+    1494,
+    "riding"
+   ],
+   [
+    1495,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    1934,
+    "getoff"
+   ],
+   [
+    1935,
+    "waiting"
+   ],
+   [
+    1955,
+    "riding"
+   ],
+   [
+    2554,
+    "getoff"
+   ],
+   [
+    2555,
+    "riding"
+   ],
+   [
+    2556,
+    "waiting"
+   ],
+   [
+    2669,
+    "riding"
+   ],
+   [
+    2941,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 26",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 26
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 255,
+  "late": 1,
+  "waitTicks": 864,
+  "rideTicks": 2127,
+  "catches": 6,
+  "transfers": 3,
+  "lastKind": "riding",
+  "activeJob": "katajanokka>pasila",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1T wait 148",
+   "63: PLAN 1T wait 87",
+   "124: PLAN 1H wait 176",
+   "185: PLAN 1H wait 115",
+   "246: PLAN 1H wait 54",
+   "279: CATCH 1H",
+   "434: OFF ooppera deliver",
+   "435: JOB ooppera>katajanokka equipment limit 624",
+   "436: PLAN 4T wait 29",
+   "443: CATCH 4T",
+   "795: OFF katajanokka deliver",
+   "796: JOB katajanokka>pasila parts limit 1539",
+   "797: PLAN 4>2 wait 125",
+   "858: PLAN 4>2 wait 64",
+   "900: CATCH 4",
+   "1387: OFF ooppera transfer",
+   "1388: PLAN 1>7H wait 220",
+   "1449: PLAN 1>7H wait 159",
+   "1510: PLAN 1>7H wait 98",
+   "1571: PLAN 1>7H wait 37",
+   "1587: CATCH 1",
+   "2048: OFF sornainen transfer",
+   "2049: PLAN 7 wait 141",
+   "2110: PLAN 1>2 wait 50",
+   "2138: CATCH 1",
+   "2599: OFF ooppera transfer",
+   "2600: PLAN 1>7 wait 198",
+   "2661: PLAN 2 wait 220",
+   "2722: PLAN 2 wait 159",
+   "2783: PLAN 1>7 wait 0",
+   "2783: CATCH 1"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    280,
+    "riding"
+   ],
+   [
+    434,
+    "getoff"
+   ],
+   [
+    435,
+    "riding"
+   ],
+   [
+    436,
+    "waiting"
+   ],
+   [
+    444,
+    "riding"
+   ],
+   [
+    795,
+    "getoff"
+   ],
+   [
+    796,
+    "riding"
+   ],
+   [
+    797,
+    "waiting"
+   ],
+   [
+    901,
+    "riding"
+   ],
+   [
+    1387,
+    "getoff"
+   ],
+   [
+    1388,
+    "waiting"
+   ],
+   [
+    1588,
+    "riding"
+   ],
+   [
+    2048,
+    "getoff"
+   ],
+   [
+    2049,
+    "waiting"
+   ],
+   [
+    2139,
+    "riding"
+   ],
+   [
+    2599,
+    "getoff"
+   ],
+   [
+    2600,
+    "waiting"
+   ],
+   [
+    2784,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 27",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 27
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2874,
+  "score": 522,
+  "late": 1,
+  "waitTicks": 694,
+  "rideTicks": 2172,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1 wait 244",
+   "63: PLAN 1T wait 87",
+   "124: PLAN 1 wait 122",
+   "185: PLAN 1T wait 263",
+   "246: PLAN 1T wait 202",
+   "307: PLAN 1T wait 141",
+   "368: PLAN 1 wait 175",
+   "429: PLAN 1T wait 0",
+   "429: CATCH 1T",
+   "599: OFF ooppera deliver",
+   "600: JOB ooppera>arabia fragile limit 1499",
+   "601: PLAN 8T wait 223",
+   "662: PLAN 8 wait 186",
+   "723: PLAN 8T wait 101",
+   "784: PLAN 8 wait 64",
+   "826: CATCH 8",
+   "1596: OFF arabia deliver",
+   "1597: JOB arabia>katajanokka fresh food limit 1847",
+   "1598: PLAN 8>4 wait 7",
+   "1605: CATCH 8",
+   "2354: OFF ooppera transfer",
+   "2355: PLAN 4 wait 53",
+   "2386: CATCH 4",
+   "2873: OFF katajanokka deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    430,
+    "riding"
+   ],
+   [
+    599,
+    "getoff"
+   ],
+   [
+    600,
+    "riding"
+   ],
+   [
+    601,
+    "waiting"
+   ],
+   [
+    827,
+    "riding"
+   ],
+   [
+    1596,
+    "getoff"
+   ],
+   [
+    1597,
+    "riding"
+   ],
+   [
+    1598,
+    "waiting"
+   ],
+   [
+    1606,
+    "riding"
+   ],
+   [
+    2354,
+    "getoff"
+   ],
+   [
+    2355,
+    "waiting"
+   ],
+   [
+    2387,
+    "riding"
+   ],
+   [
+    2873,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 28",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 28
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2448,
+  "score": 469,
+  "late": 1,
+  "waitTicks": 1151,
+  "rideTicks": 1288,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>meilahti fragile limit 789",
+   "3: PLAN 4T wait 106",
+   "64: PLAN 4T wait 45",
+   "88: CATCH 4T",
+   "509: OFF meilahti deliver",
+   "510: JOB meilahti>ooppera documents limit 695",
+   "511: PLAN 4 wait 152",
+   "572: PLAN 4 wait 91",
+   "633: PLAN 7>2 wait 177",
+   "694: PLAN 4 wait 266",
+   "755: PLAN 4 wait 205",
+   "816: PLAN 4T wait 220",
+   "877: PLAN 7>2 wait 245",
+   "938: PLAN 4T wait 98",
+   "999: PLAN 4 wait 258",
+   "1060: PLAN 4T wait 269",
+   "1121: PLAN 4 wait 136",
+   "1182: PLAN 7>2 wait 252",
+   "1243: PLAN 4 wait 0",
+   "1243: CATCH 4",
+   "1506: OFF ooppera deliver",
+   "1507: JOB ooppera>messukeskus fragile limit 1048",
+   "1508: PLAN 2H>2 wait 295",
+   "1569: PLAN 2 wait 174",
+   "1630: PLAN 2 wait 113",
+   "1691: PLAN 2H>2 wait 112",
+   "1752: PLAN 8H>2 wait 25",
+   "1766: CATCH 8H",
+   "1850: OFF toolontori transfer",
+   "1851: PLAN 2 wait 94",
+   "1912: PLAN 2 wait 33",
+   "1923: CATCH 2",
+   "2447: OFF messukeskus deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    89,
+    "riding"
+   ],
+   [
+    509,
+    "getoff"
+   ],
+   [
+    510,
+    "riding"
+   ],
+   [
+    511,
+    "waiting"
+   ],
+   [
+    1244,
+    "riding"
+   ],
+   [
+    1506,
+    "getoff"
+   ],
+   [
+    1507,
+    "riding"
+   ],
+   [
+    1508,
+    "waiting"
+   ],
+   [
+    1767,
+    "riding"
+   ],
+   [
+    1850,
+    "getoff"
+   ],
+   [
+    1851,
+    "waiting"
+   ],
+   [
+    1924,
+    "riding"
+   ],
+   [
+    2447,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 29",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 29
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 967,
+  "score": 455,
+  "late": 0,
+  "waitTicks": 193,
+  "rideTicks": 767,
+  "catches": 3,
+  "transfers": 0,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>meilahti fragile limit 789",
+   "2: PLAN 1>4 wait 244",
+   "63: PLAN 4 wait 30",
+   "71: CATCH 4",
+   "461: OFF meilahti deliver",
+   "462: JOB meilahti>ooppera documents limit 550",
+   "463: PLAN 4T wait 0",
+   "463: CATCH 4T",
+   "747: OFF ooppera deliver",
+   "748: JOB ooppera>toolontori fresh food limit 358",
+   "749: PLAN 8H wait 186",
+   "810: PLAN 2 wait 82",
+   "870: CATCH 2",
+   "966: OFF toolontori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    72,
+    "riding"
+   ],
+   [
+    461,
+    "getoff"
+   ],
+   [
+    462,
+    "riding"
+   ],
+   [
+    463,
+    "waiting"
+   ],
+   [
+    464,
+    "riding"
+   ],
+   [
+    747,
+    "getoff"
+   ],
+   [
+    748,
+    "riding"
+   ],
+   [
+    749,
+    "waiting"
+   ],
+   [
+    871,
+    "riding"
+   ],
+   [
+    966,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 30",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 30
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 470,
+  "late": 0,
+  "waitTicks": 780,
+  "rideTicks": 2209,
+  "catches": 6,
+  "transfers": 4,
+  "lastKind": "waiting",
+  "activeJob": "olympiaterminaali>lasipalatsi",
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>8 wait 243",
+   "64: PLAN 1>6H wait 182",
+   "125: PLAN 1>6H wait 121",
+   "186: PLAN 1>8 wait 60",
+   "224: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 8T wait 121",
+   "468: PLAN 8 wait 55",
+   "501: CATCH 8",
+   "1271: OFF arabia deliver",
+   "1272: JOB arabia>olympiaterminaali fragile limit 2133",
+   "1273: PLAN 6>2 wait 229",
+   "1334: PLAN 6>3 wait 168",
+   "1395: PLAN 6>2 wait 107",
+   "1456: PLAN 6>2 wait 46",
+   "1502: CATCH 6",
+   "2322: OFF rautatientori transfer",
+   "2323: PLAN 3 wait 173",
+   "2384: PLAN 3 wait 112",
+   "2445: PLAN 2H wait 57",
+   "2481: CATCH 2H",
+   "2760: OFF olympiaterminaali deliver",
+   "2761: JOB olympiaterminaali>lasipalatsi fragile limit 567",
+   "2762: PLAN 2>H wait 0",
+   "2762: CATCH 2",
+   "2844: OFF kauppatori transfer",
+   "2845: PLAN 2>4H wait 0",
+   "2845: CATCH 2",
+   "2927: OFF senaatintori transfer",
+   "2928: PLAN 4H wait 217",
+   "2989: PLAN 4 wait 254"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    502,
+    "riding"
+   ],
+   [
+    1271,
+    "getoff"
+   ],
+   [
+    1272,
+    "riding"
+   ],
+   [
+    1273,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    2322,
+    "getoff"
+   ],
+   [
+    2323,
+    "waiting"
+   ],
+   [
+    2482,
+    "riding"
+   ],
+   [
+    2760,
+    "getoff"
+   ],
+   [
+    2761,
+    "riding"
+   ],
+   [
+    2762,
+    "waiting"
+   ],
+   [
+    2763,
+    "riding"
+   ],
+   [
+    2844,
+    "getoff"
+   ],
+   [
+    2845,
+    "waiting"
+   ],
+   [
+    2846,
+    "riding"
+   ],
+   [
+    2927,
+    "getoff"
+   ],
+   [
+    2928,
+    "waiting"
+   ]
+  ]
+ },
+ {
+  "label": "random 31",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 31
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 987,
+  "score": 408,
+  "late": 0,
+  "waitTicks": 216,
+  "rideTicks": 763,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1H wait 0",
+   "2: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>hakaniemi parts limit 917",
+   "140: PLAN 1>7 wait 0",
+   "140: CATCH 1",
+   "561: OFF sornainen transfer",
+   "562: PLAN M2 wait 131",
+   "623: PLAN M2 wait 70",
+   "672: CATCH M2",
+   "775: OFF hakaniemi deliver",
+   "776: JOB hakaniemi>sornainen express limit 366",
+   "777: PLAN M1 wait 124",
+   "838: PLAN M1 wait 63",
+   "879: CATCH M1",
+   "986: OFF sornainen deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    3,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    141,
+    "riding"
+   ],
+   [
+    561,
+    "getoff"
+   ],
+   [
+    562,
+    "waiting"
+   ],
+   [
+    673,
+    "riding"
+   ],
+   [
+    775,
+    "getoff"
+   ],
+   [
+    776,
+    "riding"
+   ],
+   [
+    777,
+    "waiting"
+   ],
+   [
+    880,
+    "riding"
+   ],
+   [
+    986,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 32",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 32
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2566,
+  "score": 336,
+  "late": 2,
+  "waitTicks": 711,
+  "rideTicks": 1846,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1T wait 148",
+   "63: PLAN 1 wait 183",
+   "124: PLAN 1H wait 176",
+   "185: PLAN 1T wait 263",
+   "246: PLAN 1H wait 54",
+   "279: CATCH 1H",
+   "434: OFF ooppera deliver",
+   "435: JOB ooppera>katajanokka equipment limit 624",
+   "436: PLAN 4T wait 29",
+   "443: CATCH 4T",
+   "795: OFF katajanokka deliver",
+   "796: JOB katajanokka>pasila parts limit 1539",
+   "797: PLAN 4>7H wait 125",
+   "858: PLAN 4>2 wait 64",
+   "900: CATCH 4",
+   "1387: OFF ooppera transfer",
+   "1388: PLAN 1>7H wait 220",
+   "1449: PLAN 1>7 wait 159",
+   "1510: PLAN 1>7 wait 98",
+   "1571: PLAN 1>7 wait 37",
+   "1587: CATCH 1",
+   "2048: OFF sornainen transfer",
+   "2049: PLAN 7 wait 141",
+   "2110: PLAN 7 wait 80",
+   "2169: CATCH 7",
+   "2565: OFF pasila deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    280,
+    "riding"
+   ],
+   [
+    434,
+    "getoff"
+   ],
+   [
+    435,
+    "riding"
+   ],
+   [
+    436,
+    "waiting"
+   ],
+   [
+    444,
+    "riding"
+   ],
+   [
+    795,
+    "getoff"
+   ],
+   [
+    796,
+    "riding"
+   ],
+   [
+    797,
+    "waiting"
+   ],
+   [
+    901,
+    "riding"
+   ],
+   [
+    1387,
+    "getoff"
+   ],
+   [
+    1388,
+    "waiting"
+   ],
+   [
+    1588,
+    "riding"
+   ],
+   [
+    2048,
+    "getoff"
+   ],
+   [
+    2049,
+    "waiting"
+   ],
+   [
+    2170,
+    "riding"
+   ],
+   [
+    2565,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 33",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 33
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 342,
+  "late": 0,
+  "waitTicks": 930,
+  "rideTicks": 2060,
+  "catches": 6,
+  "transfers": 3,
+  "lastKind": "riding",
+  "activeJob": "lasipalatsi>senaatintori",
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>6H wait 243",
+   "64: PLAN 1>6 wait 182",
+   "125: PLAN 1>8 wait 121",
+   "186: PLAN 1>8 wait 60",
+   "224: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 1>6 wait 0",
+   "407: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6H wait 151",
+   "920: PLAN 6 wait 140",
+   "981: PLAN 8 wait 174",
+   "1042: PLAN 8 wait 113",
+   "1103: PLAN 8 wait 52",
+   "1133: CATCH 8",
+   "1596: OFF arabia deliver",
+   "1597: JOB arabia>lasipalatsi parts limit 1757",
+   "1598: PLAN 6>1H wait 215",
+   "1659: PLAN 6>1T wait 154",
+   "1720: PLAN 6>1H wait 93",
+   "1781: PLAN 6>1T wait 32",
+   "1814: CATCH 6",
+   "2246: OFF sornainen transfer",
+   "2247: PLAN 1 wait 210",
+   "2308: PLAN 1H wait 0",
+   "2308: CATCH 1H",
+   "2819: OFF lasipalatsi deliver",
+   "2820: JOB lasipalatsi>senaatintori express limit 304",
+   "2821: PLAN 4H wait 174",
+   "2882: PLAN 4 wait 239",
+   "2943: PLAN 4H wait 52",
+   "2973: CATCH 4H"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    408,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1134,
+    "riding"
+   ],
+   [
+    1596,
+    "getoff"
+   ],
+   [
+    1597,
+    "riding"
+   ],
+   [
+    1598,
+    "waiting"
+   ],
+   [
+    1815,
+    "riding"
+   ],
+   [
+    2246,
+    "getoff"
+   ],
+   [
+    2247,
+    "waiting"
+   ],
+   [
+    2309,
+    "riding"
+   ],
+   [
+    2819,
+    "getoff"
+   ],
+   [
+    2820,
+    "riding"
+   ],
+   [
+    2821,
+    "waiting"
+   ],
+   [
+    2974,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 34",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 34
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2365,
+  "score": 488,
+  "late": 1,
+  "waitTicks": 570,
+  "rideTicks": 1787,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1T wait 148",
+   "63: PLAN 1T wait 87",
+   "124: PLAN 1 wait 122",
+   "185: PLAN 1T wait 263",
+   "246: PLAN 1 wait 0",
+   "246: CATCH 1",
+   "406: OFF ooppera deliver",
+   "407: JOB ooppera>arabia fragile limit 1330",
+   "408: PLAN 8T wait 120",
+   "469: PLAN 8 wait 54",
+   "501: CATCH 8",
+   "1271: OFF arabia deliver",
+   "1272: JOB arabia>kamppi parts limit 1725",
+   "1273: PLAN 6>2 wait 229",
+   "1334: PLAN 6>2 wait 168",
+   "1395: PLAN 6>5 wait 107",
+   "1456: PLAN 6>2 wait 46",
+   "1502: CATCH 6",
+   "2322: OFF rautatientori transfer",
+   "2323: PLAN M2 wait 0",
+   "2323: CATCH M2",
+   "2364: OFF kamppi deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    247,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "riding"
+   ],
+   [
+    408,
+    "waiting"
+   ],
+   [
+    502,
+    "riding"
+   ],
+   [
+    1271,
+    "getoff"
+   ],
+   [
+    1272,
+    "riding"
+   ],
+   [
+    1273,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    2322,
+    "getoff"
+   ],
+   [
+    2323,
+    "waiting"
+   ],
+   [
+    2324,
+    "riding"
+   ],
+   [
+    2364,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 35",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 35
+  },
+  "won": false,
+  "delivered": 1,
+  "tick": 3000,
+  "score": 171,
+  "late": 0,
+  "waitTicks": 1505,
+  "rideTicks": 1489,
+  "catches": 3,
+  "transfers": 2,
+  "lastKind": "waiting",
+  "activeJob": "arabia>hakaniemi",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>6 wait 244",
+   "63: PLAN 1>8 wait 183",
+   "124: PLAN 1>8 wait 122",
+   "185: PLAN 1>6H wait 61",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 8 wait 296",
+   "920: PLAN 8 wait 235",
+   "981: PLAN 6H wait 29",
+   "989: CATCH 6H",
+   "1415: OFF arabia deliver",
+   "1416: JOB arabia>hakaniemi market goods limit 1092",
+   "1417: PLAN 6>7H wait 85",
+   "1478: PLAN 6>7 wait 24",
+   "1502: CATCH 6",
+   "1934: OFF sornainen transfer",
+   "1935: PLAN M2 wait 44",
+   "1957: CATCH-FAIL market goods cannot use that service",
+   "1958: CATCH-FAIL market goods cannot use that service",
+   "1959: CATCH-FAIL market goods cannot use that service",
+   "1960: CATCH-FAIL market goods cannot use that service",
+   "1961: CATCH-FAIL market goods cannot use that service",
+   "1962: CATCH-FAIL market goods cannot use that service",
+   "1963: CATCH-FAIL market goods cannot use that service",
+   "1964: CATCH-FAIL market goods cannot use that service",
+   "1965: CATCH-FAIL market goods cannot use that service",
+   "1966: CATCH-FAIL market goods cannot use that service",
+   "1967: CATCH-FAIL market goods cannot use that service",
+   "1968: CATCH-FAIL market goods cannot use that service",
+   "1969: CATCH-FAIL market goods cannot use that service",
+   "1970: CATCH-FAIL market goods cannot use that service",
+   "1971: CATCH-FAIL market goods cannot use that service",
+   "1972: CATCH-FAIL market goods cannot use that service",
+   "1973: CATCH-FAIL market goods cannot use that service",
+   "1974: CATCH-FAIL market goods cannot use that service",
+   "1975: CATCH-FAIL market goods cannot use that service",
+   "1976: CATCH-FAIL market goods cannot use that service",
+   "1977: CATCH-FAIL market goods cannot use that service",
+   "1978: CATCH-FAIL market goods cannot use that service",
+   "1979: CATCH-FAIL market goods cannot use that service",
+   "1980: CATCH-FAIL market goods cannot use that service",
+   "1981: CATCH-FAIL market goods cannot use that service",
+   "1982: CATCH-FAIL market goods cannot use that service",
+   "1983: CATCH-FAIL market goods cannot use that service",
+   "1984: CATCH-FAIL market goods cannot use that service",
+   "1985: CATCH-FAIL market goods cannot use that service",
+   "1986: CATCH-FAIL market goods cannot use that service",
+   "1987: CATCH-FAIL market goods cannot use that service",
+   "1988: CATCH-FAIL market goods cannot use that service",
+   "1989: CATCH-FAIL market goods cannot use that service",
+   "1990: CATCH-FAIL market goods cannot use that service",
+   "1991: CATCH-FAIL market goods cannot use that service",
+   "1992: CATCH-FAIL market goods cannot use that service",
+   "1993: CATCH-FAIL market goods cannot use that service",
+   "1994: CATCH-FAIL market goods cannot use that service",
+   "1995: CATCH-FAIL market goods cannot use that service",
+   "1996: PLAN 6 wait 259",
+   "2057: PLAN M1 wait 0",
+   "2057: CATCH-FAIL market goods cannot use that service"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    990,
+    "riding"
+   ],
+   [
+    1415,
+    "getoff"
+   ],
+   [
+    1416,
+    "riding"
+   ],
+   [
+    1417,
+    "waiting"
+   ],
+   [
+    1503,
+    "riding"
+   ],
+   [
+    1934,
+    "getoff"
+   ],
+   [
+    1935,
+    "waiting"
+   ]
+  ]
+ },
+ {
+  "label": "random 36",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 36
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 1306,
+  "score": 466,
+  "late": 0,
+  "waitTicks": 172,
+  "rideTicks": 1126,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1H wait 0",
+   "2: CATCH 1H",
+   "138: OFF ooppera deliver",
+   "139: JOB ooppera>katajanokka equipment limit 656",
+   "140: PLAN 4T wait 32",
+   "151: CATCH 4T",
+   "503: OFF katajanokka deliver",
+   "504: JOB katajanokka>hietalahti market goods limit 1249",
+   "505: PLAN 4H>1H wait 115",
+   "566: PLAN 4>1T wait 59",
+   "604: CATCH 4",
+   "971: OFF lasipalatsi transfer",
+   "972: PLAN 1H wait 80",
+   "1030: CATCH 1H",
+   "1305: OFF hietalahti deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    3,
+    "riding"
+   ],
+   [
+    138,
+    "getoff"
+   ],
+   [
+    139,
+    "riding"
+   ],
+   [
+    140,
+    "waiting"
+   ],
+   [
+    152,
+    "riding"
+   ],
+   [
+    503,
+    "getoff"
+   ],
+   [
+    504,
+    "riding"
+   ],
+   [
+    505,
+    "waiting"
+   ],
+   [
+    605,
+    "riding"
+   ],
+   [
+    971,
+    "getoff"
+   ],
+   [
+    972,
+    "waiting"
+   ],
+   [
+    1031,
+    "riding"
+   ],
+   [
+    1305,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 37",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 37
+  },
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 348,
+  "late": 0,
+  "waitTicks": 740,
+  "rideTicks": 2251,
+  "catches": 6,
+  "transfers": 3,
+  "lastKind": "riding",
+  "activeJob": "kauppatori>kamppi",
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>6H wait 244",
+   "63: PLAN 1>6H wait 183",
+   "124: PLAN 1>6H wait 122",
+   "185: PLAN 1>8 wait 61",
+   "224: CATCH 1",
+   "406: OFF ooppera transfer",
+   "407: PLAN 8T wait 121",
+   "468: PLAN 8 wait 55",
+   "501: CATCH 8",
+   "1271: OFF arabia deliver",
+   "1272: JOB arabia>kauppatori fresh food limit 1671",
+   "1273: PLAN 8>H wait 7",
+   "1281: CATCH 8",
+   "2029: OFF ooppera transfer",
+   "2030: PLAN 1H>H wait 62",
+   "2071: CATCH 1H",
+   "2227: OFF lasipalatsi transfer",
+   "2228: PLAN H wait 180",
+   "2289: PLAN 4>2H wait 238",
+   "2350: PLAN 4>2 wait 177",
+   "2411: PLAN H wait 0",
+   "2411: CATCH H",
+   "2659: OFF kauppatori deliver",
+   "2660: JOB kauppatori>kamppi fresh food limit 766",
+   "2661: PLAN 2 wait 191",
+   "2722: PLAN 2H wait 147",
+   "2783: PLAN 2H wait 86",
+   "2844: PLAN 2H wait 25",
+   "2847: CATCH 2H"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "waiting"
+   ],
+   [
+    502,
+    "riding"
+   ],
+   [
+    1271,
+    "getoff"
+   ],
+   [
+    1272,
+    "riding"
+   ],
+   [
+    1273,
+    "waiting"
+   ],
+   [
+    1282,
+    "riding"
+   ],
+   [
+    2029,
+    "getoff"
+   ],
+   [
+    2030,
+    "waiting"
+   ],
+   [
+    2072,
+    "riding"
+   ],
+   [
+    2227,
+    "getoff"
+   ],
+   [
+    2228,
+    "waiting"
+   ],
+   [
+    2412,
+    "riding"
+   ],
+   [
+    2659,
+    "getoff"
+   ],
+   [
+    2660,
+    "riding"
+   ],
+   [
+    2661,
+    "waiting"
+   ],
+   [
+    2848,
+    "riding"
+   ]
+  ]
+ },
+ {
+  "label": "random 38",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 38
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2942,
+  "score": 549,
+  "late": 1,
+  "waitTicks": 716,
+  "rideTicks": 2217,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1 wait 244",
+   "63: PLAN 1T wait 87",
+   "124: PLAN 1H wait 176",
+   "185: PLAN 1 wait 61",
+   "224: CATCH 1",
+   "406: OFF ooppera deliver",
+   "407: JOB ooppera>arabia fragile limit 1330",
+   "408: PLAN 1>6 wait 0",
+   "408: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6 wait 201",
+   "920: PLAN 6H wait 90",
+   "981: PLAN 6 wait 79",
+   "1039: CATCH 6",
+   "1493: OFF arabia deliver",
+   "1494: JOB arabia>kauppatori fragile limit 1682",
+   "1495: PLAN 8T>H wait 103",
+   "1556: PLAN 8T>H wait 42",
+   "1599: CATCH 8T",
+   "2363: OFF ooppera transfer",
+   "2364: PLAN H wait 226",
+   "2425: PLAN H wait 165",
+   "2486: PLAN 1>H wait 126",
+   "2547: PLAN H wait 43",
+   "2569: CATCH H",
+   "2941: OFF kauppatori deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    406,
+    "getoff"
+   ],
+   [
+    407,
+    "riding"
+   ],
+   [
+    408,
+    "waiting"
+   ],
+   [
+    409,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1040,
+    "riding"
+   ],
+   [
+    1493,
+    "getoff"
+   ],
+   [
+    1494,
+    "riding"
+   ],
+   [
+    1495,
+    "waiting"
+   ],
+   [
+    1600,
+    "riding"
+   ],
+   [
+    2363,
+    "getoff"
+   ],
+   [
+    2364,
+    "waiting"
+   ],
+   [
+    2570,
+    "riding"
+   ],
+   [
+    2941,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 39",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 39
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2263,
+  "score": 439,
+  "late": 0,
+  "waitTicks": 628,
+  "rideTicks": 1626,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "1: JOB lasipalatsi>ooppera equipment limit 346",
+   "2: PLAN 1T wait 148",
+   "63: PLAN 1H wait 237",
+   "124: PLAN 1T wait 26",
+   "128: CATCH 1T",
+   "301: OFF ooppera deliver",
+   "302: JOB ooppera>hakaniemi parts limit 1022",
+   "303: PLAN 1>6 wait 116",
+   "364: PLAN 1>6 wait 55",
+   "397: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6 wait 149",
+   "920: PLAN 6 wait 88",
+   "981: PLAN M1 wait 117",
+   "1042: PLAN M1 wait 56",
+   "1076: CATCH M1",
+   "1183: OFF hakaniemi deliver",
+   "1184: JOB hakaniemi>meilahti equipment limit 1198",
+   "1185: PLAN 7 wait 223",
+   "1246: PLAN 7H>7 wait 54",
+   "1278: CATCH 7H",
+   "1451: OFF sornainen transfer",
+   "1452: PLAN 1>4 wait 113",
+   "1513: PLAN 7 wait 53",
+   "1545: CATCH 7",
+   "2262: OFF meilahti deliver"
+  ],
+  "timeline": [
+   [
+    1,
+    "riding"
+   ],
+   [
+    2,
+    "waiting"
+   ],
+   [
+    129,
+    "riding"
+   ],
+   [
+    301,
+    "getoff"
+   ],
+   [
+    302,
+    "riding"
+   ],
+   [
+    303,
+    "waiting"
+   ],
+   [
+    398,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1077,
+    "riding"
+   ],
+   [
+    1183,
+    "getoff"
+   ],
+   [
+    1184,
+    "riding"
+   ],
+   [
+    1185,
+    "waiting"
+   ],
+   [
+    1279,
+    "riding"
+   ],
+   [
+    1451,
+    "getoff"
+   ],
+   [
+    1452,
+    "waiting"
+   ],
+   [
+    1546,
+    "riding"
+   ],
+   [
+    2262,
+    "getoff"
+   ]
+  ]
+ },
+ {
+  "label": "random 40",
+  "policy": {
+   "job": "random",
+   "plan": "random",
+   "seed": 40
+  },
+  "won": true,
+  "delivered": 3,
+  "tick": 2854,
+  "score": 436,
+  "late": 0,
+  "waitTicks": 516,
+  "rideTicks": 2329,
+  "catches": 4,
+  "transfers": 1,
+  "lastKind": "getoff",
+  "activeJob": null,
+  "leg": 0,
+  "log": [
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>6H wait 243",
+   "64: PLAN 1>6H wait 182",
+   "125: PLAN 1>8 wait 121",
+   "186: PLAN 1>6 wait 60",
+   "224: CATCH 1",
+   "858: OFF sornainen transfer",
+   "859: PLAN 6 wait 201",
+   "920: PLAN 6H wait 90",
+   "981: PLAN 8 wait 174",
+   "1042: PLAN 8 wait 113",
+   "1103: PLAN 8 wait 52",
+   "1133: CATCH 8",
+   "1596: OFF arabia deliver",
+   "1597: JOB arabia>ooppera hot food limit 1184",
+   "1598: PLAN 8T wait 0",
+   "1599: CATCH 8T",
+   "2363: OFF ooppera deliver",
+   "2364: JOB ooppera>hietalahti parts limit 739",
+   "2365: PLAN 1T wait 38",
+   "2381: CATCH 1T",
+   "2853: OFF hietalahti deliver"
+  ],
+  "timeline": [
+   [
+    2,
+    "riding"
+   ],
+   [
+    3,
+    "waiting"
+   ],
+   [
+    225,
+    "riding"
+   ],
+   [
+    858,
+    "getoff"
+   ],
+   [
+    859,
+    "waiting"
+   ],
+   [
+    1134,
+    "riding"
+   ],
+   [
+    1596,
+    "getoff"
+   ],
+   [
+    1597,
+    "riding"
+   ],
+   [
+    1598,
+    "waiting"
+   ],
+   [
+    1600,
+    "riding"
+   ],
+   [
+    2363,
+    "getoff"
+   ],
+   [
+    2364,
+    "riding"
+   ],
+   [
+    2365,
+    "waiting"
+   ],
+   [
+    2382,
+    "riding"
+   ],
+   [
+    2853,
+    "getoff"
+   ]
+  ]
+ }
+]
