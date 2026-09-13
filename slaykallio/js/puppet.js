@@ -824,7 +824,17 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   else if (look.shape === 'bird') bird(fx, look, rnd);
   else if (look.shape === 'bear') bear(fx, look, rnd);
   else person(fx, look, rnd);
-  if (fig !== c) { cutoutBorder(ctx, fig, rnd); ctx.drawImage(fig, 0, 0); }
+  if (fig !== c) {
+    cutoutBorder(ctx, fig, rnd);
+    // The card is cut flat at CUT_FOOT, so the PRINTING stops there too. The
+    // border pass erases its mask below that line; drawing the figure over it
+    // unclipped left anything that hangs lower — `slime()` runs the blob's
+    // drips to foot + 52 — floating below its own board with no kraft behind
+    // it and no dark edge.
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, TW, CUT_FOOT); ctx.clip();
+    ctx.drawImage(fig, 0, 0);
+    ctx.restore();
+  }
   // ORDER MATTERS, and it cost a figure with chickenpox to find out: the rim
   // pass finds every edge in the alpha, and `nicks` punches HOLES in it, so
   // rimming first drew a glowing ring around each of forty nicks. Light the

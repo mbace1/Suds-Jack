@@ -144,13 +144,24 @@ function scanInk(img) {
   return bottom < 0 ? { top: 0, bottom: c.height - 1, left: 0, right: c.width - 1 } : { top, bottom, left, right };
 }
 
+// AN IMAGE URL IS A CACHE KEY TOO. The module tokens (`?v=`) move when a
+// module's bytes move, but they do not reach `img.src` — so when v34 replaced
+// `figures/sledge.png` with the owner's own plate under the SAME name, a
+// browser holding the old bytes would have loaded the new modules and gone on
+// showing the generated Cart Pusher. `ASSET_REV` moves when any file under
+// `figures/` changes. It is appended at the REQUEST only: `fileFor` keeps
+// returning the bare path, because the gate resolves those against the tree
+// with `existsSync` and a query string is not part of a filename.
+const ASSET_REV = 36;
+const bust = src => `${src}?a=${ASSET_REV}`;
+
 export function preloadPlates() {
   return Promise.all(castFiles().map(src => new Promise(res => {
     if (loaded.has(src)) return res(true);
     const img = new Image();
     img.onload = () => { try { loaded.set(src, { img, ink: scanInk(img) }); } catch { /* tainted or blank */ } res(true); };
     img.onerror = () => res(false);        // a missing plate falls back to the drawn figure
-    img.src = src;
+    img.src = bust(src);
   })));
 }
 

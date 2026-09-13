@@ -711,6 +711,31 @@ const check = (name, ok, extra = '') => {
   // the silhouette. Both are gone; this is the ruler that says so.
   check(`and almost none of the figure is near-white speckle (${(cut.die.pale / cut.die.ink * 100).toFixed(1)}%)`,
     cut.die.pale / cut.die.ink < 0.08, `${cut.die.pale}/${cut.die.ink}`);
+  // NOTHING PRINTS BELOW THE FLAT FOOT. The border pass erases its card mask
+  // under the cut line, and the figure used to be drawn over it unclipped — so
+  // anything hanging lower floated below its own board with no kraft behind it
+  // and no dark edge. The blob is the figure that does it: `slime()` runs five
+  // drips to foot + 52. Measured on the blob against a person, who has nothing
+  // down there either way.
+  {
+    const below = await page.evaluate(() => {
+      __sk.debug.setCut('card');
+      const rows = id => {
+        const c = __sk.debug.look(id);
+        const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+        let last = -1;
+        for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 24) last = (i >> 2) / c.width | 0;
+        return { last, h: c.height };
+      };
+      return { blob: rows('blob'), boxer: rows('boxer') };
+    });
+    const FOOT = 476;
+    check(`the blob's drips are cut off at the foot like everything else (last ink row ${below.blob.last}, cut at ${FOOT})`,
+      below.blob.last <= FOOT, `${JSON.stringify(below.blob)}`);
+    check(`and a person still stands on the same line (${below.boxer.last})`,
+      below.boxer.last <= FOOT && below.boxer.last > FOOT - 60);
+  }
+
   check('the choice of cut is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.cut') === '"silhouette"'));
   await page.evaluate(() => __sk.debug.setCut('card'));
   await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });

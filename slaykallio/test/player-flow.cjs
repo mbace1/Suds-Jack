@@ -31,6 +31,11 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   await p.waitForFunction(()=>!document.querySelector('#start').disabled);
   assert.equal(await p.evaluate(()=>__sk.debug.art()),'turf');
   assert.ok(figures.size>=23,'TURF figure images actually loaded');
+  // A figure URL is a cache key too. The module tokens do not reach img.src,
+  // so when a plate's bytes are replaced under the same name a browser holding
+  // the old ones goes on showing them — which is what happened to the Cart
+  // Pusher when v34 swapped the generated sledge for the owner's own.
+  assert.ok([...figures].every(u=>/[?&]a=\d+/.test(u)),'every figure request carries an asset revision');
   await p.screenshot({path:path.join(__dirname,mobile?'release-title-phone.png':'release-title-desktop.png')});
   await tap(p.locator('#start'));await idle();
   assert.equal(await p.evaluate(()=>__sk.state().phase),'map');
