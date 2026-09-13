@@ -1,0 +1,15 @@
+{
+  "build": "C.09",
+  "source_repository": "mbace1/piritori-eden",
+  "source_commit": "d74f966adb6f47322e46c554d898c719bf2bdf52",
+  "source_pr": 69,
+  "entry": "web/arena-lab/?actors=6&release=9",
+  "status": "development-laboratory",
+  "character_provider": "neutral stand-ins",
+  "physical_devices_verified": false,
+  "transforms": [
+    "Use canonical render-profile.js?v=2 throughout",
+    "Hub return points to optionc-lab",
+    "Keep scoped pinned fighter URLs; correct prototype approval metadata"
+  ]
+}
