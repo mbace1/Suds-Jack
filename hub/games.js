@@ -29,7 +29,7 @@
 export const GAMES = [
   {
     id: 'optionc', title: 'PIRITORI · BEAR PATH', status: 'active',
-    path: 'piritori-fighters/web/bear-path/?release=8', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
+    path: 'piritori-fighters/web/bear-path/?release=8r2', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'A park handover. Talk your way through—or hold the path.',
     lineage: 'Kallio 2003 · Piritori encounter prototype',
     tags: ['3D', 'tactics', 'story'],

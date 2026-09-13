@@ -2,8 +2,8 @@
   "release": "C.08",
   "date": "2026-09-13",
   "source_repository": "mbace1/piritori-eden",
-  "source_commit": "bd4ff79b0cb7ddd51c32671577c1db8fe9ad7565",
-  "entry": "web/bear-path/",
+  "source_commit": "0b465132c90236052bf626d665180a4e26b74b28",
+  "entry": "web/bear-path/?release=8r2",
   "looks": [
     "ink",
     "cold"
@@ -11,5 +11,7 @@
   "runtime_art": "registered v05 F01/F02; prototype Bear Path environment",
   "private_art_included": false,
   "physical_device_acceptance": false,
-  "campaign_applied": false
+  "campaign_applied": false,
+  "revision": 2,
+  "asset_mapping": "F01/F02 retain original immutable a64a921 source URLs and hashes; environment assets are local to hub"
 }
