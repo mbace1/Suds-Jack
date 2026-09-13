@@ -1,6 +1,6 @@
 # C.15 — Night Shift crew pilot
 
-Source: 972b900c493b9736ebc5043bef62761dae8b8dfa.
+Source: d79d32bdfa89aa4b4c5ad70e5958dc1a2c5a997b.
 
 Night Places courtyard and service-yard Blender kit, painted textures, compact command strip, three camera presets; reversible gun aiming and exact return. Persistent C.12 rules and saves retained. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
