@@ -526,7 +526,7 @@ function check(name, cond) {
   // project is asking — so it has to survive, not quietly fall back to a fixed
   // list the day someone renames an id.
   const taxo = await page.evaluate(async () => {
-    const t = await import('./hub/topics.js?v=1');
+    const t = await import('./hub/topics.js?v=11');
     const bare = t.KINDS.map(k => k.id).join();
     const led = Object.fromEntries(__hub.games.map(g => [g.id, t.kindsFor(g.id).map(k => k.id)]));
     const gaps = [];
@@ -547,7 +547,7 @@ function check(name, cond) {
   await page.locator(CAB).nth(1).locator('.btn.ghost').click();
   const kindLabels = await page.$$eval('.kind', bs => bs.map(b => b.textContent));
   const wanted = await page.evaluate(async id => {
-    const t = await import('./hub/topics.js?v=1');
+    const t = await import('./hub/topics.js?v=11');
     return t.kindsFor(id).map(k => k.label);
   }, games[1].id);
   check(`the panel offers the kinds in this cabinet's order (${kindLabels[0]})`,
@@ -571,7 +571,7 @@ function check(name, cond) {
     collected[0].text.includes('wall') && collected[0].source === 'hub');
   check(`and what it is about, so it can be sorted (${collected[0].kind})`,
     collected[0].kind === (await page.evaluate(async id => {
-      const t = await import('./hub/topics.js?v=1');
+      const t = await import('./hub/topics.js?v=11');
       return t.kindsFor(id)[0].id;
     }, games[1].id)));
   check('and it is kept locally too', (await page.evaluate(() => __hub.feedback.archive())).length === 1);
@@ -1166,7 +1166,10 @@ function check(name, cond) {
       await page.evaluate(() => window.__arcadeShell?.game) === g.id);
   }
   // and a game that reads a pad itself is left completely alone
-  const native = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  // This fixture tests the shared shell's key bridge. Native-home cabinets
+  // own their controller/HOME code; the all-cabinet HOME check above still
+  // visits them, and their game repository runs their interaction gates.
+  const native = catalogue.find(g => g.pad === 'native' && g.inRepo && g.hubHome !== 'native');
   if (native) {
     await page.goto(`${base}/${native.path}`, { waitUntil: 'domcontentloaded' });
     check(`${native.id} reads its own pad, so nothing is layered on it`,
@@ -1181,7 +1184,7 @@ function check(name, cond) {
   // So drive `attachPad` directly with a stub binding, hosted on a page that
   // bridges nothing itself: whatever keys turn up are the bridge's own work,
   // with no second one to confuse them for.
-  const host = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  const host = native;
   await page.goto(`${base}/${host.path}`, { waitUntil: 'domcontentloaded' });
   await page.evaluate(async () => {
     window.__seen = [];

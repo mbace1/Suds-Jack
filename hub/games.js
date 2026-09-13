@@ -28,7 +28,7 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', title: 'PIRITORI · ARENA C.09.1', status: 'active',
+    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · ARENA C.09.1', status: 'active',
     path: 'piritori-c09/web/arena-lab/?actors=6&release=9.1', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'Play the new 3D arena: two, six or twelve fighters.',
     lineage: 'Kallio 2003 · Dream Loop development arena', tags: ['3D', 'tactics', 'prototype'],
