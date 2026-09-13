@@ -75,6 +75,12 @@ not rung 4. It raises by one rather than to the rung played, so a rung handed
 over some other way cannot skip the ones under it, and the result screen names
 what just opened.
 
+`GDD.md` §9 listed ascension under what is NOT in, with the reason "each of
+those is a system, not a table". That is **withdrawn**: it was a claim about
+difficulty ladders in general and should have been about this codebase, where
+every rung the ladder needed was a lever that already existed. §8b is the
+design record.
+
 Gates: `node test/core.mjs` 783, `NODE_PATH=$(npm root -g) node test/smoke.cjs` 140,
 and the flow harness now walks a whole act on desktop and touch.
 
