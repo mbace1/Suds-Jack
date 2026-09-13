@@ -1,9 +1,9 @@
-# C.12 — Night Shift crew pilot
+# C.13 — Night Shift crew pilot
 
-Source: 80003698eed2cc606d098897afe547de65af16ea.
+Source: 09e13affd8600ff7a790b9d486edfaed531c435f.
 
-Persistent crew, loadouts, rescue and extraction, announced arrivals, wounds and repeat outings. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
+Art Bible console, crew ledger, actual-figure portraits, practical night light, directed framing and dashed intent paths. Persistent C.12 rules and saves retained. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
 ## Port
 
-Godot: port crew-run/run.js, crew-run.mjs and the lab tactics tests before claiming rules parity; invalidate projected labels on camera, actor, text or viewport changes. Campaign keeps its authored resolver.
+Godot: reproduce the C.13 display hierarchy, labelled action costs, contextual mission commands, paper palette and world framing. Preserve C.12 vectors; invalidate projected labels on camera, actor, text or viewport changes. Campaign keeps its authored resolver.
