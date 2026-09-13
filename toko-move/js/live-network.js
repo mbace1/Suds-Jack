@@ -54,6 +54,12 @@ export const MODE_KMH = { TRAM: 16, SUBWAY: 30 };
 // than a smaller number here — ticksPerDay 4500 buys the same slowdown again
 // and keeps the deliveries, at the cost of the owner's five-minute session.
 export const SHIFT = { ticksPerDay: 3000, startHour: 7, hours: 1.25 };
+// The 07:00 timetable, in minutes between vehicles: HSL's morning peak runs
+// the trunk trams every 7.5 and the metro every 4. The fleet is provisioned
+// to this, not to a count. Measured with test/shifts.cjs, 200 random-but-sane
+// bots each: three per line 19% of shifts won, 10/5 35%, 7.5/4 52% — and the
+// shift is 07:00-08:15, which IS the peak.
+export const HEADWAY_MIN = { TRAM: 7.5, SUBWAY: 4 };
 
 const RAD = Math.PI / 180;
 export function pathKm(path) {
@@ -71,7 +77,17 @@ export function speedForLayer(layer, ticksPerDay = SHIFT.ticksPerDay, shiftHours
   return 1 / ticks;                           // one full pass per `ticks` ticks
 }
 export class LiveNetwork{
- constructor(transit,{vehiclesPerLine=2,dwellTicks=3,ticksPerDay=SHIFT.ticksPerDay}={}){this.transit=transit;this.vehiclesPerLine=vehiclesPerLine;this.dwellTicks=dwellTicks;this.vehicles=[];this.selectedVehicleId=null;for(const layer of transit?.layers||[]){if(layer.mode!=='TRAM'&&layer.mode!=='SUBWAY')continue;const count=layer.mode==='SUBWAY'?Math.max(2,vehiclesPerLine):vehiclesPerLine;// Phases are spaced EVENLY around the out-and-back cycle, offset per line by
+ // HOW MANY VEHICLES A LINE GETS. With a fixed count per line the headway is
+ // the line's length divided by that count, and nothing else — measured at
+ // three per line: tram 15 every 61 game-minutes, the metro every 49, trams
+ // 1/7/9 every 25-29, against a real morning of 10 for a tram and 4-5 for the
+ // metro. A 500-tick stand at Arabia for the next 6 was not bad luck, it was
+ // the timetable. `headwayMinutes` provisions each line to a TARGET headway
+ // instead — vehicles = cycle ÷ headway, never fewer than two — so the count
+ // is a consequence of the line and the number a player feels is the one that
+ // was chosen. `vehiclesPerLine` stays as the fixed-count path for tests and
+ // for the measurement that decided this.
+ constructor(transit,{vehiclesPerLine=2,headwayMinutes=null,dwellTicks=3,ticksPerDay=SHIFT.ticksPerDay,shiftHours=SHIFT.hours}={}){this.transit=transit;this.vehiclesPerLine=vehiclesPerLine;this.headwayMinutes=headwayMinutes;this.ticksPerDay=ticksPerDay;this.shiftHours=shiftHours;this.dwellTicks=dwellTicks;this.vehicles=[];this.selectedVehicleId=null;for(const layer of transit?.layers||[]){if(layer.mode!=='TRAM'&&layer.mode!=='SUBWAY')continue;const count=this.countFor(layer);// Phases are spaced EVENLY around the out-and-back cycle, offset per line by
   // its hash so lines do not move in lockstep. They used to be hash-scattered,
   // and scattered phases bunch: measured at Lasipalatsi from tick 0, the gap to
   // the next same-direction vehicle reached 1453 ticks on a line whose even
@@ -80,6 +96,16 @@ export class LiveNetwork{
   const base=(hash(layer.id)%10000)/10000;for(let i=0;i<count;i++)this.vehicles.push({id:`${layer.id}:${i}`,layer,phase:(base+i*(2/count))%2,speed:speedForLayer(layer,ticksPerDay)});}}
  position(v,tick){const path=v.layer.path||[];if(path.length<2)return null;const cycle=(v.phase+tick*v.speed)%2,q=cycle<=1?cycle:2-cycle,at=q*(path.length-1),i=Math.min(path.length-2,Math.floor(at)),f=at-i,a=path[i],b=path[i+1];return{lat:a[0]+(b[0]-a[0])*f,lon:a[1]+(b[1]-a[1])*f,pathIndex:at,direction:cycle<=1?1:-1};}
  vehicle(id){return this.vehicles.find(v=>v.id===id)||null;}
+ // Unit screen-space direction of travel at a vehicle, from the path tangent
+ // around its index and the sign of the leg it is on; null on a degenerate path.
+ heading(v,p,project){const path=v.layer.path||[];if(!p||path.length<2)return null;const i=Math.max(0,Math.min(path.length-2,Math.floor(p.pathIndex)));const a=project(path[i][0],path[i][1]),b=project(path[i+1][0],path[i+1][1]);let dx=(b.x-a.x)*(p.direction>=0?1:-1),dy=(b.y-a.y)*(p.direction>=0?1:-1);const L=Math.hypot(dx,dy);if(L<1e-6)return null;return{x:dx/L,y:dy/L};}
+ countFor(layer){const perMin=this.ticksPerDay/(this.shiftHours*60),want=this.headwayMinutes?.[layer.mode];
+  if(!want)return layer.mode==='SUBWAY'?Math.max(2,this.vehiclesPerLine):this.vehiclesPerLine;
+  const cycle=2/speedForLayer(layer,this.ticksPerDay,this.shiftHours);
+  return Math.max(2,Math.round(cycle/(want*perMin)));}
+ // The timetable's own headway on a line, in ticks — what "every N minutes"
+ // means here, for anything that wants to say it out loud.
+ headwayTicks(layer){const vs=this.vehicles.filter(v=>v.layer.id===layer.id);if(!vs.length)return null;return (2/vs[0].speed)/vs.length;}
  select(id){this.selectedVehicleId=this.vehicle(id)?.id||null;return this.vehicle(this.selectedVehicleId);}
  clearSelection(){this.selectedVehicleId=null;}
   // How near counts as AT THE STOP. The window was a raw path-index distance,
@@ -135,12 +161,25 @@ export class LiveNetwork{
  // Rank is stable (rank desc, then id) rather than positional, so two trams crossing
  // cannot swap which of them is readable frame to frame.
  draw(ctx,tick,project,dpr=1,{filter=null,priority=null}={}){const boxes=[],dots=[];let shown=0,total=0;const items=[];
-  for(const v of this.vehicles){if(!v.layer.visible)continue;const p=this.position(v,tick);if(!p)continue;total++;if(filter&&!filter(p.lat,p.lon,v.layer,v))continue;shown++;const selected=v.id===this.selectedVehicleId;items.push({v,q:project(p.lat,p.lon),selected,rank:selected?3:(priority?priority(v.layer,v)||0:0)});}
+  for(const v of this.vehicles){if(!v.layer.visible)continue;const p=this.position(v,tick);if(!p)continue;total++;if(filter&&!filter(p.lat,p.lon,v.layer,v))continue;shown++;const selected=v.id===this.selectedVehicleId;items.push({v,p,q:project(p.lat,p.lon),selected,rank:selected?3:(priority?priority(v.layer,v)||0:0)});}
   items.sort((a,b)=>b.rank-a.rank||(a.v.id<b.v.id?-1:a.v.id>b.v.id?1:0));
   const gap=1*dpr,hits=(b)=>boxes.some(o=>b.x<o.x+o.w+gap&&o.x<b.x+b.w+gap&&b.y<o.y+o.h+gap&&o.y<b.y+b.h+gap);
   ctx.save();ctx.font=`bold ${Math.round(8*dpr)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+  // Decide first, paint second, DOTS UNDER BADGES: a dot is a vehicle whose
+  // true position is inside a crowd, and the crowd's winner is a badge at
+  // nearly the same spot — painted in rank order the dot landed on top of the
+  // label it had just yielded to (a 2 at Töölö with a hole in it, live on
+  // v2.34). Two passes keep every dot visible at its edge and every label whole.
+  const badges=[];
   for(const it of items){const{v,q,selected}=it,w=(selected?29:24)*dpr,h=(selected?18:14)*dpr,box={x:q.x-w/2,y:q.y-h/2,w,h};
-   if(hits(box)){const r=4*dpr;ctx.fillStyle=v.layer.colour;ctx.strokeStyle='#fffdf7';ctx.lineWidth=1.5*dpr;ctx.beginPath();ctx.arc(q.x,q.y,r,0,Math.PI*2);ctx.fill();ctx.stroke();dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank});continue;}
-   ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?4:2)*dpr;ctx.beginPath();ctx.roundRect(box.x,box.y,w,h,3*dpr);ctx.fill();ctx.stroke();if(selected){ctx.strokeStyle='#fffdf7';ctx.lineWidth=1*dpr;ctx.stroke();}ctx.fillStyle='#fff';ctx.fillText(v.layer.name,q.x,q.y+.5*dpr);box.line=v.layer.name;box.id=v.id;box.rank=it.rank;boxes.push(box);}
+   if(hits(box)){const r=4*dpr;dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank,colour:v.layer.colour,cx:q.x,cy:q.y,r});continue;}
+   box.line=v.layer.name;box.id=v.id;box.rank=it.rank;boxes.push(box);badges.push({it,box});}
+  for(const d of dots){ctx.fillStyle=d.colour;ctx.strokeStyle='#fffdf7';ctx.lineWidth=1.5*dpr;ctx.beginPath();ctx.arc(d.cx,d.cy,d.r,0,Math.PI*2);ctx.fill();ctx.stroke();}
+  // A NOSE on every badge, pointing the way the vehicle is going. A CATCH only
+  // lights for a vehicle heading your way, and a rectangle cannot say which way
+  // that is; a player watching the right line go the wrong way could not tell
+  // it from the one they wanted. The nose is the badge's own colour inside the
+  // same hard line, on the leading edge, from the path's tangent at the vehicle.
+  for(const {it,box} of badges){const{v,q,selected}=it;const nose=this.heading(v,it.p,project);ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?4:2)*dpr;ctx.beginPath();ctx.roundRect(box.x,box.y,box.w,box.h,3*dpr);if(nose){const nx=nose.x,ny=nose.y,px=-ny,py=nx,L=5*dpr,cx=q.x+nx*(Math.abs(nx)>Math.abs(ny)?box.w/2:box.h/2),cy=q.y+ny*(Math.abs(nx)>Math.abs(ny)?box.w/2:box.h/2);ctx.moveTo(cx+px*4*dpr,cy+py*4*dpr);ctx.lineTo(cx+nx*L,cy+ny*L);ctx.lineTo(cx-px*4*dpr,cy-py*4*dpr);}ctx.fill();ctx.stroke();if(selected){ctx.strokeStyle='#fffdf7';ctx.lineWidth=1*dpr;ctx.stroke();}ctx.fillStyle='#fff';ctx.fillText(v.layer.name,q.x,q.y+.5*dpr);}
   ctx.restore();this.lastShown=shown;this.lastTotal=total;this.lastBadges=boxes.slice();this.lastDots=dots.slice();return boxes.concat(dots);}
 }

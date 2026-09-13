@@ -232,14 +232,18 @@ server.listen(0, '127.0.0.1', async () => {
   if (rode) {
     await page.waitForTimeout(1200);
     const riding = await page.evaluate(() => {
-      const sheet = document.getElementById('sheet'), rs = document.getElementById('rideStatus');
-      const r = rs?.getBoundingClientRect();
+      const sheet = document.getElementById('sheet');
+      const lead = [...sheet.children].filter(c => c.id && c.innerHTML)[0];
+      const r = lead?.getBoundingClientRect();
       return { kind: window.__tm.mobility?.status?.()?.kind,
-        first: [...sheet.children].filter(c => c.id && c.innerHTML)[0]?.id,
+        first: lead?.id, firstText: (lead?.innerText || '').trim().slice(0, 40),
         top: r ? Math.round(r.top) : null, bottom: r ? Math.round(r.bottom) : null };
     });
     if (riding.kind === 'riding') {
-      ok('the panel saying which tram you are on leads the sheet', riding.first === 'rideStatus', riding.first);
+      // v2.35 folded the duplicate rideStatus card into the ride card in
+      // routeChoices (strip + countdown), so the lead panel is judged by what
+      // it SAYS, not by which slot it sits in.
+      ok('the panel saying which tram you are on leads the sheet', /^ON (TRAM|METRO|SUBWAY|TRANSIT)/i.test(riding.firstText), `${riding.first}: ${riding.firstText}`);
       ok(`and it is on screen (${riding.top}..${riding.bottom} of ${vp.h})`,
         riding.top !== null && riding.top < vp.h);
     } else ok('boarding reached a riding state', false, riding.kind);

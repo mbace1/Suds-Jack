@@ -75,7 +75,7 @@ server.listen(0, '127.0.0.1', async () => {
           if (!last || at - last.tick > 8) out.banners.push({ line: m[1], tick: at, seenAt: tick }); }
         const now = [];
         for (const btn of document.querySelectorAll('#routeChoices .catchChoice')) {
-          const lab = (btn.querySelector('div > span > b')?.textContent || '').trim();
+          const lab = (btn.querySelector('.lineLabel')?.textContent || '').trim();
           if (!lab) continue;
           out.offered.add(lab);
           if (!btn.disabled) now.push(lab);
@@ -135,9 +135,12 @@ server.listen(0, '127.0.0.1', async () => {
     }
     return { boardTick, added: [...added], kind: window.__tm.mobility?.status?.()?.kind };
   });
-  ok('a catch lit inside the window, so boarding could be tested', !!board && board.kind === 'riding',
+  // riding OR getoff: at ×4 a short first leg (1H Lasipalatsi → Ooppera, ~70t)
+  // can arrive before the sample lands, and arrived is still boarded.
+  const boarded = !!board && (board.kind === 'riding' || board.kind === 'getoff');
+  ok('a catch lit inside the window, so boarding could be tested', boarded,
     board ? board.kind : 'none ever lit');
-  if (board && board.kind === 'riding')
+  if (boarded)
     ok(`boarding a lit catch does not record a miss (${board.added.length} recorded while boarding)`,
       board.added.length === 0, JSON.stringify(board));
 

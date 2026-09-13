@@ -16,3 +16,4 @@ __pycache__/
 
 # Powder harness screenshots
 powder/test/out/
+toko-move/shifts.out.json
