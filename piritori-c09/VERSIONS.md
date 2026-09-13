@@ -1,6 +1,6 @@
 # C.12 — Night Shift crew pilot
 
-Source: 2cb3bc47c2ea43f97c22e025c92de24e0dcb830b.
+Source: 80003698eed2cc606d098897afe547de65af16ea.
 
 Persistent crew, loadouts, rescue and extraction, announced arrivals, wounds and repeat outings. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
