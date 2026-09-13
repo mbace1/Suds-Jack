@@ -387,6 +387,12 @@ jobs:
       - name: no two line badges may overlap
         run: NODE_PATH=$(npm root -g) node toko-move/test/badges.cjs
 
+      # Nothing had ever finished a shift. Forty random-but-sane bots through
+      # the real timetable and the real challenge; the fleet or the dispatcher
+      # is broken if fewer than 40% of them get three deliveries home.
+      - name: a shift can be won
+        run: NODE_PATH=$(npm root -g) node toko-move/test/shifts.cjs --gate
+
   hub:
     name: the arcade floor
     needs: changes

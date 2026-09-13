@@ -2,18 +2,18 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=11';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=12';
 import {TransitLayers} from './transit-layers.js?v=6';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=5';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
-import {SHIFT} from './live-network.js?v=8';
+import {SHIFT} from './live-network.js?v=9';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.34';
+const BUILD_VERSION='2.35';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -297,6 +297,13 @@ function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=re
   const lines=creditLines(ctx,r.w-12*d);
   lines.forEach((l,i)=>ctx.fillText(l,r.x+6*d,r.y+r.h-4*d-(lines.length-1-i)*9*d));
   ctx.restore();}
+// THE SHIFT IS 07:00 TO 08:15, AND THE BOARD SHOULD KNOW. One warm wash over
+// the ground, strongest at the first tick and gone by the last, so the five
+// minutes have a direction you can feel without reading the clock — the same
+// low September light the tramstop cover is painted in. Soft-light keeps the
+// line colours honest (test/board.mjs measures them on the paper, not on this);
+// it lifts the ground, never the ink.
+function paintDawn(ctx){if(!flow)return;const a=0.13*(1-Math.min(1,flow.clock.dayProgress));if(a<=0.005)return;const r=boardRect();ctx.save();ctx.globalCompositeOperation='soft-light';ctx.fillStyle=`rgba(255,190,130,${a.toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(90,50,25,${(a*0.2).toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();}
 function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle=NIGHT.frame;ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
 
 // Stops and transfer spots. A transfer spot is the decision point of the whole
@@ -359,6 +366,19 @@ function drawDistricts(ctx=$('map').getContext('2d')){if(!city)return;const d=re
 // has to go. Nothing between them is drawn — no route is the answer.
 function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();
   for(const[id,col]of[[challenge.currentFrom(),'#2f9fb8'],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
+  // WHERE THIS JOB ENDS gets a flag, not a second ring. Two rings in two
+  // colours said "two places matter" and nothing about which is which; the
+  // one you are going to now carries a pennant in the cargo's colour on a pole
+  // with the stop's name on it, so the destination reads from across the board
+  // at any scale, before the stop labels have decided whether it earns one.
+  {const to=challenge.currentTo(),n=city.resolved?.[to];if(n){const p=fitLatLon(n.lat,n.lon),col=cargoColour(challenge.active.cargo),ink='#0f1418';
+    ctx.lineJoin='round';ctx.lineCap='round';
+    const pole=()=>{ctx.beginPath();ctx.moveTo(p.x,p.y-4*d);ctx.lineTo(p.x,p.y-30*d);};
+    const flag=()=>{ctx.beginPath();ctx.moveTo(p.x,p.y-30*d);ctx.lineTo(p.x+16*d,p.y-25*d);ctx.lineTo(p.x,p.y-20*d);ctx.closePath();};
+    ctx.strokeStyle='rgba(255,253,247,.9)';ctx.lineWidth=5*d;pole();ctx.stroke();flag();ctx.stroke();
+    ctx.strokeStyle=ink;ctx.lineWidth=2*d;pole();ctx.stroke();flag();ctx.fillStyle=col;ctx.fill();ctx.stroke();
+    const name=challenge.name(to);ctx.font=`bold ${Math.round(9*d)}px ui-monospace,monospace`;ctx.textAlign='left';ctx.textBaseline='middle';const w=ctx.measureText(name).width+8*d,x=p.x+4*d,y=p.y-40*d;
+    ctx.fillStyle=col;ctx.strokeStyle=ink;ctx.lineWidth=1.5*d;ctx.beginPath();ctx.roundRect(x,y-7*d,w,14*d,3*d);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(name,x+4*d,y+.5*d);}}
   ctx.restore();}
 
 function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${DELIVERY_TARGET}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
@@ -434,7 +454,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
     if(transitView)drawTransitInspector();
     else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=NIGHT.surround;ctx.fillRect(0,0,c.width,c.height);
       paintGround(ctx);
-      ctx.save();clipToBoard(ctx);
+      ctx.save();clipToBoard(ctx);paintDawn(ctx);
       drawTransit();drawStops();drawJobEnds();drawLegend();drawCredit();ctx.restore();drawBoardFrame();}
     if(flow.clock.tick%10===0)paintHud();}
   requestAnimationFrame(frame);}
@@ -579,6 +599,14 @@ addEventListener('resize',()=>{renderer?.resize();_railAt='';placeRail();});
 $('play').onclick=()=>{if(!flow)return;$('title').hidden=true;flow.clock.setPaused(false);};
 $('pause').onclick=()=>{if(!flow)return;flow.clock.setPaused(!flow.clock.paused);$('pause').textContent=flow.clock.paused?'▶':'❚❚';};
 $('speed').onclick=()=>{if(!flow)return;const s=flow.clock.speed>=4?1:flow.clock.speed*2;flow.clock.setSpeed(s);$('speed').textContent=`×${s}`;};
-$('again').onclick=()=>{$('end').hidden=true;boot(7);publish();flow.clock.setPaused(false);};
+$('again').onclick=()=>{
+  // RUN THE DAY AGAIN used to boot a fresh flow and challenge in place — and
+  // main-v212's mobility controller, live fleet, trails and shift log all kept
+  // their handles on the OLD ones. Measured: after "again", tm.mobility.ch was
+  // not tm.challenge, a job taken on the second shift was invisible to the
+  // controller and no CATCH could ever light. A reload rebuilds every seam in
+  // the order the first load did; a rewire would be that same order, kept by
+  // hand, in two files.
+  location.reload();};
 $('transit').onclick=()=>transitView?hideTransit():showTransit();$('transitClose').onclick=hideTransit;$('tramOnly').onclick=()=>showTransit('TRAM');$('metroOnly').onclick=()=>showTransit('SUBWAY');$('allTransit').onclick=()=>showTransit('all');$('popClose').onclick=()=>{$('pop').hidden=true;};
 init();

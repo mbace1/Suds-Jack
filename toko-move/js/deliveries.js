@@ -66,9 +66,29 @@ export class DeliveryChallenge{
   // installed (main-v212 wires the live fleet in), at least one kept offer has
   // a catch inside the horizon, and on the first job that one is listed first
   // (Loop 43: the first delivery is almost impossible to fail).
-  const judge=this.reachable;let kept=cands.slice(0,3);
-  if(typeof judge==='function'){const soon=cands.filter(o=>judge(o)),later=cands.filter(o=>!judge(o));
-    if(soon.length){kept=this.index===0?[soon[0],...later.slice(0,2)]:[...later.slice(0,2),soon[0]].slice(0,3);if(kept.length<3)kept=[...kept,...soon.slice(1),...later.slice(2)].slice(0,3);}}
+  // SIZED TO THE SHIFT. Measured with test/shifts.cjs before this: the first
+  // offer listed — the one Loop 47 promotes for having a tram within reach —
+  // was Lasipalatsi → Arabia at ~1500 ticks, half the day for one delivery,
+  // and a bot that took whatever was listed first finished 1/3 where a bot
+  // that took the cheapest finished 3/3 at tick 2201. Reachable-soon is the
+  // wrong question once the fleet runs to a timetable; the question is
+  // whether the job FITS in the shift that is left. So each candidate is
+  // priced door to door by the same estimator the deadline uses, anything
+  // that cannot land before the day ends is dropped, and the three kept are a
+  // SPREAD — cheapest, middle, dearest that fits — so the choice is short-and-
+  // cheap against long-and-paid rather than three coin flips. The first job
+  // keeps Loop 47's guarantee: the one listed first has a catch inside the
+  // horizon, and is the cheapest such.
+  const judge=this.reachable,est=o=>{const e=this.estimate?.(o);return Number.isFinite(e)&&e>0?e:null;};
+  const remaining=this.flow.clock.ticksPerDay-this.flow.clock.tick;
+  for(const o of cands)o.est=est(o);
+  const priced=cands.filter(o=>o.est!=null).sort((a,b)=>a.est-b.est),unpriced=cands.filter(o=>o.est==null);
+  let fits=priced.filter(o=>o.est<=remaining*0.9);
+  if(!fits.length)fits=priced.slice(0,3);
+  let kept=fits.length>=3?[fits[0],fits[fits.length>>1],fits[fits.length-1]]:fits.slice();
+  for(const o of [...priced,...unpriced]){if(kept.length>=3)break;if(!kept.includes(o))kept.push(o);}
+  kept=kept.filter((o,i)=>kept.indexOf(o)===i);
+  if(typeof judge==='function'&&this.index===0){const soon=kept.filter(o=>judge(o));if(soon.length)kept=[soon[0],...kept.filter(o=>o!==soon[0])];}
   this.offers=kept;this.say(`DISPATCH · ${this.offers.length} jobs available at ${this.name(from)}.`);}
  canTakeSecond(){return Boolean(this.active&&!this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location);}
  canReorder(){return Boolean(this.active&&this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location);}
