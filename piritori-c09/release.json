@@ -1,7 +1,7 @@
 {
   "build": "C.11",
   "source_repository": "mbace1/piritori-eden",
-  "source_commit": "cb8b18704b551d4ce2693d7fa1fa82c8dd4f3286",
+  "source_commit": "e528563c981a9e8a0bd2f7504f8c79249d7d1a27",
   "entry": "web/arena-lab/?actors=6&release=11",
   "status": "development-laboratory",
   "character_provider": "neutral stand-ins",

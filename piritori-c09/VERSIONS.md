@@ -1,6 +1,6 @@
 # C.11 — arena laboratory
 
-Source: cb8b18704b551d4ce2693d7fa1fa82c8dd4f3286.
+Source: e528563c981a9e8a0bd2f7504f8c79249d7d1a27.
 
 Directional low walls, flanking, crouch/peek and resolved weapon impacts. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
