@@ -29,14 +29,14 @@
 export const GAMES = [
   {
     id: 'optionc', title: 'PIRITORI · BEAR PATH', status: 'active',
-    path: 'piritori-fighters/web/bear-path/?release=7', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
+    path: 'piritori-fighters/web/bear-path/?release=8', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'A park handover. Talk your way through—or hold the path.',
     lineage: 'Kallio 2003 · Piritori encounter prototype',
     tags: ['3D', 'tactics', 'story'],
     controls: 'LOOK / TALK / USE / LEAVE · tap to move and fight · drag to orbit · FIT for overview',
-    note: 'C.07 — inspect, negotiate, fight and revisit the outcome. Local scene progress; campaign integration and final rigs pending.',
-    fi: {tagline:'Luovutus Karhupuistossa. Puhu tie auki tai pidä puolesi.', controls:'LOOK / TALK / USE / LEAVE · napauta: liiku ja taistele · vedä: käännä kameraa · FIT: yleiskuva', note:'C.07 — tutki, neuvottele, taistele ja palaa tapahtumapaikalle. Erillinen tallennus; kampanjaliitos ja hahmojen viimeistely kesken.'},
-    ja: {tagline:'公園での受け渡し。話し合うか、道を守るか。', controls:'LOOK / TALK / USE / LEAVE · タップで移動・戦闘 · ドラッグで回転 · FITで全景', note:'C.07 — 調査、交渉、戦闘、その後の再訪。独立した進行セーブ。キャンペーン連携とキャラクターの仕上げは開発中。'},
+    note: 'C.08 — compare Ink & Stone / Cold Street in the same playable park. New bear and scenery; character rigs and campaign integration remain in progress.',
+    fi: {tagline:'Luovutus Karhupuistossa. Puhu tie auki tai pidä puolesi.', controls:'LOOK / TALK / USE / LEAVE · napauta: liiku ja taistele · vedä: käännä kameraa · FIT: yleiskuva', note:'C.08 — vertaa Ink & Stone- ja Cold Street -ilmeitä samassa puistossa. Uusi karhu ja ympäristö; hahmojen ja kampanjan työ jatkuu.'},
+    ja: {tagline:'公園での受け渡し。話し合うか、道を守るか。', controls:'LOOK / TALK / USE / LEAVE · タップで移動・戦闘 · ドラッグで回転 · FITで全景', note:'C.08 — 同じ公園で Ink & Stone と Cold Street を比較。熊像と環境を更新。キャラクターとキャンペーンは開発中。'},
   },
   {
     id: 'concrete', title: 'CONCRETE', status: 'active', path: 'concrete/',
