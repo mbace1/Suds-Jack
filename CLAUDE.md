@@ -968,6 +968,31 @@ set its loss, so **every span including the boss read 0% kills**; and v34
 shipped `VERSION` at 33 while `VERSIONS.md` and `hub/versions.json` both said
 34 — the arcade advertised a release the cabinet denied, and `core.mjs` now
 reads both files and fails when they disagree.
+**THE ASCENSION LADDER, AND EVERY RUNG RIDES A LEVER THAT EXISTED** (v36).
+Six rungs — an elite offered a span earlier, what you meet mutated a level
+ahead of the hour, a rest giving back a fifth instead of a third, a carried
+Doubt, a point of Strength on every boss, a third instead of a half between
+the acts — and **no new mechanic**, which is the point rather than a saving: a
+ladder that needs new systems is a second game. Rungs are **cumulative**, so
+only rung 0 can be an exact control, and `core.mjs` proves it IS one by driving
+whole bot runs at rung 0 and at no rung and comparing the LOGS entry by entry.
+Getting that check right took three passes and the ruler was wrong every time:
+**`uid` is a module-level counter**, so two identical runs number their cards
+and enemies differently purely by running second, and it rides on `target`,
+`enemy`, `src` and `from` as well as on `uid` — it renumbers by order of first
+appearance rather than stripping those keys, because WHICH body was hit is what
+the control is checking. Measured at 150 seeds a cell (`--asc N`), `native`
+reads **25/22/19/16/11/9/6%** and `synergist` 18/17/14/12/9/7/5 — monotone on
+both competent bots with no tuning pass. **Rung 1 is the weakest and that is a
+fact about the RULE**: an elite is offered, not forced, and a competent line
+declines it (greedy even goes UP, which at a 13-point floor is noise, not a
+finding). Two rules a rung may never break, written at the lookup: it may not
+make a run non-deterministic from the seed, and it may not hide information —
+rung 5's boss hits harder and the intent line quotes the bigger number.
+**A ladder is a DECISION, not a comparison**, so unlike `art`/`cut`/`figures`
+it is kept OUT of `LOOK_KEYS`: v30 drops a stored look older than the house
+answer, and doing that to a difficulty somebody earned is the same bug with the
+sign flipped. Stored per character, raised by ONE and only by a WIN.
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`

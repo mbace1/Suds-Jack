@@ -7,6 +7,77 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v36 — 2026-09-13
+**The ascension ladder: six rungs, six levers this engine already had**
+
+A deckbuilder is worth a hundred runs or it is worth two, and what carries the
+difference is a difficulty that keeps asking a new question. This is Slay the
+Spire's ladder in this game's own terms — and the constraint that shaped it is
+that **every rung rides a lever that already existed**:
+
+```
+  1  an elite is offered a span earlier            buildRoute's guaranteed step
+  2  what you meet is mutated a level ahead        the nightfall level
+  3  a rest gives back a fifth, not a third        RULES.restHeal
+  4  you start the run carrying Doubt              the curse the events deal
+  5  every boss stands with a point of Strength    the status every enemy has
+  6  beating an act gives back a third, not a half RULES.healBetweenActs
+```
+
+No new mechanic, and that is the point rather than a saving: a ladder that
+needs new systems is a second game. The rungs are **cumulative** (rung 6 is
+every rung), which is the genre's own shape and the reason only rung 0 can be
+an exact control.
+
+**Two rules a rung may never break**, both written at the lookup in
+`engine.js`: it may not make a run non-deterministic from the seed, because the
+act-two harness's whole value is that an unrelated change reproduces a column
+exactly; and it may not hide information, because this is a full-information
+game — rung 5 makes a boss hit harder and the intent line quotes the bigger
+number the turn it happens (gated).
+
+**The control holds by construction.** `core.mjs` drives a whole bot run at
+rung 0 and at no rung at all and compares the LOGS — not the outcome, every
+entry — across three seeds. They are identical, so every number this project
+recorded before today still describes rung 0. Getting that check right took
+three passes and the fault was the ruler each time: `uid` is a module-level
+counter, so two identical runs number their cards and their enemies
+differently purely by running second, and it rides on `target`, `enemy`, `src`
+and `from` as well as on `uid` itself. It renumbers by order of first
+appearance rather than stripping those keys, because WHICH body was hit is
+exactly what the control is checking.
+
+**Measured, 150 seeds a cell, `node test/bots.mjs 150 --asc N`:**
+
+```
+  rung        0    1    2    3    4    5    6
+  native     25%  22%  19%  16%  11%   9%   6%
+  synergist  18%  17%  14%  12%   9%   7%   5%
+  greedy      9%  11%   7%   4%   3%   3%   3%
+```
+
+Monotone on both competent bots, with no tuning pass — each rung is one
+existing number moved once. **The honest reading of rung 1**: it is the
+weakest rung and is at the edge of what this sample can see (synergist 18→17,
+and greedy goes UP, which at a 13-point per-character floor is noise, not a
+finding). That is a fact about the rule rather than the measurement — an elite
+is OFFERED, not forced, and a competent line declines it. Rungs 2 and 4 are
+the biggest single steps.
+
+**The ladder is a DECISION, not a comparison**, which is why it is deliberately
+kept out of `LOOK_KEYS`: v30 exists because a value picked while comparing four
+looks beat the default for good, and the fix there was to drop a stored look
+older than the house answer. Doing that to a difficulty somebody earned would
+be the same bug with the sign flipped. It is stored per character
+(`asc.<character>`), because a win on the Cart Pusher says nothing about the
+Drinker, and **only a win opens the next rung** — reaching act two at rung 3 is
+not rung 4. It raises by one rather than to the rung played, so a rung handed
+over some other way cannot skip the ones under it, and the result screen names
+what just opened.
+
+Gates: `node test/core.mjs` 783, `NODE_PATH=$(npm root -g) node test/smoke.cjs` 140,
+and the flow harness now walks a whole act on desktop and touch.
+
 ## v35 — 2026-09-13
 **Act two had no middle, and the instrument that proves it is a per-span ledger**
 

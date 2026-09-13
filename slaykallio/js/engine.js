@@ -23,7 +23,16 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES } from './data.js?v=35';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=36';
+
+// THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
+// and nothing else, so the ladder is a table in data.js rather than six
+// conditions spread through the engine — and `core.mjs` can assert the table.
+export const rung = (state, id) => {
+  const a = state.asc ?? 0;
+  const r = ASCENSION.find(x => x.id === id);
+  return !!r && a >= r.n;
+};
 
 // ── rng ──────────────────────────────────────────────────────────────────
 export function makeRng(seed) {
@@ -77,11 +86,12 @@ export function upgrade(c) {
 }
 
 // ── run ──────────────────────────────────────────────────────────────────
-export function createRun({ seed = 1, character = 'drinker', theme = 'kallio' } = {}) {
+export function createRun({ seed = 1, character = 'drinker', theme = 'kallio', asc = 0 } = {}) {
   const def = CHARACTERS[character];
   if (!def) throw new Error(`no character ${character}`);
   const state = {
     seed, theme, character,
+    asc: Math.max(0, Math.min(ASC_MAX, Math.floor(asc) || 0)),
     rng: makeRng(seed),
     hero: {
       hp: def.hp, maxHp: def.hp, block: 0, energy: 0, maxEnergy: RULES.energy,
@@ -113,6 +123,10 @@ export function createRun({ seed = 1, character = 'drinker', theme = 'kallio' } 
 }
 
 export function startRun(state) {
+  // Rung 4 is a card, not a number: it clogs the hand the way every other
+  // curse in this game does, and it is in the deck list from the first fight
+  // so the player can see what they agreed to.
+  if (rung(state, 'carry_doubt') && !state.hero.deck.some(c => c.id === 'doubt')) state.hero.deck.push(card('doubt'));
   state.act = 0;
   buildRoute(state, 0);
   openMap(state);
@@ -142,7 +156,8 @@ export function buildRoute(state, actIndex) {
     else {
       if (last) opts.push({ kind: 'rest' });
       else if ((s === 2 || s === 3) && !restOffered && (s === 3 || rng.next() < 0.6)) { opts.push({ kind: 'rest' }); restOffered = true; }
-      if (s >= 2 && !last && (s === 4 && !eliteOffered || rng.next() < 0.35)) {
+      const eliteBy = rung(state, 'elite_early') ? 3 : 4;
+      if (s >= 2 && !last && (s === eliteBy && !eliteOffered || rng.next() < 0.35)) {
         opts.push({ kind: 'elite', id: rng.pick(act.elites) }); eliteOffered = true;
       }
       if (rng.next() < 0.55 || last) opts.push(nextEvent());
@@ -209,7 +224,9 @@ function startEncounter(state, encId, kind = 'fight') {
   state.encounter = index;
   if (kind === 'boss') { state.route.step = ACTS[state.act].steps + 1; }
   markHour(state);
-  const lvl = nightfall(state.hour ?? 0);
+  // Rung 2 does not move the HOUR — the sky, the plates and the map all read
+  // that, and a ladder must not relight the scene. It moves what SPAWNS.
+  const lvl = Math.min(2, nightfall(state.hour ?? 0) + (rung(state, 'dark_sooner') ? 1 : 0));
   const h = state.hero;
   h.block = 0; h.status = {}; h.powers = {}; h.fresh = {};
   state.enemies = enc.enemies.map((id, i) => {
@@ -222,6 +239,7 @@ function startEncounter(state, encId, kind = 'fight') {
     const e = { uid: ++uidCounter, id, slot: i, hp, maxHp: hp, block: 0, status: {}, mutated: mut,
       moveIndex: d.pattern === 'cycle' ? state.rng.int(d.moves.length) : 0, intent: null, alive: true };
     if (mut >= 2) e.status.strength = 1;
+    if (d.boss && rung(state, 'strong_boss')) e.status.strength = 1;
     return e;
   });
   state.draw = state.rng.shuffle(state.hero.deck.map(c => ({ ...c, effects: c.effects.map(f => ({ ...f })) })));
@@ -697,7 +715,7 @@ function afterFight(state) {
     // Dusk falls between the acts, and you catch your breath. Measured: without
     // this every character reached act two at ~40% HP and the Bridge King was
     // 48% of all deaths — the middle of the run was a wall, not a curve.
-    heal(state, Math.floor(state.hero.maxHp * RULES.healBetweenActs));
+    heal(state, Math.floor(state.hero.maxHp * (rung(state, 'short_breath') ? RULES.healBetweenActsHard : RULES.healBetweenActs)));
     state.act++;
     buildRoute(state, state.act);
   }
@@ -851,7 +869,7 @@ export function pickCard(state, deckIndex) {
 export function chooseRest(state, kind) {
   if (state.phase !== 'rest') return false;
   state.stats.rests++;
-  if (kind === 'heal') { heal(state, Math.floor(state.hero.maxHp * RULES.restHeal)); state.log.push({ t: 'rested', kind }); openMap(state); return true; }
+  if (kind === 'heal') { heal(state, Math.floor(state.hero.maxHp * (rung(state, 'thin_rest') ? RULES.restHealHard : RULES.restHeal))); state.log.push({ t: 'rested', kind }); openMap(state); return true; }
   if (kind === 'upgrade') { state.log.push({ t: 'rested', kind }); runEffects(state, [{ type: 'upgrade' }], 'rest'); return true; }
   return false;
 }

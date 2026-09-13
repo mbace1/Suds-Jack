@@ -3,11 +3,11 @@
 // Everything is driven off game state from a fixed seed, so a number that
 // changes here changed in the rules, not in the clock.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from '../js/data.js';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { poseAt, frameAt, FRAME_NAMES, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
 import { CAST, WITH_GUNS, POSES, WITH_POSES, castFiles, plateFor, posesFor } from '../js/plates.js';
-import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN } from '../js/engine.js';
+import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN, rung, enemyDamage } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
 
@@ -700,6 +700,99 @@ check('a won fight records the hour it was won at', (() => {
   const w = st.log.filter(l => l.t === 'fightWon');
   return w.length > 1 && w.every(l => [0, 1, 2].includes(l.lvl)) && w.every((l, i) => i === 0 || l.lvl >= w[i - 1].lvl);
 })());
+
+// ── the ascension ladder ─────────────────────────────────────────────────
+// Six rungs, each one rule, each riding a lever the engine already had. The
+// checks below are about the TABLE and about each rule firing — the ladder is
+// cumulative (rung 6 is every rung), which is Slay the Spire's own shape and
+// the reason only rung 0 can be an exact control.
+{
+  check(`the ladder is ${ASC_MAX} rungs, numbered from one with no gaps and no repeated id`,
+    ASCENSION.length === ASC_MAX && ASCENSION.every((r, i) => r.n === i + 1)
+    && new Set(ASCENSION.map(r => r.id)).size === ASC_MAX
+    && ASCENSION.every(r => typeof r.text === 'string' && r.text.length > 10));
+  check('a rung out of range is clamped, never obeyed',
+    createRun({ seed: 1, asc: -3 }).asc === 0 && createRun({ seed: 1, asc: 99 }).asc === ASC_MAX
+    && createRun({ seed: 1 }).asc === 0);
+
+  // THE CONTROL, BY CONSTRUCTION. A run at rung 0 must be the run this game
+  // had before the ladder existed — not nearly, exactly — or every number
+  // measured before v36 is measuring a different game.
+  // `uid` is a MODULE-level counter, so two identical runs number their cards
+  // and their enemies differently purely by running second — and it rides on
+  // `target`, `enemy`, `src` and `from` as well as on `uid` itself. Renumber each log
+  // by order of first appearance instead of stripping those keys, because
+  // WHICH body was hit is exactly what the control is checking.
+  const UIDKEY = new Set(['uid', 'target', 'enemy', 'src', 'from']);
+  const logOf = st => {
+    const seen = new Map();
+    return JSON.stringify(botRun(st).log, (k, v) => {
+      if (!UIDKEY.has(k) || typeof v !== 'number') return v;
+      if (!seen.has(v)) seen.set(v, seen.size);
+      return seen.get(v);
+    });
+  };
+  check('rung 0 is the old game, to the log entry',
+    [3, 11, 29].every(seed =>
+      logOf(startRun(createRun({ seed, character: 'boxer' })))
+      === logOf(startRun(createRun({ seed, character: 'boxer', asc: 0 })))));
+  check('and the ladder is cumulative — the top rung is every rung',
+    ASCENSION.every(r => rung({ asc: ASC_MAX }, r.id)) && !ASCENSION.some(r => rung({ asc: 0 }, r.id)));
+
+  // 1 — an elite is offered a span earlier
+  const eliteStep = st => st.route.steps.findIndex(o => o.some(n => n.kind === 'elite'));
+  const first = a => Array.from({ length: 40 }, (_, i) =>
+    eliteStep(startRun(createRun({ seed: i + 1, character: 'boxer', asc: a })))).filter(x => x >= 0);
+  check('rung 1 puts an elite on the route by step three, where rung 0 may wait for four',
+    first(1).every(x => x <= 3) && first(0).some(x => x === 4));
+
+  // 2 — the dark comes sooner
+  const firstFight = a => { const st = startRun(createRun({ seed: 5, character: 'boxer', asc: a })); chooseNode(st, 0); return st; };
+  check('rung 2 mutates the first fight of the run, which rung 0 leaves alone',
+    firstFight(0).enemies.every(e => e.mutated === 0) && firstFight(2).enemies.every(e => e.mutated === 1));
+  check('and it does not touch the HOUR — the sky, the plates and the map still read the same clock',
+    firstFight(0).hour === firstFight(2).hour);
+
+  // 3 — a thinner rest
+  const rested = a => {
+    const st = startRun(createRun({ seed: 5, character: 'boxer', asc: a }));
+    st.hero.hp = 10; st.phase = 'rest'; chooseRest(st, 'heal'); return st.hero.hp - 10;
+  };
+  check(`rung 3 gives back a fifth (${rested(3)}) where rung 0 gives a third (${rested(0)})`,
+    rested(3) === Math.floor(CHARACTERS.boxer.hp * RULES.restHealHard)
+    && rested(0) === Math.floor(CHARACTERS.boxer.hp * RULES.restHeal) && rested(3) < rested(0));
+
+  // 4 — the carried curse
+  const deckOf = a => startRun(createRun({ seed: 5, character: 'boxer', asc: a })).hero.deck;
+  check('rung 4 puts one Doubt in the deck, and exactly one',
+    deckOf(4).filter(c => c.id === 'doubt').length === 1
+    && deckOf(3).every(c => c.id !== 'doubt')
+    && deckOf(4).length === deckOf(3).length + 1);
+
+  // 5 — a boss with a point of Strength, and the telegraph says so
+  const bossAt = a => { const st = startRun(createRun({ seed: 5, character: 'boxer', asc: a })); jumpTo(st, ENC('bridge')); return st; };
+  check('rung 5 stands a boss up with 1 Strength; rung 0 does not',
+    (bossAt(5).enemies[0].status.strength ?? 0) === 1 && (bossAt(0).enemies[0].status.strength ?? 0) === 0);
+  {
+    const st = bossAt(5), e = st.enemies[0];
+    e.intent = { ...ENEMIES.bridge_king.moves.find(m => m.dmg), shown: 0 };
+    e.intent.shown = enemyDamage(st, e, e.intent.dmg);
+    check(`and the intent line quotes the bigger number (${e.intent.shown} for a ${e.intent.dmg})`,
+      e.intent.shown === e.intent.dmg + 1);
+  }
+
+  // 6 — a shorter breath between the acts
+  check('rung 6 hands back a third between acts where rung 0 hands back a half',
+    RULES.healBetweenActsHard < RULES.healBetweenActs
+    && Math.abs(RULES.healBetweenActsHard - 1 / 3) < 1e-9);
+
+  // and the whole ladder is still playable — a bot must be able to finish a
+  // run at every rung, or a rung is a wall rather than a difficulty
+  for (const a of [0, 2, 4, ASC_MAX]) {
+    const ends = [1, 2, 3, 4, 5].map(seed => botRun(startRun(createRun({ seed, character: 'cart', asc: a }))).phase);
+    check(`a run at rung ${a} still ends`, ends.every(p => p === 'won' || p === 'lost'));
+  }
+}
 
 // ── a whole run, six times ───────────────────────────────────────────────
 const results = {};

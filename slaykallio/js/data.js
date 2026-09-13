@@ -1051,6 +1051,26 @@ export const THEMES = {
     park: { sky: ['#171a2a', '#5e3a46'], canopy: ['#0f150f', '#182219', '#26301d'], grass: '#1b2317', path: '#332e27', stone: '#282629', bench: '#3a3028', iron: '#121014', water: '#0d1317' } },
 };
 
+// ── the ascension ladder ─────────────────────────────────────────────────
+// Six rungs, each ONE rule, and every one of them rides a lever this engine
+// already had — the step an elite is offered at, the hour's mutation level,
+// the two heals, a curse, and a boss's strength. That constraint is the point:
+// a difficulty ladder that needs new mechanics is a second game, and a second
+// game is not what "the same run, harder" means. Two things a rung may never
+// do: make the run non-deterministic from the seed (the act-two harness's
+// whole value is that an unrelated change reproduces a column exactly), or
+// hide information (this is a full-information game — if a boss hits harder,
+// the intent line says the bigger number the turn it happens).
+export const ASCENSION = [
+  { n: 1, id: 'elite_early',  text: 'An elite is offered a span earlier.' },
+  { n: 2, id: 'dark_sooner',  text: 'The dark comes sooner: what you meet is mutated a level ahead of the hour.' },
+  { n: 3, id: 'thin_rest',    text: 'A rest gives back a fifth of you, not a third.' },
+  { n: 4, id: 'carry_doubt',  text: 'You start the run carrying Doubt.' },
+  { n: 5, id: 'strong_boss',  text: 'Every boss stands with a point of Strength.' },
+  { n: 6, id: 'short_breath', text: 'Beating an act gives back a third of you, not a half.' },
+];
+export const ASC_MAX = ASCENSION.length;
+
 export const RULES = {
   energy: 3,
   draw: 5,
@@ -1058,7 +1078,9 @@ export const RULES = {
   jokerMax: 5,
   healAfterFight: 6,
   restHeal: 0.3,           // a rest site heals this share of max HP
+  restHealHard: 0.2,       // …and this much once the ladder has taken the rest (ASCENSION 3)
   healBetweenActs: 0.5,    // beating an act's boss: dusk falls, and you catch your breath
+  healBetweenActsHard: 1 / 3, // …and this much at ASCENSION 6
   mutation: [1, 1.15, 1.3],// enemy HP × by nightfall level 0/1/2; level 2 also brings 1 Strength
   vulnerable: 1.5,
   weak: 0.75,

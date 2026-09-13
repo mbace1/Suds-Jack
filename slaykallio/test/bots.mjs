@@ -336,8 +336,15 @@ const BOSSES = new Set(ACTS.map(a => a.boss));
 const ELITES = new Set(ACTS.flatMap(a => a.elites));
 const kindOf = id => BOSSES.has(id) ? 'boss' : ELITES.has(id) ? 'elite' : 'fight';
 
+// The rung the matrix is measured at. Rung 0 must reproduce every recorded
+// number by construction (`core.mjs` asserts the logs are identical), which is
+// what makes a rung's column mean anything — and the ladder is CUMULATIVE, so
+// a column is "every rule up to N", never one rule in isolation.
+export let ASC = 0;
+export const setAsc = n => { ASC = n; };
+
 export function run(seed, character, bot, ledger) {
-  return drive(startRun(createRun({ seed, character })), bot, ledger);
+  return drive(startRun(createRun({ seed, character, asc: ASC })), bot, ledger);
 }
 
 // Drive a state to the end — or to the first moment `stopAt(s)` holds, which
@@ -501,7 +508,7 @@ export function restore(snap) {
 export function arrivals(character, bot, from, to) {
   const out = [];
   for (let seed = from; seed <= to; seed++) {
-    const s = drive(startRun(createRun({ seed, character })), bot, null, AT_ACT_TWO);
+    const s = drive(startRun(createRun({ seed, character, asc: ASC })), bot, null, AT_ACT_TWO);
     if (AT_ACT_TWO(s)) out.push(snapshot(s));
   }
   return out;
@@ -626,7 +633,12 @@ export function noiseFloor(SEEDS = 150, BLOCKS = 4) {
 export const NOISE = { perCharacter: 13, mean: 2 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  // `--asc N` measures the matrix (or act two) with the ladder at rung N. It
+  // is set BEFORE anything runs, because a population bred at one rung and
+  // resumed at another would be measuring neither.
+  const ai = process.argv.indexOf('--asc');
+  if (ai >= 0) { setAsc(Number(process.argv[ai + 1]) || 0); console.log(`\n  ── ASCENSION ${ASC} ──`); }
   if (process.argv.includes('--noise')) noiseFloor(Number(process.argv[2]) || 150);
   else if (process.argv.includes('--act2')) act2Report();
-  else report();
+  else report(Number(process.argv[2]) || 150);
 }
