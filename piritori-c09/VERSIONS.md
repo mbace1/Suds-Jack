@@ -1,6 +1,6 @@
 # C.14 — Night Shift crew pilot
 
-Source: 1e1697522bd6731e3f84576403038618511fc388.
+Source: 22ac6861f4118b311b4fa18c0faa27e16155a8d0.
 
 After the Rain wet paving and practical reflections, reversible gun aiming view, action focus and exact overview return. Persistent C.12 rules and saves retained. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
