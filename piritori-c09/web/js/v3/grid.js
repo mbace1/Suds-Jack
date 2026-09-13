@@ -165,4 +165,3 @@ export function defaultPlayerSlot(index, total) {
   }
   return order[index % order.length];
 }
-

@@ -248,4 +248,3 @@ export function hireling(seed, i, o = {}) {
 export function roster(seed, n, o = {}) {
   return Array.from({ length: n }, (_, i) => hireling(seed, i, o));
 }
-

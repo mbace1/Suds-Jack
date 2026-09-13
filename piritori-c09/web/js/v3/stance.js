@@ -37,4 +37,3 @@ const WEIGHTS = {
 export function stanceWeight(stance, type) {
   return WEIGHTS[stance]?.[type] ?? 1.0;
 }
-

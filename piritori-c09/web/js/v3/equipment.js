@@ -130,4 +130,3 @@ export function itemsFrom(equipmentList) {
   }
   return out;
 }
-
