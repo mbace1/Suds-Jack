@@ -1,7 +1,7 @@
 {
   "build": "C.14",
   "source_repository": "mbace1/piritori-eden",
-  "source_commit": "d577e06e3dc9aa088781455adb7916914fa3580c",
+  "source_commit": "1e1697522bd6731e3f84576403038618511fc388",
   "entry": "web/crew-run/?release=14",
   "status": "connected-crew-pilot",
   "character_provider": "neutral stand-ins",
@@ -20,7 +20,7 @@
     "web/arena-lab/index.html": "e85c0ae10f24c0eef904162a5027f132d572c5f802f1ac3af84bc86da502e92d",
     "web/arena-lab/style.css": "c97ee99822a4b9cecf009dfa4ba2e53399d37fd0538765f9d647468d605088a1",
     "web/bear-path/assets.js": "a66302aa9d8072d25f3315abb8311a3a596a049498d593cb410644532dce3e19",
-    "web/bear-path/development-look.js": "e554c2ab57b6e108bf6afb135863de12b954157b71cbdd5c7d73e6fa1184d9b1",
+    "web/bear-path/development-look.js": "09195eef6add8a838481ff86bbe1a892ef4d357ba359e64d8bf6cf40258868b9",
     "web/bear-path/encounter.js": "87df33f188cc47441bff0117c311dcb3ef0538767e0f539776b32f4e4c75b33f",
     "web/bear-path/park.js": "60c0d14508291e5cfc2a39e670b2c165399b1e1ffa8c9b97ac0986a8d075bfe2",
     "web/bear-path/presentation.js": "5200db18053454696f7601c2df513a067753cac2e78b9088614537e0b3234b40",
