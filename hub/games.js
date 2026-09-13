@@ -28,14 +28,14 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.12', status: 'active',
-    path: 'piritori-c09/web/crew-run/?release=12', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
+    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.13', status: 'active',
+    path: 'piritori-c09/web/crew-run/?release=13', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'Choose your crew. Bring someone home. Live with the aftermath.',
     lineage: 'Kallio 2003 · Dream Loop crew pilot', tags: ['3D', 'tactics', 'prototype'],
     controls: 'Choose 2–3 crew · Move + Act · Help / Extract · preview then confirm · drag camera',
-    note: 'C.12 — Persistent crew and equipment, rescue and extraction, announced rivals, wounds and repeat outings. Temporary stand-ins; separate from the authored campaign. Pixel/iPad hardware acceptance is pending.',
-    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.12 — Ryhmä, varusteet, pelastus, poistuminen ja haavat jatkuvat seuraavalle keikalle. Erillinen prototyyppi, väliaikaiset hahmot.'},
-    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.12 — 仲間と装備、救出と脱出、予告される増援、負傷と次の任務。仮キャラクターによる独立した試作です。'},
+    note: 'C.13 — Paper console, equipment cards, actual-figure portraits, practical night lighting and intent paths. Persistent rescue outings. Temporary stand-ins; separate from the authored campaign. Pixel/iPad hardware acceptance is pending.',
+    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.13 — Ryhmä, varusteet, pelastus, poistuminen ja haavat jatkuvat seuraavalle keikalle. Erillinen prototyyppi, väliaikaiset hahmot.'},
+    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.13 — 仲間と装備、救出と脱出、予告される増援、負傷と次の任務。仮キャラクターによる独立した試作です。'},
   },
   {
     id: 'optionc', title: 'OPTION C · 3D TEST', status: 'active',
