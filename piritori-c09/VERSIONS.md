@@ -1,9 +1,9 @@
-# C.11 — arena laboratory
+# C.12 — Night Shift crew pilot
 
-Source: e528563c981a9e8a0bd2f7504f8c79249d7d1a27.
+Source: 80003698eed2cc606d098897afe547de65af16ea.
 
-Directional low walls, flanking, crouch/peek and resolved weapon impacts. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
+Persistent crew, loadouts, rescue and extraction, announced arrivals, wounds and repeat outings. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
 ## Port
 
-Godot: port lab tactics.js and tests before claiming rules parity; invalidate projected labels on camera, actor, text or viewport changes. Campaign keeps its authored resolver.
+Godot: port crew-run/run.js, crew-run.mjs and the lab tactics tests before claiming rules parity; invalidate projected labels on camera, actor, text or viewport changes. Campaign keeps its authored resolver.
