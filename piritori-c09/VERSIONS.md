@@ -1,8 +1,8 @@
-# C.10.1 — arena laboratory
+# C.11 — arena laboratory
 
-Source: 70e0d90487b81ccdfdf6240a29213d2ff90606fc.
+Source: cb8b18704b551d4ce2693d7fa1fa82c8dd4f3286.
 
-Move + Act, stored enemy plans, path/cover previews, ammo/reload and directed combat. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
+Directional low walls, flanking, crouch/peek and resolved weapon impacts. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
 ## Port
 
