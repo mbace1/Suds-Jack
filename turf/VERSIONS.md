@@ -110,6 +110,15 @@ The topple is the strongest single case and is already solved in this repo —
 camera's x and the depth axis, because a flat cutout rotating *in* the picture
 plane reads as a sprite spinning. It retires four of the pilot's 28 frames.
 
+**Two fixes from review, on this same version.** The cell namer divided `col`
+by 1 under `--all`, which gave each half of a front/back pair its own cell
+number (`r1c1f`, `r1c2b`) and broke the `f`/`b` pairing exactly where it is
+needed, since TURF is the caller that asks for both facings. `col` is the index
+of the run on the SHEET and the fronts-only filter drops odd ones without
+renumbering, so the divisor is 2 in both modes. And `index.html` still showed
+`v36` while `VERSIONS.md` and `hub/versions.json` said v37 — the same
+number-in-one-file-disagreeing-with-another class this repo keeps paying for.
+
 ## v36 — 2026-09-11
 Playable-control pass: explicit 44px attack/ability target buttons use the same
 decision path as board taps, including choosing a firing position. Reload,

@@ -164,7 +164,13 @@ await browser.close();
 // Named by where it stands on the sheet, because the sheet is the record: a
 // person names it after looking at it, and the file says where to go back to.
 out.cells.forEach((c, i) => {
-  const name = `r${c.band + 1}c${Math.floor(c.col / (ALL ? 1 : 2)) + 1}${ALL ? (c.col % 2 ? 'b' : 'f') : ''}`;
+  // `col` is the index of the run on the SHEET, front and back alike, and the
+  // `!ALL` filter above drops the odd ones without renumbering. So the cell
+  // number is col/2 in BOTH modes: fronts-only reads 0,2,4 → c1,c2,c3, and
+  // --all reads 0,1,2,3 → c1f,c1b,c2f,c2b. Dividing by 1 under --all gave each
+  // half of a pair its own cell number (c1f, c2b), which breaks the f/b
+  // pairing exactly where it is needed — TURF asks for both facings.
+  const name = `r${c.band + 1}c${Math.floor(c.col / 2) + 1}${ALL ? (c.col % 2 ? 'b' : 'f') : ''}`;
   writeFileSync(join(outDir, name + '.png'), Buffer.from(c.png.split(',')[1], 'base64'));
   console.log(`  ${name.padEnd(6)} ${String(c.w).padStart(4)}x${String(c.h).padStart(4)} at ${c.x},${c.y}`);
 });
