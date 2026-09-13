@@ -23,8 +23,15 @@
     display: flex; flex-direction: column; gap: 8px;
     padding: 8px 12px; background: #14161c;
     border-top: 1px solid #262a32; flex: none; z-index: 5;
+    max-height: 48dvh; overflow-y: auto;
   }
   #bottombar .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #targets { display: flex; gap: 6px; overflow-x: auto; flex-shrink: 0; }
+  #targets:empty { display: none; }
+  .targetBtn { flex: 0 0 auto; min-height: 44px; padding: 8px 12px; border: 1px solid #c9663f;
+    background: #241b18; color: #f5d9c5; font: inherit; cursor: pointer; }
+  button:focus-visible, summary:focus-visible { outline: 3px solid #f2e2a0; outline-offset: 2px; }
+  #operatorDetails summary { min-height: 44px; padding: 12px 0; color: #b6bac2; cursor: pointer; }
 
   #turnLabel { font-weight: bold; letter-spacing: .1em; text-transform: uppercase; color: #6fa8c9; }
   #turnLabel.enemy { color: #c9663f; }
@@ -86,6 +93,48 @@
      gradient on #stage would paint BEHIND this child rather than over it,
      and it takes the same --cam transform as the canvas so a pan moves the
      yard and the grid together instead of sliding one across the other. */
+  /* The zoom control. It sits IN the stage, over the board's own corner,
+     because zoom is a property of the board and a control for it in the
+     bottom bar would be one more thing competing with the actions. Bottom
+     right: the left side is where a thumb rests to pan, and the top is
+     where the HUD text runs. Same 44px floor as every other control here. */
+  /* Off-screen markers. Pinned to the STAGE, never to the board: the board
+     is translated by the compositor on a pan and a marker that travelled
+     with it would point at nothing. Small, edge-hugging, faction-coloured —
+     enough to say "two rivals that way", not enough to compete with the
+     board it is describing. */
+  #offscreen { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+  #offscreen .pip {
+    position: absolute; transform: translate(-50%, -50%);
+    display: flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 4px;
+    border-radius: 9px; border: 1px solid currentColor;
+    background: rgba(7,8,11,0.82);
+    font: 700 10px/1 'Courier New', ui-monospace, Menlo, monospace;
+  }
+  #offscreen .pip.danger { box-shadow: 0 0 0 2px rgba(201,102,63,0.35); }
+  #zoombar {
+    position: absolute; right: 6px; bottom: 6px; z-index: 3;
+    display: flex; align-items: center; gap: 2px;
+    background: rgba(7,8,11,0.78); border: 1px solid #262a32;
+    border-radius: 8px; padding: 2px;
+  }
+  #zoombar button {
+    min-width: 44px; min-height: 44px;
+    background: none; border: 0; color: #d6d9de;
+    font: 700 20px/1 'Courier New', ui-monospace, Menlo, monospace;
+    cursor: pointer; border-radius: 6px;
+  }
+  #zoombar button:hover:not(:disabled) { background: rgba(111,168,201,0.16); }
+  #zoombar button:disabled { opacity: 0.35; cursor: default; }
+  /* FIT is the counterweight to zooming in: this game promises you can see
+     every rival's plan, and a zoom deep enough to read a face is deep enough
+     to hide half the board. One tap puts the whole thing back on screen. */
+  #zoombar #zoomFit {
+    min-width: 48px; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    color: #a5abb5;
+  }
+  #zoombar #zoomFit.on { color: #6fa8c9; }
   #plate {
     position: absolute; left: 0; top: 0; width: 0; height: 0;
     background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
@@ -159,10 +208,13 @@
 
   .overlay {
     position: fixed; inset: 0; z-index: 20;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
     gap: 14px; padding: 20px; text-align: center;
-    background: rgba(7,8,11,0.94);
+    background: rgba(7,8,11,0.94); overflow-y: auto;
   }
+  .overlay > * { flex-shrink: 0; }
+  .overlay > h1 { margin-top: auto; }
+  .overlay > button:last-child { margin-bottom: auto; }
   .overlay[hidden] { display: none; }
   .overlay h1 { font-size: 28px; letter-spacing: .2em; text-transform: uppercase; color: #6fa8c9; }
   .overlay p { max-width: 440px; color: #b6bac2; font-size: 13px; line-height: 1.7; }
@@ -213,46 +265,40 @@
   <div id="stage">
     <div id="plate"></div>
     <canvas id="board" width="10" height="10"></canvas>
+    <div id="offscreen" aria-hidden="true"></div>
+    <div id="zoombar">
+      <button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button>
+      <button id="zoomFit" type="button" aria-label="Fit the whole board on screen">FIT</button>
+      <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+    </div>
   </div>
 
   <div id="bottombar">
+    <p id="fieldGuide" role="status" style="color:#e5edf4;line-height:1.4">Choose an operator from the crew row to see their options.</p>
     <div id="squad" class="row"></div>
     <div id="abilities" class="row"></div>
+    <div id="targets" role="group" aria-label="Attack targets"></div>
     <div class="row">
       <button id="cancelBtn" class="actionBtn secondary" disabled>Cancel</button>
       <button id="endTurnBtn" class="actionBtn" disabled>End Turn</button>
       <button id="muteBtn" class="actionBtn secondary" aria-pressed="false" title="Sound on/off">Sound</button>
       <button id="autoBtn" class="actionBtn secondary" aria-pressed="false" title="Let the crew play itself">Auto</button>
     </div>
-    <div class="row">
+    <details id="operatorDetails">
+      <summary>Operator details · odds and incoming threats</summary>
       <span id="selInfo">
         <img id="selPortrait" alt="" hidden>
         <span id="selText">Select an operator.</span>
       </span>
-      <span id="toast"></span>
-    </div>
+    </details>
+    <span id="toast" role="status"></span>
   </div>
 
   <div id="title" class="overlay">
-    <h1>TURF</h1>
+    <h1>TURF <small style="font-size:14px">v36</small></h1>
     <p class="tag">Nordic street tactics — three operators, no way out but through.</p>
-    <p>
-      Tap an operator, then tap a tile to move or an enemy to hit — move and act in either
-      order, once each, per operator. Full cover (dumpsters, fences) blocks a shot outright;
-      low cover (crates, curbs) only softens one. Moving builds MOMENTUM — one pip per
-      tile — which either sharpens your next swing or keeps you hard to shoot until you
-      use it, so standing still is a choice you pay for. Every enemy shows what it plans
-      to do before it does it — read the board, not the RNG. Every shot shows its odds and its
-      damage before you commit. The objective changes: most blocks are HELD, but some ask you to
-      get the crew OUT across green tiles, or to break a cache behind the line — and those run
-      on a clock. Lose the crew and it's over.
-    </p>
-    <p>
-      Moving builds MOMENTUM — one pip a tile — and momentum buys ACTIONS: cleave a crowd,
-      shove a body into a stairwell, drop cover, or hold your fire on overwatch and shoot the
-      first rival who crosses your line. Spend it on an action or keep it and be harder to
-      shoot; never both.
-    </p>
+    <p>Choose an operator. Move into position. Read the rivals’ plans before you strike.</p>
+    <p>Each operator can move and act once, in either order. Short field tips guide your first turn on the board.</p>
     <p class="tag">Mouse or touch · drag to look around · arrows/WASD move, Enter/Space confirm,
       Esc cancel, E ends turn · pad: stick move, A confirm, B cancel, Y ends turn ·
       AUTO lets the crew play itself</p>
@@ -266,7 +312,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=31"></script>
-  <script type="module" src="../hub/shell.js?v=17"></script>
+  <script type="module" src="js/main.js?v=35"></script>
+  <script type="module" src="../hub/shell.js?v=38"></script>
 </body>
 </html>

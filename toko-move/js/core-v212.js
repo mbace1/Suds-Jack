@@ -2,26 +2,26 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=9';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=11';
 import {TransitLayers} from './transit-layers.js?v=6';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=5';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
-import {SHIFT} from './live-network.js?v=6';
+import {SHIFT} from './live-network.js?v=8';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.24';
+const BUILD_VERSION='2.34';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
 let flow,challenge,renderer,transit,city,water,ground,source,transitView=false,done=false,last=0,msgs=[];
 let box,roads,camera;
-const say=s=>{msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};
+const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -52,6 +52,21 @@ function boot(seed=7){
   challenge.start();publish();paintHud();paintSheet();
 }
 
+// WHICH SCALE A PHONE OPENS AT. Measured, not preferred: CITY fits the whole
+// board by HEIGHT, and board.js then grows the box sideways to fill the canvas
+// (growing rather than cropping, so no stop is ever hidden). On a desktop the
+// map element carries the board's own portrait aspect and the growth is tiny.
+// On a phone `width:100%` and `max-height` force the element landscape, the
+// grown half has no ground, no water and no streets in it — the data ends where
+// the extract does — and 48% of the map is black. The badges that survive pile
+// into an unreadable heap in the middle.
+//
+// ROUTE's 4 km viewport is a CROP of the board rather than a fit to it, so it
+// is full of map at any element shape, and it is the scale the game is played
+// at anyway. CITY stays one tap away on the rail; this only picks the opening.
+function openingScale(){if(!camera)return;if(innerWidth>=900)return;
+  camera.snapTo('route');camera.zoom=camera.targetZoom;}
+
 function paintTransitPanel(){
   if(!transit)return;
   const s=transit.source;$('transitMeta').textContent=`${s.source} · ${s.fetched} · ${transit.layers.length} source lines · ${coverageLabel(s)}`;
@@ -65,7 +80,7 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
   // Inland bodies are closed rings and fill. The SEA does not: an OSM coastline
   // is a directed OPEN line — land on its left, water on its right — and closing
   // it into a polygon is inventing a shape the data does not contain. (The
-  // Piritori lane tried three closures and completed none of them.) So the sea
+  // earlier lane tried three closures and completed none of them.) So the sea
   // is not filled; it is SHOWN, by shading outward from the shore on the side
   // the data itself says is water. Three offset passes, fading out, which reads
   // as sea at a glance and is derived rather than drawn: flip the winding and
@@ -347,9 +362,47 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
   ctx.restore();}
 
 function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${DELIVERY_TARGET}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
-function paintSheet(){if(!challenge)return;const b=$('sheet');if(!challenge.active){if(!document.getElementById('jobBoard'))b.innerHTML='<p class="hint">Dispatching local jobs…</p>';return;}const j=challenge.active,c=challenge.cargoRule();b.innerHTML=`<div class="jobTop"><span class="cargoBadge" style="border-color:${cargoColour(j.cargo)}">${c.icon}</span><div><h2>JOB ${challenge.index+1}/${DELIVERY_TARGET}</h2><p class="route"><b>${esc(challenge.routeLabel())}</b></p></div></div><p class="hint">${esc(j.label)} · ${esc(j.cargo)}</p><p class="cargoRule">${esc(c.rule)}</p><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%"></i></div><p class="hint">${challenge.remaining()} ticks remaining · score ${challenge.score}</p>`;}
-function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m of msgs.slice(0,3)){const d=document.createElement('div');d.textContent=m;f.append(d);}}
-function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${DELIVERY_TARGET}</b></p><p>score <b>${challenge.score}</b></p><p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p>`;$('endNote').textContent=challenge.complete?'Ten Helsinki courier jobs complete.':'The shift ended; the route remains replayable.';$('end').hidden=false;}
+// THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
+// paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
+// panel (route-choice.js) all wrote into #sheet on their own timers, and each
+// one appended. Taking a job therefore changed NOTHING on screen: the dispatch
+// list with its three TAKE JOB cards stayed exactly where it was, the header
+// saying which job you now had was only painted on a tick that reported a
+// change, and the buttons that actually board a tram were appended third —
+// below the fold, under a list that looked untouched. The owner's report was
+// "don't know how to move from one spot to another", and that is the whole of
+// it: the next action was off screen behind a stale one.
+//
+// So the sheet has three SLOTS in a fixed order and each writer owns one. The
+// order is the order you need them in: what you are carrying, what you can
+// board right now, and only then anything else on offer.
+// The order is what you can act on first. Boarding leads, because it is the
+// only thing on this screen you can do and because the HUD one row up already
+// says which job you are on and when it is due — measured on a phone, the job
+// header pushed the first CATCH button to y=577 of 664. Then the header, then
+// what else this stop offers, then anything still on the dispatch list. There
+// were SIX writers into #sheet, not three. hub-tactics and recovery append
+// too, and hub-tactics was landing above everything — and `rideStatus`, the
+// panel that says which tram you are on, was appending straight to the sheet
+// and was not on this list at all. It happened to come out first, because
+// sheetSlot moves the six named ones to the end and leaves anything else where
+// it is; correct by accident is not correct, and the next module to append
+// directly would have landed on top of the panel you act on. PR #473 found it.
+//
+// While riding, the two things you can DO are get off early and change plan, so
+// those lead; standing at a stop, boarding leads.
+const SHEET_SLOTS=['rideStatus','recoveryControls','routeChoices','jobHead','hubTactics','jobBoard'];
+function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=$('sheet');if(!sheet)return null;
+  for(const s of SHEET_SLOTS){let el=document.getElementById(s);
+    if(!el){el=document.createElement('section');el.id=s;sheet.append(el);}
+    else if(el.parentElement!==sheet)sheet.append(el);}
+  // re-assert the order, cheaply: appendChild moves an existing node
+  for(const s of SHEET_SLOTS)sheet.append(document.getElementById(s));
+  return document.getElementById(id);}
+
+function paintSheet(){if(!challenge)return;const b=sheetSlot('jobHead');if(!b)return;if(!challenge.active){b.innerHTML=document.getElementById('jobBoard')?.innerHTML?'':'<p class="hint">Dispatching local jobs…</p>';return;}const j=challenge.active,c=challenge.cargoRule();b.innerHTML=`<div class="jobTop"><span class="cargoBadge" style="border-color:${cargoColour(j.cargo)}">${c.icon}</span><div><h2>JOB ${challenge.index+1}/${DELIVERY_TARGET} · ${esc(challenge.routeLabel())}</h2><p class="cargoRule">${esc(c.rule)}</p></div></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%"></i></div><p class="hint">${challenge.remaining()}t left · score ${challenge.score}</p>`;}
+function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m of msgs.slice(0,2)){const d=document.createElement('div');d.textContent=m;f.append(d);}}
+function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${DELIVERY_TARGET}</b></p><p>score <b>${challenge.score}</b></p><p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}$('end').hidden=false;}
 
 // THE GROUND IS CACHED. Water, streets and place names are three of the four
 // most expensive layers on the board and NONE of them moves: they change when
@@ -388,7 +441,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
 
 async function init(){
   $('play').disabled=true;$('play').textContent='LOADING HELSINKI…';
-  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
+  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
 }
 
 // Tapping the board. The whole verb set is READ the network and time it, and

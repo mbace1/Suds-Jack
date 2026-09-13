@@ -1,5 +1,406 @@
 # Toko Move — versions
 
+## v2.34 — 2026-09-11
+
+**The cache tokens were wrong, and nothing was looking at them.** Two faults,
+one of them shipped an hour earlier in v2.33:
+
+`core-v212.js` was rewritten in v2.33 — its `BUILD_VERSION` moved and, more to
+the point, its import of `live-network.js` moved from `?v=7` to `?v=8` — and it
+kept `?v=36`. A returning player holding a cached `core-v212.js?v=36` would have
+gone on importing `live-network.js?v=7` for as long as that cache held: the
+badge fix sat on the server, the token said nothing had changed, and the board
+kept its pile-up. It is now `?v=37`.
+
+`deliveries.js` was being imported under **two** tokens at once — `?v=11` by
+`core-v212.js` and `?v=10` by `job-board-v212.js` — which is the exact failure
+the one-token-per-module rule is named for: the browser instantiates the module
+twice and its state splits in half. It has been that way since v2.29 moved
+`DELIVERY_TARGET` from 6 to 3 and bumped only core's copy, so a returning player
+had an engine wanting three deliveries and a job board reading six.
+
+**`test/tokens.mjs` is the gate, and it measures against the DEPLOYED tree**,
+because a token means "this is not the file you already have" and the file you
+already have is what it has to be compared against. It walks the import graph
+from `index.html` rather than globbing `js/*.js` — the folder still carries
+`main.js`, `main-v210.js` and `main-v211.js`, superseded entry points nothing
+loads, whose stale tokens are dead files rather than a cache fault. It asserts
+one token per module across the live graph, and that no module's bytes changed
+while its token stood still. CI fetches `gh-pages` for it; with no ref to read
+it **fails** rather than skipping.
+
+The reverse case is reported and **not** enforced, and finding that out is worth
+writing down: "bytes identical, token moved" is what a CORRECTION looks like.
+v2.33 shipped core's new bytes under its old token, so the deployed copy already
+matches this tree and the 36 → 37 that fixes it reads, from bytes alone, exactly
+like a gratuitous bump. Nothing in the two trees can tell them apart. The cost of
+a wrong bump is one refetch; the cost of a missed one is a player stuck on the
+old build until their cache turns over.
+
+Also in this release, in `test/hub-smoke.cjs` rather than the game: the arcade
+gate was failing about one run in four, two different ways, and both were the
+ruler rather than the floor. The hold-Start test dereferenced
+`.arcade-home .fill` in its wait predicate — null before the shell module ran
+and null again after the hold navigated home, so the wait rejected on its own
+exception and reported both "the fill never started" and a page error. And a
+page still loading when the gate walks on has its requests aborted, which
+arrives as "Failed to fetch" from whatever was mid-flight — usually toko-move's
+own boot fetch, reported at the end of a run against a page left minutes
+earlier. Abort-shaped messages are now dropped only while a navigation the gate
+itself started is in flight, and every error is stamped with the page that was
+open when it arrived, because an unstamped message named neither the game nor
+the moment.
+
+## v2.33 — 2026-09-10
+
+**The line badges never dodged each other.** `LiveNetwork.draw()` painted one
+badge per vehicle at its exact projected position, in vehicle order, with no
+collision handling of any kind — while `drawStopLabels()` was carefully avoiding
+those same badges, so stop names dodged trams and trams piled on trams.
+Measured, at deviceScaleFactor 2:
+
+| | badges | overlapping pairs | worst stack | badge area buried | fully hidden |
+|---|---|---|---|---|---|
+| phone, CITY | 27 | 34 | 9 | 25.3% | 1 |
+| phone, ROUTE | 62 | 49 | 6 | 24.1% | 2 |
+| phone, STOP | 18 | 5 | 3 | 16.5% | 1 |
+| tablet, CITY | 27 | 22 | 7 | 19.2% | 1 |
+| tablet, ROUTE | 62 | 31 | 4 | 19.8% | 1 |
+
+The heap around Kamppi is in every screenshot sent to the owner since v2.28.
+
+**The fix is DEGRADATION, not movement.** A badge is not a label beside a
+vehicle, it *is* the vehicle — so nudging one out of a crowd moves the tram, and
+at city scale a fourteen-pixel nudge is several hundred metres of lie about where
+the service is. Instead the highest-ranked vehicle in a crowd keeps its labelled
+badge and everything under it falls back to a dot at its true position. Nothing
+is dropped and nothing moves; what is given up is the label, which was
+unreadable in that heap anyway.
+
+**Rank comes from the caller, because the board cannot know which tram matters.**
+`draw()` takes a `priority` function and `main` supplies one from the lines that
+are any use to you right now — the one you are riding, the one your selected plan
+says to take, and the ones the boarding panel is offering. Without it the
+declutter would be arbitrary about which service it silenced, and the silenced
+one is often yours. A selected vehicle outranks everything.
+
+Ties break on vehicle **id**, never on position. A positional tiebreak is the
+obvious way to write it and it makes two crossing trams swap which of them is
+readable, frame after frame, for as long as they are close.
+
+After: **zero** overlapping badges at every scale on both viewports, with 12 of
+27 vehicles labelled at phone CITY and 32 of 66 at phone ROUTE.
+
+`test/badges.cjs` (20 checks) is the gate: no two labelled badges overlap at
+three scales on two viewports; badges + dots account for every vehicle shown;
+`main` really passes a rank function; the declutter is actually engaging, so the
+no-overlap checks are not vacuous; a line silenced unranked gets a readable badge
+back when ranked; and every vehicle that yielded its label yielded it to one that
+outranks it by rank-then-id. Six mutations, six caught — including the positional
+tiebreak, which the two obvious "is it stable" checks could not see.
+
+## v2.32 — 2026-09-10
+
+**`MISSED` was accusing the player of missing trams the game had never offered
+them.** The owner could not get the recording onto a machine that can push, so
+the claim in PR #473 — that its four `MISSED` lines were evidence the catch
+buttons were unreachable — could not be checked against the video. It could be
+checked against the CODE, and it turns out to be a second fault that survived
+v2.30.
+
+`hub-tactics` worked its own misses out, and it asked a different question from
+the panel with the buttons on it: its `arrival()` scanned **every service
+calling at the stop** and took **no direction**, flagging a miss whenever any
+tram on any line was at the hub and left. A CATCH lights only for a vehicle
+travelling the way your leg goes.
+
+Measured on the live build, reproducing the recorded situation — an iPad in
+portrait, a job taken, standing still at Lasipalatsi for 100 seconds:
+**23 `MISSED` banners across 8 lines** (4T, 10H, 4H, H, 1H, 10B, 10, 1T), while
+the only line the game ever offered for that job was **1**. The overlap was
+**none**. Every accusation was about a tram the player had never been offered,
+and the one they could actually board was never mentioned. Same run after the
+fix: **one** miss, on line 1, which had been lit.
+
+**A miss is now what the word says**: a catch that was lit, is not any more, and
+you did not board it. It is detected in `route-choice.js`, where readiness is
+already computed **with a direction**, and published on `tm.catchMisses`;
+`hub-tactics` reads that instead of counting for itself. Boarding is explicitly
+not a miss — taking a lit catch makes it stop being lit, and calling that a
+failure would blame the player for succeeding.
+
+`test/misses.cjs`, and the first version of it was worthless: it watched
+`tm.catchMisses` rather than the banner on screen, so a mutation putting the old
+computation back in `hub-tactics` changed nothing it could see, and its boarding
+check sampled once at the end when the list self-trims after 8 ticks — at ×4
+that is 200 ms of wall time, long gone. **All three mutations walked straight
+past it.** It reads the BANNER now, watches the whole of a boarding, and waits
+for a catch to light rather than shrugging when none has.
+
+Two measurement faults were found and fixed inside the gate itself, and both
+were the ruler rather than the game: a 200 ms sampler at ×4 sees one frame in
+eight and missed catches lighting and going dark between samples (rAF now); and
+the banner is throttled, so the tick it becomes VISIBLE lags the miss by up to
+two polls — measured, lit until 272, dark at 274, banner seen at 291. It prints
+its own age, so the gate uses that. Before both, the same build passed and
+failed the same check on consecutive runs.
+
+## v2.31 — 2026-09-07
+
+**Where a phone actually spends its pixels, measured rather than guessed.** v2.30
+left one plan of three off the bottom on a phone, and the game's core verb is
+comparing plans. So the budget at 390x664 was measured instead of nudged: the
+HUD was **152px** (23% of the screen, wrapped to two rows), the board 292, the
+feed 39, and the sheet **181** — while three catch buttons were **95px each**,
+285px of options in a panel with 181 to put them in.
+
+Four things came off the fat, none of them information: the HUD drops `next
+X → Y` (the job panel's own first line, one row below it) and the near-count
+(diagnostic) on narrow screens, which unwraps it to **130**; the feed keeps one
+line instead of two; the catch button puts its verb and its arrival on ONE line
+instead of two of its four, and its chips lose 2px of padding, taking it **95 →
+69**; and a transfer's cost reads `+499t changing` rather than repeating the
+interchange name that is already on the chip above it.
+
+**Result: all three plans are on screen at once on a real iPhone (390x844) and
+on an iPad.** At 390x664 — Playwright's iPhone 13, which is Safari with its
+chrome bars showing, the worst case — two are whole and the third is past the
+edge, and the panel now **counts itself**: `BOARD ONE OF 3`, so a viewport that
+cannot show a plan still tells you it is there.
+
+**One attempt at the worst case was reverted by its own gate.** Taking the board
+to 37dvh bought the third button and broke something better: the canvas became
+wider than it is tall, and at ROUTE the board covered **77%** of it instead of
+91% — the empty-map problem v2.28 fixed, re-introduced to buy a button at a
+viewport that cannot hold one anyway. The board keeps its 44dvh.
+
+`test/phone.cjs` is 37 checks: the plan count at three viewports, the panel's
+self-count when it cannot show them all, and that every option still says CATCH
+or WAIT — that last one added because a mutation removing the verb was MISSED
+first time round. Compacting a button to fit three of them is allowed to move
+the verb and not allowed to lose it. Five mutations, all caught.
+
+## v2.30 — 2026-09-07
+
+**Reviewing another lane's PR #473, which diagnosed v2.28's sheet bug from the
+owner's own recording.** It was superseded — v2.29 had already fixed the same
+thing from the other end and shipped — and it could not merge (two conflicts, and
+it claimed a version number main had already used). But its diagnosis was better
+than mine in one way and it found two things I had missed, so what it caught is
+here rather than closed with it.
+
+**It proved the order was a RACE, not merely wrong.** I had reasoned my way to
+the root cause; #473 measured it — same build, three runs at 820x1180, two
+different paint orders, and on the run where the read-only HUB panel won, **zero**
+CATCH buttons were on screen. On an iPhone it lost every time. Re-measured
+against v2.29 across six runs at both viewports, the order is now identical every
+time and the catch count is 3/3 on iPad and 2/3 on iPhone, against its own
+after-figures of 3/3 and 1/3.
+
+**`rideStatus` was a SIXTH writer and I had listed five.** The panel that says
+which tram you are on appends straight to `#sheet` and was on no list. It came out
+first anyway — correct **by accident**, because `sheetSlot` moves the named slots
+to the end around whatever else is there — and the next module to append directly
+would have landed on top of the buttons in exactly the same way. It is a declared
+slot now, and while riding the two things you can DO (get off early, replan) lead.
+
+**#473's CSS `order` is taken as a second layer, with its own flaw fixed.**
+`order` defaults to 0 and its declarations started at 1, so a panel nobody had
+thought of would jump to the TOP, ahead of the buttons — the mirror image of the
+bug it was fixing. Here `#sheet>*` is `order:9` and the six named panels are 1-6,
+so an undeclared panel lands last. Two layers, because either alone is a single
+point of failure: a module that appends directly escapes the DOM ordering, and a
+panel with no rule escapes the CSS.
+
+**And the reason the recording says MISSED four times about trams that were
+standing at the stop.** HUB OPTIONS is read-only by design — spans, not buttons,
+"Availability, not recommendation" — and it said **AT HUB** in the same three
+words the boarding panel uses. #473 named this and deliberately left it. It now
+reads **ALSO CALLING HERE**, says *"Everything at this stop, whether or not it is
+any use to you. Nothing here is tappable — board from the panel above."*
+
+Nothing about the CATCH rule changed: a catch stays disabled unless a vehicle is
+at the stop travelling the way this leg goes, which is the design working.
+
+`test/phone.cjs` grows to 31 checks. Six mutations, each caught — and two of them
+were MISSED on the first attempt, which is the finding worth keeping: a gate that
+only reads the rendered page cannot tell a declared slot from one that came out
+first by accident. `sheetSlot()` with no argument now reports the list, so the
+gate can ask the code rather than the pixels.
+
+## v2.29 — 2026-09-06
+
+Two findings from the owner's first real playtest, and both were worse than
+they sounded.
+
+**"don't know how to move from one spot to another" — and it was literal.**
+Taking a job did not change the screen. **Five** modules wrote into `#sheet` on
+their own timers — `paintSheet`, the dispatch board, the catch panel, the hub
+tactics panel, the recovery controls — and not one of them owned CLEARING it,
+so accepting a job left the dispatch list exactly where it was, three `TAKE JOB`
+cards deep, and appended the buttons that actually board a tram *below* it, off
+the bottom of a phone, under a list that looked untouched. The only
+acknowledgement anywhere was a feed line that `#feed`'s own `max-height` cut off
+mid-sentence. There was nothing wrong with the boarding code; the next action
+was simply behind a stale one.
+
+`#sheet` now has five **slots** in a fixed order and each writer owns exactly
+one. The order is what you can act on first: **what you can board**, then what
+you are carrying, then what else this stop offers, then anything still on the
+dispatch list. Boarding leads because the HUD one row above already names the
+job and its deadline — measured on a phone, putting the job header first left
+the first CATCH button ending at y=577 of 664. The panel says **YOU ARE AT X ·
+BOARD ONE OF THESE** and, on the first job only, one line of what lit and grey
+mean. The job header is three lines instead of five, having repeated the HUD.
+
+**"tram speeds are too fast" — and no single number could have fixed it.**
+Speed was a fixed DURATION per mode: fifty minutes end to end for any tram, on a
+network whose lines run from about 3 km to about 17 km. So the long ones covered
+five times the ground of the short ones in the same time. Measured across all
+102 vehicles, apparent speed ran from a crawl to a median of **299 km/h** with a
+90th percentile of **494** — trams visibly overtaking other trams on the same
+map. Half the fleet was already slow; turning one dial down would have made
+those slower still and left the fast ones fast.
+
+A vehicle now has a **speed** and its pass time follows from its own line's
+length, which is the way round reality works: `MODE_KMH` is 16 for a tram and 30
+for the metro, real average service speeds with stops in them. What the player
+sees is then only the compression, and that is the shift's `hours`: three hours
+in five minutes was 36x. **1.25 hours is 15x** — every tram at **240 km/h** and
+the metro at 450, at or below the slower half of what shipped, with the 494
+tail gone. A tram crosses the 4 km ROUTE viewport in about a minute.
+
+It is paid for in deliveries, because a slower fleet makes every ride longer in
+ticks by the same factor. Measured over 56 random door-to-door plans, the median
+job costs **856 ticks** against a 3000-tick shift, so `DELIVERY_TARGET` is
+**three**. The same measurement caught the shipped build being wrong on its own
+terms: five median jobs fitted and the target asked for **six**, so a shift could
+not be finished at ordinary difficulty by anyone, and no gate had ever asked.
+
+If it should be slower still, the honest next lever is a **longer shift** rather
+than a smaller compression: `ticksPerDay` 4500 buys the same slowdown again and
+keeps the deliveries, at the cost of the owner's five-minute session.
+
+`test/pace.mjs`: 12 checks in bare node — one apparent speed for every tram
+whatever its line is long, at or below what shipped, the metro still faster than
+a tram, a minute to cross the ROUTE viewport, and a target the shift can hold.
+Five mutations each caught. `test/phone.cjs` grows seven: taking a job changes
+the screen, the dispatch list goes, the panel says what it is for in those
+words, its first button is WHOLLY on screen without scrolling, and the slots are
+in order. Three mutations each caught.
+
+## v2.28 — 2026-09-06
+
+**The phone pass, and it found the worst bug this lane has shipped.** Nobody had
+opened the game at 390px. The title card had had a paragraph appended to it on
+every release since v2.19 — nine of them, each describing what had just
+changed — and on an iPhone 13 the card was taller than the screen, on a `.veil`
+with no `overflow`. **START SHIFT was below the fold, on a surface that could not
+be scrolled.** The button was present, visible, enabled and 44px; every gate was
+green; the game could not be started with a thumb.
+
+The fix is in two halves and only the second one lasts. The copy is cut to what
+you DO — you drive nothing, you take a job and catch something already moving —
+because a title screen is not a changelog and the changelog is this file. And
+the card is now a flex column with `max-height: 100dvh - 32px`, its text in a
+`.cardBody` that scrolls while the button does not, so **a card that grows again
+eats its own paragraphs instead of its button**. The veil scrolls too, as a
+floor under both.
+
+**A phone opens at ROUTE, not CITY.** CITY fits the whole board by height, and
+`board.js` then grows the box sideways to fill the canvas — growing rather than
+cropping, deliberately, so no stop is ever hidden. On a desktop the map element
+carries the board's own portrait aspect and that growth is nothing. On a phone
+`width:100%` plus `max-height` force the element landscape, and the grown half
+has no ground, no water and no streets in it, because the data ends where the
+extract does: **48% of the map was black**, and the badges that survived piled
+into a heap in the middle. ROUTE's 4 km viewport is a crop of the board rather
+than a fit to it, so it is full of map at any element shape — measured, the
+board covers 43% of the canvas width at CITY and 91% at ROUTE — and it is the
+scale the game is played at anyway. CITY stays one tap away on the rail.
+
+The map gives 8vh back to the job sheet (`44dvh`), because a board about
+comparing three plans was showing one of them. And `say()` drops a line that
+repeats the one above it — the feed was printing DISPATCH twice, which is a
+double call, not news.
+
+`test/phone.cjs`: 11 checks at 390x664 on a real touch context, six mutations
+each caught, including the shipped bug reproduced exactly (restore the long copy
+and remove the cap and START SHIFT reports `y 1130..1174 of 664`). Its
+reachability check knows the difference between a control **off screen inside a
+scroller** — a scroll away, which is what the third job offer legitimately is —
+and one off screen with nothing to scroll, which is the bug.
+
+Frame rate at 390x664, off the game's own loop: 48 / 31 / 55 fps at
+CITY / ROUTE / STOP. ROUTE is the expensive one — it draws the streets, the
+corridors, every badge and every trail at once — and it is now the opening
+scale, so that number is the one to watch.
+
+## v2.27 — 2026-09-06
+
+**Every tram drags a wake.** The idea came from a canvas demo the owner sent: two paths, a dot running along each, and a background painted `rgba(5,10,15,0.3)` instead of cleared so the dots smear. Half of it was already here and done properly — `LiveNetwork` interpolates real traced HSL geometry at real speeds, where the demo's four hand-typed points make a long route and a short one take the same time. The **trail** was the part worth taking: direction was only readable from a badge, and a badge does not say whether a tram is coming toward you or leaving.
+
+**The demo's technique cannot be used on this board, and that decided the design.** An alpha-overdraw trail fades everything on the canvas, and this map's ground — water, streets, districts, landmarks — is a cached bitmap blitted fresh every frame. Fading it would smear the map into mud; not fading it would erase the trail on the next blit. So nothing accumulates in pixels: each vehicle keeps ~17 recent positions in **lat/lon** and the tail is re-projected every frame like everything else. That is not a workaround. A pixel buffer would be wrong the instant you panned and stale in a different way the instant you zoomed.
+
+**It is drawn additively**, because the first cut was invisible: a wake in a line's own colour, laid along that same line, is nothing. The demo's trail read against black; here it has to read against the route it runs on, so it has to be *brighter* than that route rather than merely present. `lighter` also means two trams meeting on a shared corridor brighten each other, which is true and useful. The tail fades on a squared curve and tapers from 4.5 px at the head to 1.1 px, so the fat bright end is unambiguously where the tram is going.
+
+It samples on the TICK, not the frame — a 120 Hz screen must not remember more of the city than a 30 Hz one — and it obeys the camera's near-rule, so a tram you are not being shown does not leave a wake either. A vehicle that stops being drawn is forgotten, or a filtered fleet leaves ghosts for as long as the tab is open.
+
+`test/trails.mjs`: 17 checks in bare node against a stub context, seven mutations each caught. 60/58/60 fps at the three scales, unchanged.
+
+One trap the gate found in itself: the stub context was assembled with `Object.assign`, which copies an accessor's **value** rather than the accessor — so the composite-operation setter vanished and the check that the wake is drawn additively could never have passed.
+
+
+**Deployed, and the deploy found a bug five releases old.** Every hand-deploy this lane has made since v2.22 shipped `../hub/shell.js?v=17` onto a site whose other twenty-two cabinets ask for `?v=35` — the exact trap `CLAUDE.md` records for hand-deploys ("this cabinet shipped pinned to v17 while fourteen others were on v34"), and another lane had already had to repair it once. A cabinet pinned to an old shell serves an old HOME button out of cache forever while the rest of the floor gets the new one. `test/cabinet-route.cjs` now asserts the token agrees with whatever the rest of the floor asks for — agreement, not a number, because this checkout and the deploy tree are legitimately on different ones.
+
+**The cabinet finally shows the game.** Its marquee was still `daymap` — a
+transit diagram drawn for the superseded Mini Metro lane, a game that no longer
+exists — and the marquee is the only thing a player judges before pressing
+Play. `tramstop` replaces it, built to the floor's own rule that a marquee is a
+COVER and not an icon: Helsinki at 07:00, the Cathedral small and off-centre
+because it says where you are and then gets out of the way, a green tram
+arriving, and the courier cropped by the near edge with his arm up for it.
+
+Eleven renders, and the notes are worth keeping because every one of them was
+the same class of mistake — **a thing drawn without asking what is behind it**.
+The tram was a box beside its own track (front and flank are now sized off the
+rails at their own depth). The courier was filled at `#1b2430` on a street that
+is `#171c24` where he stands, so a flat fill inside a hard black line read as a
+hole with a rim round it. His head, torso and raised arm were all lit along the
+same x and welded into one teal stripe with no person inside it. And four goes
+at an articulated running figure all read as an animal lunging: at 128x72 a
+person is a rectangle, a disc and ONE gesture, with the light as a FAT band and
+not a 1px rim — which is what `backlot` two cabinets along had been doing all
+along.
+
+`daymap` is deleted with it. The gate grew the check that would have caught a
+rename: `drawMarquee` falls back to `gel` for a key it does not know, which is
+correct at runtime and completely silent, so "every marquee is painted" passes
+while a cabinet shows another game's drawing. Only the forward direction is
+asserted — the live catalogue carries cabinets this tree has not got, and their
+art functions are not orphans.
+## v2.26 — 2026-09-02
+
+**The shift shows itself back.** A run ended in four numbers — delivered, score, bonuses, late — which was survivable while nothing could go wrong and became the worst possible ending the moment v2.25 made a shift losable. Four numbers tell you that you failed and nothing about where. `js/shiftlog.js` is the design doc's own experiment #6, the one item on its list of eight that had never been built, and its strongest-directions list calls post-run replay "a core learning tool".
+
+**It records by WATCHING.** Nothing in `deliveries.js` or `mobility-v212.js` knows the file exists: it polls from the draw loop, notices what changed and writes it down — the same discipline as turf's `anim.js` reading `state.log` rather than being called by `combat.js`. So it cannot break the game it observes, and it can be deleted without touching a rule. `test/shiftlog.mjs` drives every branch of it in bare node against a stub, because it owns no DOM and no clock; five mutations (never closing a job, inverting lateness, allowing negative spare, dropping the noise threshold, and dropping HTML escaping) are each caught.
+
+**The one thing it computes rather than observes is the alternative**: at the moment you board, what the best plan from where you stand was worth against what you actually took, both from the same timetable the panel quoted at you. `at Länsiterminaali you boarded a ~1307t plan · a ~1018t one was on the board · 289t` — that is a sentence a player can learn from, and it appeared on the job that failed.
+
+That comparison could not fire at first and the reason is worth keeping: `mobility.catchChoice` executes a chosen plan as a **single physical leg**, and `selectedPlan` was that leg rather than the plan clicked. One leg is by construction no worse than a whole trip, so the check was structurally incapable of ever finding a better alternative. The ride keeps the plan the player actually pressed now.
+
+## v2.25 — 2026-09-02
+
+**The game can be lost now, and the ride has a decision in it.** Both halves at once, because neither works alone: tension without input is a clock you watch, and input without stakes is busywork.
+
+**The deadline was a distance formula and never bit.** `late` was 0 in every run this game had ever been measured on, and the report card's `margin` column — the one number that would have said why — had never once been recorded correctly: it read `remaining()` at the moment a completion was *noticed*, by which point the challenge had already moved to the next job, so it printed `—` for every job of every run. Fixed, the answer was **75%, 58%, 42% and 14% of the deadline left spare.** A deadline with half of itself to spare is not a deadline.
+
+So a deadline is the trip's **real cost plus a grace**. `planCost` in the job board asks the same timetable the panels quote at you for the cheapest door-to-door plan; `deadlineFor` takes 1.35× it. Bare node installs no estimator and falls through to the old formula, which is what keeps every gate written before this measuring what it meant to. First measured run afterwards: deadlines roughly halved (1155→544, 1075→666), spare 47 / 42 / 0 / 29%, and **`late 1`** — the first failable shift in the project's history. The job that failed was the one that ate a 517-tick transfer wait, which is exactly what should cost you.
+
+**Getting off early** is the only decision the ride ever had in it. 71% of a five-minute shift is spent aboard with nothing to press; the verb list already said *ride* and *get off*, and what was missing is that you could only get off where the plan said. A tram passing an interchange where a faster continuation is standing right now is the most ordinary decision in transit and the game could not express it.
+
+It is offered **only while the vehicle is really at a stop** — the same 2.2-second window a catch uses, because stepping off between stops is not a thing you can do — and **only when leaving beats staying**, measured: what the rest of this ride plus the plan's remainder costs, against the best plan from here. Across a measured shift it was computed 85 times, was worth taking 46 of them, and the best single case saved **360 ticks — 36 seconds of a 300-second shift.** Usually staying aboard is right, which is correct and is why the button is not always there.
+
 ## v2.24 — 2026-09-02
 
 **The outer board stopped being invented.** 78% of the board had no OSM streets, and that 78% was drawn with twelve hand-authored corridors — the one kind of geometry this project's own rules say must never sit on the board as though it were real. It is now HSL's own service corridors, from the GTFS feed, under CC BY 4.0: `cities/ground/helsinki-corridors.json`, 696 traces covering 60.149–60.218 / 24.895–24.995, which is essentially the whole board. **There is no authored geometry on the map any more.**

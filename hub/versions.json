@@ -1,7 +1,17 @@
 {
+  "concrete": {
+    "v": "3",
+    "n": 3000,
+    "from": "VERSIONS.md"
+  },
   "sudsjack": {
     "v": "5",
     "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "tokomove": {
+    "v": "2.34",
+    "n": 2034,
     "from": "VERSIONS.md"
   },
   "tokodrop": {
@@ -20,9 +30,9 @@
     "from": "VERSIONS.md"
   },
   "powder": {
-    "v": "2",
-    "n": 2000,
-    "from": "cache token"
+    "v": "9",
+    "n": 9000,
+    "from": "VERSIONS.md"
   },
   "paperboy": {
     "v": "4",
@@ -30,13 +40,18 @@
     "from": "cache token"
   },
   "skltr": {
-    "v": "124",
-    "n": 124000,
+    "v": "156",
+    "n": 156000,
     "from": "cache token"
   },
+  "neonronin": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
   "flashprince": {
-    "v": "3",
-    "n": 3000,
+    "v": "7",
+    "n": 7000,
     "from": "VERSIONS.md"
   },
   "eeri": {
@@ -45,13 +60,13 @@
     "from": "VERSIONS.md"
   },
   "slaykallio": {
-    "v": "28",
-    "n": 28000,
+    "v": "33",
+    "n": 33000,
     "from": "VERSIONS.md"
   },
   "turf": {
-    "v": "35",
-    "n": 35000,
+    "v": "37",
+    "n": 37000,
     "from": "VERSIONS.md"
   },
   "gameoflife": {
@@ -69,11 +84,6 @@
     "n": 37000,
     "from": "cache token"
   },
-  "tokomove": {
-    "v": "2.18",
-    "n": 2018,
-    "from": "VERSIONS.md"
-  },
   "tinyhawk": {
     "v": "6",
     "n": 6000,
@@ -84,14 +94,49 @@
     "n": 3000,
     "from": "VERSIONS.md"
   },
+  "eyetest": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
   "brand": {
     "v": "5",
     "n": 5000,
     "from": "VERSIONS.md"
   },
+  "tokotrip": {
+    "v": "11",
+    "n": 11000,
+    "from": "VERSIONS.md"
+  },
+  "flowsnow": {
+    "v": "2",
+    "n": 2000,
+    "from": "VERSIONS.md"
+  },
   "toko": {
     "v": "5",
     "n": 5000,
+    "from": "VERSIONS.md"
+  },
+  "tokolive": {
+    "v": "18",
+    "n": 18000,
+    "from": "VERSIONS.md"
+  },
+  "optionc": {
+    "v": "0.2",
+    "n": 2,
+    "from": "VERSIONS.md"
+  },
+  "piritori": {
+    "v": "4.47",
+    "n": 4047,
+    "from": "VERSIONS.md"
+  },
+  "optionc-lab": {
+    "v": "9.1",
+    "n": 9001,
     "from": "VERSIONS.md"
   }
 }

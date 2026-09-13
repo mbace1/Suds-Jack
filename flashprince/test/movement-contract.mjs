@@ -29,13 +29,8 @@ runTape('run brake and reverse', ['run','runStop','pivot','runStart','run']);
 runTape('crouch and roll', ['stand','crouch','crouchIdle','crouchWalk','crouchIdle','roll','crouchIdle','standUp','stand']);
 
 for (const [from, to] of [
-  ['land','pivot'],
-  ['land','landRun'],
-  ['landRun','runStart'],
-  ['lowMantle','step'],
-  ['fall','landHard'],
-  ['runStop','pivot'],
-  ['pivot','runStart'],
+  ['land','pivot'], ['land','landRun'], ['landRun','runStart'], ['lowMantle','step'],
+  ['fall','landHard'], ['runStop','pivot'], ['pivot','runStart'],
 ]) ok(isLegalMovementTransition(from, to), `${from} -> ${to} is represented in the contract`);
 
 const strict = new StateMachine({ initial: 'stand', transitions: MOVEMENT_TRANSITIONS, strict: true });
@@ -47,19 +42,16 @@ const v3Source = await readFile(new URL('../js/movement-hero-v3.js', import.meta
 const diagSource = await readFile(new URL('../js/movement-diagnostics.js', import.meta.url), 'utf8');
 const indexSource = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const labSource = await readFile(new URL('../movement-lab.html', import.meta.url), 'utf8');
-for (const sourceEdge of [
-  "this.go('pivot')",
-  "this.go('runStart')",
-  "this.go(input.dir === this.face ? 'step' : 'stand')",
-  "this.go('landRun')",
-]) ok(heroSource.includes(sourceEdge), `movement runtime still contains expected edge: ${sourceEdge}`);
+for (const sourceEdge of ["this.go('pivot')","this.go('runStart')","this.go(input.dir === this.face ? 'step' : 'stand')","this.go('landRun')"])
+  ok(heroSource.includes(sourceEdge), `movement runtime still contains expected edge: ${sourceEdge}`);
 ok(baseHeroSource.includes("this.go('landHard')"), 'base collision runtime still promotes damaging falls to landHard');
 ok(v3Source.includes('transitionFaults'), 'V3 runtime counts transition faults');
 ok(v3Source.includes('StateMachine'), 'V3 runtime routes transitions through shared StateMachine');
 ok(diagSource.includes("FP-MOVE-9"), 'diagnostics expose the visible movement build id');
 ok(diagSource.includes('transitionFaults'), 'diagnostics read the live transition fault count');
 ok(diagSource.includes('health: this.health'), 'diagnostics expose landing damage');
-ok(indexSource.includes('js/main.js?v=9'), 'playable index launches the campaign main loop v9');
+ok(indexSource.includes('js/character-animation.js?v=10'), 'playable index loads character-specific animation profile');
+ok(indexSource.includes('js/main.js?v=10'), 'playable index launches campaign main loop v10');
 ok(!indexSource.includes('movement-lab-v3.js'), 'playable index must not launch the movement lab');
 ok(!indexSource.includes('movement-diagnostics.js'), 'playable index must not load movement-only diagnostics');
 ok(labSource.includes('movement-diagnostics.js?v=9'), 'movement lab loads diagnostics v9');

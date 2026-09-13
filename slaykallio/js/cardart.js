@@ -508,3 +508,4 @@ export function paintCardPic(pic, accent = '#c8a03a', seed = 1) {
 }
 
 export const PIC_KEYS = Object.keys(PICS);
+

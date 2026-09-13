@@ -3,10 +3,10 @@
 // internal height). Game logic stays in plain (x,y) grid space (grid.js);
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
-import { PAL } from './palette.js?v=11';
+import { PAL } from './palette.js?v=12';
 import { key } from './grid.js?v=4';
 import { magOf, roundsLeft } from './ammo.js?v=2';
-import { incomingArrivals } from './combat.js?v=19';
+import { incomingArrivals, incomingThreats } from './combat.js?v=20';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // The real on-board sprite height (drawUnitSprite) — taller than the old
@@ -248,9 +248,29 @@ function drawHighlights(g, layout, state) {
   // colour field, and the player cannot tell which tap does what.
   if (state.aimTiles && state.aimTiles.length) return;
   if (!state.moveTiles) return;
+  // OUTLINE THE REGION, DO NOT PAINT EVERY TILE IN IT. Owner, 2026-09-05:
+  // "readability and comprehension in general is hard". A 0.48-alpha wash on
+  // each of twenty reachable tiles, each with its own 2px border, was the
+  // loudest thing on the board and it was covering the cover — the props a
+  // player moves TOWARD were being obscured by the overlay saying they could
+  // move there. Same information, a fifth of the ink: a faint fill inside,
+  // and a hard edge drawn only where the region STOPS.
+  const reach = new Set([...state.moveTiles.values()].map(t => `${t.x},${t.y}`));
   for (const { x: gx, y: gy } of state.moveTiles.values()) {
     const { x, y } = toScreen(layout, gx, gy);
-    g.diamond(x, y, TILE_W - 4, TILE_H - 2, PAL.MOVE_HI, PAL.MOVE_HI_EDGE, 2);
+    g.diamond(x, y, TILE_W - 2, TILE_H - 1, PAL.MOVE_FILL, null);
+  }
+  const hw = TILE_W / 2, hh = TILE_H / 2;
+  for (const { x: gx, y: gy } of state.moveTiles.values()) {
+    const { x, y } = toScreen(layout, gx, gy);
+    // Each grid step maps to one edge of the diamond: +x runs to the lower
+    // right, +y to the lower left. An edge is drawn only where the tile
+    // across it is out of reach, so the border traces the boundary once
+    // instead of every tile drawing its own box.
+    if (!reach.has(`${gx + 1},${gy}`)) g.line(x + hw, y, x, y + hh, PAL.MOVE_HI_EDGE, null, 1.5);
+    if (!reach.has(`${gx - 1},${gy}`)) g.line(x - hw, y, x, y - hh, PAL.MOVE_HI_EDGE, null, 1.5);
+    if (!reach.has(`${gx},${gy + 1}`)) g.line(x, y + hh, x - hw, y, PAL.MOVE_HI_EDGE, null, 1.5);
+    if (!reach.has(`${gx},${gy - 1}`)) g.line(x, y - hh, x + hw, y, PAL.MOVE_HI_EDGE, null, 1.5);
   }
   for (const uid of state.attackTiles || []) {
     const u = state.units.find(t => t.uid === uid);
@@ -822,10 +842,25 @@ function drawArrivalLabels(g, layout, state) {
   }
 }
 
+// FOCUS. With five or six rivals telegraphing at once the board carries five
+// or six paths, five or six rings and five or six glyphs, all in one colour
+// at one weight — every frame correct and the whole unreadable. Selecting an
+// operator now says which of those are AIMED AT THEM: the rest stay drawn,
+// because a plan you cannot see is worse than a plan you have to squint at,
+// but they drop back so the ones that matter to the decision you are making
+// come forward. Nothing is hidden and nothing is added; only the weight
+// changes, which is the one edit that cannot cost information.
+function threatAlpha(state, intent) {
+  if (!state.selected) return 1;
+  return intent.targetUid === state.selected ? 1 : 0.28;
+}
+
 function drawTelegraph(g, layout, state) {
   for (const [uid, intent] of state.telegraph) {
     const enemy = state.units.find(u => u.uid === uid);
     if (!enemy || enemy.hp <= 0 || !intent.moveTo) continue;
+    g.ctx.save();
+    g.ctx.globalAlpha = threatAlpha(state, intent);
     const at = toScreen(layout, intent.moveTo.x, intent.moveTo.y);
     drawIntentPath(g, toScreen(layout, enemy.x, enemy.y), at, PAL.TELEGRAPH);
     if (intent.type === 'attack') {
@@ -852,6 +887,40 @@ function drawTelegraph(g, layout, state) {
     } else if (intent.type === 'move') {
       g.disc(at.x, at.y, 1.5, PAL.TELEGRAPH);
     }
+    g.ctx.restore();
+  }
+}
+
+// The damage badge, over the operator it is coming to. Drawn after every
+// telegraph so it sits on top of the paths and rings rather than under them,
+// and drawn for the TOTAL rather than per attacker: two rivals each taking
+// half your health is the case that kills you and the case a per-attack
+// marker hides. LETHAL is spelled out because a number you have to compare
+// against a health bar you also have to find is two reads, not one.
+function drawThreatBadges(g, layout, state, threats) {
+  for (const [uid, t] of threats) {
+    const u = state.units.find(x => x.uid === uid);
+    if (!u || u.hp <= 0) continue;
+    // Only what is coming for the CREW. A rival about to be hit by another
+    // rival is not a thing that happens, and a badge over an enemy would read
+    // as damage you are about to deal.
+    if (u.faction !== 'player') continue;
+    const { x, y } = toScreen(layout, u.x, u.y);
+    const text = t.lethal ? 'LETHAL' : `-${t.total}`;
+    const top = y - SPRITE_H - 9;
+    g.ctx.save();
+    g.ctx.font = `bold ${t.lethal ? 7 : 8}px monospace`;
+    const w = g.ctx.measureText(text).width + 6;
+    g.ctx.fillStyle = 'rgba(7,8,11,0.85)';
+    g.ctx.fillRect(x - w / 2, top - 7, w, 10);
+    g.ctx.strokeStyle = PAL.TELEGRAPH;
+    g.ctx.lineWidth = 1;
+    g.ctx.strokeRect(x - w / 2, top - 7, w, 10);
+    g.ctx.fillStyle = t.lethal ? PAL.HP_BAD : PAL.TELEGRAPH;
+    g.ctx.textAlign = 'center';
+    g.ctx.textBaseline = 'alphabetic';
+    g.ctx.fillText(text, x, top + 1);
+    g.ctx.restore();
   }
 }
 
@@ -958,6 +1027,7 @@ export function render(canvas, state, layout, anim = null) {
 
   if (state.turn === 'player') {
     drawTelegraph(g, layout, state);
+    drawThreatBadges(g, layout, state, incomingThreats(state));
     drawForecasts(g, layout, state);
     drawAimLabels(g, layout, state);
     drawArrivalLabels(g, layout, state);

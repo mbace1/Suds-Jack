@@ -306,10 +306,11 @@ level playable end-to-end.
 *Gate:* a headless playthrough of the authored level; screenshots of the shape
 on classic and TSL, proving parity.
 
-**P2 — the editor UI.** Requirements 2 and 3, on the real renderer, with
-play-from-here.
-*Gate:* round-trip — author a level, save, reload, play it, and the spawns land
-where and when they were placed.
+**P2 — the editor UI. ✅ SHIPPED (v237), ahead of P1 on the owner's call.**
+Requirements 2 and 3, on the real renderer, with play-from-here, on the
+rectangle. `js/editor.js` + `js/level.js`; gates `scripts/level-check.mjs` and
+`scripts/editor-smoke.sh` (the round-trip above, plus: the body stands within a
+body-width of the tap, on time). What was learned is §9.
 
 **P3 — moving shapes.** Only after §2.4 is decided.
 *Gate:* a level whose common area moves is provably always non-empty and always
@@ -388,3 +389,119 @@ coordinate fails 1,536.
 reimplemented, which was the stated stop-condition, so §2.1 is no longer the
 risk. The remaining risk is entirely §2.3 — **drawing** the shape, twice, in
 GLSL and TSL — and §2.4, which is still a decision nobody has made.
+
+---
+
+## 9. The editor, as built (v237)
+
+Owner, on being offered P1 (shaped arenas): *"rectangular is ok too, the tool
+is what really makes it work though."* So the order flipped: P2 shipped before
+P1, on the rectangle, and P1 stays on the shelf until a shape is wanted.
+
+**What shipped.** `index.html?editor` mounts `js/editor.js` over the running
+game — §3's "sibling page" was NOT taken. The sibling would have needed its own
+scene, camera, floor and spawn pump, and every one of those is a place the
+editor could disagree with the game about where a body lands. Mounting over the
+real game costs one `gameState` ('editor', render-only) and a hooks object, and
+buys the real floor, the real camera and the real `pendingSpawns` for free.
+`js/level.js` is §4's format, pure, with `compile()` emitting the pump's exact
+entry shape. `EXAMPLE_LEVEL` (FIRST LIGHT) is built in.
+
+**Against the three requirements:**
+
+1. *Arena shapes* — the format carries `arena` (a named rectangle or an
+   explicit `{halfX, halfZ}`), and `arenaPreset()` makes the game honour it.
+   Non-rectangular is a `shape` field away once §2.3/§2.4 are settled.
+2. *Drop-downs on top, tap to choose, tap to place* — native `<select>`s (the
+   one drop-down that is touch-friendly everywhere), choose-then-tap, no drag.
+   A tap near an existing spawn selects it; MOVE ⤢ then tap relocates it.
+3. *0.1s timeline along the bottom, scrollable* — a canvas strip in a
+   `pan-x` scroller, 0.1s ticks, 1s labels, four zooms, two lanes (enemies /
+   pickups), stacked-cell counts. Tap sets the playhead; the playhead is where
+   a new spawn lands and what the ghosts brighten for.
+
+**Play-from-here** is what makes it a tool rather than a form. Spawns before
+the playhead are DROPPED, not fired at once (a pile of catch-up bodies on frame
+one is a different level). The run goes through the ordinary `startGame()` with
+`customLevel` steering a handful of gates — and one of those gates was found in
+design, not play: the classic "all enemies dead → WAVE CLEAR → spawnWave()"
+path would have re-compiled the level as wave 2 and looped forever.
+
+**Two traps paid for:**
+
+- `input.js` `preventDefault()`s every touch outside its UI list, which kills
+  the synthesised `click` on the canvas. The editor reads arena taps from raw
+  `touchstart`/`touchend` pairs in the CAPTURE phase (the same lesson
+  `hub/shell.js` learned), and the timeline strip lives inside `#tded`, which
+  is on that list, so its `click` survives.
+- Rush's own level clock (`rush.levelDuration()`) would have fired a level-up
+  mid-authored-level. It is parked at 1e9 while `customLevel` is set.
+
+**Gates.** `scripts/level-check.mjs` (bare node, reads enemy names out of
+`enemy.js`'s source) and `scripts/editor-smoke.sh` (Playwright, touch-emulated
+phone: tap → spawn under the tap; save/load; export/import; play from 0.5s →
+the body stands within a body-width of the tap, on time; the run ends on the
+level's clock and reports back).
+
+**Not built, and why:** per-spawn `speedMult`/`elite` editing in the UI (the
+format carries them; import sets them — the palette wanted proving first);
+translations (a tool, like the enemy tester); shapes (§7 P1) and moving
+shapes (§7 P3, still gated on §2.4).
+
+---
+
+## 10. One format, two engines (v239, 2026-09-05)
+
+Owner ask: *"make the Godot side read the same level JSON."* It did not, and
+§4's sketch is why: two sessions each built "format 1" from it on the same
+day. v237 (this tree, the editor) wrote named arenas, pickups and three
+modes; PR #447 (unmerged) wrote shape objects, strict unknown-key rejection
+and arcade only — and the Godot port's loader (`toko-drop-godot` Q-032) was
+written against #447. A file the phone authored was a file the iPad refused,
+on its first key.
+
+**v239 is the union, and `js/level.js` is the reference.** The port's
+`scripts/level.gd` mirrors it clause for clause; the cross-build gate
+(`tools/level-parity.mjs` in the port, fed by this tree's new
+`scripts/level-smoke.sh`) passes on both bundled levels — same bodies, same
+seconds, same places, two engines.
+
+```jsonc
+{
+  "format": 1, "id": "first-light", "name": "FIRST LIGHT",
+  "arena": "auto" | "portrait" | "landscape" | "room"
+         | { "combine"?: "union"|"intersect", "shapes": [ {kind:"rect",hx,hz} | {kind:"circle",c:[x,z],r} ] },
+  "duration": 45.0,
+  "rules": { "mode": "arcade"|"melee"|"rush", "outside"?: "push" },
+  "spawns": [
+    { "t": 0.0, "type": "GLOBBO", "px": -6, "pz": -8, "speedMult"?: 1, "intervalMult"?: 1, "boss"?: true, "elite"?: true },
+    { "t": 7.5, "kind": "pickup", "id": "firerate", "px": 0, "pz": 0, "life"?: 12 }
+  ]
+}
+```
+
+**Rules worth writing down, because each one was a disagreement:**
+
+- **Strict.** An unknown key anywhere is an error; spawns are authored in
+  order; a body outside the region and a region with nowhere to stand are
+  refused; at most `MAX_SHAPES` (4) shapes. This came from #447 and it is
+  right: a translation layer that lets fields through is how Eeri's exporter
+  dropped two part types unnoticed.
+- **A build that lacks a thing refuses the level BY NAME.** The port has no
+  CLOSE COMBAT and no authored-Rush wiring, so it refuses `melee` and `rush`
+  with a message that says so. The file is never blamed for a build's gap.
+- **`toko-drop/levels/` is the seam.** The port syncs those files from the
+  deployed tree (`tools/sync-levels.sh`); a level exported from the phone's
+  editor plays on the iPad once it is committed there. There is no exporter.
+- **v238 was skipped** on this tree because #447 used it — the same reason
+  Eeri skipped v13. A reused number is how two trees look like one.
+
+**Still on #447 and nowhere else:** the v238 floor term that DRAWS a shaped
+region on both render paths (§2.3), and `level-shot.sh`. This tree PLAYS a
+shaped level (containment, the spawn ring and TORO's dash all answer to the
+SDF) but still paints the bounding box. That term should come across by
+hand, against this tree; the PR itself conflicts on every file it touches.
+
+**Open on the port:** an authored Rush level (which of Rush's cadence,
+roster and level clock an authored timeline overrides), and a menu row to
+play a synced level.

@@ -26,6 +26,10 @@ export const PAL = {
   // actual on-device size — a wash this faint reads as "slightly different
   // floor tile," not "you can move here."
   MOVE_HI: 'rgba(111,184,217,0.48)',
+  // The interior of the reachable region. A fifth of MOVE_HI's weight,
+  // because the region is now read from its OUTLINE (render.js's
+  // drawHighlights) and the fill only has to say "inside", not shout it.
+  MOVE_FILL: 'rgba(111,184,217,0.13)',
   MOVE_HI_EDGE: 'rgba(140,205,235,0.95)',
   ATTACK_HI: 'rgba(201,102,63,0.48)',
   ATTACK_HI_EDGE: 'rgba(240,140,90,0.95)',

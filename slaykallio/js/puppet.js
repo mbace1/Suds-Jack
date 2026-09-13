@@ -18,8 +18,8 @@
 // comes up with it.
 
 import * as THREE from 'three';
-import { poseAt, frameAt, clipLength, REST } from './motion.js';
-import { plateReady, drawPlate, posesFor } from './plates.js';
+import { poseAt, frameAt, clipLength, REST } from './motion.js?v=31';
+import { plateReady, drawPlate, posesFor } from './plates.js?v=31';
 
 const TW = 256, TH = 512;        // texture size; the figure fills ~70% of the height
 export const PUPPET_H = 1.5;     // world height of a scale-1 figure
@@ -1227,3 +1227,4 @@ export class Puppet {
     return v.set(this.home.x, this.home.y + this.height * 1.02, this.home.z);
   }
 }
+

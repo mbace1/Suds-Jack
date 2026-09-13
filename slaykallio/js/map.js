@@ -208,3 +208,4 @@ export function drawMap(cv, { route, act, hour = 0, portrait = false, nameOf = (
   tape(ctx, 26, 16, 46, 14, -0.5, rnd); tape(ctx, w - 30, h - 14, 52, 14, 0.4, rnd);
   return { pins, boss: bossAt, here };
 }
+

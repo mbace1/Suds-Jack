@@ -7,6 +7,23 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v33 — 2026-09-10
+**TURF scenery joins the shared cast**
+
+Reuse the existing courtyard, schoolyard and dockyard assets for day/evening/night. Copy runtime images into Slay so publication is self-contained. Preserve the original photographs with ?scenery=photos. Use gentler focus blur and skip double grading on the already-graded TURF images.
+
+## v32 — 2026-09-10
+**First graphics pass: readable combat**
+
+Separate crowded label lanes, increase label contrast, show selected-card rules at readable size and move energy clear of the shared badge. Keep all TURF art and combat behavior. Locally staged graphics work; not yet published.
+
+## v31 — 2026-09-10
+**Publish the current six-character game to the hub**
+
+Release the v30 development snapshot (252db205f6319ef3f67b6d044521fa34cab5f769), including both acts, route events, rests, upgrades, TURF figures and photographs. The previous hub v7 was based on the older game. Preserve single-activation touch/keyboard controls and isolate the deck overlay from combat input. Reset pending actions when returning to the title. Display v31 and refresh internal module cache keys.
+
+Validation: 761 core checks, 139 scene/browser checks, and real desktop/touch hub-to-route-to-combat-to-reward flows passed locally. Graphics overhaul remains a separate follow-up.
+
 ## v30 — 2026-09-10
 **The house look can be CHANGED — a comparison was overruling a decision**
 

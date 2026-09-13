@@ -1,15 +1,16 @@
+import { fieldGuide, bindActivation } from './field-guide.js?v=2';
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=11';
+import { PAL } from './palette.js?v=12';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
-  skillOffer, learnSkill, incomingArrivals, pendingArrivals,
+  skillOffer, learnSkill, incomingArrivals, pendingArrivals, incomingThreats,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=19';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=23';
-import { createCamera, MIN_TILE_W } from './camera.js?v=2';
-import { createInputHandler } from './input.js?v=19';
+} from './combat.js?v=20';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=24';
+import { createCamera, MIN_TILE_W } from './camera.js?v=3';
+import { createInputHandler } from './input.js?v=20';
 import { createAnimator } from './anim.js?v=5';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
@@ -17,9 +18,12 @@ import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2
 import { autoTurn } from './autoplay.js?v=6';
 import { PLATES } from './plates.js?v=1';
 import { audio } from './audio.js?v=1';
+import { watchPad } from '../../hub/pad.js?v=9';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage'), plate = $('plate');
+const zoomIn = $('zoomIn'), zoomOut = $('zoomOut'), zoomFit = $('zoomFit');
+const offscreenEl = $('offscreen');
 const topbar = { turn: $('turnLabel'), round: $('roundLabel') };
 const controls = { endTurn: $('endTurnBtn'), cancel: $('cancelBtn'), mute: $('muteBtn') };
 const abilitiesEl = $('abilities');
@@ -148,6 +152,114 @@ function fitPlate() {
   plate.style.top = `${Math.round(cyPx - plateSpec.cy * h)}px`;
 }
 
+
+// ── zoom ───────────────────────────────────────────────────────────
+// Owner, 2026-09-05: "should be zoomed in more. readability and
+// comprehension in general is hard."
+//
+// v25 made the FIT a floor rather than a ceiling (MIN_TILE_W) so a phone
+// could overflow the stage instead of delivering a 32px tile as a 32px
+// tile. That was the right shape and the wrong amount, and picking a
+// better single number is guesswork: how big a tile needs to be depends on
+// the screen, the distance it is held at, and the eyes reading it — none of
+// which this code can measure. So the number is the PLAYER'S now.
+//
+// It multiplies whatever fitCanvas would otherwise have chosen, so 1.0 is
+// still "as big as legibility demands, no bigger than the board needs", and
+// every other value is a deliberate departure from it. Persisted, because a
+// zoom you have to set again every encounter is a setting you stop using.
+const ZOOM_KEY = 'turfZoom';
+const ZOOM_MIN = 0.7, ZOOM_MAX = 2.6;
+// The default is above 1 on purpose. Fitting the whole board is what this
+// game's full-information promise wants and it is NOT what a phone can
+// deliver legibly, and when those two disagree the owner has now said twice
+// which way to go. Zoom out is one tap away and it remembers.
+const ZOOM_DEFAULT = 1.35;
+let userZoom = ZOOM_DEFAULT;
+try {
+  const saved = parseFloat(localStorage.getItem(ZOOM_KEY));
+  if (Number.isFinite(saved)) userZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, saved));
+} catch { /* private mode: the default is fine */ }
+
+function setZoom(z, animate = false) {
+  const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+  if (Math.abs(next - userZoom) < 0.001) return;
+  userZoom = next;
+  try { localStorage.setItem(ZOOM_KEY, String(userZoom)); } catch { /* ignore */ }
+  fitCanvas();
+  focusCamera(animate);
+  updateZoomUi();
+}
+function updateZoomUi() {
+  if (zoomOut) zoomOut.disabled = userZoom <= ZOOM_MIN + 0.001;
+  if (zoomIn) zoomIn.disabled = userZoom >= ZOOM_MAX - 0.001;
+  if (zoomFit) zoomFit.classList.toggle('on', Math.abs(userZoom - fitZoom()) < 0.02);
+}
+
+// The zoom at which the WHOLE board is on screen. fitCanvas takes the raw
+// fit, raises it to the MIN_TILE_W legibility floor, and then multiplies by
+// the player's zoom — so getting back to a true fit means dividing the floor
+// back out, not setting the zoom to 1.
+function fitZoom() {
+  if (!layout || !stage.clientWidth) return 1;
+  const raw = Math.min((stage.clientWidth - 8) / layout.width, (stage.clientHeight - 8) / layout.height);
+  const floored = Math.max(raw, MIN_TILE_W / TILE_W);
+  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, raw / floored));
+}
+
+
+// ── what the screen is not showing you ─────────────────────────────
+// Zooming in far enough to read a face is zooming in far enough to push
+// half the board off screen, and this game's whole contract is that every
+// rival's plan is visible before it happens. So anything living that falls
+// outside the viewport gets a pip on the edge nearest to it, in its own
+// faction colour, carrying the number of units stacked behind that pip and
+// a ring when one of them is telegraphing an attack.
+//
+// It is DOM on the stage rather than paint on the canvas on purpose: a pan
+// translates the canvas via the compositor without repainting, so a marker
+// drawn into the board would slide away with the very thing it points at.
+const EDGE_PAD = 16;
+function updateOffscreen() {
+  if (!offscreenEl) return;
+  if (!state || !layout || !camera || state.result) { offscreenEl.innerHTML = ''; return; }
+  const view = camera.viewRect();
+  if (!view) { offscreenEl.innerHTML = ''; return; }
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const threats = state.turn === 'player' ? incomingThreats(state) : new Map();
+  // Bucketed by edge cell so six rivals off the same side are one pip that
+  // says "6", not six pips fighting for the same 18 pixels.
+  const buckets = new Map();
+  for (const u of state.units) {
+    if (u.hp <= 0) continue;
+    const p = toScreen(layout, u.x, u.y);
+    const inside = p.x >= view.x0 && p.x <= view.x1 && p.y >= view.y0 && p.y <= view.y1;
+    if (inside) continue;
+    // Board point -> stage point, then clamped to the stage's own edge.
+    const sx = (p.x - view.x0) / (view.x1 - view.x0) * w;
+    const sy = (p.y - view.y0) / (view.y1 - view.y0) * h;
+    const cx = Math.max(EDGE_PAD, Math.min(w - EDGE_PAD, sx));
+    const cy = Math.max(EDGE_PAD, Math.min(h - EDGE_PAD, sy));
+    const key = `${u.faction}:${Math.round(cx / 40)}:${Math.round(cy / 40)}`;
+    let b = buckets.get(key);
+    if (!b) { b = { cx, cy, n: 0, faction: u.faction, danger: false }; buckets.set(key, b); }
+    b.n++;
+    if (threats.has(u.uid) || (state.telegraph && state.telegraph.has(u.uid)
+        && state.telegraph.get(u.uid).type === 'attack')) b.danger = true;
+  }
+  offscreenEl.innerHTML = '';
+  for (const b of buckets.values()) {
+    const el = document.createElement('div');
+    el.className = 'pip' + (b.danger ? ' danger' : '');
+    el.style.left = `${b.cx}px`;
+    el.style.top = `${b.cy}px`;
+    el.style.color = b.faction === 'player' ? PAL.PLAYER
+      : b.faction === 'objective' ? PAL.OBJECTIVE_EDGE : PAL.ENEMY;
+    el.textContent = String(b.n);
+    offscreenEl.appendChild(el);
+  }
+}
+
 function fitCanvas() {
   const availW = stage.clientWidth - 8, availH = stage.clientHeight - 8;
   if (!layout || availW <= 0 || availH <= 0) return;
@@ -168,6 +280,11 @@ function fitCanvas() {
   // enemies. The vertical letterbox is geometry, not waste; the encounter
   // photo shows through it.
   scale = Math.max(scale, MIN_TILE_W / TILE_W);
+  // The player's own multiplier, on top of whatever the fit and the
+  // legibility floor between them decided. Applied BEFORE the tenths
+  // snapping below so a zoomed board is still snapped, not left on a
+  // fractional scale that resamples the art.
+  scale *= userZoom;
   // Snapped to the nearest TENTH, not a whole step: a wide grid (backlot is
   // 11 tiles across) is width-bound on a phone in portrait, where the fit
   // is rarely more than ~1.0-1.3x to begin with — whole/half-integer
@@ -185,6 +302,7 @@ function fitCanvas() {
   cssScale = scale;
   fitPlate();
   if (camera) { camera.recenter(); focusCamera(); }
+  updateOffscreen();
 }
 let cssScale = 1;
 window.addEventListener('resize', fitCanvas);
@@ -256,7 +374,16 @@ function boot(seed) {
   if (input) input.destroy();
   if (camera) camera.destroy();
   anim.stop(); // a new encounter is a new log — drop any clip still playing from the last one
-  camera = createCamera({ stage, canvas, getLayout: () => layout, getScale: () => cssScale });
+  camera = createCamera({
+    stage, canvas, getLayout: () => layout, getScale: () => cssScale,
+    // Pinch on touch and wheel on desktop both land here rather than in
+    // camera.js: the camera owns pan, and the zoom is a property of the
+    // FIT (fitCanvas), so the two have to stay in one place or a pinch and
+    // the +/- buttons would drift apart.
+    onZoom: mult => setZoom(userZoom * mult),
+    onView: () => updateOffscreen(),
+  });
+  updateZoomUi();
   input = createInputHandler({
     canvas, getState: () => state, getLayout: () => layout, onChange,
     // A drag is a camera move, never an order. Without this, panning the
@@ -347,13 +474,13 @@ function applyMute() {
   controls.mute.setAttribute('aria-pressed', String(!m));
 }
 try { audio.setMuted(localStorage.getItem(MUTE_KEY) === '1'); } catch { /* private mode */ }
-controls.mute.addEventListener('click', () => {
+bindActivation(controls.mute, () => {
   audio.setMuted(!audio.isMuted());
   try { localStorage.setItem(MUTE_KEY, audio.isMuted() ? '1' : '0'); } catch { /* private mode */ }
   applyMute();
 });
 applyMute();
-controls.auto.addEventListener('click', () => setAuto(!autoOn));
+bindActivation(controls.auto, () => setAuto(!autoOn));
 
 function attackText(state, attackerName, evt) {
   const target = getUnit(state, evt.targetUid);
@@ -493,7 +620,8 @@ function renderAbilities() {
     btn.disabled = full || sel.actedAction;
     btn.title = full ? 'Already loaded' : 'Reload — costs your action, never your move';
     btn.innerHTML = `<span>Reload</span><span class="cost">${roundsLeft(sel)}/${mag}</span>`;
-    btn.addEventListener('pointerup', e => { e.preventDefault(); input.reloadSelected(); });
+    btn.dataset.control = 'reload';
+    bindActivation(btn, () => input.reloadSelected());
     abilitiesEl.appendChild(btn);
   }
   for (const ab of abilitiesFor(sel, DATA.abilities)) {
@@ -514,8 +642,8 @@ function renderAbilities() {
     btn.title = ok ? `${line} — ${ab.blurb}` : `${ab.name} — ${whyNot(sel, ab)}`;
     if (!weaponSuits(sel, ab)) btn.classList.add('inert');
     btn.innerHTML = `<span class="nm">${ab.name}<em>${line}</em></span><span class="cost">${ab.cost}</span>`;
-    btn.addEventListener('pointerup', e => {
-      e.preventDefault();
+    btn.dataset.control = `ability-${ab.id}`;
+    bindActivation(btn, () => {
       input.armAbility(ab.id);
     });
     abilitiesEl.appendChild(btn);
@@ -572,6 +700,9 @@ function autoStep() {
 const AUTO_MS = 420;
 
 function updateHud() {
+  const focused = document.activeElement?.dataset?.control;
+  $('fieldGuide').textContent = fieldGuide(state, DATA.abilities);
+  updateOffscreen();
   topbar.turn.textContent = state.turn === 'player' ? 'Your Turn' : 'Enemy Turn';
   topbar.turn.className = state.turn === 'enemy' ? 'enemy' : '';
   // The objective is shown, always. A survive-N goal the player cannot see is
@@ -586,15 +717,17 @@ function updateHud() {
   for (const u of state.units.filter(u => u.faction === 'player')) {
     const btn = document.createElement('button');
     btn.className = 'unitBtn' + (u.hp <= 0 ? ' dead' : '') + (state.selected === u.uid ? ' selected' : '') + (u.hp > 0 && !canUnitAct(u) ? ' done' : '');
+    btn.dataset.control = `unit-${u.uid}`;
     btn.disabled = u.hp <= 0 || state.turn !== 'player';
     const frac = Math.max(0, u.hp / u.maxHp);
     const portrait = u.portrait ? `<img class="portrait" src="${u.portrait}" alt="">` : '';
     btn.innerHTML = `${portrait}<span class="info"><span class="nm">${u.name} · Lv${u.level}</span><span class="hpTrack"><span class="hpFill" style="width:${frac * 100}%;background:${frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD}"></span></span></span>`;
-    btn.addEventListener('pointerup', e => { e.preventDefault(); input.selectByUid(u.uid); });
+    bindActivation(btn, () => input.selectByUid(u.uid));
     squadEl.appendChild(btn);
   }
 
   renderAbilities();
+  renderTargets();
 
   const sel = state.selected ? getUnit(state, state.selected) : null;
   if (sel) {
@@ -611,11 +744,41 @@ function updateHud() {
       + aimText(state)
       + ammoText(sel)
       + momentumText(sel)
+      + canHitText(state, sel)
+      + incomingText(state, sel)
       + forecastText(state)
       + (carried ? `<br>carrying: ${carried}` : '');
   } else {
     selPortraitEl.hidden = true;
     selTextEl.textContent = state.turn === 'player' ? 'Select an operator.' : '';
+  }
+  if (focused) {
+    const replacement = document.querySelector(`[data-control="${CSS.escape(focused)}"]`);
+    if (replacement && !replacement.disabled) replacement.focus({ preventScroll: true });
+  }
+}
+
+// These use the same decision path as a board tap, including the firing-position
+// choice. Large controls make overlapping sprites optional on a phone.
+function renderTargets() {
+  const row = $('targets'); row.replaceChildren();
+  const sel = state.selected && getUnit(state, state.selected);
+  if (!sel || state.turn !== 'player' || state.result || sel.actedAction) return;
+  const ability = DATA.abilities.find(a => a.id === state.armedAbility);
+  const self = ability && ['self', 'adjacent-all'].includes(ability.shape);
+  const ids = ability
+    ? self ? (state.abilityTiles?.length ? [sel.uid] : []) : (state.abilityTiles || []).map(t => t.uid).filter(Boolean)
+    : (state.attackTiles || []);
+  for (const uid of [...new Set(ids)]) {
+    const target = getUnit(state, uid); if (!target || target.hp <= 0) continue;
+    const btn = document.createElement('button');
+    btn.className = 'targetBtn'; btn.dataset.control = `target-${uid}`;
+    const forecast = state.forecasts?.get(uid);
+    const verb = state.aimUid === uid ? 'Confirm suggested shot' : ability ? ability.name : 'Attack';
+    btn.textContent = self ? `Use ${ability.name}` : `${verb}: ${target.name} · tile ${target.x + 1},${target.y + 1}`;
+    if (!ability && forecast) btn.textContent += ` · ${Math.round(forecast.chance * 100)}% · ${forecast.damage} dmg`;
+    bindActivation(btn, () => input.targetByUid(uid));
+    row.appendChild(btn);
   }
 }
 
@@ -630,6 +793,45 @@ function updateHud() {
 // player trusts and a number they suspect. Only for the keyboard/pad cursor,
 // because a touch player has no way to point at something without acting on
 // it, and the badge already covers them.
+
+// WHAT I CAN DO RIGHT NOW, in words. Owner, 2026-09-05, asked for this
+// alongside "what is about to happen": the board already draws a forecast
+// badge over every reachable target, but reading five badges scattered
+// across an isometric grid and ranking them is work, and at any zoom deep
+// enough to be legible some of them are off screen entirely.
+//
+// state.forecasts is the same map the badges are drawn from — one source,
+// so this line and the board can never disagree — sorted best first, with a
+// kill called a kill rather than left as a number to compare against a
+// health bar somewhere else on screen.
+function canHitText(state, sel) {
+  if (sel.actedAction || !state.forecasts || !state.forecasts.size) return '';
+  const rows = [...state.forecasts.entries()]
+    .map(([uid, f]) => ({ u: state.units.find(x => x.uid === uid), f }))
+    .filter(r => r.u && r.u.hp > 0)
+    .sort((a, b) => (b.f.lethal - a.f.lethal) || (b.f.chance * b.f.damage - a.f.chance * a.f.damage));
+  if (!rows.length) return '';
+  const shown = rows.slice(0, 3).map(r =>
+    `${r.u.name} ${Math.round(r.f.chance * 100)}%${r.f.lethal ? ' KILL' : ` for ${r.f.damage}`}`);
+  const more = rows.length > shown.length ? ` (+${rows.length - shown.length} more)` : '';
+  return `<br>can hit: ${shown.join(' · ')}${more}`;
+}
+
+// And what is coming back the other way, for the operator you are looking
+// at. The board carries the same total as a badge over their head; this
+// names WHO it is coming from, which is the half a badge cannot hold and
+// the half that tells you whether moving would help.
+function incomingText(state, sel) {
+  if (state.turn !== 'player') return '';
+  const t = incomingThreats(state).get(sel.uid);
+  if (!t) return '';
+  const who = t.sources
+    .sort((a, b) => b.damage - a.damage)
+    .map(sme => `${sme.name} ${Math.round(sme.chance * 100)}%/${sme.damage}`)
+    .join(' · ');
+  return `<br><b>incoming ${t.total}${t.lethal ? ' — LETHAL' : ` of ${sel.hp}`}</b>: ${who}`;
+}
+
 function forecastText(state) {
   if (!state.cursor || !state.forecasts || !state.forecasts.size) return '';
   const at = state.units.find(u =>
@@ -708,9 +910,11 @@ function renderLevelUps() {
       const btn = document.createElement('button');
       btn.className = 'offerBtn' + (weaponSuits(u, ab) ? '' : ' inert');
       btn.innerHTML = `<b>${ab.name}</b><em>${line} · costs ${ab.cost}</em><span>${ab.blurb}</span>`;
-      btn.addEventListener('pointerup', e => {
-        e.preventDefault();
-        if (learnSkill(state, u.uid, id, DATA.abilities).ok) { saveProgress(state); renderLevelUps(); }
+      bindActivation(btn, e => {
+        if (learnSkill(state, u.uid, id, DATA.abilities).ok) {
+          saveProgress(state); renderLevelUps();
+          if (e.type === 'click') (levelUpsEl.querySelector('button') || resultAgain).focus();
+        }
       });
       row.appendChild(btn);
     }
@@ -761,7 +965,7 @@ function showResult(result, xpEvents = []) {
   renderLevelUps();
 }
 
-titleStart.addEventListener('pointerup', e => {
+bindActivation(titleStart, e => {
   e.preventDefault();
   if (titleStart.disabled) return;
   audio.unlock(); // a browser only allows a context to start from a gesture
@@ -769,7 +973,7 @@ titleStart.addEventListener('pointerup', e => {
   titleEl.hidden = true;
   boot(Date.now());
 });
-resultAgain.addEventListener('pointerup', e => {
+bindActivation(resultAgain, e => {
   e.preventDefault();
   if (resultAgain.disabled) return;
   // Winning a non-final encounter advances the sequence; a final win or any
@@ -781,10 +985,31 @@ resultAgain.addEventListener('pointerup', e => {
   if (!advancing) crewProgress = {};
   boot(Date.now());
 });
-controls.endTurn.addEventListener('pointerup', e => { e.preventDefault(); input && input.endTurn(); });
+bindActivation(controls.endTurn, e => { e.preventDefault(); input && input.endTurn(); });
 // false: a mouse/touch player tapping Cancel never asked for the keyboard/
 // pad reticle to appear — see the comment on cancelSelection in input.js.
-controls.cancel.addEventListener('pointerup', e => { e.preventDefault(); input && input.cancelSelection(false); });
+bindActivation(controls.cancel, e => { e.preventDefault(); input && input.cancelSelection(false); });
+
+// The board reader starts after boot. Menus need their own path so a pad-only
+// player can start, choose a skill, continue and retry without reaching for a mouse.
+function menuButtons() {
+  const menu = !titleEl.hidden ? titleEl : !resultEl.hidden ? resultEl : null;
+  return menu ? [...menu.querySelectorAll('button:not(:disabled)')] : [];
+}
+watchPad({
+  dir(dx, dy) {
+    if (!dx && !dy) return;
+    const buttons = menuButtons(); if (!buttons.length) return;
+    const i = buttons.indexOf(document.activeElement);
+    buttons[(i + (dx || dy) + buttons.length) % buttons.length].focus();
+  },
+  press(i) {
+    if (i !== 0) return;
+    const buttons = menuButtons(); if (!buttons.length) return;
+    const button = buttons.includes(document.activeElement) ? document.activeElement : buttons[0];
+    button.click(); // native activation enters the same deduplicated handler
+  },
+});
 
 // Console/test hook, same shape as every other game's (__hd, __dc, __sj):
 // state for inspection, the commands a click ultimately calls, and boot()
@@ -831,4 +1056,17 @@ loadData().then(data => {
 }).catch(err => {
   titleStart.textContent = 'Failed to load — reload';
   console.error('TURF: failed to load data', err);
+});
+
+// The buttons are the discoverable path — a pinch is invisible and a wheel
+// does not exist on a phone — and they carry the current percentage so the
+// setting is legible rather than a pair of unlabelled arrows.
+if (zoomIn) bindActivation(zoomIn, () => setZoom(userZoom * 1.2, true));
+if (zoomFit) bindActivation(zoomFit, () => setZoom(fitZoom(), true));
+if (zoomOut) bindActivation(zoomOut, () => setZoom(userZoom / 1.2, true));
+window.addEventListener('keydown', e => {
+  if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.key === '+' || e.key === '=') { setZoom(userZoom * 1.2, true); e.preventDefault(); }
+  else if (e.key === '-' || e.key === '_') { setZoom(userZoom / 1.2, true); e.preventDefault(); }
+  else if (e.key === '0') { setZoom(ZOOM_DEFAULT, true); e.preventDefault(); }
 });

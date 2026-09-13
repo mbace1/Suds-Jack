@@ -1,0 +1,11 @@
+{
+  "_": "Everything that came out of Blender through pipeline/authored/*.py. Load with ?models=blender to race the Blender ships and see the derrick; models/reference/ stays the kit's own exports and the production manifest stays empty until the owner has looked at these in game.",
+  "ships": {
+    "nose": "ship-nose-01.glb",
+    "aft": "ship-aft-01.glb"
+  },
+  "landmarks": [
+    "land-derrick-01.glb"
+  ],
+  "numerals": null
+}

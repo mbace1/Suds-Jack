@@ -25,6 +25,7 @@ import { abilitiesFor, abilityTargets, canAfford, whyNot, findAbility, weaponSui
 import { autoTurn } from '../js/autoplay.js';
 import { magOf, needsReload, roundsLeft } from '../js/ammo.js';
 import { SPRITE_H, TILE_W, FULL_PROPS, PARTIAL_PROPS, PROP_H, RARE_PROPS } from '../js/render.js';
+import { incomingThreats } from '../js/combat.js';
 import { PLATES } from '../js/plates.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -1261,6 +1262,55 @@ check('every plate in play declares the floor quad it is seated by', () => {
     // board on ground the plate does not contain.
     assert.ok(q.cx - q.halfW > 0 && q.cx + q.halfW < 1, `${file}: floor quad runs off the image horizontally`);
     assert.ok(q.cy - q.halfH > 0 && q.cy + q.halfH < 1, `${file}: floor quad runs off the image vertically`);
+  }
+});
+
+
+// ── the incoming-damage warning (v34) ────────────────────────────
+// Owner, 2026-09-05, asked for "what is about to happen" first. The badge
+// over an operator's head is a PROMISE about the enemy phase, and in a game
+// whose whole contract is full information a warning that does not match
+// what then gets rolled is worse than no warning at all. It has to be the
+// same forecastAttack resolveAttack uses, from the tile the rival will
+// actually shoot FROM — a rival that closes two tiles before firing loses
+// its cover penalty, and quoting the odds from where it stands now would
+// under-report the hit every single time.
+check('the incoming warning matches what the enemy phase will actually roll', () => {
+  for (const enc of ENCOUNTERS) {
+    const state = boot(enc, 11);
+    // Walk a couple of rounds so rivals are in range and telegraphing.
+    for (let r = 0; r < 3 && !state.result; r++) {
+      for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) {
+        autoTurn(state, u, ABILITIES);
+        if (state.result) break;
+      }
+      if (state.result) break;
+      endPlayerTurn(state);
+      let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+    }
+    const threats = incomingThreats(state);
+    for (const [uid, t] of threats) {
+      const target = state.units.find(u => u.uid === uid);
+      assert.ok(target && target.hp > 0, `${enc.id}: a threat is aimed at something that is not there`);
+      assert.ok(t.total > 0, `${enc.id}: ${uid} carries a warning of zero damage`);
+      assert.equal(t.lethal, t.total >= target.hp,
+        `${enc.id}: ${uid} is marked ${t.lethal ? 'lethal' : 'survivable'} against ${t.total} of ${target.hp}`);
+      for (const src of t.sources) {
+        const from = state.telegraph.get(src.uid).moveTo;
+        const attacker = state.units.find(u => u.uid === src.uid);
+        const f = forecastAttack(state, attacker, target, attacker.weapon, {}, from || attacker);
+        assert.equal(src.damage, f.damage * (f.shots || 1),
+          `${enc.id}: the badge quotes ${src.damage} where forecastAttack says ${f.damage}`);
+        assert.equal(src.chance, f.chance, `${enc.id}: the badge quotes odds forecastAttack does not`);
+      }
+    }
+    // And it says nothing about rivals — a badge over an enemy would read as
+    // damage you are about to deal, which is the opposite fact.
+    for (const uid of threats.keys()) {
+      const u = state.units.find(x => x.uid === uid);
+      assert.ok(u.faction === 'player' || u.faction === 'objective',
+        `${enc.id}: ${uid} is a rival and should not carry an incoming warning`);
+    }
   }
 });
 

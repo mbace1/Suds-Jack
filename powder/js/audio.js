@@ -1,7 +1,8 @@
-// Audio — all synth, no assets. Three continuous voices whose gains are driven
-// by the race every frame (turbine, wind, snow hiss) plus a handful of one
-// shots. Everything routes through one master gain so a single toggle silences
-// the game and anything added later inherits it.
+// Audio — all synth, no assets. The turbine is the instrument: N1 drives a
+// stack of a low rumble, a mid saw and a compressor whine an octave and a
+// fifth above it, so spooling up sweeps the whole stack and you can HEAR the
+// lag the physics is modelling. Wind and surface roar sit under it. Every
+// voice goes through one master gain, so a single toggle silences the game.
 export class AudioKit {
   constructor() { this.ctx = null; this.on = true; this._loops = null; }
 
@@ -11,7 +12,7 @@ export class AudioKit {
       if (!AC) return;
       this.ctx = new AC();
       this.master = this.ctx.createGain();
-      this.master.gain.value = this.on ? 0.34 : 0;
+      this.master.gain.value = this.on ? 0.32 : 0;
       this.master.connect(this.ctx.destination);
       const len = this.ctx.sampleRate * 0.5;
       this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -21,69 +22,79 @@ export class AudioKit {
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
 
-  setOn(v) {
-    this.on = v;
-    if (this.master) this.master.gain.value = v ? 0.34 : 0;
-  }
+  setOn(v) { this.on = v; if (this.master) this.master.gain.value = v ? 0.32 : 0; }
 
-  _noiseSrc() {
+  _noise() {
     const s = this.ctx.createBufferSource();
     s.buffer = this.noiseBuf; s.loop = true; s.start();
     return s;
   }
 
-  /** Start the continuous voices. Safe to call twice. */
   startLoops() {
     this.ensure();
     if (!this.ctx || this._loops) return;
     const c = this.ctx;
+    const L = {};
 
-    // turbine: two detuned saws through a lowpass
-    const tg = c.createGain(); tg.gain.value = 0;
-    const tlp = c.createBiquadFilter(); tlp.type = 'lowpass'; tlp.frequency.value = 900;
-    const o1 = c.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 70;
-    const o2 = c.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = 70 * 1.008;
-    o1.connect(tlp); o2.connect(tlp); tlp.connect(tg); tg.connect(this.master);
-    o1.start(); o2.start();
+    // core: two detuned saws through a lowpass — the mass of the thing
+    L.coreG = c.createGain(); L.coreG.gain.value = 0;
+    L.coreF = c.createBiquadFilter(); L.coreF.type = 'lowpass'; L.coreF.frequency.value = 700;
+    L.o1 = c.createOscillator(); L.o1.type = 'sawtooth';
+    L.o2 = c.createOscillator(); L.o2.type = 'sawtooth';
+    L.o1.connect(L.coreF); L.o2.connect(L.coreF);
+    L.coreF.connect(L.coreG).connect(this.master);
+    L.o1.start(); L.o2.start();
 
-    // wind: broad noise, opens up with speed
-    const wg = c.createGain(); wg.gain.value = 0;
-    const wf = c.createBiquadFilter(); wf.type = 'bandpass'; wf.frequency.value = 500; wf.Q.value = 0.6;
-    this._noiseSrc().connect(wf).connect(wg).connect(this.master);
+    // compressor whine: a narrow band riding well above the core
+    L.whineG = c.createGain(); L.whineG.gain.value = 0;
+    L.whine = c.createOscillator(); L.whine.type = 'triangle';
+    L.whine.connect(L.whineG).connect(this.master);
+    L.whine.start();
 
-    // snow hiss: tight band, rides the carve
-    const sg = c.createGain(); sg.gain.value = 0;
-    const sf = c.createBiquadFilter(); sf.type = 'bandpass'; sf.frequency.value = 2600; sf.Q.value = 1.1;
-    this._noiseSrc().connect(sf).connect(sg).connect(this.master);
+    // wind over the hull
+    L.windG = c.createGain(); L.windG.gain.value = 0;
+    L.windF = c.createBiquadFilter(); L.windF.type = 'bandpass';
+    L.windF.frequency.value = 520; L.windF.Q.value = 0.55;
+    this._noise().connect(L.windF).connect(L.windG).connect(this.master);
 
-    this._loops = { tg, tlp, o1, o2, wg, wf, sg, sf };
+    // surface roar under the skirts
+    L.grG = c.createGain(); L.grG.gain.value = 0;
+    L.grF = c.createBiquadFilter(); L.grF.type = 'bandpass';
+    L.grF.frequency.value = 900; L.grF.Q.value = 0.9;
+    this._noise().connect(L.grF).connect(L.grG).connect(this.master);
+
+    this._loops = L;
   }
 
   stopLoops() {
-    if (!this._loops) return;
-    const l = this._loops;
-    l.tg.gain.value = 0; l.wg.gain.value = 0; l.sg.gain.value = 0;
+    const L = this._loops;
+    if (!L) return;
+    L.coreG.gain.value = 0; L.whineG.gain.value = 0;
+    L.windG.gain.value = 0; L.grG.gain.value = 0;
   }
 
   /**
-   * Drive the continuous voices from the race state.
-   * @param {number} speed01  0..1 of top speed
-   * @param {number} carve01  0..1 edge load
-   * @param {number} snow01   0..1 how much snow is being moved
-   * @param {boolean} boost
+   * @param {number} n1     turbine spool 0..1 — the instrument
+   * @param {number} v01    airspeed as a fraction of top
+   * @param {number} gnd    0..1 how much ground contact there is
+   * @param {number} slip   |lateral slip| in m/s
+   * @param {boolean} od    overdrive lit
    */
-  drive(speed01, carve01, snow01, boost) {
-    if (!this._loops || !this.ctx) return;
-    const l = this._loops, t = this.ctx.currentTime, k = 0.09;
-    const f = 62 + speed01 * 120 + (boost ? 40 : 0);
-    l.o1.frequency.setTargetAtTime(f, t, k);
-    l.o2.frequency.setTargetAtTime(f * 1.008, t, k);
-    l.tlp.frequency.setTargetAtTime(700 + speed01 * 2200 + (boost ? 900 : 0), t, k);
-    l.tg.gain.setTargetAtTime(0.05 + speed01 * 0.10 + (boost ? 0.07 : 0), t, k);
-    l.wg.gain.setTargetAtTime(speed01 * speed01 * 0.14, t, k);
-    l.wf.frequency.setTargetAtTime(360 + speed01 * 700, t, k);
-    l.sg.gain.setTargetAtTime(snow01 * 0.16, t, 0.05);
-    l.sf.frequency.setTargetAtTime(1800 + carve01 * 2600 + speed01 * 900, t, 0.05);
+  drive(n1, v01, gnd, slip, od) {
+    const L = this._loops;
+    if (!L || !this.ctx) return;
+    const t = this.ctx.currentTime, k = 0.07;
+    const f = 44 + n1 * 96 + (od ? 26 : 0);
+    L.o1.frequency.setTargetAtTime(f, t, k);
+    L.o2.frequency.setTargetAtTime(f * 1.011, t, k);
+    L.coreF.frequency.setTargetAtTime(450 + n1 * 2400 + (od ? 900 : 0), t, k);
+    L.coreG.gain.setTargetAtTime(0.05 + n1 * 0.13 + (od ? 0.06 : 0), t, k);
+    L.whine.frequency.setTargetAtTime(f * 11 + 220, t, k);
+    L.whineG.gain.setTargetAtTime(0.006 + n1 * 0.028, t, k);
+    L.windG.gain.setTargetAtTime(v01 * v01 * 0.15, t, k);
+    L.windF.frequency.setTargetAtTime(330 + v01 * 900, t, k);
+    L.grG.gain.setTargetAtTime(gnd * (0.02 + v01 * 0.09 + Math.min(1, slip / 9) * 0.10), t, 0.05);
+    L.grF.frequency.setTargetAtTime(600 + v01 * 900 + Math.min(1, slip / 9) * 1400, t, 0.05);
   }
 
   _tone(type, f0, f1, dur, peak) {
@@ -113,12 +124,13 @@ export class AudioKit {
     s.start(t); s.stop(t + dur);
   }
 
-  launch()  { this._burst(0.30, 900, 0.8, 0.16); this._tone('triangle', 200, 460, 0.28, 0.10); }
-  land(hard){ this._burst(0.42, hard ? 420 : 900, 0.7, hard ? 0.26 : 0.16); }
-  crash()   { this._burst(0.7, 260, 0.5, 0.34, 'lowpass'); this._tone('square', 150, 42, 0.5, 0.14); }
-  boost()   { this._burst(0.5, 1500, 0.7, 0.20); this._tone('sawtooth', 180, 700, 0.4, 0.10); }
-  gate()    { this._tone('square', 660, 660, 0.09, 0.16); setTimeout(() => this._tone('square', 990, 990, 0.16, 0.16), 100); }
-  trick()   { this._tone('triangle', 700, 1400, 0.18, 0.14); }
-  bump()    { this._burst(0.16, 520, 0.9, 0.18, 'lowpass'); }
-  over()    { this._tone('sawtooth', 300, 60, 1.1, 0.16); }
+  impact(sev) {
+    const s = Math.min(1, sev / 22);
+    this._burst(0.30 + s * 0.5, 220 - s * 90, 0.5, 0.16 + s * 0.26, 'lowpass');
+    this._tone('square', 150, 44, 0.34 + s * 0.3, 0.06 + s * 0.10);
+  }
+  land(sev)  { this._burst(0.34, 380, 0.7, 0.10 + Math.min(0.2, sev * 0.02), 'lowpass'); }
+  gate()     { this._tone('square', 760, 760, 0.07, 0.13); setTimeout(() => this._tone('square', 1140, 1140, 0.14, 0.13), 90); }
+  overheat() { this._tone('sawtooth', 420, 180, 0.5, 0.14); }
+  over()     { this._tone('sawtooth', 300, 55, 1.2, 0.15); }
 }

@@ -1,63 +1,68 @@
-// Powder — colour scheme, straight off the Moebius/Otomo hover-racer reference
-// plates: bone-white hulls with one weathered accent panel, chrome nacelles,
-// a blown-out sun in a hazy sky, muted desaturated ground. The desert of the
-// references reads as a snowfield with almost no retint — cream where the sun
-// hits, cold lilac-grey in shadow. NOTHING here is neon; that was the other
-// demos. Retint the whole game from this file.
+// Powder — the palette. Second pass on the owner's direction: more whites and
+// greys in the sand, more purple in the sky. The ground now reads as white
+// sand or powder snow — deliberately either — under a violet sky that goes
+// lilac at the horizon, with the sun the one warm thing in it. The craft keep
+// the reference plates' cream-and-accent livery; they are the only warm
+// objects on the ground, which is why they read.
 export const PAL = {
-  // ---- sky / atmosphere -------------------------------------------------
-  skyTop:  0x8d9aad,   // hazy grey-blue overhead
-  skyMid:  0xc6c5bb,
-  // skyLow and fog are the SAME value on purpose: the ground fades to fog at
-  // the draw distance and the sky starts from skyLow, so any gap between them
-  // paints a hard tan seam straight across the horizon.
-  skyLow:  0xe6ddc6,
-  sun:     0xfffdf4,   // blown out, no colour left in it
-  sunHalo: 0xf6e6b4,
-  fog:     0xe6ddc6,
+  // ---- sky ---------------------------------------------------------------
+  zenith:   0x1c1440,   // deep violet overhead
+  skyHigh:  0x4a2f7a,
+  skyMid:   0x8b5fa8,
+  horizon:  0xd9a4cc,   // lilac band the sun sits in
+  fog:      0xd9a4cc,   // MUST agree with `horizon` or the ground draws a seam
 
-  // ---- snow -------------------------------------------------------------
-  // Straight off the plates: sun-blasted bone, warm in the light, lilac-grey
-  // where it folds away. Deliberately ambiguous between deep powder and deep
-  // sand — the surface reads as either, and the carve plays the same.
-  deepLit:  0xf3ecd9,  // untracked deep stuff taking the sun
-  deepMid:  0xdccfae,  // the packed line everyone runs — a clear tone down, or
-                       // the run and the powder read as the same dead wash
-  deepShd:  0xa2957c,  // shadow side of a roller
-  deepDark: 0x8a7f68,  // carve trench / hover scar
-  crust:    0xd6cdb6,  // wind-scoured crust — fast and slippery
-  crustLit: 0xe9e2ce,
+  sun:      0xfff3dc,
+  sunGlow:  0xffc9a8,
+  planet:   0xa07898,
+  planetRim:0xe6c8e0,
+  moon:     0xe2dcf0,
 
-  // ---- ground furniture -------------------------------------------------
-  rock:     0x4a4753,  // charcoal with a plum cast, as in the plates
-  rockLit:  0x6b6675,
-  scrub:    0x5a5e44,  // olive tufts poking through
-  poleA:    0xc9c2ad,
-  flagA:    0x6b3550,  // plum course markers
-  flagB:    0xb5462f,  // faded orange
-  gateBody: 0xd8cfb6,
-  gateTrim: 0x6b3550,
+  // ---- ground ------------------------------------------------------------
+  salt:     0xf6f4f0,   // canyon floor — near white, smooth, fast
+  saltDark: 0xd8d4d2,
+  dune:     0xe6e2de,   // the deep sand: white with a grey grain
+  duneDark: 0xb6b0b8,   // its shadow side, grey with the sky in it
+  gravel:   0x9f9aa4,
+  road:     0x5e5868,   // the crossings — dark, hard, fast
+  roadEdge: 0x8a8494,
+  rock:     0x8a5c56,   // oxide canyon wall, greyed
+  rockDark: 0x4a3340,
+  rockLit:  0xc08c80,
+  scrub:    0x5a6258,
 
-  // ---- craft ------------------------------------------------------------
-  hull:     0xe8dfc6,  // cream bodywork, the constant across every plate
-  chrome:   0xb9bec7,
-  chromeHi: 0xdfe3e8,
-  intake:   0x14141a,  // black nacelle mouths
+  // shadow tint — violet, not grey. This is most of the surreal read.
+  shade:    0x5a4a8e,
+
+  // ---- set dressing ------------------------------------------------------
+  monolith: 0x5c5478,
+  monoLit:  0x9088b4,
+  arch:     0x7c5062,
+  floater:  0x80708c,
+  bridge:   0x6a6272,
+  bridgeLit:0x9c94a8,
+  glow:     0x8fe8d8,   // the one cold colour in the world, used sparingly
+
+  // ---- craft -------------------------------------------------------------
+  hull:     0xe8dfc6,
+  chrome:   0xc4c8d2,
+  chromeHi: 0xe8ecf2,
+  intake:   0x14141a,
   glass:    0x2b3340,
-  grime:    0x8d7a5c,
-  // one accent panel per racer — plum, forest, purple, maroon, olive, steel
-  accents: [0x6b3550, 0x25493f, 0x4a3a6b, 0x63303a, 0x5c5a35, 0x4d5665],
+  accents:  [0x6b3550, 0x25493f, 0x4a3a6b, 0x63303a, 0x5c5a35, 0x4d5665],
+  flame:    0xffcf8a,
 
-  // ---- plume / ui -------------------------------------------------------
-  plume:    0xf6f0e0,
-  plumeShd: 0xcfc4ac,
-  ink:      0x241f1c,   // HUD ink
-  paper:    0xe8dfc6,   // HUD paper
-  hot:      0xb5462f,   // HUD warning / boost
+  // ---- plume / ui --------------------------------------------------------
+  dust:     0xf2eee8,
+  dustShd:  0xb8b0be,
+  ink:      0x1d1726,
+  paper:    0xf0e6d2,
+  hot:      0xff8a5c,
+  cold:     0x8fe8d8,
 };
 
-// Fixed sun direction (points FROM the sun) — everything that fakes lighting
-// by hand (blob shadows, plume shading) uses this so it agrees with the light.
-// Low enough to sit in frame above the horizon and to rake the rollers with
-// long shadows, high enough that flat snow still takes some direct light.
-export const SUN_DIR = [-0.26, -0.33, 0.91];
+// Direction the KEY light travels (from the sun toward the world). Low and
+// raking, so the monoliths throw shadows the length of the flats.
+export const SUN_DIR = [-0.30, -0.24, 0.92];
+// A second, cold fill from the opposite side — the surreal tell.
+export const FILL_DIR = [0.62, -0.42, -0.66];

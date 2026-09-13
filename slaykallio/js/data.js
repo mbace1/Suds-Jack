@@ -1065,3 +1065,4 @@ export const RULES = {
   frail: 0.75,             // block gained ×0.75
   buzzCarry: 1 / 3,        // share of Buzz that survives the end of turn (v28 — measured; see engine.js endTurn)
 };
+

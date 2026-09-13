@@ -1,5 +1,19 @@
 # Slay Kallio — handoff
 
+## v33 background continuation
+
+Owner requested reuse of TURF backgrounds. The courtyard, schoolyard and dockyard now supply the day/evening/night plates, copied into Slay's own bg folder. Their existing grade is preserved and blur reduced. Original photographs remain selectable with ?scenery=photos. Desktop/touch player flows passed with the courtyard loaded and rendered screenshots checked. This extends draft #499; not live on the hub. Creature redraws, new poses and Blender stage work remain subsequent steps.
+
+## Current graphics work — v32 local prototype
+
+Goal: readable combat before broader asset production. Implemented: separated label lanes, opaque label backing, a 14px selected-card rules panel, encounter title outside the labels, and energy clear of the Toko signature. Keeps the existing TURF art and rules. Core checks passed (761), desktop/touch player flows passed; 139 scene checks passed. Not merged or live. Next: one polished fight with new creature art, poses and Blender stage assets after the readability pass is reviewed.
+
+Live v31 retest: a targeted Swing spent one energy and reduced the Scaffolder from 30 to 24 HP; deck close and end-turn controls worked. A cached plain URL still returned v7 in one browser context; adding ?release=31 returned the six-character v31 game. Resolve cache-safe hub navigation before the next publication. Physical-phone feedback remains pending.
+
+## Release integration — 2026-09-10
+
+v31 integrates the current v30 development snapshot `252db205f6319ef3f67b6d044521fa34cab5f769` for main and hub publication. This supersedes the older v7 hub implementation. All current runtime figures and photographs are included. Local validation passed: 761 core checks, 139 browser checks, and desktop/touch player flows. Publishing is tracked by the v31 release PRs; older live-version statements below describe the pre-integration state. The graphics overhaul is a subsequent work item.
+
 **For someone arriving cold.** Written 2026-09-10 against `claude/slay-kallio-project-3lv3l9`
 at v29. `GDD.md` is the design authority and the root `CLAUDE.md` is the long
 history; this is the short version plus **the state the project is actually in
@@ -20,25 +34,29 @@ Vanilla ES modules, **no build step**, three.js from a local `vendor/` copy.
 
 ---
 
-## 2. Where it stands, and this is the part that will surprise you
+## 2. Where it stands
 
 | | |
 |---|---|
-| branch | **v30** |
-| **deployed** (`gh-pages`, `/Suds-Jack/slaykallio/`) | **v7** — and it is a DIFFERENT LINEAGE, see below |
-| the reconciliation | PRs **#497** (→`main`) and **#498** (→`gh-pages`) publish this tree as **v31** |
+| `main` | **v33** — the one tree; every lane's work is in it |
+| **deployed** (`gh-pages`, `/Suds-Jack/slaykallio/`) | **v33**, published 2026-09-10 (#498, #501), with `figures/` and `bg/` |
+| `claude/slay-kallio-project-3lv3l9` | merged forward from `main` on 2026-09-13 — author here, but **`main` is the ancestor** |
 
-**The live cabinet is not this game, and it is not even this LINEAGE.**
-`git merge-base` between this branch and `gh-pages` returns *nothing*. The
-deployed v7 has no `plates.js`, no `figures/`, no `bg/` and no art toggle —
-nothing on that tree mentions a plate — while `input.js` and v7's card
-targeting exist only there. Version numbers collide the way Eeri's did, so
-`hub/versions.json` looked healthy throughout.
+**There WERE two lineages, and they are joined now.** Until 2026-09-10 the
+deployed game was a v7 built on the old six-fight prototype — no `plates.js`,
+no `figures/`, no `bg/`, no art toggle — while the two-act game with the TURF
+cast lived only on a `claude/*` branch, and `git merge-base` between them
+returned nothing. Version numbers collided (their v7 against this tree's v30),
+so `hub/versions.json` looked healthy throughout. PR #497 took the v30 snapshot
+as the game and folded v7's `input.js` (single-activation controls, deck-input
+isolation) into its `main.js` rather than overwriting either side; #498
+published it; v32 (readability) and v33 (TURF scenery) followed from `main`.
 
-**It is being reconciled properly** (2026-09-10): #497/#498 take this tree as
-the game and fold v7's `input.js` into its `main.js` rather than overwriting
-either side. If you open the live URL before that lands, **you are looking at
-another lineage**, not at an older version of this one. Run it locally instead.
+**The rule that comes out of it:** `git fetch origin && git merge-base HEAD
+origin/main` before touching this folder. Nothing returned means you are on a
+new lineage — stop and reconcile before writing anything. A version number will
+not warn you; two trees reached "v7" and "v30" independently and both looked
+fine.
 
 ---
 

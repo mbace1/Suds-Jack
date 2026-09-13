@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES } from './data.js';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES } from './data.js?v=31';
 
 // ── rng ──────────────────────────────────────────────────────────────────
 export function makeRng(seed) {
@@ -1015,3 +1015,4 @@ export function botRun(state, maxSteps = 900) {
   while (!['won', 'lost', 'menu'].includes(state.phase) && n++ < maxSteps) botStep(state);
   return state;
 }
+

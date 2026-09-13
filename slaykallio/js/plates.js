@@ -163,3 +163,4 @@ export function drawPlate(ctx, entry, { tw, th, foot, tall }) {
   ctx.drawImage(img, tw / 2 - (ink.left + iw / 2) * k, foot - (ink.bottom + 1) * k, w, h);
   ctx.imageSmoothingEnabled = true;
 }
+
