@@ -67,6 +67,7 @@ export const KINDS = kinds('en');
 // order above, so a new game gets a sensible menu the day it is listed and a
 // better one the day someone thinks about it.
 const LEADS = {
+  'optionc-lab': ['perf', 'look', 'controls'],
   optionc: ['controls', 'perf', 'look'],
   concrete: ['controls', 'look'],
   powder: ['balance', 'controls'],        // "the field still needs balancing"
