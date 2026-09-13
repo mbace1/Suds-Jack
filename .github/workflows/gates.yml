@@ -56,6 +56,7 @@ jobs:
       hub: ${{ steps.lanes.outputs.hub }}
       concrete: ${{ steps.lanes.outputs.concrete }}
       turf: ${{ steps.lanes.outputs.turf }}
+      slaykallio: ${{ steps.lanes.outputs.slaykallio }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,6 +106,11 @@ jobs:
           lane toko_move '^toko-move/'
           lane concrete  '^concrete/'
           lane turf      '^turf/'
+          # Slay Kallio's gate reads TURF's cast roster — it asserts every
+          # plate it casts is one of the owner's own twenty-six — so that
+          # folder is part of this lane too, the same way piritori's lane
+          # carries the repo-root pipeline contract it proves.
+          lane slaykallio '^slaykallio/|^turf/art-src/sprites/cast/roster/'
           # The hub gate proves every cabinet's LINK resolves and every game
           # carries the home button, so a game's own entry page is in its lane —
           # but the rest of a game's folder is not, which is the whole point.
@@ -493,3 +499,36 @@ jobs:
           NODE_PATH=$(npm root -g) node turf/tools/spritekit/verify.cjs \
             $(find turf/art-src/sprites/cast -mindepth 2 -type d \
               \( -name front -o -name rear -o -name front12 -o -name rear12 \) | sort)
+
+  # ── SLAY KALLIO ─────────────────────────────────────────────────────────
+  # Wired in because the workflow's own header says a lane goes in as it is
+  # verified green rather than all at once. Only the BARE-NODE gate runs here:
+  # it is the one that needs no browser, no GPU and no audio device, and it is
+  # where this project's real claims live — exact numbers (a Swing is 6, a
+  # doubled Swing is 12), the English-only rule, the cast plates, the
+  # ascension table, and a bot over whole runs.
+  #
+  # The browser gates (smoke.cjs, player-flow.cjs) are deliberately NOT here
+  # yet. They are honest gates and they pass, but each takes minutes under
+  # software rendering and one of them walks an entire act by tapping — the
+  # kind of job that belongs in CI only once somebody has watched it be
+  # reliable there, not on the strength of it being green on one machine.
+  slaykallio:
+    name: slay kallio
+    needs: changes
+    if: needs.changes.outputs.slaykallio == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # engine.js is the rules and nothing else — no DOM, no three.js, no
+      # clock, deterministic from a seed — which is exactly why this runs in
+      # bare node. It also gates two things a suite usually cannot see: that
+      # no player-facing string is left in Finnish, and that the in-game
+      # version label agrees with VERSIONS.md.
+      - name: the rules, the cast and the ladder
+        run: node slaykallio/test/core.mjs
