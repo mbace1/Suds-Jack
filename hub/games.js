@@ -28,16 +28,15 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · ARENA C.11', status: 'active',
-    path: 'piritori-c09/web/arena-lab/?actors=6&release=11', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
-    tagline: 'Move, take cover and act. Read the enemy plans before you commit.',
-    lineage: 'Kallio 2003 · Dream Loop development arena', tags: ['3D', 'tactics', 'prototype'],
-    controls: 'Move + Act in either order · preview then confirm · A/M/B/I/R · drag camera',
-    note: 'C.11 — Directional wall cover and flanking, crouch/peek, clearer gun/melee impacts and visible enemy plans. Separate laboratory; neutral stand-ins and physical-device testing remain provisional.',
-    fi: {tagline:'Liiku, suojaudu ja toimi. Näe vihollisen suunnitelma ennen päätöstä.', controls:'Valitse hahmo, sitten Move tai Attack · vedä kameraa · 1–6 valitsee hahmon', note:'C.11 — suuntakohtainen suoja, sivustat, kyykistyminen ja selkeämmät osumat. Erillinen testiareena; väliaikaiset hahmot.'},
-    ja: {tagline:'敵の計画を確認し、移動・遮蔽・行動を組み合わせる3Dアリーナ。', controls:'キャラクターを選び、移動または攻撃 · ドラッグで回転 · 1–6で選択', note:'C.11 — 方向付き遮蔽、側面攻撃、しゃがみと射撃、命中演出。仮キャラクターによる独立したテストです。'},
+    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.12', status: 'active',
+    path: 'piritori-c09/web/crew-run/?release=12', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
+    tagline: 'Choose your crew. Bring someone home. Live with the aftermath.',
+    lineage: 'Kallio 2003 · Dream Loop crew pilot', tags: ['3D', 'tactics', 'prototype'],
+    controls: 'Choose 2–3 crew · Move + Act · Help / Extract · preview then confirm · drag camera',
+    note: 'C.12 — Persistent crew and equipment, rescue and extraction, announced rivals, wounds and repeat outings. Temporary stand-ins; separate from the authored campaign. Pixel/iPad hardware acceptance is pending.',
+    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.12 — Ryhmä, varusteet, pelastus, poistuminen ja haavat jatkuvat seuraavalle keikalle. Erillinen prototyyppi, väliaikaiset hahmot.'},
+    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.12 — 仲間と装備、救出と脱出、予告される増援、負傷と次の任務。仮キャラクターによる独立した試作です。'},
   },
-
   {
     id: 'optionc', title: 'OPTION C · 3D TEST', status: 'active',
     path: 'option-c/', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
