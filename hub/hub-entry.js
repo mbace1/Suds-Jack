@@ -6,4 +6,4 @@
 // was never fixed, so anything reading the catalogue directly got the wrong
 // game. The entry is correct in games.js now and the patch is gone.
 
-import('./hub.js?v=98').then(() => import('./toko-cabinet-dom.js?v=5'));
+import('./hub.js?v=99').then(() => import('./toko-cabinet-dom.js?v=5'));
