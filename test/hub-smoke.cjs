@@ -20,7 +20,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.md': 'text/plain',
 };
 
