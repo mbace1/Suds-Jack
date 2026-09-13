@@ -67,6 +67,7 @@ export const KINDS = kinds('en');
 // order above, so a new game gets a sensible menu the day it is listed and a
 // better one the day someone thinks about it.
 const LEADS = {
+  'optionc-lab': ['perf', 'look', 'controls'],
   // Option C is a hub TEST, not a game: it is asked how it handles and how it
   // performs before anything else, because those are the two things a shell
   // experiment exists to answer. It has no cabinet on this branch — LEADS is
