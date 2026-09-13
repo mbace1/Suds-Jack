@@ -150,8 +150,8 @@
     "from": "VERSIONS.md"
   },
   "optionc-lab": {
-    "v": "9",
-    "n": 9000,
-    "from": "C.09 arena laboratory — source PR #69"
+    "v": "9.1",
+    "n": 9001,
+    "from": "C.09.1 arena laboratory — source PR #70"
   }
 }

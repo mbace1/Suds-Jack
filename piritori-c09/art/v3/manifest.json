@@ -1,17 +1,5 @@
 {
   "schema_version": 1,
-  "id": "piritori-runtime-art-v3",
-  "status": "vertical-slice-prototype",
-  "active_style": "cut-cardstock-hand-ink-v03",
-  "source_root": "../../art-library",
-  "art_bible": "../../ART_BIBLE.md",
-  "runtime_contract": {
-    "opaque_scenes": "WebP, lazy-loaded per location",
-    "transparent_units": "WebP with verified alpha",
-    "scalable_layers": "SVG",
-    "text_and_controls": "DOM/SVG UI unless a flattened prototype is explicitly declared",
-    "final_art_claim": false
-  },
   "assets": [
     {
       "id": "cast3d-f01-heavy-bruiser-v05",
@@ -84,6 +72,7 @@
       "source": "Blender procedural sculpt",
       "source_version": "1",
       "approval_status": "unreviewed-prototype",
+      "review_status": "not-owner-approved",
       "production_status": "playable-test-only",
       "layer": "location-stage",
       "era": "2003",
@@ -93,9 +82,8 @@
       "bytes": 302460,
       "baked_text": false,
       "baked_ui": false,
-      "note": "Environment prototype. Relative visual preference is not owner approval; final visual/device acceptance is pending.",
-      "triangle_count": 8610,
-      "review_status": "not-owner-approved"
+      "note": "C.08 environment prototype. D009 records relative preference, not owner approval of this derivative. Final runtime/device visual acceptance pending. See design/BEAR_PATH_C08_VERIFICATION.md.",
+      "triangle_count": 8610
     },
     {
       "id": "surface-karhupuisto-gravel-v01",
@@ -104,6 +92,7 @@
       "source": "Built-in Image Generation",
       "source_version": "1",
       "approval_status": "unreviewed-prototype",
+      "review_status": "not-owner-approved",
       "production_status": "playable-test-only",
       "layer": "location-stage",
       "era": "2003",
@@ -113,8 +102,7 @@
       "bytes": 3483080,
       "baked_text": false,
       "baked_ui": false,
-      "note": "Environment prototype. Relative visual preference is not owner approval; final visual/device acceptance is pending.",
-      "review_status": "not-owner-approved"
+      "note": "C.08 environment prototype. D009 records relative preference, not owner approval of this derivative. Final runtime/device visual acceptance pending. See design/BEAR_PATH_C08_VERIFICATION.md."
     }
   ]
 }

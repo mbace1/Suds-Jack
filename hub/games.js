@@ -28,14 +28,14 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', title: 'PIRITORI · ARENA C.09', status: 'active',
-    path: 'piritori-c09/web/arena-lab/?actors=6&release=9', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
+    id: 'optionc-lab', title: 'PIRITORI · ARENA C.09.1', status: 'active',
+    path: 'piritori-c09/web/arena-lab/?actors=6&release=9.1', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'Play the new 3D arena: two, six or twelve fighters.',
     lineage: 'Kallio 2003 · Dream Loop development arena', tags: ['3D', 'tactics', 'prototype'],
     controls: 'Tap a fighter, then Move or Attack · drag to orbit · 1–6 select · A/M/B/I actions',
-    note: 'C.09 — grounded stand-ins, wet materials and scenery cutaways. Separate test arena; final rigs and device performance remain in progress.',
-    fi: {tagline:'Kokeile uutta 3D-areenaa: kaksi, kuusi tai kaksitoista taistelijaa.', controls:'Valitse hahmo, sitten Move tai Attack · vedä kameraa · 1–6 valitsee hahmon', note:'C.09 — väliaikaiset hahmot, märät pinnat ja näkymän avaava ympäristö. Erillinen testiareena; lopulliset hahmot ovat työn alla.'},
-    ja: {tagline:'新しい3Dアリーナで2人・6人・12人の戦闘を試せます。', controls:'キャラクターを選び、移動または攻撃 · ドラッグで回転 · 1–6で選択', note:'C.09 — 仮キャラクター、濡れた路面、遮蔽物の透過。独立したテストアリーナです。最終モデルと実機性能は調整中。'},
+    note: 'C.09.1 — steadier rendering, grounded stand-ins and improved scenery cutaways. Separate test arena; final rigs and device performance remain in progress.',
+    fi: {tagline:'Kokeile uutta 3D-areenaa: kaksi, kuusi tai kaksitoista taistelijaa.', controls:'Valitse hahmo, sitten Move tai Attack · vedä kameraa · 1–6 valitsee hahmon', note:'C.09.1 — väliaikaiset hahmot, märät pinnat ja näkymän avaava ympäristö. Erillinen testiareena; lopulliset hahmot ovat työn alla.'},
+    ja: {tagline:'新しい3Dアリーナで2人・6人・12人の戦闘を試せます。', controls:'キャラクターを選び、移動または攻撃 · ドラッグで回転 · 1–6で選択', note:'C.09.1 — 仮キャラクター、濡れた路面、遮蔽物の透過。独立したテストアリーナです。最終モデルと実機性能は調整中。'},
   },
 
   {

@@ -1,5 +1,9 @@
-# C.09 — arena laboratory
+# C.09.1 — arena laboratory
 
-Source: Piritori PR #69, merge d74f966adb6f47322e46c554d898c719bf2bdf52.
+Source: daddf4808bf3470170be5d89bee193741461204a.
 
-Playable stand-ins, 2/6/12-person fixtures, wet materials and scenery cutaways. This is a separate development cabinet; Bear Path remains the authored encounter. Pixel/iPad acceptance and final character rigs remain pending.
+Retain frame timing remainder; update labels only when anchors or layout change. 2/6/12-person stand-in fixtures, existing rules and character gates. Pixel/iPad acceptance remains pending.
+
+## Port
+
+Godot: retain target cadence under variable refresh; invalidate projected labels on camera, actor, text or viewport changes. No combat vector changes.
