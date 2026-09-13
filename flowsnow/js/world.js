@@ -2,12 +2,12 @@
 // rebuilds only the tiles that are new, standing stones read off the same tile
 // indices, the track the board leaves, and the shadow under the rider.
 import * as THREE from 'three';
-import { snowMaterial, trailMaterial, shadowMaterial } from './snowmat.js?v=1';
+import { snowMaterial, trailMaterial, shadowMaterial } from './snowmat.js?v=2';
 import { STONE } from './palette.js?v=1';
 
 const SEG = 20;
 const SIDE = 8, AHEAD = 8, BEHIND = 2;      // tiles around the rider (ahead is -z)
-const BUILDS_PER_FRAME = 3;
+const BUILDS_PER_FRAME = 2;
 
 export class Field {
   constructor(scene, u, terrain) {
@@ -25,11 +25,35 @@ export class Field {
     scene.add(this.stone);
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._p = new THREE.Vector3(); this._s = new THREE.Vector3();
     this.dirtyStones = true;
+    // the sun the shadows were baked for, and a queue of tiles to re-bake when
+    // it has moved far enough down the run that the old bake would lie
+    this.sun = [0.6, 0.5, -0.6];
+    this.bakedSun = [0.6, 0.5, -0.6];
+    this.rebake = [];
+  }
+  setSun(sx, sy, sz) {
+    this.sun[0] = sx; this.sun[1] = sy; this.sun[2] = sz;
+    const b = this.bakedSun;
+    const drift = Math.hypot(sx - b[0], sy - b[1], sz - b[2]);
+    if (drift > 0.05 && this.rebake.length === 0) {
+      this.bakedSun = [sx, sy, sz];
+      this.rebake = [...this.tiles.values()];
+    }
+  }
+  // shadow only: heights are already in the mesh, so this is the march alone
+  _bakeShadow(m) {
+    const pos = m.geometry.attributes.position, sh = m.geometry.attributes.aShadow;
+    const ox = m.position.x, oz = m.position.z;
+    for (let i = 0; i < pos.count; i++) {
+      sh.setX(i, this.t.occlusion(pos.getX(i) + ox, pos.getZ(i) + oz, this.sun, pos.getY(i)));
+    }
+    sh.needsUpdate = true;
   }
   _mesh() {
     if (this.pool.length) return this.pool.pop();
     const g = new THREE.PlaneGeometry(this.TILE, this.TILE, SEG, SEG);
     g.rotateX(-Math.PI / 2);
+    g.setAttribute('aShadow', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(1), 1));
     const m = new THREE.Mesh(g, this.mat);
     m.frustumCulled = true;
     return m;
@@ -49,6 +73,7 @@ export class Field {
     m.geometry.computeBoundingSphere();
     m.position.set(ox, 0, oz);
     m.visible = true;
+    this._bakeShadow(m);
   }
   update(x, z) {
     const T = this.TILE;
@@ -78,6 +103,8 @@ export class Field {
       this.scene.add(m);
     }
     if (this.dirtyStones) { this._stones(); this.dirtyStones = false; }
+    // one re-bake a frame: the sun moves slowly, the queue drains long before it matters
+    if (this.rebake.length) { const m = this.rebake.pop(); if (m.visible) this._bakeShadow(m); }
   }
   // build everything queued now (the smoke test, and the first frame)
   flush() { while (this.queue.length) this.update(this.center[0] * this.TILE + 1, this.center[1] * this.TILE + 1); }
