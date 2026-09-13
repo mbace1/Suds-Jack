@@ -496,4 +496,3 @@ export function exposure(a, ctx = {}) {
     slipChance: cond.slip,
   };
 }
-
