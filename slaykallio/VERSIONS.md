@@ -7,6 +7,79 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v35 — 2026-09-13
+**Act two had no middle, and the instrument that proves it is a per-span ledger**
+
+`node test/bots.mjs --act2` grew a table that prices every act-two span under
+the population bot: how often it is met, what it costs in HP, and how often it
+KILLS. The by-kind table it already had averages thirteen fights into one
+number, which is exactly the number that cannot answer the question — a pool
+where every fight costs eleven is an HP tax the boss collects, and a pool with
+two fights that cost thirty is a route with a decision on it.
+
+What it found on v34, and nobody had looked:
+
+```
+  The Bear Wakes        boss   41.3 HP   67% of everyone who met it
+  The Last One Standing fight  28.1      15%
+  ...eight of the thirteen ordinary fights under 11 HP, killing 0-1%
+  Two For One           fight   2.7       0%
+```
+
+Act two's pool was act ONE's shapes with a mutation multiplier on top. Two
+gulls and a pigeon is a fight you have outgrown by the time you are offered it.
+
+**The retune is rosters, not numbers.** Seven spans got more body, using
+enemies that already exist — a second gull on `gulls` and `flock`, a second
+thief, a second Sable, a third blob spawn, a rival behind the two Dealers, a
+pigeon with the Night Shift. Measured against the v34 control at 600 seeds a
+cell, from the door of act two:
+
+```
+  ordinary fight costs `native`   10.9 → 15.4 HP
+  where act two ends, greedy      Bear 77% → 59%
+                      hoarder     Bear 72% → 53%
+                      aggressive  Bear 50% → 39%
+                      native      Bear 90% → 83%
+  mean win rate, every bot        down about 3 points
+```
+
+**The honest half: this half-worked.** The naive lines now die in the middle,
+which is the shape that was asked for. The strong ones still die at the Bear —
+`native` 83%, `synergist` 82%, `defensive` 90% — because a competent deck walks
+the middle and then meets a 41 HP check against arrivals at 87% of a 72 HP
+hero, and nothing in the pool can compete with that number. Moving THAT means
+either a cheaper Bear or spikes that threaten a healthy hero, and neither was
+tried here. Recorded rather than claimed.
+
+**And a rule was built, measured and CUT.** The night taking the breather —
+the post-fight 6 HP scaled by the hour, half through the evening and nothing at
+night — is the obvious way to make the middle cost something. Against the same
+populations it cost every bot about four points of win rate and moved where act
+two ends by three; laid on TOP of the retune it bought two more points of Bear
+share for two more points of win rate. An ordinary fight that is merely
+expensive is still a tax the boss collects. The reasoning is kept at the site in
+`engine.js` because it is the obvious next idea and it does not work.
+
+**A real bug, of the family this repo keeps paying for.** v34 shipped with
+`VERSION` left at 33 while `VERSIONS.md` and `hub/versions.json` both said 34 —
+the arcade advertised a release the cabinet denied. `core.mjs` now reads both
+files and fails when they disagree.
+
+Also: the ledger was mis-attributing deaths. A run that ends inside a fight
+flushes on the same iteration that sets `lost`, so by the time the loop
+condition is tested the open fight is already closed — every span read 0% kills
+and the boss did too. It reads the phase now.
+
+And the hub's release pin was a THIRD copy of the number. `hub.js` launched
+this cabinet at a hard-coded `?release=33` while `VERSION` said 33 and
+`versions.json` said 34. It is read from `versions.json` now (`RELEASE_PINNED`
++ `relink()`), so the pin cannot be left behind again — but the LIVE hub still
+carries the hard-coded 33 until the arcade shell itself is redeployed, which is
+somebody else's deploy and is not folded into a one-game publish.
+
+Gates: `node test/core.mjs` 767, `NODE_PATH=$(npm root -g) node test/smoke.cjs` 140.
+
 ## v34 — 2026-09-13
 **The owner's own 26 are the cast, and they stand as standees**
 

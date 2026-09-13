@@ -666,6 +666,41 @@ check('the Bear is never mutated — a boss IS the night', s.hour === 1 && s.ene
 s = startRun(createRun({ seed: 5, character: 'boxer' })); jumpTo(s, ENC('bridge'));
 check('nor is the Bridge King, at dusk', s.enemies[0].mutated === 0 && s.enemies[0].hp === 104 && nightfall(s.hour) === 1);
 
+// ── act two is an ESCALATION, not act one after dark ─────────────────────
+// v35. The act-two harness priced every span and found eight of the thirteen
+// ordinary fights costing under 11 HP and killing 1% of the runs that met
+// them, which is what "act two has no middle" actually means: the pool was
+// act-one shapes with a mutation multiplier on top, so the whole act was an
+// HP tax that the Bear collected. These two hold the floor the retune set.
+{
+  const body = id => {
+    const e = ENCOUNTERS.find(x => x.id === id);
+    return e.enemies.reduce((a, x) => a + ENEMIES[x].hp, 0);
+  };
+  const med = xs => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+  const one = ACTS[0].fights.map(body), two = ACTS[1].fights.map(body);
+  check(`no act-two fight is lighter than act one's middle one (${Math.min(...two)} vs ${med(one)} HP of bodies)`,
+    Math.min(...two) >= med(one));
+  check(`and act two's middle fight is half again act one's (${med(two)} vs ${med(one)})`,
+    med(two) >= med(one) * 1.25);
+  check('every act-two fight fields at least two bodies that can attack',
+    ACTS[1].fights.every(id => ENCOUNTERS.find(x => x.id === id).enemies
+      .filter(e => ENEMIES[e].moves.some(m => m.dmg)).length >= 2));
+}
+// The number on the screen and the number in the log are the same number.
+// v34 shipped with VERSION left at 33 while VERSIONS.md and hub/versions.json
+// both said 34 — the arcade advertised a release the cabinet denied.
+check('the version on screen is the version in the log', (() => {
+  const top = readFileSync(new URL('../VERSIONS.md', import.meta.url), 'utf8').match(/^## v(\d+)/m)?.[1];
+  const code = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8').match(/^const VERSION = (\d+);/m)?.[1];
+  return top && code && top === code;
+})());
+check('a won fight records the hour it was won at', (() => {
+  const st = botRun(startRun(createRun({ seed: 3, character: 'boxer' })));
+  const w = st.log.filter(l => l.t === 'fightWon');
+  return w.length > 1 && w.every(l => [0, 1, 2].includes(l.lvl)) && w.every((l, i) => i === 0 || l.lvl >= w[i - 1].lvl);
+})());
+
 // ── a whole run, six times ───────────────────────────────────────────────
 const results = {};
 for (const ch of Object.keys(CHARACTERS)) {

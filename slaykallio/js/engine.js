@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES } from './data.js?v=31';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES } from './data.js?v=35';
 
 // ── rng ──────────────────────────────────────────────────────────────────
 export function makeRng(seed) {
@@ -670,7 +670,14 @@ function checkFightOver(state) {
   if (state.phase !== 'fight') return;
   if (state.enemies.every(e => !e.alive)) {
     state.stats.fights++;
-    state.log.push({ t: 'fightWon', index: state.encounter });
+    // The breather is FLAT, and that was measured rather than assumed. Scaling
+    // it by the hour — half through the evening, nothing at night — was built
+    // and CUT in v35: against the same act-two populations it cost every bot
+    // about four points of win rate and moved where act two ends by three,
+    // because an ordinary fight that is merely expensive is an HP tax the boss
+    // collects. What gives an act a middle is fights that can kill you, not a
+    // smaller bandage between them; see VERSIONS.md v35 and the roster there.
+    state.log.push({ t: 'fightWon', index: state.encounter, lvl: nightfall(state.hour ?? 0) });
     heal(state, RULES.healAfterFight);
     const enc = ENCOUNTERS[state.encounter];
     const queue = [...enc.reward];

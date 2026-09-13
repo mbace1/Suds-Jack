@@ -18,13 +18,15 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   const tap=l=>mobile?l.tap():l.click();
   const idle=()=>p.waitForFunction(()=>!!window.__sk&&!__sk.busy(),null,{timeout:30000});
   await p.goto(base+'/');
+  // the release pin arrives with versions.json, after the cabinets are drawn
+  await p.waitForFunction(()=>[...document.querySelectorAll('a[data-game="slaykallio"]')].some(a=>a.href.includes('?release=')),null,{timeout:15000});
   await tap(p.getByRole('link',{name:'Play Slay Kallio',exact:true}));
-  await p.waitForURL('**/slaykallio/?release=33');
-  assert.equal(new URL(p.url()).searchParams.get('release'),'33','hub launches the current release URL');
-  await p.waitForFunction(()=>document.querySelector('#ver')?.textContent==='v33');
+  await p.waitForURL('**/slaykallio/?release=35');
+  assert.equal(new URL(p.url()).searchParams.get('release'),'35','hub launches the current release URL');
+  await p.waitForFunction(()=>document.querySelector('#ver')?.textContent==='v35');
   await p.goto(base+'/slaykallio/?seed=4');
   await p.waitForFunction(()=>!!window.__sk);
-  assert.equal(await p.locator('#ver').innerText(),'v33');
+  assert.equal(await p.locator('#ver').innerText(),'v35');
   assert.equal(await p.locator('#roster .pick').count(),6);
   await p.waitForFunction(()=>!document.querySelector('#start').disabled);
   assert.equal(await p.evaluate(()=>__sk.debug.art()),'turf');

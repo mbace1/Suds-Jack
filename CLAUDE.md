@@ -169,6 +169,20 @@ more than one direction, and a plain byte comparison says *that* two copies diff
 stripped, since a deployed file has been renumbered); if not, that is somebody else's
 work, it is left alone, and the run stops and tells you to bring it back first. It found
 three files that way on its first real run. **Deploys never merge.**
+**`hub/hub.js` and `test/hub-smoke.cjs` are CRLF** while everything around
+them is LF, so a rewrite through any tool that normalises newlines reflows the
+whole file and buries a three-line change in a two-thousand-line diff. Check
+`git diff --stat` before committing either.
+**A release pin is a number, so it lives in ONE file.** Slay Kallio's cabinet
+launches at `?release=N` so a cached copy of its HTML is never reused across a
+release; that number was typed into `hub.js` and promptly became the third
+place a version lives and the third one nobody moved — v34 shipped with the
+pin at 33, the cabinet's own `VERSION` at 33 and `versions.json` at 34, three
+files and three answers. `RELEASE_PINNED` now names which cabinets want the
+parameter and the number is READ from `versions.json` when it lands, with
+`relink()` rewriting the links that were drawn before it. The race is real and
+deliberate: until that fetch returns the link carries no parameter, which is
+the behaviour the hub had anyway.
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
 on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
 its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise
@@ -929,6 +943,31 @@ finding as a spec: the TURF scenery is an iso render behind a perspective
 bridge and reads as a poster; backgrounds must be made in the bridge's camera
 (36°/46° vFOV, eye 1.6/1.25, ~10° down, action width 4.6, portrait keeps the
 middle).
+**ACT TWO HAD NO MIDDLE, AND THE BY-KIND LEDGER COULD NOT SAY SO** (v35).
+`--act2` now prices every SPAN — met, HP, and how often it kills — because a
+table that averages thirteen fights into one number cannot tell a pool where
+every fight costs eleven (an HP tax the boss collects) from one with two
+fights that cost thirty (a route with a decision on it). On v34 it read: the
+Bear 41.3 HP and **67% of everyone who met it**, and **eight of the thirteen
+ordinary fights under 11 HP killing 0-1%** — act two was act ONE's shapes with
+a mutation multiplier on top, and two gulls and a pigeon is a fight you have
+outgrown by the time it is offered. The retune is **rosters, not numbers**
+(a second gull, a second thief, a second Sable, a third spawn, a rival behind
+the Dealers), and it moved the ordinary fight 10.9 → 15.4 HP and where act two
+ends by **18 points on greedy and 19 on hoarder** for about 3 points of mean
+win rate. **It half-worked and that is the finding**: the naive lines die in
+the middle now, the strong ones still die at the Bear (`native` 83%), because
+a competent deck walks the middle and then meets a 41 HP check — moving THAT
+needs a cheaper Bear or spikes that threaten a HEALTHY hero, and neither was
+tried. **One rule was built, measured and CUT**: the night taking the breather
+(the post-fight 6 HP scaled by the hour) cost every bot four points of win rate
+to move the same needle three, and on top of the retune bought two for two —
+kept at the site in `engine.js` because it is the obvious next idea and it does
+not work. Two bugs: the ledger flushed a fatal fight on the same iteration that
+set its loss, so **every span including the boss read 0% kills**; and v34
+shipped `VERSION` at 33 while `VERSIONS.md` and `hub/versions.json` both said
+34 — the arcade advertised a release the cabinet denied, and `core.mjs` now
+reads both files and fails when they disagree.
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`
