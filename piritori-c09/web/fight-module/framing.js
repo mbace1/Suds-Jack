@@ -2,9 +2,9 @@ import * as T from 'three';
 
 // Frame the whole legal board, including empty edge cells and headroom. The
 // active fighters never determine the fit, so casualties don't move the camera.
-export function fitBattleCamera(camera,{width,height,angle,zoom,lanes,rows,cell}) {
+export function fitBattleCamera(camera,{width,height,angle,zoom,lanes,rows,cell,tight=false,elevation=10}) {
   const aspect=width/height,top=Math.min(66,height*.22),bottom=24,side=16;
-  camera.position.set(Math.sin(angle)*13,10,Math.cos(angle)*13);
+  camera.position.set(Math.sin(angle)*13,elevation,Math.cos(angle)*13);
   camera.lookAt(0,.55,0);camera.updateMatrixWorld(true);
   const corners=[];
   for(const x of [-1,1])for(const z of [-1,1])for(const y of [0,2.3])
@@ -12,11 +12,11 @@ export function fitBattleCamera(camera,{width,height,angle,zoom,lanes,rows,cell}
   const minX=Math.min(...corners.map(p=>p.x)),maxX=Math.max(...corners.map(p=>p.x));
   const minY=Math.min(...corners.map(p=>p.y)),maxY=Math.max(...corners.map(p=>p.y));
   const safeW=Math.max(.3,1-2*side/width),safeH=Math.max(.3,1-(top+bottom)/height);
-  const overviewSpan=Math.max(11.9,15/aspect,(maxX-minX)/(aspect*safeW),(maxY-minY)/safeH);
+  const overviewSpan=Math.max(tight?0:11.9,tight?0:15/aspect,(maxX-minX)/(aspect*safeW),(maxY-minY)/safeH);
   const span=overviewSpan/zoom,cx=(minX+maxX)/2,cy=(minY+maxY)/2+(top-bottom)*span/(2*height);
   Object.assign(camera,{left:cx-span*aspect/2,right:cx+span*aspect/2,top:cy+span/2,bottom:cy-span/2});
   camera.updateProjectionMatrix();
-  return {overviewSpan,span,zoom,angle,aspect,safeInset:{top,bottom,side}};
+  return {overviewSpan,span,zoom,angle,elevation,aspect,safeInset:{top,bottom,side}};
 }
 
 export const intersects=(a,b,gap=0)=>a.x<b.x+b.width+gap&&a.x+a.width+gap>b.x&&a.y<b.y+b.height+gap&&a.y+a.height+gap>b.y;

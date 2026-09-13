@@ -140,4 +140,3 @@ export function hireCandidate(seed, i) {
 export function hiringPool(seed, day, count = 3) {
   return Array.from({ length: count }, (_, i) => hireCandidate(seed, day * 10 + i));
 }
-
