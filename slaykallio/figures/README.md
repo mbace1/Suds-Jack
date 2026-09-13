@@ -1,10 +1,17 @@
-# The figures — TURF's cast, standing on this bridge
+# The figures — the owner's own cast, standing on this bridge
 
 Owner, 2026-09-07: *"I would like the turf art used on those figures."*
+Owner, 2026-09-13: *"continue development with the new directions and assets."*
 
-These are copies of the owner's own TURF character plates
-(`turf/art-src/sprites/`), cast onto the person-shaped figures of Slay Kallio
-by `js/plates.js` and shown when the menu's `art:` toggle is on **turf**.
+**From v34 these are the owner's OWN 26** — the casting sheets, cut
+(`turf/tools/sheet-cut.mjs` → `turf/art-src/sprites/cast/roster/`), not
+characters generated in their technique. v18–v33 cast the thirty generated
+`*-plate.png` files, and most of those had been derived from one of these, so
+the change is largely the original taking the place of its copy.
+`leopard-*` and `gunner-*` are the two with full pose sets and come from
+`turf/art-src/sprites/cast/` as before. `js/plates.js` casts them onto the
+person-shaped figures; `test/core.mjs` fails if a cast plate is not one of the
+26, is missing from the tree, or points at `art-src/`.
 
 ## Why they live here and not in `art-src/`
 

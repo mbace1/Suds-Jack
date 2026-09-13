@@ -19,7 +19,7 @@
 
 import * as THREE from 'three';
 import { poseAt, frameAt, clipLength, REST } from './motion.js?v=31';
-import { plateReady, drawPlate, posesFor } from './plates.js?v=31';
+import { plateReady, drawPlate, posesFor } from './plates.js?v=32';
 
 const TW = 256, TH = 512;        // texture size; the figure fills ~70% of the height
 export const PUPPET_H = 1.5;     // world height of a scale-1 figure
@@ -803,6 +803,17 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   // In 'card' the drawing goes onto its own layer first, so its ink can be
   // measured and a board cut to fit it. In 'silhouette' it goes straight down,
   // which is the path this game shipped and one canvas cheaper.
+  // A CUT-OUT IS CUT AROUND THE FIGURE (v34, owner: *"characters should look
+  // more like cut outs"*). The first cut of this version printed the art on a
+  // round-topped BOARD — a standee — and it read as a sticker on a tombstone:
+  // the board was a field behind the figure and took the silhouette away,
+  // which is exactly the fault v20 recorded against boarding a drawn rat. A
+  // cut-out keeps the silhouette: the card follows the drawing's own outline
+  // with a few millimetres to spare, the way scissors do, and the torn edge,
+  // the nicks and the fibre sit on THAT edge. So under 'card' every figure —
+  // plated or drawn — is drawn to its own layer, and `cutoutBorder` lays a
+  // kraft contour under it: the dilated silhouette, a flat foot where the
+  // base is, and a darker band at the rim that reads as the card's thickness.
   const fig = CUT === 'card' ? document.createElement('canvas') : c;
   if (fig !== c) { fig.width = TW; fig.height = TH; }
   const fx = fig === c ? ctx : fig.getContext('2d');
@@ -813,7 +824,7 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   else if (look.shape === 'bird') bird(fx, look, rnd);
   else if (look.shape === 'bear') bear(fx, look, rnd);
   else person(fx, look, rnd);
-  if (fig !== c) { boardShape(ctx, inkBounds(fig), rnd); ctx.drawImage(fig, 0, 0); }
+  if (fig !== c) { cutoutBorder(ctx, fig, rnd); ctx.drawImage(fig, 0, 0); }
   // ORDER MATTERS, and it cost a figure with chickenpox to find out: the rim
   // pass finds every edge in the alpha, and `nicks` punches HOLES in it, so
   // rimming first drew a glowing ring around each of forty nicks. Light the
@@ -930,69 +941,70 @@ export function figureArt() { return ART; }
 // pixel art has an enormous amount of alpha edge. Cut it as a board and the
 // torn edge is the BOARD's edge: one clean outline, and the art inside it is
 // left alone.
-let CUT = 'silhouette';
+// 'card' is the DEFAULT from v34 — a CUT-OUT: the card follows the figure's
+// own silhouette (see `cutoutBorder`), plated or drawn alike. Owner,
+// 2026-09-13: *"characters should look more like cut outs."*
+let CUT = 'card';
 export function setFigureCut(c) { CUT = c === 'card' ? 'card' : 'silhouette'; }
 export function figureCut() { return CUT; }
 
-// Where the drawing actually reaches, so a board can be cut to it: a board on
-// fixed bounds stands a rat inside a poster. Sampled on a 4px grid — this runs
-// once per figure and the board has a 16px margin, so a quarter-resolution
-// scan is exact enough and sixteen times cheaper.
-function inkBounds(cv) {
-  const d = cv.getContext('2d').getImageData(0, 0, TW, TH).data;
-  let top = TH, bottom = -1, left = TW, right = -1;
-  for (let y = 0; y < TH; y += 4) {
-    for (let x = 0; x < TW; x += 4) {
-      if (d[(y * TW + x) * 4 + 3] > 20) {
-        if (y < top) top = y;
-        if (y > bottom) bottom = y;
-        if (x < left) left = x;
-        if (x > right) right = x;
-      }
-    }
+// The cut line follows the drawing. Dilating the figure's own alpha is what
+// makes it a CUT-OUT rather than a print: the border is the same shape as the
+// figure, a few px out, so a raised arm gets a border and the space under it
+// stays air. Done by stamping the figure round a ring of offsets into a mask
+// and tinting the mask with `source-in` — no contour tracing, and it works on
+// a plate and a painted rat alike. The foot is cut FLAT at the baseline (a
+// cut-out stands on a tab), and a darker band at the rim is the card's edge
+// seen at a slight angle, which is the one cue that says thickness.
+const CUT_PAD = 7;                       // card beyond the ink, in texture px
+const CUT_FOOT = 470 + 6;                // the flat cut, just under the baseline drawPlate uses
+function cutoutBorder(ctx, fig, rnd) {
+  const m = document.createElement('canvas'); m.width = TW; m.height = TH;
+  const mx = m.getContext('2d');
+  // the mask: the silhouette grown by CUT_PAD in every direction
+  for (let a = 0; a < 16; a++) {
+    const dx = Math.cos(a / 16 * Math.PI * 2) * CUT_PAD, dy = Math.sin(a / 16 * Math.PI * 2) * CUT_PAD;
+    mx.drawImage(fig, dx, dy);
   }
-  return bottom < 0 ? { top: 110, bottom: 470, left: 60, right: 196 } : { top, bottom, left, right };
-}
-
-// The board the figure is printed on. An arch — straight sides, a round top,
-// a flat foot — sized to the drawing's own ink with a margin, because a board
-// cut to a fixed rectangle stands a rat inside a poster.
-function boardShape(ctx, ink, rnd) {
-  const pad = 16;
-  const x0 = Math.max(4, ink.left - pad), x1 = Math.min(TW - 4, ink.right + pad);
-  const y1 = Math.min(TH - 8, ink.bottom + 10);
-  const w = x1 - x0, r = w / 2;
-  const y0 = Math.max(6, ink.top - pad);
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x0, y1);
-  ctx.lineTo(x0, y0 + r);
-  ctx.arc(x0 + r, y0 + r, r, Math.PI, 0);        // the round top
-  ctx.lineTo(x1, y1);
-  ctx.closePath();
-  // kraft board, printed side: paler than the back, and never flat
-  const g = ctx.createLinearGradient(x0, y0, x1, y1);
-  g.addColorStop(0, '#8a7d64'); g.addColorStop(0.5, '#7b6f5a'); g.addColorStop(1, '#665c4b');
-  ctx.fillStyle = g;
-  ctx.fill();
-  ctx.clip();
-  // a wash of unevenness so the board is stock rather than a swatch
-  for (let i = 0; i < 90; i++) {
-    ctx.fillStyle = rnd() > 0.5 ? 'rgba(0,0,0,0.035)' : 'rgba(255,248,232,0.045)';
-    ctx.fillRect(x0 + rnd() * w, y0 + rnd() * (y1 - y0), 6 + rnd() * 40, 3 + rnd() * 18);
+  for (let a = 0; a < 8; a++) {          // fill the ring so the border is solid, not a halo of copies
+    const dx = Math.cos(a / 8 * Math.PI * 2) * CUT_PAD * 0.5, dy = Math.sin(a / 8 * Math.PI * 2) * CUT_PAD * 0.5;
+    mx.drawImage(fig, dx, dy);
   }
-  ctx.restore();
-  // the cut edge: a darker line, drawn wobbly because scissors are
-  ctx.save();
-  ctx.strokeStyle = 'rgba(60,48,32,0.55)'; ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x0, y1);
-  ctx.lineTo(x0, y0 + r);
-  ctx.arc(x0 + r, y0 + r, r, Math.PI, 0);
-  ctx.lineTo(x1, y1);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.restore();
+  mx.drawImage(fig, 0, 0);
+  // flat foot: nothing below the cut line
+  mx.globalCompositeOperation = 'destination-out';
+  mx.fillRect(0, CUT_FOOT, TW, TH - CUT_FOOT);
+  // kraft card, tinted through the mask — paler than the back and never flat
+  mx.globalCompositeOperation = 'source-in';
+  const g = mx.createLinearGradient(0, 0, TW, TH);
+  g.addColorStop(0, '#8d8066'); g.addColorStop(0.5, '#7d715b'); g.addColorStop(1, '#685e4c');
+  mx.fillStyle = g; mx.fillRect(0, 0, TW, TH);
+  mx.globalCompositeOperation = 'source-atop';
+  for (let i = 0; i < 70; i++) {          // stock, not a swatch
+    mx.fillStyle = rnd() > 0.5 ? 'rgba(0,0,0,0.04)' : 'rgba(255,248,232,0.05)';
+    mx.fillRect(rnd() * TW, rnd() * TH, 6 + rnd() * 40, 3 + rnd() * 18);
+  }
+  // the card's edge: darken the outer ~2px of the mask. Draw the mask, then
+  // knock the inner region (figure grown by PAD-2) back to the plain kraft.
+  const inner = document.createElement('canvas'); inner.width = TW; inner.height = TH;
+  const ix = inner.getContext('2d');
+  for (let a = 0; a < 16; a++) {
+    const r = CUT_PAD - 2.2, dx = Math.cos(a / 16 * Math.PI * 2) * r, dy = Math.sin(a / 16 * Math.PI * 2) * r;
+    ix.drawImage(fig, dx, dy);
+  }
+  ix.drawImage(fig, 0, 0);
+  ix.globalCompositeOperation = 'destination-out';
+  ix.fillRect(0, CUT_FOOT - 2, TW, TH - CUT_FOOT + 2);
+  // edge = mask − inner, painted dark; the flat foot keeps its own edge line
+  const edge = document.createElement('canvas'); edge.width = TW; edge.height = TH;
+  const ex = edge.getContext('2d');
+  ex.drawImage(m, 0, 0);
+  ex.globalCompositeOperation = 'destination-out';
+  ex.drawImage(inner, 0, 0);
+  ex.globalCompositeOperation = 'source-in';
+  ex.fillStyle = 'rgba(58,46,32,0.7)'; ex.fillRect(0, 0, TW, TH);
+  ctx.drawImage(m, 0, 0);
+  ctx.drawImage(edge, 0, 0);
 }
 
 export class Puppet {

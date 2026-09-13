@@ -4,7 +4,7 @@
 // changes here changed in the rules, not in the clock.
 
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { poseAt, frameAt, FRAME_NAMES, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
 import { CAST, WITH_GUNS, POSES, WITH_POSES, castFiles, plateFor, posesFor } from '../js/plates.js';
 import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN } from '../js/engine.js';
@@ -773,6 +773,12 @@ check(`every cast plate is really in the tree${missing.length ? ` — ${missing}
 check('the plates ship from figures/, which a deploy carries — not from art-src/',
   castFiles().every(f => f.startsWith('figures/')));
 check('a figure with no plate returns null rather than a broken path', plateFor('rat') === null && plateFor('nobody') === null);
+// THE CAST IS THE OWNER'S OWN 26 (v34). v27 cut them out of his casting
+// sheets and v34 put them on the bridge; a generated `*-plate` creeping back
+// into the cast would be a copy standing in for the person it was copied from.
+const ROSTER = readdirSync(new URL('../../turf/art-src/sprites/cast/roster/', import.meta.url)).filter(f => f.endsWith('.png')).map(f => f.slice(0, -4));
+const strangers = [...new Set(Object.values(CAST))].filter(n => !ROSTER.includes(n));
+check(`every cast plate is one of the owner's own 26${strangers.length ? ` — ${strangers}` : ''} (${new Set(Object.values(CAST)).size} of ${ROSTER.length} cast)`, strangers.length === 0);
 // v19 refused eight plates for carrying firearms; the owner reversed that on
 // 2026-09-09 (*"of course they can have firearms"*), so there is nothing left
 // here to enforce and the gate that enforced it is gone rather than left

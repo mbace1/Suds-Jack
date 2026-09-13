@@ -7,6 +7,75 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v34 — 2026-09-13
+**The owner's own 26 are the cast, and they stand as standees**
+
+Owner: *"continue development with the new directions and assets."* The
+assets were the twenty-six characters v27 cut out of his casting sheets, on
+`main` since the join and read by nothing; the direction was his own draft
+#484 — *rounded printed cardboard standees with flat bottoms, front art
+first-class, movement transform-driven*. Both were one step from the bridge.
+
+**Every one of the 23 cast figures is now one of his own people.** Cast for
+what the picture shows, the rule v26 set — and most of it is the original
+taking the place of its copy, because the generated `*-plate` set had been
+drawn *from* these: `grunt-barfly` → `beanie-bottle` (the bottle, the
+cigarette), `grunt-spike` → `mohawk-green`, `grunt-milo` → `hood-can`,
+`grunt-ragged` → `rasta-bandaged` (bandaged fists, no weapon — still the old
+boxer), `cleaver` → `cook-mask` (the same person as `slomo`), `vex` → `blonde`.
+`leopard` and `gunner` were already his and keep their pose sets. **`sledge`
+had been shipping as the generated `sledge-plate` by mistake** — same name,
+different file — and is the sheet's own now. Three slots had no literal
+picture in the 26 (nobody holds a baseball bat or a crowbar) and were cast on
+the move set instead: `bat`'s `hold_him / swing` is a tracksuit heavy
+(`flatcap-blue`), `crowbar`'s `pry` is the one who actually holds a bar
+(`bar-black`), `sable`'s `finish_it` is the dark hood (`hoodie`). Three of the
+26 are spare — `beanie-nine`, `fade-red`, `redhood-blue`. The twenty
+generated plates the cast no longer names are out of `figures/`; the deploy
+carries 35 files as before (21 stills + two 7-pose sets).
+
+**They are CUT OUT, not printed on a board.** The first cut of this version
+put the art on a round-topped standee — #484's phrase taken literally — and
+the owner's answer, mid-build, was *"characters should look more like cut
+outs."* He was right about what it read as: a sticker on a tombstone, the
+board a field behind the figure that took the silhouette away (v20's fault
+against boarding a rat, now on everyone). A cut-out is cut AROUND the figure.
+`cutoutBorder` dilates the drawing's own alpha by 7 px into kraft — so a
+raised arm gets a border and the air under it stays air — cuts the foot flat
+at the baseline, and darkens the outer 2 px as the card's edge seen at a
+slant, which is the one cue that says thickness. It is the house cut now
+(`LOOK_REV` 3, dropping a `cut` saved against the old default the way v30 set
+out), and it cuts **every** figure, plated or drawn: with the silhouette kept,
+the objection to boarding a rat is gone, and a row of cut-outs is one kind of
+object. Gated on the SHAPE of the growth, not its size — a border grows the
+ink by 8–90% and the width by 6–22 px; the tombstone grew both far more.
+
+**`ART_REQUEST.md` is new** (owner: *"make an art request to match these —
+level background, foreground, items, enemies, etc."*): the register measured
+off the 26, TURF §1's cuttable contract with the two Slay Kallio differences
+(front only; 192×288 sized off ink), **the bridge's camera as the one hard
+requirement for backgrounds** — which is the v33 finding turned into a spec:
+six canal plates in perspective, by hour, composed for the portrait middle —
+three foreground flats, the 42 card subjects as props, the ten non-person
+enemies in the register, and five-frame pose sets for the five heroes without
+one. Acceptance is the key, the gates and a contact sheet a person looks at.
+
+**Looked at, not just passed** — the whole cast on a contact sheet, three
+encounters in landscape, one in portrait, twice (once to see the tombstone
+was wrong). One finding that is not this version's to fix and is now
+`ART_REQUEST.md` §2: the v33 TURF scenery is an **orthographic iso render
+standing behind a perspective bridge**, and it reads as a poster hung behind
+the deck rather than as a place (`dockyard` is one-point perspective besides).
+
+- `js/plates.js` — `CAST` recast to the roster; header rewritten
+- `js/puppet.js` — `cutoutBorder` replaces the tombstone board; `CUT` default `card`
+- `js/main.js` — `LOOK_REV` 3, default `cut` `card`; tokens `puppet` / `plates` → 32
+- `figures/` — 21 roster stills in, 20 generated plates out; README
+- `test/core.mjs` — every cast plate is one of the owner's 26 (762)
+- `test/smoke.cjs` — starts on the cut-out; the growth is a border on the boxer AND the rat
+- `ART_REQUEST.md` — new
+- `index.html` — `main.js?v=32`
+
 ## v33 — 2026-09-10
 **TURF scenery joins the shared cast**
 

@@ -904,6 +904,31 @@ the house answer and any browser already on `drawn` never saw it. `LOOK_REV` in
 `figures` older than it is dropped rather than obeyed — gated both ways, since
 a reset that ate every choice would be worse than the bug. The theme, the seed
 and the run are untouched: nobody sets those while comparing.
+**THE OWNER'S OWN 26 ARE THE CAST, AND THEY ARE CUT OUT** (v34, owner:
+*"continue development with the new directions and assets"*, then mid-build
+*"characters should look more like cut outs"*). v27 cut his twenty-six out of
+the casting sheets and, through the join, nothing read them — all 23 cast
+figures were generated `*-plate` files, most of them drawn FROM one of his.
+Every cast slot is one of the 26 now, cast for what the picture shows, which
+mostly means the original replacing its copy (`grunt-barfly` →
+`beanie-bottle`, `grunt-ragged` → `rasta-bandaged`, `cleaver` → `cook-mask`);
+`sledge` turned out to have been shipping as the generated plate under the
+same name. `core.mjs` fails on a cast plate that is not one of the 26. **The
+cut-out is the default cut, and it is cut AROUND the figure**: the first draft
+printed the art on a round-topped standee (#484's phrase taken literally) and
+it read as a sticker on a tombstone — the board was a field behind the figure
+and took the silhouette away, v20's objection to boarding a rat now on
+everyone. `cutoutBorder` dilates the drawing's own alpha into a kraft border
+(a raised arm keeps air under it), cuts the foot flat, and darkens the outer
+2 px as the card's edge — and because the silhouette survives, it cuts every
+figure, plated or drawn, so a row is one kind of object. The gate measures the
+SHAPE of the growth (a border: ink +8–90%, width +6–22 px), not its amount.
+`LOOK_REV` 3 drops a `cut` saved against the old default. **`ART_REQUEST.md`
+is the ask for everything else in the 26's register** — and its §2 is the v33
+finding as a spec: the TURF scenery is an iso render behind a perspective
+bridge and reads as a poster; backgrounds must be made in the bridge's camera
+(36°/46° vFOV, eye 1.6/1.25, ~10° down, action width 4.6, portrait keeps the
+middle).
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`

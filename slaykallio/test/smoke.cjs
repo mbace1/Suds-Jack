@@ -670,32 +670,49 @@ const check = (name, ok, extra = '') => {
   check(`a figure with one drawing stays on it through a whole verb (${unposedFrame.join(', ')})`,
     unposedFrame.length === 1 && unposedFrame[0] === 'idle');
 
-  // ── how the card is CUT (v20) ──────────────────────────────────────────
-  check('the menu carries a cut toggle, and it starts die-cut to the figure',
-    (await page.locator('#cut').innerText()).includes('silhouette'));
+  // ── how the card is CUT (v20; the CUT-OUT is the default from v34) ─────
+  // Owner, 2026-09-13: *"characters should look more like cut outs."* A
+  // cut-out is cut AROUND the figure: a kraft border that follows the
+  // silhouette a few px out, a flat foot, a darker rim for the card's edge.
+  // The ruler is the shape of the growth, not just its amount — a border
+  // grows the ink modestly and the bounding box by about the pad on each side,
+  // where the v34-draft tombstone board grew both by far more and filled the
+  // air under a raised arm.
+  check('the menu carries a cut toggle, and it starts as a cut-out — the card cut',
+    (await page.locator('#cut').innerText()).includes('card'));
   const cut = await page.evaluate(async () => {
-    const area = () => {
-      const c = __sk.debug.look('boxer');
+    const area = id => {
+      const c = __sk.debug.look(id);
       const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-      let ink = 0, pale = 0;
-      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 24) { ink++; if (d[i] > 150 && d[i + 1] > 145 && d[i + 2] > 140) pale++; }
-      return { ink, pale };
+      let ink = 0, pale = 0, x0 = c.width, x1 = -1, y0 = c.height, y1 = -1;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 24) {
+        ink++; if (d[i] > 150 && d[i + 1] > 145 && d[i + 2] > 140) pale++;
+        const px = (i >> 2) % c.width, py = (i >> 2) / c.width | 0;
+        if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+      }
+      return { ink, pale, w: x1 - x0 + 1, h: y1 - y0 + 1 };
     };
-    const die = area();
-    __sk.debug.setCut('card');
+    const card = area('boxer'), ratCard = area('rat');
+    __sk.debug.setCut('silhouette');
     await new Promise(r => setTimeout(r, 200));
-    const card = area();
-    return { die, card };
+    const die = area('boxer'), ratDie = area('rat');
+    return { die, card, ratCard, ratDie };
   });
-  check(`a card cut prints the figure on a board (${cut.die.ink} → ${cut.card.ink} ink px)`,
-    cut.card.ink > cut.die.ink * 1.6);
+  // HEIGHT, not width: the rat already spans the texture nose to tail, so its
+  // width cannot grow; the foot is cut flat, so height grows only at the top —
+  // by the pad for a border, by pad + round top (~26) for the old tombstone.
+  const border = (a, b) => a.ink > b.ink * 1.08 && a.ink < b.ink * 1.9 && a.h - b.h >= 4 && a.h - b.h <= 22;
+  check(`the cut-out is a BORDER round the plated figure, not a board behind it (${cut.die.ink} → ${cut.card.ink} ink px, ${cut.die.h} → ${cut.card.h} tall)`,
+    border(cut.card, cut.die));
+  check(`and a drawn rat is cut out the same way (${cut.ratDie.ink} → ${cut.ratCard.ink} ink px, ${cut.ratDie.h} → ${cut.ratCard.h} tall)`,
+    border(cut.ratCard, cut.ratDie));
   // The dots the owner saw were grime's near-white specks (55% of 1500, and
   // not scaled by the figure's grime) plus nicks punched through the middle of
   // the silhouette. Both are gone; this is the ruler that says so.
   check(`and almost none of the figure is near-white speckle (${(cut.die.pale / cut.die.ink * 100).toFixed(1)}%)`,
     cut.die.pale / cut.die.ink < 0.08, `${cut.die.pale}/${cut.die.ink}`);
-  check('the choice of cut is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.cut') === '"card"'));
-  await page.evaluate(() => __sk.debug.setCut('silhouette'));
+  check('the choice of cut is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.cut') === '"silhouette"'));
+  await page.evaluate(() => __sk.debug.setCut('card'));
   await page.evaluate(() => { __sk.setSpeed(0); __sk.start('drinker', 4); });
   await page.waitForTimeout(200);
 

@@ -10,8 +10,8 @@
 import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js?v=31';
 import * as engine from './engine.js?v=31';
 import { Arena } from './scene.js?v=32';
-import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=31';
-import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=31';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=32';
+import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=32';
 import { paintCardPic } from './cardart.js?v=31';
 import { drawMap } from './map.js?v=31';
 import { sfx, unlock, setMuted, isMuted } from './audio.js?v=31';
@@ -115,7 +115,7 @@ setMuted(store.get('mute', false));
 // whenever the house answer moves, and a stored style older than it is
 // dropped rather than obeyed. Everything else the game remembers — the theme,
 // the seed, the run — is untouched: this is only for the look.
-const LOOK_REV = 2;                       // 2 = plates, die-cut, paper motion
+const LOOK_REV = 3;                       // 3 = plates, the CUT-OUT card, paper motion
 const LOOK_KEYS = ['art', 'cut', 'figures'];
 if (store.get('lookRev', 0) < LOOK_REV) {
   for (const k of LOOK_KEYS) { try { localStorage.removeItem('slayKallio.' + k); } catch { /* private mode */ } }
@@ -128,7 +128,7 @@ setFigureMotion(store.get('figures', 'paper'));
 // starts on 'drawn' and the roster repaints itself once the plates land, so a
 // slow decode never shows a blank card.
 setFigureArt(store.get('art', 'turf'));
-setFigureCut(store.get('cut', 'silhouette'));
+setFigureCut(store.get('cut', 'card'));
 // The plates are the default now, so the preload is on the critical path for
 // how the game LOOKS on arrival rather than for a toggle nobody has touched.
 // A figure whose plate has not decoded falls back to the drawn cutout and
