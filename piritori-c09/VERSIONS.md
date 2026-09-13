@@ -1,9 +1,9 @@
-# C.13 — Night Shift crew pilot
+# C.14 — Night Shift crew pilot
 
-Source: 89f1842dd05877cac254a7963b5845f2ae70750f.
+Source: 22ac6861f4118b311b4fa18c0faa27e16155a8d0.
 
-Art Bible console, crew ledger, actual-figure portraits, practical night light, directed framing and dashed intent paths. Persistent C.12 rules and saves retained. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
+After the Rain wet paving and practical reflections, reversible gun aiming view, action focus and exact overview return. Persistent C.12 rules and saves retained. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
 
 ## Port
 
-Godot: reproduce the C.13 display hierarchy, labelled action costs, contextual mission commands, paper palette and world framing. Preserve C.12 vectors; invalidate projected labels on camera, actor, text or viewport changes. Campaign keeps its authored resolver.
+Godot: reproduce C.14 wet surfaces, shoulder-side gun composition, preview/confirm/cancel, reduced-motion behavior and exact planning-view return. Preserve C.12 vectors; invalidate projected labels on camera, actor, text or viewport changes. Campaign keeps its authored resolver.
