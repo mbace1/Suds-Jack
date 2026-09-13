@@ -28,14 +28,14 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · ARENA C.10.1', status: 'active',
-    path: 'piritori-c09/web/arena-lab/?actors=6&release=10.1', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
+    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · ARENA C.11', status: 'active',
+    path: 'piritori-c09/web/arena-lab/?actors=6&release=11', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'Move, take cover and act. Read the enemy plans before you commit.',
     lineage: 'Kallio 2003 · Dream Loop development arena', tags: ['3D', 'tactics', 'prototype'],
     controls: 'Move + Act in either order · preview then confirm · A/M/B/I/R · drag camera',
-    note: 'C.10.1 — Move + Act, visible enemy plans, cover forecasts, guns/reload and optional action focus. Separate laboratory; neutral stand-ins and physical-device testing remain provisional.',
-    fi: {tagline:'Liiku, suojaudu ja toimi. Näe vihollisen suunnitelma ennen päätöstä.', controls:'Valitse hahmo, sitten Move tai Attack · vedä kameraa · 1–6 valitsee hahmon', note:'C.10.1 — liike ja toiminto, vihollisen suunnitelmat, suoja, lataus ja toimintakamera. Erillinen testiareena; väliaikaiset hahmot.'},
-    ja: {tagline:'敵の計画を確認し、移動・遮蔽・行動を組み合わせる3Dアリーナ。', controls:'キャラクターを選び、移動または攻撃 · ドラッグで回転 · 1–6で選択', note:'C.10.1 — 移動＋行動、敵の計画、遮蔽予測、リロード、任意のアクションカメラ。仮キャラクターによる独立したテストです。'},
+    note: 'C.11 — Directional wall cover and flanking, crouch/peek, clearer gun/melee impacts and visible enemy plans. Separate laboratory; neutral stand-ins and physical-device testing remain provisional.',
+    fi: {tagline:'Liiku, suojaudu ja toimi. Näe vihollisen suunnitelma ennen päätöstä.', controls:'Valitse hahmo, sitten Move tai Attack · vedä kameraa · 1–6 valitsee hahmon', note:'C.11 — suuntakohtainen suoja, sivustat, kyykistyminen ja selkeämmät osumat. Erillinen testiareena; väliaikaiset hahmot.'},
+    ja: {tagline:'敵の計画を確認し、移動・遮蔽・行動を組み合わせる3Dアリーナ。', controls:'キャラクターを選び、移動または攻撃 · ドラッグで回転 · 1–6で選択', note:'C.11 — 方向付き遮蔽、側面攻撃、しゃがみと射撃、命中演出。仮キャラクターによる独立したテストです。'},
   },
 
   {
