@@ -1358,6 +1358,26 @@ function check(name, cond) {
   check('a game you have not played shows no score line at all',
     (await page.$$('#cab-skltr .best')).length === 0);
 
+  // Chat may download before the asynchronously imported hub has initialized.
+  // Delay only network delivery to reproduce that ordering on both entries.
+  for (const entry of ['/', '/AnotherHUB/']) {
+    const context = await browser.newContext();
+    const startup = await context.newPage();
+    const startupErrors = [];
+    startup.on('pageerror', e => startupErrors.push(e.message));
+    await startup.addInitScript(() => localStorage.setItem('tokoSting', '1'));
+    await startup.route('**/hub/hub.js?v=*', async route => {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await route.continue();
+    });
+    await startup.goto(base + entry);
+    await startup.waitForFunction(() => window.__hub?.chat, {}, { timeout: 10000 });
+    await startup.reload();
+    await startup.waitForFunction(() => window.__hub?.chat, {}, { timeout: 10000 });
+    check(`chat waits for hub initialization on ${entry}, including reload`, startupErrors.length === 0);
+    await context.close();
+  }
+
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 
   await browser.close();
