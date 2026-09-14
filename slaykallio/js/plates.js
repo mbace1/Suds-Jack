@@ -60,34 +60,45 @@ export const WITH_POSES = new Set(['leopard', 'gunner']);
 export const WITH_GUNS = ['denny', 'deuce', 'grunt-handgun', 'grunt-shotgun',
   'grunt-tanner', 'grunt-track', 'niner', 'gunner'];
 
+// THE OWNER'S OWN 26 ARE THE CAST (v34, owner: *"continue development with the
+// new directions and assets"*, after v27 cut them and nothing read them).
+// Every name below is a file cut from the owner's casting sheets by
+// `turf/tools/sheet-cut.mjs` — his people, not characters generated in their
+// technique. Cast for what the PICTURE shows, the rule v26 set; most of the
+// generated plates were derived from one of these, so the swap is mostly the
+// original replacing its copy: `grunt-barfly` → `beanie-bottle`, `grunt-spike`
+// → `mohawk-green`, `grunt-milo` → `hood-can`, `grunt-ragged` → `rasta-bandaged`.
+// `leopard`, `gunner` and `sledge` were already his; `sledge` had been shipping
+// as the generated `sledge-plate` by mistake. Three of the 26 are spare
+// (`beanie-nine`, `fade-red`, `redhood-blue`) — more human enemies when wanted.
 export const CAST = {
   // the roster
-  drinker:   'grunt-barfly',   // a BOTTLE, and it is the one plate that IS the mechanic
-  busker:    'grunt-spike',    // green mohawk; a busker in the underpass
-  collector: 'grunt-milo',     // hood up, a can in hand, working the bins
-  cart:      'sledge',         // the mass in the set, and a scavenged sledgehammer
-  walker:    'leopard',        // the highest-fidelity woman in the set
-  boxer:     'grunt-ragged',   // BANDAGED FISTS AND NO WEAPON — he is the old boxer
+  drinker:   'beanie-bottle',  // beer in hand, cigarette, ragged coat — the plate IS the mechanic
+  busker:    'mohawk-green',   // the green mohawk; grunt-spike was drawn from him
+  collector: 'hood-can',       // hood up, can in hand, working the bins
+  cart:      'sledge',         // the mass in the set; the sledgehammer never leaves both hands
+  walker:    'leopard',        // the highest-fidelity woman in the set, with a full pose set
+  boxer:     'rasta-bandaged', // BANDAGED FISTS AND NO WEAPON — he is the old boxer
   // the bums on the other side
-  rival:       'grunt-hollow',
-  rival_b:     'grunt-runt',
-  dealer:      'grunt-smoke',  // cigarette, bottle, ragged coat
-  preacher:    'grunt-beard',
-  bouncer:     'grunt-duffy',  // heavy, bearded, a length of pipe
-  night_shift: 'cleaver',      // apron and a face mask: he IS a night shift
-  bridge_king: 'knuckle',      // shirtless, scarred, a flail — a boss reads as one
-  // the ones that REACT (v23), cast from the spare pool
-  lookout:      'rook',        // hands empty, watching
-  scrapper:     'grunt-chain',
-  hard_case:    'grunt-curt',
-  bottle_thief: 'vex',         // the set's only other woman, and she has the bag
-  // the ones cast from the spare pool (v26), each for what the PICTURE shows
+  rival:       'hood-brown',   // hollow-eyed, brown hood, a knife
+  rival_b:     'hood-grey',    // the smaller one, grey hood
+  dealer:      'longcoat',     // a bottle and a coat that hangs below the knee
+  preacher:    'beanie-beard',
+  bouncer:     'cap-sweater',  // heavy, bearded, a length of pipe
+  night_shift: 'cook-mask',    // chef's whites and a face mask: he IS a night shift (the same person as `slomo`)
+  bridge_king: 'spike-vest',   // tattooed, a spiked club — a boss reads as one
+  // the ones that REACT (v23)
+  lookout:      'track-red',   // hands in pockets, watching
+  scrapper:     'crop-navy',
+  hard_case:    'flatcap-gold',// stocky, tracksuit, a chain
+  bottle_thief: 'blonde',      // the set's other woman, high ponytail, a knife
+  // the ones from v26, each for what the picture shows
   debt:    'gunner',           // the OTHER character with a full pose set — so he can act
-  bat:     'grunt-blunt',      // a baseball bat already up over the shoulder
-  sable:   'grunt-sable',      // white hood, and the blood is on his trousers
-  hardhat: 'grunt-alfie',      // a yellow hard hat — he came off a site
-  fence:   'otter',            // dreadlocks, orange jacket, gold: he buys anything
-  crowbar: 'wrench',           // the smallest in the set, holding a bar in both hands
+  bat:     'flatcap-blue',     // hold_him / swing: a tracksuit heavy
+  sable:   'hoodie',           // finish_it: the dark hood, the face under it
+  hardhat: 'hardhat-yellow',   // a yellow hard hat — he came off a site
+  fence:   'dread-brown',      // dreadlocks, the orange jacket: he buys anything
+  crowbar: 'bar-black',        // pry / duck: the one who actually holds a bar
 };
 
 // A posed character has no bare `<name>.png` — its standing frame is
@@ -133,13 +144,24 @@ function scanInk(img) {
   return bottom < 0 ? { top: 0, bottom: c.height - 1, left: 0, right: c.width - 1 } : { top, bottom, left, right };
 }
 
+// AN IMAGE URL IS A CACHE KEY TOO. The module tokens (`?v=`) move when a
+// module's bytes move, but they do not reach `img.src` — so when v34 replaced
+// `figures/sledge.png` with the owner's own plate under the SAME name, a
+// browser holding the old bytes would have loaded the new modules and gone on
+// showing the generated Cart Pusher. `ASSET_REV` moves when any file under
+// `figures/` changes. It is appended at the REQUEST only: `fileFor` keeps
+// returning the bare path, because the gate resolves those against the tree
+// with `existsSync` and a query string is not part of a filename.
+const ASSET_REV = 36;
+const bust = src => `${src}?a=${ASSET_REV}`;
+
 export function preloadPlates() {
   return Promise.all(castFiles().map(src => new Promise(res => {
     if (loaded.has(src)) return res(true);
     const img = new Image();
     img.onload = () => { try { loaded.set(src, { img, ink: scanInk(img) }); } catch { /* tainted or blank */ } res(true); };
     img.onerror = () => res(false);        // a missing plate falls back to the drawn figure
-    img.src = src;
+    img.src = bust(src);
   })));
 }
 

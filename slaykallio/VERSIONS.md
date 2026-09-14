@@ -7,6 +7,225 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v36 — 2026-09-13
+**The ascension ladder: six rungs, six levers this engine already had**
+
+A deckbuilder is worth a hundred runs or it is worth two, and what carries the
+difference is a difficulty that keeps asking a new question. This is Slay the
+Spire's ladder in this game's own terms — and the constraint that shaped it is
+that **every rung rides a lever that already existed**:
+
+```
+  1  an elite is offered a span earlier            buildRoute's guaranteed step
+  2  what you meet is mutated a level ahead        the nightfall level
+  3  a rest gives back a fifth, not a third        RULES.restHeal
+  4  you start the run carrying Doubt              the curse the events deal
+  5  every boss stands with a point of Strength    the status every enemy has
+  6  beating an act gives back a third, not a half RULES.healBetweenActs
+```
+
+No new mechanic, and that is the point rather than a saving: a ladder that
+needs new systems is a second game. The rungs are **cumulative** (rung 6 is
+every rung), which is the genre's own shape and the reason only rung 0 can be
+an exact control.
+
+**Two rules a rung may never break**, both written at the lookup in
+`engine.js`: it may not make a run non-deterministic from the seed, because the
+act-two harness's whole value is that an unrelated change reproduces a column
+exactly; and it may not hide information, because this is a full-information
+game — rung 5 makes a boss hit harder and the intent line quotes the bigger
+number the turn it happens (gated).
+
+**The control holds by construction.** `core.mjs` drives a whole bot run at
+rung 0 and at no rung at all and compares the LOGS — not the outcome, every
+entry — across three seeds. They are identical, so every number this project
+recorded before today still describes rung 0. Getting that check right took
+three passes and the fault was the ruler each time: `uid` is a module-level
+counter, so two identical runs number their cards and their enemies
+differently purely by running second, and it rides on `target`, `enemy`, `src`
+and `from` as well as on `uid` itself. It renumbers by order of first
+appearance rather than stripping those keys, because WHICH body was hit is
+exactly what the control is checking.
+
+**Measured, 150 seeds a cell, `node test/bots.mjs 150 --asc N`:**
+
+```
+  rung        0    1    2    3    4    5    6
+  native     25%  22%  19%  16%  11%   9%   6%
+  synergist  18%  17%  14%  12%   9%   7%   5%
+  greedy      9%  11%   7%   4%   3%   3%   3%
+```
+
+Monotone on both competent bots, with no tuning pass — each rung is one
+existing number moved once. **The honest reading of rung 1**: it is the
+weakest rung and is at the edge of what this sample can see (synergist 18→17,
+and greedy goes UP, which at a 13-point per-character floor is noise, not a
+finding). That is a fact about the rule rather than the measurement — an elite
+is OFFERED, not forced, and a competent line declines it. Rungs 2 and 4 are
+the biggest single steps.
+
+**The ladder is a DECISION, not a comparison**, which is why it is deliberately
+kept out of `LOOK_KEYS`: v30 exists because a value picked while comparing four
+looks beat the default for good, and the fix there was to drop a stored look
+older than the house answer. Doing that to a difficulty somebody earned would
+be the same bug with the sign flipped. It is stored per character
+(`asc.<character>`), because a win on the Cart Pusher says nothing about the
+Drinker, and **only a win opens the next rung** — reaching act two at rung 3 is
+not rung 4. It raises by one rather than to the rung played, so a rung handed
+over some other way cannot skip the ones under it, and the result screen names
+what just opened.
+
+`GDD.md` §9 listed ascension under what is NOT in, with the reason "each of
+those is a system, not a table". That is **withdrawn**: it was a claim about
+difficulty ladders in general and should have been about this codebase, where
+every rung the ladder needed was a lever that already existed. §8b is the
+design record.
+
+Gates: `node test/core.mjs` 783, `NODE_PATH=$(npm root -g) node test/smoke.cjs` 140,
+and the flow harness now walks a whole act on desktop and touch.
+
+## v35 — 2026-09-13
+**Act two had no middle, and the instrument that proves it is a per-span ledger**
+
+`node test/bots.mjs --act2` grew a table that prices every act-two span under
+the population bot: how often it is met, what it costs in HP, and how often it
+KILLS. The by-kind table it already had averages thirteen fights into one
+number, which is exactly the number that cannot answer the question — a pool
+where every fight costs eleven is an HP tax the boss collects, and a pool with
+two fights that cost thirty is a route with a decision on it.
+
+What it found on v34, and nobody had looked:
+
+```
+  The Bear Wakes        boss   41.3 HP   67% of everyone who met it
+  The Last One Standing fight  28.1      15%
+  ...eight of the thirteen ordinary fights under 11 HP, killing 0-1%
+  Two For One           fight   2.7       0%
+```
+
+Act two's pool was act ONE's shapes with a mutation multiplier on top. Two
+gulls and a pigeon is a fight you have outgrown by the time you are offered it.
+
+**The retune is rosters, not numbers.** Seven spans got more body, using
+enemies that already exist — a second gull on `gulls` and `flock`, a second
+thief, a second Sable, a third blob spawn, a rival behind the two Dealers, a
+pigeon with the Night Shift. Measured against the v34 control at 600 seeds a
+cell, from the door of act two:
+
+```
+  ordinary fight costs `native`   10.9 → 15.4 HP
+  where act two ends, greedy      Bear 77% → 59%
+                      hoarder     Bear 72% → 53%
+                      aggressive  Bear 50% → 39%
+                      native      Bear 90% → 83%
+  mean win rate, every bot        down about 3 points
+```
+
+**The honest half: this half-worked.** The naive lines now die in the middle,
+which is the shape that was asked for. The strong ones still die at the Bear —
+`native` 83%, `synergist` 82%, `defensive` 90% — because a competent deck walks
+the middle and then meets a 41 HP check against arrivals at 87% of a 72 HP
+hero, and nothing in the pool can compete with that number. Moving THAT means
+either a cheaper Bear or spikes that threaten a healthy hero, and neither was
+tried here. Recorded rather than claimed.
+
+**And a rule was built, measured and CUT.** The night taking the breather —
+the post-fight 6 HP scaled by the hour, half through the evening and nothing at
+night — is the obvious way to make the middle cost something. Against the same
+populations it cost every bot about four points of win rate and moved where act
+two ends by three; laid on TOP of the retune it bought two more points of Bear
+share for two more points of win rate. An ordinary fight that is merely
+expensive is still a tax the boss collects. The reasoning is kept at the site in
+`engine.js` because it is the obvious next idea and it does not work.
+
+**A real bug, of the family this repo keeps paying for.** v34 shipped with
+`VERSION` left at 33 while `VERSIONS.md` and `hub/versions.json` both said 34 —
+the arcade advertised a release the cabinet denied. `core.mjs` now reads both
+files and fails when they disagree.
+
+Also: the ledger was mis-attributing deaths. A run that ends inside a fight
+flushes on the same iteration that sets `lost`, so by the time the loop
+condition is tested the open fight is already closed — every span read 0% kills
+and the boss did too. It reads the phase now.
+
+And the hub's release pin was a THIRD copy of the number. `hub.js` launched
+this cabinet at a hard-coded `?release=33` while `VERSION` said 33 and
+`versions.json` said 34. It is read from `versions.json` now (`RELEASE_PINNED`
++ `relink()`), so the pin cannot be left behind again — but the LIVE hub still
+carries the hard-coded 33 until the arcade shell itself is redeployed, which is
+somebody else's deploy and is not folded into a one-game publish.
+
+Gates: `node test/core.mjs` 767, `NODE_PATH=$(npm root -g) node test/smoke.cjs` 140.
+
+## v34 — 2026-09-13
+**The owner's own 26 are the cast, and they stand as standees**
+
+Owner: *"continue development with the new directions and assets."* The
+assets were the twenty-six characters v27 cut out of his casting sheets, on
+`main` since the join and read by nothing; the direction was his own draft
+#484 — *rounded printed cardboard standees with flat bottoms, front art
+first-class, movement transform-driven*. Both were one step from the bridge.
+
+**Every one of the 23 cast figures is now one of his own people.** Cast for
+what the picture shows, the rule v26 set — and most of it is the original
+taking the place of its copy, because the generated `*-plate` set had been
+drawn *from* these: `grunt-barfly` → `beanie-bottle` (the bottle, the
+cigarette), `grunt-spike` → `mohawk-green`, `grunt-milo` → `hood-can`,
+`grunt-ragged` → `rasta-bandaged` (bandaged fists, no weapon — still the old
+boxer), `cleaver` → `cook-mask` (the same person as `slomo`), `vex` → `blonde`.
+`leopard` and `gunner` were already his and keep their pose sets. **`sledge`
+had been shipping as the generated `sledge-plate` by mistake** — same name,
+different file — and is the sheet's own now. Three slots had no literal
+picture in the 26 (nobody holds a baseball bat or a crowbar) and were cast on
+the move set instead: `bat`'s `hold_him / swing` is a tracksuit heavy
+(`flatcap-blue`), `crowbar`'s `pry` is the one who actually holds a bar
+(`bar-black`), `sable`'s `finish_it` is the dark hood (`hoodie`). Three of the
+26 are spare — `beanie-nine`, `fade-red`, `redhood-blue`. The twenty
+generated plates the cast no longer names are out of `figures/`; the deploy
+carries 35 files as before (21 stills + two 7-pose sets).
+
+**They are CUT OUT, not printed on a board.** The first cut of this version
+put the art on a round-topped standee — #484's phrase taken literally — and
+the owner's answer, mid-build, was *"characters should look more like cut
+outs."* He was right about what it read as: a sticker on a tombstone, the
+board a field behind the figure that took the silhouette away (v20's fault
+against boarding a rat, now on everyone). A cut-out is cut AROUND the figure.
+`cutoutBorder` dilates the drawing's own alpha by 7 px into kraft — so a
+raised arm gets a border and the air under it stays air — cuts the foot flat
+at the baseline, and darkens the outer 2 px as the card's edge seen at a
+slant, which is the one cue that says thickness. It is the house cut now
+(`LOOK_REV` 3, dropping a `cut` saved against the old default the way v30 set
+out), and it cuts **every** figure, plated or drawn: with the silhouette kept,
+the objection to boarding a rat is gone, and a row of cut-outs is one kind of
+object. Gated on the SHAPE of the growth, not its size — a border grows the
+ink by 8–90% and the width by 6–22 px; the tombstone grew both far more.
+
+**`ART_REQUEST.md` is new** (owner: *"make an art request to match these —
+level background, foreground, items, enemies, etc."*): the register measured
+off the 26, TURF §1's cuttable contract with the two Slay Kallio differences
+(front only; 192×288 sized off ink), **the bridge's camera as the one hard
+requirement for backgrounds** — which is the v33 finding turned into a spec:
+six canal plates in perspective, by hour, composed for the portrait middle —
+three foreground flats, the 42 card subjects as props, the ten non-person
+enemies in the register, and five-frame pose sets for the five heroes without
+one. Acceptance is the key, the gates and a contact sheet a person looks at.
+
+**Looked at, not just passed** — the whole cast on a contact sheet, three
+encounters in landscape, one in portrait, twice (once to see the tombstone
+was wrong). One finding that is not this version's to fix and is now
+`ART_REQUEST.md` §2: the v33 TURF scenery is an **orthographic iso render
+standing behind a perspective bridge**, and it reads as a poster hung behind
+the deck rather than as a place (`dockyard` is one-point perspective besides).
+
+- `js/plates.js` — `CAST` recast to the roster; header rewritten
+- `js/puppet.js` — `cutoutBorder` replaces the tombstone board; `CUT` default `card`
+- `js/main.js` — `LOOK_REV` 3, default `cut` `card`; tokens `puppet` / `plates` → 32
+- `figures/` — 21 roster stills in, 20 generated plates out; README
+- `test/core.mjs` — every cast plate is one of the owner's 26 (762)
+- `test/smoke.cjs` — starts on the cut-out; the growth is a border on the boxer AND the rat
+- `ART_REQUEST.md` — new
+- `index.html` — `main.js?v=32`
+
 ## v33 — 2026-09-10
 **TURF scenery joins the shared cast**
 
