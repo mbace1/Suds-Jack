@@ -1,5 +1,5 @@
 // TOKO MIDORI GAMES — conversation bridge for internal game design knowledge.
-import projects from './project-knowledge.js';
+import projects from './project-knowledge.js?v=1';
 const norm=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
 const SESSION={project:null};
 function append(chat,raw,lines){const log=chat.querySelector('.tc-log');if(!log)return;const you=document.createElement('p');you.className='tc-you';you.textContent=raw.toUpperCase();log.appendChild(you);for(const text of lines){const p=document.createElement('p');p.className='tc-me';p.textContent=text;log.appendChild(p)}log.scrollTop=log.scrollHeight}
