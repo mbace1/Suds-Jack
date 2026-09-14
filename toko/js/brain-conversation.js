@@ -1,5 +1,5 @@
 // TOKO MIDORI GAMES — conversation bridge for the local small brain.
-import brain from './brain.js';
+import brain from './brain.js?v=2';
 const norm=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
 const SESSION={last:null};
 function append(chat,raw,lines){const log=chat.querySelector('.tc-log');if(!log)return;const you=document.createElement('p');you.className='tc-you';you.textContent=raw.toUpperCase();log.appendChild(you);for(const text of lines){const p=document.createElement('p');p.className='tc-me';p.textContent=text;log.appendChild(p)}log.scrollTop=log.scrollHeight}
