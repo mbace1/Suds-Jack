@@ -28,14 +28,14 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.15', status: 'active',
-    path: 'piritori-c09/web/crew-run/?release=15', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
+    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.16', status: 'active',
+    path: 'piritori-c09/web/crew-run/?release=16', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'Choose your crew. Bring someone home. Live with the aftermath.',
     lineage: 'Kallio 2003 · Dream Loop crew pilot', tags: ['3D', 'tactics', 'prototype'],
     controls: 'Choose 2–3 crew · Move + Act · Help / Extract · Aim view then confirm · drag camera',
-    note: 'C.15 — New rain courtyard and service-yard arenas, twelve Blender scenery pieces, scene reflections and a compact command strip. VIEW offers Tactical / Oblique / Overhead. Persistent crew outings; temporary stand-ins. Physical Pixel/iPad and final-art acceptance remain open.',
-    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.15 — Sadepiha, huoltopiha ja puisto. Tiiviimpi käyttöliittymä ja kolme kamerakulmaa. Erillinen prototyyppi, väliaikaiset hahmot.'},
-    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.15 — 雨の中庭、サービスヤード、公園。コンパクトな操作パネルと3種類のカメラ。仮キャラクターによる独立した試作です。'},
+    note: 'C.16 — Recessed windows and passages, worn surfaces and bounded wet reflections. Responsive crew menus and graphics recovery. VIEW offers Tactical / Oblique / Overhead. Persistent crew outings; temporary stand-ins. Physical Pixel/iPad and final-art acceptance remain open.',
+    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.16 — Syvemmät ikkunat ja käytävät, kuluneet pinnat ja märän pihan heijastukset. Kolme kamerakulmaa. Erillinen prototyyppi, väliaikaiset hahmot.'},
+    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.16 — 窓と通路の奥行き、使い込まれた表面、雨の反射を更新。3種類のカメラ。仮キャラクターによる独立した試作です。'},
   },
   {
     id: 'optionc', title: 'OPTION C · 3D TEST', status: 'active',
