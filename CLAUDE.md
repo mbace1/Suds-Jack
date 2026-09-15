@@ -169,6 +169,20 @@ more than one direction, and a plain byte comparison says *that* two copies diff
 stripped, since a deployed file has been renumbered); if not, that is somebody else's
 work, it is left alone, and the run stops and tells you to bring it back first. It found
 three files that way on its first real run. **Deploys never merge.**
+**`hub/hub.js` and `test/hub-smoke.cjs` are CRLF** while everything around
+them is LF, so a rewrite through any tool that normalises newlines reflows the
+whole file and buries a three-line change in a two-thousand-line diff. Check
+`git diff --stat` before committing either.
+**A release pin is a number, so it lives in ONE file.** Slay Kallio's cabinet
+launches at `?release=N` so a cached copy of its HTML is never reused across a
+release; that number was typed into `hub.js` and promptly became the third
+place a version lives and the third one nobody moved — v34 shipped with the
+pin at 33, the cabinet's own `VERSION` at 33 and `versions.json` at 34, three
+files and three answers. `RELEASE_PINNED` now names which cabinets want the
+parameter and the number is READ from `versions.json` when it lands, with
+`relink()` rewriting the links that were drawn before it. The race is real and
+deliberate: until that fetch returns the link carries no parameter, which is
+the behaviour the hub had anyway.
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
 on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
 its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise
@@ -288,10 +302,37 @@ clock**, because a sandbox with no GPU renders this at a handful of frames a sec
 Build tooling: none — same no-build rule as every other demo here.
 
 ### Slay Kallio (`slaykallio/`) — the deckbuilder, ACTIVE
+**An agent arriving cold should read `slaykallio/HANDOFF.md` first** — the state
+of the project rather than its history: how to run it, every gate and what each
+is for, the `__sk` seam, which measurements to distrust and why, the prepared
+deploy, and an honest list of what is weak. This section is the record; that is
+the orientation.
 **Owner's brief, 2026-09-04: mostly Slay the Spire 2, with some Balatro jokers
 thrown in.** Read `slaykallio/GDD.md` before touching anything — this is the
 summary, that is the source. A deckbuilder fought on a **thick plank bridge**
-over a Kallio canal: four bums, six spans, a card or a friend after each.
+over a Kallio canal: six bums, **two acts of six chosen spans and a boss each**,
+events, rests, upgrades.
+**Parity direction (owner, 2026-09-05): "multiple characters, lots of cards
+(class specific and neutral), Eldritch night theme — start run during day, as
+evening comes, things start mutating."** So the route is rolled from the seed
+(`buildRoute`) and offers two or three spans a step; `hourOf(state)` runs 0 → 1
+across it; the arena lerps three light rigs (day/evening/night, `MOOD`, `DAY`,
+`NIGHT` in `data.js`); the plates follow the hour (`PLATES` in `main.js`, the
+owner's photographs, one per stage per seed); and past dusk what spawns is
+**mutated** (`nightfall`: +15% HP and grown eyes through the evening, +30% and
+1 Strength at night — never a boss, a boss IS the night). **The fork is a torn-paper
+map** (`js/map.js`, from the owner's Piritori reference): every span of the
+act pinned to a torn sheet, the walked route a strip of tape, real 48px
+buttons laid over the current step's pins; `pos(step, option)` is the one
+place the orientation lives, so portrait runs bottom-to-top with upright
+text; the paper is tinted by the hour. **Upgrades are one
+rule** (`engine.upgrade`), not a second copy of every card. **Beating an act
+boss heals half** — without it everyone reached act two at 40% and the middle
+of the run was a wall (`balance.mjs` reads per act now). Three pre-existing
+bugs this pass found: enemy debuffs on the hero ticked away before they did
+anything (fixed with StS's own just-applied rule, `hero.fresh`); the camera
+never came forward after a boss (`ensureHeadroom` now restores the seat); and
+the English gate's regex flagged the English word "on".
 **It is two experiments at once, and both are the owner's stated point**: a test
 of a unique look that has to work in **horizontal** (mobile sideways / Switch)
 AND **vertical** (a phone in one hand), and a practice run at the **deep logic
@@ -315,11 +356,22 @@ breakdown riding on the log entry so the view pops the base, then each `+3`,
 then each `×2`. And **`preview()` and the real play call the same code**, so a
 card's face text is written from its effects at the current state — quoting a
 number you then do not use is the unforgivable bug in a full-information game.
-**Every character is a question, not a stat block** — Late the park drinker
-(Buzz, a strength that fades with the turn), Ilona the busker (cards scale on
-what you played before them), Roope the bottle collector (free Bottle tokens and
-a counted hand), Vekku the cart pusher (block that hits and block that stays) —
-and each starting deck carries two cards that teach the mechanic on turn one. **A
+**Every character is a question, not a stat block** — the Park Drinker (Buzz, a
+strength that fades with the turn), the Busker (cards scale on what you played
+before them), the Bottle Collector (free Bottle tokens and a counted hand), the
+Cart Pusher (block that hits and block that stays) — and each starting deck
+carries two cards that teach the mechanic on turn one. **A character is named by
+their CLASS** (owner, 2026-09-06: *"maybe just English class names"*), the way
+Slay the Spire names the Ironclad. Six Finnish first names used to stand there,
+the one thing the English rule exempted — a name is not a language — and it was
+the wrong exemption to take: a character select exists to say what the deck DOES
+before a run is committed to it, and "VEKKU" does not do that in any language.
+The class is the name in both skins now (the Park Drinker is the Sot over
+there), which also removes a seam the lookup had: the skin used to swap the
+epithet and hold the Finnish first name still. `title` is gone rather than kept
+as a second line saying it again — the blurb was already carrying the person —
+and the English gate reads `name` on characters now, so no field in the game can
+hold a Finnish word unremarked. **A
 friend bends arithmetic you already do and never adds a verb** — a verb is a
 card's job — and the one to copy is Morning Can, which **costs** a card for its
 energy, because a friend that only gives is a number rather than a decision.
@@ -342,6 +394,168 @@ same and none of them quite flat), and **the camera is close and nearly level**
 (action width 4.6, tilted down about ten degrees — dead level hides the boards
 entirely and makes the understructure the whole lower half of the frame, any
 higher turns the bridge into a floor plan).
+**The hour is EVENING and the look is Darkest Dungeon** (owner, 2026-09-05:
+*"let's go Eldritch Kallio ... evening is darker etc"*, then *"art make over"*).
+DD's look is a **lighting setup before it is an art style**: one warm source
+close to the party, everything past its falloff going to black, one cold edge
+separating a figure from the dark. So the hour is DATA — `MOOD` in `data.js`,
+one rig per skin — and every surface reads it instead of being tinted by hand.
+A **`PointLight` with a real distance and decay**, never a directional: a
+directional cannot fall off and the falloff IS the effect, the thing that makes
+the ends of the deck disappear and the middle of the bridge the only place there
+is. **Fog takes what falloff cannot** (a plank at the frame edge is no further
+from the torch than one just off centre, but it IS further from the camera) —
+and the backdrop and near band are set `fog: false`, because fogging an already
+graded picture flattens it to one colour. The backdrop gets a **film grade in a
+colourist's terms** rather than a CSS filter stack: exposure, a **lifted** black
+rather than a crushed one, saturation out, shadows tinted cold and highlights
+toward the torch, grain, and a vignette doing most of the work of making a frame
+feel enclosed — the lifted black and the split tint are exactly the two things
+that sell evening and exactly the two with no filter primitive.
+**The torch is PAINTED INTO the puppets**, because a cutout is an unlit
+`MeshBasicMaterial` plane and nothing the scene's lights do reaches it: the hour
+changed and the figures stayed in daylight, standing in front of the night
+rather than in it. Three passes — a cold wash gathering to the far edge, a warm
+one on the near, then a **rim on each side**, which is the load-bearing one
+since a dark figure against a dark backdrop has no outline until something draws
+one. **And the UI is the bigger half of any such change**: cards are the
+brightest thing on screen by area, so five lit rectangles over a night scene
+read as holes cut in it — dark leather stock with bone text, dark card-art
+panels, and the same substitution on the roster picks and friend cards, one
+cream gradient that turned out to be the loudest thing in the game.
+The makeover surfaced a real bug: **the act card printed the encounter's raw
+id**. `nameOf(table, id)` wants a lookup keyed by id and was handed the
+encounter object plus its own id, so it fell through to the id every time and
+the `||` fallback could never fire; nobody noticed while the ids read as words,
+until the fantasy skin put **KING_RAT** across the screen.
+**Falloff is the look; an unreadable enemy is a bug.** DD lights the RANK, not
+the room, so there are two warm sources: the torch beside the party (at x −3.6,
+which is the only place consistent with the rim painted into every cutout — at
+−1.4 it stood to the hero's *right* while his warm edge was on his left) and a
+dimmer **rank light that follows the enemy row**. And because a cutout is an
+unlit plane no scene light can touch, `Arena.lightAt(x)` hands each one a light
+LEVEL it multiplies into `mat.color`, **floored** by `figureFloor`: past the
+floor a figure stops getting darker and only stops getting warmer. The hit flash
+rides on that level rather than replacing it, or a flash would reset a figure
+standing in the dark to full brightness and leave it there. The torch **gutters**
+(three incommensurate sines, one slow enough to take the others down with it) and
+holds still under `prefers-reduced-motion` — a steady light is a dimmer.
+**Render the cast at full size, not just the scene.** Four faults were invisible
+in a fight and obvious on a contact sheet: every figure had **glowing
+chickenpox**, because the rim pass finds every edge in the alpha and `nicks()`
+punches HOLES in it — light the clean silhouette, THEN take the bites out; the
+rat's fur read as a **boar**, because evenly spaced triangles are a comb whatever
+their heights are and the *gaps* are what make it fur; the rat's **ear read as
+its eye**, a ringed disc mid-skull pulling every glance while the real eye was a
+5px square; and the blob had **two literal rectangles**, a `fillRect` pupil and a
+bar mouth — a square is the one shape that reads as UI rather than as an animal.
+**The figures are MADE of paper, not painted like it** (`fibre`, `newsprint` in
+`js/puppet.js`, from the owner's collage references): a torn edge is pale
+because the board's core is lighter than its face, so the silhouette — and
+every nick, a nick being where it tore — carries an intermittent light rim,
+**lit from one side** (at a constant alpha it reads as a white sticker
+outline). Newsprint goes in as rows of dashes too small to read, in **two
+inks**, because a dark dash is invisible on the figures that are mostly black.
+A daylight plate then exposed a week-old bug the dark had hidden: unit labels
+were drawn over the HUD plate, because the gutter reserved the anchor and not
+the label's own box. It is measured off the plate's rect now — and note that
+`offsetParent` is **always null on a `position: fixed` element**, which broke
+the first fix silently.
+**The figures are CARD, so the animation moves the card** (v17, owner:
+*"can you test the Paper Mario type figures here now? as a toggle in the
+menu?"*, after the same direction was written up for TURF in
+`turf/ART_REQUEST.md` §12). `js/motion.js` is the vocabulary and it is **pure**
+— no three.js, no DOM, no clock — so `core.mjs` asserts it in bare node.
+Offsets are in the figure's **own height** (one number reads the same on a rat
+and on the Bridge King) and every rotation and squash is anchored at the
+**feet**, because a cutout stands on a base and about the centre a rotation
+reads as a sprite being spun. An attack is 0.20s leaning AWAY, 0.11s
+committing, 0.30s recovering — **the anticipation is what makes a lunge read as
+a lunge** rather than a slide, and the commit is under half a step so it never
+reads as the figure having MOVED. Being hit **bends the card**: the shear is
+the point, and since three.js has no shear field a `flex` group composes its
+own matrix. That group sits **between the base and the body** — putting the
+squash on the whole group made the figure's stand breathe with it, which reads
+as the camera bobbing. The breath is phase-offset per figure (a row of six
+breathing in unison is the tell) and, unlike the TURF brief's recommendation,
+it is **on**: turf's `anim.js` stops its rAF when nothing is animating so a
+breath there never stops, while this scene renders every frame regardless. It
+is a **toggle, not a replacement** (`figures: paper` / `still`, persisted under
+`slayKallio.figures`), and the switch is one module-level setting so it reaches
+the enemies already on the bridge — comparing the same fight twice is the only
+way to know whether motion carries a verb. **A contact sheet needs its own
+clock**: a frame grab is ~1s under SwiftShader and the whole attack is 0.61s, so
+the first strip caught the lunge once and the breath five times —
+`__sk.debug.scrub(clip, t)` holds a clip at an exact moment and `unfreeze()`
+gives the figures back, both gated because a hook that can freeze every figure
+for good is the kind that gets left on.
+**TURF's cast IS the look** (v18, owner: *"I would like the turf art used on
+those figures"*; **the default since v21**, owner on the four-way contact sheet:
+*"the first characters, style and all work. let's make that the default"* — the
+first of the four being the plates, **die-cut**). `js/plates.js` casts 13 of the
+23 figures from the owner's 32 TURF character plates; `art: drawn / turf` is
+still a menu toggle and the drawn cutouts are one tap away, but the game boots
+on the plates, so **the mixed row is the ordinary look now** rather than a
+fallback — thirteen plated people, ten drawn rats, blobs, birds and a bear, and
+it reads because they are different KINDS of thing. That promotion has one real
+engineering consequence: **the preload is on the critical path**, because a
+figure whose plate has not decoded falls back to the drawn cutout and BAKES it
+into a `CanvasTexture` made once at construction, so everything built before the
+preload resolves has to be built again (the roster, and a fight if one is
+already running). And
+the rule that makes it work is that **the plate replaces the PAINT, not the
+process** — `paintCutout` still runs newsprint, torchlight, nicks, fibre and
+grime over it, because those passes are what make a figure belong to this
+bridge rather than to TURF's board (a raw plate stands in TURF's lighting in
+front of a Kallio evening, which is v10's unlit-plane lesson from the other
+direction; the gate counts warm pixels to prove the pass ran). The other ten
+figures are the point of a lookup rather than an omission: **a roster of street
+operators has no rat, blob, pigeon or bear in it**, so those keep the drawn
+cutout and a mixed row is the normal state — the gate asserts nothing
+non-person is cast AND that every person is, since a half-plated row is worse
+than none. Plates are sized **off their INK, never their file** (each is padded
+differently; TURF's `render.js` pays for the same lesson on props) and ship from
+**`figures/`, not `art-src/`** — a Slay Kallio deploy is the folder minus
+`test/` and `art-src/`, so runtime art there would 404. **On weapons: v19 refused eight
+plates for carrying a gun and the owner REVERSED it** (2026-09-09: *"of course
+they can have firearms"*). The reasoning was mine, not theirs — a knife on a bum
+is plausible, a man drinking in a park with a pistol is a different game in a
+different country — and `art-src/concepts/README.md`'s *no weapons* filter
+cannot be applied literally anyway, since every one of the 32 plates carries
+something. The ban is **gone rather than left passing vacuously**; `FIREARMS`
+became `WITH_GUNS`, a **note** (a real fact about the set, established by a pass
+over all thirty-two at full size, and the thing you want while casting), and the
+gate now only checks the note still names plates that exist. **The cast was NOT
+reverted with the rule**, which is the deliberate half: three of v19's five
+recasts are better on their own terms and that reasoning outlives the permission
+— `grunt-ragged`'s **bandaged fists** ARE the Old Boxer, `cleaver`'s apron and
+face mask ARE the Night Shift, `knuckle` is a Bridge King — and the owner had
+just approved that exact cast as the default one version earlier, so reversing
+it here would undo their decision in the name of their permission. What the
+permission buys is the **spare pool, 11 → 19**; all nineteen are people, so they
+do nothing for the ten drawn figures and what they buy is more human enemies.
+**Three passes were putting WHITE DOTS on every figure** (v20, owner: *"white
+dots on both"*), and rendering the cast at full size named all three: `grime`
+drew 55% of 1500 specks near-white and, unlike the dark half, **did not scale
+them by the figure's own grime**, so a black coat got full snow; `nicks`
+punched holes **anywhere on the canvas**, which was survivable only because on
+a die-cut figure most of them missed; and `fibre` at 0.46 is a sticker rim on
+pixel art, whose outline carries far more high-contrast edge than a painted
+one. **A nick is damage at an EDGE** now — placed where the silhouette actually
+ends — and the count had to fall with it (18+22 → 9+9), which is the part to
+remember: making the placement smarter RAISED the effective density, because
+the misses had been doing the thinning.
+**The card can be CUT rather than die-cut** (`cut: silhouette / card`, owner:
+*"circular cut card board instead of fitting to the exact dimensions of the
+art"*). Die-cutting to the figure makes every edge of the drawing an edge of
+the CARD, which is what forced the fibre pass to trace the whole figure; cut it
+as a board — straight sides, round top, flat foot, sized to the drawing's own
+**measured** ink (a board on fixed bounds stands a rat inside a poster) — and
+the torn edge is the board's edge, with the art inside left alone. **It suits
+the plates and hurts the drawn figures**: the painted cutouts were built to be
+read as silhouettes, and a pale field behind one takes that away, while a TURF
+plate carries its own internal detail and never depended on its outline. That
+asymmetry is why cut and art are independent toggles rather than one "style".
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -360,16 +574,71 @@ same register, cached per picture and accent so re-rendering the hand does not
 repaint ten canvases. A card with only words on it is a spreadsheet row. The
 gate fails on a card with no picture, a picture the module cannot draw, or a set
 that has collapsed to fewer than fifteen distinct drawings.
+**And the cards are in the FIGURES' register now** (v29, owner: *"please make
+the turf assets the primary look"*). The figures had been TURF plates since v21
+and the cards had not moved, so the frame carried two art languages at once —
+and the cards are the brightest thing on it by area, which is v10's lesson
+about the UI being the bigger half of any look change. Rendering one of each at
+full size named the gap in four measurable parts: the cards filled every shape
+with ONE flat tone where a TURF prop carries three or four off a real light;
+they had no MATERIAL (a TURF barrel is rust streaks running DOWN it, chips,
+dents and panel seams, and wear is most of what makes it read as a thing); the
+ink line was a soft wobble against TURF's hard one; and a card shape is a
+flat-on silhouette where a prop is a three-quarter volume. **Three of the four
+are properties of the SHARED HAND**, which is the whole reason it was worth
+doing — `wob` and `blob` draw all forty-two pictures, so banding, wear and
+`amp` 1.2 → 0.75 landed on every one at once and no picture was redrawn; the
+fourth, volume, is per-picture geometry and is not claimed. The five card
+subjects that have a real TURF prop plate (bin, lamp, cart, cardboard, stack)
+were deliberately NOT dropped in: that is the mixed-row problem without the
+thing that makes the mixed row work on the bridge, where a plate and a drawn
+rat are different KINDS of thing — **a plated bin next to a drawn fist is the
+same kind rendered two ways.** The technique travels; the plates would not.
+**The bug under it took two renders to see**: `bands()` calls `beginPath()` to
+lay each half-plane down and `beginPath()` THROWS THE CURRENT PATH AWAY, so
+`wear()` clipped to the last band rather than to the object and `wob`'s closing
+stroke inked that band's half-plane — every card had two black diagonals ruled
+corner to corner. A `Path2D` carried explicitly is the fix. A first cut of the
+banding had the same fault one level up: half-planes measured from the middle
+of the 96×62 card, so a small object fell entirely on one side of the boundary
+and was *darkened* rather than modelled — a band has to be a fraction of the
+THING, which is what makes one piece of code read on a fist and on a tram.
+**Both gates are calibrated against the broken code and the first cut of each
+was wrong** (Kindling's *the page was right and the ruler was wrong*, twice in
+one hour): a darkness threshold on the corners was reading the panel's own
+vignette and flagged 42 of 42 clean or broken, and counting distinct tones in
+the glass was reading the speckle and read 8 either way. What ships is the
+bottle's glass split along the light axis and compared by **mean** — a mean
+cancels speckle — reading 23 with the bands in against 10 with them out, and
+corner patches measured against their own median flagging 1 picture clean
+against 30 leaking. It is gated as a COUNT, not a per-picture bar, because the
+fault lives in the shared hand and takes all forty-two at once.
 **The backdrop is photographic and the sharp band FOLLOWS THE DECK** (`js/bg.js`,
-`js/scene.js`): canopy as scattered dabs rather than lollipops, haze eating
-contrast with distance, the canal with the treeline smeared down into it, film
-grain, and a repaint whenever the deck's row on screen moves — a miniature
+`js/scene.js`): a repaint whenever the deck's row on screen moves — a miniature
 photograph is only convincing while the one sharp stripe lies on what you are
 looking at, and the deck sits nowhere near the same place in portrait as in
-landscape. There is a matching **out-of-focus foreground band** along the bottom.
-`?bg=<url>&stereo=sbs&eye=left` puts a **photograph** (or one eye of a
-side-by-side stereo pair) behind the bridge through the same focus pass — the
-seam for testing real plates is a URL, not a rewrite.
+landscape. The painted fallback is canopy as scattered dabs rather than
+lollipops, haze eating contrast with distance, the canal with the treeline
+smeared into it, film grain; there is a matching **out-of-focus foreground
+band** along the bottom. `?bg=<url>&stereo=sbs&eye=left` puts any photograph
+(or one eye of a side-by-side stereo pair) behind the bridge through the same
+pass — the seam for testing real plates is a URL, not a rewrite.
+**The shipped plate is the Karhupuisto bear** (`bg/plate.jpg`, the owner's own
+photo, 2026-09-05), and dropping it in exposed the seam's real fault: the
+backdrop texture was **stretched** onto a plane scaled to the frame. A painted
+canopy of dabs has no proportions to get wrong and survived that, which is
+exactly why it hid the bug for two versions; a photograph of a bear squashed
+into a phone is a vertical smear. So a plate is now **CUT to the frame** — the
+largest centred rectangle of the frame's own shape — and recut when the frame
+changes shape or the row moves. The consequence decides the crop, and it is the
+rule to remember when swapping the photo: **portrait keeps only the MIDDLE of a
+landscape plate**, and that middle is what the puppets stand in front of in both
+formats, so the subject goes off to one side and the middle stays a quiet mass.
+Two bugs of one family came with it — a `_cutting` guard that **dropped** the
+re-cut instead of folding it in (boot cuts at the camera's placeholder square
+aspect, the first resize asks for the real one a tick later, and only the wrong
+one survived), and `setTheme` **silently dropping the plate** because it builds a
+fresh background material. Both are gated.
 **One camera rule for both formats: fit the ACTION WIDTH, not the bridge** —
 the deck runs off both ends of the frame on purpose. Portrait fits a narrower
 width, is deliberately **flatter** (a phone frame is tall, so every degree of
@@ -392,8 +661,222 @@ exists so nobody has to win five fights to look at the sixth.
 `window.__sk` is the seam the browser gate drives, and `setSpeed(0)` + `flush()`
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
-Gates: `node slaykallio/test/core.mjs` (261 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (62). Hub entry:
+**Six bots that play differently** (`test/bots.mjs`, a measuring instrument and
+never a gate) — every balance number this game had came from ONE bot that plays
+the highest-value card it can afford, which empties its hand, while Roope's whole
+mechanic is holding one; so "the collector wins 2%" could mean the character is
+weak OR that the instrument cannot hold him, and one bot can never say which.
+Each is a policy over **six decisions** — card, map, event, rest, pick, draft —
+and `greedy` is **the control**: the engine's own `botStep` imported rather than
+copied, so its column reproduces v11's recorded rates by construction (TURF's
+discipline; a control that reproduces the known numbers is what makes the other
+columns mean anything). **The finding is that `synergist` beats `greedy` by 17
+points on Ilona and 19 on Vekku** — playing your powers on turn one and the
+card that counts what came before it LAST is worth more than any tuning here,
+and the greedy bot answers that backwards every turn because it sorts by face
+value, so every balance number before this was measuring a bot that did not know
+what order to play in. The **negative** result carries as much: `hoarder` did NOT
+rescue the collector (3% against 2%), so Roope is weak at his own best line
+rather than mis-measured. And **surviving is not winning** — `defensive` reaches
+act two most and wins least, because both bosses are damage checks. The bots
+found a real bug on one seed in nine hundred: a rest offering an upgrade with
+every card already upgraded had **no way out** (`skipPick`/`pickable` are the
+fix, and the panel now offers to walk on).
+**`native` is the seventh bot and one card policy per character** — it shares
+`synergist`'s drafting and walk exactly, so any gap between those two columns is
+the mechanic and nothing else. It moved the Dog Walker 5% → 24% (nobody had ever
+played her) and, with four policies now agreeing, let the two genuinely weak
+characters be named. **The Bottle Collector was ONE NUMBER**: `dig_the_bin` cost
+1, a third of a turn's energy spent on setup by a character whose line is dig
+then cash, so he dug and could not afford to cash; at 0 the bots go 3/6/7% →
+13/29/16% and nothing else moves him (deepening the counters reads as noise).
+**The Park Drinker was diffuse** — no single number moved him at 200 seeds;
+72 HP (he was the frailest AND the weakest, two disadvantages for one price),
+First Sip 3 Buzz and Never Sober 3 a turn together take him 8% → 14%, and he is
+**still last for a structural reason: buzz does not compound**, so he cannot
+build into a boss the way block-that-stays can. Left open rather than papered
+over. The **HP ledger** answers what the deaths list cannot — an ordinary fight
+costs 8.9 HP, an elite 16, a boss 41.5 — and its first cut was wrong in a way
+worth keeping: it subtracted end from start, but the post-fight heal lands in
+the same step that closes the fight, so it reported 5.4 against a 6 HP heal and
+would have had someone cut the heal. **Sum the drops; a heal is not a fight
+being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
+and a two-point HP change failed all twelve at once — none of them is about the
+Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
+**Enemies REACT now** (v23). Every one of the seventeen this game shipped with
+was a fixed loop with a random start — the move lists differ, so a dealer curses
+where a preacher buffs, but the SHAPE was identical and nothing on the bridge
+reacted to anything, which is TURF's *"eighteen portraits of one enemy"* in a
+subtler form. **`when` on a move is the whole feature**: the enemy takes the
+first move whose condition holds, else the next in its rotation, and the
+rotation walks only the UNCONDITIONAL moves. Four conditions, one user each
+because a condition with no user is dead code — `first` (the Lookout's opener,
+the one thing a rotation can never do since a rotation starts anywhere), `alone`
+(the Scrapper enrages, so kill ORDER is a decision), `walled` (the Hard Case
+answers a wall with frail — block was strictly safe before this), `hurt`+`once`
+(the Bottle Thief's one second wind, and the Bridge King having had enough at
+half). **Three bugs came out of it**: intents were planned BEFORE the fight
+state was reset, so an opener read the previous fight's turn counter; **`walled`
+could never once have fired**, because an intent is planned at the end of the
+enemy phase for the turn after, by which point the block it reacts to has been
+spent absorbing the attacks that just landed (it reads what the row walked
+INTO); and `enemyPhase` crashed on a null intent, impossible before v23 and now
+a state the engine itself produces. And one brittleness with the same shape as
+v16's `hp === 68` literals: putting a conditional move at the FRONT of a list
+shifts every index behind it, so four unrelated checks failed at once —
+`moves[2]` is `moves.find(m => m.id === …)` now. **The measurement is the honest
+half**: best lines went 14/29/30/35/24/16 → **15/43/25/43/19/16**, the mean
+barely moving (25→27) while everything under it moved in BOTH directions and
+the band got wider, not tighter. Three changes landed in one version (two fights
+per act pool, four enemies, five reacting) against one measurement, so there is
+no causal story to give and none is invented — it needs a tuning pass with the
+changes separated, and VERSIONS.md v23 records that it has not had one.
+**THE NOISE FLOOR IS 13 POINTS PER CHARACTER, AND IT WAS NEVER MEASURED UNTIL
+v24.** Four independent blocks of 150 seeds against IDENTICAL code swing a
+single character's win rate by up to **13 points** while the MEAN across the
+six swings **2**. `bots.mjs` carried "a few points at 150 seeds is noise" as a
+GUESS from v14, and `report()`'s findings bar was 8 points — *inside* the
+floor, so it was admitting noise as a finding by construction. The bar is
+`> NOISE.perCharacter` now, anything between 6 and the floor prints as
+explicitly not a finding, `node test/bots.mjs --noise` re-derives the floor on
+demand, and the footer names the measured number scaled to the sample actually
+run. **Read the mean; a per-character cell at 150 seeds is worth about ±6.**
+What it takes back: **v23's "the band widened" is withdrawn** (separated, the
+new fights are +2 points, the boss enrage +1, everything together +3 — a 2×2
+that reads almost flat), and **v16's Park Drinker buff was overstated** — sold
+on "8% → 14%", it re-measures at 600 seeds as greedy **+0**, synergist **+4**,
+native **+6**; the +6 reproduced on a 4× sample so it is probably real, but the
+evidence supports "a few points on his best line and nothing on the naive one",
+not the headline. v16's Collector (+23 on synergist) and v14's synergist
+finding (17 and 19) both clear the floor and stand.
+**PAPER MARIO'S OTHER HALF, AND THE ART WAS ALREADY IN THE REPO** (v25). v17
+moved the card and left the drawing alone, which is half of what it promised:
+Paper Mario moves the OBJECT *and* swaps a small number of drawn frames under
+it. Asked whether all of TURF's characters were in, the honest answer needed an
+enumeration rather than a memory — and the enumeration found
+`turf/art-src/sprites/cast/`, seven unopened subdirectories holding a **seven-pose
+set per character** (idle, move, attack-windup, attack-release, hit, death-fall,
+death-down, two facings) generated to `ART_REQUEST.md` §6's own frame table and
+read by **nothing**. `leopard` — the Dog Walker since v18 — is one of the two
+carried through the whole table. **`frameAt(name, t)` walks the SAME stage
+durations `poseAt` walks**, so a drawing cannot end up one beat out of step with
+the transform: the attack's stages are 0.20/0.11/0.30 and the swap to the
+release frame is the same instant as the commit because it is the same number
+read twice. The **recovery HOLDS the release** — the arm is extended and the
+body is settling under it, so popping back to idle on frame one reads as a
+second, faster attack. Textures are **baked at construction, never on the beat**
+(`paintCutout` runs newsprint, torchlight, nicks, fibre and grime; that is far
+too much work to do inside an attack), `posesFor` returns `['idle']` for
+everything else so the ordinary figure pays what it always paid, and a frame
+that failed to decode resolves to idle rather than to a blank plane. **Front
+only, and that is geometry rather than economy**: everybody faces across this
+bridge and `body.scale.x = facing` already mirrors the enemy row, so a rear
+frame would never be drawn. Death is the exception that is not on a clip — the
+topple is physics, so `death-fall` goes over and `death-down` lands.
+**SIX PEOPLE OFF THE SPARE PLATES, AND ONE VERY CLEAN NUMBER** (v26). Six of
+the fourteen uncast plates are on the bridge, each cast for what the PICTURE
+shows rather than for a hole in a stat table — `gunner` is the Debt Collector
+and is **the second figure that can act**, since he is the other character with
+a full pose set. Two new conditions, one user each: **`crowded`** is `alone`'s
+mirror, so thinning the row cuts both ways; **`bleeding`** is the first that
+reads YOU rather than the row — `walled` reads the hero, but it reads one
+turn's choice, and this reads the state of the run. **The measurement is the
+version's real content.** 400 seeds a cell against a v25 control: every bot's
+mean win rate is flat, and what moved is **what an ordinary fight COSTS — +1.0
+± 0.2 HP, six bots, one direction** — while the elite and boss costs do not
+move at all. The share of a run's HP lost to ordinary fights goes 46% → 50% on
+greedy, which is the direction v11 asked for and had never got. **And the
+separation is complete**: split by act and run as two more blocks, the act-one
+three reproduce v26 exactly and the act-two three reproduce the CONTROL exactly.
+**The act-two additions are not flat, they are INVISIBLE** — 30-45% of runs
+reach act two and those that do draw six spans from a thirteen-fight pool, so
+three additions there are barely sampled. That is a fact about the instrument
+nobody had written down, and it means `bat`, `sable` and both new conditions
+are **unmeasured**, which is a different claim from harmless: anything aimed at
+act two needs its own harness first. One cost named rather than hidden —
+reaching act two fell 6-12 points while the win rate did not, so the runs that
+used to die at the Bear now die earlier at the same rate, and whether that is
+better pacing is taste, not measurement. **The findings bar now scales with the
+sample**: v24 measured 13 points at 150 seeds and then held every later run to
+that number, so a 400-seed block (real floor ~8) was throwing away findings it
+had paid for. Two more brittle checks of the `hp === 68` family fell out — the
+condition list was typed into `core.mjs` and now reads `WHEN`'s own keys, and a
+check on digging in a bin was really asserting WHICH FRIEND the seed rolled,
+since a friend that grants max HP grants the HP with it. And a third ruler moved
+with the thing it measured: the deck-falloff check samples planks near the torch
+against planks far from it, but **the rank light FOLLOWS the enemy row**, so a
+wider row flattens the very ratio being measured — left on whatever fight the run
+had wandered into it failed on a scene with nothing wrong with it. Pinned to
+encounter 0 now, which is three rats in every version. Kindling's band-brightness
+lesson again: *the page was right and the ruler was wrong.*
+**THE OWNER'S OWN 26 ARE CUT AT LAST** (v27, `turf/tools/sheet-cut.mjs` →
+`turf/art-src/sprites/cast/roster/`). The thirty `*-plate.png` files are **new
+characters generated in the sheets' technique** — `turfGrim` says in as many
+words to copy the technique and never the reference's specific character — so
+the owner's OWN roster existed in this repo as two magenta PNGs and nothing
+else: 20 on `casting-sheet-full.png` and 6 on `casting-sheet-3.png`
+(`-detail-1` is a byte-identical duplicate of the latter and `-detail-2` a zoom
+crop of the former). Nothing is generated; Idle is the one pose that never
+needs a model, and `cast/README.md` already said so. Three things the tool gets
+right that a nominal grid does not: **cells are found by PROJECTION** (the
+sheets "bleed slightly past their nominal boundary" and a nominal crop put a
+sliver of a neighbour into `gunner-idle` twice), each figure's own top is
+tightened out of its row band (a band is as tall as its tallest member, so a
+short character cut to it stands in the air), and **a prop can BRIDGE two
+cells** — the sledgehammer reaches into its own back view and merged two
+figures into one 300px run, silently shifting every name after it, so an
+over-wide run is split at its thinnest interior column. **The key is two-stage
+and that is the whole difference between a cut-out and a sticker**: the sheets
+are antialiased AGAINST magenta, so the pixel ring where a figure meets the
+background is its colour BLENDED with the key — nowhere near the key, kept by
+any distance threshold, and the result is every character wearing a magenta
+rim. Stage two recognises contamination rather than proximity (magenta has no
+green, so it reads as R and B both well above G) and tests **edge pixels only**,
+or a purple pair of trousers gets eaten from the inside. What it unlocks: a
+pose set for any of the 26 is now **12 generations against a local reference
+crop** rather than a re-derivation of the recipe — and that step is the first
+one here that needs an API key, which this environment does not have.
+**THE ACT-TWO HARNESS, AND ACT TWO HAS NO MIDDLE** (v27, `node test/bots.mjs
+--act2`). v26 proved the whole-run matrix cannot see act two; this starts there.
+Phase A snapshots every `native` run **at the door of act two** — deck, friends,
+HP, route, and the rng's exact internal state, which mulberry32 exposes as one
+integer so a resumed run is bit-identical to one that never stopped (`core.mjs`
+asserts it; a snapshot that dropped the rng would still RUN, it would just be
+measuring a different game). Phase B resumes every snapshot under every bot. One
+bot breeds the population on purpose, so a column is about act two and not
+about arrival strength — which makes every rate a **ceiling**. The floor is
+re-derived for this instrument: **8 points per character** at ~236 arrivals a
+half. **What it found: act two is a Bear check and almost nothing else.** For
+every non-random bot "The Bear Wakes" is **78–95% of all act-two deaths**; the
+ordinary fights cost 11–13 HP and kill nearly nobody; the Bear costs **42–65 HP**
+against arrivals at ~87% of max. Every enemy v23 and v26 put into act two is
+*present* in the deaths list at 1–5% and is not what decides a run. **The Cart
+Pusher wins act two at 66% from the door; nobody else clears 40%** —
+block-that-stays is the one mechanic that accumulates across a fight, which is
+v16's "buzz does not compound" confirmed from the other side. The Drinker from
+the door is mid-pack (30%), not last: his weakness is *two* things, arriving
+least often but one (70%) AND converting at the mean. The Boxer is the one
+genuinely worst in act two (22%). **The harness is deterministic from the seed,
+so a change that cannot touch a character's cards must reproduce that column
+EXACTLY** — a control by construction, and v28 leans on it.
+**THE PARK DRINKER COMPOUNDS** (v28). v16's structural diagnosis — *buzz does
+not compound* — was right, and v27 confirmed it from the other side (the
+character whose mechanic accumulates hardest beats the Bear). The fix is one
+rule, not a number: `RULES.buzzCarry = 1/3`, a third of the buzz survives the
+end of turn, which gives it a **fixed point** rather than a reset (Never Sober's
++3 settles at 4; gated) so it compounds without running away and the drink still
+mostly wears off. **Measured against an EXACT control**: buzz is on no card but
+his, so the deterministic harness must reproduce the other five characters'
+columns to the arrival — and does, byte-identical across carry 0/⅓/½. His best
+line goes **21% → 32% whole-run** (last → fourth) and **30% → 39% from the door
+of act two**, both clearing the 8-point floor; the naive lines move +5/+6,
+inside it — the rule rewards knowing how to play him. **⅓ not ½**: half lands
+him second only to the Cart Pusher and turns "mostly wears off" into "half
+stays", which is a different character. Withdrawn: GDD §6's *"Numbers will not
+fix that"* — the numbers tried were sizes of a thing that reset; the carry is
+what stops the reset.
+Gates: `node slaykallio/test/core.mjs` (761 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.
@@ -411,6 +894,105 @@ cabinets that day) and widens a deploy that is supposed to be limited to one
 game. Last trap: hand-deploying skips the token renumbering, so check the
 `../hub/shell.js?v=` the rest of the site asks for — this cabinet shipped pinned
 to `v17` while fourteen others were on `v34`.
+**THERE ARE TWO SLAY KALLIO LINEAGES AND `git merge-base` RETURNS NOTHING**
+(found 2026-09-10). This is Eeri's disease in a second project, and it is why
+the owner asked for *"the turf characters back as the main style"*: **the
+deployed game has never had a plate in it.** The live cabinet is `gh-pages`
+v7 (PR #496, "card targeting") and carries no `plates.js`, no `figures/`, no
+`bg/` and no art toggle — nothing on that tree so much as mentions a plate. The
+plate system, the route map and the Paper Mario motion exist ONLY in
+`claude/slay-kallio-project-3lv3l9`; `input.js` and v7's card targeting exist
+only on the site. Version numbers collide exactly as Eeri's did (their v7
+against this branch's v30) so `hub/versions.json` looks fine. **A wholesale
+deploy of either tree DELETES the other's work** — the live one loses the whole
+TURF cast, this one loses card targeting — so this is a reconciliation, not a
+copy, and it needs the owner to say which lineage is the game before anybody
+writes to `gh-pages`. Eeri's recipe applies: merge by KIND against the content
+ancestor each `VERSIONS.md` names, never `--allow-unrelated-histories`.
+**A style toggle is a comparison, not a decision** (v30). The style switches
+exist so the same fight can be watched twice, which means the owner flips them
+WHILE COMPARING — and every flip writes to `localStorage`. So a value picked
+while looking at four options beat the default for good: v21 made the plates
+the house answer and any browser already on `drawn` never saw it. `LOOK_REV` in
+`main.js` is bumped when the house answer moves and a stored `art`/`cut`/
+`figures` older than it is dropped rather than obeyed — gated both ways, since
+a reset that ate every choice would be worse than the bug. The theme, the seed
+and the run are untouched: nobody sets those while comparing.
+**THE OWNER'S OWN 26 ARE THE CAST, AND THEY ARE CUT OUT** (v34, owner:
+*"continue development with the new directions and assets"*, then mid-build
+*"characters should look more like cut outs"*). v27 cut his twenty-six out of
+the casting sheets and, through the join, nothing read them — all 23 cast
+figures were generated `*-plate` files, most of them drawn FROM one of his.
+Every cast slot is one of the 26 now, cast for what the picture shows, which
+mostly means the original replacing its copy (`grunt-barfly` →
+`beanie-bottle`, `grunt-ragged` → `rasta-bandaged`, `cleaver` → `cook-mask`);
+`sledge` turned out to have been shipping as the generated plate under the
+same name. `core.mjs` fails on a cast plate that is not one of the 26. **The
+cut-out is the default cut, and it is cut AROUND the figure**: the first draft
+printed the art on a round-topped standee (#484's phrase taken literally) and
+it read as a sticker on a tombstone — the board was a field behind the figure
+and took the silhouette away, v20's objection to boarding a rat now on
+everyone. `cutoutBorder` dilates the drawing's own alpha into a kraft border
+(a raised arm keeps air under it), cuts the foot flat, and darkens the outer
+2 px as the card's edge — and because the silhouette survives, it cuts every
+figure, plated or drawn, so a row is one kind of object. The gate measures the
+SHAPE of the growth (a border: ink +8–90%, width +6–22 px), not its amount.
+`LOOK_REV` 3 drops a `cut` saved against the old default. **`ART_REQUEST.md`
+is the ask for everything else in the 26's register** — and its §2 is the v33
+finding as a spec: the TURF scenery is an iso render behind a perspective
+bridge and reads as a poster; backgrounds must be made in the bridge's camera
+(36°/46° vFOV, eye 1.6/1.25, ~10° down, action width 4.6, portrait keeps the
+middle).
+**ACT TWO HAD NO MIDDLE, AND THE BY-KIND LEDGER COULD NOT SAY SO** (v35).
+`--act2` now prices every SPAN — met, HP, and how often it kills — because a
+table that averages thirteen fights into one number cannot tell a pool where
+every fight costs eleven (an HP tax the boss collects) from one with two
+fights that cost thirty (a route with a decision on it). On v34 it read: the
+Bear 41.3 HP and **67% of everyone who met it**, and **eight of the thirteen
+ordinary fights under 11 HP killing 0-1%** — act two was act ONE's shapes with
+a mutation multiplier on top, and two gulls and a pigeon is a fight you have
+outgrown by the time it is offered. The retune is **rosters, not numbers**
+(a second gull, a second thief, a second Sable, a third spawn, a rival behind
+the Dealers), and it moved the ordinary fight 10.9 → 15.4 HP and where act two
+ends by **18 points on greedy and 19 on hoarder** for about 3 points of mean
+win rate. **It half-worked and that is the finding**: the naive lines die in
+the middle now, the strong ones still die at the Bear (`native` 83%), because
+a competent deck walks the middle and then meets a 41 HP check — moving THAT
+needs a cheaper Bear or spikes that threaten a HEALTHY hero, and neither was
+tried. **One rule was built, measured and CUT**: the night taking the breather
+(the post-fight 6 HP scaled by the hour) cost every bot four points of win rate
+to move the same needle three, and on top of the retune bought two for two —
+kept at the site in `engine.js` because it is the obvious next idea and it does
+not work. Two bugs: the ledger flushed a fatal fight on the same iteration that
+set its loss, so **every span including the boss read 0% kills**; and v34
+shipped `VERSION` at 33 while `VERSIONS.md` and `hub/versions.json` both said
+34 — the arcade advertised a release the cabinet denied, and `core.mjs` now
+reads both files and fails when they disagree.
+**THE ASCENSION LADDER, AND EVERY RUNG RIDES A LEVER THAT EXISTED** (v36).
+Six rungs — an elite offered a span earlier, what you meet mutated a level
+ahead of the hour, a rest giving back a fifth instead of a third, a carried
+Doubt, a point of Strength on every boss, a third instead of a half between
+the acts — and **no new mechanic**, which is the point rather than a saving: a
+ladder that needs new systems is a second game. Rungs are **cumulative**, so
+only rung 0 can be an exact control, and `core.mjs` proves it IS one by driving
+whole bot runs at rung 0 and at no rung and comparing the LOGS entry by entry.
+Getting that check right took three passes and the ruler was wrong every time:
+**`uid` is a module-level counter**, so two identical runs number their cards
+and enemies differently purely by running second, and it rides on `target`,
+`enemy`, `src` and `from` as well as on `uid` — it renumbers by order of first
+appearance rather than stripping those keys, because WHICH body was hit is what
+the control is checking. Measured at 150 seeds a cell (`--asc N`), `native`
+reads **25/22/19/16/11/9/6%** and `synergist` 18/17/14/12/9/7/5 — monotone on
+both competent bots with no tuning pass. **Rung 1 is the weakest and that is a
+fact about the RULE**: an elite is offered, not forced, and a competent line
+declines it (greedy even goes UP, which at a 13-point floor is noise, not a
+finding). Two rules a rung may never break, written at the lookup: it may not
+make a run non-deterministic from the seed, and it may not hide information —
+rung 5's boss hits harder and the intent line quotes the bigger number.
+**A ladder is a DECISION, not a comparison**, so unlike `art`/`cut`/`figures`
+it is kept OUT of `LOOK_KEYS`: v30 drops a stored look older than the house
+answer, and doing that to a difficulty somebody earned is the same bug with the
+sign flipped. Stored per character, raised by ONE and only by a WIN.
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`
@@ -754,6 +1336,27 @@ rect, which clips it to the silhouette instead of a glowing box.
 RUNTIME path (`units.json` points `sprite`/`portrait` there), which is why a deploy must
 carry it; CLAUDE.md's "a deploy omits `art-src/`" rule is written for eeri, where art-src is
 source. `art-src/reference/` (20MB) is source material and stays behind.
+**The owner's OWN 26 are cut** (v35, `tools/sheet-cut.mjs` →
+`art-src/sprites/cast/roster/`). The thirty `*-plate.png` files are new
+characters generated in the sheets' TECHNIQUE — `turfGrim` says in as many words
+to copy the technique and never the reference's specific character — so "we have
+32 characters" was true and "we have the owner's roster" was not: his own 26 (20
+on `casting-sheet-full.png`, 6 on `casting-sheet-3.png`; `-detail-1` is a
+byte-identical duplicate of the latter and `-detail-2` a zoom crop of the former)
+lived here as two magenta PNGs. Nothing is generated — Idle is the one pose that
+never needs a model. Cells are found by **projection**, not a nominal grid (the
+sheets bleed past their nominal boundaries, which is how a sliver of a neighbour
+got into `gunner-idle` twice), each figure's top is tightened out of its row band,
+and an over-wide run is **split** because a prop can bridge two cells — the
+sledgehammer reaches into its own back view and merged two figures, shifting every
+name after it. **The key is two-stage**: the sheets are antialiased AGAINST
+magenta, so the edge ring is the figure's colour BLENDED with the key — nowhere
+near it, kept by any distance threshold, and the result is a magenta rim on
+everyone. Stage two recognises contamination rather than proximity (magenta has no
+green, so it reads as R and B both well above G) on **edge pixels only**, or a
+purple pair of trousers gets eaten from the inside. A pose set for any of the 26
+is now 12 generations against a local crop rather than a re-derivation of the
+recipe.
 **`turf/tools/spritecheck.py` is the mechanical source of truth for sprite QA** (PR #419's
 Sprite Factory owns the state/UI). Thresholds are calibrated against the real 28-frame cast
 set, not guessed: anything legitimately different tops out at 0.841 IoU, so `DUP_IOU` is
@@ -1915,9 +2518,12 @@ slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
     bg.js       # the photographic park, the tilt-shift, and the photo/stereo seam
     main.js     # boot, HUD, and the replay that acts the engine's log out
     audio.js    # synthesised kit, every voice through one master gain
+  bg/
+    plate.jpg   # the backdrop photograph — the Karhupuisto bear; swap the file, no code
+    README.md   # what makes a plate: the middle is what the fight stands in front of
   test/
     core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
-    smoke.cjs   # a browser: puppets, the topple, the staging rules, both formats
+    smoke.cjs   # a browser: puppets, the topple, the staging rules, the plate, both formats
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate

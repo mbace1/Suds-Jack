@@ -256,6 +256,28 @@ export const CARDS = {
   off_the_lead: { char: 'walker', type: 'attack', cost: 2, target: 'enemy', rarity: 'rare', pic: 'dog',
     effects: [{ type: 'damage', n: 4, scale: 'fetch', per: 1 }],
     kallio: { name: 'Off The Lead' }, fantasy: { name: 'Unleashed' } },
+  // v38. Ten cards, and every one of them fed `fetch` to be cashed the same
+  // way — the dog goes in at the end of the turn and hits. `guard_dog` reads
+  // the same stack for BLOCK instead, which is the character's existing
+  // convention rather than a new one: `off_the_lead` already reads it for
+  // damage, and neither SPENDS it, because fetch is paid out and cleared at
+  // the end of the turn no matter what read it. So this is a second way to be
+  // paid for a big stack, not a choice between two — the honest description,
+  // after a first draft of this comment claimed a spend that no card makes.
+  guard_dog: { char: 'walker', type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', pic: 'dog',
+    effects: [{ type: 'block', n: 0, scale: 'fetch', per: 1 }],
+    kallio: { name: 'Guard Dog' }, fantasy: { name: 'The Hound Stands' } },
+  slip_lead: { char: 'walker', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'stick',
+    effects: [{ type: 'damage', n: 6 }, { type: 'status', who: 'self', key: 'fetch', n: 2 }],
+    kallio: { name: 'Slip The Lead' }, fantasy: { name: 'Loosed Collar' } },
+  // Overfeed it. The dog gets everything it was ever going to get and you wear
+  // the turn that buys it — the first card of hers that costs you something.
+  park_run: { char: 'walker', type: 'skill', cost: 2, target: 'self', rarity: 'uncommon', pic: 'stick',
+    effects: [{ type: 'status', who: 'self', key: 'fetch', n: 10 }, { type: 'status', who: 'self', key: 'vulnerable', n: 1 }],
+    kallio: { name: 'Park Run' }, fantasy: { name: 'The Long Field' } },
+  spare_lead: { char: 'walker', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'string',
+    effects: [{ type: 'draw', n: 1 }, { type: 'status', who: 'self', key: 'fetch', n: 2 }],
+    kallio: { name: 'Spare Lead' }, fantasy: { name: 'Second Lead' } },
   two_dogs: { char: 'walker', type: 'power', cost: 2, target: 'self', rarity: 'rare', pic: 'dog',
     effects: [{ type: 'status', who: 'self', key: 'keepFetch', n: 1 }],
     kallio: { name: 'Two Dogs' }, fantasy: { name: 'The Pack' } },
@@ -294,6 +316,27 @@ export const CARDS = {
   glass_chin: { char: 'boxer', type: 'attack', cost: 0, target: 'enemy', rarity: 'common', pic: 'fist',
     effects: [{ type: 'damage', n: 7 }, { type: 'status', who: 'self', key: 'vulnerable', n: 1 }],
     kallio: { name: 'Glass Chin' }, fantasy: { name: 'Open Stance' } },
+  // v38. The Boxer had ten cards and his question — take the hit, get paid —
+  // was answerable in one line: block, then punch off `struck`. These four put
+  // the choice back in the hand. `take_it` is the character in one card: it
+  // buys nothing this turn and makes the next one worse ON PURPOSE, because
+  // thorns only pay when something hits you.
+  take_it: { char: 'boxer', type: 'skill', cost: 0, target: 'self', rarity: 'uncommon', pic: 'hand',
+    effects: [{ type: 'status', who: 'self', key: 'vulnerable', n: 1 }, { type: 'status', who: 'self', key: 'thorns', n: 5 }],
+    kallio: { name: 'Take It' }, fantasy: { name: 'Bare the Ribs' } },
+  body_shot: { char: 'boxer', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'fist',
+    effects: [{ type: 'damage', n: 8 }, { type: 'status', who: 'self', key: 'thorns', n: 2 }],
+    kallio: { name: 'Body Shot' }, fantasy: { name: 'Rib Breaker' } },
+  // `second_wind` turns a round of absorbing into BLOCK; this turns it into the
+  // punch, so a round spent on the ropes has two ways out rather than one.
+  on_the_ropes: { char: 'boxer', type: 'attack', cost: 2, target: 'enemy', rarity: 'rare', pic: 'sunburst',
+    effects: [{ type: 'damage', n: 4, scale: 'struck', per: 4 }],
+    kallio: { name: 'On The Ropes' }, fantasy: { name: 'The Turning' } },
+  // He was the only character with no cheap cycler, which is why his opening
+  // hand so often had nothing to do with his mechanic in it.
+  sparring: { char: 'boxer', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'glove',
+    effects: [{ type: 'block', n: 5 }, { type: 'draw', n: 1 }],
+    kallio: { name: 'Sparring' }, fantasy: { name: 'Drill' } },
   bell: { char: 'boxer', type: 'power', cost: 2, target: 'self', rarity: 'rare', pic: 'bell',
     effects: [{ type: 'status', who: 'self', key: 'strengthPerTurn', n: 1 }],
     kallio: { name: 'The Bell' }, fantasy: { name: 'War Bell' } },
@@ -679,6 +722,25 @@ export const ENEMIES = {
     // watching should be on screen for more than two turns.
     kallio: { name: 'The Debt Collector', look: { skin: '#c8a084', hair: '#2a2420', hairStyle: 'bald', top: '#d8d4c8', bottom: '#3a4250', shoes: '#3a2c20', hat: 'none', prop: 'none', accent: '#c8a03a', base: 'tin', grime: 0.6, shape: 'person' } },
     fantasy: { name: 'The Tithe-Taker', look: { skin: '#c8a084', hair: '#2a2420', hairStyle: 'bald', top: '#c8c4bc', bottom: '#38344a', shoes: '#3a2c20', hat: 'none', prop: 'none', accent: '#a08ac8', base: 'tin', grime: 0.5, shape: 'person' } } },
+  // v37. The act-two ledger said the middle costs a healthy hero 15 HP a fight
+  // and kills 1-4%, so a deck that walks in at 87% of max walks THROUGH it and
+  // meets the Bear at full price. Three attempts at making the Bear cheaper
+  // were measured and all three moved difficulty without moving the SHAPE —
+  // its share of act-two deaths sat at 79-83% however big it was. So the spike
+  // goes in the middle, and it is aimed with `hale` at the state those decks
+  // actually arrive in. He sizes you up ONCE, early, hard: he is a chancer, he
+  // picks the ones still worth taking off, and the vulnerable he leaves behind
+  // is what makes his rotation land. Arrive hurt and he is a pushover — which
+  // is `sable` from the other side, and the pair is the point.
+  chancer: { hp: 40, pattern: 'cycle', scale: 1.0,
+    moves: [
+      { id: 'sizes_you_up', when: 'hale', once: true, intent: 'attack', dmg: 14,
+        status: { key: 'vulnerable', n: 1 } },
+      { id: 'flash', intent: 'attack', dmg: 8 },
+      { id: 'chain', intent: 'buff', status: { key: 'strength', n: 1 } },
+    ],
+    kallio: { name: 'The Chancer', look: { skin: '#c09878', hair: '#6a5a44', hairStyle: 'buzz', top: '#3a5878', bottom: '#4a4a44', shoes: '#d8d4c8', hat: 'hood', hatColor: '#8a2a2a', prop: 'knife', accent: '#c8a03a', base: 'card', grime: 0.5, shape: 'person' } },
+    fantasy: { name: 'The Waylayer', look: { skin: '#c09878', hair: '#6a5a44', hairStyle: 'buzz', top: '#3a4a78', bottom: '#44424a', shoes: '#c8c4bc', hat: 'hood', hatColor: '#6a2a5a', prop: 'knife', accent: '#a08ac8', base: 'card', grime: 0.4, shape: 'person' } } },
   bat: { hp: 32, pattern: 'cycle', scale: 0.96,
     moves: [
       // `crowded` is `alone`'s mirror and it is the whole point of this one:
@@ -779,30 +841,38 @@ export const ENCOUNTERS = [
   { id: 'bridge', enemies: ['bridge_king'], reward: ['card', 'joker'],
     kallio: { name: 'Who Owns The Bridge' }, fantasy: { name: 'Who Holds The Span' } },
   // ─ act two: under the bear
-  { id: 'gulls', enemies: ['gull', 'pigeon', 'pigeon'], reward: ['card', 'joker'],
+  { id: 'gulls', enemies: ['gull', 'gull', 'pigeon'], reward: ['card', 'joker'],
     kallio: { name: 'Gulls Off The Harbour' }, fantasy: { name: 'Harpies On The Wind' } },
   { id: 'twins', enemies: ['rival', 'rival_b'], reward: ['card'],
     kallio: { name: 'Both Of Them' }, fantasy: { name: 'Two Knives' } },
-  { id: 'night', enemies: ['night_shift', 'gull'], reward: ['card'],
+  { id: 'night', enemies: ['night_shift', 'gull', 'pigeon'], reward: ['card'],
     kallio: { name: 'The Night Shift' }, fantasy: { name: 'The Watch' } },
-  { id: 'swarm', enemies: ['blob', 'blob_spawn', 'blob_spawn'], reward: ['card', 'joker'],
+  { id: 'swarm', enemies: ['blob', 'blob_spawn', 'blob_spawn', 'blob_spawn'], reward: ['card', 'joker'],
     kallio: { name: 'It Has Been Busy' }, fantasy: { name: 'The Brood' } },
   { id: 'scrappers', enemies: ['scrapper', 'scrapper', 'rival_b'], reward: ['card'],
     kallio: { name: 'The Last One Standing' }, fantasy: { name: 'The Last Blade' } },
-  { id: 'thief', enemies: ['bottle_thief', 'gull'], reward: ['card', 'joker'],
+  { id: 'thief', enemies: ['bottle_thief', 'bottle_thief', 'gull'], reward: ['card', 'joker'],
     kallio: { name: 'She Took The Bag' }, fantasy: { name: 'The Cutpurse' } },
-  { id: 'dealers', enemies: ['dealer', 'dealer'], reward: ['card'],
+  { id: 'dealers', enemies: ['dealer', 'dealer', 'rival_b'], reward: ['card'],
     kallio: { name: 'Two For One' }, fantasy: { name: 'Twin Alchemists' } },
   { id: 'sermon', enemies: ['preacher', 'bin_rat', 'bin_rat'], reward: ['card'],
     kallio: { name: 'The Sermon' }, fantasy: { name: 'The Congregation' } },
   { id: 'pitch', enemies: ['tar_blob', 'tar_blob'], reward: ['card'],
     kallio: { name: 'Pitch Black' }, fantasy: { name: 'Twin Pitch' } },
-  { id: 'flock', enemies: ['gull', 'pigeon', 'pigeon', 'pigeon'], reward: ['card'],
+  { id: 'flock', enemies: ['gull', 'gull', 'pigeon', 'pigeon'], reward: ['card'],
     kallio: { name: 'The Whole Flock' }, fantasy: { name: 'The Whole Flight' } },
   { id: 'gull_king', enemies: ['gull_king'], reward: ['card', 'joker'],
     kallio: { name: 'The Gull King' }, fantasy: { name: 'The Harpy Queen' } },
   { id: 'rat_court', enemies: ['boss_rat', 'bin_rat', 'bin_rat'], reward: ['card', 'joker'],
     kallio: { name: 'The Rat Court' }, fantasy: { name: 'The Imp Court' } },
+  // v37, the act-two spike. TWO chancers is the whole idea: each sizes you up
+  // once, so a hero who arrives healthy eats both openers plus the vulnerable
+  // they leave, and one who arrives hurt walks into two pushovers. It is the
+  // first fight in the act whose cost depends on the state you bring to it.
+  { id: 'chancers', enemies: ['chancer', 'chancer'], reward: ['card'],
+    kallio: { name: 'They Look You Over' }, fantasy: { name: 'The Toll On The Road' } },
+  { id: 'chance_rat', enemies: ['chancer', 'rat', 'rat'], reward: ['card'],
+    kallio: { name: 'He Brought The Rats' }, fantasy: { name: 'The Waylayer’s Vermin' } },
   { id: 'bear', enemies: ['the_bear'], reward: [],
     kallio: { name: 'The Bear Wakes' }, fantasy: { name: 'The Stone Bear Wakes' } },
   // ─ cast from the spare plates (v26). Three to each act, and each one leads
@@ -815,7 +885,7 @@ export const ENCOUNTERS = [
     kallio: { name: 'He Buys Anything' }, fantasy: { name: 'The Pawnbroker’s Table' } },
   { id: 'bat', enemies: ['bat', 'rival_b', 'rat'], reward: ['card'],
     kallio: { name: 'Somebody Holds You' }, fantasy: { name: 'Held For The Cudgel' } },
-  { id: 'sable', enemies: ['sable', 'gull'], reward: ['card', 'joker'],
+  { id: 'sable', enemies: ['sable', 'sable'], reward: ['card', 'joker'],
     kallio: { name: 'He Waits For The Limp' }, fantasy: { name: 'The Red Hood Waits' } },
   { id: 'debt', enemies: ['debt', 'crowbar'], reward: ['card', 'joker'],
     kallio: { name: 'Somebody Sent Him' }, fantasy: { name: 'The Tithe Is Due' } },
@@ -831,7 +901,7 @@ export const ACTS = [
     kallio: { name: 'The Canal Bridge' }, fantasy: { name: 'The Old Span' } },
   { id: 'bear', steps: 6, boss: 'bear',
     fights: ['gulls', 'twins', 'night', 'swarm', 'dealers', 'sermon', 'pitch', 'flock', 'scrappers', 'thief',
-      'bat', 'sable', 'debt'],
+      'bat', 'sable', 'debt', 'chancers', 'chance_rat'],
     elites: ['gull_king', 'rat_court'],
     kallio: { name: 'Under The Bear' }, fantasy: { name: 'The Stone Watch' } },
 ];
@@ -1051,6 +1121,26 @@ export const THEMES = {
     park: { sky: ['#171a2a', '#5e3a46'], canopy: ['#0f150f', '#182219', '#26301d'], grass: '#1b2317', path: '#332e27', stone: '#282629', bench: '#3a3028', iron: '#121014', water: '#0d1317' } },
 };
 
+// ── the ascension ladder ─────────────────────────────────────────────────
+// Six rungs, each ONE rule, and every one of them rides a lever this engine
+// already had — the step an elite is offered at, the hour's mutation level,
+// the two heals, a curse, and a boss's strength. That constraint is the point:
+// a difficulty ladder that needs new mechanics is a second game, and a second
+// game is not what "the same run, harder" means. Two things a rung may never
+// do: make the run non-deterministic from the seed (the act-two harness's
+// whole value is that an unrelated change reproduces a column exactly), or
+// hide information (this is a full-information game — if a boss hits harder,
+// the intent line says the bigger number the turn it happens).
+export const ASCENSION = [
+  { n: 1, id: 'elite_early',  text: 'An elite is offered a span earlier.' },
+  { n: 2, id: 'dark_sooner',  text: 'The dark comes sooner: what you meet is mutated a level ahead of the hour.' },
+  { n: 3, id: 'thin_rest',    text: 'A rest gives back a fifth of you, not a third.' },
+  { n: 4, id: 'carry_doubt',  text: 'You start the run carrying Doubt.' },
+  { n: 5, id: 'strong_boss',  text: 'Every boss stands with a point of Strength.' },
+  { n: 6, id: 'short_breath', text: 'Beating an act gives back a third of you, not a half.' },
+];
+export const ASC_MAX = ASCENSION.length;
+
 export const RULES = {
   energy: 3,
   draw: 5,
@@ -1058,11 +1148,22 @@ export const RULES = {
   jokerMax: 5,
   healAfterFight: 6,
   restHeal: 0.3,           // a rest site heals this share of max HP
+  restHealHard: 0.2,       // …and this much once the ladder has taken the rest (ASCENSION 3)
   healBetweenActs: 0.5,    // beating an act's boss: dusk falls, and you catch your breath
+  healBetweenActsHard: 1 / 3, // …and this much at ASCENSION 6
   mutation: [1, 1.15, 1.3],// enemy HP × by nightfall level 0/1/2; level 2 also brings 1 Strength
   vulnerable: 1.5,
   weak: 0.75,
   frail: 0.75,             // block gained ×0.75
   buzzCarry: 1 / 3,        // share of Buzz that survives the end of turn (v28 — measured; see engine.js endTurn)
+  // v39, and it is the Boxer's `buzzCarry`. Measured over 150 native runs a
+  // character, every other character deals 107-111 damage a fight; he deals 86
+  // and his thorns add 21.8, which lands him at 107.8 — his mechanic returns
+  // him to PAR and never above it, while arriving late and on whatever hit him
+  // rather than on what he chose. And it does not COMPOUND: the Cart wins
+  // because block-that-stays accumulates across a fight, while thorns are
+  // re-bought every time. So being struck now deepens them — take the hit, get
+  // harder to hit — which is his fiction and gives the resource a slope.
+  thornsOnStruck: 1,
 };
 

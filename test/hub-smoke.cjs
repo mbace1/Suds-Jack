@@ -229,10 +229,17 @@ function check(name, cond) {
   check('the sketch shelf is there too', await page.locator('.shelf .sketch-link').count() === sketches.length);
   check('the page names itself', (await page.title()).includes('Suds Jack'));
 
-  // every Play button points at its catalogue path, in the order rendered
+  // every Play button points at its catalogue path, in the order rendered.
+  // A pinned cabinet carries ?release=N, and N is READ from versions.json
+  // rather than typed here — a release number typed into a fourth file is a
+  // fourth file to forget (v34 shipped with three different answers).
+  const relVers = JSON.parse(require('node:fs').readFileSync(require('node:path').join(ROOT, 'hub/versions.json'), 'utf8'));
+  const pinned = new Set(['slaykallio']);
+  await page.waitForFunction(() => [...document.querySelectorAll('a[data-game="slaykallio"]')].some(a => a.href.includes('?release=')));
   const hrefs = await page.locator(`${CAB} .btn.play`).evaluateAll(ns => ns.map(n => n.getAttribute('href')));
-  check('Play opens the game it is under',
-    hrefs.join() === games.filter(g => g.live !== false).map(g => g.id === 'slaykallio' ? `${g.path}?release=33` : g.path).join());
+  check('Play opens the game it is under, pinned to the release the log names',
+    hrefs.join() === games.filter(g => g.live !== false)
+      .map(g => pinned.has(g.id) && relVers[g.id] ? `${g.path}?release=${relVers[g.id].v}` : g.path).join());
 
   // not every button has to work yet — but a button that cannot work must say
   // so rather than pointing at a 404

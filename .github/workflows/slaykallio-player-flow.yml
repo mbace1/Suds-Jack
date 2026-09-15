@@ -7,7 +7,13 @@ on:
 jobs:
   slaykallio:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 10 minutes was enough while the player flow walked ONE fight. It now
+    # walks a whole act on desktop and on touch — the map, an event, a rest,
+    # the card picker and the fights between them — and the first CI run after
+    # that change was cancelled at the budget with the touch pass still going.
+    # The walk is the point of the harness, so the budget moves rather than the
+    # walk. This job only runs on pull requests that touch slaykallio/.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
