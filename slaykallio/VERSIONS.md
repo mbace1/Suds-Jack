@@ -7,6 +7,67 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v37 — 2026-09-15
+**A spike aimed at a healthy hero — and the arithmetic that says the metric was wrong**
+
+`hale` is the condition the list was missing. Every rule in `WHEN` read the row
+(`alone`, `crowded`, `first`) or read a hero who was ALREADY hurt (`bleeding`,
+`hurt`, `walled`), so nothing in this game ever cost you anything for arriving
+healthy — which is exactly what the act-two ledger measured: `native` walks in
+at 87% of max and the middle takes 15 HP a fight off it. `hale` is `bleeding`'s
+mirror and it is one function.
+
+**The Chancer** is its one user, and the design came off the ledger rather than
+out of a number. `debt` already showed the shape — it costs 5.0 HP on average
+and kills 7%, because it RAMPS rather than hitting hard. So the Chancer sizes
+you up ONCE, early: 14 and a Vulnerable, only while you are worth taking off,
+then an ordinary rotation. Arrive hurt and he is a pushover. That is `sable`
+from the other side, and the pair is the point — act two can now threaten both
+states a hero arrives in.
+
+The spike is the ENCOUNTER, not the enemy. **They Look You Over** is two of
+them, so a healthy hero eats both openers plus the Vulnerable they leave;
+**He Brought The Rats** is the mixed version. Act two's pool goes 13 → 15.
+
+`redhood-blue` is now in the game — the first of the three plates of the
+owner's own 26 that had never been shipped into this folder at all. Cast for
+what the picture shows: chin up, chain out, the knife held low and loose. He is
+looking you over, not fighting yet.
+
+**Measured at 600 seeds a cell against a v36 control.** They Look You Over
+costs **30.1 HP**, the most expensive ordinary fight in the act (the previous
+worst was The Last One Standing at 25.9). Every bot's mean win rate moves 1-3
+points, inside this instrument's 3-point floor. And the Bear's share of
+`native`'s act-two deaths reads **83%** — exactly what it read before.
+
+**So the metric was the wrong target, and that is this version's real finding.**
+The Bear is met by 2540 runs; each ordinary fight is met by ~400. The Bear
+killing 63% of 2540 is ~1600 deaths; a fight killing 6% of 400 is ~24, and
+fifteen of those is ~360. 1600/1960 = 82%, which IS the number three separate
+experiments have now failed to move. The share is arithmetic — one mandatory
+boss against fifteen sampled fights — and pushing it under 60% would need every
+ordinary span to kill ~18%, one run in five. That is a different game, not a
+tuning pass.
+
+Withdrawn with it: v35's "moving THAT needs a cheaper Bear or spikes that
+threaten a healthy hero". Both halves were tried. A cheaper Bear (140 → 120 HP)
+moves every bot +10 to +12 points of win rate and moves the share 83% → 79%;
+lowering its spikes reads the same; halving the compounding `stir` moves the
+mean +2, inside the floor. All three are difficulty dials. None is a shape dial,
+because the shape is set by which fights are compulsory.
+
+What act two should be judged on instead is what it COSTS and whether its spans
+present real decisions — not what fraction of deaths land on the one fight
+every run has to have. This version leaves it with a 30 HP span, a 12 HP span
+and a condition that reads the state the strong decks actually arrive in.
+
+Not done: `scale` on an enemy (1.0 to 1.32 on six of them) is read by nothing
+in the engine, the view or the tests. It looks exactly like the difficulty dial
+somebody will reach for first, and turning it does nothing. Wire it or delete
+it; do not leave it looking like a lever.
+
+Gates: `core.mjs` 792 (nine new), `smoke.cjs` 142.
+
 ## v36 — 2026-09-13
 **The ascension ladder: six rungs, six levers this engine already had**
 

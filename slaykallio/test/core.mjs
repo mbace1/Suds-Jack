@@ -953,6 +953,38 @@ endTurn(bs);
 check(`under half he goes for it — ${sableIntent(bs)}`, sableIntent(bs) === 'finish_it');
 check('and it is the biggest number he has',
   ENEMIES.sable.moves.find(m => m.id === 'finish_it').dmg > Math.max(...ENEMIES.sable.moves.filter(m => m.id !== 'finish_it').map(m => m.dmg ?? 0)));
+// `hale` is `bleeding`'s MIRROR, and it is the condition the list was missing:
+// every other rule reads the row or reads a hero who is already hurt, so
+// nothing in the game cost you anything for arriving healthy. The Chancer is
+// its one user — he sizes up whoever is still worth taking off, ONCE.
+let ch = fight3('chancers');
+const chanIntent = st => st.enemies.find(e => e.id === 'chancer')?.intent?.id;
+check(`healthy, he sizes you up — ${chanIntent(ch)}`, chanIntent(ch) === 'sizes_you_up');
+// and it is exactly the inverse of sable: hurt, he loses interest.
+let ch2 = fight3('chancers');
+ch2.hero.hp = Math.floor(ch2.hero.maxHp / 2);
+for (const e of ch2.enemies) e.intent = null;
+endTurn(ch2);
+check(`under half he is a pushover — ${chanIntent(ch2)}`, chanIntent(ch2) !== 'sizes_you_up');
+// ONCE, like the Bottle Thief's second wind: a spike that repeated every turn
+// while you were above half would be a wall, not a spike.
+const chMark = ch.log.length;
+for (const e of ch.enemies) e.intent = null;
+endTurn(ch); endTurn(ch);
+check('and he only does it once', chanIntent(ch) !== 'sizes_you_up');
+check('it is his biggest number',
+  ENEMIES.chancer.moves.find(m => m.id === 'sizes_you_up').dmg
+    > Math.max(...ENEMIES.chancer.moves.filter(m => m.id !== 'sizes_you_up').map(m => m.dmg ?? 0)));
+check('hale and bleeding cannot both hold', !WHEN.hale(ch2) || !WHEN.bleeding(ch2));
+check('nor can both be false', WHEN.hale(ch) || WHEN.bleeding(ch));
+// The spike is the ENCOUNTER, not the enemy: two of them open on a healthy
+// hero for more than any single ordinary act-two fight asks.
+const pair = ENCOUNTERS.find(e => e.id === 'chancers');
+check('the pair is two chancers', pair.enemies.filter(x => x === 'chancer').length === 2);
+check('both new fights are in act two',
+  ['chancers', 'chance_rat'].every(id => ACTS[1].fights.includes(id)));
+check('the Chancer is cast from one of the owner 26', !!plateFor('chancer'));
+
 // Six new people, and each is cast for a picture rather than for a hole in a
 // stat table — which a gate cannot see. What it CAN see is that each one is a
 // real plate, is person-shaped, and is not a second copy of a rotation the

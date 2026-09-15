@@ -99,6 +99,10 @@ export const CAST = {
   hardhat: 'hardhat-yellow',   // a yellow hard hat — he came off a site
   fence:   'dread-brown',      // dreadlocks, the orange jacket: he buys anything
   crowbar: 'bar-black',        // pry / duck: the one who actually holds a bar
+  // v37, and the first of the three plates that had never been shipped into
+  // this game at all. Cast for what the picture shows: chin up, chain out,
+  // the knife held low and loose — he is looking you over, not fighting yet.
+  chancer: 'redhood-blue',
 };
 
 // A posed character has no bare `<name>.png` — its standing frame is
@@ -152,7 +156,7 @@ function scanInk(img) {
 // `figures/` changes. It is appended at the REQUEST only: `fileFor` keeps
 // returning the bare path, because the gate resolves those against the tree
 // with `existsSync` and a query string is not part of a filename.
-const ASSET_REV = 36;
+const ASSET_REV = 37;
 const bust = src => `${src}?a=${ASSET_REV}`;
 
 export function preloadPlates() {

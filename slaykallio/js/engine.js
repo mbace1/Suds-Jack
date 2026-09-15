@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=36';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=37';
 
 // THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
 // and nothing else, so the ladder is a table in data.js rather than six
@@ -609,6 +609,13 @@ export const WHEN = {
   // of the run, which is what makes a finisher a finisher — an execute has to
   // be visible a turn early or it is just a big number that arrived.
   bleeding: (state) => state.hero.hp * 2 <= state.hero.maxHp,               // you are half gone
+  // v37, and it is the one the condition list was MISSING. Every rule above
+  // reads the row or reads a hero who is already hurt, so nothing in the game
+  // costs you anything for arriving healthy — which is exactly what the
+  // act-two ledger measured: `native` walks in at 87% of max and the middle
+  // takes 15 HP a fight off it. `hale` is `bleeding`'s mirror, so a spike can
+  // be aimed at the state the strong decks actually arrive in.
+  hale:     (state) => state.hero.hp * 2 > state.hero.maxHp,                // still worth robbing
 };
 
 function planIntent(state, e) {

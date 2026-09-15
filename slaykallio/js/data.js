@@ -679,6 +679,25 @@ export const ENEMIES = {
     // watching should be on screen for more than two turns.
     kallio: { name: 'The Debt Collector', look: { skin: '#c8a084', hair: '#2a2420', hairStyle: 'bald', top: '#d8d4c8', bottom: '#3a4250', shoes: '#3a2c20', hat: 'none', prop: 'none', accent: '#c8a03a', base: 'tin', grime: 0.6, shape: 'person' } },
     fantasy: { name: 'The Tithe-Taker', look: { skin: '#c8a084', hair: '#2a2420', hairStyle: 'bald', top: '#c8c4bc', bottom: '#38344a', shoes: '#3a2c20', hat: 'none', prop: 'none', accent: '#a08ac8', base: 'tin', grime: 0.5, shape: 'person' } } },
+  // v37. The act-two ledger said the middle costs a healthy hero 15 HP a fight
+  // and kills 1-4%, so a deck that walks in at 87% of max walks THROUGH it and
+  // meets the Bear at full price. Three attempts at making the Bear cheaper
+  // were measured and all three moved difficulty without moving the SHAPE —
+  // its share of act-two deaths sat at 79-83% however big it was. So the spike
+  // goes in the middle, and it is aimed with `hale` at the state those decks
+  // actually arrive in. He sizes you up ONCE, early, hard: he is a chancer, he
+  // picks the ones still worth taking off, and the vulnerable he leaves behind
+  // is what makes his rotation land. Arrive hurt and he is a pushover — which
+  // is `sable` from the other side, and the pair is the point.
+  chancer: { hp: 40, pattern: 'cycle', scale: 1.0,
+    moves: [
+      { id: 'sizes_you_up', when: 'hale', once: true, intent: 'attack', dmg: 14,
+        status: { key: 'vulnerable', n: 1 } },
+      { id: 'flash', intent: 'attack', dmg: 8 },
+      { id: 'chain', intent: 'buff', status: { key: 'strength', n: 1 } },
+    ],
+    kallio: { name: 'The Chancer', look: { skin: '#c09878', hair: '#6a5a44', hairStyle: 'buzz', top: '#3a5878', bottom: '#4a4a44', shoes: '#d8d4c8', hat: 'hood', hatColor: '#8a2a2a', prop: 'knife', accent: '#c8a03a', base: 'card', grime: 0.5, shape: 'person' } },
+    fantasy: { name: 'The Waylayer', look: { skin: '#c09878', hair: '#6a5a44', hairStyle: 'buzz', top: '#3a4a78', bottom: '#44424a', shoes: '#c8c4bc', hat: 'hood', hatColor: '#6a2a5a', prop: 'knife', accent: '#a08ac8', base: 'card', grime: 0.4, shape: 'person' } } },
   bat: { hp: 32, pattern: 'cycle', scale: 0.96,
     moves: [
       // `crowded` is `alone`'s mirror and it is the whole point of this one:
@@ -803,6 +822,14 @@ export const ENCOUNTERS = [
     kallio: { name: 'The Gull King' }, fantasy: { name: 'The Harpy Queen' } },
   { id: 'rat_court', enemies: ['boss_rat', 'bin_rat', 'bin_rat'], reward: ['card', 'joker'],
     kallio: { name: 'The Rat Court' }, fantasy: { name: 'The Imp Court' } },
+  // v37, the act-two spike. TWO chancers is the whole idea: each sizes you up
+  // once, so a hero who arrives healthy eats both openers plus the vulnerable
+  // they leave, and one who arrives hurt walks into two pushovers. It is the
+  // first fight in the act whose cost depends on the state you bring to it.
+  { id: 'chancers', enemies: ['chancer', 'chancer'], reward: ['card'],
+    kallio: { name: 'They Look You Over' }, fantasy: { name: 'The Toll On The Road' } },
+  { id: 'chance_rat', enemies: ['chancer', 'rat', 'rat'], reward: ['card'],
+    kallio: { name: 'He Brought The Rats' }, fantasy: { name: 'The Waylayer’s Vermin' } },
   { id: 'bear', enemies: ['the_bear'], reward: [],
     kallio: { name: 'The Bear Wakes' }, fantasy: { name: 'The Stone Bear Wakes' } },
   // ─ cast from the spare plates (v26). Three to each act, and each one leads
@@ -831,7 +858,7 @@ export const ACTS = [
     kallio: { name: 'The Canal Bridge' }, fantasy: { name: 'The Old Span' } },
   { id: 'bear', steps: 6, boss: 'bear',
     fights: ['gulls', 'twins', 'night', 'swarm', 'dealers', 'sermon', 'pitch', 'flock', 'scrappers', 'thief',
-      'bat', 'sable', 'debt'],
+      'bat', 'sable', 'debt', 'chancers', 'chance_rat'],
     elites: ['gull_king', 'rat_court'],
     kallio: { name: 'Under The Bear' }, fantasy: { name: 'The Stone Watch' } },
 ];
