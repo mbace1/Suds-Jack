@@ -7,6 +7,54 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v38 — 2026-09-15
+**Eight cards for the two thinnest pools, and they bought variety rather than power**
+
+The owner's brief asks for "lots of cards (class specific and neutral)". The
+build had 24 neutral and 10-13 a character, with the Dog Walker and the Boxer
+thinnest at **10 each**. Both are at 14 now, and each card extends that
+character's QUESTION rather than padding a stat table.
+
+**The Boxer — take the hit to get paid.** `take_it` is the question in one
+card: it buys nothing this turn and makes the next one worse ON PURPOSE,
+because thorns only pay when something hits you (5 thorns, 1 vulnerable, 0
+cost). `on_the_ropes` is the cash-out — `second_wind` already turned a round of
+absorbing into BLOCK, so this turns it into the punch and a round on the ropes
+has two ways out rather than one. `body_shot` and `sparring` are ordinary, and
+`sparring` fixes a real gap: he was the only character with no cheap cycler,
+which is why his opening hand so often had nothing to do with his mechanic.
+
+**The Dog Walker — feed Fetch, the dog goes in.** `guard_dog` reads the stack
+for block, `park_run` overfeeds it and charges you a Vulnerable for the turn
+that buys it, `slip_lead` attacks while still feeding, `spare_lead` cycles.
+
+**MEASURED AGAINST A CONTROL AT THE PREVIOUS COMMIT, 400 seeds a cell, and the
+result is FLAT.** Walker's best line 24% → 21%, Boxer's 15% → 14%, the mean
+across all six characters 26% → 25%. Every cell is inside the instrument's
+±4 floor. Eight cards, four of them aimed at each of the two weakest
+characters, and nothing moved.
+
+That is reported as what it is. **The Boxer is still the worst character at
+its best line** and these four did not fix him. What the cards bought is
+variety — more distinct draws in a run — which is a legitimate thing for cards
+to be and is not the same as power.
+
+And the instrument is NOT blind to them, which is the thing worth checking
+before believing a flat result: `native`'s per-character policies score by
+MECHANIC (`grants(c, 'fetch')`, `scaleOn(c, 'struck')`) rather than by card id,
+so a new card that grants thorns or scales on fetch is picked up with no
+change to the bot. Unlike v26's act-two additions, these were sampled.
+
+One correction, made in place rather than quietly: the first draft of
+`guard_dog`'s comment said it spent the Fetch stack "on the other side of the
+fight". It does not. `fetch` is READ by a card and then paid out and cleared at
+the end of the turn regardless, so the card grants block AND the dog still goes
+in. That double-dip is the character's existing convention — `off_the_lead`
+has always read the same stack for damage — so the card is consistent and the
+description was the thing that was wrong.
+
+Gates: `core.mjs` 803 (eleven new), `smoke.cjs` 142.
+
 ## v37 — 2026-09-15
 **A spike aimed at a healthy hero — and the arithmetic that says the metric was wrong**
 

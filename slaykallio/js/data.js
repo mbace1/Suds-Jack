@@ -256,6 +256,28 @@ export const CARDS = {
   off_the_lead: { char: 'walker', type: 'attack', cost: 2, target: 'enemy', rarity: 'rare', pic: 'dog',
     effects: [{ type: 'damage', n: 4, scale: 'fetch', per: 1 }],
     kallio: { name: 'Off The Lead' }, fantasy: { name: 'Unleashed' } },
+  // v38. Ten cards, and every one of them fed `fetch` to be cashed the same
+  // way — the dog goes in at the end of the turn and hits. `guard_dog` reads
+  // the same stack for BLOCK instead, which is the character's existing
+  // convention rather than a new one: `off_the_lead` already reads it for
+  // damage, and neither SPENDS it, because fetch is paid out and cleared at
+  // the end of the turn no matter what read it. So this is a second way to be
+  // paid for a big stack, not a choice between two — the honest description,
+  // after a first draft of this comment claimed a spend that no card makes.
+  guard_dog: { char: 'walker', type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', pic: 'dog',
+    effects: [{ type: 'block', n: 0, scale: 'fetch', per: 1 }],
+    kallio: { name: 'Guard Dog' }, fantasy: { name: 'The Hound Stands' } },
+  slip_lead: { char: 'walker', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'stick',
+    effects: [{ type: 'damage', n: 6 }, { type: 'status', who: 'self', key: 'fetch', n: 2 }],
+    kallio: { name: 'Slip The Lead' }, fantasy: { name: 'Loosed Collar' } },
+  // Overfeed it. The dog gets everything it was ever going to get and you wear
+  // the turn that buys it — the first card of hers that costs you something.
+  park_run: { char: 'walker', type: 'skill', cost: 2, target: 'self', rarity: 'uncommon', pic: 'stick',
+    effects: [{ type: 'status', who: 'self', key: 'fetch', n: 10 }, { type: 'status', who: 'self', key: 'vulnerable', n: 1 }],
+    kallio: { name: 'Park Run' }, fantasy: { name: 'The Long Field' } },
+  spare_lead: { char: 'walker', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'string',
+    effects: [{ type: 'draw', n: 1 }, { type: 'status', who: 'self', key: 'fetch', n: 2 }],
+    kallio: { name: 'Spare Lead' }, fantasy: { name: 'Second Lead' } },
   two_dogs: { char: 'walker', type: 'power', cost: 2, target: 'self', rarity: 'rare', pic: 'dog',
     effects: [{ type: 'status', who: 'self', key: 'keepFetch', n: 1 }],
     kallio: { name: 'Two Dogs' }, fantasy: { name: 'The Pack' } },
@@ -294,6 +316,27 @@ export const CARDS = {
   glass_chin: { char: 'boxer', type: 'attack', cost: 0, target: 'enemy', rarity: 'common', pic: 'fist',
     effects: [{ type: 'damage', n: 7 }, { type: 'status', who: 'self', key: 'vulnerable', n: 1 }],
     kallio: { name: 'Glass Chin' }, fantasy: { name: 'Open Stance' } },
+  // v38. The Boxer had ten cards and his question — take the hit, get paid —
+  // was answerable in one line: block, then punch off `struck`. These four put
+  // the choice back in the hand. `take_it` is the character in one card: it
+  // buys nothing this turn and makes the next one worse ON PURPOSE, because
+  // thorns only pay when something hits you.
+  take_it: { char: 'boxer', type: 'skill', cost: 0, target: 'self', rarity: 'uncommon', pic: 'hand',
+    effects: [{ type: 'status', who: 'self', key: 'vulnerable', n: 1 }, { type: 'status', who: 'self', key: 'thorns', n: 5 }],
+    kallio: { name: 'Take It' }, fantasy: { name: 'Bare the Ribs' } },
+  body_shot: { char: 'boxer', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'fist',
+    effects: [{ type: 'damage', n: 8 }, { type: 'status', who: 'self', key: 'thorns', n: 2 }],
+    kallio: { name: 'Body Shot' }, fantasy: { name: 'Rib Breaker' } },
+  // `second_wind` turns a round of absorbing into BLOCK; this turns it into the
+  // punch, so a round spent on the ropes has two ways out rather than one.
+  on_the_ropes: { char: 'boxer', type: 'attack', cost: 2, target: 'enemy', rarity: 'rare', pic: 'sunburst',
+    effects: [{ type: 'damage', n: 4, scale: 'struck', per: 4 }],
+    kallio: { name: 'On The Ropes' }, fantasy: { name: 'The Turning' } },
+  // He was the only character with no cheap cycler, which is why his opening
+  // hand so often had nothing to do with his mechanic in it.
+  sparring: { char: 'boxer', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'glove',
+    effects: [{ type: 'block', n: 5 }, { type: 'draw', n: 1 }],
+    kallio: { name: 'Sparring' }, fantasy: { name: 'Drill' } },
   bell: { char: 'boxer', type: 'power', cost: 2, target: 'self', rarity: 'rare', pic: 'bell',
     effects: [{ type: 'status', who: 'self', key: 'strengthPerTurn', n: 1 }],
     kallio: { name: 'The Bell' }, fantasy: { name: 'War Bell' } },

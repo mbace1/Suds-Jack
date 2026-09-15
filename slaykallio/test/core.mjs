@@ -953,6 +953,33 @@ endTurn(bs);
 check(`under half he goes for it — ${sableIntent(bs)}`, sableIntent(bs) === 'finish_it');
 check('and it is the biggest number he has',
   ENEMIES.sable.moves.find(m => m.id === 'finish_it').dmg > Math.max(...ENEMIES.sable.moves.filter(m => m.id !== 'finish_it').map(m => m.dmg ?? 0)));
+// v38. Eight cards for the two thinnest pools, and these three are the ones
+// that do something the character could not do before — the rest are numbers.
+// The Boxer's question is "take the hit to get paid", and `take_it` is the
+// whole question in one card: it buys nothing now and makes the next turn
+// WORSE on purpose, because thorns only pay when something hits you.
+s = rig('boxer', ['take_it']);
+playCard(s, 0);
+check('Take It buys thorns with your own ribs (5 thorns, 1 vulnerable)',
+  s.hero.status.thorns === 5 && s.hero.status.vulnerable === 1);
+// `second_wind` turns a round of absorbing into BLOCK. This turns it into the
+// punch, so a round on the ropes has two ways out rather than one.
+s = rig('boxer', ['on_the_ropes']);
+s.struck = 3;  // state, not a hero status: the fight counts the hits, not the man
+check('On The Ropes counts the hits he took (4 + 3x4 = 16)', preview(s, 0, 0).damage === 16);
+// The Dog Walker fed `fetch` all turn and spent it exactly one way. The dog
+// can stand in front of you now, so holding the stack is a question rather
+// than a countdown.
+s = rig('walker', ['guard_dog']);
+s.hero.status.fetch = 9;
+playCard(s, 0);
+check('Guard Dog spends the whole stack on block (9)', s.hero.block === 9);
+// Every new card is draftable, or it is decoration.
+for (const id of ['take_it', 'body_shot', 'on_the_ropes', 'sparring',
+                  'guard_dog', 'slip_lead', 'park_run', 'spare_lead'])
+  check(`${id} is a real card with a drawable picture`,
+    !!CARDS[id] && drawable.has(CARDS[id].pic) && !!CARDS[id].char);
+
 // `hale` is `bleeding`'s MIRROR, and it is the condition the list was missing:
 // every other rule reads the row or reads a hero who is already hurt, so
 // nothing in the game cost you anything for arriving healthy. The Chancer is
