@@ -4,6 +4,12 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
+// v37. These four assertions were pinned to a literal release number and went
+// stale the moment the version moved — the same drift a reviewer caught on
+// v34, arriving again because a number was typed in a fourth place. The
+// harness READS the release now; core.mjs already fails when VERSION,
+// VERSIONS.md and hub/versions.json disagree, so one of them is enough.
+const REL=String(JSON.parse(fs.readFileSync(path.join(root,'hub/versions.json'),'utf8')).slaykallio.v);
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?')[0]);if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');fs.readFile(f,(e,b)=>{res.writeHead(e?404:200,{'Content-Type':mime[path.extname(f)]||'application/octet-stream'});res.end(e?'missing':b);});});
 (async()=>{
@@ -21,12 +27,12 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   // the release pin arrives with versions.json, after the cabinets are drawn
   await p.waitForFunction(()=>[...document.querySelectorAll('a[data-game="slaykallio"]')].some(a=>a.href.includes('?release=')),null,{timeout:15000});
   await tap(p.getByRole('link',{name:'Play Slay Kallio',exact:true}));
-  await p.waitForURL('**/slaykallio/?release=36');
-  assert.equal(new URL(p.url()).searchParams.get('release'),'36','hub launches the current release URL');
-  await p.waitForFunction(()=>document.querySelector('#ver')?.textContent==='v36');
+  await p.waitForURL(`**/slaykallio/?release=${REL}`);
+  assert.equal(new URL(p.url()).searchParams.get('release'),REL,'hub launches the current release URL');
+  await p.waitForFunction(v=>document.querySelector('#ver')?.textContent===v,`v${REL}`);
   await p.goto(base+'/slaykallio/?seed=4');
   await p.waitForFunction(()=>!!window.__sk);
-  assert.equal(await p.locator('#ver').innerText(),'v36');
+  assert.equal(await p.locator('#ver').innerText(),`v${REL}`);
   assert.equal(await p.locator('#roster .pick').count(),6);
   await p.waitForFunction(()=>!document.querySelector('#start').disabled);
   assert.equal(await p.evaluate(()=>__sk.debug.art()),'turf');
