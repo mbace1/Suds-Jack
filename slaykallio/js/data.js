@@ -779,25 +779,25 @@ export const ENCOUNTERS = [
   { id: 'bridge', enemies: ['bridge_king'], reward: ['card', 'joker'],
     kallio: { name: 'Who Owns The Bridge' }, fantasy: { name: 'Who Holds The Span' } },
   // ─ act two: under the bear
-  { id: 'gulls', enemies: ['gull', 'pigeon', 'pigeon'], reward: ['card', 'joker'],
+  { id: 'gulls', enemies: ['gull', 'gull', 'pigeon'], reward: ['card', 'joker'],
     kallio: { name: 'Gulls Off The Harbour' }, fantasy: { name: 'Harpies On The Wind' } },
   { id: 'twins', enemies: ['rival', 'rival_b'], reward: ['card'],
     kallio: { name: 'Both Of Them' }, fantasy: { name: 'Two Knives' } },
-  { id: 'night', enemies: ['night_shift', 'gull'], reward: ['card'],
+  { id: 'night', enemies: ['night_shift', 'gull', 'pigeon'], reward: ['card'],
     kallio: { name: 'The Night Shift' }, fantasy: { name: 'The Watch' } },
-  { id: 'swarm', enemies: ['blob', 'blob_spawn', 'blob_spawn'], reward: ['card', 'joker'],
+  { id: 'swarm', enemies: ['blob', 'blob_spawn', 'blob_spawn', 'blob_spawn'], reward: ['card', 'joker'],
     kallio: { name: 'It Has Been Busy' }, fantasy: { name: 'The Brood' } },
   { id: 'scrappers', enemies: ['scrapper', 'scrapper', 'rival_b'], reward: ['card'],
     kallio: { name: 'The Last One Standing' }, fantasy: { name: 'The Last Blade' } },
-  { id: 'thief', enemies: ['bottle_thief', 'gull'], reward: ['card', 'joker'],
+  { id: 'thief', enemies: ['bottle_thief', 'bottle_thief', 'gull'], reward: ['card', 'joker'],
     kallio: { name: 'She Took The Bag' }, fantasy: { name: 'The Cutpurse' } },
-  { id: 'dealers', enemies: ['dealer', 'dealer'], reward: ['card'],
+  { id: 'dealers', enemies: ['dealer', 'dealer', 'rival_b'], reward: ['card'],
     kallio: { name: 'Two For One' }, fantasy: { name: 'Twin Alchemists' } },
   { id: 'sermon', enemies: ['preacher', 'bin_rat', 'bin_rat'], reward: ['card'],
     kallio: { name: 'The Sermon' }, fantasy: { name: 'The Congregation' } },
   { id: 'pitch', enemies: ['tar_blob', 'tar_blob'], reward: ['card'],
     kallio: { name: 'Pitch Black' }, fantasy: { name: 'Twin Pitch' } },
-  { id: 'flock', enemies: ['gull', 'pigeon', 'pigeon', 'pigeon'], reward: ['card'],
+  { id: 'flock', enemies: ['gull', 'gull', 'pigeon', 'pigeon'], reward: ['card'],
     kallio: { name: 'The Whole Flock' }, fantasy: { name: 'The Whole Flight' } },
   { id: 'gull_king', enemies: ['gull_king'], reward: ['card', 'joker'],
     kallio: { name: 'The Gull King' }, fantasy: { name: 'The Harpy Queen' } },
@@ -815,7 +815,7 @@ export const ENCOUNTERS = [
     kallio: { name: 'He Buys Anything' }, fantasy: { name: 'The Pawnbroker’s Table' } },
   { id: 'bat', enemies: ['bat', 'rival_b', 'rat'], reward: ['card'],
     kallio: { name: 'Somebody Holds You' }, fantasy: { name: 'Held For The Cudgel' } },
-  { id: 'sable', enemies: ['sable', 'gull'], reward: ['card', 'joker'],
+  { id: 'sable', enemies: ['sable', 'sable'], reward: ['card', 'joker'],
     kallio: { name: 'He Waits For The Limp' }, fantasy: { name: 'The Red Hood Waits' } },
   { id: 'debt', enemies: ['debt', 'crowbar'], reward: ['card', 'joker'],
     kallio: { name: 'Somebody Sent Him' }, fantasy: { name: 'The Tithe Is Due' } },
@@ -1051,6 +1051,26 @@ export const THEMES = {
     park: { sky: ['#171a2a', '#5e3a46'], canopy: ['#0f150f', '#182219', '#26301d'], grass: '#1b2317', path: '#332e27', stone: '#282629', bench: '#3a3028', iron: '#121014', water: '#0d1317' } },
 };
 
+// ── the ascension ladder ─────────────────────────────────────────────────
+// Six rungs, each ONE rule, and every one of them rides a lever this engine
+// already had — the step an elite is offered at, the hour's mutation level,
+// the two heals, a curse, and a boss's strength. That constraint is the point:
+// a difficulty ladder that needs new mechanics is a second game, and a second
+// game is not what "the same run, harder" means. Two things a rung may never
+// do: make the run non-deterministic from the seed (the act-two harness's
+// whole value is that an unrelated change reproduces a column exactly), or
+// hide information (this is a full-information game — if a boss hits harder,
+// the intent line says the bigger number the turn it happens).
+export const ASCENSION = [
+  { n: 1, id: 'elite_early',  text: 'An elite is offered a span earlier.' },
+  { n: 2, id: 'dark_sooner',  text: 'The dark comes sooner: what you meet is mutated a level ahead of the hour.' },
+  { n: 3, id: 'thin_rest',    text: 'A rest gives back a fifth of you, not a third.' },
+  { n: 4, id: 'carry_doubt',  text: 'You start the run carrying Doubt.' },
+  { n: 5, id: 'strong_boss',  text: 'Every boss stands with a point of Strength.' },
+  { n: 6, id: 'short_breath', text: 'Beating an act gives back a third of you, not a half.' },
+];
+export const ASC_MAX = ASCENSION.length;
+
 export const RULES = {
   energy: 3,
   draw: 5,
@@ -1058,7 +1078,9 @@ export const RULES = {
   jokerMax: 5,
   healAfterFight: 6,
   restHeal: 0.3,           // a rest site heals this share of max HP
+  restHealHard: 0.2,       // …and this much once the ladder has taken the rest (ASCENSION 3)
   healBetweenActs: 0.5,    // beating an act's boss: dusk falls, and you catch your breath
+  healBetweenActsHard: 1 / 3, // …and this much at ASCENSION 6
   mutation: [1, 1.15, 1.3],// enemy HP × by nightfall level 0/1/2; level 2 also brings 1 Strength
   vulnerable: 1.5,
   weak: 0.75,
