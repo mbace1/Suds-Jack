@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "project": "TURF",
+  "mode": "astra_2d_frame_first",
+  "visibility": "hidden_until_animation_approved",
+  "character": "cast_04_grey_hoodie_bottle",
+  "directions": ["front_iso", "rear_iso"],
+  "forbiddenDirections": ["side", "profile", "left", "right", "front_cardinal", "rear_cardinal"],
+  "plate": [192, 288],
+  "quantise": false,
+  "generateOneFrameAtATime": true,
+  "surfaceIntermediateWork": false,
+  "stages": [
+    {"action":"idle","frames":6,"phaseSource":"manifest","mustApproveBeforeNext":true},
+    {"action":"move","frames":16,"mustApproveBeforeNext":true,"contacts":{"1":"left_contact","9":"right_contact"}},
+    {"action":"attack","frames":{"min":5,"max":8},"mustApproveBeforeNext":true},
+    {"action":"hit","frames":{"min":3,"max":5},"mustApproveBeforeNext":true},
+    {"action":"ko","frames":{"min":5,"max":8},"mustApproveBeforeNext":true}
+  ],
+  "hardReject": [
+    "side_or_profile_facing",
+    "duplicate_or_near_duplicate",
+    "wrong_contact_or_phase",
+    "identity_drift",
+    "cropped_or_broken_anatomy",
+    "origin_or_scale_drift",
+    "camera_drift",
+    "text_ui_border_shadow_vfx",
+    "phase_without_material_motion_progress"
+  ],
+  "references": {
+    "manifest": "manifest.json",
+    "spriteBible": "../SPRITE_BIBLE.md",
+    "artReadme": "../art-src/sprites/README.md"
+  },
+  "success": "complete front/rear idle+move+attack+hit+ko with zero hard-gate failures and owner approval"
+}
