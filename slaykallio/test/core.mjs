@@ -953,6 +953,40 @@ endTurn(bs);
 check(`under half he goes for it — ${sableIntent(bs)}`, sableIntent(bs) === 'finish_it');
 check('and it is the biggest number he has',
   ENEMIES.sable.moves.find(m => m.id === 'finish_it').dmg > Math.max(...ENEMIES.sable.moves.filter(m => m.id !== 'finish_it').map(m => m.dmg ?? 0)));
+// v39, and this one is a SOFTLOCK that predates the rule which found it. The
+// row can die during its OWN phase — thorns answer every blow, so the last
+// attacker can kill itself coming in — and `endTurn` only asked whether the
+// phase had already changed, which `enemyPhase` does for a dead HERO and never
+// did for a dead row. The fight then never resolved: a fresh hand against an
+// empty board, turn after turn, with no way on.
+s = rig('boxer', []);
+s.hero.status.thorns = 50;
+s.enemies.forEach(e => { e.intent = { id: 't', intent: 'attack', dmg: 1, shown: 1 }; });
+endTurn(s);
+check('a row that kills itself on the thorns still ends the fight',
+  s.enemies.every(e => !e.alive) && s.phase !== 'fight', `phase ${s.phase}`);
+
+// v39. The Boxer's mechanic returned him to par and never above it, and it did
+// not compound — thorns were re-bought every fight where the Cart's block
+// accumulates. Being struck deepens them now, so the round spent being hit is
+// the round they become worth having.
+s = rig('boxer', []);
+s.hero.status.thorns = 2;
+s.enemies.forEach(e => { e.intent = { id: 't', intent: 'attack', dmg: 3, shown: 3 }; });
+const hit = s.enemies.filter(e => e.alive).length;
+endTurn(s);
+check(`thorns grow on the blow they answer (2 + ${hit} hits = ${2 + hit})`,
+  s.hero.status.thorns === 2 + hit * RULES.thornsOnStruck);
+// It DEEPENS a mechanic rather than handing one out: no thorns, no growth.
+s = rig('boxer', []);
+s.enemies.forEach(e => { e.intent = { id: 't', intent: 'attack', dmg: 3, shown: 3 }; });
+endTurn(s);
+check('someone carrying none does not grow any', !s.hero.status.thorns);
+// 1 and not 2: measured at 400 seeds, 2 is strictly better for him on every
+// line and takes his best to 33%, near the top of the roster, which is a
+// different character rather than a fixed one. Same call as v28's buzz carry.
+check('the slope is one, not two', RULES.thornsOnStruck === 1);
+
 // v38. Eight cards for the two thinnest pools, and these three are the ones
 // that do something the character could not do before — the rest are numbers.
 // The Boxer's question is "take the hit to get paid", and `take_it` is the

@@ -1156,5 +1156,14 @@ export const RULES = {
   weak: 0.75,
   frail: 0.75,             // block gained ×0.75
   buzzCarry: 1 / 3,        // share of Buzz that survives the end of turn (v28 — measured; see engine.js endTurn)
+  // v39, and it is the Boxer's `buzzCarry`. Measured over 150 native runs a
+  // character, every other character deals 107-111 damage a fight; he deals 86
+  // and his thorns add 21.8, which lands him at 107.8 — his mechanic returns
+  // him to PAR and never above it, while arriving late and on whatever hit him
+  // rather than on what he chose. And it does not COMPOUND: the Cart wins
+  // because block-that-stays accumulates across a fight, while thorns are
+  // re-bought every time. So being struck now deepens them — take the hit, get
+  // harder to hit — which is his fiction and gives the resource a slope.
+  thornsOnStruck: 1,
 };
 

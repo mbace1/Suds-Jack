@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=38';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=39';
 
 // THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
 // and nothing else, so the ladder is a table in data.js rather than six
@@ -355,6 +355,15 @@ export function endTurn(state) {
   delete h.status.doubleNext;
   state.log.push({ t: 'endTurn' });
   enemyPhase(state);
+  // The row can DIE during its own phase — thorns answer every blow, so the
+  // last attacker can kill itself on the way in. `enemyPhase` sets the phase
+  // itself when the HERO goes down, which is why the guard below was enough
+  // for years and why nothing caught this: the win had no such site. Without
+  // the check the fight never resolves — a fresh hand is dealt against an
+  // empty board, turn after turn, and the run cannot go on. Found by v39,
+  // which made thorns big enough to reach it in ordinary play; the bug is
+  // older than the rule that exposed it.
+  checkFightOver(state);
   if (state.phase !== 'fight') return state;
   // Statuses tick down at the end of the round on both sides — except one an
   // enemy applied to the hero THIS round, which skips its first tick (Slay
@@ -545,6 +554,11 @@ function dealDamage(state, target, amount, extra = {}) {
       state.struck++;
       const attacker = state.enemies.find(e => e.uid === extra.from);
       if (state.hero.status.thorns && attacker?.alive) dealDamage(state, attacker, state.hero.status.thorns, { src: 'thorns', thorns: true });
+      // v39. Thorns grow on the blow they answer, so the round you spend being
+      // hit is the round they get worth having. Only for someone already
+      // carrying them — this deepens a mechanic, it does not hand one out.
+      if (state.hero.status.thorns && RULES.thornsOnStruck)
+        addStatus(state, state.hero, 'thorns', RULES.thornsOnStruck, 'thornsOnStruck');
     }
     if (target.hp <= 0 && state.phase !== 'lost') {
       state.phase = 'lost';

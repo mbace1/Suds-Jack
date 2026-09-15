@@ -7,6 +7,79 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v39 — 2026-09-15
+**The Boxer compounds: thorns grow on the blow they answer**
+
+v38 put four cards in his hands and moved nothing, so this version measured him
+instead of adding to him. Over 150 `native` runs a character, where the damage
+actually comes from:
+
+| character | damage a fight | thorns | thorns share | taken |
+|---|---|---|---|---|
+| drinker | 107.0 | 0.6 | 0.6% | 38.0 |
+| busker | 108.7 | 0.9 | 0.8% | 48.1 |
+| collector | 108.9 | 0.9 | 0.8% | 58.9 |
+| cart | 111.4 | 8.4 | 7.0% | 109.5 |
+| walker | 109.5 | 1.1 | 1.0% | 48.8 |
+| **boxer** | **86.0** | **21.8** | **20.3%** | 56.1 |
+
+**Every other character deals 107-111 a fight. He deals 86, and his thorns add
+21.8 — which lands him at 107.8.** His mechanic returns him to PAR and never
+above it, while arriving late and on whatever hit him rather than on what he
+chose. Two guesses died on the way and are worth recording so nobody re-checks
+them: thorns fire correctly (5 back from each of three attackers), and BLOCK
+DOES NOT SUPPRESS THEM, so his two halves were never fighting each other.
+
+What was missing is a SLOPE. The Cart wins because block-that-stays accumulates
+across a fight; thorns were re-bought every time. `RULES.thornsOnStruck = 1`
+gives them one: being struck deepens them, so the round spent being hit is the
+round they become worth having — his fiction, and the same shape as v28's buzz
+carry. It is gated on already HAVING thorns, so it deepens a mechanic rather
+than handing one out.
+
+**Measured at 400 seeds a cell against the v38 control**, boxer's column:
+
+| bot | v38 | thornsOnStruck 1 | (swept) 2 |
+|---|---|---|---|
+| greedy | 12% | 15% | 17% |
+| defensive | **14%** | **26%** | 33% |
+| synergist | 13% | 16% | 20% |
+| native | 14% | 16% | 18% |
+
+**+12 points on `defensive`, three times the ±4 floor**, and it lands where the
+design says it should: the line that blocks and survives takes the most hits,
+which is what now compounds. His best line is no longer `native` at 14% but
+`defensive` at 26%, which takes him off the bottom of the roster — the Dog
+Walker is last now, at 20%.
+
+**1 and not 2, and that was swept rather than picked.** 2 is strictly better
+for him on every line and takes his best to 33%, near the top against cart 38
+and busker 33 — a different character rather than a fixed one, and a snowball
+(+24 thorns a fight) rather than a slope. Same call as v28's "⅓ not ½".
+
+Left open rather than papered over: **`native`'s boxer policy is now wrong for
+him.** It says "block only what would actually kill, and let the rest land",
+which was right when thorns did not compound and is not right now — which is
+why his hand-written line (16%) trails the generic defensive one (26%). The
+mean across all six characters moves 25% → 26%, inside the floor, so this is a
+fix for one character and is not claimed as more.
+
+**And the act walk found a SOFTLOCK that is older than the rule which exposed
+it.** The row can die during its OWN phase — thorns answer every blow, so the
+last attacker can kill itself coming in — and `endTurn` only asked whether the
+phase had already changed. `enemyPhase` does that itself for a dead HERO, which
+is why the guard was enough for years: there was no equivalent site for a dead
+ROW. The fight then never resolved. A fresh hand was dealt against an empty
+board, turn after turn, with no way on. Thorns could always kill an attacker on
+the way in; v39 only made them big enough to reach it in ordinary play. One
+line — `checkFightOver` after `enemyPhase` — and it is gated.
+
+Worth naming: `core.mjs` and `smoke.cjs` both passed straight over it. The
+whole-act walk is what caught it, which is the argument for running the slow
+gate before committing rather than after.
+
+Gates: `core.mjs` 807 (four new), `smoke.cjs` 142, `player-flow.cjs` both.
+
 ## v38 — 2026-09-15
 **Eight cards for the two thinnest pools, and they bought variety rather than power**
 
