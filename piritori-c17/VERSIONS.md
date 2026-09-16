@@ -1,9 +1,6 @@
-# C.16.1 — Night Shift crew pilot
+# C.17 — The Crew Matters
 
-Source: b3e028147094e5d47cc36c472201f633fcadc1e0.
+Source merge: 0b4a2753fb6a4418254dadb945fd4c9b4597700f.
+Tested source head: e330ee9052a9fab2bbe7d074493ce6484a4a40cf.
 
-Controller navigation continues in static planning screens, equipment dialogs and the crew drawer. Exact source bytes and renewed module URLs repair the C.16 cache transition. Wet Courtyard surfaces, reflections and gun camera retained. 2/6/12-person neutral fixtures; campaign rules and character gates unchanged. Pixel/iPad acceptance remains pending.
-
-## Port
-
-Godot: reproduce C.16.1 wet surfaces, shoulder-side gun composition, preview/confirm/cancel, reduced-motion behavior and exact planning-view return. Preserve C.12 vectors; invalidate projected labels on camera, actor, text or viewport changes. Campaign keeps its authored resolver.
+Campaign crew identity, deployment preference, aptitudes, perks, learned skills and supported authored weapons can enter Night Shift. Strength and Toughness affect the tactical resolver. Aftermath writes new wounds, recovery, missing state and deployed fight growth back exactly once. Existing injuries are never healed merely for surviving the pilot. C.16.1 cameras, wet courtyard and extraction loop remain the presentation baseline. Procedural development stand-ins remain temporary; physical Pixel/iPad and final-art acceptance are still open.
