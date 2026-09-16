@@ -1,0 +1,116 @@
+name: Stage Piritori C17.1
+
+on:
+  push:
+    branches: [release/piritori-c171-mobile-webgl]
+    paths: ['.github/workflows/stage-piritori-c171.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  stage:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/piritori-c171-mobile-webgl
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: mbace1/piritori-eden
+          ref: dbcc74d98f8f61cb7298123fd2c828c84b737eb2
+          path: source
+      - name: Package exact C.17.1 source and renew hub pointers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp source/web/crew-run/index.html piritori-c17/web/crew-run/index.html
+          cp source/web/crew-run/startup.js piritori-c17/web/crew-run/startup.js
+
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+
+          def replace_once(path,old,new):
+              p=Path(path); data=p.read_bytes()
+              if data.count(old)!=1:
+                  raise SystemExit(f'{path}: expected exactly one {old!r}, found {data.count(old)}')
+              p.write_bytes(data.replace(old,new,1))
+
+          def replace_all_count(path,old,new,count):
+              p=Path(path); data=p.read_bytes()
+              if data.count(old)!=count:
+                  raise SystemExit(f'{path}: expected {count} {old!r}, found {data.count(old)}')
+              p.write_bytes(data.replace(old,new))
+
+          # Release landing page + notes.
+          p=Path('piritori-c17/index.html'); data=p.read_bytes()
+          data=data.replace(b'Piritori C.17',b'Piritori C.17.1').replace(b'release=17',b'release=17.1').replace(b'Open C.17',b'Open C.17.1')
+          p.write_bytes(data)
+
+          Path('piritori-c17/VERSIONS.md').write_text(
+              '# C.17.1 — Mobile WebGL startup recovery\n\n'
+              'Source merge: dbcc74d98f8f61cb7298123fd2c828c84b737eb2.\n'
+              'Tested source head: 8ba5cedcaf83c6a0036a7a896a2cbd573ff86e06.\n\n'
+              'Pixel testing exposed a WebGL context-creation failure before gameplay. C.17.1 adds a conservative WebGL2 preflight, two short retries and a visible Retry graphics action while leaving campaign, tactics, assets and character logic unchanged. C.17 remains the gameplay baseline.\n',
+              encoding='utf-8')
+
+          # Provenance receipt.
+          rp=Path('piritori-c17/release.json')
+          receipt=json.loads(rp.read_text(encoding='utf-8'))
+          receipt['build']='C.17.1'
+          receipt['source_commit']='dbcc74d98f8f61cb7298123fd2c828c84b737eb2'
+          receipt['tested_source_head']='8ba5cedcaf83c6a0036a7a896a2cbd573ff86e06'
+          receipt['entry']='web/crew-run/?campaign=1&release=17.1'
+          receipt['status']='campaign-crew-bridge-mobile-webgl-retry'
+          transforms=list(receipt.get('transforms',[]))
+          extra='C.17.1 mobile WebGL2 preflight/retry bootstrap; no gameplay-rule changes'
+          if extra not in transforms: transforms.append(extra)
+          receipt['transforms']=transforms
+          hashes=receipt.setdefault('sha256',{})
+          for rel in ['web/crew-run/index.html','web/crew-run/startup.js','index.html','VERSIONS.md']:
+              hashes[rel]=hashlib.sha256((Path('piritori-c17')/rel).read_bytes()).hexdigest()
+          rp.write_text(json.dumps(receipt,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+
+          # C.17.1 hub card; Option C/C.08 is already absent on this branch.
+          replace_once('hub/games.js',b'PIRITORI \xc2\xb7 NIGHT SHIFT C.17',b'PIRITORI \xc2\xb7 NIGHT SHIFT C.17.1')
+          replace_once('hub/games.js',b'piritori-c17/web/crew-run/?campaign=1&release=17',b'piritori-c17/web/crew-run/?campaign=1&release=17.1')
+          replace_all_count('hub/games.js',b'C.17 \xe2\x80\x94',b'C.17.1 \xe2\x80\x94',3)
+
+          # Explicit nested-cabinet version; preserve file formatting.
+          p=Path('hub/versions.json'); data=p.read_bytes(); nl=b'\r\n' if b'\r\n' in data else b'\n'
+          start=data.find(nl+b'  "optionc-lab": {')
+          end=data.find(nl+b'  }',start)
+          if start<0 or end<0: raise SystemExit('optionc-lab version block not found')
+          end += len(nl+b'  }')
+          block=data[start:end]
+          block=block.replace(b'"v": "17"',b'"v": "17.1"').replace(b'"n": 17000',b'"n": 17001')
+          data=data[:start]+block+data[end:]
+          p.write_bytes(data)
+
+          # Renew immutable hub cache URLs one step beyond the C.08-removal branch.
+          replace_once('hub/hub.js',b'./games.js?v=99',b'./games.js?v=100')
+          replace_once('hub/hub-entry.js',b'./hub.js?v=104',b'./hub.js?v=105')
+          replace_once('index.html',b'hub/hub-entry.js?v=27',b'hub/hub-entry.js?v=28')
+          replace_once('index.html',b'./hub/hub.js?v=104',b'./hub/hub.js?v=105')
+          replace_once('AnotherHUB/index.html',b'hub/hub-entry.js?v=27',b'hub/hub-entry.js?v=28')
+          replace_once('AnotherHUB/index.html',b'./hub/hub.js?v=104',b'./hub/hub.js?v=105')
+          replace_once('sw.js',b"const VERSION = 'v96'",b"const VERSION = 'v97'")
+          replace_once('sw.js',b'./hub/games.js?v=99',b'./hub/games.js?v=100')
+          replace_once('sw.js',b'./hub/hub-entry.js?v=27',b'./hub/hub-entry.js?v=28')
+          replace_once('sw.js',b'./hub/hub.js?v=104',b'./hub/hub.js?v=105')
+          PY
+
+          grep -Fq 'NIGHT SHIFT C.17.1' piritori-c17/web/crew-run/index.html
+          grep -Fq 'getContext' piritori-c17/web/crew-run/startup.js
+          grep -Fq '"build": "C.17.1"' piritori-c17/release.json
+          ! grep -Fq "id: 'optionc'," hub/games.js
+
+          rm -rf source .github/workflows/stage-piritori-c171.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'Piritori C.17.1: mobile WebGL startup recovery'
+          git push origin HEAD:release/piritori-c171-mobile-webgl
