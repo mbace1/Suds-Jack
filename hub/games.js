@@ -28,25 +28,14 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.17', status: 'active',
-    path: 'piritori-c17/web/crew-run/?campaign=1&release=17', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
+    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.17.1', status: 'active',
+    path: 'piritori-c17/web/crew-run/?campaign=1&release=17.1', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'Choose your crew. Bring someone home. Live with the aftermath.',
     lineage: 'Kallio 2003 · Dream Loop crew pilot', tags: ['3D', 'tactics', 'prototype'],
     controls: 'Choose 2–3 crew · Move + Act · Help / Extract · Aim view then confirm · drag camera',
-    note: 'C.17 — The Crew Matters: campaign crew identity/builds enter Night Shift; wounds, missing/recovery and fight growth write back exactly once. Strength/Toughness matter in combat. C.16.1 cameras and wet courtyard retained; procedural stand-ins remain temporary. Physical Pixel/iPad and final-art acceptance remain open.',
-    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.17 — Syvemmät ikkunat ja käytävät, kuluneet pinnat ja märän pihan heijastukset. Kolme kamerakulmaa. Erillinen prototyyppi, väliaikaiset hahmot.'},
-    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.17 — 窓と通路の奥行き、使い込まれた表面、雨の反射を更新。3種類のカメラ。仮キャラクターによる独立した試作です。'},
-  },
-  {
-    id: 'optionc', title: 'PIRITORI · BEAR PATH', status: 'active',
-    path: 'piritori-fighters/web/bear-path/?release=8r2', inRepo: true, accent: '#9aebc7', art: 'tacticsyard',
-    tagline: 'A park handover. Talk your way through—or hold the path.',
-    lineage: 'Kallio 2003 · Piritori encounter prototype',
-    tags: ['3D', 'tactics', 'story'],
-    controls: 'LOOK / TALK / USE / LEAVE · tap to move and fight · drag to orbit · FIT for overview',
-    note: 'C.08 — compare Ink & Stone / Cold Street in the same playable park. New bear and scenery; character rigs and campaign integration remain in progress.',
-    fi: {tagline:'Luovutus Karhupuistossa. Puhu tie auki tai pidä puolesi.', controls:'LOOK / TALK / USE / LEAVE · napauta: liiku ja taistele · vedä: käännä kameraa · FIT: yleiskuva', note:'C.08 — vertaa Ink & Stone- ja Cold Street -ilmeitä samassa puistossa. Uusi karhu ja ympäristö; hahmojen ja kampanjan työ jatkuu.'},
-    ja: {tagline:'公園での受け渡し。話し合うか、道を守るか。', controls:'LOOK / TALK / USE / LEAVE · タップで移動・戦闘 · ドラッグで回転 · FITで全景', note:'C.08 — 同じ公園で Ink & Stone と Cold Street を比較。熊像と環境を更新。キャラクターとキャンペーンは開発中。'},
+    note: 'C.17.1 — The Crew Matters: campaign crew identity/builds enter Night Shift; wounds, missing/recovery and fight growth write back exactly once. Strength/Toughness matter in combat. C.16.1 cameras and wet courtyard retained; procedural stand-ins remain temporary. Physical Pixel/iPad and final-art acceptance remain open.',
+    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.17.1 — Syvemmät ikkunat ja käytävät, kuluneet pinnat ja märän pihan heijastukset. Kolme kamerakulmaa. Erillinen prototyyppi, väliaikaiset hahmot.'},
+    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.17.1 — 窓と通路の奥行き、使い込まれた表面、雨の反射を更新。3種類のカメラ。仮キャラクターによる独立した試作です。'},
   },
   {
     id: 'concrete', title: 'CONCRETE', status: 'active', path: 'concrete/',

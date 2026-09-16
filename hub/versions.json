@@ -124,11 +124,6 @@
     "n": 3000,
     "from": "VERSIONS.md"
   },
-  "optionc": {
-    "v": "8",
-    "n": 8000,
-    "from": "C.08 Bear Path · two art directions"
-  },
   "neonronin": {
     "v": "2",
     "n": 2000,
@@ -150,8 +145,8 @@
     "from": "VERSIONS.md"
   },
   "optionc-lab": {
-    "v": "17",
-    "n": 17000,
+    "v": "17.1",
+    "n": 17001,
     "from": "VERSIONS.md"
   }
 }

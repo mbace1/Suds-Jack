@@ -1,24 +1,25 @@
 {
-  "build": "C.17",
+  "build": "C.17.1",
   "source_repository": "mbace1/piritori-eden",
-  "source_commit": "0b4a2753fb6a4418254dadb945fd4c9b4597700f",
-  "tested_source_head": "e330ee9052a9fab2bbe7d074493ce6484a4a40cf",
-  "entry": "web/crew-run/?campaign=1&release=17",
-  "status": "campaign-crew-bridge-pilot",
+  "source_commit": "dbcc74d98f8f61cb7298123fd2c828c84b737eb2",
+  "tested_source_head": "8ba5cedcaf83c6a0036a7a896a2cbd573ff86e06",
+  "entry": "web/crew-run/?campaign=1&release=17.1",
+  "status": "campaign-crew-bridge-mobile-webgl-retry",
   "character_provider": "procedural development stand-ins",
   "physical_devices_verified": false,
   "rollback_cabinet": "../piritori-c09/",
   "transforms": [
     "Isolated C.17 cabinet path; preserve C.16.1 cabinet as rollback",
-    "Preserve already-published runtime/art blobs except exact C.17 source overlays"
+    "Preserve already-published runtime/art blobs except exact C.17 source overlays",
+    "C.17.1 mobile WebGL2 preflight/retry bootstrap; no gameplay-rule changes"
   ],
   "sha256": {
-    "VERSIONS.md": "4b12fb6c0f798f74a31083dfdbb17ab74d4ff369cdbc30a44512e06e697f4691",
+    "VERSIONS.md": "10e482002c34b046fe0da779342f399d0b349253fcc4bcf1a58a6d99957a3a79",
     "art/v3/environment3d/bear-landmark-v01.glb": "fc3fc41681d5c7dbcec7a7471d75b248597412ffd8664cee2489db4a9b7240f1",
     "art/v3/environment3d/park-ground-study-v01.png": "ee1dfc3c2794a18bf48c15be1eef36aed48be7f9c999720f91b3e8ba1239e0e3",
     "art/v3/manifest.json": "dfce58c98aa133530d534d9d35cc259b6468e28a2fd1601c2fedd5abd9c11361",
     "content/era1-slice-v1.json": "a1d94ef8c6561be062ec96b53559a6fa633b3e4e1a2f159d944f59206a3fbdee",
-    "index.html": "70e6a31492bb99c8a7a4d0bd48f15e2ee7e925d50c061ee7c1e137e0f7648302",
+    "index.html": "4cb29bc68d5aaec45e1ae30faff06316df51d3fe2fb5f19a978bd9feb5f8edb6",
     "market/model.mjs": "6d367dbefb38a8a5667ba0d57d557b2722b9ff6aaa198aabcebc0a2b274ba563",
     "people/hiring.mjs": "45f7388605cb0efcea379033896bd4a8fca06fcdefeca0444c95350f2763f997",
     "people/roster.mjs": "62a0394348455a38c99806c11480e701cf3d5e0428706e0e87aa3d0d8f57aa2b",
@@ -41,7 +42,7 @@
     "web/crew-run/fonts/BarlowCondensed-SemiBold.ttf": "7b619d14bc2327509a9ef32b0890f709626f7ecc9ff61191c2a4314c5499d2d9",
     "web/crew-run/fonts/OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
     "web/crew-run/icons.js": "31c6dc63d30270117e7b573de0c50989770348475d5e3b2d37d569dde9bf70fc",
-    "web/crew-run/index.html": "978536657d7bcd78355d1e31ccad6d4df5e85d1afa7460b44af5db2c0f87156a",
+    "web/crew-run/index.html": "948cbe9a2a70329e21cc7a04dd9d48318780c3c884678ef98f927aa6e2e81bbd",
     "web/crew-run/locations.js": "9d2e140e2f64024b146f29a44382d3883ce4af12f3585097078d7ba065927f43",
     "web/crew-run/portraits.js": "d5e96df1cb31bdc4447f8f9fb1907a35146e723259b7607eab3accd202c210e5",
     "web/crew-run/run.js": "8064cd160ed4c941da80172fbfc0b3ad2eb72bd1e6c3c3f0a6fedec1e2251f66",
@@ -72,6 +73,7 @@
     "web/vendor/jsm/loaders/GLTFLoader.js": "1050864a94eeac64651c3b11b6e41e3a610bdef172f360a9d5a73c4494798756",
     "web/vendor/jsm/shaders/FXAAShader.js": "33dfba55320397897590f334ac85656c65c92368afba399d66d7272dce6cb88e",
     "web/vendor/jsm/utils/BufferGeometryUtils.js": "c25b7930e570e9ec56173cd3b866ec8d2e10016630db3937efb439daf1cedbf6",
-    "web/vendor/three.module.min.js": "54a7a52ddce0ad06fbd1d021fd03b1e1812d946114a2111e1260bcd490c6b840"
+    "web/vendor/three.module.min.js": "54a7a52ddce0ad06fbd1d021fd03b1e1812d946114a2111e1260bcd490c6b840",
+    "web/crew-run/startup.js": "ab136a6f734e734f9813ca46684bcfb4f75ce3e45a06b9b4527ba47bc90f1ef4"
   }
 }

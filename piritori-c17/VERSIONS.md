@@ -1,6 +1,6 @@
-# C.17 — The Crew Matters
+# C.17.1 — Mobile WebGL startup recovery
 
-Source merge: 0b4a2753fb6a4418254dadb945fd4c9b4597700f.
-Tested source head: e330ee9052a9fab2bbe7d074493ce6484a4a40cf.
+Source merge: dbcc74d98f8f61cb7298123fd2c828c84b737eb2.
+Tested source head: 8ba5cedcaf83c6a0036a7a896a2cbd573ff86e06.
 
-Campaign crew identity, deployment preference, aptitudes, perks, learned skills and supported authored weapons can enter Night Shift. Strength and Toughness affect the tactical resolver. Aftermath writes new wounds, recovery, missing state and deployed fight growth back exactly once. Existing injuries are never healed merely for surviving the pilot. C.16.1 cameras, wet courtyard and extraction loop remain the presentation baseline. Procedural development stand-ins remain temporary; physical Pixel/iPad and final-art acceptance are still open.
+Pixel testing exposed a WebGL context-creation failure before gameplay. C.17.1 adds a conservative WebGL2 preflight, two short retries and a visible Retry graphics action while leaving campaign, tactics, assets and character logic unchanged. C.17 remains the gameplay baseline.
