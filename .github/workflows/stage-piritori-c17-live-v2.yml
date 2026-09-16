@@ -1,0 +1,87 @@
+name: Stage Piritori C17 Live v2
+
+on:
+  push:
+    branches: [deploy/piritori-c17-live]
+    paths: ['.github/workflows/stage-piritori-c17-live-v2.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  stage-live:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: deploy/piritori-c17-live
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-src
+      - name: Overlay C.17 without disturbing live-only work
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIVE_BASE=8e47da2888a1cac0cf7c68092bde837c32b9c94d
+          test "$(git merge-base HEAD origin/gh-pages)" = "$LIVE_BASE"
+          test "$(git rev-parse origin/gh-pages)" = "$LIVE_BASE"
+          test -f main-src/piritori-c17/release.json
+          rm -rf piritori-c17
+          cp -a main-src/piritori-c17 piritori-c17
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          def replace_exact(path, old, new):
+              p=Path(path); b=p.read_bytes(); a=old.encode(); c=new.encode()
+              n=b.count(a)
+              if n != 1:
+                  raise SystemExit(f'{path}: expected exactly one {old!r}, found {n}')
+              p.write_bytes(b.replace(a,c))
+
+          replace_exact('hub/games.js','PIRITORI · NIGHT SHIFT C.16.1','PIRITORI · NIGHT SHIFT C.17')
+          replace_exact('hub/games.js','piritori-c09/web/crew-run/?release=16.1','piritori-c17/web/crew-run/?campaign=1&release=17')
+          replace_exact('hub/games.js',
+            'C.16.1 — Recessed windows and passages, worn surfaces and bounded wet reflections. Controller navigation restored in crew menus; graphics recovery retained. VIEW offers Tactical / Oblique / Overhead. Persistent crew outings; temporary stand-ins. Physical Pixel/iPad and final-art acceptance remain open.',
+            'C.17 — The Crew Matters: campaign crew identity/builds enter Night Shift; wounds, missing/recovery and fight growth write back exactly once. Strength/Toughness matter in combat. C.16.1 cameras and wet courtyard retained; procedural stand-ins remain temporary. Physical Pixel/iPad and final-art acceptance remain open.')
+          replace_exact('hub/games.js','C.16.1 — Syvemmät','C.17 — Syvemmät')
+          replace_exact('hub/games.js','C.16.1 — 窓','C.17 — 窓')
+
+          vp=Path('hub/versions.json'); versions=json.loads(vp.read_text(encoding='utf-8'))
+          versions['optionc-lab']={'v':'17','n':17000,'from':'VERSIONS.md'}
+          vp.write_text(json.dumps(versions,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+
+          replace_exact('hub/hub.js','./games.js?v=96','./games.js?v=98')
+          replace_exact('hub/hub-entry.js','./hub.js?v=101','./hub.js?v=103')
+          replace_exact('index.html','hub/hub-entry.js?v=24','hub/hub-entry.js?v=26')
+          replace_exact('index.html','./hub/hub.js?v=101','./hub/hub.js?v=103')
+
+          replace_exact('sw.js',"const VERSION = 'v93'","const VERSION = 'v95'")
+          replace_exact('sw.js','./hub/games.js?v=96','./hub/games.js?v=98')
+          replace_exact('sw.js','./hub/hub-entry.js?v=24','./hub/hub-entry.js?v=26')
+          replace_exact('sw.js','./hub/hub.js?v=101','./hub/hub.js?v=103')
+
+          root=Path('index.html').read_text(encoding='utf-8')
+          base='  <!-- the short URL: /Suds-Jack/AnotherHUB. Same page, one level down, so\n       everything it links to is resolved against the site root instead. -->\n  <base href="../" />\n'
+          if '<base href="../" />' in root:
+              raise SystemExit('root index unexpectedly already has short-url base')
+          short=root.replace('<head>\n','<head>\n'+base,1)
+          Path('AnotherHUB/index.html').write_text(short,encoding='utf-8')
+          PY
+
+          grep -q '"build": "C.17"' piritori-c17/release.json
+          grep -q '0b4a2753fb6a4418254dadb945fd4c9b4597700f' piritori-c17/release.json
+          grep -q 'e330ee9052a9fab2bbe7d074493ce6484a4a40cf' piritori-c17/release.json
+          grep -Fq 'piritori-c17/web/crew-run/?campaign=1&release=17' hub/games.js
+
+          rm -rf main-src
+          rm -f .github/workflows/stage-piritori-c17-live.yml .github/workflows/stage-piritori-c17-live-v2.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'Release Piritori C.17 on current live hub'
+          git push origin HEAD:deploy/piritori-c17-live
