@@ -45,7 +45,6 @@ jobs:
                   raise SystemExit(f'{path}: expected {count} {old!r}, found {data.count(old)}')
               p.write_bytes(data.replace(old,new))
 
-          # Release landing page + notes.
           p=Path('piritori-c17/index.html'); data=p.read_bytes()
           data=data.replace(b'Piritori C.17',b'Piritori C.17.1').replace(b'release=17',b'release=17.1').replace(b'Open C.17',b'Open C.17.1')
           p.write_bytes(data)
@@ -57,7 +56,6 @@ jobs:
               'Pixel testing exposed a WebGL context-creation failure before gameplay. C.17.1 adds a conservative WebGL2 preflight, two short retries and a visible Retry graphics action while leaving campaign, tactics, assets and character logic unchanged. C.17 remains the gameplay baseline.\n',
               encoding='utf-8')
 
-          # Provenance receipt.
           rp=Path('piritori-c17/release.json')
           receipt=json.loads(rp.read_text(encoding='utf-8'))
           receipt['build']='C.17.1'
@@ -74,12 +72,10 @@ jobs:
               hashes[rel]=hashlib.sha256((Path('piritori-c17')/rel).read_bytes()).hexdigest()
           rp.write_text(json.dumps(receipt,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
 
-          # C.17.1 hub card; Option C/C.08 is already absent on this branch.
           replace_once('hub/games.js',b'PIRITORI \xc2\xb7 NIGHT SHIFT C.17',b'PIRITORI \xc2\xb7 NIGHT SHIFT C.17.1')
           replace_once('hub/games.js',b'piritori-c17/web/crew-run/?campaign=1&release=17',b'piritori-c17/web/crew-run/?campaign=1&release=17.1')
           replace_all_count('hub/games.js',b'C.17 \xe2\x80\x94',b'C.17.1 \xe2\x80\x94',3)
 
-          # Explicit nested-cabinet version; preserve file formatting.
           p=Path('hub/versions.json'); data=p.read_bytes(); nl=b'\r\n' if b'\r\n' in data else b'\n'
           start=data.find(nl+b'  "optionc-lab": {')
           end=data.find(nl+b'  }',start)
@@ -90,7 +86,6 @@ jobs:
           data=data[:start]+block+data[end:]
           p.write_bytes(data)
 
-          # Renew immutable hub cache URLs one step beyond the C.08-removal branch.
           replace_once('hub/hub.js',b'./games.js?v=99',b'./games.js?v=100')
           replace_once('hub/hub-entry.js',b'./hub.js?v=104',b'./hub.js?v=105')
           replace_once('index.html',b'hub/hub-entry.js?v=27',b'hub/hub-entry.js?v=28')
@@ -103,7 +98,7 @@ jobs:
           replace_once('sw.js',b'./hub/hub.js?v=104',b'./hub/hub.js?v=105')
           PY
 
-          grep -Fq 'NIGHT SHIFT C.17.1' piritori-c17/web/crew-run/index.html
+          grep -Fq '<span>C.17.1</span>' piritori-c17/web/crew-run/index.html
           grep -Fq 'getContext' piritori-c17/web/crew-run/startup.js
           grep -Fq '"build": "C.17.1"' piritori-c17/release.json
           ! grep -Fq "id: 'optionc'," hub/games.js
