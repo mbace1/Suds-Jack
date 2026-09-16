@@ -7,348 +7,90 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v249 — 2026-09-16
-**The white screen was the GPU taking the context back — found, and now survived** *(five releases of guessing ended by one screenshot)*
-- **The owner's phone finally printed it**, thanks to v248's on-screen handler:
-  `WEBGL CONTEXT LOST @ v248 gl … dpr=2.00 … enemies=8 t=5`. Not a shader bug,
-  not a NaN, not Rush. **Android was reclaiming the WebGL context about five
-  seconds in**, three.js restored it, and it went again — *"black, then back,
-  then white"* is exactly that cycle, and *"couldn't get the game to start
-  after"* is what a never-restored context looks like
-- **Why it ran out of memory.** A 1080×2400 phone at `devicePixelRatio` 2
-  backs the canvas with 2.6 Mpx; `antialias: true` adds a 4× MSAA target
-  (~41 MB), plus depth, a 1024² shadow map and the transmission pass's own
-  target. That is a lot to hold on a device also running a browser, and the
-  system takes it back. **The budget is in PIXELS now, not in
-  devicePixelRatio** (`PIXEL_BUDGET` 2.0 Mpx): a phone at dpr 2 and at dpr 1.4
-  look the same at arm's length, and one of them keeps its context
-- **A loss now makes the next attempt cheaper, and is REMEMBERED.** Restoring
-  and then asking for the same memory again is how the cycle sustains itself.
-  Each loss ratchets down one step — dpr ceiling 2 → 1.5 → 1.25 → 1, MSAA off
-  after the first, the shadow map after the second, transmission after the
-  third — and the count is persisted, because **memory does not improve on a
-  refresh**. The ratchet is applied at BOOT as well as on restore, which a
-  first cut got wrong: it reloaded and immediately asked for the shadow map
-  and the transmission pass all over again
-- **`preventDefault()` on `webglcontextlost` is the line that matters most.**
-  Without it the browser never offers the context back at all — which is why
-  this looked permanent rather than intermittent. It has been missing since
-  the game was written
-- On restore every material is marked for recompile and the shadow map
-  invalidated; a restored context has no compiled programs, and that is the
-  WHITE half of the owner's black-then-white
-- `sun.castShadow` is now gated on the loss count too — `applyPerfMode()` runs
-  at boot and was turning it back on for a device that had already said no
-  twice. The shadow map stayed unrendered, but the two flags disagreed
-- RESET in the pause menu clears the ratchet: a device that lost the context
-  once on a bad day must not be pinned at dpr 1 forever
-- **Measured, on an emulated dpr-2 phone:** three forced losses walk
-  2 → 1.5 → 1.25 → 1 with shadows and transmission dropping on cue, the state
-  survives a reload unchanged, and the game keeps playing throughout
-- **What was wrong on the way, recorded because it cost days:** v242's
-  half-float overflow is a real bug but `FLOOR_FRAG` declares
-  `precision highp float`, so it was never the classic path's fault; v244's
-  detector bailed on a lost context and so was silent by construction; and
-  v244–v248 all gated the watch on `IS_GPU`, so the WEBGPU build was never
-  watched at all. The readback is renderer-agnostic now (a 1×1 2D canvas) and
-  runs in the same tick as the render, because the drawing buffer is cleared
-  once composited
-- Gates: `smoke` · `cabinets` · `webgpu-smoke` · `level-smoke` ×3 ·
-  `editor-smoke` 27 · `level-check` 74 · `shader-lint` 3 · `arena-check`
-  8,396 · `crowd-check` 12
-- Cache-bust `?v=201` → `?v=202`; HUD label → v249
+## v250 — 2026-09-16
+**The zoom was v247 dollying the camera in on phones; v249's memory budget never bound on the phone it was written for** *(and the version is on the title screen now, so a bug report can name its own build)*
+- **"Zooms in weirdly" — found, and it was not the context loss.** Measured on
+  a 412×790 portrait viewport: `camera.position.y` creeps from the rest 27.0
+  down to **19.6 over about twenty seconds of play**, then keeps drifting. That
+  is v247's framing dolly ("the camera frames the fight, not the floor")
+  running in PORTRAIT. It arrives too slowly to read as a camera move — it just
+  leaves the arena looking wrong, which is exactly how it was reported.
+- **Why portrait is the wrong place for it.** Portrait's rest framing is
+  hand-tuned and **already crops the corners**: at rest the near corners sit at
+  **1.65×** the horizontal frustum and 1.23× the vertical. Dollying in from
+  there hides the side walls of a *fixed-screen* arena shooter — you stop being
+  able to see where the next body will arrive. `ARENA_PRESETS` has said
+  *"Portrait keeps its fixed framing"* since v111; v247 quietly broke that
+  invariant. `framingAllowed()` now requires `landscapeMode`. Verified both
+  ways: portrait holds 27.0 flat across a 30 s run, landscape still dollies
+  20.5 → 13.8, so the v247 feature is untouched where it was designed and tuned.
+- **v249's pixel budget did nothing.** It capped the backing store at 2.0 Mpx
+  and called it a fix. The owner's phone is **412×790 CSS px**: at `dpr` 2 that
+  is **1.3 Mpx — already under the budget**, so the cap computed 2.48,
+  `Math.min` picked 2, and the game asked for exactly what it had asked for
+  before. Confirmed by measuring the canvas: v249 backs **824×1580**, v250 backs
+  **618×1185**. *Writing a limit is not the same as writing a limit that binds.*
+- **The memory was never mostly in the colour buffer — it is in MSAA.**
+  `antialias: true` costs 4× the colour buffer **and** 4× depth:
 
----
+  | | |
+  |---|---|
+  | dpr 2.0, antialias on | **~54 MB** ← what it was asking for |
+  | dpr 2.0, antialias off | ~17 MB |
+  | dpr 1.5, antialias off | **~13 MB** ← what a phone gets now |
 
-## v248 — 2026-09-16
-**The white-out narrows itself — the game walks a ladder of suspects and names the one that brings the picture back** *(fourth owner report, now with a timing: "after 3 secs of game")*
-- **v244's detector shipped, survived into v247, and reported nothing — and
-  the reason is a blind spot in it.** It bailed the instant
-  `gl.isContextLost()` was true, so if the fault IS a lost context — the case
-  that best explains "60 FPS, HUD fine, whole scene white, stays broken" — the
-  detector was **silent by construction**. Context loss now prints itself ON
-  SCREEN, not to a console nobody can open on a phone
-- **AUTO-BISECT.** When the picture goes white the game stops describing the
-  fault and starts narrowing it: one suspect disabled every half second, the
-  pixel re-read after each — **shadows → transmission → the floor → fog →
-  pixel ratio → tone mapping → the retro pass**. The first that brings the
-  picture back is named on screen and the game **keeps playing with it off**.
-  Every rung is something a phone GPU is known to fail at and every one is
-  survivable, which is what makes healing safe rather than a mask. If none of
-  them work it says so — and that is an answer too: it is none of these, and
-  the next release looks elsewhere
-- **Why a ladder instead of a fourth guess.** Two diagnoses have been wrong
-  already. v242's half-float overflow was real but `FLOOR_FRAG` declares
-  `precision highp float`, so it was never the classic path's bug; v244's
-  detector had the hole above. The owner's screenshots carry a tell worth more
-  than any of my theories: **the bullets render in correct colour while
-  everything else is white**, which is not a floor-shader NaN. Another guess
-  costs another release and another day of a game that cannot be played
-- The line carries `trans=` and `enemies=` — transmission is the term
-  `perfMode` exists to switch off, and "after 3 seconds" is about when the
-  first bodies arrive
-- **Not a fix, and not claimed as one.** It is a way to get the answer in one
-  run instead of one release
-- Gates: `smoke` · `cabinets` · `webgpu-smoke` · `level-smoke` ×3 ·
-  `editor-smoke` 27 · `level-check` 74 · `shader-lint` 3 · `arena-check`
-  8,396; and the bisect itself falsified — silent through normal play, and
-  against a deliberately whitened floor it names the rung that clears it
-- Cache-bust `?v=200` → `?v=201`; HUD label → v248
+  A small screen now starts a rung lower (`_smallScreen` → dpr ladder
+  `1.5 / 1.25 / 1 / 1`; desktop keeps `2 / 1.5 / 1.25 / 1`) and **never turns
+  MSAA on at all** — confirmed at the context, not just the intent
+  (`getContextAttributes().antialias === false`). `_smallScreen` is
+  deliberately generous (`maxTouchPoints`, or a short edge ≤ 820): capping a
+  narrow desktop window costs nothing, missing a phone costs the context.
+- **One resize path.** v249's `webglcontextrestored` handler hand-rolled a
+  *partial* copy of `resize()` — pixel ratio and drawing-buffer size, but not
+  `camera.aspect`, not the retro render target, not the UI canvas. It calls
+  **`resize()`** now. Stated honestly: this was **not** the zoom (a lose/restore
+  cycle leaves aspect, fov and camera distance bit-identical), it is a
+  duplication removed before it becomes one.
+- **The version is on the title screen**, which is what was asked for. One
+  `GAME_VERSION` constant feeds the HUD label, the on-screen diagnostic line
+  and the title, so they cannot drift. The title reads e.g.
+  `v250 · dpr 1.25 · GPU RESETS 1`.
+  **It reports state, not intent, and this took two tries:** the first cut read
+  `renderer.getPixelRatio()` while building the title and printed `dpr 2.00` on
+  a phone whose backing store was already 1.5, because the title is built
+  before the boot `resize()` applies the budget. It now measures the **drawing
+  buffer against the CSS box** and is refreshed from `resize()`, so it tracks
+  rotation and every rung of the ratchet. A diagnostic that reports the intent
+  is worse than none — five of the last six releases were spent unsure which
+  build a screenshot was of.
+- `scripts/bump-version.sh` follows `^const GAME_VERSION` now, instead of the
+  `fillText('vN'` literal it used to rewrite — that literal is gone, and a bump
+  that silently matches nothing is worse than one that fails.
+- Cache-bust `?v=202` → `?v=203`; HUD label → v250
 
----
-
-## v247 — 2026-09-12
-**The camera frames the fight, not the floor** *(the last open finding of the LOOK pass)*
-- **What was wrong.** The classic arena is fitted to the screen edge to
-  edge and the fight is a small patch in the middle of a large dark floor —
-  on a phone, four cubes and the player were a fifth of the height of the
-  screen with black round them. A fixed-screen arena shooter keeps the
-  whole arena in view so a spawn on the rim is never a surprise, and that
-  rule is KEPT: the rim is part of the frame whenever a spawn is pending
-- **`js/framing.js`** (pure, no three.js): the things that matter are the
-  player, the live bodies and the enemy bullets; the camera dollies in along
-  its own view ray until that set (plus `margin`) fills the frame, never
-  closer than `dollyMax` of the rest distance, never further than rest. The
-  look point slides toward the set's centre in proportion to how far in the
-  camera has come, so at full-out the view IS the fixed one it always was —
-  nothing drifts on the title, and the player alone frames nothing. Coming
-  OUT (a spawn is arriving) eases at 5/s; coming IN at 2/s: out is urgent,
-  in is a mood. Shake rides on top as before
-- **Where it is OFF, on purpose:** REDUCE MOTION, every cabinet, SMASH TV,
-  authored levels (`arenaOverride`) and scrolling arenas (`arenaScale > 1`),
-  which keep the cameras they were designed around. `TUNING.camera.framing`
-  is the kill switch
-- Judged on a 480×800 portrait viewport, framing on against off at 3, 8 and
-  14 s of a real run, and in the FLIT school loop: the fight fills the
-  screen and every body is twice the size, with the arena's far edge still
-  in view. Rest 36.1 → 26.6 by the fourteenth second
-- **Gate: `scripts/framing-check.mjs`** (bare node, 19 checks, both
-  aspects): corners on every rim → the fixed view; a tight fight → the dolly
-  floor and no further, every point inside the frustum margins; a fight in
-  a corner is looked at and stays in frame; a pending spawn → the full
-  arena; the player alone → rest; disabled → rest; the ease is monotone and
-  coming out reaches 90% of rest inside half a second; deterministic
-- `sw.js` precaches `framing.js`
-- Gates: `check-syntax` · `framing-check` 19 · `crowd-check` 12 ·
-  `arena-check` 8396 · `level-check` 74 · `smoke` · `webgpu-smoke` ·
-  `cabinets`
-- Cache-bust `?v=198` → `?v=199`; HUD label → v247
-
----
-
-## v246 — 2026-09-11
-**A contrast floor: no body darker than the ground it stands on** *(roadmap-v2 art priority 4, silhouette & readability — the first pass of it)*
-- **Found by looking.** The LOOK pass named the dark enemy as the
-  lowest-contrast thing on screen. Ranking every CFG colour by linear
-  luminance against the floor's base (0.085) put four bodies AT or BELOW it
-  — THUG 0.050, WRAITH 0.059, WEEVA 0.085, FLIT 0.087 — and FLIT is also the
-  smallest body in the game (radius 0.3). A hole, not a body
-- **`TUNING.material.contrast`** — `minLum` 0.16 is the readable floor. Two
-  treatments, both keyed to how far UNDER it a body's own colour sits, so a
-  bright body gets nothing: a fresnel **RIM** in the body's own hue lifted
-  toward white (`rim` 2.2, `rimPow` 2 — wide, not a hairline; at 20 px on
-  screen a hairline is nothing), and a value **LIFT** of the base colour
-  toward minLum (`lift` 0.6 — a full lift turned WRAITH into a muddy mauve
-  that had stopped being WRAITH; the rim keeps the middle dark and lights
-  the edge, which is what a silhouette is)
-- Rendered five ways in a staged lab (control, rim ×2, lift, both) and
-  judged at 2× before choosing; then confirmed in the FLIT loops, where a
-  dark dot is now a small lit body. Both render paths carry the same term
-  (classic GLSL in `makeSatinMat`, the TSL emissive graph in
-  `applyGooNodes`); `applySatinValues` keeps `uRim` live under the
-  pause-menu sliders; `mat.userData.baseLum` remembers the pre-lift value
-- Gates: `check-syntax` · `crowd-check` 12 · `arena-check` 8396 ·
-  `level-check` 74 · `smoke` · `webgpu-smoke`
-- Cache-bust `?v=197` → `?v=198`; HUD label → v246
-
----
-
-## v245 — 2026-09-10
-**The swarm arrives as a fan, not a pile** *(owner: "fix the swarm clumping")*
-- **Found by looking, not by a gate.** Motion loops decoded to frames showed
-  nine FLITs ending as ONE body's width of overlapping gel on the player —
-  which one was charging and which was circling was unreadable at exactly
-  the range where it matters. The engine's crowd solver only ever answered
-  overlap after the fact, and every frame the pursuit closed the gap it had
-  just opened
-- **`js/crowd.js`** takes the solver out of `main.js` (the inline pass is
-  gone; `resolveCrowd()` is called where it stood) and adds two terms over
-  the unchanged hard RESOLVE: a **following distance** — the body BEHIND,
-  when it is actually closing on the target, is held off the body ahead at
-  up to `push` u/s fading to nothing at `comfort` × contact — and a
-  **slide**, the body behind flowing round the body ahead along the pair's
-  tangent toward the target's side, which turns a queue from one door into
-  a fan round the player. Holders, turrets and circling bosses are never
-  held back (they are not tailgating anyone); a boss never yields
-- **The number that moved the picture was `pad`, 0.25 → 0.6.** A swarm that
-  bites ENDS packed on you whatever the approach looked like; whether that
-  pack reads as bodies or as one mass is the air between them. Two cuts of
-  clever forces changed the pile's size by nothing measurable (a ring of
-  side-by-side bodies only pushes along the ring, never out of it); the
-  contact distance changed it by a third. Nine still reach the player; four
-  can bite at once instead of five
-- **Gate: `scripts/crowd-check.mjs`** (bare node, 12 checks): the hard
-  resolve is byte-for-byte the inline solver it replaced; nine bodies from
-  one door end with no overlaps, the nearest one on the target, ≥240° round
-  it, nearest-neighbour spacing ≥1.25× and the pack ≥1.2× what the old
-  solver left; a holder streamed past by a school is shoved under HALF as
-  far as before (the school is held off it and slides round — shelter,
-  not a new shove);
-  anchored bodies never move; flopping cubes' tumble origins follow every
-  nudge; and 30 fps gives the same fan as 60 (within 25°) — the numbers came
-  from a sweep at both rates
-- `TUNING.crowd` holds pad / comfort / push / slide / passes; `sw.js`
-  precaches `crowd.js` (no tokened imports of its own, so not in the bump
-  loop)
-- Also this session: `scripts/enemy-loop.mjs` was recording frozen corpses
-  into every clip — `reset()` emptied the enemy list without removing the
-  bodies from the scene; fixed on the `claude/devil-daggers-hyper-demon-4vmk67`
-  branch (`removeFrom(scene)`), byte-identical to the copy here, carried over
-- Gates: `check-syntax` · `crowd-check` 12 · `arena-check` 8396 ·
-  `level-check` 74 · `smoke`
-- Cache-bust `?v=196` → `?v=197`; HUD label → v245
-
----
-
-## v244 — 2026-09-09
-**The white-out explains itself, and the game survives losing the GPU** *(no fix yet — v242's half-float overflow was real and was NOT this)*
-- **Still not reproduced, and that is the point of this release.** An owner
-  screenshot showed v243 on Android at 60 FPS with a correct HUD and the whole
-  scene white — *"works for a bit and then it doesn't"*. Everything available
-  here is clean: six gates, a 60 s Rush run, a forced WebGL context loss, a
-  v239→v240 service-worker upgrade, and static reads of every term that could
-  blow out. **SwiftShader is not a phone GPU**, and guessing again would just
-  spend another release. So the game says what it sees
-- **WHITE-OUT WATCH.** Once a second during play the classic path reads **one
-  pixel** back from the frame it just drew, at a spot the floor always covers.
-  The floor cannot be near-white — its base is `(0.079, 0.079, 0.169)` and the
-  brightest term adds 0.85 — so three channels over 240 means the RENDER is
-  wrong, not the art. The state that could explain it is captured and drawn
-  **on the screen**: renderer path, perf/pixel mode, pixel ratio, shape-pass
-  flag, arena size, background, fog, sun intensity and shadow, floor
-  visibility and material type, retro pass, context-lost, elapsed time. **A
-  screenshot of the fault now carries its own diagnosis.** `?diag` shows the
-  same line continuously. One pixel a second is free, it is skipped on the
-  WebGPU path (no synchronous readback) and it stops after the first catch
-- **There was no WebGL context-loss handler anywhere in this game**, which is
-  a real gap regardless of the white-out: a phone takes the GPU back routinely
-  (backgrounding, memory pressure, a driver reset), and without
-  `preventDefault()` on `webglcontextlost` the context is **never** restored —
-  the canvas stays dead until a reload, which is exactly *"couldn't get the
-  game to start after"*. Both handlers are wired now
-- **v242 is not withdrawn.** `mix(1e5, -1e5, …)` genuinely overflows a
-  mediump half and genuinely produces a NaN floor; `FLOOR_FRAG` declares
-  `precision highp float`, so it was not the classic path's bug. The fix and
-  `shader-lint.mjs` stay — the TSL path has no such declaration
-- Gates: `shader-lint` · `smoke` · `cabinets` · `webgpu-smoke` · `level-smoke`
-  ×3 · `level-check` 74 · `editor-smoke` 27
-- Cache-bust `?v=195` → `?v=196`; HUD label → v244
-
----
-
-## v243 — 2026-09-08
-**BOOST LANE — a Rush level, and the first Rush-level parity measurement against the port** *(re-cut from the unmerged v241 on top of the v242 hotfix; v241 is skipped for the same reason v238 was)*
-- **`levels/boost-lane.json`** — 56 spawns over 40 s, `rules.mode: "rush"`.
-  Authored to teach the verb rather than to be hard: two lanes to learn that
-  boost kills on contact, a wall to cut through, pressure from both ends with
-  room to vent, a crowd where a chain is finally worth building, and one heavy
-  with escorts you must not stop for. `BUNDLED` names it, `sw.js` precaches it,
-  `?level=boost-lane` plays it and the editor's LOAD lists it
-- **The port plays it too** (its Q-040): **an authored timeline replaces the
-  DIRECTOR and nothing else** — every Rush verb stays, Rush's own difficulty
-  clock is parked, the file's duration is the only clock. This build has done
-  exactly that since v237 (`rush.levelDuration()` → 1e9 inside a level), so
-  the two builds now park the same clock in the same place for the same reason
-- **Measured this time, not claimed.** The cross-build parity gate had only
-  ever run on the two ARCADE levels. With this file on the deployed tree the
-  port can sync it, and `level-parity.mjs boost-lane` is in the gate list
-  below — the first proof that a RUSH level is the same level in both engines
-- `level-check.mjs` 74 · `level-smoke.sh boost-lane` (a Rush run, headless,
-  every spawn where and when the file says) · `shader-lint` · `smoke` ·
-  `cabinets` · `webgpu-smoke` · `editor-smoke`; port `level-parity.mjs
-  boost-lane` — numbers in the PR
-- Cache-bust `?v=194` → `?v=195`; HUD label → v243
-
----
-
-## v242 — 2026-09-08
-**HOTFIX: the floor went WHITE on phones — a half-float overflow in v240's shape term** *(owner screenshot, Android Chrome, base mode: white floor, HUD and score fine, 61 FPS)*
-- **What you saw:** the game running perfectly and the whole floor rendered
-  white, in every mode. The HUD, score and FPS counter are a 2D canvas and
-  were fine; only the WebGL floor was gone. That is a **NaN in the floor
-  fragment shader** — a NaN pixel renders white on that GPU
-- **Where it came from — mine, v240.** The shape term's "far away" sentinel
-  was `mix(1e5, -1e5, uShapeMode.y)`. On a desktop GPU that is 100000. On a
-  phone, fragment floats are commonly **mediump — a 16-bit half whose largest
-  finite value is 65504** — so 1e5 is Inf, `mix()` computes `0 × (−Inf) = NaN`,
-  and `mix(col, NaN, 0.0)` is NaN as well. **The pass being OFF did not save
-  it**: `0 × NaN` is still NaN, so every floor pixel went white whether a
-  level was running or not. Proven numerically in half-float arithmetic
-  (`mix(1e5, −1e5, 0) → NaN`; `mix(1e4, −1e4, 0) → 10000`)
-- **The fix is one number:** the sentinel is `1e4` on both render paths. The
-  arena is about 40 units across; 10 000 is as far away as the maths ever
-  needs, and it fits a half float with room to spare
-- **Why six gates missed it:** every one of them runs on SwiftShader, which is
-  32-bit float everywhere — it cannot overflow a half. A gate that cannot see
-  the failure passed green. **`scripts/shader-lint.mjs`** (new, bare node)
-  refuses the *class*: any float literal in the two floor shaders outside
-  ±65504 fails, and the GLSL and TSL sentinels must agree. Falsified before
-  being trusted — with 1e5 put back it fails on both regions
-- **Honest limit:** this sandbox has no phone GPU, so the fix is by
-  construction, not by reproduction on the device that showed it. The
-  arithmetic is not in doubt; the screenshot is the measurement
-- **The Godot port's `floor_grid.gdshader` carries the same `1e5`** (it took
-  the term from the same source, Q-037). Godot's Compatibility tier on iPad is
-  GLES3 — fixed there separately
-- **Rush was never the culprit.** The owner's first report ("Rush froze, lost
-  graphics") was this bug seen in Rush; the second screenshot shows it in base
-  mode. Same floor, same NaN
-- Gates: `shader-lint.mjs` 3 · `level-shot.sh three-rings` (the shape pass
-  still draws) · `webgpu-smoke.sh` · `smoke.sh` · `cabinets.sh` ·
-  `level-smoke.sh` ×2 · `editor-smoke.sh`
-- Cache-bust `?v=193` → `?v=194`; HUD label → v242
-
----
-
-## v240 — 2026-09-05
-**The floor draws a level's region, on both render paths** *(PR #447's v238 term, brought across by hand — LEVEL_EDITOR_DESIGN.md §2.3, P1's other half)*
-- **A shaped level is VISIBLE now.** v239 made a level's SDF the boundary
-  every body answers to, but the floor still painted the bounding box —
-  three circles' common area played as a lens you could not see. `FLOOR_FRAG`
-  and `makeFloorMat()` each gain the same term, node-for-node: world-space
-  signed distance from a FIXED array of shape slots (`TUNING.arena.shapeSlots`,
-  4), union as `min`, intersect as `max`, an unused slot as the combine's
-  neutral element — `mix`/`step` throughout, no branch, the v228 point-array
-  discipline. Inside is the floor as before; outside dims to `shapeOutside`;
-  the boundary glows the border rail's colour over a `shapeEdge`-wide band.
-  The rectangular border line hides when the region is not its own box
-- **Classic play is untouched.** The pass is OFF unless a level with a shape
-  is running (`uShapeMode.x`), and `applyArenaMode()` writes the rectangle
-  with it off — every existing floor pixel is the same expression it was
-- **This is the sanctioned double-write** (§2.3): shader art is written once
-  on TSL in principle, but the classic r167 path is the default renderer, so
-  the floor is the standing exception — the same math in GLSL and TSL, gated
-  by review. `scripts/level-shot.sh` (new — #447's picture gate, re-cut)
-  automates that review as far as it can: the level on the CLASSIC bundle and
-  on the WEBGPU bundle, started, shot, and diffed; fails above a mean
-  absolute difference of 6 counts. The pictures are the artefact — look at
-  them
-- `arena.js`'s `circleShape` exposes its centre and radius for the uniform
-  write; nothing else in it moved (8,396 checks still exact). `level-check`
-  asserts `MAX_SHAPES === shapeSlots`, so a level cannot load and paint the
-  wrong region. `step` is the one TSL primitive new to the floor graph;
-  `webgpu-smoke.sh` runs it
-- **PR #447 is closed with this.** Its loader, files and level-check were
-  superseded by v239; its floor term and picture gate are here now. The two
-  lineages are one tree again
-- Gates: `level-shot.sh three-rings` · `webgpu-smoke.sh` · `level-smoke.sh`
-  ×2 · `level-check.mjs` 71 · `arena-check.mjs` 8,396 · `editor-smoke.sh` ·
-  `smoke.sh` · `cabinets.sh`
-- Cache-bust `?v=192` → `?v=193`; HUD label → v240
+**Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
+break and the lying version line were mine and are both verified here. The
+white screen is **made much less likely, not proven fixed**: no phone GPU
+exists in this sandbox and SwiftShader never loses a context, so the evidence
+is the memory arithmetic above plus the persisted ratchet. If it recurs, the
+title screen now names the build and the rung it is standing on.
 
 ---
 
 ## Archive
+
+**v240–v249 summary (2026-09-05 – 2026-09-16)**
+- v240: The floor draws a level's region on both render paths — PR #447's v238 term brought across by hand
+- v241: skipped on purpose — an unmerged lineage had already used it (the same reason v238 was skipped)
+- v242: HOTFIX — a half-float overflow in v240's shape term; real, fixed, and NOT the white screen (`scripts/shader-lint.mjs` added to catch the class)
+- v243: BOOST LANE, a Rush level, and the first Rush-level cross-build parity measurement against the port
+- v244: The white-out explains itself — on-screen diagnostics, and the game survives losing the GPU
+- v245: The swarm arrives as a fan, not a pile
+- v246: A contrast floor — no body darker than the ground it stands on
+- v247: The camera frames the fight, not the floor
+- v248: The white-out narrows itself — an auto-bisect ladder names the suspect that brings the picture back
+- v249: **Found it.** Android was reclaiming the WebGL context ~5s in; `preventDefault()`, a persisted loss ratchet, and a pixel budget
+- **The lesson of the decade:** five releases were spent guessing at a bug no sandbox could reproduce (SwiftShader is 32-bit float everywhere and never loses a context). It was solved by making the game *diagnose itself on the owner's device* — and v250 then found that v249's budget never actually bound. Ship the instrument before the fix.
 
 **v230–v239 summary (2026-08-28 – 2026-09-05)**
 - v230: QOL — haptic pulse on a shield block, a test buzz when haptics are switched on

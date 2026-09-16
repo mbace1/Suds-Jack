@@ -25,10 +25,12 @@ if [[ -z "$NEW_V" || ! "$NEW_V" =~ ^[0-9]+$ ]]; then
   exit 1
 fi
 
-OLD_V=$(grep -oE "fillText\('v[0-9]+'" toko-drop/js/main.js | grep -oE '[0-9]+' | head -1)
+# v250: the version lives in ONE place (const GAME_VERSION) so the HUD label
+# and the title screen cannot drift apart. It used to be the fillText literal.
+OLD_V=$(grep -oE "^const GAME_VERSION = '[0-9]+'" toko-drop/js/main.js | grep -oE '[0-9]+' | head -1)
 OLD_T=$(grep -oE 'main\.js\?v=[0-9]+' toko-drop/index.html | grep -oE '[0-9]+$' | head -1)
 if [[ -z "$OLD_V" || -z "$OLD_T" ]]; then
-  echo "could not detect current HUD version or cache token" >&2
+  echo "could not detect current GAME_VERSION or cache token" >&2
   exit 1
 fi
 NEW_T=$(( OLD_T + 1 ))
@@ -44,8 +46,8 @@ for f in toko-drop/index.html toko-drop/enemy-lab.html toko-drop/js/main.js toko
   sed -i "s/?v=$OLD_T/?v=$NEW_T/g" "$f"
 done
 
-# 2) HUD label
-sed -i "s/fillText('v$OLD_V'/fillText('v$NEW_V'/" toko-drop/js/main.js
+# 2) the one version constant (HUD label + title screen both read it)
+sed -i "s/^const GAME_VERSION = '$OLD_V'/const GAME_VERSION = '$NEW_V'/" toko-drop/js/main.js
 
 # 3) README H1
 sed -i "s/^# Toko Drop — v[0-9]\+/# Toko Drop — v$NEW_V/" README.md
