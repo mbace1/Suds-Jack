@@ -44,7 +44,7 @@
 // (scripts/level-check.mjs). Enemy names are resolved against an EnemyType
 // map the caller passes in, because enemy.js imports three and cannot load here.
 
-import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=201';
+import { Arena, rectShape, circleShape, unionShape, intersectShape } from './arena.js?v=202';
 
 export const FORMAT = 1;
 export const STEP = 0.1;
