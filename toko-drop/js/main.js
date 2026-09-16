@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=199';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=199';
-import { Player, PLAYER_RADIUS } from './player.js?v=199';
+import { InputManager } from './input.js?v=201';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=201';
+import { Player, PLAYER_RADIUS } from './player.js?v=201';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=199';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=199';
-import { audio } from './audio.js?v=199';
-import { haptics } from './haptics.js?v=199';
-import { initDesigner } from './designer.js?v=199';
-import { createSpecimen } from './specimen.js?v=199';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=199';
-import { TUNING } from './tuning.js?v=199';
-import { Arena, rectShape } from './arena.js?v=199';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=199';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=199';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=199';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=201';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=201';
+import { audio } from './audio.js?v=201';
+import { haptics } from './haptics.js?v=201';
+import { initDesigner } from './designer.js?v=201';
+import { createSpecimen } from './specimen.js?v=201';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=201';
+import { TUNING } from './tuning.js?v=201';
+import { Arena, rectShape } from './arena.js?v=201';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=201';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=201';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=201';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -367,79 +367,136 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setSize(innerWidth, innerHeight);
 
-// ── v244 WHITE-OUT WATCH ────────────────────────────────────────────────────
-// An owner screenshot (Android, twice) showed the game at 60 FPS with a
-// correct HUD and the WHOLE SCENE WHITE — "works for a bit and then it
-// doesn't". Nothing here reproduces it: six gates plus a Rush run, a forced
-// context loss and a v239→v240 service-worker upgrade are all clean on
-// SwiftShader, which is not a phone GPU. v242 fixed a real half-float
-// overflow that could have caused it and did not.
+// ── v248 WHITE-OUT WATCH + AUTO-BISECT ──────────────────────────────────────
+// Three owner screenshots now: the game at 60 FPS, a correct HUD, and the
+// whole scene white — reliably "after 3 seconds of game". Nothing here
+// reproduces it (six gates, a Rush run, a forced context loss, a
+// service-worker upgrade); SwiftShader is not a phone GPU. v242's half-float
+// overflow was real and was NOT this. v244 added a detector and it reported
+// nothing, because of a blind spot fixed below.
 //
-// So the game says what it sees. Every second of play it reads ONE pixel
-// back from the frame it just drew, at a spot the floor always covers. The
-// floor is never near-white — base is (0.079, 0.079, 0.169) and the brightest
-// term adds 0.85 — so three channels above 240 means the render is wrong,
-// not the art. When that happens the state that could explain it is captured
-// and drawn ON the screen, so a screenshot of the fault carries its own
-// diagnosis. `?diag` shows the same line continuously.
+// So the game stops describing the fault and starts NARROWING it. When the
+// picture goes white it walks a ladder of suspects, one per half second,
+// re-checking after each: shadows, then transmission, then the floor, then
+// fog, then pixel ratio. The first one that brings the picture back is named
+// on screen and the game keeps playing with it off. If none of them do, it
+// says that too — which is itself the answer (it is not any of these).
 //
-// One pixel per second is free; the readback is skipped entirely on the
-// WebGPU path (no synchronous readPixels) and after the first catch.
+// The detector reads ONE pixel a second from the frame just drawn, where the
+// floor always covers. The floor cannot be near-white: base is
+// (0.079, 0.079, 0.169) and the brightest term adds 0.85.
 const DIAG = new URLSearchParams(location.search).has('diag');
-let _whiteOut = null;      // the captured explanation, once
+let _diagMsg = null;       // what to print on screen, once there is something
 let _diagT = 0;
 let _ctxLost = false;
-// There was NO context-loss handler anywhere in this game. A phone takes the
-// GPU away routinely (backgrounding, memory pressure, a driver reset); with
-// no handler the canvas stays dead and only a reload brings it back, which
-// is exactly "couldn't get the game to start after".
+let _bisect = -1;          // -1 = not started; else the rung being tried
+let _bisectDone = false;
+
+// v244: there was NO context-loss handler in this game at all. A phone takes
+// the GPU back routinely, and without preventDefault() the context is NEVER
+// restored — the canvas stays dead until a reload, which is exactly
+// "couldn't get the game to start after".
 renderer.domElement.addEventListener('webglcontextlost', (e) => {
-  e.preventDefault();          // required, or the context is never restored
+  e.preventDefault();
   _ctxLost = true;
-  console.warn('WEBGL CONTEXT LOST — the GPU took it back; waiting for restore');
+  // v245: v244 detected this and then said nothing, because the pixel read
+  // bailed on a lost context before it could report. Say it loudly instead.
+  _diagMsg = 'WEBGL CONTEXT LOST @ ' + diagLine() + ' — waiting for the GPU';
+  console.error(_diagMsg);
 }, false);
 renderer.domElement.addEventListener('webglcontextrestored', () => {
   _ctxLost = false;
-  console.warn('WEBGL CONTEXT RESTORED');
+  _diagMsg = 'WEBGL CONTEXT RESTORED — the GPU gave it back';
+  console.warn(_diagMsg);
 }, false);
 
 function diagLine() {
-  const gl = renderer.getContext?.();
+  const M = TUNING.material;
   return [
-    'v244', IS_GPU ? 'gpu' : 'gl',
+    'v248', IS_GPU ? 'gpu' : 'gl',
     'perf=' + (perfMode ? 1 : 0), 'pixel=' + (pixelMode ? 1 : 0),
     'dpr=' + renderer.getPixelRatio().toFixed(2),
     'shape=' + floorUniforms.uShapeMode.value.x,
     'half=' + HALF_X.toFixed(0) + 'x' + HALF_Z.toFixed(0),
     'bg=' + scene.background.getHexString(),
-    'fog=' + (scene.fog ? scene.fog.color.getHexString() + '/' + scene.fog.near.toFixed(0) : 'off'),
+    'fog=' + (scene.fog ? 'on' : 'off'),
     'sun=' + sun.intensity.toFixed(2), 'shadow=' + (sun.castShadow ? 1 : 0),
+    'trans=' + M.transmission.toFixed(2),
     'floorVis=' + (floor.visible ? 1 : 0), 'mat=' + floor.material.type,
     'retro=' + (retro._profile ? 'on' : 'off'),
-    'ctxLost=' + ((gl && gl.isContextLost && gl.isContextLost()) ? 1 : (_ctxLost ? 1 : 0)),
+    'enemies=' + enemies.length,
     't=' + runTimer.toFixed(0),
   ].join(' ');
 }
 
-// Reads one pixel of the frame just drawn. Classic path only.
+// The ladder. Cheapest and most-likely first; each is a thing a phone GPU is
+// known to fail at, and each is survivable — the game stays playable with it
+// off, which is why auto-healing is safe here.
+const BISECT = [
+  ['shadows', () => { sun.castShadow = false; renderer.shadowMap.enabled = false; }],
+  ['transmission', () => {
+    const M = TUNING.material;
+    M.transmission = 0;
+    for (const f of Object.values(M.families)) if (f.transmission !== undefined) f.transmission = 0;
+    applySatinValues();
+  }],
+  ['the floor', () => { floor.visible = false; }],
+  ['fog', () => { scene.fog = null; }],
+  ['pixel ratio', () => { renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight); }],
+  // v248: two whole-screen suspects the first cut missed. Tone mapping turns
+  // every pixel at once, which is the shape of this fault; the retro pass
+  // owns a render target and is off in base mode but costs nothing to rule out.
+  ['tone mapping', () => { renderer.toneMapping = THREE.NoToneMapping; }],
+  ['the retro pass', () => { retro.setCabinet(null, renderer); }],
+];
+
 const _px = new Uint8Array(4);
-function checkWhiteOut(dt) {
-  if (IS_GPU || _whiteOut) return;
-  _diagT -= dt;
-  if (_diagT > 0) return;
-  _diagT = 1.0;
+// True when the frame just drawn is blown out where the floor should be.
+function readsWhite() {
   const gl = renderer.getContext?.();
-  if (!gl || (gl.isContextLost && gl.isContextLost())) return;
+  if (!gl || (gl.isContextLost && gl.isContextLost())) return null;   // unknown, not "fine"
   try {
-    // Just below centre: the floor fills this in every mode and orientation.
     const x = Math.floor(gl.drawingBufferWidth * 0.5);
     const y = Math.floor(gl.drawingBufferHeight * 0.42);
     gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, _px);
-  } catch (_) { return; }
-  if (_px[0] > 240 && _px[1] > 240 && _px[2] > 240) {
-    _whiteOut = 'WHITE-OUT @ ' + diagLine();
-    console.error(_whiteOut);
+  } catch (_) { return null; }
+  return _px[0] > 240 && _px[1] > 240 && _px[2] > 240;
+}
+
+function checkWhiteOut(dt) {
+  if (IS_GPU || _bisectDone) return;         // no synchronous readback on the TSL path
+  _diagT -= dt;
+  if (_diagT > 0) return;
+  _diagT = _bisect >= 0 ? 0.5 : 1.0;         // once started, move quickly
+  const white = readsWhite();
+  if (white === null) return;                // context gone; the handler speaks
+
+  if (_bisect < 0) {
+    if (!white) return;                      // all well
+    _diagMsg = 'WHITE-OUT @ ' + diagLine();
+    console.error(_diagMsg);
+    _bisect = 0;
+    _diagMsg += '  — narrowing…';
+    BISECT[0][1]();
+    _diagMsg = 'WHITE-OUT — trying without ' + BISECT[0][0] + '…';
+    return;
   }
+  // A rung was applied last tick; did it bring the picture back?
+  if (!white) {
+    _bisectDone = true;
+    _diagMsg = 'WHITE-OUT FIXED by disabling ' + BISECT[_bisect][0] + ' @ ' + diagLine();
+    console.error(_diagMsg);
+    return;
+  }
+  _bisect++;
+  if (_bisect >= BISECT.length) {
+    _bisectDone = true;
+    _diagMsg = 'WHITE-OUT — none of ' + BISECT.map(b => b[0]).join('/') + ' fixed it @ ' + diagLine();
+    console.error(_diagMsg);
+    return;
+  }
+  BISECT[_bisect][1]();
+  _diagMsg = 'WHITE-OUT — trying without ' + BISECT[_bisect][0] + '…';
 }
 
 // ── Scene ───────────────────────────────────────────────────────────────────
@@ -5239,8 +5296,8 @@ function drawHUD() {
   ctx.textAlign = 'left';
   // v244: the fault explains itself. Drawn small, wrapped, above the version
   // label, so a screenshot of a white screen carries the reason with it.
-  if (_whiteOut || DIAG) {
-    const line = _whiteOut || diagLine();
+  if (_diagMsg || DIAG) {
+    const line = _diagMsg || diagLine();
     ctx.save();
     ctx.font = '9px monospace';
     ctx.textAlign = 'left';
@@ -5254,14 +5311,14 @@ function drawHUD() {
     const h = rows.length * 11 + 8;
     ctx.fillStyle = 'rgba(0,0,0,0.78)';
     ctx.fillRect(8, uiCanvas.height - 26 - h, uiCanvas.width - 16, h);
-    ctx.fillStyle = _whiteOut ? '#ff8899' : '#88ddff';
+    ctx.fillStyle = _diagMsg ? '#ff8899' : '#88ddff';
     rows.forEach((r, i) => ctx.fillText(r, 14, uiCanvas.height - 26 - h + 13 + i * 11));
     ctx.restore();
   }
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v247' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v248' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -10406,7 +10463,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=199').then(async m => {
+  import('./editor.js?v=201').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10437,6 +10494,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=199').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=201').catch(() => {});
   });
 }
