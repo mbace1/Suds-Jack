@@ -1,0 +1,109 @@
+name: Stage Piritori C17
+
+on:
+  push:
+    branches: [release/piritori-c17]
+    paths: ['.github/workflows/stage-piritori-c17.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  stage:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/piritori-c17
+          fetch-depth: 0
+      - name: Build isolated C.17 cabinet and hub pointers
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=/tmp/piritori-c17-source
+          rm -rf "$SRC"
+          git clone --quiet https://github.com/mbace1/piritori-eden.git "$SRC"
+          git -C "$SRC" checkout --quiet --detach 0b4a2753fb6a4418254dadb945fd4c9b4597700f
+
+          rm -rf piritori-c17
+          cp -a piritori-c09 piritori-c17
+          files=(
+            web/crew-run/index.html
+            web/crew-run/c17/index.html
+            web/crew-run/campaign-adapter.js
+            web/crew-run/portraits.js
+            web/crew-run/run.js
+            web/fight-module/actors.js
+            web/fight-module/session.js
+            web/fight-module/stand-in.js
+            web/fight-module/tactical-ui.js
+            web/fight-module/tactics.js
+          )
+          for f in "${files[@]}"; do
+            mkdir -p "piritori-c17/$(dirname "$f")"
+            cp "$SRC/$f" "piritori-c17/$f"
+          done
+
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          root = Path('piritori-c17')
+          source_commit = '0b4a2753fb6a4418254dadb945fd4c9b4597700f'
+          tested_head = 'e330ee9052a9fab2bbe7d074493ce6484a4a40cf'
+          entry = 'web/crew-run/?campaign=1&release=17'
+          (root/'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Piritori C.17</title><meta http-equiv="refresh" content="0;url='+entry+'"><a href="'+entry+'">Open C.17</a>\n', encoding='utf-8')
+          (root/'VERSIONS.md').write_text(f'''# C.17 — The Crew Matters\n\nSource merge: {source_commit}.\nTested source head: {tested_head}.\n\nCampaign crew identity, deployment preference, aptitudes, perks, learned skills and supported authored weapons can enter Night Shift. Strength and Toughness affect the tactical resolver. Aftermath writes new wounds, recovery, missing state and deployed fight growth back exactly once. Existing injuries are never healed merely for surviving the pilot. C.16.1 cameras, wet courtyard and extraction loop remain the presentation baseline. Procedural development stand-ins remain temporary; physical Pixel/iPad and final-art acceptance are still open.\n''', encoding='utf-8')
+          hashes = {}
+          for p in sorted(root.rglob('*')):
+            if p.is_file() and p.name != 'release.json':
+              hashes[p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
+          release = {
+            'build':'C.17',
+            'source_repository':'mbace1/piritori-eden',
+            'source_commit':source_commit,
+            'tested_source_head':tested_head,
+            'entry':entry,
+            'status':'campaign-crew-bridge-pilot',
+            'character_provider':'procedural development stand-ins',
+            'physical_devices_verified':False,
+            'rollback_cabinet':'../piritori-c09/',
+            'transforms':['Isolated C.17 cabinet path; preserve C.16.1 cabinet as rollback','Preserve already-published runtime/art blobs except exact C.17 source overlays'],
+            'sha256':hashes,
+          }
+          (root/'release.json').write_text(json.dumps(release, indent=2)+'\n', encoding='utf-8')
+
+          # Catalogue: only the existing Option C lab card moves to the isolated C.17 cabinet.
+          p=Path('hub/games.js'); b=p.read_bytes()
+          b=b.replace('PIRITORI · NIGHT SHIFT C.16.1'.encode(), 'PIRITORI · NIGHT SHIFT C.17'.encode())
+          b=b.replace(b"piritori-c09/web/crew-run/?release=16.1", b"piritori-c17/web/crew-run/?campaign=1&release=17")
+          old=("C.16.1 — Recessed windows and passages, worn surfaces and bounded wet reflections. Controller navigation restored in crew menus; graphics recovery retained. VIEW offers Tactical / Oblique / Overhead. Persistent crew outings; temporary stand-ins. Physical Pixel/iPad and final-art acceptance remain open.").encode()
+          new=("C.17 — The Crew Matters: campaign crew identity/builds enter Night Shift; wounds, missing/recovery and fight growth write back exactly once. Strength/Toughness matter in combat. C.16.1 cameras and wet courtyard retained; procedural stand-ins remain temporary. Physical Pixel/iPad and final-art acceptance remain open.").encode()
+          b=b.replace(old,new).replace('C.16.1 — Syvemmät'.encode(),'C.17 — Syvemmät'.encode()).replace('C.16.1 — 窓'.encode(),'C.17 — 窓'.encode())
+          p.write_bytes(b)
+
+          # Version feed.
+          p=Path('hub/versions.json'); versions=json.loads(p.read_text(encoding='utf-8'))
+          versions['optionc-lab']={'v':'17','n':17000,'from':'VERSIONS.md'}
+          p.write_text(json.dumps(versions, indent=2, ensure_ascii=False)+'\n', encoding='utf-8')
+
+          # Hub immutable module chain. shell.js/playlog-auto.js keep v97 intentionally:
+          # C.17 owns its native HOME link/controller and those consumers do not need the new route.
+          def repl(path, pairs):
+            p=Path(path); data=p.read_bytes()
+            for a,c in pairs: data=data.replace(a.encode(),c.encode())
+            p.write_bytes(data)
+          repl('hub/hub.js', [('games.js?v=97','games.js?v=98')])
+          repl('hub/hub-entry.js', [('hub.js?v=102','hub.js?v=103')])
+          for path in ['index.html','AnotherHUB/index.html']:
+            repl(path, [('hub-entry.js?v=25','hub-entry.js?v=26'),('hub.js?v=102','hub.js?v=103')])
+          repl('sw.js', [("const VERSION = 'v94'","const VERSION = 'v95'"),('hub/games.js?v=97','hub/games.js?v=98'),('hub/hub-entry.js?v=25','hub/hub-entry.js?v=26'),('hub/hub.js?v=102','hub/hub.js?v=103')])
+          PY
+
+          rm .github/workflows/stage-piritori-c17.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'release(piritori): publish C.17 test cabinet'
+          git push origin HEAD:release/piritori-c17
