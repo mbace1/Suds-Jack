@@ -9,6 +9,8 @@ jobs:
   package:
     runs-on: ubuntu-latest
     timeout-minutes: 14
+    env:
+      SOURCE_SHA: ef7b4785831aacf54cf00d77c5625b9e1c95f6d4
     steps:
       - uses: actions/checkout@v4
         with:
@@ -16,37 +18,35 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: mbace1/piritori-eden
-          ref: 80a723526dc47088e25602ea0316b18c37fd8681
+          ref: ${{ env.SOURCE_SHA }}
           path: source
       - name: Package exact source bytes and scoped hub metadata
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import json,hashlib,re,shutil
-          cabinet=Path('piritori-c17')
+          import json,hashlib,re,shutil,os
+          source=os.environ['SOURCE_SHA'];cabinet=Path('piritori-c17')
           files=['web/crew-run/index.html','web/crew-run/startup.js','web/crew-run/style.css','web/crew-run/ui.js','web/fight-module/main.js','web/fight-module/tactical-ui.js','web/arena-lab/index.html']
           allowed=json.loads(Path('source/tools/publish/arena_lab_files.json').read_text())
           for rel in files:
               assert rel in allowed and (cabinet/rel).exists(),rel
               shutil.copyfile(Path('source')/rel,cabinet/rel)
           (cabinet/'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Piritori C.18</title><meta http-equiv="refresh" content="0;url=web/crew-run/?campaign=1&release=18"><a href="web/crew-run/?campaign=1&release=18">Open C.18</a>\n')
-          (cabinet/'VERSIONS.md').write_text('# C.18 — Unified command interface and direct scene rendering\n\nSource and tested head: 80a723526dc47088e25602ea0316b18c37fd8681 (Piritori PR #86).\n\nOne command surface, restored procedural portraits, combined mission/round strip, secondary withdrawal in Menu, and a short-landscape forecast that stays below the arena. Direct scene rendering bypasses framebuffer-copy smoothing. Menu > Graphics offers reflection-bypass safe mode and diagnostics.\n\nC.17 campaign/tactics, saves and exact-once aftermath are unchanged. No external character models or rigs added. Browser evidence is separate from physical phone acceptance, which remains open. C.08 stays absent from the hub; C.16.1 remains the rollback cabinet.\n',encoding='utf-8')
+          (cabinet/'VERSIONS.md').write_text('# C.18 — Unified command interface and direct scene rendering\n\nSource and tested head: '+source+' (Piritori PR #86).\n\nOne command surface, restored procedural portraits, combined mission/round strip, secondary withdrawal in Menu, and a short-landscape forecast that stays below the arena. Direct scene rendering bypasses framebuffer-copy smoothing. Menu > Graphics offers reflection-bypass safe mode and diagnostics. Interrupted graphics recovery clears uncommitted previews without spending an action.\n\nC.17 campaign/tactics, saves and exact-once aftermath are unchanged. No external character models or rigs added. Browser evidence is separate from physical phone acceptance, which remains open. C.08 stays absent from the hub; C.16.1 remains the rollback cabinet.\n',encoding='utf-8')
           rp=cabinet/'release.json';receipt=json.loads(rp.read_text())
-          receipt.update(build='C.18',source_commit='80a723526dc47088e25602ea0316b18c37fd8681',tested_source_head='80a723526dc47088e25602ea0316b18c37fd8681',entry='web/crew-run/?campaign=1&release=18',status='unified-ui-direct-rendering',physical_devices_verified=False)
+          receipt.update(build='C.18',source_commit=source,tested_source_head=source,entry='web/crew-run/?campaign=1&release=18',status='unified-ui-direct-rendering',physical_devices_verified=False)
           receipt['transforms'].append('C.18 exact source UI/direct-rendering overlay; retained C.17 campaign rules and procedural cast')
           for rel in files+['index.html','VERSIONS.md']:
               receipt['sha256'][rel]=hashlib.sha256((cabinet/rel).read_bytes()).hexdigest()
           for rel,sha in receipt['sha256'].items():
               assert hashlib.sha256((cabinet/rel).read_bytes()).hexdigest()==sha,rel
           rp.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          p=Path('hub/games.js');data=p.read_bytes();text=data.decode();start=text.index("    id: 'optionc-lab',");end=text.index('\n  },',start)
+          p=Path('hub/games.js');text=p.read_bytes().decode();start=text.index("    id: 'optionc-lab',");end=text.index('\n  },',start)
           card=text[start:end].replace('C.17.1','C.18').replace('release=17.1','release=18')
           notes=iter(['C.18 — One command bar, character portraits and clearer mission/turn information. Secondary controls live in Menu. Direct scene rendering and optional safe graphics; C.17 campaign rules retained. Procedural characters only. Physical phone retest pending.','C.18 — Yhtenäinen komentopalkki, hahmomuotokuvat ja selkeämpi tehtävä- ja vuorotieto. Lisätoiminnot Menussa. Suora 3D-piirto ja valinnainen kevyt grafiikka. C.17-pelisäännöt säilyvät; puhelintesti odottaa.','C.18 — コマンドバー、人物ポートレート、任務とターン表示を統一。補助操作はMenuへ。直接描画と安全な描画設定を追加。C.17のルールと仮キャラクターを維持。実機確認は未完了。'])
-          card,n=re.subn(r"note:\s*'[^']*'",lambda m:"note:'"+next(notes)+"'",card)
-          assert n==3,n
-          p.write_bytes((text[:start]+card+text[end:]).encode())
-          assert "id: 'optionc'," not in p.read_text()
+          card,n=re.subn(r"note:\s*'[^']*'",lambda m:"note:'"+next(notes)+"'",card);assert n==3,n
+          p.write_bytes((text[:start]+card+text[end:]).encode());assert "id: 'optionc'," not in p.read_text()
           p=Path('hub/versions.json');text=p.read_bytes().decode();pattern=r'("optionc-lab":\s*\{)[^}]*(\})'
           text,n=re.subn(pattern,lambda m:m[1]+'\n    "v": "18",\n    "n": 18000,\n    "from": "VERSIONS.md"\n  '+m[2],text);assert n==1
           p.write_bytes(text.encode())
@@ -66,7 +66,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --prefix /tmp/piritori-test playwright pngjs
+      - run: npm install --prefix /tmp/piritori-test playwright
       - run: /tmp/piritori-test/node_modules/.bin/playwright install --with-deps chromium
       - name: Test the actual nested hub cabinet
         env:
