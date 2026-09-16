@@ -309,6 +309,7 @@ option is spelled out and the reading is flagged so it can be corrected.
 | 10 | Where do the upgrade cards live? | *"For now 1"* — **own ROGUE door**; *"up in the air depending on where these modes develop to."* | decided-for-now |
 | — | What ends a round, once pulses spread across it? | *"3 likely but I would like to test 1"* — **empty-floor-only is the likely rule; test clock-only first.** Both need the last pulse early enough to clear. | test, then decide |
 | 12 | Rush: the campaign, or an ingredient? | First pass: *"2 sounds right but I don't understand 1 and 3"*; after rewording: **"Likely Rush IS the campaign — but that may not have exactly the current Rush rules, as those are copied from Blade Rush and are tested as optional mechanics that may be used somewhere."** | lean; see note |
+| 11 | What to take from Blade Rush's campaign? | **"Like Geometry Wars 3, which we can use as reference. It has different rooms with timed goals and S, A, B, C, F tiers. Along with added mechanics, level shapes, etc."** — so the campaign unit is a *room* with a *timed goal*, graded **S/A/B/C/F** (an F tier we do not have), and the path adds **mechanics and level shapes** as it goes. GW3 is the reference to read. | decided (reference) |
 | — | Colour for shooting vs non-shooting? | Not that axis — **families**. Owner's direction verbatim in §8. | direction; questions in §8.3 |
 
 **The Rush note matters.** The campaign door being "Rush" does not commit it
@@ -318,7 +319,8 @@ mechanic set, not the campaign's identity. What the campaign's own rule set
 is, is still open — which is why Q11 (what to take from Blade Rush) is next.
 
 **Still to ask:** what campaign progress buys (Q13); difficulty tiers (Q14);
-the Blade Rush specifics (Q11); what we measure (Q15); and §8.3.
+what we measure (Q15); and §8.3 — starting with Q16, re-asked after §8.4.
+**Format update (owner):** one question at a time when they are long.
 
 ---
 
@@ -425,3 +427,67 @@ What the table says:
     shoot revenge bullets in different patterns.* Today the dialect is per
     species (`revenge.byType`). If it became per family, the bloom would be
     predictable from the colour — the readability fix without a telegraph.
+
+### 8.4 Looking at the shapes — Q16 was asked from the wrong table
+
+The owner: *"Please look at the shapes and rethink this question."* §8.2 was
+built from movement roles and numbers. This is what the roster actually
+looks like — every base species from `enemy-lab.html`, one frame each:
+
+![the 21 base-roster species from the enemy lab](design/roster-sheet-2026-09-16.png)
+
+*`toko-drop/design/roster-sheet-2026-09-16.png` — WebGL build, lab default
+camera, captured by driving `window._lab.select()` per species.*
+
+What the picture says, with the geometry to back it (`enemy.js:672–727`):
+
+- **Ten of the twenty-one are the same gel dome** (`BLOB_TYPES`,
+  `enemy.js:586`): GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA, WARDEN,
+  BULWARK, SIREN, CLOAKER, MAGNA. One geometry (`BLOB_GEO`), varied only by
+  `mesh.scale` and colour. Between them they cover **six of the eight
+  movement roles** — DRIFTER, HOLDER, SCHOOL, SUPPORT, MASS, HUNTER — so
+  the dome silhouette carries **no** family information: whatever role you
+  name, there is a dome that has it.
+- **Five are the same rounded cube** (`CUBE_TYPES`): YELA, ORANGE, SLUDGE,
+  REDD, PURP. Roles DRIFTER and MASS; two of them shoot, three do not; two
+  split. Again the shape says "cube", not what it does.
+- **Six have a silhouette of their own**, and every one of those reads:
+  TORO's torus (charger), BAMBU's stacked cylinders (grows, stationary),
+  PYRA's spinning ring (stationary gun), BOTFLY's winged sphere (flyer),
+  SHEPHERD's spire (conductor — the code comment says exactly this: *"nothing
+  else in the roster is tall-and-thin"*), DRAPER's slab (the loom). The two
+  shape *attachments* read too: BULWARK's plate and WARDEN's aura ring.
+- So the roster already contains its own answer. **Where a species has a
+  unique silhouette, colour is free to be anything and nobody is confused.
+  Where ten species share one dome, colour is being asked to do shape's
+  job — one hue per species — and that is precisely the "colour differences
+  that don't make sense".** The complaint is not about the colours. It is
+  about ten domes.
+- Durability and speed are invisible: SPLITTA (hp 5) and GLOBBO (hp 1) are
+  the same dome at two scales; TORO (spd 5) and WEEVA (spd 0.6) are similar
+  in mass on screen. The owner's rule — *silhouette communicates movement,
+  speed, durability* — has nowhere to live on a dome.
+- The dome is not an accident to remove: it is **the goo showpiece**, art
+  pass priority 1, the reason the WebGPU/TSL build exists. So the question
+  is not "dome or not" — it is what a *family* adds to the dome.
+
+**Q16, re-asked** (one question, in the owner's words please):
+
+> The base roster has three shape classes: the gel dome (10), the cube (5),
+> and six one-offs that already read. Which of these should the families be
+> built on?
+>
+> a) **Dome + family silhouette.** Every family keeps the gel material and
+>    gets one *silhouette modifier* that says its role — a spout or
+>    aperture for HOLDERs (it has a gun), a low wide squash for MASS, a
+>    tapered teardrop for HUNTER/SCHOOL (it moves in arcs), a crown or ring
+>    for SUPPORT (WARDEN's aura is already this). Colour = family,
+>    reinforcing the silhouette; size = durability.
+> b) **One primitive per family.** Dome = fodder/drift only. Cube = MASS.
+>    Torus = charger. Spire = conductor. Ring = stationary gun. Each family
+>    owns a primitive the way the six one-offs already do; the ten domes get
+>    re-shaped or merged down. Colour becomes free again.
+> c) **Fewer species.** The ten domes collapse to three or four with clear
+>    roles; the cubes to two. The roster gets smaller and every survivor gets
+>    its own silhouette. Colour = family.
+> d) Something else — what would you draw?
