@@ -17,20 +17,21 @@ jobs:
         with:
           ref: fix/remove-piritori-c8-hub
           fetch-depth: 0
-      - name: Remove C8 from catalogue and renew hub cache chain
+      - name: Remove Option C from catalogue and renew hub cache chain
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          import json,re
+          import json
 
           p=Path('hub/games.js')
           s=p.read_text(encoding='utf-8')
-          pattern=r"\n  \{\n    id: 'optionc', title: 'PIRITORI · BEAR PATH',[\s\S]*?\n  \},(?=\n  \{\n    id: 'concrete')"
-          s2,n=re.subn(pattern,'',s,count=1)
-          if n!=1: raise SystemExit(f'expected one C8 catalogue block, found {n}')
-          p.write_text(s2,encoding='utf-8')
+          start=s.find("\n  {\n    id: 'optionc',")
+          if start < 0: raise SystemExit('Option C catalogue block not found')
+          end=s.find("\n  {\n    id: 'concrete',",start)
+          if end < 0: raise SystemExit('Concrete block after Option C not found')
+          p.write_text(s[:start]+s[end:],encoding='utf-8')
 
           vp=Path('hub/versions.json')
           versions=json.loads(vp.read_text(encoding='utf-8'))
@@ -54,13 +55,12 @@ jobs:
 
           root=Path('index.html').read_text(encoding='utf-8')
           base='  <!-- the short URL: /Suds-Jack/AnotherHUB. Same page, one level down, so\n       everything it links to is resolved against the site root instead. -->\n  <base href="../" />\n'
-          short=root.replace('<head>\n','<head>\n'+base,1)
-          Path('AnotherHUB/index.html').write_text(short,encoding='utf-8')
+          Path('AnotherHUB/index.html').write_text(root.replace('<head>\n','<head>\n'+base,1),encoding='utf-8')
           PY
 
           rm .github/workflows/stage-remove-piritori-c8.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
-          git commit -m 'hub: remove Piritori C.08 Bear Path'
+          git commit -m 'hub: remove Piritori Option C / C.08'
           git push origin HEAD:fix/remove-piritori-c8-hub
