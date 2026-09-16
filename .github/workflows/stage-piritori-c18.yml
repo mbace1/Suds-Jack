@@ -25,9 +25,10 @@ jobs:
           from pathlib import Path
           import json,hashlib,re,shutil
           cabinet=Path('piritori-c17')
-          files=['web/crew-run/index.html','web/crew-run/startup.js','web/crew-run/style.css','web/crew-run/ui.js','web/fight-module/main.js','web/fight-module/tactical-ui.js','web/arena-lab/index.html','web/bear-path/index.html','web/fight-module/index.html']
+          files=['web/crew-run/index.html','web/crew-run/startup.js','web/crew-run/style.css','web/crew-run/ui.js','web/fight-module/main.js','web/fight-module/tactical-ui.js','web/arena-lab/index.html']
+          allowed=json.loads(Path('source/tools/publish/arena_lab_files.json').read_text())
           for rel in files:
-              assert (cabinet/rel).exists(),rel
+              assert rel in allowed and (cabinet/rel).exists(),rel
               shutil.copyfile(Path('source')/rel,cabinet/rel)
           (cabinet/'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Piritori C.18</title><meta http-equiv="refresh" content="0;url=web/crew-run/?campaign=1&release=18"><a href="web/crew-run/?campaign=1&release=18">Open C.18</a>\n')
           (cabinet/'VERSIONS.md').write_text('# C.18 — Unified command interface and direct scene rendering\n\nSource and tested head: 80a723526dc47088e25602ea0316b18c37fd8681 (Piritori PR #86).\n\nOne command surface, restored procedural portraits, combined mission/round strip, secondary withdrawal in Menu, and a short-landscape forecast that stays below the arena. Direct scene rendering bypasses framebuffer-copy smoothing. Menu > Graphics offers reflection-bypass safe mode and diagnostics.\n\nC.17 campaign/tactics, saves and exact-once aftermath are unchanged. No external character models or rigs added. Browser evidence is separate from physical phone acceptance, which remains open. C.08 stays absent from the hub; C.16.1 remains the rollback cabinet.\n',encoding='utf-8')
@@ -49,7 +50,6 @@ jobs:
           p=Path('hub/versions.json');text=p.read_bytes().decode();pattern=r'("optionc-lab":\s*\{)[^}]*(\})'
           text,n=re.subn(pattern,lambda m:m[1]+'\n    "v": "18",\n    "n": 18000,\n    "from": "VERSIONS.md"\n  '+m[2],text);assert n==1
           p.write_bytes(text.encode())
-          # Renew the complete module URL chain while retaining unrelated bytes.
           def change(path,old,new):
               p=Path(path);data=p.read_bytes();a=old.encode();b=new.encode();assert data.count(a)==1,(path,old,data.count(a));p.write_bytes(data.replace(a,b))
           game=int(re.search(r'games\.js\?v=(\d+)',Path('hub/hub.js').read_text())[1]);hub=int(re.search(r'hub\.js\?v=(\d+)',Path('hub/hub-entry.js').read_text())[1]);entry=int(re.search(r'hub-entry\.js\?v=(\d+)',Path('index.html').read_text())[1]);sw=int(re.search(r"const VERSION = 'v(\d+)'",Path('sw.js').read_text())[1])
