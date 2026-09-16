@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "8e47da2888a1cac0cf7c68092bde837c32b9c94d"
+          test "$(git merge-base HEAD origin/gh-pages)" = "8e47da2888a1cac0cf7c68092bde837c32b9c94d"
           test -f main-src/piritori-c17/release.json
           rm -rf piritori-c17
           cp -a main-src/piritori-c17 piritori-c17
