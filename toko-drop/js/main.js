@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=202';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=202';
-import { Player, PLAYER_RADIUS } from './player.js?v=202';
+import { InputManager } from './input.js?v=203';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=203';
+import { Player, PLAYER_RADIUS } from './player.js?v=203';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=202';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=202';
-import { audio } from './audio.js?v=202';
-import { haptics } from './haptics.js?v=202';
-import { initDesigner } from './designer.js?v=202';
-import { createSpecimen } from './specimen.js?v=202';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=202';
-import { TUNING } from './tuning.js?v=202';
-import { Arena, rectShape } from './arena.js?v=202';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=202';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=202';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=202';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=203';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=203';
+import { audio } from './audio.js?v=203';
+import { haptics } from './haptics.js?v=203';
+import { initDesigner } from './designer.js?v=203';
+import { createSpecimen } from './specimen.js?v=203';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=203';
+import { TUNING } from './tuning.js?v=203';
+import { Arena, rectShape } from './arena.js?v=203';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=203';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=203';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=203';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -370,7 +370,24 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // So the budget is in PIXELS, not in devicePixelRatio. A phone screen at
 // dpr 2 and dpr 1.4 are indistinguishable at arm's length; an arena that
 // keeps its context is not.
+// v250: v249's budget NEVER BOUND on the device it was written for. A
+// 412x790 phone at dpr 2 backs 1.3 Mpx — under a 2.0 Mpx budget — so the cap
+// computed 2.48 and changed nothing, and the context kept going. The memory
+// was never mostly in the colour buffer: it is in MSAA. Measured for that
+// phone, in megabytes of GPU memory:
+//     dpr 2.0  antialias on   ~54      <- what it was asking for
+//     dpr 2.0  antialias off  ~17
+//     dpr 1.5  antialias off  ~13      <- what a phone gets now
+// A 4x reduction, for edges nobody can see at 1.5x on a 5-inch screen.
+// v250: ONE name for the version. The HUD label and the title screen both
+// read it, so they cannot drift apart — and bump-version.sh rewrites the
+// literal here (its regex looks for this exact line).
+const GAME_VERSION = '250';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
+// A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
+// window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
+// missing a phone costs the context.
+const _smallScreen = Math.min(innerWidth, innerHeight) <= 820 || navigator.maxTouchPoints > 0;
 const _lossKey = 'tokoDropCtxLoss';
 // How many times this device has had the context taken. Persisted, because
 // the cheapest possible fix for a device that cannot hold the memory is to
@@ -378,13 +395,16 @@ const _lossKey = 'tokoDropCtxLoss';
 let _ctxLosses = (() => { const v = parseInt(localStorage.getItem(_lossKey) ?? '0', 10); return Number.isFinite(v) ? v : 0; })();
 function budgetedRatio() {
   const cap = Math.sqrt(PIXEL_BUDGET / Math.max(1, innerWidth * innerHeight));
-  // Each loss this device has suffered ratchets the ceiling down a step.
-  const ceiling = [2, 1.5, 1.25, 1][Math.min(_ctxLosses, 3)];
-  return Math.max(1, Math.min(devicePixelRatio, ceiling, cap));
+  // Each loss this device has suffered ratchets the ceiling down a step, and
+  // a small screen starts a rung lower than a desktop does.
+  const ladder = _smallScreen ? [1.5, 1.25, 1, 1] : [2, 1.5, 1.25, 1];
+  return Math.max(1, Math.min(devicePixelRatio, ladder[Math.min(_ctxLosses, 3)], cap));
 }
-// MSAA is the single biggest allocation and the first thing to give up on a
-// device that has already lost its context once.
-const _wantAA = _ctxLosses === 0;
+// MSAA is the single biggest allocation by a wide margin — four times the
+// colour buffer, and four times the depth buffer with it. A phone never gets
+// it (at dpr 1.5 on a phone screen it buys edges nobody can see); a desktop
+// keeps it until the first loss.
+const _wantAA = !_smallScreen && _ctxLosses === 0;
 const renderer = IS_GPU
   ? new THREE.WebGPURenderer({
       canvas: document.getElementById('canvas-game'),
@@ -444,10 +464,13 @@ renderer.domElement.addEventListener('webglcontextlost', (e) => {
 }, false);
 renderer.domElement.addEventListener('webglcontextrestored', () => {
   _ctxLost = false;
-  // Come back SMALLER. The ceiling in budgetedRatio() has already stepped
-  // down by one on the loss above; applying it here is what stops the cycle.
-  renderer.setPixelRatio(budgetedRatio());
-  renderer.setSize(innerWidth, innerHeight);
+  // Come back SMALLER, through the ONE resize path. v249 hand-rolled a
+  // partial copy of it here — pixel ratio and size but not the camera aspect,
+  // the retro target or the UI canvas — and a restored context came back with
+  // a stale projection, which is the "zooms in weirdly" the owner saw.
+  // resize() already applies budgetedRatio(), and the ceiling stepped down on
+  // the loss above, so this both un-zooms and shrinks.
+  resize();
   // Give up the next-biggest allocations as the losses mount, rather than
   // asking a device that has already said no twice for a shadow map.
   if (_ctxLosses >= 2) { renderer.shadowMap.enabled = false; sun.castShadow = false; }
@@ -471,7 +494,7 @@ renderer.domElement.addEventListener('webglcontextrestored', () => {
 function diagLine() {
   const M = TUNING.material;
   return [
-    'v249', IS_GPU ? 'gpu' : 'gl',
+    'v' + GAME_VERSION, IS_GPU ? 'gpu' : 'gl',
     'perf=' + (perfMode ? 1 : 0), 'pixel=' + (pixelMode ? 1 : 0),
     'dpr=' + renderer.getPixelRatio().toFixed(2),
     'shape=' + floorUniforms.uShapeMode.value.x,
@@ -606,7 +629,19 @@ const _framePts = [];
 let _frameOn = false;
 function framingAllowed() {
   const C = TUNING.camera;
-  return !!(C && C.framing) && arenaScale === 1 && !reduceMotion && !inCabinet() && !arenaOverride && !smashMode;
+  // v250: NOT IN PORTRAIT (owner: "zooms in weirdly"). Measured on a 412x790
+  // phone: the camera crept from the rest 27.0 down to 19.6 over ~20 s of
+  // play — a 27% dolly that arrives too slowly to read as a camera move and
+  // just leaves the arena looking wrong. Worse, portrait's rest framing is
+  // hand-tuned and ALREADY crops the corners (the near corners sit at 1.65x
+  // the horizontal frustum at rest), so dollying in from there hides the side
+  // walls of a FIXED-SCREEN arena shooter — you stop being able to see where
+  // the next body will come from. ARENA_PRESETS has said "Portrait keeps its
+  // fixed framing" since v111; v247 quietly broke that invariant. Landscape
+  // and desktop, where the arena genuinely does fit edge to edge at rest and
+  // the framing was designed and tuned, are unchanged.
+  return !!(C && C.framing) && !!landscapeMode
+    && arenaScale === 1 && !reduceMotion && !inCabinet() && !arenaOverride && !smashMode;
 }
 function updateFraming(dt) {
   const B = camBasis(CAM_REST, CAM_LOOK);
@@ -5414,7 +5449,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v249' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v' + GAME_VERSION + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5709,7 +5744,42 @@ function showTitle() {
     });
     optBtn.addEventListener('touchend', e => e.stopPropagation());
     sslot.appendChild(optBtn);
+
+    // v250 (owner ask: "can you put a version number in the title screen?").
+    // The HUD label only draws during PLAY, so checking which build you are on
+    // meant starting a run — awkward at the best of times and impossible while
+    // the thing under test is a crash five seconds in. It carries the renderer
+    // state with it for the same reason: the numbers that decide whether this
+    // device keeps its GPU are exactly the ones worth reading off a screenshot.
+    const verLine = document.createElement('div');
+    verLine.id = 'verline';
+    verLine.style.cssText =
+      'margin-top:10px;font-size:10px;letter-spacing:1px;opacity:0.35;' +
+      'font-family:monospace;text-align:center;line-height:1.5;';
+    sslot.appendChild(verLine);
+    refreshVerLine();
   }
+}
+
+// v250: the version line is REFRESHED, never captured. The first cut read
+// `renderer.getPixelRatio()` while building the title and printed `dpr 2.00`
+// on a phone whose backing store was already 1.5 — the title is built before
+// the boot `resize()` applies the budget. A diagnostic that reports the
+// intent instead of the state is worse than none, so this measures the
+// DRAWING BUFFER against the CSS box: whatever that says is what the GPU is
+// actually holding. resize() calls it, so it tracks rotation too.
+function verText() {
+  const c = renderer.domElement;
+  const realDpr = c.clientWidth > 0 ? c.width / c.clientWidth : renderer.getPixelRatio();
+  let aa = _wantAA;
+  try { aa = !!renderer.getContext().getContextAttributes?.().antialias; } catch (_) {}
+  const lost = _ctxLosses > 0 ? `  ·  GPU RESETS ${_ctxLosses}` : '';
+  return `v${GAME_VERSION}${IS_GPU ? ' · WEBGPU' : ''}  ·  ` +
+    `dpr ${realDpr.toFixed(2)}${aa ? ' · AA' : ''}${lost}`;
+}
+function refreshVerLine() {
+  const el = document.getElementById('verline');
+  if (el) el.textContent = verText();
 }
 
 // Run History panel (v76): lists the top runs already tracked in pb.runs —
@@ -10532,6 +10602,7 @@ function resize() {
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
   syncAutoOrientation();  // rotation on the title re-picks the arena preset
+  refreshVerLine();       // v250: the title's dpr readout is state, not intent
 }
 window.addEventListener('resize', resize);
 // Some phones fire `resize` before rotation dimensions settle, leaving the
@@ -10563,7 +10634,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=202').then(async m => {
+  import('./editor.js?v=203').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10594,6 +10665,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=202').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=203').catch(() => {});
   });
 }
