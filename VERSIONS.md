@@ -85,6 +85,14 @@
   follow shape/movement families, not shooting; the five DRIFTERs wear five
   hues, the three HOLDER blobs three; green already means "leaves something
   on the floor"; PYRA is `HUNTER` at speed 0. Five family questions queued.
+- **Docs, again:** §8.4 looks at the SHAPES (owner: *"look at the shapes
+  and rethink this question"*) — `design/roster-sheet-2026-09-16.png`, all
+  21 base species from the lab. Ten are the same gel dome across six
+  movement roles, five the same cube, six one-offs that already read. The
+  colour complaint is really ten domes asking colour to do shape's job. Q16
+  re-asked with a/b/c. Q11 answered: the campaign unit is a GW3-style room
+  with a timed goal, S/A/B/C/F tiers, mechanics and level shapes added
+  along the path.
 
 **Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
 break and the lying version line were mine and are both verified here. The
