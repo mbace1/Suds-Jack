@@ -7,6 +7,59 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v249 — 2026-09-16
+**The white screen was the GPU taking the context back — found, and now survived** *(five releases of guessing ended by one screenshot)*
+- **The owner's phone finally printed it**, thanks to v248's on-screen handler:
+  `WEBGL CONTEXT LOST @ v248 gl … dpr=2.00 … enemies=8 t=5`. Not a shader bug,
+  not a NaN, not Rush. **Android was reclaiming the WebGL context about five
+  seconds in**, three.js restored it, and it went again — *"black, then back,
+  then white"* is exactly that cycle, and *"couldn't get the game to start
+  after"* is what a never-restored context looks like
+- **Why it ran out of memory.** A 1080×2400 phone at `devicePixelRatio` 2
+  backs the canvas with 2.6 Mpx; `antialias: true` adds a 4× MSAA target
+  (~41 MB), plus depth, a 1024² shadow map and the transmission pass's own
+  target. That is a lot to hold on a device also running a browser, and the
+  system takes it back. **The budget is in PIXELS now, not in
+  devicePixelRatio** (`PIXEL_BUDGET` 2.0 Mpx): a phone at dpr 2 and at dpr 1.4
+  look the same at arm's length, and one of them keeps its context
+- **A loss now makes the next attempt cheaper, and is REMEMBERED.** Restoring
+  and then asking for the same memory again is how the cycle sustains itself.
+  Each loss ratchets down one step — dpr ceiling 2 → 1.5 → 1.25 → 1, MSAA off
+  after the first, the shadow map after the second, transmission after the
+  third — and the count is persisted, because **memory does not improve on a
+  refresh**. The ratchet is applied at BOOT as well as on restore, which a
+  first cut got wrong: it reloaded and immediately asked for the shadow map
+  and the transmission pass all over again
+- **`preventDefault()` on `webglcontextlost` is the line that matters most.**
+  Without it the browser never offers the context back at all — which is why
+  this looked permanent rather than intermittent. It has been missing since
+  the game was written
+- On restore every material is marked for recompile and the shadow map
+  invalidated; a restored context has no compiled programs, and that is the
+  WHITE half of the owner's black-then-white
+- `sun.castShadow` is now gated on the loss count too — `applyPerfMode()` runs
+  at boot and was turning it back on for a device that had already said no
+  twice. The shadow map stayed unrendered, but the two flags disagreed
+- RESET in the pause menu clears the ratchet: a device that lost the context
+  once on a bad day must not be pinned at dpr 1 forever
+- **Measured, on an emulated dpr-2 phone:** three forced losses walk
+  2 → 1.5 → 1.25 → 1 with shadows and transmission dropping on cue, the state
+  survives a reload unchanged, and the game keeps playing throughout
+- **What was wrong on the way, recorded because it cost days:** v242's
+  half-float overflow is a real bug but `FLOOR_FRAG` declares
+  `precision highp float`, so it was never the classic path's fault; v244's
+  detector bailed on a lost context and so was silent by construction; and
+  v244–v248 all gated the watch on `IS_GPU`, so the WEBGPU build was never
+  watched at all. The readback is renderer-agnostic now (a 1×1 2D canvas) and
+  runs in the same tick as the render, because the drawing buffer is cleared
+  once composited
+- Gates: `smoke` · `cabinets` · `webgpu-smoke` · `level-smoke` ×3 ·
+  `editor-smoke` 27 · `level-check` 74 · `shader-lint` 3 · `arena-check`
+  8,396 · `crowd-check` 12
+- Cache-bust `?v=201` → `?v=202`; HUD label → v249
+
+---
+
 ## v248 — 2026-09-16
 **The white-out narrows itself — the game walks a ladder of suspects and names the one that brings the picture back** *(fourth owner report, now with a timing: "after 3 secs of game")*
 - **v244's detector shipped, survived into v247, and reported nothing — and

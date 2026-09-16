@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=201';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=201';
-import { Player, PLAYER_RADIUS } from './player.js?v=201';
+import { InputManager } from './input.js?v=202';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=202';
+import { Player, PLAYER_RADIUS } from './player.js?v=202';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=201';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=201';
-import { audio } from './audio.js?v=201';
-import { haptics } from './haptics.js?v=201';
-import { initDesigner } from './designer.js?v=201';
-import { createSpecimen } from './specimen.js?v=201';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=201';
-import { TUNING } from './tuning.js?v=201';
-import { Arena, rectShape } from './arena.js?v=201';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=201';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=201';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=201';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=202';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=202';
+import { audio } from './audio.js?v=202';
+import { haptics } from './haptics.js?v=202';
+import { initDesigner } from './designer.js?v=202';
+import { createSpecimen } from './specimen.js?v=202';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=202';
+import { TUNING } from './tuning.js?v=202';
+import { Arena, rectShape } from './arena.js?v=202';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=202';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=202';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=202';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -353,17 +353,49 @@ const IS_GPU = typeof THREE.WebGPURenderer === 'function';
 // grants one and falls back to its WebGL2 backend on its own when not. TSL
 // moved into a THREE.TSL namespace in newer builds — the shim covers both.
 const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
+// ── v249 GPU MEMORY BUDGET ──────────────────────────────────────────────────
+// An owner screenshot finally named the fault, after four releases of
+// guessing at the picture: `WEBGL CONTEXT LOST @ … dpr=2.00 … t=5`. Not a
+// shader bug and not a NaN — the phone's GPU was RECLAIMING the context about
+// five seconds in, three.js was restoring it, and it went again. "Black, then
+// back, then white" is that cycle.
+//
+// The arithmetic says why. A 1080x2400 phone at `devicePixelRatio` 2 backs
+// the canvas with 2.6 Mpx; with `antialias: true` the browser allocates a
+// 4x MSAA target on top, which is ~41 MB, plus a depth buffer, a 1024²
+// shadow map and the transmission pass's own target. That is a lot of GPU
+// memory to hold on a phone that is also running a browser, and when the
+// system wants it back it takes it.
+//
+// So the budget is in PIXELS, not in devicePixelRatio. A phone screen at
+// dpr 2 and dpr 1.4 are indistinguishable at arm's length; an arena that
+// keeps its context is not.
+const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
+const _lossKey = 'tokoDropCtxLoss';
+// How many times this device has had the context taken. Persisted, because
+// the cheapest possible fix for a device that cannot hold the memory is to
+// not ask for it again on the next load.
+let _ctxLosses = (() => { const v = parseInt(localStorage.getItem(_lossKey) ?? '0', 10); return Number.isFinite(v) ? v : 0; })();
+function budgetedRatio() {
+  const cap = Math.sqrt(PIXEL_BUDGET / Math.max(1, innerWidth * innerHeight));
+  // Each loss this device has suffered ratchets the ceiling down a step.
+  const ceiling = [2, 1.5, 1.25, 1][Math.min(_ctxLosses, 3)];
+  return Math.max(1, Math.min(devicePixelRatio, ceiling, cap));
+}
+// MSAA is the single biggest allocation and the first thing to give up on a
+// device that has already lost its context once.
+const _wantAA = _ctxLosses === 0;
 const renderer = IS_GPU
   ? new THREE.WebGPURenderer({
       canvas: document.getElementById('canvas-game'),
-      antialias: true,
+      antialias: _wantAA,
     })
   : new THREE.WebGLRenderer({
       canvas: document.getElementById('canvas-game'),
-      antialias: true,
+      antialias: _wantAA,
     });
 if (IS_GPU) await renderer.init();   // backend (webgpu or webgl2 fallback) settles here
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(budgetedRatio());
 renderer.shadowMap.enabled = true;
 renderer.setSize(innerWidth, innerHeight);
 
@@ -397,23 +429,49 @@ let _bisectDone = false;
 // restored — the canvas stays dead until a reload, which is exactly
 // "couldn't get the game to start after".
 renderer.domElement.addEventListener('webglcontextlost', (e) => {
+  // Required, or the browser never offers the context back at all — this is
+  // what made the fault look permanent ("couldn't get the game to start").
   e.preventDefault();
   _ctxLost = true;
-  // v245: v244 detected this and then said nothing, because the pixel read
-  // bailed on a lost context before it could report. Say it loudly instead.
-  _diagMsg = 'WEBGL CONTEXT LOST @ ' + diagLine() + ' — waiting for the GPU';
+  // v249: a loss is REMEMBERED. Restoring and then asking for the same
+  // memory again is how the black/white cycle the owner saw sustains itself;
+  // each loss has to make the next attempt cheaper, and has to survive a
+  // reload, because the device's memory does not improve on refresh.
+  _ctxLosses = Math.min(_ctxLosses + 1, 3);
+  try { localStorage.setItem(_lossKey, String(_ctxLosses)); } catch (_) {}
+  _diagMsg = 'WEBGL CONTEXT LOST (#' + _ctxLosses + ') @ ' + diagLine() + ' — easing off and waiting for the GPU';
   console.error(_diagMsg);
 }, false);
 renderer.domElement.addEventListener('webglcontextrestored', () => {
   _ctxLost = false;
-  _diagMsg = 'WEBGL CONTEXT RESTORED — the GPU gave it back';
+  // Come back SMALLER. The ceiling in budgetedRatio() has already stepped
+  // down by one on the loss above; applying it here is what stops the cycle.
+  renderer.setPixelRatio(budgetedRatio());
+  renderer.setSize(innerWidth, innerHeight);
+  // Give up the next-biggest allocations as the losses mount, rather than
+  // asking a device that has already said no twice for a shadow map.
+  if (_ctxLosses >= 2) { renderer.shadowMap.enabled = false; sun.castShadow = false; }
+  if (_ctxLosses >= 3) {
+    const M = TUNING.material;
+    M.transmission = 0;
+    for (const f of Object.values(M.families)) if (f.transmission !== undefined) f.transmission = 0;
+    applySatinValues();
+  }
+  // A restored context has no compiled programs. Without this the scene can
+  // come back as a blank/blown-out frame — which is the WHITE half of the
+  // owner's "black, then back, then white".
+  scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
+  renderer.shadowMap.needsUpdate = true;
+  _bisect = -1; _bisectDone = false;          // let the watch judge the new frame afresh
+  _diagMsg = 'WEBGL CONTEXT RESTORED — now at dpr ' + renderer.getPixelRatio().toFixed(2)
+           + (_ctxLosses >= 2 ? ', shadows off' : '') + (_ctxLosses >= 3 ? ', transmission off' : '');
   console.warn(_diagMsg);
 }, false);
 
 function diagLine() {
   const M = TUNING.material;
   return [
-    'v248', IS_GPU ? 'gpu' : 'gl',
+    'v249', IS_GPU ? 'gpu' : 'gl',
     'perf=' + (perfMode ? 1 : 0), 'pixel=' + (pixelMode ? 1 : 0),
     'dpr=' + renderer.getPixelRatio().toFixed(2),
     'shape=' + floorUniforms.uShapeMode.value.x,
@@ -450,21 +508,36 @@ const BISECT = [
   ['the retro pass', () => { retro.setCabinet(null, renderer); }],
 ];
 
-const _px = new Uint8Array(4);
+// v249: read the frame through a 1x1 2D canvas instead of gl.readPixels.
+// v244-v248 used the GL call and bailed on `IS_GPU`, so with WEBGPU (BETA)
+// switched on the whole watch did NOTHING — three releases of silence would
+// be explained by that alone, and the TSL floor graph is the one that has no
+// `precision highp float` to protect it. drawImage works on either canvas.
+const _probe = document.createElement('canvas');
+_probe.width = _probe.height = 1;
+const _probeCtx = _probe.getContext('2d', { willReadFrequently: true });
 // True when the frame just drawn is blown out where the floor should be.
+// MUST be called in the same tick as the render: without preserveDrawingBuffer
+// the canvas is cleared once the frame is composited.
 function readsWhite() {
   const gl = renderer.getContext?.();
-  if (!gl || (gl.isContextLost && gl.isContextLost())) return null;   // unknown, not "fine"
+  if (gl && gl.isContextLost && gl.isContextLost()) return null;   // unknown, not "fine"
+  const c = renderer.domElement;
+  if (!c || !c.width || !c.height || !_probeCtx) return null;
   try {
-    const x = Math.floor(gl.drawingBufferWidth * 0.5);
-    const y = Math.floor(gl.drawingBufferHeight * 0.42);
-    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, _px);
+    const x = Math.floor(c.width * 0.5);
+    const y = Math.floor(c.height * 0.58);   // below centre in TOP-LEFT origin: the floor
+    _probeCtx.clearRect(0, 0, 1, 1);
+    _probeCtx.drawImage(c, x, y, 1, 1, 0, 0, 1, 1);
+    const d = _probeCtx.getImageData(0, 0, 1, 1).data;
+    if (d[3] === 0) return null;             // nothing composited yet — not a verdict
+    _px[0] = d[0]; _px[1] = d[1]; _px[2] = d[2];
   } catch (_) { return null; }
   return _px[0] > 240 && _px[1] > 240 && _px[2] > 240;
 }
 
 function checkWhiteOut(dt) {
-  if (IS_GPU || _bisectDone) return;         // no synchronous readback on the TSL path
+  if (_bisectDone) return;                  // v249: BOTH render paths, not just classic
   _diagT -= dt;
   if (_diagT > 0) return;
   _diagT = _bisect >= 0 ? 0.5 : 1.0;         // once started, move quickly
@@ -603,6 +676,19 @@ sun.position.set(8, 20, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
 scene.add(sun);
+// v249: a device that has ALREADY had its context taken starts conservative.
+// The in-session ratchet stepped these down on each loss, but the count is
+// persisted and memory does not improve on a refresh — without this a phone
+// that lost the GPU three times reloads and immediately asks for the shadow
+// map and the transmission pass all over again, which is the cycle.
+// Transmission is set BEFORE any material is built, so bodies are made
+// without it rather than rebuilt after.
+if (_ctxLosses >= 2) { renderer.shadowMap.enabled = false; sun.castShadow = false; }
+if (_ctxLosses >= 3) {
+  const _M = TUNING.material;
+  _M.transmission = 0;
+  for (const f of Object.values(_M.families)) if (f.transmission !== undefined) f.transmission = 0;
+}
 
 // ── Arena ───────────────────────────────────────────────────────────────────
 // v228: fixed array sizes for the arena-pass-2 point terms — interpolated
@@ -3610,7 +3696,12 @@ function applyPerfMode() {
   VIS.hz = (cab && cab !== 'preview') ? 12 : 0;   // sprite-era stepped visuals
   // v129: the 1024² shadow pass is the third big GPU cost — drop it too.
   // Flat-lit cabinets (vector/NES) never want shadows either (v151).
-  sun.castShadow = !perfMode && cab !== 'tokotron' && cab !== 'gaundrop' && cab !== 'loadout' && cab !== 'kaikki' && cab !== 'nexdeus';
+  // v249: the context-loss budget outranks every other opinion about shadows.
+  // Without this, applyPerfMode() runs at boot and turns castShadow back ON
+  // for a device that has already lost its GPU twice — the shadow map stays
+  // unrendered (shadowMap.enabled is false) but the two flags then disagree,
+  // and a later `shadowMap.enabled = true` anywhere would quietly re-arm it.
+  sun.castShadow = _ctxLosses < 2 && !perfMode && cab !== 'tokotron' && cab !== 'gaundrop' && cab !== 'loadout' && cab !== 'kaikki' && cab !== 'nexdeus';
   const M = TUNING.material;
   if (perfMode) {
     if (!_perfSavedTrans) {
@@ -4603,6 +4694,11 @@ const designer = initDesigner({
       audio.setVolume(v);
       localStorage.setItem('tokoDropVolume', String(v));
     },
+    // v249: the context-loss ratchet is sticky on purpose (a phone that lost
+    // the GPU once will lose it again), but a one-off loss must not pin a
+    // device at dpr 1 forever. RESET in the pause menu clears it.
+    clearCtxLosses: () => { _ctxLosses = 0; try { localStorage.removeItem(_lossKey); } catch (_) {} },
+    getCtxLosses: () => _ctxLosses,
     getReduceMotion: () => reduceMotion,
     setReduceMotion: on => {
       reduceMotion = on;
@@ -5318,7 +5414,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v248' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v249' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -8275,7 +8371,6 @@ function loop() {
   input.pollGamepad();
   updateMenuNav(dt);   // gamepad menu focus (v134) — self-gates on menu states
   updateShake(dt);
-  checkWhiteOut(dt);   // v244: one pixel a second, until it catches something
 
   // Title / paused / options / run-history — just render the scene, no game logic
   if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' ||
@@ -10422,11 +10517,16 @@ function loop() {
 
   if (retro.active) retro.render(renderer, scene, camera);
   else              renderer.render(scene, camera);
+  // v249: read the frame HERE, in the same tick it was drawn — the canvas is
+  // cleared once composited, so the old top-of-loop placement was reading a
+  // buffer that may already have been thrown away.
+  checkWhiteOut(dt);
   drawHUD();
 }
 
 // ── Resize ───────────────────────────────────────────────────────────────────
 function resize() {
+  renderer.setPixelRatio(budgetedRatio());   // v249: the budget is per-viewport
   renderer.setSize(innerWidth, innerHeight);
   retro.setSize(renderer);   // v151: cabinet RT tracks the drawing buffer
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
@@ -10463,7 +10563,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=201').then(async m => {
+  import('./editor.js?v=202').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10494,6 +10594,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=201').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=202').catch(() => {});
   });
 }
