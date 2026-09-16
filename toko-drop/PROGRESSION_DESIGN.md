@@ -287,3 +287,141 @@ lean is a prompt, not a vote.**
 - `TOKO_DROP_ROADMAP.md` had forked between `gh-pages` (v237 note) and
   `main` (v228/v229/v231 ticks, the Godot-sibling note). Reconciled in the
   commit that adds this file — both halves kept.
+
+---
+
+## 7. Answers so far — the Q&A (2026-09-16)
+
+**How this runs (owner rule):** two questions at a time, **numbered, answered
+in the owner's own words**. Multiple choice only for quick, easy picks;
+otherwise offer a / b / c as text and let the answer be a sentence.
+
+Answers are recorded as given. Where an answer was an option number, the
+option is spelled out and the reading is flagged so it can be corrected.
+
+| # | question (§5) | answer | status |
+|---|---|---|---|
+| 1 | Run length / does ARCADE end? | **Endless, escalating — as today.** | decided |
+| 2 | Wave shape | **Pulses across the 20 s round** (the SMASH machinery, retargeted). | decided |
+| 3 | Who bites back, from which wave? | *"Hard to say, maybe 1"* — leaning **named species, entering at wave 3–4**, RING first, one speed, seeded. | open, lean |
+| 4 | Mixed field (living fire + revenge)? | **Playtest the mixed state first.** Flip the flag for an afternoon; decide from a screenshot and a run count. | decided (test) |
+| 9 | Doors on the title | *"For now 1, but at launch maybe 3.."* — read as: **three doors + a CLASSICS drawer now; Sektori-style unlocks (one door, the rest earned) maybe at launch.** | decided-for-now; reading flagged |
+| 10 | Where do the upgrade cards live? | *"For now 1"* — **own ROGUE door**; *"up in the air depending on where these modes develop to."* | decided-for-now |
+| — | What ends a round, once pulses spread across it? | *"3 likely but I would like to test 1"* — **empty-floor-only is the likely rule; test clock-only first.** Both need the last pulse early enough to clear. | test, then decide |
+| 12 | Rush: the campaign, or an ingredient? | First pass: *"2 sounds right but I don't understand 1 and 3"*; after rewording: **"Likely Rush IS the campaign — but that may not have exactly the current Rush rules, as those are copied from Blade Rush and are tested as optional mechanics that may be used somewhere."** | lean; see note |
+| — | Colour for shooting vs non-shooting? | Not that axis — **families**. Owner's direction verbatim in §8. | direction; questions in §8.3 |
+
+**The Rush note matters.** The campaign door being "Rush" does not commit it
+to boost-heat-chain as shipped in v224–v227. Those rules are *a tested
+ingredient*, portable to wherever they fit. So `RUSH_DESIGN.md` describes a
+mechanic set, not the campaign's identity. What the campaign's own rule set
+is, is still open — which is why Q11 (what to take from Blade Rush) is next.
+
+**Still to ask:** what campaign progress buys (Q13); difficulty tiers (Q14);
+the Blade Rush specifics (Q11); what we measure (Q15); and §8.3.
+
+---
+
+## 8. Enemy families — the colour question is a family question
+
+### 8.1 The owner's direction, as given
+
+> "Think of these more like **shape and movement families**. Original enemies
+> vary on movement and shooting type, thus having different colors.
+> Non-shooting types can still move differently and also shoot revenge
+> bullets in different patterns. **All base-mode enemy silhouettes
+> communicate movement, speed and durability.** Sometimes even aiming to do
+> special damage — like green enemies leave toxic puddles. Rush mode had
+> Blade Rush enemies that look like **fish that move in arcs**, thus varied
+> movement, and the hitbox is shown in style. These are all relevant."
+
+The question that prompted it — *"can we colour-differentiate shooting and
+non-shooting enemies? Currently colour differences for non-shooting don't
+make sense"* — resolves into: **colour should follow a family, and today the
+non-shooters' colours follow nothing.**
+
+### 8.2 What the roster's colours map to today
+
+Every species already has a movement role (`tuning.js` `movement.byType`,
+v210). The table pairs it with the values the silhouette is supposed to
+communicate and the body hue it actually wears.
+
+| species | shape | movement role | spd | hp | size | gun | body hue |
+|---|---|---|---|---|---|---|---|
+| GLOBBO | blob | DRIFTER | 2.8 | 1 | 0.55 | – | teal 169° |
+| YELA_CUBE | cube | DRIFTER | 2.2 | 2 | 0.70 | – | yellow 52° |
+| ORANGE_CUBE | cube | DRIFTER | 1.4 | 4 | 0.75 | aimed | orange 32° |
+| REDD_CUBE | cube | DRIFTER | 1.9 | 3 | 0.75 | – (splits) | red 4° |
+| PURP_CUBE | cube | DRIFTER | 1.6 | 3 | 0.75 | fan (splits) | violet 283° |
+| SPITTOR | blob | HOLDER | 1.6 | 3 | 0.90 | aimed | red 9° |
+| FANNER | blob | HOLDER | 1.4 | 3 | 0.75 | fan | magenta 320° |
+| WEEVA | blob | HOLDER | 0.6 | 3 | 0.80 | fan | blue 250° |
+| BAMBU | – | HOLDER | 0 | 1 | 0.70 | fan | tan 40° |
+| BOTFLY | flyer | HOLDER | 2.0 | 2 | 0.50 | homing | pink 324° |
+| DRAPER | – | HOLDER | – | – | – | curtain | violet 264° |
+| SLUDGE_CUBE | cube | MASS | 0.75 | 2 | 0.65 | – (trail) | lime 77° |
+| BULWARK | plate | MASS | 1.5 | 4 | 0.90 | – | steel 222° |
+| TORO | – | COMMIT | 5.0 | 6 | 1.00 | – | blue 210° |
+| SPLITTA | blob | SCHOOL | 1.0 | 5 | 1.10 | – (splits) | green 92° |
+| PYRA | – | HUNTER | 0 | 4 | 1.00 | fan | orange 36° |
+| CLOAKER | – | HUNTER | 2.4 | 3 | 0.70 | aimed burst | ice 187° |
+| WARDEN | – | SUPPORT | 1.1 | 5 | 0.85 | – (shield) | mint 170° |
+| SIREN | – | SUPPORT | 1.2 | 3 | 0.75 | – (surge) | lilac 273° |
+| MAGNA | – | SUPPORT | 0.9 | 4 | 0.80 | – (pull) | amber 27° |
+| SHEPHERD | – | HERDER | – | – | – | – (herds) | mint 160° |
+
+What the table says:
+
+- **The five DRIFTERs wear five hues** (teal, yellow, orange, red, violet).
+  They are the "ordinary bodies" — the family that should read as one — and
+  they are the least uniform group on the field. This is the owner's
+  complaint, located.
+- **The three HOLDER blobs** (SPITTOR / FANNER / WEEVA) wear red, magenta
+  and blue. Same shape, same role, same job; three unrelated colours. The
+  gun *dialect* differs (aimed / fan / fan) — but colour is not carrying that
+  either, because ORANGE_CUBE (aimed) is orange and PYRA (fan) is also
+  orange.
+- **The one thing that works is shape**: blob vs cube is legible, and the
+  sub-roster stays consistent with it (cubes are DRIFTER/MASS, blobs are
+  DRIFTER/HOLDER/SCHOOL). Shape is already a family axis; colour is not.
+- **Green already means "leaves something on the floor"**: SLUDGE_CUBE's
+  trail (lime), SPLITTA's spawn (green), and loadout's toxic-green GRUNT.
+  That is the one colour rule the roster has by accident, and it is the one
+  the owner named. Worth making deliberate.
+- **Two colours are near-collisions across families**: WARDEN mint 170° vs
+  GLOBBO teal 169° (a shield-bearer and the most common fodder, 1° apart);
+  SHEPHERD mint 160° sits between them. MAGNA amber 27° vs ORANGE_CUBE 32°
+  vs PYRA 36° — a puller, a drifter and a stationary gun within 9°.
+- **Movement, speed and durability are already in the numbers** but the
+  silhouette does not carry them consistently: TORO (spd 5, hp 6) and WEEVA
+  (spd 0.6, hp 3) are both ~0.8–1.0 radius. The owner's rule — *silhouette
+  communicates movement, speed, durability* — would make size/shape encode
+  hp and speed, and leave colour free for family.
+- Finding: **PYRA is `HUNTER` with speed 0.** Either the role is dead on it
+  or the speed is; the v210 audit did not catch it.
+
+### 8.3 Questions on families — next in the queue
+
+16. **What are the base-mode families?** The movement roles give eight
+    candidates (DRIFTER, HOLDER, MASS, COMMIT, SCHOOL, HUNTER, SUPPORT,
+    HERDER). Eight hues is too many to learn; four or five is not. Which
+    roles merge into one family for the player's eye (e.g. HUNTER + COMMIT
+    = "comes at you"; SUPPORT + HERDER = "has a job, kill it first")?
+17. **Does colour = family, or does colour = family *and* something else?**
+    a) hue = family only; speed/durability are silhouette (size, shape).
+    b) hue = family, value/saturation = tier within it (a brighter DRIFTER is
+    a faster one). c) hue = family, with one reserved hue for "special
+    damage" (green = puddle/trail) that overrides the family.
+18. **Does the gun show, and how?** If colour is family, the shooter/chaser
+    distinction needs another channel: an emissive core that lights when
+    armed and goes dark when muzzled (CLOSE COMBAT), a barrel/aperture in
+    the silhouette, a HOLDER stance (it stops). Or is "HOLDERs shoot" a
+    family fact the player just learns?
+19. **The fish.** The Rush roster's arc-movers (SCHOOL role: SPLITTA,
+    GRUNT, FLIT, GHOST, the MINIs) are the Blade Rush lineage — varied
+    movement, hitbox shown in the style. Is SCHOOL a base-mode family, or is
+    it the campaign door's own roster the way the cabinets have theirs?
+20. **Revenge dialect per family?** The owner: *non-shooting types can still
+    shoot revenge bullets in different patterns.* Today the dialect is per
+    species (`revenge.byType`). If it became per family, the bloom would be
+    predictable from the colour — the readability fix without a telegraph.
