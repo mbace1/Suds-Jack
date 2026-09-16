@@ -313,6 +313,12 @@ Forward planning lives in **`TOKO_DROP_ROADMAP.md`** (four milestones toward
 public 1.0 and beyond, agreed 2026-07-11). This section is retired — accepted
 ideas go on the roadmap, and VERSIONS.md records what shipped.
 
+**Modes, waves, revenge & progression** (owner direction 2026-09-16) are
+being thought through in `toko-drop/PROGRESSION_DESIGN.md` — the owner's
+guiding thoughts, what §2 and §6 above actually do today, a reference study
+(Geometry Wars 3, Sektori, Blade Rush), and the question set. Nothing there
+is decided; when it is, §2 and §6 change here.
+
 ### BOTFLY (v88)
 
 Flying bot: hovers at ~y1.5 on translucent wings, holds a mid-range band
