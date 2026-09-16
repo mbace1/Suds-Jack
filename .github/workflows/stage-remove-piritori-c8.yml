@@ -1,0 +1,66 @@
+name: Stage remove Piritori C8
+
+on:
+  push:
+    branches: [fix/remove-piritori-c8-hub]
+    paths: ['.github/workflows/stage-remove-piritori-c8.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  stage:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/remove-piritori-c8-hub
+          fetch-depth: 0
+      - name: Remove C8 from catalogue and renew hub cache chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+
+          p=Path('hub/games.js')
+          s=p.read_text(encoding='utf-8')
+          pattern=r"\n  \{\n    id: 'optionc', title: 'PIRITORI · BEAR PATH',[\s\S]*?\n  \},(?=\n  \{\n    id: 'concrete')"
+          s2,n=re.subn(pattern,'',s,count=1)
+          if n!=1: raise SystemExit(f'expected one C8 catalogue block, found {n}')
+          p.write_text(s2,encoding='utf-8')
+
+          vp=Path('hub/versions.json')
+          versions=json.loads(vp.read_text(encoding='utf-8'))
+          versions.pop('optionc',None)
+          vp.write_text(json.dumps(versions,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+
+          def once(path,old,new):
+            p=Path(path); s=p.read_text(encoding='utf-8')
+            n=s.count(old)
+            if n!=1: raise SystemExit(f'{path}: expected one {old!r}, found {n}')
+            p.write_text(s.replace(old,new,1),encoding='utf-8')
+
+          once('hub/hub.js','./games.js?v=98','./games.js?v=99')
+          once('hub/hub-entry.js','./hub.js?v=103','./hub.js?v=104')
+          once('index.html','hub/hub-entry.js?v=26','hub/hub-entry.js?v=27')
+          once('index.html','./hub/hub.js?v=103','./hub/hub.js?v=104')
+          once('sw.js',"const VERSION = 'v95'","const VERSION = 'v96'")
+          once('sw.js','./hub/games.js?v=98','./hub/games.js?v=99')
+          once('sw.js','./hub/hub-entry.js?v=26','./hub/hub-entry.js?v=27')
+          once('sw.js','./hub/hub.js?v=103','./hub/hub.js?v=104')
+
+          root=Path('index.html').read_text(encoding='utf-8')
+          base='  <!-- the short URL: /Suds-Jack/AnotherHUB. Same page, one level down, so\n       everything it links to is resolved against the site root instead. -->\n  <base href="../" />\n'
+          short=root.replace('<head>\n','<head>\n'+base,1)
+          Path('AnotherHUB/index.html').write_text(short,encoding='utf-8')
+          PY
+
+          rm .github/workflows/stage-remove-piritori-c8.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'hub: remove Piritori C.08 Bear Path'
+          git push origin HEAD:fix/remove-piritori-c8-hub
