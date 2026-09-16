@@ -77,6 +77,14 @@
   Sektori, Blade Rush); and 15 open questions. `TOKO_DROP_ROADMAP.md`
   reconciled with `main`'s copy (v228/v229/v231 ticks, the Godot-sibling
   note) — the two had forked with no git ancestor for the file.
+- **Docs, later the same day:** `PROGRESSION_DESIGN.md` §7 records the
+  owner's Q&A answers (ARCADE stays endless; waves become pulses; test the
+  mixed field; three doors now, maybe Sektori-style unlocks at launch; ROGUE
+  its own door; Rush is likely the campaign but not necessarily with the
+  Blade-Rush-copied rules) and §8 the enemy-FAMILY direction — colour should
+  follow shape/movement families, not shooting; the five DRIFTERs wear five
+  hues, the three HOLDER blobs three; green already means "leaves something
+  on the floor"; PYRA is `HUNTER` at speed 0. Five family questions queued.
 
 **Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
 break and the lying version line were mine and are both verified here. The
