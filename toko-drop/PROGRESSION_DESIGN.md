@@ -1,0 +1,289 @@
+# MODES, WAVES, REVENGE & PROGRESSION — guiding thoughts
+
+*Owner direction, 2026-09-16. Recorded verbatim in §1; everything after it is
+grounding and questions, not decisions. Nothing here is shipped or scheduled.
+`RUSH_DESIGN.md` (on `main`) is the worked example of one mode; this is the
+frame the modes are supposed to sit in.*
+
+---
+
+## 1. The owner's thoughts, as given
+
+1. **Waves.** "Every wave spawns at once, that doesn't seem like the way to go."
+2. **Revenge bullets.** "Currently the revenge bullets on enemy death is
+   standard, they are quite a lot and cool, but some have different speeds,
+   they launch quite randomly, they are hard to read. I must think on if they
+   should be there from the start and how we could mix them and shooting
+   enemies."
+3. **Long term: distinct modes and progression.** "There could be a campaign
+   mode, like Geometry Wars 3 and Blade Rush has, and how our Rush mode should
+   have."
+4. **The main mode** "should have a good base set of enemies and goals.
+   Distinct session length and that *one more go* feel. It might use roguelike
+   updates like Sektori or maybe that's a separate mode."
+5. **Study progression** in Sektori ("hard and confusing with tons of modes")
+   and in games where it is clearer.
+
+---
+
+## 2. What the game does today — the parts these thoughts touch
+
+Read this before answering §5; two of the questions dissolve once the code is
+in view.
+
+### 2.1 A wave is a 3-second pour into a 20-second round
+
+- A round is **20 s** (`ROUND_DUR`, `main.js:65`). The director builds the
+  whole wave as a list and hands it to the pump with per-entry delays.
+- The delay between entries is `cadence.normal` **0.18 + rand 0.5 s** and
+  `cadence.swarm` **0.08 + rand 0.28 s** (`tuning.js`, `waves.cadence`). The
+  arithmetic: wave 1's budget (`5 × 0.85`) buys 2–4 entries, on the field
+  inside **~1.5 s**; wave 10's (`5 + 1.8×9 ≈ 21`) buys 8–12, all landed by
+  **~4–5 s**. The remaining 15+ seconds of every round are clearing.
+- **This is deliberate, and it was solving a different problem.** The
+  comment at `main.js:303` says it outright: *"Tight spawn cadence so most of
+  the budget is on-field before the player can clear it (prevents instant
+  wave-end from trivialising waves)."* A wave ends on `all dead + timer
+  elapsed` (GDD §2). So "spawns at once" is not an accident to fix — it is a
+  load-bearing choice, and changing the pour means deciding again what a wave
+  *is* and what ends it. That is §5 Q3/Q4.
+- **The other pacing already exists in the codebase.** SMASH TV re-paces the
+  same list as *pulses*: bursts of 3, every 2–3 s, from one door, walking
+  around the room, for the whole wave (`main.js:311–330`, `cadence.smashPulse`).
+  Whatever the main game's answer is, the pulse machinery is a cabinet-only
+  branch today, not new work.
+
+### 2.2 Revenge is not "standard" — it is the *whole* bullet game, in one mode
+
+- **CLOSE COMBAT is the default** (`main.js:2663–2666`, v198: absent key
+  means ON). In it, living enemies are **muzzled** (`MUZZLED_BULLETS`,
+  `main.js:2668`) — *the only bullets on the field are revenge.*
+- **In classic (CLOSE COMBAT off), revenge never fires** — the whole block is
+  gated on `meleeRun` (`main.js:3831`).
+- So the field is **binary today: revenge-only, or living-fire-only, never
+  both.** "Should they be there from the start / how to mix them with
+  shooting enemies" is therefore not a tuning question — the game has no
+  state in which the two coexist. Mixing them is a new state (§5 Q8).
+- **"Some have different speeds" — two speeds, and the fast one is the
+  elite's.** Every revenge dialect fires at `revenge.speedMult` **0.6×**
+  (`main.js:3845, 3853`) — one speed, on purpose ("the graze game, not a
+  wall"). The exception is the **VOLATILE** affix: its 8-bullet corpse ring
+  calls `spawnDir` *without* the multiplier (`main.js:3813–3819`) and so
+  leaves at **1.0×**. An elite that dies next to you fires a full-speed ring
+  while every other corpse fires a slow one. That is the speed inconsistency,
+  and it is one line.
+- **"They launch quite randomly."** Three dialects (`revenge.byType`): AIMED
+  (3-shot burst at your position), FAN (5-shot ~115° arc at your position),
+  RING (4 / 7 / 14 bullets, evenly spaced, **random rotation**). The AIMED
+  and FAN dialects are *not* random — they point at you. The RING's phase is
+  `Math.random()` (`main.js:3849`), so two identical corpses bloom
+  differently, and — a finding, not a fix — it is `Math.random()` rather than
+  the run's seeded `rng()`, so **daily-seed runs are not deterministic once a
+  corpse blooms.** Same at `main.js:3841` for a corpse standing exactly on
+  the player.
+- **"Hard to read."** A corpse's dialect depends on its species, its colour on
+  a hue-shift of the species' bullet colour (`revengeColor()`), its count on
+  its radius, and its speed on whether it was a volatile elite. Four
+  variables per bloom, decided at the instant of death, by a body the player
+  has just stopped looking at. The tell (v145's orange strobe) exists only for
+  VOLATILE. Everything else has no telegraph because death *is* the trigger.
+
+### 2.3 There are already thirteen ways to start the game
+
+From the title and OPTIONS: classic arcade, roguelike (GDD §2 says *this* is
+the default), CLOSE COMBAT (v198 says *this* is the default — the two stack),
+SMASH TV, RUSH, DAILY, LEVELS (three bundled), and six cabinets (on hold,
+still shipped). **"Tons of modes" already describes us**; Sektori's eight is
+fewer. The difference is Sektori unlocks them behind its first boss, and we
+put ours on the title screen.
+
+### 2.4 Rush is already a campaign seed
+
+Timed levels, a per-level PAR, S/A/B/C tiers, two goals per level, a stamp
+you keep (`RUSH_DESIGN.md` §2–3). That is Geometry Wars 3's *level* — a
+score-tiered, goal-carrying, replayable unit. What it lacks is the *path*:
+the thing that makes level 7 come after level 6 and makes stars mean
+something.
+
+---
+
+## 3. Reference study
+
+### 3.1 Geometry Wars 3: Dimensions — the clear one
+
+- **Adventure**: 50 levels on a **straight path**, no skipping; you need one
+  star on a level to move on. **Three score tiers per level = three stars,
+  150 total.** Stars gate the boss levels and buy ship upgrades (drones,
+  supers).
+- Every level pairs **a mode variant with an arena shape** — Pacifism on a
+  sphere, King on a cube, Deadline on a flat plane with a wall through it.
+  The classic modes are not menu peers; they are *flavours the campaign
+  hands you*, one per level, and the whole legacy set lives in a separate
+  CLASSIC drawer for people who already know them.
+- **Why it reads clearly:** one path, one currency, one thing to do next.
+  The variety is *inside* the path, not beside it.
+
+### 3.2 Sektori — the "one more run" one, and the confusing one
+
+- **Campaign: 5 worlds (6 on the highest difficulty), a boss at the end of
+  each, ~30 min per run** on the base difficulty. Bosses are drawn at random
+  with Gen 1.0 / Gen 2.0 variants, so runs differ.
+- **Deck**: enemy remains buy upgrades (speed, blaster, shield, boost,
+  missiles, score); you curate a deck of what can be offered. Three
+  difficulties.
+- **After the first boss, eight alternate modes unlock at once** — Classic
+  with mutators, Surge (swap between under- and over-powered), Crash
+  (dash-only kills), Assault (dwindling-clock waves), Gates (rotating laser
+  posts), Boss Rush, and more.
+- **Why it is confusing:** difficulty × mode × deck is a three-axis grid,
+  handed over all at once, with the modes as menu peers. **Why it is praised
+  anyway:** every mode is score-based and short, so "jump back in" has no
+  friction. The reviews that call it one of the best modern twin-sticks and
+  the ones that call it hard and confusing are describing the same design.
+- The lesson is not "fewer modes". It is **the doors and the depth are
+  separate problems**: Sektori nails depth-per-door and fumbles the number
+  of doors.
+
+### 3.3 Blade Rush — could not be fetched from here
+
+The egress proxy blocks both `noba.games` and the Steam store. What the
+search surfaced: Noba's Games, a one-stick shooter, **boost + overheat** as
+the core, "petri dish" arenas, and "a wide variety of challenges, unlocks
+and additional content". `RUSH_DESIGN.md` §1.3 already borrows its roster
+roles. **The owner knows this one better than this doc does** — §5 Q11 asks
+for the specific thing about its campaign that is worth taking.
+
+### 3.4 The Housemarque shape, for contrast
+
+Super Stardust HD / Resogun: **one arcade path — five planets, a fixed number
+of phases each, a boss per planet** — and the rest is leaderboards. Almost no
+modes at launch. Sektori's reviews keep invoking this lineage because it is
+the *clear* version of the same fantasy: constant pressure, a definite end,
+a number to beat. Toko Drop's fixed-screen arena is closer to this than to
+Geometry Wars' scrolling grids, which matters for §5 Q3.
+
+---
+
+## 4. A frame to argue with — proposal, not decision
+
+Written down so the questions in §5 have something concrete to push
+against. Every line is reversible.
+
+**Three doors, one drawer.**
+
+| door | what it is | session | already have |
+|---|---|---|---|
+| **ARCADE** | the main mode. One roster, fixed length, a definite end, a score. The "one more go" mode. | ~8–12 min | classic waves, the director, the roster |
+| **CAMPAIGN** | authored levels on a path. Stars from score tiers gate the path and the bosses. Each level may carry a mutator (CLOSE COMBAT, SMASH pulses, a Rush level…) the way GW3 carries a mode. | 1–3 min per level | the level editor, `level.js`, Rush's tiers/goals/stamps |
+| **ROGUE** | the long form: the deck. Escalating, ends when you die. | 20–30 min | roguelike cards (GDD §7) |
+| *CLASSICS* (drawer) | the six cabinets and SMASH TV as tributes, unchanged | — | shipped, on hold |
+
+DAILY becomes a *seed* on ARCADE, not a door. CLOSE COMBAT becomes a level
+mutator and a Rush ingredient, not a global toggle that silently decides
+whether the bullet game exists.
+
+**Waves become fronts.** Keep the 20 s round; pour it as **2–4 pulses across
+the round** (the SMASH machinery, retargeted), with the last pulse landing at
+~14 s so the round's end is always earned by the clock, not by an empty
+floor. "Wave clear" stays as a non-interrupting beat (GDD §2's fixed rule).
+
+**Revenge becomes a species trait, not a mode.** Some species shoot alive.
+Some bite back dead. A few do both, and *those* are the elite tells. It
+enters the roster like everything else — a `minWave` — so wave 1 has no
+corpse fire and the first species that has it uses the most readable dialect
+(RING), at one speed, seeded. CLOSE COMBAT then stops being "the mode where
+revenge exists" and becomes "the mutator where the guns are taken away".
+
+---
+
+## 5. The questions
+
+Grouped. Each says what it decides and, where there is one, a lean. **The
+lean is a prompt, not a vote.**
+
+### A. The session
+
+1. **How long is one ARCADE run meant to be, in minutes?** This decides
+   almost everything below — wave count, roster unlock pacing, whether a
+   boss fits. GW3 levels run 1–3 min; Sektori runs 30. *Lean: 8–12, because
+   "one more go" needs the run to end while you still want more.*
+2. **Does ARCADE end?** A win state (a boss at wave 10 or 12, then a
+   score), or endless escalation (today)? *Lean: it ends. Endless is what
+   ROGUE is for.*
+
+### B. Waves
+
+3. **Pulses inside a round, or no rounds at all?** Fronts (§4) keep the
+   20 s beat and the "WAVE N" banner. The Housemarque alternative is a
+   continuous pressure curve with no wave concept — spawns as a function of
+   time and live bodies. *Lean: pulses first; it is the smaller change and
+   reuses shipped code. Revisit if the banner starts to feel like a lie.*
+4. **What ends a round — the clock, an empty floor, or both?** Today both.
+   If bodies arrive across the whole round, "all dead before the clock"
+   becomes rare, and the wave-clear moment mostly disappears. *Is that
+   moment wanted?* If yes, the last pulse must land early enough to clear.
+
+### C. Revenge
+
+5. **Who bites back — every corpse (today, in CLOSE COMBAT) or named
+   species?** *Lean: species. It makes the tell learnable ("the purple ones
+   bloom") instead of universal.*
+6. **Is there corpse fire in wave 1?** *Lean: no. It arrives at wave 3–4 as
+   a roster unlock, RING first, and the game teaches it the way it teaches
+   BULWARK's plate.*
+7. **One speed?** Today 0.6× for everything and 1.0× for VOLATILE elites'
+   rings — the fast one is the one that also has the most bullets. *Lean:
+   one speed; VOLATILE's payoff becomes count, not velocity. Also: seed it.*
+8. **Mixed field.** Living fire *and* revenge on the same floor — is that a
+   state we want, and at what ratio? Or is CLOSE COMBAT's purity ("the
+   only bullets are the ones you made") the identity worth protecting, so
+   living fire is *another* level's mutator, never mixed? *No lean; this is
+   the real design question in the owner's second thought, and playtesting
+   the mixed state for an afternoon would answer it faster than arguing.*
+
+### D. Modes and progression
+
+9. **How many doors on the title?** Thirteen today (§2.3). *Lean: three plus
+   a drawer (§4).* If fewer than three, which one goes?
+10. **Is Roguelike the main mode's default, or its own door?** GDD §2 says
+    default; v198 made CLOSE COMBAT default too, so today a new player gets
+    both at once. *Lean: own door. ARCADE is the one with no choices in it.*
+11. **What is the one thing Blade Rush's campaign does that we should take?**
+    This doc could not read it (§3.3). Is it the level shape, the medal
+    structure, the unlock pacing, the boss cadence?
+12. **Is Rush the campaign, or one ingredient in it?** GW3 pairs a mode with
+    each level; on that model a Rush level and a CLOSE COMBAT level and a
+    plain level sit on the same path. Or Rush stays its own ladder, as
+    `RUSH_DESIGN.md` assumes. *Lean: ingredient. The stamp/tier/goal system
+    is already mode-agnostic in shape.*
+13. **What do stars buy?** GW3: bosses and ship upgrades. Sektori: nothing —
+    the deck is bought with remains instead. Us: the roadmap's Phase 4
+    "unlock track" (cosmetics / starting loadouts) is the placeholder. *Lean:
+    stars gate the path and bosses only; keep power out of it, so ARCADE
+    scores stay comparable.*
+14. **Difficulty tiers?** Sektori's three vs none. *Lean: none in ARCADE —
+    the star tiers are the difficulty in CAMPAIGN, and ROGUE escalates.*
+
+### E. How we'd know
+
+15. **What gets measured?** "One more go" is a number: **restart rate within
+    10 s of the death screen**, and the session-length distribution. The
+    death-screen feedback pipeline already posts a run summary; adding
+    `restartedWithin` and `runLength` to it costs one field each. *Lean: add
+    them before changing anything, so the wave/revenge changes have a
+    before.*
+
+---
+
+## 6. Findings recorded while writing this (not fixed — owner did not ask)
+
+- VOLATILE's corpse ring fires at 1.0× while every other revenge bullet is
+  0.6× (`main.js:3813–3819` vs `3845/3853`). One `R.speedMult` argument.
+- Revenge RING phase and the on-top-of-player fallback use `Math.random()`
+  (`main.js:3841, 3849`); the run's `rng()` is what the daily seed
+  reproduces. Dailies diverge at the first bloom.
+- GDD §2 and `main.js:2663` name two different defaults (Roguelike;
+  CLOSE COMBAT). Both are true; the GDD does not say so.
+- `TOKO_DROP_ROADMAP.md` had forked between `gh-pages` (v237 note) and
+  `main` (v228/v229/v231 ticks, the Godot-sibling note). Reconciled in the
+  commit that adds this file — both halves kept.

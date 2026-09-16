@@ -15,6 +15,11 @@ environment → 3. Motion/animation character → 4. Enemy silhouettes & readabi
 stay shipped and gated by `scripts/cabinets.sh`, but no new cabinet work until
 this arc lands.
 
+**The Godot port (`mbace1/toko-drop-godot`) is a live sibling, not a parked
+idea** — see root `CLAUDE.md`'s Toko Drop section for the leadership split,
+`RUSH_DESIGN.md` for the worked example, and root `QUEUE.md` for cross-repo
+work items.
+
 ---
 
 ## Reconciliation note — read before planning
@@ -96,7 +101,10 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 - [x] **Arena & environment pass**: floor/space treatment that makes swarm flow
       readable — *v223: rim vignette, grid distance falloff, and a lit pool that
       follows the player; both renderers in parity, constants in `TUNING.arena`*
-- [ ] Arena pass 2: reactive surface response to mass, prizes, pops
+- [x] Arena pass 2: reactive surface response to mass, prizes, pops — *v228:
+      up to 10 live enemies darken the ground under them, every kill rings
+      the floor out and fades, up to 5 live pickups mark their own ground;
+      same "cheap fragment terms" discipline as v223, both renderers in parity*
 - [ ] Performance budget checkpoint on a mid-range phone, measured after each pass
 
 ## Phase 4 — Full Meta *(Early Access gate)*
@@ -104,11 +112,24 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 - [x] Score model, end-of-run summary, local bests, daily seed
 - [ ] Unlock track: cumulative-score gates for cosmetics or starting loadouts
       *(cabinet unlocks exist; this is the main-game equivalent)*
-- [ ] Haptics + motion-comfort clamp review
+- [ ] **Modes, waves, revenge & progression** — owner direction 2026-09-16,
+      recorded with the grounding and an open question set in
+      `toko-drop/PROGRESSION_DESIGN.md`. Answer §5 there before scoping any
+      of: wave pulses, revenge-as-species-trait, the three-door title, a
+      campaign path over the level editor. *Not scheduled; the questions are
+      the work.*
+- [x] Haptics + motion-comfort clamp review — *v229: `js/haptics.js`
+      (`navigator.vibrate()` on hit/death/Rush overheat, Android Chrome
+      only, its own settings toggle) plus a real gap the audit half found:
+      the hit-damage vignette and wave-clear flash were never gated by
+      REDUCE MOTION, unlike `addShake()` and the NEX DEUS flash — gated now*
 
 ## Phase 5 — Early Access launch
 
-- [ ] itch.io page: embed, copy, capture GIFs (`scripts/enemy-loop.mjs` records them)
+- [ ] itch.io page: embed *(copy + GIFs done — v231, `toko-drop/press/PRESS.md`:
+      one-liner, itch.io short/long description, features, controls, tech
+      notes, 4 real screenshots + 2 `enemy-loop.mjs` GIFs. Actually creating
+      the itch.io page/embed is a manual step outside this repo)*
 - [ ] Pages build tagged Early Access, changelog surfaced in-game
 - [ ] Feedback channel *(the v212 contextual death-screen question is the
       in-game half; the hub feedback button is the other)*
@@ -141,7 +162,6 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 
 ## Parking lot
 
-- Godot 4.x port — superseded by WebGPU/TSL unless Three.js hits a wall
 - Rapier/WASM physics — only if profiling demands it
 - Multiplayer / backend leaderboards
 - Any post-processing revisit

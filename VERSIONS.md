@@ -67,6 +67,16 @@
   `fillText('vN'` literal it used to rewrite — that literal is gone, and a bump
   that silently matches nothing is worse than one that fails.
 - Cache-bust `?v=202` → `?v=203`; HUD label → v250
+- **Docs, same day, no game code** (owner: *"please save these as guiding
+  thoughts"*): `toko-drop/PROGRESSION_DESIGN.md` — the owner's direction on
+  waves ("every wave spawns at once"), revenge bullets, distinct modes and a
+  campaign, and the main mode's session/"one more go"; what the code does
+  today for each (the 3-second pour is deliberate, `main.js:303`; revenge is
+  binary — the ONLY bullets in the default mode, and absent in classic;
+  VOLATILE rings are the one full-speed corpse); a reference study (GW3,
+  Sektori, Blade Rush); and 15 open questions. `TOKO_DROP_ROADMAP.md`
+  reconciled with `main`'s copy (v228/v229/v231 ticks, the Godot-sibling
+  note) — the two had forked with no git ancestor for the file.
 
 **Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
 break and the lying version line were mine and are both verified here. The
