@@ -7,6 +7,43 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v248 — 2026-09-16
+**The white-out narrows itself — the game walks a ladder of suspects and names the one that brings the picture back** *(fourth owner report, now with a timing: "after 3 secs of game")*
+- **v244's detector shipped, survived into v247, and reported nothing — and
+  the reason is a blind spot in it.** It bailed the instant
+  `gl.isContextLost()` was true, so if the fault IS a lost context — the case
+  that best explains "60 FPS, HUD fine, whole scene white, stays broken" — the
+  detector was **silent by construction**. Context loss now prints itself ON
+  SCREEN, not to a console nobody can open on a phone
+- **AUTO-BISECT.** When the picture goes white the game stops describing the
+  fault and starts narrowing it: one suspect disabled every half second, the
+  pixel re-read after each — **shadows → transmission → the floor → fog →
+  pixel ratio → tone mapping → the retro pass**. The first that brings the
+  picture back is named on screen and the game **keeps playing with it off**.
+  Every rung is something a phone GPU is known to fail at and every one is
+  survivable, which is what makes healing safe rather than a mask. If none of
+  them work it says so — and that is an answer too: it is none of these, and
+  the next release looks elsewhere
+- **Why a ladder instead of a fourth guess.** Two diagnoses have been wrong
+  already. v242's half-float overflow was real but `FLOOR_FRAG` declares
+  `precision highp float`, so it was never the classic path's bug; v244's
+  detector had the hole above. The owner's screenshots carry a tell worth more
+  than any of my theories: **the bullets render in correct colour while
+  everything else is white**, which is not a floor-shader NaN. Another guess
+  costs another release and another day of a game that cannot be played
+- The line carries `trans=` and `enemies=` — transmission is the term
+  `perfMode` exists to switch off, and "after 3 seconds" is about when the
+  first bodies arrive
+- **Not a fix, and not claimed as one.** It is a way to get the answer in one
+  run instead of one release
+- Gates: `smoke` · `cabinets` · `webgpu-smoke` · `level-smoke` ×3 ·
+  `editor-smoke` 27 · `level-check` 74 · `shader-lint` 3 · `arena-check`
+  8,396; and the bisect itself falsified — silent through normal play, and
+  against a deliberately whitened floor it names the rung that clears it
+- Cache-bust `?v=200` → `?v=201`; HUD label → v248
+
+---
+
 ## v247 — 2026-09-12
 **The camera frames the fight, not the floor** *(the last open finding of the LOOK pass)*
 - **What was wrong.** The classic arena is fitted to the screen edge to
