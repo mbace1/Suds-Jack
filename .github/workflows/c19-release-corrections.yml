@@ -1,0 +1,80 @@
+name: Complete C19 release compatibility
+on:
+  push:
+    branches: [qa/c19-hub-delivery]
+    paths: [.github/workflows/c19-release-corrections.yml]
+permissions:
+  contents: write
+jobs:
+  correction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Stage the final reviewed source
+        run: |
+          git init /tmp/c19-source
+          git -C /tmp/c19-source remote add origin https://github.com/mbace1/piritori-eden.git
+          git -C /tmp/c19-source fetch --depth=1 origin 69b23168653d6dccb0c0a626755eac890ac686ad
+          git -C /tmp/c19-source checkout --detach FETCH_HEAD
+          git fetch origin main gh-pages release/c19-night-shift deploy/c19-night-shift
+          git worktree add --detach /tmp/c19-live origin/gh-pages
+          git show origin/main:scripts/sw-shell.mjs > /tmp/c19-sw-shell.mjs
+          python3 /tmp/c19-source/tools/publish/arena_lab_release.py --source /tmp/c19-source --commit 69b23168653d6dccb0c0a626755eac890ac686ad --deployed-manifest /tmp/c19-live/piritori-c17/art/v3/manifest.json --previous-cabinet /tmp/c19-live/piritori-c17 --output /tmp/c19-package
+      - name: Preserve candidate work and regenerate each actual shell
+        run: |
+          mkdir -p /tmp/c19-final
+          for BRANCH in release/c19-night-shift deploy/c19-night-shift; do
+            git checkout --detach "origin/$BRANCH"
+            python3 - <<'PY'
+          import pathlib,shutil,re
+          shutil.rmtree('piritori-c17');shutil.copytree('/tmp/c19-package','piritori-c17')
+          p=pathlib.Path('sw.js');raw=p.read_text();pattern=r"const VERSION = 'v(\d+)';"
+          assert len(re.findall(pattern,raw))==1
+          raw=re.sub(pattern,lambda m:"const VERSION = 'v"+str(int(m[1])+1)+"';",raw)
+          p.write_text(raw)
+          p=pathlib.Path('test/piritori-c18-entry.cjs');raw=p.read_text()
+          old="    assert.deepEqual(errors,[],'no JavaScript page errors along the actual route');"
+          assert raw.count(old)==1
+          raw=raw.replace(old,"""    // Existing public bookmarks must continue to reach the same canonical build.
+              await page.goto(new URL('piritori-c17/web/crew-run/c17/',base).href);
+              await page.waitForURL(url=>url.pathname===entry.pathname&&url.searchParams.get('campaign')==='1'&&url.searchParams.get('release')===version,{timeout:60000});
+              await idle();assert.equal(await page.locator('h1 span').textContent(),build);
+              assert.ok(await page.locator('#crew-deploy').isVisible(),'compatibility entry preserves preparation');
+          """+old)
+          old="build:build,pixels,loop:";assert raw.count(old)==1
+          raw=raw.replace(old,"build:build,compatibilityRoute:true,pixels,loop:")
+          p.write_text(raw)
+          PY
+            node /tmp/c19-sw-shell.mjs "$PWD"
+            node test/piritori-c18-package.mjs
+            node test/piritori-c18-package-regressions.mjs
+            node --check sw.js
+            node --check test/piritori-c18-entry.cjs
+            python3 - <<'PY'
+          import subprocess
+          changed=set(subprocess.check_output(['git','diff','--name-only']).decode().splitlines())
+          untracked=set(subprocess.check_output(['git','ls-files','--others','--exclude-standard']).decode().splitlines())
+          allowed={'sw.js','test/piritori-c18-entry.cjs','piritori-c17/VERSIONS.md','piritori-c17/release.json','piritori-c17/web/arena-lab/index.html','piritori-c17/web/crew-run/c17/index.html'}
+          assert changed|untracked <= allowed,(changed,untracked)
+          PY
+            git add piritori-c17 sw.js test/piritori-c18-entry.cjs
+            git -c core.whitespace=cr-at-eol diff --cached --check
+            git config user.name 'Piritori release worker'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'C19: preserve bookmarks, regenerate offline shell and align arena identity'
+            git push origin "HEAD:refs/heads/$BRANCH"
+            git rev-parse HEAD > "/tmp/c19-final/$(echo "$BRANCH" | tr / _).txt"
+            git diff --stat HEAD^ HEAD > "/tmp/c19-final/$(echo "$BRANCH" | tr / _)-changes.txt"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c19-reviewed-release-candidates
+          path: /tmp/c19-final
+          retention-days: 3
